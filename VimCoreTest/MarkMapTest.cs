@@ -133,6 +133,59 @@ namespace VimCoreTest
             Assert.IsTrue(opt.IsNone());
         }
 
+        [TestMethod, Description("Deleting a non-existant mark is OK")]
+        public void DeleteMark1()
+        {
+            CreateBuffer("foo");
+            Assert.IsFalse(_map.DeleteMark(_buffer, 'a'));
+        }
+
+        [TestMethod, Description("Simple Mark deletion")]
+        public void DeleteMark2()
+        {
+            CreateBuffer("foo");
+            _map.SetMark(new SnapshotPoint(_buffer.CurrentSnapshot, 0), 'a');
+            Assert.IsTrue(_map.DeleteMark(_buffer, 'a'));
+            Assert.IsTrue(_map.GetLocalMark(_buffer, 'a').IsNone());
+        }
+
+        [TestMethod, Description("Double deletion of a mark")]
+        public void DeleteMark3()
+        {
+            CreateBuffer("foo");
+            _map.SetMark(new SnapshotPoint(_buffer.CurrentSnapshot, 0), 'a');
+            Assert.IsTrue(_map.DeleteMark(_buffer, 'a'));
+            Assert.IsTrue(_map.GetLocalMark(_buffer, 'a').IsNone());
+            Assert.IsFalse(_map.DeleteMark(_buffer, 'a'));
+            Assert.IsTrue(_map.GetLocalMark(_buffer, 'a').IsNone());
+        }
+
+        [TestMethod, Description("Deleting a mark in one buffer shouldn't affect another")]
+        public void DeleteMark4()
+        {
+            CreateBuffer("foo");
+            var buffer2 = Utils.EditorUtil.CreateBuffer("baz");
+            _map.SetMark(new SnapshotPoint(_buffer.CurrentSnapshot, 0), 'a');
+            _map.SetMark(new SnapshotPoint(buffer2.CurrentSnapshot, 0), 'a');
+            Assert.IsTrue(_map.DeleteMark(buffer2, 'a'));
+            Assert.IsTrue(_map.GetLocalMark(_buffer, 'a').IsSome());
+        }
+
+        [TestMethod, Description("Should work on an empty map")]
+        public void DeleteAllMarks()
+        {
+            _map.DeleteAllMarks();   
+        }
+
+        [TestMethod]
+        public void DeleteAllMarks2()
+        {
+            CreateBuffer();
+            _map.SetMark(new SnapshotPoint(_buffer.CurrentSnapshot, 0), 'a');
+            _map.DeleteAllMarks();
+            Assert.IsTrue(_map.GetLocalMark(_buffer, 'a').IsNone());
+        }
+
         // TODO: Test Undo logic
        
     }

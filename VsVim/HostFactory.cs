@@ -15,10 +15,6 @@ using Microsoft.VisualStudio.Shell.Interop;
 
 namespace VsVim
 {
-    /// <summary>
-    /// Establishes an <see cref="IAdornmentLayer"/> to place the adornment on and exports the <see cref="IWpfTextViewCreationListener"/>
-    /// that instantiates the adornment on the event of a <see cref="IWpfTextView"/>'s creation
-    /// </summary>
     [Export(typeof(IWpfTextViewCreationListener))]
     [ContentType("text")]
     [TextViewRole(PredefinedTextViewRoles.Editable)]
@@ -31,11 +27,11 @@ namespace VsVim
         [Import]
         public KeyBindingService m_keyBindingService = null;
 
-        private List<VsVimBuffer> m_bufferList = new List<VsVimBuffer>();
+        private IVim m_vim;
 
         public HostFactory()
         {
-
+            m_vim = Factory.CreateVim();
         }
 
         public void TextViewCreated(IWpfTextView textView)
@@ -66,15 +62,13 @@ namespace VsVim
             // Once we have the view, stop listening to the event
             view.GotAggregateFocus -= new EventHandler(OnGotAggregateFocus);
 
-            var buffer = new VsVimBuffer(view, interopView, interopLines, m_undoHistoryRegistry);
+            var buffer = new VsVimBuffer(m_vim, view, interopView, interopLines, m_undoHistoryRegistry);
             view.Properties.AddTypedProperty(buffer);
 
             m_keyBindingService.OneTimeCheckForConflictingKeyBindings(buffer.VsVimHost.DTE, buffer.VimBuffer);
-            m_bufferList.Add(buffer);
             view.Closed += (x, y) =>
             {
                 view.Properties.RemoveTypedProperty<VsVimBuffer>();
-                m_bufferList.Remove(buffer);
             };
         }
     

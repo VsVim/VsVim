@@ -65,8 +65,10 @@
     <Compile Include="VimSettings.fs" />
     <Compile Include="ModeKind.fs" />
     <Compile Include="IMode.fs" />
+    <Compile Include="IVimData.fs" />
     <Compile Include="IVimBufferData.fs" />
     <Compile Include="IVimBuffer.fs" />
+    <Compile Include="IVim.fs" />
     <Compile Include="VimBufferData.fs" />
     <Compile Include="VimBuffer.fs" />
     <Compile Include="Factory.fsi" />
@@ -86,6 +88,8 @@
     <Compile Include="IM_InsertMode.fsi" />
     <Compile Include="IM_InsertMode.fs" />
     <Compile Include="RegisterMap.fs" />
+    <Compile Include="VimData.fs" />
+    <Compile Include="Vim.fs" />
     <Compile Include="Factory.fs" />
     <Compile Include="AssemblyInfo.fs" />
   </ItemGroup>

@@ -9,7 +9,6 @@ using System.Windows.Input;
 using System.Windows.Media;
 using Microsoft.VisualStudio.Text.Editor;
 using VimCoreTest.Utils;
-using Moq;
 using Microsoft.FSharp.Core;
 
 namespace VimCoreTest
@@ -36,7 +35,11 @@ namespace VimCoreTest
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 0));
             _host = new FakeVimHost();
             _map = new RegisterMap();
-            var data = new VimBufferData("test", _view, _host, _map);
+            var data = MockFactory.CreateVimBufferData(
+                _view,
+                "test",
+                _host,
+                MockFactory.CreateVimData(_map).Object);
             _modeRaw = new VimCore.Modes.Normal.NormalMode(data);
             _mode = _modeRaw;
             _mode.OnEnter();

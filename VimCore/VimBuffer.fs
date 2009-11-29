@@ -6,7 +6,7 @@ open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
 open System.Windows.Input
 
-type VimBuffer 
+type internal VimBuffer 
     (
         _data:IVimBufferData,
         _modeMap : Map<ModeKind,IMode>) =

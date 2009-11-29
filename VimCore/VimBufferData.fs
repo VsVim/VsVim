@@ -6,13 +6,12 @@ open Microsoft.VisualStudio.Text.Editor
 open System.Windows.Input
 
 /// Default implementation of the IVimBufferData interface
-type VimBufferData 
+type internal VimBufferData 
     ( 
         _name : string,
         _view :IWpfTextView, 
         _host : IVimHost, 
-        _map : IRegisterMap ) =
-    let _settings = VimSettingsUtil.CreateDefault    
+        _vimData : IVimData ) =
 
     interface IVimBufferData with 
         member x.Name = _name
@@ -20,8 +19,9 @@ type VimBufferData
         member x.TextBuffer = _view.TextBuffer
         member x.TextSnapshot = _view.TextSnapshot
         member x.VimHost = _host
-        member x.RegisterMap = _map
-        member x.Settings = _settings
+        member x.VimData = _vimData
+        member x.RegisterMap = _vimData.RegisterMap
+        member x.Settings = _vimData.Settings
         
     
     

@@ -9,6 +9,7 @@ open System.Windows.Input
 
 /// Represents the core pieces of data available for an IVimBuffer implementation
 type IVimBufferData =
+
     /// Name of the buffer.  Used for items like Marks
     abstract Name : string
 
@@ -19,5 +20,6 @@ type IVimBufferData =
     abstract TextBuffer : ITextBuffer
     abstract TextSnapshot : ITextSnapshot
     abstract VimHost : IVimHost
+    abstract VimData : IVimData
     abstract Settings : VimSettings
     abstract RegisterMap : IRegisterMap

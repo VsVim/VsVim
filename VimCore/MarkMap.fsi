@@ -3,7 +3,7 @@
 namespace VimCore
 open Microsoft.VisualStudio.Text
 
-[<Class>]
+[<Sealed>]
 type MarkMap =
     new : unit -> MarkMap
     member GetLocalMark : ITextBuffer -> char -> VirtualSnapshotPoint option

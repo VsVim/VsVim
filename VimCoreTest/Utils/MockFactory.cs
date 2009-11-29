@@ -8,9 +8,9 @@ using Microsoft.VisualStudio.Text.Editor;
 
 namespace VimCoreTest.Utils
 {
-    public static class MockFactory
+    internal static class MockFactory
     {
-        public static Mock<IRegisterMap> CreateRegisterMap()
+        internal static Mock<IRegisterMap> CreateRegisterMap()
         {
             var mock = new Mock<IRegisterMap>();
             var reg = new Register('_');
@@ -19,15 +19,34 @@ namespace VimCoreTest.Utils
             return mock;
         }
 
-        public static VimBufferData CreateVimBufferData(IWpfTextView view)
+        internal static Mock<IVimData> CreateVimData(
+            IRegisterMap registerMap = null)
         {
-            return CreateVimBufferData(view, new FakeVimHost(), CreateRegisterMap().Object);
+            registerMap = registerMap ?? CreateRegisterMap().Object;
+            var mock = new Mock<IVimData>(MockBehavior.Strict);
+            mock.Setup(x => x.RegisterMap).Returns(registerMap);
+            return mock;
         }
 
-        public static VimBufferData CreateVimBufferData(IWpfTextView view, IVimHost host, IRegisterMap map)
+        internal static Mock<IVim> CreateVim(
+            IVimData data = null)
         {
-            return new VimBufferData("test", view, host, map);
+            data = data ?? CreateVimData().Object;
+            var mock = new Mock<IVim>(MockBehavior.Strict);
+            mock.Setup(x => x.Data).Returns(data);
+            return mock;
+        }
 
+        internal static VimBufferData CreateVimBufferData(
+            IWpfTextView view, 
+            string name = null,
+            IVimHost host = null, 
+            IVimData data = null)
+        {
+            name = name ?? "test";
+            host = host ?? new FakeVimHost();
+            data = data ?? CreateVimData().Object;
+            return new VimBufferData("test", view, host, data);
         }
     }
 }

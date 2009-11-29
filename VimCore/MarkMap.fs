@@ -52,7 +52,7 @@ type Mark =
     /// this mark was last valid.  
     | Invalid of MarkData * int 
 
-[<Class>]
+[<Sealed>]
 type MarkMap() =
 
     let mutable _map: Map<MarkIdentifier, Mark> = Map.empty
@@ -119,7 +119,7 @@ type MarkMap() =
 
     /// Tracks all changes to the buffer and updates the corresponding marks as 
     /// appropriate
-    member x.OnBufferChanged (e:TextContentChangedEventArgs) =
+    member x.OnBufferChanged (sender:obj) (e:TextContentChangedEventArgs) =
 
         // Line changes are the only action that can affect a mark so don't bother processing 
         // if there hasn't been a line change
@@ -128,7 +128,13 @@ type MarkMap() =
 
     member x.EnsureTracking (buffer:ITextBuffer) =
         if _tracking.Add(buffer) then
-            buffer.Changed.Add(x.OnBufferChanged)
+            let handler = new System.EventHandler<TextContentChangedEventArgs>(x.OnBufferChanged)
+            buffer.Changed.AddHandler handler
+
+    member x.EnsureNotTracking (buffer:ITextBuffer) =
+        if _tracking.Remove(buffer) then
+            let handler = new System.EventHandler<TextContentChangedEventArgs>(x.OnBufferChanged)
+            buffer.Changed.RemoveHandler handler
 
     /// Try and get the local mark for the specified char <param name="c"/>.  If it does not
     /// exist then the value None will be returned.  The mark is always returned for the 
@@ -158,9 +164,16 @@ type MarkMap() =
         let ident = MarkIdentifier(buffer, c)
         let isDelete = _map.ContainsKey ident
         _map <- _map.Remove(ident)
+        let allMarksGoneInBuffer =
+            _map
+                |> Seq.filter (fun p -> p.Key.TextBuffer = buffer)
+                |> Seq.isEmpty
+        if allMarksGoneInBuffer then
+            x.EnsureNotTracking buffer
         isDelete
 
     /// Delete all of the marks being tracked
     member x.DeleteAllMarks () = 
+        _map |> Seq.iter (fun p -> x.EnsureNotTracking(p.Key.TextBuffer))
         _map <- Map.empty
     

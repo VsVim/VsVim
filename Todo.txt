@@ -11,12 +11,14 @@ X - j: in normal mode
 X - Typing shouldn't work in normal mode
 X - Ctrl+]: in normal mode
 - Delete key in normal mode
-- Mark navigation support
+- Mark navigation support in normal mode
+- Mark navigation for global marks
 - Fix the Caret thing
 - Check on the behavior of tab in normal mode
-- Marks
-	- Undo Support
-	- Stop listening for buffer changes at some point
+- Marks Undo Support
+X - Marks Stop listening for buffer changes at some point
+- Track buffer close in some way
+- Make appropriate items internal
 
 Version .5.1
 ===
