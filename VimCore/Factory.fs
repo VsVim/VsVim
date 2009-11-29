@@ -16,9 +16,8 @@ module Factory =
             |> List.map (fun x-> (x.ModeKind,x))
             |> Map.ofList
 
-    let CreateVimBuffer host view = 
+    let CreateVimBuffer host view name = 
         let map = new RegisterMap()
-        let data = VimBufferData(view, host, map)
+        let data = VimBufferData(name, view, host, map)
         let buf = VimBuffer(data, (modeMap data))
-        let data = VimBufferData(view, host, map)
         buf :> IVimBuffer

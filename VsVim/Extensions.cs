@@ -9,6 +9,7 @@ using System.Runtime.InteropServices;
 using Microsoft.VisualStudio.Utilities;
 using VimCore;
 using System.Windows.Input;
+using Microsoft.VisualStudio.TextManager.Interop;
 
 namespace VsVim
 {
@@ -128,7 +129,36 @@ namespace VsVim
 
         public static KeyInput ConvertToKeyInput(this KeyEventArgs e)
         {
-            return InputUtil.KeyAndModifierToKeyInput(e.Key, e.KeyboardDevice.Modifiers);   
+            return InputUtil.KeyAndModifierToKeyInput(e.Key, e.KeyboardDevice.Modifiers);
+        }
+
+        #endregion
+
+        #region IVsTextLines
+
+        /// <summary>
+        /// Get the file name of the presented view.  If the name cannot be discovered an empty string will be returned
+        /// </summary>
+        public static string GetFileName(this IVsTextLines lines)
+        {
+            try
+            {
+                // GUID_VsBufferMoniker
+                var monikerId = new Guid(0x978a8e17, 0x4df8, 0x432a, 150, 0x23, 0xd5, 0x30, 0xa2, 100, 0x52, 0xbc);
+                var userData = (IVsUserData)lines;
+                object data = null;
+                if (Microsoft.VisualStudio.VSConstants.S_OK != userData.GetData(ref monikerId, out data)
+                    || String.IsNullOrEmpty(data as string))
+                {
+                    return String.Empty;
+                }
+
+                return (string)data;
+            }
+            catch (InvalidCastException)
+            {
+                return String.Empty;
+            }
         }
 
         #endregion

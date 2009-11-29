@@ -33,13 +33,13 @@ namespace VsVim
             get { return m_host; }
         }
 
-        internal VsVimBuffer(IWpfTextView view, IVsTextView shimView, IUndoHistoryRegistry undoHistory)
+        internal VsVimBuffer(IWpfTextView view, IVsTextView shimView, IVsTextLines lines, IUndoHistoryRegistry undoHistory)
         {
             m_view = view;
 
             var sp = ((IObjectWithSite)shimView).GetServiceProvider();
             m_host = new VsVimHost(sp, undoHistory);
-            m_buffer = Factory.CreateVimBuffer(m_host, m_view);
+            m_buffer = Factory.CreateVimBuffer(m_host, m_view, lines.GetFileName());
             m_filter = new VsCommandFilter(m_buffer, shimView);
 
             m_view.GotAggregateFocus += OnGotAggregateFocus;

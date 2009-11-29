@@ -57,10 +57,16 @@ namespace VsVim
                 return;
             }
 
+            var interopLines = m_service.GetBufferAdapter(view.TextBuffer) as IVsTextLines;
+            if (interopLines == null)
+            {
+                return;
+            }
+
             // Once we have the view, stop listening to the event
             view.GotAggregateFocus -= new EventHandler(OnGotAggregateFocus);
 
-            var buffer = new VsVimBuffer(view, interopView, m_undoHistoryRegistry);
+            var buffer = new VsVimBuffer(view, interopView, interopLines, m_undoHistoryRegistry);
             view.Properties.AddTypedProperty(buffer);
 
             m_keyBindingService.OneTimeCheckForConflictingKeyBindings(buffer.VsVimHost.DTE, buffer.VimBuffer);

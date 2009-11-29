@@ -36,7 +36,7 @@ namespace VimCoreTest
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 0));
             _host = new FakeVimHost();
             _map = new RegisterMap();
-            var data = new VimBufferData(_view, _host, _map);
+            var data = new VimBufferData("test", _view, _host, _map);
             _modeRaw = new VimCore.Modes.Normal.NormalMode(data);
             _mode = _modeRaw;
             _mode.OnEnter();

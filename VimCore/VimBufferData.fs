@@ -8,12 +8,14 @@ open System.Windows.Input
 /// Default implementation of the IVimBufferData interface
 type VimBufferData 
     ( 
+        _name : string,
         _view :IWpfTextView, 
         _host : IVimHost, 
         _map : IRegisterMap ) =
     let _settings = VimSettingsUtil.CreateDefault    
 
     interface IVimBufferData with 
+        member x.Name = _name
         member x.TextView = _view
         member x.TextBuffer = _view.TextBuffer
         member x.TextSnapshot = _view.TextSnapshot

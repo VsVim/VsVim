@@ -11,6 +11,7 @@ X - j: in normal mode
 X - Typing shouldn't work in normal mode
 X - Ctrl+]: in normal mode
 - Delete key in normal mode
+- Mark support
 
 Version .5.1
 ===

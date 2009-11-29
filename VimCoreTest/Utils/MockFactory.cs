@@ -26,7 +26,7 @@ namespace VimCoreTest.Utils
 
         public static VimBufferData CreateVimBufferData(IWpfTextView view, IVimHost host, IRegisterMap map)
         {
-            return new VimBufferData(view, host, map);
+            return new VimBufferData("test", view, host, map);
 
         }
     }
