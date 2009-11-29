@@ -6,6 +6,8 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text;
 using VimCore.Modes.Common;
+using Moq;
+using VimCore;
 
 namespace VimCoreTest
 {
@@ -62,5 +64,35 @@ namespace VimCoreTest
             Assert.AreEqual(4, _view.Caret.Position.BufferPosition.Position);
         }
 
+        [TestMethod]
+        public void GoToDefinition1()
+        {
+            CreateLines("foo");
+            var host = new Mock<IVimHost>(MockBehavior.Strict);
+            host.Setup(x => x.GoToDefinition()).Returns(true);
+            var res = Operations.GoToDefinition(_view, host.Object);
+            Assert.IsTrue(res.IsSucceeded);
+        }
+
+        [TestMethod]
+        public void GoToDefinition2()
+        {
+            CreateLines("foo");
+            var host = new Mock<IVimHost>(MockBehavior.Strict);
+            host.Setup(x => x.GoToDefinition()).Returns(false);
+            var res = Operations.GoToDefinition(_view, host.Object);
+            Assert.IsTrue(res.IsFailed);
+            Assert.IsTrue(((Operations.GoToDefinitionResult.Failed)res).Item.Contains("foo"));
+        }
+
+        [TestMethod, Description("Make sure we don't crash when nothing is under the cursor")]
+        public void GoToDefinition3()
+        {
+            CreateLines("      foo");
+            var host = new Mock<IVimHost>(MockBehavior.Strict);
+            host.Setup(x => x.GoToDefinition()).Returns(false);
+            var res = Operations.GoToDefinition(_view, host.Object);
+            Assert.IsTrue(res.IsFailed);
+        }
     }
 }

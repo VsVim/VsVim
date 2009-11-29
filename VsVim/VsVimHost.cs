@@ -89,6 +89,19 @@ namespace VsVim
             }
         }
 
+        bool IVimHost.GoToDefinition()
+        {
+            try
+            {
+                m_dte.ExecuteCommand("Edit.GoToDefinition");
+                return true;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
         #endregion
 
     }

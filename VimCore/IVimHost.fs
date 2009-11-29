@@ -8,3 +8,5 @@ type IVimHost =
     abstract Beep : unit -> unit
     abstract OpenFile : string -> unit
     abstract Undo : ITextBuffer -> int -> unit
+    abstract GoToDefinition : unit -> bool
+

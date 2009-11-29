@@ -7,6 +7,10 @@ open Microsoft.VisualStudio.Text.Editor
 
 module Operations =
 
+    type GoToDefinitionResult = 
+        | Succeeded
+        | Failed of string
+
     /// Implements the Join command.  Returns false in the case the join command cannot
     /// be complete (such as joining at the end of the buffer)
     let Join (view:ITextView) count = 
@@ -56,6 +60,20 @@ module Operations =
                 | _ -> inner (count-1)
         inner count
             
+    /// Attempt to GoToDefinition on the current state of the buffer.  If this operation fails, an error message will 
+    /// be generated as appropriate
+    let GoToDefinition (view:ITextView) (host:VimCore.IVimHost) =
+        if host.GoToDefinition() then
+            Succeeded
+        else
+            match TssUtil.FindCurrentFullWordSpan view.Caret.Position.BufferPosition VimCore.WordKind.BigWord with
+            | Some(span) -> 
+                let param1 = (span.GetText()) :> obj
+                let msg = System.String.Format("Could not navigate to definition of '{0}'", param1)
+                Failed(msg)
+            | None ->  Failed("Could not navigate to definition of word under cursor")
 
+            
+        
             
     

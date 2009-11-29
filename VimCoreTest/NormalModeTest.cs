@@ -1013,6 +1013,34 @@ namespace VimCoreTest
             _mode.Process("3J");
             Assert.AreEqual("foo bar baz", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
         }
+
+        [TestMethod]
+        public void GoToDefinition1()
+        {
+            var def = new KeyInput(']', Key.OemCloseBrackets, ModifierKeys.Control);
+            CreateBuffer("foo");
+            _mode.Process(def);
+            Assert.AreEqual(1, _host.GoToDefinitionCount);
+        }
+
+        [TestMethod, Description("When it fails, the status should be updated")]
+        public void GotoDefinition2()
+        {
+            CreateBuffer("foo");
+            var def = new KeyInput(']', Key.OemCloseBrackets, ModifierKeys.Control);
+            _host.GoToDefinitionReturn = false;
+            _mode.Process(def);
+            Assert.AreEqual(1, _host.GoToDefinitionCount);
+            Assert.IsTrue(_host.Status.Contains("foo"));
+        }
+
+        [TestMethod]
+        public void GotoDefinition3()
+        {
+            var def = new KeyInput(']', Key.OemCloseBrackets, ModifierKeys.Control);
+            Assert.IsTrue(_mode.CanProcess(def));
+            Assert.IsTrue(_mode.Commands.Contains(def));
+        }
         
         #endregion
 

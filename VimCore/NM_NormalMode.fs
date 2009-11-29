@@ -393,6 +393,14 @@ type internal NormalMode( _bufferData : IVimBufferData ) =
                     if not res then
                         this.VimHost.Beep()
                     NormalModeResult.Complete) };
+            {   KeyInput=KeyInput(']', Key.OemCloseBrackets, ModifierKeys.Control);
+                RunFunc=(fun d ->
+                    match VimCore.Modes.Common.Operations.GoToDefinition this.TextView this.VimHost with
+                    | VimCore.Modes.Common.Operations.Succeeded -> ()
+                    | VimCore.Modes.Common.Operations.Failed(msg) ->
+                        this.VimHost.UpdateStatus(msg)
+                        ()
+                    NormalModeResult.Complete) };
             ]
         l |> List.map (fun d -> d.KeyInput,d) |> Map.ofList
 
