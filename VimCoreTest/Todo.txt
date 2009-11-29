@@ -1,0 +1,7 @@
+﻿X Finish incremental searching
+X Normal n
+X Normal N
+X incremental search backward
+Normal *
+Normal #
+Normal a

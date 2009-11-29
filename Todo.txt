@@ -1,0 +1,81 @@
+Version .6
+===
+X - Fix normal mode eating other commands 
+X - Move modes into separate namespaces
+X - Modes need to expose the key combos they care about
+X - Remove conflicting key bindings
+X - Handle CTRL-U and CTRL-D in normal mode
+- :$ in Command Mode
+X - j: in normal mode
+- j in command mode
+- Typing shouldn't work in normal mode
+- Ctrl+]: in normal mode
+
+Version .5.1
+===
+X - VS: Delete in normal mode deletes
+
+Version .5
+===
+
+X - Delete key is not updating the incremental search status message properly
+X - IncrementalSearch should be case insensitive
+X - Fix Motion capture to understand characterwise, linewise and inclusive, exclusive
+X - Get the motion information into the Register structure
+X - Pasting a linewise motion pastes line a characterwise motion
+X - Delete needs to understand linewise motion vs characterwise motion
+X - BufferUtil.DeleteSpan doesn't set the proper MotionKind and OperationKind on the new value
+X - Need to implement a count on end of line motion
+X - p needs to move the cursor to the start of the next line if it's a linewise paste
+X - dd should delete the entire line.  Not from the current caret point
+X - yy should yank the entire line.  Not just from the current caret point
+X - X is not implemented
+X - Paste of a line in a buffer created by 'dd' causes the LF/CR problems
+X - Delete of incremental search characters is not handled properly in VsVim
+X - 'o' command at the end of the buffer causes the LF/CR problems
+X - Paste at end of buffer causes crash
+X - j at the end of the buffer causes a crash
+X - Fix the Cursor to be more visibly Normal mode  
+X - Enter should indent the cursor to the indent on the previous line.  
+X - Normal mode o at end of the file should be fixed.  Right now it either doesn't work or crashes
+X - Delete key doesn't work in insert mode
+X - Make sure O and o do not explicitly position the caret.  Let the language service do that
+X - Ocassionally, unable to leave insertion modei
+X - x is broken
+X - b is broken
+X - Cursor won't switch to black for insert mode
+X - Sholud make CommandState an interface 
+X - w is broken.  Jumps around the file too much.  Works for some lines but not others
+X - # is broken
+X - w skips the first word on the line
+X - Remove ModeKind from ICommandState.  Intstead return a type that is indicative that a mode change needs to occur
+X - Moving the mouse to the laptop causes weird characters to be inserted.
+X  * Appears to be an InputDirector issue.  Doesn't go through the FsVim code
+X - Starting VS with an open file puts the emulation into a weird state
+X - Command mode :$ crashes the IDE
+X - All of the TssUtil::FindNext/FindPrevious should be non-wrapping
+X - The 'o' command is apparently still messing up
+X - Motion commands are not exiting correctly
+X - "w" motion needs to implement a count
+X - Hitting escape in insert mode is causing escape to be inserted into the buffer
+X - Typing in an invalid motion should give some warning
+X - Enter must still cancel an invalid motion
+X - Enter in normal should move to next line
+X - Do not Complete in Normal mode must reset the run function
+X - Motion should have a WaitForMode which indiciates error conditions
+X - Motion keys should clear selection
+X - 'u' is not implemented
+X - Insert Mode: CTRL+D
+
+Version .6
+===
+- Remove the bad Visual Studio key bindings
+- Move the cursor paiting code to the host and not the core engine
+- RegisterMap should handle any char
+- Need to fix insert above
+- * matches partial words.  Should only match whole words
+- Escape must dismiss intellisense
+- 'w' is not implemented
+- Need to make incremental search case or not case based on user option
+
+

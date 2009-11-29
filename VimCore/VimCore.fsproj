@@ -1,0 +1,130 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>8.0.30703</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{06be08e7-8626-40bd-877b-8d2dca6ba451}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <RootNamespace>FsVim</RootNamespace>
+    <AssemblyName>VimCore</AssemblyName>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <Name>VimCore</Name>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>3</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>3</WarningLevel>
+  </PropertyGroup>
+  <Import Project="$(ProgramFiles)\Microsoft F#\v4.0\Microsoft.FSharp.Targets" />
+  <ItemGroup>
+    <Compile Include="IVimHost.fs" />
+    <Compile Include="WordKind.fs" />
+    <Compile Include="SearchKind.fs" />
+    <Compile Include="KeyInput.fs" />
+    <Compile Include="InputUtil.fsi" />
+    <Compile Include="InputUtil.fs" />
+    <Compile Include="StringUtil.fsi" />
+    <Compile Include="StringUtil.fs" />
+    <Compile Include="TextUtil.fsi" />
+    <Compile Include="TextUtil.fs" />
+    <Compile Include="TssUtil.fsi" />
+    <Compile Include="TssUtil.fs" />
+    <Compile Include="MotionUtil.fsi" />
+    <Compile Include="MotionUtil.fs" />
+    <Compile Include="ViewUtil.fsi" />
+    <Compile Include="ViewUtil.fs" />
+    <Compile Include="CountCapture.fs" />
+    <Compile Include="OperationKind.fs" />
+    <Compile Include="MotionKind.fs" />
+    <Compile Include="MotionCapture.fsi" />
+    <Compile Include="MotionCapture.fs" />
+    <Compile Include="SearchOptions.fs" />
+    <Compile Include="IncrementalSearch.fsi" />
+    <Compile Include="IncrementalSearch.fs" />
+    <Compile Include="Register.fs" />
+    <Compile Include="IRegisterMap.fs" />
+    <Compile Include="BufferUtil.fsi" />
+    <Compile Include="BufferUtil.fs" />
+    <Compile Include="VimSettings.fs" />
+    <Compile Include="ModeKind.fs" />
+    <Compile Include="IMode.fs" />
+    <Compile Include="IVimBufferData.fs" />
+    <Compile Include="IVimBuffer.fs" />
+    <Compile Include="VimBufferData.fs" />
+    <Compile Include="VimBuffer.fs" />
+    <Compile Include="Factory.fsi" />
+    <Compile Include="RegexUtil.fs" />
+    <Compile Include="Common_Operations.fsi" />
+    <Compile Include="Common_Operations.fs" />
+    <Compile Include="CM_CommandMode.fsi" />
+    <Compile Include="CM_CommandMode.fs" />
+    <Compile Include="NM_Data.fsi" />
+    <Compile Include="NM_Data.fs" />
+    <Compile Include="NM_Operation.fsi" />
+    <Compile Include="NM_Operation.fs" />
+    <Compile Include="NM_Operations.fsi" />
+    <Compile Include="NM_Operations.fs" />
+    <Compile Include="NM_NormalMode.fsi" />
+    <Compile Include="NM_NormalMode.fs" />
+    <Compile Include="IM_InsertMode.fsi" />
+    <Compile Include="IM_InsertMode.fs" />
+    <Compile Include="RegisterMap.fs" />
+    <Compile Include="Factory.fs" />
+    <Compile Include="AssemblyInfo.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="FSharp.Core">
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Microsoft.VisualStudio.CoreUtility">
+      <HintPath>C:\Users\jaredp\dotnet\FsVim\References\Microsoft.VisualStudio.CoreUtility.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Microsoft.VisualStudio.Text.Data">
+      <HintPath>C:\Users\jaredp\dotnet\FsVim\References\Microsoft.VisualStudio.Text.Data.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Microsoft.VisualStudio.Text.Logic">
+      <HintPath>C:\Users\jaredp\dotnet\FsVim\References\Microsoft.VisualStudio.Text.Logic.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Microsoft.VisualStudio.Text.UI">
+      <HintPath>C:\Users\jaredp\dotnet\FsVim\References\Microsoft.VisualStudio.Text.UI.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Microsoft.VisualStudio.Text.UI.Wpf">
+      <HintPath>C:\Users\jaredp\dotnet\FsVim\References\Microsoft.VisualStudio.Text.UI.Wpf.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="mscorlib" />
+    <Reference Include="PresentationCore" />
+    <Reference Include="PresentationFramework" />
+    <Reference Include="System" />
+    <Reference Include="System.Core">
+      <RequiredTargetFramework>3.5</RequiredTargetFramework>
+    </Reference>
+    <Reference Include="WindowsBase" />
+  </ItemGroup>
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+	     Other similar extension points exist, see Microsoft.Common.targets.
+	<Target Name="BeforeBuild">
+	</Target>
+	<Target Name="AfterBuild">
+	</Target>
+	-->
+</Project>

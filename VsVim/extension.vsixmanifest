@@ -1,0 +1,25 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<VSIX xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2010">
+  <Identifier ID="VsVim..97b3c7d4-4087-476f-a25b-9c2ff7a4f630">
+    <Name>VsVim</Name>
+    <Author>Jared Parsons</Author>
+    <Version>0.5</Version>
+    <Description>Basic Vim Emulator</Description>
+    <Locale>1033</Locale>
+    <Icon>TextAdornment_small.png</Icon>
+    <PreviewImage>TextAdornment_large.png</PreviewImage>
+    <SupportedVSEdition version="10.0">
+      <Edition>VST_All</Edition>
+      <Edition>Pro</Edition>
+    </SupportedVSEdition>
+    <SupportedFrameworkRuntimeEdition minversion="4.0" maxversion="4.0" />
+  </Identifier>
+  <References>
+    <Reference ID="Microsoft.VisualStudio.Editor" minversion="10.0">
+      <Name>Microsoft Visual Studio Editor</Name>
+    </Reference>
+  </References>
+  <Content>
+    <MEFComponent>VsVim.dll</MEFComponent>
+  </Content>
+</VSIX>
