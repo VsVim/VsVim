@@ -11,7 +11,7 @@ type VimSettings = {
     Scroll : option<int>;
     }
     
-module VimSettingsUtil =
+module internal VimSettingsUtil =
 
     /// Create the default settings class
     let CreateDefault : VimSettings = {

@@ -5,11 +5,11 @@ open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor;
 open System.Windows.Input
 
-type CountResult =
+type internal CountResult =
     | Complete of int * KeyInput
     | NeedMore of (KeyInput -> CountResult)
 
-module CountCapture =
+module internal CountCapture =
 
     /// At least one digit is seen.  This will wait for the completion of the number
     /// as input by the user

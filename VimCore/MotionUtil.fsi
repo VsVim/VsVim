@@ -5,7 +5,7 @@ open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor;
 open System.Windows.Input
 
-module MotionUtil =
+module internal MotionUtil =
     val CharLeft : SnapshotPoint -> int -> SnapshotSpan 
     val CharRight : SnapshotPoint -> int -> SnapshotSpan
     val CharUp : SnapshotPoint -> int -> SnapshotSpan

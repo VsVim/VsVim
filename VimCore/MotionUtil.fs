@@ -7,7 +7,7 @@ open System.Windows.Input
 
 /// This module is used to implement certain motion capture commands.  Operations
 /// like calculated h with a count are implemented here 
-module MotionUtil =
+module internal MotionUtil =
 
     /// Get the span by moving count characters to the left.  Do not move past the start
     /// of the current physical line

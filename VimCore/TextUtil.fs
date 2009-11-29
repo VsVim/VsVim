@@ -3,12 +3,12 @@ namespace VimCore
 open System
 open Microsoft.VisualStudio.Text
 
-type Direction =
+type internal Direction =
     | Neither = 0
     | Left = 1
     | Right = 2
 
-module TextUtil =
+module internal TextUtil =
 
     let private IsBigWordChar c = not (Char.IsWhiteSpace(c))
     let private IsWordChar c = Char.IsLetterOrDigit(c) || c = '_'

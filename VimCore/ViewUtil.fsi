@@ -4,7 +4,7 @@ namespace VimCore
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
 
-module ViewUtil =
+module internal ViewUtil =
     val VimLineToViewLine : int -> int
     val GetLineNumber : ITextView -> int
     val GetLineText : ITextView -> int -> string

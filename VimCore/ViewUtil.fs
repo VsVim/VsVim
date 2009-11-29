@@ -4,7 +4,7 @@ namespace VimCore
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
 
-module ViewUtil =
+module internal ViewUtil =
     let paddingHorizontal = 10.0
     let paddingVertical = 10.0
     

@@ -5,7 +5,7 @@ open Microsoft.VisualStudio.Text
 open System.Windows.Input
 open System.Text.RegularExpressions
 
-module RegexUtil =
+module internal RegexUtil =
     let group (m:Match) (n:int) = m.Groups.[n].Value
     let (|MatchAll|_|) (pat:string) (input:string) = 
         let m = Regex.Match(input,pat) 

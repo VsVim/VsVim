@@ -3,7 +3,7 @@
 namespace VimCore
 open Microsoft.VisualStudio.Text
 
-module TssUtil =
+module internal TssUtil =
     val GetLines : SnapshotPoint -> SearchKind -> seq<ITextSnapshotLine>
     val GetPoints : ITextSnapshotLine -> seq<SnapshotPoint>
     val GetSpans : SnapshotPoint -> SearchKind -> seq<SnapshotSpan>

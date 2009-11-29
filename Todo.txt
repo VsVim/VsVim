@@ -18,7 +18,7 @@ X - Ctrl+]: in normal mode
 - Marks Undo Support
 X - Marks Stop listening for buffer changes at some point
 - Track buffer close in some way
-- Make appropriate items internal
+X - Make appropriate items internal
 
 Version .5.1
 ===

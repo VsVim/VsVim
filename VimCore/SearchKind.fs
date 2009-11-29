@@ -2,13 +2,13 @@
 
 namespace VimCore
 
-type SearchKind = 
+type internal SearchKind = 
      | Forward = 1
      | ForwardWithWrap = 2
      | Backward = 3
      | BackwardWithWrap = 4 
 
-module SearchKindUtil =
+module internal SearchKindUtil =
     let IsForward x =
         match x with 
             | SearchKind.Forward -> true

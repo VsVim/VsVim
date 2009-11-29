@@ -2,7 +2,7 @@
 namespace VimCore
 open Microsoft.VisualStudio.Text
 
-module BufferUtil =
+module internal BufferUtil =
 
     // Adds an empty line to the buffer below the specified line and returns
     // the new ITextSnapshotLine instance representing the buffer

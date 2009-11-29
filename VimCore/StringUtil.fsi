@@ -2,7 +2,7 @@
 
 namespace VimCore
 
-module StringUtil =
+module internal StringUtil =
 
     val FindFirst : seq<char> -> int -> (char -> bool) -> option<int * char>
     val CharAtOption : string -> int -> option<char>

@@ -8,11 +8,11 @@ using VimCore;
 
 namespace VimCoreTest.Utils
 {
-    public static class Extensions
+    internal static class Extensions
     {
         #region CountResult
 
-        public static CountResult.NeedMore AsNeedMore(this CountResult res)
+        internal static CountResult.NeedMore AsNeedMore(this CountResult res)
         {
             return (CountResult.NeedMore)res;
         }
@@ -21,7 +21,7 @@ namespace VimCoreTest.Utils
 
         #region ProcessResult
 
-        public static ProcessResult.SwitchMode AsSwitchMode(this ProcessResult res)
+        internal static ProcessResult.SwitchMode AsSwitchMode(this ProcessResult res)
         {
             return (ProcessResult.SwitchMode)res;
         }
@@ -30,25 +30,25 @@ namespace VimCoreTest.Utils
 
         #region MotionResult
 
-        public static MotionResult.Complete AsComplete(this MotionResult res)
+        internal static MotionResult.Complete AsComplete(this MotionResult res)
         {
             return (MotionResult.Complete)res;
         }
 
-        public static MotionResult.InvalidMotion AsInvalidMotion(this MotionResult res)
+        internal static MotionResult.InvalidMotion AsInvalidMotion(this MotionResult res)
         {
             return (MotionResult.InvalidMotion)res;
         }
 
         #endregion
 
-        public static SnapshotSpan GetSpan(this ITextSelection selection)
+        internal static SnapshotSpan GetSpan(this ITextSelection selection)
         {
             var span = new SnapshotSpan(selection.Start.Position, selection.End.Position);
             return span;
         }
 
-        public static void UpdateValue(this Register reg, string value)
+        internal static void UpdateValue(this Register reg, string value)
         {
             var regValue = new RegisterValue(value, MotionKind.Inclusive, OperationKind.CharacterWise);
             reg.UpdateValue(regValue);

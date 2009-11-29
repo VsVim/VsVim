@@ -36,7 +36,7 @@ namespace VimCoreTest
             _snapshot = _buffer.CurrentSnapshot;
         }
 
-        public MotionResult Process(int startPosition, int count, string input)
+        internal MotionResult Process(int startPosition, int count, string input)
         {
             Assert.IsTrue(count > 0, "this will cause an almost infinite loop");
             var res = MotionCapture.ProcessInput(

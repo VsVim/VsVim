@@ -2,6 +2,6 @@
 
 namespace VimCore
 
-type WordKind = 
+type internal WordKind = 
     | NormalWord = 1
     | BigWord = 2

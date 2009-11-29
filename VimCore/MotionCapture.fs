@@ -5,7 +5,7 @@ open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor;
 open System.Windows.Input
 
-type MotionResult = 
+type internal MotionResult = 
     | Complete of (SnapshotSpan * MotionKind * OperationKind)
     
     /// Motion needs more input to be completed
@@ -19,7 +19,7 @@ type MotionResult =
     | Error of string
     | Cancel
        
-module MotionCapture = 
+module internal MotionCapture = 
 
     /// When an invalid motion is given just wait for enter and then report and invalid 
     /// motion error.  Update the status to let the user know that we are currently

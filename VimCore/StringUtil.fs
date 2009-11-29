@@ -3,7 +3,7 @@
 
 namespace VimCore
 
-module StringUtil =
+module internal StringUtil =
     let FindFirst (input:seq<char>) index del =
         let found = 
             input 

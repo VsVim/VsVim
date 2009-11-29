@@ -2,7 +2,7 @@
 namespace VimCore
 open Microsoft.VisualStudio.Text
 
-module TssUtil =
+module internal TssUtil =
 
     /// Get the last line in the ITextSnapshot.  Avoid pulling the entire buffer into memory
     /// slowly by using the index

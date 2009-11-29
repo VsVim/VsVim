@@ -4,7 +4,7 @@ namespace VimCore
 open Microsoft.VisualStudio.Text
 open System.Text.RegularExpressions
 
-module Utils =
+module internal Utils =
 
     let GetRegexOptions (opt:SearchOptions) =  
         let mutable regexOptions = RegexOptions.Compiled
@@ -23,7 +23,7 @@ module Utils =
         with 
             | :? System.ArgumentException -> None
 
-type IncrementalSearch(_pattern:string,_kind:SearchKind, _options: SearchOptions) =
+type internal IncrementalSearch(_pattern:string,_kind:SearchKind, _options: SearchOptions) =
     let _regex = Utils.SafeBuildRegex _pattern _options
     new (pattern) = IncrementalSearch(pattern, SearchKind.ForwardWithWrap, SearchOptions.None)
     new (pattern,kind) = IncrementalSearch(pattern, kind, SearchOptions.None)

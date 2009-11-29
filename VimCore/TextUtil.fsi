@@ -4,7 +4,7 @@ namespace VimCore
 open System.Windows.Input
 open Microsoft.VisualStudio.Text
 
-module TextUtil = 
+module internal TextUtil = 
     val FindCurrentWordSpan : WordKind -> string -> int -> option<Span>
     val FindCurrentWord : WordKind -> string -> int -> string
     val FindFullWordSpan : WordKind -> string -> int -> option<Span>
