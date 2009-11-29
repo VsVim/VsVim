@@ -39,16 +39,18 @@ namespace VsVim
                 return false;
             }
             
-            // Don't process text commands
-            if (Char.IsLetterOrDigit(command.KeyInput.Char))
-            {
-                return false;
-            }
-
-
+            // If the current state of the buffer cannot process the command then do not convert it 
             if (!m_buffer.WillProcessInput(command.KeyInput))
             {
-                return false;
+
+                // The one exception is input commands while we are in normal mode.  While normal mode does not actually
+                // process the commands, it does need to prevent them from being routed to other buffers.  Eventually when
+                // NormalMode is 100% implemented the vast majority of these will actually be processable commands.  Until then
+                // though we need to process them and beep
+                if (!(command.IsInput && ModeKind.Normal == m_buffer.ModeKind))
+                {
+                    return false;
+                }
             }
 
             kiOutput = command.KeyInput;

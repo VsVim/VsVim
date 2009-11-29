@@ -259,10 +259,12 @@ namespace VsVimTest
             m_filter = m_filterRaw;
         }
 
-        [TestMethod(), Description("Don't process text input")]
+        [TestMethod(), Description("Don't process text input in insert mode")]
         public void Exec1()
         {
             m_buffer.Setup(x => x.ModeKind).Returns(ModeKind.Normal);
+            m_buffer.Setup(x => x.WillProcessInput(It.IsAny<KeyInput>())).Returns(false);
+            m_buffer.Setup(x => x.ModeKind).Returns(ModeKind.Insert);
             var command = (uint)(VSConstants.VSStd2KCmdID.TYPECHAR);
             var commandGroup = VSConstants.VSStd2K;
             using (var ptr = CharPointer.Create('c'))

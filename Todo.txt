@@ -10,6 +10,7 @@ X - j: in normal mode
 - j in command mode
 - Typing shouldn't work in normal mode
 - Ctrl+]: in normal mode
+- Delete key in normal mode
 
 Version .5.1
 ===
