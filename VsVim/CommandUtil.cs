@@ -10,13 +10,13 @@ using System.Windows.Input;
 
 namespace VsVim
 {
-    public static class CommandUtil
+    internal static class CommandUtil
     {
         /// <summary>
         /// Is this a command we should immediately filter out in debug mode so that I can see what is actually 
         /// new and interesteing
         /// </summary>
-        public static bool IsDebugIgnore(Guid commandGroup, uint commandId)
+        internal static bool IsDebugIgnore(Guid commandGroup, uint commandId)
         {
             if (VSConstants.VSStd2K == commandGroup)
             {
@@ -30,7 +30,7 @@ namespace VsVim
             return false;
         }
 
-        public static bool IsDebugIgnore(VSConstants.VSStd2KCmdID commandId)
+        internal static bool IsDebugIgnore(VSConstants.VSStd2KCmdID commandId)
         {
             switch (commandId)
             {
@@ -61,7 +61,7 @@ namespace VsVim
             return false;
         }
 
-        public static bool IsDebugIgnore(VSConstants.VSStd97CmdID commandId)
+        internal static bool IsDebugIgnore(VSConstants.VSStd97CmdID commandId)
         {
             switch (commandId)
             {
@@ -73,32 +73,51 @@ namespace VsVim
             return false;
         }
 
-        public static bool TryConvert(Guid commandGroup, uint commandId, out KeyInput ki)
+        internal static bool TryConvert(Guid commandGroup, uint commandId, out EditCommand command)
         {
-            return TryConvert(commandGroup, commandId, IntPtr.Zero, out ki);
+            return TryConvert(commandGroup, commandId, IntPtr.Zero, out command);
         }
 
-        public static bool TryConvert(Guid commandGroup, uint commandId, IntPtr pVariableIn, out KeyInput ki)
+        internal static bool TryConvert(Guid commandGroup, uint commandId, out KeyInput ki, out EditCommandKind kind)
+        {
+            return TryConvert(commandGroup, commandId, IntPtr.Zero, out ki, out kind);
+        }
+
+        internal static bool TryConvert(Guid commandGroup, uint commandId, IntPtr pVariableIn, out EditCommand command)
+        {
+            KeyInput ki;
+            EditCommandKind kind;
+            if (!TryConvert(commandGroup, commandId, pVariableIn, out ki, out kind))
+            {
+                command = null;
+                return false;
+            }
+
+            command = new EditCommand(ki, kind, commandGroup, commandId);
+            return true;
+        }
+
+        internal static bool TryConvert(Guid commandGroup, uint commandId, IntPtr pVariableIn, out KeyInput ki, out EditCommandKind kind )
         {
             if (VSConstants.GUID_VSStandardCommandSet97 == commandGroup)
             {
-                return TryConvert((VSConstants.VSStd97CmdID)commandId, pVariableIn, out ki);
+                return TryConvert((VSConstants.VSStd97CmdID)commandId, pVariableIn, out ki, out kind);
             }
             else if (VSConstants.VSStd2K == commandGroup)
             {
-                return TryConvert((VSConstants.VSStd2KCmdID)commandId, pVariableIn, out ki);
+                return TryConvert((VSConstants.VSStd2KCmdID)commandId, pVariableIn, out ki, out kind);
             }
             else
             {
                 ki = null;
+                kind = EditCommandKind.Unknown;
+                return false;
             }
-
-            ki = null;
-            return false;
         }
 
-        public static bool TryConvert(VSConstants.VSStd2KCmdID cmdId, IntPtr pVariantIn, out KeyInput ki)
+        internal static bool TryConvert(VSConstants.VSStd2KCmdID cmdId, IntPtr pVariantIn, out KeyInput ki, out EditCommandKind kind)
         {
+            kind = EditCommandKind.Unknown;
             ki = null;
             switch (cmdId)
             {
@@ -111,18 +130,23 @@ namespace VsVim
                     var obj = Marshal.GetObjectForNativeVariant(pVariantIn);
                     var c = (char)(ushort)obj;
                     ki = InputUtil.CharToKeyInput(c);
+                    kind = EditCommandKind.TypeChar;
                     break;
                 case VSConstants.VSStd2KCmdID.RETURN:
                     ki = InputUtil.KeyToKeyInput(Key.Enter);
+                    kind = EditCommandKind.Return;
                     break;
                 case VSConstants.VSStd2KCmdID.CANCEL:
                     ki = InputUtil.KeyToKeyInput(Key.Escape);
+                    kind = EditCommandKind.Cancel;
                     break;
                 case VSConstants.VSStd2KCmdID.DELETE:
                     ki = InputUtil.KeyToKeyInput(Key.Delete);
+                    kind = EditCommandKind.Delete;
                     break;
                 case VSConstants.VSStd2KCmdID.BACKSPACE:
                     ki = InputUtil.KeyToKeyInput(Key.Back);
+                    kind = EditCommandKind.Backspace;
                     break;
 
                 default:
@@ -132,24 +156,25 @@ namespace VsVim
             return ki != null;
         }
 
-        public static bool TryConvert(VSConstants.VSStd97CmdID cmdId, IntPtr pVariantIn, out KeyInput ki)
+        internal static bool TryConvert(VSConstants.VSStd97CmdID cmdId, IntPtr pVariantIn, out KeyInput ki, out EditCommandKind kind)
         {
             ki = null;
+            kind = EditCommandKind.Unknown;
             switch (cmdId)
             {
                 case VSConstants.VSStd97CmdID.SingleChar:
                     var obj = Marshal.GetObjectForNativeVariant(pVariantIn);
                     var c = (char)(ushort)obj;
                     ki = InputUtil.CharToKeyInput(c);
+                    kind = EditCommandKind.TypeChar;
                     break;
                 case VSConstants.VSStd97CmdID.Escape:
                     ki = InputUtil.KeyToKeyInput(Key.Escape);
+                    kind = EditCommandKind.Cancel;
                     break;
                 case VSConstants.VSStd97CmdID.Delete:
                     ki = InputUtil.KeyToKeyInput(Key.Delete);
-                    break;
-                case VSConstants.VSStd97CmdID.FindInFiles:
-                    ki = new KeyInput(Char.MinValue, Key.D, ModifierKeys.Control);
+                    kind = EditCommandKind.Delete;
                     break;
             }
 

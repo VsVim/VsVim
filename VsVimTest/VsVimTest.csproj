@@ -127,6 +127,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CommandUtilTest.cs" />
+    <Compile Include="EditCommandTest.cs" />
     <Compile Include="ExtensionsTest.cs" />
     <Compile Include="KeyBindingServiceTest.cs" />
     <Compile Include="KeyBindingTest.cs" />

@@ -23,7 +23,7 @@
 # Directories 
 */obj/
 */bin/
-*/TestResults/ 
+TestResults/
 */Debug/
 */Release/
 

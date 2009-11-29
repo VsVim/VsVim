@@ -33,25 +33,25 @@ namespace VsVim
         internal bool TryConvert(Guid commandGroup, uint commandId, IntPtr pvaIn, out KeyInput kiOutput)
         {
             kiOutput = null;
-            KeyInput ki = null;
-            if (!CommandUtil.TryConvert(commandGroup, commandId, pvaIn, out ki))
+            EditCommand command;
+            if (!CommandUtil.TryConvert(commandGroup, commandId, pvaIn, out command))
             {
                 return false;
             }
             
             // Don't process text commands
-            if (Char.IsLetterOrDigit(ki.Char))
+            if (Char.IsLetterOrDigit(command.KeyInput.Char))
             {
                 return false;
             }
 
 
-            if (!m_buffer.WillProcessInput(ki))
+            if (!m_buffer.WillProcessInput(command.KeyInput))
             {
                 return false;
             }
 
-            kiOutput = ki;
+            kiOutput = command.KeyInput;
             return true;
         }
 
