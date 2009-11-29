@@ -1024,7 +1024,7 @@ namespace VimCoreTest
         }
 
         [TestMethod, Description("When it fails, the status should be updated")]
-        public void GotoDefinition2()
+        public void GoToDefinition2()
         {
             CreateBuffer("foo");
             var def = new KeyInput(']', Key.OemCloseBrackets, ModifierKeys.Control);
@@ -1035,7 +1035,7 @@ namespace VimCoreTest
         }
 
         [TestMethod]
-        public void GotoDefinition3()
+        public void GoToDefinition3()
         {
             var def = new KeyInput(']', Key.OemCloseBrackets, ModifierKeys.Control);
             Assert.IsTrue(_mode.CanProcess(def));

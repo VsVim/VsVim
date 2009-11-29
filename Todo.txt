@@ -8,8 +8,8 @@ X - Handle CTRL-U and CTRL-D in normal mode
 - :$ in Command Mode
 X - j: in normal mode
 - j in command mode
-- Typing shouldn't work in normal mode
-- Ctrl+]: in normal mode
+X - Typing shouldn't work in normal mode
+X - Ctrl+]: in normal mode
 - Delete key in normal mode
 
 Version .5.1
