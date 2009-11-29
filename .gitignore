@@ -15,6 +15,11 @@
 *.pdb 
 *.msi 
 
+# Project Files
+*.user
+*.suo
+*.db 
+
 # Directories 
 */obj/
 */bin/
@@ -22,8 +27,4 @@
 */Debug/
 */Release/
 
-# Project Files
-*.user 
-*.suo 
-*.db 
 
