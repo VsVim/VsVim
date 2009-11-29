@@ -5,7 +5,12 @@ open Microsoft.VisualStudio.Text
 open System.Collections.Generic
 
 type MarkIdentifier(buffer: ITextBuffer, identifier : char) =
+    static let mutable s_id = 0
+    let _id = 
+        s_id <- s_id + 1
+        s_id
 
+    member x.Id = _id    
     member x.TextBuffer = buffer
     member x.Identifier = identifier
 
@@ -17,7 +22,8 @@ type MarkIdentifier(buffer: ITextBuffer, identifier : char) =
     member private x.CompareTo (other:MarkIdentifier) =
         if x.Identifier = other.Identifier then
             if x.IsGlobal then 0
-            else x.TextBuffer.GetHashCode() - other.TextBuffer.GetHashCode()
+            else if x.TextBuffer = other.TextBuffer then 0
+            else x.Id - other.Id
         else
             (int32 x.Identifier) - (int32 other.Identifier)
 

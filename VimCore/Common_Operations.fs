@@ -7,7 +7,7 @@ open Microsoft.VisualStudio.Text.Editor
 
 module Operations =
 
-    type GoToDefinitionResult = 
+    type Result = 
         | Succeeded
         | Failed of string
 
@@ -74,6 +74,13 @@ module Operations =
             | None ->  Failed("Could not navigate to definition of word under cursor")
 
             
-        
+    /// Sets a mark at the specified point.  If this operation fails an error message will be generated
+    let SetMark (map:MarkMap) (point:SnapshotPoint) c =
+        if System.Char.IsLetter(c) || c = '\'' || c = '`'then
+            map.SetMark point c
+            Succeeded
+        else
+            Failed("Argument must be a letter or forward / back quote")
+            
             
     

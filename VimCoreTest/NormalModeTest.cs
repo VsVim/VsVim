@@ -21,6 +21,7 @@ namespace VimCoreTest
         private IWpfTextView _view;
         private IRegisterMap _map;
         private FakeVimHost _host;
+        private VimBufferData _bufferData;
 
         static string[] s_lines = new string[]
             {
@@ -35,12 +36,12 @@ namespace VimCoreTest
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 0));
             _host = new FakeVimHost();
             _map = new RegisterMap();
-            var data = MockFactory.CreateVimBufferData(
+            _bufferData = MockFactory.CreateVimBufferData(
                 _view,
                 "test",
                 _host,
                 MockFactory.CreateVimData(_map).Object);
-            _modeRaw = new VimCore.Modes.Normal.NormalMode(data);
+            _modeRaw = new VimCore.Modes.Normal.NormalMode(_bufferData);
             _mode = _modeRaw;
             _mode.OnEnter();
         }
@@ -1043,6 +1044,36 @@ namespace VimCoreTest
             var def = new KeyInput(']', Key.OemCloseBrackets, ModifierKeys.Control);
             Assert.IsTrue(_mode.CanProcess(def));
             Assert.IsTrue(_mode.Commands.Contains(def));
+        }
+
+        [TestMethod]
+        public void Mark1()
+        {
+            Assert.IsTrue(_mode.CanProcess(InputUtil.CharToKeyInput('m')));
+            Assert.IsTrue(_mode.Commands.Contains(InputUtil.CharToKeyInput('m')));
+        }
+
+        [TestMethod, Description("Once we are in mark mode we can process anything")]
+        public void Mark2()
+        {
+            _mode.Process(InputUtil.CharToKeyInput('m'));
+            Assert.IsTrue(_mode.CanProcess(new KeyInput('c', Key.C, ModifierKeys.Control)));
+        }
+
+        [TestMethod]
+        public void Mark3()
+        {
+            _mode.Process(InputUtil.CharToKeyInput('m'));
+            _mode.Process(InputUtil.CharToKeyInput('a'));
+            Assert.IsTrue(_bufferData._vimData.MarkMap.GetLocalMark(_view.TextBuffer, 'a').IsSome());
+        }
+
+        [TestMethod, Description("Bad mark should beep")]
+        public void Mark4()
+        {
+            _mode.Process(InputUtil.CharToKeyInput('m'));
+            _mode.Process(InputUtil.CharToKeyInput(';'));
+            Assert.IsTrue(_host.BeepCount > 0);
         }
         
         #endregion

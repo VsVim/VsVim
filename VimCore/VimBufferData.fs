@@ -22,7 +22,7 @@ type internal VimBufferData
         member x.VimData = _vimData
         member x.RegisterMap = _vimData.RegisterMap
         member x.Settings = _vimData.Settings
-        
+        member x.MarkMap = _vimData.MarkMap
     
     
     

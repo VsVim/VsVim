@@ -82,7 +82,7 @@ namespace VimCoreTest
             host.Setup(x => x.GoToDefinition()).Returns(false);
             var res = Operations.GoToDefinition(_view, host.Object);
             Assert.IsTrue(res.IsFailed);
-            Assert.IsTrue(((Operations.GoToDefinitionResult.Failed)res).Item.Contains("foo"));
+            Assert.IsTrue(((Operations.Result.Failed)res).Item.Contains("foo"));
         }
 
         [TestMethod, Description("Make sure we don't crash when nothing is under the cursor")]
@@ -92,6 +92,25 @@ namespace VimCoreTest
             var host = new Mock<IVimHost>(MockBehavior.Strict);
             host.Setup(x => x.GoToDefinition()).Returns(false);
             var res = Operations.GoToDefinition(_view, host.Object);
+            Assert.IsTrue(res.IsFailed);
+        }
+
+        [TestMethod]
+        public void SetMark1()
+        {
+            CreateLines("foo");
+            var map = new MarkMap();
+            var res = Operations.SetMark(map, _buffer.CurrentSnapshot.GetLineFromLineNumber(0).Start, 'a');
+            Assert.IsTrue(res.IsSucceeded);
+            Assert.IsTrue(map.GetLocalMark(_buffer, 'a').IsSome());
+        }
+
+        [TestMethod,Description("Invalid mark character")]
+        public void SetMark2()
+        {
+            CreateLines("bar");
+            var map = new MarkMap();
+            var res = Operations.SetMark(map, _buffer.CurrentSnapshot.GetLineFromLineNumber(0).Start, ';');
             Assert.IsTrue(res.IsFailed);
         }
     }

@@ -401,6 +401,8 @@ type internal NormalMode( _bufferData : IVimBufferData ) =
                         this.VimHost.UpdateStatus(msg)
                         ()
                     NormalModeResult.Complete) };
+            {   KeyInput=InputUtil.CharToKeyInput('m');
+                RunFunc=(fun d->Operations.Mark d) };
             ]
         l |> List.map (fun d -> d.KeyInput,d) |> Map.ofList
 

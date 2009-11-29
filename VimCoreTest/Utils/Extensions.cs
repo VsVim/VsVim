@@ -5,6 +5,7 @@ using System.Text;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using VimCore;
+using VimCore.Modes.Common;
 
 namespace VimCoreTest.Utils
 {
@@ -30,6 +31,7 @@ namespace VimCoreTest.Utils
 
         #region MotionResult
 
+
         internal static MotionResult.Complete AsComplete(this MotionResult res)
         {
             return (MotionResult.Complete)res;
@@ -38,6 +40,15 @@ namespace VimCoreTest.Utils
         internal static MotionResult.InvalidMotion AsInvalidMotion(this MotionResult res)
         {
             return (MotionResult.InvalidMotion)res;
+        }
+
+        #endregion
+
+        #region Operations.Result
+
+        internal static Operations.Result.Failed AsFailed(this Operations.Result res)
+        {
+            return (Operations.Result.Failed)res;
         }
 
         #endregion

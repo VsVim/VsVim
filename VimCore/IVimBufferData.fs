@@ -23,3 +23,4 @@ type IVimBufferData =
     abstract VimData : IVimData
     abstract Settings : VimSettings
     abstract RegisterMap : IRegisterMap
+    abstract MarkMap : MarkMap

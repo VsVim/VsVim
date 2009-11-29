@@ -3,7 +3,8 @@
 namespace VimCore.Modes.Normal
 
 module internal Operations =
-    val All : list<Operation>
+
+    val Mark : NormalModeData -> NormalModeResult
 
 
 

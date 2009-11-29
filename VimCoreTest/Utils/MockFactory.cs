@@ -20,11 +20,14 @@ namespace VimCoreTest.Utils
         }
 
         internal static Mock<IVimData> CreateVimData(
-            IRegisterMap registerMap = null)
+            IRegisterMap registerMap = null,
+            MarkMap map = null)
         {
             registerMap = registerMap ?? CreateRegisterMap().Object;
+            map = map ?? new MarkMap();
             var mock = new Mock<IVimData>(MockBehavior.Strict);
             mock.Setup(x => x.RegisterMap).Returns(registerMap);
+            mock.Setup(x => x.MarkMap).Returns(map);
             return mock;
         }
 
