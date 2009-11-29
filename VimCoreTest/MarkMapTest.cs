@@ -111,6 +111,28 @@ namespace VimCoreTest
             Assert.IsTrue(opt.IsNone());
         }
 
+        [TestMethod, Description("Deletion of a previous line shouldn't affect the mark")]
+        public void TrackDeleteLine2()
+        {
+            CreateBuffer("foo", "bar", "baz");
+            _map.SetMark(_buffer.CurrentSnapshot.GetLineFromLineNumber(2).Start, 'a');
+            _buffer.Delete(_buffer.CurrentSnapshot.GetLineFromLineNumber(1).ExtentIncludingLineBreak.Span);
+            var opt = _map.GetLocalMark(_buffer, 'a');
+            Assert.IsTrue(opt.IsSome());
+            var data = opt.Value;
+            Assert.AreEqual(_buffer.CurrentSnapshot.GetLineFromLineNumber(1).Start, data.Position);
+        }
+
+        [TestMethod, Description("Deleting a line in the middle of the buffer")]
+        public void TrackDeleteLine3()
+        {
+            CreateBuffer("foo", "bar", "baz");
+            _map.SetMark(_buffer.CurrentSnapshot.GetLineFromLineNumber(1).Start, 'a');
+            _buffer.Delete(_buffer.CurrentSnapshot.GetLineFromLineNumber(1).ExtentIncludingLineBreak.Span);
+            var opt = _map.GetLocalMark(_buffer, 'a');
+            Assert.IsTrue(opt.IsNone());
+        }
+
         // TODO: Test Undo logic
        
     }

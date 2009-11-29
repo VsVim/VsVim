@@ -44,6 +44,8 @@
     <Compile Include="TextUtil.fs" />
     <Compile Include="TssUtil.fsi" />
     <Compile Include="TssUtil.fs" />
+    <Compile Include="MarkMap.fsi" />
+    <Compile Include="MarkMap.fs" />
     <Compile Include="MotionUtil.fsi" />
     <Compile Include="MotionUtil.fs" />
     <Compile Include="ViewUtil.fsi" />

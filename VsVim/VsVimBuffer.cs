@@ -82,7 +82,9 @@ namespace VsVim
             field.SetValue(caret, CalculateCurrentBrush());
         }
 
-
+        /// <summary>
+        /// Calculate the current brush based on the state of the Vim buffer
+        /// </summary>
         private Brush CalculateCurrentBrush()
         {
             switch (m_buffer.ModeKind)

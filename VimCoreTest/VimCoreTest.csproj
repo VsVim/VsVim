@@ -132,6 +132,7 @@
     <Compile Include="InsertModeTest.cs" />
     <Compile Include="IntegrationTests.cs" />
     <Compile Include="KeyInputTest.cs" />
+    <Compile Include="MarkMapTest.cs" />
     <Compile Include="MotionCaptureTest.cs" />
     <Compile Include="MotionUtilTests.cs" />
     <Compile Include="NormalModeTest.cs" />
