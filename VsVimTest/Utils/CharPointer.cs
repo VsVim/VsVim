@@ -19,8 +19,11 @@ namespace VsVimTest.Utils
 
         void IDisposable.Dispose()
         {
-            Marshal.FreeCoTaskMem(IntPtr);
-            IntPtr = IntPtr.Zero;
+            if (IntPtr.Zero != IntPtr)
+            {
+                Marshal.FreeCoTaskMem(IntPtr);
+                IntPtr = IntPtr.Zero;
+            }
         }
 
         public static CharPointer Create(char c)

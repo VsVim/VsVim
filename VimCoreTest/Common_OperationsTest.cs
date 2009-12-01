@@ -51,7 +51,7 @@ namespace VimCoreTest
             Assert.IsTrue(Operations.Join(_view, 3));
             Assert.AreEqual("foo bar baz", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
             Assert.AreEqual(1, _view.TextSnapshot.LineCount);
-            Assert.AreEqual(7, _view.Caret.Position.BufferPosition.Position);
+            Assert.AreEqual(8, _view.Caret.Position.BufferPosition.Position);
         }
 
         [TestMethod, Description("Join with a single count, should be no different")]
@@ -130,7 +130,7 @@ namespace VimCoreTest
             var view = Utils.EditorUtil.CreateView("foo", "bar");
             var map = new MarkMap();
             var res = Operations.JumpToMark(map, view, 'b');
-            Assert.IsTrue(res.IsSucceeded);
+            Assert.IsTrue(res.IsFailed);
         }
 
         [TestMethod, Description("Global marks aren't supported yet")]
