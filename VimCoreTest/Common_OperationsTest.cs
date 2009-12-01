@@ -113,5 +113,34 @@ namespace VimCoreTest
             var res = Operations.SetMark(map, _buffer.CurrentSnapshot.GetLineFromLineNumber(0).Start, ';');
             Assert.IsTrue(res.IsFailed);
         }
+
+        [TestMethod]
+        public void JumpToMark1()
+        {
+            var view = Utils.EditorUtil.CreateView("foo", "bar");
+            var map = new MarkMap();
+            map.SetMark(new SnapshotPoint(view.TextSnapshot, 0), 'a');
+            var res = Operations.JumpToMark(map, view, 'a');
+            Assert.IsTrue(res.IsSucceeded);
+        }
+
+        [TestMethod]
+        public void JumpToMark2()
+        {
+            var view = Utils.EditorUtil.CreateView("foo", "bar");
+            var map = new MarkMap();
+            var res = Operations.JumpToMark(map, view, 'b');
+            Assert.IsTrue(res.IsSucceeded);
+        }
+
+        [TestMethod, Description("Global marks aren't supported yet")]
+        public void JumpToMark3()
+        {
+            var view = Utils.EditorUtil.CreateView("foo", "bar");
+            var map = new MarkMap();
+            map.SetMark(new SnapshotPoint(view.TextSnapshot, 0), 'B');
+            var res = Operations.JumpToMark(map, view, 'B');
+            Assert.IsTrue(res.IsFailed);
+        }
     }
 }

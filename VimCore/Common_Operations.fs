@@ -83,4 +83,17 @@ module Operations =
             Failed("Argument must be a letter or forward / back quote")
             
             
+    /// Jumps to a given mark in the buffer.  
+    /// TODO: Support global marks.  
+    let JumpToMark (map:MarkMap) (view:ITextView) ident =
+        if not (MarkMap.IsLocalMark ident) then Failed "Only local marks are supported at this time"
+        else
+            match map.GetLocalMark view.TextBuffer ident with
+            | Some(point) -> 
+                ViewUtil.MoveCaretToPoint view point.Position |> ignore
+                Succeeded
+            | None -> Failed "Mark not set"
+
+            
+        
     

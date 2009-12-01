@@ -12,4 +12,4 @@ module internal Operations =
     val Join : ITextView -> int -> bool
     val GoToDefinition : ITextView -> VimCore.IVimHost -> Result
     val SetMark : VimCore.MarkMap -> SnapshotPoint -> char -> Result
-    
+    val JumpToMark : VimCore.MarkMap -> ITextView -> char -> Result
