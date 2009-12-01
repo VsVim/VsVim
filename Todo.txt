@@ -1,24 +1,27 @@
-Version .6
+Version 5.2
 ===
 X - Fix normal mode eating other commands 
 X - Move modes into separate namespaces
 X - Modes need to expose the key combos they care about
 X - Remove conflicting key bindings
 X - Handle CTRL-U and CTRL-D in normal mode
-- :$ in Command Mode
 X - j: in normal mode
-- j in command mode
 X - Typing shouldn't work in normal mode
 X - Ctrl+]: in normal mode
+X - Mark navigation support in normal mode
+X - Marks Stop listening for buffer changes at some point
+X - Make appropriate items internal
+
+Version 6.0
+===
+- :$ in Command Mode
+- j in command mode
 - Delete key in normal mode
-- Mark navigation support in normal mode
-- Mark navigation for global marks
 - Fix the Caret thing
 - Check on the behavior of tab in normal mode
 - Marks Undo Support
-X - Marks Stop listening for buffer changes at some point
+- Mark navigation for global marks
 - Track buffer close in some way
-X - Make appropriate items internal
 
 Version .5.1
 ===
