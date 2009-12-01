@@ -21,4 +21,15 @@ module internal Operations =
             | _ -> ()
             NormalModeResult.Complete
         NormalModeResult.NeedMore2 waitForKey
+
+    /// Process the ' or ` jump to mark keys
+    let JumpToMark (d:NormalModeData) =
+        let waitForKey (d:NormalModeData) (ki:KeyInput) =
+            let bufferData = d.VimBufferData
+            let res = Modes.Common.Operations.JumpToMark bufferData.MarkMap bufferData.TextView ki.Char
+            match res with 
+            | Operations.Failed(msg) -> bufferData.VimHost.UpdateStatus(msg)
+            | _ -> ()
+            NormalModeResult.Complete
+        NormalModeResult.NeedMore2 waitForKey
             

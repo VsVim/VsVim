@@ -1075,6 +1075,25 @@ namespace VimCoreTest
             _mode.Process(InputUtil.CharToKeyInput(';'));
             Assert.IsTrue(_host.BeepCount > 0);
         }
+
+        [TestMethod]
+        public void JumpToMark1()
+        {
+            Assert.IsTrue(_mode.CanProcess(InputUtil.CharToKeyInput('\'')));
+            Assert.IsTrue(_mode.CanProcess(InputUtil.CharToKeyInput('`')));
+            Assert.IsTrue(_mode.Commands.Contains(InputUtil.CharToKeyInput('\'')));
+            Assert.IsTrue(_mode.Commands.Contains(InputUtil.CharToKeyInput('`')));
+        }
+
+        [TestMethod]
+        public void JumpToMark2()
+        {
+            CreateBuffer("foobar");
+            _bufferData._vimData.MarkMap.SetMark(new SnapshotPoint(_bufferData._view.TextSnapshot, 1), 'a');
+            _mode.Process('\'');
+            _mode.Process('a');
+            Assert.AreEqual(1, _view.Caret.Position.BufferPosition.Position);
+        }
         
         #endregion
 

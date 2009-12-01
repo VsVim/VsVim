@@ -402,7 +402,11 @@ type internal NormalMode( _bufferData : IVimBufferData ) =
                         ()
                     NormalModeResult.Complete) };
             {   KeyInput=InputUtil.CharToKeyInput('m');
-                RunFunc=(fun d->Operations.Mark d) };
+                RunFunc=Operations.Mark };
+            {   KeyInput=InputUtil.CharToKeyInput('\'');
+                RunFunc=Operations.JumpToMark };
+            {   KeyInput=InputUtil.CharToKeyInput('`');
+                RunFunc=Operations.JumpToMark };
             ]
         l |> List.map (fun d -> d.KeyInput,d) |> Map.ofList
 

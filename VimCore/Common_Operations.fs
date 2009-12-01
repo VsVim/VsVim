@@ -76,7 +76,7 @@ module Operations =
             
     /// Sets a mark at the specified point.  If this operation fails an error message will be generated
     let SetMark (map:MarkMap) (point:SnapshotPoint) c =
-        if System.Char.IsLetter(c) || c = '\'' || c = '`'then
+        if System.Char.IsLetter(c) || c = '\'' || c = '`' then
             map.SetMark point c
             Succeeded
         else
