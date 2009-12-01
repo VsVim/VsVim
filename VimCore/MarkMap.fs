@@ -4,7 +4,7 @@ namespace VimCore
 open Microsoft.VisualStudio.Text
 open System.Collections.Generic
 
-type MarkIdentifier(buffer: ITextBuffer, identifier : char) =
+type MarkIdentifier(buffer: ITextBuffer, identifier : char, isGlobal : bool) =
     static let mutable s_id = 0
     let _id = 
         s_id <- s_id + 1
@@ -14,10 +14,8 @@ type MarkIdentifier(buffer: ITextBuffer, identifier : char) =
     member x.TextBuffer = buffer
     member x.Identifier = identifier
 
-    static member IsGlobalIdentifier identifier = System.Char.IsLetter(identifier) && System.Char.IsUpper(identifier)
-
     /// Does this represent a global mark
-    member x.IsGlobal = MarkIdentifier.IsGlobalIdentifier identifier
+    member x.IsGlobal = isGlobal
 
     member private x.CompareTo (other:MarkIdentifier) =
         if x.Identifier = other.Identifier then
@@ -63,6 +61,16 @@ type MarkMap() =
 
     let mutable _map: Map<MarkIdentifier, Mark> = Map.empty
     let mutable _tracking: HashSet<ITextBuffer> = new HashSet<ITextBuffer>()
+
+    /// Is this mark local to a buffer
+    static member IsLocalMark c =
+        if System.Char.IsDigit(c) then false
+        else if System.Char.IsLetter(c) && System.Char.IsUpper(c) then false
+        else true
+
+    static member CreateMarkIdentifier buffer ident = 
+        let isGlobal = not (MarkMap.IsLocalMark ident)
+        MarkIdentifier(buffer, ident, isGlobal)
 
     static member PointToMarkData (point:SnapshotPoint) =
         let line = point.GetContainingLine()
@@ -146,7 +154,7 @@ type MarkMap() =
     /// exist then the value None will be returned.  The mark is always returned for the 
     /// current ITextSnapshot of the <param name="buffer"> 
     member x.GetLocalMark (buffer:ITextBuffer) (c:char) =
-        let ident = MarkIdentifier(buffer, c)
+        let ident = MarkMap.CreateMarkIdentifier buffer c
         if ident.IsGlobal then None
         else
             match Map.tryFind ident _map with
@@ -159,7 +167,7 @@ type MarkMap() =
     
     /// Set the mark for the <param name="point"/> inside the corresponding buffer.  
     member x.SetMark (point:SnapshotPoint) (c:char) = 
-        let ident = MarkIdentifier(point.Snapshot.TextBuffer,c)
+        let ident = MarkMap.CreateMarkIdentifier (point.Snapshot.TextBuffer) c
         let md = MarkMap.PointToMarkData point
         _map <- _map.Add(ident, Valid(md))
         x.EnsureTracking point.Snapshot.TextBuffer
@@ -167,7 +175,7 @@ type MarkMap() =
     /// Delete the specified local mark.  
     /// <returns>True if the mark was deleted.  False if no action was taken </returns>
     member x.DeleteMark (buffer:ITextBuffer) (c:char) =
-        let ident = MarkIdentifier(buffer, c)
+        let ident =  MarkMap.CreateMarkIdentifier buffer c
         let isDelete = _map.ContainsKey ident
         _map <- _map.Remove(ident)
         let allMarksGoneInBuffer =

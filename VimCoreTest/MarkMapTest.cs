@@ -186,6 +186,22 @@ namespace VimCoreTest
             Assert.IsTrue(_map.GetLocalMark(_buffer, 'a').IsNone());
         }
 
+        [TestMethod]
+        public void IsLocalMark1()
+        {
+            Assert.IsTrue(MarkMap.IsLocalMark('a'));
+            Assert.IsTrue(MarkMap.IsLocalMark('b'));
+            Assert.IsTrue(MarkMap.IsLocalMark(']'));
+        }
+
+        [TestMethod]
+        public void IsLocalMark2()
+        {
+            Assert.IsFalse(MarkMap.IsLocalMark('B'));
+            Assert.IsFalse(MarkMap.IsLocalMark('Z'));
+            Assert.IsFalse(MarkMap.IsLocalMark('1'));
+        }
+
         // TODO: Test Undo logic
        
     }
