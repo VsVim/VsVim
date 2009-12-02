@@ -4,11 +4,16 @@ Version 5.3
 - :$ in Command Mode
 - j in command mode
 - Delete key in normal mode
-- Fix the Caret thing
 - Check on the behavior of tab in normal mode
 - Marks Undo Support
 - Mark navigation for global marks
 - Track buffer close in some way
+- Escape out of a command should clear status in command mode
+- Initial : should update status in command mode
+
+Version 6.0
+===
+- Fix the Caret thing
 
 Version 5.2
 ===
@@ -23,9 +28,6 @@ X - Ctrl+]: in normal mode
 X - Mark navigation support in normal mode
 X - Marks Stop listening for buffer changes at some point
 X - Make appropriate items internal
-
-Version 6.0
-===
 
 Version .5.1
 ===
