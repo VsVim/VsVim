@@ -1,3 +1,15 @@
+Version 5.3
+===
+- Fix Command mode to be more extensible
+- :$ in Command Mode
+- j in command mode
+- Delete key in normal mode
+- Fix the Caret thing
+- Check on the behavior of tab in normal mode
+- Marks Undo Support
+- Mark navigation for global marks
+- Track buffer close in some way
+
 Version 5.2
 ===
 X - Fix normal mode eating other commands 
@@ -14,14 +26,6 @@ X - Make appropriate items internal
 
 Version 6.0
 ===
-- :$ in Command Mode
-- j in command mode
-- Delete key in normal mode
-- Fix the Caret thing
-- Check on the behavior of tab in normal mode
-- Marks Undo Support
-- Mark navigation for global marks
-- Track buffer close in some way
 
 Version .5.1
 ===

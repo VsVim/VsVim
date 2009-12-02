@@ -18,19 +18,9 @@ module CommandModeUtil =
     let ProcessCommand (cmd:string) (d:IVimBufferData) = 
         let host = d.VimHost
         match cmd with
-            | Match2 "^e\s(.*)$" (_,file) -> host.OpenFile file
-            | Match2 "^(\d+)$" (_,lineNum) -> 
-                let num = System.Int32.Parse(lineNum)
-                let num = TssUtil.VimLineToTssLine(num)
-                let tss = d.TextSnapshot
-                match num < tss.LineCount with
-                    | true -> 
-                        let line = tss.GetLineFromLineNumber(num)
-                        ViewUtil.MoveToLineStart d.TextView line |> ignore
-                    | false -> 
-                        host.UpdateStatus("Invalid line number")
-            | Match1 "^\$$" _ -> 
-                ViewUtil.MoveToLastLineStart d.TextView |> ignore
+            | Match2 "^e\s(.*)$" (_,file) -> Util.EditFile host file
+            | Match2 "^(\d+)$" (_,lineNum) -> Util.JumpToLineNumber d lineNum
+            | Match1 "^\$$" _ -> Util.JumpToLastLine d
             | _ -> host.UpdateStatus("Cannot run \"" + cmd)
     
                 
