@@ -38,6 +38,8 @@ type CommandMode( _data : IVimBufferData ) =
                     
         member x.OnEnter () =
             _command <- System.String.Empty
-        member x.OnLeave () = ()
+            _data.VimHost.UpdateStatus(":")
+        member x.OnLeave () = 
+            _data.VimHost.UpdateStatus(System.String.Empty)
 
 
