@@ -121,6 +121,7 @@
   <ItemGroup>
     <Compile Include="BufferUtilTest.cs" />
     <Compile Include="CommandModeIntegrationTest.cs" />
+    <Compile Include="CommandModeTest.cs" />
     <Compile Include="CommandUtilTest.cs" />
     <Compile Include="Common_OperationsTest.cs" />
     <Compile Include="CountCaptureTest.cs" />
