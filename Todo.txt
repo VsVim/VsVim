@@ -85,15 +85,5 @@ X - Motion keys should clear selection
 X - 'u' is not implemented
 X - Insert Mode: CTRL+D
 
-Version .6
-===
-- Remove the bad Visual Studio key bindings
-- Move the cursor paiting code to the host and not the core engine
-- RegisterMap should handle any char
-- Need to fix insert above
-- * matches partial words.  Should only match whole words
-- Escape must dismiss intellisense
-- 'w' is not implemented
-- Need to make incremental search case or not case based on user option
 
 
