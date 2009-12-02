@@ -75,6 +75,8 @@
     <Compile Include="RegexUtil.fs" />
     <Compile Include="Common_Operations.fsi" />
     <Compile Include="Common_Operations.fs" />
+    <Compile Include="CM_RangeCapture.fsi" />
+    <Compile Include="CM_RangeCapture.fs" />
     <Compile Include="CM_Util.fs" />
     <Compile Include="CM_CommandMode.fsi" />
     <Compile Include="CM_CommandMode.fs" />
