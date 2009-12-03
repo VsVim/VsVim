@@ -43,6 +43,8 @@ type KeyInput(literal:char,key:Key,modKey:ModifierKeys) =
         | :? KeyInput as other ->
             0 = x.CompareTo other
         | _ -> false
+
+    override x.ToString() = System.String.Format("{0}:{1}:{2}", x.Char, x.Key, x.ModifierKeys);
    
     interface System.IComparable with
         member x.CompareTo yObj =

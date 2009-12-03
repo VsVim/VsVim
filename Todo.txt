@@ -13,6 +13,8 @@ Version 5.3
 - Horizontal offset issue Noah raised
 - Support the don't remove blanks part of join
 - gJ in normal mode
+X - Command mode needs to actually hook into ranges
+- Actually implement range capture
 
 Version 6.0
 ===
