@@ -13,7 +13,7 @@ module Operations =
 
     /// Implements the Join command.  Returns false in the case the join command cannot
     /// be complete (such as joining at the end of the buffer)
-    let Join (view:ITextView) count = 
+    let Join (view:ITextView) (start:SnapshotPoint) count = 
 
         // Always joining at least 2 lines so we subtract to get the number of join
         // operations.  1 is a valid input though
@@ -49,8 +49,7 @@ module Operations =
 
         let rec inner count = 
             let tss = view.TextBuffer.CurrentSnapshot
-            let caret = ViewUtil.GetCaretPoint view
-            let lineNumber = caret.GetContainingLine().LineNumber
+            let lineNumber = start.GetContainingLine().LineNumber
             if lineNumber = tss.LineCount + 1 then
                 false
             else

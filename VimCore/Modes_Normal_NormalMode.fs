@@ -389,7 +389,8 @@ type internal NormalMode( _bufferData : IVimBufferData ) =
                 RunFunc=(fun d -> this.ScrollCore ScrollDirection.Down d.Count) };
             {   KeyInput=KeyInput('J', Key.J, ModifierKeys.Shift);
                 RunFunc=(fun d -> 
-                    let res = VimCore.Modes.Common.Operations.Join this.TextView d.Count
+                    let start = ViewUtil.GetCaretPoint this.TextView
+                    let res = VimCore.Modes.Common.Operations.Join this.TextView start d.Count
                     if not res then
                         this.VimHost.Beep()
                     NormalModeResult.Complete) };

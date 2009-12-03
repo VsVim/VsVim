@@ -11,6 +11,8 @@ Version 5.3
 - Escape out of a command should clear status in command mode
 - Initial : should update status in command mode
 - Horizontal offset issue Noah raised
+- Support the don't remove blanks part of join
+- gJ in normal mode
 
 Version 6.0
 ===

@@ -9,7 +9,7 @@ module internal Operations =
         | Succeeded
         | Failed of string
 
-    val Join : ITextView -> int -> bool
+    val Join : ITextView -> SnapshotPoint -> int -> bool
     val GoToDefinition : ITextView -> VimCore.IVimHost -> Result
     val SetMark : VimCore.MarkMap -> SnapshotPoint -> char -> Result
     val JumpToMark : VimCore.MarkMap -> ITextView -> char -> Result

@@ -3,6 +3,7 @@
 namespace VimCore.Modes.Command
 open VimCore
 open Microsoft.VisualStudio.Text
+open Microsoft.VisualStudio.Text.Editor
 open System.Windows.Input
 open System.Text.RegularExpressions
 open VimCore.RegexUtil
@@ -27,4 +28,21 @@ module internal Util =
     /// Jump to the last line in the file
     let JumpToLastLine (d:IVimBufferData) =
         ViewUtil.MoveToLastLineStart d.TextView |> ignore
+
+    /// Join a range of lines with a potential count
+    let Join (view:ITextView) (range:SnapshotSpan option) (count:int option) (removeSpaces:bool)= 
+        let range = 
+            match range with 
+            | Some(s) -> s
+            | None -> 
+                let point = ViewUtil.GetCaretPoint view
+                SnapshotSpan(point,0)
+
+        match count with 
+        | Some(c) -> Modes.Common.Operations.Join view range.End c
+        | None -> 
+            let startLine = range.Start.GetContainingLine().LineNumber
+            let endLine = range.End.GetContainingLine().LineNumber
+            let count = endLine - startLine
+            Modes.Common.Operations.Join view range.Start count
 
