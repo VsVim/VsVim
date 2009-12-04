@@ -16,7 +16,7 @@ Version 5.3
 X - Command mode needs to actually hook into ranges
 - Actually implement range capture
 
-Version 6.0
+Version 5.4
 ===
 - Fix the Caret thing
 
