@@ -116,6 +116,7 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BlockCaret.cs" />
     <Compile Include="EditCommand.cs" />
     <Compile Include="CommandKeyBinding.cs" />
     <Compile Include="EditCommandKind.cs" />
