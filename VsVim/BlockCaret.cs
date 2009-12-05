@@ -19,6 +19,8 @@ namespace VsVim
         [DllImport("user32.dll")]
         private static extern int GetCaretBlinkTime();
 
+        private double CaretOpacity = 0.7;
+
         private struct CaretData
         {
             /// <summary>
@@ -98,7 +100,7 @@ namespace VsVim
             {
                 var data = _caretData.Value;
                 data.Image.Opacity = data.Image.Opacity == 0.0
-                    ? 1.0
+                    ? CaretOpacity
                     : 0.0;
             }
         }
@@ -188,6 +190,7 @@ namespace VsVim
             drawingImage.Freeze();
 
             var image = new Image();
+            image.Opacity = CaretOpacity;
             image.Source = drawingImage;
 
             var point = _view.Caret.Position.BufferPosition;
