@@ -19,7 +19,7 @@ namespace VsVim
         [DllImport("user32.dll")]
         private static extern int GetCaretBlinkTime();
 
-        private double CaretOpacity = 0.7;
+        private double CaretOpacity = 0.65;
 
         private struct CaretData
         {
@@ -245,6 +245,8 @@ namespace VsVim
         public void Destroy()
         {
             Hide();
+            _view.LayoutChanged -= OnLayoutChanged;
+            _view.Caret.PositionChanged -= OnCaretChanged;
         }
 
         public void Hide()

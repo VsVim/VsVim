@@ -42,71 +42,11 @@ namespace VsVim
             m_buffer = vim.CreateBuffer(m_host, m_view, lines.GetFileName(), new BlockCursor(view,HostFactory.BlockAdornmentLayer));
 
             m_filter = new VsCommandFilter(m_buffer, shimView);
-
-            m_view.GotAggregateFocus += OnGotAggregateFocus;
-            m_buffer.SwitchedMode += new FSharpHandler<IMode>(SwitchedMode);
-            m_buffer.KeyInputProcessed += new FSharpHandler<KeyInput>(KeyInputProcessed);
-            DiagnoseNewLineBug();
-            UpdateBrush();
         }
 
         internal void Close()
         {
-            m_view.GotAggregateFocus -= OnGotAggregateFocus;
-            m_buffer.SwitchedMode -= new FSharpHandler<IMode>(SwitchedMode);
         }
-
-        /// <summary>
-        /// It appears that some properties of the cursor are shared between views.  Most importantly
-        /// to us it appears the RegularBrush of the cursor is.  Therefore we have to reset the 
-        /// brush whenever we get focus.  Lest we end up with the brush from another VsVimBuffer instance
-        /// </summary>
-        private void OnGotAggregateFocus(object sender, EventArgs e)
-        {
-            UpdateBrush();
-        }
-
-        private void SwitchedMode(object sender, IMode args)
-        {
-            UpdateBrush();
-        }
-
-        private void KeyInputProcessed(object sender, KeyInput ki)
-        {
-            UpdateBrush();
-        }
-
-        private void UpdateBrush()
-        {
-        }
-
-        /// <summary>
-        /// There is currently a bug hanging around where the VsVim plugin will force the insertion
-        /// of a \r instead of the standard newline ending.  Need to check for that
-        /// </summary>
-        [Conditional("DEBUG")]
-        private void DiagnoseNewLineBug()
-        {
-            m_view.TextBuffer.Changed += OnTextChanged;
-        }
-
-        private void OnTextChanged(object sender, TextContentChangedEventArgs e)
-        {
-            if (e.Changes.Any(x => x.LineCountDelta != 0))
-            {
-                foreach (var line in e.After.Lines)
-                {
-                    var text = line.GetText();
-                    Debug.Assert(!text.EndsWith("\n"));
-                    Debug.Assert(!text.EndsWith("\r"));
-
-                    var lb = line.GetLineBreakText();
-                    Debug.Assert(lb != "\n");
-                    Debug.Assert(lb != "\r");
-                }
-            }
-        }
-
     }
 }
 
