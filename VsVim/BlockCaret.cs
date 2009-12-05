@@ -19,12 +19,59 @@ namespace VsVim
         [DllImport("user32.dll")]
         private static extern int GetCaretBlinkTime();
 
-        private IAdornmentLayer _layer;
-        private IWpfTextView _view;
-        private Pen _pen;
-        private object _tag = Guid.NewGuid().ToString();
-        private Image _caretImage;
+        private struct CaretData
+        {
+            /// <summary>
+            /// Image being used to draw the caret
+            /// </summary>
+            internal readonly Image Image;
+
+            /// <summary>
+            /// Color used to create the brush
+            /// </summary>
+            internal readonly Color Color;
+
+            /// <summary>
+            /// Point this caret is tracking
+            /// </summary>
+            internal readonly SnapshotPoint Point;
+
+            internal CaretData(Image image, Color color, SnapshotPoint point)
+            {
+                this.Image = image;
+                this.Color = color;
+                this.Point = point;
+            }
+        }
+
+        private readonly IAdornmentLayer _layer;
+        private readonly IWpfTextView _view;
+        private readonly object _tag = Guid.NewGuid().ToString();
         private DispatcherTimer _blinkTimer;
+
+        /// <summary>
+        /// Image being used to draw the caret.  Will be null if the caret is currently
+        /// not displayed
+        /// </summary>
+        private CaretData? _caretData;
+
+        /// <summary>
+        /// Does the consumer of IBlockCaret want us to be in control of displaying the caret
+        /// </summary>
+        private bool _isShown;
+
+        /// <summary>
+        /// Is the real caret visible in some way
+        /// </summary>
+        private bool IsRealCaretVisible
+        {
+            get
+            {
+                var caret = _view.Caret;
+                var line = caret.ContainingTextViewLine;
+                return line.VisibilityState != VisibilityState.Unattached;
+            }
+        }
 
         public BlockCursor(IWpfTextView view)
         {
@@ -35,7 +82,25 @@ namespace VsVim
             _view.LayoutChanged += OnLayoutChanged;
             _view.Caret.PositionChanged += OnCaretChanged;
 
-            _view.Caret.IsHidden = false;
+            var caretBlinkTime = GetCaretBlinkTime();
+            var caretBlinkTimeSpan = new TimeSpan(0, 0, 0, 0, caretBlinkTime);
+            _blinkTimer = new DispatcherTimer(
+                caretBlinkTimeSpan,
+                DispatcherPriority.Normal,
+                new EventHandler(OnCaretBlinkTimer),
+                Dispatcher.CurrentDispatcher);
+            _blinkTimer.IsEnabled = false;
+        }
+
+        private void OnCaretBlinkTimer(object sender, EventArgs e)
+        {
+            if (_isShown && _caretData.HasValue)
+            {
+                var data = _caretData.Value;
+                data.Image.Opacity = data.Image.Opacity == 0.0
+                    ? 1.0
+                    : 0.0;
+            }
         }
 
         /// <summary>
@@ -51,48 +116,46 @@ namespace VsVim
             UpdateCaret();
         }
 
-        private void OnCaretBlinkTimer(object sender, EventArgs e)
-        {
-            if (_caretImage != null)
-            {
-                _caretImage.Visibility = _caretImage.Visibility == Visibility.Visible
-                    ? Visibility.Hidden
-                    : Visibility.Visible;
-            }
-        }
-
         private void UpdateCaret()
         {
-            var caret = _view.Caret;
-            var line = caret.ContainingTextViewLine;
-            if (line.VisibilityState == VisibilityState.Unattached)
+            if (!_isShown)
             {
-                // Not Visible
+                return;
+            }
+
+            if (!IsRealCaretVisible)
+            {
                 MaybeDestroyCaret();
+            }
+            else if (NeedRecreateCaret())
+            {
+                MaybeDestroyCaret();
+                CreateCaretData();
             }
             else
             {
-                if (_caretImage == null)
-                {
-                    CreateCaretImage();
-                }
-                else
-                {
-                    if (!_blinkTimer.IsEnabled)
-                    {
-                        _blinkTimer.IsEnabled = true;
-                    }
-                    MoveCaretImageToCaret();
-                }
+                MoveCaretImageToCaret();
             }
         }
 
         private void MaybeDestroyCaret()
         {
-            if (_caretImage != null)
+            if ( _caretData.HasValue )
             {
                 DestroyCaret();
             }
+        }
+
+        private bool NeedRecreateCaret()
+        {
+            if (!_caretData.HasValue)
+            {
+                return true;
+            }
+
+            var data = _caretData.Value;
+            return  data.Color != GetRealCaretBrushColor() 
+                || data.Point != _view.Caret.Position.BufferPosition ;
         }
 
         private void DestroyCaret()
@@ -104,71 +167,112 @@ namespace VsVim
 
         private void MoveCaretImageToCaret()
         {
-            var caret = _view.Caret;
-            Canvas.SetLeft(_caretImage, caret.Left);
-            Canvas.SetTop(_caretImage, caret.Top);
+            var point = GetRealCaretVisualPoint();
+            Canvas.SetLeft(_caretData.Value.Image, point.X);
+            Canvas.SetTop(_caretData.Value.Image, point.Y);
         }
 
-        private void CreateCaretImage()
+        private void CreateCaretData()
         {
-            //Create the pen and brush to color the box behind the a's
-            Brush penBrush = new SolidColorBrush(Colors.Green);
-            penBrush.Freeze();
-            Pen pen = new Pen(penBrush, 1.0);
-            pen.Freeze();
+            var brush = new SolidColorBrush(GetRealCaretBrushColor());
+            brush.Freeze();
+            var pen = new Pen(brush, 1.0);
 
-            var line = _view.Caret.ContainingTextViewLine;
-            var topLeft = new Point(_view.Caret.Left, _view.Caret.Top);
-            var rect = new Rect(topLeft, new Size(10, 10));
-            var g = new RectangleGeometry(rect);
-            var drawing = new GeometryDrawing(Brushes.Green, _pen, g);
+            var rect = new Rect(
+                GetRealCaretVisualPoint(),
+                GetOptimalCaretSize());
+            var geometry = new RectangleGeometry(rect);
+            var drawing = new GeometryDrawing(brush, pen, geometry);
             drawing.Freeze();
 
             var drawingImage = new DrawingImage(drawing);
             drawingImage.Freeze();
 
-            _caretImage = new Image();
-            _caretImage.Source = drawingImage;
-
-            _blinkTimer = new DispatcherTimer(
-                TimeSpan.FromMilliseconds(GetCaretBlinkTime()),
-                DispatcherPriority.Normal,
-                new EventHandler(OnCaretBlinkTimer),
-                _caretImage.Dispatcher);
-            _blinkTimer.IsEnabled = true;
-
-            _layer.AddAdornment(
-                AdornmentPositioningBehavior.TextRelative,
-                new SnapshotSpan(_view.Caret.Position.BufferPosition, 0),
-                _tag,
-                _caretImage,
-                (x, y) =>
-                {
-                    _caretImage = null;
-                    _blinkTimer = null;
-                });
-
+            var image = new Image();
+            image.Source = drawingImage;
             MoveCaretImageToCaret();
+
+            var point = _view.Caret.Position.BufferPosition;
+            _caretData = new CaretData(image, GetRealCaretBrushColor(), point);
+            _layer.AddAdornment(
+               AdornmentPositioningBehavior.TextRelative,
+               new SnapshotSpan(point, 0),
+               _tag,
+               image,
+               (x, y) =>
+               {
+                   _caretData = null;
+               });
         }
+
+        private Color GetRealCaretBrushColor()
+        {
+            // TODO :actually calculate it
+            return Colors.Black;
+        }
+
+        private Point GetRealCaretVisualPoint()
+        {
+            return new Point(_view.Caret.Left, _view.Caret.Top);
+        }
+
+        /// <summary>
+        /// Get the size that should be used for the caret
+        /// </summary>
+        private Size GetOptimalCaretSize()
+        {
+            var caret = _view.Caret;
+            var line = caret.ContainingTextViewLine;
+            var defaultSize = new Size(
+                5,
+                line.IsValid ? line.Height : 10);
+            if (!IsRealCaretVisible)
+            {
+                return defaultSize;
+            }
+
+            var point = caret.Position.VirtualBufferPosition;
+            var bounds = line.GetCharacterBounds(point);
+            return new Size(
+                bounds.Width,
+                bounds.Height);
+        }
+
+        #region IBlockCaret
 
         public void Destroy()
         {
-            throw new NotImplementedException();
+            Hide();
         }
 
         public void Hide()
         {
-            throw new NotImplementedException();
+            if (_isShown)
+            {
+                _isShown = false;
+                _blinkTimer.IsEnabled = false;
+                _view.Caret.IsHidden = false;
+                DestroyCaret();
+            }
         }
 
         public void Show()
         {
-            throw new NotImplementedException();
+            if (!_isShown)
+            {
+                _isShown = true;
+                CreateCaretData();
+                _blinkTimer.IsEnabled = true;
+                _view.Caret.IsHidden = true;
+            }
         }
 
         public ITextView TextView
         {
-            get { throw new NotImplementedException(); }
+            get { return _view; }
         }
+
+        #endregion
+
     }
 }

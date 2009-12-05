@@ -77,29 +77,7 @@ namespace VsVim
 
         private void UpdateBrush()
         {
-            var caret = m_view.Caret;
-            var field = caret.GetType().GetField("_caretBrush", BindingFlags.NonPublic | BindingFlags.Instance);
-            field.SetValue(caret, CalculateCurrentBrush());
         }
-
-        /// <summary>
-        /// Calculate the current brush based on the state of the Vim buffer
-        /// </summary>
-        private Brush CalculateCurrentBrush()
-        {
-            switch (m_buffer.ModeKind)
-            {
-                case ModeKind.Insert:
-                    return Brushes.Black;
-                case ModeKind.Normal:
-                case ModeKind.Command:
-                    return Brushes.Red;
-                default:
-                    Debug.Fail("Unrecognized mode kind");
-                    return Brushes.Black;
-            }
-        }
-
 
         /// <summary>
         /// There is currently a bug hanging around where the VsVim plugin will force the insertion
