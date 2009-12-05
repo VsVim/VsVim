@@ -10,7 +10,6 @@ using System.Windows.Threading;
 
 namespace VsVim
 {
-
     ///<summary>
     ///BlockCursor adornment places red boxes behind all the "a"s in the editor window
     ///</summary>

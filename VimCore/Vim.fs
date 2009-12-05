@@ -8,8 +8,8 @@ type internal Vim() =
     let _data = VimData()
     let mutable _buffers : seq<IVimBuffer> = Seq.empty
 
-    member x.CreateVimBufferCore host view name = 
-        let data = VimBufferData(name, view, host, _data :> IVimData)
+    member x.CreateVimBufferCore host view name caret = 
+        let data = VimBufferData(name, view, host, _data :> IVimData, caret )
         let modeList = 
             [
                 ((new Modes.Normal.NormalMode(data)) :> IMode);
@@ -26,7 +26,7 @@ type internal Vim() =
     interface IVim with
         member x.Data = _data :> IVimData
         member x.Buffers = _buffers
-        member x.CreateBuffer host view name =
-            x.CreateVimBufferCore host view name
+        member x.CreateBuffer host view name caret =
+            x.CreateVimBufferCore host view name caret
         
         

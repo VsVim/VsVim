@@ -11,7 +11,8 @@ type internal VimBufferData
         _name : string,
         _view :IWpfTextView, 
         _host : IVimHost, 
-        _vimData : IVimData ) =
+        _vimData : IVimData,
+        _blockCaret : IBlockCaret ) =
 
     interface IVimBufferData with 
         member x.Name = _name
@@ -23,6 +24,7 @@ type internal VimBufferData
         member x.RegisterMap = _vimData.RegisterMap
         member x.Settings = _vimData.Settings
         member x.MarkMap = _vimData.MarkMap
+        member x.BlockCaret = _blockCaret
     
     
     

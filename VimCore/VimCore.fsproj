@@ -69,6 +69,7 @@
     <Compile Include="ModeKind.fs" />
     <Compile Include="IMode.fs" />
     <Compile Include="IVimData.fs" />
+    <Compile Include="IBlockCaret.fs" />
     <Compile Include="IVimBufferData.fs" />
     <Compile Include="IVimBuffer.fs" />
     <Compile Include="IVim.fs" />

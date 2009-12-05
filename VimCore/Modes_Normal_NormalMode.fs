@@ -497,7 +497,9 @@ type internal NormalMode( _bufferData : IVimBufferData ) =
                     _data <- {_data with Register=reg; RunFunc=this.StartCore;  WaitingForMoreInput=false }
                     Processed
         member this.OnEnter ()  =
+            _bufferData.BlockCaret.Show()
             this.ResetData
-        member this.OnLeave () = ()                
+        member this.OnLeave () = 
+            _bufferData.BlockCaret.Hide()
     
 

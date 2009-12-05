@@ -6,6 +6,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using VimCore;
 using System.Windows.Input;
 using Microsoft.VisualStudio.Text.Editor;
+using Moq;
 
 namespace VimCoreTest
 {
@@ -23,7 +24,7 @@ namespace VimCoreTest
         {
             view = Utils.EditorUtil.CreateView(lines);
             host = new FakeVimHost();
-            buffer = Factory.CreateVimBuffer(host, view, "test");
+            buffer = Factory.CreateVimBuffer(host, view, "test", (new Mock<IBlockCaret>()).Object);
         }
 
         [TestInitialize]

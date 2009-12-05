@@ -7,5 +7,5 @@ open Microsoft.VisualStudio.Text.Editor
 type IVim =
     abstract Data : IVimData
     abstract Buffers : seq<IVimBuffer>
-    abstract CreateBuffer : IVimHost -> IWpfTextView -> string -> IVimBuffer
+    abstract CreateBuffer : IVimHost -> IWpfTextView -> string -> IBlockCaret -> IVimBuffer
 

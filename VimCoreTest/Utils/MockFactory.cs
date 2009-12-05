@@ -43,16 +43,24 @@ namespace VimCoreTest.Utils
             return mock;
         }
 
+        internal static Mock<IBlockCaret> CreateBlockCaret()
+        {
+            var mock = new Mock<IBlockCaret>(MockBehavior.Loose);
+            return mock;
+        }
+
         internal static VimBufferData CreateVimBufferData(
             IWpfTextView view, 
             string name = null,
             IVimHost host = null, 
-            IVimData data = null)
+            IVimData data = null,
+            IBlockCaret caret = null)
         {
             name = name ?? "test";
             host = host ?? new FakeVimHost();
             data = data ?? CreateVimData().Object;
-            return new VimBufferData("test", view, host, data);
+            caret = caret ?? CreateBlockCaret().Object;
+            return new VimBufferData("test", view, host, data, caret);
         }
     }
 }
