@@ -47,7 +47,7 @@ namespace VsVim
         private readonly IAdornmentLayer _layer;
         private readonly IWpfTextView _view;
         private readonly object _tag = Guid.NewGuid().ToString();
-        private DispatcherTimer _blinkTimer;
+        private readonly DispatcherTimer _blinkTimer;
 
         /// <summary>
         /// Image being used to draw the caret.  Will be null if the caret is currently
@@ -76,7 +76,7 @@ namespace VsVim
         public BlockCursor(IWpfTextView view)
         {
             _view = view;
-            _layer = view.GetAdornmentLayer("BlockCursor");
+            _layer = view.GetAdornmentLayer("BlockCursor42");
 
             //Listen to any event that changes the layout (text changes, scrolling, etc)
             _view.LayoutChanged += OnLayoutChanged;
@@ -161,8 +161,7 @@ namespace VsVim
         private void DestroyCaret()
         {
             _layer.RemoveAdornmentsByTag(_tag);
-            _blinkTimer.IsEnabled = false;
-            _blinkTimer = null;
+            _caretData = null;
         }
 
         private void MoveCaretImageToCaret()
@@ -190,7 +189,6 @@ namespace VsVim
 
             var image = new Image();
             image.Source = drawingImage;
-            MoveCaretImageToCaret();
 
             var point = _view.Caret.Position.BufferPosition;
             _caretData = new CaretData(image, GetRealCaretBrushColor(), point);
@@ -203,6 +201,7 @@ namespace VsVim
                {
                    _caretData = null;
                });
+            MoveCaretImageToCaret();
         }
 
         private Color GetRealCaretBrushColor()
@@ -261,7 +260,10 @@ namespace VsVim
             if (!_isShown)
             {
                 _isShown = true;
-                CreateCaretData();
+                if (IsRealCaretVisible)
+                {
+                    CreateCaretData();
+                }
                 _blinkTimer.IsEnabled = true;
                 _view.Caret.IsHidden = true;
             }
