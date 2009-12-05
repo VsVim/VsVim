@@ -73,10 +73,10 @@ namespace VsVim
             }
         }
 
-        public BlockCursor(IWpfTextView view)
+        public BlockCursor(IWpfTextView view, string adornmentLayer)
         {
             _view = view;
-            _layer = view.GetAdornmentLayer("BlockCursor42");
+            _layer = view.GetAdornmentLayer(adornmentLayer);
 
             //Listen to any event that changes the layout (text changes, scrolling, etc)
             _view.LayoutChanged += OnLayoutChanged;

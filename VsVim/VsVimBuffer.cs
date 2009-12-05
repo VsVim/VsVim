@@ -39,7 +39,8 @@ namespace VsVim
 
             var sp = ((IObjectWithSite)shimView).GetServiceProvider();
             m_host = new VsVimHost(sp, undoHistory);
-            m_buffer = vim.CreateBuffer(m_host, m_view, lines.GetFileName(), new BlockCursor(view));
+            m_buffer = vim.CreateBuffer(m_host, m_view, lines.GetFileName(), new BlockCursor(view,HostFactory.BlockAdornmentLayer));
+
             m_filter = new VsCommandFilter(m_buffer, shimView);
 
             m_view.GotAggregateFocus += OnGotAggregateFocus;

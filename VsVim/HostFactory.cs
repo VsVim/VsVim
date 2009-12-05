@@ -20,6 +20,14 @@ namespace VsVim
     [TextViewRole(PredefinedTextViewRoles.Editable)]
     internal sealed class HostFactory : IWpfTextViewCreationListener
     {
+        public const string BlockAdornmentLayer = "BlockCaret";
+
+        [Export(typeof(AdornmentLayerDefinition))]
+        [Name(BlockAdornmentLayer)]
+        [Order(After = PredefinedAdornmentLayers.Selection)]
+        [TextViewRole(PredefinedTextViewRoles.Document)]
+        public AdornmentLayerDefinition m_blockAdornmentLayer = null;
+
         [Import]
         public IVsEditorAdaptersFactoryService m_service = null;
         [Import]
