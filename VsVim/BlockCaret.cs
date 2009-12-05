@@ -7,13 +7,14 @@ using Microsoft.VisualStudio.Text.Formatting;
 using System;
 using System.Runtime.InteropServices;
 using System.Windows.Threading;
+using VimCore;
 
 namespace VsVim
 {
     ///<summary>
     ///BlockCursor adornment places red boxes behind all the "a"s in the editor window
     ///</summary>
-    public class BlockCursor
+    public class BlockCursor : IBlockCaret
     {
         [DllImport("user32.dll")]
         private static extern int GetCaretBlinkTime();
@@ -148,6 +149,26 @@ namespace VsVim
                 });
 
             MoveCaretImageToCaret();
+        }
+
+        public void Destroy()
+        {
+            throw new NotImplementedException();
+        }
+
+        public void Hide()
+        {
+            throw new NotImplementedException();
+        }
+
+        public void Show()
+        {
+            throw new NotImplementedException();
+        }
+
+        public ITextView TextView
+        {
+            get { throw new NotImplementedException(); }
         }
     }
 }
