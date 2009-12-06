@@ -27,22 +27,22 @@ namespace VsVim
         [Name(BlockAdornmentLayer)]
         [Order(After = PredefinedAdornmentLayers.Selection)]
         [TextViewRole(PredefinedTextViewRoles.Document)]
-        public AdornmentLayerDefinition m_blockAdornmentLayer = null;
+        public AdornmentLayerDefinition _blockAdornmentLayer = null;
 
         [Import]
-        public IVsEditorAdaptersFactoryService m_service = null;
+        public IVsEditorAdaptersFactoryService _service = null;
         [Import]
-        public IUndoHistoryRegistry m_undoHistoryRegistry = null;
+        public IUndoHistoryRegistry _undoHistoryRegistry = null;
         [Import]
-        public KeyBindingService m_keyBindingService = null;
+        public KeyBindingService _keyBindingService = null;
         [Import]
-        public IEditorFormatMap m_formatMap = null;
+        public IEditorFormatMap _formatMap = null;
 
-        private IVim m_vim;
+        private IVim _vim;
 
         public HostFactory()
         {
-            m_vim = Factory.CreateVim();
+            _vim = Factory.CreateVim();
         }
 
         public void TextViewCreated(IWpfTextView textView)
@@ -58,13 +58,13 @@ namespace VsVim
                 return;
             }
 
-            var interopView = m_service.GetViewAdapter(view);
+            var interopView = _service.GetViewAdapter(view);
             if (interopView == null)
             {
                 return;
             }
 
-            var interopLines = m_service.GetBufferAdapter(view.TextBuffer) as IVsTextLines;
+            var interopLines = _service.GetBufferAdapter(view.TextBuffer) as IVsTextLines;
             if (interopLines == null)
             {
                 return;
@@ -73,10 +73,10 @@ namespace VsVim
             // Once we have the view, stop listening to the event
             view.GotAggregateFocus -= new EventHandler(OnGotAggregateFocus);
 
-            var buffer = new VsVimBuffer(m_vim, view, interopView, interopLines, m_undoHistoryRegistry, m_formatMap);
+            var buffer = new VsVimBuffer(_vim, view, interopView, interopLines, _undoHistoryRegistry, _formatMap);
             view.Properties.AddTypedProperty(buffer);
 
-            m_keyBindingService.OneTimeCheckForConflictingKeyBindings(buffer.VsVimHost.DTE, buffer.VimBuffer);
+            _keyBindingService.OneTimeCheckForConflictingKeyBindings(buffer.VsVimHost.DTE, buffer.VimBuffer);
             view.Closed += (x, y) =>
             {
                 view.Properties.RemoveTypedProperty<VsVimBuffer>();

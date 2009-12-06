@@ -10,7 +10,7 @@ namespace VsVim
 {
     public sealed class VimKeyProcessor : KeyProcessor
     {
-        private readonly IWpfTextView m_view;
+        private readonly IWpfTextView _view;
 
         public VimKeyProcessor(IWpfTextView view)
         {
@@ -19,12 +19,12 @@ namespace VsVim
                 throw new ArgumentNullException("view");
             }
 
-            m_view = view;
+            _view = view;
         }
 
         public override void KeyUp(KeyEventArgs args)
         {
-            var buf = m_view.Properties.TryGetTypedProperty<VsVimBuffer>();
+            var buf = _view.Properties.TryGetTypedProperty<VsVimBuffer>();
             if (buf.IsSome() && TryHandleKeyUp(buf.Value, args))
             {
                 args.Handled = true;
@@ -37,7 +37,7 @@ namespace VsVim
 
         public override void TextInput(TextCompositionEventArgs args)
         {
-            var buf = m_view.Properties.TryGetTypedProperty<VsVimBuffer>();
+            var buf = _view.Properties.TryGetTypedProperty<VsVimBuffer>();
             if (buf.IsSome() && TryHandleTextInput(buf.Value, args))
             {
                 args.Handled = true;
@@ -50,7 +50,7 @@ namespace VsVim
 
         public override void KeyDown(KeyEventArgs args)
         {
-            var buf = m_view.Properties.TryGetTypedProperty<VsVimBuffer>();
+            var buf = _view.Properties.TryGetTypedProperty<VsVimBuffer>();
             if (buf.IsSome() && !IsNonInputKey(args))
             {
                 KeyDown(buf.Value, args);

@@ -19,30 +19,30 @@ namespace VsVim
 {
     internal sealed class VsVimBuffer
     {
-        private readonly IWpfTextView m_view;
-        private readonly VsVimHost m_host;
-        private readonly IVimBuffer m_buffer;
-        private readonly VsCommandFilter m_filter;
+        private readonly IWpfTextView _view;
+        private readonly VsVimHost _host;
+        private readonly IVimBuffer _buffer;
+        private readonly VsCommandFilter _filter;
 
         internal IVimBuffer VimBuffer
         {
-            get { return m_buffer; }
+            get { return _buffer; }
         }
 
         internal VsVimHost VsVimHost
         {
-            get { return m_host; }
+            get { return _host; }
         }
 
         internal VsVimBuffer(IVim vim, IWpfTextView view, IVsTextView shimView, IVsTextLines lines, IUndoHistoryRegistry undoHistory, IEditorFormatMap map)
         {
-            m_view = view;
+            _view = view;
 
             var sp = ((IObjectWithSite)shimView).GetServiceProvider();
-            m_host = new VsVimHost(sp, undoHistory);
-            m_buffer = vim.CreateBuffer(m_host, m_view, lines.GetFileName(), new BlockCursor(view,HostFactory.BlockAdornmentLayer, map));
+            _host = new VsVimHost(sp, undoHistory);
+            _buffer = vim.CreateBuffer(_host, _view, lines.GetFileName(), new BlockCursor(view,HostFactory.BlockAdornmentLayer, map));
 
-            m_filter = new VsCommandFilter(m_buffer, shimView);
+            _filter = new VsCommandFilter(_buffer, shimView);
         }
 
         internal void Close()

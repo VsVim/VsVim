@@ -19,15 +19,15 @@ namespace VsVim
     /// </summary>
     internal sealed class VsCommandFilter : IOleCommandTarget
     {
-        private readonly IVimBuffer m_buffer;
-        private readonly IVsTextView m_textView;
-        private readonly IOleCommandTarget m_nextTarget;
+        private readonly IVimBuffer _buffer;
+        private readonly IVsTextView _textView;
+        private readonly IOleCommandTarget _nextTarget;
 
         internal VsCommandFilter(IVimBuffer buffer, IVsTextView view)
         {
-            m_buffer = buffer;
-            m_textView = view;
-            var hr = view.AddCommandFilter(this, out m_nextTarget);
+            _buffer = buffer;
+            _textView = view;
+            var hr = view.AddCommandFilter(this, out _nextTarget);
         }
 
         internal bool TryConvert(Guid commandGroup, uint commandId, IntPtr pvaIn, out KeyInput kiOutput)
@@ -40,14 +40,14 @@ namespace VsVim
             }
             
             // If the current state of the buffer cannot process the command then do not convert it 
-            if (!m_buffer.WillProcessInput(command.KeyInput))
+            if (!_buffer.WillProcessInput(command.KeyInput))
             {
 
                 // The one exception is input commands while we are in normal mode.  While normal mode does not actually
                 // process the commands, it does need to prevent them from being routed to other buffers.  Eventually when
                 // NormalMode is 100% implemented the vast majority of these will actually be processable commands.  Until then
                 // though we need to process them and beep
-                if (!(command.IsInput && ModeKind.Normal == m_buffer.ModeKind))
+                if (!(command.IsInput && ModeKind.Normal == _buffer.ModeKind))
                 {
                     return false;
                 }
@@ -64,9 +64,9 @@ namespace VsVim
             KeyInput ki =null;
             if (CommandUtil.IsDebugIgnore(commandGroup, commandId)
                 || !TryConvert(commandGroup, commandId, pvaIn, out ki) 
-                || !m_buffer.ProcessInput(ki) )
+                || !_buffer.ProcessInput(ki) )
             {
-                return m_nextTarget.Exec(commandGroup, commandId, nCmdexecopt, pvaIn, pvaOut);
+                return _nextTarget.Exec(commandGroup, commandId, nCmdexecopt, pvaIn, pvaOut);
             }
 
             return NativeMethods.S_OK;
@@ -81,7 +81,7 @@ namespace VsVim
                 return NativeMethods.S_OK;
             }
 
-            return m_nextTarget.QueryStatus(pguidCmdGroup, cCmds, prgCmds, pCmdText);
+            return _nextTarget.QueryStatus(pguidCmdGroup, cCmds, prgCmds, pCmdText);
         }
 
         #endregion

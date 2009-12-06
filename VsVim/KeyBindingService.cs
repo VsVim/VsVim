@@ -17,7 +17,7 @@ namespace VsVim
     [Export(typeof(KeyBindingService))]
     public sealed class KeyBindingService
     {
-        private bool m_hasChecked;
+        private bool _hasChecked;
 
         public void OneTimeCheckForConflictingKeyBindings(_DTE dte, IVimBuffer buffer)
         {
@@ -26,11 +26,11 @@ namespace VsVim
                 throw new ArgumentNullException("dte");
             }
 
-            if (m_hasChecked)
+            if (_hasChecked)
             {
                 return;
             }
-            m_hasChecked = true;
+            _hasChecked = true;
             CheckForConflictingKeyBindings(dte, buffer);
         }
 
