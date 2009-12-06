@@ -17,6 +17,7 @@ X - Command mode needs to actually hook into ranges
 - Actually implement range capture
 - When the view is closed, kill the block caret
 - Match cursor color
+- Fix the inconsistent naming of member fields
 
 Version 5.4
 ===

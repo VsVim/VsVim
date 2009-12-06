@@ -8,6 +8,7 @@ using System;
 using System.Runtime.InteropServices;
 using System.Windows.Threading;
 using VimCore;
+using Microsoft.VisualStudio.Text.Classification;
 
 namespace VsVim
 {
@@ -29,16 +30,17 @@ namespace VsVim
             internal readonly Image Image;
 
             /// <summary>
-            /// Color used to create the brush
+            /// Color used to create the brush.  Can be null in the case the color
+            /// can't be determined
             /// </summary>
-            internal readonly Color Color;
+            internal readonly Color? Color;
 
             /// <summary>
             /// Point this caret is tracking
             /// </summary>
             internal readonly SnapshotPoint Point;
 
-            internal CaretData(Image image, Color color, SnapshotPoint point)
+            internal CaretData(Image image, Color? color, SnapshotPoint point)
             {
                 this.Image = image;
                 this.Color = color;
@@ -46,6 +48,7 @@ namespace VsVim
             }
         }
 
+        private readonly IEditorFormatMap _formatMap;
         private readonly IAdornmentLayer _layer;
         private readonly IWpfTextView _view;
         private readonly object _tag = Guid.NewGuid().ToString();
@@ -75,10 +78,11 @@ namespace VsVim
             }
         }
 
-        public BlockCursor(IWpfTextView view, string adornmentLayer)
+        public BlockCursor(IWpfTextView view, string adornmentLayer, IEditorFormatMap map)
         {
             _view = view;
             _layer = view.GetAdornmentLayer(adornmentLayer);
+            _formatMap = map;
 
             //Listen to any event that changes the layout (text changes, scrolling, etc)
             _view.LayoutChanged += OnLayoutChanged;
@@ -142,7 +146,7 @@ namespace VsVim
 
         private void MaybeDestroyCaret()
         {
-            if ( _caretData.HasValue )
+            if (_caretData.HasValue)
             {
                 DestroyCaret();
             }
@@ -156,8 +160,8 @@ namespace VsVim
             }
 
             var data = _caretData.Value;
-            return  data.Color != GetRealCaretBrushColor() 
-                || data.Point != _view.Caret.Position.BufferPosition ;
+            return data.Color != GetRealCaretBrushColor()
+                || data.Point != _view.Caret.Position.BufferPosition;
         }
 
         private void DestroyCaret()
@@ -175,7 +179,8 @@ namespace VsVim
 
         private void CreateCaretData()
         {
-            var brush = new SolidColorBrush(GetRealCaretBrushColor());
+            var color = GetRealCaretBrushColor();
+            var brush = new SolidColorBrush(color ?? Colors.Black);
             brush.Freeze();
             var pen = new Pen(brush, 1.0);
 
@@ -194,7 +199,7 @@ namespace VsVim
             image.Source = drawingImage;
 
             var point = _view.Caret.Position.BufferPosition;
-            _caretData = new CaretData(image, GetRealCaretBrushColor(), point);
+            _caretData = new CaretData(image, color, point);
             _layer.AddAdornment(
                AdornmentPositioningBehavior.TextRelative,
                new SnapshotSpan(point, 0),
@@ -207,10 +212,18 @@ namespace VsVim
             MoveCaretImageToCaret();
         }
 
-        private Color GetRealCaretBrushColor()
+        /// <summary>
+        /// Attempt to get the real caret color and copy it
+        /// </summary>
+        private Color? GetRealCaretBrushColor()
         {
-            // TODO :actually calculate it
-            return Colors.Black;
+            ResourceDictionary properties = _formatMap.GetProperties("Caret");
+            if (properties.Contains("ForegroundColor"))
+            {
+                return (Color)properties["ForegroundColor"];
+            }
+
+            return null;
         }
 
         private Point GetRealCaretVisualPoint()

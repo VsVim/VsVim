@@ -12,6 +12,7 @@ using VimCore;
 using Microsoft.VisualStudio.UI.Undo;
 using Microsoft.VisualStudio.OLE.Interop;
 using Microsoft.VisualStudio.Shell.Interop;
+using Microsoft.VisualStudio.Text.Classification;
 
 namespace VsVim
 {
@@ -34,6 +35,8 @@ namespace VsVim
         public IUndoHistoryRegistry m_undoHistoryRegistry = null;
         [Import]
         public KeyBindingService m_keyBindingService = null;
+        [Import]
+        public IEditorFormatMap m_formatMap = null;
 
         private IVim m_vim;
 
@@ -70,7 +73,7 @@ namespace VsVim
             // Once we have the view, stop listening to the event
             view.GotAggregateFocus -= new EventHandler(OnGotAggregateFocus);
 
-            var buffer = new VsVimBuffer(m_vim, view, interopView, interopLines, m_undoHistoryRegistry);
+            var buffer = new VsVimBuffer(m_vim, view, interopView, interopLines, m_undoHistoryRegistry, m_formatMap);
             view.Properties.AddTypedProperty(buffer);
 
             m_keyBindingService.OneTimeCheckForConflictingKeyBindings(buffer.VsVimHost.DTE, buffer.VimBuffer);
@@ -79,10 +82,10 @@ namespace VsVim
                 view.Properties.RemoveTypedProperty<VsVimBuffer>();
             };
         }
-    
 
 
-      
-        
+
+
+
     }
 }

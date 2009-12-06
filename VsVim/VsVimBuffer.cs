@@ -13,6 +13,7 @@ using System.Windows.Media;
 using System.Diagnostics;
 using Microsoft.FSharp.Control;
 using Microsoft.VisualStudio.Text;
+using Microsoft.VisualStudio.Text.Classification;
 
 namespace VsVim
 {
@@ -33,13 +34,13 @@ namespace VsVim
             get { return m_host; }
         }
 
-        internal VsVimBuffer(IVim vim, IWpfTextView view, IVsTextView shimView, IVsTextLines lines, IUndoHistoryRegistry undoHistory)
+        internal VsVimBuffer(IVim vim, IWpfTextView view, IVsTextView shimView, IVsTextLines lines, IUndoHistoryRegistry undoHistory, IEditorFormatMap map)
         {
             m_view = view;
 
             var sp = ((IObjectWithSite)shimView).GetServiceProvider();
             m_host = new VsVimHost(sp, undoHistory);
-            m_buffer = vim.CreateBuffer(m_host, m_view, lines.GetFileName(), new BlockCursor(view,HostFactory.BlockAdornmentLayer));
+            m_buffer = vim.CreateBuffer(m_host, m_view, lines.GetFileName(), new BlockCursor(view,HostFactory.BlockAdornmentLayer, map));
 
             m_filter = new VsCommandFilter(m_buffer, shimView);
         }
