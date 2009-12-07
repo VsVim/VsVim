@@ -9,4 +9,6 @@ module internal StringUtil =
     val CharAt : string -> int -> char
     val IsValidIndex : string -> int -> bool
     val Repeat : string -> int -> string
+    val OfCharArray : char[] -> string
+    val OfCharSeq : char seq -> string
     

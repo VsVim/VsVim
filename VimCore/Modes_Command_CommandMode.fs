@@ -14,7 +14,9 @@ type CommandMode( _data : IVimBufferData ) =
     /// Reverse list of the inputted commands
     let mutable _input : list<KeyInput> = []
 
-   // Actually process the completed command
+    member x.BadMessage = sprintf "Cannot run \"%s\"" _command
+
+    // Actually process the completed command
     member x.ProcessCommand (cmd:string) (range:SnapshotSpan option)= 
         let d = _data
         let host = d.VimHost
@@ -25,6 +27,67 @@ type CommandMode( _data : IVimBufferData ) =
             | Match1 "^j" _ -> Util.Join d.TextView range JoinKind.RemoveEmptySpaces None |> ignore
             | Match1 "^join" _ -> Util.Join d.TextView range JoinKind.RemoveEmptySpaces None |> ignore
             | _ -> host.UpdateStatus("Cannot run \"" + cmd)
+
+    member x.SkipWhitespace (cmd:KeyInput list) =
+        if cmd |> List.isEmpty then cmd
+        else 
+            let head = cmd |> List.head 
+            if System.Char.IsWhiteSpace head.Char then x.SkipWhitespace (cmd |> List.tail)
+            else cmd
+        
+    member x.SkipPast (cmd:list<KeyInput>) (suffix:seq<char>) = 
+        let cmd = x.SkipWhitespace cmd |> Seq.ofList
+        let rec inner (cmd:seq<KeyInput>) (suffix:seq<char>) = 
+            if suffix |> Seq.isEmpty then cmd
+            else if cmd |> Seq.isEmpty then cmd
+            else 
+                let left = cmd |> Seq.head 
+                let right = suffix |> Seq.head
+                if left.Char = right then inner (cmd |> Seq.skip 1) (suffix |> Seq.skip 1)
+                else cmd
+        inner cmd suffix |> List.ofSeq
+
+    /// Try and skip the ! operator
+    member x.SkipBang (cmd:KeyInput list) =
+        match cmd |> List.isEmpty with
+        | true -> (false,cmd)
+        | false ->
+            let head = cmd |> List.head 
+            if head.Char = '!' then (true, cmd |> List.tail)
+            else (false,cmd)
+
+    member x.TryParse (cmd:KeyInput List) (range:SnapshotSpan option) next = 
+        if cmd |> List.isEmpty then 
+            _data.VimHost.UpdateStatus("Invalid Command String:")
+        else next (cmd |> List.head) (cmd |> List.tail) range
+
+    /// Parse out the :join command
+    member x.ParseJoin (rest:KeyInput list) (range:SnapshotSpan option) =
+        let rest = x.SkipPast rest "oin" |> x.SkipWhitespace
+        let hasBang,rest = x.SkipBang rest        
+        let kind = if hasBang then JoinKind.KeepEmptySpaces else JoinKind.RemoveEmptySpaces
+        let rest = x.SkipWhitespace rest
+        let count,rest = RangeUtil.ParseNumber rest
+        Util.Join _data.TextView range kind count |> ignore
+
+    /// Parse out the :edit commnad
+    member x.ParseEdit (rest:KeyInput list) = 
+        let rest = x.SkipWhitespace rest
+        let rest = x.SkipPast rest "dit"
+        let _,rest = x.SkipBang rest
+        let name = 
+            rest 
+                |> Seq.ofList
+                |> Seq.map (fun i -> i.Char)
+                |> StringUtil.OfCharSeq 
+        Util.EditFile _data.VimHost name
+
+    member x.ParseCommand (current:KeyInput) (rest:KeyInput list) (range:SnapshotSpan option) =
+        match current.Char with
+        | 'j' -> x.ParseJoin rest range
+        | 'e' -> x.ParseEdit rest 
+        | '$' -> Util.JumpToLastLine _data
+        | _ -> _data.VimHost.UpdateStatus(x.BadMessage)
 
     member x.ParseInput (originalInputs : KeyInput list) =
         let withRange (range:SnapshotSpan option) (inputs:KeyInput list) =

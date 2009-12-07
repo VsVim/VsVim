@@ -10,4 +10,5 @@ type internal Range =
     | Invalid of string * KeyInput list
 
 module internal RangeUtil =
+    val ParseNumber : KeyInput list -> (int option * KeyInput list)
     val ParseRange : SnapshotPoint -> MarkMap -> KeyInput list -> Range

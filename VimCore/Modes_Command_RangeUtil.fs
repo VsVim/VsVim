@@ -15,8 +15,8 @@ type internal Range =
 
 module internal RangeUtil =
 
-    /// Parse out a line number 
-    let ParseLineNumber (tss:ITextSnapshot) (input:KeyInput list) =
+    /// Parse out a number from the input string
+    let ParseNumber (input:KeyInput list) =
 
         // Parse out the input into the list of digits and remaining input
         let rec getDigits (input:KeyInput list) =
@@ -31,23 +31,31 @@ module internal RangeUtil =
                     ([],input)
             
         let digits,remaining = getDigits input
-        let numberArray = 
+        let numberStr = 
             digits 
                 |> Seq.ofList
                 |> Seq.map (fun x -> x.Char)
                 |> Array.ofSeq
-        let numberStr = new System.String(numberArray)
-        let msg = sprintf "Invalid Range: \"%s\" is not a valid line number numberStr" numberStr
+                |> StringUtil.OfCharArray
         let mutable number = 0
         match System.Int32.TryParse(numberStr, &number) with
-        | false -> Invalid(msg, input)
-        | true -> 
+        | false -> (None,input)
+        | true -> (Some(number), remaining)
+
+    /// Parse out a line number 
+    let ParseLineNumber (tss:ITextSnapshot) (input:KeyInput list) =
+    
+        let msg = "Invalid Range: Could not find a valid number"
+        let opt,remaining = ParseNumber input
+        match opt with 
+        | Some(number) ->
             let number = TssUtil.VimLineToTssLine number
             if number < tss.LineCount then 
                 let line = tss.GetLineFromLineNumber(number)
                 ValidRange(line.ExtentIncludingLineBreak, remaining)
             else
                 Invalid(msg,input)
+        | None -> Invalid(msg, input)
 
 
     /// Parse out a single item in the range

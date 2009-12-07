@@ -31,3 +31,9 @@ module internal StringUtil =
         for i = 1 to count do
             buffer.Append(value) |> ignore
         buffer.ToString()
+
+    /// Create a String from an array of chars
+    let OfCharArray (chars:char[]) = new System.String(chars)
+
+    /// Create a String from a sequence of chars
+    let OfCharSeq (chars : char seq) = chars |> Array.ofSeq |> OfCharArray
