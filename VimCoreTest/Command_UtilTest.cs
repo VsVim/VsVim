@@ -9,6 +9,7 @@ using CommandUtil = VimCore.Modes.Command.Util;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text;
 using VimCoreTest.Utils;
+using VimCore.Modes.Common;
 
 namespace VimCoreTest
 {
@@ -21,8 +22,8 @@ namespace VimCoreTest
             return CommandUtil.Join(
                 view,
                 range.HasValue ? FSharpOption<SnapshotSpan>.Some(range.Value) : FSharpOption<SnapshotSpan>.None,
-                count.HasValue ? FSharpOption<int>.Some(count.Value) : FSharpOption<int>.None,
-                removeSpaces);
+                removeSpaces ? JoinKind.RemoveEmptySpaces : JoinKind.KeepEmptySpaces,
+                count.HasValue ? FSharpOption<int>.Some(count.Value) : FSharpOption<int>.None);
         }
 
         [TestMethod]

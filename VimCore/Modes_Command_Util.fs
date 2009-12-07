@@ -30,7 +30,7 @@ module internal Util =
         ViewUtil.MoveToLastLineStart d.TextView |> ignore
 
     /// Join a range of lines with a potential count
-    let Join (view:ITextView) (range:SnapshotSpan option) (count:int option) (removeSpaces:bool)= 
+    let Join (view:ITextView) (range:SnapshotSpan option) kind (count:int option) = 
         let range = 
             match range with 
             | Some(s) -> s
@@ -39,10 +39,10 @@ module internal Util =
                 SnapshotSpan(point,0)
 
         match count with 
-        | Some(c) -> Modes.Common.Operations.Join view range.End c
+        | Some(c) -> Modes.Common.Operations.Join view range.End kind c
         | None -> 
             let startLine = range.Start.GetContainingLine().LineNumber
             let endLine = range.End.GetContainingLine().LineNumber
             let count = endLine - startLine
-            Modes.Common.Operations.Join view range.Start count
+            Modes.Common.Operations.Join view range.Start kind count
 

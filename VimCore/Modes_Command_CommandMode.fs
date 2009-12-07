@@ -2,6 +2,7 @@
 
 namespace VimCore.Modes.Command
 open VimCore
+open VimCore.Modes.Common
 open Microsoft.VisualStudio.Text
 open System.Windows.Input
 open System.Text.RegularExpressions
@@ -21,8 +22,8 @@ type CommandMode( _data : IVimBufferData ) =
             | Match2 "^e\s(.*)$" (_,file) -> Util.EditFile host file
             | Match2 "^(\d+)$" (_,lineNum) -> Util.JumpToLineNumber d lineNum
             | Match1 "^\$$" _ -> Util.JumpToLastLine d
-            | Match1 "^j" _ -> Util.Join d.TextView range None true |> ignore
-            | Match1 "^join" _ -> Util.Join d.TextView range None true |> ignore
+            | Match1 "^j" _ -> Util.Join d.TextView range JoinKind.RemoveEmptySpaces None |> ignore
+            | Match1 "^join" _ -> Util.Join d.TextView range JoinKind.RemoveEmptySpaces None |> ignore
             | _ -> host.UpdateStatus("Cannot run \"" + cmd)
 
     /// Parse out the range element from the list of commands

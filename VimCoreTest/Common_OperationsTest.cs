@@ -29,7 +29,7 @@ namespace VimCoreTest
         public void Join1()
         {
             CreateLines("foo","bar");
-            Assert.IsTrue(Operations.Join(_view, _view.GetCaretPoint(), 2));
+            Assert.IsTrue(Operations.Join(_view, _view.GetCaretPoint(), JoinKind.RemoveEmptySpaces, 2));
             Assert.AreEqual("foo bar", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
             Assert.AreEqual(1, _view.TextSnapshot.LineCount);
             Assert.AreEqual(4, _view.Caret.Position.BufferPosition.Position);
@@ -39,7 +39,7 @@ namespace VimCoreTest
         public void Join2()
         {
             CreateLines("foo", "   bar");
-            Assert.IsTrue(Operations.Join(_view, _view.GetCaretPoint(), 2));
+            Assert.IsTrue(Operations.Join(_view, _view.GetCaretPoint(), JoinKind.RemoveEmptySpaces, 2));
             Assert.AreEqual("foo bar", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
             Assert.AreEqual(1, _view.TextSnapshot.LineCount);
             Assert.AreEqual(4, _view.Caret.Position.BufferPosition.Position);
@@ -49,7 +49,7 @@ namespace VimCoreTest
         public void Join3()
         {
             CreateLines("foo", "bar", "baz");
-            Assert.IsTrue(Operations.Join(_view, _view.GetCaretPoint(), 3));
+            Assert.IsTrue(Operations.Join(_view, _view.GetCaretPoint(), JoinKind.RemoveEmptySpaces, 3));
             Assert.AreEqual("foo bar baz", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
             Assert.AreEqual(1, _view.TextSnapshot.LineCount);
             Assert.AreEqual(8, _view.Caret.Position.BufferPosition.Position);
@@ -59,10 +59,28 @@ namespace VimCoreTest
         public void Join4()
         {
             CreateLines("foo", "bar");
-            Assert.IsTrue(Operations.Join(_view, _view.GetCaretPoint(), 1));
+            Assert.IsTrue(Operations.Join(_view, _view.GetCaretPoint(),JoinKind.RemoveEmptySpaces, 1));
             Assert.AreEqual("foo bar", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
             Assert.AreEqual(1, _view.TextSnapshot.LineCount);
             Assert.AreEqual(4, _view.Caret.Position.BufferPosition.Position);
+        }
+
+        [TestMethod]
+        public void Join5()
+        {
+            CreateLines("foo", "bar");
+            Assert.IsTrue(Operations.Join(_view, _view.GetCaretPoint(), JoinKind.KeepEmptySpaces, 1));
+            Assert.AreEqual("foobar", _view.TextSnapshot.GetText());
+            Assert.AreEqual(1, _view.TextSnapshot.LineCount);
+        }
+
+        [TestMethod]
+        public void Join6()
+        {
+            CreateLines("foo", " bar");
+            Assert.IsTrue(Operations.Join(_view, _view.GetCaretPoint(), JoinKind.KeepEmptySpaces, 1));
+            Assert.AreEqual("foo bar", _view.TextSnapshot.GetText());
+            Assert.AreEqual(1, _view.TextSnapshot.LineCount);
         }
 
         [TestMethod]

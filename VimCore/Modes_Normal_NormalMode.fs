@@ -390,7 +390,8 @@ type internal NormalMode( _bufferData : IVimBufferData ) =
             {   KeyInput=KeyInput('J', Key.J, ModifierKeys.Shift);
                 RunFunc=(fun d -> 
                     let start = ViewUtil.GetCaretPoint this.TextView
-                    let res = VimCore.Modes.Common.Operations.Join this.TextView start d.Count
+                    let kind = VimCore.Modes.Common.JoinKind.RemoveEmptySpaces
+                    let res = VimCore.Modes.Common.Operations.Join this.TextView start kind d.Count
                     if not res then
                         this.VimHost.Beep()
                     NormalModeResult.Complete) };

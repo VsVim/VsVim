@@ -2,7 +2,7 @@ Version 5.3
 ===
 - Fix Command mode to be more extensible
 - :$ in Command Mode
-- j in command mode
+X - j in command mode
 - Delete key in normal mode
 - Check on the behavior of tab in normal mode
 - Marks Undo Support
@@ -11,17 +11,18 @@ Version 5.3
 - Escape out of a command should clear status in command mode
 - Initial : should update status in command mode
 - Horizontal offset issue Noah raised
-- Support the don't remove blanks part of join
+X - Support the don't remove blanks part of join
 - gJ in normal mode
 X - Command mode needs to actually hook into ranges
 - Actually implement range capture
 - When the view is closed, kill the block caret
-- Match cursor color
+X - Match cursor color
 X - Fix the inconsistent naming of member fields
 X - Fix the Caret thing
 
 Version 5.4
 ===
+- Edits need to understand cursor color
 
 Version 5.2
 ===

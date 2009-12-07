@@ -5,6 +5,10 @@ open VimCore
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
 
+type internal JoinKind = 
+    | RemoveEmptySpaces
+    | KeepEmptySpaces
+
 module Operations =
 
     type Result = 
@@ -13,7 +17,7 @@ module Operations =
 
     /// Implements the Join command.  Returns false in the case the join command cannot
     /// be complete (such as joining at the end of the buffer)
-    let Join (view:ITextView) (start:SnapshotPoint) count = 
+    let Join (view:ITextView) (start:SnapshotPoint) (kind:JoinKind) count = 
 
         // Always joining at least 2 lines so we subtract to get the number of join
         // operations.  1 is a valid input though
@@ -25,10 +29,9 @@ module Operations =
             use edit = buffer.CreateEdit()
             let line = buffer.CurrentSnapshot.GetLineFromLineNumber(lineNumber)
             let lineBreakSpan = Span(line.End.Position, line.LineBreakLength)
-            edit.Replace(lineBreakSpan, " ") |> ignore
 
             // Strip out the whitespace at the start of the next line
-            let maybeStripWhiteSpace ()= 
+            let maybeStripWhiteSpace () = 
                 let nextLine = tss.GetLineFromLineNumber(lineNumber+1)
                 let rec countSpace (index) =
                     if index < nextLine.Length && System.Char.IsWhiteSpace(nextLine.Start.Add(index).GetChar()) then
@@ -39,7 +42,13 @@ module Operations =
                 | 0 -> ()
                 | value -> edit.Delete(nextLine.Start.Position, value) |> ignore
 
-            maybeStripWhiteSpace()
+            match kind with 
+            | RemoveEmptySpaces ->  
+                edit.Replace(lineBreakSpan, " ") |> ignore
+                maybeStripWhiteSpace()
+            | KeepEmptySpaces -> 
+                edit.Delete(lineBreakSpan) |> ignore
+
             edit.Apply() |> ignore
             line.End.Position + 1
 
