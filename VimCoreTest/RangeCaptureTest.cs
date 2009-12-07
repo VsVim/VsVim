@@ -36,7 +36,6 @@ namespace VimCoreTest
 
         private Range CaptureComplete(SnapshotPoint point, string input)
         {
-            Assert.IsFalse(String.IsNullOrEmpty(input));
             var list = input.Select(x => InputUtil.CharToKeyInput(x));
             return RangeUtil.ParseRange(point, _map, ListModule.OfSeq(list));
         }

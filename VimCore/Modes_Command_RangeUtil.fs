@@ -55,6 +55,9 @@ module internal RangeUtil =
         let head = list |> List.head 
         if head.IsDigit then
             ParseLineNumber point.Snapshot list
+        else if head.Char = '.' then
+            let span = point.GetContainingLine().ExtentIncludingLineBreak
+            ValidRange(span, list |> List.tail)
         else
             NoRange(list)
 
