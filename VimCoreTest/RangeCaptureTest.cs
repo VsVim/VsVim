@@ -7,6 +7,7 @@ using VimCore.Modes.Command;
 using VimCore;
 using VimCoreTest.Utils;
 using Microsoft.VisualStudio.Text;
+using Microsoft.FSharp.Collections;
 
 namespace VimCoreTest
 {
@@ -28,26 +29,29 @@ namespace VimCoreTest
             _buffer = EditorUtil.CreateBuffer(lines);
         }
 
-        private RangeResult CaptureComplete(string input)
+        private Range CaptureComplete(string input)
         {
             return CaptureComplete(new SnapshotPoint(_buffer.CurrentSnapshot, 0), input);
         }
 
-        private RangeResult CaptureComplete(SnapshotPoint point, string input)
+        private Range CaptureComplete(SnapshotPoint point, string input)
         {
             Assert.IsFalse(String.IsNullOrEmpty(input));
-            var output = RangeCapture.Capture(point, _map, InputUtil.CharToKeyInput(input[0]));
-            int i = 1;
-            while (i < input.Length)
-            {
-                Assert.IsTrue(output.IsNeedMore);
-                var next = InputUtil.CharToKeyInput(input[i]);
-                output = output.AsNeedMore().Item.Invoke(next);
-            }
-            Assert.IsTrue(output.IsNeedMore);
-            output = output.AsNeedMore().item.Invoke(new KeyInput(' ', System.Windows.Input.Key.Space));
-            Assert.IsFalse(output.IsNeedMore);
-            return output;
+            var list = input.Select(x => InputUtil.CharToKeyInput(x));
+            return RangeUtil.ParseRange(point, _map, ListModule.OfSeq(list));
+        }
+
+        [TestMethod]
+        public void NoRange1()
+        {
+            Create(string.Empty);
+            Action<string> del = input =>
+                {
+                    Assert.IsTrue(CaptureComplete(input).IsNoRange);
+                };
+            del(String.Empty);
+            del("j");
+            del("join");
         }
 
         [TestMethod]
@@ -56,8 +60,19 @@ namespace VimCoreTest
             Create("foo","bar");
             var res = CaptureComplete("%");
             var tss = _buffer.CurrentSnapshot;
-            Assert.IsTrue(res.IsRange);
-            Assert.AreEqual(new SnapshotSpan(tss, 0, tss.Length), res.AsRange().Item1);
+            Assert.IsTrue(res.IsValidRange);
+            Assert.AreEqual(new SnapshotSpan(tss, 0, tss.Length), res.AsValidRange().Item1);
+        }
+
+        [TestMethod]
+        public void FullFile2()
+        {
+            Create("foo", "bar");
+            var res = CaptureComplete("%bar");
+            Assert.IsTrue(res.IsValidRange);
+            var range = res.AsValidRange();
+            Assert.AreEqual(new SnapshotSpan(_buffer.CurrentSnapshot, 0, _buffer.CurrentSnapshot.Length), range.Item1);
+            Assert.IsTrue("bar".SequenceEqual(range.Item2.Select(x => x.Char)));
         }
 
         [TestMethod]
@@ -65,8 +80,8 @@ namespace VimCoreTest
         {
             Create("foo", "bar");
             var res = CaptureComplete(".");
-            Assert.IsTrue(res.IsRange);
-            Assert.AreEqual(_buffer.CurrentSnapshot.GetLineFromLineNumber(0).ExtentIncludingLineBreak, res.AsRange().Item1);
+            Assert.IsTrue(res.IsValidRange);
+            Assert.AreEqual(_buffer.CurrentSnapshot.GetLineFromLineNumber(0).ExtentIncludingLineBreak, res.AsValidRange().Item1);
         }
 
         [TestMethod]
@@ -74,10 +89,21 @@ namespace VimCoreTest
         {
             Create("foo", "bar");
             var res = CaptureComplete(".,.");
-            Assert.IsTrue(res.IsRange);
-            Assert.AreEqual(_buffer.CurrentSnapshot.GetLineFromLineNumber(0).ExtentIncludingLineBreak, res.AsRange().Item1);
+            Assert.IsTrue(res.IsValidRange);
+            Assert.AreEqual(_buffer.CurrentSnapshot.GetLineFromLineNumber(0).ExtentIncludingLineBreak, res.AsValidRange().Item1);
         }
 
-
+        [TestMethod]
+        public void LineNumber1()
+        {
+            Create("a", "b", "c");
+            var res = CaptureComplete("1,2");
+            Assert.IsTrue(res.IsValidRange);
+               
+            var span = new SnapshotSpan(
+                _buffer.CurrentSnapshot.GetLineFromLineNumber(0).Start,
+                _buffer.CurrentSnapshot.GetLineFromLineNumber(1).EndIncludingLineBreak);
+            Assert.AreEqual(span, res.AsValidRange().Item1);
+        }
     }
 }

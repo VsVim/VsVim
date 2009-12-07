@@ -32,4 +32,19 @@ module internal Operations =
             | _ -> ()
             NormalModeResult.Complete
         NormalModeResult.NeedMore2 waitForKey
+
+    /// Handles commands which begin with g in normal mode.  This should be called when the g char is
+    /// already processed
+    let CharGCommand (d:NormalModeData) =
+        let inner (d:NormalModeData) (ki:KeyInput) =  
+            match ki.Char with
+            | 'J' -> 
+                let view = d.VimBufferData.TextView
+                let caret = ViewUtil.GetCaretPoint view
+                Operations.Join view caret JoinKind.KeepEmptySpaces d.Count |> ignore
+            | _ ->
+                d.VimBufferData.VimHost.Beep()
+                ()
+            NormalModeResult.Complete
+        NeedMore2(inner)
             

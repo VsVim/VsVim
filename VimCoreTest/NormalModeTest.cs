@@ -1019,6 +1019,14 @@ namespace VimCoreTest
         }
 
         [TestMethod]
+        public void Join4()
+        {
+            CreateBuffer("foo", "bar");
+            _mode.Process("gJ");
+            Assert.AreEqual("foobar", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());   
+        }
+
+        [TestMethod]
         public void GoToDefinition1()
         {
             var def = new KeyInput(']', Key.OemCloseBrackets, ModifierKeys.Control);
@@ -1093,6 +1101,13 @@ namespace VimCoreTest
             _mode.Process('\'');
             _mode.Process('a');
             Assert.AreEqual(1, _view.Caret.Position.BufferPosition.Position);
+        }
+
+        [TestMethod]
+        public void CharGCommand()
+        {
+            _mode.Process("gB");
+            Assert.IsTrue(_host.BeepCount > 0);
         }
         
         #endregion

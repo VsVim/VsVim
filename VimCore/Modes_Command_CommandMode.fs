@@ -26,25 +26,18 @@ type CommandMode( _data : IVimBufferData ) =
             | Match1 "^join" _ -> Util.Join d.TextView range JoinKind.RemoveEmptySpaces None |> ignore
             | _ -> host.UpdateStatus("Cannot run \"" + cmd)
 
-    /// Parse out the range element from the list of commands
-    member x.ParseRange (originalInputs : list<KeyInput> ) =
-        let rec inner inputs (toCall: KeyInput -> RangeResult) =
-            match List.isEmpty inputs with
-            | true -> (None,originalInputs)
-            | false -> 
-                match toCall (List.head inputs) with
-                | Range(span,_) -> (Some(span),inputs)
-                | RangeResult.NeedMore(toCall) -> inner (List.tail inputs) toCall
-                | Empty(_,_) -> (None,inputs)
-        let start = ViewUtil.GetCaretPoint _data.TextView
-        let first = fun ki -> RangeCapture.Capture start _data.MarkMap ki
-        inner originalInputs first
-
-    member x.ParseInput (originalInputs : list<KeyInput>) =
-        let range,inputs = x.ParseRange originalInputs
-        let builder = new System.Text.StringBuilder()
-        inputs |> List.iter (fun x -> builder.Append(x.Char) |> ignore)
-        x.ProcessCommand (builder.ToString()) range
+    member x.ParseInput (originalInputs : KeyInput list) =
+        let withRange (range:SnapshotSpan option) (inputs:KeyInput list) =
+            let builder = new System.Text.StringBuilder()
+            inputs |> List.iter (fun x -> builder.Append(x.Char) |> ignore)
+            x.ProcessCommand (builder.ToString()) range
+        let point = ViewUtil.GetCaretPoint _data.TextView
+        match RangeUtil.ParseRange point _data.MarkMap originalInputs with
+        | ValidRange(span, inputs) -> withRange (Some(span)) inputs
+        | NoRange(inputs) -> withRange None inputs
+        | Invalid(msg,_) -> 
+            _data.VimHost.UpdateStatus(msg)
+            ()
 
     interface IMode with 
         member x.Commands = Seq.empty

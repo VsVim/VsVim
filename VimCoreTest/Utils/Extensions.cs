@@ -53,21 +53,21 @@ namespace VimCoreTest.Utils
 
         #endregion
 
-        #region RangeResult
+        #region Range
 
-        internal static VimCore.Modes.Command.RangeResult.Range AsRange(this VimCore.Modes.Command.RangeResult res)
+        internal static VimCore.Modes.Command.Range.NoRange AsNoRange(this VimCore.Modes.Command.Range res)
         {
-            return (VimCore.Modes.Command.RangeResult.Range)res;
+            return (VimCore.Modes.Command.Range.NoRange)res;
         }
 
-        internal static VimCore.Modes.Command.RangeResult.NeedMore AsNeedMore(this VimCore.Modes.Command.RangeResult res)
+        internal static VimCore.Modes.Command.Range.ValidRange AsValidRange(this VimCore.Modes.Command.Range res)
         {
-            return (VimCore.Modes.Command.RangeResult.NeedMore)res;
+            return (VimCore.Modes.Command.Range.ValidRange)res;
         }
 
-        internal static VimCore.Modes.Command.RangeResult.Empty AsEmpty(this VimCore.Modes.Command.RangeResult res)
+        internal static VimCore.Modes.Command.Range.Invalid AsInvalid(this VimCore.Modes.Command.Range res)
         {
-            return (VimCore.Modes.Command.RangeResult.Empty)res;
+            return (VimCore.Modes.Command.Range.Invalid)res;
         }
 
         #endregion

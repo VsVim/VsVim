@@ -409,6 +409,8 @@ type internal NormalMode( _bufferData : IVimBufferData ) =
                 RunFunc=Operations.JumpToMark };
             {   KeyInput=InputUtil.CharToKeyInput('`');
                 RunFunc=Operations.JumpToMark };
+            {   KeyInput=InputUtil.CharToKeyInput('g');
+                RunFunc=Operations.CharGCommand };
             ]
         l |> List.map (fun d -> d.KeyInput,d) |> Map.ofList
 
