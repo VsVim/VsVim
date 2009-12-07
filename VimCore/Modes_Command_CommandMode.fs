@@ -83,12 +83,16 @@ type CommandMode( _data : IVimBufferData ) =
         Util.EditFile _data.VimHost name
 
     member x.ParseCommand (current:KeyInput) (rest:KeyInput list) (range:SnapshotSpan option) =
-        match current.Char with
-        | 'j' -> x.ParseJoin rest range
-        | 'e' -> x.ParseEdit rest 
-        | '$' -> Util.JumpToLastLine _data
-        | _ -> _data.VimHost.UpdateStatus(x.BadMessage)
-
+        if current.IsDigit then
+            let number = (current :: rest) |> Seq.ofList |> Seq.map (fun x -> x.Char) |> StringUtil.OfCharSeq
+            Util.JumpToLineNumber _data number
+        else
+            match current.Char with
+            | 'j' -> x.ParseJoin rest range
+            | 'e' -> x.ParseEdit rest 
+            | '$' -> Util.JumpToLastLine _data
+            | _ -> _data.VimHost.UpdateStatus(x.BadMessage)
+    
     member x.ParseInput (originalInputs : KeyInput list) =
         let withRange (range:SnapshotSpan option) (inputs:KeyInput list) =
             let builder = new System.Text.StringBuilder()
