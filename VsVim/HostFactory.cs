@@ -36,7 +36,7 @@ namespace VsVim
         [Import]
         public KeyBindingService _keyBindingService = null;
         [Import]
-        public IEditorFormatMap _formatMap = null;
+        public IEditorFormatMapService _editorFormatMapService = null;
 
         private IVim _vim;
 
@@ -73,7 +73,7 @@ namespace VsVim
             // Once we have the view, stop listening to the event
             view.GotAggregateFocus -= new EventHandler(OnGotAggregateFocus);
 
-            var buffer = new VsVimBuffer(_vim, view, interopView, interopLines, _undoHistoryRegistry, _formatMap);
+            var buffer = new VsVimBuffer(_vim, view, interopView, interopLines, _undoHistoryRegistry, _editorFormatMapService.GetEditorFormatMap(view));
             view.Properties.AddTypedProperty(buffer);
 
             _keyBindingService.OneTimeCheckForConflictingKeyBindings(buffer.VsVimHost.DTE, buffer.VimBuffer);
