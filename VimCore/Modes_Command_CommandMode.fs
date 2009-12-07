@@ -16,18 +16,6 @@ type CommandMode( _data : IVimBufferData ) =
 
     member x.BadMessage = sprintf "Cannot run \"%s\"" _command
 
-    // Actually process the completed command
-    member x.ProcessCommand (cmd:string) (range:SnapshotSpan option)= 
-        let d = _data
-        let host = d.VimHost
-        match cmd with
-            | Match2 "^e\s(.*)$" (_,file) -> Util.EditFile host file
-            | Match2 "^(\d+)$" (_,lineNum) -> Util.JumpToLineNumber d lineNum
-            | Match1 "^\$$" _ -> Util.JumpToLastLine d
-            | Match1 "^j" _ -> Util.Join d.TextView range JoinKind.RemoveEmptySpaces None |> ignore
-            | Match1 "^join" _ -> Util.Join d.TextView range JoinKind.RemoveEmptySpaces None |> ignore
-            | _ -> host.UpdateStatus("Cannot run \"" + cmd)
-
     member x.SkipWhitespace (cmd:KeyInput list) =
         if cmd |> List.isEmpty then cmd
         else 
@@ -56,10 +44,10 @@ type CommandMode( _data : IVimBufferData ) =
             if head.Char = '!' then (true, cmd |> List.tail)
             else (false,cmd)
 
-    member x.TryParse (cmd:KeyInput List) (range:SnapshotSpan option) next = 
+    member x.TryParseNext (cmd:KeyInput List) next = 
         if cmd |> List.isEmpty then 
             _data.VimHost.UpdateStatus("Invalid Command String:")
-        else next (cmd |> List.head) (cmd |> List.tail) range
+        else next (cmd |> List.head) (cmd |> List.tail) 
 
     /// Parse out the :join command
     member x.ParseJoin (rest:KeyInput list) (range:SnapshotSpan option) =
@@ -95,9 +83,8 @@ type CommandMode( _data : IVimBufferData ) =
     
     member x.ParseInput (originalInputs : KeyInput list) =
         let withRange (range:SnapshotSpan option) (inputs:KeyInput list) =
-            let builder = new System.Text.StringBuilder()
-            inputs |> List.iter (fun x -> builder.Append(x.Char) |> ignore)
-            x.ProcessCommand (builder.ToString()) range
+            let next head tail = x.ParseCommand head tail range
+            x.TryParseNext inputs next
         let point = ViewUtil.GetCaretPoint _data.TextView
         match RangeUtil.ParseRange point _data.MarkMap originalInputs with
         | ValidRange(span, inputs) -> withRange (Some(span)) inputs

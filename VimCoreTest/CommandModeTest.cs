@@ -8,6 +8,7 @@ using VimCore.Modes.Command;
 using Microsoft.VisualStudio.Text.Editor;
 using VimCoreTest.Utils;
 using Microsoft.VisualStudio.Text;
+using System.Windows.Input;
 
 namespace VimCoreTest
 {
@@ -35,6 +36,12 @@ namespace VimCoreTest
             _mode.OnEnter();
         }
 
+        private void ProcessWithEnter(string input)
+        {
+            _mode.Process(input);
+            _mode.Process(InputUtil.KeyToKeyInput(Key.Enter));
+        }
+
         [TestMethod, Description("Entering command mode should update the status")]
         public void StatusOnColon1()
         {
@@ -50,6 +57,15 @@ namespace VimCoreTest
             _host.Status = "foo";
             _mode.OnLeave();
             Assert.AreEqual(String.Empty, _host.Status);
+        }
+
+        [TestMethod]
+        public void Jump1()
+        {
+            Create("foo", "bar", "baz");
+            ProcessWithEnter("$");
+            var caretPoint = _view.Caret.Position.BufferPosition;
+            Assert.AreEqual(new SnapshotSpan(_view.TextSnapshot, 0, _view.TextSnapshot.Length).End, caretPoint);
         }
     }
 }
