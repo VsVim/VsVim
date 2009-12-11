@@ -79,5 +79,38 @@ namespace VimCoreTest
             Assert.AreEqual(1, caret.GetContainingLine().LineNumber);
             Assert.AreEqual(caret, caret.GetContainingLine().Start);
         }
+
+        [TestMethod]
+        public void Yank1()
+        {
+            Create("foo", "bar");
+
+            IRegisterMap map = new RegisterMap();
+            ProcessWithEnter("y");
+            Assert.AreEqual("foo" + Environment.NewLine, map.DefaultRegister.Value);
+        }
+
+        [TestMethod]
+        public void Yank2()
+        {
+            Create("foo", "bar", "baz");
+            IRegisterMap map = new RegisterMap();
+            ProcessWithEnter("1,2y");
+            var tss = _view.TextSnapshot;
+            var span = new SnapshotSpan(
+                tss.GetLineFromLineNumber(0).Start,
+                tss.GetLineFromLineNumber(1).EndIncludingLineBreak);
+            Assert.AreEqual(span.GetText(), map.DefaultRegister.Value);
+        }
+
+        [TestMethod]
+        public void Yank3()
+        {
+            Create("foo", "bar");
+            IRegisterMap map = new RegisterMap();
+            ProcessWithEnter("y c");
+            var line = _view.TextSnapshot.GetLineFromLineNumber(0);
+            Assert.AreEqual(line.ExtentIncludingLineBreak.GetText(), map.GetRegister('c').Value);
+        }
     }
 }

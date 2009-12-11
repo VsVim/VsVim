@@ -23,7 +23,7 @@ type CommandMode( _data : IVimBufferData ) =
             if System.Char.IsWhiteSpace head.Char then x.SkipWhitespace (cmd |> List.tail)
             else cmd
         
-    member x.SkipPast (cmd:list<KeyInput>) (suffix:seq<char>) = 
+    member x.SkipPast (suffix:seq<char>) (cmd:list<KeyInput>) =
         let cmd = x.SkipWhitespace cmd |> Seq.ofList
         let rec inner (cmd:seq<KeyInput>) (suffix:seq<char>) = 
             if suffix |> Seq.isEmpty then cmd
@@ -44,6 +44,18 @@ type CommandMode( _data : IVimBufferData ) =
             if head.Char = '!' then (true, cmd |> List.tail)
             else (false,cmd)
 
+    /// Parse the register out of the stream.  Will return default if no register is 
+    /// specified
+    member x.SkipRegister (cmd:KeyInput list) =
+        let map = _data.RegisterMap
+        match cmd |> List.isEmpty with
+        | true -> (map.DefaultRegister,cmd)
+        | false -> 
+            let head = cmd |> List.head
+            match map.IsRegisterName (head.Char) with
+            | true -> (map.GetRegister(head.Char), cmd |> List.tail)
+            | false -> (map.DefaultRegister, cmd)
+
     member x.TryParseNext (cmd:KeyInput List) next = 
         if cmd |> List.isEmpty then 
             _data.VimHost.UpdateStatus("Invalid Command String:")
@@ -51,7 +63,7 @@ type CommandMode( _data : IVimBufferData ) =
 
     /// Parse out the :join command
     member x.ParseJoin (rest:KeyInput list) (range:SnapshotSpan option) =
-        let rest = x.SkipPast rest "oin" |> x.SkipWhitespace
+        let rest = rest |> x.SkipPast "oin" |> x.SkipWhitespace
         let hasBang,rest = x.SkipBang rest        
         let kind = if hasBang then JoinKind.KeepEmptySpaces else JoinKind.RemoveEmptySpaces
         let rest = x.SkipWhitespace rest
@@ -60,15 +72,34 @@ type CommandMode( _data : IVimBufferData ) =
 
     /// Parse out the :edit commnad
     member x.ParseEdit (rest:KeyInput list) = 
-        let rest = x.SkipWhitespace rest
-        let rest = x.SkipPast rest "dit"
-        let _,rest = x.SkipBang rest
+        let _,rest = 
+            rest 
+            |> x.SkipWhitespace 
+            |> x.SkipPast "dit"
+            |> x.SkipBang
         let name = 
             rest 
                 |> Seq.ofList
                 |> Seq.map (fun i -> i.Char)
                 |> StringUtil.OfCharSeq 
         Util.EditFile _data.VimHost name
+
+    /// Parse out the Yank command
+    member x.ParseYank (rest:KeyInput list) (range: SnapshotSpan option)=
+        let reg,rest = 
+            rest 
+            |> x.SkipWhitespace
+            |> x.SkipPast "ank"
+            |> x.SkipWhitespace
+            |> x.SkipRegister
+        let count,rest = RangeUtil.ParseNumber rest
+
+        // If no span is given, it's the current line
+        let range = 
+            match range with 
+            | Some(span) -> span
+            | None -> _data.TextView.Caret.Position.BufferPosition.GetContainingLine().ExtentIncludingLineBreak
+        Modes.Common.Operations.Yank span MotionKind.Exclusive OperationKind.LineWise reg
 
     member x.ParseCommand (current:KeyInput) (rest:KeyInput list) (range:SnapshotSpan option) =
         if current.IsDigit then
@@ -79,6 +110,7 @@ type CommandMode( _data : IVimBufferData ) =
             | 'j' -> x.ParseJoin rest range
             | 'e' -> x.ParseEdit rest 
             | '$' -> Util.JumpToLastLine _data
+            | 'y' -> x.ParseYank rest range
             | _ -> _data.VimHost.UpdateStatus(x.BadMessage)
     
     member x.ParseInput (originalInputs : KeyInput list) =

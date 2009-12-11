@@ -2,7 +2,7 @@
 
 namespace VimCore
 
-module RegisterUtil =
+module internal RegisterUtil =
     let DefaultName = '_'
     let RegisterNames = 
         ['a'..'z'] 
@@ -18,7 +18,7 @@ module RegisterUtil =
             |> Map.ofSeq
 
     
-type RegisterMap (_map: Map<char,Register> ) =
+type internal RegisterMap (_map: Map<char,Register> ) =
     new() = RegisterMap( RegisterUtil.BuildRegisterMap )
     interface IRegisterMap with
         member x.DefaultRegisterName = RegisterUtil.DefaultName
