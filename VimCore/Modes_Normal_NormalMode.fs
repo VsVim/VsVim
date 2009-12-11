@@ -191,13 +191,11 @@ type internal NormalMode( _bufferData : IVimBufferData ) =
                     let point = ViewUtil.GetCaretPoint d.VimBufferData.TextView
                     let point = point.GetContainingLine().Start
                     let span = TssUtil.GetLineRangeSpanIncludingLineBreak point d.Count
-                    let regValue = {Value=span.GetText();MotionKind = MotionKind.Inclusive; OperationKind = OperationKind.LineWise};
-                    d.Register.UpdateValue (regValue)
+                    Modes.Common.Operations.Yank span MotionKind.Inclusive OperationKind.LineWise d.Register
                     NormalModeResult.Complete
                 | _ ->
                     let inner (ss:SnapshotSpan,motionKind,opKind) = 
-                        let regValue = {Value=ss.GetText();MotionKind=motionKind;OperationKind=opKind}
-                        d.Register.UpdateValue(regValue)
+                        Modes.Common.Operations.Yank ss motionKind opKind d.Register
                         NormalModeResult.Complete
                     this.WaitForMotion ki d inner
         inner 

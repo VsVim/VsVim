@@ -102,6 +102,8 @@ module Operations =
                 Succeeded
             | None -> Failed "Mark not set"
 
-            
-        
+    /// Yank the span into the given register
+    let Yank (span:SnapshotSpan) motion operation (reg:Register) =
+        let regValue = {Value=span.GetText();MotionKind = motion; OperationKind = operation};
+        reg.UpdateValue (regValue)
     
