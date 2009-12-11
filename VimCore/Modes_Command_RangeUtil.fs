@@ -69,32 +69,32 @@ module internal RangeUtil =
         else
             NoRange(list)
 
-    let ParseRangeCore (point:SnapshotPoint) (map:MarkMap) (range:KeyInput list) =
+    let ParseRangeCore (point:SnapshotPoint) (map:MarkMap) (originalInput:KeyInput list) =
 
         let parseRight (point:SnapshotPoint) map (leftSpan:SnapshotSpan) remainingInput = 
             let right = ParseItem point map remainingInput 
             match right with 
-            | Invalid(msg,_) -> Invalid(msg,range)
-            | NoRange(_) -> Invalid("Invalid right portion of range", range)
+            | Invalid(msg,_) -> Invalid(msg,originalInput)
+            | NoRange(_) -> Invalid("Invalid right portion of range", originalInput)
             | ValidRange(rightSpan,remainingInput) ->
                 let fullSpan = new SnapshotSpan(leftSpan.Start,rightSpan.End)
                 ValidRange(fullSpan, remainingInput)
         
         // Parse out the separator 
         let parseWithLeft (leftSpan:SnapshotSpan) (remainingInput:KeyInput list) =
-            let msg = "Invalid Range: Expected , or ;"
             match remainingInput |> List.isEmpty with
-            | true -> Invalid(msg,range)
+            | true ->  NoRange(originalInput)
             | false -> 
+                let msg = "Invalid Range: Expected , or ;"
                 let head = remainingInput |> List.head 
                 let remainingInput = remainingInput |> List.tail
                 if head.Char = ',' then parseRight point map leftSpan remainingInput
                 else if head.Char = ';' then 
                     let point = leftSpan.End.GetContainingLine().Start
                     parseRight point map leftSpan remainingInput
-                else Invalid(msg,range)
+                else Invalid(msg,originalInput)
         
-        let left = ParseItem point map range
+        let left = ParseItem point map originalInput
         match left with 
         | Invalid(_) -> left
         | NoRange(_) -> left

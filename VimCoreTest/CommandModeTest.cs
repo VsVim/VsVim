@@ -65,7 +65,19 @@ namespace VimCoreTest
             Create("foo", "bar", "baz");
             ProcessWithEnter("$");
             var caretPoint = _view.Caret.Position.BufferPosition;
-            Assert.AreEqual(new SnapshotSpan(_view.TextSnapshot, 0, _view.TextSnapshot.Length).End, caretPoint);
+            var tss = caretPoint.Snapshot;
+            var last = tss.GetLineFromLineNumber(tss.LineCount - 1);
+            Assert.AreEqual(last.Start, caretPoint);
+        }
+
+        [TestMethod]
+        public void Jump2()
+        {
+            Create("foo", "bar");
+            ProcessWithEnter("2");
+            var caret = _view.Caret.Position.BufferPosition;
+            Assert.AreEqual(1, caret.GetContainingLine().LineNumber);
+            Assert.AreEqual(caret, caret.GetContainingLine().Start);
         }
     }
 }

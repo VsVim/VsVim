@@ -51,6 +51,8 @@ namespace VimCoreTest
             del(String.Empty);
             del("j");
             del("join");
+            del("1");   // A set of digits is not a range
+            del("12");   // A set of digits is not a range
         }
 
         [TestMethod]

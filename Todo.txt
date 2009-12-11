@@ -1,3 +1,18 @@
+Version 5.4
+===
+- Edits need to understand cursor selection
+- r in normal mode
+- O in normal mode
+X - :linecount is broken in command mode
+- Finish range parsing
+- Delete key in normal mode
+- Check on the behavior of tab in normal mode
+- Marks Undo Support
+- Mark navigation for global marks
+- Track buffer close in some way
+- Horizontal offset issue Noah raised
+- When the view is closed, kill the block caret
+
 Version 5.3
 ===
 X - Fix Command mode to be more extensible
@@ -13,17 +28,7 @@ X - Match cursor color
 X - Fix the inconsistent naming of member fields
 X - Fix the Caret thing
 
-Version 5.4
-===
-- Edits need to understand cursor selection
-- Finish range parsing
-- Delete key in normal mode
-- Check on the behavior of tab in normal mode
-- Marks Undo Support
-- Mark navigation for global marks
-- Track buffer close in some way
-- Horizontal offset issue Noah raised
-- When the view is closed, kill the block caret
+
 
 Version 5.2
 ===
