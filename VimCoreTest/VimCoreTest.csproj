@@ -145,6 +145,7 @@
     <Compile Include="Util.cs" />
     <Compile Include="Utils\EditorUtil.cs" />
     <Compile Include="Utils\Extensions.cs" />
+    <Compile Include="Utils\MockBlockCaret.cs" />
     <Compile Include="Utils\MockFactory.cs" />
     <Compile Include="Utils\TestOnlyUndoHistory.cs" />
     <Compile Include="Utils\UndoHistoryRegistry.cs" />

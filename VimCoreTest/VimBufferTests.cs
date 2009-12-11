@@ -26,8 +26,8 @@ namespace VimCoreTest
         [TestInitialize]
         public void Initialize()
         {
-            _normalMode = new Mock<IMode>();
-            _insertMode = new Mock<IMode>();
+            _normalMode = new Mock<IMode>(MockBehavior.Strict);
+            _insertMode = new Mock<IMode>(MockBehavior.Strict);
             var map = new FSharpMap<ModeKind, IMode>(new List<Tuple<ModeKind, IMode>>())
                .Add(ModeKind.Normal, _normalMode.Object)
                .Add(ModeKind.Insert, _insertMode.Object);
@@ -56,6 +56,24 @@ namespace VimCoreTest
             Assert.IsTrue(ran);
         }
 
-        
+        [TestMethod, Description("Close should call OnLeave for the active mode")]
+        public void Close1()
+        {
+            var ran = false;
+            var caret = new MockBlockCaret();
+            _bufferData.Setup(x => x.BlockCaret).Returns(caret);
+            _buffer.SwitchMode(ModeKind.Normal);
+            _normalMode.Setup(x => x.OnLeave()).Callback(() => { ran = true; });
+            _buffer.Close();
+            Assert.IsTrue(ran);
+        }
+
+        [TestMethod, Description("Close should destroy the block caret")]
+        public void Close2()
+        {
+            var caret = new MockBlockCaret();
+            _buffer.Close();
+            Assert.AreEqual(1, caret.DestroyCount);
+        }
     }
 }

@@ -47,6 +47,7 @@ namespace VsVim
 
         internal void Close()
         {
+            _buffer.Close();
         }
     }
 }

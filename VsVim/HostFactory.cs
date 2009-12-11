@@ -80,12 +80,8 @@ namespace VsVim
             view.Closed += (x, y) =>
             {
                 view.Properties.RemoveTypedProperty<VsVimBuffer>();
+                buffer.Close();
             };
         }
-
-
-
-
-
     }
 }

@@ -30,6 +30,10 @@ type IVimBuffer =
     abstract WillProcessInput : KeyInput -> bool
     abstract WillProcessKey : Key -> bool
     abstract SwitchMode : ModeKind -> IMode
+
+    /// Called when the view is closed and the IVimBuffer should uninstall itself
+    /// and it's modes
+    abstract Close : unit -> unit
     
     /// Raised when the mode is switched
     [<CLIEvent>]

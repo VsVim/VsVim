@@ -10,6 +10,8 @@ using System.Windows.Media;
 using Microsoft.VisualStudio.Text.Editor;
 using VimCoreTest.Utils;
 using Microsoft.FSharp.Core;
+using Moq;
+using MockFactory = VimCoreTest.Utils.MockFactory;
 
 namespace VimCoreTest
 {
@@ -22,6 +24,7 @@ namespace VimCoreTest
         private IRegisterMap _map;
         private FakeVimHost _host;
         private VimBufferData _bufferData;
+        private MockBlockCaret _blockCaret;
 
         static string[] s_lines = new string[]
             {
@@ -36,11 +39,13 @@ namespace VimCoreTest
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 0));
             _host = new FakeVimHost();
             _map = new RegisterMap();
+            _blockCaret = new MockBlockCaret();
             _bufferData = MockFactory.CreateVimBufferData(
                 _view,
                 "test",
                 _host,
-                MockFactory.CreateVimData(_map).Object);
+                MockFactory.CreateVimData(_map).Object,
+                _blockCaret);
             _modeRaw = new VimCore.Modes.Normal.NormalMode(_bufferData);
             _mode = _modeRaw;
             _mode.OnEnter();
@@ -1108,6 +1113,14 @@ namespace VimCoreTest
         {
             _mode.Process("gB");
             Assert.IsTrue(_host.BeepCount > 0);
+        }
+
+        [TestMethod, Description("OnLeave should kill the block caret")]
+        public void OnLeave1()
+        {
+            _blockCaret.HideCount = 0;
+            _mode.OnLeave();
+            Assert.AreEqual(1, _blockCaret.HideCount);
         }
         
         #endregion

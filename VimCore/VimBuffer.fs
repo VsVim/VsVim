@@ -66,3 +66,6 @@ type internal VimBuffer
         member x.ProcessInput ki = x.ProcessInput ki
         member x.WillProcessInput ki = x.WillProcessInput ki
         member x.WillProcessKey k = x.WillProcessInput (InputUtil.KeyToKeyInput k)
+        member x.Close () = 
+            x.Mode.OnLeave()
+            _data.BlockCaret.Destroy()

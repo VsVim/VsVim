@@ -11,7 +11,8 @@ X - :linecount is broken in command mode
 - Mark navigation for global marks
 - Track buffer close in some way
 - Horizontal offset issue Noah raised
-- When the view is closed, kill the block caret
+X - When the view is closed, kill the block caret
+- Rename MockFactory -> MockObjectFactory
 
 Version 5.3
 ===
