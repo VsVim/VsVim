@@ -11,7 +11,7 @@ using Microsoft.VisualStudio.Text.Editor;
 using VimCoreTest.Utils;
 using Microsoft.FSharp.Core;
 using Moq;
-using MockFactory = VimCoreTest.Utils.MockFactory;
+using MockFactory = VimCoreTest.Utils.MockObjectFactory;
 
 namespace VimCoreTest
 {

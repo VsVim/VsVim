@@ -27,7 +27,7 @@ namespace VimCoreTest
         {
             _view = Utils.EditorUtil.CreateView(lines);
             _buffer = _view.TextBuffer;
-            _data = Utils.MockFactory.CreateVimBufferData(_view);
+            _data = Utils.MockObjectFactory.CreateVimBufferData(_view);
             _modeRaw = new VimCore.Modes.Insert.InsertMode(_data);
             _mode = _modeRaw;
         }

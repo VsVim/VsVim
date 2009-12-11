@@ -31,7 +31,7 @@ namespace VimCoreTest
         {
             m_view = Utils.EditorUtil.CreateView(lines);
             m_host = new FakeVimHost();
-            m_buffer = Factory.CreateVimBuffer(m_host, m_view, "test",VimCoreTest.Utils.MockFactory.CreateBlockCaret().Object);
+            m_buffer = Factory.CreateVimBuffer(m_host, m_view, "test",VimCoreTest.Utils.MockObjectFactory.CreateBlockCaret().Object);
         }
 
         [TestInitialize]

@@ -9,7 +9,7 @@ X - :linecount is broken in command mode
 - Check on the behavior of tab in normal mode
 - Marks Undo Support
 - Mark navigation for global marks
-- Track buffer close in some way
+X - Track buffer close in some way
 - Horizontal offset issue Noah raised
 X - When the view is closed, kill the block caret
 - Rename MockFactory -> MockObjectFactory

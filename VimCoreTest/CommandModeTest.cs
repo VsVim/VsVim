@@ -26,11 +26,11 @@ namespace VimCoreTest
             _view = Utils.EditorUtil.CreateView(lines);
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 0));
             _host = new FakeVimHost();
-            _bufferData = MockFactory.CreateVimBufferData(
+            _bufferData = MockObjectFactory.CreateVimBufferData(
                 _view,
                 "test",
                 _host,
-                MockFactory.CreateVimData(new RegisterMap()).Object);
+                MockObjectFactory.CreateVimData(new RegisterMap()).Object);
             _modeRaw = new VimCore.Modes.Command.CommandMode(_bufferData);
             _mode = _modeRaw;
             _mode.OnEnter();

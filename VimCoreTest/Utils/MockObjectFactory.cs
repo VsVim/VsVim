@@ -8,7 +8,7 @@ using Microsoft.VisualStudio.Text.Editor;
 
 namespace VimCoreTest.Utils
 {
-    internal static class MockFactory
+    internal static class MockObjectFactory
     {
         internal static Mock<IRegisterMap> CreateRegisterMap()
         {
