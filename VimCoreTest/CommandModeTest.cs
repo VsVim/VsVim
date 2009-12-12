@@ -87,7 +87,7 @@ namespace VimCoreTest
 
             IRegisterMap map = new RegisterMap();
             ProcessWithEnter("y");
-            Assert.AreEqual("foo" + Environment.NewLine, map.DefaultRegister.Value);
+            Assert.AreEqual("foo" + Environment.NewLine, map.DefaultRegister.Value.Value);
         }
 
         [TestMethod]
@@ -100,7 +100,7 @@ namespace VimCoreTest
             var span = new SnapshotSpan(
                 tss.GetLineFromLineNumber(0).Start,
                 tss.GetLineFromLineNumber(1).EndIncludingLineBreak);
-            Assert.AreEqual(span.GetText(), map.DefaultRegister.Value);
+            Assert.AreEqual(span.GetText(), map.DefaultRegister.Value.Value);
         }
 
         [TestMethod]
@@ -110,7 +110,7 @@ namespace VimCoreTest
             IRegisterMap map = new RegisterMap();
             ProcessWithEnter("y c");
             var line = _view.TextSnapshot.GetLineFromLineNumber(0);
-            Assert.AreEqual(line.ExtentIncludingLineBreak.GetText(), map.GetRegister('c').Value);
+            Assert.AreEqual(line.ExtentIncludingLineBreak.GetText(), map.GetRegister('c').Value.Value);
         }
 
         [TestMethod]
@@ -123,7 +123,7 @@ namespace VimCoreTest
             var span = new SnapshotSpan(
                 tss.GetLineFromLineNumber(0).Start,
                 tss.GetLineFromLineNumber(1).EndIncludingLineBreak);
-            Assert.AreEqual(span.GetText(), map.DefaultRegister.Value);
+            Assert.AreEqual(span.GetText(), map.DefaultRegister.Value.Value);
         }
     }
 }

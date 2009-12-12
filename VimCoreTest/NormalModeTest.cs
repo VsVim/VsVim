@@ -416,7 +416,7 @@ namespace VimCoreTest
             var tss = _view.TextSnapshot;
             Assert.AreEqual(2, tss.LineCount);
             Assert.AreEqual("f", tss.GetLineFromLineNumber(0).GetText());
-            Assert.AreEqual("o", tss.GetLineFromLineNumber(1).GetText());
+            Assert.AreEqual("d", tss.GetLineFromLineNumber(1).GetText());
         }
 
         [TestMethod]

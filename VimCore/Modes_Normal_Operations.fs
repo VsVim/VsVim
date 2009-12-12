@@ -51,7 +51,8 @@ module internal Operations =
     /// Insert a line above the current cursor position
     let InsertLineAbove (d:NormalModeData) = 
         let point = ViewUtil.GetCaretPoint d.VimBufferData.TextView
-        BufferUtil.AddLineAbove (point.GetContainingLine()) |> ignore
+        let line = BufferUtil.AddLineAbove (point.GetContainingLine()) 
+        d.VimBufferData.TextView.Caret.MoveTo(line.Start) |> ignore
         NormalModeResult.Complete
         
     /// Implement the r command in normal mode.  
@@ -61,7 +62,7 @@ module internal Operations =
             let point = ViewUtil.GetCaretPoint bufferData.TextView
 
             // Make sure the replace string is valid
-            if point.Add(d.Count).Position > point.GetContainingLine().End.Position then
+            if (point.Position + d.Count) > point.GetContainingLine().End.Position then
                 bufferData.VimHost.Beep()
             else
                 let isNewLine = (ki.Key = Key.LineFeed) || (ki.Key = Key.Return)

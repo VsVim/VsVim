@@ -44,7 +44,6 @@ namespace VsVimTest
             Assert.AreEqual(Key.A, command.KeyInput.Key);
         }
 
-        [TestMethod]
         public void TypeChar2()
         {
             var command = ConvertTypeChar('b');
