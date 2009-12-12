@@ -9,5 +9,6 @@ module internal Operations =
     val JumpToMark : NormalModeData -> NormalModeResult
     val CharGCommand : NormalModeData -> NormalModeResult
     val InsertLineAbove : NormalModeData -> NormalModeResult
+    val ReplaceChar : NormalModeData -> NormalModeResult
 
 

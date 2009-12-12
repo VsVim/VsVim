@@ -377,6 +377,58 @@ namespace VimCoreTest
             Assert.AreEqual("foo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
         }
 
+        [TestMethod]
+        public void Edit_r_1()
+        {
+            CreateBuffer("foo");
+            _mode.Process("rb");
+            Assert.AreEqual("boo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
+        }
+
+        [TestMethod]
+        public void Edit_r_2()
+        {
+            CreateBuffer("foo");
+            _mode.Process("2rb");
+            Assert.AreEqual("bbo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
+        }
+
+        [TestMethod]
+        public void Edit_r_3()
+        {
+            CreateBuffer("foo");
+            _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 1));
+            _mode.Process("r");
+            _mode.Process(InputUtil.KeyToKeyInput(Key.LineFeed));
+            var tss = _view.TextSnapshot;
+            Assert.AreEqual(2, tss.LineCount);
+            Assert.AreEqual("f", tss.GetLineFromLineNumber(0).GetText());
+            Assert.AreEqual("o", tss.GetLineFromLineNumber(1).GetText());
+        }
+
+        [TestMethod]
+        public void Edit_r_4()
+        {
+            CreateBuffer("food");
+            _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 1));
+            _mode.Process("2r");
+            _mode.Process(InputUtil.KeyToKeyInput(Key.LineFeed));
+            var tss = _view.TextSnapshot;
+            Assert.AreEqual(2, tss.LineCount);
+            Assert.AreEqual("f", tss.GetLineFromLineNumber(0).GetText());
+            Assert.AreEqual("o", tss.GetLineFromLineNumber(1).GetText());
+        }
+
+        [TestMethod]
+        public void Edit_r_5()
+        {
+            var tss = _view.TextSnapshot;
+            CreateBuffer("food");
+            _mode.Process("200ru");
+            Assert.IsTrue(_host.BeepCount > 0);
+            Assert.AreSame(tss, _view.TextSnapshot);
+        }
+
         #endregion
 
         #region Yank

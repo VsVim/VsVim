@@ -48,9 +48,30 @@ module internal Operations =
             NormalModeResult.Complete
         NeedMore2(inner)
                 
-    // Insert a line above the current cursor position
+    /// Insert a line above the current cursor position
     let InsertLineAbove (d:NormalModeData) = 
         let point = ViewUtil.GetCaretPoint d.VimBufferData.TextView
         BufferUtil.AddLineAbove (point.GetContainingLine()) |> ignore
         NormalModeResult.Complete
         
+    /// Implement the r command in normal mode.  
+    let ReplaceChar (d:NormalModeData) = 
+        let inner (d:NormalModeData) (ki:KeyInput) =
+            let bufferData = d.VimBufferData
+            let point = ViewUtil.GetCaretPoint bufferData.TextView
+
+            // Make sure the replace string is valid
+            if point.Add(d.Count).Position > point.GetContainingLine().End.Position then
+                bufferData.VimHost.Beep()
+            else
+                let isNewLine = (ki.Key = Key.LineFeed) || (ki.Key = Key.Return)
+                let replaceText = 
+                    if isNewLine then System.Environment.NewLine
+                    else new System.String(ki.Char, d.Count)
+                let span = new Span(point.Position,d.Count)
+                bufferData.TextBuffer.Replace(span, replaceText) |> ignore
+            NormalModeResult.Complete
+        NeedMore2(inner)
+
+
+

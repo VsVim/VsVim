@@ -1,7 +1,7 @@
 Version 5.4
 ===
 - Edits need to understand cursor selection
-- r in normal mode
+X - r in normal mode
 X - O in normal mode
 X - :linecount is broken in command mode
 - Finish range parsing
@@ -12,7 +12,7 @@ X - :linecount is broken in command mode
 X - Track buffer close in some way
 - Horizontal offset issue Noah raised
 X - When the view is closed, kill the block caret
-- Rename MockFactory -> MockObjectFactory
+X - Rename MockFactory -> MockObjectFactory
 
 Version 5.3
 ===
