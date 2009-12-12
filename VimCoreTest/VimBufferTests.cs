@@ -27,6 +27,7 @@ namespace VimCoreTest
         public void Initialize()
         {
             _normalMode = new Mock<IMode>(MockBehavior.Strict);
+            _normalMode.Setup(x => x.OnEnter());
             _insertMode = new Mock<IMode>(MockBehavior.Strict);
             var map = new FSharpMap<ModeKind, IMode>(new List<Tuple<ModeKind, IMode>>())
                .Add(ModeKind.Normal, _normalMode.Object)
