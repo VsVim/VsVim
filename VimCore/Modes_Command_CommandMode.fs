@@ -99,7 +99,7 @@ type CommandMode( _data : IVimBufferData ) =
             match range with 
             | Some(span) -> span
             | None -> _data.TextView.Caret.Position.BufferPosition.GetContainingLine().ExtentIncludingLineBreak
-        Modes.Common.Operations.Yank span MotionKind.Exclusive OperationKind.LineWise reg
+        Modes.Common.Operations.Yank range MotionKind.Exclusive OperationKind.LineWise reg
 
     member x.ParseCommand (current:KeyInput) (rest:KeyInput list) (range:SnapshotSpan option) =
         if current.IsDigit then

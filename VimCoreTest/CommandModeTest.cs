@@ -112,5 +112,18 @@ namespace VimCoreTest
             var line = _view.TextSnapshot.GetLineFromLineNumber(0);
             Assert.AreEqual(line.ExtentIncludingLineBreak.GetText(), map.GetRegister('c').Value);
         }
+
+        [TestMethod]
+        public void Yank4()
+        {
+            Create("foo", "bar");
+            IRegisterMap map = new RegisterMap();
+            ProcessWithEnter("y 2");
+            var tss = _view.TextSnapshot;
+            var span = new SnapshotSpan(
+                tss.GetLineFromLineNumber(0).Start,
+                tss.GetLineFromLineNumber(1).EndIncludingLineBreak);
+            Assert.AreEqual(span.GetText(0, map.DefaultRegister.Value);
+        }
     }
 }
