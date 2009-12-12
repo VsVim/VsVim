@@ -94,8 +94,27 @@ namespace VimCoreTest
             Assert.AreEqual(0, line.LineBreakLength);
             Assert.AreEqual("baz", line.GetText());
             Assert.AreEqual("baz", line.GetTextIncludingLineBreak());
+        }
 
+        [TestMethod]
+        public void AddLineAbove1()
+        {
+            Initialize("foo");
+            var newLine = BufferUtil.AddLineAbove(_buffer.CurrentSnapshot.GetLineFromLineNumber(0));
+            Assert.AreEqual(0, newLine.LineNumber);
+            Assert.AreEqual(2, _buffer.CurrentSnapshot.LineCount);
+            Assert.AreEqual(String.Empty, newLine.GetText());
+        }
 
+        [TestMethod]
+        public void AddLineAbove2()
+        {
+            Initialize("bar", "baz");
+            var newLine = BufferUtil.AddLineAbove(_buffer.CurrentSnapshot.GetLineFromLineNumber(1));
+            Assert.AreEqual(String.Empty, newLine.GetText());
+            var tss = _buffer.CurrentSnapshot;
+            Assert.AreEqual("foo", tss.GetLineFromLineNumber(0).GetText());
+            Assert.AreEqual("bar", tss.GetLineFromLineNumber(2).GetText());
         }
 
         [TestMethod]

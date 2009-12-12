@@ -47,4 +47,10 @@ module internal Operations =
                 ()
             NormalModeResult.Complete
         NeedMore2(inner)
-            
+                
+    // Insert a line above the current cursor position
+    let InsertLineAbove (d:NormalModeData) = 
+        let point = ViewUtil.GetCaretPoint d.VimBufferData.TextView
+        BufferUtil.AddLineAbove (point.GetContainingLine()) |> ignore
+        NormalModeResult.Complete
+        

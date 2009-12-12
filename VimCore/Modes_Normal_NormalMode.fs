@@ -379,6 +379,8 @@ type internal NormalMode( _bufferData : IVimBufferData ) =
                     NormalModeResult.Complete) };
             {   KeyInput=InputUtil.CharToKeyInput('o');
                 RunFunc=(fun d -> this.AddLineBelow this.TextView) };
+            {   KeyInput=InputUtil.CharToKeyInput('O');
+                RunFunc=Operations.InsertLineAbove };
             {   KeyInput=InputUtil.KeyToKeyInput(Key.Enter);
                 RunFunc=(fun d -> this.MoveForEnter this.TextView d.VimBufferData.VimHost) };
             {   KeyInput=KeyInput('u', Key.U, ModifierKeys.Control);

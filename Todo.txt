@@ -2,7 +2,7 @@ Version 5.4
 ===
 - Edits need to understand cursor selection
 - r in normal mode
-- O in normal mode
+X - O in normal mode
 X - :linecount is broken in command mode
 - Finish range parsing
 - Delete key in normal mode

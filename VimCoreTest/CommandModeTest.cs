@@ -123,7 +123,7 @@ namespace VimCoreTest
             var span = new SnapshotSpan(
                 tss.GetLineFromLineNumber(0).Start,
                 tss.GetLineFromLineNumber(1).EndIncludingLineBreak);
-            Assert.AreEqual(span.GetText(0, map.DefaultRegister.Value);
+            Assert.AreEqual(span.GetText(), map.DefaultRegister.Value);
         }
     }
 }
