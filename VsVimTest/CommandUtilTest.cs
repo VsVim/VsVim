@@ -1,5 +1,5 @@
 ﻿using VsVim;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NUnit.Framework;
 using System;
 using Microsoft.VisualStudio;
 using VimCore;
@@ -9,7 +9,7 @@ using VsVimTest.Utils;
 
 namespace VsVimTest
 {
-    [TestClass()]
+    [TestFixture()]
     public class CommandUtilTest
     {
         internal EditCommand ConvertTypeChar(char data)
@@ -22,21 +22,21 @@ namespace VsVimTest
             }
         }
 
-        [TestMethod, Description("Make sure we don't puke on missing data")]
+        [Test, Description("Make sure we don't puke on missing data")]
         public void TypeCharNoData()
         {
             EditCommand command;
             Assert.IsFalse(CommandUtil.TryConvert(VSConstants.GUID_VSStandardCommandSet97, (uint)VSConstants.VSStd2KCmdID.TYPECHAR, IntPtr.Zero, out command));
         }
 
-        [TestMethod, Description("Delete key")]
+        [Test, Description("Delete key")]
         public void TypeDelete()
         {
             var command = ConvertTypeChar('\b');
             Assert.AreEqual(Key.Back, command.KeyInput.Key);
         }
 
-        [TestMethod]
+        [Test]
         public void TypeChar1()
         {
             var command = ConvertTypeChar('a');

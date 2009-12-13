@@ -1,5 +1,5 @@
 ﻿using VsVim;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NUnit.Framework;
 using System;
 using EnvDTE;
 using System.Collections.Generic;
@@ -10,7 +10,7 @@ using System.Windows.Input;
 
 namespace VsVimTest
 {
-    [TestClass()]
+    [TestFixture()]
     public class KeyBindingServiceTest
     {
 
@@ -27,7 +27,7 @@ namespace VsVimTest
             }
         }
 
-        [TestMethod()]
+        [Test()]
         public void FindConflictingCommands1()
         {
             var commands = Create("::h");
@@ -36,7 +36,7 @@ namespace VsVimTest
             Assert.AreEqual(1, list.Count);
         }
 
-        [TestMethod]
+        [Test]
         public void FindConflictingCommands2()
         {
             var commands = Create("::h");
@@ -45,7 +45,7 @@ namespace VsVimTest
             Assert.AreEqual(0, list.Count);
         }
 
-        [TestMethod, Description("Conflicting key on first")]
+        [Test, Description("Conflicting key on first")]
         public void FindConflictingCommands3()
         {
             var commands = Create("::z, h");
@@ -54,7 +54,7 @@ namespace VsVimTest
             Assert.AreEqual(1, list.Count);
         }
 
-        [TestMethod, Description("Only check first key")]
+        [Test, Description("Only check first key")]
         public void FindConflictingCommands4()
         {
             var commands = Create("::h, z");
@@ -63,7 +63,7 @@ namespace VsVimTest
             Assert.AreEqual(0, list.Count);
         }
 
-        [TestMethod]
+        [Test]
         public void FindConflictingCommands5()
         {
             var commands = Create("::a","::z, h");

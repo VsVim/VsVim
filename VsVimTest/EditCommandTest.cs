@@ -1,5 +1,5 @@
 ﻿using VsVim;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NUnit.Framework;
 using System;
 using VimCore;
 
@@ -11,7 +11,7 @@ namespace VsVimTest
     ///This is a test class for EditCommandTest and is intended
     ///to contain all EditCommandTest Unit Tests
     ///</summary>
-    [TestClass()]
+    [TestFixture()]
     public class EditCommandTest
     {
 
@@ -25,7 +25,7 @@ namespace VsVimTest
             return new EditCommand(ki, kind, Guid.Empty, 0);
         }
 
-        [TestMethod]
+        [Test]
         public void Ctor1()
         {
             var command = Create(InputUtil.CharToKeyInput('a'), EditCommandKind.TypeChar);
@@ -33,7 +33,7 @@ namespace VsVimTest
             Assert.AreEqual(EditCommandKind.TypeChar, command.EditCommandKind);
         }
 
-        [TestMethod]
+        [Test]
         public void IsInput1()
         {
             Assert.IsTrue(Create('a', EditCommandKind.TypeChar).IsInput);
@@ -42,7 +42,7 @@ namespace VsVimTest
             Assert.IsTrue(Create('a', EditCommandKind.Return).IsInput);
         }
 
-        [TestMethod]
+        [Test]
         public void IsInput2()
         {
             Assert.IsFalse(Create('a', EditCommandKind.Cancel).IsInput);

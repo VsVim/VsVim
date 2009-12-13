@@ -2,18 +2,18 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NUnit.Framework;
 using VsVim;
 using System.Windows.Input;
 using KeyBinding = VsVim.KeyBinding;
 
 namespace VsVimTest
 {
-    [TestClass]
+    [TestFixture]
     public class KeyBindingTest
     {
 
-        [TestMethod]
+        [Test]
         public void Parse1()
         {
             var b = KeyBinding.Parse("foo::e");
@@ -22,7 +22,7 @@ namespace VsVimTest
             Assert.AreEqual(Key.E, b.FirstKeyInput.Key);
         }
 
-        [TestMethod]
+        [Test]
         public void Parse2()
         {
             var b = KeyBinding.Parse("::b");
@@ -30,7 +30,7 @@ namespace VsVimTest
             Assert.AreEqual('b', b.FirstKeyInput.Char);
         }
 
-        [TestMethod]
+        [Test]
         public void Parse3()
         {
             var b = KeyBinding.Parse("::f2");
@@ -38,7 +38,7 @@ namespace VsVimTest
             Assert.AreEqual(Key.F2, b.FirstKeyInput.Key);
         }
 
-        [TestMethod, Description("Parse a keybinding with , correctly")]
+        [Test, Description("Parse a keybinding with , correctly")]
         public void Parse4()
         {
             var b = KeyBinding.Parse("::,");
@@ -47,7 +47,7 @@ namespace VsVimTest
             Assert.AreEqual(ModifierKeys.None, b.FirstKeyInput.ModifierKeys);
         }
 
-        [TestMethod, Description("Double modifier")]
+        [Test, Description("Double modifier")]
         public void Parse5()
         {
             var b = KeyBinding.Parse("::ctrl+shift+f");
@@ -56,7 +56,7 @@ namespace VsVimTest
             Assert.IsTrue(0 != (ModifierKeys.Control & b.FirstKeyInput.ModifierKeys));
         }
 
-        [TestMethod, Description("Don't carry shift keys for letters")]
+        [Test, Description("Don't carry shift keys for letters")]
         public void Parse6()
         {
             var b = KeyBinding.Parse("::ctrl+D");
@@ -64,14 +64,14 @@ namespace VsVimTest
             Assert.AreEqual(ModifierKeys.Control, b.FirstKeyInput.ModifierKeys);
         }
 
-        [TestMethod]
+        [Test]
         public void ParseMultiple1()
         {
             var b = KeyBinding.Parse("::e, f");
             Assert.AreEqual(2, b.KeyInputs.Count());
         }
 
-        [TestMethod, Description("With a comma key")]
+        [Test, Description("With a comma key")]
         public void ParseMultiple2()
         {
             var b = KeyBinding.Parse("::,, f");
@@ -80,74 +80,74 @@ namespace VsVimTest
             Assert.AreEqual(Key.F, b.KeyInputs.ElementAt(1).Key);
         }
 
-        [TestMethod, ExpectedException(typeof(ArgumentException))]
+        [Test, ExpectedException(typeof(ArgumentException))]
         public void BadParse1()
         {
             KeyBinding.Parse("::notavalidkey");
         }
 
-        [TestMethod, ExpectedException(typeof(ArgumentException))]
+        [Test, ExpectedException(typeof(ArgumentException))]
         public void BadParse2()
         {
             KeyBinding.Parse("::ctrl+notavalidkey");
         }
 
-        [TestMethod, ExpectedException(typeof(ArgumentException)), Description("Not supported because simply put I don't understand it")]
+        [Test, ExpectedException(typeof(ArgumentException)), Description("Not supported because simply put I don't understand it")]
         public void BadParse3()
         {
             KeyBinding.Parse("::Num *");
         }
 
-        [TestMethod]
+        [Test]
         public void VsKeyBackSpace()
         {
             var b = KeyBinding.Parse("::Bkspce");
             Assert.AreEqual(Key.Back, b.FirstKeyInput.Key);
         }
 
-        [TestMethod]
+        [Test]
         public void VsKeyLeftArrow()
         {
             var b = KeyBinding.Parse("::Left Arrow");
             Assert.AreEqual(Key.Left, b.FirstKeyInput.Key);
         }
 
-        [TestMethod]
+        [Test]
         public void VsKeyRightArrow()
         {
             var b = KeyBinding.Parse("::Right Arrow");
             Assert.AreEqual(Key.Right, b.FirstKeyInput.Key);
         }
 
-        [TestMethod]
+        [Test]
         public void VsKeyUpArrow()
         {
             var b = KeyBinding.Parse("::Up Arrow");
             Assert.AreEqual(Key.Up, b.FirstKeyInput.Key);
         }
 
-        [TestMethod]
+        [Test]
         public void VsKeyDownArrow()
         {
             var b = KeyBinding.Parse("::Down Arrow");
             Assert.AreEqual(Key.Down, b.FirstKeyInput.Key);
         }
 
-        [TestMethod]
+        [Test]
         public void VsKeyDownArrow2()
         {
             var b = KeyBinding.Parse("::Shift+Down Arrow");
             Assert.AreEqual(Key.Down, b.FirstKeyInput.Key);
         }
 
-        [TestMethod]
+        [Test]
         public void VsKeyPageDown()
         {
             var b = KeyBinding.Parse("::PgDn");
             Assert.AreEqual(Key.PageDown, b.FirstKeyInput.Key);
         }
 
-        [TestMethod]
+        [Test]
         public void VsKeyPageUp()
         {
             var b = KeyBinding.Parse("::PgUp");

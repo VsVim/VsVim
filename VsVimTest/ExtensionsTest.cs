@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NUnit.Framework;
 using Moq;
 using VsVim;
 using System.Windows.Input;
@@ -11,12 +11,12 @@ using System.Windows;
 
 namespace VsVimTest
 {
-    [TestClass]
+    [TestFixture]
     public class ExtensionsTest
     {
         #region KeyBindings
 
-        [TestMethod, Description("Bindings as an array")]
+        [Test, Description("Bindings as an array")]
         public void GetKeyBindings1()
         {
             var com = new Mock<EnvDTE.Command>();
@@ -28,7 +28,7 @@ namespace VsVimTest
             Assert.AreEqual("name", list[0].Name);
         }
 
-        [TestMethod]
+        [Test]
         public void GetKeyBindings2()
         {
             var com = new Mock<EnvDTE.Command>();
@@ -42,7 +42,7 @@ namespace VsVimTest
             Assert.AreEqual("bar", list[1].KeyBinding.Scope);
         }
 
-        [TestMethod, Description("Bindings as a string which is what the documentation indicates it should be")]
+        [Test, Description("Bindings as a string which is what the documentation indicates it should be")]
         public void GetKeyBindings3()
         {
             var com = new Mock<EnvDTE.Command>();
@@ -54,7 +54,7 @@ namespace VsVimTest
             Assert.AreEqual(String.Empty, list[0].KeyBinding.Scope);
         }
 
-        [TestMethod, Description("A bad key binding should just return as an empty result set")]
+        [Test, Description("A bad key binding should just return as an empty result set")]
         public void GetKeyBindings4()
         {
             var com = new Mock<EnvDTE.Command>();
@@ -68,7 +68,7 @@ namespace VsVimTest
 
         #region PropertyCollection
 
-        [TestMethod]
+        [Test]
         public void AddTypedProperty1()
         {
             var col = new PropertyCollection();
@@ -77,7 +77,7 @@ namespace VsVimTest
             Assert.IsTrue(col.ContainsProperty(typeof(string)));
         }
 
-        [TestMethod]
+        [Test]
         public void TryGetTypedProperty1()
         {
             var col = new PropertyCollection();
@@ -87,7 +87,7 @@ namespace VsVimTest
             Assert.AreEqual("foo", opt.Value);
         }
 
-        [TestMethod]
+        [Test]
         public void TryGetTypedProperty2()
         {
             var col = new PropertyCollection();

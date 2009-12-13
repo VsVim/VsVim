@@ -1,5 +1,5 @@
 ﻿using VsVim;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NUnit.Framework;
 using System;
 using VimCore;
 using Microsoft.VisualStudio.TextManager.Interop;
@@ -10,7 +10,7 @@ using VsVimTest.Utils;
 
 namespace VsVimTest
 {
-    [TestClass()]
+    [TestFixture()]
     public class VsCommandFilterTest
     {
         #region OleCommandTargetUtil
@@ -249,7 +249,7 @@ namespace VsVimTest
         private VsCommandFilter m_filterRaw;
         private IOleCommandTarget m_filter;
 
-        [TestInitialize]
+        [SetUp]
         public void Init()
         {
             m_buffer = new Mock<IVimBuffer>(MockBehavior.Strict);
@@ -259,7 +259,7 @@ namespace VsVimTest
             m_filter = m_filterRaw;
         }
 
-        [TestMethod(), Description("Don't process text input in insert mode"),Ignore]
+        [Test(), Description("Don't process text input in insert mode"),Ignore]
         public void Exec1()
         {
             m_buffer.Setup(x => x.ModeKind).Returns(ModeKind.Normal);
@@ -275,7 +275,7 @@ namespace VsVimTest
             }
         }
 
-        [TestMethod, Description("Process Delete"),Ignore]
+        [Test, Description("Process Delete"),Ignore]
         public void Exec2()
         {
             var ran = false;
@@ -294,7 +294,7 @@ namespace VsVimTest
             Assert.IsTrue(ran);
         }
 
-        [TestMethod(), Description("Don't process text changes if the mode won't process them"),Ignore]
+        [Test(), Description("Don't process text changes if the mode won't process them"),Ignore]
         public void Exec3()
         {
             m_buffer.Setup(x => x.ModeKind).Returns(ModeKind.Insert);
@@ -309,7 +309,7 @@ namespace VsVimTest
             }
         }
 
-        [TestMethod(), Description("Don't process any change that the mode can't handle"),Ignore]
+        [Test(), Description("Don't process any change that the mode can't handle"),Ignore]
         public void Exec4()
         {
             m_buffer.Setup(x => x.ModeKind).Returns(ModeKind.Insert);
