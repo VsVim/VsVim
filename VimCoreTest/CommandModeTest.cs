@@ -65,6 +65,7 @@ namespace VimCoreTest
             Create("foo", "bar");
             _host.Status = "foo";
             _mode.Process("1");
+            _mode.Process(InputUtil.KeyToKeyInput(Key.Enter));
             Assert.AreEqual(String.Empty, _host.Status);
         }
 

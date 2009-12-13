@@ -19,11 +19,60 @@ type internal ItemRangeKind =
     | CurrentLine
 
 type internal ItemRange = 
-    | ValidRange of SnapshotSpan * ItemRangeKind * KeyInput list
+    | ValidRange of Range * ItemRangeKind * KeyInput list
     | NoRange
     | Error of string
 
 module internal RangeUtil =
+
+    /// Get the SnapshotSpan for the given Range
+    let GetSnapshotSpan (r:Range) =
+        match r with
+        | RawSpan(span) -> span
+        | Lines(tss,first,last) -> 
+            new SnapshotSpan(
+                tss.GetLineFromLineNumber(first).Start,
+                tss.GetLineFromLineNumber(last).EndIncludingLineBreak)
+        
+    /// Get the range for the currently selected line
+    let RangeForCurrentLine view =
+        let point = ViewUtil.GetCaretPoint view
+        let line = point.GetContainingLine().LineNumber
+        let tss = point.Snapshot
+        Range.Lines(tss,line,line)
+
+    /// Apply the count to the given range
+    let ApplyCount range count =
+        let inner (tss:ITextSnapshot) startLine =
+            let endLine = startLine + count
+            let endLine = if endLine >= tss.LineCount then tss.LineCount-1 else endLine
+            Range.Lines(tss,startLine,endLine)
+            
+        match range with 
+        | Range.Lines(tss,_,endLine) ->
+            // When a cuont is applied to a line range, the count of lines staring at the end 
+            // line is used
+            inner tss endLine
+        | Range.RawSpan(span) -> 
+            inner span.Snapshot (span.End.GetContainingLine().LineNumber)
+
+    /// Combine the two ranges
+    let CombineRanges left right = 
+        let bestFit = 
+            match left with
+            | Range.Lines(tss,startLine,_) -> 
+                match right with
+                | Range.Lines(_,_,endLine) ->
+                    Some(Range.Lines(tss,startLine,endLine))
+                | _ -> None
+            | _-> None
+        match bestFit with
+        | Some(range) -> range
+        | None ->
+            let left = GetSnapshotSpan left
+            let right = GetSnapshotSpan right
+            let span = new SnapshotSpan(left.Start, right.End)
+            Range.RawSpan(span)
 
     /// Parse out a number from the input string
     let ParseNumber (input:KeyInput list) =
@@ -61,8 +110,8 @@ module internal RangeUtil =
         | Some(number) ->
             let number = TssUtil.VimLineToTssLine number
             if number < tss.LineCount then 
-                let line = tss.GetLineFromLineNumber(number)
-                ValidRange(line.ExtentIncludingLineBreak, LineNumber, remaining)
+                let range = Range.Lines(tss,number,number)
+                ValidRange(range, LineNumber, remaining)
             else
                 let msg = sprintf "Invalid Range: Line Number %d is not a valid number in the file" number
                 Error(msg)
@@ -75,38 +124,38 @@ module internal RangeUtil =
         if head.IsDigit then
             ParseLineNumber point.Snapshot list
         else if head.Char = '.' then
-            let span = point.GetContainingLine().ExtentIncludingLineBreak
-            ValidRange(span, CurrentLine, list |> List.tail)
+            let line = point.GetContainingLine().LineNumber
+            let range = Range.Lines(point.Snapshot, line,line)
+            ValidRange(range,CurrentLine, list |> List.tail)
         else
             NoRange
 
     let ParseRangeCore (point:SnapshotPoint) (map:MarkMap) (originalInput:KeyInput list) =
 
-        let parseRight (point:SnapshotPoint) map (leftSpan:SnapshotSpan) remainingInput : ParseRangeResult = 
+        let parseRight (point:SnapshotPoint) map (leftRange:Range) remainingInput : ParseRangeResult = 
             let right = ParseItem point map remainingInput 
             match right with 
             | NoRange -> Failed("Invalid Range: Right hand side is missing")
             | Error(msg) -> Failed(msg)
-            | ValidRange(rightSpan,_,remainingInput) ->
-                let fullSpan = new SnapshotSpan(leftSpan.Start,rightSpan.End)
-                let range = RawSpan(fullSpan)
-                Succeeded(range, remainingInput)
+            | ValidRange(rightRange,_,remainingInput) ->
+                let fullRange = CombineRanges leftRange rightRange
+                Succeeded(fullRange, remainingInput)
         
         // Parse out the separator 
-        let parseWithLeft (leftSpan:SnapshotSpan) (remainingInput:KeyInput list) kind =
+        let parseWithLeft (leftRange:Range) (remainingInput:KeyInput list) kind =
             match remainingInput |> List.isEmpty with
-            | true ->  if kind = CurrentLine then Succeeded(RawSpan(leftSpan),remainingInput) else ParseRangeResult.NoRange
+            | true ->  if kind = CurrentLine then Succeeded(leftRange,remainingInput) else ParseRangeResult.NoRange
             | false -> 
                 let head = remainingInput |> List.head 
                 let rest = remainingInput |> List.tail
-                if head.Char = ',' then parseRight point map leftSpan rest
+                if head.Char = ',' then parseRight point map leftRange rest
                 else if head.Char = ';' then 
-                    let point = leftSpan.End.GetContainingLine().Start
-                    parseRight point map leftSpan rest
+                    let point = (GetSnapshotSpan leftRange).Start
+                    parseRight point map leftRange rest
                 else if kind = LineNumber then
                     ParseRangeResult.NoRange
                 else if kind = CurrentLine then
-                    ParseRangeResult.Succeeded(RawSpan(leftSpan), remainingInput)
+                    ParseRangeResult.Succeeded(leftRange, remainingInput)
                 else
                     let msg = "Invalid Range: Expected , or ;"
                     ParseRangeResult.Failed(msg)
@@ -130,12 +179,6 @@ module internal RangeUtil =
             else
                 ParseRangeCore point map list
 
-    /// Get the SnapshotSpan for the given Range
-    let GetSnapshotSpan (r:Range) =
-        match r with
-        | RawSpan(span) -> span
-        | Lines(tss,first,last) -> 
-            new SnapshotSpan(
-                tss.GetLineFromLineNumber(first).Start,
-                tss.GetLineFromLineNumber(last).EndIncludingLineBreak)
+
+                
         

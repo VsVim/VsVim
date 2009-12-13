@@ -63,13 +63,17 @@ type CommandMode( _data : IVimBufferData ) =
         else next (cmd |> List.head) (cmd |> List.tail) 
 
     /// Parse out the :join command
-    member x.ParseJoin (rest:KeyInput list) (range:SnapshotSpan option) =
+    member x.ParseJoin (rest:KeyInput list) (range:Range option) =
         let rest = rest |> x.SkipPast "oin" |> x.SkipWhitespace
         let hasBang,rest = x.SkipBang rest        
         let kind = if hasBang then JoinKind.KeepEmptySpaces else JoinKind.RemoveEmptySpaces
         let rest = x.SkipWhitespace rest
         let count,rest = RangeUtil.ParseNumber rest
-        Util.Join _data.TextView range kind count |> ignore
+        let span = 
+            match range with 
+            | Some(range) -> Some(RangeUtil.GetSnapshotSpan range)
+            | None -> None
+        Util.Join _data.TextView span kind count |> ignore
 
     /// Parse out the :edit commnad
     member x.ParseEdit (rest:KeyInput list) = 
@@ -86,7 +90,7 @@ type CommandMode( _data : IVimBufferData ) =
         Util.EditFile _data.VimHost name
 
     /// Parse out the Yank command
-    member x.ParseYank (rest:KeyInput list) (range: SnapshotSpan option)=
+    member x.ParseYank (rest:KeyInput list) (range: Range option)=
         let reg,rest = 
             rest 
             |> x.SkipWhitespace
@@ -95,28 +99,22 @@ type CommandMode( _data : IVimBufferData ) =
             |> x.SkipRegister
         let count,rest = RangeUtil.ParseNumber rest
 
-        // If no span is given, it's the current line
+        // Calculate the span to yank
         let range = 
             match range with 
-            | Some(span) -> span
-            | None -> _data.TextView.Caret.Position.BufferPosition.GetContainingLine().ExtentIncludingLineBreak
-
-        // If there is a count then we yank "count" lines starting with the last line in the range
+            | Some(range) -> range
+            | None -> RangeUtil.RangeForCurrentLine _data.TextView
+        
+        // Apply the count if present
         let range = 
-            match count with 
+            match count with             
+            | Some(count) -> RangeUtil.ApplyCount range count
             | None -> range
-            | Some(count) -> 
-                let tss = _data.TextSnapshot
-                let first = range.End.GetContainingLine().LineNumber
-                let last = count+first
-                let last = if last >= tss.LineCount then tss.LineCount-1 else last
-                new SnapshotSpan( 
-                    tss.GetLineFromLineNumber(first).Start,
-                    tss.GetLineFromLineNumber(last).EndIncludingLineBreak)
 
-        Modes.Common.Operations.Yank range MotionKind.Exclusive OperationKind.LineWise reg
+        let span = RangeUtil.GetSnapshotSpan range
+        Modes.Common.Operations.Yank span MotionKind.Exclusive OperationKind.LineWise reg
 
-    member x.ParseCommand (current:KeyInput) (rest:KeyInput list) (range:SnapshotSpan option) =
+    member x.ParseCommand (current:KeyInput) (rest:KeyInput list) (range:Range option) =
         if current.IsDigit then
             let number = (current :: rest) |> Seq.ofList |> Seq.map (fun x -> x.Char) |> StringUtil.OfCharSeq
             Util.JumpToLineNumber _data number
@@ -129,14 +127,12 @@ type CommandMode( _data : IVimBufferData ) =
             | _ -> _data.VimHost.UpdateStatus(x.BadMessage)
     
     member x.ParseInput (originalInputs : KeyInput list) =
-        let withRange (range:SnapshotSpan option) (inputs:KeyInput list) =
+        let withRange (range:Range option) (inputs:KeyInput list) =
             let next head tail = x.ParseCommand head tail range
             x.TryParseNext inputs next
         let point = ViewUtil.GetCaretPoint _data.TextView
         match RangeUtil.ParseRange point _data.MarkMap originalInputs with
-        | Succeeded(range, inputs) -> 
-            let span = RangeUtil.GetSnapshotSpan range
-            withRange (Some(span)) inputs
+        | Succeeded(range, inputs) -> withRange (Some(range)) inputs
         | NoRange -> withRange None originalInputs
         | Failed(msg) -> 
             _data.VimHost.UpdateStatus(msg)
