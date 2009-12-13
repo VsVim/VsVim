@@ -67,6 +67,20 @@ namespace VimCoreTest.Utils
 
         #endregion
 
+        #region Range
+
+        internal static VimCore.Modes.Command.Range.Lines AsLines(this VimCore.Modes.Command.Range range)
+        {
+            return (VimCore.Modes.Command.Range.Lines)range;
+        }
+
+        internal static VimCore.Modes.Command.Range.RawSpan AsRawSpan(this VimCore.Modes.Command.Range range)
+        {
+            return (VimCore.Modes.Command.Range.RawSpan)range;
+        }
+
+        #endregion
+
         internal static SnapshotSpan GetSpan(this ITextSelection selection)
         {
             var span = new SnapshotSpan(selection.Start.Position, selection.End.Position);

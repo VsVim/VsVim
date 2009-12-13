@@ -118,5 +118,30 @@ namespace VimCoreTest
                 _buffer.CurrentSnapshot.GetLineFromLineNumber(1).EndIncludingLineBreak);
             Assert.AreEqual(span, RangeUtil.GetSnapshotSpan(res.AsSucceeded().Item1));
         }
+
+        [TestMethod]
+        public void ApplyCount1()
+        {
+            Create("foo","bar","baz","jaz");
+            var first = Range.NewLines(_buffer.CurrentSnapshot, 0, 0);
+            var second = RangeUtil.ApplyCount(first, 2);
+            Assert.IsTrue(second.IsLines);
+            var lines = second.AsLines();
+            Assert.AreEqual(0, lines.Item2);
+            Assert.AreEqual(2, lines.Item3);
+        }
+
+        [TestMethod, Description("Count is bound to end of the file")]
+        public void ApplyCount2()
+        {
+            Create("foo", "bar");
+            var v1 = Range.NewLines(_buffer.CurrentSnapshot, 0, 0);
+            var v2 = RangeUtil.ApplyCount(v1, 200);
+            Assert.IsTrue(v2.IsLines);
+            var lines = v2.AsLines();
+            Assert.AreEqual(0, lines.Item2);
+            Assert.AreEqual(_buffer.CurrentSnapshot.LineCount - 1, lines.Item3);
+        }
+        
     }
 }
