@@ -70,8 +70,14 @@ module internal Operations =
                     if isNewLine then System.Environment.NewLine
                     else new System.String(ki.Char, d.Count)
                 let span = new Span(point.Position,d.Count)
-                bufferData.TextBuffer.Replace(span, replaceText) |> ignore
+                let tss = bufferData.TextBuffer.Replace(span, replaceText) 
+
+                // Reset the caret to the point before the edit
+                let point = new SnapshotPoint(tss,point.Position)
+                bufferData.TextView.Caret.MoveTo(point) |> ignore
+            d.VimBufferData.BlockCaret.Show()
             NormalModeResult.Complete
+        d.VimBufferData.BlockCaret.Hide()
         NeedMore2(inner)
 
 

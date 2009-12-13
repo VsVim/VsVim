@@ -429,6 +429,26 @@ namespace VimCoreTest
             Assert.AreSame(tss, _view.TextSnapshot);
         }
 
+        [TestMethod, Description("block caret should be hidden for the duration of the r command")]
+        public void Edit_r_6()
+        {
+            CreateBuffer("foo");
+            _blockCaret.HideCount = 0;
+            _blockCaret.ShowCount = 0;
+            _mode.Process('r');
+            Assert.AreEqual(1, _blockCaret.HideCount);
+            _mode.Process('u');
+            Assert.AreEqual(1, _blockCaret.ShowCount);
+        }
+
+        [TestMethod, Description("Edit should not cause the cursor to move")]
+        public void Edit_r_7()
+        {
+            CreateBuffer("foo");
+            _mode.Process("ru");
+            Assert.AreEqual(0, _view.Caret.Position.BufferPosition.Position);
+        }
+
         #endregion
 
         #region Yank
