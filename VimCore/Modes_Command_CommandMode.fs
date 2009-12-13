@@ -52,9 +52,10 @@ type CommandMode( _data : IVimBufferData ) =
         | true -> (map.DefaultRegister,cmd)
         | false -> 
             let head = cmd |> List.head
-            match map.IsRegisterName (head.Char) with
-            | true -> (map.GetRegister(head.Char), cmd |> List.tail)
-            | false -> (map.DefaultRegister, cmd)
+            match head.IsDigit,map.IsRegisterName (head.Char) with
+            | true,_ -> (map.DefaultRegister, cmd)
+            | false,true -> (map.GetRegister(head.Char), cmd |> List.tail)
+            | false,false -> (map.DefaultRegister, cmd)
 
     member x.TryParseNext (cmd:KeyInput List) next = 
         if cmd |> List.isEmpty then 
