@@ -2,25 +2,25 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NUnit.Framework;
 using Microsoft.VisualStudio.Text;
 using VimCore;
 
 namespace VimCoreTest
 {
-    [TestClass]
+    [TestFixture]
     public class MarkMapTest
     {
         ITextBuffer _buffer;
         MarkMap _map;
 
-        [TestInitialize]
+        [SetUp]
         public void Init()
         {
             _map = new VimCore.MarkMap();
         }
 
-        [TestCleanup]
+        [TearDown]
         public void Cleanup()
         {
             _map.DeleteAllMarks();
@@ -31,7 +31,7 @@ namespace VimCoreTest
             _buffer = Utils.EditorUtil.CreateBuffer(lines);
         }
 
-        [TestMethod]
+        [Test]
         public void SetMark1()
         {
             CreateBuffer("foo", "bar");
@@ -43,7 +43,7 @@ namespace VimCoreTest
             Assert.IsFalse(data.IsInVirtualSpace);
         }
 
-        [TestMethod]
+        [Test]
         public void GetLocalMark1()
         {
             CreateBuffer("foo");
@@ -51,7 +51,7 @@ namespace VimCoreTest
             Assert.IsFalse(opt.IsSome());
         }
 
-        [TestMethod, Description("Simple insertion shouldn't invalidate the mark")]
+        [Test, Description("Simple insertion shouldn't invalidate the mark")]
         public void TrackReplace1()
         {
             CreateBuffer("foo");
@@ -62,7 +62,7 @@ namespace VimCoreTest
             Assert.AreEqual(0, opt.Value.Position.Position);
         }
 
-        [TestMethod, Description("Insertions elsewhere on the line should not affect the mark")]
+        [Test, Description("Insertions elsewhere on the line should not affect the mark")]
         public void TrackReplace2()
         {
             CreateBuffer("foo");
@@ -73,7 +73,7 @@ namespace VimCoreTest
             Assert.AreEqual(1, opt.Value.Position.Position);
         }
 
-        [TestMethod, Description("Shrinking the line should just return the position in Virtual Space")]
+        [Test, Description("Shrinking the line should just return the position in Virtual Space")]
         public void TrackReplace3()
         {
             CreateBuffer("foo");
@@ -86,7 +86,7 @@ namespace VimCoreTest
             Assert.AreEqual(0, data.Position.Position);
         }
 
-        [TestMethod, Description("Deleting the line above should not affect the mark")]
+        [Test, Description("Deleting the line above should not affect the mark")]
         public void TrackReplace4()
         {
             CreateBuffer("foo", "bar");
@@ -98,7 +98,7 @@ namespace VimCoreTest
             Assert.AreEqual(0, data.Position.Position);
         }
 
-        [TestMethod]
+        [Test]
         public void TrackDeleteLine1()
         {
             CreateBuffer("foo", "bar");
@@ -111,7 +111,7 @@ namespace VimCoreTest
             Assert.IsTrue(opt.IsNone());
         }
 
-        [TestMethod, Description("Deletion of a previous line shouldn't affect the mark")]
+        [Test, Description("Deletion of a previous line shouldn't affect the mark")]
         public void TrackDeleteLine2()
         {
             CreateBuffer("foo", "bar", "baz");
@@ -123,7 +123,7 @@ namespace VimCoreTest
             Assert.AreEqual(_buffer.CurrentSnapshot.GetLineFromLineNumber(1).Start, data.Position);
         }
 
-        [TestMethod, Description("Deleting a line in the middle of the buffer")]
+        [Test, Description("Deleting a line in the middle of the buffer")]
         public void TrackDeleteLine3()
         {
             CreateBuffer("foo", "bar", "baz");
@@ -133,14 +133,14 @@ namespace VimCoreTest
             Assert.IsTrue(opt.IsNone());
         }
 
-        [TestMethod, Description("Deleting a non-existant mark is OK")]
+        [Test, Description("Deleting a non-existant mark is OK")]
         public void DeleteMark1()
         {
             CreateBuffer("foo");
             Assert.IsFalse(_map.DeleteMark(_buffer, 'a'));
         }
 
-        [TestMethod, Description("Simple Mark deletion")]
+        [Test, Description("Simple Mark deletion")]
         public void DeleteMark2()
         {
             CreateBuffer("foo");
@@ -149,7 +149,7 @@ namespace VimCoreTest
             Assert.IsTrue(_map.GetLocalMark(_buffer, 'a').IsNone());
         }
 
-        [TestMethod, Description("Double deletion of a mark")]
+        [Test, Description("Double deletion of a mark")]
         public void DeleteMark3()
         {
             CreateBuffer("foo");
@@ -160,7 +160,7 @@ namespace VimCoreTest
             Assert.IsTrue(_map.GetLocalMark(_buffer, 'a').IsNone());
         }
 
-        [TestMethod, Description("Deleting a mark in one buffer shouldn't affect another")]
+        [Test, Description("Deleting a mark in one buffer shouldn't affect another")]
         public void DeleteMark4()
         {
             CreateBuffer("foo");
@@ -171,13 +171,13 @@ namespace VimCoreTest
             Assert.IsTrue(_map.GetLocalMark(_buffer, 'a').IsSome());
         }
 
-        [TestMethod, Description("Should work on an empty map")]
+        [Test, Description("Should work on an empty map")]
         public void DeleteAllMarks()
         {
             _map.DeleteAllMarks();   
         }
 
-        [TestMethod]
+        [Test]
         public void DeleteAllMarks2()
         {
             CreateBuffer();
@@ -186,7 +186,7 @@ namespace VimCoreTest
             Assert.IsTrue(_map.GetLocalMark(_buffer, 'a').IsNone());
         }
 
-        [TestMethod]
+        [Test]
         public void IsLocalMark1()
         {
             Assert.IsTrue(MarkMap.IsLocalMark('a'));
@@ -194,7 +194,7 @@ namespace VimCoreTest
             Assert.IsTrue(MarkMap.IsLocalMark(']'));
         }
 
-        [TestMethod]
+        [Test]
         public void IsLocalMark2()
         {
             Assert.IsFalse(MarkMap.IsLocalMark('B'));

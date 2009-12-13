@@ -2,7 +2,7 @@
 using System.Text;
 using System.Collections.Generic;
 using System.Linq;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NUnit.Framework;
 using VimCore;
 using Microsoft.VisualStudio.Text;
 using Microsoft.FSharp.Core;
@@ -12,7 +12,7 @@ namespace VimCoreTest
     /// <summary>
     /// Summary description for TssUtilTest
     /// </summary>
-    [TestClass]
+    [TestFixture]
     public class MotionUtilTests
     {
         ITextBuffer _buffer = null;
@@ -25,7 +25,7 @@ namespace VimCoreTest
             _buffer.Changed += (s, e) => _snapshot = _buffer.CurrentSnapshot;
         }
 
-        [TestMethod]
+        [Test]
         public void CharLeft1()
         {
             Initialize("foo bar");
@@ -35,7 +35,7 @@ namespace VimCoreTest
             Assert.AreEqual(1, res.End.Position);
         }
 
-        [TestMethod, Description("Don't go off the end of the buffer")]
+        [Test, Description("Don't go off the end of the buffer")]
         public void CharLeft2()
         {
             Initialize("foo bar");
@@ -45,7 +45,7 @@ namespace VimCoreTest
             Assert.AreEqual(1, res.End.Position);
         }
 
-        [TestMethod]
+        [Test]
         public void CharRight1()
         {
             Initialize("foo bar");
@@ -55,7 +55,7 @@ namespace VimCoreTest
             Assert.AreEqual(1, res.End.Position);
         }
 
-        [TestMethod]
+        [Test]
         public void CharRight2()
         {
             Initialize("foo bar");
@@ -65,7 +65,7 @@ namespace VimCoreTest
             Assert.AreEqual(2, res.End.Position);
         }
 
-        [TestMethod, Description("Don't go off the end of the buffer")]
+        [Test, Description("Don't go off the end of the buffer")]
         public void CharRight3()
         {
             Initialize("foo bar");
@@ -76,7 +76,7 @@ namespace VimCoreTest
             Assert.AreEqual(line.End, res.End);
         }
 
-        [TestMethod]
+        [Test]
         public void CharUp1()
         {
             Initialize("foo", "bar");
@@ -86,7 +86,7 @@ namespace VimCoreTest
             Assert.AreEqual(_snapshot.GetLineFromLineNumber(1).Start, res.End);
         }
 
-        [TestMethod]
+        [Test]
         public void CharUp2()
         {
             Initialize("foo", "bar");
@@ -96,7 +96,7 @@ namespace VimCoreTest
             Assert.AreEqual(_snapshot.GetLineFromLineNumber(1).Start.Add(1), res.End);
         }
 
-        [TestMethod]
+        [Test]
         public void CharDown1()
         {
             Initialize("foo", "bar");
@@ -107,7 +107,7 @@ namespace VimCoreTest
         }
 
 
-        [TestMethod, Description("Don't go past the end of the buffer")]
+        [Test, Description("Don't go past the end of the buffer")]
         public void CharDown2()
         {
             Initialize("foo", "bar");
@@ -117,7 +117,7 @@ namespace VimCoreTest
             Assert.AreEqual(1, res.Start.Position);
         }
 
-        [TestMethod]
+        [Test]
         public void LineUp1()
         {
             Initialize("foo", "bar");
@@ -125,7 +125,7 @@ namespace VimCoreTest
             Assert.AreEqual("foo" + Environment.NewLine + "bar", res.GetText());
         }
 
-        [TestMethod]
+        [Test]
         public void LineDown1()
         {
             Initialize("foo", "bar");

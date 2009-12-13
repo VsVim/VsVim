@@ -2,7 +2,7 @@
 using System.Text;
 using System.Collections.Generic;
 using System.Linq;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NUnit.Framework;
 using VimCore;
 using System.Windows.Input;
 using Microsoft.VisualStudio.Text.Editor;
@@ -14,7 +14,7 @@ namespace VimCoreTest
     /// <summary>
     /// Summary description for InputMode
     /// </summary>
-    [TestClass]
+    [TestFixture]
     public class InsertModeTest
     {
         private IVimBufferData _data;
@@ -32,7 +32,7 @@ namespace VimCoreTest
             _mode = _modeRaw;
         }
 
-        [TestInitialize]
+        [SetUp]
         public void Init()
         {
             CreateBuffer("foo bar baz", "boy kick ball");
@@ -40,20 +40,20 @@ namespace VimCoreTest
 
         #region Misc
 
-        [TestMethod, Description("Must process escape")]
+        [Test, Description("Must process escape")]
         public void CanProcess1()
         {
             Assert.IsTrue(_mode.CanProcess(Key.Escape));
         }
 
-        [TestMethod, Description("Do not processing anything other than Escape")]
+        [Test, Description("Do not processing anything other than Escape")]
         public void CanProcess2()
         {
             Assert.IsFalse(_mode.CanProcess(Key.Enter));
             Assert.IsFalse(_mode.CanProcess(Key.I));
         }
 
-        [TestMethod, Description("Process but and handle Escape, otherwise it will end up as a char in the buffer")]
+        [Test, Description("Process but and handle Escape, otherwise it will end up as a char in the buffer")]
         public void Process1()
         {
             var res = _mode.Process(Key.Escape);
@@ -64,7 +64,7 @@ namespace VimCoreTest
 
         #region CTRL-D
 
-        [TestMethod]
+        [Test]
         public void ShiftLeft1()
         {
             CreateBuffer("    foo");
@@ -73,7 +73,7 @@ namespace VimCoreTest
             Assert.AreEqual("foo", _buffer.CurrentSnapshot.GetLineFromLineNumber(0).GetText());
         }
 
-        [TestMethod, Description("Too short of a shift width")]
+        [Test, Description("Too short of a shift width")]
         public void ShiftLeft2()
         {
             CreateBuffer(" foo");
@@ -82,7 +82,7 @@ namespace VimCoreTest
             Assert.AreEqual("foo", _buffer.CurrentSnapshot.GetLineFromLineNumber(0).GetText());
         }
 
-        [TestMethod, Description("Another too short of a shift")]
+        [Test, Description("Another too short of a shift")]
         public void ShiftLeft3()
         {
             CreateBuffer("foo");
@@ -91,7 +91,7 @@ namespace VimCoreTest
             Assert.AreEqual("foo", _buffer.CurrentSnapshot.GetLineFromLineNumber(0).GetText());
         }
 
-        [TestMethod]
+        [Test]
         public void ShiftLeft4()
         {
             CreateBuffer("foo", "     bar");

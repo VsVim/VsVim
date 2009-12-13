@@ -1,0 +1,79 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!--This file represents the results of running a test suite-->
+<test-results name="C:\Users\JaredP\VsVim\VsVim.nunit" total="54" errors="0" failures="0" not-run="0" inconclusive="0" ignored="0" skipped="0" invalid="0" date="2009-12-13" time="11:59:53">
+  <environment nunit-version="2.5.2.9222" clr-version="4.0.21006.1" os-version="Microsoft Windows NT 6.1.7600.0" platform="Win32NT" cwd="C:\Program Files\NUnit 2.5.2\bin\net-2.0" machine-name="VS2010BETA2" user="JaredP" user-domain="vs2010beta2" />
+  <culture-info current-culture="en-US" current-uiculture="en-US" />
+  <test-suite name="C:\Users\JaredP\VsVim\VsVim.nunit" executed="True" success="True" time="3.377" asserts="0">
+    <results>
+      <test-suite name="C:\Users\JaredP\VsVim\VimCoreTest\bin\Debug\VimCoreTest.dll" executed="True" success="True" time="3.357" asserts="0">
+        <properties>
+          <property name="APARTMENT_STATE" value="STA" />
+        </properties>
+        <results>
+          <test-suite name="VimCoreTest" executed="True" success="True" time="3.347" asserts="0">
+            <results>
+              <test-suite name="TssUtilTest" executed="True" success="True" time="3.343" asserts="0">
+                <results>
+                  <test-case name="VimCoreTest.TssUtilTest.FindCurrentWordSpan1" description="End of line should not have a current word" executed="True" success="True" time="3.013" asserts="1" />
+                  <test-case name="VimCoreTest.TssUtilTest.FindIndentPosition" executed="True" success="True" time="0.011" asserts="1" />
+                  <test-case name="VimCoreTest.TssUtilTest.FindIndentPosition2" executed="True" success="True" time="0.000" asserts="1" />
+                  <test-case name="VimCoreTest.TssUtilTest.FindNextWordPosition1" executed="True" success="True" time="0.069" asserts="1" />
+                  <test-case name="VimCoreTest.TssUtilTest.FindNextWordPosition2" description="Start of word should give bakc the current word" executed="True" success="True" time="0.000" asserts="1" />
+                  <test-case name="VimCoreTest.TssUtilTest.FindNextWordPosition3" description="Start on non-first line" executed="True" success="True" time="0.008" asserts="1" />
+                  <test-case name="VimCoreTest.TssUtilTest.FindNextWordPosition4" description="Start on non-first line with non-first word" executed="True" success="True" time="0.001" asserts="3" />
+                  <test-case name="VimCoreTest.TssUtilTest.FindNextWordPosition5" description="Find word accross line boundary" executed="True" success="True" time="0.010" asserts="1" />
+                  <test-case name="VimCoreTest.TssUtilTest.FindNextWordPosition6" description="At end of buffer it should give back the last point" executed="True" success="True" time="0.013" asserts="1" />
+                  <test-case name="VimCoreTest.TssUtilTest.FindNextWordSpan1" description="Make sure we don't throw if we are in the Line break" executed="True" success="True" time="0.001" asserts="2" />
+                  <test-case name="VimCoreTest.TssUtilTest.FindPreviousWordSpan1" executed="True" success="True" time="0.004" asserts="1" />
+                  <test-case name="VimCoreTest.TssUtilTest.FindPreviousWordSpan2" description="in whitespace so go backwards" executed="True" success="True" time="0.023" asserts="1" />
+                  <test-case name="VimCoreTest.TssUtilTest.FindPreviousWordSpan3" description="Don't go back a word if we're in the middle of one" executed="True" success="True" time="0.000" asserts="1" />
+                  <test-case name="VimCoreTest.TssUtilTest.FindPreviousWordSpan4" description="Make sure to go back if we're at the start of a word" executed="True" success="True" time="0.000" asserts="2" />
+                  <test-case name="VimCoreTest.TssUtilTest.FindPreviousWordSpan5" description="Make sure to go backwards across lines" executed="True" success="True" time="0.001" asserts="1" />
+                  <test-case name="VimCoreTest.TssUtilTest.FindPreviousWordSpan6" description="Don't crash when at the end of a line" executed="True" success="True" time="0.001" asserts="1" />
+                  <test-case name="VimCoreTest.TssUtilTest.FindPreviousWordSpan7" description="Back to front should return the start of the buffer" executed="True" success="True" time="0.009" asserts="2" />
+                  <test-case name="VimCoreTest.TssUtilTest.GetCharacterSpan1" executed="True" success="True" time="0.002" asserts="2" />
+                  <test-case name="VimCoreTest.TssUtilTest.GetCharacterSpan2" description="Empty line shtould have a character span of the entire line" executed="True" success="True" time="0.001" asserts="1" />
+                  <test-case name="VimCoreTest.TssUtilTest.GetCharacterSpan3" description="End of line should have the span of the line break" executed="True" success="True" time="0.000" asserts="1" />
+                  <test-case name="VimCoreTest.TssUtilTest.GetEndPoint" executed="True" success="True" time="0.000" asserts="1" />
+                  <test-case name="VimCoreTest.TssUtilTest.GetLineRangeSpan1" executed="True" success="True" time="0.004" asserts="1" />
+                  <test-case name="VimCoreTest.TssUtilTest.GetLineRangeSpan2" executed="True" success="True" time="0.001" asserts="1" />
+                  <test-case name="VimCoreTest.TssUtilTest.GetLineRangeSpanIncludingLineBreak1" executed="True" success="True" time="0.000" asserts="1" />
+                  <test-case name="VimCoreTest.TssUtilTest.GetLines1" executed="True" success="True" time="0.002" asserts="1" />
+                  <test-case name="VimCoreTest.TssUtilTest.GetLines2" executed="True" success="True" time="0.029" asserts="2" />
+                  <test-case name="VimCoreTest.TssUtilTest.GetLines3" executed="True" success="True" time="0.001" asserts="1" />
+                  <test-case name="VimCoreTest.TssUtilTest.GetLines4" executed="True" success="True" time="0.006" asserts="1" />
+                  <test-case name="VimCoreTest.TssUtilTest.GetLines5" executed="True" success="True" time="0.005" asserts="1" />
+                  <test-case name="VimCoreTest.TssUtilTest.GetLines6" executed="True" success="True" time="0.006" asserts="1" />
+                  <test-case name="VimCoreTest.TssUtilTest.GetLines7" executed="True" success="True" time="0.001" asserts="1" />
+                  <test-case name="VimCoreTest.TssUtilTest.GetNextPoint1" executed="True" success="True" time="0.001" asserts="1" />
+                  <test-case name="VimCoreTest.TssUtilTest.GetNextPoint2" description="End of line should wrap" executed="True" success="True" time="0.000" asserts="1" />
+                  <test-case name="VimCoreTest.TssUtilTest.GetNextPoint3" description="Don't around the buffer" executed="True" success="True" time="0.001" asserts="1" />
+                  <test-case name="VimCoreTest.TssUtilTest.GetNextPointWithWrap1" executed="True" success="True" time="0.001" asserts="1" />
+                  <test-case name="VimCoreTest.TssUtilTest.GetNextPointWithWrap2" description="End of line should wrap" executed="True" success="True" time="0.001" asserts="1" />
+                  <test-case name="VimCoreTest.TssUtilTest.GetNextPointWithWrap3" description="Wrap around the buffer" executed="True" success="True" time="0.001" asserts="1" />
+                  <test-case name="VimCoreTest.TssUtilTest.GetPoints1" executed="True" success="True" time="0.010" asserts="1" />
+                  <test-case name="VimCoreTest.TssUtilTest.GetPreviousPointWithWrap1" executed="True" success="True" time="0.001" asserts="1" />
+                  <test-case name="VimCoreTest.TssUtilTest.GetPreviousPointWithWrap2" executed="True" success="True" time="0.001" asserts="1" />
+                  <test-case name="VimCoreTest.TssUtilTest.GetPreviousPointWithWrap3" executed="True" success="True" time="0.000" asserts="1" />
+                  <test-case name="VimCoreTest.TssUtilTest.GetReverseCharacterSpan1" executed="True" success="True" time="0.001" asserts="1" />
+                  <test-case name="VimCoreTest.TssUtilTest.GetReverseCharacterSpan2" executed="True" success="True" time="0.001" asserts="1" />
+                  <test-case name="VimCoreTest.TssUtilTest.GetReverseCharacterSpan3" executed="True" success="True" time="0.000" asserts="1" />
+                  <test-case name="VimCoreTest.TssUtilTest.GetSpans1" executed="True" success="True" time="0.007" asserts="3" />
+                  <test-case name="VimCoreTest.TssUtilTest.GetSpans2" executed="True" success="True" time="0.001" asserts="4" />
+                  <test-case name="VimCoreTest.TssUtilTest.GetSpans3" description="Full lines starting at line not 0" executed="True" success="True" time="0.001" asserts="3" />
+                  <test-case name="VimCoreTest.TssUtilTest.GetSpans4" description="Don't wrap if we say dont't wrap" executed="True" success="True" time="0.000" asserts="1" />
+                  <test-case name="VimCoreTest.TssUtilTest.GetSpans5" description="Don't wrap backwards if we don't say wrap" executed="True" success="True" time="0.001" asserts="1" />
+                  <test-case name="VimCoreTest.TssUtilTest.GetSpans6" description="Multi lack of wrap" executed="True" success="True" time="0.000" asserts="1" />
+                  <test-case name="VimCoreTest.TssUtilTest.GetSpans7" description="multi lack of wrap reverse" executed="True" success="True" time="0.001" asserts="1" />
+                  <test-case name="VimCoreTest.TssUtilTest.GetSpans8" executed="True" success="True" time="0.000" asserts="1" />
+                  <test-case name="VimCoreTest.TssUtilTest.GetSpans9" description="Handle being given a point in the middle of a line break" executed="True" success="True" time="0.005" asserts="4" />
+                  <test-case name="VimCoreTest.TssUtilTest.GetStartPoint" executed="True" success="True" time="0.000" asserts="1" />
+                </results>
+              </test-suite>
+            </results>
+          </test-suite>
+        </results>
+      </test-suite>
+    </results>
+  </test-suite>
+</test-results>

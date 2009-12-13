@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NUnit.Framework;
 using VimCore.Modes.Command;
 using VimCore;
 using VimCoreTest.Utils;
@@ -11,13 +11,13 @@ using Microsoft.FSharp.Collections;
 
 namespace VimCoreTest
 {
-    [TestClass]
+    [TestFixture]
     public class RangeUtilTest
     {
         private ITextBuffer _buffer;
         private MarkMap _map;
 
-        [TestInitialize]
+        [SetUp]
         public void Init()
         {
             _buffer = null;
@@ -40,7 +40,7 @@ namespace VimCoreTest
             return RangeUtil.ParseRange(point, _map, ListModule.OfSeq(list));
         }
 
-        [TestMethod]
+        [Test]
         public void NoRange1()
         {
             Create(string.Empty);
@@ -55,7 +55,7 @@ namespace VimCoreTest
             del("12");   // A set of digits is not a range
         }
 
-        [TestMethod]
+        [Test]
         public void FullFile()
         {
             Create("foo","bar");
@@ -65,7 +65,7 @@ namespace VimCoreTest
             Assert.AreEqual(new SnapshotSpan(tss, 0, tss.Length), RangeUtil.GetSnapshotSpan(res.AsSucceeded().Item1));
         }
 
-        [TestMethod]
+        [Test]
         public void FullFile2()
         {
             Create("foo", "bar");
@@ -76,7 +76,7 @@ namespace VimCoreTest
             Assert.IsTrue("bar".SequenceEqual(res.AsSucceeded().Item2.Select(x => x.Char)));
         }
 
-        [TestMethod]
+        [Test]
         public void CurrentLine1()
         {
             Create("foo", "bar");
@@ -85,7 +85,7 @@ namespace VimCoreTest
             Assert.AreEqual(_buffer.CurrentSnapshot.GetLineFromLineNumber(0).ExtentIncludingLineBreak, RangeUtil.GetSnapshotSpan(res.AsSucceeded().Item1));
         }
 
-        [TestMethod]
+        [Test]
         public void CurrentLine2()
         {
             Create("foo", "bar");
@@ -94,7 +94,7 @@ namespace VimCoreTest
             Assert.AreEqual(_buffer.CurrentSnapshot.GetLineFromLineNumber(0).ExtentIncludingLineBreak, RangeUtil.GetSnapshotSpan(res.AsSucceeded().Item1));
         }
 
-        [TestMethod]
+        [Test]
         public void CurrentLine3()
         {
             Create("foo", "bar");
@@ -106,7 +106,7 @@ namespace VimCoreTest
             Assert.AreEqual('f', range.Item2.First().Char);
         }
 
-        [TestMethod]
+        [Test]
         public void LineNumber1()
         {
             Create("a", "b", "c");
@@ -119,7 +119,7 @@ namespace VimCoreTest
             Assert.AreEqual(span, RangeUtil.GetSnapshotSpan(res.AsSucceeded().Item1));
         }
 
-        [TestMethod]
+        [Test]
         public void ApplyCount1()
         {
             Create("foo","bar","baz","jaz");
@@ -131,7 +131,7 @@ namespace VimCoreTest
             Assert.AreEqual(2, lines.Item3);
         }
 
-        [TestMethod, Description("Count is bound to end of the file")]
+        [Test, Description("Count is bound to end of the file")]
         public void ApplyCount2()
         {
             Create("foo", "bar");

@@ -2,14 +2,14 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NUnit.Framework;
 using VimCore;
 using System.Windows.Input;
 using VimCoreTest.Utils;
 
 namespace VimCoreTest
 {
-    [TestClass]
+    [TestFixture]
     public class CountCaptureTest
     {
         private CountResult.Complete Process(string input)
@@ -26,7 +26,7 @@ namespace VimCoreTest
             return (CountResult.Complete)res;
         }
 
-        [TestMethod]
+        [Test]
         public void Simple1()
         {
             var res = Process("A");
@@ -37,7 +37,7 @@ namespace VimCoreTest
         }
 
 
-        [TestMethod]
+        [Test]
         public void Simple2()
         {
             var res = Process("1A");
@@ -45,7 +45,7 @@ namespace VimCoreTest
             Assert.AreEqual(Key.A, res.Item2.Key);
         }
 
-        [TestMethod]
+        [Test]
         public void Simple3()
         {
             var res = Process("23B");

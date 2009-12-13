@@ -2,7 +2,7 @@
 using System.Text;
 using System.Collections.Generic;
 using System.Linq;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NUnit.Framework;
 using VimCore;
 using Microsoft.FSharp.Core;
 using System.Windows.Input;
@@ -12,13 +12,13 @@ namespace VimCoreTest
     /// <summary>
     /// Summary description for InputUtilTest
     /// </summary>
-    [TestClass]
+    [TestFixture]
     public class InputUtilTest
     {
         /// <summary>
         /// Make sure that all letters convert
         /// </summary>
-        [TestMethod()]
+        [Test()]
         public void CharToKeyTest()
         {
             var startLower = (int)('a');
@@ -45,7 +45,7 @@ namespace VimCoreTest
             Assert.AreEqual(c, back);
         }
 
-        [TestMethod]
+        [Test]
         public void CharBothway()
         {
             CharBothway(' ', Key.Space);
@@ -70,7 +70,7 @@ namespace VimCoreTest
             
         }
 
-        [TestMethod]
+        [Test]
         public void KeyAndModifierToKeyInput1()
         {
             var ki = InputUtil.KeyAndModifierToKeyInput(Key.A, ModifierKeys.Shift);
@@ -79,7 +79,7 @@ namespace VimCoreTest
             Assert.AreEqual(ModifierKeys.Shift, ki.ModifierKeys);
         }
 
-        [TestMethod]
+        [Test]
         public void KeyAndModifierToKeyInput2()
         {
             var ki = InputUtil.KeyAndModifierToKeyInput(Key.A, ModifierKeys.None);

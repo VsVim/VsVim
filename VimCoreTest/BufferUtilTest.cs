@@ -2,7 +2,7 @@
 using System.Text;
 using System.Collections.Generic;
 using System.Linq;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NUnit.Framework;
 using VimCore;
 using System.Windows.Input;
 using Microsoft.VisualStudio.Text.Editor;
@@ -10,7 +10,7 @@ using Microsoft.VisualStudio.Text;
 
 namespace VimCoreTest
 {
-    [TestClass]
+    [TestFixture]
     public class BufferUtilTest
     {
         static string[] s_lines = new string[]
@@ -22,7 +22,7 @@ namespace VimCoreTest
 
         ITextBuffer _buffer = null;
 
-        [TestInitialize]
+        [SetUp]
         public void Init()
         {
             Initialize(s_lines);
@@ -33,7 +33,7 @@ namespace VimCoreTest
             _buffer = Utils.EditorUtil.CreateBuffer(lines);
         }
 
-        [TestMethod]
+        [Test]
         public void AddLineBelow()
         {
             var line = _buffer.CurrentSnapshot.GetLineFromLineNumber(0);
@@ -43,7 +43,7 @@ namespace VimCoreTest
            
         }
 
-        [TestMethod, Description("New line at end of buffer")]
+        [Test, Description("New line at end of buffer")]
         public void AddLineBelow2()
         {
             var line = _buffer.CurrentSnapshot.Lines.Last();
@@ -51,7 +51,7 @@ namespace VimCoreTest
             Assert.IsTrue(String.IsNullOrEmpty(newLine.GetText()));
         }
 
-        [TestMethod, Description("Make sure the new is actually a newline")]
+        [Test, Description("Make sure the new is actually a newline")]
         public void AddLineBelow3()
         {
             Initialize("foo");
@@ -60,7 +60,7 @@ namespace VimCoreTest
             Assert.AreEqual(String.Empty, _buffer.CurrentSnapshot.GetLineFromLineNumber(1).GetLineBreakText());
         }
 
-        [TestMethod, Description("Make sure line inserted in the middle has correct text")]
+        [Test, Description("Make sure line inserted in the middle has correct text")]
         public void AddLineBelow4()
         {
             Initialize("foo", "bar");
@@ -72,7 +72,7 @@ namespace VimCoreTest
             }
         }
 
-        [TestMethod]
+        [Test]
         public void AddLineBelow5()
         {
             Initialize("foo bar", "baz");
@@ -96,7 +96,7 @@ namespace VimCoreTest
             Assert.AreEqual("baz", line.GetTextIncludingLineBreak());
         }
 
-        [TestMethod]
+        [Test]
         public void AddLineAbove1()
         {
             Initialize("foo");
@@ -106,7 +106,7 @@ namespace VimCoreTest
             Assert.AreEqual(String.Empty, newLine.GetText());
         }
 
-        [TestMethod]
+        [Test]
         public void AddLineAbove2()
         {
             Initialize("bar", "baz");
@@ -117,7 +117,7 @@ namespace VimCoreTest
             Assert.AreEqual("baz", tss.GetLineFromLineNumber(2).GetText());
         }
 
-        [TestMethod]
+        [Test]
         public void DeleteSpan1()
         {
             Initialize("foo", "bar");
@@ -128,7 +128,7 @@ namespace VimCoreTest
             Assert.AreEqual("fo", r.StringValue);
         }
 
-        [TestMethod]
+        [Test]
         public void ShiftRight1()
         {
             Initialize("foo");
@@ -137,7 +137,7 @@ namespace VimCoreTest
             Assert.AreEqual("  foo", _buffer.CurrentSnapshot.GetLineFromLineNumber(0).GetText());
         }
 
-        [TestMethod, Description("Only shift whitespace")]
+        [Test, Description("Only shift whitespace")]
         public void ShiftLeft1()
         {
             Initialize("foo");
@@ -146,7 +146,7 @@ namespace VimCoreTest
             Assert.AreEqual("foo", _buffer.CurrentSnapshot.GetLineFromLineNumber(0).GetText());
         }
 
-        [TestMethod, Description("Don't puke on an empty line")]
+        [Test, Description("Don't puke on an empty line")]
         public void ShiftLeft2()
         {
             Initialize("");
@@ -155,7 +155,7 @@ namespace VimCoreTest
             Assert.AreEqual("", _buffer.CurrentSnapshot.GetLineFromLineNumber(0).GetText());
         }
 
-        [TestMethod]
+        [Test]
         public void ShiftLeft3()
         {
             Initialize("  foo", "  bar");
@@ -167,7 +167,7 @@ namespace VimCoreTest
             Assert.AreEqual("bar", _buffer.CurrentSnapshot.GetLineFromLineNumber(1).GetText());
         }
 
-        [TestMethod]
+        [Test]
         public void ShiftLeft4()
         {
             Initialize("   foo");

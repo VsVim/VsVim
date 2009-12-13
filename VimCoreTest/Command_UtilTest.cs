@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NUnit.Framework;
 using VimCore;
 using Microsoft.FSharp.Core;
 using CommandUtil = VimCore.Modes.Command.Util;
@@ -13,7 +13,7 @@ using VimCore.Modes.Common;
 
 namespace VimCoreTest
 {
-    [TestClass]
+    [TestFixture]
     public class Command_UtilTest
     {
 
@@ -26,7 +26,7 @@ namespace VimCoreTest
                 count.HasValue ? FSharpOption<int>.Some(count.Value) : FSharpOption<int>.None);
         }
 
-        [TestMethod]
+        [Test]
         public void Join1()
         {
             var view = EditorUtil.CreateView("foo", "bar");
@@ -34,7 +34,7 @@ namespace VimCoreTest
             Assert.AreEqual("foo bar", view.TextSnapshot.GetText());
         }
 
-        [TestMethod]
+        [Test]
         public void Join2()
         {
             var view = EditorUtil.CreateView("foo", "bar", "baz", "jazz");

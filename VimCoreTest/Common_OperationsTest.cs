@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NUnit.Framework;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text;
 using VimCore.Modes.Common;
@@ -12,7 +12,7 @@ using VimCoreTest.Utils;
 
 namespace VimCoreTest
 {
-    [TestClass]
+    [TestFixture]
     public class Common_OperationsTest
     {
         private IWpfTextView _view;
@@ -25,7 +25,7 @@ namespace VimCoreTest
             _buffer = _view.TextBuffer;
         }
 
-        [TestMethod]
+        [Test]
         public void Join1()
         {
             CreateLines("foo","bar");
@@ -35,7 +35,7 @@ namespace VimCoreTest
             Assert.AreEqual(4, _view.Caret.Position.BufferPosition.Position);
         }
 
-        [TestMethod,Description("Eat spaces at the start of the next line")]
+        [Test,Description("Eat spaces at the start of the next line")]
         public void Join2()
         {
             CreateLines("foo", "   bar");
@@ -45,7 +45,7 @@ namespace VimCoreTest
             Assert.AreEqual(4, _view.Caret.Position.BufferPosition.Position);
         }
 
-        [TestMethod, Description("Join with a count")]
+        [Test, Description("Join with a count")]
         public void Join3()
         {
             CreateLines("foo", "bar", "baz");
@@ -55,7 +55,7 @@ namespace VimCoreTest
             Assert.AreEqual(8, _view.Caret.Position.BufferPosition.Position);
         }
 
-        [TestMethod, Description("Join with a single count, should be no different")]
+        [Test, Description("Join with a single count, should be no different")]
         public void Join4()
         {
             CreateLines("foo", "bar");
@@ -65,7 +65,7 @@ namespace VimCoreTest
             Assert.AreEqual(4, _view.Caret.Position.BufferPosition.Position);
         }
 
-        [TestMethod]
+        [Test]
         public void Join5()
         {
             CreateLines("foo", "bar");
@@ -74,7 +74,7 @@ namespace VimCoreTest
             Assert.AreEqual(1, _view.TextSnapshot.LineCount);
         }
 
-        [TestMethod]
+        [Test]
         public void Join6()
         {
             CreateLines("foo", " bar");
@@ -83,7 +83,7 @@ namespace VimCoreTest
             Assert.AreEqual(1, _view.TextSnapshot.LineCount);
         }
 
-        [TestMethod]
+        [Test]
         public void GoToDefinition1()
         {
             CreateLines("foo");
@@ -93,7 +93,7 @@ namespace VimCoreTest
             Assert.IsTrue(res.IsSucceeded);
         }
 
-        [TestMethod]
+        [Test]
         public void GoToDefinition2()
         {
             CreateLines("foo");
@@ -104,7 +104,7 @@ namespace VimCoreTest
             Assert.IsTrue(((Operations.Result.Failed)res).Item.Contains("foo"));
         }
 
-        [TestMethod, Description("Make sure we don't crash when nothing is under the cursor")]
+        [Test, Description("Make sure we don't crash when nothing is under the cursor")]
         public void GoToDefinition3()
         {
             CreateLines("      foo");
@@ -114,7 +114,7 @@ namespace VimCoreTest
             Assert.IsTrue(res.IsFailed);
         }
 
-        [TestMethod]
+        [Test]
         public void SetMark1()
         {
             CreateLines("foo");
@@ -124,7 +124,7 @@ namespace VimCoreTest
             Assert.IsTrue(map.GetLocalMark(_buffer, 'a').IsSome());
         }
 
-        [TestMethod,Description("Invalid mark character")]
+        [Test,Description("Invalid mark character")]
         public void SetMark2()
         {
             CreateLines("bar");
@@ -133,7 +133,7 @@ namespace VimCoreTest
             Assert.IsTrue(res.IsFailed);
         }
 
-        [TestMethod]
+        [Test]
         public void JumpToMark1()
         {
             var view = Utils.EditorUtil.CreateView("foo", "bar");
@@ -143,7 +143,7 @@ namespace VimCoreTest
             Assert.IsTrue(res.IsSucceeded);
         }
 
-        [TestMethod]
+        [Test]
         public void JumpToMark2()
         {
             var view = Utils.EditorUtil.CreateView("foo", "bar");
@@ -152,7 +152,7 @@ namespace VimCoreTest
             Assert.IsTrue(res.IsFailed);
         }
 
-        [TestMethod, Description("Global marks aren't supported yet")]
+        [Test, Description("Global marks aren't supported yet")]
         public void JumpToMark3()
         {
             var view = Utils.EditorUtil.CreateView("foo", "bar");

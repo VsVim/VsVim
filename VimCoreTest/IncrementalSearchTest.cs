@@ -2,7 +2,7 @@
 using System.Text;
 using System.Collections.Generic;
 using System.Linq;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NUnit.Framework;
 using VimCore;
 using System.Windows.Input;
 using Microsoft.VisualStudio.Text.Editor;
@@ -14,7 +14,7 @@ namespace VimCoreTest
     /// <summary>
     /// Summary description for IncrementalSearchTest
     /// </summary>
-    [TestClass]
+    [TestFixture]
     public class IncrementalSearchTest
     {
         private ITextBuffer _buffer;
@@ -33,13 +33,13 @@ namespace VimCoreTest
             _buffer = Utils.EditorUtil.CreateBuffer(lines);
         }
 
-        [TestInitialize]
+        [SetUp]
         public void Init()
         {
             CreateBuffer(s_lines);
         }
 
-        [TestMethod]
+        [Test]
         public void Search1()
         {
             var search = new IncrementalSearch("for");
@@ -48,7 +48,7 @@ namespace VimCoreTest
             Assert.AreEqual(20, found.Value.Start);
         }
 
-        [TestMethod]
+        [Test]
         public void Search2()
         {
             var search = new IncrementalSearch("won'tbethere");
@@ -56,7 +56,7 @@ namespace VimCoreTest
             Assert.IsTrue(found.IsNone());
         }
 
-        [TestMethod]
+        [Test]
         public void Search3()
         {
             var search = new IncrementalSearch("or", SearchKind.BackwardWithWrap);
@@ -65,7 +65,7 @@ namespace VimCoreTest
             Assert.AreEqual(21, found.Value.Start);
         }
 
-        [TestMethod, Description("Search with a bad regex should just produce a bad result")]
+        [Test, Description("Search with a bad regex should just produce a bad result")]
         public void Search4()
         {
             var search = new IncrementalSearch("(");
@@ -73,7 +73,7 @@ namespace VimCoreTest
             Assert.IsFalse(found.HasValue());
         }
 
-        [TestMethod]
+        [Test]
         public void Previous1()
         {
             CreateBuffer("bar bar");
@@ -83,7 +83,7 @@ namespace VimCoreTest
             Assert.AreEqual(4, found.Value.Start.Position);
         }
 
-        [TestMethod, Description("In the middle of the word should match the word in a previous searh")]
+        [Test, Description("In the middle of the word should match the word in a previous searh")]
         public void Previous2()
         {
             CreateBuffer("bar bar");
@@ -94,7 +94,7 @@ namespace VimCoreTest
             Assert.AreEqual(4, found.Value.Start.Position);
         }
 
-        [TestMethod, Description("Bad regex should not cause a crash")]
+        [Test, Description("Bad regex should not cause a crash")]
         public void Constructor1()
         {
             var search = new IncrementalSearch("(");

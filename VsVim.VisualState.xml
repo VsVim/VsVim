@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<VisualState xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" ShowCheckBoxes="false">
+  <TopNode>[0-1241]VimCoreTest.InputUtilTest</TopNode>
+  <SelectedNode>[0-1057]VimCoreTest.TssUtilTest.FindPreviousWordSpan3</SelectedNode>
+  <ExcludeCategories>false</ExcludeCategories>
+  <Nodes>
+    <Node UniqueName="[0-1000]C:\Users\JaredP\VsVim\VsVim.nunit" Expanded="true" />
+    <Node UniqueName="[0-1406]C:\Users\JaredP\VsVim\VimCoreTest\bin\Debug\VimCoreTest.dll" Expanded="true" />
+    <Node UniqueName="[0-1407]VimCoreTest" Expanded="true" />
+    <Node UniqueName="[0-1028]VimCoreTest.TssUtilTest" Expanded="true" />
+  </Nodes>
+</VisualState>

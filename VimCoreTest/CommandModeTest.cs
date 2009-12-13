@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NUnit.Framework;
 using VimCore;
 using VimCore.Modes.Command;
 using Microsoft.VisualStudio.Text.Editor;
@@ -12,7 +12,7 @@ using System.Windows.Input;
 
 namespace VimCoreTest
 {
-    [TestClass]
+    [TestFixture,RequiresSTA]
     public class CommandModeTest
     {
         private IWpfTextView _view;
@@ -42,7 +42,7 @@ namespace VimCoreTest
             _mode.Process(InputUtil.KeyToKeyInput(Key.Enter));
         }
 
-        [TestMethod, Description("Entering command mode should update the status")]
+        [Test, Description("Entering command mode should update the status")]
         public void StatusOnColon1()
         {
             Create(String.Empty);
@@ -50,7 +50,7 @@ namespace VimCoreTest
             Assert.AreEqual(":", _host.Status);
         }
 
-        [TestMethod, Description("When leaving command mode we should not clear the status because it will remove error messages")]
+        [Test, Description("When leaving command mode we should not clear the status because it will remove error messages")]
         public void StatusOnLeave()
         {
             Create(String.Empty);
@@ -59,7 +59,7 @@ namespace VimCoreTest
             Assert.AreEqual("foo", _host.Status);
         }
 
-        [TestMethod]
+        [Test]
         public void StatusOnProcess()
         {
             Create("foo", "bar");
@@ -69,7 +69,7 @@ namespace VimCoreTest
             Assert.AreEqual(String.Empty, _host.Status);
         }
 
-        [TestMethod]
+        [Test]
         public void Jump1()
         {
             Create("foo", "bar", "baz");
@@ -80,7 +80,7 @@ namespace VimCoreTest
             Assert.AreEqual(last.Start, caretPoint);
         }
 
-        [TestMethod]
+        [Test]
         public void Jump2()
         {
             Create("foo", "bar");
@@ -90,7 +90,7 @@ namespace VimCoreTest
             Assert.AreEqual(caret, caret.GetContainingLine().Start);
         }
 
-        [TestMethod]
+        [Test]
         public void Jump3()
         {
             Create("foo");
@@ -98,7 +98,7 @@ namespace VimCoreTest
             Assert.AreEqual("Invalid line number", _host.Status);
         }
 
-        [TestMethod]
+        [Test]
         public void Yank1()
         {
             Create("foo", "bar");
@@ -108,7 +108,7 @@ namespace VimCoreTest
             Assert.AreEqual("foo" + Environment.NewLine, map.DefaultRegister.Value.Value);
         }
 
-        [TestMethod]
+        [Test]
         public void Yank2()
         {
             Create("foo", "bar", "baz");
@@ -121,7 +121,7 @@ namespace VimCoreTest
             Assert.AreEqual(span.GetText(), map.DefaultRegister.Value.Value);
         }
 
-        [TestMethod]
+        [Test]
         public void Yank3()
         {
             Create("foo", "bar");
@@ -131,7 +131,7 @@ namespace VimCoreTest
             Assert.AreEqual(line.ExtentIncludingLineBreak.GetText(), map.GetRegister('c').Value.Value);
         }
 
-        [TestMethod]
+        [Test]
         public void Yank4()
         {
             Create("foo", "bar");

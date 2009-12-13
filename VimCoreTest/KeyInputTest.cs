@@ -2,31 +2,31 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NUnit.Framework;
 using VimCoreTest;
 using VimCore;
 using System.Windows.Input;
 
 namespace VimCoreTest
 {
-    [TestClass]
+    [TestFixture]
     public class KeyInputTest
     {
-        [TestMethod]
+        [Test]
         public void IsDigit1()
         {
             var input = InputUtil.KeyToKeyInput(Key.D0);
             Assert.IsTrue(input.IsDigit);
         }
 
-        [TestMethod]
+        [Test]
         public void IsDigit2()
         {
             var input = InputUtil.KeyToKeyInput(Key.Enter);
             Assert.IsFalse(input.IsDigit);
         }
 
-        [TestMethod]
+        [Test]
         public void Equality1()
         {
             var i1 = new KeyInput('c', Key.C, ModifierKeys.None);
@@ -36,14 +36,14 @@ namespace VimCoreTest
             Assert.AreNotEqual(i1, new KeyInput('c', Key.C, ModifierKeys.Alt));
         }
 
-        [TestMethod, Description("Boundary condition")]
+        [Test, Description("Boundary condition")]
         public void Equality2()
         {
             var i1 = new KeyInput('c', Key.C, ModifierKeys.None);
             Assert.AreNotEqual(i1, 42);
         }
 
-        [TestMethod]
+        [Test]
         public void CompareTo1()
         {
             var i1 = new KeyInput('c', Key.C, ModifierKeys.None);

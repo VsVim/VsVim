@@ -2,7 +2,7 @@
 using System.Text;
 using System.Collections.Generic;
 using System.Linq;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NUnit.Framework;
 using VimCore;
 using Microsoft.VisualStudio.Text;
 using System.Windows.Input;
@@ -14,7 +14,7 @@ using Moq;
 
 namespace VimCoreTest
 {
-    [TestClass]
+    [TestFixture]
     public class VimBufferTests
     {
         Mock<IMode> _normalMode;
@@ -23,7 +23,7 @@ namespace VimCoreTest
         VimBuffer _rawBuffer;
         IVimBuffer _buffer;
 
-        [TestInitialize]
+        [SetUp]
         public void Initialize()
         {
             _normalMode = new Mock<IMode>(MockBehavior.Strict);
@@ -37,7 +37,7 @@ namespace VimCoreTest
             _buffer = _rawBuffer;
         }
 
-        [TestMethod]
+        [Test]
         public void SwitchedMode1()
         {
             var ran = false;
@@ -47,7 +47,7 @@ namespace VimCoreTest
             Assert.IsTrue(ran);
         }
 
-        [TestMethod]
+        [Test]
         public void KeyInputProcessed1()
         {
             var ki = new KeyInput('f', Key.F);
@@ -58,7 +58,7 @@ namespace VimCoreTest
             Assert.IsTrue(ran);
         }
 
-        [TestMethod, Description("Close should call OnLeave for the active mode")]
+        [Test, Description("Close should call OnLeave for the active mode")]
         public void Close1()
         {
             var ran = false;
@@ -70,7 +70,7 @@ namespace VimCoreTest
             Assert.IsTrue(ran);
         }
 
-        [TestMethod, Description("Close should destroy the block caret")]
+        [Test, Description("Close should destroy the block caret")]
         public void Close2()
         {
             var caret = new MockBlockCaret();

@@ -2,7 +2,7 @@
 using System.Text;
 using System.Collections.Generic;
 using System.Linq;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NUnit.Framework;
 using VimCore;
 using Microsoft.VisualStudio.Text;
 using Microsoft.FSharp.Core;
@@ -12,7 +12,7 @@ namespace VimCoreTest
     /// <summary>
     /// Summary description for TssUtilTest
     /// </summary>
-    [TestClass]
+    [TestFixture]
     public class TssUtilTest
     {
         static string[] s_lines = new string[]
@@ -25,7 +25,7 @@ namespace VimCoreTest
         ITextBuffer _buffer = null;
         ITextSnapshot _snapshot = null;
 
-        [TestInitialize]
+        [SetUp]
         public void Init()
         {
             Initialize(s_lines);
@@ -37,7 +37,7 @@ namespace VimCoreTest
             _snapshot = _buffer.CurrentSnapshot;
         }
 
-        [TestMethod]
+        [Test]
         public void GetLines1()
         {
             Initialize("foo", "bar");
@@ -49,7 +49,7 @@ namespace VimCoreTest
         /// <summary>
         /// Check forward wraping
         /// </summary>
-        [TestMethod]
+        [Test]
         public void GetLines2()
         {
             Initialize("foo", "bar", "baz");
@@ -65,7 +65,7 @@ namespace VimCoreTest
             Assert.AreEqual("barbazfoo", agg);
         }
 
-        [TestMethod]
+        [Test]
         public void GetLines3()
         {
             Initialize("foo bar", "baz");
@@ -74,7 +74,7 @@ namespace VimCoreTest
             Assert.AreEqual(1, list.Count());
         }
 
-        [TestMethod]
+        [Test]
         public void GetLines4()
         {
             Initialize("abcde".Select(x => x.ToString()).ToArray());
@@ -83,7 +83,7 @@ namespace VimCoreTest
             Assert.AreEqual("cba", msg);
         }
 
-        [TestMethod]
+        [Test]
         public void GetLines5()
         {
             Initialize("abcde".Select(x => x.ToString()).ToArray());
@@ -92,7 +92,7 @@ namespace VimCoreTest
             Assert.AreEqual("cde", msg);
         }
 
-        [TestMethod]
+        [Test]
         public void GetLines6()
         {
             Initialize("abcde".Select(x => x.ToString()).ToArray());
@@ -101,7 +101,7 @@ namespace VimCoreTest
             Assert.AreEqual("cbaed", msg);
         }
 
-        [TestMethod]
+        [Test]
         public void GetLines7()
         {
             Initialize("abcde".Select(x => x.ToString()).ToArray());
@@ -112,7 +112,7 @@ namespace VimCoreTest
 
      
 
-        [TestMethod]
+        [Test]
         public void GetSpans1()
         {
             Initialize("foo", "bar");
@@ -123,7 +123,7 @@ namespace VimCoreTest
             Assert.AreEqual("f", list[2]);
         }
 
-        [TestMethod]
+        [Test]
         public void GetSpans2()
         {
             Initialize("foo", "bar");
@@ -135,7 +135,7 @@ namespace VimCoreTest
             Assert.AreEqual("oo", list[2]);
         }
 
-        [TestMethod, Description("Full lines starting at line not 0")]
+        [Test, Description("Full lines starting at line not 0")]
         public void GetSpans3()
         {
             Initialize("foo", "bar baz");
@@ -146,7 +146,7 @@ namespace VimCoreTest
             Assert.AreEqual("foo", list[1]);
         }
 
-        [TestMethod, Description("Don't wrap if we say dont't wrap")]
+        [Test, Description("Don't wrap if we say dont't wrap")]
         public void GetSpans4()
         {
             Initialize("foo");
@@ -155,7 +155,7 @@ namespace VimCoreTest
             Assert.AreEqual(1, list.Count());
         }
 
-        [TestMethod, Description("Don't wrap backwards if we don't say wrap")]
+        [Test, Description("Don't wrap backwards if we don't say wrap")]
         public void GetSpans5()
         {
             Initialize("foo");
@@ -164,7 +164,7 @@ namespace VimCoreTest
             Assert.AreEqual(1, list.Count());
         }
 
-        [TestMethod, Description("Multi lack of wrap")]
+        [Test, Description("Multi lack of wrap")]
         public void GetSpans6()
         {
             Initialize("foo", "bar", "baz");
@@ -173,7 +173,7 @@ namespace VimCoreTest
             Assert.AreEqual(2, list.Count());
         }
 
-        [TestMethod, Description("multi lack of wrap reverse")]
+        [Test, Description("multi lack of wrap reverse")]
         public void GetSpans7()
         {
             Initialize("foo bar", "baz");
@@ -182,7 +182,7 @@ namespace VimCoreTest
             Assert.AreEqual(2, list.Count());
         }
 
-        [TestMethod]
+        [Test]
         public void GetSpans8()
         {
             Initialize("foo bar", "baz");
@@ -191,7 +191,7 @@ namespace VimCoreTest
             Assert.AreEqual(1, list.Count());
         }
 
-        [TestMethod, Description("Handle being given a point in the middle of a line break")]
+        [Test, Description("Handle being given a point in the middle of a line break")]
         public void GetSpans9()
         {
             Initialize("foo", "bar");
@@ -203,28 +203,28 @@ namespace VimCoreTest
             Assert.AreEqual("foo", list.ElementAt(2));
         }
 
-        [TestMethod]
+        [Test]
         public void GetLineRangeSpan1()
         {
             var span = TssUtil.GetLineRangeSpan(new SnapshotPoint(_snapshot,0), 1);
             var line = _snapshot.GetLineFromLineNumber(0);
-            Assert.AreEqual(line.Extent.Span, span);
+            Assert.AreEqual(line.Extent, span);
         }
 
         /// <summary>
         /// Multi-line range
         /// </summary>
-        [TestMethod]
+        [Test]
         public void GetLineRangeSpan2()
         {
             var span = TssUtil.GetLineRangeSpan(new SnapshotPoint(_snapshot, 0), 2);
             var start = _snapshot.GetLineFromLineNumber(0);
             var second = _snapshot.GetLineFromLineNumber(1);
             var expected = new Span(start.Start, second.End - start.Start);
-            Assert.AreEqual(span, expected);
+            Assert.AreEqual(span.Span, expected);
         }
 
-        [TestMethod]
+        [Test]
         public void GetLineRangeSpanIncludingLineBreak1()
         {
             Initialize("foo", "bar");
@@ -232,7 +232,7 @@ namespace VimCoreTest
             Assert.AreEqual(_snapshot.GetLineFromLineNumber(0).ExtentIncludingLineBreak, span);
         }
 
-        [TestMethod]
+        [Test]
         public void FindNextWordPosition1()
         {
             Initialize("foo bar");
@@ -240,7 +240,7 @@ namespace VimCoreTest
             Assert.AreEqual(4, p.Position);
         }
 
-        [TestMethod, Description("Start of word should give bakc the current word")]
+        [Test, Description("Start of word should give bakc the current word")]
         public void FindNextWordPosition2()
         {
             Initialize("foo bar");
@@ -248,7 +248,7 @@ namespace VimCoreTest
             Assert.AreEqual(4, p.Position);
         }
 
-        [TestMethod, Description("Start on non-first line")]
+        [Test, Description("Start on non-first line")]
         public void FindNextWordPosition3()
         {
             Initialize("foo", "bar baz");
@@ -257,7 +257,7 @@ namespace VimCoreTest
             Assert.AreNotEqual(line.Start, p);
         }
 
-        [TestMethod, Description("Start on non-first line with non-first word")]
+        [Test, Description("Start on non-first line with non-first word")]
         public void FindNextWordPosition4()
         {
             Initialize("foo", "bar caz dang");
@@ -269,7 +269,7 @@ namespace VimCoreTest
             Assert.AreEqual(p+4, p2);
         }
 
-        [TestMethod, Description("Find word accross line boundary")]
+        [Test, Description("Find word accross line boundary")]
         public void FindNextWordPosition5()
         {
             Initialize("foo", "bar daz");
@@ -279,7 +279,7 @@ namespace VimCoreTest
             Assert.AreEqual(other.Start, point);
         }
 
-        [TestMethod, Description("At end of buffer it should give back the last point")]
+        [Test, Description("At end of buffer it should give back the last point")]
         public void FindNextWordPosition6()
         {
             Initialize("foo bar");
@@ -289,7 +289,7 @@ namespace VimCoreTest
             Assert.AreEqual(line.End, other);
         }   
 
-        [TestMethod, Description("Make sure we don't throw if we are in the Line break")]
+        [Test, Description("Make sure we don't throw if we are in the Line break")]
         public void FindNextWordSpan1()
         {
             Initialize("foo bar");
@@ -299,7 +299,7 @@ namespace VimCoreTest
             Assert.AreEqual(line.End, span.Start);
         }
 
-        [TestMethod]
+        [Test]
         public void FindPreviousWordSpan1()
         {
             Initialize("foo bar");
@@ -308,7 +308,7 @@ namespace VimCoreTest
             Assert.AreEqual("foo", span.GetText());
         }
 
-        [TestMethod, Description("in whitespace so go backwards")]
+        [Test, Description("in whitespace so go backwards")]
         public void FindPreviousWordSpan2()
         {
             Initialize("foo bar");
@@ -317,7 +317,7 @@ namespace VimCoreTest
             Assert.AreEqual("foo", span.GetText());
         }
 
-        [TestMethod, Description("Don't go back a word if we're in the middle of one")]
+        [Test, Description("Don't go back a word if we're in the middle of one")]
         public void FindPreviousWordSpan3()
         {
             Initialize("foo bar");
@@ -326,7 +326,7 @@ namespace VimCoreTest
             Assert.AreEqual("bar", span.GetText());
         }
 
-        [TestMethod, Description("Make sure to go back if we're at the start of a word")]
+        [Test, Description("Make sure to go back if we're at the start of a word")]
         public void FindPreviousWordSpan4()
         {
             Initialize("foo bar");
@@ -337,7 +337,7 @@ namespace VimCoreTest
             Assert.AreEqual("foo", span.GetText());
         }
 
-        [TestMethod, Description("Make sure to go backwards across lines")]
+        [Test, Description("Make sure to go backwards across lines")]
         public void FindPreviousWordSpan5()
         {
             Initialize("foo bar", "baz");
@@ -346,7 +346,7 @@ namespace VimCoreTest
             Assert.AreEqual("bar", span.GetText());
         }
 
-        [TestMethod, Description("Don't crash when at the end of a line")]
+        [Test, Description("Don't crash when at the end of a line")]
         public void FindPreviousWordSpan6()
         {
             Initialize("foo bar");
@@ -355,7 +355,7 @@ namespace VimCoreTest
             Assert.AreEqual("bar", span.GetText());
         }
 
-        [TestMethod, Description("Back to front should return the start of the buffer")]
+        [Test, Description("Back to front should return the start of the buffer")]
         public void FindPreviousWordSpan7()
         {
             Initialize("    foo bar");
@@ -365,7 +365,7 @@ namespace VimCoreTest
             Assert.AreEqual(line.Start, span.Start);
         }
 
-        [TestMethod]
+        [Test]
         public void FindIndentPosition()
         {
             Initialize("  foo");
@@ -373,7 +373,7 @@ namespace VimCoreTest
             Assert.AreEqual(2, TssUtil.FindIndentPosition(line));
         }
 
-        [TestMethod]
+        [Test]
         public void FindIndentPosition2()
         {
             Initialize("foo");
@@ -381,7 +381,7 @@ namespace VimCoreTest
             Assert.AreEqual(0, TssUtil.FindIndentPosition(line));
         }
 
-        [TestMethod]
+        [Test]
         public void GetCharacterSpan1()
         {
             Initialize("foo");
@@ -390,7 +390,7 @@ namespace VimCoreTest
             Assert.AreEqual(1, span.Length);
         }
 
-        [TestMethod, Description("Empty line shtould have a character span of the entire line")]
+        [Test, Description("Empty line shtould have a character span of the entire line")]
         public void GetCharacterSpan2()
         {
             Initialize("foo", String.Empty, "baz");
@@ -399,7 +399,7 @@ namespace VimCoreTest
             Assert.AreEqual(span, line.ExtentIncludingLineBreak);
         }
 
-        [TestMethod, Description("End of line should have the span of the line break")]
+        [Test, Description("End of line should have the span of the line break")]
         public void GetCharacterSpan3()
         {
             Initialize("foo", "bar");
@@ -408,7 +408,7 @@ namespace VimCoreTest
             Assert.AreEqual(span, new SnapshotSpan(line.End, line.EndIncludingLineBreak));
         }
 
-        [TestMethod]
+        [Test]
         public void GetReverseCharacterSpan1()
         {
             Initialize("foo");
@@ -417,7 +417,7 @@ namespace VimCoreTest
             Assert.AreEqual("f", span.GetText());
         }
 
-        [TestMethod]
+        [Test]
         public void GetReverseCharacterSpan2()
         {
             Initialize("foo");
@@ -426,7 +426,7 @@ namespace VimCoreTest
             Assert.AreEqual("fo", span.GetText());
         }
 
-        [TestMethod]
+        [Test]
         public void GetReverseCharacterSpan3()
         {
             Initialize("foo");
@@ -437,7 +437,7 @@ namespace VimCoreTest
 
 
 
-        [TestMethod, Description("End of line should not have a current word")]
+        [Test, Description("End of line should not have a current word")]
         public void FindCurrentWordSpan1()
         {
             Initialize("foo bar");
@@ -446,7 +446,7 @@ namespace VimCoreTest
             Assert.IsTrue(opt.IsNone());
         }
 
-        [TestMethod]
+        [Test]
         public void GetStartPoint()
         {
             Initialize("foo bar");
@@ -455,7 +455,7 @@ namespace VimCoreTest
             Assert.AreEqual(line.Start, start);
         }
 
-        [TestMethod]
+        [Test]
         public void GetEndPoint()
         {
             Initialize("foo bar");
@@ -464,7 +464,7 @@ namespace VimCoreTest
             Assert.AreEqual(line.End, end);
         }
 
-        [TestMethod]
+        [Test]
         public void GetNextPointWithWrap1()
         {
             Initialize("foo", "baz");
@@ -473,7 +473,7 @@ namespace VimCoreTest
             Assert.AreEqual(1, next.Position);
         }
 
-        [TestMethod, Description("End of line should wrap")]
+        [Test, Description("End of line should wrap")]
         public void GetNextPointWithWrap2()
         {
             Initialize("foo", "bar");
@@ -483,14 +483,14 @@ namespace VimCoreTest
             Assert.AreEqual(line.Start, next);
         }
 
-        [TestMethod, Description("Wrap around the buffer")]
+        [Test, Description("Wrap around the buffer")]
         public void GetNextPointWithWrap3()
         {
             Initialize("foo", "bar");
             var next = TssUtil.GetNextPointWithWrap(_buffer.CurrentSnapshot.GetLineFromLineNumber(1).End);
             Assert.AreEqual(_buffer.CurrentSnapshot.GetLineFromLineNumber(0).Start, next);
         }
-        [TestMethod]
+        [Test]
         public void GetNextPoint1()
         {
             Initialize("foo", "baz");
@@ -499,7 +499,7 @@ namespace VimCoreTest
             Assert.AreEqual(1, next.Position);
         }
 
-        [TestMethod, Description("End of line should wrap")]
+        [Test, Description("End of line should wrap")]
         public void GetNextPoint2()
         {
             Initialize("foo", "bar");
@@ -509,7 +509,7 @@ namespace VimCoreTest
             Assert.AreEqual(line.Start, next);
         }
 
-        [TestMethod, Description("Don't around the buffer")]
+        [Test, Description("Don't around the buffer")]
         public void GetNextPoint3()
         {
             Initialize("foo", "bar");
@@ -518,7 +518,7 @@ namespace VimCoreTest
             Assert.AreEqual(next, point);
         }
 
-        [TestMethod]
+        [Test]
         public void GetPreviousPointWithWrap1()
         {
             Initialize("foo", "bar");
@@ -526,7 +526,7 @@ namespace VimCoreTest
             Assert.AreEqual(_buffer.CurrentSnapshot.GetLineFromLineNumber(0).Start, prev);
         }
 
-        [TestMethod]
+        [Test]
         public void GetPreviousPointWithWrap2()
         {
             Initialize("foo", "bar");
@@ -534,7 +534,7 @@ namespace VimCoreTest
             Assert.AreEqual(_buffer.CurrentSnapshot.GetLineFromLineNumber(0).End, prev);
         }
 
-        [TestMethod]
+        [Test]
         public void GetPreviousPointWithWrap3()
         {
             Initialize("foo", "bar");
@@ -542,7 +542,7 @@ namespace VimCoreTest
             Assert.AreEqual(TssUtil.GetEndPoint(_buffer.CurrentSnapshot), prev);
         }
 
-        [TestMethod]
+        [Test]
         public void GetPoints1()
         {
             Initialize("foo");

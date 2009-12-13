@@ -2,7 +2,7 @@
 using System.Text;
 using System.Collections.Generic;
 using System.Linq;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NUnit.Framework;
 using VimCore;
 using System.Windows.Input;
 using Microsoft.VisualStudio.Text.Editor;
@@ -13,7 +13,7 @@ namespace VimCoreTest
     /// <summary>
     /// Summary description for CommandModeTest
     /// </summary>
-    [TestClass]
+    [TestFixture]
     public class CommandModeIntegrationTest
     {
         private IVimBuffer buffer;
@@ -27,7 +27,7 @@ namespace VimCoreTest
             buffer = Factory.CreateVimBuffer(host, view, "test", (new Mock<IBlockCaret>()).Object);
         }
 
-        [TestInitialize]
+        [SetUp]
         public void Init()
         {
             CreateBuffer(
@@ -38,7 +38,7 @@ namespace VimCoreTest
                 );
         }
 
-        [TestMethod]
+        [Test]
         public void OpenFile1()
         {
             buffer.ProcessInputAsString(":e foo.cpp");
@@ -46,14 +46,14 @@ namespace VimCoreTest
             Assert.AreEqual("foo.cpp", host.LastFileOpen);
         }
 
-        [TestMethod]
+        [Test]
         public void SwitchTo()
         {
             buffer.ProcessInputAsString(":");
             Assert.AreEqual(ModeKind.Command, buffer.ModeKind);
         }
 
-        [TestMethod]
+        [Test]
         public void SwitchOut()
         {
             buffer.ProcessInputAsString(":e foo");
@@ -61,7 +61,7 @@ namespace VimCoreTest
             Assert.AreEqual(ModeKind.Normal, buffer.ModeKind);
         }
 
-        [TestMethod]
+        [Test]
         public void JumpLine1()
         {
             buffer.ProcessInputAsString(":0");
@@ -75,7 +75,7 @@ namespace VimCoreTest
         /// <summary>
         /// Non-first line
         /// </summary>
-        [TestMethod]
+        [Test]
         public void JumpLine2()
         {
             buffer.ProcessInputAsString(":2");
@@ -86,7 +86,7 @@ namespace VimCoreTest
         /// <summary>
         /// Invalid line position
         /// </summary>
-        [TestMethod]
+        [Test]
         public void JumpLine3()
         {
             buffer.ProcessInputAsString(":200");
@@ -94,7 +94,7 @@ namespace VimCoreTest
             Assert.AreEqual("Invalid line number", host.Status);
         }
 
-        [TestMethod]
+        [Test]
         public void JumpLineLast()
         {
             buffer.ProcessInputAsString(":$");

@@ -2,7 +2,7 @@
 using System.Text;
 using System.Collections.Generic;
 using System.Linq;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NUnit.Framework;
 using VimCore;
 using Microsoft.VisualStudio.Text;
 using Microsoft.FSharp.Core;
@@ -12,7 +12,7 @@ namespace VimCoreTest
     /// <summary>
     /// Summary description for TextUtilTest
     /// </summary>
-    [TestClass]
+    [TestFixture]
     public class TextUtilTest
     {
         string FindCurrentNormalWord(string input, int index)
@@ -27,7 +27,7 @@ namespace VimCoreTest
         /// <summary>
         /// Basic tests
         /// </summary>
-        [TestMethod]
+        [Test]
         public void FindWord1()
         {
             Assert.AreEqual("foo",FindCurrentNormalWord("foo ", 0));
@@ -37,7 +37,7 @@ namespace VimCoreTest
         /// <summary>
         /// Non-zero index tests
         /// </summary>
-        [TestMethod]
+        [Test]
         public void FindWord2()
         {
             Assert.AreEqual("oo",FindCurrentNormalWord("foo", 1));
@@ -47,7 +47,7 @@ namespace VimCoreTest
         /// <summary>
         /// Limits
         /// </summary>
-        [TestMethod]
+        [Test]
         public void FindWord3()
         {
             Assert.AreEqual("",FindCurrentNormalWord(" foo", 0));
@@ -58,7 +58,7 @@ namespace VimCoreTest
         /// <summary>
         /// Non-keyword words
         /// </summary>
-        [TestMethod]
+        [Test]
         public void FindWord4()
         {
             Assert.AreEqual("!@#$",FindCurrentNormalWord("!@#$", 0));
@@ -68,21 +68,21 @@ namespace VimCoreTest
         /// <summary>
         /// Mix of keyword and non-keyword strings
         /// </summary>
-        [TestMethod]
+        [Test]
         public void FindWord5()
         {
             Assert.AreEqual("#$",FindCurrentNormalWord("#$foo", 0));
             Assert.AreEqual("foo",FindCurrentNormalWord("foo!@#$", 0));
         }
 
-        [TestMethod]
+        [Test]
         public void FindBigWord1()
         {
             Assert.AreEqual("foo!@#$", FindCurrentBigWord("foo!@#$", 0));
             Assert.AreEqual("!foo!", FindCurrentBigWord("!foo!", 0));
         }
 
-        [TestMethod]
+        [Test]
         public void FindFullWord1()
         {
             Assert.AreEqual("foo", TextUtil.FindFullWord(WordKind.BigWord, "foo", 0));
@@ -91,7 +91,7 @@ namespace VimCoreTest
             Assert.AreEqual("foo_123", TextUtil.FindFullWord(WordKind.BigWord, "foo_123", 2));
         }
 
-        [TestMethod]
+        [Test]
         public void FindFullWord2()
         {
             Assert.AreEqual("foo", TextUtil.FindFullWord(WordKind.NormalWord,"foo bar", 2));
@@ -99,7 +99,7 @@ namespace VimCoreTest
             Assert.AreEqual("", TextUtil.FindFullWord(WordKind.NormalWord,"foo bar", 3));
         }
 
-        [TestMethod]
+        [Test]
         public void FindFullBigWord1()
         {
             Assert.AreEqual("!@#", TextUtil.FindFullWord(WordKind.BigWord,"!@#", 0));
@@ -107,7 +107,7 @@ namespace VimCoreTest
             Assert.AreEqual("!@#", TextUtil.FindFullWord(WordKind.BigWord, "!@#", 2));
         }
 
-        [TestMethod]
+        [Test]
         public void FindPreviousWordStart1()
         {
             Assert.AreEqual(0, TextUtil.FindPreviousWordSpan(WordKind.NormalWord,"foo", 1).Value.Start);
@@ -117,7 +117,7 @@ namespace VimCoreTest
         /// <summary>
         /// Move back accross a blank
         /// </summary>
-        [TestMethod]
+        [Test]
         public void FindPreviousWordStart2()
         {
             Assert.AreEqual("foo", TextUtil.FindPreviousWord(WordKind.NormalWord,"foo bar", 3));
@@ -127,7 +127,7 @@ namespace VimCoreTest
         /// <summary>
         /// Move back when starting at a word.  Shouldd go to the start of the previous word
         /// </summary>
-        [TestMethod]
+        [Test]
         public void FindPreviousWordStart3()
         {
             Assert.AreEqual("foo", TextUtil.FindPreviousWord(WordKind.BigWord, "foo bar", 4));
@@ -136,7 +136,7 @@ namespace VimCoreTest
         /// <summary>
         /// At the start of a line there is no previous word 
         /// </summary>
-        [TestMethod]
+        [Test]
         public void FindPreviousWordStart4()
         {
             Assert.AreEqual(FSharpOption<Span>.None, TextUtil.FindPreviousWordSpan(WordKind.NormalWord, "foo", 0));
@@ -147,14 +147,14 @@ namespace VimCoreTest
         /// <summary>
         /// Mix of word and WORD characters
         /// </summary>
-        [TestMethod]
+        [Test]
         public void FindPreviousWordStart5()
         {
             Assert.AreEqual("#$", TextUtil.FindPreviousWord(WordKind.NormalWord, "foo#$", 4));
             Assert.AreEqual("#$", TextUtil.FindPreviousWord(WordKind.NormalWord, "foo #$", 5));
         }
 
-        [TestMethod, Description("Simple find next word")]
+        [Test, Description("Simple find next word")]
         public void FindNextWord()
         {
             var res = TextUtil.FindNextWord(WordKind.NormalWord, "foo bar", 0);

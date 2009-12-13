@@ -84,9 +84,13 @@ namespace VimCoreTest.Utils
         {
             try
             {
-                var root = Path.GetDirectoryName(typeof(EditorUtil).Assembly.Location);
+                var uri = new Uri(typeof(EditorUtil).Assembly.CodeBase);
+                var root = Path.GetDirectoryName(uri.LocalPath);
                 var list = new List<ComposablePartCatalog>();
                 list.Add(new AssemblyCatalog(Path.Combine(root, "Microsoft.VisualStudio.Platform.VSEditor.dll")));
+
+                // Not entirely sure why this is suddenly needed
+                list.Add(new AssemblyCatalog(Path.Combine(root, "Microsoft.VisualStudio.Text.Internal.dll")));
 
                 // Must include this because several editor options are actually stored as exported information 
                 // on this DLL.  Including most importantly, the tabsize information

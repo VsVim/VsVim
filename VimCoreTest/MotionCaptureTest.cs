@@ -2,7 +2,7 @@
 using System.Text;
 using System.Collections.Generic;
 using System.Linq;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NUnit.Framework;
 using VimCore;
 using System.Windows.Input;
 using Microsoft.VisualStudio.Text.Editor;
@@ -11,7 +11,7 @@ using VimCoreTest.Utils;
 
 namespace VimCoreTest
 {
-    [TestClass]
+    [TestFixture]
     public class MotionCaptureTest
     {
         static string[] s_lines = new string[]
@@ -24,7 +24,7 @@ namespace VimCoreTest
         ITextBuffer _buffer = null;
         ITextSnapshot _snapshot = null;
 
-        [TestInitialize]
+        [SetUp]
         public void Init()
         {
             Initialize(s_lines);
@@ -54,7 +54,7 @@ namespace VimCoreTest
        }
 
 
-        [TestMethod]
+        [Test]
         public void Word1()
         {
             Initialize("foo bar");
@@ -69,7 +69,7 @@ namespace VimCoreTest
         }
 
 
-        [TestMethod]
+        [Test]
         public void Word2()
         {
             Initialize("foo bar");
@@ -80,7 +80,7 @@ namespace VimCoreTest
             Assert.AreEqual("oo ", span.GetText());
         }
 
-        [TestMethod, Description("Word motion with a count")]
+        [Test, Description("Word motion with a count")]
         public void Word3()
         {
             Initialize("foo bar baz");
@@ -89,7 +89,7 @@ namespace VimCoreTest
             Assert.AreEqual("foo bar ", res.AsComplete().Item.Item1.GetText());
         }
 
-        [TestMethod, Description("Count across lines")]
+        [Test, Description("Count across lines")]
         public void Word4()
         {
             Initialize("foo bar", "baz jaz");
@@ -98,7 +98,7 @@ namespace VimCoreTest
             Assert.AreEqual("foo bar" + Environment.NewLine + "baz ", res.AsComplete().Item.Item1.GetText());
         }
 
-        [TestMethod, Description("Count off the end of the buffer")]
+        [Test, Description("Count off the end of the buffer")]
         public void Word5()
         {
             Initialize("foo bar");
@@ -107,7 +107,7 @@ namespace VimCoreTest
             Assert.AreEqual("foo bar", res.AsComplete().Item.Item1.GetText());
         }
 
-        [TestMethod]
+        [Test]
         public void BadInput()
         {
             Initialize("foo bar");
@@ -118,7 +118,7 @@ namespace VimCoreTest
         }
 
 
-        [TestMethod, Description("Keep gettnig input until it's escaped")]
+        [Test, Description("Keep gettnig input until it's escaped")]
         public void BadInput2()
         {
             Initialize("foo bar");
@@ -130,7 +130,7 @@ namespace VimCoreTest
             Assert.IsTrue(res.IsCancel);
         }
 
-        [TestMethod]
+        [Test]
         public void EndOfLine1()
         {
             Initialize("foo bar", "baz");
@@ -144,7 +144,7 @@ namespace VimCoreTest
             Assert.AreEqual(OperationKind.CharacterWise, tuple.Item3);
         }
 
-        [TestMethod]
+        [Test]
         public void EndOfLine2()
         {
             Initialize("foo bar", "baz");
@@ -155,7 +155,7 @@ namespace VimCoreTest
             Assert.AreEqual("oo bar", span.GetText());
         }
 
-        [TestMethod]
+        [Test]
         public void EndOfLineCount1()
         {
             Initialize("foo", "bar", "baz");
@@ -168,7 +168,7 @@ namespace VimCoreTest
             Assert.AreEqual(OperationKind.CharacterWise, tuple.Item3);
         }
 
-        [TestMethod]
+        [Test]
         public void EndOfLineCount2()
         {
             Initialize("foo", "bar", "baz", "jar");
@@ -181,7 +181,7 @@ namespace VimCoreTest
             Assert.AreEqual(OperationKind.CharacterWise, tuple.Item3);
         }
 
-        [TestMethod,Description("Make sure counts past the end of the buffer don't crash")]
+        [Test,Description("Make sure counts past the end of the buffer don't crash")]
         public void EndOfLineCount3()
         {
             Initialize("foo");
@@ -192,7 +192,7 @@ namespace VimCoreTest
             Assert.AreEqual("foo", tuple.Item1.GetText());
         }
 
-        [TestMethod]
+        [Test]
         public void StartOfLine1()
         {
             Initialize("foo");
@@ -205,7 +205,7 @@ namespace VimCoreTest
             Assert.AreEqual(OperationKind.CharacterWise, tuple.Item3);
         }
 
-        [TestMethod, Description("Make sure it goes to the first non-whitespace character")]
+        [Test, Description("Make sure it goes to the first non-whitespace character")]
         public void StartOfLine2()
         {
             Initialize("  foo");
@@ -218,7 +218,7 @@ namespace VimCoreTest
             Assert.AreEqual(OperationKind.CharacterWise, tuple.Item3);
         }
 
-        [TestMethod]
+        [Test]
         public void Count1()
         {
             Initialize("foo bar baz");
@@ -228,7 +228,7 @@ namespace VimCoreTest
             Assert.AreEqual("foo bar ", span.GetText());
         }
 
-        [TestMethod, Description("Count of 1")]
+        [Test, Description("Count of 1")]
         public void Count2()
         {
             Initialize("foo bar baz");
@@ -238,7 +238,7 @@ namespace VimCoreTest
             Assert.AreEqual("foo ", span.GetText());
         }
 
-        [TestMethod]
+        [Test]
         public void AllWord1()
         {
             Initialize("foo bar");
@@ -247,7 +247,7 @@ namespace VimCoreTest
             Assert.AreEqual("foo ", res.AsComplete().Item.Item1.GetText());
         }
 
-        [TestMethod]
+        [Test]
         public void AllWord2()
         {
             Initialize("foo bar");
@@ -256,7 +256,7 @@ namespace VimCoreTest
             Assert.AreEqual("foo ", res.AsComplete().Item.Item1.GetText());
         }
 
-        [TestMethod]
+        [Test]
         public void AllWord3()
         {
             Initialize("foo bar baz");
@@ -265,7 +265,7 @@ namespace VimCoreTest
             Assert.AreEqual("foo bar ", res.AsComplete().Item.Item1.GetText());
         }
 
-        [TestMethod]
+        [Test]
         public void CharLeft1()
         {
             Initialize("foo bar");
@@ -274,7 +274,7 @@ namespace VimCoreTest
             Assert.AreEqual("fo", res.AsComplete().Item.Item1.GetText());
         }
 
-        [TestMethod, Description("Make sure that counts are multiplied")]
+        [Test, Description("Make sure that counts are multiplied")]
         public void CharLeft2()
         {
             Initialize("food bar");
@@ -282,7 +282,7 @@ namespace VimCoreTest
             Assert.AreEqual("food", res.AsComplete().Item.Item1.GetText());
         }
 
-        [TestMethod]
+        [Test]
         public void CharRight1()
         {
             Initialize("foo");
@@ -291,7 +291,7 @@ namespace VimCoreTest
             Assert.AreEqual(OperationKind.CharacterWise, res.AsComplete().Item.Item3);
         }
 
-        [TestMethod]
+        [Test]
         public void LineUp1()
         {
             Initialize("foo", "bar");

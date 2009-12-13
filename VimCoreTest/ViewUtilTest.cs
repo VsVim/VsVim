@@ -2,7 +2,7 @@
 using System.Text;
 using System.Collections.Generic;
 using System.Linq;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NUnit.Framework;
 using VimCore;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text;
@@ -12,7 +12,7 @@ namespace VimCoreTest
     /// <summary>
     /// Summary description for ViewUtilTest
     /// </summary>
-    [TestClass]
+    [TestFixture]
     public class ViewUtilTest
     {
         private IWpfTextView _view;
@@ -22,7 +22,7 @@ namespace VimCoreTest
             _view = Utils.EditorUtil.CreateView(lines);
         }
 
-        [TestInitialize]
+        [SetUp]
         public void Init()
         {
             CreateView(
@@ -31,7 +31,7 @@ namespace VimCoreTest
                 "a big dog");
         }
 
-        [TestMethod, Description("Move to the top of the file")]
+        [Test, Description("Move to the top of the file")]
         public void MoveToLine1()
         {
             var line = _view.TextSnapshot.GetLineFromLineNumber(0);
@@ -40,7 +40,7 @@ namespace VimCoreTest
             Assert.AreEqual(point, _view.Caret.Position.BufferPosition);
         }
 
-        [TestMethod, Description("Make sure the caret moves")]
+        [Test, Description("Make sure the caret moves")]
         public void MoveToLine2()
         {
             var line = _view.TextSnapshot.GetLineFromLineNumber(1);
@@ -49,7 +49,7 @@ namespace VimCoreTest
             Assert.AreEqual(point, _view.Caret.Position.BufferPosition);
         }
 
-        [TestMethod]
+        [Test]
         public void FindCurrentFullWord1()
         {
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 3));
@@ -57,7 +57,7 @@ namespace VimCoreTest
             Assert.IsTrue(string.IsNullOrEmpty(word));
         }
 
-        [TestMethod]
+        [Test]
         public void FindCurrentFullWord2()
         {
             var line = _view.TextSnapshot.GetLineFromLineNumber(1);
@@ -66,7 +66,7 @@ namespace VimCoreTest
             Assert.AreEqual("boy", word);
         }
 
-        [TestMethod, Description("At end of line should wrap to the start of the next line if there is a word")]
+        [Test, Description("At end of line should wrap to the start of the next line if there is a word")]
         public void MoveWordForward1()
         {
             var line1 = _view.TextSnapshot.GetLineFromLineNumber(0);
@@ -76,7 +76,7 @@ namespace VimCoreTest
             Assert.AreEqual(line2.Start, _view.Caret.Position.BufferPosition);
         }
 
-        [TestMethod]
+        [Test]
         public void MoveWordForward2()
         {
             var line = _view.TextSnapshot.GetLineFromLineNumber(0);
@@ -85,7 +85,7 @@ namespace VimCoreTest
             Assert.AreEqual(4, _view.Caret.Position.BufferPosition.Position);
         }
 
-        [TestMethod]
+        [Test]
         public void MoveWordBackword1()
         {
             _view = Utils.EditorUtil.CreateView("foo bar");
@@ -95,7 +95,7 @@ namespace VimCoreTest
             Assert.AreEqual(4, _view.Caret.Position.BufferPosition.Position);
         }
 
-        [TestMethod, Description("At the the start of a word move back to the start of the previous wodr")]
+        [Test, Description("At the the start of a word move back to the start of the previous wodr")]
         public void MoveWordBackward2()
         {
             _view = Utils.EditorUtil.CreateView("foo bar");
@@ -105,7 +105,7 @@ namespace VimCoreTest
             Assert.AreEqual(0, _view.Caret.Position.BufferPosition.Position);
         }
 
-        [TestMethod, Description("Middle of word should move back to front")]
+        [Test, Description("Middle of word should move back to front")]
         public void MoveWordBackard3()
         {
             _view = Utils.EditorUtil.CreateView("foo bar");
@@ -115,7 +115,7 @@ namespace VimCoreTest
             Assert.AreEqual(4, _view.Caret.Position.BufferPosition.Position);
         }
 
-        [TestMethod, Description("Move backwards across lines")]
+        [Test, Description("Move backwards across lines")]
         public void MoveWordBackward4()
         {
             _view = Utils.EditorUtil.CreateView("foo bar", "baz");
@@ -125,7 +125,7 @@ namespace VimCoreTest
             Assert.AreEqual(4, _view.Caret.Position.BufferPosition.Position);
         }
 
-        [TestMethod, Description("Don't crash going off the buffer")]
+        [Test, Description("Don't crash going off the buffer")]
         public void MoveCaretRight1()
         {
             var last = _view.TextSnapshot.Lines.Last();
@@ -134,7 +134,7 @@ namespace VimCoreTest
             Assert.AreEqual(last.End, res);
         }
 
-        [TestMethod, Description("Don't go off the end of the current line")]
+        [Test, Description("Don't go off the end of the current line")]
         public void MoveCaretRight2()
         {
             var line = _view.TextSnapshot.GetLineFromLineNumber(0);
@@ -144,7 +144,7 @@ namespace VimCoreTest
 
         }
 
-        [TestMethod]
+        [Test]
         public void MoveCaretLeft1()
         {
             var line = _view.TextSnapshot.GetLineFromLineNumber(0);
@@ -154,7 +154,7 @@ namespace VimCoreTest
             Assert.AreEqual(line.Start, _view.Caret.Position.BufferPosition);
         }
 
-        [TestMethod, Description("Left at the start of the line should not go further")]
+        [Test, Description("Left at the start of the line should not go further")]
         public void MoveCaretLeft2()
         {
             var line = _view.TextSnapshot.GetLineFromLineNumber(1);
@@ -163,7 +163,7 @@ namespace VimCoreTest
             Assert.AreEqual(line.Start, res);
         }
 
-        [TestMethod, Description("Move caret down should fail if the caret is at the end of the buffer")]
+        [Test, Description("Move caret down should fail if the caret is at the end of the buffer")]
         public void MoveCaretDown1()
         {
             var last = _view.TextSnapshot.Lines.Last();
@@ -172,7 +172,7 @@ namespace VimCoreTest
             Assert.AreEqual(last.Start, res);
         }
 
-        [TestMethod, Description("Move caret down should not crash if the line is the second to last line.  In other words, the last real line")]
+        [Test, Description("Move caret down should not crash if the line is the second to last line.  In other words, the last real line")]
         public void MoveCaretDown2()
         {
             var tss = _view.TextSnapshot;
@@ -182,7 +182,7 @@ namespace VimCoreTest
             Assert.AreNotEqual(line.Start, res);
         }
 
-        [TestMethod, Description("Move caret down should not crash if the line is the second to last line.  In other words, the last real line")]
+        [Test, Description("Move caret down should not crash if the line is the second to last line.  In other words, the last real line")]
         public void MoveCaretDown3()
         {
             var tss = _view.TextSnapshot;
@@ -192,7 +192,7 @@ namespace VimCoreTest
             Assert.AreEqual(line.Start, res);
         }
 
-        [TestMethod, Description("Be wary the 0 length last line")]
+        [Test, Description("Be wary the 0 length last line")]
         public void MoveCaretDown4()
         {
             CreateView("foo", String.Empty);
@@ -203,7 +203,7 @@ namespace VimCoreTest
             Assert.AreNotEqual(line.Start, res);
         }
 
-        [TestMethod, Description("Move caret down should maintain column")]
+        [Test, Description("Move caret down should maintain column")]
         public void MoveCaretDown5()
         {
             CreateView("foo", "bar");
@@ -213,7 +213,7 @@ namespace VimCoreTest
             Assert.AreEqual(res, tss.GetLineFromLineNumber(1).Start.Add(1));
         }
 
-        [TestMethod, Description("Move caret down should maintain column")]
+        [Test, Description("Move caret down should maintain column")]
         public void MoveCaretDown6()
         {
             CreateView("foo", "bar");
@@ -223,7 +223,7 @@ namespace VimCoreTest
             Assert.AreEqual(res, tss.GetLineFromLineNumber(1).End);
         }
 
-        [TestMethod, Description("Move caret up past the begining of the buffer should fail if it's already at the top")]
+        [Test, Description("Move caret up past the begining of the buffer should fail if it's already at the top")]
         public void MoveCaretUp1()
         {
             var first = _view.TextSnapshot.Lines.First();
@@ -232,7 +232,7 @@ namespace VimCoreTest
             Assert.AreEqual(first.End, res);
         }
 
-        [TestMethod, Description("Move caret up should respect column positions")]
+        [Test, Description("Move caret up should respect column positions")]
         public void MoveCaretUp2()
         {
             CreateView("foo", "bar");

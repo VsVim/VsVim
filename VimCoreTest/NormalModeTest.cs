@@ -2,7 +2,7 @@
 using System.Text;
 using System.Collections.Generic;
 using System.Linq;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NUnit.Framework;
 using VimCore;
 using Microsoft.VisualStudio.Text;
 using System.Windows.Input;
@@ -15,7 +15,7 @@ using MockFactory = VimCoreTest.Utils.MockObjectFactory;
 
 namespace VimCoreTest
 {
-    [TestClass]
+    [TestFixture]
     public class NormalModeTest
     {
         private VimCore.Modes.Normal.NormalMode _modeRaw;
@@ -51,19 +51,19 @@ namespace VimCoreTest
             _mode.OnEnter();
         }
 
-        [TestInitialize]
+        [SetUp]
         public void TestInit()
         {
             CreateBuffer(s_lines);
         }
 
-        [TestMethod]
+        [Test]
         public void ModeKindTest()
         {
             Assert.AreEqual(ModeKind.Normal, _mode.ModeKind);
         }
 
-        [TestMethod, Description("Let enter go straight back to the editor in the default case")]
+        [Test, Description("Let enter go straight back to the editor in the default case")]
         public void EnterProcessing()
         {
             var can = _mode.CanProcess(InputUtil.KeyToKeyInput(Key.Enter));
@@ -72,7 +72,7 @@ namespace VimCoreTest
 
         #region CanProcess
 
-        [TestMethod, Description("Can process basic commands")]
+        [Test, Description("Can process basic commands")]
         public void CanProcess1()
         {
             Assert.IsTrue(_mode.CanProcess(InputUtil.CharToKeyInput('u')));
@@ -81,14 +81,14 @@ namespace VimCoreTest
             Assert.IsTrue(_mode.CanProcess(InputUtil.CharToKeyInput('i')));
         }
 
-        [TestMethod, Description("Cannot process invalid commands")]
+        [Test, Description("Cannot process invalid commands")]
         public void CanProcess2()
         {
             Assert.IsFalse(_mode.CanProcess(InputUtil.CharToKeyInput('U')));
             Assert.IsFalse(_mode.CanProcess(InputUtil.CharToKeyInput('Z')));
         }
 
-        [TestMethod, Description("Must be able to process numbers")]
+        [Test, Description("Must be able to process numbers")]
         public void CanProcess3()
         {
             foreach (var cur in Enumerable.Range(1, 8))
@@ -99,7 +99,7 @@ namespace VimCoreTest
             }
         }
 
-        [TestMethod, Description("When in a need more state, process everything")]
+        [Test, Description("When in a need more state, process everything")]
         public void CanProcess4()
         {
             _mode.Process(InputUtil.CharToKeyInput('/'));
@@ -111,7 +111,7 @@ namespace VimCoreTest
 
         #region Movement
 
-        [TestMethod, Description("Enter should move down on line")]
+        [Test, Description("Enter should move down on line")]
         public void Enter1()
         {
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 0));
@@ -120,7 +120,7 @@ namespace VimCoreTest
             Assert.AreEqual(line.Start, _view.Caret.Position.BufferPosition);
         }
 
-        [TestMethod, Description("Enter at end of file should beep ")]
+        [Test, Description("Enter at end of file should beep ")]
         public void Enter2()
         {
             var last = _view.TextSnapshot.Lines.Last();
@@ -130,7 +130,7 @@ namespace VimCoreTest
             Assert.AreEqual(last.Start.Add(2), _view.Caret.Position.BufferPosition);
         }
 
-        [TestMethod]
+        [Test]
         public void Move_l()
         {
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 0));
@@ -138,7 +138,7 @@ namespace VimCoreTest
             Assert.AreEqual(1, _view.Caret.Position.BufferPosition.Position);
         }
 
-        [TestMethod]
+        [Test]
         public void Move_l2()
         {
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 0));
@@ -146,7 +146,7 @@ namespace VimCoreTest
             Assert.AreEqual(2, _view.Caret.Position.BufferPosition.Position);
         }
 
-        [TestMethod]
+        [Test]
         public void Move_h()
         {
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 1));
@@ -154,7 +154,7 @@ namespace VimCoreTest
             Assert.AreEqual(0, _view.Caret.Position.BufferPosition.Position);
         }
 
-        [TestMethod,Description("Make sure that we clear the selection on a motion")]
+        [Test,Description("Make sure that we clear the selection on a motion")]
         public void Move_h2()
         {
             var start = new SnapshotPoint(_view.TextSnapshot, 1);
@@ -164,7 +164,7 @@ namespace VimCoreTest
             Assert.AreEqual(0, _view.Selection.SelectedSpans.Single().Length);
         }
 
-        [TestMethod]
+        [Test]
         public void Move_k()
         {
             var line = _view.TextSnapshot.GetLineFromLineNumber(1);
@@ -173,7 +173,7 @@ namespace VimCoreTest
             Assert.AreEqual(0, _view.Caret.Position.BufferPosition.GetContainingLine().LineNumber);
         }
 
-        [TestMethod]
+        [Test]
         public void Move_j()
         {
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 0));
@@ -185,7 +185,7 @@ namespace VimCoreTest
 
         #region Scroll
 
-        [TestMethod]
+        [Test]
         public void ScrollUp1()
         {
             CreateBuffer("foo", "bar");
@@ -194,7 +194,7 @@ namespace VimCoreTest
             Assert.AreEqual(0, _view.Caret.Position.BufferPosition.GetContainingLine().LineNumber);
         }
 
-        [TestMethod, Description("Don't break at line 0")]
+        [Test, Description("Don't break at line 0")]
         public void ScrollUp2()
         {
             CreateBuffer("foo", "bar");
@@ -203,7 +203,7 @@ namespace VimCoreTest
             Assert.AreEqual(0, _view.Caret.Position.BufferPosition.GetContainingLine().LineNumber);
         }
 
-        [TestMethod]
+        [Test]
         public void ScrollDown1()
         {
             CreateBuffer("foo", "bar");
@@ -216,21 +216,21 @@ namespace VimCoreTest
 
         #region Motion
 
-        [TestMethod, Description("Typing in invalid motion should produce a warning")]
+        [Test, Description("Typing in invalid motion should produce a warning")]
         public void BadMotion1()
         {
             _mode.Process("d@");
             Assert.AreNotEqual(String.Empty, _host.Status);
         }
 
-        [TestMethod, Description("Typing in invalid motion should produce a warning")]
+        [Test, Description("Typing in invalid motion should produce a warning")]
         public void BadMotion2()
         {
             _mode.Process("d@aoeuaoeu");
             Assert.AreNotEqual(String.Empty, _host.Status);
         }
 
-        [TestMethod, Description("Enter must cancel an invalid motion")]
+        [Test, Description("Enter must cancel an invalid motion")]
         public void BadMotion3()
         {
             _mode.Process("d@");
@@ -241,7 +241,7 @@ namespace VimCoreTest
             Assert.IsTrue(res.IsSwitchMode);  
         }
 
-        [TestMethod, Description("Canceled motion should reset the status")]
+        [Test, Description("Canceled motion should reset the status")]
         public void BadMotion4()
         {
             _mode.Process("dzzz");
@@ -250,14 +250,14 @@ namespace VimCoreTest
             Assert.IsTrue(String.IsNullOrEmpty(_host.Status));
         }
 
-        [TestMethod, Description("Completed motion should reset the status")]
+        [Test, Description("Completed motion should reset the status")]
         public void BadMotion5()
         {
             _mode.Process("yaw");
             Assert.IsTrue(String.IsNullOrEmpty(_host.Status));
         }
 
-        [TestMethod]
+        [Test]
         public void Motion_l()
         {
             _mode.Process("l");
@@ -266,7 +266,7 @@ namespace VimCoreTest
             Assert.AreEqual(line.Start.Add(1), point);
         }
 
-        [TestMethod]
+        [Test]
         public void Motion_2l()
         {
             _mode.Process("2l");
@@ -275,7 +275,7 @@ namespace VimCoreTest
             Assert.AreEqual(line.Start.Add(2), point);
         }
 
-        [TestMethod, Description("Don't crash moving off the end of the buffer")]
+        [Test, Description("Don't crash moving off the end of the buffer")]
         public void Motion_50l()
         {
             var line = _view.TextSnapshot.Lines.Last();
@@ -289,7 +289,7 @@ namespace VimCoreTest
 
         #region Edits
 
-        [TestMethod]
+        [Test]
         public void Edit_o_1()
         {
             CreateBuffer("how is", "foo");
@@ -300,7 +300,7 @@ namespace VimCoreTest
             Assert.AreEqual(3, _view.TextSnapshot.Lines.Count());
         }
 
-        [TestMethod, Description("Use o at end of buffer")]
+        [Test, Description("Use o at end of buffer")]
         public void Edit_o_2()
         {
             CreateBuffer("foo", "bar");
@@ -309,7 +309,7 @@ namespace VimCoreTest
             _mode.Process('o');
         }
 
-        [TestMethod, Description("Make sure o will indent if the previous line was indented")]
+        [Test, Description("Make sure o will indent if the previous line was indented")]
         public void Edit_o_3()
         {
             CreateBuffer("  foo");
@@ -320,7 +320,7 @@ namespace VimCoreTest
             Assert.AreEqual(2, point.VirtualSpaces);
         }
 
-        [TestMethod]
+        [Test]
         public void Edit_O_1()
         {
             CreateBuffer("foo");
@@ -330,7 +330,7 @@ namespace VimCoreTest
             Assert.AreEqual(0, point.Position.Position);
         }
 
-        [TestMethod]
+        [Test]
         public void Edit_O_2()
         {
             CreateBuffer("foo", "bar");
@@ -341,7 +341,7 @@ namespace VimCoreTest
             Assert.AreEqual(String.Empty, point.GetContainingLine().GetText());
         }
 
-        [TestMethod]
+        [Test]
         public void Edit_X_1()
         {
             CreateBuffer("foo");
@@ -350,7 +350,7 @@ namespace VimCoreTest
             Assert.AreEqual("oo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
         }
 
-        [TestMethod, Description("Don't delete past the current line")]
+        [Test, Description("Don't delete past the current line")]
         public void Edit_X_2()
         {
             CreateBuffer("foo", "bar");
@@ -360,7 +360,7 @@ namespace VimCoreTest
             Assert.AreEqual("foo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
         }
 
-        [TestMethod]
+        [Test]
         public void Edit_2X_1()
         {
             CreateBuffer("foo", "bar");
@@ -369,7 +369,7 @@ namespace VimCoreTest
             Assert.AreEqual("o", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
         }
 
-        [TestMethod]
+        [Test]
         public void Edit_2X_2()
         {
             CreateBuffer("foo");
@@ -377,7 +377,7 @@ namespace VimCoreTest
             Assert.AreEqual("foo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
         }
 
-        [TestMethod]
+        [Test]
         public void Edit_r_1()
         {
             CreateBuffer("foo");
@@ -385,7 +385,7 @@ namespace VimCoreTest
             Assert.AreEqual("boo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
         }
 
-        [TestMethod]
+        [Test]
         public void Edit_r_2()
         {
             CreateBuffer("foo");
@@ -393,7 +393,7 @@ namespace VimCoreTest
             Assert.AreEqual("bbo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
         }
 
-        [TestMethod]
+        [Test]
         public void Edit_r_3()
         {
             CreateBuffer("foo");
@@ -406,7 +406,7 @@ namespace VimCoreTest
             Assert.AreEqual("o", tss.GetLineFromLineNumber(1).GetText());
         }
 
-        [TestMethod]
+        [Test]
         public void Edit_r_4()
         {
             CreateBuffer("food");
@@ -419,7 +419,7 @@ namespace VimCoreTest
             Assert.AreEqual("d", tss.GetLineFromLineNumber(1).GetText());
         }
 
-        [TestMethod]
+        [Test]
         public void Edit_r_5()
         {
             CreateBuffer("food");
@@ -429,7 +429,7 @@ namespace VimCoreTest
             Assert.AreSame(tss, _view.TextSnapshot);
         }
 
-        [TestMethod, Description("block caret should be hidden for the duration of the r command")]
+        [Test, Description("block caret should be hidden for the duration of the r command")]
         public void Edit_r_6()
         {
             CreateBuffer("foo");
@@ -441,7 +441,7 @@ namespace VimCoreTest
             Assert.AreEqual(1, _blockCaret.ShowCount);
         }
 
-        [TestMethod, Description("Edit should not cause the cursor to move")]
+        [Test, Description("Edit should not cause the cursor to move")]
         public void Edit_r_7()
         {
             CreateBuffer("foo");
@@ -453,7 +453,7 @@ namespace VimCoreTest
 
         #region Yank
 
-        [TestMethod]
+        [Test]
         public void Yank_yw()
         {
             CreateBuffer("foo");
@@ -461,7 +461,7 @@ namespace VimCoreTest
             Assert.AreEqual("foo", _map.DefaultRegister.StringValue);
         }
 
-        [TestMethod, Description("Yanks in the middle of the word should only get a partial")]
+        [Test, Description("Yanks in the middle of the word should only get a partial")]
         public void Yank_yw_2()
         {
             CreateBuffer("foo bar baz");
@@ -470,7 +470,7 @@ namespace VimCoreTest
             Assert.AreEqual("oo ", _map.DefaultRegister.StringValue);
         }
 
-        [TestMethod, Description("Yank word should go to the start of the next word including spaces")]
+        [Test, Description("Yank word should go to the start of the next word including spaces")]
         public void Yank_yw_3()
         {
             CreateBuffer("foo bar");
@@ -478,7 +478,7 @@ namespace VimCoreTest
             Assert.AreEqual("foo ", _map.DefaultRegister.StringValue);
         }
 
-        [TestMethod, Description("Non-default register")]
+        [Test, Description("Non-default register")]
         public void Yank_yw_4()
         {
             CreateBuffer("foo bar");
@@ -486,7 +486,7 @@ namespace VimCoreTest
             Assert.AreEqual("foo ", _map.GetRegister('c').StringValue);
         }
 
-        [TestMethod]
+        [Test]
         public void Yank_2yw()
         {
             CreateBuffer("foo bar baz");
@@ -494,7 +494,7 @@ namespace VimCoreTest
             Assert.AreEqual("foo bar ", _map.DefaultRegister.StringValue);
         }
 
-        [TestMethod]
+        [Test]
         public void Yank_3yw()
         {
             CreateBuffer("foo bar baz joe");
@@ -502,7 +502,7 @@ namespace VimCoreTest
             Assert.AreEqual("foo bar baz ", _map.DefaultRegister.StringValue);
         }
 
-        [TestMethod]
+        [Test]
         public void Yank_yaw()
         {
             CreateBuffer("foo bar");
@@ -510,7 +510,7 @@ namespace VimCoreTest
             Assert.AreEqual("foo ", _map.DefaultRegister.StringValue);
         }
 
-        [TestMethod]
+        [Test]
         public void Yank_y2w()
         {
             CreateBuffer("foo bar baz");
@@ -518,7 +518,7 @@ namespace VimCoreTest
             Assert.AreEqual("foo bar ", _map.DefaultRegister.StringValue);
         }
 
-        [TestMethod]
+        [Test]
         public void Yank_yaw_2()
         {
             CreateBuffer("foo bar");
@@ -527,7 +527,7 @@ namespace VimCoreTest
             Assert.AreEqual("foo ", _map.DefaultRegister.StringValue);
         }
 
-        [TestMethod, Description("A yy should grab the end of line including line break information")]
+        [Test, Description("A yy should grab the end of line including line break information")]
         public void Yank_yy_1()
         {
             CreateBuffer("foo", "bar");
@@ -537,7 +537,7 @@ namespace VimCoreTest
             Assert.AreEqual(MotionKind.Inclusive, _map.DefaultRegister.Value.MotionKind);
         }
 
-        [TestMethod, Description("yy should yank the entire line even if the cursor is not at the start")]
+        [Test, Description("yy should yank the entire line even if the cursor is not at the start")]
         public void Yank_yy_2()
         {
             CreateBuffer("foo", "bar");
@@ -550,7 +550,7 @@ namespace VimCoreTest
 
         #region Paste
 
-        [TestMethod]
+        [Test]
         public void Paste_p()
         {
             CreateBuffer("foo bar");
@@ -559,7 +559,7 @@ namespace VimCoreTest
             Assert.AreEqual("fheyoo bar", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
         }
 
-        [TestMethod, Description("Paste from a non-default register")]
+        [Test, Description("Paste from a non-default register")]
         public void Paste_p_2()
         {
             CreateBuffer("foo");
@@ -568,7 +568,7 @@ namespace VimCoreTest
             Assert.AreEqual("fheyoo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
         }
 
-        [TestMethod, Description("Paste at end of buffer shouldn't crash")]
+        [Test, Description("Paste at end of buffer shouldn't crash")]
         public void Paste_p_3()
         {
             CreateBuffer("foo", "bar");
@@ -578,7 +578,7 @@ namespace VimCoreTest
             Assert.AreEqual("barhello", _view.TextSnapshot.GetLineFromLineNumber(1).GetText());
         }
 
-        [TestMethod]
+        [Test]
         public void Paste_p_4()
         {
             CreateBuffer("foo", String.Empty);
@@ -588,7 +588,7 @@ namespace VimCoreTest
             Assert.AreEqual("bar", _view.TextSnapshot.GetLineFromLineNumber(1).GetText());
         }
 
-        [TestMethod, Description("Pasting a linewise motion should occur on the next line")]
+        [Test, Description("Pasting a linewise motion should occur on the next line")]
         public void Paste_p_5()
         {
             CreateBuffer("foo", "bar");
@@ -599,7 +599,7 @@ namespace VimCoreTest
             Assert.AreEqual("baz", _view.TextSnapshot.GetLineFromLineNumber(1).GetText());
         }
 
-        [TestMethod, Description("Pasting a linewise motion should move the caret to the start of the next line")]
+        [Test, Description("Pasting a linewise motion should move the caret to the start of the next line")]
         public void Paste_p_6()
         {
             CreateBuffer("foo", "bar");
@@ -610,7 +610,7 @@ namespace VimCoreTest
             Assert.AreEqual(pos, _view.TextSnapshot.GetLineFromLineNumber(1).Start);
         }
 
-        [TestMethod]
+        [Test]
         public void Paste_2p()
         {
             CreateBuffer("foo");
@@ -619,7 +619,7 @@ namespace VimCoreTest
             Assert.AreEqual("fheyheyoo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
         }
 
-        [TestMethod]
+        [Test]
         public void Paste_P()
         {
             CreateBuffer("foo");
@@ -628,7 +628,7 @@ namespace VimCoreTest
             Assert.AreEqual("heyfoo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
         }
 
-        [TestMethod]
+        [Test]
         public void Paste_2P()
         {
             CreateBuffer("foo");
@@ -641,7 +641,7 @@ namespace VimCoreTest
 
         #region Delete
 
-        [TestMethod, Description("Make sure a dd is a linewise action")]
+        [Test, Description("Make sure a dd is a linewise action")]
         public void Delete_dd_1()
         {
             CreateBuffer("foo", "bar");
@@ -652,7 +652,7 @@ namespace VimCoreTest
             Assert.AreEqual(OperationKind.LineWise, value.OperationKind);
         }
 
-        [TestMethod, Description("Make sure that it deletes the entire line regardless of where the caret is")]
+        [Test, Description("Make sure that it deletes the entire line regardless of where the caret is")]
         public void Delete_dd_2()
         {
             CreateBuffer("foo", "bar");
@@ -669,7 +669,7 @@ namespace VimCoreTest
 
         #region Regressions
 
-        [TestMethod, Description("Don't re-enter insert mode on every keystroke once you've left")]
+        [Test, Description("Don't re-enter insert mode on every keystroke once you've left")]
         public void Regression_InsertMode()
         {
             var res = _mode.Process(InputUtil.KeyToKeyInput(Key.I));
@@ -679,7 +679,7 @@ namespace VimCoreTest
             Assert.IsTrue(res.IsProcessed);
         }
 
-        [TestMethod, Description("j past the end of the buffer")]
+        [Test, Description("j past the end of the buffer")]
         public void Regression_DownPastBufferEnd()
         {
             CreateBuffer("foo");
@@ -693,7 +693,7 @@ namespace VimCoreTest
 
         #region Incremental Search
 
-        [TestMethod]
+        [Test]
         public void Search1()
         {
             CreateBuffer("foo bar");
@@ -703,7 +703,7 @@ namespace VimCoreTest
             Assert.AreEqual("bar", sel.GetText());
         }
 
-        [TestMethod]
+        [Test]
         public void Search2()
         {
             CreateBuffer("foo bar");
@@ -713,7 +713,7 @@ namespace VimCoreTest
             Assert.AreEqual("foo", sel.GetText());
         }
 
-        [TestMethod, Description("Make sure it matches the first occurance")]
+        [Test, Description("Make sure it matches the first occurance")]
         public void Search3()
         {
             CreateBuffer("foo bar bar");
@@ -723,7 +723,7 @@ namespace VimCoreTest
             Assert.AreEqual("bar", sel.GetText());
         }
 
-        [TestMethod, Description("No match should select nothing")]
+        [Test, Description("No match should select nothing")]
         public void Search4()
         {
             CreateBuffer("foo bar baz");
@@ -733,7 +733,7 @@ namespace VimCoreTest
             Assert.AreEqual(0, sel.Length);
         }
 
-        [TestMethod, Description("A partial match followed by a bad match should go back to start")]
+        [Test, Description("A partial match followed by a bad match should go back to start")]
         public void Search5()
         {
             CreateBuffer("foo bar baz");
@@ -744,7 +744,7 @@ namespace VimCoreTest
             Assert.AreEqual(0, sel.Length);
         }
 
-        [TestMethod, Description("Search accross lines")]
+        [Test, Description("Search accross lines")]
         public void Search6()
         {
             CreateBuffer("foo", "bar");
@@ -755,7 +755,7 @@ namespace VimCoreTest
             Assert.AreEqual(line.Start, _view.Caret.Position.BufferPosition);
         }
 
-        [TestMethod]
+        [Test]
         public void SearchNext1()
         {
             CreateBuffer("foo bar");
@@ -766,7 +766,7 @@ namespace VimCoreTest
             Assert.AreEqual(0, sel.Length);
         }
 
-        [TestMethod, Description("Don't start at current position")]
+        [Test, Description("Don't start at current position")]
         public void SearchNext2()
         {
             CreateBuffer("bar bar");
@@ -777,7 +777,7 @@ namespace VimCoreTest
             Assert.AreEqual(0, sel.Length);
         }
 
-        [TestMethod, Description("Don't skip the current word just the current letter")]
+        [Test, Description("Don't skip the current word just the current letter")]
         public void SearchNext3()
         {
             CreateBuffer("bbar, baz");
@@ -786,7 +786,7 @@ namespace VimCoreTest
             Assert.AreEqual(1, _view.Caret.Position.BufferPosition.Position);
         }
 
-        [TestMethod, Description("Counted next")]
+        [Test, Description("Counted next")]
         public void SearchNext4()
         {
             CreateBuffer(" bar bar bar");
@@ -795,7 +795,7 @@ namespace VimCoreTest
             Assert.AreEqual(9, _view.Caret.Position.BufferPosition.Position);
         }
 
-        [TestMethod, Description("Make sure enter sets the search")]
+        [Test, Description("Make sure enter sets the search")]
         public void SearchNext5()
         {
             CreateBuffer("foo bar baz");
@@ -805,7 +805,7 @@ namespace VimCoreTest
             Assert.AreEqual(8, _view.Caret.Position.BufferPosition.Position);
         }
 
-        [TestMethod]
+        [Test]
         public void SearchReverse1()
         {
             CreateBuffer("foo bar");
@@ -818,7 +818,7 @@ namespace VimCoreTest
             Assert.AreEqual(4, _view.Caret.Position.BufferPosition.Position);
         }
 
-        [TestMethod, Description("Change nothing on invalid searh")]
+        [Test, Description("Change nothing on invalid searh")]
         public void SearchReverse2()
         {
             CreateBuffer("foo bar");
@@ -831,7 +831,7 @@ namespace VimCoreTest
             Assert.AreEqual(line.End, _view.Caret.Position.BufferPosition);
         }
 
-        [TestMethod]
+        [Test]
         public void SearchNextReverse1()
         {
             CreateBuffer("bar bar");
@@ -843,21 +843,21 @@ namespace VimCoreTest
             Assert.AreEqual(0, _view.Selection.SelectedSpans.Single().Length);
         }
 
-        [TestMethod]
+        [Test]
         public void SearchStatus1()
         {
             _mode.Process("/");
             Assert.AreEqual("/", _host.Status);
         }
 
-        [TestMethod]
+        [Test]
         public void SearchStatus2()
         {
             _mode.Process("/zzz");
             Assert.AreEqual("/zzz", _host.Status);
         }
 
-        [TestMethod]
+        [Test]
         public void SearchBackspace1()
         {
             CreateBuffer("foo bar");
@@ -868,7 +868,7 @@ namespace VimCoreTest
             Assert.AreEqual("foo", _view.Selection.SelectedSpans.Single().GetText());
         }
 
-        [TestMethod]
+        [Test]
         public void SearchBackspace2()
         {
             CreateBuffer("foo bar");
@@ -878,7 +878,7 @@ namespace VimCoreTest
             Assert.AreEqual("b", _view.Selection.SelectedSpans.Single().GetText());
         }
 
-        [TestMethod, Description("Completely exit from the search")]
+        [Test, Description("Completely exit from the search")]
         public void SearchBackspace3()
         {
             CreateBuffer("foo bar");
@@ -894,7 +894,7 @@ namespace VimCoreTest
 
         #region Next / Previous Word
 
-        [TestMethod]
+        [Test]
         public void NextWord1()
         {
             CreateBuffer(" ");
@@ -902,7 +902,7 @@ namespace VimCoreTest
             Assert.AreEqual("No word under cursor", _host.Status);
         }
 
-        [TestMethod, Description("No matches should have no effect")]
+        [Test, Description("No matches should have no effect")]
         public void NextWord2()
         {
             CreateBuffer("foo bar");
@@ -910,7 +910,7 @@ namespace VimCoreTest
             Assert.AreEqual(0, _view.Caret.Position.BufferPosition.Position);
         }
 
-        [TestMethod]
+        [Test]
         public void NextWord3()
         {
             CreateBuffer("foo foo");
@@ -918,7 +918,7 @@ namespace VimCoreTest
             Assert.AreEqual(4, _view.Caret.Position.BufferPosition.Position);
         }
 
-        [TestMethod]
+        [Test]
         public void NextWord4()
         {
             CreateBuffer("foo bar", "foo");
@@ -927,7 +927,7 @@ namespace VimCoreTest
             Assert.AreEqual(line.Start, _view.Caret.Position.BufferPosition);
         }
 
-        [TestMethod, Description("Don't start on position 0")]
+        [Test, Description("Don't start on position 0")]
         public void NextWord5()
         {
             CreateBuffer("foo bar", "foo bar");
@@ -937,7 +937,7 @@ namespace VimCoreTest
             Assert.AreEqual(line.Start.Add(4), _view.Caret.Position.BufferPosition);
         }
 
-        [TestMethod]
+        [Test]
         public void PreviousWord1()
         {
             CreateBuffer("");
@@ -945,7 +945,7 @@ namespace VimCoreTest
             Assert.AreEqual("No word under cursor", _host.Status);
         }
 
-        [TestMethod]
+        [Test]
         public void PreviousWord2()
         {
             CreateBuffer("foo bar");
@@ -953,7 +953,7 @@ namespace VimCoreTest
             Assert.AreEqual(0, _view.Caret.Position.BufferPosition.Position);
         }
 
-        [TestMethod]
+        [Test]
         public void PreviousWord3()
         {
             CreateBuffer("foo bar", "foo");
@@ -963,7 +963,7 @@ namespace VimCoreTest
             Assert.AreEqual(0, _view.Caret.Position.BufferPosition.Position);
         }
 
-        [TestMethod]
+        [Test]
         public void PreviousWord4()
         {
             CreateBuffer("foo bar", "foo bar");
@@ -977,7 +977,7 @@ namespace VimCoreTest
 
         #region Shift
 
-        [TestMethod]
+        [Test]
         public void ShiftRight1()
         {
             CreateBuffer("foo");
@@ -985,7 +985,7 @@ namespace VimCoreTest
             Assert.AreEqual("    foo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
         }
 
-        [TestMethod, Description("With a count")]
+        [Test, Description("With a count")]
         public void ShiftRight2()
         {
             CreateBuffer("foo", "bar");
@@ -995,7 +995,7 @@ namespace VimCoreTest
             Assert.AreEqual("    bar", tss.GetLineFromLineNumber(1).GetText());
         }
 
-        [TestMethod, Description("With a motion")]
+        [Test, Description("With a motion")]
         public void ShiftRight3()
         {
             CreateBuffer("foo", "bar");
@@ -1005,7 +1005,7 @@ namespace VimCoreTest
             Assert.AreEqual("    bar", tss.GetLineFromLineNumber(1).GetText());
         }
 
-        [TestMethod, Description("Make sure a normal >> doesn't shift 2 lines")]
+        [Test, Description("Make sure a normal >> doesn't shift 2 lines")]
         public void ShiftRight4()
         {
             CreateBuffer("foo", "bar");
@@ -1015,7 +1015,7 @@ namespace VimCoreTest
             Assert.AreEqual("bar", tss.GetLineFromLineNumber(1).GetText());
         }
 
-        [TestMethod, Description("Don't eat extra whitespace")]
+        [Test, Description("Don't eat extra whitespace")]
         public void ShiftLeft1()
         {
             CreateBuffer("foo");
@@ -1023,7 +1023,7 @@ namespace VimCoreTest
             Assert.AreEqual("foo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
         }
 
-        [TestMethod]
+        [Test]
         public void ShiftLeft2()
         {
             CreateBuffer(" foo");
@@ -1031,7 +1031,7 @@ namespace VimCoreTest
             Assert.AreEqual("foo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
         }
 
-        [TestMethod]
+        [Test]
         public void ShiftLeft3()
         {
             CreateBuffer("     foo");
@@ -1039,7 +1039,7 @@ namespace VimCoreTest
             Assert.AreEqual(" foo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
         }
 
-        [TestMethod, Description("With a count")]
+        [Test, Description("With a count")]
         public void ShiftLeft4()
         {
             CreateBuffer("     foo", "     bar");
@@ -1049,7 +1049,7 @@ namespace VimCoreTest
             Assert.AreEqual(" bar", tss.GetLineFromLineNumber(1).GetText());
         }
 
-        [TestMethod, Description("Make sure a << doesn't shift more than 1 line")]
+        [Test, Description("Make sure a << doesn't shift more than 1 line")]
         public void ShiftLeft5()
         {
             CreateBuffer(" foo", " bar");
@@ -1065,7 +1065,7 @@ namespace VimCoreTest
 
         #region Misc
 
-        [TestMethod]
+        [Test]
         public void Register1()
         {
             CreateBuffer("foo");
@@ -1074,7 +1074,7 @@ namespace VimCoreTest
             Assert.AreEqual('c', _modeRaw.Register.Name);
         }
 
-        [TestMethod]
+        [Test]
         public void Undo1()
         {
             CreateBuffer("foo");
@@ -1083,7 +1083,7 @@ namespace VimCoreTest
             Assert.AreEqual(1, _host.UndoCount);
         }
 
-        [TestMethod]
+        [Test]
         public void Undo2()
         {
             CreateBuffer("foo");
@@ -1091,7 +1091,7 @@ namespace VimCoreTest
             Assert.AreEqual(2, _host.UndoCount);
         }
 
-        [TestMethod]
+        [Test]
         public void Join1()
         {
             CreateBuffer("foo", "bar");
@@ -1100,7 +1100,7 @@ namespace VimCoreTest
             Assert.AreEqual(4, _view.Caret.Position.BufferPosition.Position);
         }
 
-        [TestMethod]
+        [Test]
         public void Join2()
         {
             CreateBuffer("foo", "  bar", "baz");
@@ -1108,7 +1108,7 @@ namespace VimCoreTest
             Assert.AreEqual("foo bar", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
         }
 
-        [TestMethod]
+        [Test]
         public void Join3()
         {
             CreateBuffer("foo", "  bar", "baz");
@@ -1116,7 +1116,7 @@ namespace VimCoreTest
             Assert.AreEqual("foo bar baz", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
         }
 
-        [TestMethod]
+        [Test]
         public void Join4()
         {
             CreateBuffer("foo", "bar");
@@ -1124,7 +1124,7 @@ namespace VimCoreTest
             Assert.AreEqual("foobar", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());   
         }
 
-        [TestMethod]
+        [Test]
         public void GoToDefinition1()
         {
             var def = new KeyInput(']', Key.OemCloseBrackets, ModifierKeys.Control);
@@ -1133,7 +1133,7 @@ namespace VimCoreTest
             Assert.AreEqual(1, _host.GoToDefinitionCount);
         }
 
-        [TestMethod, Description("When it fails, the status should be updated")]
+        [Test, Description("When it fails, the status should be updated")]
         public void GoToDefinition2()
         {
             CreateBuffer("foo");
@@ -1144,7 +1144,7 @@ namespace VimCoreTest
             Assert.IsTrue(_host.Status.Contains("foo"));
         }
 
-        [TestMethod]
+        [Test]
         public void GoToDefinition3()
         {
             var def = new KeyInput(']', Key.OemCloseBrackets, ModifierKeys.Control);
@@ -1152,21 +1152,21 @@ namespace VimCoreTest
             Assert.IsTrue(_mode.Commands.Contains(def));
         }
 
-        [TestMethod]
+        [Test]
         public void Mark1()
         {
             Assert.IsTrue(_mode.CanProcess(InputUtil.CharToKeyInput('m')));
             Assert.IsTrue(_mode.Commands.Contains(InputUtil.CharToKeyInput('m')));
         }
 
-        [TestMethod, Description("Once we are in mark mode we can process anything")]
+        [Test, Description("Once we are in mark mode we can process anything")]
         public void Mark2()
         {
             _mode.Process(InputUtil.CharToKeyInput('m'));
             Assert.IsTrue(_mode.CanProcess(new KeyInput('c', Key.C, ModifierKeys.Control)));
         }
 
-        [TestMethod]
+        [Test]
         public void Mark3()
         {
             _mode.Process(InputUtil.CharToKeyInput('m'));
@@ -1174,7 +1174,7 @@ namespace VimCoreTest
             Assert.IsTrue(_bufferData._vimData.MarkMap.GetLocalMark(_view.TextBuffer, 'a').IsSome());
         }
 
-        [TestMethod, Description("Bad mark should beep")]
+        [Test, Description("Bad mark should beep")]
         public void Mark4()
         {
             _mode.Process(InputUtil.CharToKeyInput('m'));
@@ -1182,7 +1182,7 @@ namespace VimCoreTest
             Assert.IsTrue(_host.BeepCount > 0);
         }
 
-        [TestMethod]
+        [Test]
         public void JumpToMark1()
         {
             Assert.IsTrue(_mode.CanProcess(InputUtil.CharToKeyInput('\'')));
@@ -1191,7 +1191,7 @@ namespace VimCoreTest
             Assert.IsTrue(_mode.Commands.Contains(InputUtil.CharToKeyInput('`')));
         }
 
-        [TestMethod]
+        [Test]
         public void JumpToMark2()
         {
             CreateBuffer("foobar");
@@ -1201,14 +1201,14 @@ namespace VimCoreTest
             Assert.AreEqual(1, _view.Caret.Position.BufferPosition.Position);
         }
 
-        [TestMethod]
+        [Test]
         public void CharGCommand()
         {
             _mode.Process("gB");
             Assert.IsTrue(_host.BeepCount > 0);
         }
 
-        [TestMethod, Description("OnLeave should kill the block caret")]
+        [Test, Description("OnLeave should kill the block caret")]
         public void OnLeave1()
         {
             _blockCaret.HideCount = 0;
