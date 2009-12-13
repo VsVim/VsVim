@@ -12,7 +12,7 @@ using Microsoft.FSharp.Collections;
 namespace VimCoreTest
 {
     [TestClass]
-    public class RangeCaptureTest
+    public class RangeUtilTest
     {
         private ITextBuffer _buffer;
         private MarkMap _map;
