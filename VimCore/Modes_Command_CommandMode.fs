@@ -134,9 +134,11 @@ type CommandMode( _data : IVimBufferData ) =
             x.TryParseNext inputs next
         let point = ViewUtil.GetCaretPoint _data.TextView
         match RangeUtil.ParseRange point _data.MarkMap originalInputs with
-        | ValidRange(span, inputs) -> withRange (Some(span)) inputs
-        | NoRange(inputs) -> withRange None inputs
-        | Invalid(msg,_) -> 
+        | Succeeded(range, inputs) -> 
+            let span = RangeUtil.GetSnapshotSpan range
+            withRange (Some(span)) inputs
+        | NoRange -> withRange None originalInputs
+        | Failed(msg) -> 
             _data.VimHost.UpdateStatus(msg)
             ()
 

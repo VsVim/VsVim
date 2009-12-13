@@ -53,21 +53,16 @@ namespace VimCoreTest.Utils
 
         #endregion
 
-        #region Range
+        #region ParseRangeResult
 
-        internal static VimCore.Modes.Command.Range.NoRange AsNoRange(this VimCore.Modes.Command.Range res)
+        internal static VimCore.Modes.Command.ParseRangeResult.Succeeded AsSucceeded(this VimCore.Modes.Command.ParseRangeResult res)
         {
-            return (VimCore.Modes.Command.Range.NoRange)res;
+            return (VimCore.Modes.Command.ParseRangeResult.Succeeded)res;
         }
 
-        internal static VimCore.Modes.Command.Range.ValidRange AsValidRange(this VimCore.Modes.Command.Range res)
+        internal static VimCore.Modes.Command.ParseRangeResult.Failed AsFailed(this VimCore.Modes.Command.ParseRangeResult res)
         {
-            return (VimCore.Modes.Command.Range.ValidRange)res;
-        }
-
-        internal static VimCore.Modes.Command.Range.Invalid AsInvalid(this VimCore.Modes.Command.Range res)
-        {
-            return (VimCore.Modes.Command.Range.Invalid)res;
+            return (VimCore.Modes.Command.ParseRangeResult.Failed)res;
         }
 
         #endregion

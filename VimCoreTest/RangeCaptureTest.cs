@@ -29,12 +29,12 @@ namespace VimCoreTest
             _buffer = EditorUtil.CreateBuffer(lines);
         }
 
-        private Range CaptureComplete(string input)
+        private ParseRangeResult CaptureComplete(string input)
         {
             return CaptureComplete(new SnapshotPoint(_buffer.CurrentSnapshot, 0), input);
         }
 
-        private Range CaptureComplete(SnapshotPoint point, string input)
+        private ParseRangeResult CaptureComplete(SnapshotPoint point, string input)
         {
             var list = input.Select(x => InputUtil.CharToKeyInput(x));
             return RangeUtil.ParseRange(point, _map, ListModule.OfSeq(list));
@@ -61,8 +61,8 @@ namespace VimCoreTest
             Create("foo","bar");
             var res = CaptureComplete("%");
             var tss = _buffer.CurrentSnapshot;
-            Assert.IsTrue(res.IsValidRange);
-            Assert.AreEqual(new SnapshotSpan(tss, 0, tss.Length), res.AsValidRange().Item1);
+            Assert.IsTrue(res.IsSucceeded);
+            Assert.AreEqual(new SnapshotSpan(tss, 0, tss.Length), RangeUtil.GetSnapshotSpan(res.AsSucceeded().Item1));
         }
 
         [TestMethod]
@@ -70,10 +70,10 @@ namespace VimCoreTest
         {
             Create("foo", "bar");
             var res = CaptureComplete("%bar");
-            Assert.IsTrue(res.IsValidRange);
-            var range = res.AsValidRange();
-            Assert.AreEqual(new SnapshotSpan(_buffer.CurrentSnapshot, 0, _buffer.CurrentSnapshot.Length), range.Item1);
-            Assert.IsTrue("bar".SequenceEqual(range.Item2.Select(x => x.Char)));
+            Assert.IsTrue(res.IsSucceeded);
+            var range = res.AsSucceeded().Item1;
+            Assert.AreEqual(new SnapshotSpan(_buffer.CurrentSnapshot, 0, _buffer.CurrentSnapshot.Length), RangeUtil.GetSnapshotSpan(range));
+            Assert.IsTrue("bar".SequenceEqual(res.AsSucceeded().Item2.Select(x => x.Char)));
         }
 
         [TestMethod]
@@ -81,8 +81,8 @@ namespace VimCoreTest
         {
             Create("foo", "bar");
             var res = CaptureComplete(".");
-            Assert.IsTrue(res.IsValidRange);
-            Assert.AreEqual(_buffer.CurrentSnapshot.GetLineFromLineNumber(0).ExtentIncludingLineBreak, res.AsValidRange().Item1);
+            Assert.IsTrue(res.IsSucceeded);
+            Assert.AreEqual(_buffer.CurrentSnapshot.GetLineFromLineNumber(0).ExtentIncludingLineBreak, RangeUtil.GetSnapshotSpan(res.AsSucceeded().Item1));
         }
 
         [TestMethod]
@@ -90,8 +90,8 @@ namespace VimCoreTest
         {
             Create("foo", "bar");
             var res = CaptureComplete(".,.");
-            Assert.IsTrue(res.IsValidRange);
-            Assert.AreEqual(_buffer.CurrentSnapshot.GetLineFromLineNumber(0).ExtentIncludingLineBreak, res.AsValidRange().Item1);
+            Assert.IsTrue(res.IsSucceeded);
+            Assert.AreEqual(_buffer.CurrentSnapshot.GetLineFromLineNumber(0).ExtentIncludingLineBreak, RangeUtil.GetSnapshotSpan(res.AsSucceeded().Item1));
         }
 
         [TestMethod]
@@ -99,10 +99,10 @@ namespace VimCoreTest
         {
             Create("foo", "bar");
             var res = CaptureComplete(".foo");
-            Assert.IsTrue(res.IsValidRange);
+            Assert.IsTrue(res.IsSucceeded);
 
-            var range = res.AsValidRange();
-            Assert.AreEqual(_buffer.CurrentSnapshot.GetLineFromLineNumber(0).ExtentIncludingLineBreak, range.Item1);
+            var range = res.AsSucceeded();
+            Assert.AreEqual(_buffer.CurrentSnapshot.GetLineFromLineNumber(0).ExtentIncludingLineBreak, RangeUtil.GetSnapshotSpan(range.Item1));
             Assert.AreEqual('f', range.Item2.First().Char);
         }
 
@@ -111,12 +111,12 @@ namespace VimCoreTest
         {
             Create("a", "b", "c");
             var res = CaptureComplete("1,2");
-            Assert.IsTrue(res.IsValidRange);
+            Assert.IsTrue(res.IsSucceeded);
                
             var span = new SnapshotSpan(
                 _buffer.CurrentSnapshot.GetLineFromLineNumber(0).Start,
                 _buffer.CurrentSnapshot.GetLineFromLineNumber(1).EndIncludingLineBreak);
-            Assert.AreEqual(span, res.AsValidRange().Item1);
+            Assert.AreEqual(span, RangeUtil.GetSnapshotSpan(res.AsSucceeded().Item1));
         }
     }
 }
