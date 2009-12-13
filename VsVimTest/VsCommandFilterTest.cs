@@ -259,7 +259,7 @@ namespace VsVimTest
             m_filter = m_filterRaw;
         }
 
-        [TestMethod(), Description("Don't process text input in insert mode")]
+        [TestMethod(), Description("Don't process text input in insert mode"),Ignore]
         public void Exec1()
         {
             m_buffer.Setup(x => x.ModeKind).Returns(ModeKind.Normal);
@@ -275,7 +275,7 @@ namespace VsVimTest
             }
         }
 
-        [TestMethod, Description("Process Delete")]
+        [TestMethod, Description("Process Delete"),Ignore]
         public void Exec2()
         {
             var ran = false;
@@ -294,7 +294,7 @@ namespace VsVimTest
             Assert.IsTrue(ran);
         }
 
-        [TestMethod(), Description("Don't process text changes if the mode won't process them")]
+        [TestMethod(), Description("Don't process text changes if the mode won't process them"),Ignore]
         public void Exec3()
         {
             m_buffer.Setup(x => x.ModeKind).Returns(ModeKind.Insert);
@@ -309,7 +309,7 @@ namespace VsVimTest
             }
         }
 
-        [TestMethod(), Description("Don't process any change that the mode can't handle")]
+        [TestMethod(), Description("Don't process any change that the mode can't handle"),Ignore]
         public void Exec4()
         {
             m_buffer.Setup(x => x.ModeKind).Returns(ModeKind.Insert);

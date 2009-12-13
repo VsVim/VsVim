@@ -41,6 +41,7 @@ namespace VimCoreTest
         public void SwitchedMode1()
         {
             var ran = false;
+            _normalMode.Setup(x => x.OnLeave());
             _buffer.SwitchedMode += (s, m) => { ran = true; };
             _buffer.SwitchMode(ModeKind.Normal);
             Assert.IsTrue(ran);
@@ -62,9 +63,9 @@ namespace VimCoreTest
         {
             var ran = false;
             var caret = new MockBlockCaret();
+            _normalMode.Setup(x => x.OnLeave()).Callback(() => { ran = true; });
             _bufferData.Setup(x => x.BlockCaret).Returns(caret);
             _buffer.SwitchMode(ModeKind.Normal);
-            _normalMode.Setup(x => x.OnLeave()).Callback(() => { ran = true; });
             _buffer.Close();
             Assert.IsTrue(ran);
         }
@@ -73,6 +74,8 @@ namespace VimCoreTest
         public void Close2()
         {
             var caret = new MockBlockCaret();
+            _bufferData.Setup(x => x.BlockCaret).Returns(caret);
+            _normalMode.Setup(x => x.OnLeave());
             _buffer.Close();
             Assert.AreEqual(1, caret.DestroyCount);
         }

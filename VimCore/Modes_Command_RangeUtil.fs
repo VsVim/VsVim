@@ -13,6 +13,15 @@ type internal Range =
     /// Invalid range.  String contains the error
     | Invalid of string * KeyInput list
 
+type internal ItemRangeKind = 
+    | LineNumber
+    | CurrentLine
+
+type internal ItemRange = 
+    | ValidRange of SnapshotSpan * ItemRangeKind * KeyInput list
+    | NoRange
+    | Error of string
+
 module internal RangeUtil =
 
     /// Parse out a number from the input string
@@ -52,63 +61,69 @@ module internal RangeUtil =
             let number = TssUtil.VimLineToTssLine number
             if number < tss.LineCount then 
                 let line = tss.GetLineFromLineNumber(number)
-                ValidRange(line.ExtentIncludingLineBreak, remaining)
+                ValidRange(line.ExtentIncludingLineBreak, LineNumber, remaining)
             else
-                Invalid(msg,input)
-        | None -> Invalid(msg, input)
+                let msg = sprintf "Invalid Range: Line Number %d is not a valid number in the file" number
+                Error(msg)
+        | None -> Error("Expected a line number")
 
 
-    /// Parse out a single item in the range
+    /// Parse out a single item in the range.
     let ParseItem (point:SnapshotPoint) (map:MarkMap) (list:KeyInput list) =
         let head = list |> List.head 
         if head.IsDigit then
             ParseLineNumber point.Snapshot list
         else if head.Char = '.' then
             let span = point.GetContainingLine().ExtentIncludingLineBreak
-            ValidRange(span, list |> List.tail)
+            ValidRange(span, CurrentLine, list |> List.tail)
         else
-            NoRange(list)
+            NoRange
 
     let ParseRangeCore (point:SnapshotPoint) (map:MarkMap) (originalInput:KeyInput list) =
 
-        let parseRight (point:SnapshotPoint) map (leftSpan:SnapshotSpan) remainingInput = 
+        let parseRight (point:SnapshotPoint) map (leftSpan:SnapshotSpan) remainingInput : Range = 
             let right = ParseItem point map remainingInput 
             match right with 
-            | Invalid(msg,_) -> Invalid(msg,originalInput)
-            | NoRange(_) -> Invalid("Invalid right portion of range", originalInput)
-            | ValidRange(rightSpan,remainingInput) ->
+            | NoRange -> Invalid("Invalid Range: Right hand side is missing", originalInput)
+            | Error(msg) -> Invalid(msg, originalInput)
+            | ValidRange(rightSpan,_,remainingInput) ->
                 let fullSpan = new SnapshotSpan(leftSpan.Start,rightSpan.End)
-                ValidRange(fullSpan, remainingInput)
+                Range.ValidRange(fullSpan, remainingInput)
         
         // Parse out the separator 
-        let parseWithLeft (leftSpan:SnapshotSpan) (remainingInput:KeyInput list) =
+        let parseWithLeft (leftSpan:SnapshotSpan) (remainingInput:KeyInput list) kind =
             match remainingInput |> List.isEmpty with
-            | true ->  NoRange(originalInput)
+            | true ->  if kind = CurrentLine then Range.ValidRange(leftSpan,remainingInput) else Range.NoRange(originalInput)
             | false -> 
-                let msg = "Invalid Range: Expected , or ;"
                 let head = remainingInput |> List.head 
                 let remainingInput = remainingInput |> List.tail
                 if head.Char = ',' then parseRight point map leftSpan remainingInput
                 else if head.Char = ';' then 
                     let point = leftSpan.End.GetContainingLine().Start
                     parseRight point map leftSpan remainingInput
-                else Invalid(msg,originalInput)
+                else if kind = LineNumber then
+                    Range.NoRange(originalInput)
+                else if kind = CurrentLine then
+                    Range.ValidRange(leftSpan, remainingInput)
+                else
+                    let msg = "Invalid Range: Expected , or ;"
+                    Invalid(msg,originalInput)
         
         let left = ParseItem point map originalInput
         match left with 
-        | Invalid(_) -> left
-        | NoRange(_) -> left
-        | ValidRange(leftSpan,range) -> parseWithLeft leftSpan range
+        | NoRange -> Range.NoRange(originalInput)
+        | Error(_) -> Range.NoRange(originalInput)
+        | ValidRange(leftSpan,kind,range) -> parseWithLeft leftSpan range kind
 
 
     let ParseRange (point:SnapshotPoint) (map:MarkMap) (list:KeyInput list) = 
         match list |> List.isEmpty with
-        | true -> NoRange(list)
+        | true -> Range.NoRange(list)
         | false ->
             let head = list |> List.head
             if head.Char = '%' then 
                 let tss = point.Snapshot
                 let span = new SnapshotSpan(tss, 0, tss.Length)
-                ValidRange(span, List.tail list)
+                Range.ValidRange(span, List.tail list)
             else
                 ParseRangeCore point map list

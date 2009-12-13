@@ -113,8 +113,8 @@ namespace VimCoreTest
             var newLine = BufferUtil.AddLineAbove(_buffer.CurrentSnapshot.GetLineFromLineNumber(1));
             Assert.AreEqual(String.Empty, newLine.GetText());
             var tss = _buffer.CurrentSnapshot;
-            Assert.AreEqual("foo", tss.GetLineFromLineNumber(0).GetText());
-            Assert.AreEqual("bar", tss.GetLineFromLineNumber(2).GetText());
+            Assert.AreEqual("bar", tss.GetLineFromLineNumber(0).GetText());
+            Assert.AreEqual("baz", tss.GetLineFromLineNumber(2).GetText());
         }
 
         [TestMethod]

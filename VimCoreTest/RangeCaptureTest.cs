@@ -95,6 +95,18 @@ namespace VimCoreTest
         }
 
         [TestMethod]
+        public void CurrentLine3()
+        {
+            Create("foo", "bar");
+            var res = CaptureComplete(".foo");
+            Assert.IsTrue(res.IsValidRange);
+
+            var range = res.AsValidRange();
+            Assert.AreEqual(_buffer.CurrentSnapshot.GetLineFromLineNumber(0).ExtentIncludingLineBreak, range.Item1);
+            Assert.AreEqual('f', range.Item2.First().Char);
+        }
+
+        [TestMethod]
         public void LineNumber1()
         {
             Create("a", "b", "c");

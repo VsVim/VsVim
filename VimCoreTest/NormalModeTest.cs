@@ -422,8 +422,8 @@ namespace VimCoreTest
         [TestMethod]
         public void Edit_r_5()
         {
-            var tss = _view.TextSnapshot;
             CreateBuffer("food");
+            var tss = _view.TextSnapshot;
             _mode.Process("200ru");
             Assert.IsTrue(_host.BeepCount > 0);
             Assert.AreSame(tss, _view.TextSnapshot);

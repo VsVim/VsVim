@@ -50,12 +50,21 @@ namespace VimCoreTest
             Assert.AreEqual(":", _host.Status);
         }
 
-        [TestMethod, Description("When leaving command mode we should clear the status")]
+        [TestMethod, Description("When leaving command mode we should not clear the status because it will remove error messages")]
         public void StatusOnLeave()
         {
             Create(String.Empty);
             _host.Status = "foo";
             _mode.OnLeave();
+            Assert.AreEqual("foo", _host.Status);
+        }
+
+        [TestMethod]
+        public void StatusOnProcess()
+        {
+            Create("foo", "bar");
+            _host.Status = "foo";
+            _mode.Process("1");
             Assert.AreEqual(String.Empty, _host.Status);
         }
 
@@ -78,6 +87,14 @@ namespace VimCoreTest
             var caret = _view.Caret.Position.BufferPosition;
             Assert.AreEqual(1, caret.GetContainingLine().LineNumber);
             Assert.AreEqual(caret, caret.GetContainingLine().Start);
+        }
+
+        [TestMethod]
+        public void Jump3()
+        {
+            Create("foo");
+            ProcessWithEnter("400");
+            Assert.AreEqual("Invalid line number", _host.Status);
         }
 
         [TestMethod]

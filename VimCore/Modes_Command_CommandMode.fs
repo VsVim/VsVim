@@ -99,6 +99,20 @@ type CommandMode( _data : IVimBufferData ) =
             match range with 
             | Some(span) -> span
             | None -> _data.TextView.Caret.Position.BufferPosition.GetContainingLine().ExtentIncludingLineBreak
+
+        // If there is a count then we yank "count" lines starting with the last line in the range
+        let range = 
+            match count with 
+            | None -> range
+            | Some(count) -> 
+                let tss = _data.TextSnapshot
+                let first = range.End.GetContainingLine().LineNumber
+                let last = count+first
+                let last = if last >= tss.LineCount then tss.LineCount-1 else last
+                new SnapshotSpan( 
+                    tss.GetLineFromLineNumber(first).Start,
+                    tss.GetLineFromLineNumber(last).EndIncludingLineBreak)
+
         Modes.Common.Operations.Yank range MotionKind.Exclusive OperationKind.LineWise reg
 
     member x.ParseCommand (current:KeyInput) (rest:KeyInput list) (range:SnapshotSpan option) =
@@ -132,9 +146,11 @@ type CommandMode( _data : IVimBufferData ) =
         member x.Process ki = 
             match ki.Key with 
                 | Key.Enter ->
+                    _data.VimHost.UpdateStatus(System.String.Empty)
                     x.ParseInput (List.rev _input)
                     SwitchMode ModeKind.Normal
                 | Key.Escape ->
+                    _data.VimHost.UpdateStatus(System.String.Empty)
                     SwitchMode ModeKind.Normal
                 | _ -> 
                     let c = ki.Char
@@ -146,7 +162,6 @@ type CommandMode( _data : IVimBufferData ) =
         member x.OnEnter () =
             _command <- System.String.Empty
             _data.VimHost.UpdateStatus(":")
-        member x.OnLeave () = 
-            _data.VimHost.UpdateStatus(System.String.Empty)
+        member x.OnLeave () = ()
 
 
