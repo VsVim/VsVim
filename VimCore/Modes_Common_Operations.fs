@@ -118,7 +118,8 @@ module Operations =
                 let line = point.GetContainingLine()
                 new SnapshotSpan(line.EndIncludingLineBreak, 0)
             | OperationKind.CharacterWise ->
-                let point = TssUtil.GetNextPoint point
+                let line = point.GetContainingLine()
+                let point =  if point.Position < line.End.Position then point.Add(1) else point
                 new SnapshotSpan(point,0)
             | _ -> failwith "Invalid Enum Value"
         let tss = buffer.Replace(replaceSpan.Span, text)

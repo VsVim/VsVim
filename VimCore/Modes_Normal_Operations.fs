@@ -36,12 +36,18 @@ module internal Operations =
     /// Handles commands which begin with g in normal mode.  This should be called when the g char is
     /// already processed
     let CharGCommand (d:NormalModeData) =
+        let data = d.VimBufferData
         let inner (d:NormalModeData) (ki:KeyInput) =  
             match ki.Char with
             | 'J' -> 
-                let view = d.VimBufferData.TextView
+                let view = data.TextView
                 let caret = ViewUtil.GetCaretPoint view
                 Operations.Join view caret JoinKind.KeepEmptySpaces d.Count |> ignore
+            | 'p' -> 
+                let caret  = ViewUtil.GetCaretPoint data.TextView
+                let reg = d.Register.Value
+                let span = Modes.Common.Operations.PasteAfter caret reg.Value reg.OperationKind 
+                data.TextView.Caret.MoveTo(span.End) |> ignore
             | _ ->
                 d.VimBufferData.VimHost.Beep()
                 ()

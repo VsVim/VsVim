@@ -208,5 +208,14 @@ namespace VimCoreTest
             var span = Operations.PasteAfter(new SnapshotPoint(buffer.CurrentSnapshot, 0), "yay", OperationKind.LineWise);
             Assert.AreEqual("yay", span.GetText());
         }
+
+        [Test,Description("Character wise paste at the end of the line should go on that line")]
+        public void PasteAfter6()
+        {
+            var buffer = EditorUtil.CreateBuffer("foo", "bar");
+            var point = buffer.CurrentSnapshot.GetLineFromLineNumber(0).End;
+            Operations.PasteAfter(point, "yay", OperationKind.CharacterWise);
+            Assert.AreEqual("fooyay", buffer.CurrentSnapshot.GetLineFromLineNumber(0).GetText());
+        }
     }
 }

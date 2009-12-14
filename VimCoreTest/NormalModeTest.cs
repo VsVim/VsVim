@@ -709,7 +709,16 @@ namespace VimCoreTest
             _map.DefaultRegister.UpdateValue("hey");
             _mode.Process("gp");
             Assert.AreEqual("foohey", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
-            Assert.AreEqual(_view.TextSnapshot.GetLineFromLineNumber(0).End, _view.Caret.Position.BufferPosition);
+        }
+
+        [Test]
+        public void Paste_gp_3()
+        {
+            CreateBuffer("foo", "bar");
+            _view.Caret.MoveTo(_view.TextSnapshot.GetLineFromLineNumber(0).End);
+            _map.GetRegister('c').UpdateValue("hey");
+            _mode.Process("\"cgp");
+            Assert.AreEqual("foohey", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
         }
 
         #endregion
