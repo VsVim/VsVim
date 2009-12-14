@@ -2,7 +2,7 @@
 using NUnit.Framework;
 using System;
 using Microsoft.VisualStudio;
-using VimCore;
+using Vim;
 using System.Runtime.InteropServices;
 using System.Windows.Input;
 using VsVimTest.Utils;

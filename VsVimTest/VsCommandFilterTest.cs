@@ -1,7 +1,7 @@
 ﻿using VsVim;
 using NUnit.Framework;
 using System;
-using VimCore;
+using Vim;
 using Microsoft.VisualStudio.TextManager.Interop;
 using Moq;
 using Microsoft.VisualStudio.OLE.Interop;

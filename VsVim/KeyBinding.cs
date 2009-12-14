@@ -4,7 +4,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
-using VimCore;
+using Vim;
 using System.Diagnostics;
 using System.Windows.Input;
 

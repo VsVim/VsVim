@@ -1,6 +1,6 @@
 ﻿#light
 
-namespace VimCore
+namespace Vim
 
 type internal VimData() =
     let _markMap = MarkMap()

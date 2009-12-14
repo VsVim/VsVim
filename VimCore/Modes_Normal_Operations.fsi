@@ -1,7 +1,7 @@
 ﻿#light
 
-namespace VimCore.Modes.Normal
-open VimCore
+namespace Vim.Modes.Normal
+open Vim
 
 module internal Operations =
 

@@ -1,6 +1,6 @@
 ﻿#light
 
-namespace VimCore
+namespace Vim
 open Microsoft.VisualStudio.Text
 open System.Collections.Generic
 

@@ -1,7 +1,7 @@
 ﻿#light
 
-namespace VimCore.Modes.Common
-open VimCore
+namespace Vim.Modes.Common
+open Vim
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
 

@@ -7,7 +7,7 @@ using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.OLE.Interop;
 using System.Runtime.InteropServices;
 using Microsoft.VisualStudio.Utilities;
-using VimCore;
+using Vim;
 using System.Windows.Input;
 using Microsoft.VisualStudio.TextManager.Interop;
 

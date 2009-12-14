@@ -1,12 +1,12 @@
 ﻿#light
 
-namespace VimCore.Modes.Command
-open VimCore
-open VimCore.Modes.Common
+namespace Vim.Modes.Command
+open Vim
+open Vim.Modes.Common
 open Microsoft.VisualStudio.Text
 open System.Windows.Input
 open System.Text.RegularExpressions
-open VimCore.RegexUtil
+open Vim.RegexUtil
 
 type CommandMode( _data : IVimBufferData ) = 
     let mutable _command : System.String = System.String.Empty

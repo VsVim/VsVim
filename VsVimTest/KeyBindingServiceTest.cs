@@ -4,7 +4,7 @@ using System;
 using EnvDTE;
 using System.Collections.Generic;
 using System.Linq;
-using VimCore;
+using Vim;
 using Moq;
 using System.Windows.Input;
 

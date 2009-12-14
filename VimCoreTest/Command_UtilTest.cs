@@ -3,13 +3,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using NUnit.Framework;
-using VimCore;
+using Vim;
 using Microsoft.FSharp.Core;
-using CommandUtil = VimCore.Modes.Command.Util;
+using CommandUtil = Vim.Modes.Command.Util;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text;
 using VimCoreTest.Utils;
-using VimCore.Modes.Common;
+using Vim.Modes.Common;
 
 namespace VimCoreTest
 {

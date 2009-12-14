@@ -1,6 +1,6 @@
 ﻿#light
 
-namespace VimCore
+namespace Vim
 
 /// Information which is global to all <seealso cref="IVimBuffer" /> instances
 type IVimData =

@@ -5,9 +5,9 @@ using System.Text;
 using NUnit.Framework;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text;
-using VimCore.Modes.Common;
+using Vim.Modes.Common;
 using Moq;
-using VimCore;
+using Vim;
 using VimCoreTest.Utils;
 
 namespace VimCoreTest

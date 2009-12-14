@@ -1,7 +1,7 @@
 ﻿#light
 
-namespace VimCore.Modes.Insert
-open VimCore
+namespace Vim.Modes.Insert
+open Vim
 open Microsoft.VisualStudio.Text
 open System.Windows.Input
 open System.Windows.Media

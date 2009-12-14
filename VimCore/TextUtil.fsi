@@ -1,6 +1,6 @@
 ﻿#light
 
-namespace VimCore
+namespace Vim
 open System.Windows.Input
 open Microsoft.VisualStudio.Text
 

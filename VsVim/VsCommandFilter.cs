@@ -8,7 +8,7 @@ using Microsoft.VisualStudio.Text.Editor;
 using System.Runtime.InteropServices;
 using System.Windows.Input;
 using Microsoft.FSharp.Core;
-using VimCore;
+using Vim;
 
 namespace VsVim
 {

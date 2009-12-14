@@ -1,6 +1,6 @@
 ﻿#light
 
-namespace VimCore
+namespace Vim
 
 /// Value stored in the register.  Contains contextual information on how the data
 /// was yanked from the buffer

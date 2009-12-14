@@ -4,8 +4,8 @@ using System.Linq;
 using System.Text;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
-using VimCore;
-using VimCore.Modes.Common;
+using Vim;
+using Vim.Modes.Common;
 
 namespace VimCoreTest.Utils
 {
@@ -55,28 +55,28 @@ namespace VimCoreTest.Utils
 
         #region ParseRangeResult
 
-        internal static VimCore.Modes.Command.ParseRangeResult.Succeeded AsSucceeded(this VimCore.Modes.Command.ParseRangeResult res)
+        internal static Vim.Modes.Command.ParseRangeResult.Succeeded AsSucceeded(this Vim.Modes.Command.ParseRangeResult res)
         {
-            return (VimCore.Modes.Command.ParseRangeResult.Succeeded)res;
+            return (Vim.Modes.Command.ParseRangeResult.Succeeded)res;
         }
 
-        internal static VimCore.Modes.Command.ParseRangeResult.Failed AsFailed(this VimCore.Modes.Command.ParseRangeResult res)
+        internal static Vim.Modes.Command.ParseRangeResult.Failed AsFailed(this Vim.Modes.Command.ParseRangeResult res)
         {
-            return (VimCore.Modes.Command.ParseRangeResult.Failed)res;
+            return (Vim.Modes.Command.ParseRangeResult.Failed)res;
         }
 
         #endregion
 
         #region Range
 
-        internal static VimCore.Modes.Command.Range.Lines AsLines(this VimCore.Modes.Command.Range range)
+        internal static Vim.Modes.Command.Range.Lines AsLines(this Vim.Modes.Command.Range range)
         {
-            return (VimCore.Modes.Command.Range.Lines)range;
+            return (Vim.Modes.Command.Range.Lines)range;
         }
 
-        internal static VimCore.Modes.Command.Range.RawSpan AsRawSpan(this VimCore.Modes.Command.Range range)
+        internal static Vim.Modes.Command.Range.RawSpan AsRawSpan(this Vim.Modes.Command.Range range)
         {
-            return (VimCore.Modes.Command.Range.RawSpan)range;
+            return (Vim.Modes.Command.Range.RawSpan)range;
         }
 
         #endregion

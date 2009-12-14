@@ -3,7 +3,7 @@ using System.Text;
 using System.Collections.Generic;
 using System.Linq;
 using NUnit.Framework;
-using VimCore;
+using Vim;
 using Microsoft.VisualStudio.Text;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -18,7 +18,7 @@ namespace VimCoreTest
     [TestFixture]
     public class NormalModeTest
     {
-        private VimCore.Modes.Normal.NormalMode _modeRaw;
+        private Vim.Modes.Normal.NormalMode _modeRaw;
         private IMode _mode;
         private IWpfTextView _view;
         private IRegisterMap _map;
@@ -46,7 +46,7 @@ namespace VimCoreTest
                 _host,
                 MockFactory.CreateVimData(_map).Object,
                 _blockCaret);
-            _modeRaw = new VimCore.Modes.Normal.NormalMode(_bufferData);
+            _modeRaw = new Vim.Modes.Normal.NormalMode(_bufferData);
             _mode = _modeRaw;
             _mode.OnEnter();
         }

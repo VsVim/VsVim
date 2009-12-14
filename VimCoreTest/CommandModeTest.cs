@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using NUnit.Framework;
-using VimCore;
-using VimCore.Modes.Command;
+using Vim;
+using Vim.Modes.Command;
 using Microsoft.VisualStudio.Text.Editor;
 using VimCoreTest.Utils;
 using Microsoft.VisualStudio.Text;
@@ -31,7 +31,7 @@ namespace VimCoreTest
                 "test",
                 _host,
                 MockObjectFactory.CreateVimData(new RegisterMap()).Object);
-            _modeRaw = new VimCore.Modes.Command.CommandMode(_bufferData);
+            _modeRaw = new Vim.Modes.Command.CommandMode(_bufferData);
             _mode = _modeRaw;
             _mode.OnEnter();
         }

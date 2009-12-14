@@ -1,6 +1,6 @@
 ﻿#light
 
-namespace VimCore
+namespace Vim
 
 [<System.Flags>]
 type internal SearchOptions = 

@@ -1,7 +1,7 @@
 ﻿#light
 
 
-namespace VimCore
+namespace Vim
 
 module internal StringUtil =
     let FindFirst (input:seq<char>) index del =

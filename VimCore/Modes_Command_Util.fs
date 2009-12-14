@@ -1,12 +1,12 @@
 ﻿#light
 
-namespace VimCore.Modes.Command
-open VimCore
+namespace Vim.Modes.Command
+open Vim
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
 open System.Windows.Input
 open System.Text.RegularExpressions
-open VimCore.RegexUtil
+open Vim.RegexUtil
 
 module internal Util =
     

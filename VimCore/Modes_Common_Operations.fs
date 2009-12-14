@@ -1,7 +1,7 @@
 ﻿#light
 
-namespace VimCore.Modes.Common
-open VimCore
+namespace Vim.Modes.Common
+open Vim
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
 
@@ -70,11 +70,11 @@ module Operations =
             
     /// Attempt to GoToDefinition on the current state of the buffer.  If this operation fails, an error message will 
     /// be generated as appropriate
-    let GoToDefinition (view:ITextView) (host:VimCore.IVimHost) =
+    let GoToDefinition (view:ITextView) (host:Vim.IVimHost) =
         if host.GoToDefinition() then
             Succeeded
         else
-            match TssUtil.FindCurrentFullWordSpan view.Caret.Position.BufferPosition VimCore.WordKind.BigWord with
+            match TssUtil.FindCurrentFullWordSpan view.Caret.Position.BufferPosition Vim.WordKind.BigWord with
             | Some(span) -> 
                 let param1 = (span.GetText()) :> obj
                 let msg = System.String.Format("Could not navigate to definition of '{0}'", param1)

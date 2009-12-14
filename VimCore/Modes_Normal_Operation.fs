@@ -1,9 +1,9 @@
 ﻿#light
 
-namespace VimCore.Modes.Normal
+namespace Vim.Modes.Normal
 
 /// Operation in the normal mode
 type internal Operation =  {
-    KeyInput : VimCore.KeyInput;
+    KeyInput : Vim.KeyInput;
     RunFunc : NormalModeData -> NormalModeResult
 }

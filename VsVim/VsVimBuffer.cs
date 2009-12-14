@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Reflection;
 using Microsoft.VisualStudio.Text.Editor;
-using VimCore;
+using Vim;
 using Microsoft.VisualStudio.Editor;
 using Microsoft.VisualStudio.TextManager.Interop;
 using Microsoft.VisualStudio.UI.Undo;

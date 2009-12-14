@@ -8,7 +8,7 @@
     <ProjectGuid>{06be08e7-8626-40bd-877b-8d2dca6ba451}</ProjectGuid>
     <OutputType>Library</OutputType>
     <RootNamespace>FsVim</RootNamespace>
-    <AssemblyName>VimCore</AssemblyName>
+    <AssemblyName>Vim.Core</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Name>VimCore</Name>

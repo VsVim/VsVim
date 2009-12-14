@@ -7,7 +7,7 @@ using Microsoft.VisualStudio.Text.Formatting;
 using System;
 using System.Runtime.InteropServices;
 using System.Windows.Threading;
-using VimCore;
+using Vim;
 using Microsoft.VisualStudio.Text.Classification;
 
 namespace VsVim

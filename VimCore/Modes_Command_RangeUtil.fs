@@ -1,7 +1,7 @@
 ﻿#light
 
-namespace VimCore.Modes.Command
-open VimCore
+namespace Vim.Modes.Command
+open Vim
 open Microsoft.VisualStudio.Text
 
 type internal Range = 

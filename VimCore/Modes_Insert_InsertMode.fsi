@@ -1,7 +1,7 @@
 ﻿#light
 
-namespace VimCore.Modes.Insert
-open VimCore
+namespace Vim.Modes.Insert
+open Vim
 
 type internal InsertMode =
     interface IMode

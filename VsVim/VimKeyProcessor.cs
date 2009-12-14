@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using System.Windows.Input;
-using VimCore;
+using Vim;
 
 namespace VsVim
 {

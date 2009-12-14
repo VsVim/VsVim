@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using VimCore;
+using Vim;
 using System.Windows.Input;
 using EnvDTE;
 using System.ComponentModel.Composition.Primitives;

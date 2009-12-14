@@ -3,7 +3,7 @@ using System.Text;
 using System.Collections.Generic;
 using System.Linq;
 using NUnit.Framework;
-using VimCore;
+using Vim;
 using System.Windows.Input;
 using Microsoft.VisualStudio.Text.Editor;
 using System.Windows.Media;
@@ -18,7 +18,7 @@ namespace VimCoreTest
     public class InsertModeTest
     {
         private IVimBufferData _data;
-        private VimCore.Modes.Insert.InsertMode _modeRaw;
+        private Vim.Modes.Insert.InsertMode _modeRaw;
         private IMode _mode;
         private ITextBuffer _buffer;
         private IWpfTextView _view;
@@ -28,7 +28,7 @@ namespace VimCoreTest
             _view = Utils.EditorUtil.CreateView(lines);
             _buffer = _view.TextBuffer;
             _data = Utils.MockObjectFactory.CreateVimBufferData(_view);
-            _modeRaw = new VimCore.Modes.Insert.InsertMode(_data);
+            _modeRaw = new Vim.Modes.Insert.InsertMode(_data);
             _mode = _modeRaw;
         }
 

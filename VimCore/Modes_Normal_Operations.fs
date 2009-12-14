@@ -1,8 +1,8 @@
 ﻿#light
 
-namespace VimCore.Modes.Normal
-open VimCore
-open VimCore.Modes.Common
+namespace Vim.Modes.Normal
+open Vim
+open Vim.Modes.Common
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
 open System.Windows.Input

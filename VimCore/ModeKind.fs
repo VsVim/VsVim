@@ -1,6 +1,6 @@
 ﻿#light
 
-namespace VimCore
+namespace Vim
 
 type ModeKind = 
     | Normal = 1

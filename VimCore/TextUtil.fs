@@ -1,5 +1,5 @@
 ﻿#light
-namespace VimCore
+namespace Vim
 open System
 open Microsoft.VisualStudio.Text
 

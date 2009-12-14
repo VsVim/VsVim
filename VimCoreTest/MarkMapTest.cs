@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using NUnit.Framework;
 using Microsoft.VisualStudio.Text;
-using VimCore;
+using Vim;
 
 namespace VimCoreTest
 {
@@ -17,7 +17,7 @@ namespace VimCoreTest
         [SetUp]
         public void Init()
         {
-            _map = new VimCore.MarkMap();
+            _map = new Vim.MarkMap();
         }
 
         [TearDown]

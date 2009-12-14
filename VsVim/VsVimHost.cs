@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 using Microsoft.VisualStudio.OLE.Interop;
 using System.Diagnostics;
 using Microsoft.VisualStudio.Shell.Interop;
-using VimCore;
+using Vim;
 using Microsoft.VisualStudio.TextManager.Interop;
 using Microsoft.VisualStudio.UI.Undo;
 

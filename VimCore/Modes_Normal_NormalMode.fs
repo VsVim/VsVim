@@ -1,7 +1,7 @@
 ﻿#light
 
-namespace VimCore.Modes.Normal
-open VimCore
+namespace Vim.Modes.Normal
+open Vim
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
 open System.Windows.Input
@@ -390,16 +390,16 @@ type internal NormalMode( _bufferData : IVimBufferData ) =
             {   KeyInput=KeyInput('J', Key.J, ModifierKeys.Shift);
                 RunFunc=(fun d -> 
                     let start = ViewUtil.GetCaretPoint this.TextView
-                    let kind = VimCore.Modes.Common.JoinKind.RemoveEmptySpaces
-                    let res = VimCore.Modes.Common.Operations.Join this.TextView start kind d.Count
+                    let kind = Vim.Modes.Common.JoinKind.RemoveEmptySpaces
+                    let res = Vim.Modes.Common.Operations.Join this.TextView start kind d.Count
                     if not res then
                         this.VimHost.Beep()
                     NormalModeResult.Complete) };
             {   KeyInput=KeyInput(']', Key.OemCloseBrackets, ModifierKeys.Control);
                 RunFunc=(fun d ->
-                    match VimCore.Modes.Common.Operations.GoToDefinition this.TextView this.VimHost with
-                    | VimCore.Modes.Common.Operations.Succeeded -> ()
-                    | VimCore.Modes.Common.Operations.Failed(msg) ->
+                    match Vim.Modes.Common.Operations.GoToDefinition this.TextView this.VimHost with
+                    | Vim.Modes.Common.Operations.Succeeded -> ()
+                    | Vim.Modes.Common.Operations.Failed(msg) ->
                         this.VimHost.UpdateStatus(msg)
                         ()
                     NormalModeResult.Complete) };

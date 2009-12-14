@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Runtime.InteropServices;
-using VimCore;
+using Vim;
 using Microsoft.VisualStudio;
 using Microsoft.FSharp.Core;
 using System.Windows.Input;

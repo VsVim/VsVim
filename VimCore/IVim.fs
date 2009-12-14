@@ -1,6 +1,6 @@
 ﻿#light
 
-namespace VimCore
+namespace Vim
 open Microsoft.VisualStudio.Text.Editor
 
 /// Vim instance.  Global for a group of buffers
