@@ -113,24 +113,16 @@ type internal NormalMode( _bufferData : IVimBufferData ) =
     /// Paste after the current cursor position.  Don't forget that a linewise paste
     /// operation needs to occur under the cursor
     member this.PasteAfter text opKind =
-        let view = _bufferData.TextView
-        let caretPoint = ViewUtil.GetCaretPoint view
-        let buffer = view.TextBuffer
-        match opKind with
-        | OperationKind.LineWise ->
-            let line = caretPoint.GetContainingLine()
-            let span = new SnapshotSpan(line.EndIncludingLineBreak, 0)
-            let tss = buffer.Replace(span.Span, text) 
+        let caretPoint = ViewUtil.GetCaretPoint _bufferData.TextView
+        let caretLineNumber = caretPoint.GetContainingLine().LineNumber
+        let tss = Modes.Common.Operations.PasteAfter caretPoint text opKind
+
+        // For a LineWise paste we want to place the cursor at the start
+        // of the next line
+        if opKind = OperationKind.LineWise then
+            let nextLine = tss.GetLineFromLineNumber(caretLineNumber+1)
+            _bufferData.TextView.Caret.MoveTo(nextLine.Start) |> ignore
             
-            // For a LineWise paste we want to place the cursor at the start
-            // of the next line
-            let nextLine = tss.GetLineFromLineNumber(line.LineNumber+1)
-            view.Caret.MoveTo(nextLine.Start) |> ignore
-        | OperationKind.CharacterWise ->
-            let point = TssUtil.GetNextPoint caretPoint
-            let span = new SnapshotSpan(point,0)
-            buffer.Replace(span.Span, text) |> ignore
-        | _ -> failwith "Invalid Enum Value"
         NormalModeResult.Complete
         
     // Paste at the current cursor position

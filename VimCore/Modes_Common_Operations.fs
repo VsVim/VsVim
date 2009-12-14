@@ -107,3 +107,17 @@ module Operations =
         let regValue = {Value=span.GetText();MotionKind = motion; OperationKind = operation};
         reg.UpdateValue (regValue)
     
+    /// Paste after the current cursor position.  Don't forget that a linewise paste
+    /// operation needs to occur under the cursor
+    let PasteAfter (point:SnapshotPoint) text opKind = 
+        let buffer = point.Snapshot.TextBuffer
+        match opKind with
+        | OperationKind.LineWise ->
+            let line = point.GetContainingLine()
+            let span = new SnapshotSpan(line.EndIncludingLineBreak, 0)
+            buffer.Replace(span.Span, text)  
+        | OperationKind.CharacterWise ->
+            let point = TssUtil.GetNextPoint point
+            let span = new SnapshotSpan(point,0)
+            buffer.Replace(span.Span, text) 
+        | _ -> failwith "Invalid Enum Value"

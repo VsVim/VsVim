@@ -1,6 +1,6 @@
 Version 5.5
 ===
-- 'Y in normal mode
+X - 'Y in normal mode
 - Edits need to understand cursor selection
 - Finish range parsing
 - Delete key in normal mode
