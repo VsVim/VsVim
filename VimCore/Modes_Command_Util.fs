@@ -27,12 +27,12 @@ module internal Util =
                 SnapshotSpan(point,0)
 
         match count with 
-        | Some(c) -> Modes.Common.Operations.Join view range.End kind c
+        | Some(c) -> Modes.ModeUtil.Join view range.End kind c
         | None -> 
             let startLine = range.Start.GetContainingLine().LineNumber
             let endLine = range.End.GetContainingLine().LineNumber
             let count = endLine - startLine
-            Modes.Common.Operations.Join view range.Start kind count
+            Modes.ModeUtil.Join view range.Start kind count
 
 
     /// Implement the :pu[t] command
@@ -47,8 +47,8 @@ module internal Util =
 
         let point = line.Start
         let span =
-            if isAfter then Modes.Common.Operations.PasteAfter point text OperationKind.LineWise
-            else Modes.Common.Operations.PasteBefore point text
+            if isAfter then Modes.ModeUtil.PasteAfter point text OperationKind.LineWise
+            else Modes.ModeUtil.PasteBefore point text
 
         // Move the cursor to the first non-blank character on the last line
         let line = span.End.Subtract(1).GetContainingLine()

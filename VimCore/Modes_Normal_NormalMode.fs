@@ -115,7 +115,7 @@ type internal NormalMode( _bufferData : IVimBufferData ) =
     member this.PasteAfter text opKind =
         let caretPoint = ViewUtil.GetCaretPoint _bufferData.TextView
         let caretLineNumber = caretPoint.GetContainingLine().LineNumber
-        let replaceSpan = Modes.Common.Operations.PasteAfter caretPoint text opKind
+        let replaceSpan = Modes.ModeUtil.PasteAfter caretPoint text opKind
         let tss = replaceSpan.Snapshot
 
         // For a LineWise paste we want to place the cursor at the start
@@ -129,7 +129,7 @@ type internal NormalMode( _bufferData : IVimBufferData ) =
     // Paste at the current cursor position
     member this.PasteBefore text = 
         let point = ViewUtil.GetCaretPoint _bufferData.TextView
-        Modes.Common.Operations.PasteBefore point text |> ignore
+        Modes.ModeUtil.PasteBefore point text |> ignore
         NormalModeResult.Complete
         
     member this.WaitForMotion ki (d:NormalModeData) doneFunc = 
@@ -163,11 +163,11 @@ type internal NormalMode( _bufferData : IVimBufferData ) =
                     let point = ViewUtil.GetCaretPoint d.VimBufferData.TextView
                     let point = point.GetContainingLine().Start
                     let span = TssUtil.GetLineRangeSpanIncludingLineBreak point d.Count
-                    Modes.Common.Operations.DeleteSpan span MotionKind.Inclusive OperationKind.LineWise d.Register |> ignore
+                    Modes.ModeUtil.DeleteSpan span MotionKind.Inclusive OperationKind.LineWise d.Register |> ignore
                     NormalModeResult.Complete
                 | _ -> 
                     let func (span,motionKind,opKind)= 
-                        Modes.Common.Operations.DeleteSpan span motionKind opKind d.Register |> ignore
+                        Modes.ModeUtil.DeleteSpan span motionKind opKind d.Register |> ignore
                         NormalModeResult.Complete
                     this.WaitForMotion ki d func
         inner
@@ -180,11 +180,11 @@ type internal NormalMode( _bufferData : IVimBufferData ) =
                     let point = ViewUtil.GetCaretPoint d.VimBufferData.TextView
                     let point = point.GetContainingLine().Start
                     let span = TssUtil.GetLineRangeSpanIncludingLineBreak point d.Count
-                    Modes.Common.Operations.Yank span MotionKind.Inclusive OperationKind.LineWise d.Register
+                    Modes.ModeUtil.Yank span MotionKind.Inclusive OperationKind.LineWise d.Register
                     NormalModeResult.Complete
                 | _ ->
                     let inner (ss:SnapshotSpan,motionKind,opKind) = 
-                        Modes.Common.Operations.Yank ss motionKind opKind d.Register
+                        Modes.ModeUtil.Yank ss motionKind opKind d.Register
                         NormalModeResult.Complete
                     this.WaitForMotion ki d inner
         inner 
@@ -357,16 +357,16 @@ type internal NormalMode( _bufferData : IVimBufferData ) =
             {   KeyInput=KeyInput('J', Key.J, ModifierKeys.Shift);
                 RunFunc=(fun d -> 
                     let start = ViewUtil.GetCaretPoint this.TextView
-                    let kind = Vim.Modes.Common.JoinKind.RemoveEmptySpaces
-                    let res = Vim.Modes.Common.Operations.Join this.TextView start kind d.Count
+                    let kind = Vim.Modes.JoinKind.RemoveEmptySpaces
+                    let res = Vim.Modes.ModeUtil.Join this.TextView start kind d.Count
                     if not res then
                         this.VimHost.Beep()
                     NormalModeResult.Complete) };
             {   KeyInput=KeyInput(']', Key.OemCloseBrackets, ModifierKeys.Control);
                 RunFunc=(fun d ->
-                    match Vim.Modes.Common.Operations.GoToDefinition this.TextView this.VimHost with
-                    | Vim.Modes.Common.Operations.Succeeded -> ()
-                    | Vim.Modes.Common.Operations.Failed(msg) ->
+                    match Vim.Modes.ModeUtil.GoToDefinition this.TextView this.VimHost with
+                    | Vim.Modes.ModeUtil.Succeeded -> ()
+                    | Vim.Modes.ModeUtil.Failed(msg) ->
                         this.VimHost.UpdateStatus(msg)
                         ()
                     NormalModeResult.Complete) };

@@ -2,7 +2,7 @@
 
 namespace Vim.Modes.Normal
 open Vim
-open Vim.Modes.Common
+open Vim.Modes
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
 open System.Windows.Input
@@ -15,9 +15,9 @@ module internal Operations =
         let waitForKey (d2:NormalModeData) (ki:KeyInput) =
             let bufferData = d2.VimBufferData
             let cursor = ViewUtil.GetCaretPoint bufferData.TextView
-            let res = Modes.Common.Operations.SetMark bufferData.MarkMap cursor ki.Char
+            let res = Modes.ModeUtil.SetMark bufferData.MarkMap cursor ki.Char
             match res with
-            | Operations.Failed(_) -> bufferData.VimHost.Beep()
+            | ModeUtil.Failed(_) -> bufferData.VimHost.Beep()
             | _ -> ()
             NormalModeResult.Complete
         NormalModeResult.NeedMore2 waitForKey
@@ -26,9 +26,9 @@ module internal Operations =
     let JumpToMark (d:NormalModeData) =
         let waitForKey (d:NormalModeData) (ki:KeyInput) =
             let bufferData = d.VimBufferData
-            let res = Modes.Common.Operations.JumpToMark bufferData.MarkMap bufferData.TextView ki.Char
+            let res = Modes.ModeUtil.JumpToMark bufferData.MarkMap bufferData.TextView ki.Char
             match res with 
-            | Operations.Failed(msg) -> bufferData.VimHost.UpdateStatus(msg)
+            | ModeUtil.Failed(msg) -> bufferData.VimHost.UpdateStatus(msg)
             | _ -> ()
             NormalModeResult.Complete
         NormalModeResult.NeedMore2 waitForKey
@@ -42,16 +42,16 @@ module internal Operations =
             | 'J' -> 
                 let view = data.TextView
                 let caret = ViewUtil.GetCaretPoint view
-                Operations.Join view caret JoinKind.KeepEmptySpaces d.Count |> ignore
+                ModeUtil.Join view caret JoinKind.KeepEmptySpaces d.Count |> ignore
             | 'p' -> 
                 let caret  = ViewUtil.GetCaretPoint data.TextView
                 let reg = d.Register.Value
-                let span = Modes.Common.Operations.PasteAfter caret reg.Value reg.OperationKind 
+                let span = Modes.ModeUtil.PasteAfter caret reg.Value reg.OperationKind 
                 data.TextView.Caret.MoveTo(span.End) |> ignore
             | 'P' ->
                 let caret = ViewUtil.GetCaretPoint data.TextView
                 let text = d.Register.StringValue
-                let span = Modes.Common.Operations.PasteBefore caret text
+                let span = Modes.ModeUtil.PasteBefore caret text
                 data.TextView.Caret.MoveTo(span.End) |> ignore
             | _ ->
                 d.VimBufferData.VimHost.Beep()
@@ -97,7 +97,7 @@ module internal Operations =
         let point = ViewUtil.GetCaretPoint data.TextView
         let point = point.GetContainingLine().Start
         let span = TssUtil.GetLineRangeSpanIncludingLineBreak point d.Count 
-        Modes.Common.Operations.Yank span MotionKind.Inclusive OperationKind.LineWise d.Register |> ignore
+        Modes.ModeUtil.Yank span MotionKind.Inclusive OperationKind.LineWise d.Register |> ignore
         NormalModeResult.Complete
 
     /// Implement the normal mode x command
@@ -107,7 +107,7 @@ module internal Operations =
         let line = point.GetContainingLine()
         let count = min (d.Count) (line.End.Position-point.Position)
         let span = new SnapshotSpan(point, count)
-        Modes.Common.Operations.DeleteSpan span MotionKind.Exclusive OperationKind.CharacterWise d.Register |> ignore
+        Modes.ModeUtil.DeleteSpan span MotionKind.Exclusive OperationKind.CharacterWise d.Register |> ignore
         NormalModeResult.Complete
 
     /// Implement the normal mode X command
@@ -115,7 +115,7 @@ module internal Operations =
         let data = d.VimBufferData
         let point = ViewUtil.GetCaretPoint data.TextView
         let range = TssUtil.GetReverseCharacterSpan point d.Count
-        Modes.Common.Operations.DeleteSpan range MotionKind.Exclusive OperationKind.CharacterWise d.Register |> ignore
+        Modes.ModeUtil.DeleteSpan range MotionKind.Exclusive OperationKind.CharacterWise d.Register |> ignore
         NormalModeResult.Complete
 
 

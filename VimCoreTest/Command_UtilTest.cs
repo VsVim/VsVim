@@ -9,7 +9,7 @@ using CommandUtil = Vim.Modes.Command.Util;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text;
 using VimCoreTest.Utils;
-using Vim.Modes.Common;
+using Vim.Modes;
 
 namespace VimCoreTest
 {

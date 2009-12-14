@@ -2,7 +2,7 @@
 
 namespace Vim.Modes.Command
 open Vim
-open Vim.Modes.Common
+open Vim.Modes
 open Microsoft.VisualStudio.Text
 open System.Windows.Input
 open System.Text.RegularExpressions
@@ -112,7 +112,7 @@ type CommandMode( _data : IVimBufferData ) =
             | None -> range
 
         let span = RangeUtil.GetSnapshotSpan range
-        Modes.Common.Operations.Yank span MotionKind.Exclusive OperationKind.LineWise reg
+        Modes.ModeUtil.Yank span MotionKind.Exclusive OperationKind.LineWise reg
 
     /// Parse the Put command
     member x.ParsePut (rest:KeyInput list) (range: Range option) =

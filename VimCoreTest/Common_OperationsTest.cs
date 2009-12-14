@@ -5,7 +5,7 @@ using System.Text;
 using NUnit.Framework;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text;
-using Vim.Modes.Common;
+using Vim.Modes;
 using Moq;
 using Vim;
 using VimCoreTest.Utils;
@@ -13,7 +13,7 @@ using VimCoreTest.Utils;
 namespace VimCoreTest
 {
     [TestFixture]
-    public class Common_OperationsTest
+    public class Common_ModeUtilTest
     {
         private IWpfTextView _view;
         private ITextBuffer _buffer;
@@ -29,7 +29,7 @@ namespace VimCoreTest
         public void Join1()
         {
             CreateLines("foo","bar");
-            Assert.IsTrue(Operations.Join(_view, _view.GetCaretPoint(), JoinKind.RemoveEmptySpaces, 2));
+            Assert.IsTrue(ModeUtil.Join(_view, _view.GetCaretPoint(), JoinKind.RemoveEmptySpaces, 2));
             Assert.AreEqual("foo bar", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
             Assert.AreEqual(1, _view.TextSnapshot.LineCount);
             Assert.AreEqual(4, _view.Caret.Position.BufferPosition.Position);
@@ -39,7 +39,7 @@ namespace VimCoreTest
         public void Join2()
         {
             CreateLines("foo", "   bar");
-            Assert.IsTrue(Operations.Join(_view, _view.GetCaretPoint(), JoinKind.RemoveEmptySpaces, 2));
+            Assert.IsTrue(ModeUtil.Join(_view, _view.GetCaretPoint(), JoinKind.RemoveEmptySpaces, 2));
             Assert.AreEqual("foo bar", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
             Assert.AreEqual(1, _view.TextSnapshot.LineCount);
             Assert.AreEqual(4, _view.Caret.Position.BufferPosition.Position);
@@ -49,7 +49,7 @@ namespace VimCoreTest
         public void Join3()
         {
             CreateLines("foo", "bar", "baz");
-            Assert.IsTrue(Operations.Join(_view, _view.GetCaretPoint(), JoinKind.RemoveEmptySpaces, 3));
+            Assert.IsTrue(ModeUtil.Join(_view, _view.GetCaretPoint(), JoinKind.RemoveEmptySpaces, 3));
             Assert.AreEqual("foo bar baz", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
             Assert.AreEqual(1, _view.TextSnapshot.LineCount);
             Assert.AreEqual(8, _view.Caret.Position.BufferPosition.Position);
@@ -59,7 +59,7 @@ namespace VimCoreTest
         public void Join4()
         {
             CreateLines("foo", "bar");
-            Assert.IsTrue(Operations.Join(_view, _view.GetCaretPoint(),JoinKind.RemoveEmptySpaces, 1));
+            Assert.IsTrue(ModeUtil.Join(_view, _view.GetCaretPoint(),JoinKind.RemoveEmptySpaces, 1));
             Assert.AreEqual("foo bar", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
             Assert.AreEqual(1, _view.TextSnapshot.LineCount);
             Assert.AreEqual(4, _view.Caret.Position.BufferPosition.Position);
@@ -69,7 +69,7 @@ namespace VimCoreTest
         public void Join5()
         {
             CreateLines("foo", "bar");
-            Assert.IsTrue(Operations.Join(_view, _view.GetCaretPoint(), JoinKind.KeepEmptySpaces, 1));
+            Assert.IsTrue(ModeUtil.Join(_view, _view.GetCaretPoint(), JoinKind.KeepEmptySpaces, 1));
             Assert.AreEqual("foobar", _view.TextSnapshot.GetText());
             Assert.AreEqual(1, _view.TextSnapshot.LineCount);
         }
@@ -78,7 +78,7 @@ namespace VimCoreTest
         public void Join6()
         {
             CreateLines("foo", " bar");
-            Assert.IsTrue(Operations.Join(_view, _view.GetCaretPoint(), JoinKind.KeepEmptySpaces, 1));
+            Assert.IsTrue(ModeUtil.Join(_view, _view.GetCaretPoint(), JoinKind.KeepEmptySpaces, 1));
             Assert.AreEqual("foo bar", _view.TextSnapshot.GetText());
             Assert.AreEqual(1, _view.TextSnapshot.LineCount);
         }
@@ -89,7 +89,7 @@ namespace VimCoreTest
             CreateLines("foo");
             var host = new Mock<IVimHost>(MockBehavior.Strict);
             host.Setup(x => x.GoToDefinition()).Returns(true);
-            var res = Operations.GoToDefinition(_view, host.Object);
+            var res = ModeUtil.GoToDefinition(_view, host.Object);
             Assert.IsTrue(res.IsSucceeded);
         }
 
@@ -99,9 +99,9 @@ namespace VimCoreTest
             CreateLines("foo");
             var host = new Mock<IVimHost>(MockBehavior.Strict);
             host.Setup(x => x.GoToDefinition()).Returns(false);
-            var res = Operations.GoToDefinition(_view, host.Object);
+            var res = ModeUtil.GoToDefinition(_view, host.Object);
             Assert.IsTrue(res.IsFailed);
-            Assert.IsTrue(((Operations.Result.Failed)res).Item.Contains("foo"));
+            Assert.IsTrue(((ModeUtil.Result.Failed)res).Item.Contains("foo"));
         }
 
         [Test, Description("Make sure we don't crash when nothing is under the cursor")]
@@ -110,7 +110,7 @@ namespace VimCoreTest
             CreateLines("      foo");
             var host = new Mock<IVimHost>(MockBehavior.Strict);
             host.Setup(x => x.GoToDefinition()).Returns(false);
-            var res = Operations.GoToDefinition(_view, host.Object);
+            var res = ModeUtil.GoToDefinition(_view, host.Object);
             Assert.IsTrue(res.IsFailed);
         }
 
@@ -119,7 +119,7 @@ namespace VimCoreTest
         {
             CreateLines("foo");
             var map = new MarkMap();
-            var res = Operations.SetMark(map, _buffer.CurrentSnapshot.GetLineFromLineNumber(0).Start, 'a');
+            var res = ModeUtil.SetMark(map, _buffer.CurrentSnapshot.GetLineFromLineNumber(0).Start, 'a');
             Assert.IsTrue(res.IsSucceeded);
             Assert.IsTrue(map.GetLocalMark(_buffer, 'a').IsSome());
         }
@@ -129,7 +129,7 @@ namespace VimCoreTest
         {
             CreateLines("bar");
             var map = new MarkMap();
-            var res = Operations.SetMark(map, _buffer.CurrentSnapshot.GetLineFromLineNumber(0).Start, ';');
+            var res = ModeUtil.SetMark(map, _buffer.CurrentSnapshot.GetLineFromLineNumber(0).Start, ';');
             Assert.IsTrue(res.IsFailed);
         }
 
@@ -139,7 +139,7 @@ namespace VimCoreTest
             var view = Utils.EditorUtil.CreateView("foo", "bar");
             var map = new MarkMap();
             map.SetMark(new SnapshotPoint(view.TextSnapshot, 0), 'a');
-            var res = Operations.JumpToMark(map, view, 'a');
+            var res = ModeUtil.JumpToMark(map, view, 'a');
             Assert.IsTrue(res.IsSucceeded);
         }
 
@@ -148,7 +148,7 @@ namespace VimCoreTest
         {
             var view = Utils.EditorUtil.CreateView("foo", "bar");
             var map = new MarkMap();
-            var res = Operations.JumpToMark(map, view, 'b');
+            var res = ModeUtil.JumpToMark(map, view, 'b');
             Assert.IsTrue(res.IsFailed);
         }
 
@@ -158,7 +158,7 @@ namespace VimCoreTest
             var view = Utils.EditorUtil.CreateView("foo", "bar");
             var map = new MarkMap();
             map.SetMark(new SnapshotPoint(view.TextSnapshot, 0), 'B');
-            var res = Operations.JumpToMark(map, view, 'B');
+            var res = ModeUtil.JumpToMark(map, view, 'B');
             Assert.IsTrue(res.IsFailed);
         }
 
@@ -166,7 +166,7 @@ namespace VimCoreTest
         public void PasteAfter1()
         {
             var view = EditorUtil.CreateBuffer("foo", "bar");
-            var tss = Operations.PasteAfter(new SnapshotPoint(view.CurrentSnapshot, 0), "yay", OperationKind.LineWise).Snapshot;
+            var tss = ModeUtil.PasteAfter(new SnapshotPoint(view.CurrentSnapshot, 0), "yay", OperationKind.LineWise).Snapshot;
             Assert.AreEqual(2, tss.LineCount);
             Assert.AreEqual("foo", tss.GetLineFromLineNumber(0).GetText());
             Assert.AreEqual("yaybar", tss.GetLineFromLineNumber(1).GetText());
@@ -176,7 +176,7 @@ namespace VimCoreTest
         public void PasteAfter2()
         {
             var view = EditorUtil.CreateBuffer("foo", "bar");
-            var tss = Operations.PasteAfter(new SnapshotPoint(view.CurrentSnapshot, 0), "yay", OperationKind.CharacterWise).Snapshot;
+            var tss = ModeUtil.PasteAfter(new SnapshotPoint(view.CurrentSnapshot, 0), "yay", OperationKind.CharacterWise).Snapshot;
             Assert.AreEqual(2, tss.LineCount);
             Assert.AreEqual("fyayoo", tss.GetLineFromLineNumber(0).GetText());
             Assert.AreEqual("bar", tss.GetLineFromLineNumber(1).GetText());
@@ -186,7 +186,7 @@ namespace VimCoreTest
         public void PasteAfter3()
         {
             var view = EditorUtil.CreateBuffer("foo", "bar");
-            var tss = Operations.PasteAfter(new SnapshotPoint(view.CurrentSnapshot, 0), "yay" + Environment.NewLine, OperationKind.LineWise).Snapshot;
+            var tss = ModeUtil.PasteAfter(new SnapshotPoint(view.CurrentSnapshot, 0), "yay" + Environment.NewLine, OperationKind.LineWise).Snapshot;
             Assert.AreEqual(3, tss.LineCount);
             Assert.AreEqual("foo", tss.GetLineFromLineNumber(0).GetText());
             Assert.AreEqual("yay", tss.GetLineFromLineNumber(1).GetText());
@@ -197,7 +197,7 @@ namespace VimCoreTest
         public void PasteAfter4()
         {
             var buffer = EditorUtil.CreateBuffer("foo", "bar");
-            var span = Operations.PasteAfter(new SnapshotPoint(buffer.CurrentSnapshot, 0), "yay", OperationKind.CharacterWise);
+            var span = ModeUtil.PasteAfter(new SnapshotPoint(buffer.CurrentSnapshot, 0), "yay", OperationKind.CharacterWise);
             Assert.AreEqual("yay", span.GetText());
         }
 
@@ -205,7 +205,7 @@ namespace VimCoreTest
         public void PasteAfter5()
         {
             var buffer = EditorUtil.CreateBuffer("foo", "bar");
-            var span = Operations.PasteAfter(new SnapshotPoint(buffer.CurrentSnapshot, 0), "yay", OperationKind.LineWise);
+            var span = ModeUtil.PasteAfter(new SnapshotPoint(buffer.CurrentSnapshot, 0), "yay", OperationKind.LineWise);
             Assert.AreEqual("yay", span.GetText());
         }
 
@@ -214,7 +214,7 @@ namespace VimCoreTest
         {
             var buffer = EditorUtil.CreateBuffer("foo", "bar");
             var point = buffer.CurrentSnapshot.GetLineFromLineNumber(0).End;
-            Operations.PasteAfter(point, "yay", OperationKind.CharacterWise);
+            ModeUtil.PasteAfter(point, "yay", OperationKind.CharacterWise);
             Assert.AreEqual("fooyay", buffer.CurrentSnapshot.GetLineFromLineNumber(0).GetText());
         }
 
@@ -222,7 +222,7 @@ namespace VimCoreTest
         public void PasteBefore1()
         {
             var buffer = EditorUtil.CreateBuffer("foo", "bar");
-            var span = Operations.PasteBefore(new SnapshotPoint(buffer.CurrentSnapshot, 0), "yay");
+            var span = ModeUtil.PasteBefore(new SnapshotPoint(buffer.CurrentSnapshot, 0), "yay");
             Assert.AreEqual("yay", span.GetText());
             Assert.AreEqual("yayfoo", span.Snapshot.GetLineFromLineNumber(0).GetText());
         }

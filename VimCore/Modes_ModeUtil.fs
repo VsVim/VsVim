@@ -1,6 +1,6 @@
 ﻿#light
 
-namespace Vim.Modes.Common
+namespace Vim.Modes
 open Vim
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
@@ -9,7 +9,7 @@ type internal JoinKind =
     | RemoveEmptySpaces
     | KeepEmptySpaces
 
-module Operations =
+module ModeUtil =
 
     type Result = 
         | Succeeded

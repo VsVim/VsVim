@@ -5,7 +5,7 @@ using System.Text;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Vim;
-using Vim.Modes.Common;
+using Vim.Modes;
 
 namespace VimCoreTest.Utils
 {
@@ -44,11 +44,11 @@ namespace VimCoreTest.Utils
 
         #endregion
 
-        #region Operations.Result
+        #region ModeUtil.Result
 
-        internal static Operations.Result.Failed AsFailed(this Operations.Result res)
+        internal static ModeUtil.Result.Failed AsFailed(this ModeUtil.Result res)
         {
-            return (Operations.Result.Failed)res;
+            return (ModeUtil.Result.Failed)res;
         }
 
         #endregion
