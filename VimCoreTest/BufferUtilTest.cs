@@ -118,17 +118,6 @@ namespace VimCoreTest
         }
 
         [Test]
-        public void DeleteSpan1()
-        {
-            Initialize("foo", "bar");
-            var r = new Register('a');
-            var span = new SnapshotSpan(_buffer.CurrentSnapshot, 0, 2);
-            var tuple = Tuple.Create(span, MotionKind.Inclusive, OperationKind.CharacterWise);
-            BufferUtil.DeleteSpan(tuple, r);
-            Assert.AreEqual("fo", r.StringValue);
-        }
-
-        [Test]
         public void ShiftRight1()
         {
             Initialize("foo");

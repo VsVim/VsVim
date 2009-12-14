@@ -163,12 +163,11 @@ type internal NormalMode( _bufferData : IVimBufferData ) =
                     let point = ViewUtil.GetCaretPoint d.VimBufferData.TextView
                     let point = point.GetContainingLine().Start
                     let span = TssUtil.GetLineRangeSpanIncludingLineBreak point d.Count
-                    let tuple = (span,  MotionKind.Inclusive, OperationKind.LineWise)
-                    BufferUtil.DeleteSpan tuple d.Register |> ignore
+                    Modes.Common.Operations.DeleteSpan span MotionKind.Inclusive OperationKind.LineWise d.Register |> ignore
                     NormalModeResult.Complete
                 | _ -> 
-                    let func tuple = 
-                        BufferUtil.DeleteSpan tuple d.Register |> ignore
+                    let func (span,motionKind,opKind)= 
+                        Modes.Common.Operations.DeleteSpan span motionKind opKind d.Register |> ignore
                         NormalModeResult.Complete
                     this.WaitForMotion ki d func
         inner
@@ -259,22 +258,6 @@ type internal NormalMode( _bufferData : IVimBufferData ) =
         ViewUtil.MoveCaretToVirtualPoint view point |> ignore
         NormalModeResult.SwitchMode (ModeKind.Insert)
         
-    member this.DeleteCharacterUnderCursor (d:NormalModeData) =
-        let view = d.VimBufferData.TextView
-        let range = TssUtil.GetCharacterSpan(view.Caret.Position.BufferPosition)
-        let tuple = (range, MotionKind.Exclusive, OperationKind.CharacterWise)
-        BufferUtil.DeleteSpan tuple d.Register |> ignore
-        NormalModeResult.Complete
-
-    /// Delete the character range before the current cursor.  Used to implement the X
-    /// command. 
-    member this.DeleteCharacterBeforeCursor (view:ITextView) count r =
-        let caretPoint = ViewUtil.GetCaretPoint view
-        let range = TssUtil.GetReverseCharacterSpan caretPoint count
-        let tuple = (range, MotionKind.Exclusive, OperationKind.CharacterWise)
-        BufferUtil.DeleteSpan tuple r |> ignore
-        NormalModeResult.Complete
-
     /// Core method for scrolling the editor up or down
     member this.ScrollCore dir count =
         let lines = VimSettingsUtil.GetScrollLineCount this.Settings this.TextView
@@ -320,9 +303,9 @@ type internal NormalMode( _bufferData : IVimBufferData ) =
             {   KeyInput=InputUtil.CharToKeyInput('B');
                 RunFunc=(fun d -> this.MotionFunc this.TextView d.Count (fun v -> ViewUtil.MoveWordBackward v WordKind.BigWord)) };
             {   KeyInput=InputUtil.CharToKeyInput('x');
-                RunFunc=(fun d -> this.DeleteCharacterUnderCursor d) };
+                RunFunc=Operations.DeleteCharacterAtCursor; };
             {   KeyInput=InputUtil.CharToKeyInput('X');
-                RunFunc=(fun d -> this.DeleteCharacterBeforeCursor this.TextView d.Count d.Register) };
+                RunFunc=Operations.DeleteCharacterBeforeCursor; };
             {   KeyInput=InputUtil.CharToKeyInput('d');
                 RunFunc=(fun d -> NeedMore2(this.WaitDelete)) };
             {   KeyInput=InputUtil.CharToKeyInput('y');

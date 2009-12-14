@@ -21,3 +21,4 @@ module internal Operations =
     val Yank : SnapshotSpan -> MotionKind -> OperationKind -> Register -> unit
     val PasteAfter : SnapshotPoint -> string -> OperationKind -> SnapshotSpan
     val PasteBefore : SnapshotPoint -> string -> SnapshotSpan
+    val DeleteSpan: SnapshotSpan -> MotionKind -> OperationKind -> Register -> ITextSnapshot

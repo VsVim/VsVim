@@ -132,3 +132,10 @@ module Operations =
         let buffer = point.Snapshot.TextBuffer
         let tss = buffer.Replace(span.Span, text) 
         new SnapshotSpan(tss,span.End.Position, text.Length)
+
+    // Delete a range of text
+    let DeleteSpan (span:SnapshotSpan) motionKind opKind (reg:Register) =
+        let tss = span.Snapshot
+        let regValue = {Value=span.GetText();MotionKind=motionKind;OperationKind=opKind}
+        reg.UpdateValue(regValue) 
+        tss.TextBuffer.Delete(span.Span)

@@ -11,5 +11,7 @@ module internal Operations =
     val InsertLineAbove : NormalModeData -> NormalModeResult
     val ReplaceChar : NormalModeData -> NormalModeResult
     val YankLines : NormalModeData -> NormalModeResult
+    val DeleteCharacterAtCursor : NormalModeData -> NormalModeResult 
+    val DeleteCharacterBeforeCursor : NormalModeData -> NormalModeResult
 
 

@@ -472,6 +472,34 @@ namespace VimCoreTest
             Assert.AreEqual(0, _view.Caret.Position.BufferPosition.Position);
         }
 
+        [Test]
+        public void Edit_x_1()
+        {
+            CreateBuffer("foo");
+            _mode.Process("x");
+            Assert.AreEqual("oo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
+            Assert.AreEqual("f", _map.DefaultRegister.StringValue);
+            Assert.AreEqual(OperationKind.CharacterWise, _map.DefaultRegister.Value.OperationKind);
+        }
+
+        [Test]
+        public void Edit_2x()
+        {
+            CreateBuffer("foo");
+            _mode.Process("2x");
+            Assert.AreEqual("o", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
+            Assert.AreEqual("fo", _map.DefaultRegister.StringValue);
+            Assert.AreEqual(OperationKind.CharacterWise, _map.DefaultRegister.Value.OperationKind);
+        }
+
+        [Test]
+        public void Edit_x_2()
+        {
+            CreateBuffer("foo");
+            _mode.Process("\"cx");
+            Assert.AreEqual("f", _map.GetRegister('c').StringValue);
+        }
+
         #endregion
 
         #region Yank

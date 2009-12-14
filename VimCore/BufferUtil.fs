@@ -18,17 +18,6 @@ module internal BufferUtil =
         let tss = buffer.Replace(new Span(line.Start.Position,0), System.Environment.NewLine)
         tss.GetLineFromLineNumber(line.LineNumber)
 
-                
-    // Delete a range of text
-    let DeleteSpan (range:SnapshotSpan,motionKind,opKind) (r:Register) =
-        let buf = range.Snapshot.TextBuffer
-        let tss = range.Snapshot
-        let regValue = {Value=range.GetText();MotionKind=motionKind;OperationKind=opKind}
-        r.UpdateValue(regValue);
-        use edit = buf.CreateEdit()
-        edit.Delete range.Span |> ignore
-        edit.Apply() 
-        
     /// Shift the lines enumerated by the specified span "count" characters to the right
     let ShiftRight (span:SnapshotSpan) count = 
         let text = new System.String(' ', count)

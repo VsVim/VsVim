@@ -14,8 +14,9 @@ X - 'Y in normal mode
 - Need a way to disable Vim on startup
 X - gp in Normal mode
 X - gP in normal mode
-- Bug: 5x does not delete 5 characters
+X - Bug: 5x does not delete 5 characters
 - Bug: dw at end of line, should it delete the line break as well?
+- Rename Modes_Common_operations to ModeUtil or something like that
 
 Version 6.0
 === 

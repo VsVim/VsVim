@@ -100,5 +100,23 @@ module internal Operations =
         Modes.Common.Operations.Yank span MotionKind.Inclusive OperationKind.LineWise d.Register |> ignore
         NormalModeResult.Complete
 
+    /// Implement the normal mode x command
+    let DeleteCharacterAtCursor (d:NormalModeData) =
+        let data = d.VimBufferData
+        let point = ViewUtil.GetCaretPoint data.TextView
+        let line = point.GetContainingLine()
+        let count = min (d.Count) (line.End.Position-point.Position)
+        let span = new SnapshotSpan(point, count)
+        Modes.Common.Operations.DeleteSpan span MotionKind.Exclusive OperationKind.CharacterWise d.Register |> ignore
+        NormalModeResult.Complete
+
+    /// Implement the normal mode X command
+    let DeleteCharacterBeforeCursor (d:NormalModeData) = 
+        let data = d.VimBufferData
+        let point = ViewUtil.GetCaretPoint data.TextView
+        let range = TssUtil.GetReverseCharacterSpan point d.Count
+        Modes.Common.Operations.DeleteSpan range MotionKind.Exclusive OperationKind.CharacterWise d.Register |> ignore
+        NormalModeResult.Complete
+
 
 
