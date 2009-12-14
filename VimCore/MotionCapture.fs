@@ -86,6 +86,7 @@ module internal MotionCapture =
         inner (CountCapture.Process) ki               
         
     let rec ProcessInput start (ki:KeyInput) count =
+        let count = if count < 1 then 1 else count
         if ki.IsDigit then
             ProcessCount ki (ProcessInput start) count
         else 

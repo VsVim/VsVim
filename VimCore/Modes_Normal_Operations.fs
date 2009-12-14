@@ -80,5 +80,14 @@ module internal Operations =
         d.VimBufferData.BlockCaret.Hide()
         NeedMore2(inner)
 
+    /// Yank lines from the buffer.  Implements the Y command
+    let YankLines (d:NormalModeData) =
+        let data = d.VimBufferData
+        let point = ViewUtil.GetCaretPoint data.TextView
+        let point = point.GetContainingLine().Start
+        let span = TssUtil.GetLineRangeSpanIncludingLineBreak point d.Count 
+        Modes.Common.Operations.Yank span MotionKind.Inclusive OperationKind.LineWise d.Register |> ignore
+        NormalModeResult.Complete
+
 
 

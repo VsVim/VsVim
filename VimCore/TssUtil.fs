@@ -119,32 +119,32 @@ module internal TssUtil =
         match line with
             | 0 -> 0
             | _ -> line-1
-            
-    /// Get the line range passed in.  If the count of lines exceeds the amount of lines remaining
-    /// in the buffer, the span will be truncated to the final line
-    let GetLineRangeSpanCore (start:SnapshotPoint) count = 
-        let tss = start.Snapshot
-        let rec inner (curLine:ITextSnapshotLine) count =
-            let nextLineNum = curLine.LineNumber + 1
-            if nextLineNum < tss.LineCount && count > 1 then
-                let nextLine = tss.GetLineFromLineNumber(nextLineNum)
-                inner nextLine (count-1)
-            else
-                curLine
-        inner (start.GetContainingLine()) count                
-    
+
+    /// Get the line number back if it's valid and if not the last line in the snapshot
+    let GetValidLineNumberOrLast (tss:ITextSnapshot) lineNumber = 
+        if lineNumber >= tss.LineCount then tss.LineCount-1 else lineNumber
+
+    /// Get a valid line for the specified number if it's valid and the last line if it's
+    /// not
+    let GetValidLineOrLast (tss:ITextSnapshot) lineNumber =
+        let lineNumber = GetValidLineNumberOrLast tss lineNumber
+        tss.GetLineFromLineNumber(lineNumber)
+
     /// Get the line range passed in.  If the count of lines exceeds the amount of lines remaining
     /// in the buffer, the span will be truncated to the final line
     let GetLineRangeSpan (start:SnapshotPoint) count = 
-        let last = GetLineRangeSpanCore start count
+        let tss = start.Snapshot
+        let startLine = start.GetContainingLine()
+        let last = GetValidLineOrLast tss (startLine.LineNumber+(count-1))
         new SnapshotSpan(start, last.End)
 
     /// Functions exactly line GetLineRangeSpan except it will include the final line up until
     /// the end of the line break
     let GetLineRangeSpanIncludingLineBreak (start:SnapshotPoint) count =
-        let last = GetLineRangeSpanCore start count
+        let tss = start.Snapshot
+        let startLine = start.GetContainingLine()
+        let last = GetValidLineOrLast tss (startLine.LineNumber+(count-1))
         new SnapshotSpan(start, last.EndIncludingLineBreak)
-    
             
     /// Wrap the TextUtil functions which operate on String and int locations into 
     /// a SnapshotPoint and SnapshotSpan version

@@ -10,5 +10,6 @@ module internal Operations =
     val CharGCommand : NormalModeData -> NormalModeResult
     val InsertLineAbove : NormalModeData -> NormalModeResult
     val ReplaceChar : NormalModeData -> NormalModeResult
+    val YankLines : NormalModeData -> NormalModeResult
 
 

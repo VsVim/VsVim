@@ -413,6 +413,8 @@ type internal NormalMode( _bufferData : IVimBufferData ) =
                 RunFunc=Operations.CharGCommand };
             {   KeyInput=InputUtil.CharToKeyInput('r');
                 RunFunc=Operations.ReplaceChar};
+            {   KeyInput=InputUtil.CharToKeyInput('Y');
+                RunFunc=Operations.YankLines; }
             ]
         l |> List.map (fun d -> d.KeyInput,d) |> Map.ofList
 

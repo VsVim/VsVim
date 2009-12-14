@@ -1,20 +1,24 @@
-Version 5.4
+Version 5.5
 ===
+- 'Y in normal mode
 - Edits need to understand cursor selection
-X - r in normal mode
-X - O in normal mode
-X - :linecount is broken in command mode
 - Finish range parsing
 - Delete key in normal mode
 - Check on the behavior of tab in normal mode
 - Marks Undo Support
 - Mark navigation for global marks
-X - Track buffer close in some way
 - Horizontal offset issue Noah raised
-X - When the view is closed, kill the block caret
-X - Rename MockFactory -> MockObjectFactory
 - Shift lines in commnad mode
 - Help "copy-move" start from there
+
+Version 5.4
+===
+X - r in normal mode
+X - O in normal mode
+X - :linecount is broken in command mode
+X - Track buffer close in some way
+X - When the view is closed, kill the block caret
+X - Rename MockFactory -> MockObjectFactory
 X - Rename RangeCaptureTest -> RangeUtilTest
 
 Version 5.3

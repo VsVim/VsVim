@@ -7,6 +7,8 @@ module internal TssUtil =
     val GetLines : SnapshotPoint -> SearchKind -> seq<ITextSnapshotLine>
     val GetPoints : ITextSnapshotLine -> seq<SnapshotPoint>
     val GetSpans : SnapshotPoint -> SearchKind -> seq<SnapshotSpan>
+    val GetValidLineNumberOrLast : ITextSnapshot -> int -> int
+    val GetValidLineOrLast : ITextSnapshot -> int -> ITextSnapshotLine
     val GetLineRangeSpan : SnapshotPoint -> int -> SnapshotSpan
     val GetLineRangeSpanIncludingLineBreak : SnapshotPoint -> int -> SnapshotSpan
     val VimLineToTssLine : int -> int

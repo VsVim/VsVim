@@ -157,12 +157,6 @@
     <Compile Include="VimBufferTests.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\VimCore\VimCore.fsproj">
-      <Project>{06BE08E7-8626-40BD-877B-8D2DCA6BA451}</Project>
-      <Name>VimCore</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
     <Content Include="Todo.txt" />
   </ItemGroup>
   <ItemGroup>
@@ -171,6 +165,12 @@
       <ProductName>.NET Framework 3.5 SP1</ProductName>
       <Install>false</Install>
     </BootstrapperPackage>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\VimCore\VimCore.fsproj">
+      <Project>{06BE08E7-8626-40BD-877B-8D2DCA6BA451}</Project>
+      <Name>VimCore</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

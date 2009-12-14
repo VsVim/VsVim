@@ -204,6 +204,21 @@ namespace VimCoreTest
         }
 
         [Test]
+        public void GetValidLineNumberOrLast()
+        {
+            Initialize("foo", "bar");
+            Assert.AreEqual(1, TssUtil.GetValidLineNumberOrLast(_snapshot, 1));
+            Assert.AreEqual(0, TssUtil.GetValidLineNumberOrLast(_snapshot, 0));
+        }
+
+        [Test]
+        public void GetValidLineNumberOrLast2()
+        {
+            Initialize("foo", "bar");
+            Assert.AreEqual(1, TssUtil.GetValidLineNumberOrLast(_snapshot, 200));
+        }
+
+        [Test]
         public void GetLineRangeSpan1()
         {
             var span = TssUtil.GetLineRangeSpan(new SnapshotPoint(_snapshot,0), 1);
