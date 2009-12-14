@@ -105,23 +105,23 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="Microsoft.VisualStudio.CoreUtility">
-      <HintPath>C:\Users\jaredp\dotnet\FsVim\References\Microsoft.VisualStudio.CoreUtility.dll</HintPath>
+      <HintPath>..\References\Microsoft.VisualStudio.CoreUtility.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Microsoft.VisualStudio.Text.Data">
-      <HintPath>C:\Users\jaredp\dotnet\FsVim\References\Microsoft.VisualStudio.Text.Data.dll</HintPath>
+      <HintPath>..\References\Microsoft.VisualStudio.Text.Data.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Microsoft.VisualStudio.Text.Logic">
-      <HintPath>C:\Users\jaredp\dotnet\FsVim\References\Microsoft.VisualStudio.Text.Logic.dll</HintPath>
+      <HintPath>..\References\Microsoft.VisualStudio.Text.Logic.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Microsoft.VisualStudio.Text.UI">
-      <HintPath>C:\Users\jaredp\dotnet\FsVim\References\Microsoft.VisualStudio.Text.UI.dll</HintPath>
+      <HintPath>..\References\Microsoft.VisualStudio.Text.UI.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Microsoft.VisualStudio.Text.UI.Wpf">
-      <HintPath>C:\Users\jaredp\dotnet\FsVim\References\Microsoft.VisualStudio.Text.UI.Wpf.dll</HintPath>
+      <HintPath>..\References\Microsoft.VisualStudio.Text.UI.Wpf.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="mscorlib" />
