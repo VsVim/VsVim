@@ -18,6 +18,7 @@ type internal ParseRangeResult =
 module internal RangeUtil =
     val GetSnapshotSpan : Range -> SnapshotSpan
     val RangeForCurrentLine : ITextView -> Range
+    val RangeOrCurrentLine : ITextView -> Range option -> Range
     val ApplyCount : Range -> int -> Range
     val ParseNumber : KeyInput list -> (int option * KeyInput list)
     val ParseRange : SnapshotPoint -> MarkMap -> KeyInput list -> ParseRangeResult

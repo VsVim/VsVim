@@ -212,5 +212,36 @@ namespace VimCoreTest
             Assert.AreEqual("    foo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
             Assert.AreEqual("    bar", _view.TextSnapshot.GetLineFromLineNumber(1).GetText());
         }
+
+        [Test]
+        public void Delete1()
+        {
+            Create("foo","bar");
+            ProcessWithEnter("del");
+            var tss = _view.TextSnapshot;
+            Assert.AreEqual(1, tss.LineCount);
+            Assert.AreEqual("bar", tss.GetLineFromLineNumber(0).GetText());
+        }
+
+        [Test]
+        public void Delete2()
+        {
+            Create("foo", "bar", "baz");
+            ProcessWithEnter("dele 2");
+            var tss = _view.TextSnapshot;
+            Assert.AreEqual(1, tss.LineCount);
+            Assert.AreEqual("baz", tss.GetLineFromLineNumber(0).GetText());
+        }
+
+        [Test]
+        public void Delete3()
+        {
+            Create("foo", "bar", "baz");
+            ProcessWithEnter("2del");
+            var tss = _view.TextSnapshot;
+            Assert.AreEqual(2, tss.LineCount);
+            Assert.AreEqual("foo", tss.GetLineFromLineNumber(0).GetText());
+            Assert.AreEqual("baz", tss.GetLineFromLineNumber(1).GetText());
+        }
     }
 }

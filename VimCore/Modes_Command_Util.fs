@@ -59,3 +59,4 @@ module internal Util =
                 inner (cur.Add(1))
         let point = inner line.Start
         view.Caret.MoveTo(point) |> ignore
+

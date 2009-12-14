@@ -39,12 +39,19 @@ module internal RangeUtil =
     /// Get the range for the currently selected line
     let RangeForCurrentLine view =
         let point = ViewUtil.GetCaretPoint view
-        let line = point.GetContainingLine().LineNumber
-        let tss = point.Snapshot
-        Range.Lines(tss,line,line)
+        let line = point.GetContainingLine()
+        Range.SingleLine(line)
+
+    /// Retrieve the passed in range if valid or the range for the current line
+    /// if the Range Option is empty
+    let RangeOrCurrentLine view rangeOpt =
+        match rangeOpt with
+        | Some(range) -> range
+        | None -> RangeForCurrentLine view
 
     /// Apply the count to the given range
     let ApplyCount range count =
+        let count = if count <= 1 then 1 else count-1
         let inner (tss:ITextSnapshot) startLine =
             let endLine = startLine + count
             let endLine = if endLine >= tss.LineCount then tss.LineCount-1 else endLine

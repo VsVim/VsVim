@@ -8,19 +8,23 @@ X - 'Y in normal mode
 - Marks Undo Support
 - Mark navigation for global marks
 - Horizontal offset issue Noah raised
-- Shift lines in commnad mode
-- Help "copy-move" start from there
+X - Shift lines in commnad mode
+X - Help "copy-move" start from there
 - Need a way to disable Vim via keyboard
 - Need a way to disable Vim on startup
 X - gp in Normal mode
 X - gP in normal mode
 X - Bug: 5x does not delete 5 characters
 - Bug: dw at end of line, should it delete the line break as well?
-- Rename Modes_Common_operations to ModeUtil or something like that
+X - Rename Modes_Common_operations to ModeUtil or something like that
+- Test NormalMode_Operations indepnedently
+- Help delete and insert
 
 Version 6.0
 === 
 - Visual mode
+  - Copy-move
+  - delete-insert
 
 Version 5.4
 ===

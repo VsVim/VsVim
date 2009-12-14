@@ -8,6 +8,8 @@ using Vim;
 using VimCoreTest.Utils;
 using Microsoft.VisualStudio.Text;
 using Microsoft.FSharp.Collections;
+using Microsoft.FSharp.Core;
+using Microsoft.VisualStudio.Text.Editor;
 
 namespace VimCoreTest
 {
@@ -126,7 +128,7 @@ namespace VimCoreTest
             Assert.IsTrue(second.IsLines);
             var lines = second.AsLines();
             Assert.AreEqual(0, lines.Item2);
-            Assert.AreEqual(2, lines.Item3);
+            Assert.AreEqual(1, lines.Item3);
         }
 
         [Test, Description("Count is bound to end of the file")]
@@ -142,12 +144,43 @@ namespace VimCoreTest
         }
 
         [Test]
+        public void ApplyCount3()
+        {
+            Create("foo","bar","baz");
+            var v1 = Range.NewSingleLine(_buffer.CurrentSnapshot.GetLineFromLineNumber(0));
+            var v2 = RangeUtil.ApplyCount(v1, 2);
+            Assert.IsTrue(v2.IsLines);
+            var lines = v2.AsLines();
+            Assert.AreEqual(0, lines.Item2);
+            Assert.AreEqual(1, lines.Item3);
+        }
+
+        [Test]
         public void SingleLine1()
         {
             Create("foo", "bar");
             var res = CaptureComplete("1");
             Assert.IsTrue(res.IsSucceeded);
             Assert.AreEqual(0, res.AsSucceeded().Item1.AsSingleLine().Item.LineNumber);
+        }
+
+        [Test]
+        public void RangeOrCurrentLine1()
+        {
+            var view = EditorUtil.CreateView("foo");
+            var res = RangeUtil.RangeOrCurrentLine(view, FSharpOption<Range>.None);
+            Assert.AreEqual(view.TextSnapshot.GetLineFromLineNumber(0).Extent, RangeUtil.GetSnapshotSpan(res));
+            Assert.IsTrue(res.IsSingleLine);
+        }
+
+        [Test]
+        public void RangeOrCurrentLine2()
+        {
+            Create("foo","bar");
+            var mock = new Moq.Mock<ITextView>(Moq.MockBehavior.Strict);
+            var range = Vim.Modes.Command.Range.NewLines(_buffer.CurrentSnapshot, 0, 0);
+            var res = RangeUtil.RangeOrCurrentLine(mock.Object, FSharpOption<Vim.Modes.Command.Range>.Some(range));
+            Assert.IsTrue(res.IsLines);
         }
         
     }

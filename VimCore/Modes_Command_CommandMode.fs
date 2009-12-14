@@ -100,10 +100,7 @@ type CommandMode( _data : IVimBufferData ) =
         let count,rest = RangeUtil.ParseNumber rest
 
         // Calculate the span to yank
-        let range = 
-            match range with 
-            | Some(range) -> range
-            | None -> RangeUtil.RangeForCurrentLine _data.TextView
+        let range = RangeUtil.RangeOrCurrentLine _data.TextView range
         
         // Apply the count if present
         let range = 
@@ -141,11 +138,7 @@ type CommandMode( _data : IVimBufferData ) =
     /// Parse the < command
     member x.ParseShiftLeft (rest:KeyInput list) (range: Range option) =
         let count,rest =  rest  |> x.SkipWhitespace |> RangeUtil.ParseNumber
-
-        let range = 
-            match range with 
-            | Some(range) -> range
-            | None -> RangeUtil.RangeForCurrentLine _data.TextView
+        let range = RangeUtil.RangeOrCurrentLine _data.TextView range
         let range = 
             match count with
             | Some(count) -> RangeUtil.ApplyCount range count
@@ -155,17 +148,31 @@ type CommandMode( _data : IVimBufferData ) =
 
     member x.ParseShiftRight (rest:KeyInput list) (range: Range option) =
         let count,rest = rest |> x.SkipWhitespace |> RangeUtil.ParseNumber
-
-        let range =
-            match range with
-            | Some(range) -> range
-            | None -> RangeUtil.RangeForCurrentLine _data.TextView
+        let range = RangeUtil.RangeOrCurrentLine _data.TextView range
         let range = 
             match count with
             | Some(count) -> RangeUtil.ApplyCount range count
             | None -> range
         let span = RangeUtil.GetSnapshotSpan range
         BufferUtil.ShiftRight span _data.Settings.ShiftWidth |> ignore
+
+    /// Implements the :delete command
+    member x.ParseDelete (rest:KeyInput list) (range:Range option) =
+        let reg,rest =
+            rest
+            |> x.SkipWhitespace
+            |> x.SkipPast "elete"
+            |> x.SkipWhitespace
+            |> x.SkipRegister
+        let count,rest = rest |> x.SkipWhitespace |> RangeUtil.ParseNumber
+        let range = RangeUtil.RangeOrCurrentLine _data.TextView range
+        let range = 
+            match count with
+            | Some(count) -> RangeUtil.ApplyCount range count
+            | None -> range
+        let span = RangeUtil.GetSnapshotSpan range
+        ModeUtil.DeleteSpan span MotionKind.Exclusive OperationKind.LineWise reg |> ignore
+
 
     member x.ParsePChar (current:KeyInput) (rest: KeyInput list) (range:Range option) =
         match current.Char with
@@ -183,6 +190,7 @@ type CommandMode( _data : IVimBufferData ) =
             x.TryParseNext rest next
         | '<' -> x.ParseShiftLeft rest range
         | '>' -> x.ParseShiftRight rest range
+        | 'd' -> x.ParseDelete rest range
         | _ -> _data.VimHost.UpdateStatus(x.BadMessage)
     
     member x.ParseInput (originalInputs : KeyInput list) =
