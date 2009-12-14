@@ -138,6 +138,35 @@ type CommandMode( _data : IVimBufferData ) =
 
         Util.Put _data.VimHost _data.TextView reg.StringValue line (not bang)
 
+    /// Parse the < command
+    member x.ParseShiftLeft (rest:KeyInput list) (range: Range option) =
+        let count,rest =  rest  |> x.SkipWhitespace |> RangeUtil.ParseNumber
+
+        let range = 
+            match range with 
+            | Some(range) -> range
+            | None -> RangeUtil.RangeForCurrentLine _data.TextView
+        let range = 
+            match count with
+            | Some(count) -> RangeUtil.ApplyCount range count
+            | None -> range
+        let span = RangeUtil.GetSnapshotSpan range
+        BufferUtil.ShiftLeft span _data.Settings.ShiftWidth |> ignore
+
+    member x.ParseShiftRight (rest:KeyInput list) (range: Range option) =
+        let count,rest = rest |> x.SkipWhitespace |> RangeUtil.ParseNumber
+
+        let range =
+            match range with
+            | Some(range) -> range
+            | None -> RangeUtil.RangeForCurrentLine _data.TextView
+        let range = 
+            match count with
+            | Some(count) -> RangeUtil.ApplyCount range count
+            | None -> range
+        let span = RangeUtil.GetSnapshotSpan range
+        BufferUtil.ShiftRight span _data.Settings.ShiftWidth |> ignore
+
     member x.ParsePChar (current:KeyInput) (rest: KeyInput list) (range:Range option) =
         match current.Char with
         | 'u' -> x.ParsePut rest range
@@ -152,6 +181,8 @@ type CommandMode( _data : IVimBufferData ) =
         | 'p' -> 
             let next head tail = x.ParsePChar head tail range
             x.TryParseNext rest next
+        | '<' -> x.ParseShiftLeft rest range
+        | '>' -> x.ParseShiftRight rest range
         | _ -> _data.VimHost.UpdateStatus(x.BadMessage)
     
     member x.ParseInput (originalInputs : KeyInput list) =
