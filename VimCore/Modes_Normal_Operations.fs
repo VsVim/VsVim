@@ -48,6 +48,11 @@ module internal Operations =
                 let reg = d.Register.Value
                 let span = Modes.Common.Operations.PasteAfter caret reg.Value reg.OperationKind 
                 data.TextView.Caret.MoveTo(span.End) |> ignore
+            | 'P' ->
+                let caret = ViewUtil.GetCaretPoint data.TextView
+                let text = d.Register.StringValue
+                let span = Modes.Common.Operations.PasteBefore caret text
+                data.TextView.Caret.MoveTo(span.End) |> ignore
             | _ ->
                 d.VimBufferData.VimHost.Beep()
                 ()

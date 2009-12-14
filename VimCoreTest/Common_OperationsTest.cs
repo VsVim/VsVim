@@ -217,5 +217,14 @@ namespace VimCoreTest
             Operations.PasteAfter(point, "yay", OperationKind.CharacterWise);
             Assert.AreEqual("fooyay", buffer.CurrentSnapshot.GetLineFromLineNumber(0).GetText());
         }
+
+        [Test]
+        public void PasteBefore1()
+        {
+            var buffer = EditorUtil.CreateBuffer("foo", "bar");
+            var span = Operations.PasteBefore(new SnapshotPoint(buffer.CurrentSnapshot, 0), "yay");
+            Assert.AreEqual("yay", span.GetText());
+            Assert.AreEqual("yayfoo", span.Snapshot.GetLineFromLineNumber(0).GetText());
+        }
     }
 }

@@ -20,4 +20,4 @@ module internal Operations =
     val JumpToMark : MarkMap -> ITextView -> char -> Result
     val Yank : SnapshotSpan -> MotionKind -> OperationKind -> Register -> unit
     val PasteAfter : SnapshotPoint -> string -> OperationKind -> SnapshotSpan
-    val PasteBefore : SnapshotPoint -> string -> ITextSnapshot
+    val PasteBefore : SnapshotPoint -> string -> SnapshotSpan

@@ -721,6 +721,36 @@ namespace VimCoreTest
             Assert.AreEqual("foohey", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
         }
 
+        [Test]
+        public void Paste_gP_1()
+        {
+            CreateBuffer("foo");
+            _map.DefaultRegister.UpdateValue("hey");
+            _mode.Process("gP");
+            Assert.AreEqual("heyfoo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
+            Assert.AreEqual(3, _view.Caret.Position.BufferPosition.Position);
+        }
+
+        [Test]
+        public void Paste_gP_2()
+        {
+            CreateBuffer("foo", "bar");
+            _view.Caret.MoveTo(_view.TextSnapshot.GetLineFromLineNumber(0).End);
+            _map.DefaultRegister.UpdateValue("hey");
+            _mode.Process("gP");
+            Assert.AreEqual("foohey", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
+        }
+
+        [Test]
+        public void Paste_gP_3()
+        {
+            CreateBuffer("foo", "bar");
+            _view.Caret.MoveTo(_view.TextSnapshot.GetLineFromLineNumber(0).End);
+            _map.GetRegister('c').UpdateValue("hey");
+            _mode.Process("\"cgP");
+            Assert.AreEqual("foohey", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
+        }
+
         #endregion
 
         #region Delete

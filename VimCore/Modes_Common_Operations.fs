@@ -125,8 +125,10 @@ module Operations =
         let tss = buffer.Replace(replaceSpan.Span, text)
         new SnapshotSpan(tss, replaceSpan.End.Position, text.Length)
     
-    /// Paste the text before the passed in position
+    /// Paste the text before the passed in position.  Returns the SnapshotSpan for the text in
+    /// the new snapshot of the buffer
     let PasteBefore (point:SnapshotPoint) text =
         let span = new SnapshotSpan(point,0)
         let buffer = point.Snapshot.TextBuffer
-        buffer.Replace(span.Span, text) 
+        let tss = buffer.Replace(span.Span, text) 
+        new SnapshotSpan(tss,span.End.Position, text.Length)
