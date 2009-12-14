@@ -91,7 +91,7 @@ namespace VimCoreTest
         {
             buffer.ProcessInputAsString(":200");
             buffer.ProcessKey(Key.Enter);
-            Assert.AreEqual("Invalid line number", host.Status);
+            Assert.IsFalse(String.IsNullOrEmpty(host.Status));
         }
 
         [Test]

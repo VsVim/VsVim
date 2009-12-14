@@ -79,6 +79,11 @@ namespace VimCoreTest.Utils
             return (Vim.Modes.Command.Range.RawSpan)range;
         }
 
+        internal static Vim.Modes.Command.Range.SingleLine AsSingleLine(this Vim.Modes.Command.Range range)
+        {
+            return (Vim.Modes.Command.Range.SingleLine)range;
+        }
+
         #endregion
 
         internal static SnapshotSpan GetSpan(this ITextSelection selection)

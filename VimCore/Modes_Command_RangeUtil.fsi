@@ -8,6 +8,7 @@ open Microsoft.VisualStudio.Text.Editor
 type internal Range = 
     | RawSpan of SnapshotSpan
     | Lines of ITextSnapshot * int * int
+    | SingleLine of ITextSnapshotLine 
 
 type internal ParseRangeResult =
     | Succeeded of Range * KeyInput list

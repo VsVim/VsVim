@@ -13,18 +13,6 @@ module internal Util =
     /// Handle the :edit command
     let EditFile (host:IVimHost) fileName = host.OpenFile fileName
 
-    /// Jump to a specified line number in the file
-    let JumpToLineNumber (d:IVimBufferData) lineNumberStr = 
-        let num = System.Int32.Parse(lineNumberStr)
-        let num = TssUtil.VimLineToTssLine(num)
-        let tss = d.TextSnapshot
-        match num < tss.LineCount with
-            | true -> 
-                let line = tss.GetLineFromLineNumber(num)
-                ViewUtil.MoveToLineStart d.TextView line |> ignore
-            | false -> 
-                d.VimHost.UpdateStatus("Invalid line number")
-
     /// Jump to the last line in the file
     let JumpToLastLine (d:IVimBufferData) =
         ViewUtil.MoveToLastLineStart d.TextView |> ignore
@@ -46,3 +34,28 @@ module internal Util =
             let count = endLine - startLine
             Modes.Common.Operations.Join view range.Start kind count
 
+
+    /// Implement the :pu[t] command
+    let Put (host:IVimHost) (view:ITextView) (text:string) (line:ITextSnapshotLine) isAfter =
+
+        // Force a newline at the end to be consistent with the implemented 
+        // behavior in various VIM implementations.  This isn't called out in 
+        // the documentation though
+        let text = 
+            if text.EndsWith(System.Environment.NewLine) then text
+            else text + System.Environment.NewLine
+
+        let point = line.Start
+        let span =
+            if isAfter then Modes.Common.Operations.PasteAfter point text OperationKind.LineWise
+            else Modes.Common.Operations.PasteBefore point text
+
+        // Move the cursor to the first non-blank character on the last line
+        let line = span.End.Subtract(1).GetContainingLine()
+        let rec inner (cur:SnapshotPoint) = 
+            if cur = line.End || not (System.Char.IsWhiteSpace(cur.GetChar())) then
+                cur
+            else
+                inner (cur.Add(1))
+        let point = inner line.Start
+        view.Caret.MoveTo(point) |> ignore

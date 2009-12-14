@@ -20,17 +20,19 @@ namespace VimCoreTest
         private CommandMode _modeRaw;
         private IMode _mode;
         private FakeVimHost _host;
+        private IRegisterMap _map;
 
         public void Create(params string[] lines)
         {
             _view = Utils.EditorUtil.CreateView(lines);
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 0));
+            _map = new RegisterMap();
             _host = new FakeVimHost();
             _bufferData = MockObjectFactory.CreateVimBufferData(
                 _view,
                 "test",
                 _host,
-                MockObjectFactory.CreateVimData(new RegisterMap()).Object);
+                MockObjectFactory.CreateVimData(_map).Object);
             _modeRaw = new Vim.Modes.Command.CommandMode(_bufferData);
             _mode = _modeRaw;
             _mode.OnEnter();
@@ -95,7 +97,7 @@ namespace VimCoreTest
         {
             Create("foo");
             ProcessWithEnter("400");
-            Assert.AreEqual("Invalid line number", _host.Status);
+            Assert.IsTrue(!String.IsNullOrEmpty(_host.Status));
         }
 
         [Test]
@@ -112,36 +114,51 @@ namespace VimCoreTest
         public void Yank2()
         {
             Create("foo", "bar", "baz");
-            IRegisterMap map = new RegisterMap();
             ProcessWithEnter("1,2y");
             var tss = _view.TextSnapshot;
             var span = new SnapshotSpan(
                 tss.GetLineFromLineNumber(0).Start,
                 tss.GetLineFromLineNumber(1).EndIncludingLineBreak);
-            Assert.AreEqual(span.GetText(), map.DefaultRegister.Value.Value);
+            Assert.AreEqual(span.GetText(), _map.DefaultRegister.Value.Value);
         }
 
         [Test]
         public void Yank3()
         {
             Create("foo", "bar");
-            IRegisterMap map = new RegisterMap();
             ProcessWithEnter("y c");
             var line = _view.TextSnapshot.GetLineFromLineNumber(0);
-            Assert.AreEqual(line.ExtentIncludingLineBreak.GetText(), map.GetRegister('c').Value.Value);
+            Assert.AreEqual(line.ExtentIncludingLineBreak.GetText(), _map.GetRegister('c').Value.Value);
         }
 
         [Test]
         public void Yank4()
         {
             Create("foo", "bar");
-            IRegisterMap map = new RegisterMap();
             ProcessWithEnter("y 2");
             var tss = _view.TextSnapshot;
             var span = new SnapshotSpan(
                 tss.GetLineFromLineNumber(0).Start,
                 tss.GetLineFromLineNumber(1).EndIncludingLineBreak);
-            Assert.AreEqual(span.GetText(), map.DefaultRegister.Value.Value);
+            Assert.AreEqual(span.GetText(), _map.DefaultRegister.Value.Value);
+        }
+
+        [Test]
+        public void Put1()
+        {
+            Create("foo", "bar");
+            _map.DefaultRegister.UpdateValue("hey");
+            ProcessWithEnter("put");
+            Assert.AreEqual("hey", _view.TextSnapshot.GetLineFromLineNumber(1).GetText());
+        }
+
+        [Test]
+        public void Put2()
+        {
+            Create("foo", "bar");
+            _map.DefaultRegister.UpdateValue("hey");
+            ProcessWithEnter("2put!");
+            Assert.AreEqual("hey", _view.TextSnapshot.GetLineFromLineNumber(1).GetText());
         }
     }
 }

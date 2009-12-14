@@ -51,8 +51,6 @@ namespace VimCoreTest
             del(String.Empty);
             del("j");
             del("join");
-            del("1");   // A set of digits is not a range
-            del("12");   // A set of digits is not a range
         }
 
         [Test]
@@ -141,6 +139,15 @@ namespace VimCoreTest
             var lines = v2.AsLines();
             Assert.AreEqual(0, lines.Item2);
             Assert.AreEqual(_buffer.CurrentSnapshot.LineCount - 1, lines.Item3);
+        }
+
+        [Test]
+        public void SingleLine1()
+        {
+            Create("foo", "bar");
+            var res = CaptureComplete("1");
+            Assert.IsTrue(res.IsSucceeded);
+            Assert.AreEqual(0, res.AsSucceeded().Item1.AsSingleLine().Item.LineNumber);
         }
         
     }

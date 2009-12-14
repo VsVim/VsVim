@@ -59,7 +59,7 @@ type CommandMode( _data : IVimBufferData ) =
 
     member x.TryParseNext (cmd:KeyInput List) next = 
         if cmd |> List.isEmpty then 
-            _data.VimHost.UpdateStatus("Invalid Command String:")
+            _data.VimHost.UpdateStatus("Invalid Command String")
         else next (cmd |> List.head) (cmd |> List.tail) 
 
     /// Parse out the :join command
@@ -114,17 +114,45 @@ type CommandMode( _data : IVimBufferData ) =
         let span = RangeUtil.GetSnapshotSpan range
         Modes.Common.Operations.Yank span MotionKind.Exclusive OperationKind.LineWise reg
 
+    /// Parse the Put command
+    member x.ParsePut (rest:KeyInput list) (range: Range option) =
+        let bang,rest =
+            rest
+            |> x.SkipWhitespace
+            |> x.SkipPast "t"
+            |> x.SkipBang
+        let reg,rest = 
+            rest
+            |> x.SkipWhitespace
+            |> x.SkipRegister
+        
+        // Figure out the line number
+        let line = 
+            match range with 
+            | None -> (ViewUtil.GetCaretPoint _data.TextView).GetContainingLine()
+            | Some(range) ->
+                match range with 
+                | Range.SingleLine(line) -> line
+                | Range.RawSpan(span) -> span.End.GetContainingLine()
+                | Range.Lines(tss,_,endLine) -> tss.GetLineFromLineNumber(endLine)
+
+        Util.Put _data.VimHost _data.TextView reg.StringValue line (not bang)
+
+    member x.ParsePChar (current:KeyInput) (rest: KeyInput list) (range:Range option) =
+        match current.Char with
+        | 'u' -> x.ParsePut rest range
+        | _ -> _data.VimHost.UpdateStatus(x.BadMessage)
+
     member x.ParseCommand (current:KeyInput) (rest:KeyInput list) (range:Range option) =
-        if current.IsDigit then
-            let number = (current :: rest) |> Seq.ofList |> Seq.map (fun x -> x.Char) |> StringUtil.OfCharSeq
-            Util.JumpToLineNumber _data number
-        else
-            match current.Char with
-            | 'j' -> x.ParseJoin rest range
-            | 'e' -> x.ParseEdit rest 
-            | '$' -> Util.JumpToLastLine _data
-            | 'y' -> x.ParseYank rest range
-            | _ -> _data.VimHost.UpdateStatus(x.BadMessage)
+        match current.Char with
+        | 'j' -> x.ParseJoin rest range
+        | 'e' -> x.ParseEdit rest 
+        | '$' -> Util.JumpToLastLine _data
+        | 'y' -> x.ParseYank rest range
+        | 'p' -> 
+            let next head tail = x.ParsePChar head tail range
+            x.TryParseNext rest next
+        | _ -> _data.VimHost.UpdateStatus(x.BadMessage)
     
     member x.ParseInput (originalInputs : KeyInput list) =
         let withRange (range:Range option) (inputs:KeyInput list) =
@@ -132,7 +160,13 @@ type CommandMode( _data : IVimBufferData ) =
             x.TryParseNext inputs next
         let point = ViewUtil.GetCaretPoint _data.TextView
         match RangeUtil.ParseRange point _data.MarkMap originalInputs with
-        | Succeeded(range, inputs) -> withRange (Some(range)) inputs
+        | Succeeded(range, inputs) -> 
+            if inputs |> List.isEmpty then
+                match range with 
+                | SingleLine(line) ->  _data.TextView.Caret.MoveTo(line.Start) |> ignore
+                | _ -> _data.VimHost.UpdateStatus("Invalid Command String")
+            else
+                withRange (Some(range)) inputs
         | NoRange -> withRange None originalInputs
         | Failed(msg) -> 
             _data.VimHost.UpdateStatus(msg)
