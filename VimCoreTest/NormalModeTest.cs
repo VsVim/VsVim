@@ -51,21 +51,24 @@ namespace VimCoreTest
             _mode.OnEnter();
         }
 
-        [SetUp]
-        public void TestInit()
+        [TearDown]
+        public void TearDown()
         {
-            CreateBuffer(s_lines);
+            _view = null;
+            _mode = null;
         }
 
         [Test]
         public void ModeKindTest()
         {
+            CreateBuffer(s_lines);
             Assert.AreEqual(ModeKind.Normal, _mode.ModeKind);
         }
 
         [Test, Description("Let enter go straight back to the editor in the default case")]
         public void EnterProcessing()
         {
+            CreateBuffer(s_lines);
             var can = _mode.CanProcess(InputUtil.KeyToKeyInput(Key.Enter));
             Assert.IsTrue(can);
         }
@@ -75,6 +78,7 @@ namespace VimCoreTest
         [Test, Description("Can process basic commands")]
         public void CanProcess1()
         {
+            CreateBuffer(s_lines);
             Assert.IsTrue(_mode.CanProcess(InputUtil.CharToKeyInput('u')));
             Assert.IsTrue(_mode.CanProcess(InputUtil.CharToKeyInput('h')));
             Assert.IsTrue(_mode.CanProcess(InputUtil.CharToKeyInput('j')));
@@ -84,6 +88,7 @@ namespace VimCoreTest
         [Test, Description("Cannot process invalid commands")]
         public void CanProcess2()
         {
+            CreateBuffer(s_lines);
             Assert.IsFalse(_mode.CanProcess(InputUtil.CharToKeyInput('U')));
             Assert.IsFalse(_mode.CanProcess(InputUtil.CharToKeyInput('Z')));
         }
@@ -91,6 +96,7 @@ namespace VimCoreTest
         [Test, Description("Must be able to process numbers")]
         public void CanProcess3()
         {
+            CreateBuffer(s_lines);
             foreach (var cur in Enumerable.Range(1, 8))
             {
                 var c = char.Parse(cur.ToString());
@@ -102,6 +108,7 @@ namespace VimCoreTest
         [Test, Description("When in a need more state, process everything")]
         public void CanProcess4()
         {
+            CreateBuffer(s_lines);
             _mode.Process(InputUtil.CharToKeyInput('/'));
             Assert.IsTrue(_mode.CanProcess(InputUtil.CharToKeyInput('U')));
             Assert.IsTrue(_mode.CanProcess(InputUtil.CharToKeyInput('Z')));
@@ -114,6 +121,7 @@ namespace VimCoreTest
         [Test, Description("Enter should move down on line")]
         public void Enter1()
         {
+            CreateBuffer(s_lines);
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 0));
             _mode.Process(Key.Enter);
             var line = _view.TextSnapshot.GetLineFromLineNumber(1);
@@ -123,6 +131,7 @@ namespace VimCoreTest
         [Test, Description("Enter at end of file should beep ")]
         public void Enter2()
         {
+            CreateBuffer(s_lines);
             var last = _view.TextSnapshot.Lines.Last();
             _view.Caret.MoveTo(last.Start.Add(2));
             _mode.Process(Key.Enter);
@@ -133,6 +142,7 @@ namespace VimCoreTest
         [Test]
         public void Move_l()
         {
+            CreateBuffer(s_lines);
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 0));
             _mode.Process("l");
             Assert.AreEqual(1, _view.Caret.Position.BufferPosition.Position);
@@ -141,6 +151,7 @@ namespace VimCoreTest
         [Test]
         public void Move_l2()
         {
+            CreateBuffer(s_lines);
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 0));
             _mode.Process("2l");
             Assert.AreEqual(2, _view.Caret.Position.BufferPosition.Position);
@@ -149,6 +160,7 @@ namespace VimCoreTest
         [Test]
         public void Move_h()
         {
+            CreateBuffer(s_lines);
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 1));
             _mode.Process("h");
             Assert.AreEqual(0, _view.Caret.Position.BufferPosition.Position);
@@ -157,6 +169,7 @@ namespace VimCoreTest
         [Test,Description("Make sure that we clear the selection on a motion")]
         public void Move_h2()
         {
+            CreateBuffer(s_lines);
             var start = new SnapshotPoint(_view.TextSnapshot, 1);
             _view.Caret.MoveTo(start);
             _view.Selection.Select(new SnapshotSpan(start, 5), false);
@@ -167,6 +180,7 @@ namespace VimCoreTest
         [Test]
         public void Move_k()
         {
+            CreateBuffer(s_lines);
             var line = _view.TextSnapshot.GetLineFromLineNumber(1);
             _view.Caret.MoveTo(line.Start);
             _mode.Process("k");
@@ -176,6 +190,7 @@ namespace VimCoreTest
         [Test]
         public void Move_j()
         {
+            CreateBuffer(s_lines);
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 0));
             _mode.Process("j");
             Assert.AreEqual(1, _view.Caret.Position.BufferPosition.GetContainingLine().LineNumber);
@@ -219,6 +234,7 @@ namespace VimCoreTest
         [Test, Description("Typing in invalid motion should produce a warning")]
         public void BadMotion1()
         {
+            CreateBuffer(s_lines);
             _mode.Process("d@");
             Assert.AreNotEqual(String.Empty, _host.Status);
         }
@@ -226,6 +242,7 @@ namespace VimCoreTest
         [Test, Description("Typing in invalid motion should produce a warning")]
         public void BadMotion2()
         {
+            CreateBuffer(s_lines);
             _mode.Process("d@aoeuaoeu");
             Assert.AreNotEqual(String.Empty, _host.Status);
         }
@@ -233,6 +250,7 @@ namespace VimCoreTest
         [Test, Description("Enter must cancel an invalid motion")]
         public void BadMotion3()
         {
+            CreateBuffer(s_lines);
             _mode.Process("d@");
             var res = _mode.Process(Key.I);
             Assert.IsTrue(res.IsProcessed);
@@ -244,6 +262,7 @@ namespace VimCoreTest
         [Test, Description("Canceled motion should reset the status")]
         public void BadMotion4()
         {
+            CreateBuffer(s_lines);
             _mode.Process("dzzz");
             Assert.IsFalse(String.IsNullOrEmpty(_host.Status));
             _mode.Process(Key.Escape);
@@ -253,6 +272,7 @@ namespace VimCoreTest
         [Test, Description("Completed motion should reset the status")]
         public void BadMotion5()
         {
+            CreateBuffer(s_lines);
             _mode.Process("yaw");
             Assert.IsTrue(String.IsNullOrEmpty(_host.Status));
         }
@@ -260,6 +280,7 @@ namespace VimCoreTest
         [Test]
         public void Motion_l()
         {
+            CreateBuffer(s_lines);
             _mode.Process("l");
             var point = _view.Caret.Position.BufferPosition;
             var line = _view.TextSnapshot.GetLineFromLineNumber(0);
@@ -269,6 +290,7 @@ namespace VimCoreTest
         [Test]
         public void Motion_2l()
         {
+            CreateBuffer(s_lines);
             _mode.Process("2l");
             var point = _view.Caret.Position.BufferPosition;
             var line = _view.TextSnapshot.GetLineFromLineNumber(0);
@@ -278,6 +300,7 @@ namespace VimCoreTest
         [Test, Description("Don't crash moving off the end of the buffer")]
         public void Motion_50l()
         {
+            CreateBuffer(s_lines);
             var line = _view.TextSnapshot.Lines.Last();
             _view.Caret.MoveTo(line.Start);
             _mode.Process("50l");
@@ -672,6 +695,7 @@ namespace VimCoreTest
         [Test, Description("Don't re-enter insert mode on every keystroke once you've left")]
         public void Regression_InsertMode()
         {
+            CreateBuffer(s_lines);
             var res = _mode.Process(InputUtil.KeyToKeyInput(Key.I));
             Assert.IsTrue(res.IsSwitchMode);
             Assert.AreEqual(ModeKind.Insert, res.AsSwitchMode().Item);
@@ -846,6 +870,7 @@ namespace VimCoreTest
         [Test]
         public void SearchStatus1()
         {
+            CreateBuffer(s_lines);
             _mode.Process("/");
             Assert.AreEqual("/", _host.Status);
         }
@@ -853,6 +878,7 @@ namespace VimCoreTest
         [Test]
         public void SearchStatus2()
         {
+            CreateBuffer(s_lines);
             _mode.Process("/zzz");
             Assert.AreEqual("/zzz", _host.Status);
         }
@@ -1127,6 +1153,7 @@ namespace VimCoreTest
         [Test]
         public void GoToDefinition1()
         {
+            CreateBuffer(s_lines);
             var def = new KeyInput(']', Key.OemCloseBrackets, ModifierKeys.Control);
             CreateBuffer("foo");
             _mode.Process(def);
@@ -1147,6 +1174,7 @@ namespace VimCoreTest
         [Test]
         public void GoToDefinition3()
         {
+            CreateBuffer(s_lines);
             var def = new KeyInput(']', Key.OemCloseBrackets, ModifierKeys.Control);
             Assert.IsTrue(_mode.CanProcess(def));
             Assert.IsTrue(_mode.Commands.Contains(def));
@@ -1155,6 +1183,7 @@ namespace VimCoreTest
         [Test]
         public void Mark1()
         {
+            CreateBuffer(s_lines);
             Assert.IsTrue(_mode.CanProcess(InputUtil.CharToKeyInput('m')));
             Assert.IsTrue(_mode.Commands.Contains(InputUtil.CharToKeyInput('m')));
         }
@@ -1162,6 +1191,7 @@ namespace VimCoreTest
         [Test, Description("Once we are in mark mode we can process anything")]
         public void Mark2()
         {
+            CreateBuffer(s_lines);
             _mode.Process(InputUtil.CharToKeyInput('m'));
             Assert.IsTrue(_mode.CanProcess(new KeyInput('c', Key.C, ModifierKeys.Control)));
         }
@@ -1169,6 +1199,7 @@ namespace VimCoreTest
         [Test]
         public void Mark3()
         {
+            CreateBuffer(s_lines);
             _mode.Process(InputUtil.CharToKeyInput('m'));
             _mode.Process(InputUtil.CharToKeyInput('a'));
             Assert.IsTrue(_bufferData._vimData.MarkMap.GetLocalMark(_view.TextBuffer, 'a').IsSome());
@@ -1177,6 +1208,7 @@ namespace VimCoreTest
         [Test, Description("Bad mark should beep")]
         public void Mark4()
         {
+            CreateBuffer(s_lines);
             _mode.Process(InputUtil.CharToKeyInput('m'));
             _mode.Process(InputUtil.CharToKeyInput(';'));
             Assert.IsTrue(_host.BeepCount > 0);
@@ -1185,6 +1217,7 @@ namespace VimCoreTest
         [Test]
         public void JumpToMark1()
         {
+            CreateBuffer(s_lines);
             Assert.IsTrue(_mode.CanProcess(InputUtil.CharToKeyInput('\'')));
             Assert.IsTrue(_mode.CanProcess(InputUtil.CharToKeyInput('`')));
             Assert.IsTrue(_mode.Commands.Contains(InputUtil.CharToKeyInput('\'')));
@@ -1204,6 +1237,7 @@ namespace VimCoreTest
         [Test]
         public void CharGCommand()
         {
+            CreateBuffer(s_lines);
             _mode.Process("gB");
             Assert.IsTrue(_host.BeepCount > 0);
         }
@@ -1211,6 +1245,7 @@ namespace VimCoreTest
         [Test, Description("OnLeave should kill the block caret")]
         public void OnLeave1()
         {
+            CreateBuffer(s_lines);
             _blockCaret.HideCount = 0;
             _mode.OnLeave();
             Assert.AreEqual(1, _blockCaret.HideCount);
