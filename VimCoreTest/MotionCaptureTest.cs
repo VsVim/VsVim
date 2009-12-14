@@ -108,6 +108,24 @@ namespace VimCoreTest
         }
 
         [Test]
+        public void Word6()
+        {
+            Initialize("foo bar", "baz");
+            var res = Process(4, 1, "w");
+            Assert.IsTrue(res.IsComplete);
+            Assert.AreEqual("bar", res.AsComplete().Item.Item1.GetText());
+        }
+
+        [Test]
+        public void Word7()
+        {
+            Initialize("foo bar", "  baz");
+            var res = Process(4, 1, "w");
+            Assert.IsTrue(res.IsComplete);
+            Assert.AreEqual("bar", res.AsComplete().Item.Item1.GetText());
+        }
+
+        [Test]
         public void BadInput()
         {
             Initialize("foo bar");

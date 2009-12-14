@@ -37,10 +37,17 @@ module internal MotionCapture =
         let rec inner curPoint curCount = 
             let next = TssUtil.FindNextWordPosition curPoint kind
             match curCount with 
-                | 1 -> 
-                    let span = new SnapshotSpan(start, next)
-                    Complete(span, MotionKind.Exclusive, OperationKind.CharacterWise)
-                | _ -> inner next (curCount-1)
+            | 1 -> 
+                // When the next word crosses a line boundary for the last count then 
+                // we stop the motion on the current line.  This does not appear to be 
+                // caled out in the documentation but is evident in the behavior
+                let span = 
+                    if next.GetContainingLine().LineNumber <> curPoint.GetContainingLine().LineNumber then
+                        new SnapshotSpan(start, curPoint.GetContainingLine().End)
+                    else
+                        new SnapshotSpan(start,next)
+                Complete(span, MotionKind.Exclusive, OperationKind.CharacterWise)
+            | _ -> inner next (curCount-1)
         inner start originalCount      
         
     /// Implement the aw motion.  This is called once the a key is seen.
