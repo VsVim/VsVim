@@ -13,7 +13,7 @@ using VimCoreTest.Utils;
 namespace VimCoreTest
 {
     [TestFixture]
-    public class Common_ModeUtilTest
+    public class Modes_ModeUtilTest
     {
         private IWpfTextView _view;
         private ITextBuffer _buffer;
