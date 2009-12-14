@@ -107,17 +107,25 @@ module Operations =
         let regValue = {Value=span.GetText();MotionKind = motion; OperationKind = operation};
         reg.UpdateValue (regValue)
     
-    /// Paste after the current cursor position.  Don't forget that a linewise paste
-    /// operation needs to occur under the cursor
+    /// Paste after the passed in position.  Don't forget that a linewise paste
+    /// operation needs to occur under the cursor.  Returns the SnapshotSpan of
+    /// the text on the new snapshot
     let PasteAfter (point:SnapshotPoint) text opKind = 
         let buffer = point.Snapshot.TextBuffer
-        match opKind with
-        | OperationKind.LineWise ->
-            let line = point.GetContainingLine()
-            let span = new SnapshotSpan(line.EndIncludingLineBreak, 0)
-            buffer.Replace(span.Span, text)  
-        | OperationKind.CharacterWise ->
-            let point = TssUtil.GetNextPoint point
-            let span = new SnapshotSpan(point,0)
-            buffer.Replace(span.Span, text) 
-        | _ -> failwith "Invalid Enum Value"
+        let replaceSpan = 
+            match opKind with
+            | OperationKind.LineWise ->
+                let line = point.GetContainingLine()
+                new SnapshotSpan(line.EndIncludingLineBreak, 0)
+            | OperationKind.CharacterWise ->
+                let point = TssUtil.GetNextPoint point
+                new SnapshotSpan(point,0)
+            | _ -> failwith "Invalid Enum Value"
+        let tss = buffer.Replace(replaceSpan.Span, text)
+        new SnapshotSpan(tss, replaceSpan.End.Position, text.Length)
+    
+    /// Paste the text before the passed in position
+    let PasteBefore (point:SnapshotPoint) text =
+        let span = new SnapshotSpan(point,0)
+        let buffer = point.Snapshot.TextBuffer
+        buffer.Replace(span.Span, text) 

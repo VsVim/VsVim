@@ -166,7 +166,7 @@ namespace VimCoreTest
         public void PasteAfter1()
         {
             var view = EditorUtil.CreateBuffer("foo", "bar");
-            var tss = Operations.PasteAfter(new SnapshotPoint(view.CurrentSnapshot, 0), "yay", OperationKind.LineWise);
+            var tss = Operations.PasteAfter(new SnapshotPoint(view.CurrentSnapshot, 0), "yay", OperationKind.LineWise).Snapshot;
             Assert.AreEqual(2, tss.LineCount);
             Assert.AreEqual("foo", tss.GetLineFromLineNumber(0).GetText());
             Assert.AreEqual("yaybar", tss.GetLineFromLineNumber(1).GetText());
@@ -176,7 +176,7 @@ namespace VimCoreTest
         public void PasteAfter2()
         {
             var view = EditorUtil.CreateBuffer("foo", "bar");
-            var tss = Operations.PasteAfter(new SnapshotPoint(view.CurrentSnapshot, 0), "yay", OperationKind.CharacterWise);
+            var tss = Operations.PasteAfter(new SnapshotPoint(view.CurrentSnapshot, 0), "yay", OperationKind.CharacterWise).Snapshot;
             Assert.AreEqual(2, tss.LineCount);
             Assert.AreEqual("fyayoo", tss.GetLineFromLineNumber(0).GetText());
             Assert.AreEqual("bar", tss.GetLineFromLineNumber(1).GetText());
@@ -186,11 +186,27 @@ namespace VimCoreTest
         public void PasteAfter3()
         {
             var view = EditorUtil.CreateBuffer("foo", "bar");
-            var tss = Operations.PasteAfter(new SnapshotPoint(view.CurrentSnapshot, 0), "yay" + Environment.NewLine, OperationKind.LineWise);
+            var tss = Operations.PasteAfter(new SnapshotPoint(view.CurrentSnapshot, 0), "yay" + Environment.NewLine, OperationKind.LineWise).Snapshot;
             Assert.AreEqual(3, tss.LineCount);
             Assert.AreEqual("foo", tss.GetLineFromLineNumber(0).GetText());
             Assert.AreEqual("yay", tss.GetLineFromLineNumber(1).GetText());
             Assert.AreEqual("bar", tss.GetLineFromLineNumber(2).GetText());
+        }
+
+        [Test]
+        public void PasteAfter4()
+        {
+            var buffer = EditorUtil.CreateBuffer("foo", "bar");
+            var span = Operations.PasteAfter(new SnapshotPoint(buffer.CurrentSnapshot, 0), "yay", OperationKind.CharacterWise);
+            Assert.AreEqual("yay", span.GetText());
+        }
+
+        [Test]
+        public void PasteAfter5()
+        {
+            var buffer = EditorUtil.CreateBuffer("foo", "bar");
+            var span = Operations.PasteAfter(new SnapshotPoint(buffer.CurrentSnapshot, 0), "yay", OperationKind.LineWise);
+            Assert.AreEqual("yay", span.GetText());
         }
     }
 }

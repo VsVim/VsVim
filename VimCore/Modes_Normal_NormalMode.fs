@@ -115,7 +115,8 @@ type internal NormalMode( _bufferData : IVimBufferData ) =
     member this.PasteAfter text opKind =
         let caretPoint = ViewUtil.GetCaretPoint _bufferData.TextView
         let caretLineNumber = caretPoint.GetContainingLine().LineNumber
-        let tss = Modes.Common.Operations.PasteAfter caretPoint text opKind
+        let replaceSpan = Modes.Common.Operations.PasteAfter caretPoint text opKind
+        let tss = replaceSpan.Snapshot
 
         // For a LineWise paste we want to place the cursor at the start
         // of the next line
@@ -127,11 +128,8 @@ type internal NormalMode( _bufferData : IVimBufferData ) =
         
     // Paste at the current cursor position
     member this.PasteBefore text = 
-        let view = _bufferData.TextView
-        let point = ViewUtil.GetCaretPoint view
-        let span = new SnapshotSpan(point,0)
-        let buffer = view.TextBuffer
-        buffer.Replace(span.Span, text) |> ignore
+        let point = ViewUtil.GetCaretPoint _bufferData.TextView
+        Modes.Common.Operations.PasteBefore point text |> ignore
         NormalModeResult.Complete
         
     member this.WaitForMotion ki (d:NormalModeData) doneFunc = 
