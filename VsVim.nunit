@@ -2,8 +2,10 @@
   <Settings activeconfig="Debug" />
   <Config name="Debug" binpathtype="Auto">
     <assembly path="VimCoreTest\bin\Debug\VimCoreTest.dll" />
+    <assembly path="VsVimTest\bin\Debug\VsVimTest.dll" />
   </Config>
   <Config name="Release" binpathtype="Auto">
     <assembly path="VimCoreTest\bin\Release\VimCoreTest.dll" />
+    <assembly path="VsVimTest\bin\Release\VsVimTest.dll" />
   </Config>
 </NUnitProject>
