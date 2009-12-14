@@ -805,6 +805,28 @@ namespace VimCoreTest
             Assert.AreEqual(MotionKind.Inclusive, value.MotionKind);
             Assert.AreEqual(OperationKind.LineWise, value.OperationKind);
         }
+
+        [Test]
+        public void Delete_dw_1()
+        {
+            CreateBuffer("foo bar baz");
+            _mode.Process("dw");
+            Assert.AreEqual("bar baz", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
+            Assert.AreEqual(0, _view.Caret.Position.BufferPosition.Position);
+        }
+
+        [Test, Description("Delete at the end of the line shouldn't delete newline")]
+        public void Delete_dw_2()
+        {
+            CreateBuffer("foo bar","baz");
+            _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 4));
+            Assert.AreEqual('b', _view.Caret.Position.BufferPosition.GetChar());
+            _mode.Process("dw");
+            var tss = _view.TextSnapshot;
+            Assert.AreEqual(2, tss.LineCount);
+            Assert.AreEqual("foo ", tss.GetLineFromLineNumber(0).GetText());
+            Assert.AreEqual("baz", tss.GetLineFromLineNumber(1).GetText());
+        }
         
 
         #endregion
