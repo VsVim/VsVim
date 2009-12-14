@@ -195,10 +195,7 @@ type internal NormalMode( _bufferData : IVimBufferData ) =
         let inner (d:NormalModeData) (ki:KeyInput) =
             match ki.Char with 
                 | '<' ->
-                    let tss = this.CaretPoint.Snapshot
-                    let startLine = this.CaretPoint.GetContainingLine()
-                    let endLineNumber = min (tss.LineCount-1) (startLine.LineNumber+d.Count-1)
-                    let span = new SnapshotSpan(startLine.Start, tss.GetLineFromLineNumber(endLineNumber).End)
+                    let span = TssUtil.GetLineRangeSpan (this.CaretPoint.GetContainingLine().Start) d.Count
                     BufferUtil.ShiftLeft span _bufferData.Settings.ShiftWidth |> ignore
                     NormalModeResult.Complete
                 | _ ->
@@ -214,10 +211,7 @@ type internal NormalMode( _bufferData : IVimBufferData ) =
         let inner (d:NormalModeData) (ki:KeyInput) =
             match ki.Char with
                 | '>' ->
-                    let tss = this.CaretPoint.Snapshot
-                    let startLine = this.CaretPoint.GetContainingLine()
-                    let endLineNumber = min (tss.LineCount-1) (startLine.LineNumber+d.Count-1)
-                    let span = new SnapshotSpan(startLine.Start, tss.GetLineFromLineNumber(endLineNumber).End)
+                    let span = TssUtil.GetLineRangeSpan (this.CaretPoint.GetContainingLine().Start) d.Count
                     BufferUtil.ShiftRight span _bufferData.Settings.ShiftWidth |> ignore
                     NormalModeResult.Complete
                 | _ ->

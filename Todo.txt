@@ -10,8 +10,16 @@ X - 'Y in normal mode
 - Horizontal offset issue Noah raised
 - Shift lines in commnad mode
 - Help "copy-move" start from there
+- Need a way to disable Vim via keyboard
+- Need a way to disable Vim on startup
 X - gp in Normal mode
 X - gP in normal mode
+- Bug: 5x does not delete 5 characters
+- Bug: dw at end of line, should it delete the line break as well?
+
+Version 6.0
+=== 
+- Visual mode
 
 Version 5.4
 ===

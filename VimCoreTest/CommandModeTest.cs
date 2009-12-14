@@ -160,5 +160,57 @@ namespace VimCoreTest
             ProcessWithEnter("2put!");
             Assert.AreEqual("hey", _view.TextSnapshot.GetLineFromLineNumber(1).GetText());
         }
+
+        [Test]
+        public void ShiftLeft1()
+        {
+            Create("     foo", "bar", "baz");
+            ProcessWithEnter("<");
+            Assert.AreEqual(" foo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
+        }
+
+        [Test]
+        public void ShiftLeft2()
+        {
+            Create("     foo", "     bar", "baz");
+            ProcessWithEnter("1,2<");
+            Assert.AreEqual(" foo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
+            Assert.AreEqual(" bar", _view.TextSnapshot.GetLineFromLineNumber(1).GetText());
+        }
+
+        [Test]
+        public void ShiftLeft3()
+        {
+            Create("     foo", "     bar", "baz");
+            ProcessWithEnter("< 2");
+            Assert.AreEqual(" foo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
+            Assert.AreEqual(" bar", _view.TextSnapshot.GetLineFromLineNumber(1).GetText());
+        }
+
+        [Test]
+        public void ShiftRight1()
+        {
+            Create("foo", "bar", "baz");
+            ProcessWithEnter(">");
+            Assert.AreEqual("    foo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
+        }
+
+        [Test]
+        public void ShiftRight2()
+        {
+            Create("foo", "bar", "baz");
+            ProcessWithEnter("1,2>");
+            Assert.AreEqual("    foo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
+            Assert.AreEqual("    bar", _view.TextSnapshot.GetLineFromLineNumber(1).GetText());
+        }
+
+        [Test]
+        public void ShiftRight3()
+        {
+            Create("foo", "bar", "baz");
+            ProcessWithEnter("> 2");
+            Assert.AreEqual("    foo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
+            Assert.AreEqual("    bar", _view.TextSnapshot.GetLineFromLineNumber(1).GetText());
+        }
     }
 }
