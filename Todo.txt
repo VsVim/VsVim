@@ -10,6 +10,8 @@ X - 'Y in normal mode
 - Horizontal offset issue Noah raised
 - Shift lines in commnad mode
 - Help "copy-move" start from there
+X - gp in Normal mode
+X - gP in normal mode
 
 Version 5.4
 ===
