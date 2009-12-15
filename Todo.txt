@@ -15,11 +15,12 @@ X - Help "copy-move" start from there
 X - gp in Normal mode
 X - gP in normal mode
 X - Bug: 5x does not delete 5 characters
-- Bug: dw at end of line, should it delete the line break as well?
+X - Bug: dw at end of line, should it delete the line break as well?
 X - Rename Modes_Common_operations to ModeUtil or something like that
 - Test NormalMode_Operations indepnedently
 X - Command mode :delete
 - Help delete and insert
+- View close should clear out the markers
 
 Version 6.0
 === 
