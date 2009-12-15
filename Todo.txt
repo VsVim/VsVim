@@ -7,7 +7,6 @@ X - 'Y in normal mode
 - Check on the behavior of tab in normal mode
 - Marks Undo Support
 - Mark navigation for global marks
-- Horizontal offset issue Noah raised
 X - Shift lines in commnad mode
 X - Help "copy-move" start from there
 - Need a way to disable Vim via keyboard
@@ -24,6 +23,7 @@ X - View close should clear out the markers
 
 Version 6.0
 === 
+- Horizontal offset issue Noah raised
 - Visual mode
   - Copy-move
   - delete-insert

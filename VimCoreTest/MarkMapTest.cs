@@ -175,7 +175,7 @@ namespace VimCoreTest
         [Test, Description("Should work on an empty map")]
         public void DeleteAllMarks()
         {
-            _map.DeleteAllMarks();   
+            _map.DeleteAllMarks();
         }
 
         [Test]
@@ -195,7 +195,7 @@ namespace VimCoreTest
             _map.DeleteAllMarksForBuffer(buf1);
             Assert.IsTrue(_map.GetLocalMark(buf1, 'a').IsNone());
         }
-        
+
         [Test]
         public void DeleteAllMarksForBuffer2()
         {
@@ -224,7 +224,27 @@ namespace VimCoreTest
             Assert.IsFalse(MarkMap.IsLocalMark('1'));
         }
 
+        [Test]
+        public void GetMark1()
+        {
+            var buf1 = EditorUtil.CreateBuffer("foo");
+            _map.SetMark(new SnapshotPoint(buf1.CurrentSnapshot, 0), 'A');
+            var ret = _map.GetMark(buf1, 'A');
+            Assert.IsTrue(ret.IsSome());
+            Assert.AreEqual(0, ret.Value.Position);
+        }
+
+        [Test]
+        public void GetMark2()
+        {
+            var buf1 = EditorUtil.CreateBuffer("foo");
+            var buf2 = EditorUtil.CreateBuffer("bar");
+            _map.SetMark(new SnapshotPoint(buf1.CurrentSnapshot, 0), 'A');
+            var ret = _map.GetMark(buf2, 'A');
+            Assert.IsTrue(ret.IsNone());
+        }
+
         // TODO: Test Undo logic
-       
+
     }
 }

@@ -150,6 +150,16 @@ type MarkMap() =
             let handler = new System.EventHandler<TextContentChangedEventArgs>(x.OnBufferChanged)
             buffer.Changed.RemoveHandler handler
 
+    /// Get the mark relative to the specified buffer
+    member x.GetMark (buffer:ITextBuffer) (c:char) =
+        let ident = MarkMap.CreateMarkIdentifier buffer c
+        match Map.tryFind ident _map with
+        | None -> None
+        | Some(mark) ->
+            match mark with
+            | Valid(data) -> MarkMap.MarkDataToPoint buffer.CurrentSnapshot data
+            | Invalid(_) -> None
+
     /// Try and get the local mark for the specified char <param name="c"/>.  If it does not
     /// exist then the value None will be returned.  The mark is always returned for the 
     /// current ITextSnapshot of the <param name="buffer"> 
@@ -157,13 +167,7 @@ type MarkMap() =
         let ident = MarkMap.CreateMarkIdentifier buffer c
         if ident.IsGlobal then None
         else
-            match Map.tryFind ident _map with
-            | None -> None
-            | Some(mark) ->
-                match mark with
-                | Valid(data) -> MarkMap.MarkDataToPoint buffer.CurrentSnapshot data
-                | Invalid(_) -> None
-            
+            x.GetMark buffer c
     
     /// Set the mark for the <param name="point"/> inside the corresponding buffer.  
     member x.SetMark (point:SnapshotPoint) (c:char) = 
