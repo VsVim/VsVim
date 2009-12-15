@@ -11,4 +11,5 @@ type MarkMap =
     member SetMark : SnapshotPoint -> char -> unit
     member DeleteMark : ITextBuffer -> char -> bool
     member DeleteAllMarks : unit -> unit
+    member DeleteAllMarksForBuffer : ITextBuffer -> unit
 

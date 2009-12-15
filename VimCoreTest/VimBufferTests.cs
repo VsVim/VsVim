@@ -65,6 +65,7 @@ namespace VimCoreTest
             var caret = new MockBlockCaret();
             _normalMode.Setup(x => x.OnLeave()).Callback(() => { ran = true; });
             _bufferData.Setup(x => x.BlockCaret).Returns(caret);
+            _bufferData.Setup(x => x.MarkMap).Returns(new MarkMap());
             _buffer.SwitchMode(ModeKind.Normal);
             _buffer.Close();
             Assert.IsTrue(ran);
@@ -75,9 +76,26 @@ namespace VimCoreTest
         {
             var caret = new MockBlockCaret();
             _bufferData.Setup(x => x.BlockCaret).Returns(caret);
+            _bufferData.Setup(x => x.MarkMap).Returns(new MarkMap());
             _normalMode.Setup(x => x.OnLeave());
             _buffer.Close();
             Assert.AreEqual(1, caret.DestroyCount);
+        }
+
+        [Test, Description("Close should clear out the mark map")]
+        public void Close3()
+        {
+            var caret = new MockBlockCaret();
+            var buffer = EditorUtil.CreateBuffer("foo bar");
+            var map = new MarkMap();
+            map.SetMark(new SnapshotPoint(buffer.CurrentSnapshot, 0), 'c');
+            _normalMode.Setup(x => x.OnLeave());
+            _bufferData.Setup(x => x.TextBuffer).Returns(buffer);
+            _bufferData.Setup(x => x.BlockCaret).Returns(caret);
+            _bufferData.Setup(x => x.MarkMap).Returns(map);
+            _buffer.SwitchMode(ModeKind.Normal);
+            _buffer.Close();
+            Assert.IsTrue(map.GetLocalMark(buffer, 'c').IsNone());
         }
     }
 }

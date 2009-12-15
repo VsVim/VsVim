@@ -5,6 +5,7 @@ using System.Text;
 using NUnit.Framework;
 using Microsoft.VisualStudio.Text;
 using Vim;
+using VimCoreTest.Utils;
 
 namespace VimCoreTest
 {
@@ -184,6 +185,27 @@ namespace VimCoreTest
             _map.SetMark(new SnapshotPoint(_buffer.CurrentSnapshot, 0), 'a');
             _map.DeleteAllMarks();
             Assert.IsTrue(_map.GetLocalMark(_buffer, 'a').IsNone());
+        }
+
+        [Test]
+        public void DeleteAllMarksForBuffer1()
+        {
+            var buf1 = EditorUtil.CreateBuffer("foo");
+            _map.SetMark(new SnapshotPoint(buf1.CurrentSnapshot, 0), 'a');
+            _map.DeleteAllMarksForBuffer(buf1);
+            Assert.IsTrue(_map.GetLocalMark(buf1, 'a').IsNone());
+        }
+        
+        [Test]
+        public void DeleteAllMarksForBuffer2()
+        {
+            var buf1 = EditorUtil.CreateBuffer("foo");
+            var buf2 = EditorUtil.CreateBuffer("bar");
+            _map.SetMark(new SnapshotPoint(buf1.CurrentSnapshot, 0), 'a');
+            _map.SetMark(new SnapshotPoint(buf2.CurrentSnapshot, 0), 'b');
+            _map.DeleteAllMarksForBuffer(buf1);
+            Assert.IsTrue(_map.GetLocalMark(buf1, 'a').IsNone());
+            Assert.IsFalse(_map.GetLocalMark(buf2, 'b').IsNone());
         }
 
         [Test]

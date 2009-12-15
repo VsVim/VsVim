@@ -69,3 +69,4 @@ type internal VimBuffer
         member x.Close () = 
             x.Mode.OnLeave()
             _data.BlockCaret.Destroy()
+            _data.MarkMap.DeleteAllMarksForBuffer _data.TextBuffer

@@ -191,3 +191,11 @@ type MarkMap() =
         _map |> Seq.iter (fun p -> x.EnsureNotTracking(p.Key.TextBuffer))
         _map <- Map.empty
     
+    /// Delete all of the marks for the specified buffer
+    member x.DeleteAllMarksForBuffer buffer =
+        x.EnsureNotTracking buffer
+        _map <- 
+            _map 
+            |> Seq.filter (fun pair -> pair.Key.TextBuffer <> buffer)
+            |> Seq.map (fun pair -> (pair.Key,pair.Value))
+            |> Map.ofSeq

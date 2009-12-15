@@ -20,7 +20,7 @@ X - Rename Modes_Common_operations to ModeUtil or something like that
 - Test NormalMode_Operations indepnedently
 X - Command mode :delete
 - Help delete and insert
-- View close should clear out the markers
+X - View close should clear out the markers
 
 Version 6.0
 === 
