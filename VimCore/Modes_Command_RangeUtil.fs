@@ -18,6 +18,7 @@ type internal ParseRangeResult =
 type internal ItemRangeKind = 
     | LineNumber
     | CurrentLine
+    | Mark
 
 type internal ItemRange = 
     | ValidRange of Range * ItemRangeKind * KeyInput list
@@ -116,7 +117,7 @@ module internal RangeUtil =
         | true -> (Some(number), remaining)
 
     /// Parse out a line number 
-    let ParseLineNumber (tss:ITextSnapshot) (input:KeyInput list) =
+    let private ParseLineNumber (tss:ITextSnapshot) (input:KeyInput list) =
     
         let msg = "Invalid Range: Could not find a valid number"
         let opt,remaining = ParseNumber input
@@ -132,9 +133,22 @@ module internal RangeUtil =
                 Error(msg)
         | None -> Error("Expected a line number")
 
+    /// Parse out a mark 
+    let private ParseMark (point:SnapshotPoint) (map:MarkMap) (list:KeyInput list) = 
+        if list |> List.isEmpty then
+            Error("Invalid Range: Missing mark after '")
+        else 
+            let head = list |> List.head
+            let opt = map.GetMark point.Snapshot.TextBuffer head.Char
+            match opt with 
+            | Some(point) -> 
+                let line = point.Position.GetContainingLine()
+                ValidRange(Range.SingleLine(line), Mark, list |> List.tail)
+            | None ->
+                Error("Invalid Range: Mark is invalid in this file")
 
     /// Parse out a single item in the range.
-    let ParseItem (point:SnapshotPoint) (map:MarkMap) (list:KeyInput list) =
+    let private ParseItem (point:SnapshotPoint) (map:MarkMap) (list:KeyInput list) =
         let head = list |> List.head 
         if head.IsDigit then
             ParseLineNumber point.Snapshot list
@@ -142,10 +156,12 @@ module internal RangeUtil =
             let line = point.GetContainingLine().LineNumber
             let range = Range.Lines(point.Snapshot, line,line)
             ValidRange(range,CurrentLine, list |> List.tail)
+        else if head.Char = '\'' then
+            ParseMark point map (list |> List.tail)
         else
             NoRange
 
-    let ParseRangeCore (point:SnapshotPoint) (map:MarkMap) (originalInput:KeyInput list) =
+    let private ParseRangeCore (point:SnapshotPoint) (map:MarkMap) (originalInput:KeyInput list) =
 
         let parseRight (point:SnapshotPoint) map (leftRange:Range) remainingInput : ParseRangeResult = 
             let right = ParseItem point map remainingInput 

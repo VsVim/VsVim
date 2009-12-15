@@ -2,6 +2,7 @@ Version 5.5
 ===
 X - 'Y in normal mode
 - Edits need to understand cursor selection
+X - Add mark support to range parsing
 - Finish range parsing
 - Delete key in normal mode
 - Check on the behavior of tab in normal mode
