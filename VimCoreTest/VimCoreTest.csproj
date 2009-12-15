@@ -150,6 +150,7 @@
     <Compile Include="Util.cs" />
     <Compile Include="Utils\EditorUtil.cs" />
     <Compile Include="Utils\Extensions.cs" />
+    <Compile Include="Utils\FSharpFuncUtil.cs" />
     <Compile Include="Utils\MockBlockCaret.cs" />
     <Compile Include="Utils\MockObjectFactory.cs" />
     <Compile Include="Utils\TestOnlyUndoHistory.cs" />
