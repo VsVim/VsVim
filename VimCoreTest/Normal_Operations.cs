@@ -45,6 +45,7 @@ namespace VimCoreTest
             var res = Operations.DeleteCharacterAtCursor(data);
             Assert.IsTrue(res.IsComplete);
             Assert.AreEqual("oo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
+            Assert.AreEqual("f", _reg.StringValue);
         }
     }
 }
