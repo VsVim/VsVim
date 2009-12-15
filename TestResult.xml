@@ -1,28 +1,24 @@
 ﻿<?xml version="1.0" encoding="utf-8" standalone="no"?>
 <!--This file represents the results of running a test suite-->
-<test-results name="C:\Users\jaredpar\VsVim\VsVim.nunit" total="1" errors="0" failures="1" not-run="0" inconclusive="0" ignored="0" skipped="0" invalid="0" date="2009-12-14" time="17:01:19">
+<test-results name="C:\Users\jaredpar\VsVim\VsVim.nunit" total="5" errors="0" failures="0" not-run="0" inconclusive="0" ignored="0" skipped="0" invalid="0" date="2009-12-15" time="08:51:28">
   <environment nunit-version="2.5.3.9345" clr-version="4.0.21006.1" os-version="Microsoft Windows NT 6.1.7600.0" platform="Win32NT" cwd="C:\Program Files (x86)\NUnit 2.5.3\bin\net-2.0" machine-name="JAREDPAR14" user="jaredpar" user-domain="REDMOND" />
   <culture-info current-culture="en-US" current-uiculture="en-US" />
-  <test-suite name="C:\Users\jaredpar\VsVim\VsVim.nunit" executed="True" success="False" time="51.185" asserts="0">
+  <test-suite name="C:\Users\jaredpar\VsVim\VsVim.nunit" executed="True" success="True" time="2.314" asserts="0">
     <results>
-      <test-suite name="C:\Users\jaredpar\VsVim\VimCoreTest\bin\Debug\VimCoreTest.dll" executed="True" success="False" time="51.185" asserts="0">
+      <test-suite name="C:\Users\jaredpar\VsVim\VimCoreTest\bin\Debug\VimCoreTest.dll" executed="True" success="True" time="2.302" asserts="0">
         <properties>
           <property name="APARTMENT_STATE" value="STA" />
         </properties>
         <results>
-          <test-suite name="VimCoreTest" executed="True" success="False" time="51.156" asserts="0">
+          <test-suite name="VimCoreTest" executed="True" success="True" time="2.295" asserts="0">
             <results>
-              <test-suite name="MarkMapTest" executed="True" success="False" time="51.125" asserts="0">
+              <test-suite name="VimBufferTests" executed="True" success="True" time="2.294" asserts="0">
                 <results>
-                  <test-case name="VimCoreTest.MarkMapTest.GetMark2" executed="True" success="False" time="51.125" asserts="1">
-                    <failure>
-                      <message><![CDATA[  Expected: True
-  But was:  False
-]]></message>
-                      <stack-trace><![CDATA[at VimCoreTest.MarkMapTest.GetMark2() in C:\Users\jaredpar\VsVim\VimCoreTest\MarkMapTest.cs:line 244
-]]></stack-trace>
-                    </failure>
-                  </test-case>
+                  <test-case name="VimCoreTest.VimBufferTests.Close1" description="Close should call OnLeave for the active mode" executed="True" success="True" time="0.710" asserts="1" />
+                  <test-case name="VimCoreTest.VimBufferTests.Close2" description="Close should destroy the block caret" executed="True" success="True" time="0.014" asserts="1" />
+                  <test-case name="VimCoreTest.VimBufferTests.Close3" description="Close should clear out the mark map" executed="True" success="True" time="1.433" asserts="1" />
+                  <test-case name="VimCoreTest.VimBufferTests.KeyInputProcessed1" executed="True" success="True" time="0.117" asserts="1" />
+                  <test-case name="VimCoreTest.VimBufferTests.SwitchedMode1" executed="True" success="True" time="0.002" asserts="1" />
                 </results>
               </test-suite>
             </results>

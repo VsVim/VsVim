@@ -45,6 +45,53 @@ namespace VimCoreTest
         }
 
         [Test]
+        public void TrackedBuffers1()
+        {
+            CreateBuffer("foo", "bar");
+            _map.SetMark(new SnapshotPoint(_buffer.CurrentSnapshot, 0), 'a');
+            Assert.IsTrue(_map.TrackedBuffers.Contains(_buffer));
+        }
+
+        [Test, Description("Tracking of global marks")]
+        public void TrackedBuffers2()
+        {
+            CreateBuffer("foo", "bar");
+            _map.SetMark(new SnapshotPoint(_buffer.CurrentSnapshot, 0), 'A');
+            Assert.IsTrue(_map.TrackedBuffers.Contains(_buffer));
+        }
+
+        [Test]
+        public void TrackedBuffers3()
+        {
+            CreateBuffer("foo", "bar");
+            _map.SetMark(new SnapshotPoint(_buffer.CurrentSnapshot, 0), 'a');
+            _map.DeleteMark(_buffer, 'a');
+            Assert.IsFalse(_map.TrackedBuffers.Contains(_buffer));
+        }
+
+        [Test]
+        public void TrackedBuffers4()
+        {
+            CreateBuffer("foo", "bar");
+            _map.SetMark(new SnapshotPoint(_buffer.CurrentSnapshot, 0), 'A');
+            _map.DeleteMark(_buffer, 'A');
+            Assert.IsFalse(_map.TrackedBuffers.Contains(_buffer));
+        }
+
+        [Test]
+        public void TrackedBuffers5()
+        {
+            CreateBuffer("foo", "bar");
+            _map.SetMark(new SnapshotPoint(_buffer.CurrentSnapshot, 0), 'a');
+            _map.SetMark(new SnapshotPoint(_buffer.CurrentSnapshot, 0), 'b');
+            Assert.IsTrue(_map.TrackedBuffers.Contains(_buffer));
+            Assert.IsTrue(_map.DeleteMark(_buffer, 'a'));
+            Assert.IsTrue(_map.TrackedBuffers.Contains(_buffer));
+            Assert.IsTrue(_map.DeleteMark(_buffer, 'b'));
+            Assert.IsFalse(_map.TrackedBuffers.Contains(_buffer));
+        }
+
+        [Test]
         public void GetLocalMark1()
         {
             CreateBuffer("foo");

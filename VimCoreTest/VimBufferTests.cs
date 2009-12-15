@@ -66,6 +66,7 @@ namespace VimCoreTest
             _normalMode.Setup(x => x.OnLeave()).Callback(() => { ran = true; });
             _bufferData.Setup(x => x.BlockCaret).Returns(caret);
             _bufferData.Setup(x => x.MarkMap).Returns(new MarkMap());
+            _bufferData.Setup(x => x.TextBuffer).Returns((new Mock<ITextBuffer>()).Object);
             _buffer.SwitchMode(ModeKind.Normal);
             _buffer.Close();
             Assert.IsTrue(ran);
@@ -77,6 +78,7 @@ namespace VimCoreTest
             var caret = new MockBlockCaret();
             _bufferData.Setup(x => x.BlockCaret).Returns(caret);
             _bufferData.Setup(x => x.MarkMap).Returns(new MarkMap());
+            _bufferData.Setup(x => x.TextBuffer).Returns((new Mock<ITextBuffer>()).Object);
             _normalMode.Setup(x => x.OnLeave());
             _buffer.Close();
             Assert.AreEqual(1, caret.DestroyCount);
