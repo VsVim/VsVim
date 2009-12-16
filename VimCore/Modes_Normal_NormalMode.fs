@@ -400,7 +400,9 @@ type internal NormalMode( _bufferData : IVimBufferData, _operations : IOperation
             {   KeyInput=InputUtil.CharToKeyInput('r');
                 RunFunc=this.ReplaceChar; }
             {   KeyInput=InputUtil.CharToKeyInput('Y');
-                RunFunc=_operations.YankLines; }
+                RunFunc=(fun d -> 
+                        _operations.YankLines d.Count d.Register 
+                        NormalModeResult.Complete); }
             ]
         l |> List.map (fun d -> d.KeyInput,d) |> Map.ofList
 

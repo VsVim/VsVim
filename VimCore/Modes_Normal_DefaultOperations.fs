@@ -94,13 +94,11 @@ type internal DefaultOperations
                 true
     
         /// Yank lines from the buffer.  Implements the Y command
-        member x.YankLines (d:NormalModeData) =
-            let data = d.VimBufferData
-            let point = ViewUtil.GetCaretPoint data.TextView
+        member x.YankLines count reg =
+            let point = ViewUtil.GetCaretPoint _textView
             let point = point.GetContainingLine().Start
-            let span = TssUtil.GetLineRangeSpanIncludingLineBreak point d.Count 
-            Modes.ModeUtil.Yank span MotionKind.Inclusive OperationKind.LineWise d.Register |> ignore
-            NormalModeResult.Complete
+            let span = TssUtil.GetLineRangeSpanIncludingLineBreak point count
+            Modes.ModeUtil.Yank span MotionKind.Inclusive OperationKind.LineWise reg |> ignore
     
         /// Implement the normal mode x command
         member x.DeleteCharacterAtCursor count reg =

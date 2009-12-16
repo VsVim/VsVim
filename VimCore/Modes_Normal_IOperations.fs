@@ -13,6 +13,6 @@ type IOperations =
     abstract CharGCommand : NormalModeData -> NormalModeResult
     abstract InsertLineAbove : NormalModeData -> NormalModeResult
     abstract ReplaceChar : KeyInput -> int -> bool
-    abstract YankLines : NormalModeData -> NormalModeResult
+    abstract YankLines : int -> Register -> unit
     abstract DeleteCharacterAtCursor : int -> Register -> unit 
     abstract DeleteCharacterBeforeCursor : int -> Register -> unit

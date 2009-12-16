@@ -590,31 +590,27 @@ namespace VimCoreTest
         public void Yank_Y_1()
         {
             CreateBuffer("foo", "bar");
+            _operations.Setup(x => x.YankLines(1, _map.DefaultRegister)).Verifiable();
             _mode.Process("Y");
-            Assert.AreEqual("foo" + Environment.NewLine, _map.DefaultRegister.StringValue);
-            Assert.AreEqual(OperationKind.LineWise, _map.DefaultRegister.Value.OperationKind);
+            _operations.Verify();
         }
 
         [Test]
         public void Yank_Y_2()
         {
             CreateBuffer("foo", "bar");
+            _operations.Setup(x => x.YankLines(1, _map.GetRegister('c'))).Verifiable();
             _mode.Process("\"cY");
-            Assert.AreEqual("foo" + Environment.NewLine, _map.GetRegister('c').StringValue);
-            Assert.AreEqual(OperationKind.LineWise, _map.GetRegister('c').Value.OperationKind);
+            _operations.Verify();
         }
 
         [Test]
         public void Yank_Y_3()
         {
             CreateBuffer("foo", "bar","jazz");
+            _operations.Setup(x => x.YankLines(2, _map.DefaultRegister)).Verifiable();
             _mode.Process("2Y");
-            var tss = _view.TextSnapshot;
-            var span = new SnapshotSpan(
-                tss.GetLineFromLineNumber(0).Start,
-                tss.GetLineFromLineNumber(1).EndIncludingLineBreak);
-            Assert.AreEqual(span.GetText(), _map.DefaultRegister.StringValue);
-            Assert.AreEqual(OperationKind.LineWise, _map.DefaultRegister.Value.OperationKind);
+            _operations.Verify();
         }
 
         #endregion

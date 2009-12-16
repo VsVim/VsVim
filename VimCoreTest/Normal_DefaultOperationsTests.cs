@@ -171,5 +171,28 @@ namespace VimCoreTest
             Assert.AreEqual(0, _view.Caret.Position.BufferPosition.Position);
         }
 
+        [Test]
+        public void YankLines1()
+        {
+            Create("foo", "bar");
+            var reg = new Register('c');
+            _operations.YankLines(1, reg);
+            Assert.AreEqual("foo" + Environment.NewLine, reg.StringValue);
+            Assert.AreEqual(OperationKind.LineWise, reg.Value.OperationKind);
+        }
+
+        [Test]
+        public void YankLines2()
+        {
+            Create("foo", "bar", "jazz");
+            var reg = new Register('c');
+            _operations.YankLines(2, reg);
+            var tss = _view.TextSnapshot;
+            var span = new SnapshotSpan(
+                tss.GetLineFromLineNumber(0).Start,
+                tss.GetLineFromLineNumber(1).EndIncludingLineBreak);
+            Assert.AreEqual(span.GetText(), reg.StringValue);
+            Assert.AreEqual(OperationKind.LineWise, reg.Value.OperationKind);
+        }
     }
 }
