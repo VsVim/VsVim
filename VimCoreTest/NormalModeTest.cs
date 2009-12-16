@@ -350,21 +350,19 @@ namespace VimCoreTest
         public void Edit_O_1()
         {
             CreateBuffer("foo");
+            _operations.Setup(x => x.InsertLineAbove()).Verifiable();
             _mode.Process('O');
-            var point = _view.Caret.Position.VirtualBufferPosition;
-            Assert.IsFalse(point.IsInVirtualSpace);
-            Assert.AreEqual(0, point.Position.Position);
+            _operations.Verify();
         }
 
         [Test]
         public void Edit_O_2()
         {
             CreateBuffer("foo", "bar");
+            _operations.Setup(x => x.InsertLineAbove()).Verifiable();
             _view.Caret.MoveTo(_view.TextSnapshot.GetLineFromLineNumber(1).Start);
             _mode.Process("O");
-            var point = _view.Caret.Position.BufferPosition;
-            Assert.AreEqual(1, point.GetContainingLine().LineNumber);
-            Assert.AreEqual(String.Empty, point.GetContainingLine().GetText());
+            _operations.Verify();
         }
 
         [Test]

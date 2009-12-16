@@ -10,7 +10,7 @@ type IOperations =
     abstract TextView : ITextView
     abstract Mark : NormalModeData -> NormalModeResult
     abstract JumpToMark : NormalModeData -> NormalModeResult
-    abstract InsertLineAbove : NormalModeData -> NormalModeResult
+    abstract InsertLineAbove : unit -> unit
     abstract ReplaceChar : KeyInput -> int -> bool
     abstract YankLines : int -> Register -> unit
     abstract DeleteCharacterAtCursor : int -> Register -> unit 

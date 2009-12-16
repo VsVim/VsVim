@@ -301,5 +301,26 @@ namespace VimCoreTest
             _operations.PasteBefore("hey", 1, true);
             Assert.AreEqual("foohey", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
         }
+
+        [Test]
+        public void InsertLiveAbove1()
+        {
+            Create("foo");
+            _operations.InsertLineAbove();
+            var point = _view.Caret.Position.VirtualBufferPosition;
+            Assert.IsFalse(point.IsInVirtualSpace);
+            Assert.AreEqual(0, point.Position.Position);
+        }
+
+        [Test]
+        public void InsertLineAbove2()
+        {
+            Create("foo", "bar");
+            _view.Caret.MoveTo(_view.TextSnapshot.GetLineFromLineNumber(1).Start);
+            _operations.InsertLineAbove();
+            var point = _view.Caret.Position.BufferPosition;
+            Assert.AreEqual(1, point.GetContainingLine().LineNumber);
+            Assert.AreEqual(String.Empty, point.GetContainingLine().GetText());
+        }
     }
 }

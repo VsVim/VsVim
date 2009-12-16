@@ -63,11 +63,10 @@ type internal DefaultOperations
                 ViewUtil.MoveCaretToPoint _textView span.End |> ignore
 
         /// Insert a line above the current cursor position
-        member x.InsertLineAbove (d:NormalModeData) = 
-            let point = ViewUtil.GetCaretPoint d.VimBufferData.TextView
+        member x.InsertLineAbove ()=
+            let point = ViewUtil.GetCaretPoint _textView
             let line = BufferUtil.AddLineAbove (point.GetContainingLine()) 
-            d.VimBufferData.TextView.Caret.MoveTo(line.Start) |> ignore
-            NormalModeResult.Complete
+            ViewUtil.MoveCaretToPoint _textView line.Start |> ignore
             
         /// Implement the r command in normal mode.  
         member x.ReplaceChar (ki:KeyInput) count = 
