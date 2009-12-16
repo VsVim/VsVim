@@ -14,7 +14,7 @@ X - gP in normal mode
 X - Bug: 5x does not delete 5 characters
 X - Bug: dw at end of line, should it delete the line break as well?
 X - Rename Modes_Common_operations to ModeUtil or something like that
-- Test NormalMode_Operations indepnedently
+X - Test NormalMode_Operations indepnedently
 X - Command mode :delete
 - Help delete and insert
 X - View close should clear out the markers
