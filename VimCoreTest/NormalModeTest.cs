@@ -26,6 +26,7 @@ namespace VimCoreTest
         private FakeVimHost _host;
         private VimBufferData _bufferData;
         private MockBlockCaret _blockCaret;
+        private Mock<IOperations> _operations;
 
         static string[] s_lines = new string[]
             {
@@ -47,8 +48,8 @@ namespace VimCoreTest
                 _host,
                 MockFactory.CreateVimData(_map).Object,
                 _blockCaret);
-            IOperations opts = new DefaultOperations();
-            _modeRaw = new Vim.Modes.Normal.NormalMode(Tuple.Create((IVimBufferData)_bufferData, opts));
+            _operations = new Mock<IOperations>(MockBehavior.Strict);
+            _modeRaw = new Vim.Modes.Normal.NormalMode(Tuple.Create((IVimBufferData)_bufferData, _operations.Object));
             _mode = _modeRaw;
             _mode.OnEnter();
         }

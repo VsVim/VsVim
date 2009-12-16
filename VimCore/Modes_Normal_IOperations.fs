@@ -5,7 +5,7 @@ open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Operations
 
 /// Normal mode operations
-type internal IOperations =
+type IOperations =
     abstract Mark : NormalModeData -> NormalModeResult
     abstract JumpToMark : NormalModeData -> NormalModeResult
     abstract CharGCommand : NormalModeData -> NormalModeResult

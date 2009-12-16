@@ -3,7 +3,7 @@
 namespace Vim
 open Microsoft.VisualStudio.Text
 
-type internal IncrementalSearch =
+type IncrementalSearch =
     new : string -> IncrementalSearch
     new : string * SearchKind -> IncrementalSearch
     new : string * SearchKind * SearchOptions -> IncrementalSearch
