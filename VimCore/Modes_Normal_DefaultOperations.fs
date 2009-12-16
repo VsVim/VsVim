@@ -5,12 +5,18 @@ open Vim
 open Vim.Modes
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
+open Microsoft.VisualStudio.Text.Operations
 open System.Windows.Input
 open System.Windows.Media
 
-type internal DefaultOperations() =
+type internal DefaultOperations
+    (
+    _textView : ITextView,
+    _operations : IEditorOperations ) =
 
     interface IOperations with 
+        member x.TextView = _textView 
+
         /// Process the m[a-z] command.  Called when the m has been input so wait for the next key
         member x.Mark (d:NormalModeData) =
             let waitForKey (d2:NormalModeData) (ki:KeyInput) =
@@ -34,32 +40,20 @@ type internal DefaultOperations() =
                 NormalModeResult.Complete
             NormalModeResult.NeedMore2 waitForKey
     
-        /// Handles commands which begin with g in normal mode.  This should be called when the g char is
-        /// already processed
-        member x.CharGCommand (d:NormalModeData) =
-            let data = d.VimBufferData
-            let inner (d:NormalModeData) (ki:KeyInput) =  
-                match ki.Char with
-                | 'J' -> 
-                    let view = data.TextView
-                    let caret = ViewUtil.GetCaretPoint view
-                    ModeUtil.Join view caret JoinKind.KeepEmptySpaces d.Count |> ignore
-                | 'p' -> 
-                    let caret  = ViewUtil.GetCaretPoint data.TextView
-                    let reg = d.Register.Value
-                    let span = Modes.ModeUtil.PasteAfter caret reg.Value reg.OperationKind 
-                    data.TextView.Caret.MoveTo(span.End) |> ignore
-                | 'P' ->
-                    let caret = ViewUtil.GetCaretPoint data.TextView
-                    let text = d.Register.StringValue
-                    let span = Modes.ModeUtil.PasteBefore caret text
-                    data.TextView.Caret.MoveTo(span.End) |> ignore
-                | _ ->
-                    d.VimBufferData.VimHost.Beep()
-                    ()
-                NormalModeResult.Complete
-            NeedMore2(inner)
-                    
+        /// Paste the given text after the cursor
+        member x.PasteAfter text opKind moveCursor = 
+            let caret = ViewUtil.GetCaretPoint _textView
+            let span = ModeUtil.PasteAfter caret text opKind
+            if moveCursor then
+                ViewUtil.MoveCaretToPoint _textView span.End |> ignore
+
+        /// Paste the text before the cursor
+        member x.PasteBefore text moveCursor = 
+            let caret = ViewUtil.GetCaretPoint _textView
+            let span = ModeUtil.PasteBefore caret text 
+            if moveCursor then
+                ViewUtil.MoveCaretToPoint _textView span.End |> ignore
+
         /// Insert a line above the current cursor position
         member x.InsertLineAbove (d:NormalModeData) = 
             let point = ViewUtil.GetCaretPoint d.VimBufferData.TextView
@@ -68,56 +62,45 @@ type internal DefaultOperations() =
             NormalModeResult.Complete
             
         /// Implement the r command in normal mode.  
-        member x.ReplaceChar (d:NormalModeData) = 
-            let inner (d:NormalModeData) (ki:KeyInput) =
-                let bufferData = d.VimBufferData
-                let point = ViewUtil.GetCaretPoint bufferData.TextView
-    
-                // Make sure the replace string is valid
-                if (point.Position + d.Count) > point.GetContainingLine().End.Position then
-                    bufferData.VimHost.Beep()
-                else
-                    let isNewLine = (ki.Key = Key.LineFeed) || (ki.Key = Key.Return)
-                    let replaceText = 
-                        if isNewLine then System.Environment.NewLine
-                        else new System.String(ki.Char, d.Count)
-                    let span = new Span(point.Position,d.Count)
-                    let tss = bufferData.TextBuffer.Replace(span, replaceText) 
-    
-                    // Reset the caret to the point before the edit
-                    let point = new SnapshotPoint(tss,point.Position)
-                    bufferData.TextView.Caret.MoveTo(point) |> ignore
-                d.VimBufferData.BlockCaret.Show()
-                NormalModeResult.Complete
-            d.VimBufferData.BlockCaret.Hide()
-            NeedMore2(inner)
+        member x.ReplaceChar (ki:KeyInput) count = 
+            let point = ViewUtil.GetCaretPoint _textView
+
+            // Make sure the replace string is valid
+            if (point.Position + count) > point.GetContainingLine().End.Position then
+                false
+            else
+                let isNewLine = (ki.Key = Key.LineFeed) || (ki.Key = Key.Return)
+                let replaceText = 
+                    if isNewLine then System.Environment.NewLine
+                    else new System.String(ki.Char, count)
+                let span = new Span(point.Position, count)
+                let tss = _textView.TextBuffer.Replace(span, replaceText) 
+
+                // Reset the caret to the point before the edit
+                let point = new SnapshotPoint(tss,point.Position)
+                _textView.Caret.MoveTo(point) |> ignore
+                true
     
         /// Yank lines from the buffer.  Implements the Y command
-        member x.YankLines (d:NormalModeData) =
-            let data = d.VimBufferData
-            let point = ViewUtil.GetCaretPoint data.TextView
+        member x.YankLines count reg =
+            let point = ViewUtil.GetCaretPoint _textView
             let point = point.GetContainingLine().Start
-            let span = TssUtil.GetLineRangeSpanIncludingLineBreak point d.Count 
-            Modes.ModeUtil.Yank span MotionKind.Inclusive OperationKind.LineWise d.Register |> ignore
-            NormalModeResult.Complete
+            let span = TssUtil.GetLineRangeSpanIncludingLineBreak point count
+            Modes.ModeUtil.Yank span MotionKind.Inclusive OperationKind.LineWise reg |> ignore
     
         /// Implement the normal mode x command
-        member x.DeleteCharacterAtCursor (d:NormalModeData) =
-            let data = d.VimBufferData
-            let point = ViewUtil.GetCaretPoint data.TextView
+        member x.DeleteCharacterAtCursor count reg =
+            let point = ViewUtil.GetCaretPoint _textView
             let line = point.GetContainingLine()
-            let count = min (d.Count) (line.End.Position-point.Position)
+            let count = min (count) (line.End.Position-point.Position)
             let span = new SnapshotSpan(point, count)
-            Modes.ModeUtil.DeleteSpan span MotionKind.Exclusive OperationKind.CharacterWise d.Register |> ignore
-            NormalModeResult.Complete
+            Modes.ModeUtil.DeleteSpan span MotionKind.Exclusive OperationKind.CharacterWise reg |> ignore
     
         /// Implement the normal mode X command
-        member x.DeleteCharacterBeforeCursor (d:NormalModeData) = 
-            let data = d.VimBufferData
-            let point = ViewUtil.GetCaretPoint data.TextView
-            let range = TssUtil.GetReverseCharacterSpan point d.Count
-            Modes.ModeUtil.DeleteSpan range MotionKind.Exclusive OperationKind.CharacterWise d.Register |> ignore
-            NormalModeResult.Complete
+        member x.DeleteCharacterBeforeCursor count reg = 
+            let point = ViewUtil.GetCaretPoint _textView
+            let range = TssUtil.GetReverseCharacterSpan point count
+            Modes.ModeUtil.DeleteSpan range MotionKind.Exclusive OperationKind.CharacterWise reg |> ignore
     
     
     

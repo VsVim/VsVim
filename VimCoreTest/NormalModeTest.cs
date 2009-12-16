@@ -372,8 +372,9 @@ namespace VimCoreTest
         {
             CreateBuffer("foo");
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 1));
+            _operations.Setup(x => x.DeleteCharacterBeforeCursor(1, It.IsAny<Register>())).Verifiable();
             _mode.Process("X");
-            Assert.AreEqual("oo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
+            _operations.Verify();
         }
 
         [Test, Description("Don't delete past the current line")]
@@ -381,9 +382,9 @@ namespace VimCoreTest
         {
             CreateBuffer("foo", "bar");
             _view.Caret.MoveTo(_view.TextSnapshot.GetLineFromLineNumber(1).Start);
+            _operations.Setup(x => x.DeleteCharacterBeforeCursor(1, It.IsAny<Register>())).Verifiable();
             _mode.Process("X");
-            Assert.AreEqual("bar", _view.TextSnapshot.GetLineFromLineNumber(1).GetText());
-            Assert.AreEqual("foo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
+            _operations.Verify();
         }
 
         [Test]
@@ -391,116 +392,101 @@ namespace VimCoreTest
         {
             CreateBuffer("foo", "bar");
             _view.Caret.MoveTo(_view.TextSnapshot.GetLineFromLineNumber(0).Start.Add(2));
+            _operations.Setup(x => x.DeleteCharacterBeforeCursor(2, It.IsAny<Register>())).Verifiable();
             _mode.Process("2X");
-            Assert.AreEqual("o", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
+            _operations.Verify();
         }
 
         [Test]
         public void Edit_2X_2()
         {
             CreateBuffer("foo");
+            _operations.Setup(x => x.DeleteCharacterBeforeCursor(2, It.IsAny<Register>())).Verifiable();
             _mode.Process("2X");
-            Assert.AreEqual("foo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
+            _operations.Verify();
         }
 
         [Test]
         public void Edit_r_1()
         {
             CreateBuffer("foo");
+            var ki = InputUtil.CharToKeyInput('b');
+            _operations.Setup(x => x.ReplaceChar(ki, 1)).Returns(true).Verifiable();
             _mode.Process("rb");
-            Assert.AreEqual("boo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
+            _operations.Verify();
         }
 
         [Test]
         public void Edit_r_2()
         {
             CreateBuffer("foo");
+            var ki = InputUtil.CharToKeyInput('b');
+            _operations.Setup(x => x.ReplaceChar(ki, 2)).Returns(true).Verifiable();
             _mode.Process("2rb");
-            Assert.AreEqual("bbo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
+            _operations.Verify();
         }
 
         [Test]
         public void Edit_r_3()
         {
             CreateBuffer("foo");
+            var ki = InputUtil.KeyToKeyInput(Key.LineFeed);
+            _operations.Setup(x => x.ReplaceChar(ki, 1)).Returns(true).Verifiable();
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 1));
             _mode.Process("r");
             _mode.Process(InputUtil.KeyToKeyInput(Key.LineFeed));
-            var tss = _view.TextSnapshot;
-            Assert.AreEqual(2, tss.LineCount);
-            Assert.AreEqual("f", tss.GetLineFromLineNumber(0).GetText());
-            Assert.AreEqual("o", tss.GetLineFromLineNumber(1).GetText());
+            _operations.Verify();
         }
 
-        [Test]
         public void Edit_r_4()
         {
             CreateBuffer("food");
-            _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 1));
-            _mode.Process("2r");
-            _mode.Process(InputUtil.KeyToKeyInput(Key.LineFeed));
-            var tss = _view.TextSnapshot;
-            Assert.AreEqual(2, tss.LineCount);
-            Assert.AreEqual("f", tss.GetLineFromLineNumber(0).GetText());
-            Assert.AreEqual("d", tss.GetLineFromLineNumber(1).GetText());
-        }
-
-        [Test]
-        public void Edit_r_5()
-        {
-            CreateBuffer("food");
-            var tss = _view.TextSnapshot;
+            _operations.Setup(x => x.ReplaceChar(It.IsAny<KeyInput>(), 200)).Returns(false).Verifiable();
             _mode.Process("200ru");
             Assert.IsTrue(_host.BeepCount > 0);
-            Assert.AreSame(tss, _view.TextSnapshot);
+            _operations.Verify();
         }
 
         [Test, Description("block caret should be hidden for the duration of the r command")]
-        public void Edit_r_6()
+        public void Edit_r_5()
         {
             CreateBuffer("foo");
             _blockCaret.HideCount = 0;
             _blockCaret.ShowCount = 0;
             _mode.Process('r');
             Assert.AreEqual(1, _blockCaret.HideCount);
+            _operations.Setup(x => x.ReplaceChar(It.IsAny<KeyInput>(), 1)).Returns(true).Verifiable();
             _mode.Process('u');
             Assert.AreEqual(1, _blockCaret.ShowCount);
-        }
-
-        [Test, Description("Edit should not cause the cursor to move")]
-        public void Edit_r_7()
-        {
-            CreateBuffer("foo");
-            _mode.Process("ru");
-            Assert.AreEqual(0, _view.Caret.Position.BufferPosition.Position);
+            _operations.Verify();
         }
 
         [Test]
         public void Edit_x_1()
         {
             CreateBuffer("foo");
+            _operations.Setup(x => x.DeleteCharacterAtCursor(1, It.IsAny<Register>())).Verifiable();
             _mode.Process("x");
-            Assert.AreEqual("oo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
-            Assert.AreEqual("f", _map.DefaultRegister.StringValue);
-            Assert.AreEqual(OperationKind.CharacterWise, _map.DefaultRegister.Value.OperationKind);
+            _operations.Verify();
         }
 
         [Test]
         public void Edit_2x()
         {
             CreateBuffer("foo");
+            _operations.Setup(x => x.DeleteCharacterAtCursor(2, It.IsAny<Register>())).Verifiable();
             _mode.Process("2x");
-            Assert.AreEqual("o", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
-            Assert.AreEqual("fo", _map.DefaultRegister.StringValue);
-            Assert.AreEqual(OperationKind.CharacterWise, _map.DefaultRegister.Value.OperationKind);
+            _operations.Verify();
         }
 
         [Test]
         public void Edit_x_2()
         {
             CreateBuffer("foo");
+            var reg = _map.GetRegister('c');
+            _operations.Setup(x => x.DeleteCharacterAtCursor(1, reg)).Verifiable();
             _mode.Process("\"cx");
-            Assert.AreEqual("f", _map.GetRegister('c').StringValue);
+            _operations.Verify();
         }
 
         #endregion
@@ -604,31 +590,27 @@ namespace VimCoreTest
         public void Yank_Y_1()
         {
             CreateBuffer("foo", "bar");
+            _operations.Setup(x => x.YankLines(1, _map.DefaultRegister)).Verifiable();
             _mode.Process("Y");
-            Assert.AreEqual("foo" + Environment.NewLine, _map.DefaultRegister.StringValue);
-            Assert.AreEqual(OperationKind.LineWise, _map.DefaultRegister.Value.OperationKind);
+            _operations.Verify();
         }
 
         [Test]
         public void Yank_Y_2()
         {
             CreateBuffer("foo", "bar");
+            _operations.Setup(x => x.YankLines(1, _map.GetRegister('c'))).Verifiable();
             _mode.Process("\"cY");
-            Assert.AreEqual("foo" + Environment.NewLine, _map.GetRegister('c').StringValue);
-            Assert.AreEqual(OperationKind.LineWise, _map.GetRegister('c').Value.OperationKind);
+            _operations.Verify();
         }
 
         [Test]
         public void Yank_Y_3()
         {
             CreateBuffer("foo", "bar","jazz");
+            _operations.Setup(x => x.YankLines(2, _map.DefaultRegister)).Verifiable();
             _mode.Process("2Y");
-            var tss = _view.TextSnapshot;
-            var span = new SnapshotSpan(
-                tss.GetLineFromLineNumber(0).Start,
-                tss.GetLineFromLineNumber(1).EndIncludingLineBreak);
-            Assert.AreEqual(span.GetText(), _map.DefaultRegister.StringValue);
-            Assert.AreEqual(OperationKind.LineWise, _map.DefaultRegister.Value.OperationKind);
+            _operations.Verify();
         }
 
         #endregion
@@ -1381,6 +1363,7 @@ namespace VimCoreTest
         [Test]
         public void CharGCommand()
         {
+        verify  this calls the FontEmbeddingRight operations
             CreateBuffer(s_lines);
             _operations
                 .Setup(x => x.CharGCommand(It.IsAny<NormalModeData>()))

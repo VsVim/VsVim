@@ -248,6 +248,15 @@ type internal NormalMode( _bufferData : IVimBufferData, _operations : IOperation
             | true ->
                 host.Beep()
                 NormalModeResult.Complete
+
+    member private x.ReplaceChar (d:NormalModeData) = 
+        let inner (d:NormalModeData) (ki:KeyInput) =
+            if not (_operations.ReplaceChar ki d.Count) then
+                _bufferData.VimHost.Beep()
+            d.VimBufferData.BlockCaret.Show()
+            NormalModeResult.Complete
+        d.VimBufferData.BlockCaret.Hide()
+        NeedMore2(inner)
         
 
     /// Add a line below the current cursor position and switch back to insert mode
@@ -280,6 +289,25 @@ type internal NormalMode( _bufferData : IVimBufferData, _operations : IOperation
         this.TextView.Caret.EnsureVisible()
         NormalModeResult.Complete
 
+    /// Handles commands which begin with g in normal mode.  This should be called when the g char is
+    /// already processed
+    member x.CharGCommand (d:NormalModeData) =
+        let data = d.VimBufferData
+        let inner (d:NormalModeData) (ki:KeyInput) =  
+            match ki.Char with
+            | 'J' -> 
+                let view = data.TextView
+                let caret = ViewUtil.GetCaretPoint view
+                Modes.ModeUtil.Join view caret Modes.JoinKind.KeepEmptySpaces d.Count |> ignore
+            | 'p' -> _operations.PasteAfter d.Register.StringValue d.Register.Value.OperationKind true
+            | 'P' -> _operations.PasteBefore d.Register.StringValue true
+            | _ ->
+                d.VimBufferData.VimHost.Beep()
+                ()
+            NormalModeResult.Complete
+        NeedMore2(inner)
+
+
     /// Complete the specified motion function            
     member this.MotionFunc view count func =
         let rec runCount count =
@@ -309,9 +337,13 @@ type internal NormalMode( _bufferData : IVimBufferData, _operations : IOperation
             {   KeyInput=InputUtil.CharToKeyInput('B');
                 RunFunc=(fun d -> this.MotionFunc this.TextView d.Count (fun v -> ViewUtil.MoveWordBackward v WordKind.BigWord)) };
             {   KeyInput=InputUtil.CharToKeyInput('x');
-                RunFunc=_operations.DeleteCharacterAtCursor; };
+                RunFunc=(fun d ->
+                    _operations.DeleteCharacterAtCursor d.Count d.Register
+                    NormalModeResult.Complete); };
             {   KeyInput=InputUtil.CharToKeyInput('X');
-                RunFunc=_operations.DeleteCharacterBeforeCursor; };
+                RunFunc=(fun d -> 
+                    _operations.DeleteCharacterBeforeCursor d.Count d.Register
+                    NormalModeResult.Complete); };
             {   KeyInput=InputUtil.CharToKeyInput('d');
                 RunFunc=(fun d -> NeedMore2(this.WaitDelete)) };
             {   KeyInput=InputUtil.CharToKeyInput('y');
@@ -383,11 +415,13 @@ type internal NormalMode( _bufferData : IVimBufferData, _operations : IOperation
             {   KeyInput=InputUtil.CharToKeyInput('`');
                 RunFunc=_operations.JumpToMark };
             {   KeyInput=InputUtil.CharToKeyInput('g');
-                RunFunc=_operations.CharGCommand };
+                RunFunc=this.CharGCommand };
             {   KeyInput=InputUtil.CharToKeyInput('r');
-                RunFunc=_operations.ReplaceChar};
+                RunFunc=this.ReplaceChar; }
             {   KeyInput=InputUtil.CharToKeyInput('Y');
-                RunFunc=_operations.YankLines; }
+                RunFunc=(fun d -> 
+                        _operations.YankLines d.Count d.Register 
+                        NormalModeResult.Complete); }
             ]
         l |> List.map (fun d -> d.KeyInput,d) |> Map.ofList
 
