@@ -11,7 +11,7 @@ type internal Vim(_host : IVimHost) =
 
     member x.CreateVimBufferCore view editOperations name caret = 
         let data = VimBufferData(name, view, _host, _data :> IVimData, caret, editOperations ) :> IVimBufferData
-        let opts = Modes.Normal.DefaultOperations() :> Modes.Normal.IOperations
+        let opts = Modes.Normal.DefaultOperations(view,editOperations) :> Modes.Normal.IOperations
         let modeList = 
             [
                 ((Modes.Normal.NormalMode(data, opts)) :> IMode);

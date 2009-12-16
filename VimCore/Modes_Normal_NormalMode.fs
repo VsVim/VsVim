@@ -309,7 +309,9 @@ type internal NormalMode( _bufferData : IVimBufferData, _operations : IOperation
             {   KeyInput=InputUtil.CharToKeyInput('B');
                 RunFunc=(fun d -> this.MotionFunc this.TextView d.Count (fun v -> ViewUtil.MoveWordBackward v WordKind.BigWord)) };
             {   KeyInput=InputUtil.CharToKeyInput('x');
-                RunFunc=_operations.DeleteCharacterAtCursor; };
+                RunFunc=(fun d ->
+                    _operations.DeleteCharacterAtCursor d.Count d.Register
+                    NormalModeResult.Complete); };
             {   KeyInput=InputUtil.CharToKeyInput('X');
                 RunFunc=_operations.DeleteCharacterBeforeCursor; };
             {   KeyInput=InputUtil.CharToKeyInput('d');

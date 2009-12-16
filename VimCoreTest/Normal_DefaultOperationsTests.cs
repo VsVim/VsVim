@@ -9,6 +9,7 @@ using Moq;
 using Vim;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text.Editor;
+using Microsoft.VisualStudio.Text.Operations;
 
 namespace VimCoreTest
 {
@@ -16,38 +17,61 @@ namespace VimCoreTest
     public class Normal_DefaultOperationsTests
     {
         private IOperations _operations;
-        private IWpfTextView _view;
-        private Mock<IVimBufferData> _bufferData;
-        private Register _reg;
+        private DefaultOperations _operationsRaw;
+        private ITextView _view;
 
-        private NormalModeData Create(int? count, params string[] lines)
+        private void Create(params string[] lines)
         {
-            _operations = new DefaultOperations();
-            _view = EditorUtil.CreateView(lines);
-            _bufferData= new Mock<IVimBufferData>(MockBehavior.Strict);
-            _bufferData.Setup(x => x.TextView).Returns(_view);
-            _bufferData.Setup(x => x.TextBuffer).Returns(_view.TextBuffer);
-            _bufferData.Setup(x => x.TextSnapshot).Returns(() => _view.TextSnapshot);
-            _reg = new Register('c');
-            var innerFunc = FSharpFuncUtil.Create( (KeyInput ki) => NormalModeResult._unique_Complete);
-            var func = FSharpFuncUtil.Create((NormalModeData d) => innerFunc);
-            return new NormalModeData(
-                _bufferData.Object,
-                _reg,
-                count ?? 1,
-                FSharpOption<IncrementalSearch>.None,
-                func,
-                false);
+            Create(null, lines);
+        }
+
+        private void Create(IEditorOperations editorOpts, params string[] lines)
+        {
+            if (editorOpts == null)
+            {
+                var tuple = EditorUtil.CreateViewAndOperations(lines);
+                _operationsRaw = new DefaultOperations(tuple.Item1, tuple.Item2);
+            }
+            else
+            {
+                var view = EditorUtil.CreateView(lines);
+                _operationsRaw = new DefaultOperations(view, editorOpts);
+            }
+
+            _operations = _operationsRaw;
+            _view = _operations.TextView;
         }
 
         [Test]
         public void DeleteCharacterAtCursor1()
         {
-            var data = Create(null, "foo", "bar");
-            var res = _operations.DeleteCharacterAtCursor(data);
-            Assert.IsTrue(res.IsComplete);
+            Create("foo", "bar");
+            var reg = new Register('c');
+            _operations.DeleteCharacterAtCursor(1, reg);
             Assert.AreEqual("oo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
-            Assert.AreEqual("f", _reg.StringValue);
+            Assert.AreEqual("f", reg.StringValue);
+        }
+
+        [Test]
+        public void DeleteCharacterAtCursor2()
+        {
+            Create("foo", "bar");
+            var reg = new Register('c');
+            _operations.DeleteCharacterAtCursor(1, reg);
+            Assert.AreEqual("oo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
+            Assert.AreEqual("f", reg.StringValue);
+            Assert.AreEqual(OperationKind.CharacterWise, reg.Value.OperationKind);
+        }
+
+        [Test]
+        public void DeleteCharacterAtCursor3()
+        {
+            Create("foo", "bar");
+            var reg = new Register('c');
+            _operations.DeleteCharacterAtCursor(2, reg);
+            Assert.AreEqual("o", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
+            Assert.AreEqual("fo", reg.StringValue);
+            Assert.AreEqual(OperationKind.CharacterWise, reg.Value.OperationKind);
         }
     }
 }

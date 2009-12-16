@@ -5,12 +5,18 @@ open Vim
 open Vim.Modes
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
+open Microsoft.VisualStudio.Text.Operations
 open System.Windows.Input
 open System.Windows.Media
 
-type internal DefaultOperations() =
+type internal DefaultOperations
+    (
+    _textView : ITextView,
+    _operations : IEditorOperations ) =
 
     interface IOperations with 
+        member x.TextView = _textView 
+
         /// Process the m[a-z] command.  Called when the m has been input so wait for the next key
         member x.Mark (d:NormalModeData) =
             let waitForKey (d2:NormalModeData) (ki:KeyInput) =
@@ -102,14 +108,12 @@ type internal DefaultOperations() =
             NormalModeResult.Complete
     
         /// Implement the normal mode x command
-        member x.DeleteCharacterAtCursor (d:NormalModeData) =
-            let data = d.VimBufferData
-            let point = ViewUtil.GetCaretPoint data.TextView
+        member x.DeleteCharacterAtCursor count reg =
+            let point = ViewUtil.GetCaretPoint _textView
             let line = point.GetContainingLine()
-            let count = min (d.Count) (line.End.Position-point.Position)
+            let count = min (count) (line.End.Position-point.Position)
             let span = new SnapshotSpan(point, count)
-            Modes.ModeUtil.DeleteSpan span MotionKind.Exclusive OperationKind.CharacterWise d.Register |> ignore
-            NormalModeResult.Complete
+            Modes.ModeUtil.DeleteSpan span MotionKind.Exclusive OperationKind.CharacterWise reg |> ignore
     
         /// Implement the normal mode X command
         member x.DeleteCharacterBeforeCursor (d:NormalModeData) = 
