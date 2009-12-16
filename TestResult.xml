@@ -1,64 +1,64 @@
 ﻿<?xml version="1.0" encoding="utf-8" standalone="no"?>
 <!--This file represents the results of running a test suite-->
-<test-results name="C:\Users\JaredP\VsVim\VsVim.nunit" total="134" errors="24" failures="0" not-run="0" inconclusive="0" ignored="0" skipped="0" invalid="0" date="2009-12-15" time="19:07:00">
+<test-results name="C:\Users\JaredP\VsVim\VsVim.nunit" total="131" errors="17" failures="0" not-run="0" inconclusive="0" ignored="0" skipped="0" invalid="0" date="2009-12-15" time="23:25:17">
   <environment nunit-version="2.5.2.9222" clr-version="4.0.21006.1" os-version="Microsoft Windows NT 6.1.7600.0" platform="Win32NT" cwd="C:\Program Files\NUnit 2.5.2\bin\net-2.0" machine-name="VS2010BETA2" user="JaredP" user-domain="vs2010beta2" />
   <culture-info current-culture="en-US" current-uiculture="en-US" />
-  <test-suite name="C:\Users\JaredP\VsVim\VsVim.nunit" executed="True" success="False" time="6.289" asserts="0">
+  <test-suite name="C:\Users\JaredP\VsVim\VsVim.nunit" executed="True" success="False" time="6.820" asserts="0">
     <results>
-      <test-suite name="C:\Users\JaredP\VsVim\VimCoreTest\bin\Debug\VimCoreTest.dll" executed="True" success="False" time="6.259" asserts="0">
+      <test-suite name="C:\Users\JaredP\VsVim\VimCoreTest\bin\Debug\VimCoreTest.dll" executed="True" success="False" time="6.790" asserts="0">
         <properties>
           <property name="APARTMENT_STATE" value="STA" />
         </properties>
         <results>
-          <test-suite name="VimCoreTest" executed="True" success="False" time="6.239" asserts="0">
+          <test-suite name="VimCoreTest" executed="True" success="False" time="6.730" asserts="0">
             <results>
-              <test-suite name="NormalModeTest" executed="True" success="False" time="6.239" asserts="0">
+              <test-suite name="NormalModeTest" executed="True" success="False" time="6.730" asserts="0">
                 <results>
-                  <test-case name="VimCoreTest.NormalModeTest.BadMotion1" description="Typing in invalid motion should produce a warning" executed="True" success="True" time="4.376" asserts="1" />
+                  <test-case name="VimCoreTest.NormalModeTest.BadMotion1" description="Typing in invalid motion should produce a warning" executed="True" success="True" time="4.797" asserts="1" />
                   <test-case name="VimCoreTest.NormalModeTest.BadMotion2" description="Typing in invalid motion should produce a warning" executed="True" success="True" time="0.010" asserts="1" />
                   <test-case name="VimCoreTest.NormalModeTest.BadMotion3" description="Enter must cancel an invalid motion" executed="True" success="True" time="0.010" asserts="2" />
-                  <test-case name="VimCoreTest.NormalModeTest.BadMotion4" description="Canceled motion should reset the status" executed="True" success="True" time="0.020" asserts="2" />
+                  <test-case name="VimCoreTest.NormalModeTest.BadMotion4" description="Canceled motion should reset the status" executed="True" success="True" time="0.010" asserts="2" />
                   <test-case name="VimCoreTest.NormalModeTest.BadMotion5" description="Completed motion should reset the status" executed="True" success="True" time="0.070" asserts="1" />
-                  <test-case name="VimCoreTest.NormalModeTest.CanProcess1" description="Can process basic commands" executed="True" success="True" time="0.000" asserts="4" />
-                  <test-case name="VimCoreTest.NormalModeTest.CanProcess2" description="Cannot process invalid commands" executed="True" success="True" time="0.010" asserts="2" />
+                  <test-case name="VimCoreTest.NormalModeTest.CanProcess1" description="Can process basic commands" executed="True" success="True" time="0.010" asserts="4" />
+                  <test-case name="VimCoreTest.NormalModeTest.CanProcess2" description="Cannot process invalid commands" executed="True" success="True" time="0.000" asserts="2" />
                   <test-case name="VimCoreTest.NormalModeTest.CanProcess3" description="Must be able to process numbers" executed="True" success="True" time="0.000" asserts="8" />
-                  <test-case name="VimCoreTest.NormalModeTest.CanProcess4" description="When in a need more state, process everything" executed="True" success="True" time="0.020" asserts="2" />
+                  <test-case name="VimCoreTest.NormalModeTest.CanProcess4" description="When in a need more state, process everything" executed="True" success="True" time="0.010" asserts="2" />
                   <test-case name="VimCoreTest.NormalModeTest.CharGCommand" executed="True" success="False" time="0.040" asserts="0">
                     <failure>
                       <message><![CDATA[Moq.MockException : IOperations.CharGCommand(Vim.Modes.Normal.NormalModeData) invocation failed with mock behavior Strict.
 All invocations on the mock must have a corresponding setup.]]></message>
                       <stack-trace><![CDATA[at Moq.Interceptor.Intercept(IInvocation invocation)
 at Castle.DynamicProxy.AbstractInvocation.Proceed()
-at IOperationsProxy89a4eaebc66649308d2dcfa2345b1938.CharGCommand(NormalModeData )
-at <StartupCode$Vim-Core>.$Modes_Normal_NormalMode.l@390-45.Invoke(NormalModeData arg00) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 390
-at Vim.Modes.Normal.NormalMode.StartCore(NormalModeData d, KeyInput ki) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 423
-at <StartupCode$Vim-Core>.$Modes_Normal_NormalMode.get_ResetData@433.Invoke(NormalModeData arg00, KeyInput arg10) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 433
-at Vim.Modes.Normal.NormalMode.Vim-IMode-Process(KeyInput ki) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 460
+at IOperationsProxy051f0766b76041c29f5821fbdfbbaa7d.CharGCommand(NormalModeData )
+at <StartupCode$Vim-Core>.$Modes_Normal_NormalMode.l@399-45.Invoke(NormalModeData arg00) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 399
+at Vim.Modes.Normal.NormalMode.StartCore(NormalModeData d, KeyInput ki) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 432
+at <StartupCode$Vim-Core>.$Modes_Normal_NormalMode.get_ResetData@442.Invoke(NormalModeData arg00, KeyInput arg10) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 442
+at Vim.Modes.Normal.NormalMode.Vim-IMode-Process(KeyInput ki) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 469
 at VimCoreTest.Util.Process(IMode mode, Char c) in C:\Users\JaredP\VsVim\VimCoreTest\Util.cs:line 46
 at VimCoreTest.Util.Process(IMode mode, String input) in C:\Users\JaredP\VsVim\VimCoreTest\Util.cs:line 54
-at VimCoreTest.NormalModeTest.CharGCommand() in C:\Users\JaredP\VsVim\VimCoreTest\NormalModeTest.cs:line 1388
+at VimCoreTest.NormalModeTest.CharGCommand() in C:\Users\JaredP\VsVim\VimCoreTest\NormalModeTest.cs:line 1371
 ]]></stack-trace>
                     </failure>
                   </test-case>
                   <test-case name="VimCoreTest.NormalModeTest.Delete_dd_1" description="Make sure a dd is a linewise action" executed="True" success="True" time="0.270" asserts="3" />
                   <test-case name="VimCoreTest.NormalModeTest.Delete_dd_2" description="Make sure that it deletes the entire line regardless of where the caret is" executed="True" success="True" time="0.010" asserts="3" />
-                  <test-case name="VimCoreTest.NormalModeTest.Delete_dw_1" executed="True" success="True" time="0.010" asserts="2" />
+                  <test-case name="VimCoreTest.NormalModeTest.Delete_dw_1" executed="True" success="True" time="0.020" asserts="2" />
                   <test-case name="VimCoreTest.NormalModeTest.Delete_dw_2" description="Delete at the end of the line shouldn't delete newline" executed="True" success="True" time="0.020" asserts="4" />
                   <test-case name="VimCoreTest.NormalModeTest.Edit_2x" executed="True" success="True" time="0.100" asserts="0" />
                   <test-case name="VimCoreTest.NormalModeTest.Edit_2X_1" executed="True" success="True" time="0.010" asserts="0" />
                   <test-case name="VimCoreTest.NormalModeTest.Edit_2X_2" executed="True" success="True" time="0.000" asserts="0" />
-                  <test-case name="VimCoreTest.NormalModeTest.Edit_o_1" executed="True" success="True" time="0.030" asserts="3" />
+                  <test-case name="VimCoreTest.NormalModeTest.Edit_o_1" executed="True" success="True" time="0.020" asserts="3" />
                   <test-case name="VimCoreTest.NormalModeTest.Edit_O_1" executed="True" success="False" time="0.010" asserts="0">
                     <failure>
                       <message><![CDATA[Moq.MockException : IOperations.InsertLineAbove(Vim.Modes.Normal.NormalModeData) invocation failed with mock behavior Strict.
 All invocations on the mock must have a corresponding setup.]]></message>
                       <stack-trace><![CDATA[at Moq.Interceptor.Intercept(IInvocation invocation)
 at Castle.DynamicProxy.AbstractInvocation.Proceed()
-at IOperationsProxy89a4eaebc66649308d2dcfa2345b1938.InsertLineAbove(NormalModeData )
-at <StartupCode$Vim-Core>.$Modes_Normal_NormalMode.l@360-36.Invoke(NormalModeData arg00) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 360
-at Vim.Modes.Normal.NormalMode.StartCore(NormalModeData d, KeyInput ki) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 423
-at <StartupCode$Vim-Core>.$Modes_Normal_NormalMode.get_ResetData@433.Invoke(NormalModeData arg00, KeyInput arg10) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 433
-at Vim.Modes.Normal.NormalMode.Vim-IMode-Process(KeyInput ki) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 460
+at IOperationsProxy051f0766b76041c29f5821fbdfbbaa7d.InsertLineAbove(NormalModeData )
+at <StartupCode$Vim-Core>.$Modes_Normal_NormalMode.l@369-36.Invoke(NormalModeData arg00) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 369
+at Vim.Modes.Normal.NormalMode.StartCore(NormalModeData d, KeyInput ki) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 432
+at <StartupCode$Vim-Core>.$Modes_Normal_NormalMode.get_ResetData@442.Invoke(NormalModeData arg00, KeyInput arg10) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 442
+at Vim.Modes.Normal.NormalMode.Vim-IMode-Process(KeyInput ki) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 469
 at VimCoreTest.Util.Process(IMode mode, Char c) in C:\Users\JaredP\VsVim\VimCoreTest\Util.cs:line 46
 at VimCoreTest.NormalModeTest.Edit_O_1() in C:\Users\JaredP\VsVim\VimCoreTest\NormalModeTest.cs:line 353
 ]]></stack-trace>
@@ -71,151 +71,34 @@ at VimCoreTest.NormalModeTest.Edit_O_1() in C:\Users\JaredP\VsVim\VimCoreTest\No
 All invocations on the mock must have a corresponding setup.]]></message>
                       <stack-trace><![CDATA[at Moq.Interceptor.Intercept(IInvocation invocation)
 at Castle.DynamicProxy.AbstractInvocation.Proceed()
-at IOperationsProxy89a4eaebc66649308d2dcfa2345b1938.InsertLineAbove(NormalModeData )
-at <StartupCode$Vim-Core>.$Modes_Normal_NormalMode.l@360-36.Invoke(NormalModeData arg00) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 360
-at Vim.Modes.Normal.NormalMode.StartCore(NormalModeData d, KeyInput ki) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 423
-at <StartupCode$Vim-Core>.$Modes_Normal_NormalMode.get_ResetData@433.Invoke(NormalModeData arg00, KeyInput arg10) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 433
-at Vim.Modes.Normal.NormalMode.Vim-IMode-Process(KeyInput ki) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 460
+at IOperationsProxy051f0766b76041c29f5821fbdfbbaa7d.InsertLineAbove(NormalModeData )
+at <StartupCode$Vim-Core>.$Modes_Normal_NormalMode.l@369-36.Invoke(NormalModeData arg00) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 369
+at Vim.Modes.Normal.NormalMode.StartCore(NormalModeData d, KeyInput ki) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 432
+at <StartupCode$Vim-Core>.$Modes_Normal_NormalMode.get_ResetData@442.Invoke(NormalModeData arg00, KeyInput arg10) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 442
+at Vim.Modes.Normal.NormalMode.Vim-IMode-Process(KeyInput ki) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 469
 at VimCoreTest.Util.Process(IMode mode, Char c) in C:\Users\JaredP\VsVim\VimCoreTest\Util.cs:line 46
 at VimCoreTest.Util.Process(IMode mode, String input) in C:\Users\JaredP\VsVim\VimCoreTest\Util.cs:line 54
 at VimCoreTest.NormalModeTest.Edit_O_2() in C:\Users\JaredP\VsVim\VimCoreTest\NormalModeTest.cs:line 364
 ]]></stack-trace>
                     </failure>
                   </test-case>
-                  <test-case name="VimCoreTest.NormalModeTest.Edit_o_3" description="Make sure o will indent if the previous line was indented" executed="True" success="True" time="0.000" asserts="2" />
-                  <test-case name="VimCoreTest.NormalModeTest.Edit_r_1" executed="True" success="False" time="0.000" asserts="0">
-                    <failure>
-                      <message><![CDATA[Moq.MockException : IOperations.ReplaceChar(Vim.Modes.Normal.NormalModeData) invocation failed with mock behavior Strict.
-All invocations on the mock must have a corresponding setup.]]></message>
-                      <stack-trace><![CDATA[at Moq.Interceptor.Intercept(IInvocation invocation)
-at Castle.DynamicProxy.AbstractInvocation.Proceed()
-at IOperationsProxy89a4eaebc66649308d2dcfa2345b1938.ReplaceChar(NormalModeData )
-at <StartupCode$Vim-Core>.$Modes_Normal_NormalMode.l@392-46.Invoke(NormalModeData arg00) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 392
-at Vim.Modes.Normal.NormalMode.StartCore(NormalModeData d, KeyInput ki) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 423
-at <StartupCode$Vim-Core>.$Modes_Normal_NormalMode.get_ResetData@433.Invoke(NormalModeData arg00, KeyInput arg10) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 433
-at Vim.Modes.Normal.NormalMode.Vim-IMode-Process(KeyInput ki) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 460
-at VimCoreTest.Util.Process(IMode mode, Char c) in C:\Users\JaredP\VsVim\VimCoreTest\Util.cs:line 46
-at VimCoreTest.Util.Process(IMode mode, String input) in C:\Users\JaredP\VsVim\VimCoreTest\Util.cs:line 54
-at VimCoreTest.NormalModeTest.Edit_r_1() in C:\Users\JaredP\VsVim\VimCoreTest\NormalModeTest.cs:line 413
-]]></stack-trace>
-                    </failure>
-                  </test-case>
-                  <test-case name="VimCoreTest.NormalModeTest.Edit_r_2" executed="True" success="False" time="0.010" asserts="0">
-                    <failure>
-                      <message><![CDATA[Moq.MockException : IOperations.ReplaceChar(Vim.Modes.Normal.NormalModeData) invocation failed with mock behavior Strict.
-All invocations on the mock must have a corresponding setup.]]></message>
-                      <stack-trace><![CDATA[at Moq.Interceptor.Intercept(IInvocation invocation)
-at Castle.DynamicProxy.AbstractInvocation.Proceed()
-at IOperationsProxy89a4eaebc66649308d2dcfa2345b1938.ReplaceChar(NormalModeData )
-at <StartupCode$Vim-Core>.$Modes_Normal_NormalMode.l@392-46.Invoke(NormalModeData arg00) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 392
-at Vim.Modes.Normal.NormalMode.StartCore(NormalModeData d, KeyInput ki) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 423
-at <StartupCode$Vim-Core>.$Modes_Normal_NormalMode.Vim-IMode-Process@478.Invoke(NormalModeData arg00, KeyInput arg10) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 478
-at Vim.Modes.Normal.NormalMode.Vim-IMode-Process(KeyInput ki) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 460
-at Vim.Modes.Normal.NormalMode.Vim-IMode-Process(KeyInput ki) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 479
-at VimCoreTest.Util.Process(IMode mode, Char c) in C:\Users\JaredP\VsVim\VimCoreTest\Util.cs:line 46
-at VimCoreTest.Util.Process(IMode mode, String input) in C:\Users\JaredP\VsVim\VimCoreTest\Util.cs:line 54
-at VimCoreTest.NormalModeTest.Edit_r_2() in C:\Users\JaredP\VsVim\VimCoreTest\NormalModeTest.cs:line 421
-]]></stack-trace>
-                    </failure>
-                  </test-case>
-                  <test-case name="VimCoreTest.NormalModeTest.Edit_r_3" executed="True" success="False" time="0.000" asserts="0">
-                    <failure>
-                      <message><![CDATA[Moq.MockException : IOperations.ReplaceChar(Vim.Modes.Normal.NormalModeData) invocation failed with mock behavior Strict.
-All invocations on the mock must have a corresponding setup.]]></message>
-                      <stack-trace><![CDATA[at Moq.Interceptor.Intercept(IInvocation invocation)
-at Castle.DynamicProxy.AbstractInvocation.Proceed()
-at IOperationsProxy89a4eaebc66649308d2dcfa2345b1938.ReplaceChar(NormalModeData )
-at <StartupCode$Vim-Core>.$Modes_Normal_NormalMode.l@392-46.Invoke(NormalModeData arg00) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 392
-at Vim.Modes.Normal.NormalMode.StartCore(NormalModeData d, KeyInput ki) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 423
-at <StartupCode$Vim-Core>.$Modes_Normal_NormalMode.get_ResetData@433.Invoke(NormalModeData arg00, KeyInput arg10) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 433
-at Vim.Modes.Normal.NormalMode.Vim-IMode-Process(KeyInput ki) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 460
-at VimCoreTest.Util.Process(IMode mode, Char c) in C:\Users\JaredP\VsVim\VimCoreTest\Util.cs:line 46
-at VimCoreTest.Util.Process(IMode mode, String input) in C:\Users\JaredP\VsVim\VimCoreTest\Util.cs:line 54
-at VimCoreTest.NormalModeTest.Edit_r_3() in C:\Users\JaredP\VsVim\VimCoreTest\NormalModeTest.cs:line 430
-]]></stack-trace>
-                    </failure>
-                  </test-case>
-                  <test-case name="VimCoreTest.NormalModeTest.Edit_r_4" executed="True" success="False" time="0.000" asserts="0">
-                    <failure>
-                      <message><![CDATA[Moq.MockException : IOperations.ReplaceChar(Vim.Modes.Normal.NormalModeData) invocation failed with mock behavior Strict.
-All invocations on the mock must have a corresponding setup.]]></message>
-                      <stack-trace><![CDATA[at Moq.Interceptor.Intercept(IInvocation invocation)
-at Castle.DynamicProxy.AbstractInvocation.Proceed()
-at IOperationsProxy89a4eaebc66649308d2dcfa2345b1938.ReplaceChar(NormalModeData )
-at <StartupCode$Vim-Core>.$Modes_Normal_NormalMode.l@392-46.Invoke(NormalModeData arg00) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 392
-at Vim.Modes.Normal.NormalMode.StartCore(NormalModeData d, KeyInput ki) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 423
-at <StartupCode$Vim-Core>.$Modes_Normal_NormalMode.Vim-IMode-Process@478.Invoke(NormalModeData arg00, KeyInput arg10) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 478
-at Vim.Modes.Normal.NormalMode.Vim-IMode-Process(KeyInput ki) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 460
-at Vim.Modes.Normal.NormalMode.Vim-IMode-Process(KeyInput ki) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 479
-at VimCoreTest.Util.Process(IMode mode, Char c) in C:\Users\JaredP\VsVim\VimCoreTest\Util.cs:line 46
-at VimCoreTest.Util.Process(IMode mode, String input) in C:\Users\JaredP\VsVim\VimCoreTest\Util.cs:line 54
-at VimCoreTest.NormalModeTest.Edit_r_4() in C:\Users\JaredP\VsVim\VimCoreTest\NormalModeTest.cs:line 443
-]]></stack-trace>
-                    </failure>
-                  </test-case>
-                  <test-case name="VimCoreTest.NormalModeTest.Edit_r_5" executed="True" success="False" time="0.010" asserts="0">
-                    <failure>
-                      <message><![CDATA[Moq.MockException : IOperations.ReplaceChar(Vim.Modes.Normal.NormalModeData) invocation failed with mock behavior Strict.
-All invocations on the mock must have a corresponding setup.]]></message>
-                      <stack-trace><![CDATA[at Moq.Interceptor.Intercept(IInvocation invocation)
-at Castle.DynamicProxy.AbstractInvocation.Proceed()
-at IOperationsProxy89a4eaebc66649308d2dcfa2345b1938.ReplaceChar(NormalModeData )
-at <StartupCode$Vim-Core>.$Modes_Normal_NormalMode.l@392-46.Invoke(NormalModeData arg00) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 392
-at Vim.Modes.Normal.NormalMode.StartCore(NormalModeData d, KeyInput ki) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 423
-at <StartupCode$Vim-Core>.$Modes_Normal_NormalMode.Vim-IMode-Process@478.Invoke(NormalModeData arg00, KeyInput arg10) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 478
-at Vim.Modes.Normal.NormalMode.Vim-IMode-Process(KeyInput ki) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 460
-at Vim.Modes.Normal.NormalMode.Vim-IMode-Process(KeyInput ki) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 479
-at VimCoreTest.Util.Process(IMode mode, Char c) in C:\Users\JaredP\VsVim\VimCoreTest\Util.cs:line 46
-at VimCoreTest.Util.Process(IMode mode, String input) in C:\Users\JaredP\VsVim\VimCoreTest\Util.cs:line 54
-at VimCoreTest.NormalModeTest.Edit_r_5() in C:\Users\JaredP\VsVim\VimCoreTest\NormalModeTest.cs:line 456
-]]></stack-trace>
-                    </failure>
-                  </test-case>
-                  <test-case name="VimCoreTest.NormalModeTest.Edit_r_6" description="block caret should be hidden for the duration of the r command" executed="True" success="False" time="0.000" asserts="0">
-                    <failure>
-                      <message><![CDATA[Moq.MockException : IOperations.ReplaceChar(Vim.Modes.Normal.NormalModeData) invocation failed with mock behavior Strict.
-All invocations on the mock must have a corresponding setup.]]></message>
-                      <stack-trace><![CDATA[at Moq.Interceptor.Intercept(IInvocation invocation)
-at Castle.DynamicProxy.AbstractInvocation.Proceed()
-at IOperationsProxy89a4eaebc66649308d2dcfa2345b1938.ReplaceChar(NormalModeData )
-at <StartupCode$Vim-Core>.$Modes_Normal_NormalMode.l@392-46.Invoke(NormalModeData arg00) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 392
-at Vim.Modes.Normal.NormalMode.StartCore(NormalModeData d, KeyInput ki) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 423
-at <StartupCode$Vim-Core>.$Modes_Normal_NormalMode.get_ResetData@433.Invoke(NormalModeData arg00, KeyInput arg10) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 433
-at Vim.Modes.Normal.NormalMode.Vim-IMode-Process(KeyInput ki) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 460
-at VimCoreTest.Util.Process(IMode mode, Char c) in C:\Users\JaredP\VsVim\VimCoreTest\Util.cs:line 46
-at VimCoreTest.NormalModeTest.Edit_r_6() in C:\Users\JaredP\VsVim\VimCoreTest\NormalModeTest.cs:line 467
-]]></stack-trace>
-                    </failure>
-                  </test-case>
-                  <test-case name="VimCoreTest.NormalModeTest.Edit_r_7" description="Edit should not cause the cursor to move" executed="True" success="False" time="0.000" asserts="0">
-                    <failure>
-                      <message><![CDATA[Moq.MockException : IOperations.ReplaceChar(Vim.Modes.Normal.NormalModeData) invocation failed with mock behavior Strict.
-All invocations on the mock must have a corresponding setup.]]></message>
-                      <stack-trace><![CDATA[at Moq.Interceptor.Intercept(IInvocation invocation)
-at Castle.DynamicProxy.AbstractInvocation.Proceed()
-at IOperationsProxy89a4eaebc66649308d2dcfa2345b1938.ReplaceChar(NormalModeData )
-at <StartupCode$Vim-Core>.$Modes_Normal_NormalMode.l@392-46.Invoke(NormalModeData arg00) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 392
-at Vim.Modes.Normal.NormalMode.StartCore(NormalModeData d, KeyInput ki) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 423
-at <StartupCode$Vim-Core>.$Modes_Normal_NormalMode.get_ResetData@433.Invoke(NormalModeData arg00, KeyInput arg10) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 433
-at Vim.Modes.Normal.NormalMode.Vim-IMode-Process(KeyInput ki) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 460
-at VimCoreTest.Util.Process(IMode mode, Char c) in C:\Users\JaredP\VsVim\VimCoreTest\Util.cs:line 46
-at VimCoreTest.Util.Process(IMode mode, String input) in C:\Users\JaredP\VsVim\VimCoreTest\Util.cs:line 54
-at VimCoreTest.NormalModeTest.Edit_r_7() in C:\Users\JaredP\VsVim\VimCoreTest\NormalModeTest.cs:line 477
-]]></stack-trace>
-                    </failure>
-                  </test-case>
-                  <test-case name="VimCoreTest.NormalModeTest.Edit_x_1" executed="True" success="True" time="0.010" asserts="0" />
-                  <test-case name="VimCoreTest.NormalModeTest.Edit_X_1" executed="True" success="True" time="0.000" asserts="0" />
-                  <test-case name="VimCoreTest.NormalModeTest.Edit_x_2" executed="True" success="True" time="0.040" asserts="0" />
-                  <test-case name="VimCoreTest.NormalModeTest.Edit_X_2" description="Don't delete past the current line" executed="True" success="True" time="0.010" asserts="0" />
-                  <test-case name="VimCoreTest.NormalModeTest.Enter1" description="Enter should move down on line" executed="True" success="True" time="0.000" asserts="1" />
-                  <test-case name="VimCoreTest.NormalModeTest.Enter2" description="Enter at end of file should beep " executed="True" success="True" time="0.010" asserts="2" />
+                  <test-case name="VimCoreTest.NormalModeTest.Edit_o_3" description="Make sure o will indent if the previous line was indented" executed="True" success="True" time="0.010" asserts="2" />
+                  <test-case name="VimCoreTest.NormalModeTest.Edit_r_1" executed="True" success="True" time="0.040" asserts="0" />
+                  <test-case name="VimCoreTest.NormalModeTest.Edit_r_2" executed="True" success="True" time="0.000" asserts="0" />
+                  <test-case name="VimCoreTest.NormalModeTest.Edit_r_3" executed="True" success="True" time="0.000" asserts="0" />
+                  <test-case name="VimCoreTest.NormalModeTest.Edit_r_5" description="block caret should be hidden for the duration of the r command" executed="True" success="True" time="0.010" asserts="2" />
+                  <test-case name="VimCoreTest.NormalModeTest.Edit_x_1" executed="True" success="True" time="0.000" asserts="0" />
+                  <test-case name="VimCoreTest.NormalModeTest.Edit_X_1" executed="True" success="True" time="0.010" asserts="0" />
+                  <test-case name="VimCoreTest.NormalModeTest.Edit_x_2" executed="True" success="True" time="0.010" asserts="0" />
+                  <test-case name="VimCoreTest.NormalModeTest.Edit_X_2" description="Don't delete past the current line" executed="True" success="True" time="0.000" asserts="0" />
+                  <test-case name="VimCoreTest.NormalModeTest.Enter1" description="Enter should move down on line" executed="True" success="True" time="0.010" asserts="1" />
+                  <test-case name="VimCoreTest.NormalModeTest.Enter2" description="Enter at end of file should beep " executed="True" success="True" time="0.000" asserts="2" />
                   <test-case name="VimCoreTest.NormalModeTest.EnterProcessing" description="Let enter go straight back to the editor in the default case" executed="True" success="True" time="0.000" asserts="1" />
                   <test-case name="VimCoreTest.NormalModeTest.GoToDefinition1" executed="True" success="True" time="0.010" asserts="1" />
-                  <test-case name="VimCoreTest.NormalModeTest.GoToDefinition2" description="When it fails, the status should be updated" executed="True" success="True" time="0.000" asserts="2" />
-                  <test-case name="VimCoreTest.NormalModeTest.GoToDefinition3" executed="True" success="True" time="0.030" asserts="2" />
-                  <test-case name="VimCoreTest.NormalModeTest.Join1" executed="True" success="True" time="0.020" asserts="2" />
-                  <test-case name="VimCoreTest.NormalModeTest.Join2" executed="True" success="True" time="0.000" asserts="1" />
+                  <test-case name="VimCoreTest.NormalModeTest.GoToDefinition2" description="When it fails, the status should be updated" executed="True" success="True" time="0.010" asserts="2" />
+                  <test-case name="VimCoreTest.NormalModeTest.GoToDefinition3" executed="True" success="True" time="0.040" asserts="2" />
+                  <test-case name="VimCoreTest.NormalModeTest.Join1" executed="True" success="True" time="0.010" asserts="2" />
+                  <test-case name="VimCoreTest.NormalModeTest.Join2" executed="True" success="True" time="0.010" asserts="1" />
                   <test-case name="VimCoreTest.NormalModeTest.Join3" executed="True" success="True" time="0.000" asserts="1" />
                   <test-case name="VimCoreTest.NormalModeTest.Join4" executed="True" success="False" time="0.010" asserts="0">
                     <failure>
@@ -223,14 +106,14 @@ at VimCoreTest.NormalModeTest.Edit_r_7() in C:\Users\JaredP\VsVim\VimCoreTest\No
 All invocations on the mock must have a corresponding setup.]]></message>
                       <stack-trace><![CDATA[at Moq.Interceptor.Intercept(IInvocation invocation)
 at Castle.DynamicProxy.AbstractInvocation.Proceed()
-at IOperationsProxy89a4eaebc66649308d2dcfa2345b1938.CharGCommand(NormalModeData )
-at <StartupCode$Vim-Core>.$Modes_Normal_NormalMode.l@390-45.Invoke(NormalModeData arg00) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 390
-at Vim.Modes.Normal.NormalMode.StartCore(NormalModeData d, KeyInput ki) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 423
-at <StartupCode$Vim-Core>.$Modes_Normal_NormalMode.get_ResetData@433.Invoke(NormalModeData arg00, KeyInput arg10) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 433
-at Vim.Modes.Normal.NormalMode.Vim-IMode-Process(KeyInput ki) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 460
+at IOperationsProxy051f0766b76041c29f5821fbdfbbaa7d.CharGCommand(NormalModeData )
+at <StartupCode$Vim-Core>.$Modes_Normal_NormalMode.l@399-45.Invoke(NormalModeData arg00) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 399
+at Vim.Modes.Normal.NormalMode.StartCore(NormalModeData d, KeyInput ki) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 432
+at <StartupCode$Vim-Core>.$Modes_Normal_NormalMode.get_ResetData@442.Invoke(NormalModeData arg00, KeyInput arg10) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 442
+at Vim.Modes.Normal.NormalMode.Vim-IMode-Process(KeyInput ki) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 469
 at VimCoreTest.Util.Process(IMode mode, Char c) in C:\Users\JaredP\VsVim\VimCoreTest\Util.cs:line 46
 at VimCoreTest.Util.Process(IMode mode, String input) in C:\Users\JaredP\VsVim\VimCoreTest\Util.cs:line 54
-at VimCoreTest.NormalModeTest.Join4() in C:\Users\JaredP\VsVim\VimCoreTest\NormalModeTest.cs:line 1296
+at VimCoreTest.NormalModeTest.Join4() in C:\Users\JaredP\VsVim\VimCoreTest\NormalModeTest.cs:line 1279
 ]]></stack-trace>
                     </failure>
                   </test-case>
@@ -241,29 +124,29 @@ at VimCoreTest.NormalModeTest.Join4() in C:\Users\JaredP\VsVim\VimCoreTest\Norma
 All invocations on the mock must have a corresponding setup.]]></message>
                       <stack-trace><![CDATA[at Moq.Interceptor.Intercept(IInvocation invocation)
 at Castle.DynamicProxy.AbstractInvocation.Proceed()
-at IOperationsProxy89a4eaebc66649308d2dcfa2345b1938.JumpToMark(NormalModeData )
-at <StartupCode$Vim-Core>.$Modes_Normal_NormalMode.l@386-43.Invoke(NormalModeData arg00) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 386
-at Vim.Modes.Normal.NormalMode.StartCore(NormalModeData d, KeyInput ki) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 423
-at <StartupCode$Vim-Core>.$Modes_Normal_NormalMode.get_ResetData@433.Invoke(NormalModeData arg00, KeyInput arg10) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 433
-at Vim.Modes.Normal.NormalMode.Vim-IMode-Process(KeyInput ki) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 460
+at IOperationsProxy051f0766b76041c29f5821fbdfbbaa7d.JumpToMark(NormalModeData )
+at <StartupCode$Vim-Core>.$Modes_Normal_NormalMode.l@395-43.Invoke(NormalModeData arg00) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 395
+at Vim.Modes.Normal.NormalMode.StartCore(NormalModeData d, KeyInput ki) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 432
+at <StartupCode$Vim-Core>.$Modes_Normal_NormalMode.get_ResetData@442.Invoke(NormalModeData arg00, KeyInput arg10) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 442
+at Vim.Modes.Normal.NormalMode.Vim-IMode-Process(KeyInput ki) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 469
 at VimCoreTest.Util.Process(IMode mode, Char c) in C:\Users\JaredP\VsVim\VimCoreTest\Util.cs:line 46
-at VimCoreTest.NormalModeTest.JumpToMark2() in C:\Users\JaredP\VsVim\VimCoreTest\NormalModeTest.cs:line 1379
+at VimCoreTest.NormalModeTest.JumpToMark2() in C:\Users\JaredP\VsVim\VimCoreTest\NormalModeTest.cs:line 1362
 ]]></stack-trace>
                     </failure>
                   </test-case>
                   <test-case name="VimCoreTest.NormalModeTest.Mark1" executed="True" success="True" time="0.000" asserts="2" />
-                  <test-case name="VimCoreTest.NormalModeTest.Mark2" description="Once we are in mark mode we can process anything" executed="True" success="False" time="0.000" asserts="0">
+                  <test-case name="VimCoreTest.NormalModeTest.Mark2" description="Once we are in mark mode we can process anything" executed="True" success="False" time="0.010" asserts="0">
                     <failure>
                       <message><![CDATA[Moq.MockException : IOperations.Mark(Vim.Modes.Normal.NormalModeData) invocation failed with mock behavior Strict.
 All invocations on the mock must have a corresponding setup.]]></message>
                       <stack-trace><![CDATA[at Moq.Interceptor.Intercept(IInvocation invocation)
 at Castle.DynamicProxy.AbstractInvocation.Proceed()
-at IOperationsProxy89a4eaebc66649308d2dcfa2345b1938.Mark(NormalModeData )
-at <StartupCode$Vim-Core>.$Modes_Normal_NormalMode.l@384-42.Invoke(NormalModeData arg00) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 384
-at Vim.Modes.Normal.NormalMode.StartCore(NormalModeData d, KeyInput ki) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 423
-at <StartupCode$Vim-Core>.$Modes_Normal_NormalMode.get_ResetData@433.Invoke(NormalModeData arg00, KeyInput arg10) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 433
-at Vim.Modes.Normal.NormalMode.Vim-IMode-Process(KeyInput ki) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 460
-at VimCoreTest.NormalModeTest.Mark2() in C:\Users\JaredP\VsVim\VimCoreTest\NormalModeTest.cs:line 1342
+at IOperationsProxy051f0766b76041c29f5821fbdfbbaa7d.Mark(NormalModeData )
+at <StartupCode$Vim-Core>.$Modes_Normal_NormalMode.l@393-42.Invoke(NormalModeData arg00) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 393
+at Vim.Modes.Normal.NormalMode.StartCore(NormalModeData d, KeyInput ki) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 432
+at <StartupCode$Vim-Core>.$Modes_Normal_NormalMode.get_ResetData@442.Invoke(NormalModeData arg00, KeyInput arg10) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 442
+at Vim.Modes.Normal.NormalMode.Vim-IMode-Process(KeyInput ki) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 469
+at VimCoreTest.NormalModeTest.Mark2() in C:\Users\JaredP\VsVim\VimCoreTest\NormalModeTest.cs:line 1325
 ]]></stack-trace>
                     </failure>
                   </test-case>
@@ -273,96 +156,96 @@ at VimCoreTest.NormalModeTest.Mark2() in C:\Users\JaredP\VsVim\VimCoreTest\Norma
 All invocations on the mock must have a corresponding setup.]]></message>
                       <stack-trace><![CDATA[at Moq.Interceptor.Intercept(IInvocation invocation)
 at Castle.DynamicProxy.AbstractInvocation.Proceed()
-at IOperationsProxy89a4eaebc66649308d2dcfa2345b1938.Mark(NormalModeData )
-at <StartupCode$Vim-Core>.$Modes_Normal_NormalMode.l@384-42.Invoke(NormalModeData arg00) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 384
-at Vim.Modes.Normal.NormalMode.StartCore(NormalModeData d, KeyInput ki) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 423
-at <StartupCode$Vim-Core>.$Modes_Normal_NormalMode.get_ResetData@433.Invoke(NormalModeData arg00, KeyInput arg10) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 433
-at Vim.Modes.Normal.NormalMode.Vim-IMode-Process(KeyInput ki) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 460
-at VimCoreTest.NormalModeTest.Mark3() in C:\Users\JaredP\VsVim\VimCoreTest\NormalModeTest.cs:line 1350
+at IOperationsProxy051f0766b76041c29f5821fbdfbbaa7d.Mark(NormalModeData )
+at <StartupCode$Vim-Core>.$Modes_Normal_NormalMode.l@393-42.Invoke(NormalModeData arg00) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 393
+at Vim.Modes.Normal.NormalMode.StartCore(NormalModeData d, KeyInput ki) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 432
+at <StartupCode$Vim-Core>.$Modes_Normal_NormalMode.get_ResetData@442.Invoke(NormalModeData arg00, KeyInput arg10) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 442
+at Vim.Modes.Normal.NormalMode.Vim-IMode-Process(KeyInput ki) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 469
+at VimCoreTest.NormalModeTest.Mark3() in C:\Users\JaredP\VsVim\VimCoreTest\NormalModeTest.cs:line 1333
 ]]></stack-trace>
                     </failure>
                   </test-case>
-                  <test-case name="VimCoreTest.NormalModeTest.Mark4" description="Bad mark should beep" executed="True" success="False" time="0.010" asserts="0">
+                  <test-case name="VimCoreTest.NormalModeTest.Mark4" description="Bad mark should beep" executed="True" success="False" time="0.020" asserts="0">
                     <failure>
                       <message><![CDATA[Moq.MockException : IOperations.Mark(Vim.Modes.Normal.NormalModeData) invocation failed with mock behavior Strict.
 All invocations on the mock must have a corresponding setup.]]></message>
                       <stack-trace><![CDATA[at Moq.Interceptor.Intercept(IInvocation invocation)
 at Castle.DynamicProxy.AbstractInvocation.Proceed()
-at IOperationsProxy89a4eaebc66649308d2dcfa2345b1938.Mark(NormalModeData )
-at <StartupCode$Vim-Core>.$Modes_Normal_NormalMode.l@384-42.Invoke(NormalModeData arg00) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 384
-at Vim.Modes.Normal.NormalMode.StartCore(NormalModeData d, KeyInput ki) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 423
-at <StartupCode$Vim-Core>.$Modes_Normal_NormalMode.get_ResetData@433.Invoke(NormalModeData arg00, KeyInput arg10) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 433
-at Vim.Modes.Normal.NormalMode.Vim-IMode-Process(KeyInput ki) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 460
-at VimCoreTest.NormalModeTest.Mark4() in C:\Users\JaredP\VsVim\VimCoreTest\NormalModeTest.cs:line 1359
+at IOperationsProxy051f0766b76041c29f5821fbdfbbaa7d.Mark(NormalModeData )
+at <StartupCode$Vim-Core>.$Modes_Normal_NormalMode.l@393-42.Invoke(NormalModeData arg00) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 393
+at Vim.Modes.Normal.NormalMode.StartCore(NormalModeData d, KeyInput ki) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 432
+at <StartupCode$Vim-Core>.$Modes_Normal_NormalMode.get_ResetData@442.Invoke(NormalModeData arg00, KeyInput arg10) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 442
+at Vim.Modes.Normal.NormalMode.Vim-IMode-Process(KeyInput ki) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 469
+at VimCoreTest.NormalModeTest.Mark4() in C:\Users\JaredP\VsVim\VimCoreTest\NormalModeTest.cs:line 1342
 ]]></stack-trace>
                     </failure>
                   </test-case>
                   <test-case name="VimCoreTest.NormalModeTest.ModeKindTest" executed="True" success="True" time="0.000" asserts="1" />
-                  <test-case name="VimCoreTest.NormalModeTest.Motion_2l" executed="True" success="True" time="0.030" asserts="1" />
+                  <test-case name="VimCoreTest.NormalModeTest.Motion_2l" executed="True" success="True" time="0.040" asserts="1" />
                   <test-case name="VimCoreTest.NormalModeTest.Motion_50l" description="Don't crash moving off the end of the buffer" executed="True" success="True" time="0.010" asserts="1" />
                   <test-case name="VimCoreTest.NormalModeTest.Motion_l" executed="True" success="True" time="0.000" asserts="1" />
-                  <test-case name="VimCoreTest.NormalModeTest.Move_h" executed="True" success="True" time="0.000" asserts="1" />
-                  <test-case name="VimCoreTest.NormalModeTest.Move_h2" description="Make sure that we clear the selection on a motion" executed="True" success="True" time="0.050" asserts="1" />
-                  <test-case name="VimCoreTest.NormalModeTest.Move_j" executed="True" success="True" time="0.010" asserts="1" />
-                  <test-case name="VimCoreTest.NormalModeTest.Move_k" executed="True" success="True" time="0.010" asserts="1" />
+                  <test-case name="VimCoreTest.NormalModeTest.Move_h" executed="True" success="True" time="0.010" asserts="1" />
+                  <test-case name="VimCoreTest.NormalModeTest.Move_h2" description="Make sure that we clear the selection on a motion" executed="True" success="True" time="0.060" asserts="1" />
+                  <test-case name="VimCoreTest.NormalModeTest.Move_j" executed="True" success="True" time="0.000" asserts="1" />
+                  <test-case name="VimCoreTest.NormalModeTest.Move_k" executed="True" success="True" time="0.000" asserts="1" />
                   <test-case name="VimCoreTest.NormalModeTest.Move_l" executed="True" success="True" time="0.000" asserts="1" />
                   <test-case name="VimCoreTest.NormalModeTest.Move_l2" executed="True" success="True" time="0.010" asserts="1" />
                   <test-case name="VimCoreTest.NormalModeTest.NextWord1" executed="True" success="True" time="0.000" asserts="1" />
                   <test-case name="VimCoreTest.NormalModeTest.NextWord2" description="No matches should have no effect" executed="True" success="True" time="0.020" asserts="1" />
-                  <test-case name="VimCoreTest.NormalModeTest.NextWord3" executed="True" success="True" time="0.040" asserts="1" />
+                  <test-case name="VimCoreTest.NormalModeTest.NextWord3" executed="True" success="True" time="0.030" asserts="1" />
                   <test-case name="VimCoreTest.NormalModeTest.NextWord4" executed="True" success="True" time="0.010" asserts="1" />
                   <test-case name="VimCoreTest.NormalModeTest.NextWord5" description="Don't start on position 0" executed="True" success="True" time="0.000" asserts="1" />
-                  <test-case name="VimCoreTest.NormalModeTest.OnLeave1" description="OnLeave should kill the block caret" executed="True" success="True" time="0.000" asserts="1" />
+                  <test-case name="VimCoreTest.NormalModeTest.OnLeave1" description="OnLeave should kill the block caret" executed="True" success="True" time="0.010" asserts="1" />
                   <test-case name="VimCoreTest.NormalModeTest.Paste_2p" executed="True" success="True" time="0.010" asserts="1" />
                   <test-case name="VimCoreTest.NormalModeTest.Paste_2P" executed="True" success="True" time="0.000" asserts="1" />
-                  <test-case name="VimCoreTest.NormalModeTest.Paste_gp_1" executed="True" success="False" time="0.000" asserts="0">
+                  <test-case name="VimCoreTest.NormalModeTest.Paste_gp_1" executed="True" success="False" time="0.010" asserts="0">
                     <failure>
                       <message><![CDATA[Moq.MockException : IOperations.CharGCommand(Vim.Modes.Normal.NormalModeData) invocation failed with mock behavior Strict.
 All invocations on the mock must have a corresponding setup.]]></message>
                       <stack-trace><![CDATA[at Moq.Interceptor.Intercept(IInvocation invocation)
 at Castle.DynamicProxy.AbstractInvocation.Proceed()
-at IOperationsProxy89a4eaebc66649308d2dcfa2345b1938.CharGCommand(NormalModeData )
-at <StartupCode$Vim-Core>.$Modes_Normal_NormalMode.l@390-45.Invoke(NormalModeData arg00) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 390
-at Vim.Modes.Normal.NormalMode.StartCore(NormalModeData d, KeyInput ki) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 423
-at <StartupCode$Vim-Core>.$Modes_Normal_NormalMode.get_ResetData@433.Invoke(NormalModeData arg00, KeyInput arg10) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 433
-at Vim.Modes.Normal.NormalMode.Vim-IMode-Process(KeyInput ki) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 460
+at IOperationsProxy051f0766b76041c29f5821fbdfbbaa7d.CharGCommand(NormalModeData )
+at <StartupCode$Vim-Core>.$Modes_Normal_NormalMode.l@399-45.Invoke(NormalModeData arg00) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 399
+at Vim.Modes.Normal.NormalMode.StartCore(NormalModeData d, KeyInput ki) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 432
+at <StartupCode$Vim-Core>.$Modes_Normal_NormalMode.get_ResetData@442.Invoke(NormalModeData arg00, KeyInput arg10) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 442
+at Vim.Modes.Normal.NormalMode.Vim-IMode-Process(KeyInput ki) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 469
 at VimCoreTest.Util.Process(IMode mode, Char c) in C:\Users\JaredP\VsVim\VimCoreTest\Util.cs:line 46
 at VimCoreTest.Util.Process(IMode mode, String input) in C:\Users\JaredP\VsVim\VimCoreTest\Util.cs:line 54
-at VimCoreTest.NormalModeTest.Paste_gp_1() in C:\Users\JaredP\VsVim\VimCoreTest\NormalModeTest.cs:line 733
+at VimCoreTest.NormalModeTest.Paste_gp_1() in C:\Users\JaredP\VsVim\VimCoreTest\NormalModeTest.cs:line 716
 ]]></stack-trace>
                     </failure>
                   </test-case>
-                  <test-case name="VimCoreTest.NormalModeTest.Paste_gP_1" executed="True" success="False" time="0.010" asserts="0">
+                  <test-case name="VimCoreTest.NormalModeTest.Paste_gP_1" executed="True" success="False" time="0.000" asserts="0">
                     <failure>
                       <message><![CDATA[Moq.MockException : IOperations.CharGCommand(Vim.Modes.Normal.NormalModeData) invocation failed with mock behavior Strict.
 All invocations on the mock must have a corresponding setup.]]></message>
                       <stack-trace><![CDATA[at Moq.Interceptor.Intercept(IInvocation invocation)
 at Castle.DynamicProxy.AbstractInvocation.Proceed()
-at IOperationsProxy89a4eaebc66649308d2dcfa2345b1938.CharGCommand(NormalModeData )
-at <StartupCode$Vim-Core>.$Modes_Normal_NormalMode.l@390-45.Invoke(NormalModeData arg00) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 390
-at Vim.Modes.Normal.NormalMode.StartCore(NormalModeData d, KeyInput ki) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 423
-at <StartupCode$Vim-Core>.$Modes_Normal_NormalMode.get_ResetData@433.Invoke(NormalModeData arg00, KeyInput arg10) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 433
-at Vim.Modes.Normal.NormalMode.Vim-IMode-Process(KeyInput ki) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 460
+at IOperationsProxy051f0766b76041c29f5821fbdfbbaa7d.CharGCommand(NormalModeData )
+at <StartupCode$Vim-Core>.$Modes_Normal_NormalMode.l@399-45.Invoke(NormalModeData arg00) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 399
+at Vim.Modes.Normal.NormalMode.StartCore(NormalModeData d, KeyInput ki) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 432
+at <StartupCode$Vim-Core>.$Modes_Normal_NormalMode.get_ResetData@442.Invoke(NormalModeData arg00, KeyInput arg10) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 442
+at Vim.Modes.Normal.NormalMode.Vim-IMode-Process(KeyInput ki) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 469
 at VimCoreTest.Util.Process(IMode mode, Char c) in C:\Users\JaredP\VsVim\VimCoreTest\Util.cs:line 46
 at VimCoreTest.Util.Process(IMode mode, String input) in C:\Users\JaredP\VsVim\VimCoreTest\Util.cs:line 54
-at VimCoreTest.NormalModeTest.Paste_gP_1() in C:\Users\JaredP\VsVim\VimCoreTest\NormalModeTest.cs:line 763
+at VimCoreTest.NormalModeTest.Paste_gP_1() in C:\Users\JaredP\VsVim\VimCoreTest\NormalModeTest.cs:line 746
 ]]></stack-trace>
                     </failure>
                   </test-case>
-                  <test-case name="VimCoreTest.NormalModeTest.Paste_gp_2" executed="True" success="False" time="0.010" asserts="0">
+                  <test-case name="VimCoreTest.NormalModeTest.Paste_gp_2" executed="True" success="False" time="0.000" asserts="0">
                     <failure>
                       <message><![CDATA[Moq.MockException : IOperations.CharGCommand(Vim.Modes.Normal.NormalModeData) invocation failed with mock behavior Strict.
 All invocations on the mock must have a corresponding setup.]]></message>
                       <stack-trace><![CDATA[at Moq.Interceptor.Intercept(IInvocation invocation)
 at Castle.DynamicProxy.AbstractInvocation.Proceed()
-at IOperationsProxy89a4eaebc66649308d2dcfa2345b1938.CharGCommand(NormalModeData )
-at <StartupCode$Vim-Core>.$Modes_Normal_NormalMode.l@390-45.Invoke(NormalModeData arg00) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 390
-at Vim.Modes.Normal.NormalMode.StartCore(NormalModeData d, KeyInput ki) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 423
-at <StartupCode$Vim-Core>.$Modes_Normal_NormalMode.get_ResetData@433.Invoke(NormalModeData arg00, KeyInput arg10) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 433
-at Vim.Modes.Normal.NormalMode.Vim-IMode-Process(KeyInput ki) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 460
+at IOperationsProxy051f0766b76041c29f5821fbdfbbaa7d.CharGCommand(NormalModeData )
+at <StartupCode$Vim-Core>.$Modes_Normal_NormalMode.l@399-45.Invoke(NormalModeData arg00) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 399
+at Vim.Modes.Normal.NormalMode.StartCore(NormalModeData d, KeyInput ki) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 432
+at <StartupCode$Vim-Core>.$Modes_Normal_NormalMode.get_ResetData@442.Invoke(NormalModeData arg00, KeyInput arg10) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 442
+at Vim.Modes.Normal.NormalMode.Vim-IMode-Process(KeyInput ki) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 469
 at VimCoreTest.Util.Process(IMode mode, Char c) in C:\Users\JaredP\VsVim\VimCoreTest\Util.cs:line 46
 at VimCoreTest.Util.Process(IMode mode, String input) in C:\Users\JaredP\VsVim\VimCoreTest\Util.cs:line 54
-at VimCoreTest.NormalModeTest.Paste_gp_2() in C:\Users\JaredP\VsVim\VimCoreTest\NormalModeTest.cs:line 744
+at VimCoreTest.NormalModeTest.Paste_gp_2() in C:\Users\JaredP\VsVim\VimCoreTest\NormalModeTest.cs:line 727
 ]]></stack-trace>
                     </failure>
                   </test-case>
@@ -372,99 +255,99 @@ at VimCoreTest.NormalModeTest.Paste_gp_2() in C:\Users\JaredP\VsVim\VimCoreTest\
 All invocations on the mock must have a corresponding setup.]]></message>
                       <stack-trace><![CDATA[at Moq.Interceptor.Intercept(IInvocation invocation)
 at Castle.DynamicProxy.AbstractInvocation.Proceed()
-at IOperationsProxy89a4eaebc66649308d2dcfa2345b1938.CharGCommand(NormalModeData )
-at <StartupCode$Vim-Core>.$Modes_Normal_NormalMode.l@390-45.Invoke(NormalModeData arg00) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 390
-at Vim.Modes.Normal.NormalMode.StartCore(NormalModeData d, KeyInput ki) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 423
-at <StartupCode$Vim-Core>.$Modes_Normal_NormalMode.get_ResetData@433.Invoke(NormalModeData arg00, KeyInput arg10) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 433
-at Vim.Modes.Normal.NormalMode.Vim-IMode-Process(KeyInput ki) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 460
+at IOperationsProxy051f0766b76041c29f5821fbdfbbaa7d.CharGCommand(NormalModeData )
+at <StartupCode$Vim-Core>.$Modes_Normal_NormalMode.l@399-45.Invoke(NormalModeData arg00) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 399
+at Vim.Modes.Normal.NormalMode.StartCore(NormalModeData d, KeyInput ki) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 432
+at <StartupCode$Vim-Core>.$Modes_Normal_NormalMode.get_ResetData@442.Invoke(NormalModeData arg00, KeyInput arg10) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 442
+at Vim.Modes.Normal.NormalMode.Vim-IMode-Process(KeyInput ki) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 469
 at VimCoreTest.Util.Process(IMode mode, Char c) in C:\Users\JaredP\VsVim\VimCoreTest\Util.cs:line 46
 at VimCoreTest.Util.Process(IMode mode, String input) in C:\Users\JaredP\VsVim\VimCoreTest\Util.cs:line 54
-at VimCoreTest.NormalModeTest.Paste_gP_2() in C:\Users\JaredP\VsVim\VimCoreTest\NormalModeTest.cs:line 774
+at VimCoreTest.NormalModeTest.Paste_gP_2() in C:\Users\JaredP\VsVim\VimCoreTest\NormalModeTest.cs:line 757
 ]]></stack-trace>
                     </failure>
                   </test-case>
-                  <test-case name="VimCoreTest.NormalModeTest.Paste_gp_3" executed="True" success="False" time="0.010" asserts="0">
+                  <test-case name="VimCoreTest.NormalModeTest.Paste_gp_3" executed="True" success="False" time="0.000" asserts="0">
                     <failure>
                       <message><![CDATA[Moq.MockException : IOperations.CharGCommand(Vim.Modes.Normal.NormalModeData) invocation failed with mock behavior Strict.
 All invocations on the mock must have a corresponding setup.]]></message>
                       <stack-trace><![CDATA[at Moq.Interceptor.Intercept(IInvocation invocation)
 at Castle.DynamicProxy.AbstractInvocation.Proceed()
-at IOperationsProxy89a4eaebc66649308d2dcfa2345b1938.CharGCommand(NormalModeData )
-at <StartupCode$Vim-Core>.$Modes_Normal_NormalMode.l@390-45.Invoke(NormalModeData arg00) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 390
-at Vim.Modes.Normal.NormalMode.StartCore(NormalModeData d, KeyInput ki) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 423
-at <StartupCode$Vim-Core>.$Modes_Normal_NormalMode.Vim-IMode-Process@481-1.Invoke(NormalModeData arg00, KeyInput arg10) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 481
-at Vim.Modes.Normal.NormalMode.Vim-IMode-Process(KeyInput ki) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 460
+at IOperationsProxy051f0766b76041c29f5821fbdfbbaa7d.CharGCommand(NormalModeData )
+at <StartupCode$Vim-Core>.$Modes_Normal_NormalMode.l@399-45.Invoke(NormalModeData arg00) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 399
+at Vim.Modes.Normal.NormalMode.StartCore(NormalModeData d, KeyInput ki) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 432
+at <StartupCode$Vim-Core>.$Modes_Normal_NormalMode.Vim-IMode-Process@490-1.Invoke(NormalModeData arg00, KeyInput arg10) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 490
+at Vim.Modes.Normal.NormalMode.Vim-IMode-Process(KeyInput ki) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 469
 at VimCoreTest.Util.Process(IMode mode, Char c) in C:\Users\JaredP\VsVim\VimCoreTest\Util.cs:line 46
 at VimCoreTest.Util.Process(IMode mode, String input) in C:\Users\JaredP\VsVim\VimCoreTest\Util.cs:line 54
-at VimCoreTest.NormalModeTest.Paste_gp_3() in C:\Users\JaredP\VsVim\VimCoreTest\NormalModeTest.cs:line 754
+at VimCoreTest.NormalModeTest.Paste_gp_3() in C:\Users\JaredP\VsVim\VimCoreTest\NormalModeTest.cs:line 737
 ]]></stack-trace>
                     </failure>
                   </test-case>
-                  <test-case name="VimCoreTest.NormalModeTest.Paste_gP_3" executed="True" success="False" time="0.000" asserts="0">
+                  <test-case name="VimCoreTest.NormalModeTest.Paste_gP_3" executed="True" success="False" time="0.010" asserts="0">
                     <failure>
                       <message><![CDATA[Moq.MockException : IOperations.CharGCommand(Vim.Modes.Normal.NormalModeData) invocation failed with mock behavior Strict.
 All invocations on the mock must have a corresponding setup.]]></message>
                       <stack-trace><![CDATA[at Moq.Interceptor.Intercept(IInvocation invocation)
 at Castle.DynamicProxy.AbstractInvocation.Proceed()
-at IOperationsProxy89a4eaebc66649308d2dcfa2345b1938.CharGCommand(NormalModeData )
-at <StartupCode$Vim-Core>.$Modes_Normal_NormalMode.l@390-45.Invoke(NormalModeData arg00) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 390
-at Vim.Modes.Normal.NormalMode.StartCore(NormalModeData d, KeyInput ki) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 423
-at <StartupCode$Vim-Core>.$Modes_Normal_NormalMode.Vim-IMode-Process@481-1.Invoke(NormalModeData arg00, KeyInput arg10) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 481
-at Vim.Modes.Normal.NormalMode.Vim-IMode-Process(KeyInput ki) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 460
+at IOperationsProxy051f0766b76041c29f5821fbdfbbaa7d.CharGCommand(NormalModeData )
+at <StartupCode$Vim-Core>.$Modes_Normal_NormalMode.l@399-45.Invoke(NormalModeData arg00) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 399
+at Vim.Modes.Normal.NormalMode.StartCore(NormalModeData d, KeyInput ki) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 432
+at <StartupCode$Vim-Core>.$Modes_Normal_NormalMode.Vim-IMode-Process@490-1.Invoke(NormalModeData arg00, KeyInput arg10) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 490
+at Vim.Modes.Normal.NormalMode.Vim-IMode-Process(KeyInput ki) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 469
 at VimCoreTest.Util.Process(IMode mode, Char c) in C:\Users\JaredP\VsVim\VimCoreTest\Util.cs:line 46
 at VimCoreTest.Util.Process(IMode mode, String input) in C:\Users\JaredP\VsVim\VimCoreTest\Util.cs:line 54
-at VimCoreTest.NormalModeTest.Paste_gP_3() in C:\Users\JaredP\VsVim\VimCoreTest\NormalModeTest.cs:line 784
+at VimCoreTest.NormalModeTest.Paste_gP_3() in C:\Users\JaredP\VsVim\VimCoreTest\NormalModeTest.cs:line 767
 ]]></stack-trace>
                     </failure>
                   </test-case>
-                  <test-case name="VimCoreTest.NormalModeTest.Paste_p" executed="True" success="True" time="0.010" asserts="1" />
-                  <test-case name="VimCoreTest.NormalModeTest.Paste_P" executed="True" success="True" time="0.000" asserts="1" />
+                  <test-case name="VimCoreTest.NormalModeTest.Paste_p" executed="True" success="True" time="0.000" asserts="1" />
+                  <test-case name="VimCoreTest.NormalModeTest.Paste_P" executed="True" success="True" time="0.010" asserts="1" />
                   <test-case name="VimCoreTest.NormalModeTest.Paste_p_2" description="Paste from a non-default register" executed="True" success="True" time="0.000" asserts="1" />
-                  <test-case name="VimCoreTest.NormalModeTest.Paste_p_3" description="Paste at end of buffer shouldn't crash" executed="True" success="True" time="0.000" asserts="1" />
-                  <test-case name="VimCoreTest.NormalModeTest.Paste_p_4" executed="True" success="True" time="0.010" asserts="1" />
+                  <test-case name="VimCoreTest.NormalModeTest.Paste_p_3" description="Paste at end of buffer shouldn't crash" executed="True" success="True" time="0.020" asserts="1" />
+                  <test-case name="VimCoreTest.NormalModeTest.Paste_p_4" executed="True" success="True" time="0.000" asserts="1" />
                   <test-case name="VimCoreTest.NormalModeTest.Paste_p_5" description="Pasting a linewise motion should occur on the next line" executed="True" success="True" time="0.010" asserts="2" />
                   <test-case name="VimCoreTest.NormalModeTest.Paste_p_6" description="Pasting a linewise motion should move the caret to the start of the next line" executed="True" success="True" time="0.000" asserts="1" />
                   <test-case name="VimCoreTest.NormalModeTest.PreviousWord1" executed="True" success="True" time="0.000" asserts="1" />
                   <test-case name="VimCoreTest.NormalModeTest.PreviousWord2" executed="True" success="True" time="0.030" asserts="1" />
                   <test-case name="VimCoreTest.NormalModeTest.PreviousWord3" executed="True" success="True" time="0.010" asserts="1" />
-                  <test-case name="VimCoreTest.NormalModeTest.PreviousWord4" executed="True" success="True" time="0.000" asserts="1" />
-                  <test-case name="VimCoreTest.NormalModeTest.Register1" executed="True" success="True" time="0.000" asserts="2" />
-                  <test-case name="VimCoreTest.NormalModeTest.Regression_DownPastBufferEnd" description="j past the end of the buffer" executed="True" success="True" time="0.010" asserts="2" />
-                  <test-case name="VimCoreTest.NormalModeTest.Regression_InsertMode" description="Don't re-enter insert mode on every keystroke once you've left" executed="True" success="True" time="0.000" asserts="3" />
-                  <test-case name="VimCoreTest.NormalModeTest.ScrollDown1" executed="True" success="True" time="0.010" asserts="1" />
-                  <test-case name="VimCoreTest.NormalModeTest.ScrollUp1" executed="True" success="True" time="0.000" asserts="1" />
-                  <test-case name="VimCoreTest.NormalModeTest.ScrollUp2" description="Don't break at line 0" executed="True" success="True" time="0.030" asserts="1" />
-                  <test-case name="VimCoreTest.NormalModeTest.Search1" executed="True" success="True" time="0.130" asserts="2" />
-                  <test-case name="VimCoreTest.NormalModeTest.Search2" executed="True" success="True" time="0.010" asserts="2" />
+                  <test-case name="VimCoreTest.NormalModeTest.PreviousWord4" executed="True" success="True" time="0.010" asserts="1" />
+                  <test-case name="VimCoreTest.NormalModeTest.Register1" executed="True" success="True" time="0.010" asserts="2" />
+                  <test-case name="VimCoreTest.NormalModeTest.Regression_DownPastBufferEnd" description="j past the end of the buffer" executed="True" success="True" time="0.000" asserts="2" />
+                  <test-case name="VimCoreTest.NormalModeTest.Regression_InsertMode" description="Don't re-enter insert mode on every keystroke once you've left" executed="True" success="True" time="0.010" asserts="3" />
+                  <test-case name="VimCoreTest.NormalModeTest.ScrollDown1" executed="True" success="True" time="0.000" asserts="1" />
+                  <test-case name="VimCoreTest.NormalModeTest.ScrollUp1" executed="True" success="True" time="0.010" asserts="1" />
+                  <test-case name="VimCoreTest.NormalModeTest.ScrollUp2" description="Don't break at line 0" executed="True" success="True" time="0.000" asserts="1" />
+                  <test-case name="VimCoreTest.NormalModeTest.Search1" executed="True" success="True" time="0.170" asserts="2" />
+                  <test-case name="VimCoreTest.NormalModeTest.Search2" executed="True" success="True" time="0.000" asserts="2" />
                   <test-case name="VimCoreTest.NormalModeTest.Search3" description="Make sure it matches the first occurance" executed="True" success="True" time="0.000" asserts="2" />
-                  <test-case name="VimCoreTest.NormalModeTest.Search4" description="No match should select nothing" executed="True" success="True" time="0.010" asserts="2" />
-                  <test-case name="VimCoreTest.NormalModeTest.Search5" description="A partial match followed by a bad match should go back to start" executed="True" success="True" time="0.000" asserts="2" />
+                  <test-case name="VimCoreTest.NormalModeTest.Search4" description="No match should select nothing" executed="True" success="True" time="0.000" asserts="2" />
+                  <test-case name="VimCoreTest.NormalModeTest.Search5" description="A partial match followed by a bad match should go back to start" executed="True" success="True" time="0.010" asserts="2" />
                   <test-case name="VimCoreTest.NormalModeTest.Search6" description="Search accross lines" executed="True" success="True" time="0.000" asserts="2" />
                   <test-case name="VimCoreTest.NormalModeTest.SearchBackspace1" executed="True" success="True" time="0.010" asserts="3" />
                   <test-case name="VimCoreTest.NormalModeTest.SearchBackspace2" executed="True" success="True" time="0.000" asserts="2" />
-                  <test-case name="VimCoreTest.NormalModeTest.SearchBackspace3" description="Completely exit from the search" executed="True" success="True" time="0.010" asserts="2" />
+                  <test-case name="VimCoreTest.NormalModeTest.SearchBackspace3" description="Completely exit from the search" executed="True" success="True" time="0.000" asserts="2" />
                   <test-case name="VimCoreTest.NormalModeTest.SearchNext1" executed="True" success="True" time="0.040" asserts="2" />
-                  <test-case name="VimCoreTest.NormalModeTest.SearchNext2" description="Don't start at current position" executed="True" success="True" time="0.000" asserts="2" />
-                  <test-case name="VimCoreTest.NormalModeTest.SearchNext3" description="Don't skip the current word just the current letter" executed="True" success="True" time="0.010" asserts="1" />
+                  <test-case name="VimCoreTest.NormalModeTest.SearchNext2" description="Don't start at current position" executed="True" success="True" time="0.010" asserts="2" />
+                  <test-case name="VimCoreTest.NormalModeTest.SearchNext3" description="Don't skip the current word just the current letter" executed="True" success="True" time="0.000" asserts="1" />
                   <test-case name="VimCoreTest.NormalModeTest.SearchNext4" description="Counted next" executed="True" success="True" time="0.000" asserts="1" />
                   <test-case name="VimCoreTest.NormalModeTest.SearchNext5" description="Make sure enter sets the search" executed="True" success="True" time="0.010" asserts="1" />
                   <test-case name="VimCoreTest.NormalModeTest.SearchNextReverse1" executed="True" success="True" time="0.000" asserts="2" />
                   <test-case name="VimCoreTest.NormalModeTest.SearchReverse1" executed="True" success="True" time="0.010" asserts="3" />
                   <test-case name="VimCoreTest.NormalModeTest.SearchReverse2" description="Change nothing on invalid searh" executed="True" success="True" time="0.000" asserts="3" />
                   <test-case name="VimCoreTest.NormalModeTest.SearchStatus1" executed="True" success="True" time="0.010" asserts="1" />
-                  <test-case name="VimCoreTest.NormalModeTest.SearchStatus2" executed="True" success="True" time="0.010" asserts="1" />
-                  <test-case name="VimCoreTest.NormalModeTest.ShiftLeft1" description="Don't eat extra whitespace" executed="True" success="True" time="0.000" asserts="1" />
+                  <test-case name="VimCoreTest.NormalModeTest.SearchStatus2" executed="True" success="True" time="0.000" asserts="1" />
+                  <test-case name="VimCoreTest.NormalModeTest.ShiftLeft1" description="Don't eat extra whitespace" executed="True" success="True" time="0.010" asserts="1" />
                   <test-case name="VimCoreTest.NormalModeTest.ShiftLeft2" executed="True" success="True" time="0.000" asserts="1" />
                   <test-case name="VimCoreTest.NormalModeTest.ShiftLeft3" executed="True" success="True" time="0.010" asserts="1" />
                   <test-case name="VimCoreTest.NormalModeTest.ShiftLeft4" description="With a count" executed="True" success="True" time="0.000" asserts="2" />
-                  <test-case name="VimCoreTest.NormalModeTest.ShiftLeft5" description="Make sure a &lt;&lt; doesn't shift more than 1 line" executed="True" success="True" time="0.010" asserts="2" />
-                  <test-case name="VimCoreTest.NormalModeTest.ShiftRight1" executed="True" success="True" time="0.000" asserts="1" />
+                  <test-case name="VimCoreTest.NormalModeTest.ShiftLeft5" description="Make sure a &lt;&lt; doesn't shift more than 1 line" executed="True" success="True" time="0.000" asserts="2" />
+                  <test-case name="VimCoreTest.NormalModeTest.ShiftRight1" executed="True" success="True" time="0.010" asserts="1" />
                   <test-case name="VimCoreTest.NormalModeTest.ShiftRight2" description="With a count" executed="True" success="True" time="0.010" asserts="2" />
                   <test-case name="VimCoreTest.NormalModeTest.ShiftRight3" description="With a motion" executed="True" success="True" time="0.010" asserts="2" />
                   <test-case name="VimCoreTest.NormalModeTest.ShiftRight4" description="Make sure a normal &gt;&gt; doesn't shift 2 lines" executed="True" success="True" time="0.000" asserts="2" />
-                  <test-case name="VimCoreTest.NormalModeTest.Undo1" executed="True" success="True" time="0.010" asserts="2" />
-                  <test-case name="VimCoreTest.NormalModeTest.Undo2" executed="True" success="True" time="0.010" asserts="1" />
-                  <test-case name="VimCoreTest.NormalModeTest.Yank_2yw" executed="True" success="True" time="0.000" asserts="1" />
+                  <test-case name="VimCoreTest.NormalModeTest.Undo1" executed="True" success="True" time="0.000" asserts="2" />
+                  <test-case name="VimCoreTest.NormalModeTest.Undo2" executed="True" success="True" time="0.000" asserts="1" />
+                  <test-case name="VimCoreTest.NormalModeTest.Yank_2yw" executed="True" success="True" time="0.010" asserts="1" />
                   <test-case name="VimCoreTest.NormalModeTest.Yank_3yw" executed="True" success="True" time="0.000" asserts="1" />
                   <test-case name="VimCoreTest.NormalModeTest.Yank_Y_1" executed="True" success="False" time="0.010" asserts="0">
                     <failure>
@@ -472,14 +355,14 @@ at VimCoreTest.NormalModeTest.Paste_gP_3() in C:\Users\JaredP\VsVim\VimCoreTest\
 All invocations on the mock must have a corresponding setup.]]></message>
                       <stack-trace><![CDATA[at Moq.Interceptor.Intercept(IInvocation invocation)
 at Castle.DynamicProxy.AbstractInvocation.Proceed()
-at IOperationsProxy89a4eaebc66649308d2dcfa2345b1938.YankLines(NormalModeData )
-at <StartupCode$Vim-Core>.$Modes_Normal_NormalMode.l@394-47.Invoke(NormalModeData arg00) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 394
-at Vim.Modes.Normal.NormalMode.StartCore(NormalModeData d, KeyInput ki) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 423
-at <StartupCode$Vim-Core>.$Modes_Normal_NormalMode.get_ResetData@433.Invoke(NormalModeData arg00, KeyInput arg10) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 433
-at Vim.Modes.Normal.NormalMode.Vim-IMode-Process(KeyInput ki) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 460
+at IOperationsProxy051f0766b76041c29f5821fbdfbbaa7d.YankLines(NormalModeData )
+at <StartupCode$Vim-Core>.$Modes_Normal_NormalMode.l@403-47.Invoke(NormalModeData arg00) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 403
+at Vim.Modes.Normal.NormalMode.StartCore(NormalModeData d, KeyInput ki) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 432
+at <StartupCode$Vim-Core>.$Modes_Normal_NormalMode.get_ResetData@442.Invoke(NormalModeData arg00, KeyInput arg10) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 442
+at Vim.Modes.Normal.NormalMode.Vim-IMode-Process(KeyInput ki) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 469
 at VimCoreTest.Util.Process(IMode mode, Char c) in C:\Users\JaredP\VsVim\VimCoreTest\Util.cs:line 46
 at VimCoreTest.Util.Process(IMode mode, String input) in C:\Users\JaredP\VsVim\VimCoreTest\Util.cs:line 54
-at VimCoreTest.NormalModeTest.Yank_Y_1() in C:\Users\JaredP\VsVim\VimCoreTest\NormalModeTest.cs:line 610
+at VimCoreTest.NormalModeTest.Yank_Y_1() in C:\Users\JaredP\VsVim\VimCoreTest\NormalModeTest.cs:line 593
 ]]></stack-trace>
                     </failure>
                   </test-case>
@@ -489,14 +372,14 @@ at VimCoreTest.NormalModeTest.Yank_Y_1() in C:\Users\JaredP\VsVim\VimCoreTest\No
 All invocations on the mock must have a corresponding setup.]]></message>
                       <stack-trace><![CDATA[at Moq.Interceptor.Intercept(IInvocation invocation)
 at Castle.DynamicProxy.AbstractInvocation.Proceed()
-at IOperationsProxy89a4eaebc66649308d2dcfa2345b1938.YankLines(NormalModeData )
-at <StartupCode$Vim-Core>.$Modes_Normal_NormalMode.l@394-47.Invoke(NormalModeData arg00) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 394
-at Vim.Modes.Normal.NormalMode.StartCore(NormalModeData d, KeyInput ki) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 423
-at <StartupCode$Vim-Core>.$Modes_Normal_NormalMode.Vim-IMode-Process@481-1.Invoke(NormalModeData arg00, KeyInput arg10) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 481
-at Vim.Modes.Normal.NormalMode.Vim-IMode-Process(KeyInput ki) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 460
+at IOperationsProxy051f0766b76041c29f5821fbdfbbaa7d.YankLines(NormalModeData )
+at <StartupCode$Vim-Core>.$Modes_Normal_NormalMode.l@403-47.Invoke(NormalModeData arg00) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 403
+at Vim.Modes.Normal.NormalMode.StartCore(NormalModeData d, KeyInput ki) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 432
+at <StartupCode$Vim-Core>.$Modes_Normal_NormalMode.Vim-IMode-Process@490-1.Invoke(NormalModeData arg00, KeyInput arg10) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 490
+at Vim.Modes.Normal.NormalMode.Vim-IMode-Process(KeyInput ki) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 469
 at VimCoreTest.Util.Process(IMode mode, Char c) in C:\Users\JaredP\VsVim\VimCoreTest\Util.cs:line 46
 at VimCoreTest.Util.Process(IMode mode, String input) in C:\Users\JaredP\VsVim\VimCoreTest\Util.cs:line 54
-at VimCoreTest.NormalModeTest.Yank_Y_2() in C:\Users\JaredP\VsVim\VimCoreTest\NormalModeTest.cs:line 619
+at VimCoreTest.NormalModeTest.Yank_Y_2() in C:\Users\JaredP\VsVim\VimCoreTest\NormalModeTest.cs:line 602
 ]]></stack-trace>
                     </failure>
                   </test-case>
@@ -506,15 +389,15 @@ at VimCoreTest.NormalModeTest.Yank_Y_2() in C:\Users\JaredP\VsVim\VimCoreTest\No
 All invocations on the mock must have a corresponding setup.]]></message>
                       <stack-trace><![CDATA[at Moq.Interceptor.Intercept(IInvocation invocation)
 at Castle.DynamicProxy.AbstractInvocation.Proceed()
-at IOperationsProxy89a4eaebc66649308d2dcfa2345b1938.YankLines(NormalModeData )
-at <StartupCode$Vim-Core>.$Modes_Normal_NormalMode.l@394-47.Invoke(NormalModeData arg00) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 394
-at Vim.Modes.Normal.NormalMode.StartCore(NormalModeData d, KeyInput ki) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 423
-at <StartupCode$Vim-Core>.$Modes_Normal_NormalMode.Vim-IMode-Process@478.Invoke(NormalModeData arg00, KeyInput arg10) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 478
-at Vim.Modes.Normal.NormalMode.Vim-IMode-Process(KeyInput ki) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 460
-at Vim.Modes.Normal.NormalMode.Vim-IMode-Process(KeyInput ki) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 479
+at IOperationsProxy051f0766b76041c29f5821fbdfbbaa7d.YankLines(NormalModeData )
+at <StartupCode$Vim-Core>.$Modes_Normal_NormalMode.l@403-47.Invoke(NormalModeData arg00) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 403
+at Vim.Modes.Normal.NormalMode.StartCore(NormalModeData d, KeyInput ki) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 432
+at <StartupCode$Vim-Core>.$Modes_Normal_NormalMode.Vim-IMode-Process@487.Invoke(NormalModeData arg00, KeyInput arg10) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 487
+at Vim.Modes.Normal.NormalMode.Vim-IMode-Process(KeyInput ki) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 469
+at Vim.Modes.Normal.NormalMode.Vim-IMode-Process(KeyInput ki) in C:\Users\JaredP\VsVim\VimCore\Modes_Normal_NormalMode.fs:line 488
 at VimCoreTest.Util.Process(IMode mode, Char c) in C:\Users\JaredP\VsVim\VimCoreTest\Util.cs:line 46
 at VimCoreTest.Util.Process(IMode mode, String input) in C:\Users\JaredP\VsVim\VimCoreTest\Util.cs:line 54
-at VimCoreTest.NormalModeTest.Yank_Y_3() in C:\Users\JaredP\VsVim\VimCoreTest\NormalModeTest.cs:line 628
+at VimCoreTest.NormalModeTest.Yank_Y_3() in C:\Users\JaredP\VsVim\VimCoreTest\NormalModeTest.cs:line 611
 ]]></stack-trace>
                     </failure>
                   </test-case>

@@ -410,72 +410,55 @@ namespace VimCoreTest
         public void Edit_r_1()
         {
             CreateBuffer("foo");
+            var ki = InputUtil.CharToKeyInput('b');
+            _operations.Setup(x => x.ReplaceChar(ki, 1)).Returns(true).Verifiable();
             _mode.Process("rb");
-            Assert.AreEqual("boo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
+            _operations.Verify();
         }
 
         [Test]
         public void Edit_r_2()
         {
             CreateBuffer("foo");
+            var ki = InputUtil.CharToKeyInput('b');
+            _operations.Setup(x => x.ReplaceChar(ki, 2)).Returns(true).Verifiable();
             _mode.Process("2rb");
-            Assert.AreEqual("bbo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
+            _operations.Verify();
         }
 
         [Test]
         public void Edit_r_3()
         {
             CreateBuffer("foo");
+            var ki = InputUtil.KeyToKeyInput(Key.LineFeed);
+            _operations.Setup(x => x.ReplaceChar(ki, 1)).Returns(true).Verifiable();
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 1));
             _mode.Process("r");
             _mode.Process(InputUtil.KeyToKeyInput(Key.LineFeed));
-            var tss = _view.TextSnapshot;
-            Assert.AreEqual(2, tss.LineCount);
-            Assert.AreEqual("f", tss.GetLineFromLineNumber(0).GetText());
-            Assert.AreEqual("o", tss.GetLineFromLineNumber(1).GetText());
+            _operations.Verify();
         }
 
-        [Test]
         public void Edit_r_4()
         {
             CreateBuffer("food");
-            _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 1));
-            _mode.Process("2r");
-            _mode.Process(InputUtil.KeyToKeyInput(Key.LineFeed));
-            var tss = _view.TextSnapshot;
-            Assert.AreEqual(2, tss.LineCount);
-            Assert.AreEqual("f", tss.GetLineFromLineNumber(0).GetText());
-            Assert.AreEqual("d", tss.GetLineFromLineNumber(1).GetText());
-        }
-
-        [Test]
-        public void Edit_r_5()
-        {
-            CreateBuffer("food");
-            var tss = _view.TextSnapshot;
+            _operations.Setup(x => x.ReplaceChar(It.IsAny<KeyInput>(), 200)).Returns(false).Verifiable();
             _mode.Process("200ru");
             Assert.IsTrue(_host.BeepCount > 0);
-            Assert.AreSame(tss, _view.TextSnapshot);
+            _operations.Verify();
         }
 
         [Test, Description("block caret should be hidden for the duration of the r command")]
-        public void Edit_r_6()
+        public void Edit_r_5()
         {
             CreateBuffer("foo");
             _blockCaret.HideCount = 0;
             _blockCaret.ShowCount = 0;
             _mode.Process('r');
             Assert.AreEqual(1, _blockCaret.HideCount);
+            _operations.Setup(x => x.ReplaceChar(It.IsAny<KeyInput>(), 1)).Returns(true).Verifiable();
             _mode.Process('u');
             Assert.AreEqual(1, _blockCaret.ShowCount);
-        }
-
-        [Test, Description("Edit should not cause the cursor to move")]
-        public void Edit_r_7()
-        {
-            CreateBuffer("foo");
-            _mode.Process("ru");
-            Assert.AreEqual(0, _view.Caret.Position.BufferPosition.Position);
+            _operations.Verify();
         }
 
         [Test]
