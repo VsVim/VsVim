@@ -2,7 +2,7 @@
 
 namespace Vim
 
-type SearchKind = 
+type internal SearchKind = 
      | Forward = 1
      | ForwardWithWrap = 2
      | Backward = 3

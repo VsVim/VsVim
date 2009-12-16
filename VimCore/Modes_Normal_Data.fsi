@@ -7,7 +7,7 @@ open Microsoft.VisualStudio.Text.Editor
 open System.Windows.Input
 open System.Windows.Media
 
-type NormalModeData = {
+type internal NormalModeData = {
     VimBufferData : IVimBufferData;
     Register : Register;
     Count : int;
@@ -16,7 +16,7 @@ type NormalModeData = {
     WaitingForMoreInput : bool
 } 
     
-and NormalModeResult = 
+and internal NormalModeResult = 
     | SwitchMode of ModeKind
     | NeedMore of NormalModeData
     | NeedMore2 of (NormalModeData -> KeyInput -> NormalModeResult)
