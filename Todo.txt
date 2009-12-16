@@ -1,9 +1,7 @@
-Version 5.5
+Version 6.0
 ===
 X - 'Y in normal mode
-- Edits need to understand cursor selection
 X - Add mark support to range parsing
-- Finish range parsing
 - Delete key in normal mode
 - Check on the behavior of tab in normal mode
 - Marks Undo Support
@@ -21,6 +19,7 @@ X - Rename Modes_Common_operations to ModeUtil or something like that
 X - Command mode :delete
 - Help delete and insert
 X - View close should clear out the markers
+- O should enter insert mode
 
 Version 6.0
 === 
@@ -28,6 +27,8 @@ Version 6.0
 - Visual mode
   - Copy-move
   - delete-insert
+- Edits need to understand cursor selection
+- Finish range parsing
 
 Version 5.4
 ===
