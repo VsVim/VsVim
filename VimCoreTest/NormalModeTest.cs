@@ -13,6 +13,7 @@ using Microsoft.FSharp.Core;
 using Moq;
 using MockFactory = VimCoreTest.Utils.MockObjectFactory;
 using Vim.Modes.Normal;
+using Vim.Modes;
 
 namespace VimCoreTest
 {
@@ -1309,10 +1310,26 @@ namespace VimCoreTest
         public void JumpToMark2()
         {
             CreateBuffer("foobar");
-            _bufferData._vimData.MarkMap.SetMark(new SnapshotPoint(_bufferData._view.TextSnapshot, 1), 'a');
+            _operations
+                .Setup(x => x.JumpToMark('a', _bufferData._vimData.MarkMap))
+                .Returns(Result._unique_Succeeded)
+                .Verifiable();
             _mode.Process('\'');
             _mode.Process('a');
-            Assert.AreEqual(1, _view.Caret.Position.BufferPosition.Position);
+            _operations.Verify();
+        }
+
+        [Test]
+        public void JumpToMark3()
+        {
+            CreateBuffer("foobar");
+            _operations
+                .Setup(x => x.JumpToMark('a', _bufferData._vimData.MarkMap))
+                .Returns(Result._unique_Succeeded)
+                .Verifiable();
+            _mode.Process('`');
+            _mode.Process('a');
+            _operations.Verify();
         }
 
         [Test, Description("OnLeave should kill the block caret")]
