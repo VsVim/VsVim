@@ -12,7 +12,7 @@ type IOperations =
     abstract JumpToMark : NormalModeData -> NormalModeResult
     abstract CharGCommand : NormalModeData -> NormalModeResult
     abstract InsertLineAbove : NormalModeData -> NormalModeResult
-    abstract ReplaceChar : NormalModeData -> NormalModeResult
+    abstract ReplaceChar : KeyInput -> int -> bool
     abstract YankLines : NormalModeData -> NormalModeResult
     abstract DeleteCharacterAtCursor : int -> Register -> unit 
     abstract DeleteCharacterBeforeCursor : int -> Register -> unit

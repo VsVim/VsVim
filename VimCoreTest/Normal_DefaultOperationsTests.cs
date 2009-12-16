@@ -114,5 +114,6 @@ namespace VimCoreTest
             Assert.AreEqual("foo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
         }
 
+replace lines
     }
 }

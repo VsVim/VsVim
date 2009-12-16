@@ -74,29 +74,24 @@ type internal DefaultOperations
             NormalModeResult.Complete
             
         /// Implement the r command in normal mode.  
-        member x.ReplaceChar (d:NormalModeData) = 
-            let inner (d:NormalModeData) (ki:KeyInput) =
-                let bufferData = d.VimBufferData
-                let point = ViewUtil.GetCaretPoint bufferData.TextView
-    
-                // Make sure the replace string is valid
-                if (point.Position + d.Count) > point.GetContainingLine().End.Position then
-                    bufferData.VimHost.Beep()
-                else
-                    let isNewLine = (ki.Key = Key.LineFeed) || (ki.Key = Key.Return)
-                    let replaceText = 
-                        if isNewLine then System.Environment.NewLine
-                        else new System.String(ki.Char, d.Count)
-                    let span = new Span(point.Position,d.Count)
-                    let tss = bufferData.TextBuffer.Replace(span, replaceText) 
-    
-                    // Reset the caret to the point before the edit
-                    let point = new SnapshotPoint(tss,point.Position)
-                    bufferData.TextView.Caret.MoveTo(point) |> ignore
-                d.VimBufferData.BlockCaret.Show()
-                NormalModeResult.Complete
-            d.VimBufferData.BlockCaret.Hide()
-            NeedMore2(inner)
+        member x.ReplaceChar (ki:KeyInput) count = 
+            let point = ViewUtil.GetCaretPoint _textView
+
+            // Make sure the replace string is valid
+            if (point.Position + count) > point.GetContainingLine().End.Position then
+                false
+            else
+                let isNewLine = (ki.Key = Key.LineFeed) || (ki.Key = Key.Return)
+                let replaceText = 
+                    if isNewLine then System.Environment.NewLine
+                    else new System.String(ki.Char, count)
+                let span = new Span(point.Position, count)
+                let tss = _textView.TextBuffer.Replace(span, replaceText) 
+
+                // Reset the caret to the point before the edit
+                let point = new SnapshotPoint(tss,point.Position)
+                _textView.Caret.MoveTo(point) |> ignore
+                true
     
         /// Yank lines from the buffer.  Implements the Y command
         member x.YankLines (d:NormalModeData) =

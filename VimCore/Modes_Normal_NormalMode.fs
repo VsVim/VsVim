@@ -248,6 +248,15 @@ type internal NormalMode( _bufferData : IVimBufferData, _operations : IOperation
             | true ->
                 host.Beep()
                 NormalModeResult.Complete
+
+    member private x.ReplaceChar (d:NormalModeData) = 
+        let inner (d:NormalModeData) (ki:KeyInput) =
+            if not (_operations.ReplaceChar ki d.Count) then
+                _bufferData.VimHost.Beep()
+            d.VimBufferData.BlockCaret.Show()
+            NormalModeResult.Complete
+        d.VimBufferData.BlockCaret.Hide()
+        NeedMore2(inner)
         
 
     /// Add a line below the current cursor position and switch back to insert mode
@@ -389,7 +398,7 @@ type internal NormalMode( _bufferData : IVimBufferData, _operations : IOperation
             {   KeyInput=InputUtil.CharToKeyInput('g');
                 RunFunc=_operations.CharGCommand };
             {   KeyInput=InputUtil.CharToKeyInput('r');
-                RunFunc=_operations.ReplaceChar};
+                RunFunc=this.ReplaceChar; }
             {   KeyInput=InputUtil.CharToKeyInput('Y');
                 RunFunc=_operations.YankLines; }
             ]
