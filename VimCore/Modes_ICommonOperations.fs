@@ -17,3 +17,4 @@ type Result =
 type ICommonOperations =
     abstract TextView : ITextView 
     abstract JumpToMark : char -> MarkMap -> Result
+    abstract SetMark : char -> MarkMap -> Result

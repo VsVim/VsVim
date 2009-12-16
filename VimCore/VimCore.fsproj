@@ -80,7 +80,6 @@
     <Compile Include="Modes_ICommonOperations.fs" />
     <Compile Include="Modes_ModeUtil.fsi" />
     <Compile Include="Modes_ModeUtil.fs" />
-    <Compile Include="Modes_DefaultCommonOperations.fs" />
     <Compile Include="Modes_Command_RangeUtil.fsi" />
     <Compile Include="Modes_Command_RangeUtil.fs" />
     <Compile Include="Modes_Command_Util.fs" />

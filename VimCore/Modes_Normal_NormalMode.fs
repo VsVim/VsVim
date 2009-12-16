@@ -295,6 +295,18 @@ type internal NormalMode( _bufferData : IVimBufferData, _operations : IOperation
             NormalModeResult.Complete
         NormalModeResult.NeedMore2 waitForKey
 
+    /// Process the m[a-z] command.  Called when the m has been input so wait for the next key
+    member x.Mark (d:NormalModeData) =
+        let waitForKey (d2:NormalModeData) (ki:KeyInput) =
+            let bufferData = d2.VimBufferData
+            let cursor = ViewUtil.GetCaretPoint bufferData.TextView
+            let res = _operations.SetMark ki.Char bufferData.MarkMap
+            match res with
+            | Modes.Failed(_) -> bufferData.VimHost.Beep()
+            | _ -> ()
+            NormalModeResult.Complete
+        NormalModeResult.NeedMore2 waitForKey
+
     /// Complete the specified motion function            
     member this.MotionFunc view count func =
         let rec runCount count =
@@ -402,7 +414,7 @@ type internal NormalMode( _bufferData : IVimBufferData, _operations : IOperation
                         ()
                     NormalModeResult.Complete) };
             {   KeyInput=InputUtil.CharToKeyInput('m');
-                RunFunc=_operations.Mark };
+                RunFunc=this.Mark };
             {   KeyInput=InputUtil.CharToKeyInput('\'');
                 RunFunc=this.JumpToMark };
             {   KeyInput=InputUtil.CharToKeyInput('`');

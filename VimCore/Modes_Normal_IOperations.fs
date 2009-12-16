@@ -7,7 +7,6 @@ open Microsoft.VisualStudio.Text.Operations
 
 /// Normal mode operations
 type IOperations =
-    abstract Mark : NormalModeData -> NormalModeResult
     abstract InsertLineAbove : unit -> unit
     abstract ReplaceChar : KeyInput -> int -> bool
     abstract YankLines : int -> Register -> unit

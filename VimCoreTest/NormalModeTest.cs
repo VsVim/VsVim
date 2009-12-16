@@ -1282,18 +1282,21 @@ namespace VimCoreTest
         public void Mark3()
         {
             CreateBuffer(s_lines);
+            _operations.Setup(x => x.SetMark('a', _bufferData._vimData.MarkMap)).Returns(Result._unique_Succeeded).Verifiable();
             _mode.Process(InputUtil.CharToKeyInput('m'));
             _mode.Process(InputUtil.CharToKeyInput('a'));
-            Assert.IsTrue(_bufferData._vimData.MarkMap.GetLocalMark(_view.TextBuffer, 'a').IsSome());
+            _operations.Verify();
         }
 
         [Test, Description("Bad mark should beep")]
         public void Mark4()
         {
             CreateBuffer(s_lines);
+            _operations.Setup(x => x.SetMark(';', _bufferData._vimData.MarkMap)).Returns(Result.NewFailed("foo")).Verifiable();
             _mode.Process(InputUtil.CharToKeyInput('m'));
             _mode.Process(InputUtil.CharToKeyInput(';'));
             Assert.IsTrue(_host.BeepCount > 0);
+            _operations.Verify();
         }
 
         [Test]

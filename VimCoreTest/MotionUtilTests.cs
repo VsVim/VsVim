@@ -133,5 +133,7 @@ namespace VimCoreTest
             Assert.AreEqual("foo" + Environment.NewLine + "bar", res.GetText());
         }
 
+
+
     }
 }

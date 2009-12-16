@@ -19,19 +19,10 @@ type internal DefaultOperations
         // From ICommonOperations
         member x.TextView = _textView 
         member x.JumpToMark ident map = ModeUtil.JumpToMark map _textView ident
+        member x.SetMark ident map = 
+            let point = ViewUtil.GetCaretPoint _textView
+            ModeUtil.SetMark map point ident 
 
-        /// Process the m[a-z] command.  Called when the m has been input so wait for the next key
-        member x.Mark (d:NormalModeData) =
-            let waitForKey (d2:NormalModeData) (ki:KeyInput) =
-                let bufferData = d2.VimBufferData
-                let cursor = ViewUtil.GetCaretPoint bufferData.TextView
-                let res = Modes.ModeUtil.SetMark bufferData.MarkMap cursor ki.Char
-                match res with
-                | Failed(_) -> bufferData.VimHost.Beep()
-                | _ -> ()
-                NormalModeResult.Complete
-            NormalModeResult.NeedMore2 waitForKey
-    
         /// Paste the given text after the cursor
         member x.PasteAfter text count opKind moveCursor = 
             let text = StringUtil.Repeat text count 
