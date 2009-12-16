@@ -1382,8 +1382,12 @@ namespace VimCoreTest
         public void CharGCommand()
         {
             CreateBuffer(s_lines);
-            _mode.Process("gB");
-            Assert.IsTrue(_host.BeepCount > 0);
+            _operations
+                .Setup(x => x.CharGCommand(It.IsAny<NormalModeData>()))
+                .Returns(NormalModeResult.Complete)
+                .Verifiable();
+            _mode.Process("g");
+            _operations.Verify();
         }
 
         [Test, Description("OnLeave should kill the block caret")]
