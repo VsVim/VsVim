@@ -14,6 +14,7 @@ using System.Diagnostics;
 using Microsoft.FSharp.Control;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Classification;
+using Microsoft.VisualStudio.Text.Operations;
 
 namespace VsVim
 {
@@ -28,10 +29,21 @@ namespace VsVim
             get { return _buffer; }
         }
 
-        internal VsVimBuffer(IVim vim, IWpfTextView view, IVsTextView shimView, IVsTextLines lines, IUndoHistoryRegistry undoHistory, IEditorFormatMap map)
+        internal VsVimBuffer(
+            IVim vim, 
+            IWpfTextView view, 
+            IEditorOperations operations,
+            IVsTextView shimView, 
+            IVsTextLines lines, 
+            IUndoHistoryRegistry undoHistory, 
+            IEditorFormatMap map)
         {
             _view = view;
-            _buffer = vim.CreateBuffer( _view, lines.GetFileName(), new BlockCursor(view,HostFactory.BlockAdornmentLayerName, map));
+            _buffer = vim.CreateBuffer(
+                _view, 
+                operations,
+                lines.GetFileName(), 
+                new BlockCursor(view,HostFactory.BlockAdornmentLayerName, map));
             _filter = new VsCommandFilter(_buffer, shimView);
         }
 

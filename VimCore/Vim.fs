@@ -2,14 +2,15 @@
 
 namespace Vim
 open Microsoft.VisualStudio.Text.Editor
+open Microsoft.VisualStudio.Text.Operations
 
 /// Default implementation of IVim 
 type internal Vim(_host : IVimHost) =
     let _data = VimData()
     let mutable _buffers : seq<IVimBuffer> = Seq.empty
 
-    member x.CreateVimBufferCore view name caret = 
-        let data = VimBufferData(name, view, _host, _data :> IVimData, caret )
+    member x.CreateVimBufferCore view editOperations name caret = 
+        let data = VimBufferData(name, view, _host, _data :> IVimData, caret, editOperations )
         let modeList = 
             [
                 ((new Modes.Normal.NormalMode(data)) :> IMode);
@@ -27,7 +28,7 @@ type internal Vim(_host : IVimHost) =
         member x.Host = _host
         member x.Data = _data :> IVimData
         member x.Buffers = _buffers
-        member x.CreateBuffer view name caret =
-            x.CreateVimBufferCore view name caret
+        member x.CreateBuffer view editOperations name caret =
+            x.CreateVimBufferCore view editOperations name caret 
         
         

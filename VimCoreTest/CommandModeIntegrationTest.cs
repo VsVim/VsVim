@@ -22,9 +22,10 @@ namespace VimCoreTest
 
         public void CreateBuffer(params string[] lines)
         {
-            view = Utils.EditorUtil.CreateView(lines);
+            var tuple = Utils.EditorUtil.CreateViewAndOperations(lines);
+            view = tuple.Item1;
             host = new FakeVimHost();
-            buffer = Factory.CreateVimBuffer(host, view, "test", (new Mock<IBlockCaret>()).Object);
+            buffer = Factory.CreateVimBuffer(host, view, tuple.Item2, "test", (new Mock<IBlockCaret>()).Object);
         }
 
         [SetUp]

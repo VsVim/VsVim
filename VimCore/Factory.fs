@@ -10,7 +10,7 @@ module Factory =
     let CreateVim host = (Vim(host)) :> IVim
 
     // Create a standalone IVimBuffer instance
-    let CreateVimBuffer host view name caret =
+    let CreateVimBuffer host view editorOperations name caret =
         let vim = CreateVim host
-        vim.CreateBuffer view name caret
+        vim.CreateBuffer view editorOperations name caret
       

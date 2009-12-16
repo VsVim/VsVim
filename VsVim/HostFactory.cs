@@ -13,6 +13,7 @@ using Microsoft.VisualStudio.UI.Undo;
 using Microsoft.VisualStudio.OLE.Interop;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Text.Classification;
+using Microsoft.VisualStudio.Text.Operations;
 
 namespace VsVim
 {
@@ -37,6 +38,8 @@ namespace VsVim
         private KeyBindingService _keyBindingService = null;
         [Import]
         private IEditorFormatMapService _editorFormatMapService = null;
+        [Import]
+        private IEditorOperationsFactoryService _editorOperationsFactoryService = null;
 
         private VsVimHost _host;
         private IVim _vim;
@@ -92,7 +95,8 @@ namespace VsVim
         private void CreateVsVimBuffer(IWpfTextView view, IVsTextView interopView, IVsTextLines interopLines)
         {
             EnsureVim(((IObjectWithSite)interopView).GetServiceProvider());
-            var buffer = new VsVimBuffer(_vim, view, interopView, interopLines, _undoHistoryRegistry, _editorFormatMapService.GetEditorFormatMap(view));
+            var opts = _editorOperationsFactoryService.GetEditorOperations(view);
+            var buffer = new VsVimBuffer(_vim, view, opts, interopView, interopLines, _undoHistoryRegistry, _editorFormatMapService.GetEditorFormatMap(view));
             view.Properties.AddTypedProperty(buffer);
 
             _keyBindingService.OneTimeCheckForConflictingKeyBindings(_host.DTE, buffer.VimBuffer);

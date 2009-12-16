@@ -1,4 +1,4 @@
-Version 6.0
+Version 0.6
 ===
 X - 'Y in normal mode
 X - Add mark support to range parsing
@@ -20,10 +20,10 @@ X - Command mode :delete
 - Help delete and insert
 X - View close should clear out the markers
 - O should enter insert mode
-
-Version 6.0
-=== 
 - Horizontal offset issue Noah raised
+
+Version 0.7
+=== 
 - Visual mode
   - Copy-move
   - delete-insert
