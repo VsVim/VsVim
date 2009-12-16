@@ -12,6 +12,7 @@ using VimCoreTest.Utils;
 using Microsoft.FSharp.Core;
 using Moq;
 using MockFactory = VimCoreTest.Utils.MockObjectFactory;
+using Vim.Modes.Normal;
 
 namespace VimCoreTest
 {
@@ -46,7 +47,8 @@ namespace VimCoreTest
                 _host,
                 MockFactory.CreateVimData(_map).Object,
                 _blockCaret);
-            _modeRaw = new Vim.Modes.Normal.NormalMode(_bufferData);
+            IOperations opts = new DefaultOperations();
+            _modeRaw = new Vim.Modes.Normal.NormalMode(Tuple.Create((IVimBufferData)_bufferData, opts));
             _mode = _modeRaw;
             _mode.OnEnter();
         }

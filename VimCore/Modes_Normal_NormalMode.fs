@@ -7,7 +7,13 @@ open Microsoft.VisualStudio.Text.Editor
 open System.Windows.Input
 open System.Windows.Media
 
-type internal NormalMode( _bufferData : IVimBufferData ) = 
+/// Operation in the normal mode
+type internal Operation =  {
+    KeyInput : Vim.KeyInput;
+    RunFunc : NormalModeData -> NormalModeResult
+}
+
+type internal NormalMode( _bufferData : IVimBufferData, _operations : IOperations ) = 
     let mutable _data = {
         VimBufferData=_bufferData; 
         RunFunc = (fun _ _ -> NormalModeResult.Complete);
@@ -303,9 +309,9 @@ type internal NormalMode( _bufferData : IVimBufferData ) =
             {   KeyInput=InputUtil.CharToKeyInput('B');
                 RunFunc=(fun d -> this.MotionFunc this.TextView d.Count (fun v -> ViewUtil.MoveWordBackward v WordKind.BigWord)) };
             {   KeyInput=InputUtil.CharToKeyInput('x');
-                RunFunc=Operations.DeleteCharacterAtCursor; };
+                RunFunc=_operations.DeleteCharacterAtCursor; };
             {   KeyInput=InputUtil.CharToKeyInput('X');
-                RunFunc=Operations.DeleteCharacterBeforeCursor; };
+                RunFunc=_operations.DeleteCharacterBeforeCursor; };
             {   KeyInput=InputUtil.CharToKeyInput('d');
                 RunFunc=(fun d -> NeedMore2(this.WaitDelete)) };
             {   KeyInput=InputUtil.CharToKeyInput('y');
@@ -347,7 +353,7 @@ type internal NormalMode( _bufferData : IVimBufferData ) =
             {   KeyInput=InputUtil.CharToKeyInput('o');
                 RunFunc=(fun d -> this.AddLineBelow this.TextView) };
             {   KeyInput=InputUtil.CharToKeyInput('O');
-                RunFunc=Operations.InsertLineAbove };
+                RunFunc=_operations.InsertLineAbove };
             {   KeyInput=InputUtil.KeyToKeyInput(Key.Enter);
                 RunFunc=(fun d -> this.MoveForEnter this.TextView d.VimBufferData.VimHost) };
             {   KeyInput=KeyInput('u', Key.U, ModifierKeys.Control);
@@ -371,17 +377,17 @@ type internal NormalMode( _bufferData : IVimBufferData ) =
                         ()
                     NormalModeResult.Complete) };
             {   KeyInput=InputUtil.CharToKeyInput('m');
-                RunFunc=Operations.Mark };
+                RunFunc=_operations.Mark };
             {   KeyInput=InputUtil.CharToKeyInput('\'');
-                RunFunc=Operations.JumpToMark };
+                RunFunc=_operations.JumpToMark };
             {   KeyInput=InputUtil.CharToKeyInput('`');
-                RunFunc=Operations.JumpToMark };
+                RunFunc=_operations.JumpToMark };
             {   KeyInput=InputUtil.CharToKeyInput('g');
-                RunFunc=Operations.CharGCommand };
+                RunFunc=_operations.CharGCommand };
             {   KeyInput=InputUtil.CharToKeyInput('r');
-                RunFunc=Operations.ReplaceChar};
+                RunFunc=_operations.ReplaceChar};
             {   KeyInput=InputUtil.CharToKeyInput('Y');
-                RunFunc=Operations.YankLines; }
+                RunFunc=_operations.YankLines; }
             ]
         l |> List.map (fun d -> d.KeyInput,d) |> Map.ofList
 

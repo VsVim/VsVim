@@ -141,7 +141,7 @@
     <Compile Include="MotionCaptureTest.cs" />
     <Compile Include="MotionUtilTests.cs" />
     <Compile Include="NormalModeTest.cs" />
-    <Compile Include="Normal_Operations.cs" />
+    <Compile Include="Normal_DefaultOperationsTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RangeUtilTest.cs" />
     <Compile Include="TextUtilTest.cs" />

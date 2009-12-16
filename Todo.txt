@@ -21,6 +21,9 @@ X - Command mode :delete
 X - View close should clear out the markers
 - O should enter insert mode
 - Horizontal offset issue Noah raised
+- :et in command mode
+- Normal mode operations should be an interface
+- Switch normal mode tests to use the interface
 
 Version 0.7
 === 

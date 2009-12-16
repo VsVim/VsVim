@@ -10,12 +10,13 @@ type internal Vim(_host : IVimHost) =
     let mutable _buffers : seq<IVimBuffer> = Seq.empty
 
     member x.CreateVimBufferCore view editOperations name caret = 
-        let data = VimBufferData(name, view, _host, _data :> IVimData, caret, editOperations )
+        let data = VimBufferData(name, view, _host, _data :> IVimData, caret, editOperations ) :> IVimBufferData
+        let opts = Modes.Normal.DefaultOperations() :> Modes.Normal.IOperations
         let modeList = 
             [
-                ((new Modes.Normal.NormalMode(data)) :> IMode);
-                ((new Modes.Command.CommandMode(data)) :> IMode);
-                ((new Modes.Insert.InsertMode(data)) :> IMode);
+                ((Modes.Normal.NormalMode(data, opts)) :> IMode);
+                ((Modes.Command.CommandMode(data)) :> IMode);
+                ((Modes.Insert.InsertMode(data)) :> IMode);
             ]
         let modeMap =
             modeList 

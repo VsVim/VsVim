@@ -13,14 +13,16 @@ using Microsoft.VisualStudio.Text.Editor;
 namespace VimCoreTest
 {
     [TestFixture]
-    public class Normal_Operations
+    public class Normal_DefaultOperationsTests
     {
+        private IOperations _operations;
         private IWpfTextView _view;
         private Mock<IVimBufferData> _bufferData;
         private Register _reg;
 
         private NormalModeData Create(int? count, params string[] lines)
         {
+            _operations = new DefaultOperations();
             _view = EditorUtil.CreateView(lines);
             _bufferData= new Mock<IVimBufferData>(MockBehavior.Strict);
             _bufferData.Setup(x => x.TextView).Returns(_view);
@@ -42,7 +44,7 @@ namespace VimCoreTest
         public void DeleteCharacterAtCursor1()
         {
             var data = Create(null, "foo", "bar");
-            var res = Operations.DeleteCharacterAtCursor(data);
+            var res = _operations.DeleteCharacterAtCursor(data);
             Assert.IsTrue(res.IsComplete);
             Assert.AreEqual("oo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
             Assert.AreEqual("f", _reg.StringValue);

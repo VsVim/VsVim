@@ -86,10 +86,8 @@
     <Compile Include="Modes_Command_CommandMode.fs" />
     <Compile Include="Modes_Normal_Data.fsi" />
     <Compile Include="Modes_Normal_Data.fs" />
-    <Compile Include="Modes_Normal_Operation.fsi" />
-    <Compile Include="Modes_Normal_Operation.fs" />
-    <Compile Include="Modes_Normal_Operations.fsi" />
-    <Compile Include="Modes_Normal_Operations.fs" />
+    <Compile Include="Modes_Normal_IOperations.fs" />
+    <Compile Include="Modes_Normal_DefaultOperations.fs" />
     <Compile Include="Modes_Normal_NormalMode.fsi" />
     <Compile Include="Modes_Normal_NormalMode.fs" />
     <Compile Include="Modes_Insert_InsertMode.fsi" />
