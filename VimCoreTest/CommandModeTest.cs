@@ -78,6 +78,17 @@ namespace VimCoreTest
             Assert.AreEqual(String.Empty, _host.Status);
         }
 
+        [Test, Description("Ensure multiple commands can be processed")]
+        public void DoubleCommand1()
+        {
+            Create("foo", "bar", "baz");
+            _editOpts.Setup(x => x.GotoLine(1)).Verifiable();
+            ProcessWithEnter("2");
+            _editOpts.Setup(x => x.GotoLine(2)).Verifiable();
+            ProcessWithEnter("3");
+            _editOpts.Verify();
+        }
+
         [Test]
         public void Jump1()
         {

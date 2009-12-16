@@ -1,31 +1,44 @@
 ﻿<?xml version="1.0" encoding="utf-8" standalone="no"?>
 <!--This file represents the results of running a test suite-->
-<test-results name="C:\Users\jaredpar\VsVim\VsVim.nunit" total="12" errors="0" failures="0" not-run="0" inconclusive="0" ignored="0" skipped="0" invalid="0" date="2009-12-15" time="17:11:37">
+<test-results name="C:\Users\jaredpar\VsVim\VsVim.nunit" total="22" errors="0" failures="0" not-run="0" inconclusive="0" ignored="0" skipped="0" invalid="0" date="2009-12-15" time="17:23:27">
   <environment nunit-version="2.5.3.9345" clr-version="4.0.21006.1" os-version="Microsoft Windows NT 6.1.7600.0" platform="Win32NT" cwd="C:\Program Files (x86)\NUnit 2.5.3\bin\net-2.0" machine-name="JAREDPAR14" user="jaredpar" user-domain="REDMOND" />
   <culture-info current-culture="en-US" current-uiculture="en-US" />
-  <test-suite name="C:\Users\jaredpar\VsVim\VsVim.nunit" executed="True" success="True" time="1.436" asserts="0">
+  <test-suite name="C:\Users\jaredpar\VsVim\VsVim.nunit" executed="True" success="True" time="5.653" asserts="0">
     <results>
-      <test-suite name="C:\Users\jaredpar\VsVim\VimCoreTest\bin\Debug\VimCoreTest.dll" executed="True" success="True" time="1.427" asserts="0">
+      <test-suite name="C:\Users\jaredpar\VsVim\VimCoreTest\bin\Debug\VimCoreTest.dll" executed="True" success="True" time="5.642" asserts="0">
         <properties>
           <property name="APARTMENT_STATE" value="STA" />
         </properties>
         <results>
-          <test-suite name="VimCoreTest" executed="True" success="True" time="1.420" asserts="0">
+          <test-suite name="VimCoreTest" executed="True" success="True" time="5.633" asserts="0">
             <results>
-              <test-suite name="BufferUtilTest" executed="True" success="True" time="1.419" asserts="0">
+              <test-suite name="CommandModeTest" executed="True" success="True" time="5.631" asserts="0">
+                <properties>
+                  <property name="APARTMENT_STATE" value="STA" />
+                </properties>
                 <results>
-                  <test-case name="VimCoreTest.BufferUtilTest.AddLineAbove1" executed="True" success="True" time="1.363" asserts="3" />
-                  <test-case name="VimCoreTest.BufferUtilTest.AddLineAbove2" executed="True" success="True" time="0.003" asserts="3" />
-                  <test-case name="VimCoreTest.BufferUtilTest.AddLineBelow" executed="True" success="True" time="0.002" asserts="2" />
-                  <test-case name="VimCoreTest.BufferUtilTest.AddLineBelow2" description="New line at end of buffer" executed="True" success="True" time="0.004" asserts="1" />
-                  <test-case name="VimCoreTest.BufferUtilTest.AddLineBelow3" description="Make sure the new is actually a newline" executed="True" success="True" time="0.001" asserts="2" />
-                  <test-case name="VimCoreTest.BufferUtilTest.AddLineBelow4" description="Make sure line inserted in the middle has correct text" executed="True" success="True" time="0.005" asserts="2" />
-                  <test-case name="VimCoreTest.BufferUtilTest.AddLineBelow5" executed="True" success="True" time="0.002" asserts="12" />
-                  <test-case name="VimCoreTest.BufferUtilTest.ShiftLeft1" description="Only shift whitespace" executed="True" success="True" time="0.008" asserts="1" />
-                  <test-case name="VimCoreTest.BufferUtilTest.ShiftLeft2" description="Don't puke on an empty line" executed="True" success="True" time="0.000" asserts="1" />
-                  <test-case name="VimCoreTest.BufferUtilTest.ShiftLeft3" executed="True" success="True" time="0.004" asserts="2" />
-                  <test-case name="VimCoreTest.BufferUtilTest.ShiftLeft4" executed="True" success="True" time="0.000" asserts="1" />
-                  <test-case name="VimCoreTest.BufferUtilTest.ShiftRight1" executed="True" success="True" time="0.004" asserts="1" />
+                  <test-case name="VimCoreTest.CommandModeTest.Delete1" executed="True" success="True" time="5.232" asserts="2" />
+                  <test-case name="VimCoreTest.CommandModeTest.Delete2" executed="True" success="True" time="0.018" asserts="2" />
+                  <test-case name="VimCoreTest.CommandModeTest.Delete3" executed="True" success="True" time="0.021" asserts="3" />
+                  <test-case name="VimCoreTest.CommandModeTest.DoubleCommand1" description="Ensure multiple commands can be processed" executed="True" success="True" time="0.055" asserts="0" />
+                  <test-case name="VimCoreTest.CommandModeTest.Jump1" executed="True" success="True" time="0.003" asserts="0" />
+                  <test-case name="VimCoreTest.CommandModeTest.Jump2" executed="True" success="True" time="0.003" asserts="0" />
+                  <test-case name="VimCoreTest.CommandModeTest.Jump3" executed="True" success="True" time="0.090" asserts="1" />
+                  <test-case name="VimCoreTest.CommandModeTest.Put1" executed="True" success="True" time="0.017" asserts="1" />
+                  <test-case name="VimCoreTest.CommandModeTest.Put2" executed="True" success="True" time="0.004" asserts="1" />
+                  <test-case name="VimCoreTest.CommandModeTest.ShiftLeft1" executed="True" success="True" time="0.017" asserts="1" />
+                  <test-case name="VimCoreTest.CommandModeTest.ShiftLeft2" executed="True" success="True" time="0.008" asserts="2" />
+                  <test-case name="VimCoreTest.CommandModeTest.ShiftLeft3" executed="True" success="True" time="0.003" asserts="2" />
+                  <test-case name="VimCoreTest.CommandModeTest.ShiftRight1" executed="True" success="True" time="0.006" asserts="1" />
+                  <test-case name="VimCoreTest.CommandModeTest.ShiftRight2" executed="True" success="True" time="0.003" asserts="2" />
+                  <test-case name="VimCoreTest.CommandModeTest.ShiftRight3" executed="True" success="True" time="0.003" asserts="2" />
+                  <test-case name="VimCoreTest.CommandModeTest.StatusOnColon1" description="Entering command mode should update the status" executed="True" success="True" time="0.007" asserts="1" />
+                  <test-case name="VimCoreTest.CommandModeTest.StatusOnLeave" description="When leaving command mode we should not clear the status because it will remove error messages" executed="True" success="True" time="0.006" asserts="1" />
+                  <test-case name="VimCoreTest.CommandModeTest.StatusOnProcess" executed="True" success="True" time="0.088" asserts="1" />
+                  <test-case name="VimCoreTest.CommandModeTest.Yank1" executed="True" success="True" time="0.003" asserts="1" />
+                  <test-case name="VimCoreTest.CommandModeTest.Yank2" executed="True" success="True" time="0.003" asserts="1" />
+                  <test-case name="VimCoreTest.CommandModeTest.Yank3" executed="True" success="True" time="0.003" asserts="1" />
+                  <test-case name="VimCoreTest.CommandModeTest.Yank4" executed="True" success="True" time="0.003" asserts="1" />
                 </results>
               </test-suite>
             </results>

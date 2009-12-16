@@ -220,6 +220,7 @@ type CommandMode( _data : IVimBufferData ) =
                 | Key.Enter ->
                     _data.VimHost.UpdateStatus(System.String.Empty)
                     x.ParseInput (List.rev _input)
+                    _input <- List.empty
                     SwitchMode ModeKind.Normal
                 | Key.Escape ->
                     _data.VimHost.UpdateStatus(System.String.Empty)
