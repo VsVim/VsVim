@@ -12,7 +12,7 @@ using System.Windows.Input;
 
 namespace VimCoreTest
 {
-    [TestFixture,RequiresSTA]
+    [TestFixture, RequiresSTA]
     public class CommandModeTest
     {
         private IWpfTextView _view;
@@ -67,6 +67,16 @@ namespace VimCoreTest
             _mode.Process("1");
             _mode.Process(InputUtil.KeyToKeyInput(Key.Enter));
             Assert.AreEqual(String.Empty, _host.Status);
+        }
+
+        [Test, Description("Make sure we are clearing out the input list")]
+        public void StatusDoubleCommand1()
+        {
+            Create("foo", "bar");
+            _mode.Process("2");
+            _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot,0));
+            _mode.Process("2");
+            Assert.AreEqual(1, _view.Caret.Position.BufferPosition.GetContainingLine().LineNumber);
         }
 
         [Test]

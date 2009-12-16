@@ -1,3 +1,7 @@
+Version 5.5
+===
+X - Fixed the issue where command mode doesn't clear input
+
 Version 5.4
 ===
 - Edits need to understand cursor selection
