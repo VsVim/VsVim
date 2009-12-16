@@ -13,10 +13,6 @@ module internal Util =
     /// Handle the :edit command
     let EditFile (host:IVimHost) fileName = host.OpenFile fileName
 
-    /// Jump to the last line in the file
-    let JumpToLastLine (d:IVimBufferData) =
-        ViewUtil.MoveToLastLineStart d.TextView |> ignore
-
     /// Join a range of lines with a potential count
     let Join (view:ITextView) (range:SnapshotSpan option) kind (count:int option) = 
         let range = 

@@ -102,7 +102,7 @@ namespace VimCoreTest
             buffer.ProcessKey(Key.Enter);
             var tss = view.TextSnapshot;
             var last = tss.GetLineFromLineNumber(tss.LineCount - 1);
-            Assert.AreEqual(last.Start, view.Caret.Position.BufferPosition);
+            Assert.AreEqual(last.EndIncludingLineBreak, view.Caret.Position.BufferPosition);
         }
     }
 }

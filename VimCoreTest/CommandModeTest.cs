@@ -9,6 +9,8 @@ using Microsoft.VisualStudio.Text.Editor;
 using VimCoreTest.Utils;
 using Microsoft.VisualStudio.Text;
 using System.Windows.Input;
+using Microsoft.VisualStudio.Text.Operations;
+using Moq;
 
 namespace VimCoreTest
 {
@@ -21,6 +23,7 @@ namespace VimCoreTest
         private IMode _mode;
         private FakeVimHost _host;
         private IRegisterMap _map;
+        private Mock<IEditorOperations> _editOpts;
 
         public void Create(params string[] lines)
         {
@@ -28,11 +31,14 @@ namespace VimCoreTest
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 0));
             _map = new RegisterMap();
             _host = new FakeVimHost();
+            _editOpts = new Mock<IEditorOperations>(MockBehavior.Strict);
             _bufferData = MockObjectFactory.CreateVimBufferData(
                 _view,
                 "test",
                 _host,
-                MockObjectFactory.CreateVimData(_map).Object);
+                MockObjectFactory.CreateVimData(_map).Object,
+                MockObjectFactory.CreateBlockCaret().Object,
+                _editOpts.Object);
             _modeRaw = new Vim.Modes.Command.CommandMode(_bufferData);
             _mode = _modeRaw;
             _mode.OnEnter();
@@ -66,6 +72,7 @@ namespace VimCoreTest
         {
             Create("foo", "bar");
             _host.Status = "foo";
+            _editOpts.Setup(x => x.GotoLine(It.IsAny<int>()));
             _mode.Process("1");
             _mode.Process(InputUtil.KeyToKeyInput(Key.Enter));
             Assert.AreEqual(String.Empty, _host.Status);
@@ -75,21 +82,20 @@ namespace VimCoreTest
         public void Jump1()
         {
             Create("foo", "bar", "baz");
+            var tss = _view.TextSnapshot;
+            var last = tss.LineCount-1;
+            _editOpts.Setup(x => x.MoveToEndOfDocument(false)).Verifiable();
             ProcessWithEnter("$");
-            var caretPoint = _view.Caret.Position.BufferPosition;
-            var tss = caretPoint.Snapshot;
-            var last = tss.GetLineFromLineNumber(tss.LineCount - 1);
-            Assert.AreEqual(last.Start, caretPoint);
+            _editOpts.Verify();
         }
 
         [Test]
         public void Jump2()
         {
             Create("foo", "bar");
+            _editOpts.Setup(x => x.GotoLine(1)).Verifiable();
             ProcessWithEnter("2");
-            var caret = _view.Caret.Position.BufferPosition;
-            Assert.AreEqual(1, caret.GetContainingLine().LineNumber);
-            Assert.AreEqual(caret, caret.GetContainingLine().Start);
+            _editOpts.Verify();
         }
 
         [Test]
