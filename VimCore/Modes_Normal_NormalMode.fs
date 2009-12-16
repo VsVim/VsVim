@@ -285,6 +285,15 @@ type internal NormalMode( _bufferData : IVimBufferData, _operations : IOperation
             NormalModeResult.Complete
         NeedMore2(inner)
 
+    member x.JumpToMark (d:NormalModeData) =
+        let waitForKey (d:NormalModeData) (ki:KeyInput) =
+            let bufferData = d.VimBufferData
+            let res = _operations.JumpToMark ki.Char bufferData.MarkMap 
+            match res with 
+            | Modes.Failed(msg) -> bufferData.VimHost.UpdateStatus(msg)
+            | _ -> ()
+            NormalModeResult.Complete
+        NormalModeResult.NeedMore2 waitForKey
 
     /// Complete the specified motion function            
     member this.MotionFunc view count func =
@@ -387,17 +396,17 @@ type internal NormalMode( _bufferData : IVimBufferData, _operations : IOperation
             {   KeyInput=KeyInput(']', Key.OemCloseBrackets, ModifierKeys.Control);
                 RunFunc=(fun d ->
                     match Vim.Modes.ModeUtil.GoToDefinition this.TextView this.VimHost with
-                    | Vim.Modes.ModeUtil.Succeeded -> ()
-                    | Vim.Modes.ModeUtil.Failed(msg) ->
+                    | Vim.Modes.Succeeded -> ()
+                    | Vim.Modes.Failed(msg) ->
                         this.VimHost.UpdateStatus(msg)
                         ()
                     NormalModeResult.Complete) };
             {   KeyInput=InputUtil.CharToKeyInput('m');
                 RunFunc=_operations.Mark };
             {   KeyInput=InputUtil.CharToKeyInput('\'');
-                RunFunc=_operations.JumpToMark };
+                RunFunc=this.JumpToMark };
             {   KeyInput=InputUtil.CharToKeyInput('`');
-                RunFunc=_operations.JumpToMark };
+                RunFunc=this.JumpToMark };
             {   KeyInput=InputUtil.CharToKeyInput('g');
                 RunFunc=this.CharGCommand };
             {   KeyInput=InputUtil.CharToKeyInput('r');

@@ -5,15 +5,15 @@ open Vim
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
 
-type internal JoinKind = 
+type JoinKind = 
     | RemoveEmptySpaces
     | KeepEmptySpaces
 
-module ModeUtil =
+type Result = 
+    | Succeeded
+    | Failed of string
 
-    type Result = 
-        | Succeeded
-        | Failed of string
+module ModeUtil =
 
     /// Implements the Join command.  Returns false in the case the join command cannot
     /// be complete (such as joining at the end of the buffer)

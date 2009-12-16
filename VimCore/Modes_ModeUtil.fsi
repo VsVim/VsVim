@@ -5,15 +5,15 @@ open Vim
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
 
-type internal JoinKind = 
+type JoinKind = 
     | RemoveEmptySpaces
     | KeepEmptySpaces
 
-module internal ModeUtil =
-    type Result = 
-        | Succeeded
-        | Failed of string
+type Result = 
+    | Succeeded
+    | Failed of string
 
+module ModeUtil =
     val Join : ITextView -> SnapshotPoint -> JoinKind -> int -> bool
     val GoToDefinition : ITextView -> IVimHost -> Result
     val SetMark : MarkMap -> SnapshotPoint -> char -> Result

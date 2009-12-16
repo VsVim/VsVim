@@ -9,7 +9,7 @@ open Microsoft.VisualStudio.Text.Operations
 type IOperations =
     abstract TextView : ITextView
     abstract Mark : NormalModeData -> NormalModeResult
-    abstract JumpToMark : NormalModeData -> NormalModeResult
+    abstract JumpToMark : char -> MarkMap -> Modes.Result
     abstract InsertLineAbove : unit -> unit
     abstract ReplaceChar : KeyInput -> int -> bool
     abstract YankLines : int -> Register -> unit

@@ -24,21 +24,13 @@ type internal DefaultOperations
                 let cursor = ViewUtil.GetCaretPoint bufferData.TextView
                 let res = Modes.ModeUtil.SetMark bufferData.MarkMap cursor ki.Char
                 match res with
-                | ModeUtil.Failed(_) -> bufferData.VimHost.Beep()
+                | Failed(_) -> bufferData.VimHost.Beep()
                 | _ -> ()
                 NormalModeResult.Complete
             NormalModeResult.NeedMore2 waitForKey
     
         /// Process the ' or ` jump to mark keys
-        member x.JumpToMark (d:NormalModeData) =
-            let waitForKey (d:NormalModeData) (ki:KeyInput) =
-                let bufferData = d.VimBufferData
-                let res = Modes.ModeUtil.JumpToMark bufferData.MarkMap bufferData.TextView ki.Char
-                match res with 
-                | ModeUtil.Failed(msg) -> bufferData.VimHost.UpdateStatus(msg)
-                | _ -> ()
-                NormalModeResult.Complete
-            NormalModeResult.NeedMore2 waitForKey
+        member x.JumpToMark ident (map:MarkMap) = ModeUtil.JumpToMark map _textView ident
     
         /// Paste the given text after the cursor
         member x.PasteAfter text count opKind moveCursor = 

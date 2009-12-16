@@ -199,7 +199,7 @@ type CommandMode( _data : IVimBufferData ) =
             x.TryParseNext inputs next
         let point = ViewUtil.GetCaretPoint _data.TextView
         match RangeUtil.ParseRange point _data.MarkMap originalInputs with
-        | Succeeded(range, inputs) -> 
+        | ParseRangeResult.Succeeded(range, inputs) -> 
             if inputs |> List.isEmpty then
                 match range with 
                 | SingleLine(line) -> _data.EditorOperations.GotoLine(line.LineNumber) |> ignore
@@ -207,7 +207,7 @@ type CommandMode( _data : IVimBufferData ) =
             else
                 withRange (Some(range)) inputs
         | NoRange -> withRange None originalInputs
-        | Failed(msg) -> 
+        | ParseRangeResult.Failed(msg) -> 
             _data.VimHost.UpdateStatus(msg)
             ()
 
