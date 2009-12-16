@@ -5,14 +5,6 @@ open Vim
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
 
-type JoinKind = 
-    | RemoveEmptySpaces
-    | KeepEmptySpaces
-
-type Result = 
-    | Succeeded
-    | Failed of string
-
 module ModeUtil =
     val Join : ITextView -> SnapshotPoint -> JoinKind -> int -> bool
     val GoToDefinition : ITextView -> IVimHost -> Result

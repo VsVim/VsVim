@@ -15,7 +15,10 @@ type internal DefaultOperations
     _operations : IEditorOperations ) =
 
     interface IOperations with 
+        
+        // From ICommonOperations
         member x.TextView = _textView 
+        member x.JumpToMark ident map = ModeUtil.JumpToMark map _textView ident
 
         /// Process the m[a-z] command.  Called when the m has been input so wait for the next key
         member x.Mark (d:NormalModeData) =
@@ -28,9 +31,6 @@ type internal DefaultOperations
                 | _ -> ()
                 NormalModeResult.Complete
             NormalModeResult.NeedMore2 waitForKey
-    
-        /// Process the ' or ` jump to mark keys
-        member x.JumpToMark ident (map:MarkMap) = ModeUtil.JumpToMark map _textView ident
     
         /// Paste the given text after the cursor
         member x.PasteAfter text count opKind moveCursor = 
@@ -101,6 +101,7 @@ type internal DefaultOperations
             let range = TssUtil.GetReverseCharacterSpan point count
             Modes.ModeUtil.DeleteSpan range MotionKind.Exclusive OperationKind.CharacterWise reg |> ignore
     
+      
     
     
     
