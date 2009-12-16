@@ -15,4 +15,4 @@ type IOperations =
     abstract ReplaceChar : NormalModeData -> NormalModeResult
     abstract YankLines : NormalModeData -> NormalModeResult
     abstract DeleteCharacterAtCursor : int -> Register -> unit 
-    abstract DeleteCharacterBeforeCursor : NormalModeData -> NormalModeResult
+    abstract DeleteCharacterBeforeCursor : int -> Register -> unit

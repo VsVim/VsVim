@@ -313,7 +313,9 @@ type internal NormalMode( _bufferData : IVimBufferData, _operations : IOperation
                     _operations.DeleteCharacterAtCursor d.Count d.Register
                     NormalModeResult.Complete); };
             {   KeyInput=InputUtil.CharToKeyInput('X');
-                RunFunc=_operations.DeleteCharacterBeforeCursor; };
+                RunFunc=(fun d -> 
+                    _operations.DeleteCharacterBeforeCursor d.Count d.Register
+                    NormalModeResult.Complete); };
             {   KeyInput=InputUtil.CharToKeyInput('d');
                 RunFunc=(fun d -> NeedMore2(this.WaitDelete)) };
             {   KeyInput=InputUtil.CharToKeyInput('y');

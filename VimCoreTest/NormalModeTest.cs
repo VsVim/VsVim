@@ -372,8 +372,9 @@ namespace VimCoreTest
         {
             CreateBuffer("foo");
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 1));
+            _operations.Setup(x => x.DeleteCharacterBeforeCursor(1, It.IsAny<Register>())).Verifiable();
             _mode.Process("X");
-            Assert.AreEqual("oo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
+            _operations.Verify();
         }
 
         [Test, Description("Don't delete past the current line")]
@@ -381,9 +382,9 @@ namespace VimCoreTest
         {
             CreateBuffer("foo", "bar");
             _view.Caret.MoveTo(_view.TextSnapshot.GetLineFromLineNumber(1).Start);
+            _operations.Setup(x => x.DeleteCharacterBeforeCursor(1, It.IsAny<Register>())).Verifiable();
             _mode.Process("X");
-            Assert.AreEqual("bar", _view.TextSnapshot.GetLineFromLineNumber(1).GetText());
-            Assert.AreEqual("foo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
+            _operations.Verify();
         }
 
         [Test]
@@ -391,16 +392,18 @@ namespace VimCoreTest
         {
             CreateBuffer("foo", "bar");
             _view.Caret.MoveTo(_view.TextSnapshot.GetLineFromLineNumber(0).Start.Add(2));
+            _operations.Setup(x => x.DeleteCharacterBeforeCursor(2, It.IsAny<Register>())).Verifiable();
             _mode.Process("2X");
-            Assert.AreEqual("o", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
+            _operations.Verify();
         }
 
         [Test]
         public void Edit_2X_2()
         {
             CreateBuffer("foo");
+            _operations.Setup(x => x.DeleteCharacterBeforeCursor(2, It.IsAny<Register>())).Verifiable();
             _mode.Process("2X");
-            Assert.AreEqual("foo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
+            _operations.Verify();
         }
 
         [Test]

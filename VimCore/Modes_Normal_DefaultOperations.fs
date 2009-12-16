@@ -116,12 +116,10 @@ type internal DefaultOperations
             Modes.ModeUtil.DeleteSpan span MotionKind.Exclusive OperationKind.CharacterWise reg |> ignore
     
         /// Implement the normal mode X command
-        member x.DeleteCharacterBeforeCursor (d:NormalModeData) = 
-            let data = d.VimBufferData
-            let point = ViewUtil.GetCaretPoint data.TextView
-            let range = TssUtil.GetReverseCharacterSpan point d.Count
-            Modes.ModeUtil.DeleteSpan range MotionKind.Exclusive OperationKind.CharacterWise d.Register |> ignore
-            NormalModeResult.Complete
+        member x.DeleteCharacterBeforeCursor count reg = 
+            let point = ViewUtil.GetCaretPoint _textView
+            let range = TssUtil.GetReverseCharacterSpan point count
+            Modes.ModeUtil.DeleteSpan range MotionKind.Exclusive OperationKind.CharacterWise reg |> ignore
     
     
     

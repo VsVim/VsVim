@@ -10,6 +10,7 @@ using Vim;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Operations;
+using Microsoft.VisualStudio.Text;
 
 namespace VimCoreTest
 {
@@ -73,5 +74,45 @@ namespace VimCoreTest
             Assert.AreEqual("fo", reg.StringValue);
             Assert.AreEqual(OperationKind.CharacterWise, reg.Value.OperationKind);
         }
+        [Test]
+        public void DeleteCharacterBeforeCursor1()
+        {
+            Create("foo");
+            _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 1));
+            var reg = new Register('c');
+            _operations.DeleteCharacterBeforeCursor(1, reg);
+            Assert.AreEqual("oo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
+            Assert.AreEqual("f", reg.StringValue);
+        }
+
+        [Test, Description("Don't delete past the current line")]
+        public void DeleteCharacterBeforeCursor2()
+        {
+            Create("foo", "bar");
+            _view.Caret.MoveTo(_view.TextSnapshot.GetLineFromLineNumber(1).Start);
+            _operations.DeleteCharacterBeforeCursor(1, new Register('c'));
+            Assert.AreEqual("bar", _view.TextSnapshot.GetLineFromLineNumber(1).GetText());
+            Assert.AreEqual("foo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
+        }
+
+        [Test]
+        public void DeleteCharacterBeforeCursor3()
+        {
+            Create("foo", "bar");
+            _view.Caret.MoveTo(_view.TextSnapshot.GetLineFromLineNumber(0).Start.Add(2));
+            var reg = new Register('c');
+            _operations.DeleteCharacterBeforeCursor(2, reg);
+            Assert.AreEqual("o", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
+            Assert.AreEqual("fo", reg.StringValue);
+        }
+
+        [Test]
+        public void DeleteCharacterBeforeCursor4()
+        {
+            Create("foo");
+            _operations.DeleteCharacterBeforeCursor(2, new Register('c'));
+            Assert.AreEqual("foo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
+        }
+
     }
 }
