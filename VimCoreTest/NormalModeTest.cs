@@ -14,6 +14,7 @@ using Moq;
 using MockFactory = VimCoreTest.Utils.MockObjectFactory;
 using Vim.Modes.Normal;
 using Vim.Modes;
+using Microsoft.VisualStudio.Text.Operations;
 
 namespace VimCoreTest
 {
@@ -28,6 +29,7 @@ namespace VimCoreTest
         private VimBufferData _bufferData;
         private MockBlockCaret _blockCaret;
         private Mock<IOperations> _operations;
+        private Mock<IEditorOperations> _editorOperations;
 
         static string[] s_lines = new string[]
             {
@@ -43,12 +45,14 @@ namespace VimCoreTest
             _host = new FakeVimHost();
             _map = new RegisterMap();
             _blockCaret = new MockBlockCaret();
+            _editorOperations = new Mock<IEditorOperations>();
             _bufferData = MockFactory.CreateVimBufferData(
                 _view,
                 "test",
                 _host,
                 MockFactory.CreateVimData(_map).Object,
-                _blockCaret);
+                _blockCaret,
+                _editorOperations.Object);
             _operations = new Mock<IOperations>(MockBehavior.Strict);
             _modeRaw = new Vim.Modes.Normal.NormalMode(Tuple.Create((IVimBufferData)_bufferData, _operations.Object));
             _mode = _modeRaw;
@@ -229,6 +233,73 @@ namespace VimCoreTest
             _view.Caret.MoveTo(_view.TextSnapshot.GetLineFromLineNumber(0).End);
             _mode.Process(InputUtil.KeyAndModifierToKeyInput(Key.D, ModifierKeys.Control));
             Assert.AreEqual(1, _view.Caret.Position.BufferPosition.GetContainingLine().LineNumber);
+        }
+
+        [Test]
+        public void Scroll_zEnter()
+        {
+            CreateBuffer("foo", "bar");
+            _editorOperations.Setup(x => x.ScrollLineTop()).Verifiable();
+            _editorOperations.Setup(x => x.MoveToStartOfLineAfterWhiteSpace(false)).Verifiable();
+            _mode.Process("z");
+            _mode.Process(Key.Enter);
+            _editorOperations.Verify();
+        }
+
+        [Test]
+        public void Scroll_zt()
+        {
+            CreateBuffer("foo", "bar");
+            _editorOperations.Setup(x => x.ScrollLineTop()).Verifiable();
+            _mode.Process("zt");
+            _editorOperations.Verify();
+        }
+
+        [Test]
+        public void Scroll_zPeriod()
+        {
+            CreateBuffer("foo", "bar");
+            _editorOperations.Setup(x => x.ScrollLineCenter()).Verifiable();
+            _editorOperations.Setup(x => x.MoveToStartOfLineAfterWhiteSpace(false)).Verifiable();
+            _mode.Process("z.");
+            _editorOperations.Verify();
+        }
+
+        [Test]
+        public void Scroll_zz()
+        {
+            CreateBuffer("foo", "bar");
+            _editorOperations.Setup(x => x.ScrollLineCenter()).Verifiable();
+            _mode.Process("z.");
+            _editorOperations.Verify();
+        }
+
+        [Test]
+        public void Scroll_zDash()
+        {
+            CreateBuffer(String.Empty);
+            _editorOperations.Setup(x => x.ScrollLineBottom()).Verifiable();
+            _editorOperations.Setup(x => x.MoveToStartOfLineAfterWhiteSpace(false)).Verifiable();
+            _mode.Process("z-");
+            _editorOperations.Verify();
+        }
+
+        [Test]
+        public void Scroll_zb()
+        {
+            CreateBuffer(String.Empty);
+            _editorOperations.Setup(x => x.ScrollLineBottom()).Verifiable();
+            _editorOperations.Setup(x => x.MoveToStartOfLineAfterWhiteSpace(false)).Verifiable();
+            _mode.Process("z-");
+            _editorOperations.Verify();
+        }
+
+        [Test]
+        public void Scroll_zInvalid()
+        {
+            CreateBuffer(String.Empty);
+            _mode.Process("z;");
+            Assert.IsTrue(_host.BeepCount > 0);
         }
 
         #endregion

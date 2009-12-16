@@ -59,9 +59,8 @@ type internal DefaultOperations
             if (point.Position + count) > point.GetContainingLine().End.Position then
                 false
             else
-                let isNewLine = (ki.Key = Key.LineFeed) || (ki.Key = Key.Return)
                 let replaceText = 
-                    if isNewLine then System.Environment.NewLine
+                    if ki.IsNewLine then System.Environment.NewLine
                     else new System.String(ki.Char, count)
                 let span = new Span(point.Position, count)
                 let tss = _textView.TextBuffer.Replace(span, replaceText) 

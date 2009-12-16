@@ -27,6 +27,7 @@ X - View close should clear out the markers
 - IOperations shouldn't take NormalMode data so we can make it and a lot of other things internal again
 - IOperations.Paste* should have an enum instead of a bool parameter
 X - Move ModeUtil.Result out of ModeUtil
+X - Implement z scrolling in normal mode
 
 Version 0.7
 === 

@@ -26,6 +26,13 @@ type KeyInput(literal:char,key:Key,modKey:ModifierKeys) =
                 | _ -> false
         else false
 
+    /// Determine if this a new line key.  Meant to match the Vim definition of <CR>
+    member x.IsNewLine = 
+        match key with
+            | Key.Enter -> true
+            | Key.LineFeed -> true
+            | _ -> false
+
     member private x.CompareTo (other:KeyInput) =
         let comp = compare x.Char other.Char
         if comp <> 0 then 

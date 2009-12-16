@@ -285,6 +285,28 @@ type internal NormalMode( _bufferData : IVimBufferData, _operations : IOperation
             NormalModeResult.Complete
         NeedMore2(inner)
 
+    /// Implement the commands associated with the z prefix in normal mode
+    member x.CharZCommand (d:NormalModeData) =
+        let data = d.VimBufferData
+        let inner (d:NormalModeData) (ki:KeyInput) =  
+            if ki.IsNewLine then 
+                _bufferData.EditorOperations.ScrollLineTop()
+                _bufferData.EditorOperations.MoveToStartOfLineAfterWhiteSpace(false) 
+            else
+                match ki.Char with
+                | 't' ->  _bufferData.EditorOperations.ScrollLineTop() 
+                | '.' -> 
+                    _bufferData.EditorOperations.ScrollLineCenter() 
+                    _bufferData.EditorOperations.MoveToStartOfLineAfterWhiteSpace(false) 
+                | 'z' -> _bufferData.EditorOperations.ScrollLineCenter() 
+                | '-' -> 
+                    _bufferData.EditorOperations.ScrollLineBottom() 
+                    _bufferData.EditorOperations.MoveToStartOfLineAfterWhiteSpace(false) 
+                | 'b' -> _bufferData.EditorOperations.ScrollLineBottom() 
+                | _ -> _bufferData.VimHost.Beep()
+            NormalModeResult.Complete
+        NeedMore2(inner)
+
     member x.JumpToMark (d:NormalModeData) =
         let waitForKey (d:NormalModeData) (ki:KeyInput) =
             let bufferData = d.VimBufferData
@@ -421,6 +443,8 @@ type internal NormalMode( _bufferData : IVimBufferData, _operations : IOperation
                 RunFunc=this.JumpToMark };
             {   KeyInput=InputUtil.CharToKeyInput('g');
                 RunFunc=this.CharGCommand };
+            {   KeyInput=InputUtil.CharToKeyInput('z');
+                RunFunc=this.CharZCommand; };
             {   KeyInput=InputUtil.CharToKeyInput('r');
                 RunFunc=this.ReplaceChar; }
             {   KeyInput=InputUtil.CharToKeyInput('Y');
