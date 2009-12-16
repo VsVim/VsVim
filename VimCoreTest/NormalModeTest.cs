@@ -1363,6 +1363,7 @@ namespace VimCoreTest
         [Test]
         public void CharGCommand()
         {
+        verify  this calls the FontEmbeddingRight operations
             CreateBuffer(s_lines);
             _mode.Process("gB");
             Assert.IsTrue(_host.BeepCount > 0);

@@ -40,32 +40,20 @@ type internal DefaultOperations
                 NormalModeResult.Complete
             NormalModeResult.NeedMore2 waitForKey
     
-        /// Handles commands which begin with g in normal mode.  This should be called when the g char is
-        /// already processed
-        member x.CharGCommand (d:NormalModeData) =
-            let data = d.VimBufferData
-            let inner (d:NormalModeData) (ki:KeyInput) =  
-                match ki.Char with
-                | 'J' -> 
-                    let view = data.TextView
-                    let caret = ViewUtil.GetCaretPoint view
-                    ModeUtil.Join view caret JoinKind.KeepEmptySpaces d.Count |> ignore
-                | 'p' -> 
-                    let caret  = ViewUtil.GetCaretPoint data.TextView
-                    let reg = d.Register.Value
-                    let span = Modes.ModeUtil.PasteAfter caret reg.Value reg.OperationKind 
-                    data.TextView.Caret.MoveTo(span.End) |> ignore
-                | 'P' ->
-                    let caret = ViewUtil.GetCaretPoint data.TextView
-                    let text = d.Register.StringValue
-                    let span = Modes.ModeUtil.PasteBefore caret text
-                    data.TextView.Caret.MoveTo(span.End) |> ignore
-                | _ ->
-                    d.VimBufferData.VimHost.Beep()
-                    ()
-                NormalModeResult.Complete
-            NeedMore2(inner)
-                    
+        /// Paste the given text after the cursor
+        member x.PasteAfter text opKind moveCursor = 
+            let caret = ViewUtil.GetCaretPoint _textView
+            let span = ModeUtil.PasteAfter caret text opKind
+            if moveCursor then
+                ViewUtil.MoveCaretToPoint _textView span.End |> ignore
+
+        /// Paste the text before the cursor
+        member x.PasteBefore text moveCursor = 
+            let caret = ViewUtil.GetCaretPoint _textView
+            let span = ModeUtil.PasteBefore caret text 
+            if moveCursor then
+                ViewUtil.MoveCaretToPoint _textView span.End |> ignore
+
         /// Insert a line above the current cursor position
         member x.InsertLineAbove (d:NormalModeData) = 
             let point = ViewUtil.GetCaretPoint d.VimBufferData.TextView
