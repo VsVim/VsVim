@@ -25,6 +25,7 @@ X - View close should clear out the markers
 - Normal mode operations should be an interface
 - Switch normal mode tests to use the interface
 - IOperations shouldn't take NormalMode data so we can make it and a lot of other things internal again
+- IOperations.Paste* should have an enum instead of a bool parameter
 
 Version 0.7
 === 

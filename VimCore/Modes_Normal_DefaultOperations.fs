@@ -41,14 +41,22 @@ type internal DefaultOperations
             NormalModeResult.NeedMore2 waitForKey
     
         /// Paste the given text after the cursor
-        member x.PasteAfter text opKind moveCursor = 
+        member x.PasteAfter text count opKind moveCursor = 
+            let text = StringUtil.Repeat text count 
             let caret = ViewUtil.GetCaretPoint _textView
             let span = ModeUtil.PasteAfter caret text opKind
             if moveCursor then
                 ViewUtil.MoveCaretToPoint _textView span.End |> ignore
-
+            else if opKind = OperationKind.LineWise then
+                // For a LineWise paste we want to place the cursor at the start
+                // of the next line
+                let caretLineNumber = caret.GetContainingLine().LineNumber
+                let nextLine = _textView.TextSnapshot.GetLineFromLineNumber(caretLineNumber+1)
+                ViewUtil.MoveCaretToPoint _textView nextLine.Start |> ignore
+ 
         /// Paste the text before the cursor
-        member x.PasteBefore text moveCursor = 
+        member x.PasteBefore text count moveCursor = 
+            let text = StringUtil.Repeat text count 
             let caret = ViewUtil.GetCaretPoint _textView
             let span = ModeUtil.PasteBefore caret text 
             if moveCursor then

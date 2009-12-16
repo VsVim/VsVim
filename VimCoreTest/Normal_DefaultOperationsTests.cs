@@ -194,5 +194,112 @@ namespace VimCoreTest
             Assert.AreEqual(span.GetText(), reg.StringValue);
             Assert.AreEqual(OperationKind.LineWise, reg.Value.OperationKind);
         }
+
+        [Test]
+        public void PasteAfter1()
+        {
+            Create("foo bar");
+            _operations.PasteAfter("hey", 1, OperationKind.CharacterWise, false);
+            Assert.AreEqual("fheyoo bar", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
+        }
+
+        [Test, Description("Paste at end of buffer shouldn't crash")]
+        public void PasteAfter2()
+        {
+            Create("foo", "bar");
+            _view.Caret.MoveTo(TssUtil.GetEndPoint(_view.TextSnapshot));
+            _operations.PasteAfter("hello", 1, OperationKind.CharacterWise, false);
+            Assert.AreEqual("barhello", _view.TextSnapshot.GetLineFromLineNumber(1).GetText());
+        }
+
+        [Test]
+        public void PasteAfter3()
+        {
+            Create("foo", String.Empty);
+            _view.Caret.MoveTo(TssUtil.GetEndPoint(_view.TextSnapshot));
+            _operations.PasteAfter("bar", 1, OperationKind.CharacterWise, false);
+            Assert.AreEqual("bar", _view.TextSnapshot.GetLineFromLineNumber(1).GetText());
+        }
+
+        [Test, Description("Pasting a linewise motion should occur on the next line")]
+        public void PasteAfter4()
+        {
+            Create("foo", "bar");
+            _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 0));
+            _operations.PasteAfter("baz" + Environment.NewLine, 1, OperationKind.LineWise, false);
+            Assert.AreEqual("foo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
+            Assert.AreEqual("baz", _view.TextSnapshot.GetLineFromLineNumber(1).GetText());
+        }
+
+        [Test, Description("Pasting a linewise motion should move the caret to the start of the next line")]
+        public void PasteAfter7()
+        {
+            Create("foo", "bar");
+            _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 0));
+            _operations.PasteAfter("baz" + Environment.NewLine, 1, OperationKind.LineWise, false);
+            var pos = _view.Caret.Position.BufferPosition;
+            Assert.AreEqual(_view.TextSnapshot.GetLineFromLineNumber(1).Start, pos);
+        }
+
+        [Test]
+        public void PasteAfter8()
+        {
+            Create("foo");
+            _operations.PasteAfter("hey",2, OperationKind.CharacterWise, false);
+            Assert.AreEqual("fheyheyoo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
+        }
+
+        [Test]
+        public void PasteAfter9()
+        {
+            Create("foo");
+            _operations.PasteAfter("hey", 1, OperationKind.CharacterWise, true);
+            Assert.AreEqual("fheyoo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
+            Assert.AreEqual(4, _view.Caret.Position.BufferPosition.Position);
+        }
+
+        [Test]
+        public void PasteAfter10()
+        {
+            Create("foo", "bar");
+            _view.Caret.MoveTo(_view.TextSnapshot.GetLineFromLineNumber(0).End);
+            _operations.PasteAfter("hey", 1, OperationKind.CharacterWise, true);
+            Assert.AreEqual("foohey", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
+        }
+
+        [Test]
+        public void PasteBefore1()
+        {
+            Create("foo");
+            _operations.PasteBefore("hey", 1, false);
+            Assert.AreEqual("heyfoo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
+        }
+
+        [Test]
+        public void PasteBefore2()
+        {
+            Create("foo");
+            _operations.PasteBefore("hey", 2, false);
+            Assert.AreEqual("heyheyfoo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
+        }
+
+ 
+        [Test]
+        public void PasteBefore3()
+        {
+            Create("foo");
+            _operations.PasteBefore("hey", 1, true);
+            Assert.AreEqual("heyfoo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
+            Assert.AreEqual(3, _view.Caret.Position.BufferPosition.Position);
+        }
+
+        [Test]
+        public void PasteBefore4()
+        {
+            Create("foo", "bar");
+            _view.Caret.MoveTo(_view.TextSnapshot.GetLineFromLineNumber(0).End);
+            _operations.PasteBefore("hey", 1, true);
+            Assert.AreEqual("foohey", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
+        }
     }
 }

@@ -5,9 +5,9 @@
   <ExcludeCategories>false</ExcludeCategories>
   <Nodes>
     <Node UniqueName="[0-1000]C:\Users\jaredpar\VsVim\VsVim.nunit" Expanded="true" />
-    <Node UniqueName="[0-1406]C:\Users\jaredpar\VsVim\VimCoreTest\bin\Debug\VimCoreTest.dll" Expanded="true" />
-    <Node UniqueName="[0-1407]VimCoreTest" Expanded="true" />
-    <Node UniqueName="[0-1456]C:\Users\jaredpar\VsVim\VsVimTest\bin\Debug\VsVimTest.dll" Expanded="true" />
-    <Node UniqueName="[0-1457]VsVimTest" Expanded="true" />
+    <Node UniqueName="[0-1480]C:\Users\jaredpar\VsVim\VimCoreTest\bin\Debug\VimCoreTest.dll" Expanded="true" />
+    <Node UniqueName="[0-1481]VimCoreTest" Expanded="true" />
+    <Node UniqueName="[0-1530]C:\Users\jaredpar\VsVim\VsVimTest\bin\Debug\VsVimTest.dll" Expanded="true" />
+    <Node UniqueName="[0-1531]VsVimTest" Expanded="true" />
   </Nodes>
 </VisualState>

@@ -15,5 +15,5 @@ type IOperations =
     abstract YankLines : int -> Register -> unit
     abstract DeleteCharacterAtCursor : int -> Register -> unit 
     abstract DeleteCharacterBeforeCursor : int -> Register -> unit
-    abstract PasteAfter : string -> OperationKind -> bool -> unit
-    abstract PasteBefore : string -> bool -> unit
+    abstract PasteAfter : string -> int -> OperationKind -> bool -> unit
+    abstract PasteBefore : string -> int -> bool -> unit
