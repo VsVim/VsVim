@@ -194,5 +194,7 @@ namespace VimCoreTest
             Assert.AreEqual(span.GetText(), reg.StringValue);
             Assert.AreEqual(OperationKind.LineWise, reg.Value.OperationKind);
         }
+
+        verify paste after and before
     }
 }
