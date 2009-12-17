@@ -116,28 +116,6 @@ type internal NormalMode( _bufferData : IVimBufferData, _operations : IOperation
                 this.TryFindNextMatch search count |> ignore
                 NormalModeResult.Complete
                 
-    /// Paste after the current cursor position.  Don't forget that a linewise paste
-    /// operation needs to occur under the cursor
-    member this.PasteAfter text opKind =
-        let caretPoint = ViewUtil.GetCaretPoint _bufferData.TextView
-        let caretLineNumber = caretPoint.GetContainingLine().LineNumber
-        let replaceSpan = Modes.ModeUtil.PasteAfter caretPoint text opKind
-        let tss = replaceSpan.Snapshot
-
-        // For a LineWise paste we want to place the cursor at the start
-        // of the next line
-        if opKind = OperationKind.LineWise then
-            let nextLine = tss.GetLineFromLineNumber(caretLineNumber+1)
-            _bufferData.TextView.Caret.MoveTo(nextLine.Start) |> ignore
-            
-        NormalModeResult.Complete
-        
-    // Paste at the current cursor position
-    member this.PasteBefore text = 
-        let point = ViewUtil.GetCaretPoint _bufferData.TextView
-        Modes.ModeUtil.PasteBefore point text |> ignore
-        NormalModeResult.Complete
-        
     member this.WaitForMotion ki (d:NormalModeData) doneFunc = 
         let rec f (result:MotionResult) = 
             match result with 
@@ -299,14 +277,57 @@ type internal NormalMode( _bufferData : IVimBufferData, _operations : IOperation
                 let view = data.TextView
                 let caret = ViewUtil.GetCaretPoint view
                 Modes.ModeUtil.Join view caret Modes.JoinKind.KeepEmptySpaces d.Count |> ignore
-            | 'p' -> _operations.PasteAfter d.Register.StringValue d.Register.Value.OperationKind true
-            | 'P' -> _operations.PasteBefore d.Register.StringValue true
+            | 'p' -> _operations.PasteAfter d.Register.StringValue 1 d.Register.Value.OperationKind true
+            | 'P' -> _operations.PasteBefore d.Register.StringValue 1 true
             | _ ->
                 d.VimBufferData.VimHost.Beep()
                 ()
             NormalModeResult.Complete
         NeedMore2(inner)
 
+    /// Implement the commands associated with the z prefix in normal mode
+    member x.CharZCommand (d:NormalModeData) =
+        let data = d.VimBufferData
+        let inner (d:NormalModeData) (ki:KeyInput) =  
+            if ki.IsNewLine then 
+                _bufferData.EditorOperations.ScrollLineTop()
+                _bufferData.EditorOperations.MoveToStartOfLineAfterWhiteSpace(false) 
+            else
+                match ki.Char with
+                | 't' ->  _bufferData.EditorOperations.ScrollLineTop() 
+                | '.' -> 
+                    _bufferData.EditorOperations.ScrollLineCenter() 
+                    _bufferData.EditorOperations.MoveToStartOfLineAfterWhiteSpace(false) 
+                | 'z' -> _bufferData.EditorOperations.ScrollLineCenter() 
+                | '-' -> 
+                    _bufferData.EditorOperations.ScrollLineBottom() 
+                    _bufferData.EditorOperations.MoveToStartOfLineAfterWhiteSpace(false) 
+                | 'b' -> _bufferData.EditorOperations.ScrollLineBottom() 
+                | _ -> _bufferData.VimHost.Beep()
+            NormalModeResult.Complete
+        NeedMore2(inner)
+
+    member x.JumpToMark (d:NormalModeData) =
+        let waitForKey (d:NormalModeData) (ki:KeyInput) =
+            let bufferData = d.VimBufferData
+            let res = _operations.JumpToMark ki.Char bufferData.MarkMap 
+            match res with 
+            | Modes.Failed(msg) -> bufferData.VimHost.UpdateStatus(msg)
+            | _ -> ()
+            NormalModeResult.Complete
+        NormalModeResult.NeedMore2 waitForKey
+
+    /// Process the m[a-z] command.  Called when the m has been input so wait for the next key
+    member x.Mark (d:NormalModeData) =
+        let waitForKey (d2:NormalModeData) (ki:KeyInput) =
+            let bufferData = d2.VimBufferData
+            let cursor = ViewUtil.GetCaretPoint bufferData.TextView
+            let res = _operations.SetMark ki.Char bufferData.MarkMap
+            match res with
+            | Modes.Failed(_) -> bufferData.VimHost.Beep()
+            | _ -> ()
+            NormalModeResult.Complete
+        NormalModeResult.NeedMore2 waitForKey
 
     /// Complete the specified motion function            
     member this.MotionFunc view count func =
@@ -353,9 +374,13 @@ type internal NormalMode( _bufferData : IVimBufferData, _operations : IOperation
             {   KeyInput=InputUtil.CharToKeyInput('>');
                 RunFunc=(fun d -> NeedMore2(this.ShiftRight)); };
             {   KeyInput=InputUtil.CharToKeyInput('p');
-                RunFunc=(fun d -> this.PasteAfter (StringUtil.Repeat (d.Register.StringValue) (d.Count)) d.Register.Value.OperationKind) };
+                RunFunc=(fun d -> 
+                            _operations.PasteAfter d.Register.StringValue d.Count d.Register.Value.OperationKind false
+                            NormalModeResult.Complete); };
             {   KeyInput=InputUtil.CharToKeyInput('P');
-                RunFunc=(fun d -> this.PasteBefore (StringUtil.Repeat (d.Register.StringValue) (d.Count))) };
+                RunFunc=(fun d -> 
+                            _operations.PasteBefore d.Register.StringValue d.Count false
+                            NormalModeResult.Complete); };
             {   KeyInput=InputUtil.CharToKeyInput('$');
                 RunFunc=(fun d -> this.MoveEndOfLine d) };
             {   KeyInput=InputUtil.CharToKeyInput('^');
@@ -385,7 +410,9 @@ type internal NormalMode( _bufferData : IVimBufferData, _operations : IOperation
             {   KeyInput=InputUtil.CharToKeyInput('o');
                 RunFunc=(fun d -> this.AddLineBelow this.TextView) };
             {   KeyInput=InputUtil.CharToKeyInput('O');
-                RunFunc=_operations.InsertLineAbove };
+                RunFunc=(fun d -> 
+                            _operations.InsertLineAbove()
+                            NormalModeResult.Complete); };
             {   KeyInput=InputUtil.KeyToKeyInput(Key.Enter);
                 RunFunc=(fun d -> this.MoveForEnter this.TextView d.VimBufferData.VimHost) };
             {   KeyInput=KeyInput('u', Key.U, ModifierKeys.Control);
@@ -403,19 +430,21 @@ type internal NormalMode( _bufferData : IVimBufferData, _operations : IOperation
             {   KeyInput=KeyInput(']', Key.OemCloseBrackets, ModifierKeys.Control);
                 RunFunc=(fun d ->
                     match Vim.Modes.ModeUtil.GoToDefinition this.TextView this.VimHost with
-                    | Vim.Modes.ModeUtil.Succeeded -> ()
-                    | Vim.Modes.ModeUtil.Failed(msg) ->
+                    | Vim.Modes.Succeeded -> ()
+                    | Vim.Modes.Failed(msg) ->
                         this.VimHost.UpdateStatus(msg)
                         ()
                     NormalModeResult.Complete) };
             {   KeyInput=InputUtil.CharToKeyInput('m');
-                RunFunc=_operations.Mark };
+                RunFunc=this.Mark };
             {   KeyInput=InputUtil.CharToKeyInput('\'');
-                RunFunc=_operations.JumpToMark };
+                RunFunc=this.JumpToMark };
             {   KeyInput=InputUtil.CharToKeyInput('`');
-                RunFunc=_operations.JumpToMark };
+                RunFunc=this.JumpToMark };
             {   KeyInput=InputUtil.CharToKeyInput('g');
                 RunFunc=this.CharGCommand };
+            {   KeyInput=InputUtil.CharToKeyInput('z');
+                RunFunc=this.CharZCommand; };
             {   KeyInput=InputUtil.CharToKeyInput('r');
                 RunFunc=this.ReplaceChar; }
             {   KeyInput=InputUtil.CharToKeyInput('Y');

@@ -23,7 +23,7 @@ module internal Utils =
         with 
             | :? System.ArgumentException -> None
 
-type IncrementalSearch(_pattern:string,_kind:SearchKind, _options: SearchOptions) =
+type internal IncrementalSearch(_pattern:string,_kind:SearchKind, _options: SearchOptions) =
     let _regex = Utils.SafeBuildRegex _pattern _options
     new (pattern) = IncrementalSearch(pattern, SearchKind.ForwardWithWrap, SearchOptions.None)
     new (pattern,kind) = IncrementalSearch(pattern, kind, SearchOptions.None)

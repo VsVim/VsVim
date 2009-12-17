@@ -27,10 +27,12 @@ module internal StringUtil =
             | None -> failwith "Invalid index"
     
     let Repeat (value:string) count =
-        let buffer = new System.Text.StringBuilder()
-        for i = 1 to count do
-            buffer.Append(value) |> ignore
-        buffer.ToString()
+        if 1 = count then value
+        else
+            let buffer = new System.Text.StringBuilder()
+            for i = 1 to count do
+                buffer.Append(value) |> ignore
+            buffer.ToString()
 
     /// Create a String from an array of chars
     let OfCharArray (chars:char[]) = new System.String(chars)
