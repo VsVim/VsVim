@@ -101,7 +101,7 @@ namespace VimCoreTest
             host.Setup(x => x.GoToDefinition()).Returns(false);
             var res = ModeUtil.GoToDefinition(_view, host.Object);
             Assert.IsTrue(res.IsFailed);
-            Assert.IsTrue(((ModeUtil.Result.Failed)res).Item.Contains("foo"));
+            Assert.IsTrue(((Result.Failed)res).Item.Contains("foo"));
         }
 
         [Test, Description("Make sure we don't crash when nothing is under the cursor")]

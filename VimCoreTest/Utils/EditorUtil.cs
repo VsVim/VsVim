@@ -8,6 +8,7 @@ using System.ComponentModel.Composition.Primitives;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using System.ComponentModel.Composition.Hosting;
+using Microsoft.VisualStudio.Text.Operations;
 
 namespace VimCoreTest.Utils
 {
@@ -22,6 +23,9 @@ namespace VimCoreTest.Utils
 
             [Import]
             public ITextEditorFactoryService textEditorFactory;
+
+            [Import]
+            public IEditorOperationsFactoryService editorOperationsFactory;
 
             public Factory() { }
         }
@@ -78,6 +82,13 @@ namespace VimCoreTest.Utils
             var buffer = CreateBuffer(lines);
             var view = FactoryService.textEditorFactory.CreateTextView(buffer);
             return view;
+        }
+
+        public static Tuple<IWpfTextView, IEditorOperations> CreateViewAndOperations(params string[] lines)
+        {
+            var view = CreateView(lines);
+            var opts = FactoryService.editorOperationsFactory.GetEditorOperations(view);
+            return Tuple.Create(view, opts);
         }
 
         public static CompositionContainer CreateContainer()

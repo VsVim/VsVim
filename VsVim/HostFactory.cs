@@ -13,6 +13,7 @@ using Microsoft.VisualStudio.UI.Undo;
 using Microsoft.VisualStudio.OLE.Interop;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Text.Classification;
+using Microsoft.VisualStudio.Text.Operations;
 
 namespace VsVim
 {
@@ -21,28 +22,30 @@ namespace VsVim
     [TextViewRole(PredefinedTextViewRoles.Editable)]
     internal sealed class HostFactory : IWpfTextViewCreationListener
     {
-        public const string BlockAdornmentLayer = "BlockCaret";
+        public const string BlockAdornmentLayerName = "BlockCaret";
 
         [Export(typeof(AdornmentLayerDefinition))]
-        [Name(BlockAdornmentLayer)]
+        [Name(BlockAdornmentLayerName)]
         [Order(After = PredefinedAdornmentLayers.Selection)]
         [TextViewRole(PredefinedTextViewRoles.Document)]
-        public AdornmentLayerDefinition _blockAdornmentLayer = null;
+        public AdornmentLayerDefinition BlockAdornmentLayer = null;
 
         [Import]
-        public IVsEditorAdaptersFactoryService _service = null;
+        private IVsEditorAdaptersFactoryService _service = null;
         [Import]
-        public IUndoHistoryRegistry _undoHistoryRegistry = null;
+        private IUndoHistoryRegistry _undoHistoryRegistry = null;
         [Import]
-        public KeyBindingService _keyBindingService = null;
+        private KeyBindingService _keyBindingService = null;
         [Import]
-        public IEditorFormatMapService _editorFormatMapService = null;
+        private IEditorFormatMapService _editorFormatMapService = null;
+        [Import]
+        private IEditorOperationsFactoryService _editorOperationsFactoryService = null;
 
+        private VsVimHost _host;
         private IVim _vim;
 
         public HostFactory()
         {
-            _vim = Factory.CreateVim();
         }
 
         public void TextViewCreated(IWpfTextView textView)
@@ -72,11 +75,31 @@ namespace VsVim
 
             // Once we have the view, stop listening to the event
             view.GotAggregateFocus -= new EventHandler(OnGotAggregateFocus);
+            CreateVsVimBuffer(view, interopView, interopLines);
+        }
 
-            var buffer = new VsVimBuffer(_vim, view, interopView, interopLines, _undoHistoryRegistry, _editorFormatMapService.GetEditorFormatMap(view));
+        private void EnsureVim(Microsoft.VisualStudio.OLE.Interop.IServiceProvider sp)
+        {
+            if (_vim != null)
+            {
+                return;
+            }
+
+            _host = new VsVimHost(sp, _undoHistoryRegistry);
+            _vim = Factory.CreateVim(_host);
+        }
+
+        /// <summary>
+        /// Called to actually create the VsVimBuffer for the given IWpfTextView
+        /// </summary>
+        private void CreateVsVimBuffer(IWpfTextView view, IVsTextView interopView, IVsTextLines interopLines)
+        {
+            EnsureVim(((IObjectWithSite)interopView).GetServiceProvider());
+            var opts = _editorOperationsFactoryService.GetEditorOperations(view);
+            var buffer = new VsVimBuffer(_vim, view, opts, interopView, interopLines, _undoHistoryRegistry, _editorFormatMapService.GetEditorFormatMap(view));
             view.Properties.AddTypedProperty(buffer);
 
-            _keyBindingService.OneTimeCheckForConflictingKeyBindings(buffer.VsVimHost.DTE, buffer.VimBuffer);
+            _keyBindingService.OneTimeCheckForConflictingKeyBindings(_host.DTE, buffer.VimBuffer);
             view.Closed += (x, y) =>
             {
                 view.Properties.RemoveTypedProperty<VsVimBuffer>();

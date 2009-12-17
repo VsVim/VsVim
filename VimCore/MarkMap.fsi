@@ -7,8 +7,11 @@ open Microsoft.VisualStudio.Text
 type MarkMap =
     static member IsLocalMark : char -> bool
     new : unit -> MarkMap
+    member TrackedBuffers : ITextBuffer seq
     member GetLocalMark : ITextBuffer -> char -> VirtualSnapshotPoint option
+    member GetMark : ITextBuffer -> char -> VirtualSnapshotPoint option
     member SetMark : SnapshotPoint -> char -> unit
     member DeleteMark : ITextBuffer -> char -> bool
     member DeleteAllMarks : unit -> unit
+    member DeleteAllMarksForBuffer : ITextBuffer -> unit
 

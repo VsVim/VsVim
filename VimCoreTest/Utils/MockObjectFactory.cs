@@ -5,6 +5,7 @@ using System.Text;
 using Vim;
 using Moq;
 using Microsoft.VisualStudio.Text.Editor;
+using Microsoft.VisualStudio.Text.Operations;
 
 namespace VimCoreTest.Utils
 {
@@ -49,18 +50,26 @@ namespace VimCoreTest.Utils
             return mock;
         }
 
+        internal static Mock<IEditorOperations> CreateEditorOperations()
+        {
+            var mock = new Mock<IEditorOperations>(MockBehavior.Strict);
+            return mock;
+        }
+
         internal static VimBufferData CreateVimBufferData(
             IWpfTextView view, 
             string name = null,
             IVimHost host = null, 
             IVimData data = null,
-            IBlockCaret caret = null)
+            IBlockCaret caret = null,
+            IEditorOperations editorOperations = null)
         {
             name = name ?? "test";
             host = host ?? new FakeVimHost();
             data = data ?? CreateVimData().Object;
             caret = caret ?? CreateBlockCaret().Object;
-            return new VimBufferData("test", view, host, data, caret);
+            editorOperations = editorOperations ?? CreateEditorOperations().Object;
+            return new VimBufferData("test", view, host, data, caret, editorOperations);
         }
     }
 }

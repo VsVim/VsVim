@@ -1,13 +1,10 @@
-Version 5.5
+Version 0.6
 ===
 X - 'Y in normal mode
-- Edits need to understand cursor selection
-- Finish range parsing
+X - Add mark support to range parsing
 - Delete key in normal mode
 - Check on the behavior of tab in normal mode
-- Marks Undo Support
 - Mark navigation for global marks
-- Horizontal offset issue Noah raised
 X - Shift lines in commnad mode
 X - Help "copy-move" start from there
 - Need a way to disable Vim via keyboard
@@ -15,17 +12,31 @@ X - Help "copy-move" start from there
 X - gp in Normal mode
 X - gP in normal mode
 X - Bug: 5x does not delete 5 characters
-- Bug: dw at end of line, should it delete the line break as well?
+X - Bug: dw at end of line, should it delete the line break as well?
 X - Rename Modes_Common_operations to ModeUtil or something like that
-- Test NormalMode_Operations indepnedently
+X - Test NormalMode_Operations indepnedently
 X - Command mode :delete
 - Help delete and insert
+X - View close should clear out the markers
+- O should enter insert mode
+- Horizontal offset issue Noah raised
+- :et in command mode
+X - Normal mode operations should be an interface
+X - Switch normal mode tests to use the interface
+X - IOperations shouldn't take NormalMode data so we can make it and a lot of other things internal again
+- IOperations.Paste* should have an enum instead of a bool parameter
+X - Move ModeUtil.Result out of ModeUtil
+X - Implement z scrolling in normal mode
+- Move more operations to the interfaces in normal mode
 
-Version 6.0
+Version 0.7
 === 
+- Marks Undo Support
 - Visual mode
   - Copy-move
   - delete-insert
+- Edits need to understand cursor selection
+- Finish range parsing
 
 Version 5.4
 ===

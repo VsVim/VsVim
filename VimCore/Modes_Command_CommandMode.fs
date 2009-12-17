@@ -183,7 +183,7 @@ type CommandMode( _data : IVimBufferData ) =
         match current.Char with
         | 'j' -> x.ParseJoin rest range
         | 'e' -> x.ParseEdit rest 
-        | '$' -> Util.JumpToLastLine _data
+        | '$' -> _data.EditorOperations.MoveToEndOfDocument(false);
         | 'y' -> x.ParseYank rest range
         | 'p' -> 
             let next head tail = x.ParsePChar head tail range
@@ -199,15 +199,15 @@ type CommandMode( _data : IVimBufferData ) =
             x.TryParseNext inputs next
         let point = ViewUtil.GetCaretPoint _data.TextView
         match RangeUtil.ParseRange point _data.MarkMap originalInputs with
-        | Succeeded(range, inputs) -> 
+        | ParseRangeResult.Succeeded(range, inputs) -> 
             if inputs |> List.isEmpty then
                 match range with 
-                | SingleLine(line) ->  _data.TextView.Caret.MoveTo(line.Start) |> ignore
+                | SingleLine(line) -> _data.EditorOperations.GotoLine(line.LineNumber) |> ignore
                 | _ -> _data.VimHost.UpdateStatus("Invalid Command String")
             else
                 withRange (Some(range)) inputs
         | NoRange -> withRange None originalInputs
-        | Failed(msg) -> 
+        | ParseRangeResult.Failed(msg) -> 
             _data.VimHost.UpdateStatus(msg)
             ()
 
@@ -220,6 +220,7 @@ type CommandMode( _data : IVimBufferData ) =
                 | Key.Enter ->
                     _data.VimHost.UpdateStatus(System.String.Empty)
                     x.ParseInput (List.rev _input)
+                    _input <- List.empty
                     SwitchMode ModeKind.Normal
                 | Key.Escape ->
                     _data.VimHost.UpdateStatus(System.String.Empty)

@@ -5,6 +5,7 @@ using System.Text;
 using NUnit.Framework;
 using Microsoft.VisualStudio.Text;
 using Vim;
+using VimCoreTest.Utils;
 
 namespace VimCoreTest
 {
@@ -41,6 +42,53 @@ namespace VimCoreTest
             var data = opt.Value;
             Assert.AreEqual(0, data.Position.Position);
             Assert.IsFalse(data.IsInVirtualSpace);
+        }
+
+        [Test]
+        public void TrackedBuffers1()
+        {
+            CreateBuffer("foo", "bar");
+            _map.SetMark(new SnapshotPoint(_buffer.CurrentSnapshot, 0), 'a');
+            Assert.IsTrue(_map.TrackedBuffers.Contains(_buffer));
+        }
+
+        [Test, Description("Tracking of global marks")]
+        public void TrackedBuffers2()
+        {
+            CreateBuffer("foo", "bar");
+            _map.SetMark(new SnapshotPoint(_buffer.CurrentSnapshot, 0), 'A');
+            Assert.IsTrue(_map.TrackedBuffers.Contains(_buffer));
+        }
+
+        [Test]
+        public void TrackedBuffers3()
+        {
+            CreateBuffer("foo", "bar");
+            _map.SetMark(new SnapshotPoint(_buffer.CurrentSnapshot, 0), 'a');
+            _map.DeleteMark(_buffer, 'a');
+            Assert.IsFalse(_map.TrackedBuffers.Contains(_buffer));
+        }
+
+        [Test]
+        public void TrackedBuffers4()
+        {
+            CreateBuffer("foo", "bar");
+            _map.SetMark(new SnapshotPoint(_buffer.CurrentSnapshot, 0), 'A');
+            _map.DeleteMark(_buffer, 'A');
+            Assert.IsFalse(_map.TrackedBuffers.Contains(_buffer));
+        }
+
+        [Test]
+        public void TrackedBuffers5()
+        {
+            CreateBuffer("foo", "bar");
+            _map.SetMark(new SnapshotPoint(_buffer.CurrentSnapshot, 0), 'a');
+            _map.SetMark(new SnapshotPoint(_buffer.CurrentSnapshot, 0), 'b');
+            Assert.IsTrue(_map.TrackedBuffers.Contains(_buffer));
+            Assert.IsTrue(_map.DeleteMark(_buffer, 'a'));
+            Assert.IsTrue(_map.TrackedBuffers.Contains(_buffer));
+            Assert.IsTrue(_map.DeleteMark(_buffer, 'b'));
+            Assert.IsFalse(_map.TrackedBuffers.Contains(_buffer));
         }
 
         [Test]
@@ -174,7 +222,7 @@ namespace VimCoreTest
         [Test, Description("Should work on an empty map")]
         public void DeleteAllMarks()
         {
-            _map.DeleteAllMarks();   
+            _map.DeleteAllMarks();
         }
 
         [Test]
@@ -184,6 +232,27 @@ namespace VimCoreTest
             _map.SetMark(new SnapshotPoint(_buffer.CurrentSnapshot, 0), 'a');
             _map.DeleteAllMarks();
             Assert.IsTrue(_map.GetLocalMark(_buffer, 'a').IsNone());
+        }
+
+        [Test]
+        public void DeleteAllMarksForBuffer1()
+        {
+            var buf1 = EditorUtil.CreateBuffer("foo");
+            _map.SetMark(new SnapshotPoint(buf1.CurrentSnapshot, 0), 'a');
+            _map.DeleteAllMarksForBuffer(buf1);
+            Assert.IsTrue(_map.GetLocalMark(buf1, 'a').IsNone());
+        }
+
+        [Test]
+        public void DeleteAllMarksForBuffer2()
+        {
+            var buf1 = EditorUtil.CreateBuffer("foo");
+            var buf2 = EditorUtil.CreateBuffer("bar");
+            _map.SetMark(new SnapshotPoint(buf1.CurrentSnapshot, 0), 'a');
+            _map.SetMark(new SnapshotPoint(buf2.CurrentSnapshot, 0), 'b');
+            _map.DeleteAllMarksForBuffer(buf1);
+            Assert.IsTrue(_map.GetLocalMark(buf1, 'a').IsNone());
+            Assert.IsFalse(_map.GetLocalMark(buf2, 'b').IsNone());
         }
 
         [Test]
@@ -202,7 +271,27 @@ namespace VimCoreTest
             Assert.IsFalse(MarkMap.IsLocalMark('1'));
         }
 
+        [Test]
+        public void GetMark1()
+        {
+            var buf1 = EditorUtil.CreateBuffer("foo");
+            _map.SetMark(new SnapshotPoint(buf1.CurrentSnapshot, 0), 'A');
+            var ret = _map.GetMark(buf1, 'A');
+            Assert.IsTrue(ret.IsSome());
+            Assert.AreEqual(0, ret.Value.Position);
+        }
+
+        [Test]
+        public void GetMark2()
+        {
+            var buf1 = EditorUtil.CreateBuffer("foo");
+            var buf2 = EditorUtil.CreateBuffer("bar");
+            _map.SetMark(new SnapshotPoint(buf1.CurrentSnapshot, 0), 'A');
+            var ret = _map.GetMark(buf2, 'A');
+            Assert.IsTrue(ret.IsNone());
+        }
+
         // TODO: Test Undo logic
-       
+
     }
 }

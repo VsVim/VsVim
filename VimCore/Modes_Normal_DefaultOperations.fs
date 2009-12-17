@@ -1,0 +1,97 @@
+﻿#light
+
+namespace Vim.Modes.Normal
+open Vim
+open Vim.Modes
+open Microsoft.VisualStudio.Text
+open Microsoft.VisualStudio.Text.Editor
+open Microsoft.VisualStudio.Text.Operations
+open System.Windows.Input
+open System.Windows.Media
+
+type internal DefaultOperations
+    (
+    _textView : ITextView,
+    _operations : IEditorOperations ) =
+
+    interface IOperations with 
+        
+        // From ICommonOperations
+        member x.TextView = _textView 
+        member x.JumpToMark ident map = ModeUtil.JumpToMark map _textView ident
+        member x.SetMark ident map = 
+            let point = ViewUtil.GetCaretPoint _textView
+            ModeUtil.SetMark map point ident 
+
+        /// Paste the given text after the cursor
+        member x.PasteAfter text count opKind moveCursor = 
+            let text = StringUtil.Repeat text count 
+            let caret = ViewUtil.GetCaretPoint _textView
+            let span = ModeUtil.PasteAfter caret text opKind
+            if moveCursor then
+                ViewUtil.MoveCaretToPoint _textView span.End |> ignore
+            else if opKind = OperationKind.LineWise then
+                // For a LineWise paste we want to place the cursor at the start
+                // of the next line
+                let caretLineNumber = caret.GetContainingLine().LineNumber
+                let nextLine = _textView.TextSnapshot.GetLineFromLineNumber(caretLineNumber+1)
+                ViewUtil.MoveCaretToPoint _textView nextLine.Start |> ignore
+ 
+        /// Paste the text before the cursor
+        member x.PasteBefore text count moveCursor = 
+            let text = StringUtil.Repeat text count 
+            let caret = ViewUtil.GetCaretPoint _textView
+            let span = ModeUtil.PasteBefore caret text 
+            if moveCursor then
+                ViewUtil.MoveCaretToPoint _textView span.End |> ignore
+
+        /// Insert a line above the current cursor position
+        member x.InsertLineAbove ()=
+            let point = ViewUtil.GetCaretPoint _textView
+            let line = BufferUtil.AddLineAbove (point.GetContainingLine()) 
+            ViewUtil.MoveCaretToPoint _textView line.Start |> ignore
+            
+        /// Implement the r command in normal mode.  
+        member x.ReplaceChar (ki:KeyInput) count = 
+            let point = ViewUtil.GetCaretPoint _textView
+
+            // Make sure the replace string is valid
+            if (point.Position + count) > point.GetContainingLine().End.Position then
+                false
+            else
+                let replaceText = 
+                    if ki.IsNewLine then System.Environment.NewLine
+                    else new System.String(ki.Char, count)
+                let span = new Span(point.Position, count)
+                let tss = _textView.TextBuffer.Replace(span, replaceText) 
+
+                // Reset the caret to the point before the edit
+                let point = new SnapshotPoint(tss,point.Position)
+                _textView.Caret.MoveTo(point) |> ignore
+                true
+    
+        /// Yank lines from the buffer.  Implements the Y command
+        member x.YankLines count reg =
+            let point = ViewUtil.GetCaretPoint _textView
+            let point = point.GetContainingLine().Start
+            let span = TssUtil.GetLineRangeSpanIncludingLineBreak point count
+            Modes.ModeUtil.Yank span MotionKind.Inclusive OperationKind.LineWise reg |> ignore
+    
+        /// Implement the normal mode x command
+        member x.DeleteCharacterAtCursor count reg =
+            let point = ViewUtil.GetCaretPoint _textView
+            let line = point.GetContainingLine()
+            let count = min (count) (line.End.Position-point.Position)
+            let span = new SnapshotSpan(point, count)
+            Modes.ModeUtil.DeleteSpan span MotionKind.Exclusive OperationKind.CharacterWise reg |> ignore
+    
+        /// Implement the normal mode X command
+        member x.DeleteCharacterBeforeCursor count reg = 
+            let point = ViewUtil.GetCaretPoint _textView
+            let range = TssUtil.GetReverseCharacterSpan point count
+            Modes.ModeUtil.DeleteSpan range MotionKind.Exclusive OperationKind.CharacterWise reg |> ignore
+    
+      
+    
+    
+    

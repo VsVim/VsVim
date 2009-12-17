@@ -46,9 +46,9 @@ namespace VimCoreTest.Utils
 
         #region ModeUtil.Result
 
-        internal static ModeUtil.Result.Failed AsFailed(this ModeUtil.Result res)
+        internal static Result.Failed AsFailed(this Result res)
         {
-            return (ModeUtil.Result.Failed)res;
+            return (Result.Failed)res;
         }
 
         #endregion
