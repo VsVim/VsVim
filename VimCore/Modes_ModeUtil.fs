@@ -134,21 +134,21 @@ module ModeUtil =
         tss.TextBuffer.Delete(span.Span)
 
     /// Move the cursor count spaces left
-    let MoveCharLeft view (editorOpts : IEditorOperations) count = 
+    let MoveCaretLeft view (editorOpts : IEditorOperations) count = 
         editorOpts.ResetSelection()
         let caret = ViewUtil.GetCaretPoint view
         let span = MotionUtil.CharLeft caret count
         ViewUtil.MoveCaretToPoint view span.Start |> ignore
 
     /// Move the cursor count spaces to the right
-    let MoveCharRight view (editorOpts : IEditorOperations) count =
+    let MoveCaretRight view (editorOpts : IEditorOperations) count =
         editorOpts.ResetSelection()
         let caret = ViewUtil.GetCaretPoint view
         let span = MotionUtil.CharRight caret count
         ViewUtil.MoveCaretToPoint view span.End  |> ignore
 
     /// Move the cursor count spaces up 
-    let MoveCharUp view (editorOpts:IEditorOperations) count =
+    let MoveCaretUp view (editorOpts:IEditorOperations) count =
         editorOpts.ResetSelection()
         let caret = ViewUtil.GetCaretPoint view
         let current = caret.GetContainingLine()
@@ -159,7 +159,7 @@ module ModeUtil =
             editorOpts.MoveLineUp(false)
         
     /// Move the cursor count spaces down
-    let MoveCharDown view (editorOpts : IEditorOperations) count =
+    let MoveCaretDown view (editorOpts : IEditorOperations) count =
         editorOpts.ResetSelection()
         let caret = ViewUtil.GetCaretPoint view
         let line = caret.GetContainingLine()

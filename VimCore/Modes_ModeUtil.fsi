@@ -15,7 +15,7 @@ module ModeUtil =
     val PasteAfter : SnapshotPoint -> string -> OperationKind -> SnapshotSpan
     val PasteBefore : SnapshotPoint -> string -> SnapshotSpan
     val DeleteSpan: SnapshotSpan -> MotionKind -> OperationKind -> Register -> ITextSnapshot
-    val MoveCharLeft : ITextView -> IEditorOperations -> count : int -> unit
-    val MoveCharRight : ITextView -> IEditorOperations -> count : int -> unit
-    val MoveCharUp : ITextView -> IEditorOperations -> count : int -> unit
-    val MoveCharDown : ITextView -> IEditorOperations -> count : int -> unit
+    val MoveCaretLeft : ITextView -> IEditorOperations -> count : int -> unit
+    val MoveCaretRight : ITextView -> IEditorOperations -> count : int -> unit
+    val MoveCaretUp : ITextView -> IEditorOperations -> count : int -> unit
+    val MoveCaretDown : ITextView -> IEditorOperations -> count : int -> unit
