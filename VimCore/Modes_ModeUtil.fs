@@ -164,9 +164,9 @@ module ModeUtil =
         let caret = ViewUtil.GetCaretPoint view
         let line = caret.GetContainingLine()
         let tss = line.Snapshot
-        if line.LineNumber + count < tss.LineCount then 
-            for i = 0 to count do
-                editorOpts.MoveLineDown(false)
-        else editorOpts.MoveToEndOfDocument(false)
-
+        let count = 
+            if line.LineNumber + count < tss.LineCount then count
+            else (tss.LineCount - line.LineNumber) - 1 
+        for i = 0 to count do
+            editorOpts.MoveLineDown(false)
 

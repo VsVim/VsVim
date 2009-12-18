@@ -353,31 +353,29 @@ namespace VimCoreTest
         public void Motion_l()
         {
             CreateBuffer(s_lines);
+            _operations.Setup(x => x.MoveCaretRight(1)).Verifiable();
             _mode.Process("l");
-            var point = _view.Caret.Position.BufferPosition;
-            var line = _view.TextSnapshot.GetLineFromLineNumber(0);
-            Assert.AreEqual(line.Start.Add(1), point);
+            _operations.Verify();
         }
 
         [Test]
         public void Motion_2l()
         {
             CreateBuffer(s_lines);
+            _operations.Setup(x => x.MoveCaretRight(2)).Verifiable();
             _mode.Process("2l");
-            var point = _view.Caret.Position.BufferPosition;
-            var line = _view.TextSnapshot.GetLineFromLineNumber(0);
-            Assert.AreEqual(line.Start.Add(2), point);
+            _operations.Verify();
         }
 
-        [Test, Description("Don't crash moving off the end of the buffer")]
+        [Test]
         public void Motion_50l()
         {
             CreateBuffer(s_lines);
             var line = _view.TextSnapshot.Lines.Last();
             _view.Caret.MoveTo(line.Start);
+            _operations.Setup(x => x.MoveCaretRight(50)).Verifiable();
             _mode.Process("50l");
-            var point = _view.Caret.Position.BufferPosition;
-            Assert.AreEqual(line.End, point);
+            _operations.Verify();
         }
 
         #endregion
@@ -849,18 +847,22 @@ namespace VimCoreTest
             var res = _mode.Process(InputUtil.KeyToKeyInput(Key.I));
             Assert.IsTrue(res.IsSwitchMode);
             Assert.AreEqual(ModeKind.Insert, res.AsSwitchMode().Item);
+            _operations.Setup(x => x.MoveCaretLeft(1)).Verifiable();
             res = _mode.Process(InputUtil.KeyToKeyInput(Key.H));
             Assert.IsTrue(res.IsProcessed);
+            _operations.Verify();
         }
 
         [Test, Description("j past the end of the buffer")]
         public void Regression_DownPastBufferEnd()
         {
             CreateBuffer("foo");
+            _operations.Setup(x => x.MoveCaretDown(1)).Verifiable();
             var res = _mode.Process(Key.J);
             Assert.IsTrue(res.IsProcessed);
             res = _mode.Process(Key.J);
             Assert.IsTrue(res.IsProcessed);
+            _operations.Verify();
         }
 
         #endregion
