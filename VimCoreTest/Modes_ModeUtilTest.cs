@@ -9,6 +9,7 @@ using Vim.Modes;
 using Moq;
 using Vim;
 using VimCoreTest.Utils;
+using Microsoft.VisualStudio.Text.Operations;
 
 namespace VimCoreTest
 {
@@ -225,6 +226,89 @@ namespace VimCoreTest
             var span = ModeUtil.PasteBefore(new SnapshotPoint(buffer.CurrentSnapshot, 0), "yay");
             Assert.AreEqual("yay", span.GetText());
             Assert.AreEqual("yayfoo", span.Snapshot.GetLineFromLineNumber(0).GetText());
+        }
+
+
+        [Test]
+        public void MoveCharRight1()
+        {
+            CreateLines("foo", "bar");
+            var opts = new Mock<IEditorOperations>(MockBehavior.Strict);
+            opts.Setup(x => x.ResetSelection()).Verifiable();
+            ModeUtil.MoveCharRight(_view, opts.Object, 1);
+            Assert.AreEqual(1, _view.Caret.Position.BufferPosition.Position);
+            opts.Verify();
+        }
+
+        [Test]
+        public void MoveCharRight2()
+        {
+            CreateLines("foo", "bar");
+            var opts = new Mock<IEditorOperations>(MockBehavior.Strict);
+            opts.Setup(x => x.ResetSelection()).Verifiable();
+            _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 0));
+            ModeUtil.MoveCharRight(_view, opts.Object, 2);
+            Assert.AreEqual(2, _view.Caret.Position.BufferPosition.Position);
+            opts.Verify();
+        }
+
+        [Test, Description("Don't move past the end of the line")]
+        public void MoveCharRight3()
+        {
+            CreateLines("foo", "bar");
+            var tss = _view.TextSnapshot;
+            var endPoint = tss.GetLineFromLineNumber(0).End;
+            _view.Caret.MoveTo(endPoint);
+            var opts = new Mock<IEditorOperations>(MockBehavior.Strict);
+            opts.Setup(x => x.ResetSelection()).Verifiable();
+            ModeUtil.MoveCharRight(_view, opts.Object, 1);
+            Assert.AreEqual(endPoint, _view.Caret.Position.BufferPosition);
+        }
+
+        [Test]
+        public void MoveCharLeft1()
+        {
+            CreateLines("foo", "bar");
+            _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 1));
+            var opts = new Mock<IEditorOperations>(MockBehavior.Strict);
+            opts.Setup(x => x.ResetSelection()).Verifiable();
+            ModeUtil.MoveCharLeft(_view, opts.Object, 1);
+            Assert.AreEqual(0, _view.Caret.Position.BufferPosition.Position);
+            opts.Verify();
+        }
+
+        [Test,Description("Move left on the start of the line should not go anywhere")]
+        public void MoveCharLeft2()
+        {
+            CreateLines("foo", "bar");
+            var opts = new Mock<IEditorOperations>(MockBehavior.Strict);
+            opts.Setup(x => x.ResetSelection()).Verifiable();
+            ModeUtil.MoveCharLeft(_view, opts.Object, 1);
+            Assert.AreEqual(0, _view.Caret.Position.BufferPosition.Position);
+            opts.Verify();
+        }
+
+        [Test]
+        public void MoveCharUp1()
+        {
+            CreateLines("foo","bar","baz");
+            var line = _view.TextSnapshot.GetLineFromLineNumber(1);
+            _view.Caret.MoveTo(line.Start);
+            var opts = new Mock<IEditorOperations>(MockBehavior.Strict);
+            opts.Setup(x => x.ResetSelection()).Verifiable();
+            opts.Setup(x => x.MoveLineUp(false)).Verifiable();
+            ModeUtil.MoveCharUp(_view, opts.Object, 1);
+            opts.Verify();
+        }
+
+        [Test]
+        public void MoveCharDown1()
+        {
+            CreateLines("foo","bar","baz");
+            var opts = new Mock<IEditorOperations>(MockBehavior.Strict);
+            opts.Setup(x => x.ResetSelection()).Verifiable();
+            opts.Setup(x => x.MoveLineDown(false)).Verifiable();
+            ModeUtil.MoveCharDown(_view, opts.Object, 1);
         }
     }
 }
