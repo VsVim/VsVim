@@ -28,6 +28,7 @@ X - IOperations shouldn't take NormalMode data so we can make it and a lot of ot
 X - Move ModeUtil.Result out of ModeUtil
 X - Implement z scrolling in normal mode
 - Move more operations to the interfaces in normal mode
+- Join needs to move into ICommonOperations
 
 Version 0.7
 === 

@@ -5,5 +5,5 @@ open Vim
 
 type internal CommandMode =
     interface IMode
-    new : IVimBufferData -> CommandMode
+    new : (IVimBufferData * IOperations ) -> CommandMode
     

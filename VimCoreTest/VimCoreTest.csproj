@@ -126,7 +126,7 @@
     <Compile Include="BufferUtilTest.cs" />
     <Compile Include="CommandModeIntegrationTest.cs" />
     <Compile Include="CommandModeTest.cs" />
-    <Compile Include="Command_UtilTest.cs" />
+    <Compile Include="Command_DefaultOperations.cs" />
     <Compile Include="Modes_ModeUtilTest.cs" />
     <Compile Include="CountCaptureTest.cs" />
     <Compile Include="FakeVimHost.cs" />

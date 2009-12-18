@@ -24,6 +24,7 @@ namespace VimCoreTest
         private FakeVimHost _host;
         private IRegisterMap _map;
         private Mock<IEditorOperations> _editOpts;
+        private Mock<IOperations> _operations;
 
         public void Create(params string[] lines)
         {
@@ -32,6 +33,7 @@ namespace VimCoreTest
             _map = new RegisterMap();
             _host = new FakeVimHost();
             _editOpts = new Mock<IEditorOperations>(MockBehavior.Strict);
+            _operations = new Mock<IOperations>(MockBehavior.Strict);
             _bufferData = MockObjectFactory.CreateVimBufferData(
                 _view,
                 "test",
@@ -39,7 +41,7 @@ namespace VimCoreTest
                 MockObjectFactory.CreateVimData(_map).Object,
                 MockObjectFactory.CreateBlockCaret().Object,
                 _editOpts.Object);
-            _modeRaw = new Vim.Modes.Command.CommandMode(_bufferData);
+            _modeRaw = new Vim.Modes.Command.CommandMode(Tuple.Create<IVimBufferData,IOperations>(_bufferData,_operations.Object));
             _mode = _modeRaw;
             _mode.OnEnter();
         }

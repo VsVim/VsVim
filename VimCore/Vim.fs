@@ -11,11 +11,12 @@ type internal Vim(_host : IVimHost) =
 
     member x.CreateVimBufferCore view editOperations name caret = 
         let data = VimBufferData(name, view, _host, _data :> IVimData, caret, editOperations ) :> IVimBufferData
-        let opts = Modes.Normal.DefaultOperations(view,editOperations) :> Modes.Normal.IOperations
+        let normalOpts = Modes.Normal.DefaultOperations(view,editOperations) :> Modes.Normal.IOperations
+        let commandOpts = Modes.Command.DefaultOperations(view,editOperations,_host) :> Modes.Command.IOperations
         let modeList = 
             [
-                ((Modes.Normal.NormalMode(data, opts)) :> IMode);
-                ((Modes.Command.CommandMode(data)) :> IMode);
+                ((Modes.Normal.NormalMode(data, normalOpts)) :> IMode);
+                ((Modes.Command.CommandMode(data, commandOpts)) :> IMode)
                 ((Modes.Insert.InsertMode(data)) :> IMode);
             ]
         let modeMap =
