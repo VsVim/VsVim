@@ -4,6 +4,7 @@ namespace Vim.Modes
 open Vim
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
+open Microsoft.VisualStudio.Text.Operations
 
 module ModeUtil =
 
@@ -131,3 +132,41 @@ module ModeUtil =
         let regValue = {Value=span.GetText();MotionKind=motionKind;OperationKind=opKind}
         reg.UpdateValue(regValue) 
         tss.TextBuffer.Delete(span.Span)
+
+    /// Move the cursor count spaces left
+    let MoveCaretLeft view (editorOpts : IEditorOperations) count = 
+        editorOpts.ResetSelection()
+        let caret = ViewUtil.GetCaretPoint view
+        let span = MotionUtil.CharLeft caret count
+        ViewUtil.MoveCaretToPoint view span.Start |> ignore
+
+    /// Move the cursor count spaces to the right
+    let MoveCaretRight view (editorOpts : IEditorOperations) count =
+        editorOpts.ResetSelection()
+        let caret = ViewUtil.GetCaretPoint view
+        let span = MotionUtil.CharRight caret count
+        ViewUtil.MoveCaretToPoint view span.End  |> ignore
+
+    /// Move the cursor count spaces up 
+    let MoveCaretUp view (editorOpts:IEditorOperations) count =
+        editorOpts.ResetSelection()
+        let caret = ViewUtil.GetCaretPoint view
+        let current = caret.GetContainingLine()
+        let count = 
+            if current.LineNumber - count > 0 then count
+            else current.LineNumber 
+        for i = 0 to count do   
+            editorOpts.MoveLineUp(false)
+        
+    /// Move the cursor count spaces down
+    let MoveCaretDown view (editorOpts : IEditorOperations) count =
+        editorOpts.ResetSelection()
+        let caret = ViewUtil.GetCaretPoint view
+        let line = caret.GetContainingLine()
+        let tss = line.Snapshot
+        let count = 
+            if line.LineNumber + count < tss.LineCount then count
+            else (tss.LineCount - line.LineNumber) - 1 
+        for i = 0 to count do
+            editorOpts.MoveLineDown(false)
+

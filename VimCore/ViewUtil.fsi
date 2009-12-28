@@ -10,13 +10,9 @@ module internal ViewUtil =
     val GetLineText : ITextView -> int -> string
     val CurrentPosition : ITextView -> int
     val GetCaretPoint : ITextView -> SnapshotPoint
-    val MoveCaretLeft : ITextView -> SnapshotPoint
-    val MoveCaretRight : ITextView -> SnapshotPoint
     val MoveCaretToPosition : ITextView -> int -> CaretPosition
     val MoveCaretToPoint : ITextView -> SnapshotPoint -> CaretPosition
     val MoveCaretToVirtualPoint : ITextView -> VirtualSnapshotPoint -> CaretPosition
-    val MoveCaretUp : ITextView -> SnapshotPoint
-    val MoveCaretDown : ITextView -> SnapshotPoint
     val MoveCaretToEndOfLine : ITextView -> CaretPosition
     val MoveCaretToBeginingOfLine : ITextView -> CaretPosition
     val MoveWordForward : ITextView -> WordKind -> SnapshotPoint

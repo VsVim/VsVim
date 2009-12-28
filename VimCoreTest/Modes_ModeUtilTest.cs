@@ -9,6 +9,7 @@ using Vim.Modes;
 using Moq;
 using Vim;
 using VimCoreTest.Utils;
+using Microsoft.VisualStudio.Text.Operations;
 
 namespace VimCoreTest
 {
@@ -226,5 +227,215 @@ namespace VimCoreTest
             Assert.AreEqual("yay", span.GetText());
             Assert.AreEqual("yayfoo", span.Snapshot.GetLineFromLineNumber(0).GetText());
         }
+
+
+        [Test]
+        public void MoveCaretRight1()
+        {
+            CreateLines("foo", "bar");
+            var opts = new Mock<IEditorOperations>(MockBehavior.Strict);
+            opts.Setup(x => x.ResetSelection()).Verifiable();
+            ModeUtil.MoveCaretRight(_view, opts.Object, 1);
+            Assert.AreEqual(1, _view.Caret.Position.BufferPosition.Position);
+            opts.Verify();
+        }
+
+        [Test]
+        public void MoveCaretRight2()
+        {
+            CreateLines("foo", "bar");
+            var opts = new Mock<IEditorOperations>(MockBehavior.Strict);
+            opts.Setup(x => x.ResetSelection()).Verifiable();
+            _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 0));
+            ModeUtil.MoveCaretRight(_view, opts.Object, 2);
+            Assert.AreEqual(2, _view.Caret.Position.BufferPosition.Position);
+            opts.Verify();
+        }
+
+        [Test, Description("Don't move past the end of the line")]
+        public void MoveCaretRight3()
+        {
+            CreateLines("foo", "bar");
+            var tss = _view.TextSnapshot;
+            var endPoint = tss.GetLineFromLineNumber(0).End;
+            _view.Caret.MoveTo(endPoint);
+            var opts = new Mock<IEditorOperations>(MockBehavior.Strict);
+            opts.Setup(x => x.ResetSelection()).Verifiable();
+            ModeUtil.MoveCaretRight(_view, opts.Object, 1);
+            Assert.AreEqual(endPoint, _view.Caret.Position.BufferPosition);
+        }
+
+        [Test, Description("Don't crash going off the buffer")]
+        public void MoveCaretRight4()
+        {
+            CreateLines("foo", "bar");
+            var last = _view.TextSnapshot.Lines.Last();
+            _view.Caret.MoveTo(last.End);
+            ModeUtil.MoveCaretRight(_view, EditorUtil.GetOperations(_view), 1);
+            Assert.AreEqual(last.End, _view.Caret.Position.BufferPosition);
+        }
+
+        [Test, Description("Don't go off the end of the current line")]
+        public void MoveCaretRight5()
+        {
+            CreateLines("foo", "bar");
+            var line = _view.TextSnapshot.GetLineFromLineNumber(0);
+            _view.Caret.MoveTo(line.End);
+            ModeUtil.MoveCaretRight(_view, EditorUtil.GetOperations(_view), 1);
+            Assert.AreEqual(line.End,_view.Caret.Position.BufferPosition);
+        }
+
+
+        [Test]
+        public void MoveCaretLeft1()
+        {
+            CreateLines("foo", "bar");
+            _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 1));
+            var opts = new Mock<IEditorOperations>(MockBehavior.Strict);
+            opts.Setup(x => x.ResetSelection()).Verifiable();
+            ModeUtil.MoveCaretLeft(_view, opts.Object, 1);
+            Assert.AreEqual(0, _view.Caret.Position.BufferPosition.Position);
+            opts.Verify();
+        }
+
+        [Test,Description("Move left on the start of the line should not go anywhere")]
+        public void MoveCaretLeft2()
+        {
+            CreateLines("foo", "bar");
+            var opts = new Mock<IEditorOperations>(MockBehavior.Strict);
+            opts.Setup(x => x.ResetSelection()).Verifiable();
+            ModeUtil.MoveCaretLeft(_view, opts.Object, 1);
+            Assert.AreEqual(0, _view.Caret.Position.BufferPosition.Position);
+            opts.Verify();
+        }
+
+        [Test]
+        public void MoveCaretLeft3()
+        {
+            CreateLines("foo", "bar");
+            var line = _view.TextSnapshot.GetLineFromLineNumber(0);
+            _view.Caret.MoveTo(line.Start.Add(1));
+            ModeUtil.MoveCaretLeft(_view, EditorUtil.GetOperations(_view), 1);
+            Assert.AreEqual(line.Start, _view.Caret.Position.BufferPosition);
+        }
+
+        [Test, Description("Left at the start of the line should not go further")]
+        public void MoveCaretLeft4()
+        {
+            CreateLines("foo","bar");
+            var line = _view.TextSnapshot.GetLineFromLineNumber(1);
+            _view.Caret.MoveTo(line.Start);
+            ModeUtil.MoveCaretLeft(_view, EditorUtil.GetOperations(_view), 1);
+            Assert.AreEqual(line.Start, _view.Caret.Position.BufferPosition);
+        }
+
+        [Test]
+        public void MoveCaretUp1()
+        {
+            CreateLines("foo","bar","baz");
+            var line = _view.TextSnapshot.GetLineFromLineNumber(1);
+            _view.Caret.MoveTo(line.Start);
+            var opts = new Mock<IEditorOperations>(MockBehavior.Strict);
+            opts.Setup(x => x.ResetSelection()).Verifiable();
+            opts.Setup(x => x.MoveLineUp(false)).Verifiable();
+            ModeUtil.MoveCaretUp(_view, opts.Object, 1);
+            opts.Verify();
+        }
+
+        [Test, Description("Move caret up past the begining of the buffer should fail if it's already at the top")]
+        public void MoveCaretUp2()
+        {
+            CreateLines("foo", "bar", "baz");
+            var first = _view.TextSnapshot.Lines.First();
+            _view.Caret.MoveTo(first.End);
+            ModeUtil.MoveCaretUp(_view, EditorUtil.GetOperations(_view), 1);
+            Assert.AreEqual(first.End, _view.Caret.Position.BufferPosition);
+        }
+
+        [Test, Description("Move caret up should respect column positions")]
+        public void MoveCaretUp3()
+        {
+            CreateLines("foo", "bar");
+            var tss = _view.TextSnapshot;
+            _view.Caret.MoveTo(tss.GetLineFromLineNumber(1).Start.Add(1));
+            ModeUtil.MoveCaretUp(_view, EditorUtil.GetOperations(_view), 1);
+            Assert.AreEqual(tss.GetLineFromLineNumber(0).Start.Add(1), _view.Caret.Position.BufferPosition);
+        }
+
+        [Test]
+        public void MoveCaretDown1()
+        {
+            CreateLines("foo","bar","baz");
+            var opts = new Mock<IEditorOperations>(MockBehavior.Strict);
+            opts.Setup(x => x.ResetSelection()).Verifiable();
+            opts.Setup(x => x.MoveLineDown(false)).Verifiable();
+            ModeUtil.MoveCaretDown(_view, opts.Object, 1);
+        }
+
+        [Test, Description("Move caret down should fail if the caret is at the end of the buffer")]
+        public void MoveCaretDown2()
+        {
+            CreateLines("bar", "baz", "aeu");
+            var last = _view.TextSnapshot.Lines.Last();
+            _view.Caret.MoveTo(last.Start);
+            ModeUtil.MoveCaretDown(_view, EditorUtil.GetOperations(_view), 1);
+            Assert.AreEqual(last.Start, _view.Caret.Position.BufferPosition);
+        }
+
+        [Test, Description("Move caret down should not crash if the line is the second to last line.  In other words, the last real line")]
+        public void MoveCaretDown3()
+        {
+            CreateLines("foo", "bar", "baz");
+            var tss = _view.TextSnapshot;
+            var line = tss.GetLineFromLineNumber(tss.LineCount - 2);
+            _view.Caret.MoveTo(line.Start);
+            ModeUtil.MoveCaretDown(_view, EditorUtil.GetOperations(_view), 1);
+            Assert.AreNotEqual(line.Start, _view.Caret.Position.BufferPosition);
+        }
+
+        [Test, Description("Move caret down should not crash if the line is the second to last line.  In other words, the last real line")]
+        public void MoveCaretDown4()
+        {
+            CreateLines("foo","bar","baz");
+            var tss = _view.TextSnapshot;
+            var line = tss.GetLineFromLineNumber(tss.LineCount - 1);
+            _view.Caret.MoveTo(line.Start);
+            ModeUtil.MoveCaretDown(_view, EditorUtil.GetOperations(_view), 1);
+            Assert.AreEqual(line.Start, _view.Caret.Position.BufferPosition);
+        }
+
+        [Test, Description("Be wary the 0 length last line")]
+        public void MoveCaretDown5()
+        {
+            CreateLines("foo", String.Empty);
+            var tss = _view.TextSnapshot;
+            var line = tss.GetLineFromLineNumber(0);
+            _view.Caret.MoveTo(line.Start);
+            ModeUtil.MoveCaretDown(_view, EditorUtil.GetOperations(_view), 1);
+            Assert.AreNotEqual(line.Start, _view.Caret.Position.BufferPosition);
+        }
+
+        [Test, Description("Move caret down should maintain column")]
+        public void MoveCaretDown6()
+        {
+            CreateLines("foo", "bar");
+            var tss = _view.TextSnapshot;
+            _view.Caret.MoveTo(tss.GetLineFromLineNumber(0).Start.Add(1));
+            ModeUtil.MoveCaretDown(_view, EditorUtil.GetOperations(_view), 1);
+            Assert.AreEqual(tss.GetLineFromLineNumber(1).Start.Add(1), _view.Caret.Position.BufferPosition);
+        }
+
+        [Test, Description("Move caret down should maintain column")]
+        public void MoveCaretDown7()
+        {
+            CreateLines("foo", "bar");
+            var tss = _view.TextSnapshot;
+            _view.Caret.MoveTo(tss.GetLineFromLineNumber(0).End);
+            ModeUtil.MoveCaretDown(_view, EditorUtil.GetOperations(_view), 1);
+            Assert.AreEqual(tss.GetLineFromLineNumber(1).End, _view.Caret.Position.BufferPosition);
+        }
+
+
+
     }
 }

@@ -4,6 +4,7 @@ namespace Vim.Modes
 open Vim
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
+open Microsoft.VisualStudio.Text.Operations
 
 module ModeUtil =
     val Join : ITextView -> SnapshotPoint -> JoinKind -> int -> bool
@@ -14,3 +15,7 @@ module ModeUtil =
     val PasteAfter : SnapshotPoint -> string -> OperationKind -> SnapshotSpan
     val PasteBefore : SnapshotPoint -> string -> SnapshotSpan
     val DeleteSpan: SnapshotSpan -> MotionKind -> OperationKind -> Register -> ITextSnapshot
+    val MoveCaretLeft : ITextView -> IEditorOperations -> count : int -> unit
+    val MoveCaretRight : ITextView -> IEditorOperations -> count : int -> unit
+    val MoveCaretUp : ITextView -> IEditorOperations -> count : int -> unit
+    val MoveCaretDown : ITextView -> IEditorOperations -> count : int -> unit

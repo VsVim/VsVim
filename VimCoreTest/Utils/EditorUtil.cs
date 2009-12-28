@@ -91,6 +91,11 @@ namespace VimCoreTest.Utils
             return Tuple.Create(view, opts);
         }
 
+        public static IEditorOperations GetOperations(IWpfTextView view)
+        {
+            return FactoryService.editorOperationsFactory.GetEditorOperations(view);
+        }
+
         public static CompositionContainer CreateContainer()
         {
             try

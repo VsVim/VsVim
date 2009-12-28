@@ -342,13 +342,21 @@ type internal NormalMode( _bufferData : IVimBufferData, _operations : IOperation
     member this.BuildOperationsMap = 
         let l : list<Operation> = [
             {   KeyInput=InputUtil.CharToKeyInput('h'); 
-                RunFunc=(fun d -> this.MotionFunc this.TextView d.Count (ViewUtil.MoveCaretLeft) ) };
+                RunFunc=(fun d -> 
+                    _operations.MoveCaretLeft d.Count
+                    NormalModeResult.Complete); };
             {   KeyInput=InputUtil.CharToKeyInput('j');
-                RunFunc=(fun d -> this.MotionFunc this.TextView d.Count (ViewUtil.MoveCaretDown)) };
+                RunFunc=(fun d -> 
+                    _operations.MoveCaretDown d.Count
+                    NormalModeResult.Complete); };
             {   KeyInput=InputUtil.CharToKeyInput('k');
-                RunFunc=(fun d -> this.MotionFunc this.TextView d.Count (ViewUtil.MoveCaretUp)) };
+                RunFunc=(fun d -> 
+                    _operations.MoveCaretUp d.Count
+                    NormalModeResult.Complete); };
             {   KeyInput=InputUtil.CharToKeyInput('l');
-                RunFunc=(fun d -> this.MotionFunc this.TextView d.Count (ViewUtil.MoveCaretRight)) };
+                RunFunc=(fun d -> 
+                    _operations.MoveCaretRight d.Count
+                    NormalModeResult.Complete); };
             {   KeyInput=InputUtil.CharToKeyInput('w');
                 RunFunc=(fun d -> this.MotionFunc this.TextView d.Count (fun v -> ViewUtil.MoveWordForward v WordKind.NormalWord)) };
             {   KeyInput=InputUtil.CharToKeyInput('b');
