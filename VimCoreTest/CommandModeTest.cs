@@ -14,7 +14,7 @@ using Moq;
 
 namespace VimCoreTest
 {
-    [TestFixture,RequiresSTA]
+    [TestFixture, RequiresSTA]
     public class CommandModeTest
     {
         private IWpfTextView _view;
@@ -41,7 +41,7 @@ namespace VimCoreTest
                 MockObjectFactory.CreateVimData(_map).Object,
                 MockObjectFactory.CreateBlockCaret().Object,
                 _editOpts.Object);
-            _modeRaw = new Vim.Modes.Command.CommandMode(Tuple.Create<IVimBufferData,IOperations>(_bufferData,_operations.Object));
+            _modeRaw = new Vim.Modes.Command.CommandMode(Tuple.Create<IVimBufferData, IOperations>(_bufferData, _operations.Object));
             _mode = _modeRaw;
             _mode.OnEnter();
         }
@@ -96,7 +96,7 @@ namespace VimCoreTest
         {
             Create("foo", "bar", "baz");
             var tss = _view.TextSnapshot;
-            var last = tss.LineCount-1;
+            var last = tss.LineCount - 1;
             _editOpts.Setup(x => x.MoveToEndOfDocument(false)).Verifiable();
             ProcessWithEnter("$");
             _editOpts.Verify();
@@ -123,43 +123,59 @@ namespace VimCoreTest
         public void Yank1()
         {
             Create("foo", "bar");
-
-            IRegisterMap map = new RegisterMap();
+            var tss = _view.TextSnapshot;
+            _operations.Setup(x => x.Yank(
+                tss.GetLineFromLineNumber(0).ExtentIncludingLineBreak,
+                MotionKind._unique_Exclusive,
+                OperationKind.LineWise,
+                _map.DefaultRegister))
+                .Verifiable();
             ProcessWithEnter("y");
-            Assert.AreEqual("foo" + Environment.NewLine, map.DefaultRegister.Value.Value);
+            _operations.Verify();
         }
 
         [Test]
         public void Yank2()
         {
             Create("foo", "bar", "baz");
-            ProcessWithEnter("1,2y");
             var tss = _view.TextSnapshot;
             var span = new SnapshotSpan(
                 tss.GetLineFromLineNumber(0).Start,
                 tss.GetLineFromLineNumber(1).EndIncludingLineBreak);
-            Assert.AreEqual(span.GetText(), _map.DefaultRegister.Value.Value);
+            _operations.Setup(x => x.Yank(
+                span,
+                MotionKind._unique_Exclusive,
+                OperationKind.LineWise,
+                _map.DefaultRegister)).Verifiable();
+            ProcessWithEnter("1,2y");
+            _operations.Verify();
         }
 
         [Test]
         public void Yank3()
         {
             Create("foo", "bar");
-            ProcessWithEnter("y c");
             var line = _view.TextSnapshot.GetLineFromLineNumber(0);
-            Assert.AreEqual(line.ExtentIncludingLineBreak.GetText(), _map.GetRegister('c').Value.Value);
+            _operations.Setup(x => x.Yank(
+                line.ExtentIncludingLineBreak,
+                MotionKind._unique_Exclusive,
+                OperationKind.LineWise,
+                _map.GetRegister('c'))).Verifiable();
+            ProcessWithEnter("y c");
+            _operations.Verify();
         }
 
         [Test]
         public void Yank4()
         {
             Create("foo", "bar");
-            ProcessWithEnter("y 2");
             var tss = _view.TextSnapshot;
             var span = new SnapshotSpan(
                 tss.GetLineFromLineNumber(0).Start,
                 tss.GetLineFromLineNumber(1).EndIncludingLineBreak);
-            Assert.AreEqual(span.GetText(), _map.DefaultRegister.Value.Value);
+            _operations.Setup(x => x.Yank(span, MotionKind._unique_Exclusive, OperationKind.LineWise, _map.DefaultRegister)).Verifiable();
+            ProcessWithEnter("y 2");
+            _operations.Verify();
         }
 
         [Test]
@@ -237,32 +253,50 @@ namespace VimCoreTest
         [Test]
         public void Delete1()
         {
-            Create("foo","bar");
+            Create("foo", "bar");
+            _operations.Setup(x => x.DeleteSpan(
+                _view.TextSnapshot.GetLineFromLineNumber(0).ExtentIncludingLineBreak,
+                MotionKind._unique_Exclusive,
+                OperationKind.LineWise,
+                _map.DefaultRegister))
+                .Returns(It.IsAny<ITextSnapshot>())
+                .Verifiable();
             ProcessWithEnter("del");
-            var tss = _view.TextSnapshot;
-            Assert.AreEqual(1, tss.LineCount);
-            Assert.AreEqual("bar", tss.GetLineFromLineNumber(0).GetText());
+            _operations.Verify();
         }
 
         [Test]
         public void Delete2()
         {
             Create("foo", "bar", "baz");
-            ProcessWithEnter("dele 2");
             var tss = _view.TextSnapshot;
-            Assert.AreEqual(1, tss.LineCount);
-            Assert.AreEqual("baz", tss.GetLineFromLineNumber(0).GetText());
+            var span = new SnapshotSpan(
+                tss.GetLineFromLineNumber(0).Start,
+                tss.GetLineFromLineNumber(1).EndIncludingLineBreak);
+            _operations.Setup(x => x.DeleteSpan(
+                span,
+                MotionKind._unique_Exclusive,
+                OperationKind.LineWise,
+                _map.DefaultRegister))
+                .Returns(It.IsAny<ITextSnapshot>())
+                .Verifiable();
+            ProcessWithEnter("dele 2");
+            _operations.Verify();
         }
 
         [Test]
         public void Delete3()
         {
             Create("foo", "bar", "baz");
+            _operations.Setup(x => x.DeleteSpan(
+                _view.TextSnapshot.GetLineFromLineNumber(1).ExtentIncludingLineBreak,
+                MotionKind._unique_Exclusive,
+                OperationKind.LineWise,
+                _map.DefaultRegister))
+                .Returns(It.IsAny<ITextSnapshot>())
+                .Verifiable();
             ProcessWithEnter("2del");
-            var tss = _view.TextSnapshot;
-            Assert.AreEqual(2, tss.LineCount);
-            Assert.AreEqual("foo", tss.GetLineFromLineNumber(0).GetText());
-            Assert.AreEqual("baz", tss.GetLineFromLineNumber(1).GetText());
+            _operations.Verify();
         }
     }
 }

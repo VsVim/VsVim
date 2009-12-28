@@ -128,7 +128,7 @@
     <Compile Include="CommandModeTest.cs" />
     <Compile Include="Command_DefaultOperations.cs" />
     <Compile Include="IEditorOperationsTest.cs" />
-    <Compile Include="Modes_CommonOperations.cs" />
+    <Compile Include="Modes_CommonOperationsTest.cs" />
     <Compile Include="CountCaptureTest.cs" />
     <Compile Include="FakeVimHost.cs" />
     <Compile Include="IncrementalSearchTest.cs">

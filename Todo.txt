@@ -29,6 +29,7 @@ X - Implement z scrolling in normal mode
 - Join needs to move into ICommonOperations
 - Implement IEditorOperationsTest
 - Should MoveCaretX reset selection if the caret doesn't move?
+- Move Shift into ICommonOperations
 
 Version 0.7
 === 

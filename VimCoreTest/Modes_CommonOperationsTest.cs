@@ -14,7 +14,7 @@ using Microsoft.VisualStudio.Text.Operations;
 namespace VimCoreTest
 {
     [TestFixture]
-    public class Modes_CommonOperations
+    public class Modes_CommonOperationsTest
     {
 
         private class OperationsImpl : CommonOperations
@@ -430,9 +430,73 @@ namespace VimCoreTest
             _editorOpts.Verify();
         }
 
+        [Test]
+        public void DeleteSpan1()
+        {
+            CreateLines("foo", "bar");
+            var reg = new Register('c');
+            _operations.DeleteSpan(
+                _view.TextSnapshot.GetLineFromLineNumber(0).ExtentIncludingLineBreak,
+                MotionKind._unique_Exclusive,
+                OperationKind.LineWise,
+                reg);
+            var tss = _view.TextSnapshot;
+            Assert.AreEqual(1, tss.LineCount);
+            Assert.AreEqual("bar", tss.GetLineFromLineNumber(0).GetText());
+            Assert.AreEqual("foo" + Environment.NewLine, reg.StringValue);
+        }
 
+        [Test]
+        public void DeleteSpan2()
+        {
+            CreateLines("foo", "bar", "baz");
+            var tss = _view.TextSnapshot;
+            var span = new SnapshotSpan(
+                tss.GetLineFromLineNumber(0).Start,
+                tss.GetLineFromLineNumber(1).EndIncludingLineBreak);
+            var reg = new Register('c');
+            _operations.DeleteSpan(span, MotionKind._unique_Exclusive, OperationKind.LineWise, reg);
+            Assert.AreEqual(1, tss.LineCount);
+            Assert.AreEqual("baz", tss.GetLineFromLineNumber(0).GetText());
+            Assert.AreEqual(span.GetText(), reg.StringValue);
+        }
 
+        [Test]
+        public void DeleteSpan3()
+        {
+            CreateLines("foo", "bar", "baz");
+            var tss = _view.TextSnapshot;
+            var reg = new Register('c');
+            _operations.DeleteSpan(tss.GetLineFromLineNumber(1).ExtentIncludingLineBreak, MotionKind._unique_Exclusive, OperationKind.LineWise, reg);
+            Assert.AreEqual(2, tss.LineCount);
+            Assert.AreEqual("foo", tss.GetLineFromLineNumber(0).GetText());
+            Assert.AreEqual("baz", tss.GetLineFromLineNumber(1).GetText());
+        }
+        [Test]
+        public void Yank1()
+        {
+            CreateLines("foo", "bar");
+            var reg = new Register('c');
+            _operations.Yank(
+                _view.TextSnapshot.GetLineFromLineNumber(0).ExtentIncludingLineBreak,
+                MotionKind._unique_Exclusive,
+                OperationKind.LineWise,
+                reg);
+            Assert.AreEqual("foo" + Environment.NewLine, reg.StringValue);
+        }
 
+        [Test]
+        public void Yank2()
+        {
+            CreateLines("foo", "bar", "baz");
+            var tss = _view.TextSnapshot;
+            var span = new SnapshotSpan(
+                tss.GetLineFromLineNumber(0).Start,
+                tss.GetLineFromLineNumber(1).EndIncludingLineBreak);
+            var reg = new Register('c');
+            _operations.Yank(span, MotionKind._unique_Exclusive, OperationKind.LineWise, reg);
+            Assert.AreEqual(span.GetText(), reg.StringValue);
+        }
 
     }
 }
