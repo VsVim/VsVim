@@ -328,7 +328,7 @@ namespace VimCoreTest
             Assert.IsTrue(res.IsProcessed);
             _mode.Process(Key.Enter);
             res = _mode.Process(Key.I);
-            Assert.IsTrue(res.IsSwitchMode);  
+            Assert.IsTrue(res.IsSwitchMode);
         }
 
         [Test, Description("Canceled motion should reset the status")]
@@ -345,8 +345,14 @@ namespace VimCoreTest
         public void BadMotion5()
         {
             CreateBuffer(s_lines);
+            _operations.Setup(x => x.Yank(
+                It.IsAny<SnapshotSpan>(),
+                It.IsAny<MotionKind>(),
+                It.IsAny<OperationKind>(),
+                It.IsAny<Register>())).Verifiable();
             _mode.Process("yaw");
             Assert.IsTrue(String.IsNullOrEmpty(_host.Status));
+            _operations.Verify();
         }
 
         [Test]
@@ -672,7 +678,7 @@ namespace VimCoreTest
         [Test]
         public void Yank_Y_3()
         {
-            CreateBuffer("foo", "bar","jazz");
+            CreateBuffer("foo", "bar", "jazz");
             _operations.Setup(x => x.YankLines(2, _map.DefaultRegister)).Verifiable();
             _mode.Process("2Y");
             _operations.Verify();
@@ -794,11 +800,15 @@ namespace VimCoreTest
         public void Delete_dd_1()
         {
             CreateBuffer("foo", "bar");
+            _operations.Setup(x => x.DeleteSpan(
+                _view.TextSnapshot.GetLineFromLineNumber(0).ExtentIncludingLineBreak,
+                MotionKind._unique_Inclusive,
+                OperationKind.LineWise,
+                _map.DefaultRegister))
+                .Returns(It.IsAny<ITextSnapshot>())
+                .Verifiable();
             _mode.Process("dd");
-            var value = _map.DefaultRegister.Value;
-            Assert.AreEqual("foo" + Environment.NewLine, value.Value);
-            Assert.AreEqual(MotionKind.Inclusive, value.MotionKind);
-            Assert.AreEqual(OperationKind.LineWise, value.OperationKind);
+            _operations.Verify();
         }
 
         [Test, Description("Make sure that it deletes the entire line regardless of where the caret is")]
@@ -806,35 +816,51 @@ namespace VimCoreTest
         {
             CreateBuffer("foo", "bar");
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 1));
+            _operations.Setup(x => x.DeleteSpan(
+                _view.TextSnapshot.GetLineFromLineNumber(0).ExtentIncludingLineBreak,
+                MotionKind._unique_Inclusive,
+                OperationKind.LineWise,
+                _map.DefaultRegister))
+                .Returns(It.IsAny<ITextSnapshot>())
+                .Verifiable();
             _mode.Process("dd");
-            var value = _map.DefaultRegister.Value;
-            Assert.AreEqual("foo" + Environment.NewLine, value.Value);
-            Assert.AreEqual(MotionKind.Inclusive, value.MotionKind);
-            Assert.AreEqual(OperationKind.LineWise, value.OperationKind);
+            _operations.Verify();
         }
 
         [Test]
         public void Delete_dw_1()
         {
             CreateBuffer("foo bar baz");
+            _operations.Setup(x => x.DeleteSpan(
+                new SnapshotSpan(_view.TextSnapshot, 0, 4),
+                MotionKind._unique_Exclusive,
+                OperationKind.CharacterWise,
+                _map.DefaultRegister))
+                .Returns(It.IsAny<ITextSnapshot>())
+                .Verifiable();
             _mode.Process("dw");
-            Assert.AreEqual("bar baz", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
-            Assert.AreEqual(0, _view.Caret.Position.BufferPosition.Position);
+            _operations.Verify();
         }
 
         [Test, Description("Delete at the end of the line shouldn't delete newline")]
         public void Delete_dw_2()
         {
-            CreateBuffer("foo bar","baz");
-            _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 4));
+            CreateBuffer("foo bar", "baz");
+            var point = new SnapshotPoint(_view.TextSnapshot, 4);
+            _view.Caret.MoveTo(point);
             Assert.AreEqual('b', _view.Caret.Position.BufferPosition.GetChar());
+            var span = new SnapshotSpan(point, _view.TextSnapshot.GetLineFromLineNumber(0).End);
+            _operations.Setup(x => x.DeleteSpan(
+                span,
+                MotionKind.Exclusive,
+                OperationKind.CharacterWise,
+                _map.DefaultRegister))
+                .Returns(It.IsAny<ITextSnapshot>())
+                .Verifiable();
             _mode.Process("dw");
-            var tss = _view.TextSnapshot;
-            Assert.AreEqual(2, tss.LineCount);
-            Assert.AreEqual("foo ", tss.GetLineFromLineNumber(0).GetText());
-            Assert.AreEqual("baz", tss.GetLineFromLineNumber(1).GetText());
+            _operations.Verify();
         }
-        
+
 
         #endregion
 
@@ -1273,33 +1299,56 @@ namespace VimCoreTest
         public void Join1()
         {
             CreateBuffer("foo", "bar");
+            _operations.Setup(x => x.Join(
+                _view.Caret.Position.BufferPosition,
+                JoinKind.RemoveEmptySpaces,
+                1))
+                .Returns(true)
+                .Verifiable();
             _mode.Process("J");
-            Assert.AreEqual("foo bar", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
-            Assert.AreEqual(4, _view.Caret.Position.BufferPosition.Position);
+            _operations.Verify();
         }
 
         [Test]
         public void Join2()
         {
             CreateBuffer("foo", "  bar", "baz");
+            _operations.Setup(x => x.Join(
+                _view.Caret.Position.BufferPosition,
+                JoinKind.RemoveEmptySpaces,
+                2))
+                .Returns(true)
+                .Verifiable();
             _mode.Process("2J");
-            Assert.AreEqual("foo bar", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
+            _operations.Verify();
         }
 
         [Test]
         public void Join3()
         {
             CreateBuffer("foo", "  bar", "baz");
+            _operations.Setup(x => x.Join(
+                _view.Caret.Position.BufferPosition,
+                JoinKind.RemoveEmptySpaces,
+                3))
+                .Returns(true)
+                .Verifiable();
             _mode.Process("3J");
-            Assert.AreEqual("foo bar baz", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
+            _operations.Verify();
         }
 
         [Test]
         public void Join4()
         {
             CreateBuffer("foo", "bar");
+            _operations.Setup(x => x.Join(
+                _view.Caret.Position.BufferPosition,
+                JoinKind.KeepEmptySpaces,
+                1))
+                .Returns(true)
+                .Verifiable();
             _mode.Process("gJ");
-            Assert.AreEqual("foobar", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());   
+            _operations.Verify();
         }
 
         [Test]
@@ -1308,8 +1357,9 @@ namespace VimCoreTest
             CreateBuffer(s_lines);
             var def = new KeyInput(']', Key.OemCloseBrackets, ModifierKeys.Control);
             CreateBuffer("foo");
+            _operations.Setup(x => x.GoToDefinition(_host)).Returns(It.IsAny<Result>()).Verifiable();
             _mode.Process(def);
-            Assert.AreEqual(1, _host.GoToDefinitionCount);
+            _operations.Verify();
         }
 
         [Test, Description("When it fails, the status should be updated")]
@@ -1318,9 +1368,9 @@ namespace VimCoreTest
             CreateBuffer("foo");
             var def = new KeyInput(']', Key.OemCloseBrackets, ModifierKeys.Control);
             _host.GoToDefinitionReturn = false;
+            _operations.Setup(x => x.GoToDefinition(_host)).Returns(It.IsAny<Result>()).Verifiable();
             _mode.Process(def);
-            Assert.AreEqual(1, _host.GoToDefinitionCount);
-            Assert.IsTrue(_host.Status.Contains("foo"));
+            _operations.Verify();
         }
 
         [Test]
@@ -1413,7 +1463,7 @@ namespace VimCoreTest
             _mode.OnLeave();
             Assert.AreEqual(1, _blockCaret.HideCount);
         }
-        
+
         #endregion
 
     }

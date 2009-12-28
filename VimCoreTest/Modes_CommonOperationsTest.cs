@@ -472,6 +472,8 @@ namespace VimCoreTest
             Assert.AreEqual("foo", tss.GetLineFromLineNumber(0).GetText());
             Assert.AreEqual("baz", tss.GetLineFromLineNumber(1).GetText());
         }
+
+
         [Test]
         public void Yank1()
         {
