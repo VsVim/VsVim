@@ -4,7 +4,6 @@ X - 'Y in normal mode
 X - Add mark support to range parsing
 - Delete key in normal mode
 - Check on the behavior of tab in normal mode
-- Mark navigation for global marks
 X - Shift lines in commnad mode
 X - Help "copy-move" start from there
 - Need a way to disable Vim via keyboard
@@ -20,7 +19,6 @@ X - Command mode :delete
 X - View close should clear out the markers
 - O should enter insert mode
 - Horizontal offset issue Noah raised
-- :et in command mode
 X - Normal mode operations should be an interface
 X - Switch normal mode tests to use the interface
 X - IOperations shouldn't take NormalMode data so we can make it and a lot of other things internal again
@@ -31,12 +29,14 @@ X - Implement z scrolling in normal mode
 
 Version 0.7
 === 
+- Mark navigation for global marks
 - Marks Undo Support
 - Visual mode
   - Copy-move
   - delete-insert
 - Edits need to understand cursor selection
 - Finish range parsing
+- :et in command mode
 
 Version 5.4
 ===
