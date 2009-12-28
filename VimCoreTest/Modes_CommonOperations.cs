@@ -149,9 +149,9 @@ namespace VimCoreTest
         [Test]
         public void JumpToMark1()
         {
-            var view = Utils.EditorUtil.CreateView("foo", "bar");
+            CreateLines("foo", "bar");
             var map = new MarkMap();
-            map.SetMark(new SnapshotPoint(view.TextSnapshot, 0), 'a');
+            map.SetMark(new SnapshotPoint(_view.TextSnapshot, 0), 'a');
             var res = _operations.JumpToMark('a', map);
             Assert.IsTrue(res.IsSucceeded);
         }
@@ -245,23 +245,21 @@ namespace VimCoreTest
         public void MoveCaretRight1()
         {
             CreateLines("foo", "bar");
-            var opts = new Mock<IEditorOperations>(MockBehavior.Strict);
-            opts.Setup(x => x.ResetSelection()).Verifiable();
+            _editorOpts.Setup(x => x.ResetSelection()).Verifiable();
             _operations.MoveCaretRight(1);
             Assert.AreEqual(1, _view.Caret.Position.BufferPosition.Position);
-            opts.Verify();
+            _editorOpts.Verify();
         }
 
         [Test]
         public void MoveCaretRight2()
         {
             CreateLines("foo", "bar");
-            var opts = new Mock<IEditorOperations>(MockBehavior.Strict);
-            opts.Setup(x => x.ResetSelection()).Verifiable();
+            _editorOpts.Setup(x => x.ResetSelection()).Verifiable();
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 0));
             _operations.MoveCaretRight(2);
             Assert.AreEqual(2, _view.Caret.Position.BufferPosition.Position);
-            opts.Verify();
+            _editorOpts.Verify();
         }
 
         [Test, Description("Don't move past the end of the line")]
@@ -271,8 +269,7 @@ namespace VimCoreTest
             var tss = _view.TextSnapshot;
             var endPoint = tss.GetLineFromLineNumber(0).End;
             _view.Caret.MoveTo(endPoint);
-            var opts = new Mock<IEditorOperations>(MockBehavior.Strict);
-            opts.Setup(x => x.ResetSelection()).Verifiable();
+            _editorOpts.Setup(x => x.ResetSelection()).Verifiable();
             _operations.MoveCaretRight(1);
             Assert.AreEqual(endPoint, _view.Caret.Position.BufferPosition);
         }
@@ -283,8 +280,10 @@ namespace VimCoreTest
             CreateLines("foo", "bar");
             var last = _view.TextSnapshot.Lines.Last();
             _view.Caret.MoveTo(last.End);
+            _editorOpts.Setup(x => x.ResetSelection()).Verifiable();
             _operations.MoveCaretRight(1);
             Assert.AreEqual(last.End, _view.Caret.Position.BufferPosition);
+            _editorOpts.Verify();
         }
 
         [Test, Description("Don't go off the end of the current line")]
@@ -292,9 +291,11 @@ namespace VimCoreTest
         {
             CreateLines("foo", "bar");
             var line = _view.TextSnapshot.GetLineFromLineNumber(0);
+            _editorOpts.Setup(x => x.ResetSelection());
             _view.Caret.MoveTo(line.End);
             _operations.MoveCaretRight(1);
             Assert.AreEqual(line.End, _view.Caret.Position.BufferPosition);
+            _editorOpts.Verify();
         }
 
 
@@ -303,22 +304,20 @@ namespace VimCoreTest
         {
             CreateLines("foo", "bar");
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 1));
-            var opts = new Mock<IEditorOperations>(MockBehavior.Strict);
-            opts.Setup(x => x.ResetSelection()).Verifiable();
+            _editorOpts.Setup(x => x.ResetSelection()).Verifiable();
             _operations.MoveCaretLeft(1);
             Assert.AreEqual(0, _view.Caret.Position.BufferPosition.Position);
-            opts.Verify();
+            _editorOpts.Verify();
         }
 
         [Test, Description("Move left on the start of the line should not go anywhere")]
         public void MoveCaretLeft2()
         {
             CreateLines("foo", "bar");
-            var opts = new Mock<IEditorOperations>(MockBehavior.Strict);
-            opts.Setup(x => x.ResetSelection()).Verifiable();
+            _editorOpts.Setup(x => x.ResetSelection()).Verifiable();
             _operations.MoveCaretLeft(1);
             Assert.AreEqual(0, _view.Caret.Position.BufferPosition.Position);
-            opts.Verify();
+            _editorOpts.Verify();
         }
 
         [Test]
@@ -327,8 +326,10 @@ namespace VimCoreTest
             CreateLines("foo", "bar");
             var line = _view.TextSnapshot.GetLineFromLineNumber(0);
             _view.Caret.MoveTo(line.Start.Add(1));
+            _editorOpts.Setup(x => x.ResetSelection()).Verifiable();
             _operations.MoveCaretLeft(1);
             Assert.AreEqual(line.Start, _view.Caret.Position.BufferPosition);
+            _editorOpts.Verify();
         }
 
         [Test, Description("Left at the start of the line should not go further")]
@@ -337,8 +338,10 @@ namespace VimCoreTest
             CreateLines("foo", "bar");
             var line = _view.TextSnapshot.GetLineFromLineNumber(1);
             _view.Caret.MoveTo(line.Start);
+            _editorOpts.Setup(x => x.ResetSelection()).Verifiable();
             _operations.MoveCaretLeft(1);
             Assert.AreEqual(line.Start, _view.Caret.Position.BufferPosition);
+            _editorOpts.Verify();
         }
 
         [Test]
@@ -347,11 +350,10 @@ namespace VimCoreTest
             CreateLines("foo", "bar", "baz");
             var line = _view.TextSnapshot.GetLineFromLineNumber(1);
             _view.Caret.MoveTo(line.Start);
-            var opts = new Mock<IEditorOperations>(MockBehavior.Strict);
-            opts.Setup(x => x.ResetSelection()).Verifiable();
-            opts.Setup(x => x.MoveLineUp(false)).Verifiable();
+            _editorOpts.Setup(x => x.ResetSelection()).Verifiable();
+            _editorOpts.Setup(x => x.MoveLineUp(false)).Verifiable();
             _operations.MoveCaretUp(1);
-            opts.Verify();
+            _editorOpts.Verify();
         }
 
         [Test, Description("Move caret up past the begining of the buffer should fail if it's already at the top")]
@@ -360,8 +362,11 @@ namespace VimCoreTest
             CreateLines("foo", "bar", "baz");
             var first = _view.TextSnapshot.Lines.First();
             _view.Caret.MoveTo(first.End);
+            _editorOpts.Setup(x => x.ResetSelection()).Verifiable();
+            _editorOpts.Setup(x => x.MoveLineUp(false)).Verifiable();
             _operations.MoveCaretUp(1);
             Assert.AreEqual(first.End, _view.Caret.Position.BufferPosition);
+            _editorOpts.Verify();
         }
 
         [Test, Description("Move caret up should respect column positions")]
@@ -370,18 +375,20 @@ namespace VimCoreTest
             CreateLines("foo", "bar");
             var tss = _view.TextSnapshot;
             _view.Caret.MoveTo(tss.GetLineFromLineNumber(1).Start.Add(1));
+            _editorOpts.Setup(x => x.ResetSelection()).Verifiable();
+            _editorOpts.Setup(x => x.MoveLineUp(false)).Verifiable();
             _operations.MoveCaretUp(1);
-            Assert.AreEqual(tss.GetLineFromLineNumber(0).Start.Add(1), _view.Caret.Position.BufferPosition);
+            _editorOpts.Verify();
         }
 
         [Test]
         public void MoveCaretDown1()
         {
             CreateLines("foo", "bar", "baz");
-            var opts = new Mock<IEditorOperations>(MockBehavior.Strict);
-            opts.Setup(x => x.ResetSelection()).Verifiable();
-            opts.Setup(x => x.MoveLineDown(false)).Verifiable();
+            _editorOpts.Setup(x => x.ResetSelection()).Verifiable();
+            _editorOpts.Setup(x => x.MoveLineDown(false)).Verifiable();
             _operations.MoveCaretDown(1);
+            _editorOpts.Verify();
         }
 
         [Test, Description("Move caret down should fail if the caret is at the end of the buffer")]
@@ -390,8 +397,11 @@ namespace VimCoreTest
             CreateLines("bar", "baz", "aeu");
             var last = _view.TextSnapshot.Lines.Last();
             _view.Caret.MoveTo(last.Start);
+            _editorOpts.Setup(x => x.ResetSelection()).Verifiable();
+            _editorOpts.Setup(x => x.MoveLineDown(false)).Verifiable();
             _operations.MoveCaretDown(1);
             Assert.AreEqual(last.Start, _view.Caret.Position.BufferPosition);
+            _editorOpts.Verify();
         }
 
         [Test, Description("Move caret down should not crash if the line is the second to last line.  In other words, the last real line")]
@@ -401,8 +411,10 @@ namespace VimCoreTest
             var tss = _view.TextSnapshot;
             var line = tss.GetLineFromLineNumber(tss.LineCount - 2);
             _view.Caret.MoveTo(line.Start);
+            _editorOpts.Setup(x => x.ResetSelection()).Verifiable();
+            _editorOpts.Setup(x => x.MoveLineDown(false)).Verifiable();
             _operations.MoveCaretDown(1);
-            Assert.AreNotEqual(line.Start, _view.Caret.Position.BufferPosition);
+            _editorOpts.Verify();
         }
 
         [Test, Description("Move caret down should not crash if the line is the second to last line.  In other words, the last real line")]
@@ -412,40 +424,13 @@ namespace VimCoreTest
             var tss = _view.TextSnapshot;
             var line = tss.GetLineFromLineNumber(tss.LineCount - 1);
             _view.Caret.MoveTo(line.Start);
+            _editorOpts.Setup(x => x.ResetSelection()).Verifiable();
+            _editorOpts.Setup(x => x.MoveLineDown(false)).Verifiable();
             _operations.MoveCaretDown(1);
-            Assert.AreEqual(line.Start, _view.Caret.Position.BufferPosition);
+            _editorOpts.Verify();
         }
 
-        [Test, Description("Be wary the 0 length last line")]
-        public void MoveCaretDown5()
-        {
-            CreateLines("foo", String.Empty);
-            var tss = _view.TextSnapshot;
-            var line = tss.GetLineFromLineNumber(0);
-            _view.Caret.MoveTo(line.Start);
-            _operations.MoveCaretDown(1);
-            Assert.AreNotEqual(line.Start, _view.Caret.Position.BufferPosition);
-        }
 
-        [Test, Description("Move caret down should maintain column")]
-        public void MoveCaretDown6()
-        {
-            CreateLines("foo", "bar");
-            var tss = _view.TextSnapshot;
-            _view.Caret.MoveTo(tss.GetLineFromLineNumber(0).Start.Add(1));
-            _operations.MoveCaretDown(1);
-            Assert.AreEqual(tss.GetLineFromLineNumber(1).Start.Add(1), _view.Caret.Position.BufferPosition);
-        }
-
-        [Test, Description("Move caret down should maintain column")]
-        public void MoveCaretDown7()
-        {
-            CreateLines("foo", "bar");
-            var tss = _view.TextSnapshot;
-            _view.Caret.MoveTo(tss.GetLineFromLineNumber(0).End);
-            _operations.MoveCaretDown(1);
-            Assert.AreEqual(tss.GetLineFromLineNumber(1).End, _view.Caret.Position.BufferPosition);
-        }
 
 
 
