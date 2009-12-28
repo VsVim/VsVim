@@ -14,33 +14,45 @@ using Microsoft.VisualStudio.Text.Operations;
 namespace VimCoreTest
 {
     [TestFixture]
-    public class Modes_ModeUtilTest
+    public class Modes_CommonOperations
     {
+
+        private class OperationsImpl : CommonOperations
+        {
+            internal OperationsImpl(ITextView view, IEditorOperations opts) : base(view, opts) { }
+        }
+
         private IWpfTextView _view;
         private ITextBuffer _buffer;
+        private Mock<IEditorOperations> _editorOpts;
+        private ICommonOperations _operations;
+        private CommonOperations _operationsRaw;
 
         public void CreateLines(params string[] lines)
         {
             _view = Utils.EditorUtil.CreateView(lines);
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 0));
             _buffer = _view.TextBuffer;
+            _editorOpts = new Mock<IEditorOperations>(MockBehavior.Strict);
+            _operationsRaw = new OperationsImpl(_view, _editorOpts.Object);
+            _operations = _operationsRaw;
         }
 
         [Test]
         public void Join1()
         {
-            CreateLines("foo","bar");
-            Assert.IsTrue(ModeUtil.Join(_view, _view.GetCaretPoint(), JoinKind.RemoveEmptySpaces, 2));
+            CreateLines("foo", "bar");
+            Assert.IsTrue(_operations.Join(_view.GetCaretPoint(), JoinKind.RemoveEmptySpaces, 2));
             Assert.AreEqual("foo bar", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
             Assert.AreEqual(1, _view.TextSnapshot.LineCount);
             Assert.AreEqual(4, _view.Caret.Position.BufferPosition.Position);
         }
 
-        [Test,Description("Eat spaces at the start of the next line")]
+        [Test, Description("Eat spaces at the start of the next line")]
         public void Join2()
         {
             CreateLines("foo", "   bar");
-            Assert.IsTrue(ModeUtil.Join(_view, _view.GetCaretPoint(), JoinKind.RemoveEmptySpaces, 2));
+            Assert.IsTrue(_operations.Join(_view.GetCaretPoint(), JoinKind.RemoveEmptySpaces, 2));
             Assert.AreEqual("foo bar", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
             Assert.AreEqual(1, _view.TextSnapshot.LineCount);
             Assert.AreEqual(4, _view.Caret.Position.BufferPosition.Position);
@@ -50,7 +62,7 @@ namespace VimCoreTest
         public void Join3()
         {
             CreateLines("foo", "bar", "baz");
-            Assert.IsTrue(ModeUtil.Join(_view, _view.GetCaretPoint(), JoinKind.RemoveEmptySpaces, 3));
+            Assert.IsTrue(_operations.Join(_view.GetCaretPoint(), JoinKind.RemoveEmptySpaces, 3));
             Assert.AreEqual("foo bar baz", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
             Assert.AreEqual(1, _view.TextSnapshot.LineCount);
             Assert.AreEqual(8, _view.Caret.Position.BufferPosition.Position);
@@ -60,7 +72,7 @@ namespace VimCoreTest
         public void Join4()
         {
             CreateLines("foo", "bar");
-            Assert.IsTrue(ModeUtil.Join(_view, _view.GetCaretPoint(),JoinKind.RemoveEmptySpaces, 1));
+            Assert.IsTrue(_operations.Join(_view.GetCaretPoint(), JoinKind.RemoveEmptySpaces, 1));
             Assert.AreEqual("foo bar", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
             Assert.AreEqual(1, _view.TextSnapshot.LineCount);
             Assert.AreEqual(4, _view.Caret.Position.BufferPosition.Position);
@@ -70,7 +82,7 @@ namespace VimCoreTest
         public void Join5()
         {
             CreateLines("foo", "bar");
-            Assert.IsTrue(ModeUtil.Join(_view, _view.GetCaretPoint(), JoinKind.KeepEmptySpaces, 1));
+            Assert.IsTrue(_operations.Join(_view.GetCaretPoint(), JoinKind.KeepEmptySpaces, 1));
             Assert.AreEqual("foobar", _view.TextSnapshot.GetText());
             Assert.AreEqual(1, _view.TextSnapshot.LineCount);
         }
@@ -79,7 +91,7 @@ namespace VimCoreTest
         public void Join6()
         {
             CreateLines("foo", " bar");
-            Assert.IsTrue(ModeUtil.Join(_view, _view.GetCaretPoint(), JoinKind.KeepEmptySpaces, 1));
+            Assert.IsTrue(_operations.Join(_view.GetCaretPoint(), JoinKind.KeepEmptySpaces, 1));
             Assert.AreEqual("foo bar", _view.TextSnapshot.GetText());
             Assert.AreEqual(1, _view.TextSnapshot.LineCount);
         }
@@ -90,7 +102,7 @@ namespace VimCoreTest
             CreateLines("foo");
             var host = new Mock<IVimHost>(MockBehavior.Strict);
             host.Setup(x => x.GoToDefinition()).Returns(true);
-            var res = ModeUtil.GoToDefinition(_view, host.Object);
+            var res = _operations.GoToDefinition(host.Object);
             Assert.IsTrue(res.IsSucceeded);
         }
 
@@ -100,7 +112,7 @@ namespace VimCoreTest
             CreateLines("foo");
             var host = new Mock<IVimHost>(MockBehavior.Strict);
             host.Setup(x => x.GoToDefinition()).Returns(false);
-            var res = ModeUtil.GoToDefinition(_view, host.Object);
+            var res = _operations.GoToDefinition(host.Object);
             Assert.IsTrue(res.IsFailed);
             Assert.IsTrue(((Result.Failed)res).Item.Contains("foo"));
         }
@@ -111,7 +123,7 @@ namespace VimCoreTest
             CreateLines("      foo");
             var host = new Mock<IVimHost>(MockBehavior.Strict);
             host.Setup(x => x.GoToDefinition()).Returns(false);
-            var res = ModeUtil.GoToDefinition(_view, host.Object);
+            var res = _operations.GoToDefinition(host.Object);
             Assert.IsTrue(res.IsFailed);
         }
 
@@ -120,17 +132,17 @@ namespace VimCoreTest
         {
             CreateLines("foo");
             var map = new MarkMap();
-            var res = ModeUtil.SetMark(map, _buffer.CurrentSnapshot.GetLineFromLineNumber(0).Start, 'a');
+            var res = _operations.SetMark('a', map, _buffer.CurrentSnapshot.GetLineFromLineNumber(0).Start);
             Assert.IsTrue(res.IsSucceeded);
             Assert.IsTrue(map.GetLocalMark(_buffer, 'a').IsSome());
         }
 
-        [Test,Description("Invalid mark character")]
+        [Test, Description("Invalid mark character")]
         public void SetMark2()
         {
             CreateLines("bar");
             var map = new MarkMap();
-            var res = ModeUtil.SetMark(map, _buffer.CurrentSnapshot.GetLineFromLineNumber(0).Start, ';');
+            var res = _operations.SetMark(';', map, _buffer.CurrentSnapshot.GetLineFromLineNumber(0).Start);
             Assert.IsTrue(res.IsFailed);
         }
 
@@ -140,7 +152,7 @@ namespace VimCoreTest
             var view = Utils.EditorUtil.CreateView("foo", "bar");
             var map = new MarkMap();
             map.SetMark(new SnapshotPoint(view.TextSnapshot, 0), 'a');
-            var res = ModeUtil.JumpToMark(map, view, 'a');
+            var res = _operations.JumpToMark('a', map);
             Assert.IsTrue(res.IsSucceeded);
         }
 
@@ -149,7 +161,7 @@ namespace VimCoreTest
         {
             var view = Utils.EditorUtil.CreateView("foo", "bar");
             var map = new MarkMap();
-            var res = ModeUtil.JumpToMark(map, view, 'b');
+            var res = _operations.JumpToMark('b', map);
             Assert.IsTrue(res.IsFailed);
         }
 
@@ -159,7 +171,7 @@ namespace VimCoreTest
             var view = Utils.EditorUtil.CreateView("foo", "bar");
             var map = new MarkMap();
             map.SetMark(new SnapshotPoint(view.TextSnapshot, 0), 'B');
-            var res = ModeUtil.JumpToMark(map, view, 'B');
+            var res = _operations.JumpToMark('B', map);
             Assert.IsTrue(res.IsFailed);
         }
 
@@ -167,7 +179,7 @@ namespace VimCoreTest
         public void PasteAfter1()
         {
             var view = EditorUtil.CreateBuffer("foo", "bar");
-            var tss = ModeUtil.PasteAfter(new SnapshotPoint(view.CurrentSnapshot, 0), "yay", OperationKind.LineWise).Snapshot;
+            var tss = _operations.PasteAfter(new SnapshotPoint(view.CurrentSnapshot, 0), "yay", OperationKind.LineWise).Snapshot;
             Assert.AreEqual(2, tss.LineCount);
             Assert.AreEqual("foo", tss.GetLineFromLineNumber(0).GetText());
             Assert.AreEqual("yaybar", tss.GetLineFromLineNumber(1).GetText());
@@ -177,7 +189,7 @@ namespace VimCoreTest
         public void PasteAfter2()
         {
             var view = EditorUtil.CreateBuffer("foo", "bar");
-            var tss = ModeUtil.PasteAfter(new SnapshotPoint(view.CurrentSnapshot, 0), "yay", OperationKind.CharacterWise).Snapshot;
+            var tss = _operations.PasteAfter(new SnapshotPoint(view.CurrentSnapshot, 0), "yay", OperationKind.CharacterWise).Snapshot;
             Assert.AreEqual(2, tss.LineCount);
             Assert.AreEqual("fyayoo", tss.GetLineFromLineNumber(0).GetText());
             Assert.AreEqual("bar", tss.GetLineFromLineNumber(1).GetText());
@@ -187,7 +199,7 @@ namespace VimCoreTest
         public void PasteAfter3()
         {
             var view = EditorUtil.CreateBuffer("foo", "bar");
-            var tss = ModeUtil.PasteAfter(new SnapshotPoint(view.CurrentSnapshot, 0), "yay" + Environment.NewLine, OperationKind.LineWise).Snapshot;
+            var tss = _operations.PasteAfter(new SnapshotPoint(view.CurrentSnapshot, 0), "yay" + Environment.NewLine, OperationKind.LineWise).Snapshot;
             Assert.AreEqual(3, tss.LineCount);
             Assert.AreEqual("foo", tss.GetLineFromLineNumber(0).GetText());
             Assert.AreEqual("yay", tss.GetLineFromLineNumber(1).GetText());
@@ -198,7 +210,7 @@ namespace VimCoreTest
         public void PasteAfter4()
         {
             var buffer = EditorUtil.CreateBuffer("foo", "bar");
-            var span = ModeUtil.PasteAfter(new SnapshotPoint(buffer.CurrentSnapshot, 0), "yay", OperationKind.CharacterWise);
+            var span = _operations.PasteAfter(new SnapshotPoint(buffer.CurrentSnapshot, 0), "yay", OperationKind.CharacterWise);
             Assert.AreEqual("yay", span.GetText());
         }
 
@@ -206,16 +218,16 @@ namespace VimCoreTest
         public void PasteAfter5()
         {
             var buffer = EditorUtil.CreateBuffer("foo", "bar");
-            var span = ModeUtil.PasteAfter(new SnapshotPoint(buffer.CurrentSnapshot, 0), "yay", OperationKind.LineWise);
+            var span = _operations.PasteAfter(new SnapshotPoint(buffer.CurrentSnapshot, 0), "yay", OperationKind.LineWise);
             Assert.AreEqual("yay", span.GetText());
         }
 
-        [Test,Description("Character wise paste at the end of the line should go on that line")]
+        [Test, Description("Character wise paste at the end of the line should go on that line")]
         public void PasteAfter6()
         {
             var buffer = EditorUtil.CreateBuffer("foo", "bar");
             var point = buffer.CurrentSnapshot.GetLineFromLineNumber(0).End;
-            ModeUtil.PasteAfter(point, "yay", OperationKind.CharacterWise);
+            _operations.PasteAfter(point, "yay", OperationKind.CharacterWise);
             Assert.AreEqual("fooyay", buffer.CurrentSnapshot.GetLineFromLineNumber(0).GetText());
         }
 
@@ -223,7 +235,7 @@ namespace VimCoreTest
         public void PasteBefore1()
         {
             var buffer = EditorUtil.CreateBuffer("foo", "bar");
-            var span = ModeUtil.PasteBefore(new SnapshotPoint(buffer.CurrentSnapshot, 0), "yay");
+            var span = _operations.PasteBefore(new SnapshotPoint(buffer.CurrentSnapshot, 0), "yay");
             Assert.AreEqual("yay", span.GetText());
             Assert.AreEqual("yayfoo", span.Snapshot.GetLineFromLineNumber(0).GetText());
         }
@@ -235,7 +247,7 @@ namespace VimCoreTest
             CreateLines("foo", "bar");
             var opts = new Mock<IEditorOperations>(MockBehavior.Strict);
             opts.Setup(x => x.ResetSelection()).Verifiable();
-            ModeUtil.MoveCaretRight(_view, opts.Object, 1);
+            _operations.MoveCaretRight(1);
             Assert.AreEqual(1, _view.Caret.Position.BufferPosition.Position);
             opts.Verify();
         }
@@ -247,7 +259,7 @@ namespace VimCoreTest
             var opts = new Mock<IEditorOperations>(MockBehavior.Strict);
             opts.Setup(x => x.ResetSelection()).Verifiable();
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 0));
-            ModeUtil.MoveCaretRight(_view, opts.Object, 2);
+            _operations.MoveCaretRight(2);
             Assert.AreEqual(2, _view.Caret.Position.BufferPosition.Position);
             opts.Verify();
         }
@@ -261,7 +273,7 @@ namespace VimCoreTest
             _view.Caret.MoveTo(endPoint);
             var opts = new Mock<IEditorOperations>(MockBehavior.Strict);
             opts.Setup(x => x.ResetSelection()).Verifiable();
-            ModeUtil.MoveCaretRight(_view, opts.Object, 1);
+            _operations.MoveCaretRight(1);
             Assert.AreEqual(endPoint, _view.Caret.Position.BufferPosition);
         }
 
@@ -271,7 +283,7 @@ namespace VimCoreTest
             CreateLines("foo", "bar");
             var last = _view.TextSnapshot.Lines.Last();
             _view.Caret.MoveTo(last.End);
-            ModeUtil.MoveCaretRight(_view, EditorUtil.GetOperations(_view), 1);
+            _operations.MoveCaretRight(1);
             Assert.AreEqual(last.End, _view.Caret.Position.BufferPosition);
         }
 
@@ -281,8 +293,8 @@ namespace VimCoreTest
             CreateLines("foo", "bar");
             var line = _view.TextSnapshot.GetLineFromLineNumber(0);
             _view.Caret.MoveTo(line.End);
-            ModeUtil.MoveCaretRight(_view, EditorUtil.GetOperations(_view), 1);
-            Assert.AreEqual(line.End,_view.Caret.Position.BufferPosition);
+            _operations.MoveCaretRight(1);
+            Assert.AreEqual(line.End, _view.Caret.Position.BufferPosition);
         }
 
 
@@ -293,18 +305,18 @@ namespace VimCoreTest
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 1));
             var opts = new Mock<IEditorOperations>(MockBehavior.Strict);
             opts.Setup(x => x.ResetSelection()).Verifiable();
-            ModeUtil.MoveCaretLeft(_view, opts.Object, 1);
+            _operations.MoveCaretLeft(1);
             Assert.AreEqual(0, _view.Caret.Position.BufferPosition.Position);
             opts.Verify();
         }
 
-        [Test,Description("Move left on the start of the line should not go anywhere")]
+        [Test, Description("Move left on the start of the line should not go anywhere")]
         public void MoveCaretLeft2()
         {
             CreateLines("foo", "bar");
             var opts = new Mock<IEditorOperations>(MockBehavior.Strict);
             opts.Setup(x => x.ResetSelection()).Verifiable();
-            ModeUtil.MoveCaretLeft(_view, opts.Object, 1);
+            _operations.MoveCaretLeft(1);
             Assert.AreEqual(0, _view.Caret.Position.BufferPosition.Position);
             opts.Verify();
         }
@@ -315,30 +327,30 @@ namespace VimCoreTest
             CreateLines("foo", "bar");
             var line = _view.TextSnapshot.GetLineFromLineNumber(0);
             _view.Caret.MoveTo(line.Start.Add(1));
-            ModeUtil.MoveCaretLeft(_view, EditorUtil.GetOperations(_view), 1);
+            _operations.MoveCaretLeft(1);
             Assert.AreEqual(line.Start, _view.Caret.Position.BufferPosition);
         }
 
         [Test, Description("Left at the start of the line should not go further")]
         public void MoveCaretLeft4()
         {
-            CreateLines("foo","bar");
+            CreateLines("foo", "bar");
             var line = _view.TextSnapshot.GetLineFromLineNumber(1);
             _view.Caret.MoveTo(line.Start);
-            ModeUtil.MoveCaretLeft(_view, EditorUtil.GetOperations(_view), 1);
+            _operations.MoveCaretLeft(1);
             Assert.AreEqual(line.Start, _view.Caret.Position.BufferPosition);
         }
 
         [Test]
         public void MoveCaretUp1()
         {
-            CreateLines("foo","bar","baz");
+            CreateLines("foo", "bar", "baz");
             var line = _view.TextSnapshot.GetLineFromLineNumber(1);
             _view.Caret.MoveTo(line.Start);
             var opts = new Mock<IEditorOperations>(MockBehavior.Strict);
             opts.Setup(x => x.ResetSelection()).Verifiable();
             opts.Setup(x => x.MoveLineUp(false)).Verifiable();
-            ModeUtil.MoveCaretUp(_view, opts.Object, 1);
+            _operations.MoveCaretUp(1);
             opts.Verify();
         }
 
@@ -348,7 +360,7 @@ namespace VimCoreTest
             CreateLines("foo", "bar", "baz");
             var first = _view.TextSnapshot.Lines.First();
             _view.Caret.MoveTo(first.End);
-            ModeUtil.MoveCaretUp(_view, EditorUtil.GetOperations(_view), 1);
+            _operations.MoveCaretUp(1);
             Assert.AreEqual(first.End, _view.Caret.Position.BufferPosition);
         }
 
@@ -358,18 +370,18 @@ namespace VimCoreTest
             CreateLines("foo", "bar");
             var tss = _view.TextSnapshot;
             _view.Caret.MoveTo(tss.GetLineFromLineNumber(1).Start.Add(1));
-            ModeUtil.MoveCaretUp(_view, EditorUtil.GetOperations(_view), 1);
+            _operations.MoveCaretUp(1);
             Assert.AreEqual(tss.GetLineFromLineNumber(0).Start.Add(1), _view.Caret.Position.BufferPosition);
         }
 
         [Test]
         public void MoveCaretDown1()
         {
-            CreateLines("foo","bar","baz");
+            CreateLines("foo", "bar", "baz");
             var opts = new Mock<IEditorOperations>(MockBehavior.Strict);
             opts.Setup(x => x.ResetSelection()).Verifiable();
             opts.Setup(x => x.MoveLineDown(false)).Verifiable();
-            ModeUtil.MoveCaretDown(_view, opts.Object, 1);
+            _operations.MoveCaretDown(1);
         }
 
         [Test, Description("Move caret down should fail if the caret is at the end of the buffer")]
@@ -378,7 +390,7 @@ namespace VimCoreTest
             CreateLines("bar", "baz", "aeu");
             var last = _view.TextSnapshot.Lines.Last();
             _view.Caret.MoveTo(last.Start);
-            ModeUtil.MoveCaretDown(_view, EditorUtil.GetOperations(_view), 1);
+            _operations.MoveCaretDown(1);
             Assert.AreEqual(last.Start, _view.Caret.Position.BufferPosition);
         }
 
@@ -389,18 +401,18 @@ namespace VimCoreTest
             var tss = _view.TextSnapshot;
             var line = tss.GetLineFromLineNumber(tss.LineCount - 2);
             _view.Caret.MoveTo(line.Start);
-            ModeUtil.MoveCaretDown(_view, EditorUtil.GetOperations(_view), 1);
+            _operations.MoveCaretDown(1);
             Assert.AreNotEqual(line.Start, _view.Caret.Position.BufferPosition);
         }
 
         [Test, Description("Move caret down should not crash if the line is the second to last line.  In other words, the last real line")]
         public void MoveCaretDown4()
         {
-            CreateLines("foo","bar","baz");
+            CreateLines("foo", "bar", "baz");
             var tss = _view.TextSnapshot;
             var line = tss.GetLineFromLineNumber(tss.LineCount - 1);
             _view.Caret.MoveTo(line.Start);
-            ModeUtil.MoveCaretDown(_view, EditorUtil.GetOperations(_view), 1);
+            _operations.MoveCaretDown(1);
             Assert.AreEqual(line.Start, _view.Caret.Position.BufferPosition);
         }
 
@@ -411,7 +423,7 @@ namespace VimCoreTest
             var tss = _view.TextSnapshot;
             var line = tss.GetLineFromLineNumber(0);
             _view.Caret.MoveTo(line.Start);
-            ModeUtil.MoveCaretDown(_view, EditorUtil.GetOperations(_view), 1);
+            _operations.MoveCaretDown(1);
             Assert.AreNotEqual(line.Start, _view.Caret.Position.BufferPosition);
         }
 
@@ -421,7 +433,7 @@ namespace VimCoreTest
             CreateLines("foo", "bar");
             var tss = _view.TextSnapshot;
             _view.Caret.MoveTo(tss.GetLineFromLineNumber(0).Start.Add(1));
-            ModeUtil.MoveCaretDown(_view, EditorUtil.GetOperations(_view), 1);
+            _operations.MoveCaretDown(1);
             Assert.AreEqual(tss.GetLineFromLineNumber(1).Start.Add(1), _view.Caret.Position.BufferPosition);
         }
 
@@ -431,7 +443,7 @@ namespace VimCoreTest
             CreateLines("foo", "bar");
             var tss = _view.TextSnapshot;
             _view.Caret.MoveTo(tss.GetLineFromLineNumber(0).End);
-            ModeUtil.MoveCaretDown(_view, EditorUtil.GetOperations(_view), 1);
+            _operations.MoveCaretDown(1);
             Assert.AreEqual(tss.GetLineFromLineNumber(1).End, _view.Caret.Position.BufferPosition);
         }
 

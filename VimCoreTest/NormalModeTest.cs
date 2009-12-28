@@ -686,7 +686,7 @@ namespace VimCoreTest
         public void Paste_p()
         {
             CreateBuffer("foo bar");
-            _operations.Setup(x => x.PasteAfter("hey", 1, OperationKind.CharacterWise, false)).Verifiable();
+            _operations.Setup(x => x.PasteAfterCursor("hey", 1, OperationKind.CharacterWise, false)).Verifiable();
             _map.DefaultRegister.UpdateValue("hey");
             _mode.Process('p');
             _operations.Verify();
@@ -696,7 +696,7 @@ namespace VimCoreTest
         public void Paste_p_2()
         {
             CreateBuffer("foo");
-            _operations.Setup(x => x.PasteAfter("hey", 1, OperationKind.CharacterWise, false)).Verifiable();
+            _operations.Setup(x => x.PasteAfterCursor("hey", 1, OperationKind.CharacterWise, false)).Verifiable();
             _map.GetRegister('j').UpdateValue("hey");
             _mode.Process("\"jp");
             _operations.Verify();
@@ -707,7 +707,7 @@ namespace VimCoreTest
         {
             CreateBuffer("foo", "bar");
             var data = "baz" + Environment.NewLine;
-            _operations.Setup(x => x.PasteAfter(data, 1, OperationKind.LineWise, false)).Verifiable();
+            _operations.Setup(x => x.PasteAfterCursor(data, 1, OperationKind.LineWise, false)).Verifiable();
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 0));
             _map.DefaultRegister.UpdateValue(new RegisterValue(data, MotionKind.Inclusive, OperationKind.LineWise));
             _mode.Process("p");
@@ -718,7 +718,7 @@ namespace VimCoreTest
         public void Paste_2p()
         {
             CreateBuffer("foo");
-            _operations.Setup(x => x.PasteAfter("hey", 2, OperationKind.CharacterWise, false)).Verifiable();
+            _operations.Setup(x => x.PasteAfterCursor("hey", 2, OperationKind.CharacterWise, false)).Verifiable();
             _map.DefaultRegister.UpdateValue("hey");
             _mode.Process("2p");
             _operations.Verify();
@@ -728,7 +728,7 @@ namespace VimCoreTest
         public void Paste_P()
         {
             CreateBuffer("foo");
-            _operations.Setup(x => x.PasteBefore("hey", 1, false)).Verifiable();
+            _operations.Setup(x => x.PasteBeforeCursor("hey", 1, false)).Verifiable();
             _map.DefaultRegister.UpdateValue("hey");
             _mode.Process('P');
             _operations.Verify();
@@ -738,7 +738,7 @@ namespace VimCoreTest
         public void Paste_2P()
         {
             CreateBuffer("foo");
-            _operations.Setup(x => x.PasteBefore("hey", 2, false)).Verifiable();
+            _operations.Setup(x => x.PasteBeforeCursor("hey", 2, false)).Verifiable();
             _map.DefaultRegister.UpdateValue("hey");
             _mode.Process("2P");
             _operations.Verify();
@@ -748,7 +748,7 @@ namespace VimCoreTest
         public void Paste_gp_1()
         {
             CreateBuffer("foo");
-            _operations.Setup(x => x.PasteAfter("hey", 1, OperationKind.CharacterWise, true)).Verifiable();
+            _operations.Setup(x => x.PasteAfterCursor("hey", 1, OperationKind.CharacterWise, true)).Verifiable();
             _map.DefaultRegister.UpdateValue("hey");
             _mode.Process("gp");
             _operations.Verify();
@@ -758,7 +758,7 @@ namespace VimCoreTest
         public void Paste_gp_2()
         {
             CreateBuffer("foo", "bar");
-            _operations.Setup(x => x.PasteAfter("hey", 1, OperationKind.CharacterWise, true)).Verifiable();
+            _operations.Setup(x => x.PasteAfterCursor("hey", 1, OperationKind.CharacterWise, true)).Verifiable();
             _view.Caret.MoveTo(_view.TextSnapshot.GetLineFromLineNumber(0).End);
             _map.GetRegister('c').UpdateValue("hey");
             _mode.Process("\"cgp");
@@ -769,7 +769,7 @@ namespace VimCoreTest
         public void Paste_gP_1()
         {
             CreateBuffer("foo");
-            _operations.Setup(x => x.PasteBefore("hey", 1, true)).Verifiable();
+            _operations.Setup(x => x.PasteBeforeCursor("hey", 1, true)).Verifiable();
             _map.DefaultRegister.UpdateValue("hey");
             _mode.Process("gP");
             _operations.Verify();
@@ -779,7 +779,7 @@ namespace VimCoreTest
         public void Paste_gP_2()
         {
             CreateBuffer("foo", "bar");
-            _operations.Setup(x => x.PasteBefore("hey", 1, true)).Verifiable();
+            _operations.Setup(x => x.PasteBeforeCursor("hey", 1, true)).Verifiable();
             _view.Caret.MoveTo(_view.TextSnapshot.GetLineFromLineNumber(0).End);
             _map.DefaultRegister.UpdateValue("hey");
             _mode.Process("gP");
@@ -1352,7 +1352,7 @@ namespace VimCoreTest
         public void Mark3()
         {
             CreateBuffer(s_lines);
-            _operations.Setup(x => x.SetMark('a', _bufferData._vimData.MarkMap)).Returns(Result._unique_Succeeded).Verifiable();
+            _operations.Setup(x => x.SetMark('a', _bufferData._vimData.MarkMap, _view.Caret.Position.BufferPosition)).Returns(Result._unique_Succeeded).Verifiable();
             _mode.Process(InputUtil.CharToKeyInput('m'));
             _mode.Process(InputUtil.CharToKeyInput('a'));
             _operations.Verify();
@@ -1362,7 +1362,7 @@ namespace VimCoreTest
         public void Mark4()
         {
             CreateBuffer(s_lines);
-            _operations.Setup(x => x.SetMark(';', _bufferData._vimData.MarkMap)).Returns(Result.NewFailed("foo")).Verifiable();
+            _operations.Setup(x => x.SetMark(';', _bufferData._vimData.MarkMap, _view.Caret.Position.BufferPosition)).Returns(Result.NewFailed("foo")).Verifiable();
             _mode.Process(InputUtil.CharToKeyInput('m'));
             _mode.Process(InputUtil.CharToKeyInput(';'));
             Assert.IsTrue(_host.BeepCount > 0);

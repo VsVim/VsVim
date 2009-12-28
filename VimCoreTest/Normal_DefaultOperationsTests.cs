@@ -199,7 +199,7 @@ namespace VimCoreTest
         public void PasteAfter1()
         {
             Create("foo bar");
-            _operations.PasteAfter("hey", 1, OperationKind.CharacterWise, false);
+            _operations.PasteAfterCursor("hey", 1, OperationKind.CharacterWise, false);
             Assert.AreEqual("fheyoo bar", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
         }
 
@@ -208,7 +208,7 @@ namespace VimCoreTest
         {
             Create("foo", "bar");
             _view.Caret.MoveTo(TssUtil.GetEndPoint(_view.TextSnapshot));
-            _operations.PasteAfter("hello", 1, OperationKind.CharacterWise, false);
+            _operations.PasteAfterCursor("hello", 1, OperationKind.CharacterWise, false);
             Assert.AreEqual("barhello", _view.TextSnapshot.GetLineFromLineNumber(1).GetText());
         }
 
@@ -217,7 +217,7 @@ namespace VimCoreTest
         {
             Create("foo", String.Empty);
             _view.Caret.MoveTo(TssUtil.GetEndPoint(_view.TextSnapshot));
-            _operations.PasteAfter("bar", 1, OperationKind.CharacterWise, false);
+            _operations.PasteAfterCursor("bar", 1, OperationKind.CharacterWise, false);
             Assert.AreEqual("bar", _view.TextSnapshot.GetLineFromLineNumber(1).GetText());
         }
 
@@ -226,7 +226,7 @@ namespace VimCoreTest
         {
             Create("foo", "bar");
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 0));
-            _operations.PasteAfter("baz" + Environment.NewLine, 1, OperationKind.LineWise, false);
+            _operations.PasteAfterCursor("baz" + Environment.NewLine, 1, OperationKind.LineWise, moveCursorToEnd : false);
             Assert.AreEqual("foo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
             Assert.AreEqual("baz", _view.TextSnapshot.GetLineFromLineNumber(1).GetText());
         }
@@ -236,7 +236,7 @@ namespace VimCoreTest
         {
             Create("foo", "bar");
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 0));
-            _operations.PasteAfter("baz" + Environment.NewLine, 1, OperationKind.LineWise, false);
+            _operations.PasteAfterCursor("baz" + Environment.NewLine, 1, OperationKind.LineWise, false);
             var pos = _view.Caret.Position.BufferPosition;
             Assert.AreEqual(_view.TextSnapshot.GetLineFromLineNumber(1).Start, pos);
         }
@@ -245,7 +245,7 @@ namespace VimCoreTest
         public void PasteAfter8()
         {
             Create("foo");
-            _operations.PasteAfter("hey",2, OperationKind.CharacterWise, false);
+            _operations.PasteAfterCursor("hey",2, OperationKind.CharacterWise, false);
             Assert.AreEqual("fheyheyoo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
         }
 
@@ -253,7 +253,7 @@ namespace VimCoreTest
         public void PasteAfter9()
         {
             Create("foo");
-            _operations.PasteAfter("hey", 1, OperationKind.CharacterWise, true);
+            _operations.PasteAfterCursor("hey", 1, OperationKind.CharacterWise, true);
             Assert.AreEqual("fheyoo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
             Assert.AreEqual(4, _view.Caret.Position.BufferPosition.Position);
         }
@@ -263,7 +263,7 @@ namespace VimCoreTest
         {
             Create("foo", "bar");
             _view.Caret.MoveTo(_view.TextSnapshot.GetLineFromLineNumber(0).End);
-            _operations.PasteAfter("hey", 1, OperationKind.CharacterWise, true);
+            _operations.PasteAfterCursor("hey", 1, OperationKind.CharacterWise, true);
             Assert.AreEqual("foohey", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
         }
 
@@ -271,7 +271,7 @@ namespace VimCoreTest
         public void PasteBefore1()
         {
             Create("foo");
-            _operations.PasteBefore("hey", 1, false);
+            _operations.PasteBeforeCursor("hey", 1, false);
             Assert.AreEqual("heyfoo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
         }
 
@@ -279,7 +279,7 @@ namespace VimCoreTest
         public void PasteBefore2()
         {
             Create("foo");
-            _operations.PasteBefore("hey", 2, false);
+            _operations.PasteBeforeCursor("hey", 2, false);
             Assert.AreEqual("heyheyfoo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
         }
 
@@ -288,7 +288,7 @@ namespace VimCoreTest
         public void PasteBefore3()
         {
             Create("foo");
-            _operations.PasteBefore("hey", 1, true);
+            _operations.PasteBeforeCursor("hey", 1, true);
             Assert.AreEqual("heyfoo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
             Assert.AreEqual(3, _view.Caret.Position.BufferPosition.Position);
         }
@@ -298,7 +298,7 @@ namespace VimCoreTest
         {
             Create("foo", "bar");
             _view.Caret.MoveTo(_view.TextSnapshot.GetLineFromLineNumber(0).End);
-            _operations.PasteBefore("hey", 1, true);
+            _operations.PasteBeforeCursor("hey", 1, true);
             Assert.AreEqual("foohey", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
         }
 
