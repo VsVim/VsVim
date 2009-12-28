@@ -86,12 +86,12 @@ type CommandMode
                 SnapshotSpan(point,0)
 
         match count with 
-        | Some(c) -> Modes.ModeUtil.Join _data.TextView range.End kind c |> ignore
+        | Some(c) -> _operations.Join range.End kind c |> ignore
         | None -> 
             let startLine = range.Start.GetContainingLine().LineNumber
             let endLine = range.End.GetContainingLine().LineNumber
             let count = endLine - startLine
-            Modes.ModeUtil.Join _data.TextView range.Start kind count |> ignore
+            _operations.Join range.Start kind count |> ignore
 
 
     /// Parse out the :edit commnad
@@ -128,7 +128,7 @@ type CommandMode
             | None -> range
 
         let span = RangeUtil.GetSnapshotSpan range
-        Modes.ModeUtil.Yank span MotionKind.Exclusive OperationKind.LineWise reg
+        _operations.Yank span MotionKind.Exclusive OperationKind.LineWise reg
 
     /// Parse the Put command
     member x.ParsePut (rest:KeyInput list) (range: Range option) =
@@ -190,7 +190,7 @@ type CommandMode
             | Some(count) -> RangeUtil.ApplyCount range count
             | None -> range
         let span = RangeUtil.GetSnapshotSpan range
-        ModeUtil.DeleteSpan span MotionKind.Exclusive OperationKind.LineWise reg |> ignore
+        _operations.DeleteSpan span MotionKind.Exclusive OperationKind.LineWise reg |> ignore
 
     member x.ParsePChar (current:KeyInput) (rest: KeyInput list) (range:Range option) =
         match current.Char with

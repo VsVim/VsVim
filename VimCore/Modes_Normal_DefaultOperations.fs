@@ -15,13 +15,15 @@ type internal DefaultOperations
     _operations : IEditorOperations ) =
     inherit CommonOperations(_textView, _operations)
 
+    member private x.CommonImpl = x :> ICommonOperations
+
     interface IOperations with 
         
         /// Paste the given text after the cursor
-        member x.PasteAfter text count opKind moveCursor = 
+        member x.PasteAfterCursor text count opKind moveCursor = 
             let text = StringUtil.Repeat text count 
             let caret = ViewUtil.GetCaretPoint _textView
-            let span = ModeUtil.PasteAfter caret text opKind
+            let span = x.CommonImpl.PasteAfter caret text opKind
             if moveCursor then
                 ViewUtil.MoveCaretToPoint _textView span.End |> ignore
             else if opKind = OperationKind.LineWise then
@@ -32,10 +34,10 @@ type internal DefaultOperations
                 ViewUtil.MoveCaretToPoint _textView nextLine.Start |> ignore
  
         /// Paste the text before the cursor
-        member x.PasteBefore text count moveCursor = 
+        member x.PasteBeforeCursor text count moveCursor = 
             let text = StringUtil.Repeat text count 
             let caret = ViewUtil.GetCaretPoint _textView
-            let span = ModeUtil.PasteBefore caret text 
+            let span = x.CommonImpl.PasteBefore caret text 
             if moveCursor then
                 ViewUtil.MoveCaretToPoint _textView span.End |> ignore
 
@@ -69,7 +71,7 @@ type internal DefaultOperations
             let point = ViewUtil.GetCaretPoint _textView
             let point = point.GetContainingLine().Start
             let span = TssUtil.GetLineRangeSpanIncludingLineBreak point count
-            Modes.ModeUtil.Yank span MotionKind.Inclusive OperationKind.LineWise reg |> ignore
+            x.CommonImpl.Yank span MotionKind.Inclusive OperationKind.LineWise reg |> ignore
     
         /// Implement the normal mode x command
         member x.DeleteCharacterAtCursor count reg =
@@ -77,13 +79,13 @@ type internal DefaultOperations
             let line = point.GetContainingLine()
             let count = min (count) (line.End.Position-point.Position)
             let span = new SnapshotSpan(point, count)
-            Modes.ModeUtil.DeleteSpan span MotionKind.Exclusive OperationKind.CharacterWise reg |> ignore
+            x.CommonImpl.DeleteSpan span MotionKind.Exclusive OperationKind.CharacterWise reg |> ignore
     
         /// Implement the normal mode X command
         member x.DeleteCharacterBeforeCursor count reg = 
             let point = ViewUtil.GetCaretPoint _textView
             let range = TssUtil.GetReverseCharacterSpan point count
-            Modes.ModeUtil.DeleteSpan range MotionKind.Exclusive OperationKind.CharacterWise reg |> ignore
+            x.CommonImpl.DeleteSpan range MotionKind.Exclusive OperationKind.CharacterWise reg |> ignore
     
       
     

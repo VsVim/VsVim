@@ -12,6 +12,6 @@ type IOperations =
     abstract YankLines : count:int -> Register -> unit
     abstract DeleteCharacterAtCursor : count:int -> Register -> unit 
     abstract DeleteCharacterBeforeCursor : count:int -> Register -> unit
-    abstract PasteAfter : text:string -> count:int -> opKind:OperationKind -> moveCursorToEnd: bool -> unit
-    abstract PasteBefore : text:string -> count:int -> moveCursorToEnd:bool -> unit
+    abstract PasteAfterCursor : text:string -> count:int -> opKind:OperationKind -> moveCursorToEnd: bool -> unit
+    abstract PasteBeforeCursor : text:string -> count:int -> moveCursorToEnd:bool -> unit
     interface Modes.ICommonOperations

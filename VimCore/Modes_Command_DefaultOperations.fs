@@ -17,6 +17,8 @@ type internal DefaultOperations
         _host : IVimHost ) =
     inherit CommonOperations(_textView, _operations) 
 
+    member private x.CommonImpl = x :> ICommonOperations
+
     interface IOperations with
         member x.EditFile fileName = _host.OpenFile fileName
 
@@ -32,8 +34,8 @@ type internal DefaultOperations
 
             let point = line.Start
             let span =
-                if isAfter then Modes.ModeUtil.PasteAfter point text OperationKind.LineWise
-                else Modes.ModeUtil.PasteBefore point text
+                if isAfter then x.CommonImpl.PasteAfter point text OperationKind.LineWise
+                else x.CommonImpl.PasteBefore point text
 
             // Move the cursor to the first non-blank character on the last line
             let line = span.End.Subtract(1).GetContainingLine()
