@@ -166,18 +166,20 @@ namespace VimCoreTest
         public void Put1()
         {
             Create("foo", "bar");
+            _operations.Setup(x => x.Put("hey", It.IsAny<ITextSnapshotLine>(), true)).Verifiable();
             _map.DefaultRegister.UpdateValue("hey");
             ProcessWithEnter("put");
-            Assert.AreEqual("hey", _view.TextSnapshot.GetLineFromLineNumber(1).GetText());
+            _operations.Verify();
         }
 
         [Test]
         public void Put2()
         {
             Create("foo", "bar");
+            _operations.Setup(x => x.Put("hey", It.IsAny<ITextSnapshotLine>(), false)).Verifiable();
             _map.DefaultRegister.UpdateValue("hey");
             ProcessWithEnter("2put!");
-            Assert.AreEqual("hey", _view.TextSnapshot.GetLineFromLineNumber(1).GetText());
+            _operations.Verify();
         }
 
         [Test]
