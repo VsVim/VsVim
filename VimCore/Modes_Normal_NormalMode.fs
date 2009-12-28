@@ -339,24 +339,37 @@ type internal NormalMode( _bufferData : IVimBufferData, _operations : IOperation
         ViewUtil.ClearSelection view                
         runCount count
 
+    member private this.BuildMotionOperationsMap =
+        let wrap (func: NormalModeData -> unit) = 
+            let inner (d:NormalModeData) = 
+                func d |> ignore
+                NormalModeResult.Complete
+            inner
+        let moveLeft = wrap (fun d -> _operations.MoveCaretLeft(d.Count) )
+        let moveRight = wrap (fun d -> _operations.MoveCaretRight(d.Count) )
+        let moveUp = wrap (fun d -> _operations.MoveCaretUp(d.Count) )
+        let moveDown = wrap (fun d -> _operations.MoveCaretDown(d.Count) )
+
+        let l : list<Operation> = [
+            { KeyInput=InputUtil.CharToKeyInput('h'); RunFunc = moveLeft; }
+            { KeyInput=InputUtil.KeyToKeyInput(Key.Left); RunFunc = moveLeft; }
+            { KeyInput=InputUtil.KeyToKeyInput(Key.Back); RunFunc = moveLeft; }
+            { KeyInput=KeyInput('h', Key.H, ModifierKeys.Control); RunFunc = moveLeft; }
+            { KeyInput=InputUtil.CharToKeyInput('l'); RunFunc = moveRight; }
+            { KeyInput=InputUtil.KeyToKeyInput(Key.Right); RunFunc = moveRight; }
+            { KeyInput=InputUtil.KeyToKeyInput(Key.Space); RunFunc = moveRight; }
+            { KeyInput=InputUtil.CharToKeyInput('k'); RunFunc=moveUp; }
+            { KeyInput=InputUtil.KeyToKeyInput(Key.Up); RunFunc=moveUp; }
+            { KeyInput=KeyInput('p', Key.P, ModifierKeys.Control); RunFunc=moveUp; }
+            { KeyInput=InputUtil.CharToKeyInput('j'); RunFunc=moveDown; }
+            { KeyInput=InputUtil.KeyToKeyInput(Key.Down); RunFunc=moveDown; }
+            { KeyInput=KeyInput('n', Key.N, ModifierKeys.Control); RunFunc=moveDown; }
+            { KeyInput=KeyInput('j', Key.J, ModifierKeys.Control); RunFunc=moveDown; }
+            ]
+        l
+
     member this.BuildOperationsMap = 
         let l : list<Operation> = [
-            {   KeyInput=InputUtil.CharToKeyInput('h'); 
-                RunFunc=(fun d -> 
-                    _operations.MoveCaretLeft d.Count
-                    NormalModeResult.Complete); };
-            {   KeyInput=InputUtil.CharToKeyInput('j');
-                RunFunc=(fun d -> 
-                    _operations.MoveCaretDown d.Count
-                    NormalModeResult.Complete); };
-            {   KeyInput=InputUtil.CharToKeyInput('k');
-                RunFunc=(fun d -> 
-                    _operations.MoveCaretUp d.Count
-                    NormalModeResult.Complete); };
-            {   KeyInput=InputUtil.CharToKeyInput('l');
-                RunFunc=(fun d -> 
-                    _operations.MoveCaretRight d.Count
-                    NormalModeResult.Complete); };
             {   KeyInput=InputUtil.CharToKeyInput('w');
                 RunFunc=(fun d -> this.MotionFunc this.TextView d.Count (fun v -> ViewUtil.MoveWordForward v WordKind.NormalWord)) };
             {   KeyInput=InputUtil.CharToKeyInput('b');
@@ -459,11 +472,8 @@ type internal NormalMode( _bufferData : IVimBufferData, _operations : IOperation
                 RunFunc=(fun d -> 
                         _operations.YankLines d.Count d.Register 
                         NormalModeResult.Complete); }
-            {   KeyInput=InputUtil.KeyToKeyInput(Key.Back);
-                RunFunc=(fun d -> 
-                        _operations.MoveCaretLeft(d.Count)
-                        NormalModeResult.Complete); }
             ]
+        let l = l @ this.BuildMotionOperationsMap
         l |> List.map (fun d -> d.KeyInput,d) |> Map.ofList
 
    

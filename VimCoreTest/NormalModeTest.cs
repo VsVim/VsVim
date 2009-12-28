@@ -220,6 +220,118 @@ namespace VimCoreTest
             _operations.Verify();
         }
 
+        [Test]
+        public void Move_LeftArrow1()
+        {
+            CreateBuffer(s_lines);
+            _operations.Setup(x => x.MoveCaretLeft(1)).Verifiable();
+            _mode.Process(InputUtil.KeyToKeyInput(Key.Left));
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Move_LeftArrow2()
+        {
+            CreateBuffer(s_lines);
+            _operations.Setup(x => x.MoveCaretLeft(2)).Verifiable();
+            _mode.Process('2');
+            _mode.Process(InputUtil.KeyToKeyInput(Key.Left));
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Move_RightArrow1()
+        {
+            CreateBuffer(s_lines);
+            _operations.Setup(x => x.MoveCaretRight(1)).Verifiable();
+            _mode.Process(InputUtil.KeyToKeyInput(Key.Right));
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Move_RightArrow2()
+        {
+            CreateBuffer(s_lines);
+            _operations.Setup(x => x.MoveCaretRight(2)).Verifiable();
+            _mode.Process('2');
+            _mode.Process(InputUtil.KeyToKeyInput(Key.Right));
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Move_UpArrow1()
+        {
+            CreateBuffer(s_lines);
+            _operations.Setup(x => x.MoveCaretUp(1)).Verifiable();
+            _mode.Process(InputUtil.KeyToKeyInput(Key.Up));
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Move_UpArrow2()
+        {
+            CreateBuffer(s_lines);
+            _operations.Setup(x => x.MoveCaretUp(2)).Verifiable();
+            _mode.Process('2');
+            _mode.Process(InputUtil.KeyToKeyInput(Key.Up));
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Move_DownArrow1()
+        {
+            CreateBuffer(s_lines);
+            _operations.Setup(x => x.MoveCaretDown(1)).Verifiable();
+            _mode.Process(InputUtil.KeyToKeyInput(Key.Down));
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Move_DownArrow2()
+        {
+            CreateBuffer(s_lines);
+            _operations.Setup(x => x.MoveCaretDown(2)).Verifiable();
+            _mode.Process('2');
+            _mode.Process(InputUtil.KeyToKeyInput(Key.Down));
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Move_CtrlP1()
+        {
+            CreateBuffer(s_lines);
+            _operations.Setup(x => x.MoveCaretUp(1)).Verifiable();
+            _mode.Process(new KeyInput('p', Key.P, ModifierKeys.Control));
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Move_CtrlN1()
+        {
+            CreateBuffer(s_lines);
+            _operations.Setup(x => x.MoveCaretDown(1)).Verifiable();
+            _mode.Process(new KeyInput('n', Key.N, ModifierKeys.Control));
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Move_CtrlH1()
+        {
+            CreateBuffer(s_lines);
+            _operations.Setup(x => x.MoveCaretLeft(1)).Verifiable();
+            _mode.Process(new KeyInput('h', Key.H, ModifierKeys.Control));
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Move_SpaceBar1()
+        {
+            CreateBuffer(s_lines);
+            _operations.Setup(x => x.MoveCaretRight(1)).Verifiable();
+            _mode.Process(InputUtil.KeyToKeyInput(Key.Space));
+            _operations.Verify();
+        }
+
         #endregion
 
         #region Scroll
