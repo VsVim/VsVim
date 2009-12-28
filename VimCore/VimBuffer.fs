@@ -46,7 +46,7 @@ type internal VimBuffer
         _keyInputProcessedEvent.Trigger(i)
         ret
             
-    member x.WillProcessInput ki = _mode.CanProcess ki || ki = _data.Settings.DisableCommand
+    member x.CanProcessInput ki = _mode.CanProcess ki || ki = _data.Settings.DisableCommand
                  
     interface IVimBuffer with
         member x.VimBufferData = _data
@@ -67,8 +67,8 @@ type internal VimBuffer
         member x.KeyInputProcessed = _keyInputProcessedEvent.Publish
         member x.ProcessKey k = x.ProcessInput (InputUtil.KeyToKeyInput k)
         member x.ProcessInput ki = x.ProcessInput ki
-        member x.WillProcessInput ki = x.WillProcessInput ki
-        member x.WillProcessKey k = x.WillProcessInput (InputUtil.KeyToKeyInput k)
+        member x.CanProcessInput ki = x.CanProcessInput ki
+        member x.CanProcessKey k = x.CanProcessInput (InputUtil.KeyToKeyInput k)
         member x.Close () = 
             x.Mode.OnLeave()
             _data.BlockCaret.Destroy()

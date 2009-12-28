@@ -10,7 +10,6 @@ X - Check on the behavior of tab in normal mode
 X - Shift lines in commnad mode
 X - Help "copy-move" start from there
 X - Need a way to disable Vim via keyboard
-- Need a way to disable Vim on startup
 X - gp in Normal mode
 X - gP in normal mode
 X - Bug: 5x does not delete 5 characters
@@ -18,8 +17,8 @@ X - Bug: dw at end of line, should it delete the line break as well?
 X - Rename Modes_Common_operations to ModeUtil or something like that
 X - Test NormalMode_Operations indepnedently
 X - Command mode :delete
-- Help delete and insert
 X - View close should clear out the markers
+X - Rename IVimBuffer->WillProcess to CanProcess for consistency
 - O should enter insert mode
 X - Horizontal offset issue Noah raised
 X - Normal mode operations should be an interface
@@ -33,10 +32,10 @@ X - Join needs to move into ICommonOperations
 - Implement IEditorOperationsTest
 - Move Shift into ICommonOperations
 - Implement normal mode .
-- Rename IVimBuffer->WillProcess to CanProcess for consistency
 
 Version 0.7
 === 
+- Help delete-insert
 - Should MoveCaretX reset selection if the caret doesn't move?
 - Mark navigation for global marks
 - Marks Undo Support
@@ -47,6 +46,7 @@ Version 0.7
 - Finish range parsing
 - :et in command mode
 - :w in command mode
+- Need a way to disable Vim on startup
 
 Version 5.4
 ===
