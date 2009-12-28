@@ -4,7 +4,7 @@ X - 'Y in normal mode
 X - Add mark support to range parsing
 X - Delete key in normal mode
 X - All motion keys for basic motions(left,up,down,right)
-- Verify arrow keys are translated from Visual Studio Commands
+X - Verify arrow keys are translated from Visual Studio Commands
 - Verify space bar is translated to Visual Studio Commands
 - Check on the behavior of tab in normal mode
 X - Shift lines in commnad mode
@@ -31,13 +31,12 @@ X - Implement z scrolling in normal mode
 X - Move more operations to the interfaces in normal mode
 X - Join needs to move into ICommonOperations
 - Implement IEditorOperationsTest
-- Should MoveCaretX reset selection if the caret doesn't move?
 - Move Shift into ICommonOperations
 - Implement normal mode .
-- Ignore VS commands with no name
 
 Version 0.7
 === 
+- Should MoveCaretX reset selection if the caret doesn't move?
 - Mark navigation for global marks
 - Marks Undo Support
 - Visual mode
