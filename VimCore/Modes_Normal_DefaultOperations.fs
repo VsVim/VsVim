@@ -13,20 +13,10 @@ type internal DefaultOperations
     (
     _textView : ITextView,
     _operations : IEditorOperations ) =
+    inherit CommonOperations(_textView, _operations)
 
     interface IOperations with 
         
-        // From ICommonOperations
-        member x.TextView = _textView 
-        member x.MoveCaretLeft count = ModeUtil.MoveCaretLeft _textView _operations count
-        member x.MoveCaretRight count = ModeUtil.MoveCaretRight _textView _operations count
-        member x.MoveCaretUp count = ModeUtil.MoveCaretUp _textView _operations count
-        member x.MoveCaretDown count = ModeUtil.MoveCaretDown _textView _operations count
-        member x.JumpToMark ident map = ModeUtil.JumpToMark map _textView ident
-        member x.SetMark ident map = 
-            let point = ViewUtil.GetCaretPoint _textView
-            ModeUtil.SetMark map point ident 
-
         /// Paste the given text after the cursor
         member x.PasteAfter text count opKind moveCursor = 
             let text = StringUtil.Repeat text count 
