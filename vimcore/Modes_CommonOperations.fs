@@ -148,7 +148,7 @@ type internal CommonOperations
             let count = 
                 if current.LineNumber - count > 0 then count
                 else current.LineNumber 
-            for i = 0 to count do   
+            for i = 1 to count do   
                 _operations.MoveLineUp(false)
             
         /// Move the cursor count spaces down
@@ -160,7 +160,7 @@ type internal CommonOperations
             let count = 
                 if line.LineNumber + count < tss.LineCount then count
                 else (tss.LineCount - line.LineNumber) - 1 
-            for i = 0 to count do
+            for i = 1 to count do
                 _operations.MoveLineDown(false)
         
     

@@ -34,6 +34,7 @@ X - Join needs to move into ICommonOperations
 - Should MoveCaretX reset selection if the caret doesn't move?
 - Move Shift into ICommonOperations
 - Implement normal mode .
+- Ignore VS commands with no name
 
 Version 0.7
 === 

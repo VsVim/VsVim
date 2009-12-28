@@ -61,7 +61,7 @@ namespace VsVim
                     button: MessageBoxButton.YesNo);
                 if (res == MessageBoxResult.Yes)
                 {
-                    list.ForEach(x => { x.Bindings = new object[] { }; });
+                    list.ForEach(x => x.SafeResetBindings());
                 }
             }
         }
@@ -78,6 +78,11 @@ namespace VsVim
             {
                 foreach (var binding in cmd.GetKeyBindings())
                 {
+                    if (!IsImportantScope(binding.KeyBinding.Scope))
+                    {
+                        continue;
+                    }
+
                     var input = binding.KeyBinding.FirstKeyInput;
                     if (neededInputs.Contains(input))
                     {
@@ -90,5 +95,25 @@ namespace VsVim
             return list;
         }
 
+        public static bool IsImportantScope(string scope)
+        {
+            var comp = StringComparer.OrdinalIgnoreCase;
+            if (comp.Equals("Global", scope))
+            {
+                return true;
+            }
+
+            if (comp.Equals("Text Editor", scope))
+            {
+                return true;
+            }
+
+            if (comp.Equals(String.Empty, scope))
+            {
+                return true;
+            }
+
+            return false;
+        }
     }
 }

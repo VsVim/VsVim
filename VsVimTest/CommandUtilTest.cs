@@ -51,5 +51,42 @@ namespace VsVimTest
             Assert.AreEqual(EditCommandKind.TypeChar, command.EditCommandKind);
             Assert.AreEqual(Key.B, command.KeyInput.Key);
         }
+
+        [Test]
+        public void Left1()
+        {
+            EditCommand command;
+            Assert.IsTrue(CommandUtil.TryConvert(VSConstants.VSStd2K, (uint)VSConstants.VSStd2KCmdID.LEFT, out command));
+            Assert.AreEqual(InputUtil.KeyToKeyInput(Key.Left), command.KeyInput);
+            Assert.IsFalse(command.IsInput);
+        }
+
+        [Test]
+        public void Right1()
+        {
+            EditCommand command;
+            Assert.IsTrue(CommandUtil.TryConvert(VSConstants.VSStd2K, (uint)VSConstants.VSStd2KCmdID.RIGHT, out command));
+            Assert.AreEqual(InputUtil.KeyToKeyInput(Key.Right), command.KeyInput);
+            Assert.IsFalse(command.IsInput);
+        }
+
+        [Test]
+        public void Up1()
+        {
+            EditCommand command;
+            Assert.IsTrue(CommandUtil.TryConvert(VSConstants.VSStd2K, (uint)VSConstants.VSStd2KCmdID.UP, out command));
+            Assert.AreEqual(InputUtil.KeyToKeyInput(Key.Up), command.KeyInput);
+            Assert.IsFalse(command.IsInput);
+        }
+
+        [Test]
+        public void Down1()
+        {
+            EditCommand command;
+            Assert.IsTrue(CommandUtil.TryConvert(VSConstants.VSStd2K, (uint)VSConstants.VSStd2KCmdID.DOWN, out command));
+            Assert.AreEqual(InputUtil.KeyToKeyInput(Key.Down), command.KeyInput);
+            Assert.IsFalse(command.IsInput);
+        }
+
    }
 }

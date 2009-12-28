@@ -363,7 +363,6 @@ namespace VimCoreTest
             var first = _view.TextSnapshot.Lines.First();
             _view.Caret.MoveTo(first.End);
             _editorOpts.Setup(x => x.ResetSelection()).Verifiable();
-            _editorOpts.Setup(x => x.MoveLineUp(false)).Verifiable();
             _operations.MoveCaretUp(1);
             Assert.AreEqual(first.End, _view.Caret.Position.BufferPosition);
             _editorOpts.Verify();
@@ -378,6 +377,32 @@ namespace VimCoreTest
             _editorOpts.Setup(x => x.ResetSelection()).Verifiable();
             _editorOpts.Setup(x => x.MoveLineUp(false)).Verifiable();
             _operations.MoveCaretUp(1);
+            _editorOpts.Verify();
+        }
+
+        [Test]
+        public void MoveCaretUp4()
+        {
+            CreateLines("foo", "bar", "baz", "jaz");
+            _view.Caret.MoveTo(_view.TextSnapshot.GetLineFromLineNumber(3).Start);
+            var count = 0;
+            _editorOpts.Setup(x => x.ResetSelection()).Verifiable();
+            _editorOpts.Setup(x => x.MoveLineUp(false)).Callback(() => { count++; }).Verifiable();
+            _operations.MoveCaretUp(1);
+            Assert.AreEqual(1, count);
+            _editorOpts.Verify();
+        }
+
+        [Test]
+        public void MoveCaretUp5()
+        {
+            CreateLines("foo", "bar", "baz", "jaz");
+            _view.Caret.MoveTo(_view.TextSnapshot.GetLineFromLineNumber(3).Start);
+            var count = 0;
+            _editorOpts.Setup(x => x.ResetSelection()).Verifiable();
+            _editorOpts.Setup(x => x.MoveLineUp(false)).Callback(() => { count++; }).Verifiable();
+            _operations.MoveCaretUp(2);
+            Assert.AreEqual(2, count);
             _editorOpts.Verify();
         }
 
@@ -398,7 +423,6 @@ namespace VimCoreTest
             var last = _view.TextSnapshot.Lines.Last();
             _view.Caret.MoveTo(last.Start);
             _editorOpts.Setup(x => x.ResetSelection()).Verifiable();
-            _editorOpts.Setup(x => x.MoveLineDown(false)).Verifiable();
             _operations.MoveCaretDown(1);
             Assert.AreEqual(last.Start, _view.Caret.Position.BufferPosition);
             _editorOpts.Verify();
@@ -425,8 +449,37 @@ namespace VimCoreTest
             var line = tss.GetLineFromLineNumber(tss.LineCount - 1);
             _view.Caret.MoveTo(line.Start);
             _editorOpts.Setup(x => x.ResetSelection()).Verifiable();
-            _editorOpts.Setup(x => x.MoveLineDown(false)).Verifiable();
             _operations.MoveCaretDown(1);
+            _editorOpts.Verify();
+        }
+
+        [Test]
+        public void MoveCaretDown5()
+        {
+            CreateLines("foo", "bar", "baz", "jaz");
+            var count = 0;
+            _editorOpts.Setup(x => x.ResetSelection()).Verifiable();
+            _editorOpts
+                .Setup(x => x.MoveLineDown(false))
+                .Callback(() => { count++; })
+                .Verifiable();
+            _operations.MoveCaretDown(1);
+            Assert.AreEqual(1, count);
+            _editorOpts.Verify();
+        }
+
+        [Test]
+        public void MoveCaretDown6()
+        {
+            CreateLines("foo", "bar", "baz", "jaz");
+            var count = 0;
+            _editorOpts.Setup(x => x.ResetSelection()).Verifiable();
+            _editorOpts
+                .Setup(x => x.MoveLineDown(false))
+                .Callback(() => { count++; })
+                .Verifiable();
+            _operations.MoveCaretDown(2);
+            Assert.AreEqual(2, count);
             _editorOpts.Verify();
         }
 

@@ -65,6 +65,19 @@ namespace VsVim
             }
         }
 
+        public static void SafeResetBindings(this Command command)
+        {
+            try
+            {
+                command.Bindings = new object[] { };
+            }
+            catch (COMException)
+            {
+                // Several implementations, Transact SQL in particular, return E_FAIL for this
+                // operation.  Simply ignore the failure and continue
+            }
+        }
+
         #endregion
 
         #region Commands

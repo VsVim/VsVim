@@ -98,11 +98,13 @@ namespace VsVim
             var opts = _editorOperationsFactoryService.GetEditorOperations(view);
             var buffer = new VsVimBuffer(_vim, view, opts, interopView, interopLines, _undoHistoryRegistry, _editorFormatMapService.GetEditorFormatMap(view));
             view.Properties.AddTypedProperty(buffer);
+            ITextViewDebugUtil.Attach(view);
 
             _keyBindingService.OneTimeCheckForConflictingKeyBindings(_host.DTE, buffer.VimBuffer);
             view.Closed += (x, y) =>
             {
                 view.Properties.RemoveTypedProperty<VsVimBuffer>();
+                ITextViewDebugUtil.Detach(view);
                 buffer.Close();
             };
         }
