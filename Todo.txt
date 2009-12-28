@@ -30,6 +30,7 @@ X - Implement z scrolling in normal mode
 - Implement IEditorOperationsTest
 - Should MoveCaretX reset selection if the caret doesn't move?
 - Move Shift into ICommonOperations
+- Implement normal mode .
 
 Version 0.7
 === 

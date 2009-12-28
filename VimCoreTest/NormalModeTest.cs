@@ -568,8 +568,13 @@ namespace VimCoreTest
         public void Yank_yw()
         {
             CreateBuffer("foo");
+            _operations.Setup(x => x.Yank(
+                _view.TextSnapshot.GetLineFromLineNumber(0).Extent,
+                MotionKind.Exclusive,
+                OperationKind.CharacterWise,
+                _map.DefaultRegister)).Verifiable();
             _mode.Process("yw");
-            Assert.AreEqual("foo", _map.DefaultRegister.StringValue);
+            _operations.Verify();
         }
 
         [Test, Description("Yanks in the middle of the word should only get a partial")]
@@ -577,56 +582,91 @@ namespace VimCoreTest
         {
             CreateBuffer("foo bar baz");
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 1));
+            _operations.Setup(x => x.Yank(
+                new SnapshotSpan(_view.TextSnapshot, 1, 3),
+                MotionKind.Exclusive,
+                OperationKind.CharacterWise,
+                _map.DefaultRegister)).Verifiable();
             _mode.Process("yw");
-            Assert.AreEqual("oo ", _map.DefaultRegister.StringValue);
+            _operations.Verify();
         }
 
         [Test, Description("Yank word should go to the start of the next word including spaces")]
         public void Yank_yw_3()
         {
             CreateBuffer("foo bar");
+            _operations.Setup(x => x.Yank(
+                new SnapshotSpan(_view.TextSnapshot, 0, 4),
+                MotionKind.Exclusive,
+                OperationKind.CharacterWise,
+                _map.DefaultRegister)).Verifiable();
             _mode.Process("yw");
-            Assert.AreEqual("foo ", _map.DefaultRegister.StringValue);
+            _operations.Verify();
         }
 
         [Test, Description("Non-default register")]
         public void Yank_yw_4()
         {
             CreateBuffer("foo bar");
+            _operations.Setup(x => x.Yank(
+                new SnapshotSpan(_view.TextSnapshot, 0, 4),
+                MotionKind.Exclusive,
+                OperationKind.CharacterWise,
+                _map.GetRegister('c'))).Verifiable();
             _mode.Process("\"cyw");
-            Assert.AreEqual("foo ", _map.GetRegister('c').StringValue);
+            _operations.Verify();
         }
 
         [Test]
         public void Yank_2yw()
         {
             CreateBuffer("foo bar baz");
+            _operations.Setup(x => x.Yank(
+                new SnapshotSpan(_view.TextSnapshot, 0, 8),
+                MotionKind.Exclusive,
+                OperationKind.CharacterWise,
+                _map.DefaultRegister)).Verifiable();
             _mode.Process("2yw");
-            Assert.AreEqual("foo bar ", _map.DefaultRegister.StringValue);
+            _operations.Verify();
         }
 
         [Test]
         public void Yank_3yw()
         {
             CreateBuffer("foo bar baz joe");
+            _operations.Setup(x => x.Yank(
+                new SnapshotSpan(_view.TextSnapshot, 0, 12),
+                MotionKind.Exclusive,
+                OperationKind.CharacterWise,
+                _map.DefaultRegister)).Verifiable();
             _mode.Process("3yw");
-            Assert.AreEqual("foo bar baz ", _map.DefaultRegister.StringValue);
+            _operations.Verify();
         }
 
         [Test]
         public void Yank_yaw()
         {
             CreateBuffer("foo bar");
+            _operations.Setup(x => x.Yank(
+                new SnapshotSpan(_view.TextSnapshot, 0, 4),
+                MotionKind.Exclusive,
+                OperationKind.CharacterWise,
+                _map.DefaultRegister)).Verifiable();
             _mode.Process("yaw");
-            Assert.AreEqual("foo ", _map.DefaultRegister.StringValue);
+            _operations.Verify();
         }
 
         [Test]
         public void Yank_y2w()
         {
             CreateBuffer("foo bar baz");
+            _operations.Setup(x => x.Yank(
+                new SnapshotSpan(_view.TextSnapshot, 0, 8),
+                MotionKind.Exclusive,
+                OperationKind.CharacterWise,
+                _map.DefaultRegister)).Verifiable();
             _mode.Process("y2w");
-            Assert.AreEqual("foo bar ", _map.DefaultRegister.StringValue);
+            _operations.Verify();
         }
 
         [Test]
@@ -634,18 +674,26 @@ namespace VimCoreTest
         {
             CreateBuffer("foo bar");
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 1));
+            _operations.Setup(x => x.Yank(
+                new SnapshotSpan(_view.TextSnapshot, 0,4),
+                MotionKind.Exclusive,
+                OperationKind.CharacterWise,
+                _map.DefaultRegister)).Verifiable();
             _mode.Process("yaw");
-            Assert.AreEqual("foo ", _map.DefaultRegister.StringValue);
+            _operations.Verify();
         }
 
         [Test, Description("A yy should grab the end of line including line break information")]
         public void Yank_yy_1()
         {
             CreateBuffer("foo", "bar");
+            _operations.Setup(x => x.Yank(
+                _view.TextSnapshot.GetLineFromLineNumber(0).ExtentIncludingLineBreak,
+                MotionKind.Inclusive,
+                OperationKind.LineWise,
+                _map.DefaultRegister)).Verifiable();
             _mode.Process("yy");
-            Assert.AreEqual("foo" + Environment.NewLine, _map.DefaultRegister.StringValue);
-            Assert.AreEqual(OperationKind.LineWise, _map.DefaultRegister.Value.OperationKind);
-            Assert.AreEqual(MotionKind.Inclusive, _map.DefaultRegister.Value.MotionKind);
+            _operations.Verify();
         }
 
         [Test, Description("yy should yank the entire line even if the cursor is not at the start")]
@@ -653,8 +701,13 @@ namespace VimCoreTest
         {
             CreateBuffer("foo", "bar");
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 1));
+            _operations.Setup(x => x.Yank(
+                _view.TextSnapshot.GetLineFromLineNumber(0).ExtentIncludingLineBreak,
+                MotionKind.Inclusive,
+                OperationKind.LineWise,
+                _map.DefaultRegister)).Verifiable();
             _mode.Process("yy");
-            Assert.AreEqual("foo" + Environment.NewLine, _map.DefaultRegister.StringValue);
+            _operations.Verify();
         }
 
         [Test]
