@@ -95,6 +95,7 @@
     <Compile Include="Modes_Insert_InsertMode.fs" />
     <Compile Include="RegisterMap.fs" />
     <Compile Include="VimData.fs" />
+    <Compile Include="DisabledMode.fs" />
     <Compile Include="Vim.fs" />
     <Compile Include="Factory.fs" />
     <Compile Include="AssemblyInfo.fs" />

@@ -22,21 +22,21 @@ namespace VsVimTest
             }
         }
 
-        [Test, Description("Make sure we don't puke on missing data"),Ignore]
+        // [Test, Description("Make sure we don't puke on missing data"),Ignore]
         public void TypeCharNoData()
         {
             EditCommand command;
             Assert.IsFalse(CommandUtil.TryConvert(VSConstants.GUID_VSStandardCommandSet97, (uint)VSConstants.VSStd2KCmdID.TYPECHAR, IntPtr.Zero, out command));
         }
 
-        [Test, Description("Delete key"), Ignore]
+        // [Test, Description("Delete key"), Ignore]
         public void TypeDelete()
         {
             var command = ConvertTypeChar('\b');
             Assert.AreEqual(Key.Back, command.KeyInput.Key);
         }
 
-        [Test, Ignore]
+        // [Test, Ignore]
         public void TypeChar1()
         {
             var command = ConvertTypeChar('a');
@@ -44,7 +44,7 @@ namespace VsVimTest
             Assert.AreEqual(Key.A, command.KeyInput.Key);
         }
 
-        [Test,Ignore]
+        // [Test,Ignore]
         public void TypeChar2()
         {
             var command = ConvertTypeChar('b');
@@ -87,6 +87,5 @@ namespace VsVimTest
             Assert.AreEqual(InputUtil.KeyToKeyInput(Key.Down), command.KeyInput);
             Assert.IsFalse(command.IsInput);
         }
-
    }
 }

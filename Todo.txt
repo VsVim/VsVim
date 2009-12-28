@@ -5,11 +5,11 @@ X - Add mark support to range parsing
 X - Delete key in normal mode
 X - All motion keys for basic motions(left,up,down,right)
 X - Verify arrow keys are translated from Visual Studio Commands
-- Verify space bar is translated to Visual Studio Commands
-- Check on the behavior of tab in normal mode
+X - Verify space bar is translated to Visual Studio Commands
+X - Check on the behavior of tab in normal mode
 X - Shift lines in commnad mode
 X - Help "copy-move" start from there
-- Need a way to disable Vim via keyboard
+X - Need a way to disable Vim via keyboard
 - Need a way to disable Vim on startup
 X - gp in Normal mode
 X - gP in normal mode
@@ -33,6 +33,7 @@ X - Join needs to move into ICommonOperations
 - Implement IEditorOperationsTest
 - Move Shift into ICommonOperations
 - Implement normal mode .
+- Rename IVimBuffer->WillProcess to CanProcess for consistency
 
 Version 0.7
 === 
@@ -45,6 +46,7 @@ Version 0.7
 - Edits need to understand cursor selection
 - Finish range parsing
 - :et in command mode
+- :w in command mode
 
 Version 5.4
 ===

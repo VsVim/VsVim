@@ -18,6 +18,7 @@ type internal Vim(_host : IVimHost) =
                 ((Modes.Normal.NormalMode(data, normalOpts)) :> IMode);
                 ((Modes.Command.CommandMode(data, commandOpts)) :> IMode)
                 ((Modes.Insert.InsertMode(data)) :> IMode);
+                (DisabledMode(data) :> IMode);
             ]
         let modeMap =
             modeList 
