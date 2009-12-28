@@ -456,6 +456,7 @@ namespace VimCoreTest
                 tss.GetLineFromLineNumber(1).EndIncludingLineBreak);
             var reg = new Register('c');
             _operations.DeleteSpan(span, MotionKind._unique_Exclusive, OperationKind.LineWise, reg);
+            tss = _view.TextSnapshot;
             Assert.AreEqual(1, tss.LineCount);
             Assert.AreEqual("baz", tss.GetLineFromLineNumber(0).GetText());
             Assert.AreEqual(span.GetText(), reg.StringValue);
@@ -468,6 +469,7 @@ namespace VimCoreTest
             var tss = _view.TextSnapshot;
             var reg = new Register('c');
             _operations.DeleteSpan(tss.GetLineFromLineNumber(1).ExtentIncludingLineBreak, MotionKind._unique_Exclusive, OperationKind.LineWise, reg);
+            tss = _view.TextSnapshot;
             Assert.AreEqual(2, tss.LineCount);
             Assert.AreEqual("foo", tss.GetLineFromLineNumber(0).GetText());
             Assert.AreEqual("baz", tss.GetLineFromLineNumber(1).GetText());

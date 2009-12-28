@@ -2,7 +2,8 @@ Version 0.6
 ===
 X - 'Y in normal mode
 X - Add mark support to range parsing
-- Delete key in normal mode
+X - Delete key in normal mode
+- Arrow keys in normal mode
 - Check on the behavior of tab in normal mode
 X - Shift lines in commnad mode
 X - Help "copy-move" start from there
@@ -18,15 +19,15 @@ X - Command mode :delete
 - Help delete and insert
 X - View close should clear out the markers
 - O should enter insert mode
-- Horizontal offset issue Noah raised
+X - Horizontal offset issue Noah raised
 X - Normal mode operations should be an interface
 X - Switch normal mode tests to use the interface
 X - IOperations shouldn't take NormalMode data so we can make it and a lot of other things internal again
 - IOperations.Paste* should have an enum instead of a bool parameter
 X - Move ModeUtil.Result out of ModeUtil
 X - Implement z scrolling in normal mode
-- Move more operations to the interfaces in normal mode
-- Join needs to move into ICommonOperations
+X - Move more operations to the interfaces in normal mode
+X - Join needs to move into ICommonOperations
 - Implement IEditorOperationsTest
 - Should MoveCaretX reset selection if the caret doesn't move?
 - Move Shift into ICommonOperations

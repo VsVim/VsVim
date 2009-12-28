@@ -184,6 +184,25 @@ namespace VimCoreTest
         }
 
         [Test]
+        public void Move_Backspace1()
+        {
+            CreateBuffer(s_lines);
+            _operations.Setup(x => x.MoveCaretLeft(1)).Verifiable();
+            _mode.Process(InputUtil.KeyToKeyInput(Key.Back));
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Move_Backspace2()
+        {
+            CreateBuffer(s_lines);
+            _operations.Setup(x => x.MoveCaretLeft(2)).Verifiable();
+            _mode.Process('2');
+            _mode.Process(InputUtil.KeyToKeyInput(Key.Back));
+            _operations.Verify();
+        }
+
+        [Test]
         public void Move_k()
         {
             CreateBuffer(s_lines);
@@ -1140,7 +1159,6 @@ namespace VimCoreTest
         {
             CreateBuffer("foo bar");
             _mode.Process("/b");
-            _mode.Process(Key.Back);
             _mode.Process(Key.Back);
             var res = _mode.Process('i');
             Assert.IsTrue(res.IsSwitchMode);

@@ -459,6 +459,10 @@ type internal NormalMode( _bufferData : IVimBufferData, _operations : IOperation
                 RunFunc=(fun d -> 
                         _operations.YankLines d.Count d.Register 
                         NormalModeResult.Complete); }
+            {   KeyInput=InputUtil.KeyToKeyInput(Key.Back);
+                RunFunc=(fun d -> 
+                        _operations.MoveCaretLeft(d.Count)
+                        NormalModeResult.Complete); }
             ]
         l |> List.map (fun d -> d.KeyInput,d) |> Map.ofList
 
