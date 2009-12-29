@@ -79,7 +79,7 @@ namespace VsVim
             {
                 foreach (var binding in cmd.GetKeyBindings())
                 {
-                    if (!IsImportantScope(binding.KeyBinding.Scope))
+                    if (ShouldSkip(binding))
                     {
                         continue;
                     }
@@ -94,6 +94,33 @@ namespace VsVim
             }
 
             return list;
+        }
+
+        /// <summary>
+        /// Should this be skipped when removing conflicting bindings?
+        /// </summary>
+        public static bool ShouldSkip(CommandKeyBinding binding)
+        {
+            if (!IsImportantScope(binding.KeyBinding.Scope))
+            {
+                return true;
+            }
+
+            if (!binding.KeyBinding.KeyInputs.Any())
+            {
+                return true;
+            }
+
+            var first = binding.KeyBinding.FirstKeyInput;
+
+            // Don't want to remove the arrow key bindings because it breaks items like
+            // moving in the intellisense window
+            if (first.IsArrowKey)
+            {
+                return true;
+            }
+
+            return false;
         }
 
         public static bool IsImportantScope(string scope)

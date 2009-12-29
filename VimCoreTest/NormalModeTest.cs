@@ -25,7 +25,6 @@ namespace VimCoreTest
         private IMode _mode;
         private IWpfTextView _view;
         private IRegisterMap _map;
-        private FakeVimHost _host;
         private VimBufferData _bufferData;
         private MockBlockCaret _blockCaret;
         private Mock<IOperations> _operations;
@@ -40,16 +39,20 @@ namespace VimCoreTest
 
         public void CreateBuffer(params string[] lines)
         {
+            CreateBuffer(new FakeVimHost(), lines);
+        }
+
+        public void CreateBuffer(IVimHost host, params string[] lines)
+        {
             _view = Utils.EditorUtil.CreateView(lines);
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 0));
-            _host = new FakeVimHost();
             _map = new RegisterMap();
             _blockCaret = new MockBlockCaret();
             _editorOperations = new Mock<IEditorOperations>();
             _bufferData = MockFactory.CreateVimBufferData(
                 _view,
                 "test",
-                _host,
+                host,
                 MockFactory.CreateVimData(_map).Object,
                 _blockCaret,
                 _editorOperations.Object);
@@ -122,6 +125,7 @@ namespace VimCoreTest
             Assert.IsTrue(_mode.CanProcess(InputUtil.CharToKeyInput('Z')));
         }
 
+
         #endregion
 
         #region Movement
@@ -139,11 +143,12 @@ namespace VimCoreTest
         [Test, Description("Enter at end of file should beep ")]
         public void Enter2()
         {
-            CreateBuffer(s_lines);
+            var host = new FakeVimHost();
+            CreateBuffer(host, s_lines);
             var last = _view.TextSnapshot.Lines.Last();
             _view.Caret.MoveTo(last.Start.Add(2));
             _mode.Process(Key.Enter);
-            Assert.AreEqual(1, _host.BeepCount);
+            Assert.AreEqual(1, host.BeepCount);
             Assert.AreEqual(last.Start.Add(2), _view.Caret.Position.BufferPosition);
         }
 
@@ -425,9 +430,10 @@ namespace VimCoreTest
         [Test]
         public void Scroll_zInvalid()
         {
-            CreateBuffer(String.Empty);
+            var host = new FakeVimHost();
+            CreateBuffer(host, String.Empty);
             _mode.Process("z;");
-            Assert.IsTrue(_host.BeepCount > 0);
+            Assert.IsTrue(host.BeepCount > 0);
         }
 
         #endregion
@@ -437,17 +443,19 @@ namespace VimCoreTest
         [Test, Description("Typing in invalid motion should produce a warning")]
         public void BadMotion1()
         {
-            CreateBuffer(s_lines);
+            var host = new FakeVimHost();
+            CreateBuffer(host, s_lines);
             _mode.Process("d@");
-            Assert.AreNotEqual(String.Empty, _host.Status);
+            Assert.AreNotEqual(String.Empty, host.Status);
         }
 
         [Test, Description("Typing in invalid motion should produce a warning")]
         public void BadMotion2()
         {
-            CreateBuffer(s_lines);
+            var host = new FakeVimHost();
+            CreateBuffer(host, s_lines);
             _mode.Process("d@aoeuaoeu");
-            Assert.AreNotEqual(String.Empty, _host.Status);
+            Assert.AreNotEqual(String.Empty, host.Status);
         }
 
         [Test, Description("Enter must cancel an invalid motion")]
@@ -465,24 +473,26 @@ namespace VimCoreTest
         [Test, Description("Canceled motion should reset the status")]
         public void BadMotion4()
         {
-            CreateBuffer(s_lines);
+            var host = new FakeVimHost();
+            CreateBuffer(host, s_lines);
             _mode.Process("dzzz");
-            Assert.IsFalse(String.IsNullOrEmpty(_host.Status));
+            Assert.IsFalse(String.IsNullOrEmpty(host.Status));
             _mode.Process(Key.Escape);
-            Assert.IsTrue(String.IsNullOrEmpty(_host.Status));
+            Assert.IsTrue(String.IsNullOrEmpty(host.Status));
         }
 
         [Test, Description("Completed motion should reset the status")]
         public void BadMotion5()
         {
-            CreateBuffer(s_lines);
+            var host = new FakeVimHost();
+            CreateBuffer(host, s_lines);
             _operations.Setup(x => x.Yank(
                 It.IsAny<SnapshotSpan>(),
                 It.IsAny<MotionKind>(),
                 It.IsAny<OperationKind>(),
                 It.IsAny<Register>())).Verifiable();
             _mode.Process("yaw");
-            Assert.IsTrue(String.IsNullOrEmpty(_host.Status));
+            Assert.IsTrue(String.IsNullOrEmpty(host.Status));
             _operations.Verify();
         }
 
@@ -644,10 +654,11 @@ namespace VimCoreTest
 
         public void Edit_r_4()
         {
-            CreateBuffer("food");
+            var host = new FakeVimHost();
+            CreateBuffer(host, "food");
             _operations.Setup(x => x.ReplaceChar(It.IsAny<KeyInput>(), 200)).Returns(false).Verifiable();
             _mode.Process("200ru");
-            Assert.IsTrue(_host.BeepCount > 0);
+            Assert.IsTrue(host.BeepCount > 0);
             _operations.Verify();
         }
 
@@ -1234,17 +1245,19 @@ namespace VimCoreTest
         [Test]
         public void SearchStatus1()
         {
-            CreateBuffer(s_lines);
+            var host = new FakeVimHost();
+            CreateBuffer(host, s_lines);
             _mode.Process("/");
-            Assert.AreEqual("/", _host.Status);
+            Assert.AreEqual("/", host.Status);
         }
 
         [Test]
         public void SearchStatus2()
         {
-            CreateBuffer(s_lines);
+            var host = new FakeVimHost();
+            CreateBuffer(host, s_lines);
             _mode.Process("/zzz");
-            Assert.AreEqual("/zzz", _host.Status);
+            Assert.AreEqual("/zzz", host.Status);
         }
 
         [Test]
@@ -1286,9 +1299,10 @@ namespace VimCoreTest
         [Test]
         public void NextWord1()
         {
-            CreateBuffer(" ");
+            var host = new FakeVimHost();
+            CreateBuffer(host, " ");
             _mode.Process("*");
-            Assert.AreEqual("No word under cursor", _host.Status);
+            Assert.AreEqual("No word under cursor", host.Status);
         }
 
         [Test, Description("No matches should have no effect")]
@@ -1329,9 +1343,10 @@ namespace VimCoreTest
         [Test]
         public void PreviousWord1()
         {
-            CreateBuffer("");
+            var host = new FakeVimHost();
+            CreateBuffer(host, "");
             _mode.Process("#");
-            Assert.AreEqual("No word under cursor", _host.Status);
+            Assert.AreEqual("No word under cursor", host.Status);
         }
 
         [Test]
@@ -1478,18 +1493,20 @@ namespace VimCoreTest
         [Test]
         public void Undo1()
         {
-            CreateBuffer("foo");
-            Assert.AreEqual(0, _host.UndoCount);
+            var host = new FakeVimHost();
+            CreateBuffer(host, "foo");
+            Assert.AreEqual(0, host.UndoCount);
             _mode.Process("u");
-            Assert.AreEqual(1, _host.UndoCount);
+            Assert.AreEqual(1, host.UndoCount);
         }
 
         [Test]
         public void Undo2()
         {
-            CreateBuffer("foo");
+            var host = new FakeVimHost();
+            CreateBuffer(host, "foo");
             _mode.Process("2u");
-            Assert.AreEqual(2, _host.UndoCount);
+            Assert.AreEqual(2, host.UndoCount);
         }
 
         [Test]
@@ -1551,10 +1568,10 @@ namespace VimCoreTest
         [Test]
         public void GoToDefinition1()
         {
-            CreateBuffer(s_lines);
+            var host = new FakeVimHost();
             var def = new KeyInput(']', Key.OemCloseBrackets, ModifierKeys.Control);
-            CreateBuffer("foo");
-            _operations.Setup(x => x.GoToDefinition(_host)).Returns(It.IsAny<Result>()).Verifiable();
+            CreateBuffer(host, "foo");
+            _operations.Setup(x => x.GoToDefinition(host)).Returns(It.IsAny<Result>()).Verifiable();
             _mode.Process(def);
             _operations.Verify();
         }
@@ -1562,10 +1579,11 @@ namespace VimCoreTest
         [Test, Description("When it fails, the status should be updated")]
         public void GoToDefinition2()
         {
-            CreateBuffer("foo");
+            var host = new FakeVimHost();
+            CreateBuffer(host, "foo");
             var def = new KeyInput(']', Key.OemCloseBrackets, ModifierKeys.Control);
-            _host.GoToDefinitionReturn = false;
-            _operations.Setup(x => x.GoToDefinition(_host)).Returns(It.IsAny<Result>()).Verifiable();
+            host.GoToDefinitionReturn = false;
+            _operations.Setup(x => x.GoToDefinition(host)).Returns(It.IsAny<Result>()).Verifiable();
             _mode.Process(def);
             _operations.Verify();
         }
@@ -1608,11 +1626,12 @@ namespace VimCoreTest
         [Test, Description("Bad mark should beep")]
         public void Mark4()
         {
-            CreateBuffer(s_lines);
+            var host = new FakeVimHost();
+            CreateBuffer(host, s_lines);
             _operations.Setup(x => x.SetMark(';', _bufferData._vimData.MarkMap, _view.Caret.Position.BufferPosition)).Returns(Result.NewFailed("foo")).Verifiable();
             _mode.Process(InputUtil.CharToKeyInput('m'));
             _mode.Process(InputUtil.CharToKeyInput(';'));
-            Assert.IsTrue(_host.BeepCount > 0);
+            Assert.IsTrue(host.BeepCount > 0);
             _operations.Verify();
         }
 

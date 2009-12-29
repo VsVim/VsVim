@@ -27,6 +27,12 @@ namespace VsVimTest
             }
         }
 
+        public static CommandKeyBinding CreateCommandKeyBinding(KeyInput input, string name = "again", string scope = "Global")
+        {
+            var key = new VsVim.KeyBinding(scope, input);
+            return new CommandKeyBinding(name, key);
+        }
+
         [Test()]
         public void FindConflictingCommands1()
         {
@@ -103,6 +109,13 @@ namespace VsVimTest
         {
             Assert.IsFalse(KeyBindingService.IsImportantScope("blah"));
             Assert.IsFalse(KeyBindingService.IsImportantScope("VC Image Editor"));
+        }
+
+        [Test]
+        public void ShouldSkip1()
+        {
+            var binding = CreateCommandKeyBinding(InputUtil.KeyToKeyInput(Key.Left));
+            Assert.IsTrue(KeyBindingService.ShouldSkip(binding));
         }
     }
 }
