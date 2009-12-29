@@ -1,24 +1,63 @@
-Version 5.5
+Version 0.6
 ===
-X - Fixed the issue where command mode doesn't clear input
+X - 'Y in normal mode'
+X - Add mark support to range parsing
+X - Delete key in normal mode
+X - All motion keys for basic motions(left,up,down,right)
+X - Verify arrow keys are translated from Visual Studio Commands
+X - Verify space bar is translated to Visual Studio Commands
+X - Check on the behavior of tab in normal mode
+X - Shift lines in commnad mode
+X - Help "copy-move" start from there
+X - Need a way to disable Vim via keyboard
+X - gp in Normal mode
+X - gP in normal mode
+X - Bug: 5x does not delete 5 characters
+X - Bug: dw at end of line, should it delete the line break as well?
+X - Rename Modes_Common_operations to ModeUtil or something like that
+X - Test NormalMode_Operations indepnedently
+X - Command mode :delete
+X - View close should clear out the markers
+X - Rename IVimBuffer->WillProcess to CanProcess for consistency
+X - O should enter insert mode
+X - Horizontal offset issue Noah raised
+X - Normal mode operations should be an interface
+X - Switch normal mode tests to use the interface
+X - IOperations shouldn't take NormalMode data so we can make it and a lot of other things internal again
+X - Move ModeUtil.Result out of ModeUtil
+X - Implement z scrolling in normal mode
+X - Move more operations to the interfaces in normal mode
+X - Join needs to move into ICommonOperations
+X - Move Shift into ICommonOperations
+X - Implement IEditorOperationsTest
+X - Remove BufferUtil
+
+Version 0.7
+=== 
+- Implement normal mode .
+- Help delete-insert
+- Should MoveCaretX reset selection if the caret doesn't move?
+- Mark navigation for global marks
+- Marks Undo Support
+- Visual mode
+  - Copy-move
+  - delete-insert
+- Edits need to understand cursor selection
+- Finish range parsing
+- :s in command mode
+- :et in command mode
+- :w in command mode
+- Need a way to disable Vim on startup
+- IOperations.Paste* should have an enum instead of a bool parameter
 
 Version 5.4
 ===
-- Edits need to understand cursor selection
 X - r in normal mode
 X - O in normal mode
 X - :linecount is broken in command mode
-- Finish range parsing
-- Delete key in normal mode
-- Check on the behavior of tab in normal mode
-- Marks Undo Support
-- Mark navigation for global marks
 X - Track buffer close in some way
-- Horizontal offset issue Noah raised
 X - When the view is closed, kill the block caret
 X - Rename MockFactory -> MockObjectFactory
-- Shift lines in commnad mode
-- Help "copy-move" start from there
 X - Rename RangeCaptureTest -> RangeUtilTest
 
 Version 5.3

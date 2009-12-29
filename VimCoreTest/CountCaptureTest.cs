@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using NUnit.Framework;
-using VimCore;
+using Vim;
 using System.Windows.Input;
 using VimCoreTest.Utils;
 

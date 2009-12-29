@@ -1,6 +1,6 @@
 ﻿#light
 
-namespace VimCore
+namespace Vim
 
 type internal WordKind = 
     | NormalWord = 1

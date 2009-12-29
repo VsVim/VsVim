@@ -1,6 +1,6 @@
 ﻿#light
 
-namespace VimCore
+namespace Vim
 open System.Windows.Input
     
 type KeyInput(literal:char,key:Key,modKey:ModifierKeys) =
@@ -25,6 +25,13 @@ type KeyInput(literal:char,key:Key,modKey:ModifierKeys) =
                 | Key.D9 -> true
                 | _ -> false
         else false
+
+    /// Determine if this a new line key.  Meant to match the Vim definition of <CR>
+    member x.IsNewLine = 
+        match key with
+            | Key.Enter -> true
+            | Key.LineFeed -> true
+            | _ -> false
 
     member private x.CompareTo (other:KeyInput) =
         let comp = compare x.Char other.Char

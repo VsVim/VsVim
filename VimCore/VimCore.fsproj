@@ -8,7 +8,7 @@
     <ProjectGuid>{06be08e7-8626-40bd-877b-8d2dca6ba451}</ProjectGuid>
     <OutputType>Library</OutputType>
     <RootNamespace>FsVim</RootNamespace>
-    <AssemblyName>VimCore</AssemblyName>
+    <AssemblyName>Vim.Core</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Name>VimCore</Name>
@@ -63,8 +63,6 @@
     <Compile Include="IncrementalSearch.fs" />
     <Compile Include="Register.fs" />
     <Compile Include="IRegisterMap.fs" />
-    <Compile Include="BufferUtil.fsi" />
-    <Compile Include="BufferUtil.fs" />
     <Compile Include="VimSettings.fs" />
     <Compile Include="ModeKind.fs" />
     <Compile Include="IMode.fs" />
@@ -77,25 +75,26 @@
     <Compile Include="VimBuffer.fs" />
     <Compile Include="Factory.fsi" />
     <Compile Include="RegexUtil.fs" />
-    <Compile Include="Modes_Common_Operations.fsi" />
-    <Compile Include="Modes_Common_Operations.fs" />
+    <Compile Include="Modes_ICommonOperations.fs" />
+    <Compile Include="Modes_CommonOperations.fs" />
+    <Compile Include="Modes_Command_IOperations.fs" />
     <Compile Include="Modes_Command_RangeUtil.fsi" />
     <Compile Include="Modes_Command_RangeUtil.fs" />
-    <Compile Include="Modes_Command_Util.fs" />
+    <Compile Include="Modes_Command_DefaultOperations.fs" />
     <Compile Include="Modes_Command_CommandMode.fsi" />
     <Compile Include="Modes_Command_CommandMode.fs" />
+    <Compile Include="Modes_Normal_IOperations.fs" />
+    <Compile Include="Modes_Normal_DefaultOperations.fs" />
     <Compile Include="Modes_Normal_Data.fsi" />
     <Compile Include="Modes_Normal_Data.fs" />
-    <Compile Include="Modes_Normal_Operation.fsi" />
-    <Compile Include="Modes_Normal_Operation.fs" />
-    <Compile Include="Modes_Normal_Operations.fsi" />
-    <Compile Include="Modes_Normal_Operations.fs" />
     <Compile Include="Modes_Normal_NormalMode.fsi" />
     <Compile Include="Modes_Normal_NormalMode.fs" />
+    <Compile Include="Modes_Insert_DefaultOperations.fs" />
     <Compile Include="Modes_Insert_InsertMode.fsi" />
     <Compile Include="Modes_Insert_InsertMode.fs" />
     <Compile Include="RegisterMap.fs" />
     <Compile Include="VimData.fs" />
+    <Compile Include="DisabledMode.fs" />
     <Compile Include="Vim.fs" />
     <Compile Include="Factory.fs" />
     <Compile Include="AssemblyInfo.fs" />
@@ -105,23 +104,23 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="Microsoft.VisualStudio.CoreUtility">
-      <HintPath>C:\Users\jaredp\dotnet\FsVim\References\Microsoft.VisualStudio.CoreUtility.dll</HintPath>
+      <HintPath>..\References\Microsoft.VisualStudio.CoreUtility.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Microsoft.VisualStudio.Text.Data">
-      <HintPath>C:\Users\jaredp\dotnet\FsVim\References\Microsoft.VisualStudio.Text.Data.dll</HintPath>
+      <HintPath>..\References\Microsoft.VisualStudio.Text.Data.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Microsoft.VisualStudio.Text.Logic">
-      <HintPath>C:\Users\jaredp\dotnet\FsVim\References\Microsoft.VisualStudio.Text.Logic.dll</HintPath>
+      <HintPath>..\References\Microsoft.VisualStudio.Text.Logic.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Microsoft.VisualStudio.Text.UI">
-      <HintPath>C:\Users\jaredp\dotnet\FsVim\References\Microsoft.VisualStudio.Text.UI.dll</HintPath>
+      <HintPath>..\References\Microsoft.VisualStudio.Text.UI.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Microsoft.VisualStudio.Text.UI.Wpf">
-      <HintPath>C:\Users\jaredp\dotnet\FsVim\References\Microsoft.VisualStudio.Text.UI.Wpf.dll</HintPath>
+      <HintPath>..\References\Microsoft.VisualStudio.Text.UI.Wpf.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="mscorlib" />

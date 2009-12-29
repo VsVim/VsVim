@@ -123,6 +123,7 @@
     <Compile Include="CommandUtil.cs" />
     <Compile Include="Extensions.cs" />
     <Compile Include="HostFactory.cs" />
+    <Compile Include="ITextViewDebugUtil.cs" />
     <Compile Include="KeyBinding.cs" />
     <Compile Include="KeyBindingService.cs" />
     <Compile Include="KeyProcessorProvider.cs" />

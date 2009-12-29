@@ -3,7 +3,7 @@ using System.Text;
 using System.Collections.Generic;
 using System.Linq;
 using NUnit.Framework;
-using VimCore;
+using Vim;
 using System.Windows.Input;
 using Microsoft.VisualStudio.Text.Editor;
 using Moq;
@@ -22,9 +22,10 @@ namespace VimCoreTest
 
         public void CreateBuffer(params string[] lines)
         {
-            view = Utils.EditorUtil.CreateView(lines);
+            var tuple = Utils.EditorUtil.CreateViewAndOperations(lines);
+            view = tuple.Item1;
             host = new FakeVimHost();
-            buffer = Factory.CreateVimBuffer(host, view, "test", (new Mock<IBlockCaret>()).Object);
+            buffer = Factory.CreateVimBuffer(host, view, tuple.Item2, "test", (new Mock<IBlockCaret>()).Object);
         }
 
         [SetUp]
@@ -91,7 +92,7 @@ namespace VimCoreTest
         {
             buffer.ProcessInputAsString(":200");
             buffer.ProcessKey(Key.Enter);
-            Assert.AreEqual("Invalid line number", host.Status);
+            Assert.IsFalse(String.IsNullOrEmpty(host.Status));
         }
 
         [Test]
@@ -101,7 +102,7 @@ namespace VimCoreTest
             buffer.ProcessKey(Key.Enter);
             var tss = view.TextSnapshot;
             var last = tss.GetLineFromLineNumber(tss.LineCount - 1);
-            Assert.AreEqual(last.Start, view.Caret.Position.BufferPosition);
+            Assert.AreEqual(last.EndIncludingLineBreak, view.Caret.Position.BufferPosition);
         }
     }
 }

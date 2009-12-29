@@ -3,7 +3,7 @@ using System.Text;
 using System.Collections.Generic;
 using System.Linq;
 using NUnit.Framework;
-using VimCore;
+using Vim;
 using System.Windows.Input;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text;
@@ -105,6 +105,24 @@ namespace VimCoreTest
             var res = Process(0, 10, "w");
             Assert.IsTrue(res.IsComplete);
             Assert.AreEqual("foo bar", res.AsComplete().Item.Item1.GetText());
+        }
+
+        [Test]
+        public void Word6()
+        {
+            Initialize("foo bar", "baz");
+            var res = Process(4, 1, "w");
+            Assert.IsTrue(res.IsComplete);
+            Assert.AreEqual("bar", res.AsComplete().Item.Item1.GetText());
+        }
+
+        [Test]
+        public void Word7()
+        {
+            Initialize("foo bar", "  baz");
+            var res = Process(4, 1, "w");
+            Assert.IsTrue(res.IsComplete);
+            Assert.AreEqual("bar", res.AsComplete().Item.Item1.GetText());
         }
 
         [Test]

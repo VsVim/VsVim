@@ -3,7 +3,7 @@ using System.Text;
 using System.Collections.Generic;
 using System.Linq;
 using NUnit.Framework;
-using VimCore;
+using Vim;
 using Microsoft.VisualStudio.Text;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -29,9 +29,10 @@ namespace VimCoreTest
 
         public void CreateBuffer(params string[] lines)
         {
-            m_view = Utils.EditorUtil.CreateView(lines);
+            var tuple = Utils.EditorUtil.CreateViewAndOperations(lines);
+            m_view = tuple.Item1;
             m_host = new FakeVimHost();
-            m_buffer = Factory.CreateVimBuffer(m_host, m_view, "test",VimCoreTest.Utils.MockObjectFactory.CreateBlockCaret().Object);
+            m_buffer = Factory.CreateVimBuffer(m_host, m_view, tuple.Item2, "test",VimCoreTest.Utils.MockObjectFactory.CreateBlockCaret().Object);
         }
 
         [SetUp]

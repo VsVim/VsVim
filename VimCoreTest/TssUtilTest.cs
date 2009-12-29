@@ -3,7 +3,7 @@ using System.Text;
 using System.Collections.Generic;
 using System.Linq;
 using NUnit.Framework;
-using VimCore;
+using Vim;
 using Microsoft.VisualStudio.Text;
 using Microsoft.FSharp.Core;
 
@@ -201,6 +201,21 @@ namespace VimCoreTest
             Assert.AreEqual(String.Empty, list.ElementAt(0));
             Assert.AreEqual("bar", list.ElementAt(1));
             Assert.AreEqual("foo", list.ElementAt(2));
+        }
+
+        [Test]
+        public void GetValidLineNumberOrLast()
+        {
+            Initialize("foo", "bar");
+            Assert.AreEqual(1, TssUtil.GetValidLineNumberOrLast(_snapshot, 1));
+            Assert.AreEqual(0, TssUtil.GetValidLineNumberOrLast(_snapshot, 0));
+        }
+
+        [Test]
+        public void GetValidLineNumberOrLast2()
+        {
+            Initialize("foo", "bar");
+            Assert.AreEqual(1, TssUtil.GetValidLineNumberOrLast(_snapshot, 200));
         }
 
         [Test]

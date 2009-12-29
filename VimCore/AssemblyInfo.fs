@@ -1,7 +1,7 @@
 ﻿
 
 #light
-namespace VimCore
+namespace Vim
 
 open System.Runtime.CompilerServices
 

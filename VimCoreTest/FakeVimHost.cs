@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using VimCore;
+using Vim;
 using Microsoft.VisualStudio.Text;
 
 namespace VimCoreTest

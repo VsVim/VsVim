@@ -1,13 +1,14 @@
 ﻿#light
 
-namespace VimCore.Modes.Command
-open VimCore
+namespace Vim.Modes.Command
+open Vim
 open Microsoft.VisualStudio.Text
 
 type internal Range = 
     | RawSpan of SnapshotSpan
     /// Start and End line of the range
     | Lines of ITextSnapshot * int * int
+    | SingleLine of ITextSnapshotLine
 
 type internal ParseRangeResult =
     | Succeeded of Range * KeyInput list
@@ -17,6 +18,7 @@ type internal ParseRangeResult =
 type internal ItemRangeKind = 
     | LineNumber
     | CurrentLine
+    | Mark
 
 type internal ItemRange = 
     | ValidRange of Range * ItemRangeKind * KeyInput list
@@ -33,16 +35,24 @@ module internal RangeUtil =
             new SnapshotSpan(
                 tss.GetLineFromLineNumber(first).Start,
                 tss.GetLineFromLineNumber(last).EndIncludingLineBreak)
+        | SingleLine(line) -> line.ExtentIncludingLineBreak
         
     /// Get the range for the currently selected line
     let RangeForCurrentLine view =
         let point = ViewUtil.GetCaretPoint view
-        let line = point.GetContainingLine().LineNumber
-        let tss = point.Snapshot
-        Range.Lines(tss,line,line)
+        let line = point.GetContainingLine()
+        Range.SingleLine(line)
+
+    /// Retrieve the passed in range if valid or the range for the current line
+    /// if the Range Option is empty
+    let RangeOrCurrentLine view rangeOpt =
+        match rangeOpt with
+        | Some(range) -> range
+        | None -> RangeForCurrentLine view
 
     /// Apply the count to the given range
     let ApplyCount range count =
+        let count = if count <= 1 then 1 else count-1
         let inner (tss:ITextSnapshot) startLine =
             let endLine = startLine + count
             let endLine = if endLine >= tss.LineCount then tss.LineCount-1 else endLine
@@ -53,22 +63,27 @@ module internal RangeUtil =
             // When a cuont is applied to a line range, the count of lines staring at the end 
             // line is used
             inner tss endLine
+        | Range.SingleLine(line) -> inner line.Snapshot line.LineNumber
         | Range.RawSpan(span) -> 
             inner span.Snapshot (span.End.GetContainingLine().LineNumber)
 
     /// Combine the two ranges
     let CombineRanges left right = 
-        let bestFit = 
-            match left with
-            | Range.Lines(tss,startLine,_) -> 
-                match right with
-                | Range.Lines(_,_,endLine) ->
-                    Some(Range.Lines(tss,startLine,endLine))
-                | _ -> None
-            | _-> None
-        match bestFit with
-        | Some(range) -> range
-        | None ->
+        let getStartLine range =
+            match range with
+            | Range.Lines(tss,startLine,_) -> (tss,Some(startLine))
+            | Range.SingleLine(line) -> (line.Snapshot,Some(line.LineNumber))
+            | Range.RawSpan(span) -> (span.Snapshot,None)
+        let getEndLine range =
+            match range with
+            | Range.Lines(_,_,endLine) -> Some(endLine)
+            | Range.SingleLine(line) -> Some(line.LineNumber)
+            | Range.RawSpan(_) -> None
+        let tss,startLine = getStartLine left
+        let endLine = getEndLine right
+        match startLine,endLine with
+        | Some(startLine),Some(endLine) ->  Range.Lines(tss, startLine, endLine)
+        | _ -> 
             let left = GetSnapshotSpan left
             let right = GetSnapshotSpan right
             let span = new SnapshotSpan(left.Start, right.End)
@@ -102,7 +117,7 @@ module internal RangeUtil =
         | true -> (Some(number), remaining)
 
     /// Parse out a line number 
-    let ParseLineNumber (tss:ITextSnapshot) (input:KeyInput list) =
+    let private ParseLineNumber (tss:ITextSnapshot) (input:KeyInput list) =
     
         let msg = "Invalid Range: Could not find a valid number"
         let opt,remaining = ParseNumber input
@@ -110,16 +125,30 @@ module internal RangeUtil =
         | Some(number) ->
             let number = TssUtil.VimLineToTssLine number
             if number < tss.LineCount then 
-                let range = Range.Lines(tss,number,number)
+                let line = tss.GetLineFromLineNumber(number)
+                let range = Range.SingleLine(line)
                 ValidRange(range, LineNumber, remaining)
             else
                 let msg = sprintf "Invalid Range: Line Number %d is not a valid number in the file" number
                 Error(msg)
         | None -> Error("Expected a line number")
 
+    /// Parse out a mark 
+    let private ParseMark (point:SnapshotPoint) (map:MarkMap) (list:KeyInput list) = 
+        if list |> List.isEmpty then
+            Error("Invalid Range: Missing mark after '")
+        else 
+            let head = list |> List.head
+            let opt = map.GetMark point.Snapshot.TextBuffer head.Char
+            match opt with 
+            | Some(point) -> 
+                let line = point.Position.GetContainingLine()
+                ValidRange(Range.SingleLine(line), Mark, list |> List.tail)
+            | None ->
+                Error("Invalid Range: Mark is invalid in this file")
 
     /// Parse out a single item in the range.
-    let ParseItem (point:SnapshotPoint) (map:MarkMap) (list:KeyInput list) =
+    let private ParseItem (point:SnapshotPoint) (map:MarkMap) (list:KeyInput list) =
         let head = list |> List.head 
         if head.IsDigit then
             ParseLineNumber point.Snapshot list
@@ -127,10 +156,12 @@ module internal RangeUtil =
             let line = point.GetContainingLine().LineNumber
             let range = Range.Lines(point.Snapshot, line,line)
             ValidRange(range,CurrentLine, list |> List.tail)
+        else if head.Char = '\'' then
+            ParseMark point map (list |> List.tail)
         else
             NoRange
 
-    let ParseRangeCore (point:SnapshotPoint) (map:MarkMap) (originalInput:KeyInput list) =
+    let private ParseRangeCore (point:SnapshotPoint) (map:MarkMap) (originalInput:KeyInput list) =
 
         let parseRight (point:SnapshotPoint) map (leftRange:Range) remainingInput : ParseRangeResult = 
             let right = ParseItem point map remainingInput 
@@ -144,7 +175,7 @@ module internal RangeUtil =
         // Parse out the separator 
         let parseWithLeft (leftRange:Range) (remainingInput:KeyInput list) kind =
             match remainingInput |> List.isEmpty with
-            | true ->  if kind = CurrentLine then Succeeded(leftRange,remainingInput) else ParseRangeResult.NoRange
+            | true ->  Succeeded(leftRange,remainingInput) 
             | false -> 
                 let head = remainingInput |> List.head 
                 let rest = remainingInput |> List.tail
@@ -153,7 +184,7 @@ module internal RangeUtil =
                     let point = (GetSnapshotSpan leftRange).Start
                     parseRight point map leftRange rest
                 else if kind = LineNumber then
-                    ParseRangeResult.NoRange
+                    ParseRangeResult.Succeeded(leftRange, remainingInput)
                 else if kind = CurrentLine then
                     ParseRangeResult.Succeeded(leftRange, remainingInput)
                 else

@@ -1,6 +1,6 @@
 ﻿#light
 
-namespace VimCore
+namespace Vim
 
 module internal RegisterUtil =
     let DefaultName = '_'

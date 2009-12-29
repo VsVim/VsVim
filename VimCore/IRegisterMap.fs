@@ -1,6 +1,6 @@
 ﻿#light
 
-namespace VimCore
+namespace Vim
 
 /// Map containing the various VIM registers
 type IRegisterMap = 

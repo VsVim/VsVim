@@ -3,12 +3,14 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using NUnit.Framework;
-using VimCore;
-using VimCore.Modes.Command;
+using Vim;
+using Vim.Modes.Command;
 using Microsoft.VisualStudio.Text.Editor;
 using VimCoreTest.Utils;
 using Microsoft.VisualStudio.Text;
 using System.Windows.Input;
+using Microsoft.VisualStudio.Text.Operations;
+using Moq;
 
 namespace VimCoreTest
 {
@@ -20,18 +22,26 @@ namespace VimCoreTest
         private CommandMode _modeRaw;
         private IMode _mode;
         private FakeVimHost _host;
+        private IRegisterMap _map;
+        private Mock<IEditorOperations> _editOpts;
+        private Mock<IOperations> _operations;
 
         public void Create(params string[] lines)
         {
             _view = Utils.EditorUtil.CreateView(lines);
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 0));
+            _map = new RegisterMap();
             _host = new FakeVimHost();
+            _editOpts = new Mock<IEditorOperations>(MockBehavior.Strict);
+            _operations = new Mock<IOperations>(MockBehavior.Strict);
             _bufferData = MockObjectFactory.CreateVimBufferData(
                 _view,
                 "test",
                 _host,
-                MockObjectFactory.CreateVimData(new RegisterMap()).Object);
-            _modeRaw = new VimCore.Modes.Command.CommandMode(_bufferData);
+                MockObjectFactory.CreateVimData(_map).Object,
+                MockObjectFactory.CreateBlockCaret().Object,
+                _editOpts.Object);
+            _modeRaw = new Vim.Modes.Command.CommandMode(Tuple.Create<IVimBufferData, IOperations>(_bufferData, _operations.Object));
             _mode = _modeRaw;
             _mode.OnEnter();
         }
@@ -64,40 +74,41 @@ namespace VimCoreTest
         {
             Create("foo", "bar");
             _host.Status = "foo";
+            _editOpts.Setup(x => x.GotoLine(It.IsAny<int>()));
             _mode.Process("1");
             _mode.Process(InputUtil.KeyToKeyInput(Key.Enter));
             Assert.AreEqual(String.Empty, _host.Status);
         }
 
-        [Test, Description("Make sure we are clearing out the input list")]
-        public void StatusDoubleCommand1()
+        [Test, Description("Ensure multiple commands can be processed")]
+        public void DoubleCommand1()
         {
-            Create("foo", "bar");
-            _mode.Process("2");
-            _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot,0));
-            _mode.Process("2");
-            Assert.AreEqual(1, _view.Caret.Position.BufferPosition.GetContainingLine().LineNumber);
+            Create("foo", "bar", "baz");
+            _editOpts.Setup(x => x.GotoLine(1)).Verifiable();
+            ProcessWithEnter("2");
+            _editOpts.Setup(x => x.GotoLine(2)).Verifiable();
+            ProcessWithEnter("3");
+            _editOpts.Verify();
         }
 
         [Test]
         public void Jump1()
         {
             Create("foo", "bar", "baz");
+            var tss = _view.TextSnapshot;
+            var last = tss.LineCount - 1;
+            _editOpts.Setup(x => x.MoveToEndOfDocument(false)).Verifiable();
             ProcessWithEnter("$");
-            var caretPoint = _view.Caret.Position.BufferPosition;
-            var tss = caretPoint.Snapshot;
-            var last = tss.GetLineFromLineNumber(tss.LineCount - 1);
-            Assert.AreEqual(last.Start, caretPoint);
+            _editOpts.Verify();
         }
 
         [Test]
         public void Jump2()
         {
             Create("foo", "bar");
+            _editOpts.Setup(x => x.GotoLine(1)).Verifiable();
             ProcessWithEnter("2");
-            var caret = _view.Caret.Position.BufferPosition;
-            Assert.AreEqual(1, caret.GetContainingLine().LineNumber);
-            Assert.AreEqual(caret, caret.GetContainingLine().Start);
+            _editOpts.Verify();
         }
 
         [Test]
@@ -105,53 +116,223 @@ namespace VimCoreTest
         {
             Create("foo");
             ProcessWithEnter("400");
-            Assert.AreEqual("Invalid line number", _host.Status);
+            Assert.IsTrue(!String.IsNullOrEmpty(_host.Status));
         }
 
         [Test]
         public void Yank1()
         {
             Create("foo", "bar");
-
-            IRegisterMap map = new RegisterMap();
+            var tss = _view.TextSnapshot;
+            _operations.Setup(x => x.Yank(
+                tss.GetLineFromLineNumber(0).ExtentIncludingLineBreak,
+                MotionKind._unique_Exclusive,
+                OperationKind.LineWise,
+                _map.DefaultRegister))
+                .Verifiable();
             ProcessWithEnter("y");
-            Assert.AreEqual("foo" + Environment.NewLine, map.DefaultRegister.Value.Value);
+            _operations.Verify();
         }
 
         [Test]
         public void Yank2()
         {
             Create("foo", "bar", "baz");
-            IRegisterMap map = new RegisterMap();
-            ProcessWithEnter("1,2y");
             var tss = _view.TextSnapshot;
             var span = new SnapshotSpan(
                 tss.GetLineFromLineNumber(0).Start,
                 tss.GetLineFromLineNumber(1).EndIncludingLineBreak);
-            Assert.AreEqual(span.GetText(), map.DefaultRegister.Value.Value);
+            _operations.Setup(x => x.Yank(
+                span,
+                MotionKind._unique_Exclusive,
+                OperationKind.LineWise,
+                _map.DefaultRegister)).Verifiable();
+            ProcessWithEnter("1,2y");
+            _operations.Verify();
         }
 
         [Test]
         public void Yank3()
         {
             Create("foo", "bar");
-            IRegisterMap map = new RegisterMap();
-            ProcessWithEnter("y c");
             var line = _view.TextSnapshot.GetLineFromLineNumber(0);
-            Assert.AreEqual(line.ExtentIncludingLineBreak.GetText(), map.GetRegister('c').Value.Value);
+            _operations.Setup(x => x.Yank(
+                line.ExtentIncludingLineBreak,
+                MotionKind._unique_Exclusive,
+                OperationKind.LineWise,
+                _map.GetRegister('c'))).Verifiable();
+            ProcessWithEnter("y c");
+            _operations.Verify();
         }
 
         [Test]
         public void Yank4()
         {
             Create("foo", "bar");
-            IRegisterMap map = new RegisterMap();
-            ProcessWithEnter("y 2");
             var tss = _view.TextSnapshot;
             var span = new SnapshotSpan(
                 tss.GetLineFromLineNumber(0).Start,
                 tss.GetLineFromLineNumber(1).EndIncludingLineBreak);
-            Assert.AreEqual(span.GetText(), map.DefaultRegister.Value.Value);
+            _operations.Setup(x => x.Yank(span, MotionKind._unique_Exclusive, OperationKind.LineWise, _map.DefaultRegister)).Verifiable();
+            ProcessWithEnter("y 2");
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Put1()
+        {
+            Create("foo", "bar");
+            _operations.Setup(x => x.Put("hey", It.IsAny<ITextSnapshotLine>(), true)).Verifiable();
+            _map.DefaultRegister.UpdateValue("hey");
+            ProcessWithEnter("put");
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Put2()
+        {
+            Create("foo", "bar");
+            _operations.Setup(x => x.Put("hey", It.IsAny<ITextSnapshotLine>(), false)).Verifiable();
+            _map.DefaultRegister.UpdateValue("hey");
+            ProcessWithEnter("2put!");
+            _operations.Verify();
+        }
+
+        [Test]
+        public void ShiftLeft1()
+        {
+            Create("     foo", "bar", "baz");
+            _operations
+                .Setup(x => x.ShiftLeft(_view.TextSnapshot.GetLineFromLineNumber(0).ExtentIncludingLineBreak, 4))
+                .Returns<ITextSnapshot>(null)
+                .Verifiable();
+            ProcessWithEnter("<");
+            _operations.Verify();
+        }
+
+        [Test]
+        public void ShiftLeft2()
+        {
+            Create("     foo", "     bar", "baz");
+            var tss = _view.TextSnapshot;
+            var span = new SnapshotSpan(
+                tss.GetLineFromLineNumber(0).Start,
+                tss.GetLineFromLineNumber(1).EndIncludingLineBreak);
+            _operations
+                .Setup(x => x.ShiftLeft(span, 4))
+                .Returns<ITextSnapshot>(null)
+                .Verifiable();
+            ProcessWithEnter("1,2<");
+            _operations.Verify();
+        }
+
+        [Test]
+        public void ShiftLeft3()
+        {
+            Create("     foo", "     bar", "baz");
+            var tss = _view.TextSnapshot;
+            var span = new SnapshotSpan(
+                tss.GetLineFromLineNumber(0).Start,
+                tss.GetLineFromLineNumber(1).EndIncludingLineBreak);
+            _operations
+                .Setup(x => x.ShiftLeft(span, 4))
+                .Returns<ITextSnapshot>(null)
+                .Verifiable();
+            ProcessWithEnter("< 2");
+            _operations.Verify();
+        }
+
+        [Test]
+        public void ShiftRight1()
+        {
+            Create("foo", "bar", "baz");
+            _operations
+                .Setup(x => x.ShiftRight(_view.TextSnapshot.GetLineFromLineNumber(0).ExtentIncludingLineBreak, 4))
+                .Returns<ITextSnapshot>(null)
+                .Verifiable();
+            ProcessWithEnter(">");
+            _operations.Verify();
+        }
+
+        [Test]
+        public void ShiftRight2()
+        {
+            Create("foo", "bar", "baz");
+            var tss = _view.TextSnapshot;
+            var span = new SnapshotSpan(
+                tss.GetLineFromLineNumber(0).Start,
+                tss.GetLineFromLineNumber(1).EndIncludingLineBreak);
+            _operations
+                .Setup(x => x.ShiftRight(span, 4))
+                .Returns<ITextSnapshot>(null)
+                .Verifiable();
+            ProcessWithEnter("1,2>");
+            _operations.Verify();
+        }
+
+        [Test]
+        public void ShiftRight3()
+        {
+            Create("foo", "bar", "baz");
+            var tss = _view.TextSnapshot;
+            var span = new SnapshotSpan(
+                tss.GetLineFromLineNumber(0).Start,
+                tss.GetLineFromLineNumber(1).EndIncludingLineBreak);
+            _operations
+                .Setup(x => x.ShiftRight(span, 4))
+                .Returns<ITextSnapshot>(null)
+                .Verifiable();
+            ProcessWithEnter("> 2");
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Delete1()
+        {
+            Create("foo", "bar");
+            _operations.Setup(x => x.DeleteSpan(
+                _view.TextSnapshot.GetLineFromLineNumber(0).ExtentIncludingLineBreak,
+                MotionKind._unique_Exclusive,
+                OperationKind.LineWise,
+                _map.DefaultRegister))
+                .Returns(It.IsAny<ITextSnapshot>())
+                .Verifiable();
+            ProcessWithEnter("del");
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Delete2()
+        {
+            Create("foo", "bar", "baz");
+            var tss = _view.TextSnapshot;
+            var span = new SnapshotSpan(
+                tss.GetLineFromLineNumber(0).Start,
+                tss.GetLineFromLineNumber(1).EndIncludingLineBreak);
+            _operations.Setup(x => x.DeleteSpan(
+                span,
+                MotionKind._unique_Exclusive,
+                OperationKind.LineWise,
+                _map.DefaultRegister))
+                .Returns(It.IsAny<ITextSnapshot>())
+                .Verifiable();
+            ProcessWithEnter("dele 2");
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Delete3()
+        {
+            Create("foo", "bar", "baz");
+            _operations.Setup(x => x.DeleteSpan(
+                _view.TextSnapshot.GetLineFromLineNumber(1).ExtentIncludingLineBreak,
+                MotionKind._unique_Exclusive,
+                OperationKind.LineWise,
+                _map.DefaultRegister))
+                .Returns(It.IsAny<ITextSnapshot>())
+                .Verifiable();
+            ProcessWithEnter("2del");
+            _operations.Verify();
         }
     }
 }

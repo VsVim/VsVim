@@ -3,7 +3,7 @@ using System.Text;
 using System.Collections.Generic;
 using System.Linq;
 using NUnit.Framework;
-using VimCore;
+using Vim;
 using Microsoft.VisualStudio.Text;
 using Microsoft.FSharp.Core;
 
@@ -132,6 +132,8 @@ namespace VimCoreTest
             var res = MotionUtil.LineDown(_snapshot.GetLineFromLineNumber(0).Start, 1);
             Assert.AreEqual("foo" + Environment.NewLine + "bar", res.GetText());
         }
+
+
 
     }
 }

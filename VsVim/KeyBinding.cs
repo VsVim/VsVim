@@ -4,7 +4,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
-using VimCore;
+using Vim;
 using System.Diagnostics;
 using System.Windows.Input;
 
@@ -219,8 +219,8 @@ namespace VsVim
         public static bool TryParse(string binding, out KeyBinding keyBinding)
         {
             keyBinding = default(KeyBinding);
-            var scopeStart = binding.IndexOf(':');
-            if (scopeStart < 0)
+            var scopeEnd = binding.IndexOf(':');
+            if (scopeEnd < 0)
             {
                 return false;
             }
@@ -231,8 +231,8 @@ namespace VsVim
                 return false;
             }
 
-            var scope = binding.Substring(0, scopeStart);
-            var rest = binding.Substring(scopeStart + 2);
+            var scope = binding.Substring(0, scopeEnd);
+            var rest = binding.Substring(scopeEnd + 2);
             var entries = rest
                 .Split(new string[] { ", " }, StringSplitOptions.RemoveEmptyEntries)
                 .Select(x => ParseOne(x));

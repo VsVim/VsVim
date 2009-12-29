@@ -8,7 +8,7 @@ using Microsoft.VisualStudio.Text.Editor;
 using System.Runtime.InteropServices;
 using System.Windows.Input;
 using Microsoft.FSharp.Core;
-using VimCore;
+using Vim;
 
 namespace VsVim
 {
@@ -40,7 +40,7 @@ namespace VsVim
             }
             
             // If the current state of the buffer cannot process the command then do not convert it 
-            if (!_buffer.WillProcessInput(command.KeyInput))
+            if (!_buffer.CanProcessInput(command.KeyInput))
             {
 
                 // The one exception is input commands while we are in normal mode.  While normal mode does not actually

@@ -7,7 +7,7 @@ using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.OLE.Interop;
 using System.Runtime.InteropServices;
 using Microsoft.VisualStudio.Utilities;
-using VimCore;
+using Vim;
 using System.Windows.Input;
 using Microsoft.VisualStudio.TextManager.Interop;
 
@@ -62,6 +62,19 @@ namespace VsVim
                 {
                     yield return new CommandKeyBinding(name, binding);
                 }
+            }
+        }
+
+        public static void SafeResetBindings(this Command command)
+        {
+            try
+            {
+                command.Bindings = new object[] { };
+            }
+            catch (COMException)
+            {
+                // Several implementations, Transact SQL in particular, return E_FAIL for this
+                // operation.  Simply ignore the failure and continue
             }
         }
 

@@ -8,6 +8,8 @@ using VsVim;
 using System.Windows.Input;
 using Microsoft.VisualStudio.Utilities;
 using System.Windows;
+using EnvDTE;
+using System.Runtime.InteropServices;
 
 namespace VsVimTest
 {
@@ -93,6 +95,28 @@ namespace VsVimTest
             var col = new PropertyCollection();
             var opt = col.TryGetTypedProperty<string>();
             Assert.IsFalse(opt.IsSome());
+        }
+
+        #endregion
+
+        #region Command
+
+        [Test]
+        public void SafeResetKeyBindings()
+        {
+            var mock = new Mock<Command>(MockBehavior.Strict);
+            mock.SetupSet(x => x.Bindings).Verifiable();
+            mock.Object.SafeResetBindings();
+            mock.Verify();
+        }
+
+        [Test, Description("Some Command implementations return E_FAIL, just ignore it")]
+        public void SafeResetKeyBindings2()
+        {
+            var mock = new Mock<Command>(MockBehavior.Strict);
+            mock.SetupSet(x => x.Bindings).Throws(new COMException()).Verifiable();
+            mock.Object.SafeResetBindings();
+            mock.Verify();
         }
 
         #endregion

@@ -1,6 +1,6 @@
 ﻿#light
 
-namespace VimCore
+namespace Vim
 open Microsoft.VisualStudio.Text.Editor
 
 /// Defines a block style caret for a given ITextView.  This allows normal mode to create 

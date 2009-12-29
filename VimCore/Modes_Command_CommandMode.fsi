@@ -1,9 +1,9 @@
 ﻿#light
 
-namespace VimCore.Modes.Command
-open VimCore
+namespace Vim.Modes.Command
+open Vim
 
 type internal CommandMode =
     interface IMode
-    new : IVimBufferData -> CommandMode
+    new : (IVimBufferData * IOperations ) -> CommandMode
     

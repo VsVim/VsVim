@@ -1,6 +1,6 @@
 ﻿#light
 
-namespace VimCore
+namespace Vim
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
 open System.Windows.Input
@@ -27,8 +27,8 @@ type IVimBuffer =
     
     /// Process the KeyInput and return whether or not the input was completely handled
     abstract ProcessInput : KeyInput -> bool
-    abstract WillProcessInput : KeyInput -> bool
-    abstract WillProcessKey : Key -> bool
+    abstract CanProcessInput : KeyInput -> bool
+    abstract CanProcessKey : Key -> bool
     abstract SwitchMode : ModeKind -> IMode
 
     /// Called when the view is closed and the IVimBuffer should uninstall itself

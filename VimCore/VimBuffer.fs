@@ -1,6 +1,6 @@
 ﻿#light
 
-namespace VimCore
+namespace Vim
 
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
@@ -28,22 +28,25 @@ type internal VimBuffer
         
     // Actuall process the input key.  Raise the change event on an actual change
     member x.ProcessInput (i:KeyInput) = 
-        let inner = 
-            let res = _mode.Process i
-            match res with
-                | SwitchMode (kind) -> 
-                    x.SwitchMode kind |> ignore
-                    true
-                | SwitchModeNotHandled (kind) ->
-                    x.SwitchMode kind |> ignore
-                    false
-                | Processed -> true
-                | ProcessNotHandled -> false
-        let ret = inner 
+        let ret = 
+            if i = _data.Settings.DisableCommand && x.Mode.ModeKind <> ModeKind.Disabled then
+                x.SwitchMode ModeKind.Disabled |> ignore
+                true
+            else
+                let res = _mode.Process i
+                match res with
+                    | SwitchMode (kind) -> 
+                        x.SwitchMode kind |> ignore
+                        true
+                    | SwitchModeNotHandled (kind) ->
+                        x.SwitchMode kind |> ignore
+                        false
+                    | Processed -> true
+                    | ProcessNotHandled -> false
         _keyInputProcessedEvent.Trigger(i)
         ret
             
-    member x.WillProcessInput ki = _mode.CanProcess ki
+    member x.CanProcessInput ki = _mode.CanProcess ki || ki = _data.Settings.DisableCommand
                  
     interface IVimBuffer with
         member x.VimBufferData = _data
@@ -64,8 +67,9 @@ type internal VimBuffer
         member x.KeyInputProcessed = _keyInputProcessedEvent.Publish
         member x.ProcessKey k = x.ProcessInput (InputUtil.KeyToKeyInput k)
         member x.ProcessInput ki = x.ProcessInput ki
-        member x.WillProcessInput ki = x.WillProcessInput ki
-        member x.WillProcessKey k = x.WillProcessInput (InputUtil.KeyToKeyInput k)
+        member x.CanProcessInput ki = x.CanProcessInput ki
+        member x.CanProcessKey k = x.CanProcessInput (InputUtil.KeyToKeyInput k)
         member x.Close () = 
             x.Mode.OnLeave()
             _data.BlockCaret.Destroy()
+            _data.MarkMap.DeleteAllMarksForBuffer _data.TextBuffer

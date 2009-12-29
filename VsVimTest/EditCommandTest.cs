@@ -1,7 +1,7 @@
 ﻿using VsVim;
 using NUnit.Framework;
 using System;
-using VimCore;
+using Vim;
 
 namespace VsVimTest
 {

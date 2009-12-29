@@ -3,7 +3,7 @@ using System.Text;
 using System.Collections.Generic;
 using System.Linq;
 using NUnit.Framework;
-using VimCore;
+using Vim;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text;
 
@@ -125,121 +125,5 @@ namespace VimCoreTest
             Assert.AreEqual(4, _view.Caret.Position.BufferPosition.Position);
         }
 
-        [Test, Description("Don't crash going off the buffer")]
-        public void MoveCaretRight1()
-        {
-            var last = _view.TextSnapshot.Lines.Last();
-            _view.Caret.MoveTo(last.End);
-            var res = ViewUtil.MoveCaretRight(_view);
-            Assert.AreEqual(last.End, res);
-        }
-
-        [Test, Description("Don't go off the end of the current line")]
-        public void MoveCaretRight2()
-        {
-            var line = _view.TextSnapshot.GetLineFromLineNumber(0);
-            _view.Caret.MoveTo(line.End);
-            var res = ViewUtil.MoveCaretRight(_view);
-            Assert.AreEqual(res, line.End);
-
-        }
-
-        [Test]
-        public void MoveCaretLeft1()
-        {
-            var line = _view.TextSnapshot.GetLineFromLineNumber(0);
-            _view.Caret.MoveTo(line.Start.Add(1));
-            var res = ViewUtil.MoveCaretLeft(_view);
-            Assert.AreEqual(line.Start, res);
-            Assert.AreEqual(line.Start, _view.Caret.Position.BufferPosition);
-        }
-
-        [Test, Description("Left at the start of the line should not go further")]
-        public void MoveCaretLeft2()
-        {
-            var line = _view.TextSnapshot.GetLineFromLineNumber(1);
-            _view.Caret.MoveTo(line.Start);
-            var res = ViewUtil.MoveCaretLeft(_view);
-            Assert.AreEqual(line.Start, res);
-        }
-
-        [Test, Description("Move caret down should fail if the caret is at the end of the buffer")]
-        public void MoveCaretDown1()
-        {
-            var last = _view.TextSnapshot.Lines.Last();
-            _view.Caret.MoveTo(last.Start);
-            var res = ViewUtil.MoveCaretDown(_view);
-            Assert.AreEqual(last.Start, res);
-        }
-
-        [Test, Description("Move caret down should not crash if the line is the second to last line.  In other words, the last real line")]
-        public void MoveCaretDown2()
-        {
-            var tss = _view.TextSnapshot;
-            var line = tss.GetLineFromLineNumber(tss.LineCount - 2);
-            _view.Caret.MoveTo(line.Start);
-            var res = ViewUtil.MoveCaretDown(_view);
-            Assert.AreNotEqual(line.Start, res);
-        }
-
-        [Test, Description("Move caret down should not crash if the line is the second to last line.  In other words, the last real line")]
-        public void MoveCaretDown3()
-        {
-            var tss = _view.TextSnapshot;
-            var line = tss.GetLineFromLineNumber(tss.LineCount - 1);
-            _view.Caret.MoveTo(line.Start);
-            var res = ViewUtil.MoveCaretDown(_view);
-            Assert.AreEqual(line.Start, res);
-        }
-
-        [Test, Description("Be wary the 0 length last line")]
-        public void MoveCaretDown4()
-        {
-            CreateView("foo", String.Empty);
-            var tss = _view.TextSnapshot;
-            var line = tss.GetLineFromLineNumber(0);
-            _view.Caret.MoveTo(line.Start);
-            var res = ViewUtil.MoveCaretDown(_view);
-            Assert.AreNotEqual(line.Start, res);
-        }
-
-        [Test, Description("Move caret down should maintain column")]
-        public void MoveCaretDown5()
-        {
-            CreateView("foo", "bar");
-            var tss = _view.TextSnapshot;
-            _view.Caret.MoveTo(tss.GetLineFromLineNumber(0).Start.Add(1));
-            var res = ViewUtil.MoveCaretDown(_view);
-            Assert.AreEqual(res, tss.GetLineFromLineNumber(1).Start.Add(1));
-        }
-
-        [Test, Description("Move caret down should maintain column")]
-        public void MoveCaretDown6()
-        {
-            CreateView("foo", "bar");
-            var tss = _view.TextSnapshot;
-            _view.Caret.MoveTo(tss.GetLineFromLineNumber(0).End);
-            var res = ViewUtil.MoveCaretDown(_view);
-            Assert.AreEqual(res, tss.GetLineFromLineNumber(1).End);
-        }
-
-        [Test, Description("Move caret up past the begining of the buffer should fail if it's already at the top")]
-        public void MoveCaretUp1()
-        {
-            var first = _view.TextSnapshot.Lines.First();
-            _view.Caret.MoveTo(first.End);
-            var res = ViewUtil.MoveCaretUp(_view);
-            Assert.AreEqual(first.End, res);
-        }
-
-        [Test, Description("Move caret up should respect column positions")]
-        public void MoveCaretUp2()
-        {
-            CreateView("foo", "bar");
-            var tss = _view.TextSnapshot;
-            _view.Caret.MoveTo(tss.GetLineFromLineNumber(1).Start.Add(1));
-            var res = ViewUtil.MoveCaretUp(_view);
-            Assert.AreEqual(res, tss.GetLineFromLineNumber(0).Start.Add(1));
-        }
     }
 }

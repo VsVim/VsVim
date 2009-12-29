@@ -4,7 +4,7 @@ using System;
 using EnvDTE;
 using System.Collections.Generic;
 using System.Linq;
-using VimCore;
+using Vim;
 using Moq;
 using System.Windows.Input;
 
@@ -70,6 +70,39 @@ namespace VsVimTest
             var inputs = new KeyInput[] { new KeyInput('z', Key.Z) };
             var list = KeyBindingService.FindConflictingCommands(commands, new HashSet<KeyInput>(inputs));
             Assert.AreEqual(1, list.Count);
+        }
+
+        [Test]
+        public void FindConflictingCommands6()
+        {
+            var commands = Create("Global::a", "Text Editor::z");
+            var inputs = new KeyInput[] { new KeyInput('z', Key.Z), new KeyInput('a', Key.A) };
+            var list = KeyBindingService.FindConflictingCommands(commands, new HashSet<KeyInput>(inputs));
+            Assert.AreEqual(2, list.Count);
+        }
+
+        [Test]
+        public void FindConflictingCommands7()
+        {
+            var commands = Create("balgh::a", "aoeu::z");
+            var inputs = new KeyInput[] { new KeyInput('z', Key.Z), new KeyInput('a', Key.A) };
+            var list = KeyBindingService.FindConflictingCommands(commands, new HashSet<KeyInput>(inputs));
+            Assert.AreEqual(0, list.Count);
+        }
+
+        [Test]
+        public void IsImportantScope1()
+        {
+            Assert.IsTrue(KeyBindingService.IsImportantScope("Global"));
+            Assert.IsTrue(KeyBindingService.IsImportantScope("Text Editor"));
+            Assert.IsTrue(KeyBindingService.IsImportantScope(String.Empty));
+        }
+
+        [Test]
+        public void IsImportantScope2()
+        {
+            Assert.IsFalse(KeyBindingService.IsImportantScope("blah"));
+            Assert.IsFalse(KeyBindingService.IsImportantScope("VC Image Editor"));
         }
     }
 }

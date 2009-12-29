@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using VimCore;
+using Vim;
 using Microsoft.VisualStudio.Text.Editor;
 
 namespace VimCoreTest.Utils

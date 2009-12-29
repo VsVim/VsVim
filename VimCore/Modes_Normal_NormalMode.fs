@@ -1,13 +1,19 @@
 ﻿#light
 
-namespace VimCore.Modes.Normal
-open VimCore
+namespace Vim.Modes.Normal
+open Vim
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
 open System.Windows.Input
 open System.Windows.Media
 
-type internal NormalMode( _bufferData : IVimBufferData ) = 
+/// Operation in the normal mode
+type internal Operation =  {
+    KeyInput : Vim.KeyInput;
+    RunFunc : NormalModeData -> NormalModeResult
+}
+
+type internal NormalMode( _bufferData : IVimBufferData, _operations : IOperations ) = 
     let mutable _data = {
         VimBufferData=_bufferData; 
         RunFunc = (fun _ _ -> NormalModeResult.Complete);
@@ -110,38 +116,6 @@ type internal NormalMode( _bufferData : IVimBufferData ) =
                 this.TryFindNextMatch search count |> ignore
                 NormalModeResult.Complete
                 
-    /// Paste after the current cursor position.  Don't forget that a linewise paste
-    /// operation needs to occur under the cursor
-    member this.PasteAfter text opKind =
-        let view = _bufferData.TextView
-        let caretPoint = ViewUtil.GetCaretPoint view
-        let buffer = view.TextBuffer
-        match opKind with
-        | OperationKind.LineWise ->
-            let line = caretPoint.GetContainingLine()
-            let span = new SnapshotSpan(line.EndIncludingLineBreak, 0)
-            let tss = buffer.Replace(span.Span, text) 
-            
-            // For a LineWise paste we want to place the cursor at the start
-            // of the next line
-            let nextLine = tss.GetLineFromLineNumber(line.LineNumber+1)
-            view.Caret.MoveTo(nextLine.Start) |> ignore
-        | OperationKind.CharacterWise ->
-            let point = TssUtil.GetNextPoint caretPoint
-            let span = new SnapshotSpan(point,0)
-            buffer.Replace(span.Span, text) |> ignore
-        | _ -> failwith "Invalid Enum Value"
-        NormalModeResult.Complete
-        
-    // Paste at the current cursor position
-    member this.PasteBefore text = 
-        let view = _bufferData.TextView
-        let point = ViewUtil.GetCaretPoint view
-        let span = new SnapshotSpan(point,0)
-        let buffer = view.TextBuffer
-        buffer.Replace(span.Span, text) |> ignore
-        NormalModeResult.Complete
-        
     member this.WaitForMotion ki (d:NormalModeData) doneFunc = 
         let rec f (result:MotionResult) = 
             match result with 
@@ -173,12 +147,11 @@ type internal NormalMode( _bufferData : IVimBufferData ) =
                     let point = ViewUtil.GetCaretPoint d.VimBufferData.TextView
                     let point = point.GetContainingLine().Start
                     let span = TssUtil.GetLineRangeSpanIncludingLineBreak point d.Count
-                    let tuple = (span,  MotionKind.Inclusive, OperationKind.LineWise)
-                    BufferUtil.DeleteSpan tuple d.Register |> ignore
+                    _operations.DeleteSpan span MotionKind.Inclusive OperationKind.LineWise d.Register |> ignore
                     NormalModeResult.Complete
                 | _ -> 
-                    let func tuple = 
-                        BufferUtil.DeleteSpan tuple d.Register |> ignore
+                    let func (span,motionKind,opKind)= 
+                        _operations.DeleteSpan span motionKind opKind d.Register |> ignore
                         NormalModeResult.Complete
                     this.WaitForMotion ki d func
         inner
@@ -191,11 +164,11 @@ type internal NormalMode( _bufferData : IVimBufferData ) =
                     let point = ViewUtil.GetCaretPoint d.VimBufferData.TextView
                     let point = point.GetContainingLine().Start
                     let span = TssUtil.GetLineRangeSpanIncludingLineBreak point d.Count
-                    Modes.Common.Operations.Yank span MotionKind.Inclusive OperationKind.LineWise d.Register
+                    _operations.Yank span MotionKind.Inclusive OperationKind.LineWise d.Register
                     NormalModeResult.Complete
                 | _ ->
                     let inner (ss:SnapshotSpan,motionKind,opKind) = 
-                        Modes.Common.Operations.Yank ss motionKind opKind d.Register
+                        _operations.Yank ss motionKind opKind d.Register
                         NormalModeResult.Complete
                     this.WaitForMotion ki d inner
         inner 
@@ -205,15 +178,12 @@ type internal NormalMode( _bufferData : IVimBufferData ) =
         let inner (d:NormalModeData) (ki:KeyInput) =
             match ki.Char with 
                 | '<' ->
-                    let tss = this.CaretPoint.Snapshot
-                    let startLine = this.CaretPoint.GetContainingLine()
-                    let endLineNumber = min (tss.LineCount-1) (startLine.LineNumber+d.Count-1)
-                    let span = new SnapshotSpan(startLine.Start, tss.GetLineFromLineNumber(endLineNumber).End)
-                    BufferUtil.ShiftLeft span _bufferData.Settings.ShiftWidth |> ignore
+                    let span = TssUtil.GetLineRangeSpan (this.CaretPoint.GetContainingLine().Start) d.Count
+                    _operations.ShiftLeft span _bufferData.Settings.ShiftWidth |> ignore
                     NormalModeResult.Complete
                 | _ ->
                     let inner2 (span:SnapshotSpan,_,_) =
-                        BufferUtil.ShiftLeft span _bufferData.Settings.ShiftWidth |> ignore                                          
+                        _operations.ShiftLeft span _bufferData.Settings.ShiftWidth |> ignore                                          
                         NormalModeResult.Complete
                     this.WaitForMotion ki d inner2
         inner                                            
@@ -224,15 +194,12 @@ type internal NormalMode( _bufferData : IVimBufferData ) =
         let inner (d:NormalModeData) (ki:KeyInput) =
             match ki.Char with
                 | '>' ->
-                    let tss = this.CaretPoint.Snapshot
-                    let startLine = this.CaretPoint.GetContainingLine()
-                    let endLineNumber = min (tss.LineCount-1) (startLine.LineNumber+d.Count-1)
-                    let span = new SnapshotSpan(startLine.Start, tss.GetLineFromLineNumber(endLineNumber).End)
-                    BufferUtil.ShiftRight span _bufferData.Settings.ShiftWidth |> ignore
+                    let span = TssUtil.GetLineRangeSpan (this.CaretPoint.GetContainingLine().Start) d.Count
+                    _operations.ShiftRight span _bufferData.Settings.ShiftWidth |> ignore
                     NormalModeResult.Complete
                 | _ ->
                     let inner2 (span:SnapshotSpan,_,_) =
-                        BufferUtil.ShiftRight span _bufferData.Settings.ShiftWidth |> ignore
+                        _operations.ShiftRight span _bufferData.Settings.ShiftWidth |> ignore
                         NormalModeResult.Complete
                     this.WaitForMotion ki d inner2
         inner
@@ -259,38 +226,16 @@ type internal NormalMode( _bufferData : IVimBufferData ) =
             | true ->
                 host.Beep()
                 NormalModeResult.Complete
-        
 
-    /// Add a line below the current cursor position and switch back to insert mode
-    member this.AddLineBelow (view:ITextView) =
-    
-        // Insert the line
-        let point = ViewUtil.GetCaretPoint view
-        let line = point.GetContainingLine()
-        let newLine = BufferUtil.AddLineBelow line
+    member private x.ReplaceChar (d:NormalModeData) = 
+        let inner (d:NormalModeData) (ki:KeyInput) =
+            if not (_operations.ReplaceChar ki d.Count) then
+                _bufferData.VimHost.Beep()
+            d.VimBufferData.BlockCaret.Show()
+            NormalModeResult.Complete
+        d.VimBufferData.BlockCaret.Hide()
+        NeedMore2(inner)
         
-        // Move the caret to the same indent position as the previous line
-        let indent = TssUtil.FindIndentPosition(line)
-        let point = new VirtualSnapshotPoint(newLine, indent)
-        ViewUtil.MoveCaretToVirtualPoint view point |> ignore
-        NormalModeResult.SwitchMode (ModeKind.Insert)
-        
-    member this.DeleteCharacterUnderCursor (d:NormalModeData) =
-        let view = d.VimBufferData.TextView
-        let range = TssUtil.GetCharacterSpan(view.Caret.Position.BufferPosition)
-        let tuple = (range, MotionKind.Exclusive, OperationKind.CharacterWise)
-        BufferUtil.DeleteSpan tuple d.Register |> ignore
-        NormalModeResult.Complete
-
-    /// Delete the character range before the current cursor.  Used to implement the X
-    /// command. 
-    member this.DeleteCharacterBeforeCursor (view:ITextView) count r =
-        let caretPoint = ViewUtil.GetCaretPoint view
-        let range = TssUtil.GetReverseCharacterSpan caretPoint count
-        let tuple = (range, MotionKind.Exclusive, OperationKind.CharacterWise)
-        BufferUtil.DeleteSpan tuple r |> ignore
-        NormalModeResult.Complete
-
     /// Core method for scrolling the editor up or down
     member this.ScrollCore dir count =
         let lines = VimSettingsUtil.GetScrollLineCount this.Settings this.TextView
@@ -307,6 +252,68 @@ type internal NormalMode( _bufferData : IVimBufferData ) =
         this.TextView.Caret.EnsureVisible()
         NormalModeResult.Complete
 
+    /// Handles commands which begin with g in normal mode.  This should be called when the g char is
+    /// already processed
+    member x.CharGCommand (d:NormalModeData) =
+        let data = d.VimBufferData
+        let inner (d:NormalModeData) (ki:KeyInput) =  
+            match ki.Char with
+            | 'J' -> 
+                let view = data.TextView
+                let caret = ViewUtil.GetCaretPoint view
+                _operations.Join caret Modes.JoinKind.KeepEmptySpaces d.Count |> ignore
+            | 'p' -> _operations.PasteAfterCursor d.Register.StringValue 1 d.Register.Value.OperationKind true |> ignore
+            | 'P' -> _operations.PasteBeforeCursor d.Register.StringValue 1 true |> ignore
+            | _ ->
+                d.VimBufferData.VimHost.Beep()
+                ()
+            NormalModeResult.Complete
+        NeedMore2(inner)
+
+    /// Implement the commands associated with the z prefix in normal mode
+    member x.CharZCommand (d:NormalModeData) =
+        let data = d.VimBufferData
+        let inner (d:NormalModeData) (ki:KeyInput) =  
+            if ki.IsNewLine then 
+                _bufferData.EditorOperations.ScrollLineTop()
+                _bufferData.EditorOperations.MoveToStartOfLineAfterWhiteSpace(false) 
+            else
+                match ki.Char with
+                | 't' ->  _bufferData.EditorOperations.ScrollLineTop() 
+                | '.' -> 
+                    _bufferData.EditorOperations.ScrollLineCenter() 
+                    _bufferData.EditorOperations.MoveToStartOfLineAfterWhiteSpace(false) 
+                | 'z' -> _bufferData.EditorOperations.ScrollLineCenter() 
+                | '-' -> 
+                    _bufferData.EditorOperations.ScrollLineBottom() 
+                    _bufferData.EditorOperations.MoveToStartOfLineAfterWhiteSpace(false) 
+                | 'b' -> _bufferData.EditorOperations.ScrollLineBottom() 
+                | _ -> _bufferData.VimHost.Beep()
+            NormalModeResult.Complete
+        NeedMore2(inner)
+
+    member x.JumpToMark (d:NormalModeData) =
+        let waitForKey (d:NormalModeData) (ki:KeyInput) =
+            let bufferData = d.VimBufferData
+            let res = _operations.JumpToMark ki.Char bufferData.MarkMap 
+            match res with 
+            | Modes.Failed(msg) -> bufferData.VimHost.UpdateStatus(msg)
+            | _ -> ()
+            NormalModeResult.Complete
+        NormalModeResult.NeedMore2 waitForKey
+
+    /// Process the m[a-z] command.  Called when the m has been input so wait for the next key
+    member x.Mark (d:NormalModeData) =
+        let waitForKey (d2:NormalModeData) (ki:KeyInput) =
+            let bufferData = d2.VimBufferData
+            let cursor = ViewUtil.GetCaretPoint bufferData.TextView
+            let res = _operations.SetMark ki.Char bufferData.MarkMap cursor
+            match res with
+            | Modes.Failed(_) -> bufferData.VimHost.Beep()
+            | _ -> ()
+            NormalModeResult.Complete
+        NormalModeResult.NeedMore2 waitForKey
+
     /// Complete the specified motion function            
     member this.MotionFunc view count func =
         let rec runCount count =
@@ -317,16 +324,37 @@ type internal NormalMode( _bufferData : IVimBufferData ) =
         ViewUtil.ClearSelection view                
         runCount count
 
+    member private this.BuildMotionOperationsMap =
+        let wrap (func: NormalModeData -> unit) = 
+            let inner (d:NormalModeData) = 
+                func d |> ignore
+                NormalModeResult.Complete
+            inner
+        let moveLeft = wrap (fun d -> _operations.MoveCaretLeft(d.Count) )
+        let moveRight = wrap (fun d -> _operations.MoveCaretRight(d.Count) )
+        let moveUp = wrap (fun d -> _operations.MoveCaretUp(d.Count) )
+        let moveDown = wrap (fun d -> _operations.MoveCaretDown(d.Count) )
+
+        let l : list<Operation> = [
+            { KeyInput=InputUtil.CharToKeyInput('h'); RunFunc = moveLeft; }
+            { KeyInput=InputUtil.KeyToKeyInput(Key.Left); RunFunc = moveLeft; }
+            { KeyInput=InputUtil.KeyToKeyInput(Key.Back); RunFunc = moveLeft; }
+            { KeyInput=KeyInput('h', Key.H, ModifierKeys.Control); RunFunc = moveLeft; }
+            { KeyInput=InputUtil.CharToKeyInput('l'); RunFunc = moveRight; }
+            { KeyInput=InputUtil.KeyToKeyInput(Key.Right); RunFunc = moveRight; }
+            { KeyInput=InputUtil.KeyToKeyInput(Key.Space); RunFunc = moveRight; }
+            { KeyInput=InputUtil.CharToKeyInput('k'); RunFunc=moveUp; }
+            { KeyInput=InputUtil.KeyToKeyInput(Key.Up); RunFunc=moveUp; }
+            { KeyInput=KeyInput('p', Key.P, ModifierKeys.Control); RunFunc=moveUp; }
+            { KeyInput=InputUtil.CharToKeyInput('j'); RunFunc=moveDown; }
+            { KeyInput=InputUtil.KeyToKeyInput(Key.Down); RunFunc=moveDown; }
+            { KeyInput=KeyInput('n', Key.N, ModifierKeys.Control); RunFunc=moveDown; }
+            { KeyInput=KeyInput('j', Key.J, ModifierKeys.Control); RunFunc=moveDown; }
+            ]
+        l
+
     member this.BuildOperationsMap = 
         let l : list<Operation> = [
-            {   KeyInput=InputUtil.CharToKeyInput('h'); 
-                RunFunc=(fun d -> this.MotionFunc this.TextView d.Count (ViewUtil.MoveCaretLeft) ) };
-            {   KeyInput=InputUtil.CharToKeyInput('j');
-                RunFunc=(fun d -> this.MotionFunc this.TextView d.Count (ViewUtil.MoveCaretDown)) };
-            {   KeyInput=InputUtil.CharToKeyInput('k');
-                RunFunc=(fun d -> this.MotionFunc this.TextView d.Count (ViewUtil.MoveCaretUp)) };
-            {   KeyInput=InputUtil.CharToKeyInput('l');
-                RunFunc=(fun d -> this.MotionFunc this.TextView d.Count (ViewUtil.MoveCaretRight)) };
             {   KeyInput=InputUtil.CharToKeyInput('w');
                 RunFunc=(fun d -> this.MotionFunc this.TextView d.Count (fun v -> ViewUtil.MoveWordForward v WordKind.NormalWord)) };
             {   KeyInput=InputUtil.CharToKeyInput('b');
@@ -336,9 +364,13 @@ type internal NormalMode( _bufferData : IVimBufferData ) =
             {   KeyInput=InputUtil.CharToKeyInput('B');
                 RunFunc=(fun d -> this.MotionFunc this.TextView d.Count (fun v -> ViewUtil.MoveWordBackward v WordKind.BigWord)) };
             {   KeyInput=InputUtil.CharToKeyInput('x');
-                RunFunc=(fun d -> this.DeleteCharacterUnderCursor d) };
+                RunFunc=(fun d ->
+                    _operations.DeleteCharacterAtCursor d.Count d.Register
+                    NormalModeResult.Complete); };
             {   KeyInput=InputUtil.CharToKeyInput('X');
-                RunFunc=(fun d -> this.DeleteCharacterBeforeCursor this.TextView d.Count d.Register) };
+                RunFunc=(fun d -> 
+                    _operations.DeleteCharacterBeforeCursor d.Count d.Register
+                    NormalModeResult.Complete); };
             {   KeyInput=InputUtil.CharToKeyInput('d');
                 RunFunc=(fun d -> NeedMore2(this.WaitDelete)) };
             {   KeyInput=InputUtil.CharToKeyInput('y');
@@ -348,9 +380,13 @@ type internal NormalMode( _bufferData : IVimBufferData ) =
             {   KeyInput=InputUtil.CharToKeyInput('>');
                 RunFunc=(fun d -> NeedMore2(this.ShiftRight)); };
             {   KeyInput=InputUtil.CharToKeyInput('p');
-                RunFunc=(fun d -> this.PasteAfter (StringUtil.Repeat (d.Register.StringValue) (d.Count)) d.Register.Value.OperationKind) };
+                RunFunc=(fun d -> 
+                            _operations.PasteAfterCursor d.Register.StringValue d.Count d.Register.Value.OperationKind false
+                            NormalModeResult.Complete); };
             {   KeyInput=InputUtil.CharToKeyInput('P');
-                RunFunc=(fun d -> this.PasteBefore (StringUtil.Repeat (d.Register.StringValue) (d.Count))) };
+                RunFunc=(fun d -> 
+                            _operations.PasteBeforeCursor d.Register.StringValue d.Count false
+                            NormalModeResult.Complete); };
             {   KeyInput=InputUtil.CharToKeyInput('$');
                 RunFunc=(fun d -> this.MoveEndOfLine d) };
             {   KeyInput=InputUtil.CharToKeyInput('^');
@@ -378,9 +414,13 @@ type internal NormalMode( _bufferData : IVimBufferData ) =
                     this.VimHost.Undo this.TextBuffer d.Count
                     NormalModeResult.Complete) };
             {   KeyInput=InputUtil.CharToKeyInput('o');
-                RunFunc=(fun d -> this.AddLineBelow this.TextView) };
+                RunFunc=(fun d -> 
+                    _operations.InsertLineBelow() |> ignore
+                    NormalModeResult.SwitchMode ModeKind.Insert); }
             {   KeyInput=InputUtil.CharToKeyInput('O');
-                RunFunc=Operations.InsertLineAbove };
+                RunFunc=(fun d -> 
+                    _operations.InsertLineAbove() |> ignore
+                    NormalModeResult.SwitchMode ModeKind.Insert); };
             {   KeyInput=InputUtil.KeyToKeyInput(Key.Enter);
                 RunFunc=(fun d -> this.MoveForEnter this.TextView d.VimBufferData.VimHost) };
             {   KeyInput=KeyInput('u', Key.U, ModifierKeys.Control);
@@ -390,30 +430,37 @@ type internal NormalMode( _bufferData : IVimBufferData ) =
             {   KeyInput=KeyInput('J', Key.J, ModifierKeys.Shift);
                 RunFunc=(fun d -> 
                     let start = ViewUtil.GetCaretPoint this.TextView
-                    let kind = VimCore.Modes.Common.JoinKind.RemoveEmptySpaces
-                    let res = VimCore.Modes.Common.Operations.Join this.TextView start kind d.Count
+                    let kind = Vim.Modes.JoinKind.RemoveEmptySpaces
+                    let res = _operations.Join start kind d.Count
                     if not res then
                         this.VimHost.Beep()
                     NormalModeResult.Complete) };
             {   KeyInput=KeyInput(']', Key.OemCloseBrackets, ModifierKeys.Control);
                 RunFunc=(fun d ->
-                    match VimCore.Modes.Common.Operations.GoToDefinition this.TextView this.VimHost with
-                    | VimCore.Modes.Common.Operations.Succeeded -> ()
-                    | VimCore.Modes.Common.Operations.Failed(msg) ->
+                    match _operations.GoToDefinition this.VimHost with
+                    | Vim.Modes.Succeeded -> ()
+                    | Vim.Modes.Failed(msg) ->
                         this.VimHost.UpdateStatus(msg)
                         ()
                     NormalModeResult.Complete) };
             {   KeyInput=InputUtil.CharToKeyInput('m');
-                RunFunc=Operations.Mark };
+                RunFunc=this.Mark };
             {   KeyInput=InputUtil.CharToKeyInput('\'');
-                RunFunc=Operations.JumpToMark };
+                RunFunc=this.JumpToMark };
             {   KeyInput=InputUtil.CharToKeyInput('`');
-                RunFunc=Operations.JumpToMark };
+                RunFunc=this.JumpToMark };
             {   KeyInput=InputUtil.CharToKeyInput('g');
-                RunFunc=Operations.CharGCommand };
+                RunFunc=this.CharGCommand };
+            {   KeyInput=InputUtil.CharToKeyInput('z');
+                RunFunc=this.CharZCommand; };
             {   KeyInput=InputUtil.CharToKeyInput('r');
-                RunFunc=Operations.ReplaceChar};
+                RunFunc=this.ReplaceChar; }
+            {   KeyInput=InputUtil.CharToKeyInput('Y');
+                RunFunc=(fun d -> 
+                        _operations.YankLines d.Count d.Register 
+                        NormalModeResult.Complete); }
             ]
+        let l = l @ this.BuildMotionOperationsMap
         l |> List.map (fun d -> d.KeyInput,d) |> Map.ofList
 
    

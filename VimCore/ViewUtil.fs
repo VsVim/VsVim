@@ -1,6 +1,6 @@
 ﻿#light
 
-namespace VimCore
+namespace Vim
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
 
@@ -35,26 +35,6 @@ module internal ViewUtil =
         let point = SnapshotPoint(view.TextBuffer.CurrentSnapshot, pos)
         MoveCaretToPoint view point
         
-    let MoveCaretLeft (view:ITextView) =
-        let span = MotionUtil.CharLeft view.Caret.Position.BufferPosition 1
-        let point = span.Start
-        (MoveCaretToPoint view point).BufferPosition
-    
-    let MoveCaretRight (view:ITextView) = 
-        let span = MotionUtil.CharRight view.Caret.Position.BufferPosition 1
-        let point = span.End
-        (MoveCaretToPoint view point).BufferPosition
-    
-    let MoveCaretUp (view:ITextView) =
-        let span = MotionUtil.CharUp view.Caret.Position.BufferPosition 1
-        let point = span.Start
-        (MoveCaretToPoint view point).BufferPosition
-                
-    let MoveCaretDown (view:ITextView) =
-        let span = MotionUtil.CharDown view.Caret.Position.BufferPosition 1
-        let point = span.End
-        (MoveCaretToPoint view point).BufferPosition
-
     let MoveCaretToEndOfLine (view:ITextView) = 
         let line = view.Caret.ContainingTextViewLine
         MoveCaretToPosition view line.Extent.End.Position

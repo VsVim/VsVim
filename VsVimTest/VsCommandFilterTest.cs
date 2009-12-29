@@ -1,7 +1,7 @@
 ﻿using VsVim;
 using NUnit.Framework;
 using System;
-using VimCore;
+using Vim;
 using Microsoft.VisualStudio.TextManager.Interop;
 using Moq;
 using Microsoft.VisualStudio.OLE.Interop;
@@ -263,7 +263,7 @@ namespace VsVimTest
         public void Exec1()
         {
             m_buffer.Setup(x => x.ModeKind).Returns(ModeKind.Normal);
-            m_buffer.Setup(x => x.WillProcessInput(It.IsAny<KeyInput>())).Returns(false);
+            m_buffer.Setup(x => x.CanProcessInput(It.IsAny<KeyInput>())).Returns(false);
             m_buffer.Setup(x => x.ModeKind).Returns(ModeKind.Insert);
             var command = (uint)(VSConstants.VSStd2KCmdID.TYPECHAR);
             var commandGroup = VSConstants.VSStd2K;
@@ -280,7 +280,7 @@ namespace VsVimTest
         {
             var ran = false;
             m_buffer.Setup(x => x.ModeKind).Returns(ModeKind.Normal);
-            m_buffer.Setup(x => x.WillProcessInput(It.IsAny<KeyInput>())).Returns(true);
+            m_buffer.Setup(x => x.CanProcessInput(It.IsAny<KeyInput>())).Returns(true);
             m_buffer.Setup(x => x.ProcessInput(It.IsAny<KeyInput>())).Returns(
                 () =>
                 {
@@ -298,7 +298,7 @@ namespace VsVimTest
         public void Exec3()
         {
             m_buffer.Setup(x => x.ModeKind).Returns(ModeKind.Insert);
-            m_buffer.Setup(x => x.WillProcessInput(It.IsAny<KeyInput>())).Returns(false);
+            m_buffer.Setup(x => x.CanProcessInput(It.IsAny<KeyInput>())).Returns(false);
             var command = (uint)(VSConstants.VSStd2KCmdID.TYPECHAR);
             var commandGroup = VSConstants.VSStd2K;
             using (var ptr = CharPointer.Create('c'))
@@ -313,7 +313,7 @@ namespace VsVimTest
         public void Exec4()
         {
             m_buffer.Setup(x => x.ModeKind).Returns(ModeKind.Insert);
-            m_buffer.Setup(x => x.WillProcessInput(It.IsAny<KeyInput>())).Returns(false);
+            m_buffer.Setup(x => x.CanProcessInput(It.IsAny<KeyInput>())).Returns(false);
             var command = (uint)(VSConstants.VSStd2KCmdID.RETURN);
             var commandGroup = VSConstants.VSStd2K;
             Assert.AreEqual(0, m_filter.Exec(ref commandGroup, command, 0, IntPtr.Zero, IntPtr.Zero));

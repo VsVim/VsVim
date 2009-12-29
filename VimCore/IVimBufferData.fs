@@ -1,10 +1,11 @@
 ﻿
 #light
 
-namespace VimCore
+namespace Vim
 
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
+open Microsoft.VisualStudio.Text.Operations
 open System.Windows.Input
 
 /// Represents the core pieces of data available for an IVimBuffer implementation
@@ -19,6 +20,7 @@ type IVimBufferData =
     /// Underyling ITextBuffer Vim is operating under
     abstract TextBuffer : ITextBuffer
     abstract TextSnapshot : ITextSnapshot
+    abstract EditorOperations : IEditorOperations
     abstract VimHost : IVimHost
     abstract VimData : IVimData
     abstract Settings : VimSettings
