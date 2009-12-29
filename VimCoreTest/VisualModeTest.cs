@@ -134,5 +134,43 @@ namespace VimCoreTest
         }
 
         #endregion
+
+        #region Operations
+
+        [Test]
+        public void Yank1()
+        {
+            Create("foo", "bar");
+            var span = new SnapshotSpan(_view.TextSnapshot, 0, 3);
+            _view.Selection.Select(span, false);
+            _operations.Setup(x => x.Yank(span, MotionKind.Inclusive, OperationKind.CharacterWise, _map.DefaultRegister)).Verifiable();
+            _mode.Process('y');
+            _operations.Verify();
+        }
+
+        [Test, Description("Yank should go back to normal mode")]
+        public void Yank2()
+        {
+            Create("foo", "bar");
+            var span = new SnapshotSpan(_view.TextSnapshot, 0, 3);
+            _view.Selection.Select(span, false);
+            _operations.Setup(x => x.Yank(span, MotionKind.Inclusive, OperationKind.CharacterWise, _map.DefaultRegister)).Verifiable();
+            var res = _mode.Process('y');
+            Assert.IsTrue(res.IsSwitchMode);
+            Assert.AreEqual(ModeKind.Normal, res.AsSwitchMode().Item);
+        }
+
+        [Test]
+        public void Yank3()
+        {
+            Create("foo", "bar");
+            var span = new SnapshotSpan(_view.TextSnapshot, 0, 3);
+            _view.Selection.Select(span, false);
+            _operations.Setup(x => x.Yank(span, MotionKind.Inclusive, OperationKind.CharacterWise, _map.GetRegister('c'))).Verifiable();
+            _mode.Process("\"cy");
+            _operations.Verify();
+        }
+
+        #endregion
     }
 }

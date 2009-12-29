@@ -12,7 +12,7 @@ type internal VisualModeResult =
     | Complete
     | SwitchMode of ModeKind
 
-type internal Operation = unit -> VisualModeResult
+type internal Operation = Register -> VisualModeResult
 
 type internal VisualMode
     (
@@ -28,6 +28,9 @@ type internal VisualMode
         | ModeKind.VisualLineWise -> ()
         | _ -> invalidArg "_kind" "Invalid kind for Visual Mode"
 
+    member x.SelectedSpan = 
+        _bufferData.TextView.Selection.SelectedSpans.Item(0)
+
     /// Update the selection based on the current method
     member private x.UpdateSelection() =
         let cursor = _bufferData.TextView.Caret.Position.VirtualBufferPosition
@@ -35,7 +38,7 @@ type internal VisualMode
 
     member private x.BuildMotionSequence() = 
         let wrap func = 
-            fun () ->
+            fun _ ->
                 func() 
                 x.UpdateSelection()
                 VisualModeResult.Complete
@@ -53,7 +56,7 @@ type internal VisualMode
                 yield (InputUtil.CharToKeyInput('l'), moveRight)
                 yield (InputUtil.KeyToKeyInput(Key.Right), moveRight)
                 yield (InputUtil.KeyToKeyInput(Key.Space), moveRight)
-                yield (InputUtil.CharToKeyInput('h'), moveUp)
+                yield (InputUtil.CharToKeyInput('k'), moveUp)
                 yield (InputUtil.KeyToKeyInput(Key.Up), moveUp)
                 yield (KeyInput('p', Key.P, ModifierKeys.Control), moveUp)
                 yield (InputUtil.CharToKeyInput('j'), moveDown)
@@ -63,12 +66,24 @@ type internal VisualMode
                 }
         s
 
-    member x.EnsureOperationsMap () = 
+    member private x.BuildOperationsSequence() =
+        let s : seq<KeyInput * Operation> = 
+            seq {
+                yield (InputUtil.CharToKeyInput('y'), 
+                    (fun (reg:Register) -> 
+                        let span = x.SelectedSpan
+                        _operations.Yank span MotionKind.Inclusive OperationKind.CharacterWise reg
+                        VisualModeResult.SwitchMode ModeKind.Normal))
+                }
+        s
+
+    member private x.EnsureOperationsMap () = 
         if _operationsMap.Count = 0 then
             let map = 
                 x.BuildMotionSequence() 
+                |> Seq.append (x.BuildOperationsSequence())
                 |> Map.ofSeq
-                |> Map.add (InputUtil.KeyToKeyInput(Key.Escape)) (fun () -> SwitchMode ModeKind.Normal)
+                |> Map.add (InputUtil.KeyToKeyInput(Key.Escape)) (fun _ -> SwitchMode ModeKind.Normal)
             _operationsMap <- map
 
     interface IMode with
@@ -79,9 +94,9 @@ type internal VisualMode
         member x.CanProcess (ki:KeyInput) = _operationsMap.ContainsKey(ki)
         member x.Process (ki : KeyInput) =  
             let op = Map.find ki _operationsMap
-            let res = op()
+            let res = op(_bufferData.RegisterMap.DefaultRegister)
             match res with
-            | VisualModeResult.Complete -> ProcessResult.ProcessNotHandled
+            | VisualModeResult.Complete -> ProcessResult.Processed
             | VisualModeResult.SwitchMode m -> ProcessResult.SwitchMode m
 
         member x.OnEnter () = 
