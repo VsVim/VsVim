@@ -41,12 +41,28 @@ type internal DefaultOperations
             if moveCursor then
                 ViewUtil.MoveCaretToPoint _textView span.End |> ignore
 
-        /// Insert a line above the current cursor position
-        member x.InsertLineAbove ()=
+        member x.InsertLineBelow () =
             let point = ViewUtil.GetCaretPoint _textView
-            let line = BufferUtil.AddLineAbove (point.GetContainingLine()) 
+            let line = point.GetContainingLine()
+            let buffer = line.Snapshot.TextBuffer
+            let tss = buffer.Replace(new Span(line.End.Position,0), System.Environment.NewLine)
+            let newLine = tss.GetLineFromLineNumber(line.LineNumber+1)
+        
+            // Move the caret to the same indent position as the previous line
+            let indent = TssUtil.FindIndentPosition(line)
+            let point = new VirtualSnapshotPoint(newLine, indent)
+            ViewUtil.MoveCaretToVirtualPoint _textView point |> ignore
+            newLine
+    
+        member x.InsertLineAbove () = 
+            let point = ViewUtil.GetCaretPoint _textView
+            let line = point.GetContainingLine()
+            let buffer = line.Snapshot.TextBuffer
+            let tss = buffer.Replace(new Span(line.Start.Position,0), System.Environment.NewLine)
+            let line = tss.GetLineFromLineNumber(line.LineNumber)
             ViewUtil.MoveCaretToPoint _textView line.Start |> ignore
-            
+            line
+                
         /// Implement the r command in normal mode.  
         member x.ReplaceChar (ki:KeyInput) count = 
             let point = ViewUtil.GetCaretPoint _textView

@@ -524,10 +524,11 @@ namespace VimCoreTest
         {
             CreateBuffer("how is", "foo");
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 0));
+            _operations.Setup(x => x.InsertLineBelow()).Returns<ITextSnapshotLine>(null).Verifiable();
             var res = _mode.Process('o');
             Assert.IsTrue(res.IsSwitchMode);
             Assert.AreEqual(ModeKind.Insert, res.AsSwitchMode().Item);
-            Assert.AreEqual(3, _view.TextSnapshot.Lines.Count());
+            _operations.Verify();
         }
 
         [Test, Description("Use o at end of buffer")]
@@ -536,25 +537,16 @@ namespace VimCoreTest
             CreateBuffer("foo", "bar");
             var line = _view.TextSnapshot.Lines.Last();
             _view.Caret.MoveTo(line.Start);
+            _operations.Setup(x => x.InsertLineBelow()).Returns<ITextSnapshotLine>(null).Verifiable();
             _mode.Process('o');
-        }
-
-        [Test, Description("Make sure o will indent if the previous line was indented")]
-        public void Edit_o_3()
-        {
-            CreateBuffer("  foo");
-            _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 0));
-            _mode.Process('o');
-            var point = _view.Caret.Position.VirtualBufferPosition;
-            Assert.IsTrue(point.IsInVirtualSpace);
-            Assert.AreEqual(2, point.VirtualSpaces);
+            _operations.Verify();
         }
 
         [Test]
         public void Edit_O_1()
         {
             CreateBuffer("foo");
-            _operations.Setup(x => x.InsertLineAbove()).Verifiable();
+            _operations.Setup(x => x.InsertLineAbove()).Returns<ITextSnapshotLine>(null).Verifiable();
             _mode.Process('O');
             _operations.Verify();
         }
@@ -563,7 +555,7 @@ namespace VimCoreTest
         public void Edit_O_2()
         {
             CreateBuffer("foo", "bar");
-            _operations.Setup(x => x.InsertLineAbove()).Verifiable();
+            _operations.Setup(x => x.InsertLineAbove()).Returns<ITextSnapshotLine>(null).Verifiable();
             _view.Caret.MoveTo(_view.TextSnapshot.GetLineFromLineNumber(1).Start);
             _mode.Process("O");
             _operations.Verify();
@@ -573,7 +565,7 @@ namespace VimCoreTest
         public void Edit_O_3()
         {
             CreateBuffer("foo");
-            _operations.Setup(x => x.InsertLineAbove()).Verifiable();
+            _operations.Setup(x => x.InsertLineAbove()).Returns<ITextSnapshotLine>(null).Verifiable();
             var res = _mode.Process('O');
             Assert.IsTrue(res.IsSwitchMode);
             Assert.AreEqual(ModeKind.Insert, res.AsSwitchMode().item);

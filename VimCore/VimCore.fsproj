@@ -63,8 +63,6 @@
     <Compile Include="IncrementalSearch.fs" />
     <Compile Include="Register.fs" />
     <Compile Include="IRegisterMap.fs" />
-    <Compile Include="BufferUtil.fsi" />
-    <Compile Include="BufferUtil.fs" />
     <Compile Include="VimSettings.fs" />
     <Compile Include="ModeKind.fs" />
     <Compile Include="IMode.fs" />

@@ -30,7 +30,7 @@ X - Move more operations to the interfaces in normal mode
 X - Join needs to move into ICommonOperations
 X - Move Shift into ICommonOperations
 X - Implement IEditorOperationsTest
-- Remove BufferUtil
+X - Remove BufferUtil
 
 Version 0.7
 === 

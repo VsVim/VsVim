@@ -236,21 +236,6 @@ type internal NormalMode( _bufferData : IVimBufferData, _operations : IOperation
         d.VimBufferData.BlockCaret.Hide()
         NeedMore2(inner)
         
-
-    /// Add a line below the current cursor position and switch back to insert mode
-    member this.AddLineBelow (view:ITextView) =
-    
-        // Insert the line
-        let point = ViewUtil.GetCaretPoint view
-        let line = point.GetContainingLine()
-        let newLine = BufferUtil.AddLineBelow line
-        
-        // Move the caret to the same indent position as the previous line
-        let indent = TssUtil.FindIndentPosition(line)
-        let point = new VirtualSnapshotPoint(newLine, indent)
-        ViewUtil.MoveCaretToVirtualPoint view point |> ignore
-        NormalModeResult.SwitchMode (ModeKind.Insert)
-        
     /// Core method for scrolling the editor up or down
     member this.ScrollCore dir count =
         let lines = VimSettingsUtil.GetScrollLineCount this.Settings this.TextView
@@ -429,11 +414,13 @@ type internal NormalMode( _bufferData : IVimBufferData, _operations : IOperation
                     this.VimHost.Undo this.TextBuffer d.Count
                     NormalModeResult.Complete) };
             {   KeyInput=InputUtil.CharToKeyInput('o');
-                RunFunc=(fun d -> this.AddLineBelow this.TextView) };
+                RunFunc=(fun d -> 
+                    _operations.InsertLineBelow() |> ignore
+                    NormalModeResult.SwitchMode ModeKind.Insert); }
             {   KeyInput=InputUtil.CharToKeyInput('O');
                 RunFunc=(fun d -> 
-                            _operations.InsertLineAbove()
-                            NormalModeResult.SwitchMode ModeKind.Insert); };
+                    _operations.InsertLineAbove() |> ignore
+                    NormalModeResult.SwitchMode ModeKind.Insert); };
             {   KeyInput=InputUtil.KeyToKeyInput(Key.Enter);
                 RunFunc=(fun d -> this.MoveForEnter this.TextView d.VimBufferData.VimHost) };
             {   KeyInput=KeyInput('u', Key.U, ModifierKeys.Control);
