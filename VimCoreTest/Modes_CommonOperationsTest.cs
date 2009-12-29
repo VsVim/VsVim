@@ -555,5 +555,53 @@ namespace VimCoreTest
             Assert.AreEqual(span.GetText(), reg.StringValue);
         }
 
+        [Test]
+        public void ShiftRight1()
+        {
+            CreateLines("foo");
+            var span = _buffer.CurrentSnapshot.GetLineFromLineNumber(0).Extent;
+            _operations.ShiftRight(span, 2);
+            Assert.AreEqual("  foo", _buffer.CurrentSnapshot.GetLineFromLineNumber(0).GetText());
+        }
+
+        [Test, Description("Only shift whitespace")]
+        public void ShiftLeft1()
+        {
+            CreateLines("foo");
+            var span = _buffer.CurrentSnapshot.GetLineFromLineNumber(0).Extent;
+            _operations.ShiftLeft(span, 2);
+            Assert.AreEqual("foo", _buffer.CurrentSnapshot.GetLineFromLineNumber(0).GetText());
+        }
+
+        [Test, Description("Don't puke on an empty line")]
+        public void ShiftLeft2()
+        {
+            CreateLines("");
+            var span = _buffer.CurrentSnapshot.GetLineFromLineNumber(0).Extent;
+            _operations.ShiftLeft(span, 2);
+            Assert.AreEqual("", _buffer.CurrentSnapshot.GetLineFromLineNumber(0).GetText());
+        }
+
+        [Test]
+        public void ShiftLeft3()
+        {
+            CreateLines("  foo", "  bar");
+            var span = new SnapshotSpan(
+                _buffer.CurrentSnapshot.GetLineFromLineNumber(0).Start,
+                _buffer.CurrentSnapshot.GetLineFromLineNumber(1).End);
+            _operations.ShiftLeft(span, 2);
+            Assert.AreEqual("foo", _buffer.CurrentSnapshot.GetLineFromLineNumber(0).GetText());
+            Assert.AreEqual("bar", _buffer.CurrentSnapshot.GetLineFromLineNumber(1).GetText());
+        }
+
+        [Test]
+        public void ShiftLeft4()
+        {
+            CreateLines("   foo");
+            var span = _buffer.CurrentSnapshot.GetLineFromLineNumber(0).Extent;
+            _operations.ShiftLeft(span, 2);
+            Assert.AreEqual(" foo", _buffer.CurrentSnapshot.GetLineFromLineNumber(0).GetText());
+        }
+
     }
 }

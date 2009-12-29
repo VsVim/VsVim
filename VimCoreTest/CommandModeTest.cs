@@ -202,52 +202,88 @@ namespace VimCoreTest
         public void ShiftLeft1()
         {
             Create("     foo", "bar", "baz");
+            _operations
+                .Setup(x => x.ShiftLeft(_view.TextSnapshot.GetLineFromLineNumber(0).ExtentIncludingLineBreak, 4))
+                .Returns<ITextSnapshot>(null)
+                .Verifiable();
             ProcessWithEnter("<");
-            Assert.AreEqual(" foo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
+            _operations.Verify();
         }
 
         [Test]
         public void ShiftLeft2()
         {
             Create("     foo", "     bar", "baz");
+            var tss = _view.TextSnapshot;
+            var span = new SnapshotSpan(
+                tss.GetLineFromLineNumber(0).Start,
+                tss.GetLineFromLineNumber(1).EndIncludingLineBreak);
+            _operations
+                .Setup(x => x.ShiftLeft(span, 4))
+                .Returns<ITextSnapshot>(null)
+                .Verifiable();
             ProcessWithEnter("1,2<");
-            Assert.AreEqual(" foo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
-            Assert.AreEqual(" bar", _view.TextSnapshot.GetLineFromLineNumber(1).GetText());
+            _operations.Verify();
         }
 
         [Test]
         public void ShiftLeft3()
         {
             Create("     foo", "     bar", "baz");
+            var tss = _view.TextSnapshot;
+            var span = new SnapshotSpan(
+                tss.GetLineFromLineNumber(0).Start,
+                tss.GetLineFromLineNumber(1).EndIncludingLineBreak);
+            _operations
+                .Setup(x => x.ShiftLeft(span, 4))
+                .Returns<ITextSnapshot>(null)
+                .Verifiable();
             ProcessWithEnter("< 2");
-            Assert.AreEqual(" foo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
-            Assert.AreEqual(" bar", _view.TextSnapshot.GetLineFromLineNumber(1).GetText());
+            _operations.Verify();
         }
 
         [Test]
         public void ShiftRight1()
         {
             Create("foo", "bar", "baz");
+            _operations
+                .Setup(x => x.ShiftRight(_view.TextSnapshot.GetLineFromLineNumber(0).ExtentIncludingLineBreak, 4))
+                .Returns<ITextSnapshot>(null)
+                .Verifiable();
             ProcessWithEnter(">");
-            Assert.AreEqual("    foo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
+            _operations.Verify();
         }
 
         [Test]
         public void ShiftRight2()
         {
             Create("foo", "bar", "baz");
+            var tss = _view.TextSnapshot;
+            var span = new SnapshotSpan(
+                tss.GetLineFromLineNumber(0).Start,
+                tss.GetLineFromLineNumber(1).EndIncludingLineBreak);
+            _operations
+                .Setup(x => x.ShiftRight(span, 4))
+                .Returns<ITextSnapshot>(null)
+                .Verifiable();
             ProcessWithEnter("1,2>");
-            Assert.AreEqual("    foo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
-            Assert.AreEqual("    bar", _view.TextSnapshot.GetLineFromLineNumber(1).GetText());
+            _operations.Verify();
         }
 
         [Test]
         public void ShiftRight3()
         {
             Create("foo", "bar", "baz");
+            var tss = _view.TextSnapshot;
+            var span = new SnapshotSpan(
+                tss.GetLineFromLineNumber(0).Start,
+                tss.GetLineFromLineNumber(1).EndIncludingLineBreak);
+            _operations
+                .Setup(x => x.ShiftRight(span, 4))
+                .Returns<ITextSnapshot>(null)
+                .Verifiable();
             ProcessWithEnter("> 2");
-            Assert.AreEqual("    foo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
-            Assert.AreEqual("    bar", _view.TextSnapshot.GetLineFromLineNumber(1).GetText());
+            _operations.Verify();
         }
 
         [Test]

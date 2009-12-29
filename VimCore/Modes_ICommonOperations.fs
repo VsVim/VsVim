@@ -57,5 +57,11 @@ type ICommonOperations =
     /// the new snapshot of the buffer
     abstract PasteBefore : SnapshotPoint -> text : string -> SnapshotSpan 
 
-    // Delete a range of text
+    /// Delete a range of text
     abstract DeleteSpan : SnapshotSpan -> MotionKind -> OperationKind -> Register -> ITextSnapshot
+
+    /// Shift the lines in the span count spaces to the right
+    abstract ShiftRight : SnapshotSpan -> count : int -> ITextSnapshot
+
+    /// Shift the lines in the span count spaces to the left
+    abstract ShiftLeft : SnapshotSpan -> count : int -> ITextSnapshot

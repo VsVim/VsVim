@@ -8,6 +8,8 @@ using System.Windows.Input;
 using Microsoft.VisualStudio.Text.Editor;
 using System.Windows.Media;
 using Microsoft.VisualStudio.Text;
+using Vim.Modes;
+using Moq;
 
 namespace VimCoreTest
 {
@@ -22,13 +24,15 @@ namespace VimCoreTest
         private IMode _mode;
         private ITextBuffer _buffer;
         private IWpfTextView _view;
+        private Mock<ICommonOperations> _operations;
 
         public void CreateBuffer(params string[] lines)
         {
             _view = Utils.EditorUtil.CreateView(lines);
             _buffer = _view.TextBuffer;
             _data = Utils.MockObjectFactory.CreateVimBufferData(_view);
-            _modeRaw = new Vim.Modes.Insert.InsertMode(_data);
+            _operations = new Mock<ICommonOperations>(MockBehavior.Strict);
+            _modeRaw = new Vim.Modes.Insert.InsertMode(Tuple.Create<IVimBufferData,ICommonOperations>(_data,_operations.Object));
             _mode = _modeRaw;
         }
 
@@ -68,37 +72,13 @@ namespace VimCoreTest
         public void ShiftLeft1()
         {
             CreateBuffer("    foo");
+            _operations
+                .Setup(x => x.ShiftLeft(_view.TextSnapshot.GetLineFromLineNumber(0).Extent, 4))
+                .Returns<ITextSnapshot>(null)
+                .Verifiable(); ;
             var res = _mode.Process(new KeyInput(Char.MinValue, Key.D, ModifierKeys.Control));
             Assert.IsTrue(res.IsProcessed);
-            Assert.AreEqual("foo", _buffer.CurrentSnapshot.GetLineFromLineNumber(0).GetText());
-        }
-
-        [Test, Description("Too short of a shift width")]
-        public void ShiftLeft2()
-        {
-            CreateBuffer(" foo");
-            var res = _mode.Process(new KeyInput(Char.MinValue, Key.D, ModifierKeys.Control));
-            Assert.IsTrue(res.IsProcessed);
-            Assert.AreEqual("foo", _buffer.CurrentSnapshot.GetLineFromLineNumber(0).GetText());
-        }
-
-        [Test, Description("Another too short of a shift")]
-        public void ShiftLeft3()
-        {
-            CreateBuffer("foo");
-            var res = _mode.Process(new KeyInput(Char.MinValue, Key.D, ModifierKeys.Control));
-            Assert.IsTrue(res.IsProcessed);
-            Assert.AreEqual("foo", _buffer.CurrentSnapshot.GetLineFromLineNumber(0).GetText());
-        }
-
-        [Test]
-        public void ShiftLeft4()
-        {
-            CreateBuffer("foo", "     bar");
-            _view.Caret.MoveTo(_buffer.CurrentSnapshot.GetLineFromLineNumber(1).Start);
-            var res = _mode.Process(new KeyInput(Char.MinValue, Key.D, ModifierKeys.Control));
-            Assert.IsTrue(res.IsProcessed);
-            Assert.AreEqual(" bar", _buffer.CurrentSnapshot.GetLineFromLineNumber(1).GetText());
+            _operations.Verify();
         }
 
         #endregion

@@ -116,55 +116,5 @@ namespace VimCoreTest
             Assert.AreEqual("bar", tss.GetLineFromLineNumber(0).GetText());
             Assert.AreEqual("baz", tss.GetLineFromLineNumber(2).GetText());
         }
-
-        [Test]
-        public void ShiftRight1()
-        {
-            Initialize("foo");
-            var span = _buffer.CurrentSnapshot.GetLineFromLineNumber(0).Extent;
-            BufferUtil.ShiftRight(span, 2);
-            Assert.AreEqual("  foo", _buffer.CurrentSnapshot.GetLineFromLineNumber(0).GetText());
-        }
-
-        [Test, Description("Only shift whitespace")]
-        public void ShiftLeft1()
-        {
-            Initialize("foo");
-            var span = _buffer.CurrentSnapshot.GetLineFromLineNumber(0).Extent;
-            BufferUtil.ShiftLeft(span, 2);
-            Assert.AreEqual("foo", _buffer.CurrentSnapshot.GetLineFromLineNumber(0).GetText());
-        }
-
-        [Test, Description("Don't puke on an empty line")]
-        public void ShiftLeft2()
-        {
-            Initialize("");
-            var span = _buffer.CurrentSnapshot.GetLineFromLineNumber(0).Extent;
-            BufferUtil.ShiftLeft(span, 2);
-            Assert.AreEqual("", _buffer.CurrentSnapshot.GetLineFromLineNumber(0).GetText());
-        }
-
-        [Test]
-        public void ShiftLeft3()
-        {
-            Initialize("  foo", "  bar");
-            var span = new SnapshotSpan(
-                _buffer.CurrentSnapshot.GetLineFromLineNumber(0).Start,
-                _buffer.CurrentSnapshot.GetLineFromLineNumber(1).End);
-            BufferUtil.ShiftLeft(span, 2);
-            Assert.AreEqual("foo", _buffer.CurrentSnapshot.GetLineFromLineNumber(0).GetText());
-            Assert.AreEqual("bar", _buffer.CurrentSnapshot.GetLineFromLineNumber(1).GetText());
-        }
-
-        [Test]
-        public void ShiftLeft4()
-        {
-            Initialize("   foo");
-            var span = _buffer.CurrentSnapshot.GetLineFromLineNumber(0).Extent;
-            BufferUtil.ShiftLeft(span, 2);
-            Assert.AreEqual(" foo", _buffer.CurrentSnapshot.GetLineFromLineNumber(0).GetText());
-        }
-
-
     }
 }

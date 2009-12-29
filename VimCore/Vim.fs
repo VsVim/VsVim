@@ -13,11 +13,12 @@ type internal Vim(_host : IVimHost) =
         let data = VimBufferData(name, view, _host, _data :> IVimData, caret, editOperations ) :> IVimBufferData
         let normalOpts = Modes.Normal.DefaultOperations(view,editOperations) :> Modes.Normal.IOperations
         let commandOpts = Modes.Command.DefaultOperations(view,editOperations,_host) :> Modes.Command.IOperations
+        let insertOpts = Modes.Insert.DefaultOperations(view,editOperations) :> Modes.ICommonOperations
         let modeList = 
             [
                 ((Modes.Normal.NormalMode(data, normalOpts)) :> IMode);
                 ((Modes.Command.CommandMode(data, commandOpts)) :> IMode)
-                ((Modes.Insert.InsertMode(data)) :> IMode);
+                ((Modes.Insert.InsertMode(data,insertOpts)) :> IMode);
                 (DisabledMode(data) :> IMode);
             ]
         let modeMap =

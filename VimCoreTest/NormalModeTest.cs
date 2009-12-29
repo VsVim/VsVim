@@ -570,6 +570,16 @@ namespace VimCoreTest
         }
 
         [Test]
+        public void Edit_O_3()
+        {
+            CreateBuffer("foo");
+            _operations.Setup(x => x.InsertLineAbove()).Verifiable();
+            var res = _mode.Process('O');
+            Assert.IsTrue(res.IsSwitchMode);
+            Assert.AreEqual(ModeKind.Insert, res.AsSwitchMode().item);
+        }
+
+        [Test]
         public void Edit_X_1()
         {
             CreateBuffer("foo");
@@ -1368,85 +1378,97 @@ namespace VimCoreTest
         public void ShiftRight1()
         {
             CreateBuffer("foo");
+            _operations
+                .Setup(x => x.ShiftRight(_view.TextSnapshot.GetLineFromLineNumber(0).Extent, 4))
+                .Returns<ITextSnapshot>(null)
+                .Verifiable();
             _mode.Process(">>");
-            Assert.AreEqual("    foo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
+            _operations.Verify();
         }
 
         [Test, Description("With a count")]
         public void ShiftRight2()
         {
             CreateBuffer("foo", "bar");
-            _mode.Process("2>>");
             var tss = _view.TextSnapshot;
-            Assert.AreEqual("    foo", tss.GetLineFromLineNumber(0).GetText());
-            Assert.AreEqual("    bar", tss.GetLineFromLineNumber(1).GetText());
+            var span = new SnapshotSpan(
+                tss.GetLineFromLineNumber(0).Start,
+                tss.GetLineFromLineNumber(1).End);
+            _operations
+                .Setup(x => x.ShiftRight(span, 4))
+                .Returns<ITextSnapshot>(null)
+                .Verifiable();
+            _mode.Process("2>>");
+            _operations.Verify();
         }
 
         [Test, Description("With a motion")]
         public void ShiftRight3()
         {
             CreateBuffer("foo", "bar");
+            var tss = _view.TextSnapshot;
+            var span = new SnapshotSpan(
+                tss.GetLineFromLineNumber(0).Start,
+                tss.GetLineFromLineNumber(1).End);
+            _operations
+                .Setup(x => x.ShiftRight(span, 4))
+                .Returns<ITextSnapshot>(null)
+                .Verifiable();
             _mode.Process(">j");
-            var tss = _view.TextSnapshot;
-            Assert.AreEqual("    foo", tss.GetLineFromLineNumber(0).GetText());
-            Assert.AreEqual("    bar", tss.GetLineFromLineNumber(1).GetText());
+            _operations.Verify();
         }
 
-        [Test, Description("Make sure a normal >> doesn't shift 2 lines")]
-        public void ShiftRight4()
-        {
-            CreateBuffer("foo", "bar");
-            _mode.Process(">>");
-            var tss = _view.TextSnapshot;
-            Assert.AreEqual("    foo", tss.GetLineFromLineNumber(0).GetText());
-            Assert.AreEqual("bar", tss.GetLineFromLineNumber(1).GetText());
-        }
-
-        [Test, Description("Don't eat extra whitespace")]
+        [Test]
         public void ShiftLeft1()
         {
             CreateBuffer("foo");
+            _operations
+                .Setup(x => x.ShiftLeft(_view.TextSnapshot.GetLineFromLineNumber(0).ExtentIncludingLineBreak, 4))
+                .Returns<ITextSnapshot>(null)
+                .Verifiable();
             _mode.Process("<<");
-            Assert.AreEqual("foo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
+            _operations.Verify();
         }
 
         [Test]
         public void ShiftLeft2()
         {
             CreateBuffer(" foo");
+            _operations
+                .Setup(x => x.ShiftLeft(_view.TextSnapshot.GetLineFromLineNumber(0).ExtentIncludingLineBreak, 4))
+                .Returns<ITextSnapshot>(null)
+                .Verifiable();
             _mode.Process("<<");
-            Assert.AreEqual("foo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
+            _operations.Verify();
         }
 
         [Test]
         public void ShiftLeft3()
         {
             CreateBuffer("     foo");
+            _operations
+                .Setup(x => x.ShiftLeft(_view.TextSnapshot.GetLineFromLineNumber(0).ExtentIncludingLineBreak, 4))
+                .Returns<ITextSnapshot>(null)
+                .Verifiable();
             _mode.Process("<<");
-            Assert.AreEqual(" foo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
+            _operations.Verify();
         }
 
         [Test, Description("With a count")]
         public void ShiftLeft4()
         {
             CreateBuffer("     foo", "     bar");
+            var tss = _view.TextSnapshot;
+            var span = new SnapshotSpan(
+                tss.GetLineFromLineNumber(0).Start,
+                tss.GetLineFromLineNumber(1).End);
+            _operations
+                .Setup(x => x.ShiftLeft(span, 4))
+                .Returns<ITextSnapshot>(null)
+                .Verifiable();
             _mode.Process("2<<");
-            var tss = _view.TextSnapshot;
-            Assert.AreEqual(" foo", tss.GetLineFromLineNumber(0).GetText());
-            Assert.AreEqual(" bar", tss.GetLineFromLineNumber(1).GetText());
+            _operations.Verify();
         }
-
-        [Test, Description("Make sure a << doesn't shift more than 1 line")]
-        public void ShiftLeft5()
-        {
-            CreateBuffer(" foo", " bar");
-            _mode.Process("<<");
-            var tss = _view.TextSnapshot;
-            Assert.AreEqual("foo", tss.GetLineFromLineNumber(0).GetText());
-            Assert.AreEqual(" bar", tss.GetLineFromLineNumber(1).GetText());
-        }
-
-
 
         #endregion
 

@@ -179,11 +179,11 @@ type internal NormalMode( _bufferData : IVimBufferData, _operations : IOperation
             match ki.Char with 
                 | '<' ->
                     let span = TssUtil.GetLineRangeSpan (this.CaretPoint.GetContainingLine().Start) d.Count
-                    BufferUtil.ShiftLeft span _bufferData.Settings.ShiftWidth |> ignore
+                    _operations.ShiftLeft span _bufferData.Settings.ShiftWidth |> ignore
                     NormalModeResult.Complete
                 | _ ->
                     let inner2 (span:SnapshotSpan,_,_) =
-                        BufferUtil.ShiftLeft span _bufferData.Settings.ShiftWidth |> ignore                                          
+                        _operations.ShiftLeft span _bufferData.Settings.ShiftWidth |> ignore                                          
                         NormalModeResult.Complete
                     this.WaitForMotion ki d inner2
         inner                                            
@@ -195,11 +195,11 @@ type internal NormalMode( _bufferData : IVimBufferData, _operations : IOperation
             match ki.Char with
                 | '>' ->
                     let span = TssUtil.GetLineRangeSpan (this.CaretPoint.GetContainingLine().Start) d.Count
-                    BufferUtil.ShiftRight span _bufferData.Settings.ShiftWidth |> ignore
+                    _operations.ShiftRight span _bufferData.Settings.ShiftWidth |> ignore
                     NormalModeResult.Complete
                 | _ ->
                     let inner2 (span:SnapshotSpan,_,_) =
-                        BufferUtil.ShiftRight span _bufferData.Settings.ShiftWidth |> ignore
+                        _operations.ShiftRight span _bufferData.Settings.ShiftWidth |> ignore
                         NormalModeResult.Complete
                     this.WaitForMotion ki d inner2
         inner
@@ -433,7 +433,7 @@ type internal NormalMode( _bufferData : IVimBufferData, _operations : IOperation
             {   KeyInput=InputUtil.CharToKeyInput('O');
                 RunFunc=(fun d -> 
                             _operations.InsertLineAbove()
-                            NormalModeResult.Complete); };
+                            NormalModeResult.SwitchMode ModeKind.Insert); };
             {   KeyInput=InputUtil.KeyToKeyInput(Key.Enter);
                 RunFunc=(fun d -> this.MoveForEnter this.TextView d.VimBufferData.VimHost) };
             {   KeyInput=KeyInput('u', Key.U, ModifierKeys.Control);

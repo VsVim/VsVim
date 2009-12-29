@@ -3,11 +3,15 @@
 namespace Vim.Modes.Insert
 open Vim
 open Microsoft.VisualStudio.Text
+open Microsoft.VisualStudio.Text.Operations
+open Microsoft.VisualStudio.Text.Editor
 open System.Windows.Input
 open System.Windows.Media
 
-type InsertMode( _data : IVimBufferData ) = 
-    
+type internal InsertMode
+    ( 
+        _data : IVimBufferData, 
+        _operations : Modes.ICommonOperations ) =
     let _commands = [
         InputUtil.KeyToKeyInput(Key.Escape);
         KeyInput('d', Key.D, ModifierKeys.Control); ]
@@ -16,7 +20,7 @@ type InsertMode( _data : IVimBufferData ) =
     member this.ShiftLeft() =
         let caret = ViewUtil.GetCaretPoint _data.TextView
         let line = caret.GetContainingLine()
-        BufferUtil.ShiftLeft line.Extent (_data.Settings.ShiftWidth) |> ignore
+        _operations.ShiftLeft line.Extent (_data.Settings.ShiftWidth) |> ignore
 
     interface IMode with 
         member x.Commands = _commands |> Seq.ofList
