@@ -1,3 +1,20 @@
+Version 0.7
+=== 
+- Command mode should hide the cursor entirely
+- Implement normal mode .
+- Help delete-insert
+- Should MoveCaretX reset selection if the caret doesn't move?
+- Mark navigation for global marks
+- Marks Undo Support
+- Visual mode
+  - Copy-move
+  - delete-insert
+- Finish range parsing
+- :s in command mode
+- :et in command mode
+- :w in command mode
+- Need a way to disable Vim on startup
+
 Version 0.6
 ===
 X - 'Y in normal mode'
@@ -32,23 +49,6 @@ X - Move Shift into ICommonOperations
 X - Implement IEditorOperationsTest
 X - Remove BufferUtil
 
-Version 0.7
-=== 
-- Implement normal mode .
-- Help delete-insert
-- Should MoveCaretX reset selection if the caret doesn't move?
-- Mark navigation for global marks
-- Marks Undo Support
-- Visual mode
-  - Copy-move
-  - delete-insert
-- Edits need to understand cursor selection
-- Finish range parsing
-- :s in command mode
-- :et in command mode
-- :w in command mode
-- Need a way to disable Vim on startup
-- IOperations.Paste* should have an enum instead of a bool parameter
 
 Version 5.4
 ===

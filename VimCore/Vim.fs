@@ -14,12 +14,16 @@ type internal Vim(_host : IVimHost) =
         let normalOpts = Modes.Normal.DefaultOperations(view,editOperations) :> Modes.Normal.IOperations
         let commandOpts = Modes.Command.DefaultOperations(view,editOperations,_host) :> Modes.Command.IOperations
         let insertOpts = Modes.Insert.DefaultOperations(view,editOperations) :> Modes.ICommonOperations
+        let visualOpts = Modes.Visual.DefaultOperations(view,editOperations) :> Modes.ICommonOperations
         let modeList = 
             [
                 ((Modes.Normal.NormalMode(data, normalOpts)) :> IMode);
-                ((Modes.Command.CommandMode(data, commandOpts)) :> IMode)
+                ((Modes.Command.CommandMode(data, commandOpts)) :> IMode);
                 ((Modes.Insert.InsertMode(data,insertOpts)) :> IMode);
                 (DisabledMode(data) :> IMode);
+                ((Modes.Visual.VisualMode(data, visualOpts, ModeKind.VisualBlock)) :> IMode);
+                ((Modes.Visual.VisualMode(data, visualOpts, ModeKind.VisualLineWise)) :> IMode);
+                ((Modes.Visual.VisualMode(data, visualOpts, ModeKind.VisualCharacter)) :> IMode);
             ]
         let modeMap =
             modeList 
