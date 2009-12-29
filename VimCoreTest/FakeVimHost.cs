@@ -15,11 +15,14 @@ namespace VimCoreTest
         public int UndoCount { get; set; }
         public int GoToDefinitionCount { get; set; }
         public bool GoToDefinitionReturn { get; set; }
+        public bool IsCompletionWindowActive { get; set; }
+        public int DismissCompletionWindowCount { get; set; }
 
         public FakeVimHost()
         {
             Status = String.Empty;
             GoToDefinitionReturn = true;
+            IsCompletionWindowActive = false;
         }
 
         void IVimHost.Beep()
@@ -47,6 +50,17 @@ namespace VimCoreTest
         {
             GoToDefinitionCount++;
             return GoToDefinitionReturn;
+        }
+
+
+        void IVimHost.DismissCompletionWindow(Microsoft.VisualStudio.Text.Editor.ITextView value)
+        {
+            DismissCompletionWindowCount++;
+        }
+
+        bool IVimHost.IsCompletionWindowActive(Microsoft.VisualStudio.Text.Editor.ITextView value)
+        {
+            return IsCompletionWindowActive;
         }
     }
 }

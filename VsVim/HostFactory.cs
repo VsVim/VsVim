@@ -14,6 +14,7 @@ using Microsoft.VisualStudio.OLE.Interop;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Text.Classification;
 using Microsoft.VisualStudio.Text.Operations;
+using Microsoft.VisualStudio.Language.Intellisense;
 
 namespace VsVim
 {
@@ -40,6 +41,8 @@ namespace VsVim
         private IEditorFormatMapService _editorFormatMapService = null;
         [Import]
         private IEditorOperationsFactoryService _editorOperationsFactoryService = null;
+        [Import]
+        private ICompletionWindowBroker _completionBroker = null;
 
         private VsVimHost _host;
         private IVim _vim;
@@ -85,7 +88,7 @@ namespace VsVim
                 return;
             }
 
-            _host = new VsVimHost(sp, _undoHistoryRegistry);
+            _host = new VsVimHost(sp, _undoHistoryRegistry, _completionBroker);
             _vim = Factory.CreateVim(_host);
         }
 

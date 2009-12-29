@@ -22,19 +22,6 @@ namespace VsVim
             _view = view;
         }
 
-        public override void KeyUp(KeyEventArgs args)
-        {
-            var buf = _view.Properties.TryGetTypedProperty<VsVimBuffer>();
-            if (buf.IsSome() && TryHandleKeyUp(buf.Value, args))
-            {
-                args.Handled = true;
-            }
-            else
-            {
-                base.KeyUp(args);
-            }
-        }
-
         public override void TextInput(TextCompositionEventArgs args)
         {
             var buf = _view.Properties.TryGetTypedProperty<VsVimBuffer>();
@@ -69,29 +56,6 @@ namespace VsVim
             {
                 args.Handled = vim.ProcessInput(input);
             }
-        }
-
-        /// <summary>
-        /// Certain Keys only come as KeyUp event and we need to process
-        /// them here
-        /// </summary>
-        private bool TryHandleKeyUp(VsVimBuffer buffer, KeyEventArgs args)
-        {
-            KeyInput ki = null;
-            switch (args.Key)
-            {
-                case Key.Escape:
-                    ki = InputUtil.KeyToKeyInput(Key.Escape);
-                    break;
-
-            }
-
-            if (ki == null)
-            {
-                return false;
-            }
-
-            return buffer.VimBuffer.CanProcessInput(ki) && buffer.VimBuffer.ProcessInput(ki);
         }
 
         private bool TryHandleTextInput(VsVimBuffer buffer, TextCompositionEventArgs args)

@@ -33,6 +33,15 @@ type KeyInput(literal:char,key:Key,modKey:ModifierKeys) =
             | Key.LineFeed -> true
             | _ -> false
 
+    /// Is this an arrow key?
+    member x.IsArrowKey = 
+        match key with
+        | Key.Left -> true
+        | Key.Right -> true
+        | Key.Up -> true
+        | Key.Down -> true
+        | _ -> false
+
     member private x.CompareTo (other:KeyInput) =
         let comp = compare x.Char other.Char
         if comp <> 0 then 

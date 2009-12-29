@@ -135,6 +135,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Utils\CharPointer.cs" />
     <Compile Include="VsCommandFilterTest.cs" />
+    <Compile Include="VsVimHostTest.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\VimCore\VimCore.fsproj">

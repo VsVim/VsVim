@@ -25,12 +25,14 @@ namespace VimCoreTest
         private ITextBuffer _buffer;
         private IWpfTextView _view;
         private Mock<ICommonOperations> _operations;
+        private Mock<IVimHost> _host;
 
         public void CreateBuffer(params string[] lines)
         {
             _view = Utils.EditorUtil.CreateView(lines);
+            _host = new Mock<IVimHost>(MockBehavior.Strict);
             _buffer = _view.TextBuffer;
-            _data = Utils.MockObjectFactory.CreateVimBufferData(_view);
+            _data = Utils.MockObjectFactory.CreateVimBufferData(_view, host : _host.Object);
             _operations = new Mock<ICommonOperations>(MockBehavior.Strict);
             _modeRaw = new Vim.Modes.Insert.InsertMode(Tuple.Create<IVimBufferData,ICommonOperations>(_data,_operations.Object));
             _mode = _modeRaw;
@@ -57,11 +59,30 @@ namespace VimCoreTest
             Assert.IsFalse(_mode.CanProcess(Key.I));
         }
 
-        [Test, Description("Process but and handle Escape, otherwise it will end up as a char in the buffer")]
-        public void Process1()
+        [Test, Description("Escape should exit if we are not in the middle of a completion")]
+        public void Escape1()
         {
+            _host
+                .Setup(x => x.IsCompletionWindowActive(_view))
+                .Returns(false)
+                .Verifiable();
             var res = _mode.Process(Key.Escape);
             Assert.IsTrue(res.IsSwitchMode);
+            _host.Verify();
+        }
+
+        [Test, Description("Escape should dismiss completion if it is active but not exit insert mode")]
+        public void Escape2()
+        {
+            _host
+                .Setup(x => x.IsCompletionWindowActive(_view))
+                .Returns(true)
+                .Verifiable();
+            _host
+                .Setup(x => x.DismissCompletionWindow(_view))
+                .Verifiable();
+            var res = _mode.Process(Key.Escape);
+            Assert.IsTrue(res.IsProcessed);
         }
 
         #endregion
