@@ -199,7 +199,7 @@ namespace VimCoreTest
         public void PasteAfter1()
         {
             Create("foo bar");
-            _operations.PasteAfter("hey", 1, OperationKind.CharacterWise, false);
+            _operations.PasteAfterCursor("hey", 1, OperationKind.CharacterWise, false);
             Assert.AreEqual("fheyoo bar", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
         }
 
@@ -208,7 +208,7 @@ namespace VimCoreTest
         {
             Create("foo", "bar");
             _view.Caret.MoveTo(TssUtil.GetEndPoint(_view.TextSnapshot));
-            _operations.PasteAfter("hello", 1, OperationKind.CharacterWise, false);
+            _operations.PasteAfterCursor("hello", 1, OperationKind.CharacterWise, false);
             Assert.AreEqual("barhello", _view.TextSnapshot.GetLineFromLineNumber(1).GetText());
         }
 
@@ -217,7 +217,7 @@ namespace VimCoreTest
         {
             Create("foo", String.Empty);
             _view.Caret.MoveTo(TssUtil.GetEndPoint(_view.TextSnapshot));
-            _operations.PasteAfter("bar", 1, OperationKind.CharacterWise, false);
+            _operations.PasteAfterCursor("bar", 1, OperationKind.CharacterWise, false);
             Assert.AreEqual("bar", _view.TextSnapshot.GetLineFromLineNumber(1).GetText());
         }
 
@@ -226,7 +226,7 @@ namespace VimCoreTest
         {
             Create("foo", "bar");
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 0));
-            _operations.PasteAfter("baz" + Environment.NewLine, 1, OperationKind.LineWise, false);
+            _operations.PasteAfterCursor("baz" + Environment.NewLine, 1, OperationKind.LineWise, moveCursorToEnd : false);
             Assert.AreEqual("foo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
             Assert.AreEqual("baz", _view.TextSnapshot.GetLineFromLineNumber(1).GetText());
         }
@@ -236,7 +236,7 @@ namespace VimCoreTest
         {
             Create("foo", "bar");
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 0));
-            _operations.PasteAfter("baz" + Environment.NewLine, 1, OperationKind.LineWise, false);
+            _operations.PasteAfterCursor("baz" + Environment.NewLine, 1, OperationKind.LineWise, false);
             var pos = _view.Caret.Position.BufferPosition;
             Assert.AreEqual(_view.TextSnapshot.GetLineFromLineNumber(1).Start, pos);
         }
@@ -245,7 +245,7 @@ namespace VimCoreTest
         public void PasteAfter8()
         {
             Create("foo");
-            _operations.PasteAfter("hey",2, OperationKind.CharacterWise, false);
+            _operations.PasteAfterCursor("hey",2, OperationKind.CharacterWise, false);
             Assert.AreEqual("fheyheyoo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
         }
 
@@ -253,7 +253,7 @@ namespace VimCoreTest
         public void PasteAfter9()
         {
             Create("foo");
-            _operations.PasteAfter("hey", 1, OperationKind.CharacterWise, true);
+            _operations.PasteAfterCursor("hey", 1, OperationKind.CharacterWise, true);
             Assert.AreEqual("fheyoo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
             Assert.AreEqual(4, _view.Caret.Position.BufferPosition.Position);
         }
@@ -263,7 +263,7 @@ namespace VimCoreTest
         {
             Create("foo", "bar");
             _view.Caret.MoveTo(_view.TextSnapshot.GetLineFromLineNumber(0).End);
-            _operations.PasteAfter("hey", 1, OperationKind.CharacterWise, true);
+            _operations.PasteAfterCursor("hey", 1, OperationKind.CharacterWise, true);
             Assert.AreEqual("foohey", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
         }
 
@@ -271,7 +271,7 @@ namespace VimCoreTest
         public void PasteBefore1()
         {
             Create("foo");
-            _operations.PasteBefore("hey", 1, false);
+            _operations.PasteBeforeCursor("hey", 1, false);
             Assert.AreEqual("heyfoo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
         }
 
@@ -279,7 +279,7 @@ namespace VimCoreTest
         public void PasteBefore2()
         {
             Create("foo");
-            _operations.PasteBefore("hey", 2, false);
+            _operations.PasteBeforeCursor("hey", 2, false);
             Assert.AreEqual("heyheyfoo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
         }
 
@@ -288,7 +288,7 @@ namespace VimCoreTest
         public void PasteBefore3()
         {
             Create("foo");
-            _operations.PasteBefore("hey", 1, true);
+            _operations.PasteBeforeCursor("hey", 1, true);
             Assert.AreEqual("heyfoo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
             Assert.AreEqual(3, _view.Caret.Position.BufferPosition.Position);
         }
@@ -298,7 +298,7 @@ namespace VimCoreTest
         {
             Create("foo", "bar");
             _view.Caret.MoveTo(_view.TextSnapshot.GetLineFromLineNumber(0).End);
-            _operations.PasteBefore("hey", 1, true);
+            _operations.PasteBeforeCursor("hey", 1, true);
             Assert.AreEqual("foohey", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
         }
 
@@ -322,5 +322,71 @@ namespace VimCoreTest
             Assert.AreEqual(1, point.GetContainingLine().LineNumber);
             Assert.AreEqual(String.Empty, point.GetContainingLine().GetText());
         }
+
+        [Test]
+        public void InsertLineBelow()
+        {
+            Create("foo", "bar", "baz");
+            var newLine = _operations.InsertLineBelow();
+            Assert.AreEqual(1, newLine.LineNumber);
+            Assert.AreEqual(String.Empty, newLine.GetText());
+
+        }
+
+        [Test, Description("New line at end of buffer")]
+        public void InsertLineBelow2()
+        {
+            Create("foo", "bar");
+            _view.Caret.MoveTo(_view.TextSnapshot.GetLineFromLineNumber(_view.TextSnapshot.LineCount - 1).Start);
+            var newLine = _operations.InsertLineBelow();
+            Assert.IsTrue(String.IsNullOrEmpty(newLine.GetText()));
+        }
+
+        [Test, Description("Make sure the new is actually a newline")]
+        public void InsertLineBelow3()
+        {
+            Create("foo");
+            var newLine = _operations.InsertLineBelow();
+            Assert.AreEqual(Environment.NewLine, _view.TextBuffer.CurrentSnapshot.GetLineFromLineNumber(0).GetLineBreakText());
+            Assert.AreEqual(String.Empty, _view.TextBuffer.CurrentSnapshot.GetLineFromLineNumber(1).GetLineBreakText());
+        }
+
+        [Test, Description("Make sure line inserted in the middle has correct text")]
+        public void InsertLineBelow4()
+        {
+            Create("foo", "bar");
+            _operations.InsertLineBelow();
+            var count = _view.TextSnapshot.LineCount;
+            foreach (var line in _view.TextSnapshot.Lines.Take(count - 1))
+            {
+                Assert.AreEqual(Environment.NewLine, line.GetLineBreakText());
+            }
+        }
+
+        [Test]
+        public void InsertLineBelow5()
+        {
+            Create("foo bar", "baz");
+            _operations.InsertLineBelow();
+            var buffer = _view.TextBuffer;
+            var line = buffer.CurrentSnapshot.GetLineFromLineNumber(0);
+            Assert.AreEqual(Environment.NewLine, line.GetLineBreakText());
+            Assert.AreEqual(2, line.LineBreakLength);
+            Assert.AreEqual("foo bar", line.GetText());
+            Assert.AreEqual("foo bar" + Environment.NewLine, line.GetTextIncludingLineBreak());
+
+            line = buffer.CurrentSnapshot.GetLineFromLineNumber(1);
+            Assert.AreEqual(Environment.NewLine, line.GetLineBreakText());
+            Assert.AreEqual(2, line.LineBreakLength);
+            Assert.AreEqual(String.Empty, line.GetText());
+            Assert.AreEqual(String.Empty + Environment.NewLine, line.GetTextIncludingLineBreak());
+
+            line = buffer.CurrentSnapshot.GetLineFromLineNumber(2);
+            Assert.AreEqual(String.Empty, line.GetLineBreakText());
+            Assert.AreEqual(0, line.LineBreakLength);
+            Assert.AreEqual("baz", line.GetText());
+            Assert.AreEqual("baz", line.GetTextIncludingLineBreak());
+        }
+
     }
 }

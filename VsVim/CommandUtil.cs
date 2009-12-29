@@ -148,6 +148,19 @@ namespace VsVim
                     ki = InputUtil.KeyToKeyInput(Key.Back);
                     kind = EditCommandKind.Backspace;
                     break;
+                case VSConstants.VSStd2KCmdID.LEFT:
+                    ki = InputUtil.KeyToKeyInput(Key.Left);
+                    break;
+                case VSConstants.VSStd2KCmdID.RIGHT:
+                    ki = InputUtil.KeyToKeyInput(Key.Right);
+                    break;
+                case VSConstants.VSStd2KCmdID.UP:
+                    ki = InputUtil.KeyToKeyInput(Key.Up);
+                    break;
+                case VSConstants.VSStd2KCmdID.DOWN:
+                    ki = InputUtil.KeyToKeyInput(Key.Down);
+                    break;
+
 
                 default:
                     break;

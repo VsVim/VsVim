@@ -8,7 +8,10 @@ open System.Windows.Input
 open System.Text.RegularExpressions
 open Vim.RegexUtil
 
-type CommandMode( _data : IVimBufferData ) = 
+type CommandMode
+    ( 
+        _data : IVimBufferData, 
+        _operations : IOperations ) = 
     let mutable _command : System.String = System.String.Empty
 
     /// Reverse list of the inputted commands
@@ -73,7 +76,23 @@ type CommandMode( _data : IVimBufferData ) =
             match range with 
             | Some(range) -> Some(RangeUtil.GetSnapshotSpan range)
             | None -> None
-        Util.Join _data.TextView span kind count |> ignore
+            
+        let range = span
+        let range = 
+            match range with 
+            | Some(s) -> s
+            | None -> 
+                let point = ViewUtil.GetCaretPoint _data.TextView
+                SnapshotSpan(point,0)
+
+        match count with 
+        | Some(c) -> _operations.Join range.End kind c |> ignore
+        | None -> 
+            let startLine = range.Start.GetContainingLine().LineNumber
+            let endLine = range.End.GetContainingLine().LineNumber
+            let count = endLine - startLine
+            _operations.Join range.Start kind count |> ignore
+
 
     /// Parse out the :edit commnad
     member x.ParseEdit (rest:KeyInput list) = 
@@ -87,7 +106,7 @@ type CommandMode( _data : IVimBufferData ) =
                 |> Seq.ofList
                 |> Seq.map (fun i -> i.Char)
                 |> StringUtil.OfCharSeq 
-        Util.EditFile _data.VimHost name
+        _operations.EditFile name
 
     /// Parse out the Yank command
     member x.ParseYank (rest:KeyInput list) (range: Range option)=
@@ -109,7 +128,7 @@ type CommandMode( _data : IVimBufferData ) =
             | None -> range
 
         let span = RangeUtil.GetSnapshotSpan range
-        Modes.ModeUtil.Yank span MotionKind.Exclusive OperationKind.LineWise reg
+        _operations.Yank span MotionKind.Exclusive OperationKind.LineWise reg
 
     /// Parse the Put command
     member x.ParsePut (rest:KeyInput list) (range: Range option) =
@@ -133,7 +152,7 @@ type CommandMode( _data : IVimBufferData ) =
                 | Range.RawSpan(span) -> span.End.GetContainingLine()
                 | Range.Lines(tss,_,endLine) -> tss.GetLineFromLineNumber(endLine)
 
-        Util.Put _data.VimHost _data.TextView reg.StringValue line (not bang)
+        _operations.Put reg.StringValue line (not bang)
 
     /// Parse the < command
     member x.ParseShiftLeft (rest:KeyInput list) (range: Range option) =
@@ -144,7 +163,7 @@ type CommandMode( _data : IVimBufferData ) =
             | Some(count) -> RangeUtil.ApplyCount range count
             | None -> range
         let span = RangeUtil.GetSnapshotSpan range
-        BufferUtil.ShiftLeft span _data.Settings.ShiftWidth |> ignore
+        _operations.ShiftLeft span _data.Settings.ShiftWidth |> ignore
 
     member x.ParseShiftRight (rest:KeyInput list) (range: Range option) =
         let count,rest = rest |> x.SkipWhitespace |> RangeUtil.ParseNumber
@@ -154,7 +173,7 @@ type CommandMode( _data : IVimBufferData ) =
             | Some(count) -> RangeUtil.ApplyCount range count
             | None -> range
         let span = RangeUtil.GetSnapshotSpan range
-        BufferUtil.ShiftRight span _data.Settings.ShiftWidth |> ignore
+        _operations.ShiftRight span _data.Settings.ShiftWidth |> ignore
 
     /// Implements the :delete command
     member x.ParseDelete (rest:KeyInput list) (range:Range option) =
@@ -171,8 +190,7 @@ type CommandMode( _data : IVimBufferData ) =
             | Some(count) -> RangeUtil.ApplyCount range count
             | None -> range
         let span = RangeUtil.GetSnapshotSpan range
-        ModeUtil.DeleteSpan span MotionKind.Exclusive OperationKind.LineWise reg |> ignore
-
+        _operations.DeleteSpan span MotionKind.Exclusive OperationKind.LineWise reg |> ignore
 
     member x.ParsePChar (current:KeyInput) (rest: KeyInput list) (range:Range option) =
         match current.Char with

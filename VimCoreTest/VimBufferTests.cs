@@ -19,6 +19,7 @@ namespace VimCoreTest
     {
         Mock<IMode> _normalMode;
         Mock<IMode> _insertMode;
+        Mock<IMode> _disabledMode;
         Mock<IVimBufferData> _bufferData;
         VimBuffer _rawBuffer;
         IVimBuffer _buffer;
@@ -27,12 +28,15 @@ namespace VimCoreTest
         public void Initialize()
         {
             _normalMode = new Mock<IMode>(MockBehavior.Strict);
+            _disabledMode = new Mock<IMode>(MockBehavior.Strict);
             _normalMode.Setup(x => x.OnEnter());
+            _normalMode.SetupGet(x => x.ModeKind).Returns(ModeKind.Normal);
             _insertMode = new Mock<IMode>(MockBehavior.Strict);
             var map = new FSharpMap<ModeKind, IMode>(new List<Tuple<ModeKind, IMode>>())
                .Add(ModeKind.Normal, _normalMode.Object)
-               .Add(ModeKind.Insert, _insertMode.Object);
-            _bufferData = new Mock<IVimBufferData>();
+               .Add(ModeKind.Insert, _insertMode.Object)
+               .Add(ModeKind.Disabled, _disabledMode.Object);
+            _bufferData = new Mock<IVimBufferData>(MockBehavior.Strict);
             _rawBuffer = new VimBuffer(_bufferData.Object, map);
             _buffer = _rawBuffer;
         }
@@ -51,6 +55,7 @@ namespace VimCoreTest
         public void KeyInputProcessed1()
         {
             var ki = new KeyInput('f', Key.F);
+            _bufferData.SetupGet(x => x.Settings).Returns(VimSettingsUtil.CreateDefault);
             _normalMode.Setup(x => x.Process(ki)).Returns(ProcessResult.Processed);
             var ran = false;
             _buffer.KeyInputProcessed += (s, i) => { ran = true; };
@@ -98,6 +103,18 @@ namespace VimCoreTest
             _buffer.SwitchMode(ModeKind.Normal);
             _buffer.Close();
             Assert.IsTrue(map.GetLocalMark(buffer, 'c').IsNone());
+        }
+
+        [Test,Description("Disable command should be preprocessed")]
+        public void Disable1()
+        {
+            var settings = VimSettingsUtil.CreateDefault;
+            _bufferData.SetupGet(x => x.Settings).Returns(settings).Verifiable();
+            _normalMode.Setup(x => x.OnLeave());
+            _disabledMode.Setup(x => x.OnEnter()).Verifiable();
+            _buffer.ProcessInput(settings.DisableCommand);
+            _disabledMode.Verify();
+            _bufferData.Verify();
         }
     }
 }

@@ -123,11 +123,12 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="BufferUtilTest.cs" />
     <Compile Include="CommandModeIntegrationTest.cs" />
     <Compile Include="CommandModeTest.cs" />
-    <Compile Include="Command_UtilTest.cs" />
-    <Compile Include="Modes_ModeUtilTest.cs" />
+    <Compile Include="Command_DefaultOperations.cs" />
+    <Compile Include="DisabledModeTest.cs" />
+    <Compile Include="IEditorOperationsTest.cs" />
+    <Compile Include="Modes_CommonOperationsTest.cs" />
     <Compile Include="CountCaptureTest.cs" />
     <Compile Include="FakeVimHost.cs" />
     <Compile Include="IncrementalSearchTest.cs">

@@ -65,7 +65,7 @@ namespace VsVim
         {
             var input = args.ConvertToKeyInput();
             var vim = buffer.VimBuffer;
-            if (vim.WillProcessInput(input))
+            if (vim.CanProcessInput(input))
             {
                 args.Handled = vim.ProcessInput(input);
             }
@@ -91,7 +91,7 @@ namespace VsVim
                 return false;
             }
 
-            return buffer.VimBuffer.WillProcessInput(ki) && buffer.VimBuffer.ProcessInput(ki);
+            return buffer.VimBuffer.CanProcessInput(ki) && buffer.VimBuffer.ProcessInput(ki);
         }
 
         private bool TryHandleTextInput(VsVimBuffer buffer, TextCompositionEventArgs args)
@@ -114,7 +114,7 @@ namespace VsVim
             }
 
             var ki = new KeyInput(opt.Value.Char, opt.Value.Key, keyboard.Modifiers);
-            return buffer.VimBuffer.WillProcessInput(ki);
+            return buffer.VimBuffer.CanProcessInput(ki);
         }
 
         public static bool IsNonInputKey(KeyEventArgs e)

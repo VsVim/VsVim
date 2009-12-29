@@ -63,8 +63,6 @@
     <Compile Include="IncrementalSearch.fs" />
     <Compile Include="Register.fs" />
     <Compile Include="IRegisterMap.fs" />
-    <Compile Include="BufferUtil.fsi" />
-    <Compile Include="BufferUtil.fs" />
     <Compile Include="VimSettings.fs" />
     <Compile Include="ModeKind.fs" />
     <Compile Include="IMode.fs" />
@@ -78,11 +76,11 @@
     <Compile Include="Factory.fsi" />
     <Compile Include="RegexUtil.fs" />
     <Compile Include="Modes_ICommonOperations.fs" />
-    <Compile Include="Modes_ModeUtil.fsi" />
-    <Compile Include="Modes_ModeUtil.fs" />
+    <Compile Include="Modes_CommonOperations.fs" />
+    <Compile Include="Modes_Command_IOperations.fs" />
     <Compile Include="Modes_Command_RangeUtil.fsi" />
     <Compile Include="Modes_Command_RangeUtil.fs" />
-    <Compile Include="Modes_Command_Util.fs" />
+    <Compile Include="Modes_Command_DefaultOperations.fs" />
     <Compile Include="Modes_Command_CommandMode.fsi" />
     <Compile Include="Modes_Command_CommandMode.fs" />
     <Compile Include="Modes_Normal_IOperations.fs" />
@@ -91,10 +89,12 @@
     <Compile Include="Modes_Normal_Data.fs" />
     <Compile Include="Modes_Normal_NormalMode.fsi" />
     <Compile Include="Modes_Normal_NormalMode.fs" />
+    <Compile Include="Modes_Insert_DefaultOperations.fs" />
     <Compile Include="Modes_Insert_InsertMode.fsi" />
     <Compile Include="Modes_Insert_InsertMode.fs" />
     <Compile Include="RegisterMap.fs" />
     <Compile Include="VimData.fs" />
+    <Compile Include="DisabledMode.fs" />
     <Compile Include="Vim.fs" />
     <Compile Include="Factory.fs" />
     <Compile Include="AssemblyInfo.fs" />

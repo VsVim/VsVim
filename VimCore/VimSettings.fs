@@ -3,12 +3,14 @@
 namespace Vim
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
+open System.Windows.Input
 
 /// Settings that can occur for a Vim program
 type VimSettings = {
     IgnoreCase : bool;
     ShiftWidth : int;
     Scroll : option<int>;
+    DisableCommand: KeyInput;
     }
     
 module internal VimSettingsUtil =
@@ -17,8 +19,8 @@ module internal VimSettingsUtil =
     let CreateDefault : VimSettings = {
         IgnoreCase = true;
         ShiftWidth = 4;
-        Scroll = None
-        
+        Scroll = None;
+        DisableCommand = KeyInput(System.Char.MinValue, Key.F12, ModifierKeys.Control ||| ModifierKeys.Shift);
         }    
 
     /// Get the scroll line count.  

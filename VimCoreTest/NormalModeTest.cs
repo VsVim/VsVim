@@ -151,57 +151,185 @@ namespace VimCoreTest
         public void Move_l()
         {
             CreateBuffer(s_lines);
-            _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 0));
+            _operations.Setup(x => x.MoveCaretRight(1)).Verifiable();
             _mode.Process("l");
-            Assert.AreEqual(1, _view.Caret.Position.BufferPosition.Position);
+            _operations.Verify();
         }
 
         [Test]
         public void Move_l2()
         {
             CreateBuffer(s_lines);
-            _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 0));
+            _operations.Setup(x => x.MoveCaretRight(2)).Verifiable();
             _mode.Process("2l");
-            Assert.AreEqual(2, _view.Caret.Position.BufferPosition.Position);
+            _operations.Verify();
         }
 
         [Test]
         public void Move_h()
         {
             CreateBuffer(s_lines);
-            _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 1));
+            _operations.Setup(x => x.MoveCaretLeft(1)).Verifiable();
             _mode.Process("h");
-            Assert.AreEqual(0, _view.Caret.Position.BufferPosition.Position);
+            _operations.Verify();
         }
 
-        [Test,Description("Make sure that we clear the selection on a motion")]
+        [Test]
         public void Move_h2()
         {
             CreateBuffer(s_lines);
-            var start = new SnapshotPoint(_view.TextSnapshot, 1);
-            _view.Caret.MoveTo(start);
-            _view.Selection.Select(new SnapshotSpan(start, 5), false);
-            _mode.Process("h");
-            Assert.AreEqual(0, _view.Selection.SelectedSpans.Single().Length);
+            _operations.Setup(x => x.MoveCaretLeft(2)).Verifiable();
+            _mode.Process("2h");
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Move_Backspace1()
+        {
+            CreateBuffer(s_lines);
+            _operations.Setup(x => x.MoveCaretLeft(1)).Verifiable();
+            _mode.Process(InputUtil.KeyToKeyInput(Key.Back));
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Move_Backspace2()
+        {
+            CreateBuffer(s_lines);
+            _operations.Setup(x => x.MoveCaretLeft(2)).Verifiable();
+            _mode.Process('2');
+            _mode.Process(InputUtil.KeyToKeyInput(Key.Back));
+            _operations.Verify();
         }
 
         [Test]
         public void Move_k()
         {
             CreateBuffer(s_lines);
-            var line = _view.TextSnapshot.GetLineFromLineNumber(1);
-            _view.Caret.MoveTo(line.Start);
+            _operations.Setup(x => x.MoveCaretUp(1)).Verifiable();
             _mode.Process("k");
-            Assert.AreEqual(0, _view.Caret.Position.BufferPosition.GetContainingLine().LineNumber);
+            _operations.Verify();
         }
 
         [Test]
         public void Move_j()
         {
             CreateBuffer(s_lines);
-            _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 0));
+            _operations.Setup(x => x.MoveCaretDown(1)).Verifiable();
             _mode.Process("j");
-            Assert.AreEqual(1, _view.Caret.Position.BufferPosition.GetContainingLine().LineNumber);
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Move_LeftArrow1()
+        {
+            CreateBuffer(s_lines);
+            _operations.Setup(x => x.MoveCaretLeft(1)).Verifiable();
+            _mode.Process(InputUtil.KeyToKeyInput(Key.Left));
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Move_LeftArrow2()
+        {
+            CreateBuffer(s_lines);
+            _operations.Setup(x => x.MoveCaretLeft(2)).Verifiable();
+            _mode.Process('2');
+            _mode.Process(InputUtil.KeyToKeyInput(Key.Left));
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Move_RightArrow1()
+        {
+            CreateBuffer(s_lines);
+            _operations.Setup(x => x.MoveCaretRight(1)).Verifiable();
+            _mode.Process(InputUtil.KeyToKeyInput(Key.Right));
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Move_RightArrow2()
+        {
+            CreateBuffer(s_lines);
+            _operations.Setup(x => x.MoveCaretRight(2)).Verifiable();
+            _mode.Process('2');
+            _mode.Process(InputUtil.KeyToKeyInput(Key.Right));
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Move_UpArrow1()
+        {
+            CreateBuffer(s_lines);
+            _operations.Setup(x => x.MoveCaretUp(1)).Verifiable();
+            _mode.Process(InputUtil.KeyToKeyInput(Key.Up));
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Move_UpArrow2()
+        {
+            CreateBuffer(s_lines);
+            _operations.Setup(x => x.MoveCaretUp(2)).Verifiable();
+            _mode.Process('2');
+            _mode.Process(InputUtil.KeyToKeyInput(Key.Up));
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Move_DownArrow1()
+        {
+            CreateBuffer(s_lines);
+            _operations.Setup(x => x.MoveCaretDown(1)).Verifiable();
+            _mode.Process(InputUtil.KeyToKeyInput(Key.Down));
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Move_DownArrow2()
+        {
+            CreateBuffer(s_lines);
+            _operations.Setup(x => x.MoveCaretDown(2)).Verifiable();
+            _mode.Process('2');
+            _mode.Process(InputUtil.KeyToKeyInput(Key.Down));
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Move_CtrlP1()
+        {
+            CreateBuffer(s_lines);
+            _operations.Setup(x => x.MoveCaretUp(1)).Verifiable();
+            _mode.Process(new KeyInput('p', Key.P, ModifierKeys.Control));
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Move_CtrlN1()
+        {
+            CreateBuffer(s_lines);
+            _operations.Setup(x => x.MoveCaretDown(1)).Verifiable();
+            _mode.Process(new KeyInput('n', Key.N, ModifierKeys.Control));
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Move_CtrlH1()
+        {
+            CreateBuffer(s_lines);
+            _operations.Setup(x => x.MoveCaretLeft(1)).Verifiable();
+            _mode.Process(new KeyInput('h', Key.H, ModifierKeys.Control));
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Move_SpaceBar1()
+        {
+            CreateBuffer(s_lines);
+            _operations.Setup(x => x.MoveCaretRight(1)).Verifiable();
+            _mode.Process(InputUtil.KeyToKeyInput(Key.Space));
+            _operations.Verify();
         }
 
         #endregion
@@ -331,7 +459,7 @@ namespace VimCoreTest
             Assert.IsTrue(res.IsProcessed);
             _mode.Process(Key.Enter);
             res = _mode.Process(Key.I);
-            Assert.IsTrue(res.IsSwitchMode);  
+            Assert.IsTrue(res.IsSwitchMode);
         }
 
         [Test, Description("Canceled motion should reset the status")]
@@ -348,39 +476,43 @@ namespace VimCoreTest
         public void BadMotion5()
         {
             CreateBuffer(s_lines);
+            _operations.Setup(x => x.Yank(
+                It.IsAny<SnapshotSpan>(),
+                It.IsAny<MotionKind>(),
+                It.IsAny<OperationKind>(),
+                It.IsAny<Register>())).Verifiable();
             _mode.Process("yaw");
             Assert.IsTrue(String.IsNullOrEmpty(_host.Status));
+            _operations.Verify();
         }
 
         [Test]
         public void Motion_l()
         {
             CreateBuffer(s_lines);
+            _operations.Setup(x => x.MoveCaretRight(1)).Verifiable();
             _mode.Process("l");
-            var point = _view.Caret.Position.BufferPosition;
-            var line = _view.TextSnapshot.GetLineFromLineNumber(0);
-            Assert.AreEqual(line.Start.Add(1), point);
+            _operations.Verify();
         }
 
         [Test]
         public void Motion_2l()
         {
             CreateBuffer(s_lines);
+            _operations.Setup(x => x.MoveCaretRight(2)).Verifiable();
             _mode.Process("2l");
-            var point = _view.Caret.Position.BufferPosition;
-            var line = _view.TextSnapshot.GetLineFromLineNumber(0);
-            Assert.AreEqual(line.Start.Add(2), point);
+            _operations.Verify();
         }
 
-        [Test, Description("Don't crash moving off the end of the buffer")]
+        [Test]
         public void Motion_50l()
         {
             CreateBuffer(s_lines);
             var line = _view.TextSnapshot.Lines.Last();
             _view.Caret.MoveTo(line.Start);
+            _operations.Setup(x => x.MoveCaretRight(50)).Verifiable();
             _mode.Process("50l");
-            var point = _view.Caret.Position.BufferPosition;
-            Assert.AreEqual(line.End, point);
+            _operations.Verify();
         }
 
         #endregion
@@ -392,10 +524,11 @@ namespace VimCoreTest
         {
             CreateBuffer("how is", "foo");
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 0));
+            _operations.Setup(x => x.InsertLineBelow()).Returns<ITextSnapshotLine>(null).Verifiable();
             var res = _mode.Process('o');
             Assert.IsTrue(res.IsSwitchMode);
             Assert.AreEqual(ModeKind.Insert, res.AsSwitchMode().Item);
-            Assert.AreEqual(3, _view.TextSnapshot.Lines.Count());
+            _operations.Verify();
         }
 
         [Test, Description("Use o at end of buffer")]
@@ -404,25 +537,16 @@ namespace VimCoreTest
             CreateBuffer("foo", "bar");
             var line = _view.TextSnapshot.Lines.Last();
             _view.Caret.MoveTo(line.Start);
+            _operations.Setup(x => x.InsertLineBelow()).Returns<ITextSnapshotLine>(null).Verifiable();
             _mode.Process('o');
-        }
-
-        [Test, Description("Make sure o will indent if the previous line was indented")]
-        public void Edit_o_3()
-        {
-            CreateBuffer("  foo");
-            _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 0));
-            _mode.Process('o');
-            var point = _view.Caret.Position.VirtualBufferPosition;
-            Assert.IsTrue(point.IsInVirtualSpace);
-            Assert.AreEqual(2, point.VirtualSpaces);
+            _operations.Verify();
         }
 
         [Test]
         public void Edit_O_1()
         {
             CreateBuffer("foo");
-            _operations.Setup(x => x.InsertLineAbove()).Verifiable();
+            _operations.Setup(x => x.InsertLineAbove()).Returns<ITextSnapshotLine>(null).Verifiable();
             _mode.Process('O');
             _operations.Verify();
         }
@@ -431,10 +555,20 @@ namespace VimCoreTest
         public void Edit_O_2()
         {
             CreateBuffer("foo", "bar");
-            _operations.Setup(x => x.InsertLineAbove()).Verifiable();
+            _operations.Setup(x => x.InsertLineAbove()).Returns<ITextSnapshotLine>(null).Verifiable();
             _view.Caret.MoveTo(_view.TextSnapshot.GetLineFromLineNumber(1).Start);
             _mode.Process("O");
             _operations.Verify();
+        }
+
+        [Test]
+        public void Edit_O_3()
+        {
+            CreateBuffer("foo");
+            _operations.Setup(x => x.InsertLineAbove()).Returns<ITextSnapshotLine>(null).Verifiable();
+            var res = _mode.Process('O');
+            Assert.IsTrue(res.IsSwitchMode);
+            Assert.AreEqual(ModeKind.Insert, res.AsSwitchMode().item);
         }
 
         [Test]
@@ -567,8 +701,13 @@ namespace VimCoreTest
         public void Yank_yw()
         {
             CreateBuffer("foo");
+            _operations.Setup(x => x.Yank(
+                _view.TextSnapshot.GetLineFromLineNumber(0).Extent,
+                MotionKind.Exclusive,
+                OperationKind.CharacterWise,
+                _map.DefaultRegister)).Verifiable();
             _mode.Process("yw");
-            Assert.AreEqual("foo", _map.DefaultRegister.StringValue);
+            _operations.Verify();
         }
 
         [Test, Description("Yanks in the middle of the word should only get a partial")]
@@ -576,56 +715,91 @@ namespace VimCoreTest
         {
             CreateBuffer("foo bar baz");
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 1));
+            _operations.Setup(x => x.Yank(
+                new SnapshotSpan(_view.TextSnapshot, 1, 3),
+                MotionKind.Exclusive,
+                OperationKind.CharacterWise,
+                _map.DefaultRegister)).Verifiable();
             _mode.Process("yw");
-            Assert.AreEqual("oo ", _map.DefaultRegister.StringValue);
+            _operations.Verify();
         }
 
         [Test, Description("Yank word should go to the start of the next word including spaces")]
         public void Yank_yw_3()
         {
             CreateBuffer("foo bar");
+            _operations.Setup(x => x.Yank(
+                new SnapshotSpan(_view.TextSnapshot, 0, 4),
+                MotionKind.Exclusive,
+                OperationKind.CharacterWise,
+                _map.DefaultRegister)).Verifiable();
             _mode.Process("yw");
-            Assert.AreEqual("foo ", _map.DefaultRegister.StringValue);
+            _operations.Verify();
         }
 
         [Test, Description("Non-default register")]
         public void Yank_yw_4()
         {
             CreateBuffer("foo bar");
+            _operations.Setup(x => x.Yank(
+                new SnapshotSpan(_view.TextSnapshot, 0, 4),
+                MotionKind.Exclusive,
+                OperationKind.CharacterWise,
+                _map.GetRegister('c'))).Verifiable();
             _mode.Process("\"cyw");
-            Assert.AreEqual("foo ", _map.GetRegister('c').StringValue);
+            _operations.Verify();
         }
 
         [Test]
         public void Yank_2yw()
         {
             CreateBuffer("foo bar baz");
+            _operations.Setup(x => x.Yank(
+                new SnapshotSpan(_view.TextSnapshot, 0, 8),
+                MotionKind.Exclusive,
+                OperationKind.CharacterWise,
+                _map.DefaultRegister)).Verifiable();
             _mode.Process("2yw");
-            Assert.AreEqual("foo bar ", _map.DefaultRegister.StringValue);
+            _operations.Verify();
         }
 
         [Test]
         public void Yank_3yw()
         {
             CreateBuffer("foo bar baz joe");
+            _operations.Setup(x => x.Yank(
+                new SnapshotSpan(_view.TextSnapshot, 0, 12),
+                MotionKind.Exclusive,
+                OperationKind.CharacterWise,
+                _map.DefaultRegister)).Verifiable();
             _mode.Process("3yw");
-            Assert.AreEqual("foo bar baz ", _map.DefaultRegister.StringValue);
+            _operations.Verify();
         }
 
         [Test]
         public void Yank_yaw()
         {
             CreateBuffer("foo bar");
+            _operations.Setup(x => x.Yank(
+                new SnapshotSpan(_view.TextSnapshot, 0, 4),
+                MotionKind.Exclusive,
+                OperationKind.CharacterWise,
+                _map.DefaultRegister)).Verifiable();
             _mode.Process("yaw");
-            Assert.AreEqual("foo ", _map.DefaultRegister.StringValue);
+            _operations.Verify();
         }
 
         [Test]
         public void Yank_y2w()
         {
             CreateBuffer("foo bar baz");
+            _operations.Setup(x => x.Yank(
+                new SnapshotSpan(_view.TextSnapshot, 0, 8),
+                MotionKind.Exclusive,
+                OperationKind.CharacterWise,
+                _map.DefaultRegister)).Verifiable();
             _mode.Process("y2w");
-            Assert.AreEqual("foo bar ", _map.DefaultRegister.StringValue);
+            _operations.Verify();
         }
 
         [Test]
@@ -633,18 +807,26 @@ namespace VimCoreTest
         {
             CreateBuffer("foo bar");
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 1));
+            _operations.Setup(x => x.Yank(
+                new SnapshotSpan(_view.TextSnapshot, 0,4),
+                MotionKind.Exclusive,
+                OperationKind.CharacterWise,
+                _map.DefaultRegister)).Verifiable();
             _mode.Process("yaw");
-            Assert.AreEqual("foo ", _map.DefaultRegister.StringValue);
+            _operations.Verify();
         }
 
         [Test, Description("A yy should grab the end of line including line break information")]
         public void Yank_yy_1()
         {
             CreateBuffer("foo", "bar");
+            _operations.Setup(x => x.Yank(
+                _view.TextSnapshot.GetLineFromLineNumber(0).ExtentIncludingLineBreak,
+                MotionKind.Inclusive,
+                OperationKind.LineWise,
+                _map.DefaultRegister)).Verifiable();
             _mode.Process("yy");
-            Assert.AreEqual("foo" + Environment.NewLine, _map.DefaultRegister.StringValue);
-            Assert.AreEqual(OperationKind.LineWise, _map.DefaultRegister.Value.OperationKind);
-            Assert.AreEqual(MotionKind.Inclusive, _map.DefaultRegister.Value.MotionKind);
+            _operations.Verify();
         }
 
         [Test, Description("yy should yank the entire line even if the cursor is not at the start")]
@@ -652,8 +834,13 @@ namespace VimCoreTest
         {
             CreateBuffer("foo", "bar");
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 1));
+            _operations.Setup(x => x.Yank(
+                _view.TextSnapshot.GetLineFromLineNumber(0).ExtentIncludingLineBreak,
+                MotionKind.Inclusive,
+                OperationKind.LineWise,
+                _map.DefaultRegister)).Verifiable();
             _mode.Process("yy");
-            Assert.AreEqual("foo" + Environment.NewLine, _map.DefaultRegister.StringValue);
+            _operations.Verify();
         }
 
         [Test]
@@ -677,7 +864,7 @@ namespace VimCoreTest
         [Test]
         public void Yank_Y_3()
         {
-            CreateBuffer("foo", "bar","jazz");
+            CreateBuffer("foo", "bar", "jazz");
             _operations.Setup(x => x.YankLines(2, _map.DefaultRegister)).Verifiable();
             _mode.Process("2Y");
             _operations.Verify();
@@ -691,7 +878,7 @@ namespace VimCoreTest
         public void Paste_p()
         {
             CreateBuffer("foo bar");
-            _operations.Setup(x => x.PasteAfter("hey", 1, OperationKind.CharacterWise, false)).Verifiable();
+            _operations.Setup(x => x.PasteAfterCursor("hey", 1, OperationKind.CharacterWise, false)).Verifiable();
             _map.DefaultRegister.UpdateValue("hey");
             _mode.Process('p');
             _operations.Verify();
@@ -701,7 +888,7 @@ namespace VimCoreTest
         public void Paste_p_2()
         {
             CreateBuffer("foo");
-            _operations.Setup(x => x.PasteAfter("hey", 1, OperationKind.CharacterWise, false)).Verifiable();
+            _operations.Setup(x => x.PasteAfterCursor("hey", 1, OperationKind.CharacterWise, false)).Verifiable();
             _map.GetRegister('j').UpdateValue("hey");
             _mode.Process("\"jp");
             _operations.Verify();
@@ -712,7 +899,7 @@ namespace VimCoreTest
         {
             CreateBuffer("foo", "bar");
             var data = "baz" + Environment.NewLine;
-            _operations.Setup(x => x.PasteAfter(data, 1, OperationKind.LineWise, false)).Verifiable();
+            _operations.Setup(x => x.PasteAfterCursor(data, 1, OperationKind.LineWise, false)).Verifiable();
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 0));
             _map.DefaultRegister.UpdateValue(new RegisterValue(data, MotionKind.Inclusive, OperationKind.LineWise));
             _mode.Process("p");
@@ -723,7 +910,7 @@ namespace VimCoreTest
         public void Paste_2p()
         {
             CreateBuffer("foo");
-            _operations.Setup(x => x.PasteAfter("hey", 2, OperationKind.CharacterWise, false)).Verifiable();
+            _operations.Setup(x => x.PasteAfterCursor("hey", 2, OperationKind.CharacterWise, false)).Verifiable();
             _map.DefaultRegister.UpdateValue("hey");
             _mode.Process("2p");
             _operations.Verify();
@@ -733,7 +920,7 @@ namespace VimCoreTest
         public void Paste_P()
         {
             CreateBuffer("foo");
-            _operations.Setup(x => x.PasteBefore("hey", 1, false)).Verifiable();
+            _operations.Setup(x => x.PasteBeforeCursor("hey", 1, false)).Verifiable();
             _map.DefaultRegister.UpdateValue("hey");
             _mode.Process('P');
             _operations.Verify();
@@ -743,7 +930,7 @@ namespace VimCoreTest
         public void Paste_2P()
         {
             CreateBuffer("foo");
-            _operations.Setup(x => x.PasteBefore("hey", 2, false)).Verifiable();
+            _operations.Setup(x => x.PasteBeforeCursor("hey", 2, false)).Verifiable();
             _map.DefaultRegister.UpdateValue("hey");
             _mode.Process("2P");
             _operations.Verify();
@@ -753,7 +940,7 @@ namespace VimCoreTest
         public void Paste_gp_1()
         {
             CreateBuffer("foo");
-            _operations.Setup(x => x.PasteAfter("hey", 1, OperationKind.CharacterWise, true)).Verifiable();
+            _operations.Setup(x => x.PasteAfterCursor("hey", 1, OperationKind.CharacterWise, true)).Verifiable();
             _map.DefaultRegister.UpdateValue("hey");
             _mode.Process("gp");
             _operations.Verify();
@@ -763,7 +950,7 @@ namespace VimCoreTest
         public void Paste_gp_2()
         {
             CreateBuffer("foo", "bar");
-            _operations.Setup(x => x.PasteAfter("hey", 1, OperationKind.CharacterWise, true)).Verifiable();
+            _operations.Setup(x => x.PasteAfterCursor("hey", 1, OperationKind.CharacterWise, true)).Verifiable();
             _view.Caret.MoveTo(_view.TextSnapshot.GetLineFromLineNumber(0).End);
             _map.GetRegister('c').UpdateValue("hey");
             _mode.Process("\"cgp");
@@ -774,7 +961,7 @@ namespace VimCoreTest
         public void Paste_gP_1()
         {
             CreateBuffer("foo");
-            _operations.Setup(x => x.PasteBefore("hey", 1, true)).Verifiable();
+            _operations.Setup(x => x.PasteBeforeCursor("hey", 1, true)).Verifiable();
             _map.DefaultRegister.UpdateValue("hey");
             _mode.Process("gP");
             _operations.Verify();
@@ -784,7 +971,7 @@ namespace VimCoreTest
         public void Paste_gP_2()
         {
             CreateBuffer("foo", "bar");
-            _operations.Setup(x => x.PasteBefore("hey", 1, true)).Verifiable();
+            _operations.Setup(x => x.PasteBeforeCursor("hey", 1, true)).Verifiable();
             _view.Caret.MoveTo(_view.TextSnapshot.GetLineFromLineNumber(0).End);
             _map.DefaultRegister.UpdateValue("hey");
             _mode.Process("gP");
@@ -799,11 +986,15 @@ namespace VimCoreTest
         public void Delete_dd_1()
         {
             CreateBuffer("foo", "bar");
+            _operations.Setup(x => x.DeleteSpan(
+                _view.TextSnapshot.GetLineFromLineNumber(0).ExtentIncludingLineBreak,
+                MotionKind._unique_Inclusive,
+                OperationKind.LineWise,
+                _map.DefaultRegister))
+                .Returns(It.IsAny<ITextSnapshot>())
+                .Verifiable();
             _mode.Process("dd");
-            var value = _map.DefaultRegister.Value;
-            Assert.AreEqual("foo" + Environment.NewLine, value.Value);
-            Assert.AreEqual(MotionKind.Inclusive, value.MotionKind);
-            Assert.AreEqual(OperationKind.LineWise, value.OperationKind);
+            _operations.Verify();
         }
 
         [Test, Description("Make sure that it deletes the entire line regardless of where the caret is")]
@@ -811,35 +1002,51 @@ namespace VimCoreTest
         {
             CreateBuffer("foo", "bar");
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 1));
+            _operations.Setup(x => x.DeleteSpan(
+                _view.TextSnapshot.GetLineFromLineNumber(0).ExtentIncludingLineBreak,
+                MotionKind._unique_Inclusive,
+                OperationKind.LineWise,
+                _map.DefaultRegister))
+                .Returns(It.IsAny<ITextSnapshot>())
+                .Verifiable();
             _mode.Process("dd");
-            var value = _map.DefaultRegister.Value;
-            Assert.AreEqual("foo" + Environment.NewLine, value.Value);
-            Assert.AreEqual(MotionKind.Inclusive, value.MotionKind);
-            Assert.AreEqual(OperationKind.LineWise, value.OperationKind);
+            _operations.Verify();
         }
 
         [Test]
         public void Delete_dw_1()
         {
             CreateBuffer("foo bar baz");
+            _operations.Setup(x => x.DeleteSpan(
+                new SnapshotSpan(_view.TextSnapshot, 0, 4),
+                MotionKind._unique_Exclusive,
+                OperationKind.CharacterWise,
+                _map.DefaultRegister))
+                .Returns(It.IsAny<ITextSnapshot>())
+                .Verifiable();
             _mode.Process("dw");
-            Assert.AreEqual("bar baz", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
-            Assert.AreEqual(0, _view.Caret.Position.BufferPosition.Position);
+            _operations.Verify();
         }
 
         [Test, Description("Delete at the end of the line shouldn't delete newline")]
         public void Delete_dw_2()
         {
-            CreateBuffer("foo bar","baz");
-            _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 4));
+            CreateBuffer("foo bar", "baz");
+            var point = new SnapshotPoint(_view.TextSnapshot, 4);
+            _view.Caret.MoveTo(point);
             Assert.AreEqual('b', _view.Caret.Position.BufferPosition.GetChar());
+            var span = new SnapshotSpan(point, _view.TextSnapshot.GetLineFromLineNumber(0).End);
+            _operations.Setup(x => x.DeleteSpan(
+                span,
+                MotionKind.Exclusive,
+                OperationKind.CharacterWise,
+                _map.DefaultRegister))
+                .Returns(It.IsAny<ITextSnapshot>())
+                .Verifiable();
             _mode.Process("dw");
-            var tss = _view.TextSnapshot;
-            Assert.AreEqual(2, tss.LineCount);
-            Assert.AreEqual("foo ", tss.GetLineFromLineNumber(0).GetText());
-            Assert.AreEqual("baz", tss.GetLineFromLineNumber(1).GetText());
+            _operations.Verify();
         }
-        
+
 
         #endregion
 
@@ -852,18 +1059,22 @@ namespace VimCoreTest
             var res = _mode.Process(InputUtil.KeyToKeyInput(Key.I));
             Assert.IsTrue(res.IsSwitchMode);
             Assert.AreEqual(ModeKind.Insert, res.AsSwitchMode().Item);
+            _operations.Setup(x => x.MoveCaretLeft(1)).Verifiable();
             res = _mode.Process(InputUtil.KeyToKeyInput(Key.H));
             Assert.IsTrue(res.IsProcessed);
+            _operations.Verify();
         }
 
         [Test, Description("j past the end of the buffer")]
         public void Regression_DownPastBufferEnd()
         {
             CreateBuffer("foo");
+            _operations.Setup(x => x.MoveCaretDown(1)).Verifiable();
             var res = _mode.Process(Key.J);
             Assert.IsTrue(res.IsProcessed);
             res = _mode.Process(Key.J);
             Assert.IsTrue(res.IsProcessed);
+            _operations.Verify();
         }
 
         #endregion
@@ -1063,7 +1274,6 @@ namespace VimCoreTest
             CreateBuffer("foo bar");
             _mode.Process("/b");
             _mode.Process(Key.Back);
-            _mode.Process(Key.Back);
             var res = _mode.Process('i');
             Assert.IsTrue(res.IsSwitchMode);
             Assert.AreEqual(ModeKind.Insert, res.AsSwitchMode().Item);
@@ -1160,85 +1370,97 @@ namespace VimCoreTest
         public void ShiftRight1()
         {
             CreateBuffer("foo");
+            _operations
+                .Setup(x => x.ShiftRight(_view.TextSnapshot.GetLineFromLineNumber(0).Extent, 4))
+                .Returns<ITextSnapshot>(null)
+                .Verifiable();
             _mode.Process(">>");
-            Assert.AreEqual("    foo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
+            _operations.Verify();
         }
 
         [Test, Description("With a count")]
         public void ShiftRight2()
         {
             CreateBuffer("foo", "bar");
-            _mode.Process("2>>");
             var tss = _view.TextSnapshot;
-            Assert.AreEqual("    foo", tss.GetLineFromLineNumber(0).GetText());
-            Assert.AreEqual("    bar", tss.GetLineFromLineNumber(1).GetText());
+            var span = new SnapshotSpan(
+                tss.GetLineFromLineNumber(0).Start,
+                tss.GetLineFromLineNumber(1).End);
+            _operations
+                .Setup(x => x.ShiftRight(span, 4))
+                .Returns<ITextSnapshot>(null)
+                .Verifiable();
+            _mode.Process("2>>");
+            _operations.Verify();
         }
 
         [Test, Description("With a motion")]
         public void ShiftRight3()
         {
             CreateBuffer("foo", "bar");
+            var tss = _view.TextSnapshot;
+            var span = new SnapshotSpan(
+                tss.GetLineFromLineNumber(0).Start,
+                tss.GetLineFromLineNumber(1).End);
+            _operations
+                .Setup(x => x.ShiftRight(span, 4))
+                .Returns<ITextSnapshot>(null)
+                .Verifiable();
             _mode.Process(">j");
-            var tss = _view.TextSnapshot;
-            Assert.AreEqual("    foo", tss.GetLineFromLineNumber(0).GetText());
-            Assert.AreEqual("    bar", tss.GetLineFromLineNumber(1).GetText());
+            _operations.Verify();
         }
 
-        [Test, Description("Make sure a normal >> doesn't shift 2 lines")]
-        public void ShiftRight4()
-        {
-            CreateBuffer("foo", "bar");
-            _mode.Process(">>");
-            var tss = _view.TextSnapshot;
-            Assert.AreEqual("    foo", tss.GetLineFromLineNumber(0).GetText());
-            Assert.AreEqual("bar", tss.GetLineFromLineNumber(1).GetText());
-        }
-
-        [Test, Description("Don't eat extra whitespace")]
+        [Test]
         public void ShiftLeft1()
         {
             CreateBuffer("foo");
+            _operations
+                .Setup(x => x.ShiftLeft(_view.TextSnapshot.GetLineFromLineNumber(0).ExtentIncludingLineBreak, 4))
+                .Returns<ITextSnapshot>(null)
+                .Verifiable();
             _mode.Process("<<");
-            Assert.AreEqual("foo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
+            _operations.Verify();
         }
 
         [Test]
         public void ShiftLeft2()
         {
             CreateBuffer(" foo");
+            _operations
+                .Setup(x => x.ShiftLeft(_view.TextSnapshot.GetLineFromLineNumber(0).ExtentIncludingLineBreak, 4))
+                .Returns<ITextSnapshot>(null)
+                .Verifiable();
             _mode.Process("<<");
-            Assert.AreEqual("foo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
+            _operations.Verify();
         }
 
         [Test]
         public void ShiftLeft3()
         {
             CreateBuffer("     foo");
+            _operations
+                .Setup(x => x.ShiftLeft(_view.TextSnapshot.GetLineFromLineNumber(0).ExtentIncludingLineBreak, 4))
+                .Returns<ITextSnapshot>(null)
+                .Verifiable();
             _mode.Process("<<");
-            Assert.AreEqual(" foo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
+            _operations.Verify();
         }
 
         [Test, Description("With a count")]
         public void ShiftLeft4()
         {
             CreateBuffer("     foo", "     bar");
+            var tss = _view.TextSnapshot;
+            var span = new SnapshotSpan(
+                tss.GetLineFromLineNumber(0).Start,
+                tss.GetLineFromLineNumber(1).End);
+            _operations
+                .Setup(x => x.ShiftLeft(span, 4))
+                .Returns<ITextSnapshot>(null)
+                .Verifiable();
             _mode.Process("2<<");
-            var tss = _view.TextSnapshot;
-            Assert.AreEqual(" foo", tss.GetLineFromLineNumber(0).GetText());
-            Assert.AreEqual(" bar", tss.GetLineFromLineNumber(1).GetText());
+            _operations.Verify();
         }
-
-        [Test, Description("Make sure a << doesn't shift more than 1 line")]
-        public void ShiftLeft5()
-        {
-            CreateBuffer(" foo", " bar");
-            _mode.Process("<<");
-            var tss = _view.TextSnapshot;
-            Assert.AreEqual("foo", tss.GetLineFromLineNumber(0).GetText());
-            Assert.AreEqual(" bar", tss.GetLineFromLineNumber(1).GetText());
-        }
-
-
 
         #endregion
 
@@ -1274,33 +1496,56 @@ namespace VimCoreTest
         public void Join1()
         {
             CreateBuffer("foo", "bar");
+            _operations.Setup(x => x.Join(
+                _view.Caret.Position.BufferPosition,
+                JoinKind.RemoveEmptySpaces,
+                1))
+                .Returns(true)
+                .Verifiable();
             _mode.Process("J");
-            Assert.AreEqual("foo bar", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
-            Assert.AreEqual(4, _view.Caret.Position.BufferPosition.Position);
+            _operations.Verify();
         }
 
         [Test]
         public void Join2()
         {
             CreateBuffer("foo", "  bar", "baz");
+            _operations.Setup(x => x.Join(
+                _view.Caret.Position.BufferPosition,
+                JoinKind.RemoveEmptySpaces,
+                2))
+                .Returns(true)
+                .Verifiable();
             _mode.Process("2J");
-            Assert.AreEqual("foo bar", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
+            _operations.Verify();
         }
 
         [Test]
         public void Join3()
         {
             CreateBuffer("foo", "  bar", "baz");
+            _operations.Setup(x => x.Join(
+                _view.Caret.Position.BufferPosition,
+                JoinKind.RemoveEmptySpaces,
+                3))
+                .Returns(true)
+                .Verifiable();
             _mode.Process("3J");
-            Assert.AreEqual("foo bar baz", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
+            _operations.Verify();
         }
 
         [Test]
         public void Join4()
         {
             CreateBuffer("foo", "bar");
+            _operations.Setup(x => x.Join(
+                _view.Caret.Position.BufferPosition,
+                JoinKind.KeepEmptySpaces,
+                1))
+                .Returns(true)
+                .Verifiable();
             _mode.Process("gJ");
-            Assert.AreEqual("foobar", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());   
+            _operations.Verify();
         }
 
         [Test]
@@ -1309,8 +1554,9 @@ namespace VimCoreTest
             CreateBuffer(s_lines);
             var def = new KeyInput(']', Key.OemCloseBrackets, ModifierKeys.Control);
             CreateBuffer("foo");
+            _operations.Setup(x => x.GoToDefinition(_host)).Returns(It.IsAny<Result>()).Verifiable();
             _mode.Process(def);
-            Assert.AreEqual(1, _host.GoToDefinitionCount);
+            _operations.Verify();
         }
 
         [Test, Description("When it fails, the status should be updated")]
@@ -1319,9 +1565,9 @@ namespace VimCoreTest
             CreateBuffer("foo");
             var def = new KeyInput(']', Key.OemCloseBrackets, ModifierKeys.Control);
             _host.GoToDefinitionReturn = false;
+            _operations.Setup(x => x.GoToDefinition(_host)).Returns(It.IsAny<Result>()).Verifiable();
             _mode.Process(def);
-            Assert.AreEqual(1, _host.GoToDefinitionCount);
-            Assert.IsTrue(_host.Status.Contains("foo"));
+            _operations.Verify();
         }
 
         [Test]
@@ -1353,7 +1599,7 @@ namespace VimCoreTest
         public void Mark3()
         {
             CreateBuffer(s_lines);
-            _operations.Setup(x => x.SetMark('a', _bufferData._vimData.MarkMap)).Returns(Result._unique_Succeeded).Verifiable();
+            _operations.Setup(x => x.SetMark('a', _bufferData._vimData.MarkMap, _view.Caret.Position.BufferPosition)).Returns(Result._unique_Succeeded).Verifiable();
             _mode.Process(InputUtil.CharToKeyInput('m'));
             _mode.Process(InputUtil.CharToKeyInput('a'));
             _operations.Verify();
@@ -1363,7 +1609,7 @@ namespace VimCoreTest
         public void Mark4()
         {
             CreateBuffer(s_lines);
-            _operations.Setup(x => x.SetMark(';', _bufferData._vimData.MarkMap)).Returns(Result.NewFailed("foo")).Verifiable();
+            _operations.Setup(x => x.SetMark(';', _bufferData._vimData.MarkMap, _view.Caret.Position.BufferPosition)).Returns(Result.NewFailed("foo")).Verifiable();
             _mode.Process(InputUtil.CharToKeyInput('m'));
             _mode.Process(InputUtil.CharToKeyInput(';'));
             Assert.IsTrue(_host.BeepCount > 0);
@@ -1414,7 +1660,7 @@ namespace VimCoreTest
             _mode.OnLeave();
             Assert.AreEqual(1, _blockCaret.HideCount);
         }
-        
+
         #endregion
 
     }
