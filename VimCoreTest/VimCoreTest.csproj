@@ -158,6 +158,7 @@
     <Compile Include="Utils\UndoHistoryRegistry.cs" />
     <Compile Include="ViewUtilTest.cs" />
     <Compile Include="VimBufferTests.cs" />
+    <Compile Include="VisualModeTest.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Todo.txt" />
