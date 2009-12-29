@@ -1663,5 +1663,36 @@ namespace VimCoreTest
 
         #endregion
 
+        #region Visual Mode
+
+        [Test]
+        public void VisualMode1()
+        {
+            CreateBuffer(s_lines);
+            var res = _mode.Process('v');
+            Assert.IsTrue(res.IsSwitchMode);
+            Assert.AreEqual(ModeKind.VisualCharacter, res.AsSwitchMode().Item);
+        }
+
+        [Test]
+        public void VisualMode2()
+        {
+            CreateBuffer(s_lines);
+            var res = _mode.Process('V');
+            Assert.IsTrue(res.IsSwitchMode);
+            Assert.AreEqual(ModeKind.VisualLineWise, res.AsSwitchMode().Item);
+        }
+
+        [Test]
+        public void VisualMode3()
+        {
+            CreateBuffer(s_lines);
+            var res = _mode.Process(new KeyInput('q', Key.Q, ModifierKeys.Control));
+            Assert.IsTrue(res.IsSwitchMode);
+            Assert.AreEqual(ModeKind.VisualBlock, res.AsSwitchMode().Item);
+        }
+
+        #endregion
+
     }
 }

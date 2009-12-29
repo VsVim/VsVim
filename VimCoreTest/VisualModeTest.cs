@@ -12,6 +12,7 @@ using Microsoft.VisualStudio.Text.Operations;
 using Vim.Modes;
 using VimCoreTest.Utils;
 using Microsoft.VisualStudio.Text;
+using System.Windows.Input;
 
 namespace VimCoreTest
 {
@@ -31,6 +32,7 @@ namespace VimCoreTest
         {
             Create(ModeKind.VisualBlock, lines);
         }
+
         public void Create(ModeKind kind, params string[] lines)
         {
             _view = Utils.EditorUtil.CreateView(lines);
@@ -59,5 +61,78 @@ namespace VimCoreTest
             var operations = new Mock<ICommonOperations>();
             new VisualMode(Tuple.Create<IVimBufferData, ICommonOperations, ModeKind>(data.Object, operations.Object, ModeKind.Insert));
         }
+
+        [Test, Description("Escape is used to exit visual mode")]
+        public void Commands1()
+        {
+            Create("foo");
+            Assert.IsTrue(_mode.Commands.Contains(InputUtil.KeyToKeyInput(Key.Escape)));
+        }
+
+        [Test,Description("Movement commands")]
+        public void Commands2()
+        {
+            Create("foo");
+            var list = new KeyInput[] {
+                InputUtil.CharToKeyInput('h'),
+                InputUtil.CharToKeyInput('j'),
+                InputUtil.CharToKeyInput('k'),
+                InputUtil.CharToKeyInput('l'),
+                InputUtil.KeyToKeyInput(Key.Left),
+                InputUtil.KeyToKeyInput(Key.Right),
+                InputUtil.KeyToKeyInput(Key.Up),
+                InputUtil.KeyToKeyInput(Key.Down),
+                InputUtil.KeyToKeyInput(Key.Back) };
+            var commands = _mode.Commands.ToList();
+            foreach (var item in list)
+            {
+                Assert.Contains(item, commands); 
+            }
+        }
+
+        [Test]
+        public void Process1()
+        {
+            Create("foo");
+            var res = _mode.Process(InputUtil.KeyToChar(Key.Escape));
+            Assert.IsTrue(res.IsSwitchMode);
+            Assert.AreEqual(ModeKind.Normal, res.AsSwitchMode().item);
+        }
+
+        [Test]
+        public void OnLeave1()
+        {
+            _editOpts.Setup(x => x.ResetSelection()).Verifiable();
+            _mode.OnLeave();
+            _editOpts.Verify();
+        }
+
+        #region Selection
+
+        [Test]
+        public void Character1()
+        {
+            Create(ModeKind.VisualCharacter, "foo", "bar");
+            _mode.Process('l');
+            Assert.AreEqual("fo", _view.Selection.GetSpan().GetText());
+        }
+
+        [Test]
+        public void Character2()
+        {
+            Create(ModeKind.VisualCharacter, "foo", "bar");
+            _mode.Process('l');
+            _mode.Process('l');
+            Assert.AreEqual("foo", _view.Selection.GetSpan().GetText());
+        }
+
+        [Test]
+        public void Character3()
+        {
+            Create(ModeKind.VisualCharacter, "foo");
+            Assert.AreEqual("f", _view.Selection.GetSpan().GetText());
+        }
+
+        #endregion
     }
 }

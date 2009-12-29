@@ -459,6 +459,12 @@ type internal NormalMode( _bufferData : IVimBufferData, _operations : IOperation
                 RunFunc=(fun d -> 
                         _operations.YankLines d.Count d.Register 
                         NormalModeResult.Complete); }
+            {   KeyInput=InputUtil.CharToKeyInput('v');
+                RunFunc=(fun _ -> NormalModeResult.SwitchMode ModeKind.VisualCharacter); }
+            {   KeyInput=InputUtil.CharToKeyInput('V');
+                RunFunc=(fun _ -> NormalModeResult.SwitchMode ModeKind.VisualLineWise); }
+            {   KeyInput=KeyInput('q', Key.Q, ModifierKeys.Control);
+                RunFunc=(fun _ -> NormalModeResult.SwitchMode ModeKind.VisualBlock) }
             ]
         let l = l @ this.BuildMotionOperationsMap
         l |> List.map (fun d -> d.KeyInput,d) |> Map.ofList
