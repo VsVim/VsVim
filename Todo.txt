@@ -29,12 +29,12 @@ X - Implement z scrolling in normal mode
 X - Move more operations to the interfaces in normal mode
 X - Join needs to move into ICommonOperations
 X - Move Shift into ICommonOperations
+X - Implement IEditorOperationsTest
 - Remove BufferUtil
 
 Version 0.7
 === 
 - Implement normal mode .
-- Implement IEditorOperationsTest
 - Help delete-insert
 - Should MoveCaretX reset selection if the caret doesn't move?
 - Mark navigation for global marks
