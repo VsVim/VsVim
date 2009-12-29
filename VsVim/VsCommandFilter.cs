@@ -75,7 +75,7 @@ namespace VsVim
         int IOleCommandTarget.QueryStatus(ref Guid pguidCmdGroup, uint cCmds, OLECMD[] prgCmds, IntPtr pCmdText)
         {
             KeyInput ki = null;
-            if (0 == cCmds && TryConvert(pguidCmdGroup, cCmds, pCmdText, out ki) )
+            if (1 == cCmds && TryConvert(pguidCmdGroup, prgCmds[0].cmdID, pCmdText, out ki) )
             {
                 prgCmds[0].cmdf = (uint)(OLECMDF.OLECMDF_ENABLED);
                 return NativeMethods.S_OK;

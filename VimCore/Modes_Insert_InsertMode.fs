@@ -17,10 +17,17 @@ type internal InsertMode
         KeyInput('d', Key.D, ModifierKeys.Control); ]
 
     /// Process the CTRL-D combination and do a shift left
-    member this.ShiftLeft() =
+    member private this.ShiftLeft() =
         let caret = ViewUtil.GetCaretPoint _data.TextView
         let line = caret.GetContainingLine()
         _operations.ShiftLeft line.Extent (_data.Settings.ShiftWidth) |> ignore
+
+    member private this.ProcessEscape() =
+        if _data.VimHost.IsCompletionWindowActive(_data.TextView) then
+            _data.VimHost.DismissCompletionWindow(_data.TextView)
+            ProcessResult.Processed
+        else
+            ProcessResult.SwitchMode ModeKind.Normal
 
     interface IMode with 
         member x.Commands = _commands |> Seq.ofList
@@ -31,7 +38,7 @@ type internal InsertMode
             | None -> false
         member x.Process (ki : KeyInput) = 
             match ki.Key,ki.ModifierKeys with
-            | Key.Escape,_ -> ProcessResult.SwitchMode ModeKind.Normal
+            | Key.Escape,_ -> x.ProcessEscape()
             | Key.D,ModifierKeys.Control -> 
                 x.ShiftLeft()
                 ProcessResult.Processed
