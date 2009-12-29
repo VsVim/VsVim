@@ -20,7 +20,7 @@ namespace VsVimTest
             Microsoft.VisualStudio.OLE.Interop.IServiceProvider sp = null,
             _DTE dte = null,
             IUndoHistoryRegistry undoRegistry = null,
-            ICompletionBroker broker = null)
+            ICompletionWindowBroker broker = null)
         {
             return CreateRaw(sp, dte, undoRegistry, broker);
         }
@@ -29,12 +29,12 @@ namespace VsVimTest
             Microsoft.VisualStudio.OLE.Interop.IServiceProvider sp = null,
             _DTE dte = null,
             IUndoHistoryRegistry undoRegistry = null,
-            ICompletionBroker broker = null)
+            ICompletionWindowBroker broker = null)
         {
             sp = sp ?? (new Mock<Microsoft.VisualStudio.OLE.Interop.IServiceProvider>(MockBehavior.Strict)).Object;
             dte = dte ?? (new Mock<_DTE>(MockBehavior.Strict)).Object;
             undoRegistry = undoRegistry ?? (new Mock<IUndoHistoryRegistry>(MockBehavior.Strict)).Object;
-            broker = broker ?? (new Mock<ICompletionBroker>(MockBehavior.Strict)).Object;
+            broker = broker ?? (new Mock<ICompletionWindowBroker>(MockBehavior.Strict)).Object;
             return new VsVimHost(sp, undoRegistry, broker, dte);
         }
 
@@ -42,9 +42,9 @@ namespace VsVimTest
         public void IsCompletionWindowActive1()
         {
             var view = new Mock<ITextView>(MockBehavior.Strict);
-            var broker = new Mock<ICompletionBroker>(MockBehavior.Strict);
+            var broker = new Mock<ICompletionWindowBroker>(MockBehavior.Strict);
             broker
-                .Setup(x => x.IsCompletionActive(view.Object))
+                .Setup(x => x.IsCompletionWindowActive(view.Object))
                 .Returns(false)
                 .Verifiable();
             var host = Create(broker : broker.Object);
@@ -56,9 +56,9 @@ namespace VsVimTest
         public void IsCompletionWindowActive2()
         {
             var view = new Mock<ITextView>(MockBehavior.Strict);
-            var broker = new Mock<ICompletionBroker>(MockBehavior.Strict);
+            var broker = new Mock<ICompletionWindowBroker>(MockBehavior.Strict);
             broker
-                .Setup(x => x.IsCompletionActive(view.Object))
+                .Setup(x => x.IsCompletionWindowActive(view.Object))
                 .Returns(true)
                 .Verifiable();
             var host = Create(broker: broker.Object);
@@ -70,9 +70,9 @@ namespace VsVimTest
         public void DismissCompletionWindow1()
         {
             var view = new Mock<ITextView>(MockBehavior.Strict);
-            var broker = new Mock<ICompletionBroker>(MockBehavior.Strict);
+            var broker = new Mock<ICompletionWindowBroker>(MockBehavior.Strict);
             broker
-                .Setup(x => x.DismissAllSessions(view.Object))
+                .Setup(x => x.DismissCompletionWindow(view.Object))
                 .Verifiable();
             var host = Create(broker: broker.Object);
             host.DismissCompletionWindow(view.Object);

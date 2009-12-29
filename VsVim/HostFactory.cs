@@ -42,7 +42,7 @@ namespace VsVim
         [Import]
         private IEditorOperationsFactoryService _editorOperationsFactoryService = null;
         [Import]
-        private ICompletionBroker _completionBroker = null;
+        private ICompletionWindowBroker _completionBroker = null;
 
         private VsVimHost _host;
         private IVim _vim;

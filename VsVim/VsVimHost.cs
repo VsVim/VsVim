@@ -24,7 +24,7 @@ namespace VsVim
         private readonly Microsoft.VisualStudio.OLE.Interop.IServiceProvider _sp;
         private readonly _DTE _dte;
         private readonly IUndoHistoryRegistry _undoRegistry;
-        private readonly ICompletionBroker _completionBroker;
+        private readonly ICompletionWindowBroker _completionBroker;
 
         internal _DTE DTE
         {
@@ -34,7 +34,7 @@ namespace VsVim
         internal VsVimHost(
             Microsoft.VisualStudio.OLE.Interop.IServiceProvider sp, 
             IUndoHistoryRegistry undoRegistry,
-            ICompletionBroker completionBroker) :this(sp, undoRegistry, completionBroker, sp.GetService<SDTE,_DTE>())
+            ICompletionWindowBroker completionBroker) :this(sp, undoRegistry, completionBroker, sp.GetService<SDTE,_DTE>())
         {
 
         }
@@ -42,7 +42,7 @@ namespace VsVim
         internal VsVimHost(
             Microsoft.VisualStudio.OLE.Interop.IServiceProvider sp, 
             IUndoHistoryRegistry undoRegistry,
-            ICompletionBroker completionBroker,
+            ICompletionWindowBroker completionBroker,
             _DTE dte) 
         {
             _sp = sp;
@@ -119,12 +119,12 @@ namespace VsVim
 
         void IVimHost.DismissCompletionWindow(Microsoft.VisualStudio.Text.Editor.ITextView value)
         {
-            _completionBroker.DismissAllSessions(value);
+            _completionBroker.DismissCompletionWindow(value);
         }
 
         bool IVimHost.IsCompletionWindowActive(Microsoft.VisualStudio.Text.Editor.ITextView value)
         {
-            return _completionBroker.IsCompletionActive(value);
+            return _completionBroker.IsCompletionWindowActive(value);
         }
 
         #endregion

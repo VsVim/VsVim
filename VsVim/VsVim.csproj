@@ -117,12 +117,14 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BlockCaret.cs" />
+    <Compile Include="CompletionWindowBroker.cs" />
     <Compile Include="EditCommand.cs" />
     <Compile Include="CommandKeyBinding.cs" />
     <Compile Include="EditCommandKind.cs" />
     <Compile Include="CommandUtil.cs" />
     <Compile Include="Extensions.cs" />
     <Compile Include="HostFactory.cs" />
+    <Compile Include="ICompletionWindowBroker.cs" />
     <Compile Include="ITextViewDebugUtil.cs" />
     <Compile Include="KeyBinding.cs" />
     <Compile Include="KeyBindingService.cs" />
