@@ -22,7 +22,7 @@ type internal BlockCaret
     let _caretOpacity = 0.65
 
     /// Tag used to identify our items in the adornment layer 
-    let _tag = System.Guid.NewGuid()
+    let _tag = Object()
 
     let mutable _blinkTimer : DispatcherTimer = null
 
