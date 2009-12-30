@@ -32,7 +32,12 @@ type internal VimFactoryService
         signatureBroker : ISignatureHelpBroker ) =
             VimFactoryService(editorOperationsService, editorFormatMapService, completionBroker, signatureBroker, 42)
 
-    member private x.Test() =
+    /// This method is a hack.  Unless a let binding is explicitly used the F# compiler 
+    /// will remove it from the final metadata definition.  This will prevent the MEF
+    /// import from ever being resolved and hence cause us to not define the adornment
+    /// layer.  Hacky member method that is never called to fake assign and prevent this
+    /// problem
+    member private x.Hack() =
         _blockCaretAdornmentLayerDefinition = AdornmentLayerDefinition()
 
     member private x.CreateVimCore host =
