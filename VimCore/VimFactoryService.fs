@@ -12,7 +12,7 @@ open System.ComponentModel.Composition
 type internal VimFactoryService
     (
         _editorOperationsFactoryService : IEditorOperationsFactoryService,
-        _editorFormatMap : IEditorFormatMap,
+        _editorFormatMapService : IEditorFormatMapService,
         _completionBroker : ICompletionBroker,
         _signatureBroker : ISignatureHelpBroker,
         _unused : int ) =
@@ -22,21 +22,24 @@ type internal VimFactoryService
     [<Export(typeof<AdornmentLayerDefinition>)>]
     [<Name("BlockCaretAdornmentLayer")>]
     [<Order(After = PredefinedAdornmentLayers.Selection)>]
-    let _blockCaretAdornmentLayerDefinition : AdornmentLayerDefinition = null
+    let mutable _blockCaretAdornmentLayerDefinition : AdornmentLayerDefinition = null
 
     [<ImportingConstructor>]
     new (
         editorOperationsService : IEditorOperationsFactoryService,
-        editorFormatMap : IEditorFormatMap,
+        editorFormatMapService : IEditorFormatMapService,
         completionBroker : ICompletionBroker,
         signatureBroker : ISignatureHelpBroker ) =
-            VimFactoryService(editorOperationsService, editorFormatMap, completionBroker, signatureBroker, 42)
+            VimFactoryService(editorOperationsService, editorFormatMapService, completionBroker, signatureBroker, 42)
+
+    member private x.Test() =
+        _blockCaretAdornmentLayerDefinition = AdornmentLayerDefinition()
 
     member private x.CreateVimCore host =
         Vim(
             host, 
             _editorOperationsFactoryService, 
-            _editorFormatMap, 
+            _editorFormatMapService, 
             _completionBroker, 
             _signatureBroker,
             _blockCaretAdornmentLayerName)

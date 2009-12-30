@@ -33,7 +33,7 @@ type internal BlockCaret
     let mutable _isShown : bool = false
 
     [<DllImport("user32.dll")>]
-    let GetCaretBlinkTime() : int = failwith "Shouldn't fail because it's PInvoke"         
+    static let GetCaretBlinkTime() : int = failwith "Shouldn't fail because it's PInvoke"         
 
     do
         _view.LayoutChanged.AddHandler(new System.EventHandler<TextViewLayoutChangedEventArgs>(this.OnLayoutChanged))

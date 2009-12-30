@@ -11,7 +11,7 @@ type internal Vim
     (
         _host : IVimHost,
         _editorOperationsFactoryService : IEditorOperationsFactoryService,
-        _editorFormatMap : IEditorFormatMap,
+        _editorFormatMapService : IEditorFormatMapService,
         _completionBroker : ICompletionBroker,
         _signatureBroker : ISignatureHelpBroker,
         _blockCaretAdornmentLayerName : string ) =
@@ -19,7 +19,8 @@ type internal Vim
     let mutable _buffers : seq<IVimBuffer> = Seq.empty
 
     member x.CreateVimBufferCore view name = 
-        let caret = BlockCaret(view, _blockCaretAdornmentLayerName, _editorFormatMap) :> IBlockCaret
+        let editorFormatMap = _editorFormatMapService.GetEditorFormatMap(view :> ITextView)
+        let caret = BlockCaret(view, _blockCaretAdornmentLayerName, editorFormatMap) :> IBlockCaret
         let editOperations = _editorOperationsFactoryService.GetEditorOperations(view)
         let broker = CompletionWindowBroker(view, _completionBroker, _signatureBroker) :> ICompletionWindowBroker
         let data = VimBufferData(name, view, _host, _data :> IVimData, caret, editOperations ) :> IVimBufferData

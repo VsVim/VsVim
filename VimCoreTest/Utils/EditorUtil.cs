@@ -36,7 +36,7 @@ namespace VimCoreTest.Utils
             public ICompletionBroker completionBroker;
 
             [Import]
-            public IEditorFormatMap editorFormatMap;
+            public IEditorFormatMapService editorFormatMapService;
 
             public Factory() { }
         }

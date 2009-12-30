@@ -28,7 +28,7 @@ namespace VimCoreTest
             var service = Utils.EditorUtil.FactoryService;
             var factory = (IVimFactoryService)(new Vim.VimFactoryService(
                 service.editorOperationsFactory,
-                service.editorFormatMap,
+                service.editorFormatMapService,
                 service.completionBroker,
                 service.signatureBroker));
             buffer = factory.CreateVimBuffer(
