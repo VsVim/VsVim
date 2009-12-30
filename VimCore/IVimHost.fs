@@ -11,9 +11,3 @@ type IVimHost =
     abstract Undo : ITextBuffer -> int -> unit
     abstract GoToDefinition : unit -> bool
 
-    /// Is there currently a completion window active on the given ITextView
-    abstract IsCompletionWindowActive : ITextView -> bool
-
-    /// Dismiss any completion windows on the given ITextView
-    abstract DismissCompletionWindow : ITextView -> unit
-

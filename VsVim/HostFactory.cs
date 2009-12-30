@@ -80,7 +80,8 @@ namespace VsVim
                 opts,
                 vsTextLines.GetFileName(),
                 _undoHistoryRegistry,
-                map);
+                map,
+                _completionBroker);
             textView.SetVimBuffer(buffer);
 
             // Run the key binding check now

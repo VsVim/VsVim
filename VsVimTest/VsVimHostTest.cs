@@ -38,45 +38,5 @@ namespace VsVimTest
             return new VsVimHost(sp, undoRegistry, broker, dte);
         }
 
-        [Test]
-        public void IsCompletionWindowActive1()
-        {
-            var view = new Mock<ITextView>(MockBehavior.Strict);
-            var broker = new Mock<ICompletionWindowBroker>(MockBehavior.Strict);
-            broker
-                .Setup(x => x.IsCompletionWindowActive(view.Object))
-                .Returns(false)
-                .Verifiable();
-            var host = Create(broker : broker.Object);
-            Assert.IsFalse(host.IsCompletionWindowActive(view.Object));
-            broker.Verify();
-        }
-
-        [Test]
-        public void IsCompletionWindowActive2()
-        {
-            var view = new Mock<ITextView>(MockBehavior.Strict);
-            var broker = new Mock<ICompletionWindowBroker>(MockBehavior.Strict);
-            broker
-                .Setup(x => x.IsCompletionWindowActive(view.Object))
-                .Returns(true)
-                .Verifiable();
-            var host = Create(broker: broker.Object);
-            Assert.IsTrue(host.IsCompletionWindowActive(view.Object));
-            broker.Verify();
-        }
-
-        [Test]
-        public void DismissCompletionWindow1()
-        {
-            var view = new Mock<ITextView>(MockBehavior.Strict);
-            var broker = new Mock<ICompletionWindowBroker>(MockBehavior.Strict);
-            broker
-                .Setup(x => x.DismissCompletionWindow(view.Object))
-                .Verifiable();
-            var host = Create(broker: broker.Object);
-            host.DismissCompletionWindow(view.Object);
-            broker.Verify();
-        }
     }
 }

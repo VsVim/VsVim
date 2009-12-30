@@ -9,5 +9,5 @@ type IVim =
     abstract Host : IVimHost
     abstract Data : IVimData
     abstract Buffers : seq<IVimBuffer>
-    abstract CreateBuffer : IWpfTextView -> IEditorOperations -> string -> IBlockCaret -> IVimBuffer
+    abstract CreateBuffer : IWpfTextView -> IEditorOperations -> string -> IBlockCaret -> ICompletionWindowBroker -> IVimBuffer
 

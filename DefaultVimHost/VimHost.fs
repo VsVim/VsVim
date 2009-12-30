@@ -10,5 +10,3 @@ type VimHost =
         member x.OpenFile _ = ()
         member x.Undo _ _ = ()
         member x.GoToDefinition() = false
-        member x.IsCompletionWindowActive _ = false
-        member x.DismissCompletionWindow _ = ()

@@ -9,7 +9,7 @@ type internal Vim(_host : IVimHost) =
     let _data = VimData()
     let mutable _buffers : seq<IVimBuffer> = Seq.empty
 
-    member x.CreateVimBufferCore view editOperations name caret = 
+    member x.CreateVimBufferCore view editOperations name caret broker = 
         let data = VimBufferData(name, view, _host, _data :> IVimData, caret, editOperations ) :> IVimBufferData
         let normalOpts = Modes.Normal.DefaultOperations(view,editOperations) :> Modes.Normal.IOperations
         let commandOpts = Modes.Command.DefaultOperations(view,editOperations,_host) :> Modes.Command.IOperations
@@ -19,7 +19,7 @@ type internal Vim(_host : IVimHost) =
             [
                 ((Modes.Normal.NormalMode(data, normalOpts)) :> IMode);
                 ((Modes.Command.CommandMode(data, commandOpts)) :> IMode);
-                ((Modes.Insert.InsertMode(data,insertOpts)) :> IMode);
+                ((Modes.Insert.InsertMode(data,insertOpts,broker)) :> IMode);
                 (DisabledMode(data) :> IMode);
                 ((Modes.Visual.VisualMode(data, visualOpts, ModeKind.VisualBlock)) :> IMode);
                 ((Modes.Visual.VisualMode(data, visualOpts, ModeKind.VisualLineWise)) :> IMode);
@@ -36,7 +36,7 @@ type internal Vim(_host : IVimHost) =
         member x.Host = _host
         member x.Data = _data :> IVimData
         member x.Buffers = _buffers
-        member x.CreateBuffer view editOperations name caret =
-            x.CreateVimBufferCore view editOperations name caret 
+        member x.CreateBuffer view editOperations name caret broker =
+            x.CreateVimBufferCore view editOperations name caret broker
         
         

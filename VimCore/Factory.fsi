@@ -7,4 +7,4 @@ open Microsoft.VisualStudio.Text.Operations
 
 module Factory =
     val CreateVim : IVimHost -> IVim
-    val CreateVimBuffer : IVimHost -> IWpfTextView -> IEditorOperations -> string -> IBlockCaret -> IVimBuffer
+    val CreateVimBuffer : IVimHost -> IWpfTextView -> IEditorOperations -> string -> IBlockCaret -> ICompletionWindowBroker -> IVimBuffer

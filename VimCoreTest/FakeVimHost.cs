@@ -51,16 +51,5 @@ namespace VimCoreTest
             GoToDefinitionCount++;
             return GoToDefinitionReturn;
         }
-
-
-        void IVimHost.DismissCompletionWindow(Microsoft.VisualStudio.Text.Editor.ITextView value)
-        {
-            DismissCompletionWindowCount++;
-        }
-
-        bool IVimHost.IsCompletionWindowActive(Microsoft.VisualStudio.Text.Editor.ITextView value)
-        {
-            return IsCompletionWindowActive;
-        }
     }
 }

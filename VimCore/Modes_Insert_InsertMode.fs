@@ -11,7 +11,8 @@ open System.Windows.Media
 type internal InsertMode
     ( 
         _data : IVimBufferData, 
-        _operations : Modes.ICommonOperations ) =
+        _operations : Modes.ICommonOperations,
+        _broker : ICompletionWindowBroker ) =
     let _commands = [
         InputUtil.KeyToKeyInput(Key.Escape);
         KeyInput('d', Key.D, ModifierKeys.Control); ]
@@ -23,8 +24,8 @@ type internal InsertMode
         _operations.ShiftLeft line.Extent (_data.Settings.ShiftWidth) |> ignore
 
     member private this.ProcessEscape() =
-        if _data.VimHost.IsCompletionWindowActive(_data.TextView) then
-            _data.VimHost.DismissCompletionWindow(_data.TextView)
+        if _broker.IsCompletionWindowActive(_data.TextView) then
+            _broker.DismissCompletionWindow(_data.TextView)
             ProcessResult.Processed
         else
             ProcessResult.SwitchMode ModeKind.Normal

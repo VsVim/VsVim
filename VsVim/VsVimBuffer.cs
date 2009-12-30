@@ -44,13 +44,15 @@ namespace VsVim
             IEditorOperations operations,
             string fileName,
             IUndoHistoryRegistry undoHistory, 
-            IEditorFormatMap map)
+            IEditorFormatMap map,
+            ICompletionWindowBroker broker)
         {
             _buffer = vim.CreateBuffer(
                 view,
                 operations,
                 fileName,
-                new BlockCursor(view,HostFactory.BlockAdornmentLayerName, map));
+                new BlockCursor(view,HostFactory.BlockAdornmentLayerName, map),
+                broker);
         }
 
         internal void Close()

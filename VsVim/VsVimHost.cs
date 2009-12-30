@@ -117,16 +117,6 @@ namespace VsVim
             }
         }
 
-        void IVimHost.DismissCompletionWindow(Microsoft.VisualStudio.Text.Editor.ITextView value)
-        {
-            _completionBroker.DismissCompletionWindow(value);
-        }
-
-        bool IVimHost.IsCompletionWindowActive(Microsoft.VisualStudio.Text.Editor.ITextView value)
-        {
-            return _completionBroker.IsCompletionWindowActive(value);
-        }
-
         #endregion
     }
 }
