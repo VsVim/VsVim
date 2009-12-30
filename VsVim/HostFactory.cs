@@ -42,10 +42,6 @@ namespace VsVim
         [Import]
         private IEditorFormatMapService _editorFormatMapService = null;
         [Import]
-        private IEditorOperationsFactoryService _editorOperationsFactoryService = null;
-        [Import]
-        private ICompletionWindowBroker _completionBroker = null;
-        [Import]
         private IVsEditorAdaptersFactoryService _adaptersFactory = null;
         [Import]
         private IVimFactoryService _vimFactory = null;
@@ -74,16 +70,13 @@ namespace VsVim
             var sp = objectWithSite.GetServiceProvider();
             EnsureVim(sp);
 
-            var opts = _editorOperationsFactoryService.GetEditorOperations(textView);
             var map = _editorFormatMapService.GetEditorFormatMap(textView);
             var buffer = new VsVimBuffer(
                 _vim,
                 textView,
-                opts,
                 vsTextLines.GetFileName(),
                 _undoHistoryRegistry,
-                map,
-                _completionBroker);
+                map);
             textView.SetVimBuffer(buffer);
 
             // Run the key binding check now
@@ -133,7 +126,7 @@ namespace VsVim
                 return;
             }
 
-            _host = new VsVimHost(sp, _undoHistoryRegistry, _completionBroker);
+            _host = new VsVimHost(sp, _undoHistoryRegistry);
             _vim = _vimFactory.CreateVim(_host);
         }
     }

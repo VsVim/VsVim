@@ -41,18 +41,14 @@ namespace VsVim
         internal VsVimBuffer(
             IVim vim, 
             IWpfTextView view, 
-            IEditorOperations operations,
             string fileName,
             IUndoHistoryRegistry undoHistory, 
-            IEditorFormatMap map,
-            ICompletionWindowBroker broker)
+            IEditorFormatMap map)
         {
             _buffer = vim.CreateBuffer(
                 view,
-                operations,
                 fileName,
-                new BlockCursor(view,HostFactory.BlockAdornmentLayerName, map),
-                broker);
+                new BlockCursor(view, HostFactory.BlockAdornmentLayerName, map));
         }
 
         internal void Close()

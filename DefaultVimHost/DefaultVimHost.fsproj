@@ -30,6 +30,10 @@
     <WarningLevel>3</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Microsoft.VisualStudio.CoreUtility">
+      <HintPath>C:\Users\jaredpar\VsVim\References\Microsoft.VisualStudio.CoreUtility.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="Microsoft.VisualStudio.Text.Data">
       <HintPath>C:\Users\jaredpar\VsVim\References\Microsoft.VisualStudio.Text.Data.dll</HintPath>
       <Private>True</Private>
@@ -55,6 +59,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="VimHost.fs" />
+    <Compile Include="BlockCaret.fs" />
     <Compile Include="Factory.fs" />
     <Compile Include="Module1.fs" />
   </ItemGroup>

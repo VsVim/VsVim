@@ -24,7 +24,6 @@ namespace VsVim
         private readonly Microsoft.VisualStudio.OLE.Interop.IServiceProvider _sp;
         private readonly _DTE _dte;
         private readonly IUndoHistoryRegistry _undoRegistry;
-        private readonly ICompletionWindowBroker _completionBroker;
 
         internal _DTE DTE
         {
@@ -33,8 +32,7 @@ namespace VsVim
 
         internal VsVimHost(
             Microsoft.VisualStudio.OLE.Interop.IServiceProvider sp, 
-            IUndoHistoryRegistry undoRegistry,
-            ICompletionWindowBroker completionBroker) :this(sp, undoRegistry, completionBroker, sp.GetService<SDTE,_DTE>())
+            IUndoHistoryRegistry undoRegistry) :this(sp, undoRegistry, sp.GetService<SDTE,_DTE>())
         {
 
         }
@@ -42,13 +40,11 @@ namespace VsVim
         internal VsVimHost(
             Microsoft.VisualStudio.OLE.Interop.IServiceProvider sp, 
             IUndoHistoryRegistry undoRegistry,
-            ICompletionWindowBroker completionBroker,
             _DTE dte) 
         {
             _sp = sp;
             _dte = dte;
             _undoRegistry = undoRegistry;
-            _completionBroker = completionBroker;
         }
 
         #region IVimHost

@@ -3,7 +3,7 @@
 namespace DefaultVimHost
 open Vim
 
-type VimHost =
+type VimHost() =
     interface IVimHost with 
         member x.UpdateStatus _ = ()
         member x.Beep () = System.Console.Beep()
