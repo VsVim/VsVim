@@ -17,5 +17,6 @@
   <References />
   <Content>
     <MefComponent>|VsVim|</MefComponent>
+    <MefComponent>|VimCore|</MefComponent>
   </Content>
 </Vsix>
