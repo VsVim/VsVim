@@ -15,6 +15,8 @@ using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Text.Classification;
 using Microsoft.VisualStudio.Text.Operations;
 using Microsoft.VisualStudio.Language.Intellisense;
+using Microsoft.VisualStudio;
+using System.Runtime.InteropServices;
 
 namespace VsVim
 {
@@ -43,6 +45,8 @@ namespace VsVim
         private IEditorOperationsFactoryService _editorOperationsFactoryService = null;
         [Import]
         private ICompletionWindowBroker _completionBroker = null;
+        [Import]
+        private IVsEditorAdaptersFactoryService _adaptersFactory = null;
 
         private VsVimHost _host;
         private IVim _vim;
@@ -53,7 +57,44 @@ namespace VsVim
 
         public void TextViewCreated(IWpfTextView textView)
         {
+            var vsTextLines = _adaptersFactory.GetBufferAdapter(textView.TextBuffer) as IVsTextLines;
+            if (vsTextLines == null)
+            {
+                return;
+            }
+
+            var objectWithSite = vsTextLines as IObjectWithSite;
+            if (objectWithSite == null)
+            {
+                return;
+            }
+
+            var sp = objectWithSite.GetServiceProvider();
+            EnsureVim(sp);
+
+            var opts = _editorOperationsFactoryService.GetEditorOperations(textView);
+            var map = _editorFormatMapService.GetEditorFormatMap(textView);
+            var buffer = new VsVimBuffer(
+                _vim,
+                textView,
+                opts,
+                vsTextLines.GetFileName(),
+                _undoHistoryRegistry,
+                map);
+            textView.SetVimBuffer(buffer);
+
+            // Run the key binding check now
+            _keyBindingService.OneTimeCheckForConflictingKeyBindings(_host.DTE, buffer.VimBuffer);
+
+            // Have to wait for Aggregate focus before being able to set the VsCommandFilter
             textView.GotAggregateFocus += new EventHandler(OnGotAggregateFocus);
+            textView.Closed += (x, y) =>
+            {
+                buffer.Close();
+                textView.RemoveVimBuffer();
+                ITextViewDebugUtil.Detach(textView);
+            };
+            ITextViewDebugUtil.Attach(textView);
         }
 
         private void OnGotAggregateFocus(object sender, EventArgs e)
@@ -64,21 +105,22 @@ namespace VsVim
                 return;
             }
 
-            var interopView = _service.GetViewAdapter(view);
-            if (interopView == null)
+            var vsView = _service.GetViewAdapter(view);
+            if (vsView == null)
             {
                 return;
             }
 
-            var interopLines = _service.GetBufferAdapter(view.TextBuffer) as IVsTextLines;
-            if (interopLines == null)
-            {
-                return;
-            }
-
-            // Once we have the view, stop listening to the event
+            // Once we have the Vs view, stop listening to the event
             view.GotAggregateFocus -= new EventHandler(OnGotAggregateFocus);
-            CreateVsVimBuffer(view, interopView, interopLines);
+
+            VsVimBuffer buffer;
+            if (!view.TryGetVimBuffer(out buffer))
+            {
+                return;
+            }
+
+            buffer.VsCommandFilter = new VsCommandFilter(buffer.VimBuffer, vsView);
         }
 
         private void EnsureVim(Microsoft.VisualStudio.OLE.Interop.IServiceProvider sp)
@@ -90,26 +132,6 @@ namespace VsVim
 
             _host = new VsVimHost(sp, _undoHistoryRegistry, _completionBroker);
             _vim = Factory.CreateVim(_host);
-        }
-
-        /// <summary>
-        /// Called to actually create the VsVimBuffer for the given IWpfTextView
-        /// </summary>
-        private void CreateVsVimBuffer(IWpfTextView view, IVsTextView interopView, IVsTextLines interopLines)
-        {
-            EnsureVim(((IObjectWithSite)interopView).GetServiceProvider());
-            var opts = _editorOperationsFactoryService.GetEditorOperations(view);
-            var buffer = new VsVimBuffer(_vim, view, opts, interopView, interopLines, _undoHistoryRegistry, _editorFormatMapService.GetEditorFormatMap(view));
-            view.Properties.AddTypedProperty(buffer);
-            ITextViewDebugUtil.Attach(view);
-
-            _keyBindingService.OneTimeCheckForConflictingKeyBindings(_host.DTE, buffer.VimBuffer);
-            view.Closed += (x, y) =>
-            {
-                view.Properties.RemoveTypedProperty<VsVimBuffer>();
-                ITextViewDebugUtil.Detach(view);
-                buffer.Close();
-            };
         }
     }
 }

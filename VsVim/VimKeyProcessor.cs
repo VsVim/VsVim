@@ -24,8 +24,8 @@ namespace VsVim
 
         public override void TextInput(TextCompositionEventArgs args)
         {
-            var buf = _view.Properties.TryGetTypedProperty<VsVimBuffer>();
-            if (buf.IsSome() && TryHandleTextInput(buf.Value, args))
+            VsVimBuffer buffer;
+            if ( _view.TryGetVimBuffer(out buffer) && TryHandleTextInput(buffer, args))
             {
                 args.Handled = true;
             }
@@ -37,10 +37,10 @@ namespace VsVim
 
         public override void KeyDown(KeyEventArgs args)
         {
-            var buf = _view.Properties.TryGetTypedProperty<VsVimBuffer>();
-            if (buf.IsSome() && !IsNonInputKey(args))
+            VsVimBuffer buffer;
+            if (_view.TryGetVimBuffer(out buffer) && !IsNonInputKey(args))
             {
-                KeyDown(buf.Value, args);
+                KeyDown(buffer, args);
             }
             else
             {

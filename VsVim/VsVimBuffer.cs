@@ -18,33 +18,39 @@ using Microsoft.VisualStudio.Text.Operations;
 
 namespace VsVim
 {
+    /// <summary>
+    /// Wrapper class maintaining the components surrounding an IVimBuffer hosted inside of 
+    /// Visual Studio
+    /// </summary>
     internal sealed class VsVimBuffer
     {
-        private readonly IWpfTextView _view;
         private readonly IVimBuffer _buffer;
-        private readonly VsCommandFilter _filter;
 
         internal IVimBuffer VimBuffer
         {
             get { return _buffer; }
         }
 
+        /// <summary>
+        /// VsCommandFilter used on the associated view.  This will not be set until after 
+        /// the first time the underlying IVsTextView shim is created.  This happens on 
+        /// first focus
+        /// </summary>
+        internal VsCommandFilter VsCommandFilter { get; set; }
+
         internal VsVimBuffer(
             IVim vim, 
             IWpfTextView view, 
             IEditorOperations operations,
-            IVsTextView shimView, 
-            IVsTextLines lines, 
+            string fileName,
             IUndoHistoryRegistry undoHistory, 
             IEditorFormatMap map)
         {
-            _view = view;
             _buffer = vim.CreateBuffer(
-                _view, 
+                view,
                 operations,
-                lines.GetFileName(), 
+                fileName,
                 new BlockCursor(view,HostFactory.BlockAdornmentLayerName, map));
-            _filter = new VsCommandFilter(_buffer, shimView);
         }
 
         internal void Close()

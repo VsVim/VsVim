@@ -10,12 +10,13 @@ using Microsoft.VisualStudio.Utilities;
 using Vim;
 using System.Windows.Input;
 using Microsoft.VisualStudio.TextManager.Interop;
+using Microsoft.VisualStudio.Text.Editor;
 
 namespace VsVim
 {
     public static class Extensions
     {
-        #region Option<T>
+        #region FSharpOption<T>
 
         public static bool IsSome<T>(this FSharpOption<T> opt)
         {
@@ -172,6 +173,36 @@ namespace VsVim
             {
                 return String.Empty;
             }
+        }
+
+        #endregion
+
+        #region ITextView
+
+        /// <summary>
+        /// Use a randomly generated GUID for the Key.  Forces consumers to go through the accessor instead of taking
+        /// a dependency on the key in the property bag
+        /// </summary>
+        private static Guid s_VsVimBufferGuid = Guid.NewGuid();
+
+        internal static bool TryGetVimBuffer(this ITextView textView, out VsVimBuffer buffer)
+        {
+            return textView.Properties.TryGetProperty<VsVimBuffer>(s_VsVimBufferGuid, out buffer);
+        }
+
+        internal static void SetVimBuffer(this ITextView textView, VsVimBuffer buffer)
+        {
+            if (buffer == null)
+            {
+                throw new ArgumentNullException("buffer");
+            }
+
+            textView.Properties.AddProperty(s_VsVimBufferGuid, buffer);
+        }
+
+        internal static bool RemoveVimBuffer(this ITextView textView)
+        {
+            return textView.Properties.RemoveProperty(s_VsVimBufferGuid);
         }
 
         #endregion
