@@ -27,13 +27,9 @@ namespace VsVim
     internal sealed class HostFactory : IWpfTextViewCreationListener, IKeyProcessorProvider
     {
         [Import]
-        private IVsEditorAdaptersFactoryService _service = null;
-        [Import]
         private IUndoHistoryRegistry _undoHistoryRegistry = null;
         [Import]
         private KeyBindingService _keyBindingService = null;
-        [Import]
-        private IEditorFormatMapService _editorFormatMapService = null;
         [Import]
         private IVsEditorAdaptersFactoryService _adaptersFactory = null;
         [Import]
@@ -63,7 +59,6 @@ namespace VsVim
             var sp = objectWithSite.GetServiceProvider();
             EnsureVim(sp);
 
-            var map = _editorFormatMapService.GetEditorFormatMap(textView);
             var buffer = new VsVimBuffer(
                 _vim,
                 textView,
@@ -102,7 +97,7 @@ namespace VsVim
                 return;
             }
 
-            var vsView = _service.GetViewAdapter(view);
+            var vsView = _adaptersFactory.GetViewAdapter(view);
             if (vsView == null)
             {
                 return;
