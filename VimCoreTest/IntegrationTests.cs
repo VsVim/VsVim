@@ -32,8 +32,8 @@ namespace VimCoreTest
             var tuple = Utils.EditorUtil.CreateViewAndOperations(lines);
             m_view = tuple.Item1;
             m_host = new FakeVimHost();
-            var factory = (IVimFactoryService)(new Vim.VimFactoryService());
-            m_buffer = factory.CreateVimBuffer(m_host, m_view, tuple.Item2, "test",VimCoreTest.Utils.MockObjectFactory.CreateBlockCaret().Object, new Mock<ICompletionWindowBroker>().Object);
+            var factory = (IVimFactoryService)(new Vim.VimFactoryService(EditorUtil.FactoryService.editorOperationsFactory));
+            m_buffer = factory.CreateVimBuffer(m_host, m_view, "test",VimCoreTest.Utils.MockObjectFactory.CreateBlockCaret().Object, new Mock<ICompletionWindowBroker>().Object);
         }
 
         [SetUp]
