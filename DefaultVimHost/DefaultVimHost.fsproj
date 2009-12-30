@@ -59,7 +59,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="VimHost.fs" />
-    <Compile Include="BlockCaret.fs" />
     <Compile Include="Factory.fs" />
     <Compile Include="Module1.fs" />
   </ItemGroup>

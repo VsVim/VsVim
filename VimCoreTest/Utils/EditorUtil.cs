@@ -10,6 +10,7 @@ using Microsoft.VisualStudio.Language.Intellisense;
 using Microsoft.VisualStudio.Text.Editor;
 using System.ComponentModel.Composition.Hosting;
 using Microsoft.VisualStudio.Text.Operations;
+using Microsoft.VisualStudio.Text.Classification;
 
 namespace VimCoreTest.Utils
 {
@@ -33,6 +34,9 @@ namespace VimCoreTest.Utils
 
             [Import]
             public ICompletionBroker completionBroker;
+
+            [Import]
+            public IEditorFormatMap editorFormatMap;
 
             public Factory() { }
         }

@@ -26,14 +26,6 @@ namespace VsVim
     [TextViewRole(PredefinedTextViewRoles.Editable)]
     internal sealed class HostFactory : IWpfTextViewCreationListener, IKeyProcessorProvider
     {
-        public const string BlockAdornmentLayerName = "BlockCaret";
-
-        [Export(typeof(AdornmentLayerDefinition))]
-        [Name(BlockAdornmentLayerName)]
-        [Order(After = PredefinedAdornmentLayers.Selection)]
-        [TextViewRole(PredefinedTextViewRoles.Document)]
-        public AdornmentLayerDefinition BlockAdornmentLayer = null;
-
         [Import]
         private IVsEditorAdaptersFactoryService _service = null;
         [Import]
@@ -75,9 +67,7 @@ namespace VsVim
             var buffer = new VsVimBuffer(
                 _vim,
                 textView,
-                vsTextLines.GetFileName(),
-                _undoHistoryRegistry,
-                map);
+                vsTextLines.GetFileName());
             textView.SetVimBuffer(buffer);
 
             // Run the key binding check now

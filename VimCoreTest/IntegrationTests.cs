@@ -35,9 +35,10 @@ namespace VimCoreTest
             var service = EditorUtil.FactoryService;
             var factory = (IVimFactoryService)(new Vim.VimFactoryService(
                 service.editorOperationsFactory,
+                service.editorFormatMap,
                 service.completionBroker,
                 service.signatureBroker));
-            m_buffer = factory.CreateVimBuffer(m_host, m_view, "test", VimCoreTest.Utils.MockObjectFactory.CreateBlockCaret().Object);
+            m_buffer = factory.CreateVimBuffer(m_host, m_view, "test");
         }
 
         [SetUp]

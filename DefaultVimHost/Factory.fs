@@ -24,8 +24,7 @@ type Factory
     interface IWpfTextViewCreationListener with 
         member x.TextViewCreated(wpfTextView:IWpfTextView) =
             let textView = wpfTextView :> ITextView
-            let caret = BlockCaret(textView)
-            let buffer = _vim.CreateBuffer wpfTextView "Unknown" (caret :> IBlockCaret)
+            let buffer = _vim.CreateBuffer wpfTextView "Unknown" 
             wpfTextView.Properties.AddProperty(_bufferKey, buffer)
     
     interface IKeyProcessorProvider with

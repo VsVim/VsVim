@@ -70,6 +70,8 @@
     <Compile Include="IMode.fs" />
     <Compile Include="IVimData.fs" />
     <Compile Include="IBlockCaret.fs" />
+    <Compile Include="CaretData.fs" />
+    <Compile Include="BlockCaret.fs" />
     <Compile Include="IVimBufferData.fs" />
     <Compile Include="IVimBuffer.fs" />
     <Compile Include="IVim.fs" />
@@ -142,6 +144,7 @@
     <Reference Include="System.Core">
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
     </Reference>
+    <Reference Include="System.Xaml" />
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

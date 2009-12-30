@@ -28,13 +28,13 @@ namespace VimCoreTest
             var service = Utils.EditorUtil.FactoryService;
             var factory = (IVimFactoryService)(new Vim.VimFactoryService(
                 service.editorOperationsFactory,
+                service.editorFormatMap,
                 service.completionBroker,
                 service.signatureBroker));
             buffer = factory.CreateVimBuffer(
                         host,
                         view,
-                        "test",
-                        (new Mock<IBlockCaret>()).Object);
+                        "test");
         }
 
         [SetUp]

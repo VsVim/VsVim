@@ -4,18 +4,22 @@ namespace Vim
 open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Operations
 open Microsoft.VisualStudio.Language.Intellisense
+open Microsoft.VisualStudio.Text.Classification
 
 /// Default implementation of IVim 
 type internal Vim
     (
         _host : IVimHost,
         _editorOperationsFactoryService : IEditorOperationsFactoryService,
+        _editorFormatMap : IEditorFormatMap,
         _completionBroker : ICompletionBroker,
-        _signatureBroker : ISignatureHelpBroker ) =
+        _signatureBroker : ISignatureHelpBroker,
+        _blockCaretAdornmentLayerName : string ) =
     let _data = VimData()
     let mutable _buffers : seq<IVimBuffer> = Seq.empty
 
-    member x.CreateVimBufferCore view name caret = 
+    member x.CreateVimBufferCore view name = 
+        let caret = BlockCaret(view, _blockCaretAdornmentLayerName, _editorFormatMap) :> IBlockCaret
         let editOperations = _editorOperationsFactoryService.GetEditorOperations(view)
         let broker = CompletionWindowBroker(view, _completionBroker, _signatureBroker) :> ICompletionWindowBroker
         let data = VimBufferData(name, view, _host, _data :> IVimData, caret, editOperations ) :> IVimBufferData
@@ -44,7 +48,7 @@ type internal Vim
         member x.Host = _host
         member x.Data = _data :> IVimData
         member x.Buffers = _buffers
-        member x.CreateBuffer view name caret =
-            x.CreateVimBufferCore view name caret 
+        member x.CreateBuffer view bufferName =
+            x.CreateVimBufferCore view bufferName 
         
         
