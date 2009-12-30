@@ -36,6 +36,7 @@
   <Import Project="$(ProgramFiles)\Microsoft F#\v4.0\Microsoft.FSharp.Targets" />
   <ItemGroup>
     <Compile Include="IVimHost.fs" />
+    <Compile Include="ICompletionWindowBroker.fs" />
     <Compile Include="WordKind.fs" />
     <Compile Include="SearchKind.fs" />
     <Compile Include="KeyInput.fs" />

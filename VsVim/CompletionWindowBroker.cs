@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.ComponentModel.Composition;
 using Microsoft.VisualStudio.Language.Intellisense;
+using Vim;
 
 namespace VsVim
 {
