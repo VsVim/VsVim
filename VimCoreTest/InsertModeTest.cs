@@ -65,7 +65,7 @@ namespace VimCoreTest
         public void Escape1()
         {
             _broker
-                .Setup(x => x.IsCompletionWindowActive(_view))
+                .SetupGet(x => x.IsCompletionWindowActive)
                 .Returns(false)
                 .Verifiable();
             var res = _mode.Process(Key.Escape);
@@ -77,11 +77,11 @@ namespace VimCoreTest
         public void Escape2()
         {
             _broker
-                .Setup(x => x.IsCompletionWindowActive(_view))
+                .SetupGet(x => x.IsCompletionWindowActive)
                 .Returns(true)
                 .Verifiable();
             _broker
-                .Setup(x => x.DismissCompletionWindow(_view))
+                .Setup(x => x.DismissCompletionWindow())
                 .Verifiable();
             var res = _mode.Process(Key.Escape);
             Assert.IsTrue(res.IsProcessed);

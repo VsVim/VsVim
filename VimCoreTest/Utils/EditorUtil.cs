@@ -6,6 +6,7 @@ using System.Text;
 using System.ComponentModel.Composition;
 using System.ComponentModel.Composition.Primitives;
 using Microsoft.VisualStudio.Text;
+using Microsoft.VisualStudio.Language.Intellisense;
 using Microsoft.VisualStudio.Text.Editor;
 using System.ComponentModel.Composition.Hosting;
 using Microsoft.VisualStudio.Text.Operations;
@@ -26,6 +27,12 @@ namespace VimCoreTest.Utils
 
             [Import]
             public IEditorOperationsFactoryService editorOperationsFactory;
+
+            [Import]
+            public ISignatureHelpBroker signatureBroker;
+
+            [Import]
+            public ICompletionBroker completionBroker;
 
             public Factory() { }
         }

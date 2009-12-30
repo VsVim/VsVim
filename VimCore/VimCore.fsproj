@@ -37,6 +37,7 @@
   <ItemGroup>
     <Compile Include="IVimHost.fs" />
     <Compile Include="ICompletionWindowBroker.fs" />
+    <Compile Include="CompletionWindowBroker.fs" />
     <Compile Include="WordKind.fs" />
     <Compile Include="SearchKind.fs" />
     <Compile Include="KeyInput.fs" />
@@ -112,6 +113,10 @@
     <Reference Include="Microsoft.VisualStudio.CoreUtility">
       <HintPath>..\References\Microsoft.VisualStudio.CoreUtility.dll</HintPath>
       <Private>False</Private>
+    </Reference>
+    <Reference Include="Microsoft.VisualStudio.Language.Intellisense">
+      <HintPath>C:\Users\jaredpar\VsVim\References\Microsoft.VisualStudio.Language.Intellisense.dll</HintPath>
+      <Private>True</Private>
     </Reference>
     <Reference Include="Microsoft.VisualStudio.Text.Data">
       <HintPath>..\References\Microsoft.VisualStudio.Text.Data.dll</HintPath>

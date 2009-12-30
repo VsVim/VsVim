@@ -24,8 +24,8 @@ type internal InsertMode
         _operations.ShiftLeft line.Extent (_data.Settings.ShiftWidth) |> ignore
 
     member private this.ProcessEscape() =
-        if _broker.IsCompletionWindowActive(_data.TextView) then
-            _broker.DismissCompletionWindow(_data.TextView)
+        if _broker.IsCompletionWindowActive then
+            _broker.DismissCompletionWindow()
             ProcessResult.Processed
         else
             ProcessResult.SwitchMode ModeKind.Normal
