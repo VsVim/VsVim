@@ -96,8 +96,8 @@
     <Compile Include="Modes_Visual_DefaultOperations.fs" />
     <Compile Include="Modes_Visual_VisualMode.fsi" />
     <Compile Include="Modes_Visual_VisualMode.fs" />
-    <Compile Include="Utils_KeyProcessor.fsi" />
-    <Compile Include="Utils_KeyProcessor.fs" />
+    <Compile Include="Components_KeyProcessor.fsi" />
+    <Compile Include="Components_KeyProcessor.fs" />
     <Compile Include="RegisterMap.fs" />
     <Compile Include="VimData.fs" />
     <Compile Include="DisabledMode.fs" />

@@ -1,6 +1,6 @@
 ﻿#light
 
-namespace Vim.Utils
+namespace Vim.Components
 open Vim
 
 [<Class>]

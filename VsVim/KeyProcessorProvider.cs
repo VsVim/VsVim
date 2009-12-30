@@ -20,7 +20,7 @@ namespace VsVim
             VsVimBuffer buffer;
             if (wpfTextView.TryGetVimBuffer(out buffer))
             {
-                return new Vim.Utils.KeyProcessor(buffer.VimBuffer);
+                return new Vim.Components.KeyProcessor(buffer.VimBuffer);
             }
 
             return null;
