@@ -21,9 +21,10 @@ using System.Runtime.InteropServices;
 namespace VsVim
 {
     [Export(typeof(IWpfTextViewCreationListener))]
+    [Export(typeof(IKeyProcessorProvider))]
     [ContentType("text")]
     [TextViewRole(PredefinedTextViewRoles.Editable)]
-    internal sealed class HostFactory : IWpfTextViewCreationListener
+    internal sealed class HostFactory : IWpfTextViewCreationListener, IKeyProcessorProvider
     {
         public const string BlockAdornmentLayerName = "BlockCaret";
 
@@ -93,6 +94,16 @@ namespace VsVim
             ITextViewDebugUtil.Attach(textView);
         }
 
+        public KeyProcessor GetAssociatedProcessor(IWpfTextView wpfTextView)
+        {
+            VsVimBuffer buffer;
+            if (wpfTextView.TryGetVimBuffer(out buffer))
+            {
+                return _vimFactory.CreateKeyProcessor(buffer.VimBuffer);
+            }
+
+            return null;
+        }
         private void OnGotAggregateFocus(object sender, EventArgs e)
         {
             var view = sender as IWpfTextView;
@@ -130,4 +141,5 @@ namespace VsVim
             _vim = _vimFactory.CreateVim(_host);
         }
     }
+
 }
