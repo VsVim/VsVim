@@ -1,9 +1,9 @@
 ﻿#light
 
-namespace Vim.Components
+namespace Vim
 open Vim
 
 [<Class>]
-type KeyProcessor = 
+type internal KeyProcessor = 
     inherit Microsoft.VisualStudio.Text.Editor.KeyProcessor
     new : IVimBuffer -> KeyProcessor

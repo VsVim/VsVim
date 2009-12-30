@@ -15,12 +15,15 @@ namespace VsVim
     [ContentType("text")]
     public class KeyProcessorProvider : IKeyProcessorProvider
     {
+        [Import]
+        private Vim.IVimFactoryService _factory = null;
+
         public Microsoft.VisualStudio.Text.Editor.KeyProcessor GetAssociatedProcessor(IWpfTextView wpfTextView)
         {
             VsVimBuffer buffer;
             if (wpfTextView.TryGetVimBuffer(out buffer))
             {
-                return new Vim.Components.KeyProcessor(buffer.VimBuffer);
+                return _factory.CreateKeyProcessor(buffer.VimBuffer);
             }
 
             return null;

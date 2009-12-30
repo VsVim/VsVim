@@ -47,6 +47,8 @@ namespace VsVim
         private ICompletionWindowBroker _completionBroker = null;
         [Import]
         private IVsEditorAdaptersFactoryService _adaptersFactory = null;
+        [Import]
+        private IVimFactoryService _vimFactory = null;
 
         private VsVimHost _host;
         private IVim _vim;
@@ -132,7 +134,7 @@ namespace VsVim
             }
 
             _host = new VsVimHost(sp, _undoHistoryRegistry, _completionBroker);
-            _vim = Factory.CreateVim(_host);
+            _vim = _vimFactory.CreateVim(_host);
         }
     }
 }

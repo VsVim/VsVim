@@ -72,9 +72,9 @@
     <Compile Include="IVimBufferData.fs" />
     <Compile Include="IVimBuffer.fs" />
     <Compile Include="IVim.fs" />
+    <Compile Include="IVimFactoryService.fs" />
     <Compile Include="VimBufferData.fs" />
     <Compile Include="VimBuffer.fs" />
-    <Compile Include="Factory.fsi" />
     <Compile Include="RegexUtil.fs" />
     <Compile Include="Modes_ICommonOperations.fs" />
     <Compile Include="Modes_CommonOperations.fs" />
@@ -96,13 +96,13 @@
     <Compile Include="Modes_Visual_DefaultOperations.fs" />
     <Compile Include="Modes_Visual_VisualMode.fsi" />
     <Compile Include="Modes_Visual_VisualMode.fs" />
-    <Compile Include="Components_KeyProcessor.fsi" />
-    <Compile Include="Components_KeyProcessor.fs" />
+    <Compile Include="KeyProcessor.fsi" />
+    <Compile Include="KeyProcessor.fs" />
     <Compile Include="RegisterMap.fs" />
     <Compile Include="VimData.fs" />
     <Compile Include="DisabledMode.fs" />
     <Compile Include="Vim.fs" />
-    <Compile Include="Factory.fs" />
+    <Compile Include="VimFactoryService.fs" />
     <Compile Include="AssemblyInfo.fs" />
   </ItemGroup>
   <ItemGroup>
@@ -133,6 +133,7 @@
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
     <Reference Include="System" />
+    <Reference Include="System.ComponentModel.Composition" />
     <Reference Include="System.Core">
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
     </Reference>

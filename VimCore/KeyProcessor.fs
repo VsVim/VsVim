@@ -1,10 +1,10 @@
 ﻿#light
 
-namespace Vim.Components
+namespace Vim
 open Vim
 open System.Windows.Input
 
-type KeyProcessor( _buffer : IVimBuffer ) = 
+type internal KeyProcessor( _buffer : IVimBuffer ) = 
     inherit Microsoft.VisualStudio.Text.Editor.KeyProcessor()
 
     /// I'm not entirely sure what the purpose of this function is anymore.  It was directly

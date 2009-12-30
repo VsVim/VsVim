@@ -25,7 +25,8 @@ namespace VimCoreTest
             var tuple = Utils.EditorUtil.CreateViewAndOperations(lines);
             view = tuple.Item1;
             host = new FakeVimHost();
-            buffer = Factory.CreateVimBuffer(
+            var factory = (IVimFactoryService)(new Vim.VimFactoryService());
+            buffer = factory.CreateVimBuffer(
                         host, 
                         view, 
                         tuple.Item2, 
