@@ -131,7 +131,6 @@
     <Compile Include="KeyProcessorProvider.cs" />
     <Compile Include="NativeMethods.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="VimKeyProcessor.cs" />
     <Compile Include="VsCommandFilter.cs" />
     <Compile Include="VsUtility.cs" />
     <Compile Include="VsVimBuffer.cs" />

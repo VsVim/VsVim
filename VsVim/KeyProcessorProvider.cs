@@ -17,7 +17,13 @@ namespace VsVim
     {
         public Microsoft.VisualStudio.Text.Editor.KeyProcessor GetAssociatedProcessor(IWpfTextView wpfTextView)
         {
-            return new VimKeyProcessor(wpfTextView);
+            VsVimBuffer buffer;
+            if (wpfTextView.TryGetVimBuffer(out buffer))
+            {
+                return new Vim.Utils.KeyProcessor(buffer.VimBuffer);
+            }
+
+            return null;
         }
     }
 
