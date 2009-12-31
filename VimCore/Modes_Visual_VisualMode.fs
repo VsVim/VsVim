@@ -19,28 +19,21 @@ type internal VisualMode
         _bufferData : IVimBufferData,
         _operations : ICommonOperations,
         _kind : ModeKind ) = 
-    let mutable _anchor : VirtualSnapshotPoint = new VirtualSnapshotPoint()
-    let mutable _operationsMap : Map<KeyInput,Operation> = Map.empty
-    do 
+
+    let _selectionMode = 
         match _kind with 
-        | ModeKind.VisualBlock -> ()
-        | ModeKind.VisualCharacter -> ()
-        | ModeKind.VisualLineWise -> ()
+        | ModeKind.VisualBlock -> SelectionMode.Block
+        | ModeKind.VisualCharacter -> SelectionMode.Character
+        | ModeKind.VisualLineWise -> SelectionMode.Line
         | _ -> invalidArg "_kind" "Invalid kind for Visual Mode"
+    let _selectionTracker = SelectionTracker(_bufferData.TextView, _selectionMode)
 
-    member x.SelectedSpan = 
-        _bufferData.TextView.Selection.SelectedSpans.Item(0)
-
-    /// Update the selection based on the current method
-    member private x.UpdateSelection() =
-        let cursor = _bufferData.TextView.Caret.Position.VirtualBufferPosition
-        _bufferData.TextView.Selection.Select(_anchor, cursor)
+    let mutable _operationsMap : Map<KeyInput,Operation> = Map.empty
 
     member private x.BuildMotionSequence() = 
         let wrap func = 
             fun _ ->
                 func() 
-                x.UpdateSelection()
                 VisualModeResult.Complete
         let moveLeft = wrap (fun () -> _operations.MoveCaretLeft(1))
         let moveRight = wrap (fun () -> _operations.MoveCaretRight(1))
@@ -71,8 +64,7 @@ type internal VisualMode
             seq {
                 yield (InputUtil.CharToKeyInput('y'), 
                     (fun (reg:Register) -> 
-                        let span = x.SelectedSpan
-                        _operations.Yank span MotionKind.Inclusive OperationKind.CharacterWise reg
+                        _operations.YankText (_selectionTracker.SelectedText) MotionKind.Inclusive OperationKind.CharacterWise reg
                         VisualModeResult.SwitchMode ModeKind.Normal))
                 }
         s
@@ -101,10 +93,8 @@ type internal VisualMode
 
         member x.OnEnter () = 
             x.EnsureOperationsMap()
-            _anchor <- _bufferData.TextView.Caret.Position.VirtualBufferPosition
-            x.UpdateSelection()
+            _selectionTracker.Start(None)
         member x.OnLeave () = 
-            _anchor <- new VirtualSnapshotPoint()
-            _bufferData.EditorOperations.ResetSelection()
+            _selectionTracker.Stop()
 
 

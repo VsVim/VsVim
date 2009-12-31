@@ -95,6 +95,10 @@ type internal CommonOperations
                     Succeeded
                 | None -> Failed "Mark not set"
     
+        member x.YankText text motion operation (reg:Register) =
+            let regValue = {Value=text;MotionKind = motion; OperationKind = operation};
+            reg.UpdateValue (regValue)
+
         member x.Yank (span:SnapshotSpan) motion operation (reg:Register) =
             let regValue = {Value=span.GetText();MotionKind = motion; OperationKind = operation};
             reg.UpdateValue (regValue)

@@ -45,8 +45,11 @@ type ICommonOperations =
     /// Sets a mark at the specified point.  If this operation fails an error message will be generated
     abstract SetMark : char -> MarkMap -> SnapshotPoint -> Result
 
-    /// Yank the span into the given register
+    /// Yank the text at the given span into the given register
     abstract Yank : SnapshotSpan -> MotionKind -> OperationKind -> Register -> unit
+
+    /// Yank the text into the given register
+    abstract YankText : string -> MotionKind -> OperationKind -> Register -> unit
 
     /// Paste after the passed in position.  Don't forget that a linewise paste
     /// operation needs to occur under the cursor.  Returns the SnapshotSpan of
