@@ -49,6 +49,7 @@ type internal Vim
                 ((Modes.Visual.VisualMode(buffer, visualOpts, ModeKind.VisualCharacter)) :> IMode);
             ]
         modeList |> List.iter (fun m -> bufferRaw.AddMode m)
+        buffer.SwitchMode ModeKind.Normal |> ignore
         buffer
     
     interface IVim with

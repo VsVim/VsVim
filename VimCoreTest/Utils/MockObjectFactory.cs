@@ -34,6 +34,7 @@ namespace VimCoreTest.Utils
             mock.Setup(x => x.RegisterMap).Returns(registerMap);
             mock.Setup(x => x.MarkMap).Returns(map);
             mock.Setup(x => x.Settings).Returns(settings);
+            mock.Setup(x => x.Host).Returns(host);
             return mock;
         }
 
@@ -68,6 +69,9 @@ namespace VimCoreTest.Utils
             mock.SetupGet(x => x.BlockCaret).Returns(caret);
             mock.SetupGet(x => x.EditorOperations).Returns(editorOperations);
             mock.SetupGet(x => x.VimHost).Returns(vim.Host);
+            mock.SetupGet(x => x.Settings).Returns(vim.Settings);
+            mock.SetupGet(x => x.MarkMap).Returns(vim.MarkMap);
+            mock.SetupGet(x => x.RegisterMap).Returns(vim.RegisterMap);
             return mock;
         }
     }

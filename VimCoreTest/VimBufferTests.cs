@@ -24,33 +24,37 @@ namespace VimCoreTest
         Mock<IMode> _normalMode;
         Mock<IMode> _insertMode;
         Mock<IMode> _disabledMode;
-        Mock<IBlockCaret> _blockCaret;
+        MockBlockCaret _blockCaret;
         VimBuffer _rawBuffer;
         IVimBuffer _buffer;
+        MarkMap _markMap;
 
         [SetUp]
-        public void Initialize(params string[] lines)
+        public void Initialize()
         {
-            var tuple = EditorUtil.CreateViewAndOperations(lines);
+            var tuple = EditorUtil.CreateViewAndOperations("here we go");
             _view = tuple.Item1;
             _editorOperations = tuple.Item2;
-            _vim = MockObjectFactory.CreateVim();
-            _blockCaret = new Mock<IBlockCaret>(MockBehavior.Strict);
-            _normalMode = new Mock<IMode>(MockBehavior.Strict);
+            _markMap = new MarkMap();
+            _vim = MockObjectFactory.CreateVim(map:_markMap);
+            _blockCaret = new MockBlockCaret();
             _disabledMode = new Mock<IMode>(MockBehavior.Strict);
+            _disabledMode.SetupGet(x => x.ModeKind).Returns(ModeKind.Disabled);
+            _normalMode = new Mock<IMode>(MockBehavior.Strict);
             _normalMode.Setup(x => x.OnEnter());
             _normalMode.SetupGet(x => x.ModeKind).Returns(ModeKind.Normal);
             _insertMode = new Mock<IMode>(MockBehavior.Strict);
-            var map = new FSharpMap<ModeKind, IMode>(new List<Tuple<ModeKind, IMode>>())
-               .Add(ModeKind.Normal, _normalMode.Object)
-               .Add(ModeKind.Insert, _insertMode.Object)
-               .Add(ModeKind.Disabled, _disabledMode.Object);
+            _insertMode.SetupGet(x => x.ModeKind).Returns(ModeKind.Insert);
             _rawBuffer = new VimBuffer(
                 _vim.Object,
                 _view,
                 "Unknown",
                 _editorOperations,
-                _blockCaret.Object);
+                _blockCaret);
+            _rawBuffer.AddMode(_normalMode.Object);
+            _rawBuffer.AddMode(_insertMode.Object);
+            _rawBuffer.AddMode(_disabledMode.Object);
+            _rawBuffer.SwitchMode(ModeKind.Normal);
             _buffer = _rawBuffer;
         }
 
@@ -79,7 +83,6 @@ namespace VimCoreTest
         public void Close1()
         {
             var ran = false;
-            var caret = new MockBlockCaret();
             _normalMode.Setup(x => x.OnLeave()).Callback(() => { ran = true; });
             _buffer.SwitchMode(ModeKind.Normal);
             _buffer.Close();
@@ -89,23 +92,19 @@ namespace VimCoreTest
         [Test, Description("Close should destroy the block caret")]
         public void Close2()
         {
-            var caret = new MockBlockCaret();
             _normalMode.Setup(x => x.OnLeave());
             _buffer.Close();
-            Assert.AreEqual(1, caret.DestroyCount);
+            Assert.AreEqual(1, _blockCaret.DestroyCount);
         }
 
         [Test, Description("Close should clear out the mark map")]
         public void Close3()
         {
-            var caret = new MockBlockCaret();
-            var buffer = EditorUtil.CreateBuffer("foo bar");
-            var map = new MarkMap();
-            map.SetMark(new SnapshotPoint(buffer.CurrentSnapshot, 0), 'c');
+            _markMap.SetMark(new SnapshotPoint(_view.TextSnapshot, 0), 'c');
             _normalMode.Setup(x => x.OnLeave());
             _buffer.SwitchMode(ModeKind.Normal);
             _buffer.Close();
-            Assert.IsTrue(map.GetLocalMark(buffer, 'c').IsNone());
+            Assert.IsTrue(_markMap.GetLocalMark(_view.TextBuffer, 'c').IsNone());
         }
 
         [Test,Description("Disable command should be preprocessed")]

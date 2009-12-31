@@ -130,8 +130,11 @@ namespace VimCoreTest.Utils
                 list.Add(new AssemblyCatalog(Path.Combine(root, "Microsoft.VisualStudio.Text.UI.Wpf.dll")));
 
                 // There is no default IUndoHistoryRegistry provided so I need to provide it here just to 
-                // satisfy the MEF import
+                // satisfy the MEF import.  
                 list.Add(new AssemblyCatalog(typeof(EditorUtil).Assembly));
+
+                // IBlockCaret needs to be satisfied for integration tests
+                list.Add(new AssemblyCatalog(typeof(Vim.IVim).Assembly));
 
                 var catalog = new AggregateCatalog(list.ToArray());
                 return new CompositionContainer(catalog);
