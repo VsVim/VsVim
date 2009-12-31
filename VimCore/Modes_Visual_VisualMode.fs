@@ -28,12 +28,23 @@ type internal VisualMode
         | _ -> invalidArg "_kind" "Invalid kind for Visual Mode"
     let _selectionTracker = SelectionTracker(_bufferData.TextView, _selectionMode)
 
+    /// Tracks the count of explicit moves we are seeing.  Normally an explicit character
+    /// move causes the selection to be removed.  Updating this counter is a way of our 
+    /// consumers to tell us the caret move is legal
+    let mutable _explicitMoveCount = 0
+
     let mutable _operationsMap : Map<KeyInput,Operation> = Map.empty
 
-    member private x.BuildMotionSequence() = 
+    member x.InExplicitMove = _explicitMoveCount > 0
+    member x.BeginExplicitMove() = _explicitMoveCount <- _explicitMoveCount + 1
+    member x.EndExplicitMove() = _explicitMoveCount <- _explicitMoveCount - 1
+
+    member private x.BuildMoveSequence() = 
         let wrap func = 
             fun _ ->
+                x.BeginExplicitMove()
                 func() 
+                x.EndExplicitMove()
                 VisualModeResult.Complete
         let moveLeft = wrap (fun () -> _operations.MoveCaretLeft(1))
         let moveRight = wrap (fun () -> _operations.MoveCaretRight(1))
@@ -72,7 +83,7 @@ type internal VisualMode
     member private x.EnsureOperationsMap () = 
         if _operationsMap.Count = 0 then
             let map = 
-                x.BuildMotionSequence() 
+                x.BuildMoveSequence() 
                 |> Seq.append (x.BuildOperationsSequence())
                 |> Map.ofSeq
                 |> Map.add (InputUtil.KeyToKeyInput(Key.Escape)) (fun _ -> SwitchMode ModeKind.Normal)

@@ -25,25 +25,6 @@ namespace VimCoreTest
             _tracker.Start(FSharpOption<SnapshotPoint>.None);
         }
 
-        [Test]
-        public void InExplicitMove1()
-        {
-            Create(SelectionMode.Block, "foo");
-            _tracker.BeginExplicitMove();
-            Assert.IsTrue(_tracker.InExplicitMove);
-        }
-
-        [Test]
-        public void InExplicitMove2()
-        {
-            Create(SelectionMode.Character, "");
-            Assert.IsFalse(_tracker.InExplicitMove);
-            _tracker.BeginExplicitMove();
-            _tracker.BeginExplicitMove();
-            _tracker.EndExplicitMove();
-            _tracker.EndExplicitMove();
-            Assert.IsFalse(_tracker.InExplicitMove);
-        }
 
         [Test]
         public void AnchorPoint1()

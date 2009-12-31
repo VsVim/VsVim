@@ -24,11 +24,6 @@ type internal SelectionTracker
     /// TextSelectionMode of the Editor before Start was called
     let mutable _originalSelectionMode = _textView.Selection.Mode
 
-    /// Tracks the count of explicit moves we are seeing.  Normally an explicit character
-    /// move causes the selection to be removed.  Updating this counter is a way of our 
-    /// consumers to tell us the caret move is legal
-    let mutable _explicitMoveCount = 0
-
     /// Anchor point being tracked by the selection tracker
     member x.AnchorPoint = _anchorPoint
 
@@ -74,10 +69,6 @@ type internal SelectionTracker
         _textView.TextBuffer.Changed.RemoveHandler(System.EventHandler<TextContentChangedEventArgs>(x.OnTextChanged))
         _textView.Selection.Clear()
         _textView.Selection.Mode <- _originalSelectionMode
-
-    member x.InExplicitMove = _explicitMoveCount > 0
-    member x.BeginExplicitMove() = _explicitMoveCount <- _explicitMoveCount + 1
-    member x.EndExplicitMove() = _explicitMoveCount <- _explicitMoveCount - 1
 
     /// Update the selection based on the current state of the view
     member x.UpdateSelection() = 

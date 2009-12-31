@@ -107,6 +107,26 @@ namespace VimCoreTest
             _editOpts.Verify();
         }
 
+        [Test]
+        public void InExplicitMove1()
+        {
+            Create("foo");
+            _modeRaw.BeginExplicitMove();
+            Assert.IsTrue(_modeRaw.InExplicitMove);
+        }
+
+        [Test]
+        public void InExplicitMove2()
+        {
+            Create("");
+            Assert.IsFalse(_modeRaw.InExplicitMove);
+            _modeRaw.BeginExplicitMove();
+            _modeRaw.BeginExplicitMove();
+            _modeRaw.EndExplicitMove();
+            _modeRaw.EndExplicitMove();
+            Assert.IsFalse(_modeRaw.InExplicitMove);
+        }
+
         #region Selection
 
         [Test]
