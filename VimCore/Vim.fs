@@ -23,7 +23,6 @@ type internal Vim
         let caret = BlockCaret(view, _blockCaretAdornmentLayerName, editorFormatMap) :> IBlockCaret
         let editOperations = _editorOperationsFactoryService.GetEditorOperations(view)
         let broker = CompletionWindowBroker(view, _completionBroker, _signatureBroker) :> ICompletionWindowBroker
-        let data = VimBufferData(name, view, _host, _data :> IVimData, caret, editOperations ) :> IVimBufferData
         let normalOpts = Modes.Normal.DefaultOperations(view,editOperations) :> Modes.Normal.IOperations
         let commandOpts = Modes.Command.DefaultOperations(view,editOperations,_host) :> Modes.Command.IOperations
         let insertOpts = Modes.Insert.DefaultOperations(view,editOperations) :> Modes.ICommonOperations
@@ -47,7 +46,6 @@ type internal Vim
     
     interface IVim with
         member x.Host = _host
-        member x.Data = _data :> IVimData
         member x.Buffers = _buffers
         member x.CreateBuffer view bufferName =
             x.CreateVimBufferCore view bufferName 
