@@ -19,7 +19,7 @@ namespace VimCoreTest
     [TestFixture]
     public class InsertModeTest
     {
-        private IVimBufferData _data;
+        private Mock<IVimBuffer> _data;
         private Vim.Modes.Insert.InsertMode _modeRaw;
         private IMode _mode;
         private ITextBuffer _buffer;
@@ -33,10 +33,12 @@ namespace VimCoreTest
             _view = Utils.EditorUtil.CreateView(lines);
             _host = new Mock<IVimHost>(MockBehavior.Strict);
             _buffer = _view.TextBuffer;
-            _data = Utils.MockObjectFactory.CreateVimBufferData(_view, host : _host.Object);
+            _data = Utils.MockObjectFactory.CreateVimBuffer(
+                _view,
+                vim: Utils.MockObjectFactory.CreateVim(host : _host.Object).Object);
             _operations = new Mock<ICommonOperations>(MockBehavior.Strict);
             _broker = new Mock<ICompletionWindowBroker>(MockBehavior.Strict);
-            _modeRaw = new Vim.Modes.Insert.InsertMode(Tuple.Create<IVimBufferData,ICommonOperations,ICompletionWindowBroker>(_data,_operations.Object,_broker.Object));
+            _modeRaw = new Vim.Modes.Insert.InsertMode(Tuple.Create<IVimBuffer,ICommonOperations,ICompletionWindowBroker>(_data.Object,_operations.Object,_broker.Object));
             _mode = _modeRaw;
         }
 

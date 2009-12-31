@@ -20,7 +20,7 @@ namespace VimCoreTest
     public class VisualModeTest
     {
         private IWpfTextView _view;
-        private IVimBufferData _bufferData;
+        private Mock<IVimBuffer> _bufferData;
         private VisualMode _modeRaw;
         private IMode _mode;
         private FakeVimHost _host;
@@ -41,14 +41,13 @@ namespace VimCoreTest
             _host = new FakeVimHost();
             _editOpts = new Mock<IEditorOperations>(MockBehavior.Strict);
             _operations = new Mock<ICommonOperations>(MockBehavior.Strict);
-            _bufferData = MockObjectFactory.CreateVimBufferData(
+            _bufferData = MockObjectFactory.CreateVimBuffer(
                 _view,
                 "test",
-                _host,
-                MockObjectFactory.CreateVimData(_map).Object,
+                MockObjectFactory.CreateVim(_map,host:_host).Object,
                 MockObjectFactory.CreateBlockCaret().Object,
                 _editOpts.Object);
-            _modeRaw = new Vim.Modes.Visual.VisualMode(Tuple.Create<IVimBufferData, ICommonOperations, ModeKind>(_bufferData, _operations.Object, kind));
+            _modeRaw = new Vim.Modes.Visual.VisualMode(Tuple.Create<IVimBuffer, ICommonOperations, ModeKind>(_bufferData.Object, _operations.Object, kind));
             _mode = _modeRaw;
             _mode.OnEnter();
         }
@@ -57,9 +56,9 @@ namespace VimCoreTest
         [ExpectedException(typeof(ArgumentException))]
         public void ModeKind1()
         {
-            var data = new Mock<IVimBufferData>();
+            var data = new Mock<IVimBuffer>();
             var operations = new Mock<ICommonOperations>();
-            new VisualMode(Tuple.Create<IVimBufferData, ICommonOperations, ModeKind>(data.Object, operations.Object, ModeKind.Insert));
+            new VisualMode(Tuple.Create<IVimBuffer, ICommonOperations, ModeKind>(data.Object, operations.Object, ModeKind.Insert));
         }
 
         [Test, Description("Escape is used to exit visual mode")]

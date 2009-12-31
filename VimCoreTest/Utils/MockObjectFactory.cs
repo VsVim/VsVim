@@ -20,27 +20,20 @@ namespace VimCoreTest.Utils
             return mock;
         }
 
-        internal static Mock<IVimData> CreateVimData(
+        internal static Mock<IVim> CreateVim(
             IRegisterMap registerMap = null,
             MarkMap map = null,
-            VimSettings settings = null)
+            VimSettings settings = null,
+            IVimHost host = null)
         {
             registerMap = registerMap ?? CreateRegisterMap().Object;
             map = map ?? new MarkMap();
             settings = settings ?? VimSettingsUtil.CreateDefault;
-            var mock = new Mock<IVimData>(MockBehavior.Strict);
+            host = host ?? new FakeVimHost();
+            var mock = new Mock<IVim>(MockBehavior.Strict);
             mock.Setup(x => x.RegisterMap).Returns(registerMap);
             mock.Setup(x => x.MarkMap).Returns(map);
             mock.Setup(x => x.Settings).Returns(settings);
-            return mock;
-        }
-
-        internal static Mock<IVim> CreateVim(
-            IVimData data = null)
-        {
-            data = data ?? CreateVimData().Object;
-            var mock = new Mock<IVim>(MockBehavior.Strict);
-            mock.Setup(x => x.Data).Returns(data);
             return mock;
         }
 
@@ -56,20 +49,26 @@ namespace VimCoreTest.Utils
             return mock;
         }
 
-        internal static VimBufferData CreateVimBufferData(
+        internal static Mock<IVimBuffer> CreateVimBuffer(
             IWpfTextView view, 
             string name = null,
-            IVimHost host = null, 
-            IVimData data = null,
+            IVim vim = null,
             IBlockCaret caret = null,
             IEditorOperations editorOperations = null)
         {
             name = name ?? "test";
-            host = host ?? new FakeVimHost();
-            data = data ?? CreateVimData().Object;
+            vim = vim ?? CreateVim().Object;
             caret = caret ?? CreateBlockCaret().Object;
             editorOperations = editorOperations ?? CreateEditorOperations().Object;
-            return new VimBufferData("test", view, host, data, caret, editorOperations);
+            var mock = new Mock<IVimBuffer>(MockBehavior.Strict);
+            mock.SetupGet(x => x.TextView).Returns(view);
+            mock.SetupGet(x => x.TextBuffer).Returns(() => view.TextBuffer);
+            mock.SetupGet(x => x.TextSnapshot).Returns(() => view.TextSnapshot);
+            mock.SetupGet(x => x.Name).Returns(name);
+            mock.SetupGet(x => x.BlockCaret).Returns(caret);
+            mock.SetupGet(x => x.EditorOperations).Returns(editorOperations);
+            mock.SetupGet(x => x.VimHost).Returns(vim.Host);
+            return mock;
         }
     }
 }

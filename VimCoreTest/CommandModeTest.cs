@@ -18,7 +18,7 @@ namespace VimCoreTest
     public class CommandModeTest
     {
         private IWpfTextView _view;
-        private IVimBufferData _bufferData;
+        private Mock<IVimBuffer> _bufferData;
         private CommandMode _modeRaw;
         private IMode _mode;
         private FakeVimHost _host;
@@ -34,14 +34,13 @@ namespace VimCoreTest
             _host = new FakeVimHost();
             _editOpts = new Mock<IEditorOperations>(MockBehavior.Strict);
             _operations = new Mock<IOperations>(MockBehavior.Strict);
-            _bufferData = MockObjectFactory.CreateVimBufferData(
+            _bufferData = MockObjectFactory.CreateVimBuffer(
                 _view,
                 "test",
-                _host,
-                MockObjectFactory.CreateVimData(_map).Object,
+                MockObjectFactory.CreateVim(_map, host:_host).Object,
                 MockObjectFactory.CreateBlockCaret().Object,
                 _editOpts.Object);
-            _modeRaw = new Vim.Modes.Command.CommandMode(Tuple.Create<IVimBufferData, IOperations>(_bufferData, _operations.Object));
+            _modeRaw = new Vim.Modes.Command.CommandMode(Tuple.Create<IVimBuffer, IOperations>(_bufferData.Object, _operations.Object));
             _mode = _modeRaw;
             _mode.OnEnter();
         }

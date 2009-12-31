@@ -14,7 +14,7 @@ namespace VimCoreTest
     {
         private FakeVimHost _host;
         private VimSettings _settings;
-        private Mock<IVimBufferData> _bufferData;
+        private Mock<IVimBuffer> _bufferData;
         private DisabledMode _modeRaw;
         private IMode _mode;
 
@@ -23,7 +23,7 @@ namespace VimCoreTest
         {
             _host = new FakeVimHost();
             _settings = VimSettingsUtil.CreateDefault;
-            _bufferData = new Mock<IVimBufferData>(MockBehavior.Strict);
+            _bufferData = new Mock<IVimBuffer>(MockBehavior.Strict);
             _bufferData.SetupGet(x => x.Settings).Returns(_settings);
             _bufferData.SetupGet(x => x.VimHost).Returns(_host);
             _modeRaw = new DisabledMode(_bufferData.Object);

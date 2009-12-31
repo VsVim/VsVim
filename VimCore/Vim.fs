@@ -30,8 +30,7 @@ type internal Vim
                 view,
                 name,
                 editOperations,
-                caret,
-                _markMap)
+                caret)
         let buffer = bufferRaw :> IVimBuffer
 
         let broker = CompletionWindowBroker(view, _completionBroker, _signatureBroker) :> ICompletionWindowBroker

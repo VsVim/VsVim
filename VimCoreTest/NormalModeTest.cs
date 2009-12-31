@@ -25,7 +25,7 @@ namespace VimCoreTest
         private IMode _mode;
         private IWpfTextView _view;
         private IRegisterMap _map;
-        private VimBufferData _bufferData;
+        private Mock<IVimBuffer> _bufferData;
         private MockBlockCaret _blockCaret;
         private Mock<IOperations> _operations;
         private Mock<IEditorOperations> _editorOperations;
@@ -49,15 +49,14 @@ namespace VimCoreTest
             _map = new RegisterMap();
             _blockCaret = new MockBlockCaret();
             _editorOperations = new Mock<IEditorOperations>();
-            _bufferData = MockFactory.CreateVimBufferData(
+            _bufferData = MockFactory.CreateVimBuffer(
                 _view,
                 "test",
-                host,
-                MockFactory.CreateVimData(_map).Object,
+                MockFactory.CreateVim(_map, host : host).Object,
                 _blockCaret,
                 _editorOperations.Object);
             _operations = new Mock<IOperations>(MockBehavior.Strict);
-            _modeRaw = new Vim.Modes.Normal.NormalMode(Tuple.Create((IVimBufferData)_bufferData, _operations.Object));
+            _modeRaw = new Vim.Modes.Normal.NormalMode(Tuple.Create(_bufferData.Object, _operations.Object));
             _mode = _modeRaw;
             _mode.OnEnter();
         }
@@ -1617,7 +1616,7 @@ namespace VimCoreTest
         public void Mark3()
         {
             CreateBuffer(s_lines);
-            _operations.Setup(x => x.SetMark('a', _bufferData._vimData.MarkMap, _view.Caret.Position.BufferPosition)).Returns(Result._unique_Succeeded).Verifiable();
+            _operations.Setup(x => x.SetMark('a', _bufferData.Object.MarkMap, _view.Caret.Position.BufferPosition)).Returns(Result._unique_Succeeded).Verifiable();
             _mode.Process(InputUtil.CharToKeyInput('m'));
             _mode.Process(InputUtil.CharToKeyInput('a'));
             _operations.Verify();
@@ -1628,7 +1627,7 @@ namespace VimCoreTest
         {
             var host = new FakeVimHost();
             CreateBuffer(host, s_lines);
-            _operations.Setup(x => x.SetMark(';', _bufferData._vimData.MarkMap, _view.Caret.Position.BufferPosition)).Returns(Result.NewFailed("foo")).Verifiable();
+            _operations.Setup(x => x.SetMark(';', _bufferData.Object.MarkMap, _view.Caret.Position.BufferPosition)).Returns(Result.NewFailed("foo")).Verifiable();
             _mode.Process(InputUtil.CharToKeyInput('m'));
             _mode.Process(InputUtil.CharToKeyInput(';'));
             Assert.IsTrue(host.BeepCount > 0);
@@ -1650,7 +1649,7 @@ namespace VimCoreTest
         {
             CreateBuffer("foobar");
             _operations
-                .Setup(x => x.JumpToMark('a', _bufferData._vimData.MarkMap))
+                .Setup(x => x.JumpToMark('a', _bufferData.Object.MarkMap))
                 .Returns(Result._unique_Succeeded)
                 .Verifiable();
             _mode.Process('\'');
@@ -1663,7 +1662,7 @@ namespace VimCoreTest
         {
             CreateBuffer("foobar");
             _operations
-                .Setup(x => x.JumpToMark('a', _bufferData._vimData.MarkMap))
+                .Setup(x => x.JumpToMark('a', _bufferData.Object.MarkMap))
                 .Returns(Result._unique_Succeeded)
                 .Verifiable();
             _mode.Process('`');
