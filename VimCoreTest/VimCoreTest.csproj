@@ -149,6 +149,7 @@
     <Compile Include="Normal_DefaultOperationsTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RangeUtilTest.cs" />
+    <Compile Include="SelectionTrackerTest.cs" />
     <Compile Include="TextUtilTest.cs" />
     <Compile Include="TextUtilTest2.cs" />
     <Compile Include="TssUtilTest.cs" />
@@ -156,6 +157,7 @@
     <Compile Include="Utils\EditorUtil.cs" />
     <Compile Include="Utils\Extensions.cs" />
     <Compile Include="Utils\FSharpFuncUtil.cs" />
+    <Compile Include="Utils\FSharpOption.cs" />
     <Compile Include="Utils\MockBlockCaret.cs" />
     <Compile Include="Utils\MockObjectFactory.cs" />
     <Compile Include="Utils\TestOnlyUndoHistory.cs" />
