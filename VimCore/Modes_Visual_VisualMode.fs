@@ -16,7 +16,7 @@ type internal Operation = Register -> VisualModeResult
 
 type internal VisualMode
     (
-        _bufferData : IVimBuffer,
+        _buffer : IVimBuffer,
         _operations : ICommonOperations,
         _kind : ModeKind ) = 
 
@@ -26,7 +26,7 @@ type internal VisualMode
         | ModeKind.VisualCharacter -> SelectionMode.Character
         | ModeKind.VisualLineWise -> SelectionMode.Line
         | _ -> invalidArg "_kind" "Invalid kind for Visual Mode"
-    let _selectionTracker = SelectionTracker(_bufferData.TextView, _selectionMode)
+    let _selectionTracker = SelectionTracker(_buffer.TextView, _selectionMode)
 
     /// Tracks the count of explicit moves we are seeing.  Normally an explicit character
     /// move causes the selection to be removed.  Updating this counter is a way of our 
@@ -90,7 +90,7 @@ type internal VisualMode
             _operationsMap <- map
 
     interface IMode with
-        member x.VimBuffer = _bufferData
+        member x.VimBuffer = _buffer
         member x.Commands = 
             x.EnsureOperationsMap()
             _operationsMap |> Seq.map (fun pair -> pair.Key)
@@ -98,7 +98,7 @@ type internal VisualMode
         member x.CanProcess (ki:KeyInput) = _operationsMap.ContainsKey(ki)
         member x.Process (ki : KeyInput) =  
             let op = Map.find ki _operationsMap
-            let res = op(_bufferData.RegisterMap.DefaultRegister)
+            let res = op(_buffer.RegisterMap.DefaultRegister)
             match res with
             | VisualModeResult.Complete -> ProcessResult.Processed
             | VisualModeResult.SwitchMode m -> ProcessResult.SwitchMode m

@@ -5,6 +5,7 @@ open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Operations
 open Microsoft.VisualStudio.Text.Editor
 open System.Windows.Input
+open System.Windows.Threading
 open Vim
 
 /// Mode on the selection
@@ -23,6 +24,9 @@ type internal SelectionTracker
 
     /// TextSelectionMode of the Editor before Start was called
     let mutable _originalSelectionMode = _textView.Selection.Mode
+
+    /// Whether or not we are currently running
+    let mutable _running = false
 
     /// Anchor point being tracked by the selection tracker
     member x.AnchorPoint = _anchorPoint
@@ -45,6 +49,8 @@ type internal SelectionTracker
     /// Call when selection tracking should begin.  Optionally passes in an anchor point for
     /// the selection.  If it's not specified the caret will be used
     member x.Start(anchor : SnapshotPoint option) =
+        if _running then failwith "Already running"
+        _running <- true
         _textView.TextBuffer.Changed.AddHandler(System.EventHandler<TextContentChangedEventArgs>(x.OnTextChanged))
         _textView.Caret.PositionChanged.AddHandler(System.EventHandler<CaretPositionChangedEventArgs>(x.OnCaretChanged))
         _anchorPoint <- 
@@ -65,16 +71,27 @@ type internal SelectionTracker
     /// Called when selection should no longer be tracked.  Must be paired with Start calls or
     /// we will stay attached to certain event handlers
     member x.Stop() =
+        if not _running then failwith "Not running"
         _textView.Caret.PositionChanged.RemoveHandler(System.EventHandler<CaretPositionChangedEventArgs>(x.OnCaretChanged))
         _textView.TextBuffer.Changed.RemoveHandler(System.EventHandler<TextContentChangedEventArgs>(x.OnTextChanged))
-        _textView.Selection.Clear()
-        _textView.Selection.Mode <- _originalSelectionMode
+
+        // On teardown we will get calls to Stop when the view is closed.  It's invalid to access 
+        // the selection at that point
+        if not _textView.IsClosed then
+            _textView.Selection.Clear()
+            _textView.Selection.Mode <- _originalSelectionMode
+
+        _running <- false
 
     /// Update the selection based on the current state of the view
-    member x.UpdateSelection() = 
+    member private x.UpdateSelectionCore() = 
         let selectStandard() = 
             let first = VirtualSnapshotPoint(_anchorPoint)
             let last = _textView.Caret.Position.VirtualBufferPosition
+            let last = 
+                if first.Position.Position = last.Position.Position then
+                    VirtualSnapshotPoint(last.Position.Add(1),last.VirtualSpaces)
+                else last
             _textView.Selection.Select(first,last)
         match _mode with
         | SelectionMode.Character -> selectStandard()
@@ -92,6 +109,14 @@ type internal SelectionTracker
                 _textView.Selection.Select(span, false)
         | SelectionMode.Block -> selectStandard()
         | _ -> failwith "Invalid enum value"
+
+    member private x.UpdateSelection() = 
+        let func () = 
+            if _running then
+                x.UpdateSelectionCore()
+        Dispatcher.CurrentDispatcher.BeginInvoke(
+            DispatcherPriority.Background,
+            new System.Action(func)) |> ignore
 
     /// When the text is changed it invalidates the anchor point.  It needs to be forwarded to
     /// the next version of the buffer

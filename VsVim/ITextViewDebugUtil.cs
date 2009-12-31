@@ -18,6 +18,7 @@ namespace VsVim
         {
             textView.Caret.PositionChanged += new EventHandler<CaretPositionChangedEventArgs>(OnCaretPositionChanged);
             textView.TextBuffer.Changed += new EventHandler<Microsoft.VisualStudio.Text.TextContentChangedEventArgs>(OnTextBufferChanged);
+            textView.Selection.SelectionChanged += new EventHandler(OnSelectionChanged);
         }
 
         [Conditional("DEBUG")]
@@ -25,6 +26,7 @@ namespace VsVim
         {
             textView.Caret.PositionChanged -= new EventHandler<CaretPositionChangedEventArgs>(OnCaretPositionChanged);
             textView.TextBuffer.Changed -= new EventHandler<Microsoft.VisualStudio.Text.TextContentChangedEventArgs>(OnTextBufferChanged);
+            textView.Selection.SelectionChanged -= new EventHandler(OnSelectionChanged);
         }
 
         private static void OnCaretPositionChanged(object sender, CaretPositionChangedEventArgs e)
@@ -35,6 +37,11 @@ namespace VsVim
         private static void OnTextBufferChanged(object sender, Microsoft.VisualStudio.Text.TextContentChangedEventArgs e)
         {
         }
+
+        private static void OnSelectionChanged(object sender, EventArgs e)
+        {
+        }
+
 
     }
 }
