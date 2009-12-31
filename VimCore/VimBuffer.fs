@@ -7,9 +7,8 @@ open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Operations
 open System.Windows.Input
 
-type internal ModeMap
-    (
-        _modeMap : Map<ModeKind,IMode> ) =
+type internal ModeMap() = 
+    let mutable _modeMap : Map<ModeKind,IMode> = Map.empty
     let mutable _mode : IMode option = None
     let _modeSwitchedEvent = new Event<_>()
 
@@ -25,6 +24,8 @@ type internal ModeMap
         mode.OnEnter()
         _modeSwitchedEvent.Trigger(mode)
         mode
+    member x.AddMode (mode:IMode) = 
+        _modeMap <- Map.add (mode.ModeKind) mode _modeMap
 
 type internal VimBuffer 
     (
@@ -35,7 +36,7 @@ type internal VimBuffer
         _blockCaret : IBlockCaret,
         _markMap : MarkMap ) =
 
-    let mutable _modeMap = ModeMap(Map.empty)
+    let mutable _modeMap = ModeMap()
     let _keyInputProcessedEvent = new Event<_>()
     
     /// Get the current mode
@@ -63,6 +64,8 @@ type internal VimBuffer
                     | ProcessNotHandled -> false
         _keyInputProcessedEvent.Trigger(i)
         ret
+
+    member x.AddMode mode = _modeMap.AddMode mode
             
     member x.CanProcessInput ki = x.Mode.CanProcess ki || ki = _vim.Settings.DisableCommand
                  

@@ -16,7 +16,7 @@ type internal Operation = Register -> VisualModeResult
 
 type internal VisualMode
     (
-        _bufferData : IVimBufferData,
+        _bufferData : IVimBuffer,
         _operations : ICommonOperations,
         _kind : ModeKind ) = 
 
@@ -90,6 +90,7 @@ type internal VisualMode
             _operationsMap <- map
 
     interface IMode with
+        member x.VimBuffer = _bufferData
         member x.Commands = 
             x.EnsureOperationsMap()
             _operationsMap |> Seq.map (fun pair -> pair.Key)

@@ -2,7 +2,7 @@
 
 namespace Vim
 open System.Windows.Input
-type internal DisabledMode( _data : IVimBufferData ) =
+type internal DisabledMode( _data : IVimBuffer ) =
     
     member private x.HelpString = 
         let ki = _data.Settings.DisableCommand
@@ -12,6 +12,7 @@ type internal DisabledMode( _data : IVimBufferData ) =
             sprintf "Vim Disabled. Type %s+%s to re-enable" (ki.Key.ToString()) (ki.ModifierKeys.ToString())
 
     interface IMode with 
+        member x.VimBuffer = _data
         member x.ModeKind = ModeKind.Disabled        
         member x.Commands = Seq.singleton _data.Settings.DisableCommand
         member x.CanProcess ki = 

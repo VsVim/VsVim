@@ -13,7 +13,7 @@ type internal Operation =  {
     RunFunc : NormalModeData -> NormalModeResult
 }
 
-type internal NormalMode( _bufferData : IVimBufferData, _operations : IOperations ) = 
+type internal NormalMode( _bufferData : IVimBuffer, _operations : IOperations ) = 
     let mutable _data = {
         VimBufferData=_bufferData; 
         RunFunc = (fun _ _ -> NormalModeResult.Complete);
@@ -516,6 +516,7 @@ type internal NormalMode( _bufferData : IVimBufferData, _operations : IOperation
     member this.Count = _data.Count
     
     interface IMode with 
+        member this.VimBuffer = _bufferData
         member this.Commands = 
             _operationMap
                 |> Map.toSeq

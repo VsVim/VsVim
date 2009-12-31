@@ -98,7 +98,6 @@
     <Compile Include="KeyProcessor.fsi" />
     <Compile Include="KeyProcessor.fs" />
     <Compile Include="RegisterMap.fs" />
-    <Compile Include="VimData.fs" />
     <Compile Include="DisabledMode.fs" />
     <Compile Include="Vim.fs" />
     <Compile Include="VimFactoryService.fs" />

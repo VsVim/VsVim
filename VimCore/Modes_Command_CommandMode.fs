@@ -10,7 +10,7 @@ open Vim.RegexUtil
 
 type CommandMode
     ( 
-        _data : IVimBufferData, 
+        _data : IVimBuffer, 
         _operations : IOperations ) = 
     let mutable _command : System.String = System.String.Empty
 
@@ -230,6 +230,7 @@ type CommandMode
             ()
 
     interface IMode with 
+        member x.VimBuffer = _data 
         member x.Commands = Seq.empty
         member x.ModeKind = ModeKind.Command
         member x.CanProcess ki = true

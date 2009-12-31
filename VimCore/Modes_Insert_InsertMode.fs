@@ -10,7 +10,7 @@ open System.Windows.Media
 
 type internal InsertMode
     ( 
-        _data : IVimBufferData, 
+        _data : IVimBuffer, 
         _operations : Modes.ICommonOperations,
         _broker : ICompletionWindowBroker ) =
     let _commands = [
@@ -31,6 +31,7 @@ type internal InsertMode
             ProcessResult.SwitchMode ModeKind.Normal
 
     interface IMode with 
+        member x.VimBuffer = _data
         member x.Commands = _commands |> Seq.ofList
         member x.ModeKind = ModeKind.Insert
         member x.CanProcess (ki:KeyInput) = 

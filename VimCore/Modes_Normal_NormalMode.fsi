@@ -9,5 +9,5 @@ open System.Windows.Media
 
 type internal NormalMode =
     interface IMode
-    new: (IVimBufferData * IOperations) -> NormalMode
+    new: (IVimBuffer* IOperations) -> NormalMode
 

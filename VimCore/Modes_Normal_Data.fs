@@ -8,7 +8,7 @@ open System.Windows.Input
 open System.Windows.Media
 
 type internal NormalModeData = {
-    VimBufferData : IVimBufferData;
+    VimBufferData : IVimBuffer;
     Register : Register;
     Count : int;
     LastSearch : option<IncrementalSearch>;
