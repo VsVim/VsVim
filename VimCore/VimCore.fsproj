@@ -35,6 +35,8 @@
   </PropertyGroup>
   <Import Project="$(ProgramFiles)\Microsoft F#\v4.0\Microsoft.FSharp.Targets" />
   <ItemGroup>
+    <Compile Include="Resources.fs" />
+    <Compile Include="Util.fs" />
     <Compile Include="IVimHost.fs" />
     <Compile Include="ICompletionWindowBroker.fs" />
     <Compile Include="CompletionWindowBroker.fs" />

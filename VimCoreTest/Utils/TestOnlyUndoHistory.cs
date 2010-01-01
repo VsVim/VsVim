@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Microsoft.VisualStudio.UI.Undo;
+using System.Diagnostics;
 
 namespace VimCoreTest.Utils
 {
@@ -130,6 +131,7 @@ namespace VimCoreTest.Utils
 
         public override UndoHistoryState State
         {
+            [DebuggerNonUserCode]
             get { throw new NotImplementedException(); }
         }
 

@@ -25,6 +25,13 @@ namespace VimCoreTest
             _tracker.Start(FSharpOption<SnapshotPoint>.None);
         }
 
+        [TearDown]
+        public void TearDown()
+        {
+            _view = null;
+            _tracker = null;
+        }
+
 
         [Test]
         public void AnchorPoint1()
@@ -42,6 +49,29 @@ namespace VimCoreTest
             _tracker.Stop();
             _view.TextBuffer.Replace(new Span(0, 1), "h");
             Assert.AreNotSame(_view.TextSnapshot, _tracker.AnchorPoint.Snapshot);
+        }
+
+        [Test]
+        [ExpectedException(typeof(InvalidOperationException))]
+        public void Start1()
+        {
+            Create(SelectionMode.Character, "foo");
+            _tracker.Start(FSharpOption<SnapshotPoint>.None);
+        }
+
+        [Test]
+        public void Start2()
+        {
+            Create(SelectionMode.Character, "foo");
+            Assert.AreEqual(new SnapshotPoint(_view.TextSnapshot, 0), _tracker.AnchorPoint);
+        }
+
+        [Test,ExpectedException(typeof(InvalidOperationException))]
+        public void Stop1()
+        {
+            Create(SelectionMode.Character, "foo");
+            _tracker.Stop();
+            _tracker.Stop();
         }
     }
 }

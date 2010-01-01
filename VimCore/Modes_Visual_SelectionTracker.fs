@@ -18,7 +18,7 @@ type internal SelectionMode =
 type internal SelectionTracker
     (
         _textView : ITextView,
-        _mode : SelectionMode ) =
+        _mode : SelectionMode ) as this =
 
     let mutable _anchorPoint = SnapshotPoint(_textView.TextSnapshot, 0) 
 
@@ -27,6 +27,13 @@ type internal SelectionTracker
 
     /// Whether or not we are currently running
     let mutable _running = false
+
+    let mutable _textChangedHandler = Util.CreateToggleHandler (_textView.TextBuffer.Changed)
+    let mutable _caretChangedHandler = Util.CreateToggleHandler (_textView.Caret.PositionChanged)
+
+    do 
+        _textChangedHandler.Reset((fun _ args -> this.OnTextChanged(args)))
+        _caretChangedHandler.Reset((fun _ _ -> this.OnCaretChanged()))
 
     /// Anchor point being tracked by the selection tracker
     member x.AnchorPoint = _anchorPoint
@@ -49,10 +56,10 @@ type internal SelectionTracker
     /// Call when selection tracking should begin.  Optionally passes in an anchor point for
     /// the selection.  If it's not specified the caret will be used
     member x.Start(anchor : SnapshotPoint option) =
-        if _running then failwith "Already running"
+        if _running then invalidOp Vim.Resources.SelectionTracker_AlreadyRunning
         _running <- true
-        _textView.TextBuffer.Changed.AddHandler(System.EventHandler<TextContentChangedEventArgs>(x.OnTextChanged))
-        _textView.Caret.PositionChanged.AddHandler(System.EventHandler<CaretPositionChangedEventArgs>(x.OnCaretChanged))
+        _textChangedHandler.Add()
+        _caretChangedHandler.Add()
         _anchorPoint <- 
             match anchor with
             | Some(point) -> point
@@ -71,9 +78,9 @@ type internal SelectionTracker
     /// Called when selection should no longer be tracked.  Must be paired with Start calls or
     /// we will stay attached to certain event handlers
     member x.Stop() =
-        if not _running then failwith "Not running"
-        _textView.Caret.PositionChanged.RemoveHandler(System.EventHandler<CaretPositionChangedEventArgs>(x.OnCaretChanged))
-        _textView.TextBuffer.Changed.RemoveHandler(System.EventHandler<TextContentChangedEventArgs>(x.OnTextChanged))
+        if not _running then invalidOp Resources.SelectionTracker_NotRunning
+        _textChangedHandler.Remove()
+        _caretChangedHandler.Remove()
 
         // On teardown we will get calls to Stop when the view is closed.  It's invalid to access 
         // the selection at that point
@@ -120,8 +127,8 @@ type internal SelectionTracker
 
     /// When the text is changed it invalidates the anchor point.  It needs to be forwarded to
     /// the next version of the buffer
-    member private x.OnTextChanged _ (args:TextContentChangedEventArgs) =
-        let point = _anchorPoint.Snapshot.CreateTrackingPoint(_anchorPoint.Position, PointTrackingMode.Positive)
+    member private x.OnTextChanged (args:TextContentChangedEventArgs) =
+        let point = _anchorPoint.Snapshot.CreateTrackingPoint(_anchorPoint.Position, PointTrackingMode.Negative)
         try
             _anchorPoint <- point.GetPoint(args.After)
         with
@@ -131,4 +138,4 @@ type internal SelectionTracker
             | e -> reraise()
         x.UpdateSelection()
 
-    member private x.OnCaretChanged _ _ = x.UpdateSelection()
+    member private x.OnCaretChanged()  = x.UpdateSelection()
