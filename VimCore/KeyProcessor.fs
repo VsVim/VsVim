@@ -32,13 +32,12 @@ type internal KeyProcessor( _buffer : IVimBuffer ) =
                 match InputUtil.TryCharToKeyInput(args.Text.Chars(0)) with
                 | Some(ki) ->
                     let ki = KeyInput(ki.Char,ki.Key,keyboard.Modifiers)
-                    _buffer.CanProcessInput(ki)
+                    _buffer.CanProcessInput(ki) && _buffer.ProcessInput(ki)
                 | None -> false
             | _ -> false
 
     override x.TextInput(args:TextCompositionEventArgs) =
         if x.TryHandleTextInput args then
-            // TODO: I think this is a bug.  Probably should be ProcessInput instead of true 
             args.Handled <- true
         else
             base.TextInput(args)
@@ -47,11 +46,14 @@ type internal KeyProcessor( _buffer : IVimBuffer ) =
         let handled = 
             if x.IsNonInputKey(args.Key) then
                 let ki = InputUtil.KeyAndModifierToKeyInput (args.Key) (args.KeyboardDevice.Modifiers)
-                _buffer.CanProcessInput ki
+                _buffer.CanProcessInput ki && _buffer.ProcessInput(ki)
             else
                 false
         if handled then 
             args.Handled <- true
         else
             base.KeyDown(args)
+
+    override x.IsInterestedInHandledEvents = true
+
 
