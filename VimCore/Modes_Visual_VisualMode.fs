@@ -12,8 +12,15 @@ open Vim.Modes
 type internal VisualModeResult =
     | Complete
     | SwitchPreviousMode
+    | NeedMore
 
-type internal Operation = Register -> VisualModeResult
+type internal Operation = int -> Register -> VisualModeResult
+
+type internal CommandData =  {
+    RunFunc : KeyInput -> VisualModeResult;
+    IsWaitingForData: bool;
+    Count : int;
+    Register : Register } 
 
 type internal VisualMode
     (
@@ -31,6 +38,8 @@ type internal VisualMode
 
     let mutable _caretMovedHandler = ToggleHandler.Empty
 
+    let mutable _data = { RunFunc = (fun _ -> VisualModeResult.Complete); IsWaitingForData = false; Count=1;Register = _buffer.RegisterMap.DefaultRegister }
+
     do
         _caretMovedHandler <- ToggleHandler.Create (_buffer.TextView.Caret.PositionChanged) (fun _ -> this.OnCaretMoved())
 
@@ -38,11 +47,18 @@ type internal VisualMode
     member x.BeginExplicitMove() = _explicitMoveCount <- _explicitMoveCount + 1
     member x.EndExplicitMove() = _explicitMoveCount <- _explicitMoveCount - 1
 
+    member private x.ResetCommandData() =
+        _data <- {
+            RunFunc=x.ProcessInput;
+            IsWaitingForData=false;
+            Count=1;
+            Register=_buffer.RegisterMap.DefaultRegister }
+
     member private x.BuildMoveSequence() = 
         let wrap func = 
-            fun _ ->
+            fun count reg ->
                 x.BeginExplicitMove()
-                func(1) 
+                func(count) 
                 x.EndExplicitMove()
                 VisualModeResult.Complete
         let factory = Vim.Modes.CommandFactory(_operations)
@@ -53,11 +69,11 @@ type internal VisualMode
         let s : seq<KeyInput * Operation> = 
             seq {
                 yield (InputUtil.CharToKeyInput('y'), 
-                    (fun (reg:Register) -> 
+                    (fun _ (reg:Register) -> 
                         _operations.YankText (_selectionTracker.SelectedText) MotionKind.Inclusive OperationKind.CharacterWise reg
                         VisualModeResult.SwitchPreviousMode))
                 yield (InputUtil.CharToKeyInput('Y'),
-                    (fun (reg:Register) ->
+                    (fun _ (reg:Register) ->
                         let selection = _buffer.TextView.Selection
                         let startPoint = selection.Start.Position.GetContainingLine().Start
                         let endPoint = selection.End.Position.GetContainingLine().EndIncludingLineBreak
@@ -73,7 +89,7 @@ type internal VisualMode
                 x.BuildMoveSequence() 
                 |> Seq.append (x.BuildOperationsSequence())
                 |> Map.ofSeq
-                |> Map.add (InputUtil.KeyToKeyInput(Key.Escape)) (fun _ -> SwitchPreviousMode)
+                |> Map.add (InputUtil.KeyToKeyInput(Key.Escape)) (fun _ _ -> SwitchPreviousMode)
             _operationsMap <- map
 
     /// Called when the caret is moved. If we are not explicitly moving the caret then we need to switch
@@ -88,6 +104,24 @@ type internal VisualMode
                 DispatcherPriority.Background,
                 new System.Action(func)) |> ignore
 
+    member private x.ProcessInputCore ki = 
+        let op = Map.find ki _operationsMap
+        op (_data.Count) _data.Register
+
+    member private x.ProcessInput ki = 
+        if ki.Char = '"' then
+            let waitReg (ki:KeyInput) = 
+                let reg = _buffer.RegisterMap.GetRegister (ki.Char)
+                _data <- { _data with
+                            RunFunc=x.ProcessInputCore;
+                            Register=reg;
+                            IsWaitingForData=false; }
+                NeedMore
+            _data <- { _data with RunFunc=waitReg; IsWaitingForData=true }
+            NeedMore
+        else 
+            x.ProcessInputCore ki
+
     interface IMode with
         member x.VimBuffer = _buffer
         member x.Commands = 
@@ -96,15 +130,18 @@ type internal VisualMode
         member x.ModeKind = _kind
         member x.CanProcess (ki:KeyInput) = _operationsMap.ContainsKey(ki)
         member x.Process (ki : KeyInput) =  
-            let op = Map.find ki _operationsMap
-            let res = op(_buffer.RegisterMap.DefaultRegister)
+            let res = _data.RunFunc ki
             match res with
             | VisualModeResult.Complete -> 
                 _buffer.VimHost.UpdateStatus(Resources.VisualMode_Banner)
+                x.ResetCommandData()
                 ProcessResult.Processed
             | VisualModeResult.SwitchPreviousMode -> ProcessResult.SwitchPreviousMode
+            | VisualModeResult.NeedMore -> ProcessResult.Processed
+                
 
         member x.OnEnter () = 
+            x.ResetCommandData()
             _caretMovedHandler.Add()
             x.EnsureOperationsMap()
             _selectionTracker.Start()

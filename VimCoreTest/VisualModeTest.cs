@@ -99,8 +99,7 @@ namespace VimCoreTest
         {
             Create("foo");
             var res = _mode.Process(InputUtil.KeyToChar(Key.Escape));
-            Assert.IsTrue(res.IsSwitchMode);
-            Assert.AreEqual(ModeKind.Normal, res.AsSwitchMode().item);
+            Assert.IsTrue(res.IsSwitchPreviousMode);
         }
 
         [Test]
@@ -194,7 +193,6 @@ namespace VimCoreTest
             _operations.Setup(x => x.YankText("foo", MotionKind.Inclusive, OperationKind.CharacterWise, _map.DefaultRegister)).Verifiable();
             var res = _mode.Process('y');
             Assert.IsTrue(res.IsSwitchPreviousMode);
-            Assert.AreEqual(ModeKind.Normal, res.AsSwitchMode().Item);
         }
 
         [Test]
@@ -212,10 +210,10 @@ namespace VimCoreTest
         {
             Create("foo","bar");
             var tss = _buffer.CurrentSnapshot;
-            var span = tss.GetLineFromLineNumber(0).Extent;
-            _selection.SetupGet(x => x.Start).Returns(new VirtualSnapshotPoint(span.Start)).Verifiable();
-            _selection.SetupGet(x => x.End).Returns(new VirtualSnapshotPoint(span.End)).Verifiable();
-            _operations.Setup(x => x.Yank(span, MotionKind.Inclusive, OperationKind.LineWise, _map.DefaultRegister)).Verifiable();
+            var line = tss.GetLineFromLineNumber(0);
+            _selection.SetupGet(x => x.Start).Returns(new VirtualSnapshotPoint(line.Start)).Verifiable();
+            _selection.SetupGet(x => x.End).Returns(new VirtualSnapshotPoint(line.End)).Verifiable();
+            _operations.Setup(x => x.Yank(line.ExtentIncludingLineBreak, MotionKind.Inclusive, OperationKind.LineWise, _map.DefaultRegister)).Verifiable();
             Assert.IsTrue(_mode.Process('Y').IsSwitchPreviousMode);
             _selection.Verify();
             _operations.Verify();
