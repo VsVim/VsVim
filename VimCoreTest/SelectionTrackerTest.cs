@@ -9,6 +9,7 @@ using Microsoft.VisualStudio.Text.Editor;
 using VimCoreTest.Utils;
 using Microsoft.VisualStudio.Text;
 using Microsoft.FSharp.Core;
+using System.Windows.Threading;
 
 namespace VimCoreTest
 {
@@ -22,7 +23,7 @@ namespace VimCoreTest
         {
             _view = EditorUtil.CreateView(lines);
             _tracker = new SelectionTracker(_view, mode);
-            _tracker.Start(FSharpOption<SnapshotPoint>.None);
+            _tracker.Start();
         }
 
         [TearDown]
@@ -56,7 +57,7 @@ namespace VimCoreTest
         public void Start1()
         {
             Create(SelectionMode.Character, "foo");
-            _tracker.Start(FSharpOption<SnapshotPoint>.None);
+            _tracker.Start();
         }
 
         [Test]
@@ -72,6 +73,32 @@ namespace VimCoreTest
             Create(SelectionMode.Character, "foo");
             _tracker.Stop();
             _tracker.Stop();
+        }
+
+        [Test]
+        public void CaretMove1()
+        {
+            Create(SelectionMode.Character, "foo");
+            var span = new SnapshotSpan(_view.TextSnapshot, 0, 3);
+            _view.Caret.MoveTo(span.End);
+            Dispatcher.CurrentDispatcher.DoEvents();
+            Assert.AreEqual(1, _view.Selection.SelectedSpans.Count);
+            Assert.AreEqual(span, _view.Selection.SelectedSpans[0]);
+        }
+
+        [Test]
+        public void CaretMove2()
+        {
+            Create(SelectionMode.Character, "foo");
+            var span = new SnapshotSpan(_view.TextSnapshot, 0, 3);
+            _view.Caret.MoveTo(span.End);
+            Dispatcher.CurrentDispatcher.DoEvents();
+            _tracker.Stop();
+            _tracker.Start();
+            _view.Caret.MoveTo(span.Start);
+            Dispatcher.CurrentDispatcher.DoEvents();
+            Assert.AreEqual(1, _view.Selection.SelectedSpans.Count);
+            Assert.AreEqual(span, _view.Selection.SelectedSpans[0]);
         }
     }
 }

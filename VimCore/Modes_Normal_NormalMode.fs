@@ -462,7 +462,7 @@ type internal NormalMode( _bufferData : IVimBuffer, _operations : IOperations ) 
             {   KeyInput=InputUtil.CharToKeyInput('v');
                 RunFunc=(fun _ -> NormalModeResult.SwitchMode ModeKind.VisualCharacter); }
             {   KeyInput=InputUtil.CharToKeyInput('V');
-                RunFunc=(fun _ -> NormalModeResult.SwitchMode ModeKind.VisualLineWise); }
+                RunFunc=(fun _ -> NormalModeResult.SwitchMode ModeKind.VisualLine); }
             {   KeyInput=KeyInput('q', Key.Q, ModifierKeys.Control);
                 RunFunc=(fun _ -> NormalModeResult.SwitchMode ModeKind.VisualBlock) }
             ]

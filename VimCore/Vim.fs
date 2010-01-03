@@ -38,15 +38,23 @@ type internal Vim
         let commandOpts = Modes.Command.DefaultOperations(view,editOperations,_host) :> Modes.Command.IOperations
         let insertOpts = Modes.Insert.DefaultOperations(view,editOperations) :> Modes.ICommonOperations
         let visualOpts = Modes.Visual.DefaultOperations(view,editOperations) :> Modes.ICommonOperations
+        let trackerFactory kind = 
+            let mode = 
+                match kind with 
+                | ModeKind.VisualBlock -> Modes.Visual.SelectionMode.Block
+                | ModeKind.VisualCharacter -> Modes.Visual.SelectionMode.Character
+                | ModeKind.VisualLine -> Modes.Visual.SelectionMode.Line
+                | _ -> invalidArg "_kind" "Invalid kind for Visual Mode"
+            Modes.Visual.SelectionTracker(view,mode) :> Modes.Visual.ISelectionTracker
         let modeList = 
             [
                 ((Modes.Normal.NormalMode(buffer, normalOpts)) :> IMode);
                 ((Modes.Command.CommandMode(buffer, commandOpts)) :> IMode);
                 ((Modes.Insert.InsertMode(buffer,insertOpts,broker)) :> IMode);
                 (DisabledMode(buffer) :> IMode);
-                ((Modes.Visual.VisualMode(buffer, visualOpts, ModeKind.VisualBlock)) :> IMode);
-                ((Modes.Visual.VisualMode(buffer, visualOpts, ModeKind.VisualLineWise)) :> IMode);
-                ((Modes.Visual.VisualMode(buffer, visualOpts, ModeKind.VisualCharacter)) :> IMode);
+                ((Modes.Visual.VisualMode(buffer, visualOpts, (trackerFactory ModeKind.VisualBlock), ModeKind.VisualBlock)) :> IMode);
+                ((Modes.Visual.VisualMode(buffer, visualOpts, (trackerFactory ModeKind.VisualLine), ModeKind.VisualLine)) :> IMode);
+                ((Modes.Visual.VisualMode(buffer, visualOpts, (trackerFactory ModeKind.VisualCharacter), ModeKind.VisualCharacter)) :> IMode);
             ]
         modeList |> List.iter (fun m -> bufferRaw.AddMode m)
         buffer.SwitchMode ModeKind.Normal |> ignore

@@ -1698,7 +1698,7 @@ namespace VimCoreTest
             CreateBuffer(s_lines);
             var res = _mode.Process('V');
             Assert.IsTrue(res.IsSwitchMode);
-            Assert.AreEqual(ModeKind.VisualLineWise, res.AsSwitchMode().Item);
+            Assert.AreEqual(ModeKind.VisualLine, res.AsSwitchMode().Item);
         }
 
         [Test]

@@ -5,6 +5,7 @@ open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Operations
 open Microsoft.VisualStudio.Text.Editor
 open System.Windows.Input
+open System.Windows.Threading
 open Vim
 open Vim.Modes
 
@@ -18,15 +19,8 @@ type internal VisualMode
     (
         _buffer : IVimBuffer,
         _operations : ICommonOperations,
-        _kind : ModeKind ) = 
-
-    let _selectionMode = 
-        match _kind with 
-        | ModeKind.VisualBlock -> SelectionMode.Block
-        | ModeKind.VisualCharacter -> SelectionMode.Character
-        | ModeKind.VisualLineWise -> SelectionMode.Line
-        | _ -> invalidArg "_kind" "Invalid kind for Visual Mode"
-    let _selectionTracker = SelectionTracker(_buffer.TextView, _selectionMode)
+        _selectionTracker : ISelectionTracker,
+        _kind : ModeKind ) as this = 
 
     /// Tracks the count of explicit moves we are seeing.  Normally an explicit character
     /// move causes the selection to be removed.  Updating this counter is a way of our 
@@ -34,6 +28,11 @@ type internal VisualMode
     let mutable _explicitMoveCount = 0
 
     let mutable _operationsMap : Map<KeyInput,Operation> = Map.empty
+
+    let mutable _caretMovedHandler = ToggleHandler.Empty
+
+    do
+        _caretMovedHandler <- ToggleHandler.Create (_buffer.TextView.Caret.PositionChanged) (fun _ -> this.OnCaretMoved())
 
     member x.InExplicitMove = _explicitMoveCount > 0
     member x.BeginExplicitMove() = _explicitMoveCount <- _explicitMoveCount + 1
@@ -89,6 +88,18 @@ type internal VisualMode
                 |> Map.add (InputUtil.KeyToKeyInput(Key.Escape)) (fun _ -> SwitchMode ModeKind.Normal)
             _operationsMap <- map
 
+    /// Called when the caret is moved. If we are not explicitly moving the caret then we need to switch
+    /// out of Visual mode and back to normal mode.  Do this at background though so we don't interfer with
+    /// other processing
+    member private x.OnCaretMoved() =
+        if not x.InExplicitMove then
+            let func() = 
+                if _selectionTracker.IsRunning then
+                    _buffer.SwitchMode ModeKind.Normal |> ignore
+            Dispatcher.CurrentDispatcher.BeginInvoke(
+                DispatcherPriority.Background,
+                new System.Action(func)) |> ignore
+
     interface IMode with
         member x.VimBuffer = _buffer
         member x.Commands = 
@@ -100,13 +111,19 @@ type internal VisualMode
             let op = Map.find ki _operationsMap
             let res = op(_buffer.RegisterMap.DefaultRegister)
             match res with
-            | VisualModeResult.Complete -> ProcessResult.Processed
+            | VisualModeResult.Complete -> 
+                _buffer.VimHost.UpdateStatus(Resources.VisualMode_Banner)
+                ProcessResult.Processed
             | VisualModeResult.SwitchMode m -> ProcessResult.SwitchMode m
 
         member x.OnEnter () = 
+            _caretMovedHandler.Add()
             x.EnsureOperationsMap()
-            _selectionTracker.Start(None)
+            _selectionTracker.Start()
+            _buffer.VimHost.UpdateStatus(Resources.VisualMode_Banner)
         member x.OnLeave () = 
+            _caretMovedHandler.Remove()
             _selectionTracker.Stop()
+            _buffer.VimHost.UpdateStatus(System.String.Empty)
 
 

@@ -53,27 +53,27 @@ type internal SelectionTracker
                 let head = spans |> Seq.head
                 head.GetText()
 
-    /// Call when selection tracking should begin.  Optionally passes in an anchor point for
-    /// the selection.  If it's not specified the caret will be used
-    member x.Start(anchor : SnapshotPoint option) =
+    member x.IsRunning = _running
+
+    /// Call when selection tracking should begin.  
+    member x.Start() = 
         if _running then invalidOp Vim.Resources.SelectionTracker_AlreadyRunning
         _running <- true
         _textChangedHandler.Add()
         _caretChangedHandler.Add()
-        _anchorPoint <- 
-            match anchor with
-            | Some(point) -> point
-            | None -> ViewUtil.GetCaretPoint _textView
+        _anchorPoint <- ViewUtil.GetCaretPoint _textView 
 
         // Update the selection based on our current information
         _originalSelectionMode <- _textView.Selection.Mode
-        _textView.Selection.Select(new SnapshotSpan(_anchorPoint, 1), false)
         _textView.Selection.Mode <- 
             match _mode with
             | SelectionMode.Character -> TextSelectionMode.Stream
             | SelectionMode.Line -> TextSelectionMode.Stream
             | SelectionMode.Block -> TextSelectionMode.Box
             | _ -> failwith "Invaild enum value"
+
+        // Do the initial selection update
+        x.UpdateSelectionCore()
 
     /// Called when selection should no longer be tracked.  Must be paired with Start calls or
     /// we will stay attached to certain event handlers
@@ -96,8 +96,10 @@ type internal SelectionTracker
             let first = VirtualSnapshotPoint(_anchorPoint)
             let last = _textView.Caret.Position.VirtualBufferPosition
             let last = 
-                if first.Position.Position = last.Position.Position then
-                    VirtualSnapshotPoint(last.Position.Add(1),last.VirtualSpaces)
+                if first = last then
+                    if last.IsInVirtualSpace then VirtualSnapshotPoint(last.Position,last.VirtualSpaces+1)
+                    elif last.Position.GetContainingLine().End = last.Position then VirtualSnapshotPoint(last.Position,1)
+                    else VirtualSnapshotPoint(last.Position.Add(1))
                 else last
             _textView.Selection.Select(first,last)
         match _mode with
@@ -117,6 +119,9 @@ type internal SelectionTracker
         | SelectionMode.Block -> selectStandard()
         | _ -> failwith "Invalid enum value"
 
+    /// Update the selection.  Because certain types of movements can themselves reset the selection
+    /// we do our reset on the background.  Ensure we are still running to avoid a race condition in 
+    /// this process
     member private x.UpdateSelection() = 
         let func () = 
             if _running then
@@ -139,3 +144,9 @@ type internal SelectionTracker
         x.UpdateSelection()
 
     member private x.OnCaretChanged()  = x.UpdateSelection()
+
+    interface ISelectionTracker with 
+        member x.IsRunning = x.IsRunning
+        member x.SelectedText = x.SelectedText
+        member x.Start () = x.Start()
+        member x.Stop () = x.Stop()

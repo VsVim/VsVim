@@ -6,6 +6,7 @@ using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Vim;
 using Vim.Modes;
+using System.Windows.Threading;
 
 namespace VimCoreTest.Utils
 {
@@ -101,6 +102,18 @@ namespace VimCoreTest.Utils
         internal static SnapshotPoint GetCaretPoint(this ITextView view)
         {
             return view.Caret.Position.BufferPosition;
+        }
+
+        internal static void DoEvents(this System.Windows.Threading.Dispatcher dispatcher)
+        {
+            var frame = new DispatcherFrame();
+            Action<DispatcherFrame> action = _ => { frame.Continue = false; };
+            dispatcher.BeginInvoke(
+                DispatcherPriority.Background,
+                action,
+                frame);
+            Dispatcher.PushFrame(frame);
+
         }
 
     }

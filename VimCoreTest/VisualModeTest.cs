@@ -23,42 +23,38 @@ namespace VimCoreTest
         private Mock<IVimBuffer> _bufferData;
         private VisualMode _modeRaw;
         private IMode _mode;
-        private FakeVimHost _host;
         private IRegisterMap _map;
         private Mock<IEditorOperations> _editOpts;
         private Mock<ICommonOperations> _operations;
+        private Mock<ISelectionTracker> _tracker;
 
         public void Create(params string[] lines)
         {
-            Create(ModeKind.VisualBlock, lines);
+            Create2(lines: lines);
         }
 
-        public void Create(ModeKind kind, params string[] lines)
+        public void Create2(
+            ModeKind kind=ModeKind.VisualCharacter, 
+            IVimHost host= null,
+            params string[] lines)
         {
             _view = Utils.EditorUtil.CreateView(lines);
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 0));
             _map = new RegisterMap();
-            _host = new FakeVimHost();
             _editOpts = new Mock<IEditorOperations>(MockBehavior.Strict);
             _operations = new Mock<ICommonOperations>(MockBehavior.Strict);
+            _tracker = new Mock<ISelectionTracker>(MockBehavior.Strict);
+            _tracker.Setup(x => x.Start());
+            host = host ?? new FakeVimHost();
             _bufferData = MockObjectFactory.CreateVimBuffer(
                 _view,
                 "test",
-                MockObjectFactory.CreateVim(_map,host:_host).Object,
+                MockObjectFactory.CreateVim(_map,host:host).Object,
                 MockObjectFactory.CreateBlockCaret().Object,
                 _editOpts.Object);
-            _modeRaw = new Vim.Modes.Visual.VisualMode(Tuple.Create<IVimBuffer, ICommonOperations, ModeKind>(_bufferData.Object, _operations.Object, kind));
+            _modeRaw = new Vim.Modes.Visual.VisualMode(Tuple.Create<IVimBuffer, ICommonOperations, ISelectionTracker, ModeKind>(_bufferData.Object, _operations.Object, _tracker.Object, kind));
             _mode = _modeRaw;
             _mode.OnEnter();
-        }
-
-        [Test]
-        [ExpectedException(typeof(ArgumentException))]
-        public void ModeKind1()
-        {
-            var data = new Mock<IVimBuffer>();
-            var operations = new Mock<ICommonOperations>();
-            new VisualMode(Tuple.Create<IVimBuffer, ICommonOperations, ModeKind>(data.Object, operations.Object, ModeKind.Insert));
         }
 
         [Test, Description("Escape is used to exit visual mode")]
@@ -101,9 +97,9 @@ namespace VimCoreTest
         [Test]
         public void OnLeave1()
         {
-            _editOpts.Setup(x => x.ResetSelection()).Verifiable();
+            _tracker.Setup(x => x.Stop()).Verifiable();
             _mode.OnLeave();
-            _editOpts.Verify();
+            _tracker.Verify();
         }
 
         [Test]
@@ -126,33 +122,27 @@ namespace VimCoreTest
             Assert.IsFalse(_modeRaw.InExplicitMove);
         }
 
-        #region Selection
-
         [Test]
-        public void Character1()
+        public void Banner1()
         {
-            Create(ModeKind.VisualCharacter, "foo", "bar");
-            _mode.Process('l');
-            Assert.AreEqual("fo", _view.Selection.GetSpan().GetText());
+            var host = new Mock<IVimHost>(MockBehavior.Strict);
+            host.Setup(x => x.UpdateStatus(Resources.VisualMode_Banner)).Verifiable();
+            Create2(ModeKind.VisualCharacter, host.Object, "foo");
+            host.Verify();
         }
 
         [Test]
-        public void Character2()
+        public void Banner2()
         {
-            Create(ModeKind.VisualCharacter, "foo", "bar");
-            _mode.Process('l');
-            _mode.Process('l');
-            Assert.AreEqual("foo", _view.Selection.GetSpan().GetText());
+            var host = new Mock<IVimHost>(MockBehavior.Strict);
+            host.Setup(x => x.UpdateStatus(Resources.VisualMode_Banner)).Verifiable();
+            Create2(ModeKind.VisualCharacter, host.Object, "foo");
+            host.Setup(x => x.UpdateStatus(String.Empty)).Verifiable();
+            _tracker.Setup(x => x.Stop()).Verifiable();
+            _mode.OnLeave();
+            host.Verify();
+            _tracker.Verify();
         }
-
-        [Test]
-        public void Character3()
-        {
-            Create(ModeKind.VisualCharacter, "foo");
-            Assert.AreEqual("f", _view.Selection.GetSpan().GetText());
-        }
-
-        #endregion
 
         #region Operations
 
@@ -160,20 +150,19 @@ namespace VimCoreTest
         public void Yank1()
         {
             Create("foo", "bar");
-            var span = new SnapshotSpan(_view.TextSnapshot, 0, 3);
-            _view.Selection.Select(span, false);
-            _operations.Setup(x => x.Yank(span, MotionKind.Inclusive, OperationKind.CharacterWise, _map.DefaultRegister)).Verifiable();
+            _tracker.SetupGet(x => x.SelectedText).Returns("foo").Verifiable();
+            _operations.Setup(x => x.YankText("foo", MotionKind.Inclusive, OperationKind.CharacterWise, _map.DefaultRegister)).Verifiable();
             _mode.Process('y');
             _operations.Verify();
+            _tracker.Verify();
         }
 
         [Test, Description("Yank should go back to normal mode")]
         public void Yank2()
         {
             Create("foo", "bar");
-            var span = new SnapshotSpan(_view.TextSnapshot, 0, 3);
-            _view.Selection.Select(span, false);
-            _operations.Setup(x => x.Yank(span, MotionKind.Inclusive, OperationKind.CharacterWise, _map.DefaultRegister)).Verifiable();
+            _tracker.SetupGet(x => x.SelectedText).Returns("foo").Verifiable();
+            _operations.Setup(x => x.YankText("foo", MotionKind.Inclusive, OperationKind.CharacterWise, _map.DefaultRegister)).Verifiable();
             var res = _mode.Process('y');
             Assert.IsTrue(res.IsSwitchMode);
             Assert.AreEqual(ModeKind.Normal, res.AsSwitchMode().Item);
@@ -183,9 +172,8 @@ namespace VimCoreTest
         public void Yank3()
         {
             Create("foo", "bar");
-            var span = new SnapshotSpan(_view.TextSnapshot, 0, 3);
-            _view.Selection.Select(span, false);
-            _operations.Setup(x => x.Yank(span, MotionKind.Inclusive, OperationKind.CharacterWise, _map.GetRegister('c'))).Verifiable();
+            _tracker.SetupGet(x => x.SelectedText).Returns("foo").Verifiable();
+            _operations.Setup(x => x.YankText("foo", MotionKind.Inclusive, OperationKind.CharacterWise, _map.GetRegister('c'))).Verifiable();
             _mode.Process("\"cy");
             _operations.Verify();
         }
