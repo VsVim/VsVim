@@ -21,6 +21,8 @@ namespace VimCoreTest
     {
         private Mock<IWpfTextView> _view;
         private Mock<ITextCaret> _caret;
+        private Mock<ITextSelection> _selection;
+        private ITextBuffer _buffer;
         private Mock<IVimBuffer> _bufferData;
         private VisualMode _modeRaw;
         private IMode _mode;
@@ -39,9 +41,14 @@ namespace VimCoreTest
             IVimHost host= null,
             params string[] lines)
         {
+            _buffer = EditorUtil.CreateBuffer(lines);
             _caret = new Mock<ITextCaret>(MockBehavior.Strict);
             _view = new Mock<IWpfTextView>(MockBehavior.Strict);
+            _selection = new Mock<ITextSelection>(MockBehavior.Strict);
             _view.SetupGet(x => x.Caret).Returns(_caret.Object);
+            _view.SetupGet(x => x.Selection).Returns(_selection.Object);
+            _view.SetupGet(x => x.TextBuffer).Returns(_buffer);
+            _view.SetupGet(x => x.TextSnapshot).Returns(() => _buffer.CurrentSnapshot);
             _map = new RegisterMap();
             _editOpts = new Mock<IEditorOperations>(MockBehavior.Strict);
             _operations = new Mock<ICommonOperations>(MockBehavior.Strict);
@@ -177,6 +184,20 @@ namespace VimCoreTest
             _tracker.SetupGet(x => x.SelectedText).Returns("foo").Verifiable();
             _operations.Setup(x => x.YankText("foo", MotionKind.Inclusive, OperationKind.CharacterWise, _map.GetRegister('c'))).Verifiable();
             _mode.Process("\"cy");
+            _operations.Verify();
+        }
+
+        [Test]
+        public void YankLines1()
+        {
+            Create("foo","bar");
+            var tss = _buffer.CurrentSnapshot;
+            var span = tss.GetLineFromLineNumber(0).Extent;
+            _selection.SetupGet(x => x.Start).Returns(new VirtualSnapshotPoint(span.Start)).Verifiable();
+            _selection.SetupGet(x => x.End).Returns(new VirtualSnapshotPoint(span.End)).Verifiable();
+            _operations.Setup(x => x.Yank(span, MotionKind.Inclusive, OperationKind.LineWise, _map.DefaultRegister)).Verifiable();
+            _mode.Process("Y");
+            _selection.Verify();
             _operations.Verify();
         }
 
