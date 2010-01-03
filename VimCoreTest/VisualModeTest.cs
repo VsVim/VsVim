@@ -161,7 +161,7 @@ namespace VimCoreTest
             Create("foo", "bar");
             _tracker.SetupGet(x => x.SelectedText).Returns("foo").Verifiable();
             _operations.Setup(x => x.YankText("foo", MotionKind.Inclusive, OperationKind.CharacterWise, _map.DefaultRegister)).Verifiable();
-            _mode.Process('y');
+            Assert.IsTrue(_mode.Process('y').IsSwitchPreviousMode);
             _operations.Verify();
             _tracker.Verify();
         }
@@ -173,7 +173,7 @@ namespace VimCoreTest
             _tracker.SetupGet(x => x.SelectedText).Returns("foo").Verifiable();
             _operations.Setup(x => x.YankText("foo", MotionKind.Inclusive, OperationKind.CharacterWise, _map.DefaultRegister)).Verifiable();
             var res = _mode.Process('y');
-            Assert.IsTrue(res.IsSwitchMode);
+            Assert.IsTrue(res.IsSwitchPreviousMode);
             Assert.AreEqual(ModeKind.Normal, res.AsSwitchMode().Item);
         }
 
@@ -196,7 +196,7 @@ namespace VimCoreTest
             _selection.SetupGet(x => x.Start).Returns(new VirtualSnapshotPoint(span.Start)).Verifiable();
             _selection.SetupGet(x => x.End).Returns(new VirtualSnapshotPoint(span.End)).Verifiable();
             _operations.Setup(x => x.Yank(span, MotionKind.Inclusive, OperationKind.LineWise, _map.DefaultRegister)).Verifiable();
-            _mode.Process("Y");
+            Assert.IsTrue(_mode.Process('Y').IsSwitchPreviousMode);
             _selection.Verify();
             _operations.Verify();
         }

@@ -11,7 +11,7 @@ open Vim.Modes
 
 type internal VisualModeResult =
     | Complete
-    | SwitchMode of ModeKind
+    | SwitchPreviousMode
 
 type internal Operation = Register -> VisualModeResult
 
@@ -75,7 +75,7 @@ type internal VisualMode
                 yield (InputUtil.CharToKeyInput('y'), 
                     (fun (reg:Register) -> 
                         _operations.YankText (_selectionTracker.SelectedText) MotionKind.Inclusive OperationKind.CharacterWise reg
-                        VisualModeResult.SwitchMode ModeKind.Normal))
+                        VisualModeResult.SwitchPreviousMode))
                 yield (InputUtil.CharToKeyInput('Y'),
                     (fun (reg:Register) ->
                         let selection = _buffer.TextView.Selection
@@ -83,7 +83,7 @@ type internal VisualMode
                         let endPoint = selection.End.Position.GetContainingLine().EndIncludingLineBreak
                         let span = SnapshotSpan(startPoint,endPoint)
                         _operations.Yank span MotionKind.Inclusive OperationKind.LineWise reg
-                        VisualModeResult.SwitchMode ModeKind.Normal))
+                        VisualModeResult.SwitchPreviousMode))
                 }
         s
 
@@ -93,7 +93,7 @@ type internal VisualMode
                 x.BuildMoveSequence() 
                 |> Seq.append (x.BuildOperationsSequence())
                 |> Map.ofSeq
-                |> Map.add (InputUtil.KeyToKeyInput(Key.Escape)) (fun _ -> SwitchMode ModeKind.Normal)
+                |> Map.add (InputUtil.KeyToKeyInput(Key.Escape)) (fun _ -> SwitchPreviousMode)
             _operationsMap <- map
 
     /// Called when the caret is moved. If we are not explicitly moving the caret then we need to switch
@@ -122,7 +122,7 @@ type internal VisualMode
             | VisualModeResult.Complete -> 
                 _buffer.VimHost.UpdateStatus(Resources.VisualMode_Banner)
                 ProcessResult.Processed
-            | VisualModeResult.SwitchMode m -> ProcessResult.SwitchMode m
+            | VisualModeResult.SwitchPreviousMode -> ProcessResult.SwitchPreviousMode
 
         member x.OnEnter () = 
             _caretMovedHandler.Add()
