@@ -25,9 +25,10 @@ type internal CommandData =  {
 type internal VisualMode
     (
         _buffer : IVimBuffer,
-        _operations : ICommonOperations,
-        _selectionTracker : ISelectionTracker,
+        _operations : IOperations,
         _kind : ModeKind ) as this = 
+
+    let _selectionTracker = _operations.SelectionTracker 
 
     /// Tracks the count of explicit moves we are seeing.  Normally an explicit character
     /// move causes the selection to be removed.  Updating this counter is a way of our 
@@ -66,6 +67,7 @@ type internal VisualMode
             |> Seq.map (fun (ki,com) -> (ki,wrap com))
 
     member private x.BuildOperationsSequence() =
+        let del _ reg = _operations.DeleteSpan
         let s : seq<KeyInput * Operation> = 
             seq {
                 yield (InputUtil.CharToKeyInput('y'), 
