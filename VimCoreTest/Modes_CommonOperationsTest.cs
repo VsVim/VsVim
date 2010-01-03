@@ -406,6 +406,74 @@ namespace VimCoreTest
             _editorOpts.Verify();
         }
 
+        [Test, Description("At end of line should wrap to the start of the next line if there is a word")]
+        public void MoveWordForward1()
+        {
+            CreateLines(
+                "foo bar baz", 
+                "boy kick ball",
+                "a big dog");
+            var line1 = _view.TextSnapshot.GetLineFromLineNumber(0);
+            _view.Caret.MoveTo(line1.End);
+            _operations.MoveWordForward(WordKind.NormalWord,1);
+            var line2 = _view.TextSnapshot.GetLineFromLineNumber(1);
+            Assert.AreEqual(line2.Start, _view.Caret.Position.BufferPosition);
+        }
+
+        [Test]
+        public void MoveWordForward2()
+        {
+            CreateLines(
+                "foo bar baz", 
+                "boy kick ball",
+                "a big dog");
+            var line = _view.TextSnapshot.GetLineFromLineNumber(0);
+            _view.Caret.MoveTo(line.Start);
+            _operations.MoveWordForward(WordKind.NormalWord,1);
+            Assert.AreEqual(4, _view.Caret.Position.BufferPosition.Position);
+        }
+
+        [Test]
+        public void MoveWordBackword1()
+        {
+            CreateLines("foo bar");
+            var line = _view.TextSnapshot.GetLineFromLineNumber(0);
+            _view.Caret.MoveTo(line.End);
+            _operations.MoveWordBackward(WordKind.NormalWord,1);
+            Assert.AreEqual(4, _view.Caret.Position.BufferPosition.Position);
+        }
+
+        [Test, Description("At the the start of a word move back to the start of the previous wodr")]
+        public void MoveWordBackward2()
+        {
+            CreateLines("foo bar");
+            _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 4));
+            Assert.AreEqual('b', _view.Caret.Position.BufferPosition.GetChar());
+            _operations.MoveWordBackward(WordKind.NormalWord,1);
+            Assert.AreEqual(0, _view.Caret.Position.BufferPosition.Position);
+        }
+
+        [Test, Description("Middle of word should move back to front")]
+        public void MoveWordBackard3()
+        {
+            CreateLines("foo bar");
+            _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 5));
+            Assert.AreEqual('a', _view.Caret.Position.BufferPosition.GetChar());
+            _operations.MoveWordBackward(WordKind.NormalWord,1);
+            Assert.AreEqual(4, _view.Caret.Position.BufferPosition.Position);
+        }
+
+        [Test, Description("Move backwards across lines")]
+        public void MoveWordBackward4()
+        {
+            CreateLines("foo bar", "baz");
+            var line = _view.TextSnapshot.GetLineFromLineNumber(1);
+            _view.Caret.MoveTo(line.Start);
+            _operations.MoveWordBackward(WordKind.NormalWord,1);
+            Assert.AreEqual(4, _view.Caret.Position.BufferPosition.Position);
+        }
+
+
         [Test]
         public void MoveCaretDown1()
         {

@@ -336,6 +336,42 @@ namespace VimCoreTest
             _operations.Verify();
         }
 
+        [Test]
+        public void Move_w1()
+        {
+            CreateBuffer(s_lines);
+            _operations.Setup(x => x.MoveWordForward(WordKind.NormalWord, 1)).Verifiable();
+            _mode.Process('w');
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Move_W1()
+        {
+            CreateBuffer(s_lines);
+            _operations.Setup(x => x.MoveWordForward(WordKind.BigWord, 1)).Verifiable();
+            _mode.Process('W');
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Move_b1()
+        {
+            CreateBuffer(s_lines);
+            _operations.Setup(x => x.MoveWordBackward(WordKind.NormalWord, 1)).Verifiable();
+            _mode.Process('b');
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Move_B1()
+        {
+            CreateBuffer(s_lines);
+            _operations.Setup(x => x.MoveWordBackward(WordKind.BigWord, 1)).Verifiable();
+            _mode.Process('B');
+            _operations.Verify();
+        }
+
         #endregion
 
         #region Scroll

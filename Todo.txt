@@ -8,7 +8,8 @@ Version 0.7
 - Marks Undo Support
 - Visual mode
   - Copy-move
-  - delete-insert
+- Help delete-insert
+- Help simple-change
 - Finish range parsing
 - :s in command mode
 - :et in command mode

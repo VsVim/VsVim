@@ -15,8 +15,6 @@ module internal ViewUtil =
     val MoveCaretToVirtualPoint : ITextView -> VirtualSnapshotPoint -> CaretPosition
     val MoveCaretToEndOfLine : ITextView -> CaretPosition
     val MoveCaretToBeginingOfLine : ITextView -> CaretPosition
-    val MoveWordForward : ITextView -> WordKind -> SnapshotPoint
-    val MoveWordBackward : ITextView -> WordKind -> SnapshotPoint
     val MoveToLastLineStart : IWpfTextView -> SnapshotPoint
     val MoveToLineStart : IWpfTextView -> ITextSnapshotLine -> SnapshotPoint
     val InsertNewLineAfter : ITextView -> int -> bool

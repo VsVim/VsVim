@@ -7,6 +7,7 @@ open Microsoft.VisualStudio.Text.Editor
 open System.Windows.Input
 open System.Windows.Media
 
+
 /// Operation in the normal mode
 type internal Operation =  {
     KeyInput : Vim.KeyInput;
@@ -325,44 +326,17 @@ type internal NormalMode( _bufferData : IVimBuffer, _operations : IOperations ) 
         runCount count
 
     member private this.BuildMotionOperationsMap =
-        let wrap (func: NormalModeData -> unit) = 
-            let inner (d:NormalModeData) = 
-                func d |> ignore
+        let wrap func = 
+            fun (d:NormalModeData) -> 
+                func d.Count
+                ViewUtil.ClearSelection _bufferData.TextView
                 NormalModeResult.Complete
-            inner
-        let moveLeft = wrap (fun d -> _operations.MoveCaretLeft(d.Count) )
-        let moveRight = wrap (fun d -> _operations.MoveCaretRight(d.Count) )
-        let moveUp = wrap (fun d -> _operations.MoveCaretUp(d.Count) )
-        let moveDown = wrap (fun d -> _operations.MoveCaretDown(d.Count) )
-
-        let l : list<Operation> = [
-            { KeyInput=InputUtil.CharToKeyInput('h'); RunFunc = moveLeft; }
-            { KeyInput=InputUtil.KeyToKeyInput(Key.Left); RunFunc = moveLeft; }
-            { KeyInput=InputUtil.KeyToKeyInput(Key.Back); RunFunc = moveLeft; }
-            { KeyInput=KeyInput('h', Key.H, ModifierKeys.Control); RunFunc = moveLeft; }
-            { KeyInput=InputUtil.CharToKeyInput('l'); RunFunc = moveRight; }
-            { KeyInput=InputUtil.KeyToKeyInput(Key.Right); RunFunc = moveRight; }
-            { KeyInput=InputUtil.KeyToKeyInput(Key.Space); RunFunc = moveRight; }
-            { KeyInput=InputUtil.CharToKeyInput('k'); RunFunc=moveUp; }
-            { KeyInput=InputUtil.KeyToKeyInput(Key.Up); RunFunc=moveUp; }
-            { KeyInput=KeyInput('p', Key.P, ModifierKeys.Control); RunFunc=moveUp; }
-            { KeyInput=InputUtil.CharToKeyInput('j'); RunFunc=moveDown; }
-            { KeyInput=InputUtil.KeyToKeyInput(Key.Down); RunFunc=moveDown; }
-            { KeyInput=KeyInput('n', Key.N, ModifierKeys.Control); RunFunc=moveDown; }
-            { KeyInput=KeyInput('j', Key.J, ModifierKeys.Control); RunFunc=moveDown; }
-            ]
-        l
+        let factory = Vim.Modes.CommandFactory(_operations)
+        factory.CreateMovementCommands() 
+            |> Seq.map (fun (ki,com) -> {KeyInput=ki;RunFunc=(wrap com)})
 
     member this.BuildOperationsMap = 
         let l : list<Operation> = [
-            {   KeyInput=InputUtil.CharToKeyInput('w');
-                RunFunc=(fun d -> this.MotionFunc this.TextView d.Count (fun v -> ViewUtil.MoveWordForward v WordKind.NormalWord)) };
-            {   KeyInput=InputUtil.CharToKeyInput('b');
-                RunFunc=(fun d -> this.MotionFunc this.TextView d.Count (fun v -> ViewUtil.MoveWordBackward v WordKind.NormalWord)) };
-            {   KeyInput=InputUtil.CharToKeyInput('W');
-                RunFunc=(fun d -> this.MotionFunc this.TextView d.Count (fun v -> ViewUtil.MoveWordForward v WordKind.BigWord)) };
-            {   KeyInput=InputUtil.CharToKeyInput('B');
-                RunFunc=(fun d -> this.MotionFunc this.TextView d.Count (fun v -> ViewUtil.MoveWordBackward v WordKind.BigWord)) };
             {   KeyInput=InputUtil.CharToKeyInput('x');
                 RunFunc=(fun d ->
                     _operations.DeleteCharacterAtCursor d.Count d.Register
@@ -466,7 +440,7 @@ type internal NormalMode( _bufferData : IVimBuffer, _operations : IOperations ) 
             {   KeyInput=KeyInput('q', Key.Q, ModifierKeys.Control);
                 RunFunc=(fun _ -> NormalModeResult.SwitchMode ModeKind.VisualBlock) }
             ]
-        let l = l @ this.BuildMotionOperationsMap
+        let l = l @ (this.BuildMotionOperationsMap |> List.ofSeq)
         l |> List.map (fun d -> d.KeyInput,d) |> Map.ofList
 
    

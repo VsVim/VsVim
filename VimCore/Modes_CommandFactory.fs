@@ -1,0 +1,52 @@
+﻿#light
+
+namespace Vim.Modes
+open Vim
+open Microsoft.VisualStudio.Text
+open Microsoft.VisualStudio.Text.Editor
+open System.Windows.Input
+open System.Windows.Media
+
+type internal MovementCommand = int -> unit
+
+type internal CommandFactory( _operations : ICommonOperations) = 
+
+    member private x.CreateMotionCommands() =
+        let s : seq<KeyInput * MovementCommand> =
+            seq {
+                yield (InputUtil.CharToKeyInput('w'), (fun count -> _operations.MoveWordForward WordKind.NormalWord count))
+                yield (InputUtil.CharToKeyInput('W'), (fun count -> _operations.MoveWordForward WordKind.BigWord count))
+                yield (InputUtil.CharToKeyInput('b'), (fun count -> _operations.MoveWordBackward WordKind.NormalWord count))
+                yield (InputUtil.CharToKeyInput('B'), (fun count -> _operations.MoveWordBackward WordKind.BigWord count))
+            }
+        s
+
+    member private x.CreateSimpleMovementCommands() = 
+        let moveLeft = fun count -> _operations.MoveCaretLeft(count)
+        let moveRight = fun count -> _operations.MoveCaretRight(count)
+        let moveUp = fun count -> _operations.MoveCaretUp(count)
+        let moveDown = fun count -> _operations.MoveCaretDown(count)
+
+        let s : seq<KeyInput * MovementCommand> = 
+            seq {
+                yield (InputUtil.CharToKeyInput('h'), moveLeft)
+                yield (InputUtil.KeyToKeyInput(Key.Left), moveLeft)
+                yield (InputUtil.KeyToKeyInput(Key.Back), moveLeft)
+                yield (KeyInput('h', Key.H, ModifierKeys.Control), moveLeft)
+                yield (InputUtil.CharToKeyInput('l'), moveRight)
+                yield (InputUtil.KeyToKeyInput(Key.Right), moveRight)
+                yield (InputUtil.KeyToKeyInput(Key.Space), moveRight)
+                yield (InputUtil.CharToKeyInput('k'), moveUp)
+                yield (InputUtil.KeyToKeyInput(Key.Up), moveUp)
+                yield (KeyInput('p', Key.P, ModifierKeys.Control), moveUp)
+                yield (InputUtil.CharToKeyInput('j'), moveDown)
+                yield (InputUtil.KeyToKeyInput(Key.Down), moveDown)
+                yield (KeyInput('n', Key.N, ModifierKeys.Control),moveDown)
+                yield (KeyInput('j', Key.J, ModifierKeys.Control),moveDown)        
+            }
+        s
+
+    /// The sequence of commands which move the cursor.  Applicable in both Normal and Visual Mode
+    member x.CreateMovementCommands() = 
+        x.CreateSimpleMovementCommands()
+            |> Seq.append (x.CreateMotionCommands())

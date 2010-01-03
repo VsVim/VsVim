@@ -43,17 +43,6 @@ module internal ViewUtil =
         let line = view.Caret.ContainingTextViewLine
         MoveCaretToPosition view line.Extent.Start.Position
        
-            
-    let MoveWordForward (view : ITextView ) kind = 
-        let pos = TssUtil.FindNextWordPosition view.Caret.Position.BufferPosition kind
-        MoveCaretToPoint view pos |> ignore
-        pos
-            
-    let MoveWordBackward (view: ITextView) kind = 
-        let pos = TssUtil.FindPreviousWordPosition view.Caret.Position.BufferPosition kind
-        MoveCaretToPoint view pos |> ignore
-        pos
-    
     let InsertNewLineAfter (view:ITextView) pos =
         let line = view.TextSnapshot.GetLineFromPosition pos
         let next = line.EndIncludingLineBreak+1

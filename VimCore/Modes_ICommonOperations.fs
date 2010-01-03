@@ -37,6 +37,12 @@ type ICommonOperations =
 
     /// Move the cursor down count lines
     abstract MoveCaretDown : count : int -> unit
+
+    /// Move the cursor forward count WordKind's 
+    abstract MoveWordForward : WordKind -> count : int -> unit
+
+    /// Move the cursor backward count WordKind's
+    abstract MoveWordBackward : WordKind -> count : int -> unit
     
     /// Jumps to a given mark in the buffer.  
     /// TODO: Support global marks.  

@@ -42,32 +42,12 @@ type internal VisualMode
         let wrap func = 
             fun _ ->
                 x.BeginExplicitMove()
-                func() 
+                func(1) 
                 x.EndExplicitMove()
                 VisualModeResult.Complete
-        let moveLeft = wrap (fun () -> _operations.MoveCaretLeft(1))
-        let moveRight = wrap (fun () -> _operations.MoveCaretRight(1))
-        let moveUp = wrap (fun () -> _operations.MoveCaretUp(1))
-        let moveDown = wrap (fun () -> _operations.MoveCaretDown(1))
-
-        let s : seq<KeyInput * Operation> = 
-            seq {
-                yield (InputUtil.CharToKeyInput('h'), moveLeft)
-                yield (InputUtil.KeyToKeyInput(Key.Left), moveLeft)
-                yield (InputUtil.KeyToKeyInput(Key.Back), moveLeft)
-                yield (KeyInput('h', Key.H, ModifierKeys.Control), moveLeft)
-                yield (InputUtil.CharToKeyInput('l'), moveRight)
-                yield (InputUtil.KeyToKeyInput(Key.Right), moveRight)
-                yield (InputUtil.KeyToKeyInput(Key.Space), moveRight)
-                yield (InputUtil.CharToKeyInput('k'), moveUp)
-                yield (InputUtil.KeyToKeyInput(Key.Up), moveUp)
-                yield (KeyInput('p', Key.P, ModifierKeys.Control), moveUp)
-                yield (InputUtil.CharToKeyInput('j'), moveDown)
-                yield (InputUtil.KeyToKeyInput(Key.Down), moveDown)
-                yield (KeyInput('n', Key.N, ModifierKeys.Control),moveDown)
-                yield (KeyInput('j', Key.J, ModifierKeys.Control),moveDown)
-                }
-        s
+        let factory = Vim.Modes.CommandFactory(_operations)
+        factory.CreateMovementCommands()
+            |> Seq.map (fun (ki,com) -> (ki,wrap com))
 
     member private x.BuildOperationsSequence() =
         let s : seq<KeyInput * Operation> = 

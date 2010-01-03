@@ -167,6 +167,24 @@ type internal CommonOperations
             for i = 1 to count do
                 _operations.MoveLineDown(false)
 
+        member x.MoveWordForward kind count = 
+            let rec inner pos count = 
+                if count = 0 then pos
+                else 
+                    let nextPos = TssUtil.FindNextWordPosition pos kind
+                    inner nextPos (count-1)
+            let pos = inner (ViewUtil.GetCaretPoint _textView) count
+            ViewUtil.MoveCaretToPoint _textView pos |> ignore
+            
+        member x.MoveWordBackward kind count = 
+            let rec inner pos count =
+                if count = 0 then pos
+                else 
+                    let prevPos = TssUtil.FindPreviousWordPosition pos kind
+                    inner prevPos (count-1)
+            let pos = inner (ViewUtil.GetCaretPoint _textView) count
+            ViewUtil.MoveCaretToPoint _textView pos |> ignore
+
         /// Shift the lines enumerated by the specified span "count" characters to the right
         member x.ShiftRight (span:SnapshotSpan) count = 
             let text = new System.String(' ', count)

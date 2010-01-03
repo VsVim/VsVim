@@ -153,6 +153,26 @@ namespace VimCoreTest
             _tracker.Verify();
         }
 
+        #region Movement
+
+        public void MoveLeft1()
+        {
+            Create("foo", "bar");
+            _operations.Setup(x => x.MoveCaretLeft(1)).Verifiable();
+            _mode.Process('h');
+            _operations.Verify();
+        }
+
+        public void MoveWordLeft1()
+        {
+            Create("foo", "bar");
+            _operations.Setup(x => x.MoveWordForward(WordKind.NormalWord,1)).Verifiable();
+            _mode.Process('w');
+            _operations.Verify();
+        }
+
+        #endregion
+
         #region Operations
 
         [Test]
