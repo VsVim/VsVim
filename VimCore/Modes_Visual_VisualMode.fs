@@ -113,12 +113,29 @@ type internal VisualMode
             let waitReg (ki:KeyInput) = 
                 let reg = _buffer.RegisterMap.GetRegister (ki.Char)
                 _data <- { _data with
-                            RunFunc=x.ProcessInputCore;
+                            RunFunc=x.ProcessInput;
                             Register=reg;
                             IsWaitingForData=false; }
                 NeedMore
             _data <- { _data with RunFunc=waitReg; IsWaitingForData=true }
             NeedMore
+        elif ki.IsDigit then
+            let rec waitCount (ki:KeyInput) (getResult: KeyInput->CountResult) = 
+                let res = getResult ki
+                match res with 
+                | CountResult.Complete(count,ki) ->
+                    _data <- { _data with
+                                RunFunc=x.ProcessInput;
+                                Count=count;
+                                IsWaitingForData=false; }
+                    x.ProcessInput ki 
+                | CountResult.NeedMore(nextFunc) -> 
+                    let runFunc = fun ki -> waitCount ki nextFunc
+                    _data <- { _data with
+                                RunFunc=runFunc;
+                                IsWaitingForData=true };
+                    VisualModeResult.NeedMore
+            waitCount ki (CountCapture.Process)
         else 
             x.ProcessInputCore ki
 
