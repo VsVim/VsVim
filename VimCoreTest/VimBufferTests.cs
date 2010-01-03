@@ -69,6 +69,35 @@ namespace VimCoreTest
         }
 
         [Test]
+        public void SwitchPreviousMode1()
+        {
+            _normalMode.Setup(x => x.OnLeave()).Verifiable();
+            _insertMode.Setup(x => x.OnEnter()).Verifiable();
+            _buffer.SwitchMode(ModeKind.Insert);
+            _normalMode.Verify();
+            _insertMode.Verify();
+
+            _insertMode.Setup(x => x.OnLeave()).Verifiable();
+            var prev = _buffer.SwitchPreviousMode();
+            Assert.AreSame(_normalMode.Object, prev);
+            _insertMode.Verify();
+        }
+
+        [Test,Description("SwitchPreviousMode should raise the SwitchedMode event")]
+        public void SwitchPreviousMode2()
+        {
+            _normalMode.Setup(x => x.OnLeave()).Verifiable();
+            _insertMode.Setup(x => x.OnEnter()).Verifiable();
+            _buffer.SwitchMode(ModeKind.Insert);
+            _insertMode.Setup(x => x.OnLeave()).Verifiable();
+
+            var ran = false;
+            _buffer.SwitchedMode += (s, m) => { ran = true; };
+            _buffer.SwitchPreviousMode();
+            Assert.IsTrue(ran);
+        }
+
+        [Test]
         public void KeyInputProcessed1()
         {
             var ki = new KeyInput('f', Key.F);
@@ -115,6 +144,35 @@ namespace VimCoreTest
             _disabledMode.Setup(x => x.OnEnter()).Verifiable();
             _buffer.ProcessInput(settings.DisableCommand);
             _disabledMode.Verify();
+        }
+
+        [Test, Description("Handle Switch previous mode")]
+        public void Process1()
+        {
+            var prev = _buffer.ModeKind;
+            _normalMode.Setup(x => x.OnLeave());
+            _insertMode.Setup(x => x.OnEnter());
+            _insertMode.Setup(x => x.OnLeave()).Verifiable();
+            _buffer.SwitchMode(ModeKind.Insert);
+            _insertMode.Setup(x => x.Process(It.IsAny<KeyInput>())).Returns(ProcessResult.SwitchPreviousMode).Verifiable();
+            Assert.IsTrue(_buffer.ProcessChar('c'));
+            _insertMode.Verify();
+            Assert.AreEqual(prev, _buffer.ModeKind);
+        }
+
+        [Test, Description("Switch previous mode should still fire the event")]
+        public void Process2()
+        {
+            _normalMode.Setup(x => x.OnLeave());
+            _insertMode.Setup(x => x.OnEnter()).Verifiable();
+            _insertMode.Setup(x => x.OnLeave()).Verifiable();
+            _buffer.SwitchMode(ModeKind.Insert);
+            _insertMode.Setup(x => x.Process(It.IsAny<KeyInput>())).Returns(ProcessResult.SwitchPreviousMode).Verifiable();
+            var raised = false;
+            _buffer.SwitchedMode += (e, args) => { raised = true; };
+            Assert.IsTrue(_buffer.ProcessChar('c'));
+            Assert.IsTrue(raised);
+            _insertMode.Verify();
         }
     }
 }

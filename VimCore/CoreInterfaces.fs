@@ -10,7 +10,7 @@ type ProcessResult =
     | Processed
     | ProcessNotHandled
     | SwitchMode of ModeKind
-    | SwitchModeNotHandled of ModeKind
+    | SwitchPreviousMode
 
 /// Vim instance.  Global for a group of buffers
 type IVim =
@@ -67,6 +67,9 @@ and IVimBuffer =
     abstract CanProcessInput : KeyInput -> bool
     abstract CanProcessKey : Key -> bool
     abstract SwitchMode : ModeKind -> IMode
+
+    /// Switch the buffer back to the previous mode which is returned
+    abstract SwitchPreviousMode : unit -> IMode
 
     /// Called when the view is closed and the IVimBuffer should uninstall itself
     /// and it's modes

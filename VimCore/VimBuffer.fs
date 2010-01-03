@@ -10,20 +10,26 @@ open System.Windows.Input
 type internal ModeMap() = 
     let mutable _modeMap : Map<ModeKind,IMode> = Map.empty
     let mutable _mode : IMode option = None
+    let mutable _previousMode : IMode option = None
     let _modeSwitchedEvent = new Event<_>()
 
     member x.SwitchedEvent = _modeSwitchedEvent.Publish
     member x.Mode = Option.get _mode
     member x.Modes = _modeMap |> Map.toSeq |> Seq.map (fun (k,m) -> m)
     member x.SwitchMode kind =
-        let old = _mode
+        let prev = _mode
         let mode = _modeMap.Item kind
         _mode <- Some mode
-        if Option.isSome old then
-            (Option.get old).OnLeave()
+        if Option.isSome prev then
+            (Option.get prev).OnLeave()
+            _previousMode <- prev
         mode.OnEnter()
         _modeSwitchedEvent.Trigger(mode)
         mode
+    member x.SwitchPreviousMode () =
+        let prev = Option.get _previousMode
+        x.SwitchMode prev.ModeKind
+
     member x.AddMode (mode:IMode) = 
         _modeMap <- Map.add (mode.ModeKind) mode _modeMap
 
@@ -56,9 +62,9 @@ type internal VimBuffer
                     | SwitchMode (kind) -> 
                         x.SwitchMode kind |> ignore
                         true
-                    | SwitchModeNotHandled (kind) ->
-                        x.SwitchMode kind |> ignore
-                        false
+                    | SwitchPreviousMode -> 
+                        _modeMap.SwitchPreviousMode() |> ignore
+                        true
                     | Processed -> true
                     | ProcessNotHandled -> false
         _keyInputProcessedEvent.Trigger(i)
@@ -87,6 +93,7 @@ type internal VimBuffer
             let ki = InputUtil.CharToKeyInput c
             x.ProcessInput ki
         member x.SwitchMode kind = x.SwitchMode kind
+        member x.SwitchPreviousMode () = _modeMap.SwitchPreviousMode()
         [<CLIEvent>]
         member x.SwitchedMode = _modeMap.SwitchedEvent
         [<CLIEvent>]
