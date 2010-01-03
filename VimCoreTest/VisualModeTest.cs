@@ -219,6 +219,15 @@ namespace VimCoreTest
             _operations.Verify();
         }
 
+        [Test]
+        public void DeleteSelection1()
+        {
+            Create("foo", "bar");
+            _operations.Setup(x => x.DeleteSelection(_map.DefaultRegister)).Verifiable();
+            _mode.Process("d");
+            _operations.Verify();
+        }
+
         #endregion
     }
 }

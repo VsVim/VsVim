@@ -6,6 +6,7 @@ using Vim;
 using Moq;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Operations;
+using Microsoft.VisualStudio.Text;
 
 namespace VimCoreTest.Utils
 {
@@ -51,7 +52,7 @@ namespace VimCoreTest.Utils
         }
 
         internal static Mock<IVimBuffer> CreateVimBuffer(
-            IWpfTextView view, 
+            IWpfTextView view,
             string name = null,
             IVim vim = null,
             IBlockCaret caret = null,
@@ -73,6 +74,39 @@ namespace VimCoreTest.Utils
             mock.SetupGet(x => x.MarkMap).Returns(vim.MarkMap);
             mock.SetupGet(x => x.RegisterMap).Returns(vim.RegisterMap);
             return mock;
+        }
+
+        internal static Mock<ITextCaret> CreateCaret()
+        {
+            return new Mock<ITextCaret>(MockBehavior.Strict);
+        }
+
+        internal static Mock<ITextSelection> CreateSelection()
+        {
+            return new Mock<ITextSelection>(MockBehavior.Strict);
+        }
+
+        internal static Mock<IWpfTextView> CreateWpfTextView(
+            ITextBuffer buffer,
+            ITextCaret caret = null,
+            ITextSelection selection = null)
+        {
+            caret = caret ?? CreateCaret().Object;
+            selection = selection ?? CreateSelection().Object;
+            var view = new Mock<IWpfTextView>(MockBehavior.Strict);
+            view.SetupGet(x => x.Caret).Returns(caret);
+            view.SetupGet(x => x.Selection).Returns(selection);
+            view.SetupGet(x => x.TextBuffer).Returns(buffer);
+            view.SetupGet(x => x.TextSnapshot).Returns(() => buffer.CurrentSnapshot);
+            return view;
+        }
+
+        internal static Tuple<Mock<IWpfTextView>, Mock<ITextCaret>, Mock<ITextSelection>> CreateWpfTextViewAll(ITextBuffer buffer)
+        {
+            var caret = CreateCaret();
+            var selection = CreateSelection();
+            var view = CreateWpfTextView(buffer, caret.Object, selection.Object);
+            return Tuple.Create(view, caret, selection);
         }
 
     }

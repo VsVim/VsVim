@@ -165,6 +165,7 @@
     <Compile Include="ViewUtilTest.cs" />
     <Compile Include="VimBufferTests.cs" />
     <Compile Include="VisualModeTest.cs" />
+    <Compile Include="Visual_DefaultOperationsTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Todo.txt" />
