@@ -76,6 +76,14 @@ type internal VisualMode
                     (fun (reg:Register) -> 
                         _operations.YankText (_selectionTracker.SelectedText) MotionKind.Inclusive OperationKind.CharacterWise reg
                         VisualModeResult.SwitchMode ModeKind.Normal))
+                yield (InputUtil.CharToKeyInput('Y'),
+                    (fun (reg:Register) ->
+                        let selection = _buffer.TextView.Selection
+                        let startPoint = selection.Start.Position.GetContainingLine().Start
+                        let endPoint = selection.End.Position.GetContainingLine().EndIncludingLineBreak
+                        let span = SnapshotSpan(startPoint,endPoint)
+                        _operations.Yank span MotionKind.Inclusive OperationKind.LineWise reg
+                        VisualModeResult.SwitchMode ModeKind.Normal))
                 }
         s
 
