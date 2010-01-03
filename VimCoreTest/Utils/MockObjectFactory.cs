@@ -74,5 +74,6 @@ namespace VimCoreTest.Utils
             mock.SetupGet(x => x.RegisterMap).Returns(vim.RegisterMap);
             return mock;
         }
+
     }
 }

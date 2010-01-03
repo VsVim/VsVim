@@ -19,7 +19,8 @@ namespace VimCoreTest
     [TestFixture]
     public class VisualModeTest
     {
-        private IWpfTextView _view;
+        private Mock<IWpfTextView> _view;
+        private Mock<ITextCaret> _caret;
         private Mock<IVimBuffer> _bufferData;
         private VisualMode _modeRaw;
         private IMode _mode;
@@ -38,8 +39,9 @@ namespace VimCoreTest
             IVimHost host= null,
             params string[] lines)
         {
-            _view = Utils.EditorUtil.CreateView(lines);
-            _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 0));
+            _caret = new Mock<ITextCaret>(MockBehavior.Strict);
+            _view = new Mock<IWpfTextView>(MockBehavior.Strict);
+            _view.SetupGet(x => x.Caret).Returns(_caret.Object);
             _map = new RegisterMap();
             _editOpts = new Mock<IEditorOperations>(MockBehavior.Strict);
             _operations = new Mock<ICommonOperations>(MockBehavior.Strict);
@@ -47,7 +49,7 @@ namespace VimCoreTest
             _tracker.Setup(x => x.Start());
             host = host ?? new FakeVimHost();
             _bufferData = MockObjectFactory.CreateVimBuffer(
-                _view,
+                _view.Object,
                 "test",
                 MockObjectFactory.CreateVim(_map,host:host).Object,
                 MockObjectFactory.CreateBlockCaret().Object,
