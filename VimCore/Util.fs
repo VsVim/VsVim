@@ -2,18 +2,33 @@
 
 namespace Vim
 
-type internal ToggleHandler<'Del when 'Del :> System.Delegate >
-    ( _del : IDelegateEvent<'Del> ) = 
+[<AbstractClass>]
+type internal ToggleHandler() =
+    abstract Add : unit -> unit
+    abstract Remove : unit -> unit
+   
+    static member Create<'T> (source:System.IObservable<'T>) (func: 'T -> unit) = ToggleHandler<'T>(source,func)
+    static member Empty = 
+        { new ToggleHandler() with 
+            member x.Add() = ()
+            member x.Remove() = () }
 
-    let mutable _func : 'Del option = None
-
-    member x.Add() = 
-        _del.AddHandler(Option.get _func)
-    member x.Remove() =
-        _del.RemoveHandler(Option.get _func)
-    member x.Reset(func) = _func <- Some func
+and internal ToggleHandler<'T> 
+    ( 
+        _source : System.IObservable<'T>,
+        _func : 'T -> unit) =  
+    inherit ToggleHandler()
+    let mutable _handler : System.IDisposable option = None
+    override x.Add() = 
+        match _handler with
+        | Some(_) -> failwith "Already subcribed"
+        | None -> _handler <- _source |> Observable.subscribe _func |> Option.Some
+    override x.Remove() =
+        match _handler with
+        | Some(actual) -> 
+            actual.Dispose()
+            _handler <- None
+        | None -> ()
     
-module internal Util = 
-    let CreateToggleHandler<'a when 'a :> System.Delegate> (e: IDelegateEvent<'a>) = ToggleHandler<'a>(e)
     
     

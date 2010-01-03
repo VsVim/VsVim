@@ -28,12 +28,12 @@ type internal SelectionTracker
     /// Whether or not we are currently running
     let mutable _running = false
 
-    let mutable _textChangedHandler = Util.CreateToggleHandler (_textView.TextBuffer.Changed)
-    let mutable _caretChangedHandler = Util.CreateToggleHandler (_textView.Caret.PositionChanged)
+    let mutable _textChangedHandler = ToggleHandler.Empty
+    let mutable _caretChangedHandler = ToggleHandler.Empty
 
     do 
-        _textChangedHandler.Reset((fun _ args -> this.OnTextChanged(args)))
-        _caretChangedHandler.Reset((fun _ _ -> this.OnCaretChanged()))
+        _textChangedHandler <- ToggleHandler.Create (_textView.TextBuffer.Changed) (fun (args:TextContentChangedEventArgs) -> this.OnTextChanged(args))
+        _caretChangedHandler <- ToggleHandler.Create (_textView.Caret.PositionChanged) (fun _ -> this.OnCaretChanged())
 
     /// Anchor point being tracked by the selection tracker
     member x.AnchorPoint = _anchorPoint
