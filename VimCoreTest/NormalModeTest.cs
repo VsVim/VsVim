@@ -739,6 +739,15 @@ namespace VimCoreTest
             _operations.Verify();
         }
 
+        [Test]
+        public void Edit_Del_1()
+        {
+            CreateBuffer("foo");
+            _operations.Setup(x => x.DeleteCharacterAtCursor(1, _map.DefaultRegister)).Verifiable();
+            _mode.Process(Key.Delete);
+            _operations.Verify();
+        }
+
         #endregion
 
         #region Yank
