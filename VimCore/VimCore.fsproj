@@ -102,6 +102,7 @@
     <Compile Include="Modes_Visual_VisualMode.fs" />
     <Compile Include="KeyProcessor.fsi" />
     <Compile Include="KeyProcessor.fs" />
+    <Compile Include="MouseProcessor.fs" />
     <Compile Include="RegisterMap.fs" />
     <Compile Include="DisabledMode.fs" />
     <Compile Include="Vim.fs" />

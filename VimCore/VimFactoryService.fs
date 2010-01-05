@@ -55,4 +55,5 @@ type internal VimFactoryService
             let vim = (x.CreateVimCore host) :> IVim
             vim.CreateBuffer view name 
         member x.CreateKeyProcessor buffer = Vim.KeyProcessor(buffer) :> Microsoft.VisualStudio.Text.Editor.KeyProcessor
+        member x.CreateMouseProcessor buffer = Vim.MouseProcessor(buffer) :> Microsoft.VisualStudio.Text.Editor.IMouseProcessor
       

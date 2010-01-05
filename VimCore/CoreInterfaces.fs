@@ -45,11 +45,14 @@ and IVimBuffer =
     /// IVimHost for the buffer
     abstract VimHost : IVimHost
 
-    /// Current mode of the buffer
+    /// ModeKind of the current IMode in the buffer
     abstract ModeKind : ModeKind
 
+    /// Current mode of the buffer
+    abstract Mode : IMode
+
     /// Sequence of available Modes
-    abstract Modes : seq<IMode>
+    abstract AllModes : seq<IMode>
 
     abstract Settings : VimSettings
     abstract RegisterMap : IRegisterMap

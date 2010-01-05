@@ -85,7 +85,8 @@ type internal VimBuffer
         member x.Name = _name
         member x.MarkMap = _vim.MarkMap
         member x.ModeKind = x.Mode.ModeKind
-        member x.Modes = _modeMap.Modes
+        member x.Mode = x.Mode
+        member x.AllModes = _modeMap.Modes
         member x.Settings = _vim.Settings
         member x.RegisterMap = _vim.RegisterMap
         member x.GetRegister c = _vim.RegisterMap.GetRegister c

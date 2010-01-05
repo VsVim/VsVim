@@ -10,3 +10,5 @@ open Vim.Modes
 type internal VisualMode =
     interface IMode
     new : (IVimBuffer * IOperations * ModeKind ) -> VisualMode
+    member BeginExplicitMove : unit -> unit
+    member EndExplicitMove : unit -> unit

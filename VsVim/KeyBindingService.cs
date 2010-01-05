@@ -40,7 +40,7 @@ namespace VsVim
         private void CheckForConflictingKeyBindings(_DTE dte, IVimBuffer buffer)
         {
             var hashSet = new HashSet<KeyInput>(
-                buffer.Modes.Select(x => x.Commands).SelectMany(x => x));
+                buffer.AllModes.Select(x => x.Commands).SelectMany(x => x));
             hashSet.Add(buffer.Settings.DisableCommand);
             var commands = dte.Commands.GetCommands();
             var list = FindConflictingCommands(commands, hashSet);

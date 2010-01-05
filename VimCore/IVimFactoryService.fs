@@ -10,3 +10,4 @@ type IVimFactoryService =
     abstract CreateVim : IVimHost -> IVim
     abstract CreateVimBuffer : IVimHost -> IWpfTextView -> bufferName:string -> IVimBuffer
     abstract CreateKeyProcessor : IVimBuffer -> KeyProcessor
+    abstract CreateMouseProcessor : IVimBuffer -> IMouseProcessor

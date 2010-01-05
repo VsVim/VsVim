@@ -40,8 +40,12 @@ namespace VsVim
 
         private static void OnSelectionChanged(object sender, EventArgs e)
         {
-        }
+            var selection = sender as ITextSelection;
+            if (selection != null && !selection.IsEmpty)
+            {
 
+            }
+        }
 
     }
 }
