@@ -336,11 +336,15 @@ type internal NormalMode( _bufferData : IVimBuffer, _operations : IOperations ) 
             |> Seq.map (fun (ki,com) -> {KeyInput=ki;RunFunc=(wrap com)})
 
     member this.BuildOperationsMap = 
+        let deleteCharAtCursor (d:NormalModeData) = 
+            _operations.DeleteCharacterAtCursor d.Count d.Register
+            NormalModeResult.Complete
+
         let l : list<Operation> = [
             {   KeyInput=InputUtil.CharToKeyInput('x');
-                RunFunc=(fun d ->
-                    _operations.DeleteCharacterAtCursor d.Count d.Register
-                    NormalModeResult.Complete); };
+                RunFunc=deleteCharAtCursor; }
+            {   KeyInput=InputUtil.KeyToKeyInput(Key.Delete);
+                RunFunc=deleteCharAtCursor; }
             {   KeyInput=InputUtil.CharToKeyInput('X');
                 RunFunc=(fun d -> 
                     _operations.DeleteCharacterBeforeCursor d.Count d.Register

@@ -14,6 +14,8 @@ type internal DefaultOperations
         _tracker : ISelectionTracker ) =
     inherit CommonOperations(_textView, _operations)
 
+    member private x.CommonOperations = x :> ICommonOperations
+
     interface IOperations with
         member x.SelectionTracker = _tracker
         member x.DeleteSelection (reg:Register) = 
@@ -22,5 +24,11 @@ type internal DefaultOperations
             use edit = _textView.TextBuffer.CreateEdit()
             _textView.Selection.SelectedSpans |> Seq.iter (fun span -> edit.Delete(span.Span) |> ignore)
             edit.Apply() 
-
+        member x.JoinSelection kind = 
+            let selection = _textView.Selection
+            let start = selection.Start.Position
+            let startLine = start.GetContainingLine()
+            let endLine = selection.End.Position.GetContainingLine()
+            let count = (endLine.LineNumber - startLine.LineNumber) + 1
+            x.CommonOperations.Join start kind count 
         

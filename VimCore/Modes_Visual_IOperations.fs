@@ -16,3 +16,6 @@ type IOperations =
     /// Delete the selection and put the result into the specified register
     abstract DeleteSelection : Register -> ITextSnapshot
 
+    /// Joins the selected lines
+    abstract JoinSelection : JoinKind -> bool 
+

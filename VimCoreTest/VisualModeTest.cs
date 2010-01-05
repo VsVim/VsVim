@@ -290,6 +290,19 @@ namespace VimCoreTest
             _mode.Process('J');
             _operations.Verify();
             _selection.Verify();
+        }
+
+        [Test]
+        public void Join3()
+        {
+            Create("foo", "bar");
+            var endPoint = _buffer.CurrentSnapshot.GetLineFromLineNumber(1).Start;
+            _selection.SetupGet(x => x.Start).Returns(new VirtualSnapshotPoint(_buffer.CurrentSnapshot, 0)).Verifiable();
+            _selection.SetupGet(x => x.End).Returns(new VirtualSnapshotPoint(endPoint)).Verifiable();
+            _operations.Setup(x => x.Join(new SnapshotPoint(_buffer.CurrentSnapshot, 0), JoinKind.KeepEmptySpaces, 2)).Verifiable();
+            _mode.Process("gJ");
+            _operations.Verify();
+            _selection.Verify();
         }   
 
         #endregion

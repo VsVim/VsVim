@@ -67,7 +67,9 @@ type internal VisualMode
             |> Seq.map (fun (ki,com) -> (ki,wrap com))
 
     member private x.BuildOperationsSequence() =
-        let del _ reg = _operations.DeleteSpan
+        let deleteSelection _ reg = 
+            _operations.DeleteSelection reg |> ignore
+            VisualModeResult.SwitchPreviousMode
         let s : seq<KeyInput * Operation> = 
             seq {
                 yield (InputUtil.CharToKeyInput('y'), 
@@ -82,6 +84,13 @@ type internal VisualMode
                         let span = SnapshotSpan(startPoint,endPoint)
                         _operations.Yank span MotionKind.Inclusive OperationKind.LineWise reg
                         VisualModeResult.SwitchPreviousMode))
+                yield (InputUtil.CharToKeyInput('d'), deleteSelection)
+                yield (InputUtil.CharToKeyInput('x'), deleteSelection)
+                yield (InputUtil.KeyToKeyInput(Key.Delete), deleteSelection)
+                yield (InputUtil.CharToKeyInput('J'), 
+                        (fun _ _ ->         
+                            _operations.JoinSelection JoinKind.KeepEmptySpaces |> ignore
+                            VisualModeResult.SwitchPreviousMode))
                 }
         s
 
