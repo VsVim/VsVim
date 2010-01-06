@@ -66,6 +66,15 @@ type internal VisualMode
         factory.CreateMovementCommands()
             |> Seq.map (fun (ki,com) -> (ki,wrap com))
 
+    member private x.ProcessGChar count reg  =
+        let inner (ki:KeyInput) =  
+            match ki.Char with 
+            | 'J' -> _operations.JoinSelection JoinKind.KeepEmptySpaces |> ignore
+            | _ -> ()
+            VisualModeResult.SwitchPreviousMode
+        _data <- {_data with RunFunc=inner }
+        VisualModeResult.NeedMore
+
     member private x.BuildOperationsSequence() =
         let deleteSelection _ reg = 
             _operations.DeleteSelection reg |> ignore
@@ -87,9 +96,10 @@ type internal VisualMode
                 yield (InputUtil.CharToKeyInput('d'), deleteSelection)
                 yield (InputUtil.CharToKeyInput('x'), deleteSelection)
                 yield (InputUtil.KeyToKeyInput(Key.Delete), deleteSelection)
+                yield (InputUtil.CharToKeyInput('g'), x.ProcessGChar)
                 yield (InputUtil.CharToKeyInput('J'), 
                         (fun _ _ ->         
-                            _operations.JoinSelection JoinKind.KeepEmptySpaces |> ignore
+                            _operations.JoinSelection JoinKind.RemoveEmptySpaces|> ignore
                             VisualModeResult.SwitchPreviousMode))
                 }
         s
@@ -158,16 +168,18 @@ type internal VisualMode
         member x.ModeKind = _kind
         member x.CanProcess (ki:KeyInput) = _operationsMap.ContainsKey(ki)
         member x.Process (ki : KeyInput) =  
-            let res = _data.RunFunc ki
-            match res with
-            | VisualModeResult.Complete -> 
-                _buffer.VimHost.UpdateStatus(Resources.VisualMode_Banner)
-                x.ResetCommandData()
-                ProcessResult.Processed
-            | VisualModeResult.SwitchPreviousMode -> ProcessResult.SwitchPreviousMode
-            | VisualModeResult.NeedMore -> ProcessResult.Processed
-                
-
+            if ki = InputUtil.KeyToKeyInput(Key.Escape) then 
+                ProcessResult.SwitchPreviousMode
+            else
+                let res = _data.RunFunc ki
+                match res with
+                | VisualModeResult.Complete -> 
+                    _buffer.VimHost.UpdateStatus(Resources.VisualMode_Banner)
+                    x.ResetCommandData()
+                    ProcessResult.Processed
+                | VisualModeResult.SwitchPreviousMode -> ProcessResult.SwitchPreviousMode
+                | VisualModeResult.NeedMore -> ProcessResult.Processed
+    
         member x.OnEnter () = 
             x.ResetCommandData()
             _caretMovedHandler.Add()

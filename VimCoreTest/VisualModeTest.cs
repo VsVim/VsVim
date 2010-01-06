@@ -102,6 +102,15 @@ namespace VimCoreTest
             Assert.IsTrue(res.IsSwitchPreviousMode);
         }
 
+        [Test, Description("Escape should always escape even if we're processing an inner key sequence")]
+        public void Process2()
+        {
+            Create("foo");
+            _mode.Process('g');
+            var res = _mode.Process(Key.Escape);
+            Assert.IsTrue(res.IsSwitchPreviousMode);
+        }
+
         [Test]
         public void OnLeave1()
         {
@@ -271,38 +280,27 @@ namespace VimCoreTest
         public void Join1()
         {
             Create("foo", "bar");
-            _selection.SetupGet(x => x.Start).Returns(new VirtualSnapshotPoint(_buffer.CurrentSnapshot, 0)).Verifiable();
-            _selection.SetupGet(x => x.End).Returns(new VirtualSnapshotPoint(_buffer.CurrentSnapshot, 1)).Verifiable();
-            _operations.Setup(x => x.Join(new SnapshotPoint(_buffer.CurrentSnapshot, 0), JoinKind.RemoveEmptySpaces, 1)).Verifiable();
+            _operations.Setup(x => x.JoinSelection(JoinKind.RemoveEmptySpaces)).Returns(true).Verifiable();
             _mode.Process('J');
             _operations.Verify();
-            _selection.Verify();
         }
 
         [Test]
         public void Join2()
         {
             Create("foo", "bar");
-            var endPoint = _buffer.CurrentSnapshot.GetLineFromLineNumber(1).Start;
-            _selection.SetupGet(x => x.Start).Returns(new VirtualSnapshotPoint(_buffer.CurrentSnapshot, 0)).Verifiable();
-            _selection.SetupGet(x => x.End).Returns(new VirtualSnapshotPoint(endPoint)).Verifiable();
-            _operations.Setup(x => x.Join(new SnapshotPoint(_buffer.CurrentSnapshot, 0), JoinKind.RemoveEmptySpaces, 2)).Verifiable();
+            _operations.Setup(x => x.JoinSelection(JoinKind.RemoveEmptySpaces)).Returns(true).Verifiable();
             _mode.Process('J');
             _operations.Verify();
-            _selection.Verify();
         }
 
         [Test]
         public void Join3()
         {
             Create("foo", "bar");
-            var endPoint = _buffer.CurrentSnapshot.GetLineFromLineNumber(1).Start;
-            _selection.SetupGet(x => x.Start).Returns(new VirtualSnapshotPoint(_buffer.CurrentSnapshot, 0)).Verifiable();
-            _selection.SetupGet(x => x.End).Returns(new VirtualSnapshotPoint(endPoint)).Verifiable();
-            _operations.Setup(x => x.Join(new SnapshotPoint(_buffer.CurrentSnapshot, 0), JoinKind.KeepEmptySpaces, 2)).Verifiable();
+            _operations.Setup(x => x.JoinSelection(JoinKind.KeepEmptySpaces)).Returns(true).Verifiable();
             _mode.Process("gJ");
             _operations.Verify();
-            _selection.Verify();
         }   
 
         #endregion
