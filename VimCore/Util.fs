@@ -30,5 +30,11 @@ and internal ToggleHandler<'T>
             _handler <- None
         | None -> ()
     
+module internal Utils =
+
+    let IsFlagSet value flag = 
+        let intValue = LanguagePrimitives.EnumToValue value
+        let flagValue = LanguagePrimitives.EnumToValue flag
+        0 <> (intValue &&& flagValue)
     
     

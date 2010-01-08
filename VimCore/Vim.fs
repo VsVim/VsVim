@@ -48,7 +48,7 @@ type internal Vim
             Modes.Visual.DefaultOperations(view,editOperations,tracker) :> Modes.Visual.IOperations
         let modeList = 
             [
-                ((Modes.Normal.NormalMode(buffer, normalOpts)) :> IMode);
+                ((Modes.Normal.NormalMode(buffer, normalOpts, (RegexSearchReplace() :>ISearchReplace))) :> IMode);
                 ((Modes.Command.CommandMode(buffer, commandOpts)) :> IMode);
                 ((Modes.Insert.InsertMode(buffer,insertOpts,broker)) :> IMode);
                 (DisabledMode(buffer) :> IMode);

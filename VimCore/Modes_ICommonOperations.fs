@@ -16,7 +16,11 @@ type Result =
 
 /// Common operations
 type ICommonOperations =
+    /// Associated ITextView
     abstract TextView : ITextView 
+
+    /// Associated IEditorOperations
+    abstract EditorOperations : IEditorOperations
 
     /// Implements the Join command.  Returns false in the case the join command cannot
     /// be complete (such as joining at the end of the buffer)

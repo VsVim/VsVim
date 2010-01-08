@@ -14,15 +14,23 @@ type internal Operation =  {
     RunFunc : NormalModeData -> NormalModeResult
 }
 
-type internal NormalMode( _bufferData : IVimBuffer, _operations : IOperations ) = 
+type internal NormalMode
+    ( 
+        _bufferData : IVimBuffer, 
+        _operations : IOperations,
+        _searchReplace : ISearchReplace ) = 
+
     let mutable _data = {
         VimBufferData=_bufferData; 
         RunFunc = (fun _ _ -> NormalModeResult.Complete);
         Count=1;
         Register=_bufferData.RegisterMap.DefaultRegister;
-        LastSearch=None;
         WaitingForMoreInput=false;
     }
+
+    // Last search performed
+    let mutable _lastSearch : SearchData option = None
+
     let mutable _operationMap : Map<KeyInput,Operation> = Map.empty
 
     member this.TextView = _bufferData.TextView
@@ -32,9 +40,9 @@ type internal NormalMode( _bufferData : IVimBuffer, _operations : IOperations ) 
     member this.Settings = _bufferData.Settings
     
     /// Get the current search options based off of the stored data
-    member this.CalculateSearchOptions = 
-        if _bufferData.Settings.IgnoreCase then SearchOptions.IgnoreCase
-        else SearchOptions.None
+    member this.SearchReplaceFlags = 
+        if _bufferData.Settings.IgnoreCase then SearchReplaceFlags.IgnoreCase
+        else SearchReplaceFlags.None
 
     /// Begin an incremental search.  Called when the user types / into the editor
     member this.BeginIncrementalSearch (kind:SearchKind) =
@@ -43,65 +51,74 @@ type internal NormalMode( _bufferData : IVimBuffer, _operations : IOperations ) 
         let resetView () =
             view.Caret.MoveTo(origCaretPos.VirtualBufferPosition) |> ignore
             ViewUtil.ClearSelection view
-        let doSearch pattern nextFunc : NormalModeResult =
-            let search = new IncrementalSearch(pattern, kind, this.CalculateSearchOptions)
-            let nextFunc = nextFunc search
+        let doSearch (searchData:SearchData) = 
+            let pattern = searchData.Pattern
             _bufferData.VimHost.UpdateStatus("/" + pattern)
-            match search.FindNextMatch (view.Caret.Position.BufferPosition) with
+            match _searchReplace.FindNextMatch searchData (view.Caret.Position.BufferPosition) with
                 | Some span ->
-                    view.Selection.Select(span,false) |> ignore
                     ViewUtil.MoveCaretToPoint view (span.Start) |> ignore
-                    NeedMore2 (nextFunc)
                 | None ->
                     resetView()
-                    NeedMore2 (nextFunc)            
-        let rec inner (search:IncrementalSearch) (d:NormalModeData) (ki:KeyInput) : NormalModeResult =
+        let rec inner (searchData:SearchData) (_:NormalModeData) (ki:KeyInput) : NormalModeResult = 
             match ki.Key with
                 | Key.Escape ->
                     resetView()
                     NormalModeResult.Complete
                 | Key.Enter ->
-                    ViewUtil.ClearSelection view
-                    NormalModeResult.SearchComplete search
+                    _lastSearch <- Some searchData
+                    NormalModeResult.Complete
                 | Key.Back -> 
-                    if search.Pattern.Length = 1 then
+                    if searchData.Pattern.Length = 1 then
                         // User backspaced completely out of the search
                         resetView()
                         NormalModeResult.Complete
                     else 
-                        let pattern = search.Pattern.Substring(0, search.Pattern.Length-1)
-                        doSearch pattern inner
+                        let pattern = searchData.Pattern
+                        let pattern = pattern.Substring(0, pattern.Length-1)
+                        let searchData = {searchData with Pattern=pattern }
+                        doSearch searchData
+                        NeedMore2 (inner searchData)
                 | _ -> 
                     let c = ki.Char
-                    let pattern = search.Pattern + (c.ToString())
-                    doSearch pattern inner
+                    let pattern = searchData.Pattern + (c.ToString())
+                    let searchData = {searchData with Pattern=pattern }
+                    doSearch searchData
+                    NeedMore2 (inner searchData)
         _bufferData.VimHost.UpdateStatus("/")
-        NeedMore2 (inner (new IncrementalSearch(System.String.Empty, kind, this.CalculateSearchOptions)))
+        let searchData = {
+            Pattern=System.String.Empty;
+            Kind=kind;
+            Flags=this.SearchReplaceFlags}
+        NeedMore2 (searchData |> inner)
     
-    /// Find the next match of the passed in incremental search
-    member this.TryFindNextMatch (search:IncrementalSearch) (count:int) =    
-        let view = _bufferData.TextView
-        let current = view.Caret.Position.BufferPosition
-        let next = 
-            match SearchKindUtil.IsForward (search.SearchKind) with
-                | true -> TssUtil.GetNextPointWithWrap current
-                | false -> TssUtil.GetPreviousPointWithWrap current
-        match search.FindNextMatch (next) with 
+    /// Find the next match of the previous incremental search
+    member private this.FindNextMatch (count:int) = 
+
+        let getNextPoint current kind = 
+            match SearchKindUtil.IsForward kind with 
+            | true -> TssUtil.GetNextPointWithWrap current
+            | false -> TssUtil.GetPreviousPointWithWrap current
+
+        let doSearch (searchData:SearchData) = 
+            let caret = ViewUtil.GetCaretPoint _bufferData.TextView
+            let next = getNextPoint caret searchData.Kind
+            match _searchReplace.FindNextMatch searchData next with
             | None -> false
-            | Some (s) ->
-                ViewUtil.MoveCaretToPoint view (s.Start) |> ignore
-                match count with 
-                    | 1 -> true
-                    | _ -> this.TryFindNextMatch search (count-1)
-                    
-    member this.FindNextMatch (search:option<IncrementalSearch>) (count:int) =
-        let host = _bufferData.VimHost
-        match search with
-            | None -> host.UpdateStatus("No previous search")
-            | Some (s) ->
-                match this.TryFindNextMatch s count with 
-                    | false -> host.UpdateStatus("Pattern not found: " + s.Pattern)
-                    | _ -> ()
+            | Some(span) -> 
+                ViewUtil.MoveCaretToPoint _bufferData.TextView span.Start |> ignore
+                true
+
+        let rec doSearchWithCount searchData count = 
+            if not (doSearch searchData) then
+                _bufferData.VimHost.UpdateStatus Resources.NormalMode_NoPreviousSearch
+            elif count > 1 then
+                doSearchWithCount searchData (count-1)
+            else
+                ()
+
+        match _lastSearch with 
+        | None -> _bufferData.VimHost.UpdateStatus Resources.NormalMode_NoPreviousSearch
+        | Some(searchData) -> doSearchWithCount searchData count
         NormalModeResult.Complete
    
     member this.FindNextWordUnderCursor (count:int) (kind:SearchKind) =
@@ -111,10 +128,8 @@ type internal NormalMode( _bufferData : IVimBuffer, _operations : IOperations ) 
                 _bufferData.VimHost.UpdateStatus("No word under cursor")
                 NormalModeResult.Complete
             | Some (span) ->    
-                // Search is regex based so use \W on boundaries to capture full word semantics
-                let pattern = span.GetText()             
-                let search = new IncrementalSearch(pattern, kind, this.CalculateSearchOptions)
-                this.TryFindNextMatch search count |> ignore
+                let next = _searchReplace.FindNextWord span kind (this.Settings.IgnoreCase)
+                ViewUtil.MoveCaretToPoint _bufferData.TextView next.Start |> ignore
                 NormalModeResult.Complete
                 
     member this.WaitForMotion ki (d:NormalModeData) doneFunc = 
@@ -374,7 +389,7 @@ type internal NormalMode( _bufferData : IVimBuffer, _operations : IOperations ) 
             {   KeyInput=InputUtil.CharToKeyInput('?');
                 RunFunc=(fun d -> this.BeginIncrementalSearch SearchKind.BackwardWithWrap) };
             {   KeyInput=InputUtil.CharToKeyInput('n');
-                RunFunc=(fun d -> this.FindNextMatch d.LastSearch d.Count) };
+                RunFunc=(fun d -> this.FindNextMatch d.Count) };
             {   KeyInput=InputUtil.CharToKeyInput('*');
                 RunFunc=(fun d -> this.FindNextWordUnderCursor d.Count SearchKind.ForwardWithWrap) };
             {   KeyInput=InputUtil.CharToKeyInput('#');
@@ -488,8 +503,6 @@ type internal NormalMode( _bufferData : IVimBuffer, _operations : IOperations ) 
         if _operationMap.Count = 0 then
             _operationMap <- this.BuildOperationsMap
 
-
-    member this.ChangeLastSearch search = _data <- { _data with LastSearch = Some search }
     member this.Register = _data.Register
     member this.Count = _data.Count
     
@@ -519,10 +532,6 @@ type internal NormalMode( _bufferData : IVimBuffer, _operations : IOperations ) 
                     Processed
                 | NeedMore2(f) ->
                     _data <- {_data with RunFunc=f;WaitingForMoreInput=true}
-                    Processed
-                | SearchComplete(search) -> 
-                    this.ResetData
-                    _data <- {_data with LastSearch=(Some search) }
                     Processed
                 | NormalModeResult.SwitchMode (kind) -> 
                     this.ResetData // Make sure to reset information when switching modes

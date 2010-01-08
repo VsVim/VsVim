@@ -14,6 +14,7 @@ type internal CommonOperations
 
     interface ICommonOperations with
         member x.TextView = _textView 
+        member x.EditorOperations = _operations
 
         member x.Join (start:SnapshotPoint) (kind:JoinKind) count = 
     
