@@ -46,9 +46,13 @@ type internal Vim
                 | _ -> invalidArg "_kind" "Invalid kind for Visual Mode"
             let tracker = Modes.Visual.SelectionTracker(view,mode) :> Modes.Visual.ISelectionTracker
             Modes.Visual.DefaultOperations(view,editOperations,tracker) :> Modes.Visual.IOperations
+
+        // Normal mode values
+        let normalSearchReplace = RegexSearchReplace() :> ISearchReplace
+        let normalIncrementalSearch = Vim.Modes.Normal.IncrementalSearch(_host, view, _settings, normalSearchReplace) :> Modes.Normal.IIncrementalSearch
         let modeList = 
             [
-                ((Modes.Normal.NormalMode(buffer, normalOpts, (RegexSearchReplace() :>ISearchReplace))) :> IMode);
+                ((Modes.Normal.NormalMode(buffer, normalOpts, normalSearchReplace, normalIncrementalSearch)) :> IMode);
                 ((Modes.Command.CommandMode(buffer, commandOpts)) :> IMode);
                 ((Modes.Insert.InsertMode(buffer,insertOpts,broker)) :> IMode);
                 (DisabledMode(buffer) :> IMode);

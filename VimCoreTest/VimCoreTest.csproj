@@ -132,10 +132,11 @@
     <Compile Include="Command_DefaultOperations.cs" />
     <Compile Include="DisabledModeTest.cs" />
     <Compile Include="IEditorOperationsTest.cs" />
+    <Compile Include="IncrementalSearchTest.cs" />
     <Compile Include="Modes_CommonOperationsTest.cs" />
     <Compile Include="CountCaptureTest.cs" />
     <Compile Include="FakeVimHost.cs" />
-    <Compile Include="IncrementalSearchTest.cs">
+    <Compile Include="RegexSearchReplaceTest.cs">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="InputUtilTest.cs" />

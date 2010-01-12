@@ -29,6 +29,8 @@ namespace VimCoreTest
         private MockBlockCaret _blockCaret;
         private Mock<IOperations> _operations;
         private Mock<IEditorOperations> _editorOperations;
+        private Mock<ISearchReplace> _searchReplace;
+        private Mock<IIncrementalSearch> _incrementalSearch;
 
         static string[] s_lines = new string[]
             {
@@ -49,6 +51,8 @@ namespace VimCoreTest
             _map = new RegisterMap();
             _blockCaret = new MockBlockCaret();
             _editorOperations = new Mock<IEditorOperations>();
+            _searchReplace = new Mock<ISearchReplace>(MockBehavior.Strict);
+            _incrementalSearch = new Mock<IIncrementalSearch>(MockBehavior.Strict);
             _bufferData = MockFactory.CreateVimBuffer(
                 _view,
                 "test",
@@ -56,7 +60,7 @@ namespace VimCoreTest
                 _blockCaret,
                 _editorOperations.Object);
             _operations = new Mock<IOperations>(MockBehavior.Strict);
-            _modeRaw = new Vim.Modes.Normal.NormalMode(Tuple.Create(_bufferData.Object, _operations.Object));
+            _modeRaw = new Vim.Modes.Normal.NormalMode(Tuple.Create(_bufferData.Object, _operations.Object, _searchReplace.Object, _incrementalSearch.Object));
             _mode = _modeRaw;
             _mode.OnEnter();
         }
@@ -1137,203 +1141,57 @@ namespace VimCoreTest
         #region Incremental Search
 
         [Test]
-        public void Search1()
+        public void IncrementalSearch1()
         {
             CreateBuffer("foo bar");
-            _mode.Process("/bar");
-            var sel = _view.Selection.SelectedSpans.Single();
-            Assert.AreEqual(3, sel.Span.Length);
-            Assert.AreEqual("bar", sel.GetText());
+            _incrementalSearch.Setup(x => x.Begin(SearchKind.ForwardWithWrap)).Verifiable();
+            _mode.Process('/');
+            _incrementalSearch.Verify();
         }
 
         [Test]
-        public void Search2()
+        public void IncrementalSearch2()
         {
             CreateBuffer("foo bar");
-            _mode.Process("/foo");
-            var sel = _view.Selection.SelectedSpans.Single();
-            Assert.AreEqual(3, sel.Length);
-            Assert.AreEqual("foo", sel.GetText());
-        }
-
-        [Test, Description("Make sure it matches the first occurance")]
-        public void Search3()
-        {
-            CreateBuffer("foo bar bar");
-            _mode.Process("/bar");
-            var sel = _view.Selection.SelectedSpans.Single();
-            Assert.AreEqual(4, sel.Start.Position);
-            Assert.AreEqual("bar", sel.GetText());
-        }
-
-        [Test, Description("No match should select nothing")]
-        public void Search4()
-        {
-            CreateBuffer("foo bar baz");
-            _mode.Process("/q");
-            var sel = _view.Selection.SelectedSpans.Single();
-            Assert.AreEqual(0, sel.Start.Position);
-            Assert.AreEqual(0, sel.Length);
-        }
-
-        [Test, Description("A partial match followed by a bad match should go back to start")]
-        public void Search5()
-        {
-            CreateBuffer("foo bar baz");
-            _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 1));
-            _mode.Process("/bq");
-            var sel = _view.Selection.SelectedSpans.Single();
-            Assert.AreEqual(1, sel.Start.Position);
-            Assert.AreEqual(0, sel.Length);
-        }
-
-        [Test, Description("Search accross lines")]
-        public void Search6()
-        {
-            CreateBuffer("foo", "bar");
-            _mode.Process("/bar");
-            var sel = _view.Selection.SelectedSpans.Single();
-            Assert.AreEqual("bar", sel.GetText());
-            var line = _view.TextSnapshot.GetLineFromLineNumber(1);
-            Assert.AreEqual(line.Start, _view.Caret.Position.BufferPosition);
+            _incrementalSearch.Setup(x => x.Begin(SearchKind.BackwardWithWrap)).Verifiable();
+            _mode.Process('?');
+            _incrementalSearch.Verify();
         }
 
         [Test]
-        public void SearchNext1()
+        public void IncrementalSearch3()
         {
             CreateBuffer("foo bar");
-            _modeRaw.ChangeLastSearch(new IncrementalSearch("bar"));
-            _mode.Process("n");
-            var sel = _view.Selection.SelectedSpans.Single();
-            Assert.AreEqual(4, sel.Start.Position);
-            Assert.AreEqual(0, sel.Length);
+            _incrementalSearch.Setup(x => x.Begin(SearchKind.ForwardWithWrap)).Verifiable();
+            _mode.Process('/');
+            _incrementalSearch.Setup(x => x.Process(InputUtil.CharToKeyInput('b'))).Returns(true).Verifiable();
+            _mode.Process('b');
+            _incrementalSearch.Verify();
         }
 
-        [Test, Description("Don't start at current position")]
-        public void SearchNext2()
-        {
-            CreateBuffer("bar bar");
-            _modeRaw.ChangeLastSearch(new IncrementalSearch("bar"));
-            _mode.Process("n");
-            var sel = _view.Selection.SelectedSpans.Single();
-            Assert.AreEqual(4, sel.Start.Position);
-            Assert.AreEqual(0, sel.Length);
-        }
-
-        [Test, Description("Don't skip the current word just the current letter")]
-        public void SearchNext3()
-        {
-            CreateBuffer("bbar, baz");
-            _modeRaw.ChangeLastSearch(new IncrementalSearch("bar"));
-            _mode.Process("n");
-            Assert.AreEqual(1, _view.Caret.Position.BufferPosition.Position);
-        }
-
-        [Test, Description("Counted next")]
-        public void SearchNext4()
-        {
-            CreateBuffer(" bar bar bar");
-            _modeRaw.ChangeLastSearch(new IncrementalSearch("bar"));
-            _mode.Process("3n");
-            Assert.AreEqual(9, _view.Caret.Position.BufferPosition.Position);
-        }
-
-        [Test, Description("Make sure enter sets the search")]
-        public void SearchNext5()
-        {
-            CreateBuffer("foo bar baz");
-            _mode.Process("/ba");
-            _mode.Process(Key.Enter);
-            _mode.Process("n");
-            Assert.AreEqual(8, _view.Caret.Position.BufferPosition.Position);
-        }
-
-        [Test]
-        public void SearchReverse1()
+        [Test, Description("Make sure any key goes to incremental search")]
+        public void IncrementalSearch4()
         {
             CreateBuffer("foo bar");
-            var line = _view.TextSnapshot.GetLineFromLineNumber(0);
-            _view.Caret.MoveTo(line.End);
-            _mode.Process("?bar");
-            var sel = _view.Selection.SelectedSpans.Single();
-            Assert.AreEqual(4, sel.Start.Position);
-            Assert.AreEqual("bar", sel.GetText());
-            Assert.AreEqual(4, _view.Caret.Position.BufferPosition.Position);
+            _incrementalSearch.Setup(x => x.Begin(SearchKind.ForwardWithWrap)).Verifiable();
+            _mode.Process('/');
+            var ki = InputUtil.KeyToKeyInput(Key.DbeRoman);
+            _incrementalSearch.Setup(x => x.Process(ki)).Returns(true).Verifiable();
+            _mode.Process(ki);
+            _incrementalSearch.Verify();
         }
 
-        [Test, Description("Change nothing on invalid searh")]
-        public void SearchReverse2()
+        [Test, Description("After a true return incremental search should be completed")]
+        public void IncrementalSearch5()
         {
             CreateBuffer("foo bar");
-            var line = _view.TextSnapshot.GetLineFromLineNumber(0);
-            _view.Caret.MoveTo(line.End);
-            _mode.Process("?invalid");
-            var sel = _view.Selection.SelectedSpans.Single();
-            Assert.AreEqual(line.End, sel.Start);
-            Assert.AreEqual(0, sel.Length);
-            Assert.AreEqual(line.End, _view.Caret.Position.BufferPosition);
-        }
-
-        [Test]
-        public void SearchNextReverse1()
-        {
-            CreateBuffer("bar bar");
-            _modeRaw.ChangeLastSearch(new IncrementalSearch("bar", SearchKind.Backward));
-            var line = _view.TextSnapshot.GetLineFromLineNumber(0);
-            _view.Caret.MoveTo(line.End);
-            _mode.Process("n");
-            Assert.AreEqual(4, _view.Caret.Position.BufferPosition.Position);
-            Assert.AreEqual(0, _view.Selection.SelectedSpans.Single().Length);
-        }
-
-        [Test]
-        public void SearchStatus1()
-        {
-            var host = new FakeVimHost();
-            CreateBuffer(host, s_lines);
-            _mode.Process("/");
-            Assert.AreEqual("/", host.Status);
-        }
-
-        [Test]
-        public void SearchStatus2()
-        {
-            var host = new FakeVimHost();
-            CreateBuffer(host, s_lines);
-            _mode.Process("/zzz");
-            Assert.AreEqual("/zzz", host.Status);
-        }
-
-        [Test]
-        public void SearchBackspace1()
-        {
-            CreateBuffer("foo bar");
-            _mode.Process("/fooh");
-            Assert.AreEqual(0, _view.Selection.SelectedSpans.Single().Length);
-            _mode.Process(Key.Back);
-            Assert.AreEqual(3, _view.Selection.SelectedSpans.Single().Length);
-            Assert.AreEqual("foo", _view.Selection.SelectedSpans.Single().GetText());
-        }
-
-        [Test]
-        public void SearchBackspace2()
-        {
-            CreateBuffer("foo bar");
-            _mode.Process("/bb");
-            Assert.AreEqual(0, _view.Caret.Position.BufferPosition.Position);
-            _mode.Process(Key.Back);
-            Assert.AreEqual("b", _view.Selection.SelectedSpans.Single().GetText());
-        }
-
-        [Test, Description("Completely exit from the search")]
-        public void SearchBackspace3()
-        {
-            CreateBuffer("foo bar");
-            _mode.Process("/b");
-            _mode.Process(Key.Back);
-            var res = _mode.Process('i');
-            Assert.IsTrue(res.IsSwitchMode);
-            Assert.AreEqual(ModeKind.Insert, res.AsSwitchMode().Item);
+            _incrementalSearch.Setup(x => x.Begin(SearchKind.ForwardWithWrap)).Verifiable();
+            _mode.Process('/');
+            var ki = InputUtil.KeyToKeyInput(Key.DbeRoman);
+            _incrementalSearch.Setup(x => x.Process(ki)).Returns(true).Verifiable();
+            _mode.Process(ki);
+            _mode.Process(InputUtil.KeyToKeyInput(Key.DbeAlphanumeric));
+            _incrementalSearch.Verify();
         }
 
         #endregion
@@ -1343,45 +1201,25 @@ namespace VimCoreTest
         [Test]
         public void NextWord1()
         {
-            var host = new FakeVimHost();
-            CreateBuffer(host, " ");
+            var host = new Mock<IVimHost>(MockBehavior.Strict);
+            host.Setup(x => x.UpdateStatus(Resources.NormalMode_NoWordUnderCursor)).Verifiable();
+            CreateBuffer(host.Object, " ");
             _mode.Process("*");
-            Assert.AreEqual("No word under cursor", host.Status);
+            host.Verify();
         }
 
         [Test, Description("No matches should have no effect")]
         public void NextWord2()
         {
             CreateBuffer("foo bar");
+            var retSpan = new SnapshotSpan(_view.TextSnapshot, 4,1);
+            _searchReplace
+                .Setup(x => x.FindNextWord(new SnapshotSpan(_view.TextSnapshot, 0, 3), SearchKind.ForwardWithWrap, false))
+                .Returns(retSpan)
+                .Verifiable();
             _mode.Process("*");
-            Assert.AreEqual(0, _view.Caret.Position.BufferPosition.Position);
-        }
-
-        [Test]
-        public void NextWord3()
-        {
-            CreateBuffer("foo foo");
-            _mode.Process("*");
-            Assert.AreEqual(4, _view.Caret.Position.BufferPosition.Position);
-        }
-
-        [Test]
-        public void NextWord4()
-        {
-            CreateBuffer("foo bar", "foo");
-            _mode.Process("*");
-            var line = _view.TextSnapshot.GetLineFromLineNumber(1);
-            Assert.AreEqual(line.Start, _view.Caret.Position.BufferPosition);
-        }
-
-        [Test, Description("Don't start on position 0")]
-        public void NextWord5()
-        {
-            CreateBuffer("foo bar", "foo bar");
-            _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 4));
-            _mode.Process("*");
-            var line = _view.TextSnapshot.GetLineFromLineNumber(1);
-            Assert.AreEqual(line.Start.Add(4), _view.Caret.Position.BufferPosition);
+            _searchReplace.Verify();
+            Assert.AreEqual(retSpan.Start, _view.Caret.Position.BufferPosition);
         }
 
         [Test]
@@ -1390,35 +1228,21 @@ namespace VimCoreTest
             var host = new FakeVimHost();
             CreateBuffer(host, "");
             _mode.Process("#");
-            Assert.AreEqual("No word under cursor", host.Status);
+            Assert.AreEqual(Resources.NormalMode_NoWordUnderCursor, host.Status);
         }
 
         [Test]
         public void PreviousWord2()
         {
             CreateBuffer("foo bar");
+            var retSpan = new SnapshotSpan(_view.TextSnapshot, 4, 1);
+            _searchReplace
+                .Setup(x => x.FindNextWord(new SnapshotSpan(_view.TextSnapshot, 0, 3), SearchKind.ForwardWithWrap, false))
+                .Returns(retSpan)
+                .Verifiable();
             _mode.Process("#");
-            Assert.AreEqual(0, _view.Caret.Position.BufferPosition.Position);
-        }
-
-        [Test]
-        public void PreviousWord3()
-        {
-            CreateBuffer("foo bar", "foo");
-            var line = _view.TextSnapshot.GetLineFromLineNumber(1);
-            _view.Caret.MoveTo(line.Start);
-            _mode.Process("#");
-            Assert.AreEqual(0, _view.Caret.Position.BufferPosition.Position);
-        }
-
-        [Test]
-        public void PreviousWord4()
-        {
-            CreateBuffer("foo bar", "foo bar");
-            var line = _view.TextSnapshot.GetLineFromLineNumber(1);
-            _view.Caret.MoveTo(line.Start.Add(4));
-            _mode.Process("#");
-            Assert.AreEqual(4, _view.Caret.Position.BufferPosition.Position);
+            _searchReplace.Verify();
+            Assert.AreEqual(retSpan.Start, _view.Caret.Position.BufferPosition);
         }
 
         #endregion

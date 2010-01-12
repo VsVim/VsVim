@@ -67,6 +67,8 @@ type internal RegexSearchReplace() =
                 |> Seq.tryPick (x.FilterSpan regex kind)
 
     member x.FindNextWord (wordSpan:SnapshotSpan) kind ignoreCase = 
+        // TODO: Implement this
+        wordSpan
 
         
     interface ISearchReplace with

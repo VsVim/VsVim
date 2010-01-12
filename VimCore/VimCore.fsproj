@@ -87,6 +87,8 @@
     <Compile Include="Modes_Normal_IOperations.fs" />
     <Compile Include="Modes_Normal_DefaultOperations.fs" />
     <Compile Include="Modes_Normal_Data.fs" />
+    <Compile Include="Modes_Normal_IIncrementalSearch.fs" />
+    <Compile Include="Modes_Normal_IncrementalSearch.fs" />
     <Compile Include="Modes_Normal_NormalMode.fsi" />
     <Compile Include="Modes_Normal_NormalMode.fs" />
     <Compile Include="Modes_Insert_DefaultOperations.fs" />

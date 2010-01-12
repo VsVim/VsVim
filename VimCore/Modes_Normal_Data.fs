@@ -22,3 +22,4 @@ and internal NormalModeResult =
     | CountComplete of int * KeyInput
     | RegisterComplete of Register
     | Complete 
+
