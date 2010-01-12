@@ -61,5 +61,11 @@ namespace VimCoreTest
             var found = _search.FindNextMatch(data, new SnapshotPoint(_buffer.CurrentSnapshot, 0));
             Assert.IsFalse(found.HasValue());
         }
+
+        [Test]
+        public void FindNextWord1()
+        {
+            Create("foo bar foo");
+        }
     }
 }

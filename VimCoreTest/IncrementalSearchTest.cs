@@ -2,11 +2,39 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using NUnit.Framework;
+using Moq;
+using Vim;
+using Microsoft.VisualStudio.Text.Editor;
+using VimCoreTest.Utils;
+using Vim.Modes.Normal;
 
 namespace VimCoreTest
 {
-    class IncrementalSearchTest
+    [TestFixture]
+    public class IncrementalSearchTest
     {
+        private Mock<IVimHost> _host;
+        private Mock<ISearchReplace> _searchReplace;
+        private ITextView _textView;
+        private IncrementalSearch _searchRaw;
+        private IIncrementalSearch _search;
+
+        private void Create(params string[] lines)
+        {
+            _textView = EditorUtil.CreateView(lines);
+            _host = new Mock<IVimHost>(MockBehavior.Strict);
+            _searchReplace = new Mock<ISearchReplace>(MockBehavior.Strict);
+            _searchRaw = new IncrementalSearch(
+                _host.Object,
+                _textView,
+                VimSettingsUtil.CreateDefault,
+                _searchReplace.Object);
+            _search = _searchRaw;
+        }
+
+        
+
     /*
         [Test, Description("Make sure it matches the first occurance")]
         public void Search3()

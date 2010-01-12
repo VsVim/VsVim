@@ -111,10 +111,7 @@ module internal TssUtil =
             tss.LineCount-1
         else
             line
-    
-    // Vim is fairly odd in that it considers the top line of the file to be both line numbers
-    // 1 and 0.  The next line is 2.  The editor is a zero based index though so we need
-    // to take that into account
+
     let VimLineToTssLine line = 
         match line with
             | 0 -> 0
@@ -166,47 +163,44 @@ module internal TssUtil =
     let FindCurrentWordSpan point kind = (WrapTextSearch TextUtil.FindCurrentWordSpan) kind point
     let FindCurrentFullWordSpan point kind = (WrapTextSearch TextUtil.FindFullWordSpan) kind point
     
-    /// Find any word span in the specified range.   
-    let FindAnyWordSpan (span:SnapshotSpan) kind = 
-        match FindCurrentWordSpan span.Start kind with
-            | Some s -> Some s
-            | None -> 
-                let pred = WrapTextSearch TextUtil.FindNextWordSpan 
-                pred kind span.Start 
-            
-    /// Find any word span in the specified range going backwards
-    let FindAnyWordSpanReverse (span:SnapshotSpan) kind =    
-        match span.Length > 0 with
-            | false -> None
-            | true ->
-            let point = span.End.Subtract(1)
-            match FindCurrentFullWordSpan point kind with
+    let FindAnyWordSpan (span:SnapshotSpan) wordKind searchKind = 
+        let opt = 
+            if SearchKindUtil.IsForward searchKind then
+                match FindCurrentWordSpan span.Start wordKind with
                 | Some s -> Some s
                 | None -> 
-                    let pred = WrapTextSearch TextUtil.FindPreviousWordSpan
-                    pred kind point
-            
+                    let pred = WrapTextSearch TextUtil.FindNextWordSpan 
+                    pred wordKind span.Start 
+            else
+                match span.Length > 0 with
+                | false -> None
+                | true ->
+                let point = span.End.Subtract(1)
+                match FindCurrentFullWordSpan point wordKind with
+                    | Some s -> Some s
+                    | None -> 
+                        let pred = WrapTextSearch TextUtil.FindPreviousWordSpan
+                        pred wordKind point
+        match opt with
+        | Some(fullSpan) -> 
+            let value = span.Intersection(fullSpan)
+            if value.HasValue then Some value.Value else None
+        | None -> None
     
-    /// Find the next word span starting at the specified point.  This will not wrap around the buffer 
-    /// looking for word spans
     let FindNextWordSpan point kind =
         let spans = match FindCurrentWordSpan point kind with
                         | Some s -> GetSpans (s.End) SearchKind.Forward
                         | None -> GetSpans point SearchKind.Forward
-        let found = spans |> Seq.tryPick (fun x -> FindAnyWordSpan x kind)
+        let found = spans |> Seq.tryPick (fun x -> FindAnyWordSpan x kind SearchKind.Forward)
         match found with
             | Some s -> s
             | None -> SnapshotSpan((GetEndPoint (point.Snapshot)), 0)
                         
             
-    /// This function is mainly a backing for the "b" command mode command.  It is really
-    /// used to find the position of the start of the current or previous word.  Unless we 
-    /// are currently at the start of a word, in which case it should go back to the previous
-    /// one        
     let FindPreviousWordSpan (point:SnapshotPoint) kind = 
         let startSpan = new SnapshotSpan(GetStartPoint (point.Snapshot), 0)
         let fullSearch p2 =
-             let s = GetSpans p2 SearchKind.Backward |> Seq.tryPick (fun x -> FindAnyWordSpanReverse x kind)                                
+             let s = GetSpans p2 SearchKind.Backward |> Seq.tryPick (fun x -> FindAnyWordSpan x kind SearchKind.Backward)                                
              match s with 
                 | Some span -> span
                 | None -> startSpan
@@ -292,4 +286,26 @@ module internal TssUtil =
             else tss.GetLineFromLineNumber(line.LineNumber-1).End
         else
             point.Subtract(1)
+
+    let GetWordSpans point wordKind searchKind = 
+        let getForSpanForward span = 
+            span
+            |> Seq.unfold (fun cur -> 
+                match FindAnyWordSpan cur wordKind searchKind with
+                | Some(nextSpan) -> Some(nextSpan, SnapshotSpan(nextSpan.End, cur.End))
+                | None -> None )
+        let getForSpanBackwards span =
+            span
+            |> Seq.unfold (fun cur ->
+                match FindAnyWordSpan cur wordKind searchKind with
+                | Some(prevSpan) -> Some(prevSpan, SnapshotSpan(span.Start, prevSpan.Start))
+                | None -> None )
+
+        let getForSpan span = 
+            if SearchKindUtil.IsForward searchKind then getForSpanForward span
+            else getForSpanBackwards span
+
+        GetSpans point searchKind 
+            |> Seq.map getForSpan
+            |> Seq.concat
 
