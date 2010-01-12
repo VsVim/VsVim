@@ -62,10 +62,5 @@ namespace VimCoreTest
             Assert.IsFalse(found.HasValue());
         }
 
-        [Test]
-        public void FindNextWord1()
-        {
-            Create("foo bar foo");
-        }
     }
 }

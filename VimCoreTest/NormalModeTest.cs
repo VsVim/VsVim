@@ -1203,7 +1203,7 @@ namespace VimCoreTest
         public void NextWord1()
         {
             var host = new Mock<IVimHost>(MockBehavior.Strict);
-            host.Setup(x => x.UpdateStatus(Resources.NormalMode_NoWordUnderCursor)).Verifiable();
+            host.Setup(x => x.UpdateStatus(Resources.NormalMode_NoStringUnderCursor)).Verifiable();
             CreateBuffer(host.Object, " ");
             _mode.Process("*");
             host.Verify();
@@ -1215,8 +1215,8 @@ namespace VimCoreTest
             CreateBuffer("foo bar");
             var retSpan = new SnapshotSpan(_view.TextSnapshot, 4,1);
             _searchReplace
-                .Setup(x => x.FindNextWord(new SnapshotSpan(_view.TextSnapshot, 0, 3), SearchKind.ForwardWithWrap, true))
-                .Returns(retSpan)
+                .Setup(x => x.FindNextWord(new SnapshotPoint(_view.TextSnapshot, 0), WordKind.NormalWord, SearchKind.ForwardWithWrap, true))
+                .Returns(FSharpOption.Create(retSpan))
                 .Verifiable();
             _mode.Process("*");
             _searchReplace.Verify();
@@ -1229,7 +1229,7 @@ namespace VimCoreTest
             var host = new FakeVimHost();
             CreateBuffer(host, "");
             _mode.Process("#");
-            Assert.AreEqual(Resources.NormalMode_NoWordUnderCursor, host.Status);
+            Assert.AreEqual(Resources.NormalMode_NoStringUnderCursor, host.Status);
         }
 
         [Test]
@@ -1238,8 +1238,8 @@ namespace VimCoreTest
             CreateBuffer("foo bar");
             var retSpan = new SnapshotSpan(_view.TextSnapshot, 4, 1);
             _searchReplace
-                .Setup(x => x.FindNextWord(new SnapshotSpan(_view.TextSnapshot, 0, 3), SearchKind.BackwardWithWrap, true))
-                .Returns(retSpan)
+                .Setup(x => x.FindNextWord(new SnapshotPoint(_view.TextSnapshot, 0), WordKind.NormalWord, SearchKind.BackwardWithWrap, true))
+                .Returns(FSharpOption.Create(retSpan))
                 .Verifiable();
             _mode.Process("#");
             _searchReplace.Verify();

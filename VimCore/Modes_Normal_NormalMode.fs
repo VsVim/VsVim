@@ -48,16 +48,16 @@ type internal NormalMode
         NeedMore2 inner
     
     member this.FindNextWordUnderCursor (count:int) (kind:SearchKind) =
-        let view = _bufferData.TextView
-        match TssUtil.FindCurrentFullWordSpan (ViewUtil.GetCaretPoint view) WordKind.NormalWord with
-            | None ->
-                _bufferData.VimHost.UpdateStatus("No word under cursor")
-                NormalModeResult.Complete
-            | Some (span) ->    
-                let next = _searchReplace.FindNextWord span kind (this.Settings.IgnoreCase)
-                ViewUtil.MoveCaretToPoint _bufferData.TextView next.Start |> ignore
-                NormalModeResult.Complete
-                
+        let point = ViewUtil.GetCaretPoint this.TextView
+        if point.Position = point.Snapshot.Length || System.Char.IsWhiteSpace (point.GetChar()) then
+            this.VimHost.UpdateStatus Resources.NormalMode_NoStringUnderCursor
+        else
+            match _searchReplace.FindNextWord point WordKind.NormalWord kind this.Settings.IgnoreCase with
+            | None -> ()
+            | Some(span) ->
+                ViewUtil.MoveCaretToPoint this.TextView span.Start |> ignore
+        NormalModeResult.Complete
+                    
     member this.WaitForMotion ki (d:NormalModeData) doneFunc = 
         let rec f (result:MotionResult) = 
             match result with 

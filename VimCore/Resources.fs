@@ -10,4 +10,5 @@ module internal Resources =
     let NormalMode_PatternNotFound = "Pattern not found: %s" 
     let NormalMode_NoPreviousSearch = "No previous search"
     let NormalMode_NoWordUnderCursor = "No word under cursor"
+    let NormalMode_NoStringUnderCursor = "No string under cursor"
 

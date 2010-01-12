@@ -66,11 +66,14 @@ type internal RegexSearchReplace() =
             TssUtil.GetSpans start kind 
                 |> Seq.tryPick (x.FilterSpan regex kind)
 
-    member x.FindNextWord (wordSpan:SnapshotSpan) kind ignoreCase = 
-        // TODO: Implement this
-        wordSpan
-
+    member x.FindNextWord point wordKind searchKind ignoreCase = 
+        match TssUtil.FindCurrentFullWordSpan point wordKind with
+        | Some(wordSpan) ->
+            let comp = if ignoreCase then System.StringComparer.OrdinalIgnoreCase else System.StringComparer.Ordinal
+            let word = wordSpan.GetText()
+            TssUtil.GetWordSpans wordSpan.End wordKind searchKind  |> Seq.tryFind (fun span -> comp.Equals(span.GetText(), word))
+        | None -> None
         
     interface ISearchReplace with
         member x.FindNextMatch searchData point = x.FindNextMatch searchData point
-        member x.FindNextWord wordSpan kind ignoreCase = x.FindNextWord wordSpan kind ignoreCase  
+        member x.FindNextWord point wordKind searchKind ignoreCase = x.FindNextWord point wordKind searchKind ignoreCase  
