@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <VisualState xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" ShowCheckBoxes="false">
-  <TopNode>[0-1146]VimCoreTest.NormalModeTest.IncrementalSearch5</TopNode>
-  <SelectedNode>[0-1148]VimCoreTest.NormalModeTest.NextWord2</SelectedNode>
+  <TopNode>[0-1196]VimCoreTest.NormalModeTest.Move_LeftArrow2</TopNode>
+  <SelectedNode>[0-1150]VimCoreTest.NormalModeTest.PreviousWord2</SelectedNode>
   <ExcludeCategories>false</ExcludeCategories>
   <Nodes>
     <Node UniqueName="[0-1000]C:\Users\JaredP\VsVim\VsVim.nunit" Expanded="true" />
-    <Node UniqueName="[0-1545]C:\Users\JaredP\VsVim\VimCoreTest\bin\Debug\VimCoreTest.dll" Expanded="true" />
-    <Node UniqueName="[0-1546]VimCoreTest" Expanded="true" />
+    <Node UniqueName="[0-1540]C:\Users\JaredP\VsVim\VimCoreTest\bin\Debug\VimCoreTest.dll" Expanded="true" />
+    <Node UniqueName="[0-1541]VimCoreTest" Expanded="true" />
     <Node UniqueName="[0-1125]VimCoreTest.NormalModeTest" Expanded="true" />
-    <Node UniqueName="[0-1603]C:\Users\JaredP\VsVim\VsVimTest\bin\Debug\VsVimTest.dll" Expanded="true" />
-    <Node UniqueName="[0-1604]VsVimTest" Expanded="true" />
+    <Node UniqueName="[0-1598]C:\Users\JaredP\VsVim\VsVimTest\bin\Debug\VsVimTest.dll" Expanded="true" />
+    <Node UniqueName="[0-1599]VsVimTest" Expanded="true" />
   </Nodes>
 </VisualState>

@@ -123,6 +123,7 @@ namespace VimCoreTest
         public void CanProcess4()
         {
             CreateBuffer(s_lines);
+            _incrementalSearch.Setup(x => x.Begin(SearchKind.ForwardWithWrap));
             _mode.Process(InputUtil.CharToKeyInput('/'));
             Assert.IsTrue(_mode.CanProcess(InputUtil.CharToKeyInput('U')));
             Assert.IsTrue(_mode.CanProcess(InputUtil.CharToKeyInput('Z')));
@@ -1214,7 +1215,7 @@ namespace VimCoreTest
             CreateBuffer("foo bar");
             var retSpan = new SnapshotSpan(_view.TextSnapshot, 4,1);
             _searchReplace
-                .Setup(x => x.FindNextWord(new SnapshotSpan(_view.TextSnapshot, 0, 3), SearchKind.ForwardWithWrap, false))
+                .Setup(x => x.FindNextWord(new SnapshotSpan(_view.TextSnapshot, 0, 3), SearchKind.ForwardWithWrap, true))
                 .Returns(retSpan)
                 .Verifiable();
             _mode.Process("*");
@@ -1237,7 +1238,7 @@ namespace VimCoreTest
             CreateBuffer("foo bar");
             var retSpan = new SnapshotSpan(_view.TextSnapshot, 4, 1);
             _searchReplace
-                .Setup(x => x.FindNextWord(new SnapshotSpan(_view.TextSnapshot, 0, 3), SearchKind.ForwardWithWrap, false))
+                .Setup(x => x.FindNextWord(new SnapshotSpan(_view.TextSnapshot, 0, 3), SearchKind.BackwardWithWrap, true))
                 .Returns(retSpan)
                 .Verifiable();
             _mode.Process("#");
