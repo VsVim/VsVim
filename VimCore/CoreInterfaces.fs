@@ -58,8 +58,11 @@ and IVimBuffer =
     abstract RegisterMap : IRegisterMap
 
     abstract GetRegister : char -> Register
+
+    /// Get the specified Mode
+    abstract GetMode : ModeKind -> IMode
     
-    // Process the char in question and return whether or not it was handled
+    /// Process the char in question and return whether or not it was handled
     abstract ProcessChar : char -> bool
     
     /// Process the key in question.  Returns true if the key was handled by the buffer

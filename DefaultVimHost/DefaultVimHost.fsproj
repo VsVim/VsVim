@@ -38,6 +38,10 @@
       <HintPath>C:\Users\jaredpar\VsVim\References\Microsoft.VisualStudio.Text.Data.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="Microsoft.VisualStudio.Text.Logic">
+      <HintPath>C:\Users\JaredP\VsVim\References\Microsoft.VisualStudio.Text.Logic.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="Microsoft.VisualStudio.Text.UI">
       <HintPath>C:\Users\jaredpar\VsVim\References\Microsoft.VisualStudio.Text.UI.dll</HintPath>
       <Private>True</Private>

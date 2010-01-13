@@ -11,6 +11,7 @@ using Vim;
 using System.Windows.Input;
 using Microsoft.VisualStudio.TextManager.Interop;
 using Microsoft.VisualStudio.Text.Editor;
+using Microsoft.VisualStudio.Text;
 
 namespace VsVim
 {
@@ -187,7 +188,12 @@ namespace VsVim
 
         internal static bool TryGetVimBuffer(this ITextView textView, out VsVimBuffer buffer)
         {
-            return textView.Properties.TryGetProperty<VsVimBuffer>(s_VsVimBufferGuid, out buffer);
+            return textView.TextBuffer.TryGetVimBuffer(out buffer);
+        }
+
+        internal static bool TryGetVimBuffer(this ITextBuffer textBuffer, out VsVimBuffer buffer)
+        {
+            return textBuffer.Properties.TryGetProperty<VsVimBuffer>(s_VsVimBufferGuid, out buffer);
         }
 
         internal static void SetVimBuffer(this ITextView textView, VsVimBuffer buffer)
@@ -197,12 +203,12 @@ namespace VsVim
                 throw new ArgumentNullException("buffer");
             }
 
-            textView.Properties.AddProperty(s_VsVimBufferGuid, buffer);
+            textView.TextBuffer.Properties.AddProperty(s_VsVimBufferGuid, buffer);
         }
 
         internal static bool RemoveVimBuffer(this ITextView textView)
         {
-            return textView.Properties.RemoveProperty(s_VsVimBufferGuid);
+            return textView.TextBuffer.Properties.RemoveProperty(s_VsVimBufferGuid);
         }
 
         #endregion

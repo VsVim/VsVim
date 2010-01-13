@@ -20,6 +20,7 @@ type internal IncrementalSearch
 
     let mutable _data : IncrementalSearchData option = None
     let mutable _lastSearch = { Pattern = System.String.Empty; Kind = SearchKind.ForwardWithWrap; Flags = SearchReplaceFlags.None }
+    let _currentSearchSpanChanged = Event<SnapshotSpan option>()
 
     /// Get the current search options based off of the stored data
     member private x.SearchReplaceFlags = 
@@ -33,6 +34,7 @@ type internal IncrementalSearch
             SearchData  = searchData }
         _data <- Some data
         _host.UpdateStatus "/"
+        _currentSearchSpanChanged.Trigger None
 
     /// Process the next key stroke in the incremental search
     member private x.ProcessCore (ki:KeyInput) = 
@@ -45,9 +47,11 @@ type internal IncrementalSearch
 
             let doSearch (searchData:SearchData) =
                 _host.UpdateStatus ("/" + searchData.Pattern)
-                match _searchReplace.FindNextMatch searchData (ViewUtil.GetCaretPoint _textView) with
+                let opt = _searchReplace.FindNextMatch searchData (ViewUtil.GetCaretPoint _textView) 
+                match opt with
                 | Some span -> ViewUtil.MoveCaretToPoint _textView span.Start |> ignore
                 | None -> resetView()
+                _currentSearchSpanChanged.Trigger opt
                 _data <- Some { data with SearchData = searchData }
 
             let previousSearch = data.SearchData
@@ -60,10 +64,12 @@ type internal IncrementalSearch
             | Key.Enter -> 
                 _lastSearch <- previousSearch
                 _host.UpdateStatus System.String.Empty
+                _currentSearchSpanChanged.Trigger None
                 true
             | Key.Escape -> 
                 resetView()
                 _host.UpdateStatus System.String.Empty
+                _currentSearchSpanChanged.Trigger None
                 true
             | Key.Back -> 
                 resetView()
@@ -118,5 +124,7 @@ type internal IncrementalSearch
         member x.Process ki = x.ProcessCore ki
         member x.Begin kind = x.Begin kind
         member x.FindNextMatch count = x.FindNextMatch count
+        [<CLIEvent>]
+        member x.CurrentSearchSpanChanged = _currentSearchSpanChanged.Publish
     
     

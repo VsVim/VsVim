@@ -11,6 +11,7 @@ using Vim.Modes.Normal;
 using System.Windows.Input;
 using Microsoft.VisualStudio.Text;
 using Microsoft.FSharp.Core;
+using Microsoft.FSharp.Control;
 
 namespace VimCoreTest
 {
@@ -159,6 +160,68 @@ namespace VimCoreTest
             _search.LastSearch = new SearchData("foo", SearchKind.ForwardWithWrap, SearchReplaceFlags.None);
             _search.FindNextMatch(1);
             Assert.AreEqual(Resources.NormalMode_PatternNotFound("foo"), _host.Status);
+        }
+
+        [Test]
+        public void CurrentSearchSpanChanged1()
+        {
+            Create("foo bar");
+            var list = new List<FSharpOption<SnapshotSpan>>();
+            _search.CurrentSearchSpanChanged += (_,opt) => { list.Add(opt); };
+            _search.Begin(SearchKind.ForwardWithWrap);
+            Assert.AreEqual(1, list.Count);
+            Assert.IsTrue(list[0].IsNone());
+        }
+
+        [Test]
+        public void CurrentSearchSpanChanged2()
+        {
+            Create("foo bar");
+            var list = new List<FSharpOption<SnapshotSpan>>();
+            _search.CurrentSearchSpanChanged += (_,opt) => { list.Add(opt); };
+            _search.Begin(SearchKind.ForwardWithWrap);
+            list.Clear();
+            _searchReplace
+                .Setup(x => x.FindNextMatch(It.IsAny<SearchData>(), It.IsAny<SnapshotPoint>()))
+                .Returns(FSharpOption<SnapshotSpan>.None);
+            _search.Process(InputUtil.CharToKeyInput('a'));
+            Assert.AreEqual(1, list.Count);
+            Assert.IsTrue(list[0].IsNone());
+        }
+
+        [Test]
+        public void CurrentSearchSpanChanged3()
+        {
+            Create("foo bar");
+            var list = new List<FSharpOption<SnapshotSpan>>();
+            _search.CurrentSearchSpanChanged += (_,opt) => { list.Add(opt); };
+            _search.Begin(SearchKind.ForwardWithWrap);
+            list.Clear();
+            var span = new SnapshotSpan(_textView.TextSnapshot, 0,2);
+            _searchReplace
+                .Setup(x => x.FindNextMatch(It.IsAny<SearchData>(), It.IsAny<SnapshotPoint>()))
+                .Returns(FSharpOption.Create(span));
+            _search.Process(InputUtil.CharToKeyInput('a'));
+            Assert.AreEqual(1, list.Count);
+            Assert.IsTrue(list[0].IsSome());
+            Assert.AreEqual(span, list[0].Value);
+        }
+
+        [Test]
+        public void CurrentSearchSpanChanged4()
+        {
+            Create("foo bar");
+            var list = new List<FSharpOption<SnapshotSpan>>();
+            _search.CurrentSearchSpanChanged += (_,opt) => { list.Add(opt); };
+            _search.Begin(SearchKind.ForwardWithWrap);
+            _searchReplace
+                .Setup(x => x.FindNextMatch(It.IsAny<SearchData>(), It.IsAny<SnapshotPoint>()))
+                .Returns(FSharpOption<SnapshotSpan>.None);
+            _search.Process(InputUtil.CharToKeyInput('a'));
+            list.Clear();
+            _search.Process(InputUtil.KeyToKeyInput(Key.Enter));
+            Assert.AreEqual(1, list.Count);
+            Assert.IsTrue(list[0].IsNone());
         }
 
 

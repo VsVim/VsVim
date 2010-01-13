@@ -10,4 +10,5 @@ open System.Windows.Media
 type internal NormalMode =
     interface IMode
     new: (IVimBuffer* IOperations * ISearchReplace * IIncrementalSearch) -> NormalMode
+    member IncrementalSearch : IIncrementalSearch
 

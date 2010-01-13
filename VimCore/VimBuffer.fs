@@ -29,7 +29,7 @@ type internal ModeMap() =
     member x.SwitchPreviousMode () =
         let prev = Option.get _previousMode
         x.SwitchMode prev.ModeKind
-
+    member x.GetMode kind = Map.find kind _modeMap
     member x.AddMode (mode:IMode) = 
         _modeMap <- Map.add (mode.ModeKind) mode _modeMap
 
@@ -90,6 +90,7 @@ type internal VimBuffer
         member x.Settings = _vim.Settings
         member x.RegisterMap = _vim.RegisterMap
         member x.GetRegister c = _vim.RegisterMap.GetRegister c
+        member x.GetMode kind = _modeMap.GetMode kind
         member x.ProcessChar c = 
             let ki = InputUtil.CharToKeyInput c
             x.ProcessInput ki

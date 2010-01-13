@@ -21,4 +21,7 @@ type IIncrementalSearch =
     /// Find the next match of the LastSearch
     abstract FindNextMatch : count:int -> unit
 
+    [<CLIEvent>]
+    abstract CurrentSearchSpanChanged : IEvent<SnapshotSpan option>
+
 

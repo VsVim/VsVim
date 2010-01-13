@@ -2,6 +2,7 @@
 namespace Vim
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
+open Microsoft.VisualStudio.Text.Tagging
 open Microsoft.VisualStudio.Text.Operations
 open Microsoft.VisualStudio.Language.Intellisense
 open Microsoft.VisualStudio.Text.Classification
@@ -56,4 +57,9 @@ type internal VimFactoryService
             vim.CreateBuffer view name 
         member x.CreateKeyProcessor buffer = Vim.KeyProcessor(buffer) :> Microsoft.VisualStudio.Text.Editor.KeyProcessor
         member x.CreateMouseProcessor buffer = Vim.MouseProcessor(buffer) :> Microsoft.VisualStudio.Text.Editor.IMouseProcessor
+        member x.CreateTagger (buffer:IVimBuffer) = 
+            let normal = buffer.GetMode ModeKind.Normal :?> Modes.Normal.NormalMode
+            let search = normal.IncrementalSearch
+            let tagger = Modes.Normal.Tagger(search)
+            tagger :> ITagger<TextMarkerTag>
       

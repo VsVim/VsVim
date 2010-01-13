@@ -21,7 +21,7 @@ using System.Runtime.InteropServices;
 namespace VsVim
 {
     [Export(typeof(IWpfTextViewCreationListener))]
-    [ContentType("text")]
+    [ContentType(Constants.ContentType)]
     [TextViewRole(PredefinedTextViewRoles.Editable)]
     internal sealed class HostFactory : IWpfTextViewCreationListener
     {
