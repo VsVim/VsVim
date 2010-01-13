@@ -345,9 +345,6 @@ namespace VimCoreTest
 
             var selection = m_view.Selection;
             Assert.AreEqual(8, selection.Start.Position);
-
-            var span = new SnapshotSpan(selection.Start.Position, selection.End.Position);
-            Assert.AreEqual(3, span.Length);
         }
 
         /// <summary>
@@ -363,8 +360,6 @@ namespace VimCoreTest
 
             var selection = m_view.Selection;
             Assert.AreEqual(line.Start, selection.Start.Position);
-            var span = new SnapshotSpan(selection.Start.Position, selection.End.Position);
-            Assert.AreEqual(4, span.Length);
         }
 
         /// <summary>
@@ -379,7 +374,6 @@ namespace VimCoreTest
 
             var selection = m_view.Selection;
             Assert.AreEqual(0, selection.Start.Position);
-            Assert.AreEqual(7, selection.GetSpan().Length);
         }
 
         /// <summary>

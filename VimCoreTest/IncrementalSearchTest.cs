@@ -8,13 +8,16 @@ using Vim;
 using Microsoft.VisualStudio.Text.Editor;
 using VimCoreTest.Utils;
 using Vim.Modes.Normal;
+using System.Windows.Input;
+using Microsoft.VisualStudio.Text;
+using Microsoft.FSharp.Core;
 
 namespace VimCoreTest
 {
     [TestFixture]
     public class IncrementalSearchTest
     {
-        private Mock<IVimHost> _host;
+        private FakeVimHost _host;
         private Mock<ISearchReplace> _searchReplace;
         private ITextView _textView;
         private IncrementalSearch _searchRaw;
@@ -23,17 +26,141 @@ namespace VimCoreTest
         private void Create(params string[] lines)
         {
             _textView = EditorUtil.CreateView(lines);
-            _host = new Mock<IVimHost>(MockBehavior.Strict);
+            _host = new FakeVimHost();
             _searchReplace = new Mock<ISearchReplace>(MockBehavior.Strict);
             _searchRaw = new IncrementalSearch(
-                _host.Object,
+                _host,
                 _textView,
                 VimSettingsUtil.CreateDefault,
                 _searchReplace.Object);
             _search = _searchRaw;
         }
 
-        
+        private void ProcessWithEnter(string value)
+        {
+            _search.Begin(SearchKind.ForwardWithWrap);
+            foreach (var cur in value)
+            {
+                var ki = InputUtil.CharToKeyInput(cur);
+                Assert.IsFalse(_search.Process(ki));
+            }
+            Assert.IsTrue(_search.Process(InputUtil.KeyToKeyInput(Key.Enter)));
+        }
+
+        [Test]
+        public void Process1()
+        {
+            Create("foo bar");
+            _search.Begin(SearchKind.ForwardWithWrap);
+            _searchReplace.Setup(x =>x.FindNextMatch(It.IsAny<SearchData>(), It.IsAny<SnapshotPoint>())).Returns(FSharpOption<SnapshotSpan>.None);
+            Assert.IsFalse(_search.Process(InputUtil.CharToKeyInput('b')));
+        }
+
+        [Test]
+        public void Process2()
+        {
+            Create("foo bar");
+            _search.Begin(SearchKind.ForwardWithWrap);
+            Assert.IsTrue(_search.Process(InputUtil.KeyToKeyInput(Key.Enter)));
+        }
+
+        [Test]
+        public void Process3()
+        {
+            Create("foo bar");
+            _search.Begin(SearchKind.ForwardWithWrap);
+            Assert.IsTrue(_search.Process(InputUtil.KeyToKeyInput(Key.Escape)));
+        }
+
+        [Test]
+        public void LastSearch1()
+        {
+            Create("foo bar");
+            Assert.IsTrue(String.IsNullOrEmpty(_search.LastSearch.Pattern));
+        }
+
+        [Test]
+        public void LastSearch2()
+        {
+            Create("foo bar");
+            _searchReplace.Setup(x =>x.FindNextMatch(It.IsAny<SearchData>(), It.IsAny<SnapshotPoint>())).Returns(FSharpOption<SnapshotSpan>.None);
+            ProcessWithEnter("foo");
+            Assert.AreEqual("foo", _search.LastSearch.Pattern);
+        }
+
+        [Test]
+        public void LastSearch3()
+        {
+            Create("foo bar");
+            _searchReplace.Setup(x =>x.FindNextMatch(It.IsAny<SearchData>(), It.IsAny<SnapshotPoint>())).Returns(FSharpOption<SnapshotSpan>.None);
+            ProcessWithEnter("foo bar");
+            ProcessWithEnter("bar");
+            Assert.AreEqual("bar", _search.LastSearch.Pattern);
+        }
+
+        [Test]
+        public void Status1()
+        {
+            Create("foo");
+            _searchReplace.Setup(x =>x.FindNextMatch(It.IsAny<SearchData>(), It.IsAny<SnapshotPoint>())).Returns(FSharpOption<SnapshotSpan>.None);
+            _search.Begin(SearchKind.ForwardWithWrap);
+            Assert.AreEqual("/", _host.Status);
+        }
+
+        [Test]
+        public void Status2()
+        {
+            Create("foo bar");
+            _searchReplace.Setup(x =>x.FindNextMatch(It.IsAny<SearchData>(), It.IsAny<SnapshotPoint>())).Returns(FSharpOption<SnapshotSpan>.None);
+            _search.Begin(SearchKind.ForwardWithWrap);
+            _search.Process(InputUtil.CharToKeyInput('a'));
+            Assert.AreEqual("/a", _host.Status);
+        }
+
+        [Test]
+        public void Status3()
+        {
+            Create("foo bar");
+            _searchReplace.Setup(x => x.FindNextMatch(It.IsAny<SearchData>(), It.IsAny<SnapshotPoint>())).Returns(FSharpOption<SnapshotSpan>.None);
+            _search.Begin(SearchKind.ForwardWithWrap);
+            _search.Process(InputUtil.CharToKeyInput('a'));
+            _search.Process(InputUtil.CharToKeyInput('b'));
+            Assert.AreEqual("/ab", _host.Status);
+        }
+
+        [Test]
+        public void Status4()
+        {
+            Create("foo bar");
+            _searchReplace.Setup(x => x.FindNextMatch(It.IsAny<SearchData>(), It.IsAny<SnapshotPoint>())).Returns(FSharpOption<SnapshotSpan>.None);
+            ProcessWithEnter("foo");
+            Assert.IsTrue(String.IsNullOrEmpty(_host.Status));
+        }
+
+        [Test]
+        public void Status5()
+        {
+            Create("foo bar");
+            _searchReplace
+                .Setup(x => x.FindNextMatch(It.IsAny<SearchData>(), It.IsAny<SnapshotPoint>()))
+                .Returns(FSharpOption.Create(new SnapshotSpan(_textView.TextSnapshot, 0, 2)));
+            _search.LastSearch = new SearchData("foo", SearchKind.ForwardWithWrap, SearchReplaceFlags.None);
+            _search.FindNextMatch(1);
+            Assert.AreEqual("/foo", _host.Status);
+        }
+
+        [Test]
+        public void Status6()
+        {
+            Create("foo bar");
+            _searchReplace
+                .Setup(x => x.FindNextMatch(It.IsAny<SearchData>(), It.IsAny<SnapshotPoint>()))
+                .Returns(FSharpOption<SnapshotSpan>.None);
+            _search.LastSearch = new SearchData("foo", SearchKind.ForwardWithWrap, SearchReplaceFlags.None);
+            _search.FindNextMatch(1);
+            Assert.AreEqual(Resources.NormalMode_PatternNotFound("foo"), _host.Status);
+        }
+
 
     /*
         [Test, Description("Make sure it matches the first occurance")]

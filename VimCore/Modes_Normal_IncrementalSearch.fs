@@ -9,8 +9,7 @@ open System.Windows.Media
 
 type internal IncrementalSearchData = {
     Start : SnapshotPoint;
-    Kind : SearchKind; 
-    Pattern : string }
+    SearchData : SearchData; }
 
 type internal IncrementalSearch
     (
@@ -20,7 +19,7 @@ type internal IncrementalSearch
         _searchReplace : ISearchReplace ) =
 
     let mutable _data : IncrementalSearchData option = None
-    let mutable _lastSearch : SearchData option = None 
+    let mutable _lastSearch = { Pattern = System.String.Empty; Kind = SearchKind.ForwardWithWrap; Flags = SearchReplaceFlags.None }
 
     /// Get the current search options based off of the stored data
     member private x.SearchReplaceFlags = 
@@ -28,63 +27,57 @@ type internal IncrementalSearch
         else SearchReplaceFlags.None
 
     member private x.Begin kind = 
+        let searchData = { Pattern = System.String.Empty; Kind = kind; Flags = x.SearchReplaceFlags }
         let data = {
             Start = ViewUtil.GetCaretPoint _textView;
-            Kind = kind;
-            Pattern = System.String.Empty }
+            SearchData  = searchData }
         _data <- Some data
         _host.UpdateStatus "/"
 
     /// Process the next key stroke in the incremental search
     member private x.ProcessCore (ki:KeyInput) = 
 
-        let resetView() = 
-            match ( _data ) with 
-            | Some(data) ->  ViewUtil.MoveCaretToPoint _textView data.Start |> ignore
-            | None -> ()
+        match _data with 
+        | None -> true
+        | Some (data) -> 
 
-        let doSearch (searchData:SearchData) =
-            _host.UpdateStatus ("/" + searchData.Pattern)
-            match _searchReplace.FindNextMatch searchData (ViewUtil.GetCaretPoint _textView) with
-            | Some span -> ViewUtil.MoveCaretToPoint _textView span.Start |> ignore
-            | None -> resetView()
+            let resetView() = ViewUtil.MoveCaretToPoint _textView data.Start |> ignore
 
-        let handleKeyStroke (previousSearch:SearchData) =
+            let doSearch (searchData:SearchData) =
+                _host.UpdateStatus ("/" + searchData.Pattern)
+                match _searchReplace.FindNextMatch searchData (ViewUtil.GetCaretPoint _textView) with
+                | Some span -> ViewUtil.MoveCaretToPoint _textView span.Start |> ignore
+                | None -> resetView()
+                _data <- Some { data with SearchData = searchData }
+
+            let previousSearch = data.SearchData
             let pattern = previousSearch.Pattern
             let doSearchWithNewPattern newPattern = 
-                let searchData = { previousSearch with Pattern=pattern }
+                let searchData = { previousSearch with Pattern=newPattern}
                 doSearch searchData
-                Some searchData
 
             match ki.Key with 
             | Key.Enter -> 
-                _lastSearch <- Some previousSearch 
+                _lastSearch <- previousSearch
                 _host.UpdateStatus System.String.Empty
-                None
+                true
             | Key.Escape -> 
                 resetView()
                 _host.UpdateStatus System.String.Empty
-                None
+                true
             | Key.Back -> 
                 resetView()
                 let pattern = 
                     if pattern.Length = 1 then System.String.Empty
                     else pattern.Substring(0, pattern.Length - 1)
                 doSearchWithNewPattern pattern 
+                false
             | _ -> 
                 let c = ki.Char
                 let pattern = pattern + (c.ToString())
                 doSearchWithNewPattern pattern
+                false
 
-        match _data with 
-        | None -> true
-        | Some (data) -> 
-            let previousSearch = { Pattern = data.Pattern; Kind = data.Kind; Flags = x.SearchReplaceFlags }
-            match handleKeyStroke previousSearch with
-            | Some(searchData) ->
-                _data <- Some { data with Pattern=searchData.Pattern }
-                true
-            | None ->  false
 
     member private x.FindNextMatch (count:int) =
         let getNextPoint current kind = 
@@ -103,21 +96,21 @@ type internal IncrementalSearch
 
         let rec doSearchWithCount searchData count = 
             if not (doSearch searchData) then
-                _host.UpdateStatus Resources.NormalMode_NoPreviousSearch
+                _host.UpdateStatus (Resources.NormalMode_PatternNotFound searchData.Pattern)
             elif count > 1 then
                 doSearchWithCount searchData (count-1)
             else
-                ()
+                _host.UpdateStatus ("/" + searchData.Pattern)
 
-        match _lastSearch with 
-        | None -> _host.UpdateStatus Resources.NormalMode_NoPreviousSearch
-        | Some(searchData) -> doSearchWithCount searchData count
+        if System.String.IsNullOrEmpty(_lastSearch.Pattern) then 
+            _host.UpdateStatus Resources.NormalMode_NoPreviousSearch
+        else doSearchWithCount _lastSearch count
 
     interface IIncrementalSearch with
         member x.InSearch = Option.isSome _data
         member x.CurrentSearch = 
             match _data with 
-            | Some(data) -> Some { Pattern = data.Pattern; Kind=data.Kind; Flags=x.SearchReplaceFlags }
+            | Some(data) -> Some data.SearchData
             | None -> None
         member x.LastSearch 
             with get() = _lastSearch 

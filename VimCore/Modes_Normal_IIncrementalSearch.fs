@@ -10,9 +10,9 @@ open System.Windows.Media
 type IIncrementalSearch = 
     abstract InSearch : bool
     abstract CurrentSearch : SearchData option
-    abstract LastSearch : SearchData option with get, set
+    abstract LastSearch : SearchData with get, set
 
-    /// Processes the next piece of input.  
+    /// Processes the next piece of input.  Returns true when the incremental search operation is complete
     abstract Process : KeyInput -> bool
 
     /// Called when a search is about to begin
