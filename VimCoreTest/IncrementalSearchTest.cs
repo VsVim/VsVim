@@ -224,6 +224,34 @@ namespace VimCoreTest
             Assert.IsTrue(list[0].IsNone());
         }
 
+        [Test]
+        public void CurrentSearch1()
+        {
+            Create("foo bar");
+            _searchReplace
+                .Setup(x => x.FindNextMatch(It.IsAny<SearchData>(), It.IsAny<SnapshotPoint>()))
+                .Returns(FSharpOption<SnapshotSpan>.None);
+            _search.Begin(SearchKind.Forward);
+            _search.Process(InputUtil.CharToKeyInput('B'));
+            Assert.AreEqual("B", _search.CurrentSearch.Value.Pattern);
+        }
+
+        [Test]
+        public void CurrentSearch2()
+        {
+            Create("foo bar");
+            var data = new SearchData("B", SearchKind.Forward, SearchReplaceFlags.IgnoreCase);
+            _searchReplace
+                .Setup(x => x.FindNextMatch(data, It.IsAny<SnapshotPoint>()))
+                .Returns(FSharpOption<SnapshotSpan>.None)
+                .Verifiable();
+            _search.Begin(SearchKind.Forward);
+            _search.Process(InputUtil.CharToKeyInput('B'));
+            _searchReplace.Verify();
+            Assert.AreEqual("B", _search.CurrentSearch.Value.Pattern);
+        }
+
+
 
     /*
         [Test, Description("Make sure it matches the first occurance")]

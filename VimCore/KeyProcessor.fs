@@ -7,9 +7,12 @@ open System.Windows.Input
 type internal KeyProcessor( _buffer : IVimBuffer ) = 
     inherit Microsoft.VisualStudio.Text.Editor.KeyProcessor()
 
-    /// I'm not entirely sure what the purpose of this function is anymore.  It was directly
-    /// ported from the C# version of the function and hence I gave it the same semantics. 
-    /// TODO: Investigate the purpose here?  To prevent beeping?
+    /// When the user is typing we get events for every single key press.  This means that 
+    /// typing something like an upper case character will cause at least 2 events to be
+    /// generated.  
+    ///  1) LeftShift 
+    ///  2) LeftShift + b
+    /// This helps us filter out items like #1 which we don't want to process
     member private x.IsNonInputKey k =
         match k with
         | Key.LeftAlt -> true
@@ -19,6 +22,8 @@ type internal KeyProcessor( _buffer : IVimBuffer ) =
         | Key.RightCtrl -> true
         | Key.RightShift -> true
         | _ -> false
+
+    member private x.IsInputKey k = not (x.IsNonInputKey k)
 
     member private x.TryHandleTextInput (args: TextCompositionEventArgs ) = 
         if 1 <> args.Text.Length then
@@ -44,7 +49,7 @@ type internal KeyProcessor( _buffer : IVimBuffer ) =
 
     override x.KeyDown(args:KeyEventArgs) =
         let handled = 
-            if x.IsNonInputKey(args.Key) then
+            if x.IsInputKey(args.Key) then
                 let ki = InputUtil.KeyAndModifierToKeyInput (args.Key) (args.KeyboardDevice.Modifiers)
                 _buffer.CanProcessInput ki && _buffer.ProcessInput(ki)
             else
