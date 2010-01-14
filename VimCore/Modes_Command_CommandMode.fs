@@ -259,6 +259,8 @@ type CommandMode
         member x.OnEnter () =
             _command <- System.String.Empty
             _data.VimHost.UpdateStatus(":")
-        member x.OnLeave () = ()
+            _data.TextView.Caret.IsHidden <- true
+        member x.OnLeave () = 
+            _data.TextView.Caret.IsHidden <- false
 
 

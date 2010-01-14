@@ -388,5 +388,20 @@ namespace VimCoreTest
             Assert.AreEqual(String.Empty, InputString());
         }
 
+        [Test]
+        public void Cursor1()
+        {
+            Create("foo bar");
+            Assert.IsTrue(_view.Caret.IsHidden);
+        }
+
+        [Test]
+        public void Cursor2()
+        {
+            Create("foo bar");
+            _mode.OnLeave();
+            Assert.IsFalse(_view.Caret.IsHidden);
+        }
+
     }
 }
