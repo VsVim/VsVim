@@ -12,3 +12,4 @@ module internal Resources =
     let NormalMode_NoWordUnderCursor = "No word under cursor"
     let NormalMode_NoStringUnderCursor = "No string under cursor"
 
+    let CommandMode_InvalidCommand = "Invalid command"

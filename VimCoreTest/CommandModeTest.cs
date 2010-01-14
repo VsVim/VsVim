@@ -403,5 +403,116 @@ namespace VimCoreTest
             Assert.IsFalse(_view.Caret.IsHidden);
         }
 
+        [Test]
+        public void Substitute1()
+        {
+            Create("foo bar");
+            var span = _view.TextSnapshot.GetLineFromLineNumber(0).Extent;
+            _operations
+                .Setup(x => x.Substitute("f", "b", span, SubstituteFlags.None))
+                .Verifiable();
+            ProcessWithEnter("s/f/b");
+            _operations.Verify();
+        }
+
+
+        [Test]
+        public void Substitute2()
+        {
+            Create("foo bar");
+            var span = _view.TextSnapshot.GetLineFromLineNumber(0).Extent;
+            _operations
+                .Setup(x => x.Substitute("foo", "bar", span, SubstituteFlags.None))
+                .Verifiable();
+            ProcessWithEnter("s/foo/bar");
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Substitute3()
+        {
+            Create("foo bar");
+            var span = _view.TextSnapshot.GetLineFromLineNumber(0).Extent;
+            _operations
+                .Setup(x => x.Substitute("foo", "bar", span, SubstituteFlags.None))
+                .Verifiable();
+            ProcessWithEnter("s/foo/bar/");
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Substitute4()
+        {
+            Create("foo bar");
+            var span = _view.TextSnapshot.GetLineFromLineNumber(0).Extent;
+            _operations
+                .Setup(x => x.Substitute("foo", "bar", span, SubstituteFlags.ReplaceAll))
+                .Verifiable();
+            ProcessWithEnter("s/foo/bar/g");
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Substitute5()
+        {
+            Create("foo bar");
+            var span = _view.TextSnapshot.GetLineFromLineNumber(0).Extent;
+            _operations
+                .Setup(x => x.Substitute("foo", "bar", span, SubstituteFlags.IgnoreCase))
+                .Verifiable();
+            ProcessWithEnter("s/foo/bar/i");
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Substitute6()
+        {
+            Create("foo bar");
+            var span = _view.TextSnapshot.GetLineFromLineNumber(0).Extent;
+            _operations
+                .Setup(x => x.Substitute("foo", "bar", span, SubstituteFlags.IgnoreCase | SubstituteFlags.ReplaceAll))
+                .Verifiable();
+            ProcessWithEnter("s/foo/bar/gi");
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Substitute7()
+        {
+            Create("foo bar");
+            var span = _view.TextSnapshot.GetLineFromLineNumber(0).Extent;
+            _operations
+                .Setup(x => x.Substitute("foo", "bar", span, SubstituteFlags.IgnoreCase | SubstituteFlags.ReplaceAll))
+                .Verifiable();
+            ProcessWithEnter("s/foo/bar/ig");
+            _operations.Verify();
+        }
+
+
+        [Test]
+        public void Substitute8()
+        {
+            Create("foo bar");
+            var span = _view.TextSnapshot.GetLineFromLineNumber(0).Extent;
+            _operations
+                .Setup(x => x.Substitute("foo", "bar", span, SubstituteFlags.ReportOnly))
+                .Verifiable();
+            ProcessWithEnter("s/foo/bar/n");
+            _operations.Verify();
+        }
+
+
+        [Test]
+        public void Substitute9()
+        {
+            Create("foo bar","baz");
+            var tss = _view.TextSnapshot;
+            var span = new SnapshotSpan(tss, 0, tss.Length);
+            _operations
+                .Setup(x => x.Substitute("foo", "bar", span, SubstituteFlags.None))
+                .Verifiable();
+            ProcessWithEnter("%s/foo/bar");
+            _operations.Verify();
+        }
     }
 }

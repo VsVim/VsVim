@@ -17,17 +17,33 @@ type CommandMode
     /// Reverse list of the inputted commands
     let mutable _input : list<KeyInput> = []
 
-    member x.Input = List.rev _input
-    member x.BadMessage = sprintf "Cannot run \"%s\"" _command
+    let mutable _lastSubstitute : (string * string ) = ("","")
 
-    member x.SkipWhitespace (cmd:KeyInput list) =
+    member private x.Input = List.rev _input
+    member private x.BadMessage = sprintf "Cannot run \"%s\"" _command
+
+    member private x.Peek list =
+        if list |> List.isEmpty then None
+        else Some (List.head list)
+
+    member private x.SkipHead (cmd:KeyInput list) ifEmpty ifNotEmpty =
+        if cmd |> List.isEmpty then ifEmpty
+        else ifNotEmpty (cmd |> List.head) (cmd |> List.tail)
+
+    member private x.SkipConditional (cmd:KeyInput list) (toSkip:char) ifFound ifNotFound =
+        let ifNotEmpty (head:KeyInput) rest = 
+            if head.Char = toSkip then ifFound rest
+            else ifNotFound
+        x.SkipHead cmd ifNotFound ifNotEmpty
+
+    member private x.SkipWhitespace (cmd:KeyInput list) =
         if cmd |> List.isEmpty then cmd
         else 
             let head = cmd |> List.head 
             if System.Char.IsWhiteSpace head.Char then x.SkipWhitespace (cmd |> List.tail)
             else cmd
         
-    member x.SkipPast (suffix:seq<char>) (cmd:list<KeyInput>) =
+    member private x.SkipPast (suffix:seq<char>) (cmd:list<KeyInput>) =
         let cmd = x.SkipWhitespace cmd |> Seq.ofList
         let rec inner (cmd:seq<KeyInput>) (suffix:seq<char>) = 
             if suffix |> Seq.isEmpty then cmd
@@ -40,7 +56,7 @@ type CommandMode
         inner cmd suffix |> List.ofSeq
 
     /// Try and skip the ! operator
-    member x.SkipBang (cmd:KeyInput list) =
+    member private x.SkipBang (cmd:KeyInput list) =
         match cmd |> List.isEmpty with
         | true -> (false,cmd)
         | false ->
@@ -50,7 +66,7 @@ type CommandMode
 
     /// Parse the register out of the stream.  Will return default if no register is 
     /// specified
-    member x.SkipRegister (cmd:KeyInput list) =
+    member private x.SkipRegister (cmd:KeyInput list) =
         let map = _data.RegisterMap
         match cmd |> List.isEmpty with
         | true -> (map.DefaultRegister,cmd)
@@ -61,13 +77,13 @@ type CommandMode
             | false,true -> (map.GetRegister(head.Char), cmd |> List.tail)
             | false,false -> (map.DefaultRegister, cmd)
 
-    member x.TryParseNext (cmd:KeyInput List) next = 
+    member private x.TryParseNext (cmd:KeyInput List) next = 
         if cmd |> List.isEmpty then 
             _data.VimHost.UpdateStatus("Invalid Command String")
         else next (cmd |> List.head) (cmd |> List.tail) 
 
     /// Parse out the :join command
-    member x.ParseJoin (rest:KeyInput list) (range:Range option) =
+    member private x.ParseJoin (rest:KeyInput list) (range:Range option) =
         let rest = rest |> x.SkipPast "oin" |> x.SkipWhitespace
         let hasBang,rest = x.SkipBang rest        
         let kind = if hasBang then JoinKind.KeepEmptySpaces else JoinKind.RemoveEmptySpaces
@@ -96,7 +112,7 @@ type CommandMode
 
 
     /// Parse out the :edit commnad
-    member x.ParseEdit (rest:KeyInput list) = 
+    member private x.ParseEdit (rest:KeyInput list) = 
         let _,rest = 
             rest 
             |> x.SkipWhitespace 
@@ -110,7 +126,7 @@ type CommandMode
         _operations.EditFile name
 
     /// Parse out the Yank command
-    member x.ParseYank (rest:KeyInput list) (range: Range option)=
+    member private x.ParseYank (rest:KeyInput list) (range: Range option)=
         let reg,rest = 
             rest 
             |> x.SkipWhitespace
@@ -132,7 +148,7 @@ type CommandMode
         _operations.Yank span MotionKind.Exclusive OperationKind.LineWise reg
 
     /// Parse the Put command
-    member x.ParsePut (rest:KeyInput list) (range: Range option) =
+    member private x.ParsePut (rest:KeyInput list) (range: Range option) =
         let bang,rest =
             rest
             |> x.SkipWhitespace
@@ -156,7 +172,7 @@ type CommandMode
         _operations.Put reg.StringValue line (not bang)
 
     /// Parse the < command
-    member x.ParseShiftLeft (rest:KeyInput list) (range: Range option) =
+    member private x.ParseShiftLeft (rest:KeyInput list) (range: Range option) =
         let count,rest =  rest  |> x.SkipWhitespace |> RangeUtil.ParseNumber
         let range = RangeUtil.RangeOrCurrentLine _data.TextView range
         let range = 
@@ -166,7 +182,7 @@ type CommandMode
         let span = RangeUtil.GetSnapshotSpan range
         _operations.ShiftLeft span _data.Settings.ShiftWidth |> ignore
 
-    member x.ParseShiftRight (rest:KeyInput list) (range: Range option) =
+    member private x.ParseShiftRight (rest:KeyInput list) (range: Range option) =
         let count,rest = rest |> x.SkipWhitespace |> RangeUtil.ParseNumber
         let range = RangeUtil.RangeOrCurrentLine _data.TextView range
         let range = 
@@ -177,7 +193,7 @@ type CommandMode
         _operations.ShiftRight span _data.Settings.ShiftWidth |> ignore
 
     /// Implements the :delete command
-    member x.ParseDelete (rest:KeyInput list) (range:Range option) =
+    member private x.ParseDelete (rest:KeyInput list) (range:Range option) =
         let reg,rest =
             rest
             |> x.SkipWhitespace
@@ -193,12 +209,42 @@ type CommandMode
         let span = RangeUtil.GetSnapshotSpan range
         _operations.DeleteSpan span MotionKind.Exclusive OperationKind.LineWise reg |> ignore
 
-    member x.ParsePChar (current:KeyInput) (rest: KeyInput list) (range:Range option) =
+    member private x.ParseSubstitute (rest:KeyInput list) (range:Range option) =
+        let parsePatternAndSearch rest =
+            let parseOne (rest:KeyInput list) notFound found = 
+                match rest |> List.isEmpty with
+                | true -> notFound()
+                | false -> 
+                    let head = List.head rest
+                    if head.Char <> '/' then notFound()
+                    else 
+                        let value = rest |> Seq.map (fun ki -> ki.Char ) |> Seq.takeWhile (fun c -> c <> '/') |> StringUtil.OfCharSeq
+                        let rest = rest |> Seq.skip value.Length |> List.ofSeq
+                        found value rest 
+            parseOne rest (fun () -> None) (fun pattern rest -> 
+                parseOne rest (fun () -> None) (fun search rest -> Some (pattern,search,rest) ) )
+
+        let range = RangeUtil.RangeOrCurrentLine _data.TextView range |> RangeUtil.GetSnapshotSpan
+        let rest = 
+            rest 
+            |> x.SkipWhitespace
+            |> x.SkipPast "ubstitute"
+        if List.isEmpty rest then
+            let search,replace = _lastSubstitute
+            _operations.Substitute search replace range SubstituteFlags.None 
+        else 
+            match parsePatternAndSearch rest with
+            | None ->
+                _data.VimHost.UpdateStatus Resources.CommandMode_InvalidCommand
+            | Some (pattern,replace,rest) ->
+                _operations.Substitute pattern replace range SubstituteFlags.None
+
+    member private x.ParsePChar (current:KeyInput) (rest: KeyInput list) (range:Range option) =
         match current.Char with
         | 'u' -> x.ParsePut rest range
         | _ -> _data.VimHost.UpdateStatus(x.BadMessage)
 
-    member x.ParseCommand (current:KeyInput) (rest:KeyInput list) (range:Range option) =
+    member private x.ParseCommand (current:KeyInput) (rest:KeyInput list) (range:Range option) =
         match current.Char with
         | 'j' -> x.ParseJoin rest range
         | 'e' -> x.ParseEdit rest 
@@ -210,9 +256,10 @@ type CommandMode
         | '<' -> x.ParseShiftLeft rest range
         | '>' -> x.ParseShiftRight rest range
         | 'd' -> x.ParseDelete rest range
+        | 's' -> x.ParseSubstitute rest range
         | _ -> _data.VimHost.UpdateStatus(x.BadMessage)
     
-    member x.ParseInput (originalInputs : KeyInput list) =
+    member private x.ParseInput (originalInputs : KeyInput list) =
         let withRange (range:Range option) (inputs:KeyInput list) =
             let next head tail = x.ParseCommand head tail range
             x.TryParseNext inputs next

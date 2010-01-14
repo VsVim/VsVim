@@ -46,3 +46,5 @@ type internal DefaultOperations
                     inner (cur.Add(1))
             let point = inner line.Start
             _textView.Caret.MoveTo(point) |> ignore
+
+        member x.Substitute pattern replace range flags = ()
