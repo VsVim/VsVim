@@ -45,6 +45,16 @@ namespace VimCoreTest
             _mode.OnEnter();
         }
 
+        private string InputString()
+        {
+            var inputs = _modeRaw.Input;
+            if (inputs.Any())
+            {
+                return _modeRaw.Input.Select(x => x.Char.ToString()).Aggregate((l, r) => l + r);
+            }
+            return string.Empty;
+        }
+
         private void ProcessWithEnter(string input)
         {
             _mode.Process(input);
@@ -333,5 +343,50 @@ namespace VimCoreTest
             ProcessWithEnter("2del");
             _operations.Verify();
         }
+
+        [Test]
+        public void Input1()
+        {
+            Create("foo", "bar");
+            _mode.Process("fo");
+            Assert.AreEqual("fo", InputString());
+        }
+
+        [Test]
+        public void Input2()
+        {
+            Create("foo", "bar");
+            ProcessWithEnter("foo");
+            Assert.AreEqual(String.Empty, InputString());
+        }
+
+        [Test]
+        public void Input3()
+        {
+            Create("foo bar");
+            _mode.Process("foo");
+            _mode.Process(InputUtil.KeyToKeyInput(Key.Back));
+            Assert.AreEqual("fo", InputString());
+        }
+
+        [Test]
+        public void Input4()
+        {
+            Create("foo bar");
+            _mode.Process("foo");
+            _mode.Process(InputUtil.KeyToKeyInput(Key.Escape));
+            Assert.AreEqual(string.Empty, InputString());
+        }
+
+        [Test, Description("Delete past the start of the command string")]
+        public void Input5()
+        {
+            Create("foo bar");
+            _mode.Process('c');
+            _mode.Process(InputUtil.KeyToKeyInput(Key.Back));
+            _mode.Process(InputUtil.KeyToKeyInput(Key.Back));
+            Assert.AreEqual(String.Empty, InputString());
+        }
+
     }
 }

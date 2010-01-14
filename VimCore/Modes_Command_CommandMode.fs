@@ -17,6 +17,7 @@ type CommandMode
     /// Reverse list of the inputted commands
     let mutable _input : list<KeyInput> = []
 
+    member x.Input = List.rev _input
     member x.BadMessage = sprintf "Cannot run \"%s\"" _command
 
     member x.SkipWhitespace (cmd:KeyInput list) =
@@ -243,7 +244,11 @@ type CommandMode
                     SwitchMode ModeKind.Normal
                 | Key.Escape ->
                     _data.VimHost.UpdateStatus(System.String.Empty)
+                    _input <- List.empty
                     SwitchMode ModeKind.Normal
+                | Key.Back -> 
+                    if not (List.isEmpty _input) then _input <- List.tail _input
+                    Processed
                 | _ -> 
                     let c = ki.Char
                     _command <-_command + (c.ToString())
