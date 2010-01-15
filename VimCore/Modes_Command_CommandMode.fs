@@ -210,7 +210,7 @@ type CommandMode
         _operations.DeleteSpan span MotionKind.Exclusive OperationKind.LineWise reg |> ignore
 
     member private x.ParseSubstitute (rest:KeyInput list) (range:Range option) =
-        
+
         // Used to parse out the flags on the :s command
         let rec parseFlags (rest:KeyInput seq) =
             let charToOption c = 
@@ -225,20 +225,21 @@ type CommandMode
                 | _ -> SubstituteFlags.Invalid
             rest |> Seq.map (fun ki -> ki.Char) |> Seq.fold (fun f c -> (charToOption c) ||| f) SubstituteFlags.None 
 
-        let parsePatternAndSearch rest =
-            let parseOne (rest:KeyInput list) notFound found = 
-                match rest |> List.isEmpty with
-                | true -> notFound()
-                | false -> 
-                    let head = List.head rest
-                    if head.Char <> '/' then notFound()
-                    else 
-                        let rest = rest |> List.tail
-                        let value = rest |> Seq.map (fun ki -> ki.Char ) |> Seq.takeWhile (fun c -> c <> '/') |> StringUtil.OfCharSeq
-                        let rest = rest |> Seq.skip value.Length |> List.ofSeq
-                        found value rest 
-            parseOne rest (fun () -> None) (fun pattern rest -> 
-                parseOne rest (fun () -> None) (fun search rest -> Some (pattern,search,rest) ) )
+        let doParse rest badParse goodParse =
+            let parseOne (rest: KeyInput seq) notFound found = 
+                let prefix = rest |> Seq.takeWhile (fun ki -> ki.Char = '/' ) 
+                if Seq.length prefix <> 1 then notFound()
+                else
+                    let rest = rest |> Seq.skip 1
+                    let data = rest |> Seq.map (fun ki -> ki.Char) |> Seq.takeWhile (fun c -> c <> '/' ) |> StringUtil.OfCharSeq
+                    found data (rest |> Seq.skip data.Length)
+            parseOne rest (fun () -> badParse() ) (fun search rest -> 
+                parseOne rest (fun () -> badParse()) (fun replace rest ->  
+                    let rest = rest |> Seq.skipWhile (fun ki -> ki.Char = '/')
+                    let flagsInput = rest |> Seq.takeWhile (fun ki -> not (System.Char.IsWhiteSpace ki.Char))
+                    let flags = parseFlags flagsInput
+                    if Utils.IsFlagSet flags SubstituteFlags.Invalid then badParse()
+                    else goodParse search replace flags ))
 
         let range = RangeUtil.RangeOrCurrentLine _data.TextView range |> RangeUtil.GetSnapshotSpan
         let rest = 
@@ -249,17 +250,9 @@ type CommandMode
             let search,replace = _lastSubstitute
             _operations.Substitute search replace range SubstituteFlags.None 
         else 
-            match parsePatternAndSearch rest with
-            | None ->
-                _data.VimHost.UpdateStatus Resources.CommandMode_InvalidCommand
-            | Some (pattern,replace,rest) ->
-                let rest = rest |> Seq.skipWhile (fun ki -> ki.Char = '/')
-                let flagsInput = rest |> Seq.takeWhile (fun ki -> not (System.Char.IsWhiteSpace ki.Char))
-                let flags = parseFlags flagsInput
-                if Utils.IsFlagSet flags SubstituteFlags.Invalid then
-                    _data.VimHost.UpdateStatus Resources.CommandMode_InvalidCommand
-                else
-                    _operations.Substitute pattern replace range flags
+            let badParse () = _data.VimHost.UpdateStatus Resources.CommandMode_InvalidCommand
+            let goodParse search replace flags = _operations.Substitute search replace range flags
+            doParse rest badParse goodParse    
 
     member private x.ParsePChar (current:KeyInput) (rest: KeyInput list) (range:Range option) =
         match current.Char with
