@@ -514,5 +514,32 @@ namespace VimCoreTest
             ProcessWithEnter("%s/foo/bar");
             _operations.Verify();
         }
+
+        [Test]
+        public void Substitute10()
+        {
+            Create("foo bar", "baz");
+            var tss = _view.TextSnapshot;
+            var span = new SnapshotSpan(tss, 0, tss.Length);
+            _operations
+                .Setup(x => x.Substitute("foo", "bar", span, SubstituteFlags.SuppressError))
+                .Verifiable();
+            ProcessWithEnter("%s/foo/bar/e");
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Substitute11()
+        {
+            Create("foo bar", "baz");
+            var tss = _view.TextSnapshot;
+            var span = new SnapshotSpan(tss, 0, tss.Length);
+            _operations
+                .Setup(x => x.Substitute("foo", "bar", span, SubstituteFlags.OrdinalCase))
+                .Verifiable();
+            ProcessWithEnter("%s/foo/bar/I");
+            _operations.Verify();
+        }
+
     }
 }

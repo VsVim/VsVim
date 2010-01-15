@@ -13,3 +13,4 @@ module internal Resources =
     let NormalMode_NoStringUnderCursor = "No string under cursor"
 
     let CommandMode_InvalidCommand = "Invalid command"
+    let CommnadMode_PatternNotFound pattern = NormalMode_PatternNotFound pattern
