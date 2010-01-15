@@ -15,6 +15,11 @@ type SubstituteFlags =
     | IgnoreCase = 0x2
     /// Report only 
     | ReportOnly = 0x4
+    | Confirm = 0x8
+    | UsePrevious = 0x10
+    | SuppressError = 0x20
+    | OrdinalCase = 0x40
+    | Invalid = 0xf000
 
 
 /// Normal mode operations

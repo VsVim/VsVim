@@ -210,6 +210,21 @@ type CommandMode
         _operations.DeleteSpan span MotionKind.Exclusive OperationKind.LineWise reg |> ignore
 
     member private x.ParseSubstitute (rest:KeyInput list) (range:Range option) =
+        
+        // Used to parse out the flags on the :s command
+        let rec parseFlags (rest:KeyInput seq) =
+            let charToOption c = 
+                match c with 
+                | 'c' -> SubstituteFlags.Confirm
+                | '&' -> SubstituteFlags.UsePrevious
+                | 'e' -> SubstituteFlags.SuppressError
+                | 'g' -> SubstituteFlags.ReplaceAll
+                | 'i' -> SubstituteFlags.IgnoreCase
+                | 'I' -> SubstituteFlags.OrdinalCase
+                | 'n' -> SubstituteFlags.ReportOnly
+                | _ -> SubstituteFlags.Invalid
+            rest |> Seq.map (fun ki -> ki.Char) |> Seq.fold (fun f c -> (charToOption c) ||| f) SubstituteFlags.None 
+
         let parsePatternAndSearch rest =
             let parseOne (rest:KeyInput list) notFound found = 
                 match rest |> List.isEmpty with
@@ -218,6 +233,7 @@ type CommandMode
                     let head = List.head rest
                     if head.Char <> '/' then notFound()
                     else 
+                        let rest = rest |> List.tail
                         let value = rest |> Seq.map (fun ki -> ki.Char ) |> Seq.takeWhile (fun c -> c <> '/') |> StringUtil.OfCharSeq
                         let rest = rest |> Seq.skip value.Length |> List.ofSeq
                         found value rest 
@@ -237,7 +253,13 @@ type CommandMode
             | None ->
                 _data.VimHost.UpdateStatus Resources.CommandMode_InvalidCommand
             | Some (pattern,replace,rest) ->
-                _operations.Substitute pattern replace range SubstituteFlags.None
+                let rest = rest |> Seq.skipWhile (fun ki -> ki.Char = '/')
+                let flagsInput = rest |> Seq.takeWhile (fun ki -> not (System.Char.IsWhiteSpace ki.Char))
+                let flags = parseFlags flagsInput
+                if Utils.IsFlagSet flags SubstituteFlags.Invalid then
+                    _data.VimHost.UpdateStatus Resources.CommandMode_InvalidCommand
+                else
+                    _operations.Substitute pattern replace range flags
 
     member private x.ParsePChar (current:KeyInput) (rest: KeyInput list) (range:Range option) =
         match current.Char with
