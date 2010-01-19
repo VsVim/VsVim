@@ -75,9 +75,11 @@ namespace VimCoreTest
         {
             Create("bar bar", "foo bar");
             var tss = _view.TextSnapshot;
+            _host.Setup(x => x.UpdateStatus(Resources.CommandMode_SubstituteComplete(2, 2))).Verifiable();
             _operations.Substitute("bar", "again", new SnapshotSpan(tss, 0, tss.Length), SubstituteFlags.None);
             Assert.AreEqual("again bar", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
             Assert.AreEqual("foo again", _view.TextSnapshot.GetLineFromLineNumber(1).GetText());
+            _host.Verify();
         }
 
         [Test, Description("Replace all if the option is set")]
@@ -85,9 +87,11 @@ namespace VimCoreTest
         {
             Create("bar bar", "foo bar");
             var tss = _view.TextSnapshot;
+            _host.Setup(x => x.UpdateStatus(Resources.CommandMode_SubstituteComplete(2, 1))).Verifiable();
             _operations.Substitute("bar", "again", tss.GetLineFromLineNumber(0).Extent, SubstituteFlags.ReplaceAll);
             Assert.AreEqual("again again", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
             Assert.AreEqual("foo bar", _view.TextSnapshot.GetLineFromLineNumber(1).GetText());
+            _host.Verify();
         }
 
         [Test, Description("Ignore case")]
@@ -104,8 +108,10 @@ namespace VimCoreTest
         {
             Create("bar bar", "foo bar");
             var tss = _view.TextSnapshot;
+            _host.Setup(x => x.UpdateStatus(Resources.CommandMode_SubstituteComplete(2, 1))).Verifiable();
             _operations.Substitute("BAR", "again", tss.GetLineFromLineNumber(0).Extent, SubstituteFlags.IgnoreCase | SubstituteFlags.ReplaceAll);
             Assert.AreEqual("again again", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
+            _host.Verify();
         }
 
         [Test, Description("Ignore case and replace all")]
@@ -113,8 +119,10 @@ namespace VimCoreTest
         {
             Create("bar bar", "foo bar");
             var tss = _view.TextSnapshot;
+            _host.Setup(x => x.UpdateStatus(Resources.CommandMode_SubstituteComplete(2, 1))).Verifiable();
             _operations.Substitute("BAR", "again", tss.GetLineFromLineNumber(0).Extent, SubstituteFlags.IgnoreCase | SubstituteFlags.ReplaceAll);
             Assert.AreEqual("again again", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
+            _host.Verify();
         }
 
         [Test, Description("No matches")]
@@ -123,7 +131,7 @@ namespace VimCoreTest
             Create("bar bar", "foo bar");
             var tss = _view.TextSnapshot;
             var pattern = "BAR";
-            _host.Setup(x => x.UpdateStatus(Resources.CommnadMode_PatternNotFound(pattern))).Verifiable();
+            _host.Setup(x => x.UpdateStatus(Resources.CommandMode_PatternNotFound(pattern))).Verifiable();
             _operations.Substitute("BAR", "again", tss.GetLineFromLineNumber(0).Extent, SubstituteFlags.OrdinalCase);
             _host.Verify();
         }

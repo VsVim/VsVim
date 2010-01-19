@@ -76,17 +76,30 @@ type internal DefaultOperations
                         regex.Matches(span.GetText()) |> Seq.cast<Match>
                     else
                         regex.Match(span.GetText()) |> Seq.singleton
-                x.GetSpansInRange range
+                let matches = 
+                    x.GetSpansInRange range
                     |> Seq.map (fun span -> getMatches span |> Seq.map (fun m -> (m,span)) )
                     |> Seq.concat 
                     |> Seq.filter (fun (m,_) -> m.Success)
-                    |> Seq.iter (fun (m,span) -> replaceOne span m)
+
+                // Actually do the edits
+                matches |> Seq.iter (fun (m,span) -> replaceOne span m)
 
                 if edit.HasEffectiveChanges then
                     edit.Apply() |> ignore                                
+
+                    // Update the status
+                    let replaceCount = matches |> Seq.length
+                    let lineCount = 
+                        matches 
+                        |> Seq.map (fun (_,s) -> s.Start.GetContainingLine().LineNumber)
+                        |> Seq.distinct
+                        |> Seq.length
+                    if replaceCount > 1 then
+                        _host.UpdateStatus (Resources.CommandMode_SubstituteComplete replaceCount lineCount)
                 else 
                     edit.Cancel()
-                    _host.UpdateStatus (Resources.CommnadMode_PatternNotFound pattern)
+                    _host.UpdateStatus (Resources.CommandMode_PatternNotFound pattern)
 
             let options = 
                 if Utils.IsFlagSet flags SubstituteFlags.IgnoreCase then
@@ -95,5 +108,5 @@ type internal DefaultOperations
                     RegexOptions.None
             let options = options ||| RegexOptions.Compiled
             match Utils.TryCreateRegex pattern options with
-            | None -> _host.UpdateStatus (Resources.CommnadMode_PatternNotFound pattern)
+            | None -> _host.UpdateStatus (Resources.CommandMode_PatternNotFound pattern)
             | Some (regex) -> doReplace regex

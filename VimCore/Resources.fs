@@ -13,4 +13,5 @@ module internal Resources =
     let NormalMode_NoStringUnderCursor = "No string under cursor"
 
     let CommandMode_InvalidCommand = "Invalid command"
-    let CommnadMode_PatternNotFound pattern = NormalMode_PatternNotFound pattern
+    let CommandMode_PatternNotFound pattern = NormalMode_PatternNotFound pattern
+    let CommandMode_SubstituteComplete subs lines = sprintf "%d substitutions on %d lines" subs lines
