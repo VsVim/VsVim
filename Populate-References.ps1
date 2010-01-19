@@ -39,3 +39,7 @@ foreach ( $dll in $coreDllList) {
 $fullPath = join-path $progPath "Microsoft Visual Studio 10.0\Common7\IDE\PrivateAssemblies\Microsoft.VisualStudio.Text.Internal.dll"
 CopyTo-References $fullPath
 
+$fullPath = join-path $progPath "Reference Assemblies\Microsoft\F#\1.0\Runtime\v4.0\FSharp.Core.dll"
+CopyTo-References $fullPath
+
+

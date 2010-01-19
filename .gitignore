@@ -42,3 +42,4 @@ Microsoft.VisualStudio.Text.Internal.dll
 Microsoft.VisualStudio.Text.UI.dll
 Microsoft.VisualStudio.Text.UI.Wpf.dll
 Microsoft.VisualStudio.UI.Undo.dll
+FSharp.Core.dll
