@@ -82,12 +82,11 @@ type internal DefaultOperations
                     |> Seq.concat 
                     |> Seq.filter (fun (m,_) -> m.Success)
 
-                // Actually do the edits
-                matches |> Seq.iter (fun (m,span) -> replaceOne span m)
+                if not (Utils.IsFlagSet flags SubstituteFlags.ReportOnly) then
+                    // Actually do the edits
+                    matches |> Seq.iter (fun (m,span) -> replaceOne span m)
 
-                if edit.HasEffectiveChanges then
-                    edit.Apply() |> ignore                                
-
+                let updateReplaceCount () = 
                     // Update the status
                     let replaceCount = matches |> Seq.length
                     let lineCount = 
@@ -97,6 +96,13 @@ type internal DefaultOperations
                         |> Seq.length
                     if replaceCount > 1 then
                         _host.UpdateStatus (Resources.CommandMode_SubstituteComplete replaceCount lineCount)
+
+                if edit.HasEffectiveChanges then
+                    edit.Apply() |> ignore                                
+                    updateReplaceCount()
+                elif Utils.IsFlagSet flags SubstituteFlags.ReportOnly then
+                    edit.Cancel()
+                    updateReplaceCount()
                 else 
                     edit.Cancel()
                     _host.UpdateStatus (Resources.CommandMode_PatternNotFound pattern)

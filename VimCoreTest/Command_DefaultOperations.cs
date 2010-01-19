@@ -135,5 +135,37 @@ namespace VimCoreTest
             _operations.Substitute("BAR", "again", tss.GetLineFromLineNumber(0).Extent, SubstituteFlags.OrdinalCase);
             _host.Verify();
         }
+
+        [Test, Description("Invalid regex")]
+        public void Substitute9()
+        {
+            Create("bar bar", "foo bar");
+            var tss = _view.TextSnapshot;
+            var pattern = "(foo";
+            _host.Setup(x => x.UpdateStatus(Resources.CommandMode_PatternNotFound(pattern))).Verifiable();
+            _operations.Substitute(pattern, "again", tss.GetLineFromLineNumber(0).Extent, SubstituteFlags.OrdinalCase);
+            _host.Verify();
+            Assert.AreSame(tss, _view.TextSnapshot);
+        }
+
+        [Test, Description("Report only shouldn't make any changes")]
+        public void Substitute10()
+        {
+            Create("bar bar", "foo bar");
+            var tss = _view.TextSnapshot;
+            _host.Setup(x => x.UpdateStatus(Resources.CommandMode_SubstituteComplete(2, 1))).Verifiable();
+            _operations.Substitute("bar", "again", tss.GetLineFromLineNumber(0).Extent, SubstituteFlags.ReplaceAll | SubstituteFlags.ReportOnly);
+            _host.Verify();
+            Assert.AreSame(tss, _view.TextSnapshot);
+        }
+
+        [Test, Description("No matches and report only")]
+        public void Substitute11()
+        {
+            Create("bar bar", "foo bar");
+            var tss = _view.TextSnapshot;
+            var pattern = "BAR";
+            _operations.Substitute(pattern, "again", tss.GetLineFromLineNumber(0).Extent, SubstituteFlags.OrdinalCase | SubstituteFlags.ReportOnly);
+        }
     }
 }

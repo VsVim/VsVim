@@ -17,7 +17,7 @@ type CommandMode
     /// Reverse list of the inputted commands
     let mutable _input : list<KeyInput> = []
 
-    let mutable _lastSubstitute : (string * string ) = ("","")
+    let mutable _lastSubstitute : (string * string * SubstituteFlags) = ("","",SubstituteFlags.None)
 
     member private x.Input = List.rev _input
     member private x.BadMessage = sprintf "Cannot run \"%s\"" _command
@@ -238,6 +238,12 @@ type CommandMode
                     let rest = rest |> Seq.skipWhile (fun ki -> ki.Char = '/')
                     let flagsInput = rest |> Seq.takeWhile (fun ki -> not (System.Char.IsWhiteSpace ki.Char))
                     let flags = parseFlags flagsInput
+                    let flags = 
+                        if Utils.IsFlagSet flags SubstituteFlags.UsePrevious then
+                            let _,_,prev = _lastSubstitute
+                            (Utils.UnsetFlag flags SubstituteFlags.UsePrevious) ||| prev
+                        else
+                            flags
                     if Utils.IsFlagSet flags SubstituteFlags.Invalid then badParse()
                     else goodParse search replace flags ))
 
@@ -247,11 +253,16 @@ type CommandMode
             |> x.SkipWhitespace
             |> x.SkipPast "ubstitute"
         if List.isEmpty rest then
-            let search,replace = _lastSubstitute
-            _operations.Substitute search replace range SubstituteFlags.None 
+            let search,replace,flags = _lastSubstitute
+            _operations.Substitute search replace range flags
         else 
             let badParse () = _data.VimHost.UpdateStatus Resources.CommandMode_InvalidCommand
-            let goodParse search replace flags = _operations.Substitute search replace range flags
+            let goodParse search replace flags = 
+                if Utils.IsFlagSet flags SubstituteFlags.Confirm then
+                    _data.VimHost.UpdateStatus Resources.CommandMode_NotSupported_SubstituteConfirm
+                else
+                    _operations.Substitute search replace range flags
+                    _lastSubstitute <- (search,replace,flags)
             doParse rest badParse goodParse    
 
     member private x.ParsePChar (current:KeyInput) (rest: KeyInput list) (range:Range option) =

@@ -541,5 +541,48 @@ namespace VimCoreTest
             _operations.Verify();
         }
 
+        [Test, Description("Use last flags flag")]
+        public void Substitute12()
+        {
+            Create("foo bar", "baz");
+            var tss = _view.TextSnapshot;
+            var span = new SnapshotSpan(tss, 0, tss.Length);
+            _operations
+                .Setup(x => x.Substitute("foo", "bar", span, SubstituteFlags.OrdinalCase))
+                .Verifiable();
+            ProcessWithEnter("%s/foo/bar/I");
+            _operations.Verify();
+            ProcessWithEnter("%s/foo/bar/&");
+            _operations.Verify();
+        }
+
+        [Test, Description("Use last flags flag plus new flags")]
+        public void Substitute13()
+        {
+            Create("foo bar", "baz");
+            var tss = _view.TextSnapshot;
+            var span = new SnapshotSpan(tss, 0, tss.Length);
+            _operations
+                .Setup(x => x.Substitute("foo", "bar", span, SubstituteFlags.OrdinalCase))
+                .Verifiable();
+            ProcessWithEnter("%s/foo/bar/I");
+            _operations.Verify();
+            _operations
+                .Setup(x => x.Substitute("foo", "bar", span, SubstituteFlags.OrdinalCase | SubstituteFlags.ReplaceAll))
+                .Verifiable();
+            ProcessWithEnter("%s/foo/bar/&g");
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Substitute14()
+        {
+            Create("foo bar", "baz");
+            var tss = _view.TextSnapshot;
+            var span = new SnapshotSpan(tss, 0, tss.Length);
+            ProcessWithEnter("%s/foo/bar/c");
+            Assert.AreEqual(Resources.CommandMode_NotSupported_SubstituteConfirm, _host.Status);
+        }
+
     }
 }

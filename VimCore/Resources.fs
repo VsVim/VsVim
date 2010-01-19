@@ -15,3 +15,5 @@ module internal Resources =
     let CommandMode_InvalidCommand = "Invalid command"
     let CommandMode_PatternNotFound pattern = NormalMode_PatternNotFound pattern
     let CommandMode_SubstituteComplete subs lines = sprintf "%d substitutions on %d lines" subs lines
+    let CommandMode_NotSupported msg = sprintf "Command not currently supported: %s" msg
+    let CommandMode_NotSupported_SubstituteConfirm = CommandMode_NotSupported "Substitute Confirm"
