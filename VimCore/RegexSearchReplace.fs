@@ -16,11 +16,7 @@ type internal RegexSearchReplace() =
             else
                 RegexOptions.None
         let options = options &&& RegexOptions.Compiled
-        try
-            let r = new Regex(searchData.Pattern, options)
-            Some r
-        with 
-            | :? System.ArgumentException -> None
+        Utils.TryCreateRegex searchData.Pattern options
 
     /// This method filters out spans looking for valid regex matches within the Span.  It will return
     /// an empty option if no match occurs on the span, otherwise the span of the match

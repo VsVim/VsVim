@@ -19,6 +19,20 @@ type internal DefaultOperations
 
     member private x.CommonImpl = x :> ICommonOperations
 
+    /// Get the Line spans in the specified range
+    member x.GetSpansInRange (range:SnapshotSpan) =
+        let startLine = range.Start.GetContainingLine()
+        let endLine = range.End.GetContainingLine()
+        if startLine.LineNumber = endLine.LineNumber then  Seq.singleton range
+        else
+            let tss = startLine.Snapshot
+            seq {
+                yield SnapshotSpan(range.Start, startLine.EndIncludingLineBreak)
+                for i = startLine.LineNumber + 1 to endLine.LineNumber - 1 do
+                    yield tss.GetLineFromLineNumber(i).ExtentIncludingLineBreak
+                yield SnapshotSpan(endLine.Start, range.End)
+            }
+
     interface IOperations with
         member x.EditFile fileName = _host.OpenFile fileName
 
@@ -47,4 +61,39 @@ type internal DefaultOperations
             let point = inner line.Start
             _textView.Caret.MoveTo(point) |> ignore
 
-        member x.Substitute pattern replace range flags = ()
+        member x.Substitute pattern replace (range:SnapshotSpan) flags = 
+
+            /// Actually do the replace with the given regex
+            let doReplace (regex:Regex) = 
+                use edit = _textView.TextBuffer.CreateEdit()
+
+                let replaceOne (span:SnapshotSpan) (c:Capture) = 
+                    let newText = regex.Replace(c.Value, replace, 1)
+                    let offset = span.Start.Position
+                    edit.Replace(Span(c.Index+offset, c.Length), newText) |> ignore
+                let getMatches (span:SnapshotSpan) = 
+                    if Utils.IsFlagSet flags SubstituteFlags.ReplaceAll then
+                        regex.Matches(span.GetText()) |> Seq.cast<Match>
+                    else
+                        regex.Match(span.GetText()) |> Seq.singleton
+                x.GetSpansInRange range
+                    |> Seq.map (fun span -> getMatches span |> Seq.map (fun m -> (m,span)) )
+                    |> Seq.concat 
+                    |> Seq.filter (fun (m,_) -> m.Success)
+                    |> Seq.iter (fun (m,span) -> replaceOne span m)
+
+                if edit.HasEffectiveChanges then
+                    edit.Apply() |> ignore                                
+                else 
+                    edit.Cancel()
+                    _host.UpdateStatus (Resources.CommnadMode_PatternNotFound pattern)
+
+            let options = 
+                if Utils.IsFlagSet flags SubstituteFlags.IgnoreCase then
+                    RegexOptions.IgnoreCase
+                else    
+                    RegexOptions.None
+            let options = options ||| RegexOptions.Compiled
+            match Utils.TryCreateRegex pattern options with
+            | None -> _host.UpdateStatus (Resources.CommnadMode_PatternNotFound pattern)
+            | Some (regex) -> doReplace regex

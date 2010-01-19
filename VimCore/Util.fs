@@ -36,5 +36,19 @@ module internal Utils =
         let intValue = LanguagePrimitives.EnumToValue value
         let flagValue = LanguagePrimitives.EnumToValue flag
         0 <> (intValue &&& flagValue)
+
+    let UnsetFlag value flag =
+        let intValue = LanguagePrimitives.EnumToValue value
+        let flagValue = LanguagePrimitives.EnumToValue flag
+        let value = intValue &&& (~~~flagValue)
+        LanguagePrimitives.EnumOfValue value
     
+    /// Create a regex.  Returns None if the regex has invalid characters
+    let TryCreateRegex pattern options =
+        try
+            let r = new System.Text.RegularExpressions.Regex(pattern, options)
+            Some r
+        with 
+            | :? System.ArgumentException -> None
+
     
