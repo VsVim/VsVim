@@ -27,12 +27,12 @@ namespace VimCoreTest
             host = new FakeVimHost();
             var service = Utils.EditorUtil.FactoryService;
             var factory = (IVimFactoryService)(new Vim.VimFactoryService(
+                host,
                 service.editorOperationsFactory,
                 service.editorFormatMapService,
                 service.completionBroker,
                 service.signatureBroker));
             buffer = factory.CreateVimBuffer(
-                        host,
                         view,
                         "test");
         }

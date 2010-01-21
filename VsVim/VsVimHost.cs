@@ -12,6 +12,7 @@ using Vim;
 using Microsoft.VisualStudio.TextManager.Interop;
 using Microsoft.VisualStudio.UI.Undo;
 using Microsoft.VisualStudio.Language.Intellisense;
+using System.ComponentModel.Composition;
 
 namespace VsVim
 {
@@ -19,32 +20,38 @@ namespace VsVim
     /// Implement the IVimHost interface for Visual Studio functionality.  It's not responsible for 
     /// the relationship with the IVimBuffer, merely implementing the host functionality
     /// </summary>
+    [Export(typeof(IVimHost))]
     internal sealed class VsVimHost : IVimHost
     {
-        private readonly Microsoft.VisualStudio.OLE.Interop.IServiceProvider _sp;
-        private readonly _DTE _dte;
         private readonly IUndoHistoryRegistry _undoRegistry;
+
+        /// <summary>
+        /// Until we hit RC, we cannot import IServiceProvider which is where we get the DTE instance
+        /// from.  Yet we need to provide IVimHost as a MEF component.  As a temporary work around
+        /// we will leave this as a mutable field and bail out whenever it's not NULL
+        /// </summary>
+        private _DTE _dte;
 
         internal _DTE DTE
         {
             get { return _dte; }
+            set { _dte = value; }
         }
 
-        internal VsVimHost(
-            Microsoft.VisualStudio.OLE.Interop.IServiceProvider sp, 
-            IUndoHistoryRegistry undoRegistry) :this(sp, undoRegistry, sp.GetService<SDTE,_DTE>())
+        [ImportingConstructor]
+        internal VsVimHost(IUndoHistoryRegistry undoRegistry)
         {
-
-        }
-
-        internal VsVimHost(
-            Microsoft.VisualStudio.OLE.Interop.IServiceProvider sp, 
-            IUndoHistoryRegistry undoRegistry,
-            _DTE dte) 
-        {
-            _sp = sp;
-            _dte = dte;
             _undoRegistry = undoRegistry;
+        }
+
+        private void UpdateStatus(string text)
+        {
+            if (_dte == null)
+            {
+                return;
+            }
+
+            _dte.StatusBar.Text = text;
         }
 
         #region IVimHost
@@ -56,6 +63,11 @@ namespace VsVim
 
         void IVimHost.OpenFile(string file)
         {
+            if (_dte == null)
+            {
+                return;
+            }
+
             var names = _dte.GetProjects().SelectMany(x => x.GetProjecItems()).Select(x => x.Name).ToList();
             var list = _dte.GetProjectItems(file);
             
@@ -72,7 +84,7 @@ namespace VsVim
 
         void IVimHost.UpdateStatus(string status)
         {
-            _dte.StatusBar.Text = status;
+            UpdateStatus(status);
         }
 
         void IVimHost.Undo(ITextBuffer buffer, int count)
@@ -80,7 +92,7 @@ namespace VsVim
             UndoHistory history;
             if (!_undoRegistry.TryGetHistory(buffer, out history))
             {
-                _dte.StatusBar.Text = "No undo possible for this buffer";
+                UpdateStatus("No undo possible for this buffer");
                 return;
             }
 
@@ -95,13 +107,18 @@ namespace VsVim
                 }
                 catch (NotSupportedException)
                 {
-                    _dte.StatusBar.Text = "Undo not supported by this buffer";
+                    UpdateStatus("Undo not supported by this buffer");
                 }
             }
         }
 
         bool IVimHost.GoToDefinition()
         {
+            if (_dte == null)
+            {
+                return false;
+            }
+
             try
             {
                 _dte.ExecuteCommand("Edit.GoToDefinition");

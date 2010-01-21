@@ -8,8 +8,8 @@ open Microsoft.VisualStudio.Text.Tagging
 
 /// MEF component which can spin up Vi components
 type IVimFactoryService =
-    abstract CreateVim : IVimHost -> IVim
-    abstract CreateVimBuffer : IVimHost -> IWpfTextView -> bufferName:string -> IVimBuffer
+    abstract Vim : IVim
+    abstract CreateVimBuffer : IWpfTextView -> bufferName:string -> IVimBuffer
     abstract CreateKeyProcessor : IVimBuffer -> KeyProcessor
     abstract CreateMouseProcessor : IVimBuffer -> IMouseProcessor
     abstract CreateTagger : IVimBuffer -> ITagger<TextMarkerTag>

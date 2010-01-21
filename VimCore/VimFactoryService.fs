@@ -12,6 +12,7 @@ open System.ComponentModel.Composition
 [<Export(typeof<IVimFactoryService>)>]
 type internal VimFactoryService
     (
+        _host : IVimHost,
         _editorOperationsFactoryService : IEditorOperationsFactoryService,
         _editorFormatMapService : IEditorFormatMapService,
         _completionBroker : ICompletionBroker,
@@ -19,6 +20,7 @@ type internal VimFactoryService
         _unused : int ) =
 
     let _blockCaretAdornmentLayerName = "BlockCaretAdornmentLayer"
+    let mutable _vim : IVim option = None
 
     [<Export(typeof<AdornmentLayerDefinition>)>]
     [<Name("BlockCaretAdornmentLayer")>]
@@ -27,11 +29,12 @@ type internal VimFactoryService
 
     [<ImportingConstructor>]
     new (
+        host : IVimHost,
         editorOperationsService : IEditorOperationsFactoryService,
         editorFormatMapService : IEditorFormatMapService,
         completionBroker : ICompletionBroker,
         signatureBroker : ISignatureHelpBroker ) =
-            VimFactoryService(editorOperationsService, editorFormatMapService, completionBroker, signatureBroker, 42)
+            VimFactoryService(host, editorOperationsService, editorFormatMapService, completionBroker, signatureBroker, 42)
 
     /// This method is a hack.  Unless a let binding is explicitly used the F# compiler 
     /// will remove it from the final metadata definition.  This will prevent the MEF
@@ -41,19 +44,25 @@ type internal VimFactoryService
     member private x.Hack() =
         _blockCaretAdornmentLayerDefinition = AdornmentLayerDefinition()
 
-    member private x.CreateVimCore host =
-        Vim(
-            host, 
-            _editorOperationsFactoryService, 
-            _editorFormatMapService, 
-            _completionBroker, 
-            _signatureBroker,
-            _blockCaretAdornmentLayerName)
+    member private x.GetOrCreateVimCore () =
+        match _vim with 
+        | Some(vim) -> vim
+        | None ->
+            let vim = Vim( _host, 
+                           _editorOperationsFactoryService, 
+                           _editorFormatMapService, 
+                           _completionBroker, 
+                           _signatureBroker,
+                           _blockCaretAdornmentLayerName)
+            let vim = vim :> IVim
+            _vim <- Some vim
+            vim
+                
 
     interface IVimFactoryService with
-        member x.CreateVim host = (x.CreateVimCore host) :> IVim
-        member x.CreateVimBuffer host view name = 
-            let vim = (x.CreateVimCore host) :> IVim
+        member x.Vim = x.GetOrCreateVimCore()
+        member x.CreateVimBuffer view name = 
+            let vim = x.GetOrCreateVimCore()
             vim.CreateBuffer view name 
         member x.CreateKeyProcessor buffer = Vim.KeyProcessor(buffer) :> Microsoft.VisualStudio.Text.Editor.KeyProcessor
         member x.CreateMouseProcessor buffer = Vim.MouseProcessor(buffer) :> Microsoft.VisualStudio.Text.Editor.IMouseProcessor

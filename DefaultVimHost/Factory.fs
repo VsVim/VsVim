@@ -18,7 +18,7 @@ type Factory
     [<ImportingConstructor>]
     new ( vimFactoryService : IVimFactoryService) = 
         let host = VimHost() :> IVimHost
-        let vim = vimFactoryService.CreateVim(host)
+        let vim = vimFactoryService.Vim
         Factory(vimFactoryService, host, vim)
 
     interface IWpfTextViewCreationListener with 

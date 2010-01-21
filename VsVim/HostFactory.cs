@@ -26,16 +26,13 @@ namespace VsVim
     internal sealed class HostFactory : IWpfTextViewCreationListener
     {
         [Import]
-        private IUndoHistoryRegistry _undoHistoryRegistry = null;
-        [Import]
         private KeyBindingService _keyBindingService = null;
         [Import]
         private IVsEditorAdaptersFactoryService _adaptersFactory = null;
         [Import]
         private IVimFactoryService _vimFactory = null;
-
-        private VsVimHost _host;
-        private IVim _vim;
+        [Import]
+        private IVimHost _vimHost = null;
 
         public HostFactory()
         {
@@ -56,16 +53,17 @@ namespace VsVim
             }
 
             var sp = objectWithSite.GetServiceProvider();
-            EnsureVim(sp);
+            EnsureDte(sp);
 
             var buffer = new VsVimBuffer(
-                _vim,
+                _vimFactory.Vim,
                 textView,
                 vsTextLines.GetFileName());
             textView.SetVimBuffer(buffer);
 
             // Run the key binding check now
-            _keyBindingService.OneTimeCheckForConflictingKeyBindings(_host.DTE, buffer.VimBuffer);
+            var dte = sp.GetService<SDTE, EnvDTE.DTE>();
+            _keyBindingService.OneTimeCheckForConflictingKeyBindings(dte, buffer.VimBuffer);
 
             // Have to wait for Aggregate focus before being able to set the VsCommandFilter
             textView.GotAggregateFocus += new EventHandler(OnGotAggregateFocus);
@@ -106,15 +104,14 @@ namespace VsVim
             buffer.VsCommandFilter = new VsCommandFilter(buffer.VimBuffer, vsView);
         }
 
-        private void EnsureVim(Microsoft.VisualStudio.OLE.Interop.IServiceProvider sp)
+        private void EnsureDte(Microsoft.VisualStudio.OLE.Interop.IServiceProvider sp)
         {
-            if (_vim != null)
+            var vimHost = _vimHost as VsVimHost;
+            if (vimHost != null && vimHost.DTE == null)
             {
-                return;
+                var dte = sp.GetService<SDTE, EnvDTE.DTE>();
+                vimHost.DTE = dte;
             }
-
-            _host = new VsVimHost(sp, _undoHistoryRegistry);
-            _vim = _vimFactory.CreateVim(_host);
         }
     }
 
