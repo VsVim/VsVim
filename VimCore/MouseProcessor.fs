@@ -5,11 +5,26 @@ open Vim
 open Vim.Modes.Visual
 open System.Windows.Input
 
+/// Define an interface for System.Windows.Input.MouseDevice which allows me
+/// to better test MouseProcessor
+type public IMouseDevice =
+    abstract LeftButtonState : MouseButtonState
+
+/// Standard implemantation of IMouseDevice
+type internal MouseDeviceImpl() =
+    let _mouseDevice = InputManager.Current.PrimaryMouseDevice
+    interface IMouseDevice with
+        member x.LeftButtonState = _mouseDevice.LeftButton
+
 type internal SelectionData = { 
-    Mode : VisualMode;
+    Mode : IVisualMode;
 }
 
-type internal MouseProcessor( _buffer : IVimBuffer ) as this = 
+type internal MouseProcessor
+    ( 
+        _buffer : IVimBuffer,  
+        _mouseDevice : IMouseDevice ) as this =
+
     inherit Microsoft.VisualStudio.Text.Editor.MouseProcessorBase()
 
     let _selection = _buffer.TextView.Selection
@@ -36,7 +51,7 @@ type internal MouseProcessor( _buffer : IVimBuffer ) as this =
         if not x.IsSelectionChanging && not _selection.IsEmpty then
             if ModeKind.VisualCharacter <> _buffer.ModeKind then
                 _buffer.SwitchMode ModeKind.VisualCharacter |> ignore
-            let mode = _buffer.Mode :?> VisualMode
+            let mode = _buffer.Mode :?> IVisualMode
             mode.BeginExplicitMove()
             _selectionData <- Some ( { Mode = mode })
         

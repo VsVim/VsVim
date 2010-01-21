@@ -191,4 +191,8 @@ type internal VisualMode
             _selectionTracker.Stop()
             _buffer.VimHost.UpdateStatus(System.String.Empty)
 
+    interface IVisualMode with
+        member x.BeginExplicitMove() = x.BeginExplicitMove()
+        member x.EndExplicitMove() = x.EndExplicitMove()
+
 
