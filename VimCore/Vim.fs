@@ -18,7 +18,6 @@ type internal Vim
     let _markMap = MarkMap()
     let _registerMap = RegisterMap()
     let _settings = VimSettingsUtil.CreateDefault
-    let mutable _buffers : seq<IVimBuffer> = Seq.empty
 
     member x.CreateVimBufferCore view name = 
         let editorFormatMap = _editorFormatMapService.GetEditorFormatMap(view :> ITextView)
@@ -69,7 +68,6 @@ type internal Vim
         member x.MarkMap = _markMap
         member x.RegisterMap = _registerMap :> IRegisterMap
         member x.Settings = _settings
-        member x.Buffers = _buffers
         member x.CreateBuffer view bufferName =
             x.CreateVimBufferCore view bufferName 
         

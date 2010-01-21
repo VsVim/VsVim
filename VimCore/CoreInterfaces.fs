@@ -18,7 +18,6 @@ type IVim =
     abstract MarkMap : MarkMap
     abstract RegisterMap : IRegisterMap
     abstract Settings : VimSettings
-    abstract Buffers : seq<IVimBuffer>
     abstract CreateBuffer : IWpfTextView -> bufferName:string -> IVimBuffer
     
 /// Main interface for the Vim editor engine so to speak. 

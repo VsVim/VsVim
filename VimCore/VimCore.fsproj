@@ -72,7 +72,7 @@
     <Compile Include="BlockCaret.fs" />
     <Compile Include="ModeKind.fs" />
     <Compile Include="CoreInterfaces.fs" />
-    <Compile Include="IVimFactoryService.fs" />
+    <Compile Include="MefInterfaces.fs" />
     <Compile Include="VimBuffer.fs" />
     <Compile Include="RegexUtil.fs" />
     <Compile Include="Modes_ICommonOperations.fs" />
