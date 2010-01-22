@@ -130,7 +130,6 @@
     <Compile Include="MouseProcessorProvider.cs" />
     <Compile Include="NativeMethods.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="TaggerProvider.cs" />
     <Compile Include="VsCommandFilter.cs" />
     <Compile Include="VsUtility.cs" />
     <Compile Include="VsVimBuffer.cs" />

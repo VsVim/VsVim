@@ -39,5 +39,21 @@ type internal Tagger( _search : IIncrementalSearch ) as this=
         [<CLIEvent>]
         member x.TagsChanged = _tagsChanged.Publish
 
-        
+[<Export(typeof<ITaggerProvider>)>]
+[<ContentType("text")>]
+[<TextViewRole(PredefinedTextViewRoles.Editable)>]
+[<TagType(typeof<TextMarkerTag>)>]
+type internal TaggerProvider
+    [<ImportingConstructor>]
+    ( _vim : IVim ) = 
+
+    interface ITaggerProvider with 
+        member x.CreateTagger<'T when 'T :> ITag> (textBuffer) = 
+            match _vim.GetBufferForBuffer textBuffer with
+            | None -> null
+            | Some(buffer) ->
+                let normal = buffer.GetMode ModeKind.Normal :?> Modes.Normal.NormalMode
+                let search = normal.IncrementalSearch
+                let tagger = Tagger(search)
+                tagger :> obj :?> ITagger<'T>
 
