@@ -79,7 +79,7 @@ namespace VsVim
                 && TryConvert(pguidCmdGroup, prgCmds[0].cmdID, pCmdText, out ki)
                 && _buffer.CanProcessInput(ki))
             {
-                prgCmds[0].cmdf = (uint)(OLECMDF.OLECMDF_ENABLED);
+                prgCmds[0].cmdf = (uint)(OLECMDF.OLECMDF_ENABLED | OLECMDF.OLECMDF_SUPPORTED);
                 return NativeMethods.S_OK;
             }
 

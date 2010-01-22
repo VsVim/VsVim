@@ -26,7 +26,6 @@ type internal Tagger( _search : IIncrementalSearch ) as this=
             raise opt
         _search.CurrentSearchSpanChanged 
         |> Event.add handleChange
-
     member private x.GetTags col =
         match _searchSpan with
         | None -> Seq.empty
@@ -40,4 +39,5 @@ type internal Tagger( _search : IIncrementalSearch ) as this=
         [<CLIEvent>]
         member x.TagsChanged = _tagsChanged.Publish
 
+        
 
