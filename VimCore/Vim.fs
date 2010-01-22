@@ -5,23 +5,25 @@ open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Operations
 open Microsoft.VisualStudio.Language.Intellisense
 open Microsoft.VisualStudio.Text.Classification
+open System.ComponentModel.Composition
 
 /// Default implementation of IVim 
 type internal Vim
+    [<ImportingConstructor>]
     (
         _host : IVimHost,
         _editorOperationsFactoryService : IEditorOperationsFactoryService,
         _editorFormatMapService : IEditorFormatMapService,
         _completionBroker : ICompletionBroker,
         _signatureBroker : ISignatureHelpBroker,
-        _blockCaretAdornmentLayerName : string ) =
+        _blockCaretFactoryService : IBlockCaretFactoryService ) =
     let _markMap = MarkMap()
     let _registerMap = RegisterMap()
     let _settings = VimSettingsUtil.CreateDefault
 
     member x.CreateVimBufferCore view name = 
         let editorFormatMap = _editorFormatMapService.GetEditorFormatMap(view :> ITextView)
-        let caret = BlockCaret(view, _blockCaretAdornmentLayerName, editorFormatMap) :> IBlockCaret
+        let caret = _blockCaretFactoryService.CreateBlockCaret view
         let editOperations = _editorOperationsFactoryService.GetEditorOperations(view)
         let bufferRaw = 
             VimBuffer( 

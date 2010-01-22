@@ -9,32 +9,15 @@ open Microsoft.VisualStudio.Text.Classification
 open Microsoft.VisualStudio.Utilities
 open System.ComponentModel.Composition
 
-[<Export(typeof<IVimFactoryService>)>]
-type internal VimFactoryService
-    (
-        _host : IVimHost,
-        _editorOperationsFactoryService : IEditorOperationsFactoryService,
-        _editorFormatMapService : IEditorFormatMapService,
-        _completionBroker : ICompletionBroker,
-        _signatureBroker : ISignatureHelpBroker,
-        _unused : int ) =
-
+[<Export(typeof<IBlockCaretFactoryService>)>]
+type internal BlockCaretFactoryService [<ImportingConstructor>] ( _formatMap : IEditorFormatMap ) =
+    
     let _blockCaretAdornmentLayerName = "BlockCaretAdornmentLayer"
-    let mutable _vim : IVim option = None
 
     [<Export(typeof<AdornmentLayerDefinition>)>]
     [<Name("BlockCaretAdornmentLayer")>]
     [<Order(After = PredefinedAdornmentLayers.Selection)>]
     let mutable _blockCaretAdornmentLayerDefinition : AdornmentLayerDefinition = null
-
-    [<ImportingConstructor>]
-    new (
-        host : IVimHost,
-        editorOperationsService : IEditorOperationsFactoryService,
-        editorFormatMapService : IEditorFormatMapService,
-        completionBroker : ICompletionBroker,
-        signatureBroker : ISignatureHelpBroker ) =
-            VimFactoryService(host, editorOperationsService, editorFormatMapService, completionBroker, signatureBroker, 42)
 
     /// This method is a hack.  Unless a let binding is explicitly used the F# compiler 
     /// will remove it from the final metadata definition.  This will prevent the MEF
@@ -44,26 +27,17 @@ type internal VimFactoryService
     member private x.Hack() =
         _blockCaretAdornmentLayerDefinition = AdornmentLayerDefinition()
 
-    member private x.GetOrCreateVimCore () =
-        match _vim with 
-        | Some(vim) -> vim
-        | None ->
-            let vim = Vim( _host, 
-                           _editorOperationsFactoryService, 
-                           _editorFormatMapService, 
-                           _completionBroker, 
-                           _signatureBroker,
-                           _blockCaretAdornmentLayerName)
-            let vim = vim :> IVim
-            _vim <- Some vim
-            vim
-                
+    interface IBlockCaretFactoryService with
+        member x.CreateBlockCaret textView = BlockCaret(textView, _blockCaretAdornmentLayerName, _formatMap) :> IBlockCaret
+
+[<Export(typeof<IVimFactoryService>)>]
+type internal VimFactoryService
+    [<ImportingConstructor>]
+    ( _vim : IVim ) =
 
     interface IVimFactoryService with
-        member x.Vim = x.GetOrCreateVimCore()
-        member x.CreateVimBuffer view name = 
-            let vim = x.GetOrCreateVimCore()
-            vim.CreateBuffer view name 
+        member x.Vim = _vim
+        member x.CreateVimBuffer view name = _vim.CreateBuffer view name 
         member x.CreateKeyProcessor buffer = Vim.KeyProcessor(buffer) :> Microsoft.VisualStudio.Text.Editor.KeyProcessor
         member x.CreateMouseProcessor buffer = Vim.MouseProcessor(buffer, MouseDeviceImpl() :> IMouseDevice) :> Microsoft.VisualStudio.Text.Editor.IMouseProcessor
         member x.CreateTagger (buffer:IVimBuffer) = 

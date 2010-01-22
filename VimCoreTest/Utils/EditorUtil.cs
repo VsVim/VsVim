@@ -11,6 +11,7 @@ using Microsoft.VisualStudio.Text.Editor;
 using System.ComponentModel.Composition.Hosting;
 using Microsoft.VisualStudio.Text.Operations;
 using Microsoft.VisualStudio.Text.Classification;
+using Vim;
 
 namespace VimCoreTest.Utils
 {
@@ -37,6 +38,9 @@ namespace VimCoreTest.Utils
 
             [Import]
             public IEditorFormatMapService editorFormatMapService;
+
+            [Import]
+            public IVim vim;
 
             public Factory() { }
         }

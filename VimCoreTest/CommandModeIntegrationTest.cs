@@ -26,15 +26,7 @@ namespace VimCoreTest
             view = tuple.Item1;
             host = new FakeVimHost();
             var service = Utils.EditorUtil.FactoryService;
-            var factory = (IVimFactoryService)(new Vim.VimFactoryService(
-                host,
-                service.editorOperationsFactory,
-                service.editorFormatMapService,
-                service.completionBroker,
-                service.signatureBroker));
-            buffer = factory.CreateVimBuffer(
-                        view,
-                        "test");
+            buffer = service.vim.CreateBuffer(view, "test");
         }
 
         [SetUp]

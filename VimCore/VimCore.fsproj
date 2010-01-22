@@ -67,12 +67,11 @@
     <Compile Include="Register.fs" />
     <Compile Include="IRegisterMap.fs" />
     <Compile Include="VimSettings.fs" />
-    <Compile Include="IBlockCaret.fs" />
     <Compile Include="CaretData.fs" />
-    <Compile Include="BlockCaret.fs" />
     <Compile Include="ModeKind.fs" />
     <Compile Include="CoreInterfaces.fs" />
     <Compile Include="MefInterfaces.fs" />
+    <Compile Include="BlockCaret.fs" />
     <Compile Include="VimBuffer.fs" />
     <Compile Include="RegexUtil.fs" />
     <Compile Include="Modes_ICommonOperations.fs" />
@@ -108,7 +107,7 @@
     <Compile Include="RegisterMap.fs" />
     <Compile Include="DisabledMode.fs" />
     <Compile Include="Vim.fs" />
-    <Compile Include="VimFactoryService.fs" />
+    <Compile Include="MefComponents.fs" />
     <Compile Include="AssemblyInfo.fs" />
   </ItemGroup>
   <ItemGroup>

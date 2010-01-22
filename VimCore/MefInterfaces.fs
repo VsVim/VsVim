@@ -13,3 +13,7 @@ type IVimFactoryService =
     abstract CreateKeyProcessor : IVimBuffer -> KeyProcessor
     abstract CreateMouseProcessor : IVimBuffer -> IMouseProcessor
     abstract CreateTagger : IVimBuffer -> ITagger<TextMarkerTag>
+
+
+type IBlockCaretFactoryService =
+    abstract CreateBlockCaret : IWpfTextView -> IBlockCaret

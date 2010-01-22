@@ -16,7 +16,7 @@ open Microsoft.VisualStudio.Text.Classification
 /// which is used in several Vim modes
 type internal BlockCaret
     (
-        _view : IWpfTextView,
+        _view : ITextView,
         _formatMap : IEditorFormatMap,
         _layer : IAdornmentLayer) as this =
     let _caretOpacity = 0.65
@@ -46,10 +46,6 @@ type internal BlockCaret
             DispatcherPriority.Normal,
             new System.EventHandler(this.OnCaretBlinkTimer),
             Dispatcher.CurrentDispatcher)
-
-    new (view:IWpfTextView,map) =
-        let layer = view.GetAdornmentLayer("foo")
-        BlockCaret(view, map, layer)
 
     new (view:IWpfTextView,adornmentLayerName:string,map:IEditorFormatMap) =
         let layer = view.GetAdornmentLayer(adornmentLayerName)
@@ -177,7 +173,7 @@ type internal BlockCaret
             _view.Caret.IsHidden <- true
 
     interface IBlockCaret with
-        member x.TextView = _view :> ITextView
+        member x.TextView = _view 
         member x.Hide() = x.HideCore()
         member x.Show() = x.ShowCore()
         member x.Destroy() =
