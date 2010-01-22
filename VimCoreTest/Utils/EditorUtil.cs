@@ -42,6 +42,12 @@ namespace VimCoreTest.Utils
             [Import]
             public IVim vim;
 
+            [Import]
+            public IVimHost vimHost;
+
+            [Import]
+            public IBlockCaretFactoryService blockCaretFactoryService;
+
             public Factory() { }
         }
 

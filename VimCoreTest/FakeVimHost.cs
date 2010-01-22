@@ -3,9 +3,11 @@ using System.Collections.Generic;
 using System.Text;
 using Vim;
 using Microsoft.VisualStudio.Text;
+using System.ComponentModel.Composition;
 
 namespace VimCoreTest
 {
+    [Export(typeof(IVimHost))]
     internal sealed class FakeVimHost : IVimHost
     {
 
@@ -18,6 +20,7 @@ namespace VimCoreTest
         public bool IsCompletionWindowActive { get; set; }
         public int DismissCompletionWindowCount { get; set; }
 
+        [ImportingConstructor]
         public FakeVimHost()
         {
             Status = String.Empty;

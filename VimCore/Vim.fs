@@ -8,6 +8,7 @@ open Microsoft.VisualStudio.Text.Classification
 open System.ComponentModel.Composition
 
 /// Default implementation of IVim 
+[<Export(typeof<IVim>)>]
 type internal Vim
     [<ImportingConstructor>]
     (

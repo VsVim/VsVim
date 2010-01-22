@@ -10,7 +10,7 @@ open Microsoft.VisualStudio.Utilities
 open System.ComponentModel.Composition
 
 [<Export(typeof<IBlockCaretFactoryService>)>]
-type internal BlockCaretFactoryService [<ImportingConstructor>] ( _formatMap : IEditorFormatMap ) =
+type internal BlockCaretFactoryService [<ImportingConstructor>] ( _formatMapService : IEditorFormatMapService ) =
     
     let _blockCaretAdornmentLayerName = "BlockCaretAdornmentLayer"
 
@@ -28,7 +28,9 @@ type internal BlockCaretFactoryService [<ImportingConstructor>] ( _formatMap : I
         _blockCaretAdornmentLayerDefinition = AdornmentLayerDefinition()
 
     interface IBlockCaretFactoryService with
-        member x.CreateBlockCaret textView = BlockCaret(textView, _blockCaretAdornmentLayerName, _formatMap) :> IBlockCaret
+        member x.CreateBlockCaret textView = 
+            let formatMap = _formatMapService.GetEditorFormatMap(textView)
+            BlockCaret(textView, _blockCaretAdornmentLayerName, formatMap) :> IBlockCaret
 
 [<Export(typeof<IVimFactoryService>)>]
 type internal VimFactoryService

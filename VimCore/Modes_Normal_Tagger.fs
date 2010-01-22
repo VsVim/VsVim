@@ -39,4 +39,3 @@ type internal Tagger( _search : IIncrementalSearch ) as this=
         member x.TagsChanged = _tagsChanged.Publish
 
 
-
