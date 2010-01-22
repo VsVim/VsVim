@@ -10,6 +10,7 @@ using VimCoreTest.Utils;
 using Vim.Modes.Visual;
 using Microsoft.VisualStudio.Text;
 using System.Windows.Input;
+using System.Windows.Threading;
 
 namespace VimCoreTest
 {
@@ -84,9 +85,41 @@ namespace VimCoreTest
         {
             Create("foo bar");
             _buffer.SetupGet(x => x.ModeKind).Returns(ModeKind.Insert).Verifiable();
-            _processor.IsSelectionChanging = true;
-            _processor.PostprocessMouseLeftButtonUp(new MouseButtonEventArgs(InputManager.Current.PrimaryMouseDevice, 0, MouseButton.Right));
+            _processor.PostprocessMouseLeftButtonUp(new MouseButtonEventArgs(InputManager.Current.PrimaryMouseDevice, 0, MouseButton.Left));
             _buffer.Verify();
         }
+
+        [Test, Description("End of a selection should do nothing")]
+        public void MouseButtonUp3()
+        {
+            Create("foo bar");
+            _processor.IsSelectionChanging = true;
+            _processor.PostprocessMouseLeftButtonUp(new MouseButtonEventArgs(InputManager.Current.PrimaryMouseDevice, 0, MouseButton.Left));
+            Assert.IsFalse(_processor.IsSelectionChanging);
+        }
+
+        [Test, Description("End of a selection should do nothing")]
+        public void MouseButtonUp4()
+        {
+            Create("foo bar");
+            _processor.IsSelectionChanging = true;
+            _processor.PostprocessMouseLeftButtonUp(new MouseButtonEventArgs(InputManager.Current.PrimaryMouseDevice, 0, MouseButton.Left));
+            Assert.IsFalse(_processor.IsSelectionChanging);
+        }
+
+        [Test]
+        public void MouseButtonUp5()
+        {
+            Create("foo bar");
+            var mode = new Mock<IMode>(MockBehavior.Strict);
+            _buffer.Setup(x => x.ModeKind).Returns(ModeKind.VisualCharacter).Verifiable();
+            _processor.IsSelectionChanging = false;
+            _processor.PostprocessMouseLeftButtonUp(new MouseButtonEventArgs(InputManager.Current.PrimaryMouseDevice, 0, MouseButton.Left));
+            _buffer.Verify();
+            _buffer.Setup(x => x.SwitchMode(ModeKind.Normal)).Returns(mode.Object).Verifiable();
+            Dispatcher.CurrentDispatcher.DoEvents();
+            _buffer.Verify();
+        }
+
     }
 }
