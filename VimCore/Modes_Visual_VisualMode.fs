@@ -26,7 +26,7 @@ type internal VisualMode
     (
         _buffer : IVimBuffer,
         _operations : IOperations,
-        _kind : ModeKind ) as this = 
+        _kind : ModeKind ) = 
 
     let _selectionTracker = _operations.SelectionTracker 
 
@@ -37,12 +37,7 @@ type internal VisualMode
 
     let mutable _operationsMap : Map<KeyInput,Operation> = Map.empty
 
-    let mutable _caretMovedHandler = ToggleHandler.Empty
-
     let mutable _data = { RunFunc = (fun _ -> VisualModeResult.Complete); IsWaitingForData = false; Count=1;Register = _buffer.RegisterMap.DefaultRegister }
-
-    do
-        _caretMovedHandler <- ToggleHandler.Create (_buffer.TextView.Caret.PositionChanged) (fun _ -> this.OnCaretMoved())
 
     member x.InExplicitMove = _explicitMoveCount > 0
     member x.BeginExplicitMove() = _explicitMoveCount <- _explicitMoveCount + 1
@@ -113,18 +108,6 @@ type internal VisualMode
                 |> Map.add (InputUtil.KeyToKeyInput(Key.Escape)) (fun _ _ -> SwitchPreviousMode)
             _operationsMap <- map
 
-    /// Called when the caret is moved. If we are not explicitly moving the caret then we need to switch
-    /// out of Visual mode and back to normal mode.  Do this at background though so we don't interfer with
-    /// other processing
-    member private x.OnCaretMoved() =
-        if not x.InExplicitMove then
-            let func() = 
-                if _selectionTracker.IsRunning then
-                    _buffer.SwitchMode ModeKind.Normal |> ignore
-            Dispatcher.CurrentDispatcher.BeginInvoke(
-                DispatcherPriority.Background,
-                new System.Action(func)) |> ignore
-
     member private x.ProcessInputCore ki = 
         let op = Map.find ki _operationsMap
         op (_data.Count) _data.Register
@@ -182,17 +165,16 @@ type internal VisualMode
     
         member x.OnEnter () = 
             x.ResetCommandData()
-            _caretMovedHandler.Add()
             x.EnsureOperationsMap()
             _selectionTracker.Start()
             _buffer.VimHost.UpdateStatus(Resources.VisualMode_Banner)
         member x.OnLeave () = 
-            _caretMovedHandler.Remove()
             _selectionTracker.Stop()
             _buffer.VimHost.UpdateStatus(System.String.Empty)
 
     interface IVisualMode with
-        member x.BeginExplicitMove() = x.BeginExplicitMove()
-        member x.EndExplicitMove() = x.EndExplicitMove()
+        member x.Operations = _operations
+        member x.InExplicitMove = x.InExplicitMove
+
 
 

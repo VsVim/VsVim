@@ -9,6 +9,7 @@ using Vim;
 using VimCoreTest.Utils;
 using Vim.Modes.Visual;
 using Microsoft.VisualStudio.Text;
+using System.Windows.Input;
 
 namespace VimCoreTest
 {
@@ -18,11 +19,13 @@ namespace VimCoreTest
         private IWpfTextView _textView;
         private Mock<IVimBuffer> _buffer;
         private Mock<IMouseDevice> _mouseDevice;
+        private Mock<IVisualMode> _visualMode;
         private MouseProcessor _processor;
 
         private void Create(params string[] lines)
         {
             _textView = EditorUtil.CreateView(lines);
+            _visualMode = new Mock<IVisualMode>(MockBehavior.Strict);
             _buffer = new Mock<IVimBuffer>(MockBehavior.Strict);
             _buffer.SetupGet(x => x.TextView).Returns(_textView);
             _mouseDevice = new Mock<IMouseDevice>(MockBehavior.Strict);
@@ -35,19 +38,16 @@ namespace VimCoreTest
             _textView = null;
         }
 
-        [Test]
+        [Test, Description("If we are already in Visual Mode then it's their responsibility")]
         public void MouseSelect1()
         {
             Create("foo bar");
-            var count = 0;
-            var visualMode = new Mock<IVisualMode>(MockBehavior.Strict);
-            visualMode.Setup(x => x.BeginExplicitMove()).Callback(() => { count++; });
             _buffer.SetupGet(x => x.ModeKind).Returns(ModeKind.VisualCharacter).Verifiable();
-            _buffer.SetupGet(x => x.Mode).Returns(visualMode.Object).Verifiable();
             _textView.Selection.Select(new SnapshotSpan(_textView.TextSnapshot, 0,3), false);
-            Assert.AreEqual(1, count);
             _buffer.Verify();
         }
+
+        
 
     }
 }
