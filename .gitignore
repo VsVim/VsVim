@@ -19,6 +19,7 @@
 *.user
 *.suo
 *.db 
+TestResult.xml
 
 # Directories 
 */obj/
