@@ -27,6 +27,13 @@ type IVim =
     abstract RegisterMap : IRegisterMap
     abstract Settings : VimSettings
     abstract CreateBuffer : IWpfTextView -> bufferName:string -> IVimBuffer
+
+    /// Get the IVimBuffer associated with the given view
+    abstract GetBuffer : IWpfTextView -> IVimBuffer option
+
+    /// Remove the IVimBuffer associated with the given view.  This will not actually close
+    /// the IVimBuffer but instead just removes it's association with the given view
+    abstract RemoveBuffer : IWpfTextView -> bool
     
 /// Main interface for the Vim editor engine so to speak. 
 and IVimBuffer =

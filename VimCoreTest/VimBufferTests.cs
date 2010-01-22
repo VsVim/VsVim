@@ -112,28 +112,34 @@ namespace VimCoreTest
         public void Close1()
         {
             var ran = false;
+            _vim.Setup(x => x.RemoveBuffer(_view)).Returns(true).Verifiable();
             _normalMode.Setup(x => x.OnLeave()).Callback(() => { ran = true; });
             _buffer.SwitchMode(ModeKind.Normal);
             _buffer.Close();
             Assert.IsTrue(ran);
+            _vim.Verify();
         }
 
         [Test, Description("Close should destroy the block caret")]
         public void Close2()
         {
             _normalMode.Setup(x => x.OnLeave());
+            _vim.Setup(x => x.RemoveBuffer(_view)).Returns(true).Verifiable();
             _buffer.Close();
             Assert.AreEqual(1, _blockCaret.DestroyCount);
+            _vim.Verify();
         }
 
         [Test, Description("Close should clear out the mark map")]
         public void Close3()
         {
             _markMap.SetMark(new SnapshotPoint(_view.TextSnapshot, 0), 'c');
+            _vim.Setup(x => x.RemoveBuffer(_view)).Returns(true).Verifiable();
             _normalMode.Setup(x => x.OnLeave());
             _buffer.SwitchMode(ModeKind.Normal);
             _buffer.Close();
             Assert.IsTrue(_markMap.GetLocalMark(_view.TextBuffer, 'c').IsNone());
+            _vim.Verify();
         }
 
         [Test,Description("Disable command should be preprocessed")]

@@ -108,3 +108,4 @@ type internal VimBuffer
             x.Mode.OnLeave()
             _blockCaret.Destroy()
             _vim.MarkMap.DeleteAllMarksForBuffer _textView.TextBuffer
+            _vim.RemoveBuffer _textView |> ignore

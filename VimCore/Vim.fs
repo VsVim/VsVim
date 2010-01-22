@@ -22,7 +22,11 @@ type internal Vim
     let _registerMap = RegisterMap()
     let _settings = VimSettingsUtil.CreateDefault
 
+    let _bufferMap = new System.Collections.Generic.Dictionary<IWpfTextView, IVimBuffer>()
+
     member x.CreateVimBufferCore view name = 
+        if _bufferMap.ContainsKey(view) then invalidArg "view" Resources.Vim_ViewAlreadyHasBuffer
+
         let editorFormatMap = _editorFormatMapService.GetEditorFormatMap(view :> ITextView)
         let caret = _blockCaretFactoryService.CreateBlockCaret view
         let editOperations = _editorOperationsFactoryService.GetEditorOperations(view)
@@ -64,6 +68,7 @@ type internal Vim
             ]
         modeList |> List.iter (fun m -> bufferRaw.AddMode m)
         buffer.SwitchMode ModeKind.Normal |> ignore
+        _bufferMap.Add(view, buffer)
         buffer
     
     interface IVim with
@@ -73,5 +78,13 @@ type internal Vim
         member x.Settings = _settings
         member x.CreateBuffer view bufferName =
             x.CreateVimBufferCore view bufferName 
+        member x.RemoveBuffer view = _bufferMap.Remove(view)
+        member x.GetBuffer view = 
+            let tuple = _bufferMap.TryGetValue(view)
+            match tuple with 
+            | (true,buffer) -> Some buffer
+            | (false,_) -> None
+
+
         
         

@@ -167,6 +167,7 @@
     <Compile Include="Utils\UndoHistoryRegistry.cs" />
     <Compile Include="ViewUtilTest.cs" />
     <Compile Include="VimBufferTests.cs" />
+    <Compile Include="VimIntegrationTests.cs" />
     <Compile Include="VisualModeTest.cs" />
     <Compile Include="Visual_DefaultOperationsTests.cs" />
   </ItemGroup>
