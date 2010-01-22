@@ -65,7 +65,7 @@ type internal VimFactoryService
             let vim = x.GetOrCreateVimCore()
             vim.CreateBuffer view name 
         member x.CreateKeyProcessor buffer = Vim.KeyProcessor(buffer) :> Microsoft.VisualStudio.Text.Editor.KeyProcessor
-        member x.CreateMouseProcessor buffer = Vim.MouseProcessor(buffer) :> Microsoft.VisualStudio.Text.Editor.IMouseProcessor
+        member x.CreateMouseProcessor buffer = Vim.MouseProcessor(buffer, MouseDeviceImpl() :> IMouseDevice) :> Microsoft.VisualStudio.Text.Editor.IMouseProcessor
         member x.CreateTagger (buffer:IVimBuffer) = 
             let normal = buffer.GetMode ModeKind.Normal :?> Modes.Normal.NormalMode
             let search = normal.IncrementalSearch

@@ -99,6 +99,7 @@
     <Compile Include="Modes_Visual_SelectionTracker.fs" />
     <Compile Include="Modes_Visual_IOperations.fs" />
     <Compile Include="Modes_Visual_DefaultOperations.fs" />
+    <Compile Include="Modes_Visual_IVisualMode.fs" />
     <Compile Include="Modes_Visual_VisualMode.fsi" />
     <Compile Include="Modes_Visual_VisualMode.fs" />
     <Compile Include="KeyProcessor.fsi" />

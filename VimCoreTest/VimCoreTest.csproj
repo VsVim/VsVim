@@ -137,6 +137,7 @@
     <Compile Include="Modes_CommonOperationsTest.cs" />
     <Compile Include="CountCaptureTest.cs" />
     <Compile Include="FakeVimHost.cs" />
+    <Compile Include="MouseProcessorTests.cs" />
     <Compile Include="RegexSearchReplaceTest.cs">
       <SubType>Code</SubType>
     </Compile>
