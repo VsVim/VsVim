@@ -70,6 +70,12 @@ type internal Vim
         buffer.SwitchMode ModeKind.Normal |> ignore
         _bufferMap.Add(view, buffer)
         buffer
+
+    member private x.GetBufferCore view =
+        let tuple = _bufferMap.TryGetValue(view)
+        match tuple with 
+        | (true,buffer) -> Some buffer
+        | (false,_) -> None
     
     interface IVim with
         member x.Host = _host
@@ -79,12 +85,13 @@ type internal Vim
         member x.CreateBuffer view bufferName =
             x.CreateVimBufferCore view bufferName 
         member x.RemoveBuffer view = _bufferMap.Remove(view)
-        member x.GetBuffer view = 
-            let tuple = _bufferMap.TryGetValue(view)
-            match tuple with 
-            | (true,buffer) -> Some buffer
-            | (false,_) -> None
-
+        member x.GetBuffer view = x.GetBufferCore view
+        member x.GetBufferForBuffer textBuffer =
+            let keys = _bufferMap.Keys |> Seq.filter (fun view -> view.TextBuffer = textBuffer)
+            match keys |> Seq.isEmpty with
+            | true -> None
+            | false -> keys |> Seq.head |> x.GetBufferCore
+                
 
         
         

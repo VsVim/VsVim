@@ -31,6 +31,9 @@ type IVim =
     /// Get the IVimBuffer associated with the given view
     abstract GetBuffer : IWpfTextView -> IVimBuffer option
 
+    /// Get the IVimBuffer associated with the given view
+    abstract GetBufferForBuffer : ITextBuffer -> IVimBuffer option
+
     /// Remove the IVimBuffer associated with the given view.  This will not actually close
     /// the IVimBuffer but instead just removes it's association with the given view
     abstract RemoveBuffer : IWpfTextView -> bool

@@ -20,10 +20,10 @@ namespace VsVim
 
         public ITagger<T> CreateTagger<T>(ITextBuffer textBuffer) where T : ITag
         {
-            VsVimBuffer buffer;
-            if ( textBuffer.TryGetVimBuffer(out buffer))
+            var opt = _vimFactory.Vim.GetBufferForBuffer(textBuffer);
+            if ( opt.IsSome() )
             {
-                return _vimFactory.CreateTagger(buffer.VimBuffer) as ITagger<T>;
+                return _vimFactory.CreateTagger(opt.Value) as ITagger<T>;
             }
 
             return null;
