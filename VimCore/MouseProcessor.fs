@@ -17,10 +17,6 @@ type internal MouseDeviceImpl() =
     interface IMouseDevice with
         member x.LeftButtonState = _mouseDevice.LeftButton
 
-type internal SelectionData = { 
-    Mode : IVisualMode;
-}
-
 /// The purpose of this component is to manage the transition between the start of a 
 /// selection to the completion.  Visual Mode must be started at the start of the selection
 /// but not completely enabled until the selection has completed
@@ -33,7 +29,7 @@ type internal MouseProcessor
     let _selection = _buffer.TextView.Selection
 
     /// Is the selection currently being updated by the user? 
-    let mutable _selectionData : SelectionData option = None
+    let mutable _isSelectionChanging = false
     let mutable _selectionChangedHandler = ToggleHandler.Empty
     let mutable _textViewClosedHandler = ToggleHandler.Empty
 
@@ -44,7 +40,9 @@ type internal MouseProcessor
         _textViewClosedHandler.Add()
 
     /// Is the selection currently changing via a mouse operation
-    member private x.IsSelectionChanging = Option.isSome _selectionData
+    member x.IsSelectionChanging 
+        with get() =  _isSelectionChanging
+        and set value = _isSelectionChanging <- value
 
     member private x.InAnyVisualMode =
         match _buffer.ModeKind with
@@ -66,14 +64,14 @@ type internal MouseProcessor
             // If the left mouse button is pressed then we are in the middle of 
             // a mouse selection event and need to record the data
             if _mouseDevice.LeftButtonState = MouseButtonState.Pressed then
-                _selectionData <- Some ( { Mode = mode })
+                _isSelectionChanging <- true
 
     override x.PostprocessMouseLeftButtonUp (e:MouseButtonEventArgs) = 
         if e.ChangedButton = MouseButton.Left then
 
             if x.IsSelectionChanging then
                 // Just completed a selection event.  Nothing to worry about
-                _selectionData <- None
+                _isSelectionChanging <- false
             else if x.InAnyVisualMode then
                 // Mouse was clicked and we are in visual mode.  Switch out to the previous
                 // mode.  Do this at background so it doesn't interfer with other processing
