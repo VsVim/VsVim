@@ -87,5 +87,23 @@ namespace VimCoreTest
             Assert.AreEqual(Key.A, ki.key);
             Assert.AreEqual(ModifierKeys.None, ki.ModifierKeys);
         }
+
+        [Test]
+        public void MinusKey1()
+        {
+            var ki = InputUtil.CharToKeyInput('_');
+            Assert.AreEqual('_', ki.Char);
+            Assert.AreEqual(Key.OemMinus, ki.Key);
+            Assert.AreEqual(ModifierKeys.Shift, ki.ModifierKeys);
+        }
+
+        [Test]
+        public void MinusKey2()
+        {
+            var ki = InputUtil.CharToKeyInput('-');
+            Assert.AreEqual('-', ki.Char);
+            Assert.AreEqual(Key.OemMinus, ki.Key);
+            Assert.AreEqual(ModifierKeys.None, ki.ModifierKeys);
+        }
     }
 }

@@ -99,6 +99,7 @@ module InputUtil =
             KeyInput('\b', Key.Back);
             KeyInput('\t', Key.Tab);
             KeyInput('-', Key.OemMinus);
+            KeyInput('_', Key.OemMinus, ModifierKeys.Shift);
             KeyInput('+', Key.OemPlus, ModifierKeys.Shift);
             KeyInput('=', Key.OemPlus);]
             

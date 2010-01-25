@@ -388,6 +388,22 @@ namespace VimCoreTest
             Assert.AreEqual(String.Empty, InputString());
         }
 
+        [Test, Description("Upper case letter")]
+        public void Input6()
+        {
+            Create("foo bar");
+            _mode.Process("BACK");
+            Assert.AreEqual("BACK", InputString());
+        }
+
+        [Test]
+        public void Input7()
+        {
+            Create("foo bar");
+            _mode.Process("_bar");
+            Assert.AreEqual("_bar", InputString());
+        }
+
         [Test]
         public void Cursor1()
         {
