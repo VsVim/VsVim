@@ -342,6 +342,33 @@ namespace VimCoreTest
             Assert.AreEqual(ModeKind.Insert, res.AsSwitchMode().Item);
         }
 
+        [Test]
+        public void Change4()
+        {
+            Create("foo", "bar");
+            _operations
+                .Setup(x => x.DeleteSelectedLines(_map.DefaultRegister))
+                .Returns((ITextSnapshot)null)
+                .Verifiable();
+            var res = _mode.Process('S');
+            Assert.IsTrue(res.IsSwitchMode);
+            Assert.AreEqual(ModeKind.Insert, res.AsSwitchMode().Item);
+        }
+
+        [Test]
+        public void Change5()
+        {
+            Create("foo", "bar");
+            _operations
+                .Setup(x => x.DeleteSelectedLines(_map.DefaultRegister))
+                .Returns((ITextSnapshot)null)
+                .Verifiable();
+            var res = _mode.Process('C');
+            Assert.IsTrue(res.IsSwitchMode);
+            Assert.AreEqual(ModeKind.Insert, res.AsSwitchMode().Item);
+        }
+
+
         #endregion
     }
 }

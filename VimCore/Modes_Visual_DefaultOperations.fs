@@ -24,6 +24,8 @@ type internal DefaultOperations
             use edit = _textView.TextBuffer.CreateEdit()
             _textView.Selection.SelectedSpans |> Seq.iter (fun span -> edit.Delete(span.Span) |> ignore)
             edit.Apply() 
+        /// Delete the selected lines
+        member x.DeleteSelectedLines _ = _textView.TextSnapshot
         member x.JoinSelection kind = 
             let selection = _textView.Selection
             let start = selection.Start.Position
