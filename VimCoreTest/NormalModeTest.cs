@@ -753,6 +753,154 @@ namespace VimCoreTest
             _operations.Verify();
         }
 
+        [Test]
+        public void Edit_c_1()
+        {
+            CreateBuffer("foo bar");
+            _operations
+                .Setup(x => x.DeleteSpan(new SnapshotSpan(_view.TextSnapshot, 0, 3), MotionKind.Exclusive, OperationKind.CharacterWise, _map.DefaultRegister))
+                .Returns(_view.TextSnapshot)
+                .Verifiable();
+            var res = _mode.Process("cw");
+            Assert.IsTrue(res.IsSwitchMode);
+            Assert.AreEqual(ModeKind.Insert, res.AsSwitchMode().Item);
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Edit_c_2()
+        {
+            CreateBuffer("foo bar");
+            var reg = _map.GetRegister('c');
+            _operations
+                .Setup(x => x.DeleteSpan(new SnapshotSpan(_view.TextSnapshot, 0, 3), MotionKind.Exclusive, OperationKind.CharacterWise, reg))
+                .Returns(_view.TextSnapshot)
+                .Verifiable();
+            var res = _mode.Process("\"ccw");
+            Assert.IsTrue(res.IsSwitchMode);
+            Assert.AreEqual(ModeKind.Insert, res.AsSwitchMode().Item);
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Edit_cc_1()
+        {
+            CreateBuffer("foo", "bar", "baz");
+            _operations
+                .Setup(x => x.DeleteSpan(_view.GetLineSpan(0, 0), MotionKind.Inclusive, OperationKind.LineWise, _map.DefaultRegister))
+                .Returns(_view.TextSnapshot)
+                .Verifiable();
+            var res = _mode.Process("cc");
+            Assert.IsTrue(res.IsSwitchMode);
+            Assert.AreEqual(ModeKind.Insert, res.AsSwitchMode().Item);
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Edit_cc_2()
+        {
+            CreateBuffer("foo", "bar", "baz");
+            _operations
+                .Setup(x => x.DeleteSpan(_view.GetLineSpan(0, 1), MotionKind.Inclusive, OperationKind.LineWise, _map.DefaultRegister))
+                .Returns(_view.TextSnapshot)
+                .Verifiable();
+            var res = _mode.Process("2cc");
+            Assert.IsTrue(res.IsSwitchMode);
+            Assert.AreEqual(ModeKind.Insert, res.AsSwitchMode().Item);
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Edit_C_1()
+        {
+            CreateBuffer("foo", "bar", "baz");
+            var span = _view.TextSnapshot.GetLineFromLineNumber(0).Extent;
+            _operations
+                .Setup(x => x.DeleteSpan(span, MotionKind.Exclusive, OperationKind.CharacterWise, _map.DefaultRegister))
+                .Returns(_view.TextSnapshot)
+                .Verifiable();
+            var res = _mode.Process("C");
+            Assert.IsTrue(res.IsSwitchMode);
+            Assert.AreEqual(ModeKind.Insert, res.AsSwitchMode().Item);
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Edit_C_2()
+        {
+            CreateBuffer("foo", "bar", "baz");
+            var span = _view.TextSnapshot.GetLineFromLineNumber(0).Extent;
+            var reg = _map.GetRegister('b');
+            _operations
+                .Setup(x => x.DeleteSpan(span, MotionKind.Exclusive, OperationKind.CharacterWise, reg))
+                .Returns(_view.TextSnapshot)
+                .Verifiable();
+            var res = _mode.Process("\"bC");
+            Assert.IsTrue(res.IsSwitchMode);
+            Assert.AreEqual(ModeKind.Insert, res.AsSwitchMode().Item);
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Edit_s_1()
+        {
+            CreateBuffer("foo bar");
+            var span = new SnapshotSpan(_view.TextSnapshot, 0, 1);
+            _operations
+                .Setup(x => x.DeleteSpan(span, MotionKind.Inclusive, OperationKind.CharacterWise, _map.DefaultRegister))
+                .Returns(_view.TextSnapshot)
+                .Verifiable();
+            var res = _mode.Process("s");
+            Assert.IsTrue(res.IsSwitchMode);
+            Assert.AreEqual(ModeKind.Insert, res.AsSwitchMode().Item);
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Edit_s_2()
+        {
+            CreateBuffer("foo bar");
+            var span = new SnapshotSpan(_view.TextSnapshot, 0, 2);
+            _operations
+                .Setup(x => x.DeleteSpan(span, MotionKind.Inclusive, OperationKind.CharacterWise, _map.DefaultRegister))
+                .Returns(_view.TextSnapshot)
+                .Verifiable();
+            var res = _mode.Process("2s");
+            Assert.IsTrue(res.IsSwitchMode);
+            Assert.AreEqual(ModeKind.Insert, res.AsSwitchMode().Item);
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Edit_S_1()
+        {
+            CreateBuffer("foo", "bar", "baz");
+            var span = _view.GetLineSpan(0, 0);
+            _operations
+                .Setup(x => x.DeleteSpan(span, MotionKind.Inclusive, OperationKind.LineWise, _map.DefaultRegister))
+                .Returns(_view.TextSnapshot)
+                .Verifiable();
+            var res = _mode.Process("S");
+            Assert.IsTrue(res.IsSwitchMode);
+            Assert.AreEqual(ModeKind.Insert, res.AsSwitchMode().Item);
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Edit_S_2()
+        {
+            CreateBuffer("foo", "bar", "baz");
+            var span = _view.GetLineSpan(0,1);
+            _operations
+                .Setup(x => x.DeleteSpan(span, MotionKind.Inclusive, OperationKind.LineWise, _map.DefaultRegister))
+                .Returns(_view.TextSnapshot)
+                .Verifiable();
+            var res = _mode.Process("2S");
+            Assert.IsTrue(res.IsSwitchMode);
+            Assert.AreEqual(ModeKind.Insert, res.AsSwitchMode().Item);
+            _operations.Verify();
+        }
+
         #endregion
 
         #region Yank

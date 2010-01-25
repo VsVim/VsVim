@@ -301,7 +301,46 @@ namespace VimCoreTest
             _operations.Setup(x => x.JoinSelection(JoinKind.KeepEmptySpaces)).Returns(true).Verifiable();
             _mode.Process("gJ");
             _operations.Verify();
-        }   
+        }
+
+        [Test]
+        public void Change1()
+        {
+            Create("foo", "bar");
+            _operations
+                .Setup(x => x.DeleteSelection(_map.DefaultRegister))
+                .Returns((ITextSnapshot)null)
+                .Verifiable();
+            var res = _mode.Process('c');
+            Assert.IsTrue(res.IsSwitchMode);
+            Assert.AreEqual(ModeKind.Insert, res.AsSwitchMode().Item);
+        }
+
+        [Test]
+        public void Change2()
+        {
+            Create("foo", "bar");
+            _operations
+                .Setup(x => x.DeleteSelection(_map.GetRegister('b')))
+                .Returns((ITextSnapshot)null)
+                .Verifiable();
+            var res = _mode.Process("\"bc");
+            Assert.IsTrue(res.IsSwitchMode);
+            Assert.AreEqual(ModeKind.Insert, res.AsSwitchMode().Item);
+        }
+
+        [Test]
+        public void Change3()
+        {
+            Create("foo", "bar");
+            _operations
+                .Setup(x => x.DeleteSelection(_map.DefaultRegister))
+                .Returns((ITextSnapshot)null)
+                .Verifiable();
+            var res = _mode.Process('s');
+            Assert.IsTrue(res.IsSwitchMode);
+            Assert.AreEqual(ModeKind.Insert, res.AsSwitchMode().Item);
+        }
 
         #endregion
     }

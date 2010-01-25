@@ -5,6 +5,8 @@ using System.Text;
 using Microsoft.FSharp.Core;
 using Vim;
 using System.Windows.Input;
+using Microsoft.VisualStudio.Text;
+using Microsoft.VisualStudio.Text.Editor;
 
 namespace VimCoreTest
 {
@@ -46,16 +48,21 @@ namespace VimCoreTest
             return mode.Process((InputUtil.CharToKeyInput(c)));
         }
 
-        public static void Process(this IMode mode, string input)
+        public static ProcessResult Process(this IMode mode, string input)
         {
+            ProcessResult last = null;
             foreach (var c in input)
             {
                 var i = InputUtil.CharToKeyInput(c);
-                mode.Process(c);
+                last = mode.Process(c);
             }
+
+            return last;
         }
 
         #endregion
+
+        #region IVimBuffer
 
         public static void ProcessInputAsString(this IVimBuffer buf, string input)
         {
@@ -65,5 +72,28 @@ namespace VimCoreTest
                 buf.ProcessInput(i);
             }
         }
+
+        #endregion
+
+        #region ITextView
+
+        public static SnapshotSpan GetLineSpan(this ITextView textView, int startLine, int endLine)
+        {
+            return textView.TextSnapshot.GetLineSpan(startLine, endLine);
+        }
+
+        #endregion 
+
+        #region ITextSnapshot
+
+        public static SnapshotSpan GetLineSpan(this ITextSnapshot tss, int startLine, int endLine)
+        {
+            var start = tss.GetLineFromLineNumber(startLine);
+            var end = tss.GetLineFromLineNumber(endLine);
+            return new SnapshotSpan(start.Start, end.EndIncludingLineBreak);
+        }
+
+        #endregion
+
     }
 }
