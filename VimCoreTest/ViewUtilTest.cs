@@ -12,7 +12,6 @@ namespace VimCoreTest
     /// <summary>
     /// Summary description for ViewUtilTest
     /// </summary>
-    [TestFixture]
     public class ViewUtilTest
     {
         private IWpfTextView _view;
@@ -22,7 +21,6 @@ namespace VimCoreTest
             _view = Utils.EditorUtil.CreateView(lines);
         }
 
-        [SetUp]
         public void Init()
         {
             CreateView(

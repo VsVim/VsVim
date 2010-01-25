@@ -46,7 +46,7 @@ namespace VimCoreTest
             Assert.AreSame(view, _vim.GetBuffer(view).Value.TextView);
         }
 
-        [Test,ExpectedException(typeof(InvalidOperationException))]
+        [Test,ExpectedException(typeof(ArgumentException))]
         public void CreateBuffer2()
         {
             var view = EditorUtil.CreateView("foo bar");
