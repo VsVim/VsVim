@@ -7,6 +7,11 @@ module internal Resources =
     let SelectionTracker_NotRunning = "Not Running"
     let VisualMode_Banner = "--Visual--"
 
+    let Common_GotoDefNoWordUnderCursor = "No word under cursor to go to the definition of"
+    let Common_GotoDefFailed word = sprintf "Could not navigate to definition of %s" word
+    let Common_MarkInvalid = "Argument must be a letter or forward / back quote"
+    let Common_MarkNotSet = "Mark not set"
+
     let NormalMode_PatternNotFound pattern = sprintf "Pattern not found: %s" pattern
     let NormalMode_NoPreviousSearch = "No previous search"
     let NormalMode_NoWordUnderCursor = "No word under cursor"

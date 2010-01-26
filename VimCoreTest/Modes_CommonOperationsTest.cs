@@ -128,6 +128,28 @@ namespace VimCoreTest
         }
 
         [Test]
+        public void GoToDefinition4()
+        {
+            CreateLines("  foo");
+            var host = new Mock<IVimHost>(MockBehavior.Strict);
+            host.Setup(x => x.GoToDefinition()).Returns(false);
+            var res = _operations.GoToDefinition(host.Object);
+            Assert.IsTrue(res.IsFailed);
+            Assert.AreEqual(Resources.Common_GotoDefNoWordUnderCursor, res.AsFailed().Item);
+        }
+
+        [Test]
+        public void GoToDefinition5()
+        {
+            CreateLines("foo bar baz");
+            var host = new Mock<IVimHost>(MockBehavior.Strict);
+            host.Setup(x => x.GoToDefinition()).Returns(false);
+            var res = _operations.GoToDefinition(host.Object);
+            Assert.IsTrue(res.IsFailed);
+            Assert.AreEqual(Resources.Common_GotoDefFailed("foo"), res.AsFailed().Item);
+        }
+
+        [Test]
         public void SetMark1()
         {
             CreateLines("foo");
@@ -144,6 +166,7 @@ namespace VimCoreTest
             var map = new MarkMap();
             var res = _operations.SetMark(';', map, _buffer.CurrentSnapshot.GetLineFromLineNumber(0).Start);
             Assert.IsTrue(res.IsFailed);
+            Assert.AreEqual(Resources.Common_MarkInvalid, res.AsFailed().Item);
         }
 
         [Test]
@@ -163,6 +186,7 @@ namespace VimCoreTest
             var map = new MarkMap();
             var res = _operations.JumpToMark('b', map);
             Assert.IsTrue(res.IsFailed);
+            Assert.AreEqual(Resources.Common_MarkNotSet, res.AsFailed().Item);
         }
 
         [Test, Description("Global marks aren't supported yet")]
@@ -670,6 +694,7 @@ namespace VimCoreTest
             _operations.ShiftLeft(span, 2);
             Assert.AreEqual(" foo", _buffer.CurrentSnapshot.GetLineFromLineNumber(0).GetText());
         }
+
 
     }
 }

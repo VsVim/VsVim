@@ -73,10 +73,9 @@ type internal CommonOperations
             else
                 match TssUtil.FindCurrentFullWordSpan _textView.Caret.Position.BufferPosition Vim.WordKind.BigWord with
                 | Some(span) -> 
-                    let param1 = (span.GetText()) :> obj
-                    let msg = System.String.Format("Could not navigate to definition of '{0}'", param1)
+                    let msg = Resources.Common_GotoDefFailed (span.GetText())
                     Failed(msg)
-                | None ->  Failed("Could not navigate to definition of word under cursor")
+                | None ->  Failed(Resources.Common_GotoDefNoWordUnderCursor) 
     
                 
         member x.SetMark c (map:IMarkMap) (point:SnapshotPoint) =
@@ -84,7 +83,7 @@ type internal CommonOperations
                 map.SetMark point c
                 Succeeded
             else
-                Failed("Argument must be a letter or forward / back quote")
+                Failed(Resources.Common_MarkInvalid)
                 
                 
         member x.JumpToMark ident (map:IMarkMap) =
@@ -94,7 +93,7 @@ type internal CommonOperations
                 | Some(point) -> 
                     ViewUtil.MoveCaretToPoint _textView point.Position |> ignore
                     Succeeded
-                | None -> Failed "Mark not set"
+                | None -> Failed Resources.Common_MarkNotSet
     
         member x.YankText text motion operation (reg:Register) =
             let regValue = {Value=text;MotionKind = motion; OperationKind = operation};
