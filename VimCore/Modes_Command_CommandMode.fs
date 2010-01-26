@@ -209,6 +209,18 @@ type CommandMode
         let span = RangeUtil.GetSnapshotSpan range
         _operations.DeleteSpan span MotionKind.Exclusive OperationKind.LineWise reg |> ignore
 
+    member private x.ParseUndo rest =
+        let rest = rest |> x.SkipPast "ndo" |> x.SkipWhitespace 
+        match Seq.isEmpty rest with
+        | true -> _data.VimHost.Undo _data.TextBuffer 1
+        | false -> _data.VimHost.UpdateStatus x.BadMessage
+
+    member private x.ParseRedo rest =
+        let rest = rest |> x.SkipPast "edo" |> x.SkipWhitespace 
+        match Seq.isEmpty rest with
+        | true -> _data.VimHost.Redo _data.TextBuffer 1
+        | false -> _data.VimHost.UpdateStatus x.BadMessage
+
     member private x.ParseSubstitute (rest:KeyInput list) (range:Range option) =
 
         // Used to parse out the flags on the :s command
@@ -283,6 +295,8 @@ type CommandMode
         | '>' -> x.ParseShiftRight rest range
         | 'd' -> x.ParseDelete rest range
         | 's' -> x.ParseSubstitute rest range
+        | 'u' -> x.ParseUndo rest 
+        | 'r' -> x.ParseRedo rest 
         | _ -> _data.VimHost.UpdateStatus(x.BadMessage)
     
     member private x.ParseInput (originalInputs : KeyInput list) =

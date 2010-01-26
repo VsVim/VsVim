@@ -600,5 +600,55 @@ namespace VimCoreTest
             Assert.AreEqual(Resources.CommandMode_NotSupported_SubstituteConfirm, _host.Status);
         }
 
+        [Test]
+        public void Redo1()
+        {
+            Create("foo bar");
+            ProcessWithEnter("red");
+            Assert.AreEqual(1, _host.RedoCount);
+        }
+
+        [Test]
+        public void Redo2()
+        {
+            Create("foo bar");
+            ProcessWithEnter("redo");
+            Assert.AreEqual(1, _host.RedoCount);
+        }
+
+        [Test]
+        public void Redo3()
+        {
+            Create("foo");
+            ProcessWithEnter("real");
+            Assert.AreEqual(0, _host.RedoCount);
+            Assert.AreEqual(_modeRaw.BadMessage, _host.Status);
+        }
+
+        [Test]
+        public void Undo1()
+        {
+            Create("foo");
+            ProcessWithEnter("u");
+            Assert.AreEqual(1, _host.UndoCount);
+        }
+
+        [Test]
+        public void Undo2()
+        {
+            Create("foo");
+            ProcessWithEnter("undo");
+            Assert.AreEqual(1, _host.UndoCount);
+        }
+
+        [Test]
+        public void Undo3()
+        {
+            Create("foo");
+            ProcessWithEnter("unreal");
+            Assert.AreEqual(0, _host.UndoCount);
+            Assert.AreEqual(_modeRaw.BadMessage, _host.Status);
+        }
+
     }
 }

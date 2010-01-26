@@ -10,5 +10,6 @@ type VimHost() =
         member x.Beep () = System.Console.Beep()
         member x.OpenFile _ = ()
         member x.Undo _ _ = ()
+        member x.Redo _ _ = ()
         member x.GoToDefinition() = false
         member x.NavigateTo _ _ _ = false

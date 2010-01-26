@@ -1545,6 +1545,25 @@ namespace VimCoreTest
         }
 
         [Test]
+        public void Redo1()
+        {
+            var host = new FakeVimHost();
+            CreateBuffer(host, "foo");
+            _mode.Process(new KeyInput('r', Key.R, ModifierKeys.Control));
+            Assert.AreEqual(1, host.RedoCount);
+        }
+
+        [Test]
+        public void Redo2()
+        {
+            var host = new FakeVimHost();
+            CreateBuffer(host, "bar");
+            _mode.Process('2');
+            _mode.Process(new KeyInput('r', Key.R, ModifierKeys.Control));
+            Assert.AreEqual(2, host.RedoCount);
+        }
+
+        [Test]
         public void Join1()
         {
             CreateBuffer("foo", "bar");

@@ -16,6 +16,7 @@ namespace VimCoreTest
         public string Status { get; set; }
         public List<String> LongStatus { get; set; }
         public int UndoCount { get; set; }
+        public int RedoCount { get; set; }
         public int GoToDefinitionCount { get; set; }
         public bool GoToDefinitionReturn { get; set; }
         public bool IsCompletionWindowActive { get; set; }
@@ -69,6 +70,11 @@ namespace VimCoreTest
         {
             NavigateToData = Tuple.Create(fileName, line, column);
             return NavigateToReturn;
+        }
+
+        void IVimHost.Redo(ITextBuffer value, int count)
+        {
+            RedoCount += count;
         }
     }
 }

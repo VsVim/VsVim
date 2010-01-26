@@ -13,7 +13,8 @@ type IVimHost =
     abstract UpdateLongStatus : string seq -> unit
     abstract Beep : unit -> unit
     abstract OpenFile : string -> unit
-    abstract Undo : ITextBuffer -> int -> unit
+    abstract Undo : ITextBuffer -> count:int -> unit
+    abstract Redo : ITextBuffer -> count:int -> unit
     abstract GoToDefinition : unit -> bool
     abstract NavigateTo : fileName : string -> line:int -> column:int-> bool
 

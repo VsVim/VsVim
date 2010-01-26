@@ -117,6 +117,31 @@ namespace VsVim
             }
         }
 
+        void IVimHost.Redo(ITextBuffer buffer, int count)
+        {
+            UndoHistory history;
+            if (!_undoRegistry.TryGetHistory(buffer, out history))
+            {
+                UpdateStatus("No redo possible for this buffer");
+                return;
+            }
+
+            for (int i = 0; i < count; i++)
+            {
+                try
+                {
+                    if (history.CanRedo)
+                    {
+                        history.Redo(count);
+                    }
+                }
+                catch (NotSupportedException)
+                {
+                    UpdateStatus("Redo not supported by this buffer");
+                }
+            }
+        }
+
         bool IVimHost.GoToDefinition()
         {
             if (_dte == null)
@@ -142,5 +167,7 @@ namespace VsVim
         }
 
         #endregion
+
+
     }
 }

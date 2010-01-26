@@ -351,6 +351,10 @@ type internal NormalMode
                 RunFunc=(fun d -> 
                     this.VimHost.Undo this.TextBuffer d.Count
                     NormalModeResult.Complete) };
+            {   KeyInput=KeyInput('r', Key.R, ModifierKeys.Control);
+                RunFunc=(fun d ->
+                    this.VimHost.Redo this.TextBuffer d.Count
+                    NormalModeResult.Complete) };
             {   KeyInput=InputUtil.CharToKeyInput('o');
                 RunFunc=(fun d -> 
                     _operations.InsertLineBelow() |> ignore
