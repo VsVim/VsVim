@@ -49,8 +49,6 @@
     <Compile Include="TextUtil.fs" />
     <Compile Include="TssUtil.fsi" />
     <Compile Include="TssUtil.fs" />
-    <Compile Include="MarkMap.fsi" />
-    <Compile Include="MarkMap.fs" />
     <Compile Include="MotionUtil.fsi" />
     <Compile Include="MotionUtil.fs" />
     <Compile Include="ViewUtil.fsi" />
@@ -103,6 +101,7 @@
     <Compile Include="MouseProcessor.fs" />
     <Compile Include="RegisterMap.fs" />
     <Compile Include="DisabledMode.fs" />
+    <Compile Include="MarkMap.fs" />
     <Compile Include="Vim.fs" />
     <Compile Include="MefComponents.fs" />
     <Compile Include="AssemblyInfo.fs" />

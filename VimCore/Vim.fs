@@ -17,7 +17,7 @@ type internal Vim
         _editorFormatMapService : IEditorFormatMapService,
         _completionWindowBrokerFactoryService : ICompletionWindowBrokerFactoryService,
         _blockCaretFactoryService : IBlockCaretFactoryService) =
-    let _markMap = MarkMap()
+    let _markMap = MarkMap() :> IMarkMap
     let _registerMap = RegisterMap()
     let _settings = VimSettingsUtil.CreateDefault
 

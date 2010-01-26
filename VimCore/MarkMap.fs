@@ -206,3 +206,15 @@ type MarkMap() =
         x.EnsureNotTracking buffer
         _localMap.Remove(buffer) |> ignore
         _globalList <- _globalList |> Seq.filter (fun (b,_,_) -> b <> buffer)
+
+    interface IMarkMap with
+        member x.TrackedBuffers = x.TrackedBuffers
+        member x.IsLocalMark c = MarkMap.IsLocalMark c
+        member x.GetLocalMark buf c = x.GetLocalMark buf c
+        member x.GetMark buf c = x.GetMark buf c 
+        member x.SetMark point c = x.SetMark point c 
+        member x.DeleteMark buf c = x.DeleteMark buf c 
+        member x.DeleteAllMarks () = x.DeleteAllMarks()
+        member x.DeleteAllMarksForBuffer buf = x.DeleteAllMarksForBuffer buf
+    
+    

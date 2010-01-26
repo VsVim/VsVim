@@ -23,7 +23,7 @@ type ProcessResult =
 /// Vim instance.  Global for a group of buffers
 type IVim =
     abstract Host : IVimHost
-    abstract MarkMap : MarkMap
+    abstract MarkMap : IMarkMap
     abstract RegisterMap : IRegisterMap
     abstract Settings : VimSettings
     abstract CreateBuffer : IWpfTextView -> bufferName:string -> IVimBuffer
@@ -54,7 +54,7 @@ and IVimBuffer =
 
     /// Owning IVim instance
     abstract Vim : IVim
-    abstract MarkMap : MarkMap
+    abstract MarkMap : IMarkMap
 
     /// Available IBlockCaret implementation for the buffer
     abstract BlockCaret : IBlockCaret
@@ -129,4 +129,13 @@ and IMode =
     /// Called when the mode is left
     abstract OnLeave : unit -> unit
 
+and IMarkMap =
+    abstract TrackedBuffers : ITextBuffer seq
+    abstract IsLocalMark : char -> bool
+    abstract GetLocalMark : ITextBuffer -> char -> VirtualSnapshotPoint option
+    abstract GetMark : ITextBuffer -> char -> VirtualSnapshotPoint option
+    abstract SetMark : SnapshotPoint -> char -> unit
+    abstract DeleteMark : ITextBuffer -> char -> bool
+    abstract DeleteAllMarks : unit -> unit
+    abstract DeleteAllMarksForBuffer : ITextBuffer -> unit
 

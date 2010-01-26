@@ -21,4 +21,4 @@ module internal RangeUtil =
     val RangeOrCurrentLine : ITextView -> Range option -> Range
     val ApplyCount : Range -> int -> Range
     val ParseNumber : KeyInput list -> (int option * KeyInput list)
-    val ParseRange : SnapshotPoint -> MarkMap -> KeyInput list -> ParseRangeResult
+    val ParseRange : SnapshotPoint -> IMarkMap -> KeyInput list -> ParseRangeResult

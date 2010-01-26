@@ -50,10 +50,10 @@ type ICommonOperations =
     
     /// Jumps to a given mark in the buffer.  
     /// TODO: Support global marks.  
-    abstract JumpToMark : char -> MarkMap -> Result
+    abstract JumpToMark : char -> IMarkMap -> Result
 
     /// Sets a mark at the specified point.  If this operation fails an error message will be generated
-    abstract SetMark : char -> MarkMap -> SnapshotPoint -> Result
+    abstract SetMark : char -> IMarkMap -> SnapshotPoint -> Result
 
     /// Yank the text at the given span into the given register
     abstract Yank : SnapshotSpan -> MotionKind -> OperationKind -> Register -> unit

@@ -79,7 +79,7 @@ type internal CommonOperations
                 | None ->  Failed("Could not navigate to definition of word under cursor")
     
                 
-        member x.SetMark c (map:MarkMap) (point:SnapshotPoint) =
+        member x.SetMark c (map:IMarkMap) (point:SnapshotPoint) =
             if System.Char.IsLetter(c) || c = '\'' || c = '`' then
                 map.SetMark point c
                 Succeeded
@@ -87,8 +87,8 @@ type internal CommonOperations
                 Failed("Argument must be a letter or forward / back quote")
                 
                 
-        member x.JumpToMark ident (map:MarkMap) =
-            if not (MarkMap.IsLocalMark ident) then Failed "Only local marks are supported at this time"
+        member x.JumpToMark ident (map:IMarkMap) =
+            if not (map.IsLocalMark ident) then Failed "Only local marks are supported at this time"
             else
                 match map.GetLocalMark _textView.TextBuffer ident with
                 | Some(point) -> 

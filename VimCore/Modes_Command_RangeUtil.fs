@@ -134,7 +134,7 @@ module internal RangeUtil =
         | None -> Error("Expected a line number")
 
     /// Parse out a mark 
-    let private ParseMark (point:SnapshotPoint) (map:MarkMap) (list:KeyInput list) = 
+    let private ParseMark (point:SnapshotPoint) (map:IMarkMap) (list:KeyInput list) = 
         if list |> List.isEmpty then
             Error("Invalid Range: Missing mark after '")
         else 
@@ -148,7 +148,7 @@ module internal RangeUtil =
                 Error("Invalid Range: Mark is invalid in this file")
 
     /// Parse out a single item in the range.
-    let private ParseItem (point:SnapshotPoint) (map:MarkMap) (list:KeyInput list) =
+    let private ParseItem (point:SnapshotPoint) (map:IMarkMap) (list:KeyInput list) =
         let head = list |> List.head 
         if head.IsDigit then
             ParseLineNumber point.Snapshot list
@@ -161,7 +161,7 @@ module internal RangeUtil =
         else
             NoRange
 
-    let private ParseRangeCore (point:SnapshotPoint) (map:MarkMap) (originalInput:KeyInput list) =
+    let private ParseRangeCore (point:SnapshotPoint) (map:IMarkMap) (originalInput:KeyInput list) =
 
         let parseRight (point:SnapshotPoint) map (leftRange:Range) remainingInput : ParseRangeResult = 
             let right = ParseItem point map remainingInput 
@@ -198,7 +198,7 @@ module internal RangeUtil =
         | ValidRange(leftSpan,kind,range) -> parseWithLeft leftSpan range kind
 
 
-    let ParseRange (point:SnapshotPoint) (map:MarkMap) (list:KeyInput list) = 
+    let ParseRange (point:SnapshotPoint) (map:IMarkMap) (list:KeyInput list) = 
         match list |> List.isEmpty with
         | true -> ParseRangeResult.NoRange
         | false ->
