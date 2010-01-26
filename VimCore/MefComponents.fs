@@ -47,4 +47,30 @@ type internal VimFactoryService
             let search = normal.IncrementalSearch
             let tagger = Modes.Normal.Tagger(search)
             tagger :> ITagger<TextMarkerTag>
-      
+
+type internal CompletionWindowBroker 
+    ( 
+        _textView : ITextView,
+        _completionBroker : ICompletionBroker,
+        _signatureBroker : ISignatureHelpBroker ) = 
+    interface ICompletionWindowBroker with
+        member x.TextView = _textView
+        member x.IsCompletionWindowActive = 
+            _completionBroker.IsCompletionActive(_textView) || _signatureBroker.IsSignatureHelpActive(_textView)
+        member x.DismissCompletionWindow() = 
+            if _completionBroker.IsCompletionActive(_textView) then
+                _completionBroker.DismissAllSessions(_textView)
+            if _signatureBroker.IsSignatureHelpActive(_textView) then
+                _signatureBroker.DismissAllSessions(_textView)
+
+[<Export(typeof<ICompletionWindowBrokerFactoryService>)>]
+type internal CompletionWindowBrokerFactoryService
+    [<ImportingConstructor>]
+    (
+        _completionBroker : ICompletionBroker,
+        _signatureBroker : ISignatureHelpBroker ) = 
+
+    interface ICompletionWindowBrokerFactoryService with
+        member x.CreateCompletionWindowBroker textView = 
+            let broker = CompletionWindowBroker(textView, _completionBroker, _signatureBroker)
+            broker :> ICompletionWindowBroker

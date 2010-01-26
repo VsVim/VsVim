@@ -15,9 +15,8 @@ type internal Vim
         _host : IVimHost,
         _editorOperationsFactoryService : IEditorOperationsFactoryService,
         _editorFormatMapService : IEditorFormatMapService,
-        _completionBroker : ICompletionBroker,
-        _signatureBroker : ISignatureHelpBroker,
-        _blockCaretFactoryService : IBlockCaretFactoryService ) =
+        _completionWindowBrokerFactoryService : ICompletionWindowBrokerFactoryService,
+        _blockCaretFactoryService : IBlockCaretFactoryService) =
     let _markMap = MarkMap()
     let _registerMap = RegisterMap()
     let _settings = VimSettingsUtil.CreateDefault
@@ -39,7 +38,7 @@ type internal Vim
                 caret)
         let buffer = bufferRaw :> IVimBuffer
 
-        let broker = CompletionWindowBroker(view, _completionBroker, _signatureBroker) :> ICompletionWindowBroker
+        let broker = _completionWindowBrokerFactoryService.CreateCompletionWindowBroker view
         let normalOpts = Modes.Normal.DefaultOperations(view,editOperations) :> Modes.Normal.IOperations
         let commandOpts = Modes.Command.DefaultOperations(view,editOperations,_host) :> Modes.Command.IOperations
         let insertOpts = Modes.Insert.DefaultOperations(view,editOperations) :> Modes.ICommonOperations

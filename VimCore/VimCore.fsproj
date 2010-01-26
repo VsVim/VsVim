@@ -38,8 +38,6 @@
     <Compile Include="Resources.fs" />
     <Compile Include="Util.fs" />
     <Compile Include="IVimHost.fs" />
-    <Compile Include="ICompletionWindowBroker.fs" />
-    <Compile Include="CompletionWindowBroker.fs" />
     <Compile Include="WordKind.fs" />
     <Compile Include="SearchKind.fs" />
     <Compile Include="KeyInput.fs" />
@@ -67,7 +65,6 @@
     <Compile Include="Register.fs" />
     <Compile Include="IRegisterMap.fs" />
     <Compile Include="VimSettings.fs" />
-    <Compile Include="CaretData.fs" />
     <Compile Include="ModeKind.fs" />
     <Compile Include="CoreInterfaces.fs" />
     <Compile Include="MefInterfaces.fs" />
