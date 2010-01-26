@@ -78,21 +78,32 @@ type internal CommonOperations
                 | None ->  Failed(Resources.Common_GotoDefNoWordUnderCursor) 
     
                 
-        member x.SetMark c (map:IMarkMap) (point:SnapshotPoint) =
+        member x.SetMark (vimBuffer:IVimBuffer) point c = 
             if System.Char.IsLetter(c) || c = '\'' || c = '`' then
-                map.SetMark point c
+                let map = vimBuffer.MarkMap
+                map.SetMark vimBuffer point c
                 Succeeded
             else
                 Failed(Resources.Common_MarkInvalid)
                 
-                
-        member x.JumpToMark ident (map:IMarkMap) =
-            if not (map.IsLocalMark ident) then Failed "Only local marks are supported at this time"
-            else
+        member x.JumpToMark ident (map:IMarkMap) (host:IVimHost) =
+            let jumpLocal (point:VirtualSnapshotPoint) = 
+                ViewUtil.MoveCaretToPoint _textView point.Position |> ignore
+                Succeeded
+            if not (map.IsLocalMark ident) then 
+                match map.GetGlobalMark ident with
+                | None -> Failed Resources.Common_MarkNotSet
+                | Some(buf,point) -> 
+                    if buf.TextBuffer = _textView.TextBuffer then jumpLocal point
+                    else 
+                        let line = point.Position.GetContainingLine()
+                        let column = point.VirtualSpaces + (point.Position.Position - line.Start.Position)
+                        match host.NavigateTo buf.Name (line.LineNumber) column with
+                        | true -> Succeeded
+                        | false -> Failed Resources.Common_MarkInvalid
+            else 
                 match map.GetLocalMark _textView.TextBuffer ident with
-                | Some(point) -> 
-                    ViewUtil.MoveCaretToPoint _textView point.Position |> ignore
-                    Succeeded
+                | Some(point) -> jumpLocal point
                 | None -> Failed Resources.Common_MarkNotSet
     
         member x.YankText text motion operation (reg:Register) =

@@ -6,6 +6,7 @@ using NUnit.Framework;
 using Microsoft.VisualStudio.Text;
 using Vim;
 using VimCoreTest.Utils;
+using Moq;
 
 namespace VimCoreTest
 {
@@ -33,10 +34,10 @@ namespace VimCoreTest
         }
 
         [Test]
-        public void SetMark1()
+        public void SetLocalMark1()
         {
             CreateBuffer("foo", "bar");
-            _map.SetMark(new SnapshotPoint(_buffer.CurrentSnapshot, 0), 'a');
+            _map.SetLocalMark(new SnapshotPoint(_buffer.CurrentSnapshot, 0), 'a');
             var opt = _map.GetLocalMark(_buffer, 'a');
             Assert.IsTrue(opt.IsSome());
             var data = opt.Value;
@@ -48,7 +49,7 @@ namespace VimCoreTest
         public void TrackedBuffers1()
         {
             CreateBuffer("foo", "bar");
-            _map.SetMark(new SnapshotPoint(_buffer.CurrentSnapshot, 0), 'a');
+            _map.SetLocalMark(new SnapshotPoint(_buffer.CurrentSnapshot, 0), 'a');
             Assert.IsTrue(_map.TrackedBuffers.Contains(_buffer));
         }
 
@@ -56,7 +57,9 @@ namespace VimCoreTest
         public void TrackedBuffers2()
         {
             CreateBuffer("foo", "bar");
-            _map.SetMark(new SnapshotPoint(_buffer.CurrentSnapshot, 0), 'A');
+            var vimBuffer = new Mock<IVimBuffer>(MockBehavior.Strict);
+            vimBuffer.SetupGet(x => x.TextBuffer).Returns(_buffer);
+            _map.SetMark(vimBuffer.Object, new SnapshotPoint(_buffer.CurrentSnapshot, 0), 'A');
             Assert.IsTrue(_map.TrackedBuffers.Contains(_buffer));
         }
 
@@ -64,8 +67,8 @@ namespace VimCoreTest
         public void TrackedBuffers3()
         {
             CreateBuffer("foo", "bar");
-            _map.SetMark(new SnapshotPoint(_buffer.CurrentSnapshot, 0), 'a');
-            _map.DeleteMark(_buffer, 'a');
+            _map.SetLocalMark(new SnapshotPoint(_buffer.CurrentSnapshot, 0), 'a');
+            _map.DeleteLocalMark(_buffer, 'a');
             Assert.IsFalse(_map.TrackedBuffers.Contains(_buffer));
         }
 
@@ -73,8 +76,8 @@ namespace VimCoreTest
         public void TrackedBuffers4()
         {
             CreateBuffer("foo", "bar");
-            _map.SetMark(new SnapshotPoint(_buffer.CurrentSnapshot, 0), 'A');
-            _map.DeleteMark(_buffer, 'A');
+            _map.SetLocalMark(new SnapshotPoint(_buffer.CurrentSnapshot, 0), 'b');
+            _map.DeleteLocalMark(_buffer, 'b');
             Assert.IsFalse(_map.TrackedBuffers.Contains(_buffer));
         }
 
@@ -82,12 +85,12 @@ namespace VimCoreTest
         public void TrackedBuffers5()
         {
             CreateBuffer("foo", "bar");
-            _map.SetMark(new SnapshotPoint(_buffer.CurrentSnapshot, 0), 'a');
-            _map.SetMark(new SnapshotPoint(_buffer.CurrentSnapshot, 0), 'b');
+            _map.SetLocalMark(new SnapshotPoint(_buffer.CurrentSnapshot, 0), 'a');
+            _map.SetLocalMark(new SnapshotPoint(_buffer.CurrentSnapshot, 0), 'b');
             Assert.IsTrue(_map.TrackedBuffers.Contains(_buffer));
-            Assert.IsTrue(_map.DeleteMark(_buffer, 'a'));
+            Assert.IsTrue(_map.DeleteLocalMark(_buffer, 'a'));
             Assert.IsTrue(_map.TrackedBuffers.Contains(_buffer));
-            Assert.IsTrue(_map.DeleteMark(_buffer, 'b'));
+            Assert.IsTrue(_map.DeleteLocalMark(_buffer, 'b'));
             Assert.IsFalse(_map.TrackedBuffers.Contains(_buffer));
         }
 
@@ -103,7 +106,7 @@ namespace VimCoreTest
         public void TrackReplace1()
         {
             CreateBuffer("foo");
-            _map.SetMark(new SnapshotPoint(_buffer.CurrentSnapshot, 0), 'a');
+            _map.SetLocalMark(new SnapshotPoint(_buffer.CurrentSnapshot, 0), 'a');
             _buffer.Replace(new Span(0, 1), "b");
             var opt = _map.GetLocalMark(_buffer, 'a');
             Assert.IsTrue(opt.IsSome());
@@ -114,7 +117,7 @@ namespace VimCoreTest
         public void TrackReplace2()
         {
             CreateBuffer("foo");
-            _map.SetMark(new SnapshotPoint(_buffer.CurrentSnapshot, 1), 'a');
+            _map.SetLocalMark(new SnapshotPoint(_buffer.CurrentSnapshot, 1), 'a');
             _buffer.Replace(new Span(2, 1), "b");
             var opt = _map.GetLocalMark(_buffer, 'a');
             Assert.IsTrue(opt.IsSome());
@@ -125,7 +128,7 @@ namespace VimCoreTest
         public void TrackReplace3()
         {
             CreateBuffer("foo");
-            _map.SetMark(new SnapshotPoint(_buffer.CurrentSnapshot, 2), 'a');
+            _map.SetLocalMark(new SnapshotPoint(_buffer.CurrentSnapshot, 2), 'a');
             _buffer.Delete(new Span(0, 3));
             var opt = _map.GetLocalMark(_buffer, 'a');
             Assert.IsTrue(opt.IsSome());
@@ -138,7 +141,7 @@ namespace VimCoreTest
         public void TrackReplace4()
         {
             CreateBuffer("foo", "bar");
-            _map.SetMark(_buffer.CurrentSnapshot.GetLineFromLineNumber(1).Start, 'a');
+            _map.SetLocalMark(_buffer.CurrentSnapshot.GetLineFromLineNumber(1).Start, 'a');
             _buffer.Delete(_buffer.CurrentSnapshot.GetLineFromLineNumber(0).ExtentIncludingLineBreak.Span);
             var opt = _map.GetLocalMark(_buffer, 'a');
             Assert.IsTrue(opt.IsSome());
@@ -150,7 +153,7 @@ namespace VimCoreTest
         public void TrackDeleteLine1()
         {
             CreateBuffer("foo", "bar");
-            _map.SetMark(_buffer.CurrentSnapshot.GetLineFromLineNumber(1).Start, 'a');
+            _map.SetLocalMark(_buffer.CurrentSnapshot.GetLineFromLineNumber(1).Start, 'a');
             var span = new SnapshotSpan(
                 _buffer.CurrentSnapshot.GetLineFromLineNumber(0).End,
                 _buffer.CurrentSnapshot.GetLineFromLineNumber(1).EndIncludingLineBreak);
@@ -163,7 +166,7 @@ namespace VimCoreTest
         public void TrackDeleteLine2()
         {
             CreateBuffer("foo", "bar", "baz");
-            _map.SetMark(_buffer.CurrentSnapshot.GetLineFromLineNumber(2).Start, 'a');
+            _map.SetLocalMark(_buffer.CurrentSnapshot.GetLineFromLineNumber(2).Start, 'a');
             _buffer.Delete(_buffer.CurrentSnapshot.GetLineFromLineNumber(1).ExtentIncludingLineBreak.Span);
             var opt = _map.GetLocalMark(_buffer, 'a');
             Assert.IsTrue(opt.IsSome());
@@ -175,47 +178,47 @@ namespace VimCoreTest
         public void TrackDeleteLine3()
         {
             CreateBuffer("foo", "bar", "baz");
-            _map.SetMark(_buffer.CurrentSnapshot.GetLineFromLineNumber(1).Start, 'a');
+            _map.SetLocalMark(_buffer.CurrentSnapshot.GetLineFromLineNumber(1).Start, 'a');
             _buffer.Delete(_buffer.CurrentSnapshot.GetLineFromLineNumber(1).ExtentIncludingLineBreak.Span);
             var opt = _map.GetLocalMark(_buffer, 'a');
             Assert.IsTrue(opt.IsNone());
         }
 
         [Test, Description("Deleting a non-existant mark is OK")]
-        public void DeleteMark1()
+        public void DeleteLocalMark1()
         {
             CreateBuffer("foo");
-            Assert.IsFalse(_map.DeleteMark(_buffer, 'a'));
+            Assert.IsFalse(_map.DeleteLocalMark(_buffer, 'a'));
         }
 
         [Test, Description("Simple Mark deletion")]
-        public void DeleteMark2()
+        public void DeleteLocalMark2()
         {
             CreateBuffer("foo");
-            _map.SetMark(new SnapshotPoint(_buffer.CurrentSnapshot, 0), 'a');
-            Assert.IsTrue(_map.DeleteMark(_buffer, 'a'));
+            _map.SetLocalMark(new SnapshotPoint(_buffer.CurrentSnapshot, 0), 'a');
+            Assert.IsTrue(_map.DeleteLocalMark(_buffer, 'a'));
             Assert.IsTrue(_map.GetLocalMark(_buffer, 'a').IsNone());
         }
 
         [Test, Description("Double deletion of a mark")]
-        public void DeleteMark3()
+        public void DeleteLocalMark3()
         {
             CreateBuffer("foo");
-            _map.SetMark(new SnapshotPoint(_buffer.CurrentSnapshot, 0), 'a');
-            Assert.IsTrue(_map.DeleteMark(_buffer, 'a'));
+            _map.SetLocalMark(new SnapshotPoint(_buffer.CurrentSnapshot, 0), 'a');
+            Assert.IsTrue(_map.DeleteLocalMark(_buffer, 'a'));
             Assert.IsTrue(_map.GetLocalMark(_buffer, 'a').IsNone());
-            Assert.IsFalse(_map.DeleteMark(_buffer, 'a'));
+            Assert.IsFalse(_map.DeleteLocalMark(_buffer, 'a'));
             Assert.IsTrue(_map.GetLocalMark(_buffer, 'a').IsNone());
         }
 
         [Test, Description("Deleting a mark in one buffer shouldn't affect another")]
-        public void DeleteMark4()
+        public void DeleteLocalMark4()
         {
             CreateBuffer("foo");
             var buffer2 = Utils.EditorUtil.CreateBuffer("baz");
-            _map.SetMark(new SnapshotPoint(_buffer.CurrentSnapshot, 0), 'a');
-            _map.SetMark(new SnapshotPoint(buffer2.CurrentSnapshot, 0), 'a');
-            Assert.IsTrue(_map.DeleteMark(buffer2, 'a'));
+            _map.SetLocalMark(new SnapshotPoint(_buffer.CurrentSnapshot, 0), 'a');
+            _map.SetLocalMark(new SnapshotPoint(buffer2.CurrentSnapshot, 0), 'a');
+            Assert.IsTrue(_map.DeleteLocalMark(buffer2, 'a'));
             Assert.IsTrue(_map.GetLocalMark(_buffer, 'a').IsSome());
         }
 
@@ -229,7 +232,7 @@ namespace VimCoreTest
         public void DeleteAllMarks2()
         {
             CreateBuffer();
-            _map.SetMark(new SnapshotPoint(_buffer.CurrentSnapshot, 0), 'a');
+            _map.SetLocalMark(new SnapshotPoint(_buffer.CurrentSnapshot, 0), 'a');
             _map.DeleteAllMarks();
             Assert.IsTrue(_map.GetLocalMark(_buffer, 'a').IsNone());
         }
@@ -238,7 +241,7 @@ namespace VimCoreTest
         public void DeleteAllMarksForBuffer1()
         {
             var buf1 = EditorUtil.CreateBuffer("foo");
-            _map.SetMark(new SnapshotPoint(buf1.CurrentSnapshot, 0), 'a');
+            _map.SetLocalMark(new SnapshotPoint(buf1.CurrentSnapshot, 0), 'a');
             _map.DeleteAllMarksForBuffer(buf1);
             Assert.IsTrue(_map.GetLocalMark(buf1, 'a').IsNone());
         }
@@ -248,8 +251,8 @@ namespace VimCoreTest
         {
             var buf1 = EditorUtil.CreateBuffer("foo");
             var buf2 = EditorUtil.CreateBuffer("bar");
-            _map.SetMark(new SnapshotPoint(buf1.CurrentSnapshot, 0), 'a');
-            _map.SetMark(new SnapshotPoint(buf2.CurrentSnapshot, 0), 'b');
+            _map.SetLocalMark(new SnapshotPoint(buf1.CurrentSnapshot, 0), 'a');
+            _map.SetLocalMark(new SnapshotPoint(buf2.CurrentSnapshot, 0), 'b');
             _map.DeleteAllMarksForBuffer(buf1);
             Assert.IsTrue(_map.GetLocalMark(buf1, 'a').IsNone());
             Assert.IsFalse(_map.GetLocalMark(buf2, 'b').IsNone());
@@ -275,8 +278,8 @@ namespace VimCoreTest
         public void GetMark1()
         {
             var buf1 = EditorUtil.CreateBuffer("foo");
-            _map.SetMark(new SnapshotPoint(buf1.CurrentSnapshot, 0), 'A');
-            var ret = _map.GetMark(buf1, 'A');
+            _map.SetLocalMark(new SnapshotPoint(buf1.CurrentSnapshot, 0), 'a');
+            var ret = _map.GetMark(buf1, 'a');
             Assert.IsTrue(ret.IsSome());
             Assert.AreEqual(0, ret.Value.Position);
         }
@@ -286,8 +289,8 @@ namespace VimCoreTest
         {
             var buf1 = EditorUtil.CreateBuffer("foo");
             var buf2 = EditorUtil.CreateBuffer("bar");
-            _map.SetMark(new SnapshotPoint(buf1.CurrentSnapshot, 0), 'A');
-            var ret = _map.GetMark(buf2, 'A');
+            _map.SetLocalMark(new SnapshotPoint(buf1.CurrentSnapshot, 0), 'a');
+            var ret = _map.GetMark(buf2, 'a');
             Assert.IsTrue(ret.IsNone());
         }
 

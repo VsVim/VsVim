@@ -1652,7 +1652,7 @@ namespace VimCoreTest
         public void Mark3()
         {
             CreateBuffer(s_lines);
-            _operations.Setup(x => x.SetMark('a', _bufferData.Object.MarkMap, _view.Caret.Position.BufferPosition)).Returns(Result._unique_Succeeded).Verifiable();
+            _operations.Setup(x => x.SetMark(_bufferData.Object, _view.Caret.Position.BufferPosition, 'a')).Returns(Result._unique_Succeeded).Verifiable();
             _mode.Process(InputUtil.CharToKeyInput('m'));
             _mode.Process(InputUtil.CharToKeyInput('a'));
             _operations.Verify();
@@ -1663,7 +1663,7 @@ namespace VimCoreTest
         {
             var host = new FakeVimHost();
             CreateBuffer(host, s_lines);
-            _operations.Setup(x => x.SetMark(';', _bufferData.Object.MarkMap, _view.Caret.Position.BufferPosition)).Returns(Result.NewFailed("foo")).Verifiable();
+            _operations.Setup(x => x.SetMark(_bufferData.Object, _view.Caret.Position.BufferPosition, ';')).Returns(Result.NewFailed("foo")).Verifiable();
             _mode.Process(InputUtil.CharToKeyInput('m'));
             _mode.Process(InputUtil.CharToKeyInput(';'));
             Assert.IsTrue(host.BeepCount > 0);
@@ -1685,7 +1685,7 @@ namespace VimCoreTest
         {
             CreateBuffer("foobar");
             _operations
-                .Setup(x => x.JumpToMark('a', _bufferData.Object.MarkMap))
+                .Setup(x => x.JumpToMark('a', _bufferData.Object.MarkMap, _bufferData.Object.VimHost))
                 .Returns(Result._unique_Succeeded)
                 .Verifiable();
             _mode.Process('\'');
@@ -1698,7 +1698,7 @@ namespace VimCoreTest
         {
             CreateBuffer("foobar");
             _operations
-                .Setup(x => x.JumpToMark('a', _bufferData.Object.MarkMap))
+                .Setup(x => x.JumpToMark('a', _bufferData.Object.MarkMap, _bufferData.Object.VimHost))
                 .Returns(Result._unique_Succeeded)
                 .Verifiable();
             _mode.Process('`');

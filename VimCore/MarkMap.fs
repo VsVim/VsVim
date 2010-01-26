@@ -21,8 +21,8 @@ type Mark =
 type MarkMap() =
 
     let mutable _localMap = new Dictionary<ITextBuffer,(char*Mark) list>();
-    let mutable _globalList : (ITextBuffer*char*Mark) seq = Seq.empty
-    let mutable _tracking: HashSet<ITextBuffer> = new HashSet<ITextBuffer>()
+    let mutable _globalList : (IVimBuffer*char*Mark) seq = Seq.empty
+    let mutable _tracking = new Dictionary<ITextBuffer, System.IDisposable>() 
 
     /// Is this mark local to a buffer
     static member IsLocalMark c =
@@ -99,7 +99,7 @@ type MarkMap() =
 
         // First update the local marks
         let list =
-            x.GetLocalList buffer            
+            x.GetLocalList buffer
             |> Seq.ofList
             |> Seq.map (fun (c,m) -> (c,updateSingleMark m))
             |> List.ofSeq
@@ -107,97 +107,116 @@ type MarkMap() =
 
         // Now update the global marks.  Don't rebuild the list unless there is at least
         // one mark in the list for this buffer
-        if not (_globalList |> Seq.filter ( fun (buf,_,_) -> buf = buffer) |> Seq.isEmpty) then
+        if not (_globalList |> Seq.filter ( fun (buf,_,_) -> buf.TextBuffer = buffer) |> Seq.isEmpty) then
             _globalList <- _globalList |> Seq.map (fun (b,c,m) -> (b,c,updateSingleMark m))
 
 
     /// Tracks all changes to the buffer and updates the corresponding marks as 
     /// appropriate
-    member private x.OnBufferChanged (sender:obj) (e:TextContentChangedEventArgs) =
+    member private x.OnBufferChanged (e:TextContentChangedEventArgs) =
 
         // Line changes are the only action that can affect a mark so don't bother processing 
         // if there hasn't been a line change
         let anyLineDiff = not (e.Changes |> Seq.filter (fun c -> c.LineCountDelta <> 0) |> Seq.isEmpty)
         if anyLineDiff then x.UpdateMarks e.Before e.Changes
 
-    member private x.EnsureTracking (buffer:ITextBuffer) =
-        if _tracking.Add(buffer) then
-            let handler = new System.EventHandler<TextContentChangedEventArgs>(x.OnBufferChanged)
-            buffer.Changed.AddHandler handler
+    member private x.EnsureTracking buffer =
+        if not (_tracking.ContainsKey(buffer)) then
+            let res = 
+                buffer.Changed
+                |> Observable.subscribe (fun e -> x.OnBufferChanged e)
+            _tracking.Add(buffer, res)
 
-    member private x.EnsureNotTracking (buffer:ITextBuffer) =
-        if _tracking.Remove(buffer) then
-            let handler = new System.EventHandler<TextContentChangedEventArgs>(x.OnBufferChanged)
-            buffer.Changed.RemoveHandler handler
+    member private x.EnsureNotTracking buffer = 
+        let found,res = _tracking.TryGetValue(buffer)
+        if found then 
+            res.Dispose()
+            _tracking.Remove(buffer) |> ignore
 
-    member x.TrackedBuffers = _tracking :> ITextBuffer seq
+    member private x.AllMarksGoneInBuffer buffer =
+        not (_localMap.ContainsKey(buffer))
+        && (_globalList |> Seq.filter (fun (b,_,_) -> b.TextBuffer = buffer) |> Seq.isEmpty)
+
+    member x.TrackedBuffers = _tracking.Keys :> ITextBuffer seq 
 
     /// Try and get the local mark for the specified char <param name="c"/>.  If it does not
     /// exist then the value None will be returned.  The mark is always returned for the 
     /// current ITextSnapshot of the <param name="buffer"> 
-    member x.GetLocalMark (buffer:ITextBuffer) (ident:char) =
+    member x.GetLocalMark buffer (ident:char) =
         let list = x.GetLocalList buffer
         match list |> Seq.tryFind (fun (c,m) -> c = ident) with
         | Some(_,mark) -> MarkMap.MarkToPoint buffer.CurrentSnapshot mark
         | None -> None
 
     /// Get the mark relative to the specified buffer
-    member x.GetMark (buffer:ITextBuffer) (ident:char) =
+    member x.GetMark buffer (ident:char) =
         if MarkMap.IsLocalMark ident then
             x.GetLocalMark buffer ident
         else
             let found = 
                 _globalList 
-                |> Seq.tryFind (fun (b,c,m) -> b = buffer && c = ident)
+                |> Seq.tryFind (fun (b,c,m) -> b.TextBuffer = buffer && c = ident)
             match found with 
             | Some(_,_,m) -> MarkMap.MarkToPoint buffer.CurrentSnapshot m
             | None -> None
 
-    /// Set the mark for the <param name="point"/> inside the corresponding buffer.  
-    member x.SetMark (point:SnapshotPoint) (ident:char) = 
-        let buffer = point.Snapshot.TextBuffer
+    member x.SetLocalMark (point:SnapshotPoint) (ident:char) = 
+        if not (MarkMap.IsLocalMark ident) then failwith "Invalid"
         let mark = Valid(MarkMap.PointToMarkData point)
-        if MarkMap.IsLocalMark ident then
-            let list = x.GetLocalList buffer
-            let list = list |> List.filter (fun (c,md) -> c <> ident)
-            let list = (ident,mark) :: list
-            _localMap.Item(buffer) <- list
+        let buffer = point.Snapshot.TextBuffer
+        let list = x.GetLocalList buffer
+        let list = list |> List.filter (fun (c,md) -> c <> ident)
+        let list = (ident,mark) :: list
+        _localMap.Item(buffer) <- list
+        x.EnsureTracking buffer
+
+    /// Set the mark for the <param name="point"/> inside the corresponding buffer.  
+    member x.SetMark (vimBuffer:IVimBuffer) (point:SnapshotPoint) (ident:char) = 
+        if MarkMap.IsLocalMark ident then x.SetLocalMark point ident
         else    
+            let mark = Valid(MarkMap.PointToMarkData point)
             _globalList <-
                 _globalList
                 |> Seq.filter (fun (b,c,m) -> c <> ident)
-                |> Seq.append (Seq.singleton (buffer,ident,mark))
-        x.EnsureTracking buffer
+                |> Seq.append (Seq.singleton (vimBuffer,ident,mark))
+        x.EnsureTracking vimBuffer.TextBuffer
+
+    member x.GetGlobalMarkOwner ident = 
+        let res = 
+            _globalList 
+                |> Seq.filter (fun (_,c,_) -> c = ident)
+                |> Seq.map (fun (b,_,_) -> b)
+        if Seq.isEmpty res then None else Some (Seq.head res)
+
+    member x.GetGlobalMark ident = 
+        match x.GetGlobalMarkOwner ident with 
+        | Some (buf) -> 
+            match x.GetMark buf.TextBuffer ident with
+            | Some(point) -> Some (buf,point)
+            | None -> None
+        | None -> None
 
     /// Delete the specified local mark.  
     /// <returns>True if the mark was deleted.  False if no action was taken </returns>
-    member x.DeleteMark (buffer:ITextBuffer) (ident:char) =
-        let isDelete = x.GetMark buffer ident |> Option.isSome
-        if MarkMap.IsLocalMark ident then
-            let list = 
-                x.GetLocalList buffer
-                |> List.filter (fun (c,_) -> c <> ident)
-            if list |> List.isEmpty then
-                _localMap.Remove(buffer) |> ignore
-            else
-                _localMap.Item(buffer) <- list
+    member x.DeleteLocalMark buffer (ident:char) =
+        if not (MarkMap.IsLocalMark ident) then failwith "Invalid"
+        let isDelete = x.GetLocalMark buffer ident |> Option.isSome
+        let list = 
+            x.GetLocalList buffer
+            |> List.filter (fun (c,_) -> c <> ident)
+        if list |> List.isEmpty then
+            _localMap.Remove(buffer) |> ignore
         else
-            _globalList <-
-                _globalList
-                |> Seq.filter (fun(b,c,m) -> b <> buffer && c <> ident)
-        
-        let allMarksGoneInBuffer =
-            not (_localMap.ContainsKey(buffer))
-            && (_globalList |> Seq.filter (fun (b,_,_) -> b = buffer) |> Seq.isEmpty)
-        if allMarksGoneInBuffer then
+            _localMap.Item(buffer) <- list
+        if x.AllMarksGoneInBuffer buffer then
             x.EnsureNotTracking buffer
         isDelete
 
     /// Delete all of the marks being tracked
     member x.DeleteAllMarks () = 
-        _tracking 
+        _tracking.Keys
             |> List.ofSeq
-            |> List.iter (fun b -> x.EnsureNotTracking(b))
+            |> List.iter (fun vimBuffer -> x.EnsureNotTracking(vimBuffer))
         _localMap.Clear()
         _globalList <- Seq.empty
     
@@ -205,16 +224,19 @@ type MarkMap() =
     member x.DeleteAllMarksForBuffer buffer =
         x.EnsureNotTracking buffer
         _localMap.Remove(buffer) |> ignore
-        _globalList <- _globalList |> Seq.filter (fun (b,_,_) -> b <> buffer)
+        _globalList <- _globalList |> Seq.filter (fun (b,_,_) -> b.TextBuffer <> buffer)
 
     interface IMarkMap with
         member x.TrackedBuffers = x.TrackedBuffers
         member x.IsLocalMark c = MarkMap.IsLocalMark c
         member x.GetLocalMark buf c = x.GetLocalMark buf c
+        member x.GetGlobalMarkOwner c = x.GetGlobalMarkOwner c
         member x.GetMark buf c = x.GetMark buf c 
-        member x.SetMark point c = x.SetMark point c 
-        member x.DeleteMark buf c = x.DeleteMark buf c 
+        member x.GetGlobalMark c = x.GetGlobalMark c
+        member x.SetMark buffer point c = x.SetMark buffer point c 
+        member x.SetLocalMark point c = x.SetLocalMark point c
+        member x.DeleteLocalMark buf c = x.DeleteLocalMark buf c 
         member x.DeleteAllMarks () = x.DeleteAllMarks()
-        member x.DeleteAllMarksForBuffer buf = x.DeleteAllMarksForBuffer buf
+        member x.DeleteAllMarksForBuffer buf = x.DeleteAllMarksForBuffer buf.TextBuffer
     
     

@@ -154,7 +154,10 @@ namespace VimCoreTest
         {
             CreateLines("foo");
             var map = new MarkMap();
-            var res = _operations.SetMark('a', map, _buffer.CurrentSnapshot.GetLineFromLineNumber(0).Start);
+            var vimBuffer = new Mock<IVimBuffer>(MockBehavior.Strict);
+            vimBuffer.SetupGet(x => x.MarkMap).Returns(map);
+            vimBuffer.SetupGet(x => x.TextBuffer).Returns(_buffer);
+            var res = _operations.SetMark(vimBuffer.Object, _buffer.CurrentSnapshot.GetLineFromLineNumber(0).Start, 'a');
             Assert.IsTrue(res.IsSucceeded);
             Assert.IsTrue(map.GetLocalMark(_buffer, 'a').IsSome());
         }
@@ -162,9 +165,11 @@ namespace VimCoreTest
         [Test, Description("Invalid mark character")]
         public void SetMark2()
         {
-            CreateLines("bar");
+            CreateLines("bar"); 
             var map = new MarkMap();
-            var res = _operations.SetMark(';', map, _buffer.CurrentSnapshot.GetLineFromLineNumber(0).Start);
+            var vimBuffer = new Mock<IVimBuffer>(MockBehavior.Strict);
+            vimBuffer.SetupGet(x => x.MarkMap).Returns(map);
+            var res = _operations.SetMark(vimBuffer.Object, _buffer.CurrentSnapshot.GetLineFromLineNumber(0).Start, ';');
             Assert.IsTrue(res.IsFailed);
             Assert.AreEqual(Resources.Common_MarkInvalid, res.AsFailed().Item);
         }
@@ -173,9 +178,10 @@ namespace VimCoreTest
         public void JumpToMark1()
         {
             CreateLines("foo", "bar");
+            var host = new FakeVimHost();
             var map = new MarkMap();
-            map.SetMark(new SnapshotPoint(_view.TextSnapshot, 0), 'a');
-            var res = _operations.JumpToMark('a', map);
+            map.SetLocalMark(new SnapshotPoint(_view.TextSnapshot, 0), 'a');
+            var res = _operations.JumpToMark('a', map,host);
             Assert.IsTrue(res.IsSucceeded);
         }
 
@@ -183,20 +189,56 @@ namespace VimCoreTest
         public void JumpToMark2()
         {
             var view = Utils.EditorUtil.CreateView("foo", "bar");
+            var host = new FakeVimHost();
             var map = new MarkMap();
-            var res = _operations.JumpToMark('b', map);
+            var res = _operations.JumpToMark('b', map, host);
             Assert.IsTrue(res.IsFailed);
             Assert.AreEqual(Resources.Common_MarkNotSet, res.AsFailed().Item);
         }
 
-        [Test, Description("Global marks aren't supported yet")]
+        [Test, Description("Jump to global mark")]
         public void JumpToMark3()
         {
             var view = Utils.EditorUtil.CreateView("foo", "bar");
+            var buffer = new Mock<IVimBuffer>(MockBehavior.Strict);
+            buffer.SetupGet(x => x.TextBuffer).Returns(view.TextBuffer);
+            buffer.SetupGet(x => x.Name).Returns("foo");
             var map = new MarkMap();
-            map.SetMark(new SnapshotPoint(view.TextSnapshot, 0), 'B');
-            var res = _operations.JumpToMark('B', map);
+            map.SetMark(buffer.Object, new SnapshotPoint(view.TextSnapshot, 0), 'A');
+            var host = new Mock<IVimHost>(MockBehavior.Strict);
+            host.Setup(x => x.NavigateTo("foo", 0, 0)).Returns(true);
+            var res = _operations.JumpToMark('A', map, host.Object);
+            Assert.IsTrue(res.IsSucceeded);
+        }
+
+        [Test, Description("Jump to global mark and jump fails")]
+        public void JumpToMark4()
+        {
+            var view = Utils.EditorUtil.CreateView("foo", "bar");
+            var buffer = new Mock<IVimBuffer>(MockBehavior.Strict);
+            buffer.SetupGet(x => x.TextBuffer).Returns(view.TextBuffer);
+            buffer.SetupGet(x => x.Name).Returns("foo");
+            var map = new MarkMap();
+            map.SetMark(buffer.Object, new SnapshotPoint(view.TextSnapshot, 0), 'A');
+            var host = new Mock<IVimHost>(MockBehavior.Strict);
+            host.Setup(x => x.NavigateTo("foo", 0, 0)).Returns(false);
+            var res = _operations.JumpToMark('A', map, host.Object);
             Assert.IsTrue(res.IsFailed);
+            Assert.AreEqual(Resources.Common_MarkInvalid, res.AsFailed().Item);
+        }
+
+        [Test, Description("Jump to global mark that does not exist")]
+        public void JumpToMark5()
+        {
+            var view = Utils.EditorUtil.CreateView("foo", "bar");
+            var buffer = new Mock<IVimBuffer>(MockBehavior.Strict);
+            buffer.SetupGet(x => x.TextBuffer).Returns(view.TextBuffer);
+            buffer.SetupGet(x => x.Name).Returns("foo");
+            var map = new MarkMap();
+            var host = new Mock<IVimHost>(MockBehavior.Strict);
+            var res = _operations.JumpToMark('A', map, host.Object);
+            Assert.IsTrue(res.IsFailed);
+            Assert.AreEqual(Resources.Common_MarkNotSet, res.AsFailed().Item);
         }
 
         [Test]

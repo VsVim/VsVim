@@ -11,3 +11,4 @@ type VimHost() =
         member x.OpenFile _ = ()
         member x.Undo _ _ = ()
         member x.GoToDefinition() = false
+        member x.NavigateTo _ _ _ = false

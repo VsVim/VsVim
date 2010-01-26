@@ -20,6 +20,8 @@ namespace VimCoreTest
         public bool GoToDefinitionReturn { get; set; }
         public bool IsCompletionWindowActive { get; set; }
         public int DismissCompletionWindowCount { get; set; }
+        public Tuple<string, int, int> NavigateToData { get; set; }
+        public bool NavigateToReturn { get; set; }
 
         [ImportingConstructor]
         public FakeVimHost()
@@ -27,6 +29,7 @@ namespace VimCoreTest
             Status = String.Empty;
             GoToDefinitionReturn = true;
             IsCompletionWindowActive = false;
+            NavigateToReturn = false;
         }
 
         void IVimHost.Beep()
@@ -59,6 +62,13 @@ namespace VimCoreTest
         void IVimHost.UpdateLongStatus(IEnumerable<string> value)
         {
             LongStatus = value.ToList();
+        }
+
+
+        bool IVimHost.NavigateTo(string fileName, int line, int column)
+        {
+            NavigateToData = Tuple.Create(fileName, line, column);
+            return NavigateToReturn;
         }
     }
 }

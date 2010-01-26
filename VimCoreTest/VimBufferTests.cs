@@ -133,7 +133,7 @@ namespace VimCoreTest
         [Test, Description("Close should clear out the mark map")]
         public void Close3()
         {
-            _markMap.SetMark(new SnapshotPoint(_view.TextSnapshot, 0), 'c');
+            _markMap.SetLocalMark(new SnapshotPoint(_view.TextSnapshot, 0), 'c');
             _vim.Setup(x => x.RemoveBuffer(_view)).Returns(true).Verifiable();
             _normalMode.Setup(x => x.OnLeave());
             _buffer.SwitchMode(ModeKind.Normal);

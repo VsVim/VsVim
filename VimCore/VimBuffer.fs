@@ -107,5 +107,5 @@ type internal VimBuffer
         member x.Close () = 
             x.Mode.OnLeave()
             _blockCaret.Destroy()
-            _vim.MarkMap.DeleteAllMarksForBuffer _textView.TextBuffer
+            _vim.MarkMap.DeleteAllMarksForBuffer (x :> IVimBuffer)
             _vim.RemoveBuffer _textView |> ignore

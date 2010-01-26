@@ -254,7 +254,7 @@ type internal NormalMode
     member x.JumpToMark (d:NormalModeData) =
         let waitForKey (d:NormalModeData) (ki:KeyInput) =
             let bufferData = d.VimBufferData
-            let res = _operations.JumpToMark ki.Char bufferData.MarkMap 
+            let res = _operations.JumpToMark ki.Char bufferData.MarkMap _bufferData.VimHost
             match res with 
             | Modes.Failed(msg) -> bufferData.VimHost.UpdateStatus(msg)
             | _ -> ()
@@ -266,7 +266,7 @@ type internal NormalMode
         let waitForKey (d2:NormalModeData) (ki:KeyInput) =
             let bufferData = d2.VimBufferData
             let cursor = ViewUtil.GetCaretPoint bufferData.TextView
-            let res = _operations.SetMark ki.Char bufferData.MarkMap cursor
+            let res = _operations.SetMark _bufferData cursor ki.Char 
             match res with
             | Modes.Failed(_) -> bufferData.VimHost.Beep()
             | _ -> ()

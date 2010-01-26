@@ -189,7 +189,7 @@ namespace VimCoreTest
             Create("foo", "bar");
             var point1 = new SnapshotPoint(_buffer.CurrentSnapshot, 0);
             var point2 = _buffer.CurrentSnapshot.GetLineFromLineNumber(1).EndIncludingLineBreak;
-            _map.SetMark(point1, 'c');
+            _map.SetLocalMark(point1, 'c');
             var range = Parse("'c,2");
             Assert.IsTrue(range.IsSucceeded);
             Assert.AreEqual(new SnapshotSpan(point1,point2), RangeUtil.GetSnapshotSpan(range.AsSucceeded().Item1));
@@ -201,8 +201,8 @@ namespace VimCoreTest
             Create("foo", "bar");
             var point1 = new SnapshotPoint(_buffer.CurrentSnapshot, 0);
             var point2 = _buffer.CurrentSnapshot.GetLineFromLineNumber(1).EndIncludingLineBreak;
-            _map.SetMark(point1, 'c');
-            _map.SetMark(point2, 'b');
+            _map.SetLocalMark(point1, 'c');
+            _map.SetLocalMark(point2, 'b');
             var range = Parse("'c,'b");
             Assert.IsTrue(range.IsSucceeded);
             Assert.AreEqual(new SnapshotSpan(point1, point2), RangeUtil.GetSnapshotSpan(range.AsSucceeded().Item1));
@@ -214,7 +214,7 @@ namespace VimCoreTest
             Create("foo", "bar");
             var point1 = new SnapshotPoint(_buffer.CurrentSnapshot, 2);
             var point2 = _buffer.CurrentSnapshot.GetLineFromLineNumber(1).EndIncludingLineBreak;
-            _map.SetMark(point1, 'c');
+            _map.SetLocalMark(point1, 'c');
             var range = Parse("'c,2");
             Assert.IsTrue(range.IsSucceeded);
             Assert.AreEqual(new SnapshotSpan(point1.GetContainingLine().Start, point2), RangeUtil.GetSnapshotSpan(range.AsSucceeded().Item1));

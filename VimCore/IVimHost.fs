@@ -15,4 +15,5 @@ type IVimHost =
     abstract OpenFile : string -> unit
     abstract Undo : ITextBuffer -> int -> unit
     abstract GoToDefinition : unit -> bool
+    abstract NavigateTo : fileName : string -> line:int -> column:int-> bool
 

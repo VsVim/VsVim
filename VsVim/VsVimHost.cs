@@ -135,6 +135,12 @@ namespace VsVim
             }
         }
 
+        bool IVimHost.NavigateTo(string fileName, int line, int column)
+        {
+            // TODO: Implement
+            return false;
+        }
+
         #endregion
     }
 }
