@@ -13,6 +13,7 @@ using Microsoft.VisualStudio.TextManager.Interop;
 using Microsoft.VisualStudio.UI.Undo;
 using Microsoft.VisualStudio.Language.Intellisense;
 using System.ComponentModel.Composition;
+using VsVim.Properties;
 
 namespace VsVim
 {
@@ -97,7 +98,7 @@ namespace VsVim
             UndoHistory history;
             if (!_undoRegistry.TryGetHistory(buffer, out history))
             {
-                UpdateStatus("No undo possible for this buffer");
+                UpdateStatus(Resources.VimHost_NoUndoRedoSupport);
                 return;
             }
 
@@ -112,7 +113,7 @@ namespace VsVim
                 }
                 catch (NotSupportedException)
                 {
-                    UpdateStatus("Undo not supported by this buffer");
+                    UpdateStatus(Resources.VimHost_CannotUndo);
                 }
             }
         }
@@ -122,7 +123,7 @@ namespace VsVim
             UndoHistory history;
             if (!_undoRegistry.TryGetHistory(buffer, out history))
             {
-                UpdateStatus("No redo possible for this buffer");
+                UpdateStatus(Resources.VimHost_NoUndoRedoSupport);
                 return;
             }
 
@@ -137,7 +138,7 @@ namespace VsVim
                 }
                 catch (NotSupportedException)
                 {
-                    UpdateStatus("Redo not supported by this buffer");
+                    UpdateStatus(Resources.VimHost_CannotRedo);
                 }
             }
         }
