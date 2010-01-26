@@ -41,5 +41,18 @@ namespace VimCoreTest
             Assert.AreEqual("o", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
             _tracker.Verify();
         }
+
+        [Test]
+        public void DeleteSelectedLines1()
+        {
+            Create("foo", "bar");
+            var span = _view.GetLineSpan(0, 0);
+            _tracker.SetupGet(x => x.SelectedLines).Returns(span).Verifiable();
+            var reg = new Register('c');
+            _operations.DeleteSelectedLines(reg);
+            Assert.AreEqual(span.GetText(), reg.StringValue);
+            Assert.AreEqual(1, _view.TextSnapshot.LineCount);
+            _tracker.Verify();
+        }
     }
 }

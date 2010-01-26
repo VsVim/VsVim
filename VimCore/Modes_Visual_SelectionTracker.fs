@@ -53,6 +53,16 @@ type internal SelectionTracker
                 let head = spans |> Seq.head
                 head.GetText()
 
+    member x.SelectedLines = 
+        let spans = _textView.Selection.SelectedSpans 
+        match spans |> Seq.isEmpty with
+        | true -> SnapshotSpan(_textView.TextSnapshot,0,0)
+        | false -> 
+            let head = spans |> Seq.head
+            let startLine = head.Start.GetContainingLine()
+            let endLine = head.End.GetContainingLine()
+            SnapshotSpan(startLine.Start, endLine.EndIncludingLineBreak)
+
     member x.IsRunning = _running
 
     /// Call when selection tracking should begin.  
@@ -148,5 +158,6 @@ type internal SelectionTracker
     interface ISelectionTracker with 
         member x.IsRunning = x.IsRunning
         member x.SelectedText = x.SelectedText
+        member x.SelectedLines = x.SelectedLines
         member x.Start () = x.Start()
         member x.Stop () = x.Stop()

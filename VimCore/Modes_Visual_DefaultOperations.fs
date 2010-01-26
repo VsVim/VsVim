@@ -24,8 +24,13 @@ type internal DefaultOperations
             use edit = _textView.TextBuffer.CreateEdit()
             _textView.Selection.SelectedSpans |> Seq.iter (fun span -> edit.Delete(span.Span) |> ignore)
             edit.Apply() 
-        /// Delete the selected lines
-        member x.DeleteSelectedLines _ = _textView.TextSnapshot
+        member x.DeleteSelectedLines (reg:Register) = 
+            let span = _tracker.SelectedLines
+            let value = { Value=span.GetText(); MotionKind=MotionKind.Inclusive; OperationKind=OperationKind.LineWise }
+            reg.UpdateValue(value)
+            use edit = _textView.TextBuffer.CreateEdit()
+            edit.Delete(span.Span) |> ignore
+            edit.Apply()
         member x.JoinSelection kind = 
             let selection = _textView.Selection
             let start = selection.Start.Position

@@ -758,7 +758,7 @@ namespace VimCoreTest
         {
             CreateBuffer("foo bar");
             _operations
-                .Setup(x => x.DeleteSpan(new SnapshotSpan(_view.TextSnapshot, 0, 3), MotionKind.Exclusive, OperationKind.CharacterWise, _map.DefaultRegister))
+                .Setup(x => x.DeleteSpan(new SnapshotSpan(_view.TextSnapshot, 0, 4), MotionKind.Exclusive, OperationKind.CharacterWise, _map.DefaultRegister))
                 .Returns(_view.TextSnapshot)
                 .Verifiable();
             var res = _mode.Process("cw");
@@ -773,7 +773,7 @@ namespace VimCoreTest
             CreateBuffer("foo bar");
             var reg = _map.GetRegister('c');
             _operations
-                .Setup(x => x.DeleteSpan(new SnapshotSpan(_view.TextSnapshot, 0, 3), MotionKind.Exclusive, OperationKind.CharacterWise, reg))
+                .Setup(x => x.DeleteSpan(new SnapshotSpan(_view.TextSnapshot, 0, 4), MotionKind.Exclusive, OperationKind.CharacterWise, reg))
                 .Returns(_view.TextSnapshot)
                 .Verifiable();
             var res = _mode.Process("\"ccw");
@@ -814,9 +814,9 @@ namespace VimCoreTest
         public void Edit_C_1()
         {
             CreateBuffer("foo", "bar", "baz");
-            var span = _view.TextSnapshot.GetLineFromLineNumber(0).Extent;
+            var span = _view.TextSnapshot.GetLineFromLineNumber(0).ExtentIncludingLineBreak;
             _operations
-                .Setup(x => x.DeleteSpan(span, MotionKind.Exclusive, OperationKind.CharacterWise, _map.DefaultRegister))
+                .Setup(x => x.DeleteSpan(span, MotionKind.Inclusive, OperationKind.CharacterWise, _map.DefaultRegister))
                 .Returns(_view.TextSnapshot)
                 .Verifiable();
             var res = _mode.Process("C");
@@ -829,10 +829,28 @@ namespace VimCoreTest
         public void Edit_C_2()
         {
             CreateBuffer("foo", "bar", "baz");
-            var span = _view.TextSnapshot.GetLineFromLineNumber(0).Extent;
+            var span = _view.TextSnapshot.GetLineFromLineNumber(0).ExtentIncludingLineBreak;
             var reg = _map.GetRegister('b');
             _operations
-                .Setup(x => x.DeleteSpan(span, MotionKind.Exclusive, OperationKind.CharacterWise, reg))
+                .Setup(x => x.DeleteSpan(span, MotionKind.Inclusive, OperationKind.CharacterWise, reg))
+                .Returns(_view.TextSnapshot)
+                .Verifiable();
+            var res = _mode.Process("\"bC");
+            Assert.IsTrue(res.IsSwitchMode);
+            Assert.AreEqual(ModeKind.Insert, res.AsSwitchMode().Item);
+            _operations.Verify();
+        }
+
+        [Test, Description("Delete from the cursor")]
+        public void Edit_C_3()
+        {
+            CreateBuffer("foo", "bar", "baz");
+            var start = new SnapshotPoint(_view.TextSnapshot, 1);
+            _view.Caret.MoveTo(start);
+            var span = new SnapshotSpan(start, start.GetContainingLine().EndIncludingLineBreak);
+            var reg = _map.GetRegister('b');
+            _operations
+                .Setup(x => x.DeleteSpan(span, MotionKind.Inclusive, OperationKind.CharacterWise, reg))
                 .Returns(_view.TextSnapshot)
                 .Verifiable();
             var res = _mode.Process("\"bC");
@@ -847,7 +865,7 @@ namespace VimCoreTest
             CreateBuffer("foo bar");
             var span = new SnapshotSpan(_view.TextSnapshot, 0, 1);
             _operations
-                .Setup(x => x.DeleteSpan(span, MotionKind.Inclusive, OperationKind.CharacterWise, _map.DefaultRegister))
+                .Setup(x => x.DeleteSpan(span, MotionKind.Exclusive, OperationKind.CharacterWise, _map.DefaultRegister))
                 .Returns(_view.TextSnapshot)
                 .Verifiable();
             var res = _mode.Process("s");
@@ -862,7 +880,7 @@ namespace VimCoreTest
             CreateBuffer("foo bar");
             var span = new SnapshotSpan(_view.TextSnapshot, 0, 2);
             _operations
-                .Setup(x => x.DeleteSpan(span, MotionKind.Inclusive, OperationKind.CharacterWise, _map.DefaultRegister))
+                .Setup(x => x.DeleteSpan(span, MotionKind.Exclusive, OperationKind.CharacterWise, _map.DefaultRegister))
                 .Returns(_view.TextSnapshot)
                 .Verifiable();
             var res = _mode.Process("2s");

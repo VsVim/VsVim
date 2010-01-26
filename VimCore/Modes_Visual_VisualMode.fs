@@ -12,6 +12,7 @@ open Vim.Modes
 type internal VisualModeResult =
     | Complete
     | SwitchPreviousMode
+    | SwitchInsertMode
     | NeedMore
 
 type internal Operation = int -> Register -> VisualModeResult
@@ -74,6 +75,12 @@ type internal VisualMode
         let deleteSelection _ reg = 
             _operations.DeleteSelection reg |> ignore
             VisualModeResult.SwitchPreviousMode
+        let changeSelection _ reg = 
+            _operations.DeleteSelection reg |> ignore
+            VisualModeResult.SwitchInsertMode
+        let changeLines _ reg = 
+            _operations.DeleteSelectedLines reg |> ignore
+            VisualModeResult.SwitchInsertMode
         let s : seq<KeyInput * Operation> = 
             seq {
                 yield (InputUtil.CharToKeyInput('y'), 
@@ -91,6 +98,10 @@ type internal VisualMode
                 yield (InputUtil.CharToKeyInput('d'), deleteSelection)
                 yield (InputUtil.CharToKeyInput('x'), deleteSelection)
                 yield (InputUtil.KeyToKeyInput(Key.Delete), deleteSelection)
+                yield (InputUtil.CharToKeyInput('c'), changeSelection)
+                yield (InputUtil.CharToKeyInput('s'), changeSelection)
+                yield (InputUtil.CharToKeyInput('C'), changeLines)
+                yield (InputUtil.CharToKeyInput('S'), changeLines)
                 yield (InputUtil.CharToKeyInput('g'), x.ProcessGChar)
                 yield (InputUtil.CharToKeyInput('J'), 
                         (fun _ _ ->         
@@ -161,6 +172,7 @@ type internal VisualMode
                     x.ResetCommandData()
                     ProcessResult.Processed
                 | VisualModeResult.SwitchPreviousMode -> ProcessResult.SwitchPreviousMode
+                | VisualModeResult.SwitchInsertMode -> ProcessResult.SwitchMode ModeKind.Insert
                 | VisualModeResult.NeedMore -> ProcessResult.Processed
     
         member x.OnEnter () = 

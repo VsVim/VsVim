@@ -100,5 +100,21 @@ namespace VimCoreTest
             Assert.AreEqual(1, _view.Selection.SelectedSpans.Count);
             Assert.AreEqual(span, _view.Selection.SelectedSpans[0]);
         }
+
+        [Test]
+        public void SelectedLines1()
+        {
+            Create(SelectionMode.Character, "foo");
+            _view.Selection.Select(new SnapshotSpan(_view.TextSnapshot, 0, 2), false);
+            Assert.AreEqual(_view.GetLineSpan(0, 0), _tracker.SelectedLines);
+        }
+
+        [Test]
+        public void SelectedLines2()
+        {
+            Create(SelectionMode.Character, "foo", "bar", "baz");
+            _view.Selection.Select(new SnapshotSpan(_view.TextSnapshot, 0, 7), false);
+            Assert.AreEqual(_view.GetLineSpan(0, 1), _tracker.SelectedLines);
+        }
     }
 }
