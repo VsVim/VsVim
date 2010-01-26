@@ -10,6 +10,8 @@ using Microsoft.VisualStudio.Text;
 using Microsoft.FSharp.Collections;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text.Editor;
+using Moq;
+using Range = Vim.Modes.Command.Range;
 
 namespace VimCoreTest
 {
@@ -17,13 +19,11 @@ namespace VimCoreTest
     public class RangeUtilTest
     {
         private ITextBuffer _buffer;
-        private MarkMap _map;
 
         [SetUp]
         public void Init()
         {
             _buffer = null;
-            _map = new MarkMap();
         }
 
         private void Create(params string[] lines)
@@ -31,15 +31,16 @@ namespace VimCoreTest
             _buffer = EditorUtil.CreateBuffer(lines);
         }
 
-        private ParseRangeResult Parse(string input)
+        private ParseRangeResult Parse(string input, IMarkMap map = null)
         {
-            return CaptureComplete(new SnapshotPoint(_buffer.CurrentSnapshot, 0), input);
+            return CaptureComplete(new SnapshotPoint(_buffer.CurrentSnapshot, 0), input, map);
         }
 
-        private ParseRangeResult CaptureComplete(SnapshotPoint point, string input)
+        private ParseRangeResult CaptureComplete(SnapshotPoint point, string input, IMarkMap map = null)
         {
+            map = map ?? new MarkMap();
             var list = input.Select(x => InputUtil.CharToKeyInput(x));
-            return RangeUtil.ParseRange(point, _map, ListModule.OfSeq(list));
+            return RangeUtil.ParseRange(point, map, ListModule.OfSeq(list));
         }
 
         [Test]
@@ -189,8 +190,9 @@ namespace VimCoreTest
             Create("foo", "bar");
             var point1 = new SnapshotPoint(_buffer.CurrentSnapshot, 0);
             var point2 = _buffer.CurrentSnapshot.GetLineFromLineNumber(1).EndIncludingLineBreak;
-            _map.SetLocalMark(point1, 'c');
-            var range = Parse("'c,2");
+            var map = new MarkMap();
+            map.SetLocalMark(point1, 'c');
+            var range = Parse("'c,2",map);
             Assert.IsTrue(range.IsSucceeded);
             Assert.AreEqual(new SnapshotSpan(point1,point2), RangeUtil.GetSnapshotSpan(range.AsSucceeded().Item1));
         }
@@ -201,9 +203,10 @@ namespace VimCoreTest
             Create("foo", "bar");
             var point1 = new SnapshotPoint(_buffer.CurrentSnapshot, 0);
             var point2 = _buffer.CurrentSnapshot.GetLineFromLineNumber(1).EndIncludingLineBreak;
-            _map.SetLocalMark(point1, 'c');
-            _map.SetLocalMark(point2, 'b');
-            var range = Parse("'c,'b");
+            var map = new MarkMap();
+            map.SetLocalMark(point1, 'c');
+            map.SetLocalMark(point2, 'b');
+            var range = Parse("'c,'b", map);
             Assert.IsTrue(range.IsSucceeded);
             Assert.AreEqual(new SnapshotSpan(point1, point2), RangeUtil.GetSnapshotSpan(range.AsSucceeded().Item1));
         }
@@ -214,10 +217,46 @@ namespace VimCoreTest
             Create("foo", "bar");
             var point1 = new SnapshotPoint(_buffer.CurrentSnapshot, 2);
             var point2 = _buffer.CurrentSnapshot.GetLineFromLineNumber(1).EndIncludingLineBreak;
-            _map.SetLocalMark(point1, 'c');
-            var range = Parse("'c,2");
+            var map = new MarkMap();
+            map.SetLocalMark(point1, 'c');
+            var range = Parse("'c,2", map);
             Assert.IsTrue(range.IsSucceeded);
             Assert.AreEqual(new SnapshotSpan(point1.GetContainingLine().Start, point2), RangeUtil.GetSnapshotSpan(range.AsSucceeded().Item1));
+        }
+
+        [Test,Description("Global mark")]
+        public void ParseMark4()
+        {
+            Create("foo bar","bar","baz");
+            var map = new Mock<IMarkMap>(MockBehavior.Strict);
+            map
+                .Setup(x => x.GetMark(_buffer, 'A'))
+                .Returns(FSharpOption.Create(new VirtualSnapshotPoint(_buffer.CurrentSnapshot, 2)));
+            var range = Parse("'A,2",map.Object);
+            Assert.IsTrue(range.IsSucceeded);
+            var span = RangeUtil.GetSnapshotSpan(range.AsSucceeded().Item1);
+            Assert.AreEqual(_buffer.CurrentSnapshot.GetLineSpan(0,1), span);
+        }
+
+        [Test]
+        public void ParseMark5()
+        {
+            Create("foo bar", "baz");
+            var map = new Mock<IMarkMap>(MockBehavior.Strict);
+            var range = Parse("'");
+            Assert.IsTrue(range.IsFailed);
+            Assert.AreEqual(Resources.Range_MarkMissingIdentifier, range.AsFailed().Item);
+        }
+
+        [Test]
+        public void ParseMark6()
+        {
+            Create("foo bar", "baz");
+            var map = new Mock<IMarkMap>(MockBehavior.Strict);
+            map.Setup(x => x.GetMark(_buffer, 'c')).Returns(FSharpOption<VirtualSnapshotPoint>.None);
+            var range = Parse("'c,2");
+            Assert.IsTrue(range.IsFailed);
+            Assert.AreEqual(Resources.Range_MarkNotValidInFile, range.AsFailed().Item);
         }
     }
 }

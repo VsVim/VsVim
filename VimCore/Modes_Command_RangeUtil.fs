@@ -135,8 +135,7 @@ module internal RangeUtil =
 
     /// Parse out a mark 
     let private ParseMark (point:SnapshotPoint) (map:IMarkMap) (list:KeyInput list) = 
-        if list |> List.isEmpty then
-            Error("Invalid Range: Missing mark after '")
+        if list |> List.isEmpty then Error Resources.Range_MarkMissingIdentifier
         else 
             let head = list |> List.head
             let opt = map.GetMark point.Snapshot.TextBuffer head.Char
@@ -144,8 +143,7 @@ module internal RangeUtil =
             | Some(point) -> 
                 let line = point.Position.GetContainingLine()
                 ValidRange(Range.SingleLine(line), Mark, list |> List.tail)
-            | None ->
-                Error("Invalid Range: Mark is invalid in this file")
+            | None -> Error Resources.Range_MarkNotValidInFile
 
     /// Parse out a single item in the range.
     let private ParseItem (point:SnapshotPoint) (map:IMarkMap) (list:KeyInput list) =
@@ -194,7 +192,7 @@ module internal RangeUtil =
         let left = ParseItem point map originalInput
         match left with 
         | NoRange -> ParseRangeResult.NoRange
-        | Error(_) -> ParseRangeResult.NoRange
+        | Error(msg) -> ParseRangeResult.Failed(msg)
         | ValidRange(leftSpan,kind,range) -> parseWithLeft leftSpan range kind
 
 

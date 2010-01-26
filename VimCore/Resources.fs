@@ -24,3 +24,7 @@ module internal Resources =
     let CommandMode_NotSupported_SubstituteConfirm = CommandMode_NotSupported "Substitute Confirm"
 
     let Vim_ViewAlreadyHasBuffer = "View is already associated with an IVimBuffer"
+
+    let Range_Invalid msg = sprintf "Invalid Range: %s" msg
+    let Range_MarkMissingIdentifier = Range_Invalid "Missing mark after '"
+    let Range_MarkNotValidInFile = Range_Invalid "Mark is invalid in this file"
