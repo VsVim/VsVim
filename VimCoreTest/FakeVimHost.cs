@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using Vim;
 using Microsoft.VisualStudio.Text;
@@ -10,10 +11,10 @@ namespace VimCoreTest
     [Export(typeof(IVimHost))]
     internal sealed class FakeVimHost : IVimHost
     {
-
         public int BeepCount { get; set; }
         public string LastFileOpen { get; set; }
         public string Status { get; set; }
+        public List<String> LongStatus { get; set; }
         public int UndoCount { get; set; }
         public int GoToDefinitionCount { get; set; }
         public bool GoToDefinitionReturn { get; set; }
@@ -53,6 +54,11 @@ namespace VimCoreTest
         {
             GoToDefinitionCount++;
             return GoToDefinitionReturn;
+        }
+
+        void IVimHost.UpdateLongStatus(IEnumerable<string> value)
+        {
+            LongStatus = value.ToList();
         }
     }
 }

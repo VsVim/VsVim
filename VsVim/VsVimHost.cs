@@ -87,6 +87,11 @@ namespace VsVim
             UpdateStatus(status);
         }
 
+        void IVimHost.UpdateLongStatus(IEnumerable<string> statusLines)
+        {
+            // TODO: Implement a WPF popup window
+        }
+
         void IVimHost.Undo(ITextBuffer buffer, int count)
         {
             UndoHistory history;
