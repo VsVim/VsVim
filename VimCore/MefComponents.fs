@@ -39,14 +39,8 @@ type internal VimFactoryService
 
     interface IVimFactoryService with
         member x.Vim = _vim
-        member x.CreateVimBuffer view name = _vim.CreateBuffer view name 
         member x.CreateKeyProcessor buffer = Vim.KeyProcessor(buffer) :> Microsoft.VisualStudio.Text.Editor.KeyProcessor
         member x.CreateMouseProcessor buffer = Vim.MouseProcessor(buffer, MouseDeviceImpl() :> IMouseDevice) :> Microsoft.VisualStudio.Text.Editor.IMouseProcessor
-        member x.CreateTagger (buffer:IVimBuffer) = 
-            let normal = buffer.GetMode ModeKind.Normal :?> Modes.Normal.NormalMode
-            let search = normal.IncrementalSearch
-            let tagger = Modes.Normal.Tagger(search)
-            tagger :> ITagger<TextMarkerTag>
 
 type internal CompletionWindowBroker 
     ( 
