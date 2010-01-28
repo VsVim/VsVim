@@ -7,7 +7,6 @@ using Microsoft.VisualStudio.Text.Editor;
 using Vim;
 using Microsoft.VisualStudio.Editor;
 using Microsoft.VisualStudio.TextManager.Interop;
-using Microsoft.VisualStudio.UI.Undo;
 using Microsoft.VisualStudio.OLE.Interop;
 using System.Windows.Media;
 using System.Diagnostics;

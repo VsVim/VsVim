@@ -10,10 +10,10 @@ using System.Diagnostics;
 using Microsoft.VisualStudio.Shell.Interop;
 using Vim;
 using Microsoft.VisualStudio.TextManager.Interop;
-using Microsoft.VisualStudio.UI.Undo;
 using Microsoft.VisualStudio.Language.Intellisense;
 using System.ComponentModel.Composition;
 using VsVim.Properties;
+using Microsoft.VisualStudio.Text.Operations;
 
 namespace VsVim
 {
@@ -24,7 +24,7 @@ namespace VsVim
     [Export(typeof(IVimHost))]
     internal sealed class VsVimHost : IVimHost
     {
-        private readonly IUndoHistoryRegistry _undoRegistry;
+        private readonly ITextBufferUndoManagerProvider _undoManagerProvider;
 
         /// <summary>
         /// Until we hit RC, we cannot import IServiceProvider which is where we get the DTE instance
@@ -40,9 +40,9 @@ namespace VsVim
         }
 
         [ImportingConstructor]
-        internal VsVimHost(IUndoHistoryRegistry undoRegistry)
+        internal VsVimHost(ITextBufferUndoManagerProvider undoManagerProvider)
         {
-            _undoRegistry = undoRegistry;
+            _undoManagerProvider = undoManagerProvider;
         }
 
         private void UpdateStatus(string text)
@@ -95,13 +95,14 @@ namespace VsVim
 
         void IVimHost.Undo(ITextBuffer buffer, int count)
         {
-            UndoHistory history;
-            if (!_undoRegistry.TryGetHistory(buffer, out history))
+            var undoManager = _undoManagerProvider.GetTextBufferUndoManager(buffer);
+            if ( undoManager == null || undoManager.TextBufferUndoHistory == null )
             {
                 UpdateStatus(Resources.VimHost_NoUndoRedoSupport);
                 return;
             }
 
+            var history = undoManager.TextBufferUndoHistory;
             for (int i = 0; i < count; i++)
             {
                 try
@@ -120,13 +121,14 @@ namespace VsVim
 
         void IVimHost.Redo(ITextBuffer buffer, int count)
         {
-            UndoHistory history;
-            if (!_undoRegistry.TryGetHistory(buffer, out history))
+            var undoManager = _undoManagerProvider.GetTextBufferUndoManager(buffer);
+            if (undoManager == null || undoManager.TextBufferUndoHistory == null)
             {
                 UpdateStatus(Resources.VimHost_NoUndoRedoSupport);
                 return;
             }
 
+            var history = undoManager.TextBufferUndoHistory;
             for (int i = 0; i < count; i++)
             {
                 try

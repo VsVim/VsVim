@@ -33,6 +33,6 @@ type IOperations =
     /// Substitute Command implementation
     abstract Substitute : pattern : string -> replace : string -> SnapshotSpan -> SubstituteFlags -> unit
 
-    interface Modes.ICommonOperations
+    inherit Modes.ICommonOperations
 
 
