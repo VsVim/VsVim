@@ -55,7 +55,7 @@ namespace VsVim
 
             // Run the key binding check now
             var dte = sp.GetService<SDTE, EnvDTE.DTE>();
-            _keyBindingService.OneTimeCheckForConflictingKeyBindings(dte, buffer.VimBuffer);
+            _keyBindingService.OneTimeCheckForConflictingKeyBindings(dte, buffer);
         }
     }
 

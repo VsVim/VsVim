@@ -10,6 +10,6 @@ namespace VsVim
     public interface IVsVimFactoryService
     {
         IVimFactoryService VimFactoryService { get; }
-        VsVimBuffer GetOrCreateBuffer(IWpfTextView textView);
+        IVimBuffer GetOrCreateBuffer(IWpfTextView textView);
     }
 }

@@ -19,8 +19,8 @@ namespace VsVim
 
         public IMouseProcessor GetAssociatedProcessor(IWpfTextView wpfTextView)
         {
-            VsVimBuffer buffer = _factory.GetOrCreateBuffer(wpfTextView);
-            return _factory.VimFactoryService.CreateMouseProcessor(buffer.VimBuffer);
+            var buffer = _factory.GetOrCreateBuffer(wpfTextView);
+            return _factory.VimFactoryService.CreateMouseProcessor(buffer);
         }
     }
 }

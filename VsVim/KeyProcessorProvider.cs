@@ -23,8 +23,8 @@ namespace VsVim
 
         public KeyProcessor GetAssociatedProcessor(IWpfTextView wpfTextView)
         {
-            VsVimBuffer buffer = _factory.GetOrCreateBuffer(wpfTextView);
-            return _factory.VimFactoryService.CreateKeyProcessor(buffer.VimBuffer);
+            var buffer = _factory.GetOrCreateBuffer(wpfTextView);
+            return _factory.VimFactoryService.CreateKeyProcessor(buffer);
         }
     }
 }
