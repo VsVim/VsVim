@@ -25,7 +25,23 @@ type internal ItemRange =
     | NoRange
     | Error of string
 
+type internal RangeParser() =
+    member this.Bind (ir, rest) =
+        match ir with 
+        | ValidRange (r,kind,input) -> rest (r,kind,input)
+        | NoRange -> Failed Resources.Range_EmptyRange
+        | Error(msg) -> Failed(msg)
+    member this.Bind (pr, rest) = 
+        match pr with
+        | Succeeded (range,remaining) -> rest (range,remaining)
+        | ParseRangeResult.NoRange -> pr
+        | Failed(_) -> pr
+    member this.Zero () = Failed "Invalid"
+    member this.ReturnFrom (result:ParseRangeResult) = result
+
 module internal RangeUtil =
+
+    let private _parser = RangeParser()
 
     /// Get the SnapshotSpan for the given Range
     let GetSnapshotSpan (r:Range) =
@@ -160,54 +176,34 @@ module internal RangeUtil =
             NoRange
 
     let private ParseRangeCore (point:SnapshotPoint) (map:IMarkMap) (originalInput:KeyInput list) =
-
-        let parseRight (point:SnapshotPoint) map (leftRange:Range) remainingInput : ParseRangeResult = 
-            let right = ParseItem point map remainingInput 
-            match right with 
-            | NoRange -> Failed("Invalid Range: Right hand side is missing")
-            | Error(msg) -> Failed(msg)
-            | ValidRange(rightRange,_,remainingInput) ->
-                let fullRange = CombineRanges leftRange rightRange
-                Succeeded(fullRange, remainingInput)
-        
-        // Parse out the separator 
-        let parseWithLeft (leftRange:Range) (remainingInput:KeyInput list) kind =
-            match remainingInput |> List.isEmpty with
-            | true ->  Succeeded(leftRange,remainingInput) 
-            | false -> 
-                let head = remainingInput |> List.head 
-                let rest = remainingInput |> List.tail
-                if head.Char = ',' then parseRight point map leftRange rest
+        _parser {
+            let! range,kind,remaining = ParseItem point map originalInput
+            match ListUtil.tryHead remaining with
+            | None -> return! Succeeded(range, remaining)
+            | Some (head,tail) ->
+                if head.Char = ',' then 
+                    let! rightRange,_,remaining = ParseItem point map tail
+                    let fullRange = CombineRanges range rightRange
+                    return! Succeeded(fullRange, remaining)
                 else if head.Char = ';' then 
-                    let point = (GetSnapshotSpan leftRange).Start
-                    parseRight point map leftRange rest
+                    let point = (GetSnapshotSpan range).Start
+                    let! rightRange,_,remaining = ParseItem point map tail
+                    let fullRange = CombineRanges range rightRange
+                    return! Succeeded(fullRange, remaining)
                 else if kind = LineNumber then
-                    ParseRangeResult.Succeeded(leftRange, remainingInput)
+                    return! Succeeded(range, remaining)
                 else if kind = CurrentLine then
-                    ParseRangeResult.Succeeded(leftRange, remainingInput)
+                    return! Succeeded(range, remaining)
                 else
-                    let msg = "Invalid Range: Expected , or ;"
-                    ParseRangeResult.Failed(msg)
-        
-        let left = ParseItem point map originalInput
-        match left with 
-        | NoRange -> ParseRangeResult.NoRange
-        | Error(msg) -> ParseRangeResult.Failed(msg)
-        | ValidRange(leftSpan,kind,range) -> parseWithLeft leftSpan range kind
-
+                    return! Failed Resources.Range_ConnectionMissing
+        }
 
     let ParseRange (point:SnapshotPoint) (map:IMarkMap) (list:KeyInput list) = 
-        match list |> List.isEmpty with
-        | true -> ParseRangeResult.NoRange
-        | false ->
-            let head = list |> List.head
+        let inner (head:KeyInput) tail =
             if head.Char = '%' then 
                 let tss = point.Snapshot
                 let span = new SnapshotSpan(tss, 0, tss.Length)
-                ParseRangeResult.Succeeded(RawSpan(span), List.tail list)
+                ParseRangeResult.Succeeded(RawSpan(span), tail)
             else
                 ParseRangeCore point map list
-
-
-                
-        
+        ListUtil.tryProcessHead list inner (fun() -> ParseRangeResult.NoRange)

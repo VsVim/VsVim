@@ -68,10 +68,10 @@ module internal ListUtil =
 
     let tryProcessHead l ifNonEmpty ifEmpty =
         if List.isEmpty l then 
+            ifEmpty()
+        else
             let head,tail = divide l
             ifNonEmpty head tail
-        else
-            ifEmpty()
 
 module internal SeqUtil =
     
