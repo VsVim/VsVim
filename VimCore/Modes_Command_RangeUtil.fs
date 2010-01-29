@@ -29,7 +29,7 @@ type internal RangeParser() =
     member this.Bind (ir, rest) =
         match ir with 
         | ValidRange (r,kind,input) -> rest (r,kind,input)
-        | NoRange -> Failed Resources.Range_EmptyRange
+        | NoRange -> ParseRangeResult.NoRange
         | Error(msg) -> Failed(msg)
     member this.Bind (pr, rest) = 
         match pr with
