@@ -137,7 +137,6 @@
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
     <Compile Include="VsCommandFilter.cs" />
-    <Compile Include="VsUtility.cs" />
     <Compile Include="VsVimBuffer.cs" />
     <Compile Include="VsVimFactoryService.cs" />
     <Compile Include="VsVimHost.cs" />

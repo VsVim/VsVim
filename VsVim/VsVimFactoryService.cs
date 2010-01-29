@@ -8,6 +8,7 @@ using Microsoft.VisualStudio.Editor;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.TextManager.Interop;
 using Microsoft.VisualStudio.OLE.Interop;
+using VsVim.Properties;
 
 namespace VsVim
 {
@@ -33,12 +34,26 @@ namespace VsVim
 
         #region Private
 
-        private void EnsureDte(Microsoft.VisualStudio.OLE.Interop.IServiceProvider sp)
+        private void MaybeUpdateStaticServiceProvider(object source)
         {
+            if (Extensions.StaticServiceProvider != null)
+            {
+                return;
+            }
+
+            var objectWithSite = source as IObjectWithSite;
+            if (objectWithSite == null)
+            {
+                return;
+            }
+
+            Extensions.StaticServiceProvider = objectWithSite.GetServiceProvider();
+
+            // Update the host as well
             var vimHost = _vimHost as VsVimHost;
             if (vimHost != null && vimHost.DTE == null)
             {
-                vimHost.OnServiceProvider(sp);
+                vimHost.OnServiceProvider(Extensions.StaticServiceProvider);
             }
         }
 
@@ -73,17 +88,10 @@ namespace VsVim
             var vsTextLines = _adaptersFactory.GetBufferAdapter(textView.TextBuffer) as IVsTextLines;
             if (vsTextLines == null)
             {
-                return null;
+                throw new InvalidOperationException(Resources.VsVimFactoryService_UnableToCreateBuffer);
             }
 
-            var objectWithSite = vsTextLines as IObjectWithSite;
-            if (objectWithSite == null)
-            {
-                return null;
-            }
-
-            var sp = objectWithSite.GetServiceProvider();
-            EnsureDte(sp);
+            MaybeUpdateStaticServiceProvider(vsTextLines);
 
             var buffer = new VsVimBuffer(
                 _vimFactoryService.Vim,

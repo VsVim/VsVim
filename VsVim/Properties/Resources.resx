@@ -126,4 +126,7 @@
   <data name="VimHost_NoUndoRedoSupport" xml:space="preserve">
     <value>Undo/Redo is not available for this file</value>
   </data>
+  <data name="VsVimFactoryService_UnableToCreateBuffer" xml:space="preserve">
+    <value>Unable to create Vim for the current buffer</value>
+  </data>
 </root>

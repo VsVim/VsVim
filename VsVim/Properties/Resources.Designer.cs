@@ -86,5 +86,14 @@ namespace VsVim.Properties {
                 return ResourceManager.GetString("VimHost_NoUndoRedoSupport", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Unable to create Vim for the current buffer.
+        /// </summary>
+        internal static string VsVimFactoryService_UnableToCreateBuffer {
+            get {
+                return ResourceManager.GetString("VsVimFactoryService_UnableToCreateBuffer", resourceCulture);
+            }
+        }
     }
 }
