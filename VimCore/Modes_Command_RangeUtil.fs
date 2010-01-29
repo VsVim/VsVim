@@ -94,15 +94,12 @@ module internal RangeUtil =
 
         // Parse out the input into the list of digits and remaining input
         let rec getDigits (input:KeyInput list) =
-            match input |> List.isEmpty with
-            | true ->([],input)
-            | false -> 
-                let head = input |> List.head
-                if head.IsDigit then
-                    let restDigits,restInput = getDigits (input |> List.tail)
+            let inner (head:KeyInput) tail = 
+                if head.IsDigit then 
+                    let restDigits,restInput = getDigits tail
                     (head :: restDigits, restInput)
-                else 
-                    ([],input)
+                else ([],input)
+            ListUtil.tryProcessHead input inner (fun() -> ([],input))
             
         let digits,remaining = getDigits input
         let numberStr = 
@@ -135,15 +132,14 @@ module internal RangeUtil =
 
     /// Parse out a mark 
     let private ParseMark (point:SnapshotPoint) (map:IMarkMap) (list:KeyInput list) = 
-        if list |> List.isEmpty then Error Resources.Range_MarkMissingIdentifier
-        else 
-            let head = list |> List.head
+        let inner (head:KeyInput) tail = 
             let opt = map.GetMark point.Snapshot.TextBuffer head.Char
             match opt with 
             | Some(point) -> 
                 let line = point.Position.GetContainingLine()
-                ValidRange(Range.SingleLine(line), Mark, list |> List.tail)
+                ValidRange(Range.SingleLine(line), Mark, tail)
             | None -> Error Resources.Range_MarkNotValidInFile
+        ListUtil.tryProcessHead list inner (fun () -> Error Resources.Range_MarkMissingIdentifier)
 
     /// Parse out a single item in the range.
     let private ParseItem (point:SnapshotPoint) (map:IMarkMap) (list:KeyInput list) =
