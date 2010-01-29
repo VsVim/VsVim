@@ -120,8 +120,11 @@ type internal VisualMode
             _operationsMap <- map
 
     member private x.ProcessInputCore ki = 
-        let op = Map.find ki _operationsMap
-        op (_data.Count) _data.Register
+        match Map.tryFind ki _operationsMap with
+        | Some(op) -> op _data.Count _data.Register
+        | None -> 
+            _buffer.VimHost.Beep()
+            VisualModeResult.Complete
 
     member private x.ProcessInput ki = 
         if ki.Char = '"' then
@@ -160,7 +163,7 @@ type internal VisualMode
             x.EnsureOperationsMap()
             _operationsMap |> Seq.map (fun pair -> pair.Key)
         member x.ModeKind = _kind
-        member x.CanProcess (ki:KeyInput) = _operationsMap.ContainsKey(ki)
+        member x.CanProcess (ki:KeyInput) = true
         member x.Process (ki : KeyInput) =  
             if ki = InputUtil.KeyToKeyInput(Key.Escape) then 
                 ProcessResult.SwitchPreviousMode

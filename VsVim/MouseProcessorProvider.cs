@@ -14,8 +14,13 @@ namespace VsVim
     [TextViewRole(PredefinedTextViewRoles.Editable)]
     public class MouseProcessorProvider : IMouseProcessorProvider
     {
-        [Import]
-        private IVsVimFactoryService _factory = null;
+        private readonly IVsVimFactoryService _factory;
+
+        [ImportingConstructor]
+        public MouseProcessorProvider(IVsVimFactoryService factory)
+        {
+            _factory = factory;
+        }
 
         public IMouseProcessor GetAssociatedProcessor(IWpfTextView wpfTextView)
         {

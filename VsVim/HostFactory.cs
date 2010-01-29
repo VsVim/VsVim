@@ -25,24 +25,27 @@ namespace VsVim
     [TextViewRole(PredefinedTextViewRoles.Editable)]
     internal sealed class HostFactory : IWpfTextViewCreationListener
     {
-        [Import]
-        private IVsVimFactoryService _factory = null;
-        [Import]
-        private KeyBindingService _keyBindingService = null;
+        private readonly IVsVimFactoryService _factory;
+        private readonly KeyBindingService _keyBindingService;
 
-        public HostFactory()
+        [ImportingConstructor]
+        public HostFactory(
+            IVsVimFactoryService factory,
+            KeyBindingService keyBindingService)
         {
+            _factory = factory;
+            _keyBindingService = keyBindingService;
         }
 
         public void TextViewCreated(IWpfTextView textView)
         {
+            var buffer = _factory.GetOrCreateBuffer(textView);
+
             var sp = _factory.GetOrUpdateServiceProvider(textView.TextBuffer);
             if (sp == null)
             {
                 return;
             }
-
-            var buffer = _factory.GetOrCreateBuffer(textView);
 
             // Run the key binding check now
             var dte = sp.GetService<SDTE, EnvDTE.DTE>();

@@ -184,6 +184,19 @@ namespace VimCoreTest
             caret.Verify();
         }
 
+        [Test,Description("Must handle arbitrary input to prevent changes but don't list it as a command")]
+        public void PreventInput1()
+        {
+            var host = new FakeVimHost();
+            Create2(host:host,lines:"foo");
+            var input = InputUtil.CharToKeyInput(',');
+            Assert.IsFalse(_mode.Commands.Any(x => x.Char == input.Char));
+            Assert.IsTrue(_mode.CanProcess(input));
+            var ret = _mode.Process(input);
+            Assert.IsTrue(ret.IsProcessed);
+            Assert.AreEqual(1, host.BeepCount);
+        }
+
         #region Movement
 
         public void MoveLeft1()

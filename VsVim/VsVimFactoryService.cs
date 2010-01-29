@@ -107,6 +107,7 @@ namespace VsVim
                 ITextViewDebugUtil.Detach(textView);
             };
             ITextViewDebugUtil.Attach(textView);
+            _map.Add(textView, buffer);
             return buffer;
         }
 
@@ -152,6 +153,11 @@ namespace VsVim
             ServiceProvider = objectWithSite.GetServiceProvider();
             MaybeUpdateVimHostServiceProvider();
             return ServiceProvider;
+        }
+
+        public bool TryGetBuffer(IWpfTextView textView, out IVimBuffer buffer)
+        {
+            return _map.TryGetValue(textView, out buffer);
         }
 
         #endregion
