@@ -50,24 +50,15 @@ namespace VsVimTest
         }
 
         [Test]
-        [ExpectedException(typeof(InvalidOperationException))]
         public void GetOrCreateBuffer1()
         {
             Create();
-            var buffer = new Mock<ITextBuffer>(MockBehavior.Strict);
-            var view = new Mock<IWpfTextView>(MockBehavior.Strict);
-            view.SetupGet(x => x.TextBuffer).Returns(buffer.Object);
-            _adapters.Setup(x => x.GetBufferAdapter(buffer.Object)).Returns((IVsTextBuffer)null);
-            _service.GetOrCreateBuffer(view.Object);
-        }
-
-        [Test]
-        public void GetOrCreateBuffer2()
-        {
-            Create();
             var view = EditorUtil.CreateView("foo bar");
-            var lines = new Mock<IVsTextLines>(MockBehavior.Strict);
-            _adapters.Setup(x => x.GetBufferAdapter(view.TextBuffer)).Returns(lines.Object);
+            var vimBuffer = new Mock<IVimBuffer>(MockBehavior.Strict);
+            _adapters.Setup(x => x.GetBufferAdapter(view.TextBuffer)).Returns((IVsTextLines)null);
+            _vim.Setup(x => x.CreateBuffer(view, String.Empty)).Returns(vimBuffer.Object);
+            var ret = _service.GetOrCreateBuffer(view);
+            Assert.AreSame(vimBuffer.Object, ret);
         }
 
     }
