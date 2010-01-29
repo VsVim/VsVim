@@ -7,8 +7,10 @@ using Microsoft.VisualStudio.Text.Editor;
 using Vim;
 using Vim.Modes;
 using System.Windows.Threading;
+using Microsoft.FSharp.Core;
+using System.Windows.Input;
 
-namespace VimCoreTest.Utils
+namespace VimCoreTest
 {
     internal static class Extensions
     {
@@ -83,6 +85,99 @@ namespace VimCoreTest.Utils
         internal static Vim.Modes.Command.Range.SingleLine AsSingleLine(this Vim.Modes.Command.Range range)
         {
             return (Vim.Modes.Command.Range.SingleLine)range;
+        }
+
+        #endregion
+
+        #region Option
+
+        public static bool IsNone<T>(this FSharpOption<T> option)
+        {
+            return FSharpOption<T>.get_IsNone(option);
+        }
+
+        public static bool IsSome<T>(this FSharpOption<T> option)
+        {
+            return FSharpOption<T>.get_IsSome(option);
+        }
+
+        public static bool HasValue<T>(this FSharpOption<T> option)
+        {
+            return FSharpOption<T>.get_IsSome(option);
+        }
+
+        #endregion
+
+        #region IMode
+
+        public static bool CanProcess(this IMode mode, Key key)
+        {
+            return mode.CanProcess(InputUtil.KeyToKeyInput(key));
+        }
+
+        public static ProcessResult Process(this IMode mode, Key key)
+        {
+            return mode.Process(InputUtil.KeyToKeyInput(key));
+        }
+
+        public static ProcessResult Process(this IMode mode, char c)
+        {
+            return mode.Process((InputUtil.CharToKeyInput(c)));
+        }
+
+        public static ProcessResult Process(this IMode mode, string input)
+        {
+            ProcessResult last = null;
+            foreach (var c in input)
+            {
+                var i = InputUtil.CharToKeyInput(c);
+                last = mode.Process(c);
+            }
+
+            return last;
+        }
+
+        #endregion
+
+        #region IVimBuffer
+
+        public static void ProcessInputAsString(this IVimBuffer buf, string input)
+        {
+            foreach (var c in input)
+            {
+                var i = InputUtil.CharToKeyInput(c);
+                buf.ProcessInput(i);
+            }
+        }
+
+        #endregion
+
+        #region ITextView
+
+        public static ITextSnapshotLine GetLine(this ITextView textView, int line)
+        {
+            return textView.TextSnapshot.GetLineFromLineNumber(line);
+        }
+
+        public static SnapshotSpan GetLineSpan(this ITextView textView, int startLine, int endLine)
+        {
+            return textView.TextSnapshot.GetLineSpan(startLine, endLine);
+        }
+
+        public static CaretPosition MoveCaretTo(this ITextView textView, int position)
+        {
+            return textView.Caret.MoveTo(new SnapshotPoint(textView.TextSnapshot, position));
+        }
+
+        #endregion
+
+        #region ITextSnapshot
+
+        public static SnapshotSpan GetLineSpan(this ITextSnapshot tss, int startLine, int endLine)
+        {
+            var start = tss.GetLineFromLineNumber(startLine);
+            var end = tss.GetLineFromLineNumber(endLine);
+            return new SnapshotSpan(start.Start, end.EndIncludingLineBreak);
         }
 
         #endregion

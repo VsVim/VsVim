@@ -156,9 +156,8 @@
     <Compile Include="TextUtilTest.cs" />
     <Compile Include="TextUtilTest2.cs" />
     <Compile Include="TssUtilTest.cs" />
-    <Compile Include="Util.cs" />
     <Compile Include="Utils\EditorUtil.cs" />
-    <Compile Include="Utils\Extensions.cs" />
+    <Compile Include="Extensions.cs" />
     <Compile Include="Utils\FSharpFuncUtil.cs" />
     <Compile Include="Utils\FSharpOption.cs" />
     <Compile Include="Utils\MockBlockCaret.cs" />
