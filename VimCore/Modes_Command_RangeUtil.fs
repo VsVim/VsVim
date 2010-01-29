@@ -151,7 +151,6 @@ module internal RangeUtil =
     /// Parse out a line number 
     let private ParseLineNumber (tss:ITextSnapshot) (input:KeyInput list) =
     
-        let msg = "Invalid Range: Could not find a valid number"
         let opt,remaining = ParseNumber input
         match opt with 
         | Some(number) ->

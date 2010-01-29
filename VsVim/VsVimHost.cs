@@ -169,6 +169,5 @@ namespace VsVim
 
         #endregion
 
-
     }
 }
