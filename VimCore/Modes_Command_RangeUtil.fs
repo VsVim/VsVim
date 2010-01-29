@@ -83,6 +83,25 @@ module internal RangeUtil =
         | Range.RawSpan(span) -> 
             inner span.Snapshot (span.End.GetContainingLine().LineNumber)
 
+    /// Change the line number on the range by the given count
+    let ChangeEndLine range count =
+        let makeLines (tss:ITextSnapshot) startLine endLine =
+            let endLine = min (endLine+count) (tss.LineCount-1)
+            let endLine = max endLine 0
+            let startLine = min startLine endLine
+            Lines(tss, startLine, endLine)
+        match range with 
+        | Range.Lines(tss,startLine,endLine) -> makeLines tss startLine endLine
+        | Range.RawSpan(span) ->
+            let startLine = span.Start.GetContainingLine().LineNumber
+            let endLine = span.End.GetContainingLine().LineNumber
+            makeLines span.Snapshot startLine endLine
+        | Range.SingleLine(line) -> 
+            let num = line.LineNumber + count
+            let num = min num (line.Snapshot.LineCount-1)
+            let num = max num 0
+            SingleLine(line.Snapshot.GetLineFromLineNumber(num))
+
     /// Combine the two ranges
     let CombineRanges left right = 
         let getStartLine range =
@@ -175,19 +194,39 @@ module internal RangeUtil =
         else
             NoRange
 
+    let private ParsePlusMinus range (list:KeyInput list) =
+        let getCount list =
+            let opt,list = ParseNumber list
+            match opt with 
+            | Some(num) -> num,list
+            | None -> 1,list
+        let inner (head:KeyInput) tail = 
+            if head.Char = '+' then 
+                let count,tail = getCount tail
+                (ChangeEndLine range count,tail)
+            elif head.Char = '-' then
+                let count,tail = getCount tail
+                (ChangeEndLine range (-count),tail)
+            else 
+                range,list
+        ListUtil.tryProcessHead list inner (fun () -> range,list)
+
     let private ParseRangeCore (point:SnapshotPoint) (map:IMarkMap) (originalInput:KeyInput list) =
         _parser {
             let! range,kind,remaining = ParseItem point map originalInput
+            let range,remaining = ParsePlusMinus range remaining
             match ListUtil.tryHead remaining with
             | None -> return! Succeeded(range, remaining)
             | Some (head,tail) ->
                 if head.Char = ',' then 
                     let! rightRange,_,remaining = ParseItem point map tail
+                    let rightRange,remaining = ParsePlusMinus rightRange remaining
                     let fullRange = CombineRanges range rightRange
                     return! Succeeded(fullRange, remaining)
                 else if head.Char = ';' then 
                     let point = (GetSnapshotSpan range).Start
                     let! rightRange,_,remaining = ParseItem point map tail
+                    let rightRange,remaining = ParsePlusMinus rightRange remaining
                     let fullRange = CombineRanges range rightRange
                     return! Succeeded(fullRange, remaining)
                 else if kind = LineNumber then

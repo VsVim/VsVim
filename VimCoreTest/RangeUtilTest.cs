@@ -36,6 +36,42 @@ namespace VimCoreTest
             return CaptureComplete(new SnapshotPoint(_buffer.CurrentSnapshot, 0), input, map);
         }
 
+        private void ParseLineRange(string input, int startLine, int endLine)
+        {
+            var ret = Parse(input);
+            Assert.IsTrue(ret.IsSucceeded);
+            Assert.AreEqual(0, ret.AsSucceeded().Item2.Count());
+            var range = ret.AsSucceeded().Item1;
+            if (range.IsSingleLine)
+            {
+                var r = range.AsSingleLine();
+                Assert.AreEqual(startLine, r.Item.LineNumber);
+                Assert.AreEqual(endLine, r.Item.LineNumber);
+            }
+            else if (range.IsRawSpan)
+            {
+                var span = range.AsRawSpan().item;
+                Assert.AreEqual(startLine, span.Start.GetContainingLine().LineNumber);
+                Assert.AreEqual(endLine, span.End.GetContainingLine().LineNumber);
+            }
+            else
+            {
+                Assert.IsTrue(range.IsLines);
+                var lines = range.AsLines();
+                Assert.AreEqual(startLine, lines.Item2);
+                Assert.AreEqual(endLine, lines.Item3);
+            }
+        }
+
+        private void ParseSingleLine(string input, int line)
+        {
+            var ret = Parse(input);
+            Assert.IsTrue(ret.IsSucceeded);
+            var range = ret.AsSucceeded().Item1;
+            Assert.IsTrue(range.IsSingleLine);
+            Assert.AreEqual(line, range.AsSingleLine().Item.LineNumber);
+        }
+
         private ParseRangeResult CaptureComplete(SnapshotPoint point, string input, IMarkMap map = null)
         {
             map = map ?? new MarkMap();
@@ -258,5 +294,62 @@ namespace VimCoreTest
             Assert.IsTrue(range.IsFailed);
             Assert.AreEqual(Resources.Range_MarkNotValidInFile, range.AsFailed().Item);
         }
+
+        [Test]
+        public void Plus1()
+        {
+            Create("foo", "bar", "baz", "jaz");
+            ParseSingleLine("1+2", 2);
+        }
+
+        [Test]
+        public void Plus2()
+        {
+            Create("foo", "bar", "baz");
+            ParseSingleLine("1+", 1);
+        }
+
+        [Test, Description("Line number out of range should go to end of file")]
+        public void Plus3()
+        {
+            Create("foo", "bar", "baz");
+            ParseSingleLine("1+400", 2);
+        }
+
+        [Test]
+        public void Plus4()
+        {
+            Create("foo", "bar", "baz","jaz","aoeu","za,.p");
+            ParseLineRange("1+1,3", 1, 2);
+        }
+
+        [Test]
+        public void Minus1()
+        {
+            Create("foo", "bar", "baz","jaz","aoeu","za,.p");
+            ParseSingleLine("1-42", 0);
+        }
+
+        [Test]
+        public void Minus2()
+        {
+            Create("foo", "bar", "baz","jaz","aoeu","za,.p");
+            ParseSingleLine("2-", 0);
+        }
+
+        [Test]
+        public void Minus3()
+        {
+            Create("foo", "bar", "baz","jaz","aoeu","za,.p");
+            ParseSingleLine("5-3", 1);
+        }
+
+        [Test]
+        public void Minus4()
+        {
+            Create("foo", "bar", "baz","jaz","aoeu","za,.p");
+            ParseLineRange("1,5-2", 0, 2);
+        }
+
     }
 }
