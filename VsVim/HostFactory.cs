@@ -26,13 +26,11 @@ namespace VsVim
     internal sealed class HostFactory : IWpfTextViewCreationListener
     {
         [Import]
+        private IVsVimFactoryService _factory = null;
+        [Import]
         private KeyBindingService _keyBindingService = null;
         [Import]
         private IVsEditorAdaptersFactoryService _adaptersFactory = null;
-        [Import]
-        private IVimFactoryService _vimFactory = null;
-        [Import]
-        private IVimHost _vimHost = null;
 
         public HostFactory()
         {
@@ -53,64 +51,11 @@ namespace VsVim
             }
 
             var sp = objectWithSite.GetServiceProvider();
-            EnsureDte(sp);
-
-            var buffer = new VsVimBuffer(
-                _vimFactory.Vim,
-                textView,
-                vsTextLines.GetFileName());
-            textView.SetVimBuffer(buffer);
+            var buffer = _factory.GetOrCreateBuffer(textView);
 
             // Run the key binding check now
             var dte = sp.GetService<SDTE, EnvDTE.DTE>();
             _keyBindingService.OneTimeCheckForConflictingKeyBindings(dte, buffer.VimBuffer);
-
-            // Have to wait for Aggregate focus before being able to set the VsCommandFilter
-            textView.GotAggregateFocus += new EventHandler(OnGotAggregateFocus);
-            textView.Closed += (x, y) =>
-            {
-                buffer.Close();
-                textView.RemoveVimBuffer();
-                ITextViewDebugUtil.Detach(textView);
-            };
-            ITextViewDebugUtil.Attach(textView);
-        }
-
-
-
-        private void OnGotAggregateFocus(object sender, EventArgs e)
-        {
-            var view = sender as IWpfTextView;
-            if (view == null)
-            {
-                return;
-            }
-
-            var vsView = _adaptersFactory.GetViewAdapter(view);
-            if (vsView == null)
-            {
-                return;
-            }
-
-            // Once we have the Vs view, stop listening to the event
-            view.GotAggregateFocus -= new EventHandler(OnGotAggregateFocus);
-
-            VsVimBuffer buffer;
-            if (!view.TryGetVimBuffer(out buffer))
-            {
-                return;
-            }
-
-            buffer.VsCommandFilter = new VsCommandFilter(buffer.VimBuffer, vsView);
-        }
-
-        private void EnsureDte(Microsoft.VisualStudio.OLE.Interop.IServiceProvider sp)
-        {
-            var vimHost = _vimHost as VsVimHost;
-            if (vimHost != null && vimHost.DTE == null)
-            {
-                vimHost.OnServiceProvider(sp);
-            }
         }
     }
 

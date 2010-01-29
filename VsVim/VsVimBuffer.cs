@@ -22,7 +22,7 @@ namespace VsVim
     /// Wrapper class maintaining the components surrounding an IVimBuffer hosted inside of 
     /// Visual Studio
     /// </summary>
-    internal sealed class VsVimBuffer
+    public sealed class VsVimBuffer
     {
         private readonly IVimBuffer _buffer;
 

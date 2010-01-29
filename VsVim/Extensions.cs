@@ -178,39 +178,5 @@ namespace VsVim
 
         #endregion
 
-        #region ITextView
-
-        /// <summary>
-        /// Use a randomly generated GUID for the Key.  Forces consumers to go through the accessor instead of taking
-        /// a dependency on the key in the property bag
-        /// </summary>
-        private static Guid s_VsVimBufferGuid = Guid.NewGuid();
-
-        internal static bool TryGetVimBuffer(this ITextView textView, out VsVimBuffer buffer)
-        {
-            return textView.TextBuffer.TryGetVimBuffer(out buffer);
-        }
-
-        internal static bool TryGetVimBuffer(this ITextBuffer textBuffer, out VsVimBuffer buffer)
-        {
-            return textBuffer.Properties.TryGetProperty<VsVimBuffer>(s_VsVimBufferGuid, out buffer);
-        }
-
-        internal static void SetVimBuffer(this ITextView textView, VsVimBuffer buffer)
-        {
-            if (buffer == null)
-            {
-                throw new ArgumentNullException("buffer");
-            }
-
-            textView.TextBuffer.Properties.AddProperty(s_VsVimBufferGuid, buffer);
-        }
-
-        internal static bool RemoveVimBuffer(this ITextView textView)
-        {
-            return textView.TextBuffer.Properties.RemoveProperty(s_VsVimBufferGuid);
-        }
-
-        #endregion
     }
 }

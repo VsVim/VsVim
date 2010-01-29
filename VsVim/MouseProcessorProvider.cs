@@ -15,17 +15,12 @@ namespace VsVim
     public class MouseProcessorProvider : IMouseProcessorProvider
     {
         [Import]
-        private Vim.IVimFactoryService _factory = null;
+        private IVsVimFactoryService _factory = null;
 
         public IMouseProcessor GetAssociatedProcessor(IWpfTextView wpfTextView)
         {
-            VsVimBuffer buffer = null;
-            if (wpfTextView.TryGetVimBuffer(out buffer))
-            {
-                return _factory.CreateMouseProcessor(buffer.VimBuffer);
-            }
-
-            return null;
+            VsVimBuffer buffer = _factory.GetOrCreateBuffer(wpfTextView);
+            return _factory.VimFactoryService.CreateMouseProcessor(buffer.VimBuffer);
         }
     }
 }

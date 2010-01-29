@@ -17,19 +17,14 @@ namespace VsVim
     public sealed class KeyProcessorProvider : IKeyProcessorProvider
     {
         [Import]
-        private IVimFactoryService _vimFactory = null;
+        private IVsVimFactoryService _factory = null;
 
         public KeyProcessorProvider() { }
 
         public KeyProcessor GetAssociatedProcessor(IWpfTextView wpfTextView)
         {
-            VsVimBuffer buffer;
-            if (wpfTextView.TryGetVimBuffer(out buffer))
-            {
-                return _vimFactory.CreateKeyProcessor(buffer.VimBuffer);
-            }
-
-            return null;
+            VsVimBuffer buffer = _factory.GetOrCreateBuffer(wpfTextView);
+            return _factory.VimFactoryService.CreateKeyProcessor(buffer.VimBuffer);
         }
     }
 }

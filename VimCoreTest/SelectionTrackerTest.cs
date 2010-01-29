@@ -67,6 +67,23 @@ namespace VimCoreTest
             Assert.AreEqual(new SnapshotPoint(_view.TextSnapshot, 0), _tracker.AnchorPoint);
         }
 
+        [Test, Description("Don't reset the selection if there already is one.  Breaks actions like CTRL+A")]
+        public void Start3()
+        {
+            var realView = EditorUtil.CreateView("foo bar baz");
+            var selection = new Mock<ITextSelection>(MockBehavior.Strict);
+            selection.SetupGet(x => x.IsEmpty).Returns(false).Verifiable();
+            selection.SetupGet(x => x.Mode).Returns(TextSelectionMode.Stream);
+            var view = new Mock<ITextView>(MockBehavior.Strict);
+            view.SetupGet(x => x.TextBuffer).Returns(realView.TextBuffer);
+            view.SetupGet(x => x.Caret).Returns(realView.Caret);
+            view.SetupGet(x => x.TextSnapshot).Returns(realView.TextSnapshot);
+            view.SetupGet(x => x.Selection).Returns(selection.Object);
+            var tracker = new SelectionTracker(view.Object, SelectionMode.Character);
+            tracker.Start();
+            selection.Verify();
+        }
+
         [Test,ExpectedException(typeof(InvalidOperationException))]
         public void Stop1()
         {
@@ -116,5 +133,6 @@ namespace VimCoreTest
             _view.Selection.Select(new SnapshotSpan(_view.TextSnapshot, 0, 7), false);
             Assert.AreEqual(_view.GetLineSpan(0, 1), _tracker.SelectedLines);
         }
+
     }
 }

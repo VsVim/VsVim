@@ -71,19 +71,13 @@ type internal SelectionTracker
         _running <- true
         _textChangedHandler.Add()
         _caretChangedHandler.Add()
-        _anchorPoint <- ViewUtil.GetCaretPoint _textView 
 
-        // Update the selection based on our current information
-        _originalSelectionMode <- _textView.Selection.Mode
-        _textView.Selection.Mode <- 
-            match _mode with
-            | SelectionMode.Character -> TextSelectionMode.Stream
-            | SelectionMode.Line -> TextSelectionMode.Stream
-            | SelectionMode.Block -> TextSelectionMode.Box
-            | _ -> failwith "Invaild enum value"
-
-        // Do the initial selection update
-        x.UpdateSelectionCore()
+        let selection = _textView.Selection
+        _originalSelectionMode <- selection.Mode
+        if selection.IsEmpty then
+            // Do the initial selection update
+            _anchorPoint <- ViewUtil.GetCaretPoint _textView 
+            x.UpdateSelection()
 
     /// Called when selection should no longer be tracked.  Must be paired with Start calls or
     /// we will stay attached to certain event handlers
@@ -102,6 +96,14 @@ type internal SelectionTracker
 
     /// Update the selection based on the current state of the view
     member private x.UpdateSelectionCore() = 
+        let desiredMode = 
+            match _mode with
+            | SelectionMode.Character -> TextSelectionMode.Stream
+            | SelectionMode.Line -> TextSelectionMode.Stream
+            | SelectionMode.Block -> TextSelectionMode.Box
+            | _ -> failwith "Invaild enum value"
+        if _textView.Selection.Mode <> desiredMode then _textView.Selection.Mode <- desiredMode
+
         let selectStandard() = 
             let first = VirtualSnapshotPoint(_anchorPoint)
             let last = _textView.Caret.Position.VirtualBufferPosition
