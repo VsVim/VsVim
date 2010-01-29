@@ -28,3 +28,5 @@ module internal Resources =
     let Range_Invalid msg = sprintf "Invalid Range: %s" msg
     let Range_MarkMissingIdentifier = Range_Invalid "Missing mark after '"
     let Range_MarkNotValidInFile = Range_Invalid "Mark is invalid in this file"
+    let Range_EmptyRange = Range_Invalid "Expected a range"
+    let Range_ConnectionMissing = Range_Invalid "Expected , or ;"
