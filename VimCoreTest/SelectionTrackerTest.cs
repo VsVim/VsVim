@@ -40,7 +40,7 @@ namespace VimCoreTest
             Create(SelectionMode.Character, "foo");
             _view.TextBuffer.Replace(new Span(0, 1), "h");
             Assert.AreEqual(0, _tracker.AnchorPoint.Position);
-            Assert.AreSame(_view.TextSnapshot, _tracker.AnchorPoint.Snapshot);
+            Assert.AreSame(_view.TextSnapshot, _tracker.AnchorPoint.Position.Snapshot);
         }
 
         [Test, Description("Shouldn't track if it's Stopp'd")]
@@ -49,7 +49,7 @@ namespace VimCoreTest
             Create(SelectionMode.Character, "foo");
             _tracker.Stop();
             _view.TextBuffer.Replace(new Span(0, 1), "h");
-            Assert.AreNotSame(_view.TextSnapshot, _tracker.AnchorPoint.Snapshot);
+            Assert.AreNotSame(_view.TextSnapshot, _tracker.AnchorPoint.Position.Snapshot);
         }
 
         [Test]
@@ -64,7 +64,7 @@ namespace VimCoreTest
         public void Start2()
         {
             Create(SelectionMode.Character, "foo");
-            Assert.AreEqual(new SnapshotPoint(_view.TextSnapshot, 0), _tracker.AnchorPoint);
+            Assert.AreEqual(new SnapshotPoint(_view.TextSnapshot, 0), _tracker.AnchorPoint.Position);
         }
 
         [Test, Description("Don't reset the selection if there already is one.  Breaks actions like CTRL+A")]
@@ -74,6 +74,7 @@ namespace VimCoreTest
             var selection = new Mock<ITextSelection>(MockBehavior.Strict);
             selection.SetupGet(x => x.IsEmpty).Returns(false).Verifiable();
             selection.SetupGet(x => x.Mode).Returns(TextSelectionMode.Stream);
+            selection.SetupGet(x => x.AnchorPoint).Returns(new VirtualSnapshotPoint(realView.TextSnapshot, 0));
             var view = new Mock<ITextView>(MockBehavior.Strict);
             view.SetupGet(x => x.TextBuffer).Returns(realView.TextBuffer);
             view.SetupGet(x => x.Caret).Returns(realView.Caret);
@@ -82,6 +83,16 @@ namespace VimCoreTest
             var tracker = new SelectionTracker(view.Object, SelectionMode.Character);
             tracker.Start();
             selection.Verify();
+        }
+
+        [Test, Description("In a selection it should take the anchor point of the selection")]
+        public void Start4()
+        {
+            var view = EditorUtil.CreateView("foo bar baz");
+            view.Selection.Select(new SnapshotSpan(view.TextSnapshot, 1, 3), false);
+            var tracker = new SelectionTracker(view, SelectionMode.Character);
+            tracker.Start();
+            Assert.AreEqual(view.Selection.AnchorPoint.Position.Position, tracker.AnchorPoint.Position.Position);
         }
 
         [Test,ExpectedException(typeof(InvalidOperationException))]

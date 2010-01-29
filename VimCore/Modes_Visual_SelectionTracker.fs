@@ -20,7 +20,7 @@ type internal SelectionTracker
         _textView : ITextView,
         _mode : SelectionMode ) as this =
 
-    let mutable _anchorPoint = SnapshotPoint(_textView.TextSnapshot, 0) 
+    let mutable _anchorPoint = VirtualSnapshotPoint(_textView.TextSnapshot, 0) 
 
     /// TextSelectionMode of the Editor before Start was called
     let mutable _originalSelectionMode = _textView.Selection.Mode
@@ -76,8 +76,11 @@ type internal SelectionTracker
         _originalSelectionMode <- selection.Mode
         if selection.IsEmpty then
             // Do the initial selection update
-            _anchorPoint <- ViewUtil.GetCaretPoint _textView 
+            let caretPoint = ViewUtil.GetCaretPoint _textView 
+            _anchorPoint <- VirtualSnapshotPoint(caretPoint)
             x.UpdateSelection()
+        else 
+            _anchorPoint <- selection.AnchorPoint
 
     /// Called when selection should no longer be tracked.  Must be paired with Start calls or
     /// we will stay attached to certain event handlers
@@ -105,7 +108,7 @@ type internal SelectionTracker
         if _textView.Selection.Mode <> desiredMode then _textView.Selection.Mode <- desiredMode
 
         let selectStandard() = 
-            let first = VirtualSnapshotPoint(_anchorPoint)
+            let first = _anchorPoint
             let last = _textView.Caret.Position.VirtualBufferPosition
             let last = 
                 if first = last then
@@ -118,14 +121,14 @@ type internal SelectionTracker
         | SelectionMode.Character -> selectStandard()
         | SelectionMode.Line ->
             let caret = ViewUtil.GetCaretPoint _textView
-            if _anchorPoint.Position < caret.Position then 
-                let first = _anchorPoint.GetContainingLine().Start
+            if _anchorPoint.Position.Position < caret.Position then 
+                let first = _anchorPoint.Position.GetContainingLine().Start
                 let last = caret.GetContainingLine().End
                 let span = SnapshotSpan(first,last)
                 _textView.Selection.Select(span, false)
             else 
                 let first = caret.GetContainingLine().Start
-                let last = _anchorPoint.GetContainingLine().End
+                let last = _anchorPoint.Position.GetContainingLine().End
                 let span = SnapshotSpan(first,last)
                 _textView.Selection.Select(span, false)
         | SelectionMode.Block -> selectStandard()
@@ -145,13 +148,15 @@ type internal SelectionTracker
     /// When the text is changed it invalidates the anchor point.  It needs to be forwarded to
     /// the next version of the buffer
     member private x.OnTextChanged (args:TextContentChangedEventArgs) =
-        let point = _anchorPoint.Snapshot.CreateTrackingPoint(_anchorPoint.Position, PointTrackingMode.Negative)
+        let point = _anchorPoint.Position
+        let trackingPoint = point.Snapshot.CreateTrackingPoint(point.Position, PointTrackingMode.Negative)
         try
-            _anchorPoint <- point.GetPoint(args.After)
+            let point = trackingPoint.GetPoint(args.After)
+            _anchorPoint <- VirtualSnapshotPoint(point)
         with
             | :? System.ArgumentOutOfRangeException -> 
                 // If it's not present in the new version of the buffer then just go to point 0.
-                _anchorPoint <- SnapshotPoint(args.After, 0)
+                _anchorPoint <- VirtualSnapshotPoint(args.After, 0)
             | e -> reraise()
         x.UpdateSelection()
 
