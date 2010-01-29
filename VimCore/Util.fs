@@ -52,3 +52,39 @@ module internal Utils =
             | :? System.ArgumentException -> None
 
     
+module internal ListUtil =
+
+    let divide l = (l |> List.head), (l |> List.tail)
+
+    /// Try and get the head of the list.  Will return the head of list and tail 
+    /// as separate elements.  Returns None if the list is empty
+    let tryHead l = 
+        if List.isEmpty l then None
+        else Some (divide l)
+
+    let tryHeadOnly l = 
+        if List.isEmpty l then None
+        else Some (List.head l)
+
+    let tryProcessHead l ifNonEmpty ifEmpty =
+        if List.isEmpty l then 
+            let head,tail = divide l
+            ifNonEmpty head tail
+        else
+            ifEmpty()
+
+module internal SeqUtil =
+    
+    /// Try and get the head of the Sequence.  Will return the head of list and tail 
+    /// as separate elements.  Returns None if the list is empty
+    let tryHead l = 
+        if Seq.isEmpty l then None
+        else 
+            let head = Seq.head l
+            let tail = l |> Seq.skip 1 
+            Some (head,tail)
+
+    let tryHeadOnly l = 
+        if Seq.isEmpty l then None
+        else Some (Seq.head l)
+        

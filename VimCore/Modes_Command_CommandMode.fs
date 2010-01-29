@@ -12,6 +12,7 @@ type CommandMode
     ( 
         _data : IVimBuffer, 
         _operations : IOperations ) = 
+
     let mutable _command : System.String = System.String.Empty
 
     /// Reverse list of the inputted commands
@@ -22,26 +23,11 @@ type CommandMode
     member private x.Input = List.rev _input
     member private x.BadMessage = sprintf "Cannot run \"%s\"" _command
 
-    member private x.Peek list =
-        if list |> List.isEmpty then None
-        else Some (List.head list)
-
-    member private x.SkipHead (cmd:KeyInput list) ifEmpty ifNotEmpty =
-        if cmd |> List.isEmpty then ifEmpty
-        else ifNotEmpty (cmd |> List.head) (cmd |> List.tail)
-
-    member private x.SkipConditional (cmd:KeyInput list) (toSkip:char) ifFound ifNotFound =
-        let ifNotEmpty (head:KeyInput) rest = 
-            if head.Char = toSkip then ifFound rest
-            else ifNotFound
-        x.SkipHead cmd ifNotFound ifNotEmpty
-
     member private x.SkipWhitespace (cmd:KeyInput list) =
-        if cmd |> List.isEmpty then cmd
-        else 
-            let head = cmd |> List.head 
+        let inner (head:KeyInput) tail = 
             if System.Char.IsWhiteSpace head.Char then x.SkipWhitespace (cmd |> List.tail)
             else cmd
+        ListUtil.tryProcessHead cmd inner (fun () -> cmd)
         
     member private x.SkipPast (suffix:seq<char>) (cmd:list<KeyInput>) =
         let cmd = x.SkipWhitespace cmd |> Seq.ofList
@@ -57,30 +43,21 @@ type CommandMode
 
     /// Try and skip the ! operator
     member private x.SkipBang (cmd:KeyInput list) =
-        match cmd |> List.isEmpty with
-        | true -> (false,cmd)
-        | false ->
-            let head = cmd |> List.head 
-            if head.Char = '!' then (true, cmd |> List.tail)
+        let inner (head:KeyInput) tail = 
+            if head.Char = '!' then (true, tail)
             else (false,cmd)
+        ListUtil.tryProcessHead cmd inner (fun () -> (false,cmd))
 
     /// Parse the register out of the stream.  Will return default if no register is 
     /// specified
     member private x.SkipRegister (cmd:KeyInput list) =
         let map = _data.RegisterMap
-        match cmd |> List.isEmpty with
-        | true -> (map.DefaultRegister,cmd)
-        | false -> 
-            let head = cmd |> List.head
+        let inner (head:KeyInput) tail =
             match head.IsDigit,map.IsRegisterName (head.Char) with
             | true,_ -> (map.DefaultRegister, cmd)
-            | false,true -> (map.GetRegister(head.Char), cmd |> List.tail)
+            | false,true -> (map.GetRegister(head.Char), tail)
             | false,false -> (map.DefaultRegister, cmd)
-
-    member private x.TryParseNext (cmd:KeyInput List) next = 
-        if cmd |> List.isEmpty then 
-            _data.VimHost.UpdateStatus("Invalid Command String")
-        else next (cmd |> List.head) (cmd |> List.tail) 
+        ListUtil.tryProcessHead cmd inner (fun () -> (map.DefaultRegister, cmd))
 
     /// Parse out the :join command
     member private x.ParseJoin (rest:KeyInput list) (range:Range option) =
@@ -290,7 +267,7 @@ type CommandMode
         | 'y' -> x.ParseYank rest range
         | 'p' -> 
             let next head tail = x.ParsePChar head tail range
-            x.TryParseNext rest next
+            ListUtil.tryProcessHead rest next (fun () -> _data.VimHost.UpdateStatus x.BadMessage)
         | '<' -> x.ParseShiftLeft rest range
         | '>' -> x.ParseShiftRight rest range
         | 'd' -> x.ParseDelete rest range
@@ -302,7 +279,7 @@ type CommandMode
     member private x.ParseInput (originalInputs : KeyInput list) =
         let withRange (range:Range option) (inputs:KeyInput list) =
             let next head tail = x.ParseCommand head tail range
-            x.TryParseNext inputs next
+            ListUtil.tryProcessHead inputs next (fun () -> _data.VimHost.UpdateStatus x.BadMessage)
         let point = ViewUtil.GetCaretPoint _data.TextView
         match RangeUtil.ParseRange point _data.MarkMap originalInputs with
         | ParseRangeResult.Succeeded(range, inputs) -> 
