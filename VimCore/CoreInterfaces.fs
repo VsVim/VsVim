@@ -150,3 +150,4 @@ and IMarkMap =
     abstract DeleteAllMarks : unit -> unit
     abstract DeleteAllMarksForBuffer : IVimBuffer -> unit
 
+

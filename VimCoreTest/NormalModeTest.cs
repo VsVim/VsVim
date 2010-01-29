@@ -377,6 +377,54 @@ namespace VimCoreTest
             _operations.Verify();
         }
 
+        [Test]
+        public void Move_0()
+        {
+            CreateBuffer("foo bar baz");
+            _editorOperations.Setup(x => x.MoveToStartOfLine(false)).Verifiable();
+            _view.MoveCaretTo(3);
+            _mode.Process('0');
+            _editorOperations.Verify();
+        }
+
+        [Test]
+        public void Move_Shift6_1()
+        {
+            CreateBuffer("foo bar");
+            _view.MoveCaretTo(3);
+            _editorOperations.Setup(x => x.MoveToStartOfLineAfterWhiteSpace(false)).Verifiable();
+            _mode.Process('^');
+            _editorOperations.Verify();
+        }
+
+        [Test]
+        public void Move_Shift6_2()
+        {
+            CreateBuffer("   foo bar");
+            _editorOperations.Setup(x => x.MoveToStartOfLineAfterWhiteSpace(false)).Verifiable();
+            _mode.Process('^');
+            _editorOperations.Verify();
+
+        }
+
+        [Test]
+        public void Move_Shift4_1()
+        {
+            CreateBuffer("foo", "bar");
+            _editorOperations.Setup(x => x.MoveToEndOfLine(false)).Verifiable();
+            _mode.Process('$');
+            _editorOperations.Verify();
+        }
+
+        [Test]
+        public void Move_gUnderscore_1()
+        {
+            CreateBuffer("foo bar ");
+            _editorOperations.Setup(x => x.MoveToLastNonWhiteSpaceCharacter(false)).Verifiable();
+            _mode.Process("g_");
+            _editorOperations.Verify();
+        }
+
         #endregion
 
         #region Scroll

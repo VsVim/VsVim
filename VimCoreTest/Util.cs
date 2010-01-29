@@ -77,9 +77,19 @@ namespace VimCoreTest
 
         #region ITextView
 
+        public static ITextSnapshotLine GetLine(this ITextView textView, int line)
+        {
+            return textView.TextSnapshot.GetLineFromLineNumber(line);
+        }
+
         public static SnapshotSpan GetLineSpan(this ITextView textView, int startLine, int endLine)
         {
             return textView.TextSnapshot.GetLineSpan(startLine, endLine);
+        }
+
+        public static CaretPosition MoveCaretTo(this ITextView textView, int position)
+        {
+            return textView.Caret.MoveTo(new SnapshotPoint(textView.TextSnapshot, position));
         }
 
         #endregion 

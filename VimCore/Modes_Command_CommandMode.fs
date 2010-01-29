@@ -87,7 +87,6 @@ type CommandMode
             let count = endLine - startLine
             _operations.Join range.Start kind count |> ignore
 
-
     /// Parse out the :edit commnad
     member private x.ParseEdit (rest:KeyInput list) = 
         let _,rest = 

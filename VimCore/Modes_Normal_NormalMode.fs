@@ -163,14 +163,6 @@ type internal NormalMode
                     this.WaitForMotion ki d inner2
         inner
                             
-    member this.MoveEndOfLine (d:NormalModeData) =
-        ViewUtil.MoveCaretToEndOfLine d.VimBufferData.TextView |> ignore
-        NormalModeResult.Complete
-    
-    member this.MoveStartOfLine (d:NormalModeData) =
-        ViewUtil.MoveCaretToBeginingOfLine d.VimBufferData.TextView |> ignore
-        NormalModeResult.Complete
-    
     /// Move the caret as a result of the user hitting enter.  The caret should jump to the
     /// start of the next line unless we are at the end of the buffer
     member this.MoveForEnter (view:ITextView) (host:IVimHost)=
@@ -223,6 +215,7 @@ type internal NormalMode
                 _operations.Join caret Modes.JoinKind.KeepEmptySpaces d.Count |> ignore
             | 'p' -> _operations.PasteAfterCursor d.Register.StringValue 1 d.Register.Value.OperationKind true |> ignore
             | 'P' -> _operations.PasteBeforeCursor d.Register.StringValue 1 true |> ignore
+            | '_' -> _bufferData.EditorOperations.MoveToLastNonWhiteSpaceCharacter(false)
             | _ ->
                 d.VimBufferData.VimHost.Beep()
                 ()
@@ -298,6 +291,10 @@ type internal NormalMode
             _operations.DeleteCharacterAtCursor d.Count d.Register
             NormalModeResult.Complete
 
+        let wrapComplete func = 
+            func()
+            NormalModeResult.Complete
+
         let l : list<Operation> = [
             {   KeyInput=InputUtil.CharToKeyInput('x');
                 RunFunc=deleteCharAtCursor; }
@@ -324,9 +321,11 @@ type internal NormalMode
                             _operations.PasteBeforeCursor d.Register.StringValue d.Count false
                             NormalModeResult.Complete); };
             {   KeyInput=InputUtil.CharToKeyInput('$');
-                RunFunc=(fun d -> this.MoveEndOfLine d) };
+                RunFunc=(fun d -> wrapComplete (fun () -> _bufferData.EditorOperations.MoveToEndOfLine(false))) };
             {   KeyInput=InputUtil.CharToKeyInput('^');
-                RunFunc=(fun d -> this.MoveStartOfLine d) };
+                RunFunc=(fun d -> wrapComplete (fun () -> _bufferData.EditorOperations.MoveToStartOfLineAfterWhiteSpace(false))) };
+            {   KeyInput=InputUtil.CharToKeyInput('0');
+                RunFunc=(fun d -> wrapComplete (fun () -> _bufferData.EditorOperations.MoveToStartOfLine(false))) };
             {   KeyInput=InputUtil.CharToKeyInput('/');
                 RunFunc=(fun d -> this.BeginIncrementalSearch SearchKind.ForwardWithWrap) };
             {   KeyInput=InputUtil.CharToKeyInput('?');
@@ -455,7 +454,7 @@ type internal NormalMode
         RegisterComplete(reg)
 
     member this.StartCore (d:NormalModeData) (ki:KeyInput) =
-        if ki.IsDigit then this.GetCount d ki
+        if ki.IsDigit && ki.Char <> '0' then this.GetCount d ki
         elif ki.Key = Key.OemQuotes && ki.ModifierKeys = ModifierKeys.Shift then 
             let f (d:NormalModeData) ki = this.GetRegister (d.VimBufferData.RegisterMap) ki
             NeedMore2(f)
