@@ -12,6 +12,7 @@ using System.Windows.Input;
 using Microsoft.VisualStudio.TextManager.Interop;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text;
+using Microsoft.VisualStudio.Editor;
 
 namespace VsVim
 {
@@ -100,8 +101,16 @@ namespace VsVim
             {
                 var guid = typeof(Microsoft.VisualStudio.OLE.Interop.IServiceProvider).GUID;
                 ows.GetSite(ref guid, out ptr);
+                if (ptr == IntPtr.Zero)
+                {
+                    return null;
+                }
                 var site = Marshal.GetObjectForIUnknown(ptr);
-                return (Microsoft.VisualStudio.OLE.Interop.IServiceProvider)site;
+                if (site == null)
+                {
+                    return null;
+                }
+                return site as Microsoft.VisualStudio.OLE.Interop.IServiceProvider;
             }
             finally
             {
@@ -178,18 +187,7 @@ namespace VsVim
         #endregion
 
         #region IServiceProvider
-
-        private static Microsoft.VisualStudio.OLE.Interop.IServiceProvider s_serviceProvider;
-
-        /// <summary>
-        /// Temporary Hack until it's possible to MEF import an IServiceProvider
-        /// </summary>
-        public static Microsoft.VisualStudio.OLE.Interop.IServiceProvider StaticServiceProvider
-        {
-            get { return s_serviceProvider; }
-            set { s_serviceProvider = value; }
-        }
-
+        
         public static TInterface GetService<TService, TInterface>(this Microsoft.VisualStudio.OLE.Interop.IServiceProvider sp)
         {
             return (TInterface)GetService(sp, typeof(TService).GUID, typeof(TInterface).GUID);
@@ -270,6 +268,25 @@ namespace VsVim
 
         #endregion
 
+        #region IVsEditorAdaptersFactoryService
 
+        public static Microsoft.VisualStudio.OLE.Interop.IServiceProvider GetServiceProvider(this IVsEditorAdaptersFactoryService adapters, ITextBuffer textBuffer)
+        {
+            var vsTextLines = adapters.GetBufferAdapter(textBuffer) as IVsTextLines;
+            if (vsTextLines == null)
+            {
+                return null;
+            }
+
+            var objectWithSite = vsTextLines as IObjectWithSite;
+            if (objectWithSite == null)
+            {
+                return null;
+            }
+
+            return objectWithSite.GetServiceProvider();
+        }
+
+        #endregion
     }
 }

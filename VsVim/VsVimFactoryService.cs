@@ -9,6 +9,8 @@ using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.TextManager.Interop;
 using Microsoft.VisualStudio.OLE.Interop;
 using VsVim.Properties;
+using IServiceProvider = Microsoft.VisualStudio.OLE.Interop.IServiceProvider;
+using Microsoft.VisualStudio.Text;
 
 namespace VsVim
 {
@@ -20,6 +22,22 @@ namespace VsVim
         private readonly IVimHost _vimHost;
         private readonly Dictionary<ITextView, IVimBuffer> _map = new Dictionary<ITextView, IVimBuffer>();
         private readonly Dictionary<IVimBuffer, VsCommandFilter> _filterMap = new Dictionary<IVimBuffer, VsCommandFilter>();
+
+        /// <summary>
+        /// Temporary Hack is to calculate IServiceProvider on the fly.  Once we hit RC we can simply 
+        /// do a MEF import here
+        /// </summary>
+        private IServiceProvider _serviceProvider;
+
+        internal IServiceProvider ServiceProvider
+        {
+            get { return _serviceProvider; }
+            set
+            {
+                _serviceProvider = value;
+                MaybeUpdateVimHostServiceProvider();
+            }
+        }
 
         [ImportingConstructor]
         internal VsVimFactoryService(
@@ -35,26 +53,13 @@ namespace VsVim
 
         #region Private
 
-        private void MaybeUpdateStaticServiceProvider(object source)
+        private void MaybeUpdateVimHostServiceProvider()
         {
-            if (Extensions.StaticServiceProvider != null)
-            {
-                return;
-            }
-
-            var objectWithSite = source as IObjectWithSite;
-            if (objectWithSite == null)
-            {
-                return;
-            }
-
-            Extensions.StaticServiceProvider = objectWithSite.GetServiceProvider();
-
             // Update the host as well
             var vimHost = _vimHost as VsVimHost;
-            if (vimHost != null && vimHost.DTE == null)
+            if (vimHost != null && vimHost.DTE == null && ServiceProvider != null)
             {
-                vimHost.OnServiceProvider(Extensions.StaticServiceProvider);
+                vimHost.OnServiceProvider(ServiceProvider);
             }
         }
 
@@ -87,15 +92,10 @@ namespace VsVim
 
         private IVimBuffer CreateBuffer(IWpfTextView textView)
         {
+            GetOrUpdateServiceProvider(textView.TextBuffer);
             var vsTextLines = _adaptersFactory.GetBufferAdapter(textView.TextBuffer) as IVsTextLines;
-            if (vsTextLines == null)
-            {
-                throw new InvalidOperationException(Resources.VsVimFactoryService_UnableToCreateBuffer);
-            }
-
-            MaybeUpdateStaticServiceProvider(vsTextLines);
-
-            var buffer = _vimFactoryService.Vim.CreateBuffer(textView, vsTextLines.GetFileName());
+            var fileName = vsTextLines != null ? vsTextLines.GetFileName() : String.Empty;
+            var buffer = _vimFactoryService.Vim.CreateBuffer(textView, fileName);
 
             // Have to wait for Aggregate focus before being able to set the VsCommandFilter
             textView.GotAggregateFocus += new EventHandler(OnGotAggregateFocus);
@@ -128,6 +128,30 @@ namespace VsVim
             }
 
             return CreateBuffer(textView);
+        }
+
+        public IServiceProvider GetOrUpdateServiceProvider(ITextBuffer buffer)
+        {
+            if (ServiceProvider != null)
+            {
+                return ServiceProvider;
+            }
+
+            var vsTextLines = _adaptersFactory.GetBufferAdapter(buffer) as IVsTextLines;
+            if (vsTextLines == null)
+            {
+                return null;
+            }
+
+            var objectWithSite = vsTextLines as IObjectWithSite;
+            if (objectWithSite == null)
+            {
+                return null;
+            }
+
+            ServiceProvider = objectWithSite.GetServiceProvider();
+            MaybeUpdateVimHostServiceProvider();
+            return ServiceProvider;
         }
 
         #endregion

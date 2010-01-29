@@ -95,5 +95,14 @@ namespace VsVim.Properties {
                 return ResourceManager.GetString("VsVimFactoryService_UnableToCreateBuffer", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Unable to get an instance of IServiceProvider.
+        /// </summary>
+        internal static string VsVimFactoryService_UnableToGetServiceProvider {
+            get {
+                return ResourceManager.GetString("VsVimFactoryService_UnableToGetServiceProvider", resourceCulture);
+            }
+        }
     }
 }

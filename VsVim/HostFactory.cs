@@ -29,8 +29,6 @@ namespace VsVim
         private IVsVimFactoryService _factory = null;
         [Import]
         private KeyBindingService _keyBindingService = null;
-        [Import]
-        private IVsEditorAdaptersFactoryService _adaptersFactory = null;
 
         public HostFactory()
         {
@@ -38,19 +36,12 @@ namespace VsVim
 
         public void TextViewCreated(IWpfTextView textView)
         {
-            var vsTextLines = _adaptersFactory.GetBufferAdapter(textView.TextBuffer) as IVsTextLines;
-            if (vsTextLines == null)
+            var sp = _factory.GetOrUpdateServiceProvider(textView.TextBuffer);
+            if (sp == null)
             {
                 return;
             }
 
-            var objectWithSite = vsTextLines as IObjectWithSite;
-            if (objectWithSite == null)
-            {
-                return;
-            }
-
-            var sp = objectWithSite.GetServiceProvider();
             var buffer = _factory.GetOrCreateBuffer(textView);
 
             // Run the key binding check now

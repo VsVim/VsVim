@@ -129,4 +129,7 @@
   <data name="VsVimFactoryService_UnableToCreateBuffer" xml:space="preserve">
     <value>Unable to create Vim for the current buffer</value>
   </data>
+  <data name="VsVimFactoryService_UnableToGetServiceProvider" xml:space="preserve">
+    <value>Unable to get an instance of IServiceProvider</value>
+  </data>
 </root>

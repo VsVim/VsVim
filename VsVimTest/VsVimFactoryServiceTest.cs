@@ -39,13 +39,7 @@ namespace VsVimTest
                 _vimHost.Object);
             _service = _serviceRaw;
             _sp = new FakeServiceProvider();
-            Extensions.StaticServiceProvider = _sp;
-        }
-
-        [TearDown]
-        public void TearDown()
-        {
-            Extensions.StaticServiceProvider = null;
+            _serviceRaw.ServiceProvider = _sp;
         }
 
         [Test]
