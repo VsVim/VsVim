@@ -38,6 +38,7 @@ namespace VimCoreTest
         public void Create2(
             ModeKind kind=ModeKind.VisualCharacter, 
             IVimHost host= null,
+            IBlockCaret caret = null,
             params string[] lines)
         {
             _buffer = EditorUtil.CreateBuffer(lines);
@@ -55,11 +56,12 @@ namespace VimCoreTest
             _operations = new Mock<IOperations>(MockBehavior.Strict);
             _operations.SetupGet(x => x.SelectionTracker).Returns(_tracker.Object);
             host = host ?? new FakeVimHost();
+            caret = caret ?? MockObjectFactory.CreateBlockCaret().Object;
             _bufferData = MockObjectFactory.CreateVimBuffer(
                 _view.Object,
                 "test",
                 MockObjectFactory.CreateVim(_map,host:host).Object,
-                MockObjectFactory.CreateBlockCaret().Object,
+                caret,
                 _editOpts.Object);
             _modeRaw = new Vim.Modes.Visual.VisualMode(Tuple.Create<IVimBuffer, IOperations, ModeKind>(_bufferData.Object, _operations.Object, kind));
             _mode = _modeRaw;
@@ -144,7 +146,7 @@ namespace VimCoreTest
         {
             var host = new Mock<IVimHost>(MockBehavior.Strict);
             host.Setup(x => x.UpdateStatus(Resources.VisualMode_Banner)).Verifiable();
-            Create2(ModeKind.VisualCharacter, host.Object, "foo");
+            Create2(kind: ModeKind.VisualCharacter, host: host.Object, lines: "foo");
             host.Verify();
         }
 
@@ -153,12 +155,33 @@ namespace VimCoreTest
         {
             var host = new Mock<IVimHost>(MockBehavior.Strict);
             host.Setup(x => x.UpdateStatus(Resources.VisualMode_Banner)).Verifiable();
-            Create2(ModeKind.VisualCharacter, host.Object, "foo");
+            Create2(kind: ModeKind.VisualCharacter, host: host.Object, lines: "foo");
             host.Setup(x => x.UpdateStatus(String.Empty)).Verifiable();
             _tracker.Setup(x => x.Stop()).Verifiable();
             _mode.OnLeave();
             host.Verify();
             _tracker.Verify();
+        }
+
+        [Test]
+        public void Caret1()
+        {
+            var caret = new Mock<IBlockCaret>(MockBehavior.Strict);
+            caret.Setup(x => x.Show()).Verifiable();
+            Create2(caret: caret.Object, lines: "foo");
+            caret.Verify();
+        }
+
+        [Test]
+        public void Caret2()
+        {
+            var caret = new Mock<IBlockCaret>(MockBehavior.Strict);
+            caret.Setup(x => x.Show()).Verifiable();
+            Create2(caret: caret.Object, lines: "foo");
+            caret.Setup(x => x.Hide()).Verifiable();
+            _tracker.Setup(x => x.Stop());
+            _mode.OnLeave();
+            caret.Verify();
         }
 
         #region Movement

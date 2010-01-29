@@ -179,8 +179,10 @@ type internal VisualMode
             x.ResetCommandData()
             x.EnsureOperationsMap()
             _selectionTracker.Start()
+            _buffer.BlockCaret.Show()
             _buffer.VimHost.UpdateStatus(Resources.VisualMode_Banner)
         member x.OnLeave () = 
+            _buffer.BlockCaret.Hide()
             _selectionTracker.Stop()
             _buffer.VimHost.UpdateStatus(System.String.Empty)
 
