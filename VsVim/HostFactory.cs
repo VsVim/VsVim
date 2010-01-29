@@ -109,8 +109,7 @@ namespace VsVim
             var vimHost = _vimHost as VsVimHost;
             if (vimHost != null && vimHost.DTE == null)
             {
-                var dte = sp.GetService<SDTE, EnvDTE.DTE>();
-                vimHost.DTE = dte;
+                vimHost.OnServiceProvider(sp);
             }
         }
     }

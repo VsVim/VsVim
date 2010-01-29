@@ -14,6 +14,8 @@ using Microsoft.VisualStudio.UI.Undo;
 using Microsoft.VisualStudio.Language.Intellisense;
 using System.ComponentModel.Composition;
 using VsVim.Properties;
+using Microsoft.VisualStudio.Editor;
+using Microsoft.VisualStudio;
 
 namespace VsVim
 {
@@ -25,24 +27,40 @@ namespace VsVim
     internal sealed class VsVimHost : IVimHost
     {
         private readonly IUndoHistoryRegistry _undoRegistry;
+        private readonly IVsEditorAdaptersFactoryService _editorAdaptersFactoryService;
 
         /// <summary>
-        /// Until we hit RC, we cannot import IServiceProvider which is where we get the DTE instance
-        /// from.  Yet we need to provide IVimHost as a MEF component.  As a temporary work around
+        /// Until we hit RC, we cannot import IServiceProvider which is where we get the DTE and other
+        /// instances from.  Yet we need to provide IVimHost as a MEF component.  As a temporary work around
         /// we will leave this as a mutable field and bail out whenever it's not NULL
         /// </summary>
         private _DTE _dte;
+        private IVsTextManager _textManager;
 
         internal _DTE DTE
         {
             get { return _dte; }
-            set { _dte = value; }
         }
 
         [ImportingConstructor]
-        internal VsVimHost(IUndoHistoryRegistry undoRegistry)
+        internal VsVimHost(IUndoHistoryRegistry undoRegistry, IVsEditorAdaptersFactoryService editorAdaptersFactoryService)
         {
             _undoRegistry = undoRegistry;
+            _editorAdaptersFactoryService = editorAdaptersFactoryService;
+        }
+
+        internal void OnServiceProvider(Microsoft.VisualStudio.OLE.Interop.IServiceProvider sp)
+        {
+            Init(sp.GetService<SDTE, EnvDTE.DTE>(),
+                _textManager = sp.GetService<SVsTextManager, IVsTextManager>());
+        }
+
+        internal void Init(
+            _DTE dte,
+            IVsTextManager textManager)
+        {
+            _dte = dte;
+            _textManager = textManager;
         }
 
         private void UpdateStatus(string text)
@@ -71,7 +89,7 @@ namespace VsVim
 
             var names = _dte.GetProjects().SelectMany(x => x.GetProjecItems()).Select(x => x.Name).ToList();
             var list = _dte.GetProjectItems(file);
-            
+
             if (list.Any())
             {
                 var item = list.First();
@@ -161,13 +179,29 @@ namespace VsVim
             }
         }
 
-        bool IVimHost.NavigateTo(string fileName, int line, int column)
+        bool IVimHost.NavigateTo(VirtualSnapshotPoint point)
         {
-            // TODO: Implement
-            return false;
+            if (_textManager == null)
+            {
+                return false;
+            }
+
+            var snapshotLine = point.Position.GetContainingLine();
+            var column = point.Position.Position - snapshotLine.Start.Position;
+            var vsBuffer = _editorAdaptersFactoryService.GetBufferAdapter(point.Position.Snapshot.TextBuffer);
+            var viewGuid = VSConstants.LOGVIEWID_Code;
+            var hr = _textManager.NavigateToLineAndColumn(
+                vsBuffer,
+                ref viewGuid,
+                snapshotLine.LineNumber,
+                column,
+                snapshotLine.LineNumber,
+                column);
+            return ErrorHandler.Succeeded(hr);
         }
 
         #endregion
+
 
     }
 }

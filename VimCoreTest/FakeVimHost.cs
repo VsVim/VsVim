@@ -21,7 +21,7 @@ namespace VimCoreTest
         public bool GoToDefinitionReturn { get; set; }
         public bool IsCompletionWindowActive { get; set; }
         public int DismissCompletionWindowCount { get; set; }
-        public Tuple<string, int, int> NavigateToData { get; set; }
+        public VirtualSnapshotPoint NavigateToData { get; set; }
         public bool NavigateToReturn { get; set; }
 
         [ImportingConstructor]
@@ -66,9 +66,9 @@ namespace VimCoreTest
         }
 
 
-        bool IVimHost.NavigateTo(string fileName, int line, int column)
+        bool IVimHost.NavigateTo(VirtualSnapshotPoint point)
         {
-            NavigateToData = Tuple.Create(fileName, line, column);
+            NavigateToData = point;
             return NavigateToReturn;
         }
 

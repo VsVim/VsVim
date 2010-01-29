@@ -206,7 +206,7 @@ namespace VimCoreTest
             var map = new MarkMap();
             map.SetMark(buffer.Object, new SnapshotPoint(view.TextSnapshot, 0), 'A');
             var host = new Mock<IVimHost>(MockBehavior.Strict);
-            host.Setup(x => x.NavigateTo("foo", 0, 0)).Returns(true);
+            host.Setup(x => x.NavigateTo(new VirtualSnapshotPoint(view.TextSnapshot,0))).Returns(true);
             var res = _operations.JumpToMark('A', map, host.Object);
             Assert.IsTrue(res.IsSucceeded);
         }
@@ -221,7 +221,7 @@ namespace VimCoreTest
             var map = new MarkMap();
             map.SetMark(buffer.Object, new SnapshotPoint(view.TextSnapshot, 0), 'A');
             var host = new Mock<IVimHost>(MockBehavior.Strict);
-            host.Setup(x => x.NavigateTo("foo", 0, 0)).Returns(false);
+            host.Setup(x => x.NavigateTo(new VirtualSnapshotPoint(view.TextSnapshot,0))).Returns(false);
             var res = _operations.JumpToMark('A', map, host.Object);
             Assert.IsTrue(res.IsFailed);
             Assert.AreEqual(Resources.Common_MarkInvalid, res.AsFailed().Item);

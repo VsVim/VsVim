@@ -95,10 +95,8 @@ type internal CommonOperations
                 | None -> Failed Resources.Common_MarkNotSet
                 | Some(buf,point) -> 
                     if buf.TextBuffer = _textView.TextBuffer then jumpLocal point
-                    else 
-                        let line = point.Position.GetContainingLine()
-                        let column = point.VirtualSpaces + (point.Position.Position - line.Start.Position)
-                        match host.NavigateTo buf.Name (line.LineNumber) column with
+                    else  
+                        match host.NavigateTo point with
                         | true -> Succeeded
                         | false -> Failed Resources.Common_MarkInvalid
             else 
