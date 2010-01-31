@@ -226,6 +226,18 @@ type MarkMap() =
         _localMap.Remove(buffer) |> ignore
         _globalList <- _globalList |> Seq.filter (fun (b,_,_) -> b.TextBuffer <> buffer)
 
+    member x.GetLocalMarks (buffer:ITextBuffer) = 
+        let tss = buffer.CurrentSnapshot
+        buffer
+        |> x.GetLocalList
+        |> Seq.map (fun (c,m) -> (c,MarkMap.MarkToPoint tss m))
+        |> Seq.choose (fun (c,opt) -> if Option.isSome opt then Some (c, Option.get opt) else None)
+
+    member x.GetGlobalMarks () = 
+        _globalList 
+        |> Seq.map (fun (b,c,m) -> (c,MarkMap.MarkToPoint b.TextSnapshot m))
+        |> Seq.choose (fun (c,opt) -> if Option.isSome opt then Some (c, Option.get opt) else None)
+
     interface IMarkMap with
         member x.TrackedBuffers = x.TrackedBuffers
         member x.IsLocalMark c = MarkMap.IsLocalMark c
@@ -235,6 +247,8 @@ type MarkMap() =
         member x.GetGlobalMark c = x.GetGlobalMark c
         member x.SetMark buffer point c = x.SetMark buffer point c 
         member x.SetLocalMark point c = x.SetLocalMark point c
+        member x.GetLocalMarks buffer = x.GetLocalMarks buffer
+        member x.GetGlobalMarks () = x.GetGlobalMarks()
         member x.DeleteLocalMark buf c = x.DeleteLocalMark buf c 
         member x.DeleteAllMarks () = x.DeleteAllMarks()
         member x.DeleteAllMarksForBuffer buf = x.DeleteAllMarksForBuffer buf.TextBuffer

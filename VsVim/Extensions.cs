@@ -13,6 +13,7 @@ using Microsoft.VisualStudio.TextManager.Interop;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Editor;
+using Microsoft.VisualStudio;
 
 namespace VsVim
 {
@@ -167,7 +168,7 @@ namespace VsVim
             try
             {
                 // GUID_VsBufferMoniker
-                var monikerId = new Guid(0x978a8e17, 0x4df8, 0x432a, 150, 0x23, 0xd5, 0x30, 0xa2, 100, 0x52, 0xbc);
+                var monikerId = Constants.VsUserData_FileNameMoniker;
                 var userData = (IVsUserData)lines;
                 object data = null;
                 if (Microsoft.VisualStudio.VSConstants.S_OK != userData.GetData(ref monikerId, out data)

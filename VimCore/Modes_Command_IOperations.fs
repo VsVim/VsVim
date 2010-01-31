@@ -22,7 +22,7 @@ type SubstituteFlags =
     | Invalid = 0xf000
 
 
-/// Normal mode operations
+/// Command mode operations
 type IOperations =
     /// Handle the :edit command
     abstract EditFile : fileName : string -> unit
@@ -32,6 +32,9 @@ type IOperations =
 
     /// Substitute Command implementation
     abstract Substitute : pattern : string -> replace : string -> SnapshotSpan -> SubstituteFlags -> unit
+
+    /// Print out the marks in the context of the current buffer
+    abstract PrintMarks : IMarkMap -> unit
 
     interface Modes.ICommonOperations
 

@@ -197,6 +197,12 @@ type CommandMode
         | true -> _data.VimHost.Redo _data.TextBuffer 1
         | false -> _data.VimHost.UpdateStatus x.BadMessage
 
+    member private x.ParseMarks rest =
+        let rest = rest |> x.SkipPast "arks"
+        match Seq.isEmpty rest with
+        | true -> _operations.PrintMarks _data.MarkMap
+        | false -> _data.VimHost.UpdateStatus x.BadMessage
+
     member private x.ParseSubstitute (rest:KeyInput list) (range:Range option) =
 
         // Used to parse out the flags on the :s command
@@ -273,6 +279,7 @@ type CommandMode
         | 's' -> x.ParseSubstitute rest range
         | 'u' -> x.ParseUndo rest 
         | 'r' -> x.ParseRedo rest 
+        | 'm' -> x.ParseMarks rest
         | _ -> _data.VimHost.UpdateStatus(x.BadMessage)
     
     member private x.ParseInput (originalInputs : KeyInput list) =

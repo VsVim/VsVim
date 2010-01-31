@@ -116,3 +116,25 @@ type internal DefaultOperations
             match Utils.TryCreateRegex pattern options with
             | None -> _host.UpdateStatus (Resources.CommandMode_PatternNotFound pattern)
             | Some (regex) -> doReplace regex
+
+        member x.PrintMarks (markMap:IMarkMap) =    
+            let printMark (ident:char) (point:VirtualSnapshotPoint) =
+                let textLine = point.Position.GetContainingLine()
+                let lineNum = textLine.LineNumber
+                let column = point.Position.Position - textLine.Start.Position
+                let column = if point.IsInVirtualSpace then column + point.VirtualSpaces else column
+                let name = _host.GetName _textView.TextBuffer
+                sprintf " %c   %5d%5d%s" ident lineNum column name
+
+            let localSeq = markMap.GetLocalMarks _textView.TextBuffer |> Seq.sortBy (fun (c,_) -> c)
+            let globalSeq = markMap.GetGlobalMarks() |> Seq.sortBy (fun (c,_) -> c)
+            let all =
+                localSeq 
+                |> Seq.append globalSeq
+                |> Seq.map (fun (c,p) -> printMark c p )
+            "mark line  col file/text" 
+                |> Seq.singleton
+                |> Seq.append all
+                |> _host.UpdateLongStatus 
+
+

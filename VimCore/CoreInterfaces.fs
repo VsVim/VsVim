@@ -145,6 +145,12 @@ and IMarkMap =
     /// Get the current value of the specified global mark
     abstract GetGlobalMark : char -> (IVimBuffer * VirtualSnapshotPoint) option
 
+    /// Get all of the local marks for the buffer
+    abstract GetLocalMarks : ITextBuffer -> (char * VirtualSnapshotPoint) seq
+
+    /// Get all of the available global marks
+    abstract GetGlobalMarks : unit -> (char * VirtualSnapshotPoint) seq
+
     /// Delete the specified local mark on the ITextBuffer
     abstract DeleteLocalMark : ITextBuffer -> char -> bool
     abstract DeleteAllMarks : unit -> unit

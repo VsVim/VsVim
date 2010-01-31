@@ -650,5 +650,28 @@ namespace VimCoreTest
             Assert.AreEqual(_modeRaw.BadMessage, _host.Status);
         }
 
+        [Test]
+        public void Marks1()
+        {
+            Create("foo");
+            _operations.Setup(x => x.PrintMarks(_bufferData.Object.MarkMap)).Verifiable();
+            ProcessWithEnter("marks");
+        }
+
+        [Test]
+        public void Marks2()
+        {
+            Create("foo");
+            ProcessWithEnter("mar");
+            Assert.AreEqual(_modeRaw.BadMessage, _host.Status);
+        }
+
+        [Test]
+        public void Marks3()
+        {
+            Create("foo");
+            ProcessWithEnter("marksaoeu");
+            Assert.AreEqual(_modeRaw.BadMessage, _host.Status);
+        }
     }
 }
