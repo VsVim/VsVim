@@ -32,7 +32,7 @@ namespace VimCoreTest
             var tuple = Utils.EditorUtil.CreateViewAndOperations(lines);
             m_view = tuple.Item1;
             var service = EditorUtil.FactoryService;
-            m_buffer = service.vim.CreateBuffer(m_view, "test");
+            m_buffer = service.vim.CreateBuffer(m_view);
             m_host = (FakeVimHost)service.vim.Host;
         }
 

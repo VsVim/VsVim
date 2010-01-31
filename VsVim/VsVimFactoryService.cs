@@ -93,9 +93,7 @@ namespace VsVim
         private IVimBuffer CreateBuffer(IWpfTextView textView)
         {
             GetOrUpdateServiceProvider(textView.TextBuffer);
-            var vsTextLines = _adaptersFactory.GetBufferAdapter(textView.TextBuffer) as IVsTextLines;
-            var fileName = vsTextLines != null ? vsTextLines.GetFileName() : String.Empty;
-            var buffer = _vimFactoryService.Vim.CreateBuffer(textView, fileName);
+            var buffer = _vimFactoryService.Vim.CreateBuffer(textView);
 
             // Have to wait for Aggregate focus before being able to set the VsCommandFilter
             textView.GotAggregateFocus += new EventHandler(OnGotAggregateFocus);

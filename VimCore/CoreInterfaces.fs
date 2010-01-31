@@ -26,7 +26,7 @@ type IVim =
     abstract MarkMap : IMarkMap
     abstract RegisterMap : IRegisterMap
     abstract Settings : VimSettings
-    abstract CreateBuffer : IWpfTextView -> bufferName:string -> IVimBuffer
+    abstract CreateBuffer : IWpfTextView -> IVimBuffer
 
     /// Get the IVimBuffer associated with the given view
     abstract GetBuffer : IWpfTextView -> IVimBuffer option

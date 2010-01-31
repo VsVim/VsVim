@@ -48,7 +48,6 @@ namespace VimCoreTest
             _rawBuffer = new VimBuffer(
                 _vim.Object,
                 _view,
-                "Unknown",
                 _editorOperations,
                 _blockCaret);
             _rawBuffer.AddMode(_normalMode.Object);

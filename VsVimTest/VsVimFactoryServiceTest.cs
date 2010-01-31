@@ -56,7 +56,7 @@ namespace VsVimTest
             var view = EditorUtil.CreateView("foo bar");
             var vimBuffer = new Mock<IVimBuffer>(MockBehavior.Strict);
             _adapters.Setup(x => x.GetBufferAdapter(view.TextBuffer)).Returns((IVsTextLines)null);
-            _vim.Setup(x => x.CreateBuffer(view, String.Empty)).Returns(vimBuffer.Object);
+            _vim.Setup(x => x.CreateBuffer(view)).Returns(vimBuffer.Object);
             var ret = _service.GetOrCreateBuffer(view);
             Assert.AreSame(vimBuffer.Object, ret);
         }
@@ -68,7 +68,7 @@ namespace VsVimTest
             var view = EditorUtil.CreateView("foo bar");
             var vimBuffer = new Mock<IVimBuffer>(MockBehavior.Strict);
             _adapters.Setup(x => x.GetBufferAdapter(view.TextBuffer)).Returns((IVsTextLines)null);
-            _vim.Setup(x => x.CreateBuffer(view, String.Empty)).Returns(vimBuffer.Object);
+            _vim.Setup(x => x.CreateBuffer(view)).Returns(vimBuffer.Object);
             var ret = _service.GetOrCreateBuffer(view);
             Assert.AreSame(vimBuffer.Object, ret);
             IVimBuffer ret2;

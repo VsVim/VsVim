@@ -9,7 +9,4 @@ module internal ViewUtil =
     val MoveCaretToPosition : ITextView -> int -> CaretPosition
     val MoveCaretToPoint : ITextView -> SnapshotPoint -> CaretPosition
     val MoveCaretToVirtualPoint : ITextView -> VirtualSnapshotPoint -> CaretPosition
-    val MoveCaretToEndOfLine : ITextView -> CaretPosition
-    val MoveCaretToBeginingOfLine : ITextView -> CaretPosition
-    val ClearSelection : ITextView -> unit
 

@@ -198,7 +198,7 @@ type internal NormalMode
             | ScrollDirection.Up -> max (0) (curLine - lines)
             | _ -> failwith "Invalid enum value"
         let newCaret = tss.GetLineFromLineNumber(newLine).Start
-        ViewUtil.ClearSelection this.TextView
+        _bufferData.EditorOperations.ResetSelection()
         this.TextView.Caret.MoveTo(newCaret) |> ignore
         this.TextView.Caret.EnsureVisible()
         NormalModeResult.Complete
@@ -273,14 +273,14 @@ type internal NormalMode
             match count with
                 | 1 -> NormalModeResult.Complete
                 | _ -> runCount (count-1) 
-        ViewUtil.ClearSelection view                
+        _bufferData.EditorOperations.ResetSelection()
         runCount count
 
     member private this.BuildMotionOperationsMap =
         let wrap func = 
             fun (d:NormalModeData) -> 
                 func d.Count
-                ViewUtil.ClearSelection _bufferData.TextView
+                _bufferData.EditorOperations.ResetSelection()
                 NormalModeResult.Complete
         let factory = Vim.Modes.CommandFactory(_operations)
         factory.CreateMovementCommands() 
@@ -344,7 +344,7 @@ type internal NormalMode
                 RunFunc=(fun _ -> NormalModeResult.SwitchMode (ModeKind.Command)); };
             {   KeyInput=InputUtil.CharToKeyInput('A');
                 RunFunc=(fun d ->
-                    ViewUtil.MoveCaretToEndOfLine (d.VimBufferData.TextView) |> ignore  
+                    _bufferData.EditorOperations.MoveToEndOfLine(false)
                     NormalModeResult.SwitchMode (ModeKind.Insert)) };
             {   KeyInput=InputUtil.CharToKeyInput('u');
                 RunFunc=(fun d -> 

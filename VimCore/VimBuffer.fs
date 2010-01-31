@@ -37,7 +37,6 @@ type internal VimBuffer
     (
         _vim : IVim,
         _textView : IWpfTextView,
-        _name : string,
         _editorOperations : IEditorOperations,
         _blockCaret : IBlockCaret) =
 
@@ -82,7 +81,7 @@ type internal VimBuffer
         member x.TextSnapshot = _textView.TextSnapshot
         member x.BlockCaret = _blockCaret
         member x.EditorOperations = _editorOperations
-        member x.Name = _name
+        member x.Name = _vim.Host.GetName _textView.TextBuffer
         member x.MarkMap = _vim.MarkMap
         member x.ModeKind = x.Mode.ModeKind
         member x.Mode = x.Mode

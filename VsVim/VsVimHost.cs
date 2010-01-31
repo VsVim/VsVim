@@ -200,6 +200,16 @@ namespace VsVim
             return ErrorHandler.Succeeded(hr);
         }
 
+        string IVimHost.GetName(ITextBuffer buffer)
+        {
+            var vsTextLines = _editorAdaptersFactoryService.GetBufferAdapter(buffer) as IVsTextLines;
+            if (vsTextLines == null)
+            {
+                return String.Empty;
+            }
+            return vsTextLines.GetFileName();
+        }
+
         #endregion
 
 

@@ -76,5 +76,10 @@ namespace VimCoreTest
         {
             RedoCount += count;
         }
+
+        string IVimHost.GetName(ITextBuffer textBuffer)
+        {
+            return String.Empty;
+        }
     }
 }

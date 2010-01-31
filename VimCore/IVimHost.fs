@@ -16,5 +16,6 @@ type IVimHost =
     abstract Undo : ITextBuffer -> count:int -> unit
     abstract Redo : ITextBuffer -> count:int -> unit
     abstract GoToDefinition : unit -> bool
+    abstract GetName : ITextBuffer -> string
     abstract NavigateTo : point : VirtualSnapshotPoint -> bool
 

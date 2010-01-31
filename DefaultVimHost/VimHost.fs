@@ -13,3 +13,4 @@ type VimHost() =
         member x.Redo _ _ = ()
         member x.GoToDefinition() = false
         member x.NavigateTo _ = false
+        member x.GetName _ = ""

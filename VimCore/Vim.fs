@@ -23,7 +23,7 @@ type internal Vim
 
     let _bufferMap = new System.Collections.Generic.Dictionary<IWpfTextView, IVimBuffer>()
 
-    member x.CreateVimBufferCore view name = 
+    member x.CreateVimBufferCore view = 
         if _bufferMap.ContainsKey(view) then invalidArg "view" Resources.Vim_ViewAlreadyHasBuffer
 
         let editorFormatMap = _editorFormatMapService.GetEditorFormatMap(view :> ITextView)
@@ -33,7 +33,6 @@ type internal Vim
             VimBuffer( 
                 x :> IVim,
                 view,
-                name,
                 editOperations,
                 caret)
         let buffer = bufferRaw :> IVimBuffer
@@ -81,8 +80,7 @@ type internal Vim
         member x.MarkMap = _markMap
         member x.RegisterMap = _registerMap :> IRegisterMap
         member x.Settings = _settings
-        member x.CreateBuffer view bufferName =
-            x.CreateVimBufferCore view bufferName 
+        member x.CreateBuffer view = x.CreateVimBufferCore view 
         member x.RemoveBuffer view = _bufferMap.Remove(view)
         member x.GetBuffer view = x.GetBufferCore view
         member x.GetBufferForBuffer textBuffer =
