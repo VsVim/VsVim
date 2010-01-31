@@ -1,15 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <VisualState xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" ShowCheckBoxes="false">
-  <TopNode>[0-1479]VimCoreTest.IncrementalSearchTest</TopNode>
-  <SelectedNode>[0-1479]VimCoreTest.IncrementalSearchTest</SelectedNode>
+  <TopNode>[0-1000]C:\Users\JaredP\VsVim\VsVim.nunit</TopNode>
+  <SelectedNode>[0-1000]C:\Users\JaredP\VsVim\VsVim.nunit</SelectedNode>
   <ExcludeCategories>false</ExcludeCategories>
   <Nodes>
     <Node UniqueName="[0-1000]C:\Users\JaredP\VsVim\VsVim.nunit" Expanded="true" />
-    <Node UniqueName="[0-1569]C:\Users\JaredP\VsVim\VimCoreTest\bin\Debug\VimCoreTest.dll" Expanded="true" />
-    <Node UniqueName="[0-1570]VimCoreTest" Expanded="true" />
-    <Node UniqueName="[0-1479]VimCoreTest.IncrementalSearchTest" Expanded="true" />
-    <Node UniqueName="[0-1305]VimCoreTest.IntegrationTests" Expanded="true" />
-    <Node UniqueName="[0-1627]C:\Users\JaredP\VsVim\VsVimTest\bin\Debug\VsVimTest.dll" Expanded="true" />
-    <Node UniqueName="[0-1628]VsVimTest" Expanded="true" />
+    <Node UniqueName="[0-1670]VimCoreTest" Expanded="true" />
+    <Node UniqueName="[0-1064]VimCoreTest.CommandModeTest" Expanded="true" />
+    <Node UniqueName="[0-1744]C:\Users\JaredP\VsVim\VsVimTest\bin\Debug\VsVimTest.dll" Expanded="true" />
+    <Node UniqueName="[0-1745]VsVimTest" Expanded="true" />
   </Nodes>
 </VisualState>
