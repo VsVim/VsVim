@@ -16,6 +16,7 @@ using System.ComponentModel.Composition;
 using VsVim.Properties;
 using Microsoft.VisualStudio.Editor;
 using Microsoft.VisualStudio;
+using System.Windows;
 
 namespace VsVim
 {
@@ -108,7 +109,15 @@ namespace VsVim
 
         void IVimHost.UpdateLongStatus(IEnumerable<string> statusLines)
         {
-            // TODO: Implement a WPF popup window
+            var builder = new StringBuilder();
+            foreach (var item in statusLines)
+            {
+                builder.AppendLine(item);
+            }
+            MessageBox.Show(
+                caption: "Vim Status Update",
+                messageBoxText: builder.ToString(),
+                button: MessageBoxButton.OK);
         }
 
         void IVimHost.Undo(ITextBuffer buffer, int count)

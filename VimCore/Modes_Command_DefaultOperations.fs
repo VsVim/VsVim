@@ -128,13 +128,10 @@ type internal DefaultOperations
 
             let localSeq = markMap.GetLocalMarks _textView.TextBuffer |> Seq.sortBy (fun (c,_) -> c)
             let globalSeq = markMap.GetGlobalMarks() |> Seq.sortBy (fun (c,_) -> c)
-            let all =
-                localSeq 
-                |> Seq.append globalSeq
-                |> Seq.map (fun (c,p) -> printMark c p )
-            "mark line  col file/text" 
-                |> Seq.singleton
-                |> Seq.append all
-                |> _host.UpdateLongStatus 
+            localSeq 
+            |> Seq.append globalSeq
+            |> Seq.map (fun (c,p) -> printMark c p )
+            |> Seq.append ( "mark line  col file/text"  |> Seq.singleton)
+            |> _host.UpdateLongStatus 
 
 
