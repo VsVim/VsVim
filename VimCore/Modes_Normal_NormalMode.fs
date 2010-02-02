@@ -325,23 +325,39 @@ type internal NormalMode
             yield (InputUtil.CharToKeyInput('Y'), (fun count reg -> _operations.YankLines count reg))
         }
 
+        let doNothing _ _ = ()
+        let changeOpts = seq {
+            yield (InputUtil.CharToKeyInput('i'), ModeKind.Insert, doNothing)
+            yield (InputUtil.CharToKeyInput(':'), ModeKind.Command, doNothing)
+            yield (InputUtil.CharToKeyInput('A'), ModeKind.Insert, (fun _ _ -> _bufferData.EditorOperations.MoveToEndOfLine(false)))
+            yield (InputUtil.CharToKeyInput('o'), ModeKind.Insert, (fun _ _ -> _operations.InsertLineBelow() |> ignore))
+            yield (InputUtil.CharToKeyInput('O'), ModeKind.Insert, (fun _ _ -> _operations.InsertLineAbove() |> ignore))
+            yield (InputUtil.CharToKeyInput('v'), ModeKind.VisualCharacter, doNothing)
+            yield (InputUtil.CharToKeyInput('V'), ModeKind.VisualLine, doNothing)
+            yield (KeyInput('q', Key.Q, ModifierKeys.Control), ModeKind.VisualBlock, doNothing)
+            yield (InputUtil.CharToKeyInput('s'), ModeKind.Insert,
+                (fun count reg -> 
+                    let tss = this.TextView.TextSnapshot
+                    let start = ViewUtil.GetCaretPoint this.TextView
+                    let endPoint = 
+                        if start.Position + count > tss.Length then SnapshotPoint(tss, tss.Length)
+                        else start.Add(count)
+                    let span = SnapshotSpan(start,endPoint)
+                    _operations.DeleteSpan span MotionKind.Exclusive OperationKind.CharacterWise reg |> ignore ))
+            yield (InputUtil.CharToKeyInput('C'), ModeKind.Insert, 
+                (fun count reg ->
+                    let point = ViewUtil.GetCaretPoint this.TextView
+                    let span = TssUtil.GetLineRangeSpanIncludingLineBreak point count
+                    let span = SnapshotSpan(point, span.End)
+                    _operations.DeleteSpan span MotionKind.Inclusive OperationKind.CharacterWise reg |> ignore))
+            yield (InputUtil.CharToKeyInput('S'), ModeKind.Insert,
+                (fun count reg ->
+                    let point = ViewUtil.GetCaretPoint this.TextView
+                    let span = TssUtil.GetLineRangeSpanIncludingLineBreak point count
+                    _operations.DeleteSpan span MotionKind.Inclusive OperationKind.LineWise reg |> ignore) )
+        }
+
         let l : list<Operation> = [
-            {   KeyInput=InputUtil.CharToKeyInput('i');
-                RunFunc=(fun _ -> NormalModeResult.SwitchMode (ModeKind.Insert)) };
-            {   KeyInput=InputUtil.CharToKeyInput(':');
-                RunFunc=(fun _ -> NormalModeResult.SwitchMode (ModeKind.Command)); };
-            {   KeyInput=InputUtil.CharToKeyInput('A');
-                RunFunc=(fun d ->
-                    _bufferData.EditorOperations.MoveToEndOfLine(false)
-                    NormalModeResult.SwitchMode (ModeKind.Insert)) };
-            {   KeyInput=InputUtil.CharToKeyInput('o');
-                RunFunc=(fun d -> 
-                    _operations.InsertLineBelow() |> ignore
-                    NormalModeResult.SwitchMode ModeKind.Insert); }
-            {   KeyInput=InputUtil.CharToKeyInput('O');
-                RunFunc=(fun d -> 
-                    _operations.InsertLineAbove() |> ignore
-                    NormalModeResult.SwitchMode ModeKind.Insert); };
             {   KeyInput=InputUtil.CharToKeyInput('/');
                 RunFunc=(fun d -> this.BeginIncrementalSearch SearchKind.ForwardWithWrap) } 
             {   KeyInput=InputUtil.CharToKeyInput('?');
@@ -358,39 +374,12 @@ type internal NormalMode
                 RunFunc=this.CharZCommand; };
             {   KeyInput=InputUtil.CharToKeyInput('r');
                 RunFunc=this.ReplaceChar; }
-            {   KeyInput=InputUtil.CharToKeyInput('v');
-                RunFunc=(fun _ -> NormalModeResult.SwitchMode ModeKind.VisualCharacter); }
-            {   KeyInput=InputUtil.CharToKeyInput('V');
-                RunFunc=(fun _ -> NormalModeResult.SwitchMode ModeKind.VisualLine); }
-            {   KeyInput=KeyInput('q', Key.Q, ModifierKeys.Control);
-                RunFunc=(fun _ -> NormalModeResult.SwitchMode ModeKind.VisualBlock) }
-            {   KeyInput=InputUtil.CharToKeyInput('s');
-                RunFunc=(fun d -> 
-                    let tss = this.TextView.TextSnapshot
-                    let start = ViewUtil.GetCaretPoint this.TextView
-                    let endPoint = 
-                        if start.Position + d.Count > tss.Length then SnapshotPoint(tss, tss.Length)
-                        else start.Add(d.Count)
-                    let span = SnapshotSpan(start,endPoint)
-                    _operations.DeleteSpan span MotionKind.Exclusive OperationKind.CharacterWise d.Register |> ignore
-                    NormalModeResult.SwitchMode ModeKind.Insert) }
-            {   KeyInput=InputUtil.CharToKeyInput('C');
-                RunFunc=(fun d ->
-                    let point = ViewUtil.GetCaretPoint this.TextView
-                    let span = TssUtil.GetLineRangeSpanIncludingLineBreak point d.Count
-                    let span = SnapshotSpan(point, span.End)
-                    _operations.DeleteSpan span MotionKind.Inclusive OperationKind.CharacterWise d.Register |> ignore
-                    NormalModeResult.SwitchMode ModeKind.Insert) }
-            {   KeyInput=InputUtil.CharToKeyInput('S');
-                RunFunc=(fun d ->
-                    let point = ViewUtil.GetCaretPoint this.TextView
-                    let span = TssUtil.GetLineRangeSpanIncludingLineBreak point d.Count
-                    _operations.DeleteSpan span MotionKind.Inclusive OperationKind.LineWise d.Register |> ignore
-                    NormalModeResult.SwitchMode ModeKind.Insert) }
             ]
+
         let l =
             (waitOps |> Seq.map (fun (ki,func) -> {KeyInput=ki;RunFunc=(fun _ -> NeedMore2(func)) }))
             |> Seq.append (completeOps |> Seq.map (fun (ki,func) -> {KeyInput=ki;RunFunc=(fun d -> func d.Count d.Register; NormalModeResult.Complete)}))
+            |> Seq.append (changeOpts |> Seq.map (fun (ki,kind,func) -> {KeyInput=ki;RunFunc=(fun d -> func d.Count d.Register; NormalModeResult.SwitchMode kind)}))
             |> Seq.append (l |> Seq.ofList )
             |> Seq.append (this.BuildMotionOperationsMap)
             |> Seq.map (fun d -> d.KeyInput,d)
