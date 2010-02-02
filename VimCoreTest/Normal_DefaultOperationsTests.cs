@@ -390,5 +390,78 @@ namespace VimCoreTest
             Assert.AreEqual("baz", line.GetTextIncludingLineBreak());
         }
 
+        [Test]
+        public void DeleteLines1()
+        {
+            Create("foo", "bar", "baz");
+            var tss = _view.TextSnapshot;
+            var reg =new Register('c');
+            _operations.DeleteLines(2, reg);
+            Assert.AreEqual(tss.GetLineSpan(0, 1).GetText(), reg.StringValue);
+            Assert.AreEqual(1, _view.TextSnapshot.LineCount);
+            Assert.AreEqual(OperationKind.LineWise, reg.Value.OperationKind);
+        }
+
+        [Test]
+        public void DeleteLines2()
+        {
+            Create("foo", "bar", "baz", "jaz");
+            var tss = _view.TextSnapshot;
+            _view.Caret.MoveTo(tss.GetLineFromLineNumber(1).Start);
+            var reg =new Register('c');
+            _operations.DeleteLines(2, reg);
+            Assert.AreEqual(tss.GetLineSpan(1, 2).GetText(), reg.StringValue);
+            Assert.AreEqual(OperationKind.LineWise, reg.Value.OperationKind);
+        }
+
+        [Test]
+        public void DeleteLines3()
+        {
+            Create("foo", "bar", "baz", "jaz");
+            var tss = _view.TextSnapshot;
+            _view.Caret.MoveTo(tss.GetLineFromLineNumber(1).Start);
+            var reg =new Register('c');
+            _operations.DeleteLines(3000, reg);
+            Assert.AreEqual(tss.GetLineSpan(1, tss.LineCount-1).GetText(), reg.StringValue);
+            Assert.AreEqual(OperationKind.LineWise, reg.Value.OperationKind);
+        }
+
+        [Test]
+        public void DeleteLinesFromCursor1()
+        {
+            Create("foo", "bar", "baz", "jaz");
+            var tss = _view.TextSnapshot;
+            var reg = new Register('c');
+            _operations.DeleteLinesFromCursor(1, reg);
+            Assert.AreEqual(String.Empty, _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
+            Assert.AreEqual("foo", reg.StringValue);
+            Assert.AreEqual(OperationKind.CharacterWise, reg.Value.OperationKind);
+        }
+
+        [Test]
+        public void DeleteLinesFromCursor2()
+        {
+            Create("foo", "bar", "baz", "jaz");
+            var tss = _view.TextSnapshot;
+            var reg = new Register('c');
+            _operations.DeleteLinesFromCursor(2, reg);
+            Assert.AreEqual(String.Empty, _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
+            Assert.AreEqual("foo" + Environment.NewLine + "bar", reg.StringValue);
+            Assert.AreEqual(OperationKind.CharacterWise, reg.Value.OperationKind);
+        }
+
+        [Test]
+        public void DeleteLinesFromCursor3()
+        {
+            Create("foo", "bar", "baz", "jaz");
+            var tss = _view.TextSnapshot;
+            _view.MoveCaretTo(1);
+            var reg = new Register('c');
+            _operations.DeleteLinesFromCursor(2, reg);
+            Assert.AreEqual("f", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
+            Assert.AreEqual("oo" + Environment.NewLine + "bar", reg.StringValue);
+            Assert.AreEqual(OperationKind.CharacterWise, reg.Value.OperationKind);
+        }
+
     }
 }

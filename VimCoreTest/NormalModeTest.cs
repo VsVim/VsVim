@@ -862,11 +862,7 @@ namespace VimCoreTest
         public void Edit_C_1()
         {
             CreateBuffer("foo", "bar", "baz");
-            var span = _view.TextSnapshot.GetLineFromLineNumber(0).ExtentIncludingLineBreak;
-            _operations
-                .Setup(x => x.DeleteSpan(span, MotionKind.Inclusive, OperationKind.CharacterWise, _map.DefaultRegister))
-                .Returns(_view.TextSnapshot)
-                .Verifiable();
+            _operations.Setup(x => x.DeleteLinesFromCursor(1, _map.DefaultRegister)).Verifiable();
             var res = _mode.Process("C");
             Assert.IsTrue(res.IsSwitchMode);
             Assert.AreEqual(ModeKind.Insert, res.AsSwitchMode().Item);
@@ -877,12 +873,7 @@ namespace VimCoreTest
         public void Edit_C_2()
         {
             CreateBuffer("foo", "bar", "baz");
-            var span = _view.TextSnapshot.GetLineFromLineNumber(0).ExtentIncludingLineBreak;
-            var reg = _map.GetRegister('b');
-            _operations
-                .Setup(x => x.DeleteSpan(span, MotionKind.Inclusive, OperationKind.CharacterWise, reg))
-                .Returns(_view.TextSnapshot)
-                .Verifiable();
+            _operations.Setup(x => x.DeleteLinesFromCursor(1, _map.GetRegister('b'))).Verifiable();
             var res = _mode.Process("\"bC");
             Assert.IsTrue(res.IsSwitchMode);
             Assert.AreEqual(ModeKind.Insert, res.AsSwitchMode().Item);
@@ -893,15 +884,8 @@ namespace VimCoreTest
         public void Edit_C_3()
         {
             CreateBuffer("foo", "bar", "baz");
-            var start = new SnapshotPoint(_view.TextSnapshot, 1);
-            _view.Caret.MoveTo(start);
-            var span = new SnapshotSpan(start, start.GetContainingLine().EndIncludingLineBreak);
-            var reg = _map.GetRegister('b');
-            _operations
-                .Setup(x => x.DeleteSpan(span, MotionKind.Inclusive, OperationKind.CharacterWise, reg))
-                .Returns(_view.TextSnapshot)
-                .Verifiable();
-            var res = _mode.Process("\"bC");
+            _operations.Setup(x => x.DeleteLinesFromCursor(2, _map.GetRegister('b'))).Verifiable();
+            var res = _mode.Process("\"b2C");
             Assert.IsTrue(res.IsSwitchMode);
             Assert.AreEqual(ModeKind.Insert, res.AsSwitchMode().Item);
             _operations.Verify();
@@ -911,11 +895,7 @@ namespace VimCoreTest
         public void Edit_s_1()
         {
             CreateBuffer("foo bar");
-            var span = new SnapshotSpan(_view.TextSnapshot, 0, 1);
-            _operations
-                .Setup(x => x.DeleteSpan(span, MotionKind.Exclusive, OperationKind.CharacterWise, _map.DefaultRegister))
-                .Returns(_view.TextSnapshot)
-                .Verifiable();
+            _operations.Setup(x => x.DeleteCharacterAtCursor(1, _map.DefaultRegister)).Verifiable();
             var res = _mode.Process("s");
             Assert.IsTrue(res.IsSwitchMode);
             Assert.AreEqual(ModeKind.Insert, res.AsSwitchMode().Item);
@@ -926,12 +906,19 @@ namespace VimCoreTest
         public void Edit_s_2()
         {
             CreateBuffer("foo bar");
-            var span = new SnapshotSpan(_view.TextSnapshot, 0, 2);
-            _operations
-                .Setup(x => x.DeleteSpan(span, MotionKind.Exclusive, OperationKind.CharacterWise, _map.DefaultRegister))
-                .Returns(_view.TextSnapshot)
-                .Verifiable();
+            _operations.Setup(x => x.DeleteCharacterAtCursor(2, _map.DefaultRegister)).Verifiable();
             var res = _mode.Process("2s");
+            Assert.IsTrue(res.IsSwitchMode);
+            Assert.AreEqual(ModeKind.Insert, res.AsSwitchMode().Item);
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Edit_s_3()
+        {
+            CreateBuffer("foo bar");
+            _operations.Setup(x => x.DeleteCharacterAtCursor(1, _map.GetRegister('c'))).Verifiable();
+            var res = _mode.Process("\"cs");
             Assert.IsTrue(res.IsSwitchMode);
             Assert.AreEqual(ModeKind.Insert, res.AsSwitchMode().Item);
             _operations.Verify();
@@ -941,11 +928,7 @@ namespace VimCoreTest
         public void Edit_S_1()
         {
             CreateBuffer("foo", "bar", "baz");
-            var span = _view.GetLineSpan(0, 0);
-            _operations
-                .Setup(x => x.DeleteSpan(span, MotionKind.Inclusive, OperationKind.LineWise, _map.DefaultRegister))
-                .Returns(_view.TextSnapshot)
-                .Verifiable();
+            _operations.Setup(x => x.DeleteLines(1, _map.DefaultRegister)).Verifiable();
             var res = _mode.Process("S");
             Assert.IsTrue(res.IsSwitchMode);
             Assert.AreEqual(ModeKind.Insert, res.AsSwitchMode().Item);
@@ -956,12 +939,19 @@ namespace VimCoreTest
         public void Edit_S_2()
         {
             CreateBuffer("foo", "bar", "baz");
-            var span = _view.GetLineSpan(0,1);
-            _operations
-                .Setup(x => x.DeleteSpan(span, MotionKind.Inclusive, OperationKind.LineWise, _map.DefaultRegister))
-                .Returns(_view.TextSnapshot)
-                .Verifiable();
+            _operations.Setup(x => x.DeleteLines(2, _map.DefaultRegister)).Verifiable();
             var res = _mode.Process("2S");
+            Assert.IsTrue(res.IsSwitchMode);
+            Assert.AreEqual(ModeKind.Insert, res.AsSwitchMode().Item);
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Edit_S_3()
+        {
+            CreateBuffer("foo", "bar", "baz");
+            _operations.Setup(x => x.DeleteLines(300, _map.DefaultRegister)).Verifiable();
+            var res = _mode.Process("300S");
             Assert.IsTrue(res.IsSwitchMode);
             Assert.AreEqual(ModeKind.Insert, res.AsSwitchMode().Item);
             _operations.Verify();

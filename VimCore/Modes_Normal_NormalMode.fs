@@ -329,26 +329,9 @@ type internal NormalMode
             yield (InputUtil.CharToKeyInput('v'), ModeKind.VisualCharacter, doNothing)
             yield (InputUtil.CharToKeyInput('V'), ModeKind.VisualLine, doNothing)
             yield (KeyInput('q', Key.Q, ModifierKeys.Control), ModeKind.VisualBlock, doNothing)
-            yield (InputUtil.CharToKeyInput('s'), ModeKind.Insert,
-                (fun count reg -> 
-                    let tss = this.TextView.TextSnapshot
-                    let start = ViewUtil.GetCaretPoint this.TextView
-                    let endPoint = 
-                        if start.Position + count > tss.Length then SnapshotPoint(tss, tss.Length)
-                        else start.Add(count)
-                    let span = SnapshotSpan(start,endPoint)
-                    _operations.DeleteSpan span MotionKind.Exclusive OperationKind.CharacterWise reg |> ignore ))
-            yield (InputUtil.CharToKeyInput('C'), ModeKind.Insert, 
-                (fun count reg ->
-                    let point = ViewUtil.GetCaretPoint this.TextView
-                    let span = TssUtil.GetLineRangeSpanIncludingLineBreak point count
-                    let span = SnapshotSpan(point, span.End)
-                    _operations.DeleteSpan span MotionKind.Inclusive OperationKind.CharacterWise reg |> ignore))
-            yield (InputUtil.CharToKeyInput('S'), ModeKind.Insert,
-                (fun count reg ->
-                    let point = ViewUtil.GetCaretPoint this.TextView
-                    let span = TssUtil.GetLineRangeSpanIncludingLineBreak point count
-                    _operations.DeleteSpan span MotionKind.Inclusive OperationKind.LineWise reg |> ignore) )
+            yield (InputUtil.CharToKeyInput('s'), ModeKind.Insert, (fun count reg -> _operations.DeleteCharacterAtCursor count reg))
+            yield (InputUtil.CharToKeyInput('C'), ModeKind.Insert, (fun count reg -> _operations.DeleteLinesFromCursor count reg))
+            yield (InputUtil.CharToKeyInput('S'), ModeKind.Insert, (fun count reg -> _operations.DeleteLines count reg))
         }
 
         let l =

@@ -89,6 +89,18 @@ type internal DefaultOperations
             let point = point.GetContainingLine().Start
             let span = TssUtil.GetLineRangeSpanIncludingLineBreak point count
             x.CommonImpl.Yank span MotionKind.Inclusive OperationKind.LineWise reg |> ignore
+
+        member x.DeleteLines count reg = 
+            let point = ViewUtil.GetCaretPoint _textView
+            let span = TssUtil.GetLineRangeSpanIncludingLineBreak point count
+            let span = SnapshotSpan(point, span.End)
+            x.CommonImpl.DeleteSpan span MotionKind.Inclusive OperationKind.LineWise reg |> ignore
+
+        member x.DeleteLinesFromCursor count reg =
+            let point = ViewUtil.GetCaretPoint _textView
+            let span = TssUtil.GetLineRangeSpan point count
+            let span = SnapshotSpan(point, span.End)
+            x.CommonImpl.DeleteSpan span MotionKind.Inclusive OperationKind.CharacterWise reg |> ignore
     
         /// Implement the normal mode x command
         member x.DeleteCharacterAtCursor count reg =
