@@ -21,5 +21,11 @@ type IOperations =
     /// Insert a line above the current cursor position and returns the resulting ITextSnapshotLine
     abstract InsertLineAbove : unit -> ITextSnapshotLine
 
+    /// Join the lines at the current caret point
+    abstract JoinAtCaret : count:int -> unit
+
+    /// Go to the definition of the word under the cursor
+    abstract GoToDefinitionWrapper : unit -> unit
+
     interface Modes.ICommonOperations
 

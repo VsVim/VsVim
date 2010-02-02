@@ -12,7 +12,8 @@ open System.Windows.Media
 type internal DefaultOperations
     (
     _textView : ITextView,
-    _operations : IEditorOperations ) =
+    _operations : IEditorOperations,
+    _host : IVimHost ) =
     inherit CommonOperations(_textView, _operations)
 
     member private x.CommonImpl = x :> ICommonOperations
@@ -103,7 +104,17 @@ type internal DefaultOperations
             let range = TssUtil.GetReverseCharacterSpan point count
             x.CommonImpl.DeleteSpan range MotionKind.Exclusive OperationKind.CharacterWise reg |> ignore
     
-      
-    
+        member x.JoinAtCaret count =     
+            let start = ViewUtil.GetCaretPoint _textView
+            let kind = Vim.Modes.JoinKind.RemoveEmptySpaces
+            let res = x.CommonImpl.Join start kind count
+            if not res then
+                _host.Beep()
+
+        member x.GoToDefinitionWrapper () =
+            match x.CommonImpl.GoToDefinition _host with
+            | Vim.Modes.Succeeded -> ()
+            | Vim.Modes.Failed(msg) ->
+                _host.UpdateStatus(msg)
     
     

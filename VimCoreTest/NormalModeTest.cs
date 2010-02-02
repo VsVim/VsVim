@@ -1615,12 +1615,7 @@ namespace VimCoreTest
         public void Join1()
         {
             CreateBuffer("foo", "bar");
-            _operations.Setup(x => x.Join(
-                _view.Caret.Position.BufferPosition,
-                JoinKind.RemoveEmptySpaces,
-                1))
-                .Returns(true)
-                .Verifiable();
+            _operations.Setup(x => x.JoinAtCaret(1)).Verifiable();
             _mode.Process("J");
             _operations.Verify();
         }
@@ -1629,12 +1624,7 @@ namespace VimCoreTest
         public void Join2()
         {
             CreateBuffer("foo", "  bar", "baz");
-            _operations.Setup(x => x.Join(
-                _view.Caret.Position.BufferPosition,
-                JoinKind.RemoveEmptySpaces,
-                2))
-                .Returns(true)
-                .Verifiable();
+            _operations.Setup(x => x.JoinAtCaret(2)).Verifiable();
             _mode.Process("2J");
             _operations.Verify();
         }
@@ -1643,12 +1633,7 @@ namespace VimCoreTest
         public void Join3()
         {
             CreateBuffer("foo", "  bar", "baz");
-            _operations.Setup(x => x.Join(
-                _view.Caret.Position.BufferPosition,
-                JoinKind.RemoveEmptySpaces,
-                3))
-                .Returns(true)
-                .Verifiable();
+            _operations.Setup(x => x.JoinAtCaret(3)).Verifiable();
             _mode.Process("3J");
             _operations.Verify();
         }
@@ -1670,28 +1655,15 @@ namespace VimCoreTest
         [Test]
         public void GoToDefinition1()
         {
-            var host = new FakeVimHost();
             var def = new KeyInput(']', Key.OemCloseBrackets, ModifierKeys.Control);
-            CreateBuffer(host, "foo");
-            _operations.Setup(x => x.GoToDefinition(host)).Returns(It.IsAny<Result>()).Verifiable();
-            _mode.Process(def);
-            _operations.Verify();
-        }
-
-        [Test, Description("When it fails, the status should be updated")]
-        public void GoToDefinition2()
-        {
-            var host = new FakeVimHost();
-            CreateBuffer(host, "foo");
-            var def = new KeyInput(']', Key.OemCloseBrackets, ModifierKeys.Control);
-            host.GoToDefinitionReturn = false;
-            _operations.Setup(x => x.GoToDefinition(host)).Returns(It.IsAny<Result>()).Verifiable();
+            CreateBuffer("foo");
+            _operations.Setup(x => x.GoToDefinitionWrapper()).Verifiable();
             _mode.Process(def);
             _operations.Verify();
         }
 
         [Test]
-        public void GoToDefinition3()
+        public void GoToDefinition2()
         {
             CreateBuffer(s_lines);
             var def = new KeyInput(']', Key.OemCloseBrackets, ModifierKeys.Control);

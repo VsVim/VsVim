@@ -38,7 +38,7 @@ type internal Vim
         let buffer = bufferRaw :> IVimBuffer
 
         let broker = _completionWindowBrokerFactoryService.CreateCompletionWindowBroker view
-        let normalOpts = Modes.Normal.DefaultOperations(view,editOperations) :> Modes.Normal.IOperations
+        let normalOpts = Modes.Normal.DefaultOperations(view,editOperations,_host) :> Modes.Normal.IOperations
         let commandOpts = Modes.Command.DefaultOperations(view,editOperations,_host) :> Modes.Command.IOperations
         let insertOpts = Modes.Insert.DefaultOperations(view,editOperations) :> Modes.ICommonOperations
         let visualOptsFactory kind = 

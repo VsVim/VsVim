@@ -314,20 +314,8 @@ type internal NormalMode
             yield (InputUtil.KeyToKeyInput(Key.Enter), (fun _ _ -> this.MoveForEnter this.TextView _bufferData.VimHost))
             yield (KeyInput('u', Key.U, ModifierKeys.Control), (fun count _ -> this.ScrollCore ScrollDirection.Up count))
             yield (KeyInput('d', Key.D, ModifierKeys.Control), (fun count _ -> this.ScrollCore ScrollDirection.Down count))
-            yield (KeyInput('J', Key.J, ModifierKeys.Shift),
-                (fun count _-> 
-                    let start = ViewUtil.GetCaretPoint this.TextView
-                    let kind = Vim.Modes.JoinKind.RemoveEmptySpaces
-                    let res = _operations.Join start kind count
-                    if not res then
-                        this.VimHost.Beep() ) )
-            yield (KeyInput(']', Key.OemCloseBrackets, ModifierKeys.Control),
-                (fun _ _ ->
-                    match _operations.GoToDefinition this.VimHost with
-                    | Vim.Modes.Succeeded -> ()
-                    | Vim.Modes.Failed(msg) ->
-                        this.VimHost.UpdateStatus(msg)
-                        () ) )
+            yield (KeyInput('J', Key.J, ModifierKeys.Shift), (fun count _ -> _operations.JoinAtCaret count))
+            yield (KeyInput(']', Key.OemCloseBrackets, ModifierKeys.Control), (fun _ _ -> _operations.GoToDefinitionWrapper()))
             yield (InputUtil.CharToKeyInput('Y'), (fun count reg -> _operations.YankLines count reg))
         }
 

@@ -21,6 +21,7 @@ namespace VimCoreTest
         private IOperations _operations;
         private DefaultOperations _operationsRaw;
         private ITextView _view;
+        private Mock<IVimHost> _host;
 
         private void Create(params string[] lines)
         {
@@ -29,15 +30,16 @@ namespace VimCoreTest
 
         private void Create(IEditorOperations editorOpts, params string[] lines)
         {
+            _host = new Mock<IVimHost>(MockBehavior.Strict);
             if (editorOpts == null)
             {
                 var tuple = EditorUtil.CreateViewAndOperations(lines);
-                _operationsRaw = new DefaultOperations(tuple.Item1, tuple.Item2);
+                _operationsRaw = new DefaultOperations(tuple.Item1, tuple.Item2, _host.Object);
             }
             else
             {
                 var view = EditorUtil.CreateView(lines);
-                _operationsRaw = new DefaultOperations(view, editorOpts);
+                _operationsRaw = new DefaultOperations(view, editorOpts, _host.Object);
             }
 
             _operations = _operationsRaw;
