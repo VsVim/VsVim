@@ -49,7 +49,7 @@ type internal NormalMode
             if _incrementalSearch.Process ki then NormalModeResult.Complete
             else NormalModeResult.NeedMore2 inner
         _incrementalSearch.Begin kind
-        NeedMore2 inner
+        inner
     
     member this.FindNextWordUnderCursor (count:int) (kind:SearchKind) =
         let point = ViewUtil.GetCaretPoint this.TextView
@@ -179,14 +179,14 @@ type internal NormalMode
             | true ->
                 host.Beep()
 
-    member private x.ReplaceChar (d:NormalModeData) = 
+    member private x.ReplaceChar = 
         let inner (d:NormalModeData) (ki:KeyInput) =
             if not (_operations.ReplaceChar ki d.Count) then
                 _bufferData.VimHost.Beep()
             _bufferData.BlockCaret.Show()
             NormalModeResult.Complete
         _bufferData.BlockCaret.Hide()
-        NeedMore2(inner)
+        inner
         
     /// Core method for scrolling the editor up or down
     member this.ScrollCore dir count =
@@ -205,7 +205,7 @@ type internal NormalMode
 
     /// Handles commands which begin with g in normal mode.  This should be called when the g char is
     /// already processed
-    member x.CharGCommand (d:NormalModeData) =
+    member x.CharGCommand =
         let inner (d:NormalModeData) (ki:KeyInput) =  
             match ki.Char with
             | 'J' -> 
@@ -219,10 +219,10 @@ type internal NormalMode
                 _bufferData.VimHost.Beep()
                 ()
             NormalModeResult.Complete
-        NeedMore2(inner)
+        inner
 
     /// Implement the commands associated with the z prefix in normal mode
-    member x.CharZCommand (d:NormalModeData) =
+    member x.CharZCommand = 
         let inner (d:NormalModeData) (ki:KeyInput) =  
             if ki.IsNewLine then 
                 _bufferData.EditorOperations.ScrollLineTop()
@@ -240,19 +240,19 @@ type internal NormalMode
                 | 'b' -> _bufferData.EditorOperations.ScrollLineBottom() 
                 | _ -> _bufferData.VimHost.Beep()
             NormalModeResult.Complete
-        NeedMore2(inner)
+        inner
 
-    member x.JumpToMark (d:NormalModeData) =
+    member x.JumpToMark =
         let waitForKey (d:NormalModeData) (ki:KeyInput) =
             let res = _operations.JumpToMark ki.Char _bufferData.MarkMap _bufferData.VimHost
             match res with 
             | Modes.Failed(msg) -> _bufferData.VimHost.UpdateStatus(msg)
             | _ -> ()
             NormalModeResult.Complete
-        NormalModeResult.NeedMore2 waitForKey
+        waitForKey
 
     /// Process the m[a-z] command.  Called when the m has been input so wait for the next key
-    member x.Mark (d:NormalModeData) =
+    member x.Mark = 
         let waitForKey (d2:NormalModeData) (ki:KeyInput) =
             let cursor = ViewUtil.GetCaretPoint _bufferData.TextView
             let res = _operations.SetMark _bufferData cursor ki.Char 
@@ -260,7 +260,7 @@ type internal NormalMode
             | Modes.Failed(_) -> _bufferData.VimHost.Beep()
             | _ -> ()
             NormalModeResult.Complete
-        NormalModeResult.NeedMore2 waitForKey
+        waitForKey
 
     /// Complete the specified motion function            
     member this.MotionFunc view count func =
@@ -289,6 +289,14 @@ type internal NormalMode
             yield (InputUtil.CharToKeyInput('<'), this.ShiftLeft)
             yield (InputUtil.CharToKeyInput('>'), this.ShiftRight)
             yield (InputUtil.CharToKeyInput('c'), this.WaitChange)
+            yield (InputUtil.CharToKeyInput('/'), this.BeginIncrementalSearch SearchKind.ForwardWithWrap) 
+            yield (InputUtil.CharToKeyInput('?'), this.BeginIncrementalSearch SearchKind.BackwardWithWrap)
+            yield (InputUtil.CharToKeyInput('m'), this.Mark)
+            yield (InputUtil.CharToKeyInput('\''), this.JumpToMark)
+            yield (InputUtil.CharToKeyInput('`'), this.JumpToMark)
+            yield (InputUtil.CharToKeyInput('g'), this.CharGCommand)
+            yield (InputUtil.CharToKeyInput('z'), this.CharZCommand)
+            yield (InputUtil.CharToKeyInput('r'), this.ReplaceChar)
         }
 
         let completeOps : seq<KeyInput * (int -> Register -> unit)> = seq {
@@ -357,30 +365,10 @@ type internal NormalMode
                     _operations.DeleteSpan span MotionKind.Inclusive OperationKind.LineWise reg |> ignore) )
         }
 
-        let l : list<Operation> = [
-            {   KeyInput=InputUtil.CharToKeyInput('/');
-                RunFunc=(fun d -> this.BeginIncrementalSearch SearchKind.ForwardWithWrap) } 
-            {   KeyInput=InputUtil.CharToKeyInput('?');
-                RunFunc=(fun d -> this.BeginIncrementalSearch SearchKind.BackwardWithWrap) } 
-            {   KeyInput=InputUtil.CharToKeyInput('m');
-                RunFunc=this.Mark };
-            {   KeyInput=InputUtil.CharToKeyInput('\'');
-                RunFunc=this.JumpToMark };
-            {   KeyInput=InputUtil.CharToKeyInput('`');
-                RunFunc=this.JumpToMark };
-            {   KeyInput=InputUtil.CharToKeyInput('g');
-                RunFunc=this.CharGCommand };
-            {   KeyInput=InputUtil.CharToKeyInput('z');
-                RunFunc=this.CharZCommand; };
-            {   KeyInput=InputUtil.CharToKeyInput('r');
-                RunFunc=this.ReplaceChar; }
-            ]
-
         let l =
             (waitOps |> Seq.map (fun (ki,func) -> {KeyInput=ki;RunFunc=(fun _ -> NeedMore2(func)) }))
             |> Seq.append (completeOps |> Seq.map (fun (ki,func) -> {KeyInput=ki;RunFunc=(fun d -> func d.Count d.Register; NormalModeResult.Complete)}))
             |> Seq.append (changeOpts |> Seq.map (fun (ki,kind,func) -> {KeyInput=ki;RunFunc=(fun d -> func d.Count d.Register; NormalModeResult.SwitchMode kind)}))
-            |> Seq.append (l |> Seq.ofList )
             |> Seq.append (this.BuildMotionOperationsMap)
             |> Seq.map (fun d -> d.KeyInput,d)
             |> Map.ofSeq
