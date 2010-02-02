@@ -186,21 +186,6 @@ type internal NormalMode
         _bufferData.BlockCaret.Hide()
         inner
         
-    /// Core method for scrolling the editor up or down
-    member this.ScrollCore dir count =
-        let lines = VimSettingsUtil.GetScrollLineCount this.Settings this.TextView
-        let tss = this.TextBuffer.CurrentSnapshot
-        let curLine = this.CaretPoint.GetContainingLine().LineNumber
-        let newLine = 
-            match dir with
-            | ScrollDirection.Down -> min (tss.LineCount - 1) (curLine + lines)
-            | ScrollDirection.Up -> max (0) (curLine - lines)
-            | _ -> failwith "Invalid enum value"
-        let newCaret = tss.GetLineFromLineNumber(newLine).Start
-        _bufferData.EditorOperations.ResetSelection()
-        this.TextView.Caret.MoveTo(newCaret) |> ignore
-        this.TextView.Caret.EnsureVisible()
-
     /// Handles commands which begin with g in normal mode.  This should be called when the g char is
     /// already processed
     member x.CharGCommand =
@@ -312,8 +297,8 @@ type internal NormalMode
             yield (InputUtil.CharToKeyInput('u'), (fun count _ -> _bufferData.VimHost.Undo this.TextBuffer count))
             yield (KeyInput('r', Key.R, ModifierKeys.Control), (fun count _ -> _bufferData.VimHost.Redo this.TextBuffer count))
             yield (InputUtil.KeyToKeyInput(Key.Enter), (fun _ _ -> this.MoveForEnter this.TextView _bufferData.VimHost))
-            yield (KeyInput('u', Key.U, ModifierKeys.Control), (fun count _ -> this.ScrollCore ScrollDirection.Up count))
-            yield (KeyInput('d', Key.D, ModifierKeys.Control), (fun count _ -> this.ScrollCore ScrollDirection.Down count))
+            yield (KeyInput('u', Key.U, ModifierKeys.Control), (fun count _ -> _operations.Scroll ScrollDirection.Up count))
+            yield (KeyInput('d', Key.D, ModifierKeys.Control), (fun count _ -> _operations.Scroll ScrollDirection.Down count))
             yield (KeyInput('J', Key.J, ModifierKeys.Shift), (fun count _ -> _operations.JoinAtCaret count))
             yield (KeyInput(']', Key.OemCloseBrackets, ModifierKeys.Control), (fun _ _ -> _operations.GoToDefinitionWrapper()))
             yield (InputUtil.CharToKeyInput('Y'), (fun count reg -> _operations.YankLines count reg))

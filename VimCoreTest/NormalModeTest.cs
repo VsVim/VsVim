@@ -433,9 +433,9 @@ namespace VimCoreTest
         public void ScrollUp1()
         {
             CreateBuffer("foo", "bar");
-            _view.Caret.MoveTo(_view.TextSnapshot.GetLineFromLineNumber(1).End);
+            _operations.Setup(x => x.Scroll(ScrollDirection.Up, 1)).Verifiable();
             _mode.Process(InputUtil.KeyAndModifierToKeyInput(Key.U, ModifierKeys.Control));
-            Assert.AreEqual(0, _view.Caret.Position.BufferPosition.GetContainingLine().LineNumber);
+            _operations.Verify();
         }
 
         [Test, Description("Don't break at line 0")]
@@ -443,8 +443,10 @@ namespace VimCoreTest
         {
             CreateBuffer("foo", "bar");
             _view.Caret.MoveTo(_view.TextSnapshot.GetLineFromLineNumber(0).End);
+            _operations.Setup(x => x.Scroll(ScrollDirection.Up, 2)).Verifiable();
+            _mode.Process('2');
             _mode.Process(InputUtil.KeyAndModifierToKeyInput(Key.U, ModifierKeys.Control));
-            Assert.AreEqual(0, _view.Caret.Position.BufferPosition.GetContainingLine().LineNumber);
+            _operations.Verify();
         }
 
         [Test]
@@ -452,8 +454,9 @@ namespace VimCoreTest
         {
             CreateBuffer("foo", "bar");
             _view.Caret.MoveTo(_view.TextSnapshot.GetLineFromLineNumber(0).End);
+            _operations.Setup(x => x.Scroll(ScrollDirection.Down, 1)).Verifiable();
             _mode.Process(InputUtil.KeyAndModifierToKeyInput(Key.D, ModifierKeys.Control));
-            Assert.AreEqual(1, _view.Caret.Position.BufferPosition.GetContainingLine().LineNumber);
+            _operations.Verify();
         }
 
         [Test]

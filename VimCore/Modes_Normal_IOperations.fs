@@ -27,5 +27,8 @@ type IOperations =
     /// Go to the definition of the word under the cursor
     abstract GoToDefinitionWrapper : unit -> unit
 
+    /// Scroll the buffer by count lines in the given direction
+    abstract Scroll : ScrollDirection -> count:int -> unit
+
     interface Modes.ICommonOperations
 

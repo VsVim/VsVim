@@ -25,7 +25,7 @@ module internal VimSettingsUtil =
 
     /// Get the scroll line count.  
     /// TODO: Actually find the count of visible lines
-    let GetScrollLineCount (set:VimSettings) (view:IWpfTextView) =
+    let GetScrollLineCount (set:VimSettings) (view:ITextView) =
         match set.Scroll with
         | Some s -> s
         | None -> 50

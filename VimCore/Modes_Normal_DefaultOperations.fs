@@ -13,7 +13,8 @@ type internal DefaultOperations
     (
     _textView : ITextView,
     _operations : IEditorOperations,
-    _host : IVimHost ) =
+    _host : IVimHost,
+    _settings : VimSettings ) =
     inherit CommonOperations(_textView, _operations)
 
     member private x.CommonImpl = x :> ICommonOperations
@@ -116,5 +117,20 @@ type internal DefaultOperations
             | Vim.Modes.Succeeded -> ()
             | Vim.Modes.Failed(msg) ->
                 _host.UpdateStatus(msg)
+
+        member x.Scroll dir count =
+            let lines = VimSettingsUtil.GetScrollLineCount _settings _textView
+            let tss = _textView.TextSnapshot
+            let caretPoint = ViewUtil.GetCaretPoint _textView
+            let curLine = caretPoint.GetContainingLine().LineNumber
+            let newLine = 
+                match dir with
+                | ScrollDirection.Down -> min (tss.LineCount - 1) (curLine + lines)
+                | ScrollDirection.Up -> max (0) (curLine - lines)
+                | _ -> failwith "Invalid enum value"
+            let newCaret = tss.GetLineFromLineNumber(newLine).Start
+            _operations.ResetSelection()
+            _textView.Caret.MoveTo(newCaret) |> ignore
+            _textView.Caret.EnsureVisible()
     
     

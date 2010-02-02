@@ -34,12 +34,12 @@ namespace VimCoreTest
             if (editorOpts == null)
             {
                 var tuple = EditorUtil.CreateViewAndOperations(lines);
-                _operationsRaw = new DefaultOperations(tuple.Item1, tuple.Item2, _host.Object);
+                _operationsRaw = new DefaultOperations(tuple.Item1, tuple.Item2, _host.Object, VimSettingsUtil.CreateDefault);
             }
             else
             {
                 var view = EditorUtil.CreateView(lines);
-                _operationsRaw = new DefaultOperations(view, editorOpts, _host.Object);
+                _operationsRaw = new DefaultOperations(view, editorOpts, _host.Object, VimSettingsUtil.CreateDefault);
             }
 
             _operations = _operationsRaw;
@@ -388,6 +388,33 @@ namespace VimCoreTest
             Assert.AreEqual(0, line.LineBreakLength);
             Assert.AreEqual("baz", line.GetText());
             Assert.AreEqual("baz", line.GetTextIncludingLineBreak());
+        }
+
+        [Test]
+        public void ScrollUp1()
+        {
+            Create("foo", "bar");
+            _view.Caret.MoveTo(_view.TextSnapshot.GetLineFromLineNumber(1).End);
+            _operations.Scroll(ScrollDirection.Up, 1);
+            Assert.AreEqual(0, _view.Caret.Position.BufferPosition.GetContainingLine().LineNumber);
+        }
+
+        [Test, Description("Don't break at line 0")]
+        public void ScrollUp2()
+        {
+            Create("foo", "bar");
+            _view.Caret.MoveTo(_view.TextSnapshot.GetLineFromLineNumber(0).End);
+            _operations.Scroll(ScrollDirection.Up, 1);
+            Assert.AreEqual(0, _view.Caret.Position.BufferPosition.GetContainingLine().LineNumber);
+        }
+
+        [Test]
+        public void ScrollDown1()
+        {
+            Create("foo", "bar");
+            _view.Caret.MoveTo(_view.TextSnapshot.GetLineFromLineNumber(0).End);
+            _operations.Scroll(ScrollDirection.Down, 1);
+            Assert.AreEqual(1, _view.Caret.Position.BufferPosition.GetContainingLine().LineNumber);
         }
 
     }
