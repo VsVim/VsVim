@@ -11,7 +11,7 @@ open System.Windows.Media
 /// Operation in the normal mode
 type internal Operation =  {
     KeyInput : Vim.KeyInput;
-    RunFunc : NormalModeData -> NormalModeResult
+    RunFunc : int -> Register -> NormalModeResult
 }
 
 type internal NormalMode 
@@ -22,15 +22,13 @@ type internal NormalMode
         _incrementalSearch : IIncrementalSearch ) = 
 
 
-    let mutable _data = {
-        Count=1;
-        Register=_bufferData.RegisterMap.DefaultRegister;
-    }
+    /// Command specific data (count,register)
+    let mutable _data = (1,_bufferData.RegisterMap.DefaultRegister)
 
     let mutable _operationMap : Map<KeyInput,Operation> = Map.empty
 
     /// Function used to process the next piece of input
-    let mutable _runFunc : NormalModeData -> KeyInput -> NormalModeResult = (fun _ _ -> NormalModeResult.Complete)
+    let mutable _runFunc : KeyInput -> int -> Register -> NormalModeResult = (fun _ _ _ -> NormalModeResult.Complete)
 
     /// Whether or not we are waiting for at least the second keystroke
     /// of a given command
@@ -45,7 +43,7 @@ type internal NormalMode
     
     /// Begin an incremental search.  Called when the user types / into the editor
     member this.BeginIncrementalSearch (kind:SearchKind) =
-        let rec inner (_:NormalModeData) (ki:KeyInput) = 
+        let rec inner (ki:KeyInput) _ _ = 
             if _incrementalSearch.Process ki then NormalModeResult.Complete
             else NormalModeResult.NeedMore2 inner
         _incrementalSearch.Begin kind
@@ -61,7 +59,7 @@ type internal NormalMode
             | Some(span) ->
                 ViewUtil.MoveCaretToPoint this.TextView span.Start |> ignore
                     
-    member this.WaitForMotion ki (d:NormalModeData) doneFunc = 
+    member this.WaitForMotion ki count doneFunc = 
         let rec f (result:MotionResult) = 
             match result with 
                 | MotionResult.Complete (span) -> 
@@ -69,11 +67,11 @@ type internal NormalMode
                     doneFunc span
                 | NeedMoreInput (moreFunc) ->
                     _bufferData.VimHost.UpdateStatus("Waiting for motion")
-                    let inputFunc _ ki = f (moreFunc ki)
+                    let inputFunc ki _ _ = f (moreFunc ki)
                     NormalModeResult.NeedMore2 inputFunc
                 | InvalidMotion (msg,moreFunc) ->
                     _bufferData.VimHost.UpdateStatus(msg)
-                    let inputFunc _ ki = f (moreFunc ki)
+                    let inputFunc ki _ _ = f (moreFunc ki)
                     NormalModeResult.NeedMore2 inputFunc 
                 | Error (msg) ->
                     _bufferData.VimHost.UpdateStatus(msg)
@@ -81,89 +79,89 @@ type internal NormalMode
                 | Cancel -> 
                     _bufferData.VimHost.UpdateStatus(System.String.Empty)
                     NormalModeResult.Complete
-        f (MotionCapture.ProcessView _bufferData.TextView ki d.Count)
+        f (MotionCapture.ProcessView _bufferData.TextView ki count)
         
         
     // Respond to the d command.  Need the finish motion
     member this.WaitDelete =
-        let inner (d:NormalModeData) (ki:KeyInput) =
+        let inner (ki:KeyInput) count reg =
             match ki.Key with 
                 | Key.D -> 
                     let point = ViewUtil.GetCaretPoint _bufferData.TextView
                     let point = point.GetContainingLine().Start
-                    let span = TssUtil.GetLineRangeSpanIncludingLineBreak point d.Count
-                    _operations.DeleteSpan span MotionKind.Inclusive OperationKind.LineWise d.Register |> ignore
+                    let span = TssUtil.GetLineRangeSpanIncludingLineBreak point count
+                    _operations.DeleteSpan span MotionKind.Inclusive OperationKind.LineWise reg |> ignore
                     NormalModeResult.Complete
                 | _ -> 
                     let func (span,motionKind,opKind)= 
-                        _operations.DeleteSpan span motionKind opKind d.Register |> ignore
+                        _operations.DeleteSpan span motionKind opKind reg |> ignore
                         NormalModeResult.Complete
-                    this.WaitForMotion ki d func
+                    this.WaitForMotion ki count func
         inner
         
     // Respond to the y command.  Need to wait for a complete motion
     member this.WaitYank =
-        let inner (d:NormalModeData) (ki:KeyInput) =
+        let inner (ki:KeyInput) count reg =
             match ki.Key with 
                 | Key.Y -> 
                     let point = ViewUtil.GetCaretPoint _bufferData.TextView
                     let point = point.GetContainingLine().Start
-                    let span = TssUtil.GetLineRangeSpanIncludingLineBreak point d.Count
-                    _operations.Yank span MotionKind.Inclusive OperationKind.LineWise d.Register
+                    let span = TssUtil.GetLineRangeSpanIncludingLineBreak point count
+                    _operations.Yank span MotionKind.Inclusive OperationKind.LineWise reg 
                     NormalModeResult.Complete
                 | _ ->
                     let inner (ss:SnapshotSpan,motionKind,opKind) = 
-                        _operations.Yank ss motionKind opKind d.Register
+                        _operations.Yank ss motionKind opKind reg 
                         NormalModeResult.Complete
-                    this.WaitForMotion ki d inner
+                    this.WaitForMotion ki count inner
         inner 
 
     // Respond to the c command.  Need the finish motion
     member this.WaitChange =
-        let inner (d:NormalModeData) (ki:KeyInput) =
+        let inner (ki:KeyInput) count reg =
             match ki.Key with 
                 | Key.C -> 
                     let point = ViewUtil.GetCaretPoint _bufferData.TextView
-                    let span = TssUtil.GetLineRangeSpanIncludingLineBreak point d.Count 
+                    let span = TssUtil.GetLineRangeSpanIncludingLineBreak point count
                     let span = SnapshotSpan(point.GetContainingLine().Start,span.End)
-                    _operations.DeleteSpan span MotionKind.Inclusive OperationKind.LineWise d.Register |> ignore
+                    _operations.DeleteSpan span MotionKind.Inclusive OperationKind.LineWise reg |> ignore
                     NormalModeResult.SwitchMode ModeKind.Insert
                 | _ -> 
                     let func (span,motionKind,opKind)= 
-                        _operations.DeleteSpan span motionKind opKind d.Register |> ignore
+                        _operations.DeleteSpan span motionKind opKind reg |> ignore
                         NormalModeResult.SwitchMode ModeKind.Insert
-                    this.WaitForMotion ki d func
+                    this.WaitForMotion ki count func
         inner
 
     /// Implement the < operator        
     member this.ShiftLeft =
-        let inner (d:NormalModeData) (ki:KeyInput) =
+        let inner (ki:KeyInput) count reg =
             match ki.Char with 
                 | '<' ->
-                    let span = TssUtil.GetLineRangeSpan (this.CaretPoint.GetContainingLine().Start) d.Count
+                    let span = TssUtil.GetLineRangeSpan (this.CaretPoint.GetContainingLine().Start) count
                     _operations.ShiftLeft span _bufferData.Settings.ShiftWidth |> ignore
                     NormalModeResult.Complete
                 | _ ->
                     let inner2 (span:SnapshotSpan,_,_) =
                         _operations.ShiftLeft span _bufferData.Settings.ShiftWidth |> ignore                                          
                         NormalModeResult.Complete
-                    this.WaitForMotion ki d inner2
+                    this.WaitForMotion ki count inner2
         inner                                            
                     
     /// Implements the > operator.  Check for the special > motion key and then default
     /// back to a standard motion                    
     member this.ShiftRight =
-        let inner (d:NormalModeData) (ki:KeyInput) =
+        let inner (ki:KeyInput) count reg =
             match ki.Char with
                 | '>' ->
-                    let span = TssUtil.GetLineRangeSpan (this.CaretPoint.GetContainingLine().Start) d.Count
+                    let span = TssUtil.GetLineRangeSpan (this.CaretPoint.GetContainingLine().Start) count
                     _operations.ShiftRight span _bufferData.Settings.ShiftWidth |> ignore
                     NormalModeResult.Complete
                 | _ ->
                     let inner2 (span:SnapshotSpan,_,_) =
                         _operations.ShiftRight span _bufferData.Settings.ShiftWidth |> ignore
                         NormalModeResult.Complete
-                    this.WaitForMotion ki d inner2
+                    this.WaitForMotion ki count inner2
         inner
                             
     /// Move the caret as a result of the user hitting enter.  The caret should jump to the
@@ -180,8 +178,8 @@ type internal NormalMode
                 host.Beep()
 
     member private x.ReplaceChar = 
-        let inner (d:NormalModeData) (ki:KeyInput) =
-            if not (_operations.ReplaceChar ki d.Count) then
+        let inner (ki:KeyInput) count reg =
+            if not (_operations.ReplaceChar ki count) then
                 _bufferData.VimHost.Beep()
             _bufferData.BlockCaret.Show()
             NormalModeResult.Complete
@@ -206,14 +204,14 @@ type internal NormalMode
     /// Handles commands which begin with g in normal mode.  This should be called when the g char is
     /// already processed
     member x.CharGCommand =
-        let inner (d:NormalModeData) (ki:KeyInput) =  
+        let inner (ki:KeyInput) count (reg:Register) =  
             match ki.Char with
             | 'J' -> 
                 let view = _bufferData.TextView
                 let caret = ViewUtil.GetCaretPoint view
-                _operations.Join caret Modes.JoinKind.KeepEmptySpaces d.Count |> ignore
-            | 'p' -> _operations.PasteAfterCursor d.Register.StringValue 1 d.Register.Value.OperationKind true |> ignore
-            | 'P' -> _operations.PasteBeforeCursor d.Register.StringValue 1 true |> ignore
+                _operations.Join caret Modes.JoinKind.KeepEmptySpaces count |> ignore
+            | 'p' -> _operations.PasteAfterCursor reg.StringValue 1 reg.Value.OperationKind true |> ignore
+            | 'P' -> _operations.PasteBeforeCursor reg.StringValue 1 true |> ignore
             | '_' -> _bufferData.EditorOperations.MoveToLastNonWhiteSpaceCharacter(false)
             | _ ->
                 _bufferData.VimHost.Beep()
@@ -223,7 +221,7 @@ type internal NormalMode
 
     /// Implement the commands associated with the z prefix in normal mode
     member x.CharZCommand = 
-        let inner (d:NormalModeData) (ki:KeyInput) =  
+        let inner (ki:KeyInput) coun reg =  
             if ki.IsNewLine then 
                 _bufferData.EditorOperations.ScrollLineTop()
                 _bufferData.EditorOperations.MoveToStartOfLineAfterWhiteSpace(false) 
@@ -243,7 +241,7 @@ type internal NormalMode
         inner
 
     member x.JumpToMark =
-        let waitForKey (d:NormalModeData) (ki:KeyInput) =
+        let waitForKey (ki:KeyInput) _ _ =
             let res = _operations.JumpToMark ki.Char _bufferData.MarkMap _bufferData.VimHost
             match res with 
             | Modes.Failed(msg) -> _bufferData.VimHost.UpdateStatus(msg)
@@ -253,7 +251,7 @@ type internal NormalMode
 
     /// Process the m[a-z] command.  Called when the m has been input so wait for the next key
     member x.Mark = 
-        let waitForKey (d2:NormalModeData) (ki:KeyInput) =
+        let waitForKey (ki:KeyInput) _ _ =
             let cursor = ViewUtil.GetCaretPoint _bufferData.TextView
             let res = _operations.SetMark _bufferData cursor ki.Char 
             match res with
@@ -274,8 +272,8 @@ type internal NormalMode
 
     member private this.BuildMotionOperationsMap =
         let wrap func = 
-            fun (d:NormalModeData) -> 
-                func d.Count
+            fun count _ -> 
+                func count
                 _bufferData.EditorOperations.ResetSelection()
                 NormalModeResult.Complete
         let factory = Vim.Modes.CommandFactory(_operations)
@@ -284,19 +282,19 @@ type internal NormalMode
 
     member this.BuildOperationsMap = 
         let waitOps = seq {
-            yield (InputUtil.CharToKeyInput('d'), this.WaitDelete)
-            yield (InputUtil.CharToKeyInput('y'), this.WaitYank)
-            yield (InputUtil.CharToKeyInput('<'), this.ShiftLeft)
-            yield (InputUtil.CharToKeyInput('>'), this.ShiftRight)
-            yield (InputUtil.CharToKeyInput('c'), this.WaitChange)
-            yield (InputUtil.CharToKeyInput('/'), this.BeginIncrementalSearch SearchKind.ForwardWithWrap) 
-            yield (InputUtil.CharToKeyInput('?'), this.BeginIncrementalSearch SearchKind.BackwardWithWrap)
-            yield (InputUtil.CharToKeyInput('m'), this.Mark)
-            yield (InputUtil.CharToKeyInput('\''), this.JumpToMark)
-            yield (InputUtil.CharToKeyInput('`'), this.JumpToMark)
-            yield (InputUtil.CharToKeyInput('g'), this.CharGCommand)
-            yield (InputUtil.CharToKeyInput('z'), this.CharZCommand)
-            yield (InputUtil.CharToKeyInput('r'), this.ReplaceChar)
+            yield (InputUtil.CharToKeyInput('d'), (fun () -> this.WaitDelete))
+            yield (InputUtil.CharToKeyInput('y'), (fun () -> this.WaitYank))
+            yield (InputUtil.CharToKeyInput('<'), (fun () -> this.ShiftLeft))
+            yield (InputUtil.CharToKeyInput('>'), (fun () -> this.ShiftRight))
+            yield (InputUtil.CharToKeyInput('c'), (fun () -> this.WaitChange))
+            yield (InputUtil.CharToKeyInput('/'), (fun () -> this.BeginIncrementalSearch SearchKind.ForwardWithWrap))
+            yield (InputUtil.CharToKeyInput('?'), (fun () -> this.BeginIncrementalSearch SearchKind.BackwardWithWrap))
+            yield (InputUtil.CharToKeyInput('m'), (fun () -> this.Mark))
+            yield (InputUtil.CharToKeyInput('\''), (fun () -> this.JumpToMark))
+            yield (InputUtil.CharToKeyInput('`'), (fun () -> this.JumpToMark))
+            yield (InputUtil.CharToKeyInput('g'), (fun () -> this.CharGCommand))
+            yield (InputUtil.CharToKeyInput('z'), (fun () -> this.CharZCommand))
+            yield (InputUtil.CharToKeyInput('r'), (fun () -> this.ReplaceChar))
         }
 
         let completeOps : seq<KeyInput * (int -> Register -> unit)> = seq {
@@ -366,22 +364,22 @@ type internal NormalMode
         }
 
         let l =
-            (waitOps |> Seq.map (fun (ki,func) -> {KeyInput=ki;RunFunc=(fun _ -> NeedMore2(func)) }))
-            |> Seq.append (completeOps |> Seq.map (fun (ki,func) -> {KeyInput=ki;RunFunc=(fun d -> func d.Count d.Register; NormalModeResult.Complete)}))
-            |> Seq.append (changeOpts |> Seq.map (fun (ki,kind,func) -> {KeyInput=ki;RunFunc=(fun d -> func d.Count d.Register; NormalModeResult.SwitchMode kind)}))
+            (waitOps |> Seq.map (fun (ki,func) -> {KeyInput=ki;RunFunc=(fun _ _ -> NeedMore2(func())) }))
+            |> Seq.append (completeOps |> Seq.map (fun (ki,func) -> {KeyInput=ki;RunFunc=(fun count reg -> func count reg; NormalModeResult.Complete)}))
+            |> Seq.append (changeOpts |> Seq.map (fun (ki,kind,func) -> {KeyInput=ki;RunFunc=(fun count reg -> func count reg; NormalModeResult.SwitchMode kind)}))
             |> Seq.append (this.BuildMotionOperationsMap)
             |> Seq.map (fun d -> d.KeyInput,d)
             |> Map.ofSeq
         l
    
     /// Repsonible for getting the count                
-    member this.GetCount (d:NormalModeData) (ki:KeyInput) = 
+    member this.GetCount (ki:KeyInput) = 
         let rec inner ki (func: KeyInput -> CountResult) = 
             match func ki with
                 | CountResult.Complete (count,nextKi) ->
                     CountComplete(count, nextKi)
                 | CountResult.NeedMore(f) ->
-                    let nextFunc _ ki2 = inner ki2 f
+                    let nextFunc ki2 _ _ = inner ki2 f
                     NeedMore2(nextFunc)
         inner ki (CountCapture.Process)                    
         
@@ -391,32 +389,33 @@ type internal NormalMode
         let reg = m.GetRegister c
         RegisterComplete(reg)
 
-    member this.StartCore (d:NormalModeData) (ki:KeyInput) =
-        if ki.IsDigit && ki.Char <> '0' then this.GetCount d ki
+    member this.StartCore (ki:KeyInput) count reg =
+        if ki.IsDigit && ki.Char <> '0' then this.GetCount ki
         elif ki.Key = Key.OemQuotes && ki.ModifierKeys = ModifierKeys.Shift then 
-            let f (d:NormalModeData) ki = this.GetRegister (_bufferData.RegisterMap) ki
+            let f ki _ _ = this.GetRegister (_bufferData.RegisterMap) ki
             NeedMore2(f)
         else
             match Map.tryFind ki _operationMap with
-            | Some op -> op.RunFunc(d)
+            | Some op -> op.RunFunc count reg
             | None -> 
                 this.VimHost.Beep()
                 NormalModeResult.Complete
 
     /// Reset the internal data for the NormalMode instance
     member this.ResetData = 
-        _data <- {
-            _data with 
-                Count=1; 
-                Register=_bufferData.RegisterMap.DefaultRegister }
+        _data <- (1, _bufferData.RegisterMap.DefaultRegister)
         _runFunc <- this.StartCore
         _waitingForMoreInput <- false
         if _operationMap.Count = 0 then
             _operationMap <- this.BuildOperationsMap
 
-    member this.Register = _data.Register
-    member this.Count = _data.Count
-    
+    member this.Register = 
+        let _,reg = _data
+        reg
+    member this.Count = 
+        let count,_ = _data
+        count
+
     interface IMode with 
         member this.VimBuffer = _bufferData
         member this.Commands = 
@@ -434,7 +433,7 @@ type internal NormalMode
                 _operationMap.ContainsKey ki
 
         member this.Process ki = 
-            match _runFunc _data ki with
+            match _runFunc ki this.Count this.Register with
                 | NormalModeResult.Complete -> 
                     this.ResetData
                     Processed
@@ -446,11 +445,13 @@ type internal NormalMode
                     this.ResetData // Make sure to reset information when switching modes
                     ProcessResult.SwitchMode kind
                 | CountComplete (count,nextKi) ->
-                    _data <- {_data with Count=count; }
+                    let _,reg = _data
+                    _data <- (count,reg)
                     _runFunc <- this.StartCore
                     (this :> IMode).Process nextKi
                 | RegisterComplete (reg) ->     
-                    _data <- {_data with Register=reg; }
+                    let count,_ = _data
+                    _data <- (count,reg)
                     _runFunc <- this.StartCore
                     _waitingForMoreInput <- false
                     Processed
