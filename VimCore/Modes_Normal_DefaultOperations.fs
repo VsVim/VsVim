@@ -22,6 +22,50 @@ type internal DefaultOperations
 
     member private x.CommonImpl = x :> ICommonOperations
 
+    member private x.MoveToNextWordCore isWrap isWholeWord count = 
+        let point = ViewUtil.GetCaretPoint _textView
+        match TssUtil.FindCurrentFullWordSpan point WordKind.NormalWord with
+        | None -> _host.UpdateStatus Resources.NormalMode_NoWordUnderCursor
+        | Some(span) ->
+            let options = if isWholeWord then FindOptions.WholeWord else FindOptions.None
+            let options = if _settings.IgnoreCase then options else options ||| FindOptions.MatchCase
+            let count = max 0 (count-1)
+            let word = span.GetText()
+            let rec doFind count pos = 
+                let data = FindData(word, point.Snapshot, options,_normalWordNav)
+                let found = _searchService.FindNext(pos, isWrap, data) 
+                if found.HasValue && count > 1 then
+                    let nextPos = found.Value.End.Position
+                    doFind (count-1) nextPos 
+                elif found.HasValue then
+                    ViewUtil.MoveCaretToPoint _textView found.Value.Start |> ignore
+            doFind count span.End.Position
+
+    member x.MoveToPreviousWordCore isWrap isWholeWord count = 
+        let point = ViewUtil.GetCaretPoint _textView
+        match TssUtil.FindCurrentFullWordSpan point WordKind.NormalWord with
+        | None -> _host.UpdateStatus Resources.NormalMode_NoWordUnderCursor
+        | Some(span) ->
+            let options = if isWholeWord then FindOptions.WholeWord else FindOptions.None
+            let options = if _settings.IgnoreCase then options else options ||| FindOptions.MatchCase
+            let options = options ||| FindOptions.SearchReverse
+            let count = max 0 (count-1)
+            let getNextPos (span:SnapshotSpan) = 
+                let pos = span.Start.Position-1
+                if pos >= 0 then pos 
+                elif isWrap then point.Snapshot.Length
+                else 0
+            let word = span.GetText()
+            let rec doFind count pos = 
+                let data = FindData(word, point.Snapshot, options,_normalWordNav)
+                let found = _searchService.FindNext(pos, isWrap, data) 
+                if found.HasValue && count > 1 then
+                    let nextPos = getNextPos found.Value
+                    doFind (count-1) nextPos 
+                elif found.HasValue then
+                    ViewUtil.MoveCaretToPoint _textView found.Value.Start |> ignore
+            doFind count (getNextPos span)
+
     interface IOperations with 
         
         /// Paste the given text after the cursor
@@ -149,47 +193,13 @@ type internal DefaultOperations
             _textView.Caret.EnsureVisible()
     
         member x.MoveToNextOccuranceOfWordAtCursor isWrap count = 
-            let point = ViewUtil.GetCaretPoint _textView
-            match TssUtil.FindCurrentFullWordSpan point WordKind.NormalWord with
-            | None -> _host.UpdateStatus Resources.NormalMode_NoWordUnderCursor
-            | Some(span) ->
-                let options = 
-                    if _settings.IgnoreCase then FindOptions.WholeWord 
-                    else FindOptions.WholeWord ||| FindOptions.MatchCase
-                let count = max 0 (count-1)
-                let word = span.GetText()
-                let rec doFind count pos = 
-                    let data = FindData(word, point.Snapshot, options,_normalWordNav)
-                    let found = _searchService.FindNext(pos, isWrap, data) 
-                    if found.HasValue && count > 1 then
-                        let nextPos = found.Value.End.Position
-                        doFind (count-1) nextPos 
-                    elif found.HasValue then
-                        ViewUtil.MoveCaretToPoint _textView found.Value.Start |> ignore
-                doFind count span.End.Position
+            x.MoveToNextWordCore isWrap true count
 
         member x.MoveToPreviousOccuranceOfWordAtCursor isWrap count = 
-            let point = ViewUtil.GetCaretPoint _textView
-            match TssUtil.FindCurrentFullWordSpan point WordKind.NormalWord with
-            | None -> _host.UpdateStatus Resources.NormalMode_NoWordUnderCursor
-            | Some(span) ->
-                let options = 
-                    if _settings.IgnoreCase then FindOptions.WholeWord 
-                    else FindOptions.WholeWord ||| FindOptions.MatchCase
-                let options = options ||| FindOptions.SearchReverse
-                let count = max 0 (count-1)
-                let getNextPos (span:SnapshotSpan) = 
-                    let pos = span.Start.Position-1
-                    if pos >= 0 then pos 
-                    elif isWrap then point.Snapshot.Length
-                    else 0
-                let word = span.GetText()
-                let rec doFind count pos = 
-                    let data = FindData(word, point.Snapshot, options,_normalWordNav)
-                    let found = _searchService.FindNext(pos, isWrap, data) 
-                    if found.HasValue && count > 1 then
-                        let nextPos = getNextPos found.Value
-                        doFind (count-1) nextPos 
-                    elif found.HasValue then
-                        ViewUtil.MoveCaretToPoint _textView found.Value.Start |> ignore
-                doFind count (getNextPos span)
+            x.MoveToPreviousWordCore isWrap true count
+
+        member x.MoveToNextOccuranceOfPartialWordAtCursor count = 
+            x.MoveToNextWordCore true false count
+    
+        member x.MoveToPreviousOccuranceOfPartialWordAtCursor count =
+            x.MoveToPreviousWordCore true false count

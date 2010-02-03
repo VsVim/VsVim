@@ -42,6 +42,7 @@ module internal Utils =
         let flagValue = LanguagePrimitives.EnumToValue flag
         let value = intValue &&& (~~~flagValue)
         LanguagePrimitives.EnumOfValue value
+
     
     /// Create a regex.  Returns None if the regex has invalid characters
     let TryCreateRegex pattern options =

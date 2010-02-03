@@ -548,6 +548,14 @@ namespace VimCoreTest
         }
 
         [Test]
+        public void MoveToNextOccuranceOfWordAtCursor7()
+        {
+            Create("foo foobar baz", "foo");
+            _operations.MoveToNextOccuranceOfWordAtCursor(true, 1);
+            Assert.AreEqual(_view.GetLine(1).Start, _view.GetCaretPoint());
+        }
+
+        [Test]
         public void MoveToPreviousOccuranceOfWordAtCursor1()
         {
             Create("foo bar", "foo");
@@ -574,6 +582,14 @@ namespace VimCoreTest
             Assert.AreEqual(_view.GetLine(2).Start.Position, _view.Caret.Position.BufferPosition.Position);
         }
 
+        [Test]
+        public void MoveToPreviousOccuranceOfWordAtCursor4()
+        {
+            Create("foo", "foobar", "foo");
+            _view.MoveCaretTo(_view.GetLine(2).Start);
+            _operations.MoveToPreviousOccuranceOfWordAtCursor(true, 1);
+            Assert.AreEqual(0, _view.GetCaretPoint().Position);
+        }
 
     }
 }

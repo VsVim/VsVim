@@ -188,6 +188,8 @@ type internal NormalMode
             | 'p' -> _operations.PasteAfterCursor reg.StringValue 1 reg.Value.OperationKind true |> ignore
             | 'P' -> _operations.PasteBeforeCursor reg.StringValue 1 true |> ignore
             | '_' -> _bufferData.EditorOperations.MoveToLastNonWhiteSpaceCharacter(false)
+            | '*' -> _operations.MoveToNextOccuranceOfPartialWordAtCursor count
+            | '#' -> _operations.MoveToPreviousOccuranceOfPartialWordAtCursor count
             | _ ->
                 _bufferData.VimHost.Beep()
                 ()

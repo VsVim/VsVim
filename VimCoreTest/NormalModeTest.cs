@@ -1442,6 +1442,24 @@ namespace VimCoreTest
             _operations.Verify();
         }
 
+        [Test]
+        public void NextPartialWord1()
+        {
+            CreateBuffer("foo bar");
+            _operations.Setup(x => x.MoveToNextOccuranceOfPartialWordAtCursor(1)).Verifiable();
+            _mode.Process("g*");
+            _operations.Verify();
+        }
+
+        [Test]
+        public void PreviousPartialWord1()
+        {
+            CreateBuffer("foo bar");
+            _operations.Setup(x => x.MoveToPreviousOccuranceOfPartialWordAtCursor(1)).Verifiable();
+            _mode.Process("g#");
+            _operations.Verify();
+        }
+
         #endregion
 
         #region Shift
