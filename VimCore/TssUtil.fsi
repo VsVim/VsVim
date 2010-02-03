@@ -2,6 +2,7 @@
 
 namespace Vim
 open Microsoft.VisualStudio.Text
+open Microsoft.VisualStudio.Text.Operations
 
 module internal TssUtil =
     val GetLines : SnapshotPoint -> SearchKind -> seq<ITextSnapshotLine>
@@ -59,4 +60,10 @@ module internal TssUtil =
     val GetNextPoint : SnapshotPoint -> SnapshotPoint
     val GetNextPointWithWrap : SnapshotPoint -> SnapshotPoint 
     val GetPreviousPointWithWrap : SnapshotPoint -> SnapshotPoint
+        
+    /// Create an ITextStructureNavigator instance for the given WordKind with the provided 
+    /// base implementation to fall back on
+    val CreateTextStructureNavigator : WordKind -> ITextStructureNavigator -> ITextStructureNavigator
+
+
     

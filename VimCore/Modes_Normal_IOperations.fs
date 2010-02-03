@@ -42,5 +42,11 @@ type IOperations =
     /// Scroll the buffer by count lines in the given direction
     abstract Scroll : ScrollDirection -> count:int -> unit
 
+    /// Move to the next occurance of the word under the cursor
+    abstract MoveToNextOccuranceOfWordAtCursor : isWrap:bool -> count:int -> unit
+
+    /// Move to the previous occurance of the word under the cursor
+    abstract MoveToPreviousOccuranceOfWordAtCursor : isWrap:bool -> count:int -> unit
+
     interface Modes.ICommonOperations
 

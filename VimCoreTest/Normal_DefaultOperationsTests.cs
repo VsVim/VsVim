@@ -25,25 +25,32 @@ namespace VimCoreTest
 
         private void Create(params string[] lines)
         {
-            Create(null, lines);
+            Create(null, null, null, lines);
         }
 
-        private void Create(IEditorOperations editorOpts, params string[] lines)
+        private void Create(
+            IEditorOperations editorOpts = null,
+            ITextSearchService searchService = null,
+            ITextStructureNavigator baseNav = null,
+            params string[] lines)
         {
             _host = new Mock<IVimHost>(MockBehavior.Strict);
             if (editorOpts == null)
             {
                 var tuple = EditorUtil.CreateViewAndOperations(lines);
-                _operationsRaw = new DefaultOperations(tuple.Item1, tuple.Item2, _host.Object, VimSettingsUtil.CreateDefault);
+                _view = tuple.Item1;
+                editorOpts = tuple.Item2;
             }
             else
             {
-                var view = EditorUtil.CreateView(lines);
-                _operationsRaw = new DefaultOperations(view, editorOpts, _host.Object, VimSettingsUtil.CreateDefault);
+                _view = EditorUtil.CreateView(lines);
             }
 
+            searchService = searchService ?? EditorUtil.FactoryService.textSearchService;
+            baseNav = baseNav ?? (new Mock<ITextStructureNavigator>(MockBehavior.Strict)).Object;
+            var nav = TssUtil.CreateTextStructureNavigator(WordKind.NormalWord, baseNav);
+            _operationsRaw = new DefaultOperations(_view, editorOpts, _host.Object, VimSettingsUtil.CreateDefault, nav, searchService);
             _operations = _operationsRaw;
-            _view = _operations.TextView;
         }
 
         [Test]
@@ -228,7 +235,7 @@ namespace VimCoreTest
         {
             Create("foo", "bar");
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 0));
-            _operations.PasteAfterCursor("baz" + Environment.NewLine, 1, OperationKind.LineWise, moveCursorToEnd : false);
+            _operations.PasteAfterCursor("baz" + Environment.NewLine, 1, OperationKind.LineWise, moveCursorToEnd: false);
             Assert.AreEqual("foo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
             Assert.AreEqual("baz", _view.TextSnapshot.GetLineFromLineNumber(1).GetText());
         }
@@ -247,7 +254,7 @@ namespace VimCoreTest
         public void PasteAfter8()
         {
             Create("foo");
-            _operations.PasteAfterCursor("hey",2, OperationKind.CharacterWise, false);
+            _operations.PasteAfterCursor("hey", 2, OperationKind.CharacterWise, false);
             Assert.AreEqual("fheyheyoo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
         }
 
@@ -285,7 +292,7 @@ namespace VimCoreTest
             Assert.AreEqual("heyheyfoo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
         }
 
- 
+
         [Test]
         public void PasteBefore3()
         {
@@ -422,7 +429,7 @@ namespace VimCoreTest
         {
             Create("foo", "bar", "baz");
             var tss = _view.TextSnapshot;
-            var reg =new Register('c');
+            var reg = new Register('c');
             _operations.DeleteLines(2, reg);
             Assert.AreEqual(tss.GetLineSpan(0, 1).GetText(), reg.StringValue);
             Assert.AreEqual(1, _view.TextSnapshot.LineCount);
@@ -435,7 +442,7 @@ namespace VimCoreTest
             Create("foo", "bar", "baz", "jaz");
             var tss = _view.TextSnapshot;
             _view.Caret.MoveTo(tss.GetLineFromLineNumber(1).Start);
-            var reg =new Register('c');
+            var reg = new Register('c');
             _operations.DeleteLines(2, reg);
             Assert.AreEqual(tss.GetLineSpan(1, 2).GetText(), reg.StringValue);
             Assert.AreEqual(OperationKind.LineWise, reg.Value.OperationKind);
@@ -447,9 +454,9 @@ namespace VimCoreTest
             Create("foo", "bar", "baz", "jaz");
             var tss = _view.TextSnapshot;
             _view.Caret.MoveTo(tss.GetLineFromLineNumber(1).Start);
-            var reg =new Register('c');
+            var reg = new Register('c');
             _operations.DeleteLines(3000, reg);
-            Assert.AreEqual(tss.GetLineSpan(1, tss.LineCount-1).GetText(), reg.StringValue);
+            Assert.AreEqual(tss.GetLineSpan(1, tss.LineCount - 1).GetText(), reg.StringValue);
             Assert.AreEqual(OperationKind.LineWise, reg.Value.OperationKind);
         }
 
@@ -489,6 +496,84 @@ namespace VimCoreTest
             Assert.AreEqual("oo" + Environment.NewLine + "bar", reg.StringValue);
             Assert.AreEqual(OperationKind.CharacterWise, reg.Value.OperationKind);
         }
+
+        [Test]
+        public void MoveToNextOccuranceOfWordAtCursor1()
+        {
+            Create("  foo bar baz");
+            _host.Setup(x => x.UpdateStatus(Resources.NormalMode_NoWordUnderCursor)).Verifiable();
+            _operations.MoveToNextOccuranceOfWordAtCursor(true, 1);
+            _host.Verify();
+        }
+
+        [Test]
+        public void MoveToNextOccuranceOfWordAtCursor2()
+        {
+            Create("foo bar", "foo");
+            _operations.MoveToNextOccuranceOfWordAtCursor(true, 1);
+            Assert.AreEqual(_view.GetLine(1).Start, _view.Caret.Position.BufferPosition);
+        }
+
+        [Test]
+        public void MoveToNextOccuranceOfWordAtCursor3()
+        {
+            Create("foo bar", "baz foo");
+            _operations.MoveToNextOccuranceOfWordAtCursor(false, 1);
+            Assert.AreEqual(_view.GetLine(1).Start.Add(4), _view.Caret.Position.BufferPosition);
+        }
+
+        [Test, Description("No match shouldn't do anything")]
+        public void MoveToNextOccuranceOfWordAtCursor4()
+        {
+            Create("fuz bar", "baz foo");
+            _operations.MoveToNextOccuranceOfWordAtCursor(false, 1);
+            Assert.AreEqual(0, _view.Caret.Position.BufferPosition.Position);
+        }
+
+        [Test, Description("With a count")]
+        public void MoveToNextOccuranceOfWordAtCursor5()
+        {
+            Create("foo bar foo", "foo");
+            _operations.MoveToNextOccuranceOfWordAtCursor(false, 3);
+            Assert.AreEqual(_view.GetLine(1).Start, _view.Caret.Position.BufferPosition);
+        }
+
+        [Test]
+        public void MoveToNextOccuranceOfWordAtCursor6()
+        {
+            Create("foo bar baz", "foo");
+            _view.MoveCaretTo(_view.GetLine(1).Start.Position);
+            _operations.MoveToNextOccuranceOfWordAtCursor(true, 1);
+            Assert.AreEqual(0, _view.Caret.Position.BufferPosition.Position);
+        }
+
+        [Test]
+        public void MoveToPreviousOccuranceOfWordAtCursor1()
+        {
+            Create("foo bar", "foo");
+            _view.MoveCaretTo(_view.GetLine(1).Start.Position);
+            _operations.MoveToPreviousOccuranceOfWordAtCursor(false, 1);
+            Assert.AreEqual(0, _view.Caret.Position.BufferPosition.Position);
+        }
+
+        [Test]
+        public void MoveToPreviousOccuranceOfWordAtCursor2()
+        {
+            Create("foo bar", "again foo", "foo");
+            _view.MoveCaretTo(_view.GetLine(2).Start.Position);
+            _operations.MoveToPreviousOccuranceOfWordAtCursor(false, 3);
+            Assert.AreEqual(0, _view.Caret.Position.BufferPosition.Position);
+        }
+
+        [Test]
+        public void MoveToPreviousOccuranceOfWordAtCursor3()
+        {
+            Create("foo bar", "again foo", "foo");
+            _view.MoveCaretTo(_view.GetLine(2).Start.Position);
+            _operations.MoveToPreviousOccuranceOfWordAtCursor(true, 4);
+            Assert.AreEqual(_view.GetLine(2).Start.Position, _view.Caret.Position.BufferPosition.Position);
+        }
+
 
     }
 }

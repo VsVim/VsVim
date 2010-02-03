@@ -1,6 +1,7 @@
 ﻿#light
 
 namespace Vim
+open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Operations
 open Microsoft.VisualStudio.Language.Intellisense
@@ -16,7 +17,9 @@ type internal Vim
         _editorOperationsFactoryService : IEditorOperationsFactoryService,
         _editorFormatMapService : IEditorFormatMapService,
         _completionWindowBrokerFactoryService : ICompletionWindowBrokerFactoryService,
-        _blockCaretFactoryService : IBlockCaretFactoryService) =
+        _blockCaretFactoryService : IBlockCaretFactoryService,
+        _textSearchService : ITextSearchService,
+        _textStructureNavigatorSelectorService : ITextStructureNavigatorSelectorService ) =
     let _markMap = MarkMap() :> IMarkMap
     let _registerMap = RegisterMap()
     let _settings = VimSettingsUtil.CreateDefault
@@ -37,8 +40,9 @@ type internal Vim
                 caret)
         let buffer = bufferRaw :> IVimBuffer
 
+        let wordNav = x.CreateTextStructureNavigator view.TextBuffer WordKind.NormalWord
         let broker = _completionWindowBrokerFactoryService.CreateCompletionWindowBroker view
-        let normalOpts = Modes.Normal.DefaultOperations(view,editOperations,_host,_settings) :> Modes.Normal.IOperations
+        let normalOpts = Modes.Normal.DefaultOperations(view,editOperations,_host,_settings,wordNav,_textSearchService) :> Modes.Normal.IOperations
         let commandOpts = Modes.Command.DefaultOperations(view,editOperations,_host) :> Modes.Command.IOperations
         let insertOpts = Modes.Insert.DefaultOperations(view,editOperations) :> Modes.ICommonOperations
         let visualOptsFactory kind = 
@@ -74,7 +78,11 @@ type internal Vim
         match tuple with 
         | (true,buffer) -> Some buffer
         | (false,_) -> None
-    
+
+    member private x.CreateTextStructureNavigator textBuffer wordKind =
+        let baseImpl = _textStructureNavigatorSelectorService.GetTextStructureNavigator(textBuffer)
+        TssUtil.CreateTextStructureNavigator wordKind baseImpl
+
     interface IVim with
         member x.Host = _host
         member x.MarkMap = _markMap

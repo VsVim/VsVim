@@ -48,6 +48,9 @@ namespace VimCoreTest.Utils
             [Import]
             public IBlockCaretFactoryService blockCaretFactoryService;
 
+            [Import]
+            public ITextSearchService textSearchService;
+
             public Factory() { }
         }
 

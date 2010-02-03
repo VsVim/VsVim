@@ -51,7 +51,6 @@ module internal Utils =
         with 
             | :? System.ArgumentException -> None
 
-    
 module internal ListUtil =
 
     let divide l = (l |> List.head), (l |> List.tail)

@@ -1,6 +1,7 @@
 ﻿#light
 namespace Vim
 open Microsoft.VisualStudio.Text
+open Microsoft.VisualStudio.Text.Operations
 
 module internal TssUtil =
 
@@ -309,3 +310,14 @@ module internal TssUtil =
             |> Seq.map getForSpan
             |> Seq.concat
 
+    let CreateTextStructureNavigator wordKind (baseImpl:ITextStructureNavigator) = 
+        { new ITextStructureNavigator with 
+            member x.ContentType = baseImpl.ContentType
+            member x.GetExtentOfWord point = 
+                match FindCurrentFullWordSpan point wordKind with
+                | Some(span) -> TextExtent(span, true)
+                | None -> TextExtent(SnapshotSpan(point,1),false)
+            member x.GetSpanOfEnclosing span = baseImpl.GetSpanOfEnclosing(span)
+            member x.GetSpanOfFirstChild span = baseImpl.GetSpanOfFirstChild(span)
+            member x.GetSpanOfNextSibling span = baseImpl.GetSpanOfNextSibling(span)
+            member x.GetSpanOfPreviousSibling span = baseImpl.GetSpanOfPreviousSibling(span) }

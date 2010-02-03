@@ -1409,48 +1409,37 @@ namespace VimCoreTest
         [Test]
         public void NextWord1()
         {
-            var host = new Mock<IVimHost>(MockBehavior.Strict);
-            host.Setup(x => x.UpdateStatus(Resources.NormalMode_NoStringUnderCursor)).Verifiable();
-            CreateBuffer(host.Object, " ");
+            CreateBuffer("foo bar");
+            _operations.Setup(x => x.MoveToNextOccuranceOfWordAtCursor(true, 1)).Verifiable();
             _mode.Process("*");
-            host.Verify();
+            _operations.Verify();
         }
 
         [Test, Description("No matches should have no effect")]
         public void NextWord2()
         {
             CreateBuffer("foo bar");
-            var retSpan = new SnapshotSpan(_view.TextSnapshot, 4,1);
-            _searchReplace
-                .Setup(x => x.FindNextWord(new SnapshotPoint(_view.TextSnapshot, 0), WordKind.NormalWord, SearchKind.ForwardWithWrap, true))
-                .Returns(FSharpOption.Create(retSpan))
-                .Verifiable();
-            _mode.Process("*");
-            _searchReplace.Verify();
-            Assert.AreEqual(retSpan.Start, _view.Caret.Position.BufferPosition);
+            _operations.Setup(x => x.MoveToNextOccuranceOfWordAtCursor(true, 4)).Verifiable();
+            _mode.Process("4*");
+            _operations.Verify();
         }
 
         [Test]
         public void PreviousWord1()
         {
-            var host = new FakeVimHost();
-            CreateBuffer(host, "");
+            CreateBuffer("foo bar");
+            _operations.Setup(x => x.MoveToPreviousOccuranceOfWordAtCursor(true, 1)).Verifiable();
             _mode.Process("#");
-            Assert.AreEqual(Resources.NormalMode_NoStringUnderCursor, host.Status);
+            _operations.Verify();
         }
 
         [Test]
         public void PreviousWord2()
         {
             CreateBuffer("foo bar");
-            var retSpan = new SnapshotSpan(_view.TextSnapshot, 4, 1);
-            _searchReplace
-                .Setup(x => x.FindNextWord(new SnapshotPoint(_view.TextSnapshot, 0), WordKind.NormalWord, SearchKind.BackwardWithWrap, true))
-                .Returns(FSharpOption.Create(retSpan))
-                .Verifiable();
-            _mode.Process("#");
-            _searchReplace.Verify();
-            Assert.AreEqual(retSpan.Start, _view.Caret.Position.BufferPosition);
+            _operations.Setup(x => x.MoveToPreviousOccuranceOfWordAtCursor(true, 4)).Verifiable();
+            _mode.Process("4#");
+            _operations.Verify();
         }
 
         #endregion

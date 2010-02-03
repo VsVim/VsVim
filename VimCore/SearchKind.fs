@@ -15,4 +15,9 @@ module internal SearchKindUtil =
             | SearchKind.ForwardWithWrap -> true
             | _ -> false
     let IsBackward x = not (IsForward x)
+    let IsWrap x = 
+        match x with 
+        | SearchKind.BackwardWithWrap -> true
+        | SearchKind.ForwardWithWrap -> true
+        | _ -> false
     

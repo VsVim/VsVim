@@ -49,16 +49,6 @@ type internal NormalMode
         _incrementalSearch.Begin kind
         inner
     
-    member this.FindNextWordUnderCursor (count:int) (kind:SearchKind) =
-        let point = ViewUtil.GetCaretPoint this.TextView
-        if point.Position = point.Snapshot.Length || System.Char.IsWhiteSpace (point.GetChar()) then
-            this.VimHost.UpdateStatus Resources.NormalMode_NoStringUnderCursor
-        else
-            match _searchReplace.FindNextWord point WordKind.NormalWord kind this.Settings.IgnoreCase with
-            | None -> ()
-            | Some(span) ->
-                ViewUtil.MoveCaretToPoint this.TextView span.Start |> ignore
-                    
     member this.WaitForMotion ki count doneFunc = 
         let rec f (result:MotionResult) = 
             match result with 
@@ -292,8 +282,8 @@ type internal NormalMode
             yield (InputUtil.CharToKeyInput('^'), (fun _ _ -> _bufferData.EditorOperations.MoveToStartOfLineAfterWhiteSpace(false)))
             yield (InputUtil.CharToKeyInput('0'), (fun _ _ -> _bufferData.EditorOperations.MoveToStartOfLine(false))) 
             yield (InputUtil.CharToKeyInput('n'), (fun count _ -> _incrementalSearch.FindNextMatch count))
-            yield (InputUtil.CharToKeyInput('*'), (fun count _ -> this.FindNextWordUnderCursor count SearchKind.ForwardWithWrap))
-            yield (InputUtil.CharToKeyInput('#'), (fun count _ -> this.FindNextWordUnderCursor count SearchKind.BackwardWithWrap))
+            yield (InputUtil.CharToKeyInput('*'), (fun count _ -> _operations.MoveToNextOccuranceOfWordAtCursor true count))
+            yield (InputUtil.CharToKeyInput('#'), (fun count _ -> _operations.MoveToPreviousOccuranceOfWordAtCursor true count))
             yield (InputUtil.CharToKeyInput('u'), (fun count _ -> _bufferData.VimHost.Undo this.TextBuffer count))
             yield (KeyInput('r', Key.R, ModifierKeys.Control), (fun count _ -> _bufferData.VimHost.Redo this.TextBuffer count))
             yield (InputUtil.KeyToKeyInput(Key.Enter), (fun _ _ -> this.MoveForEnter this.TextView _bufferData.VimHost))
