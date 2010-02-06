@@ -12,8 +12,9 @@ type internal DefaultOperations
         _textView : ITextView,
         _operations : IEditorOperations,
         _host : IVimHost,
+        _jumpList : IJumpList,
         _tracker : ISelectionTracker ) =
-    inherit CommonOperations(_textView, _operations, _host)
+    inherit CommonOperations(_textView, _operations, _host, _jumpList)
 
     member private x.CommonOperations = x :> ICommonOperations
 

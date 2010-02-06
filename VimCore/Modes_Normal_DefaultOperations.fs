@@ -19,7 +19,7 @@ type internal DefaultOperations
     _searchService : ITextSearchService,
     _jumpList : IJumpList ) =
 
-    inherit CommonOperations(_textView, _operations, _host)
+    inherit CommonOperations(_textView, _operations, _host, _jumpList)
 
     member private x.CommonImpl = x :> ICommonOperations
 

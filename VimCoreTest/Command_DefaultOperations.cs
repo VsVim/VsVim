@@ -23,13 +23,15 @@ namespace VimCoreTest
         private ITextView _view;
         private Mock<IEditorOperations> _editOpts;
         private Mock<IVimHost> _host;
+        private Mock<IJumpList> _jumpList;
 
         private void Create(params string[] lines)
         {
             _view = EditorUtil.CreateView(lines);
             _editOpts = new Mock<IEditorOperations>(MockBehavior.Strict);
             _host = new Mock<IVimHost>(MockBehavior.Strict);
-            _operationsRaw = new DefaultOperations(_view, _editOpts.Object, _host.Object);
+            _jumpList = new Mock<IJumpList>(MockBehavior.Strict);
+            _operationsRaw = new DefaultOperations(_view, _editOpts.Object, _host.Object, _jumpList.Object);
             _operations = _operationsRaw;
         }
         

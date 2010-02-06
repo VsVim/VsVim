@@ -37,11 +37,11 @@ type IMarkMap =
 /// Jump list information
 type IJumpList = 
 
-    /// Current size of the jump list
-    abstract Count : int
-
     /// Current jump
     abstract Current : SnapshotPoint option
+
+    /// Get all of the jumps in the jump list.  Returns in order of most recent to oldest
+    abstract AllJumps : (SnapshotPoint option) seq 
 
     /// Move to the previous point in the jump list
     abstract MovePrevious: unit -> bool
@@ -49,8 +49,8 @@ type IJumpList =
     /// Move to the next point in the jump list
     abstract MoveNext : unit -> bool
 
-    /// Get all of the jumps in the jump list.  Returns in order of most recent to oldest
-    abstract AllJumps : (SnapshotPoint option) seq 
+    /// Add a given SnapshotPoint to the jump list
+    abstract Add : SnapshotPoint -> unit
 
 
 /// Defines a block style caret for a given ITextView.  This allows normal mode to create 

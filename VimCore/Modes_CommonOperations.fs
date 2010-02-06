@@ -11,7 +11,8 @@ type internal CommonOperations
     (
         _textView : ITextView,
         _operations : IEditorOperations,
-        _host : IVimHost ) =
+        _host : IVimHost,
+        _jumpList : IJumpList ) =
 
     member private x.NavigateToPoint (point:VirtualSnapshotPoint) = 
         let buf = point.Position.Snapshot.TextBuffer
@@ -97,15 +98,19 @@ type internal CommonOperations
         member x.NavigateToPoint point = x.NavigateToPoint point
                 
         member x.JumpToMark ident (map:IMarkMap) (host:IVimHost) =
+            let before = ViewUtil.GetCaretPoint _textView
             let jumpLocal (point:VirtualSnapshotPoint) = 
                 ViewUtil.MoveCaretToPoint _textView point.Position |> ignore
+                _jumpList.Add before
                 Succeeded
             if not (map.IsLocalMark ident) then 
                 match map.GetGlobalMark ident with
                 | None -> Failed Resources.Common_MarkNotSet
                 | Some(point) -> 
                     match x.NavigateToPoint point with
-                    | true -> Succeeded
+                    | true -> 
+                        _jumpList.Add before
+                        Succeeded
                     | false -> Failed Resources.Common_MarkInvalid
             else 
                 match map.GetLocalMark _textView.TextBuffer ident with

@@ -19,13 +19,14 @@ namespace VimCoreTest
 
         private class OperationsImpl : CommonOperations
         {
-            internal OperationsImpl(ITextView view, IEditorOperations opts, IVimHost host) : base(view, opts, host) { }
+            internal OperationsImpl(ITextView view, IEditorOperations opts, IVimHost host, IJumpList jumpList) : base(view, opts, host, jumpList) { }
         }
 
         private IWpfTextView _view;
         private ITextBuffer _buffer;
         private Mock<IEditorOperations> _editorOpts;
         private Mock<IVimHost> _host;
+        private Mock<IJumpList> _jumpList;
         private ICommonOperations _operations;
         private CommonOperations _operationsRaw;
 
@@ -35,8 +36,9 @@ namespace VimCoreTest
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 0));
             _buffer = _view.TextBuffer;
             _host = new Mock<IVimHost>(MockBehavior.Strict);
+            _jumpList = new Mock<IJumpList>(MockBehavior.Strict);
             _editorOpts = new Mock<IEditorOperations>(MockBehavior.Strict);
-            _operationsRaw = new OperationsImpl(_view, _editorOpts.Object, _host.Object);
+            _operationsRaw = new OperationsImpl(_view, _editorOpts.Object, _host.Object, _jumpList.Object);
             _operations = _operationsRaw;
         }
 
@@ -183,8 +185,10 @@ namespace VimCoreTest
             var host = new FakeVimHost();
             var map = new MarkMap();
             map.SetLocalMark(new SnapshotPoint(_view.TextSnapshot, 0), 'a');
+            _jumpList.Setup(x => x.Add(_view.GetCaretPoint())).Verifiable();
             var res = _operations.JumpToMark('a', map,host);
             Assert.IsTrue(res.IsSucceeded);
+            _jumpList.Verify();
         }
 
         [Test]
@@ -204,10 +208,11 @@ namespace VimCoreTest
             var view = Utils.EditorUtil.CreateView("foo", "bar");
             var map = new MarkMap();
             map.SetMark(new SnapshotPoint(view.TextSnapshot, 0), 'A');
-            var host = new Mock<IVimHost>(MockBehavior.Strict);
-            host.Setup(x => x.NavigateTo(new VirtualSnapshotPoint(view.TextSnapshot,0))).Returns(true);
-            var res = _operations.JumpToMark('A', map, host.Object);
+            _host.Setup(x => x.NavigateTo(new VirtualSnapshotPoint(view.TextSnapshot,0))).Returns(true);
+            _jumpList.Setup(x => x.Add(_view.GetCaretPoint())).Verifiable();
+            var res = _operations.JumpToMark('A', map, _host.Object);
             Assert.IsTrue(res.IsSucceeded);
+            _jumpList.Verify();
         }
 
         [Test, Description("Jump to global mark and jump fails")]
@@ -216,9 +221,8 @@ namespace VimCoreTest
             var view = Utils.EditorUtil.CreateView("foo", "bar");
             var map = new MarkMap();
             map.SetMark(new SnapshotPoint(view.TextSnapshot, 0), 'A');
-            var host = new Mock<IVimHost>(MockBehavior.Strict);
-            host.Setup(x => x.NavigateTo(new VirtualSnapshotPoint(view.TextSnapshot,0))).Returns(false);
-            var res = _operations.JumpToMark('A', map, host.Object);
+            _host.Setup(x => x.NavigateTo(new VirtualSnapshotPoint(view.TextSnapshot,0))).Returns(false);
+            var res = _operations.JumpToMark('A', map, _host.Object);
             Assert.IsTrue(res.IsFailed);
             Assert.AreEqual(Resources.Common_MarkInvalid, res.AsFailed().Item);
         }
