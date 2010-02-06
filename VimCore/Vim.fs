@@ -37,7 +37,8 @@ type internal Vim
                 x :> IVim,
                 view,
                 editOperations,
-                caret)
+                caret,
+                JumpList())
         let buffer = bufferRaw :> IVimBuffer
 
         let wordNav = x.CreateTextStructureNavigator view.TextBuffer WordKind.NormalWord

@@ -38,7 +38,8 @@ type internal VimBuffer
         _vim : IVim,
         _textView : IWpfTextView,
         _editorOperations : IEditorOperations,
-        _blockCaret : IBlockCaret) =
+        _blockCaret : IBlockCaret,
+        _jumpList : IJumpList ) =
 
     let mutable _modeMap = ModeMap()
     let _keyInputProcessedEvent = new Event<_>()
@@ -83,6 +84,7 @@ type internal VimBuffer
         member x.EditorOperations = _editorOperations
         member x.Name = _vim.Host.GetName _textView.TextBuffer
         member x.MarkMap = _vim.MarkMap
+        member x.JumpList = _jumpList
         member x.ModeKind = x.Mode.ModeKind
         member x.Mode = x.Mode
         member x.AllModes = _modeMap.Modes
@@ -106,5 +108,5 @@ type internal VimBuffer
         member x.Close () = 
             x.Mode.OnLeave()
             _blockCaret.Destroy()
-            _vim.MarkMap.DeleteAllMarksForBuffer (x :> IVimBuffer)
+            _vim.MarkMap.DeleteAllMarksForBuffer _textView.TextBuffer
             _vim.RemoveBuffer _textView |> ignore

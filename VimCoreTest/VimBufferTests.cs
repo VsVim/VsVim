@@ -24,6 +24,7 @@ namespace VimCoreTest
         Mock<IMode> _normalMode;
         Mock<IMode> _insertMode;
         Mock<IMode> _disabledMode;
+        Mock<IJumpList> _jumpList;
         MockBlockCaret _blockCaret;
         VimBuffer _rawBuffer;
         IVimBuffer _buffer;
@@ -45,11 +46,13 @@ namespace VimCoreTest
             _normalMode.SetupGet(x => x.ModeKind).Returns(ModeKind.Normal);
             _insertMode = new Mock<IMode>(MockBehavior.Strict);
             _insertMode.SetupGet(x => x.ModeKind).Returns(ModeKind.Insert);
+            _jumpList = new Mock<IJumpList>(MockBehavior.Strict);
             _rawBuffer = new VimBuffer(
                 _vim.Object,
                 _view,
                 _editorOperations,
-                _blockCaret);
+                _blockCaret,
+                _jumpList.Object);
             _rawBuffer.AddMode(_normalMode.Object);
             _rawBuffer.AddMode(_insertMode.Object);
             _rawBuffer.AddMode(_disabledMode.Object);

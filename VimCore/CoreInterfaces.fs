@@ -34,6 +34,22 @@ type IMarkMap =
     abstract DeleteAllMarksForBuffer : ITextBuffer -> unit
 
 
+/// Jump list information
+type IJumpList = 
+
+    /// Current size of the jump list
+    abstract Count : int
+
+    /// Get the previous jump in the jump list
+    abstract PreviousJump : SnapshotPoint option
+
+    /// Get the next jump in the jump list
+    abstract NextJump : SnapshotPoint option
+
+    /// Get all of the jumps in the jump list.  Returns in order of most recent to oldest
+    abstract AllJumps : (SnapshotPoint option) seq 
+
+
 /// Defines a block style caret for a given ITextView.  This allows normal mode to create 
 /// a block style cursor when needed
 type IBlockCaret =
@@ -83,6 +99,9 @@ and IVimBuffer =
     /// Owning IVim instance
     abstract Vim : IVim
     abstract MarkMap : IMarkMap
+
+    /// Jump list
+    abstract JumpList : IJumpList
 
     /// Available IBlockCaret implementation for the buffer
     abstract BlockCaret : IBlockCaret
