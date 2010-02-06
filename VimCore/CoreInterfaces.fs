@@ -6,6 +6,34 @@ open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Operations
 open System.Windows.Input
 
+type IMarkMap =
+    abstract TrackedBuffers : ITextBuffer seq
+    abstract IsLocalMark : char -> bool
+    abstract GetLocalMark : ITextBuffer -> char -> VirtualSnapshotPoint option
+
+    /// Setup a local mark for the given SnapshotPoint
+    abstract SetLocalMark : SnapshotPoint -> char -> unit
+    abstract GetMark : ITextBuffer -> char -> VirtualSnapshotPoint option
+    abstract SetMark : SnapshotPoint -> char -> unit
+
+    /// Get the ITextBuffer to which this global mark points to 
+    abstract GetGlobalMarkOwner : char -> ITextBuffer option
+
+    /// Get the current value of the specified global mark
+    abstract GetGlobalMark : char -> VirtualSnapshotPoint option
+
+    /// Get all of the local marks for the buffer
+    abstract GetLocalMarks : ITextBuffer -> (char * VirtualSnapshotPoint) seq
+
+    /// Get all of the available global marks
+    abstract GetGlobalMarks : unit -> (char * VirtualSnapshotPoint) seq
+
+    /// Delete the specified local mark on the ITextBuffer
+    abstract DeleteLocalMark : ITextBuffer -> char -> bool
+    abstract DeleteAllMarks : unit -> unit
+    abstract DeleteAllMarksForBuffer : ITextBuffer -> unit
+
+
 /// Defines a block style caret for a given ITextView.  This allows normal mode to create 
 /// a block style cursor when needed
 type IBlockCaret =
@@ -128,32 +156,5 @@ and IMode =
 
     /// Called when the mode is left
     abstract OnLeave : unit -> unit
-
-and IMarkMap =
-    abstract TrackedBuffers : ITextBuffer seq
-    abstract IsLocalMark : char -> bool
-    abstract GetLocalMark : ITextBuffer -> char -> VirtualSnapshotPoint option
-
-    /// Setup a local mark for the given SnapshotPoint
-    abstract SetLocalMark : SnapshotPoint -> char -> unit
-    abstract GetMark : ITextBuffer -> char -> VirtualSnapshotPoint option
-    abstract SetMark : IVimBuffer -> SnapshotPoint -> char -> unit
-
-    /// Get the ITextBuffer to which this global mark points to 
-    abstract GetGlobalMarkOwner : char -> IVimBuffer option
-
-    /// Get the current value of the specified global mark
-    abstract GetGlobalMark : char -> (IVimBuffer * VirtualSnapshotPoint) option
-
-    /// Get all of the local marks for the buffer
-    abstract GetLocalMarks : ITextBuffer -> (char * VirtualSnapshotPoint) seq
-
-    /// Get all of the available global marks
-    abstract GetGlobalMarks : unit -> (char * VirtualSnapshotPoint) seq
-
-    /// Delete the specified local mark on the ITextBuffer
-    abstract DeleteLocalMark : ITextBuffer -> char -> bool
-    abstract DeleteAllMarks : unit -> unit
-    abstract DeleteAllMarksForBuffer : IVimBuffer -> unit
 
 

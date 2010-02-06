@@ -21,7 +21,7 @@ type Mark =
 type MarkMap() =
 
     let mutable _localMap = new Dictionary<ITextBuffer,(char*Mark) list>();
-    let mutable _globalList : (IVimBuffer*char*Mark) seq = Seq.empty
+    let mutable _globalList : (ITextBuffer*char*Mark) seq = Seq.empty
     let mutable _tracking = new Dictionary<ITextBuffer, System.IDisposable>() 
 
     /// Is this mark local to a buffer
@@ -107,7 +107,7 @@ type MarkMap() =
 
         // Now update the global marks.  Don't rebuild the list unless there is at least
         // one mark in the list for this buffer
-        if not (_globalList |> Seq.filter ( fun (buf,_,_) -> buf.TextBuffer = buffer) |> Seq.isEmpty) then
+        if not (_globalList |> Seq.filter ( fun (buf,_,_) -> buf = buffer) |> Seq.isEmpty) then
             _globalList <- _globalList |> Seq.map (fun (b,c,m) -> (b,c,updateSingleMark m))
 
 
@@ -135,7 +135,7 @@ type MarkMap() =
 
     member private x.AllMarksGoneInBuffer buffer =
         not (_localMap.ContainsKey(buffer))
-        && (_globalList |> Seq.filter (fun (b,_,_) -> b.TextBuffer = buffer) |> Seq.isEmpty)
+        && (_globalList |> Seq.filter (fun (b,_,_) -> b = buffer) |> Seq.isEmpty)
 
     member x.TrackedBuffers = _tracking.Keys :> ITextBuffer seq 
 
@@ -155,7 +155,7 @@ type MarkMap() =
         else
             let found = 
                 _globalList 
-                |> Seq.tryFind (fun (b,c,m) -> b.TextBuffer = buffer && c = ident)
+                |> Seq.tryFind (fun (b,c,m) -> b = buffer && c = ident)
             match found with 
             | Some(_,_,m) -> MarkMap.MarkToPoint buffer.CurrentSnapshot m
             | None -> None
@@ -171,15 +171,16 @@ type MarkMap() =
         x.EnsureTracking buffer
 
     /// Set the mark for the <param name="point"/> inside the corresponding buffer.  
-    member x.SetMark (vimBuffer:IVimBuffer) (point:SnapshotPoint) (ident:char) = 
+    member x.SetMark (point:SnapshotPoint) (ident:char) = 
+        let buffer = point.Snapshot.TextBuffer
         if MarkMap.IsLocalMark ident then x.SetLocalMark point ident
         else    
             let mark = Valid(MarkMap.PointToMarkData point)
             _globalList <-
                 _globalList
                 |> Seq.filter (fun (b,c,m) -> c <> ident)
-                |> Seq.append (Seq.singleton (vimBuffer,ident,mark))
-        x.EnsureTracking vimBuffer.TextBuffer
+                |> Seq.append (Seq.singleton (buffer,ident,mark))
+        x.EnsureTracking buffer
 
     member x.GetGlobalMarkOwner ident = 
         let res = 
@@ -190,10 +191,7 @@ type MarkMap() =
 
     member x.GetGlobalMark ident = 
         match x.GetGlobalMarkOwner ident with 
-        | Some (buf) -> 
-            match x.GetMark buf.TextBuffer ident with
-            | Some(point) -> Some (buf,point)
-            | None -> None
+        | Some (buf) ->  x.GetMark buf ident 
         | None -> None
 
     /// Delete the specified local mark.  
@@ -224,7 +222,7 @@ type MarkMap() =
     member x.DeleteAllMarksForBuffer buffer =
         x.EnsureNotTracking buffer
         _localMap.Remove(buffer) |> ignore
-        _globalList <- _globalList |> Seq.filter (fun (b,_,_) -> b.TextBuffer <> buffer)
+        _globalList <- _globalList |> Seq.filter (fun (b,_,_) -> b <> buffer)
 
     member x.GetLocalMarks (buffer:ITextBuffer) = 
         let tss = buffer.CurrentSnapshot
@@ -235,7 +233,7 @@ type MarkMap() =
 
     member x.GetGlobalMarks () = 
         _globalList 
-        |> Seq.map (fun (b,c,m) -> (c,MarkMap.MarkToPoint b.TextSnapshot m))
+        |> Seq.map (fun (b,c,m) -> (c,MarkMap.MarkToPoint b.CurrentSnapshot m))
         |> Seq.choose (fun (c,opt) -> if Option.isSome opt then Some (c, Option.get opt) else None)
 
     interface IMarkMap with
@@ -245,12 +243,12 @@ type MarkMap() =
         member x.GetGlobalMarkOwner c = x.GetGlobalMarkOwner c
         member x.GetMark buf c = x.GetMark buf c 
         member x.GetGlobalMark c = x.GetGlobalMark c
-        member x.SetMark buffer point c = x.SetMark buffer point c 
+        member x.SetMark point c = x.SetMark point c 
         member x.SetLocalMark point c = x.SetLocalMark point c
         member x.GetLocalMarks buffer = x.GetLocalMarks buffer
         member x.GetGlobalMarks () = x.GetGlobalMarks()
         member x.DeleteLocalMark buf c = x.DeleteLocalMark buf c 
         member x.DeleteAllMarks () = x.DeleteAllMarks()
-        member x.DeleteAllMarksForBuffer buf = x.DeleteAllMarksForBuffer buf.TextBuffer
+        member x.DeleteAllMarksForBuffer buf = x.DeleteAllMarksForBuffer buf
     
     

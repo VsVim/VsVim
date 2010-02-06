@@ -57,9 +57,7 @@ namespace VimCoreTest
         public void TrackedBuffers2()
         {
             CreateBuffer("foo", "bar");
-            var vimBuffer = new Mock<IVimBuffer>(MockBehavior.Strict);
-            vimBuffer.SetupGet(x => x.TextBuffer).Returns(_buffer);
-            _map.SetMark(vimBuffer.Object, new SnapshotPoint(_buffer.CurrentSnapshot, 0), 'A');
+            _map.SetMark(new SnapshotPoint(_buffer.CurrentSnapshot, 0), 'A');
             Assert.IsTrue(_map.TrackedBuffers.Contains(_buffer));
         }
 

@@ -200,11 +200,8 @@ namespace VimCoreTest
         public void JumpToMark3()
         {
             var view = Utils.EditorUtil.CreateView("foo", "bar");
-            var buffer = new Mock<IVimBuffer>(MockBehavior.Strict);
-            buffer.SetupGet(x => x.TextBuffer).Returns(view.TextBuffer);
-            buffer.SetupGet(x => x.Name).Returns("foo");
             var map = new MarkMap();
-            map.SetMark(buffer.Object, new SnapshotPoint(view.TextSnapshot, 0), 'A');
+            map.SetMark(new SnapshotPoint(view.TextSnapshot, 0), 'A');
             var host = new Mock<IVimHost>(MockBehavior.Strict);
             host.Setup(x => x.NavigateTo(new VirtualSnapshotPoint(view.TextSnapshot,0))).Returns(true);
             var res = _operations.JumpToMark('A', map, host.Object);
@@ -215,11 +212,8 @@ namespace VimCoreTest
         public void JumpToMark4()
         {
             var view = Utils.EditorUtil.CreateView("foo", "bar");
-            var buffer = new Mock<IVimBuffer>(MockBehavior.Strict);
-            buffer.SetupGet(x => x.TextBuffer).Returns(view.TextBuffer);
-            buffer.SetupGet(x => x.Name).Returns("foo");
             var map = new MarkMap();
-            map.SetMark(buffer.Object, new SnapshotPoint(view.TextSnapshot, 0), 'A');
+            map.SetMark(new SnapshotPoint(view.TextSnapshot, 0), 'A');
             var host = new Mock<IVimHost>(MockBehavior.Strict);
             host.Setup(x => x.NavigateTo(new VirtualSnapshotPoint(view.TextSnapshot,0))).Returns(false);
             var res = _operations.JumpToMark('A', map, host.Object);

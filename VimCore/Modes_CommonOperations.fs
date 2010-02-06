@@ -81,7 +81,7 @@ type internal CommonOperations
         member x.SetMark (vimBuffer:IVimBuffer) point c = 
             if System.Char.IsLetter(c) || c = '\'' || c = '`' then
                 let map = vimBuffer.MarkMap
-                map.SetMark vimBuffer point c
+                map.SetMark point c
                 Succeeded
             else
                 Failed(Resources.Common_MarkInvalid)
@@ -93,8 +93,9 @@ type internal CommonOperations
             if not (map.IsLocalMark ident) then 
                 match map.GetGlobalMark ident with
                 | None -> Failed Resources.Common_MarkNotSet
-                | Some(buf,point) -> 
-                    if buf.TextBuffer = _textView.TextBuffer then jumpLocal point
+                | Some(point) -> 
+                    let buf = point.Position.Snapshot.TextBuffer
+                    if buf = _textView.TextBuffer then jumpLocal point
                     else  
                         match host.NavigateTo point with
                         | true -> Succeeded
