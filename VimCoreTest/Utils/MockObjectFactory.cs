@@ -109,5 +109,29 @@ namespace VimCoreTest.Utils
             return Tuple.Create(view, caret, selection);
         }
 
+        internal static Mock<ITextBuffer> CreateTextBuffer()
+        {
+            var mock = new Mock<ITextBuffer>(MockBehavior.Strict);
+            return mock;
+        }
+
+        internal static Mock<ITextSnapshot> CreateTextSnapshot(
+            int length,
+            ITextBuffer buffer = null )
+        {
+            buffer = buffer ?? CreateTextBuffer().Object;
+            var mock = new Mock<ITextSnapshot>(MockBehavior.Strict);
+            mock.SetupGet(x => x.Length).Returns(length);
+            mock.SetupGet(x => x.TextBuffer).Returns(buffer);
+            return mock;
+        }
+
+        internal static SnapshotPoint CreateSnapshotPoint(
+            int position,
+            ITextSnapshot snapshot = null)
+        {
+            snapshot = snapshot ?? CreateTextSnapshot(position + 1).Object;
+            return new SnapshotPoint(snapshot, position);
+        }
     }
 }

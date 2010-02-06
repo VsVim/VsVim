@@ -294,6 +294,9 @@ type internal NormalMode
             yield (KeyInput('J', Key.J, ModifierKeys.Shift), (fun count _ -> _operations.JoinAtCaret count))
             yield (KeyInput(']', Key.OemCloseBrackets, ModifierKeys.Control), (fun _ _ -> _operations.GoToDefinitionWrapper()))
             yield (InputUtil.CharToKeyInput('Y'), (fun count reg -> _operations.YankLines count reg))
+            yield (InputUtil.KeyToKeyInput(Key.Tab), (fun count _ -> _operations.JumpNext count))
+            yield (KeyInput('i', Key.I, ModifierKeys.Control), (fun count _ -> _operations.JumpNext count))
+            yield (KeyInput('o', Key.O, ModifierKeys.Control), (fun count _ -> _operations.JumpPrevious count))
         }
 
         let doNothing _ _ = ()

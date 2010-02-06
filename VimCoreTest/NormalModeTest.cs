@@ -1754,6 +1754,54 @@ namespace VimCoreTest
             Assert.AreEqual(1, _blockCaret.HideCount);
         }
 
+        [Test]
+        public void JumpNext1()
+        {
+            CreateBuffer(s_lines);
+            _operations.Setup(x => x.JumpNext(1)).Verifiable();
+            _mode.Process(new KeyInput('i', Key.I, ModifierKeys.Control));
+            _operations.Verify();
+        }
+
+        [Test]
+        public void JumpNext2()
+        {
+            CreateBuffer(s_lines);
+            _operations.Setup(x => x.JumpNext(2)).Verifiable();
+            _mode.Process('2');
+            _mode.Process(new KeyInput('i', Key.I, ModifierKeys.Control));
+            _operations.Verify();
+        }
+
+        [Test]
+        public void JumpNext3()
+        {
+            CreateBuffer(s_lines);
+            _operations.Setup(x => x.JumpNext(1)).Verifiable();
+            _mode.Process(InputUtil.KeyToKeyInput(Key.Tab));
+            _operations.Verify();
+
+        }
+
+        [Test]
+        public void JumpPrevious1()
+        {
+            CreateBuffer(s_lines);
+            _operations.Setup(x => x.JumpPrevious(1)).Verifiable();
+            _mode.Process(new KeyInput('o', Key.O, ModifierKeys.Control));
+            _operations.Verify();
+        }
+
+        [Test]
+        public void JumpPrevious2()
+        {
+            CreateBuffer(s_lines);
+            _operations.Setup(x => x.JumpPrevious(2)).Verifiable();
+            _mode.Process('2');
+            _mode.Process(new KeyInput('o', Key.O, ModifierKeys.Control));
+            _operations.Verify();
+        }
+
         #endregion
 
         #region Visual Mode

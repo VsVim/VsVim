@@ -10,7 +10,15 @@ open Microsoft.VisualStudio.Text.Operations
 type internal CommonOperations 
     (
         _textView : ITextView,
-        _operations : IEditorOperations ) =
+        _operations : IEditorOperations,
+        _host : IVimHost ) =
+
+    member private x.NavigateToPoint (point:VirtualSnapshotPoint) = 
+        let buf = point.Position.Snapshot.TextBuffer
+        if buf = _textView.TextBuffer then 
+            ViewUtil.MoveCaretToPoint _textView point.Position |> ignore
+            true
+        else  _host.NavigateTo point 
 
     interface ICommonOperations with
         member x.TextView = _textView 
@@ -85,6 +93,8 @@ type internal CommonOperations
                 Succeeded
             else
                 Failed(Resources.Common_MarkInvalid)
+
+        member x.NavigateToPoint point = x.NavigateToPoint point
                 
         member x.JumpToMark ident (map:IMarkMap) (host:IVimHost) =
             let jumpLocal (point:VirtualSnapshotPoint) = 
@@ -94,12 +104,9 @@ type internal CommonOperations
                 match map.GetGlobalMark ident with
                 | None -> Failed Resources.Common_MarkNotSet
                 | Some(point) -> 
-                    let buf = point.Position.Snapshot.TextBuffer
-                    if buf = _textView.TextBuffer then jumpLocal point
-                    else  
-                        match host.NavigateTo point with
-                        | true -> Succeeded
-                        | false -> Failed Resources.Common_MarkInvalid
+                    match x.NavigateToPoint point with
+                    | true -> Succeeded
+                    | false -> Failed Resources.Common_MarkInvalid
             else 
                 match map.GetLocalMark _textView.TextBuffer ident with
                 | Some(point) -> jumpLocal point

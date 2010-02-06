@@ -16,11 +16,25 @@ type internal DefaultOperations
     _host : IVimHost,
     _settings : VimSettings,
     _normalWordNav : ITextStructureNavigator,
-    _searchService : ITextSearchService ) =
+    _searchService : ITextSearchService,
+    _jumpList : IJumpList ) =
 
-    inherit CommonOperations(_textView, _operations)
+    inherit CommonOperations(_textView, _operations, _host)
 
     member private x.CommonImpl = x :> ICommonOperations
+
+    member private x.JumpCore count moveJump =
+        let rec inner count = 
+            if count >= 1 && moveJump() then inner (count-1)
+            elif count = 0 then true
+            else false
+        if not (inner count) then _host.Beep()
+        else
+            match _jumpList.Current with
+            | None -> _host.Beep()
+            | Some(point) -> 
+                let ret = x.CommonImpl.NavigateToPoint (VirtualSnapshotPoint(point))
+                if not ret then _host.Beep()
 
     member private x.MoveToNextWordCore isWrap isWholeWord count = 
         let point = ViewUtil.GetCaretPoint _textView
@@ -203,3 +217,7 @@ type internal DefaultOperations
     
         member x.MoveToPreviousOccuranceOfPartialWordAtCursor count =
             x.MoveToPreviousWordCore true false count
+
+        member x.JumpNext count = x.JumpCore count (fun () -> _jumpList.MoveNext())
+        member x.JumpPrevious count = x.JumpCore count (fun() -> _jumpList.MovePrevious())
+    

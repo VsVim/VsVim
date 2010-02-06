@@ -30,6 +30,10 @@ type ICommonOperations =
     /// be generated as appropriate
     abstract GoToDefinition : IVimHost -> Result
 
+    /// Navigate to the given point which may occur in any ITextBuffer.  This will not update the 
+    /// jump list
+    abstract NavigateToPoint : VirtualSnapshotPoint -> bool
+
     /// Move the caret count spaces left on the same line
     abstract MoveCaretLeft : count : int -> unit
 
@@ -49,7 +53,6 @@ type ICommonOperations =
     abstract MoveWordBackward : WordKind -> count : int -> unit
     
     /// Jumps to a given mark in the buffer.  
-    /// TODO: Support global marks.  
     abstract JumpToMark : char -> IMarkMap -> IVimHost -> Result
 
     /// Sets a mark at the specified point.  If this operation fails an error message will be generated

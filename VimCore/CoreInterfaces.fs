@@ -40,11 +40,14 @@ type IJumpList =
     /// Current size of the jump list
     abstract Count : int
 
-    /// Get the previous jump in the jump list
-    abstract PreviousJump : SnapshotPoint option
+    /// Current jump
+    abstract Current : SnapshotPoint option
 
-    /// Get the next jump in the jump list
-    abstract NextJump : SnapshotPoint option
+    /// Move to the previous point in the jump list
+    abstract MovePrevious: unit -> bool
+
+    /// Move to the next point in the jump list
+    abstract MoveNext : unit -> bool
 
     /// Get all of the jumps in the jump list.  Returns in order of most recent to oldest
     abstract AllJumps : (SnapshotPoint option) seq 

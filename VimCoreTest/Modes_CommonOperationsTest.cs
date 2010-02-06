@@ -19,12 +19,13 @@ namespace VimCoreTest
 
         private class OperationsImpl : CommonOperations
         {
-            internal OperationsImpl(ITextView view, IEditorOperations opts) : base(view, opts) { }
+            internal OperationsImpl(ITextView view, IEditorOperations opts, IVimHost host) : base(view, opts, host) { }
         }
 
         private IWpfTextView _view;
         private ITextBuffer _buffer;
         private Mock<IEditorOperations> _editorOpts;
+        private Mock<IVimHost> _host;
         private ICommonOperations _operations;
         private CommonOperations _operationsRaw;
 
@@ -33,8 +34,9 @@ namespace VimCoreTest
             _view = Utils.EditorUtil.CreateView(lines);
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 0));
             _buffer = _view.TextBuffer;
+            _host = new Mock<IVimHost>(MockBehavior.Strict);
             _editorOpts = new Mock<IEditorOperations>(MockBehavior.Strict);
-            _operationsRaw = new OperationsImpl(_view, _editorOpts.Object);
+            _operationsRaw = new OperationsImpl(_view, _editorOpts.Object, _host.Object);
             _operations = _operationsRaw;
         }
 

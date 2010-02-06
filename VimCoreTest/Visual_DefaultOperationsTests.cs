@@ -19,6 +19,7 @@ namespace VimCoreTest
         private IWpfTextView _view;
         private Mock<IEditorOperations> _editorOpts;
         private Mock<ISelectionTracker> _tracker;
+        private Mock<IVimHost> _host;
         private IOperations _operations;
 
         private void Create(params string[] lines)
@@ -26,7 +27,8 @@ namespace VimCoreTest
             _view = EditorUtil.CreateView(lines);
             _editorOpts = new Mock<IEditorOperations>(MockBehavior.Strict);
             _tracker = new Mock<ISelectionTracker>(MockBehavior.Strict);
-            _operations = new DefaultOperations(_view, _editorOpts.Object, _tracker.Object);
+            _host = new Mock<IVimHost>(MockBehavior.Strict);
+            _operations = new DefaultOperations(_view, _editorOpts.Object, _host.Object, _tracker.Object);
         }
 
         [Test]
