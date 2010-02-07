@@ -40,7 +40,7 @@ type internal IncrementalSearch
     member private x.ProcessCore (ki:KeyInput) = 
 
         match _data with 
-        | None -> true
+        | None -> SearchComplete
         | Some (data) -> 
 
             let resetView() = ViewUtil.MoveCaretToPoint _textView data.Start |> ignore
@@ -65,24 +65,24 @@ type internal IncrementalSearch
                 _lastSearch <- previousSearch
                 _host.UpdateStatus System.String.Empty
                 _currentSearchSpanChanged.Trigger None
-                true
+                SearchComplete
             | Key.Escape -> 
                 resetView()
                 _host.UpdateStatus System.String.Empty
                 _currentSearchSpanChanged.Trigger None
-                true
+                SearchCanceled
             | Key.Back -> 
                 resetView()
                 let pattern = 
                     if pattern.Length = 1 then System.String.Empty
                     else pattern.Substring(0, pattern.Length - 1)
                 doSearchWithNewPattern pattern 
-                false
+                SearchNeedMore
             | _ -> 
                 let c = ki.Char
                 let pattern = pattern + (c.ToString())
                 doSearchWithNewPattern pattern
-                false
+                SearchNeedMore
 
 
     member private x.FindNextMatch (count:int) =

@@ -43,9 +43,14 @@ type internal NormalMode
     
     /// Begin an incremental search.  Called when the user types / into the editor
     member this.BeginIncrementalSearch (kind:SearchKind) =
+        let before = ViewUtil.GetCaretPoint _bufferData.TextView
         let rec inner (ki:KeyInput) _ _ = 
-            if _incrementalSearch.Process ki then NormalModeResult.Complete
-            else NormalModeResult.NeedMore2 inner
+            match _incrementalSearch.Process ki with
+            | SearchComplete -> 
+                _bufferData.JumpList.Add before
+                NormalModeResult.Complete
+            | SearchCanceled -> NormalModeResult.Complete
+            | SearchNeedMore ->  NormalModeResult.NeedMore2 inner
         _incrementalSearch.Begin kind
         inner
     
