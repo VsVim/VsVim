@@ -104,9 +104,11 @@ namespace VimCoreTest
         public void GoToDefinition1()
         {
             CreateLines("foo");
+            _jumpList.Setup(x => x.Add(_view.GetCaretPoint())).Verifiable();
             _host.Setup(x => x.GoToDefinition()).Returns(true);
             var res = _operations.GoToDefinition();
             Assert.IsTrue(res.IsSucceeded);
+            _jumpList.Verify();
         }
 
         [Test]

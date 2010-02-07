@@ -77,7 +77,9 @@ type internal CommonOperations
             inner count
                 
         member x.GoToDefinition () = 
+            let before = ViewUtil.GetCaretPoint _textView
             if _host.GoToDefinition() then
+                _jumpList.Add before
                 Succeeded
             else
                 match TssUtil.FindCurrentFullWordSpan _textView.Caret.Position.BufferPosition Vim.WordKind.BigWord with
