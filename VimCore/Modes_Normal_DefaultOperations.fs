@@ -186,7 +186,7 @@ type internal DefaultOperations
                 _host.Beep()
 
         member x.GoToDefinitionWrapper () =
-            match x.CommonImpl.GoToDefinition _host with
+            match x.CommonImpl.GoToDefinition() with
             | Vim.Modes.Succeeded -> ()
             | Vim.Modes.Failed(msg) ->
                 _host.UpdateStatus(msg)

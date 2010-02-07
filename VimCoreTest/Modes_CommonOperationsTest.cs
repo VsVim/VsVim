@@ -104,9 +104,8 @@ namespace VimCoreTest
         public void GoToDefinition1()
         {
             CreateLines("foo");
-            var host = new Mock<IVimHost>(MockBehavior.Strict);
-            host.Setup(x => x.GoToDefinition()).Returns(true);
-            var res = _operations.GoToDefinition(host.Object);
+            _host.Setup(x => x.GoToDefinition()).Returns(true);
+            var res = _operations.GoToDefinition();
             Assert.IsTrue(res.IsSucceeded);
         }
 
@@ -114,9 +113,8 @@ namespace VimCoreTest
         public void GoToDefinition2()
         {
             CreateLines("foo");
-            var host = new Mock<IVimHost>(MockBehavior.Strict);
-            host.Setup(x => x.GoToDefinition()).Returns(false);
-            var res = _operations.GoToDefinition(host.Object);
+            _host.Setup(x => x.GoToDefinition()).Returns(false);
+            var res = _operations.GoToDefinition();
             Assert.IsTrue(res.IsFailed);
             Assert.IsTrue(((Result.Failed)res).Item.Contains("foo"));
         }
@@ -125,9 +123,8 @@ namespace VimCoreTest
         public void GoToDefinition3()
         {
             CreateLines("      foo");
-            var host = new Mock<IVimHost>(MockBehavior.Strict);
-            host.Setup(x => x.GoToDefinition()).Returns(false);
-            var res = _operations.GoToDefinition(host.Object);
+            _host.Setup(x => x.GoToDefinition()).Returns(false);
+            var res = _operations.GoToDefinition();
             Assert.IsTrue(res.IsFailed);
         }
 
@@ -135,9 +132,8 @@ namespace VimCoreTest
         public void GoToDefinition4()
         {
             CreateLines("  foo");
-            var host = new Mock<IVimHost>(MockBehavior.Strict);
-            host.Setup(x => x.GoToDefinition()).Returns(false);
-            var res = _operations.GoToDefinition(host.Object);
+            _host.Setup(x => x.GoToDefinition()).Returns(false);
+            var res = _operations.GoToDefinition();
             Assert.IsTrue(res.IsFailed);
             Assert.AreEqual(Resources.Common_GotoDefNoWordUnderCursor, res.AsFailed().Item);
         }
@@ -146,9 +142,8 @@ namespace VimCoreTest
         public void GoToDefinition5()
         {
             CreateLines("foo bar baz");
-            var host = new Mock<IVimHost>(MockBehavior.Strict);
-            host.Setup(x => x.GoToDefinition()).Returns(false);
-            var res = _operations.GoToDefinition(host.Object);
+            _host.Setup(x => x.GoToDefinition()).Returns(false);
+            var res = _operations.GoToDefinition();
             Assert.IsTrue(res.IsFailed);
             Assert.AreEqual(Resources.Common_GotoDefFailed("foo"), res.AsFailed().Item);
         }
@@ -182,11 +177,10 @@ namespace VimCoreTest
         public void JumpToMark1()
         {
             CreateLines("foo", "bar");
-            var host = new FakeVimHost();
             var map = new MarkMap();
             map.SetLocalMark(new SnapshotPoint(_view.TextSnapshot, 0), 'a');
             _jumpList.Setup(x => x.Add(_view.GetCaretPoint())).Verifiable();
-            var res = _operations.JumpToMark('a', map,host);
+            var res = _operations.JumpToMark('a', map);
             Assert.IsTrue(res.IsSucceeded);
             _jumpList.Verify();
         }
@@ -195,9 +189,8 @@ namespace VimCoreTest
         public void JumpToMark2()
         {
             var view = Utils.EditorUtil.CreateView("foo", "bar");
-            var host = new FakeVimHost();
             var map = new MarkMap();
-            var res = _operations.JumpToMark('b', map, host);
+            var res = _operations.JumpToMark('b', map);
             Assert.IsTrue(res.IsFailed);
             Assert.AreEqual(Resources.Common_MarkNotSet, res.AsFailed().Item);
         }
@@ -210,7 +203,7 @@ namespace VimCoreTest
             map.SetMark(new SnapshotPoint(view.TextSnapshot, 0), 'A');
             _host.Setup(x => x.NavigateTo(new VirtualSnapshotPoint(view.TextSnapshot,0))).Returns(true);
             _jumpList.Setup(x => x.Add(_view.GetCaretPoint())).Verifiable();
-            var res = _operations.JumpToMark('A', map, _host.Object);
+            var res = _operations.JumpToMark('A', map);
             Assert.IsTrue(res.IsSucceeded);
             _jumpList.Verify();
         }
@@ -222,7 +215,7 @@ namespace VimCoreTest
             var map = new MarkMap();
             map.SetMark(new SnapshotPoint(view.TextSnapshot, 0), 'A');
             _host.Setup(x => x.NavigateTo(new VirtualSnapshotPoint(view.TextSnapshot,0))).Returns(false);
-            var res = _operations.JumpToMark('A', map, _host.Object);
+            var res = _operations.JumpToMark('A', map);
             Assert.IsTrue(res.IsFailed);
             Assert.AreEqual(Resources.Common_MarkInvalid, res.AsFailed().Item);
         }
@@ -235,8 +228,7 @@ namespace VimCoreTest
             buffer.SetupGet(x => x.TextBuffer).Returns(view.TextBuffer);
             buffer.SetupGet(x => x.Name).Returns("foo");
             var map = new MarkMap();
-            var host = new Mock<IVimHost>(MockBehavior.Strict);
-            var res = _operations.JumpToMark('A', map, host.Object);
+            var res = _operations.JumpToMark('A', map);
             Assert.IsTrue(res.IsFailed);
             Assert.AreEqual(Resources.Common_MarkNotSet, res.AsFailed().Item);
         }

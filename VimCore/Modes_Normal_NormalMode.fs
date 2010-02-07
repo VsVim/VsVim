@@ -219,7 +219,7 @@ type internal NormalMode
 
     member x.JumpToMark =
         let waitForKey (ki:KeyInput) _ _ =
-            let res = _operations.JumpToMark ki.Char _bufferData.MarkMap _bufferData.VimHost
+            let res = _operations.JumpToMark ki.Char _bufferData.MarkMap 
             match res with 
             | Modes.Failed(msg) -> _bufferData.VimHost.UpdateStatus(msg)
             | _ -> ()

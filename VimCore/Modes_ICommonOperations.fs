@@ -28,7 +28,7 @@ type ICommonOperations =
 
     /// Attempt to GoToDefinition on the current state of the buffer.  If this operation fails, an error message will 
     /// be generated as appropriate
-    abstract GoToDefinition : IVimHost -> Result
+    abstract GoToDefinition : unit -> Result
 
     /// Navigate to the given point which may occur in any ITextBuffer.  This will not update the 
     /// jump list
@@ -53,7 +53,7 @@ type ICommonOperations =
     abstract MoveWordBackward : WordKind -> count : int -> unit
     
     /// Jumps to a given mark in the buffer.  
-    abstract JumpToMark : char -> IMarkMap -> IVimHost -> Result
+    abstract JumpToMark : char -> IMarkMap -> Result
 
     /// Sets a mark at the specified point.  If this operation fails an error message will be generated
     abstract SetMark : IVimBuffer -> SnapshotPoint -> char -> Result

@@ -76,8 +76,8 @@ type internal CommonOperations
                     | _ -> inner (count-1)
             inner count
                 
-        member x.GoToDefinition (host:Vim.IVimHost) =
-            if host.GoToDefinition() then
+        member x.GoToDefinition () = 
+            if _host.GoToDefinition() then
                 Succeeded
             else
                 match TssUtil.FindCurrentFullWordSpan _textView.Caret.Position.BufferPosition Vim.WordKind.BigWord with
@@ -97,7 +97,7 @@ type internal CommonOperations
 
         member x.NavigateToPoint point = x.NavigateToPoint point
                 
-        member x.JumpToMark ident (map:IMarkMap) (host:IVimHost) =
+        member x.JumpToMark ident (map:IMarkMap) = 
             let before = ViewUtil.GetCaretPoint _textView
             let jumpLocal (point:VirtualSnapshotPoint) = 
                 ViewUtil.MoveCaretToPoint _textView point.Position |> ignore

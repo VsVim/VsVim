@@ -1724,7 +1724,7 @@ namespace VimCoreTest
         {
             CreateBuffer("foobar");
             _operations
-                .Setup(x => x.JumpToMark('a', _bufferData.Object.MarkMap, _bufferData.Object.VimHost))
+                .Setup(x => x.JumpToMark('a', _bufferData.Object.MarkMap))
                 .Returns(Result._unique_Succeeded)
                 .Verifiable();
             _mode.Process('\'');
@@ -1737,7 +1737,7 @@ namespace VimCoreTest
         {
             CreateBuffer("foobar");
             _operations
-                .Setup(x => x.JumpToMark('a', _bufferData.Object.MarkMap, _bufferData.Object.VimHost))
+                .Setup(x => x.JumpToMark('a', _bufferData.Object.MarkMap))
                 .Returns(Result._unique_Succeeded)
                 .Verifiable();
             _mode.Process('`');
