@@ -68,3 +68,87 @@ type internal CompletionWindowBrokerFactoryService
         member x.CreateCompletionWindowBroker textView = 
             let broker = CompletionWindowBroker(textView, _completionBroker, _signatureBroker)
             broker :> ICompletionWindowBroker
+
+
+type internal TrackingLineColumn 
+    ( 
+        _textBuffer : ITextBuffer,
+        _column : int,
+        _onClose : TrackingLineColumn -> unit ) =
+
+    /// This is the SnapshotSpan of the line that we are tracking.  It is None in the
+    /// case of a deleted line
+    let mutable _line : ITextSnapshotLine option  = None
+
+    /// When the line this TrackingLineColumn is deleted, this will record the version 
+    /// number of the last valid version containing the line.  That way if we undo this 
+    /// can become valid again
+    let mutable _lastValidVersion : (int * int) option  = None
+
+    member x.Line 
+        with get() = _line
+        and set value = _line <- value
+
+    member x.Column = _column
+
+    member private x.VirtualSnapshotPoint = 
+        match _line with
+        | None -> None
+        | Some(line) -> Some (VirtualSnapshotPoint(line, _column))
+
+    /// Update based on the new snapshot.  
+    member x.UpdateForNewSnapshot (e:TextContentChangedEventArgs) =
+        let newSnapshot = e.After
+        let changes = e.Changes
+
+        let updateValidLine (oldLine:ITextSnapshotLine) = 
+            let span = oldLine.ExtentIncludingLineBreak.Span
+            let makeInvalid () = 
+                _line <- None
+                _lastValidVersion <- Some (oldLine.Snapshot.Version.VersionNumber, oldLine.LineNumber)
+
+            let deleted =  changes |> Seq.filter (fun c -> c.LineCountDelta <> 0 && c.OldSpan.Contains(span)) 
+            if not (deleted |> Seq.isEmpty) then makeInvalid()
+            else
+                let lineDiff = 
+                    changes 
+                    |> Seq.filter (fun c -> c.OldPosition <= oldLine.Start.Position)
+                    |> Seq.map (fun c -> c.LineCountDelta) 
+                    |> Seq.sum
+                let lineNumber = oldLine.LineNumber + lineDiff
+                if lineNumber < newSnapshot.LineCount then makeInvalid()
+                else  _line <- Some (newSnapshot.GetLineFromLineNumber(lineNumber))
+
+        let checkUndo lastVersion lastLineNumber = 
+            let newVersion = e.AfterVersion
+            if newVersion.ReiteratedVersionNumber = lastVersion && lastLineNumber <= newSnapshot.LineCount then 
+                _line <- Some (newSnapshot.GetLineFromLineNumber(lastLineNumber))
+                _lastValidVersion <- None
+
+        match _line,_lastValidVersion with
+        | Some(line),_ -> updateValidLine line
+        | None,Some(version,lineNumber) -> checkUndo version lineNumber
+        | _ -> ()
+
+
+    interface ITrackingLineColumn with
+        member x.TextBuffer = _textBuffer
+        member x.VirtualPoint = x.VirtualSnapshotPoint
+        member x.Point = 
+            match x.VirtualSnapshotPoint with
+            | None -> None
+            | Some(point) -> 
+                if point.IsInVirtualSpace then None
+                else Some point.Position
+        member x.PointTruncating =
+            match x.VirtualSnapshotPoint with
+            | None -> None
+            | Some(point) -> Some point.Position
+        member x.Close () =
+            _onClose x
+            _line <- None
+            _lastValidVersion <- None
+
+
+
+
