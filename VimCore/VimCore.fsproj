@@ -102,6 +102,7 @@
     <Compile Include="RegisterMap.fs" />
     <Compile Include="DisabledMode.fs" />
     <Compile Include="MarkMap.fs" />
+    <Compile Include="JumpList.fs" />
     <Compile Include="Vim.fs" />
     <Compile Include="MefComponents.fs" />
     <Compile Include="AssemblyInfo.fs" />

@@ -19,12 +19,14 @@ namespace VimCoreTest
 
         private class OperationsImpl : CommonOperations
         {
-            internal OperationsImpl(ITextView view, IEditorOperations opts) : base(view, opts) { }
+            internal OperationsImpl(ITextView view, IEditorOperations opts, IVimHost host, IJumpList jumpList) : base(view, opts, host, jumpList) { }
         }
 
         private IWpfTextView _view;
         private ITextBuffer _buffer;
         private Mock<IEditorOperations> _editorOpts;
+        private Mock<IVimHost> _host;
+        private Mock<IJumpList> _jumpList;
         private ICommonOperations _operations;
         private CommonOperations _operationsRaw;
 
@@ -33,8 +35,10 @@ namespace VimCoreTest
             _view = Utils.EditorUtil.CreateView(lines);
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 0));
             _buffer = _view.TextBuffer;
+            _host = new Mock<IVimHost>(MockBehavior.Strict);
+            _jumpList = new Mock<IJumpList>(MockBehavior.Strict);
             _editorOpts = new Mock<IEditorOperations>(MockBehavior.Strict);
-            _operationsRaw = new OperationsImpl(_view, _editorOpts.Object);
+            _operationsRaw = new OperationsImpl(_view, _editorOpts.Object, _host.Object, _jumpList.Object);
             _operations = _operationsRaw;
         }
 
@@ -100,19 +104,19 @@ namespace VimCoreTest
         public void GoToDefinition1()
         {
             CreateLines("foo");
-            var host = new Mock<IVimHost>(MockBehavior.Strict);
-            host.Setup(x => x.GoToDefinition()).Returns(true);
-            var res = _operations.GoToDefinition(host.Object);
+            _jumpList.Setup(x => x.Add(_view.GetCaretPoint())).Verifiable();
+            _host.Setup(x => x.GoToDefinition()).Returns(true);
+            var res = _operations.GoToDefinition();
             Assert.IsTrue(res.IsSucceeded);
+            _jumpList.Verify();
         }
 
         [Test]
         public void GoToDefinition2()
         {
             CreateLines("foo");
-            var host = new Mock<IVimHost>(MockBehavior.Strict);
-            host.Setup(x => x.GoToDefinition()).Returns(false);
-            var res = _operations.GoToDefinition(host.Object);
+            _host.Setup(x => x.GoToDefinition()).Returns(false);
+            var res = _operations.GoToDefinition();
             Assert.IsTrue(res.IsFailed);
             Assert.IsTrue(((Result.Failed)res).Item.Contains("foo"));
         }
@@ -121,9 +125,8 @@ namespace VimCoreTest
         public void GoToDefinition3()
         {
             CreateLines("      foo");
-            var host = new Mock<IVimHost>(MockBehavior.Strict);
-            host.Setup(x => x.GoToDefinition()).Returns(false);
-            var res = _operations.GoToDefinition(host.Object);
+            _host.Setup(x => x.GoToDefinition()).Returns(false);
+            var res = _operations.GoToDefinition();
             Assert.IsTrue(res.IsFailed);
         }
 
@@ -131,9 +134,8 @@ namespace VimCoreTest
         public void GoToDefinition4()
         {
             CreateLines("  foo");
-            var host = new Mock<IVimHost>(MockBehavior.Strict);
-            host.Setup(x => x.GoToDefinition()).Returns(false);
-            var res = _operations.GoToDefinition(host.Object);
+            _host.Setup(x => x.GoToDefinition()).Returns(false);
+            var res = _operations.GoToDefinition();
             Assert.IsTrue(res.IsFailed);
             Assert.AreEqual(Resources.Common_GotoDefNoWordUnderCursor, res.AsFailed().Item);
         }
@@ -142,9 +144,8 @@ namespace VimCoreTest
         public void GoToDefinition5()
         {
             CreateLines("foo bar baz");
-            var host = new Mock<IVimHost>(MockBehavior.Strict);
-            host.Setup(x => x.GoToDefinition()).Returns(false);
-            var res = _operations.GoToDefinition(host.Object);
+            _host.Setup(x => x.GoToDefinition()).Returns(false);
+            var res = _operations.GoToDefinition();
             Assert.IsTrue(res.IsFailed);
             Assert.AreEqual(Resources.Common_GotoDefFailed("foo"), res.AsFailed().Item);
         }
@@ -178,20 +179,20 @@ namespace VimCoreTest
         public void JumpToMark1()
         {
             CreateLines("foo", "bar");
-            var host = new FakeVimHost();
             var map = new MarkMap();
             map.SetLocalMark(new SnapshotPoint(_view.TextSnapshot, 0), 'a');
-            var res = _operations.JumpToMark('a', map,host);
+            _jumpList.Setup(x => x.Add(_view.GetCaretPoint())).Verifiable();
+            var res = _operations.JumpToMark('a', map);
             Assert.IsTrue(res.IsSucceeded);
+            _jumpList.Verify();
         }
 
         [Test]
         public void JumpToMark2()
         {
             var view = Utils.EditorUtil.CreateView("foo", "bar");
-            var host = new FakeVimHost();
             var map = new MarkMap();
-            var res = _operations.JumpToMark('b', map, host);
+            var res = _operations.JumpToMark('b', map);
             Assert.IsTrue(res.IsFailed);
             Assert.AreEqual(Resources.Common_MarkNotSet, res.AsFailed().Item);
         }
@@ -200,29 +201,23 @@ namespace VimCoreTest
         public void JumpToMark3()
         {
             var view = Utils.EditorUtil.CreateView("foo", "bar");
-            var buffer = new Mock<IVimBuffer>(MockBehavior.Strict);
-            buffer.SetupGet(x => x.TextBuffer).Returns(view.TextBuffer);
-            buffer.SetupGet(x => x.Name).Returns("foo");
             var map = new MarkMap();
-            map.SetMark(buffer.Object, new SnapshotPoint(view.TextSnapshot, 0), 'A');
-            var host = new Mock<IVimHost>(MockBehavior.Strict);
-            host.Setup(x => x.NavigateTo(new VirtualSnapshotPoint(view.TextSnapshot,0))).Returns(true);
-            var res = _operations.JumpToMark('A', map, host.Object);
+            map.SetMark(new SnapshotPoint(view.TextSnapshot, 0), 'A');
+            _host.Setup(x => x.NavigateTo(new VirtualSnapshotPoint(view.TextSnapshot,0))).Returns(true);
+            _jumpList.Setup(x => x.Add(_view.GetCaretPoint())).Verifiable();
+            var res = _operations.JumpToMark('A', map);
             Assert.IsTrue(res.IsSucceeded);
+            _jumpList.Verify();
         }
 
         [Test, Description("Jump to global mark and jump fails")]
         public void JumpToMark4()
         {
             var view = Utils.EditorUtil.CreateView("foo", "bar");
-            var buffer = new Mock<IVimBuffer>(MockBehavior.Strict);
-            buffer.SetupGet(x => x.TextBuffer).Returns(view.TextBuffer);
-            buffer.SetupGet(x => x.Name).Returns("foo");
             var map = new MarkMap();
-            map.SetMark(buffer.Object, new SnapshotPoint(view.TextSnapshot, 0), 'A');
-            var host = new Mock<IVimHost>(MockBehavior.Strict);
-            host.Setup(x => x.NavigateTo(new VirtualSnapshotPoint(view.TextSnapshot,0))).Returns(false);
-            var res = _operations.JumpToMark('A', map, host.Object);
+            map.SetMark(new SnapshotPoint(view.TextSnapshot, 0), 'A');
+            _host.Setup(x => x.NavigateTo(new VirtualSnapshotPoint(view.TextSnapshot,0))).Returns(false);
+            var res = _operations.JumpToMark('A', map);
             Assert.IsTrue(res.IsFailed);
             Assert.AreEqual(Resources.Common_MarkInvalid, res.AsFailed().Item);
         }
@@ -235,8 +230,7 @@ namespace VimCoreTest
             buffer.SetupGet(x => x.TextBuffer).Returns(view.TextBuffer);
             buffer.SetupGet(x => x.Name).Returns("foo");
             var map = new MarkMap();
-            var host = new Mock<IVimHost>(MockBehavior.Strict);
-            var res = _operations.JumpToMark('A', map, host.Object);
+            var res = _operations.JumpToMark('A', map);
             Assert.IsTrue(res.IsFailed);
             Assert.AreEqual(Resources.Common_MarkNotSet, res.AsFailed().Item);
         }

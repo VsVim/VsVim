@@ -662,14 +662,6 @@ namespace VimCoreTest
         public void Marks2()
         {
             Create("foo");
-            ProcessWithEnter("mar");
-            Assert.AreEqual(_modeRaw.BadMessage, _host.Status);
-        }
-
-        [Test]
-        public void Marks3()
-        {
-            Create("foo");
             ProcessWithEnter("marksaoeu");
             Assert.AreEqual(_modeRaw.BadMessage, _host.Status);
         }

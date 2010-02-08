@@ -43,9 +43,9 @@ namespace VimCoreTest
             foreach (var cur in value)
             {
                 var ki = InputUtil.CharToKeyInput(cur);
-                Assert.IsFalse(_search.Process(ki));
+                Assert.IsTrue(_search.Process(ki).IsSearchNeedMore);
             }
-            Assert.IsTrue(_search.Process(InputUtil.KeyToKeyInput(Key.Enter)));
+            Assert.IsTrue(_search.Process(InputUtil.KeyToKeyInput(Key.Enter)).IsSearchComplete);
         }
 
         [Test]
@@ -54,7 +54,7 @@ namespace VimCoreTest
             Create("foo bar");
             _search.Begin(SearchKind.ForwardWithWrap);
             _searchReplace.Setup(x =>x.FindNextMatch(It.IsAny<SearchData>(), It.IsAny<SnapshotPoint>())).Returns(FSharpOption<SnapshotSpan>.None);
-            Assert.IsFalse(_search.Process(InputUtil.CharToKeyInput('b')));
+            Assert.IsTrue(_search.Process(InputUtil.CharToKeyInput('b')).IsSearchNeedMore);
         }
 
         [Test]
@@ -62,7 +62,7 @@ namespace VimCoreTest
         {
             Create("foo bar");
             _search.Begin(SearchKind.ForwardWithWrap);
-            Assert.IsTrue(_search.Process(InputUtil.KeyToKeyInput(Key.Enter)));
+            Assert.IsTrue(_search.Process(InputUtil.KeyToKeyInput(Key.Enter)).IsSearchComplete);
         }
 
         [Test]
@@ -70,7 +70,7 @@ namespace VimCoreTest
         {
             Create("foo bar");
             _search.Begin(SearchKind.ForwardWithWrap);
-            Assert.IsTrue(_search.Process(InputUtil.KeyToKeyInput(Key.Escape)));
+            Assert.IsTrue(_search.Process(InputUtil.KeyToKeyInput(Key.Escape)).IsSearchCanceled);
         }
 
         [Test]

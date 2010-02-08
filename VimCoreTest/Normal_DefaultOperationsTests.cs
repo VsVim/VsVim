@@ -22,6 +22,7 @@ namespace VimCoreTest
         private DefaultOperations _operationsRaw;
         private ITextView _view;
         private Mock<IVimHost> _host;
+        private Mock<IJumpList> _jumpList;
 
         private void Create(params string[] lines)
         {
@@ -49,7 +50,8 @@ namespace VimCoreTest
             searchService = searchService ?? EditorUtil.FactoryService.textSearchService;
             baseNav = baseNav ?? (new Mock<ITextStructureNavigator>(MockBehavior.Strict)).Object;
             var nav = TssUtil.CreateTextStructureNavigator(WordKind.NormalWord, baseNav);
-            _operationsRaw = new DefaultOperations(_view, editorOpts, _host.Object, VimSettingsUtil.CreateDefault, nav, searchService);
+            _jumpList = new Mock<IJumpList>(MockBehavior.Strict);
+            _operationsRaw = new DefaultOperations(_view, editorOpts, _host.Object, VimSettingsUtil.CreateDefault, nav, searchService, _jumpList.Object);
             _operations = _operationsRaw;
         }
 
@@ -590,6 +592,123 @@ namespace VimCoreTest
             _operations.MoveToPreviousOccuranceOfWordAtCursor(true, 1);
             Assert.AreEqual(0, _view.GetCaretPoint().Position);
         }
+
+        [Test]
+        public void JumpNext1()
+        {
+            Create("foo", "bar");
+            var count = 0;
+            _jumpList.Setup(x => x.MoveNext()).Callback(() => { count++; }).Returns(false);
+            _host.Setup(x => x.Beep()).Verifiable();
+            _operations.JumpNext(1);
+            _host.Verify();
+            Assert.AreEqual(1, count);
+        }
+
+        [Test]
+        public void JumpNext2()
+        {
+            Create("foo", "bar");
+            var count = 0;
+            _jumpList.Setup(x => x.MoveNext()).Callback(() => { count++; }).Returns(() => count == 1);
+            _host.Setup(x => x.Beep()).Verifiable();
+            _operations.JumpNext(2);
+            _host.Verify();
+            Assert.AreEqual(2, count);
+        }
+
+        [Test]
+        public void JumpNext3()
+        {
+            Create("foo", "bar");
+            _jumpList.Setup(x => x.MoveNext()).Returns(true);
+            _jumpList.SetupGet(x => x.Current).Returns(FSharpOption<SnapshotPoint>.None);
+            _host.Setup(x => x.Beep()).Verifiable();
+            _operations.JumpNext(1);
+            _host.Verify();
+        }
+
+        [Test]
+        public void JumpNext4()
+        {
+            Create("foo", "bar");
+            _jumpList.Setup(x => x.MoveNext()).Returns(true);
+            _jumpList.SetupGet(x => x.Current).Returns(FSharpOption.Create(new SnapshotPoint(_view.TextSnapshot, 1)));
+            _operations.JumpNext(1);
+            _host.Verify();
+            Assert.AreEqual(1, _view.GetCaretPoint().Position);
+        }
+
+        [Test]
+        public void JumpNext5()
+        {
+            Create("foo", "bar");
+            var point = MockObjectFactory.CreateSnapshotPoint(42);
+            _jumpList.Setup(x => x.MoveNext()).Returns(true);
+            _jumpList.SetupGet(x => x.Current).Returns(FSharpOption.Create(point));
+            _host.Setup(x => x.NavigateTo(It.IsAny<VirtualSnapshotPoint>())).Returns(true).Verifiable();
+            _operations.JumpNext(1);
+            _host.Verify();
+        }
+
+        [Test]
+        public void JumpPrevious1()
+        {
+            Create("foo", "bar");
+            var count = 0;
+            _jumpList.Setup(x => x.MovePrevious()).Callback(() => { count++; }).Returns(false);
+            _host.Setup(x => x.Beep()).Verifiable();
+            _operations.JumpPrevious(1);
+            _host.Verify();
+            Assert.AreEqual(1, count);
+        }
+
+        [Test]
+        public void JumpPrevious2()
+        {
+            Create("foo", "bar");
+            var count = 0;
+            _jumpList.Setup(x => x.MovePrevious()).Callback(() => { count++; }).Returns(() => count == 1);
+            _host.Setup(x => x.Beep()).Verifiable();
+            _operations.JumpPrevious(2);
+            _host.Verify();
+            Assert.AreEqual(2, count);
+        }
+
+        [Test]
+        public void JumpPrevious3()
+        {
+            Create("foo", "bar");
+            _jumpList.Setup(x => x.MovePrevious()).Returns(true);
+            _jumpList.SetupGet(x => x.Current).Returns(FSharpOption<SnapshotPoint>.None);
+            _host.Setup(x => x.Beep()).Verifiable();
+            _operations.JumpPrevious(1);
+            _host.Verify();
+        }
+
+        [Test]
+        public void JumpPrevious4()
+        {
+            Create("foo", "bar");
+            _jumpList.Setup(x => x.MovePrevious()).Returns(true);
+            _jumpList.SetupGet(x => x.Current).Returns(FSharpOption.Create(new SnapshotPoint(_view.TextSnapshot, 1)));
+            _operations.JumpPrevious(1);
+            _host.Verify();
+            Assert.AreEqual(1, _view.GetCaretPoint().Position);
+        }
+
+        [Test]
+        public void JumpPrevious5()
+        {
+            Create("foo", "bar");
+            var point = MockObjectFactory.CreateSnapshotPoint(42);
+            _jumpList.Setup(x => x.MovePrevious()).Returns(true);
+            _jumpList.SetupGet(x => x.Current).Returns(FSharpOption.Create(point));
+            _host.Setup(x => x.NavigateTo(It.IsAny<VirtualSnapshotPoint>())).Returns(true).Verifiable();
+            _operations.JumpPrevious(1);
+            _host.Verify();
+        }
+
 
     }
 }

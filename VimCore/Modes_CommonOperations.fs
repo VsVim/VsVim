@@ -10,7 +10,16 @@ open Microsoft.VisualStudio.Text.Operations
 type internal CommonOperations 
     (
         _textView : ITextView,
-        _operations : IEditorOperations ) =
+        _operations : IEditorOperations,
+        _host : IVimHost,
+        _jumpList : IJumpList ) =
+
+    member private x.NavigateToPoint (point:VirtualSnapshotPoint) = 
+        let buf = point.Position.Snapshot.TextBuffer
+        if buf = _textView.TextBuffer then 
+            ViewUtil.MoveCaretToPoint _textView point.Position |> ignore
+            true
+        else  _host.NavigateTo point 
 
     interface ICommonOperations with
         member x.TextView = _textView 
@@ -67,8 +76,10 @@ type internal CommonOperations
                     | _ -> inner (count-1)
             inner count
                 
-        member x.GoToDefinition (host:Vim.IVimHost) =
-            if host.GoToDefinition() then
+        member x.GoToDefinition () = 
+            let before = ViewUtil.GetCaretPoint _textView
+            if _host.GoToDefinition() then
+                _jumpList.Add before
                 Succeeded
             else
                 match TssUtil.FindCurrentFullWordSpan _textView.Caret.Position.BufferPosition Vim.WordKind.BigWord with
@@ -81,24 +92,28 @@ type internal CommonOperations
         member x.SetMark (vimBuffer:IVimBuffer) point c = 
             if System.Char.IsLetter(c) || c = '\'' || c = '`' then
                 let map = vimBuffer.MarkMap
-                map.SetMark vimBuffer point c
+                map.SetMark point c
                 Succeeded
             else
                 Failed(Resources.Common_MarkInvalid)
+
+        member x.NavigateToPoint point = x.NavigateToPoint point
                 
-        member x.JumpToMark ident (map:IMarkMap) (host:IVimHost) =
+        member x.JumpToMark ident (map:IMarkMap) = 
+            let before = ViewUtil.GetCaretPoint _textView
             let jumpLocal (point:VirtualSnapshotPoint) = 
                 ViewUtil.MoveCaretToPoint _textView point.Position |> ignore
+                _jumpList.Add before
                 Succeeded
             if not (map.IsLocalMark ident) then 
                 match map.GetGlobalMark ident with
                 | None -> Failed Resources.Common_MarkNotSet
-                | Some(buf,point) -> 
-                    if buf.TextBuffer = _textView.TextBuffer then jumpLocal point
-                    else  
-                        match host.NavigateTo point with
-                        | true -> Succeeded
-                        | false -> Failed Resources.Common_MarkInvalid
+                | Some(point) -> 
+                    match x.NavigateToPoint point with
+                    | true -> 
+                        _jumpList.Add before
+                        Succeeded
+                    | false -> Failed Resources.Common_MarkInvalid
             else 
                 match map.GetLocalMark _textView.TextBuffer ident with
                 | Some(point) -> jumpLocal point

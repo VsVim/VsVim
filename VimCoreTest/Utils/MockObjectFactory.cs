@@ -56,12 +56,14 @@ namespace VimCoreTest.Utils
             string name = null,
             IVim vim = null,
             IBlockCaret caret = null,
-            IEditorOperations editorOperations = null)
+            IEditorOperations editorOperations = null,
+            IJumpList jumpList = null )
         {
             name = name ?? "test";
             vim = vim ?? CreateVim().Object;
             caret = caret ?? CreateBlockCaret().Object;
             editorOperations = editorOperations ?? CreateEditorOperations().Object;
+            jumpList = jumpList ?? (new Mock<IJumpList>(MockBehavior.Strict)).Object;
             var mock = new Mock<IVimBuffer>(MockBehavior.Strict);
             mock.SetupGet(x => x.TextView).Returns(view);
             mock.SetupGet(x => x.TextBuffer).Returns(() => view.TextBuffer);
@@ -73,6 +75,7 @@ namespace VimCoreTest.Utils
             mock.SetupGet(x => x.Settings).Returns(vim.Settings);
             mock.SetupGet(x => x.MarkMap).Returns(vim.MarkMap);
             mock.SetupGet(x => x.RegisterMap).Returns(vim.RegisterMap);
+            mock.SetupGet(x => x.JumpList).Returns(jumpList);
             return mock;
         }
 
@@ -109,5 +112,29 @@ namespace VimCoreTest.Utils
             return Tuple.Create(view, caret, selection);
         }
 
+        internal static Mock<ITextBuffer> CreateTextBuffer()
+        {
+            var mock = new Mock<ITextBuffer>(MockBehavior.Strict);
+            return mock;
+        }
+
+        internal static Mock<ITextSnapshot> CreateTextSnapshot(
+            int length,
+            ITextBuffer buffer = null )
+        {
+            buffer = buffer ?? CreateTextBuffer().Object;
+            var mock = new Mock<ITextSnapshot>(MockBehavior.Strict);
+            mock.SetupGet(x => x.Length).Returns(length);
+            mock.SetupGet(x => x.TextBuffer).Returns(buffer);
+            return mock;
+        }
+
+        internal static SnapshotPoint CreateSnapshotPoint(
+            int position,
+            ITextSnapshot snapshot = null)
+        {
+            snapshot = snapshot ?? CreateTextSnapshot(position + 1).Object;
+            return new SnapshotPoint(snapshot, position);
+        }
     }
 }

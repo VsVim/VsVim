@@ -32,19 +32,21 @@ type internal Vim
         let editorFormatMap = _editorFormatMapService.GetEditorFormatMap(view :> ITextView)
         let caret = _blockCaretFactoryService.CreateBlockCaret view
         let editOperations = _editorOperationsFactoryService.GetEditorOperations(view)
+        let jumpList = JumpList() :> IJumpList
         let bufferRaw = 
             VimBuffer( 
                 x :> IVim,
                 view,
                 editOperations,
-                caret)
+                caret,
+                jumpList)
         let buffer = bufferRaw :> IVimBuffer
 
         let wordNav = x.CreateTextStructureNavigator view.TextBuffer WordKind.NormalWord
         let broker = _completionWindowBrokerFactoryService.CreateCompletionWindowBroker view
-        let normalOpts = Modes.Normal.DefaultOperations(view,editOperations,_host,_settings,wordNav,_textSearchService) :> Modes.Normal.IOperations
-        let commandOpts = Modes.Command.DefaultOperations(view,editOperations,_host) :> Modes.Command.IOperations
-        let insertOpts = Modes.Insert.DefaultOperations(view,editOperations) :> Modes.ICommonOperations
+        let normalOpts = Modes.Normal.DefaultOperations(view,editOperations,_host,_settings,wordNav,_textSearchService,jumpList) :> Modes.Normal.IOperations
+        let commandOpts = Modes.Command.DefaultOperations(view,editOperations,_host, jumpList) :> Modes.Command.IOperations
+        let insertOpts = Modes.Insert.DefaultOperations(view,editOperations,_host, jumpList) :> Modes.ICommonOperations
         let visualOptsFactory kind = 
             let mode = 
                 match kind with 
@@ -53,7 +55,7 @@ type internal Vim
                 | ModeKind.VisualLine -> Modes.Visual.SelectionMode.Line
                 | _ -> invalidArg "_kind" "Invalid kind for Visual Mode"
             let tracker = Modes.Visual.SelectionTracker(view,mode) :> Modes.Visual.ISelectionTracker
-            Modes.Visual.DefaultOperations(view,editOperations,tracker) :> Modes.Visual.IOperations
+            Modes.Visual.DefaultOperations(view,editOperations,_host, jumpList, tracker) :> Modes.Visual.IOperations
 
         // Normal mode values
         let normalSearchReplace = RegexSearchReplace() :> ISearchReplace

@@ -54,5 +54,11 @@ type IOperations =
     /// Move to the previous occurance of the word under the cursor
     abstract MoveToPreviousOccuranceOfPartialWordAtCursor : count:int -> unit
 
+    /// Jump to the next item in the jump list
+    abstract JumpNext : count:int -> unit
+
+    /// Jump to the previous item in the jump list
+    abstract JumpPrevious : count:int -> unit
+
     interface Modes.ICommonOperations
 

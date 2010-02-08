@@ -31,6 +31,7 @@ namespace VimCoreTest
         private Mock<IEditorOperations> _editorOperations;
         private Mock<ISearchReplace> _searchReplace;
         private Mock<IIncrementalSearch> _incrementalSearch;
+        private Mock<IJumpList> _jumpList;
 
         static string[] s_lines = new string[]
             {
@@ -53,12 +54,14 @@ namespace VimCoreTest
             _editorOperations = new Mock<IEditorOperations>();
             _searchReplace = new Mock<ISearchReplace>(MockBehavior.Strict);
             _incrementalSearch = new Mock<IIncrementalSearch>(MockBehavior.Strict);
+            _jumpList = new Mock<IJumpList>(MockBehavior.Strict);
             _bufferData = MockFactory.CreateVimBuffer(
                 _view,
                 "test",
                 MockFactory.CreateVim(_map, host : host).Object,
                 _blockCaret,
-                _editorOperations.Object);
+                _editorOperations.Object,
+                _jumpList.Object);
             _operations = new Mock<IOperations>(MockBehavior.Strict);
             _modeRaw = new Vim.Modes.Normal.NormalMode(Tuple.Create(_bufferData.Object, _operations.Object, _searchReplace.Object, _incrementalSearch.Object));
             _mode = _modeRaw;
@@ -1371,10 +1374,12 @@ namespace VimCoreTest
         {
             CreateBuffer("foo bar");
             _incrementalSearch.Setup(x => x.Begin(SearchKind.ForwardWithWrap)).Verifiable();
+            _jumpList.Setup(x => x.Add(_view.GetCaretPoint())).Verifiable();
             _mode.Process('/');
-            _incrementalSearch.Setup(x => x.Process(InputUtil.CharToKeyInput('b'))).Returns(true).Verifiable();
+            _incrementalSearch.Setup(x => x.Process(It.IsAny<KeyInput>())).Returns(SearchResult.SearchComplete).Verifiable();
             _mode.Process('b');
             _incrementalSearch.Verify();
+            _jumpList.Verify();
         }
 
         [Test, Description("Make sure any key goes to incremental search")]
@@ -1384,9 +1389,11 @@ namespace VimCoreTest
             _incrementalSearch.Setup(x => x.Begin(SearchKind.ForwardWithWrap)).Verifiable();
             _mode.Process('/');
             var ki = InputUtil.KeyToKeyInput(Key.DbeRoman);
-            _incrementalSearch.Setup(x => x.Process(ki)).Returns(true).Verifiable();
+            _incrementalSearch.Setup(x => x.Process(It.IsAny<KeyInput>())).Returns(SearchResult.SearchComplete).Verifiable();
+            _jumpList.Setup(x => x.Add(_view.GetCaretPoint())).Verifiable();
             _mode.Process(ki);
             _incrementalSearch.Verify();
+            _jumpList.Verify();
         }
 
         [Test, Description("After a true return incremental search should be completed")]
@@ -1396,10 +1403,24 @@ namespace VimCoreTest
             _incrementalSearch.Setup(x => x.Begin(SearchKind.ForwardWithWrap)).Verifiable();
             _mode.Process('/');
             var ki = InputUtil.KeyToKeyInput(Key.DbeRoman);
-            _incrementalSearch.Setup(x => x.Process(ki)).Returns(true).Verifiable();
+            _incrementalSearch.Setup(x => x.Process(It.IsAny<KeyInput>())).Returns(SearchResult.SearchComplete).Verifiable();
+            _jumpList.Setup(x => x.Add(_view.GetCaretPoint())).Verifiable();
             _mode.Process(ki);
             _mode.Process(InputUtil.KeyToKeyInput(Key.DbeAlphanumeric));
             _incrementalSearch.Verify();
+            _jumpList.Verify();
+        }
+
+        [Test, Description("Cancel should not add to the jump list")]
+        public void IncrementalSearch6()
+        {
+            CreateBuffer("foo bar");
+            _incrementalSearch.Setup(x => x.Begin(SearchKind.ForwardWithWrap)).Verifiable();
+            _mode.Process('/');
+            _incrementalSearch.Setup(x => x.Process(It.IsAny<KeyInput>())).Returns(SearchResult.SearchCanceled).Verifiable();
+            _mode.Process(InputUtil.KeyToKeyInput(Key.DbeRoman));
+            _incrementalSearch.Verify();
+            _jumpList.Verify();
         }
 
         #endregion
@@ -1724,7 +1745,7 @@ namespace VimCoreTest
         {
             CreateBuffer("foobar");
             _operations
-                .Setup(x => x.JumpToMark('a', _bufferData.Object.MarkMap, _bufferData.Object.VimHost))
+                .Setup(x => x.JumpToMark('a', _bufferData.Object.MarkMap))
                 .Returns(Result._unique_Succeeded)
                 .Verifiable();
             _mode.Process('\'');
@@ -1737,7 +1758,7 @@ namespace VimCoreTest
         {
             CreateBuffer("foobar");
             _operations
-                .Setup(x => x.JumpToMark('a', _bufferData.Object.MarkMap, _bufferData.Object.VimHost))
+                .Setup(x => x.JumpToMark('a', _bufferData.Object.MarkMap))
                 .Returns(Result._unique_Succeeded)
                 .Verifiable();
             _mode.Process('`');
@@ -1752,6 +1773,54 @@ namespace VimCoreTest
             _blockCaret.HideCount = 0;
             _mode.OnLeave();
             Assert.AreEqual(1, _blockCaret.HideCount);
+        }
+
+        [Test]
+        public void JumpNext1()
+        {
+            CreateBuffer(s_lines);
+            _operations.Setup(x => x.JumpNext(1)).Verifiable();
+            _mode.Process(new KeyInput('i', Key.I, ModifierKeys.Control));
+            _operations.Verify();
+        }
+
+        [Test]
+        public void JumpNext2()
+        {
+            CreateBuffer(s_lines);
+            _operations.Setup(x => x.JumpNext(2)).Verifiable();
+            _mode.Process('2');
+            _mode.Process(new KeyInput('i', Key.I, ModifierKeys.Control));
+            _operations.Verify();
+        }
+
+        [Test]
+        public void JumpNext3()
+        {
+            CreateBuffer(s_lines);
+            _operations.Setup(x => x.JumpNext(1)).Verifiable();
+            _mode.Process(InputUtil.KeyToKeyInput(Key.Tab));
+            _operations.Verify();
+
+        }
+
+        [Test]
+        public void JumpPrevious1()
+        {
+            CreateBuffer(s_lines);
+            _operations.Setup(x => x.JumpPrevious(1)).Verifiable();
+            _mode.Process(new KeyInput('o', Key.O, ModifierKeys.Control));
+            _operations.Verify();
+        }
+
+        [Test]
+        public void JumpPrevious2()
+        {
+            CreateBuffer(s_lines);
+            _operations.Setup(x => x.JumpPrevious(2)).Verifiable();
+            _mode.Process('2');
+            _mode.Process(new KeyInput('o', Key.O, ModifierKeys.Control));
+            _operations.Verify();
         }
 
         #endregion
