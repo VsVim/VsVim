@@ -21,5 +21,4 @@ type IOperations =
     /// Insert a line above the current cursor position and returns the resulting ITextSnapshotLine
     abstract InsertLineAbove : unit -> ITextSnapshotLine
 
-    interface Modes.ICommonOperations
-
+    inherit Modes.ICommonOperations

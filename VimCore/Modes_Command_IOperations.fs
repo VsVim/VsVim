@@ -36,6 +36,6 @@ type IOperations =
     /// Print out the marks in the context of the current buffer
     abstract PrintMarks : IMarkMap -> unit
 
-    interface Modes.ICommonOperations
+    inherit Modes.ICommonOperations
 
 

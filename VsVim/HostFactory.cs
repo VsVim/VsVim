@@ -9,7 +9,6 @@ using Microsoft.VisualStudio.Editor;
 using System.Diagnostics;
 using System.Collections.Generic;
 using Vim;
-using Microsoft.VisualStudio.UI.Undo;
 using Microsoft.VisualStudio.OLE.Interop;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Text.Classification;

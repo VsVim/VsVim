@@ -6,7 +6,7 @@ open Vim.Modes
 
 /// Interface for members specific to IVisualMode
 type IVisualMode = 
-    interface IMode 
+    inherit IMode 
     abstract Operations : IOperations
     abstract InExplicitMove : bool
 
