@@ -16,6 +16,7 @@ using Microsoft.VisualStudio.Text.Operations;
 using Microsoft.VisualStudio.Language.Intellisense;
 using Microsoft.VisualStudio;
 using System.Runtime.InteropServices;
+using System.Windows.Threading;
 
 namespace VsVim
 {
@@ -46,10 +47,16 @@ namespace VsVim
                 return;
             }
 
-            // Run the key binding check now
             var dte = sp.GetService<SDTE, EnvDTE.DTE>();
-            _keyBindingService.OneTimeCheckForConflictingKeyBindings(dte, buffer);
+            Action doCheck = () =>
+                {
+                    // Run the key binding check now
+                    _keyBindingService.OneTimeCheckForConflictingKeyBindings(dte, buffer);
+                };
+
+            Dispatcher.CurrentDispatcher.BeginInvoke(doCheck, null);
         }
+
     }
 
 }

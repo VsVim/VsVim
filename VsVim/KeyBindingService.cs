@@ -57,7 +57,7 @@ namespace VsVim
                 }
 
                 var res = MessageBox.Show(
-                    caption: "Remove Conflicting Key Bindings",
+                    caption: "VsVim: Remove Conflicting Key Bindings",
                     messageBoxText: msg.ToString(),
                     button: MessageBoxButton.YesNo);
                 if (res == MessageBoxResult.Yes)

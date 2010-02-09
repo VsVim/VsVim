@@ -65,9 +65,12 @@ type internal BlockCaret
 
     /// Is the real caret visible in some way 
     member private x.IsRealCaretVisible = 
-        let caret = _view.Caret
-        let line = caret.ContainingTextViewLine
-        line.VisibilityState <> VisibilityState.Unattached
+        try
+            let caret = _view.Caret
+            let line = caret.ContainingTextViewLine
+            line.VisibilityState <> VisibilityState.Unattached
+        with 
+        | :? System.InvalidOperationException -> false
 
     member private x.OnCaretBlinkTimer _ _ = 
         match _isShown,_caretData with
