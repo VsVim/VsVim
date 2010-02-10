@@ -48,10 +48,8 @@ type IJumpList =
     /// Move to the next point in the jump list
     abstract MoveNext : unit -> bool
 
-    /// Add a given SnapshotPoint to the jump list.  Only works if the SnapshotPoint is against
-    /// the current version of the ITextBuffer
-    abstract Add : SnapshotPoint -> bool
-
+    /// Add a given SnapshotPoint to the jump list
+    abstract Add : SnapshotPoint -> unit
 
 /// Defines a block style caret for a given ITextView.  This allows normal mode to create 
 /// a block style cursor when needed
