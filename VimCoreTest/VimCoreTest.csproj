@@ -140,6 +140,7 @@
     <Compile Include="DisabledModeTest.cs" />
     <Compile Include="IEditorOperationsTest.cs" />
     <Compile Include="IncrementalSearchTest.cs" />
+    <Compile Include="JumpListTest.cs" />
     <Compile Include="Modes_CommonOperationsTest.cs" />
     <Compile Include="CountCaptureTest.cs" />
     <Compile Include="FakeVimHost.cs" />

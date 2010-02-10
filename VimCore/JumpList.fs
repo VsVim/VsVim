@@ -29,15 +29,18 @@ type internal JumpList
 
     member x.AllJumps = _list |> Seq.map (fun tlc -> tlc.Point) |> List.ofSeq
 
+    member x.AddRaw buffer line column = 
+        let tlc = _tlcService.Create buffer line column
+        _current <- _list.AddFirst(tlc)
+        x.MaybeTruncate()
+
     /// Add the SnapshotPoint to the jumplist.  Only works if the SnapshotPiont 
     member x.Add (point:SnapshotPoint) =
         let buffer = point.Snapshot.TextBuffer
         if buffer.CurrentSnapshot <> point.Snapshot then false
         else
             let line,column = TssUtil.GetLineColumn point
-            let tlc = _tlcService.Create buffer line column
-            _current <- _list.AddFirst(tlc)
-            x.MaybeTruncate()
+            x.AddRaw buffer line column
             true
 
     member private x.MaybeTruncate() =
