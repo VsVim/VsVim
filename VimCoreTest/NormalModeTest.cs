@@ -1317,6 +1317,32 @@ namespace VimCoreTest
             _operations.Verify();
         }
 
+        [Test]
+        public void Delete_D_1()
+        {
+            CreateBuffer("foo bar");
+            _operations.Setup(x => x.DeleteLinesFromCursor(1, _map.DefaultRegister)).Verifiable();
+            _mode.Process("D");
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Delete_D_2()
+        {
+            CreateBuffer("foo bar baz");
+            _operations.Setup(x => x.DeleteLinesFromCursor(1, _map.GetRegister('b'))).Verifiable();
+            _mode.Process("\"bD");
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Delete_D_3()
+        {
+            CreateBuffer("foo bar");
+            _operations.Setup(x => x.DeleteLinesFromCursor(3, _map.DefaultRegister)).Verifiable();
+            _mode.Process("3D");
+            _operations.Verify();
+        }
 
         #endregion
 
@@ -1820,6 +1846,17 @@ namespace VimCoreTest
             _operations.Setup(x => x.JumpPrevious(2)).Verifiable();
             _mode.Process('2');
             _mode.Process(new KeyInput('o', Key.O, ModifierKeys.Control));
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Append1()
+        {
+            CreateBuffer("foo bar");
+            _operations.Setup(x => x.MoveCaretRight(1)).Verifiable();
+            var ret = _mode.Process('a');
+            Assert.IsTrue(ret.IsSwitchMode);
+            Assert.AreEqual(ModeKind.Insert, ret.AsSwitchMode().Item);
             _operations.Verify();
         }
 
