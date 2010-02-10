@@ -65,5 +65,8 @@ module internal TssUtil =
     /// base implementation to fall back on
     val CreateTextStructureNavigator : WordKind -> ITextStructureNavigator -> ITextStructureNavigator
 
+    /// Get the line and column information for a given SnapshotPoint
+    val GetLineColumn : SnapshotPoint -> (int * int)
+
 
     

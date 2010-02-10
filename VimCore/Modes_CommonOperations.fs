@@ -79,7 +79,7 @@ type internal CommonOperations
         member x.GoToDefinition () = 
             let before = ViewUtil.GetCaretPoint _textView
             if _host.GoToDefinition() then
-                _jumpList.Add before
+                _jumpList.Add before |> ignore
                 Succeeded
             else
                 match TssUtil.FindCurrentFullWordSpan _textView.Caret.Position.BufferPosition Vim.WordKind.BigWord with
@@ -103,7 +103,7 @@ type internal CommonOperations
             let before = ViewUtil.GetCaretPoint _textView
             let jumpLocal (point:VirtualSnapshotPoint) = 
                 ViewUtil.MoveCaretToPoint _textView point.Position |> ignore
-                _jumpList.Add before
+                _jumpList.Add before |> ignore
                 Succeeded
             if not (map.IsLocalMark ident) then 
                 match map.GetGlobalMark ident with
@@ -111,7 +111,7 @@ type internal CommonOperations
                 | Some(point) -> 
                     match x.NavigateToPoint point with
                     | true -> 
-                        _jumpList.Add before
+                        _jumpList.Add before |> ignore
                         Succeeded
                     | false -> Failed Resources.Common_MarkInvalid
             else 

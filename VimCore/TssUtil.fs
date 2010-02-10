@@ -321,3 +321,8 @@ module internal TssUtil =
             member x.GetSpanOfFirstChild span = baseImpl.GetSpanOfFirstChild(span)
             member x.GetSpanOfNextSibling span = baseImpl.GetSpanOfNextSibling(span)
             member x.GetSpanOfPreviousSibling span = baseImpl.GetSpanOfPreviousSibling(span) }
+
+    let GetLineColumn (point:SnapshotPoint) =
+        let line = point.GetContainingLine()
+        let column = point.Position - line.Start.Position
+        (line.LineNumber,column)

@@ -33,6 +33,14 @@ namespace VimCoreTest
             AssertLineColumn(point.Value, lineNumber, column);
         }
 
+        private static void AssertTruncatedPoint(ITrackingLineColumn tlc, int lineNumber, int column)
+        {
+            Assert.IsTrue(tlc.Point.IsNone());
+            var point = tlc.PointTruncating;
+            Assert.IsTrue(point.IsSome());
+            AssertLineColumn(point.Value, lineNumber, column);
+        }
+
         private static void AssertLineColumn(SnapshotPoint point, int lineNumber, int column)
         {
             var line = point.GetContainingLine();
@@ -103,6 +111,34 @@ namespace VimCoreTest
             var tlc = Create(buffer, 1, 2);
             buffer.Delete(buffer.GetLineFromLineNumber(0).ExtentIncludingLineBreak.Span);
             AssertPoint(tlc, 0, 2);
+        }
+
+        [Test]
+        public void TruncatingEdit1()
+        {
+            var buffer = EditorUtil.CreateBuffer("foo bar baz");
+            var tlc = Create(buffer, 0, 5);
+            buffer.Replace(buffer.GetLineFromLineNumber(0).ExtentIncludingLineBreak, "yes");
+            AssertTruncatedPoint(tlc, 0, 3);
+        }
+
+        [Test, Description("Make it 0 width")]
+        public void TruncatingEdit2()
+        {
+            var buffer = EditorUtil.CreateBuffer("foo bar baz");
+            var tlc = Create(buffer, 0, 5);
+            buffer.Replace(buffer.GetLineFromLineNumber(0).ExtentIncludingLineBreak, "");
+            AssertTruncatedPoint(tlc, 0, 0);
+        }
+
+        [Test, Description("Shouldn't truncate when it comes back")]
+        public void TruncatingEdit3()
+        {
+            var buffer = EditorUtil.CreateBuffer("foo bar baz");
+            var tlc = Create(buffer, 0, 5);
+            buffer.Replace(buffer.GetLineFromLineNumber(0).ExtentIncludingLineBreak, "yes");
+            buffer.Replace(new Span(0, 0), "hello world");
+            AssertPoint(tlc, 0, 5);
         }
 
     }

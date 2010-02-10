@@ -47,7 +47,7 @@ type internal NormalMode
         let rec inner (ki:KeyInput) _ _ = 
             match _incrementalSearch.Process ki with
             | SearchComplete -> 
-                _bufferData.JumpList.Add before
+                _bufferData.JumpList.Add before |> ignore
                 NormalModeResult.Complete
             | SearchCanceled -> NormalModeResult.Complete
             | SearchNeedMore ->  NormalModeResult.NeedMore2 inner

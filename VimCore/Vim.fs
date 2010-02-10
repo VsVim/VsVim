@@ -19,7 +19,8 @@ type internal Vim
         _completionWindowBrokerFactoryService : ICompletionWindowBrokerFactoryService,
         _blockCaretFactoryService : IBlockCaretFactoryService,
         _textSearchService : ITextSearchService,
-        _textStructureNavigatorSelectorService : ITextStructureNavigatorSelectorService ) =
+        _textStructureNavigatorSelectorService : ITextStructureNavigatorSelectorService,
+        _tlcService : ITrackingLineColumnService ) =
     let _markMap = MarkMap() :> IMarkMap
     let _registerMap = RegisterMap()
     let _settings = VimSettingsUtil.CreateDefault
@@ -32,7 +33,7 @@ type internal Vim
         let editorFormatMap = _editorFormatMapService.GetEditorFormatMap(view :> ITextView)
         let caret = _blockCaretFactoryService.CreateBlockCaret view
         let editOperations = _editorOperationsFactoryService.GetEditorOperations(view)
-        let jumpList = JumpList() :> IJumpList
+        let jumpList = JumpList(_tlcService) :> IJumpList
         let bufferRaw = 
             VimBuffer( 
                 x :> IVim,
