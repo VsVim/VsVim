@@ -217,8 +217,6 @@ module internal TssUtil =
                         else startSpan
             | None -> fullSearch point
 
-    /// Find the start of the next word from the specified point.  If the cursor is currently
-    /// on a word then this word will not be considered
     let FindNextWordPosition point kind =
         let span = FindNextWordSpan point kind
         span.Start
@@ -256,7 +254,6 @@ module internal TssUtil =
         elif diff < 0 then new SnapshotSpan(line.Start, point)
         else new SnapshotSpan(point.Subtract(count), point)
             
-    /// Get the next point in the buffer without wrap
     let GetNextPoint (point:SnapshotPoint) =
         let tss = point.Snapshot
         let line = point.GetContainingLine()
@@ -267,7 +264,6 @@ module internal TssUtil =
         else
             point.Add(1)    
 
-    /// Get the next point in the buffer with wrap
     let GetNextPointWithWrap (point:SnapshotPoint) =
         let tss = point.Snapshot
         let line = point.GetContainingLine()

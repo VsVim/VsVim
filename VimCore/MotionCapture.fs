@@ -63,7 +63,31 @@ module internal MotionCapture =
                 | Key.W,true -> func WordKind.BigWord
                 | _ -> HitInvalidMotion
         NeedMoreInput(inner)             
-        
+
+    /// Implement the 'e' motion.  This goes to the end of the current word.  If we're
+    /// not currently on a word it will find the next word and then go to the end of that
+    let private EndOfWordMotion (start:SnapshotPoint) count kind =
+        let snapshotEnd = TssUtil.GetEndPoint start.Snapshot
+        let rec inner start count = 
+            if count <= 0 || start = snapshotEnd then start
+            else
+
+                // Move start to the first word if we're currently on whitespace
+                let start = 
+                    if System.Char.IsWhiteSpace(start.GetChar()) then TssUtil.FindNextWordPosition start kind
+                    else start
+
+                if start = snapshotEnd then snapshotEnd
+                else
+                    // Get the span of the current word and the end completes the motion
+                    match TssUtil.FindCurrentFullWordSpan start kind with
+                    | None -> TssUtil.GetEndPoint start.Snapshot
+                    | Some(s) -> inner s.End (count-1)
+
+        let endPoint = inner start count
+        let span = SnapshotSpan(start,endPoint)
+        Complete (span, MotionKind.Inclusive, OperationKind.CharacterWise)
+    
     /// Implement an end of line motion.  Typically in response to the $ key.  Even though
     /// this motion deals with lines, it's still a character wise motion motion. 
     let private EndOfLineMotion (start:SnapshotPoint) count = 
@@ -103,6 +127,8 @@ module internal MotionCapture =
                 | '$' -> EndOfLineMotion start count
                 | '^' -> BeginingOfLineMotion start 
                 | 'a' -> AllWordMotion start count
+                | 'e' -> EndOfWordMotion start count WordKind.NormalWord
+                | 'E' -> EndOfWordMotion start count WordKind.BigWord
                 
                 /// Simple left right motions
                 | 'h' -> 

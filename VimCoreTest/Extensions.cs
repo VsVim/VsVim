@@ -9,6 +9,7 @@ using Vim.Modes;
 using System.Windows.Threading;
 using Microsoft.FSharp.Core;
 using System.Windows.Input;
+using NUnit.Framework;
 
 namespace VimCoreTest
 {
@@ -37,11 +38,13 @@ namespace VimCoreTest
 
         internal static MotionResult.Complete AsComplete(this MotionResult res)
         {
+            Assert.IsTrue(res.IsComplete);
             return (MotionResult.Complete)res;
         }
 
         internal static MotionResult.InvalidMotion AsInvalidMotion(this MotionResult res)
         {
+            Assert.IsTrue(res.IsInvalidMotion);
             return (MotionResult.InvalidMotion)res;
         }
 

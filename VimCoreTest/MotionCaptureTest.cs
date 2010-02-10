@@ -317,5 +317,68 @@ namespace VimCoreTest
             Assert.AreEqual(OperationKind.LineWise, res.AsComplete().Item.Item3);
             Assert.AreEqual("foo" + Environment.NewLine + "bar", res.AsComplete().Item.Item1.GetText());
         }
+
+        [Test]
+        public void EndOfWord1()
+        {
+            Initialize("foo bar");
+            var res = Process(new SnapshotPoint(_snapshot, 0), 1, "e").AsComplete().Item;
+            Assert.AreEqual(MotionKind.Inclusive, res.Item2);
+            Assert.AreEqual(OperationKind.CharacterWise, res.Item3);
+            Assert.AreEqual(new SnapshotSpan(_snapshot, 0, 3), res.Item1);
+        }
+
+        [Test, Description("Needs to cross the end of the line")]
+        public void EndOfWord2()
+        {
+            Initialize("foo   ","bar");
+            var point = new SnapshotPoint(_snapshot, 4);
+            var res = Process(point, 1, "e").AsComplete().Item;
+            var span = new SnapshotSpan(
+                point,
+                _snapshot.GetLineFromLineNumber(1).Start.Add(3));
+            Assert.AreEqual(span, res.Item1);
+            Assert.AreEqual(MotionKind.Inclusive, res.Item2);
+            Assert.AreEqual(OperationKind.CharacterWise, res.Item3);
+        }
+
+        [Test]
+        public void EndOfWord3()
+        {
+            Initialize("foo bar baz jaz");
+            var res = Process(new SnapshotPoint(_snapshot, 0), 2, "e").AsComplete().Item;
+            var span = new SnapshotSpan(_snapshot, 0, 7);
+            Assert.AreEqual(span, res.Item1);
+            Assert.AreEqual(MotionKind.Inclusive, res.Item2);
+            Assert.AreEqual(OperationKind.CharacterWise, res.Item3);
+        }
+
+        [Test, Description("Work across blank lines")]
+        public void EndOfWord4()
+        {
+            Initialize("foo   ", "", "bar");
+            var point = new SnapshotPoint(_snapshot, 4);
+            var res = Process(point, 1, "e").AsComplete().Item;
+            var span = new SnapshotSpan(
+                point,
+                _snapshot.GetLineFromLineNumber(2).Start.Add(3));
+            Assert.AreEqual(span, res.Item1);
+            Assert.AreEqual(MotionKind.Inclusive, res.Item2);
+            Assert.AreEqual(OperationKind.CharacterWise, res.Item3);
+        }
+
+        [Test, Description("Go off the end ofthe buffer")]
+        public void EndOfWord5()
+        {
+            Initialize("foo   ", "", "bar");
+            var point = new SnapshotPoint(_snapshot, 4);
+            var res = Process(point, 400, "e").AsComplete().Item;
+            var span = new SnapshotSpan(
+                point,
+                TssUtil.GetEndPoint(_snapshot));
+            Assert.AreEqual(span, res.Item1);
+            Assert.AreEqual(MotionKind.Inclusive, res.Item2);
+            Assert.AreEqual(OperationKind.CharacterWise, res.Item3);
+        }
     }   
 }

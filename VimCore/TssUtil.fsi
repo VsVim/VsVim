@@ -48,7 +48,11 @@ module internal TssUtil =
     /// of the original span. 
     val FindAnyWordSpan : SnapshotSpan -> WordKind -> SearchKind -> option<SnapshotSpan>
 
+    /// Find the start of the next word from the specified point.  If the cursor is currently
+    /// on a word then this word will not be considered.  If there are no more words GetEndPoint
+    /// will be returned
     val FindNextWordPosition : SnapshotPoint -> WordKind -> SnapshotPoint
+
     val FindPreviousWordPosition : SnapshotPoint -> WordKind -> SnapshotPoint
     val SearchDirection: SearchKind -> 'a -> 'a -> 'a
     val FindIndentPosition : ITextSnapshotLine -> int
@@ -57,8 +61,14 @@ module internal TssUtil =
     val GetLastLine : ITextSnapshot -> ITextSnapshotLine
     val GetStartPoint : ITextSnapshot -> SnapshotPoint
     val GetEndPoint : ITextSnapshot -> SnapshotPoint 
+
+    /// Get the next point in the buffer without wrap.  Will throw if you run off the end of 
+    /// the ITextSnapshot
     val GetNextPoint : SnapshotPoint -> SnapshotPoint
+
+    /// Get the next point in the buffer with wrap
     val GetNextPointWithWrap : SnapshotPoint -> SnapshotPoint 
+
     val GetPreviousPointWithWrap : SnapshotPoint -> SnapshotPoint
         
     /// Create an ITextStructureNavigator instance for the given WordKind with the provided 
