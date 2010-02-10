@@ -16,7 +16,7 @@
   </Identifier>
   <References />
   <Content>
-    <MefComponent>|VsVim|</MefComponent>
+    <MefComponent>|%CurrentProject%|</MefComponent>
     <MefComponent>|VimCore|</MefComponent>
   </Content>
 </Vsix>

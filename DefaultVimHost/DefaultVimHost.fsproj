@@ -50,10 +50,6 @@
       <HintPath>C:\Users\jaredpar\VsVim\References\Microsoft.VisualStudio.Text.UI.Wpf.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Microsoft.VisualStudio.UI.Undo">
-      <HintPath>C:\Users\jaredpar\VsVim\References\Microsoft.VisualStudio.UI.Undo.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
     <Reference Include="mscorlib" />
     <Reference Include="FSharp.Core" />
     <Reference Include="System" />

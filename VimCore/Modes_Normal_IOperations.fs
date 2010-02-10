@@ -60,5 +60,4 @@ type IOperations =
     /// Jump to the previous item in the jump list
     abstract JumpPrevious : count:int -> unit
 
-    interface Modes.ICommonOperations
-
+    inherit Modes.ICommonOperations

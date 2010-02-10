@@ -57,6 +57,7 @@ type IJumpList =
 /// a block style cursor when needed
 type IBlockCaret =
     abstract TextView : ITextView
+    abstract IsShown : bool
     abstract Show : unit -> unit
     abstract Hide : unit -> unit
     abstract Destroy : unit -> unit

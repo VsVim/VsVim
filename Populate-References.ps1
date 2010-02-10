@@ -6,12 +6,10 @@ $coreDllList = @(   "Microsoft.VisualStudio.CoreUtility.dll",
                 "Microsoft.VisualStudio.Language.Intellisense.dll",
                 "Microsoft.VisualStudio.Language.StandardClassification.dll",
                 "Microsoft.VisualStudio.Platform.VSEditor.dll",
-                "Microsoft.VisualStudio.Platform.VSEditor.Interop.dll",
                 "Microsoft.VisualStudio.Text.Data.dll",
                 "Microsoft.VisualStudio.Text.Logic.dll",
                 "Microsoft.VisualStudio.Text.UI.dll",
-                "Microsoft.VisualStudio.Text.UI.Wpf.dll",
-                "Microsoft.VisualStudio.UI.Undo.dll" )
+                "Microsoft.VisualStudio.Text.UI.Wpf.dll" )
 
 function Get-ProgramFiles32() {
     if ( test-path (join-path $env:WinDir "SysWow64") ) {
@@ -36,10 +34,11 @@ foreach ( $dll in $coreDllList) {
     CopyTo-References $fullPath
 }
 
-$fullPath = join-path $progPath "Microsoft Visual Studio 10.0\Common7\IDE\PrivateAssemblies\Microsoft.VisualStudio.Text.Internal.dll"
-CopyTo-References $fullPath
+$privPath = join-path $progPath "Microsoft Visual Studio 10.0\Common7\IDE\PrivateAssemblies"
+CopyTo-References (join-path $privPath "Microsoft.VisualStudio.Text.Internal.dll" )
+CopyTo-References (join-path $privPath "Microsoft.VisualStudio.Platform.VSEditor.Interop.dll" )
 
-$fullPath = join-path $progPath "Reference Assemblies\Microsoft\F#\1.0\Runtime\v4.0\FSharp.Core.dll"
+$fullPath = join-path $progPath "Reference Assemblies\Microsoft\FSharp\2.0\Runtime\v4.0\FSharp.Core.dll"
 CopyTo-References $fullPath
 
 
