@@ -665,5 +665,31 @@ namespace VimCoreTest
             ProcessWithEnter("marksaoeu");
             Assert.AreEqual(_modeRaw.BadMessage, _host.Status);
         }
+
+        [Test]
+        public void Edit1()
+        {
+            Create("foo");
+            ProcessWithEnter("e");
+            Assert.AreEqual(1, _host.ShowOpenFileDialogCount);
+        }
+
+        [Test]
+        public void Edit2()
+        {
+            Create("foo");
+            ProcessWithEnter("edi");
+            Assert.AreEqual(1, _host.ShowOpenFileDialogCount);
+        }
+
+        [Test]
+        public void Edit3()
+        {
+            Create("bar");
+            _operations.Setup(x => x.EditFile("foo.cs")).Verifiable();
+            ProcessWithEnter("ed foo.cs");
+            _operations.Verify();
+        }
+
     }
 }

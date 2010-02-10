@@ -19,3 +19,6 @@ type IVimHost =
     abstract GetName : ITextBuffer -> string
     abstract NavigateTo : point : VirtualSnapshotPoint -> bool
 
+    /// Display the open file dialog 
+    abstract ShowOpenFileDialog : unit -> unit
+

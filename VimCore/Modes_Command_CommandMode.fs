@@ -96,10 +96,12 @@ type CommandMode
             |> x.SkipBang
         let name = 
             rest 
+                |> x.SkipWhitespace
                 |> Seq.ofList
                 |> Seq.map (fun i -> i.Char)
                 |> StringUtil.OfCharSeq 
-        _operations.EditFile name
+        if System.String.IsNullOrEmpty name then _data.VimHost.ShowOpenFileDialog()
+        else _operations.EditFile name
 
     /// Parse out the Yank command
     member private x.ParseYank (rest:KeyInput list) (range: Range option)=

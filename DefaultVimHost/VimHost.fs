@@ -14,3 +14,4 @@ type VimHost() =
         member x.GoToDefinition() = false
         member x.NavigateTo _ = false
         member x.GetName _ = ""
+        member x.ShowOpenFileDialog () = ()

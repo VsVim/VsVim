@@ -23,6 +23,7 @@ namespace VimCoreTest
         public int DismissCompletionWindowCount { get; set; }
         public VirtualSnapshotPoint NavigateToData { get; set; }
         public bool NavigateToReturn { get; set; }
+        public int ShowOpenFileDialogCount { get; set; }
 
         [ImportingConstructor]
         public FakeVimHost()
@@ -80,6 +81,11 @@ namespace VimCoreTest
         string IVimHost.GetName(ITextBuffer textBuffer)
         {
             return String.Empty;
+        }
+
+        void IVimHost.ShowOpenFileDialog()
+        {
+            ShowOpenFileDialogCount++;
         }
     }
 }

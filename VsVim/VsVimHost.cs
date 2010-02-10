@@ -75,6 +75,24 @@ namespace VsVim
             _dte.StatusBar.Text = text;
         }
 
+        private bool SafeExecuteCommand(string command)
+        {
+            if (_dte == null)
+            {
+                return false;
+            }
+
+            try
+            {
+                _dte.ExecuteCommand(command);
+                return true;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
         #region IVimHost
 
         void IVimHost.Beep()
@@ -175,20 +193,12 @@ namespace VsVim
 
         bool IVimHost.GoToDefinition()
         {
-            if (_dte == null)
-            {
-                return false;
-            }
+            return SafeExecuteCommand("Edit.GoToDefinition");
+        }
 
-            try
-            {
-                _dte.ExecuteCommand("Edit.GoToDefinition");
-                return true;
-            }
-            catch (Exception)
-            {
-                return false;
-            }
+        void IVimHost.ShowOpenFileDialog()
+        {
+            SafeExecuteCommand("Edit.OpenFile");
         }
 
         bool IVimHost.NavigateTo(VirtualSnapshotPoint point)
