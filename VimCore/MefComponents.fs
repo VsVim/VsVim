@@ -139,6 +139,12 @@ type internal TrackingLineColumn
         | None,Some(version,lineNumber) -> checkUndo version lineNumber
         | _ -> ()
 
+    override x.ToString() =
+        match x.VirtualSnapshotPoint with
+        | Some(point) ->
+            let line,_ = TssUtil.GetLineColumn point.Position
+            sprintf "%d,%d - %s" line _column (point.ToString())
+        | None -> "Invalid"
 
     interface ITrackingLineColumn with
         member x.TextBuffer = _textBuffer

@@ -51,19 +51,52 @@ namespace VimCoreTest
         public void MoveNext2()
         {
             var buffer = EditorUtil.CreateBuffer("foo bar");
-            var point1 = new SnapshotPoint(buffer.CurrentSnapshot, 0);
             var tlc1 = new Mock<ITrackingLineColumn>(MockBehavior.Strict);
-            tlc1.SetupGet(x => x.Point).Returns(FSharpOption.Create(new SnapshotPoint(buffer.CurrentSnapshot, 1)));
             var tlc2 = new Mock<ITrackingLineColumn>(MockBehavior.Strict);
+            var point1 = new SnapshotPoint(buffer.CurrentSnapshot, 0);
             var point2 = new SnapshotPoint(buffer.CurrentSnapshot, 1);
             _tlcService.Setup(x => x.CreateForPoint(point1)).Returns(tlc1.Object);
             _tlcService.Setup(x => x.CreateForPoint(point2)).Returns(tlc2.Object);
             _jumpList.Add(point1);
             _jumpList.Add(point2);
-            Assert.IsTrue(_jumpList.MoveNext());
-            Assert.IsTrue(_jumpList.Current.IsSome());
-            Assert.AreEqual(1, _jumpList.Current.Value.Position);
             Assert.IsFalse(_jumpList.MoveNext());
+        }
+
+        [Test]
+        public void MoveNext3()
+        {
+            var buffer = EditorUtil.CreateBuffer("foo bar");
+            var tlc1 = new Mock<ITrackingLineColumn>(MockBehavior.Strict);
+            var tlc2 = new Mock<ITrackingLineColumn>(MockBehavior.Strict);
+            var point1 = new SnapshotPoint(buffer.CurrentSnapshot, 0);
+            var point2 = new SnapshotPoint(buffer.CurrentSnapshot, 1);
+            _tlcService.Setup(x => x.CreateForPoint(point1)).Returns(tlc1.Object);
+            _tlcService.Setup(x => x.CreateForPoint(point2)).Returns(tlc2.Object);
+            _jumpList.Add(point1);
+            _jumpList.Add(point2);
+            _jumpList.MovePrevious();
+            Assert.IsTrue(_jumpList.MoveNext());
+            Assert.IsTrue(_jumpList.Current.IsNone());
+        }
+
+        [Test]
+        public void MoveNext4()
+        {
+            var buffer = EditorUtil.CreateBuffer("foo bar");
+            var tlc1 = new Mock<ITrackingLineColumn>(MockBehavior.Strict);
+            var tlc2 = new Mock<ITrackingLineColumn>(MockBehavior.Strict);
+            var point1 = new SnapshotPoint(buffer.CurrentSnapshot, 0);
+            var point2 = new SnapshotPoint(buffer.CurrentSnapshot, 1);
+            _tlcService.Setup(x => x.CreateForPoint(point1)).Returns(tlc1.Object);
+            _tlcService.Setup(x => x.CreateForPoint(point2)).Returns(tlc2.Object);
+            _jumpList.Add(point1);
+            _jumpList.Add(point2);
+            _jumpList.MovePrevious();
+            _jumpList.MovePrevious();
+            Assert.IsTrue(_jumpList.MoveNext());
+            tlc2.SetupGet(x => x.Point).Returns(FSharpOption.Create(point2));
+            Assert.IsTrue(_jumpList.Current.IsSome());
+            Assert.AreEqual(point2, _jumpList.Current.Value);
         }
 
         [Test]
@@ -79,7 +112,7 @@ namespace VimCoreTest
             var tlc1 = new Mock<ITrackingLineColumn>(MockBehavior.Strict);
             _tlcService.Setup(x => x.CreateForPoint(new SnapshotPoint(buffer.CurrentSnapshot,0))).Returns(tlc1.Object);
             _jumpList.Add(new SnapshotPoint(buffer.CurrentSnapshot, 0));
-            Assert.IsFalse(_jumpList.MovePrevious());
+            Assert.IsTrue(_jumpList.MovePrevious());
         }
 
         [Test]
@@ -87,18 +120,41 @@ namespace VimCoreTest
         {
             var buffer = EditorUtil.CreateBuffer("foo bar");
             var tlc1 = new Mock<ITrackingLineColumn>(MockBehavior.Strict);
-            tlc1.SetupGet(x => x.Point).Returns(FSharpOption.Create(new SnapshotPoint(buffer.CurrentSnapshot, 1)));
-            var point1 = new SnapshotPoint(buffer.CurrentSnapshot, 1);
-            var tlc2 = new Mock<ITrackingLineColumn>(MockBehavior.Strict);
-            var point2 = new SnapshotPoint(buffer.CurrentSnapshot, 0);
-            _tlcService.Setup(x => x.CreateForPoint(point2)).Returns(tlc2.Object);
+            var point1 = new SnapshotPoint(buffer.CurrentSnapshot, 0);
             _tlcService.Setup(x => x.CreateForPoint(point1)).Returns(tlc1.Object);
-            _jumpList.Add(point2);
             _jumpList.Add(point1);
-            _jumpList.MoveNext();
             Assert.IsTrue(_jumpList.MovePrevious());
+        }
+
+        [Test]
+        public void MovePrevious4()
+        {
+            var buffer = EditorUtil.CreateBuffer("foo bar");
+            var tlc1 = new Mock<ITrackingLineColumn>(MockBehavior.Strict);
+            var point1 = new SnapshotPoint(buffer.CurrentSnapshot, 0);
+            _tlcService.Setup(x => x.CreateForPoint(point1)).Returns(tlc1.Object);
+            _jumpList.Add(point1);
+            Assert.IsTrue(_jumpList.MovePrevious());
+            Assert.IsFalse(_jumpList.MovePrevious());
+        }
+
+        [Test]
+        public void MovePrevious5()
+        {
+            var buffer = EditorUtil.CreateBuffer("foo bar");
+            var tlc1 = new Mock<ITrackingLineColumn>(MockBehavior.Strict);
+            var tlc2 = new Mock<ITrackingLineColumn>(MockBehavior.Strict);
+            var point1 = new SnapshotPoint(buffer.CurrentSnapshot, 0);
+            var point2 = new SnapshotPoint(buffer.CurrentSnapshot, 1);
+            _tlcService.Setup(x => x.CreateForPoint(point1)).Returns(tlc1.Object);
+            _tlcService.Setup(x => x.CreateForPoint(point2)).Returns(tlc2.Object);
+            _jumpList.Add(point1);
+            _jumpList.Add(point2);
+            Assert.IsTrue(_jumpList.MovePrevious());
+            Assert.IsTrue(_jumpList.MovePrevious());
+            tlc1.SetupGet(x => x.Point).Returns(FSharpOption.Create(point1));
             Assert.IsTrue(_jumpList.Current.IsSome());
-            Assert.AreEqual(1, _jumpList.Current.Value.Position);
+            Assert.AreEqual(point1, _jumpList.Current.Value);
         }
 
         [Test, Description("Make sure we call close on ITrackingLineColumn instances which fall off the end of the list")]
@@ -140,6 +196,71 @@ namespace VimCoreTest
             tlc1.Verify();
         }
 
+        [Test]
+        public void Current1()
+        {
+            Assert.IsTrue(_jumpList.Current.IsNone());
+        }
 
+        [Test, Description("Current is None until we actually move")]
+        public void Current2()
+        {
+            var buffer = EditorUtil.CreateBuffer("foo bar");
+            var tlc1 = new Mock<ITrackingLineColumn>(MockBehavior.Strict);
+            var point1 = new SnapshotPoint(buffer.CurrentSnapshot, 0);
+            _tlcService.Setup(x => x.CreateForPoint(point1)).Returns(tlc1.Object);
+            _jumpList.Add(point1);
+            Assert.IsTrue(_jumpList.Current.IsNone());
+        }
+
+        [Test]
+        public void Current3()
+        {
+            var buffer = EditorUtil.CreateBuffer("foo bar");
+            var tlc1 = new Mock<ITrackingLineColumn>(MockBehavior.Strict);
+            var point1 = new SnapshotPoint(buffer.CurrentSnapshot, 0);
+            _tlcService.Setup(x => x.CreateForPoint(point1)).Returns(tlc1.Object);
+            _jumpList.Add(point1);
+            Assert.IsTrue(_jumpList.MovePrevious());
+            tlc1.SetupGet(x => x.Point).Returns(FSharpOption.Create(point1)).Verifiable();
+            Assert.IsTrue(_jumpList.Current.IsSome());
+            Assert.AreEqual(point1, _jumpList.Current.Value);
+            tlc1.Verify();
+        }
+
+        [Test, Description("Add should reset Current to empty")]
+        public void Current4()
+        {
+            var buffer = EditorUtil.CreateBuffer("foo bar");
+            var tlc1 = new Mock<ITrackingLineColumn>(MockBehavior.Strict);
+            var tlc2 = new Mock<ITrackingLineColumn>(MockBehavior.Strict);
+            var point1 = new SnapshotPoint(buffer.CurrentSnapshot, 0);
+            var point2 = new SnapshotPoint(buffer.CurrentSnapshot, 1);
+            _tlcService.Setup(x => x.CreateForPoint(point1)).Returns(tlc1.Object);
+            _tlcService.Setup(x => x.CreateForPoint(point2)).Returns(tlc2.Object);
+            _jumpList.Add(point1);
+            _jumpList.MovePrevious();
+            _jumpList.Add(point2);
+            Assert.IsTrue(_jumpList.Current.IsNone());
+        }
+
+        [Test]
+        public void Current5()
+        {
+            var buffer = EditorUtil.CreateBuffer("foo bar");
+            var tlc1 = new Mock<ITrackingLineColumn>(MockBehavior.Strict);
+            var tlc2 = new Mock<ITrackingLineColumn>(MockBehavior.Strict);
+            var point1 = new SnapshotPoint(buffer.CurrentSnapshot, 0);
+            var point2 = new SnapshotPoint(buffer.CurrentSnapshot, 1);
+            _tlcService.Setup(x => x.CreateForPoint(point1)).Returns(tlc1.Object);
+            _tlcService.Setup(x => x.CreateForPoint(point2)).Returns(tlc2.Object);
+            _jumpList.Add(point1);
+            _jumpList.MovePrevious();
+            _jumpList.Add(point2);
+            Assert.IsTrue(_jumpList.MovePrevious());
+            tlc2.SetupGet(x => x.Point).Returns(FSharpOption.Create(point2));
+            Assert.IsTrue(_jumpList.Current.IsSome());
+            Assert.AreEqual(point2, _jumpList.Current.Value);
+        }
     }
 }
