@@ -30,7 +30,6 @@ type ICompletionWindowBroker =
 type ICompletionWindowBrokerFactoryService =
     abstract CreateCompletionWindowBroker : ITextView -> ICompletionWindowBroker
 
-
 type ITrackingLineColumn =
     abstract TextBuffer : ITextBuffer
 
@@ -48,5 +47,13 @@ type ITrackingLineColumn =
 
     /// Needs to be called when you are done with the ITrackingLineColumn
     abstract Close : unit -> unit
+
+type ITrackingLineColumnService = 
+
+    /// Create an ITrackingLineColumn at the given position in the buffer.  
+    abstract Create : ITextBuffer -> line:int -> column: int -> ITrackingLineColumn
+
+    /// Close all of the outstanding ITrackingLineColumn instances
+    abstract CloseAll : unit -> unit
 
 

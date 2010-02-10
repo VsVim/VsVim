@@ -8,6 +8,7 @@ open Microsoft.VisualStudio.Language.Intellisense
 open Microsoft.VisualStudio.Text.Classification
 open Microsoft.VisualStudio.Utilities
 open System.ComponentModel.Composition
+open System.Collections.Generic
 
 [<Export(typeof<IBlockCaretFactoryService>)>]
 type internal BlockCaretFactoryService [<ImportingConstructor>] ( _formatMapService : IEditorFormatMapService ) =
@@ -85,6 +86,8 @@ type internal TrackingLineColumn
     /// can become valid again
     let mutable _lastValidVersion : (int * int) option  = None
 
+    member x.TextBuffer = _textBuffer
+
     member x.Line 
         with get() = _line
         and set value = _line <- value
@@ -97,7 +100,7 @@ type internal TrackingLineColumn
         | Some(line) -> Some (VirtualSnapshotPoint(line, _column))
 
     /// Update based on the new snapshot.  
-    member x.UpdateForNewSnapshot (e:TextContentChangedEventArgs) =
+    member x.UpdateForChange (e:TextContentChangedEventArgs) =
         let newSnapshot = e.After
         let changes = e.Changes
 
@@ -149,6 +152,57 @@ type internal TrackingLineColumn
             _line <- None
             _lastValidVersion <- None
 
+type internal TrackedData = {
+    List : TrackingLineColumn list
+    Observer : System.IDisposable 
+}
 
+[<Export(typeof<ITrackingLineColumnService>)>]
+type internal TrackingLineColumnService() = 
+    
+    let _map = new Dictionary<ITextBuffer, TrackedData>()
 
+    member private x.Remove (tlc:TrackingLineColumn) = 
+        let textBuffer = tlc.TextBuffer
+        let found,data = _map.TryGetValue(textBuffer)
+        if not found then ()
+        else
+            let l = data.List |> List.filter (fun item -> item <> tlc)
+            if l |> List.isEmpty then 
+                data.Observer.Dispose()
+                _map.Remove(textBuffer) |> ignore
+            else
+                _map.Item(textBuffer) <- { data with List = l} 
+
+    member private x.Add (tlc:TrackingLineColumn) =
+        let textBuffer = tlc.TextBuffer 
+        let found,data= _map.TryGetValue(textBuffer)
+        if found then 
+            let data = { data with List = [tlc] @ data.List }
+            _map.Item(textBuffer) <- data
+        else 
+            let observer = textBuffer.Changed |> Observable.subscribe x.OnBufferChanged
+            let data = { List = List.empty; Observer = observer }
+            _map.Add(textBuffer,data)
+
+    member private x.OnBufferChanged (e:TextContentChangedEventArgs) = 
+        let data = _map.Item(e.After.TextBuffer)
+        data.List |> List.iter (fun tlc -> tlc.UpdateForChange e)
+
+    interface ITrackingLineColumnService with
+        member x.Create (textBuffer:ITextBuffer) lineNumber column = 
+            let tlc = TrackingLineColumn(textBuffer, column, x.Remove)
+            let tss = textBuffer.CurrentSnapshot
+            let line = tss.GetLineFromLineNumber(lineNumber)
+            tlc.Line <-  Some line
+            tlc :> ITrackingLineColumn
+
+        member x.CloseAll() =
+            let values = _map.Values |> List.ofSeq
+            values 
+            |> Seq.ofList
+            |> Seq.map (fun data -> data.List)
+            |> Seq.concat
+            |> Seq.map (fun tlc -> tlc :> ITrackingLineColumn)
+            |> Seq.iter (fun tlc -> tlc.Close() )
 
