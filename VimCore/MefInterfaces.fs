@@ -29,3 +29,31 @@ type ICompletionWindowBroker =
 
 type ICompletionWindowBrokerFactoryService =
     abstract CreateCompletionWindowBroker : ITextView -> ICompletionWindowBroker
+
+type ITrackingLineColumn =
+    abstract TextBuffer : ITextBuffer
+
+    /// Get the point as it relates to current Snapshot.  Returns None
+    /// in the case that the line and column cannot be matched
+    abstract Point : SnapshotPoint option 
+
+    /// Get the point as it relates the current Snapshot.  If the current
+    /// length of the line is not long enough to support the column, it will be 
+    /// truncated to the last non-linebreak character of the line
+    abstract PointTruncating: SnapshotPoint option
+
+    /// Get the point as a VirtualSnapshot point on the current ITextSnapshot
+    abstract VirtualPoint : VirtualSnapshotPoint option
+
+    /// Needs to be called when you are done with the ITrackingLineColumn
+    abstract Close : unit -> unit
+
+type ITrackingLineColumnService = 
+
+    /// Create an ITrackingLineColumn at the given position in the buffer.  
+    abstract Create : ITextBuffer -> line:int -> column: int -> ITrackingLineColumn
+
+    /// Close all of the outstanding ITrackingLineColumn instances
+    abstract CloseAll : unit -> unit
+
+

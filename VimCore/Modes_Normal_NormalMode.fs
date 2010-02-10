@@ -129,7 +129,7 @@ type internal NormalMode
         inner
 
     /// Implement the < operator        
-    member this.ShiftLeft =
+    member this.WaitShiftLeft =
         let inner (ki:KeyInput) count reg =
             match ki.Char with 
                 | '<' ->
@@ -145,7 +145,7 @@ type internal NormalMode
                     
     /// Implements the > operator.  Check for the special > motion key and then default
     /// back to a standard motion                    
-    member this.ShiftRight =
+    member this.WaitShiftRight =
         let inner (ki:KeyInput) count reg =
             match ki.Char with
                 | '>' ->
@@ -172,7 +172,7 @@ type internal NormalMode
             | true ->
                 host.Beep()
 
-    member private x.ReplaceChar = 
+    member private x.WaitReplaceChar = 
         let inner (ki:KeyInput) count reg =
             if not (_operations.ReplaceChar ki count) then
                 _bufferData.VimHost.Beep()
@@ -183,7 +183,7 @@ type internal NormalMode
         
     /// Handles commands which begin with g in normal mode.  This should be called when the g char is
     /// already processed
-    member x.CharGCommand =
+    member x.WaitCharGCommand =
         let inner (ki:KeyInput) count (reg:Register) =  
             match ki.Char with
             | 'J' -> 
@@ -202,7 +202,7 @@ type internal NormalMode
         inner
 
     /// Implement the commands associated with the z prefix in normal mode
-    member x.CharZCommand = 
+    member x.WaitCharZCommand = 
         let inner (ki:KeyInput) coun reg =  
             if ki.IsNewLine then 
                 _bufferData.EditorOperations.ScrollLineTop()
@@ -222,7 +222,7 @@ type internal NormalMode
             NormalModeResult.Complete
         inner
 
-    member x.JumpToMark =
+    member x.WaitJumpToMark =
         let waitForKey (ki:KeyInput) _ _ =
             let res = _operations.JumpToMark ki.Char _bufferData.MarkMap 
             match res with 
@@ -232,7 +232,7 @@ type internal NormalMode
         waitForKey
 
     /// Process the m[a-z] command.  Called when the m has been input so wait for the next key
-    member x.Mark = 
+    member x.WaitMark = 
         let waitForKey (ki:KeyInput) _ _ =
             let cursor = ViewUtil.GetCaretPoint _bufferData.TextView
             let res = _operations.SetMark _bufferData cursor ki.Char 
@@ -266,17 +266,17 @@ type internal NormalMode
         let waitOps = seq {
             yield (InputUtil.CharToKeyInput('d'), (fun () -> this.WaitDelete))
             yield (InputUtil.CharToKeyInput('y'), (fun () -> this.WaitYank))
-            yield (InputUtil.CharToKeyInput('<'), (fun () -> this.ShiftLeft))
-            yield (InputUtil.CharToKeyInput('>'), (fun () -> this.ShiftRight))
+            yield (InputUtil.CharToKeyInput('<'), (fun () -> this.WaitShiftLeft))
+            yield (InputUtil.CharToKeyInput('>'), (fun () -> this.WaitShiftRight))
             yield (InputUtil.CharToKeyInput('c'), (fun () -> this.WaitChange))
             yield (InputUtil.CharToKeyInput('/'), (fun () -> this.BeginIncrementalSearch SearchKind.ForwardWithWrap))
             yield (InputUtil.CharToKeyInput('?'), (fun () -> this.BeginIncrementalSearch SearchKind.BackwardWithWrap))
-            yield (InputUtil.CharToKeyInput('m'), (fun () -> this.Mark))
-            yield (InputUtil.CharToKeyInput('\''), (fun () -> this.JumpToMark))
-            yield (InputUtil.CharToKeyInput('`'), (fun () -> this.JumpToMark))
-            yield (InputUtil.CharToKeyInput('g'), (fun () -> this.CharGCommand))
-            yield (InputUtil.CharToKeyInput('z'), (fun () -> this.CharZCommand))
-            yield (InputUtil.CharToKeyInput('r'), (fun () -> this.ReplaceChar))
+            yield (InputUtil.CharToKeyInput('m'), (fun () -> this.WaitMark))
+            yield (InputUtil.CharToKeyInput('\''), (fun () -> this.WaitJumpToMark))
+            yield (InputUtil.CharToKeyInput('`'), (fun () -> this.WaitJumpToMark))
+            yield (InputUtil.CharToKeyInput('g'), (fun () -> this.WaitCharGCommand))
+            yield (InputUtil.CharToKeyInput('z'), (fun () -> this.WaitCharZCommand))
+            yield (InputUtil.CharToKeyInput('r'), (fun () -> this.WaitReplaceChar))
         }
 
         let completeOps : seq<KeyInput * (int -> Register -> unit)> = seq {

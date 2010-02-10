@@ -52,6 +52,35 @@ module internal Utils =
         with 
             | :? System.ArgumentException -> None
 
+    /// Determine if the given character is any line break character.  This matches up with 
+    /// the editors understanding of line break characters
+//    let IsAnyLineBreakCharacter c =
+//        // TODO: \x0085
+//        let special = char 133 // '\x0085'
+//        match c with 
+//        | '\n' -> true
+//        | '\r' -> true
+//        | '\u2028' -> true
+//        | '\u2029' -> true
+//        | _ -> false
+//
+//    let IsAnyLineBreakCharacterExcept c except = 
+//        if c = except then false
+//        else IsAnyLineBreakCharacter c
+//
+//    /// Get the set of Span's for line breaks over the given text
+//    let GetLineBreakSpans (text:string) = 
+//        let rec inner index l = 
+//            if index < 0 then l
+//            elif index = 0 && IsAnyLineBreakCharacter text.[index] then
+//                Span(index,1) @ l 
+//            elif text.[index] = '\n' && text.[index-1] = '\r' then
+//                inner (index-2) (Span(index-1,2) @ l)
+//            elif IsAnyLineBreakCharacterExcept text.[index] '\n' then
+//                inner (index-1) (Span(index,1)@@ l)
+//            else inner (index-1) l
+//        inner (text.Length-1) []
+
 module internal ListUtil =
 
     let divide l = (l |> List.head), (l |> List.tail)
