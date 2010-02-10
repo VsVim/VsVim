@@ -70,6 +70,9 @@ type internal BlockCaret
             let line = caret.ContainingTextViewLine
             line.VisibilityState <> VisibilityState.Unattached
         with 
+        // InvalidOperationException is thrown when we ask for ContainingTextViewLine and the view
+        // is not yet completely rendered.  It's safe to say at this point that the caret is not 
+        // visible
         | :? System.InvalidOperationException -> false
 
     member private x.OnCaretBlinkTimer _ _ = 
@@ -188,6 +191,7 @@ type internal BlockCaret
 
     interface IBlockCaret with
         member x.TextView = _view 
+        member x.IsShown = _isShown
         member x.Hide() = x.HideCore()
         member x.Show() = x.ShowCore()
         member x.Destroy() =
