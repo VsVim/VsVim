@@ -96,5 +96,40 @@ namespace VimCoreTest
             Assert.AreEqual(1, _jumpList.Current.Value.Position);
         }
 
+        [Test, Description("Make sure we call close on ITrackingLineColumn instances which fall off the end of the list")]
+        public void Limit1()
+        {
+            Create(1);
+            var buffer = EditorUtil.CreateBuffer("foo bar");
+            var tlc1 = new Mock<ITrackingLineColumn>(MockBehavior.Strict);
+            var tlc2 = new Mock<ITrackingLineColumn>(MockBehavior.Strict);
+            _tlcService.Setup(x => x.Create(buffer, 0, 0)).Returns(tlc1.Object);
+            _tlcService.Setup(x => x.Create(buffer, 0, 1)).Returns(tlc2.Object);
+            _jumpList.Add(new SnapshotPoint(buffer.CurrentSnapshot, 0));
+            tlc1.Setup(x => x.Close()).Verifiable();
+            _jumpList.Add(new SnapshotPoint(buffer.CurrentSnapshot, 1));
+            tlc1.Verify();
+        }
+
+        [Test, Description("Make sure we call close on ITrackingLineColumn instances which fall off the end of the list")]
+        public void Limit2()
+        {
+            Create(1);
+            var buffer = EditorUtil.CreateBuffer("foo bar");
+            var tlc1 = new Mock<ITrackingLineColumn>(MockBehavior.Strict);
+            var tlc2 = new Mock<ITrackingLineColumn>(MockBehavior.Strict);
+            var tlc3 = new Mock<ITrackingLineColumn>(MockBehavior.Strict);
+            _tlcService.Setup(x => x.Create(buffer, 0, 0)).Returns(tlc1.Object);
+            _tlcService.Setup(x => x.Create(buffer, 0, 1)).Returns(tlc2.Object);
+            _tlcService.Setup(x => x.Create(buffer, 0, 2)).Returns(tlc2.Object);
+            _jumpList.Add(new SnapshotPoint(buffer.CurrentSnapshot, 0));
+            tlc1.Setup(x => x.Close()).Verifiable();
+            _jumpList.Add(new SnapshotPoint(buffer.CurrentSnapshot, 1));
+            tlc2.Setup(x => x.Close()).Verifiable();
+            _jumpList.Add(new SnapshotPoint(buffer.CurrentSnapshot, 2));
+            tlc1.Verify();
+        }
+
+
     }
 }

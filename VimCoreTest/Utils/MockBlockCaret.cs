@@ -13,7 +13,7 @@ namespace VimCoreTest.Utils
         internal int DestroyCount;
         internal int HideCount;
         internal int ShowCount;
-        internal bool isShown;
+        internal bool isShown = false;
 
         internal MockBlockCaret(IWpfTextView view = null)
         {
