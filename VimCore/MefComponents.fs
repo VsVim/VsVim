@@ -119,7 +119,7 @@ type internal TrackingLineColumn
                     |> Seq.map (fun c -> c.LineCountDelta) 
                     |> Seq.sum
                 let lineNumber = oldLine.LineNumber + lineDiff
-                if lineNumber < newSnapshot.LineCount then makeInvalid()
+                if lineNumber >= newSnapshot.LineCount then makeInvalid()
                 else  _line <- Some (newSnapshot.GetLineFromLineNumber(lineNumber))
 
         let checkUndo lastVersion lastLineNumber = 
@@ -162,6 +162,9 @@ type internal TrackingLineColumnService() =
     
     let _map = new Dictionary<ITextBuffer, TrackedData>()
 
+    /// Remove the TrackingLineColumn from the map.  If it is the only remaining 
+    /// TrackingLineColumn assigned to the ITextBuffer, remove it from the map
+    /// and unsubscribe from the Changed event
     member private x.Remove (tlc:TrackingLineColumn) = 
         let textBuffer = tlc.TextBuffer
         let found,data = _map.TryGetValue(textBuffer)
@@ -174,6 +177,8 @@ type internal TrackingLineColumnService() =
             else
                 _map.Item(textBuffer) <- { data with List = l} 
 
+    /// Add the TrackingLineColumn to the map.  If this is the first item in the
+    /// map then subscribe to the Changed event on the buffer
     member private x.Add (tlc:TrackingLineColumn) =
         let textBuffer = tlc.TextBuffer 
         let found,data= _map.TryGetValue(textBuffer)
@@ -182,21 +187,23 @@ type internal TrackingLineColumnService() =
             _map.Item(textBuffer) <- data
         else 
             let observer = textBuffer.Changed |> Observable.subscribe x.OnBufferChanged
-            let data = { List = List.empty; Observer = observer }
+            let data = { List = [tlc]; Observer = observer }
             _map.Add(textBuffer,data)
 
     member private x.OnBufferChanged (e:TextContentChangedEventArgs) = 
         let data = _map.Item(e.After.TextBuffer)
         data.List |> List.iter (fun tlc -> tlc.UpdateForChange e)
 
-    interface ITrackingLineColumnService with
-        member x.Create (textBuffer:ITextBuffer) lineNumber column = 
-            let tlc = TrackingLineColumn(textBuffer, column, x.Remove)
-            let tss = textBuffer.CurrentSnapshot
-            let line = tss.GetLineFromLineNumber(lineNumber)
-            tlc.Line <-  Some line
-            tlc :> ITrackingLineColumn
+    member x.Create (textBuffer:ITextBuffer) lineNumber column = 
+        let tlc = TrackingLineColumn(textBuffer, column, x.Remove)
+        let tss = textBuffer.CurrentSnapshot
+        let line = tss.GetLineFromLineNumber(lineNumber)
+        tlc.Line <-  Some line
+        x.Add tlc
+        tlc
 
+    interface ITrackingLineColumnService with
+        member x.Create textBuffer lineNumber column = x.Create textBuffer lineNumber column :> ITrackingLineColumn
         member x.CloseAll() =
             let values = _map.Values |> List.ofSeq
             values 

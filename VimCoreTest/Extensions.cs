@@ -171,6 +171,15 @@ namespace VimCoreTest
 
         #endregion
 
+        #region ITextBuffer
+
+        public static ITextSnapshotLine GetLineFromLineNumber(this ITextBuffer buffer, int line)
+        {
+            return buffer.CurrentSnapshot.GetLineFromLineNumber(line);
+        }
+
+        #endregion
+
         #region ITextSnapshot
 
         public static SnapshotSpan GetLineSpan(this ITextSnapshot tss, int startLine, int endLine)

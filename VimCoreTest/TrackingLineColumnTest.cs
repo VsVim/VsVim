@@ -13,21 +13,24 @@ namespace VimCoreTest
     [TestFixture]
     public class TrackingLineColumnTest
     {
-        private ITrackingLineColumn Create(
-            ITextBuffer buffer,
-            int line,
-            int column,
-            Action<TrackingLineColumn> onClose = null)
-        {   
-            onClose = onClose ?? ( _ => {} );
-            var func = FSharpFuncUtil.Create<TrackingLineColumn,Unit>( item =>
-                {
-                    onClose(item);
-                    return null;
-                });
-            var tlc = new TrackingLineColumn(buffer, column, func);
-            tlc.Line = FSharpOption.Create(buffer.CurrentSnapshot.GetLineFromLineNumber(line));
-            return tlc;
+        private TrackingLineColumnService _service;
+
+        [SetUp]
+        public void SetUp() 
+        {
+            _service = new TrackingLineColumnService();
+        }
+
+        private ITrackingLineColumn Create(ITextBuffer buffer, int line, int column)
+        {
+            return _service.Create(buffer, line ,column);
+        }
+
+        private static void AssertPoint(ITrackingLineColumn tlc, int lineNumber, int column)
+        {
+            var point = tlc.Point;
+            Assert.IsTrue(point.IsSome());
+            AssertLineColumn(point.Value, lineNumber, column);
         }
 
         private static void AssertLineColumn(SnapshotPoint point, int lineNumber, int column)
@@ -43,11 +46,64 @@ namespace VimCoreTest
             var buffer = EditorUtil.CreateBuffer("foo bar", "baz");
             var tlc = Create(buffer, 0, 1);
             buffer.Replace(new Span(0, 0), "foo");
-            var point = tlc.Point;
-            Assert.IsTrue(point.IsSome());
-            AssertLineColumn(point.Value, 0, 1);
+            AssertPoint(tlc, 0, 1);
         }
 
+        [Test, Description("Replace the line, shouldn't affect the column tracking")]
+        public void SimpleEdit2()
+        {
+            var buffer = EditorUtil.CreateBuffer("foo bar", "baz");
+            var tlc = Create(buffer, 0, 1);
+            buffer.Replace(new Span(0, 5), "barbar");
+            AssertPoint(tlc, 0, 1);
+        }
+
+        [Test, Description("Edit at the end of the line")]
+        public void SimpleEdit3()
+        {
+            var buffer = EditorUtil.CreateBuffer("foo bar", "baz");
+            var tlc = Create(buffer, 0, 1);
+            buffer.Replace(new Span(5, 0), "barbar");
+            AssertPoint(tlc, 0, 1);
+        }
+
+        [Test, Description("Edit a different line")]
+        public void SimpleEdit4()
+        {
+            var buffer = EditorUtil.CreateBuffer("foo bar", "baz");
+            var tlc = Create(buffer, 0, 1);
+            buffer.Replace(buffer.CurrentSnapshot.GetLineSpan(1, 1).Span, "hello world");
+            AssertPoint(tlc, 0, 1);
+        }
+
+        [Test]
+        public void DeleteLine1()
+        {
+            var buffer = EditorUtil.CreateBuffer("foo", "bar");
+            var tlc = Create(buffer, 0, 0);
+            buffer.Delete(buffer.GetLineFromLineNumber(0).ExtentIncludingLineBreak.Span);
+            Assert.IsTrue(tlc.Point.IsNone());
+            Assert.IsTrue(tlc.PointTruncating.IsNone());
+            Assert.IsTrue(tlc.VirtualPoint.IsNone());
+        }
+
+        [Test, Description("Deleting a line below shouldn't affect it")]
+        public void DeleteLine2()
+        {
+            var buffer = EditorUtil.CreateBuffer("foo", "bar");
+            var tlc = Create(buffer, 0, 2);
+            buffer.Delete(buffer.GetLineFromLineNumber(1).ExtentIncludingLineBreak.Span);
+            AssertPoint(tlc, 0, 2);
+        }
+
+        [Test, Description("Deleting a line above should just shift the line")]
+        public void DeleteLine3()
+        {
+            var buffer = EditorUtil.CreateBuffer("foo", "bar", "baz");
+            var tlc = Create(buffer, 1, 2);
+            buffer.Delete(buffer.GetLineFromLineNumber(0).ExtentIncludingLineBreak.Span);
+            AssertPoint(tlc, 0, 2);
+        }
 
     }
 }
