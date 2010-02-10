@@ -21,6 +21,12 @@ namespace VimCoreTest.Utils
             return mock;
         }
 
+        internal static Mock<ITrackingLineColumnService> CreateTrackingLineColumnService()
+        {
+            var mock = new Mock<ITrackingLineColumnService>(MockBehavior.Strict);
+            return mock;
+        }
+
         internal static Mock<IVim> CreateVim(
             IRegisterMap registerMap = null,
             MarkMap map = null,
@@ -28,7 +34,7 @@ namespace VimCoreTest.Utils
             IVimHost host = null)
         {
             registerMap = registerMap ?? CreateRegisterMap().Object;
-            map = map ?? new MarkMap();
+            map = map ?? new MarkMap(new TrackingLineColumnService());
             settings = settings ?? VimSettingsUtil.CreateDefault;
             host = host ?? new FakeVimHost();
             var mock = new Mock<IVim>(MockBehavior.Strict);

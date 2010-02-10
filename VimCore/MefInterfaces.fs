@@ -53,6 +53,17 @@ type ITrackingLineColumnService =
     /// Create an ITrackingLineColumn at the given position in the buffer.  
     abstract Create : ITextBuffer -> line:int -> column: int -> ITrackingLineColumn
 
+    /// Creates a disconnected ITrackingLineColumn instance.  ITrackingLineColumn 
+    /// instances can only be created against the current snapshot of an ITextBuffer.  This
+    /// method is useful when a valid one can't be supplied so instead we provide 
+    /// a ITrackingLineColumn which satisifies the interface but produces no values
+    abstract CreateDisconnected : ITextBuffer -> ITrackingLineColumn
+
+    /// Creates an ITrackingLineColumn for the given SnapshotPoint.  If the point does
+    /// not point to the current snapshot of ITextBuffer, a disconnected ITrackingLineColumn
+    /// will be created
+    abstract CreateForPoint : SnapshotPoint -> ITrackingLineColumn
+
     /// Close all of the outstanding ITrackingLineColumn instances
     abstract CloseAll : unit -> unit
 

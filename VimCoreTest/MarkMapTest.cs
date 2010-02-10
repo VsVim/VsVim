@@ -19,7 +19,8 @@ namespace VimCoreTest
         [SetUp]
         public void Init()
         {
-            _map = new Vim.MarkMap();
+            var service = new TrackingLineColumnService();
+            _map = new Vim.MarkMap(service);
         }
 
         [TearDown]
@@ -43,53 +44,6 @@ namespace VimCoreTest
             var data = opt.Value;
             Assert.AreEqual(0, data.Position.Position);
             Assert.IsFalse(data.IsInVirtualSpace);
-        }
-
-        [Test]
-        public void TrackedBuffers1()
-        {
-            CreateBuffer("foo", "bar");
-            _map.SetLocalMark(new SnapshotPoint(_buffer.CurrentSnapshot, 0), 'a');
-            Assert.IsTrue(_map.TrackedBuffers.Contains(_buffer));
-        }
-
-        [Test, Description("Tracking of global marks")]
-        public void TrackedBuffers2()
-        {
-            CreateBuffer("foo", "bar");
-            _map.SetMark(new SnapshotPoint(_buffer.CurrentSnapshot, 0), 'A');
-            Assert.IsTrue(_map.TrackedBuffers.Contains(_buffer));
-        }
-
-        [Test]
-        public void TrackedBuffers3()
-        {
-            CreateBuffer("foo", "bar");
-            _map.SetLocalMark(new SnapshotPoint(_buffer.CurrentSnapshot, 0), 'a');
-            _map.DeleteLocalMark(_buffer, 'a');
-            Assert.IsFalse(_map.TrackedBuffers.Contains(_buffer));
-        }
-
-        [Test]
-        public void TrackedBuffers4()
-        {
-            CreateBuffer("foo", "bar");
-            _map.SetLocalMark(new SnapshotPoint(_buffer.CurrentSnapshot, 0), 'b');
-            _map.DeleteLocalMark(_buffer, 'b');
-            Assert.IsFalse(_map.TrackedBuffers.Contains(_buffer));
-        }
-
-        [Test]
-        public void TrackedBuffers5()
-        {
-            CreateBuffer("foo", "bar");
-            _map.SetLocalMark(new SnapshotPoint(_buffer.CurrentSnapshot, 0), 'a');
-            _map.SetLocalMark(new SnapshotPoint(_buffer.CurrentSnapshot, 0), 'b');
-            Assert.IsTrue(_map.TrackedBuffers.Contains(_buffer));
-            Assert.IsTrue(_map.DeleteLocalMark(_buffer, 'a'));
-            Assert.IsTrue(_map.TrackedBuffers.Contains(_buffer));
-            Assert.IsTrue(_map.DeleteLocalMark(_buffer, 'b'));
-            Assert.IsFalse(_map.TrackedBuffers.Contains(_buffer));
         }
 
         [Test]

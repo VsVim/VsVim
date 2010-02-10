@@ -36,7 +36,7 @@ namespace VimCoreTest
             var tuple = EditorUtil.CreateViewAndOperations("here we go");
             _view = tuple.Item1;
             _editorOperations = tuple.Item2;
-            _markMap = new MarkMap();
+            _markMap = new MarkMap(new TrackingLineColumnService());
             _vim = MockObjectFactory.CreateVim(map:_markMap);
             _blockCaret = new MockBlockCaret();
             _disabledMode = new Mock<IMode>(MockBehavior.Strict);

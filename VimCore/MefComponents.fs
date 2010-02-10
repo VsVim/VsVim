@@ -202,8 +202,25 @@ type internal TrackingLineColumnService() =
         x.Add tlc
         tlc
 
+    member x.CreateDisconnected textBuffer = 
+        { new ITrackingLineColumn with 
+            member x.TextBuffer = textBuffer
+            member x.Point = None
+            member x.PointTruncating = None
+            member x.VirtualPoint = None
+            member x.Close() = () }
+
     interface ITrackingLineColumnService with
         member x.Create textBuffer lineNumber column = x.Create textBuffer lineNumber column :> ITrackingLineColumn
+        member x.CreateForPoint (point:SnapshotPoint) =
+            let buffer = point.Snapshot.TextBuffer
+            if point.Snapshot <> buffer.CurrentSnapshot then 
+                x.CreateDisconnected buffer
+            else
+                let line,column = TssUtil.GetLineColumn point
+                (x.Create buffer line column) :> ITrackingLineColumn
+        member x.CreateDisconnected textBuffer = x.CreateDisconnected textBuffer
+            
         member x.CloseAll() =
             let values = _map.Values |> List.ofSeq
             values 

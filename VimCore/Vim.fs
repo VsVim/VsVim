@@ -21,7 +21,7 @@ type internal Vim
         _textSearchService : ITextSearchService,
         _textStructureNavigatorSelectorService : ITextStructureNavigatorSelectorService,
         _tlcService : ITrackingLineColumnService ) =
-    let _markMap = MarkMap() :> IMarkMap
+    let _markMap = MarkMap(_tlcService) :> IMarkMap
     let _registerMap = RegisterMap()
     let _settings = VimSettingsUtil.CreateDefault
 

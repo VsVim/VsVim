@@ -7,7 +7,6 @@ open Microsoft.VisualStudio.Text.Operations
 open System.Windows.Input
 
 type IMarkMap =
-    abstract TrackedBuffers : ITextBuffer seq
     abstract IsLocalMark : char -> bool
     abstract GetLocalMark : ITextBuffer -> char -> VirtualSnapshotPoint option
 

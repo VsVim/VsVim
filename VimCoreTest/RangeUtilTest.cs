@@ -74,7 +74,7 @@ namespace VimCoreTest
 
         private ParseRangeResult CaptureComplete(SnapshotPoint point, string input, IMarkMap map = null)
         {
-            map = map ?? new MarkMap();
+            map = map ?? new MarkMap(new TrackingLineColumnService());
             var list = input.Select(x => InputUtil.CharToKeyInput(x));
             return RangeUtil.ParseRange(point, map, ListModule.OfSeq(list));
         }
@@ -226,7 +226,7 @@ namespace VimCoreTest
             Create("foo", "bar");
             var point1 = new SnapshotPoint(_buffer.CurrentSnapshot, 0);
             var point2 = _buffer.CurrentSnapshot.GetLineFromLineNumber(1).EndIncludingLineBreak;
-            var map = new MarkMap();
+            var map = new MarkMap(new TrackingLineColumnService());
             map.SetLocalMark(point1, 'c');
             var range = Parse("'c,2",map);
             Assert.IsTrue(range.IsSucceeded);
@@ -239,7 +239,7 @@ namespace VimCoreTest
             Create("foo", "bar");
             var point1 = new SnapshotPoint(_buffer.CurrentSnapshot, 0);
             var point2 = _buffer.CurrentSnapshot.GetLineFromLineNumber(1).EndIncludingLineBreak;
-            var map = new MarkMap();
+            var map = new MarkMap(new TrackingLineColumnService());
             map.SetLocalMark(point1, 'c');
             map.SetLocalMark(point2, 'b');
             var range = Parse("'c,'b", map);
@@ -253,7 +253,7 @@ namespace VimCoreTest
             Create("foo", "bar");
             var point1 = new SnapshotPoint(_buffer.CurrentSnapshot, 2);
             var point2 = _buffer.CurrentSnapshot.GetLineFromLineNumber(1).EndIncludingLineBreak;
-            var map = new MarkMap();
+            var map = new MarkMap(new TrackingLineColumnService());
             map.SetLocalMark(point1, 'c');
             var range = Parse("'c,2", map);
             Assert.IsTrue(range.IsSucceeded);
