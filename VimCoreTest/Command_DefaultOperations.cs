@@ -34,6 +34,12 @@ namespace VimCoreTest
             _operationsRaw = new DefaultOperations(_view, _editOpts.Object, _host.Object, _jumpList.Object);
             _operations = _operationsRaw;
         }
+
+        [TearDown]
+        public void TearDown()
+        {
+            _operations = null;
+        }
         
         [Test]
         public void Put1()

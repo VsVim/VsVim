@@ -42,6 +42,13 @@ namespace VimCoreTest
             _operations = _operationsRaw;
         }
 
+        [TearDown]
+        public void TearDown()
+        {
+            _operations = null;
+            _operationsRaw = null;
+        }
+
         [Test]
         public void Join1()
         {
@@ -190,7 +197,7 @@ namespace VimCoreTest
         [Test]
         public void JumpToMark2()
         {
-            var view = Utils.EditorUtil.CreateView("foo", "bar");
+            CreateLines("foo", "bar");
             var map = new MarkMap(new TrackingLineColumnService());
             var res = _operations.JumpToMark('b', map);
             Assert.IsTrue(res.IsFailed);
@@ -200,10 +207,10 @@ namespace VimCoreTest
         [Test, Description("Jump to global mark")]
         public void JumpToMark3()
         {
-            var view = Utils.EditorUtil.CreateView("foo", "bar");
+            CreateLines("foo", "bar");
             var map = new MarkMap(new TrackingLineColumnService());
-            map.SetMark(new SnapshotPoint(view.TextSnapshot, 0), 'A');
-            _host.Setup(x => x.NavigateTo(new VirtualSnapshotPoint(view.TextSnapshot,0))).Returns(true);
+            map.SetMark(new SnapshotPoint(_view.TextSnapshot, 0), 'A');
+            _host.Setup(x => x.NavigateTo(new VirtualSnapshotPoint(_view.TextSnapshot,0))).Returns(true);
             _jumpList.Setup(x => x.Add(_view.GetCaretPoint())).Verifiable();
             var res = _operations.JumpToMark('A', map);
             Assert.IsTrue(res.IsSucceeded);
@@ -213,7 +220,8 @@ namespace VimCoreTest
         [Test, Description("Jump to global mark and jump fails")]
         public void JumpToMark4()
         {
-            var view = Utils.EditorUtil.CreateView("foo", "bar");
+            CreateLines();
+            var view = EditorUtil.CreateView("foo", "bar");
             var map = new MarkMap(new TrackingLineColumnService());
             map.SetMark(new SnapshotPoint(view.TextSnapshot, 0), 'A');
             _host.Setup(x => x.NavigateTo(new VirtualSnapshotPoint(view.TextSnapshot,0))).Returns(false);
@@ -225,9 +233,9 @@ namespace VimCoreTest
         [Test, Description("Jump to global mark that does not exist")]
         public void JumpToMark5()
         {
-            var view = Utils.EditorUtil.CreateView("foo", "bar");
+            CreateLines("foo", "bar");
             var buffer = new Mock<IVimBuffer>(MockBehavior.Strict);
-            buffer.SetupGet(x => x.TextBuffer).Returns(view.TextBuffer);
+            buffer.SetupGet(x => x.TextBuffer).Returns(_view.TextBuffer);
             buffer.SetupGet(x => x.Name).Returns("foo");
             var map = new MarkMap(new TrackingLineColumnService());
             var res = _operations.JumpToMark('A', map);
@@ -238,8 +246,8 @@ namespace VimCoreTest
         [Test]
         public void PasteAfter1()
         {
-            var view = EditorUtil.CreateBuffer("foo", "bar");
-            var tss = _operations.PasteAfter(new SnapshotPoint(view.CurrentSnapshot, 0), "yay", OperationKind.LineWise).Snapshot;
+            CreateLines("foo", "bar");
+            var tss = _operations.PasteAfter(new SnapshotPoint(_view.TextSnapshot, 0), "yay", OperationKind.LineWise).Snapshot;
             Assert.AreEqual(2, tss.LineCount);
             Assert.AreEqual("foo", tss.GetLineFromLineNumber(0).GetText());
             Assert.AreEqual("yaybar", tss.GetLineFromLineNumber(1).GetText());
@@ -248,8 +256,8 @@ namespace VimCoreTest
         [Test]
         public void PasteAfter2()
         {
-            var view = EditorUtil.CreateBuffer("foo", "bar");
-            var tss = _operations.PasteAfter(new SnapshotPoint(view.CurrentSnapshot, 0), "yay", OperationKind.CharacterWise).Snapshot;
+            CreateLines("foo", "bar");
+            var tss = _operations.PasteAfter(new SnapshotPoint(_view.TextSnapshot, 0), "yay", OperationKind.CharacterWise).Snapshot;
             Assert.AreEqual(2, tss.LineCount);
             Assert.AreEqual("fyayoo", tss.GetLineFromLineNumber(0).GetText());
             Assert.AreEqual("bar", tss.GetLineFromLineNumber(1).GetText());
@@ -258,8 +266,8 @@ namespace VimCoreTest
         [Test]
         public void PasteAfter3()
         {
-            var view = EditorUtil.CreateBuffer("foo", "bar");
-            var tss = _operations.PasteAfter(new SnapshotPoint(view.CurrentSnapshot, 0), "yay" + Environment.NewLine, OperationKind.LineWise).Snapshot;
+            CreateLines("foo", "bar");
+            var tss = _operations.PasteAfter(new SnapshotPoint(_view.TextSnapshot, 0), "yay" + Environment.NewLine, OperationKind.LineWise).Snapshot;
             Assert.AreEqual(3, tss.LineCount);
             Assert.AreEqual("foo", tss.GetLineFromLineNumber(0).GetText());
             Assert.AreEqual("yay", tss.GetLineFromLineNumber(1).GetText());
@@ -269,23 +277,24 @@ namespace VimCoreTest
         [Test]
         public void PasteAfter4()
         {
-            var buffer = EditorUtil.CreateBuffer("foo", "bar");
-            var span = _operations.PasteAfter(new SnapshotPoint(buffer.CurrentSnapshot, 0), "yay", OperationKind.CharacterWise);
+            CreateLines("foo", "bar");
+            var span = _operations.PasteAfter(new SnapshotPoint(_view.TextSnapshot, 0), "yay", OperationKind.CharacterWise);
             Assert.AreEqual("yay", span.GetText());
         }
 
         [Test]
         public void PasteAfter5()
         {
-            var buffer = EditorUtil.CreateBuffer("foo", "bar");
-            var span = _operations.PasteAfter(new SnapshotPoint(buffer.CurrentSnapshot, 0), "yay", OperationKind.LineWise);
+            CreateLines("foo", "bar");
+            var span = _operations.PasteAfter(new SnapshotPoint(_view.TextSnapshot, 0), "yay", OperationKind.LineWise);
             Assert.AreEqual("yay", span.GetText());
         }
 
         [Test, Description("Character wise paste at the end of the line should go on that line")]
         public void PasteAfter6()
         {
-            var buffer = EditorUtil.CreateBuffer("foo", "bar");
+            CreateLines("foo", "bar");
+            var buffer = _view.TextBuffer;
             var point = buffer.CurrentSnapshot.GetLineFromLineNumber(0).End;
             _operations.PasteAfter(point, "yay", OperationKind.CharacterWise);
             Assert.AreEqual("fooyay", buffer.CurrentSnapshot.GetLineFromLineNumber(0).GetText());
@@ -294,7 +303,8 @@ namespace VimCoreTest
         [Test]
         public void PasteBefore1()
         {
-            var buffer = EditorUtil.CreateBuffer("foo", "bar");
+            CreateLines("foo", "bar");
+            var buffer = _view.TextBuffer;
             var span = _operations.PasteBefore(new SnapshotPoint(buffer.CurrentSnapshot, 0), "yay");
             Assert.AreEqual("yay", span.GetText());
             Assert.AreEqual("yayfoo", span.Snapshot.GetLineFromLineNumber(0).GetText());
