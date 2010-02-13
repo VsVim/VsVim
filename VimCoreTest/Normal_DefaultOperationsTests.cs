@@ -23,6 +23,7 @@ namespace VimCoreTest
         private ITextView _view;
         private Mock<IVimHost> _host;
         private Mock<IJumpList> _jumpList;
+        private Mock<IVimGlobalSettings> _globalSettings;
         private Mock<IVimLocalSettings> _settings;
 
         private void Create(params string[] lines)
@@ -51,7 +52,8 @@ namespace VimCoreTest
             searchService = searchService ?? EditorUtil.FactoryService.textSearchService;
             baseNav = baseNav ?? (new Mock<ITextStructureNavigator>(MockBehavior.Strict)).Object;
             var nav = TssUtil.CreateTextStructureNavigator(WordKind.NormalWord, baseNav);
-            _settings = new Mock<IVimLocalSettings>(MockBehavior.Strict);
+            _globalSettings = MockObjectFactory.CreateGlobalSettings(ignoreCase: true);
+            _settings = MockObjectFactory.CreateLocalSettings(_globalSettings.Object);
             _jumpList = new Mock<IJumpList>(MockBehavior.Strict);
             _operationsRaw = new DefaultOperations(_view, editorOpts, _host.Object, _settings.Object, nav, searchService, _jumpList.Object);
             _operations = _operationsRaw;
@@ -406,8 +408,10 @@ namespace VimCoreTest
         {
             Create("foo", "bar");
             _view.Caret.MoveTo(_view.TextSnapshot.GetLineFromLineNumber(1).End);
+            _settings.SetupGet(x => x.Scroll).Returns(42).Verifiable();
             _operations.Scroll(ScrollDirection.Up, 1);
             Assert.AreEqual(0, _view.Caret.Position.BufferPosition.GetContainingLine().LineNumber);
+            _settings.Verify();
         }
 
         [Test, Description("Don't break at line 0")]
@@ -415,8 +419,10 @@ namespace VimCoreTest
         {
             Create("foo", "bar");
             _view.Caret.MoveTo(_view.TextSnapshot.GetLineFromLineNumber(0).End);
+            _settings.SetupGet(x => x.Scroll).Returns(42).Verifiable();
             _operations.Scroll(ScrollDirection.Up, 1);
             Assert.AreEqual(0, _view.Caret.Position.BufferPosition.GetContainingLine().LineNumber);
+            _settings.Verify();
         }
 
         [Test]
@@ -424,8 +430,10 @@ namespace VimCoreTest
         {
             Create("foo", "bar");
             _view.Caret.MoveTo(_view.TextSnapshot.GetLineFromLineNumber(0).End);
+            _settings.SetupGet(x => x.Scroll).Returns(42).Verifiable();
             _operations.Scroll(ScrollDirection.Down, 1);
             Assert.AreEqual(1, _view.Caret.Position.BufferPosition.GetContainingLine().LineNumber);
+            _settings.Verify();
         }
 
         [Test]
