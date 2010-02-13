@@ -58,13 +58,23 @@ type internal MouseProcessor
 
     member private x.OnSelectionChanged() =
         if not x.IsSelectionChanging && not _selection.IsEmpty && not x.InAnyVisualMode then
-            let mode = _buffer.SwitchMode ModeKind.VisualCharacter 
-            let mode = mode :?> IVisualMode
 
-            // If the left mouse button is pressed then we are in the middle of 
-            // a mouse selection event and need to record the data
-            if _mouseDevice.LeftButtonState = MouseButtonState.Pressed then
-                _isSelectionChanging <- true
+            // Actually process the selection event during background processing.  The editor commonly
+            // implements operations as a selection + edit combination.  Delete Previous word for instance
+            // works this way.  By processing later we can see if this selection is persisted
+            let func() = 
+                if not x.IsSelectionChanging && not _selection.IsEmpty && not x.InAnyVisualMode then
+                    let mode = _buffer.SwitchMode ModeKind.VisualCharacter 
+                    let mode = mode :?> IVisualMode
+        
+                    // If the left mouse button is pressed then we are in the middle of 
+                    // a mouse selection event and need to record the data
+                    if _mouseDevice.LeftButtonState = MouseButtonState.Pressed then
+                        _isSelectionChanging <- true
+
+            Dispatcher.CurrentDispatcher.BeginInvoke(
+                DispatcherPriority.Background,
+                new System.Action(func)) |> ignore
 
     override x.PostprocessMouseLeftButtonUp (e:MouseButtonEventArgs) = 
         if e.ChangedButton = MouseButton.Left then

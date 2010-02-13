@@ -56,6 +56,7 @@ namespace VimCoreTest
             _buffer.Setup(x => x.SwitchMode(ModeKind.VisualCharacter)).Returns(_visualMode.Object).Verifiable();
             _mouseDevice.SetupGet(x => x.LeftButtonState).Returns(MouseButtonState.Pressed).Verifiable();
             _textView.Selection.Select(new SnapshotSpan(_textView.TextSnapshot, 0, 3), false);
+            Dispatcher.CurrentDispatcher.DoEvents();
             Assert.IsTrue(_processor.IsSelectionChanging);
             _buffer.Verify();
             _mouseDevice.Verify();
@@ -69,7 +70,20 @@ namespace VimCoreTest
             _buffer.Setup(x => x.SwitchMode(ModeKind.VisualCharacter)).Returns(_visualMode.Object).Verifiable();
             _mouseDevice.SetupGet(x => x.LeftButtonState).Returns(MouseButtonState.Released).Verifiable();
             _textView.Selection.Select(new SnapshotSpan(_textView.TextSnapshot, 0, 3), false);
+            Dispatcher.CurrentDispatcher.DoEvents();
             Assert.IsFalse(_processor.IsSelectionChanging);
+            _buffer.Verify();
+        }
+
+        [Test, Description("Selection processing should occur in a dispatcher callback")]
+        public void SelectionEvent4()
+        {
+            Create("foo bar");
+            _buffer.Setup(x => x.ModeKind).Returns(ModeKind.Normal).Verifiable();
+            _textView.Selection.Select(new SnapshotSpan(_textView.TextSnapshot, 0, 3), false);
+            _textView.Selection.Clear();
+            _mouseDevice.SetupGet(x => x.LeftButtonState).Returns(MouseButtonState.Released).Verifiable();
+            Dispatcher.CurrentDispatcher.DoEvents();
             _buffer.Verify();
         }
 
