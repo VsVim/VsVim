@@ -23,6 +23,7 @@ namespace VimCoreTest
         private ITextView _view;
         private Mock<IVimHost> _host;
         private Mock<IJumpList> _jumpList;
+        private Mock<IVimLocalSettings> _settings;
 
         private void Create(params string[] lines)
         {
@@ -50,8 +51,9 @@ namespace VimCoreTest
             searchService = searchService ?? EditorUtil.FactoryService.textSearchService;
             baseNav = baseNav ?? (new Mock<ITextStructureNavigator>(MockBehavior.Strict)).Object;
             var nav = TssUtil.CreateTextStructureNavigator(WordKind.NormalWord, baseNav);
+            _settings = new Mock<IVimLocalSettings>(MockBehavior.Strict);
             _jumpList = new Mock<IJumpList>(MockBehavior.Strict);
-            _operationsRaw = new DefaultOperations(_view, editorOpts, _host.Object, VimSettingsUtil.CreateDefault, nav, searchService, _jumpList.Object);
+            _operationsRaw = new DefaultOperations(_view, editorOpts, _host.Object, _settings.Object, nav, searchService, _jumpList.Object);
             _operations = _operationsRaw;
         }
 

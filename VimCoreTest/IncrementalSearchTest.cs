@@ -20,6 +20,7 @@ namespace VimCoreTest
     {
         private FakeVimHost _host;
         private Mock<ISearchReplace> _searchReplace;
+        private Mock<IVimLocalSettings> _settings;
         private ITextView _textView;
         private IncrementalSearch _searchRaw;
         private IIncrementalSearch _search;
@@ -29,10 +30,11 @@ namespace VimCoreTest
             _textView = EditorUtil.CreateView(lines);
             _host = new FakeVimHost();
             _searchReplace = new Mock<ISearchReplace>(MockBehavior.Strict);
+            _settings = new Mock<IVimLocalSettings>(MockBehavior.Strict);
             _searchRaw = new IncrementalSearch(
                 _host,
                 _textView,
-                VimSettingsUtil.CreateDefault,
+                _settings.Object,
                 _searchReplace.Object);
             _search = _searchRaw;
         }

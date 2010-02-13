@@ -39,7 +39,8 @@ type internal VimBuffer
         _textView : IWpfTextView,
         _editorOperations : IEditorOperations,
         _blockCaret : IBlockCaret,
-        _jumpList : IJumpList ) =
+        _jumpList : IJumpList,
+        _settings : IVimLocalSettings ) =
 
     let mutable _modeMap = ModeMap()
     let _keyInputProcessedEvent = new Event<_>()
@@ -88,7 +89,7 @@ type internal VimBuffer
         member x.ModeKind = x.Mode.ModeKind
         member x.Mode = x.Mode
         member x.AllModes = _modeMap.Modes
-        member x.Settings = _vim.Settings
+        member x.Settings = _settings
         member x.RegisterMap = _vim.RegisterMap
         member x.GetRegister c = _vim.RegisterMap.GetRegister c
         member x.GetMode kind = _modeMap.GetMode kind

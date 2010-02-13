@@ -21,7 +21,7 @@ type internal InsertMode
     member private this.ShiftLeft() =
         let caret = ViewUtil.GetCaretPoint _data.TextView
         let line = caret.GetContainingLine()
-        _operations.ShiftLeft line.Extent (_data.Settings.ShiftWidth) |> ignore
+        _operations.ShiftLeft line.Extent (_data.Settings.GlobalSettings.ShiftWidth) |> ignore
 
     member private this.ProcessEscape() =
         if _broker.IsCompletionWindowActive then

@@ -62,7 +62,6 @@
     <Compile Include="RegexSearchReplace.fs" />
     <Compile Include="Register.fs" />
     <Compile Include="IRegisterMap.fs" />
-    <Compile Include="VimSettingsOld.fs" />
     <Compile Include="CoreInterfaces.fs" />
     <Compile Include="MefInterfaces.fs" />
     <Compile Include="BlockCaret.fs" />

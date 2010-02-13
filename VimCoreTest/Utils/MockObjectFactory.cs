@@ -30,12 +30,12 @@ namespace VimCoreTest.Utils
         internal static Mock<IVim> CreateVim(
             IRegisterMap registerMap = null,
             MarkMap map = null,
-            VimSettings settings = null,
+            IVimGlobalSettings settings = null,
             IVimHost host = null)
         {
             registerMap = registerMap ?? CreateRegisterMap().Object;
             map = map ?? new MarkMap(new TrackingLineColumnService());
-            settings = settings ?? VimSettingsUtil.CreateDefault;
+            settings = settings ?? new GlobalSettings();
             host = host ?? new FakeVimHost();
             var mock = new Mock<IVim>(MockBehavior.Strict);
             mock.Setup(x => x.RegisterMap).Returns(registerMap);
@@ -57,19 +57,49 @@ namespace VimCoreTest.Utils
             return mock;
         }
 
+        internal static Mock<IVimGlobalSettings> CreateGlobalSettings(
+            bool? ignoreCase = null,
+            int? shiftWidth = null)
+        {
+            var mock = new Mock<IVimGlobalSettings>(MockBehavior.Strict);
+            if (ignoreCase.HasValue)
+            {
+                mock.SetupGet(x => x.IgnoreCase).Returns(ignoreCase.Value);
+            }
+            if (shiftWidth.HasValue)
+            {
+                mock.SetupGet(x => x.ShiftWidth).Returns(shiftWidth.Value);
+            }
+
+            mock.SetupGet(x => x.DisableCommand).Returns(GlobalSettings.DisableCommand);
+            return mock;
+        }
+
+        internal static Mock<IVimLocalSettings> CreateLocalSettings(
+            IVimGlobalSettings global = null)
+        {
+            global = global ?? CreateGlobalSettings().Object;
+            var mock = new Mock<IVimLocalSettings>(MockBehavior.Strict);
+            mock.SetupGet(x => x.GlobalSettings).Returns(global);
+            return mock;
+        }
+
+
         internal static Mock<IVimBuffer> CreateVimBuffer(
             IWpfTextView view,
             string name = null,
             IVim vim = null,
             IBlockCaret caret = null,
             IEditorOperations editorOperations = null,
-            IJumpList jumpList = null )
+            IJumpList jumpList = null,
+            IVimLocalSettings settings = null )
         {
             name = name ?? "test";
             vim = vim ?? CreateVim().Object;
             caret = caret ?? CreateBlockCaret().Object;
             editorOperations = editorOperations ?? CreateEditorOperations().Object;
             jumpList = jumpList ?? (new Mock<IJumpList>(MockBehavior.Strict)).Object;
+            settings = settings ?? new LocalSettings(vim.Settings, view);
             var mock = new Mock<IVimBuffer>(MockBehavior.Strict);
             mock.SetupGet(x => x.TextView).Returns(view);
             mock.SetupGet(x => x.TextBuffer).Returns(() => view.TextBuffer);
@@ -78,7 +108,7 @@ namespace VimCoreTest.Utils
             mock.SetupGet(x => x.BlockCaret).Returns(caret);
             mock.SetupGet(x => x.EditorOperations).Returns(editorOperations);
             mock.SetupGet(x => x.VimHost).Returns(vim.Host);
-            mock.SetupGet(x => x.Settings).Returns(vim.Settings);
+            mock.SetupGet(x => x.Settings).Returns(settings);
             mock.SetupGet(x => x.MarkMap).Returns(vim.MarkMap);
             mock.SetupGet(x => x.RegisterMap).Returns(vim.RegisterMap);
             mock.SetupGet(x => x.JumpList).Returns(jumpList);

@@ -15,7 +15,7 @@ type internal IncrementalSearch
     (
         _host : IVimHost,
         _textView : ITextView,
-        _settings : VimSettings,
+        _settings : IVimLocalSettings,
         _searchReplace : ISearchReplace ) =
 
     let mutable _data : IncrementalSearchData option = None
@@ -24,7 +24,7 @@ type internal IncrementalSearch
 
     /// Get the current search options based off of the stored data
     member private x.SearchReplaceFlags = 
-        if _settings.IgnoreCase then SearchReplaceFlags.IgnoreCase
+        if _settings.GlobalSettings.IgnoreCase then SearchReplaceFlags.IgnoreCase
         else SearchReplaceFlags.None
 
     member private x.Begin kind = 

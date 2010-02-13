@@ -41,7 +41,7 @@ namespace VsVim
         {
             var hashSet = new HashSet<KeyInput>(
                 buffer.AllModes.Select(x => x.Commands).SelectMany(x => x));
-            hashSet.Add(buffer.Settings.DisableCommand);
+            hashSet.Add(buffer.Settings.GlobalSettings.DisableCommand);
             var commands = dte.Commands.GetCommands();
             var list = FindConflictingCommands(commands, hashSet);
             if (list.Count > 0)

@@ -139,7 +139,7 @@ and IVim =
     abstract Host : IVimHost
     abstract MarkMap : IMarkMap
     abstract RegisterMap : IRegisterMap
-    abstract Settings : VimSettings
+    abstract Settings : IVimGlobalSettings
     abstract CreateBuffer : IWpfTextView -> IVimBuffer
 
     /// Get the IVimBuffer associated with the given view
@@ -188,7 +188,7 @@ and IVimBuffer =
     /// Sequence of available Modes
     abstract AllModes : seq<IMode>
 
-    abstract Settings : VimSettings
+    abstract Settings : IVimLocalSettings
     abstract RegisterMap : IRegisterMap
 
     abstract GetRegister : char -> Register

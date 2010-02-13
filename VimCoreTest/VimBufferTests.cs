@@ -25,6 +25,8 @@ namespace VimCoreTest
         Mock<IMode> _insertMode;
         Mock<IMode> _disabledMode;
         Mock<IJumpList> _jumpList;
+        Mock<IVimGlobalSettings> _globalSettings;
+        Mock<IVimLocalSettings> _settings;
         MockBlockCaret _blockCaret;
         VimBuffer _rawBuffer;
         IVimBuffer _buffer;
@@ -37,7 +39,9 @@ namespace VimCoreTest
             _view = tuple.Item1;
             _editorOperations = tuple.Item2;
             _markMap = new MarkMap(new TrackingLineColumnService());
-            _vim = MockObjectFactory.CreateVim(map:_markMap);
+            _globalSettings = MockObjectFactory.CreateGlobalSettings();
+            _settings = MockObjectFactory.CreateLocalSettings(_globalSettings.Object);
+            _vim = MockObjectFactory.CreateVim(map:_markMap, settings:_globalSettings.Object);
             _blockCaret = new MockBlockCaret();
             _disabledMode = new Mock<IMode>(MockBehavior.Strict);
             _disabledMode.SetupGet(x => x.ModeKind).Returns(ModeKind.Disabled);
@@ -52,7 +56,8 @@ namespace VimCoreTest
                 _view,
                 _editorOperations,
                 _blockCaret,
-                _jumpList.Object);
+                _jumpList.Object,
+                _settings.Object);
             _rawBuffer.AddMode(_normalMode.Object);
             _rawBuffer.AddMode(_insertMode.Object);
             _rawBuffer.AddMode(_disabledMode.Object);
@@ -147,10 +152,9 @@ namespace VimCoreTest
         [Test,Description("Disable command should be preprocessed")]
         public void Disable1()
         {
-            var settings = VimSettingsUtil.CreateDefault;
             _normalMode.Setup(x => x.OnLeave());
             _disabledMode.Setup(x => x.OnEnter()).Verifiable();
-            _buffer.ProcessInput(settings.DisableCommand);
+            _buffer.ProcessInput(Vim.GlobalSettings.DisableCommand);
             _disabledMode.Verify();
         }
 

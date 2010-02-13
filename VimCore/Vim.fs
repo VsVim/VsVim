@@ -23,7 +23,7 @@ type internal Vim
         _tlcService : ITrackingLineColumnService ) =
     let _markMap = MarkMap(_tlcService) :> IMarkMap
     let _registerMap = RegisterMap()
-    let _settings = VimSettingsUtil.CreateDefault
+    let _settings = GlobalSettings() :> IVimGlobalSettings
 
     let _bufferMap = new System.Collections.Generic.Dictionary<IWpfTextView, IVimBuffer>()
 
@@ -34,18 +34,20 @@ type internal Vim
         let caret = _blockCaretFactoryService.CreateBlockCaret view
         let editOperations = _editorOperationsFactoryService.GetEditorOperations(view)
         let jumpList = JumpList(_tlcService) :> IJumpList
+        let localSettings = LocalSettings(_settings, view) :> IVimLocalSettings
         let bufferRaw = 
             VimBuffer( 
                 x :> IVim,
                 view,
                 editOperations,
                 caret,
-                jumpList)
+                jumpList,
+                localSettings)
         let buffer = bufferRaw :> IVimBuffer
 
         let wordNav = x.CreateTextStructureNavigator view.TextBuffer WordKind.NormalWord
         let broker = _completionWindowBrokerFactoryService.CreateCompletionWindowBroker view
-        let normalOpts = Modes.Normal.DefaultOperations(view,editOperations,_host,_settings,wordNav,_textSearchService,jumpList) :> Modes.Normal.IOperations
+        let normalOpts = Modes.Normal.DefaultOperations(view,editOperations,_host,localSettings,wordNav,_textSearchService,jumpList) :> Modes.Normal.IOperations
         let commandOpts = Modes.Command.DefaultOperations(view,editOperations,_host, jumpList) :> Modes.Command.IOperations
         let insertOpts = Modes.Insert.DefaultOperations(view,editOperations,_host, jumpList) :> Modes.ICommonOperations
         let visualOptsFactory kind = 
@@ -60,7 +62,7 @@ type internal Vim
 
         // Normal mode values
         let normalSearchReplace = RegexSearchReplace() :> ISearchReplace
-        let normalIncrementalSearch = Vim.Modes.Normal.IncrementalSearch(_host, view, _settings, normalSearchReplace) :> Modes.Normal.IIncrementalSearch
+        let normalIncrementalSearch = Vim.Modes.Normal.IncrementalSearch(_host, view, localSettings, normalSearchReplace) :> Modes.Normal.IIncrementalSearch
         let modeList = 
             [
                 ((Modes.Normal.NormalMode(buffer, normalOpts, normalSearchReplace, normalIncrementalSearch)) :> IMode);

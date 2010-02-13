@@ -75,6 +75,7 @@ type internal SettingsMap
 
 type internal GlobalSettings() =
 
+    static let DisableCommandLet = KeyInput(System.Char.MinValue, Key.F12, ModifierKeys.Control ||| ModifierKeys.Shift);
     static let IgnoreCaseName = "ignorecase"
     static let ShiftWidthName = "shiftwidth"
 
@@ -85,6 +86,8 @@ type internal GlobalSettings() =
         |]
 
     let _map = SettingsMap(GlobalSettings, true)
+
+    static member DisableCommand = DisableCommandLet
 
     interface IVimGlobalSettings with
         // IVimSettings
@@ -101,7 +104,7 @@ type internal GlobalSettings() =
             with get() = _map.GetNumberValue ShiftWidthName
             and set value = _map.TrySetValue ShiftWidthName (NumberValue(value)) |> ignore
 
-        member x.DisableCommand = KeyInput(System.Char.MinValue, Key.F12, ModifierKeys.Control ||| ModifierKeys.Shift);
+        member x.DisableCommand = DisableCommandLet
 
 type internal LocalSettings
     ( 

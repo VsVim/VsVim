@@ -134,11 +134,11 @@ type internal NormalMode
             match ki.Char with 
                 | '<' ->
                     let span = TssUtil.GetLineRangeSpan (this.CaretPoint.GetContainingLine().Start) count
-                    _operations.ShiftLeft span _bufferData.Settings.ShiftWidth |> ignore
+                    _operations.ShiftLeft span _bufferData.Settings.GlobalSettings.ShiftWidth |> ignore
                     NormalModeResult.Complete
                 | _ ->
                     let inner2 (span:SnapshotSpan,_,_) =
-                        _operations.ShiftLeft span _bufferData.Settings.ShiftWidth |> ignore                                          
+                        _operations.ShiftLeft span _bufferData.Settings.GlobalSettings.ShiftWidth |> ignore                                          
                         NormalModeResult.Complete
                     this.WaitForMotion ki count inner2
         inner                                            
@@ -150,11 +150,11 @@ type internal NormalMode
             match ki.Char with
                 | '>' ->
                     let span = TssUtil.GetLineRangeSpan (this.CaretPoint.GetContainingLine().Start) count
-                    _operations.ShiftRight span _bufferData.Settings.ShiftWidth |> ignore
+                    _operations.ShiftRight span _bufferData.Settings.GlobalSettings.ShiftWidth |> ignore
                     NormalModeResult.Complete
                 | _ ->
                     let inner2 (span:SnapshotSpan,_,_) =
-                        _operations.ShiftRight span _bufferData.Settings.ShiftWidth |> ignore
+                        _operations.ShiftRight span _bufferData.Settings.GlobalSettings.ShiftWidth |> ignore
                         NormalModeResult.Complete
                     this.WaitForMotion ki count inner2
         inner

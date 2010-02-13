@@ -14,7 +14,7 @@ type internal DefaultOperations
     _textView : ITextView,
     _operations : IEditorOperations,
     _host : IVimHost,
-    _settings : VimSettings,
+    _settings : IVimLocalSettings,
     _normalWordNav : ITextStructureNavigator,
     _searchService : ITextSearchService,
     _jumpList : IJumpList ) =
@@ -42,7 +42,7 @@ type internal DefaultOperations
         | None -> _host.UpdateStatus Resources.NormalMode_NoWordUnderCursor
         | Some(span) ->
             let options = if isWholeWord then FindOptions.WholeWord else FindOptions.None
-            let options = if _settings.IgnoreCase then options else options ||| FindOptions.MatchCase
+            let options = if _settings.GlobalSettings.IgnoreCase then options else options ||| FindOptions.MatchCase
             let count = max 0 (count-1)
             let word = span.GetText()
             let rec doFind count pos = 
@@ -61,7 +61,7 @@ type internal DefaultOperations
         | None -> _host.UpdateStatus Resources.NormalMode_NoWordUnderCursor
         | Some(span) ->
             let options = if isWholeWord then FindOptions.WholeWord else FindOptions.None
-            let options = if _settings.IgnoreCase then options else options ||| FindOptions.MatchCase
+            let options = if _settings.GlobalSettings.IgnoreCase then options else options ||| FindOptions.MatchCase
             let options = options ||| FindOptions.SearchReverse
             let count = max 0 (count-1)
             let getNextPos (span:SnapshotSpan) = 
@@ -192,7 +192,7 @@ type internal DefaultOperations
                 _host.UpdateStatus(msg)
 
         member x.Scroll dir count =
-            let lines = VimSettingsUtil.GetScrollLineCount _settings _textView
+            let lines = _settings.Scroll
             let tss = _textView.TextSnapshot
             let caretPoint = ViewUtil.GetCaretPoint _textView
             let curLine = caretPoint.GetContainingLine().LineNumber

@@ -158,7 +158,7 @@ type CommandMode
             | Some(count) -> RangeUtil.ApplyCount range count
             | None -> range
         let span = RangeUtil.GetSnapshotSpan range
-        _operations.ShiftLeft span _data.Settings.ShiftWidth |> ignore
+        _operations.ShiftLeft span _data.Settings.GlobalSettings.ShiftWidth |> ignore
 
     member private x.ParseShiftRight (rest:KeyInput list) (range: Range option) =
         let count,rest = rest |> x.SkipWhitespace |> RangeUtil.ParseNumber
@@ -168,7 +168,7 @@ type CommandMode
             | Some(count) -> RangeUtil.ApplyCount range count
             | None -> range
         let span = RangeUtil.GetSnapshotSpan range
-        _operations.ShiftRight span _data.Settings.ShiftWidth |> ignore
+        _operations.ShiftRight span _data.Settings.GlobalSettings.ShiftWidth |> ignore
 
     /// Implements the :delete command
     member private x.ParseDelete (rest:KeyInput list) (range:Range option) =
