@@ -6,6 +6,18 @@ open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Operations
 open System.Windows.Input
 
+type ModeKind = 
+    | Normal = 1
+    | Insert = 2
+    | Command = 3
+    | VisualCharacter = 4
+    | VisualLine = 5
+    | VisualBlock = 6 
+
+    // Mode when Vim is disabled via the user
+    | Disabled = 42
+
+    
 type IMarkMap =
     abstract IsLocalMark : char -> bool
     abstract GetLocalMark : ITextBuffer -> char -> VirtualSnapshotPoint option
@@ -66,8 +78,64 @@ type ProcessResult =
     | SwitchMode of ModeKind
     | SwitchPreviousMode
 
+type SettingKind =
+    | NumberKind
+    | StringKind    
+    | BooleanKind
+
+type SettingValue =
+    | NoValue 
+    | NumberValue of int
+    | StringValue of string
+    | BooleanValue of bool
+
+type Setting = {
+    Name : string
+    Abbreviation : string
+    Kind : SettingKind
+    DefaultValue : SettingValue
+    Value : SettingValue
+    IsGlobal : bool
+}
+
+/// Represent the setting supported by the Vim implementation.  This class **IS** mutable
+/// and the values will change.  Setting names are case sensitive but the exposed property
+/// names tend to have more familiar camel case names
+type IVimSettings =
+
+    /// Returns a sequence of all of the settings and values
+    abstract AllSettings : Setting seq
+
+    /// Try and set a setting to the passed in value.  This can fail if the value does not 
+    /// have the correct type.  The provided name can be the full name or abbreviation
+    abstract TrySetValue : settingName:string -> value:SettingValue -> bool
+
+    /// Get the value for the named setting.  The name can be the full setting name or an 
+    /// abbreviation
+    abstract GetSetting : settingName:string -> Setting option
+
+and IVimGlobalSettings = 
+
+    abstract IgnoreCase : bool with get, set
+    abstract ShiftWidth : int with get, set
+
+    abstract DisableCommand: KeyInput;
+
+    inherit IVimSettings
+
+/// Settings class which is local to a given IVimBuffer.  This will hide the work of merging
+/// global settings with non-global ones
+and IVimLocalSettings =
+
+    /// Return the handle to the global IVimSettings instance
+    abstract GlobalSettings : IVimGlobalSettings
+
+    abstract Scroll : int with get,set
+
+    inherit IVimSettings
+
 /// Vim instance.  Global for a group of buffers
-type IVim =
+and IVim =
     abstract Host : IVimHost
     abstract MarkMap : IMarkMap
     abstract RegisterMap : IRegisterMap
