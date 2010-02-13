@@ -138,6 +138,7 @@
     <Compile Include="CommandModeTest.cs" />
     <Compile Include="Command_DefaultOperations.cs" />
     <Compile Include="DisabledModeTest.cs" />
+    <Compile Include="GlobalSettingsTest.cs" />
     <Compile Include="IEditorOperationsTest.cs" />
     <Compile Include="IncrementalSearchTest.cs" />
     <Compile Include="JumpListTest.cs" />

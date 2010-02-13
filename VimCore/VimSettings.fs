@@ -41,7 +41,15 @@ type internal SettingsMap
                 true
             else false
 
-    member x.GetSetting settingName = _settings |> Map.tryFind settingName
+    member x.GetSetting settingName = 
+        match _settings |> Map.tryFind settingName with
+        | Some(s) -> Some(s)
+        | None -> 
+            _settings 
+            |> Map.toSeq 
+            |> Seq.map (fun (_,value) -> value) 
+            |> Seq.tryFind (fun setting -> setting.Abbreviation = settingName)
+            
 
     /// Get a boolean setting value.  Will throw if the setting name does not exist
     member x.GetBoolValue settingName = 

@@ -73,6 +73,28 @@ namespace VimCoreTest
 
         #endregion
 
+        #region SettingValue
+
+        internal static SettingValue.StringValue AsStringValue(this SettingValue value)
+        {
+            Assert.IsTrue(value.IsStringValue);
+            return (SettingValue.StringValue)value;
+        }
+
+        internal static SettingValue.BooleanValue AsBooleanValue(this SettingValue value)
+        {
+            Assert.IsTrue(value.IsBooleanValue);
+            return (SettingValue.BooleanValue)value;
+        }
+
+        internal static SettingValue.NumberValue AsNumberValue(this SettingValue value)
+        {
+            Assert.IsTrue(value.IsNumberValue);
+            return (SettingValue.NumberValue)value;
+        }
+
+        #endregion
+
         #region Range
 
         internal static Vim.Modes.Command.Range.Lines AsLines(this Vim.Modes.Command.Range range)
