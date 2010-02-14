@@ -33,8 +33,26 @@ type IOperations =
     /// Substitute Command implementation
     abstract Substitute : pattern : string -> replace : string -> SnapshotSpan -> SubstituteFlags -> unit
 
+    /// For a toggle setting, switch it.  For all others display it
+    abstract OperateSetting: settingName:string -> unit
+
+    /// Reset the setting if it's a ToggleValue
+    abstract ResetSetting : settingName:string -> unit
+
+    /// Invert the setting if it's a ToggleValue
+    abstract InvertSetting : settingName:string -> unit
+
     /// Print out the marks in the context of the current buffer
     abstract PrintMarks : IMarkMap -> unit
+
+    /// Print all settings which do not have their default value to the host
+    abstract PrintModifiedSettings : unit -> unit
+
+    /// Print all settings to the host
+    abstract PrintAllSettings : unit -> unit
+
+    /// Print a single setting out to the host
+    abstract PrintSetting : settingName:string -> unit
 
     inherit Modes.ICommonOperations
 

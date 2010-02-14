@@ -48,7 +48,7 @@ type internal Vim
         let wordNav = x.CreateTextStructureNavigator view.TextBuffer WordKind.NormalWord
         let broker = _completionWindowBrokerFactoryService.CreateCompletionWindowBroker view
         let normalOpts = Modes.Normal.DefaultOperations(view,editOperations,_host,localSettings,wordNav,_textSearchService,jumpList) :> Modes.Normal.IOperations
-        let commandOpts = Modes.Command.DefaultOperations(view,editOperations,_host, jumpList) :> Modes.Command.IOperations
+        let commandOpts = Modes.Command.DefaultOperations(view,editOperations,_host, jumpList, localSettings) :> Modes.Command.IOperations
         let insertOpts = Modes.Insert.DefaultOperations(view,editOperations,_host, jumpList) :> Modes.ICommonOperations
         let visualOptsFactory kind = 
             let mode = 

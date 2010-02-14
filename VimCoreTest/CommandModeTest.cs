@@ -37,7 +37,7 @@ namespace VimCoreTest
             _bufferData = MockObjectFactory.CreateVimBuffer(
                 _view,
                 "test",
-                MockObjectFactory.CreateVim(_map, host:_host).Object,
+                MockObjectFactory.CreateVim(_map, host: _host).Object,
                 MockObjectFactory.CreateBlockCaret().Object,
                 _editOpts.Object);
             _modeRaw = new Vim.Modes.Command.CommandMode(Tuple.Create<IVimBuffer, IOperations>(_bufferData.Object, _operations.Object));
@@ -691,5 +691,85 @@ namespace VimCoreTest
             _operations.Verify();
         }
 
+        [Test]
+        public void Set1()
+        {
+            Create("bar");
+            _operations.Setup(x => x.PrintModifiedSettings()).Verifiable();
+            ProcessWithEnter("se");
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Set2()
+        {
+            Create("bar");
+            _operations.Setup(x => x.PrintModifiedSettings()).Verifiable();
+            ProcessWithEnter("set");
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Set3()
+        {
+            Create("bar");
+            _operations.Setup(x => x.PrintAllSettings()).Verifiable();
+            ProcessWithEnter("se all");
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Set4()
+        {
+            Create("bar");
+            _operations.Setup(x => x.PrintAllSettings()).Verifiable();
+            ProcessWithEnter("set all");
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Set5()
+        {
+            Create("bar");
+            _operations.Setup(x => x.PrintSetting("foo")).Verifiable();
+            ProcessWithEnter("set foo?");
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Set6()
+        {
+            Create("bar");
+            _operations.Setup(x => x.OperateSetting("foo")).Verifiable();
+            ProcessWithEnter("set foo");
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Set7()
+        {
+            Create("bor");
+            _operations.Setup(x => x.ResetSetting("foo")).Verifiable();
+            ProcessWithEnter("set nofoo");
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Set8()
+        {
+            Create("bar");
+            _operations.Setup(x => x.InvertSetting("foo")).Verifiable();
+            ProcessWithEnter("set foo!");
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Set9()
+        {
+            Create("bar");
+            _operations.Setup(x => x.InvertSetting("foo")).Verifiable();
+            ProcessWithEnter("set invfoo");
+            _operations.Verify();
+        }
     }
 }

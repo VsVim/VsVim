@@ -15,7 +15,8 @@ type internal DefaultOperations
         _textView : ITextView,
         _operations : IEditorOperations, 
         _host : IVimHost,
-        _jumpList : IJumpList ) =
+        _jumpList : IJumpList,
+        _settings : IVimLocalSettings ) =
     inherit CommonOperations(_textView, _operations, _host, _jumpList) 
 
     member private x.CommonImpl = x :> ICommonOperations
@@ -135,4 +136,11 @@ type internal DefaultOperations
             |> Seq.append ( "mark line  col file/text"  |> Seq.singleton)
             |> _host.UpdateLongStatus 
 
+
+        member x.PrintModifiedSettings () = failwith "implement"
+        member x.PrintAllSettings () = failwith "implement"
+        member x.PrintSetting settingName = failwith "implement"
+        member x.OperateSetting settingName = failwith "implement"
+        member x.ResetSetting settingName = failwith "implement"
+        member x.InvertSetting settingName = failwith "implement"
 
