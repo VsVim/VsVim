@@ -41,6 +41,16 @@ type CommandMode
                 else cmd
         inner cmd suffix |> List.ofSeq
 
+    /// Skip past non-whitespace characters and return the string and next input
+    member private x.SkipNonWhitespace (cmd:KeyInput list) =
+        let rec inner (cmd:KeyInput list) (data:char list) =
+            let withHead (headKey:KeyInput) rest = 
+                if System.Char.IsWhiteSpace headKey.Char then (cmd,data)
+                else inner rest ([headKey.Char] @ data)
+            ListUtil.tryProcessHead cmd withHead (fun () -> (cmd,data))
+        let rest,data = inner cmd List.empty
+        rest,(data |> List.rev |> StringUtil.OfCharSeq)
+
     /// Try and skip the ! operator
     member private x.SkipBang (cmd:KeyInput list) =
         let inner (head:KeyInput) tail = 
@@ -205,6 +215,20 @@ type CommandMode
         | true -> _operations.PrintMarks _data.MarkMap
         | false -> _data.VimHost.UpdateStatus x.BadMessage
 
+    member private x.ParseSet (rest:KeyInput list) =
+        let rest,data = rest |> x.SkipPast "t" |> x.SkipWhitespace |> x.SkipNonWhitespace
+        if System.String.IsNullOrEmpty(data) then _operations.PrintModifiedSettings()
+        else
+            match data with
+            | Match1("^all$") _ -> _operations.PrintAllSettings()
+            | Match2("^(\w+)\?$") (_,settingName) -> _operations.PrintSetting(settingName)
+            | Match2("^no(\w+)$") (_,settingName) -> _operations.ResetSetting(settingName)
+            | Match2("^(\w+)\!$") (_,settingName) -> _operations.InvertSetting(settingName)
+            | Match2("^inv(\w+)$") (_,settingName) -> _operations.InvertSetting(settingName)
+            | Match2("^(\w+)$") (_,settingName) -> _operations.OperateSetting(settingName)
+            | _ -> ()
+
+
     member private x.ParseSubstitute (rest:KeyInput list) (range:Range option) =
 
         // Used to parse out the flags on the :s command
@@ -247,7 +271,7 @@ type CommandMode
         let rest = 
             rest 
             |> x.SkipWhitespace
-            |> x.SkipPast "ubstitute"
+            |> x.SkipPast "bstitute"
         if List.isEmpty rest then
             let search,replace,flags = _lastSubstitute
             _operations.Substitute search replace range flags
@@ -266,22 +290,29 @@ type CommandMode
         | 'u' -> x.ParsePut rest range
         | _ -> _data.VimHost.UpdateStatus(x.BadMessage)
 
+    member private x.ParseSChar (current:KeyInput) (rest: KeyInput list) (range:Range option) =
+        match current.Char with
+        | 'e' -> x.ParseSet rest 
+        | _ -> x.ParseSubstitute ([current] @ rest) range
+
     member private x.ParseCommand (current:KeyInput) (rest:KeyInput list) (range:Range option) =
         match current.Char with
         | 'j' -> x.ParseJoin rest range
         | 'e' -> x.ParseEdit rest 
         | '$' -> _data.EditorOperations.MoveToEndOfDocument(false);
         | 'y' -> x.ParseYank rest range
-        | 'p' -> 
-            let next head tail = x.ParsePChar head tail range
-            ListUtil.tryProcessHead rest next (fun () -> _data.VimHost.UpdateStatus x.BadMessage)
         | '<' -> x.ParseShiftLeft rest range
         | '>' -> x.ParseShiftRight rest range
         | 'd' -> x.ParseDelete rest range
-        | 's' -> x.ParseSubstitute rest range
         | 'u' -> x.ParseUndo rest 
         | 'r' -> x.ParseRedo rest 
         | 'm' -> x.ParseMarks rest
+        | 'p' -> 
+            let next head tail = x.ParsePChar head tail range
+            ListUtil.tryProcessHead rest next (fun () -> _data.VimHost.UpdateStatus x.BadMessage)
+        | 's' -> 
+            let next head tail = x.ParseSChar head tail range
+            ListUtil.tryProcessHead rest next (fun () -> _data.VimHost.UpdateStatus x.BadMessage)
         | _ -> _data.VimHost.UpdateStatus(x.BadMessage)
     
     member private x.ParseInput (originalInputs : KeyInput list) =

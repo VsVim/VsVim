@@ -177,5 +177,183 @@ namespace VimCoreTest
             var pattern = "BAR";
             _operations.Substitute(pattern, "again", tss.GetLineFromLineNumber(0).Extent, SubstituteFlags.OrdinalCase | SubstituteFlags.ReportOnly);
         }
+
+        [Test]
+        public void OperateSetting1()
+        {
+            Create("foO");
+            var setting = new Setting("foobar","fb", SettingKind.BooleanKind, SettingValue.NewBooleanValue(true), SettingValue.NewBooleanValue(true), false);
+            _settings.Setup(x => x.GetSetting("foo")).Returns(FSharpOption.Create(setting)).Verifiable();
+            _operations.OperateSetting("foobar");
+            _settings.Verify();
+        }
+
+        [Test]
+        public void OperateSetting2()
+        {
+            Create("foo");
+            var setting = new Setting("foobar","fb", SettingKind.BooleanKind, SettingValue.NewBooleanValue(false), SettingValue.NewBooleanValue(false), false);
+            _settings.Setup(x => x.GetSetting("foo")).Returns(FSharpOption.Create(setting)).Verifiable();
+            _settings.Setup(x => x.TrySetValue("foo", SettingValue.NewBooleanValue(true))).Verifiable();
+            _operations.OperateSetting("foobar");
+            _settings.Verify();
+        }
+
+        [Test]
+        public void OperateSetting3()
+        {
+            Create("foo");
+            var setting = new Setting("foobar", "fb", SettingKind.NumberKind, SettingValue.NewNumberValue(42), SettingValue.NewNumberValue(42), false);
+            _settings.Setup(x => x.GetSetting("foo")).Returns(FSharpOption.Create(setting)).Verifiable();
+            _host.Setup(x => x.UpdateStatus(It.IsAny<string>())).Verifiable();
+            _operations.OperateSetting("foobar");
+            _settings.Verify();
+            _host.Verify();
+        }
+
+        [Test]
+        public void OperateSetting4()
+        {
+            Create("foo");
+            _settings.Setup(X => X.GetSetting("foo")).Returns(FSharpOption<Setting>.None).Verifiable();
+            _host.Setup(x => x.UpdateStatus(Resources.CommandMode_UnknownOption("foo"))).Verifiable();
+            _operations.OperateSetting("foo");
+            _settings.Verify();
+            _host.Verify();
+        }
+
+        [Test]
+        public void ResetSettings1()
+        {
+            Create("foo");
+            var setting = new Setting("foobar","fb", SettingKind.BooleanKind, SettingValue.NewBooleanValue(false), SettingValue.NewBooleanValue(false), false);
+            _settings.Setup(x => x.GetSetting("foobar")).Returns(FSharpOption.Create(setting)).Verifiable();
+            _settings.Setup(x => x.TrySetValue("foobar", SettingValue.NewBooleanValue(false))).Verifiable();
+            _operations.ResetSetting("foobar");
+            _settings.Verify();
+        }
+
+        [Test]
+        public void ResetSettings2()
+        {
+            Create("foo");
+            var setting = new Setting("foobar","fb", SettingKind.NumberKind, SettingValue.NewBooleanValue(false), SettingValue.NewBooleanValue(false), false);
+            _settings.Setup(x => x.GetSetting("foobar")).Returns(FSharpOption.Create(setting)).Verifiable();
+            _host.Setup(x => x.UpdateStatus(Resources.CommandMode_InvalidArgument("foobar"))).Verifiable();
+            _operations.ResetSetting("foobar");
+            _settings.Verify();
+            _host.Verify();
+        }
+
+        [Test]
+        public void ResetSettings3()
+        {
+            Create("foo");
+            _settings.Setup(X => X.GetSetting("foo")).Returns(FSharpOption<Setting>.None).Verifiable();
+            _host.Setup(x => x.UpdateStatus(Resources.CommandMode_UnknownOption("foo"))).Verifiable();
+            _operations.ResetSetting("foo");
+            _settings.Verify();
+            _host.Verify();
+        }
+
+        [Test]
+        public void InvertSettings1()
+        {
+            Create("foo");
+            var setting = new Setting("foobar","fb", SettingKind.BooleanKind, SettingValue.NewBooleanValue(false), SettingValue.NewBooleanValue(false), false);
+            _settings.Setup(x => x.GetSetting("foobar")).Returns(FSharpOption.Create(setting)).Verifiable();
+            _settings.Setup(x => x.TrySetValue("foobar", SettingValue.NewBooleanValue(true))).Verifiable();
+            _operations.InvertSetting("foobar");
+            _settings.Verify();
+        }
+
+        [Test]
+        public void InvertSettings2()
+        {
+            Create("foo");
+            var setting = new Setting("foobar","fb", SettingKind.NumberKind, SettingValue.NewBooleanValue(false), SettingValue.NewBooleanValue(false), false);
+            _settings.Setup(x => x.GetSetting("foobar")).Returns(FSharpOption.Create(setting)).Verifiable();
+            _host.Setup(x => x.UpdateStatus(Resources.CommandMode_InvalidArgument("foobar"))).Verifiable();
+            _operations.InvertSetting("foobar");
+            _settings.Verify();
+            _host.Verify();
+        }
+
+        [Test]
+        public void InvertSettings3()
+        {
+            Create("foo");
+            _settings.Setup(X => X.GetSetting("foo")).Returns(FSharpOption<Setting>.None).Verifiable();
+            _host.Setup(x => x.UpdateStatus(Resources.CommandMode_UnknownOption("foo"))).Verifiable();
+            _operations.InvertSetting("foo");
+            _settings.Verify();
+            _host.Verify();
+        }
+
+        [Test]
+        public void PrintModifiedSettings1()
+        {
+            Create("foobar");
+            var setting = new Setting("foobar","fb", SettingKind.NumberKind, SettingValue.NewBooleanValue(false), SettingValue.NewBooleanValue(false), false);
+            _settings.Setup(x => x.AllSettings).Returns(Enumerable.Repeat(setting, 1));
+            _host.Setup(x => x.UpdateLongStatus(It.IsAny<IEnumerable<string>>())).Verifiable();
+            _operations.PrintModifiedSettings();
+            _host.Verify();
+        }
+
+        [Test]
+        public void PrintAllSettings1()
+        {
+            Create("foobar");
+            var setting = new Setting("foobar","fb", SettingKind.NumberKind, SettingValue.NewBooleanValue(false), SettingValue.NewBooleanValue(false), false);
+            _settings.Setup(x => x.AllSettings).Returns(Enumerable.Repeat(setting, 1));
+            _host.Setup(x => x.UpdateLongStatus(It.IsAny<IEnumerable<string>>())).Verifiable();
+            _operations.PrintAllSettings();
+            _host.Verify();
+        }
+
+        [Test]
+        public void PrintSetting1()
+        {
+            Create("foobar");
+            _settings.Setup(x => x.GetSetting("foo")).Returns(FSharpOption<Setting>.None).Verifiable();
+            _host.Setup(x => x.UpdateStatus(Resources.CommandMode_UnknownOption("foo"))).Verifiable();
+            _operations.PrintSetting("foo");
+            _host.Verify();
+        }
+
+        [Test]
+        public void PrintSetting2()
+        {
+            Create("foobar");
+            var setting = new Setting("foobar", "fb", SettingKind.BooleanKind, SettingValue.NewBooleanValue(false), SettingValue.NewBooleanValue(false), false);
+            _settings.Setup(x => x.GetSetting("foobar")).Returns(FSharpOption.Create(setting));
+            _host.Setup(x => x.UpdateStatus("nofoobar")).Verifiable();
+            _operations.PrintSetting("foobar");
+            _host.Verify();
+        }
+
+        [Test]
+        public void PrintSetting3()
+        {
+            Create("foobar");
+            var setting = new Setting("foobar", "fb", SettingKind.BooleanKind, SettingValue.NewBooleanValue(true), SettingValue.NewBooleanValue(true), false);
+            _settings.Setup(x => x.GetSetting("foobar")).Returns(FSharpOption.Create(setting));
+            _host.Setup(x => x.UpdateStatus("foobar")).Verifiable();
+            _operations.PrintSetting("foobar");
+            _host.Verify();
+        }
+
+        [Test]
+        public void PrintSetting4()
+        {
+            Create("foobar");
+            var setting = new Setting("foobar", "fb", SettingKind.NumberKind, SettingValue.NewNumberValue(42), SettingValue.NewNumberValue(42), false);
+            _settings.Setup(x => x.GetSetting("foobar")).Returns(FSharpOption.Create(setting));
+            _host.Setup(x => x.UpdateStatus("foobar=42")).Verifiable();
+            _operations.PrintSetting("foobar");
+            _host.Verify();
+        }
+
     }
 }

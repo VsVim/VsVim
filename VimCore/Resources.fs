@@ -22,6 +22,8 @@ module internal Resources =
     let CommandMode_SubstituteComplete subs lines = sprintf "%d substitutions on %d lines" subs lines
     let CommandMode_NotSupported msg = sprintf "Command not currently supported: %s" msg
     let CommandMode_NotSupported_SubstituteConfirm = CommandMode_NotSupported "Substitute Confirm"
+    let CommandMode_UnknownOption optionName = sprintf "Unknown option: %s" optionName
+    let CommandMode_InvalidArgument name = sprintf "Invalid argument: %s" name
 
     let Vim_ViewAlreadyHasBuffer = "View is already associated with an IVimBuffer"
 
