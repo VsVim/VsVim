@@ -82,13 +82,13 @@ type ProcessResult =
 type SettingKind =
     | NumberKind
     | StringKind    
-    | BooleanKind
+    | ToggleKind
 
 type SettingValue =
     | NoValue 
     | NumberValue of int
     | StringValue of string
-    | BooleanValue of bool
+    | ToggleValue of bool
 
 [<DebuggerDisplay("{Name}={Value}")>]
 type Setting = {

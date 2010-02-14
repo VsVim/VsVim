@@ -182,9 +182,9 @@ namespace VimCoreTest
         public void OperateSetting1()
         {
             Create("foO");
-            var setting = new Setting("foobar","fb", SettingKind.BooleanKind, SettingValue.NewBooleanValue(true), SettingValue.NewBooleanValue(true), false);
+            var setting = new Setting("foobar","fb", SettingKind.ToggleKind, SettingValue.NewToggleValue(true), SettingValue.NewToggleValue(true), false);
             _settings.Setup(x => x.GetSetting("foobar")).Returns(FSharpOption.Create(setting)).Verifiable();
-            _settings.Setup(x => x.TrySetValue("foobar", SettingValue.NewBooleanValue(true))).Returns(true).Verifiable();
+            _settings.Setup(x => x.TrySetValue("foobar", SettingValue.NewToggleValue(true))).Returns(true).Verifiable();
             _operations.OperateSetting("foobar");
             _settings.Verify();
         }
@@ -193,9 +193,9 @@ namespace VimCoreTest
         public void OperateSetting2()
         {
             Create("foo");
-            var setting = new Setting("foobar","fb", SettingKind.BooleanKind, SettingValue.NewBooleanValue(false), SettingValue.NewBooleanValue(false), false);
+            var setting = new Setting("foobar","fb", SettingKind.ToggleKind, SettingValue.NewToggleValue(false), SettingValue.NewToggleValue(false), false);
             _settings.Setup(x => x.GetSetting("foobar")).Returns(FSharpOption.Create(setting)).Verifiable();
-            _settings.Setup(x => x.TrySetValue("foobar", SettingValue.NewBooleanValue(true))).Returns(true).Verifiable();
+            _settings.Setup(x => x.TrySetValue("foobar", SettingValue.NewToggleValue(true))).Returns(true).Verifiable();
             _operations.OperateSetting("foobar");
             _settings.Verify();
         }
@@ -227,9 +227,9 @@ namespace VimCoreTest
         public void ResetSettings1()
         {
             Create("foo");
-            var setting = new Setting("foobar","fb", SettingKind.BooleanKind, SettingValue.NewBooleanValue(false), SettingValue.NewBooleanValue(false), false);
+            var setting = new Setting("foobar","fb", SettingKind.ToggleKind, SettingValue.NewToggleValue(false), SettingValue.NewToggleValue(false), false);
             _settings.Setup(x => x.GetSetting("foobar")).Returns(FSharpOption.Create(setting)).Verifiable();
-            _settings.Setup(x => x.TrySetValue("foobar", SettingValue.NewBooleanValue(false))).Returns(true).Verifiable();
+            _settings.Setup(x => x.TrySetValue("foobar", SettingValue.NewToggleValue(false))).Returns(true).Verifiable();
             _operations.ResetSetting("foobar");
             _settings.Verify();
         }
@@ -238,7 +238,7 @@ namespace VimCoreTest
         public void ResetSettings2()
         {
             Create("foo");
-            var setting = new Setting("foobar","fb", SettingKind.NumberKind, SettingValue.NewBooleanValue(false), SettingValue.NewBooleanValue(false), false);
+            var setting = new Setting("foobar","fb", SettingKind.NumberKind, SettingValue.NewToggleValue(false), SettingValue.NewToggleValue(false), false);
             _settings.Setup(x => x.GetSetting("foobar")).Returns(FSharpOption.Create(setting)).Verifiable();
             _host.Setup(x => x.UpdateStatus(Resources.CommandMode_InvalidArgument("foobar"))).Verifiable();
             _operations.ResetSetting("foobar");
@@ -261,9 +261,9 @@ namespace VimCoreTest
         public void InvertSettings1()
         {
             Create("foo");
-            var setting = new Setting("foobar","fb", SettingKind.BooleanKind, SettingValue.NewBooleanValue(false), SettingValue.NewBooleanValue(false), false);
+            var setting = new Setting("foobar","fb", SettingKind.ToggleKind, SettingValue.NewToggleValue(false), SettingValue.NewToggleValue(false), false);
             _settings.Setup(x => x.GetSetting("foobar")).Returns(FSharpOption.Create(setting)).Verifiable();
-            _settings.Setup(x => x.TrySetValue("foobar", SettingValue.NewBooleanValue(true))).Returns(true).Verifiable();
+            _settings.Setup(x => x.TrySetValue("foobar", SettingValue.NewToggleValue(true))).Returns(true).Verifiable();
             _operations.InvertSetting("foobar");
             _settings.Verify();
         }
@@ -272,7 +272,7 @@ namespace VimCoreTest
         public void InvertSettings2()
         {
             Create("foo");
-            var setting = new Setting("foobar","fb", SettingKind.NumberKind, SettingValue.NewBooleanValue(false), SettingValue.NewBooleanValue(false), false);
+            var setting = new Setting("foobar","fb", SettingKind.NumberKind, SettingValue.NewToggleValue(false), SettingValue.NewToggleValue(false), false);
             _settings.Setup(x => x.GetSetting("foobar")).Returns(FSharpOption.Create(setting)).Verifiable();
             _host.Setup(x => x.UpdateStatus(Resources.CommandMode_InvalidArgument("foobar"))).Verifiable();
             _operations.InvertSetting("foobar");
@@ -295,7 +295,7 @@ namespace VimCoreTest
         public void PrintModifiedSettings1()
         {
             Create("foobar");
-            var setting = new Setting("foobar","fb", SettingKind.NumberKind, SettingValue.NewBooleanValue(false), SettingValue.NewBooleanValue(false), false);
+            var setting = new Setting("foobar","fb", SettingKind.NumberKind, SettingValue.NewToggleValue(false), SettingValue.NewToggleValue(false), false);
             _settings.Setup(x => x.AllSettings).Returns(Enumerable.Repeat(setting, 1));
             _host.Setup(x => x.UpdateLongStatus(It.IsAny<IEnumerable<string>>())).Verifiable();
             _operations.PrintModifiedSettings();
@@ -306,7 +306,7 @@ namespace VimCoreTest
         public void PrintAllSettings1()
         {
             Create("foobar");
-            var setting = new Setting("foobar","fb", SettingKind.NumberKind, SettingValue.NewBooleanValue(false), SettingValue.NewBooleanValue(false), false);
+            var setting = new Setting("foobar","fb", SettingKind.NumberKind, SettingValue.NewToggleValue(false), SettingValue.NewToggleValue(false), false);
             _settings.Setup(x => x.AllSettings).Returns(Enumerable.Repeat(setting, 1));
             _host.Setup(x => x.UpdateLongStatus(It.IsAny<IEnumerable<string>>())).Verifiable();
             _operations.PrintAllSettings();
@@ -327,7 +327,7 @@ namespace VimCoreTest
         public void PrintSetting2()
         {
             Create("foobar");
-            var setting = new Setting("foobar", "fb", SettingKind.BooleanKind, SettingValue.NewBooleanValue(false), SettingValue.NewBooleanValue(false), false);
+            var setting = new Setting("foobar", "fb", SettingKind.ToggleKind, SettingValue.NewToggleValue(false), SettingValue.NewToggleValue(false), false);
             _settings.Setup(x => x.GetSetting("foobar")).Returns(FSharpOption.Create(setting));
             _host.Setup(x => x.UpdateStatus("nofoobar")).Verifiable();
             _operations.PrintSetting("foobar");
@@ -338,7 +338,7 @@ namespace VimCoreTest
         public void PrintSetting3()
         {
             Create("foobar");
-            var setting = new Setting("foobar", "fb", SettingKind.BooleanKind, SettingValue.NewBooleanValue(true), SettingValue.NewBooleanValue(true), false);
+            var setting = new Setting("foobar", "fb", SettingKind.ToggleKind, SettingValue.NewToggleValue(true), SettingValue.NewToggleValue(true), false);
             _settings.Setup(x => x.GetSetting("foobar")).Returns(FSharpOption.Create(setting));
             _host.Setup(x => x.UpdateStatus("foobar")).Verifiable();
             _operations.PrintSetting("foobar");

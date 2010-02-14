@@ -81,10 +81,10 @@ namespace VimCoreTest
             return (SettingValue.StringValue)value;
         }
 
-        internal static SettingValue.BooleanValue AsBooleanValue(this SettingValue value)
+        internal static SettingValue.ToggleValue AsBooleanValue(this SettingValue value)
         {
-            Assert.IsTrue(value.IsBooleanValue);
-            return (SettingValue.BooleanValue)value;
+            Assert.IsTrue(value.IsToggleValue);
+            return (SettingValue.ToggleValue)value;
         }
 
         internal static SettingValue.NumberValue AsNumberValue(this SettingValue value)

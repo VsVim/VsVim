@@ -28,7 +28,7 @@ type internal SettingsMap
             match kind,value with
             | (NumberKind,NumberValue(_)) -> true
             | (StringKind,StringValue(_)) -> true
-            | (BooleanKind,BooleanValue(_)) -> true
+            | (ToggleKind,ToggleValue(_)) -> true
             | (_, NoValue) -> true
             | _ -> false
 
@@ -63,8 +63,8 @@ type internal SettingsMap
     member x.GetBoolValue settingName = 
         let setting = _settings |> Map.find settingName
         match setting.Value,setting.DefaultValue with 
-        | BooleanValue(b),_ -> b
-        | NoValue,BooleanValue(b) -> b
+        | ToggleValue(b),_ -> b
+        | NoValue,ToggleValue(b) -> b
         | _ -> failwith "Invalid"
 
     /// Get a string setting value.  Will throw if the setting name does not exist
@@ -90,10 +90,10 @@ type internal SettingsMap
             if ret then Some (NumberValue(value)) else None
         let convertToBoolean() =
             let ret,value = System.Boolean.TryParse str
-            if ret then Some (BooleanValue(value)) else None
+            if ret then Some (ToggleValue(value)) else None
         match kind with
         | NumberKind -> convertToNumber()
-        | BooleanKind -> convertToBoolean()
+        | ToggleKind -> convertToBoolean()
         | StringKind -> Some (StringValue(str))
 
             
@@ -106,7 +106,7 @@ type internal GlobalSettings() =
 
     static let GlobalSettings = 
         [|
-            ( IgnoreCaseName,"ic", BooleanKind, BooleanValue(false) );
+            ( IgnoreCaseName,"ic", ToggleKind, ToggleValue(false) );
             ( ShiftWidthName, "sw", NumberKind, NumberValue(4) )
         |]
 
@@ -125,7 +125,7 @@ type internal GlobalSettings() =
         // IVimGlobalSettings 
         member x.IgnoreCase
             with get()  = _map.GetBoolValue IgnoreCaseName
-            and set value = _map.TrySetValue IgnoreCaseName (BooleanValue(value)) |> ignore
+            and set value = _map.TrySetValue IgnoreCaseName (ToggleValue(value)) |> ignore
         member x.ShiftWidth  
             with get() = _map.GetNumberValue ShiftWidthName
             and set value = _map.TrySetValue ShiftWidthName (NumberValue(value)) |> ignore

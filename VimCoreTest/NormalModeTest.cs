@@ -29,7 +29,6 @@ namespace VimCoreTest
         private MockBlockCaret _blockCaret;
         private Mock<IOperations> _operations;
         private Mock<IEditorOperations> _editorOperations;
-        private Mock<ISearchReplace> _searchReplace;
         private Mock<IIncrementalSearch> _incrementalSearch;
         private Mock<IJumpList> _jumpList;
 
@@ -52,7 +51,6 @@ namespace VimCoreTest
             _map = new RegisterMap();
             _blockCaret = new MockBlockCaret();
             _editorOperations = new Mock<IEditorOperations>();
-            _searchReplace = new Mock<ISearchReplace>(MockBehavior.Strict);
             _incrementalSearch = new Mock<IIncrementalSearch>(MockBehavior.Strict);
             _jumpList = new Mock<IJumpList>(MockBehavior.Strict);
             _bufferData = MockFactory.CreateVimBuffer(
@@ -63,7 +61,7 @@ namespace VimCoreTest
                 _editorOperations.Object,
                 _jumpList.Object);
             _operations = new Mock<IOperations>(MockBehavior.Strict);
-            _modeRaw = new Vim.Modes.Normal.NormalMode(Tuple.Create(_bufferData.Object, _operations.Object, _searchReplace.Object, _incrementalSearch.Object));
+            _modeRaw = new Vim.Modes.Normal.NormalMode(Tuple.Create(_bufferData.Object, _operations.Object, _incrementalSearch.Object));
             _mode = _modeRaw;
             _mode.OnEnter();
         }

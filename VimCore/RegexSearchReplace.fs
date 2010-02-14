@@ -15,7 +15,7 @@ type internal RegexSearchReplace() =
                 RegexOptions.IgnoreCase
             else
                 RegexOptions.None
-        let options = options &&& RegexOptions.Compiled
+        let options = options ||| RegexOptions.Compiled
         Utils.TryCreateRegex searchData.Pattern options
 
     /// This method filters out spans looking for valid regex matches within the Span.  It will return

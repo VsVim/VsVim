@@ -23,7 +23,7 @@ type internal DefaultOperations
     let FormatSetting(setting:Setting) = 
 
         match setting.Kind,setting.AggregateValue with
-        | (BooleanKind,BooleanValue(b)) -> 
+        | (ToggleKind,ToggleValue(b)) -> 
             if b then setting.Name
             else sprintf "no%s" setting.Name
         | (StringKind,StringValue(s)) -> sprintf "%s=\"%s\"" setting.Name s
@@ -164,14 +164,14 @@ type internal DefaultOperations
             match _settings.GetSetting settingName with
             | None -> _host.UpdateStatus (Resources.CommandMode_UnknownOption settingName)
             | Some(setting) ->
-                if setting.Kind = BooleanKind then _settings.TrySetValue settingName (BooleanValue(true)) |> ignore
+                if setting.Kind = ToggleKind then _settings.TrySetValue settingName (ToggleValue(true)) |> ignore
                 else setting |> FormatSetting |> _host.UpdateStatus
 
         member x.ResetSetting settingName =
             match _settings.GetSetting settingName with
             | None -> _host.UpdateStatus (Resources.CommandMode_UnknownOption settingName)
             | Some(setting) ->
-                if setting.Kind = BooleanKind then _settings.TrySetValue settingName (BooleanValue(false)) |> ignore
+                if setting.Kind = ToggleKind then _settings.TrySetValue settingName (ToggleValue(false)) |> ignore
                 else settingName |> Resources.CommandMode_InvalidArgument |> _host.UpdateStatus
             
         member x.InvertSetting settingName = 
@@ -179,7 +179,7 @@ type internal DefaultOperations
             | None -> _host.UpdateStatus (Resources.CommandMode_UnknownOption settingName)
             | Some(setting) ->
                 match setting.Kind,setting.AggregateValue with
-                | (BooleanKind,BooleanValue(b)) -> _settings.TrySetValue settingName (BooleanValue(not b)) |> ignore
+                | (ToggleKind,ToggleValue(b)) -> _settings.TrySetValue settingName (ToggleValue(not b)) |> ignore
                 | _ -> settingName |> Resources.CommandMode_InvalidArgument |> _host.UpdateStatus
 
         member x.SetSettingValue settingName value = 

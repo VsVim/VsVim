@@ -65,7 +65,7 @@ namespace VimCoreTest
         public void TrySetValue1()
         {
             var settings = Create();
-            Assert.IsTrue(settings.TrySetValue(GlobalSettings.IgnoreCaseName, SettingValue.NewBooleanValue(true)));
+            Assert.IsTrue(settings.TrySetValue(GlobalSettings.IgnoreCaseName, SettingValue.NewToggleValue(true)));
             var value = settings.GetSetting(GlobalSettings.IgnoreCaseName);
             Assert.IsTrue(value.IsSome());
             Assert.AreEqual(true, value.Value.Value.AsBooleanValue().Item);
@@ -88,9 +88,9 @@ namespace VimCoreTest
             foreach (var cur in settings.AllSettings)
             {
                 SettingValue value = null;
-                if ( cur.Kind.IsBooleanKind )
+                if ( cur.Kind.IsToggleKind )
                 {
-                    value = SettingValue.NewBooleanValue(true);
+                    value = SettingValue.NewToggleValue(true);
                 }
                 else if (cur.Kind.IsStringKind)
                 {
@@ -116,7 +116,7 @@ namespace VimCoreTest
             foreach (var cur in settings.AllSettings)
             {
                 string value = null;
-                if ( cur.Kind.IsBooleanKind )
+                if ( cur.Kind.IsToggleKind )
                 {
                     value = "true";
                 }
@@ -144,7 +144,7 @@ namespace VimCoreTest
             foreach (var cur in settings.AllSettings)
             {
                 string value = null;
-                if (cur.Kind.IsBooleanKind)
+                if (cur.Kind.IsToggleKind)
                 {
                     value = "true";
                 }

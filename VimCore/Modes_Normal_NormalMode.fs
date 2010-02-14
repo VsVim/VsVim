@@ -18,7 +18,6 @@ type internal NormalMode
     ( 
         _bufferData : IVimBuffer, 
         _operations : IOperations,
-        _searchReplace : ISearchReplace,
         _incrementalSearch : IIncrementalSearch ) = 
 
 

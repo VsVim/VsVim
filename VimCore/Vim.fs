@@ -65,7 +65,7 @@ type internal Vim
         let normalIncrementalSearch = Vim.Modes.Normal.IncrementalSearch(_host, view, localSettings, normalSearchReplace) :> Modes.Normal.IIncrementalSearch
         let modeList = 
             [
-                ((Modes.Normal.NormalMode(buffer, normalOpts, normalSearchReplace, normalIncrementalSearch)) :> IMode);
+                ((Modes.Normal.NormalMode(buffer, normalOpts, normalIncrementalSearch)) :> IMode);
                 ((Modes.Command.CommandMode(buffer, commandOpts)) :> IMode);
                 ((Modes.Insert.InsertMode(buffer,insertOpts,broker)) :> IMode);
                 (DisabledMode(buffer) :> IMode);

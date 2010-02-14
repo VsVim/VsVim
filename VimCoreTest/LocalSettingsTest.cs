@@ -51,7 +51,7 @@ namespace VimCoreTest
         public void TrySetValueUp1()
         {
             _global.Setup(x => x.TrySetValue("notasetting", It.IsAny<SettingValue>())).Returns(false).Verifiable();
-            Assert.IsFalse(_local.TrySetValue("notasetting", SettingValue.NewBooleanValue(true)));
+            Assert.IsFalse(_local.TrySetValue("notasetting", SettingValue.NewToggleValue(true)));
             _global.Verify();
         }
 
