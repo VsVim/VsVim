@@ -356,5 +356,25 @@ namespace VimCoreTest
             _host.Verify();
         }
 
+        [Test]
+        public void SetSettingValue1()
+        {
+            Create("foobar");
+            _settings.Setup(x => x.TrySetValueFromString("foo", "bar")).Returns(true).Verifiable();
+            _operations.SetSettingValue("foo", "bar");
+            _settings.Verify();
+        }
+
+        [Test]
+        public void SetSettingValue2()
+        {
+            Create("foobar");
+            _settings.Setup(x => x.TrySetValueFromString("foo", "bar")).Returns(false).Verifiable();
+            _host.Setup(x => x.UpdateStatus(Resources.CommandMode_InvalidValue("foo", "bar"))).Verifiable();
+            _operations.SetSettingValue("foo", "bar");
+            _settings.Verify();
+            _host.Verify();
+        }
+
     }
 }

@@ -36,6 +36,9 @@ type IOperations =
     /// For a toggle setting, switch it.  For all others display it
     abstract OperateSetting: settingName:string -> unit
 
+    /// Update a setting value to the provided value
+    abstract SetSettingValue : settingName:string -> value:string -> unit
+
     /// Reset the setting if it's a ToggleValue
     abstract ResetSetting : settingName:string -> unit
 

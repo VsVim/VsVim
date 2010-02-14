@@ -215,17 +215,20 @@ type CommandMode
         | true -> _operations.PrintMarks _data.MarkMap
         | false -> _data.VimHost.UpdateStatus x.BadMessage
 
+    /// Parse out the :set command
     member private x.ParseSet (rest:KeyInput list) =
         let rest,data = rest |> x.SkipPast "t" |> x.SkipWhitespace |> x.SkipNonWhitespace
         if System.String.IsNullOrEmpty(data) then _operations.PrintModifiedSettings()
         else
             match data with
             | Match1("^all$") _ -> _operations.PrintAllSettings()
-            | Match2("^(\w+)\?$") (_,settingName) -> _operations.PrintSetting(settingName)
-            | Match2("^no(\w+)$") (_,settingName) -> _operations.ResetSetting(settingName)
-            | Match2("^(\w+)\!$") (_,settingName) -> _operations.InvertSetting(settingName)
-            | Match2("^inv(\w+)$") (_,settingName) -> _operations.InvertSetting(settingName)
-            | Match2("^(\w+)$") (_,settingName) -> _operations.OperateSetting(settingName)
+            | Match2("^(\w+)\?$") (_,name) -> _operations.PrintSetting name
+            | Match2("^no(\w+)$") (_,name) -> _operations.ResetSetting name
+            | Match2("^(\w+)\!$") (_,name) -> _operations.InvertSetting name
+            | Match2("^inv(\w+)$") (_,name) -> _operations.InvertSetting name
+            | Match3("^(\w+):(\w+)$") (_,name,value) -> _operations.SetSettingValue name value
+            | Match3("^(\w+)=(\w+)$") (_,name,value) -> _operations.SetSettingValue name value
+            | Match2("^(\w+)$") (_,name) -> _operations.OperateSetting(name)
             | _ -> ()
 
 

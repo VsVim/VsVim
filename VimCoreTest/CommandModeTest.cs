@@ -771,5 +771,32 @@ namespace VimCoreTest
             ProcessWithEnter("set invfoo");
             _operations.Verify();
         }
+
+        [Test]
+        public void Set10()
+        {
+            Create("bar");
+            _operations.Setup(x => x.SetSettingValue("foo", "bar")).Verifiable();
+            ProcessWithEnter("set foo=bar");
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Set11()
+        {
+            Create("baa");
+            _operations.Setup(x => x.SetSettingValue("foo", "true")).Verifiable();
+            ProcessWithEnter("set foo=true");
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Set12()
+        {
+            Create("baa");
+            _operations.Setup(x => x.SetSettingValue("foo", "true")).Verifiable();
+            ProcessWithEnter("set foo:true");
+            _operations.Verify();
+        }
     }
 }

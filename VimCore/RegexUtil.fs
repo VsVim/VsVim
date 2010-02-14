@@ -24,3 +24,9 @@ module internal RegexUtil =
         match m.Success && m.Groups.Count=2 with
             | false -> None
             | true -> Some ((group m 0),(group m 1))
+
+    let (|Match3|_|) (pat:string) (input:string) = 
+        let m = Regex.Match(input,pat)
+        match m.Success && m.Groups.Count=3 with
+            | false -> None
+            | true -> Some ((group m 0),(group m 1),(group m 2))

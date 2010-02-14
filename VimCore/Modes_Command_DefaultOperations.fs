@@ -182,3 +182,7 @@ type internal DefaultOperations
                 | (BooleanKind,BooleanValue(b)) -> _settings.TrySetValue settingName (BooleanValue(not b)) |> ignore
                 | _ -> settingName |> Resources.CommandMode_InvalidArgument |> _host.UpdateStatus
 
+        member x.SetSettingValue settingName value = 
+            let ret = _settings.TrySetValueFromString settingName value 
+            if not ret then 
+                Resources.CommandMode_InvalidValue settingName value |> _host.UpdateStatus
