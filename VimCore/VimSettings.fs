@@ -32,7 +32,7 @@ type internal SettingsMap
             | (_, NoValue) -> true
             | _ -> false
 
-        match _settings |> Map.tryFind settingName with
+        match x.GetSetting settingName with
         | None -> false
         | Some(setting) ->
             if doesValueMatchKind setting.Kind then
@@ -40,6 +40,14 @@ type internal SettingsMap
                 _settings <- _settings |> Map.add settingName setting
                 true
             else false
+
+    member x.TrySetValueFromString settingName strValue = 
+        match x.GetSetting settingName with
+        | None -> false
+        | Some(setting) ->
+            match x.ConvertStringToValue strValue setting.Kind with
+            | None -> false
+            | Some(value) -> x.TrySetValue settingName value
 
     member x.GetSetting settingName = 
         match _settings |> Map.tryFind settingName with
@@ -59,6 +67,7 @@ type internal SettingsMap
         | NoValue,BooleanValue(b) -> b
         | _ -> failwith "Invalid"
 
+    /// Get a string setting value.  Will throw if the setting name does not exist
     member x.GetStringValue settingName =
         let setting = _settings |> Map.find settingName
         match setting.Value,setting.DefaultValue with
@@ -66,12 +75,28 @@ type internal SettingsMap
         | NoValue,StringValue(s) -> s
         | _ -> failwith "Invalid"
 
+    /// Get a number setting value.  Will throw if the setting name does not exist
     member x.GetNumberValue settingName =
         let setting = _settings |> Map.find settingName
         match setting.Value,setting.DefaultValue with
         | NumberValue(n),_ -> n
         | NoValue,NumberValue(n) -> n
         | _ -> failwith "Invalid"
+
+    member x.ConvertStringToValue str kind =
+        
+        let convertToNumber() = 
+            let ret,value = System.Int32.TryParse str
+            if ret then Some (NumberValue(value)) else None
+        let convertToBoolean() =
+            let ret,value = System.Boolean.TryParse str
+            if ret then Some (BooleanValue(value)) else None
+        match kind with
+        | NumberKind -> convertToNumber()
+        | BooleanKind -> convertToBoolean()
+        | StringKind -> Some (StringValue(str))
+
+            
 
 type internal GlobalSettings() =
 
@@ -94,6 +119,7 @@ type internal GlobalSettings() =
 
         member x.AllSettings = _map.AllSettings
         member x.TrySetValue settingName value = _map.TrySetValue settingName value
+        member x.TrySetValueFromString settingName strValue = _map.TrySetValueFromString settingName strValue
         member x.GetSetting settingName = _map.GetSetting settingName
 
         // IVimGlobalSettings 
@@ -127,6 +153,9 @@ type internal LocalSettings
         member x.TrySetValue settingName value = 
             if _map.OwnsSetting settingName then _map.TrySetValue settingName value
             else _global.TrySetValue settingName value
+        member x.TrySetValueFromString settingName strValue = 
+            if _map.OwnsSetting settingName then _map.TrySetValueFromString settingName strValue
+            else _global.TrySetValueFromString settingName strValue
         member x.GetSetting settingName =
             if _map.OwnsSetting settingName then _map.GetSetting settingName
             else _global.GetSetting settingName

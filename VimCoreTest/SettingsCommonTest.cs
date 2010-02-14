@@ -80,5 +80,90 @@ namespace VimCoreTest
             Assert.IsTrue(value.IsSome());
             Assert.AreEqual(42, value.Value.Value.AsNumberValue().Item);
         }
+
+        [Test, Description("Set by abbreviation")]
+        public void TrySetValue3()
+        {
+            var settings = Create();
+            foreach (var cur in settings.AllSettings)
+            {
+                SettingValue value = null;
+                if ( cur.Kind.IsBooleanKind )
+                {
+                    value = SettingValue.NewBooleanValue(true);
+                }
+                else if (cur.Kind.IsStringKind)
+                {
+                    value = SettingValue.NewStringValue("foo");
+                }
+                else if (cur.Kind.IsNumberKind)
+                {
+                    value = SettingValue.NewNumberValue(42);
+                }
+                else
+                {
+                    Assert.Fail();
+                }
+
+                Assert.IsTrue(settings.TrySetValue(cur.Abbreviation, value));
+            }
+        }
+
+        [Test]
+        public void TrySetValueFromString1()
+        {
+            var settings = Create();
+            foreach (var cur in settings.AllSettings)
+            {
+                string value = null;
+                if ( cur.Kind.IsBooleanKind )
+                {
+                    value = "true";
+                }
+                else if (cur.Kind.IsStringKind)
+                {
+                    value = "hello world";
+                }
+                else if (cur.Kind.IsNumberKind)
+                {
+                    value = "42";
+                }
+                else
+                {
+                    Assert.Fail();
+                }
+
+                Assert.IsTrue(settings.TrySetValueFromString(cur.Name, value));
+            }
+        }
+
+        [Test, Description("Now by abbreviation")]
+        public void TrySetValueFromString2()
+        {
+            var settings = Create();
+            foreach (var cur in settings.AllSettings)
+            {
+                string value = null;
+                if (cur.Kind.IsBooleanKind)
+                {
+                    value = "true";
+                }
+                else if (cur.Kind.IsStringKind)
+                {
+                    value = "hello world";
+                }
+                else if (cur.Kind.IsNumberKind)
+                {
+                    value = "42";
+                }
+                else
+                {
+                    Assert.Fail();
+                }
+
+                Assert.IsTrue(settings.TrySetValueFromString(cur.Abbreviation, value));
+            }
+        }
+
     }
 }
