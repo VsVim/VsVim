@@ -1717,6 +1717,15 @@ namespace VimCoreTest
         }
 
         [Test]
+        public void GoToMatch1()
+        {
+            CreateBuffer("foo bar");
+            _operations.Setup(x => x.GoToMatch()).Returns(true);
+            Assert.IsTrue(_mode.Process(InputUtil.CharToKeyInput('%')).IsProcessed);
+            _operations.Verify();
+        }
+
+        [Test]
         public void Mark1()
         {
             CreateBuffer(s_lines);

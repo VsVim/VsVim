@@ -196,6 +196,11 @@ namespace VsVim
             return SafeExecuteCommand("Edit.GoToDefinition");
         }
 
+        bool IVimHost.GoToMatch()
+        {
+            return SafeExecuteCommand("Edit.GoToBrace");
+        }
+
         void IVimHost.ShowOpenFileDialog()
         {
             SafeExecuteCommand("Edit.OpenFile");

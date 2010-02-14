@@ -12,6 +12,7 @@ type VimHost() =
         member x.Undo _ _ = ()
         member x.Redo _ _ = ()
         member x.GoToDefinition() = false
+        member x.GoToMatch() = false
         member x.NavigateTo _ = false
         member x.GetName _ = ""
         member x.ShowOpenFileDialog () = ()

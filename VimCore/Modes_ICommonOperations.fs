@@ -30,6 +30,9 @@ type ICommonOperations =
     /// be generated as appropriate
     abstract GoToDefinition : unit -> Result
 
+    /// Go to the matching construct of the value under the cursor
+    abstract GoToMatch : unit -> bool
+
     /// Navigate to the given point which may occur in any ITextBuffer.  This will not update the 
     /// jump list
     abstract NavigateToPoint : VirtualSnapshotPoint -> bool

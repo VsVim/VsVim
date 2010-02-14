@@ -167,6 +167,22 @@ namespace VsVimTest
             Assert.IsTrue(_host.GoToDefinition());
         }
 
+        [Test]
+        public void GoToMatch1()
+        {
+            CreateAll();
+            _dte.Setup(x => x.ExecuteCommand(It.IsAny<string>(), It.IsAny<string>()));
+            Assert.IsTrue(_host.GoToMatch());
+        }
+
+        [Test]
+        public void GoToMatch2()
+        {
+            CreateAll();
+            _dte.Setup(x => x.ExecuteCommand(It.IsAny<string>(), It.IsAny<string>())).Throws(new Exception());
+            Assert.IsFalse(_host.GoToMatch());
+        }
+
         [Test, Description("Don't fail without VS")]
         public void NavigateTo1()
         {

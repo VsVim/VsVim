@@ -18,6 +18,7 @@ namespace VimCoreTest
         public int UndoCount { get; set; }
         public int RedoCount { get; set; }
         public int GoToDefinitionCount { get; set; }
+        public int GoToMatchCount { get; set; }
         public bool GoToDefinitionReturn { get; set; }
         public bool IsCompletionWindowActive { get; set; }
         public int DismissCompletionWindowCount { get; set; }
@@ -86,6 +87,12 @@ namespace VimCoreTest
         void IVimHost.ShowOpenFileDialog()
         {
             ShowOpenFileDialogCount++;
+        }
+
+        bool IVimHost.GoToMatch()
+        {
+            GoToMatchCount++;
+            return true;
         }
     }
 }

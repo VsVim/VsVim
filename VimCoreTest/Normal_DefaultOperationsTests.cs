@@ -719,6 +719,23 @@ namespace VimCoreTest
             _host.Verify();
         }
 
+        [Test]
+        public void GoToMatch1()
+        {
+            Create("foo bar");
+            _host.Setup(x => x.GoToMatch()).Returns(true).Verifiable();
+            Assert.IsTrue(_operations.GoToMatch());
+            _host.Verify();
+        }
+
+        [Test]
+        public void GoToMatch2()
+        {
+            Create("foo bar");
+            _host.Setup(x => x.GoToMatch()).Returns(false).Verifiable();
+            Assert.IsFalse(_operations.GoToMatch());
+            _host.Verify();
+        }
 
     }
 }

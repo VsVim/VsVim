@@ -105,5 +105,14 @@ namespace VimCoreTest
             Assert.AreEqual(Key.OemMinus, ki.Key);
             Assert.AreEqual(ModifierKeys.None, ki.ModifierKeys);
         }
+
+        [Test]
+        public void Percent1()
+        {
+            var ki = InputUtil.CharToKeyInput('%');
+            Assert.AreEqual('%', ki.Char);
+            Assert.AreEqual(Key.D5, ki.Key);
+            Assert.AreEqual(ModifierKeys.Shift, ki.ModifierKeys);
+        }
     }
 }

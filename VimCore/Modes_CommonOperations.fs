@@ -87,7 +87,8 @@ type internal CommonOperations
                     let msg = Resources.Common_GotoDefFailed (span.GetText())
                     Failed(msg)
                 | None ->  Failed(Resources.Common_GotoDefNoWordUnderCursor) 
-    
+
+        member x.GoToMatch () = _host.GoToMatch()
                 
         member x.SetMark (vimBuffer:IVimBuffer) point c = 
             if System.Char.IsLetter(c) || c = '\'' || c = '`' then

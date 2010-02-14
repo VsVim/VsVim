@@ -15,7 +15,13 @@ type IVimHost =
     abstract OpenFile : string -> unit
     abstract Undo : ITextBuffer -> count:int -> unit
     abstract Redo : ITextBuffer -> count:int -> unit
+
+    /// Go to the definition of the value under the cursor
     abstract GoToDefinition : unit -> bool
+
+    /// Go to the matching construct of the value under the cursor
+    abstract GoToMatch : unit -> bool
+
     abstract GetName : ITextBuffer -> string
     abstract NavigateTo : point : VirtualSnapshotPoint -> bool
 

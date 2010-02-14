@@ -302,6 +302,7 @@ type internal NormalMode
             yield (InputUtil.KeyToKeyInput(Key.Tab), (fun count _ -> _operations.JumpNext count))
             yield (KeyInput('i', Key.I, ModifierKeys.Control), (fun count _ -> _operations.JumpNext count))
             yield (KeyInput('o', Key.O, ModifierKeys.Control), (fun count _ -> _operations.JumpPrevious count))
+            yield (InputUtil.CharToKeyInput('%'), (fun _ _ -> _operations.GoToMatch() |> ignore))
         }
 
         let doNothing _ _ = ()
