@@ -19,6 +19,17 @@ type internal DefaultOperations
         _settings : IVimLocalSettings ) =
     inherit CommonOperations(_textView, _operations, _host, _jumpList) 
 
+    /// Format the setting for use in output
+    let FormatSetting(setting:Setting) = 
+
+        match setting.Kind,setting.AggregateValue with
+        | (BooleanKind,BooleanValue(b)) -> 
+            if b then setting.Name
+            else sprintf "no%s" setting.Name
+        | (StringKind,StringValue(s)) -> sprintf "%s=\"%s\"" setting.Name s
+        | (NumberKind,NumberValue(n)) -> sprintf "%s=%d" setting.Name n
+        | _ -> "Invalid value"
+
     member private x.CommonImpl = x :> ICommonOperations
 
     /// Get the Line spans in the specified range
@@ -34,6 +45,7 @@ type internal DefaultOperations
                     yield tss.GetLineFromLineNumber(i).ExtentIncludingLineBreak
                 yield SnapshotSpan(endLine.Start, range.End)
             }
+
 
     interface IOperations with
         member x.EditFile fileName = _host.OpenFile fileName
@@ -137,10 +149,36 @@ type internal DefaultOperations
             |> _host.UpdateLongStatus 
 
 
-        member x.PrintModifiedSettings () = failwith "implement"
-        member x.PrintAllSettings () = failwith "implement"
-        member x.PrintSetting settingName = failwith "implement"
-        member x.OperateSetting settingName = failwith "implement"
-        member x.ResetSetting settingName = failwith "implement"
-        member x.InvertSetting settingName = failwith "implement"
+        member x.PrintModifiedSettings () = 
+            _settings.AllSettings |> Seq.filter (fun s -> s.Value <> s.DefaultValue) |> Seq.map FormatSetting |> _host.UpdateLongStatus
+
+        member x.PrintAllSettings () = 
+            _settings.AllSettings |> Seq.map FormatSetting |> _host.UpdateLongStatus
+            
+        member x.PrintSetting settingName = 
+            match _settings.GetSetting settingName with 
+            | None -> _host.UpdateStatus (Resources.CommandMode_UnknownOption settingName)
+            | Some(setting) -> setting |> FormatSetting |> _host.UpdateStatus
+
+        member x.OperateSetting settingName = 
+            match _settings.GetSetting settingName with
+            | None -> _host.UpdateStatus (Resources.CommandMode_UnknownOption settingName)
+            | Some(setting) ->
+                if setting.Kind = BooleanKind then _settings.TrySetValue settingName (BooleanValue(true)) |> ignore
+                else setting |> FormatSetting |> _host.UpdateStatus
+
+        member x.ResetSetting settingName =
+            match _settings.GetSetting settingName with
+            | None -> _host.UpdateStatus (Resources.CommandMode_UnknownOption settingName)
+            | Some(setting) ->
+                if setting.Kind = BooleanKind then _settings.TrySetValue settingName (BooleanValue(false)) |> ignore
+                else settingName |> Resources.CommandMode_InvalidArgument |> _host.UpdateStatus
+            
+        member x.InvertSetting settingName = 
+            match _settings.GetSetting settingName with
+            | None -> _host.UpdateStatus (Resources.CommandMode_UnknownOption settingName)
+            | Some(setting) ->
+                match setting.Kind,setting.AggregateValue with
+                | (BooleanKind,BooleanValue(b)) -> _settings.TrySetValue settingName (BooleanValue(not b)) |> ignore
+                | _ -> settingName |> Resources.CommandMode_InvalidArgument |> _host.UpdateStatus
 

@@ -98,7 +98,11 @@ type Setting = {
     DefaultValue : SettingValue
     Value : SettingValue
     IsGlobal : bool
-}
+} with 
+    member x.AggregateValue = 
+        match x.Value with 
+        | NoValue -> x.DefaultValue
+        | _ -> x.Value
 
 /// Represent the setting supported by the Vim implementation.  This class **IS** mutable
 /// and the values will change.  Setting names are case sensitive but the exposed property
