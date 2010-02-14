@@ -5,6 +5,7 @@ open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Operations
 open System.Windows.Input
+open System.Diagnostics
 
 type ModeKind = 
     | Normal = 1
@@ -89,6 +90,7 @@ type SettingValue =
     | StringValue of string
     | BooleanValue of bool
 
+[<DebuggerDisplay("{Name}={Value}")>]
 type Setting = {
     Name : string
     Abbreviation : string

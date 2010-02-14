@@ -142,6 +142,7 @@
     <Compile Include="IEditorOperationsTest.cs" />
     <Compile Include="IncrementalSearchTest.cs" />
     <Compile Include="JumpListTest.cs" />
+    <Compile Include="LocalSettingsTest.cs" />
     <Compile Include="Modes_CommonOperationsTest.cs" />
     <Compile Include="CountCaptureTest.cs" />
     <Compile Include="FakeVimHost.cs" />
@@ -161,6 +162,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RangeUtilTest.cs" />
     <Compile Include="SelectionTrackerTest.cs" />
+    <Compile Include="SettingsCommonTest.cs" />
     <Compile Include="TextUtilTest.cs" />
     <Compile Include="TextUtilTest2.cs" />
     <Compile Include="TrackingLineColumnTest.cs" />

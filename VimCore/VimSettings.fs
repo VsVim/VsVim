@@ -19,7 +19,7 @@ type internal SettingsMap
          |> Map.ofSeq
 
     member x.AllSettings = _settings |> Map.toSeq |> Seq.map (fun (_,value) -> value)
-    member x.OwnsSetting settingName = _settings |> Map.tryFind settingName |> Option.isSome
+    member x.OwnsSetting settingName = x.GetSetting settingName |> Option.isSome
 
     member x.TrySetValue settingName value =
 
