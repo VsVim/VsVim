@@ -184,7 +184,7 @@ namespace VimCoreTest
             Create("foO");
             var setting = new Setting("foobar","fb", SettingKind.ToggleKind, SettingValue.NewToggleValue(true), SettingValue.NewToggleValue(true), false);
             _settings.Setup(x => x.GetSetting("foobar")).Returns(FSharpOption.Create(setting)).Verifiable();
-            _settings.Setup(x => x.TrySetValue("foobar", SettingValue.NewToggleValue(true))).Returns(true).Verifiable();
+            _settings.Setup(x => x.TrySetValue("foobar", It.IsAny<SettingValue>())).Returns(true).Verifiable();
             _operations.OperateSetting("foobar");
             _settings.Verify();
         }
@@ -195,7 +195,7 @@ namespace VimCoreTest
             Create("foo");
             var setting = new Setting("foobar","fb", SettingKind.ToggleKind, SettingValue.NewToggleValue(false), SettingValue.NewToggleValue(false), false);
             _settings.Setup(x => x.GetSetting("foobar")).Returns(FSharpOption.Create(setting)).Verifiable();
-            _settings.Setup(x => x.TrySetValue("foobar", SettingValue.NewToggleValue(true))).Returns(true).Verifiable();
+            _settings.Setup(x => x.TrySetValue("foobar", It.IsAny<SettingValue>())).Returns(true).Verifiable();
             _operations.OperateSetting("foobar");
             _settings.Verify();
         }
@@ -229,7 +229,7 @@ namespace VimCoreTest
             Create("foo");
             var setting = new Setting("foobar","fb", SettingKind.ToggleKind, SettingValue.NewToggleValue(false), SettingValue.NewToggleValue(false), false);
             _settings.Setup(x => x.GetSetting("foobar")).Returns(FSharpOption.Create(setting)).Verifiable();
-            _settings.Setup(x => x.TrySetValue("foobar", SettingValue.NewToggleValue(false))).Returns(true).Verifiable();
+            _settings.Setup(x => x.TrySetValue("foobar", It.IsAny<SettingValue>())).Returns(true).Verifiable();
             _operations.ResetSetting("foobar");
             _settings.Verify();
         }
@@ -263,7 +263,7 @@ namespace VimCoreTest
             Create("foo");
             var setting = new Setting("foobar","fb", SettingKind.ToggleKind, SettingValue.NewToggleValue(false), SettingValue.NewToggleValue(false), false);
             _settings.Setup(x => x.GetSetting("foobar")).Returns(FSharpOption.Create(setting)).Verifiable();
-            _settings.Setup(x => x.TrySetValue("foobar", SettingValue.NewToggleValue(true))).Returns(true).Verifiable();
+            _settings.Setup(x => x.TrySetValue("foobar", It.IsAny<SettingValue>())).Returns(true).Verifiable();
             _operations.InvertSetting("foobar");
             _settings.Verify();
         }

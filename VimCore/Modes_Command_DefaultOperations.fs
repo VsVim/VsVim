@@ -150,7 +150,7 @@ type internal DefaultOperations
 
 
         member x.PrintModifiedSettings () = 
-            _settings.AllSettings |> Seq.filter (fun s -> s.Value <> s.DefaultValue) |> Seq.map FormatSetting |> _host.UpdateLongStatus
+            _settings.AllSettings |> Seq.filter (fun s -> not s.IsValueDefault) |> Seq.map FormatSetting |> _host.UpdateLongStatus
 
         member x.PrintAllSettings () = 
             _settings.AllSettings |> Seq.map FormatSetting |> _host.UpdateLongStatus

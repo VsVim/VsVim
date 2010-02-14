@@ -89,6 +89,17 @@ type SettingValue =
     | NumberValue of int
     | StringValue of string
     | ToggleValue of bool
+    | CalculatedValue of (unit -> SettingValue)
+
+    /// Get the AggregateValue of the SettingValue.  This will dig through any CalculatedValue
+    /// instances and return the actual value
+    member x.AggregateValue = 
+
+        let rec digThrough value = 
+            match value with 
+            | CalculatedValue(func) -> digThrough (func())
+            | _ -> value
+        digThrough x
 
 [<DebuggerDisplay("{Name}={Value}")>]
 type Setting = {
@@ -99,10 +110,14 @@ type Setting = {
     Value : SettingValue
     IsGlobal : bool
 } with 
-    member x.AggregateValue = 
-        match x.Value with 
-        | NoValue -> x.DefaultValue
-        | _ -> x.Value
+
+    member x.AggregateValue = x.Value.AggregateValue
+
+    /// Is the setting value currently set to the default value
+    member x.IsValueDefault = 
+        match x.Value with
+        | NoValue -> true
+        | _ -> false
 
 /// Represent the setting supported by the Vim implementation.  This class **IS** mutable
 /// and the values will change.  Setting names are case sensitive but the exposed property

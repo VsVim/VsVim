@@ -21,6 +21,9 @@ type internal SettingsMap
     member x.AllSettings = _settings |> Map.toSeq |> Seq.map (fun (_,value) -> value)
     member x.OwnsSetting settingName = x.GetSetting settingName |> Option.isSome
 
+    /// Replace a Setting with a new value
+    member x.ReplaceSetting settingName setting = _settings <- _settings |> Map.add settingName setting
+
     member x.TrySetValue settingName value =
 
         /// Determine if the value and the kind are compatible
@@ -62,7 +65,7 @@ type internal SettingsMap
     /// Get a boolean setting value.  Will throw if the setting name does not exist
     member x.GetBoolValue settingName = 
         let setting = _settings |> Map.find settingName
-        match setting.Value,setting.DefaultValue with 
+        match setting.Value.AggregateValue,setting.DefaultValue.AggregateValue with 
         | ToggleValue(b),_ -> b
         | NoValue,ToggleValue(b) -> b
         | _ -> failwith "Invalid"
@@ -70,7 +73,7 @@ type internal SettingsMap
     /// Get a string setting value.  Will throw if the setting name does not exist
     member x.GetStringValue settingName =
         let setting = _settings |> Map.find settingName
-        match setting.Value,setting.DefaultValue with
+        match setting.Value.AggregateValue,setting.DefaultValue.AggregateValue with
         | StringValue(s),_ -> s
         | NoValue,StringValue(s) -> s
         | _ -> failwith "Invalid"
@@ -78,7 +81,7 @@ type internal SettingsMap
     /// Get a number setting value.  Will throw if the setting name does not exist
     member x.GetNumberValue settingName =
         let setting = _settings |> Map.find settingName
-        match setting.Value,setting.DefaultValue with
+        match setting.Value.AggregateValue,setting.DefaultValue.AggregateValue with
         | NumberValue(n),_ -> n
         | NoValue,NumberValue(n) -> n
         | _ -> failwith "Invalid"
@@ -135,7 +138,7 @@ type internal GlobalSettings() =
 type internal LocalSettings
     ( 
         _global : IVimGlobalSettings,
-        _textView : ITextView ) =
+        _textView : ITextView ) as this =
     
     static let ScrollName = "scroll"
 
@@ -146,6 +149,29 @@ type internal LocalSettings
 
     let _map = SettingsMap(LocalSettings, false)
 
+    do
+        let setting = _map.GetSetting ScrollName |> Option.get
+        _map.ReplaceSetting ScrollName {setting with Value=NoValue;DefaultValue=CalculatedValue(this.CalculateScroll) }
+
+    /// Calculate the scroll value as specified in the Vim documenation.  Should be half the number of 
+    /// visible lines 
+    member private x.CalculateScroll() =
+        let defaultValue = 10
+        let lineCount = 
+            try
+                let col = _textView.TextViewLines
+                match col.FirstVisibleLine,col.LastVisibleLine with
+                | (null,_) -> defaultValue
+                | (_,null) -> defaultValue
+                | (top,bottom) ->
+                    let topLine = top.Start.GetContainingLine()
+                    let endLine = bottom.End.GetContainingLine()
+                    (endLine.LineNumber - topLine.LineNumber) / 2
+            with 
+                // This will be thrown if we're currently in the middle of an inner layout
+                :? System.InvalidOperationException -> defaultValue
+        NumberValue(lineCount)
+    
     interface IVimLocalSettings with 
         // IVimSettings
         
