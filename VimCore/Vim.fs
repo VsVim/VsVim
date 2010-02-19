@@ -7,6 +7,7 @@ open Microsoft.VisualStudio.Text.Operations
 open Microsoft.VisualStudio.Language.Intellisense
 open Microsoft.VisualStudio.Text.Classification
 open System.ComponentModel.Composition
+open System.IO
 
 /// Default implementation of IVim 
 [<Export(typeof<IVim>)>]
@@ -20,12 +21,16 @@ type internal Vim
         _blockCaretFactoryService : IBlockCaretFactoryService,
         _textSearchService : ITextSearchService,
         _textStructureNavigatorSelectorService : ITextStructureNavigatorSelectorService,
-        _tlcService : ITrackingLineColumnService ) =
+        _tlcService : ITrackingLineColumnService,
+        _editorFactoryService : ITextEditorFactoryService ) =
+
+    static let _vimRcEnvironmentVariables = ["HOME";"VIM"]
+
     let _markMap = MarkMap(_tlcService) :> IMarkMap
     let _registerMap = RegisterMap()
     let _settings = GlobalSettings() :> IVimGlobalSettings
-
     let _bufferMap = new System.Collections.Generic.Dictionary<IWpfTextView, IVimBuffer>()
+
 
     member x.CreateVimBufferCore view = 
         if _bufferMap.ContainsKey(view) then invalidArg "view" Resources.Vim_ViewAlreadyHasBuffer
@@ -78,6 +83,8 @@ type internal Vim
         _bufferMap.Add(view, buffer)
         buffer
 
+    member private x.RemoveBufferCore view = _bufferMap.Remove(view)
+
     member private x.GetBufferCore view =
         let tuple = _bufferMap.TryGetValue(view)
         match tuple with 
@@ -88,19 +95,51 @@ type internal Vim
         let baseImpl = _textStructureNavigatorSelectorService.GetTextStructureNavigator(textBuffer)
         TssUtil.CreateTextStructureNavigator wordKind baseImpl
 
+    static member LoadVimRc (vim:IVim) (editorFactoryService:ITextEditorFactoryService)= 
+        let settings = vim.Settings
+        settings.VimRc <- System.String.Empty
+
+        let getPaths var =
+            match System.Environment.GetEnvironmentVariable(var) with
+            | null -> Seq.empty
+            | value ->
+                let files = [".vimrc"; "_vimrc" ]
+                files |> Seq.map (fun file -> Path.Combine(value,file)) 
+        let paths = _vimRcEnvironmentVariables |> Seq.map getPaths |> Seq.concat
+        settings.VimRcPaths <- paths |> String.concat ";"
+
+        let getLines path =
+            try
+                let lines = File.ReadAllLines(path)
+                Some(path,lines)
+            with
+                _ -> None
+        match paths |> Seq.tryPick getLines with
+        | None -> false
+        | Some(path,lines) ->
+            settings.VimRc <- path
+            let view = editorFactoryService.CreateTextView()
+            let buffer = vim.CreateBuffer view
+            let mode = buffer.GetMode ModeKind.Command :?> Modes.Command.ICommandMode
+            lines |> Seq.iter mode.RunCommand
+            vim.RemoveBuffer view |> ignore
+            true
+
     interface IVim with
         member x.Host = _host
         member x.MarkMap = _markMap
+        member x.IsVimRcLoaded = not (System.String.IsNullOrEmpty(_settings.VimRc))
         member x.RegisterMap = _registerMap :> IRegisterMap
         member x.Settings = _settings
         member x.CreateBuffer view = x.CreateVimBufferCore view 
-        member x.RemoveBuffer view = _bufferMap.Remove(view)
+        member x.RemoveBuffer view = x.RemoveBufferCore view
         member x.GetBuffer view = x.GetBufferCore view
         member x.GetBufferForBuffer textBuffer =
             let keys = _bufferMap.Keys |> Seq.filter (fun view -> view.TextBuffer = textBuffer)
             match keys |> Seq.isEmpty with
             | true -> None
             | false -> keys |> Seq.head |> x.GetBufferCore
+        member x.LoadVimRc () = Vim.LoadVimRc x _editorFactoryService
                 
 
         

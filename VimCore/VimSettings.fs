@@ -106,11 +106,15 @@ type internal GlobalSettings() =
     static let DisableCommandLet = KeyInput(System.Char.MinValue, Key.F12, ModifierKeys.Control ||| ModifierKeys.Shift);
     static let IgnoreCaseName = "ignorecase"
     static let ShiftWidthName = "shiftwidth"
+    static let VimRcName = "vimrc"
+    static let VimRcPathsName = "vimrcpaths"
 
     static let GlobalSettings = 
         [|
             ( IgnoreCaseName,"ic", ToggleKind, ToggleValue(false) );
-            ( ShiftWidthName, "sw", NumberKind, NumberValue(4) )
+            ( ShiftWidthName, "sw", NumberKind, NumberValue(4) );
+            ( VimRcName, VimRcName, StringKind, StringValue(System.String.Empty) );
+            ( VimRcPathsName, VimRcPathsName, StringKind, StringValue(System.String.Empty) );
         |]
 
     let _map = SettingsMap(GlobalSettings, true)
@@ -132,6 +136,12 @@ type internal GlobalSettings() =
         member x.ShiftWidth  
             with get() = _map.GetNumberValue ShiftWidthName
             and set value = _map.TrySetValue ShiftWidthName (NumberValue(value)) |> ignore
+        member x.VimRc 
+            with get() = _map.GetStringValue VimRcName
+            and set value = _map.TrySetValue VimRcName (StringValue(value)) |> ignore
+        member x.VimRcPaths 
+            with get() = _map.GetStringValue VimRcPathsName
+            and set value = _map.TrySetValue VimRcPathsName (StringValue(value)) |> ignore
 
         member x.DisableCommand = DisableCommandLet
 

@@ -145,6 +145,14 @@ and IVimGlobalSettings =
     abstract IgnoreCase : bool with get, set
     abstract ShiftWidth : int with get, set
 
+    /// Retrieves the location of the loaded VimRC file.  Will be the empty string if the load 
+    /// did not succeed or has not been tried
+    abstract VimRc : string with get, set
+
+    /// Set of paths considered when looking for a .vimrc file.  Will be the empty string if the 
+    /// load has not been attempted yet
+    abstract VimRcPaths : string with get, set
+
     abstract DisableCommand: KeyInput;
 
     inherit IVimSettings
@@ -166,6 +174,11 @@ and IVim =
     abstract MarkMap : IMarkMap
     abstract RegisterMap : IRegisterMap
     abstract Settings : IVimGlobalSettings
+
+    /// Is the VimRc loaded
+    abstract IsVimRcLoaded : bool
+
+    /// Create an IVimBuffer for the given IWpfTextView
     abstract CreateBuffer : IWpfTextView -> IVimBuffer
 
     /// Get the IVimBuffer associated with the given view
@@ -177,6 +190,9 @@ and IVim =
     /// Remove the IVimBuffer associated with the given view.  This will not actually close
     /// the IVimBuffer but instead just removes it's association with the given view
     abstract RemoveBuffer : IWpfTextView -> bool
+
+    /// Load the VimRc file.  If the file was previously, a new load will be attempted
+    abstract LoadVimRc : unit -> bool
     
 /// Main interface for the Vim editor engine so to speak. 
 and IVimBuffer =
