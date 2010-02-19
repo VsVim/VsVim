@@ -15,6 +15,119 @@ namespace VimCoreTest
     [TestFixture]
     public class VimTest
     {
+        private Mock<IVimGlobalSettings> _settings;
+        private Mock<IRegisterMap> _registerMap;
+        private Mock<IMarkMap> _markMap;
+        private Mock<IVimBufferFactory> _factory;
+        private Mock<IVimHost> _host;
+        private Mock<ITextEditorFactoryService> _editorFactoryService;
+        private Vim.Vim _vimRaw;
+        private IVim _vim;
+
+        [SetUp]
+        public void Setup()
+        {
+            _settings = new Mock<IVimGlobalSettings>(MockBehavior.Strict);
+            _registerMap = new Mock<IRegisterMap>(MockBehavior.Strict);
+            _markMap = new Mock<IMarkMap>(MockBehavior.Strict);
+            _factory = new Mock<IVimBufferFactory>(MockBehavior.Strict);
+            _editorFactoryService = new Mock<ITextEditorFactoryService>(MockBehavior.Strict);
+            _host = new Mock<IVimHost>(MockBehavior.Strict);
+            _vimRaw = new Vim.Vim(
+                _host.Object,
+                _factory.Object,
+                _editorFactoryService.Object,
+                _settings.Object,
+                _registerMap.Object,
+                _markMap.Object);
+            _vim = _vimRaw;
+        }
+
+        [Test]
+        public void Create1()
+        {
+            var view = new Mock<IWpfTextView>(MockBehavior.Strict);
+            var buffer = new Mock<IVimBuffer>(MockBehavior.Strict);
+            _factory.Setup(x => x.CreateBuffer(_vim, view.Object)).Returns(buffer.Object);
+            var ret = _vim.CreateBuffer(view.Object);
+            Assert.AreSame(ret, buffer.Object);
+        }
+
+        [Test, ExpectedException(typeof(ArgumentException))]
+        public void Create2()
+        {
+            var view = new Mock<IWpfTextView>(MockBehavior.Strict);
+            var buffer = new Mock<IVimBuffer>(MockBehavior.Strict);
+            _factory.Setup(x => x.CreateBuffer(_vim, view.Object)).Returns(buffer.Object);
+            var ret = _vim.CreateBuffer(view.Object);
+            var ret2 = _vim.CreateBuffer(view.Object);
+        }
+
+        [Test]
+        public void GetBuffer1()
+        {
+            var view = new Mock<IWpfTextView>(MockBehavior.Strict);
+            var ret = _vim.GetBuffer(view.Object);
+            Assert.IsTrue(ret.IsNone());
+        }
+
+        [Test]
+        public void GetBuffer2()
+        {
+            var view = new Mock<IWpfTextView>(MockBehavior.Strict);
+            var buffer = new Mock<IVimBuffer>(MockBehavior.Strict);
+            _factory.Setup(x => x.CreateBuffer(_vim, view.Object)).Returns(buffer.Object);
+            _vim.CreateBuffer(view.Object);
+            var ret = _vim.GetBuffer(view.Object);
+            Assert.IsTrue(ret.IsSome());
+            Assert.AreSame(ret.Value, buffer.Object);
+        }
+
+        [Test]
+        public void GetOrCreateBuffer1()
+        {
+            var view = new Mock<IWpfTextView>(MockBehavior.Strict);
+            var buffer = new Mock<IVimBuffer>(MockBehavior.Strict);
+            _factory.Setup(x => x.CreateBuffer(_vim, view.Object)).Returns(buffer.Object);
+            var ret = _vim.GetOrCreateBuffer(view.Object);
+            Assert.AreSame(ret, buffer.Object);
+        }
+
+        [Test]
+        public void GetOrCreateBuffer2()
+        {
+            var view = new Mock<IWpfTextView>(MockBehavior.Strict);
+            var buffer = new Mock<IVimBuffer>(MockBehavior.Strict);
+            _factory.Setup(x => x.CreateBuffer(_vim, view.Object)).Returns(buffer.Object);
+            var ret1 = _vim.GetOrCreateBuffer(view.Object);
+            _factory.Setup(x => x.CreateBuffer(_vim, view.Object)).Throws(new Exception());
+            var ret2 = _vim.GetOrCreateBuffer(view.Object);
+            Assert.AreSame(ret1, ret2);
+        }
+
+        [Test]
+        public void RemoveBuffer1()
+        {
+            var view = new Mock<IWpfTextView>(MockBehavior.Strict);
+            Assert.IsFalse(_vim.RemoveBuffer(view.Object));
+        }
+
+        [Test]
+        public void RemoveBuffer2()
+        {
+            var view = new Mock<IWpfTextView>(MockBehavior.Strict);
+            var buffer = new Mock<IVimBuffer>(MockBehavior.Strict);
+            _factory.Setup(x => x.CreateBuffer(_vim, view.Object)).Returns(buffer.Object);
+            _vim.CreateBuffer(view.Object);
+            Assert.IsTrue(_vim.RemoveBuffer(view.Object));
+            var ret = _vim.GetBuffer(view.Object);
+            Assert.IsTrue(ret.IsNone());
+        }
+    }
+
+    [TestFixture]
+    public class VimOldTest
+    {
         [SetUp]
         public void SetUp()
         {

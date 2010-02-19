@@ -88,19 +88,32 @@ type internal VimBufferFactory
 /// Default implementation of IVim 
 [<Export(typeof<IVim>)>]
 type internal Vim
-    [<ImportingConstructor>]
     (
         _host : IVimHost,
         _bufferFactoryService : IVimBufferFactory,
-        _tlcService : ITrackingLineColumnService,
-        _editorFactoryService : ITextEditorFactoryService ) =
+        _editorFactoryService : ITextEditorFactoryService,
+        _settings : IVimGlobalSettings,
+        _registerMap : IRegisterMap,
+        _markMap : IMarkMap ) =
+
 
     static let _vimRcEnvironmentVariables = ["HOME";"VIM";"USERPROFILE"]
 
-    let _markMap = MarkMap(_tlcService) :> IMarkMap
-    let _registerMap = RegisterMap()
-    let _settings = GlobalSettings() :> IVimGlobalSettings
     let _bufferMap = new System.Collections.Generic.Dictionary<IWpfTextView, IVimBuffer>()
+
+    [<ImportingConstructor>]
+    new(
+        host : IVimHost,
+        bufferFactoryService : IVimBufferFactory,
+        tlcService : ITrackingLineColumnService,
+        editorFactoryService : ITextEditorFactoryService ) =
+        Vim(
+            host,
+            bufferFactoryService,
+            editorFactoryService,
+            GlobalSettings() :> IVimGlobalSettings,
+            RegisterMap() :> IRegisterMap,
+            MarkMap(tlcService) :> IMarkMap)
 
     member x.CreateVimBufferCore view = 
         if _bufferMap.ContainsKey(view) then invalidArg "view" Resources.Vim_ViewAlreadyHasBuffer
@@ -155,7 +168,7 @@ type internal Vim
         member x.Host = _host
         member x.MarkMap = _markMap
         member x.IsVimRcLoaded = not (System.String.IsNullOrEmpty(_settings.VimRc))
-        member x.RegisterMap = _registerMap :> IRegisterMap
+        member x.RegisterMap = _registerMap 
         member x.Settings = _settings
         member x.CreateBuffer view = x.CreateVimBufferCore view 
         member x.GetOrCreateBuffer view = x.GetOrCreateBufferCore view
