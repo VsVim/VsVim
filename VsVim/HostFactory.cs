@@ -25,23 +25,28 @@ namespace VsVim
     [TextViewRole(PredefinedTextViewRoles.Editable)]
     internal sealed class HostFactory : IWpfTextViewCreationListener
     {
-        private readonly IVsVimFactoryService _factory;
+        private readonly IVsVimFactoryService _vsVimFactory;
         private readonly KeyBindingService _keyBindingService;
+        private readonly IVimBufferFactory _vimBufferFactory;
+        private readonly IVim _vim;
 
         [ImportingConstructor]
         public HostFactory(
             IVsVimFactoryService factory,
+            IVimBufferFactory vimBufferFactory,
+            IVim vim,
             KeyBindingService keyBindingService)
         {
-            _factory = factory;
+            _vim = vim;
+            _vsVimFactory = factory;
+            _vimBufferFactory = vimBufferFactory;
             _keyBindingService = keyBindingService;
         }
 
         public void TextViewCreated(IWpfTextView textView)
         {
-            var buffer = _factory.GetOrCreateBuffer(textView);
-
-            var sp = _factory.GetOrUpdateServiceProvider(textView.TextBuffer);
+            var buffer = _vim.GetOrCreateBuffer(textView);
+            var sp = _vsVimFactory.GetOrUpdateServiceProvider(textView.TextBuffer);
             if (sp == null)
             {
                 return;
@@ -56,6 +61,7 @@ namespace VsVim
 
             Dispatcher.CurrentDispatcher.BeginInvoke(doCheck, null);
         }
+
 
     }
 

@@ -11,6 +11,7 @@ using Microsoft.VisualStudio.OLE.Interop;
 using VsVim.Properties;
 using IServiceProvider = Microsoft.VisualStudio.OLE.Interop.IServiceProvider;
 using Microsoft.VisualStudio.Text;
+using Microsoft.FSharp.Control;
 
 namespace VsVim
 {
@@ -18,9 +19,9 @@ namespace VsVim
     internal sealed class VsVimFactoryService : IVsVimFactoryService
     {
         private readonly IVsEditorAdaptersFactoryService _adaptersFactory;
+        private readonly IVimBufferFactory _vimBufferFactory;
         private readonly IVimFactoryService _vimFactoryService;
         private readonly IVimHost _vimHost;
-        private readonly Dictionary<ITextView, IVimBuffer> _map = new Dictionary<ITextView, IVimBuffer>();
         private readonly Dictionary<IVimBuffer, VsCommandFilter> _filterMap = new Dictionary<IVimBuffer, VsCommandFilter>();
 
         /// <summary>
@@ -42,13 +43,17 @@ namespace VsVim
         [ImportingConstructor]
         internal VsVimFactoryService(
             IVimFactoryService vimFactoryService,
+            IVimBufferFactory bufferFactory,
             IVsEditorAdaptersFactoryService adaptersFactory,
             IVimHost vimHost
             )
         {
             _adaptersFactory = adaptersFactory;
+            _vimBufferFactory = bufferFactory;
             _vimFactoryService = vimFactoryService;
             _vimHost = vimHost;
+
+            _vimBufferFactory.BufferCreated += new FSharpHandler<IVimBuffer>(OnBufferCreated);
         }
 
         #region Private
@@ -79,34 +84,31 @@ namespace VsVim
 
             // Once we have the Vs view, stop listening to the event
             view.GotAggregateFocus -= new EventHandler(OnGotAggregateFocus);
-
-            IVimBuffer buffer;
-            if (!_map.TryGetValue(view, out buffer))
+            var opt = _vimFactoryService.Vim.GetBuffer(view);
+            if (!opt.IsSome())
             {
                 return;
             }
 
+            var buffer = opt.Value;
             var filter = new VsCommandFilter(buffer, vsView);
             _filterMap.Add(buffer, filter);
         }
 
-        private IVimBuffer CreateBuffer(IWpfTextView textView)
+        private void OnBufferCreated(object sender, IVimBuffer buffer)
         {
-            GetOrUpdateServiceProvider(textView.TextBuffer);
-            var buffer = _vimFactoryService.Vim.CreateBuffer(textView);
+            GetOrUpdateServiceProvider(buffer.TextBuffer);
 
             // Have to wait for Aggregate focus before being able to set the VsCommandFilter
+            var textView = buffer.TextView;
             textView.GotAggregateFocus += new EventHandler(OnGotAggregateFocus);
             textView.Closed += (x, y) =>
             {
                 buffer.Close();
-                _map.Remove(textView);
                 _filterMap.Remove(buffer);
                 ITextViewDebugUtil.Detach(textView);
             };
             ITextViewDebugUtil.Attach(textView);
-            _map.Add(textView, buffer);
-            return buffer;
         }
 
         #endregion
@@ -116,17 +118,6 @@ namespace VsVim
         public IVimFactoryService VimFactoryService
         {
             get { return _vimFactoryService; }
-        }
-
-        public IVimBuffer GetOrCreateBuffer(IWpfTextView textView)
-        {
-            IVimBuffer buffer;
-            if (_map.TryGetValue(textView, out buffer))
-            {
-                return buffer;
-            }
-
-            return CreateBuffer(textView);
         }
 
         public IServiceProvider GetOrUpdateServiceProvider(ITextBuffer buffer)
@@ -151,11 +142,6 @@ namespace VsVim
             ServiceProvider = objectWithSite.GetServiceProvider();
             MaybeUpdateVimHostServiceProvider();
             return ServiceProvider;
-        }
-
-        public bool TryGetBuffer(IWpfTextView textView, out IVimBuffer buffer)
-        {
-            return _map.TryGetValue(textView, out buffer);
         }
 
         #endregion

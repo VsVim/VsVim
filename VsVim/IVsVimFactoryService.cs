@@ -11,8 +11,6 @@ namespace VsVim
     public interface IVsVimFactoryService
     {
         IVimFactoryService VimFactoryService { get; }
-        IVimBuffer GetOrCreateBuffer(IWpfTextView textView);
-        bool TryGetBuffer(IWpfTextView textView, out IVimBuffer buffer);
         Microsoft.VisualStudio.OLE.Interop.IServiceProvider GetOrUpdateServiceProvider(ITextBuffer buffer);
     }
 }
