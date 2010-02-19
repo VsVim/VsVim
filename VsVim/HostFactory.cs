@@ -52,6 +52,12 @@ namespace VsVim
                 return;
             }
 
+            // Load the VimRC file if we haven't tried yet
+            if (!_vim.IsVimRcLoaded && String.IsNullOrEmpty(_vim.Settings.VimRcPaths))
+            {
+                _vim.LoadVimRc();
+            }
+
             var dte = sp.GetService<SDTE, EnvDTE.DTE>();
             Action doCheck = () =>
                 {
