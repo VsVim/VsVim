@@ -23,6 +23,7 @@ namespace VimCoreTest
         private Mock<ITextEditorFactoryService> _editorFactoryService;
         private Vim.Vim _vimRaw;
         private IVim _vim;
+        private Dictionary<string, string> _savedEnvironment = new Dictionary<string, string>();
 
         [SetUp]
         public void Setup()
@@ -41,6 +42,24 @@ namespace VimCoreTest
                 _registerMap.Object,
                 _markMap.Object);
             _vim = _vimRaw;
+            _savedEnvironment = new Dictionary<string, string>();
+        }
+
+        private void SaveAndClear()
+        {
+            foreach (var name in Vim.Vim._vimRcEnvironmentVariables)
+            {
+                _savedEnvironment[name] = Environment.GetEnvironmentVariable(name);
+                Environment.SetEnvironmentVariable(name, null);
+            }
+        }
+
+        private void Restore()
+        {
+            foreach (var pair in _savedEnvironment)
+            {
+                Environment.SetEnvironmentVariable(pair.Key, pair.Value);
+            }
         }
 
         [Test]
@@ -123,75 +142,75 @@ namespace VimCoreTest
             var ret = _vim.GetBuffer(view.Object);
             Assert.IsTrue(ret.IsNone());
         }
-    }
-
-    [TestFixture]
-    public class VimOldTest
-    {
-        [SetUp]
-        public void SetUp()
-        {
-            foreach (var value in Vim.Vim._vimRcEnvironmentVariables)
-            {
-                Environment.SetEnvironmentVariable(value, null);
-            }
-        }
 
         [Test]
         public void LoadVimRc1()
         {
-            var settings = MockObjectFactory.CreateGlobalSettings();
-            var vim = MockObjectFactory.CreateVim(settings:settings.Object);
-            var service = new Mock<ITextEditorFactoryService>(MockBehavior.Strict);
-            settings.SetupSet(x => x.VimRc = String.Empty).Verifiable();
-            settings.SetupSet(x => x.VimRcPaths = String.Empty).Verifiable();
-            Assert.IsFalse(Vim.Vim.LoadVimRc(vim.Object, service.Object));
-            settings.Verify();
+            SaveAndClear();
+            try
+            {
+                _settings.SetupSet(x => x.VimRc = String.Empty).Verifiable();
+                _settings.SetupSet(x => x.VimRcPaths = String.Empty).Verifiable();
+                Assert.IsFalse(_vim.LoadVimRc());
+                _settings.Verify();
+            }
+            finally
+            {
+                Restore();
+            }
         }
 
         [Test]
         public void LoadVimRc2()
         {
-            var settings = MockObjectFactory.CreateGlobalSettings();
-            var vim = MockObjectFactory.CreateVim(settings: settings.Object);
-            var service = new Mock<ITextEditorFactoryService>(MockBehavior.Strict);
-            settings.SetupSet(x => x.VimRc = String.Empty).Verifiable();
-            settings.SetupSet(x => x.VimRcPaths = @"c:\.vimrc;c:\_vimrc").Verifiable();
-            Environment.SetEnvironmentVariable("HOME", @"c:\");
-            Assert.IsFalse(Vim.Vim.LoadVimRc(vim.Object, service.Object));
-            settings.Verify();
+            SaveAndClear();
+            try
+            {
+                _settings.SetupSet(x => x.VimRc = String.Empty).Verifiable();
+                _settings.SetupSet(x => x.VimRcPaths = @"c:\.vimrc;c:\_vimrc").Verifiable();
+                Environment.SetEnvironmentVariable("HOME", @"c:\");
+                Assert.IsFalse(_vim.LoadVimRc());
+                _settings.Verify();
+            }
+            finally
+            {
+                Restore();
+            }
         }
 
         [Test]
         public void LoadVimRc3()
         {
-            var settings = MockObjectFactory.CreateGlobalSettings();
-            var vim = MockObjectFactory.CreateVim(settings: settings.Object);
-            var service = new Mock<ITextEditorFactoryService>(MockBehavior.Strict);
-
             // Setup the buffer creation
             var view = new Mock<IWpfTextView>(MockBehavior.Strict);
             var commandMode = new Mock<ICommandMode>(MockBehavior.Strict);
             var buffer = new Mock<IVimBuffer>(MockBehavior.Strict);
             commandMode.Setup(x => x.RunCommand("set noignorecase")).Verifiable();
             buffer.Setup(x => x.GetMode(ModeKind.Command)).Returns(commandMode.Object);
-            service.Setup(x => x.CreateTextView()).Returns(view.Object);
-            vim.Setup(x => x.CreateBuffer(view.Object)).Returns(buffer.Object);
-            vim.Setup(x => x.RemoveBuffer(view.Object)).Returns(true);
+            _factory.Setup(x => x.CreateBuffer(_vim, view.Object)).Returns(buffer.Object);
+            _editorFactoryService.Setup(x => x.CreateTextView()).Returns(view.Object);
 
-            // Update the vimrc file
-            var path = Environment.GetEnvironmentVariable("TMP");
-            Assert.IsFalse(string.IsNullOrEmpty(path));
-            var file = Path.Combine(path, ".vimrc");
-            Environment.SetEnvironmentVariable("HOME", path);
-            File.WriteAllText(file, "set noignorecase");
+            SaveAndClear();
+            try
+            {
+                // Update the vimrc file
+                var path = Environment.GetEnvironmentVariable("TMP");
+                Assert.IsFalse(string.IsNullOrEmpty(path));
+                var file = Path.Combine(path, ".vimrc");
+                Environment.SetEnvironmentVariable("HOME", path);
+                File.WriteAllText(file, "set noignorecase");
 
-            settings.SetupProperty(x => x.VimRc);
-            settings.SetupSet(x => x.VimRcPaths = It.IsAny<string>()).Verifiable();
-            Assert.IsTrue(Vim.Vim.LoadVimRc(vim.Object, service.Object));
-            Assert.AreEqual(file, settings.Object.VimRc);
-            settings.Verify();
-            commandMode.Verify();
+                _settings.SetupProperty(x => x.VimRc);
+                _settings.SetupSet(x => x.VimRcPaths = It.IsAny<string>()).Verifiable();
+                Assert.IsTrue(_vim.LoadVimRc());
+                Assert.AreEqual(file, _settings.Object.VimRc);
+                _settings.Verify();
+                commandMode.Verify();
+            }
+            finally
+            {
+                Restore();
+            }
         }
     }
 }
