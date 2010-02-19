@@ -336,7 +336,7 @@ type CommandMode
             _data.VimHost.UpdateStatus(msg)
             ()
 
-    interface IMode with 
+    interface ICommandMode with 
         member x.VimBuffer = _data 
         member x.Commands = Seq.empty
         member x.ModeKind = ModeKind.Command
@@ -361,12 +361,19 @@ type CommandMode
                     _data.VimHost.UpdateStatus(":" + _command)
                     _input <- ki :: _input
                     Processed
-                    
+
         member x.OnEnter () =
             _command <- System.String.Empty
             _data.VimHost.UpdateStatus(":")
             _data.TextView.Caret.IsHidden <- true
         member x.OnLeave () = 
             _data.TextView.Caret.IsHidden <- false
+
+        member x.RunCommand command = 
+            _command <- command
+            let input = command |> Seq.map InputUtil.CharToKeyInput |> List.ofSeq
+            _input <- input |> List.rev
+            x.ParseInput input
+            
 
 

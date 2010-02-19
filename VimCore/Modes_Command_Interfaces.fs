@@ -60,4 +60,12 @@ type IOperations =
 
     inherit Modes.ICommonOperations
 
+type ICommandMode = 
+
+    /// Run the specified command
+    abstract RunCommand : string -> unit
+
+    inherit IMode
+    
+
 

@@ -20,7 +20,7 @@ namespace VimCoreTest
         private IWpfTextView _view;
         private Mock<IVimBuffer> _bufferData;
         private CommandMode _modeRaw;
-        private IMode _mode;
+        private ICommandMode _mode;
         private FakeVimHost _host;
         private IRegisterMap _map;
         private Mock<IEditorOperations> _editOpts;
@@ -796,6 +796,15 @@ namespace VimCoreTest
             Create("baa");
             _operations.Setup(x => x.SetSettingValue("foo", "true")).Verifiable();
             ProcessWithEnter("set foo:true");
+            _operations.Verify();
+        }
+
+        [Test]
+        public void RunCommand1()
+        {
+            Create("");
+            _operations.Setup(x => x.SetSettingValue("foo","true")).Verifiable();
+            _mode.RunCommand("set foo:true");
             _operations.Verify();
         }
     }
