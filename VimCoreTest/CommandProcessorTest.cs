@@ -11,6 +11,7 @@ using Microsoft.VisualStudio.Text;
 using System.Windows.Input;
 using Microsoft.VisualStudio.Text.Operations;
 using Moq;
+using System.IO;
 
 namespace VimCoreTest
 {
@@ -671,6 +672,45 @@ namespace VimCoreTest
             Create("baa");
             _operations.Setup(x => x.SetSettingValue("foo", "true")).Verifiable();
             RunCommand("set foo:true");
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Source1()
+        {
+            Create("boo");
+            RunCommand("source");
+            Assert.AreEqual(Resources.CommandMode_CouldNotOpenFile(String.Empty), _host.Status);
+        }
+
+        [Test]
+        public void Source2()
+        {
+            Create("bar");
+            RunCommand("source! boo");
+            Assert.AreEqual(Resources.CommandMode_NotSupported_SourceNormal, _host.Status);
+        }
+
+        [Test]
+        public void Source3()
+        {
+            var name = Path.GetTempFileName();
+            File.WriteAllText(name, "set noignorecase");
+
+            _operations.Setup(x => x.ResetSetting("ignorecase")).Verifiable();
+            RunCommand("source " + name);
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Source4()
+        {
+            var name = Path.GetTempFileName();
+            File.WriteAllLines(name, new string[] { "set noignorecase", "set nofoo" });
+
+            _operations.Setup(x => x.ResetSetting("ignorecase")).Verifiable();
+            _operations.Setup(x => x.ResetSetting("foo")).Verifiable();
+            RunCommand("source " + name);
             _operations.Verify();
         }
     }

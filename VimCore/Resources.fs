@@ -22,10 +22,12 @@ module internal Resources =
     let CommandMode_SubstituteComplete subs lines = sprintf "%d substitutions on %d lines" subs lines
     let CommandMode_NotSupported msg = sprintf "Command not currently supported: %s" msg
     let CommandMode_NotSupported_SubstituteConfirm = CommandMode_NotSupported "Substitute Confirm"
+    let CommandMode_NotSupported_SourceNormal = "source! commands are not currently supported"
     let CommandMode_UnknownOption optionName = sprintf "Unknown option: %s" optionName
     let CommandMode_InvalidArgument name = sprintf "Invalid argument: %s" name
     let CommandMode_InvalidValue name value = sprintf "Invalid value given for %s: %s" name value
     let CommandMode_CannotRun command = sprintf "Cannot run \"%s\"" command
+    let CommandMode_CouldNotOpenFile file = sprintf "Could not open file \"%s\"" file
 
     let Vim_ViewAlreadyHasBuffer = "View is already associated with an IVimBuffer"
 

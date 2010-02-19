@@ -229,6 +229,19 @@ type internal CommandProcessor
             | Match2("^(\w+)$") (_,name) -> _operations.OperateSetting(name)
             | _ -> ()
 
+    /// Used to parse out the :source command.  List is pointing past the o in :source
+    member private x.ParseSource (rest:KeyInput list) =
+        let bang,rest = rest |> x.SkipPast "urce" |> x.SkipBang
+        let rest = rest |> x.SkipWhitespace
+        let file = rest |> Seq.map (fun ki -> ki.Char) |> StringUtil.OfCharSeq
+        if bang then _data.VimHost.UpdateStatus Resources.CommandMode_NotSupported_SourceNormal
+        else
+            match Utils.ReadAllLines file with
+            | None -> _data.VimHost.UpdateStatus (Resources.CommandMode_CouldNotOpenFile file)
+            | Some(_,lines) ->
+                lines 
+                |> Seq.map (fun command -> command |> Seq.map InputUtil.CharToKeyInput |> List.ofSeq)
+                |> Seq.iter x.RunCommand
 
     member private x.ParseSubstitute (rest:KeyInput list) (range:Range option) =
 
@@ -294,6 +307,7 @@ type internal CommandProcessor
     member private x.ParseSChar (current:KeyInput) (rest: KeyInput list) (range:Range option) =
         match current.Char with
         | 'e' -> x.ParseSet rest 
+        | 'o' -> x.ParseSource rest
         | _ -> x.ParseSubstitute ([current] @ rest) range
 
     member private x.ParseCommand (current:KeyInput) (rest:KeyInput list) (range:Range option) =

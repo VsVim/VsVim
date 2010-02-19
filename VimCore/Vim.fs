@@ -148,13 +148,7 @@ type internal Vim
         let paths = _vimRcEnvironmentVariables |> Seq.map getPaths |> Seq.concat
         settings.VimRcPaths <- paths |> String.concat ";"
 
-        let getLines path =
-            try
-                let lines = File.ReadAllLines(path)
-                Some(path,lines)
-            with
-                _ -> None
-        match paths |> Seq.tryPick getLines with
+        match paths |> Seq.tryPick Utils.ReadAllLines with
         | None -> false
         | Some(path,lines) ->
             settings.VimRc <- path

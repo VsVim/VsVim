@@ -67,6 +67,17 @@ module internal Utils =
         let weakRef = System.WeakReference(value)
         WeakReference<'T>(weakRef)
 
+    /// Read all of the lines from the file at the given path.  If this fails None
+    /// will be returned
+    let ReadAllLines path =
+        try
+            if System.String.IsNullOrEmpty path then None
+            else
+                let lines = System.IO.File.ReadAllLines(path)
+                Some(path,lines)
+        with
+            _ -> None
+
 module internal ListUtil =
 
     let divide l = (l |> List.head), (l |> List.tail)
