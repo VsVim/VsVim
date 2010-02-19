@@ -11,48 +11,42 @@ using Microsoft.VisualStudio.Text;
 using System.Windows.Input;
 using Microsoft.VisualStudio.Text.Operations;
 using Moq;
+using Microsoft.FSharp.Collections;
 
 namespace VimCoreTest
 {
     [TestFixture, RequiresSTA]
     public class CommandModeTest
     {
-        private IWpfTextView _view;
+        private Mock<ITextCaret> _caret;
+        private Mock<IWpfTextView> _view;
         private Mock<IVimBuffer> _bufferData;
+        private Mock<ICommandProcessor> _processor;
         private CommandMode _modeRaw;
         private ICommandMode _mode;
         private FakeVimHost _host;
-        private IRegisterMap _map;
-        private Mock<IEditorOperations> _editOpts;
-        private Mock<IOperations> _operations;
 
-        public void Create(params string[] lines)
+        [SetUp]
+        public void SetUp()
         {
-            _view = Utils.EditorUtil.CreateView(lines);
-            _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 0));
-            _map = new RegisterMap();
+            _caret = MockObjectFactory.CreateCaret();
+            _caret.SetupProperty(x => x.IsHidden);
+            _view = new Mock<IWpfTextView>(MockBehavior.Strict);
+            _view.SetupGet(x => x.Caret).Returns(_caret.Object);
+            
             _host = new FakeVimHost();
-            _editOpts = new Mock<IEditorOperations>(MockBehavior.Strict);
-            _operations = new Mock<IOperations>(MockBehavior.Strict);
-            _bufferData = MockObjectFactory.CreateVimBuffer(
-                _view,
-                "test",
-                MockObjectFactory.CreateVim(_map, host: _host).Object,
-                MockObjectFactory.CreateBlockCaret().Object,
-                _editOpts.Object);
-            _modeRaw = new Vim.Modes.Command.CommandMode(Tuple.Create<IVimBuffer, IOperations>(_bufferData.Object, _operations.Object));
+            _bufferData = MockObjectFactory.CreateVimBuffer(view:_view.Object);
+            _bufferData.SetupGet(x => x.VimHost).Returns(_host);
+            _processor = new Mock<ICommandProcessor>(MockBehavior.Strict);
+            _modeRaw = new CommandMode(Tuple.Create(_bufferData.Object, _processor.Object));
             _mode = _modeRaw;
-            _mode.OnEnter();
         }
 
-        private string InputString()
+        private FSharpList<KeyInput> CreateMatch(string input)
         {
-            var inputs = _modeRaw.Input;
-            if (inputs.Any())
-            {
-                return _modeRaw.Input.Select(x => x.Char.ToString()).Aggregate((l, r) => l + r);
-            }
-            return string.Empty;
+            var list = input.Select(x => InputUtil.CharToKeyInput(x));
+            Predicate<FSharpList<KeyInput>> pred = otherList => Enumerable.SequenceEqual(list, otherList);
+            return Match<FSharpList<KeyInput>>.Create(pred);
         }
 
         private void ProcessWithEnter(string input)
@@ -64,7 +58,6 @@ namespace VimCoreTest
         [Test, Description("Entering command mode should update the status")]
         public void StatusOnColon1()
         {
-            Create(String.Empty);
             _mode.OnEnter();
             Assert.AreEqual(":", _host.Status);
         }
@@ -72,7 +65,6 @@ namespace VimCoreTest
         [Test, Description("When leaving command mode we should not clear the status because it will remove error messages")]
         public void StatusOnLeave()
         {
-            Create(String.Empty);
             _host.Status = "foo";
             _mode.OnLeave();
             Assert.AreEqual("foo", _host.Status);
@@ -81,731 +73,92 @@ namespace VimCoreTest
         [Test]
         public void StatusOnProcess()
         {
-            Create("foo", "bar");
             _host.Status = "foo";
-            _editOpts.Setup(x => x.GotoLine(It.IsAny<int>()));
+            _processor.Setup(x => x.RunCommand(CreateMatch("1"))).Verifiable();
             _mode.Process("1");
             _mode.Process(InputUtil.KeyToKeyInput(Key.Enter));
+            _processor.Verify();
             Assert.AreEqual(String.Empty, _host.Status);
         }
 
         [Test, Description("Ensure multiple commands can be processed")]
         public void DoubleCommand1()
         {
-            Create("foo", "bar", "baz");
-            _editOpts.Setup(x => x.GotoLine(1)).Verifiable();
+            _processor.Setup(x => x.RunCommand(CreateMatch("2"))).Verifiable();
             ProcessWithEnter("2");
-            _editOpts.Setup(x => x.GotoLine(2)).Verifiable();
+            _processor.Verify();
+            _processor.Setup(x => x.RunCommand(CreateMatch("3"))).Verifiable();
             ProcessWithEnter("3");
-            _editOpts.Verify();
-        }
-
-        [Test]
-        public void Jump1()
-        {
-            Create("foo", "bar", "baz");
-            var tss = _view.TextSnapshot;
-            var last = tss.LineCount - 1;
-            _editOpts.Setup(x => x.MoveToEndOfDocument(false)).Verifiable();
-            ProcessWithEnter("$");
-            _editOpts.Verify();
-        }
-
-        [Test]
-        public void Jump2()
-        {
-            Create("foo", "bar");
-            _editOpts.Setup(x => x.GotoLine(1)).Verifiable();
-            ProcessWithEnter("2");
-            _editOpts.Verify();
-        }
-
-        [Test]
-        public void Jump3()
-        {
-            Create("foo");
-            ProcessWithEnter("400");
-            Assert.IsTrue(!String.IsNullOrEmpty(_host.Status));
-        }
-
-        [Test]
-        public void Yank1()
-        {
-            Create("foo", "bar");
-            var tss = _view.TextSnapshot;
-            _operations.Setup(x => x.Yank(
-                tss.GetLineFromLineNumber(0).ExtentIncludingLineBreak,
-                MotionKind._unique_Exclusive,
-                OperationKind.LineWise,
-                _map.DefaultRegister))
-                .Verifiable();
-            ProcessWithEnter("y");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void Yank2()
-        {
-            Create("foo", "bar", "baz");
-            var tss = _view.TextSnapshot;
-            var span = new SnapshotSpan(
-                tss.GetLineFromLineNumber(0).Start,
-                tss.GetLineFromLineNumber(1).EndIncludingLineBreak);
-            _operations.Setup(x => x.Yank(
-                span,
-                MotionKind._unique_Exclusive,
-                OperationKind.LineWise,
-                _map.DefaultRegister)).Verifiable();
-            ProcessWithEnter("1,2y");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void Yank3()
-        {
-            Create("foo", "bar");
-            var line = _view.TextSnapshot.GetLineFromLineNumber(0);
-            _operations.Setup(x => x.Yank(
-                line.ExtentIncludingLineBreak,
-                MotionKind._unique_Exclusive,
-                OperationKind.LineWise,
-                _map.GetRegister('c'))).Verifiable();
-            ProcessWithEnter("y c");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void Yank4()
-        {
-            Create("foo", "bar");
-            var tss = _view.TextSnapshot;
-            var span = new SnapshotSpan(
-                tss.GetLineFromLineNumber(0).Start,
-                tss.GetLineFromLineNumber(1).EndIncludingLineBreak);
-            _operations.Setup(x => x.Yank(span, MotionKind._unique_Exclusive, OperationKind.LineWise, _map.DefaultRegister)).Verifiable();
-            ProcessWithEnter("y 2");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void Put1()
-        {
-            Create("foo", "bar");
-            _operations.Setup(x => x.Put("hey", It.IsAny<ITextSnapshotLine>(), true)).Verifiable();
-            _map.DefaultRegister.UpdateValue("hey");
-            ProcessWithEnter("put");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void Put2()
-        {
-            Create("foo", "bar");
-            _operations.Setup(x => x.Put("hey", It.IsAny<ITextSnapshotLine>(), false)).Verifiable();
-            _map.DefaultRegister.UpdateValue("hey");
-            ProcessWithEnter("2put!");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void ShiftLeft1()
-        {
-            Create("     foo", "bar", "baz");
-            _operations
-                .Setup(x => x.ShiftLeft(_view.TextSnapshot.GetLineFromLineNumber(0).ExtentIncludingLineBreak, 4))
-                .Returns<ITextSnapshot>(null)
-                .Verifiable();
-            ProcessWithEnter("<");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void ShiftLeft2()
-        {
-            Create("     foo", "     bar", "baz");
-            var tss = _view.TextSnapshot;
-            var span = new SnapshotSpan(
-                tss.GetLineFromLineNumber(0).Start,
-                tss.GetLineFromLineNumber(1).EndIncludingLineBreak);
-            _operations
-                .Setup(x => x.ShiftLeft(span, 4))
-                .Returns<ITextSnapshot>(null)
-                .Verifiable();
-            ProcessWithEnter("1,2<");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void ShiftLeft3()
-        {
-            Create("     foo", "     bar", "baz");
-            var tss = _view.TextSnapshot;
-            var span = new SnapshotSpan(
-                tss.GetLineFromLineNumber(0).Start,
-                tss.GetLineFromLineNumber(1).EndIncludingLineBreak);
-            _operations
-                .Setup(x => x.ShiftLeft(span, 4))
-                .Returns<ITextSnapshot>(null)
-                .Verifiable();
-            ProcessWithEnter("< 2");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void ShiftRight1()
-        {
-            Create("foo", "bar", "baz");
-            _operations
-                .Setup(x => x.ShiftRight(_view.TextSnapshot.GetLineFromLineNumber(0).ExtentIncludingLineBreak, 4))
-                .Returns<ITextSnapshot>(null)
-                .Verifiable();
-            ProcessWithEnter(">");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void ShiftRight2()
-        {
-            Create("foo", "bar", "baz");
-            var tss = _view.TextSnapshot;
-            var span = new SnapshotSpan(
-                tss.GetLineFromLineNumber(0).Start,
-                tss.GetLineFromLineNumber(1).EndIncludingLineBreak);
-            _operations
-                .Setup(x => x.ShiftRight(span, 4))
-                .Returns<ITextSnapshot>(null)
-                .Verifiable();
-            ProcessWithEnter("1,2>");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void ShiftRight3()
-        {
-            Create("foo", "bar", "baz");
-            var tss = _view.TextSnapshot;
-            var span = new SnapshotSpan(
-                tss.GetLineFromLineNumber(0).Start,
-                tss.GetLineFromLineNumber(1).EndIncludingLineBreak);
-            _operations
-                .Setup(x => x.ShiftRight(span, 4))
-                .Returns<ITextSnapshot>(null)
-                .Verifiable();
-            ProcessWithEnter("> 2");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void Delete1()
-        {
-            Create("foo", "bar");
-            _operations.Setup(x => x.DeleteSpan(
-                _view.TextSnapshot.GetLineFromLineNumber(0).ExtentIncludingLineBreak,
-                MotionKind._unique_Exclusive,
-                OperationKind.LineWise,
-                _map.DefaultRegister))
-                .Returns(It.IsAny<ITextSnapshot>())
-                .Verifiable();
-            ProcessWithEnter("del");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void Delete2()
-        {
-            Create("foo", "bar", "baz");
-            var tss = _view.TextSnapshot;
-            var span = new SnapshotSpan(
-                tss.GetLineFromLineNumber(0).Start,
-                tss.GetLineFromLineNumber(1).EndIncludingLineBreak);
-            _operations.Setup(x => x.DeleteSpan(
-                span,
-                MotionKind._unique_Exclusive,
-                OperationKind.LineWise,
-                _map.DefaultRegister))
-                .Returns(It.IsAny<ITextSnapshot>())
-                .Verifiable();
-            ProcessWithEnter("dele 2");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void Delete3()
-        {
-            Create("foo", "bar", "baz");
-            _operations.Setup(x => x.DeleteSpan(
-                _view.TextSnapshot.GetLineFromLineNumber(1).ExtentIncludingLineBreak,
-                MotionKind._unique_Exclusive,
-                OperationKind.LineWise,
-                _map.DefaultRegister))
-                .Returns(It.IsAny<ITextSnapshot>())
-                .Verifiable();
-            ProcessWithEnter("2del");
-            _operations.Verify();
+            _processor.Verify();
         }
 
         [Test]
         public void Input1()
         {
-            Create("foo", "bar");
             _mode.Process("fo");
-            Assert.AreEqual("fo", InputString());
+            Assert.AreEqual("fo", _modeRaw.Command);
         }
 
         [Test]
         public void Input2()
         {
-            Create("foo", "bar");
+            _processor.Setup(x => x.RunCommand(CreateMatch("foo"))).Verifiable();
             ProcessWithEnter("foo");
-            Assert.AreEqual(String.Empty, InputString());
+            _processor.Verify();
+            Assert.AreEqual(String.Empty, _modeRaw.Command);
         }
 
         [Test]
         public void Input3()
         {
-            Create("foo bar");
             _mode.Process("foo");
             _mode.Process(InputUtil.KeyToKeyInput(Key.Back));
-            Assert.AreEqual("fo", InputString());
+            Assert.AreEqual("fo", _modeRaw.Command);
         }
 
         [Test]
         public void Input4()
         {
-            Create("foo bar");
             _mode.Process("foo");
             _mode.Process(InputUtil.KeyToKeyInput(Key.Escape));
-            Assert.AreEqual(string.Empty, InputString());
+            Assert.AreEqual(string.Empty, _modeRaw.Command);
         }
 
         [Test, Description("Delete past the start of the command string")]
         public void Input5()
         {
-            Create("foo bar");
             _mode.Process('c');
             _mode.Process(InputUtil.KeyToKeyInput(Key.Back));
             _mode.Process(InputUtil.KeyToKeyInput(Key.Back));
-            Assert.AreEqual(String.Empty, InputString());
+            Assert.AreEqual(String.Empty, _modeRaw.Command);
         }
 
         [Test, Description("Upper case letter")]
         public void Input6()
         {
-            Create("foo bar");
             _mode.Process("BACK");
-            Assert.AreEqual("BACK", InputString());
+            Assert.AreEqual("BACK", _modeRaw.Command);
         }
 
         [Test]
         public void Input7()
         {
-            Create("foo bar");
             _mode.Process("_bar");
-            Assert.AreEqual("_bar", InputString());
+            Assert.AreEqual("_bar", _modeRaw.Command);
         }
 
         [Test]
         public void Cursor1()
         {
-            Create("foo bar");
-            Assert.IsTrue(_view.Caret.IsHidden);
+            _mode.OnEnter();
+            Assert.IsTrue(_view.Object.Caret.IsHidden);
         }
 
         [Test]
         public void Cursor2()
         {
-            Create("foo bar");
             _mode.OnLeave();
-            Assert.IsFalse(_view.Caret.IsHidden);
-        }
-
-        [Test]
-        public void Substitute1()
-        {
-            Create("foo bar");
-            var span = _view.TextSnapshot.GetLineFromLineNumber(0).Extent;
-            _operations
-                .Setup(x => x.Substitute("f", "b", span, SubstituteFlags.None))
-                .Verifiable();
-            ProcessWithEnter("s/f/b");
-            _operations.Verify();
-        }
-
-
-        [Test]
-        public void Substitute2()
-        {
-            Create("foo bar");
-            var span = _view.TextSnapshot.GetLineFromLineNumber(0).Extent;
-            _operations
-                .Setup(x => x.Substitute("foo", "bar", span, SubstituteFlags.None))
-                .Verifiable();
-            ProcessWithEnter("s/foo/bar");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void Substitute3()
-        {
-            Create("foo bar");
-            var span = _view.TextSnapshot.GetLineFromLineNumber(0).Extent;
-            _operations
-                .Setup(x => x.Substitute("foo", "bar", span, SubstituteFlags.None))
-                .Verifiable();
-            ProcessWithEnter("s/foo/bar/");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void Substitute4()
-        {
-            Create("foo bar");
-            var span = _view.TextSnapshot.GetLineFromLineNumber(0).Extent;
-            _operations
-                .Setup(x => x.Substitute("foo", "bar", span, SubstituteFlags.ReplaceAll))
-                .Verifiable();
-            ProcessWithEnter("s/foo/bar/g");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void Substitute5()
-        {
-            Create("foo bar");
-            var span = _view.TextSnapshot.GetLineFromLineNumber(0).Extent;
-            _operations
-                .Setup(x => x.Substitute("foo", "bar", span, SubstituteFlags.IgnoreCase))
-                .Verifiable();
-            ProcessWithEnter("s/foo/bar/i");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void Substitute6()
-        {
-            Create("foo bar");
-            var span = _view.TextSnapshot.GetLineFromLineNumber(0).Extent;
-            _operations
-                .Setup(x => x.Substitute("foo", "bar", span, SubstituteFlags.IgnoreCase | SubstituteFlags.ReplaceAll))
-                .Verifiable();
-            ProcessWithEnter("s/foo/bar/gi");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void Substitute7()
-        {
-            Create("foo bar");
-            var span = _view.TextSnapshot.GetLineFromLineNumber(0).Extent;
-            _operations
-                .Setup(x => x.Substitute("foo", "bar", span, SubstituteFlags.IgnoreCase | SubstituteFlags.ReplaceAll))
-                .Verifiable();
-            ProcessWithEnter("s/foo/bar/ig");
-            _operations.Verify();
-        }
-
-
-        [Test]
-        public void Substitute8()
-        {
-            Create("foo bar");
-            var span = _view.TextSnapshot.GetLineFromLineNumber(0).Extent;
-            _operations
-                .Setup(x => x.Substitute("foo", "bar", span, SubstituteFlags.ReportOnly))
-                .Verifiable();
-            ProcessWithEnter("s/foo/bar/n");
-            _operations.Verify();
-        }
-
-
-        [Test]
-        public void Substitute9()
-        {
-            Create("foo bar","baz");
-            var tss = _view.TextSnapshot;
-            var span = new SnapshotSpan(tss, 0, tss.Length);
-            _operations
-                .Setup(x => x.Substitute("foo", "bar", span, SubstituteFlags.None))
-                .Verifiable();
-            ProcessWithEnter("%s/foo/bar");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void Substitute10()
-        {
-            Create("foo bar", "baz");
-            var tss = _view.TextSnapshot;
-            var span = new SnapshotSpan(tss, 0, tss.Length);
-            _operations
-                .Setup(x => x.Substitute("foo", "bar", span, SubstituteFlags.SuppressError))
-                .Verifiable();
-            ProcessWithEnter("%s/foo/bar/e");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void Substitute11()
-        {
-            Create("foo bar", "baz");
-            var tss = _view.TextSnapshot;
-            var span = new SnapshotSpan(tss, 0, tss.Length);
-            _operations
-                .Setup(x => x.Substitute("foo", "bar", span, SubstituteFlags.OrdinalCase))
-                .Verifiable();
-            ProcessWithEnter("%s/foo/bar/I");
-            _operations.Verify();
-        }
-
-        [Test, Description("Use last flags flag")]
-        public void Substitute12()
-        {
-            Create("foo bar", "baz");
-            var tss = _view.TextSnapshot;
-            var span = new SnapshotSpan(tss, 0, tss.Length);
-            _operations
-                .Setup(x => x.Substitute("foo", "bar", span, SubstituteFlags.OrdinalCase))
-                .Verifiable();
-            ProcessWithEnter("%s/foo/bar/I");
-            _operations.Verify();
-            ProcessWithEnter("%s/foo/bar/&");
-            _operations.Verify();
-        }
-
-        [Test, Description("Use last flags flag plus new flags")]
-        public void Substitute13()
-        {
-            Create("foo bar", "baz");
-            var tss = _view.TextSnapshot;
-            var span = new SnapshotSpan(tss, 0, tss.Length);
-            _operations
-                .Setup(x => x.Substitute("foo", "bar", span, SubstituteFlags.OrdinalCase))
-                .Verifiable();
-            ProcessWithEnter("%s/foo/bar/I");
-            _operations.Verify();
-            _operations
-                .Setup(x => x.Substitute("foo", "bar", span, SubstituteFlags.OrdinalCase | SubstituteFlags.ReplaceAll))
-                .Verifiable();
-            ProcessWithEnter("%s/foo/bar/&g");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void Substitute14()
-        {
-            Create("foo bar", "baz");
-            var tss = _view.TextSnapshot;
-            var span = new SnapshotSpan(tss, 0, tss.Length);
-            ProcessWithEnter("%s/foo/bar/c");
-            Assert.AreEqual(Resources.CommandMode_NotSupported_SubstituteConfirm, _host.Status);
-        }
-
-        [Test]
-        public void Redo1()
-        {
-            Create("foo bar");
-            ProcessWithEnter("red");
-            Assert.AreEqual(1, _host.RedoCount);
-        }
-
-        [Test]
-        public void Redo2()
-        {
-            Create("foo bar");
-            ProcessWithEnter("redo");
-            Assert.AreEqual(1, _host.RedoCount);
-        }
-
-        [Test]
-        public void Redo3()
-        {
-            Create("foo");
-            ProcessWithEnter("real");
-            Assert.AreEqual(0, _host.RedoCount);
-            Assert.AreEqual(_modeRaw.BadMessage, _host.Status);
-        }
-
-        [Test]
-        public void Undo1()
-        {
-            Create("foo");
-            ProcessWithEnter("u");
-            Assert.AreEqual(1, _host.UndoCount);
-        }
-
-        [Test]
-        public void Undo2()
-        {
-            Create("foo");
-            ProcessWithEnter("undo");
-            Assert.AreEqual(1, _host.UndoCount);
-        }
-
-        [Test]
-        public void Undo3()
-        {
-            Create("foo");
-            ProcessWithEnter("unreal");
-            Assert.AreEqual(0, _host.UndoCount);
-            Assert.AreEqual(_modeRaw.BadMessage, _host.Status);
-        }
-
-        [Test]
-        public void Marks1()
-        {
-            Create("foo");
-            _operations.Setup(x => x.PrintMarks(_bufferData.Object.MarkMap)).Verifiable();
-            ProcessWithEnter("marks");
-        }
-
-        [Test]
-        public void Marks2()
-        {
-            Create("foo");
-            ProcessWithEnter("marksaoeu");
-            Assert.AreEqual(_modeRaw.BadMessage, _host.Status);
-        }
-
-        [Test]
-        public void Edit1()
-        {
-            Create("foo");
-            ProcessWithEnter("e");
-            Assert.AreEqual(1, _host.ShowOpenFileDialogCount);
-        }
-
-        [Test]
-        public void Edit2()
-        {
-            Create("foo");
-            ProcessWithEnter("edi");
-            Assert.AreEqual(1, _host.ShowOpenFileDialogCount);
-        }
-
-        [Test]
-        public void Edit3()
-        {
-            Create("bar");
-            _operations.Setup(x => x.EditFile("foo.cs")).Verifiable();
-            ProcessWithEnter("ed foo.cs");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void Set1()
-        {
-            Create("bar");
-            _operations.Setup(x => x.PrintModifiedSettings()).Verifiable();
-            ProcessWithEnter("se");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void Set2()
-        {
-            Create("bar");
-            _operations.Setup(x => x.PrintModifiedSettings()).Verifiable();
-            ProcessWithEnter("set");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void Set3()
-        {
-            Create("bar");
-            _operations.Setup(x => x.PrintAllSettings()).Verifiable();
-            ProcessWithEnter("se all");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void Set4()
-        {
-            Create("bar");
-            _operations.Setup(x => x.PrintAllSettings()).Verifiable();
-            ProcessWithEnter("set all");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void Set5()
-        {
-            Create("bar");
-            _operations.Setup(x => x.PrintSetting("foo")).Verifiable();
-            ProcessWithEnter("set foo?");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void Set6()
-        {
-            Create("bar");
-            _operations.Setup(x => x.OperateSetting("foo")).Verifiable();
-            ProcessWithEnter("set foo");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void Set7()
-        {
-            Create("bor");
-            _operations.Setup(x => x.ResetSetting("foo")).Verifiable();
-            ProcessWithEnter("set nofoo");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void Set8()
-        {
-            Create("bar");
-            _operations.Setup(x => x.InvertSetting("foo")).Verifiable();
-            ProcessWithEnter("set foo!");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void Set9()
-        {
-            Create("bar");
-            _operations.Setup(x => x.InvertSetting("foo")).Verifiable();
-            ProcessWithEnter("set invfoo");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void Set10()
-        {
-            Create("bar");
-            _operations.Setup(x => x.SetSettingValue("foo", "bar")).Verifiable();
-            ProcessWithEnter("set foo=bar");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void Set11()
-        {
-            Create("baa");
-            _operations.Setup(x => x.SetSettingValue("foo", "true")).Verifiable();
-            ProcessWithEnter("set foo=true");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void Set12()
-        {
-            Create("baa");
-            _operations.Setup(x => x.SetSettingValue("foo", "true")).Verifiable();
-            ProcessWithEnter("set foo:true");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void RunCommand1()
-        {
-            Create("");
-            _operations.Setup(x => x.SetSettingValue("foo","true")).Verifiable();
-            _mode.RunCommand("set foo:true");
-            _operations.Verify();
+            Assert.IsFalse(_view.Object.Caret.IsHidden);
         }
     }
 }

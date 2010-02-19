@@ -60,6 +60,11 @@ type IOperations =
 
     inherit Modes.ICommonOperations
 
+type ICommandProcessor =
+
+    /// Run the specified command
+    abstract RunCommand : KeyInput list -> unit
+
 type ICommandMode = 
 
     /// Run the specified command

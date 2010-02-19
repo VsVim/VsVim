@@ -46,6 +46,7 @@ type internal VimBufferFactory
         let broker = _completionWindowBrokerFactoryService.CreateCompletionWindowBroker view
         let normalOpts = Modes.Normal.DefaultOperations(view,editOperations,_host,localSettings,wordNav,_textSearchService,jumpList) :> Modes.Normal.IOperations
         let commandOpts = Modes.Command.DefaultOperations(view,editOperations,_host, jumpList, localSettings) :> Modes.Command.IOperations
+        let commandProcessor = Modes.Command.CommandProcessor(buffer, commandOpts) :> Modes.Command.ICommandProcessor
         let insertOpts = Modes.Insert.DefaultOperations(view,editOperations,_host, jumpList) :> Modes.ICommonOperations
         let visualOptsFactory kind = 
             let mode = 
@@ -63,7 +64,7 @@ type internal VimBufferFactory
         let modeList = 
             [
                 ((Modes.Normal.NormalMode(buffer, normalOpts, normalIncrementalSearch)) :> IMode);
-                ((Modes.Command.CommandMode(buffer, commandOpts)) :> IMode);
+                ((Modes.Command.CommandMode(buffer, commandProcessor)) :> IMode);
                 ((Modes.Insert.InsertMode(buffer,insertOpts,broker)) :> IMode);
                 (DisabledMode(buffer) :> IMode);
                 ((Modes.Visual.VisualMode(buffer, (visualOptsFactory ModeKind.VisualBlock), ModeKind.VisualBlock)) :> IMode);

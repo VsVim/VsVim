@@ -136,6 +136,7 @@
     <Compile Include="BlockCaretTest.cs" />
     <Compile Include="CommandModeIntegrationTest.cs" />
     <Compile Include="CommandModeTest.cs" />
+    <Compile Include="CommandProcessorTest.cs" />
     <Compile Include="Command_DefaultOperations.cs" />
     <Compile Include="DisabledModeTest.cs" />
     <Compile Include="GlobalSettingsTest.cs" />

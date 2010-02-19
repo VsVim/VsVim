@@ -25,6 +25,7 @@ module internal Resources =
     let CommandMode_UnknownOption optionName = sprintf "Unknown option: %s" optionName
     let CommandMode_InvalidArgument name = sprintf "Invalid argument: %s" name
     let CommandMode_InvalidValue name value = sprintf "Invalid value given for %s: %s" name value
+    let CommandMode_CannotRun command = sprintf "Cannot run \"%s\"" command
 
     let Vim_ViewAlreadyHasBuffer = "View is already associated with an IVimBuffer"
 
