@@ -12,6 +12,7 @@ using System.Windows.Input;
 using Microsoft.VisualStudio.Text.Operations;
 using Moq;
 using System.IO;
+using Microsoft.FSharp.Collections;
 
 namespace VimCoreTest
 {
@@ -711,6 +712,15 @@ namespace VimCoreTest
             _operations.Setup(x => x.ResetSetting("ignorecase")).Verifiable();
             _operations.Setup(x => x.ResetSetting("foo")).Verifiable();
             RunCommand("source " + name);
+            _operations.Verify();
+        }
+
+        [Test, Description("RunCommand should strip off the : prefix")]
+        public void RunCommand1()
+        {
+            var list = ListModule.OfSeq(":set nofoo".Select(x => InputUtil.CharToKeyInput(x)));
+            _operations.Setup(x => x.ResetSetting("foo")).Verifiable();
+            _processor.RunCommand(list);
             _operations.Verify();
         }
     }

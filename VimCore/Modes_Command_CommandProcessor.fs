@@ -352,6 +352,13 @@ type internal CommandProcessor
     member x.RunCommand (input: KeyInput list)=
         let prev = _command
         try
+            // Strip off the preceeding :
+            let input = 
+                match ListUtil.tryHead input with
+                | None -> input
+                | Some(head,tail) when head.Char = ':' -> tail
+                | _ -> input
+
             _command <- input |> Seq.map (fun ki -> ki.Char) |> StringUtil.OfCharSeq
             x.ParseInput input
         finally
