@@ -51,6 +51,9 @@ namespace VimCoreTest.Utils
             [Import]
             public ITextSearchService textSearchService;
 
+            [Import]
+            public IVimBufferFactory vimBufferFactory;
+
             public Factory() { }
         }
 

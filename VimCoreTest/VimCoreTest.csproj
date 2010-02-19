@@ -175,6 +175,7 @@
     <Compile Include="Utils\MockObjectFactory.cs" />
     <Compile Include="Utils\TextUndoHistoryRegistry.cs" />
     <Compile Include="ViewUtilTest.cs" />
+    <Compile Include="VimBufferFactoryIntegrationTest.cs" />
     <Compile Include="VimBufferTests.cs" />
     <Compile Include="VimIntegrationTests.cs" />
     <Compile Include="VimTest.cs" />

@@ -71,3 +71,7 @@ type IVimBufferFactory =
     
     /// Create a IVimBuffer for the given parameters
     abstract CreateBuffer : IVim -> IWpfTextView -> IVimBuffer
+
+    /// Raised when an IVimBuffer instance is created
+    [<CLIEvent>]
+    abstract BufferCreated: IEvent<IVimBuffer>

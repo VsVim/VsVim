@@ -196,6 +196,7 @@ and IVim =
 
     /// Load the VimRc file.  If the file was previously, a new load will be attempted
     abstract LoadVimRc : unit -> bool
+
     
 /// Main interface for the Vim editor engine so to speak. 
 and IVimBuffer =

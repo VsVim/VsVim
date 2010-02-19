@@ -23,6 +23,8 @@ type internal VimBufferFactory
         _textStructureNavigatorSelectorService : ITextStructureNavigatorSelectorService,
         _tlcService : ITrackingLineColumnService,
         _editorFactoryService : ITextEditorFactoryService ) =
+
+    let _bufferCreatedEvent = new Event<_>()
     
     member x.CreateBuffer (vim:IVim) view = 
         let editorFormatMap = _editorFormatMapService.GetEditorFormatMap(view :> ITextView)
@@ -69,6 +71,8 @@ type internal VimBufferFactory
                 ((Modes.Visual.VisualMode(buffer, (visualOptsFactory ModeKind.VisualCharacter), ModeKind.VisualCharacter)) :> IMode);
             ]
         modeList |> List.iter (fun m -> bufferRaw.AddMode m)
+        buffer.SwitchMode ModeKind.Normal |> ignore
+        _bufferCreatedEvent.Trigger buffer
         bufferRaw
 
     member private x.CreateTextStructureNavigator textBuffer wordKind =
@@ -77,6 +81,8 @@ type internal VimBufferFactory
 
     interface IVimBufferFactory with
         member x.CreateBuffer vim view = x.CreateBuffer vim view :> IVimBuffer
+        [<CLIEvent>]
+        member x.BufferCreated = _bufferCreatedEvent.Publish
 
 
 /// Default implementation of IVim 
@@ -99,7 +105,6 @@ type internal Vim
     member x.CreateVimBufferCore view = 
         if _bufferMap.ContainsKey(view) then invalidArg "view" Resources.Vim_ViewAlreadyHasBuffer
         let buffer = _bufferFactoryService.CreateBuffer (x:>IVim) view
-        buffer.SwitchMode ModeKind.Normal |> ignore
         _bufferMap.Add(view, buffer)
         buffer
 
