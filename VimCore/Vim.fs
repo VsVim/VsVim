@@ -24,7 +24,7 @@ type internal Vim
         _tlcService : ITrackingLineColumnService,
         _editorFactoryService : ITextEditorFactoryService ) =
 
-    static let _vimRcEnvironmentVariables = ["HOME";"VIM"]
+    static let _vimRcEnvironmentVariables = ["HOME";"VIM";"USERPROFILE"]
 
     let _markMap = MarkMap(_tlcService) :> IMarkMap
     let _registerMap = RegisterMap()
