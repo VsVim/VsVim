@@ -11,3 +11,9 @@ Building
 3. Open the Solution VsVim.sln
 4. Build
 
+Branching Structure
+===
+
+ - master: This is the branch used for the majority of feature development.  
+ - release: Release staging branch.  All releases come from this branch
+ - next: Used for very long lead features
