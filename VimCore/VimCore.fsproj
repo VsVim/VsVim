@@ -74,6 +74,7 @@
     <Compile Include="Modes_Command_RangeUtil.fsi" />
     <Compile Include="Modes_Command_RangeUtil.fs" />
     <Compile Include="Modes_Command_DefaultOperations.fs" />
+    <Compile Include="Modes_Command_CommandProcessor.fs" />
     <Compile Include="Modes_Command_CommandMode.fsi" />
     <Compile Include="Modes_Command_CommandMode.fs" />
     <Compile Include="Modes_Normal_IOperations.fs" />

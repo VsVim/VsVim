@@ -24,6 +24,7 @@ type SubstituteFlags =
 
 /// Command mode operations
 type IOperations =
+
     /// Handle the :edit command
     abstract EditFile : fileName : string -> unit
 
