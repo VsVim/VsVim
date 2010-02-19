@@ -67,4 +67,7 @@ type ITrackingLineColumnService =
     /// Close all of the outstanding ITrackingLineColumn instances
     abstract CloseAll : unit -> unit
 
-
+type IVimBufferFactory =
+    
+    /// Create a IVimBuffer for the given parameters
+    abstract CreateBuffer : IVim -> IWpfTextView -> IVimBuffer

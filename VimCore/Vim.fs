@@ -10,8 +10,8 @@ open System.ComponentModel.Composition
 open System.IO
 
 /// Default implementation of IVim 
-[<Export(typeof<IVim>)>]
-type internal Vim
+[<Export(typeof<IVimBufferFactory>)>]
+type internal VimBufferFactory
     [<ImportingConstructor>]
     (
         _host : IVimHost,
@@ -23,26 +23,16 @@ type internal Vim
         _textStructureNavigatorSelectorService : ITextStructureNavigatorSelectorService,
         _tlcService : ITrackingLineColumnService,
         _editorFactoryService : ITextEditorFactoryService ) =
-
-    static let _vimRcEnvironmentVariables = ["HOME";"VIM";"USERPROFILE"]
-
-    let _markMap = MarkMap(_tlcService) :> IMarkMap
-    let _registerMap = RegisterMap()
-    let _settings = GlobalSettings() :> IVimGlobalSettings
-    let _bufferMap = new System.Collections.Generic.Dictionary<IWpfTextView, IVimBuffer>()
-
-
-    member x.CreateVimBufferCore view = 
-        if _bufferMap.ContainsKey(view) then invalidArg "view" Resources.Vim_ViewAlreadyHasBuffer
-
+    
+    member x.CreateBuffer (vim:IVim) view = 
         let editorFormatMap = _editorFormatMapService.GetEditorFormatMap(view :> ITextView)
         let caret = _blockCaretFactoryService.CreateBlockCaret view
         let editOperations = _editorOperationsFactoryService.GetEditorOperations(view)
         let jumpList = JumpList(_tlcService) :> IJumpList
-        let localSettings = LocalSettings(_settings, view) :> IVimLocalSettings
+        let localSettings = LocalSettings(vim.Settings, view) :> IVimLocalSettings
         let bufferRaw = 
             VimBuffer( 
-                x :> IVim,
+                vim,
                 view,
                 editOperations,
                 caret,
@@ -79,6 +69,36 @@ type internal Vim
                 ((Modes.Visual.VisualMode(buffer, (visualOptsFactory ModeKind.VisualCharacter), ModeKind.VisualCharacter)) :> IMode);
             ]
         modeList |> List.iter (fun m -> bufferRaw.AddMode m)
+        bufferRaw
+
+    member private x.CreateTextStructureNavigator textBuffer wordKind =
+        let baseImpl = _textStructureNavigatorSelectorService.GetTextStructureNavigator(textBuffer)
+        TssUtil.CreateTextStructureNavigator wordKind baseImpl
+
+    interface IVimBufferFactory with
+        member x.CreateBuffer vim view = x.CreateBuffer vim view :> IVimBuffer
+
+
+/// Default implementation of IVim 
+[<Export(typeof<IVim>)>]
+type internal Vim
+    [<ImportingConstructor>]
+    (
+        _host : IVimHost,
+        _bufferFactoryService : IVimBufferFactory,
+        _tlcService : ITrackingLineColumnService,
+        _editorFactoryService : ITextEditorFactoryService ) =
+
+    static let _vimRcEnvironmentVariables = ["HOME";"VIM";"USERPROFILE"]
+
+    let _markMap = MarkMap(_tlcService) :> IMarkMap
+    let _registerMap = RegisterMap()
+    let _settings = GlobalSettings() :> IVimGlobalSettings
+    let _bufferMap = new System.Collections.Generic.Dictionary<IWpfTextView, IVimBuffer>()
+
+    member x.CreateVimBufferCore view = 
+        if _bufferMap.ContainsKey(view) then invalidArg "view" Resources.Vim_ViewAlreadyHasBuffer
+        let buffer = _bufferFactoryService.CreateBuffer (x:>IVim) view
         buffer.SwitchMode ModeKind.Normal |> ignore
         _bufferMap.Add(view, buffer)
         buffer
@@ -91,9 +111,10 @@ type internal Vim
         | (true,buffer) -> Some buffer
         | (false,_) -> None
 
-    member private x.CreateTextStructureNavigator textBuffer wordKind =
-        let baseImpl = _textStructureNavigatorSelectorService.GetTextStructureNavigator(textBuffer)
-        TssUtil.CreateTextStructureNavigator wordKind baseImpl
+    member private x.GetOrCreateBufferCore view =
+        match x.GetBufferCore view with
+        | Some(buffer) -> buffer
+        | None -> x.CreateVimBufferCore view
 
     static member LoadVimRc (vim:IVim) (editorFactoryService:ITextEditorFactoryService)= 
         let settings = vim.Settings
@@ -119,7 +140,7 @@ type internal Vim
         | Some(path,lines) ->
             settings.VimRc <- path
             let view = editorFactoryService.CreateTextView()
-            let buffer = vim.CreateBuffer view
+            let buffer = vim.GetOrCreateBuffer view
             let mode = buffer.GetMode ModeKind.Command :?> Modes.Command.ICommandMode
             lines |> Seq.iter mode.RunCommand
             vim.RemoveBuffer view |> ignore
@@ -132,6 +153,7 @@ type internal Vim
         member x.RegisterMap = _registerMap :> IRegisterMap
         member x.Settings = _settings
         member x.CreateBuffer view = x.CreateVimBufferCore view 
+        member x.GetOrCreateBuffer view = x.GetOrCreateBufferCore view
         member x.RemoveBuffer view = x.RemoveBufferCore view
         member x.GetBuffer view = x.GetBufferCore view
         member x.GetBufferForBuffer textBuffer =

@@ -184,6 +184,9 @@ and IVim =
     /// Get the IVimBuffer associated with the given view
     abstract GetBuffer : IWpfTextView -> IVimBuffer option
 
+    /// Get or create an IVimBuffer for the given IWpfTextView
+    abstract GetOrCreateBuffer : IWpfTextView -> IVimBuffer
+
     /// Get the IVimBuffer associated with the given view
     abstract GetBufferForBuffer : ITextBuffer -> IVimBuffer option
 
