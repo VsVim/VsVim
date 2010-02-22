@@ -16,7 +16,8 @@ type internal DefaultOperations
         _operations : IEditorOperations, 
         _host : IVimHost,
         _jumpList : IJumpList,
-        _settings : IVimLocalSettings ) =
+        _settings : IVimLocalSettings,
+        _keyMap : IKeyMap) =
     inherit CommonOperations(_textView, _operations, _host, _jumpList) 
 
     /// Format the setting for use in output
@@ -186,3 +187,9 @@ type internal DefaultOperations
             let ret = _settings.TrySetValueFromString settingName value 
             if not ret then 
                 Resources.CommandMode_InvalidValue settingName value |> _host.UpdateStatus
+
+        member x.RemapKeys (lhs:string) (rhs:string) (mode:KeyRemapMode) allowRemap = 
+            if allowRemap then
+                _host.UpdateStatus Resources.CommandMode_NotSupported_KeyRemapping
+            elif not (_keyMap.MapWithNoRemap lhs rhs mode) then
+                _host.UpdateStatus (Resources.CommandMode_NotSupported_KeyMapping lhs rhs)

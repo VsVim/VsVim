@@ -45,7 +45,7 @@ type internal VimBufferFactory
         let wordNav = x.CreateTextStructureNavigator view.TextBuffer WordKind.NormalWord
         let broker = _completionWindowBrokerFactoryService.CreateCompletionWindowBroker view
         let normalOpts = Modes.Normal.DefaultOperations(view,editOperations,_host,localSettings,wordNav,_textSearchService,jumpList) :> Modes.Normal.IOperations
-        let commandOpts = Modes.Command.DefaultOperations(view,editOperations,_host, jumpList, localSettings) :> Modes.Command.IOperations
+        let commandOpts = Modes.Command.DefaultOperations(view,editOperations,_host, jumpList, localSettings, vim.KeyMap) :> Modes.Command.IOperations
         let commandProcessor = Modes.Command.CommandProcessor(buffer, commandOpts) :> Modes.Command.ICommandProcessor
         let insertOpts = Modes.Insert.DefaultOperations(view,editOperations,_host, jumpList) :> Modes.ICommonOperations
         let visualOptsFactory kind = 
@@ -95,7 +95,8 @@ type internal Vim
         _editorFactoryService : ITextEditorFactoryService,
         _settings : IVimGlobalSettings,
         _registerMap : IRegisterMap,
-        _markMap : IMarkMap ) =
+        _markMap : IMarkMap,
+        _keyMap : IKeyMap ) =
 
 
     static let _vimRcEnvironmentVariables = ["HOME";"VIM";"USERPROFILE"]
@@ -114,7 +115,8 @@ type internal Vim
             editorFactoryService,
             GlobalSettings() :> IVimGlobalSettings,
             RegisterMap() :> IRegisterMap,
-            MarkMap(tlcService) :> IMarkMap)
+            MarkMap(tlcService) :> IMarkMap,
+            KeyMap() :> IKeyMap)
 
     member x.CreateVimBufferCore view = 
         if _bufferMap.ContainsKey(view) then invalidArg "view" Resources.Vim_ViewAlreadyHasBuffer
@@ -162,6 +164,7 @@ type internal Vim
     interface IVim with
         member x.Host = _host
         member x.MarkMap = _markMap
+        member x.KeyMap = _keyMap
         member x.IsVimRcLoaded = not (System.String.IsNullOrEmpty(_settings.VimRc))
         member x.RegisterMap = _registerMap 
         member x.Settings = _settings

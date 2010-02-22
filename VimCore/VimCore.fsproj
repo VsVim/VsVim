@@ -101,6 +101,7 @@
     <Compile Include="RegisterMap.fs" />
     <Compile Include="DisabledMode.fs" />
     <Compile Include="MarkMap.fs" />
+    <Compile Include="KeyMap.fs" />
     <Compile Include="JumpList.fs" />
     <Compile Include="VimSettings.fs" />
     <Compile Include="Vim.fs" />

@@ -18,6 +18,26 @@ type ModeKind =
     // Mode when Vim is disabled via the user
     | Disabled = 42
 
+/// Modes for a key remapping
+type KeyRemapMode =
+    | Normal = 0x1
+    | Visual = 0x2
+    | Select = 0x4
+    | OperatorPending = 0x8
+    | Insert = 0x10
+    | Command = 0x20
+    | LangArg = 0x40
+
+
+/// Manages the key map for Vim.  Responsible for handling all key remappings
+type IKeyMap =
+
+    /// Get the mapping for the provided KeyInput 
+    abstract GetKeyMapping : KeyInput -> (KeyInput * KeyRemapMode) option
+    
+    /// Map the given key sequence without allowing for remaping
+    abstract MapWithNoRemap : lhs:string -> rhs:string -> KeyRemapMode -> bool
+
     
 type IMarkMap =
     abstract IsLocalMark : char -> bool
@@ -175,6 +195,9 @@ and IVim =
     abstract RegisterMap : IRegisterMap
     abstract Settings : IVimGlobalSettings
 
+    /// IKeyMap for this IVim instance
+    abstract KeyMap : IKeyMap
+    
     /// Is the VimRc loaded
     abstract IsVimRcLoaded : bool
 

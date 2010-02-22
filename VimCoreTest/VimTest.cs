@@ -21,6 +21,7 @@ namespace VimCoreTest
         private Mock<IVimBufferFactory> _factory;
         private Mock<IVimHost> _host;
         private Mock<ITextEditorFactoryService> _editorFactoryService;
+        private Mock<IKeyMap> _keyMap;
         private Vim.Vim _vimRaw;
         private IVim _vim;
         private Dictionary<string, string> _savedEnvironment = new Dictionary<string, string>();
@@ -33,6 +34,7 @@ namespace VimCoreTest
             _markMap = new Mock<IMarkMap>(MockBehavior.Strict);
             _factory = new Mock<IVimBufferFactory>(MockBehavior.Strict);
             _editorFactoryService = new Mock<ITextEditorFactoryService>(MockBehavior.Strict);
+            _keyMap = new Mock<IKeyMap>(MockBehavior.Strict);
             _host = new Mock<IVimHost>(MockBehavior.Strict);
             _vimRaw = new Vim.Vim(
                 _host.Object,
@@ -40,7 +42,8 @@ namespace VimCoreTest
                 _editorFactoryService.Object,
                 _settings.Object,
                 _registerMap.Object,
-                _markMap.Object);
+                _markMap.Object,
+                _keyMap.Object);
             _vim = _vimRaw;
             _savedEnvironment = new Dictionary<string, string>();
         }

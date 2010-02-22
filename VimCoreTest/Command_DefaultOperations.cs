@@ -24,7 +24,8 @@ namespace VimCoreTest
         private Mock<IEditorOperations> _editOpts;
         private Mock<IVimHost> _host;
         private Mock<IJumpList> _jumpList;
-        private Mock<IVimLocalSettings> _settings; 
+        private Mock<IVimLocalSettings> _settings;
+        private Mock<IKeyMap> _keyMap;
 
         private void Create(params string[] lines)
         {
@@ -33,7 +34,8 @@ namespace VimCoreTest
             _host = new Mock<IVimHost>(MockBehavior.Strict);
             _jumpList = new Mock<IJumpList>(MockBehavior.Strict);
             _settings = new Mock<IVimLocalSettings>(MockBehavior.Strict);
-            _operationsRaw = new DefaultOperations(_view, _editOpts.Object, _host.Object, _jumpList.Object, _settings.Object);
+            _keyMap = new Mock<IKeyMap>(MockBehavior.Strict);
+            _operationsRaw = new DefaultOperations(_view, _editOpts.Object, _host.Object, _jumpList.Object, _settings.Object, _keyMap.Object);
             _operations = _operationsRaw;
         }
 

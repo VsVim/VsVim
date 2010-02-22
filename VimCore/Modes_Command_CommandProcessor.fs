@@ -67,6 +67,15 @@ type internal CommandProcessor
             | false,false -> (map.DefaultRegister, cmd)
         ListUtil.tryProcessHead cmd inner (fun () -> (map.DefaultRegister, cmd))
 
+    /// Parse out the keys for a key remap command
+    member private x.ParseKeys (rest:KeyInput list) found notFound =
+        let rest,left = rest |> x.SkipWhitespace |> x.SkipNonWhitespace
+        let rest,right = rest |> x.SkipWhitespace |> x.SkipNonWhitespace 
+        if System.String.IsNullOrEmpty(left) || System.String.IsNullOrEmpty(right) then
+            notFound()
+        else
+            found left right rest
+
     /// Parse out the :join command
     member private x.ParseJoin (rest:KeyInput list) (range:Range option) =
         let rest = rest |> x.SkipPast "oin" |> x.SkipWhitespace
@@ -299,9 +308,18 @@ type internal CommandProcessor
                     _lastSubstitute <- (search,replace,flags)
             doParse rest badParse goodParse    
 
+    member private x.ParseKeyRemap (rest: KeyInput list) (expected:string) modes allowRemap =
+        let rest = rest |> x.SkipPast expected 
+        x.ParseKeys rest (fun lhs rhs _ -> _operations.RemapKeys lhs rhs modes allowRemap |> ignore) (fun() -> _data.VimHost.UpdateStatus x.BadMessage)
+
     member private x.ParsePChar (current:KeyInput) (rest: KeyInput list) (range:Range option) =
         match current.Char with
         | 'u' -> x.ParsePut rest range
+        | _ -> _data.VimHost.UpdateStatus(x.BadMessage)
+
+    member private x.ParseNChar (current:KeyInput) (rest: KeyInput list) (range:Range option) =
+        match current.Char with
+        | 'o' -> x.ParseKeyRemap rest "remap" (KeyRemapMode.Normal ||| KeyRemapMode.Visual ||| KeyRemapMode.OperatorPending) false
         | _ -> _data.VimHost.UpdateStatus(x.BadMessage)
 
     member private x.ParseSChar (current:KeyInput) (rest: KeyInput list) (range:Range option) =
@@ -311,6 +329,9 @@ type internal CommandProcessor
         | _ -> x.ParseSubstitute ([current] @ rest) range
 
     member private x.ParseCommand (current:KeyInput) (rest:KeyInput list) (range:Range option) =
+        let parseNext nextFunc = 
+            let next head tail = nextFunc head tail range
+            ListUtil.tryProcessHead rest next (fun () -> _data.VimHost.UpdateStatus x.BadMessage)
         match current.Char with
         | 'j' -> x.ParseJoin rest range
         | 'e' -> x.ParseEdit rest 
@@ -322,12 +343,9 @@ type internal CommandProcessor
         | 'u' -> x.ParseUndo rest 
         | 'r' -> x.ParseRedo rest 
         | 'm' -> x.ParseMarks rest
-        | 'p' -> 
-            let next head tail = x.ParsePChar head tail range
-            ListUtil.tryProcessHead rest next (fun () -> _data.VimHost.UpdateStatus x.BadMessage)
-        | 's' -> 
-            let next head tail = x.ParseSChar head tail range
-            ListUtil.tryProcessHead rest next (fun () -> _data.VimHost.UpdateStatus x.BadMessage)
+        | 'p' -> parseNext x.ParsePChar
+        | 's' -> parseNext x.ParseSChar
+        | 'n' -> parseNext x.ParseNChar
         | _ -> _data.VimHost.UpdateStatus(x.BadMessage)
     
     member private x.ParseInput (originalInputs : KeyInput list) =

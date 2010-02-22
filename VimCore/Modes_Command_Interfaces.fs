@@ -21,7 +21,6 @@ type SubstituteFlags =
     | OrdinalCase = 0x40
     | Invalid = 0xf000
 
-
 /// Command mode operations
 type IOperations =
 
@@ -45,6 +44,9 @@ type IOperations =
 
     /// Invert the setting if it's a ToggleValue
     abstract InvertSetting : settingName:string -> unit
+
+    /// Remap the specified keys
+    abstract RemapKeys : lhs:string -> rhs:string -> mode:KeyRemapMode -> allowRemap : bool -> unit
 
     /// Print out the marks in the context of the current buffer
     abstract PrintMarks : IMarkMap -> unit
