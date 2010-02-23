@@ -65,6 +65,9 @@ type IOperations =
 type INormalMode =
 
     /// Is in the middle of an operator pending 
-    abstract InOperatorPending : bool
+    abstract IsOperatorPending : bool
+
+    /// Is normal mode waiting for additional input on a command
+    abstract IsWaitingForInput : bool
 
     inherit Vim.IMode

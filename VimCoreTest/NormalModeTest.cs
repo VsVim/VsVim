@@ -22,7 +22,7 @@ namespace VimCoreTest
     public class NormalModeTest
     {
         private Vim.Modes.Normal.NormalMode _modeRaw;
-        private IMode _mode;
+        private INormalMode _mode;
         private IWpfTextView _view;
         private IRegisterMap _map;
         private Mock<IVimBuffer> _bufferData;
@@ -1865,6 +1865,62 @@ namespace VimCoreTest
             Assert.IsTrue(ret.IsSwitchMode);
             Assert.AreEqual(ModeKind.Insert, ret.AsSwitchMode().Item);
             _operations.Verify();
+        }
+
+        [Test]
+        public void IsOperatorPending1()
+        {
+            CreateBuffer("foobar");
+            Assert.IsFalse(_mode.IsOperatorPending);
+        }
+
+        [Test]
+        public void IsOperatorPending2()
+        {
+            CreateBuffer("foobar");
+            _incrementalSearch.Setup(x => x.Begin(SearchKind.ForwardWithWrap));
+            _mode.Process('/');
+            Assert.IsFalse(_mode.IsOperatorPending);
+        }
+
+        [Test]
+        public void IsOperatorPending3()
+        {
+            CreateBuffer("");
+            _mode.Process('y');
+            Assert.IsTrue(_mode.IsOperatorPending);
+        }
+
+        [Test]
+        public void IsOperatorPending4()
+        {
+            CreateBuffer("");
+            _mode.Process('d');
+            Assert.IsTrue(_mode.IsOperatorPending);
+        }
+
+        [Test]
+        public void IsWaitingForInput1()
+        {
+            CreateBuffer("foobar");
+            Assert.IsFalse(_mode.IsWaitingForInput);
+        }
+
+        [Test]
+        public void IsWaitingForInput2()
+        {
+            CreateBuffer("foobar");
+            _incrementalSearch.Setup(x => x.Begin(SearchKind.ForwardWithWrap));
+            _mode.Process('/');
+            Assert.IsTrue(_mode.IsWaitingForInput);
+        }
+
+        [Test]
+        public void IsWaitingForInput3()
+        {
+            CreateBuffer("");
+            _mode.Process('y');
+            Assert.IsTrue(_mode.IsWaitingForInput);
         }
 
         #endregion

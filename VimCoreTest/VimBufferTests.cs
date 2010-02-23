@@ -52,7 +52,8 @@ namespace VimCoreTest
             _normalMode = new Mock<INormalMode>(MockBehavior.Strict);
             _normalMode.Setup(x => x.OnEnter());
             _normalMode.SetupGet(x => x.ModeKind).Returns(ModeKind.Normal);
-            _normalMode.SetupGet(x => x.InOperatorPending).Returns(false);
+            _normalMode.SetupGet(x => x.IsOperatorPending).Returns(false);
+            _normalMode.SetupGet(x => x.IsWaitingForInput).Returns(false);
             _insertMode = new Mock<IMode>(MockBehavior.Strict);
             _insertMode.SetupGet(x => x.ModeKind).Returns(ModeKind.Insert);
             _jumpList = new Mock<IJumpList>(MockBehavior.Strict);
@@ -245,6 +246,34 @@ namespace VimCoreTest
                 .Returns(Enumerable.Repeat(InputUtil.CharToKeyInput('b'), 1));
             _normalMode.Setup(x => x.Process(InputUtil.CharToKeyInput('b'))).Returns(ProcessResult.Processed).Verifiable();
             Assert.IsTrue(_buffer.ProcessChar('b'));
+            _normalMode.Verify();
+        }
+
+        [Test, Description("Don't send input down to normal mode if we're in operator pending")]
+        public void Remap4()
+        {
+            var oldKi = InputUtil.CharToKeyInput('b');
+            var newKi = InputUtil.CharToKeyInput('c');
+            _keyMap
+                .Setup(x => x.GetKeyMapping(oldKi, KeyRemapMode.Normal))
+                .Returns(Enumerable.Repeat(newKi,1));
+            _keyMap
+                .Setup(x => x.GetKeyMapping(oldKi, KeyRemapMode.OperatorPending))
+                .Returns(Enumerable.Repeat(oldKi,1));
+            _normalMode.SetupGet(x => x.IsOperatorPending).Returns(true);
+            _normalMode.Setup(x => x.Process(oldKi)).Returns(ProcessResult.Processed).Verifiable();
+            Assert.IsTrue(_buffer.ProcessInput(oldKi));
+            _normalMode.Verify();
+        }
+
+        [Test, Description("Don't send input down to normal mode if we're in waitforinput")]
+        public void Remap5()
+        {
+            var oldKi = InputUtil.CharToKeyInput('b');
+            _normalMode.SetupGet(x => x.IsOperatorPending).Returns(false);
+            _normalMode.SetupGet(x => x.IsWaitingForInput).Returns(true);
+            _normalMode.Setup(x => x.Process(oldKi)).Returns(ProcessResult.Processed).Verifiable();
+            Assert.IsTrue(_buffer.ProcessInput(oldKi));
             _normalMode.Verify();
         }
     }

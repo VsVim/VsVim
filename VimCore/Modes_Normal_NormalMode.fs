@@ -33,6 +33,9 @@ type internal NormalMode
     /// of a given command
     let mutable _waitingForMoreInput = false
 
+    /// Are we in the operator pending mode?
+    let mutable _isOperatingPending = false;
+
     member this.TextView = _bufferData.TextView
     member this.TextBuffer = _bufferData.TextBuffer
     member this.VimHost = _bufferData.VimHost
@@ -49,7 +52,7 @@ type internal NormalMode
                 _bufferData.JumpList.Add before |> ignore
                 NormalModeResult.Complete
             | SearchCanceled -> NormalModeResult.Complete
-            | SearchNeedMore ->  NormalModeResult.NeedMore2 inner
+            | SearchNeedMore ->  NormalModeResult.NeedMoreInput inner
         _incrementalSearch.Begin kind
         inner
     
@@ -62,11 +65,11 @@ type internal NormalMode
                 | NeedMoreInput (moreFunc) ->
                     _bufferData.VimHost.UpdateStatus("Waiting for motion")
                     let inputFunc ki _ _ = f (moreFunc ki)
-                    NormalModeResult.NeedMore2 inputFunc
+                    NormalModeResult.NeedMoreInput inputFunc
                 | InvalidMotion (msg,moreFunc) ->
                     _bufferData.VimHost.UpdateStatus(msg)
                     let inputFunc ki _ _ = f (moreFunc ki)
-                    NormalModeResult.NeedMore2 inputFunc 
+                    NormalModeResult.NeedMoreInput inputFunc 
                 | Error (msg) ->
                     _bufferData.VimHost.UpdateStatus(msg)
                     NormalModeResult.Complete
@@ -265,17 +268,21 @@ type internal NormalMode
         let waitOps = seq {
             yield (InputUtil.CharToKeyInput('d'), (fun () -> this.WaitDelete))
             yield (InputUtil.CharToKeyInput('y'), (fun () -> this.WaitYank))
-            yield (InputUtil.CharToKeyInput('<'), (fun () -> this.WaitShiftLeft))
-            yield (InputUtil.CharToKeyInput('>'), (fun () -> this.WaitShiftRight))
             yield (InputUtil.CharToKeyInput('c'), (fun () -> this.WaitChange))
+        }
+
+        // Similar to waitOpts but contains items which should not go to OperatorPending
+        let waitOps2 = seq {
             yield (InputUtil.CharToKeyInput('/'), (fun () -> this.BeginIncrementalSearch SearchKind.ForwardWithWrap))
             yield (InputUtil.CharToKeyInput('?'), (fun () -> this.BeginIncrementalSearch SearchKind.BackwardWithWrap))
             yield (InputUtil.CharToKeyInput('m'), (fun () -> this.WaitMark))
-            yield (InputUtil.CharToKeyInput('\''), (fun () -> this.WaitJumpToMark))
-            yield (InputUtil.CharToKeyInput('`'), (fun () -> this.WaitJumpToMark))
+            yield (InputUtil.CharToKeyInput('<'), (fun () -> this.WaitShiftLeft))
+            yield (InputUtil.CharToKeyInput('>'), (fun () -> this.WaitShiftRight))
             yield (InputUtil.CharToKeyInput('g'), (fun () -> this.WaitCharGCommand))
             yield (InputUtil.CharToKeyInput('z'), (fun () -> this.WaitCharZCommand))
             yield (InputUtil.CharToKeyInput('r'), (fun () -> this.WaitReplaceChar))
+            yield (InputUtil.CharToKeyInput('\''), (fun () -> this.WaitJumpToMark))
+            yield (InputUtil.CharToKeyInput('`'), (fun () -> this.WaitJumpToMark))
         }
 
         let completeOps : seq<KeyInput * (int -> Register -> unit)> = seq {
@@ -322,7 +329,8 @@ type internal NormalMode
         }
 
         let l =
-            (waitOps |> Seq.map (fun (ki,func) -> {KeyInput=ki;RunFunc=(fun _ _ -> NeedMore2(func())) }))
+            (waitOps |> Seq.map (fun (ki,func) -> {KeyInput=ki;RunFunc=(fun _ _ -> NormalModeResult.OperatorPending(func())) }))
+            |> Seq.append (waitOps2 |> Seq.map (fun (ki,func) -> {KeyInput=ki;RunFunc=(fun _ _ -> NormalModeResult.NeedMoreInput(func())) }))
             |> Seq.append (completeOps |> Seq.map (fun (ki,func) -> {KeyInput=ki;RunFunc=(fun count reg -> func count reg; NormalModeResult.Complete)}))
             |> Seq.append (changeOpts |> Seq.map (fun (ki,kind,func) -> {KeyInput=ki;RunFunc=(fun count reg -> func count reg; NormalModeResult.SwitchMode kind)}))
             |> Seq.append (this.BuildMotionOperationsMap)
@@ -338,7 +346,7 @@ type internal NormalMode
                     CountComplete(count, nextKi)
                 | CountResult.NeedMore(f) ->
                     let nextFunc ki2 _ _ = inner ki2 f
-                    NeedMore2(nextFunc)
+                    NormalModeResult.NeedMoreInput(nextFunc)
         inner ki (CountCapture.Process)                    
         
     /// Responsible for getting the register 
@@ -351,7 +359,7 @@ type internal NormalMode
         if ki.IsDigit && ki.Char <> '0' then this.GetCount ki
         elif ki.Key = Key.OemQuotes && ki.ModifierKeys = ModifierKeys.Shift then 
             let f ki _ _ = this.GetRegister (_bufferData.RegisterMap) ki
-            NeedMore2(f)
+            NormalModeResult.NeedMoreInput(f)
         else
             match Map.tryFind ki _operationMap with
             | Some op -> op.RunFunc count reg
@@ -360,10 +368,11 @@ type internal NormalMode
                 NormalModeResult.Complete
 
     /// Reset the internal data for the NormalMode instance
-    member this.ResetData = 
+    member this.ResetData() = 
         _data <- (1, _bufferData.RegisterMap.DefaultRegister)
         _runFunc <- this.StartCore
         _waitingForMoreInput <- false
+        _isOperatingPending <- false
         if _operationMap.Count = 0 then
             _operationMap <- this.BuildOperationsMap
 
@@ -375,7 +384,8 @@ type internal NormalMode
         count
 
     interface INormalMode with 
-        member this.InOperatorPending = _waitingForMoreInput
+        member this.IsOperatorPending = _isOperatingPending
+        member this.IsWaitingForInput = _waitingForMoreInput
         member this.VimBuffer = _bufferData
         member this.Commands = 
             _operationMap
@@ -394,14 +404,19 @@ type internal NormalMode
         member this.Process ki = 
             match _runFunc ki this.Count this.Register with
                 | NormalModeResult.Complete -> 
-                    this.ResetData
+                    this.ResetData()
                     Processed
-                | NeedMore2(f) ->
+                | NormalModeResult.NeedMoreInput(f) ->
                     _runFunc <- f
                     _waitingForMoreInput <- true
                     Processed
+                | NormalModeResult.OperatorPending(f) ->
+                    _runFunc <- f
+                    _waitingForMoreInput <- true
+                    _isOperatingPending <- true
+                    Processed
                 | NormalModeResult.SwitchMode (kind) -> 
-                    this.ResetData // Make sure to reset information when switching modes
+                    this.ResetData() // Make sure to reset information when switching modes
                     ProcessResult.SwitchMode kind
                 | CountComplete (count,nextKi) ->
                     let _,reg = _data
@@ -416,7 +431,7 @@ type internal NormalMode
                     Processed
         member this.OnEnter ()  =
             _bufferData.BlockCaret.Show()
-            this.ResetData
+            this.ResetData()
         member this.OnLeave () = 
             _bufferData.BlockCaret.Hide()
     

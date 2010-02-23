@@ -9,7 +9,8 @@ open System.Windows.Media
 
 type internal NormalModeResult = 
     | SwitchMode of ModeKind
-    | NeedMore2 of (KeyInput -> int -> Register -> NormalModeResult)
+    | OperatorPending of (KeyInput -> int -> Register -> NormalModeResult)
+    | NeedMoreInput of (KeyInput -> int -> Register -> NormalModeResult)
     | CountComplete of int * KeyInput
     | RegisterComplete of Register
     | Complete 
