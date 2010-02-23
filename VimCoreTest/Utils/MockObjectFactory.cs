@@ -31,17 +31,20 @@ namespace VimCoreTest.Utils
             IRegisterMap registerMap = null,
             MarkMap map = null,
             IVimGlobalSettings settings = null,
-            IVimHost host = null)
+            IVimHost host = null,
+            IKeyMap keyMap = null)
         {
             registerMap = registerMap ?? CreateRegisterMap().Object;
             map = map ?? new MarkMap(new TrackingLineColumnService());
             settings = settings ?? new GlobalSettings();
             host = host ?? new FakeVimHost();
+            keyMap = keyMap ?? (new KeyMap());
             var mock = new Mock<IVim>(MockBehavior.Strict);
             mock.Setup(x => x.RegisterMap).Returns(registerMap);
             mock.Setup(x => x.MarkMap).Returns(map);
             mock.Setup(x => x.Settings).Returns(settings);
             mock.Setup(x => x.Host).Returns(host);
+            mock.Setup(x => x.KeyMap).Returns(keyMap);
             return mock;
         }
 

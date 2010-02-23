@@ -53,6 +53,7 @@ type internal VimBuffer
 
     // Actuall process the input key.  Raise the change event on an actual change
     member x.ProcessInput (i:KeyInput) = 
+        let i = x.MaybeMapKeyInput i
         let ret = 
             if i = _vim.Settings.DisableCommand && x.Mode.ModeKind <> ModeKind.Disabled then
                 x.SwitchMode ModeKind.Disabled |> ignore
@@ -70,6 +71,29 @@ type internal VimBuffer
                     | ProcessNotHandled -> false
         _keyInputProcessedEvent.Trigger(i)
         ret
+
+    member x.MaybeMapKeyInput ki = 
+        match _vim.KeyMap.GetKeyMapping ki with
+        | None -> ki
+        | Some(mappedKi,mode) ->
+            let appliesToCurrentMode = 
+                match _modeMap.Mode.ModeKind with
+                | ModeKind.Insert -> Utils.IsFlagSet mode KeyRemapMode.Insert
+                | ModeKind.Normal -> 
+                    if Utils.IsFlagSet mode KeyRemapMode.Normal then true
+                    elif Utils.IsFlagSet mode KeyRemapMode.OperatorPending then
+                        let mode = _modeMap.Mode :?> Vim.Modes.Normal.INormalMode
+                        mode.InOperatorPending
+                    else
+                        false
+                | ModeKind.Command -> Utils.IsFlagSet mode KeyRemapMode.Command
+                | ModeKind.VisualBlock -> Utils.IsFlagSet mode KeyRemapMode.Visual
+                | ModeKind.VisualCharacter -> Utils.IsFlagSet mode KeyRemapMode.Visual
+                | ModeKind.VisualLine -> Utils.IsFlagSet mode KeyRemapMode.Visual
+                | ModeKind.Disabled -> false
+                | _ -> false
+            if appliesToCurrentMode then mappedKi
+            else ki
 
     member x.AddMode mode = _modeMap.AddMode mode
             

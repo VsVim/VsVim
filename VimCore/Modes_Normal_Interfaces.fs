@@ -61,3 +61,10 @@ type IOperations =
     abstract JumpPrevious : count:int -> unit
 
     inherit Modes.ICommonOperations
+
+type INormalMode =
+
+    /// Is in the middle of an operator pending 
+    abstract InOperatorPending : bool
+
+    inherit Vim.IMode

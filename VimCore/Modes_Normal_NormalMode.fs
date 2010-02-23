@@ -374,7 +374,8 @@ type internal NormalMode
         let count,_ = _data
         count
 
-    interface IMode with 
+    interface INormalMode with 
+        member this.InOperatorPending = _waitingForMoreInput
         member this.VimBuffer = _bufferData
         member this.Commands = 
             _operationMap

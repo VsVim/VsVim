@@ -378,5 +378,35 @@ namespace VimCoreTest
             _host.Verify();
         }
 
+        [Test]
+        public void RemapKeys1()
+        {
+            Create("foo");
+            _host.Setup(x => x.UpdateStatus(Resources.CommandMode_NotSupported_KeyRemapping)).Verifiable();
+            _operations.RemapKeys("foo", "bar", KeyRemapMode.Insert, true);
+            _host.Verify();
+        }
+
+        [Test]
+        public void RemapKeys2()
+        {
+            Create("foo");
+            _host.Setup(x => x.UpdateStatus(Resources.CommandMode_NotSupported_KeyMapping("a", "b"))).Verifiable();
+            _keyMap.Setup(x => x.MapWithNoRemap("a","b",KeyRemapMode.Insert)).Returns(false).Verifiable();
+            _operations.RemapKeys("a", "b", KeyRemapMode.Insert, false);
+            _host.Verify();
+            _keyMap.Verify();
+        }
+
+        [Test]
+        public void RemapKeys3()
+        {
+            Create("foo");
+            _keyMap.Setup(x => x.MapWithNoRemap("a","b",KeyRemapMode.Insert)).Returns(true).Verifiable();
+            _operations.RemapKeys("a", "b", KeyRemapMode.Insert, false);
+            _host.Verify();
+            _keyMap.Verify();
+        }
+
     }
 }

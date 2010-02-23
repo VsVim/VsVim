@@ -8,7 +8,7 @@ open System.Windows.Input
 open System.Windows.Media
 
 type internal NormalMode =
-    interface IMode
+    interface INormalMode
     new: (IVimBuffer* IOperations * IIncrementalSearch) -> NormalMode
     member IncrementalSearch : IIncrementalSearch
 

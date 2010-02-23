@@ -65,7 +65,6 @@
     <Compile Include="CoreInterfaces.fs" />
     <Compile Include="MefInterfaces.fs" />
     <Compile Include="BlockCaret.fs" />
-    <Compile Include="VimBuffer.fs" />
     <Compile Include="RegexUtil.fs" />
     <Compile Include="Modes_ICommonOperations.fs" />
     <Compile Include="Modes_CommonOperations.fs" />
@@ -77,7 +76,7 @@
     <Compile Include="Modes_Command_CommandProcessor.fs" />
     <Compile Include="Modes_Command_CommandMode.fsi" />
     <Compile Include="Modes_Command_CommandMode.fs" />
-    <Compile Include="Modes_Normal_IOperations.fs" />
+    <Compile Include="Modes_Normal_Interfaces.fs" />
     <Compile Include="Modes_Normal_DefaultOperations.fs" />
     <Compile Include="Modes_Normal_Data.fs" />
     <Compile Include="Modes_Normal_IIncrementalSearch.fs" />
@@ -95,6 +94,7 @@
     <Compile Include="Modes_Visual_IVisualMode.fs" />
     <Compile Include="Modes_Visual_VisualMode.fsi" />
     <Compile Include="Modes_Visual_VisualMode.fs" />
+    <Compile Include="VimBuffer.fs" />
     <Compile Include="KeyProcessor.fsi" />
     <Compile Include="KeyProcessor.fs" />
     <Compile Include="MouseProcessor.fs" />
