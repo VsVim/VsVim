@@ -15,9 +15,8 @@ namespace VimCoreTest
         {
             var map = new KeyMap();
             Assert.IsTrue(map.MapWithNoRemap("a", "b", KeyRemapMode.Normal));
-            var ret = map.GetKeyMapping(InputUtil.CharToKeyInput('a'));
-            Assert.IsTrue(ret.IsSome());
-            Assert.AreEqual(InputUtil.CharToKeyInput('b'), ret.Value.Item1);
+            var ret = map.GetKeyMapping(InputUtil.CharToKeyInput('a'), KeyRemapMode.Normal).Single();
+            Assert.AreEqual(InputUtil.CharToKeyInput('b'), ret);
         }
 
         [Test]
@@ -25,9 +24,8 @@ namespace VimCoreTest
         {
             var map = new KeyMap();
             Assert.IsTrue(map.MapWithNoRemap("a", "1", KeyRemapMode.Normal));
-            var ret = map.GetKeyMapping(InputUtil.CharToKeyInput('a'));
-            Assert.IsTrue(ret.IsSome());
-            Assert.AreEqual(InputUtil.CharToKeyInput('1'), ret.Value.Item1);
+            var ret = map.GetKeyMapping(InputUtil.CharToKeyInput('a'), KeyRemapMode.Normal).Single();
+            Assert.AreEqual(InputUtil.CharToKeyInput('1'), ret);
         }
 
         [Test, Description("Non-alpha-numerics are not supported yet")]

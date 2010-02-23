@@ -20,20 +20,21 @@ type ModeKind =
 
 /// Modes for a key remapping
 type KeyRemapMode =
-    | Normal = 0x1
-    | Visual = 0x2
-    | Select = 0x4
-    | OperatorPending = 0x8
-    | Insert = 0x10
-    | Command = 0x20
-    | LangArg = 0x40
+    | Normal 
+    | Visual 
+    | Select 
+    | OperatorPending 
+    | Insert 
+    | Command 
+    | Language 
 
 
 /// Manages the key map for Vim.  Responsible for handling all key remappings
 type IKeyMap =
 
-    /// Get the mapping for the provided KeyInput 
-    abstract GetKeyMapping : KeyInput -> (KeyInput * KeyRemapMode) option
+    /// Get the mapping for the provided KeyInput for the given mode.  If no mapping exists
+    /// then a sequence of a single element containing the passed in key will be returned
+    abstract GetKeyMapping : KeyInput -> KeyRemapMode -> KeyInput seq
     
     /// Map the given key sequence without allowing for remaping
     abstract MapWithNoRemap : lhs:string -> rhs:string -> KeyRemapMode -> bool

@@ -13,6 +13,7 @@ using Microsoft.FSharp.Collections;
 using Moq;
 using Microsoft.VisualStudio.Text.Operations;
 using Microsoft.FSharp.Core;
+using Vim.Modes.Normal;
 
 namespace VimCoreTest
 {
@@ -22,7 +23,7 @@ namespace VimCoreTest
         IWpfTextView _view;
         IEditorOperations _editorOperations;
         Mock<IVim> _vim;
-        Mock<IMode> _normalMode;
+        Mock<INormalMode> _normalMode;
         Mock<IMode> _insertMode;
         Mock<IMode> _disabledMode;
         Mock<IJumpList> _jumpList;
@@ -48,9 +49,10 @@ namespace VimCoreTest
             _blockCaret = new MockBlockCaret();
             _disabledMode = new Mock<IMode>(MockBehavior.Strict);
             _disabledMode.SetupGet(x => x.ModeKind).Returns(ModeKind.Disabled);
-            _normalMode = new Mock<IMode>(MockBehavior.Strict);
+            _normalMode = new Mock<INormalMode>(MockBehavior.Strict);
             _normalMode.Setup(x => x.OnEnter());
             _normalMode.SetupGet(x => x.ModeKind).Returns(ModeKind.Normal);
+            _normalMode.SetupGet(x => x.InOperatorPending).Returns(false);
             _insertMode = new Mock<IMode>(MockBehavior.Strict);
             _insertMode.SetupGet(x => x.ModeKind).Returns(ModeKind.Insert);
             _jumpList = new Mock<IJumpList>(MockBehavior.Strict);
@@ -66,6 +68,13 @@ namespace VimCoreTest
             _rawBuffer.AddMode(_disabledMode.Object);
             _rawBuffer.SwitchMode(ModeKind.Normal);
             _buffer = _rawBuffer;
+        }
+
+        private void DisableKeyRemap()
+        {
+            _keyMap
+                .Setup(x => x.GetKeyMapping(It.IsAny<KeyInput>(), It.IsAny<KeyRemapMode>()))
+                .Returns<KeyInput,KeyRemapMode>((p1, p2) => Enumerable.Repeat(p1, 1));
         }
 
         [Test]
@@ -110,7 +119,7 @@ namespace VimCoreTest
         [Test]
         public void KeyInputProcessed1()
         {
-            _keyMap.Setup(x => x.GetKeyMapping(It.IsAny<KeyInput>())).Returns(FSharpOption<Tuple<KeyInput, KeyRemapMode>>.None);
+            DisableKeyRemap();
             var ki = new KeyInput('f', Key.F);
             _normalMode.Setup(x => x.Process(ki)).Returns(ProcessResult.Processed);
             var ran = false;
@@ -156,7 +165,7 @@ namespace VimCoreTest
         [Test,Description("Disable command should be preprocessed")]
         public void Disable1()
         {
-            _keyMap.Setup(x => x.GetKeyMapping(It.IsAny<KeyInput>())).Returns(FSharpOption<Tuple<KeyInput, KeyRemapMode>>.None);
+            DisableKeyRemap();
             _normalMode.Setup(x => x.OnLeave());
             _disabledMode.Setup(x => x.OnEnter()).Verifiable();
             _buffer.ProcessInput(Vim.GlobalSettings.DisableCommand);
@@ -166,7 +175,7 @@ namespace VimCoreTest
         [Test, Description("Handle Switch previous mode")]
         public void Process1()
         {
-            _keyMap.Setup(x => x.GetKeyMapping(It.IsAny<KeyInput>())).Returns(FSharpOption<Tuple<KeyInput, KeyRemapMode>>.None);
+            DisableKeyRemap();
             var prev = _buffer.ModeKind;
             _normalMode.Setup(x => x.OnLeave());
             _insertMode.Setup(x => x.OnEnter());
@@ -181,7 +190,7 @@ namespace VimCoreTest
         [Test, Description("Switch previous mode should still fire the event")]
         public void Process2()
         {
-            _keyMap.Setup(x => x.GetKeyMapping(It.IsAny<KeyInput>())).Returns(FSharpOption<Tuple<KeyInput, KeyRemapMode>>.None);
+            DisableKeyRemap();
             _normalMode.Setup(x => x.OnLeave());
             _insertMode.Setup(x => x.OnEnter()).Verifiable();
             _insertMode.Setup(x => x.OnLeave()).Verifiable();
@@ -199,11 +208,43 @@ namespace VimCoreTest
         {
             var newKi = InputUtil.CharToKeyInput('c');
             _keyMap
-                .Setup(x => x.GetKeyMapping(InputUtil.CharToKeyInput('b')))
-                .Returns((FSharpOption.Create(Tuple.Create(newKi, KeyRemapMode.Normal))));
+                .Setup(x => x.GetKeyMapping(InputUtil.CharToKeyInput('b'), KeyRemapMode.Normal))
+                .Returns(Enumerable.Repeat(newKi,1));
             _normalMode.Setup(x => x.Process(newKi)).Returns(ProcessResult._unique_Processed).Verifiable();
             Assert.IsTrue(_buffer.ProcessChar('b'));
             _keyMap.Verify();
+            _normalMode.Verify();
+        }
+
+        [Test, Description("Multiple keys returned")]
+        public void Remap2()
+        {
+            var list = new KeyInput[] {
+                InputUtil.CharToKeyInput('c'),
+                InputUtil.CharToKeyInput('d') };
+            _keyMap
+                .Setup(x => x.GetKeyMapping(InputUtil.CharToKeyInput('b'), KeyRemapMode.Normal))
+                .Returns(list);
+            _normalMode.Setup(x => x.Process(list[0])).Returns(ProcessResult.Processed).Verifiable();
+            _normalMode.Setup(x => x.Process(list[1])).Returns(ProcessResult.Processed).Verifiable();
+            Assert.IsTrue(_buffer.ProcessChar('b'));
+            _normalMode.Verify();
+        }
+
+        [Test, Description("Don't return a value for a different mode")]
+        public void Remap3()
+        {
+            var list = new KeyInput[] {
+                InputUtil.CharToKeyInput('c'),
+                InputUtil.CharToKeyInput('d') };
+            _keyMap
+                .Setup(x => x.GetKeyMapping(InputUtil.CharToKeyInput('b'), KeyRemapMode.Command))
+                .Returns(list);
+            _keyMap
+                .Setup(x => x.GetKeyMapping(InputUtil.CharToKeyInput('b'), KeyRemapMode.Normal))
+                .Returns(Enumerable.Repeat(InputUtil.CharToKeyInput('b'), 1));
+            _normalMode.Setup(x => x.Process(InputUtil.CharToKeyInput('b'))).Returns(ProcessResult.Processed).Verifiable();
+            Assert.IsTrue(_buffer.ProcessChar('b'));
             _normalMode.Verify();
         }
     }

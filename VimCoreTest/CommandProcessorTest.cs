@@ -52,9 +52,9 @@ namespace VimCoreTest
             _processor.RunCommand(Microsoft.FSharp.Collections.ListModule.OfSeq(list));
         }
 
-        private void TestRemap(string input, string lhs, string rhs, KeyRemapMode modes, bool allowRemap = false)
+        private void TestRemap(string input, string lhs, string rhs, params KeyRemapMode[] modes)
         {
-            _operations.Setup(x => x.RemapKeys(lhs, rhs, modes, allowRemap)).Verifiable();
+            _operations.Setup(x => x.RemapKeys(lhs, rhs, modes, false)).Verifiable();
             RunCommand(input);
             _operations.Verify();
         }
@@ -735,20 +735,20 @@ namespace VimCoreTest
         public void Remap_noremap()
         {
             Create("");
-            var mode = KeyRemapMode.Normal | KeyRemapMode.Visual | KeyRemapMode.OperatorPending;
-            TestRemap("noremap l h", "l", "h", mode);
-            TestRemap("nore l h", "l", "h", mode);
-            TestRemap("no l h", "l", "h", mode);
+            var modes = new KeyRemapMode[] { KeyRemapMode.Normal, KeyRemapMode.Visual, KeyRemapMode.OperatorPending };
+            TestRemap("noremap l h", "l", "h", modes);
+            TestRemap("nore l h", "l", "h", modes);
+            TestRemap("no l h", "l", "h", modes);
         }
 
         [Test,Ignore]
         public void Remap_noremap2()
         {
             Create("");
-            var mode = KeyRemapMode.Insert | KeyRemapMode.Command;
-            TestRemap("noremap! l h", "l", "h", mode);
-            TestRemap("nore! l h", "l", "h", mode);
-            TestRemap("no! l h", "l", "h", mode);
+            var modes = new KeyRemapMode[] { KeyRemapMode.Normal, KeyRemapMode.Visual, KeyRemapMode.OperatorPending };
+            TestRemap("noremap! l h", "l", "h", modes);
+            TestRemap("nore! l h", "l", "h", modes);
+            TestRemap("no! l h", "l", "h", modes);
         }
 
         [Test,Ignore]

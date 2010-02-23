@@ -188,8 +188,13 @@ type internal DefaultOperations
             if not ret then 
                 Resources.CommandMode_InvalidValue settingName value |> _host.UpdateStatus
 
-        member x.RemapKeys (lhs:string) (rhs:string) (mode:KeyRemapMode) allowRemap = 
+        member x.RemapKeys (lhs:string) (rhs:string) (modes:KeyRemapMode seq) allowRemap = 
             if allowRemap then
                 _host.UpdateStatus Resources.CommandMode_NotSupported_KeyRemapping
-            elif not (_keyMap.MapWithNoRemap lhs rhs mode) then
-                _host.UpdateStatus (Resources.CommandMode_NotSupported_KeyMapping lhs rhs)
+            else
+                let failed = 
+                    modes
+                    |> Seq.map (fun mode -> (mode,_keyMap.MapWithNoRemap lhs rhs mode))
+                    |> Seq.filter (fun (_,ret) -> not ret)
+                if not (failed |> Seq.isEmpty) then
+                    _host.UpdateStatus (Resources.CommandMode_NotSupported_KeyMapping lhs rhs)

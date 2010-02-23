@@ -52,48 +52,46 @@ type internal VimBuffer
     member x.SwitchMode kind = _modeMap.SwitchMode kind
 
     // Actuall process the input key.  Raise the change event on an actual change
-    member x.ProcessInput (i:KeyInput) = 
-        let i = x.MaybeMapKeyInput i
-        let ret = 
-            if i = _vim.Settings.DisableCommand && x.Mode.ModeKind <> ModeKind.Disabled then
-                x.SwitchMode ModeKind.Disabled |> ignore
-                true
-            else
-                let res = x.Mode.Process i
-                match res with
-                    | SwitchMode (kind) -> 
-                        x.SwitchMode kind |> ignore
-                        true
-                    | SwitchPreviousMode -> 
-                        _modeMap.SwitchPreviousMode() |> ignore
-                        true
-                    | Processed -> true
-                    | ProcessNotHandled -> false
-        _keyInputProcessedEvent.Trigger(i)
-        ret
+    member x.ProcessInput (i:KeyInput) : bool = 
+        let inner i = 
+            let ret = 
+                if i = _vim.Settings.DisableCommand && x.Mode.ModeKind <> ModeKind.Disabled then
+                    x.SwitchMode ModeKind.Disabled |> ignore
+                    true
+                else
+                    let res = x.Mode.Process i
+                    match res with
+                        | SwitchMode (kind) -> 
+                            x.SwitchMode kind |> ignore
+                            true
+                        | SwitchPreviousMode -> 
+                            _modeMap.SwitchPreviousMode() |> ignore
+                            true
+                        | Processed -> true
+                        | ProcessNotHandled -> false
+            _keyInputProcessedEvent.Trigger(i)
+            ret
+        x.MaybeMapKeyInput i
+            |> Seq.map inner
+            |> SeqUtil.last
 
-    member x.MaybeMapKeyInput ki = 
-        match _vim.KeyMap.GetKeyMapping ki with
-        | None -> ki
-        | Some(mappedKi,mode) ->
-            let appliesToCurrentMode = 
-                match _modeMap.Mode.ModeKind with
-                | ModeKind.Insert -> Utils.IsFlagSet mode KeyRemapMode.Insert
-                | ModeKind.Normal -> 
-                    if Utils.IsFlagSet mode KeyRemapMode.Normal then true
-                    elif Utils.IsFlagSet mode KeyRemapMode.OperatorPending then
-                        let mode = _modeMap.Mode :?> Vim.Modes.Normal.INormalMode
-                        mode.InOperatorPending
-                    else
-                        false
-                | ModeKind.Command -> Utils.IsFlagSet mode KeyRemapMode.Command
-                | ModeKind.VisualBlock -> Utils.IsFlagSet mode KeyRemapMode.Visual
-                | ModeKind.VisualCharacter -> Utils.IsFlagSet mode KeyRemapMode.Visual
-                | ModeKind.VisualLine -> Utils.IsFlagSet mode KeyRemapMode.Visual
-                | ModeKind.Disabled -> false
-                | _ -> false
-            if appliesToCurrentMode then mappedKi
-            else ki
+    
+    member x.MaybeMapKeyInput (ki:KeyInput) : KeyInput seq= 
+        let opt = 
+            match _modeMap.Mode.ModeKind with
+            | ModeKind.Insert -> Some (KeyRemapMode.Insert)
+            | ModeKind.Normal -> 
+                let mode = _modeMap.Mode :?> Vim.Modes.Normal.INormalMode
+                if mode.InOperatorPending then Some(KeyRemapMode.OperatorPending)
+                else Some(KeyRemapMode.Normal)
+            | ModeKind.Command -> Some(KeyRemapMode.Command)
+            | ModeKind.VisualBlock -> Some(KeyRemapMode.Visual)
+            | ModeKind.VisualCharacter -> Some(KeyRemapMode.Visual)
+            | ModeKind.VisualLine -> Some(KeyRemapMode.Visual)
+            | _ -> None
+        match opt with
+        | None -> Seq.singleton ki
+        | Some(mode) -> _vim.KeyMap.GetKeyMapping ki mode
 
     member x.AddMode mode = _modeMap.AddMode mode
             

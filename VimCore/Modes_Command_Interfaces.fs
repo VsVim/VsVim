@@ -46,7 +46,7 @@ type IOperations =
     abstract InvertSetting : settingName:string -> unit
 
     /// Remap the specified keys
-    abstract RemapKeys : lhs:string -> rhs:string -> mode:KeyRemapMode -> allowRemap : bool -> unit
+    abstract RemapKeys : lhs:string -> rhs:string -> modes:KeyRemapMode seq -> allowRemap : bool -> unit
 
     /// Print out the marks in the context of the current buffer
     abstract PrintMarks : IMarkMap -> unit

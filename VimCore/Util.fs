@@ -53,6 +53,9 @@ module internal Utils =
         let value = intValue &&& (~~~flagValue)
         LanguagePrimitives.EnumOfValue value
 
+    /// Get the declared values of the specified enumeration
+    let GetEnumValues<'T when 'T : enum<'T>>() : 'T seq=
+        System.Enum.GetValues(typeof<'T>) |> Seq.cast<'T>
     
     /// Create a regex.  Returns None if the regex has invalid characters
     let TryCreateRegex pattern options =
@@ -113,4 +116,16 @@ module internal SeqUtil =
     let tryHeadOnly l = 
         if Seq.isEmpty l then None
         else Some (Seq.head l)
+
+    /// Get the last element in the sequence.  Throws an ArgumentException if 
+    /// the sequence is empty
+    let last (s:'a seq) = 
+        use e = s.GetEnumerator()
+        if not (e.MoveNext()) then invalidArg "s" "Sequence must not be empty"
+
+        let mutable value = e.Current
+        while e.MoveNext() do
+            value <- e.Current
+        value
+
         

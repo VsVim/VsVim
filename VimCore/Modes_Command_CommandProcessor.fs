@@ -319,7 +319,7 @@ type internal CommandProcessor
 
     member private x.ParseNChar (current:KeyInput) (rest: KeyInput list) (range:Range option) =
         match current.Char with
-        | 'o' -> x.ParseKeyRemap rest "remap" (KeyRemapMode.Normal ||| KeyRemapMode.Visual ||| KeyRemapMode.OperatorPending) false
+        | 'o' -> x.ParseKeyRemap rest "remap" [KeyRemapMode.Normal ; KeyRemapMode.Visual ; KeyRemapMode.OperatorPending] false
         | _ -> _data.VimHost.UpdateStatus(x.BadMessage)
 
     member private x.ParseSChar (current:KeyInput) (rest: KeyInput list) (range:Range option) =
