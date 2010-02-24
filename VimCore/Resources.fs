@@ -32,6 +32,7 @@ module internal Resources =
     let CommandMode_CouldNotOpenFile file = sprintf "Could not open file \"%s\"" file
 
     let Vim_ViewAlreadyHasBuffer = "View is already associated with an IVimBuffer"
+    let Vim_RecursiveMapping = "Recursive key mapping detected"
 
     let Range_Invalid msg = sprintf "Invalid Range: %s" msg
     let Range_MarkMissingIdentifier = Range_Invalid "Missing mark after '"

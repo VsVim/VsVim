@@ -30,6 +30,7 @@ namespace VimCoreTest
         Mock<IKeyMap> _keyMap;
         Mock<IVimGlobalSettings> _globalSettings;
         Mock<IVimLocalSettings> _settings;
+        Mock<IVimHost> _host;
         MockBlockCaret _blockCaret;
         VimBuffer _rawBuffer;
         IVimBuffer _buffer;
@@ -45,7 +46,8 @@ namespace VimCoreTest
             _globalSettings = MockObjectFactory.CreateGlobalSettings();
             _settings = MockObjectFactory.CreateLocalSettings(_globalSettings.Object);
             _keyMap = new Mock<IKeyMap>(MockBehavior.Strict);
-            _vim = MockObjectFactory.CreateVim(map:_markMap, settings:_globalSettings.Object, keyMap:_keyMap.Object);
+            _host = new Mock<IVimHost>(MockBehavior.Strict);
+            _vim = MockObjectFactory.CreateVim(map:_markMap, settings:_globalSettings.Object, keyMap:_keyMap.Object, host:_host.Object);
             _blockCaret = new MockBlockCaret();
             _disabledMode = new Mock<IMode>(MockBehavior.Strict);
             _disabledMode.SetupGet(x => x.ModeKind).Returns(ModeKind.Disabled);
@@ -74,8 +76,8 @@ namespace VimCoreTest
         private void DisableKeyRemap()
         {
             _keyMap
-                .Setup(x => x.GetKeyMapping(It.IsAny<KeyInput>(), It.IsAny<KeyRemapMode>()))
-                .Returns<KeyInput,KeyRemapMode>((p1, p2) => Enumerable.Repeat(p1, 1));
+                .Setup(x => x.GetKeyMappingResult(It.IsAny<KeyInput>(), It.IsAny<KeyRemapMode>()))
+                .Returns(KeyMappingResult.NoMapping);
         }
 
         [Test]
@@ -209,8 +211,8 @@ namespace VimCoreTest
         {
             var newKi = InputUtil.CharToKeyInput('c');
             _keyMap
-                .Setup(x => x.GetKeyMapping(InputUtil.CharToKeyInput('b'), KeyRemapMode.Normal))
-                .Returns(Enumerable.Repeat(newKi,1));
+                .Setup(x => x.GetKeyMappingResult(InputUtil.CharToKeyInput('b'), KeyRemapMode.Normal))
+                .Returns(KeyMappingResult.NewSingleKey(newKi));
             _normalMode.Setup(x => x.Process(newKi)).Returns(ProcessResult._unique_Processed).Verifiable();
             Assert.IsTrue(_buffer.ProcessChar('b'));
             _keyMap.Verify();
@@ -224,8 +226,8 @@ namespace VimCoreTest
                 InputUtil.CharToKeyInput('c'),
                 InputUtil.CharToKeyInput('d') };
             _keyMap
-                .Setup(x => x.GetKeyMapping(InputUtil.CharToKeyInput('b'), KeyRemapMode.Normal))
-                .Returns(list);
+                .Setup(x => x.GetKeyMappingResult(InputUtil.CharToKeyInput('b'), KeyRemapMode.Normal))
+                .Returns(KeyMappingResult.NewKeySequence(list));
             _normalMode.Setup(x => x.Process(list[0])).Returns(ProcessResult.Processed).Verifiable();
             _normalMode.Setup(x => x.Process(list[1])).Returns(ProcessResult.Processed).Verifiable();
             Assert.IsTrue(_buffer.ProcessChar('b'));
@@ -239,11 +241,11 @@ namespace VimCoreTest
                 InputUtil.CharToKeyInput('c'),
                 InputUtil.CharToKeyInput('d') };
             _keyMap
-                .Setup(x => x.GetKeyMapping(InputUtil.CharToKeyInput('b'), KeyRemapMode.Command))
-                .Returns(list);
+                .Setup(x => x.GetKeyMappingResult(InputUtil.CharToKeyInput('b'), KeyRemapMode.Command))
+                .Returns(KeyMappingResult.NewKeySequence(list));
             _keyMap
-                .Setup(x => x.GetKeyMapping(InputUtil.CharToKeyInput('b'), KeyRemapMode.Normal))
-                .Returns(Enumerable.Repeat(InputUtil.CharToKeyInput('b'), 1));
+                .Setup(x => x.GetKeyMappingResult(InputUtil.CharToKeyInput('b'), KeyRemapMode.Normal))
+                .Returns(KeyMappingResult.NoMapping);
             _normalMode.Setup(x => x.Process(InputUtil.CharToKeyInput('b'))).Returns(ProcessResult.Processed).Verifiable();
             Assert.IsTrue(_buffer.ProcessChar('b'));
             _normalMode.Verify();
@@ -255,11 +257,11 @@ namespace VimCoreTest
             var oldKi = InputUtil.CharToKeyInput('b');
             var newKi = InputUtil.CharToKeyInput('c');
             _keyMap
-                .Setup(x => x.GetKeyMapping(oldKi, KeyRemapMode.Normal))
-                .Returns(Enumerable.Repeat(newKi,1));
+                .Setup(x => x.GetKeyMappingResult(oldKi, KeyRemapMode.Normal))
+                .Returns(KeyMappingResult.NewSingleKey(newKi));
             _keyMap
-                .Setup(x => x.GetKeyMapping(oldKi, KeyRemapMode.OperatorPending))
-                .Returns(Enumerable.Repeat(oldKi,1));
+                .Setup(x => x.GetKeyMappingResult(oldKi, KeyRemapMode.OperatorPending))
+                .Returns(KeyMappingResult.NewSingleKey(oldKi));
             _normalMode.SetupGet(x => x.IsOperatorPending).Returns(true);
             _normalMode.Setup(x => x.Process(oldKi)).Returns(ProcessResult.Processed).Verifiable();
             Assert.IsTrue(_buffer.ProcessInput(oldKi));
@@ -275,6 +277,17 @@ namespace VimCoreTest
             _normalMode.Setup(x => x.Process(oldKi)).Returns(ProcessResult.Processed).Verifiable();
             Assert.IsTrue(_buffer.ProcessInput(oldKi));
             _normalMode.Verify();
+        }
+
+        [Test, Description("Recursive mapping should print out an error message")]
+        public void Remap6()
+        {
+            _host.Setup(x => x.UpdateStatus(Resources.Vim_RecursiveMapping)).Verifiable();
+            _keyMap
+                .Setup(x => x.GetKeyMappingResult(It.IsAny<KeyInput>(), KeyRemapMode.Normal))
+                .Returns(KeyMappingResult.RecursiveMapping);
+            _buffer.ProcessChar('b');
+            _host.Verify();
         }
     }
 }

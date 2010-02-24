@@ -73,6 +73,22 @@ namespace VimCoreTest
 
         #endregion
 
+        #region KeyMappingResult
+
+        internal static Vim.KeyMappingResult.SingleKey AsSingleKey(this KeyMappingResult res)
+        {
+            Assert.IsTrue(res.IsSingleKey);
+            return (KeyMappingResult.SingleKey)res;
+        }
+
+        internal static KeyMappingResult.KeySequence AsKeySequence(this KeyMappingResult res)
+        {
+            Assert.IsTrue(res.IsKeySequence);
+            return (KeyMappingResult.KeySequence)res;
+        }
+
+        #endregion
+
         #region SettingValue
 
         internal static SettingValue.StringValue AsStringValue(this SettingValue value)
