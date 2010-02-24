@@ -9,14 +9,24 @@ type internal KeyMap() =
     let mutable _map : Map<KeyRemapMode, RemapModeMap> = Map.empty
 
     member x.GetKeyMapping ki mode = 
-        match _map |> Map.tryFind mode with
-        | None -> Seq.singleton ki
-        | Some(modeMap) ->  
-            match modeMap |> Map.tryFind ki with
-            | None -> Seq.singleton ki
-            | Some(kiSeq,_) -> kiSeq
+        let kiSeq,_,_ = x.GetKeyMappingCore ki mode Set.empty
+        kiSeq
 
-    member x.MapWithNoRemap (lhs:string) (rhs:string) (mode:KeyRemapMode) = 
+    member x.GetKeyMappingResult ki mode = 
+        let kiSeq,isRecursive,_ = x.GetKeyMappingCore ki mode Set.empty
+        if isRecursive then RecursiveMapping
+        elif kiSeq |> Seq.isEmpty then NoMapping
+        elif kiSeq |> Seq.length = 1 then SingleKey (kiSeq |> Seq.head)
+        else KeySequence kiSeq
+
+    member x.MapWithNoRemap lhs rhs mode = x.MapCore lhs rhs mode false
+    member x.MapWithRemap lhs rhs mode = x.MapCore lhs rhs mode true
+
+    member x.Clear mode = _map <- _map |> Map.remove mode
+    member x.ClearAll () = _map <- Map.empty
+
+    /// Main API for adding a key mapping into our storage
+    member private x.MapCore (lhs:string) (rhs:string) (mode:KeyRemapMode) allowRemap = 
         if StringUtil.Length lhs <> 1 || StringUtil.Length rhs <= 0 then 
             false
         else
@@ -25,7 +35,7 @@ type internal KeyMap() =
             match lhs,rhs with
             | Some(leftSeq),Some(rightSeq) ->
                 let leftKi = leftSeq |> Seq.head
-                let value = (rightSeq,false)
+                let value = (rightSeq,allowRemap)
                 let modeMap = 
                     match _map |> Map.tryFind mode with
                     | None -> Map.empty
@@ -34,11 +44,6 @@ type internal KeyMap() =
                 _map <- Map.add mode modeMap _map
                 true
             | _ -> false
-
-    member x.MapWithRemap lhs rhs mode = x.MapWithNoRemap lhs rhs mode
-    member x.GetKeyMappingResult ki mode = NoMapping
-    member x.Clear mode = ()
-    member x.ClearAll () = ()
 
     /// Parse out the passed in key bindings.  Returns None in the case of a bad
     /// format on data or a Some KeyInput list on success
@@ -49,6 +54,40 @@ type internal KeyMap() =
             |> SeqUtil.isNotEmpty
         if hasBadData then None
         else data |> Seq.map InputUtil.CharToKeyInput |> Some
+
+    /// Get the key mapping for the passed in data.  Returns a tuple of (KeyInput seq,bool,Set<KeyInput>)
+    /// where the bool value is true if there is a recursive mapping.  The Set parameter
+    /// tracks the KeyInput values we've already seen in order to detect recursion 
+    member private x.GetKeyMappingCore ki mode set = 
+        if Set.contains ki set then (Seq.empty, true, set)
+        else
+            match _map |> Map.tryFind mode with
+            | None -> (Seq.empty, false, set)
+            | Some(modeMap) ->  
+                match modeMap |> Map.tryFind ki with
+                | None -> (Seq.empty, false, set)
+                | Some(kiSeq,allowRemap) -> 
+                    let set = set |> Set.add ki
+                    if allowRemap then
+                        let mutable anyRecursive = false
+                        let mutable set = set
+                        let list = new System.Collections.Generic.List<KeyInput>()
+                        for mappedKi in kiSeq do
+                            let mappedSeq, isRecursive,newSet = x.GetKeyMappingCore mappedKi mode set
+                            set <- newSet
+                            if isRecursive then
+                                anyRecursive <- true
+                                list.Add(mappedKi)
+                            elif mappedSeq |> Seq.isEmpty then
+                                list.Add(mappedKi)
+                            else
+                                list.AddRange(mappedSeq)
+
+                        (list :> KeyInput seq, anyRecursive, set)
+
+                    else
+                        (kiSeq, false, set)
+
             
 
     interface IKeyMap with
