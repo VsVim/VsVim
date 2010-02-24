@@ -24,7 +24,6 @@ module internal Resources =
     let CommandMode_NotSupported_SubstituteConfirm = CommandMode_NotSupported "Substitute Confirm"
     let CommandMode_NotSupported_SourceNormal = "source! commands are not currently supported"
     let CommandMode_NotSupported_KeyMapping lhs rhs = sprintf "The key mapping %s -> %s is not currently supported" lhs rhs
-    let CommandMode_NotSupported_KeyRemapping = "Key mapping with remapping is not currently supported"
     let CommandMode_UnknownOption optionName = sprintf "Unknown option: %s" optionName
     let CommandMode_InvalidArgument name = sprintf "Invalid argument: %s" name
     let CommandMode_InvalidValue name value = sprintf "Invalid value given for %s: %s" name value

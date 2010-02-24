@@ -382,9 +382,9 @@ namespace VimCoreTest
         public void RemapKeys1()
         {
             Create("foo");
-            _host.Setup(x => x.UpdateStatus(Resources.CommandMode_NotSupported_KeyRemapping)).Verifiable();
+            _keyMap.Setup(x => x.MapWithRemap("foo", "bar", KeyRemapMode.Insert)).Returns(true).Verifiable();
             _operations.RemapKeys("foo", "bar", Enumerable.Repeat(KeyRemapMode.Insert,1), true);
-            _host.Verify();
+            _keyMap.Verify();
         }
 
         [Test]
@@ -407,6 +407,5 @@ namespace VimCoreTest
             _host.Verify();
             _keyMap.Verify();
         }
-
     }
 }

@@ -52,9 +52,21 @@ namespace VimCoreTest
             _processor.RunCommand(Microsoft.FSharp.Collections.ListModule.OfSeq(list));
         }
 
+
+
+        private void TestNoRemap(string input, string lhs, string rhs, params KeyRemapMode[] modes)
+        {
+            TestMapCore(input, lhs, rhs, false, modes);
+        }
+
         private void TestRemap(string input, string lhs, string rhs, params KeyRemapMode[] modes)
         {
-            _operations.Setup(x => x.RemapKeys(lhs, rhs, modes, false)).Verifiable();
+            TestMapCore(input, lhs, rhs, true, modes);
+        }
+
+        private void TestMapCore(string input, string lhs, string rhs, bool allowRemap, params KeyRemapMode[] modes)
+        {
+            _operations.Setup(x => x.RemapKeys(lhs, rhs, modes, allowRemap)).Verifiable();
             RunCommand(input);
             _operations.Verify();
         }
@@ -736,9 +748,9 @@ namespace VimCoreTest
         {
             Create("");
             var modes = new KeyRemapMode[] { KeyRemapMode.Normal, KeyRemapMode.Visual, KeyRemapMode.OperatorPending };
-            TestRemap("noremap l h", "l", "h", modes);
-            TestRemap("nore l h", "l", "h", modes);
-            TestRemap("no l h", "l", "h", modes);
+            TestNoRemap("noremap l h", "l", "h", modes);
+            TestNoRemap("nore l h", "l", "h", modes);
+            TestNoRemap("no l h", "l", "h", modes);
         }
 
         [Test,Ignore]
@@ -746,55 +758,88 @@ namespace VimCoreTest
         {
             Create("");
             var modes = new KeyRemapMode[] { KeyRemapMode.Normal, KeyRemapMode.Visual, KeyRemapMode.OperatorPending };
-            TestRemap("noremap! l h", "l", "h", modes);
-            TestRemap("nore! l h", "l", "h", modes);
-            TestRemap("no! l h", "l", "h", modes);
+            TestNoRemap("noremap! l h", "l", "h", modes);
+            TestNoRemap("nore! l h", "l", "h", modes);
+            TestNoRemap("no! l h", "l", "h", modes);
         }
 
         [Test,Ignore]
         public void Remap_nnoremap()
         {
             Create("");
-            TestRemap("nnoremap l h", "l", "h", KeyRemapMode.Normal);
-            TestRemap("nnor l h", "l", "h", KeyRemapMode.Normal);
-            TestRemap("nn l h", "l", "h", KeyRemapMode.Normal);
+            TestNoRemap("nnoremap l h", "l", "h", KeyRemapMode.Normal);
+            TestNoRemap("nnor l h", "l", "h", KeyRemapMode.Normal);
+            TestNoRemap("nn l h", "l", "h", KeyRemapMode.Normal);
         }
 
         [Test,Ignore]
         public void Remap_vnoremap()
         {
             Create("");
-            TestRemap("vnoremap a b", "a", "b", KeyRemapMode.Visual);
-            TestRemap("vnor a b", "a", "b", KeyRemapMode.Visual);
-            TestRemap("vn a b", "a", "b", KeyRemapMode.Visual);
+            TestNoRemap("vnoremap a b", "a", "b", KeyRemapMode.Visual);
+            TestNoRemap("vnor a b", "a", "b", KeyRemapMode.Visual);
+            TestNoRemap("vn a b", "a", "b", KeyRemapMode.Visual);
         }
 
         [Test,Ignore]
         public void Remap_xnoremap()
         {
             Create("");
-            TestRemap("xnoremap b c", "b", "c", KeyRemapMode.Visual);
+            TestNoRemap("xnoremap b c", "b", "c", KeyRemapMode.Visual);
         }
 
         [Test,Ignore]
         public void Remap_snoremap()
         {
             Create("");
-            TestRemap("snoremap a b", "a", "b", KeyRemapMode.Select);
+            TestNoRemap("snoremap a b", "a", "b", KeyRemapMode.Select);
         }
 
         [Test,Ignore]
         public void Remap_onoremap()
         {
             Create("");
-            TestRemap("onoremap a b", "a", "b", KeyRemapMode.OperatorPending);
+            TestNoRemap("onoremap a b", "a", "b", KeyRemapMode.OperatorPending);
         }
 
         [Test,Ignore]
         public void Remap_inoremap()
         {
             Create("");
-            TestRemap("inoremap a b", "a", "b", KeyRemapMode.Insert);
+            TestNoRemap("inoremap a b", "a", "b", KeyRemapMode.Insert);
+        }
+
+        [Test]
+        public void Remap_map1()
+        {
+            Create("");
+            TestRemap("map a bc", "a", "bc", KeyRemapMode.Normal, KeyRemapMode.Visual, KeyRemapMode.OperatorPending);
+        }
+
+        [Test]
+        public void Remap_nmap1()
+        {
+            Create("");
+            TestRemap("nmap a b", "a", "b", KeyRemapMode.Normal);
+        }
+
+        [Test]
+        public void Remap_many1()
+        {
+            Create("");
+            TestRemap("vmap a b", "a", "b", KeyRemapMode.Visual, KeyRemapMode.Select);
+            TestRemap("vm a b", "a", "b", KeyRemapMode.Visual, KeyRemapMode.Select);
+            TestRemap("xmap a b", "a", "b", KeyRemapMode.Visual);
+            TestRemap("xm a b", "a", "b", KeyRemapMode.Visual);
+            TestRemap("smap a b", "a", "b", KeyRemapMode.Select);
+            TestRemap("omap a b", "a", "b", KeyRemapMode.OperatorPending);
+            TestRemap("om a b", "a", "b", KeyRemapMode.OperatorPending);
+            TestRemap("imap a b", "a", "b", KeyRemapMode.Insert);
+            TestRemap("im a b", "a", "b", KeyRemapMode.Insert);
+            TestRemap("cmap a b", "a", "b", KeyRemapMode.Command);
+            TestRemap("cm a b", "a", "b", KeyRemapMode.Command);
+            TestRemap("lmap a b", "a", "b", KeyRemapMode.Language);
+            TestRemap("lm a b", "a", "b", KeyRemapMode.Language);
         }
 
     }

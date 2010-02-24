@@ -28,7 +28,7 @@ type internal CommandProcessor
         ListUtil.tryProcessHead cmd inner (fun () -> cmd)
         
     member private x.SkipPast (suffix:seq<char>) (cmd:list<KeyInput>) =
-        let cmd = x.SkipWhitespace cmd |> Seq.ofList
+        let cmd = cmd |> Seq.ofList
         let rec inner (cmd:seq<KeyInput>) (suffix:seq<char>) = 
             if suffix |> Seq.isEmpty then cmd
             else if cmd |> Seq.isEmpty then cmd
@@ -217,7 +217,7 @@ type internal CommandProcessor
         | false -> _data.VimHost.UpdateStatus x.BadMessage
 
     member private x.ParseMarks rest =
-        let rest = rest |> x.SkipPast "arks"
+        let rest = rest |> x.SkipPast "ks"
         match Seq.isEmpty rest with
         | true -> _operations.PrintMarks _data.MarkMap
         | false -> _data.VimHost.UpdateStatus x.BadMessage
@@ -312,6 +312,11 @@ type internal CommandProcessor
         let rest = rest |> x.SkipPast expected 
         x.ParseKeys rest (fun lhs rhs _ -> _operations.RemapKeys lhs rhs modes allowRemap |> ignore) (fun() -> _data.VimHost.UpdateStatus x.BadMessage)
 
+    member private x.ParseOChar (current:KeyInput) (rest: KeyInput list) (range:Range option) =
+        match current.Char with
+        | 'm' -> x.ParseKeyRemap rest "ap" [KeyRemapMode.OperatorPending] true
+        | _ -> _data.VimHost.UpdateStatus x.BadMessage
+
     member private x.ParsePChar (current:KeyInput) (rest: KeyInput list) (range:Range option) =
         match current.Char with
         | 'u' -> x.ParsePut rest range
@@ -320,32 +325,79 @@ type internal CommandProcessor
     member private x.ParseNChar (current:KeyInput) (rest: KeyInput list) (range:Range option) =
         match current.Char with
         | 'o' -> x.ParseKeyRemap rest "remap" [KeyRemapMode.Normal ; KeyRemapMode.Visual ; KeyRemapMode.OperatorPending] false
+        | 'm' -> x.ParseKeyRemap rest "ap" [KeyRemapMode.Normal] true
         | _ -> _data.VimHost.UpdateStatus(x.BadMessage)
 
     member private x.ParseSChar (current:KeyInput) (rest: KeyInput list) (range:Range option) =
         match current.Char with
         | 'e' -> x.ParseSet rest 
         | 'o' -> x.ParseSource rest
+        | 'm' -> x.ParseKeyRemap rest "ap" [KeyRemapMode.Select] true
         | _ -> x.ParseSubstitute ([current] @ rest) range
+
+    member private x.ParseMAChar (current:KeyInput) (rest: KeyInput list) (range:Range option) =
+        match current.Char with
+        | 'r' -> x.ParseMarks rest
+        | 'p' -> x.ParseKeyRemap rest "" [KeyRemapMode.Normal; KeyRemapMode.Visual; KeyRemapMode.OperatorPending] true
+        | _ -> _data.VimHost.UpdateStatus x.BadMessage
+
+    member private x.ParseCChar (current:KeyInput) (rest: KeyInput list) (range:Range option) =
+        match current.Char with
+        | 'm' -> x.ParseKeyRemap rest "ap" [KeyRemapMode.Command] true
+        | _ -> _data.VimHost.UpdateStatus x.BadMessage
+
+    member private x.ParseLChar (current:KeyInput) (rest: KeyInput list) (range:Range option) =
+        match current.Char with
+        | 'm' -> x.ParseKeyRemap rest "ap" [KeyRemapMode.Language] true
+        | _ -> _data.VimHost.UpdateStatus x.BadMessage
+
+    member private x.ParseIChar (current:KeyInput) (rest: KeyInput list) (range:Range option) =
+        match current.Char with
+        | 'm' -> x.ParseKeyRemap rest "ap" [KeyRemapMode.Insert] true
+        | _ -> _data.VimHost.UpdateStatus x.BadMessage
+
+    member private x.ParseMChar (current:KeyInput) (rest: KeyInput list) (range:Range option) =
+        let parseNext nextFunc = 
+            let next head tail = nextFunc head tail range
+            ListUtil.tryProcessHead rest next (fun () -> _data.VimHost.UpdateStatus x.BadMessage)
+        match current.Char with
+        | 'a' -> parseNext x.ParseMAChar
+        | _ -> _data.VimHost.UpdateStatus x.BadMessage
+
+    member private x.ParseVChar (current:KeyInput) (rest: KeyInput list) (range:Range option) =
+        match current.Char with
+        | 'm' -> x.ParseKeyRemap rest "ap" [KeyRemapMode.Visual; KeyRemapMode.Select] true
+        | _ -> _data.VimHost.UpdateStatus x.BadMessage
+
+    member private x.ParseXChar (current:KeyInput) (rest: KeyInput list) (range:Range option) =
+        match current.Char with
+        | 'm' -> x.ParseKeyRemap rest "ap" [KeyRemapMode.Visual] true
+        | _ -> _data.VimHost.UpdateStatus x.BadMessage
 
     member private x.ParseCommand (current:KeyInput) (rest:KeyInput list) (range:Range option) =
         let parseNext nextFunc = 
             let next head tail = nextFunc head tail range
             ListUtil.tryProcessHead rest next (fun () -> _data.VimHost.UpdateStatus x.BadMessage)
         match current.Char with
-        | 'j' -> x.ParseJoin rest range
+        | 'c' -> parseNext x.ParseCChar
+        | 'd' -> x.ParseDelete rest range
         | 'e' -> x.ParseEdit rest 
-        | '$' -> _data.EditorOperations.MoveToEndOfDocument(false);
+        | 'j' -> x.ParseJoin rest range
+        | 'l' -> parseNext x.ParseLChar 
+        | 'i' -> parseNext x.ParseIChar 
+        | 'm' -> parseNext x.ParseMChar
+        | 'n' -> parseNext x.ParseNChar
+        | 'o' -> parseNext x.ParseOChar 
+        | 'p' -> parseNext x.ParsePChar
+        | 'r' -> x.ParseRedo rest 
+        | 's' -> parseNext x.ParseSChar
+        | 'u' -> x.ParseUndo rest 
+        | 'v' -> parseNext x.ParseVChar
+        | 'x' -> parseNext x.ParseXChar
         | 'y' -> x.ParseYank rest range
+        | '$' -> _data.EditorOperations.MoveToEndOfDocument(false);
         | '<' -> x.ParseShiftLeft rest range
         | '>' -> x.ParseShiftRight rest range
-        | 'd' -> x.ParseDelete rest range
-        | 'u' -> x.ParseUndo rest 
-        | 'r' -> x.ParseRedo rest 
-        | 'm' -> x.ParseMarks rest
-        | 'p' -> parseNext x.ParsePChar
-        | 's' -> parseNext x.ParseSChar
-        | 'n' -> parseNext x.ParseNChar
         | _ -> _data.VimHost.UpdateStatus(x.BadMessage)
     
     member private x.ParseInput (originalInputs : KeyInput list) =
