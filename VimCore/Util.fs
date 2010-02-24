@@ -128,4 +128,5 @@ module internal SeqUtil =
             value <- e.Current
         value
 
-        
+    /// Return if the sequence is not empty
+    let isNotEmpty s = not (s |> Seq.isEmpty)

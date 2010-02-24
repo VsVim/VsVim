@@ -28,7 +28,7 @@ namespace VimCoreTest
             Assert.AreEqual(InputUtil.CharToKeyInput('1'), ret);
         }
 
-        [Test, Description("Non-alpha-numerics are not supported yet")]
+        [Test, Description("Having the source contain more than one key stroke is not supported")]
         public void MapWithNoRemap4()
         {
             var map = new KeyMap();
@@ -39,7 +39,37 @@ namespace VimCoreTest
         public void MapWithNoRemap5()
         {
             var map = new KeyMap();
-            Assert.IsFalse(map.MapWithNoRemap("a", "aoeu", KeyRemapMode.Normal));
+            Assert.IsFalse(map.MapWithNoRemap("&", "!", KeyRemapMode.Normal));
+        }
+
+        [Test]
+        public void MapWithNoRemap6()
+        {
+            var map = new KeyMap();
+            Assert.IsTrue(map.MapWithNoRemap("a", "bc", KeyRemapMode.Normal));
+            var ret = map.GetKeyMapping(InputUtil.CharToKeyInput('a'), KeyRemapMode.Normal).ToList();
+            Assert.AreEqual(2, ret.Count);
+            Assert.AreEqual('b', ret[0].Char);
+            Assert.AreEqual('c', ret[1].Char);
+        }
+
+        [Test]
+        public void MapWithNoRemap7()
+        {
+            var map = new KeyMap();
+            Assert.IsTrue(map.MapWithNoRemap("a", "bcd", KeyRemapMode.Normal));
+            var ret = map.GetKeyMapping(InputUtil.CharToKeyInput('a'), KeyRemapMode.Normal).ToList();
+            Assert.AreEqual(3, ret.Count);
+            Assert.AreEqual('b', ret[0].Char);
+            Assert.AreEqual('c', ret[1].Char);
+            Assert.AreEqual('d', ret[2].Char);
+        }
+
+        [Test,Description("Don't map the empty string")]
+        public void MapWithNoRemap8()
+        {
+            var map = new KeyMap();
+            Assert.IsFalse(map.MapWithNoRemap("a", "", KeyRemapMode.Normal));
         }
     }
 }

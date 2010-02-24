@@ -17,24 +17,34 @@ type internal KeyMap() =
             | Some(kiSeq,_) -> kiSeq
 
     member x.MapWithNoRemap (lhs:string) (rhs:string) (mode:KeyRemapMode) = 
-        if StringUtil.Length lhs <> 1 || StringUtil.Length rhs <> 1 then 
+        if StringUtil.Length lhs <> 1 || StringUtil.Length rhs <= 0 then 
             false
         else
-            let lhs = lhs.Chars(0)
-            let rhs = rhs.Chars(0)
-            if System.Char.IsLetterOrDigit(lhs) && System.Char.IsLetterOrDigit(rhs) then
-                let leftKi = InputUtil.CharToKeyInput lhs
-                let rightKi = InputUtil.CharToKeyInput rhs
-                let value = (rightKi,mode)
+            let lhs = x.ParseKeyBinding lhs
+            let rhs = x.ParseKeyBinding rhs
+            match lhs,rhs with
+            | Some(leftSeq),Some(rightSeq) ->
+                let leftKi = leftSeq |> Seq.head
+                let value = (rightSeq,false)
                 let modeMap = 
                     match _map |> Map.tryFind mode with
                     | None -> Map.empty
                     | Some(modeMap) -> modeMap
-                let modeMap = Map.add leftKi ((Seq.singleton rightKi),false) modeMap
+                let modeMap = Map.add leftKi value modeMap
                 _map <- Map.add mode modeMap _map
                 true
-            else
-                false
+            | _ -> false
+
+    /// Parse out the passed in key bindings.  Returns None in the case of a bad
+    /// format on data or a Some KeyInput list on success
+    member private x.ParseKeyBinding (data:string) =
+        let hasBadData = 
+            data 
+            |> Seq.filter (fun c -> not (System.Char.IsLetterOrDigit(c)))
+            |> SeqUtil.isNotEmpty
+        if hasBadData then None
+        else data |> Seq.map InputUtil.CharToKeyInput |> Some
+            
 
     interface IKeyMap with
         member x.GetKeyMapping ki mode = x.GetKeyMapping ki mode
