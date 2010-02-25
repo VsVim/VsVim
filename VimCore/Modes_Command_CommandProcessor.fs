@@ -35,11 +35,13 @@ type internal CommandProcessor
             yield ("set", this.ProcessSet)
             yield ("source", this.ProcessSource)
             yield ("substitute", this.ProcessSubstitute)
+            yield ("s", this.ProcessSubstitute)
+            yield ("su", this.ProcessSubstitute)
             yield ("redo", this.ProcessRedo)
             yield ("undo", this.ProcessUndo)
             yield ("yank", this.ProcessYank)
             yield ("<", this.ProcessShiftLeft)
-            yield ("<", this.ProcessShiftRight)
+            yield (">", this.ProcessShiftRight)
             yield ("$", fun _ _ _ -> _data.EditorOperations.MoveToEndOfDocument(false))
         }
 
@@ -336,11 +338,15 @@ type internal CommandProcessor
 
     member private x.ParseCommand (rest:KeyInput list) (range:Range option) = 
 
+        let isCommandNameChar c = System.Char.IsLetter c
+
         /// Find the single command which fits the passed in set of key strokes
         let rec findCommand (current:KeyInput) (rest:KeyInput list) (commands : (string * CommandAction) seq) index = 
+
             let found = 
                 commands 
                 |> Seq.filter (fun (name,_) -> index < name.Length && name.Chars(index) = current.Char)
+
             match found |> Seq.length with
             | 0 -> None
             | 1 -> 
@@ -350,16 +356,23 @@ type internal CommandProcessor
                 // match the remainder of the name
                 let rec correctNameCheck index (current:KeyInput) (rest:KeyInput list) = 
                     if index = name.Length then Some(action,current :: rest)
-                    elif not (System.Char.IsLetter(current.Char)) then Some(action, current :: rest)
+                    elif not (isCommandNameChar current.Char) then Some(action, current :: rest)
                     elif name.Chars(index) <> current.Char then None
                     else ListUtil.tryProcessHead rest (fun head tail -> correctNameCheck (index+1) head tail) (fun () -> Some(action,List.empty))
                 
                 match rest |> ListUtil.tryHead with
                 | Some(head,tail) -> correctNameCheck (index+1) head tail
                 | None -> Some(action,List.empty)
+
             | _ -> 
-                let withHead head tail = findCommand head tail found (index+1)
-                ListUtil.tryProcessHead rest withHead (fun() -> None)
+                let exactMatch = found |> Seq.tryFind (fun (name,action) -> name.Length = (index+1))
+                match exactMatch,(rest |> ListUtil.tryHead) with
+                | Some(name,action),None -> Some(action,List.empty)
+                | Some(name,action),Some(head,tail) ->
+                    if isCommandNameChar head.Char then findCommand head tail found (index+1)
+                    else Some(action,head :: tail)
+                | None,Some(head,tail) -> findCommand head tail found (index+1)
+                | None,None -> None
 
         if rest |> List.isEmpty then _data.VimHost.UpdateStatus (x.BadMessage)
         else 
