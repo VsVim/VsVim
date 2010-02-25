@@ -407,5 +407,25 @@ namespace VimCoreTest
             _host.Verify();
             _keyMap.Verify();
         }
+
+        [Test]
+        public void UnmapKeys1()
+        {
+            Create("foo");
+            _keyMap.Setup(x => x.Unmap("h", KeyRemapMode.Insert)).Returns(false).Verifiable();
+            _host.Setup(x => x.UpdateStatus(Resources.CommandMode_NoSuchMapping)).Verifiable();
+            _operations.UnmapKeys("h", Enumerable.Repeat(KeyRemapMode.Insert, 1));
+            _keyMap.Verify();
+            _host.Verify();
+        }
+
+        [Test]
+        public void UnmapKeys2()
+        {
+            Create("foo");
+            _keyMap.Setup(x => x.Unmap("h", KeyRemapMode.Insert)).Returns(true).Verifiable();
+            _operations.UnmapKeys("h", Enumerable.Repeat(KeyRemapMode.Insert, 1));
+            _keyMap.Verify();
+        }
     }
 }

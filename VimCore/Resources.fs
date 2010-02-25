@@ -29,6 +29,7 @@ module internal Resources =
     let CommandMode_InvalidValue name value = sprintf "Invalid value given for %s: %s" name value
     let CommandMode_CannotRun command = sprintf "Cannot run \"%s\"" command
     let CommandMode_CouldNotOpenFile file = sprintf "Could not open file \"%s\"" file
+    let CommandMode_NoSuchMapping = "No such mapping"
 
     let Vim_ViewAlreadyHasBuffer = "View is already associated with an IVimBuffer"
     let Vim_RecursiveMapping = "Recursive key mapping detected"

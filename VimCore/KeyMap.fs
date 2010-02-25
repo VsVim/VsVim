@@ -45,6 +45,24 @@ type internal KeyMap() =
                 true
             | _ -> false
 
+
+    member x.Unmap lhs mode = 
+        if StringUtil.Length lhs <> 1 then false
+        else
+            match x.ParseKeyBinding lhs with
+            | Some(leftSeq) ->
+                let ki = leftSeq |> Seq.head
+                match _map |> Map.tryFind mode with
+                | None -> false
+                | Some(modeMap) -> 
+                    if Map.containsKey ki modeMap then
+                        let modeMap = Map.remove ki modeMap
+                        _map <- Map.add mode modeMap _map
+                        true
+                    else
+                        false
+            | None -> false
+
     /// Parse out the passed in key bindings.  Returns None in the case of a bad
     /// format on data or a Some KeyInput list on success
     member private x.ParseKeyBinding (data:string) =
@@ -95,6 +113,7 @@ type internal KeyMap() =
         member x.GetKeyMappingResult ki mode = x.GetKeyMappingResult ki mode
         member x.MapWithNoRemap lhs rhs mode = x.MapWithNoRemap lhs rhs mode
         member x.MapWithRemap lhs rhs mode = x.MapWithRemap lhs rhs mode
+        member x.Unmap lhs mode = x.Unmap lhs mode
         member x.Clear mode = x.Clear mode
         member x.ClearAll () = x.ClearAll()
 

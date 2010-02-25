@@ -39,6 +39,7 @@ type internal CommandProcessor
             yield ("su", this.ProcessSubstitute)
             yield ("redo", this.ProcessRedo)
             yield ("undo", this.ProcessUndo)
+            yield ("u", this.ProcessUndo)
             yield ("yank", this.ProcessYank)
             yield ("<", this.ProcessShiftLeft)
             yield (">", this.ProcessShiftRight)

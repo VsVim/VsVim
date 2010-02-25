@@ -201,4 +201,10 @@ type internal DefaultOperations
 
         member x.ClearKeyMapModes modes = modes |> Seq.iter (fun mode -> _keyMap.Clear mode)
 
-        member x.UnmapKeys lhs modes = ()
+        member x.UnmapKeys lhs modes = 
+            let allSucceeded =
+                modes 
+                |> Seq.map (fun mode -> _keyMap.Unmap lhs mode)
+                |> Seq.filter (fun x -> not x)
+                |> Seq.isEmpty
+            if not allSucceeded then _host.UpdateStatus Resources.CommandMode_NoSuchMapping

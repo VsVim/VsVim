@@ -65,7 +65,7 @@ namespace VimCoreTest
             Assert.AreEqual('d', ret[2].Char);
         }
 
-        [Test,Description("Don't map the empty string")]
+        [Test, Description("Don't map the empty string")]
         public void MapWithNoRemap8()
         {
             var map = new KeyMap();
@@ -200,5 +200,24 @@ namespace VimCoreTest
             Assert.IsTrue(res.IsNoMapping);
 
         }
+
+        [Test]
+        public void Unmap1()
+        {
+            var map = new KeyMap();
+            Assert.IsTrue(map.MapWithNoRemap("a", "b", KeyRemapMode.Normal));
+            Assert.IsTrue(map.Unmap("a", KeyRemapMode.Normal));
+            Assert.IsTrue(map.GetKeyMappingResult(InputUtil.CharToKeyInput('a'), KeyRemapMode.Normal).IsNoMapping);
+        }
+
+        [Test]
+        public void Unmap2()
+        {
+            var map = new KeyMap();
+            Assert.IsTrue(map.MapWithNoRemap("a", "b", KeyRemapMode.Normal));
+            Assert.IsFalse(map.Unmap("a", KeyRemapMode.Insert));
+            Assert.IsTrue(map.GetKeyMappingResult(InputUtil.CharToKeyInput('a'), KeyRemapMode.Normal).IsSingleKey);
+        }
+
     }
 }

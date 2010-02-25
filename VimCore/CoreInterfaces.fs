@@ -52,6 +52,9 @@ type IKeyMap =
     /// Map the given key sequence allowing for a remap 
     abstract MapWithRemap : lhs:string -> rhs:string -> KeyRemapMode -> bool
 
+    /// Unmap the specified key sequence for the specified mode
+    abstract Unmap : lhs:string -> KeyRemapMode -> bool
+
     /// Clear the Key mappings for the specified mode
     abstract Clear : KeyRemapMode -> unit
 
