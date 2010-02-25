@@ -753,17 +753,17 @@ namespace VimCoreTest
             TestNoRemap("no l h", "l", "h", modes);
         }
 
-        [Test,Ignore]
+        [Test]
         public void Remap_noremap2()
         {
             Create("");
-            var modes = new KeyRemapMode[] { KeyRemapMode.Normal, KeyRemapMode.Visual, KeyRemapMode.Select, KeyRemapMode.OperatorPending };
+            var modes = new KeyRemapMode[] { KeyRemapMode.Insert, KeyRemapMode.Command };
             TestNoRemap("noremap! l h", "l", "h", modes);
             TestNoRemap("nore! l h", "l", "h", modes);
             TestNoRemap("no! l h", "l", "h", modes);
         }
 
-        [Test,Ignore]
+        [Test]
         public void Remap_nnoremap()
         {
             Create("");
@@ -772,37 +772,37 @@ namespace VimCoreTest
             TestNoRemap("nn l h", "l", "h", KeyRemapMode.Normal);
         }
 
-        [Test,Ignore]
+        [Test]
         public void Remap_vnoremap()
         {
             Create("");
-            TestNoRemap("vnoremap a b", "a", "b", KeyRemapMode.Visual);
-            TestNoRemap("vnor a b", "a", "b", KeyRemapMode.Visual);
-            TestNoRemap("vn a b", "a", "b", KeyRemapMode.Visual);
+            TestNoRemap("vnoremap a b", "a", "b", KeyRemapMode.Visual, KeyRemapMode.Select);
+            TestNoRemap("vnor a b", "a", "b", KeyRemapMode.Visual, KeyRemapMode.Select);
+            TestNoRemap("vn a b", "a", "b", KeyRemapMode.Visual, KeyRemapMode.Select);
         }
 
-        [Test,Ignore]
+        [Test]
         public void Remap_xnoremap()
         {
             Create("");
             TestNoRemap("xnoremap b c", "b", "c", KeyRemapMode.Visual);
         }
 
-        [Test,Ignore]
+        [Test]
         public void Remap_snoremap()
         {
             Create("");
             TestNoRemap("snoremap a b", "a", "b", KeyRemapMode.Select);
         }
 
-        [Test,Ignore]
+        [Test]
         public void Remap_onoremap()
         {
             Create("");
             TestNoRemap("onoremap a b", "a", "b", KeyRemapMode.OperatorPending);
         }
 
-        [Test,Ignore]
+        [Test]
         public void Remap_inoremap()
         {
             Create("");
@@ -840,6 +840,7 @@ namespace VimCoreTest
             TestRemap("cm a b", "a", "b", KeyRemapMode.Command);
             TestRemap("lmap a b", "a", "b", KeyRemapMode.Language);
             TestRemap("lm a b", "a", "b", KeyRemapMode.Language);
+            TestRemap("map! a b", "a", "b", KeyRemapMode.Insert, KeyRemapMode.Command);
         }
 
     }

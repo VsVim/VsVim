@@ -334,7 +334,11 @@ type internal CommandProcessor
             doParse rest badParse goodParse    
 
     member private x.ProcessKeyMap (name:string) (allowRemap:bool) (modes: KeyRemapMode list) (hasBang:bool) (rest: KeyInput list) = 
-        x.ParseKeys rest (fun lhs rhs _ -> _operations.RemapKeys lhs rhs modes allowRemap |> ignore) (fun() -> _data.VimHost.UpdateStatus x.BadMessage)
+        let modes = 
+            if hasBang then [KeyRemapMode.Insert; KeyRemapMode.Command]
+            else modes
+        let withKeys lhs rhs _ = _operations.RemapKeys lhs rhs modes allowRemap 
+        x.ParseKeys rest withKeys (fun() -> _data.VimHost.UpdateStatus x.BadMessage)
 
     member private x.ParseCommand (rest:KeyInput list) (range:Range option) = 
 
@@ -365,6 +369,12 @@ type internal CommandProcessor
                 | None -> Some(action,List.empty)
 
             | _ -> 
+
+                // Need to be careful here for exact matches.  Certain commands such as substitute can be
+                // executed even though they have an ambiguous prefix.  "s" for instance is a prefix for 
+                // set or substitute but substitute has priority here.  This is established by adding the 
+                // exact name s into the command table.  So if we reach the end of the input to process
+                // a command against and we have an exact match it wins
                 let exactMatch = found |> Seq.tryFind (fun (name,action) -> name.Length = (index+1))
                 match exactMatch,(rest |> ListUtil.tryHead) with
                 | Some(name,action),None -> Some(action,List.empty)
