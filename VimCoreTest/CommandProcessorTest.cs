@@ -747,7 +747,7 @@ namespace VimCoreTest
         public void Remap_noremap()
         {
             Create("");
-            var modes = new KeyRemapMode[] { KeyRemapMode.Normal, KeyRemapMode.Visual, KeyRemapMode.OperatorPending };
+            var modes = new KeyRemapMode[] { KeyRemapMode.Normal, KeyRemapMode.Visual, KeyRemapMode.Select, KeyRemapMode.OperatorPending };
             TestNoRemap("noremap l h", "l", "h", modes);
             TestNoRemap("nore l h", "l", "h", modes);
             TestNoRemap("no l h", "l", "h", modes);
@@ -757,7 +757,7 @@ namespace VimCoreTest
         public void Remap_noremap2()
         {
             Create("");
-            var modes = new KeyRemapMode[] { KeyRemapMode.Normal, KeyRemapMode.Visual, KeyRemapMode.OperatorPending };
+            var modes = new KeyRemapMode[] { KeyRemapMode.Normal, KeyRemapMode.Visual, KeyRemapMode.Select, KeyRemapMode.OperatorPending };
             TestNoRemap("noremap! l h", "l", "h", modes);
             TestNoRemap("nore! l h", "l", "h", modes);
             TestNoRemap("no! l h", "l", "h", modes);
@@ -813,7 +813,7 @@ namespace VimCoreTest
         public void Remap_map1()
         {
             Create("");
-            TestRemap("map a bc", "a", "bc", KeyRemapMode.Normal, KeyRemapMode.Visual, KeyRemapMode.OperatorPending);
+            TestRemap("map a bc", "a", "bc", KeyRemapMode.Normal, KeyRemapMode.Visual, KeyRemapMode.Select, KeyRemapMode.OperatorPending);
         }
 
         [Test]
