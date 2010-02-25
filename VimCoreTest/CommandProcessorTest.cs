@@ -71,6 +71,13 @@ namespace VimCoreTest
             _operations.Verify();
         }
 
+        private void TestMapClear(string input, params KeyRemapMode[] modes)
+        {
+            _operations.Setup(x => x.ClearKeyMapModes(modes)).Verifiable();
+            RunCommand(input);
+            _operations.Verify();
+        }
+
         [Test]
         public void Jump1()
         {
@@ -843,5 +850,19 @@ namespace VimCoreTest
             TestRemap("map! a b", "a", "b", KeyRemapMode.Insert, KeyRemapMode.Command);
         }
 
+        [Test]
+        public void MapClear_Many1()
+        {
+            Create("");
+            TestMapClear("mapc", KeyRemapMode.Normal, KeyRemapMode.Visual, KeyRemapMode.Command, KeyRemapMode.OperatorPending);
+            TestMapClear("nmapc", KeyRemapMode.Normal);
+            TestMapClear("vmapc", KeyRemapMode.Visual, KeyRemapMode.Select);
+            TestMapClear("xmapc", KeyRemapMode.Visual);
+            TestMapClear("smapc", KeyRemapMode.Select);
+            TestMapClear("omapc", KeyRemapMode.OperatorPending);
+            TestMapClear("mapc!", KeyRemapMode.Insert, KeyRemapMode.Command);
+            TestMapClear("imapc", KeyRemapMode.Insert);
+            TestMapClear("cmapc", KeyRemapMode.Command);
+        }
     }
 }

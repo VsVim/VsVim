@@ -48,6 +48,9 @@ type IOperations =
     /// Remap the specified keys
     abstract RemapKeys : lhs:string -> rhs:string -> modes:KeyRemapMode seq -> allowRemap : bool -> unit
 
+    /// Clear out the specified Mode in the IKeyMap
+    abstract ClearKeyMapModes : KeyRemapMode seq -> unit
+
     /// Print out the marks in the context of the current buffer
     abstract PrintMarks : IMarkMap -> unit
 

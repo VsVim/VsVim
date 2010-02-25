@@ -45,6 +45,21 @@ type internal CommandProcessor
             yield ("$", fun _ _ _ -> _data.EditorOperations.MoveToEndOfDocument(false))
         }
 
+        let mapClearSeq = seq {
+            yield ("mapc", [KeyRemapMode.Normal; KeyRemapMode.Visual; KeyRemapMode.Command; KeyRemapMode.OperatorPending]);
+            yield ("nmapc", [KeyRemapMode.Normal]);
+            yield ("vmapc", [KeyRemapMode.Visual; KeyRemapMode.Select]);
+            yield ("xmapc", [KeyRemapMode.Visual]);
+            yield ("smapc", [KeyRemapMode.Select]);
+            yield ("omapc", [KeyRemapMode.OperatorPending]);
+            yield ("mapc!", [KeyRemapMode.Insert; KeyRemapMode.Command]);
+            yield ("imapc", [KeyRemapMode.Insert]);
+            yield ("cmapc", [KeyRemapMode.Command]);
+        }
+        let mapClearSeq = 
+            mapClearSeq 
+            |> Seq.map (fun (name,modes) -> (name, fun _ _ hasBang -> this.ProcessKeyMapClear modes hasBang))
+
         let remapSeq = seq {
             yield ("map", true, [KeyRemapMode.Normal;KeyRemapMode.Visual; KeyRemapMode.Select;KeyRemapMode.OperatorPending])
             yield ("nmap", true, [KeyRemapMode.Normal])
@@ -72,6 +87,7 @@ type internal CommandProcessor
         _commandList <- 
             normalSeq 
             |> Seq.append remapSeq
+            |> Seq.append mapClearSeq
             |> List.ofSeq
 
     member private x.BadMessage = Resources.CommandMode_CannotRun _command
@@ -332,7 +348,13 @@ type internal CommandProcessor
                     _operations.Substitute search replace range flags
                     _lastSubstitute <- (search,replace,flags)
             doParse rest badParse goodParse    
-
+    
+    member private x.ProcessKeyMapClear modes hasBang =
+        let modes = 
+            if hasBang then [KeyRemapMode.Insert; KeyRemapMode.Command]
+            else modes
+        _operations.ClearKeyMapModes modes
+        
     member private x.ProcessKeyMap (name:string) (allowRemap:bool) (modes: KeyRemapMode list) (hasBang:bool) (rest: KeyInput list) = 
         let modes = 
             if hasBang then [KeyRemapMode.Insert; KeyRemapMode.Command]

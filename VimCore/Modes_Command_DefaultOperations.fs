@@ -198,3 +198,5 @@ type internal DefaultOperations
                 |> Seq.filter (fun (_,ret) -> not ret)
             if not (failed |> Seq.isEmpty) then
                 _host.UpdateStatus (Resources.CommandMode_NotSupported_KeyMapping lhs rhs)
+
+        member x.ClearKeyMapModes modes = modes |> Seq.iter (fun mode -> _keyMap.Clear mode)
