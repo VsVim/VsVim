@@ -60,6 +60,22 @@ type internal CommandProcessor
             mapClearSeq 
             |> Seq.map (fun (name,modes) -> (name, fun _ _ hasBang -> this.ProcessKeyMapClear modes hasBang))
 
+
+        let unmapSeq = seq {
+            yield ("unmap", [KeyRemapMode.Normal;KeyRemapMode.Visual; KeyRemapMode.Select;KeyRemapMode.OperatorPending])
+            yield ("nunmap", [KeyRemapMode.Normal])
+            yield ("vunmap", [KeyRemapMode.Visual;KeyRemapMode.Select])
+            yield ("xunmap", [KeyRemapMode.Visual])
+            yield ("sunmap", [KeyRemapMode.Select])
+            yield ("ounmap", [KeyRemapMode.OperatorPending])
+            yield ("iunmap", [KeyRemapMode.Insert])
+            yield ("lunmap", [KeyRemapMode.Language])
+            yield ("cunmap", [KeyRemapMode.Command])
+        }
+        let unmapSeq= 
+            unmapSeq
+            |> Seq.map (fun (name,modes) -> (name,(fun rest _ hasBang -> this.ProcessKeyUnmap name modes hasBang rest)))
+
         let remapSeq = seq {
             yield ("map", true, [KeyRemapMode.Normal;KeyRemapMode.Visual; KeyRemapMode.Select;KeyRemapMode.OperatorPending])
             yield ("nmap", true, [KeyRemapMode.Normal])
@@ -84,10 +100,12 @@ type internal CommandProcessor
         let remapSeq = 
             remapSeq 
             |> Seq.map (fun (name,allowRemap,modes) -> (name,(fun rest _ hasBang -> this.ProcessKeyMap name allowRemap modes hasBang rest)))
+
         _commandList <- 
             normalSeq 
             |> Seq.append remapSeq
             |> Seq.append mapClearSeq
+            |> Seq.append unmapSeq
             |> List.ofSeq
 
     member private x.BadMessage = Resources.CommandMode_CannotRun _command
@@ -354,6 +372,13 @@ type internal CommandProcessor
             if hasBang then [KeyRemapMode.Insert; KeyRemapMode.Command]
             else modes
         _operations.ClearKeyMapModes modes
+
+    member private x.ProcessKeyUnmap (name:string) (modes: KeyRemapMode list) (hasBang:bool) (rest: KeyInput list) = 
+        let modes = 
+            if hasBang then [KeyRemapMode.Insert; KeyRemapMode.Command]
+            else modes
+        let rest,lhs = rest |> x.SkipNonWhitespace
+        _operations.UnmapKeys lhs modes
         
     member private x.ProcessKeyMap (name:string) (allowRemap:bool) (modes: KeyRemapMode list) (hasBang:bool) (rest: KeyInput list) = 
         let modes = 

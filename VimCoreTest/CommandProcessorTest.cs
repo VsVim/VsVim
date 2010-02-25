@@ -78,6 +78,13 @@ namespace VimCoreTest
             _operations.Verify();
         }
 
+        private void TestUnmap(string input, string lhs, params KeyRemapMode[] modes)
+        {
+            _operations.Setup(x => x.UnmapKeys(lhs, modes)).Verifiable();
+            RunCommand(input);
+            _operations.Verify();
+        }
+
         [Test]
         public void Jump1()
         {
@@ -863,6 +870,26 @@ namespace VimCoreTest
             TestMapClear("mapc!", KeyRemapMode.Insert, KeyRemapMode.Command);
             TestMapClear("imapc", KeyRemapMode.Insert);
             TestMapClear("cmapc", KeyRemapMode.Command);
+        }
+
+        [Test]
+        public void Unmap_Many1()
+        {
+            Create("");
+            TestUnmap("vunmap a ", "a", KeyRemapMode.Visual, KeyRemapMode.Select);
+            TestUnmap("vunm a ", "a", KeyRemapMode.Visual, KeyRemapMode.Select);
+            TestUnmap("xunmap a", "a", KeyRemapMode.Visual);
+            TestUnmap("xunm a ", "a",  KeyRemapMode.Visual);
+            TestUnmap("sunmap a ", "a", KeyRemapMode.Select);
+            TestUnmap("ounmap a ", "a", KeyRemapMode.OperatorPending);
+            TestUnmap("ounm a ", "a", KeyRemapMode.OperatorPending);
+            TestUnmap("iunmap a ", "a", KeyRemapMode.Insert);
+            TestUnmap("iunm a", "a", KeyRemapMode.Insert);
+            TestUnmap("cunmap a ", "a", KeyRemapMode.Command);
+            TestUnmap("cunm a ", "a", KeyRemapMode.Command);
+            TestUnmap("lunmap a ", "a", KeyRemapMode.Language);
+            TestUnmap("lunm a ", "a", KeyRemapMode.Language);
+            TestUnmap("unmap! a ", "a", KeyRemapMode.Insert, KeyRemapMode.Command);
         }
     }
 }

@@ -48,6 +48,9 @@ type IOperations =
     /// Remap the specified keys
     abstract RemapKeys : lhs:string -> rhs:string -> modes:KeyRemapMode seq -> allowRemap : bool -> unit
 
+    /// Remap the specified key sequence
+    abstract UnmapKeys : lhs:string -> modes:KeyRemapMode seq -> unit
+
     /// Clear out the specified Mode in the IKeyMap
     abstract ClearKeyMapModes : KeyRemapMode seq -> unit
 

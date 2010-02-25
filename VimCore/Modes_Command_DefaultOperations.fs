@@ -200,3 +200,5 @@ type internal DefaultOperations
                 _host.UpdateStatus (Resources.CommandMode_NotSupported_KeyMapping lhs rhs)
 
         member x.ClearKeyMapModes modes = modes |> Seq.iter (fun mode -> _keyMap.Clear mode)
+
+        member x.UnmapKeys lhs modes = ()
