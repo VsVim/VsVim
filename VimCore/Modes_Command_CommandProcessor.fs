@@ -8,6 +8,51 @@ open System.Windows.Input
 open System.Text.RegularExpressions
 open Vim.RegexUtil
 
+module internal CommandParseUtil = 
+
+    let rec SkipWhitespace (cmd:KeyInput list) =
+        let inner (head:KeyInput) tail = 
+            if System.Char.IsWhiteSpace head.Char then SkipWhitespace (cmd |> List.tail)
+            else cmd
+        ListUtil.tryProcessHead cmd inner (fun () -> cmd)
+        
+    /// Skip past non-whitespace characters and return the string and next input
+    let SkipNonWhitespace (cmd:KeyInput list) =
+        let rec inner (cmd:KeyInput list) (data:char list) =
+            let withHead (headKey:KeyInput) rest = 
+                if System.Char.IsWhiteSpace headKey.Char then (cmd,data)
+                else inner rest ([headKey.Char] @ data)
+            ListUtil.tryProcessHead cmd withHead (fun () -> (cmd,data))
+        let rest,data = inner cmd List.empty
+        rest,(data |> List.rev |> StringUtil.OfCharSeq)
+
+    /// Try and skip the ! operator
+    let SkipBang (cmd:KeyInput list) =
+        let inner (head:KeyInput) tail = 
+            if head.Char = '!' then (true, tail)
+            else (false,cmd)
+        ListUtil.tryProcessHead cmd inner (fun () -> (false,cmd))
+
+    /// Parse the register out of the stream.  Will return default if no register is 
+    /// specified
+    let SkipRegister (map:IRegisterMap) (cmd:KeyInput list) =
+        let inner (head:KeyInput) tail =
+            match head.IsDigit,map.IsRegisterName (head.Char) with
+            | true,_ -> (map.DefaultRegister, cmd)
+            | false,true -> (map.GetRegister(head.Char), tail)
+            | false,false -> (map.DefaultRegister, cmd)
+        ListUtil.tryProcessHead cmd inner (fun () -> (map.DefaultRegister, cmd))
+
+    /// Parse out the keys for a key remap command
+    let ParseKeys (rest:KeyInput list) found notFound =
+        let rest,left = rest |> SkipWhitespace |> SkipNonWhitespace
+        let rest,right = rest |> SkipWhitespace |> SkipNonWhitespace 
+        if System.String.IsNullOrEmpty(left) || System.String.IsNullOrEmpty(right) then
+            notFound()
+        else
+            found left right rest
+    
+
 type CommandAction = KeyInput list -> Range option -> bool -> unit
 
 /// Type which is responsible for executing command mode commands
@@ -119,65 +164,10 @@ type internal CommandProcessor
 
     member private x.BadMessage = Resources.CommandMode_CannotRun _command
 
-    member private x.SkipWhitespace (cmd:KeyInput list) =
-        let inner (head:KeyInput) tail = 
-            if System.Char.IsWhiteSpace head.Char then x.SkipWhitespace (cmd |> List.tail)
-            else cmd
-        ListUtil.tryProcessHead cmd inner (fun () -> cmd)
-        
-    member private x.SkipPast (suffix:seq<char>) (cmd:list<KeyInput>) =
-        let cmd = cmd |> Seq.ofList
-        let rec inner (cmd:seq<KeyInput>) (suffix:seq<char>) = 
-            if suffix |> Seq.isEmpty then cmd
-            else if cmd |> Seq.isEmpty then cmd
-            else 
-                let left = cmd |> Seq.head 
-                let right = suffix |> Seq.head
-                if left.Char = right then inner (cmd |> Seq.skip 1) (suffix |> Seq.skip 1)
-                else cmd
-        inner cmd suffix |> List.ofSeq
-
-    /// Skip past non-whitespace characters and return the string and next input
-    member private x.SkipNonWhitespace (cmd:KeyInput list) =
-        let rec inner (cmd:KeyInput list) (data:char list) =
-            let withHead (headKey:KeyInput) rest = 
-                if System.Char.IsWhiteSpace headKey.Char then (cmd,data)
-                else inner rest ([headKey.Char] @ data)
-            ListUtil.tryProcessHead cmd withHead (fun () -> (cmd,data))
-        let rest,data = inner cmd List.empty
-        rest,(data |> List.rev |> StringUtil.OfCharSeq)
-
-    /// Try and skip the ! operator
-    member private x.SkipBang (cmd:KeyInput list) =
-        let inner (head:KeyInput) tail = 
-            if head.Char = '!' then (true, tail)
-            else (false,cmd)
-        ListUtil.tryProcessHead cmd inner (fun () -> (false,cmd))
-
-    /// Parse the register out of the stream.  Will return default if no register is 
-    /// specified
-    member private x.SkipRegister (cmd:KeyInput list) =
-        let map = _data.RegisterMap
-        let inner (head:KeyInput) tail =
-            match head.IsDigit,map.IsRegisterName (head.Char) with
-            | true,_ -> (map.DefaultRegister, cmd)
-            | false,true -> (map.GetRegister(head.Char), tail)
-            | false,false -> (map.DefaultRegister, cmd)
-        ListUtil.tryProcessHead cmd inner (fun () -> (map.DefaultRegister, cmd))
-
-    /// Parse out the keys for a key remap command
-    member private x.ParseKeys (rest:KeyInput list) found notFound =
-        let rest,left = rest |> x.SkipWhitespace |> x.SkipNonWhitespace
-        let rest,right = rest |> x.SkipWhitespace |> x.SkipNonWhitespace 
-        if System.String.IsNullOrEmpty(left) || System.String.IsNullOrEmpty(right) then
-            notFound()
-        else
-            found left right rest
-
     /// Process the :join command
     member private x.ProcessJoin (rest:KeyInput list) (range:Range option) hasBang =
         let kind = if hasBang then JoinKind.KeepEmptySpaces else JoinKind.RemoveEmptySpaces
-        let rest = x.SkipWhitespace rest
+        let rest = CommandParseUtil.SkipWhitespace rest
         let count,rest = RangeUtil.ParseNumber rest
         let span = 
             match range with 
@@ -204,7 +194,7 @@ type internal CommandProcessor
     member private x.ProcessEdit (rest:KeyInput list) _ hasBang = 
         let name = 
             rest 
-                |> x.SkipWhitespace
+                |> CommandParseUtil.SkipWhitespace
                 |> Seq.ofList
                 |> Seq.map (fun i -> i.Char)
                 |> StringUtil.OfCharSeq 
@@ -213,7 +203,7 @@ type internal CommandProcessor
 
     /// Parse out the Yank command
     member private x.ProcessYank (rest:KeyInput list) (range: Range option) _ =
-        let reg,rest = rest |> x.SkipRegister
+        let reg,rest = rest |> CommandParseUtil.SkipRegister _data.RegisterMap
         let count,rest = RangeUtil.ParseNumber rest
 
         // Calculate the span to yank
@@ -232,8 +222,8 @@ type internal CommandProcessor
     member private x.ProcessPut (rest:KeyInput list) (range: Range option) bang =
         let reg,rest = 
             rest
-            |> x.SkipWhitespace
-            |> x.SkipRegister
+            |> CommandParseUtil.SkipWhitespace
+            |> CommandParseUtil.SkipRegister _data.RegisterMap
         
         // Figure out the line number
         let line = 
@@ -249,7 +239,7 @@ type internal CommandProcessor
 
     /// Parse the < command
     member private x.ProcessShiftLeft (rest:KeyInput list) (range: Range option) _ =
-        let count,rest =  rest  |> x.SkipWhitespace |> RangeUtil.ParseNumber
+        let count,rest =  rest  |> RangeUtil.ParseNumber
         let range = RangeUtil.RangeOrCurrentLine _data.TextView range
         let range = 
             match count with
@@ -259,7 +249,7 @@ type internal CommandProcessor
         _operations.ShiftLeft span _data.Settings.GlobalSettings.ShiftWidth |> ignore
 
     member private x.ProcessShiftRight (rest:KeyInput list) (range: Range option) _ =
-        let count,rest = rest |> x.SkipWhitespace |> RangeUtil.ParseNumber
+        let count,rest = rest |> RangeUtil.ParseNumber
         let range = RangeUtil.RangeOrCurrentLine _data.TextView range
         let range = 
             match count with
@@ -270,8 +260,8 @@ type internal CommandProcessor
 
     /// Implements the :delete command
     member private x.ProcessDelete (rest:KeyInput list) (range:Range option) _ =
-        let reg,rest = rest |> x.SkipRegister
-        let count,rest = rest |> x.SkipWhitespace |> RangeUtil.ParseNumber
+        let reg,rest = rest |> CommandParseUtil.SkipRegister _data.RegisterMap
+        let count,rest = rest |> CommandParseUtil.SkipWhitespace |> RangeUtil.ParseNumber
         let range = RangeUtil.RangeOrCurrentLine _data.TextView range
         let range = 
             match count with
@@ -297,7 +287,7 @@ type internal CommandProcessor
 
     /// Parse out the :set command
     member private x.ProcessSet (rest:KeyInput list) _ _=
-        let rest,data = rest |> x.SkipWhitespace |> x.SkipNonWhitespace
+        let rest,data = rest |> CommandParseUtil.SkipNonWhitespace
         if System.String.IsNullOrEmpty(data) then _operations.PrintModifiedSettings()
         else
             match data with
@@ -313,7 +303,6 @@ type internal CommandProcessor
 
     /// Used to parse out the :source command.  List is pointing past the o in :source
     member private x.ProcessSource (rest:KeyInput list) _ bang =
-        let rest = rest |> x.SkipWhitespace
         let file = rest |> Seq.map (fun ki -> ki.Char) |> StringUtil.OfCharSeq
         if bang then _data.VimHost.UpdateStatus Resources.CommandMode_NotSupported_SourceNormal
         else
@@ -386,7 +375,7 @@ type internal CommandProcessor
         let modes = 
             if hasBang then [KeyRemapMode.Insert; KeyRemapMode.Command]
             else modes
-        let rest,lhs = rest |> x.SkipNonWhitespace
+        let rest,lhs = rest |> CommandParseUtil.SkipNonWhitespace
         _operations.UnmapKeys lhs modes
         
     member private x.ProcessKeyMap (name:string) (allowRemap:bool) (modes: KeyRemapMode list) (hasBang:bool) (rest: KeyInput list) = 
@@ -394,7 +383,7 @@ type internal CommandProcessor
             if hasBang then [KeyRemapMode.Insert; KeyRemapMode.Command]
             else modes
         let withKeys lhs rhs _ = _operations.RemapKeys lhs rhs modes allowRemap 
-        x.ParseKeys rest withKeys (fun() -> _data.VimHost.UpdateStatus x.BadMessage)
+        CommandParseUtil.ParseKeys rest withKeys (fun() -> _data.VimHost.UpdateStatus x.BadMessage)
 
     member private x.ParseCommand (rest:KeyInput list) (range:Range option) = 
 
@@ -434,8 +423,8 @@ type internal CommandProcessor
         | None -> _data.VimHost.UpdateStatus x.BadMessage
         | Some(name,shortName,action) ->
             let rest = rest |> ListUtil.skip commandName.Length 
-            let hasBang,rest = rest |> x.SkipBang
-            let rest = rest |> x.SkipWhitespace
+            let hasBang,rest = rest |> CommandParseUtil.SkipBang
+            let rest = rest |> CommandParseUtil.SkipWhitespace
             action rest range hasBang
     
     member private x.ParseInput (originalInputs : KeyInput list) =

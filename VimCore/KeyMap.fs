@@ -2,6 +2,8 @@
 
 namespace Vim
 
+// :help key-notation for all of the key codes
+
 type internal RemapModeMap = Map<KeyInput, (KeyInput seq * bool)>
 
 type internal KeyMap() =
