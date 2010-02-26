@@ -22,85 +22,82 @@ type internal CommandProcessor
     let mutable _lastSubstitute : (string * string * SubstituteFlags) = ("","",SubstituteFlags.None)
 
     /// List of supported commands.  The bool value on the lambda is whether or not there was a 
-    /// bang following the command
-    let mutable _commandList : (string * CommandAction) list = List.empty
+    /// bang following the command.  The two strings represent the full and short match name
+    /// of the command.  String.Empty represents no shorten'd command available
+    let mutable _commandList : (string * string * CommandAction) list = List.empty
 
     do
         let normalSeq = seq {
-            yield ("edit", this.ProcessEdit)
-            yield ("delete", this.ProcessDelete)
-            yield ("join", this.ProcessJoin)
-            yield ("marks", this.ProcessMarks)
-            yield ("put", this.ProcessPut)
-            yield ("set", this.ProcessSet)
-            yield ("source", this.ProcessSource)
-            yield ("substitute", this.ProcessSubstitute)
-            yield ("s", this.ProcessSubstitute)
-            yield ("su", this.ProcessSubstitute)
-            yield ("redo", this.ProcessRedo)
-            yield ("undo", this.ProcessUndo)
-            yield ("u", this.ProcessUndo)
-            yield ("yank", this.ProcessYank)
-            yield ("<", this.ProcessShiftLeft)
-            yield (">", this.ProcessShiftRight)
-            yield ("$", fun _ _ _ -> _data.EditorOperations.MoveToEndOfDocument(false))
+            yield ("edit", "e", this.ProcessEdit)
+            yield ("delete","d", this.ProcessDelete)
+            yield ("join", "j", this.ProcessJoin)
+            yield ("marks", "", this.ProcessMarks)
+            yield ("put", "pu", this.ProcessPut)
+            yield ("set", "se", this.ProcessSet)
+            yield ("source","so", this.ProcessSource)
+            yield ("substitute", "s", this.ProcessSubstitute)
+            yield ("redo", "red", this.ProcessRedo)
+            yield ("undo", "u", this.ProcessUndo)
+            yield ("yank", "y", this.ProcessYank)
+            yield ("<", "", this.ProcessShiftLeft)
+            yield (">", "", this.ProcessShiftRight)
+            yield ("$", "", fun _ _ _ -> _data.EditorOperations.MoveToEndOfDocument(false))
         }
 
         let mapClearSeq = seq {
-            yield ("mapc", [KeyRemapMode.Normal; KeyRemapMode.Visual; KeyRemapMode.Command; KeyRemapMode.OperatorPending]);
-            yield ("nmapc", [KeyRemapMode.Normal]);
-            yield ("vmapc", [KeyRemapMode.Visual; KeyRemapMode.Select]);
-            yield ("xmapc", [KeyRemapMode.Visual]);
-            yield ("smapc", [KeyRemapMode.Select]);
-            yield ("omapc", [KeyRemapMode.OperatorPending]);
-            yield ("mapc!", [KeyRemapMode.Insert; KeyRemapMode.Command]);
-            yield ("imapc", [KeyRemapMode.Insert]);
-            yield ("cmapc", [KeyRemapMode.Command]);
+            yield ("mapclear", "mapc", [KeyRemapMode.Normal; KeyRemapMode.Visual; KeyRemapMode.Command; KeyRemapMode.OperatorPending]);
+            yield ("nmapclear", "nmapc", [KeyRemapMode.Normal]);
+            yield ("vmapclear", "vmapc", [KeyRemapMode.Visual; KeyRemapMode.Select]);
+            yield ("xmapclear", "xmapc", [KeyRemapMode.Visual]);
+            yield ("smapclear", "smapc", [KeyRemapMode.Select]);
+            yield ("omapclear", "omapc", [KeyRemapMode.OperatorPending]);
+            yield ("imapclear", "imapc", [KeyRemapMode.Insert]);
+            yield ("cmapclear", "cmapc", [KeyRemapMode.Command]);
         }
         let mapClearSeq = 
             mapClearSeq 
-            |> Seq.map (fun (name,modes) -> (name, fun _ _ hasBang -> this.ProcessKeyMapClear modes hasBang))
+            |> Seq.map (fun (name,short,modes) -> (name, short, fun _ _ hasBang -> this.ProcessKeyMapClear modes hasBang))
 
 
         let unmapSeq = seq {
-            yield ("unmap", [KeyRemapMode.Normal;KeyRemapMode.Visual; KeyRemapMode.Select;KeyRemapMode.OperatorPending])
-            yield ("nunmap", [KeyRemapMode.Normal])
-            yield ("vunmap", [KeyRemapMode.Visual;KeyRemapMode.Select])
-            yield ("xunmap", [KeyRemapMode.Visual])
-            yield ("sunmap", [KeyRemapMode.Select])
-            yield ("ounmap", [KeyRemapMode.OperatorPending])
-            yield ("iunmap", [KeyRemapMode.Insert])
-            yield ("lunmap", [KeyRemapMode.Language])
-            yield ("cunmap", [KeyRemapMode.Command])
+            yield ("unmap", "unm", [KeyRemapMode.Normal;KeyRemapMode.Visual; KeyRemapMode.Select;KeyRemapMode.OperatorPending])
+            yield ("nunmap", "nun", [KeyRemapMode.Normal])
+            yield ("vunmap", "vu", [KeyRemapMode.Visual;KeyRemapMode.Select])
+            yield ("xunmap", "xu", [KeyRemapMode.Visual])
+            yield ("sunmap", "sunm", [KeyRemapMode.Select])
+            yield ("ounmap", "ou", [KeyRemapMode.OperatorPending])
+            yield ("iunmap", "iu", [KeyRemapMode.Insert])
+            yield ("lunmap", "lu", [KeyRemapMode.Language])
+            yield ("cunmap", "cu", [KeyRemapMode.Command])
         }
         let unmapSeq= 
             unmapSeq
-            |> Seq.map (fun (name,modes) -> (name,(fun rest _ hasBang -> this.ProcessKeyUnmap name modes hasBang rest)))
+            |> Seq.map (fun (name,short, modes) -> (name,short,(fun rest _ hasBang -> this.ProcessKeyUnmap name modes hasBang rest)))
 
         let remapSeq = seq {
-            yield ("map", true, [KeyRemapMode.Normal;KeyRemapMode.Visual; KeyRemapMode.Select;KeyRemapMode.OperatorPending])
-            yield ("nmap", true, [KeyRemapMode.Normal])
-            yield ("vmap", true, [KeyRemapMode.Visual;KeyRemapMode.Select])
-            yield ("xmap", true, [KeyRemapMode.Visual])
-            yield ("smap", true, [KeyRemapMode.Select])
-            yield ("omap", true, [KeyRemapMode.OperatorPending])
-            yield ("imap", true, [KeyRemapMode.Insert])
-            yield ("lmap", true, [KeyRemapMode.Language])
-            yield ("cmap", true, [KeyRemapMode.Command])
-            yield ("noremap", false, [KeyRemapMode.Normal;KeyRemapMode.Visual; KeyRemapMode.Select;KeyRemapMode.OperatorPending])
-            yield ("nnoremap", false, [KeyRemapMode.Normal])
-            yield ("vnoremap", false, [KeyRemapMode.Visual;KeyRemapMode.Select])
-            yield ("xnoremap", false, [KeyRemapMode.Visual])
-            yield ("snoremap", false, [KeyRemapMode.Select])
-            yield ("onoremap", false, [KeyRemapMode.OperatorPending])
-            yield ("inoremap", false, [KeyRemapMode.Insert])
-            yield ("lnoremap", false, [KeyRemapMode.Language])
-            yield ("cnoremap", false, [KeyRemapMode.Command])
+            yield ("map", "", true, [KeyRemapMode.Normal;KeyRemapMode.Visual; KeyRemapMode.Select;KeyRemapMode.OperatorPending])
+            yield ("nmap", "nm", true, [KeyRemapMode.Normal])
+            yield ("vmap", "vm", true, [KeyRemapMode.Visual;KeyRemapMode.Select])
+            yield ("xmap", "xm", true, [KeyRemapMode.Visual])
+            yield ("smap", "", true, [KeyRemapMode.Select])
+            yield ("omap", "om", true, [KeyRemapMode.OperatorPending])
+            yield ("imap", "im", true, [KeyRemapMode.Insert])
+            yield ("lmap", "lm", true, [KeyRemapMode.Language])
+            yield ("cmap", "cm", true, [KeyRemapMode.Command])
+            yield ("noremap", "no", false, [KeyRemapMode.Normal;KeyRemapMode.Visual; KeyRemapMode.Select;KeyRemapMode.OperatorPending])
+            yield ("nnoremap", "nn", false, [KeyRemapMode.Normal])
+            yield ("vnoremap", "vn", false, [KeyRemapMode.Visual;KeyRemapMode.Select])
+            yield ("xnoremap", "xn", false, [KeyRemapMode.Visual])
+            yield ("snoremap", "snor", false, [KeyRemapMode.Select])
+            yield ("onoremap", "ono", false, [KeyRemapMode.OperatorPending])
+            yield ("inoremap", "ino", false, [KeyRemapMode.Insert])
+            yield ("lnoremap", "ln", false, [KeyRemapMode.Language])
+            yield ("cnoremap", "cno", false, [KeyRemapMode.Command])
         }
 
         let remapSeq = 
             remapSeq 
-            |> Seq.map (fun (name,allowRemap,modes) -> (name,(fun rest _ hasBang -> this.ProcessKeyMap name allowRemap modes hasBang rest)))
+            |> Seq.map (fun (name,short,allowRemap,modes) -> (name,short,(fun rest _ hasBang -> this.ProcessKeyMap name allowRemap modes hasBang rest)))
 
         _commandList <- 
             normalSeq 
@@ -108,6 +105,17 @@ type internal CommandProcessor
             |> Seq.append mapClearSeq
             |> Seq.append unmapSeq
             |> List.ofSeq
+
+#if DEBUG
+        // Make sure there are no duplicates
+        let set = new System.Collections.Generic.HashSet<string>()
+        for name in _commandList |> Seq.map (fun (name,_,_) -> name) do
+            if not (set.Add(name)) then failwith (sprintf "Duplicate command name %s" name)
+        let set = new System.Collections.Generic.HashSet<string>()
+        for name in _commandList |> Seq.map (fun (_,short,_) -> short) do
+            if name <> "" && not (set.Add(name)) then failwith (sprintf "Duplicate command short name %s" name)
+
+#endif
 
     member private x.BadMessage = Resources.CommandMode_CannotRun _command
 
@@ -390,57 +398,45 @@ type internal CommandProcessor
 
     member private x.ParseCommand (rest:KeyInput list) (range:Range option) = 
 
-        let isCommandNameChar c = System.Char.IsLetter c
+        let isCommandNameChar c = 
+            (not (System.Char.IsWhiteSpace(c))) 
+            && c <> '!'
+            && c <> '/'
 
-        /// Find the single command which fits the passed in set of key strokes
-        let rec findCommand (current:KeyInput) (rest:KeyInput list) (commands : (string * CommandAction) seq) index = 
+        // Get the name of the command
+        let commandName = 
+            rest 
+            |> Seq.map (fun ki -> ki.Char)
+            |> Seq.takeWhile isCommandNameChar
+            |> StringUtil.OfCharSeq
 
-            let found = 
-                commands 
-                |> Seq.filter (fun (name,_) -> index < name.Length && name.Chars(index) = current.Char)
+        // Look for commands with that name
+        let command =
 
-            match found |> Seq.length with
-            | 0 -> None
-            | 1 -> 
-                let name,action = found |> Seq.head
-
-                // We found a single command with the prefix.  Make sure any remaining input keys
-                // match the remainder of the name
-                let rec correctNameCheck index (current:KeyInput) (rest:KeyInput list) = 
-                    if index = name.Length then Some(action,current :: rest)
-                    elif not (isCommandNameChar current.Char) then Some(action, current :: rest)
-                    elif name.Chars(index) <> current.Char then None
-                    else ListUtil.tryProcessHead rest (fun head tail -> correctNameCheck (index+1) head tail) (fun () -> Some(action,List.empty))
+            // First look for the exact match
+            let found =
+                _commandList
+                |> Seq.tryFind (fun (name,shortName,_) -> name = commandName || shortName = commandName)
+            match found with
+            | Some(data) -> Some(data)
+            | None ->
                 
-                match rest |> ListUtil.tryHead with
-                | Some(head,tail) -> correctNameCheck (index+1) head tail
-                | None -> Some(action,List.empty)
+                // No exact name matches look for a prefix match on the full command name
+                let found =
+                    _commandList
+                    |> Seq.filter (fun (name,_,_) -> name.StartsWith(commandName, System.StringComparison.Ordinal))
+                match found |> Seq.length with
+                | 1 -> found |> Seq.head |> Some
+                | _ -> None
 
-            | _ -> 
 
-                // Need to be careful here for exact matches.  Certain commands such as substitute can be
-                // executed even though they have an ambiguous prefix.  "s" for instance is a prefix for 
-                // set or substitute but substitute has priority here.  This is established by adding the 
-                // exact name s into the command table.  So if we reach the end of the input to process
-                // a command against and we have an exact match it wins
-                let exactMatch = found |> Seq.tryFind (fun (name,action) -> name.Length = (index+1))
-                match exactMatch,(rest |> ListUtil.tryHead) with
-                | Some(name,action),None -> Some(action,List.empty)
-                | Some(name,action),Some(head,tail) ->
-                    if isCommandNameChar head.Char then findCommand head tail found (index+1)
-                    else Some(action,head :: tail)
-                | None,Some(head,tail) -> findCommand head tail found (index+1)
-                | None,None -> None
-
-        if rest |> List.isEmpty then _data.VimHost.UpdateStatus (x.BadMessage)
-        else 
-            let head,tail = rest |> ListUtil.divide
-            match findCommand head tail _commandList 0 with
-            | None -> _data.VimHost.UpdateStatus x.BadMessage
-            | Some(action,rest) -> 
-                let hasBang,rest = rest |> x.SkipBang
-                let rest = rest |> x.SkipWhitespace
-                action rest range hasBang
+        match command with
+        | None -> _data.VimHost.UpdateStatus x.BadMessage
+        | Some(name,shortName,action) ->
+            let rest = rest |> ListUtil.skip commandName.Length 
+            let hasBang,rest = rest |> x.SkipBang
+            let rest = rest |> x.SkipWhitespace
+            action rest range hasBang
     
     member private x.ParseInput (originalInputs : KeyInput list) =
         let withRange (range:Range option) (inputs:KeyInput list) = x.ParseCommand inputs range

@@ -102,6 +102,12 @@ module internal ListUtil =
             let head,tail = divide l
             ifNonEmpty head tail
 
+    let rec skip count l =
+        if count <= 0 then l
+        else 
+            let _,tail = l |> divide
+            skip (count-1) tail
+
 module internal SeqUtil =
     
     /// Try and get the head of the Sequence.  Will return the head of list and tail 
