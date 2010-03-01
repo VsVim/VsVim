@@ -48,8 +48,7 @@ namespace VimCoreTest
 
         private void RunCommand(string input)
         {
-            var list = input.Select(x => InputUtil.CharToKeyInput(x));
-            _processor.RunCommand(Microsoft.FSharp.Collections.ListModule.OfSeq(list));
+            _processor.RunCommand(Microsoft.FSharp.Collections.ListModule.OfSeq(input));
         }
 
 
@@ -751,7 +750,7 @@ namespace VimCoreTest
         [Test, Description("RunCommand should strip off the : prefix")]
         public void RunCommand1()
         {
-            var list = ListModule.OfSeq(":set nofoo".Select(x => InputUtil.CharToKeyInput(x)));
+            var list = ListModule.OfSeq(":set nofoo");
             _operations.Setup(x => x.ResetSetting("foo")).Verifiable();
             _processor.RunCommand(list);
             _operations.Verify();

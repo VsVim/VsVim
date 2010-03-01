@@ -11,7 +11,7 @@ type internal Range =
     | SingleLine of ITextSnapshotLine 
 
 type internal ParseRangeResult =
-    | Succeeded of Range * KeyInput list
+    | Succeeded of Range * char list
     | NoRange 
     | Failed of string 
 
@@ -20,5 +20,5 @@ module internal RangeUtil =
     val RangeForCurrentLine : ITextView -> Range
     val RangeOrCurrentLine : ITextView -> Range option -> Range
     val ApplyCount : Range -> int -> Range
-    val ParseNumber : KeyInput list -> (int option * KeyInput list)
-    val ParseRange : SnapshotPoint -> IMarkMap -> KeyInput list -> ParseRangeResult
+    val ParseNumber : char list -> (int option * char list)
+    val ParseRange : SnapshotPoint -> IMarkMap -> char list -> ParseRangeResult

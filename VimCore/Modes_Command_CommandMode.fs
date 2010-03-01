@@ -30,7 +30,8 @@ type internal CommandMode
             match ki.Key with 
                 | Key.Enter ->
                     _data.VimHost.UpdateStatus(System.String.Empty)
-                    _processor.RunCommand(List.rev _input)
+                    let command = _input |> List.rev |> Seq.map (fun ki -> ki.Char) |> List.ofSeq
+                    _processor.RunCommand command
                     _input <- List.empty
                     _command <- System.String.Empty
                     SwitchMode ModeKind.Normal
@@ -59,8 +60,7 @@ type internal CommandMode
             _data.TextView.Caret.IsHidden <- false
 
         member x.RunCommand command = 
-            let input = command |> Seq.map InputUtil.CharToKeyInput |> List.ofSeq
-            _processor.RunCommand input
+            _processor.RunCommand (command |> List.ofSeq)
             
 
 

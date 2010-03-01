@@ -75,8 +75,7 @@ namespace VimCoreTest
         private ParseRangeResult CaptureComplete(SnapshotPoint point, string input, IMarkMap map = null)
         {
             map = map ?? new MarkMap(new TrackingLineColumnService());
-            var list = input.Select(x => InputUtil.CharToKeyInput(x));
-            return RangeUtil.ParseRange(point, map, ListModule.OfSeq(list));
+            return RangeUtil.ParseRange(point, map, ListModule.OfSeq(input));
         }
 
         [Test]
@@ -110,7 +109,7 @@ namespace VimCoreTest
             Assert.IsTrue(res.IsSucceeded);
             var range = res.AsSucceeded().Item1;
             Assert.AreEqual(new SnapshotSpan(_buffer.CurrentSnapshot, 0, _buffer.CurrentSnapshot.Length), RangeUtil.GetSnapshotSpan(range));
-            Assert.IsTrue("bar".SequenceEqual(res.AsSucceeded().Item2.Select(x => x.Char)));
+            Assert.IsTrue("bar".SequenceEqual(res.AsSucceeded().Item2));
         }
 
         [Test]
@@ -140,7 +139,7 @@ namespace VimCoreTest
 
             var range = res.AsSucceeded();
             Assert.AreEqual(_buffer.CurrentSnapshot.GetLineFromLineNumber(0).ExtentIncludingLineBreak, RangeUtil.GetSnapshotSpan(range.Item1));
-            Assert.AreEqual('f', range.Item2.First().Char);
+            Assert.AreEqual('f', range.Item2.First());
         }
 
         [Test]

@@ -8,43 +8,67 @@ open System.Windows.Input
 open System.Text.RegularExpressions
 open Vim.RegexUtil
 
+[<System.Flags>]
+type internal KeyRemapOptions =
+    | None = 0
+    | Buffer = 0x1
+    | Silent = 0x2
+    | Special = 0x4
+    | Script = 0x8
+    | Expr = 0x10
+    | Unique = 0x20
+
 module internal CommandParseUtil = 
 
-    let rec SkipWhitespace (cmd:KeyInput list) =
-        let inner (head:KeyInput) tail = 
-            if System.Char.IsWhiteSpace head.Char then SkipWhitespace (cmd |> List.tail)
+    let rec SkipWhitespace (cmd:char list) =
+        let inner head tail = 
+            if System.Char.IsWhiteSpace head then SkipWhitespace (cmd |> List.tail)
             else cmd
         ListUtil.tryProcessHead cmd inner (fun () -> cmd)
         
     /// Skip past non-whitespace characters and return the string and next input
-    let SkipNonWhitespace (cmd:KeyInput list) =
-        let rec inner (cmd:KeyInput list) (data:char list) =
-            let withHead (headKey:KeyInput) rest = 
-                if System.Char.IsWhiteSpace headKey.Char then (cmd,data)
-                else inner rest ([headKey.Char] @ data)
+    let SkipNonWhitespace (cmd:char list) =
+        let rec inner (cmd:char list) (data:char list) =
+            let withHead headKey rest = 
+                if System.Char.IsWhiteSpace headKey then (cmd,data)
+                else inner rest (headKey :: data)
             ListUtil.tryProcessHead cmd withHead (fun () -> (cmd,data))
         let rest,data = inner cmd List.empty
         rest,(data |> List.rev |> StringUtil.OfCharSeq)
 
     /// Try and skip the ! operator
-    let SkipBang (cmd:KeyInput list) =
-        let inner (head:KeyInput) tail = 
-            if head.Char = '!' then (true, tail)
+    let SkipBang (cmd:char list) =
+        let inner head tail = 
+            if head = '!' then (true, tail)
             else (false,cmd)
         ListUtil.tryProcessHead cmd inner (fun () -> (false,cmd))
 
     /// Parse the register out of the stream.  Will return default if no register is 
     /// specified
-    let SkipRegister (map:IRegisterMap) (cmd:KeyInput list) =
-        let inner (head:KeyInput) tail =
-            match head.IsDigit,map.IsRegisterName (head.Char) with
+    let SkipRegister (map:IRegisterMap) (cmd:char list) =
+        let inner head tail =
+            match System.Char.IsDigit(head),map.IsRegisterName head with
             | true,_ -> (map.DefaultRegister, cmd)
-            | false,true -> (map.GetRegister(head.Char), tail)
+            | false,true -> (map.GetRegister head, tail)
             | false,false -> (map.DefaultRegister, cmd)
         ListUtil.tryProcessHead cmd inner (fun () -> (map.DefaultRegister, cmd))
 
+    let ParseKeyRemapOptions (rest:char list) =
+        let rec inner (orig:char list) options =
+            let rest,arg = orig |> SkipNonWhitespace
+            match arg with
+            | "<buffer>" -> inner rest (options ||| KeyRemapOptions.Buffer)
+            | "<silent>" -> inner rest (options ||| KeyRemapOptions.Silent)
+            | "<special>" -> inner rest (options ||| KeyRemapOptions.Special)
+            | "<script>" -> inner rest (options ||| KeyRemapOptions.Script)
+            | "<expr>" -> inner rest (options ||| KeyRemapOptions.Expr)
+            | "<unique>" -> inner rest (options ||| KeyRemapOptions.Unique)
+            | _ -> (orig |> SkipWhitespace,options)
+        inner rest KeyRemapOptions.None
+
     /// Parse out the keys for a key remap command
-    let ParseKeys (rest:KeyInput list) found notFound =
+    let ParseKeys (rest:char list) found notFound =
+        let rest,options = rest |> ParseKeyRemapOptions
         let rest,left = rest |> SkipWhitespace |> SkipNonWhitespace
         let rest,right = rest |> SkipWhitespace |> SkipNonWhitespace 
         if System.String.IsNullOrEmpty(left) || System.String.IsNullOrEmpty(right) then
@@ -53,7 +77,7 @@ module internal CommandParseUtil =
             found left right rest
     
 
-type CommandAction = KeyInput list -> Range option -> bool -> unit
+type CommandAction = char list -> Range option -> bool -> unit
 
 /// Type which is responsible for executing command mode commands
 type internal CommandProcessor 
@@ -165,7 +189,7 @@ type internal CommandProcessor
     member private x.BadMessage = Resources.CommandMode_CannotRun _command
 
     /// Process the :join command
-    member private x.ProcessJoin (rest:KeyInput list) (range:Range option) hasBang =
+    member private x.ProcessJoin (rest:char list) (range:Range option) hasBang =
         let kind = if hasBang then JoinKind.KeepEmptySpaces else JoinKind.RemoveEmptySpaces
         let rest = CommandParseUtil.SkipWhitespace rest
         let count,rest = RangeUtil.ParseNumber rest
@@ -191,18 +215,16 @@ type internal CommandProcessor
             _operations.Join range.Start kind count |> ignore
 
     /// Parse out the :edit commnad
-    member private x.ProcessEdit (rest:KeyInput list) _ hasBang = 
+    member private x.ProcessEdit (rest:char list) _ hasBang = 
         let name = 
             rest 
                 |> CommandParseUtil.SkipWhitespace
-                |> Seq.ofList
-                |> Seq.map (fun i -> i.Char)
-                |> StringUtil.OfCharSeq 
+                |> StringUtil.OfCharSeq
         if System.String.IsNullOrEmpty name then _data.VimHost.ShowOpenFileDialog()
         else _operations.EditFile name
 
     /// Parse out the Yank command
-    member private x.ProcessYank (rest:KeyInput list) (range: Range option) _ =
+    member private x.ProcessYank (rest:char list) (range: Range option) _ =
         let reg,rest = rest |> CommandParseUtil.SkipRegister _data.RegisterMap
         let count,rest = RangeUtil.ParseNumber rest
 
@@ -219,7 +241,7 @@ type internal CommandProcessor
         _operations.Yank span MotionKind.Exclusive OperationKind.LineWise reg
 
     /// Parse the Put command
-    member private x.ProcessPut (rest:KeyInput list) (range: Range option) bang =
+    member private x.ProcessPut (rest:char list) (range: Range option) bang =
         let reg,rest = 
             rest
             |> CommandParseUtil.SkipWhitespace
@@ -238,7 +260,7 @@ type internal CommandProcessor
         _operations.Put reg.StringValue line (not bang)
 
     /// Parse the < command
-    member private x.ProcessShiftLeft (rest:KeyInput list) (range: Range option) _ =
+    member private x.ProcessShiftLeft (rest:char list) (range: Range option) _ =
         let count,rest =  rest  |> RangeUtil.ParseNumber
         let range = RangeUtil.RangeOrCurrentLine _data.TextView range
         let range = 
@@ -248,7 +270,7 @@ type internal CommandProcessor
         let span = RangeUtil.GetSnapshotSpan range
         _operations.ShiftLeft span _data.Settings.GlobalSettings.ShiftWidth |> ignore
 
-    member private x.ProcessShiftRight (rest:KeyInput list) (range: Range option) _ =
+    member private x.ProcessShiftRight (rest:char list) (range: Range option) _ =
         let count,rest = rest |> RangeUtil.ParseNumber
         let range = RangeUtil.RangeOrCurrentLine _data.TextView range
         let range = 
@@ -259,7 +281,7 @@ type internal CommandProcessor
         _operations.ShiftRight span _data.Settings.GlobalSettings.ShiftWidth |> ignore
 
     /// Implements the :delete command
-    member private x.ProcessDelete (rest:KeyInput list) (range:Range option) _ =
+    member private x.ProcessDelete (rest:char list) (range:Range option) _ =
         let reg,rest = rest |> CommandParseUtil.SkipRegister _data.RegisterMap
         let count,rest = rest |> CommandParseUtil.SkipWhitespace |> RangeUtil.ParseNumber
         let range = RangeUtil.RangeOrCurrentLine _data.TextView range
@@ -286,7 +308,7 @@ type internal CommandProcessor
         | false -> _data.VimHost.UpdateStatus x.BadMessage
 
     /// Parse out the :set command
-    member private x.ProcessSet (rest:KeyInput list) _ _=
+    member private x.ProcessSet (rest:char list) _ _=
         let rest,data = rest |> CommandParseUtil.SkipNonWhitespace
         if System.String.IsNullOrEmpty(data) then _operations.PrintModifiedSettings()
         else
@@ -302,21 +324,21 @@ type internal CommandProcessor
             | _ -> ()
 
     /// Used to parse out the :source command.  List is pointing past the o in :source
-    member private x.ProcessSource (rest:KeyInput list) _ bang =
-        let file = rest |> Seq.map (fun ki -> ki.Char) |> StringUtil.OfCharSeq
+    member private x.ProcessSource (rest:char list) _ bang =
+        let file = rest |> StringUtil.OfCharSeq
         if bang then _data.VimHost.UpdateStatus Resources.CommandMode_NotSupported_SourceNormal
         else
             match Utils.ReadAllLines file with
             | None -> _data.VimHost.UpdateStatus (Resources.CommandMode_CouldNotOpenFile file)
             | Some(_,lines) ->
                 lines 
-                |> Seq.map (fun command -> command |> Seq.map InputUtil.CharToKeyInput |> List.ofSeq)
+                |> Seq.map (fun command -> command |> List.ofSeq)
                 |> Seq.iter x.RunCommand
 
-    member private x.ProcessSubstitute(rest:KeyInput list) (range:Range option) _ =
+    member private x.ProcessSubstitute(rest:char list) (range:Range option) _ =
 
         // Used to parse out the flags on the :s command
-        let rec parseFlags (rest:KeyInput seq) =
+        let rec parseFlags (rest:char seq) =
             let charToOption c = 
                 match c with 
                 | 'c' -> SubstituteFlags.Confirm
@@ -327,20 +349,20 @@ type internal CommandProcessor
                 | 'I' -> SubstituteFlags.OrdinalCase
                 | 'n' -> SubstituteFlags.ReportOnly
                 | _ -> SubstituteFlags.Invalid
-            rest |> Seq.map (fun ki -> ki.Char) |> Seq.fold (fun f c -> (charToOption c) ||| f) SubstituteFlags.None 
+            rest |> Seq.fold (fun f c -> (charToOption c) ||| f) SubstituteFlags.None 
 
         let doParse rest badParse goodParse =
-            let parseOne (rest: KeyInput seq) notFound found = 
-                let prefix = rest |> Seq.takeWhile (fun ki -> ki.Char = '/' ) 
+            let parseOne (rest: char seq) notFound found = 
+                let prefix = rest |> Seq.takeWhile (fun ki -> ki = '/' ) 
                 if Seq.length prefix <> 1 then notFound()
                 else
                     let rest = rest |> Seq.skip 1
-                    let data = rest |> Seq.map (fun ki -> ki.Char) |> Seq.takeWhile (fun c -> c <> '/' ) |> StringUtil.OfCharSeq
+                    let data = rest |> Seq.takeWhile (fun c -> c <> '/' ) |> StringUtil.OfCharSeq
                     found data (rest |> Seq.skip data.Length)
             parseOne rest (fun () -> badParse() ) (fun search rest -> 
                 parseOne rest (fun () -> badParse()) (fun replace rest ->  
-                    let rest = rest |> Seq.skipWhile (fun ki -> ki.Char = '/')
-                    let flagsInput = rest |> Seq.takeWhile (fun ki -> not (System.Char.IsWhiteSpace ki.Char))
+                    let rest = rest |> Seq.skipWhile (fun c -> c = '/')
+                    let flagsInput = rest |> Seq.takeWhile (fun c -> not (CharUtil.IsWhiteSpace c))
                     let flags = parseFlags flagsInput
                     let flags = 
                         if Utils.IsFlagSet flags SubstituteFlags.UsePrevious then
@@ -371,21 +393,21 @@ type internal CommandProcessor
             else modes
         _operations.ClearKeyMapModes modes
 
-    member private x.ProcessKeyUnmap (name:string) (modes: KeyRemapMode list) (hasBang:bool) (rest: KeyInput list) = 
+    member private x.ProcessKeyUnmap (name:string) (modes: KeyRemapMode list) (hasBang:bool) (rest: char list) = 
         let modes = 
             if hasBang then [KeyRemapMode.Insert; KeyRemapMode.Command]
             else modes
         let rest,lhs = rest |> CommandParseUtil.SkipNonWhitespace
         _operations.UnmapKeys lhs modes
         
-    member private x.ProcessKeyMap (name:string) (allowRemap:bool) (modes: KeyRemapMode list) (hasBang:bool) (rest: KeyInput list) = 
+    member private x.ProcessKeyMap (name:string) (allowRemap:bool) (modes: KeyRemapMode list) (hasBang:bool) (rest: char list) = 
         let modes = 
             if hasBang then [KeyRemapMode.Insert; KeyRemapMode.Command]
             else modes
         let withKeys lhs rhs _ = _operations.RemapKeys lhs rhs modes allowRemap 
         CommandParseUtil.ParseKeys rest withKeys (fun() -> _data.VimHost.UpdateStatus x.BadMessage)
 
-    member private x.ParseCommand (rest:KeyInput list) (range:Range option) = 
+    member private x.ParseCommand (rest:char list) (range:Range option) = 
 
         let isCommandNameChar c = 
             (not (System.Char.IsWhiteSpace(c))) 
@@ -395,7 +417,6 @@ type internal CommandProcessor
         // Get the name of the command
         let commandName = 
             rest 
-            |> Seq.map (fun ki -> ki.Char)
             |> Seq.takeWhile isCommandNameChar
             |> StringUtil.OfCharSeq
 
@@ -427,8 +448,8 @@ type internal CommandProcessor
             let rest = rest |> CommandParseUtil.SkipWhitespace
             action rest range hasBang
     
-    member private x.ParseInput (originalInputs : KeyInput list) =
-        let withRange (range:Range option) (inputs:KeyInput list) = x.ParseCommand inputs range
+    member private x.ParseInput (originalInputs :char list) =
+        let withRange (range:Range option) (inputs:char list) = x.ParseCommand inputs range
         let point = ViewUtil.GetCaretPoint _data.TextView
         match RangeUtil.ParseRange point _data.MarkMap originalInputs with
         | ParseRangeResult.Succeeded(range, inputs) -> 
@@ -444,17 +465,17 @@ type internal CommandProcessor
             ()
 
     /// Run the specified command.  This funtion can be called recursively
-    member x.RunCommand (input: KeyInput list)=
+    member x.RunCommand (input: char list)=
         let prev = _command
         try
             // Strip off the preceeding :
             let input = 
                 match ListUtil.tryHead input with
                 | None -> input
-                | Some(head,tail) when head.Char = ':' -> tail
+                | Some(head,tail) when head = ':' -> tail
                 | _ -> input
 
-            _command <- input |> Seq.map (fun ki -> ki.Char) |> StringUtil.OfCharSeq
+            _command <- input |> StringUtil.OfCharSeq
             x.ParseInput input
         finally
             _command <- prev

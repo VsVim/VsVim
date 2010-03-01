@@ -136,3 +136,7 @@ module internal SeqUtil =
 
     /// Return if the sequence is not empty
     let isNotEmpty s = not (s |> Seq.isEmpty)
+
+module internal CharUtil =
+    let IsDigit x = System.Char.IsDigit(x)
+    let IsWhiteSpace x = System.Char.IsWhiteSpace(x)

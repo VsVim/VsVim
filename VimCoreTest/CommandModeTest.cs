@@ -42,11 +42,10 @@ namespace VimCoreTest
             _mode = _modeRaw;
         }
 
-        private FSharpList<KeyInput> CreateMatch(string input)
+        private FSharpList<char> CreateMatch(string input)
         {
-            var list = input.Select(x => InputUtil.CharToKeyInput(x));
-            Predicate<FSharpList<KeyInput>> pred = otherList => Enumerable.SequenceEqual(list, otherList);
-            return Match<FSharpList<KeyInput>>.Create(pred);
+            Predicate<FSharpList<char>> pred = otherList => Enumerable.SequenceEqual(input, otherList);
+            return Match<FSharpList<char>>.Create(pred);
         }
 
         private void ProcessWithEnter(string input)

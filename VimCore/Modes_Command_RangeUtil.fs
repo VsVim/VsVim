@@ -11,7 +11,7 @@ type internal Range =
     | SingleLine of ITextSnapshotLine
 
 type internal ParseRangeResult =
-    | Succeeded of Range * KeyInput list
+    | Succeeded of Range * char list
     | NoRange 
     | Failed of string 
 
@@ -21,7 +21,7 @@ type internal ItemRangeKind =
     | Mark
 
 type internal ItemRange = 
-    | ValidRange of Range * ItemRangeKind * KeyInput list
+    | ValidRange of Range * ItemRangeKind * char list
     | NoRange
     | Error of string
 
@@ -125,12 +125,12 @@ module internal RangeUtil =
             Range.RawSpan(span)
 
     /// Parse out a number from the input string
-    let ParseNumber (input:KeyInput list) =
+    let ParseNumber (input:char list) =
 
         // Parse out the input into the list of digits and remaining input
-        let rec getDigits (input:KeyInput list) =
-            let inner (head:KeyInput) tail = 
-                if head.IsDigit then 
+        let rec getDigits (input:char list) =
+            let inner (head:char) tail = 
+                if System.Char.IsDigit head then 
                     let restDigits,restInput = getDigits tail
                     (head :: restDigits, restInput)
                 else ([],input)
@@ -140,7 +140,6 @@ module internal RangeUtil =
         let numberStr = 
             digits 
                 |> Seq.ofList
-                |> Seq.map (fun x -> x.Char)
                 |> Array.ofSeq
                 |> StringUtil.OfCharArray
         let mutable number = 0
@@ -149,7 +148,7 @@ module internal RangeUtil =
         | true -> (Some(number), remaining)
 
     /// Parse out a line number 
-    let private ParseLineNumber (tss:ITextSnapshot) (input:KeyInput list) =
+    let private ParseLineNumber (tss:ITextSnapshot) (input:char list) =
     
         let opt,remaining = ParseNumber input
         match opt with 
@@ -165,9 +164,9 @@ module internal RangeUtil =
         | None -> Error("Expected a line number")
 
     /// Parse out a mark 
-    let private ParseMark (point:SnapshotPoint) (map:IMarkMap) (list:KeyInput list) = 
-        let inner (head:KeyInput) tail = 
-            let opt = map.GetMark point.Snapshot.TextBuffer head.Char
+    let private ParseMark (point:SnapshotPoint) (map:IMarkMap) (list:char list) = 
+        let inner head tail = 
+            let opt = map.GetMark point.Snapshot.TextBuffer head
             match opt with 
             | Some(point) -> 
                 let line = point.Position.GetContainingLine()
@@ -176,49 +175,49 @@ module internal RangeUtil =
         ListUtil.tryProcessHead list inner (fun () -> Error Resources.Range_MarkMissingIdentifier)
 
     /// Parse out a single item in the range.
-    let private ParseItem (point:SnapshotPoint) (map:IMarkMap) (list:KeyInput list) =
+    let private ParseItem (point:SnapshotPoint) (map:IMarkMap) (list:char list) =
         let head = list |> List.head 
-        if head.IsDigit then
+        if CharUtil.IsDigit head then
             ParseLineNumber point.Snapshot list
-        else if head.Char = '.' then
+        else if head = '.' then
             let line = point.GetContainingLine().LineNumber
             let range = Range.Lines(point.Snapshot, line,line)
             ValidRange(range,CurrentLine, list |> List.tail)
-        else if head.Char = '\'' then
+        else if head = '\'' then
             ParseMark point map (list |> List.tail)
         else
             NoRange
 
-    let private ParsePlusMinus range (list:KeyInput list) =
+    let private ParsePlusMinus range (list:char list) =
         let getCount list =
             let opt,list = ParseNumber list
             match opt with 
             | Some(num) -> num,list
             | None -> 1,list
-        let inner (head:KeyInput) tail = 
-            if head.Char = '+' then 
+        let inner head tail = 
+            if head = '+' then 
                 let count,tail = getCount tail
                 (ChangeEndLine range count,tail)
-            elif head.Char = '-' then
+            elif head = '-' then
                 let count,tail = getCount tail
                 (ChangeEndLine range (-count),tail)
             else 
                 range,list
         ListUtil.tryProcessHead list inner (fun () -> range,list)
 
-    let private ParseRangeCore (point:SnapshotPoint) (map:IMarkMap) (originalInput:KeyInput list) =
+    let private ParseRangeCore (point:SnapshotPoint) (map:IMarkMap) (originalInput:char list) =
         _parser {
             let! range,kind,remaining = ParseItem point map originalInput
             let range,remaining = ParsePlusMinus range remaining
             match ListUtil.tryHead remaining with
             | None -> return! Succeeded(range, remaining)
             | Some (head,tail) ->
-                if head.Char = ',' then 
+                if head = ',' then 
                     let! rightRange,_,remaining = ParseItem point map tail
                     let rightRange,remaining = ParsePlusMinus rightRange remaining
                     let fullRange = CombineRanges range rightRange
                     return! Succeeded(fullRange, remaining)
-                else if head.Char = ';' then 
+                else if head = ';' then 
                     let point = (GetSnapshotSpan range).Start
                     let! rightRange,_,remaining = ParseItem point map tail
                     let rightRange,remaining = ParsePlusMinus rightRange remaining
@@ -232,9 +231,9 @@ module internal RangeUtil =
                     return! Failed Resources.Range_ConnectionMissing
         }
 
-    let ParseRange (point:SnapshotPoint) (map:IMarkMap) (list:KeyInput list) = 
-        let inner (head:KeyInput) tail =
-            if head.Char = '%' then 
+    let ParseRange (point:SnapshotPoint) (map:IMarkMap) (list:char list) = 
+        let inner head tail =
+            if head = '%' then 
                 let tss = point.Snapshot
                 let span = new SnapshotSpan(tss, 0, tss.Length)
                 ParseRangeResult.Succeeded(RawSpan(span), tail)

@@ -71,7 +71,7 @@ type IOperations =
 type ICommandProcessor =
 
     /// Run the specified command
-    abstract RunCommand : KeyInput list -> unit
+    abstract RunCommand : char list -> unit
 
 type ICommandMode = 
 
