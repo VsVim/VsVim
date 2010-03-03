@@ -34,7 +34,7 @@ module internal CommandParseUtil =
                 else inner rest (headKey :: data)
             ListUtil.tryProcessHead cmd withHead (fun () -> (cmd,data))
         let rest,data = inner cmd List.empty
-        rest,(data |> List.rev |> StringUtil.OfCharSeq)
+        rest,(data |> List.rev |> StringUtil.ofCharSeq)
 
     /// Try and skip the ! operator
     let SkipBang (cmd:char list) =
@@ -219,7 +219,7 @@ type internal CommandProcessor
         let name = 
             rest 
                 |> CommandParseUtil.SkipWhitespace
-                |> StringUtil.OfCharSeq
+                |> StringUtil.ofCharSeq
         if System.String.IsNullOrEmpty name then _data.VimHost.ShowOpenFileDialog()
         else _operations.EditFile name
 
@@ -325,7 +325,7 @@ type internal CommandProcessor
 
     /// Used to parse out the :source command.  List is pointing past the o in :source
     member private x.ProcessSource (rest:char list) _ bang =
-        let file = rest |> StringUtil.OfCharSeq
+        let file = rest |> StringUtil.ofCharSeq
         if bang then _data.VimHost.UpdateStatus Resources.CommandMode_NotSupported_SourceNormal
         else
             match Utils.ReadAllLines file with
@@ -357,7 +357,7 @@ type internal CommandProcessor
                 if Seq.length prefix <> 1 then notFound()
                 else
                     let rest = rest |> Seq.skip 1
-                    let data = rest |> Seq.takeWhile (fun c -> c <> '/' ) |> StringUtil.OfCharSeq
+                    let data = rest |> Seq.takeWhile (fun c -> c <> '/' ) |> StringUtil.ofCharSeq
                     found data (rest |> Seq.skip data.Length)
             parseOne rest (fun () -> badParse() ) (fun search rest -> 
                 parseOne rest (fun () -> badParse()) (fun replace rest ->  
@@ -418,7 +418,7 @@ type internal CommandProcessor
         let commandName = 
             rest 
             |> Seq.takeWhile isCommandNameChar
-            |> StringUtil.OfCharSeq
+            |> StringUtil.ofCharSeq
 
         // Look for commands with that name
         let command =
@@ -475,7 +475,7 @@ type internal CommandProcessor
                 | Some(head,tail) when head = ':' -> tail
                 | _ -> input
 
-            _command <- input |> StringUtil.OfCharSeq
+            _command <- input |> StringUtil.ofCharSeq
             x.ParseInput input
         finally
             _command <- prev

@@ -28,18 +28,18 @@ namespace VimCoreTest
             Assert.AreEqual(InputUtil.CharToKeyInput('1'), ret);
         }
 
-        [Test, Description("Having the source contain more than one key stroke is not supported")]
+        [Test]
         public void MapWithNoRemap4()
         {
             var map = new KeyMap();
-            Assert.IsFalse(map.MapWithNoRemap("aaoue", "b", KeyRemapMode.Normal));
+            Assert.IsTrue(map.MapWithNoRemap("aaoue", "b", KeyRemapMode.Normal));
         }
 
-        [Test, Description("Non-alpha-numerics are not supported yet")]
+        [Test]
         public void MapWithNoRemap5()
         {
             var map = new KeyMap();
-            Assert.IsFalse(map.MapWithNoRemap("&", "!", KeyRemapMode.Normal));
+            Assert.IsTrue(map.MapWithNoRemap("&", "!", KeyRemapMode.Normal));
         }
 
         [Test]

@@ -43,7 +43,6 @@
     <Compile Include="KeyInput.fs" />
     <Compile Include="InputUtil.fsi" />
     <Compile Include="InputUtil.fs" />
-    <Compile Include="StringUtil.fsi" />
     <Compile Include="StringUtil.fs" />
     <Compile Include="TextUtil.fsi" />
     <Compile Include="TextUtil.fs" />

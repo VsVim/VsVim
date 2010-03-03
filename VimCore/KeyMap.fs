@@ -94,13 +94,43 @@ module internal KeyMapUtil =
             if StringUtil.Length data = 1 then c |> InputUtil.CharToKeyInput |> Some
             else None
 
-type internal RemapModeMap = Map<KeyInput, (KeyInput seq * bool)>
+    /// Try to convert the passed in string to multiple KeyInput values.  Returns true only
+    /// if the entire list succesfully parses
+    let TryStringToKeyInputList (data:string) =
+        let rec inner data withData =
+            match ListUtil.tryHead data with
+            | None -> withData []  |> Some
+            | Some('<',_) ->
+                
+                match data |> List.tryFindIndex (fun c -> c = '>') with
+                | None -> None
+                | Some(index) ->
+                    let str = data |> Seq.ofList |> Seq.take (index+1) |> StringUtil.ofCharSeq
+                    match TryStringToKeyInput str with
+                    | None -> None
+                    | Some(ki) -> inner (data |> Seq.skip (index+1) |> List.ofSeq ) (fun rest -> withData (ki :: rest))
+            | Some(head,tail) -> 
+                let ki = InputUtil.CharToKeyInput head
+                inner tail (fun rest -> withData (ki :: rest))
+        inner (data |> List.ofSeq) (fun all -> all)
+            
+
+type internal RemapModeMap = Map<string, (KeyInput list * bool)>
 
 type internal KeyMap() =
     
     let mutable _map : Map<KeyRemapMode, RemapModeMap> = Map.empty
 
-    member x.GetKeyMapping ki mode = 
+    /// Convert the KeyInput list back to an actual string key.  Can't use the input string because
+    /// several input values map back to the same KeyInput sequence
+    static member private KeyInputSequenceToKey (l:KeyInput seq) = l |> Seq.map (fun ki -> ki.Char) |> StringUtil.ofCharSeq
+
+    static member private UserInputToKey input =
+        match KeyMapUtil.TryStringToKeyInputList input with
+        | None -> None
+        | Some(list) -> KeyMap.KeyInputSequenceToKey list |> Some
+
+    member x.GetKeyMapping (ki:KeyInput) mode = 
         let kiSeq,_,_ = x.GetKeyMappingCore ki mode Set.empty
         kiSeq
 
@@ -119,62 +149,50 @@ type internal KeyMap() =
 
     /// Main API for adding a key mapping into our storage
     member private x.MapCore (lhs:string) (rhs:string) (mode:KeyRemapMode) allowRemap = 
-        if StringUtil.Length lhs <> 1 || StringUtil.Length rhs <= 0 then 
+        if StringUtil.isNullOrEmpty lhs || StringUtil.isNullOrEmpty rhs then
             false
         else
-            let lhs = x.ParseKeyBinding lhs
-            let rhs = x.ParseKeyBinding rhs
-            match lhs,rhs with
-            | Some(leftSeq),Some(rightSeq) ->
-                let leftKi = leftSeq |> Seq.head
-                let value = (rightSeq,allowRemap)
+            let key = KeyMap.UserInputToKey lhs
+            let rhs = KeyMapUtil.TryStringToKeyInputList rhs
+            match key,rhs with
+            | Some(key),Some(rightList) ->
+                let value = (rightList,allowRemap)
                 let modeMap = 
                     match _map |> Map.tryFind mode with
                     | None -> Map.empty
                     | Some(modeMap) -> modeMap
-                let modeMap = Map.add leftKi value modeMap
+                let modeMap = Map.add key value modeMap
                 _map <- Map.add mode modeMap _map
                 true
             | _ -> false
 
-
     member x.Unmap lhs mode = 
-        if StringUtil.Length lhs <> 1 then false
+        if StringUtil.isNullOrEmpty lhs then false
         else
-            match x.ParseKeyBinding lhs with
-            | Some(leftSeq) ->
-                let ki = leftSeq |> Seq.head
+            match KeyMap.UserInputToKey lhs with
+            | None -> false
+            | Some(key) ->
                 match _map |> Map.tryFind mode with
                 | None -> false
                 | Some(modeMap) -> 
-                    if Map.containsKey ki modeMap then
-                        let modeMap = Map.remove ki modeMap
+                    if Map.containsKey key modeMap then
+                        let modeMap = Map.remove key modeMap
                         _map <- Map.add mode modeMap _map
                         true
                     else
                         false
-            | None -> false
 
-    /// Parse out the passed in key bindings.  Returns None in the case of a bad
-    /// format on data or a Some KeyInput list on success
-    member private x.ParseKeyBinding (data:string) =
-        let hasBadData = 
-            data 
-            |> Seq.filter (fun c -> not (System.Char.IsLetterOrDigit(c)))
-            |> SeqUtil.isNotEmpty
-        if hasBadData then None
-        else data |> Seq.map InputUtil.CharToKeyInput |> Some
-
-    /// Get the key mapping for the passed in data.  Returns a tuple of (KeyInput seq,bool,Set<KeyInput>)
+    /// Get the key mapping for the passed in data.  Returns a tuple of (KeyInput list,bool,Set<KeyInput>)
     /// where the bool value is true if there is a recursive mapping.  The Set parameter
     /// tracks the KeyInput values we've already seen in order to detect recursion 
-    member private x.GetKeyMappingCore ki mode set = 
+    member private x.GetKeyMappingCore (ki:KeyInput) mode set = 
         if Set.contains ki set then (Seq.empty, true, set)
         else
             match _map |> Map.tryFind mode with
             | None -> (Seq.empty, false, set)
             | Some(modeMap) ->  
-                match modeMap |> Map.tryFind ki with
+                let key = ki |> Seq.singleton |> KeyMap.KeyInputSequenceToKey
+                match modeMap |> Map.tryFind key with
                 | None -> (Seq.empty, false, set)
                 | Some(kiSeq,allowRemap) -> 
                     let set = set |> Set.add ki
@@ -196,7 +214,7 @@ type internal KeyMap() =
                         (list :> KeyInput seq, anyRecursive, set)
 
                     else
-                        (kiSeq, false, set)
+                        (kiSeq |> Seq.ofList, false, set)
 
             
 

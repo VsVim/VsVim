@@ -141,7 +141,7 @@ module internal RangeUtil =
             digits 
                 |> Seq.ofList
                 |> Array.ofSeq
-                |> StringUtil.OfCharArray
+                |> StringUtil.ofCharArray
         let mutable number = 0
         match System.Int32.TryParse(numberStr, &number) with
         | false -> (None,input)

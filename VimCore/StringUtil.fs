@@ -4,6 +4,7 @@
 namespace Vim
 
 module internal StringUtil =
+
     let FindFirst (input:seq<char>) index del =
         let found = 
             input 
@@ -34,9 +35,20 @@ module internal StringUtil =
                 buffer.Append(value) |> ignore
             buffer.ToString()
 
-    let OfCharArray (chars:char[]) = new System.String(chars)
+    /// Create a String from an array of chars
+    [<CompiledName("OfCharArray")>]
+    let ofCharArray (chars:char[]) = new System.String(chars)
 
-    let OfCharSeq (chars : char seq) = chars |> Array.ofSeq |> OfCharArray
+    /// Create a String from a sequence of chars
+    [<CompiledName("OfCharSeq")>]
+    let ofCharSeq (chars : char seq) = chars |> Array.ofSeq |> ofCharArray
+
+    /// Create a String from a single char
+    [<CompiledName("OfChar")>]
+    let ofChar c = System.String(c,1)
+
+    [<CompiledName("IsNullOrEmpty")>]
+    let isNullOrEmpty str = System.String.IsNullOrEmpty(str)
 
     let Length (str:string) = 
         if str = null then 0

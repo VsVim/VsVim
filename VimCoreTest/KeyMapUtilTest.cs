@@ -71,5 +71,34 @@ namespace VimCoreTest
             Assert.IsTrue(opt.IsSome());
             Assert.AreEqual(InputUtil.CharToKeyInput('A'), opt.Value);
         }
+
+        [Test]
+        public void TryStringToKeyInputList1()
+        {
+            var opt = KeyMapUtil.TryStringToKeyInputList("ab");
+            Assert.IsTrue(opt.IsSome());
+            var list = opt.Value.ToList();
+            Assert.AreEqual(2, list.Count);
+            Assert.AreEqual('a', list[0].Char);
+            Assert.AreEqual('b', list[1].Char);
+        }
+
+        [Test]
+        public void TryStringToKeyInputList2()
+        {
+            var opt = KeyMapUtil.TryStringToKeyInputList("<foo");
+            Assert.IsTrue(opt.IsNone());
+        }
+
+        [Test]
+        public void TryStringToKeInputList3()
+        {
+            var opt = KeyMapUtil.TryStringToKeyInputList("<Home>a");
+            Assert.IsTrue(opt.IsSome());
+            var list = opt.Value.ToList();
+            Assert.AreEqual(2, list.Count);
+            Assert.AreEqual(InputUtil.KeyToKeyInput(Key.Home), list[0]);
+            Assert.AreEqual('a', list[1].Char);
+        }
     }
 }
