@@ -289,5 +289,35 @@ namespace VimCoreTest
             _buffer.ProcessChar('b');
             _host.Verify();
         }
+
+        [Test, Description("When more input is needed for a map don't pass it to the IMode")]
+        public void Remap7()
+        {
+            _keyMap
+                .Setup(x => x.GetKeyMappingResult(It.IsAny<KeyInput>(), KeyRemapMode.Normal))
+                .Returns(KeyMappingResult.MappingNeedsMoreInput)
+                .Verifiable();
+            _buffer.ProcessChar('b');
+            _keyMap.Verify();
+        }
+
+        [Test]
+        public void Remap8()
+        {
+            _keyMap
+                .Setup(x => x.GetKeyMappingResult(InputUtil.CharToKeyInput('a'), KeyRemapMode.Normal))
+                .Returns(KeyMappingResult.MappingNeedsMoreInput)
+                .Verifiable();
+            _buffer.ProcessChar('a');
+            var toProcess = InputUtil.CharToKeyInput('c');
+            _keyMap
+                .Setup(x => x.GetKeyMappingResult(InputUtil.CharToKeyInput('b'), KeyRemapMode.Normal))
+                .Returns(KeyMappingResult.NewSingleKey(toProcess))
+                .Verifiable();
+            _normalMode.Setup(x => x.Process(toProcess)).Returns(ProcessResult.Processed).Verifiable();
+            _buffer.ProcessChar('b');
+            _keyMap.Verify();
+            _normalMode.Verify();
+        }
     }
 }
