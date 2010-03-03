@@ -243,6 +243,7 @@ type internal KeyMap() =
     interface IKeyMap with
         member x.GetKeyMapping ki mode = x.GetKeyMapping ki mode
         member x.GetKeyMappingResult ki mode = x.GetKeyMappingResult ki mode
+        member x.GetKeyMappingResultFromMultiple keyInputs mode = x.GetKeyMappingCore keyInputs mode
         member x.MapWithNoRemap lhs rhs mode = x.MapWithNoRemap lhs rhs mode
         member x.MapWithRemap lhs rhs mode = x.MapWithRemap lhs rhs mode
         member x.Unmap lhs mode = x.Unmap lhs mode

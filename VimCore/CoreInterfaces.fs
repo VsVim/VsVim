@@ -54,6 +54,9 @@ type IKeyMap =
 
     /// Get the key mapping for the specified KeyInput
     abstract GetKeyMappingResult : KeyInput -> KeyRemapMode -> KeyMappingResult
+
+    /// Get the key mapping result from the specified set of keys
+    abstract GetKeyMappingResultFromMultiple : KeyInput seq -> KeyRemapMode -> KeyMappingResult
     
     /// Map the given key sequence without allowing for remaping
     abstract MapWithNoRemap : lhs:string -> rhs:string -> KeyRemapMode -> bool

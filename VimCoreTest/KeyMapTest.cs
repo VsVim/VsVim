@@ -228,5 +228,27 @@ namespace VimCoreTest
             Assert.IsTrue(map.GetKeyMappingResult(InputUtil.CharToKeyInput('a'), KeyRemapMode.Normal).IsSingleKey);
         }
 
+        [Test]
+        public void GetKeyMappingResultFromMultiple1()
+        {
+            IKeyMap map = new KeyMap();
+            map.MapWithNoRemap("aa", "b", KeyRemapMode.Normal);
+
+            var input = "aa".Select(InputUtil.CharToKeyInput);
+            var res = map.GetKeyMappingResultFromMultiple(input, KeyRemapMode.Normal);
+            Assert.IsTrue(res.IsSingleKey);
+            Assert.AreEqual('b', res.AsSingleKey().Item.Char);
+        }
+
+        [Test]
+        public void GetKeyMappingResultFromMultiple2()
+        {
+            IKeyMap map = new KeyMap();
+            map.MapWithNoRemap("aa", "b", KeyRemapMode.Normal);
+
+            var input = "a".Select(InputUtil.CharToKeyInput);
+            var res = map.GetKeyMappingResultFromMultiple(input, KeyRemapMode.Normal);
+            Assert.IsTrue(res.IsMappingNeedsMoreInput);
+        }
     }
 }
