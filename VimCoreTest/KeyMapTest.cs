@@ -167,6 +167,15 @@ namespace VimCoreTest
         }
 
         [Test]
+        public void GetKeyMappingResult5()
+        {
+            var map = new KeyMap();
+            Assert.IsTrue(map.MapWithNoRemap("aa", "b", KeyRemapMode.Normal));
+            var res = map.GetKeyMappingResult(InputUtil.CharToKeyInput('a'), KeyRemapMode.Normal);
+            Assert.IsTrue(res.IsMappingNeedsMoreInput);
+        }
+
+        [Test]
         public void Clear1()
         {
             var map = new KeyMap();

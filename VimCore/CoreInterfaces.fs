@@ -29,10 +29,19 @@ type KeyRemapMode =
     | Language 
 
 type KeyMappingResult =
+
+    /// No mapping exists 
+    | NoMapping 
+
+    | SingleKey of KeyInput 
+
     | KeySequence of KeyInput seq
-    | SingleKey of KeyInput
-    | NoMapping
-    | RecursiveMapping 
+
+    /// The mapping encountered a recursive element that had to be broken 
+    | RecursiveMapping of KeyInput seq
+
+    /// More input is needed to resolve this mapping
+    | MappingNeedsMoreInput
 
 /// Manages the key map for Vim.  Responsible for handling all key remappings
 type IKeyMap =

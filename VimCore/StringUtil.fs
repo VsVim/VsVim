@@ -48,6 +48,9 @@ module internal StringUtil =
     [<CompiledName("OfCharSeq")>]
     let ofCharSeq (chars : char seq) = chars |> Array.ofSeq |> ofCharArray
 
+    [<CompiledName("OfCharList")>]
+    let ofCharList (chars :char list) = chars |> Seq.ofList |> ofCharSeq
+
     /// Create a String from a single char
     [<CompiledName("OfChar")>]
     let ofChar c = System.String(c,1)

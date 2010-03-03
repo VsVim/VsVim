@@ -285,7 +285,7 @@ namespace VimCoreTest
             _host.Setup(x => x.UpdateStatus(Resources.Vim_RecursiveMapping)).Verifiable();
             _keyMap
                 .Setup(x => x.GetKeyMappingResult(It.IsAny<KeyInput>(), KeyRemapMode.Normal))
-                .Returns(KeyMappingResult.RecursiveMapping);
+                .Returns(KeyMappingResult.NewRecursiveMapping(new KeyInput[]{}));
             _buffer.ProcessChar('b');
             _host.Verify();
         }

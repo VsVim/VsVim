@@ -72,11 +72,12 @@ type internal VimBuffer
             _keyInputProcessedEvent.Trigger(i)
             ret
         match x.MaybeMapKeyInput i with
-        | NoMapping -> inner i
-        | RecursiveMapping -> 
+        | SingleKey(ki) -> inner ki
+        | NoMapping -> inner i 
+        | MappingNeedsMoreInput -> inner i
+        | RecursiveMapping(_) -> 
             _vim.Host.UpdateStatus Resources.Vim_RecursiveMapping
             true
-        | SingleKey(ki) -> inner ki
         | KeySequence(kiSeq) ->
             kiSeq 
             |> Seq.map inner
@@ -97,7 +98,7 @@ type internal VimBuffer
             | ModeKind.VisualLine -> Some(KeyRemapMode.Visual)
             | _ -> None
         match opt with
-        | None -> SingleKey ki
+        | None -> SingleKey(ki)
         | Some(mode) -> _vim.KeyMap.GetKeyMappingResult ki mode
 
     member x.AddMode mode = _modeMap.AddMode mode

@@ -137,6 +137,24 @@ module internal SeqUtil =
     /// Return if the sequence is not empty
     let isNotEmpty s = not (s |> Seq.isEmpty)
 
+    /// Maps a seq of options to an option of list where None indicates at least one 
+    /// entry was None and Some indicates all entries had values
+    let allOrNone s =
+        let rec inner s withNext =
+            if s |> Seq.isEmpty then withNext [] |> Some
+            else
+                match s |> Seq.head with
+                | None -> None
+                | Some(cur) ->
+                    let rest = s |> Seq.skip 1
+                    inner rest (fun next -> withNext (cur :: next))
+        inner s (fun all -> all)
+
+module internal MapUtil =
+
+    /// Get the set of keys in the Map
+    let keys (map:Map<'TKey,'TValue>) = map |> Seq.map (fun pair -> pair.Key)
+
 module internal CharUtil =
     let IsDigit x = System.Char.IsDigit(x)
     let IsWhiteSpace x = System.Char.IsWhiteSpace(x)
