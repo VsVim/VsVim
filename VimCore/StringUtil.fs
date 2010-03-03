@@ -5,7 +5,8 @@ namespace Vim
 
 module internal StringUtil =
 
-    let FindFirst (input:seq<char>) index del =
+    [<CompiledName("FindFirst")>]
+    let findFirst (input:seq<char>) index del =
         let found = 
             input 
                 |> Seq.mapi ( fun i c -> (i,c) )
@@ -15,19 +16,23 @@ module internal StringUtil =
             | true -> None
             | false -> Some (Seq.head found)
             
-    let IsValidIndex index (input:string) = index >= 0 && index < input.Length
+    [<CompiledName("isValidIndex")>]
+    let isValidIndex index (input:string) = index >= 0 && index < input.Length
             
-    let CharAtOption index (input:string) = 
-        match IsValidIndex index input with
+    [<CompiledName("CharAtOption")>]
+    let charAtOption index (input:string) = 
+        match isValidIndex index input with
             | true -> Some input.[index]
             | false -> None
             
-    let CharAt index input =
-        match CharAtOption index input with 
+    [<CompiledName("CharAt")>]
+    let charAt index input =
+        match charAtOption index input with 
             | Some c -> c
             | None -> failwith "Invalid index"
     
-    let Repeat (value:string) count =
+    [<CompiledName("Repeat")>]
+    let repeat (value:string) count =
         if 1 = count then value
         else
             let buffer = new System.Text.StringBuilder()
@@ -50,14 +55,17 @@ module internal StringUtil =
     [<CompiledName("IsNullOrEmpty")>]
     let isNullOrEmpty str = System.String.IsNullOrEmpty(str)
 
-    let Length (str:string) = 
+    [<CompiledName("length")>]
+    let length (str:string) = 
         if str = null then 0
         else str.Length
 
-    let IsEqualIgnoreCase left right = 
+    [<CompiledName("IsEqualIgnoreCase")>]
+    let isEqualIgnoreCase left right = 
         let comp = System.StringComparer.OrdinalIgnoreCase
         comp.Equals(left,right)
 
-    let IsEqual left right = 
+    [<CompiledName("IsEqual")>]
+    let isEqual left right = 
         let comp = System.StringComparer.Ordinal
         comp.Equals(left,right)

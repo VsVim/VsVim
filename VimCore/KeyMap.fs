@@ -83,15 +83,15 @@ module internal KeyMapUtil =
     /// guidelines specified in :help key-notation.  
     let TryStringToKeyInput data = 
         
-        match StringUtil.CharAtOption 0 data with
+        match StringUtil.charAtOption 0 data with
         | None -> None
         | Some('<') -> 
-            match KeyNotationList |> Seq.tryFind (fun (name,_) -> StringUtil.IsEqualIgnoreCase name data) with
+            match KeyNotationList |> Seq.tryFind (fun (name,_) -> StringUtil.isEqualIgnoreCase name data) with
             | None -> None
             | Some(_,ki) -> Some(ki)
         | Some(c) -> 
             // If it doesn't start with a < then it must be a single character value
-            if StringUtil.Length data = 1 then c |> InputUtil.CharToKeyInput |> Some
+            if StringUtil.length data = 1 then c |> InputUtil.CharToKeyInput |> Some
             else None
 
     /// Try to convert the passed in string to multiple KeyInput values.  Returns true only

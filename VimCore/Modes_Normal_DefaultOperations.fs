@@ -84,7 +84,7 @@ type internal DefaultOperations
         
         /// Paste the given text after the cursor
         member x.PasteAfterCursor text count opKind moveCursor = 
-            let text = StringUtil.Repeat text count 
+            let text = StringUtil.repeat text count 
             let caret = ViewUtil.GetCaretPoint _textView
             let span = x.CommonImpl.PasteAfter caret text opKind
             if moveCursor then
@@ -98,7 +98,7 @@ type internal DefaultOperations
  
         /// Paste the text before the cursor
         member x.PasteBeforeCursor text count moveCursor = 
-            let text = StringUtil.Repeat text count 
+            let text = StringUtil.repeat text count 
             let caret = ViewUtil.GetCaretPoint _textView
             let span = x.CommonImpl.PasteBefore caret text 
             if moveCursor then

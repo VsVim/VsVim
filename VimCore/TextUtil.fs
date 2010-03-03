@@ -22,7 +22,7 @@ module internal TextUtil =
                 | Direction.Neither -> -1
                 | _ -> failwith "Invalid Enum"
         
-        match StringUtil.CharAtOption index input with 
+        match StringUtil.charAtOption index input with 
             | None -> IsWordChar
             | Some c -> 
                 if IsWordChar c then
@@ -49,17 +49,17 @@ module internal TextUtil =
                     match pred input.[i] with 
                         | true -> goWhile (i+1)
                         | false -> Span(index, i-index)
-        match (StringUtil.IsValidIndex index input) && (pred input.[index]) with 
+        match (StringUtil.isValidIndex index input) && (pred input.[index]) with 
             | true -> Some (goWhile (index+1))
             | false -> None
             
     // Find the full span of the current word
     let private FindFullSpanCore (input:string) index pred =
         let rec goBack i = 
-            match (StringUtil.IsValidIndex (i-1) input) && pred (input.[i-1]) with
+            match (StringUtil.isValidIndex (i-1) input) && pred (input.[i-1]) with
                 | true -> goBack (i-1)
                 | false -> i
-        match (StringUtil.IsValidIndex index input) && (pred input.[index]) with
+        match (StringUtil.isValidIndex index input) && (pred input.[index]) with
             | true -> FindCurrentSpanCore input (goBack index) pred
             | false -> None
     
@@ -75,7 +75,7 @@ module internal TextUtil =
                 | (true,_) -> FindFullSpanCore input index pred  // Middle of word, get the start
                 | (false,0) -> None
                 | (false,_) -> findNotStartOnWord (index-1)
-        match (index,StringUtil.IsValidIndex index input) with 
+        match (index,StringUtil.isValidIndex index input) with 
             | (0,_) -> None
             | (_,false) -> None
             | _ -> // Valid non-zero index
