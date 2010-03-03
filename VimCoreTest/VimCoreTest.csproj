@@ -145,6 +145,7 @@
     <Compile Include="IncrementalSearchTest.cs" />
     <Compile Include="JumpListTest.cs" />
     <Compile Include="KeyMapTest.cs" />
+    <Compile Include="KeyMapUtilTest.cs" />
     <Compile Include="LocalSettingsTest.cs" />
     <Compile Include="Modes_CommonOperationsTest.cs" />
     <Compile Include="CountCaptureTest.cs" />

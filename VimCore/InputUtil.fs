@@ -140,4 +140,8 @@ module InputUtil =
             let c = KeyToChar k
             KeyInput(c, k, modifier)
             
+    let SetModifiers modKeys (ki:KeyInput) = KeyInput(ki.Char, ki.Key, modKeys)
+        
+
+
     

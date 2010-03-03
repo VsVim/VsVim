@@ -14,15 +14,15 @@ module internal StringUtil =
             | true -> None
             | false -> Some (Seq.head found)
             
-    let IsValidIndex (input:string) index = index >= 0 && index < input.Length
+    let IsValidIndex index (input:string) = index >= 0 && index < input.Length
             
-    let CharAtOption (input:string) index = 
-        match IsValidIndex input index with
+    let CharAtOption index (input:string) = 
+        match IsValidIndex index input with
             | true -> Some input.[index]
             | false -> None
             
-    let CharAt input index =
-        match CharAtOption input index with 
+    let CharAt index input =
+        match CharAtOption index input with 
             | Some c -> c
             | None -> failwith "Invalid index"
     
@@ -41,3 +41,11 @@ module internal StringUtil =
     let Length (str:string) = 
         if str = null then 0
         else str.Length
+
+    let IsEqualIgnoreCase left right = 
+        let comp = System.StringComparer.OrdinalIgnoreCase
+        comp.Equals(left,right)
+
+    let IsEqual left right = 
+        let comp = System.StringComparer.Ordinal
+        comp.Equals(left,right)

@@ -56,7 +56,7 @@ module internal Utils =
     /// Get the declared values of the specified enumeration
     let GetEnumValues<'T when 'T : enum<'T>>() : 'T seq=
         System.Enum.GetValues(typeof<'T>) |> Seq.cast<'T>
-    
+
     /// Create a regex.  Returns None if the regex has invalid characters
     let TryCreateRegex pattern options =
         try
