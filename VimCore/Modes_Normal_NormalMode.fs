@@ -304,7 +304,7 @@ type internal NormalMode
             yield (KeyInput('u', Key.U, ModifierKeys.Control), (fun count _ -> _operations.Scroll ScrollDirection.Up count))
             yield (KeyInput('d', Key.D, ModifierKeys.Control), (fun count _ -> _operations.Scroll ScrollDirection.Down count))
             yield (KeyInput('J', Key.J, ModifierKeys.Shift), (fun count _ -> _operations.JoinAtCaret count))
-            yield (KeyInput(']', Key.OemCloseBrackets, ModifierKeys.Control), (fun _ _ -> _operations.GoToDefinitionWrapper()))
+            yield (InputUtil.CharToKeyInput(']') |> InputUtil.SetModifiers(ModifierKeys.Control), (fun _ _ -> _operations.GoToDefinitionWrapper()))
             yield (InputUtil.CharToKeyInput('Y'), (fun count reg -> _operations.YankLines count reg))
             yield (InputUtil.KeyToKeyInput(Key.Tab), (fun count _ -> _operations.JumpNext count))
             yield (KeyInput('i', Key.I, ModifierKeys.Control), (fun count _ -> _operations.JumpNext count))
@@ -357,7 +357,7 @@ type internal NormalMode
 
     member this.StartCore (ki:KeyInput) count reg =
         if ki.IsDigit && ki.Char <> '0' then this.GetCount ki
-        elif ki.Key = Key.OemQuotes && ki.ModifierKeys = ModifierKeys.Shift then 
+        elif ki.Char = '"' then 
             let f ki _ _ = this.GetRegister (_bufferData.RegisterMap) ki
             NormalModeResult.NeedMoreInput(f)
         else

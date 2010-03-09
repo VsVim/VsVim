@@ -2,8 +2,31 @@
 
 namespace Vim
 open System.Windows.Input
+open System.Runtime.InteropServices
 
 module InputUtil = 
+
+    /// Convert the passed in char to the corresponding Virtual Key Code 
+    [<DllImport("user32.dll")>]    
+    extern System.Int16 VkKeyScan(System.Char ch)
+
+    let TryCharToKeyInput ch =
+        let res = VkKeyScan ch
+        let res = int res
+
+        // The virtual key code is the low byte and the shift state is the high byte
+        let virtualKey = res &&& 0xff 
+        let state = ((res >>> 8) &&& 0xff) 
+
+        if virtualKey = -1 && state = -1 then None
+        else
+            let shiftMod = if 0 <> (state &&& 0x1) then ModifierKeys.Shift else ModifierKeys.None
+            let controlMod = if 0 <> (state &&& 0x2) then ModifierKeys.Control else ModifierKeys.None
+            let altMod = if 0 <> (state &&& 0x4) then ModifierKeys.Alt else ModifierKeys.None
+            let modKeys = shiftMod ||| controlMod ||| altMod
+            let key = KeyInterop.KeyFromVirtualKey(virtualKey)
+            KeyInput(ch, key, modKeys) |> Some
+
     let KeyInputList = [
             KeyInput('a',Key.A);
             KeyInput('b',Key.B);
@@ -118,13 +141,6 @@ module InputUtil =
         let ki = KeyToKeyInput k
         ki.Char
 
-    /// Try and convert the specified char to a predefined KeyInput structure.  Returns an
-    /// empty value if no such KeyInput structure exists
-    let TryCharToKeyInput c =
-        match KeyInputList |> List.filter (fun e -> e.Char = c) with
-        | h::_ -> Some h
-        | _ -> None
-                        
     let CharToKeyInput c = 
         match TryCharToKeyInput c with
         | Some ki -> ki

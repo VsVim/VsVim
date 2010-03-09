@@ -61,7 +61,6 @@ namespace VimCoreTest
             CharBothway('{', Key.OemOpenBrackets, ModifierKeys.Shift);
             CharBothway(']', Key.OemCloseBrackets);
             CharBothway('}', Key.OemCloseBrackets, ModifierKeys.Shift);
-            CharBothway('\\', Key.OemBackslash);
             CharBothway('\b', Key.Back);
             CharBothway('\t', Key.Tab);
             CharBothway('-', Key.OemMinus);
