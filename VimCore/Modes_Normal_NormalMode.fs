@@ -351,8 +351,7 @@ type internal NormalMode
         
     /// Responsible for getting the register 
     member this.GetRegister (m:IRegisterMap) (ki:KeyInput) =
-        let c = InputUtil.KeyInputToChar ki
-        let reg = m.GetRegister c
+        let reg = m.GetRegister ki.Char
         RegisterComplete(reg)
 
     member this.StartCore (ki:KeyInput) count reg =

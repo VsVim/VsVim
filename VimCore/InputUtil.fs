@@ -10,7 +10,10 @@ module InputUtil =
     [<DllImport("user32.dll")>]    
     extern System.Int16 VkKeyScan(System.Char ch)
 
-    let TryCharToKeyInput ch =
+    [<DllImport("user32.dll")>]
+    extern uint32 MapVirtualKey(uint32 code, uint32 mapType)
+
+    let private TryCharToVirtualKeyAndModifiers ch =
         let res = VkKeyScan ch
         let res = int res
 
@@ -24,122 +27,55 @@ module InputUtil =
             let controlMod = if 0 <> (state &&& 0x2) then ModifierKeys.Control else ModifierKeys.None
             let altMod = if 0 <> (state &&& 0x4) then ModifierKeys.Alt else ModifierKeys.None
             let modKeys = shiftMod ||| controlMod ||| altMod
+            Some (virtualKey,modKeys)
+
+    /// This is the core set of characters used in Vim
+    let private CoreChars = 
+        ['a' .. 'z' ] @
+        ['A' .. 'Z' ] @
+        ['0' .. '9' ] @
+        ("!@#$%^&*()[]{}-_=+\\|'\",<>./?\t\b:;" |> List.ofSeq)
+
+    /// List of the core Vim Characters mapped into the VirtualKey Code and the corresponding ModifierKeys
+    let private MappedCoreChars = 
+        CoreChars 
+        |> Seq.ofList 
+        |> Seq.map (fun c -> c,TryCharToVirtualKeyAndModifiers c)
+        |> Seq.choose (fun (c,opt) -> 
+            match opt with 
+            | Some(virtualKey,modKeys) -> Some(c,virtualKey,modKeys) 
+            | None -> None )
+        |> List.ofSeq
+
+    let TryCharToKeyInput ch =
+        match TryCharToVirtualKeyAndModifiers ch with
+        | None -> None
+        | Some(virtualKey,modKeys) ->
             let key = KeyInterop.KeyFromVirtualKey(virtualKey)
             KeyInput(ch, key, modKeys) |> Some
 
-    let KeyInputList = [
-            KeyInput('a',Key.A);
-            KeyInput('b',Key.B);
-            KeyInput('c',Key.C);
-            KeyInput('d',Key.D);
-            KeyInput('e',Key.E);
-            KeyInput('f',Key.F);
-            KeyInput('g',Key.G);
-            KeyInput('h',Key.H);
-            KeyInput('i',Key.I);
-            KeyInput('j',Key.J);
-            KeyInput('k',Key.K);
-            KeyInput('l',Key.L);
-            KeyInput('m',Key.M);
-            KeyInput('n',Key.N);
-            KeyInput('o',Key.O);
-            KeyInput('p',Key.P);
-            KeyInput('q',Key.Q);
-            KeyInput('r',Key.R);
-            KeyInput('s',Key.S);
-            KeyInput('t',Key.T);
-            KeyInput('u',Key.U);
-            KeyInput('v',Key.V);
-            KeyInput('w',Key.W);
-            KeyInput('x',Key.X);
-            KeyInput('y',Key.Y);
-            KeyInput('z',Key.Z);
-            KeyInput('A',Key.A,ModifierKeys.Shift);
-            KeyInput('B',Key.B,ModifierKeys.Shift);
-            KeyInput('C',Key.C,ModifierKeys.Shift);
-            KeyInput('D',Key.D,ModifierKeys.Shift);
-            KeyInput('E',Key.E,ModifierKeys.Shift);
-            KeyInput('F',Key.F,ModifierKeys.Shift);
-            KeyInput('G',Key.G,ModifierKeys.Shift);
-            KeyInput('H',Key.H,ModifierKeys.Shift);
-            KeyInput('I',Key.I,ModifierKeys.Shift);
-            KeyInput('J',Key.J,ModifierKeys.Shift);
-            KeyInput('K',Key.K,ModifierKeys.Shift);
-            KeyInput('L',Key.L,ModifierKeys.Shift);
-            KeyInput('M',Key.M,ModifierKeys.Shift);
-            KeyInput('N',Key.N,ModifierKeys.Shift);
-            KeyInput('O',Key.O,ModifierKeys.Shift);
-            KeyInput('P',Key.P,ModifierKeys.Shift);
-            KeyInput('Q',Key.Q,ModifierKeys.Shift);
-            KeyInput('R',Key.R,ModifierKeys.Shift);
-            KeyInput('S',Key.S,ModifierKeys.Shift);
-            KeyInput('T',Key.T,ModifierKeys.Shift);
-            KeyInput('U',Key.U,ModifierKeys.Shift);
-            KeyInput('V',Key.V,ModifierKeys.Shift);
-            KeyInput('W',Key.W,ModifierKeys.Shift);
-            KeyInput('X',Key.X,ModifierKeys.Shift);
-            KeyInput('Y',Key.Y,ModifierKeys.Shift);
-            KeyInput('Z',Key.Z,ModifierKeys.Shift);
-            KeyInput('0', Key.D0);
-            KeyInput('1', Key.D1);
-            KeyInput('2', Key.D2);
-            KeyInput('3', Key.D3);
-            KeyInput('4', Key.D4);
-            KeyInput('5', Key.D5);
-            KeyInput('6', Key.D6);
-            KeyInput('7', Key.D7);
-            KeyInput('8', Key.D8);
-            KeyInput('9', Key.D9);
-            KeyInput(')', Key.D0, ModifierKeys.Shift);
-            KeyInput('!', Key.D1, ModifierKeys.Shift);
-            KeyInput('@', Key.D2, ModifierKeys.Shift);
-            KeyInput('#', Key.D3, ModifierKeys.Shift);
-            KeyInput('$', Key.D4, ModifierKeys.Shift);
-            KeyInput('%', Key.D5, ModifierKeys.Shift);
-            KeyInput('^', Key.D6, ModifierKeys.Shift);
-            KeyInput('&', Key.D7, ModifierKeys.Shift);
-            KeyInput('*', Key.D8, ModifierKeys.Shift);
-            KeyInput('(', Key.D9, ModifierKeys.Shift);
-            KeyInput(',', Key.OemComma);
-            KeyInput('<', Key.OemComma, ModifierKeys.Shift);
-            KeyInput('.', Key.OemPeriod);
-            KeyInput('>', Key.OemPeriod, ModifierKeys.Shift);
-            KeyInput('[', Key.OemOpenBrackets);
-            KeyInput(']', Key.OemCloseBrackets);
-            KeyInput('{', Key.OemOpenBrackets, ModifierKeys.Shift);
-            KeyInput('}', Key.OemCloseBrackets, ModifierKeys.Shift);
-            KeyInput(' ', Key.Space);
-            KeyInput('/', Key.Oem2);
-            KeyInput('?', Key.Oem2, ModifierKeys.Shift);
-            KeyInput('\r', Key.Return);
-            KeyInput('\n', Key.LineFeed);
-            KeyInput((char)27, Key.Escape);
-            KeyInput(';', Key.OemSemicolon);
-            KeyInput(':', Key.OemSemicolon, ModifierKeys.Shift);
-            KeyInput('\\', Key.OemBackslash); 
-            KeyInput(''', Key.OemQuotes);
-            KeyInput('"', Key.OemQuotes, ModifierKeys.Shift);
-            KeyInput('\b', Key.Back);
-            KeyInput('\t', Key.Tab);
-            KeyInput('-', Key.OemMinus);
-            KeyInput('_', Key.OemMinus, ModifierKeys.Shift);
-            KeyInput('+', Key.OemPlus, ModifierKeys.Shift);
-            KeyInput('=', Key.OemPlus);]
-            
-    let FindKeyInput (k:Key) (m:ModifierKeys)= 
-        let filter (e:KeyInput) = e.Key = k && e.ModifierKeys = m
-        KeyInputList 
-            |> List.filter filter
-            |> List.tryPick (fun e -> Some e)
-            
-    let KeyInputToChar (ki:KeyInput) = ki.Char
-    let KeyToKeyInput k = 
-        match FindKeyInput k (ModifierKeys.None) with
-        | Some ke -> KeyInput(ke.Char, ke.Key, ke.ModifierKeys)
-        | None -> KeyInput((System.Char.MinValue),k, (ModifierKeys.None))
-    let KeyToChar k = 
-        let ki = KeyToKeyInput k
-        ki.Char
+    let private TryKeyToKeyInputAndVirtualKey key = 
+        let virtualKey = KeyInterop.VirtualKeyFromKey(key)
+        if 0 = virtualKey then None
+        else
+            // Mode to map a 
+            let MAPVK_VK_TO_CHAR = 0x02u 
+            let mapped = MapVirtualKey(uint32 virtualKey, MAPVK_VK_TO_CHAR)
+            if 0u = mapped then None
+            else 
+                let c = char mapped 
+                let c = if System.Char.IsLetter(c) then System.Char.ToLower(c) else c
+                (KeyInput(c, key, ModifierKeys.None),virtualKey) |> Some
+
+    let TryKeyToKeyInput key = 
+        match TryKeyToKeyInputAndVirtualKey key with
+        | None -> None
+        | Some(ki,_) -> Some(ki)
+
+    let KeyToKeyInput key =
+        match TryKeyToKeyInput key with
+        | Some(ki) -> ki
+        | None -> KeyInput(System.Char.MinValue, key, ModifierKeys.None)
 
     let CharToKeyInput c = 
         match TryCharToKeyInput c with
@@ -148,15 +84,29 @@ module InputUtil =
             // In some cases we don't have the correct Key enumeration available and 
             // have to rely on the char value to be correct
             KeyInput(c, Key.None)
-    
-    let KeyAndModifierToKeyInput k modifier =
-        match FindKeyInput k modifier with
-        | Some ke -> KeyInput(ke.Char, ke.Key, ke.ModifierKeys)
-        | None -> 
-            let c = KeyToChar k
-            KeyInput(c, k, modifier)
+
+    let KeyAndModifierToKeyInput key modKeys = 
+        match TryKeyToKeyInputAndVirtualKey key with
+        | None -> KeyInput(System.Char.MinValue, key, modKeys)
+        | Some(ki,virtualKey) ->
             
-    let SetModifiers modKeys (ki:KeyInput) = KeyInput(ki.Char, ki.Key, modKeys)
+            if Utils.IsFlagSet modKeys ModifierKeys.Shift then 
+
+                // The shift flag is tricky.  There is no good API available to translate a virtualKey 
+                // with an additional modifier.  Instead we define the core set of keys we care about,
+                // map them to a virtualKey + ModifierKeys tuple.  We then consult this map here to see
+                // if we can appropriately "shift" the KeyInput value
+                //
+                // This feels like a very hackish solution and I'm actively seeking a better, more thorough
+                // one
+
+                let opt =  MappedCoreChars  |> Seq.tryFind (fun (_,vk,modKeys) -> virtualKey = vk && modKeys = ModifierKeys.Shift)
+                match opt with 
+                | None -> ki
+                | Some(ch,_,_) -> KeyInput(ch,key,modKeys)
+            else KeyInput(ki.Char, ki.Key, modKeys)
+    
+    let SetModifiers modKeys (ki:KeyInput) = KeyInput(ki.Char,ki.Key, modKeys)
         
 
 

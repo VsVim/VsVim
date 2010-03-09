@@ -100,7 +100,7 @@ namespace VimCoreTest
         public void Process1()
         {
             Create("foo");
-            var res = _mode.Process(InputUtil.KeyToChar(Key.Escape));
+            var res = _mode.Process(InputUtil.KeyToKeyInput(Key.Escape));
             Assert.IsTrue(res.IsSwitchPreviousMode);
         }
 

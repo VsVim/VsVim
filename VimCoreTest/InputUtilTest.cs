@@ -41,7 +41,7 @@ namespace VimCoreTest
             Assert.AreEqual(input.Char, c);
             Assert.AreEqual(key, input.Key);
             Assert.AreEqual(mod, input.ModifierKeys);
-            var back = InputUtil.KeyInputToChar(new KeyInput(c, key, mod));
+            var back = InputUtil.KeyAndModifierToKeyInput(key, mod).Char;
             Assert.AreEqual(c, back);
         }
 
@@ -85,6 +85,31 @@ namespace VimCoreTest
             Assert.AreEqual('a', ki.Char);
             Assert.AreEqual(Key.A, ki.key);
             Assert.AreEqual(ModifierKeys.None, ki.ModifierKeys);
+        }
+
+        [Test]
+        public void KeyAndModifierToKeyInput3()
+        {
+            var ki = InputUtil.KeyAndModifierToKeyInput(Key.A, ModifierKeys.Control);
+            Assert.AreEqual('a', ki.Char);
+            Assert.AreEqual(Key.A, ki.key);
+            Assert.AreEqual(ModifierKeys.Control, ki.ModifierKeys);
+        }
+
+        [Test]
+        public void KeyandModifierToKeyInput4()
+        {
+            var list = new List<Tuple<char,Key>>() {
+                    Tuple.Create('1', Key.D1),
+                    Tuple.Create('2', Key.D2),
+                    Tuple.Create('3', Key.D3) };
+            foreach (var tuple in list)
+            {
+                var ki = InputUtil.KeyAndModifierToKeyInput(tuple.Item2, ModifierKeys.None);
+                Assert.AreEqual(tuple.Item1, ki.Char);
+                Assert.AreEqual(tuple.Item2, ki.Key);
+                Assert.AreEqual(ModifierKeys.None, ki.ModifierKeys);
+            }
         }
 
         [Test]
