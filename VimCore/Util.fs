@@ -150,6 +150,12 @@ module internal SeqUtil =
                     inner rest (fun next -> withNext (cur :: next))
         inner s (fun all -> all)
 
+    /// Append a single element to the end of a sequence
+    let appendSingle element sequence = 
+        let right = element |> Seq.singleton
+        Seq.append sequence right
+        
+
 module internal MapUtil =
 
     /// Get the set of keys in the Map

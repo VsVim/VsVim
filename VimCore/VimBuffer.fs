@@ -43,7 +43,18 @@ type internal VimBuffer
         _settings : IVimLocalSettings ) =
 
     let mutable _modeMap = ModeMap()
+
+    /// This is the buffered input when a remap request needs more than one 
+    /// element
+    let mutable _remapInput : KeyInput list option = None
+
     let _keyInputProcessedEvent = new Event<_>()
+    let _keyInputReceivedEvent = new Event<_>()
+
+    member x.BufferedRemapKeyInputs =
+        match _remapInput with
+        | None -> List.empty
+        | Some(keyInputs) -> keyInputs
     
     /// Get the current mode
     member x.Mode = _modeMap.Mode
@@ -53,7 +64,9 @@ type internal VimBuffer
 
     // Actuall process the input key.  Raise the change event on an actual change
     member x.ProcessInput (i:KeyInput) : bool = 
-        let inner i = 
+
+        // Actually process the given piece of input
+        let doProcess i = 
             let ret = 
                 if i = _vim.Settings.DisableCommand && x.Mode.ModeKind <> ModeKind.Disabled then
                     x.SwitchMode ModeKind.Disabled |> ignore
@@ -71,20 +84,9 @@ type internal VimBuffer
                         | ProcessNotHandled -> false
             _keyInputProcessedEvent.Trigger(i)
             ret
-        match x.MaybeMapKeyInput i with
-        | SingleKey(ki) -> inner ki
-        | NoMapping -> inner i 
-        | MappingNeedsMoreInput -> inner i
-        | RecursiveMapping(_) -> 
-            _vim.Host.UpdateStatus Resources.Vim_RecursiveMapping
-            true
-        | KeySequence(kiSeq) ->
-            kiSeq 
-            |> Seq.map inner
-            |> SeqUtil.last
-    
-    member x.MaybeMapKeyInput (ki:KeyInput) =
-        let opt = 
+
+        // Calculate the current remapMode
+        let remapMode = 
             match _modeMap.Mode.ModeKind with
             | ModeKind.Insert -> Some (KeyRemapMode.Insert)
             | ModeKind.Normal -> 
@@ -97,10 +99,36 @@ type internal VimBuffer
             | ModeKind.VisualCharacter -> Some(KeyRemapMode.Visual)
             | ModeKind.VisualLine -> Some(KeyRemapMode.Visual)
             | _ -> None
-        match opt with
-        | None -> SingleKey(ki)
-        | Some(mode) -> _vim.KeyMap.GetKeyMappingResult ki mode
 
+        // Raise the event that we recieved the key
+        _keyInputReceivedEvent.Trigger(i)
+
+        let remapResult,keyInputs = 
+            match _remapInput,remapMode with
+            | Some(buffered),Some(remapMode) -> 
+                let keyInputs = buffered |> SeqUtil.appendSingle i 
+                (_vim.KeyMap.GetKeyMappingResultFromMultiple keyInputs remapMode),keyInputs
+            | Some(buffered),None -> 
+                let keyInputs = buffered |> SeqUtil.appendSingle i 
+                KeySequence(keyInputs),keyInputs
+            | None,Some(remapMode) -> (_vim.KeyMap.GetKeyMappingResult i remapMode,Seq.singleton i)
+            | None,None -> (SingleKey(i),Seq.singleton(i))
+
+        // Clear out the _remapInput at this point.  It will be reset if the mapping needs more 
+        // data
+        _remapInput <- None
+
+        match remapResult with
+        | SingleKey(ki) -> doProcess ki
+        | NoMapping -> doProcess i 
+        | MappingNeedsMoreInput -> 
+            _remapInput <- keyInputs |> List.ofSeq |> Some
+            true
+        | RecursiveMapping(_) -> 
+            _vim.Host.UpdateStatus Resources.Vim_RecursiveMapping
+            true
+        | KeySequence(kiSeq) -> kiSeq |> Seq.map doProcess |> SeqUtil.last
+    
     member x.AddMode mode = _modeMap.AddMode mode
             
     member x.CanProcessInput ki = x.Mode.CanProcess ki || ki = _vim.Settings.DisableCommand
@@ -112,6 +140,7 @@ type internal VimBuffer
         member x.TextBuffer = _textView.TextBuffer
         member x.TextSnapshot = _textView.TextSnapshot
         member x.BlockCaret = _blockCaret
+        member x.BufferedRemapKeyInputs = x.BufferedRemapKeyInputs 
         member x.EditorOperations = _editorOperations
         member x.Name = _vim.Host.GetName _textView.TextBuffer
         member x.MarkMap = _vim.MarkMap
@@ -132,6 +161,8 @@ type internal VimBuffer
         member x.SwitchedMode = _modeMap.SwitchedEvent
         [<CLIEvent>]
         member x.KeyInputProcessed = _keyInputProcessedEvent.Publish
+        [<CLIEvent>]
+        member x.KeyInputReceived = _keyInputReceivedEvent.Publish
         member x.ProcessKey k = x.ProcessInput (InputUtil.KeyToKeyInput k)
         member x.ProcessInput ki = x.ProcessInput ki
         member x.CanProcessInput ki = x.CanProcessInput ki

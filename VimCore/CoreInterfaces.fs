@@ -270,6 +270,10 @@ and IVimBuffer =
     abstract TextSnapshot : ITextSnapshot
     abstract EditorOperations : IEditorOperations
 
+    /// Buffered KeyInput list.  When a key remapping has multiple source elements the input 
+    /// is buffered until it is completed or the ambiguity is removed.  
+    abstract BufferedRemapKeyInputs : KeyInput list
+
     /// Owning IVim instance
     abstract Vim : IVim
     abstract MarkMap : IMarkMap
@@ -323,9 +327,19 @@ and IVimBuffer =
     [<CLIEvent>]
     abstract SwitchedMode : IEvent<IMode>
 
-    /// Raised when a key is processed
+    /// Raised when a key is processed.  This is raised when the KeyInput is actually
+    /// processed by Vim not when it is received.  
+    ///
+    /// Typically these occur back to back.  One example of where it does not though is 
+    /// the case of a key remapping where the source mapping contains more than one key.  
+    /// In this case the input is buffered until the second key is read and then the 
+    /// inputs are processed
     [<CLIEvent>]
     abstract KeyInputProcessed : IEvent<KeyInput>
+
+    /// Raised when a KeyInput is recieved by the buffer
+    [<CLIEvent>]
+    abstract KeyInputReceived : IEvent<KeyInput>
 
 and IMode =
 

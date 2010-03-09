@@ -311,7 +311,7 @@ namespace VimCoreTest
             _buffer.ProcessChar('a');
             var toProcess = InputUtil.CharToKeyInput('c');
             _keyMap
-                .Setup(x => x.GetKeyMappingResult(InputUtil.CharToKeyInput('b'), KeyRemapMode.Normal))
+                .Setup(x => x.GetKeyMappingResultFromMultiple(MatchUtil.CreateForKeyInputSequence("ab"), KeyRemapMode.Normal))
                 .Returns(KeyMappingResult.NewSingleKey(toProcess))
                 .Verifiable();
             _normalMode.Setup(x => x.Process(toProcess)).Returns(ProcessResult.Processed).Verifiable();
@@ -319,5 +319,57 @@ namespace VimCoreTest
             _keyMap.Verify();
             _normalMode.Verify();
         }
+
+        [Test]
+        public void BufferedRemapKeyInputs1()
+        {
+            _keyMap
+                .Setup(x => x.GetKeyMappingResult(InputUtil.CharToKeyInput('a'), KeyRemapMode.Normal))
+                .Returns(KeyMappingResult.MappingNeedsMoreInput)
+                .Verifiable();
+            _buffer.ProcessChar('a');
+            var list = _buffer.BufferedRemapKeyInputs.ToList();
+            Assert.AreEqual(1, list.Count);
+            Assert.AreEqual('a', list[0].Char);
+        }
+
+        [Test]
+        public void BufferedRemapKeyInputs2()
+        {
+            Assert.AreEqual(0, _buffer.BufferedRemapKeyInputs.Count());
+        }
+
+        [Test]
+        public void BufferedRemapKeyInputs3()
+        {
+            _keyMap
+                .Setup(x => x.GetKeyMappingResult(InputUtil.CharToKeyInput('a'), KeyRemapMode.Normal))
+                .Returns(KeyMappingResult.MappingNeedsMoreInput);
+            _buffer.ProcessChar('a');
+            _keyMap
+                .Setup(x => x.GetKeyMappingResultFromMultiple(It.IsAny<IEnumerable<KeyInput>>(), KeyRemapMode.Normal))
+                .Returns(KeyMappingResult.MappingNeedsMoreInput);
+            _buffer.ProcessChar('b');
+            var list = _buffer.BufferedRemapKeyInputs.ToList();
+            Assert.AreEqual(2, list.Count);
+            Assert.AreEqual('a', list[0].Char);
+            Assert.AreEqual('b', list[1].Char);
+        }
+
+        [Test]
+        public void BufferedRemapKeyInputs4()
+        {
+            _keyMap
+                .Setup(x => x.GetKeyMappingResult(InputUtil.CharToKeyInput('a'), KeyRemapMode.Normal))
+                .Returns(KeyMappingResult.MappingNeedsMoreInput);
+            _buffer.ProcessChar('a');
+            _keyMap
+                .Setup(x => x.GetKeyMappingResultFromMultiple(It.IsAny<IEnumerable<KeyInput>>(), KeyRemapMode.Normal))
+                .Returns(KeyMappingResult.NewSingleKey(InputUtil.CharToKeyInput('b')));
+            _normalMode.Setup(x => x.Process(It.IsAny<KeyInput>())).Returns(ProcessResult.Processed);
+            _buffer.ProcessChar('b');
+            Assert.AreEqual(0, _buffer.BufferedRemapKeyInputs.Count());
+        }
+
     }
 }

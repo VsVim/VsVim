@@ -42,12 +42,6 @@ namespace VimCoreTest
             _mode = _modeRaw;
         }
 
-        private FSharpList<char> CreateMatch(string input)
-        {
-            Predicate<FSharpList<char>> pred = otherList => Enumerable.SequenceEqual(input, otherList);
-            return Match<FSharpList<char>>.Create(pred);
-        }
-
         private void ProcessWithEnter(string input)
         {
             _mode.Process(input);
@@ -73,7 +67,7 @@ namespace VimCoreTest
         public void StatusOnProcess()
         {
             _host.Status = "foo";
-            _processor.Setup(x => x.RunCommand(CreateMatch("1"))).Verifiable();
+            _processor.Setup(x => x.RunCommand(MatchUtil.CreateForCharList("1"))).Verifiable();
             _mode.Process("1");
             _mode.Process(InputUtil.KeyToKeyInput(Key.Enter));
             _processor.Verify();
@@ -83,10 +77,10 @@ namespace VimCoreTest
         [Test, Description("Ensure multiple commands can be processed")]
         public void DoubleCommand1()
         {
-            _processor.Setup(x => x.RunCommand(CreateMatch("2"))).Verifiable();
+            _processor.Setup(x => x.RunCommand(MatchUtil.CreateForCharList("2"))).Verifiable();
             ProcessWithEnter("2");
             _processor.Verify();
-            _processor.Setup(x => x.RunCommand(CreateMatch("3"))).Verifiable();
+            _processor.Setup(x => x.RunCommand(MatchUtil.CreateForCharList("3"))).Verifiable();
             ProcessWithEnter("3");
             _processor.Verify();
         }
@@ -101,7 +95,7 @@ namespace VimCoreTest
         [Test]
         public void Input2()
         {
-            _processor.Setup(x => x.RunCommand(CreateMatch("foo"))).Verifiable();
+            _processor.Setup(x => x.RunCommand(MatchUtil.CreateForCharList("foo"))).Verifiable();
             ProcessWithEnter("foo");
             _processor.Verify();
             Assert.AreEqual(String.Empty, _modeRaw.Command);
