@@ -215,6 +215,16 @@ namespace VimCoreTest
             _operations.Verify();
         }
 
+        public void MoveDollar1()
+        {
+            Create("foo", "bar");
+            var editOpts = new Mock<IEditorOperations>(MockBehavior.Strict);
+            editOpts.Setup(x => x.MoveToEndOfLine(false)).Verifiable();
+            _operations.Setup(x => x.EditorOperations).Returns(editOpts.Object);
+            _mode.Process('$');
+            editOpts.Verify();
+        }
+
         #endregion
 
         #region Operations

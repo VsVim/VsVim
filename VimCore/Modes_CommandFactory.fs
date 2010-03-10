@@ -43,6 +43,8 @@ type internal CommandFactory( _operations : ICommonOperations) =
                 yield (InputUtil.KeyToKeyInput(Key.Down), moveDown)
                 yield (KeyInput('n', Key.N, ModifierKeys.Control),moveDown)
                 yield (KeyInput('j', Key.J, ModifierKeys.Control),moveDown)        
+                yield (InputUtil.CharToKeyInput('$'), (fun _ -> _operations.EditorOperations.MoveToEndOfLine(false)))
+                yield (InputUtil.CharToKeyInput('^'), (fun _ -> _operations.EditorOperations.MoveToStartOfLineAfterWhiteSpace(false)))
             }
         s
 
