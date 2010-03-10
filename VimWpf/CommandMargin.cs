@@ -10,9 +10,12 @@ namespace Vim.UI.Wpf
     internal sealed class CommandMargin : IWpfTextViewMargin
     {
         private readonly CommandMarginControl _margin = new CommandMarginControl();
+        private readonly IVimBuffer _buffer;
 
-        public CommandMargin(IWpfTextViewHost wpfTextViewHost, IWpfTextViewMargin marginContainer)
+        public CommandMargin(IVimBuffer buffer)
         {
+            _buffer = buffer;
+            _buffer.SwitchedMode += (sender, args) => _margin.CommandLine = _buffer.Mode.ModeKind.ToString();
             _margin.CommandLine = "This is the Vim Command Margin";
         }
 

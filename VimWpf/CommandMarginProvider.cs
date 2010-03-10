@@ -18,9 +18,18 @@ namespace Vim.UI.Wpf
     [TextViewRole(PredefinedTextViewRoles.Document)]
     internal sealed class CommandMarginProvider : IWpfTextViewMarginProvider
     {
+        private readonly IVim _vim;
+
+        [ImportingConstructor]
+        internal CommandMarginProvider(IVim vim)
+        {
+            _vim = vim;
+        }
+
         public IWpfTextViewMargin CreateMargin(IWpfTextViewHost wpfTextViewHost, IWpfTextViewMargin marginContainer)
         {
-            return new CommandMargin(wpfTextViewHost, marginContainer);
+            var buffer = _vim.GetOrCreateBuffer(wpfTextViewHost.TextView);
+            return new CommandMargin(buffer);
         }
     }
 }
