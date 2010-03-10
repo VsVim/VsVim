@@ -19,15 +19,18 @@ namespace Vim.UI.Wpf
     /// </summary>
     public partial class CommandMarginControl : UserControl
     {
-        public static readonly DependencyProperty CommandLineProperty = DependencyProperty.Register(
-            "CommandLine", 
+        public static readonly DependencyProperty StatusLineProperty = DependencyProperty.Register(
+            "StatusLine", 
             typeof(string),
             typeof(CommandMarginControl));
 
-        public string CommandLine
+        /// <summary>
+        /// The primary status line for Vim
+        /// </summary>
+        public string StatusLine
         {
-            get { return (string)GetValue(CommandLineProperty); }
-            set { SetValue(CommandLineProperty, value); }
+            get { return (string)GetValue(StatusLineProperty); }
+            set { SetValue(StatusLineProperty, value); }
         }
 
         public CommandMarginControl()

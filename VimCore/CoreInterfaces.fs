@@ -364,4 +364,8 @@ and IMode =
     /// Called when the mode is left
     abstract OnLeave : unit -> unit
 
+and IVimBufferCreationListener =
+
+    abstract VimBufferCreated : IVimBuffer -> unit
+
 

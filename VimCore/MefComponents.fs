@@ -31,7 +31,7 @@ type internal BlockCaretFactoryService [<ImportingConstructor>] ( _formatMapServ
     interface IBlockCaretFactoryService with
         member x.CreateBlockCaret textView = 
             let formatMap = _formatMapService.GetEditorFormatMap(textView)
-            BlockCaret(textView, _blockCaretAdornmentLayerName, formatMap) :> IBlockCaret
+            BlockCaret(textView) :> IBlockCaret
 
 [<Export(typeof<IVimFactoryService>)>]
 type internal VimFactoryService

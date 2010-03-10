@@ -93,6 +93,7 @@ type internal Vim
         _host : IVimHost,
         _bufferFactoryService : IVimBufferFactory,
         _editorFactoryService : ITextEditorFactoryService,
+        _bufferCreationListeners : Lazy<IVimBufferCreationListener> seq,
         _settings : IVimGlobalSettings,
         _registerMap : IRegisterMap,
         _markMap : IMarkMap,
@@ -108,11 +109,13 @@ type internal Vim
         host : IVimHost,
         bufferFactoryService : IVimBufferFactory,
         tlcService : ITrackingLineColumnService,
-        editorFactoryService : ITextEditorFactoryService ) =
+        editorFactoryService : ITextEditorFactoryService,
+        [<ImportMany>] bufferCreationListeners : Lazy<IVimBufferCreationListener> seq ) =
         Vim(
             host,
             bufferFactoryService,
             editorFactoryService,
+            bufferCreationListeners,
             GlobalSettings() :> IVimGlobalSettings,
             RegisterMap() :> IRegisterMap,
             MarkMap(tlcService) :> IMarkMap,
@@ -122,6 +125,7 @@ type internal Vim
         if _bufferMap.ContainsKey(view) then invalidArg "view" Resources.Vim_ViewAlreadyHasBuffer
         let buffer = _bufferFactoryService.CreateBuffer (x:>IVim) view
         _bufferMap.Add(view, buffer)
+        _bufferCreationListeners |> Seq.iter (fun x -> x.Value.VimBufferCreated buffer)
         buffer
 
     member private x.RemoveBufferCore view = _bufferMap.Remove(view)

@@ -15,8 +15,8 @@ namespace Vim.UI.Wpf
         public CommandMargin(IVimBuffer buffer)
         {
             _buffer = buffer;
-            _buffer.SwitchedMode += (sender, args) => _margin.CommandLine = _buffer.Mode.ModeKind.ToString();
-            _margin.CommandLine = "This is the Vim Command Margin";
+            _buffer.SwitchedMode += (sender, args) => _margin.StatusLine= _buffer.Mode.ModeKind.ToString();
+            _margin.StatusLine = "Welcome to Vim";
         }
 
         public FrameworkElement VisualElement

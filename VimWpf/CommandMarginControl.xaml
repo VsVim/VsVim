@@ -10,7 +10,7 @@
     <DockPanel
         DataContext="{Binding ElementName=commandMarginControl}">
 
-        <TextBox Text="{Binding Path=CommandLine}" DockPanel.Dock="Left" />
+        <TextBox Text="{Binding Path=StatusLine}" DockPanel.Dock="Left" />
 
     </DockPanel>
 

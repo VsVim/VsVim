@@ -40,6 +40,7 @@ namespace VimCoreTest
                 _host.Object,
                 _factory.Object,
                 _editorFactoryService.Object,
+                new Lazy<IVimBufferCreationListener>[] {},
                 _settings.Object,
                 _registerMap.Object,
                 _markMap.Object,

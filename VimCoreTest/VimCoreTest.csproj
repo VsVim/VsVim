@@ -133,7 +133,6 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="BlockCaretTest.cs" />
     <Compile Include="CommandModeIntegrationTest.cs" />
     <Compile Include="CommandModeTest.cs" />
     <Compile Include="CommandParseUtilTest.cs" />

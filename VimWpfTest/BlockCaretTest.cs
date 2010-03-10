@@ -7,9 +7,9 @@ using NUnit.Framework;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Classification;
 using Moq;
-using VimCoreTest.Utils;
+using Vim.UI.Wpf.Implementation;
 
-namespace VimCoreTest
+namespace Vim.UI.Wpf.Test
 {
     [TestFixture]
     public class BlockCaretTest
