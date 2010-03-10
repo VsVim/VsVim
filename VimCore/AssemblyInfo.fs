@@ -5,5 +5,5 @@ namespace Vim
 
 open System.Runtime.CompilerServices
 
-[<assembly:InternalsVisibleTo("VimCoreTest")>]
+[<assembly:InternalsVisibleTo("Vim.Core.UnitTest")>]
 do()

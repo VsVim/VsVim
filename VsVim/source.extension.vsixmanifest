@@ -18,5 +18,6 @@
   <Content>
     <MefComponent>|%CurrentProject%|</MefComponent>
     <MefComponent>|VimCore|</MefComponent>
+    <MefComponent>|VimWpf|</MefComponent>
   </Content>
 </Vsix>
