@@ -422,14 +422,15 @@ type internal CommandProcessor
 
         // Look for commands with that name
         let command =
-
+            
             // First look for the exact match
             let found =
                 _commandList
                 |> Seq.tryFind (fun (name,shortName,_) -> name = commandName || shortName = commandName)
-            match found with
-            | Some(data) -> Some(data)
-            | None ->
+            match found,StringUtil.isNullOrEmpty commandName with
+            | _,true -> None
+            | Some(data),false -> Some(data)
+            | None,false ->
                 
                 // No exact name matches look for a prefix match on the full command name
                 let found =

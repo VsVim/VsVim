@@ -73,6 +73,15 @@ namespace VimCoreTest
         }
 
         [Test]
+        public void TryStringToKeyInput6()
+        {
+            var opt = KeyMapUtil.TryStringToKeyInput("<C-x>");
+            Assert.IsTrue(opt.IsSome());
+            Assert.AreEqual('x', opt.Value.Char);
+            Assert.AreEqual(ModifierKeys.Control, opt.Value.ModifierKeys);
+        }
+
+        [Test]
         public void TryStringToKeyInputList1()
         {
             var opt = KeyMapUtil.TryStringToKeyInputList("ab");
@@ -91,7 +100,7 @@ namespace VimCoreTest
         }
 
         [Test]
-        public void TryStringToKeInputList3()
+        public void TryStringToKeyInputList3()
         {
             var opt = KeyMapUtil.TryStringToKeyInputList("<Home>a");
             Assert.IsTrue(opt.IsSome());
@@ -99,6 +108,17 @@ namespace VimCoreTest
             Assert.AreEqual(2, list.Count);
             Assert.AreEqual(InputUtil.KeyToKeyInput(Key.Home), list[0]);
             Assert.AreEqual('a', list[1].Char);
+        }
+
+        [Test]
+        public void TryStringToKeyInputList4()
+        {
+            var opt = KeyMapUtil.TryStringToKeyInputList("<C-x><C-o>");
+            Assert.IsTrue(opt.IsSome());
+            var list = opt.Value.ToList();
+            Assert.AreEqual(2, list.Count);
+            Assert.AreEqual('x', list[0].Char);
+            Assert.AreEqual('o', list[1].Char);
         }
     }
 }
