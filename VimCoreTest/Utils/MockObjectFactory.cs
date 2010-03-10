@@ -48,12 +48,6 @@ namespace VimCoreTest.Utils
             return mock;
         }
 
-        internal static Mock<IBlockCaret> CreateBlockCaret()
-        {
-            var mock = new Mock<IBlockCaret>(MockBehavior.Loose);
-            return mock;
-        }
-
         internal static Mock<IEditorOperations> CreateEditorOperations()
         {
             var mock = new Mock<IEditorOperations>(MockBehavior.Strict);
@@ -92,14 +86,12 @@ namespace VimCoreTest.Utils
             IWpfTextView view,
             string name = null,
             IVim vim = null,
-            IBlockCaret caret = null,
             IEditorOperations editorOperations = null,
             IJumpList jumpList = null,
             IVimLocalSettings settings = null )
         {
             name = name ?? "test";
             vim = vim ?? CreateVim().Object;
-            caret = caret ?? CreateBlockCaret().Object;
             editorOperations = editorOperations ?? CreateEditorOperations().Object;
             jumpList = jumpList ?? (new Mock<IJumpList>(MockBehavior.Strict)).Object;
             settings = settings ?? new LocalSettings(vim.Settings, view);
@@ -108,7 +100,6 @@ namespace VimCoreTest.Utils
             mock.SetupGet(x => x.TextBuffer).Returns(() => view.TextBuffer);
             mock.SetupGet(x => x.TextSnapshot).Returns(() => view.TextSnapshot);
             mock.SetupGet(x => x.Name).Returns(name);
-            mock.SetupGet(x => x.BlockCaret).Returns(caret);
             mock.SetupGet(x => x.EditorOperations).Returns(editorOperations);
             mock.SetupGet(x => x.VimHost).Returns(vim.Host);
             mock.SetupGet(x => x.Settings).Returns(settings);

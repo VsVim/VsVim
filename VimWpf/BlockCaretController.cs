@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Vim.Modes.Normal;
 
 namespace Vim.UI.Wpf
 {
@@ -16,18 +17,43 @@ namespace Vim.UI.Wpf
         {
             _buffer = buffer;
             _blockCaret = blockCaret;
-            _buffer.SwitchedMode += new Microsoft.FSharp.Control.FSharpHandler<IMode>(OnSwitchMode);
-            UpdateCaretBasedOnMode();
+            _buffer.SwitchedMode += OnCaretRelatedEvent;
+            _buffer.KeyInputProcessed += OnCaretRelatedEvent;
+            _buffer.KeyInputReceived += OnCaretRelatedEvent;
+            UpdateCaret();
         }
 
-        private void OnSwitchMode(object sender, IMode args)
+        private void OnCaretRelatedEvent(object sender, object args)
         {
-            UpdateCaretBasedOnMode();
+            UpdateCaret();
         }
 
-        private void UpdateCaretBasedOnMode()
+        private void UpdateCaret()
         {
-            if (ModeKind.Normal == _buffer.ModeKind)
+            var show = false;
+            switch (_buffer.ModeKind )
+            {
+                case ModeKind.Normal:
+                    {
+                        var mode = (INormalMode)_buffer.Mode;
+                        if (!mode.IsOperatorPending && !mode.IsWaitingForInput)
+                        {
+                            show = true;
+                        }
+                        else if ( mode.IsOperatorPending )
+                        {
+                            show = true;
+                        }
+                    }
+                    break;
+                case ModeKind.VisualBlock:
+                case ModeKind.VisualCharacter:
+                case ModeKind.VisualLine:
+                    show = true;
+                    break;
+            }
+
+            if ( show )
             {
                 _blockCaret.Show();
             }

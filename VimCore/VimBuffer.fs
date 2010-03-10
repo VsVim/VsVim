@@ -38,7 +38,6 @@ type internal VimBuffer
         _vim : IVim,
         _textView : IWpfTextView,
         _editorOperations : IEditorOperations,
-        _blockCaret : IBlockCaret,
         _jumpList : IJumpList,
         _settings : IVimLocalSettings ) =
 
@@ -139,7 +138,6 @@ type internal VimBuffer
         member x.TextView = _textView
         member x.TextBuffer = _textView.TextBuffer
         member x.TextSnapshot = _textView.TextSnapshot
-        member x.BlockCaret = _blockCaret
         member x.BufferedRemapKeyInputs = x.BufferedRemapKeyInputs 
         member x.EditorOperations = _editorOperations
         member x.Name = _vim.Host.GetName _textView.TextBuffer
@@ -169,6 +167,5 @@ type internal VimBuffer
         member x.CanProcessKey k = x.CanProcessInput (InputUtil.KeyToKeyInput k)
         member x.Close () = 
             x.Mode.OnLeave()
-            _blockCaret.Destroy()
             _vim.MarkMap.DeleteAllMarksForBuffer _textView.TextBuffer
             _vim.RemoveBuffer _textView |> ignore

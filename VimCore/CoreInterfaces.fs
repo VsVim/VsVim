@@ -119,15 +119,6 @@ type IJumpList =
     /// Add a given SnapshotPoint to the jump list
     abstract Add : SnapshotPoint -> unit
 
-/// Defines a block style caret for a given ITextView.  This allows normal mode to create 
-/// a block style cursor when needed
-type IBlockCaret =
-    abstract TextView : ITextView
-    abstract IsShown : bool
-    abstract Show : unit -> unit
-    abstract Hide : unit -> unit
-    abstract Destroy : unit -> unit
-
 type ProcessResult = 
     | Processed
     | ProcessNotHandled
@@ -280,9 +271,6 @@ and IVimBuffer =
 
     /// Jump list
     abstract JumpList : IJumpList
-
-    /// Available IBlockCaret implementation for the buffer
-    abstract BlockCaret : IBlockCaret
 
     /// IVimHost for the buffer
     abstract VimHost : IVimHost

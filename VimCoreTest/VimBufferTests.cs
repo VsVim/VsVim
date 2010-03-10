@@ -31,7 +31,6 @@ namespace VimCoreTest
         Mock<IVimGlobalSettings> _globalSettings;
         Mock<IVimLocalSettings> _settings;
         Mock<IVimHost> _host;
-        MockBlockCaret _blockCaret;
         VimBuffer _rawBuffer;
         IVimBuffer _buffer;
         MarkMap _markMap;
@@ -48,7 +47,6 @@ namespace VimCoreTest
             _keyMap = new Mock<IKeyMap>(MockBehavior.Strict);
             _host = new Mock<IVimHost>(MockBehavior.Strict);
             _vim = MockObjectFactory.CreateVim(map:_markMap, settings:_globalSettings.Object, keyMap:_keyMap.Object, host:_host.Object);
-            _blockCaret = new MockBlockCaret();
             _disabledMode = new Mock<IMode>(MockBehavior.Strict);
             _disabledMode.SetupGet(x => x.ModeKind).Returns(ModeKind.Disabled);
             _normalMode = new Mock<INormalMode>(MockBehavior.Strict);
@@ -63,7 +61,6 @@ namespace VimCoreTest
                 _vim.Object,
                 _view,
                 _editorOperations,
-                _blockCaret,
                 _jumpList.Object,
                 _settings.Object);
             _rawBuffer.AddMode(_normalMode.Object);
@@ -140,16 +137,6 @@ namespace VimCoreTest
             _buffer.SwitchMode(ModeKind.Normal);
             _buffer.Close();
             Assert.IsTrue(ran);
-            _vim.Verify();
-        }
-
-        [Test, Description("Close should destroy the block caret")]
-        public void Close2()
-        {
-            _normalMode.Setup(x => x.OnLeave());
-            _vim.Setup(x => x.RemoveBuffer(_view)).Returns(true).Verifiable();
-            _buffer.Close();
-            Assert.AreEqual(1, _blockCaret.DestroyCount);
             _vim.Verify();
         }
 

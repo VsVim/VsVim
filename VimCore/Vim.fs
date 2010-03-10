@@ -18,7 +18,6 @@ type internal VimBufferFactory
         _editorOperationsFactoryService : IEditorOperationsFactoryService,
         _editorFormatMapService : IEditorFormatMapService,
         _completionWindowBrokerFactoryService : ICompletionWindowBrokerFactoryService,
-        _blockCaretFactoryService : IBlockCaretFactoryService,
         _textSearchService : ITextSearchService,
         _textStructureNavigatorSelectorService : ITextStructureNavigatorSelectorService,
         _tlcService : ITrackingLineColumnService,
@@ -28,7 +27,6 @@ type internal VimBufferFactory
     
     member x.CreateBuffer (vim:IVim) view = 
         let editorFormatMap = _editorFormatMapService.GetEditorFormatMap(view :> ITextView)
-        let caret = _blockCaretFactoryService.CreateBlockCaret view
         let editOperations = _editorOperationsFactoryService.GetEditorOperations(view)
         let jumpList = JumpList(_tlcService) :> IJumpList
         let localSettings = LocalSettings(vim.Settings, view) :> IVimLocalSettings
@@ -37,7 +35,6 @@ type internal VimBufferFactory
                 vim,
                 view,
                 editOperations,
-                caret,
                 jumpList,
                 localSettings)
         let buffer = bufferRaw :> IVimBuffer

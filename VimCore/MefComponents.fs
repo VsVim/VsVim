@@ -10,29 +10,6 @@ open Microsoft.VisualStudio.Utilities
 open System.ComponentModel.Composition
 open System.Collections.Generic
 
-[<Export(typeof<IBlockCaretFactoryService>)>]
-type internal BlockCaretFactoryService [<ImportingConstructor>] ( _formatMapService : IEditorFormatMapService ) =
-    
-    let _blockCaretAdornmentLayerName = "BlockCaretAdornmentLayer"
-
-    [<Export(typeof<AdornmentLayerDefinition>)>]
-    [<Name("BlockCaretAdornmentLayer")>]
-    [<Order(After = PredefinedAdornmentLayers.Selection)>]
-    let mutable _blockCaretAdornmentLayerDefinition : AdornmentLayerDefinition = null
-
-    /// This method is a hack.  Unless a let binding is explicitly used the F# compiler 
-    /// will remove it from the final metadata definition.  This will prevent the MEF
-    /// import from ever being resolved and hence cause us to not define the adornment
-    /// layer.  Hacky member method that is never called to fake assign and prevent this
-    /// problem
-    member private x.Hack() =
-        _blockCaretAdornmentLayerDefinition = AdornmentLayerDefinition()
-
-    interface IBlockCaretFactoryService with
-        member x.CreateBlockCaret textView = 
-            let formatMap = _formatMapService.GetEditorFormatMap(textView)
-            BlockCaret(textView) :> IBlockCaret
-
 [<Export(typeof<IVimFactoryService>)>]
 type internal VimFactoryService
     [<ImportingConstructor>]

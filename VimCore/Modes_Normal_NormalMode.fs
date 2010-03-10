@@ -178,9 +178,7 @@ type internal NormalMode
         let inner (ki:KeyInput) count reg =
             if not (_operations.ReplaceChar ki count) then
                 _bufferData.VimHost.Beep()
-            _bufferData.BlockCaret.Show()
             NormalModeResult.Complete
-        _bufferData.BlockCaret.Hide()
         inner
         
     /// Handles commands which begin with g in normal mode.  This should be called when the g char is
@@ -427,9 +425,7 @@ type internal NormalMode
                     _waitingForMoreInput <- false
                     Processed
         member this.OnEnter ()  =
-            _bufferData.BlockCaret.Show()
             this.ResetData()
-        member this.OnLeave () = 
-            _bufferData.BlockCaret.Hide()
+        member this.OnLeave () = ()
     
 

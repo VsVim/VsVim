@@ -12,9 +12,6 @@ type IVimFactoryService =
     abstract CreateKeyProcessor : IVimBuffer -> KeyProcessor
     abstract CreateMouseProcessor : IVimBuffer -> IMouseProcessor
 
-type IBlockCaretFactoryService =
-    abstract CreateBlockCaret : IWpfTextView -> IBlockCaret
-
 /// Used to determine if a completion window is active for a given view
 type ICompletionWindowBroker =
 

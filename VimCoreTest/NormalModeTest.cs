@@ -26,7 +26,6 @@ namespace VimCoreTest
         private IWpfTextView _view;
         private IRegisterMap _map;
         private Mock<IVimBuffer> _bufferData;
-        private MockBlockCaret _blockCaret;
         private Mock<IOperations> _operations;
         private Mock<IEditorOperations> _editorOperations;
         private Mock<IIncrementalSearch> _incrementalSearch;
@@ -49,7 +48,6 @@ namespace VimCoreTest
             _view = Utils.EditorUtil.CreateView(lines);
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 0));
             _map = new RegisterMap();
-            _blockCaret = new MockBlockCaret();
             _editorOperations = new Mock<IEditorOperations>();
             _incrementalSearch = new Mock<IIncrementalSearch>(MockBehavior.Strict);
             _jumpList = new Mock<IJumpList>(MockBehavior.Strict);
@@ -57,7 +55,6 @@ namespace VimCoreTest
                 _view,
                 "test",
                 MockFactory.CreateVim(_map, host : host).Object,
-                _blockCaret,
                 _editorOperations.Object,
                 _jumpList.Object);
             _operations = new Mock<IOperations>(MockBehavior.Strict);
@@ -754,20 +751,6 @@ namespace VimCoreTest
             _operations.Setup(x => x.ReplaceChar(It.IsAny<KeyInput>(), 200)).Returns(false).Verifiable();
             _mode.Process("200ru");
             Assert.IsTrue(host.BeepCount > 0);
-            _operations.Verify();
-        }
-
-        [Test, Description("block caret should be hidden for the duration of the r command")]
-        public void Edit_r_5()
-        {
-            CreateBuffer("foo");
-            _blockCaret.HideCount = 0;
-            _blockCaret.ShowCount = 0;
-            _mode.Process('r');
-            Assert.AreEqual(1, _blockCaret.HideCount);
-            _operations.Setup(x => x.ReplaceChar(It.IsAny<KeyInput>(), 1)).Returns(true).Verifiable();
-            _mode.Process('u');
-            Assert.AreEqual(1, _blockCaret.ShowCount);
             _operations.Verify();
         }
 
@@ -1800,15 +1783,6 @@ namespace VimCoreTest
             _mode.Process('`');
             _mode.Process('a');
             _operations.Verify();
-        }
-
-        [Test, Description("OnLeave should kill the block caret")]
-        public void OnLeave1()
-        {
-            CreateBuffer(s_lines);
-            _blockCaret.HideCount = 0;
-            _mode.OnLeave();
-            Assert.AreEqual(1, _blockCaret.HideCount);
         }
 
         [Test]

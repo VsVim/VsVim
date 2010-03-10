@@ -175,7 +175,6 @@
     <Compile Include="Utils\FSharpFuncUtil.cs" />
     <Compile Include="Utils\FSharpOption.cs" />
     <Compile Include="Utils\MatchUtil.cs" />
-    <Compile Include="Utils\MockBlockCaret.cs" />
     <Compile Include="Utils\MockObjectFactory.cs" />
     <Compile Include="Utils\TextUndoHistoryRegistry.cs" />
     <Compile Include="ViewUtilTest.cs" />

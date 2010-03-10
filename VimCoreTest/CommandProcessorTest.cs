@@ -40,7 +40,6 @@ namespace VimCoreTest
                 _view,
                 "test",
                 MockObjectFactory.CreateVim(_map, host: _host).Object,
-                MockObjectFactory.CreateBlockCaret().Object,
                 _editOpts.Object);
             _processorRaw = new Vim.Modes.Command.CommandProcessor(_bufferData.Object, _operations.Object);
             _processor = _processorRaw;
