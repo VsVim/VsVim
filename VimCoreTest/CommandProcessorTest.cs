@@ -50,8 +50,6 @@ namespace VimCoreTest
             _processor.RunCommand(Microsoft.FSharp.Collections.ListModule.OfSeq(input));
         }
 
-
-
         private void TestNoRemap(string input, string lhs, string rhs, params KeyRemapMode[] modes)
         {
             TestMapCore(input, lhs, rhs, false, modes);

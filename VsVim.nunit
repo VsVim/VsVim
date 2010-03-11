@@ -1,8 +1,9 @@
 ﻿<NUnitProject>
   <Settings activeconfig="Debug" />
   <Config name="Debug" binpathtype="Auto">
-    <assembly path="VimCoreTest\bin\Debug\VimCoreTest.dll" />
-    <assembly path="VsVimTest\bin\Debug\VsVimTest.dll" />
+    <assembly path="VimCoreTest\bin\Debug\Vim.Core.UnitTest.dll" />
+    <assembly path="VimWpfTest\bin\Debug\Vim.UI.Wpf.UnitTest.dll" />
+    <assembly path="VsVimTest\bin\Debug\VsVim.UnitTest.dll" />
   </Config>
   <Config name="Release" binpathtype="Auto">
     <assembly path="VimCoreTest\bin\Release\VimCoreTest.dll" />
