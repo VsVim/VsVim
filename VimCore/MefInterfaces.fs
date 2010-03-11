@@ -9,7 +9,6 @@ open Microsoft.VisualStudio.Text.Tagging
 /// MEF component which can spin up Vi components
 type IVimFactoryService =
     abstract Vim : IVim
-    abstract CreateKeyProcessor : IVimBuffer -> KeyProcessor
     abstract CreateMouseProcessor : IVimBuffer -> IMouseProcessor
 
 /// Used to determine if a completion window is active for a given view
