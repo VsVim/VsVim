@@ -16,10 +16,10 @@ using Microsoft.FSharp.Control;
 namespace VsVim
 {
     [Export(typeof(IVsVimFactoryService))]
-    internal sealed class VsVimFactoryService : IVsVimFactoryService
+    [Export(typeof(IVimBufferCreationListener))]
+    internal sealed class VsVimFactoryService : IVsVimFactoryService, IVimBufferCreationListener
     {
         private readonly IVsEditorAdaptersFactoryService _adaptersFactory;
-        private readonly IVimBufferFactory _vimBufferFactory;
         private readonly IVim _vim;
         private readonly IVimHost _vimHost;
         private readonly Dictionary<IVimBuffer, VsCommandFilter> _filterMap = new Dictionary<IVimBuffer, VsCommandFilter>();
@@ -43,17 +43,14 @@ namespace VsVim
         [ImportingConstructor]
         internal VsVimFactoryService(
             IVim vim,
-            IVimBufferFactory bufferFactory,
             IVsEditorAdaptersFactoryService adaptersFactory,
             IVimHost vimHost
             )
         {
             _vim = vim;
             _adaptersFactory = adaptersFactory;
-            _vimBufferFactory = bufferFactory;
             _vimHost = vimHost;
 
-            _vimBufferFactory.BufferCreated += new FSharpHandler<IVimBuffer>(OnBufferCreated);
         }
 
         #region Private
@@ -95,7 +92,9 @@ namespace VsVim
             _filterMap.Add(buffer, filter);
         }
 
-        private void OnBufferCreated(object sender, IVimBuffer buffer)
+        #region IVimBufferCreationListener
+
+        void IVimBufferCreationListener.VimBufferCreated(IVimBuffer buffer)
         {
             GetOrUpdateServiceProvider(buffer.TextBuffer);
 
@@ -110,6 +109,8 @@ namespace VsVim
             };
             ITextViewDebugUtil.Attach(textView);
         }
+
+        #endregion
 
         #endregion
 
