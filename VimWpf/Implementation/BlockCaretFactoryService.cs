@@ -16,10 +16,12 @@ namespace Vim.UI.Wpf.Implementation
 
         private readonly IEditorFormatMapService _formatMapService;
 
+#pragma warning disable 169
         [Export(typeof(AdornmentLayerDefinition))]
         [Name(BlockCaretAdornmentLayerName)]
-        [Order(After=PredefinedAdornmentLayers.Selection)]
-        private AdornmentLayerDefinition _blockCaretAdornmentLayerDefinition = null;
+        [Order(After = PredefinedAdornmentLayers.Selection)]
+        private AdornmentLayerDefinition _blockCaretAdornmentLayerDefinition;
+#pragma warning restore 169
 
         [ImportingConstructor]
         internal BlockCaretFactoryService(IEditorFormatMapService formatMapService)

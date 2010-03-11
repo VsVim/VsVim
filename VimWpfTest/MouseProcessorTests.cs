@@ -6,13 +6,13 @@ using NUnit.Framework;
 using Microsoft.VisualStudio.Text.Editor;
 using Moq;
 using Vim;
-using VimCoreTest.Utils;
 using Vim.Modes.Visual;
 using Microsoft.VisualStudio.Text;
 using System.Windows.Input;
 using System.Windows.Threading;
+using VimCoreTest.Utils;
 
-namespace VimCoreTest
+namespace Vim.UI.Wpf.Test
 {
     [TestFixture]
     public class MouseProcessorTests

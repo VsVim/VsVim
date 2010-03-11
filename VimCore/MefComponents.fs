@@ -10,15 +10,6 @@ open Microsoft.VisualStudio.Utilities
 open System.ComponentModel.Composition
 open System.Collections.Generic
 
-[<Export(typeof<IVimFactoryService>)>]
-type internal VimFactoryService
-    [<ImportingConstructor>]
-    ( _vim : IVim ) =
-
-    interface IVimFactoryService with
-        member x.Vim = _vim
-        member x.CreateMouseProcessor buffer = Vim.MouseProcessor(buffer, MouseDeviceImpl() :> IMouseDevice) :> Microsoft.VisualStudio.Text.Editor.IMouseProcessor
-
 type internal CompletionWindowBroker 
     ( 
         _textView : ITextView,

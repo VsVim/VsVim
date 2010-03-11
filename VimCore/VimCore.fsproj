@@ -93,7 +93,6 @@
     <Compile Include="Modes_Visual_VisualMode.fsi" />
     <Compile Include="Modes_Visual_VisualMode.fs" />
     <Compile Include="VimBuffer.fs" />
-    <Compile Include="MouseProcessor.fs" />
     <Compile Include="RegisterMap.fs" />
     <Compile Include="DisabledMode.fs" />
     <Compile Include="MarkMap.fs" />

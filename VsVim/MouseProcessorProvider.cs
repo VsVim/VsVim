@@ -15,18 +15,18 @@ namespace VsVim
     [TextViewRole(PredefinedTextViewRoles.Editable)]
     public class MouseProcessorProvider : IMouseProcessorProvider
     {
-        private readonly IVimFactoryService _vimFactoryService;
+        private readonly IVim _vim;
 
         [ImportingConstructor]
-        public MouseProcessorProvider(IVimFactoryService vimFactoryService)
+        public MouseProcessorProvider(IVim vim)
         {
-            _vimFactoryService = vimFactoryService;
+            _vim = vim;
         }
 
         public IMouseProcessor GetAssociatedProcessor(IWpfTextView wpfTextView)
         {
-            var buffer = _vimFactoryService.Vim.GetOrCreateBuffer(wpfTextView);
-            return _vimFactoryService.CreateMouseProcessor(buffer);
+            var buffer = _vim.GetOrCreateBuffer(wpfTextView);
+            return new Vim.UI.Wpf.MouseProcessor(buffer);
         }
     }
 }

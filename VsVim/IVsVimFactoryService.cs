@@ -10,7 +10,6 @@ namespace VsVim
 {
     public interface IVsVimFactoryService
     {
-        IVimFactoryService VimFactoryService { get; }
         Microsoft.VisualStudio.OLE.Interop.IServiceProvider GetOrUpdateServiceProvider(ITextBuffer buffer);
     }
 }

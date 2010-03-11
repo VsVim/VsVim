@@ -20,7 +20,7 @@ namespace VsVim
     {
         private readonly IVsEditorAdaptersFactoryService _adaptersFactory;
         private readonly IVimBufferFactory _vimBufferFactory;
-        private readonly IVimFactoryService _vimFactoryService;
+        private readonly IVim _vim;
         private readonly IVimHost _vimHost;
         private readonly Dictionary<IVimBuffer, VsCommandFilter> _filterMap = new Dictionary<IVimBuffer, VsCommandFilter>();
 
@@ -42,15 +42,15 @@ namespace VsVim
 
         [ImportingConstructor]
         internal VsVimFactoryService(
-            IVimFactoryService vimFactoryService,
+            IVim vim,
             IVimBufferFactory bufferFactory,
             IVsEditorAdaptersFactoryService adaptersFactory,
             IVimHost vimHost
             )
         {
+            _vim = vim;
             _adaptersFactory = adaptersFactory;
             _vimBufferFactory = bufferFactory;
-            _vimFactoryService = vimFactoryService;
             _vimHost = vimHost;
 
             _vimBufferFactory.BufferCreated += new FSharpHandler<IVimBuffer>(OnBufferCreated);
@@ -84,7 +84,7 @@ namespace VsVim
 
             // Once we have the Vs view, stop listening to the event
             view.GotAggregateFocus -= new EventHandler(OnGotAggregateFocus);
-            var opt = _vimFactoryService.Vim.GetBuffer(view);
+            var opt = _vim.GetBuffer(view);
             if (!opt.IsSome())
             {
                 return;
@@ -114,11 +114,6 @@ namespace VsVim
         #endregion
 
         #region IVsVimFactoryService
-
-        public IVimFactoryService VimFactoryService
-        {
-            get { return _vimFactoryService; }
-        }
 
         public IServiceProvider GetOrUpdateServiceProvider(ITextBuffer buffer)
         {
