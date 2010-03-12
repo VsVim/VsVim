@@ -35,7 +35,7 @@ namespace Vim.UI.Wpf
             {
                 case ModeKind.Normal:
                     {
-                        var mode = (INormalMode)_buffer.Mode;
+                        var mode = _buffer.NormalMode;
                         if (!mode.IsOperatorPending && !mode.IsWaitingForInput)
                         {
                             show = true;

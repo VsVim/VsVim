@@ -280,6 +280,9 @@ and IVimBuffer =
     /// Current mode of the buffer
     abstract Mode : IMode
 
+    abstract NormalMode : INormalMode 
+    abstract CommandMode : ICommandMode 
+
     /// Sequence of available Modes
     abstract AllModes : seq<IMode>
 
@@ -347,8 +350,28 @@ and IMode =
     /// Called when the mode is left
     abstract OnLeave : unit -> unit
 
+
 and IVimBufferCreationListener =
 
     abstract VimBufferCreated : IVimBuffer -> unit
+
+and INormalMode =
+
+    /// Is in the middle of an operator pending 
+    abstract IsOperatorPending : bool
+
+    /// Is normal mode waiting for additional input on a command
+    abstract IsWaitingForInput : bool
+
+    inherit IMode
+
+and ICommandMode = 
+
+    /// Run the specified command
+    abstract RunCommand : string -> unit
+
+    inherit IMode
+    
+
 
 

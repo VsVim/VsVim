@@ -56,6 +56,8 @@ type internal VimBuffer
     
     /// Get the current mode
     member x.Mode = _modeMap.Mode
+    member x.NormalMode = _modeMap.GetMode ModeKind.Normal :?> INormalMode
+    member x.CommandMode = _modeMap.GetMode ModeKind.Command :?> ICommandMode
 
     /// Switch to the desired mode
     member x.SwitchMode kind = _modeMap.SwitchMode kind
@@ -88,7 +90,7 @@ type internal VimBuffer
             match _modeMap.Mode.ModeKind with
             | ModeKind.Insert -> Some (KeyRemapMode.Insert)
             | ModeKind.Normal -> 
-                let mode = _modeMap.Mode :?> Vim.Modes.Normal.INormalMode
+                let mode = x.NormalMode
                 if mode.IsOperatorPending then Some(KeyRemapMode.OperatorPending)
                 elif mode.IsWaitingForInput then None
                 else Some(KeyRemapMode.Normal)
@@ -144,6 +146,8 @@ type internal VimBuffer
         member x.JumpList = _jumpList
         member x.ModeKind = x.Mode.ModeKind
         member x.Mode = x.Mode
+        member x.NormalMode = x.NormalMode
+        member x.CommandMode = x.CommandMode
         member x.AllModes = _modeMap.Modes
         member x.Settings = _settings
         member x.RegisterMap = _vim.RegisterMap

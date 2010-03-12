@@ -73,12 +73,3 @@ type ICommandProcessor =
     /// Run the specified command
     abstract RunCommand : char list -> unit
 
-type ICommandMode = 
-
-    /// Run the specified command
-    abstract RunCommand : string -> unit
-
-    inherit IMode
-    
-
-

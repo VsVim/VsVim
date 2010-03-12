@@ -62,12 +62,3 @@ type IOperations =
 
     inherit Modes.ICommonOperations
 
-type INormalMode =
-
-    /// Is in the middle of an operator pending 
-    abstract IsOperatorPending : bool
-
-    /// Is normal mode waiting for additional input on a command
-    abstract IsWaitingForInput : bool
-
-    inherit Vim.IMode

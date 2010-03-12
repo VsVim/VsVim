@@ -151,7 +151,7 @@ type internal Vim
             settings.VimRc <- path
             let view = createViewFunc()
             let buffer = vim.GetOrCreateBuffer view
-            let mode = buffer.GetMode ModeKind.Command :?> Modes.Command.ICommandMode
+            let mode = buffer.CommandMode
             lines |> Seq.iter mode.RunCommand
             vim.RemoveBuffer view |> ignore
             true
