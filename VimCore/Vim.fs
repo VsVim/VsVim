@@ -16,17 +16,14 @@ type internal VimBufferFactory
     (
         _host : IVimHost,
         _editorOperationsFactoryService : IEditorOperationsFactoryService,
-        _editorFormatMapService : IEditorFormatMapService,
         _completionWindowBrokerFactoryService : ICompletionWindowBrokerFactoryService,
         _textSearchService : ITextSearchService,
         _textStructureNavigatorSelectorService : ITextStructureNavigatorSelectorService,
-        _tlcService : ITrackingLineColumnService,
-        _editorFactoryService : ITextEditorFactoryService ) =
+        _tlcService : ITrackingLineColumnService ) =
 
     let _bufferCreatedEvent = new Event<_>()
     
     member x.CreateBuffer (vim:IVim) view = 
-        let editorFormatMap = _editorFormatMapService.GetEditorFormatMap(view :> ITextView)
         let editOperations = _editorOperationsFactoryService.GetEditorOperations(view)
         let jumpList = JumpList(_tlcService) :> IJumpList
         let localSettings = LocalSettings(vim.Settings, view) :> IVimLocalSettings
@@ -89,7 +86,6 @@ type internal Vim
     (
         _host : IVimHost,
         _bufferFactoryService : IVimBufferFactory,
-        _editorFactoryService : ITextEditorFactoryService,
         _bufferCreationListeners : Lazy<IVimBufferCreationListener> seq,
         _settings : IVimGlobalSettings,
         _registerMap : IRegisterMap,
@@ -106,12 +102,10 @@ type internal Vim
         host : IVimHost,
         bufferFactoryService : IVimBufferFactory,
         tlcService : ITrackingLineColumnService,
-        editorFactoryService : ITextEditorFactoryService,
         [<ImportMany>] bufferCreationListeners : Lazy<IVimBufferCreationListener> seq ) =
         Vim(
             host,
             bufferFactoryService,
-            editorFactoryService,
             bufferCreationListeners,
             GlobalSettings() :> IVimGlobalSettings,
             RegisterMap() :> IRegisterMap,
@@ -138,7 +132,7 @@ type internal Vim
         | Some(buffer) -> buffer
         | None -> x.CreateVimBufferCore view
 
-    static member LoadVimRc (vim:IVim) (editorFactoryService:ITextEditorFactoryService)= 
+    static member LoadVimRc (vim:IVim) (createViewFunc : (unit -> ITextView)) =
         let settings = vim.Settings
         settings.VimRc <- System.String.Empty
 
@@ -155,7 +149,7 @@ type internal Vim
         | None -> false
         | Some(path,lines) ->
             settings.VimRc <- path
-            let view = editorFactoryService.CreateTextView()
+            let view = createViewFunc()
             let buffer = vim.GetOrCreateBuffer view
             let mode = buffer.GetMode ModeKind.Command :?> Modes.Command.ICommandMode
             lines |> Seq.iter mode.RunCommand
@@ -178,7 +172,7 @@ type internal Vim
             match keys |> Seq.isEmpty with
             | true -> None
             | false -> keys |> Seq.head |> x.GetBufferCore
-        member x.LoadVimRc () = Vim.LoadVimRc x _editorFactoryService
+        member x.LoadVimRc createViewFunc = Vim.LoadVimRc x createViewFunc
                 
 
         

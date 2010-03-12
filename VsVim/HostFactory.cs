@@ -17,6 +17,7 @@ using Microsoft.VisualStudio.Language.Intellisense;
 using Microsoft.VisualStudio;
 using System.Runtime.InteropServices;
 using System.Windows.Threading;
+using Microsoft.FSharp.Core;
 
 namespace VsVim
 {
@@ -28,6 +29,7 @@ namespace VsVim
         private readonly IVsVimFactoryService _vsVimFactory;
         private readonly KeyBindingService _keyBindingService;
         private readonly IVimBufferFactory _vimBufferFactory;
+        private readonly ITextEditorFactoryService _editorFactoryService;
         private readonly IVim _vim;
 
         [ImportingConstructor]
@@ -35,12 +37,14 @@ namespace VsVim
             IVsVimFactoryService factory,
             IVimBufferFactory vimBufferFactory,
             IVim vim,
+            ITextEditorFactoryService editorFactoryService,
             KeyBindingService keyBindingService)
         {
             _vim = vim;
             _vsVimFactory = factory;
             _vimBufferFactory = vimBufferFactory;
             _keyBindingService = keyBindingService;
+            _editorFactoryService = editorFactoryService;
         }
 
         public void TextViewCreated(IWpfTextView textView)
@@ -55,7 +59,8 @@ namespace VsVim
             // Load the VimRC file if we haven't tried yet
             if (!_vim.IsVimRcLoaded && String.IsNullOrEmpty(_vim.Settings.VimRcPaths))
             {
-                _vim.LoadVimRc();
+                var func = FSharpFunc<Unit, ITextView>.FromConverter(_ => _editorFactoryService.CreateTextView());
+                _vim.LoadVimRc(func);
             }
 
             var dte = sp.GetService<SDTE, EnvDTE.DTE>();

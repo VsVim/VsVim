@@ -1,7 +1,6 @@
 ﻿#light
 
 namespace Vim
-open System.Windows.Input
 
 // :help key-notation for all of the key codes
 

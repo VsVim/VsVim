@@ -6,7 +6,6 @@ open Vim.Modes
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Operations
-open System.Windows.Input
 open System.Text.RegularExpressions
 open Vim.RegexUtil
 

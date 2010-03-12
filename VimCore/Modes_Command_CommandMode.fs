@@ -4,7 +4,6 @@ namespace Vim.Modes.Command
 open Vim
 open Vim.Modes
 open Microsoft.VisualStudio.Text
-open System.Windows.Input
 open System.Text.RegularExpressions
 open Vim.RegexUtil
 

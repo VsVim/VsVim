@@ -2,7 +2,6 @@
 
 namespace Vim
 open Microsoft.VisualStudio.Text
-open System.Windows.Input
 open System.Text.RegularExpressions
 
 module internal RegexUtil =

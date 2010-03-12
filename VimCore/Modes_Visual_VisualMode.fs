@@ -4,8 +4,6 @@ namespace Vim.Modes.Visual
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Operations
 open Microsoft.VisualStudio.Text.Editor
-open System.Windows.Input
-open System.Windows.Threading
 open Vim
 open Vim.Modes
 

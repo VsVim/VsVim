@@ -127,20 +127,12 @@
       <HintPath>..\References\Microsoft.VisualStudio.Text.UI.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="Microsoft.VisualStudio.Text.UI.Wpf">
-      <HintPath>..\References\Microsoft.VisualStudio.Text.UI.Wpf.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
     <Reference Include="mscorlib" />
-    <Reference Include="PresentationCore" />
-    <Reference Include="PresentationFramework" />
     <Reference Include="System" />
     <Reference Include="System.ComponentModel.Composition" />
     <Reference Include="System.Core">
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
     </Reference>
-    <Reference Include="System.Xaml" />
-    <Reference Include="WindowsBase" />
   </ItemGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
 	     Other similar extension points exist, see Microsoft.Common.targets.

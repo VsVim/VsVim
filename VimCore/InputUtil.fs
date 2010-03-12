@@ -1,7 +1,6 @@
 ﻿#light
 
 namespace Vim
-open System.Windows.Input
 open System.Runtime.InteropServices
 
 

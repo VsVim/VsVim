@@ -6,8 +6,6 @@ open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Tagging
 open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Utilities
-open System.Windows.Input
-open System.Windows.Media
 open System.ComponentModel.Composition
 
 /// Tagger for incremental searches

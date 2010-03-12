@@ -5,7 +5,6 @@ namespace Vim
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Operations
-open System.Windows.Input
 
 type internal ModeMap() = 
     let mutable _modeMap : Map<ModeKind,IMode> = Map.empty

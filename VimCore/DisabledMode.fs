@@ -1,7 +1,7 @@
 ﻿#light
 
 namespace Vim
-open System.Windows.Input
+
 type internal DisabledMode( _data : IVimBuffer ) =
     
     member private x.HelpString = 

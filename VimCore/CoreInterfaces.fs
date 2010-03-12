@@ -4,7 +4,6 @@ namespace Vim
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Operations
-open System.Windows.Input
 open System.Diagnostics
 
 type ModeKind = 
@@ -244,7 +243,7 @@ and IVim =
     abstract RemoveBuffer : ITextView -> bool
 
     /// Load the VimRc file.  If the file was previously, a new load will be attempted
-    abstract LoadVimRc : unit -> bool
+    abstract LoadVimRc : createViewFunc:(unit -> ITextView) -> bool
 
     
 /// Main interface for the Vim editor engine so to speak. 

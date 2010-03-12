@@ -9,6 +9,7 @@ using VimCoreTest.Utils;
 using Microsoft.VisualStudio.Text.Editor;
 using System.IO;
 using Vim.Modes.Command;
+using Microsoft.FSharp.Core;
 
 namespace VimCoreTest
 {
@@ -20,7 +21,6 @@ namespace VimCoreTest
         private Mock<IMarkMap> _markMap;
         private Mock<IVimBufferFactory> _factory;
         private Mock<IVimHost> _host;
-        private Mock<ITextEditorFactoryService> _editorFactoryService;
         private Mock<IKeyMap> _keyMap;
         private Vim.Vim _vimRaw;
         private IVim _vim;
@@ -33,13 +33,11 @@ namespace VimCoreTest
             _registerMap = new Mock<IRegisterMap>(MockBehavior.Strict);
             _markMap = new Mock<IMarkMap>(MockBehavior.Strict);
             _factory = new Mock<IVimBufferFactory>(MockBehavior.Strict);
-            _editorFactoryService = new Mock<ITextEditorFactoryService>(MockBehavior.Strict);
             _keyMap = new Mock<IKeyMap>(MockBehavior.Strict);
             _host = new Mock<IVimHost>(MockBehavior.Strict);
             _vimRaw = new Vim.Vim(
                 _host.Object,
                 _factory.Object,
-                _editorFactoryService.Object,
                 new Lazy<IVimBufferCreationListener>[] {},
                 _settings.Object,
                 _registerMap.Object,
@@ -155,7 +153,7 @@ namespace VimCoreTest
             {
                 _settings.SetupSet(x => x.VimRc = String.Empty).Verifiable();
                 _settings.SetupSet(x => x.VimRcPaths = String.Empty).Verifiable();
-                Assert.IsFalse(_vim.LoadVimRc());
+                Assert.IsFalse(_vim.LoadVimRc(FSharpFuncUtil.Create<Unit,ITextView>(_ => null)));
                 _settings.Verify();
             }
             finally
@@ -173,7 +171,7 @@ namespace VimCoreTest
                 _settings.SetupSet(x => x.VimRc = String.Empty).Verifiable();
                 _settings.SetupSet(x => x.VimRcPaths = @"c:\.vimrc;c:\_vimrc").Verifiable();
                 Environment.SetEnvironmentVariable("HOME", @"c:\");
-                Assert.IsFalse(_vim.LoadVimRc());
+                Assert.IsFalse(_vim.LoadVimRc(FSharpFuncUtil.Create<Unit,ITextView>(_ => null)));
                 _settings.Verify();
             }
             finally
@@ -191,8 +189,9 @@ namespace VimCoreTest
             var buffer = new Mock<IVimBuffer>(MockBehavior.Strict);
             commandMode.Setup(x => x.RunCommand("set noignorecase")).Verifiable();
             buffer.Setup(x => x.GetMode(ModeKind.Command)).Returns(commandMode.Object);
+
+            var createViewFunc = FSharpFuncUtil.Create<Microsoft.FSharp.Core.Unit, ITextView>(_ => view.Object);
             _factory.Setup(x => x.CreateBuffer(_vim, view.Object)).Returns(buffer.Object);
-            _editorFactoryService.Setup(x => x.CreateTextView()).Returns(view.Object);
 
             SaveAndClear();
             try
@@ -206,7 +205,7 @@ namespace VimCoreTest
 
                 _settings.SetupProperty(x => x.VimRc);
                 _settings.SetupSet(x => x.VimRcPaths = It.IsAny<string>()).Verifiable();
-                Assert.IsTrue(_vim.LoadVimRc());
+                Assert.IsTrue(_vim.LoadVimRc(createViewFunc));
                 Assert.AreEqual(file, _settings.Object.VimRc);
                 _settings.Verify();
                 commandMode.Verify();

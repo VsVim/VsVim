@@ -1,7 +1,6 @@
 ﻿#light
 
 namespace Vim
-open System.Windows.Input
 
 /// Provides values for the well known key values used by Vim 
 type WellKnownKey =

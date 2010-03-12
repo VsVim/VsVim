@@ -4,8 +4,6 @@ namespace Vim.Modes.Visual
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Operations
 open Microsoft.VisualStudio.Text.Editor
-open System.Windows.Input
-open System.Windows.Threading
 open Vim
 
 /// Mode on the selection
@@ -138,12 +136,12 @@ type internal SelectionTracker
     /// we do our reset on the background.  Ensure we are still running to avoid a race condition in 
     /// this process
     member private x.UpdateSelection() = 
-        let func () = 
+        let func _ = 
             if _running then
                 x.UpdateSelectionCore()
-        Dispatcher.CurrentDispatcher.BeginInvoke(
-            DispatcherPriority.Background,
-            new System.Action(func)) |> ignore
+        System.Threading.SynchronizationContext.Current.Post(
+            new System.Threading.SendOrPostCallback(func),
+            null)
 
     /// When the text is changed it invalidates the anchor point.  It needs to be forwarded to
     /// the next version of the buffer

@@ -3,7 +3,6 @@
 namespace Vim
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
-open System.Windows.Input
 
 type internal SettingsMap
     (

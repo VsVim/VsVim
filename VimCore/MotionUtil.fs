@@ -3,7 +3,6 @@
 namespace Vim
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor;
-open System.Windows.Input
 
 /// This module is used to implement certain motion capture commands.  Operations
 /// like calculated h with a count are implemented here 

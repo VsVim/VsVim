@@ -1,7 +1,6 @@
 ﻿#light
 
 namespace Vim
-open System.Windows.Input
 
 
 module InputUtil = 
