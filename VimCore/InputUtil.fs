@@ -14,7 +14,7 @@ module InputUtil =
     [<DllImport("user32.dll")>]
     extern uint32 MapVirtualKey(uint32 code, uint32 mapType)
 
-    let private TryCharToVirtualKeyAndModifiers ch =
+    let TryCharToVirtualKeyAndModifiers ch =
         let res = VkKeyScan ch
         let res = int res
 
@@ -55,7 +55,7 @@ module InputUtil =
             let key = KeyInterop.KeyFromVirtualKey(virtualKey)
             KeyInput(ch, key, modKeys) |> Some
 
-    let private TryVirtualKeyCodeToChar virtualKey = 
+    let TryVirtualKeyCodeToChar virtualKey = 
         if 0 = virtualKey then None
         else   
             // Mode to map a 
@@ -65,13 +65,13 @@ module InputUtil =
             else 
                 let c = char mapped 
                 let c = if System.Char.IsLetter(c) then System.Char.ToLower(c) else c
-                (c,virtualKey) |> Some
+                Some(c)
     
     let private TryKeyToKeyInputAndVirtualKey key = 
         let virtualKey = KeyInterop.VirtualKeyFromKey(key)
         match TryVirtualKeyCodeToChar virtualKey with
         | None -> None
-        | Some(ch,virtualKey) -> (KeyInput(ch,key,ModifierKeys.None),virtualKey) |> Some
+        | Some(ch) -> (KeyInput(ch,key,ModifierKeys.None),virtualKey) |> Some
 
     let TryKeyToKeyInput key = 
         match TryKeyToKeyInputAndVirtualKey key with
@@ -117,7 +117,7 @@ module InputUtil =
         let ch = 
             match TryVirtualKeyCodeToChar virtualKey with
             | None -> System.Char.MinValue
-            | Some(ch,_) -> ch
+            | Some(ch) -> ch
         KeyInput(ch,key)
 
     ///

@@ -6,8 +6,14 @@ open System.Windows.Input
 
 module InputUtil = 
 
+    /// Try and convert a char to a virtualKey and ModifierKeys pair
+    val TryCharToVirtualKeyAndModifiers : char -> (int * ModifierKeys) option
+
     /// Try and convert the given char to a KeyInput value
     val TryCharToKeyInput : char -> option<KeyInput>    
+
+    /// Try and convert the given virtual key to a char
+    val TryVirtualKeyCodeToChar : int -> option<char>
 
     /// Try and convert the given Key into a KeyInput value
     val TryKeyToKeyInput : Key -> option<KeyInput>

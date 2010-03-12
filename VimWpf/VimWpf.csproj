@@ -101,6 +101,7 @@
     <Compile Include="IBlockCaretFactoryService.cs" />
     <Compile Include="Implementation\MouseDeviceImpl.cs" />
     <Compile Include="KeyProcessor.cs" />
+    <Compile Include="KeyUtil.cs" />
     <Compile Include="MouseProcessor.cs" />
     <Compile Include="NativeMethods.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

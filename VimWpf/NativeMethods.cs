@@ -10,5 +10,12 @@ namespace Vim.UI.Wpf
     {
         [DllImport("user32.dll")]
         internal static extern int GetCaretBlinkTime();
+
+        [DllImport("user32.dll")]
+        internal static extern short VkKeyScan(char ch);
+
+        [DllImport("user32.dll")]
+        internal static extern uint MapVirtualKey(uint code, uint mapType);
+
     }
 }
