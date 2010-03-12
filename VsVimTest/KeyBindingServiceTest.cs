@@ -114,7 +114,7 @@ namespace VsVimTest
         [Test]
         public void ShouldSkip1()
         {
-            var binding = CreateCommandKeyBinding(InputUtil.KeyToKeyInput(Key.Left));
+            var binding = CreateCommandKeyBinding(InputUtil.WellKnownKeyToKeyInput(WellKnownKey.LeftKey));
             Assert.IsTrue(KeyBindingService.ShouldSkip(binding));
         }
     }

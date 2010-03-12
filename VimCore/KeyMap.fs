@@ -40,12 +40,10 @@ module internal KeyMapUtil =
         ]
 
     let private FunctionKeys = 
-        let keys =  
-            [1..12] 
-            |> Seq.map (fun number -> sprintf "F%d" number) 
-            |> Seq.map (fun value -> System.Enum.Parse(typeof<Key>,value) :?> Key)
-        let standard = keys |> Seq.map (fun key -> ((sprintf "<%s>" (key.ToString())),(key |> InputUtil.KeyToKeyInput)))
-        standard |> List.ofSeq
+        [F1Key;F2Key;F3Key;F4Key;F5Key;F6Key;F7Key;F8Key;F9Key;F10Key;F11Key;F12Key]
+            |> Seq.mapi (fun i k -> (i+1),k)
+            |> Seq.map (fun (number,key) -> (sprintf "<F%d>" number),InputUtil.WellKnownKeyToKeyInput key)
+            |> List.ofSeq
 
     /// Contains the tuple of (name,KeyInput) for all of the supported key notations
     /// Not supported

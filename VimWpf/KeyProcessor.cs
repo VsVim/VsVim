@@ -93,7 +93,7 @@ namespace Vim.UI.Wpf
             var isHandled = false;
             if (IsInputKey(args.Key))
             {
-                var ki = InputUtil.KeyAndModifierToKeyInput(args.Key, args.KeyboardDevice.Modifiers);
+                var ki = KeyUtil.ConvertToKeyInput(args.Key, args.KeyboardDevice.Modifiers);
                 isHandled = _buffer.CanProcessInput(ki) && _buffer.ProcessInput(ki);
             }
 

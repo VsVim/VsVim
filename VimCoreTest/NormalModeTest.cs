@@ -435,7 +435,7 @@ namespace VimCoreTest
         {
             CreateBuffer("foo", "bar");
             _operations.Setup(x => x.Scroll(ScrollDirection.Up, 1)).Verifiable();
-            _mode.Process(InputUtil.KeyAndModifierToKeyInput(Key.U, ModifierKeys.Control));
+            _mode.Process(new KeyInput('u', Key.U, ModifierKeys.Control));
             _operations.Verify();
         }
 
@@ -446,7 +446,7 @@ namespace VimCoreTest
             _view.Caret.MoveTo(_view.TextSnapshot.GetLineFromLineNumber(0).End);
             _operations.Setup(x => x.Scroll(ScrollDirection.Up, 2)).Verifiable();
             _mode.Process('2');
-            _mode.Process(InputUtil.KeyAndModifierToKeyInput(Key.U, ModifierKeys.Control));
+            _mode.Process(new KeyInput('u', Key.U, ModifierKeys.Control));
             _operations.Verify();
         }
 
@@ -456,7 +456,7 @@ namespace VimCoreTest
             CreateBuffer("foo", "bar");
             _view.Caret.MoveTo(_view.TextSnapshot.GetLineFromLineNumber(0).End);
             _operations.Setup(x => x.Scroll(ScrollDirection.Down, 1)).Verifiable();
-            _mode.Process(InputUtil.KeyAndModifierToKeyInput(Key.D, ModifierKeys.Control));
+            _mode.Process(new KeyInput('d', Key.D, ModifierKeys.Control));
             _operations.Verify();
         }
 

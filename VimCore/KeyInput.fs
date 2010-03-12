@@ -23,7 +23,18 @@ type WellKnownKey =
     | PageDownKey
     | InsertKey
     | HomeKey
-
+    | F1Key
+    | F2Key
+    | F3Key
+    | F4Key
+    | F5Key
+    | F6Key
+    | F7Key
+    | F8Key
+    | F9Key
+    | F10Key
+    | F11Key
+    | F12Key
 
 type KeyModifiers = 
     | Shift = 0x1

@@ -295,13 +295,9 @@ and IVimBuffer =
     /// Process the char in question and return whether or not it was handled
     abstract ProcessChar : char -> bool
     
-    /// Process the key in question.  Returns true if the key was handled by the buffer
-    abstract ProcessKey : Key -> bool
-    
     /// Process the KeyInput and return whether or not the input was completely handled
     abstract ProcessInput : KeyInput -> bool
     abstract CanProcessInput : KeyInput -> bool
-    abstract CanProcessKey : Key -> bool
     abstract SwitchMode : ModeKind -> IMode
 
     /// Switch the buffer back to the previous mode which is returned

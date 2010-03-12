@@ -149,15 +149,6 @@ namespace VsVim
 
         #endregion
 
-        #region KeyEventArgs
-
-        public static KeyInput ConvertToKeyInput(this KeyEventArgs e)
-        {
-            return InputUtil.KeyAndModifierToKeyInput(e.Key, e.KeyboardDevice.Modifiers);
-        }
-
-        #endregion
-
         #region IVsTextLines
 
         /// <summary>

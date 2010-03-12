@@ -89,6 +89,18 @@ module InputUtil =
         | PageUpKey ->  VirtualKeyCodeToKeyInput 0x21
         | PageDownKey ->  VirtualKeyCodeToKeyInput 0x22
         | NotWellKnownKey -> CharToKeyInput System.Char.MinValue
+        | F1Key -> VirtualKeyCodeToKeyInput 0x70
+        | F2Key -> VirtualKeyCodeToKeyInput 0x71
+        | F3Key -> VirtualKeyCodeToKeyInput 0x72
+        | F4Key -> VirtualKeyCodeToKeyInput 0x73
+        | F5Key -> VirtualKeyCodeToKeyInput 0x74
+        | F6Key -> VirtualKeyCodeToKeyInput 0x75
+        | F7Key -> VirtualKeyCodeToKeyInput 0x76
+        | F8Key -> VirtualKeyCodeToKeyInput 0x77
+        | F9Key -> VirtualKeyCodeToKeyInput 0x78
+        | F10Key -> VirtualKeyCodeToKeyInput 0x79
+        | F11Key -> VirtualKeyCodeToKeyInput 0x7a
+        | F12Key -> VirtualKeyCodeToKeyInput 0x7b
         
     let SetModifiers modKeys (ki:KeyInput) = KeyInput(ki.Char,ki.Key, modKeys)
         

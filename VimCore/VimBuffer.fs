@@ -161,10 +161,8 @@ type internal VimBuffer
         member x.KeyInputProcessed = _keyInputProcessedEvent.Publish
         [<CLIEvent>]
         member x.KeyInputReceived = _keyInputReceivedEvent.Publish
-        member x.ProcessKey k = x.ProcessInput (InputUtil.KeyToKeyInput k)
         member x.ProcessInput ki = x.ProcessInput ki
         member x.CanProcessInput ki = x.CanProcessInput ki
-        member x.CanProcessKey k = x.CanProcessInput (InputUtil.KeyToKeyInput k)
         member x.Close () = 
             x.Mode.OnLeave()
             _vim.MarkMap.DeleteAllMarksForBuffer _textView.TextBuffer

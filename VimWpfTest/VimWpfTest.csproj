@@ -98,6 +98,7 @@
     <Compile Include="BlockCaretControllerTest.cs" />
     <Compile Include="BlockCaretTest.cs" />
     <Compile Include="Extensions.cs" />
+    <Compile Include="KeyUtilTest.cs" />
     <Compile Include="MouseProcessorTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
