@@ -32,8 +32,8 @@ namespace VimCoreTest
             var res = Process("A");
 
             Assert.AreEqual(1, res.Item1);
-            Assert.AreEqual(Key.A, res.Item2.Key);
-            Assert.AreEqual(ModifierKeys.Shift, res.Item2.KeyModifiers);
+            Assert.AreEqual(WellKnownKey.NotWellKnownKey, res.Item2.Key);
+            Assert.AreEqual(KeyModifiers.Shift, res.Item2.KeyModifiers);
         }
 
 
@@ -42,7 +42,7 @@ namespace VimCoreTest
         {
             var res = Process("1A");
             Assert.AreEqual(1, res.Item1);
-            Assert.AreEqual(Key.A, res.Item2.Key);
+            Assert.AreEqual('A', res.Item2.Char);
         }
 
         [Test]
@@ -50,7 +50,7 @@ namespace VimCoreTest
         {
             var res = Process("23B");
             Assert.AreEqual(23, res.Item1);
-            Assert.AreEqual(Key.B, res.Item2.Key);
+            Assert.AreEqual('B', res.item2.Char);
         }
 
 
