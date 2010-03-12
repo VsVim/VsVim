@@ -202,7 +202,7 @@ namespace VsVim
 
             if (mod != KeyModifiers.None )
             {
-                ki = new KeyInput(ki.Char, ki.Key, ki.KeyModifiers);
+                ki = new KeyInput(ki.Char, ki.Key, ki.KeyModifiers | mod);
             }
 
             return ki;

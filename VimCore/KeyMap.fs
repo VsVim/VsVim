@@ -11,7 +11,7 @@ module internal KeyMapUtil =
             ("<Nul>",InputUtil.CharToKeyInput '@' |> InputUtil.SetModifiers KeyModifiers.Control);
             ("<Bs>", InputUtil.VimKeyToKeyInput VimKey.BackKey);
             ("<Tab>",InputUtil.VimKeyToKeyInput VimKey.TabKey);
-            ("<NL>", InputUtil.VimKeyToKeyInput VimKey.LineFeedKey);
+            ("<NL>", InputUtil.VimKeyToKeyInput VimKey.EnterKey);
             ("<FF>", InputUtil.CharToKeyInput 'l' |> InputUtil.SetModifiers KeyModifiers.Control);
             ("<CR>", InputUtil.VimKeyToKeyInput VimKey.EnterKey);
             ("<Return>", InputUtil.VimKeyToKeyInput VimKey.EnterKey);

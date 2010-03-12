@@ -20,7 +20,6 @@ namespace VsVimTest
             var b = KeyBinding.Parse("foo::e");
             Assert.AreEqual("foo", b.Scope);
             Assert.AreEqual('e', b.FirstKeyInput.Char);
-            Assert.AreEqual(Key.E, b.FirstKeyInput.Key);
         }
 
         [Test]
@@ -36,7 +35,7 @@ namespace VsVimTest
         {
             var b = KeyBinding.Parse("::f2");
             Assert.AreEqual(Char.MinValue, b.FirstKeyInput.Char);
-            Assert.AreEqual(Key.F2, b.FirstKeyInput.Key);
+            Assert.AreEqual(VimKey.F2Key, b.FirstKeyInput.Key);
         }
 
         [Test, Description("Parse a keybinding with , correctly")]
@@ -44,7 +43,6 @@ namespace VsVimTest
         {
             var b = KeyBinding.Parse("::,");
             Assert.AreEqual(',', b.FirstKeyInput.Char);
-            Assert.AreEqual(Key.OemComma, b.FirstKeyInput.Key);
             Assert.AreEqual(KeyModifiers.None, b.FirstKeyInput.KeyModifiers);
         }
 
@@ -52,7 +50,7 @@ namespace VsVimTest
         public void Parse5()
         {
             var b = KeyBinding.Parse("::ctrl+shift+f");
-            Assert.AreEqual(Key.F, b.FirstKeyInput.Key);
+            Assert.AreEqual('f', b.FirstKeyInput.Char);
             Assert.IsTrue(0 != (KeyModifiers.Shift & b.FirstKeyInput.KeyModifiers));
             Assert.IsTrue(0 != (KeyModifiers.Control & b.FirstKeyInput.KeyModifiers));
         }
@@ -77,8 +75,8 @@ namespace VsVimTest
         {
             var b = KeyBinding.Parse("::,, f");
             Assert.AreEqual(2, b.KeyInputs.Count());
-            Assert.AreEqual(Key.OemComma, b.KeyInputs.ElementAt(0).Key);
-            Assert.AreEqual(Key.F, b.KeyInputs.ElementAt(1).Key);
+            Assert.AreEqual(',', b.KeyInputs.ElementAt(0).Char);
+            Assert.AreEqual('f', b.KeyInputs.ElementAt(1).Char);
         }
 
         [Test, ExpectedException(typeof(ArgumentException))]
@@ -103,56 +101,56 @@ namespace VsVimTest
         public void VsKeyBackSpace()
         {
             var b = KeyBinding.Parse("::Bkspce");
-            Assert.AreEqual(Key.Back, b.FirstKeyInput.Key);
+            Assert.AreEqual(VimKey.BackKey, b.FirstKeyInput.Key);
         }
 
         [Test]
         public void VsKeyLeftArrow()
         {
             var b = KeyBinding.Parse("::Left Arrow");
-            Assert.AreEqual(Key.Left, b.FirstKeyInput.Key);
+            Assert.AreEqual(VimKey.LeftKey, b.FirstKeyInput.Key);
         }
 
         [Test]
         public void VsKeyRightArrow()
         {
             var b = KeyBinding.Parse("::Right Arrow");
-            Assert.AreEqual(Key.Right, b.FirstKeyInput.Key);
+            Assert.AreEqual(VimKey.RightKey, b.FirstKeyInput.Key);
         }
 
         [Test]
         public void VsKeyUpArrow()
         {
             var b = KeyBinding.Parse("::Up Arrow");
-            Assert.AreEqual(Key.Up, b.FirstKeyInput.Key);
+            Assert.AreEqual(VimKey.UpKey, b.FirstKeyInput.Key);
         }
 
         [Test]
         public void VsKeyDownArrow()
         {
             var b = KeyBinding.Parse("::Down Arrow");
-            Assert.AreEqual(Key.Down, b.FirstKeyInput.Key);
+            Assert.AreEqual(VimKey.DownKey, b.FirstKeyInput.Key);
         }
 
         [Test]
         public void VsKeyDownArrow2()
         {
             var b = KeyBinding.Parse("::Shift+Down Arrow");
-            Assert.AreEqual(Key.Down, b.FirstKeyInput.Key);
+            Assert.AreEqual(VimKey.DownKey, b.FirstKeyInput.Key);
         }
 
         [Test]
         public void VsKeyPageDown()
         {
             var b = KeyBinding.Parse("::PgDn");
-            Assert.AreEqual(Key.PageDown, b.FirstKeyInput.Key);
+            Assert.AreEqual(VimKey.PageDownKey, b.FirstKeyInput.Key);
         }
 
         [Test]
         public void VsKeyPageUp()
         {
             var b = KeyBinding.Parse("::PgUp");
-            Assert.AreEqual(Key.PageUp, b.FirstKeyInput.Key);
+            Assert.AreEqual(VimKey.PageUpKey, b.FirstKeyInput.Key);
         }
 
 

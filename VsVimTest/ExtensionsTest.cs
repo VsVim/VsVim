@@ -26,7 +26,7 @@ namespace VsVimTest
             com.Setup(x => x.Name).Returns("name");
             var list = Extensions.GetKeyBindings(com.Object).ToList();
             Assert.AreEqual(1, list.Count);
-            Assert.AreEqual(Key.F, list[0].KeyBinding.FirstKeyInput.Key);
+            Assert.AreEqual('f', list[0].KeyBinding.FirstKeyInput.Char);
             Assert.AreEqual("name", list[0].Name);
         }
 
@@ -38,9 +38,9 @@ namespace VsVimTest
             com.Setup(x => x.Name).Returns("name");
             var list = Extensions.GetKeyBindings(com.Object).ToList();
             Assert.AreEqual(2, list.Count);
-            Assert.AreEqual(Key.F, list[0].KeyBinding.FirstKeyInput.Key);
+            Assert.AreEqual('f', list[0].KeyBinding.FirstKeyInput.Char);
             Assert.AreEqual("foo", list[0].KeyBinding.Scope);
-            Assert.AreEqual(Key.B, list[1].KeyBinding.FirstKeyInput.Key);
+            Assert.AreEqual('b', list[1].KeyBinding.FirstKeyInput.Char);
             Assert.AreEqual("bar", list[1].KeyBinding.Scope);
         }
 
@@ -52,7 +52,7 @@ namespace VsVimTest
             com.Setup(x => x.Name).Returns("name");
             var list = Extensions.GetKeyBindings(com.Object).ToList();
             Assert.AreEqual(1, list.Count);
-            Assert.AreEqual(Key.F, list[0].KeyBinding.FirstKeyInput.Key);
+            Assert.AreEqual('f', list[0].KeyBinding.FirstKeyInput.Char);
             Assert.AreEqual(String.Empty, list[0].KeyBinding.Scope);
         }
 

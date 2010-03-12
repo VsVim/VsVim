@@ -29,11 +29,6 @@ module InputUtil =
             let modKeys = shiftMod ||| controlMod ||| altMod
             Some (virtualKey,modKeys)
 
-    let TryCharToKeyInput ch = 
-        match TryCharToVirtualKeyAndModifiers ch with
-        | None -> None
-        | Some(_,modKeys) -> KeyInput(ch,modKeys) |> Some
-
     let TryVirtualKeyCodeToChar virtualKey = 
         if 0 = virtualKey then None
         else   
@@ -45,11 +40,83 @@ module InputUtil =
                 let c = char mapped 
                 let c = if System.Char.IsLetter(c) then System.Char.ToLower(c) else c
                 Some(c)
-    
+    ///
+    /// All constant values derived from the list at the following 
+    /// location
+    ///   http://msdn.microsoft.com/en-us/library/ms645540(VS.85).aspx
+    let TryVimKeyToVirtualKeyCode vimKey = 
+        if vimKey = VimKey.NotWellKnownKey then None
+        else
+            let code = 
+                match vimKey with 
+                | VimKey.BackKey ->  0x8
+                | VimKey.TabKey ->  0x9
+                | VimKey.EnterKey ->  0xD
+                | VimKey.EscapeKey ->  0x1B
+                | VimKey.DeleteKey ->  0x2E
+                | VimKey.LeftKey ->  0x25
+                | VimKey.UpKey ->  0x26
+                | VimKey.RightKey ->  0x27
+                | VimKey.DownKey ->  0x28
+                | VimKey.HelpKey ->  0x2F
+                | VimKey.InsertKey ->  0x2D
+                | VimKey.HomeKey ->  0x24
+                | VimKey.EndKey ->  0x23
+                | VimKey.PageUpKey ->  0x21
+                | VimKey.PageDownKey ->  0x22
+                | VimKey.BreakKey -> 0x03
+                | VimKey.F1Key -> 0x70
+                | VimKey.F2Key -> 0x71
+                | VimKey.F3Key -> 0x72
+                | VimKey.F4Key -> 0x73
+                | VimKey.F5Key -> 0x74
+                | VimKey.F6Key -> 0x75
+                | VimKey.F7Key -> 0x76
+                | VimKey.F8Key -> 0x77
+                | VimKey.F9Key -> 0x78
+                | VimKey.F10Key -> 0x79
+                | VimKey.F11Key -> 0x7a
+                | VimKey.F12Key -> 0x7b
+                | _ -> failwith "Invalid Enum value"
+            Some(code)
+        
+    /// This is a tuple of the VimKey values listing their char,virtualKey,VimKey values
+    let VimKeyMap = 
+        let vimKeyToTuple vimKey = 
+            match TryVimKeyToVirtualKeyCode vimKey with
+            | None -> None
+            | Some(virtualKey) ->
+                match TryVirtualKeyCodeToChar virtualKey with
+                | None -> Some(virtualKey,System.Char.MinValue,vimKey)
+                | Some(ch) -> Some(virtualKey,ch,vimKey)
+
+        System.Enum.GetValues(typeof<VimKey>) 
+        |> Seq.cast<VimKey>
+        |> Seq.map vimKeyToTuple
+        |> Seq.choose (fun x -> x)
+        |> Seq.map (fun (virtualKey,ch,vimKey) -> virtualKey,(ch,vimKey))
+        |> Map.ofSeq
+
+    let TryCharToKeyInput ch = 
+        match TryCharToVirtualKeyAndModifiers ch with
+        | None -> None
+        | Some(virtualKey,modKeys) -> 
+            match Map.tryFind virtualKey VimKeyMap with
+            | None -> KeyInput(ch,modKeys) |> Some
+            | Some(_,vimKey) -> KeyInput(ch, vimKey, modKeys) |> Some
+
     let CharToKeyInput c = 
         match TryCharToKeyInput c with
         | Some ki -> ki
         | None -> KeyInput(c, KeyModifiers.None)
+
+    let TryVirtualKeyCodeToKeyInput virtualKey = 
+        match Map.tryFind virtualKey VimKeyMap with
+        | Some(ch,vimKey) -> KeyInput(ch,vimKey,KeyModifiers.None) |> Some
+        | None -> 
+            match TryVirtualKeyCodeToChar virtualKey with
+            | None -> None
+            | Some(ch) -> KeyInput(ch) |> Some
 
     let VirtualKeyCodeToKeyInput virtualKey = 
         let ch = 
@@ -58,43 +125,14 @@ module InputUtil =
             | Some(ch) -> ch
         KeyInput(ch)
 
-    ///
-    /// All constant values derived from the list at the following 
-    /// location
-    ///   http://msdn.microsoft.com/en-us/library/ms645540(VS.85).aspx
-    let VimKeyToKeyInput wellKnownKey = 
-        match wellKnownKey with 
-        | VimKey.BackKey ->  VirtualKeyCodeToKeyInput 0x8
-        | VimKey.TabKey ->  VirtualKeyCodeToKeyInput 0x9
-        | VimKey.EnterKey ->  VirtualKeyCodeToKeyInput 0xD
-        | VimKey.EscapeKey ->  VirtualKeyCodeToKeyInput 0x1B
-        | VimKey.DeleteKey ->  VirtualKeyCodeToKeyInput 0x2E
-        | VimKey.LeftKey ->  VirtualKeyCodeToKeyInput 0x25
-        | VimKey.UpKey ->  VirtualKeyCodeToKeyInput 0x26
-        | VimKey.RightKey ->  VirtualKeyCodeToKeyInput 0x27
-        | VimKey.DownKey ->  VirtualKeyCodeToKeyInput 0x28
-        | VimKey.LineFeedKey ->  CharToKeyInput '\r'
-        | VimKey.HelpKey ->  VirtualKeyCodeToKeyInput 0x2F
-        | VimKey.InsertKey ->  VirtualKeyCodeToKeyInput 0x2D
-        | VimKey.HomeKey ->  VirtualKeyCodeToKeyInput 0x24
-        | VimKey.EndKey ->  VirtualKeyCodeToKeyInput 0x23
-        | VimKey.PageUpKey ->  VirtualKeyCodeToKeyInput 0x21
-        | VimKey.PageDownKey ->  VirtualKeyCodeToKeyInput 0x22
-        | VimKey.BreakKey -> VirtualKeyCodeToKeyInput 0x03
-        | VimKey.NotWellKnownKey -> CharToKeyInput System.Char.MinValue
-        | VimKey.F1Key -> VirtualKeyCodeToKeyInput 0x70
-        | VimKey.F2Key -> VirtualKeyCodeToKeyInput 0x71
-        | VimKey.F3Key -> VirtualKeyCodeToKeyInput 0x72
-        | VimKey.F4Key -> VirtualKeyCodeToKeyInput 0x73
-        | VimKey.F5Key -> VirtualKeyCodeToKeyInput 0x74
-        | VimKey.F6Key -> VirtualKeyCodeToKeyInput 0x75
-        | VimKey.F7Key -> VirtualKeyCodeToKeyInput 0x76
-        | VimKey.F8Key -> VirtualKeyCodeToKeyInput 0x77
-        | VimKey.F9Key -> VirtualKeyCodeToKeyInput 0x78
-        | VimKey.F10Key -> VirtualKeyCodeToKeyInput 0x79
-        | VimKey.F11Key -> VirtualKeyCodeToKeyInput 0x7a
-        | VimKey.F12Key -> VirtualKeyCodeToKeyInput 0x7b
-        | _ -> failwith "Invalid Enum value"
+    let VimKeyToKeyInput vimKey = 
+        let bad = KeyInput(System.Char.MinValue)
+        match TryVimKeyToVirtualKeyCode vimKey with
+        | None -> bad
+        | Some(virtualKey) -> 
+            match TryVirtualKeyCodeToChar virtualKey with
+            | None -> KeyInput(System.Char.MinValue, vimKey, KeyModifiers.None)
+            | Some(ch) -> KeyInput(ch, vimKey, KeyModifiers.None)
         
     let SetModifiers modKeys (ki:KeyInput) = KeyInput(ki.Char,ki.Key, modKeys)
         

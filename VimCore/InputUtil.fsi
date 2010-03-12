@@ -12,7 +12,7 @@ module InputUtil =
     val TryCharToKeyInput : char -> option<KeyInput>    
 
     /// Try and convert the given virtual key to a char
-    val TryVirtualKeyCodeToChar : int -> option<char>
+    val TryVirtualKeyCodeToKeyInput : int -> option<KeyInput>
 
     /// Convert the specified Virtual Key code to a KeyInput 
     val VimKeyToKeyInput : VimKey -> KeyInput

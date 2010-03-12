@@ -32,7 +32,7 @@ namespace VimCoreTest
             var i1 = new KeyInput('c', KeyModifiers.None);
             Assert.AreEqual(i1, new KeyInput('c', KeyModifiers.None));
             Assert.AreNotEqual(i1, new KeyInput('d', KeyModifiers.None));
-            Assert.AreNotEqual(i1, new KeyInput('c', KeyModifiers.None));
+            Assert.AreNotEqual(i1, new KeyInput('c', KeyModifiers.Shift));
             Assert.AreNotEqual(i1, new KeyInput('c', KeyModifiers.Alt));
         }
 

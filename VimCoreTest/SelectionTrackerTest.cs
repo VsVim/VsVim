@@ -9,7 +9,7 @@ using Microsoft.VisualStudio.Text.Editor;
 using VimCoreTest.Utils;
 using Microsoft.VisualStudio.Text;
 using Microsoft.FSharp.Core;
-using System.Windows.Threading;
+using System.Threading;
 
 namespace VimCoreTest
 {
@@ -18,6 +18,8 @@ namespace VimCoreTest
     {
         private ITextView _view;
         private SelectionTracker _tracker;
+        private TestableSynchronizationContext _context;
+        private SynchronizationContext _before;
 
         private void Create(SelectionMode mode, params string[] lines)
         {
@@ -26,11 +28,20 @@ namespace VimCoreTest
             _tracker.Start();
         }
 
+        [SetUp]
+        public void SetUp()
+        {
+            _before = SynchronizationContext.Current;
+            _context = new TestableSynchronizationContext();
+            SynchronizationContext.SetSynchronizationContext(_context);
+        }
+
         [TearDown]
         public void TearDown()
         {
             _view = null;
             _tracker = null;
+            SynchronizationContext.SetSynchronizationContext(_before);
         }
 
 
@@ -109,7 +120,7 @@ namespace VimCoreTest
             Create(SelectionMode.Character, "foo");
             var span = new SnapshotSpan(_view.TextSnapshot, 0, 3);
             _view.Caret.MoveTo(span.End);
-            Dispatcher.CurrentDispatcher.DoEvents();
+            _context.RunAll();
             Assert.AreEqual(1, _view.Selection.SelectedSpans.Count);
             Assert.AreEqual(span, _view.Selection.SelectedSpans[0]);
         }
@@ -120,11 +131,11 @@ namespace VimCoreTest
             Create(SelectionMode.Character, "foo");
             var span = new SnapshotSpan(_view.TextSnapshot, 0, 3);
             _view.Caret.MoveTo(span.End);
-            Dispatcher.CurrentDispatcher.DoEvents();
+            _context.RunAll();
             _tracker.Stop();
             _tracker.Start();
             _view.Caret.MoveTo(span.Start);
-            Dispatcher.CurrentDispatcher.DoEvents();
+            _context.RunAll();
             Assert.AreEqual(1, _view.Selection.SelectedSpans.Count);
             Assert.AreEqual(span, _view.Selection.SelectedSpans[0]);
         }

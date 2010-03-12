@@ -69,7 +69,6 @@ namespace VimCoreTest
         {
             buffer.ProcessInputAsString(":0");
             buffer.ProcessInput(InputUtil.VimKeyToKeyInput(VimKey.EnterKey));
-            buffer.ProcessInput(InputUtil.VimKeyToKeyInput(VimKey.EnterKey));
             Assert.AreEqual(0, view.Caret.Position.BufferPosition.Position);
             buffer.ProcessInputAsString(":1");
             buffer.ProcessInput(InputUtil.VimKeyToKeyInput(VimKey.EnterKey));

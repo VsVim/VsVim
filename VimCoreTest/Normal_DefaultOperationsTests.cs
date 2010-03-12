@@ -150,7 +150,7 @@ namespace VimCoreTest
         {
             Create("foo");
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 1));
-            _operations.ReplaceChar(InputUtil.VimKeyToKeyInput(VimKey.LineFeedKey), 1);
+            _operations.ReplaceChar(InputUtil.VimKeyToKeyInput(VimKey.EnterKey), 1);
             var tss = _view.TextSnapshot;
             Assert.AreEqual(2, tss.LineCount);
             Assert.AreEqual("f", tss.GetLineFromLineNumber(0).GetText());

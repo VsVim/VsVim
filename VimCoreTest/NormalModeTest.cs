@@ -736,11 +736,11 @@ namespace VimCoreTest
         public void Edit_r_3()
         {
             CreateBuffer("foo");
-            var ki = InputUtil.VimKeyToKeyInput(VimKey.LineFeedKey);
+            var ki = InputUtil.VimKeyToKeyInput(VimKey.EnterKey);
             _operations.Setup(x => x.ReplaceChar(ki, 1)).Returns(true).Verifiable();
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 1));
             _mode.Process("r");
-            _mode.Process(InputUtil.VimKeyToKeyInput(VimKey.LineFeedKey));
+            _mode.Process(InputUtil.VimKeyToKeyInput(VimKey.EnterKey));
             _operations.Verify();
         }
 
@@ -1412,11 +1412,10 @@ namespace VimCoreTest
             CreateBuffer("foo bar");
             _incrementalSearch.Setup(x => x.Begin(SearchKind.ForwardWithWrap)).Verifiable();
             _mode.Process('/');
-            var ki = InputUtil.CharToKeyInput((char)7);
+            var ki = InputUtil.CharToKeyInput('c');
             _incrementalSearch.Setup(x => x.Process(It.IsAny<KeyInput>())).Returns(SearchResult.SearchComplete).Verifiable();
             _jumpList.Setup(x => x.Add(_view.GetCaretPoint())).Verifiable();
             _mode.Process(ki);
-            _mode.Process(InputUtil.CharToKeyInput((char)8));
             _incrementalSearch.Verify();
             _jumpList.Verify();
         }

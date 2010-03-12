@@ -13,7 +13,7 @@ type VimKey =
     | UpKey = 6
     | RightKey = 7
     | DownKey = 8
-    | LineFeedKey = 9
+    | DeleteKey = 9
     | HelpKey = 10
     | EndKey = 11
     | PageUpKey = 12
@@ -33,7 +33,6 @@ type VimKey =
     | F10Key = 26
     | F11Key = 27
     | F12Key = 28
-    | DeleteKey = 29
 
 [<System.Flags>]
 type KeyModifiers = 
@@ -61,7 +60,6 @@ type KeyInput
     member x.IsNewLine = 
         match _key with
             | VimKey.EnterKey -> true
-            | VimKey.LineFeedKey -> true
             | _ -> false
 
     /// Is this an arrow key?
