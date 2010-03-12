@@ -10,33 +10,33 @@ module internal KeyMapUtil =
     let private ManualKeyList = 
         [
             ("<Nul>",InputUtil.CharToKeyInput '@' |> InputUtil.SetModifiers ModifierKeys.Control);
-            ("<Bs>",InputUtil.KeyToKeyInput Key.Back);
-            ("<Tab>",InputUtil.KeyToKeyInput Key.Tab);
-            ("<NL>", InputUtil.KeyToKeyInput Key.LineFeed);
+            ("<Bs>", InputUtil.WellKnownKeyToKeyInput BackKey);
+            ("<Tab>",InputUtil.WellKnownKeyToKeyInput TabKey);
+            ("<NL>", InputUtil.WellKnownKeyToKeyInput LineFeedKey);
             ("<FF>", InputUtil.CharToKeyInput 'l' |> InputUtil.SetModifiers ModifierKeys.Control);
-            ("<CR>", InputUtil.KeyToKeyInput Key.Return);
-            ("<Return>", InputUtil.KeyToKeyInput Key.Return);
-            ("<Enter>", InputUtil.KeyToKeyInput Key.Return);
-            ("<Esc>", InputUtil.KeyToKeyInput Key.Escape);
-            ("<Space>", InputUtil.KeyToKeyInput Key.Space);
+            ("<CR>", InputUtil.WellKnownKeyToKeyInput ReturnKey);
+            ("<Return>", InputUtil.WellKnownKeyToKeyInput ReturnKey);
+            ("<Enter>", InputUtil.WellKnownKeyToKeyInput ReturnKey);
+            ("<Esc>", InputUtil.WellKnownKeyToKeyInput EscapeKey);
+            ("<Space>", InputUtil.CharToKeyInput ' ')
             ("<lt>", InputUtil.CharToKeyInput '<');
             ("<Bslash>", InputUtil.CharToKeyInput '\\' );
             ("<Bar>", InputUtil.CharToKeyInput '|');
-            ("<Del>", InputUtil.KeyToKeyInput Key.Delete );
-            ("<Up>", InputUtil.KeyToKeyInput Key.Up);
-            ("<Down>", InputUtil.KeyToKeyInput Key.Down);
-            ("<Left>", InputUtil.KeyToKeyInput Key.Left);
-            ("<Right>", InputUtil.KeyToKeyInput Key.Right);
-            ("<Help>", InputUtil.KeyToKeyInput Key.Help);
-            ("<Insert>", InputUtil.KeyToKeyInput Key.Insert);
-            ("<Home>", InputUtil.KeyToKeyInput Key.Home);
-            ("<End>", InputUtil.KeyToKeyInput Key.End);
-            ("<PageUp>", InputUtil.KeyToKeyInput Key.PageUp);
-            ("<PageDown>", InputUtil.KeyToKeyInput Key.PageDown);
-            ("<kHome>", InputUtil.KeyToKeyInput Key.Home);
-            ("<kEnd>", InputUtil.KeyToKeyInput Key.End);
-            ("<kPageUp>", InputUtil.KeyToKeyInput Key.PageUp);
-            ("<kPageDown>", InputUtil.KeyToKeyInput Key.PageDown);
+            ("<Del>", InputUtil.WellKnownKeyToKeyInput DeleteKey);
+            ("<Up>", InputUtil.WellKnownKeyToKeyInput UpKey);
+            ("<Down>", InputUtil.WellKnownKeyToKeyInput DownKey);
+            ("<Left>", InputUtil.WellKnownKeyToKeyInput LeftKey);
+            ("<Right>", InputUtil.WellKnownKeyToKeyInput RightKey);
+            ("<Help>", InputUtil.WellKnownKeyToKeyInput HelpKey);
+            ("<Insert>", InputUtil.WellKnownKeyToKeyInput InsertKey);
+            ("<Home>", InputUtil.WellKnownKeyToKeyInput HomeKey);
+            ("<End>", InputUtil.WellKnownKeyToKeyInput EndKey);
+            ("<PageUp>", InputUtil.WellKnownKeyToKeyInput PageUpKey);
+            ("<PageDown>", InputUtil.WellKnownKeyToKeyInput PageDownKey);
+            ("<kHome>", InputUtil.WellKnownKeyToKeyInput HomeKey);
+            ("<kEnd>", InputUtil.WellKnownKeyToKeyInput EndKey);
+            ("<kPageUp>", InputUtil.WellKnownKeyToKeyInput PageUpKey);
+            ("<kPageDown>", InputUtil.WellKnownKeyToKeyInput PageDownKey);
         ]
 
     let private FunctionKeys = 

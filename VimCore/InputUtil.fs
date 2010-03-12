@@ -4,6 +4,7 @@ namespace Vim
 open System.Windows.Input
 open System.Runtime.InteropServices
 
+
 module InputUtil = 
 
     /// Convert the passed in char to the corresponding Virtual Key Code 
@@ -54,10 +55,9 @@ module InputUtil =
             let key = KeyInterop.KeyFromVirtualKey(virtualKey)
             KeyInput(ch, key, modKeys) |> Some
 
-    let private TryKeyToKeyInputAndVirtualKey key = 
-        let virtualKey = KeyInterop.VirtualKeyFromKey(key)
+    let private TryVirtualKeyCodeToChar virtualKey = 
         if 0 = virtualKey then None
-        else
+        else   
             // Mode to map a 
             let MAPVK_VK_TO_CHAR = 0x02u 
             let mapped = MapVirtualKey(uint32 virtualKey, MAPVK_VK_TO_CHAR)
@@ -65,7 +65,13 @@ module InputUtil =
             else 
                 let c = char mapped 
                 let c = if System.Char.IsLetter(c) then System.Char.ToLower(c) else c
-                (KeyInput(c, key, ModifierKeys.None),virtualKey) |> Some
+                (c,virtualKey) |> Some
+    
+    let private TryKeyToKeyInputAndVirtualKey key = 
+        let virtualKey = KeyInterop.VirtualKeyFromKey(key)
+        match TryVirtualKeyCodeToChar virtualKey with
+        | None -> None
+        | Some(ch,virtualKey) -> (KeyInput(ch,key,ModifierKeys.None),virtualKey) |> Some
 
     let TryKeyToKeyInput key = 
         match TryKeyToKeyInputAndVirtualKey key with
@@ -105,7 +111,39 @@ module InputUtil =
                 | None -> ki
                 | Some(ch,_,_) -> KeyInput(ch,key,modKeys)
             else KeyInput(ki.Char, ki.Key, modKeys)
-    
+
+    let VirtualKeyCodeToKeyInput virtualKey = 
+        let key = KeyInterop.KeyFromVirtualKey(virtualKey)
+        let ch = 
+            match TryVirtualKeyCodeToChar virtualKey with
+            | None -> System.Char.MinValue
+            | Some(ch,_) -> ch
+        KeyInput(ch,key)
+
+    ///
+    /// All constant values derived from the list at the following 
+    /// location
+    ///   http://msdn.microsoft.com/en-us/library/ms645540(VS.85).aspx
+    let WellKnownKeyToKeyInput wellKnownKey = 
+        match wellKnownKey with 
+        | BackKey ->  VirtualKeyCodeToKeyInput 0x8
+        | TabKey ->  VirtualKeyCodeToKeyInput 0x9
+        | ReturnKey ->  VirtualKeyCodeToKeyInput 0xD
+        | EscapeKey ->  VirtualKeyCodeToKeyInput 0x1B
+        | DeleteKey ->  VirtualKeyCodeToKeyInput 0x2E
+        | LeftKey ->  VirtualKeyCodeToKeyInput 0x25
+        | UpKey ->  VirtualKeyCodeToKeyInput 0x26
+        | RightKey ->  VirtualKeyCodeToKeyInput 0x27
+        | DownKey ->  VirtualKeyCodeToKeyInput 0x28
+        | LineFeedKey ->  CharToKeyInput '\r'
+        | HelpKey ->  VirtualKeyCodeToKeyInput 0x2F
+        | InsertKey ->  VirtualKeyCodeToKeyInput 0x2D
+        | HomeKey ->  VirtualKeyCodeToKeyInput 0x24
+        | EndKey ->  VirtualKeyCodeToKeyInput 0x23
+        | PageUpKey ->  VirtualKeyCodeToKeyInput 0x21
+        | PageDownKey ->  VirtualKeyCodeToKeyInput 0x22
+        | NotWellKnownKey -> CharToKeyInput System.Char.MinValue
+        
     let SetModifiers modKeys (ki:KeyInput) = KeyInput(ki.Char,ki.Key, modKeys)
         
 

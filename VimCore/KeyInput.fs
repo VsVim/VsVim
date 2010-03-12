@@ -2,7 +2,33 @@
 
 namespace Vim
 open System.Windows.Input
-    
+
+/// Provides values for the well known key values used by Vim 
+type WellKnownKey =
+    | NotWellKnownKey
+    | BackKey
+    | TabKey
+    | ReturnKey
+    | EscapeKey
+    | DeleteKey
+    | LeftKey
+    | UpKey
+    | RightKey
+    | DownKey
+    | LineFeedKey
+    | HelpKey
+    | EndKey
+    | PageUpKey
+    | PageDownKey
+    | InsertKey
+    | HomeKey
+
+
+type KeyModifiers = 
+    | Shift = 0x1
+    | Alt = 0x2
+    | Control = 0x4
+
 type KeyInput(literal:char,key:Key,modKey:ModifierKeys) =
     new (c,k) = KeyInput(c,k, ModifierKeys.None)
 
@@ -10,21 +36,7 @@ type KeyInput(literal:char,key:Key,modKey:ModifierKeys) =
     member x.Key = key
     member x.ModifierKeys = modKey
     member x.HasShiftModifier = modKey = ModifierKeys.Shift
-    member x.IsDigit = 
-        if not x.HasShiftModifier then
-            match key with 
-                | Key.D0 -> true
-                | Key.D1 -> true
-                | Key.D2 -> true
-                | Key.D3 -> true
-                | Key.D4 -> true
-                | Key.D5 -> true
-                | Key.D6 -> true
-                | Key.D7 -> true
-                | Key.D8 -> true
-                | Key.D9 -> true
-                | _ -> false
-        else false
+    member x.IsDigit = System.Char.IsDigit(x.Char)
 
     /// Determine if this a new line key.  Meant to match the Vim definition of <CR>
     member x.IsNewLine = 

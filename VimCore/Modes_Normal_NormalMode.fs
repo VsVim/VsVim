@@ -285,7 +285,7 @@ type internal NormalMode
 
         let completeOps : seq<KeyInput * (int -> Register -> unit)> = seq {
             yield (InputUtil.CharToKeyInput('x'), (fun count reg -> _operations.DeleteCharacterAtCursor count reg))
-            yield (InputUtil.KeyToKeyInput(Key.Delete), (fun count reg -> _operations.DeleteCharacterAtCursor count reg))
+            yield (InputUtil.WellKnownKeyToKeyInput DeleteKey, (fun count reg -> _operations.DeleteCharacterAtCursor count reg))
             yield (InputUtil.CharToKeyInput('X'),  (fun count reg -> _operations.DeleteCharacterBeforeCursor count reg))
             yield (InputUtil.CharToKeyInput('p'), (fun count reg -> _operations.PasteAfterCursor reg.StringValue count reg.Value.OperationKind false))
             yield (InputUtil.CharToKeyInput('P'), (fun count reg -> _operations.PasteBeforeCursor reg.StringValue count false))
@@ -302,7 +302,7 @@ type internal NormalMode
             yield (KeyInput('J', Key.J, ModifierKeys.Shift), (fun count _ -> _operations.JoinAtCaret count))
             yield (InputUtil.CharToKeyInput(']') |> InputUtil.SetModifiers(ModifierKeys.Control), (fun _ _ -> _operations.GoToDefinitionWrapper()))
             yield (InputUtil.CharToKeyInput('Y'), (fun count reg -> _operations.YankLines count reg))
-            yield (InputUtil.KeyToKeyInput(Key.Tab), (fun count _ -> _operations.JumpNext count))
+            yield (InputUtil.WellKnownKeyToKeyInput TabKey, (fun count _ -> _operations.JumpNext count))
             yield (KeyInput('i', Key.I, ModifierKeys.Control), (fun count _ -> _operations.JumpNext count))
             yield (KeyInput('o', Key.O, ModifierKeys.Control), (fun count _ -> _operations.JumpPrevious count))
             yield (InputUtil.CharToKeyInput('%'), (fun _ _ -> _operations.GoToMatch() |> ignore))

@@ -12,6 +12,9 @@ module InputUtil =
     /// Try and convert the given Key into a KeyInput value
     val TryKeyToKeyInput : Key -> option<KeyInput>
 
+    /// Convert the specified Virtual Key code to a KeyInput 
+    val WellKnownKeyToKeyInput : WellKnownKey -> KeyInput
+
     /// Convert the passed in char into a KeyInput value
     val CharToKeyInput : char -> KeyInput
 
