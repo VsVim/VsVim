@@ -27,19 +27,19 @@ type internal CommandMode
         member x.CanProcess ki = true
         member x.Process ki = 
             match ki.Key with 
-                | EnterKey ->
+                | VimKey.EnterKey ->
                     _data.VimHost.UpdateStatus(System.String.Empty)
                     let command = _input |> List.rev |> Seq.map (fun ki -> ki.Char) |> List.ofSeq
                     _processor.RunCommand command
                     _input <- List.empty
                     _command <- System.String.Empty
                     SwitchMode ModeKind.Normal
-                | EscapeKey ->
+                | VimKey.EscapeKey ->
                     _data.VimHost.UpdateStatus(System.String.Empty)
                     _input <- List.empty
                     _command <- System.String.Empty
                     SwitchMode ModeKind.Normal
-                | BackKey -> 
+                | VimKey.BackKey -> 
                     if not (List.isEmpty _input) then 
                         _input <- List.tail _input
                         _command <- _command.Substring(0, (_command.Length - 1))

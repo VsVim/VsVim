@@ -56,15 +56,15 @@ namespace VimCoreTest
         [Test, Description("In the case of a bad key it should return the default key")]
         public void WellKnownKeyToKeyInput1()
         {
-            var key = InputUtil.WellKnownKeyToKeyInput(WellKnownKey.NotWellKnownKey);
+            var key = InputUtil.VimKeyToKeyInput(VimKey.NotWellKnownKey);
             Assert.IsNotNull(key);
         }
 
         [Test]
         public void WellKnownKeyToKeyInput2()
         {
-            var key = InputUtil.WellKnownKeyToKeyInput(WellKnownKey.EnterKey);
-            Assert.AreEqual(WellKnownKey.EnterKey, key.Key);
+            var key = InputUtil.VimKeyToKeyInput(VimKey.EnterKey);
+            Assert.AreEqual(VimKey.EnterKey, key.Key);
         }
     }
 }

@@ -62,39 +62,39 @@ module InputUtil =
     /// All constant values derived from the list at the following 
     /// location
     ///   http://msdn.microsoft.com/en-us/library/ms645540(VS.85).aspx
-    let WellKnownKeyToKeyInput wellKnownKey = 
+    let VimKeyToKeyInput wellKnownKey = 
         match wellKnownKey with 
-        | BackKey ->  VirtualKeyCodeToKeyInput 0x8
-        | TabKey ->  VirtualKeyCodeToKeyInput 0x9
-        | ReturnKey ->  VirtualKeyCodeToKeyInput 0xD
-        | EnterKey ->  VirtualKeyCodeToKeyInput 0xD
-        | EscapeKey ->  VirtualKeyCodeToKeyInput 0x1B
-        | DeleteKey ->  VirtualKeyCodeToKeyInput 0x2E
-        | LeftKey ->  VirtualKeyCodeToKeyInput 0x25
-        | UpKey ->  VirtualKeyCodeToKeyInput 0x26
-        | RightKey ->  VirtualKeyCodeToKeyInput 0x27
-        | DownKey ->  VirtualKeyCodeToKeyInput 0x28
-        | LineFeedKey ->  CharToKeyInput '\r'
-        | HelpKey ->  VirtualKeyCodeToKeyInput 0x2F
-        | InsertKey ->  VirtualKeyCodeToKeyInput 0x2D
-        | HomeKey ->  VirtualKeyCodeToKeyInput 0x24
-        | EndKey ->  VirtualKeyCodeToKeyInput 0x23
-        | PageUpKey ->  VirtualKeyCodeToKeyInput 0x21
-        | PageDownKey ->  VirtualKeyCodeToKeyInput 0x22
-        | BreakKey -> VirtualKeyCodeToKeyInput 0x03
-        | NotWellKnownKey -> CharToKeyInput System.Char.MinValue
-        | F1Key -> VirtualKeyCodeToKeyInput 0x70
-        | F2Key -> VirtualKeyCodeToKeyInput 0x71
-        | F3Key -> VirtualKeyCodeToKeyInput 0x72
-        | F4Key -> VirtualKeyCodeToKeyInput 0x73
-        | F5Key -> VirtualKeyCodeToKeyInput 0x74
-        | F6Key -> VirtualKeyCodeToKeyInput 0x75
-        | F7Key -> VirtualKeyCodeToKeyInput 0x76
-        | F8Key -> VirtualKeyCodeToKeyInput 0x77
-        | F9Key -> VirtualKeyCodeToKeyInput 0x78
-        | F10Key -> VirtualKeyCodeToKeyInput 0x79
-        | F11Key -> VirtualKeyCodeToKeyInput 0x7a
-        | F12Key -> VirtualKeyCodeToKeyInput 0x7b
+        | VimKey.BackKey ->  VirtualKeyCodeToKeyInput 0x8
+        | VimKey.TabKey ->  VirtualKeyCodeToKeyInput 0x9
+        | VimKey.EnterKey ->  VirtualKeyCodeToKeyInput 0xD
+        | VimKey.EscapeKey ->  VirtualKeyCodeToKeyInput 0x1B
+        | VimKey.DeleteKey ->  VirtualKeyCodeToKeyInput 0x2E
+        | VimKey.LeftKey ->  VirtualKeyCodeToKeyInput 0x25
+        | VimKey.UpKey ->  VirtualKeyCodeToKeyInput 0x26
+        | VimKey.RightKey ->  VirtualKeyCodeToKeyInput 0x27
+        | VimKey.DownKey ->  VirtualKeyCodeToKeyInput 0x28
+        | VimKey.LineFeedKey ->  CharToKeyInput '\r'
+        | VimKey.HelpKey ->  VirtualKeyCodeToKeyInput 0x2F
+        | VimKey.InsertKey ->  VirtualKeyCodeToKeyInput 0x2D
+        | VimKey.HomeKey ->  VirtualKeyCodeToKeyInput 0x24
+        | VimKey.EndKey ->  VirtualKeyCodeToKeyInput 0x23
+        | VimKey.PageUpKey ->  VirtualKeyCodeToKeyInput 0x21
+        | VimKey.PageDownKey ->  VirtualKeyCodeToKeyInput 0x22
+        | VimKey.BreakKey -> VirtualKeyCodeToKeyInput 0x03
+        | VimKey.NotWellKnownKey -> CharToKeyInput System.Char.MinValue
+        | VimKey.F1Key -> VirtualKeyCodeToKeyInput 0x70
+        | VimKey.F2Key -> VirtualKeyCodeToKeyInput 0x71
+        | VimKey.F3Key -> VirtualKeyCodeToKeyInput 0x72
+        | VimKey.F4Key -> VirtualKeyCodeToKeyInput 0x73
+        | VimKey.F5Key -> VirtualKeyCodeToKeyInput 0x74
+        | VimKey.F6Key -> VirtualKeyCodeToKeyInput 0x75
+        | VimKey.F7Key -> VirtualKeyCodeToKeyInput 0x76
+        | VimKey.F8Key -> VirtualKeyCodeToKeyInput 0x77
+        | VimKey.F9Key -> VirtualKeyCodeToKeyInput 0x78
+        | VimKey.F10Key -> VirtualKeyCodeToKeyInput 0x79
+        | VimKey.F11Key -> VirtualKeyCodeToKeyInput 0x7a
+        | VimKey.F12Key -> VirtualKeyCodeToKeyInput 0x7b
+        | _ -> failwith "Invalid Enum value"
         
     let SetModifiers modKeys (ki:KeyInput) = KeyInput(ki.Char,ki.Key, modKeys)
         

@@ -208,7 +208,7 @@ namespace Vim.UI.Wpf
     ///// All constant values derived from the list at the following 
     ///// location
     /////   http://msdn.microsoft.com/en-us/library/ms645540(VS.85).aspx
-    //let WellKnownKeyToKeyInput wellKnownKey = 
+    //let VimKeyToKeyInput wellKnownKey = 
     //    match wellKnownKey with 
     //    | BackKey ->  VirtualKeyCodeToKeyInput 0x8
     //    | TabKey ->  VirtualKeyCodeToKeyInput 0x9

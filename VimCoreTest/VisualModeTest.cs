@@ -69,7 +69,7 @@ namespace VimCoreTest
         public void Commands1()
         {
             Create("foo");
-            Assert.IsTrue(_mode.Commands.Contains(InputUtil.WellKnownKeyToKeyInput(WellKnownKey.EscapeKey)));
+            Assert.IsTrue(_mode.Commands.Contains(InputUtil.VimKeyToKeyInput(VimKey.EscapeKey)));
         }
 
         [Test,Description("Movement commands")]
@@ -81,11 +81,11 @@ namespace VimCoreTest
                 InputUtil.CharToKeyInput('j'),
                 InputUtil.CharToKeyInput('k'),
                 InputUtil.CharToKeyInput('l'),
-                InputUtil.WellKnownKeyToKeyInput(WellKnownKey.LeftKey),
-                InputUtil.WellKnownKeyToKeyInput(WellKnownKey.RightKey),
-                InputUtil.WellKnownKeyToKeyInput(WellKnownKey.UpKey),
-                InputUtil.WellKnownKeyToKeyInput(WellKnownKey.DownKey),
-                InputUtil.WellKnownKeyToKeyInput(WellKnownKey.BackKey) };
+                InputUtil.VimKeyToKeyInput(VimKey.LeftKey),
+                InputUtil.VimKeyToKeyInput(VimKey.RightKey),
+                InputUtil.VimKeyToKeyInput(VimKey.UpKey),
+                InputUtil.VimKeyToKeyInput(VimKey.DownKey),
+                InputUtil.VimKeyToKeyInput(VimKey.BackKey) };
             var commands = _mode.Commands.ToList();
             foreach (var item in list)
             {
@@ -97,7 +97,7 @@ namespace VimCoreTest
         public void Process1()
         {
             Create("foo");
-            var res = _mode.Process(InputUtil.WellKnownKeyToKeyInput(WellKnownKey.EscapeKey));
+            var res = _mode.Process(InputUtil.VimKeyToKeyInput(VimKey.EscapeKey));
             Assert.IsTrue(res.IsSwitchPreviousMode);
         }
 
@@ -106,7 +106,7 @@ namespace VimCoreTest
         {
             Create("foo");
             _mode.Process('g');
-            var res = _mode.Process(WellKnownKey.EscapeKey);
+            var res = _mode.Process(VimKey.EscapeKey);
             Assert.IsTrue(res.IsSwitchPreviousMode);
         }
 
@@ -294,7 +294,7 @@ namespace VimCoreTest
                 .Setup(x => x.DeleteSelection(_map.DefaultRegister))
                 .Returns<ITextSnapshot>(null)
                 .Verifiable();
-            _mode.Process(WellKnownKey.DeleteKey);
+            _mode.Process(VimKey.DeleteKey);
             _operations.Verify();
         }
 

@@ -12,7 +12,7 @@ type internal InsertMode
         _operations : Modes.ICommonOperations,
         _broker : ICompletionWindowBroker ) =
     let _commands = [
-        InputUtil.WellKnownKeyToKeyInput EscapeKey;
+        InputUtil.VimKeyToKeyInput VimKey.EscapeKey;
         KeyInput('d', KeyModifiers.Control); ]
 
     /// Process the CTRL-D combination and do a shift left
@@ -37,7 +37,7 @@ type internal InsertMode
             | Some _ -> true
             | None -> false
         member x.Process (ki : KeyInput) = 
-            if ki = InputUtil.WellKnownKeyToKeyInput(EscapeKey) then x.ProcessEscape()
+            if ki = InputUtil.VimKeyToKeyInput(VimKey.EscapeKey) then x.ProcessEscape()
             elif ki = KeyInput('d', KeyModifiers.Control) then 
                 x.ShiftLeft()
                 ProcessResult.Processed

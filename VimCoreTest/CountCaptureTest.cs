@@ -32,7 +32,7 @@ namespace VimCoreTest
             var res = Process("A");
 
             Assert.AreEqual(1, res.Item1);
-            Assert.AreEqual(WellKnownKey.NotWellKnownKey, res.Item2.Key);
+            Assert.AreEqual(VimKey.NotWellKnownKey, res.Item2.Key);
             Assert.AreEqual(KeyModifiers.Shift, res.Item2.KeyModifiers);
         }
 

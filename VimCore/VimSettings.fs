@@ -102,7 +102,7 @@ type internal SettingsMap
 
 type internal GlobalSettings() =
 
-    static let DisableCommandLet = KeyInput(System.Char.MinValue, F12Key, KeyModifiers.Control ||| KeyModifiers.Shift);
+    static let DisableCommandLet = KeyInput(System.Char.MinValue, VimKey.F12Key, KeyModifiers.Control ||| KeyModifiers.Shift);
     static let IgnoreCaseName = "ignorecase"
     static let ShiftWidthName = "shiftwidth"
     static let VimRcName = "vimrc"

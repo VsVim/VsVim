@@ -26,8 +26,8 @@ module internal MotionCapture =
     let HitInvalidMotion =
         let rec inner (ki:KeyInput) =
             match ki.Key with 
-            | EscapeKey -> Cancel
-            | EnterKey -> Error("Invalid Motion")
+            | VimKey.EscapeKey -> Cancel
+            | VimKey.EnterKey -> Error("Invalid Motion")
             | _ -> InvalidMotion("Invalid Motion", inner)
         InvalidMotion("Invalid Motion",inner)
     

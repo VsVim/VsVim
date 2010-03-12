@@ -9,39 +9,39 @@ module internal KeyMapUtil =
     let private ManualKeyList = 
         [
             ("<Nul>",InputUtil.CharToKeyInput '@' |> InputUtil.SetModifiers KeyModifiers.Control);
-            ("<Bs>", InputUtil.WellKnownKeyToKeyInput BackKey);
-            ("<Tab>",InputUtil.WellKnownKeyToKeyInput TabKey);
-            ("<NL>", InputUtil.WellKnownKeyToKeyInput LineFeedKey);
+            ("<Bs>", InputUtil.VimKeyToKeyInput VimKey.BackKey);
+            ("<Tab>",InputUtil.VimKeyToKeyInput VimKey.TabKey);
+            ("<NL>", InputUtil.VimKeyToKeyInput VimKey.LineFeedKey);
             ("<FF>", InputUtil.CharToKeyInput 'l' |> InputUtil.SetModifiers KeyModifiers.Control);
-            ("<CR>", InputUtil.WellKnownKeyToKeyInput ReturnKey);
-            ("<Return>", InputUtil.WellKnownKeyToKeyInput ReturnKey);
-            ("<Enter>", InputUtil.WellKnownKeyToKeyInput ReturnKey);
-            ("<Esc>", InputUtil.WellKnownKeyToKeyInput EscapeKey);
+            ("<CR>", InputUtil.VimKeyToKeyInput VimKey.EnterKey);
+            ("<Return>", InputUtil.VimKeyToKeyInput VimKey.EnterKey);
+            ("<Enter>", InputUtil.VimKeyToKeyInput VimKey.EnterKey);
+            ("<Esc>", InputUtil.VimKeyToKeyInput VimKey.EscapeKey);
             ("<Space>", InputUtil.CharToKeyInput ' ')
             ("<lt>", InputUtil.CharToKeyInput '<');
             ("<Bslash>", InputUtil.CharToKeyInput '\\' );
             ("<Bar>", InputUtil.CharToKeyInput '|');
-            ("<Del>", InputUtil.WellKnownKeyToKeyInput DeleteKey);
-            ("<Up>", InputUtil.WellKnownKeyToKeyInput UpKey);
-            ("<Down>", InputUtil.WellKnownKeyToKeyInput DownKey);
-            ("<Left>", InputUtil.WellKnownKeyToKeyInput LeftKey);
-            ("<Right>", InputUtil.WellKnownKeyToKeyInput RightKey);
-            ("<Help>", InputUtil.WellKnownKeyToKeyInput HelpKey);
-            ("<Insert>", InputUtil.WellKnownKeyToKeyInput InsertKey);
-            ("<Home>", InputUtil.WellKnownKeyToKeyInput HomeKey);
-            ("<End>", InputUtil.WellKnownKeyToKeyInput EndKey);
-            ("<PageUp>", InputUtil.WellKnownKeyToKeyInput PageUpKey);
-            ("<PageDown>", InputUtil.WellKnownKeyToKeyInput PageDownKey);
-            ("<kHome>", InputUtil.WellKnownKeyToKeyInput HomeKey);
-            ("<kEnd>", InputUtil.WellKnownKeyToKeyInput EndKey);
-            ("<kPageUp>", InputUtil.WellKnownKeyToKeyInput PageUpKey);
-            ("<kPageDown>", InputUtil.WellKnownKeyToKeyInput PageDownKey);
+            ("<Del>", InputUtil.VimKeyToKeyInput VimKey.DeleteKey);
+            ("<Up>", InputUtil.VimKeyToKeyInput VimKey.UpKey);
+            ("<Down>", InputUtil.VimKeyToKeyInput VimKey.DownKey);
+            ("<Left>", InputUtil.VimKeyToKeyInput VimKey.LeftKey);
+            ("<Right>", InputUtil.VimKeyToKeyInput VimKey.RightKey);
+            ("<Help>", InputUtil.VimKeyToKeyInput VimKey.HelpKey);
+            ("<Insert>", InputUtil.VimKeyToKeyInput VimKey.InsertKey);
+            ("<Home>", InputUtil.VimKeyToKeyInput VimKey.HomeKey);
+            ("<End>", InputUtil.VimKeyToKeyInput VimKey.EndKey);
+            ("<PageUp>", InputUtil.VimKeyToKeyInput VimKey.PageUpKey);
+            ("<PageDown>", InputUtil.VimKeyToKeyInput VimKey.PageDownKey);
+            ("<kHome>", InputUtil.VimKeyToKeyInput VimKey.HomeKey);
+            ("<kEnd>", InputUtil.VimKeyToKeyInput VimKey.EndKey);
+            ("<kPageUp>", InputUtil.VimKeyToKeyInput VimKey.PageUpKey);
+            ("<kPageDown>", InputUtil.VimKeyToKeyInput VimKey.PageDownKey);
         ]
 
     let private FunctionKeys = 
-        [F1Key;F2Key;F3Key;F4Key;F5Key;F6Key;F7Key;F8Key;F9Key;F10Key;F11Key;F12Key]
+        [VimKey.F1Key;VimKey.F2Key;VimKey.F3Key;VimKey.F4Key;VimKey.F5Key;VimKey.F6Key;VimKey.F7Key;VimKey.F8Key;VimKey.F9Key;VimKey.F10Key;VimKey.F11Key;VimKey.F12Key]
             |> Seq.mapi (fun i k -> (i+1),k)
-            |> Seq.map (fun (number,key) -> (sprintf "<F%d>" number),InputUtil.WellKnownKeyToKeyInput key)
+            |> Seq.map (fun (number,key) -> (sprintf "<F%d>" number),InputUtil.VimKeyToKeyInput key)
             |> List.ofSeq
 
     /// Contains the tuple of (name,KeyInput) for all of the supported key notations

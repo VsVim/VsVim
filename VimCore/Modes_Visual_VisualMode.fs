@@ -95,7 +95,7 @@ type internal VisualMode
                         VisualModeResult.SwitchPreviousMode))
                 yield (InputUtil.CharToKeyInput('d'), deleteSelection)
                 yield (InputUtil.CharToKeyInput('x'), deleteSelection)
-                yield (InputUtil.WellKnownKeyToKeyInput DeleteKey, deleteSelection)
+                yield (InputUtil.VimKeyToKeyInput VimKey.DeleteKey, deleteSelection)
                 yield (InputUtil.CharToKeyInput('c'), changeSelection)
                 yield (InputUtil.CharToKeyInput('s'), changeSelection)
                 yield (InputUtil.CharToKeyInput('C'), changeLines)
@@ -114,7 +114,7 @@ type internal VisualMode
                 x.BuildMoveSequence() 
                 |> Seq.append (x.BuildOperationsSequence())
                 |> Map.ofSeq
-                |> Map.add (InputUtil.WellKnownKeyToKeyInput EscapeKey) (fun _ _ -> SwitchPreviousMode)
+                |> Map.add (InputUtil.VimKeyToKeyInput VimKey.EscapeKey) (fun _ _ -> SwitchPreviousMode)
             _operationsMap <- map
 
     member private x.ProcessInputCore ki = 
@@ -163,7 +163,7 @@ type internal VisualMode
         member x.ModeKind = _kind
         member x.CanProcess (ki:KeyInput) = true
         member x.Process (ki : KeyInput) =  
-            if ki.Key = EscapeKey then
+            if ki.Key = VimKey.EscapeKey then
                 ProcessResult.SwitchPreviousMode
             else
                 let res = _data.RunFunc ki

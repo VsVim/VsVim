@@ -22,7 +22,7 @@ namespace VimCoreTest
         [Test]
         public void IsDigit2()
         {
-            var input = InputUtil.WellKnownKeyToKeyInput(WellKnownKey.EnterKey);
+            var input = InputUtil.VimKeyToKeyInput(VimKey.EnterKey);
             Assert.IsFalse(input.IsDigit);
         }
 

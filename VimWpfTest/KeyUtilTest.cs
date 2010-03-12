@@ -25,9 +25,9 @@ namespace Vim.UI.Wpf.Test
             Assert.AreEqual(c, back);
         }
 
-        private void WellKnownBothWays(WellKnownKey wellKnownKey, Key key)
+        private void WellKnownBothWays(VimKey wellKnownKey, Key key)
         {
-            var left = InputUtil.WellKnownKeyToKeyInput(wellKnownKey);
+            var left = InputUtil.VimKeyToKeyInput(wellKnownKey);
             var right = KeyUtil.ConvertToKeyInput(key);
             Assert.AreEqual(left, right);
         }
@@ -58,24 +58,24 @@ namespace Vim.UI.Wpf.Test
         [Test]
         public void WellKnownBothWays()
         {
-            WellKnownBothWays(WellKnownKey.LeftKey, Key.Left);
-            WellKnownBothWays(WellKnownKey.RightKey, Key.Right);
-            WellKnownBothWays(WellKnownKey.UpKey, Key.Up);
-            WellKnownBothWays(WellKnownKey.DownKey, Key.Down);
-            WellKnownBothWays(WellKnownKey.F1Key, Key.F1);
-            WellKnownBothWays(WellKnownKey.F2Key, Key.F2);
-            WellKnownBothWays(WellKnownKey.F3Key, Key.F3);
-            WellKnownBothWays(WellKnownKey.F4Key, Key.F4);
-            WellKnownBothWays(WellKnownKey.F5Key, Key.F5);
-            WellKnownBothWays(WellKnownKey.F6Key, Key.F6);
-            WellKnownBothWays(WellKnownKey.F7Key, Key.F7);
-            WellKnownBothWays(WellKnownKey.F8Key, Key.F8);
-            WellKnownBothWays(WellKnownKey.F9Key, Key.F9);
-            WellKnownBothWays(WellKnownKey.F10Key, Key.F10);
-            WellKnownBothWays(WellKnownKey.F11Key, Key.F11);
-            WellKnownBothWays(WellKnownKey.F12Key, Key.F12);
-            WellKnownBothWays(WellKnownKey.DeleteKey, Key.Delete);
-            WellKnownBothWays(WellKnownKey.EscapeKey, Key.Escape);
+            WellKnownBothWays(VimKey.LeftKey, Key.Left);
+            WellKnownBothWays(VimKey.RightKey, Key.Right);
+            WellKnownBothWays(VimKey.UpKey, Key.Up);
+            WellKnownBothWays(VimKey.DownKey, Key.Down);
+            WellKnownBothWays(VimKey.F1Key, Key.F1);
+            WellKnownBothWays(VimKey.F2Key, Key.F2);
+            WellKnownBothWays(VimKey.F3Key, Key.F3);
+            WellKnownBothWays(VimKey.F4Key, Key.F4);
+            WellKnownBothWays(VimKey.F5Key, Key.F5);
+            WellKnownBothWays(VimKey.F6Key, Key.F6);
+            WellKnownBothWays(VimKey.F7Key, Key.F7);
+            WellKnownBothWays(VimKey.F8Key, Key.F8);
+            WellKnownBothWays(VimKey.F9Key, Key.F9);
+            WellKnownBothWays(VimKey.F10Key, Key.F10);
+            WellKnownBothWays(VimKey.F11Key, Key.F11);
+            WellKnownBothWays(VimKey.F12Key, Key.F12);
+            WellKnownBothWays(VimKey.DeleteKey, Key.Delete);
+            WellKnownBothWays(VimKey.EscapeKey, Key.Escape);
         }
 
         [Test]

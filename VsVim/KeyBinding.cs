@@ -57,22 +57,22 @@ namespace VsVim
 
         #region Parsing Methods
 
-        private static Dictionary<string, WellKnownKey> s_vsMap;
+        private static Dictionary<string, VimKey> s_vsMap;
 
         private static void BuildVsMap()
         {
-            var map = new Dictionary<string, WellKnownKey>(StringComparer.OrdinalIgnoreCase);
-            map.Add("Down Arrow", WellKnownKey.DownKey);
-            map.Add("Up Arrow", WellKnownKey.UpKey);
-            map.Add("Left Arrow", WellKnownKey.LeftKey);
-            map.Add("Right Arrow", WellKnownKey.RightKey);
-            map.Add("bkspce", WellKnownKey.BackKey);
-            map.Add("PgDn", WellKnownKey.PageDownKey);
-            map.Add("PgUp", WellKnownKey.PageUpKey);
-            map.Add("Ins", WellKnownKey.InsertKey);
-            map.Add("Del", WellKnownKey.DeleteKey);
-            map.Add("Esc", WellKnownKey.EscapeKey);
-            map.Add("Break", WellKnownKey.BreakKey);
+            var map = new Dictionary<string, VimKey>(StringComparer.OrdinalIgnoreCase);
+            map.Add("Down Arrow", VimKey.DownKey);
+            map.Add("Up Arrow", VimKey.UpKey);
+            map.Add("Left Arrow", VimKey.LeftKey);
+            map.Add("Right Arrow", VimKey.RightKey);
+            map.Add("bkspce", VimKey.BackKey);
+            map.Add("PgDn", VimKey.PageDownKey);
+            map.Add("PgUp", VimKey.PageUpKey);
+            map.Add("Ins", VimKey.InsertKey);
+            map.Add("Del", VimKey.DeleteKey);
+            map.Add("Esc", VimKey.EscapeKey);
+            map.Add("Break", VimKey.BreakKey);
             s_vsMap = map;
         }
 
@@ -155,14 +155,14 @@ namespace VsVim
         private static bool TryConvertVsSpecificKey(string keystroke, out KeyInput ki)
         {
             EnsureVsMap();
-            WellKnownKey wellKnownKey;
+            VimKey wellKnownKey;
             if (!s_vsMap.TryGetValue(keystroke, out wellKnownKey))
             {
                 ki = null;
                 return false;
             }
 
-            ki = InputUtil.WellKnownKeyToKeyInput(wellKnownKey);
+            ki = InputUtil.VimKeyToKeyInput(wellKnownKey);
             return true;
         }
 

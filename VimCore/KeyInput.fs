@@ -3,38 +3,37 @@
 namespace Vim
 
 /// Provides values for the well known key values used by Vim 
-type WellKnownKey =
-    | NotWellKnownKey
-    | BackKey
-    | TabKey
-    | EnterKey
-    | ReturnKey
-    | EscapeKey
-    | DeleteKey
-    | LeftKey
-    | UpKey
-    | RightKey
-    | DownKey
-    | LineFeedKey
-    | HelpKey
-    | EndKey
-    | PageUpKey
-    | PageDownKey
-    | InsertKey
-    | HomeKey
-    | BreakKey
-    | F1Key
-    | F2Key
-    | F3Key
-    | F4Key
-    | F5Key
-    | F6Key
-    | F7Key
-    | F8Key
-    | F9Key
-    | F10Key
-    | F11Key
-    | F12Key
+type VimKey =
+    | NotWellKnownKey = 0
+    | BackKey = 1
+    | TabKey = 2
+    | EnterKey = 3
+    | EscapeKey = 4 
+    | LeftKey = 5
+    | UpKey = 6
+    | RightKey = 7
+    | DownKey = 8
+    | LineFeedKey = 9
+    | HelpKey = 10
+    | EndKey = 11
+    | PageUpKey = 12
+    | PageDownKey = 13
+    | InsertKey = 14
+    | HomeKey = 15
+    | BreakKey = 16
+    | F1Key = 17
+    | F2Key = 18
+    | F3Key = 19
+    | F4Key = 20
+    | F5Key = 21
+    | F6Key = 22
+    | F7Key = 23
+    | F8Key = 24
+    | F9Key = 25
+    | F10Key = 26
+    | F11Key = 27
+    | F12Key = 28
+    | DeleteKey = 29
 
 [<System.Flags>]
 type KeyModifiers = 
@@ -46,11 +45,11 @@ type KeyModifiers =
 type KeyInput
     (
         _literal:char,
-        _key:WellKnownKey,
+        _key:VimKey,
         _modKey:KeyModifiers) =
 
-    new (c) = KeyInput(c,WellKnownKey.NotWellKnownKey,KeyModifiers.None)
-    new (c,modKey) = KeyInput(c,WellKnownKey.NotWellKnownKey,modKey)
+    new (c) = KeyInput(c,VimKey.NotWellKnownKey,KeyModifiers.None)
+    new (c,modKey) = KeyInput(c,VimKey.NotWellKnownKey,modKey)
 
     member x.Char = _literal
     member x.Key = _key
@@ -61,18 +60,17 @@ type KeyInput
     /// Determine if this a new line key.  Meant to match the Vim definition of <CR>
     member x.IsNewLine = 
         match _key with
-            | WellKnownKey.EnterKey -> true
-            | WellKnownKey.ReturnKey -> true
-            | WellKnownKey.LineFeedKey -> true
+            | VimKey.EnterKey -> true
+            | VimKey.LineFeedKey -> true
             | _ -> false
 
     /// Is this an arrow key?
     member x.IsArrowKey = 
         match _key with
-        | LeftKey -> true
-        | RightKey -> true
-        | UpKey -> true
-        | DownKey -> true
+        | VimKey.LeftKey -> true
+        | VimKey.RightKey -> true
+        | VimKey.UpKey -> true
+        | VimKey.DownKey -> true
         | _ -> false
 
     member private x.CompareTo (other:KeyInput) =

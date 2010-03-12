@@ -49,7 +49,7 @@ namespace VimCoreTest
                 var ki = InputUtil.CharToKeyInput(cur);
                 Assert.IsTrue(_search.Process(ki).IsSearchNeedMore);
             }
-            Assert.IsTrue(_search.Process(InputUtil.WellKnownKeyToKeyInput(WellKnownKey.EnterKey)).IsSearchComplete);
+            Assert.IsTrue(_search.Process(InputUtil.VimKeyToKeyInput(VimKey.EnterKey)).IsSearchComplete);
         }
 
         [Test]
@@ -66,7 +66,7 @@ namespace VimCoreTest
         {
             Create("foo bar");
             _search.Begin(SearchKind.ForwardWithWrap);
-            Assert.IsTrue(_search.Process(InputUtil.WellKnownKeyToKeyInput(WellKnownKey.EnterKey)).IsSearchComplete);
+            Assert.IsTrue(_search.Process(InputUtil.VimKeyToKeyInput(VimKey.EnterKey)).IsSearchComplete);
         }
 
         [Test]
@@ -74,7 +74,7 @@ namespace VimCoreTest
         {
             Create("foo bar");
             _search.Begin(SearchKind.ForwardWithWrap);
-            Assert.IsTrue(_search.Process(InputUtil.WellKnownKeyToKeyInput(WellKnownKey.EscapeKey)).IsSearchCanceled);
+            Assert.IsTrue(_search.Process(InputUtil.VimKeyToKeyInput(VimKey.EscapeKey)).IsSearchCanceled);
         }
 
         [Test]
@@ -223,7 +223,7 @@ namespace VimCoreTest
                 .Returns(FSharpOption<SnapshotSpan>.None);
             _search.Process(InputUtil.CharToKeyInput('a'));
             list.Clear();
-            _search.Process(InputUtil.WellKnownKeyToKeyInput(WellKnownKey.EnterKey));
+            _search.Process(InputUtil.VimKeyToKeyInput(VimKey.EnterKey));
             Assert.AreEqual(1, list.Count);
             Assert.IsTrue(list[0].IsNone());
         }
@@ -345,7 +345,7 @@ namespace VimCoreTest
         {
             CreateBuffer("foo bar baz");
             _mode.Process("/ba");
-            _mode.Process(WellKnownKey.EnterKey);
+            _mode.Process(VimKey.EnterKey);
             _mode.Process("n");
             Assert.AreEqual(8, _view.Caret.Position.BufferPosition.Position);
         }
@@ -412,7 +412,7 @@ namespace VimCoreTest
             CreateBuffer("foo bar");
             _mode.Process("/fooh");
             Assert.AreEqual(0, _view.Selection.SelectedSpans.Single().Length);
-            _mode.Process(WellKnownKey.BackKey);
+            _mode.Process(VimKey.BackKey);
             Assert.AreEqual(3, _view.Selection.SelectedSpans.Single().Length);
             Assert.AreEqual("foo", _view.Selection.SelectedSpans.Single().GetText());
         }
@@ -423,7 +423,7 @@ namespace VimCoreTest
             CreateBuffer("foo bar");
             _mode.Process("/bb");
             Assert.AreEqual(0, _view.Caret.Position.BufferPosition.Position);
-            _mode.Process(WellKnownKey.BackKey);
+            _mode.Process(VimKey.BackKey);
             Assert.AreEqual("b", _view.Selection.SelectedSpans.Single().GetText());
         }
 
@@ -432,7 +432,7 @@ namespace VimCoreTest
         {
             CreateBuffer("foo bar");
             _mode.Process("/b");
-            _mode.Process(WellKnownKey.BackKey);
+            _mode.Process(VimKey.BackKey);
             var res = _mode.Process('i');
             Assert.IsTrue(res.IsSwitchMode);
             Assert.AreEqual(ModeKind.Insert, res.AsSwitchMode().Item);

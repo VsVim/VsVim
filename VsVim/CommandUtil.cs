@@ -133,32 +133,32 @@ namespace VsVim
                     kind = EditCommandKind.TypeChar;
                     break;
                 case VSConstants.VSStd2KCmdID.RETURN:
-                    ki = InputUtil.WellKnownKeyToKeyInput(WellKnownKey.ReturnKey);
+                    ki = InputUtil.VimKeyToKeyInput(VimKey.EnterKey);
                     kind = EditCommandKind.Return;
                     break;
                 case VSConstants.VSStd2KCmdID.CANCEL:
-                    ki = InputUtil.WellKnownKeyToKeyInput(WellKnownKey.EscapeKey);
+                    ki = InputUtil.VimKeyToKeyInput(VimKey.EscapeKey);
                     kind = EditCommandKind.Cancel;
                     break;
                 case VSConstants.VSStd2KCmdID.DELETE:
-                    ki = InputUtil.WellKnownKeyToKeyInput(WellKnownKey.DeleteKey);
+                    ki = InputUtil.VimKeyToKeyInput(VimKey.DeleteKey);
                     kind = EditCommandKind.Delete;
                     break;
                 case VSConstants.VSStd2KCmdID.BACKSPACE:
-                    ki = InputUtil.WellKnownKeyToKeyInput(WellKnownKey.BackKey);
+                    ki = InputUtil.VimKeyToKeyInput(VimKey.BackKey);
                     kind = EditCommandKind.Backspace;
                     break;
                 case VSConstants.VSStd2KCmdID.LEFT:
-                    ki = InputUtil.WellKnownKeyToKeyInput(WellKnownKey.LeftKey);
+                    ki = InputUtil.VimKeyToKeyInput(VimKey.LeftKey);
                     break;
                 case VSConstants.VSStd2KCmdID.RIGHT:
-                    ki = InputUtil.WellKnownKeyToKeyInput(WellKnownKey.RightKey);
+                    ki = InputUtil.VimKeyToKeyInput(VimKey.RightKey);
                     break;
                 case VSConstants.VSStd2KCmdID.UP:
-                    ki = InputUtil.WellKnownKeyToKeyInput(WellKnownKey.UpKey);
+                    ki = InputUtil.VimKeyToKeyInput(VimKey.UpKey);
                     break;
                 case VSConstants.VSStd2KCmdID.DOWN:
-                    ki = InputUtil.WellKnownKeyToKeyInput(WellKnownKey.DownKey);
+                    ki = InputUtil.VimKeyToKeyInput(VimKey.DownKey);
                     break;
 
 
@@ -182,11 +182,11 @@ namespace VsVim
                     kind = EditCommandKind.TypeChar;
                     break;
                 case VSConstants.VSStd97CmdID.Escape:
-                    ki = InputUtil.WellKnownKeyToKeyInput(WellKnownKey.EscapeKey);
+                    ki = InputUtil.VimKeyToKeyInput(VimKey.EscapeKey);
                     kind = EditCommandKind.Cancel;
                     break;
                 case VSConstants.VSStd97CmdID.Delete:
-                    ki = InputUtil.WellKnownKeyToKeyInput(WellKnownKey.DeleteKey);
+                    ki = InputUtil.VimKeyToKeyInput(VimKey.DeleteKey);
                     kind = EditCommandKind.Delete;
                     break;
             }

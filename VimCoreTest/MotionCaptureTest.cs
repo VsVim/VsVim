@@ -131,7 +131,7 @@ namespace VimCoreTest
             Initialize("foo bar");
             var res = MotionCapture.ProcessInput(new SnapshotPoint(_snapshot, 0), InputUtil.CharToKeyInput('z'), 0);
             Assert.IsTrue(res.IsInvalidMotion);
-            res = res.AsInvalidMotion().Item2.Invoke(InputUtil.WellKnownKeyToKeyInput(WellKnownKey.EscapeKey));
+            res = res.AsInvalidMotion().Item2.Invoke(InputUtil.VimKeyToKeyInput(VimKey.EscapeKey));
             Assert.IsTrue(res.IsCancel);
         }
 
@@ -144,7 +144,7 @@ namespace VimCoreTest
             Assert.IsTrue(res.IsInvalidMotion);
             res = res.AsInvalidMotion().Item2.Invoke(InputUtil.CharToKeyInput('a'));
             Assert.IsTrue(res.IsInvalidMotion);
-            res = res.AsInvalidMotion().Item2.Invoke(InputUtil.WellKnownKeyToKeyInput(WellKnownKey.EscapeKey));
+            res = res.AsInvalidMotion().Item2.Invoke(InputUtil.VimKeyToKeyInput(VimKey.EscapeKey));
             Assert.IsTrue(res.IsCancel);
         }
 

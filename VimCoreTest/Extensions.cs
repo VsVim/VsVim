@@ -151,14 +151,14 @@ namespace VimCoreTest
 
         #region IMode
 
-        public static bool CanProcess(this IMode mode,WellKnownKey key)
+        public static bool CanProcess(this IMode mode,VimKey key)
         {
-            return mode.CanProcess(InputUtil.WellKnownKeyToKeyInput(key));
+            return mode.CanProcess(InputUtil.VimKeyToKeyInput(key));
         }
 
-        public static ProcessResult Process(this IMode mode, WellKnownKey key)
+        public static ProcessResult Process(this IMode mode, VimKey key)
         {
-            return mode.Process(InputUtil.WellKnownKeyToKeyInput(key));
+            return mode.Process(InputUtil.VimKeyToKeyInput(key));
         }
 
         public static ProcessResult Process(this IMode mode, char c)
