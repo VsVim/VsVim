@@ -228,20 +228,20 @@ and IVim =
     abstract IsVimRcLoaded : bool
 
     /// Create an IVimBuffer for the given IWpfTextView
-    abstract CreateBuffer : IWpfTextView -> IVimBuffer
+    abstract CreateBuffer : ITextView -> IVimBuffer
 
     /// Get the IVimBuffer associated with the given view
-    abstract GetBuffer : IWpfTextView -> IVimBuffer option
+    abstract GetBuffer : ITextView -> IVimBuffer option
 
     /// Get or create an IVimBuffer for the given IWpfTextView
-    abstract GetOrCreateBuffer : IWpfTextView -> IVimBuffer
+    abstract GetOrCreateBuffer : ITextView -> IVimBuffer
 
     /// Get the IVimBuffer associated with the given view
     abstract GetBufferForBuffer : ITextBuffer -> IVimBuffer option
 
     /// Remove the IVimBuffer associated with the given view.  This will not actually close
     /// the IVimBuffer but instead just removes it's association with the given view
-    abstract RemoveBuffer : IWpfTextView -> bool
+    abstract RemoveBuffer : ITextView -> bool
 
     /// Load the VimRc file.  If the file was previously, a new load will be attempted
     abstract LoadVimRc : unit -> bool
@@ -254,7 +254,7 @@ and IVimBuffer =
     abstract Name : string
 
     /// View of the file
-    abstract TextView : IWpfTextView
+    abstract TextView : ITextView
 
     /// Underyling ITextBuffer Vim is operating under
     abstract TextBuffer : ITextBuffer

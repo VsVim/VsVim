@@ -99,7 +99,7 @@ type internal Vim
 
     static let _vimRcEnvironmentVariables = ["HOME";"VIM";"USERPROFILE"]
 
-    let _bufferMap = new System.Collections.Generic.Dictionary<IWpfTextView, IVimBuffer>()
+    let _bufferMap = new System.Collections.Generic.Dictionary<ITextView, IVimBuffer>()
 
     [<ImportingConstructor>]
     new(

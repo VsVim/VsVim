@@ -61,7 +61,7 @@ type ITrackingLineColumnService =
 type IVimBufferFactory =
     
     /// Create a IVimBuffer for the given parameters
-    abstract CreateBuffer : IVim -> IWpfTextView -> IVimBuffer
+    abstract CreateBuffer : IVim -> ITextView -> IVimBuffer
 
     /// Raised when an IVimBuffer instance is created
     [<CLIEvent>]

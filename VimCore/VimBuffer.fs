@@ -36,7 +36,7 @@ type internal ModeMap() =
 type internal VimBuffer 
     (
         _vim : IVim,
-        _textView : IWpfTextView,
+        _textView : ITextView,
         _editorOperations : IEditorOperations,
         _jumpList : IJumpList,
         _settings : IVimLocalSettings ) =
