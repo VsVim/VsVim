@@ -9,14 +9,17 @@ namespace Vim.UI.Wpf
 {
     internal sealed class CommandMargin : IWpfTextViewMargin
     {
+        internal const string Name = "Vim Command Margin";
+
         private readonly CommandMarginControl _margin = new CommandMarginControl();
+        private readonly CommandMarginController _controller;
         private readonly IVimBuffer _buffer;
 
         public CommandMargin(IVimBuffer buffer)
         {
             _buffer = buffer;
-            _buffer.SwitchedMode += (sender, args) => _margin.StatusLine= _buffer.Mode.ModeKind.ToString();
             _margin.StatusLine = "Welcome to Vim";
+            _controller = new CommandMarginController(buffer, _margin);
         }
 
         public FrameworkElement VisualElement
@@ -31,7 +34,11 @@ namespace Vim.UI.Wpf
 
         public ITextViewMargin GetTextViewMargin(string marginName)
         {
-            throw new NotImplementedException();
+            if (marginName == Name)
+            {
+                return this;
+            }
+            return null;
         }
 
         public double MarginSize

@@ -7,11 +7,30 @@
              d:DesignHeight="25" d:DesignWidth="419"
              x:Name="commandMarginControl"
              >
-    <DockPanel
+    <Grid
         DataContext="{Binding ElementName=commandMarginControl}">
 
-        <TextBox Text="{Binding Path=StatusLine}" DockPanel.Dock="Left" />
+        <Grid.RowDefinitions>
+            <RowDefinition Height="auto" />
+        </Grid.RowDefinitions>
 
-    </DockPanel>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="4*" />
+            <ColumnDefinition Width="1*" />
+        </Grid.ColumnDefinitions>
+
+        <TextBox 
+            Grid.Row="0"
+            Grid.Column="0"
+            Text="{Binding Path=StatusLine}" 
+            IsReadOnly="True" />
+
+        <TextBox
+            Grid.Row="0"
+            Grid.Column="1"
+            Text="{Binding Path=RightStatusLine}"
+            IsReadOnly="True" />
+
+    </Grid>
 
 </UserControl>

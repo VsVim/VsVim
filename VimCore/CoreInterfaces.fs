@@ -367,6 +367,9 @@ and INormalMode =
 
 and ICommandMode = 
 
+    /// buffered input for the current command
+    abstract Command : string
+
     /// Run the specified command
     abstract RunCommand : string -> unit
 

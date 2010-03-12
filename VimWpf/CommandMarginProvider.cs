@@ -14,7 +14,7 @@ namespace Vim.UI.Wpf
     [Export(typeof(IWpfTextViewMarginProvider))]
     [MarginContainer(PredefinedMarginNames.Bottom)]
     [ContentType("code")]
-    [Name("Vim Command Margin")]
+    [Name(CommandMargin.Name)]
     [TextViewRole(PredefinedTextViewRoles.Document)]
     internal sealed class CommandMarginProvider : IWpfTextViewMarginProvider
     {
