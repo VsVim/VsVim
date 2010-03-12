@@ -45,7 +45,7 @@ namespace VimCoreTest
         private void ProcessWithEnter(string input)
         {
             _mode.Process(input);
-            _mode.Process(InputUtil.KeyToKeyInput(Key.Enter));
+            _mode.Process(InputUtil.WellKnownKeyToKeyInput(WellKnownKey.ReturnKey));
         }
 
         [Test, Description("Entering command mode should update the status")]
@@ -69,7 +69,7 @@ namespace VimCoreTest
             _host.Status = "foo";
             _processor.Setup(x => x.RunCommand(MatchUtil.CreateForCharList("1"))).Verifiable();
             _mode.Process("1");
-            _mode.Process(InputUtil.KeyToKeyInput(Key.Enter));
+            _mode.Process(InputUtil.WellKnownKeyToKeyInput(WellKnownKey.EnterKey));
             _processor.Verify();
             Assert.AreEqual(String.Empty, _host.Status);
         }
@@ -105,7 +105,7 @@ namespace VimCoreTest
         public void Input3()
         {
             _mode.Process("foo");
-            _mode.Process(InputUtil.KeyToKeyInput(Key.Back));
+            _mode.Process(InputUtil.WellKnownKeyToKeyInput(WellKnownKey.BackKey));
             Assert.AreEqual("fo", _modeRaw.Command);
         }
 
@@ -113,7 +113,7 @@ namespace VimCoreTest
         public void Input4()
         {
             _mode.Process("foo");
-            _mode.Process(InputUtil.KeyToKeyInput(Key.Escape));
+            _mode.Process(InputUtil.WellKnownKeyToKeyInput(WellKnownKey.EscapeKey));
             Assert.AreEqual(string.Empty, _modeRaw.Command);
         }
 
@@ -121,8 +121,8 @@ namespace VimCoreTest
         public void Input5()
         {
             _mode.Process('c');
-            _mode.Process(InputUtil.KeyToKeyInput(Key.Back));
-            _mode.Process(InputUtil.KeyToKeyInput(Key.Back));
+            _mode.Process(InputUtil.WellKnownKeyToKeyInput(WellKnownKey.BackKey));
+            _mode.Process(InputUtil.WellKnownKeyToKeyInput(WellKnownKey.BackKey));
             Assert.AreEqual(String.Empty, _modeRaw.Command);
         }
 

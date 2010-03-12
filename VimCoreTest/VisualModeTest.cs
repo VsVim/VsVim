@@ -69,7 +69,7 @@ namespace VimCoreTest
         public void Commands1()
         {
             Create("foo");
-            Assert.IsTrue(_mode.Commands.Contains(InputUtil.KeyToKeyInput(Key.Escape)));
+            Assert.IsTrue(_mode.Commands.Contains(InputUtil.WellKnownKeyToKeyInput(WellKnownKey.EscapeKey)));
         }
 
         [Test,Description("Movement commands")]
@@ -81,11 +81,11 @@ namespace VimCoreTest
                 InputUtil.CharToKeyInput('j'),
                 InputUtil.CharToKeyInput('k'),
                 InputUtil.CharToKeyInput('l'),
-                InputUtil.KeyToKeyInput(Key.Left),
-                InputUtil.KeyToKeyInput(Key.Right),
-                InputUtil.KeyToKeyInput(Key.Up),
-                InputUtil.KeyToKeyInput(Key.Down),
-                InputUtil.KeyToKeyInput(Key.Back) };
+                InputUtil.WellKnownKeyToKeyInput(WellKnownKey.LeftKey),
+                InputUtil.WellKnownKeyToKeyInput(WellKnownKey.RightKey),
+                InputUtil.WellKnownKeyToKeyInput(WellKnownKey.UpKey),
+                InputUtil.WellKnownKeyToKeyInput(WellKnownKey.DownKey),
+                InputUtil.WellKnownKeyToKeyInput(WellKnownKey.BackKey) };
             var commands = _mode.Commands.ToList();
             foreach (var item in list)
             {
@@ -97,7 +97,7 @@ namespace VimCoreTest
         public void Process1()
         {
             Create("foo");
-            var res = _mode.Process(InputUtil.KeyToKeyInput(Key.Escape));
+            var res = _mode.Process(InputUtil.WellKnownKeyToKeyInput(WellKnownKey.EscapeKey));
             Assert.IsTrue(res.IsSwitchPreviousMode);
         }
 
@@ -106,7 +106,7 @@ namespace VimCoreTest
         {
             Create("foo");
             _mode.Process('g');
-            var res = _mode.Process(Key.Escape);
+            var res = _mode.Process(WellKnownKey.EscapeKey);
             Assert.IsTrue(res.IsSwitchPreviousMode);
         }
 
@@ -294,7 +294,7 @@ namespace VimCoreTest
                 .Setup(x => x.DeleteSelection(_map.DefaultRegister))
                 .Returns<ITextSnapshot>(null)
                 .Verifiable();
-            _mode.Process(Key.Delete);
+            _mode.Process(WellKnownKey.DeleteKey);
             _operations.Verify();
         }
 

@@ -14,7 +14,7 @@ type internal InsertMode
         _operations : Modes.ICommonOperations,
         _broker : ICompletionWindowBroker ) =
     let _commands = [
-        InputUtil.KeyToKeyInput(Key.Escape);
+        InputUtil.WellKnownKeyToKeyInput EscapeKey;
         KeyInput('d', Key.D, ModifierKeys.Control); ]
 
     /// Process the CTRL-D combination and do a shift left

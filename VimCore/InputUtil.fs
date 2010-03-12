@@ -30,24 +30,6 @@ module InputUtil =
             let modKeys = shiftMod ||| controlMod ||| altMod
             Some (virtualKey,modKeys)
 
-    /// This is the core set of characters used in Vim
-    let private CoreChars = 
-        ['a' .. 'z' ] @
-        ['A' .. 'Z' ] @
-        ['0' .. '9' ] @
-        ("!@#$%^&*()[]{}-_=+\\|'\",<>./?\t\b:;" |> List.ofSeq)
-
-    /// List of the core Vim Characters mapped into the VirtualKey Code and the corresponding ModifierKeys
-    let private MappedCoreChars = 
-        CoreChars 
-        |> Seq.ofList 
-        |> Seq.map (fun c -> c,TryCharToVirtualKeyAndModifiers c)
-        |> Seq.choose (fun (c,opt) -> 
-            match opt with 
-            | Some(virtualKey,modKeys) -> Some(c,virtualKey,modKeys) 
-            | None -> None )
-        |> List.ofSeq
-
     let TryCharToKeyInput ch =
         match TryCharToVirtualKeyAndModifiers ch with
         | None -> None
@@ -67,22 +49,6 @@ module InputUtil =
                 let c = if System.Char.IsLetter(c) then System.Char.ToLower(c) else c
                 Some(c)
     
-    let private TryKeyToKeyInputAndVirtualKey key = 
-        let virtualKey = KeyInterop.VirtualKeyFromKey(key)
-        match TryVirtualKeyCodeToChar virtualKey with
-        | None -> None
-        | Some(ch) -> (KeyInput(ch,key,ModifierKeys.None),virtualKey) |> Some
-
-    let TryKeyToKeyInput key = 
-        match TryKeyToKeyInputAndVirtualKey key with
-        | None -> None
-        | Some(ki,_) -> Some(ki)
-
-    let KeyToKeyInput key =
-        match TryKeyToKeyInput key with
-        | Some(ki) -> ki
-        | None -> KeyInput(System.Char.MinValue, key, ModifierKeys.None)
-
     let CharToKeyInput c = 
         match TryCharToKeyInput c with
         | Some ki -> ki
@@ -90,27 +56,6 @@ module InputUtil =
             // In some cases we don't have the correct Key enumeration available and 
             // have to rely on the char value to be correct
             KeyInput(c, Key.None)
-
-    let KeyAndModifierToKeyInput key modKeys = 
-        match TryKeyToKeyInputAndVirtualKey key with
-        | None -> KeyInput(System.Char.MinValue, key, modKeys)
-        | Some(ki,virtualKey) ->
-            
-            if Utils.IsFlagSet modKeys ModifierKeys.Shift then 
-
-                // The shift flag is tricky.  There is no good API available to translate a virtualKey 
-                // with an additional modifier.  Instead we define the core set of keys we care about,
-                // map them to a virtualKey + ModifierKeys tuple.  We then consult this map here to see
-                // if we can appropriately "shift" the KeyInput value
-                //
-                // This feels like a very hackish solution and I'm actively seeking a better, more thorough
-                // one
-
-                let opt =  MappedCoreChars  |> Seq.tryFind (fun (_,vk,modKeys) -> virtualKey = vk && modKeys = ModifierKeys.Shift)
-                match opt with 
-                | None -> ki
-                | Some(ch,_,_) -> KeyInput(ch,key,modKeys)
-            else KeyInput(ki.Char, ki.Key, modKeys)
 
     let VirtualKeyCodeToKeyInput virtualKey = 
         let key = KeyInterop.KeyFromVirtualKey(virtualKey)
@@ -129,6 +74,7 @@ module InputUtil =
         | BackKey ->  VirtualKeyCodeToKeyInput 0x8
         | TabKey ->  VirtualKeyCodeToKeyInput 0x9
         | ReturnKey ->  VirtualKeyCodeToKeyInput 0xD
+        | EnterKey ->  VirtualKeyCodeToKeyInput 0xD
         | EscapeKey ->  VirtualKeyCodeToKeyInput 0x1B
         | DeleteKey ->  VirtualKeyCodeToKeyInput 0x2E
         | LeftKey ->  VirtualKeyCodeToKeyInput 0x25

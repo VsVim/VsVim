@@ -58,7 +58,7 @@ namespace VimCoreTest
         public void Word1()
         {
             Initialize("foo bar");
-            var res = MotionCapture.ProcessInput(new SnapshotPoint(_snapshot, 0), InputUtil.KeyToKeyInput(Key.W), 1);
+            var res = MotionCapture.ProcessInput(new SnapshotPoint(_snapshot, 0), InputUtil.CharToKeyInput('w'), 1);
             Assert.IsTrue(res.IsComplete);
             var res2 = (MotionResult.Complete)res;
             var span = res2.Item.Item1;
@@ -73,7 +73,7 @@ namespace VimCoreTest
         public void Word2()
         {
             Initialize("foo bar");
-            var res = MotionCapture.ProcessInput(new SnapshotPoint(_snapshot, 1), InputUtil.KeyToKeyInput(Key.W), 1);
+            var res = MotionCapture.ProcessInput(new SnapshotPoint(_snapshot, 1), InputUtil.CharToKeyInput('w'), 1);
             Assert.IsTrue(res.IsComplete);
             var span = res.AsComplete().Item.Item1;
             Assert.AreEqual(3, span.Length);
@@ -129,9 +129,9 @@ namespace VimCoreTest
         public void BadInput()
         {
             Initialize("foo bar");
-            var res = MotionCapture.ProcessInput(new SnapshotPoint(_snapshot, 0), InputUtil.KeyToKeyInput(Key.Z), 0);
+            var res = MotionCapture.ProcessInput(new SnapshotPoint(_snapshot, 0), InputUtil.CharToKeyInput('z'), 0);
             Assert.IsTrue(res.IsInvalidMotion);
-            res = res.AsInvalidMotion().Item2.Invoke(InputUtil.KeyToKeyInput(Key.Escape));
+            res = res.AsInvalidMotion().Item2.Invoke(InputUtil.WellKnownKeyToKeyInput(WellKnownKey.EscapeKey));
             Assert.IsTrue(res.IsCancel);
         }
 
@@ -140,11 +140,11 @@ namespace VimCoreTest
         public void BadInput2()
         {
             Initialize("foo bar");
-            var res = MotionCapture.ProcessInput(new SnapshotPoint(_snapshot, 0), InputUtil.KeyToKeyInput(Key.Z), 0);
+            var res = MotionCapture.ProcessInput(new SnapshotPoint(_snapshot, 0), InputUtil.CharToKeyInput('z'), 0);
             Assert.IsTrue(res.IsInvalidMotion);
-            res = res.AsInvalidMotion().Item2.Invoke(InputUtil.KeyToKeyInput(Key.A));
+            res = res.AsInvalidMotion().Item2.Invoke(InputUtil.CharToKeyInput('a'));
             Assert.IsTrue(res.IsInvalidMotion);
-            res = res.AsInvalidMotion().Item2.Invoke(InputUtil.KeyToKeyInput(Key.Escape));
+            res = res.AsInvalidMotion().Item2.Invoke(InputUtil.WellKnownKeyToKeyInput(WellKnownKey.EscapeKey));
             Assert.IsTrue(res.IsCancel);
         }
 

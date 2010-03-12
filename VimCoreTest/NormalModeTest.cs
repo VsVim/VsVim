@@ -81,7 +81,7 @@ namespace VimCoreTest
         public void EnterProcessing()
         {
             CreateBuffer(s_lines);
-            var can = _mode.CanProcess(InputUtil.KeyToKeyInput(Key.Enter));
+            var can = _mode.CanProcess(InputUtil.WellKnownKeyToKeyInput(WellKnownKey.EnterKey));
             Assert.IsTrue(can);
         }
 
@@ -137,7 +137,7 @@ namespace VimCoreTest
         {
             CreateBuffer(s_lines);
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 0));
-            _mode.Process(Key.Enter);
+            _mode.Process(WellKnownKey.EnterKey);
             var line = _view.TextSnapshot.GetLineFromLineNumber(1);
             Assert.AreEqual(line.Start, _view.Caret.Position.BufferPosition);
         }
@@ -149,7 +149,7 @@ namespace VimCoreTest
             CreateBuffer(host, s_lines);
             var last = _view.TextSnapshot.Lines.Last();
             _view.Caret.MoveTo(last.Start.Add(2));
-            _mode.Process(Key.Enter);
+            _mode.Process(WellKnownKey.EnterKey);
             Assert.AreEqual(1, host.BeepCount);
             Assert.AreEqual(last.Start.Add(2), _view.Caret.Position.BufferPosition);
         }
@@ -195,7 +195,7 @@ namespace VimCoreTest
         {
             CreateBuffer(s_lines);
             _operations.Setup(x => x.MoveCaretLeft(1)).Verifiable();
-            _mode.Process(InputUtil.KeyToKeyInput(Key.Back));
+            _mode.Process(InputUtil.WellKnownKeyToKeyInput(WellKnownKey.BackKey));
             _operations.Verify();
         }
 
@@ -205,7 +205,7 @@ namespace VimCoreTest
             CreateBuffer(s_lines);
             _operations.Setup(x => x.MoveCaretLeft(2)).Verifiable();
             _mode.Process('2');
-            _mode.Process(InputUtil.KeyToKeyInput(Key.Back));
+            _mode.Process(InputUtil.WellKnownKeyToKeyInput(WellKnownKey.BackKey));
             _operations.Verify();
         }
 
@@ -232,7 +232,7 @@ namespace VimCoreTest
         {
             CreateBuffer(s_lines);
             _operations.Setup(x => x.MoveCaretLeft(1)).Verifiable();
-            _mode.Process(InputUtil.KeyToKeyInput(Key.Left));
+            _mode.Process(InputUtil.WellKnownKeyToKeyInput(WellKnownKey.LeftKey));
             _operations.Verify();
         }
 
@@ -242,7 +242,7 @@ namespace VimCoreTest
             CreateBuffer(s_lines);
             _operations.Setup(x => x.MoveCaretLeft(2)).Verifiable();
             _mode.Process('2');
-            _mode.Process(InputUtil.KeyToKeyInput(Key.Left));
+            _mode.Process(InputUtil.WellKnownKeyToKeyInput(WellKnownKey.LeftKey));
             _operations.Verify();
         }
 
@@ -251,7 +251,7 @@ namespace VimCoreTest
         {
             CreateBuffer(s_lines);
             _operations.Setup(x => x.MoveCaretRight(1)).Verifiable();
-            _mode.Process(InputUtil.KeyToKeyInput(Key.Right));
+            _mode.Process(InputUtil.WellKnownKeyToKeyInput(WellKnownKey.RightKey));
             _operations.Verify();
         }
 
@@ -261,7 +261,7 @@ namespace VimCoreTest
             CreateBuffer(s_lines);
             _operations.Setup(x => x.MoveCaretRight(2)).Verifiable();
             _mode.Process('2');
-            _mode.Process(InputUtil.KeyToKeyInput(Key.Right));
+            _mode.Process(InputUtil.WellKnownKeyToKeyInput(WellKnownKey.RightKey));
             _operations.Verify();
         }
 
@@ -270,7 +270,7 @@ namespace VimCoreTest
         {
             CreateBuffer(s_lines);
             _operations.Setup(x => x.MoveCaretUp(1)).Verifiable();
-            _mode.Process(InputUtil.KeyToKeyInput(Key.Up));
+            _mode.Process(InputUtil.WellKnownKeyToKeyInput(WellKnownKey.UpKey));
             _operations.Verify();
         }
 
@@ -280,7 +280,7 @@ namespace VimCoreTest
             CreateBuffer(s_lines);
             _operations.Setup(x => x.MoveCaretUp(2)).Verifiable();
             _mode.Process('2');
-            _mode.Process(InputUtil.KeyToKeyInput(Key.Up));
+            _mode.Process(InputUtil.WellKnownKeyToKeyInput(WellKnownKey.UpKey));
             _operations.Verify();
         }
 
@@ -289,7 +289,7 @@ namespace VimCoreTest
         {
             CreateBuffer(s_lines);
             _operations.Setup(x => x.MoveCaretDown(1)).Verifiable();
-            _mode.Process(InputUtil.KeyToKeyInput(Key.Down));
+            _mode.Process(InputUtil.WellKnownKeyToKeyInput(WellKnownKey.DownKey));
             _operations.Verify();
         }
 
@@ -299,7 +299,7 @@ namespace VimCoreTest
             CreateBuffer(s_lines);
             _operations.Setup(x => x.MoveCaretDown(2)).Verifiable();
             _mode.Process('2');
-            _mode.Process(InputUtil.KeyToKeyInput(Key.Down));
+            _mode.Process(InputUtil.WellKnownKeyToKeyInput(WellKnownKey.DownKey));
             _operations.Verify();
         }
 
@@ -335,7 +335,7 @@ namespace VimCoreTest
         {
             CreateBuffer(s_lines);
             _operations.Setup(x => x.MoveCaretRight(1)).Verifiable();
-            _mode.Process(InputUtil.KeyToKeyInput(Key.Space));
+            _mode.Process(InputUtil.CharToKeyInput(' '));
             _operations.Verify();
         }
 
@@ -467,7 +467,7 @@ namespace VimCoreTest
             _editorOperations.Setup(x => x.ScrollLineTop()).Verifiable();
             _editorOperations.Setup(x => x.MoveToStartOfLineAfterWhiteSpace(false)).Verifiable();
             _mode.Process("z");
-            _mode.Process(Key.Enter);
+            _mode.Process(WellKnownKey.EnterKey);
             _editorOperations.Verify();
         }
 
@@ -555,10 +555,10 @@ namespace VimCoreTest
         {
             CreateBuffer(s_lines);
             _mode.Process("d@");
-            var res = _mode.Process(Key.I);
+            var res = _mode.Process(InputUtil.CharToKeyInput('i'));
             Assert.IsTrue(res.IsProcessed);
-            _mode.Process(Key.Enter);
-            res = _mode.Process(Key.I);
+            _mode.Process(WellKnownKey.EnterKey);
+            res = _mode.Process(InputUtil.CharToKeyInput('i'));
             Assert.IsTrue(res.IsSwitchMode);
         }
 
@@ -569,7 +569,7 @@ namespace VimCoreTest
             CreateBuffer(host, s_lines);
             _mode.Process("dzzz");
             Assert.IsFalse(String.IsNullOrEmpty(host.Status));
-            _mode.Process(Key.Escape);
+            _mode.Process(WellKnownKey.EscapeKey);
             Assert.IsTrue(String.IsNullOrEmpty(host.Status));
         }
 
@@ -736,11 +736,11 @@ namespace VimCoreTest
         public void Edit_r_3()
         {
             CreateBuffer("foo");
-            var ki = InputUtil.KeyToKeyInput(Key.LineFeed);
+            var ki = InputUtil.WellKnownKeyToKeyInput(WellKnownKey.LineFeedKey);
             _operations.Setup(x => x.ReplaceChar(ki, 1)).Returns(true).Verifiable();
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 1));
             _mode.Process("r");
-            _mode.Process(InputUtil.KeyToKeyInput(Key.LineFeed));
+            _mode.Process(InputUtil.WellKnownKeyToKeyInput(WellKnownKey.LineFeedKey));
             _operations.Verify();
         }
 
@@ -787,7 +787,7 @@ namespace VimCoreTest
         {
             CreateBuffer("foo");
             _operations.Setup(x => x.DeleteCharacterAtCursor(1, _map.DefaultRegister)).Verifiable();
-            _mode.Process(Key.Delete);
+            _mode.Process(WellKnownKey.DeleteKey);
             _operations.Verify();
         }
 
@@ -1336,11 +1336,11 @@ namespace VimCoreTest
         public void Regression_InsertMode()
         {
             CreateBuffer(s_lines);
-            var res = _mode.Process(InputUtil.KeyToKeyInput(Key.I));
+            var res = _mode.Process('i');
             Assert.IsTrue(res.IsSwitchMode);
             Assert.AreEqual(ModeKind.Insert, res.AsSwitchMode().Item);
             _operations.Setup(x => x.MoveCaretLeft(1)).Verifiable();
-            res = _mode.Process(InputUtil.KeyToKeyInput(Key.H));
+            res = _mode.Process('h');
             Assert.IsTrue(res.IsProcessed);
             _operations.Verify();
         }
@@ -1350,9 +1350,9 @@ namespace VimCoreTest
         {
             CreateBuffer("foo");
             _operations.Setup(x => x.MoveCaretDown(1)).Verifiable();
-            var res = _mode.Process(Key.J);
+            var res = _mode.Process('j');
             Assert.IsTrue(res.IsProcessed);
-            res = _mode.Process(Key.J);
+            res = _mode.Process('j');
             Assert.IsTrue(res.IsProcessed);
             _operations.Verify();
         }
@@ -1398,7 +1398,7 @@ namespace VimCoreTest
             CreateBuffer("foo bar");
             _incrementalSearch.Setup(x => x.Begin(SearchKind.ForwardWithWrap)).Verifiable();
             _mode.Process('/');
-            var ki = InputUtil.KeyToKeyInput(Key.DbeRoman);
+            var ki = InputUtil.CharToKeyInput((char)7);
             _incrementalSearch.Setup(x => x.Process(It.IsAny<KeyInput>())).Returns(SearchResult.SearchComplete).Verifiable();
             _jumpList.Setup(x => x.Add(_view.GetCaretPoint())).Verifiable();
             _mode.Process(ki);
@@ -1412,11 +1412,11 @@ namespace VimCoreTest
             CreateBuffer("foo bar");
             _incrementalSearch.Setup(x => x.Begin(SearchKind.ForwardWithWrap)).Verifiable();
             _mode.Process('/');
-            var ki = InputUtil.KeyToKeyInput(Key.DbeRoman);
+            var ki = InputUtil.CharToKeyInput((char)7);
             _incrementalSearch.Setup(x => x.Process(It.IsAny<KeyInput>())).Returns(SearchResult.SearchComplete).Verifiable();
             _jumpList.Setup(x => x.Add(_view.GetCaretPoint())).Verifiable();
             _mode.Process(ki);
-            _mode.Process(InputUtil.KeyToKeyInput(Key.DbeAlphanumeric));
+            _mode.Process(InputUtil.CharToKeyInput((char)8));
             _incrementalSearch.Verify();
             _jumpList.Verify();
         }
@@ -1428,7 +1428,7 @@ namespace VimCoreTest
             _incrementalSearch.Setup(x => x.Begin(SearchKind.ForwardWithWrap)).Verifiable();
             _mode.Process('/');
             _incrementalSearch.Setup(x => x.Process(It.IsAny<KeyInput>())).Returns(SearchResult.SearchCanceled).Verifiable();
-            _mode.Process(InputUtil.KeyToKeyInput(Key.DbeRoman));
+            _mode.Process(InputUtil.CharToKeyInput((char)8));
             _incrementalSearch.Verify();
             _jumpList.Verify();
         }
@@ -1809,7 +1809,7 @@ namespace VimCoreTest
         {
             CreateBuffer(s_lines);
             _operations.Setup(x => x.JumpNext(1)).Verifiable();
-            _mode.Process(InputUtil.KeyToKeyInput(Key.Tab));
+            _mode.Process(InputUtil.WellKnownKeyToKeyInput(WellKnownKey.TabKey));
             _operations.Verify();
 
         }

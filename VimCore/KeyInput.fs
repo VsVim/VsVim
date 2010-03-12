@@ -8,6 +8,7 @@ type WellKnownKey =
     | NotWellKnownKey
     | BackKey
     | TabKey
+    | EnterKey
     | ReturnKey
     | EscapeKey
     | DeleteKey

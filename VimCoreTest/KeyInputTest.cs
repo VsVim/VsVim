@@ -15,14 +15,14 @@ namespace VimCoreTest
         [Test]
         public void IsDigit1()
         {
-            var input = InputUtil.KeyToKeyInput(Key.D0);
+            var input = InputUtil.CharToKeyInput('0');
             Assert.IsTrue(input.IsDigit);
         }
 
         [Test]
         public void IsDigit2()
         {
-            var input = InputUtil.KeyToKeyInput(Key.Enter);
+            var input = InputUtil.WellKnownKeyToKeyInput(WellKnownKey.EnterKey);
             Assert.IsFalse(input.IsDigit);
         }
 

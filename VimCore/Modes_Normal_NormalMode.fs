@@ -296,7 +296,7 @@ type internal NormalMode
             yield (InputUtil.CharToKeyInput('u'), (fun count _ -> _bufferData.VimHost.Undo this.TextBuffer count))
             yield (InputUtil.CharToKeyInput('D'), (fun count reg -> _operations.DeleteLinesFromCursor count reg))
             yield (KeyInput('r', Key.R, ModifierKeys.Control), (fun count _ -> _bufferData.VimHost.Redo this.TextBuffer count))
-            yield (InputUtil.KeyToKeyInput(Key.Enter), (fun _ _ -> this.MoveForEnter this.TextView _bufferData.VimHost))
+            yield (InputUtil.WellKnownKeyToKeyInput ReturnKey, (fun _ _ -> this.MoveForEnter this.TextView _bufferData.VimHost))
             yield (KeyInput('u', Key.U, ModifierKeys.Control), (fun count _ -> _operations.Scroll ScrollDirection.Up count))
             yield (KeyInput('d', Key.D, ModifierKeys.Control), (fun count _ -> _operations.Scroll ScrollDirection.Down count))
             yield (KeyInput('J', Key.J, ModifierKeys.Shift), (fun count _ -> _operations.JoinAtCaret count))

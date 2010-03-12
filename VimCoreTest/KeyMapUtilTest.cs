@@ -44,7 +44,7 @@ namespace VimCoreTest
         {
             var opt = KeyMapUtil.TryStringToKeyInput("<Left>");
             Assert.IsTrue(opt.IsSome());
-            Assert.AreEqual(InputUtil.KeyToKeyInput(Key.Left), opt.Value);
+            Assert.AreEqual(InputUtil.WellKnownKeyToKeyInput(WellKnownKey.LeftKey), opt.Value);
         }
 
         [Test]
@@ -52,7 +52,7 @@ namespace VimCoreTest
         {
             var opt = KeyMapUtil.TryStringToKeyInput("<Right>");
             Assert.IsTrue(opt.IsSome());
-            Assert.AreEqual(InputUtil.KeyToKeyInput(Key.Right), opt.Value);
+            Assert.AreEqual(InputUtil.WellKnownKeyToKeyInput(WellKnownKey.RightKey), opt.Value);
         }
 
         [Test]
@@ -97,7 +97,7 @@ namespace VimCoreTest
             Assert.IsTrue(opt.IsSome());
             var list = opt.Value.ToList();
             Assert.AreEqual(2, list.Count);
-            Assert.AreEqual(InputUtil.KeyToKeyInput(Key.Home), list[0]);
+            Assert.AreEqual(InputUtil.WellKnownKeyToKeyInput(WellKnownKey.HomeKey), list[0]);
             Assert.AreEqual('a', list[1].Char);
         }
     }

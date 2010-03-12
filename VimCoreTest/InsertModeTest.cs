@@ -51,14 +51,14 @@ namespace VimCoreTest
         [Test, Description("Must process escape")]
         public void CanProcess1()
         {
-            Assert.IsTrue(_mode.CanProcess(Key.Escape));
+            Assert.IsTrue(_mode.CanProcess(WellKnownKey.EscapeKey));
         }
 
         [Test, Description("Do not processing anything other than Escape")]
         public void CanProcess2()
         {
-            Assert.IsFalse(_mode.CanProcess(Key.Enter));
-            Assert.IsFalse(_mode.CanProcess(Key.I));
+            Assert.IsFalse(_mode.CanProcess(WellKnownKey.EnterKey));
+            Assert.IsFalse(_mode.CanProcess(InputUtil.CharToKeyInput('c')));
         }
 
         [Test, Description("Escape should exit if we are not in the middle of a completion")]
@@ -68,7 +68,7 @@ namespace VimCoreTest
                 .SetupGet(x => x.IsCompletionWindowActive)
                 .Returns(false)
                 .Verifiable();
-            var res = _mode.Process(Key.Escape);
+            var res = _mode.Process(WellKnownKey.EscapeKey);
             Assert.IsTrue(res.IsSwitchMode);
             _broker.Verify();
         }
@@ -83,7 +83,7 @@ namespace VimCoreTest
             _broker
                 .Setup(x => x.DismissCompletionWindow())
                 .Verifiable();
-            var res = _mode.Process(Key.Escape);
+            var res = _mode.Process(WellKnownKey.EscapeKey);
             Assert.IsTrue(res.IsProcessed);
         }
 
