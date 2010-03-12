@@ -10,7 +10,7 @@ namespace Vim.UI.Wpf
     public static class KeyUtil
     {
         private static ReadOnlyCollection<char> s_coreChars = null;
-        private static ReadOnlyCollection<Tuple<char, int, ModifierKeys>> s_mappedCoreChars;
+        private static ReadOnlyCollection<Tuple<char, int, KeyModifiers>> s_mappedCoreChars;
 
         private static ReadOnlyCollection<char> CoreChars
         {
@@ -24,7 +24,7 @@ namespace Vim.UI.Wpf
             }
         }
 
-        private static ReadOnlyCollection<Tuple<char, int, ModifierKeys>> MappedCoreChars
+        private static ReadOnlyCollection<Tuple<char, int, KeyModifiers>> MappedCoreChars
         {
             get
             {
@@ -41,8 +41,26 @@ namespace Vim.UI.Wpf
             var virtualKey = KeyInterop.VirtualKeyFromKey(key);
             var opt = InputUtil.TryVirtualKeyCodeToChar(virtualKey);
             return opt.HasValue()
-                ? Tuple.Create(new KeyInput(opt.Value, key),virtualKey)
+                ? Tuple.Create(new KeyInput(opt.Value),virtualKey)
                 : null;
+        }
+
+        public static KeyModifiers ConvertToKeyModifiers(ModifierKeys keys)
+        {
+            var res = KeyModifiers.None;
+            if ( 0 != (keys & ModifierKeys.Shift))
+            {
+                res = res | KeyModifiers.Shift;
+            }
+            if (0 != (keys & ModifierKeys.Alt))
+            {
+                res = res | KeyModifiers.Alt;
+            }
+            if (0 != (keys & ModifierKeys.Control))
+            {
+                res = res | KeyModifiers.Control;
+            }
+            return res;
         }
 
         public static KeyInput ConvertToKeyInput(Key key)
@@ -50,21 +68,22 @@ namespace Vim.UI.Wpf
             var tuple = TryConvertToKeyInput(key);
             return tuple != null
                 ? tuple.Item1
-                : new KeyInput(Char.MinValue, key);
+                : new KeyInput(Char.MinValue);
         }
 
-        public static KeyInput ConvertToKeyInput(Key key, ModifierKeys modKeys)
+        public static KeyInput ConvertToKeyInput(Key key, ModifierKeys modifierKeys)
         {
+            var modKeys = ConvertToKeyModifiers(modifierKeys);
             var tuple = TryConvertToKeyInput(key);
             if (tuple == null)
             {
-                return new KeyInput(Char.MinValue, key);
+                return new KeyInput(Char.MinValue, modKeys);
             }
 
-            if ((modKeys & ModifierKeys.Shift) == 0)
+            if ((modKeys & KeyModifiers.Shift) == 0)
             {
                 var temp = tuple.Item1;
-                return new KeyInput(temp.Char, key, modKeys);
+                return new KeyInput(temp.Char, modKeys);
             }
             
             // The shift flag is tricky.  There is no good API available to translate a virtualKey 
@@ -77,14 +96,14 @@ namespace Vim.UI.Wpf
 
             var ki = tuple.Item1;
             var virtualKey = tuple.Item2;
-            var found = MappedCoreChars.FirstOrDefault(x => x.Item2 == virtualKey && ModifierKeys.Shift == x.Item3);
+            var found = MappedCoreChars.FirstOrDefault(x => x.Item2 == virtualKey && KeyModifiers.Shift == x.Item3);
             if (found == null)
             {
-                return new KeyInput(ki.Char, key, modKeys);
+                return new KeyInput(ki.Char, modKeys);
             }
             else
             {
-                return new KeyInput(found.Item1, key, modKeys);
+                return new KeyInput(found.Item1, modKeys);
             }
         }
 
@@ -97,14 +116,14 @@ namespace Vim.UI.Wpf
             return new ReadOnlyCollection<char>(list);
         }
 
-        private static ReadOnlyCollection<Tuple<char, int, ModifierKeys>> CreateMappedCoreChars()
+        private static ReadOnlyCollection<Tuple<char, int, KeyModifiers>> CreateMappedCoreChars()
         {
             var list = CoreChars
                 .Select(x => Tuple.Create(x, InputUtil.TryCharToVirtualKeyAndModifiers(x)))
                 .Where(x => x.Item2.HasValue())
                 .Select(x => Tuple.Create(x.Item1, x.Item2.Value.Item1, x.Item2.Value.Item2))
                 .ToList();
-            return new ReadOnlyCollection<Tuple<char, int, ModifierKeys>>(list);
+            return new ReadOnlyCollection<Tuple<char, int, KeyModifiers>>(list);
         }
         
     //    CoreChars 

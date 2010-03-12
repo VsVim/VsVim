@@ -120,7 +120,7 @@ namespace VimCoreTest
         public void KeyInputProcessed1()
         {
             DisableKeyRemap();
-            var ki = new KeyInput('f', Key.F);
+            var ki = new KeyInput('f');
             _normalMode.Setup(x => x.Process(ki)).Returns(ProcessResult.Processed);
             var ran = false;
             _buffer.KeyInputProcessed += (s, i) => { ran = true; };

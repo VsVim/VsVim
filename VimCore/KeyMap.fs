@@ -9,11 +9,11 @@ module internal KeyMapUtil =
 
     let private ManualKeyList = 
         [
-            ("<Nul>",InputUtil.CharToKeyInput '@' |> InputUtil.SetModifiers ModifierKeys.Control);
+            ("<Nul>",InputUtil.CharToKeyInput '@' |> InputUtil.SetModifiers KeyModifiers.Control);
             ("<Bs>", InputUtil.WellKnownKeyToKeyInput BackKey);
             ("<Tab>",InputUtil.WellKnownKeyToKeyInput TabKey);
             ("<NL>", InputUtil.WellKnownKeyToKeyInput LineFeedKey);
-            ("<FF>", InputUtil.CharToKeyInput 'l' |> InputUtil.SetModifiers ModifierKeys.Control);
+            ("<FF>", InputUtil.CharToKeyInput 'l' |> InputUtil.SetModifiers KeyModifiers.Control);
             ("<CR>", InputUtil.WellKnownKeyToKeyInput ReturnKey);
             ("<Return>", InputUtil.WellKnownKeyToKeyInput ReturnKey);
             ("<Enter>", InputUtil.WellKnownKeyToKeyInput ReturnKey);
@@ -60,15 +60,15 @@ module internal KeyMapUtil =
     /// <k0> - <k9>	keypad 0 to 9			*keypad-0* *keypad-9*
     let KeyNotationList = 
         let allManual = ManualKeyList |> Seq.append FunctionKeys
-        let toMod = allManual |> Seq.append FunctionKeys |> Seq.filter (fun (_,ki) -> ki.ModifierKeys = ModifierKeys.None)
+        let toMod = allManual |> Seq.append FunctionKeys |> Seq.filter (fun (_,ki) -> ki.KeyModifiers = KeyModifiers.None)
         let doMod prefix modKeys = 
             let changePrefix (name:string) = sprintf "<%s-%s" prefix (name.Substring(1))
             toMod |> Seq.map (fun (name,ki) -> (changePrefix name),(ki |> InputUtil.SetModifiers modKeys))
-        let withShift = doMod "S" ModifierKeys.Shift
-        let withControl = doMod "C" ModifierKeys.Control
-        let withMeta = doMod "M" ModifierKeys.Alt
-        let withAlt = doMod "A" ModifierKeys.Alt
-        let lettersWithShift = ['A'..'Z'] |> Seq.map (fun c -> ((sprintf "<S-%c>" c),InputUtil.CharToKeyInput c |> InputUtil.SetModifiers ModifierKeys.Shift))
+        let withShift = doMod "S" KeyModifiers.Shift
+        let withControl = doMod "C" KeyModifiers.Control
+        let withMeta = doMod "M" KeyModifiers.Alt
+        let withAlt = doMod "A" KeyModifiers.Alt
+        let lettersWithShift = ['A'..'Z'] |> Seq.map (fun c -> ((sprintf "<S-%c>" c),InputUtil.CharToKeyInput c |> InputUtil.SetModifiers KeyModifiers.Shift))
         allManual
         |> Seq.append withShift
         |> Seq.append withControl

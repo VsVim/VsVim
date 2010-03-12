@@ -27,8 +27,8 @@ module internal MotionCapture =
     let HitInvalidMotion =
         let rec inner (ki:KeyInput) =
             match ki.Key with 
-            | Key.Escape -> Cancel
-            | Key.Enter -> Error("Invalid Motion")
+            | EscapeKey -> Cancel
+            | EnterKey -> Error("Invalid Motion")
             | _ -> InvalidMotion("Invalid Motion", inner)
         InvalidMotion("Invalid Motion",inner)
     
@@ -58,9 +58,9 @@ module internal MotionCapture =
                             | None -> start
             WordMotion start kind count
         let inner (ki:KeyInput) = 
-            match ki.Key,ki.ModifierKeys = ModifierKeys.Shift with  
-                | Key.W,false -> func WordKind.NormalWord
-                | Key.W,true -> func WordKind.BigWord
+            match ki.Char with
+                | 'w' -> func WordKind.NormalWord
+                | 'W' -> func WordKind.BigWord
                 | _ -> HitInvalidMotion
         NeedMoreInput(inner)             
 

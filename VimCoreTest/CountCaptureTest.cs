@@ -33,7 +33,7 @@ namespace VimCoreTest
 
             Assert.AreEqual(1, res.Item1);
             Assert.AreEqual(Key.A, res.Item2.Key);
-            Assert.AreEqual(ModifierKeys.Shift, res.Item2.ModifierKeys);
+            Assert.AreEqual(ModifierKeys.Shift, res.Item2.KeyModifiers);
         }
 
 

@@ -61,17 +61,17 @@ type internal IncrementalSearch
                 doSearch searchData
 
             match ki.Key with 
-            | Key.Enter -> 
+            | EnterKey -> 
                 _lastSearch <- previousSearch
                 _host.UpdateStatus System.String.Empty
                 _currentSearchSpanChanged.Trigger None
                 SearchComplete
-            | Key.Escape -> 
+            | EscapeKey -> 
                 resetView()
                 _host.UpdateStatus System.String.Empty
                 _currentSearchSpanChanged.Trigger None
                 SearchCanceled
-            | Key.Back -> 
+            | BackKey -> 
                 resetView()
                 let pattern = 
                     if pattern.Length = 1 then System.String.Empty

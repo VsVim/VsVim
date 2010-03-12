@@ -6,10 +6,10 @@ type internal DisabledMode( _data : IVimBuffer ) =
     
     member private x.HelpString = 
         let ki = _data.Settings.GlobalSettings.DisableCommand
-        if ModifierKeys.None = ki.ModifierKeys then 
+        if KeyModifiers.None = ki.KeyModifiers then 
             sprintf "Vim Disabled. Type %s to re-enable" (ki.Key.ToString())
         else
-            sprintf "Vim Disabled. Type %s+%s to re-enable" (ki.Key.ToString()) (ki.ModifierKeys.ToString())
+            sprintf "Vim Disabled. Type %s+%s to re-enable" (ki.Key.ToString()) (ki.KeyModifiers.ToString())
 
     interface IMode with 
         member x.VimBuffer = _data

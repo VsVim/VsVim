@@ -6,6 +6,7 @@ using NUnit.Framework;
 using VsVim;
 using System.Windows.Input;
 using KeyBinding = VsVim.KeyBinding;
+using Vim;
 
 namespace VsVimTest
 {
@@ -44,7 +45,7 @@ namespace VsVimTest
             var b = KeyBinding.Parse("::,");
             Assert.AreEqual(',', b.FirstKeyInput.Char);
             Assert.AreEqual(Key.OemComma, b.FirstKeyInput.Key);
-            Assert.AreEqual(ModifierKeys.None, b.FirstKeyInput.ModifierKeys);
+            Assert.AreEqual(KeyModifiers.None, b.FirstKeyInput.KeyModifiers);
         }
 
         [Test, Description("Double modifier")]
@@ -52,8 +53,8 @@ namespace VsVimTest
         {
             var b = KeyBinding.Parse("::ctrl+shift+f");
             Assert.AreEqual(Key.F, b.FirstKeyInput.Key);
-            Assert.IsTrue(0 != (ModifierKeys.Shift & b.FirstKeyInput.ModifierKeys));
-            Assert.IsTrue(0 != (ModifierKeys.Control & b.FirstKeyInput.ModifierKeys));
+            Assert.IsTrue(0 != (KeyModifiers.Shift & b.FirstKeyInput.KeyModifiers));
+            Assert.IsTrue(0 != (KeyModifiers.Control & b.FirstKeyInput.KeyModifiers));
         }
 
         [Test, Description("Don't carry shift keys for letters")]
@@ -61,7 +62,7 @@ namespace VsVimTest
         {
             var b = KeyBinding.Parse("::ctrl+D");
             Assert.AreEqual('d', b.FirstKeyInput.Char);
-            Assert.AreEqual(ModifierKeys.Control, b.FirstKeyInput.ModifierKeys);
+            Assert.AreEqual(KeyModifiers.Control, b.FirstKeyInput.KeyModifiers);
         }
 
         [Test]

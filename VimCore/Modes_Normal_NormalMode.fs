@@ -82,8 +82,8 @@ type internal NormalMode
     // Respond to the d command.  Need the finish motion
     member this.WaitDelete =
         let inner (ki:KeyInput) count reg =
-            match ki.Key with 
-                | Key.D -> 
+            match ki.Char with 
+                | 'd' -> 
                     let point = ViewUtil.GetCaretPoint _bufferData.TextView
                     let point = point.GetContainingLine().Start
                     let span = TssUtil.GetLineRangeSpanIncludingLineBreak point count
@@ -99,8 +99,8 @@ type internal NormalMode
     // Respond to the y command.  Need to wait for a complete motion
     member this.WaitYank =
         let inner (ki:KeyInput) count reg =
-            match ki.Key with 
-                | Key.Y -> 
+            match ki.Char with 
+                | 'y' -> 
                     let point = ViewUtil.GetCaretPoint _bufferData.TextView
                     let point = point.GetContainingLine().Start
                     let span = TssUtil.GetLineRangeSpanIncludingLineBreak point count
@@ -116,8 +116,8 @@ type internal NormalMode
     // Respond to the c command.  Need the finish motion
     member this.WaitChange =
         let inner (ki:KeyInput) count reg =
-            match ki.Key with 
-                | Key.C -> 
+            match ki.Char with 
+                | 'c' -> 
                     let point = ViewUtil.GetCaretPoint _bufferData.TextView
                     let span = TssUtil.GetLineRangeSpanIncludingLineBreak point count
                     let span = SnapshotSpan(point.GetContainingLine().Start,span.End)
@@ -295,16 +295,16 @@ type internal NormalMode
             yield (InputUtil.CharToKeyInput('#'), (fun count _ -> _operations.MoveToPreviousOccuranceOfWordAtCursor true count))
             yield (InputUtil.CharToKeyInput('u'), (fun count _ -> _bufferData.VimHost.Undo this.TextBuffer count))
             yield (InputUtil.CharToKeyInput('D'), (fun count reg -> _operations.DeleteLinesFromCursor count reg))
-            yield (KeyInput('r', Key.R, ModifierKeys.Control), (fun count _ -> _bufferData.VimHost.Redo this.TextBuffer count))
+            yield (KeyInput('r', KeyModifiers.Control), (fun count _ -> _bufferData.VimHost.Redo this.TextBuffer count))
             yield (InputUtil.WellKnownKeyToKeyInput ReturnKey, (fun _ _ -> this.MoveForEnter this.TextView _bufferData.VimHost))
-            yield (KeyInput('u', Key.U, ModifierKeys.Control), (fun count _ -> _operations.Scroll ScrollDirection.Up count))
-            yield (KeyInput('d', Key.D, ModifierKeys.Control), (fun count _ -> _operations.Scroll ScrollDirection.Down count))
-            yield (KeyInput('J', Key.J, ModifierKeys.Shift), (fun count _ -> _operations.JoinAtCaret count))
-            yield (InputUtil.CharToKeyInput(']') |> InputUtil.SetModifiers(ModifierKeys.Control), (fun _ _ -> _operations.GoToDefinitionWrapper()))
+            yield (KeyInput('u', KeyModifiers.Control), (fun count _ -> _operations.Scroll ScrollDirection.Up count))
+            yield (KeyInput('d', KeyModifiers.Control), (fun count _ -> _operations.Scroll ScrollDirection.Down count))
+            yield (InputUtil.CharToKeyInput('J'), (fun count _ -> _operations.JoinAtCaret count))
+            yield (KeyInput(']', KeyModifiers.Control), (fun _ _ -> _operations.GoToDefinitionWrapper()))
             yield (InputUtil.CharToKeyInput('Y'), (fun count reg -> _operations.YankLines count reg))
             yield (InputUtil.WellKnownKeyToKeyInput TabKey, (fun count _ -> _operations.JumpNext count))
-            yield (KeyInput('i', Key.I, ModifierKeys.Control), (fun count _ -> _operations.JumpNext count))
-            yield (KeyInput('o', Key.O, ModifierKeys.Control), (fun count _ -> _operations.JumpPrevious count))
+            yield (KeyInput('i', KeyModifiers.Control), (fun count _ -> _operations.JumpNext count))
+            yield (KeyInput('o', KeyModifiers.Control), (fun count _ -> _operations.JumpPrevious count))
             yield (InputUtil.CharToKeyInput('%'), (fun _ _ -> _operations.GoToMatch() |> ignore))
         }
 
@@ -317,7 +317,7 @@ type internal NormalMode
             yield (InputUtil.CharToKeyInput('O'), ModeKind.Insert, (fun _ _ -> _operations.InsertLineAbove() |> ignore))
             yield (InputUtil.CharToKeyInput('v'), ModeKind.VisualCharacter, doNothing)
             yield (InputUtil.CharToKeyInput('V'), ModeKind.VisualLine, doNothing)
-            yield (KeyInput('q', Key.Q, ModifierKeys.Control), ModeKind.VisualBlock, doNothing)
+            yield (KeyInput('q', KeyModifiers.Control), ModeKind.VisualBlock, doNothing)
             yield (InputUtil.CharToKeyInput('s'), ModeKind.Insert, (fun count reg -> _operations.DeleteCharacterAtCursor count reg))
             yield (InputUtil.CharToKeyInput('C'), ModeKind.Insert, (fun count reg -> _operations.DeleteLinesFromCursor count reg))
             yield (InputUtil.CharToKeyInput('S'), ModeKind.Insert, (fun count reg -> _operations.DeleteLines count reg))

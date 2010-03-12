@@ -7,6 +7,7 @@ using System.Text.RegularExpressions;
 using Vim;
 using System.Diagnostics;
 using System.Windows.Input;
+using Vim.UI.Wpf;
 
 namespace VsVim
 {
@@ -49,30 +50,29 @@ namespace VsVim
                     builder.Append(',');
                 }
                 isfirst = false;
-                builder.AppendFormat("{0}+{1}", input.Key, input.ModifierKeys);
+                builder.AppendFormat("{0}+{1}", input.Key, input.KeyModifiers);
             }
             return builder.ToString();
         }
 
         #region Parsing Methods
 
-
-        private static Dictionary<string, KeyInput> s_vsMap;
+        private static Dictionary<string, WellKnownKey> s_vsMap;
 
         private static void BuildVsMap()
         {
-            var map = new Dictionary<string, KeyInput>(StringComparer.OrdinalIgnoreCase);
-            map.Add("Down Arrow", new KeyInput(char.MinValue, Key.Down));
-            map.Add("Up Arrow", new KeyInput(Char.MinValue, Key.Up));
-            map.Add("Left Arrow", new KeyInput(Char.MinValue, Key.Left));
-            map.Add("Right Arrow", new KeyInput(Char.MinValue, Key.Right));
-            map.Add("bkspce", new KeyInput(Char.MinValue, Key.Back));
-            map.Add("PgDn", new KeyInput(Char.MinValue, Key.PageDown));
-            map.Add("PgUp", new KeyInput(Char.MinValue, Key.PageUp));
-            map.Add("Ins", new KeyInput(Char.MinValue, Key.Insert));
-            map.Add("Del", new KeyInput(Char.MinValue, Key.Delete));
-            map.Add("Esc", new KeyInput(char.MinValue, Key.Escape));
-            map.Add("Break", new KeyInput(Char.MinValue, Key.Pause));
+            var map = new Dictionary<string, WellKnownKey>(StringComparer.OrdinalIgnoreCase);
+            map.Add("Down Arrow", WellKnownKey.DownKey);
+            map.Add("Up Arrow", WellKnownKey.UpKey);
+            map.Add("Left Arrow", WellKnownKey.LeftKey);
+            map.Add("Right Arrow", WellKnownKey.RightKey);
+            map.Add("bkspce", WellKnownKey.BackKey);
+            map.Add("PgDn", WellKnownKey.PageDownKey);
+            map.Add("PgUp", WellKnownKey.PageUpKey);
+            map.Add("Ins", WellKnownKey.InsertKey);
+            map.Add("Del", WellKnownKey.DeleteKey);
+            map.Add("Esc", WellKnownKey.EscapeKey);
+            map.Add("Break", WellKnownKey.BreakKey);
             s_vsMap = map;
         }
 
@@ -84,24 +84,24 @@ namespace VsVim
             }
         }
 
-        private static bool TryConvertToModifierKeys(string mod, out ModifierKeys modKeys )
+        private static bool TryConvertToModifierKeys(string mod, out KeyModifiers modKeys )
         {
             var comp = StringComparer.OrdinalIgnoreCase;
             if ( comp.Equals(mod, "shift+"))
             {
-                modKeys = ModifierKeys.Shift;
+                modKeys = KeyModifiers.Shift;
             }
             else if (comp.Equals(mod, "ctrl+"))
             {
-                modKeys = ModifierKeys.Control;
+                modKeys = KeyModifiers.Control;
             }
             else if ( comp.Equals(mod, "alt+"))
             {
-                modKeys = ModifierKeys.Alt;
+                modKeys = KeyModifiers.Alt;
             }
             else 
             {
-                modKeys = ModifierKeys.None;
+                modKeys = KeyModifiers.None;
                 return false;
             }
 
@@ -118,12 +118,12 @@ namespace VsVim
                     // Visual Studio doesn't differentiate between upper and lower case
                     // alpha characters.  Use all lower case for simplicity elsewhere
                     var v = opt.Value;
-                    if (Char.IsLetter(v.Char) && 0 != (ModifierKeys.Shift & v.ModifierKeys))
+                    if (Char.IsLetter(v.Char) && 0 != (KeyModifiers.Shift & v.KeyModifiers))
                     {
                         return new KeyInput(
                             Char.ToLower(v.Char),
                             v.Key,
-                            v.ModifierKeys & ~ModifierKeys.Shift);
+                            v.KeyModifiers & ~KeyModifiers.Shift);
                     }
 
                     return v;
@@ -138,8 +138,8 @@ namespace VsVim
 
             try
             {
-                var obj = Enum.Parse(typeof(Key), keystroke, ignoreCase: true);
-                return new KeyInput(Char.MinValue, (Key)obj, ModifierKeys.None);
+                var key = (Key)Enum.Parse(typeof(Key), keystroke, ignoreCase: true);
+                return KeyUtil.ConvertToKeyInput(key);
             }
             catch (Exception)
             {
@@ -155,7 +155,15 @@ namespace VsVim
         private static bool TryConvertVsSpecificKey(string keystroke, out KeyInput ki)
         {
             EnsureVsMap();
-            return s_vsMap.TryGetValue(keystroke, out ki);
+            WellKnownKey wellKnownKey;
+            if (!s_vsMap.TryGetValue(keystroke, out wellKnownKey))
+            {
+                ki = null;
+                return false;
+            }
+
+            ki = InputUtil.WellKnownKeyToKeyInput(wellKnownKey);
+            return true;
         }
 
         private static KeyInput ParseOne(string entry)
@@ -168,12 +176,12 @@ namespace VsVim
 
             KeyInput ki = null;
             var match = Regex.Match(entry, @"^([\w ]+\+)+(.+)$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
-            var mod = ModifierKeys.None;
+            var mod = KeyModifiers.None;
             if (match.Success)
             {
                 foreach (var cap in match.Groups[1].Captures.Cast<Capture>())
                 {
-                    var modKeys = ModifierKeys.None;
+                    var modKeys = KeyModifiers.None;
                     if (!TryConvertToModifierKeys(cap.Value, out modKeys))
                     {
                         return null;
@@ -192,9 +200,9 @@ namespace VsVim
                 return null;
             }
 
-            if (mod != ModifierKeys.None )
+            if (mod != KeyModifiers.None )
             {
-                ki = new KeyInput(ki.Char, ki.Key, ki.ModifierKeys | mod);
+                ki = new KeyInput(ki.Char, ki.Key, ki.KeyModifiers);
             }
 
             return ki;

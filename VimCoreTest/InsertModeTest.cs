@@ -95,7 +95,7 @@ namespace VimCoreTest
                 .Setup(x => x.ShiftLeft(_view.TextSnapshot.GetLineFromLineNumber(0).Extent, 4))
                 .Returns<ITextSnapshot>(null)
                 .Verifiable(); ;
-            var res = _mode.Process(new KeyInput(Char.MinValue, Key.D, ModifierKeys.Control));
+            var res = _mode.Process(new KeyInput('d', KeyModifiers.Control));
             Assert.IsTrue(res.IsProcessed);
             _operations.Verify();
         }

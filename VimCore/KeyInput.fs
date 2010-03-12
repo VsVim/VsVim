@@ -23,6 +23,7 @@ type WellKnownKey =
     | PageDownKey
     | InsertKey
     | HomeKey
+    | BreakKey
     | F1Key
     | F2Key
     | F3Key
@@ -36,34 +37,43 @@ type WellKnownKey =
     | F11Key
     | F12Key
 
+[<System.Flags>]
 type KeyModifiers = 
-    | Shift = 0x1
-    | Alt = 0x2
-    | Control = 0x4
+    | None = 0x0
+    | Alt = 0x1
+    | Control = 0x2
+    | Shift = 0x4
 
-type KeyInput(literal:char,key:Key,modKey:ModifierKeys) =
-    new (c,k) = KeyInput(c,k, ModifierKeys.None)
+type KeyInput
+    (
+        _literal:char,
+        _key:WellKnownKey,
+        _modKey:KeyModifiers) =
 
-    member x.Char = literal
-    member x.Key = key
-    member x.ModifierKeys = modKey
-    member x.HasShiftModifier = modKey = ModifierKeys.Shift
+    new (c) = KeyInput(c,WellKnownKey.NotWellKnownKey,KeyModifiers.None)
+    new (c,modKey) = KeyInput(c,WellKnownKey.NotWellKnownKey,modKey)
+
+    member x.Char = _literal
+    member x.Key = _key
+    member x.KeyModifiers = _modKey
+    member x.HasShiftModifier = _modKey = KeyModifiers.Shift
     member x.IsDigit = System.Char.IsDigit(x.Char)
 
     /// Determine if this a new line key.  Meant to match the Vim definition of <CR>
     member x.IsNewLine = 
-        match key with
-            | Key.Enter -> true
-            | Key.LineFeed -> true
+        match _key with
+            | WellKnownKey.EnterKey -> true
+            | WellKnownKey.ReturnKey -> true
+            | WellKnownKey.LineFeedKey -> true
             | _ -> false
 
     /// Is this an arrow key?
     member x.IsArrowKey = 
-        match key with
-        | Key.Left -> true
-        | Key.Right -> true
-        | Key.Up -> true
-        | Key.Down -> true
+        match _key with
+        | LeftKey -> true
+        | RightKey -> true
+        | UpKey -> true
+        | DownKey -> true
         | _ -> false
 
     member private x.CompareTo (other:KeyInput) =
@@ -75,16 +85,16 @@ type KeyInput(literal:char,key:Key,modKey:ModifierKeys) =
             if comp <> 0 then 
                 comp
             else
-                compare x.ModifierKeys other.ModifierKeys
+                compare x.KeyModifiers other.KeyModifiers
                     
-    override x.GetHashCode() = int32 literal
+    override x.GetHashCode() = int32 _literal
     override x.Equals(obj) =
         match obj with
         | :? KeyInput as other ->
             0 = x.CompareTo other
         | _ -> false
 
-    override x.ToString() = System.String.Format("{0}:{1}:{2}", x.Char, x.Key, x.ModifierKeys);
+    override x.ToString() = System.String.Format("{0}:{1}:{2}", x.Char, x.Key, x.KeyModifiers);
    
     interface System.IComparable with
         member x.CompareTo yObj =

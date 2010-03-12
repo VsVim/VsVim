@@ -37,7 +37,7 @@ namespace VsVimTest
         public void FindConflictingCommands1()
         {
             var commands = Create("::h");
-            var inputs = new KeyInput[] { new KeyInput('h', Key.H) };
+            var inputs = new KeyInput[] { new KeyInput('h') };
             var list = KeyBindingService.FindConflictingCommands(commands, new HashSet<KeyInput>(inputs));
             Assert.AreEqual(1, list.Count);
         }
@@ -46,7 +46,7 @@ namespace VsVimTest
         public void FindConflictingCommands2()
         {
             var commands = Create("::h");
-            var inputs = new KeyInput[] { new KeyInput('z', Key.Z) };
+            var inputs = new KeyInput[] { new KeyInput('z') };
             var list = KeyBindingService.FindConflictingCommands(commands, new HashSet<KeyInput>(inputs));
             Assert.AreEqual(0, list.Count);
         }
@@ -55,7 +55,7 @@ namespace VsVimTest
         public void FindConflictingCommands3()
         {
             var commands = Create("::z, h");
-            var inputs = new KeyInput[] { new KeyInput('z', Key.Z) };
+            var inputs = new KeyInput[] { new KeyInput('z') };
             var list = KeyBindingService.FindConflictingCommands(commands, new HashSet<KeyInput>(inputs));
             Assert.AreEqual(1, list.Count);
         }
@@ -64,7 +64,7 @@ namespace VsVimTest
         public void FindConflictingCommands4()
         {
             var commands = Create("::h, z");
-            var inputs = new KeyInput[] { new KeyInput('z', Key.Z) };
+            var inputs = new KeyInput[] { new KeyInput('z') };
             var list = KeyBindingService.FindConflictingCommands(commands, new HashSet<KeyInput>(inputs));
             Assert.AreEqual(0, list.Count);
         }
@@ -73,7 +73,7 @@ namespace VsVimTest
         public void FindConflictingCommands5()
         {
             var commands = Create("::a","::z, h");
-            var inputs = new KeyInput[] { new KeyInput('z', Key.Z) };
+            var inputs = new KeyInput[] { new KeyInput('z') };
             var list = KeyBindingService.FindConflictingCommands(commands, new HashSet<KeyInput>(inputs));
             Assert.AreEqual(1, list.Count);
         }
@@ -82,7 +82,7 @@ namespace VsVimTest
         public void FindConflictingCommands6()
         {
             var commands = Create("Global::a", "Text Editor::z");
-            var inputs = new KeyInput[] { new KeyInput('z', Key.Z), new KeyInput('a', Key.A) };
+            var inputs = new KeyInput[] { new KeyInput('z'), new KeyInput('a') };
             var list = KeyBindingService.FindConflictingCommands(commands, new HashSet<KeyInput>(inputs));
             Assert.AreEqual(2, list.Count);
         }
@@ -91,7 +91,7 @@ namespace VsVimTest
         public void FindConflictingCommands7()
         {
             var commands = Create("balgh::a", "aoeu::z");
-            var inputs = new KeyInput[] { new KeyInput('z', Key.Z), new KeyInput('a', Key.A) };
+            var inputs = new KeyInput[] { new KeyInput('z'), new KeyInput('a') };
             var list = KeyBindingService.FindConflictingCommands(commands, new HashSet<KeyInput>(inputs));
             Assert.AreEqual(0, list.Count);
         }

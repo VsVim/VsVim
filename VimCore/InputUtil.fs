@@ -24,18 +24,16 @@ module InputUtil =
 
         if virtualKey = -1 && state = -1 then None
         else
-            let shiftMod = if 0 <> (state &&& 0x1) then ModifierKeys.Shift else ModifierKeys.None
-            let controlMod = if 0 <> (state &&& 0x2) then ModifierKeys.Control else ModifierKeys.None
-            let altMod = if 0 <> (state &&& 0x4) then ModifierKeys.Alt else ModifierKeys.None
+            let shiftMod = if 0 <> (state &&& 0x1) then KeyModifiers.Shift else KeyModifiers.None
+            let controlMod = if 0 <> (state &&& 0x2) then KeyModifiers.Control else KeyModifiers.None
+            let altMod = if 0 <> (state &&& 0x4) then KeyModifiers.Alt else KeyModifiers.None
             let modKeys = shiftMod ||| controlMod ||| altMod
             Some (virtualKey,modKeys)
 
-    let TryCharToKeyInput ch =
+    let TryCharToKeyInput ch = 
         match TryCharToVirtualKeyAndModifiers ch with
         | None -> None
-        | Some(virtualKey,modKeys) ->
-            let key = KeyInterop.KeyFromVirtualKey(virtualKey)
-            KeyInput(ch, key, modKeys) |> Some
+        | Some(_,modKeys) -> KeyInput(ch,modKeys) |> Some
 
     let TryVirtualKeyCodeToChar virtualKey = 
         if 0 = virtualKey then None
@@ -52,18 +50,14 @@ module InputUtil =
     let CharToKeyInput c = 
         match TryCharToKeyInput c with
         | Some ki -> ki
-        | None ->
-            // In some cases we don't have the correct Key enumeration available and 
-            // have to rely on the char value to be correct
-            KeyInput(c, Key.None)
+        | None -> KeyInput(c, KeyModifiers.None)
 
     let VirtualKeyCodeToKeyInput virtualKey = 
-        let key = KeyInterop.KeyFromVirtualKey(virtualKey)
         let ch = 
             match TryVirtualKeyCodeToChar virtualKey with
             | None -> System.Char.MinValue
             | Some(ch) -> ch
-        KeyInput(ch,key)
+        KeyInput(ch)
 
     ///
     /// All constant values derived from the list at the following 
@@ -88,6 +82,7 @@ module InputUtil =
         | EndKey ->  VirtualKeyCodeToKeyInput 0x23
         | PageUpKey ->  VirtualKeyCodeToKeyInput 0x21
         | PageDownKey ->  VirtualKeyCodeToKeyInput 0x22
+        | BreakKey -> VirtualKeyCodeToKeyInput 0x03
         | NotWellKnownKey -> CharToKeyInput System.Char.MinValue
         | F1Key -> VirtualKeyCodeToKeyInput 0x70
         | F2Key -> VirtualKeyCodeToKeyInput 0x71

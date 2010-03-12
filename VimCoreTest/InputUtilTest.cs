@@ -27,7 +27,7 @@ namespace VimCoreTest
             var upperCase = Enumerable.Range(0, 26).Select(x => (char)(x + startUpper));
             var all = lowerCase.Concat(upperCase);
             Assert.IsTrue(all.All(x => InputUtil.CharToKeyInput(x).Char == x));
-            Assert.IsTrue(upperCase.All(x => InputUtil.CharToKeyInput(x).ModifierKeys == ModifierKeys.Shift));
+            Assert.IsTrue(upperCase.All(x => InputUtil.CharToKeyInput(x).KeyModifiers == KeyModifiers.Shift));
         }
 
         [Test]
@@ -36,7 +36,7 @@ namespace VimCoreTest
             var ki = InputUtil.CharToKeyInput('_');
             Assert.AreEqual('_', ki.Char);
             Assert.AreEqual(Key.OemMinus, ki.Key);
-            Assert.AreEqual(ModifierKeys.Shift, ki.ModifierKeys);
+            Assert.AreEqual(KeyModifiers.Shift, ki.KeyModifiers);
         }
 
         [Test]
@@ -45,7 +45,7 @@ namespace VimCoreTest
             var ki = InputUtil.CharToKeyInput('-');
             Assert.AreEqual('-', ki.Char);
             Assert.AreEqual(Key.OemMinus, ki.Key);
-            Assert.AreEqual(ModifierKeys.None, ki.ModifierKeys);
+            Assert.AreEqual(KeyModifiers.None, ki.KeyModifiers);
         }
 
         [Test]
@@ -54,7 +54,14 @@ namespace VimCoreTest
             var ki = InputUtil.CharToKeyInput('%');
             Assert.AreEqual('%', ki.Char);
             Assert.AreEqual(Key.D5, ki.Key);
-            Assert.AreEqual(ModifierKeys.Shift, ki.ModifierKeys);
+            Assert.AreEqual(KeyModifiers.Shift, ki.KeyModifiers);
+        }
+
+        [Test, Description("In the case of a bad key it should return the default key")]
+        public void WellKnownKeyToKeyInput1()
+        {
+            var key = InputUtil.WellKnownKeyToKeyInput(WellKnownKey.NotWellKnownKey);
+            Assert.IsNotNull(key);
         }
     }
 }
