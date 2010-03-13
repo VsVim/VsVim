@@ -60,7 +60,6 @@
     <Compile Include="ISearchReplace.fs" />
     <Compile Include="RegexSearchReplace.fs" />
     <Compile Include="Register.fs" />
-    <Compile Include="IRegisterMap.fs" />
     <Compile Include="CoreInterfaces.fs" />
     <Compile Include="MefInterfaces.fs" />
     <Compile Include="RegexUtil.fs" />
@@ -77,7 +76,6 @@
     <Compile Include="Modes_Normal_Interfaces.fs" />
     <Compile Include="Modes_Normal_DefaultOperations.fs" />
     <Compile Include="Modes_Normal_Data.fs" />
-    <Compile Include="Modes_Normal_IIncrementalSearch.fs" />
     <Compile Include="Modes_Normal_IncrementalSearch.fs" />
     <Compile Include="Modes_Normal_NormalMode.fsi" />
     <Compile Include="Modes_Normal_NormalMode.fs" />

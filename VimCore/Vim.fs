@@ -54,7 +54,7 @@ type internal VimBufferFactory
 
         // Normal mode values
         let normalSearchReplace = RegexSearchReplace() :> ISearchReplace
-        let normalIncrementalSearch = Vim.Modes.Normal.IncrementalSearch(_host, view, localSettings, normalSearchReplace) :> Modes.Normal.IIncrementalSearch
+        let normalIncrementalSearch = Vim.Modes.Normal.IncrementalSearch(_host, view, localSettings, normalSearchReplace) :> IIncrementalSearch
         let modeList = 
             [
                 ((Modes.Normal.NormalMode(buffer, normalOpts, normalIncrementalSearch)) :> IMode);
