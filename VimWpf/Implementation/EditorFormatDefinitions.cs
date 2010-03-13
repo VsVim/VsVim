@@ -9,8 +9,21 @@ using System.Windows.Media;
 
 namespace Vim.UI.Wpf.Implementation
 {
+    internal static class EditorFormatDefinitionNames
+    {
+        /// <summary>
+        /// When updating this value make sure you also change the Vim.Core tagger
+        /// </summary>
+        internal const string IncrementalSearch = "vsvim_incrementalsearch";
+
+        /// <summary>
+        /// Color of the block caret
+        /// </summary>
+        internal const string BlockCaret = "vsvim_blockcaret";
+    }
+
     [Export(typeof(EditorFormatDefinition))]
-    [Name("vsvim_incrementalsearch")]
+    [Name(EditorFormatDefinitionNames.IncrementalSearch)]
     [UserVisible(true)]
     internal sealed class IncrementalSearchMarkerDefinition : MarkerFormatDefinition
     {
@@ -20,4 +33,19 @@ namespace Vim.UI.Wpf.Implementation
             this.Fill = new SolidColorBrush(Colors.Blue);
         }
     }
+
+
+    [Export(typeof(EditorFormatDefinition))]
+    [Name(EditorFormatDefinitionNames.BlockCaret)]
+    [UserVisible(true)]
+    internal sealed class BlockCaretMarkerDefinition : EditorFormatDefinition
+    {
+        internal BlockCaretMarkerDefinition()
+        {
+            this.DisplayName = "VsVim Block Caret";
+            this.ForegroundColor = Colors.Black;
+        }
+    }
+
+
 }

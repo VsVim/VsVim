@@ -79,7 +79,7 @@ namespace Vim.UI.Wpf.Implementation
                 if (_caretData.HasValue)
                 {
                     var data = _caretData.Value;
-                    return data.Color != GetRealCaretBrushColor() || data.Point != _view.Caret.Position.BufferPosition;
+                    return data.Color != TryCalculateCaretColor() || data.Point != _view.Caret.Position.BufferPosition;
                 }
                 else
                 {
@@ -147,9 +147,9 @@ namespace Vim.UI.Wpf.Implementation
         /// <summary>
         /// Attempt to copy the real caret color
         /// </summary>
-        private Color? GetRealCaretBrushColor()
+        private Color? TryCalculateCaretColor()
         {
-            var properties = _formatMap.GetProperties("Caret");
+            var properties = _formatMap.GetProperties(EditorFormatDefinitionNames.BlockCaret);
             var key = "ForegroundColor";
             if (properties.Contains(key))
             {
@@ -193,7 +193,7 @@ namespace Vim.UI.Wpf.Implementation
 
         private void CreateCaretData()
         {
-            var color = GetRealCaretBrushColor();
+            var color = TryCalculateCaretColor();
             var brush = new SolidColorBrush(color ?? Colors.Black);
             brush.Freeze();
 
