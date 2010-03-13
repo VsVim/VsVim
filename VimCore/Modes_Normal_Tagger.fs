@@ -28,7 +28,7 @@ type internal Tagger( _search : IIncrementalSearch ) as this=
         match _searchSpan with
         | None -> Seq.empty
         | Some(span) ->
-            let tag = TextMarkerTag("blue")
+            let tag = TextMarkerTag("vsvim_incrementalsearch")
             let tagSpan = TagSpan(span, tag) :> ITagSpan<TextMarkerTag>
             Seq.singleton tagSpan
 
