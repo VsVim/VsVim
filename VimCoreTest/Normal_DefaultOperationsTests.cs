@@ -25,6 +25,7 @@ namespace VimCoreTest
         private Mock<IJumpList> _jumpList;
         private Mock<IVimGlobalSettings> _globalSettings;
         private Mock<IVimLocalSettings> _settings;
+        private Mock<IIncrementalSearch> _search;
 
         private void Create(params string[] lines)
         {
@@ -55,7 +56,8 @@ namespace VimCoreTest
             _globalSettings = MockObjectFactory.CreateGlobalSettings(ignoreCase: true);
             _settings = MockObjectFactory.CreateLocalSettings(_globalSettings.Object);
             _jumpList = new Mock<IJumpList>(MockBehavior.Strict);
-            _operationsRaw = new DefaultOperations(_view, editorOpts, _host.Object, _settings.Object, nav, searchService, _jumpList.Object);
+            _search = new Mock<IIncrementalSearch>(MockBehavior.Strict);
+            _operationsRaw = new DefaultOperations(_view, editorOpts, _host.Object, _settings.Object, nav, searchService, _jumpList.Object, _search.Object);
             _operations = _operationsRaw;
         }
 
@@ -737,5 +739,36 @@ namespace VimCoreTest
             _host.Verify();
         }
 
+        [Test]
+        public void FindNextMatch1()
+        {
+            Create("foo bar");
+            _search.SetupGet(x => x.LastSearch).Returns(new SearchData(String.Empty, SearchKind.ForwardWithWrap, FindOptions.None));
+            _host.Setup(x => x.UpdateStatus(Resources.NormalMode_NoPreviousSearch)).Verifiable();
+            _operations.FindNextMatch(1);
+            _host.Verify();
+        }
+
+        [Test]
+        public void FindNextMatch2()
+        {
+            Create("foo bar");
+            _search.SetupGet(x => x.LastSearch).Returns(new SearchData("foo", SearchKind.ForwardWithWrap, FindOptions.None)).Verifiable();
+            _search.Setup(x => x.FindNextMatch(2)).Returns(false).Verifiable();
+            _host.Setup(x => x.UpdateStatus(Resources.NormalMode_PatternNotFound("foo"))).Verifiable();
+            _operations.FindNextMatch(2);
+            _host.Verify();
+            _search.Verify();
+        }
+
+        [Test]
+        public void FindNextMatch3()
+        {
+            Create("foo bar");
+            _search.SetupGet(x => x.LastSearch).Returns(new SearchData("foo", SearchKind.ForwardWithWrap, FindOptions.None)).Verifiable();
+            _search.Setup(x => x.FindNextMatch(2)).Returns(true).Verifiable();
+            _operations.FindNextMatch(2);
+            _search.Verify();
+        }
     }
 }

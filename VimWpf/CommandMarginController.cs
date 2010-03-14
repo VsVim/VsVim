@@ -53,9 +53,26 @@ namespace Vim.UI.Wpf
 
         private void OnKeyInputProcessed(object sender, KeyInput input)
         {
-            if (ModeKind.Command == _buffer.ModeKind)
+            switch ( _buffer.ModeKind )
             {
-                _margin.StatusLine = ":" + _buffer.CommandMode.Command;
+                case ModeKind.Command:
+                    _margin.StatusLine = ":" + _buffer.CommandMode.Command;
+                    break;
+                case ModeKind.Normal:
+                    {
+                        var mode = _buffer.NormalMode;
+                        var search = mode.IncrementalSearch;
+                        if (search.InSearch && search.CurrentSearch.HasValue())
+                        {
+                            var data = search.CurrentSearch.Value;
+                            _margin.StatusLine = "/" + data.Pattern;
+                        }
+                        else
+                        {
+                            _margin.StatusLine = String.Empty;
+                        }
+                    }
+                    break;
             }
         }
 

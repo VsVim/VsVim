@@ -57,8 +57,6 @@
     <Compile Include="MotionKind.fs" />
     <Compile Include="MotionCapture.fsi" />
     <Compile Include="MotionCapture.fs" />
-    <Compile Include="ISearchReplace.fs" />
-    <Compile Include="RegexSearchReplace.fs" />
     <Compile Include="Register.fs" />
     <Compile Include="CoreInterfaces.fs" />
     <Compile Include="MefInterfaces.fs" />

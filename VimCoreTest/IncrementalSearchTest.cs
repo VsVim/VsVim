@@ -12,14 +12,15 @@ using System.Windows.Input;
 using Microsoft.VisualStudio.Text;
 using Microsoft.FSharp.Core;
 using Microsoft.FSharp.Control;
+using Microsoft.VisualStudio.Text.Operations;
 
 namespace VimCoreTest
 {
     [TestFixture]
     public class IncrementalSearchTest
     {
-        private FakeVimHost _host;
-        private Mock<ISearchReplace> _searchReplace;
+        private Mock<ITextSearchService> _textSearch;
+        private Mock<ITextStructureNavigator> _nav;
         private Mock<IVimGlobalSettings> _globalSettings;
         private Mock<IVimLocalSettings> _settings;
         private ITextView _textView;
@@ -29,15 +30,15 @@ namespace VimCoreTest
         private void Create(params string[] lines)
         {
             _textView = EditorUtil.CreateView(lines);
-            _host = new FakeVimHost();
-            _searchReplace = new Mock<ISearchReplace>(MockBehavior.Strict);
+            _textSearch = new Mock<ITextSearchService>(MockBehavior.Strict);
+            _nav = new Mock<ITextStructureNavigator>(MockBehavior.Strict);
             _globalSettings = MockObjectFactory.CreateGlobalSettings(ignoreCase: true);
             _settings = MockObjectFactory.CreateLocalSettings(_globalSettings.Object);
             _searchRaw = new IncrementalSearch(
-                _host,
                 _textView,
                 _settings.Object,
-                _searchReplace.Object);
+                _textSearch.Object,
+                _nav.Object);
             _search = _searchRaw;
         }
 
@@ -57,7 +58,7 @@ namespace VimCoreTest
         {
             Create("foo bar");
             _search.Begin(SearchKind.ForwardWithWrap);
-            _searchReplace.Setup(x =>x.FindNextMatch(It.IsAny<SearchData>(), It.IsAny<SnapshotPoint>())).Returns(FSharpOption<SnapshotSpan>.None);
+            _textSearch.Setup(x => x.FindNext(0, true, It.IsAny<FindData>())).Returns<SnapshotSpan?>(null);
             Assert.IsTrue(_search.Process(InputUtil.CharToKeyInput('b')).IsSearchNeedMore);
         }
 
@@ -74,7 +75,7 @@ namespace VimCoreTest
         {
             Create("foo bar");
             _search.Begin(SearchKind.ForwardWithWrap);
-            Assert.IsTrue(_search.Process(InputUtil.VimKeyToKeyInput(VimKey.EscapeKey)).IsSearchCanceled);
+            Assert.IsTrue(_search.Process(InputUtil.VimKeyToKeyInput(VimKey.EscapeKey)).IsSearchCancelled);
         }
 
         [Test]
@@ -88,7 +89,9 @@ namespace VimCoreTest
         public void LastSearch2()
         {
             Create("foo bar");
-            _searchReplace.Setup(x =>x.FindNextMatch(It.IsAny<SearchData>(), It.IsAny<SnapshotPoint>())).Returns(FSharpOption<SnapshotSpan>.None);
+            _textSearch
+                .Setup(x => x.FindNext(0, true, It.IsAny<FindData>()))
+                .Returns<SnapshotSpan?>(null);
             ProcessWithEnter("foo");
             Assert.AreEqual("foo", _search.LastSearch.Pattern);
         }
@@ -97,7 +100,9 @@ namespace VimCoreTest
         public void LastSearch3()
         {
             Create("foo bar");
-            _searchReplace.Setup(x =>x.FindNextMatch(It.IsAny<SearchData>(), It.IsAny<SnapshotPoint>())).Returns(FSharpOption<SnapshotSpan>.None);
+            _textSearch
+                .Setup(x => x.FindNext(0, true, It.IsAny<FindData>()))
+                .Returns<SnapshotSpan?>(null);
             ProcessWithEnter("foo bar");
             ProcessWithEnter("bar");
             Assert.AreEqual("bar", _search.LastSearch.Pattern);
@@ -107,134 +112,61 @@ namespace VimCoreTest
         public void Status1()
         {
             Create("foo");
-            _searchReplace.Setup(x =>x.FindNextMatch(It.IsAny<SearchData>(), It.IsAny<SnapshotPoint>())).Returns(FSharpOption<SnapshotSpan>.None);
+            var didRun = false;
+            _search.CurrentSearchUpdated += (unused, tuple) =>
+                {
+                    didRun = true;
+                    Assert.IsTrue(tuple.Item2.IsSearchNotFound);
+                };
             _search.Begin(SearchKind.ForwardWithWrap);
-            Assert.AreEqual("/", _host.Status);
+            Assert.IsTrue(didRun);
         }
 
         [Test]
         public void Status2()
         {
             Create("foo bar");
-            _searchReplace.Setup(x =>x.FindNextMatch(It.IsAny<SearchData>(), It.IsAny<SnapshotPoint>())).Returns(FSharpOption<SnapshotSpan>.None);
             _search.Begin(SearchKind.ForwardWithWrap);
+            _textSearch
+                .Setup(x => x.FindNext(0, true, It.IsAny<FindData>()))
+                .Returns<SnapshotSpan?>(null);
+            var didRun = false;
+            _search.CurrentSearchUpdated += (unused, tuple) =>
+                {
+                    Assert.AreEqual("a", tuple.Item1.Pattern);
+                    Assert.IsTrue(tuple.Item2.IsSearchNotFound);
+                    didRun = true;
+                };
             _search.Process(InputUtil.CharToKeyInput('a'));
-            Assert.AreEqual("/a", _host.Status);
+            Assert.IsTrue(didRun);
         }
 
         [Test]
         public void Status3()
         {
             Create("foo bar");
-            _searchReplace.Setup(x => x.FindNextMatch(It.IsAny<SearchData>(), It.IsAny<SnapshotPoint>())).Returns(FSharpOption<SnapshotSpan>.None);
-            _search.Begin(SearchKind.ForwardWithWrap);
-            _search.Process(InputUtil.CharToKeyInput('a'));
-            _search.Process(InputUtil.CharToKeyInput('b'));
-            Assert.AreEqual("/ab", _host.Status);
-        }
+            _textSearch
+                .Setup(x => x.FindNext(0, true, It.IsAny<FindData>()))
+                .Returns<SnapshotSpan?>(null);
+            var didRun = false;
+            _search.CurrentSearchCompleted += (unused, tuple) =>
+                {
+                    Assert.AreEqual("foo", tuple.Item1.Pattern);
+                    Assert.IsTrue(tuple.Item2.IsSearchNotFound);
+                    didRun = true;
+                };
 
-        [Test]
-        public void Status4()
-        {
-            Create("foo bar");
-            _searchReplace.Setup(x => x.FindNextMatch(It.IsAny<SearchData>(), It.IsAny<SnapshotPoint>())).Returns(FSharpOption<SnapshotSpan>.None);
             ProcessWithEnter("foo");
-            Assert.IsTrue(String.IsNullOrEmpty(_host.Status));
-        }
-
-        [Test]
-        public void Status5()
-        {
-            Create("foo bar");
-            _searchReplace
-                .Setup(x => x.FindNextMatch(It.IsAny<SearchData>(), It.IsAny<SnapshotPoint>()))
-                .Returns(FSharpOption.Create(new SnapshotSpan(_textView.TextSnapshot, 0, 2)));
-            _search.LastSearch = new SearchData("foo", SearchKind.ForwardWithWrap, SearchReplaceFlags.None);
-            _search.FindNextMatch(1);
-            Assert.AreEqual("/foo", _host.Status);
-        }
-
-        [Test]
-        public void Status6()
-        {
-            Create("foo bar");
-            _searchReplace
-                .Setup(x => x.FindNextMatch(It.IsAny<SearchData>(), It.IsAny<SnapshotPoint>()))
-                .Returns(FSharpOption<SnapshotSpan>.None);
-            _search.LastSearch = new SearchData("foo", SearchKind.ForwardWithWrap, SearchReplaceFlags.None);
-            _search.FindNextMatch(1);
-            Assert.AreEqual(Resources.NormalMode_PatternNotFound("foo"), _host.Status);
-        }
-
-        [Test]
-        public void CurrentSearchSpanChanged1()
-        {
-            Create("foo bar");
-            var list = new List<FSharpOption<SnapshotSpan>>();
-            _search.CurrentSearchSpanChanged += (_,opt) => { list.Add(opt); };
-            _search.Begin(SearchKind.ForwardWithWrap);
-            Assert.AreEqual(1, list.Count);
-            Assert.IsTrue(list[0].IsNone());
-        }
-
-        [Test]
-        public void CurrentSearchSpanChanged2()
-        {
-            Create("foo bar");
-            var list = new List<FSharpOption<SnapshotSpan>>();
-            _search.CurrentSearchSpanChanged += (_,opt) => { list.Add(opt); };
-            _search.Begin(SearchKind.ForwardWithWrap);
-            list.Clear();
-            _searchReplace
-                .Setup(x => x.FindNextMatch(It.IsAny<SearchData>(), It.IsAny<SnapshotPoint>()))
-                .Returns(FSharpOption<SnapshotSpan>.None);
-            _search.Process(InputUtil.CharToKeyInput('a'));
-            Assert.AreEqual(1, list.Count);
-            Assert.IsTrue(list[0].IsNone());
-        }
-
-        [Test]
-        public void CurrentSearchSpanChanged3()
-        {
-            Create("foo bar");
-            var list = new List<FSharpOption<SnapshotSpan>>();
-            _search.CurrentSearchSpanChanged += (_,opt) => { list.Add(opt); };
-            _search.Begin(SearchKind.ForwardWithWrap);
-            list.Clear();
-            var span = new SnapshotSpan(_textView.TextSnapshot, 0,2);
-            _searchReplace
-                .Setup(x => x.FindNextMatch(It.IsAny<SearchData>(), It.IsAny<SnapshotPoint>()))
-                .Returns(FSharpOption.Create(span));
-            _search.Process(InputUtil.CharToKeyInput('a'));
-            Assert.AreEqual(1, list.Count);
-            Assert.IsTrue(list[0].IsSome());
-            Assert.AreEqual(span, list[0].Value);
-        }
-
-        [Test]
-        public void CurrentSearchSpanChanged4()
-        {
-            Create("foo bar");
-            var list = new List<FSharpOption<SnapshotSpan>>();
-            _search.CurrentSearchSpanChanged += (_,opt) => { list.Add(opt); };
-            _search.Begin(SearchKind.ForwardWithWrap);
-            _searchReplace
-                .Setup(x => x.FindNextMatch(It.IsAny<SearchData>(), It.IsAny<SnapshotPoint>()))
-                .Returns(FSharpOption<SnapshotSpan>.None);
-            _search.Process(InputUtil.CharToKeyInput('a'));
-            list.Clear();
-            _search.Process(InputUtil.VimKeyToKeyInput(VimKey.EnterKey));
-            Assert.AreEqual(1, list.Count);
-            Assert.IsTrue(list[0].IsNone());
+            Assert.IsTrue(didRun);
         }
 
         [Test]
         public void CurrentSearch1()
         {
             Create("foo bar");
-            _searchReplace
-                .Setup(x => x.FindNextMatch(It.IsAny<SearchData>(), It.IsAny<SnapshotPoint>()))
-                .Returns(FSharpOption<SnapshotSpan>.None);
+            _textSearch
+                .Setup(x => x.FindNext(0, false, It.IsAny<FindData>()))
+                .Returns<SnapshotSpan?>(null);
             _search.Begin(SearchKind.Forward);
             _search.Process(InputUtil.CharToKeyInput('B'));
             Assert.AreEqual("B", _search.CurrentSearch.Value.Pattern);
@@ -244,20 +176,100 @@ namespace VimCoreTest
         public void CurrentSearch2()
         {
             Create("foo bar");
-            var data = new SearchData("B", SearchKind.Forward, SearchReplaceFlags.IgnoreCase);
-            _searchReplace
-                .Setup(x => x.FindNextMatch(data, It.IsAny<SnapshotPoint>()))
-                .Returns(FSharpOption<SnapshotSpan>.None)
-                .Verifiable();
+            _textSearch
+                .Setup(x => x.FindNext(0, false, It.IsAny<FindData>()))
+                .Returns<SnapshotSpan?>(null);
             _search.Begin(SearchKind.Forward);
             _search.Process(InputUtil.CharToKeyInput('B'));
-            _searchReplace.Verify();
+            _textSearch.Verify();
             Assert.AreEqual("B", _search.CurrentSearch.Value.Pattern);
+        }
+
+        [Test]
+        public void CurrentSearch3()
+        {
+            Create("foo bar");
+            _textSearch
+                .Setup(x => x.FindNext(0, true, It.IsAny<FindData>()))
+                .Returns<SnapshotSpan?>(null);
+            _search.Begin(SearchKind.ForwardWithWrap);
+            _search.Process(InputUtil.CharToKeyInput('a'));
+            _search.Process(InputUtil.CharToKeyInput('b'));
+        }
+
+
+        [Test]
+        public void InSearch1()
+        {
+            Create("foo bar");
+            _search.Begin(SearchKind.Forward);
+            Assert.IsTrue(_search.InSearch);
+        }
+
+        [Test]
+        public void InSearch2()
+        {
+            Create("foo bar");
+            _search.Begin(SearchKind.Forward);
+            _search.Process(InputUtil.VimKeyToKeyInput(VimKey.EnterKey));
+            Assert.IsFalse(_search.InSearch);
+            Assert.IsFalse(_search.CurrentSearch.HasValue());
+        }
+
+        [Test, Description("Cancelling needs to remove the CurrentSearch")]
+        public void InSearch3()
+        {
+            Create("foo bar");
+            _textSearch
+                .Setup(x => x.FindNext(0, true, It.IsAny<FindData>()))
+                .Returns<SnapshotSpan?>(null);
+            _search.Begin(SearchKind.ForwardWithWrap);
+            _search.Process(InputUtil.VimKeyToKeyInput(VimKey.EscapeKey));
+            Assert.IsFalse(_search.InSearch);
         }
 
 
 
     /*
+        [Test]
+        public void FindNextMatch1()
+        {
+            Create("bar for");
+            var data = new SearchData("for", SearchKind.ForwardWithWrap, SearchReplaceFlags.None);
+            var found = _search.FindNextMatch(data, new SnapshotPoint(_buffer.CurrentSnapshot, 0));
+            Assert.IsTrue(found.IsSome());
+            Assert.AreEqual(4, found.Value.Start.Position);
+        }
+
+        [Test]
+        public void FindNextMatch2()
+        {
+            Create("foo bar");
+            var data = new SearchData("won't be there", SearchKind.ForwardWithWrap, SearchReplaceFlags.None);
+            var found = _search.FindNextMatch(data, new SnapshotPoint(_buffer.CurrentSnapshot, 0));
+            Assert.IsTrue(found.IsNone());
+        }
+
+        [Test]
+        public void FindNextMatch3()
+        {
+            Create("foo bar");
+            var data = new SearchData("oo", SearchKind.Backward, SearchReplaceFlags.None);
+            var found = _search.FindNextMatch(data, _buffer.CurrentSnapshot.GetLineFromLineNumber(0).End);
+            Assert.IsTrue(found.HasValue());
+            Assert.AreEqual(1, found.Value.Start);
+            Assert.AreEqual("oo", found.Value.GetText());
+        }
+
+        [Test, Description("Search with a bad regex should just produce a bad result")]
+        public void FindNextMatch4()
+        {
+            Create("foo bar(");
+            var data = new SearchData("(", SearchKind.Forward, SearchReplaceFlags.None);
+            var found = _search.FindNextMatch(data, new SnapshotPoint(_buffer.CurrentSnapshot, 0));
+            Assert.IsFalse(found.HasValue());
+        }
+
         [Test, Description("Make sure it matches the first occurance")]
         public void Search3()
         {

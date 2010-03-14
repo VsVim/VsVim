@@ -322,3 +322,10 @@ module internal TssUtil =
         let line = point.GetContainingLine()
         let column = point.Position - line.Start.Position
         (line.LineNumber,column)
+
+    let SafeGetTrackingSpan (trackingSpan:ITrackingSpan) (snapshot:ITextSnapshot) =
+        try
+            let span = trackingSpan.GetSpan(snapshot)
+            Some(span)
+        with
+            | :? System.ArgumentException -> None

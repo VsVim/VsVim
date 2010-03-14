@@ -60,5 +60,8 @@ type IOperations =
     /// Jump to the previous item in the jump list
     abstract JumpPrevious : count:int -> unit
 
+    /// Find and move to the next match from the last search   
+    abstract FindNextMatch : count:int -> unit
+
     inherit Modes.ICommonOperations
 

@@ -127,10 +127,20 @@ type IRegisterMap =
     abstract IsRegisterName : char -> bool
     abstract GetRegister : char -> Register
     
-
+/// Result of an individual searh
 type SearchResult =
-    | SearchComplete
-    | SearchCanceled
+    | SearchFound of SnapshotSpan
+    | SearchNotFound 
+
+type SearchData = {
+    Pattern : string;
+    Kind: SearchKind;
+    Options : FindOptions;
+}
+
+type SearchProcessResult =
+    | SearchComplete 
+    | SearchCancelled 
     | SearchNeedMore
 
 type IIncrementalSearch = 
@@ -139,17 +149,22 @@ type IIncrementalSearch =
     abstract LastSearch : SearchData with get, set
 
     /// Processes the next piece of input.  Returns true when the incremental search operation is complete
-    abstract Process : KeyInput -> SearchResult
+    abstract Process : KeyInput -> SearchProcessResult
 
     /// Called when a search is about to begin
     abstract Begin : SearchKind -> unit
 
     /// Find the next match of the LastSearch
-    abstract FindNextMatch : count:int -> unit
+    abstract FindNextMatch : count:int -> bool
 
     [<CLIEvent>]
-    abstract CurrentSearchSpanChanged : IEvent<SnapshotSpan option>
+    abstract CurrentSearchUpdated : IEvent<SearchData * SearchResult>
 
+    [<CLIEvent>]
+    abstract CurrentSearchCompleted : IEvent<SearchData * SearchResult>
+
+    [<CLIEvent>]
+    abstract CurrentSearchCancelled : IEvent<SearchData>
 
 type ProcessResult = 
     | Processed
@@ -395,6 +410,9 @@ and INormalMode =
 
     /// Is normal mode waiting for additional input on a command
     abstract IsWaitingForInput : bool
+
+    /// The IIncrementalSearch instance for normal mode
+    abstract IncrementalSearch : IIncrementalSearch
 
     inherit IMode
 

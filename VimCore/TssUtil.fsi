@@ -78,5 +78,9 @@ module internal TssUtil =
     /// Get the line and column information for a given SnapshotPoint
     val GetLineColumn : SnapshotPoint -> (int * int)
 
+    /// Map the specified tracking span to the given ITextSnapshot.  If the span cannot be mapped
+    /// due to incompatible changes in the buffer, None will be returned
+    val SafeGetTrackingSpan : ITrackingSpan -> ITextSnapshot -> SnapshotSpan option
+
 
     

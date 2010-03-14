@@ -49,7 +49,7 @@ type internal NormalMode
             | SearchComplete -> 
                 _bufferData.JumpList.Add before |> ignore
                 NormalModeResult.Complete
-            | SearchCanceled -> NormalModeResult.Complete
+            | SearchCancelled -> NormalModeResult.Complete
             | SearchNeedMore ->  NormalModeResult.NeedMoreInput inner
         _incrementalSearch.Begin kind
         inner
@@ -288,7 +288,7 @@ type internal NormalMode
             yield (InputUtil.CharToKeyInput('p'), (fun count reg -> _operations.PasteAfterCursor reg.StringValue count reg.Value.OperationKind false))
             yield (InputUtil.CharToKeyInput('P'), (fun count reg -> _operations.PasteBeforeCursor reg.StringValue count false))
             yield (InputUtil.CharToKeyInput('0'), (fun _ _ -> _bufferData.EditorOperations.MoveToStartOfLine(false))) 
-            yield (InputUtil.CharToKeyInput('n'), (fun count _ -> _incrementalSearch.FindNextMatch count))
+            yield (InputUtil.CharToKeyInput('n'), (fun count _ -> _operations.FindNextMatch count))
             yield (InputUtil.CharToKeyInput('*'), (fun count _ -> _operations.MoveToNextOccuranceOfWordAtCursor true count))
             yield (InputUtil.CharToKeyInput('#'), (fun count _ -> _operations.MoveToPreviousOccuranceOfWordAtCursor true count))
             yield (InputUtil.CharToKeyInput('u'), (fun count _ -> _bufferData.VimHost.Undo this.TextBuffer count))
@@ -379,6 +379,7 @@ type internal NormalMode
     interface INormalMode with 
         member this.IsOperatorPending = _isOperatingPending
         member this.IsWaitingForInput = _waitingForMoreInput
+        member this.IncrementalSearch = _incrementalSearch
         member this.VimBuffer = _bufferData
         member this.Commands = 
             _operationMap

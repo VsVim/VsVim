@@ -1386,7 +1386,7 @@ namespace VimCoreTest
             _incrementalSearch.Setup(x => x.Begin(SearchKind.ForwardWithWrap)).Verifiable();
             _jumpList.Setup(x => x.Add(_view.GetCaretPoint())).Verifiable();
             _mode.Process('/');
-            _incrementalSearch.Setup(x => x.Process(It.IsAny<KeyInput>())).Returns(SearchResult.SearchComplete).Verifiable();
+            _incrementalSearch.Setup(x => x.Process(It.IsAny<KeyInput>())).Returns(SearchProcessResult.SearchComplete).Verifiable();
             _mode.Process('b');
             _incrementalSearch.Verify();
             _jumpList.Verify();
@@ -1399,7 +1399,7 @@ namespace VimCoreTest
             _incrementalSearch.Setup(x => x.Begin(SearchKind.ForwardWithWrap)).Verifiable();
             _mode.Process('/');
             var ki = InputUtil.CharToKeyInput((char)7);
-            _incrementalSearch.Setup(x => x.Process(It.IsAny<KeyInput>())).Returns(SearchResult.SearchComplete).Verifiable();
+            _incrementalSearch.Setup(x => x.Process(It.IsAny<KeyInput>())).Returns(SearchProcessResult.SearchComplete).Verifiable();
             _jumpList.Setup(x => x.Add(_view.GetCaretPoint())).Verifiable();
             _mode.Process(ki);
             _incrementalSearch.Verify();
@@ -1413,7 +1413,7 @@ namespace VimCoreTest
             _incrementalSearch.Setup(x => x.Begin(SearchKind.ForwardWithWrap)).Verifiable();
             _mode.Process('/');
             var ki = InputUtil.CharToKeyInput('c');
-            _incrementalSearch.Setup(x => x.Process(It.IsAny<KeyInput>())).Returns(SearchResult.SearchComplete).Verifiable();
+            _incrementalSearch.Setup(x => x.Process(It.IsAny<KeyInput>())).Returns(SearchProcessResult.SearchComplete).Verifiable();
             _jumpList.Setup(x => x.Add(_view.GetCaretPoint())).Verifiable();
             _mode.Process(ki);
             _incrementalSearch.Verify();
@@ -1426,7 +1426,7 @@ namespace VimCoreTest
             CreateBuffer("foo bar");
             _incrementalSearch.Setup(x => x.Begin(SearchKind.ForwardWithWrap)).Verifiable();
             _mode.Process('/');
-            _incrementalSearch.Setup(x => x.Process(It.IsAny<KeyInput>())).Returns(SearchResult.SearchCanceled).Verifiable();
+            _incrementalSearch.Setup(x => x.Process(It.IsAny<KeyInput>())).Returns(SearchProcessResult.SearchCancelled).Verifiable();
             _mode.Process(InputUtil.CharToKeyInput((char)8));
             _incrementalSearch.Verify();
             _jumpList.Verify();

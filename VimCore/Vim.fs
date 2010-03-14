@@ -38,7 +38,8 @@ type internal VimBufferFactory
 
         let wordNav = x.CreateTextStructureNavigator view.TextBuffer WordKind.NormalWord
         let broker = _completionWindowBrokerFactoryService.CreateCompletionWindowBroker view
-        let normalOpts = Modes.Normal.DefaultOperations(view,editOperations,_host,localSettings,wordNav,_textSearchService,jumpList) :> Modes.Normal.IOperations
+        let normalIncrementalSearch = Vim.Modes.Normal.IncrementalSearch(view, localSettings, _textSearchService, wordNav) :> IIncrementalSearch
+        let normalOpts = Modes.Normal.DefaultOperations(view,editOperations,_host,localSettings,wordNav,_textSearchService,jumpList, normalIncrementalSearch) :> Modes.Normal.IOperations
         let commandOpts = Modes.Command.DefaultOperations(view,editOperations,_host, jumpList, localSettings, vim.KeyMap) :> Modes.Command.IOperations
         let commandProcessor = Modes.Command.CommandProcessor(buffer, commandOpts) :> Modes.Command.ICommandProcessor
         let insertOpts = Modes.Insert.DefaultOperations(view,editOperations,_host, jumpList) :> Modes.ICommonOperations
@@ -53,8 +54,6 @@ type internal VimBufferFactory
             Modes.Visual.DefaultOperations(view,editOperations,_host, jumpList, tracker) :> Modes.Visual.IOperations
 
         // Normal mode values
-        let normalSearchReplace = RegexSearchReplace() :> ISearchReplace
-        let normalIncrementalSearch = Vim.Modes.Normal.IncrementalSearch(_host, view, localSettings, normalSearchReplace) :> IIncrementalSearch
         let modeList = 
             [
                 ((Modes.Normal.NormalMode(buffer, normalOpts, normalIncrementalSearch)) :> IMode);

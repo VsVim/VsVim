@@ -15,7 +15,8 @@ type internal DefaultOperations
     _settings : IVimLocalSettings,
     _normalWordNav : ITextStructureNavigator,
     _searchService : ITextSearchService,
-    _jumpList : IJumpList ) =
+    _jumpList : IJumpList,
+    _incrementalSearch : IIncrementalSearch ) =
 
     inherit CommonOperations(_textView, _operations, _host, _jumpList)
 
@@ -218,4 +219,9 @@ type internal DefaultOperations
 
         member x.JumpNext count = x.JumpCore count (fun () -> _jumpList.MoveNext())
         member x.JumpPrevious count = x.JumpCore count (fun() -> _jumpList.MovePrevious())
+        member x.FindNextMatch count =
+            if StringUtil.isNullOrEmpty _incrementalSearch.LastSearch.Pattern then 
+                _host.UpdateStatus Resources.NormalMode_NoPreviousSearch
+            elif not (_incrementalSearch.FindNextMatch count) then
+                _host.UpdateStatus (Resources.NormalMode_PatternNotFound _incrementalSearch.LastSearch.Pattern)
     
