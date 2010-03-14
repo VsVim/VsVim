@@ -233,6 +233,10 @@ type IVimSettings =
     /// abbreviation
     abstract GetSetting : settingName:string -> Setting option
 
+    /// Raised when a Setting changes
+    [<CLIEvent>]
+    abstract SettingChanged : IEvent<Setting>
+
 and IVimGlobalSettings = 
 
     abstract IgnoreCase : bool with get, set

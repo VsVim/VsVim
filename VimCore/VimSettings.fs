@@ -9,6 +9,7 @@ type internal SettingsMap
         _rawData : (string*string*SettingKind*SettingValue) seq,
         _isGlobal : bool ) =
 
+    let _settingChangedEvent = new Event<_>()
 
     /// Create the settings off of the default map
     let mutable _settings =
@@ -19,9 +20,12 @@ type internal SettingsMap
 
     member x.AllSettings = _settings |> Map.toSeq |> Seq.map (fun (_,value) -> value)
     member x.OwnsSetting settingName = x.GetSetting settingName |> Option.isSome
+    member x.SettingChanged = _settingChangedEvent.Publish
 
     /// Replace a Setting with a new value
-    member x.ReplaceSetting settingName setting = _settings <- _settings |> Map.add settingName setting
+    member x.ReplaceSetting settingName setting = 
+        _settings <- _settings |> Map.add settingName setting
+        _settingChangedEvent.Trigger setting
 
     member x.TrySetValue settingName value =
 
@@ -40,6 +44,7 @@ type internal SettingsMap
             if doesValueMatchKind setting.Kind then
                 let setting = { setting with Value=value }
                 _settings <- _settings |> Map.add settingName setting
+                _settingChangedEvent.Trigger setting
                 true
             else false
 
@@ -144,6 +149,9 @@ type internal GlobalSettings() =
 
         member x.DisableCommand = DisableCommandLet
 
+        [<CLIEvent>]
+        member x.SettingChanged = _map.SettingChanged
+
 type internal LocalSettings
     ( 
         _global : IVimGlobalSettings,
@@ -199,5 +207,8 @@ type internal LocalSettings
         member x.Scroll 
             with get() = _map.GetNumberValue ScrollName
             and set value = _map.TrySetValue ScrollName (NumberValue(value)) |> ignore
+
+        [<CLIEvent>]
+        member x.SettingChanged = _map.SettingChanged
     
 

@@ -165,5 +165,35 @@ namespace VimCoreTest
             }
         }
 
+        [Test]
+        public void SettingChanged1()
+        {
+            var settings = Create();
+            var didRun = false;
+            settings.SettingChanged += (unused, setting) =>
+                {
+                    Assert.AreEqual(GlobalSettings.IgnoreCaseName, setting.Name);
+                    Assert.IsTrue(setting.AggregateValue.AsBooleanValue().Item);
+                    didRun = true;
+                };
+            settings.TrySetValue(GlobalSettings.IgnoreCaseName, SettingValue.NewToggleValue(true));
+            Assert.IsTrue(didRun);
+        }
+
+        [Test]
+        public void SettingChanged2()
+        {
+            var settings = Create();
+            var didRun = false;
+            settings.SettingChanged += (unused, setting) =>
+                {
+                    Assert.AreEqual(GlobalSettings.IgnoreCaseName, setting.Name);
+                    Assert.IsTrue(setting.AggregateValue.AsBooleanValue().Item);
+                    didRun = true;
+                };
+            settings.TrySetValueFromString(GlobalSettings.IgnoreCaseName, "true");
+            Assert.IsTrue(didRun);
+        }
+
     }
 }

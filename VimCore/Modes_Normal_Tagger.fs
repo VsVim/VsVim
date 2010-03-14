@@ -17,6 +17,13 @@ type internal Tagger
     let _tagsChanged = new Event<System.EventHandler<SnapshotSpanEventArgs>, SnapshotSpanEventArgs>()
     let mutable _searchSpan : ITrackingSpan option = None
     do 
+        let raiseAllChanged () = 
+            // Don't bother calculating the range of changed spans.  Simply raise the event for the entire 
+            // buffer.  The editor will only call back for visible spans
+            let snapshot = _textBuffer.CurrentSnapshot
+            let allSpan = SnapshotSpan(snapshot, 0, snapshot.Length)
+            _tagsChanged.Trigger (this,SnapshotSpanEventArgs(allSpan))
+
         let handleChange (_,result) = 
 
             // Make sure to reset _searchSpan before raising the event.  The editor can and will call back
@@ -26,15 +33,17 @@ type internal Tagger
                 _searchSpan <- Some(span.Snapshot.CreateTrackingSpan(span.Span, SpanTrackingMode.EdgeExclusive))
             | SearchNotFound ->
                 _searchSpan <- None
-               
-            // Don't bother calculating the range of changed spans.  Simply raise the event for the entire 
-            // buffer.  The editor will only call back for visible spans
-            let snapshot = _textBuffer.CurrentSnapshot
-            let allSpan = SnapshotSpan(snapshot, 0, snapshot.Length)
-            _tagsChanged.Trigger (this,SnapshotSpanEventArgs(allSpan))
+            raiseAllChanged()               
+
+        let clearTags _ =
+            _searchSpan <- None
+            raiseAllChanged()
+            
 
         _search.CurrentSearchUpdated
         |> Event.add handleChange
+        _search.CurrentSearchCompleted |> Event.add clearTags
+        _search.CurrentSearchCancelled |> Event.add clearTags
 
     member private x.GetTags (col:NormalizedSnapshotSpanCollection) =
         let inner snapshot = 
