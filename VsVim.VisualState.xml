@@ -1,51 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <VisualState xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ShowCheckBoxes="false">
-  <TopNode>[0-1000]C:\Users\jaredpar\VsVim\VsVim.nunit</TopNode>
-  <SelectedNode>[0-1000]C:\Users\jaredpar\VsVim\VsVim.nunit</SelectedNode>
+  <TopNode>[0-1000]C:\Users\jaredpar\VsVimRelease\VsVim.nunit</TopNode>
+  <SelectedNode>[0-1918]VimCoreTest</SelectedNode>
   <ExcludeCategories>false</ExcludeCategories>
   <Nodes>
-    <Node UniqueName="[0-1000]C:\Users\jaredpar\VsVim\VsVim.nunit" Expanded="true" />
-    <Node UniqueName="[0-1751]C:\Users\jaredpar\VsVim\VimCoreTest\bin\Debug\VimCoreTest.dll" Expanded="true" />
-    <Node UniqueName="[0-1752]VimCoreTest" Expanded="true" />
-    <Node UniqueName="[0-1727]VimCoreTest.BlockCaretTest" Expanded="true" />
-    <Node UniqueName="[0-1737]VimCoreTest.Command_DefaultOperations" Expanded="true" />
-    <Node UniqueName="[0-1190]VimCoreTest.CommandModeIntegrationTest" Expanded="true" />
-    <Node UniqueName="[0-1488]VimCoreTest.CommandModeTest" Expanded="true" />
-    <Node UniqueName="[0-1116]VimCoreTest.CountCaptureTest" Expanded="true" />
-    <Node UniqueName="[0-1219]VimCoreTest.DisabledModeTest" Expanded="true" />
-    <Node UniqueName="[0-1216]VimCoreTest.IEditorOperationsTest" Expanded="true" />
-    <Node UniqueName="[0-1171]VimCoreTest.IncrementalSearchTest" Expanded="true" />
-    <Node UniqueName="[0-1204]VimCoreTest.InputUtilTest" Expanded="true" />
-    <Node UniqueName="[0-1120]VimCoreTest.InsertModeTest" Expanded="true" />
-    <Node UniqueName="[0-1029]VimCoreTest.IntegrationTests" Expanded="true" />
-    <Node UniqueName="[0-1396]VimCoreTest.JumpListTest" Expanded="true" />
-    <Node UniqueName="[0-1198]VimCoreTest.KeyInputTest" Expanded="true" />
-    <Node UniqueName="[0-1094]VimCoreTest.MarkMapTest" Expanded="true" />
-    <Node UniqueName="[0-1426]VimCoreTest.Modes_CommonOperationsTest" Expanded="true" />
-    <Node UniqueName="[0-1140]VimCoreTest.MotionCaptureTest" Expanded="true" />
-    <Node UniqueName="[0-1001]VimCoreTest.MotionUtilTests" Expanded="true" />
-    <Node UniqueName="[0-1387]VimCoreTest.MouseProcessorTests" Expanded="true" />
-    <Node UniqueName="[0-1322]VimCoreTest.Normal_DefaultOperationsTests" Expanded="true" />
-    <Node UniqueName="[0-1561]VimCoreTest.NormalModeTest" Expanded="true" />
-    <Node UniqueName="[0-1066]VimCoreTest.RangeUtilTest" Expanded="true" />
-    <Node UniqueName="[0-1211]VimCoreTest.RegexSearchReplaceTest" Expanded="true" />
-    <Node UniqueName="[0-1414]VimCoreTest.SelectionTrackerTest" Expanded="true" />
-    <Node UniqueName="[0-1013]VimCoreTest.TextUtilTest" Expanded="true" />
-    <Node UniqueName="[0-1548]VimCoreTest.TextUtilTest2" Expanded="true" />
-    <Node UniqueName="[0-1550]VimCoreTest.TrackingLineColumnTest" Expanded="true" />
-    <Node UniqueName="[0-1255]VimCoreTest.TssUtilTest" Expanded="true" />
-    <Node UniqueName="[0-1129]VimCoreTest.VimBufferTests" Expanded="true" />
-    <Node UniqueName="[0-1732]VimCoreTest.VimIntegrationTests" Expanded="true" />
-    <Node UniqueName="[0-1545]VimCoreTest.Visual_DefaultOperationsTests" Expanded="true" />
-    <Node UniqueName="[0-1226]VimCoreTest.VisualModeTest" Expanded="true" />
-    <Node UniqueName="[0-1821]C:\Users\jaredpar\VsVim\VsVimTest\bin\Debug\VsVimTest.dll" Expanded="true" />
-    <Node UniqueName="[0-1822]VsVimTest" Expanded="true" />
-    <Node UniqueName="[0-1796]VsVimTest.CommandUtilTest" Expanded="true" />
-    <Node UniqueName="[0-1777]VsVimTest.EditCommandTest" Expanded="true" />
-    <Node UniqueName="[0-1767]VsVimTest.ExtensionsTest" Expanded="true" />
-    <Node UniqueName="[0-1785]VsVimTest.KeyBindingServiceTest" Expanded="true" />
-    <Node UniqueName="[0-1801]VsVimTest.KeyBindingTest" Expanded="true" />
-    <Node UniqueName="[0-1781]VsVimTest.VsVimFactoryServiceTest" Expanded="true" />
-    <Node UniqueName="[0-1753]VsVimTest.VsVimHostTest" Expanded="true" />
+    <Node UniqueName="[0-1000]C:\Users\jaredpar\VsVimRelease\VsVim.nunit" Expanded="true" />
+    <Node UniqueName="[0-1917]C:\Users\jaredpar\VsVimRelease\VimCoreTest\bin\Debug\VimCoreTest.dll" Expanded="true" />
+    <Node UniqueName="[0-1918]VimCoreTest" Expanded="true" />
+    <Node UniqueName="[0-1143]VimCoreTest.KeyMapUtilTest" Expanded="true" />
+    <Node UniqueName="[0-1985]C:\Users\jaredpar\VsVimRelease\VsVimTest\bin\Debug\VsVimTest.dll" Expanded="true" />
+    <Node UniqueName="[0-1986]VsVimTest" Expanded="true" />
   </Nodes>
 </VisualState>
