@@ -39,9 +39,11 @@ type internal HighlightIncrementalSearchTagger
 
             raiseAllChanged() )
 
-        // _settings.SettingChanged 
-        // |> Event.filter (fun args -> StringUtil.isEqual args.Name GlobalSettingNames.HighlightSearchName)
-        // |> Event.add (fun _ -> raiseAllChanged())
+        // Up cast here to work around the F# bug which prevents accessing a CLIEvent from
+        // a derived type
+        (_settings :> IVimSettings).SettingChanged 
+        |> Event.filter (fun args -> StringUtil.isEqual args.Name GlobalSettingNames.HighlightSearchName)
+        |> Event.add (fun _ -> raiseAllChanged())
         
     member private x.GetTagsCore (col:NormalizedSnapshotSpanCollection) = 
         let options = NormalModeUtil.CreateFindOptions SearchKind.Forward _settings
