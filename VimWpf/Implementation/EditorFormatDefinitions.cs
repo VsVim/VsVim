@@ -17,6 +17,11 @@ namespace Vim.UI.Wpf.Implementation
         internal const string IncrementalSearch = "vsvim_incrementalsearch";
 
         /// <summary>
+        /// When updating this value make sure you also change the Vim.Core tagger
+        /// </summary>
+        internal const string HighlightIncrementalSearch = "vsvim_highlightsearch";
+
+        /// <summary>
         /// Color of the block caret
         /// </summary>
         internal const string BlockCaret = "vsvim_blockcaret";
@@ -34,6 +39,17 @@ namespace Vim.UI.Wpf.Implementation
         }
     }
 
+    [Export(typeof(EditorFormatDefinition))]
+    [Name(EditorFormatDefinitionNames.HighlightIncrementalSearch)]
+    [UserVisible(true)]
+    internal sealed class HighlightIncrementalSearchMarkerDefinition : MarkerFormatDefinition
+    {
+        internal HighlightIncrementalSearchMarkerDefinition()
+        {
+            this.DisplayName = "VsVim Highlight Incremental Search";
+            this.Fill = new SolidColorBrush(Colors.LightBlue);
+        }
+    }
 
     [Export(typeof(EditorFormatDefinition))]
     [Name(EditorFormatDefinitionNames.BlockCaret)]
