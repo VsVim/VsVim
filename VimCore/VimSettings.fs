@@ -3,6 +3,8 @@
 namespace Vim
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
+open Vim.GlobalSettingNames
+open Vim.LocalSettingNames
 
 type internal SettingsMap
     (
@@ -108,11 +110,6 @@ type internal SettingsMap
 type internal GlobalSettings() =
 
     static let DisableCommandLet = KeyInput(System.Char.MinValue, VimKey.F12Key, KeyModifiers.Control ||| KeyModifiers.Shift);
-    static let IgnoreCaseName = "ignorecase"
-    static let ShiftWidthName = "shiftwidth"
-    static let HighlightSearchName = "hlsearch"
-    static let VimRcName = "vimrc"
-    static let VimRcPathsName = "vimrcpaths"
 
     static let GlobalSettings = 
         [|
@@ -162,8 +159,6 @@ type internal LocalSettings
         _global : IVimGlobalSettings,
         _textView : ITextView ) as this =
     
-    static let ScrollName = "scroll"
-
     static let LocalSettings =
         [|
             ( ScrollName, "scr", NumberKind, NumberValue(25) )

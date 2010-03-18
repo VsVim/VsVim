@@ -40,7 +40,7 @@ type internal HighlightIncrementalSearchTagger
             raiseAllChanged() )
 
         // _settings.SettingChanged 
-        // |> Event.filter (fun args -> StringUtil.isEqual args.Name "hlsearch")
+        // |> Event.filter (fun args -> StringUtil.isEqual args.Name GlobalSettingNames.HighlightSearchName)
         // |> Event.add (fun _ -> raiseAllChanged())
         
     member private x.GetTagsCore (col:NormalizedSnapshotSpanCollection) = 

@@ -18,11 +18,11 @@ namespace VimCoreTest
         {
             var settings = Create();
             var all = settings.AllSettings;
-            var value = all.Single(x => x.Name == GlobalSettings.ShiftWidthName);
+            var value = all.Single(x => x.Name == GlobalSettingNames.ShiftWidthName);
             var prev= value.Value.AsNumberValue().Item;
             Assert.AreNotEqual(42, prev);
-            Assert.IsTrue(settings.TrySetValue(GlobalSettings.ShiftWidthName, SettingValue.NewNumberValue(42)));
-            value = all.Single(x => x.Name == GlobalSettings.ShiftWidthName);
+            Assert.IsTrue(settings.TrySetValue(GlobalSettingNames.ShiftWidthName, SettingValue.NewNumberValue(42)));
+            value = all.Single(x => x.Name == GlobalSettingNames.ShiftWidthName);
             Assert.AreEqual(prev, value.Value.AsNumberValue().Item);
         }
 
@@ -38,7 +38,7 @@ namespace VimCoreTest
         public void GetSetting2()
         {
             var settings = Create();
-            var opt = settings.GetSetting(GlobalSettings.IgnoreCaseName);
+            var opt = settings.GetSetting(GlobalSettingNames.IgnoreCaseName);
             Assert.IsTrue(opt.IsSome());
         }
 
@@ -65,8 +65,8 @@ namespace VimCoreTest
         public void TrySetValue1()
         {
             var settings = Create();
-            Assert.IsTrue(settings.TrySetValue(GlobalSettings.IgnoreCaseName, SettingValue.NewToggleValue(true)));
-            var value = settings.GetSetting(GlobalSettings.IgnoreCaseName);
+            Assert.IsTrue(settings.TrySetValue(GlobalSettingNames.IgnoreCaseName, SettingValue.NewToggleValue(true)));
+            var value = settings.GetSetting(GlobalSettingNames.IgnoreCaseName);
             Assert.IsTrue(value.IsSome());
             Assert.AreEqual(true, value.Value.Value.AsBooleanValue().Item);
         }
@@ -75,8 +75,8 @@ namespace VimCoreTest
         public void TrySetValue2()
         {
             var settings = Create();
-            Assert.IsTrue(settings.TrySetValue(GlobalSettings.ShiftWidthName, SettingValue.NewNumberValue(42)));
-            var value = settings.GetSetting(GlobalSettings.ShiftWidthName);
+            Assert.IsTrue(settings.TrySetValue(GlobalSettingNames.ShiftWidthName, SettingValue.NewNumberValue(42)));
+            var value = settings.GetSetting(GlobalSettingNames.ShiftWidthName);
             Assert.IsTrue(value.IsSome());
             Assert.AreEqual(42, value.Value.Value.AsNumberValue().Item);
         }
@@ -172,11 +172,11 @@ namespace VimCoreTest
             var didRun = false;
             settings.SettingChanged += (unused, setting) =>
                 {
-                    Assert.AreEqual(GlobalSettings.IgnoreCaseName, setting.Name);
+                    Assert.AreEqual(GlobalSettingNames.IgnoreCaseName, setting.Name);
                     Assert.IsTrue(setting.AggregateValue.AsBooleanValue().Item);
                     didRun = true;
                 };
-            settings.TrySetValue(GlobalSettings.IgnoreCaseName, SettingValue.NewToggleValue(true));
+            settings.TrySetValue(GlobalSettingNames.IgnoreCaseName, SettingValue.NewToggleValue(true));
             Assert.IsTrue(didRun);
         }
 
@@ -187,11 +187,11 @@ namespace VimCoreTest
             var didRun = false;
             settings.SettingChanged += (unused, setting) =>
                 {
-                    Assert.AreEqual(GlobalSettings.IgnoreCaseName, setting.Name);
+                    Assert.AreEqual(GlobalSettingNames.IgnoreCaseName, setting.Name);
                     Assert.IsTrue(setting.AggregateValue.AsBooleanValue().Item);
                     didRun = true;
                 };
-            settings.TrySetValueFromString(GlobalSettings.IgnoreCaseName, "true");
+            settings.TrySetValueFromString(GlobalSettingNames.IgnoreCaseName, "true");
             Assert.IsTrue(didRun);
         }
 

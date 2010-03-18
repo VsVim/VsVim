@@ -27,8 +27,8 @@ namespace VimCoreTest
         {
             var global = CreateGlobal();
             var all = global.AllSettings;
-            Assert.IsTrue(all.Any(x => x.Name == GlobalSettings.IgnoreCaseName));
-            Assert.IsTrue(all.Any(x => x.Name == GlobalSettings.ShiftWidthName));
+            Assert.IsTrue(all.Any(x => x.Name == GlobalSettingNames.IgnoreCaseName));
+            Assert.IsTrue(all.Any(x => x.Name == GlobalSettingNames.ShiftWidthName));
         }
 
     }

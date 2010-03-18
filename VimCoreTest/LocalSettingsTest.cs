@@ -58,7 +58,7 @@ namespace VimCoreTest
         [Test, Description("Don't go up for our own settings")]
         public void TrySetValueUp2()
         {
-            Assert.IsTrue(_local.TrySetValue(LocalSettings.ScrollName, SettingValue.NewNumberValue(42)));
+            Assert.IsTrue(_local.TrySetValue(LocalSettingNames.ScrollName, SettingValue.NewNumberValue(42)));
         }
 
         [Test]

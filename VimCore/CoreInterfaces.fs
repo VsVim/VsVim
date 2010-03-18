@@ -215,6 +215,18 @@ type Setting = {
         | NoValue -> true
         | _ -> false
 
+module GlobalSettingNames = 
+
+    let IgnoreCaseName = "ignorecase"
+    let ShiftWidthName = "shiftwidth"
+    let HighlightSearchName = "hlsearch"
+    let VimRcName = "vimrc"
+    let VimRcPathsName = "vimrcpaths"
+
+module LocalSettingNames =
+    
+    let ScrollName = "scroll"
+
 /// Represent the setting supported by the Vim implementation.  This class **IS** mutable
 /// and the values will change.  Setting names are case sensitive but the exposed property
 /// names tend to have more familiar camel case names
