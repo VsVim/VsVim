@@ -188,7 +188,7 @@ namespace VimCoreTest
             var commandMode = new Mock<ICommandMode>(MockBehavior.Strict);
             var buffer = new Mock<IVimBuffer>(MockBehavior.Strict);
             commandMode.Setup(x => x.RunCommand("set noignorecase")).Verifiable();
-            buffer.Setup(x => x.GetMode(ModeKind.Command)).Returns(commandMode.Object);
+            buffer.Setup(x => x.CommandMode).Returns(commandMode.Object);
 
             var createViewFunc = FSharpFuncUtil.Create<Microsoft.FSharp.Core.Unit, ITextView>(_ => view.Object);
             _factory.Setup(x => x.CreateBuffer(_vim, view.Object)).Returns(buffer.Object);
