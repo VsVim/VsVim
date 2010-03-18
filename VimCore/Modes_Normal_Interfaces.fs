@@ -39,6 +39,9 @@ type IOperations =
     /// Go to the definition of the word under the cursor
     abstract GoToDefinitionWrapper : unit -> unit
 
+    /// GoTo the specified line number or the last line if no value is specified
+    abstract GoToLineOrLast : int option -> unit
+
     /// Scroll the buffer by count lines in the given direction
     abstract Scroll : ScrollDirection -> count:int -> unit
 

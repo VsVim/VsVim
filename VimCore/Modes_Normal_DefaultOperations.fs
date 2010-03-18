@@ -225,3 +225,24 @@ type internal DefaultOperations
             elif not (_incrementalSearch.FindNextMatch count) then
                 _host.UpdateStatus (Resources.NormalMode_PatternNotFound _incrementalSearch.LastSearch.Pattern)
     
+        member x.GoToLineOrLast count =
+            let snapshot = _textView.TextSnapshot
+            let point = ViewUtil.GetCaretPoint _textView
+            let lastLineNumber = snapshot.LineCount - 1
+            let line = 
+                match count with
+                | None -> lastLineNumber
+                | Some(c) -> min c lastLineNumber
+            let textLine = snapshot.GetLineFromLineNumber(line)
+            if _settings.GlobalSettings.StartOfLine then 
+                _textView.Caret.MoveTo( textLine.Start ) |> ignore
+                _operations.MoveToStartOfLineAfterWhiteSpace(false)
+            else 
+                let _,column = TssUtil.GetLineColumn point
+                let column = min column textLine.Length
+                let point = textLine.Start.Add(column)
+                _textView.Caret.MoveTo (point) |> ignore
+
+
+
+

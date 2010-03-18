@@ -1966,6 +1966,24 @@ namespace VimCoreTest
             _editorOperations.Verify();
         }
 
+        [Test]
+        public void ShiftG_1()
+        {
+            CreateBuffer(s_lines);
+            _operations.Setup(x => x.GoToLineOrLast(FSharpOption<int>.None)).Verifiable();
+            _mode.Process('G');
+            _operations.Verify();
+        }
+
+        [Test]
+        public void ShiftG_2()
+        {
+            CreateBuffer(s_lines);
+            _operations.Setup(x => x.GoToLineOrLast(FSharpOption.Create(42))).Verifiable();
+            _mode.Process("42G");
+            _operations.Verify();
+        }
+
         #endregion
 
     }

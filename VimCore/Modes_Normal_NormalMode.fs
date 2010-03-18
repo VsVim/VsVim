@@ -311,6 +311,11 @@ type internal NormalMode
             yield (InputUtil.CharToKeyInput('%'), (fun _ _ -> _operations.GoToMatch() |> ignore))
         }
 
+        // Similar to completeOpts but take the conditional count value
+        let completeOpts2= seq {
+            yield (InputUtil.CharToKeyInput('G'), (fun count _ -> _operations.GoToLineOrLast(count)))
+        }
+
         let doNothing _ _ = ()
         let changeOpts = seq {
             yield (InputUtil.CharToKeyInput('i'), ModeKind.Insert, doNothing)
@@ -332,6 +337,7 @@ type internal NormalMode
             (waitOps |> Seq.map (fun (ki,func) -> {KeyInput=ki;RunFunc=(fun _ _ -> NormalModeResult.OperatorPending(func())) }))
             |> Seq.append (waitOps2 |> Seq.map (fun (ki,func) -> {KeyInput=ki;RunFunc=(fun _ _ -> NormalModeResult.NeedMoreInput(func())) }))
             |> Seq.append (completeOps |> Seq.map (fun (ki,func) -> {KeyInput=ki;RunFunc=(fun count reg -> func (CountOrDefault count) reg; NormalModeResult.Complete)}))
+            |> Seq.append (completeOpts2 |> Seq.map (fun (ki,func) -> {KeyInput=ki;RunFunc=(fun count reg -> func count reg; NormalModeResult.Complete)}))
             |> Seq.append (changeOpts |> Seq.map (fun (ki,kind,func) -> {KeyInput=ki;RunFunc=(fun count reg -> func (CountOrDefault count) reg; NormalModeResult.SwitchMode kind)}))
             |> Seq.append (this.BuildMotionOperationsMap)
             |> Seq.map (fun d -> d.KeyInput,d)
