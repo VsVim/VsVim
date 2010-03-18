@@ -36,7 +36,6 @@ namespace VsVim
             set
             {
                 _serviceProvider = value;
-                MaybeUpdateVimHostServiceProvider();
             }
         }
 
@@ -54,16 +53,6 @@ namespace VsVim
         }
 
         #region Private
-
-        private void MaybeUpdateVimHostServiceProvider()
-        {
-            // Update the host as well
-            var vimHost = _vimHost as VsVimHost;
-            if (vimHost != null && vimHost.DTE == null && ServiceProvider != null)
-            {
-                vimHost.OnServiceProvider(ServiceProvider);
-            }
-        }
 
         private void OnGotAggregateFocus(object sender, EventArgs e)
         {
@@ -136,7 +125,6 @@ namespace VsVim
             }
 
             ServiceProvider = objectWithSite.GetServiceProvider();
-            MaybeUpdateVimHostServiceProvider();
             return ServiceProvider;
         }
 

@@ -16,6 +16,7 @@ using Microsoft.VisualStudio.Editor;
 using VimCoreTest.Utils;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Text.Operations;
+using Microsoft.VisualStudio.Shell;
 
 namespace VsVimTest
 {
@@ -34,23 +35,15 @@ namespace VsVimTest
         {
             _undoManagerProvider = new Mock<ITextBufferUndoManagerProvider>(MockBehavior.Strict);
             _editorAdaptersFactoryService = new Mock<IVsEditorAdaptersFactoryService>(MockBehavior.Strict);
-            _hostRaw = new VsVimHost(_undoManagerProvider.Object, _editorAdaptersFactoryService.Object);
-            _host = _hostRaw;
-        }
-
-        private void CreateRest()
-        {
-            _statusBar = new Mock<StatusBar>(MockBehavior.Strict);
             _dte = new Mock<_DTE>(MockBehavior.Strict);
             _dte.SetupGet(x => x.StatusBar).Returns(_statusBar.Object);
             _textManager = new Mock<IVsTextManager>(MockBehavior.Strict);
-            _hostRaw.Init(_dte.Object, _textManager.Object);
-        }
 
-        private void CreateAll()
-        {
-            Create();
-            CreateRest();
+            var sp = new Mock<SVsServiceProvider>(MockBehavior.Strict);
+            sp.Setup(x => x.GetService(typeof(SVsTextManager))).Returns(_textManager.Object);
+            sp.Setup(x => x.GetService(typeof(_DTE))).Returns(_dte.Object);
+            _hostRaw = new VsVimHost(_undoManagerProvider.Object, _editorAdaptersFactoryService.Object, null);
+            _host = _hostRaw;
         }
 
         [TearDown]
@@ -72,7 +65,7 @@ namespace VsVimTest
         [Test]
         public void UpdateStatus2()
         {
-            CreateAll();
+            Create();
             _statusBar.SetupSet(x => x.Text).Verifiable();
             _host.UpdateStatus("foo");
             _statusBar.Verify();
@@ -81,7 +74,7 @@ namespace VsVimTest
         [Test]
         public void Undo1()
         {
-            CreateAll();
+            Create();
             var buffer = new Mock<ITextBuffer>(MockBehavior.Strict);
             _undoManagerProvider.Setup(x => x.GetTextBufferUndoManager(buffer.Object)).Returns((ITextBufferUndoManager)null).Verifiable();
             _statusBar
@@ -96,7 +89,7 @@ namespace VsVimTest
         [Test]
         public void Undo2()
         {
-            CreateAll();
+            Create();
             var buffer = new Mock<ITextBuffer>(MockBehavior.Strict);
             var manager = new Mock<ITextBufferUndoManager>(MockBehavior.Strict);
             var history = new Mock<ITextUndoHistory>(MockBehavior.Strict);
@@ -114,7 +107,7 @@ namespace VsVimTest
         [Test]
         public void Redo1()
         {
-            CreateAll();
+            Create();
             var buffer = new Mock<ITextBuffer>(MockBehavior.Strict);
             _undoManagerProvider.Setup(x => x.GetTextBufferUndoManager(buffer.Object)).Returns((ITextBufferUndoManager)null).Verifiable();
             _statusBar
@@ -129,7 +122,7 @@ namespace VsVimTest
         [Test]
         public void Redo2()
         {
-            CreateAll();
+            Create();
             var buffer = new Mock<ITextBuffer>(MockBehavior.Strict);
             var manager = new Mock<ITextBufferUndoManager>(MockBehavior.Strict);
             var history = new Mock<ITextUndoHistory>(MockBehavior.Strict);
@@ -154,7 +147,7 @@ namespace VsVimTest
         [Test]
         public void GotoDefinition2()
         {
-            CreateAll();
+            Create();
             _dte.Setup(x => x.ExecuteCommand(It.IsAny<string>(), It.IsAny<string>())).Throws(new Exception());
             Assert.IsFalse(_host.GoToDefinition());
         }
@@ -162,7 +155,7 @@ namespace VsVimTest
         [Test]
         public void GotoDefinition3()
         {
-            CreateAll();
+            Create();
             _dte.Setup(x => x.ExecuteCommand(It.IsAny<string>(), It.IsAny<string>()));
             Assert.IsTrue(_host.GoToDefinition());
         }
@@ -170,7 +163,7 @@ namespace VsVimTest
         [Test]
         public void GoToMatch1()
         {
-            CreateAll();
+            Create();
             _dte.Setup(x => x.ExecuteCommand(It.IsAny<string>(), It.IsAny<string>()));
             Assert.IsTrue(_host.GoToMatch());
         }
@@ -178,7 +171,7 @@ namespace VsVimTest
         [Test]
         public void GoToMatch2()
         {
-            CreateAll();
+            Create();
             _dte.Setup(x => x.ExecuteCommand(It.IsAny<string>(), It.IsAny<string>())).Throws(new Exception());
             Assert.IsFalse(_host.GoToMatch());
         }
@@ -193,7 +186,7 @@ namespace VsVimTest
         [Test]
         public void NavigateTo2()
         {
-            CreateAll();
+            Create();
             var buffer = EditorUtil.CreateBuffer("foo", "bar");
             var vsBuffer = new Mock<IVsTextBuffer>(MockBehavior.Strict);
             _editorAdaptersFactoryService.Setup(x => x.GetBufferAdapter(buffer)).Returns(vsBuffer.Object);
