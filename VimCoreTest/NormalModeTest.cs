@@ -1899,6 +1899,31 @@ namespace VimCoreTest
             Assert.IsTrue(_mode.IsWaitingForInput);
         }
 
+        [Test]
+        public void Command1()
+        {
+            CreateBuffer("foo");
+            _mode.Process("\"a");
+            Assert.AreEqual("\"a", _modeRaw.Command);
+        }
+
+        [Test]
+        public void Command2()
+        {
+            CreateBuffer("bar");
+            _mode.Process("\"f");
+            Assert.AreEqual("\"f", _modeRaw.Command);
+        }
+
+        [Test]
+        public void Command3()
+        {
+            CreateBuffer("again");
+            _operations.Setup(x => x.MoveCaretUp(1));
+            _mode.Process('k');
+            Assert.AreEqual(string.Empty, _mode.Command);
+        }
+
         #endregion
 
         #region Visual Mode

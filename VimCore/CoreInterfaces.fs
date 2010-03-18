@@ -427,6 +427,9 @@ and IVimBufferCreationListener =
 
 and INormalMode =
 
+    /// Buffered input for the current command
+    abstract Command : string 
+
     /// Is in the middle of an operator pending 
     abstract IsOperatorPending : bool
 

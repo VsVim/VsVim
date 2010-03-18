@@ -69,7 +69,7 @@ namespace Vim.UI.Wpf
                         }
                         else
                         {
-                            _margin.StatusLine = String.Empty;
+                            _margin.StatusLine = mode.Command;
                         }
                     }
                     break;

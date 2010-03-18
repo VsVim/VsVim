@@ -18,9 +18,8 @@ type internal NormalMode
         _operations : IOperations,
         _incrementalSearch : IIncrementalSearch ) = 
 
-
     /// Command specific data (count,register)
-    let mutable _data = (1,_bufferData.RegisterMap.DefaultRegister)
+    let mutable _data = (1,_bufferData.RegisterMap.DefaultRegister,"")
 
     let mutable _operationMap : Map<KeyInput,Operation> = Map.empty
 
@@ -362,7 +361,7 @@ type internal NormalMode
 
     /// Reset the internal data for the NormalMode instance
     member this.ResetData() = 
-        _data <- (1, _bufferData.RegisterMap.DefaultRegister)
+        _data <- (1, _bufferData.RegisterMap.DefaultRegister,"")
         _runFunc <- this.StartCore
         _waitingForMoreInput <- false
         _isOperatingPending <- false
@@ -370,17 +369,22 @@ type internal NormalMode
             _operationMap <- this.BuildOperationsMap
 
     member this.Register = 
-        let _,reg = _data
+        let _,reg,_= _data
         reg
     member this.Count = 
-        let count,_ = _data
+        let count,_,_ = _data
         count
+    member this.Command = 
+        let _,_,command = _data
+        command
+
 
     interface INormalMode with 
         member this.IsOperatorPending = _isOperatingPending
         member this.IsWaitingForInput = _waitingForMoreInput
         member this.IncrementalSearch = _incrementalSearch
         member this.VimBuffer = _bufferData
+        member this.Command = this.Command
         member this.Commands = 
             _operationMap
                 |> Map.toSeq
@@ -396,6 +400,12 @@ type internal NormalMode
                 _operationMap.ContainsKey ki
 
         member this.Process ki = 
+
+            // Update the command string
+            let command = this.Command + (ki.Char.ToString())
+            let count,reg,_ = _data
+            _data <- (count,reg,command)
+
             match _runFunc ki this.Count this.Register with
                 | NormalModeResult.Complete -> 
                     this.ResetData()
@@ -413,16 +423,17 @@ type internal NormalMode
                     this.ResetData() // Make sure to reset information when switching modes
                     ProcessResult.SwitchMode kind
                 | CountComplete (count,nextKi) ->
-                    let _,reg = _data
-                    _data <- (count,reg)
+                    let _,reg,command = _data
+                    _data <- (count,reg,command)
                     _runFunc <- this.StartCore
                     (this :> IMode).Process nextKi
                 | RegisterComplete (reg) ->     
-                    let count,_ = _data
-                    _data <- (count,reg)
+                    let count,_,command = _data
+                    _data <- (count,reg,command)
                     _runFunc <- this.StartCore
                     _waitingForMoreInput <- false
                     Processed
+
         member this.OnEnter ()  =
             this.ResetData()
         member this.OnLeave () = ()
