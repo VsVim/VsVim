@@ -32,11 +32,11 @@ namespace VimCoreTest
             bool forSearch = true,
             string lastSearch = null,
             params string[] lines)
-        {   
-             lines = lines.Length > 0 ? lines : DefaultText;
-             _textBuffer = EditorUtil.CreateBuffer(lines);
-            _settings = new Mock<IVimGlobalSettings>(MockBehavior.Strict);
-            _search = new Mock<IIncrementalSearch>(MockBehavior.Loose);
+        {
+            lines = lines.Length > 0 ? lines : DefaultText;
+            _textBuffer = EditorUtil.CreateBuffer(lines);
+            _settings = new Mock<IVimGlobalSettings>();
+            _search = new Mock<IIncrementalSearch>();
             _searchService = new Mock<ITextSearchService>(MockBehavior.Strict);
             _taggerRaw = new HighlightIncrementalSearchTagger(
                 _textBuffer,
@@ -63,10 +63,10 @@ namespace VimCoreTest
             _taggerRaw = null;
         }
 
-        [Test,Description("Do nothing if search disabled")]
+        [Test, Description("Do nothing if search disabled")]
         public void GetTags1()
         {
-            Init(forSearch:false);
+            Init(forSearch: false);
             _settings.Setup(x => x.HighlightSearch).Returns(false).Verifiable();
             var ret = _taggerRaw.GetTags(new NormalizedSnapshotSpanCollection());
             Assert.AreEqual(0, ret.Count());
@@ -76,7 +76,7 @@ namespace VimCoreTest
         [Test, Description("Do nothing if the search pattern is empty")]
         public void GetTags2()
         {
-            Init(forSearch:false);
+            Init(forSearch: false);
             _settings.Setup(x => x.HighlightSearch).Returns(true).Verifiable();
             _settings.Setup(x => x.IgnoreCase).Returns(true).Verifiable();
             _search
@@ -92,7 +92,7 @@ namespace VimCoreTest
         [Test]
         public void GetTags3()
         {
-            Init(lines:"foo is the bar", lastSearch: "foo");
+            Init(lines: "foo is the bar", lastSearch: "foo");
             _searchService
                 .Setup(x => x.FindNext(0, false, It.IsAny<FindData>()))
                 .Returns(new SnapshotSpan(_textBuffer.CurrentSnapshot, 0, 3));
@@ -107,7 +107,7 @@ namespace VimCoreTest
         [Test, Description("Don't return a tag outside the requested span")]
         public void GetTags4()
         {
-            Init(lines:"foo is the bar", lastSearch: "foo");
+            Init(lines: "foo is the bar", lastSearch: "foo");
             _searchService
                 .Setup(x => x.FindNext(0, false, It.IsAny<FindData>()))
                 .Returns(new SnapshotSpan(_textBuffer.CurrentSnapshot, 4, 3));
@@ -118,13 +118,13 @@ namespace VimCoreTest
         [Test, Description("Spans which start in the request but end outside it should be returned")]
         public void GetTags5()
         {
-            Init(lines:"foo is the bar", lastSearch: "foo");
+            Init(lines: "foo is the bar", lastSearch: "foo");
             _searchService
                 .Setup(x => x.FindNext(0, false, It.IsAny<FindData>()))
                 .Returns(new SnapshotSpan(_textBuffer.CurrentSnapshot, 2, 3));
             var ret = _taggerRaw.GetTags(new NormalizedSnapshotSpanCollection(new SnapshotSpan(_textBuffer.CurrentSnapshot, 0, 3)));
             Assert.AreEqual(1, ret.Count());
-            Assert.AreEqual(new SnapshotSpan(_textBuffer.CurrentSnapshot, 2,3), ret.Single().Span);
+            Assert.AreEqual(new SnapshotSpan(_textBuffer.CurrentSnapshot, 2, 3), ret.Single().Span);
         }
 
         /// <summary>
@@ -133,16 +133,16 @@ namespace VimCoreTest
         /// </summary>
         public void TagsChanged1()
         {
-            Init(lines:"foo is the bar", lastSearch:null);
+            Init(lines: "foo is the bar", lastSearch: null);
             var didSee = false;
             _tagger.TagsChanged += (sender, span) =>
                 {
-                    Assert.AreEqual(new SnapshotSpan(_textBuffer.CurrentSnapshot,0, _textBuffer.CurrentSnapshot.Length), span);
+                    Assert.AreEqual(new SnapshotSpan(_textBuffer.CurrentSnapshot, 0, _textBuffer.CurrentSnapshot.Length), span);
                     didSee = true;
                 };
 
-            var data = 
-                Tuple.Create<SearchData,SearchResult>(
+            var data =
+                Tuple.Create<SearchData, SearchResult>(
                     new SearchData("foo", SearchKind.Forward, FindOptions.None),
                     SearchResult.NewSearchFound(new SnapshotSpan(_textBuffer.CurrentSnapshot, 0, 3)));
             _search.Raise(

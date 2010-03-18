@@ -9,7 +9,7 @@ open Microsoft.VisualStudio.Text.Editor
 /// Operation in the normal mode
 type internal Operation =  {
     KeyInput : Vim.KeyInput;
-    RunFunc : int -> Register -> NormalModeResult
+    RunFunc : int option -> Register -> NormalModeResult
 }
 
 type internal NormalMode 
@@ -19,12 +19,12 @@ type internal NormalMode
         _incrementalSearch : IIncrementalSearch ) = 
 
     /// Command specific data (count,register)
-    let mutable _data = (1,_bufferData.RegisterMap.DefaultRegister,"")
+    let mutable _data : int option * Register * string = (None,_bufferData.RegisterMap.DefaultRegister,"")
 
     let mutable _operationMap : Map<KeyInput,Operation> = Map.empty
 
     /// Function used to process the next piece of input
-    let mutable _runFunc : KeyInput -> int -> Register -> NormalModeResult = (fun _ _ _ -> NormalModeResult.Complete)
+    let mutable _runFunc : KeyInput -> int option -> Register -> NormalModeResult = (fun _ _ _ -> NormalModeResult.Complete)
 
     /// Whether or not we are waiting for at least the second keystroke
     /// of a given command
@@ -32,6 +32,11 @@ type internal NormalMode
 
     /// Are we in the operator pending mode?
     let mutable _isOperatingPending = false;
+
+    let CountOrDefault count =
+        match count with 
+        | Some(c) -> c
+        | None -> 1
 
     member this.TextView = _bufferData.TextView
     member this.TextBuffer = _bufferData.TextBuffer
@@ -252,6 +257,7 @@ type internal NormalMode
     member private this.BuildMotionOperationsMap =
         let wrap func = 
             fun count _ -> 
+                let count = CountOrDefault count
                 func count
                 _bufferData.EditorOperations.ResetSelection()
                 NormalModeResult.Complete
@@ -325,8 +331,8 @@ type internal NormalMode
         let l =
             (waitOps |> Seq.map (fun (ki,func) -> {KeyInput=ki;RunFunc=(fun _ _ -> NormalModeResult.OperatorPending(func())) }))
             |> Seq.append (waitOps2 |> Seq.map (fun (ki,func) -> {KeyInput=ki;RunFunc=(fun _ _ -> NormalModeResult.NeedMoreInput(func())) }))
-            |> Seq.append (completeOps |> Seq.map (fun (ki,func) -> {KeyInput=ki;RunFunc=(fun count reg -> func count reg; NormalModeResult.Complete)}))
-            |> Seq.append (changeOpts |> Seq.map (fun (ki,kind,func) -> {KeyInput=ki;RunFunc=(fun count reg -> func count reg; NormalModeResult.SwitchMode kind)}))
+            |> Seq.append (completeOps |> Seq.map (fun (ki,func) -> {KeyInput=ki;RunFunc=(fun count reg -> func (CountOrDefault count) reg; NormalModeResult.Complete)}))
+            |> Seq.append (changeOpts |> Seq.map (fun (ki,kind,func) -> {KeyInput=ki;RunFunc=(fun count reg -> func (CountOrDefault count) reg; NormalModeResult.SwitchMode kind)}))
             |> Seq.append (this.BuildMotionOperationsMap)
             |> Seq.map (fun d -> d.KeyInput,d)
             |> Map.ofSeq
@@ -362,7 +368,7 @@ type internal NormalMode
 
     /// Reset the internal data for the NormalMode instance
     member this.ResetData() = 
-        _data <- (1, _bufferData.RegisterMap.DefaultRegister,"")
+        _data <- (None, _bufferData.RegisterMap.DefaultRegister,"")
         _runFunc <- this.StartCore
         _waitingForMoreInput <- false
         _isOperatingPending <- false
@@ -412,11 +418,11 @@ type internal NormalMode
                     this.ResetData()
                     Processed
                 | NormalModeResult.NeedMoreInput(f) ->
-                    _runFunc <- f
+                    _runFunc <- (fun ki count reg -> f ki (CountOrDefault count) reg)
                     _waitingForMoreInput <- true
                     Processed
                 | NormalModeResult.OperatorPending(f) ->
-                    _runFunc <- f
+                    _runFunc <- (fun ki count reg -> f ki (CountOrDefault count) reg)
                     _waitingForMoreInput <- true
                     _isOperatingPending <- true
                     Processed
@@ -425,7 +431,7 @@ type internal NormalMode
                     ProcessResult.SwitchMode kind
                 | CountComplete (count,nextKi) ->
                     let _,reg,command = _data
-                    _data <- (count,reg,command)
+                    _data <- (Some(count),reg,command)
                     _runFunc <- this.StartCore
                     (this :> IMode).Process nextKi
                 | RegisterComplete (reg) ->     
