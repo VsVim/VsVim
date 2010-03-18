@@ -308,6 +308,7 @@ type internal NormalMode
         let doNothing _ _ = ()
         let changeOpts = seq {
             yield (InputUtil.CharToKeyInput('i'), ModeKind.Insert, doNothing)
+            yield (InputUtil.CharToKeyInput('I'), ModeKind.Insert, (fun _ _ -> _bufferData.EditorOperations.MoveToStartOfLineAfterWhiteSpace(false)))
             yield (InputUtil.CharToKeyInput(':'), ModeKind.Command, doNothing)
             yield (InputUtil.CharToKeyInput('A'), ModeKind.Insert, (fun _ _ -> _bufferData.EditorOperations.MoveToEndOfLine(false)))
             yield (InputUtil.CharToKeyInput('o'), ModeKind.Insert, (fun _ _ -> _operations.InsertLineBelow() |> ignore))

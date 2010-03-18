@@ -1955,6 +1955,17 @@ namespace VimCoreTest
             Assert.AreEqual(ModeKind.VisualBlock, res.AsSwitchMode().Item);
         }
 
+        [Test]
+        public void ShiftI_1()
+        {
+            CreateBuffer(s_lines);
+            _editorOperations.Setup(x => x.MoveToStartOfLineAfterWhiteSpace(false)).Verifiable();
+            var res = _mode.Process('I');
+            Assert.IsTrue(res.IsSwitchMode);
+            Assert.AreEqual(ModeKind.Insert, res.AsSwitchMode().Item);
+            _editorOperations.Verify();
+        }
+
         #endregion
 
     }
