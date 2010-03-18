@@ -161,7 +161,8 @@ type internal LocalSettings
     
     static let LocalSettings =
         [|
-            ( ScrollName, "scr", NumberKind, NumberValue(25) )
+            ( ScrollName, "scr", NumberKind, NumberValue(25) );
+            ( NumberName, "nu", ToggleKind, ToggleValue(false) )
         |]
 
     let _map = SettingsMap(LocalSettings, false)

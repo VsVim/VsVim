@@ -226,6 +226,7 @@ module GlobalSettingNames =
 module LocalSettingNames =
     
     let ScrollName = "scroll"
+    let NumberName = "number"
 
 /// Represent the setting supported by the Vim implementation.  This class **IS** mutable
 /// and the values will change.  Setting names are case sensitive but the exposed property

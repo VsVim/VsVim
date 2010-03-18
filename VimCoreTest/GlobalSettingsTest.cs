@@ -12,6 +12,7 @@ namespace VimCoreTest
     [TestFixture]
     public class GlobalSettingsTest : SettingsCommonTest
     {
+        protected override string ToggleSettingName { get { return GlobalSettingNames.IgnoreCaseName; } }
         protected override IVimSettings Create()
         {
             return CreateGlobal();

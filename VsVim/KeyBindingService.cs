@@ -113,9 +113,11 @@ namespace VsVim
 
             var first = binding.KeyBinding.FirstKeyInput;
 
-            // Don't want to remove the arrow key bindings because it breaks items like
-            // moving in the intellisense window
-            if (first.IsArrowKey)
+            // We don't want to remove any mappings which don't include a modifier key 
+            // because it removes too many mappings.  Without this check we would for
+            // example remove Delete in insert mode, arrow keys for intellisense and 
+            // general navigation, space bar for completion, etc ...
+            if (first.KeyModifiers == KeyModifiers.None)
             {
                 return true;
             }

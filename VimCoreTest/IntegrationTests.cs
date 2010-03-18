@@ -322,9 +322,7 @@ namespace VimCoreTest
             CreateBuffer("how is", "foo");
             m_view.Caret.MoveTo(new SnapshotPoint(m_view.TextSnapshot, 0));
             m_buffer.ProcessInputAsString("/");
-            Assert.AreEqual("/", m_host.Status);
             m_buffer.ProcessInputAsString("is");
-            Assert.AreEqual("/is", m_host.Status);
             Assert.AreEqual(4, m_view.Caret.Position.BufferPosition.Position);
         }
 

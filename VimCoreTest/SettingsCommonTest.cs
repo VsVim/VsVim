@@ -13,6 +13,8 @@ namespace VimCoreTest
     {
         protected abstract IVimSettings Create();
 
+        protected abstract string ToggleSettingName { get; }
+
         [Test, Description("Value returned from all should be immutable")]
         public void AllSettings1()
         {
@@ -172,11 +174,11 @@ namespace VimCoreTest
             var didRun = false;
             settings.SettingChanged += (unused, setting) =>
                 {
-                    Assert.AreEqual(GlobalSettingNames.IgnoreCaseName, setting.Name);
+                    Assert.AreEqual(ToggleSettingName, setting.Name);
                     Assert.IsTrue(setting.AggregateValue.AsBooleanValue().Item);
                     didRun = true;
                 };
-            settings.TrySetValue(GlobalSettingNames.IgnoreCaseName, SettingValue.NewToggleValue(true));
+            settings.TrySetValue(ToggleSettingName, SettingValue.NewToggleValue(true));
             Assert.IsTrue(didRun);
         }
 
@@ -187,11 +189,11 @@ namespace VimCoreTest
             var didRun = false;
             settings.SettingChanged += (unused, setting) =>
                 {
-                    Assert.AreEqual(GlobalSettingNames.IgnoreCaseName, setting.Name);
+                    Assert.AreEqual(ToggleSettingName, setting.Name);
                     Assert.IsTrue(setting.AggregateValue.AsBooleanValue().Item);
                     didRun = true;
                 };
-            settings.TrySetValueFromString(GlobalSettingNames.IgnoreCaseName, "true");
+            settings.TrySetValueFromString(ToggleSettingName, "true");
             Assert.IsTrue(didRun);
         }
 
