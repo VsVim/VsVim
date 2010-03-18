@@ -754,6 +754,22 @@ namespace VimCoreTest
         }
 
         [Test]
+        public void RunCommand2()
+        {
+            var command = "\"foo bar";
+            _processor.RunCommand(ListModule.OfSeq(command));
+            Assert.AreEqual(Resources.CommandMode_CannotRun(command),  _host.Status);
+        }
+
+        [Test]
+        public void RunCommand3()
+        {
+            var command = " \"foo bar";
+            _processor.RunCommand(ListModule.OfSeq(command));
+            Assert.AreEqual(Resources.CommandMode_CannotRun(command),  _host.Status);
+        }
+
+        [Test]
         public void Remap_noremap()
         {
             Create("");

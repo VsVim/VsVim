@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <VisualState xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ShowCheckBoxes="false">
-  <TopNode>[0-1000]C:\Users\jaredpar\VsVim\VsVim.nunit</TopNode>
-  <SelectedNode>[0-1000]C:\Users\jaredpar\VsVim\VsVim.nunit</SelectedNode>
+  <TopNode>[0-1000]C:\Users\jaredpar\VsVimRelease\VsVim.nunit</TopNode>
+  <SelectedNode>[0-1918]VimCoreTest</SelectedNode>
   <ExcludeCategories>false</ExcludeCategories>
   <Nodes>
     <Node UniqueName="[0-1000]C:\Users\jaredpar\VsVim\VsVim.nunit" Expanded="true" />
