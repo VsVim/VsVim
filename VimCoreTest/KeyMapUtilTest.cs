@@ -78,7 +78,7 @@ namespace VimCoreTest
             var opt = KeyMapUtil.TryStringToKeyInput("<C-x>");
             Assert.IsTrue(opt.IsSome());
             Assert.AreEqual('x', opt.Value.Char);
-            Assert.AreEqual(ModifierKeys.Control, opt.Value.ModifierKeys);
+            Assert.AreEqual(ModifierKeys.Control, opt.Value.KeyModifiers);
         }
 
         [Test]

@@ -63,7 +63,7 @@ module internal KeyMapUtil =
         let toModShort = 
             allManual 
             |> Seq.append FunctionKeys 
-            |> Seq.filter (fun (_,ki) -> ki.ModifierKeys = ModifierKeys.None)
+            |> Seq.filter (fun (_,ki) -> ki.KeyModifiers = KeyModifiers.None)
         let toMod = toModShort |> Seq.append lowerCaseLetters
         let doMod toMod prefix modKeys = 
             let changePrefix (name:string) = sprintf "<%s-%s" prefix (name.Substring(1))
@@ -71,10 +71,10 @@ module internal KeyMapUtil =
 
         // Don' run the modifier on the lower case letters for Shift.  They have to be recreated with different
         // modifiers
-        let withShift = doMod toModShort "S" ModifierKeys.Shift
-        let withControl = doMod toMod "C" ModifierKeys.Control
-        let withMeta = doMod toMod "M" ModifierKeys.Alt
-        let withAlt = doMod toMod "A" ModifierKeys.Alt
+        let withShift = doMod toModShort "S" KeyModifiers.Shift
+        let withControl = doMod toMod "C" KeyModifiers.Control
+        let withMeta = doMod toMod "M" KeyModifiers.Alt
+        let withAlt = doMod toMod "A" KeyModifiers.Alt
         let upperCaseLetters = ['A' .. 'Z'] |> Seq.map (fun ch -> (sprintf "<S-%c>" ch),InputUtil.CharToKeyInput ch)
             
         allManual
