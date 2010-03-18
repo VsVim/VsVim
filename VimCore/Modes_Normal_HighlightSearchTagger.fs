@@ -48,13 +48,14 @@ type internal HighlightIncrementalSearchTagger
         let withSpan pattern (span:SnapshotSpan) =  
             span.Start.Position
             |> Seq.unfold (fun pos -> 
-                let snapshot = _textBuffer.CurrentSnapshot
-                if pos >= snapshot.Length then None
+                if pos >= span.Length then None
                 else
                     let findData = FindData(pattern, _textBuffer.CurrentSnapshot, options, _search.WordNavigator)
                     match _searchService.FindNext(pos, false, findData) with
                     | Null -> None
-                    | HasValue(span) -> Some(span,span.End.Position) )
+                    | HasValue(foundSpan) -> 
+                        if foundSpan.Start.Position <= span.End.Position then Some(foundSpan, foundSpan.End.Position)
+                        else None )
                     
         let searchData = _search.LastSearch
         if StringUtil.isNullOrEmpty searchData.Pattern then Seq.empty
