@@ -114,6 +114,7 @@ type internal GlobalSettings() =
     static let GlobalSettings = 
         [|
             ( IgnoreCaseName,"ic", ToggleKind, ToggleValue(false) );
+            ( StartOfLineName, "sol", ToggleKind, ToggleValue(true) );
             ( ShiftWidthName, "sw", NumberKind, NumberValue(4) );
             ( HighlightSearchName, "hls", ToggleKind, ToggleValue(false) );
             ( VimRcName, VimRcName, StringKind, StringValue(System.String.Empty) );
@@ -142,6 +143,9 @@ type internal GlobalSettings() =
         member x.HighlightSearch
             with get() = _map.GetBoolValue HighlightSearchName
             and set value = _map.TrySetValue HighlightSearchName (ToggleValue(value)) |> ignore
+        member x.StartOfLine 
+            with get() = _map.GetBoolValue StartOfLineName
+            and set value = _map.TrySetValue StartOfLineName (ToggleValue(value)) |> ignore
         member x.VimRc 
             with get() = _map.GetStringValue VimRcName
             and set value = _map.TrySetValue VimRcName (StringValue(value)) |> ignore
