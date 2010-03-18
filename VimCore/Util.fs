@@ -164,3 +164,11 @@ module internal MapUtil =
 module internal CharUtil =
     let IsDigit x = System.Char.IsDigit(x)
     let IsWhiteSpace x = System.Char.IsWhiteSpace(x)
+
+module internal NullableUtil = 
+
+    let (|HasValue|Null|) (x:System.Nullable<_>) =
+        if x.HasValue then
+            HasValue (x.Value)
+        else
+            Null 

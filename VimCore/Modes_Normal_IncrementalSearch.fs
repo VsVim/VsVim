@@ -25,14 +25,9 @@ type internal IncrementalSearch
     let _currentSearchCompleted = Event<SearchData * SearchResult>()
     let _currentSearchCancelled = Event<SearchData>()
 
-    /// Get the current search options based off of the stored data
-    member private x.CaculateFindOptions kind = 
-        let options = if not _settings.GlobalSettings.IgnoreCase then FindOptions.MatchCase else FindOptions.None
-        let options = if SearchKindUtil.IsBackward kind then options ||| FindOptions.SearchReverse else options
-        options
-
     member private x.Begin kind = 
-        let searchData = { Pattern = System.String.Empty; Kind = kind; Options = x.CaculateFindOptions kind}
+        let options = NormalModeUtil.CreateFindOptions kind _settings.GlobalSettings
+        let searchData = { Pattern = System.String.Empty; Kind = kind; Options = options }
         let pos = (ViewUtil.GetCaretPoint _textView).Position
         let start = _textView.TextSnapshot.CreateTrackingPoint(pos, PointTrackingMode.Negative)
         let data = {
@@ -123,6 +118,7 @@ type internal IncrementalSearch
 
     interface IIncrementalSearch with
         member x.InSearch = Option.isSome _data
+        member x.WordNavigator = _navigator
         member x.CurrentSearch = 
             match _data with 
             | Some(data) -> Some data.SearchData

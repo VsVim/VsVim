@@ -148,6 +148,9 @@ type IIncrementalSearch =
     abstract CurrentSearch : SearchData option
     abstract LastSearch : SearchData with get, set
 
+    /// The ITextStructureNavigator used for finding 'word' values in the ITextBuffer
+    abstract WordNavigator : ITextStructureNavigator
+
     /// Processes the next piece of input.  Returns true when the incremental search operation is complete
     abstract Process : KeyInput -> SearchProcessResult
 
@@ -241,6 +244,9 @@ and IVimGlobalSettings =
 
     abstract IgnoreCase : bool with get, set
     abstract ShiftWidth : int with get, set
+
+    /// Whether or not to highlight previous search patterns matching cases
+    abstract HighlightSearch : bool with get,set
 
     /// Retrieves the location of the loaded VimRC file.  Will be the empty string if the load 
     /// did not succeed or has not been tried

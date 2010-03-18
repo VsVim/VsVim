@@ -110,6 +110,7 @@ type internal GlobalSettings() =
     static let DisableCommandLet = KeyInput(System.Char.MinValue, VimKey.F12Key, KeyModifiers.Control ||| KeyModifiers.Shift);
     static let IgnoreCaseName = "ignorecase"
     static let ShiftWidthName = "shiftwidth"
+    static let HighlightSearchName = "hlsearch"
     static let VimRcName = "vimrc"
     static let VimRcPathsName = "vimrcpaths"
 
@@ -117,6 +118,7 @@ type internal GlobalSettings() =
         [|
             ( IgnoreCaseName,"ic", ToggleKind, ToggleValue(false) );
             ( ShiftWidthName, "sw", NumberKind, NumberValue(4) );
+            ( HighlightSearchName, "hls", ToggleKind, ToggleValue(false) );
             ( VimRcName, VimRcName, StringKind, StringValue(System.String.Empty) );
             ( VimRcPathsName, VimRcPathsName, StringKind, StringValue(System.String.Empty) );
         |]
@@ -140,6 +142,9 @@ type internal GlobalSettings() =
         member x.ShiftWidth  
             with get() = _map.GetNumberValue ShiftWidthName
             and set value = _map.TrySetValue ShiftWidthName (NumberValue(value)) |> ignore
+        member x.HighlightSearch
+            with get() = _map.GetBoolValue HighlightSearchName
+            and set value = _map.TrySetValue HighlightSearchName (ToggleValue(value)) |> ignore
         member x.VimRc 
             with get() = _map.GetStringValue VimRcName
             and set value = _map.TrySetValue VimRcName (StringValue(value)) |> ignore

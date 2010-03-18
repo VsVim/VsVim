@@ -9,7 +9,7 @@ open Microsoft.VisualStudio.Utilities
 open System.ComponentModel.Composition
 
 /// Tagger for incremental searches
-type internal Tagger
+type internal IncrementalSearchTagger
     ( 
         _textBuffer : ITextBuffer,
         _search : IIncrementalSearch ) as this= 
@@ -70,7 +70,7 @@ type internal Tagger
 [<ContentType("text")>]
 [<TextViewRole(PredefinedTextViewRoles.Editable)>]
 [<TagType(typeof<TextMarkerTag>)>]
-type internal TaggerProvider
+type internal IncrementalSearchTaggerProvider
     [<ImportingConstructor>]
     ( _vim : IVim ) = 
 
@@ -81,6 +81,7 @@ type internal TaggerProvider
             | Some(buffer) ->
                 let normal = buffer.NormalMode
                 let search = normal.IncrementalSearch
-                let tagger = Tagger(textBuffer,search)
+                let tagger = IncrementalSearchTagger(textBuffer,search)
                 tagger :> obj :?> ITagger<'T>
+
 

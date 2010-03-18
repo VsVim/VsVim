@@ -30,7 +30,7 @@ namespace Vim.UI.Wpf.Implementation
         internal IncrementalSearchMarkerDefinition()
         {
             this.DisplayName = "VsVim Incremental Search";
-            this.Fill = new SolidColorBrush(Colors.Blue);
+            this.Fill = new SolidColorBrush(Colors.LightBlue);
         }
     }
 
