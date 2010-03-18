@@ -9,7 +9,6 @@ using Microsoft.VisualStudio.Editor;
 using System.Diagnostics;
 using System.Collections.Generic;
 using Vim;
-using Microsoft.VisualStudio.OLE.Interop;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Text.Classification;
 using Microsoft.VisualStudio.Text.Operations;
@@ -18,43 +17,43 @@ using Microsoft.VisualStudio;
 using System.Runtime.InteropServices;
 using System.Windows.Threading;
 using Microsoft.FSharp.Core;
+using Microsoft.VisualStudio.Shell;
+using EnvDTE;
 
 namespace VsVim
 {
     [Export(typeof(IWpfTextViewCreationListener))]
+    [Export(typeof(IVimBufferCreationListener))]
+    [Export(typeof(IVsTextViewCreationListener))]
     [ContentType(Constants.ContentType)]
     [TextViewRole(PredefinedTextViewRoles.Editable)]
-    internal sealed class HostFactory : IWpfTextViewCreationListener
+    internal sealed class HostFactory : IWpfTextViewCreationListener, IVimBufferCreationListener, IVsTextViewCreationListener
     {
-        private readonly IVsVimFactoryService _vsVimFactory;
         private readonly KeyBindingService _keyBindingService;
-        private readonly IVimBufferFactory _vimBufferFactory;
         private readonly ITextEditorFactoryService _editorFactoryService;
+        private readonly IServiceProvider _serviceProvider;
         private readonly IVim _vim;
+        private readonly IVsEditorAdaptersFactoryService _adaptersFactory;
+        private readonly Dictionary<IVimBuffer, VsCommandFilter> _filterMap = new Dictionary<IVimBuffer, VsCommandFilter>();
 
         [ImportingConstructor]
         public HostFactory(
-            IVsVimFactoryService factory,
-            IVimBufferFactory vimBufferFactory,
             IVim vim,
             ITextEditorFactoryService editorFactoryService,
-            KeyBindingService keyBindingService)
+            KeyBindingService keyBindingService,
+            SVsServiceProvider serviceProvider,
+            IVsEditorAdaptersFactoryService adaptersFactory)
         {
             _vim = vim;
-            _vsVimFactory = factory;
-            _vimBufferFactory = vimBufferFactory;
             _keyBindingService = keyBindingService;
             _editorFactoryService = editorFactoryService;
+            _serviceProvider = serviceProvider;
+            _adaptersFactory = adaptersFactory;
         }
 
-        public void TextViewCreated(IWpfTextView textView)
+        void IWpfTextViewCreationListener.TextViewCreated(IWpfTextView textView)
         {
             var buffer = _vim.GetOrCreateBuffer(textView);
-            var sp = _vsVimFactory.GetOrUpdateServiceProvider(textView.TextBuffer);
-            if (sp == null)
-            {
-                return;
-            }
 
             // Load the VimRC file if we haven't tried yet
             if (!_vim.IsVimRcLoaded && String.IsNullOrEmpty(_vim.Settings.VimRcPaths))
@@ -63,7 +62,7 @@ namespace VsVim
                 _vim.LoadVimRc(func);
             }
 
-            var dte = sp.GetService<SDTE, EnvDTE.DTE>();
+            var dte = (_DTE)_serviceProvider.GetService(typeof(_DTE));
             Action doCheck = () =>
                 {
                     // Run the key binding check now
@@ -73,7 +72,37 @@ namespace VsVim
             Dispatcher.CurrentDispatcher.BeginInvoke(doCheck, null);
         }
 
+        void IVimBufferCreationListener.VimBufferCreated(IVimBuffer buffer)
+        {
+            var textView = buffer.TextView;
+            textView.Closed += (x, y) =>
+            {
+                buffer.Close();
+                _filterMap.Remove(buffer);
+                ITextViewDebugUtil.Detach(textView);
+            };
+            ITextViewDebugUtil.Attach(textView);
+        }
 
+        void IVsTextViewCreationListener.VsTextViewCreated(IVsTextView vsView)
+        {
+            // Once we have the Vs view, stop listening to the event
+            var view = _adaptersFactory.GetWpfTextView(vsView);
+            if (view == null)
+            {
+                return;
+            }
+
+            var opt = _vim.GetBuffer(view);
+            if (!opt.IsSome())
+            {
+                return;
+            }
+
+            var buffer = opt.Value;
+            var filter = new VsCommandFilter(buffer, vsView);
+            _filterMap.Add(buffer, filter);
+        }
     }
 
 }

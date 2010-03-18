@@ -120,7 +120,6 @@
     <Compile Include="Extensions.cs" />
     <Compile Include="HostFactory.cs" />
     <Compile Include="ITextViewDebugUtil.cs" />
-    <Compile Include="IVsVimFactoryService.cs" />
     <Compile Include="KeyBinding.cs" />
     <Compile Include="KeyBindingService.cs" />
     <Compile Include="KeyProcessorProvider.cs" />
@@ -133,7 +132,6 @@
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
     <Compile Include="VsCommandFilter.cs" />
-    <Compile Include="VsVimFactoryService.cs" />
     <Compile Include="VsVimHost.cs" />
   </ItemGroup>
   <ItemGroup>
