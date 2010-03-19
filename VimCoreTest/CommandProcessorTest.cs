@@ -13,6 +13,7 @@ using Microsoft.VisualStudio.Text.Operations;
 using Moq;
 using System.IO;
 using Microsoft.FSharp.Collections;
+using Vim.Modes;
 
 namespace VimCoreTest
 {
@@ -27,6 +28,7 @@ namespace VimCoreTest
         private IRegisterMap _map;
         private Mock<IEditorOperations> _editOpts;
         private Mock<IOperations> _operations;
+        private Mock<IStatusUtil> _statusUtil;
 
         public void Create(params string[] lines)
         {
@@ -37,11 +39,12 @@ namespace VimCoreTest
             _editOpts = new Mock<IEditorOperations>(MockBehavior.Strict);
             _operations = new Mock<IOperations>(MockBehavior.Strict);
             _operations.SetupGet(x => x.EditorOperations).Returns(_editOpts.Object);
+            _statusUtil = new Mock<IStatusUtil>();
             _bufferData = MockObjectFactory.CreateVimBuffer(
                 _view,
                 "test",
                 MockObjectFactory.CreateVim(_map, host: _host).Object);
-            _processorRaw = new Vim.Modes.Command.CommandProcessor(_bufferData.Object, _operations.Object);
+            _processorRaw = new Vim.Modes.Command.CommandProcessor(_bufferData.Object, _operations.Object, _statusUtil.Object);
             _processor = _processorRaw;
         }
 
@@ -106,7 +109,7 @@ namespace VimCoreTest
         {
             Create("foo");
             RunCommand("400");
-            Assert.IsTrue(!String.IsNullOrEmpty(_host.Status));
+            _statusUtil.Verify(x => x.OnError(It.IsAny<string>()));
         }
 
         [Test]
@@ -503,7 +506,7 @@ namespace VimCoreTest
             var tss = _view.TextSnapshot;
             var span = new SnapshotSpan(tss, 0, tss.Length);
             RunCommand("%s/foo/bar/c");
-            Assert.AreEqual(Resources.CommandMode_NotSupported_SubstituteConfirm, _host.Status);
+            _statusUtil.Verify(x => x.OnError(Resources.CommandMode_NotSupported_SubstituteConfirm));
         }
 
         [Test]
@@ -528,7 +531,7 @@ namespace VimCoreTest
             Create("foo");
             RunCommand("real");
             Assert.AreEqual(0, _host.RedoCount);
-            Assert.AreEqual(Resources.CommandMode_CannotRun("real"), _host.Status);
+            _statusUtil.Verify(x => x.OnError(Resources.CommandMode_CannotRun("real")));
         }
 
         [Test]
@@ -553,7 +556,7 @@ namespace VimCoreTest
             Create("foo");
             RunCommand("unreal");
             Assert.AreEqual(0, _host.UndoCount);
-            Assert.AreEqual(Resources.CommandMode_CannotRun("unreal"), _host.Status);
+            _statusUtil.Verify(x => x.OnError(Resources.CommandMode_CannotRun("unreal")));
         }
 
         [Test]
@@ -569,7 +572,7 @@ namespace VimCoreTest
         {
             Create("foo");
             RunCommand("marksaoeu");
-            Assert.AreEqual(Resources.CommandMode_CannotRun("marksaoeu"), _host.Status);
+            _statusUtil.Verify(x => x.OnError(Resources.CommandMode_CannotRun("marksaoeu")));
         }
 
         [Test]
@@ -710,7 +713,7 @@ namespace VimCoreTest
         {
             Create("boo");
             RunCommand("source");
-            Assert.AreEqual(Resources.CommandMode_CouldNotOpenFile(String.Empty), _host.Status);
+            _statusUtil.Verify(x => x.OnError(Resources.CommandMode_CouldNotOpenFile(String.Empty)));
         }
 
         [Test]
@@ -718,7 +721,7 @@ namespace VimCoreTest
         {
             Create("bar");
             RunCommand("source! boo");
-            Assert.AreEqual(Resources.CommandMode_NotSupported_SourceNormal, _host.Status);
+            _statusUtil.Verify(x => x.OnError(Resources.CommandMode_NotSupported_SourceNormal));
         }
 
         [Test]
@@ -758,7 +761,7 @@ namespace VimCoreTest
         {
             var command = "\"foo bar";
             _processor.RunCommand(ListModule.OfSeq(command));
-            Assert.AreEqual(Resources.CommandMode_CannotRun(command),  _host.Status);
+            _statusUtil.Verify(x => x.OnError(Resources.CommandMode_CannotRun(command)));
         }
 
         [Test]
@@ -766,7 +769,7 @@ namespace VimCoreTest
         {
             var command = " \"foo bar";
             _processor.RunCommand(ListModule.OfSeq(command));
-            Assert.AreEqual(Resources.CommandMode_CannotRun(command),  _host.Status);
+            _statusUtil.Verify(x => x.OnError(Resources.CommandMode_CannotRun(command)));
         }
 
         [Test]

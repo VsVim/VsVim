@@ -82,7 +82,8 @@ type CommandAction = char list -> Range option -> bool -> unit
 type internal CommandProcessor 
     ( 
         _data : IVimBuffer, 
-        _operations : IOperations ) as this = 
+        _operations : IOperations,
+        _statusUtil : IStatusUtil ) as this = 
 
     let mutable _command : System.String = System.String.Empty
 
@@ -294,17 +295,17 @@ type internal CommandProcessor
     member private x.ProcessUndo rest _ _ =
         match Seq.isEmpty rest with
         | true -> _data.VimHost.Undo _data.TextBuffer 1
-        | false -> _data.VimHost.UpdateStatus x.BadMessage
+        | false -> _statusUtil.OnError x.BadMessage
 
     member private x.ProcessRedo rest _ _ =
         match Seq.isEmpty rest with
         | true -> _data.VimHost.Redo _data.TextBuffer 1
-        | false -> _data.VimHost.UpdateStatus x.BadMessage
+        | false -> _statusUtil.OnError x.BadMessage
 
     member private x.ProcessMarks rest _ _ =
         match Seq.isEmpty rest with
         | true -> _operations.PrintMarks _data.MarkMap
-        | false -> _data.VimHost.UpdateStatus x.BadMessage
+        | false -> _statusUtil.OnError x.BadMessage
 
     /// Parse out the :set command
     member private x.ProcessSet (rest:char list) _ _=
@@ -325,10 +326,10 @@ type internal CommandProcessor
     /// Used to parse out the :source command.  List is pointing past the o in :source
     member private x.ProcessSource (rest:char list) _ bang =
         let file = rest |> StringUtil.ofCharSeq
-        if bang then _data.VimHost.UpdateStatus Resources.CommandMode_NotSupported_SourceNormal
+        if bang then _statusUtil.OnError Resources.CommandMode_NotSupported_SourceNormal
         else
             match Utils.ReadAllLines file with
-            | None -> _data.VimHost.UpdateStatus (Resources.CommandMode_CouldNotOpenFile file)
+            | None -> _statusUtil.OnError (Resources.CommandMode_CouldNotOpenFile file)
             | Some(_,lines) ->
                 lines 
                 |> Seq.map (fun command -> command |> List.ofSeq)
@@ -377,10 +378,10 @@ type internal CommandProcessor
             let search,replace,flags = _lastSubstitute
             _operations.Substitute search replace range flags
         else 
-            let badParse () = _data.VimHost.UpdateStatus Resources.CommandMode_InvalidCommand
+            let badParse () = _statusUtil.OnError Resources.CommandMode_InvalidCommand
             let goodParse search replace flags = 
                 if Utils.IsFlagSet flags SubstituteFlags.Confirm then
-                    _data.VimHost.UpdateStatus Resources.CommandMode_NotSupported_SubstituteConfirm
+                    _statusUtil.OnError Resources.CommandMode_NotSupported_SubstituteConfirm
                 else
                     _operations.Substitute search replace range flags
                     _lastSubstitute <- (search,replace,flags)
@@ -404,7 +405,7 @@ type internal CommandProcessor
             if hasBang then [KeyRemapMode.Insert; KeyRemapMode.Command]
             else modes
         let withKeys lhs rhs _ = _operations.RemapKeys lhs rhs modes allowRemap 
-        CommandParseUtil.ParseKeys rest withKeys (fun() -> _data.VimHost.UpdateStatus x.BadMessage)
+        CommandParseUtil.ParseKeys rest withKeys (fun() -> _statusUtil.OnError x.BadMessage)
 
     member private x.ParseCommand (rest:char list) (range:Range option) = 
 
@@ -441,7 +442,7 @@ type internal CommandProcessor
 
 
         match command with
-        | None -> _data.VimHost.UpdateStatus x.BadMessage
+        | None -> _statusUtil.OnError x.BadMessage
         | Some(name,shortName,action) ->
             let rest = rest |> ListUtil.skip commandName.Length 
             let hasBang,rest = rest |> CommandParseUtil.SkipBang
@@ -456,13 +457,11 @@ type internal CommandProcessor
             if inputs |> List.isEmpty then
                 match range with 
                 | SingleLine(line) -> _operations.EditorOperations.GotoLine(line.LineNumber) |> ignore
-                | _ -> _data.VimHost.UpdateStatus("Invalid Command String")
+                | _ -> _statusUtil.OnError("Invalid Command String")
             else
                 withRange (Some(range)) inputs
         | NoRange -> withRange None originalInputs
-        | ParseRangeResult.Failed(msg) -> 
-            _data.VimHost.UpdateStatus(msg)
-            ()
+        | ParseRangeResult.Failed(msg) -> _statusUtil.OnError msg
 
     /// Run the specified command.  This funtion can be called recursively
     member x.RunCommand (input: char list)=

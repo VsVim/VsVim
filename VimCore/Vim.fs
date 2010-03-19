@@ -39,7 +39,7 @@ type internal VimBufferFactory
         let normalIncrementalSearch = Vim.Modes.Normal.IncrementalSearch(view, localSettings, _textSearchService, wordNav) :> IIncrementalSearch
         let normalOpts = Modes.Normal.DefaultOperations(view,editOperations,_host,localSettings,wordNav,_textSearchService,jumpList, normalIncrementalSearch) :> Modes.Normal.IOperations
         let commandOpts = Modes.Command.DefaultOperations(view,editOperations,_host, statusUtil, jumpList, localSettings, vim.KeyMap) :> Modes.Command.IOperations
-        let commandProcessor = Modes.Command.CommandProcessor(buffer, commandOpts) :> Modes.Command.ICommandProcessor
+        let commandProcessor = Modes.Command.CommandProcessor(buffer, commandOpts, statusUtil) :> Modes.Command.ICommandProcessor
         let insertOpts = Modes.Insert.DefaultOperations(view,editOperations,_host, jumpList) :> Modes.ICommonOperations
         let visualOptsFactory kind = 
             let mode = 
