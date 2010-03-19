@@ -51,7 +51,7 @@ namespace Vim.UI.Wpf
             }
         }
 
-        private void OnKeyInputProcessed(object sender, KeyInput input)
+        private void OnKeyInputProcessed(object sender, Tuple<KeyInput,ProcessResult> tuple)
         {
             switch ( _buffer.ModeKind )
             {

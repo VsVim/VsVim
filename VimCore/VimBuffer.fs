@@ -66,22 +66,25 @@ type internal VimBuffer
 
         // Actually process the given piece of input
         let doProcess i = 
-            let ret = 
+            let ret,res = 
                 if i = _vim.Settings.DisableCommand && x.Mode.ModeKind <> ModeKind.Disabled then
                     x.SwitchMode ModeKind.Disabled |> ignore
-                    true
+                    true,SwitchMode(ModeKind.Disabled)
                 else
                     let res = x.Mode.Process i
-                    match res with
+                    let ret = 
+                        match res with
                         | SwitchMode (kind) -> 
                             x.SwitchMode kind |> ignore
                             true
                         | SwitchPreviousMode -> 
                             _modeMap.SwitchPreviousMode() |> ignore
                             true
+                        | ProcessedWithError(_) -> true
                         | Processed -> true
                         | ProcessNotHandled -> false
-            _keyInputProcessedEvent.Trigger(i)
+                    ret,res
+            _keyInputProcessedEvent.Trigger(i,res)
             ret
 
         // Calculate the current remapMode

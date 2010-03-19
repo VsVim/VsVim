@@ -171,6 +171,7 @@ type IIncrementalSearch =
 
 type ProcessResult = 
     | Processed
+    | ProcessedWithError of string
     | ProcessNotHandled
     | SwitchMode of ModeKind
     | SwitchPreviousMode
@@ -393,7 +394,7 @@ and IVimBuffer =
     /// In this case the input is buffered until the second key is read and then the 
     /// inputs are processed
     [<CLIEvent>]
-    abstract KeyInputProcessed : IEvent<KeyInput>
+    abstract KeyInputProcessed : IEvent<KeyInput * ProcessResult>
 
     /// Raised when a KeyInput is recieved by the buffer
     [<CLIEvent>]
