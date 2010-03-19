@@ -63,6 +63,8 @@ type IVimBufferFactory =
     /// Create a IVimBuffer for the given parameters
     abstract CreateBuffer : IVim -> ITextView -> IVimBuffer
 
-    /// Raised when an IVimBuffer instance is created
-    [<CLIEvent>]
-    abstract BufferCreated: IEvent<IVimBuffer>
+type IVimBufferCreationListener =
+
+    /// Called whenever an IVimBuffer is created
+    abstract VimBufferCreated : IVimBuffer -> unit
+

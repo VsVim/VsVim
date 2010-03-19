@@ -21,8 +21,6 @@ type internal VimBufferFactory
         _textStructureNavigatorSelectorService : ITextStructureNavigatorSelectorService,
         _tlcService : ITrackingLineColumnService ) =
 
-    let _bufferCreatedEvent = new Event<_>()
-    
     member x.CreateBuffer (vim:IVim) view = 
         let editOperations = _editorOperationsFactoryService.GetEditorOperations(view)
         let jumpList = JumpList(_tlcService) :> IJumpList
@@ -65,7 +63,6 @@ type internal VimBufferFactory
             ]
         modeList |> List.iter (fun m -> bufferRaw.AddMode m)
         buffer.SwitchMode ModeKind.Normal |> ignore
-        _bufferCreatedEvent.Trigger buffer
         bufferRaw
 
     member private x.CreateTextStructureNavigator textBuffer wordKind =
@@ -74,8 +71,6 @@ type internal VimBufferFactory
 
     interface IVimBufferFactory with
         member x.CreateBuffer vim view = x.CreateBuffer vim view :> IVimBuffer
-        [<CLIEvent>]
-        member x.BufferCreated = _bufferCreatedEvent.Publish
 
 
 /// Default implementation of IVim 

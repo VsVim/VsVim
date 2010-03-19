@@ -14,26 +14,18 @@ namespace VimCoreTest
     {
         private IVim _vim;
         private IVimBufferFactory _factory;
-        private List<IVimBuffer> _created;
 
         [SetUp]
         public void SetUp()
         {
             _factory = EditorUtil.FactoryService.vimBufferFactory;
-            _factory.BufferCreated += new FSharpHandler<IVimBuffer>(OnBufferCreated);
             _vim = EditorUtil.FactoryService.vim;
-            _created = new List<IVimBuffer>();
         }
 
         [TearDown]
         public void TearDown()
         {
-            _factory.BufferCreated -= new FSharpHandler<IVimBuffer>(OnBufferCreated);
-        }
 
-        void OnBufferCreated(object sender, IVimBuffer args)
-        {
-            _created.Add(args);
         }
 
         [Test]
@@ -56,16 +48,5 @@ namespace VimCoreTest
             Assert.IsNotNull(buffer2);
             Assert.AreNotSame(buffer1, buffer2);
         }
-
-        [Test]
-        public void Created1()
-        {
-            var view = EditorUtil.CreateView("foo bar");
-            var buffer = _factory.CreateBuffer(_vim, view);
-            Assert.AreEqual(1, _created.Count);
-            Assert.AreSame(buffer, _created[0]);
-
-        }
-
     }
 }
