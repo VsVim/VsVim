@@ -330,6 +330,8 @@ and IVimBuffer =
 
     /// Underyling ITextBuffer Vim is operating under
     abstract TextBuffer : ITextBuffer
+
+    /// Current ITextSnapshot of the ITextBuffer
     abstract TextSnapshot : ITextSnapshot
 
     /// Buffered KeyInput list.  When a key remapping has multiple source elements the input 
@@ -351,6 +353,9 @@ and IVimBuffer =
 
     /// Current mode of the buffer
     abstract Mode : IMode
+
+    /// Whether or not the IVimBuffer is currently processing input
+    abstract IsProcessingInput : bool
 
     abstract NormalMode : INormalMode 
     abstract CommandMode : ICommandMode 
@@ -398,6 +403,18 @@ and IVimBuffer =
     /// Raised when a KeyInput is recieved by the buffer
     [<CLIEvent>]
     abstract KeyInputReceived : IEvent<KeyInput>
+
+    /// Raised when an error is encountered
+    [<CLIEvent>]
+    abstract ErrorMessage : IEvent<string>
+
+    /// Raised when a status message is encountered
+    [<CLIEvent>]
+    abstract StatusMessage : IEvent<string>
+
+    /// Raised when a long status message is encountered
+    [<CLIEvent>]
+    abstract StatusMessageLong : IEvent<string seq>
 
 and IMode =
 

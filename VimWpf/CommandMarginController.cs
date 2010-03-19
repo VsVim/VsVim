@@ -10,6 +10,7 @@ namespace Vim.UI.Wpf
     {
         private readonly IVimBuffer _buffer;
         private readonly CommandMarginControl _margin;
+        private bool _ignoreNextKeyProcessedEvent;
 
         internal CommandMarginController(IVimBuffer buffer, CommandMarginControl control)
         {
@@ -19,6 +20,8 @@ namespace Vim.UI.Wpf
             _buffer.SwitchedMode += OnSwitchMode;
             _buffer.KeyInputProcessed += OnKeyInputProcessed;
             _buffer.KeyInputReceived += OnKeyInputReceived;
+            _buffer.StatusMessage += OnStatusMessage;
+            _buffer.ErrorMessage += OnErrorMessage;
         }
 
         private void UpdateStatusLine()
@@ -53,6 +56,12 @@ namespace Vim.UI.Wpf
 
         private void OnKeyInputProcessed(object sender, Tuple<KeyInput, ProcessResult> tuple)
         {
+            if (_ignoreNextKeyProcessedEvent)
+            {
+                _ignoreNextKeyProcessedEvent = false;
+                return;
+            }
+
             switch (_buffer.ModeKind)
             {
                 case ModeKind.Command:
@@ -79,6 +88,18 @@ namespace Vim.UI.Wpf
         private void OnKeyInputReceived(object sender, KeyInput input)
         {
 
+        }
+
+        private void OnStatusMessage(object sender, string message)
+        {
+            _margin.StatusLine = message;
+            _ignoreNextKeyProcessedEvent = _buffer.IsProcessingInput;
+        }
+
+        private void OnErrorMessage(object sender, string message)
+        {
+            _margin.StatusLine = message;
+            _ignoreNextKeyProcessedEvent = _buffer.IsProcessingInput;
         }
     }
 }

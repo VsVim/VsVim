@@ -12,6 +12,7 @@ type IVimHost =
     /// function result information
     abstract UpdateLongStatus : string seq -> unit
     abstract Beep : unit -> unit
+
     abstract OpenFile : string -> unit
     abstract Undo : ITextBuffer -> count:int -> unit
     abstract Redo : ITextBuffer -> count:int -> unit

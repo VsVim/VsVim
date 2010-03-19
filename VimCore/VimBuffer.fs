@@ -40,6 +40,7 @@ type internal VimBuffer
         _settings : IVimLocalSettings ) =
 
     let mutable _modeMap = ModeMap()
+    let mutable _isProcessingInput = false
 
     /// This is the buffered input when a remap request needs more than one 
     /// element
@@ -47,6 +48,9 @@ type internal VimBuffer
 
     let _keyInputProcessedEvent = new Event<_>()
     let _keyInputReceivedEvent = new Event<_>()
+    let _errorMessageEvent = new Event<_>()
+    let _statusMessageEvent = new Event<_>()
+    let _statusMessageLongEvent = new Event<_>()
 
     member x.BufferedRemapKeyInputs =
         match _remapInput with
@@ -67,22 +71,26 @@ type internal VimBuffer
         // Actually process the given piece of input
         let doProcess i = 
             let ret,res = 
-                if i = _vim.Settings.DisableCommand && x.Mode.ModeKind <> ModeKind.Disabled then
-                    x.SwitchMode ModeKind.Disabled |> ignore
-                    true,SwitchMode(ModeKind.Disabled)
-                else
-                    let res = x.Mode.Process i
-                    let ret = 
-                        match res with
-                        | SwitchMode (kind) -> 
-                            x.SwitchMode kind |> ignore
-                            true
-                        | SwitchPreviousMode -> 
-                            _modeMap.SwitchPreviousMode() |> ignore
-                            true
-                        | Processed -> true
-                        | ProcessNotHandled -> false
-                    ret,res
+                _isProcessingInput <- true 
+                try
+                    if i = _vim.Settings.DisableCommand && x.Mode.ModeKind <> ModeKind.Disabled then
+                        x.SwitchMode ModeKind.Disabled |> ignore
+                        true,SwitchMode(ModeKind.Disabled)
+                    else
+                        let res = x.Mode.Process i
+                        let ret = 
+                            match res with
+                            | SwitchMode (kind) -> 
+                                x.SwitchMode kind |> ignore
+                                true
+                            | SwitchPreviousMode -> 
+                                _modeMap.SwitchPreviousMode() |> ignore
+                                true
+                            | Processed -> true
+                            | ProcessNotHandled -> false
+                        ret,res
+                finally
+                    _isProcessingInput <- false
             _keyInputProcessedEvent.Trigger(i,res)
             ret
 
@@ -133,6 +141,10 @@ type internal VimBuffer
     member x.AddMode mode = _modeMap.AddMode mode
             
     member x.CanProcessInput ki = x.Mode.CanProcess ki || ki = _vim.Settings.DisableCommand
+
+    member x.RaiseErrorMessage msg = _errorMessageEvent.Trigger msg
+    member x.RaiseStatusMessage msg = _statusMessageEvent.Trigger msg
+    member x.RaiseStatusMessageLong msgSeq = _statusMessageLongEvent.Trigger msgSeq
                  
     interface IVimBuffer with
         member x.Vim = _vim
@@ -141,6 +153,7 @@ type internal VimBuffer
         member x.TextBuffer = _textView.TextBuffer
         member x.TextSnapshot = _textView.TextSnapshot
         member x.BufferedRemapKeyInputs = x.BufferedRemapKeyInputs 
+        member x.IsProcessingInput = _isProcessingInput
         member x.Name = _vim.Host.GetName _textView.TextBuffer
         member x.MarkMap = _vim.MarkMap
         member x.JumpList = _jumpList
@@ -158,12 +171,20 @@ type internal VimBuffer
             x.ProcessInput ki
         member x.SwitchMode kind = x.SwitchMode kind
         member x.SwitchPreviousMode () = _modeMap.SwitchPreviousMode()
+
         [<CLIEvent>]
         member x.SwitchedMode = _modeMap.SwitchedEvent
         [<CLIEvent>]
         member x.KeyInputProcessed = _keyInputProcessedEvent.Publish
         [<CLIEvent>]
         member x.KeyInputReceived = _keyInputReceivedEvent.Publish
+        [<CLIEvent>]
+        member x.ErrorMessage = _errorMessageEvent.Publish
+        [<CLIEvent>]
+        member x.StatusMessage = _statusMessageEvent.Publish
+        [<CLIEvent>]
+        member x.StatusMessageLong = _statusMessageLongEvent.Publish
+
         member x.ProcessInput ki = x.ProcessInput ki
         member x.CanProcessInput ki = x.CanProcessInput ki
         member x.Close () = 

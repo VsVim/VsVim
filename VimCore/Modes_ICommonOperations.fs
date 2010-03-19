@@ -14,8 +14,20 @@ type Result =
     | Succeeded
     | Failed of string
 
+type IStatusUtil =
+
+    /// Raised when there is a special status message that needs to be reported
+    abstract OnStatus : string -> unit
+
+    /// Raised when there is a long status message that needs to be reported
+    abstract OnLongStatus : string seq -> unit 
+
+    /// Raised when there is an error message that needs to be reported
+    abstract OnError : string -> unit 
+
 /// Common operations
 type ICommonOperations =
+
     /// Associated ITextView
     abstract TextView : ITextView 
 
