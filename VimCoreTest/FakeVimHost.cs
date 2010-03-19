@@ -95,5 +95,16 @@ namespace VimCoreTest
         {
             throw new NotImplementedException();
         }
+
+
+        void IVimHost.GoToNextTab(int count)
+        {
+            throw new NotImplementedException();
+        }
+
+        void IVimHost.GoToPreviousTab(int count)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

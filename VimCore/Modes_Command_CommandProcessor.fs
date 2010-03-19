@@ -112,6 +112,9 @@ type internal CommandProcessor
             yield (">", "", this.ProcessShiftRight)
             yield ("write","w", this.ProcessWrite)
             yield ("quit", "q", this.ProcessQuit)
+            yield ("tabnext", "tabn", this.ProcessTabNext)
+            yield ("tabprevious", "tabp", this.ProcessTabPrevious)
+            yield ("tabNext", "tabN", this.ProcessTabPrevious)
             yield ("$", "", fun _ _ _ -> _operations.EditorOperations.MoveToEndOfDocument(false))
         }
 
@@ -291,6 +294,16 @@ type internal CommandProcessor
     member private x.ProcessQuit _ _ hasBang =
         let checkDirty = not hasBang
         _operations.Close checkDirty
+
+    member private x.ProcessTabNext rest _ _ =
+        let count,rest = RangeUtil.ParseNumber rest
+        let count = match count with | Some(c) -> c | None -> 1
+        _operations.GoToNextTab count
+
+    member private x.ProcessTabPrevious rest _ _ =
+        let count,rest = RangeUtil.ParseNumber rest
+        let count = match count with | Some(c) -> c | None -> 1
+        _operations.GoToPreviousTab count
 
     /// Implements the :delete command
     member private x.ProcessDelete (rest:char list) (range:Range option) _ =

@@ -200,8 +200,25 @@ namespace VsVim
             SafeExecuteCommand("File.Close");
         }
 
-        #endregion
+        void IVimHost.GoToNextTab(int count)
+        {
+            while (count > 0)
+            {
+                SafeExecuteCommand("Window.NextDocumentWindow");
+                count--;
+            }
+        }
 
+        void IVimHost.GoToPreviousTab(int count)
+        {
+            while (count > 0)
+            {
+                SafeExecuteCommand("Window.PreviousDocumentWindow");
+                count--;
+            }
+        }
+
+        #endregion
 
     }
 }

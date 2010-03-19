@@ -16,6 +16,12 @@ type IVimHost =
     /// Go to the matching construct of the value under the cursor
     abstract GoToMatch : unit -> bool
 
+    /// Go to the next tab window
+    abstract GoToNextTab : count : int -> unit
+
+    /// Go to the previous tab window
+    abstract GoToPreviousTab: count : int -> unit
+
     abstract GetName : ITextBuffer -> string
     abstract NavigateTo : point : VirtualSnapshotPoint -> bool
 
@@ -30,6 +36,7 @@ type IVimHost =
 
     /// Close the current file
     abstract CloseCurrentFile : checkDirty:bool -> unit
+
 
 
 

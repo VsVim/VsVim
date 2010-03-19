@@ -45,6 +45,12 @@ type ICommonOperations =
     /// Go to the matching construct of the value under the cursor
     abstract GoToMatch : unit -> bool
 
+    /// Go to the next "count" tab
+    abstract GoToNextTab : count : int -> unit
+
+    /// Go to the previous "count" tab
+    abstract GoToPreviousTab : count : int -> unit
+
     /// Navigate to the given point which may occur in any ITextBuffer.  This will not update the 
     /// jump list
     abstract NavigateToPoint : VirtualSnapshotPoint -> bool

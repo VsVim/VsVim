@@ -197,6 +197,8 @@ type internal NormalMode
             | '*' -> _operations.MoveToNextOccuranceOfPartialWordAtCursor count
             | '#' -> _operations.MoveToPreviousOccuranceOfPartialWordAtCursor count
             | 'g' -> _operations.GoToLineOrFirst countOpt
+            | 't' -> _operations.GoToNextTab count
+            | 'T' -> _operations.GoToPreviousTab count
             | _ ->
                 _bufferData.VimHost.Beep()
                 ()
@@ -313,6 +315,8 @@ type internal NormalMode
             yield (KeyInput('i', KeyModifiers.Control), (fun count _ -> _operations.JumpNext count))
             yield (KeyInput('o', KeyModifiers.Control), (fun count _ -> _operations.JumpPrevious count))
             yield (InputUtil.CharToKeyInput('%'), (fun _ _ -> _operations.GoToMatch() |> ignore))
+            yield (InputUtil.VimKeyAndModifiersToKeyInput VimKey.PageDownKey KeyModifiers.Control, (fun count _ -> _operations.GoToNextTab count))
+            yield (InputUtil.VimKeyAndModifiersToKeyInput VimKey.PageUpKey KeyModifiers.Control, (fun count _ -> _operations.GoToPreviousTab count))
         }
 
         // Similar to completeOpts but take the conditional count value

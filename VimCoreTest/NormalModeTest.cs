@@ -1996,7 +1996,79 @@ namespace VimCoreTest
             _editorOperations.Verify();
         }
 
+        [Test]
+        public void gt_1()
+        {
+            CreateBuffer(s_lines);
+            _operations.Setup(x => x.GoToNextTab(1)).Verifiable();
+            _mode.Process("gt");
+            _operations.Verify();
+        }
 
+        [Test]
+        public void gt_2()
+        {
+            CreateBuffer(s_lines);
+            _operations.Setup(x => x.GoToNextTab(2)).Verifiable();
+            _mode.Process("2gt");
+            _operations.Verify();
+        }
+
+        [Test]
+        public void CPageDown_1()
+        {
+            CreateBuffer(s_lines);
+            _operations.Setup(x => x.GoToNextTab(1)).Verifiable();
+            _mode.Process(InputUtil.VimKeyAndModifiersToKeyInput(VimKey.PageDownKey, KeyModifiers.Control));
+            _operations.Verify();
+        }
+       
+        [Test]
+        public void CPageDown_2()
+        {
+            CreateBuffer(s_lines);
+            _operations.Setup(x => x.GoToNextTab(2)).Verifiable();
+            _mode.Process("2");
+            _mode.Process(InputUtil.VimKeyAndModifiersToKeyInput(VimKey.PageDownKey, KeyModifiers.Control));
+            _operations.Verify();
+        }
+
+        [Test]
+        public void gT_1()
+        {
+            CreateBuffer(s_lines);
+            _operations.Setup(x => x.GoToPreviousTab(1)).Verifiable();
+            _mode.Process("gT");
+            _operations.Verify();
+        }
+
+        [Test]
+        public void gT_2()
+        {
+            CreateBuffer(s_lines);
+            _operations.Setup(x => x.GoToPreviousTab(2)).Verifiable();
+            _mode.Process("2gT");
+            _operations.Verify();
+        }
+
+        [Test]
+        public void CPageUp_1()
+        {
+            CreateBuffer(s_lines);
+            _operations.Setup(x => x.GoToPreviousTab(1)).Verifiable();
+            _mode.Process(InputUtil.VimKeyAndModifiersToKeyInput(VimKey.PageUpKey, KeyModifiers.Control));
+            _operations.Verify();
+        }
+
+        [Test]
+        public void CPageUp_2()
+        {
+            CreateBuffer(s_lines);
+            _operations.Setup(x => x.GoToPreviousTab(2)).Verifiable();
+            _mode.Process('2');
+            _mode.Process(InputUtil.VimKeyAndModifiersToKeyInput(VimKey.PageUpKey, KeyModifiers.Control));
+            _operations.Verify();
+        }
 
         #endregion
 

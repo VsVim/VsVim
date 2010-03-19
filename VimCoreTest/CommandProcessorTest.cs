@@ -978,5 +978,77 @@ namespace VimCoreTest
             RunCommand("q!");
             _operations.Verify();
         }
+
+        [Test]
+        public void TabNext1()
+        {
+            Create("");
+            _operations.Setup(x => x.GoToNextTab(1)).Verifiable();
+            RunCommand("tabnext");
+            _operations.Verify();
+        }
+
+        [Test]
+        public void TabNext2()
+        {
+            Create("");
+            _operations.Setup(x => x.GoToNextTab(1)).Verifiable();
+            RunCommand("tabn");
+            _operations.Verify();
+        }
+
+        [Test]
+        public void TabNext3()
+        {
+            Create("");
+            _operations.Setup(x => x.GoToNextTab(3)).Verifiable();
+            RunCommand("tabn 3");
+            _operations.Verify();
+        }
+
+        [Test]
+        public void TabPrevious1()
+        {
+            Create("");
+            _operations.Setup(x => x.GoToPreviousTab(1)).Verifiable();
+            RunCommand("tabprevious");
+            _operations.Verify();
+        }
+
+        [Test]
+        public void TabPrevious2()
+        {
+            Create("");
+            _operations.Setup(x => x.GoToPreviousTab(1)).Verifiable();
+            RunCommand("tabp");
+            _operations.Verify();
+        }
+
+        [Test]
+        public void TabPrevious3()
+        {
+            Create("");
+            _operations.Setup(x => x.GoToPreviousTab(1)).Verifiable();
+            RunCommand("tabN");
+            _operations.Verify();
+        }
+
+        [Test]
+        public void TabPrevious4()
+        {
+            Create("");
+            _operations.Setup(x => x.GoToPreviousTab(1)).Verifiable();
+            RunCommand("tabNext");
+            _operations.Verify();
+        }
+
+        [Test]
+        public void TabPrevious5()
+        {
+            Create("");
+            _operations.Setup(x => x.GoToPreviousTab(42)).Verifiable();
+            RunCommand("tabNext 42");
+            _operations.Verify();
+        }
     }
  }
