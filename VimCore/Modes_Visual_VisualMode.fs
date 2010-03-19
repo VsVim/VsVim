@@ -169,7 +169,6 @@ type internal VisualMode
                 let res = _data.RunFunc ki
                 match res with
                 | VisualModeResult.Complete -> 
-                    _buffer.VimHost.UpdateStatus(Resources.VisualMode_Banner)
                     x.ResetCommandData()
                     ProcessResult.Processed
                 | VisualModeResult.SwitchPreviousMode -> ProcessResult.SwitchPreviousMode
@@ -180,10 +179,8 @@ type internal VisualMode
             x.ResetCommandData()
             x.EnsureOperationsMap()
             _selectionTracker.Start()
-            _buffer.VimHost.UpdateStatus(Resources.VisualMode_Banner)
         member x.OnLeave () = 
             _selectionTracker.Stop()
-            _buffer.VimHost.UpdateStatus(System.String.Empty)
 
     interface IVisualMode with
         member x.Operations = _operations

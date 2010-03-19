@@ -16,7 +16,8 @@ type internal NormalMode
     ( 
         _bufferData : IVimBuffer, 
         _operations : IOperations,
-        _incrementalSearch : IIncrementalSearch ) = 
+        _incrementalSearch : IIncrementalSearch,
+        _statusUtil : Vim.Modes.IStatusUtil ) =
 
     /// Command specific data (count,register)
     let mutable _data : int option * Register * string = (None,_bufferData.RegisterMap.DefaultRegister,"")
@@ -62,21 +63,18 @@ type internal NormalMode
         let rec f (result:MotionResult) = 
             match result with 
                 | MotionResult.Complete (span) -> 
-                    _bufferData.VimHost.UpdateStatus(System.String.Empty)
                     doneFunc span
                 | NeedMoreInput (moreFunc) ->
-                    _bufferData.VimHost.UpdateStatus("Waiting for motion")
                     let inputFunc ki _ _ = f (moreFunc ki)
                     NormalModeResult.NeedMoreInput inputFunc
                 | InvalidMotion (msg,moreFunc) ->
-                    _bufferData.VimHost.UpdateStatus(msg)
+                    _statusUtil.OnError msg
                     let inputFunc ki _ _ = f (moreFunc ki)
                     NormalModeResult.NeedMoreInput inputFunc 
                 | Error (msg) ->
-                    _bufferData.VimHost.UpdateStatus(msg)
+                    _statusUtil.OnError msg
                     NormalModeResult.Complete
                 | Cancel -> 
-                    _bufferData.VimHost.UpdateStatus(System.String.Empty)
                     NormalModeResult.Complete
         f (MotionCapture.ProcessView _bufferData.TextView ki count)
         
@@ -230,7 +228,7 @@ type internal NormalMode
         let waitForKey (ki:KeyInput) _ _ =
             let res = _operations.JumpToMark ki.Char _bufferData.MarkMap 
             match res with 
-            | Modes.Failed(msg) -> _bufferData.VimHost.UpdateStatus(msg)
+            | Modes.Failed(msg) -> _statusUtil.OnError msg
             | _ -> ()
             NormalModeResult.Complete
         waitForKey

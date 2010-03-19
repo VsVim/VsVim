@@ -12,6 +12,7 @@ type internal DefaultOperations
     _textView : ITextView,
     _operations : IEditorOperations,
     _host : IVimHost,
+    _statusUtil : IStatusUtil,
     _settings : IVimLocalSettings,
     _normalWordNav : ITextStructureNavigator,
     _searchService : ITextSearchService,
@@ -38,7 +39,7 @@ type internal DefaultOperations
     member private x.MoveToNextWordCore isWrap isWholeWord count = 
         let point = ViewUtil.GetCaretPoint _textView
         match TssUtil.FindCurrentFullWordSpan point WordKind.NormalWord with
-        | None -> _host.UpdateStatus Resources.NormalMode_NoWordUnderCursor
+        | None -> _statusUtil.OnError Resources.NormalMode_NoWordUnderCursor
         | Some(span) ->
             let options = if isWholeWord then FindOptions.WholeWord else FindOptions.None
             let options = if _settings.GlobalSettings.IgnoreCase then options else options ||| FindOptions.MatchCase
@@ -57,7 +58,7 @@ type internal DefaultOperations
     member x.MoveToPreviousWordCore isWrap isWholeWord count = 
         let point = ViewUtil.GetCaretPoint _textView
         match TssUtil.FindCurrentFullWordSpan point WordKind.NormalWord with
-        | None -> _host.UpdateStatus Resources.NormalMode_NoWordUnderCursor
+        | None -> _statusUtil.OnError Resources.NormalMode_NoWordUnderCursor
         | Some(span) ->
             let options = if isWholeWord then FindOptions.WholeWord else FindOptions.None
             let options = if _settings.GlobalSettings.IgnoreCase then options else options ||| FindOptions.MatchCase
@@ -203,8 +204,7 @@ type internal DefaultOperations
         member x.GoToDefinitionWrapper () =
             match x.CommonImpl.GoToDefinition() with
             | Vim.Modes.Succeeded -> ()
-            | Vim.Modes.Failed(msg) ->
-                _host.UpdateStatus(msg)
+            | Vim.Modes.Failed(msg) -> _statusUtil.OnError msg
 
         member x.Scroll dir count =
             let lines = _settings.Scroll
@@ -237,9 +237,9 @@ type internal DefaultOperations
         member x.JumpPrevious count = x.JumpCore count (fun() -> _jumpList.MovePrevious())
         member x.FindNextMatch count =
             if StringUtil.isNullOrEmpty _incrementalSearch.LastSearch.Pattern then 
-                _host.UpdateStatus Resources.NormalMode_NoPreviousSearch
+                _statusUtil.OnError Resources.NormalMode_NoPreviousSearch
             elif not (_incrementalSearch.FindNextMatch count) then
-                _host.UpdateStatus (Resources.NormalMode_PatternNotFound _incrementalSearch.LastSearch.Pattern)
+                _statusUtil.OnError (Resources.NormalMode_PatternNotFound _incrementalSearch.LastSearch.Pattern)
     
         member x.GoToLineOrFirst count =
             let line =

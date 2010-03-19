@@ -30,6 +30,7 @@ namespace VimCoreTest
         private Mock<IEditorOperations> _editorOperations;
         private Mock<IIncrementalSearch> _incrementalSearch;
         private Mock<IJumpList> _jumpList;
+        private Mock<IStatusUtil> _statusUtil;
 
         static string[] s_lines = new string[]
             {
@@ -51,6 +52,7 @@ namespace VimCoreTest
             _editorOperations = new Mock<IEditorOperations>();
             _incrementalSearch = new Mock<IIncrementalSearch>(MockBehavior.Strict);
             _jumpList = new Mock<IJumpList>(MockBehavior.Strict);
+            _statusUtil = new Mock<IStatusUtil>(MockBehavior.Strict);
             _bufferData = MockFactory.CreateVimBuffer(
                 _view,
                 "test",
@@ -58,7 +60,7 @@ namespace VimCoreTest
                 _jumpList.Object);
             _operations = new Mock<IOperations>(MockBehavior.Strict);
             _operations.SetupGet(x => x.EditorOperations).Returns(_editorOperations.Object);
-            _modeRaw = new Vim.Modes.Normal.NormalMode(Tuple.Create(_bufferData.Object, _operations.Object, _incrementalSearch.Object));
+            _modeRaw = new Vim.Modes.Normal.NormalMode(Tuple.Create(_bufferData.Object, _operations.Object, _incrementalSearch.Object, _statusUtil.Object));
             _mode = _modeRaw;
             _mode.OnEnter();
         }
@@ -587,19 +589,19 @@ namespace VimCoreTest
         [Test, Description("Typing in invalid motion should produce a warning")]
         public void BadMotion1()
         {
-            var host = new FakeVimHost();
-            CreateBuffer(host, s_lines);
+            CreateBuffer(s_lines);
+            _statusUtil.Setup(x => x.OnError(It.IsAny<string>())).Verifiable();
             _mode.Process("d@");
-            Assert.AreNotEqual(String.Empty, host.Status);
+            _statusUtil.Verify();
         }
 
         [Test, Description("Typing in invalid motion should produce a warning")]
         public void BadMotion2()
         {
-            var host = new FakeVimHost();
-            CreateBuffer(host, s_lines);
+            CreateBuffer(s_lines);
+            _statusUtil.Setup(x => x.OnError(It.IsAny<string>())).Verifiable();
             _mode.Process("d@aoeuaoeu");
-            Assert.AreNotEqual(String.Empty, host.Status);
+            _statusUtil.Verify();
         }
 
         [Test, Description("Enter must cancel an invalid motion")]
@@ -607,37 +609,13 @@ namespace VimCoreTest
         {
             CreateBuffer(s_lines);
             _mode.Process("d@");
+            _statusUtil.Setup(x => x.OnError(It.IsAny<string>())).Verifiable();
             var res = _mode.Process(InputUtil.CharToKeyInput('i'));
             Assert.IsTrue(res.IsProcessed);
             _mode.Process(VimKey.EnterKey);
             res = _mode.Process(InputUtil.CharToKeyInput('i'));
             Assert.IsTrue(res.IsSwitchMode);
-        }
-
-        [Test, Description("Canceled motion should reset the status")]
-        public void BadMotion4()
-        {
-            var host = new FakeVimHost();
-            CreateBuffer(host, s_lines);
-            _mode.Process("dzzz");
-            Assert.IsFalse(String.IsNullOrEmpty(host.Status));
-            _mode.Process(VimKey.EscapeKey);
-            Assert.IsTrue(String.IsNullOrEmpty(host.Status));
-        }
-
-        [Test, Description("Completed motion should reset the status")]
-        public void BadMotion5()
-        {
-            var host = new FakeVimHost();
-            CreateBuffer(host, s_lines);
-            _operations.Setup(x => x.Yank(
-                It.IsAny<SnapshotSpan>(),
-                It.IsAny<MotionKind>(),
-                It.IsAny<OperationKind>(),
-                It.IsAny<Register>())).Verifiable();
-            _mode.Process("yaw");
-            Assert.IsTrue(String.IsNullOrEmpty(host.Status));
-            _operations.Verify();
+            _statusUtil.Verify();
         }
 
         [Test]

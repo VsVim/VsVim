@@ -12,6 +12,7 @@ using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Operations;
 using Microsoft.VisualStudio.Text;
 using System.Windows.Input;
+using Vim.Modes;
 
 namespace VimCoreTest
 {
@@ -26,6 +27,7 @@ namespace VimCoreTest
         private Mock<IVimGlobalSettings> _globalSettings;
         private Mock<IVimLocalSettings> _settings;
         private Mock<IIncrementalSearch> _search;
+        private Mock<IStatusUtil> _statusUtil;
 
         private void Create(params string[] lines)
         {
@@ -57,7 +59,8 @@ namespace VimCoreTest
             _settings = MockObjectFactory.CreateLocalSettings(_globalSettings.Object);
             _jumpList = new Mock<IJumpList>(MockBehavior.Strict);
             _search = new Mock<IIncrementalSearch>(MockBehavior.Strict);
-            _operationsRaw = new DefaultOperations(_view, editorOpts, _host.Object, _settings.Object, nav, searchService, _jumpList.Object, _search.Object);
+            _statusUtil = new Mock<IStatusUtil>(MockBehavior.Strict);
+            _operationsRaw = new DefaultOperations(_view, editorOpts, _host.Object, _statusUtil.Object, _settings.Object, nav, searchService, _jumpList.Object, _search.Object);
             _operations = _operationsRaw;
         }
 
@@ -515,9 +518,9 @@ namespace VimCoreTest
         public void MoveToNextOccuranceOfWordAtCursor1()
         {
             Create("  foo bar baz");
-            _host.Setup(x => x.UpdateStatus(Resources.NormalMode_NoWordUnderCursor)).Verifiable();
+            _statusUtil.Setup(x => x.OnError(Resources.NormalMode_NoWordUnderCursor)).Verifiable();
             _operations.MoveToNextOccuranceOfWordAtCursor(true, 1);
-            _host.Verify();
+            _statusUtil.Verify();
         }
 
         [Test]
@@ -744,9 +747,9 @@ namespace VimCoreTest
         {
             Create("foo bar");
             _search.SetupGet(x => x.LastSearch).Returns(new SearchData(String.Empty, SearchKind.ForwardWithWrap, FindOptions.None));
-            _host.Setup(x => x.UpdateStatus(Resources.NormalMode_NoPreviousSearch)).Verifiable();
+            _statusUtil.Setup(x => x.OnError(Resources.NormalMode_NoPreviousSearch)).Verifiable();
             _operations.FindNextMatch(1);
-            _host.Verify();
+            _statusUtil.Verify();
         }
 
         [Test]
@@ -755,9 +758,9 @@ namespace VimCoreTest
             Create("foo bar");
             _search.SetupGet(x => x.LastSearch).Returns(new SearchData("foo", SearchKind.ForwardWithWrap, FindOptions.None)).Verifiable();
             _search.Setup(x => x.FindNextMatch(2)).Returns(false).Verifiable();
-            _host.Setup(x => x.UpdateStatus(Resources.NormalMode_PatternNotFound("foo"))).Verifiable();
+            _statusUtil.Setup(x => x.OnError(Resources.NormalMode_PatternNotFound("foo"))).Verifiable();
             _operations.FindNextMatch(2);
-            _host.Verify();
+            _statusUtil.Verify();
             _search.Verify();
         }
 

@@ -16,19 +16,14 @@ type internal DisabledMode( _data : IVimBuffer ) =
         member x.ModeKind = ModeKind.Disabled        
         member x.Commands = Seq.singleton _data.Settings.GlobalSettings.DisableCommand
         member x.CanProcess ki = 
-            _data.VimHost.UpdateStatus(x.HelpString)
             ki = _data.Settings.GlobalSettings.DisableCommand
         member x.Process ki = 
             if ki = _data.Settings.GlobalSettings.DisableCommand then
                 ProcessResult.SwitchMode ModeKind.Normal
             else
                 ProcessResult.ProcessNotHandled
-        member x.OnEnter() = 
-            _data.VimHost.UpdateStatus(x.HelpString)
-            ()
-        member x.OnLeave() = 
-            _data.VimHost.UpdateStatus(System.String.Empty)
-            ()
+        member x.OnEnter() = ()
+        member x.OnLeave() = ()
     
     
 

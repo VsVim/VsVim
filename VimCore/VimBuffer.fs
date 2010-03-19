@@ -134,7 +134,7 @@ type internal VimBuffer
             _remapInput <- keyInputs |> List.ofSeq |> Some
             true
         | RecursiveMapping(_) -> 
-            _vim.Host.UpdateStatus Resources.Vim_RecursiveMapping
+            x.RaiseErrorMessage Resources.Vim_RecursiveMapping
             true
         | KeySequence(kiSeq) -> kiSeq |> Seq.map doProcess |> SeqUtil.last
     
