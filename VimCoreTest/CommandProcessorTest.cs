@@ -906,5 +906,41 @@ namespace VimCoreTest
             TestUnmap("lunm a ", "a", KeyRemapMode.Language);
             TestUnmap("unmap! a ", "a", KeyRemapMode.Insert, KeyRemapMode.Command);
         }
+
+        [Test]
+        public void Write1()
+        {
+            Create("");
+            _operations.Setup(x => x.Save()).Verifiable();
+            RunCommand("w");
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Write2()
+        {
+            Create("");
+            _operations.Setup(x => x.Save()).Verifiable();
+            RunCommand("write");
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Write3()
+        {
+            Create("");
+            _operations.Setup(x => x.SaveAs("foo")).Verifiable();
+            RunCommand("write foo");
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Write4()
+        {
+            Create("");
+            _operations.Setup(x => x.SaveAs("foo")).Verifiable();
+            RunCommand("w foo");
+            _operations.Verify();
+        }
     }
-}
+ }

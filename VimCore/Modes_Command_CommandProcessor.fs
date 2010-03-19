@@ -110,6 +110,7 @@ type internal CommandProcessor
             yield ("yank", "y", this.ProcessYank)
             yield ("<", "", this.ProcessShiftLeft)
             yield (">", "", this.ProcessShiftRight)
+            yield ("write","w", this.ProcessWrite)
             yield ("$", "", fun _ _ _ -> _operations.EditorOperations.MoveToEndOfDocument(false))
         }
 
@@ -279,6 +280,12 @@ type internal CommandProcessor
             | None -> range
         let span = RangeUtil.GetSnapshotSpan range
         _operations.ShiftRight span _data.Settings.GlobalSettings.ShiftWidth |> ignore
+
+    member private x.ProcessWrite (rest:char list) _ _ = 
+        let name = rest |> StringUtil.ofCharSeq 
+        let name = name.Trim()
+        if StringUtil.isNullOrEmpty name then _operations.Save()
+        else _operations.SaveAs name
 
     /// Implements the :delete command
     member private x.ProcessDelete (rest:char list) (range:Range option) _ =

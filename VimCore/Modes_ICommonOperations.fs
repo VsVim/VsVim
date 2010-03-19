@@ -96,3 +96,9 @@ type ICommonOperations =
 
     /// Shift the lines in the span count spaces to the left
     abstract ShiftLeft : SnapshotSpan -> count : int -> ITextSnapshot
+
+    /// Save the current document
+    abstract Save : unit -> unit
+
+    /// Save the current document as the specified file
+    abstract SaveAs : string -> unit

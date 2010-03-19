@@ -80,5 +80,16 @@ namespace VimCoreTest
             GoToMatchCount++;
             return true;
         }
+
+
+        void IVimHost.Save()
+        {
+            throw new NotImplementedException();
+        }
+
+        void IVimHost.SaveAs(string value)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

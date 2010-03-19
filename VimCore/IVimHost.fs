@@ -22,3 +22,9 @@ type IVimHost =
     /// Display the open file dialog 
     abstract ShowOpenFileDialog : unit -> unit
 
+    /// Save the current document
+    abstract Save : unit -> unit
+
+    /// Save the current document as a new file with the specified name
+    abstract SaveAs : string -> unit
+
