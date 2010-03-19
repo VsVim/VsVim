@@ -92,24 +92,6 @@ namespace VsVim
             Console.Beep();
         }
 
-        void IVimHost.UpdateStatus(string status)
-        {
-            UpdateStatus(status);
-        }
-
-        void IVimHost.UpdateLongStatus(IEnumerable<string> statusLines)
-        {
-            var builder = new StringBuilder();
-            foreach (var item in statusLines)
-            {
-                builder.AppendLine(item);
-            }
-            MessageBox.Show(
-                caption: "Vim Status Update",
-                messageBoxText: builder.ToString(),
-                button: MessageBoxButton.OK);
-        }
-
         void IVimHost.Undo(ITextBuffer buffer, int count)
         {
             var undoManager = _undoManagerProvider.GetTextBufferUndoManager(buffer);

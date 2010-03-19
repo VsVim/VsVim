@@ -13,8 +13,6 @@ namespace VimCoreTest
     {
         public int BeepCount { get; set; }
         public string LastFileOpen { get; set; }
-        public string Status { get; set; }
-        public List<String> LongStatus { get; set; }
         public int UndoCount { get; set; }
         public int RedoCount { get; set; }
         public int GoToDefinitionCount { get; set; }
@@ -29,7 +27,6 @@ namespace VimCoreTest
         [ImportingConstructor]
         public FakeVimHost()
         {
-            Status = String.Empty;
             GoToDefinitionReturn = true;
             IsCompletionWindowActive = false;
             NavigateToReturn = false;
@@ -46,11 +43,6 @@ namespace VimCoreTest
             LastFileOpen = p;
         }
 
-        void IVimHost.UpdateStatus(string status)
-        {
-            Status = status;
-        }
-
         void IVimHost.Undo(ITextBuffer buffer, int count)
         {
             UndoCount += count;
@@ -61,12 +53,6 @@ namespace VimCoreTest
             GoToDefinitionCount++;
             return GoToDefinitionReturn;
         }
-
-        void IVimHost.UpdateLongStatus(IEnumerable<string> value)
-        {
-            LongStatus = value.ToList();
-        }
-
 
         bool IVimHost.NavigateTo(VirtualSnapshotPoint point)
         {

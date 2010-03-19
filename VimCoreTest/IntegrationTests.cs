@@ -436,7 +436,6 @@ namespace VimCoreTest
         public void Next4()
         {
             m_buffer.ProcessInputAsString("n");
-            Assert.IsFalse(String.IsNullOrEmpty(m_host.Status));
         }
 
         #endregion
@@ -472,7 +471,6 @@ namespace VimCoreTest
             m_view.Caret.MoveTo(new SnapshotPoint(m_view.TextSnapshot, 7));
             m_buffer.ProcessInputAsString("*");
             Assert.AreEqual(7, m_view.Caret.Position.BufferPosition.Position);
-            Assert.IsFalse(string.IsNullOrEmpty(m_host.Status));
         }
 
 

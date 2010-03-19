@@ -86,17 +86,6 @@ namespace VimCoreTest
             Assert.AreEqual(view.TextSnapshot.GetLineFromLineNumber(1).Start, view.Caret.Position.BufferPosition);
         }
 
-        /// <summary>
-        /// Invalid line position
-        /// </summary>
-        [Test]
-        public void JumpLine3()
-        {
-            buffer.ProcessInputAsString(":200");
-            buffer.ProcessInput(InputUtil.VimKeyToKeyInput(VimKey.EnterKey));
-            Assert.IsFalse(String.IsNullOrEmpty(host.Status));
-        }
-
         [Test]
         public void JumpLineLast()
         {

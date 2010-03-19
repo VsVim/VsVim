@@ -608,8 +608,8 @@ namespace VimCoreTest
         public void BadMotion3()
         {
             CreateBuffer(s_lines);
-            _mode.Process("d@");
             _statusUtil.Setup(x => x.OnError(It.IsAny<string>())).Verifiable();
+            _mode.Process("d@");
             var res = _mode.Process(InputUtil.CharToKeyInput('i'));
             Assert.IsTrue(res.IsProcessed);
             _mode.Process(VimKey.EnterKey);

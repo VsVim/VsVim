@@ -38,30 +38,6 @@ namespace VimCoreTest
         }
 
         [Test]
-        public void CanProcess2()
-        {
-            _host.Status = String.Empty;
-            Assert.IsFalse(_mode.CanProcess(InputUtil.CharToKeyInput('a')));
-            Assert.IsFalse(String.IsNullOrEmpty(_host.Status));
-        }
-
-        [Test]
-        public void OnEnter1()
-        {
-            _host.Status = String.Empty;
-            _mode.OnEnter();
-            Assert.IsFalse(string.IsNullOrEmpty(_host.Status));
-        }
-
-        [Test, Description("Leaving should clear the help message")]
-        public void OnLeave1()
-        {
-            _host.Status = "aoeu";
-            _mode.OnLeave();
-            Assert.IsTrue(string.IsNullOrEmpty(_host.Status));
-        }
-
-        [Test]
         public void Commands1()
         {
             Assert.IsTrue(_mode.Commands.First().Equals(GlobalSettings.DisableCommand));

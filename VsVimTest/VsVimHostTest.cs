@@ -55,22 +55,6 @@ namespace VsVimTest
             _hostRaw = null;
         }
 
-        [Test, Description("Don't crash id _dte is not set")]
-        public void UpdateStatus1()
-        {
-            Create();
-            _host.UpdateStatus("foo");
-        }
-
-        [Test]
-        public void UpdateStatus2()
-        {
-            Create();
-            _statusBar.SetupSet(x => x.Text).Verifiable();
-            _host.UpdateStatus("foo");
-            _statusBar.Verify();
-        }
-
         [Test]
         public void Undo1()
         {

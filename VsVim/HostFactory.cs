@@ -35,6 +35,7 @@ namespace VsVim
         private readonly IVim _vim;
         private readonly IVsEditorAdaptersFactoryService _adaptersFactory;
         private readonly Dictionary<IVimBuffer, VsCommandFilter> _filterMap = new Dictionary<IVimBuffer, VsCommandFilter>();
+        private readonly IVimHost _host;
 
         [ImportingConstructor]
         public HostFactory(
@@ -42,13 +43,15 @@ namespace VsVim
             ITextEditorFactoryService editorFactoryService,
             KeyBindingService keyBindingService,
             SVsServiceProvider serviceProvider,
-            IVsEditorAdaptersFactoryService adaptersFactory)
+            IVsEditorAdaptersFactoryService adaptersFactory,
+            IVimHost host)
         {
             _vim = vim;
             _keyBindingService = keyBindingService;
             _editorFactoryService = editorFactoryService;
             _serviceProvider = serviceProvider;
             _adaptersFactory = adaptersFactory;
+            _host = host;
         }
 
         void IWpfTextViewCreationListener.TextViewCreated(IWpfTextView textView)
@@ -74,6 +77,10 @@ namespace VsVim
 
         void IVimBufferCreationListener.VimBufferCreated(IVimBuffer buffer)
         {
+            var dte = (_DTE)_serviceProvider.GetService(typeof(_DTE));
+            buffer.ErrorMessage += (unused, msg) => dte.StatusBar.Text = msg;
+            buffer.StatusMessage += (unused, msg) => dte.StatusBar.Text = msg;
+
             var textView = buffer.TextView;
             textView.Closed += (x, y) =>
             {

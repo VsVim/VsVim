@@ -135,28 +135,6 @@ namespace VimCoreTest
             Assert.IsFalse(_modeRaw.InExplicitMove);
         }
 
-        [Test]
-        public void Banner1()
-        {
-            var host = new Mock<IVimHost>(MockBehavior.Strict);
-            host.Setup(x => x.UpdateStatus(Resources.VisualMode_Banner)).Verifiable();
-            Create2(kind: ModeKind.VisualCharacter, host: host.Object, lines: "foo");
-            host.Verify();
-        }
-
-        [Test]
-        public void Banner2()
-        {
-            var host = new Mock<IVimHost>(MockBehavior.Strict);
-            host.Setup(x => x.UpdateStatus(Resources.VisualMode_Banner)).Verifiable();
-            Create2(kind: ModeKind.VisualCharacter, host: host.Object, lines: "foo");
-            host.Setup(x => x.UpdateStatus(String.Empty)).Verifiable();
-            _tracker.Setup(x => x.Stop()).Verifiable();
-            _mode.OnLeave();
-            host.Verify();
-            _tracker.Verify();
-        }
-
         [Test,Description("Must handle arbitrary input to prevent changes but don't list it as a command")]
         public void PreventInput1()
         {

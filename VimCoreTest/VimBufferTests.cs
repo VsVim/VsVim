@@ -265,12 +265,17 @@ namespace VimCoreTest
         [Test, Description("Recursive mapping should print out an error message")]
         public void Remap6()
         {
-            _host.Setup(x => x.UpdateStatus(Resources.Vim_RecursiveMapping)).Verifiable();
+            var didRun = false;
+            _buffer.ErrorMessage += (notUsed, msg) =>
+                {
+                    Assert.AreEqual(Resources.Vim_RecursiveMapping, msg);
+                    didRun = true;
+                };
             _keyMap
                 .Setup(x => x.GetKeyMappingResult(It.IsAny<KeyInput>(), KeyRemapMode.Normal))
                 .Returns(KeyMappingResult.NewRecursiveMapping(new KeyInput[]{}));
             _buffer.ProcessChar('b');
-            _host.Verify();
+            Assert.IsTrue(didRun);
         }
 
         [Test, Description("When more input is needed for a map don't pass it to the IMode")]

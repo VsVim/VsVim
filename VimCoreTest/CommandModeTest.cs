@@ -52,26 +52,23 @@ namespace VimCoreTest
         public void StatusOnColon1()
         {
             _mode.OnEnter();
-            Assert.AreEqual(":", _host.Status);
+            Assert.AreEqual("", _mode.Command);
         }
 
         [Test, Description("When leaving command mode we should not clear the status because it will remove error messages")]
         public void StatusOnLeave()
         {
-            _host.Status = "foo";
             _mode.OnLeave();
-            Assert.AreEqual("foo", _host.Status);
+            Assert.AreEqual("", _mode.Command);
         }
 
         [Test]
         public void StatusOnProcess()
         {
-            _host.Status = "foo";
             _processor.Setup(x => x.RunCommand(MatchUtil.CreateForCharList("1"))).Verifiable();
             _mode.Process("1");
             _mode.Process(InputUtil.VimKeyToKeyInput(VimKey.EnterKey));
             _processor.Verify();
-            Assert.AreEqual(String.Empty, _host.Status);
         }
 
         [Test, Description("Ensure multiple commands can be processed")]
