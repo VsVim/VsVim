@@ -171,7 +171,6 @@ type IIncrementalSearch =
 
 type ProcessResult = 
     | Processed
-    | ProcessedWithError of string
     | ProcessNotHandled
     | SwitchMode of ModeKind
     | SwitchPreviousMode

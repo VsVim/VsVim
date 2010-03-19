@@ -51,36 +51,28 @@ namespace Vim.UI.Wpf
             }
         }
 
-        private void OnKeyInputProcessed(object sender, Tuple<KeyInput,ProcessResult> tuple)
+        private void OnKeyInputProcessed(object sender, Tuple<KeyInput, ProcessResult> tuple)
         {
-            if (tuple.Item2.IsProcessedWithError)
+            switch (_buffer.ModeKind)
             {
-                var item = (ProcessResult.ProcessedWithError)tuple.Item2;
-                _margin.StatusLine = item.Item;
-            }
-            else
-            {
-                switch (_buffer.ModeKind)
-                {
-                    case ModeKind.Command:
-                        _margin.StatusLine = ":" + _buffer.CommandMode.Command;
-                        break;
-                    case ModeKind.Normal:
+                case ModeKind.Command:
+                    _margin.StatusLine = ":" + _buffer.CommandMode.Command;
+                    break;
+                case ModeKind.Normal:
+                    {
+                        var mode = _buffer.NormalMode;
+                        var search = mode.IncrementalSearch;
+                        if (search.InSearch && search.CurrentSearch.HasValue())
                         {
-                            var mode = _buffer.NormalMode;
-                            var search = mode.IncrementalSearch;
-                            if (search.InSearch && search.CurrentSearch.HasValue())
-                            {
-                                var data = search.CurrentSearch.Value;
-                                _margin.StatusLine = "/" + data.Pattern;
-                            }
-                            else
-                            {
-                                _margin.StatusLine = mode.Command;
-                            }
+                            var data = search.CurrentSearch.Value;
+                            _margin.StatusLine = "/" + data.Pattern;
                         }
-                        break;
-                }
+                        else
+                        {
+                            _margin.StatusLine = mode.Command;
+                        }
+                    }
+                    break;
             }
         }
 

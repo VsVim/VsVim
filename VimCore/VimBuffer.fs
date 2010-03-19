@@ -80,7 +80,6 @@ type internal VimBuffer
                         | SwitchPreviousMode -> 
                             _modeMap.SwitchPreviousMode() |> ignore
                             true
-                        | ProcessedWithError(_) -> true
                         | Processed -> true
                         | ProcessNotHandled -> false
                     ret,res
