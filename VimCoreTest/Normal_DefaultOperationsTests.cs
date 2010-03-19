@@ -770,5 +770,66 @@ namespace VimCoreTest
             _operations.FindNextMatch(2);
             _search.Verify();
         }
+
+        [Test]
+        public void GoToLineOrFirst1()
+        {
+            Create("foo", "bar", "baz");
+            _globalSettings.SetupGet(x => x.StartOfLine).Returns(true).Verifiable();
+            _operations.GoToLineOrFirst(FSharpOption.Create(1));
+            Assert.AreEqual(1, _view.GetCaretLine().LineNumber);
+            _globalSettings.Verify();
+        }
+
+        [Test]
+        public void GoToLineOrFirst2()
+        {
+            Create("foo", "bar", "baz");
+            _globalSettings.SetupGet(x => x.StartOfLine).Returns(true).Verifiable();
+            _operations.GoToLineOrFirst(FSharpOption.Create(42));
+            Assert.AreEqual(2, _view.GetCaretLine().LineNumber);
+            _globalSettings.Verify();
+        }
+
+        [Test]
+        public void GoToLineOrFirst3()
+        {
+            Create("foo", "bar", "baz");
+            _globalSettings.SetupGet(x => x.StartOfLine).Returns(true).Verifiable();
+            _operations.GoToLineOrFirst(FSharpOption<int>.None);
+            Assert.AreEqual(0, _view.GetCaretLine().LineNumber);
+            _globalSettings.Verify();
+        }
+
+        [Test, Description("0 goes to the last line surprisingly and not the first")]
+        public void GoToLineOrLast1()
+        {
+            Create("foo", "bar", "baz");
+            _globalSettings.SetupGet(x => x.StartOfLine).Returns(true).Verifiable();
+            _operations.GoToLineOrLast(FSharpOption.Create(0));
+            Assert.AreEqual(2, _view.GetCaretLine().LineNumber);
+            _globalSettings.Verify();
+        }
+
+        [Test]
+        public void GoToLineOrLast2()
+        {
+            Create("foo", "bar", "baz");
+            _globalSettings.SetupGet(x => x.StartOfLine).Returns(true).Verifiable();
+            _operations.GoToLineOrLast(FSharpOption.Create(1));
+            Assert.AreEqual(1, _view.GetCaretLine().LineNumber);
+            _globalSettings.Verify();
+        }
+
+        [Test]
+        public void GoToLineOrLast3()
+        {
+            Create("foo", "bar", "baz");
+            _globalSettings.SetupGet(x => x.StartOfLine).Returns(true).Verifiable();
+            _operations.GoToLineOrLast(FSharpOption<int>.None);
+            Assert.AreEqual(2, _view.GetCaretLine().LineNumber);
+            _globalSettings.Verify();
+        }
+
     }
 }

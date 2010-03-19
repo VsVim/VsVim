@@ -210,6 +210,11 @@ namespace VimCoreTest
             return textView.Caret.MoveTo(new SnapshotPoint(textView.TextSnapshot, position));
         }
 
+        public static ITextSnapshotLine GetCaretLine(this ITextView textView)
+        {
+            return textView.Caret.Position.BufferPosition.GetContainingLine();
+        }
+
         #endregion
 
         #region ITextBuffer

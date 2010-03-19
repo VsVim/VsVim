@@ -426,6 +426,61 @@ namespace VimCoreTest
             _editorOperations.Verify();
         }
 
+        [Test]
+        public void Move_G_1()
+        {
+            CreateBuffer(s_lines);
+            _operations.Setup(x => x.GoToLineOrLast(FSharpOption<int>.None)).Verifiable();
+            _mode.Process('G');
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Move_G_2()
+        {
+            CreateBuffer(s_lines);
+            _operations.Setup(x => x.GoToLineOrLast(FSharpOption.Create(42))).Verifiable();
+            _mode.Process("42G");
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Move_gg_1()
+        {
+            CreateBuffer(s_lines);
+            _operations.Setup(x => x.GoToLineOrFirst(FSharpOption<int>.None)).Verifiable();
+            _mode.Process("gg");
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Move_gg_2()
+        {
+            CreateBuffer(s_lines);
+            _operations.Setup(x => x.GoToLineOrFirst(FSharpOption.Create(42))).Verifiable();
+            _mode.Process("42gg");
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Move_CHome_1()
+        {
+            CreateBuffer(s_lines);
+            _operations.Setup(x => x.GoToLineOrFirst(FSharpOption<int>.None)).Verifiable();
+            _mode.Process(new KeyInput(Char.MinValue, VimKey.HomeKey, KeyModifiers.Control));
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Move_CHome_2()
+        {
+            CreateBuffer(s_lines);
+            _operations.Setup(x => x.GoToLineOrFirst(FSharpOption.Create(42))).Verifiable();
+            _mode.Process("42");
+            _mode.Process(new KeyInput(Char.MinValue, VimKey.HomeKey, KeyModifiers.Control));
+            _operations.Verify();
+        }
+
         #endregion
 
         #region Scroll
@@ -1966,23 +2021,7 @@ namespace VimCoreTest
             _editorOperations.Verify();
         }
 
-        [Test]
-        public void ShiftG_1()
-        {
-            CreateBuffer(s_lines);
-            _operations.Setup(x => x.GoToLineOrLast(FSharpOption<int>.None)).Verifiable();
-            _mode.Process('G');
-            _operations.Verify();
-        }
 
-        [Test]
-        public void ShiftG_2()
-        {
-            CreateBuffer(s_lines);
-            _operations.Setup(x => x.GoToLineOrLast(FSharpOption.Create(42))).Verifiable();
-            _mode.Process("42G");
-            _operations.Verify();
-        }
 
         #endregion
 

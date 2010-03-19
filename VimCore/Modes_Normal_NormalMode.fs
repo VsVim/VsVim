@@ -186,7 +186,8 @@ type internal NormalMode
     /// Handles commands which begin with g in normal mode.  This should be called when the g char is
     /// already processed
     member x.WaitCharGCommand =
-        let inner (ki:KeyInput) count (reg:Register) =  
+        let inner (ki:KeyInput) countOpt (reg:Register) =  
+            let count = CountOrDefault countOpt
             match ki.Char with
             | 'J' -> 
                 let view = _bufferData.TextView
@@ -197,6 +198,7 @@ type internal NormalMode
             | '_' -> _bufferData.EditorOperations.MoveToLastNonWhiteSpaceCharacter(false)
             | '*' -> _operations.MoveToNextOccuranceOfPartialWordAtCursor count
             | '#' -> _operations.MoveToPreviousOccuranceOfPartialWordAtCursor count
+            | 'g' -> _operations.GoToLineOrFirst countOpt
             | _ ->
                 _bufferData.VimHost.Beep()
                 ()
@@ -279,11 +281,15 @@ type internal NormalMode
             yield (InputUtil.CharToKeyInput('m'), (fun () -> this.WaitMark))
             yield (InputUtil.CharToKeyInput('<'), (fun () -> this.WaitShiftLeft))
             yield (InputUtil.CharToKeyInput('>'), (fun () -> this.WaitShiftRight))
-            yield (InputUtil.CharToKeyInput('g'), (fun () -> this.WaitCharGCommand))
             yield (InputUtil.CharToKeyInput('z'), (fun () -> this.WaitCharZCommand))
             yield (InputUtil.CharToKeyInput('r'), (fun () -> this.WaitReplaceChar))
             yield (InputUtil.CharToKeyInput('\''), (fun () -> this.WaitJumpToMark))
             yield (InputUtil.CharToKeyInput('`'), (fun () -> this.WaitJumpToMark))
+        }
+
+        // Similar to waitOpts but has items which need a count option
+        let waitOps3 = seq {
+            yield (InputUtil.CharToKeyInput('g'), (fun () -> this.WaitCharGCommand))
         }
 
         let completeOps : seq<KeyInput * (int -> Register -> unit)> = seq {
@@ -314,6 +320,7 @@ type internal NormalMode
         // Similar to completeOpts but take the conditional count value
         let completeOpts2= seq {
             yield (InputUtil.CharToKeyInput('G'), (fun count _ -> _operations.GoToLineOrLast(count)))
+            yield (InputUtil.VimKeyToKeyInput(VimKey.HomeKey) |> InputUtil.SetModifiers KeyModifiers.Control), (fun count _ -> _operations.GoToLineOrFirst(count)) 
         }
 
         let doNothing _ _ = ()
@@ -336,6 +343,7 @@ type internal NormalMode
         let l =
             (waitOps |> Seq.map (fun (ki,func) -> {KeyInput=ki;RunFunc=(fun _ _ -> NormalModeResult.OperatorPending(func())) }))
             |> Seq.append (waitOps2 |> Seq.map (fun (ki,func) -> {KeyInput=ki;RunFunc=(fun _ _ -> NormalModeResult.NeedMoreInput(func())) }))
+            |> Seq.append (waitOps3 |> Seq.map (fun (ki,func) -> {KeyInput=ki;RunFunc=(fun _ _ -> NormalModeResult.NeedMoreInput2(func())) }))
             |> Seq.append (completeOps |> Seq.map (fun (ki,func) -> {KeyInput=ki;RunFunc=(fun count reg -> func (CountOrDefault count) reg; NormalModeResult.Complete)}))
             |> Seq.append (completeOpts2 |> Seq.map (fun (ki,func) -> {KeyInput=ki;RunFunc=(fun count reg -> func count reg; NormalModeResult.Complete)}))
             |> Seq.append (changeOpts |> Seq.map (fun (ki,kind,func) -> {KeyInput=ki;RunFunc=(fun count reg -> func (CountOrDefault count) reg; NormalModeResult.SwitchMode kind)}))
@@ -425,6 +433,10 @@ type internal NormalMode
                     Processed
                 | NormalModeResult.NeedMoreInput(f) ->
                     _runFunc <- (fun ki count reg -> f ki (CountOrDefault count) reg)
+                    _waitingForMoreInput <- true
+                    Processed
+                | NormalModeResult.NeedMoreInput2(f) ->
+                    _runFunc <- f 
                     _waitingForMoreInput <- true
                     Processed
                 | NormalModeResult.OperatorPending(f) ->

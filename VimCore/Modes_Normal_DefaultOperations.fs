@@ -79,6 +79,22 @@ type internal DefaultOperations
                     ViewUtil.MoveCaretToPoint _textView found.Value.Start |> ignore
             doFind count (getNextPos span)
 
+
+    member x.GoToLineCore line =
+        let snapshot = _textView.TextSnapshot
+        let lastLineNumber = snapshot.LineCount - 1
+        let line = min line lastLineNumber
+        let textLine = snapshot.GetLineFromLineNumber(line)
+        if _settings.GlobalSettings.StartOfLine then 
+            _textView.Caret.MoveTo( textLine.Start ) |> ignore
+            _operations.MoveToStartOfLineAfterWhiteSpace(false)
+        else 
+            let point = ViewUtil.GetCaretPoint _textView
+            let _,column = TssUtil.GetLineColumn point
+            let column = min column textLine.Length
+            let point = textLine.Start.Add(column)
+            _textView.Caret.MoveTo (point) |> ignore
+
     interface IOperations with 
         
         /// Paste the given text after the cursor
@@ -225,23 +241,23 @@ type internal DefaultOperations
             elif not (_incrementalSearch.FindNextMatch count) then
                 _host.UpdateStatus (Resources.NormalMode_PatternNotFound _incrementalSearch.LastSearch.Pattern)
     
+        member x.GoToLineOrFirst count =
+            let line =
+                match count with
+                | None -> 0
+                | Some(c) -> c
+            x.GoToLineCore line
+
         member x.GoToLineOrLast count =
             let snapshot = _textView.TextSnapshot
-            let point = ViewUtil.GetCaretPoint _textView
             let lastLineNumber = snapshot.LineCount - 1
             let line = 
                 match count with
                 | None -> lastLineNumber
-                | Some(c) -> min c lastLineNumber
-            let textLine = snapshot.GetLineFromLineNumber(line)
-            if _settings.GlobalSettings.StartOfLine then 
-                _textView.Caret.MoveTo( textLine.Start ) |> ignore
-                _operations.MoveToStartOfLineAfterWhiteSpace(false)
-            else 
-                let _,column = TssUtil.GetLineColumn point
-                let column = min column textLine.Length
-                let point = textLine.Start.Add(column)
-                _textView.Caret.MoveTo (point) |> ignore
+                // Surprisingly 0 goes to the last line nmuber in gVim
+                | Some(c) when c = 0 -> lastLineNumber
+                | Some(c) -> c
+            x.GoToLineCore line
 
 
 
