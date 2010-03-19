@@ -600,6 +600,15 @@ namespace VimCoreTest
             _operations.Verify();
         }
 
+        [Test, Description("Make sure the starting e is not picked up as an :edit command")]
+        public void Edit4()
+        {
+            Create("");
+            _statusUtil.Setup(x => x.OnError(It.IsAny<string>())).Verifiable();
+            RunCommand("endfunc");
+            _statusUtil.Verify();
+        }
+
         [Test]
         public void Set1()
         {
