@@ -36,7 +36,6 @@ type internal VimBuffer
     (
         _vim : IVim,
         _textView : ITextView,
-        _editorOperations : IEditorOperations,
         _jumpList : IJumpList,
         _settings : IVimLocalSettings ) =
 
@@ -140,7 +139,6 @@ type internal VimBuffer
         member x.TextBuffer = _textView.TextBuffer
         member x.TextSnapshot = _textView.TextSnapshot
         member x.BufferedRemapKeyInputs = x.BufferedRemapKeyInputs 
-        member x.EditorOperations = _editorOperations
         member x.Name = _vim.Host.GetName _textView.TextBuffer
         member x.MarkMap = _vim.MarkMap
         member x.JumpList = _jumpList

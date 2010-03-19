@@ -109,7 +109,7 @@ type internal CommandProcessor
             yield ("yank", "y", this.ProcessYank)
             yield ("<", "", this.ProcessShiftLeft)
             yield (">", "", this.ProcessShiftRight)
-            yield ("$", "", fun _ _ _ -> _data.EditorOperations.MoveToEndOfDocument(false))
+            yield ("$", "", fun _ _ _ -> _operations.EditorOperations.MoveToEndOfDocument(false))
         }
 
         let mapClearSeq = seq {
@@ -455,7 +455,7 @@ type internal CommandProcessor
         | ParseRangeResult.Succeeded(range, inputs) -> 
             if inputs |> List.isEmpty then
                 match range with 
-                | SingleLine(line) -> _data.EditorOperations.GotoLine(line.LineNumber) |> ignore
+                | SingleLine(line) -> _operations.EditorOperations.GotoLine(line.LineNumber) |> ignore
                 | _ -> _data.VimHost.UpdateStatus("Invalid Command String")
             else
                 withRange (Some(range)) inputs

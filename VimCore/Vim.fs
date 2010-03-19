@@ -31,7 +31,6 @@ type internal VimBufferFactory
             VimBuffer( 
                 vim,
                 view,
-                editOperations,
                 jumpList,
                 localSettings)
         let buffer = bufferRaw :> IVimBuffer

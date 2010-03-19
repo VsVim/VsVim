@@ -26,7 +26,6 @@ namespace VimCoreTest
         private VisualMode _modeRaw;
         private IMode _mode;
         private IRegisterMap _map;
-        private Mock<IEditorOperations> _editOpts;
         private Mock<IOperations> _operations;
         private Mock<ISelectionTracker> _tracker;
 
@@ -49,7 +48,6 @@ namespace VimCoreTest
             _view.SetupGet(x => x.TextBuffer).Returns(_buffer);
             _view.SetupGet(x => x.TextSnapshot).Returns(() => _buffer.CurrentSnapshot);
             _map = new RegisterMap();
-            _editOpts = new Mock<IEditorOperations>(MockBehavior.Strict);
             _tracker = new Mock<ISelectionTracker>(MockBehavior.Strict);
             _tracker.Setup(x => x.Start());
             _operations = new Mock<IOperations>(MockBehavior.Strict);
@@ -58,8 +56,7 @@ namespace VimCoreTest
             _bufferData = MockObjectFactory.CreateVimBuffer(
                 _view.Object,
                 "test",
-                MockObjectFactory.CreateVim(_map,host:host).Object,
-                _editOpts.Object);
+                MockObjectFactory.CreateVim(_map, host: host).Object);
             _modeRaw = new Vim.Modes.Visual.VisualMode(Tuple.Create<IVimBuffer, IOperations, ModeKind>(_bufferData.Object, _operations.Object, kind));
             _mode = _modeRaw;
             _mode.OnEnter();

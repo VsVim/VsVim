@@ -36,11 +36,11 @@ namespace VimCoreTest
             _host = new FakeVimHost();
             _editOpts = new Mock<IEditorOperations>(MockBehavior.Strict);
             _operations = new Mock<IOperations>(MockBehavior.Strict);
+            _operations.SetupGet(x => x.EditorOperations).Returns(_editOpts.Object);
             _bufferData = MockObjectFactory.CreateVimBuffer(
                 _view,
                 "test",
-                MockObjectFactory.CreateVim(_map, host: _host).Object,
-                _editOpts.Object);
+                MockObjectFactory.CreateVim(_map, host: _host).Object);
             _processorRaw = new Vim.Modes.Command.CommandProcessor(_bufferData.Object, _operations.Object);
             _processor = _processorRaw;
         }

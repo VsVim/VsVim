@@ -331,7 +331,6 @@ and IVimBuffer =
     /// Underyling ITextBuffer Vim is operating under
     abstract TextBuffer : ITextBuffer
     abstract TextSnapshot : ITextSnapshot
-    abstract EditorOperations : IEditorOperations
 
     /// Buffered KeyInput list.  When a key remapping has multiple source elements the input 
     /// is buffered until it is completed or the ambiguity is removed.  

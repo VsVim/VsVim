@@ -195,7 +195,7 @@ type internal NormalMode
                 _operations.Join caret Modes.JoinKind.KeepEmptySpaces count |> ignore
             | 'p' -> _operations.PasteAfterCursor reg.StringValue 1 reg.Value.OperationKind true |> ignore
             | 'P' -> _operations.PasteBeforeCursor reg.StringValue 1 true |> ignore
-            | '_' -> _bufferData.EditorOperations.MoveToLastNonWhiteSpaceCharacter(false)
+            | '_' -> _operations.EditorOperations.MoveToLastNonWhiteSpaceCharacter(false)
             | '*' -> _operations.MoveToNextOccuranceOfPartialWordAtCursor count
             | '#' -> _operations.MoveToPreviousOccuranceOfPartialWordAtCursor count
             | 'g' -> _operations.GoToLineOrFirst countOpt
@@ -209,19 +209,19 @@ type internal NormalMode
     member x.WaitCharZCommand = 
         let inner (ki:KeyInput) coun reg =  
             if ki.IsNewLine then 
-                _bufferData.EditorOperations.ScrollLineTop()
-                _bufferData.EditorOperations.MoveToStartOfLineAfterWhiteSpace(false) 
+                _operations.EditorOperations.ScrollLineTop()
+                _operations.EditorOperations.MoveToStartOfLineAfterWhiteSpace(false) 
             else
                 match ki.Char with
-                | 't' ->  _bufferData.EditorOperations.ScrollLineTop() 
+                | 't' ->  _operations.EditorOperations.ScrollLineTop() 
                 | '.' -> 
-                    _bufferData.EditorOperations.ScrollLineCenter() 
-                    _bufferData.EditorOperations.MoveToStartOfLineAfterWhiteSpace(false) 
-                | 'z' -> _bufferData.EditorOperations.ScrollLineCenter() 
+                    _operations.EditorOperations.ScrollLineCenter() 
+                    _operations.EditorOperations.MoveToStartOfLineAfterWhiteSpace(false) 
+                | 'z' -> _operations.EditorOperations.ScrollLineCenter() 
                 | '-' -> 
-                    _bufferData.EditorOperations.ScrollLineBottom() 
-                    _bufferData.EditorOperations.MoveToStartOfLineAfterWhiteSpace(false) 
-                | 'b' -> _bufferData.EditorOperations.ScrollLineBottom() 
+                    _operations.EditorOperations.ScrollLineBottom() 
+                    _operations.EditorOperations.MoveToStartOfLineAfterWhiteSpace(false) 
+                | 'b' -> _operations.EditorOperations.ScrollLineBottom() 
                 | _ -> _bufferData.VimHost.Beep()
             NormalModeResult.Complete
         inner
@@ -253,7 +253,7 @@ type internal NormalMode
             match count with
                 | 1 -> NormalModeResult.Complete
                 | _ -> runCount (count-1) 
-        _bufferData.EditorOperations.ResetSelection()
+        _operations.EditorOperations.ResetSelection()
         runCount count
 
     member private this.BuildMotionOperationsMap =
@@ -261,7 +261,7 @@ type internal NormalMode
             fun count _ -> 
                 let count = CountOrDefault count
                 func count
-                _bufferData.EditorOperations.ResetSelection()
+                _operations.EditorOperations.ResetSelection()
                 NormalModeResult.Complete
         let factory = Vim.Modes.CommandFactory(_operations)
         factory.CreateMovementCommands() 
@@ -298,7 +298,7 @@ type internal NormalMode
             yield (InputUtil.CharToKeyInput('X'),  (fun count reg -> _operations.DeleteCharacterBeforeCursor count reg))
             yield (InputUtil.CharToKeyInput('p'), (fun count reg -> _operations.PasteAfterCursor reg.StringValue count reg.Value.OperationKind false))
             yield (InputUtil.CharToKeyInput('P'), (fun count reg -> _operations.PasteBeforeCursor reg.StringValue count false))
-            yield (InputUtil.CharToKeyInput('0'), (fun _ _ -> _bufferData.EditorOperations.MoveToStartOfLine(false))) 
+            yield (InputUtil.CharToKeyInput('0'), (fun _ _ -> _operations.EditorOperations.MoveToStartOfLine(false))) 
             yield (InputUtil.CharToKeyInput('n'), (fun count _ -> _operations.FindNextMatch count))
             yield (InputUtil.CharToKeyInput('*'), (fun count _ -> _operations.MoveToNextOccuranceOfWordAtCursor true count))
             yield (InputUtil.CharToKeyInput('#'), (fun count _ -> _operations.MoveToPreviousOccuranceOfWordAtCursor true count))
@@ -326,9 +326,9 @@ type internal NormalMode
         let doNothing _ _ = ()
         let changeOpts = seq {
             yield (InputUtil.CharToKeyInput('i'), ModeKind.Insert, doNothing)
-            yield (InputUtil.CharToKeyInput('I'), ModeKind.Insert, (fun _ _ -> _bufferData.EditorOperations.MoveToStartOfLineAfterWhiteSpace(false)))
+            yield (InputUtil.CharToKeyInput('I'), ModeKind.Insert, (fun _ _ -> _operations.EditorOperations.MoveToStartOfLineAfterWhiteSpace(false)))
             yield (InputUtil.CharToKeyInput(':'), ModeKind.Command, doNothing)
-            yield (InputUtil.CharToKeyInput('A'), ModeKind.Insert, (fun _ _ -> _bufferData.EditorOperations.MoveToEndOfLine(false)))
+            yield (InputUtil.CharToKeyInput('A'), ModeKind.Insert, (fun _ _ -> _operations.EditorOperations.MoveToEndOfLine(false)))
             yield (InputUtil.CharToKeyInput('o'), ModeKind.Insert, (fun _ _ -> _operations.InsertLineBelow() |> ignore))
             yield (InputUtil.CharToKeyInput('O'), ModeKind.Insert, (fun _ _ -> _operations.InsertLineAbove() |> ignore))
             yield (InputUtil.CharToKeyInput('v'), ModeKind.VisualCharacter, doNothing)

@@ -21,7 +21,6 @@ namespace VimCoreTest
     public class VimBufferTests
     {
         IWpfTextView _view;
-        IEditorOperations _editorOperations;
         Mock<IVim> _vim;
         Mock<INormalMode> _normalMode;
         Mock<IMode> _insertMode;
@@ -38,9 +37,7 @@ namespace VimCoreTest
         [SetUp]
         public void Initialize()
         {
-            var tuple = EditorUtil.CreateViewAndOperations("here we go");
-            _view = tuple.Item1;
-            _editorOperations = tuple.Item2;
+            _view = EditorUtil.CreateView("here we go");
             _markMap = new MarkMap(new TrackingLineColumnService());
             _globalSettings = MockObjectFactory.CreateGlobalSettings();
             _settings = MockObjectFactory.CreateLocalSettings(_globalSettings.Object);
@@ -60,7 +57,6 @@ namespace VimCoreTest
             _rawBuffer = new VimBuffer(
                 _vim.Object,
                 _view,
-                _editorOperations,
                 _jumpList.Object,
                 _settings.Object);
             _rawBuffer.AddMode(_normalMode.Object);

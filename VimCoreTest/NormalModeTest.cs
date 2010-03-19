@@ -55,9 +55,9 @@ namespace VimCoreTest
                 _view,
                 "test",
                 MockFactory.CreateVim(_map, host : host).Object,
-                _editorOperations.Object,
                 _jumpList.Object);
             _operations = new Mock<IOperations>(MockBehavior.Strict);
+            _operations.SetupGet(x => x.EditorOperations).Returns(_editorOperations.Object);
             _modeRaw = new Vim.Modes.Normal.NormalMode(Tuple.Create(_bufferData.Object, _operations.Object, _incrementalSearch.Object));
             _mode = _modeRaw;
             _mode.OnEnter();
@@ -390,7 +390,6 @@ namespace VimCoreTest
         {
             CreateBuffer("foo bar");
             _view.MoveCaretTo(3);
-            _operations.SetupGet(x => x.EditorOperations).Returns(_editorOperations.Object);
             _editorOperations.Setup(x => x.MoveToStartOfLineAfterWhiteSpace(false)).Verifiable();
             _mode.Process('^');
             _editorOperations.Verify();
@@ -400,7 +399,6 @@ namespace VimCoreTest
         public void Move_Shift6_2()
         {
             CreateBuffer("   foo bar");
-            _operations.SetupGet(x => x.EditorOperations).Returns(_editorOperations.Object);
             _editorOperations.Setup(x => x.MoveToStartOfLineAfterWhiteSpace(false)).Verifiable();
             _mode.Process('^');
             _editorOperations.Verify();
@@ -411,7 +409,6 @@ namespace VimCoreTest
         public void Move_Shift4_1()
         {
             CreateBuffer("foo", "bar");
-            _operations.SetupGet(x => x.EditorOperations).Returns(_editorOperations.Object);
             _editorOperations.Setup(x => x.MoveToEndOfLine(false)).Verifiable();
             _mode.Process('$');
             _editorOperations.Verify();
