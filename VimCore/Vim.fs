@@ -33,11 +33,12 @@ type internal VimBufferFactory
                 localSettings)
         let buffer = bufferRaw :> IVimBuffer
 
+        let statusUtil = x.CreateStatusUtil bufferRaw 
         let wordNav = x.CreateTextStructureNavigator view.TextBuffer WordKind.NormalWord
         let broker = _completionWindowBrokerFactoryService.CreateCompletionWindowBroker view
         let normalIncrementalSearch = Vim.Modes.Normal.IncrementalSearch(view, localSettings, _textSearchService, wordNav) :> IIncrementalSearch
         let normalOpts = Modes.Normal.DefaultOperations(view,editOperations,_host,localSettings,wordNav,_textSearchService,jumpList, normalIncrementalSearch) :> Modes.Normal.IOperations
-        let commandOpts = Modes.Command.DefaultOperations(view,editOperations,_host, jumpList, localSettings, vim.KeyMap) :> Modes.Command.IOperations
+        let commandOpts = Modes.Command.DefaultOperations(view,editOperations,_host, statusUtil, jumpList, localSettings, vim.KeyMap) :> Modes.Command.IOperations
         let commandProcessor = Modes.Command.CommandProcessor(buffer, commandOpts) :> Modes.Command.ICommandProcessor
         let insertOpts = Modes.Insert.DefaultOperations(view,editOperations,_host, jumpList) :> Modes.ICommonOperations
         let visualOptsFactory kind = 
@@ -68,6 +69,13 @@ type internal VimBufferFactory
     member private x.CreateTextStructureNavigator textBuffer wordKind =
         let baseImpl = _textStructureNavigatorSelectorService.GetTextStructureNavigator(textBuffer)
         TssUtil.CreateTextStructureNavigator wordKind baseImpl
+
+    member private x.CreateStatusUtil (buffer:VimBuffer) =
+        { new Vim.Modes.IStatusUtil with 
+            member x.OnStatus msg = buffer.RaiseStatusMessage msg
+            member x.OnError msg = buffer.RaiseErrorMessage msg
+            member x.OnStatusLong msgSeq = buffer.RaiseStatusMessageLong msgSeq }
+        
 
     interface IVimBufferFactory with
         member x.CreateBuffer vim view = x.CreateBuffer vim view :> IVimBuffer

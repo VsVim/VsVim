@@ -14,6 +14,7 @@ type internal DefaultOperations
         _textView : ITextView,
         _operations : IEditorOperations, 
         _host : IVimHost,
+        _statusUtil : IStatusUtil,
         _jumpList : IJumpList,
         _settings : IVimLocalSettings,
         _keyMap : IKeyMap) =
@@ -109,7 +110,7 @@ type internal DefaultOperations
                         |> Seq.distinct
                         |> Seq.length
                     if replaceCount > 1 then
-                        _host.UpdateStatus (Resources.CommandMode_SubstituteComplete replaceCount lineCount)
+                        _statusUtil.OnStatus (Resources.CommandMode_SubstituteComplete replaceCount lineCount)
 
                 if edit.HasEffectiveChanges then
                     edit.Apply() |> ignore                                
@@ -119,7 +120,7 @@ type internal DefaultOperations
                     updateReplaceCount()
                 else 
                     edit.Cancel()
-                    _host.UpdateStatus (Resources.CommandMode_PatternNotFound pattern)
+                    _statusUtil.OnError (Resources.CommandMode_PatternNotFound pattern)
 
             let options = 
                 if Utils.IsFlagSet flags SubstituteFlags.IgnoreCase then
@@ -128,7 +129,7 @@ type internal DefaultOperations
                     RegexOptions.None
             let options = options ||| RegexOptions.Compiled
             match Utils.TryCreateRegex pattern options with
-            | None -> _host.UpdateStatus (Resources.CommandMode_PatternNotFound pattern)
+            | None -> _statusUtil.OnError (Resources.CommandMode_PatternNotFound pattern)
             | Some (regex) -> doReplace regex
 
         member x.PrintMarks (markMap:IMarkMap) =    
@@ -146,46 +147,46 @@ type internal DefaultOperations
             |> Seq.append globalSeq
             |> Seq.map (fun (c,p) -> printMark c p )
             |> Seq.append ( "mark line  col file/text"  |> Seq.singleton)
-            |> _host.UpdateLongStatus 
+            |> _statusUtil.OnStatusLong
 
 
         member x.PrintModifiedSettings () = 
-            _settings.AllSettings |> Seq.filter (fun s -> not s.IsValueDefault) |> Seq.map FormatSetting |> _host.UpdateLongStatus
+            _settings.AllSettings |> Seq.filter (fun s -> not s.IsValueDefault) |> Seq.map FormatSetting |> _statusUtil.OnStatusLong
 
         member x.PrintAllSettings () = 
-            _settings.AllSettings |> Seq.map FormatSetting |> _host.UpdateLongStatus
+            _settings.AllSettings |> Seq.map FormatSetting |> _statusUtil.OnStatusLong
             
         member x.PrintSetting settingName = 
             match _settings.GetSetting settingName with 
-            | None -> _host.UpdateStatus (Resources.CommandMode_UnknownOption settingName)
-            | Some(setting) -> setting |> FormatSetting |> _host.UpdateStatus
+            | None -> _statusUtil.OnError (Resources.CommandMode_UnknownOption settingName)
+            | Some(setting) -> setting |> FormatSetting |> _statusUtil.OnStatus
 
         member x.OperateSetting settingName = 
             match _settings.GetSetting settingName with
-            | None -> _host.UpdateStatus (Resources.CommandMode_UnknownOption settingName)
+            | None -> _statusUtil.OnError (Resources.CommandMode_UnknownOption settingName)
             | Some(setting) ->
                 if setting.Kind = ToggleKind then _settings.TrySetValue settingName (ToggleValue(true)) |> ignore
-                else setting |> FormatSetting |> _host.UpdateStatus
+                else setting |> FormatSetting |> _statusUtil.OnStatus
 
         member x.ResetSetting settingName =
             match _settings.GetSetting settingName with
-            | None -> _host.UpdateStatus (Resources.CommandMode_UnknownOption settingName)
+            | None -> _statusUtil.OnError (Resources.CommandMode_UnknownOption settingName)
             | Some(setting) ->
                 if setting.Kind = ToggleKind then _settings.TrySetValue settingName (ToggleValue(false)) |> ignore
-                else settingName |> Resources.CommandMode_InvalidArgument |> _host.UpdateStatus
+                else settingName |> Resources.CommandMode_InvalidArgument |> _statusUtil.OnError
             
         member x.InvertSetting settingName = 
             match _settings.GetSetting settingName with
-            | None -> _host.UpdateStatus (Resources.CommandMode_UnknownOption settingName)
+            | None -> _statusUtil.OnError (Resources.CommandMode_UnknownOption settingName)
             | Some(setting) ->
                 match setting.Kind,setting.AggregateValue with
                 | (ToggleKind,ToggleValue(b)) -> _settings.TrySetValue settingName (ToggleValue(not b)) |> ignore
-                | _ -> settingName |> Resources.CommandMode_InvalidArgument |> _host.UpdateStatus
+                | _ -> settingName |> Resources.CommandMode_InvalidArgument |> _statusUtil.OnError
 
         member x.SetSettingValue settingName value = 
             let ret = _settings.TrySetValueFromString settingName value 
             if not ret then 
-                Resources.CommandMode_InvalidValue settingName value |> _host.UpdateStatus
+                Resources.CommandMode_InvalidValue settingName value |> _statusUtil.OnError
 
         member x.RemapKeys (lhs:string) (rhs:string) (modes:KeyRemapMode seq) allowRemap = 
             let func = 
@@ -196,7 +197,7 @@ type internal DefaultOperations
                 |> Seq.map (fun mode -> (mode,func lhs rhs mode))
                 |> Seq.filter (fun (_,ret) -> not ret)
             if not (failed |> Seq.isEmpty) then
-                _host.UpdateStatus (Resources.CommandMode_NotSupported_KeyMapping lhs rhs)
+                _statusUtil.OnError (Resources.CommandMode_NotSupported_KeyMapping lhs rhs)
 
         member x.ClearKeyMapModes modes = modes |> Seq.iter (fun mode -> _keyMap.Clear mode)
 
@@ -206,4 +207,4 @@ type internal DefaultOperations
                 |> Seq.map (fun mode -> _keyMap.Unmap lhs mode)
                 |> Seq.filter (fun x -> not x)
                 |> Seq.isEmpty
-            if not allSucceeded then _host.UpdateStatus Resources.CommandMode_NoSuchMapping
+            if not allSucceeded then _statusUtil.OnError Resources.CommandMode_NoSuchMapping

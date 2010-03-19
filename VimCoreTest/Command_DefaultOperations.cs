@@ -23,6 +23,7 @@ namespace VimCoreTest
         private ITextView _view;
         private Mock<IEditorOperations> _editOpts;
         private Mock<IVimHost> _host;
+        private Mock<IStatusUtil> _statusUtil;
         private Mock<IJumpList> _jumpList;
         private Mock<IVimLocalSettings> _settings;
         private Mock<IKeyMap> _keyMap;
@@ -35,7 +36,8 @@ namespace VimCoreTest
             _jumpList = new Mock<IJumpList>(MockBehavior.Strict);
             _settings = new Mock<IVimLocalSettings>(MockBehavior.Strict);
             _keyMap = new Mock<IKeyMap>(MockBehavior.Strict);
-            _operationsRaw = new DefaultOperations(_view, _editOpts.Object, _host.Object, _jumpList.Object, _settings.Object, _keyMap.Object);
+            _statusUtil = new Mock<IStatusUtil>(MockBehavior.Strict);
+            _operationsRaw = new DefaultOperations(_view, _editOpts.Object, _host.Object, _statusUtil.Object,_jumpList.Object, _settings.Object, _keyMap.Object);
             _operations = _operationsRaw;
         }
 
@@ -87,11 +89,11 @@ namespace VimCoreTest
         {
             Create("bar bar", "foo bar");
             var tss = _view.TextSnapshot;
-            _host.Setup(x => x.UpdateStatus(Resources.CommandMode_SubstituteComplete(2, 2))).Verifiable();
+            _statusUtil.Setup(x => x.OnStatus(Resources.CommandMode_SubstituteComplete(2, 2))).Verifiable();
             _operations.Substitute("bar", "again", new SnapshotSpan(tss, 0, tss.Length), SubstituteFlags.None);
             Assert.AreEqual("again bar", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
             Assert.AreEqual("foo again", _view.TextSnapshot.GetLineFromLineNumber(1).GetText());
-            _host.Verify();
+            _statusUtil.Verify();
         }
 
         [Test, Description("Replace all if the option is set")]
@@ -99,11 +101,11 @@ namespace VimCoreTest
         {
             Create("bar bar", "foo bar");
             var tss = _view.TextSnapshot;
-            _host.Setup(x => x.UpdateStatus(Resources.CommandMode_SubstituteComplete(2, 1))).Verifiable();
+            _statusUtil.Setup(x => x.OnStatus(Resources.CommandMode_SubstituteComplete(2, 1))).Verifiable();
             _operations.Substitute("bar", "again", tss.GetLineFromLineNumber(0).Extent, SubstituteFlags.ReplaceAll);
             Assert.AreEqual("again again", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
             Assert.AreEqual("foo bar", _view.TextSnapshot.GetLineFromLineNumber(1).GetText());
-            _host.Verify();
+            _statusUtil.Verify();
         }
 
         [Test, Description("Ignore case")]
@@ -120,10 +122,10 @@ namespace VimCoreTest
         {
             Create("bar bar", "foo bar");
             var tss = _view.TextSnapshot;
-            _host.Setup(x => x.UpdateStatus(Resources.CommandMode_SubstituteComplete(2, 1))).Verifiable();
+            _statusUtil.Setup(x => x.OnStatus(Resources.CommandMode_SubstituteComplete(2, 1))).Verifiable();
             _operations.Substitute("BAR", "again", tss.GetLineFromLineNumber(0).Extent, SubstituteFlags.IgnoreCase | SubstituteFlags.ReplaceAll);
             Assert.AreEqual("again again", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
-            _host.Verify();
+            _statusUtil.Verify();
         }
 
         [Test, Description("Ignore case and replace all")]
@@ -131,10 +133,10 @@ namespace VimCoreTest
         {
             Create("bar bar", "foo bar");
             var tss = _view.TextSnapshot;
-            _host.Setup(x => x.UpdateStatus(Resources.CommandMode_SubstituteComplete(2, 1))).Verifiable();
+            _statusUtil.Setup(x => x.OnStatus(Resources.CommandMode_SubstituteComplete(2, 1))).Verifiable();
             _operations.Substitute("BAR", "again", tss.GetLineFromLineNumber(0).Extent, SubstituteFlags.IgnoreCase | SubstituteFlags.ReplaceAll);
             Assert.AreEqual("again again", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
-            _host.Verify();
+            _statusUtil.Verify();
         }
 
         [Test, Description("No matches")]
@@ -143,9 +145,9 @@ namespace VimCoreTest
             Create("bar bar", "foo bar");
             var tss = _view.TextSnapshot;
             var pattern = "BAR";
-            _host.Setup(x => x.UpdateStatus(Resources.CommandMode_PatternNotFound(pattern))).Verifiable();
+            _statusUtil.Setup(x => x.OnError(Resources.CommandMode_PatternNotFound(pattern))).Verifiable();
             _operations.Substitute("BAR", "again", tss.GetLineFromLineNumber(0).Extent, SubstituteFlags.OrdinalCase);
-            _host.Verify();
+            _statusUtil.Verify();
         }
 
         [Test, Description("Invalid regex")]
@@ -154,9 +156,9 @@ namespace VimCoreTest
             Create("bar bar", "foo bar");
             var tss = _view.TextSnapshot;
             var pattern = "(foo";
-            _host.Setup(x => x.UpdateStatus(Resources.CommandMode_PatternNotFound(pattern))).Verifiable();
+            _statusUtil.Setup(x => x.OnError(Resources.CommandMode_PatternNotFound(pattern))).Verifiable();
             _operations.Substitute(pattern, "again", tss.GetLineFromLineNumber(0).Extent, SubstituteFlags.OrdinalCase);
-            _host.Verify();
+            _statusUtil.Verify();
             Assert.AreSame(tss, _view.TextSnapshot);
         }
 
@@ -165,9 +167,9 @@ namespace VimCoreTest
         {
             Create("bar bar", "foo bar");
             var tss = _view.TextSnapshot;
-            _host.Setup(x => x.UpdateStatus(Resources.CommandMode_SubstituteComplete(2, 1))).Verifiable();
+            _statusUtil.Setup(x => x.OnStatus(Resources.CommandMode_SubstituteComplete(2, 1))).Verifiable();
             _operations.Substitute("bar", "again", tss.GetLineFromLineNumber(0).Extent, SubstituteFlags.ReplaceAll | SubstituteFlags.ReportOnly);
-            _host.Verify();
+            _statusUtil.Verify();
             Assert.AreSame(tss, _view.TextSnapshot);
         }
 
@@ -208,10 +210,10 @@ namespace VimCoreTest
             Create("foo");
             var setting = new Setting("foobar", "fb", SettingKind.NumberKind, SettingValue.NewNumberValue(42), SettingValue.NewNumberValue(42), false);
             _settings.Setup(x => x.GetSetting("foobar")).Returns(FSharpOption.Create(setting)).Verifiable();
-            _host.Setup(x => x.UpdateStatus(It.IsAny<string>())).Verifiable();
+            _statusUtil.Setup(x => x.OnStatus(It.IsAny<string>())).Verifiable();
             _operations.OperateSetting("foobar");
             _settings.Verify();
-            _host.Verify();
+            _statusUtil.Verify();
         }
 
         [Test]
@@ -219,10 +221,10 @@ namespace VimCoreTest
         {
             Create("foo");
             _settings.Setup(X => X.GetSetting("foo")).Returns(FSharpOption<Setting>.None).Verifiable();
-            _host.Setup(x => x.UpdateStatus(Resources.CommandMode_UnknownOption("foo"))).Verifiable();
+            _statusUtil.Setup(x => x.OnError(Resources.CommandMode_UnknownOption("foo"))).Verifiable();
             _operations.OperateSetting("foo");
             _settings.Verify();
-            _host.Verify();
+            _statusUtil.Verify();
         }
 
         [Test]
@@ -242,10 +244,10 @@ namespace VimCoreTest
             Create("foo");
             var setting = new Setting("foobar","fb", SettingKind.NumberKind, SettingValue.NewToggleValue(false), SettingValue.NewToggleValue(false), false);
             _settings.Setup(x => x.GetSetting("foobar")).Returns(FSharpOption.Create(setting)).Verifiable();
-            _host.Setup(x => x.UpdateStatus(Resources.CommandMode_InvalidArgument("foobar"))).Verifiable();
+            _statusUtil.Setup(x => x.OnError(Resources.CommandMode_InvalidArgument("foobar"))).Verifiable();
             _operations.ResetSetting("foobar");
             _settings.Verify();
-            _host.Verify();
+            _statusUtil.Verify();
         }
 
         [Test]
@@ -253,10 +255,10 @@ namespace VimCoreTest
         {
             Create("foo");
             _settings.Setup(X => X.GetSetting("foo")).Returns(FSharpOption<Setting>.None).Verifiable();
-            _host.Setup(x => x.UpdateStatus(Resources.CommandMode_UnknownOption("foo"))).Verifiable();
+            _statusUtil.Setup(x => x.OnError(Resources.CommandMode_UnknownOption("foo"))).Verifiable();
             _operations.ResetSetting("foo");
             _settings.Verify();
-            _host.Verify();
+            _statusUtil.Verify();
         }
 
         [Test]
@@ -276,10 +278,10 @@ namespace VimCoreTest
             Create("foo");
             var setting = new Setting("foobar","fb", SettingKind.NumberKind, SettingValue.NewToggleValue(false), SettingValue.NewToggleValue(false), false);
             _settings.Setup(x => x.GetSetting("foobar")).Returns(FSharpOption.Create(setting)).Verifiable();
-            _host.Setup(x => x.UpdateStatus(Resources.CommandMode_InvalidArgument("foobar"))).Verifiable();
+            _statusUtil.Setup(x => x.OnError(Resources.CommandMode_InvalidArgument("foobar"))).Verifiable();
             _operations.InvertSetting("foobar");
             _settings.Verify();
-            _host.Verify();
+            _statusUtil.Verify();
         }
 
         [Test]
@@ -287,10 +289,10 @@ namespace VimCoreTest
         {
             Create("foo");
             _settings.Setup(X => X.GetSetting("foo")).Returns(FSharpOption<Setting>.None).Verifiable();
-            _host.Setup(x => x.UpdateStatus(Resources.CommandMode_UnknownOption("foo"))).Verifiable();
+            _statusUtil.Setup(x => x.OnError(Resources.CommandMode_UnknownOption("foo"))).Verifiable();
             _operations.InvertSetting("foo");
             _settings.Verify();
-            _host.Verify();
+            _statusUtil.Verify();
         }
 
         [Test]
@@ -299,9 +301,9 @@ namespace VimCoreTest
             Create("foobar");
             var setting = new Setting("foobar","fb", SettingKind.NumberKind, SettingValue.NewToggleValue(false), SettingValue.NewToggleValue(false), false);
             _settings.Setup(x => x.AllSettings).Returns(Enumerable.Repeat(setting, 1));
-            _host.Setup(x => x.UpdateLongStatus(It.IsAny<IEnumerable<string>>())).Verifiable();
+            _statusUtil.Setup(x => x.OnStatusLong(It.IsAny<IEnumerable<string>>())).Verifiable();
             _operations.PrintModifiedSettings();
-            _host.Verify();
+            _statusUtil.Verify();
         }
 
         [Test]
@@ -310,9 +312,9 @@ namespace VimCoreTest
             Create("foobar");
             var setting = new Setting("foobar","fb", SettingKind.NumberKind, SettingValue.NewToggleValue(false), SettingValue.NewToggleValue(false), false);
             _settings.Setup(x => x.AllSettings).Returns(Enumerable.Repeat(setting, 1));
-            _host.Setup(x => x.UpdateLongStatus(It.IsAny<IEnumerable<string>>())).Verifiable();
+            _statusUtil.Setup(x => x.OnStatusLong(It.IsAny<IEnumerable<string>>())).Verifiable();
             _operations.PrintAllSettings();
-            _host.Verify();
+            _statusUtil.Verify();
         }
 
         [Test]
@@ -320,9 +322,9 @@ namespace VimCoreTest
         {
             Create("foobar");
             _settings.Setup(x => x.GetSetting("foo")).Returns(FSharpOption<Setting>.None).Verifiable();
-            _host.Setup(x => x.UpdateStatus(Resources.CommandMode_UnknownOption("foo"))).Verifiable();
+            _statusUtil.Setup(x => x.OnError(Resources.CommandMode_UnknownOption("foo"))).Verifiable();
             _operations.PrintSetting("foo");
-            _host.Verify();
+            _statusUtil.Verify();
         }
 
         [Test]
@@ -331,9 +333,9 @@ namespace VimCoreTest
             Create("foobar");
             var setting = new Setting("foobar", "fb", SettingKind.ToggleKind, SettingValue.NewToggleValue(false), SettingValue.NewToggleValue(false), false);
             _settings.Setup(x => x.GetSetting("foobar")).Returns(FSharpOption.Create(setting));
-            _host.Setup(x => x.UpdateStatus("nofoobar")).Verifiable();
+            _statusUtil.Setup(x => x.OnStatus("nofoobar")).Verifiable();
             _operations.PrintSetting("foobar");
-            _host.Verify();
+            _statusUtil.Verify();
         }
 
         [Test]
@@ -342,9 +344,9 @@ namespace VimCoreTest
             Create("foobar");
             var setting = new Setting("foobar", "fb", SettingKind.ToggleKind, SettingValue.NewToggleValue(true), SettingValue.NewToggleValue(true), false);
             _settings.Setup(x => x.GetSetting("foobar")).Returns(FSharpOption.Create(setting));
-            _host.Setup(x => x.UpdateStatus("foobar")).Verifiable();
+            _statusUtil.Setup(x => x.OnStatus("foobar")).Verifiable();
             _operations.PrintSetting("foobar");
-            _host.Verify();
+            _statusUtil.Verify();
         }
 
         [Test]
@@ -353,9 +355,9 @@ namespace VimCoreTest
             Create("foobar");
             var setting = new Setting("foobar", "fb", SettingKind.NumberKind, SettingValue.NewNumberValue(42), SettingValue.NewNumberValue(42), false);
             _settings.Setup(x => x.GetSetting("foobar")).Returns(FSharpOption.Create(setting));
-            _host.Setup(x => x.UpdateStatus("foobar=42")).Verifiable();
+            _statusUtil.Setup(x => x.OnStatus("foobar=42")).Verifiable();
             _operations.PrintSetting("foobar");
-            _host.Verify();
+            _statusUtil.Verify();
         }
 
         [Test]
@@ -372,10 +374,10 @@ namespace VimCoreTest
         {
             Create("foobar");
             _settings.Setup(x => x.TrySetValueFromString("foo", "bar")).Returns(false).Verifiable();
-            _host.Setup(x => x.UpdateStatus(Resources.CommandMode_InvalidValue("foo", "bar"))).Verifiable();
+            _statusUtil.Setup(x => x.OnError(Resources.CommandMode_InvalidValue("foo", "bar"))).Verifiable();
             _operations.SetSettingValue("foo", "bar");
             _settings.Verify();
-            _host.Verify();
+            _statusUtil.Verify();
         }
 
         [Test]
@@ -391,10 +393,10 @@ namespace VimCoreTest
         public void RemapKeys2()
         {
             Create("foo");
-            _host.Setup(x => x.UpdateStatus(Resources.CommandMode_NotSupported_KeyMapping("a", "b"))).Verifiable();
+            _statusUtil.Setup(x => x.OnError(Resources.CommandMode_NotSupported_KeyMapping("a", "b"))).Verifiable();
             _keyMap.Setup(x => x.MapWithNoRemap("a","b",KeyRemapMode.Insert)).Returns(false).Verifiable();
             _operations.RemapKeys("a", "b", Enumerable.Repeat(KeyRemapMode.Insert,1), false);
-            _host.Verify();
+            _statusUtil.Verify();
             _keyMap.Verify();
         }
 
@@ -404,7 +406,6 @@ namespace VimCoreTest
             Create("foo");
             _keyMap.Setup(x => x.MapWithNoRemap("a","b",KeyRemapMode.Insert)).Returns(true).Verifiable();
             _operations.RemapKeys("a", "b", Enumerable.Repeat(KeyRemapMode.Insert,1), false);
-            _host.Verify();
             _keyMap.Verify();
         }
 
@@ -413,10 +414,10 @@ namespace VimCoreTest
         {
             Create("foo");
             _keyMap.Setup(x => x.Unmap("h", KeyRemapMode.Insert)).Returns(false).Verifiable();
-            _host.Setup(x => x.UpdateStatus(Resources.CommandMode_NoSuchMapping)).Verifiable();
+            _statusUtil.Setup(x => x.OnError(Resources.CommandMode_NoSuchMapping)).Verifiable();
             _operations.UnmapKeys("h", Enumerable.Repeat(KeyRemapMode.Insert, 1));
             _keyMap.Verify();
-            _host.Verify();
+            _statusUtil.Verify();
         }
 
         [Test]
