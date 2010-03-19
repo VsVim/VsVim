@@ -61,6 +61,7 @@ type internal VimBuffer
     member x.Mode = _modeMap.Mode
     member x.NormalMode = _modeMap.GetMode ModeKind.Normal :?> INormalMode
     member x.CommandMode = _modeMap.GetMode ModeKind.Command :?> ICommandMode
+    member x.DisabledMode = _modeMap.GetMode ModeKind.Disabled :?> IDisabledMode
 
     /// Switch to the desired mode
     member x.SwitchMode kind = _modeMap.SwitchMode kind
@@ -161,6 +162,7 @@ type internal VimBuffer
         member x.Mode = x.Mode
         member x.NormalMode = x.NormalMode
         member x.CommandMode = x.CommandMode
+        member x.DisabledMode = x.DisabledMode
         member x.AllModes = _modeMap.Modes
         member x.Settings = _settings
         member x.RegisterMap = _vim.RegisterMap

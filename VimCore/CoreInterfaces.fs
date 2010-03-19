@@ -359,6 +359,7 @@ and IVimBuffer =
 
     abstract NormalMode : INormalMode 
     abstract CommandMode : ICommandMode 
+    abstract DisabledMode : IDisabledMode
 
     /// Sequence of available Modes
     abstract AllModes : seq<IMode>
@@ -466,6 +467,9 @@ and ICommandMode =
 
     inherit IMode
     
-
+and IDisabledMode =
+    
+    /// Help message to display 
+    abstract HelpMessage : string 
 
 

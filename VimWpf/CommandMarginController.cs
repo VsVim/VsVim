@@ -48,6 +48,9 @@ namespace Vim.UI.Wpf
                 case ModeKind.VisualLine:
                     _margin.StatusLine = Resources.VisualLineBanner;
                     break;
+                case ModeKind.Disabled:
+                    _margin.StatusLine = _buffer.DisabledMode.HelpMessage;
+                    break;
                 default:
                     _margin.StatusLine = String.Empty;
                     break;
@@ -81,6 +84,9 @@ namespace Vim.UI.Wpf
                             _margin.StatusLine = mode.Command;
                         }
                     }
+                    break;
+                case ModeKind.Disabled:
+                    _margin.StatusLine = _buffer.DisabledMode.HelpMessage;
                     break;
             }
         }
