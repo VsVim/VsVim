@@ -53,26 +53,34 @@ namespace Vim.UI.Wpf
 
         private void OnKeyInputProcessed(object sender, Tuple<KeyInput,ProcessResult> tuple)
         {
-            switch ( _buffer.ModeKind )
+            if (tuple.Item2.IsProcessedWithError)
             {
-                case ModeKind.Command:
-                    _margin.StatusLine = ":" + _buffer.CommandMode.Command;
-                    break;
-                case ModeKind.Normal:
-                    {
-                        var mode = _buffer.NormalMode;
-                        var search = mode.IncrementalSearch;
-                        if (search.InSearch && search.CurrentSearch.HasValue())
+                var item = (ProcessResult.ProcessedWithError)tuple.Item2;
+                _margin.StatusLine = item.Item;
+            }
+            else
+            {
+                switch (_buffer.ModeKind)
+                {
+                    case ModeKind.Command:
+                        _margin.StatusLine = ":" + _buffer.CommandMode.Command;
+                        break;
+                    case ModeKind.Normal:
                         {
-                            var data = search.CurrentSearch.Value;
-                            _margin.StatusLine = "/" + data.Pattern;
+                            var mode = _buffer.NormalMode;
+                            var search = mode.IncrementalSearch;
+                            if (search.InSearch && search.CurrentSearch.HasValue())
+                            {
+                                var data = search.CurrentSearch.Value;
+                                _margin.StatusLine = "/" + data.Pattern;
+                            }
+                            else
+                            {
+                                _margin.StatusLine = mode.Command;
+                            }
                         }
-                        else
-                        {
-                            _margin.StatusLine = mode.Command;
-                        }
-                    }
-                    break;
+                        break;
+                }
             }
         }
 
