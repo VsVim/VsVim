@@ -102,3 +102,6 @@ type ICommonOperations =
 
     /// Save the current document as the specified file
     abstract SaveAs : string -> unit
+
+    /// Close the current file
+    abstract Close : checkDirty : bool -> unit

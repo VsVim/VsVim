@@ -81,13 +81,17 @@ namespace VimCoreTest
             return true;
         }
 
-
-        void IVimHost.Save()
+        void IVimHost.CloseCurrentFile(bool checkDirty)
         {
             throw new NotImplementedException();
         }
 
-        void IVimHost.SaveAs(string value)
+        void IVimHost.SaveCurrentFile()
+        {
+            throw new NotImplementedException();
+        }
+
+        void IVimHost.SaveCurrentFileAs(string value)
         {
             throw new NotImplementedException();
         }

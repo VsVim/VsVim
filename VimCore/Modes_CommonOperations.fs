@@ -245,7 +245,8 @@ type internal CommonOperations
                 edit.Replace(line.Extent.Span, text) |> ignore
             edit.Apply()
         
-        member x.Save() = _host.Save()
-        member x.SaveAs fileName = _host.SaveAs fileName
+        member x.Save() = _host.SaveCurrentFile()
+        member x.SaveAs fileName = _host.SaveCurrentFileAs fileName
+        member x.Close checkDirty = _host.CloseCurrentFile checkDirty
         
         

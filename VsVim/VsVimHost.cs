@@ -185,14 +185,19 @@ namespace VsVim
             return vsTextLines.GetFileName();
         }
 
-        void IVimHost.Save()
+        void IVimHost.SaveCurrentFile()
         {
             SafeExecuteCommand("File.SaveSelectedItems");
         }
 
-        void IVimHost.SaveAs(string fileName)
+        void IVimHost.SaveCurrentFileAs(string fileName)
         {
             SafeExecuteCommand("File.SaveSelectedItemsAs " + fileName);
+        }
+
+        void IVimHost.CloseCurrentFile(bool checkDirty)
+        {
+            SafeExecuteCommand("File.Close");
         }
 
         #endregion

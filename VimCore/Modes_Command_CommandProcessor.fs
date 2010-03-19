@@ -111,6 +111,7 @@ type internal CommandProcessor
             yield ("<", "", this.ProcessShiftLeft)
             yield (">", "", this.ProcessShiftRight)
             yield ("write","w", this.ProcessWrite)
+            yield ("quit", "q", this.ProcessQuit)
             yield ("$", "", fun _ _ _ -> _operations.EditorOperations.MoveToEndOfDocument(false))
         }
 
@@ -286,6 +287,10 @@ type internal CommandProcessor
         let name = name.Trim()
         if StringUtil.isNullOrEmpty name then _operations.Save()
         else _operations.SaveAs name
+
+    member private x.ProcessQuit _ _ hasBang =
+        let checkDirty = not hasBang
+        _operations.Close checkDirty
 
     /// Implements the :delete command
     member private x.ProcessDelete (rest:char list) (range:Range option) _ =

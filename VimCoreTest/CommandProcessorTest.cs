@@ -942,5 +942,32 @@ namespace VimCoreTest
             RunCommand("w foo");
             _operations.Verify();
         }
+
+        [Test]
+        public void Quit1()
+        {
+            Create("");
+            _operations.Setup(x => x.Close(true)).Verifiable();
+            RunCommand("quit");
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Quit2()
+        {
+            Create("");
+            _operations.Setup(x => x.Close(true)).Verifiable();
+            RunCommand("q");
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Quit3()
+        {
+            Create("");
+            _operations.Setup(x => x.Close(false)).Verifiable();
+            RunCommand("q!");
+            _operations.Verify();
+        }
     }
  }
