@@ -245,7 +245,12 @@ type internal CommonOperations
                 edit.Replace(line.Extent.Span, text) |> ignore
             edit.Apply()
         
-        member x.InsertText text count = failwith "Must implement"
+        member x.InsertText text count = 
+            let text = StringUtil.repeat text count 
+            let point = ViewUtil.GetCaretPoint _textView
+            use edit = _textView.TextBuffer.CreateEdit()
+            edit.Insert(0, text) |> ignore
+            edit.Apply()                    
             
         member x.Save() = _host.SaveCurrentFile()
         member x.SaveAs fileName = _host.SaveCurrentFileAs fileName
