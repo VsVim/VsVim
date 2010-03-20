@@ -1980,7 +1980,7 @@ namespace VimCoreTest
         public void CommandExecuted2()
         {
             CreateBuffer("foo");
-            _operations.Setup(x => x.MoveCaretLeft(1));
+            _operations.Setup(x => x.MoveCaretLeft(2));
             var didSee = false;
             _mode.CommandExecuted += (unused, command) =>
                 {

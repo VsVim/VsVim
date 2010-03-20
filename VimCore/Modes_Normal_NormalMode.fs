@@ -13,6 +13,13 @@ type internal Operation =  {
     RunFunc : int option -> Register -> NormalModeResult
 }
 
+type internal CommandData = {
+    Count : int option;
+    Register : Register;
+    KeyInputs : KeyInput list;
+    Command : string
+}
+
 type internal NormalMode 
     ( 
         _bufferData : IVimBuffer, 
@@ -25,7 +32,7 @@ type internal NormalMode
     /// Command specific data (count,register,KeyInput list)  The KeyInput list
     /// value is a list of the KeyInputs for the current command.  The head of 
     /// the list is the most recent KeyInput
-    let mutable _data : int option * Register * KeyInput list= (None,_bufferData.RegisterMap.DefaultRegister,List.empty)
+    let mutable _data = {Count=None;Register=_bufferData.RegisterMap.DefaultRegister;KeyInputs=List.empty;Command=""}
 
     let mutable _operationMap : Map<KeyInput,Operation> = Map.empty
 
@@ -271,10 +278,8 @@ type internal NormalMode
             | TextChange(newText) -> _operations.InsertText newText (CountOrDefault countOpt) |> ignore
             | NormalModeChange(keyInputs,count,_) -> 
                 let count = match countOpt with | Some(c) -> c | None -> count
-                let _,reg,_ = _data
-                _data <- Some(count), reg, List.empty
+                _data <- {_data with Count=Some(count); }
                 keyInputs |> Seq.iter (fun ki -> this.ProcessCore ki |> ignore)
-                 
 
     member private this.BuildMotionOperationsMap =
         let wrap func = 
@@ -413,28 +418,23 @@ type internal NormalMode
 
     /// Reset the internal data for the NormalMode instance
     member this.ResetData() = 
-        _data <- (None, _bufferData.RegisterMap.DefaultRegister,List.empty)
+        _data <- {Count=None;Register=_bufferData.RegisterMap.DefaultRegister;KeyInputs=List.empty;Command=""}
         _runFunc <- this.StartCore
         _waitingForMoreInput <- false
         _isOperatingPending <- false
         if _operationMap.Count = 0 then
             _operationMap <- this.BuildOperationsMap
 
-    member this.Register = 
-        let _,reg,_= _data
-        reg
-    member this.Count = 
-        let count,_,_ = _data
-        count
-    member this.Command = 
-        let _,_,inputs= _data
-        inputs |> List.rev |> Seq.map (fun ki -> ki.Char) |> StringUtil.ofCharSeq
+    member this.Register = _data.Register   
+    member this.Count = _data.Count
+    member this.Command = _data.Command
 
     member this.ProcessCore ki =
 
         // Update the command string
-        let count,reg,commandInputs = _data
-        _data <- (count,reg,ki :: commandInputs)
+        let commandInputs = ki :: _data.KeyInputs
+        let command = _data.Command + (ki.Char.ToString())
+        _data <- {_data with KeyInputs=commandInputs;Command=command }
 
         match _runFunc ki this.Count this.Register with
             | NormalModeResult.Complete ->
@@ -445,7 +445,7 @@ type internal NormalMode
                 this.ResetData()
                 Processed
             | NormalModeResult.CompleteRepeatable(count,reg) ->
-                let _,_,commandInputs = _data
+                let commandInputs = _data.KeyInputs
                 this.ResetData()
                 _commandExecutedEvent.Trigger (RepeatableCommand((commandInputs |> List.rev),count,reg))
                 Processed
@@ -466,13 +466,11 @@ type internal NormalMode
                 this.ResetData() // Make sure to reset information when switching modes
                 ProcessResult.SwitchMode kind
             | CountComplete (count,nextKi) ->
-                let _,reg,command = _data
-                _data <- (Some(count),reg,command)
+                _data <- {_data with Count=Some(count);KeyInputs=List.empty}
                 _runFunc <- this.StartCore
                 (this :> IMode).Process nextKi
             | RegisterComplete (reg) ->     
-                let count,_,command = _data
-                _data <- (count,reg,command)
+                _data <- {_data with Register=reg;KeyInputs=List.empty }
                 _runFunc <- this.StartCore
                 _waitingForMoreInput <- false
                 Processed
