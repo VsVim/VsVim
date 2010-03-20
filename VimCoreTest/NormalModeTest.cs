@@ -31,6 +31,7 @@ namespace VimCoreTest
         private Mock<IIncrementalSearch> _incrementalSearch;
         private Mock<IJumpList> _jumpList;
         private Mock<IStatusUtil> _statusUtil;
+        private Mock<IChangeTracker> _changeTracker;
 
         static string[] s_lines = new string[]
             {
@@ -53,10 +54,11 @@ namespace VimCoreTest
             _incrementalSearch = new Mock<IIncrementalSearch>(MockBehavior.Strict);
             _jumpList = new Mock<IJumpList>(MockBehavior.Strict);
             _statusUtil = new Mock<IStatusUtil>(MockBehavior.Strict);
+            _changeTracker = new Mock<IChangeTracker>(MockBehavior.Strict);
             _bufferData = MockFactory.CreateVimBuffer(
                 _view,
                 "test",
-                MockFactory.CreateVim(_map, host : host).Object,
+                MockFactory.CreateVim(_map, host : host, changeTracker:_changeTracker.Object).Object,
                 _jumpList.Object);
             _operations = new Mock<IOperations>(MockBehavior.Strict);
             _operations.SetupGet(x => x.EditorOperations).Returns(_editorOperations.Object);
@@ -2007,6 +2009,112 @@ namespace VimCoreTest
                 };
             _mode.Process(";");
             Assert.IsTrue(didSee);
+        }
+
+        [Test]
+        public void RepeatLastChange1()
+        {
+            var host = new Mock<IVimHost>();
+            CreateBuffer(host.Object,"foo");
+            _changeTracker.SetupGet(x => x.LastChange).Returns(FSharpOption<RepeatableChange>.None).Verifiable();
+            _mode.Process('.');
+            host.Verify(x => x.Beep());
+            _changeTracker.Verify();
+        }
+
+        [Test]
+        public void RepeatLastChange2()
+        {
+            CreateBuffer("");
+            _changeTracker.SetupGet(x => x.LastChange).Returns(FSharpOption.Create(RepeatableChange.NewTextChange("h"))).Verifiable();
+            _operations.Setup(x => x.InsertText("h", 1)).Returns(_view.TextSnapshot).Verifiable();
+            _mode.Process('.');
+            _operations.Verify();
+            _changeTracker.Verify();
+        }
+
+        [Test]
+        public void RepeatLastChange3()
+        {
+            CreateBuffer("");
+            _changeTracker.SetupGet(x => x.LastChange).Returns(FSharpOption.Create(RepeatableChange.NewTextChange("h"))).Verifiable();
+            _operations.Setup(x => x.InsertText("h", 3)).Returns(_view.TextSnapshot).Verifiable();
+            _mode.Process("3.");
+            _operations.Verify();
+            _changeTracker.Verify();
+        }
+
+        [Test]
+        public void RepeatLastChange4()
+        {
+            CreateBuffer("");
+            _changeTracker
+                .SetupGet(x => x.LastChange)
+                .Returns(FSharpOption.Create(RepeatableChange.NewNormalModeChange(
+                    (new KeyInput[] { InputUtil.CharToKeyInput('h')}).ToFSharpList(),
+                    1,
+                    new Register('c'))))
+                .Verifiable();
+            _operations.Setup(x => x.MoveCaretLeft(1)).Verifiable();
+            _mode.Process(".");
+            _operations.Verify();
+            _changeTracker.Verify();
+        }
+
+        [Test]
+        public void RepeatLastChange5()
+        {
+            CreateBuffer("");
+            _changeTracker
+                .SetupGet(x => x.LastChange)
+                .Returns(FSharpOption.Create(RepeatableChange.NewNormalModeChange(
+                    (new KeyInput[] { InputUtil.CharToKeyInput('h')}).ToFSharpList(),
+                    3,
+                    new Register('c'))))
+                .Verifiable();
+            _operations.Setup(x => x.MoveCaretLeft(3)).Verifiable();
+            _mode.Process(".");
+            _operations.Verify();
+            _changeTracker.Verify();
+        }
+
+        [Test]
+        public void RepeatLastChange6()
+        {
+            CreateBuffer("");
+            _changeTracker
+                .SetupGet(x => x.LastChange)
+                .Returns(FSharpOption.Create(RepeatableChange.NewNormalModeChange(
+                    (new KeyInput[] { InputUtil.CharToKeyInput('h')}).ToFSharpList(),
+                    3,
+                    new Register('c'))))
+                .Verifiable();
+            _operations.Setup(x => x.MoveCaretLeft(2)).Verifiable();
+            _mode.Process("2.");
+            _operations.Verify();
+            _changeTracker.Verify();
+        }
+
+        [Test, Description("Executing . should not clear the last command")]
+        public void RepeatLastChange7()
+        {
+            CreateBuffer("");
+            var count = 0;
+            _changeTracker
+                .SetupGet(x => x.LastChange)
+                .Returns(FSharpOption.Create(RepeatableChange.NewNormalModeChange(
+                    (new KeyInput[] { InputUtil.CharToKeyInput('h') }).ToFSharpList(),
+                    3,
+                    new Register('c'))))
+                .Callback(() => { count++; });
+
+            _operations.Setup(x => x.MoveCaretLeft(3)).Verifiable();
+            _mode.Process(".");
+            _mode.Process(".");
+            _mode.Process(".");
+            _operations.Verify();
+            _changeTracker.Verify();
+            Assert.AreEqual(3, count);
         }
 
         #endregion

@@ -94,6 +94,9 @@ type ICommonOperations =
     /// the new snapshot of the buffer
     abstract PasteBefore : SnapshotPoint -> text : string -> SnapshotSpan 
 
+    /// Insert the specified text at the cursor position "count" times
+    abstract InsertText : text:string -> count : int -> ITextSnapshot
+
     /// Delete a range of text
     abstract DeleteSpan : SnapshotSpan -> MotionKind -> OperationKind -> Register -> ITextSnapshot
 

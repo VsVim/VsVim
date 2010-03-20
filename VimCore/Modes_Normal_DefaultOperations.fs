@@ -17,7 +17,7 @@ type internal DefaultOperations
     _normalWordNav : ITextStructureNavigator,
     _searchService : ITextSearchService,
     _jumpList : IJumpList,
-    _incrementalSearch : IIncrementalSearch ) =
+    _incrementalSearch : IIncrementalSearch) =
 
     inherit CommonOperations(_textView, _operations, _host, _jumpList)
 
@@ -258,7 +258,6 @@ type internal DefaultOperations
                 | Some(c) when c = 0 -> lastLineNumber
                 | Some(c) -> c
             x.GoToLineCore line
-
-
+            
 
 

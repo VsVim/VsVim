@@ -15,6 +15,7 @@ type internal NormalModeResult =
     | RegisterComplete of Register
     | CompleteRepeatable of int * Register
     | Complete 
+    | CompleteNotCommand 
 
 module internal NormalModeUtil =
     

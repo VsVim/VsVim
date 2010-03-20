@@ -834,5 +834,20 @@ namespace VimCoreTest
             _globalSettings.Verify();
         }
 
+        [Test]
+        public void InsertText1()
+        {
+            Create("foo");
+            _operations.InsertText("a", 1);
+            Assert.AreEqual("afoo", _view.TextSnapshot.GetText());
+        }
+
+        [Test]
+        public void InsertText2()
+        {
+            Create("bar");
+            _operations.InsertText("a", 3);
+            Assert.AreEqual("aaabar", _view.TextSnapshot.GetText());
+        }
     }
 }

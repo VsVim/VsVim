@@ -10,6 +10,7 @@ using Microsoft.VisualStudio.Text.Editor;
 using System.IO;
 using Vim.Modes.Command;
 using Microsoft.FSharp.Core;
+using Microsoft.FSharp.Collections;
 
 namespace VimCoreTest
 {
@@ -22,6 +23,7 @@ namespace VimCoreTest
         private Mock<IVimBufferFactory> _factory;
         private Mock<IVimHost> _host;
         private Mock<IKeyMap> _keyMap;
+        private Mock<IChangeTracker> _changeTracker;
         private Vim.Vim _vimRaw;
         private IVim _vim;
         private Dictionary<string, string> _savedEnvironment = new Dictionary<string, string>();
@@ -34,15 +36,17 @@ namespace VimCoreTest
             _markMap = new Mock<IMarkMap>(MockBehavior.Strict);
             _factory = new Mock<IVimBufferFactory>(MockBehavior.Strict);
             _keyMap = new Mock<IKeyMap>(MockBehavior.Strict);
+            _changeTracker = new Mock<IChangeTracker>(MockBehavior.Strict);
             _host = new Mock<IVimHost>(MockBehavior.Strict);
             _vimRaw = new Vim.Vim(
                 _host.Object,
                 _factory.Object,
-                new Lazy<IVimBufferCreationListener>[] {},
+                FSharpList<Lazy<IVimBufferCreationListener>>.Empty,
                 _settings.Object,
                 _registerMap.Object,
                 _markMap.Object,
-                _keyMap.Object);
+                _keyMap.Object,
+                _changeTracker.Object);
             _vim = _vimRaw;
             _savedEnvironment = new Dictionary<string, string>();
         }

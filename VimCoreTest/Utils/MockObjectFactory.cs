@@ -32,19 +32,22 @@ namespace VimCoreTest.Utils
             MarkMap map = null,
             IVimGlobalSettings settings = null,
             IVimHost host = null,
-            IKeyMap keyMap = null)
+            IKeyMap keyMap = null,
+            IChangeTracker changeTracker = null)
         {
             registerMap = registerMap ?? CreateRegisterMap().Object;
             map = map ?? new MarkMap(new TrackingLineColumnService());
             settings = settings ?? new GlobalSettings();
             host = host ?? new FakeVimHost();
             keyMap = keyMap ?? (new KeyMap());
+            changeTracker = changeTracker ?? new ChangeTracker();
             var mock = new Mock<IVim>(MockBehavior.Strict);
             mock.Setup(x => x.RegisterMap).Returns(registerMap);
             mock.Setup(x => x.MarkMap).Returns(map);
             mock.Setup(x => x.Settings).Returns(settings);
             mock.Setup(x => x.Host).Returns(host);
             mock.Setup(x => x.KeyMap).Returns(keyMap);
+            mock.Setup(x => x.ChangeTracker).Returns(changeTracker);
             return mock;
         }
 
@@ -103,6 +106,7 @@ namespace VimCoreTest.Utils
             mock.SetupGet(x => x.MarkMap).Returns(vim.MarkMap);
             mock.SetupGet(x => x.RegisterMap).Returns(vim.RegisterMap);
             mock.SetupGet(x => x.JumpList).Returns(jumpList);
+            mock.SetupGet(x => x.Vim).Returns(vim);
             return mock;
         }
 

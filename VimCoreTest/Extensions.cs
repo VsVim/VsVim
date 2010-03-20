@@ -10,6 +10,7 @@ using System.Windows.Threading;
 using Microsoft.FSharp.Core;
 using System.Windows.Input;
 using NUnit.Framework;
+using Microsoft.FSharp.Collections;
 
 namespace VimCoreTest
 {
@@ -275,6 +276,28 @@ namespace VimCoreTest
                 frame);
             Dispatcher.PushFrame(frame);
 
+        }
+
+        internal static FSharpList<T> ToFSharpList<T>(this IEnumerable<T> enumerable)
+        {
+            var retList = FSharpList<T>.Empty;
+            var list = enumerable as IList<T>;
+            if ( list != null )
+            {
+                for ( var i= list.Count-1; i >= 0; i-- )
+                {
+                    retList = new FSharpList<T>(list[i], retList);
+                }
+            }
+            else
+            {
+                foreach (var cur in enumerable.Reverse())
+                {
+                    retList = new FSharpList<T>(cur, retList);
+                }
+            }
+
+            return retList;
         }
 
     }

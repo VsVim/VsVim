@@ -489,6 +489,6 @@ and IChangeTracker =
     abstract LastChange : RepeatableChange option
 
 and RepeatableChange =
-    | NormalModeChange of NormalModeCommand
+    | NormalModeChange of KeyInput list * int * Register
     | TextChange of string
 
