@@ -2011,6 +2011,42 @@ namespace VimCoreTest
             Assert.IsTrue(didSee);
         }
 
+        private void AssertIsRepeatable(string initialCommand, string repeatCommand = null, int? count = null)
+        {
+            repeatCommand = repeatCommand ?? initialCommand;
+            count = count ?? 1;
+            var didSee = false;
+            _mode.CommandExecuted += (unused, command) =>
+                {
+                    Assert.IsTrue(command.IsRepeatableCommand);
+                    var com = command.AsRepeatabelCommand();
+                    var data = new string(com.Item1.Select(x => x.Char).ToArray());
+                    Assert.AreEqual(repeatCommand, data);
+                    Assert.AreEqual(count.Value, com.Item2);
+                    didSee = true;
+                };
+            _mode.Process(initialCommand);
+            Assert.IsTrue(didSee);
+        }
+
+        [Test]
+        public void CommandExecute4()
+        {
+            CreateBuffer("foo", "bar", "baz");
+            _operations.Setup(x => x.DeleteLines(1, _map.DefaultRegister));
+            AssertIsRepeatable("dd");
+        }
+
+        [Test]
+        public void CommandExecute5()
+        {
+            CreateBuffer("foo", "bar", "baz");
+            _operations
+                .Setup(x => x.DeleteSpan(It.IsAny<SnapshotSpan>(), It.IsAny<MotionKind>(), It.IsAny<OperationKind>(), _map.DefaultRegister))
+                .Returns<ITextSnapshot>(null);
+            AssertIsRepeatable("d$");
+        }
+
         [Test]
         public void RepeatLastChange1()
         {

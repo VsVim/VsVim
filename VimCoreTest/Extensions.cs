@@ -101,6 +101,16 @@ namespace VimCoreTest
 
         #endregion
 
+        #region RepeatableChange
+
+        internal static RepeatableChange.TextChange AsTextChange(this RepeatableChange change)
+        {
+            Assert.IsTrue(change.IsTextChange);
+            return (RepeatableChange.TextChange)change;
+        }
+
+        #endregion
+
         #region SettingValue
 
         internal static SettingValue.StringValue AsStringValue(this SettingValue value)

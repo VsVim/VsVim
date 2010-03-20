@@ -96,15 +96,12 @@ type internal NormalMode
         let inner (ki:KeyInput) count reg =
             match ki.Char with 
                 | 'd' -> 
-                    let point = ViewUtil.GetCaretPoint _bufferData.TextView
-                    let point = point.GetContainingLine().Start
-                    let span = TssUtil.GetLineRangeSpanIncludingLineBreak point count
-                    _operations.DeleteSpan span MotionKind.Inclusive OperationKind.LineWise reg |> ignore
-                    NormalModeResult.Complete
+                    _operations.DeleteLines count reg 
+                    NormalModeResult.CompleteRepeatable(count,reg)
                 | _ -> 
                     let func (span,motionKind,opKind)= 
                         _operations.DeleteSpan span motionKind opKind reg |> ignore
-                        NormalModeResult.Complete 
+                        NormalModeResult.CompleteRepeatable(count,reg)
                     this.WaitForMotion ki count func
         inner
         
@@ -117,11 +114,11 @@ type internal NormalMode
                     let point = point.GetContainingLine().Start
                     let span = TssUtil.GetLineRangeSpanIncludingLineBreak point count
                     _operations.Yank span MotionKind.Inclusive OperationKind.LineWise reg 
-                    NormalModeResult.Complete 
+                    NormalModeResult.CompleteRepeatable (count,reg)
                 | _ ->
                     let inner (ss:SnapshotSpan,motionKind,opKind) = 
                         _operations.Yank ss motionKind opKind reg 
-                        NormalModeResult.Complete
+                        NormalModeResult.CompleteRepeatable (count,reg)
                     this.WaitForMotion ki count inner
         inner 
 
@@ -149,11 +146,11 @@ type internal NormalMode
                 | '<' ->
                     let span = TssUtil.GetLineRangeSpan (this.CaretPoint.GetContainingLine().Start) count
                     _operations.ShiftLeft span _bufferData.Settings.GlobalSettings.ShiftWidth |> ignore
-                    NormalModeResult.Complete 
+                    NormalModeResult.CompleteRepeatable(count,reg)
                 | _ ->
                     let inner2 (span:SnapshotSpan,_,_) =
                         _operations.ShiftLeft span _bufferData.Settings.GlobalSettings.ShiftWidth |> ignore                                          
-                        NormalModeResult.Complete 
+                        NormalModeResult.CompleteRepeatable(count,reg)
                     this.WaitForMotion ki count inner2
         inner                                            
                     
@@ -165,11 +162,11 @@ type internal NormalMode
                 | '>' ->
                     let span = TssUtil.GetLineRangeSpan (this.CaretPoint.GetContainingLine().Start) count
                     _operations.ShiftRight span _bufferData.Settings.GlobalSettings.ShiftWidth |> ignore
-                    NormalModeResult.Complete 
+                    NormalModeResult.CompleteRepeatable(count,reg) 
                 | _ ->
                     let inner2 (span:SnapshotSpan,_,_) =
                         _operations.ShiftRight span _bufferData.Settings.GlobalSettings.ShiftWidth |> ignore
-                        NormalModeResult.Complete
+                        NormalModeResult.CompleteRepeatable(count,reg) 
                     this.WaitForMotion ki count inner2
         inner
                             
@@ -190,7 +187,7 @@ type internal NormalMode
         let inner (ki:KeyInput) count reg =
             if not (_operations.ReplaceChar ki count) then
                 _bufferData.VimHost.Beep()
-            NormalModeResult.Complete
+            NormalModeResult.CompleteRepeatable(count,reg) 
         inner
         
     /// Handles commands which begin with g in normal mode.  This should be called when the g char is
@@ -214,7 +211,7 @@ type internal NormalMode
             | _ ->
                 _bufferData.VimHost.Beep()
                 ()
-            NormalModeResult.Complete
+            NormalModeResult.CompleteRepeatable(count,reg)
         inner
 
     /// Implement the commands associated with the z prefix in normal mode
