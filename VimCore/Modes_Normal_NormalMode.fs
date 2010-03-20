@@ -22,8 +22,10 @@ type internal NormalMode
 
     let _commandExecutedEvent = Event<_>()
 
-    /// Command specific data (count,register)
-    let mutable _data : int option * Register * string = (None,_bufferData.RegisterMap.DefaultRegister,"")
+    /// Command specific data (count,register,KeyInput list)  The KeyInput list
+    /// value is a list of the KeyInputs for the current command.  The head of 
+    /// the list is the most recent KeyInput
+    let mutable _data : int option * Register * KeyInput list= (None,_bufferData.RegisterMap.DefaultRegister,List.empty)
 
     let mutable _operationMap : Map<KeyInput,Operation> = Map.empty
 
@@ -56,7 +58,7 @@ type internal NormalMode
             match _incrementalSearch.Process ki with
             | SearchComplete -> 
                 _bufferData.JumpList.Add before |> ignore
-                NormalModeResult.Complete
+                NormalModeResult.Complete 
             | SearchCancelled -> NormalModeResult.Complete
             | SearchNeedMore ->  NormalModeResult.NeedMoreInput inner
         _incrementalSearch.Begin kind
@@ -95,7 +97,7 @@ type internal NormalMode
                 | _ -> 
                     let func (span,motionKind,opKind)= 
                         _operations.DeleteSpan span motionKind opKind reg |> ignore
-                        NormalModeResult.Complete
+                        NormalModeResult.Complete 
                     this.WaitForMotion ki count func
         inner
         
@@ -108,7 +110,7 @@ type internal NormalMode
                     let point = point.GetContainingLine().Start
                     let span = TssUtil.GetLineRangeSpanIncludingLineBreak point count
                     _operations.Yank span MotionKind.Inclusive OperationKind.LineWise reg 
-                    NormalModeResult.Complete
+                    NormalModeResult.Complete 
                 | _ ->
                     let inner (ss:SnapshotSpan,motionKind,opKind) = 
                         _operations.Yank ss motionKind opKind reg 
@@ -140,11 +142,11 @@ type internal NormalMode
                 | '<' ->
                     let span = TssUtil.GetLineRangeSpan (this.CaretPoint.GetContainingLine().Start) count
                     _operations.ShiftLeft span _bufferData.Settings.GlobalSettings.ShiftWidth |> ignore
-                    NormalModeResult.Complete
+                    NormalModeResult.Complete 
                 | _ ->
                     let inner2 (span:SnapshotSpan,_,_) =
                         _operations.ShiftLeft span _bufferData.Settings.GlobalSettings.ShiftWidth |> ignore                                          
-                        NormalModeResult.Complete
+                        NormalModeResult.Complete 
                     this.WaitForMotion ki count inner2
         inner                                            
                     
@@ -156,7 +158,7 @@ type internal NormalMode
                 | '>' ->
                     let span = TssUtil.GetLineRangeSpan (this.CaretPoint.GetContainingLine().Start) count
                     _operations.ShiftRight span _bufferData.Settings.GlobalSettings.ShiftWidth |> ignore
-                    NormalModeResult.Complete
+                    NormalModeResult.Complete 
                 | _ ->
                     let inner2 (span:SnapshotSpan,_,_) =
                         _operations.ShiftRight span _bufferData.Settings.GlobalSettings.ShiftWidth |> ignore
@@ -261,11 +263,11 @@ type internal NormalMode
 
     member private this.BuildMotionOperationsMap =
         let wrap func = 
-            fun count _ -> 
+            fun count reg -> 
                 let count = CountOrDefault count
                 func count
                 _operations.EditorOperations.ResetSelection()
-                NormalModeResult.Complete
+                NormalModeResult.CompleteRepeatable(count,reg)
         let factory = Vim.Modes.CommandFactory(_operations)
         factory.CreateMovementCommands() 
             |> Seq.map (fun (ki,com) -> (ki,wrap com))
@@ -349,8 +351,13 @@ type internal NormalMode
             (waitOps |> Seq.map (fun (ki,func) -> (ki,false,fun _ _ -> NormalModeResult.OperatorPending(func()))))
             |> Seq.append (waitOps2 |> Seq.map (fun (ki,func) -> (ki,false,fun _ _  -> NormalModeResult.NeedMoreInput(func()))))
             |> Seq.append (waitOps3 |> Seq.map (fun (ki,func) -> (ki,false,fun _ _ -> NormalModeResult.NeedMoreInput2(func()))))
-            |> Seq.append (completeOps |> Seq.map (fun (ki,func) -> (ki,true,(fun count reg -> func (CountOrDefault count) reg; NormalModeResult.Complete))))
-            |> Seq.append (completeOpts2 |> Seq.map (fun (ki,func) -> (ki,true,fun count reg -> func count reg; NormalModeResult.Complete)))
+            |> Seq.append (completeOps |> Seq.map (fun (ki,func) -> (ki,true,(fun count reg -> 
+                let count = CountOrDefault count
+                func count reg
+                NormalModeResult.CompleteRepeatable(count,reg)))))
+            |> Seq.append (completeOpts2 |> Seq.map (fun (ki,func) -> (ki,true,fun count reg -> 
+                func count reg; 
+                NormalModeResult.CompleteRepeatable(CountOrDefault count,reg))))
             |> Seq.append (changeOpts |> Seq.map (fun (ki,kind,func) -> (ki,false,fun count reg -> func (CountOrDefault count) reg; NormalModeResult.SwitchMode kind)))
             |> Seq.map (fun (ki,isRepeatable,func) -> {KeyInput=ki;IsRepeatable=isRepeatable;RunFunc=func})
             |> Seq.append (this.BuildMotionOperationsMap |> Seq.map (fun (ki,func) -> {KeyInput=ki;IsRepeatable=true;RunFunc=func}))
@@ -381,14 +388,14 @@ type internal NormalMode
             NormalModeResult.NeedMoreInput(f)
         else
             match Map.tryFind ki _operationMap with
-            | Some op -> op.RunFunc count reg
+            | Some op ->  op.RunFunc count reg 
             | None -> 
                 this.VimHost.Beep()
                 NormalModeResult.Complete
 
     /// Reset the internal data for the NormalMode instance
     member this.ResetData() = 
-        _data <- (None, _bufferData.RegisterMap.DefaultRegister,"")
+        _data <- (None, _bufferData.RegisterMap.DefaultRegister,List.empty)
         _runFunc <- this.StartCore
         _waitingForMoreInput <- false
         _isOperatingPending <- false
@@ -402,8 +409,8 @@ type internal NormalMode
         let count,_,_ = _data
         count
     member this.Command = 
-        let _,_,command = _data
-        command
+        let _,_,inputs= _data
+        inputs |> List.rev |> Seq.map (fun ki -> ki.Char) |> StringUtil.ofCharSeq
 
 
     interface INormalMode with 
@@ -433,13 +440,18 @@ type internal NormalMode
         member this.Process ki = 
 
             // Update the command string
-            let command = this.Command + (ki.Char.ToString())
-            let count,reg,_ = _data
-            _data <- (count,reg,command)
+            let count,reg,commandInputs = _data
+            _data <- (count,reg,ki :: commandInputs)
 
             match _runFunc ki this.Count this.Register with
-                | NormalModeResult.Complete -> 
+                | NormalModeResult.Complete ->
                     this.ResetData()
+                    _commandExecutedEvent.Trigger NonRepeatableCommand
+                    Processed
+                | NormalModeResult.CompleteRepeatable(count,reg) ->
+                    let _,_,commandInputs = _data
+                    this.ResetData()
+                    _commandExecutedEvent.Trigger (RepeatableCommand((commandInputs |> List.rev),count,reg))
                     Processed
                 | NormalModeResult.NeedMoreInput(f) ->
                     _runFunc <- (fun ki count reg -> f ki (CountOrDefault count) reg)

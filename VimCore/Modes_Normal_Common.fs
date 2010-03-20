@@ -13,6 +13,7 @@ type internal NormalModeResult =
     | NeedMoreInput2 of (KeyInput -> int option -> Register -> NormalModeResult)
     | CountComplete of int * KeyInput
     | RegisterComplete of Register
+    | CompleteRepeatable of int * Register
     | Complete 
 
 module internal NormalModeUtil =

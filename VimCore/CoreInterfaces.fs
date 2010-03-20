@@ -229,11 +229,6 @@ module LocalSettingNames =
     let ScrollName = "scroll"
     let NumberName = "number"
 
-/// Command executed in normal mode
-type NormalModeCommand =
-    | NonRepeatableCommand
-    | RepeatableCommand of int * Register * (int * Register -> ProcessResult)
-
 /// Represent the setting supported by the Vim implementation.  This class **IS** mutable
 /// and the values will change.  Setting names are case sensitive but the exposed property
 /// names tend to have more familiar camel case names
@@ -480,5 +475,10 @@ and IDisabledMode =
     
     /// Help message to display 
     abstract HelpMessage : string 
+
+/// Command executed in normal mode
+and NormalModeCommand =
+    | NonRepeatableCommand
+    | RepeatableCommand of KeyInput list * int * Register 
 
 

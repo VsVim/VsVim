@@ -75,6 +75,7 @@ namespace VimCoreTest
 
         #region KeyMappingResult
 
+
         internal static Vim.KeyMappingResult.SingleKey AsSingleKey(this KeyMappingResult res)
         {
             Assert.IsTrue(res.IsSingleKey);
@@ -85,6 +86,16 @@ namespace VimCoreTest
         {
             Assert.IsTrue(res.IsKeySequence);
             return (KeyMappingResult.KeySequence)res;
+        }
+
+        #endregion
+
+        #region NormalModeCommand
+
+        internal static NormalModeCommand.RepeatableCommand AsRepeatabelCommand(this NormalModeCommand command)
+        {
+            Assert.IsTrue(command.IsRepeatableCommand);
+            return (NormalModeCommand.RepeatableCommand)command;
         }
 
         #endregion

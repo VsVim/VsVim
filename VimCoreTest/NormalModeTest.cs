@@ -1954,6 +1954,61 @@ namespace VimCoreTest
             Assert.AreEqual(string.Empty, _mode.Command);
         }
 
+        [Test]
+        public void CommandExecuted1()
+        {
+            CreateBuffer("foo");
+            _operations.Setup(x => x.MoveCaretLeft(1));
+            var didSee = false;
+            _mode.CommandExecuted += (unused, command) =>
+                {
+                    Assert.IsTrue(command.IsRepeatableCommand);
+                    var com = command.AsRepeatabelCommand();
+                    Assert.AreEqual(1, com.Item2);
+                    var inputs = com.Item1.ToList();
+                    Assert.AreEqual(1, inputs.Count);
+                    Assert.AreEqual(InputUtil.CharToKeyInput('h'), inputs[0]);
+                    didSee = true;
+                };
+            _mode.Process('h');
+            Assert.IsTrue(didSee);
+        }
+
+        [Test]
+        public void CommandExecuted2()
+        {
+            CreateBuffer("foo");
+            _operations.Setup(x => x.MoveCaretLeft(1));
+            var didSee = false;
+            _mode.CommandExecuted += (unused, command) =>
+                {
+                    Assert.IsTrue(command.IsRepeatableCommand);
+                    var com = command.AsRepeatabelCommand();
+                    Assert.AreEqual(2, com.Item2);
+                    var inputs = com.Item1.ToList();
+                    Assert.AreEqual(1, inputs.Count);
+                    Assert.AreEqual(InputUtil.CharToKeyInput('h'), inputs[0]);
+                    didSee = true;
+                };
+            _mode.Process("2h");
+            Assert.IsTrue(didSee);
+        }
+
+        [Test]
+        public void CommandExecuted3()
+        {
+            CreateBuffer("foo");
+            _operations.Setup(x => x.MoveCaretLeft(1));
+            var didSee = false;
+            _mode.CommandExecuted += (unused, command) =>
+                {
+                    Assert.IsTrue(command.IsNonRepeatableCommand);
+                    didSee = true;
+                };
+            _mode.Process(";");
+            Assert.IsTrue(didSee);
+        }
+
         #endregion
 
         #region Visual Mode
