@@ -95,6 +95,7 @@
     <Compile Include="MarkMap.fs" />
     <Compile Include="KeyMap.fs" />
     <Compile Include="JumpList.fs" />
+    <Compile Include="ChangeTracker.fs" />
     <Compile Include="VimSettings.fs" />
     <Compile Include="Vim.fs" />
     <Compile Include="MefComponents.fs" />

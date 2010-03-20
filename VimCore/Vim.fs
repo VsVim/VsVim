@@ -87,11 +87,12 @@ type internal Vim
     (
         _host : IVimHost,
         _bufferFactoryService : IVimBufferFactory,
-        _bufferCreationListeners : Lazy<IVimBufferCreationListener> seq,
+        _bufferCreationListeners : Lazy<IVimBufferCreationListener> list,
         _settings : IVimGlobalSettings,
         _registerMap : IRegisterMap,
         _markMap : IMarkMap,
-        _keyMap : IKeyMap ) =
+        _keyMap : IKeyMap,
+        _changeTracker : IChangeTracker ) =
 
 
     static let _vimRcEnvironmentVariables = ["HOME";"VIM";"USERPROFILE"]
@@ -104,14 +105,21 @@ type internal Vim
         bufferFactoryService : IVimBufferFactory,
         tlcService : ITrackingLineColumnService,
         [<ImportMany>] bufferCreationListeners : Lazy<IVimBufferCreationListener> seq ) =
+        let tracker = ChangeTracker() 
+        let listeners = 
+            new Lazy<IVimBufferCreationListener>( fun () -> tracker :> IVimBufferCreationListener)
+            |> Seq.singleton
+            |> Seq.append bufferCreationListeners 
+            |> List.ofSeq
         Vim(
             host,
             bufferFactoryService,
-            bufferCreationListeners,
+            listeners,
             GlobalSettings() :> IVimGlobalSettings,
             RegisterMap() :> IRegisterMap,
             MarkMap(tlcService) :> IMarkMap,
-            KeyMap() :> IKeyMap)
+            KeyMap() :> IKeyMap,
+            tracker :> IChangeTracker )
 
     member x.CreateVimBufferCore view = 
         if _bufferMap.ContainsKey(view) then invalidArg "view" Resources.Vim_ViewAlreadyHasBuffer
@@ -161,6 +169,7 @@ type internal Vim
         member x.Host = _host
         member x.MarkMap = _markMap
         member x.KeyMap = _keyMap
+        member x.ChangeTracker = _changeTracker
         member x.IsVimRcLoaded = not (System.String.IsNullOrEmpty(_settings.VimRc))
         member x.RegisterMap = _registerMap 
         member x.Settings = _settings

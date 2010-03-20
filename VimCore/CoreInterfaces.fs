@@ -295,6 +295,9 @@ and IVim =
 
     /// IKeyMap for this IVim instance
     abstract KeyMap : IKeyMap
+
+    /// IChangeTracker for this IVim instance
+    abstract ChangeTracker : IChangeTracker
     
     /// Is the VimRc loaded
     abstract IsVimRcLoaded : bool
@@ -481,4 +484,11 @@ and NormalModeCommand =
     | NonRepeatableCommand
     | RepeatableCommand of KeyInput list * int * Register 
 
+and IChangeTracker =
+    
+    abstract LastChange : RepeatableChange option
+
+and RepeatableChange =
+    | NormalModeChange of NormalModeCommand
+    | TextChange of string
 
