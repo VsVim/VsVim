@@ -86,7 +86,7 @@ namespace VimCoreTest.Utils
 
 
         internal static Mock<IVimBuffer> CreateVimBuffer(
-            IWpfTextView view,
+            ITextView view,
             string name = null,
             IVim vim = null,
             IJumpList jumpList = null,
@@ -120,14 +120,14 @@ namespace VimCoreTest.Utils
             return new Mock<ITextSelection>(MockBehavior.Strict);
         }
 
-        internal static Mock<IWpfTextView> CreateWpfTextView(
+        internal static Mock<ITextView> CreateTextView(
             ITextBuffer buffer,
             ITextCaret caret = null,
             ITextSelection selection = null)
         {
             caret = caret ?? CreateCaret().Object;
             selection = selection ?? CreateSelection().Object;
-            var view = new Mock<IWpfTextView>(MockBehavior.Strict);
+            var view = new Mock<ITextView>(MockBehavior.Strict);
             view.SetupGet(x => x.Caret).Returns(caret);
             view.SetupGet(x => x.Selection).Returns(selection);
             view.SetupGet(x => x.TextBuffer).Returns(buffer);
@@ -135,11 +135,11 @@ namespace VimCoreTest.Utils
             return view;
         }
 
-        internal static Tuple<Mock<IWpfTextView>, Mock<ITextCaret>, Mock<ITextSelection>> CreateWpfTextViewAll(ITextBuffer buffer)
+        internal static Tuple<Mock<ITextView>, Mock<ITextCaret>, Mock<ITextSelection>> CreateTextViewAll(ITextBuffer buffer)
         {
             var caret = CreateCaret();
             var selection = CreateSelection();
-            var view = CreateWpfTextView(buffer, caret.Object, selection.Object);
+            var view = CreateTextView(buffer, caret.Object, selection.Object);
             return Tuple.Create(view, caret, selection);
         }
 
