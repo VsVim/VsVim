@@ -9,6 +9,7 @@ open Microsoft.VisualStudio.Text.Editor
 /// Operation in the normal mode
 type internal Operation =  {
     KeyInput : Vim.KeyInput;
+    IsRepeatable : bool;
     RunFunc : int option -> Register -> NormalModeResult
 }
 
@@ -18,6 +19,8 @@ type internal NormalMode
         _operations : IOperations,
         _incrementalSearch : IIncrementalSearch,
         _statusUtil : Vim.Modes.IStatusUtil ) =
+
+    let _commandExecutedEvent = Event<_>()
 
     /// Command specific data (count,register)
     let mutable _data : int option * Register * string = (None,_bufferData.RegisterMap.DefaultRegister,"")
@@ -265,7 +268,7 @@ type internal NormalMode
                 NormalModeResult.Complete
         let factory = Vim.Modes.CommandFactory(_operations)
         factory.CreateMovementCommands() 
-            |> Seq.map (fun (ki,com) -> {KeyInput=ki;RunFunc=(wrap com)})
+            |> Seq.map (fun (ki,com) -> (ki,wrap com))
 
     member this.BuildOperationsMap = 
         let waitOps = seq {
@@ -343,13 +346,14 @@ type internal NormalMode
         }
 
         let l =
-            (waitOps |> Seq.map (fun (ki,func) -> {KeyInput=ki;RunFunc=(fun _ _ -> NormalModeResult.OperatorPending(func())) }))
-            |> Seq.append (waitOps2 |> Seq.map (fun (ki,func) -> {KeyInput=ki;RunFunc=(fun _ _ -> NormalModeResult.NeedMoreInput(func())) }))
-            |> Seq.append (waitOps3 |> Seq.map (fun (ki,func) -> {KeyInput=ki;RunFunc=(fun _ _ -> NormalModeResult.NeedMoreInput2(func())) }))
-            |> Seq.append (completeOps |> Seq.map (fun (ki,func) -> {KeyInput=ki;RunFunc=(fun count reg -> func (CountOrDefault count) reg; NormalModeResult.Complete)}))
-            |> Seq.append (completeOpts2 |> Seq.map (fun (ki,func) -> {KeyInput=ki;RunFunc=(fun count reg -> func count reg; NormalModeResult.Complete)}))
-            |> Seq.append (changeOpts |> Seq.map (fun (ki,kind,func) -> {KeyInput=ki;RunFunc=(fun count reg -> func (CountOrDefault count) reg; NormalModeResult.SwitchMode kind)}))
-            |> Seq.append (this.BuildMotionOperationsMap)
+            (waitOps |> Seq.map (fun (ki,func) -> (ki,false,fun _ _ -> NormalModeResult.OperatorPending(func()))))
+            |> Seq.append (waitOps2 |> Seq.map (fun (ki,func) -> (ki,false,fun _ _  -> NormalModeResult.NeedMoreInput(func()))))
+            |> Seq.append (waitOps3 |> Seq.map (fun (ki,func) -> (ki,false,fun _ _ -> NormalModeResult.NeedMoreInput2(func()))))
+            |> Seq.append (completeOps |> Seq.map (fun (ki,func) -> (ki,true,(fun count reg -> func (CountOrDefault count) reg; NormalModeResult.Complete))))
+            |> Seq.append (completeOpts2 |> Seq.map (fun (ki,func) -> (ki,true,fun count reg -> func count reg; NormalModeResult.Complete)))
+            |> Seq.append (changeOpts |> Seq.map (fun (ki,kind,func) -> (ki,false,fun count reg -> func (CountOrDefault count) reg; NormalModeResult.SwitchMode kind)))
+            |> Seq.map (fun (ki,isRepeatable,func) -> {KeyInput=ki;IsRepeatable=isRepeatable;RunFunc=func})
+            |> Seq.append (this.BuildMotionOperationsMap |> Seq.map (fun (ki,func) -> {KeyInput=ki;IsRepeatable=true;RunFunc=func}))
             |> Seq.map (fun d -> d.KeyInput,d)
             |> Map.ofSeq
         l
@@ -414,6 +418,10 @@ type internal NormalMode
                 |> Seq.map (fun (k,v) -> k)
 
         member this.ModeKind = ModeKind.Normal
+
+        [<CLIEvent>] 
+        member this.CommandExecuted = _commandExecutedEvent.Publish
+
         member this.CanProcess (ki:KeyInput) =
             if _waitingForMoreInput then 
                 true

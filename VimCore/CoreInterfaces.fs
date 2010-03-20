@@ -229,6 +229,11 @@ module LocalSettingNames =
     let ScrollName = "scroll"
     let NumberName = "number"
 
+/// Command executed in normal mode
+type NormalModeCommand =
+    | NonRepeatableCommand
+    | RepeatableCommand of int * Register * (int * Register -> ProcessResult)
+
 /// Represent the setting supported by the Vim implementation.  This class **IS** mutable
 /// and the values will change.  Setting names are case sensitive but the exposed property
 /// names tend to have more familiar camel case names
@@ -454,6 +459,10 @@ and INormalMode =
 
     /// The IIncrementalSearch instance for normal mode
     abstract IncrementalSearch : IIncrementalSearch
+
+    /// Raised when a command is executed
+    [<CLIEvent>]
+    abstract CommandExecuted : IEvent<NormalModeCommand>
 
     inherit IMode
 

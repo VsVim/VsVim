@@ -1,26 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
-<VisualState xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ShowCheckBoxes="false">
-  <TopNode>[0-1000]C:\Users\jaredpar\VsVimRelease\VsVim.nunit</TopNode>
-  <SelectedNode>[0-1918]VimCoreTest</SelectedNode>
+<VisualState xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" ShowCheckBoxes="false">
+  <TopNode>[0-1244]VimCoreTest.NormalModeTest</TopNode>
+  <SelectedNode>[0-1349]VimCoreTest.NormalModeTest.Append1</SelectedNode>
   <ExcludeCategories>false</ExcludeCategories>
   <Nodes>
-    <Node UniqueName="[0-1000]C:\Users\jaredpar\VsVim\VsVim.nunit" Expanded="true" />
-    <Node UniqueName="[0-1892]C:\Users\jaredpar\VsVim\VimCoreTest\bin\Debug\Vim.Core.UnitTest.dll" Expanded="true" />
-    <Node UniqueName="[0-1893]VimCoreTest" Expanded="true" />
-    <Node UniqueName="[0-1341]VimCoreTest.CommandModeIntegrationTest" Expanded="true" />
-    <Node UniqueName="[0-1628]VimCoreTest.CommandModeTest" Expanded="true" />
-    <Node UniqueName="[0-1838]VimCoreTest.GlobalSettingsTest" Expanded="true" />
-    <Node UniqueName="[0-1889]VimCoreTest.HighlightIncrementalSearchTaggerTest" Expanded="true" />
-    <Node UniqueName="[0-1314]VimCoreTest.IncrementalSearchTest" Expanded="true" />
-    <Node UniqueName="[0-1355]VimCoreTest.InputUtilTest" Expanded="true" />
-    <Node UniqueName="[0-1349]VimCoreTest.KeyInputTest" Expanded="true" />
-    <Node UniqueName="[0-1297]VimCoreTest.LocalSettingsTest" Expanded="true" />
-    <Node UniqueName="[0-1919]C:\Users\jaredpar\VsVim\VimWpfTest\bin\Debug\Vim.UI.Wpf.UnitTest.dll" Expanded="true" />
-    <Node UniqueName="[0-1920]Vim" Expanded="true" />
-    <Node UniqueName="[0-1921]Vim.UI" Expanded="true" />
-    <Node UniqueName="[0-1922]Vim.UI.Wpf" Expanded="true" />
-    <Node UniqueName="[0-1923]Vim.UI.Wpf.Test" Expanded="true" />
-    <Node UniqueName="[0-1990]C:\Users\jaredpar\VsVim\VsVimTest\bin\Debug\VsVim.UnitTest.dll" Expanded="true" />
-    <Node UniqueName="[0-1991]VsVimTest" Expanded="true" />
+    <Node UniqueName="[0-1000]C:\Users\jaredp\VsVim\VsVim.nunit" Expanded="true" />
+    <Node UniqueName="[0-1930]C:\Users\jaredp\VsVim\VimCoreTest\bin\Debug\Vim.Core.UnitTest.dll" Expanded="true" />
+    <Node UniqueName="[0-1931]VimCoreTest" Expanded="true" />
+    <Node UniqueName="[0-1244]VimCoreTest.NormalModeTest" Expanded="true" />
+    <Node UniqueName="[0-1957]C:\Users\jaredp\VsVim\VimWpfTest\bin\Debug\Vim.UI.Wpf.UnitTest.dll" Expanded="true" />
+    <Node UniqueName="[0-1958]Vim" Expanded="true" />
+    <Node UniqueName="[0-1959]Vim.UI" Expanded="true" />
+    <Node UniqueName="[0-1960]Vim.UI.Wpf" Expanded="true" />
+    <Node UniqueName="[0-1961]Vim.UI.Wpf.Test" Expanded="true" />
+    <Node UniqueName="[0-2026]C:\Users\jaredp\VsVim\VsVimTest\bin\Debug\VsVim.UnitTest.dll" Expanded="true" />
+    <Node UniqueName="[0-2027]VsVimTest" Expanded="true" />
   </Nodes>
 </VisualState>
