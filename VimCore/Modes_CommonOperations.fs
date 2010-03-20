@@ -249,7 +249,7 @@ type internal CommonOperations
             let text = StringUtil.repeat text count 
             let point = ViewUtil.GetCaretPoint _textView
             use edit = _textView.TextBuffer.CreateEdit()
-            edit.Insert(0, text) |> ignore
+            edit.Insert(point.Position, text) |> ignore
             edit.Apply()                    
             
         member x.Save() = _host.SaveCurrentFile()
