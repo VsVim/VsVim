@@ -15,6 +15,7 @@ type internal ChangeTracker() =
     
     member private x.OnVimBufferCreated (buffer:IVimBuffer) =
         buffer.NormalMode.CommandExecuted |> Event.add x.OnCommandExecuted
+        buffer.SwitchedMode |> Event.add (fun _ -> _currentTextChange <- None)
 
         // Listen to the ITextBuffer.Change event.  It's important to unsubscribe to this as the ITextBuffer
         // can live much longer than an IVimBuffer instance

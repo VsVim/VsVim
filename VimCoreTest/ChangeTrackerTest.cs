@@ -7,6 +7,7 @@ using Vim;
 using Microsoft.VisualStudio.Text.Editor;
 using Moq;
 using Microsoft.VisualStudio.Text;
+using VimCoreTest.Utils;
 
 namespace VimCoreTest
 {
@@ -17,7 +18,7 @@ namespace VimCoreTest
         private IChangeTracker _tracker;
         private ITextBuffer _textBuffer;
         private Mock<ITextView> _textView;
-        private Mock<IVimBuffer> _buffer;
+        private MockVimBuffer _buffer;
         private Mock<INormalMode> _normalMode;
 
         private void CreateForText(params string[] lines)
@@ -25,12 +26,14 @@ namespace VimCoreTest
             _textBuffer = Utils.EditorUtil.CreateBuffer(lines);
             _textView = Utils.MockObjectFactory.CreateTextView(_textBuffer);
             _textView.SetupGet(x => x.HasAggregateFocus).Returns(true);
-            _buffer = Utils.MockObjectFactory.CreateVimBuffer(_textView.Object);
+            _buffer = new MockVimBuffer();
+            _buffer.TextViewImpl = _textView.Object;
+            _buffer.TextBufferImpl = _textBuffer;
             _normalMode = new Mock<INormalMode>(MockBehavior.Loose);
-            _buffer.SetupGet(x => x.NormalMode).Returns(_normalMode.Object);
+            _buffer.NormalModeImpl = _normalMode.Object;
             _trackerRaw = new ChangeTracker();
             _tracker = _trackerRaw;
-            _trackerRaw.OnVimBufferCreated(_buffer.Object);
+            _trackerRaw.OnVimBufferCreated(_buffer);
         }
 
         [Test]
@@ -112,5 +115,55 @@ namespace VimCoreTest
             _textBuffer.Insert(0, "hey");
             Assert.IsFalse(_tracker.LastChange.HasValue());
         }
+
+        [Test, Description("Disconnected changes shouln't be remembered")]
+        public void BufferChange9()
+        {
+            CreateForText("foo bar baz");
+            using (var edit = _textBuffer.CreateEdit())
+            {
+                edit.Insert(0, "f");
+                edit.Insert(7, "b");
+                edit.Apply();
+            }
+            Assert.IsFalse(_tracker.LastChange.HasValue());
+        }
+
+        [Test, Description("Disconnected changes should clear the last change flag")]
+        public void BufferChange10()
+        {
+            CreateForText("foo bar baz");
+            _textBuffer.Insert(0, "f");
+            using (var edit = _textBuffer.CreateEdit())
+            {
+                edit.Insert(1, "f");
+                edit.Insert(7, "b");
+                edit.Apply();
+            }
+            Assert.IsFalse(_tracker.LastChange.HasValue());
+        }
+
+        [Test, Description("Switching modes should break up the text change")]
+        public void SwitchMode1()
+        {
+            CreateForText("foo");
+            _textBuffer.Insert(0, "h");
+            var mode = new Mock<IMode>();
+            _buffer.RaiseSwitchedMode(mode.Object);
+            _textBuffer.Insert(1, "e");
+            Assert.AreEqual("e", _tracker.LastChange.Value.AsTextChange().Item);
+        }
+
+        [Test, Description("SwitchMode should not clear the LastChange field")]
+        public void SwitchMode2()
+        {
+            CreateForText("foo");
+            _textBuffer.Insert(0, "h");
+            var mode = new Mock<IMode>();
+            _buffer.RaiseSwitchedMode(mode.Object);
+            Assert.AreEqual("h", _tracker.LastChange.Value.AsTextChange().Item);
+        }
+
+
     }
 }
