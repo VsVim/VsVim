@@ -138,5 +138,6 @@ module InputUtil =
         
     let VimKeyAndModifiersToKeyInput vimKey modKeys = vimKey |> VimKeyToKeyInput |> SetModifiers modKeys
 
+    let CharAndModifiersToKeyInput ch modKeys = ch |> CharToKeyInput |> SetModifiers modKeys
 
     

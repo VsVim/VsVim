@@ -744,7 +744,7 @@ namespace VimCoreTest
         }
 
         [Test]
-        public void ScrollUp1()
+        public void ScrollLines1()
         {
             CreateLines("foo", "bar");
             _view.Caret.MoveTo(_view.TextSnapshot.GetLineFromLineNumber(1).End);
@@ -755,7 +755,7 @@ namespace VimCoreTest
         }
 
         [Test, Description("Don't break at line 0")]
-        public void ScrollUp2()
+        public void ScrollLines2()
         {
             CreateLines("foo", "bar");
             _view.Caret.MoveTo(_view.TextSnapshot.GetLineFromLineNumber(0).End);
@@ -766,7 +766,7 @@ namespace VimCoreTest
         }
 
         [Test]
-        public void ScrollDown1()
+        public void ScrollLines3()
         {
             CreateLines("foo", "bar");
             _view.Caret.MoveTo(_view.TextSnapshot.GetLineFromLineNumber(0).End);
@@ -774,6 +774,44 @@ namespace VimCoreTest
             _operations.ScrollLines(ScrollDirection.Down, 1);
             Assert.AreEqual(1, _view.Caret.Position.BufferPosition.GetContainingLine().LineNumber);
             _settings.Verify();
+        }
+
+        [Test]
+        public void ScrollPages1()
+        {
+            CreateLines("");
+            _editorOpts.Setup(x => x.ScrollPageUp()).Verifiable();
+            _operations.ScrollPages(ScrollDirection.Up, 1);
+            _editorOpts.Verify();
+        }
+
+        [Test]
+        public void ScrollPages2()
+        {
+            CreateLines("");
+            var count = 0;
+            _editorOpts.Setup(x => x.ScrollPageUp()).Callback(() => { count++; });
+            _operations.ScrollPages(ScrollDirection.Up, 2);
+            Assert.AreEqual(2, count);
+        }
+
+        [Test]
+        public void ScrollPages3()
+        {
+            CreateLines("");
+            _editorOpts.Setup(x => x.ScrollPageDown()).Verifiable();
+            _operations.ScrollPages(ScrollDirection.Down, 1);
+            _editorOpts.Verify();
+        }
+
+        [Test]
+        public void ScrollPages4()
+        {
+            CreateLines("");
+            var count = 0;
+            _editorOpts.Setup(x => x.ScrollPageDown()).Callback(() => { count++; });
+            _operations.ScrollPages(ScrollDirection.Down, 2);
+            Assert.AreEqual(2, count);
         }
 
     }

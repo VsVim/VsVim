@@ -268,6 +268,7 @@ type internal CommonOperations
             _textView.Caret.MoveTo(newCaret) |> ignore
             _textView.Caret.EnsureVisible()
     
+        member x.ScrollPages dir count = failwith "Not implemented"
             
         member x.Save() = _host.SaveCurrentFile()
         member x.SaveAs fileName = _host.SaveCurrentFileAs fileName

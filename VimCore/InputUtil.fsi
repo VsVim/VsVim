@@ -23,6 +23,9 @@ module InputUtil =
     /// Convert the passed in char into a KeyInput value
     val CharToKeyInput : char -> KeyInput
 
+    /// Convert the passed in char and modifiers into a KeyInput value
+    val CharAndModifiersToKeyInput : char -> KeyModifiers -> KeyInput
+
     /// Set the modifier keys on the specified KeyInput
     val SetModifiers : KeyModifiers -> KeyInput -> KeyInput
 

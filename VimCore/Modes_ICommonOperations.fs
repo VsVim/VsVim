@@ -118,3 +118,5 @@ type ICommonOperations =
     /// Scroll the buffer by count lines in the given direction
     abstract ScrollLines : ScrollDirection -> count:int -> unit
 
+    /// Scroll the buffer by the specified number of pages in the given direction
+    abstract ScrollPages : ScrollDirection -> count:int -> unit

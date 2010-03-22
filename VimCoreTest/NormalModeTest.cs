@@ -528,6 +528,80 @@ namespace VimCoreTest
         }
 
         [Test]
+        public void ScrollPages1()
+        {
+            CreateBuffer("foo bar");
+            _operations.Setup(x => x.ScrollPages(ScrollDirection.Down, 1)).Verifiable();
+            _mode.Process(InputUtil.CharAndModifiersToKeyInput('f', KeyModifiers.Control));
+            _operations.Verify();
+        }
+
+        [Test]
+        public void ScrollPages2()
+        {
+            CreateBuffer("foo bar");
+            _operations.Setup(x => x.ScrollPages(ScrollDirection.Down, 2)).Verifiable();
+            _mode.Process('2');
+            _mode.Process(InputUtil.CharAndModifiersToKeyInput('f', KeyModifiers.Control));
+            _operations.Verify();
+        }
+
+        [Test]
+        public void ScollPages3()
+        {
+            CreateBuffer("foo bar");
+            _operations.Setup(x => x.ScrollPages(ScrollDirection.Down, 1)).Verifiable();
+            _mode.Process(InputUtil.VimKeyAndModifiersToKeyInput(VimKey.DownKey, KeyModifiers.Shift));
+            _operations.Verify();
+        }
+
+        [Test]
+        public void ScrollPages4()
+        {
+            CreateBuffer("foo bar");
+            _operations.Setup(x => x.ScrollPages(ScrollDirection.Down, 1)).Verifiable();
+            _mode.Process(InputUtil.VimKeyToKeyInput(VimKey.PageDownKey));
+            _operations.Verify();
+        }
+
+        [Test]
+        public void ScrollPages5()
+        {
+            CreateBuffer("foo bar");
+            _operations.Setup(x => x.ScrollPages(ScrollDirection.Up, 1)).Verifiable();
+            _mode.Process(InputUtil.CharAndModifiersToKeyInput('b', KeyModifiers.Control));
+            _operations.Verify();
+        }
+
+        [Test]
+        public void ScrollPages6()
+        {
+            CreateBuffer("foo bar");
+            _operations.Setup(x => x.ScrollPages(ScrollDirection.Up, 2)).Verifiable();
+            _mode.Process('2');
+            _mode.Process(InputUtil.CharAndModifiersToKeyInput('b', KeyModifiers.Control));
+            _operations.Verify();
+        }
+
+        [Test]
+        public void ScrollPages7()
+        {
+            CreateBuffer("foo bar");
+            _operations.Setup(x => x.ScrollPages(ScrollDirection.Up, 1)).Verifiable();
+            _mode.Process(InputUtil.VimKeyToKeyInput(VimKey.PageUpKey));
+            _operations.Verify();
+        }
+
+        [Test]
+        public void ScrollPages8()
+        {
+            CreateBuffer("foo bar");
+            _operations.Setup(x => x.ScrollPages(ScrollDirection.Up, 1)).Verifiable();
+            _mode.Process(InputUtil.VimKeyAndModifiersToKeyInput(VimKey.UpKey, KeyModifiers.Shift));
+            _operations.Verify();
+        }
+
+        [Test]
         public void Scroll_zt()
         {
             CreateBuffer("foo", "bar");
