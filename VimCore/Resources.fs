@@ -16,6 +16,7 @@ module internal Resources =
     let NormalMode_NoPreviousSearch = "No previous search"
     let NormalMode_NoWordUnderCursor = "No word under cursor"
     let NormalMode_NoStringUnderCursor = "No string under cursor"
+    let NormalMode_RecursiveRepeatDetected = "Recursive repeat command detected"
 
     let CommandMode_InvalidCommand = "Invalid command"
     let CommandMode_PatternNotFound pattern = NormalMode_PatternNotFound pattern

@@ -1272,13 +1272,7 @@ namespace VimCoreTest
         public void Delete_dd_1()
         {
             CreateBuffer("foo", "bar");
-            _operations.Setup(x => x.DeleteSpan(
-                _view.TextSnapshot.GetLineFromLineNumber(0).ExtentIncludingLineBreak,
-                MotionKind._unique_Inclusive,
-                OperationKind.LineWise,
-                _map.DefaultRegister))
-                .Returns(It.IsAny<ITextSnapshot>())
-                .Verifiable();
+            _operations.Setup(x => x.DeleteLines(1, _map.DefaultRegister)).Verifiable();
             _mode.Process("dd");
             _operations.Verify();
         }
@@ -1288,14 +1282,17 @@ namespace VimCoreTest
         {
             CreateBuffer("foo", "bar");
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 1));
-            _operations.Setup(x => x.DeleteSpan(
-                _view.TextSnapshot.GetLineFromLineNumber(0).ExtentIncludingLineBreak,
-                MotionKind._unique_Inclusive,
-                OperationKind.LineWise,
-                _map.DefaultRegister))
-                .Returns(It.IsAny<ITextSnapshot>())
-                .Verifiable();
+            _operations.Setup(x => x.DeleteLines(1, _map.DefaultRegister)).Verifiable();
             _mode.Process("dd");
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Delete_dd_3()
+        {
+            CreateBuffer("foo", "bar");
+            _operations.Setup(x => x.DeleteLines(2, _map.DefaultRegister)).Verifiable();
+            _mode.Process("2dd");
             _operations.Verify();
         }
 
@@ -2151,6 +2148,24 @@ namespace VimCoreTest
             _operations.Verify();
             _changeTracker.Verify();
             Assert.AreEqual(3, count);
+        }
+
+        [Test, Description("Guard against a possible stack overflow with a recursive . repeat")]
+        public void RepeatLastChange8()
+        {
+            CreateBuffer("");
+            _changeTracker
+                .SetupGet(x => x.LastChange)
+                .Returns(FSharpOption.Create(RepeatableChange.NewNormalModeChange(
+                    (new KeyInput[] { InputUtil.CharToKeyInput('.') }).ToFSharpList(),
+                    3,
+                    new Register('c'))))
+                .Verifiable();
+
+            _statusUtil.Setup(x => x.OnError(Resources.NormalMode_RecursiveRepeatDetected)).Verifiable();
+            _mode.Process(".");
+            _statusUtil.Verify();
+            _changeTracker.Verify();
         }
 
         #endregion

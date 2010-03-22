@@ -46,6 +46,9 @@ type internal NormalMode
     /// Are we in the operator pending mode?
     let mutable _isOperatingPending = false;
 
+    /// True when in the middle of a repeat last change operation
+    let mutable _isInRepeatLastChange = false
+
     let CountOrDefault count =
         match count with 
         | Some(c) -> c
@@ -268,15 +271,21 @@ type internal NormalMode
     /// Implements the '.' operator.  This is a special command in that it cannot be easily routed 
     /// to interfaces like ICommonOperations due to the complexity of repeating the command here.  
     member private this.RepeatLastChange countOpt =  
-        match _bufferData.Vim.ChangeTracker.LastChange with
-        | None -> _bufferData.VimHost.Beep()
-        | Some(lastChange) ->
-            match lastChange with
-            | TextChange(newText) -> _operations.InsertText newText (CountOrDefault countOpt) |> ignore
-            | NormalModeChange(keyInputs,count,_) -> 
-                let count = match countOpt with | Some(c) -> c | None -> count
-                _data <- {_data with Count=Some(count); }
-                keyInputs |> Seq.iter (fun ki -> this.ProcessCore ki |> ignore)
+        if _isInRepeatLastChange then _statusUtil.OnError Resources.NormalMode_RecursiveRepeatDetected
+        else
+            _isInRepeatLastChange <- true
+            try
+                match _bufferData.Vim.ChangeTracker.LastChange with
+                | None -> _bufferData.VimHost.Beep()
+                | Some(lastChange) ->
+                    match lastChange with
+                    | TextChange(newText) -> _operations.InsertText newText (CountOrDefault countOpt) |> ignore
+                    | NormalModeChange(keyInputs,count,_) -> 
+                        let count = match countOpt with | Some(c) -> c | None -> count
+                        _data <- {_data with Count=Some(count); }
+                        keyInputs |> Seq.iter (fun ki -> this.ProcessCore ki |> ignore)
+            finally
+                _isInRepeatLastChange <- false
 
     member private this.BuildMotionOperationsMap =
         let wrap func = 
