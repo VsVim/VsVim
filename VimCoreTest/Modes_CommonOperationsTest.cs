@@ -19,7 +19,7 @@ namespace VimCoreTest
 
         private class OperationsImpl : CommonOperations
         {
-            internal OperationsImpl(ITextView view, IEditorOperations opts, IVimHost host, IJumpList jumpList) : base(view, opts, host, jumpList) { }
+            internal OperationsImpl(ITextView view, IEditorOperations opts, IVimHost host, IJumpList jumpList, IVimLocalSettings settings) : base(view, opts, host, jumpList, settings) { }
         }
 
         private IWpfTextView _view;
@@ -27,6 +27,7 @@ namespace VimCoreTest
         private Mock<IEditorOperations> _editorOpts;
         private Mock<IVimHost> _host;
         private Mock<IJumpList> _jumpList;
+        private Mock<IVimLocalSettings> _settings;
         private ICommonOperations _operations;
         private CommonOperations _operationsRaw;
 
@@ -38,7 +39,8 @@ namespace VimCoreTest
             _host = new Mock<IVimHost>(MockBehavior.Strict);
             _jumpList = new Mock<IJumpList>(MockBehavior.Strict);
             _editorOpts = new Mock<IEditorOperations>(MockBehavior.Strict);
-            _operationsRaw = new OperationsImpl(_view, _editorOpts.Object, _host.Object, _jumpList.Object);
+            _settings = new Mock<IVimLocalSettings>(MockBehavior.Strict);
+            _operationsRaw = new OperationsImpl(_view, _editorOpts.Object, _host.Object, _jumpList.Object,_settings.Object);
             _operations = _operationsRaw;
         }
 
@@ -741,6 +743,38 @@ namespace VimCoreTest
             Assert.AreEqual(" foo", _buffer.CurrentSnapshot.GetLineFromLineNumber(0).GetText());
         }
 
+        [Test]
+        public void ScrollUp1()
+        {
+            CreateLines("foo", "bar");
+            _view.Caret.MoveTo(_view.TextSnapshot.GetLineFromLineNumber(1).End);
+            _settings.SetupGet(x => x.Scroll).Returns(42).Verifiable();
+            _operations.ScrollLines(ScrollDirection.Up, 1);
+            Assert.AreEqual(0, _view.Caret.Position.BufferPosition.GetContainingLine().LineNumber);
+            _settings.Verify();
+        }
+
+        [Test, Description("Don't break at line 0")]
+        public void ScrollUp2()
+        {
+            CreateLines("foo", "bar");
+            _view.Caret.MoveTo(_view.TextSnapshot.GetLineFromLineNumber(0).End);
+            _settings.SetupGet(x => x.Scroll).Returns(42).Verifiable();
+            _operations.ScrollLines(ScrollDirection.Up, 1);
+            Assert.AreEqual(0, _view.Caret.Position.BufferPosition.GetContainingLine().LineNumber);
+            _settings.Verify();
+        }
+
+        [Test]
+        public void ScrollDown1()
+        {
+            CreateLines("foo", "bar");
+            _view.Caret.MoveTo(_view.TextSnapshot.GetLineFromLineNumber(0).End);
+            _settings.SetupGet(x => x.Scroll).Returns(42).Verifiable();
+            _operations.ScrollLines(ScrollDirection.Down, 1);
+            Assert.AreEqual(1, _view.Caret.Position.BufferPosition.GetContainingLine().LineNumber);
+            _settings.Verify();
+        }
 
     }
 }

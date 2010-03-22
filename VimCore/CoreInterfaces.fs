@@ -221,6 +221,7 @@ module GlobalSettingNames =
     let ShiftWidthName = "shiftwidth"
     let HighlightSearchName = "hlsearch"
     let StartOfLineName = "startofline"
+    let SingleEscape = "vsvimsingleescape"
     let VimRcName = "vimrc"
     let VimRcPathsName = "vimrcpaths"
 
@@ -262,6 +263,12 @@ and IVimGlobalSettings =
 
     /// Whether or not to highlight previous search patterns matching cases
     abstract HighlightSearch : bool with get,set
+
+    /// Affects behavior of <ESC> in Insert Mode.  <ESC> is overloaded some environments to be both 
+    /// an exit of Insert mode and a dismisser of intellisense.  The default behavior of insert 
+    /// mode is to dismiss intellisense in the presence of the <ESC> key but remain in insert
+    /// mode.  When this option is set though it will instead dismiss and leave insert mode
+    abstract SingleEscape :bool with get,set
 
     /// Retrieves the location of the loaded VimRC file.  Will be the empty string if the load 
     /// did not succeed or has not been tried

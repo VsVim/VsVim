@@ -490,7 +490,7 @@ namespace VimCoreTest
         public void ScrollUp1()
         {
             CreateBuffer("foo", "bar");
-            _operations.Setup(x => x.Scroll(ScrollDirection.Up, 1)).Verifiable();
+            _operations.Setup(x => x.ScrollLines(ScrollDirection.Up, 1)).Verifiable();
             _mode.Process(new KeyInput('u', KeyModifiers.Control));
             _operations.Verify();
         }
@@ -500,7 +500,7 @@ namespace VimCoreTest
         {
             CreateBuffer("foo", "bar");
             _view.Caret.MoveTo(_view.TextSnapshot.GetLineFromLineNumber(0).End);
-            _operations.Setup(x => x.Scroll(ScrollDirection.Up, 2)).Verifiable();
+            _operations.Setup(x => x.ScrollLines(ScrollDirection.Up, 2)).Verifiable();
             _mode.Process('2');
             _mode.Process(new KeyInput('u', KeyModifiers.Control));
             _operations.Verify();
@@ -511,7 +511,7 @@ namespace VimCoreTest
         {
             CreateBuffer("foo", "bar");
             _view.Caret.MoveTo(_view.TextSnapshot.GetLineFromLineNumber(0).End);
-            _operations.Setup(x => x.Scroll(ScrollDirection.Down, 1)).Verifiable();
+            _operations.Setup(x => x.ScrollLines(ScrollDirection.Down, 1)).Verifiable();
             _mode.Process(new KeyInput('d', KeyModifiers.Control));
             _operations.Verify();
         }

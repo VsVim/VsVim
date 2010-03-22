@@ -13,8 +13,9 @@ type internal DefaultOperations
         _operations : IEditorOperations,
         _host : IVimHost,
         _jumpList : IJumpList,
-        _tracker : ISelectionTracker ) =
-    inherit CommonOperations(_textView, _operations, _host, _jumpList)
+        _tracker : ISelectionTracker,
+        _settings : IVimLocalSettings ) =
+    inherit CommonOperations(_textView, _operations, _host, _jumpList, _settings)
 
     member private x.CommonOperations = x :> ICommonOperations
 

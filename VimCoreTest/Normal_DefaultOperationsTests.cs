@@ -408,38 +408,6 @@ namespace VimCoreTest
             Assert.AreEqual("baz", line.GetTextIncludingLineBreak());
         }
 
-        [Test]
-        public void ScrollUp1()
-        {
-            Create("foo", "bar");
-            _view.Caret.MoveTo(_view.TextSnapshot.GetLineFromLineNumber(1).End);
-            _settings.SetupGet(x => x.Scroll).Returns(42).Verifiable();
-            _operations.Scroll(ScrollDirection.Up, 1);
-            Assert.AreEqual(0, _view.Caret.Position.BufferPosition.GetContainingLine().LineNumber);
-            _settings.Verify();
-        }
-
-        [Test, Description("Don't break at line 0")]
-        public void ScrollUp2()
-        {
-            Create("foo", "bar");
-            _view.Caret.MoveTo(_view.TextSnapshot.GetLineFromLineNumber(0).End);
-            _settings.SetupGet(x => x.Scroll).Returns(42).Verifiable();
-            _operations.Scroll(ScrollDirection.Up, 1);
-            Assert.AreEqual(0, _view.Caret.Position.BufferPosition.GetContainingLine().LineNumber);
-            _settings.Verify();
-        }
-
-        [Test]
-        public void ScrollDown1()
-        {
-            Create("foo", "bar");
-            _view.Caret.MoveTo(_view.TextSnapshot.GetLineFromLineNumber(0).End);
-            _settings.SetupGet(x => x.Scroll).Returns(42).Verifiable();
-            _operations.Scroll(ScrollDirection.Down, 1);
-            Assert.AreEqual(1, _view.Caret.Position.BufferPosition.GetContainingLine().LineNumber);
-            _settings.Verify();
-        }
 
         [Test]
         public void DeleteLines1()

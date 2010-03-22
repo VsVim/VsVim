@@ -25,17 +25,23 @@ namespace VimCoreTest
         private ITextBuffer _buffer;
         private IWpfTextView _view;
         private Mock<ICommonOperations> _operations;
-        private Mock<IVimHost> _host;
         private Mock<ICompletionWindowBroker> _broker;
+        private Mock<IVimGlobalSettings> _globalSettings;
+        private Mock<IVimLocalSettings> _localSettings;
+        private Mock<IVim> _vim;
 
         public void CreateBuffer(params string[] lines)
         {
             _view = Utils.EditorUtil.CreateView(lines);
-            _host = new Mock<IVimHost>(MockBehavior.Strict);
             _buffer = _view.TextBuffer;
+            _vim = new Mock<IVim>();
+            _globalSettings = new Mock<IVimGlobalSettings>(MockBehavior.Strict);
+            _localSettings = new Mock<IVimLocalSettings>(MockBehavior.Strict);
+            _localSettings.SetupGet(x => x.GlobalSettings).Returns(_globalSettings.Object);
             _data = Utils.MockObjectFactory.CreateVimBuffer(
                 _view,
-                vim: Utils.MockObjectFactory.CreateVim(host : _host.Object).Object);
+                settings:_localSettings.Object,
+                vim:_vim.Object);
             _operations = new Mock<ICommonOperations>(MockBehavior.Strict);
             _broker = new Mock<ICompletionWindowBroker>(MockBehavior.Strict);
             _modeRaw = new Vim.Modes.Insert.InsertMode(Tuple.Create<IVimBuffer,ICommonOperations,ICompletionWindowBroker>(_data.Object,_operations.Object,_broker.Object));
@@ -64,6 +70,7 @@ namespace VimCoreTest
         [Test, Description("Escape should exit if we are not in the middle of a completion")]
         public void Escape1()
         {
+            _globalSettings.SetupGet(x => x.SingleEscape).Returns(false);
             _broker
                 .SetupGet(x => x.IsCompletionWindowActive)
                 .Returns(false)
@@ -76,6 +83,7 @@ namespace VimCoreTest
         [Test, Description("Escape should dismiss completion if it is active but not exit insert mode")]
         public void Escape2()
         {
+            _globalSettings.SetupGet(x => x.SingleEscape).Returns(false);
             _broker
                 .SetupGet(x => x.IsCompletionWindowActive)
                 .Returns(true)
@@ -88,9 +96,26 @@ namespace VimCoreTest
         }
 
         [Test]
+        public void Escape3()
+        {
+            _globalSettings.SetupGet(x => x.SingleEscape).Returns(true);
+            _broker
+                .SetupGet(x => x.IsCompletionWindowActive)
+                .Returns(true)
+                .Verifiable();
+            _broker
+                .Setup(x => x.DismissCompletionWindow())
+                .Verifiable();
+            var res = _mode.Process(VimKey.EscapeKey);
+            Assert.IsTrue(res.IsSwitchMode);
+            Assert.AreEqual(ModeKind.Normal, res.AsSwitchMode().Item);
+        }
+
+        [Test]
         public void ShiftLeft1()
         {
             CreateBuffer("    foo");
+            _globalSettings.SetupGet(x => x.ShiftWidth).Returns(4).Verifiable();
             _operations
                 .Setup(x => x.ShiftLeft(_view.TextSnapshot.GetLineFromLineNumber(0).Extent, 4))
                 .Returns<ITextSnapshot>(null)
@@ -98,6 +123,7 @@ namespace VimCoreTest
             var res = _mode.Process(new KeyInput('d', KeyModifiers.Control));
             Assert.IsTrue(res.IsProcessed);
             _operations.Verify();
+            _globalSettings.Verify();
         }
 
         [Test]

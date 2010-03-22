@@ -119,6 +119,7 @@ type internal GlobalSettings() =
             ( HighlightSearchName, "hls", ToggleKind, ToggleValue(false) );
             ( VimRcName, VimRcName, StringKind, StringValue(System.String.Empty) );
             ( VimRcPathsName, VimRcPathsName, StringKind, StringValue(System.String.Empty) );
+            ( SingleEscape, SingleEscape, ToggleKind, ToggleValue(false) );
         |]
 
     let _map = SettingsMap(GlobalSettings, true)
@@ -146,6 +147,9 @@ type internal GlobalSettings() =
         member x.StartOfLine 
             with get() = _map.GetBoolValue StartOfLineName
             and set value = _map.TrySetValue StartOfLineName (ToggleValue(value)) |> ignore
+        member x.SingleEscape
+            with get() = _map.GetBoolValue SingleEscape
+            and set value = _map.TrySetValue SingleEscape (ToggleValue(value)) |> ignore
         member x.VimRc 
             with get() = _map.GetStringValue VimRcName
             and set value = _map.TrySetValue VimRcName (StringValue(value)) |> ignore

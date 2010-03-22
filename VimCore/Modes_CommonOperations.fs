@@ -12,7 +12,8 @@ type internal CommonOperations
         _textView : ITextView,
         _operations : IEditorOperations,
         _host : IVimHost,
-        _jumpList : IJumpList ) =
+        _jumpList : IJumpList,
+        _settings : IVimLocalSettings ) =
 
     member private x.NavigateToPoint (point:VirtualSnapshotPoint) = 
         let buf = point.Position.Snapshot.TextBuffer
@@ -251,6 +252,22 @@ type internal CommonOperations
             use edit = _textView.TextBuffer.CreateEdit()
             edit.Insert(point.Position, text) |> ignore
             edit.Apply()                    
+
+        member x.ScrollLines dir count =
+            let lines = _settings.Scroll
+            let tss = _textView.TextSnapshot
+            let caretPoint = ViewUtil.GetCaretPoint _textView
+            let curLine = caretPoint.GetContainingLine().LineNumber
+            let newLine = 
+                match dir with
+                | ScrollDirection.Down -> min (tss.LineCount - 1) (curLine + lines)
+                | ScrollDirection.Up -> max (0) (curLine - lines)
+                | _ -> failwith "Invalid enum value"
+            let newCaret = tss.GetLineFromLineNumber(newLine).Start
+            _operations.ResetSelection()
+            _textView.Caret.MoveTo(newCaret) |> ignore
+            _textView.Caret.EnsureVisible()
+    
             
         member x.Save() = _host.SaveCurrentFile()
         member x.SaveAs fileName = _host.SaveCurrentFileAs fileName

@@ -40,7 +40,7 @@ type internal VimBufferFactory
         let normalOpts = Modes.Normal.DefaultOperations(view,editOperations,_host, statusUtil, localSettings,wordNav,_textSearchService,jumpList, normalIncrementalSearch) :> Modes.Normal.IOperations
         let commandOpts = Modes.Command.DefaultOperations(view,editOperations,_host, statusUtil, jumpList, localSettings, vim.KeyMap) :> Modes.Command.IOperations
         let commandProcessor = Modes.Command.CommandProcessor(buffer, commandOpts, statusUtil) :> Modes.Command.ICommandProcessor
-        let insertOpts = Modes.Insert.DefaultOperations(view,editOperations,_host, jumpList) :> Modes.ICommonOperations
+        let insertOpts = Modes.Insert.DefaultOperations(view,editOperations,_host, jumpList, localSettings) :> Modes.ICommonOperations
         let visualOptsFactory kind = 
             let mode = 
                 match kind with 
@@ -49,7 +49,7 @@ type internal VimBufferFactory
                 | ModeKind.VisualLine -> Modes.Visual.SelectionMode.Line
                 | _ -> invalidArg "_kind" "Invalid kind for Visual Mode"
             let tracker = Modes.Visual.SelectionTracker(view,mode) :> Modes.Visual.ISelectionTracker
-            Modes.Visual.DefaultOperations(view,editOperations,_host, jumpList, tracker) :> Modes.Visual.IOperations
+            Modes.Visual.DefaultOperations(view,editOperations,_host, jumpList, tracker, localSettings) :> Modes.Visual.IOperations
 
         // Normal mode values
         let modeList = 

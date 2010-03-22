@@ -19,7 +19,7 @@ type internal DefaultOperations
     _jumpList : IJumpList,
     _incrementalSearch : IIncrementalSearch) =
 
-    inherit CommonOperations(_textView, _operations, _host, _jumpList)
+    inherit CommonOperations(_textView, _operations, _host, _jumpList, _settings)
 
     member private x.CommonImpl = x :> ICommonOperations
 
@@ -206,21 +206,6 @@ type internal DefaultOperations
             | Vim.Modes.Succeeded -> ()
             | Vim.Modes.Failed(msg) -> _statusUtil.OnError msg
 
-        member x.Scroll dir count =
-            let lines = _settings.Scroll
-            let tss = _textView.TextSnapshot
-            let caretPoint = ViewUtil.GetCaretPoint _textView
-            let curLine = caretPoint.GetContainingLine().LineNumber
-            let newLine = 
-                match dir with
-                | ScrollDirection.Down -> min (tss.LineCount - 1) (curLine + lines)
-                | ScrollDirection.Up -> max (0) (curLine - lines)
-                | _ -> failwith "Invalid enum value"
-            let newCaret = tss.GetLineFromLineNumber(newLine).Start
-            _operations.ResetSelection()
-            _textView.Caret.MoveTo(newCaret) |> ignore
-            _textView.Caret.EnsureVisible()
-    
         member x.MoveToNextOccuranceOfWordAtCursor isWrap count = 
             x.MoveToNextWordCore isWrap true count
 

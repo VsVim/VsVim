@@ -114,3 +114,7 @@ type ICommonOperations =
 
     /// Close the current file
     abstract Close : checkDirty : bool -> unit
+
+    /// Scroll the buffer by count lines in the given direction
+    abstract ScrollLines : ScrollDirection -> count:int -> unit
+

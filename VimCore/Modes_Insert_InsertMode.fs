@@ -24,7 +24,10 @@ type internal InsertMode
     member private this.ProcessEscape() =
         if _broker.IsCompletionWindowActive then
             _broker.DismissCompletionWindow()
-            ProcessResult.Processed
+
+            if _data.Settings.GlobalSettings.SingleEscape then ProcessResult.SwitchMode ModeKind.Normal
+            else ProcessResult.Processed
+
         else
             ProcessResult.SwitchMode ModeKind.Normal
 
