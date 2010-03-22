@@ -268,7 +268,14 @@ type internal CommonOperations
             _textView.Caret.MoveTo(newCaret) |> ignore
             _textView.Caret.EnsureVisible()
     
-        member x.ScrollPages dir count = failwith "Not implemented"
+        member x.ScrollPages dir count = 
+            let func =
+                match dir with
+                | ScrollDirection.Down -> _operations.ScrollPageDown 
+                | ScrollDirection.Up -> _operations.ScrollPageUp
+                | _ -> failwith "Invalid enum value"
+            for i = 1 to count do
+                func()
             
         member x.Save() = _host.SaveCurrentFile()
         member x.SaveAs fileName = _host.SaveCurrentFileAs fileName

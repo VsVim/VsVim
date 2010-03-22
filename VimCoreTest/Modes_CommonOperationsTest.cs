@@ -748,6 +748,7 @@ namespace VimCoreTest
         {
             CreateLines("foo", "bar");
             _view.Caret.MoveTo(_view.TextSnapshot.GetLineFromLineNumber(1).End);
+            _editorOpts.Setup(x => x.ResetSelection());
             _settings.SetupGet(x => x.Scroll).Returns(42).Verifiable();
             _operations.ScrollLines(ScrollDirection.Up, 1);
             Assert.AreEqual(0, _view.Caret.Position.BufferPosition.GetContainingLine().LineNumber);
@@ -759,6 +760,7 @@ namespace VimCoreTest
         {
             CreateLines("foo", "bar");
             _view.Caret.MoveTo(_view.TextSnapshot.GetLineFromLineNumber(0).End);
+            _editorOpts.Setup(x => x.ResetSelection());
             _settings.SetupGet(x => x.Scroll).Returns(42).Verifiable();
             _operations.ScrollLines(ScrollDirection.Up, 1);
             Assert.AreEqual(0, _view.Caret.Position.BufferPosition.GetContainingLine().LineNumber);
@@ -770,6 +772,7 @@ namespace VimCoreTest
         {
             CreateLines("foo", "bar");
             _view.Caret.MoveTo(_view.TextSnapshot.GetLineFromLineNumber(0).End);
+            _editorOpts.Setup(x => x.ResetSelection());
             _settings.SetupGet(x => x.Scroll).Returns(42).Verifiable();
             _operations.ScrollLines(ScrollDirection.Down, 1);
             Assert.AreEqual(1, _view.Caret.Position.BufferPosition.GetContainingLine().LineNumber);
