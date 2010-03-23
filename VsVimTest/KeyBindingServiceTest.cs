@@ -36,8 +36,8 @@ namespace VsVimTest
         [Test()]
         public void FindConflictingCommands1()
         {
-            var commands = Create("::h");
-            var inputs = new KeyInput[] { new KeyInput('h') };
+            var commands = Create("::ctrl+h");
+            var inputs = new KeyInput[] { InputUtil.CharAndModifiersToKeyInput('h', KeyModifiers.Control) };
             var list = KeyBindingService.FindConflictingCommands(commands, new HashSet<KeyInput>(inputs));
             Assert.AreEqual(1, list.Count);
         }
@@ -54,8 +54,8 @@ namespace VsVimTest
         [Test, Description("Conflicting key on first")]
         public void FindConflictingCommands3()
         {
-            var commands = Create("::z, h");
-            var inputs = new KeyInput[] { new KeyInput('z') };
+            var commands = Create("::ctrl+z, h");
+            var inputs = new KeyInput[] { InputUtil.CharAndModifiersToKeyInput('z', KeyModifiers.Control) };
             var list = KeyBindingService.FindConflictingCommands(commands, new HashSet<KeyInput>(inputs));
             Assert.AreEqual(1, list.Count);
         }
@@ -72,8 +72,8 @@ namespace VsVimTest
         [Test]
         public void FindConflictingCommands5()
         {
-            var commands = Create("::a","::z, h");
-            var inputs = new KeyInput[] { new KeyInput('z') };
+            var commands = Create("::a","::ctrl+z, h");
+            var inputs = new KeyInput[] { InputUtil.CharAndModifiersToKeyInput('z', KeyModifiers.Control) };
             var list = KeyBindingService.FindConflictingCommands(commands, new HashSet<KeyInput>(inputs));
             Assert.AreEqual(1, list.Count);
         }
@@ -81,8 +81,10 @@ namespace VsVimTest
         [Test]
         public void FindConflictingCommands6()
         {
-            var commands = Create("Global::a", "Text Editor::z");
-            var inputs = new KeyInput[] { new KeyInput('z'), new KeyInput('a') };
+            var commands = Create("Global::ctrl+a", "Text Editor::ctrl+z");
+            var inputs = new KeyInput[] { 
+                InputUtil.CharAndModifiersToKeyInput('a', KeyModifiers.Control),
+                InputUtil.CharAndModifiersToKeyInput('z', KeyModifiers.Control) };
             var list = KeyBindingService.FindConflictingCommands(commands, new HashSet<KeyInput>(inputs));
             Assert.AreEqual(2, list.Count);
         }
