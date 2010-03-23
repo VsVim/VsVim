@@ -99,7 +99,7 @@ type internal NormalMode
         let inner (ki:KeyInput) count reg =
             match ki.Char with 
                 | 'd' -> 
-                    _operations.DeleteLines count reg 
+                    _operations.DeleteLinesIncludingLineBreak count reg 
                     NormalModeResult.CompleteRepeatable(count,reg)
                 | _ -> 
                     let func (span,motionKind,opKind)= 

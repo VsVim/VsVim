@@ -270,7 +270,7 @@ namespace VimCoreTest
             var range = Parse("'A,2",map.Object);
             Assert.IsTrue(range.IsSucceeded);
             var span = RangeUtil.GetSnapshotSpan(range.AsSucceeded().Item1);
-            Assert.AreEqual(_buffer.CurrentSnapshot.GetLineSpan(0,1), span);
+            Assert.AreEqual(_buffer.CurrentSnapshot.GetLineSpanIncludingLineBreak(0,1), span);
         }
 
         [Test]

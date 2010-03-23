@@ -80,7 +80,7 @@ namespace VimCoreTest
         {
             var buffer = EditorUtil.CreateBuffer("foo bar", "baz");
             var tlc = Create(buffer, 0, 1);
-            buffer.Replace(buffer.CurrentSnapshot.GetLineSpan(1, 1).Span, "hello world");
+            buffer.Replace(buffer.CurrentSnapshot.GetLineSpanIncludingLineBreak(1, 1).Span, "hello world");
             AssertPoint(tlc, 0, 1);
         }
 

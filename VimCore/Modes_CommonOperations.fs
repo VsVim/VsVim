@@ -22,6 +22,12 @@ type internal CommonOperations
             true
         else  _host.NavigateTo point 
 
+    member private x.DeleteSpan (span:SnapshotSpan) motionKind opKind (reg:Register) =
+        let tss = span.Snapshot
+        let regValue = {Value=span.GetText();MotionKind=motionKind;OperationKind=opKind}
+        reg.UpdateValue(regValue) 
+        tss.TextBuffer.Delete(span.Span)
+
     interface ICommonOperations with
         member x.TextView = _textView 
         member x.EditorOperations = _operations
@@ -150,12 +156,6 @@ type internal CommonOperations
             let tss = buffer.Replace(span.Span, text) 
             new SnapshotSpan(tss,span.End.Position, text.Length)
     
-        member x.DeleteSpan (span:SnapshotSpan) motionKind opKind (reg:Register) =
-            let tss = span.Snapshot
-            let regValue = {Value=span.GetText();MotionKind=motionKind;OperationKind=opKind}
-            reg.UpdateValue(regValue) 
-            tss.TextBuffer.Delete(span.Span)
-    
         /// Move the cursor count spaces left
         member x.MoveCaretLeft count = 
             _operations.ResetSelection()
@@ -276,7 +276,35 @@ type internal CommonOperations
                 | _ -> failwith "Invalid enum value"
             for i = 1 to count do
                 func()
-            
+
+        member x.DeleteSpan span motionKind opKind reg = x.DeleteSpan span motionKind opKind reg
+    
+        member x.DeleteLines count reg = 
+            let point = ViewUtil.GetCaretPoint _textView
+            let point = point.GetContainingLine().Start
+            let span = TssUtil.GetLineRangeSpan point count
+            let span = SnapshotSpan(point, span.End)
+            x.DeleteSpan span MotionKind.Inclusive OperationKind.LineWise reg |> ignore
+
+        member x.DeleteLinesFromCursor count reg = 
+            let point = ViewUtil.GetCaretPoint _textView
+            let span = TssUtil.GetLineRangeSpan point count
+            let span = SnapshotSpan(point, span.End)
+            x.DeleteSpan span MotionKind.Inclusive OperationKind.CharacterWise reg |> ignore
+
+        member x.DeleteLinesIncludingLineBreak count reg = 
+            let point = ViewUtil.GetCaretPoint _textView
+            let point = point.GetContainingLine().Start
+            let span = TssUtil.GetLineRangeSpanIncludingLineBreak point count
+            let span = SnapshotSpan(point, span.End)
+            x.DeleteSpan span MotionKind.Inclusive OperationKind.LineWise reg |> ignore
+
+        member x.DeleteLinesIncludingLineBreakFromCursor count reg = 
+            let point = ViewUtil.GetCaretPoint _textView
+            let span = TssUtil.GetLineRangeSpanIncludingLineBreak point count
+            let span = SnapshotSpan(point, span.End)
+            x.DeleteSpan span MotionKind.Inclusive OperationKind.CharacterWise reg |> ignore
+
         member x.Save() = _host.SaveCurrentFile()
         member x.SaveAs fileName = _host.SaveCurrentFileAs fileName
         member x.Close checkDirty = _host.CloseCurrentFile checkDirty

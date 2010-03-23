@@ -1346,7 +1346,7 @@ namespace VimCoreTest
         public void Delete_dd_1()
         {
             CreateBuffer("foo", "bar");
-            _operations.Setup(x => x.DeleteLines(1, _map.DefaultRegister)).Verifiable();
+            _operations.Setup(x => x.DeleteLinesIncludingLineBreak(1, _map.DefaultRegister)).Verifiable();
             _mode.Process("dd");
             _operations.Verify();
         }
@@ -1356,7 +1356,7 @@ namespace VimCoreTest
         {
             CreateBuffer("foo", "bar");
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 1));
-            _operations.Setup(x => x.DeleteLines(1, _map.DefaultRegister)).Verifiable();
+            _operations.Setup(x => x.DeleteLinesIncludingLineBreak(1, _map.DefaultRegister)).Verifiable();
             _mode.Process("dd");
             _operations.Verify();
         }
@@ -1365,7 +1365,7 @@ namespace VimCoreTest
         public void Delete_dd_3()
         {
             CreateBuffer("foo", "bar");
-            _operations.Setup(x => x.DeleteLines(2, _map.DefaultRegister)).Verifiable();
+            _operations.Setup(x => x.DeleteLinesIncludingLineBreak(2, _map.DefaultRegister)).Verifiable();
             _mode.Process("2dd");
             _operations.Verify();
         }
@@ -2104,7 +2104,7 @@ namespace VimCoreTest
         public void CommandExecute4()
         {
             CreateBuffer("foo", "bar", "baz");
-            _operations.Setup(x => x.DeleteLines(1, _map.DefaultRegister));
+            _operations.Setup(x => x.DeleteLinesIncludingLineBreak(1, _map.DefaultRegister));
             AssertIsRepeatable("dd");
         }
 

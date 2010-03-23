@@ -97,6 +97,21 @@ type ICommonOperations =
     /// Insert the specified text at the cursor position "count" times
     abstract InsertText : text:string -> count : int -> ITextSnapshot
 
+    /// Delete count lines starting from the cursor line.  The last line will 
+    /// not have its break deleted
+    abstract DeleteLines : count:int -> Register -> unit
+
+    /// Delete from the cursor to the end of the current line and (count-1) more 
+    /// lines.  
+    abstract DeleteLinesFromCursor : count:int -> Register -> unit
+
+    /// Delete count lines from the buffer starting from the cursor line
+    abstract DeleteLinesIncludingLineBreak : count:int -> Register -> unit
+
+    /// Delete from the cursor to the end of the current line and (count-1) more 
+    /// lines.  
+    abstract DeleteLinesIncludingLineBreakFromCursor : count:int -> Register -> unit
+
     /// Delete a range of text
     abstract DeleteSpan : SnapshotSpan -> MotionKind -> OperationKind -> Register -> ITextSnapshot
 

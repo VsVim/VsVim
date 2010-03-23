@@ -173,7 +173,7 @@ namespace VimCoreTest
 
         #region IMode
 
-        public static bool CanProcess(this IMode mode,VimKey key)
+        public static bool CanProcess(this IMode mode, VimKey key)
         {
             return mode.CanProcess(InputUtil.VimKeyToKeyInput(key));
         }
@@ -224,7 +224,7 @@ namespace VimCoreTest
 
         public static SnapshotSpan GetLineSpan(this ITextView textView, int startLine, int endLine)
         {
-            return textView.TextSnapshot.GetLineSpan(startLine, endLine);
+            return textView.TextSnapshot.GetLineSpanIncludingLineBreak(startLine, endLine);
         }
 
         public static CaretPosition MoveCaretTo(this ITextView textView, int position)
@@ -250,8 +250,17 @@ namespace VimCoreTest
 
         #region ITextSnapshot
 
-        public static SnapshotSpan GetLineSpan(this ITextSnapshot tss, int startLine, int endLine)
+        public static SnapshotSpan GetLineSpan(this ITextSnapshot tss, int startLine, int endLine = -1)
         {
+            endLine = endLine >= 0 ? endLine : startLine;
+            var start = tss.GetLineFromLineNumber(startLine);
+            var end = tss.GetLineFromLineNumber(endLine);
+            return new SnapshotSpan(start.Start, end.End);
+        }
+
+        public static SnapshotSpan GetLineSpanIncludingLineBreak(this ITextSnapshot tss, int startLine, int endLine = -1)
+        {
+            endLine = endLine >= 0 ? endLine : startLine;
             var start = tss.GetLineFromLineNumber(startLine);
             var end = tss.GetLineFromLineNumber(endLine);
             return new SnapshotSpan(start.Start, end.EndIncludingLineBreak);
@@ -292,9 +301,9 @@ namespace VimCoreTest
         {
             var retList = FSharpList<T>.Empty;
             var list = enumerable as IList<T>;
-            if ( list != null )
+            if (list != null)
             {
-                for ( var i= list.Count-1; i >= 0; i-- )
+                for (var i = list.Count - 1; i >= 0; i--)
                 {
                     retList = new FSharpList<T>(list[i], retList);
                 }
