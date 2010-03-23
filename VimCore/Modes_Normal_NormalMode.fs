@@ -293,7 +293,7 @@ type internal NormalMode
                 let count = CountOrDefault count
                 func count
                 _operations.EditorOperations.ResetSelection()
-                NormalModeResult.CompleteRepeatable(count,reg)
+                NormalModeResult.CompleteNotCommand
         let factory = Vim.Modes.CommandFactory(_operations)
         factory.CreateMovementCommands() 
             |> Seq.map (fun (ki,com) -> (ki,wrap com))
