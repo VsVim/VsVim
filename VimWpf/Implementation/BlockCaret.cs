@@ -220,6 +220,10 @@ namespace Vim.UI.Wpf.Implementation
                 image,
                 (x, y) => { _caretData = null; });
             MoveCaretImageToCaret();
+
+            // Restart the timer so the block caret doesn't immediately disappear
+            _blinkTimer.IsEnabled = false;
+            _blinkTimer.IsEnabled = true;
         }
 
         private void UpdateCaret()
