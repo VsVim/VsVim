@@ -61,6 +61,15 @@ namespace Vim.UI.Wpf.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to -- INSERT --.
+        /// </summary>
+        internal static string InsertBanner {
+            get {
+                return ResourceManager.GetString("InsertBanner", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to -- VISUALBLOCK --.
         /// </summary>
         internal static string VisualBlockBanner {

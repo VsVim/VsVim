@@ -36,8 +36,10 @@ namespace Vim.UI.Wpf
             {
                 case ModeKind.Normal:
                 case ModeKind.Command:
-                case ModeKind.Insert:
                     _margin.StatusLine = String.Empty;
+                    break;
+                case ModeKind.Insert:
+                    _margin.StatusLine = Resources.InsertBanner;
                     break;
                 case ModeKind.VisualBlock:
                     _margin.StatusLine = Resources.VisualBlockBanner;
