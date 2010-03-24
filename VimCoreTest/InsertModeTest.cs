@@ -67,10 +67,9 @@ namespace VimCoreTest
             Assert.IsFalse(_mode.CanProcess(InputUtil.CharToKeyInput('c')));
         }
 
-        [Test, Description("Escape should exit if we are not in the middle of a completion")]
+        [Test]
         public void Escape1()
         {
-            _globalSettings.SetupGet(x => x.SingleEscape).Returns(false);
             _broker
                 .SetupGet(x => x.IsCompletionWindowActive)
                 .Returns(false)
@@ -80,25 +79,10 @@ namespace VimCoreTest
             _broker.Verify();
         }
 
-        [Test, Description("Escape should dismiss completion if it is active but not exit insert mode")]
+        [Test]
         public void Escape2()
         {
-            _globalSettings.SetupGet(x => x.SingleEscape).Returns(false);
-            _broker
-                .SetupGet(x => x.IsCompletionWindowActive)
-                .Returns(true)
-                .Verifiable();
-            _broker
-                .Setup(x => x.DismissCompletionWindow())
-                .Verifiable();
-            var res = _mode.Process(VimKey.EscapeKey);
-            Assert.IsTrue(res.IsProcessed);
-        }
-
-        [Test]
-        public void Escape3()
-        {
-            _globalSettings.SetupGet(x => x.SingleEscape).Returns(true);
+            _globalSettings.SetupGet(x => x.DoubleEscape).Returns(false);
             _broker
                 .SetupGet(x => x.IsCompletionWindowActive)
                 .Returns(true)
@@ -109,6 +93,21 @@ namespace VimCoreTest
             var res = _mode.Process(VimKey.EscapeKey);
             Assert.IsTrue(res.IsSwitchMode);
             Assert.AreEqual(ModeKind.Normal, res.AsSwitchMode().Item);
+        }
+
+        [Test, Description("Double escape will only dismiss intellisense")]
+        public void Escape3()
+        {
+            _globalSettings.SetupGet(x => x.DoubleEscape).Returns(true);
+            _broker
+                .SetupGet(x => x.IsCompletionWindowActive)
+                .Returns(true)
+                .Verifiable();
+            _broker
+                .Setup(x => x.DismissCompletionWindow())
+                .Verifiable();
+            var res = _mode.Process(VimKey.EscapeKey);
+            Assert.IsTrue(res.IsProcessed);
         }
 
         [Test]
