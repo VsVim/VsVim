@@ -91,7 +91,7 @@ namespace VimCoreTest
         [Test]
         public void DismissCompletionWindow1()
         {
-            _quickInfoBroker.SetupGet(x => x.IsQuickInfoActive(_textView.Object)).Returns(true).Verifiable();
+            _quickInfoBroker.Setup(x => x.IsQuickInfoActive(_textView.Object)).Returns(true).Verifiable();
             _quickInfoBroker.Setup(x => x.GetSessions(_textView.Object)).Returns(new List<IQuickInfoSession>().AsReadOnly()).Verifiable();
             _broker.DismissCompletionWindow();
             _quickInfoBroker.Verify();

@@ -2044,7 +2044,7 @@ namespace VimCoreTest
         public void CommandExecuted1()
         {
             CreateBuffer("foo");
-            _operations.Setup(x => x.MoveCaretLeft(1));
+            _operations.Setup(x => x.DeleteLinesFromCursor(1, _map.DefaultRegister));
             var didSee = false;
             _mode.CommandExecuted += (unused, command) =>
                 {
@@ -2053,10 +2053,10 @@ namespace VimCoreTest
                     Assert.AreEqual(1, com.Item2);
                     var inputs = com.Item1.ToList();
                     Assert.AreEqual(1, inputs.Count);
-                    Assert.AreEqual(InputUtil.CharToKeyInput('h'), inputs[0]);
+                    Assert.AreEqual(InputUtil.CharToKeyInput('D'), inputs[0]);
                     didSee = true;
                 };
-            _mode.Process('h');
+            _mode.Process('D');
             Assert.IsTrue(didSee);
         }
 
@@ -2064,7 +2064,7 @@ namespace VimCoreTest
         public void CommandExecuted2()
         {
             CreateBuffer("foo");
-            _operations.Setup(x => x.MoveCaretLeft(2));
+            _operations.Setup(x => x.DeleteLinesFromCursor(2, _map.DefaultRegister));
             var didSee = false;
             _mode.CommandExecuted += (unused, command) =>
                 {
@@ -2073,10 +2073,10 @@ namespace VimCoreTest
                     Assert.AreEqual(2, com.Item2);
                     var inputs = com.Item1.ToList();
                     Assert.AreEqual(1, inputs.Count);
-                    Assert.AreEqual(InputUtil.CharToKeyInput('h'), inputs[0]);
+                    Assert.AreEqual(InputUtil.CharToKeyInput('D'), inputs[0]);
                     didSee = true;
                 };
-            _mode.Process("2h");
+            _mode.Process("2D");
             Assert.IsTrue(didSee);
         }
 
@@ -2093,6 +2093,20 @@ namespace VimCoreTest
                 };
             _mode.Process(";");
             Assert.IsTrue(didSee);
+        }
+
+        [Test, Description("Make sure movement keys don't register as executed commands")]
+        public void CommandExecuted4()
+        {
+            CreateBuffer("foo");
+            _operations.Setup(x => x.MoveCaretLeft(1));
+            var didSee = false;
+            _mode.CommandExecuted += (unused, command) =>
+                {
+                    didSee = true;
+                };
+            _mode.Process('h');
+            Assert.IsFalse(didSee);
         }
 
         private void AssertIsRepeatable(string initialCommand, string repeatCommand = null, int? count = null)
