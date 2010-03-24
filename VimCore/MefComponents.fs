@@ -14,11 +14,13 @@ type internal DisplayWindowBroker
     ( 
         _textView : ITextView,
         _completionBroker : ICompletionBroker,
-        _signatureBroker : ISignatureHelpBroker ) = 
+        _signatureBroker : ISignatureHelpBroker,
+        _smartTagBroker : ISmartTagBroker ) = 
     interface IDisplayWindowBroker with
         member x.TextView = _textView
         member x.IsCompletionWindowActive = 
             _completionBroker.IsCompletionActive(_textView) || _signatureBroker.IsSignatureHelpActive(_textView)
+        member x.IsSmartTagWindowActive = _smartTagBroker.IsSmartTagActive(_textView)
         member x.DismissCompletionWindow() = 
             if _completionBroker.IsCompletionActive(_textView) then
                 _completionBroker.DismissAllSessions(_textView)
@@ -30,11 +32,12 @@ type internal DisplayWindowBrokerFactoryService
     [<ImportingConstructor>]
     (
         _completionBroker : ICompletionBroker,
-        _signatureBroker : ISignatureHelpBroker ) = 
+        _signatureBroker : ISignatureHelpBroker,
+        _smartTagBroker : ISmartTagBroker ) = 
 
     interface IDisplayWindowBrokerFactoryService with
         member x.CreateDisplayWindowBroker textView = 
-            let broker = DisplayWindowBroker(textView, _completionBroker, _signatureBroker)
+            let broker = DisplayWindowBroker(textView, _completionBroker, _signatureBroker, _smartTagBroker)
             broker :> IDisplayWindowBroker
 
 

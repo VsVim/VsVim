@@ -15,6 +15,9 @@ type IDisplayWindowBroker =
     /// Is there currently a completion window active on the given ITextView
     abstract IsCompletionWindowActive : bool
 
+    /// Is there a smart tip window active
+    abstract IsSmartTagWindowActive : bool
+
     /// Dismiss any completion windows on the given ITextView
     abstract DismissCompletionWindow : unit -> unit
 
