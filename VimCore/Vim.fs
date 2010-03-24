@@ -16,7 +16,7 @@ type internal VimBufferFactory
     (
         _host : IVimHost,
         _editorOperationsFactoryService : IEditorOperationsFactoryService,
-        _completionWindowBrokerFactoryService : ICompletionWindowBrokerFactoryService,
+        _completionWindowBrokerFactoryService : IDisplayWindowBrokerFactoryService,
         _textSearchService : ITextSearchService,
         _textStructureNavigatorSelectorService : ITextStructureNavigatorSelectorService,
         _tlcService : ITrackingLineColumnService ) =
@@ -35,7 +35,7 @@ type internal VimBufferFactory
 
         let statusUtil = x.CreateStatusUtil bufferRaw 
         let wordNav = x.CreateTextStructureNavigator view.TextBuffer WordKind.NormalWord
-        let broker = _completionWindowBrokerFactoryService.CreateCompletionWindowBroker view
+        let broker = _completionWindowBrokerFactoryService.CreateDisplayWindowBroker view
         let normalIncrementalSearch = Vim.Modes.Normal.IncrementalSearch(view, localSettings, _textSearchService, wordNav) :> IIncrementalSearch
         let normalOpts = Modes.Normal.DefaultOperations(view,editOperations,_host, statusUtil, localSettings,wordNav,_textSearchService,jumpList, normalIncrementalSearch) :> Modes.Normal.IOperations
         let commandOpts = Modes.Command.DefaultOperations(view,editOperations,_host, statusUtil, jumpList, localSettings, vim.KeyMap) :> Modes.Command.IOperations

@@ -25,7 +25,7 @@ namespace VimCoreTest
         private ITextBuffer _buffer;
         private IWpfTextView _view;
         private Mock<ICommonOperations> _operations;
-        private Mock<ICompletionWindowBroker> _broker;
+        private Mock<IDisplayWindowBroker> _broker;
         private Mock<IVimGlobalSettings> _globalSettings;
         private Mock<IVimLocalSettings> _localSettings;
         private Mock<IVim> _vim;
@@ -43,8 +43,8 @@ namespace VimCoreTest
                 settings:_localSettings.Object,
                 vim:_vim.Object);
             _operations = new Mock<ICommonOperations>(MockBehavior.Strict);
-            _broker = new Mock<ICompletionWindowBroker>(MockBehavior.Strict);
-            _modeRaw = new Vim.Modes.Insert.InsertMode(Tuple.Create<IVimBuffer,ICommonOperations,ICompletionWindowBroker>(_data.Object,_operations.Object,_broker.Object));
+            _broker = new Mock<IDisplayWindowBroker>(MockBehavior.Strict);
+            _modeRaw = new Vim.Modes.Insert.InsertMode(Tuple.Create<IVimBuffer,ICommonOperations,IDisplayWindowBroker>(_data.Object,_operations.Object,_broker.Object));
             _mode = _modeRaw;
         }
 

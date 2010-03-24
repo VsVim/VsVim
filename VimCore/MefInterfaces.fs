@@ -7,7 +7,7 @@ open Microsoft.VisualStudio.Text.Operations
 open Microsoft.VisualStudio.Text.Tagging
 
 /// Used to determine if a completion window is active for a given view
-type ICompletionWindowBroker =
+type IDisplayWindowBroker =
 
     /// TextView this broker is associated with
     abstract TextView : ITextView 
@@ -18,8 +18,9 @@ type ICompletionWindowBroker =
     /// Dismiss any completion windows on the given ITextView
     abstract DismissCompletionWindow : unit -> unit
 
-type ICompletionWindowBrokerFactoryService =
-    abstract CreateCompletionWindowBroker : ITextView -> ICompletionWindowBroker
+type IDisplayWindowBrokerFactoryService  =
+
+    abstract CreateDisplayWindowBroker : ITextView -> IDisplayWindowBroker
 
 type ITrackingLineColumn =
     abstract TextBuffer : ITextBuffer

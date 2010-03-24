@@ -10,7 +10,7 @@ type internal InsertMode
     ( 
         _data : IVimBuffer, 
         _operations : Modes.ICommonOperations,
-        _broker : ICompletionWindowBroker ) =
+        _broker : IDisplayWindowBroker) =
     let _commands = [
         InputUtil.VimKeyToKeyInput VimKey.EscapeKey;
         KeyInput('d', KeyModifiers.Control); ]

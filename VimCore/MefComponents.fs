@@ -10,12 +10,12 @@ open Microsoft.VisualStudio.Utilities
 open System.ComponentModel.Composition
 open System.Collections.Generic
 
-type internal CompletionWindowBroker 
+type internal DisplayWindowBroker 
     ( 
         _textView : ITextView,
         _completionBroker : ICompletionBroker,
         _signatureBroker : ISignatureHelpBroker ) = 
-    interface ICompletionWindowBroker with
+    interface IDisplayWindowBroker with
         member x.TextView = _textView
         member x.IsCompletionWindowActive = 
             _completionBroker.IsCompletionActive(_textView) || _signatureBroker.IsSignatureHelpActive(_textView)
@@ -25,17 +25,17 @@ type internal CompletionWindowBroker
             if _signatureBroker.IsSignatureHelpActive(_textView) then
                 _signatureBroker.DismissAllSessions(_textView)
 
-[<Export(typeof<ICompletionWindowBrokerFactoryService>)>]
-type internal CompletionWindowBrokerFactoryService
+[<Export(typeof<IDisplayWindowBrokerFactoryService>)>]
+type internal DisplayWindowBrokerFactoryService
     [<ImportingConstructor>]
     (
         _completionBroker : ICompletionBroker,
         _signatureBroker : ISignatureHelpBroker ) = 
 
-    interface ICompletionWindowBrokerFactoryService with
-        member x.CreateCompletionWindowBroker textView = 
-            let broker = CompletionWindowBroker(textView, _completionBroker, _signatureBroker)
-            broker :> ICompletionWindowBroker
+    interface IDisplayWindowBrokerFactoryService with
+        member x.CreateDisplayWindowBroker textView = 
+            let broker = DisplayWindowBroker(textView, _completionBroker, _signatureBroker)
+            broker :> IDisplayWindowBroker
 
 
 type internal TrackingLineColumn 
