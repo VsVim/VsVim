@@ -15,11 +15,14 @@ type internal DisplayWindowBroker
         _textView : ITextView,
         _completionBroker : ICompletionBroker,
         _signatureBroker : ISignatureHelpBroker,
-        _smartTagBroker : ISmartTagBroker ) = 
+        _smartTagBroker : ISmartTagBroker,
+        _quickInfoBroker : IQuickInfoBroker)  =
     interface IDisplayWindowBroker with
         member x.TextView = _textView
         member x.IsCompletionWindowActive = 
-            _completionBroker.IsCompletionActive(_textView) || _signatureBroker.IsSignatureHelpActive(_textView)
+            _completionBroker.IsCompletionActive(_textView) 
+            || _signatureBroker.IsSignatureHelpActive(_textView)
+            || _quickInfoBroker.IsQuickInfoActive(_textView)
         member x.IsSmartTagWindowActive = 
             if _smartTagBroker.IsSmartTagActive(_textView) then
                 _smartTagBroker.GetSessions(_textView) 
@@ -32,6 +35,8 @@ type internal DisplayWindowBroker
                 _completionBroker.DismissAllSessions(_textView)
             if _signatureBroker.IsSignatureHelpActive(_textView) then
                 _signatureBroker.DismissAllSessions(_textView)
+            if _quickInfoBroker.IsQuickInfoActive(_textView) then
+                _quickInfoBroker.GetSessions(_textView) |> Seq.iter (fun x -> x.Dismiss())
 
 [<Export(typeof<IDisplayWindowBrokerFactoryService>)>]
 type internal DisplayWindowBrokerFactoryService
@@ -39,11 +44,12 @@ type internal DisplayWindowBrokerFactoryService
     (
         _completionBroker : ICompletionBroker,
         _signatureBroker : ISignatureHelpBroker,
-        _smartTagBroker : ISmartTagBroker ) = 
+        _smartTagBroker : ISmartTagBroker,
+        _quickInfoBroker : IQuickInfoBroker ) = 
 
     interface IDisplayWindowBrokerFactoryService with
         member x.CreateDisplayWindowBroker textView = 
-            let broker = DisplayWindowBroker(textView, _completionBroker, _signatureBroker, _smartTagBroker)
+            let broker = DisplayWindowBroker(textView, _completionBroker, _signatureBroker, _smartTagBroker, _quickInfoBroker)
             broker :> IDisplayWindowBroker
 
 
