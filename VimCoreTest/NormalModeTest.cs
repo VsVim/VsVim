@@ -32,6 +32,7 @@ namespace VimCoreTest
         private Mock<IJumpList> _jumpList;
         private Mock<IStatusUtil> _statusUtil;
         private Mock<IChangeTracker> _changeTracker;
+        private Mock<IDisplayWindowBroker> _displayWindowBroker;
 
         static string[] s_lines = new string[]
             {
@@ -55,6 +56,8 @@ namespace VimCoreTest
             _jumpList = new Mock<IJumpList>(MockBehavior.Strict);
             _statusUtil = new Mock<IStatusUtil>(MockBehavior.Strict);
             _changeTracker = new Mock<IChangeTracker>(MockBehavior.Strict);
+            _displayWindowBroker = new Mock<IDisplayWindowBroker>(MockBehavior.Strict);
+            _displayWindowBroker.SetupGet(x => x.IsSmartTagWindowActive).Returns(false);
             _bufferData = MockFactory.CreateVimBuffer(
                 _view,
                 "test",
@@ -62,7 +65,7 @@ namespace VimCoreTest
                 _jumpList.Object);
             _operations = new Mock<IOperations>(MockBehavior.Strict);
             _operations.SetupGet(x => x.EditorOperations).Returns(_editorOperations.Object);
-            _modeRaw = new Vim.Modes.Normal.NormalMode(Tuple.Create(_bufferData.Object, _operations.Object, _incrementalSearch.Object, _statusUtil.Object));
+            _modeRaw = new Vim.Modes.Normal.NormalMode(Tuple.Create(_bufferData.Object, _operations.Object, _incrementalSearch.Object, _statusUtil.Object, _displayWindowBroker.Object));
             _mode = _modeRaw;
             _mode.OnEnter();
         }
@@ -129,6 +132,16 @@ namespace VimCoreTest
             _mode.Process(InputUtil.CharToKeyInput('/'));
             Assert.IsTrue(_mode.CanProcess(InputUtil.CharToKeyInput('U')));
             Assert.IsTrue(_mode.CanProcess(InputUtil.CharToKeyInput('Z')));
+        }
+
+        [Test, Description("Don't process while a smart tag is open otherwise you prevent it from being used")]
+        public void CanProcess5()
+        {
+            CreateBuffer(s_lines);
+            _displayWindowBroker.SetupGet(x => x.IsSmartTagWindowActive).Returns(true);
+            Assert.IsFalse(_mode.CanProcess(InputUtil.VimKeyToKeyInput(VimKey.EnterKey)));
+            Assert.IsFalse(_mode.CanProcess(InputUtil.VimKeyToKeyInput(VimKey.LeftKey)));
+            Assert.IsFalse(_mode.CanProcess(InputUtil.VimKeyToKeyInput(VimKey.DownKey)));
         }
 
 

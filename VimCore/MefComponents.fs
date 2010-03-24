@@ -20,7 +20,13 @@ type internal DisplayWindowBroker
         member x.TextView = _textView
         member x.IsCompletionWindowActive = 
             _completionBroker.IsCompletionActive(_textView) || _signatureBroker.IsSignatureHelpActive(_textView)
-        member x.IsSmartTagWindowActive = _smartTagBroker.IsSmartTagActive(_textView)
+        member x.IsSmartTagWindowActive = 
+            if _smartTagBroker.IsSmartTagActive(_textView) then
+                _smartTagBroker.GetSessions(_textView) 
+                |> Seq.filter (fun x -> x.State = SmartTagState.Expanded) 
+                |> SeqUtil.isNotEmpty
+            else
+                false
         member x.DismissCompletionWindow() = 
             if _completionBroker.IsCompletionActive(_textView) then
                 _completionBroker.DismissAllSessions(_textView)

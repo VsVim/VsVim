@@ -25,7 +25,8 @@ type internal NormalMode
         _bufferData : IVimBuffer, 
         _operations : IOperations,
         _incrementalSearch : IIncrementalSearch,
-        _statusUtil : Vim.Modes.IStatusUtil ) =
+        _statusUtil : Vim.Modes.IStatusUtil,
+        _displayWindowBroker : IDisplayWindowBroker ) =
 
     let _commandExecutedEvent = Event<_>()
 
@@ -504,9 +505,11 @@ type internal NormalMode
         member this.CommandExecuted = _commandExecutedEvent.Publish
 
         member this.CanProcess (ki:KeyInput) =
-            if _waitingForMoreInput then 
+            if _displayWindowBroker.IsSmartTagWindowActive then
+                false                
+            elif _waitingForMoreInput then 
                 true
-            else if ki.IsDigit then
+            elif ki.IsDigit then
                 true
             else
                 _operationMap.ContainsKey ki

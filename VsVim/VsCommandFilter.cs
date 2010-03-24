@@ -38,19 +38,11 @@ namespace VsVim
             {
                 return false;
             }
-            
+
             // If the current state of the buffer cannot process the command then do not convert it 
             if (!_buffer.CanProcessInput(command.KeyInput))
             {
-
-                // The one exception is input commands while we are in normal mode.  While normal mode does not actually
-                // process the commands, it does need to prevent them from being routed to other buffers.  Eventually when
-                // NormalMode is 100% implemented the vast majority of these will actually be processable commands.  Until then
-                // though we need to process them and beep
-                if (!(command.IsInput && ModeKind.Normal == _buffer.ModeKind))
-                {
-                    return false;
-                }
+                return false;
             }
 
             kiOutput = command.KeyInput;
@@ -61,10 +53,10 @@ namespace VsVim
 
         int IOleCommandTarget.Exec(ref Guid commandGroup, uint commandId, uint nCmdexecopt, IntPtr pvaIn, IntPtr pvaOut)
         {
-            KeyInput ki =null;
+            KeyInput ki = null;
             if (CommandUtil.IsDebugIgnore(commandGroup, commandId)
-                || !TryConvert(commandGroup, commandId, pvaIn, out ki) 
-                || !_buffer.ProcessInput(ki) )
+                || !TryConvert(commandGroup, commandId, pvaIn, out ki)
+                || !_buffer.ProcessInput(ki))
             {
                 return _nextTarget.Exec(commandGroup, commandId, nCmdexecopt, pvaIn, pvaOut);
             }
@@ -75,7 +67,7 @@ namespace VsVim
         int IOleCommandTarget.QueryStatus(ref Guid pguidCmdGroup, uint cCmds, OLECMD[] prgCmds, IntPtr pCmdText)
         {
             KeyInput ki = null;
-            if (1 == cCmds 
+            if (1 == cCmds
                 && TryConvert(pguidCmdGroup, prgCmds[0].cmdID, pCmdText, out ki)
                 && _buffer.CanProcessInput(ki))
             {

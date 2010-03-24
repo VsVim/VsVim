@@ -140,6 +140,7 @@
     <Compile Include="CommandProcessorTest.cs" />
     <Compile Include="Command_DefaultOperations.cs" />
     <Compile Include="DisabledModeTest.cs" />
+    <Compile Include="DisplayWindowBrokerTest.cs" />
     <Compile Include="GlobalSettingsTest.cs" />
     <Compile Include="HighlightIncrementalSearchTaggerTest.cs" />
     <Compile Include="IEditorOperationsTest.cs" />
