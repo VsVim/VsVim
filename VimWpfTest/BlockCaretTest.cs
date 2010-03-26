@@ -44,7 +44,6 @@ namespace Vim.UI.Wpf.Test
         {
             Create();
             _caret.SetupGet(x => x.ContainingTextViewLine).Throws(new InvalidOperationException());
-            _caret.SetupSet(x => x.IsHidden = true).Verifiable();
             _blockCaret.CaretDisplay = CaretDisplay.HalfBlock;
             _caret.Verify();
             Assert.AreEqual(CaretDisplay.HalfBlock, _blockCaret.CaretDisplay);
@@ -54,15 +53,11 @@ namespace Vim.UI.Wpf.Test
         public void Hide1()
         {
             Create();
-            _caret.SetupSet(x => x.IsHidden = true).Verifiable();
             _caret.Setup(x => x.ContainingTextViewLine).Throws(new InvalidOperationException());
             _blockCaret.CaretDisplay = CaretDisplay.HalfBlock;
             _caret.Verify();
-            _caret.SetupSet(x => x.IsHidden = false).Verifiable();
-            _layer.Setup(x => x.RemoveAdornmentsByTag(It.IsAny<object>())).Verifiable();
             _blockCaret.CaretDisplay = CaretDisplay.NormalCaret;
             _caret.Verify();
-            _layer.Verify();
         }
     }
 }

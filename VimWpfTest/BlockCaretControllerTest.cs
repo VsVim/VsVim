@@ -46,9 +46,11 @@ namespace Vim.UI.Wpf.Test
         [Test, Description("Other modes shouldn't even consider operator pending")]
         public void OperaterPending2()
         {
+            var mode = new Mock<INormalMode>();
+            mode.SetupGet(x => x.IsOperatorPending).Returns(true).Verifiable();
+            _buffer.SetupGet(x => x.NormalMode).Returns(mode.Object);
             _buffer.SetupGet(x => x.ModeKind).Returns(ModeKind.Command);
-
-            _caret.SetupSet(x => x.CaretDisplay = CaretDisplay.HalfBlock).Verifiable();
+            _caret.SetupSet(x => x.CaretDisplay = CaretDisplay.Invisible).Verifiable();
             _controller.Update();
             _caret.Verify();
         }
@@ -66,14 +68,45 @@ namespace Vim.UI.Wpf.Test
             _caret.Verify();
         }
 
+        [Test, Description("Replace wins over operator pending")]
+        public void IsInReplace2()
+        {
+            var mode = new Mock<INormalMode>();
+            mode.SetupGet(x => x.IsInReplace).Returns(true);
+            mode.SetupGet(x => x.IsOperatorPending).Returns(true);
+            _buffer.SetupGet(x => x.NormalMode).Returns(mode.Object);
+            _buffer.SetupGet(x => x.ModeKind).Returns(ModeKind.Normal);
+
+            _caret.SetupSet(x => x.CaretDisplay = CaretDisplay.QuarterBlock).Verifiable();
+            _controller.Update();
+            _caret.Verify();
+        }
+
         [Test]
         public void NormalMode1()
         {
             var mode = new Mock<INormalMode>();
+            var search = new Mock<IIncrementalSearch>();
             _buffer.SetupGet(x => x.NormalMode).Returns(mode.Object);
             _buffer.SetupGet(x => x.ModeKind).Returns(ModeKind.Normal);
+            mode.SetupGet(x => x.IncrementalSearch).Returns(search.Object);
 
             _caret.SetupSet(x => x.CaretDisplay = CaretDisplay.Block).Verifiable();
+            _controller.Update();
+            _caret.Verify();
+        }
+
+        [Test]
+        public void NormalMode2()
+        {
+            var mode = new Mock<INormalMode>();
+            var search = new Mock<IIncrementalSearch>();
+            _buffer.SetupGet(x => x.NormalMode).Returns(mode.Object);
+            _buffer.SetupGet(x => x.ModeKind).Returns(ModeKind.Normal);
+            mode.SetupGet(x => x.IncrementalSearch).Returns(search.Object);
+            search.SetupGet(x => x.InSearch).Returns(true);
+
+            _caret.SetupSet(x => x.CaretDisplay = CaretDisplay.Invisible).Verifiable();
             _controller.Update();
             _caret.Verify();
         }

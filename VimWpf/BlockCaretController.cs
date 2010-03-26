@@ -41,13 +41,13 @@ namespace Vim.UI.Wpf
                 case ModeKind.Normal:
                     {
                         var mode = _buffer.NormalMode;
-                        if (mode.IsOperatorPending)
-                        {
-                            kind = CaretDisplay.HalfBlock;
-                        }
-                        else if (mode.IsInReplace)
+                        if (mode.IsInReplace)
                         {
                             kind = CaretDisplay.QuarterBlock;
+                        }
+                        else if (mode.IsOperatorPending)
+                        {
+                            kind = CaretDisplay.HalfBlock;
                         }
                         else if (mode.IncrementalSearch.InSearch)
                         {
