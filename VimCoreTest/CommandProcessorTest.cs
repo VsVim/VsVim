@@ -196,8 +196,7 @@ namespace VimCoreTest
         {
             Create("     foo", "bar", "baz");
             _operations
-                .Setup(x => x.ShiftLeft(_view.TextSnapshot.GetLineFromLineNumber(0).ExtentIncludingLineBreak, 4))
-                .Returns<ITextSnapshot>(null)
+                .Setup(x => x.ShiftSpanLeft(_view.TextSnapshot.GetLineFromLineNumber(0).ExtentIncludingLineBreak))
                 .Verifiable();
             RunCommand("<");
             _operations.Verify();
@@ -212,8 +211,7 @@ namespace VimCoreTest
                 tss.GetLineFromLineNumber(0).Start,
                 tss.GetLineFromLineNumber(1).EndIncludingLineBreak);
             _operations
-                .Setup(x => x.ShiftLeft(span, 4))
-                .Returns<ITextSnapshot>(null)
+                .Setup(x => x.ShiftSpanLeft(span))
                 .Verifiable();
             RunCommand("1,2<");
             _operations.Verify();
@@ -228,8 +226,7 @@ namespace VimCoreTest
                 tss.GetLineFromLineNumber(0).Start,
                 tss.GetLineFromLineNumber(1).EndIncludingLineBreak);
             _operations
-                .Setup(x => x.ShiftLeft(span, 4))
-                .Returns<ITextSnapshot>(null)
+                .Setup(x => x.ShiftSpanLeft(span))
                 .Verifiable();
             RunCommand("< 2");
             _operations.Verify();
@@ -240,8 +237,7 @@ namespace VimCoreTest
         {
             Create("foo", "bar", "baz");
             _operations
-                .Setup(x => x.ShiftRight(_view.TextSnapshot.GetLineFromLineNumber(0).ExtentIncludingLineBreak, 4))
-                .Returns<ITextSnapshot>(null)
+                .Setup(x => x.ShiftSpanRight(_view.TextSnapshot.GetLineFromLineNumber(0).ExtentIncludingLineBreak))
                 .Verifiable();
             RunCommand(">");
             _operations.Verify();
@@ -256,8 +252,7 @@ namespace VimCoreTest
                 tss.GetLineFromLineNumber(0).Start,
                 tss.GetLineFromLineNumber(1).EndIncludingLineBreak);
             _operations
-                .Setup(x => x.ShiftRight(span, 4))
-                .Returns<ITextSnapshot>(null)
+                .Setup(x => x.ShiftSpanRight(span))
                 .Verifiable();
             RunCommand("1,2>");
             _operations.Verify();
@@ -272,8 +267,7 @@ namespace VimCoreTest
                 tss.GetLineFromLineNumber(0).Start,
                 tss.GetLineFromLineNumber(1).EndIncludingLineBreak);
             _operations
-                .Setup(x => x.ShiftRight(span, 4))
-                .Returns<ITextSnapshot>(null)
+                .Setup(x => x.ShiftSpanRight(span))
                 .Verifiable();
             RunCommand("> 2");
             _operations.Verify();

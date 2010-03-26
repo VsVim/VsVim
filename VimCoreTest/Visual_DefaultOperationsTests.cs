@@ -52,7 +52,7 @@ namespace VimCoreTest
         public void DeleteSelectedLines1()
         {
             Create("foo", "bar");
-            var span = _view.GetLineSpan(0, 0);
+            var span = _view.GetLineSpanIncludingLineBreak(0, 0);
             _tracker.SetupGet(x => x.SelectedLines).Returns(span).Verifiable();
             var reg = new Register('c');
             _operations.DeleteSelectedLines(reg);

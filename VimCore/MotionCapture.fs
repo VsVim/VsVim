@@ -20,6 +20,12 @@ type internal MotionResult =
        
 module internal MotionCapture = 
 
+    let NeedMoreInputWithEscape func =
+        let inner (ki:KeyInput) = 
+            if ki.Key = VimKey.EscapeKey then Cancel
+            else func(ki)
+        NeedMoreInput(inner)
+
     /// When an invalid motion is given just wait for enter and then report and invalid 
     /// motion error.  Update the status to let the user know that we are currently
     /// in an invalid state
@@ -61,7 +67,7 @@ module internal MotionCapture =
                 | 'w' -> func WordKind.NormalWord
                 | 'W' -> func WordKind.BigWord
                 | _ -> HitInvalidMotion
-        NeedMoreInput(inner)             
+        NeedMoreInputWithEscape inner
 
     /// Implement the 'e' motion.  This goes to the end of the current word.  If we're
     /// not currently on a word it will find the next word and then go to the end of that
@@ -112,7 +118,7 @@ module internal MotionCapture =
                 | CountResult.Complete(count,nextKi) -> 
                     let fullCount = startCount * count
                     completeFunc nextKi fullCount
-                | NeedMore(nextFunc) -> NeedMoreInput(inner nextFunc)
+                | NeedMore(nextFunc) -> NeedMoreInputWithEscape (inner nextFunc)
         inner (CountCapture.Process) ki               
         
     let rec ProcessInput start (ki:KeyInput) count =

@@ -114,10 +114,8 @@ namespace VimCoreTest
         public void ShiftLeft1()
         {
             CreateBuffer("    foo");
-            _globalSettings.SetupGet(x => x.ShiftWidth).Returns(4).Verifiable();
             _operations
-                .Setup(x => x.ShiftLeft(_view.TextSnapshot.GetLineFromLineNumber(0).Extent, 4))
-                .Returns<ITextSnapshot>(null)
+                .Setup(x => x.ShiftLinesLeft(1))
                 .Verifiable(); ;
             var res = _mode.Process(new KeyInput('d', KeyModifiers.Control));
             Assert.IsTrue(res.IsProcessed);

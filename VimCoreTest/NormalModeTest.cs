@@ -972,7 +972,7 @@ namespace VimCoreTest
         {
             CreateBuffer("foo", "bar", "baz");
             _operations
-                .Setup(x => x.DeleteSpan(_view.GetLineSpan(0, 0), MotionKind.Inclusive, OperationKind.LineWise, _map.DefaultRegister))
+                .Setup(x => x.DeleteSpan(_view.GetLineSpanIncludingLineBreak(0, 0), MotionKind.Inclusive, OperationKind.LineWise, _map.DefaultRegister))
                 .Returns(_view.TextSnapshot)
                 .Verifiable();
             var res = _mode.Process("cc");
@@ -986,7 +986,7 @@ namespace VimCoreTest
         {
             CreateBuffer("foo", "bar", "baz");
             _operations
-                .Setup(x => x.DeleteSpan(_view.GetLineSpan(0, 1), MotionKind.Inclusive, OperationKind.LineWise, _map.DefaultRegister))
+                .Setup(x => x.DeleteSpan(_view.GetLineSpanIncludingLineBreak(0, 1), MotionKind.Inclusive, OperationKind.LineWise, _map.DefaultRegister))
                 .Returns(_view.TextSnapshot)
                 .Verifiable();
             var res = _mode.Process("2cc");
@@ -1203,6 +1203,7 @@ namespace VimCoreTest
             _operations.Verify();
         }
 
+
         [Test]
         public void Yank_yaw_2()
         {
@@ -1215,6 +1216,15 @@ namespace VimCoreTest
                 _map.DefaultRegister)).Verifiable();
             _mode.Process("yaw");
             _operations.Verify();
+        }
+
+        [Test]
+        public void Yank_yaw_3()
+        {
+            CreateBuffer(s_lines);
+            _mode.Process("ya");
+            _mode.Process(InputUtil.VimKeyToKeyInput(VimKey.EscapeKey));
+            Assert.IsFalse(_mode.IsWaitingForInput);
         }
 
         [Test, Description("A yy should grab the end of line including line break information")]
@@ -1653,8 +1663,7 @@ namespace VimCoreTest
         {
             CreateBuffer("foo");
             _operations
-                .Setup(x => x.ShiftRight(_view.TextSnapshot.GetLineFromLineNumber(0).Extent, 4))
-                .Returns<ITextSnapshot>(null)
+                .Setup(x => x.ShiftLinesRight(1))
                 .Verifiable();
             _mode.Process(">>");
             _operations.Verify();
@@ -1665,12 +1674,8 @@ namespace VimCoreTest
         {
             CreateBuffer("foo", "bar");
             var tss = _view.TextSnapshot;
-            var span = new SnapshotSpan(
-                tss.GetLineFromLineNumber(0).Start,
-                tss.GetLineFromLineNumber(1).End);
             _operations
-                .Setup(x => x.ShiftRight(span, 4))
-                .Returns<ITextSnapshot>(null)
+                .Setup(x => x.ShiftLinesRight(2))
                 .Verifiable();
             _mode.Process("2>>");
             _operations.Verify();
@@ -1685,8 +1690,7 @@ namespace VimCoreTest
                 tss.GetLineFromLineNumber(0).Start,
                 tss.GetLineFromLineNumber(1).End);
             _operations
-                .Setup(x => x.ShiftRight(span, 4))
-                .Returns<ITextSnapshot>(null)
+                .Setup(x => x.ShiftSpanRight(span))
                 .Verifiable();
             _mode.Process(">j");
             _operations.Verify();
@@ -1697,8 +1701,7 @@ namespace VimCoreTest
         {
             CreateBuffer("foo");
             _operations
-                .Setup(x => x.ShiftLeft(_view.TextSnapshot.GetLineFromLineNumber(0).ExtentIncludingLineBreak, 4))
-                .Returns<ITextSnapshot>(null)
+                .Setup(x => x.ShiftLinesLeft(1))
                 .Verifiable();
             _mode.Process("<<");
             _operations.Verify();
@@ -1709,36 +1712,19 @@ namespace VimCoreTest
         {
             CreateBuffer(" foo");
             _operations
-                .Setup(x => x.ShiftLeft(_view.TextSnapshot.GetLineFromLineNumber(0).ExtentIncludingLineBreak, 4))
-                .Returns<ITextSnapshot>(null)
-                .Verifiable();
-            _mode.Process("<<");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void ShiftLeft3()
-        {
-            CreateBuffer("     foo");
-            _operations
-                .Setup(x => x.ShiftLeft(_view.TextSnapshot.GetLineFromLineNumber(0).ExtentIncludingLineBreak, 4))
-                .Returns<ITextSnapshot>(null)
+                .Setup(x => x.ShiftLinesLeft(1))
                 .Verifiable();
             _mode.Process("<<");
             _operations.Verify();
         }
 
         [Test, Description("With a count")]
-        public void ShiftLeft4()
+        public void ShiftLeft3()
         {
             CreateBuffer("     foo", "     bar");
             var tss = _view.TextSnapshot;
-            var span = new SnapshotSpan(
-                tss.GetLineFromLineNumber(0).Start,
-                tss.GetLineFromLineNumber(1).End);
             _operations
-                .Setup(x => x.ShiftLeft(span, 4))
-                .Returns<ITextSnapshot>(null)
+                .Setup(x => x.ShiftLinesLeft(2))
                 .Verifiable();
             _mode.Process("2<<");
             _operations.Verify();
@@ -2161,6 +2147,27 @@ namespace VimCoreTest
                 };
             _mode.Process('h');
             Assert.IsFalse(didSee);
+        }
+
+        [Test]
+        public void CommandExecuted5()
+        {
+            CreateBuffer(s_lines);
+            _operations.Setup(x => x.DeleteLinesIncludingLineBreak(2, _map.DefaultRegister));
+            var didSee = false;
+            _mode.CommandExecuted += (unused, command) =>
+                {
+                    Assert.IsTrue(command.IsRepeatableCommand);
+                    var com = command.AsRepeatabelCommand();
+                    Assert.AreEqual(2, com.Item2);
+                    var inputs = com.Item1.ToList();
+                    Assert.AreEqual(2, inputs.Count);
+                    Assert.AreEqual(InputUtil.CharToKeyInput('d'), inputs[0]);
+                    Assert.AreEqual(InputUtil.CharToKeyInput('d'), inputs[1]);
+                    didSee = true;
+                };
+            _mode.Process("2dd");
+            Assert.IsTrue(didSee);
         }
 
         private void AssertIsRepeatable(string initialCommand, string repeatCommand = null, int? count = null)

@@ -28,6 +28,7 @@ namespace VimCoreTest
         private Mock<IVimHost> _host;
         private Mock<IJumpList> _jumpList;
         private Mock<IVimLocalSettings> _settings;
+        private Mock<IVimGlobalSettings> _globalSettings;
         private ICommonOperations _operations;
         private CommonOperations _operationsRaw;
 
@@ -40,6 +41,9 @@ namespace VimCoreTest
             _jumpList = new Mock<IJumpList>(MockBehavior.Strict);
             _editorOpts = new Mock<IEditorOperations>(MockBehavior.Strict);
             _settings = new Mock<IVimLocalSettings>(MockBehavior.Strict);
+            _globalSettings = new Mock<IVimGlobalSettings>(MockBehavior.Strict);
+            _globalSettings.SetupGet(x => x.ShiftWidth).Returns(2);
+            _settings.SetupGet(x => x.GlobalSettings).Returns(_globalSettings.Object);
             _operationsRaw = new OperationsImpl(_view, _editorOpts.Object, _host.Object, _jumpList.Object,_settings.Object);
             _operations = _operationsRaw;
         }
@@ -696,51 +700,113 @@ namespace VimCoreTest
         }
 
         [Test]
-        public void ShiftRight1()
+        public void ShiftSpanRight1()
         {
             CreateLines("foo");
             var span = _buffer.CurrentSnapshot.GetLineFromLineNumber(0).Extent;
-            _operations.ShiftRight(span, 2);
+            _operations.ShiftSpanRight(span);
             Assert.AreEqual("  foo", _buffer.CurrentSnapshot.GetLineFromLineNumber(0).GetText());
         }
 
         [Test, Description("Only shift whitespace")]
-        public void ShiftLeft1()
+        public void ShiftSpanLeft1()
         {
             CreateLines("foo");
             var span = _buffer.CurrentSnapshot.GetLineFromLineNumber(0).Extent;
-            _operations.ShiftLeft(span, 2);
+            _operations.ShiftSpanLeft(span);
             Assert.AreEqual("foo", _buffer.CurrentSnapshot.GetLineFromLineNumber(0).GetText());
         }
 
         [Test, Description("Don't puke on an empty line")]
-        public void ShiftLeft2()
+        public void ShiftSpanLeft2()
         {
             CreateLines("");
             var span = _buffer.CurrentSnapshot.GetLineFromLineNumber(0).Extent;
-            _operations.ShiftLeft(span, 2);
+            _operations.ShiftSpanLeft(span);
             Assert.AreEqual("", _buffer.CurrentSnapshot.GetLineFromLineNumber(0).GetText());
         }
 
         [Test]
-        public void ShiftLeft3()
+        public void ShiftSpanLeft3()
         {
             CreateLines("  foo", "  bar");
             var span = new SnapshotSpan(
                 _buffer.CurrentSnapshot.GetLineFromLineNumber(0).Start,
                 _buffer.CurrentSnapshot.GetLineFromLineNumber(1).End);
-            _operations.ShiftLeft(span, 2);
+            _operations.ShiftSpanLeft(span);
             Assert.AreEqual("foo", _buffer.CurrentSnapshot.GetLineFromLineNumber(0).GetText());
             Assert.AreEqual("bar", _buffer.CurrentSnapshot.GetLineFromLineNumber(1).GetText());
         }
 
         [Test]
-        public void ShiftLeft4()
+        public void ShiftSpanLeft4()
         {
             CreateLines("   foo");
             var span = _buffer.CurrentSnapshot.GetLineFromLineNumber(0).Extent;
-            _operations.ShiftLeft(span, 2);
+            _operations.ShiftSpanLeft(span);
             Assert.AreEqual(" foo", _buffer.CurrentSnapshot.GetLineFromLineNumber(0).GetText());
+        }
+
+        [Test]
+        public void ShiftLinesLeft1()
+        {
+            CreateLines("   foo");
+            _operations.ShiftLinesLeft(1);
+            Assert.AreEqual(" foo", _buffer.GetLineSpan(0).GetText());
+        }
+
+        [Test]
+        public void ShiftLinesLeft2()
+        {
+            CreateLines(" foo");
+            _operations.ShiftLinesLeft(400);
+            Assert.AreEqual("foo", _buffer.GetLineSpan(0).GetText());
+        }
+
+        [Test]
+        public void ShiftLinesLeft3()
+        {
+            CreateLines("   foo", "    bar");
+            _operations.ShiftLinesLeft(2);
+            Assert.AreEqual(" foo", _buffer.GetLineSpan(0).GetText());
+            Assert.AreEqual("  bar", _buffer.GetLineSpan(1).GetText());
+        }
+
+        [Test]
+        public void ShiftLinesLeft4()
+        {
+            CreateLines(" foo", "   bar");
+            _view.MoveCaretTo(_buffer.GetLineSpan(1).Start.Position);
+            _operations.ShiftLinesLeft(1);
+            Assert.AreEqual(" foo", _buffer.GetLineSpan(0).GetText());
+            Assert.AreEqual(" bar", _buffer.GetLineSpan(1).GetText());
+        }
+
+        [Test]
+        public void ShiftLinesRight1()
+        {
+            CreateLines("foo");
+            _operations.ShiftLinesRight(1);
+            Assert.AreEqual("  foo", _buffer.GetLineSpan(0).GetText());
+        }
+
+        [Test]
+        public void ShiftLinesRight2()
+        {
+            CreateLines("foo", " bar");
+            _operations.ShiftLinesRight(2);
+            Assert.AreEqual("  foo", _buffer.GetLineSpan(0).GetText());
+            Assert.AreEqual("   bar", _buffer.GetLineSpan(1).GetText());
+        }
+
+        [Test]
+        public void ShiftLinesRight3()
+        {
+            CreateLines("foo", " bar");
+            _view.MoveCaretTo(_buffer.GetLineSpan(1).Start.Position);
+            _operations.ShiftLinesRight(2);
+            Assert.AreEqual("foo", _buffer.GetLineSpan(0).GetText());
+            Assert.AreEqual("   bar", _buffer.GetLineSpan(1).GetText());
         }
 
         [Test]

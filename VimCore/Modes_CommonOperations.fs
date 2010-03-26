@@ -28,6 +28,39 @@ type internal CommonOperations
         reg.UpdateValue(regValue) 
         tss.TextBuffer.Delete(span.Span)
 
+    member x.ShiftSpanRight (span:SnapshotSpan) = 
+        let text = new System.String(' ', _settings.GlobalSettings.ShiftWidth)
+        let buf = span.Snapshot.TextBuffer
+        let startLineNumber = span.Start.GetContainingLine().LineNumber
+        let endLineNumber = span.End.GetContainingLine().LineNumber
+        use edit = buf.CreateEdit()
+        for i = startLineNumber to endLineNumber do
+            let line = span.Snapshot.GetLineFromLineNumber(i)
+            edit.Replace(line.Start.Position,0,text) |> ignore
+        
+        edit.Apply() |> ignore
+        
+    member x.ShiftSpanLeft (span:SnapshotSpan) =
+        let count = _settings.GlobalSettings.ShiftWidth
+        let fixText (text:string) = 
+            let count = min count (text.Length) // Deal with count being greater than line length
+            let count = 
+                match text |> Seq.tryFindIndex (fun x -> x <> ' ') with
+                    | Some(i) ->
+                        if i < count then i
+                        else count
+                    | None -> count
+            text.Substring(count)                 
+        let buf = span.Snapshot.TextBuffer
+        let startLineNumber = span.Start.GetContainingLine().LineNumber
+        let endLineNumber = span.End.GetContainingLine().LineNumber
+        use edit = buf.CreateEdit()
+        for i = startLineNumber to endLineNumber do
+            let line = span.Snapshot.GetLineFromLineNumber(i)
+            let text = fixText (line.GetText())
+            edit.Replace(line.Extent.Span, text) |> ignore
+        edit.Apply() |> ignore
+
     interface ICommonOperations with
         member x.TextView = _textView 
         member x.EditorOperations = _operations
@@ -211,41 +244,20 @@ type internal CommonOperations
             let pos = inner (ViewUtil.GetCaretPoint _textView) count
             ViewUtil.MoveCaretToPoint _textView pos |> ignore
 
-        /// Shift the lines enumerated by the specified span "count" characters to the right
-        member x.ShiftRight (span:SnapshotSpan) count = 
-            let text = new System.String(' ', count)
-            let buf = span.Snapshot.TextBuffer
-            let startLineNumber = span.Start.GetContainingLine().LineNumber
-            let endLineNumber = span.End.GetContainingLine().LineNumber
-            use edit = buf.CreateEdit()
-            for i = startLineNumber to endLineNumber do
-                let line = span.Snapshot.GetLineFromLineNumber(i)
-                edit.Replace(line.Start.Position,0,text) |> ignore
+        member x.ShiftSpanRight span = x.ShiftSpanRight span
+
+        member x.ShiftSpanLeft span = x.ShiftSpanLeft span
+
+        member x.ShiftLinesRight count = 
+            let point = ViewUtil.GetCaretPoint _textView
+            let span = TssUtil.GetLineRangeSpan point count
+            x.ShiftSpanRight span
+
+        member x.ShiftLinesLeft count =
+            let point = ViewUtil.GetCaretPoint _textView
+            let span = TssUtil.GetLineRangeSpan point count
+            x.ShiftSpanLeft span
             
-            edit.Apply()
-            
-        /// Shift the lines unemerated by the specified span "count" characters left.  Essentially,
-        /// eat the first count blank spaces on the line       
-        member x.ShiftLeft (span:SnapshotSpan) count =
-            let fixText (text:string) = 
-                let count = min count (text.Length) // Deal with count being greater than line length
-                let count = 
-                    match text |> Seq.tryFindIndex (fun x -> x <> ' ') with
-                        | Some(i) ->
-                            if i < count then i
-                            else count
-                        | None -> count
-                text.Substring(count)                 
-            let buf = span.Snapshot.TextBuffer
-            let startLineNumber = span.Start.GetContainingLine().LineNumber
-            let endLineNumber = span.End.GetContainingLine().LineNumber
-            use edit = buf.CreateEdit()
-            for i = startLineNumber to endLineNumber do
-                let line = span.Snapshot.GetLineFromLineNumber(i)
-                let text = fixText (line.GetText())
-                edit.Replace(line.Extent.Span, text) |> ignore
-            edit.Apply()
-        
         member x.InsertText text count = 
             let text = StringUtil.repeat text count 
             let point = ViewUtil.GetCaretPoint _textView

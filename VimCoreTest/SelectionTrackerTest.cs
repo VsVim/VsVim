@@ -145,7 +145,7 @@ namespace VimCoreTest
         {
             Create(SelectionMode.Character, "foo");
             _view.Selection.Select(new SnapshotSpan(_view.TextSnapshot, 0, 2), false);
-            Assert.AreEqual(_view.GetLineSpan(0, 0), _tracker.SelectedLines);
+            Assert.AreEqual(_view.GetLineSpanIncludingLineBreak(0, 0), _tracker.SelectedLines);
         }
 
         [Test]
@@ -153,7 +153,7 @@ namespace VimCoreTest
         {
             Create(SelectionMode.Character, "foo", "bar", "baz");
             _view.Selection.Select(new SnapshotSpan(_view.TextSnapshot, 0, 7), false);
-            Assert.AreEqual(_view.GetLineSpan(0, 1), _tracker.SelectedLines);
+            Assert.AreEqual(_view.GetLineSpanIncludingLineBreak(0, 1), _tracker.SelectedLines);
         }
 
     }

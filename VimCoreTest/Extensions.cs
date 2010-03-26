@@ -222,9 +222,16 @@ namespace VimCoreTest
             return textView.TextSnapshot.GetLineFromLineNumber(line);
         }
 
-        public static SnapshotSpan GetLineSpan(this ITextView textView, int startLine, int endLine)
+        public static SnapshotSpan GetLineSpanIncludingLineBreak(this ITextView textView, int startLine, int endLine=-1)
         {
+            endLine = endLine >= 0 ? endLine : startLine;
             return textView.TextSnapshot.GetLineSpanIncludingLineBreak(startLine, endLine);
+        }
+
+        public static SnapshotSpan GetLineSpan(this ITextView textView, int startLine, int endLine=-1)
+        {
+            endLine = endLine >= 0 ? endLine : startLine;
+            return textView.TextSnapshot.GetLineSpan(startLine, endLine);
         }
 
         public static CaretPosition MoveCaretTo(this ITextView textView, int position)
@@ -245,6 +252,24 @@ namespace VimCoreTest
         {
             return buffer.CurrentSnapshot.GetLineFromLineNumber(line);
         }
+
+        public static ITextSnapshotLine GetLine(this ITextBuffer buffer, int line)
+        {
+            return buffer.CurrentSnapshot.GetLineFromLineNumber(line);
+        }
+
+        public static SnapshotSpan GetLineSpanIncludingLineBreak(this ITextBuffer buffer, int startLine, int endLine=-1)
+        {
+            endLine = endLine >= 0 ? endLine : startLine;
+            return buffer.CurrentSnapshot.GetLineSpanIncludingLineBreak(startLine, endLine);
+        }
+
+        public static SnapshotSpan GetLineSpan(this ITextBuffer buffer, int startLine, int endLine = -1)
+        {
+            endLine = endLine >= 0 ? endLine : startLine;
+            return buffer.CurrentSnapshot.GetLineSpan(startLine, endLine);
+        }
+
 
         #endregion
 

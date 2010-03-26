@@ -273,7 +273,7 @@ type internal CommandProcessor
             | Some(count) -> RangeUtil.ApplyCount range count
             | None -> range
         let span = RangeUtil.GetSnapshotSpan range
-        _operations.ShiftLeft span _data.Settings.GlobalSettings.ShiftWidth |> ignore
+        _operations.ShiftSpanLeft span 
 
     member private x.ProcessShiftRight (rest:char list) (range: Range option) _ =
         let count,rest = rest |> RangeUtil.ParseNumber
@@ -283,7 +283,7 @@ type internal CommandProcessor
             | Some(count) -> RangeUtil.ApplyCount range count
             | None -> range
         let span = RangeUtil.GetSnapshotSpan range
-        _operations.ShiftRight span _data.Settings.GlobalSettings.ShiftWidth |> ignore
+        _operations.ShiftSpanRight span 
 
     member private x.ProcessWrite (rest:char list) _ _ = 
         let name = rest |> StringUtil.ofCharSeq 

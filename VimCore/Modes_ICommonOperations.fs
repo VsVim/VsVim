@@ -115,11 +115,17 @@ type ICommonOperations =
     /// Delete a range of text
     abstract DeleteSpan : SnapshotSpan -> MotionKind -> OperationKind -> Register -> ITextSnapshot
 
-    /// Shift the lines in the span count spaces to the right
-    abstract ShiftRight : SnapshotSpan -> count : int -> ITextSnapshot
+    /// Shift the count lines starting at the cursor right by the "ShiftWidth" setting
+    abstract ShiftLinesRight : count:int -> unit
 
-    /// Shift the lines in the span count spaces to the left
-    abstract ShiftLeft : SnapshotSpan -> count : int -> ITextSnapshot
+    /// Shift the count lines starting at the cursor left by the "ShiftWidth" setting
+    abstract ShiftLinesLeft :  count:int -> unit
+
+    /// Shift the lines in the span to the right by the "ShiftWidth" setting
+    abstract ShiftSpanRight : SnapshotSpan -> unit
+
+    /// Shift the lines in the span to the right by the "ShiftWidth" setting
+    abstract ShiftSpanLeft : SnapshotSpan -> unit
 
     /// Save the current document
     abstract Save : unit -> unit
