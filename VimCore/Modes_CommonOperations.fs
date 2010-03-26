@@ -150,9 +150,16 @@ type internal CommonOperations
             let tss = buffer.Replace(replaceSpan.Span, text)
             new SnapshotSpan(tss, replaceSpan.End.Position, text.Length)
         
-        member x.PasteBefore (point:SnapshotPoint) text =
-            let span = new SnapshotSpan(point,0)
+        member x.PasteBefore (point:SnapshotPoint) text opKind =
             let buffer = point.Snapshot.TextBuffer
+            let span = 
+                match opKind with
+                | OperationKind.LineWise ->
+                    let line = point.GetContainingLine()
+                    new SnapshotSpan(line.Start, 0)
+                | OperationKind.CharacterWise ->
+                    new SnapshotSpan(point,0)
+                | _ -> failwith "Invalid Enum Value"
             let tss = buffer.Replace(span.Span, text) 
             new SnapshotSpan(tss,span.End.Position, text.Length)
     

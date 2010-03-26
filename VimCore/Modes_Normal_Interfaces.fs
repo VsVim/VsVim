@@ -17,7 +17,7 @@ type IOperations =
 
     abstract DeleteCharacterBeforeCursor : count:int -> Register -> unit
     abstract PasteAfterCursor : text:string -> count:int -> opKind:OperationKind -> moveCursorToEnd: bool -> unit
-    abstract PasteBeforeCursor : text:string -> count:int -> moveCursorToEnd:bool -> unit
+    abstract PasteBeforeCursor : text:string -> count:int -> opKind:OperationKind -> moveCursorToEnd:bool -> unit
 
     /// Adds an empty line to the buffer below the cursor and returns the resulting ITextSnapshotLine
     abstract InsertLineBelow : unit -> ITextSnapshotLine

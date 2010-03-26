@@ -307,9 +307,31 @@ namespace VimCoreTest
         {
             CreateLines("foo", "bar");
             var buffer = _view.TextBuffer;
-            var span = _operations.PasteBefore(new SnapshotPoint(buffer.CurrentSnapshot, 0), "yay");
+            var span = _operations.PasteBefore(new SnapshotPoint(buffer.CurrentSnapshot, 0), "yay", OperationKind.CharacterWise);
             Assert.AreEqual("yay", span.GetText());
             Assert.AreEqual("yayfoo", span.Snapshot.GetLineFromLineNumber(0).GetText());
+        }
+
+
+        [Test]
+        public void PasteBefore2()
+        {
+            CreateLines("foo", "bar");
+            var buffer = _view.TextBuffer;
+            var snapshot = _operations.PasteBefore(new SnapshotPoint(buffer.CurrentSnapshot, 0), "yay" + Environment.NewLine, OperationKind.LineWise).Snapshot;
+            Assert.AreEqual("yay", snapshot.GetLineFromLineNumber(0).GetText());
+            Assert.AreEqual("foo", snapshot.GetLineFromLineNumber(1).GetText());
+        }
+
+
+        [Test]
+        public void PasteBefore3()
+        {
+            CreateLines("foo", "bar");
+            var buffer = _view.TextBuffer;
+            var snapshot = _operations.PasteBefore(new SnapshotPoint(buffer.CurrentSnapshot, 3), "yay" + Environment.NewLine, OperationKind.LineWise).Snapshot;
+            Assert.AreEqual("yay", snapshot.GetLineFromLineNumber(0).Extent.GetText());
+            Assert.AreEqual("foo", snapshot.GetLineFromLineNumber(1).Extent.GetText());
         }
 
 
