@@ -191,10 +191,12 @@ type internal NormalMode
 
     member private x.WaitReplaceChar = 
         let inner (ki:KeyInput) count reg =
-            if not (_operations.ReplaceChar ki count) then
-                _bufferData.VimHost.Beep()
             _isInReplace <- false
-            NormalModeResult.CompleteRepeatable(count,reg) 
+            if ki.Key = VimKey.EscapeKey then NormalModeResult.CompleteNotCommand
+            else 
+                if not (_operations.ReplaceChar ki count) then
+                    _bufferData.VimHost.Beep()
+                NormalModeResult.CompleteRepeatable(count,reg) 
         _isInReplace <- true
         inner
         

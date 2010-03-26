@@ -880,6 +880,7 @@ namespace VimCoreTest
             _operations.Verify();
         }
 
+        [Test]
         public void Edit_r_4()
         {
             var host = new FakeVimHost();
@@ -888,6 +889,16 @@ namespace VimCoreTest
             _mode.Process("200ru");
             Assert.IsTrue(host.BeepCount > 0);
             _operations.Verify();
+        }
+
+        [Test,Description("Escape should exit replace not be a part of it")]
+        public void Edit_r_5()
+        {
+            CreateBuffer("foo");
+            _mode.Process("200r");
+            _mode.Process(InputUtil.VimKeyToKeyInput(VimKey.EscapeKey));
+            Assert.IsFalse(_mode.IsInReplace);
+            Assert.IsFalse(_mode.IsWaitingForInput);
         }
 
         [Test]
@@ -1432,6 +1443,16 @@ namespace VimCoreTest
                 .Verifiable();
             _mode.Process("dw");
             _operations.Verify();
+        }
+
+        [Test, Description("Escape should exit d")]
+        public void Delete_d_1()
+        {
+            CreateBuffer(s_lines);
+            _mode.Process('d');
+            Assert.IsTrue(_mode.IsWaitingForInput);
+            _mode.Process(InputUtil.VimKeyToKeyInput(VimKey.EscapeKey));
+            Assert.IsFalse(_mode.IsWaitingForInput);
         }
 
         [Test]

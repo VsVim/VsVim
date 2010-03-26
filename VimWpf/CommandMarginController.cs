@@ -24,11 +24,6 @@ namespace Vim.UI.Wpf
             _buffer.ErrorMessage += OnErrorMessage;
         }
 
-        private void UpdateStatusLine()
-        {
-
-        }
-
         private void OnSwitchMode(object sender, IMode mode)
         {
             _margin.RightStatusLine = String.Empty;

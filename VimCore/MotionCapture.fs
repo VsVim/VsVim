@@ -117,8 +117,8 @@ module internal MotionCapture =
         
     let rec ProcessInput start (ki:KeyInput) count =
         let count = if count < 1 then 1 else count
-        if ki.IsDigit then
-            ProcessCount ki (ProcessInput start) count
+        if ki.Key = VimKey.EscapeKey then Cancel
+        elif ki.IsDigit then ProcessCount ki (ProcessInput start) count
         else 
             match ki.Char with
                 | 'w' -> WordMotion start WordKind.NormalWord count
