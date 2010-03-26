@@ -12,13 +12,14 @@ namespace VimCoreTest.Utils
     /// There is either a bug in F# or Moq which prevents the raising of events through an IMock if 
     /// the event is defined in F#.  This class exists to work around that limitation
     /// </summary>
-    internal class MockVimBuffer : IVimBuffer
+    public class MockVimBuffer : IVimBuffer
     {
-        internal ITextBuffer TextBufferImpl;
-        internal ITextView TextViewImpl;
-        internal INormalMode NormalModeImpl;
+        public ITextBuffer TextBufferImpl;
+        public ITextView TextViewImpl;
+        public IMode ModeImpl;
+        public ModeKind ModeKindImpl;
 
-        internal void RaiseSwitchedMode(IMode mode)
+        public void RaiseSwitchedMode(IMode mode)
         {
             if ( SwitchedMode != null )
             {
@@ -83,12 +84,12 @@ namespace VimCoreTest.Utils
 
         public IMode Mode
         {
-            get { throw new NotImplementedException(); }
+            get { return ModeImpl; }
         }
 
         public ModeKind ModeKind
         {
-            get { throw new NotImplementedException(); }
+            get { return ModeKindImpl; }
         }
 
         public string Name
@@ -98,7 +99,7 @@ namespace VimCoreTest.Utils
 
         public INormalMode NormalMode
         {
-            get { return NormalModeImpl; }
+            get { return (INormalMode)ModeImpl; }
         }
 
         public bool ProcessChar(char value)

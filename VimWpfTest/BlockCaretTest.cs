@@ -45,30 +45,22 @@ namespace Vim.UI.Wpf.Test
             Create();
             _caret.SetupGet(x => x.ContainingTextViewLine).Throws(new InvalidOperationException());
             _caret.SetupSet(x => x.IsHidden = true).Verifiable();
-            _blockCaret.Show();
+            _blockCaret.CaretDisplay = CaretDisplay.HalfBlock;
             _caret.Verify();
-            Assert.IsTrue(_blockCaret.IsShown);
-        }
-
-        [Test, Description("If not shown, do nothing")]
-        public void Hide1()
-        {
-            Create();
-            _blockCaret.Hide();
-            Assert.IsFalse(_blockCaret.IsShown);
+            Assert.AreEqual(CaretDisplay.HalfBlock, _blockCaret.CaretDisplay);
         }
 
         [Test]
-        public void Hide2()
+        public void Hide1()
         {
             Create();
             _caret.SetupSet(x => x.IsHidden = true).Verifiable();
             _caret.Setup(x => x.ContainingTextViewLine).Throws(new InvalidOperationException());
-            _blockCaret.Show();
+            _blockCaret.CaretDisplay = CaretDisplay.HalfBlock;
             _caret.Verify();
             _caret.SetupSet(x => x.IsHidden = false).Verifiable();
             _layer.Setup(x => x.RemoveAdornmentsByTag(It.IsAny<object>())).Verifiable();
-            _blockCaret.Hide();
+            _blockCaret.CaretDisplay = CaretDisplay.NormalCaret;
             _caret.Verify();
             _layer.Verify();
         }

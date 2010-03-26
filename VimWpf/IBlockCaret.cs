@@ -6,12 +6,19 @@ using Microsoft.VisualStudio.Text.Editor;
 
 namespace Vim.UI.Wpf
 {
+    public enum CaretDisplay
+    {
+        Block,
+        HalfBlock,
+        QuarterBlock,
+        Invisible,
+        NormalCaret
+    }
+
     public interface IBlockCaret
     {
         ITextView TextView { get; }
-        bool IsShown { get; }
-        void Show();
-        void Hide();
+        CaretDisplay CaretDisplay { get; set; }
         void Destroy();
     }
 }

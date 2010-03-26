@@ -17,15 +17,19 @@ namespace Vim.UI.Wpf.Implementation
     {
         private struct CaretData
         {
+            internal readonly CaretDisplay CaretDisplay;
             internal readonly Image Image;
             internal readonly Color? Color;
             internal readonly SnapshotPoint Point;
+            internal double YDisplayOffset;
 
-            internal CaretData(Image image, Color? color, SnapshotPoint point)
+            internal CaretData(CaretDisplay caretDisplay, Image image, Color? color, SnapshotPoint point, double displayOffset)
             {
+                CaretDisplay = caretDisplay;
                 Image = image;
                 Color = color;
                 Point = point;
+                YDisplayOffset = displayOffset;
             }
         }
 
@@ -35,7 +39,7 @@ namespace Vim.UI.Wpf.Implementation
         private readonly Object _tag = new object();
         private readonly DispatcherTimer _blinkTimer;
         private CaretData? _caretData;
-        private bool _isShown;
+        private CaretDisplay _caretDisplay;
 
         private const double _caretOpacity = 0.65;
 
@@ -44,9 +48,17 @@ namespace Vim.UI.Wpf.Implementation
             get { return _view; }
         }
 
-        public bool IsShown
+        public CaretDisplay CaretDisplay
         {
-            get { return _isShown; }
+            get { return _caretDisplay; }
+            set
+            {
+                if (_caretDisplay != value)
+                {
+                    _caretDisplay = value;
+                    UpdateCaret();
+                }
+            }
         }
 
         /// <summary>
@@ -79,7 +91,9 @@ namespace Vim.UI.Wpf.Implementation
                 if (_caretData.HasValue)
                 {
                     var data = _caretData.Value;
-                    return data.Color != TryCalculateCaretColor() || data.Point != _view.Caret.Position.BufferPosition;
+                    return data.Color != TryCalculateCaretColor()
+                        || data.Point != _view.Caret.Position.BufferPosition
+                        || data.CaretDisplay != _caretDisplay;
                 }
                 else
                 {
@@ -123,24 +137,24 @@ namespace Vim.UI.Wpf.Implementation
 
         private void OnCaretBlinkTimer(object sender, EventArgs e)
         {
-            if (_isShown && _caretData.HasValue)
+            if (_caretData.HasValue && _caretData.Value.CaretDisplay != Wpf.CaretDisplay.NormalCaret)
             {
                 var data = _caretData.Value;
                 data.Image.Opacity = data.Image.Opacity == 0.0 ? _caretOpacity : 0.0;
             }
         }
 
-        private void DestroyCaret()
+        private void DestroyBlockCaretDisplay()
         {
             _layer.RemoveAdornmentsByTag(_tag);
             _caretData = null;
         }
 
-        private void MaybeDestroyCaret()
+        private void MaybeDestroyBlockCaretDisplay()
         {
             if (_caretData.HasValue)
             {
-                DestroyCaret();
+                DestroyBlockCaretDisplay();
             }
         }
 
@@ -171,34 +185,75 @@ namespace Vim.UI.Wpf.Implementation
             var point = GetRealCaretVisualPoint();
             var data = _caretData.Value;
             Canvas.SetLeft(data.Image, point.X);
-            Canvas.SetTop(data.Image, point.Y);
+            Canvas.SetTop(data.Image, point.Y + data.YDisplayOffset);
         }
 
-        private Size GetOptimalCaretSize()
+        /// <summary>
+        /// Calculate the dimensions of the caret
+        /// </summary>
+        private Size CalculateCaretSize()
         {
             var caret = _view.Caret;
             var line = caret.ContainingTextViewLine;
-            var defaultSize = new Size(5.0, line.IsValid ? line.Height : 10.0);
-            if (!IsRealCaretVisible)
-            {
-                return defaultSize;
-            }
-            else
+            Size caretSize;
+            if (IsRealCaretVisible)
             {
                 var point = caret.Position.BufferPosition;
                 var bounds = line.GetCharacterBounds(point);
-                return new Size(bounds.Width, bounds.Height);
+                caretSize = new Size(bounds.Width, bounds.Height);
+            }
+            else
+            {
+                caretSize = new Size(5.0, line.IsValid ? line.Height : 10.0);
+            }
+
+            return caretSize;
+        }
+
+        private Tuple<Rect, double> CalculateCaretRectAndDisplayOffset()
+        {
+            switch (_caretDisplay)
+            {
+                case Wpf.CaretDisplay.Block:
+                    return Tuple.Create(new Rect(GetRealCaretVisualPoint(), CalculateCaretSize()), 0d);
+                case Wpf.CaretDisplay.HalfBlock:
+                    {
+                        var size = CalculateCaretSize();
+                        size = new Size(size.Width, size.Height / 2);
+
+                        var point = GetRealCaretVisualPoint();
+                        point = new Point(point.X, point.Y + size.Height);
+                        return Tuple.Create(new Rect(point, size), size.Height);
+                    }
+                case Wpf.CaretDisplay.QuarterBlock:
+                    {
+                        var size = CalculateCaretSize();
+                        var quarter = size.Height / 4;
+                        size = new Size(size.Width, quarter);
+
+                        var point = GetRealCaretVisualPoint();
+                        var offset = quarter * 3;
+                        point = new Point(point.X, point.Y + offset);
+                        return Tuple.Create(new Rect(point, size), offset);
+                    }
+                case Wpf.CaretDisplay.Invisible:
+                case Wpf.CaretDisplay.NormalCaret:
+                    return Tuple.Create(new Rect(GetRealCaretVisualPoint(), new Size(0, 0)), 0d);
+
+                default:
+                    throw new InvalidOperationException("Invalid enum value");
             }
         }
 
-        private void CreateCaretData()
+        private CaretData CreateCaretData()
         {
             var color = TryCalculateCaretColor();
             var brush = new SolidColorBrush(color ?? Colors.Black);
             brush.Freeze();
 
             var pen = new Pen(brush, 1.0);
-            var rect = new Rect(GetRealCaretVisualPoint(), GetOptimalCaretSize());
+            var tuple = CalculateCaretRectAndDisplayOffset();
+            var rect = tuple.Item1;
             var geometry = new RectangleGeometry(rect);
             var drawing = new GeometryDrawing(brush, pen, geometry);
             drawing.Freeze();
@@ -211,71 +266,58 @@ namespace Vim.UI.Wpf.Implementation
             image.Source = drawingImage;
 
             var point = _view.Caret.Position.BufferPosition;
-            var data = new CaretData(image, color, point);
+            return new CaretData(_caretDisplay, image, color, point, tuple.Item2);
+        }
+
+        private void CreateBlockCaretDisplay()
+        {
+            var data = CreateCaretData();
             _caretData = data;
             _layer.AddAdornment(
                 AdornmentPositioningBehavior.TextRelative,
-                new SnapshotSpan(point, 0),
+                new SnapshotSpan(data.Point, 0),
                 _tag,
-                image,
+                data.Image,
                 (x, y) => { _caretData = null; });
-            MoveCaretImageToCaret();
 
-            // Restart the timer so the block caret doesn't immediately disappear
-            _blinkTimer.IsEnabled = false;
-            _blinkTimer.IsEnabled = true;
+            if (_caretDisplay != Wpf.CaretDisplay.NormalCaret)
+            {
+                _view.Caret.IsHidden = true;
+                MoveCaretImageToCaret();
+
+                // Restart the timer so the block caret doesn't immediately disappear
+                _blinkTimer.IsEnabled = false;
+                _blinkTimer.IsEnabled = true;
+            }
+            else
+            {
+                _view.Caret.IsHidden = false;
+            }
         }
 
         private void UpdateCaret()
         {
-            if (_isShown)
+            if (!IsRealCaretVisible)
             {
-                if (!IsRealCaretVisible)
-                {
-                    MaybeDestroyCaret();
-                }
-                else if (NeedRecreateCaret)
-                {
-                    MaybeDestroyCaret();
-                    CreateCaretData();
-                }
-                else
-                {
-                    MoveCaretImageToCaret();
-                }
+                MaybeDestroyBlockCaretDisplay();
             }
-        }
-
-        public void Hide()
-        {
-            if (IsShown)
+            else if (NeedRecreateCaret)
             {
-                _isShown = false;
-                _blinkTimer.IsEnabled = false;
-                _view.Caret.IsHidden = false;
-                DestroyCaret();
+                MaybeDestroyBlockCaretDisplay();
+                CreateBlockCaretDisplay();
             }
-        }
-
-        public void Show()
-        {
-            if (!IsShown)
+            else
             {
-                _isShown = true;
-                if (IsRealCaretVisible)
-                {
-                    CreateCaretData();
-                }
-                _blinkTimer.IsEnabled = true;
-                _view.Caret.IsHidden = true;
+                MoveCaretImageToCaret();
             }
         }
 
         public void Destroy()
         {
-            Hide();
+            MaybeDestroyBlockCaretDisplay();
             _view.LayoutChanged -= OnLayoutChanged;
             _view.Caret.PositionChanged -= OnCaretChanged;
+            _view.Caret.IsHidden = false;
         }
     }
 

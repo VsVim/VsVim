@@ -23,6 +23,11 @@ namespace Vim.UI.Wpf
             UpdateCaret();
         }
 
+        internal void Update()
+        {
+            UpdateCaret();
+        }
+
         private void OnCaretRelatedEvent(object sender, object args)
         {
             UpdateCaret();
@@ -30,37 +35,41 @@ namespace Vim.UI.Wpf
 
         private void UpdateCaret()
         {
-            var show = false;
+            var kind = CaretDisplay.Block;
             switch (_buffer.ModeKind )
             {
                 case ModeKind.Normal:
                     {
                         var mode = _buffer.NormalMode;
-                        if (!mode.IsOperatorPending && !mode.IsWaitingForInput)
+                        if (mode.IsOperatorPending)
                         {
-                            show = true;
+                            kind = CaretDisplay.HalfBlock;
                         }
-                        else if ( mode.IsOperatorPending )
+                        else if (mode.IsInReplace)
                         {
-                            show = true;
+                            kind = CaretDisplay.QuarterBlock;
+                        }
+                        else if (mode.IncrementalSearch.InSearch)
+                        {
+                            kind = CaretDisplay.Invisible;
+                        }
+                        else
+                        {
+                            kind = CaretDisplay.Block;
                         }
                     }
                     break;
                 case ModeKind.VisualBlock:
                 case ModeKind.VisualCharacter:
                 case ModeKind.VisualLine:
-                    show = true;
+                    kind = CaretDisplay.Block;
+                    break;
+                case ModeKind.Command:
+                    kind = CaretDisplay.Invisible;
                     break;
             }
 
-            if ( show )
-            {
-                _blockCaret.Show();
-            }
-            else
-            {
-                _blockCaret.Hide();
-            }
+            _blockCaret.CaretDisplay = kind;
         }
     }
 }

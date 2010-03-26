@@ -6,11 +6,12 @@ using Vim;
 
 namespace VimCoreTest.Utils
 {
-    internal class MockNormalMode : INormalMode
+    public class MockNormalMode : INormalMode
     {
-        internal IVimBuffer VimBufferImpl = null;
-        internal bool IsOperatorPendingImpl = false;
-        internal bool IsWaitingForInputImpl= false;
+        public IVimBuffer VimBufferImpl = null;
+        public bool IsOperatorPendingImpl = false;
+        public bool IsWaitingForInputImpl= false;
+        public bool IsInReplaceImpl = false;
 
         void RaisCommandexecuted(NormalModeCommand command)
         {
@@ -76,6 +77,12 @@ namespace VimCoreTest.Utils
         public IVimBuffer VimBuffer
         {
             get { return VimBufferImpl; }
+        }
+
+
+        public bool IsInReplace
+        {
+            get { return IsInReplaceImpl; }
         }
     }
 }

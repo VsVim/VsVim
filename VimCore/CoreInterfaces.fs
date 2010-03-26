@@ -462,6 +462,9 @@ and INormalMode =
     /// Is normal mode waiting for additional input on a command
     abstract IsWaitingForInput : bool
 
+    /// Is normal mode in the middle of a character replace operation
+    abstract IsInReplace : bool
+
     /// The IIncrementalSearch instance for normal mode
     abstract IncrementalSearch : IIncrementalSearch
 

@@ -50,6 +50,8 @@ type internal NormalMode
     /// True when in the middle of a repeat last change operation
     let mutable _isInRepeatLastChange = false
 
+    let mutable _isInReplace = false;
+
     let CountOrDefault count =
         match count with 
         | Some(c) -> c
@@ -191,7 +193,9 @@ type internal NormalMode
         let inner (ki:KeyInput) count reg =
             if not (_operations.ReplaceChar ki count) then
                 _bufferData.VimHost.Beep()
+            _isInReplace <- false
             NormalModeResult.CompleteRepeatable(count,reg) 
+        _isInReplace <- true
         inner
         
     /// Handles commands which begin with g in normal mode.  This should be called when the g char is
@@ -220,7 +224,7 @@ type internal NormalMode
 
     /// Implement the commands associated with the z prefix in normal mode
     member x.WaitCharZCommand = 
-        let inner (ki:KeyInput) coun reg =  
+        let inner (ki:KeyInput) count reg =  
             if ki.IsNewLine then 
                 _operations.EditorOperations.ScrollLineTop()
                 _operations.EditorOperations.MoveToStartOfLineAfterWhiteSpace(false) 
@@ -435,6 +439,7 @@ type internal NormalMode
         _runFunc <- this.StartCore
         _waitingForMoreInput <- false
         _isOperatingPending <- false
+        _isInReplace <- false
         if _operationMap.Count = 0 then
             _operationMap <- this.BuildOperationsMap
 
@@ -492,6 +497,7 @@ type internal NormalMode
         member this.IsOperatorPending = _isOperatingPending
         member this.IsWaitingForInput = _waitingForMoreInput
         member this.IncrementalSearch = _incrementalSearch
+        member this.IsInReplace = _isInReplace
         member this.VimBuffer = _bufferData
         member this.Command = this.Command
         member this.Commands = 

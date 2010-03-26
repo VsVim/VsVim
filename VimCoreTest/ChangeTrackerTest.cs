@@ -30,7 +30,7 @@ namespace VimCoreTest
             _buffer.TextViewImpl = _textView.Object;
             _buffer.TextBufferImpl = _textBuffer;
             _normalMode = new MockNormalMode();
-            _buffer.NormalModeImpl = _normalMode;
+            _buffer.ModeImpl = _normalMode;
             _trackerRaw = new ChangeTracker();
             _tracker = _trackerRaw;
             _trackerRaw.OnVimBufferCreated(_buffer);
