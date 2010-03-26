@@ -209,7 +209,7 @@ type internal NormalMode
                 let caret = ViewUtil.GetCaretPoint view
                 _operations.Join caret Modes.JoinKind.KeepEmptySpaces count |> ignore
             | 'p' -> _operations.PasteAfterCursor reg.StringValue 1 reg.Value.OperationKind true |> ignore
-            | 'P' -> _operations.PasteBeforeCursor reg.StringValue 1 true |> ignore
+            | 'P' -> _operations.PasteBeforeCursor reg.StringValue 1 reg.Value.OperationKind true |> ignore
             | '_' -> _operations.EditorOperations.MoveToLastNonWhiteSpaceCharacter(false)
             | '*' -> _operations.MoveToNextOccuranceOfPartialWordAtCursor count
             | '#' -> _operations.MoveToPreviousOccuranceOfPartialWordAtCursor count
@@ -333,7 +333,7 @@ type internal NormalMode
             yield (InputUtil.VimKeyToKeyInput VimKey.DeleteKey, (fun count reg -> _operations.DeleteCharacterAtCursor count reg))
             yield (InputUtil.CharToKeyInput('X'),  (fun count reg -> _operations.DeleteCharacterBeforeCursor count reg))
             yield (InputUtil.CharToKeyInput('p'), (fun count reg -> _operations.PasteAfterCursor reg.StringValue count reg.Value.OperationKind false))
-            yield (InputUtil.CharToKeyInput('P'), (fun count reg -> _operations.PasteBeforeCursor reg.StringValue count false))
+            yield (InputUtil.CharToKeyInput('P'), (fun count reg -> _operations.PasteBeforeCursor reg.StringValue count reg.Value.OperationKind false))
             yield (InputUtil.CharToKeyInput('0'), (fun _ _ -> _operations.EditorOperations.MoveToStartOfLine(false))) 
             yield (InputUtil.CharToKeyInput('n'), (fun count _ -> _operations.FindNextMatch count))
             yield (InputUtil.CharToKeyInput('*'), (fun count _ -> _operations.MoveToNextOccuranceOfWordAtCursor true count))

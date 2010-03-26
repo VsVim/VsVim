@@ -92,7 +92,7 @@ type ICommonOperations =
 
     /// Paste the text before the passed in position.  Returns the SnapshotSpan for the text in
     /// the new snapshot of the buffer
-    abstract PasteBefore : SnapshotPoint -> text : string -> SnapshotSpan 
+    abstract PasteBefore : SnapshotPoint -> text : string -> OperationKind -> SnapshotSpan 
 
     /// Insert the specified text at the cursor position "count" times
     abstract InsertText : text:string -> count : int -> ITextSnapshot

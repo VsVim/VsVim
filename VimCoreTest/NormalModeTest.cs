@@ -1331,8 +1331,20 @@ namespace VimCoreTest
         public void Paste_P()
         {
             CreateBuffer("foo");
-            _operations.Setup(x => x.PasteBeforeCursor("hey", 1, false)).Verifiable();
+            _operations.Setup(x => x.PasteBeforeCursor("hey", 1, OperationKind.CharacterWise, false)).Verifiable();
             _map.DefaultRegister.UpdateValue("hey");
+            _mode.Process('P');
+            _operations.Verify();
+        }
+
+        [Test, Description("Pasting a linewise motion should occur on the previous line")]
+        public void Paste_P_2()
+        {
+            CreateBuffer("foo", "bar");
+            var data = "baz" + Environment.NewLine;
+            _operations.Setup(x => x.PasteBeforeCursor(data, 1, OperationKind.LineWise, false)).Verifiable();
+            _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 1));
+            _map.DefaultRegister.UpdateValue(new RegisterValue(data, MotionKind.Inclusive, OperationKind.LineWise));
             _mode.Process('P');
             _operations.Verify();
         }
@@ -1341,7 +1353,7 @@ namespace VimCoreTest
         public void Paste_2P()
         {
             CreateBuffer("foo");
-            _operations.Setup(x => x.PasteBeforeCursor("hey", 2, false)).Verifiable();
+            _operations.Setup(x => x.PasteBeforeCursor("hey", 2, OperationKind.CharacterWise, false)).Verifiable();
             _map.DefaultRegister.UpdateValue("hey");
             _mode.Process("2P");
             _operations.Verify();
@@ -1372,7 +1384,7 @@ namespace VimCoreTest
         public void Paste_gP_1()
         {
             CreateBuffer("foo");
-            _operations.Setup(x => x.PasteBeforeCursor("hey", 1, true)).Verifiable();
+            _operations.Setup(x => x.PasteBeforeCursor("hey", 1, OperationKind.CharacterWise, true)).Verifiable();
             _map.DefaultRegister.UpdateValue("hey");
             _mode.Process("gP");
             _operations.Verify();
@@ -1382,7 +1394,7 @@ namespace VimCoreTest
         public void Paste_gP_2()
         {
             CreateBuffer("foo", "bar");
-            _operations.Setup(x => x.PasteBeforeCursor("hey", 1, true)).Verifiable();
+            _operations.Setup(x => x.PasteBeforeCursor("hey", 1, OperationKind.CharacterWise, true)).Verifiable();
             _view.Caret.MoveTo(_view.TextSnapshot.GetLineFromLineNumber(0).End);
             _map.DefaultRegister.UpdateValue("hey");
             _mode.Process("gP");

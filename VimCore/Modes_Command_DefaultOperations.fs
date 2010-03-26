@@ -64,7 +64,7 @@ type internal DefaultOperations
             let point = line.Start
             let span =
                 if isAfter then x.CommonImpl.PasteAfter point text OperationKind.LineWise
-                else x.CommonImpl.PasteBefore point text
+                else x.CommonImpl.PasteBefore point text OperationKind.LineWise
 
             // Move the cursor to the first non-blank character on the last line
             let line = span.End.Subtract(1).GetContainingLine()

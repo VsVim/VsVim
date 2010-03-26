@@ -21,6 +21,9 @@
 *.db 
 TestResult.xml
 
+# NUnit files
+VsVim.VisualState.xml
+
 # Directories 
 */obj/
 */bin/

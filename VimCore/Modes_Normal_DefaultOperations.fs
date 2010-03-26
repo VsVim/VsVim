@@ -113,12 +113,16 @@ type internal DefaultOperations
                 ViewUtil.MoveCaretToPoint _textView nextLine.Start |> ignore
  
         /// Paste the text before the cursor
-        member x.PasteBeforeCursor text count moveCursor = 
+        member x.PasteBeforeCursor text count opKind moveCursor = 
             let text = StringUtil.repeat text count 
             let caret = ViewUtil.GetCaretPoint _textView
-            let span = x.CommonImpl.PasteBefore caret text 
+            let span = x.CommonImpl.PasteBefore caret text opKind
             if moveCursor then
                 ViewUtil.MoveCaretToPoint _textView span.End |> ignore
+            else if opKind = OperationKind.LineWise then
+                // For a LineWise paste we want to place the cursor at the start of this line
+                let line = caret.GetContainingLine()
+                ViewUtil.MoveCaretToPoint _textView line.Start |> ignore
 
         member x.InsertLineBelow () =
             let point = ViewUtil.GetCaretPoint _textView
