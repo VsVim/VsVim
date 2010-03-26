@@ -504,6 +504,45 @@ namespace VimCoreTest
         }
 
         [Test]
+        public void Substitute15()
+        {
+            Create("foo bar baz");
+            var tss = _view.TextSnapshot;
+            var span = new SnapshotSpan(tss, 0, tss.Length);
+            _operations
+                .Setup(x => x.Substitute("foo", "", span, SubstituteFlags.None))
+                .Verifiable();
+            RunCommand("%s/foo//");
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Substitute16()
+        {
+            Create("foo bar baz");
+            var tss = _view.TextSnapshot;
+            var span = new SnapshotSpan(tss, 0, tss.Length);
+            _operations
+                .Setup(x => x.Substitute("foo", "b", span, SubstituteFlags.None))
+                .Verifiable();
+            RunCommand("%s/foo/b/");
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Substitute17()
+        {
+            Create("foo bar baz");
+            var tss = _view.TextSnapshot;
+            var span = new SnapshotSpan(tss, 0, tss.Length);
+            _operations
+                .Setup(x => x.Substitute("foo", "", span, SubstituteFlags.None))
+                .Verifiable();
+            RunCommand("%s/foo/");
+            _operations.Verify();
+        }
+
+        [Test]
         public void Redo1()
         {
             Create("foo bar");
