@@ -456,45 +456,51 @@ type internal NormalMode
         let command = _data.Command + (ki.Char.ToString())
         _data <- {_data with KeyInputs=commandInputs;Command=command }
 
-        match _runFunc ki this.Count this.Register with
-            | NormalModeResult.Complete ->
-                this.ResetData()
-                _commandExecutedEvent.Trigger NonRepeatableCommand
-                Processed
-            | NormalModeResult.CompleteNotCommand ->
-                this.ResetData()
-                Processed
-            | NormalModeResult.CompleteRepeatable(count,reg) ->
-                let commandInputs = _data.KeyInputs
-                this.ResetData()
-                _commandExecutedEvent.Trigger (RepeatableCommand((commandInputs |> List.rev),count,reg))
-                Processed
-            | NormalModeResult.NeedMoreInput(f) ->
-                _runFunc <- (fun ki count reg -> f ki (CountOrDefault count) reg)
-                _waitingForMoreInput <- true
-                Processed
-            | NormalModeResult.NeedMoreInput2(f) ->
-                _runFunc <- f 
-                _waitingForMoreInput <- true
-                Processed
-            | NormalModeResult.OperatorPending(f) ->
-                _runFunc <- (fun ki count reg -> f ki (CountOrDefault count) reg)
-                _waitingForMoreInput <- true
-                _isOperatingPending <- true
-                Processed
-            | NormalModeResult.SwitchMode (kind) -> 
-                this.ResetData() // Make sure to reset information when switching modes
-                ProcessResult.SwitchMode kind
-            | CountComplete (count,nextKi) ->
-                _data <- {_data with Count=Some(count);KeyInputs=List.empty}
-                _runFunc <- this.StartCore
-                (this :> IMode).Process nextKi
-            | RegisterComplete (reg) ->     
-                _data <- {_data with Register=reg;KeyInputs=List.empty }
-                _runFunc <- this.StartCore
-                _waitingForMoreInput <- false
-                Processed
+        let rec inner ki = 
+            match _runFunc ki this.Count this.Register with
+                | NormalModeResult.Complete ->
+                    this.ResetData()
+                    _commandExecutedEvent.Trigger NonRepeatableCommand
+                    Processed
+                | NormalModeResult.CompleteNotCommand ->
+                    this.ResetData()
+                    Processed
+                | NormalModeResult.CompleteRepeatable(count,reg) ->
+                    let commandInputs = _data.KeyInputs
+                    this.ResetData()
+                    _commandExecutedEvent.Trigger (RepeatableCommand((commandInputs |> List.rev),count,reg))
+                    Processed
+                | NormalModeResult.NeedMoreInput(f) ->
+                    _runFunc <- (fun ki count reg -> f ki (CountOrDefault count) reg)
+                    _waitingForMoreInput <- true
+                    Processed
+                | NormalModeResult.NeedMoreInput2(f) ->
+                    _runFunc <- f 
+                    _waitingForMoreInput <- true
+                    Processed
+                | NormalModeResult.OperatorPending(f) ->
+                    _runFunc <- (fun ki count reg -> f ki (CountOrDefault count) reg)
+                    _waitingForMoreInput <- true
+                    _isOperatingPending <- true
+                    Processed
+                | NormalModeResult.SwitchMode (kind) -> 
+                    this.ResetData() // Make sure to reset information when switching modes
+                    ProcessResult.SwitchMode kind
+                | CountComplete (count,nextKi) ->
+                    _data <- {_data with Count=Some(count);KeyInputs=[nextKi]};
+                    _runFunc <- this.StartCore
 
+                    // Do not go to Process or ProcessCore here because it will record the key for 
+                    // a second time
+                    inner nextKi
+                | RegisterComplete (reg) ->     
+                    _data <- {_data with Register=reg;KeyInputs=List.empty }
+                    _runFunc <- this.StartCore
+                    _waitingForMoreInput <- false
+                    Processed
+
+        inner ki
+    
     interface INormalMode with 
         member this.IsOperatorPending = _isOperatingPending
         member this.IsWaitingForInput = _waitingForMoreInput

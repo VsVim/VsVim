@@ -2079,6 +2079,22 @@ namespace VimCoreTest
         }
 
         [Test]
+        public void Command4()
+        {
+            CreateBuffer(s_lines);
+            _mode.Process('2');
+            Assert.AreEqual("2", _mode.Command);
+        }
+
+        [Test]
+        public void Command5()
+        {
+            CreateBuffer(s_lines);
+            _mode.Process("2d");
+            Assert.AreEqual("2d", _mode.Command);
+        }
+
+        [Test]
         public void CommandExecuted1()
         {
             CreateBuffer("foo");
