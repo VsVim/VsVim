@@ -109,11 +109,7 @@ namespace Vim.UI.Wpf
 
         private static ReadOnlyCollection<char> CreateCoreChars()
         {
-            IEnumerable<char> lowerLetters = "abcdefghijklmnopqrstuvwxyz";
-            var upperLetters = lowerLetters.Select(Char.ToUpper);
-            var other = "!@#$%^&*()[]{}-_=+\\|'\",<>./?\t\b:;";
-            var list = lowerLetters.Concat(upperLetters).Concat(other).ToList();
-            return new ReadOnlyCollection<char>(list);
+            return InputUtil.CoreCharacters.ToList().AsReadOnly();
         }
 
         private static ReadOnlyCollection<Tuple<char, int, KeyModifiers>> CreateMappedCoreChars()

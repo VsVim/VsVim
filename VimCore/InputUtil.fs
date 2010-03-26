@@ -13,6 +13,18 @@ module InputUtil =
     [<DllImport("user32.dll")>]
     extern uint32 MapVirtualKey(uint32 code, uint32 mapType)
 
+    let CoreCharacters =
+        let lowerLetters = "abcdefghijklmnopqrstuvwxyz" :> char seq
+        let upperLetters = lowerLetters |> Seq.map (fun x -> System.Char.ToUpper(x))
+        let other = "!@#$%^&*()[]{}-_=+\\|'\",<>./?\t\b:;\n\r`" :> char seq
+        let digits = "1234567890"
+        lowerLetters
+        |> Seq.append upperLetters
+        |> Seq.append other
+        |> Seq.append digits
+
+    let CoreCharactersSet = CoreCharacters |> Set.ofSeq
+
     let TryCharToVirtualKeyAndModifiers ch =
         let res = VkKeyScan ch
         let res = int res

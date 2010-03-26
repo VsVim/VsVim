@@ -164,6 +164,8 @@ module internal MapUtil =
 module internal CharUtil =
     let IsDigit x = System.Char.IsDigit(x)
     let IsWhiteSpace x = System.Char.IsWhiteSpace(x)
+    let IsLetter x = System.Char.IsLetter(x)
+    let IsLetterOrDigit x = System.Char.IsLetterOrDigit(x)
 
 module internal NullableUtil = 
 

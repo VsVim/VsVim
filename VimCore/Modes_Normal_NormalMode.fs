@@ -505,14 +505,12 @@ type internal NormalMode
         member this.CommandExecuted = _commandExecutedEvent.Publish
 
         member this.CanProcess (ki:KeyInput) =
-            if _displayWindowBroker.IsSmartTagWindowActive then
-                false                
-            elif _waitingForMoreInput then 
-                true
-            elif ki.IsDigit then
-                true
-            else
-                _operationMap.ContainsKey ki
+            if _displayWindowBroker.IsSmartTagWindowActive then false                
+            elif _waitingForMoreInput then  true
+            elif CharUtil.IsLetterOrDigit(ki.Char) then true
+            elif _operationMap.ContainsKey ki then true
+            elif InputUtil.CoreCharactersSet |> Set.contains ki.Char then true
+            else false
 
         member this.Process ki = this.ProcessCore ki
         member this.OnEnter ()  =

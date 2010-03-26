@@ -104,12 +104,12 @@ namespace VimCoreTest
             Assert.IsTrue(_mode.CanProcess(InputUtil.CharToKeyInput('i')));
         }
 
-        [Test, Description("Cannot process invalid commands")]
+        [Test, Description("Can process even invalid commands else they end up as input")]
         public void CanProcess2()
         {
             CreateBuffer(s_lines);
-            Assert.IsFalse(_mode.CanProcess(InputUtil.CharToKeyInput('U')));
-            Assert.IsFalse(_mode.CanProcess(InputUtil.CharToKeyInput('Z')));
+            Assert.IsTrue(_mode.CanProcess(InputUtil.CharToKeyInput('U')));
+            Assert.IsTrue(_mode.CanProcess(InputUtil.CharToKeyInput('Z')));
         }
 
         [Test, Description("Must be able to process numbers")]
@@ -144,6 +144,23 @@ namespace VimCoreTest
             Assert.IsFalse(_mode.CanProcess(InputUtil.VimKeyToKeyInput(VimKey.DownKey)));
         }
 
+        [Test,Description("Should be able to handle ever core character")]
+        public void CanProcess6()
+        {
+            CreateBuffer(s_lines);
+            foreach (var cur in InputUtil.CoreCharacters)
+            {
+                Assert.IsTrue(_mode.CanProcess(InputUtil.CharToKeyInput(cur)));
+            }
+        }
+
+        [Test, Description("Must be able to handle certain movement keys")]
+        public void CanProcess7()
+        {
+            CreateBuffer(s_lines);
+            Assert.IsTrue(_mode.CanProcess(InputUtil.VimKeyToKeyInput(VimKey.EnterKey)));
+            Assert.IsTrue(_mode.CanProcess(InputUtil.VimKeyToKeyInput(VimKey.TabKey)));
+        }
 
         #endregion
 

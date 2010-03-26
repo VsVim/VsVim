@@ -4,6 +4,12 @@ namespace Vim
 
 
 module InputUtil = 
+    
+    /// The core set of characters Vim considers for input
+    val CoreCharacters : char seq
+
+    /// The set of core characters as a seq
+    val CoreCharactersSet : Set<char>
 
     /// Try and convert a char to a virtualKey and ModifierKeys pair
     val TryCharToVirtualKeyAndModifiers : char -> (int * KeyModifiers) option
