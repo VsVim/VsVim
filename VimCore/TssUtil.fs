@@ -5,18 +5,6 @@ open Microsoft.VisualStudio.Text.Operations
 
 module internal TssUtil =
 
-    let GetLineExtent (line:ITextSnapshotLine) = line.Extent
-
-    let GetLineExtentIncludingLineBreak (line:ITextSnapshotLine) = line.ExtentIncludingLineBreak
-
-    let GetLinePoints line =
-        let span = GetLineExtent line
-        seq { for i in 0 .. span.Length do yield span.Start.Add(i) }
-
-    let GetLinePointsIncludingLineBreak line = 
-        let span = GetLineExtentIncludingLineBreak line
-        seq { for i in 0 .. span.Length do yield span.Start.Add(i) }
-
     // Quick and dirty ternary on the general direction of the search (forward or backwards)
     let SearchDirection kind forwardRes backwardRes = 
         match kind with
@@ -26,40 +14,6 @@ module internal TssUtil =
             | SearchKind.BackwardWithWrap -> backwardRes
             | _ -> failwith "Invalid enum value"
         
-    let GetLinesForward (tss : ITextSnapshot) startLine wrap =
-        let endLine = tss.LineCount - 1
-        let forward = seq { for i in startLine .. endLine -> i }
-        let range = 
-            match wrap with 
-                | false -> forward
-                | true -> 
-                    let front = seq { for i in 0 .. (startLine-1) -> i}
-                    Seq.append forward front
-        range |> Seq.map (fun x -> tss.GetLineFromLineNumber(x))  
-        
-    let GetLinesBackward (tss : ITextSnapshot) startLine wrap =
-        let rev s = s |> List.ofSeq |> List.rev |> Seq.ofList
-        let endLine = tss.LineCount - 1
-        let all = seq { for i in 0 .. endLine -> i }
-        let backward = all |> Seq.take (startLine+1) |> rev
-        let range =               
-            match wrap with 
-                | false -> backward 
-                | true ->
-                    let tail = seq { for i in (startLine+1) .. endLine -> i } |> rev
-                    Seq.append backward tail
-        range |> Seq.map (fun x -> tss.GetLineFromLineNumber(x))                     
-    
-    let GetLines (point : SnapshotPoint) kind =
-        let tss = point.Snapshot
-        let startLine = point.GetContainingLine().LineNumber
-        match kind with 
-            | SearchKind.Forward -> GetLinesForward tss startLine false
-            | SearchKind.ForwardWithWrap -> GetLinesForward tss startLine true
-            | SearchKind.Backward -> GetLinesBackward tss startLine false
-            | SearchKind.BackwardWithWrap -> GetLinesBackward tss startLine true
-            | _ -> failwith "Invalid enum value"
-            
     let GetSpans (point: SnapshotPoint) kind =
         let tss = point.Snapshot
         let startLine = point.GetContainingLine()
@@ -68,7 +22,7 @@ module internal TssUtil =
         // of the line
         let point = if point.Position > startLine.End.Position then startLine.End else point
         
-        let middle = GetLines point kind |> Seq.skip 1 |> Seq.map (fun l -> l.Extent)
+        let middle = SnapshotPointUtil.GetLines point kind |> Seq.skip 1 |> Seq.map SnapshotLineUtil.GetExtent
         let forward = seq {
             yield new SnapshotSpan(point, startLine.End)
             yield! middle
@@ -248,11 +202,6 @@ module internal TssUtil =
             member x.GetSpanOfFirstChild span = baseImpl.GetSpanOfFirstChild(span)
             member x.GetSpanOfNextSibling span = baseImpl.GetSpanOfNextSibling(span)
             member x.GetSpanOfPreviousSibling span = baseImpl.GetSpanOfPreviousSibling(span) }
-
-    let GetLineColumn (point:SnapshotPoint) =
-        let line = point.GetContainingLine()
-        let column = point.Position - line.Start.Position
-        (line.LineNumber,column)
 
     let SafeGetTrackingSpan (trackingSpan:ITrackingSpan) (snapshot:ITextSnapshot) =
         try

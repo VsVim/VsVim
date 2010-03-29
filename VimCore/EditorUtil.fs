@@ -13,6 +13,8 @@ module internal SnapshotUtil =
     let GetLastLine (tss:ITextSnapshot) =
         let lastIndex = tss.LineCount - 1
         tss.GetLineFromLineNumber(lastIndex)   
+
+    let GetLastLineNumber (tss:ITextSnapshot) = tss.LineCount - 1 
         
     /// Get the end point of the snapshot
     let GetEndPoint (tss:ITextSnapshot) =
@@ -34,12 +36,52 @@ module internal SnapshotUtil =
         let lineNumber = GetValidLineNumberOrLast tss lineNumber
         tss.GetLineFromLineNumber(lineNumber)
 
+    /// Get the lines in the ITextSnapshot as a seq in forward.  
+    let GetLinesForward tss startLine wrap =
+        let endLine = GetLastLineNumber tss
+        let endLine = tss.LineCount - 1
+        let forward = seq { for i in startLine .. endLine -> i }
+        let range = 
+            match wrap with 
+                | false -> forward
+                | true -> 
+                    let front = seq { for i in 0 .. (startLine-1) -> i}
+                    Seq.append forward front
+        range |> Seq.map (fun x -> tss.GetLineFromLineNumber(x))  
+        
+    /// Get the lines in the ITextSnapshot as a seq in reverse order
+    let GetLinesBackward (tss : ITextSnapshot) startLine wrap =
+        let rev s = s |> List.ofSeq |> List.rev |> Seq.ofList
+        let endLine = tss.LineCount - 1
+        let all = seq { for i in 0 .. endLine -> i }
+        let backward = all |> Seq.take (startLine+1) |> rev
+        let range =               
+            match wrap with 
+                | false -> backward 
+                | true ->
+                    let tail = seq { for i in (startLine+1) .. endLine -> i } |> rev
+                    Seq.append backward tail
+        range |> Seq.map (fun x -> tss.GetLineFromLineNumber(x))                     
+    
+
 
 /// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
 /// include any Vim specific logic
 module internal SnapshotLineUtil =
 
-    let Holder = 1
+    let GetExtent (line:ITextSnapshotLine) = line.Extent
+
+    let GetExtentIncludingLineBreak (line:ITextSnapshotLine) = line.ExtentIncludingLineBreak
+
+    /// Get the points on the particular line in order 
+    let GetPoints line = 
+        let span = GetExtent line
+        seq { for i in 0 .. span.Length do yield span.Start.Add(i) }
+
+    /// Get the points on the particular line including the line break
+    let GetPointsIncludingLineBreak line = 
+        let span = GetExtentIncludingLineBreak line
+        seq { for i in 0 .. span.Length do yield span.Start.Add(i) }
 
 /// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
 /// include any Vim specific logic
@@ -121,3 +163,21 @@ module internal SnapshotPointUtil =
         let startLine = start.GetContainingLine()
         let last = SnapshotUtil.GetValidLineOrLast tss (startLine.LineNumber+(count-1))
         new SnapshotSpan(start, last.EndIncludingLineBreak)
+
+    /// Get the line and column information for a given SnapshotPoint
+    let GetLineColumn point = 
+        let line = GetContainingLine point
+        let column = point.Position - line.Start.Position
+        (line.LineNumber,column)
+    
+    /// Get the lines of the containing ITextSnapshot as a seq 
+    let GetLines point kind =
+        let tss = GetSnapshot point
+        let startLine = point.GetContainingLine().LineNumber
+        match kind with 
+            | SearchKind.Forward -> SnapshotUtil.GetLinesForward tss startLine false
+            | SearchKind.ForwardWithWrap -> SnapshotUtil.GetLinesForward tss startLine true
+            | SearchKind.Backward -> SnapshotUtil.GetLinesBackward tss startLine false
+            | SearchKind.BackwardWithWrap -> SnapshotUtil.GetLinesBackward tss startLine true
+            | _ -> failwith "Invalid enum value"
+

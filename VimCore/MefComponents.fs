@@ -124,7 +124,7 @@ type internal TrackingLineColumn
     override x.ToString() =
         match x.VirtualSnapshotPoint with
         | Some(point) ->
-            let line,_ = TssUtil.GetLineColumn point.Position
+            let line,_ = SnapshotPointUtil.GetLineColumn point.Position
             sprintf "%d,%d - %s" line _column (point.ToString())
         | None -> "Invalid"
 
@@ -228,7 +228,7 @@ type internal TrackingLineColumnService() =
             if point.Snapshot <> buffer.CurrentSnapshot then 
                 x.CreateDisconnected buffer
             else
-                let line,column = TssUtil.GetLineColumn point
+                let line,column = SnapshotPointUtil.GetLineColumn point
                 (x.Create buffer line column) :> ITrackingLineColumn
         member x.CreateDisconnected textBuffer = x.CreateDisconnected textBuffer
             

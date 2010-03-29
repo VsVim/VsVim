@@ -38,81 +38,6 @@ namespace VimCoreTest
         }
 
         [Test]
-        public void GetLines1()
-        {
-            Create("foo", "bar");
-            var point = new SnapshotPoint(_snapshot, 0);
-            var agg = TssUtil.GetLines(point, SearchKind.Forward).Select(x => x.GetText()).Aggregate((x, y) => x + y);
-            Assert.AreEqual("foobar", agg);
-        }
-
-        /// <summary>
-        /// Check forward wraping
-        /// </summary>
-        [Test]
-        public void GetLines2()
-        {
-            Create("foo", "bar", "baz");
-            var point = new SnapshotPoint(_snapshot, 6);
-            var agg = TssUtil.GetLines(point, SearchKind.Forward)
-                .Select(x => x.GetText())
-                .Aggregate((x, y) => x + y);
-            Assert.AreEqual("barbaz", agg);
-            var point2 = new SnapshotPoint(_snapshot, 6);
-            agg = TssUtil.GetLines(point2, SearchKind.ForwardWithWrap)
-                .Select(x => x.GetText())
-                .Aggregate((x, y) => x + y);
-            Assert.AreEqual("barbazfoo", agg);
-        }
-
-        [Test]
-        public void GetLines3()
-        {
-            Create("foo bar", "baz");
-            var line = _snapshot.GetLineFromLineNumber(1);
-            var list = TssUtil.GetLines(line.Start.Subtract(1), SearchKind.Backward);
-            Assert.AreEqual(1, list.Count());
-        }
-
-        [Test]
-        public void GetLines4()
-        {
-            Create("abcde".Select(x => x.ToString()).ToArray());
-            var line = _snapshot.GetLineFromLineNumber(2);
-            var msg = TssUtil.GetLines(line.Start, SearchKind.Backward).Select(x => x.GetText()).Aggregate((x, y) => x + y);
-            Assert.AreEqual("cba", msg);
-        }
-
-        [Test]
-        public void GetLines5()
-        {
-            Create("abcde".Select(x => x.ToString()).ToArray());
-            var line = _snapshot.GetLineFromLineNumber(2);
-            var msg = TssUtil.GetLines(line.Start, SearchKind.Forward).Select(x => x.GetText()).Aggregate((x, y) => x + y);
-            Assert.AreEqual("cde", msg);
-        }
-
-        [Test]
-        public void GetLines6()
-        {
-            Create("abcde".Select(x => x.ToString()).ToArray());
-            var line = _snapshot.GetLineFromLineNumber(2);
-            var msg = TssUtil.GetLines(line.Start, SearchKind.BackwardWithWrap).Select(x => x.GetText()).Aggregate((x, y) => x + y);
-            Assert.AreEqual("cbaed", msg);
-        }
-
-        [Test]
-        public void GetLines7()
-        {
-            Create("abcde".Select(x => x.ToString()).ToArray());
-            var line = _snapshot.GetLineFromLineNumber(2);
-            var msg = TssUtil.GetLines(line.Start, SearchKind.ForwardWithWrap).Select(x => x.GetText()).Aggregate((x, y) => x + y);
-            Assert.AreEqual("cdeab", msg);
-        }
-
-     
-
-        [Test]
         public void GetSpans1()
         {
             Create("foo", "bar");
@@ -394,30 +319,6 @@ namespace VimCoreTest
 
 
 
-        [Test]
-        public void GetPoints1()
-        {
-            Create("foo");
-            var points = TssUtil.GetLinePoints(_buffer.CurrentSnapshot.GetLineFromLineNumber(0));
-            var text = points.Select(x => x.GetChar().ToString()).Aggregate((x, y) => x + y);
-            Assert.AreEqual("foo",text);
-        }
-
-        [Test]
-        public void GetLineExtent1()
-        {
-            Create("foo");
-            var span = TssUtil.GetLineExtent(_buffer.GetLine(0));
-            Assert.AreEqual("foo", span.GetText());
-        }
-
-        [Test]
-        public void GetLineExtentIncludingLineBreak1()
-        {
-            Create("foo", "baz");
-            var span = TssUtil.GetLineExtentIncludingLineBreak(_buffer.GetLine(0));
-            Assert.AreEqual("foo" + Environment.NewLine, span.GetText());
-        }
 
         [Test]
         public void GetWordSpans1()

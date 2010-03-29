@@ -6,19 +6,6 @@ open Microsoft.VisualStudio.Text.Operations
 
 
 module internal TssUtil =
-    val GetLines : SnapshotPoint -> SearchKind -> seq<ITextSnapshotLine>
-
-    /// Get the SnapshotSpan of an ITextSnapshotLine
-    val GetLineExtent : ITextSnapshotLine -> SnapshotSpan
-
-    /// Get the SnapshotSpan of an ITextSnapshotLine including the line break
-    val GetLineExtentIncludingLineBreak : ITextSnapshotLine -> SnapshotSpan
-
-    /// Get the points on the particular line in order 
-    val GetLinePoints : ITextSnapshotLine -> seq<SnapshotPoint>
-
-    /// Get the points on the particular line including the line break
-    val GetLinePointsIncludingLineBreak : ITextSnapshotLine -> seq<SnapshotPoint>
 
     /// Start searching the snapshot at the given point and return the buffer as a 
     /// sequence of SnapshotSpans.  One will be returned per line in the buffer.  The
@@ -85,9 +72,6 @@ module internal TssUtil =
     /// Create an ITextStructureNavigator instance for the given WordKind with the provided 
     /// base implementation to fall back on
     val CreateTextStructureNavigator : WordKind -> ITextStructureNavigator -> ITextStructureNavigator
-
-    /// Get the line and column information for a given SnapshotPoint
-    val GetLineColumn : SnapshotPoint -> (int * int)
 
     /// Map the specified tracking span to the given ITextSnapshot.  If the span cannot be mapped
     /// due to incompatible changes in the buffer, None will be returned

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using NUnit.Framework;
 using Microsoft.VisualStudio.Text;
+using Vim;
 
 namespace VimCoreTest
 {
@@ -33,5 +34,29 @@ namespace VimCoreTest
             _snapshot = null;
         }
 
+        [Test]
+        public void GetPoints1()
+        {
+            Create("foo");
+            var points = SnapshotLineUtil.GetPoints(_buffer.CurrentSnapshot.GetLineFromLineNumber(0));
+            var text = points.Select(x => x.GetChar().ToString()).Aggregate((x, y) => x + y);
+            Assert.AreEqual("foo",text);
+        }
+
+        [Test]
+        public void GetExtent1()
+        {
+            Create("foo");
+            var span = SnapshotLineUtil.GetExtent(_buffer.GetLine(0));
+            Assert.AreEqual("foo", span.GetText());
+        }
+
+        [Test]
+        public void GetExtentIncludingLineBreak1()
+        {
+            Create("foo", "baz");
+            var span = SnapshotLineUtil.GetExtentIncludingLineBreak(_buffer.GetLine(0));
+            Assert.AreEqual("foo" + Environment.NewLine, span.GetText());
+        }
     }
 }

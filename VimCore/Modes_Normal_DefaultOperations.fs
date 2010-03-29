@@ -91,7 +91,7 @@ type internal DefaultOperations
             _operations.MoveToStartOfLineAfterWhiteSpace(false)
         else 
             let point = ViewUtil.GetCaretPoint _textView
-            let _,column = TssUtil.GetLineColumn point
+            let _,column = SnapshotPointUtil.GetLineColumn point
             let column = min column textLine.Length
             let point = textLine.Start.Add(column)
             _textView.Caret.MoveTo (point) |> ignore

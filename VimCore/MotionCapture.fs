@@ -103,7 +103,7 @@ module internal MotionCapture =
     /// motion so be careful we don't go to far forward
     let private BeginingOfLineMotion (start:SnapshotPoint) =
         let line = start.GetContainingLine()
-        let found = TssUtil.GetLinePoints line
+        let found = SnapshotLineUtil.GetPoints line
                         |> Seq.filter (fun x -> x.Position < start.Position)
                         |> Seq.tryFind (fun x-> x.GetChar() <> ' ')
         let span = match found with 
