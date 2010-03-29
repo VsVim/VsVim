@@ -96,8 +96,8 @@ type internal IncrementalSearch
     member private x.FindNextMatch (count:int) =
         let getNextPoint current kind = 
             match SearchKindUtil.IsForward kind with 
-            | true -> TssUtil.GetNextPointWithWrap current
-            | false -> TssUtil.GetPreviousPointWithWrap current
+            | true -> SnapshotPointUtil.GetNextPointWithWrap current
+            | false -> SnapshotPointUtil.GetPreviousPointWithWrap current
 
         let doSearch (searchData:SearchData) = 
             let caret = ViewUtil.GetCaretPoint _textView

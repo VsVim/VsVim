@@ -227,7 +227,7 @@ namespace VimCoreTest
         public void PasteAfter2()
         {
             Create("foo", "bar");
-            _view.Caret.MoveTo(TssUtil.GetEndPoint(_view.TextSnapshot));
+            _view.Caret.MoveTo(SnapshotUtil.GetEndPoint(_view.TextSnapshot));
             _operations.PasteAfterCursor("hello", 1, OperationKind.CharacterWise, false);
             Assert.AreEqual("barhello", _view.TextSnapshot.GetLineFromLineNumber(1).GetText());
         }
@@ -236,7 +236,7 @@ namespace VimCoreTest
         public void PasteAfter3()
         {
             Create("foo", String.Empty);
-            _view.Caret.MoveTo(TssUtil.GetEndPoint(_view.TextSnapshot));
+            _view.Caret.MoveTo(SnapshotUtil.GetEndPoint(_view.TextSnapshot));
             _operations.PasteAfterCursor("bar", 1, OperationKind.CharacterWise, false);
             Assert.AreEqual("bar", _view.TextSnapshot.GetLineFromLineNumber(1).GetText());
         }

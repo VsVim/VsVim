@@ -72,7 +72,7 @@ module internal MotionCapture =
     /// Implement the 'e' motion.  This goes to the end of the current word.  If we're
     /// not currently on a word it will find the next word and then go to the end of that
     let private EndOfWordMotion (start:SnapshotPoint) count kind =
-        let snapshotEnd = TssUtil.GetEndPoint start.Snapshot
+        let snapshotEnd = SnapshotUtil.GetEndPoint start.Snapshot
         let rec inner start count = 
             if count <= 0 || start = snapshotEnd then start
             else
@@ -86,7 +86,7 @@ module internal MotionCapture =
                 else
                     // Get the span of the current word and the end completes the motion
                     match TssUtil.FindCurrentFullWordSpan start kind with
-                    | None -> TssUtil.GetEndPoint start.Snapshot
+                    | None -> SnapshotUtil.GetEndPoint start.Snapshot
                     | Some(s) -> inner s.End (count-1)
 
         let endPoint = inner start count
@@ -96,14 +96,14 @@ module internal MotionCapture =
     /// Implement an end of line motion.  Typically in response to the $ key.  Even though
     /// this motion deals with lines, it's still a character wise motion motion. 
     let private EndOfLineMotion (start:SnapshotPoint) count = 
-        let span = TssUtil.GetLineRangeSpan start count
+        let span = SnapshotPointUtil.GetLineRangeSpan start count
         Complete (span, MotionKind.Inclusive, OperationKind.CharacterWise)
 
     /// Find the first non-whitespace character as the start of the span.  This is an exclusive
     /// motion so be careful we don't go to far forward
     let private BeginingOfLineMotion (start:SnapshotPoint) =
         let line = start.GetContainingLine()
-        let found = TssUtil.GetPoints line
+        let found = TssUtil.GetLinePoints line
                         |> Seq.filter (fun x -> x.Position < start.Position)
                         |> Seq.tryFind (fun x-> x.GetChar() <> ' ')
         let span = match found with 

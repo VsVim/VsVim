@@ -169,7 +169,7 @@ type internal DefaultOperations
         member x.YankLines count reg =
             let point = ViewUtil.GetCaretPoint _textView
             let point = point.GetContainingLine().Start
-            let span = TssUtil.GetLineRangeSpanIncludingLineBreak point count
+            let span = SnapshotPointUtil.GetLineRangeSpanIncludingLineBreak point count
             x.CommonImpl.Yank span MotionKind.Inclusive OperationKind.LineWise reg |> ignore
 
     

@@ -236,7 +236,7 @@ type internal CommonOperations
         member x.MoveCaretDownToFirstNonWhitespaceCharacter count = 
             let caret = ViewUtil.GetCaretPoint _textView
             let line = caret.GetContainingLine()
-            let line = TssUtil.GetValidLineOrLast caret.Snapshot (line.LineNumber + count)
+            let line = SnapshotUtil.GetValidLineOrLast caret.Snapshot (line.LineNumber + count)
             let point = TssUtil.FindFirstNonWhitespaceCharacter line
             _operations.ResetSelection()
             ViewUtil.MoveCaretToPoint _textView point |> ignore
@@ -265,12 +265,12 @@ type internal CommonOperations
 
         member x.ShiftLinesRight count = 
             let point = ViewUtil.GetCaretPoint _textView
-            let span = TssUtil.GetLineRangeSpan point count
+            let span = SnapshotPointUtil.GetLineRangeSpan point count
             x.ShiftSpanRight span
 
         member x.ShiftLinesLeft count =
             let point = ViewUtil.GetCaretPoint _textView
-            let span = TssUtil.GetLineRangeSpan point count
+            let span = SnapshotPointUtil.GetLineRangeSpan point count
             x.ShiftSpanLeft span
             
         member x.InsertText text count = 
@@ -309,26 +309,26 @@ type internal CommonOperations
         member x.DeleteLines count reg = 
             let point = ViewUtil.GetCaretPoint _textView
             let point = point.GetContainingLine().Start
-            let span = TssUtil.GetLineRangeSpan point count
+            let span = SnapshotPointUtil.GetLineRangeSpan point count
             let span = SnapshotSpan(point, span.End)
             x.DeleteSpan span MotionKind.Inclusive OperationKind.LineWise reg |> ignore
 
         member x.DeleteLinesFromCursor count reg = 
             let point = ViewUtil.GetCaretPoint _textView
-            let span = TssUtil.GetLineRangeSpan point count
+            let span = SnapshotPointUtil.GetLineRangeSpan point count
             let span = SnapshotSpan(point, span.End)
             x.DeleteSpan span MotionKind.Inclusive OperationKind.CharacterWise reg |> ignore
 
         member x.DeleteLinesIncludingLineBreak count reg = 
             let point = ViewUtil.GetCaretPoint _textView
             let point = point.GetContainingLine().Start
-            let span = TssUtil.GetLineRangeSpanIncludingLineBreak point count
+            let span = SnapshotPointUtil.GetLineRangeSpanIncludingLineBreak point count
             let span = SnapshotSpan(point, span.End)
             x.DeleteSpan span MotionKind.Inclusive OperationKind.LineWise reg |> ignore
 
         member x.DeleteLinesIncludingLineBreakFromCursor count reg = 
             let point = ViewUtil.GetCaretPoint _textView
-            let span = TssUtil.GetLineRangeSpanIncludingLineBreak point count
+            let span = SnapshotPointUtil.GetLineRangeSpanIncludingLineBreak point count
             let span = SnapshotSpan(point, span.End)
             x.DeleteSpan span MotionKind.Inclusive OperationKind.CharacterWise reg |> ignore
 

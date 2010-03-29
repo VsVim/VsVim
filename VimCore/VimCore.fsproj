@@ -46,6 +46,7 @@
     <Compile Include="StringUtil.fs" />
     <Compile Include="TextUtil.fsi" />
     <Compile Include="TextUtil.fs" />
+    <Compile Include="EditorUtil.fs" />
     <Compile Include="TssUtil.fsi" />
     <Compile Include="TssUtil.fs" />
     <Compile Include="MotionUtil.fsi" />

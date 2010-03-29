@@ -5,33 +5,15 @@ open Microsoft.VisualStudio.Text.Operations
 
 module internal TssUtil =
 
-    /// Get the last line in the ITextSnapshot.  Avoid pulling the entire buffer into memory
-    /// slowly by using the index
-    let GetLastLine (tss:ITextSnapshot) =
-        let lastIndex = tss.LineCount - 1
-        tss.GetLineFromLineNumber(lastIndex)   
-        
-    /// Get the end point of the snapshot
-    let GetEndPoint (tss:ITextSnapshot) =
-        let line = GetLastLine tss
-        line.End
-        
-    /// Get the start point of the snapshot
-    let GetStartPoint (tss:ITextSnapshot) =
-        let first = tss.GetLineFromLineNumber(0)
-        first.Start
-
     let GetLineExtent (line:ITextSnapshotLine) = line.Extent
 
     let GetLineExtentIncludingLineBreak (line:ITextSnapshotLine) = line.ExtentIncludingLineBreak
 
-    let GetContainingLine (point:SnapshotPoint) = point.GetContainingLine()
-
-    let GetPoints line =
+    let GetLinePoints line =
         let span = GetLineExtent line
         seq { for i in 0 .. span.Length do yield span.Start.Add(i) }
 
-    let GetPointsIncludingLineBreak line = 
+    let GetLinePointsIncludingLineBreak line = 
         let span = GetLineExtentIncludingLineBreak line
         seq { for i in 0 .. span.Length do yield span.Start.Add(i) }
 
@@ -126,30 +108,12 @@ module internal TssUtil =
             | 0 -> 0
             | _ -> line-1
 
-    let GetValidLineNumberOrLast (tss:ITextSnapshot) lineNumber = 
-        if lineNumber >= tss.LineCount then tss.LineCount-1 else lineNumber
 
-    let GetValidLineOrLast (tss:ITextSnapshot) lineNumber =
-        let lineNumber = GetValidLineNumberOrLast tss lineNumber
-        tss.GetLineFromLineNumber(lineNumber)
-
-    let GetLineRangeSpan start count = 
-        let startLine = GetContainingLine start
-        let tss = startLine.Snapshot
-        let last = GetValidLineOrLast tss (startLine.LineNumber+(count-1))
-        new SnapshotSpan(start, last.End)
-
-    let GetLineRangeSpanIncludingLineBreak (start:SnapshotPoint) count =
-        let tss = start.Snapshot
-        let startLine = start.GetContainingLine()
-        let last = GetValidLineOrLast tss (startLine.LineNumber+(count-1))
-        new SnapshotSpan(start, last.EndIncludingLineBreak)
-            
     /// Wrap the TextUtil functions which operate on String and int locations into 
     /// a SnapshotPoint and SnapshotSpan version
     let WrapTextSearch (func: WordKind -> string -> int -> option<Span> ) = 
         let f kind point = 
-            let line = GetContainingLine point
+            let line = SnapshotPointUtil.GetContainingLine point
             let text = line.GetText()
             let pos = point.Position - line.Start.Position
             match pos >= text.Length with
@@ -196,11 +160,11 @@ module internal TssUtil =
         let found = spans |> Seq.tryPick (fun x -> FindAnyWordSpan x kind SearchKind.Forward)
         match found with
             | Some s -> s
-            | None -> SnapshotSpan((GetEndPoint (point.Snapshot)), 0)
+            | None -> SnapshotSpan((SnapshotUtil.GetEndPoint (point.Snapshot)), 0)
                         
             
     let FindPreviousWordSpan (point:SnapshotPoint) kind = 
-        let startSpan = new SnapshotSpan(GetStartPoint (point.Snapshot), 0)
+        let startSpan = new SnapshotSpan(SnapshotUtil.GetStartPoint (point.Snapshot), 0)
         let fullSearch p2 =
              let s = GetSpans p2 SearchKind.Backward |> Seq.tryPick (fun x -> FindAnyWordSpan x kind SearchKind.Backward)                                
              match s with 
@@ -225,6 +189,10 @@ module internal TssUtil =
     let FindPreviousWordPosition point kind  =
         let span = FindPreviousWordSpan point kind 
         span.Start
+
+    let FindNextOccurrenceOfCharacter (startPoint:SnapshotPoint) (toFind:char) : SnapshotPoint option = failwith ""
+        
+    let FindPreviousOccurrenceOfCharacter (startPoint:SnapshotPoint) (toFind:char) : SnapshotPoint option = failwith ""
             
     let FindIndentPosition (line:ITextSnapshotLine) =
         let text = line.GetText()
@@ -232,13 +200,6 @@ module internal TssUtil =
             | Some i -> i
             | None -> 0
         
-    let GetCharacterSpan (point:SnapshotPoint) =
-        let line = point.GetContainingLine()
-        let endSpan = new SnapshotSpan(line.End, line.EndIncludingLineBreak)
-        match endSpan.Contains(point) with
-            | true -> endSpan
-            | false -> new SnapshotSpan(point,1)
-
     let GetReverseCharacterSpan (point:SnapshotPoint) count =
         let line = point.GetContainingLine()
         let diff = line.Start.Position - count
@@ -246,34 +207,6 @@ module internal TssUtil =
         elif diff < 0 then new SnapshotSpan(line.Start, point)
         else new SnapshotSpan(point.Subtract(count), point)
             
-    let GetNextPoint (point:SnapshotPoint) =
-        let tss = point.Snapshot
-        let line = point.GetContainingLine()
-        if point.Position >= line.End.Position then
-            let num = line.LineNumber+1
-            if num = tss.LineCount then point
-            else tss.GetLineFromLineNumber(num).Start
-        else
-            point.Add(1)    
-
-    let GetNextPointWithWrap (point:SnapshotPoint) =
-        let tss = point.Snapshot
-        let line = point.GetContainingLine()
-        if point.Position >= line.End.Position then
-            let num = line.LineNumber+1
-            if num = tss.LineCount then GetStartPoint tss
-            else tss.GetLineFromLineNumber(num).Start
-        else
-            point.Add(1)                    
-
-    let GetPreviousPointWithWrap (point:SnapshotPoint) =
-        let tss = point.Snapshot
-        let line = point.GetContainingLine()
-        if point.Position = line.Start.Position then
-            if line.LineNumber = 0 then GetEndPoint tss
-            else tss.GetLineFromLineNumber(line.LineNumber-1).End
-        else
-            point.Subtract(1)
 
     let GetWordSpans point wordKind searchKind = 
         let getForSpanForward span = 

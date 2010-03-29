@@ -375,7 +375,7 @@ namespace VimCoreTest
             var res = Process(point, 400, "e").AsComplete().Item;
             var span = new SnapshotSpan(
                 point,
-                TssUtil.GetEndPoint(_snapshot));
+                SnapshotUtil.GetEndPoint(_snapshot));
             Assert.AreEqual(span, res.Item1);
             Assert.AreEqual(MotionKind.Inclusive, res.Item2);
             Assert.AreEqual(OperationKind.CharacterWise, res.Item3);

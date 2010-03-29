@@ -118,7 +118,7 @@ type internal NormalMode
                 | 'y' -> 
                     let point = ViewUtil.GetCaretPoint _bufferData.TextView
                     let point = point.GetContainingLine().Start
-                    let span = TssUtil.GetLineRangeSpanIncludingLineBreak point count
+                    let span = SnapshotPointUtil.GetLineRangeSpanIncludingLineBreak point count
                     _operations.Yank span MotionKind.Inclusive OperationKind.LineWise reg 
                     NormalModeResult.CompleteRepeatable (count,reg)
                 | _ ->
@@ -134,7 +134,7 @@ type internal NormalMode
             match ki.Char with 
                 | 'c' -> 
                     let point = ViewUtil.GetCaretPoint _bufferData.TextView
-                    let span = TssUtil.GetLineRangeSpanIncludingLineBreak point count
+                    let span = SnapshotPointUtil.GetLineRangeSpanIncludingLineBreak point count
                     let span = SnapshotSpan(point.GetContainingLine().Start,span.End)
                     _operations.DeleteSpan span MotionKind.Inclusive OperationKind.LineWise reg |> ignore
                     NormalModeResult.SwitchMode ModeKind.Insert

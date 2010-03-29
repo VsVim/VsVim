@@ -139,6 +139,8 @@
     <Compile Include="CommandParseUtilTest.cs" />
     <Compile Include="CommandProcessorTest.cs" />
     <Compile Include="Command_DefaultOperations.cs" />
+    <Compile Include="SnapshotLineUtilTest.cs" />
+    <Compile Include="SnapshotPointUtilTest.cs" />
     <Compile Include="DisabledModeTest.cs" />
     <Compile Include="DisplayWindowBrokerTest.cs" />
     <Compile Include="GlobalSettingsTest.cs" />
@@ -165,6 +167,7 @@
     <Compile Include="RangeUtilTest.cs" />
     <Compile Include="SelectionTrackerTest.cs" />
     <Compile Include="SettingsCommonTest.cs" />
+    <Compile Include="SnapshotUtilTest.cs" />
     <Compile Include="TextUtilTest.cs" />
     <Compile Include="TextUtilTest2.cs" />
     <Compile Include="TrackingLineColumnTest.cs" />

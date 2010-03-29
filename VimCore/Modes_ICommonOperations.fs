@@ -75,7 +75,7 @@ type ICommonOperations =
 
     /// Move the cursor backward count WordKind's
     abstract MoveWordBackward : WordKind -> count : int -> unit
-    
+
     /// Jumps to a given mark in the buffer.  
     abstract JumpToMark : char -> IMarkMap -> Result
 

@@ -4,6 +4,7 @@ namespace Vim
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Operations
 
+
 module internal TssUtil =
     val GetLines : SnapshotPoint -> SearchKind -> seq<ITextSnapshotLine>
 
@@ -14,13 +15,10 @@ module internal TssUtil =
     val GetLineExtentIncludingLineBreak : ITextSnapshotLine -> SnapshotSpan
 
     /// Get the points on the particular line in order 
-    val GetPoints : ITextSnapshotLine -> seq<SnapshotPoint>
+    val GetLinePoints : ITextSnapshotLine -> seq<SnapshotPoint>
 
     /// Get the points on the particular line including the line break
-    val GetPointsIncludingLineBreak : ITextSnapshotLine -> seq<SnapshotPoint>
-
-    /// Get the ITextSnapshotLine containing the specified SnapshotPoint
-    val GetContainingLine : SnapshotPoint -> ITextSnapshotLine
+    val GetLinePointsIncludingLineBreak : ITextSnapshotLine -> seq<SnapshotPoint>
 
     /// Start searching the snapshot at the given point and return the buffer as a 
     /// sequence of SnapshotSpans.  One will be returned per line in the buffer.  The
@@ -32,21 +30,6 @@ module internal TssUtil =
     /// spans with the specified Kind
     val GetWordSpans : SnapshotPoint -> WordKind -> SearchKind -> seq<SnapshotSpan>
     
-    /// Get the line number back if it's valid and if not the last line in the snapshot
-    val GetValidLineNumberOrLast : ITextSnapshot -> int -> int
-
-    /// Get a valid line for the specified number if it's valid and the last line if it's
-    /// not
-    val GetValidLineOrLast : ITextSnapshot -> int -> ITextSnapshotLine
-
-    /// Get the line range passed in.  If the count of lines exceeds the amount of lines remaining
-    /// in the buffer, the span will be truncated to the final line
-    val GetLineRangeSpan : SnapshotPoint -> int -> SnapshotSpan
-
-    /// Functions exactly line GetLineRangeSpan except it will include the final line up until
-    /// the end of the line break
-    val GetLineRangeSpanIncludingLineBreak : SnapshotPoint -> int -> SnapshotSpan
-
     /// Vim is fairly odd in that it considers the top line of the file to be both line numbers
     /// 1 and 0.  The next line is 2.  The editor is a zero based index though so we need
     /// to take that into account
@@ -81,6 +64,12 @@ module internal TssUtil =
     /// the given ITextSnapshotLine
     val FindFirstNonWhitespaceCharacter : ITextSnapshotLine -> SnapshotPoint
 
+    /// Find the next occurrance of the specified char.  
+    val FindNextOccurrenceOfCharacter : SnapshotPoint -> char -> SnapshotPoint option
+
+    /// Find the previous occurrance of the specified char.  
+    val FindPreviousOccurrenceOfCharacter : SnapshotPoint -> char -> SnapshotPoint option
+
     /// This function is mainly a backing for the "b" command mode command.  It is really
     /// used to find the position of the start of the current or previous word.  Unless we 
     /// are currently at the start of a word, in which case it should go back to the previous
@@ -93,25 +82,6 @@ module internal TssUtil =
     /// count is satisfied or the begining of the line is reached
     val GetReverseCharacterSpan : SnapshotPoint -> int -> SnapshotSpan
 
-    // Get the span of the character which is pointed to by the point.  Normally this is a 
-    // trivial operation.  The only difficulty if the Point exists on an empty line.  In that
-    // case it is the extent of the line
-    val GetCharacterSpan : SnapshotPoint -> SnapshotSpan
-
-    val GetLastLine : ITextSnapshot -> ITextSnapshotLine
-    val GetStartPoint : ITextSnapshot -> SnapshotPoint
-    val GetEndPoint : ITextSnapshot -> SnapshotPoint 
-
-    /// Get the next point in the buffer without wrap.  Will throw if you run off the end of 
-    /// the ITextSnapshot
-    val GetNextPoint : SnapshotPoint -> SnapshotPoint
-
-    /// Get the next point in the buffer with wrap
-    val GetNextPointWithWrap : SnapshotPoint -> SnapshotPoint 
-
-    /// Get the previous point in the buffer with wrap
-    val GetPreviousPointWithWrap : SnapshotPoint -> SnapshotPoint
-        
     /// Create an ITextStructureNavigator instance for the given WordKind with the provided 
     /// base implementation to fall back on
     val CreateTextStructureNavigator : WordKind -> ITextStructureNavigator -> ITextStructureNavigator

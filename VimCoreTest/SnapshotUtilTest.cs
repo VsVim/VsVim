@@ -1,0 +1,70 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using NUnit.Framework;
+using Microsoft.VisualStudio.Text;
+using Vim;
+
+namespace VimCoreTest
+{
+    [TestFixture]
+    public class SnapshotUtilTest
+    {
+        static string[] s_lines = new string[]
+            {
+                "summary description for this line",
+                "some other line",
+                "running out of things to make up"
+            };
+
+        ITextBuffer _buffer = null;
+        ITextSnapshot _snapshot = null;
+
+        public void Create(params string[] lines)
+        {
+            _buffer = Utils.EditorUtil.CreateBuffer(lines);
+            _snapshot = _buffer.CurrentSnapshot;
+        }
+
+        [TearDown]
+        public void TearDown()
+        {
+            _buffer = null;
+            _snapshot = null;
+        }
+
+        [Test]
+        public void GetValidLineNumberOrLast()
+        {
+            Create("foo", "bar");
+            Assert.AreEqual(1, SnapshotUtil.GetValidLineNumberOrLast(_snapshot, 1));
+            Assert.AreEqual(0, SnapshotUtil.GetValidLineNumberOrLast(_snapshot, 0));
+        }
+
+        [Test]
+        public void GetValidLineNumberOrLast2()
+        {
+            Create("foo", "bar");
+            Assert.AreEqual(1, SnapshotUtil.GetValidLineNumberOrLast(_snapshot, 200));
+        }
+
+        [Test]
+        public void GetStartPoint()
+        {
+            Create("foo bar");
+            var start = SnapshotUtil.GetStartPoint(_buffer.CurrentSnapshot);
+            var line = _buffer.CurrentSnapshot.GetLineFromLineNumber(0);
+            Assert.AreEqual(line.Start, start);
+        }
+
+        [Test]
+        public void GetEndPoint()
+        {
+            Create("foo bar");
+            var end = SnapshotUtil.GetEndPoint(_buffer.CurrentSnapshot);
+            var line = _buffer.CurrentSnapshot.GetLineFromLineNumber(0);
+            Assert.AreEqual(line.End, end);
+        }
+    }
+}
