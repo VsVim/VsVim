@@ -37,6 +37,7 @@ namespace VimCoreTest
         [Test]
         public void GetLineRangeSpan1()
         {
+            Create(s_lines);
             var span = SnapshotPointUtil.GetLineRangeSpan(new SnapshotPoint(_snapshot,0), 1);
             var line = _snapshot.GetLineFromLineNumber(0);
             Assert.AreEqual(line.Extent, span);
@@ -48,6 +49,7 @@ namespace VimCoreTest
         [Test]
         public void GetLineRangeSpan2()
         {
+            Create(s_lines);
             var span = SnapshotPointUtil.GetLineRangeSpan(new SnapshotPoint(_snapshot, 0), 2);
             var start = _snapshot.GetLineFromLineNumber(0);
             var second = _snapshot.GetLineFromLineNumber(1);
@@ -332,6 +334,42 @@ namespace VimCoreTest
             Assert.AreEqual("foo", list.ElementAt(2));
         }
 
+        [Test]
+        public void GetCharOrDefault1()
+        {
+            Create("foo", "bar");
+            var point = _buffer.GetLine(0).Start;
+            Assert.AreEqual('f', SnapshotPointUtil.GetCharOrDefault(point, 'g'));
+        }
+
+        [Test]
+        public void GetCharOrDefault2()
+        {
+            Create("foo", "bar");
+            var endPoint = new SnapshotPoint(_buffer.CurrentSnapshot, _buffer.CurrentSnapshot.Length);
+            var didSee = false;
+            try
+            {
+                var notUsed = endPoint.GetChar();
+            }
+            catch (ArgumentException)
+            {
+                didSee = true;
+            }
+            Assert.IsTrue(didSee);
+            Assert.AreEqual('f', SnapshotPointUtil.GetCharOrDefault(endPoint, 'f'));
+        }
+
+        [Test, Description("All points should be valid")]
+        public void GetPoints1()
+        {
+            Create("foo", "bar");
+            var start = SnapshotUtil.GetStartPoint(_buffer.CurrentSnapshot);
+            foreach (var cur in SnapshotPointUtil.GetPoints(start, SearchKind.ForwardWithWrap))
+            {
+                var notUsed = cur.GetChar();
+            }
+        }
      
 
     }

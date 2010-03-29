@@ -154,7 +154,13 @@ module internal SeqUtil =
     let appendSingle element sequence = 
         let right = element |> Seq.singleton
         Seq.append sequence right
-        
+
+    /// Try and find the first value which meets the specified filter.  If it does not exist then
+    /// return the specified default value
+    let tryFindOrDefault filter defaultValue sequence =
+        match Seq.tryFind filter sequence with
+        | Some(value) -> value
+        | None -> defaultValue 
 
 module internal MapUtil =
 

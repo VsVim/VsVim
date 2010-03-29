@@ -62,13 +62,17 @@ module internal SnapshotUtil =
                     let tail = seq { for i in (startLine+1) .. endLine -> i } |> rev
                     Seq.append backward tail
         range |> Seq.map (fun x -> tss.GetLineFromLineNumber(x))                     
+
     
 /// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
 /// include any Vim specific logic
 module internal SnapshotSpanUtil =
     
-    let GetPoints (span:SnapshotSpan) = seq { for i in 0 .. span.Length do yield span.Start.Add(i) }
-       
+    let GetPoints (span:SnapshotSpan) = 
+        let tss = span.Snapshot 
+        let startPos = span.Start.Position
+        let endPos = min (tss.Length-1) span.End.Position
+        seq { for i in  startPos .. endPos do yield SnapshotPoint(tss, i) }
 
 /// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
 /// include any Vim specific logic
@@ -226,3 +230,17 @@ module internal SnapshotPointUtil =
         GetSpans point kind 
         |> Seq.map SnapshotSpanUtil.GetPoints
         |> Seq.concat       
+
+    /// Get the character associated with the current point.  Returns None for the last character
+    /// in the buffer which has no representable value
+    let TryGetChar point = 
+        let tss = GetSnapshot point
+        if point = SnapshotUtil.GetEndPoint tss then None
+        else point.GetChar() |> Some
+
+    /// Try and get the character associated with the current point.  If the point does not point to
+    /// a valid character in the buffer then the defaultValue will be returned
+    let GetCharOrDefault point defaultValue =
+        match TryGetChar point with
+        | Some(c) -> c
+        | None -> defaultValue

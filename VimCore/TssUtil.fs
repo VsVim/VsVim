@@ -6,20 +6,14 @@ open Microsoft.VisualStudio.Text.Operations
 module internal TssUtil =
 
     let ValidPos (tss:ITextSnapshot) start = 
-        if start < 0 then 
-            0
-        else if start >= tss.Length then
-            tss.Length - 1
-        else    
-            start
+        if start < 0 then 0
+        else if start >= tss.Length then tss.Length - 1
+        else start
             
     let ValidLine (tss:ITextSnapshot) line =
-        if line < 0 then
-            0
-        else if line >= tss.LineCount then
-            tss.LineCount-1
-        else
-            line
+        if line < 0 then 0
+        else if line >= tss.LineCount then tss.LineCount-1
+        else line
 
     let VimLineToTssLine line = 
         match line with
@@ -149,11 +143,9 @@ module internal TssUtil =
             |> Seq.concat
 
     let FindFirstNonWhitespaceCharacter (line:ITextSnapshotLine) = 
-        let rec inner (cur:SnapshotPoint) = 
-            if cur.Position >= line.End.Position then cur
-            elif not (CharUtil.IsWhiteSpace (cur.GetChar())) then cur
-            else inner (cur.Add(1))
-        inner line.Start
+        line
+        |> SnapshotLineUtil.GetPoints
+        |> SeqUtil.tryFindOrDefault (fun p -> not (CharUtil.IsWhiteSpace (p.GetChar()))) (line.Start)
 
     let CreateTextStructureNavigator wordKind (baseImpl:ITextStructureNavigator) = 
         { new ITextStructureNavigator with 

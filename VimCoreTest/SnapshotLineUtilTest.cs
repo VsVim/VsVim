@@ -58,5 +58,7 @@ namespace VimCoreTest
             var span = SnapshotLineUtil.GetExtentIncludingLineBreak(_buffer.GetLine(0));
             Assert.AreEqual("foo" + Environment.NewLine, span.GetText());
         }
+
+
     }
 }
