@@ -174,19 +174,6 @@ type internal NormalMode
                     this.WaitForMotion ki count inner2
         inner
                             
-    /// Move the caret as a result of the user hitting enter.  The caret should jump to the
-    /// start of the next line unless we are at the end of the buffer
-    member this.MoveForEnter (view:ITextView) (host:IVimHost)=
-        let tss = view.TextSnapshot
-        let point = ViewUtil.GetCaretPoint view
-        let last = TssUtil.GetLastLine tss
-        match last.LineNumber = point.GetContainingLine().LineNumber with
-            | false -> 
-                let next = tss.GetLineFromLineNumber(point.GetContainingLine().LineNumber+1)
-                ViewUtil.MoveCaretToPoint view (next.Start) |> ignore
-            | true ->
-                host.Beep()
-
     member private x.WaitReplaceChar = 
         let inner (ki:KeyInput) count reg =
             _isInReplace <- false
@@ -341,7 +328,6 @@ type internal NormalMode
             yield (InputUtil.CharToKeyInput('u'), (fun count _ -> _bufferData.VimHost.Undo this.TextBuffer count))
             yield (InputUtil.CharToKeyInput('D'), (fun count reg -> _operations.DeleteLinesFromCursor count reg))
             yield (KeyInput('r', KeyModifiers.Control), (fun count _ -> _bufferData.VimHost.Redo this.TextBuffer count))
-            yield (InputUtil.VimKeyToKeyInput VimKey.EnterKey, (fun _ _ -> this.MoveForEnter this.TextView _bufferData.VimHost))
             yield (InputUtil.CharAndModifiersToKeyInput 'u' KeyModifiers.Control, (fun count _ -> _operations.ScrollLines ScrollDirection.Up count))
             yield (InputUtil.CharAndModifiersToKeyInput 'd' KeyModifiers.Control, (fun count _ -> _operations.ScrollLines ScrollDirection.Down count))
             yield (InputUtil.CharAndModifiersToKeyInput 'f' KeyModifiers.Control, (fun count _ -> _operations.ScrollPages ScrollDirection.Down count))

@@ -306,6 +306,13 @@ module internal TssUtil =
             |> Seq.map getForSpan
             |> Seq.concat
 
+    let FindFirstNonWhitespaceCharacter (line:ITextSnapshotLine) = 
+        let rec inner (cur:SnapshotPoint) = 
+            if cur.Position >= line.End.Position then cur
+            elif not (CharUtil.IsWhiteSpace (cur.GetChar())) then cur
+            else inner (cur.Add(1))
+        inner line.Start
+
     let CreateTextStructureNavigator wordKind (baseImpl:ITextStructureNavigator) = 
         { new ITextStructureNavigator with 
             member x.ContentType = baseImpl.ContentType

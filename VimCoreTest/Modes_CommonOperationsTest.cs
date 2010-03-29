@@ -1026,5 +1026,54 @@ namespace VimCoreTest
             Assert.AreEqual(2, _view.TextSnapshot.LineCount);
         }
 
+        [Test]
+        public void MoveCaretDownToFirstNonWhitespaceCharacter1()
+        {
+            CreateLines("foo", "bar");
+            _editorOpts.Setup(x => x.ResetSelection()).Verifiable();
+            _operations.MoveCaretDownToFirstNonWhitespaceCharacter(1);
+            Assert.AreEqual(_view.GetLine(1).Start, _view.GetCaretPoint());
+            _editorOpts.Verify();
+        }
+
+        [Test]
+        public void MoveCaretDownToFirstNonWhitespaceCharacter2()
+        {
+            CreateLines("foo", " bar");
+            _editorOpts.Setup(x => x.ResetSelection()).Verifiable();
+            _operations.MoveCaretDownToFirstNonWhitespaceCharacter(1);
+            Assert.AreEqual(_view.GetLine(1).Start.Add(1), _view.GetCaretPoint());
+            _editorOpts.Verify();
+        }
+
+        [Test]
+        public void MoveCaretDownToFirstNonWhitespaceCharacter3()
+        {
+            CreateLines("foo", "  bar", "baz");
+            _editorOpts.Setup(x => x.ResetSelection()).Verifiable();
+            _operations.MoveCaretDownToFirstNonWhitespaceCharacter(1);
+            Assert.AreEqual(_view.GetLine(1).Start.Add(2), _view.GetCaretPoint());
+            _editorOpts.Verify();
+        }
+
+        [Test]
+        public void MoveCaretDownToFirstNonWhitespaceCharacter4()
+        {
+            CreateLines("foo", "  bar", " baz");
+            _editorOpts.Setup(x => x.ResetSelection()).Verifiable();
+            _operations.MoveCaretDownToFirstNonWhitespaceCharacter(2);
+            Assert.AreEqual(_view.GetLine(2).Start.Add(1), _view.GetCaretPoint());
+            _editorOpts.Verify();
+        }
+
+        [Test]
+        public void MoveCaretDownToFirstNonWhitespaceCharacter5()
+        {
+            CreateLines("foo", "  bar", "baz");
+            _editorOpts.Setup(x => x.ResetSelection()).Verifiable();
+            _operations.MoveCaretDownToFirstNonWhitespaceCharacter(300);
+            Assert.AreEqual(_view.GetLine(2).Start, _view.GetCaretPoint());
+            _editorOpts.Verify();
+        }
     }
 }

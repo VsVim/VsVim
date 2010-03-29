@@ -176,6 +176,14 @@ namespace VimCoreTest
             editOpts.Verify();
         }
 
+        public void MoveEnter1()
+        {
+            Create("foo bar");
+            _operations.Setup(x => x.MoveCaretDownToFirstNonWhitespaceCharacter(1)).Verifiable();
+            _mode.Process(VimKey.EnterKey);
+            _operations.Verify();
+        }
+
         #endregion
 
         #region Operations

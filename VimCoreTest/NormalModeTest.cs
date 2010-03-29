@@ -166,28 +166,6 @@ namespace VimCoreTest
 
         #region Movement
 
-        [Test, Description("Enter should move down on line")]
-        public void Enter1()
-        {
-            CreateBuffer(s_lines);
-            _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 0));
-            _mode.Process(VimKey.EnterKey);
-            var line = _view.TextSnapshot.GetLineFromLineNumber(1);
-            Assert.AreEqual(line.Start, _view.Caret.Position.BufferPosition);
-        }
-
-        [Test, Description("Enter at end of file should beep ")]
-        public void Enter2()
-        {
-            var host = new FakeVimHost();
-            CreateBuffer(host, s_lines);
-            var last = _view.TextSnapshot.Lines.Last();
-            _view.Caret.MoveTo(last.Start.Add(2));
-            _mode.Process(VimKey.EnterKey);
-            Assert.AreEqual(1, host.BeepCount);
-            Assert.AreEqual(last.Start.Add(2), _view.Caret.Position.BufferPosition);
-        }
-
         [Test]
         public void Move_l()
         {
@@ -509,6 +487,25 @@ namespace VimCoreTest
             _operations.Setup(x => x.GoToLineOrFirst(FSharpOption.Create(42))).Verifiable();
             _mode.Process("42");
             _mode.Process(new KeyInput(Char.MinValue, VimKey.HomeKey, KeyModifiers.Control));
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Move_Enter_1()
+        {
+            CreateBuffer(s_lines);
+            _operations.Setup(x => x.MoveCaretDownToFirstNonWhitespaceCharacter(1)).Verifiable();
+            _mode.Process(InputUtil.VimKeyToKeyInput(VimKey.EnterKey));
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Move_Enter_2()
+        {
+            CreateBuffer(s_lines);
+            _operations.Setup(x => x.MoveCaretDownToFirstNonWhitespaceCharacter(2)).Verifiable();
+            _mode.Process('2');
+            _mode.Process(InputUtil.VimKeyToKeyInput(VimKey.EnterKey));
             _operations.Verify();
         }
 

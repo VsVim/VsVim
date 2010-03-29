@@ -233,6 +233,14 @@ type internal CommonOperations
             for i = 1 to count do
                 _operations.MoveLineDown(false)
 
+        member x.MoveCaretDownToFirstNonWhitespaceCharacter count = 
+            let caret = ViewUtil.GetCaretPoint _textView
+            let line = caret.GetContainingLine()
+            let line = TssUtil.GetValidLineOrLast caret.Snapshot (line.LineNumber + count)
+            let point = TssUtil.FindFirstNonWhitespaceCharacter line
+            _operations.ResetSelection()
+            ViewUtil.MoveCaretToPoint _textView point |> ignore
+
         member x.MoveWordForward kind count = 
             let rec inner pos count = 
                 if count = 0 then pos

@@ -43,6 +43,7 @@ type internal CommandFactory( _operations : ICommonOperations) =
                 yield (KeyInput('j', KeyModifiers.Control),moveDown)        
                 yield (InputUtil.CharToKeyInput('$'), (fun _ -> _operations.EditorOperations.MoveToEndOfLine(false)))
                 yield (InputUtil.CharToKeyInput('^'), (fun _ -> _operations.EditorOperations.MoveToStartOfLineAfterWhiteSpace(false)))
+                yield (InputUtil.VimKeyToKeyInput(VimKey.EnterKey), (fun count -> _operations.MoveCaretDownToFirstNonWhitespaceCharacter count)) 
             }
         s
 

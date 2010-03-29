@@ -53,6 +53,10 @@ module internal TssUtil =
     /// will be returned
     val FindNextWordPosition : SnapshotPoint -> WordKind -> SnapshotPoint
 
+    /// Find and return the SnapshotPoint representing the first non-whitespace character on
+    /// the given ITextSnapshotLine
+    val FindFirstNonWhitespaceCharacter : ITextSnapshotLine -> SnapshotPoint
+
     val FindPreviousWordPosition : SnapshotPoint -> WordKind -> SnapshotPoint
     val SearchDirection: SearchKind -> 'a -> 'a -> 'a
     val FindIndentPosition : ITextSnapshotLine -> int

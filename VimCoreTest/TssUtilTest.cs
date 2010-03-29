@@ -686,6 +686,37 @@ namespace VimCoreTest
             Assert.AreEqual("ba", span.Value.GetText());            
         }
 
+        [Test]
+        public void FindFirstNoneWhitespaceCharacter1()
+        {
+            Create("foo");
+            var point = TssUtil.FindFirstNonWhitespaceCharacter(_buffer.GetLine(0));
+            Assert.AreEqual(_buffer.GetLine(0).Start, point);
+        }
+
+        [Test]
+        public void FindFirstNoneWhitespaceCharacter2()
+        {
+            Create(" foo");
+            var point = TssUtil.FindFirstNonWhitespaceCharacter(_buffer.GetLine(0));
+            Assert.AreEqual(_buffer.GetLine(0).Start.Add(1), point);
+        }
+
+        [Test]
+        public void FindFirstNoneWhitespaceCharacter3()
+        {
+            Create("");
+            var point = TssUtil.FindFirstNonWhitespaceCharacter(_buffer.GetLine(0));
+            Assert.AreEqual(_buffer.GetLine(0).Start, point);
+        }
+
+        [Test]
+        public void FindFirstNoneWhitespaceCharacter4()
+        {
+            Create("  bar");
+            var point = TssUtil.FindFirstNonWhitespaceCharacter(_buffer.GetLine(0));
+            Assert.AreEqual(_buffer.GetLine(0).Start.Add(2), point);
+        }
 
     }
 }
