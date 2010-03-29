@@ -19,6 +19,9 @@ module internal TssUtil =
     /// Get the points on the particular line including the line break
     val GetPointsIncludingLineBreak : ITextSnapshotLine -> seq<SnapshotPoint>
 
+    /// Get the ITextSnapshotLine containing the specified SnapshotPoint
+    val GetContainingLine : SnapshotPoint -> ITextSnapshotLine
+
     /// Start searching the snapshot at the given point and return the buffer as a 
     /// sequence of SnapshotSpans.  One will be returned per line in the buffer.  The
     /// only exception is the start line which will be divided at the given start

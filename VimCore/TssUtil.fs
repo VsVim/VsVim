@@ -25,6 +25,8 @@ module internal TssUtil =
 
     let GetLineExtentIncludingLineBreak (line:ITextSnapshotLine) = line.ExtentIncludingLineBreak
 
+    let GetContainingLine (point:SnapshotPoint) = point.GetContainingLine()
+
     let GetPoints line =
         let span = GetLineExtent line
         seq { for i in 0 .. span.Length do yield span.Start.Add(i) }
@@ -131,9 +133,9 @@ module internal TssUtil =
         let lineNumber = GetValidLineNumberOrLast tss lineNumber
         tss.GetLineFromLineNumber(lineNumber)
 
-    let GetLineRangeSpan (start:SnapshotPoint) count = 
-        let tss = start.Snapshot
-        let startLine = start.GetContainingLine()
+    let GetLineRangeSpan start count = 
+        let startLine = GetContainingLine start
+        let tss = startLine.Snapshot
         let last = GetValidLineOrLast tss (startLine.LineNumber+(count-1))
         new SnapshotSpan(start, last.End)
 
@@ -146,8 +148,8 @@ module internal TssUtil =
     /// Wrap the TextUtil functions which operate on String and int locations into 
     /// a SnapshotPoint and SnapshotSpan version
     let WrapTextSearch (func: WordKind -> string -> int -> option<Span> ) = 
-        let f kind (point:SnapshotPoint) = 
-            let line = point.GetContainingLine()
+        let f kind point = 
+            let line = GetContainingLine point
             let text = line.GetText()
             let pos = point.Position - line.Start.Position
             match pos >= text.Length with
