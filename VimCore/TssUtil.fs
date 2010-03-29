@@ -21,6 +21,18 @@ module internal TssUtil =
         let first = tss.GetLineFromLineNumber(0)
         first.Start
 
+    let GetLineExtent (line:ITextSnapshotLine) = line.Extent
+
+    let GetLineExtentIncludingLineBreak (line:ITextSnapshotLine) = line.ExtentIncludingLineBreak
+
+    let GetPoints line =
+        let span = GetLineExtent line
+        seq { for i in 0 .. span.Length do yield span.Start.Add(i) }
+
+    let GetPointsIncludingLineBreak line = 
+        let span = GetLineExtentIncludingLineBreak line
+        seq { for i in 0 .. span.Length do yield span.Start.Add(i) }
+
     // Quick and dirty ternary on the general direction of the search (forward or backwards)
     let SearchDirection kind forwardRes backwardRes = 
         match kind with
@@ -91,12 +103,6 @@ module internal TssUtil =
             }
         SearchDirection kind forward backward
        
-    /// Get the points on the particular line in order 
-    let GetPoints (line:ITextSnapshotLine) =
-        let start = line.Start
-        let len = line.End.Position - start.Position - 1
-        seq { for i in 0 .. len do yield start.Add(i) }
- 
     let ValidPos (tss:ITextSnapshot) start = 
         if start < 0 then 
             0
@@ -118,26 +124,19 @@ module internal TssUtil =
             | 0 -> 0
             | _ -> line-1
 
-    /// Get the line number back if it's valid and if not the last line in the snapshot
     let GetValidLineNumberOrLast (tss:ITextSnapshot) lineNumber = 
         if lineNumber >= tss.LineCount then tss.LineCount-1 else lineNumber
 
-    /// Get a valid line for the specified number if it's valid and the last line if it's
-    /// not
     let GetValidLineOrLast (tss:ITextSnapshot) lineNumber =
         let lineNumber = GetValidLineNumberOrLast tss lineNumber
         tss.GetLineFromLineNumber(lineNumber)
 
-    /// Get the line range passed in.  If the count of lines exceeds the amount of lines remaining
-    /// in the buffer, the span will be truncated to the final line
     let GetLineRangeSpan (start:SnapshotPoint) count = 
         let tss = start.Snapshot
         let startLine = start.GetContainingLine()
         let last = GetValidLineOrLast tss (startLine.LineNumber+(count-1))
         new SnapshotSpan(start, last.End)
 
-    /// Functions exactly line GetLineRangeSpan except it will include the final line up until
-    /// the end of the line break
     let GetLineRangeSpanIncludingLineBreak (start:SnapshotPoint) count =
         let tss = start.Snapshot
         let startLine = start.GetContainingLine()
@@ -221,10 +220,6 @@ module internal TssUtil =
         let span = FindNextWordSpan point kind
         span.Start
            
-    /// This function is mainly a backing for the "b" command mode command.  It is really
-    /// used to find the position of the start of the current or previous word.  Unless we 
-    /// are currently at the start of a word, in which case it should go back to the previous
-    /// one
     let FindPreviousWordPosition point kind  =
         let span = FindPreviousWordSpan point kind 
         span.Start
@@ -235,9 +230,6 @@ module internal TssUtil =
             | Some i -> i
             | None -> 0
         
-    // Get the span of the character which is pointed to by the point.  Normally this is a 
-    // trivial operation.  The only difficulty if the Point exists on an empty line.  In that
-    // case it is the extent of the line
     let GetCharacterSpan (point:SnapshotPoint) =
         let line = point.GetContainingLine()
         let endSpan = new SnapshotSpan(line.End, line.EndIncludingLineBreak)
@@ -245,8 +237,6 @@ module internal TssUtil =
             | true -> endSpan
             | false -> new SnapshotSpan(point,1)
 
-    /// Get the reverse character span.  This will search backwards count items until the 
-    /// count is satisfied or the begining of the line is reached
     let GetReverseCharacterSpan (point:SnapshotPoint) count =
         let line = point.GetContainingLine()
         let diff = line.Start.Position - count
@@ -274,7 +264,6 @@ module internal TssUtil =
         else
             point.Add(1)                    
 
-    /// Get the previous point in the buffer with wrap
     let GetPreviousPointWithWrap (point:SnapshotPoint) =
         let tss = point.Snapshot
         let line = point.GetContainingLine()

@@ -567,6 +567,22 @@ namespace VimCoreTest
         }
 
         [Test]
+        public void GetLineExtent1()
+        {
+            Create("foo");
+            var span = TssUtil.GetLineExtent(_buffer.GetLine(0));
+            Assert.AreEqual("foo", span.GetText());
+        }
+
+        [Test]
+        public void GetLineExtentIncludingLineBreak1()
+        {
+            Create("foo", "baz");
+            var span = TssUtil.GetLineExtentIncludingLineBreak(_buffer.GetLine(0));
+            Assert.AreEqual("foo" + Environment.NewLine, span.GetText());
+        }
+
+        [Test]
         public void GetWordSpans1()
         {
             Create("foo bar baz");
@@ -717,6 +733,7 @@ namespace VimCoreTest
             var point = TssUtil.FindFirstNonWhitespaceCharacter(_buffer.GetLine(0));
             Assert.AreEqual(_buffer.GetLine(0).Start.Add(2), point);
         }
+
 
     }
 }
