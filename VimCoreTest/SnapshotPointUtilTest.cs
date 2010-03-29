@@ -241,6 +241,97 @@ namespace VimCoreTest
             Assert.AreEqual("cdeab", msg);
         }
 
+        [Test]
+        public void GetSpans1()
+        {
+            Create("foo", "bar");
+            var point = new SnapshotPoint(_snapshot, 1);
+            var list = SnapshotPointUtil.GetSpans(point, SearchKind.ForwardWithWrap).Select(x => x.GetText()).ToList();
+            Assert.AreEqual("oo", list[0]);
+            Assert.AreEqual("bar", list[1]);
+            Assert.AreEqual("f", list[2]);
+        }
+
+        [Test]
+        public void GetSpans2()
+        {
+            Create("foo", "bar");
+            var point = new SnapshotPoint(_snapshot, 1);
+            var list = SnapshotPointUtil.GetSpans(point, SearchKind.BackwardWithWrap).Select(x => x.GetText()).ToList();
+            Assert.AreEqual(3, list.Count);
+            Assert.AreEqual("f", list[0]);
+            Assert.AreEqual("bar", list[1]);
+            Assert.AreEqual("oo", list[2]);
+        }
+
+        [Test, Description("Full lines starting at line not 0")]
+        public void GetSpans3()
+        {
+            Create("foo", "bar baz");
+            var line = _snapshot.GetLineFromLineNumber(1);
+            var list = SnapshotPointUtil.GetSpans(line.Start, SearchKind.ForwardWithWrap).Select(x => x.GetText()).ToList();
+            Assert.AreEqual(2, list.Count);
+            Assert.AreEqual("bar baz", list[0]);
+            Assert.AreEqual("foo", list[1]);
+        }
+
+        [Test, Description("Don't wrap if we say dont't wrap")]
+        public void GetSpans4()
+        {
+            Create("foo");
+            var line = _snapshot.GetLineFromLineNumber(0);
+            var list = SnapshotPointUtil.GetSpans(line.End, SearchKind.Forward);
+            Assert.AreEqual(1, list.Count());
+        }
+
+        [Test, Description("Don't wrap backwards if we don't say wrap")]
+        public void GetSpans5()
+        {
+            Create("foo");
+            var line = _snapshot.GetLineFromLineNumber(0);
+            var list = SnapshotPointUtil.GetSpans(line.Start + 2, SearchKind.Backward);
+            Assert.AreEqual(1, list.Count());
+        }
+
+        [Test, Description("Multi lack of wrap")]
+        public void GetSpans6()
+        {
+            Create("foo", "bar", "baz");
+            var line = _snapshot.GetLineFromLineNumber(1);
+            var list = SnapshotPointUtil.GetSpans(line.Start + 1, SearchKind.Forward);
+            Assert.AreEqual(2, list.Count());
+        }
+
+        [Test, Description("multi lack of wrap reverse")]
+        public void GetSpans7()
+        {
+            Create("foo bar", "baz");
+            var line = _snapshot.GetLineFromLineNumber(1);
+            var list = SnapshotPointUtil.GetSpans(line.Start, SearchKind.Backward);
+            Assert.AreEqual(2, list.Count());
+        }
+
+        [Test]
+        public void GetSpans8()
+        {
+            Create("foo bar", "baz");
+            var line = _snapshot.GetLineFromLineNumber(1);
+            var list = SnapshotPointUtil.GetSpans(line.Start.Subtract(1), SearchKind.Backward);
+            Assert.AreEqual(1, list.Count());
+        }
+
+        [Test, Description("Handle being given a point in the middle of a line break")]
+        public void GetSpans9()
+        {
+            Create("foo", "bar");
+            var point = _snapshot.GetLineFromLineNumber(0).End.Add(1);
+            var list = SnapshotPointUtil.GetSpans(point, SearchKind.ForwardWithWrap).Select(x => x.GetText());
+            Assert.AreEqual(3, list.Count());
+            Assert.AreEqual(String.Empty, list.ElementAt(0));
+            Assert.AreEqual("bar", list.ElementAt(1));
+            Assert.AreEqual("foo", list.ElementAt(2));
+        }
+
      
 
     }

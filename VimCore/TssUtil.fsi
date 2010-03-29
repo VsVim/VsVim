@@ -7,11 +7,6 @@ open Microsoft.VisualStudio.Text.Operations
 
 module internal TssUtil =
 
-    /// Start searching the snapshot at the given point and return the buffer as a 
-    /// sequence of SnapshotSpans.  One will be returned per line in the buffer.  The
-    /// only exception is the start line which will be divided at the given start
-    /// point
-    val GetSpans : SnapshotPoint -> SearchKind -> seq<SnapshotSpan>
 
     /// Get the spans of all Words starting at the given point and searching the 
     /// spans with the specified Kind
@@ -62,7 +57,7 @@ module internal TssUtil =
     /// are currently at the start of a word, in which case it should go back to the previous
     /// one
     val FindPreviousWordPosition : SnapshotPoint -> WordKind -> SnapshotPoint
-    val SearchDirection: SearchKind -> 'a -> 'a -> 'a
+
     val FindIndentPosition : ITextSnapshotLine -> int
 
     /// Get the reverse character span.  This will search backwards count items until the 

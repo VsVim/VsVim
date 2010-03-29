@@ -5,42 +5,6 @@ open Microsoft.VisualStudio.Text.Operations
 
 module internal TssUtil =
 
-    // Quick and dirty ternary on the general direction of the search (forward or backwards)
-    let SearchDirection kind forwardRes backwardRes = 
-        match kind with
-            | SearchKind.Forward -> forwardRes
-            | SearchKind.ForwardWithWrap -> forwardRes
-            | SearchKind.Backward -> backwardRes
-            | SearchKind.BackwardWithWrap -> backwardRes
-            | _ -> failwith "Invalid enum value"
-        
-    let GetSpans (point: SnapshotPoint) kind =
-        let tss = point.Snapshot
-        let startLine = point.GetContainingLine()
-        
-        // If the point is within the exetend of the line push it back to the end 
-        // of the line
-        let point = if point.Position > startLine.End.Position then startLine.End else point
-        
-        let middle = SnapshotPointUtil.GetLines point kind |> Seq.skip 1 |> Seq.map SnapshotLineUtil.GetExtent
-        let forward = seq {
-            yield new SnapshotSpan(point, startLine.End)
-            yield! middle
-            
-            // Be careful not to wrap unless specified
-            if startLine.Start <> point  && kind = SearchKind.ForwardWithWrap then
-                yield new SnapshotSpan(startLine.Start, point)
-            }
-        let backward = seq {
-            yield new SnapshotSpan(startLine.Start, point)
-            yield! middle
-            
-            // Be careful not to wrap unless specified
-            if startLine.End <> point && kind = SearchKind.BackwardWithWrap then
-                yield new SnapshotSpan(point, startLine.End)
-            }
-        SearchDirection kind forward backward
-       
     let ValidPos (tss:ITextSnapshot) start = 
         if start < 0 then 
             0
@@ -109,8 +73,8 @@ module internal TssUtil =
     
     let FindNextWordSpan point kind =
         let spans = match FindCurrentWordSpan point kind with
-                        | Some s -> GetSpans (s.End) SearchKind.Forward
-                        | None -> GetSpans point SearchKind.Forward
+                        | Some s -> SnapshotPointUtil.GetSpans (s.End) SearchKind.Forward
+                        | None -> SnapshotPointUtil.GetSpans point SearchKind.Forward
         let found = spans |> Seq.tryPick (fun x -> FindAnyWordSpan x kind SearchKind.Forward)
         match found with
             | Some s -> s
@@ -120,7 +84,7 @@ module internal TssUtil =
     let FindPreviousWordSpan (point:SnapshotPoint) kind = 
         let startSpan = new SnapshotSpan(SnapshotUtil.GetStartPoint (point.Snapshot), 0)
         let fullSearch p2 =
-             let s = GetSpans p2 SearchKind.Backward |> Seq.tryPick (fun x -> FindAnyWordSpan x kind SearchKind.Backward)                                
+             let s = SnapshotPointUtil.GetSpans p2 SearchKind.Backward |> Seq.tryPick (fun x -> FindAnyWordSpan x kind SearchKind.Backward)                                
              match s with 
                 | Some span -> span
                 | None -> startSpan
@@ -180,7 +144,7 @@ module internal TssUtil =
             if SearchKindUtil.IsForward searchKind then getForSpanForward span
             else getForSpanBackwards span
 
-        GetSpans point searchKind 
+        SnapshotPointUtil.GetSpans point searchKind 
             |> Seq.map getForSpan
             |> Seq.concat
 
