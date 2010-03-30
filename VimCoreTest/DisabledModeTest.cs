@@ -17,7 +17,7 @@ namespace VimCoreTest
         private Mock<IVimLocalSettings> _settings;
         private Mock<IVimBuffer> _bufferData;
         private DisabledMode _modeRaw;
-        private IMode _mode;
+        private IDisabledMode _mode;
 
         [SetUp]
         public void Init()

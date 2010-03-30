@@ -99,11 +99,11 @@ namespace Vim.UI.Wpf
             var found = MappedCoreChars.FirstOrDefault(x => x.Item2 == virtualKey && KeyModifiers.Shift == x.Item3);
             if (found == null)
             {
-                return new KeyInput(ki.Char, modKeys);
+                return new KeyInput(ki.Char, ki.Key, modKeys);
             }
             else
             {
-                return new KeyInput(found.Item1, modKeys);
+                return new KeyInput(found.Item1, ki.Key, modKeys);
             }
         }
 

@@ -120,6 +120,14 @@ namespace Vim.UI.Wpf.Test
         }
 
         [Test]
+        public void DisabledMode1()
+        {
+            _buffer.SetupGet(x => x.ModeKind).Returns(ModeKind.Disabled);
+            _caret.SetupSet(x => x.CaretDisplay = CaretDisplay.NormalCaret);
+            _controller.Update();
+        }
+
+        [Test]
         public void VisualMode1()
         {
             _buffer.SetupGet(x => x.ModeKind).Returns(ModeKind.VisualBlock);

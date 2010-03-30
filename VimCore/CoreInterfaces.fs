@@ -489,6 +489,8 @@ and IDisabledMode =
     /// Help message to display 
     abstract HelpMessage : string 
 
+    inherit IMode
+
 /// Command executed in normal mode
 and NormalModeCommand =
     | NonRepeatableCommand

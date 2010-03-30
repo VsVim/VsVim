@@ -141,8 +141,7 @@ type internal VimBuffer
     
     member x.AddMode mode = _modeMap.AddMode mode
             
-    member x.CanProcessInput ki = x.Mode.CanProcess ki || ki = _vim.Settings.DisableCommand
-
+    member x.CanProcessInput ki =  x.Mode.CanProcess ki || ki = _vim.Settings.DisableCommand
     member x.RaiseErrorMessage msg = _errorMessageEvent.Trigger msg
     member x.RaiseStatusMessage msg = _statusMessageEvent.Trigger msg
     member x.RaiseStatusMessageLong msgSeq = _statusMessageLongEvent.Trigger msgSeq

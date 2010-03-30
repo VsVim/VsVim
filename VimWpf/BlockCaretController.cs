@@ -70,6 +70,9 @@ namespace Vim.UI.Wpf
                 case ModeKind.Insert:
                     kind = CaretDisplay.NormalCaret;
                     break;
+                case ModeKind.Disabled:
+                    kind = CaretDisplay.NormalCaret;
+                    break;
             }
 
             _blockCaret.CaretDisplay = kind;

@@ -11,8 +11,9 @@ type internal DisabledMode( _data : IVimBuffer ) =
         else
             sprintf "Vim Disabled. Type %s+%s to re-enable" (ki.Key.ToString()) (ki.KeyModifiers.ToString())
 
-    interface IMode with 
+    interface IDisabledMode with 
         member x.VimBuffer = _data
+        member x.HelpMessage = x.HelpString
         member x.ModeKind = ModeKind.Disabled        
         member x.Commands = Seq.singleton _data.Settings.GlobalSettings.DisableCommand
         member x.CanProcess ki = 
