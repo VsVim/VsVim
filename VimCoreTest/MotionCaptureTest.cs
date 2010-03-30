@@ -27,10 +27,10 @@ namespace VimCoreTest
         [SetUp]
         public void Init()
         {
-            Initialize(s_lines);
+            Create(s_lines);
         }
 
-        public void Initialize(params string[] lines)
+        public void Create(params string[] lines)
         {
             _buffer = Utils.EditorUtil.CreateBuffer(lines);
             _snapshot = _buffer.CurrentSnapshot;
@@ -53,11 +53,21 @@ namespace VimCoreTest
             return res;
        }
 
+        internal void ProcessComplete(int startPosition, int count, string input, string match, MotionKind motionKind, OperationKind opKind)
+        {
+            var res = Process(startPosition, count, input);
+            var tuple = res.AsComplete().Item;
+            Assert.IsTrue(res.IsComplete);
+            Assert.AreEqual(match, tuple.Item1.GetText());
+            Assert.AreEqual(motionKind, tuple.Item2);
+            Assert.AreEqual(opKind, tuple.Item3);
+        }
+
 
         [Test]
         public void Word1()
         {
-            Initialize("foo bar");
+            Create("foo bar");
             var res = MotionCapture.ProcessInput(new SnapshotPoint(_snapshot, 0), InputUtil.CharToKeyInput('w'), 1);
             Assert.IsTrue(res.IsComplete);
             var res2 = (MotionResult.Complete)res;
@@ -72,7 +82,7 @@ namespace VimCoreTest
         [Test]
         public void Word2()
         {
-            Initialize("foo bar");
+            Create("foo bar");
             var res = MotionCapture.ProcessInput(new SnapshotPoint(_snapshot, 1), InputUtil.CharToKeyInput('w'), 1);
             Assert.IsTrue(res.IsComplete);
             var span = res.AsComplete().Item.Item1;
@@ -83,7 +93,7 @@ namespace VimCoreTest
         [Test, Description("Word motion with a count")]
         public void Word3()
         {
-            Initialize("foo bar baz");
+            Create("foo bar baz");
             var res = Process(0, 2, "w");
             Assert.IsTrue(res.IsComplete);
             Assert.AreEqual("foo bar ", res.AsComplete().Item.Item1.GetText());
@@ -92,7 +102,7 @@ namespace VimCoreTest
         [Test, Description("Count across lines")]
         public void Word4()
         {
-            Initialize("foo bar", "baz jaz");
+            Create("foo bar", "baz jaz");
             var res = Process(0, 3, "w");
             Assert.IsTrue(res.IsComplete);
             Assert.AreEqual("foo bar" + Environment.NewLine + "baz ", res.AsComplete().Item.Item1.GetText());
@@ -101,7 +111,7 @@ namespace VimCoreTest
         [Test, Description("Count off the end of the buffer")]
         public void Word5()
         {
-            Initialize("foo bar");
+            Create("foo bar");
             var res = Process(0, 10, "w");
             Assert.IsTrue(res.IsComplete);
             Assert.AreEqual("foo bar", res.AsComplete().Item.Item1.GetText());
@@ -110,7 +120,7 @@ namespace VimCoreTest
         [Test]
         public void Word6()
         {
-            Initialize("foo bar", "baz");
+            Create("foo bar", "baz");
             var res = Process(4, 1, "w");
             Assert.IsTrue(res.IsComplete);
             Assert.AreEqual("bar", res.AsComplete().Item.Item1.GetText());
@@ -119,7 +129,7 @@ namespace VimCoreTest
         [Test]
         public void Word7()
         {
-            Initialize("foo bar", "  baz");
+            Create("foo bar", "  baz");
             var res = Process(4, 1, "w");
             Assert.IsTrue(res.IsComplete);
             Assert.AreEqual("bar", res.AsComplete().Item.Item1.GetText());
@@ -128,7 +138,7 @@ namespace VimCoreTest
         [Test]
         public void BadInput()
         {
-            Initialize("foo bar");
+            Create("foo bar");
             var res = MotionCapture.ProcessInput(new SnapshotPoint(_snapshot, 0), InputUtil.CharToKeyInput('z'), 0);
             Assert.IsTrue(res.IsInvalidMotion);
             res = res.AsInvalidMotion().Item2.Invoke(InputUtil.VimKeyToKeyInput(VimKey.EscapeKey));
@@ -139,7 +149,7 @@ namespace VimCoreTest
         [Test, Description("Keep gettnig input until it's escaped")]
         public void BadInput2()
         {
-            Initialize("foo bar");
+            Create("foo bar");
             var res = MotionCapture.ProcessInput(new SnapshotPoint(_snapshot, 0), InputUtil.CharToKeyInput('z'), 0);
             Assert.IsTrue(res.IsInvalidMotion);
             res = res.AsInvalidMotion().Item2.Invoke(InputUtil.CharToKeyInput('a'));
@@ -151,7 +161,7 @@ namespace VimCoreTest
         [Test]
         public void EndOfLine1()
         {
-            Initialize("foo bar", "baz");
+            Create("foo bar", "baz");
             var ki = InputUtil.CharToKeyInput('$');
             var res = MotionCapture.ProcessInput(new SnapshotPoint(_snapshot, 0), ki, 0);
             Assert.IsTrue(res.IsComplete);
@@ -165,7 +175,7 @@ namespace VimCoreTest
         [Test]
         public void EndOfLine2()
         {
-            Initialize("foo bar", "baz");
+            Create("foo bar", "baz");
             var ki = InputUtil.CharToKeyInput('$');
             var res = MotionCapture.ProcessInput(new SnapshotPoint(_snapshot, 1), ki, 0);
             Assert.IsTrue(res.IsComplete);
@@ -176,7 +186,7 @@ namespace VimCoreTest
         [Test]
         public void EndOfLineCount1()
         {
-            Initialize("foo", "bar", "baz");
+            Create("foo", "bar", "baz");
             var ki = InputUtil.CharToKeyInput('$');
             var res = MotionCapture.ProcessInput(new SnapshotPoint(_snapshot, 0), ki, 2);
             Assert.IsTrue(res.IsComplete);
@@ -189,7 +199,7 @@ namespace VimCoreTest
         [Test]
         public void EndOfLineCount2()
         {
-            Initialize("foo", "bar", "baz", "jar");
+            Create("foo", "bar", "baz", "jar");
             var ki = InputUtil.CharToKeyInput('$');
             var res = MotionCapture.ProcessInput(new SnapshotPoint(_snapshot, 0), ki, 3);
             Assert.IsTrue(res.IsComplete);
@@ -202,7 +212,7 @@ namespace VimCoreTest
         [Test,Description("Make sure counts past the end of the buffer don't crash")]
         public void EndOfLineCount3()
         {
-            Initialize("foo");
+            Create("foo");
             var ki = InputUtil.CharToKeyInput('$');
             var res = MotionCapture.ProcessInput(new SnapshotPoint(_snapshot, 0), ki, 300);
             Assert.IsTrue(res.IsComplete);
@@ -213,7 +223,7 @@ namespace VimCoreTest
         [Test]
         public void StartOfLine1()
         {
-            Initialize("foo");
+            Create("foo");
             var ki = InputUtil.CharToKeyInput('^');
             var res = MotionCapture.ProcessInput(_buffer.CurrentSnapshot.GetLineFromLineNumber(0).End, ki, 1);
             Assert.IsTrue(res.IsComplete);
@@ -226,7 +236,7 @@ namespace VimCoreTest
         [Test, Description("Make sure it goes to the first non-whitespace character")]
         public void StartOfLine2()
         {
-            Initialize("  foo");
+            Create("  foo");
             var ki = InputUtil.CharToKeyInput('^');
             var res = MotionCapture.ProcessInput(_buffer.CurrentSnapshot.GetLineFromLineNumber(0).End, ki, 1);
             Assert.IsTrue(res.IsComplete);
@@ -239,7 +249,7 @@ namespace VimCoreTest
         [Test]
         public void Count1()
         {
-            Initialize("foo bar baz");
+            Create("foo bar baz");
             var res  = Process(0, 1, "2w");
             Assert.IsTrue(res.IsComplete);
             var span = res.AsComplete().Item.Item1;
@@ -249,7 +259,7 @@ namespace VimCoreTest
         [Test, Description("Count of 1")]
         public void Count2()
         {
-            Initialize("foo bar baz");
+            Create("foo bar baz");
             var res = Process(0, 1, "1w");
             Assert.IsTrue(res.IsComplete);
             var span = res.AsComplete().Item.Item1;
@@ -259,7 +269,7 @@ namespace VimCoreTest
         [Test]
         public void AllWord1()
         {
-            Initialize("foo bar");
+            Create("foo bar");
             var res = Process(0, 1, "aw");
             Assert.IsTrue(res.IsComplete);
             Assert.AreEqual("foo ", res.AsComplete().Item.Item1.GetText());
@@ -268,7 +278,7 @@ namespace VimCoreTest
         [Test]
         public void AllWord2()
         {
-            Initialize("foo bar");
+            Create("foo bar");
             var res = Process(1, 1, "aw");
             Assert.IsTrue(res.IsComplete);
             Assert.AreEqual("foo ", res.AsComplete().Item.Item1.GetText());
@@ -277,7 +287,7 @@ namespace VimCoreTest
         [Test]
         public void AllWord3()
         {
-            Initialize("foo bar baz");
+            Create("foo bar baz");
             var res = Process(1, 1, "2aw");
             Assert.IsTrue(res.IsComplete);
             Assert.AreEqual("foo bar ", res.AsComplete().Item.Item1.GetText());
@@ -286,7 +296,7 @@ namespace VimCoreTest
         [Test]
         public void CharLeft1()
         {
-            Initialize("foo bar");
+            Create("foo bar");
             var res = Process(2, 1, "2h");
             Assert.IsTrue(res.IsComplete);
             Assert.AreEqual("fo", res.AsComplete().Item.Item1.GetText());
@@ -295,7 +305,7 @@ namespace VimCoreTest
         [Test, Description("Make sure that counts are multiplied")]
         public void CharLeft2()
         {
-            Initialize("food bar");
+            Create("food bar");
             var res = Process(4, 2, "2h");
             Assert.AreEqual("food", res.AsComplete().Item.Item1.GetText());
         }
@@ -303,7 +313,7 @@ namespace VimCoreTest
         [Test]
         public void CharRight1()
         {
-            Initialize("foo");
+            Create("foo");
             var res = Process(0, 1, "2l");
             Assert.AreEqual("fo", res.AsComplete().Item.Item1.GetText());
             Assert.AreEqual(OperationKind.CharacterWise, res.AsComplete().Item.Item3);
@@ -312,7 +322,7 @@ namespace VimCoreTest
         [Test]
         public void LineUp1()
         {
-            Initialize("foo", "bar");
+            Create("foo", "bar");
             var res = Process(_snapshot.GetLineFromLineNumber(1).Start.Position, 1, "k");
             Assert.AreEqual(OperationKind.LineWise, res.AsComplete().Item.Item3);
             Assert.AreEqual("foo" + Environment.NewLine + "bar", res.AsComplete().Item.Item1.GetText());
@@ -321,7 +331,7 @@ namespace VimCoreTest
         [Test]
         public void EndOfWord1()
         {
-            Initialize("foo bar");
+            Create("foo bar");
             var res = Process(new SnapshotPoint(_snapshot, 0), 1, "e").AsComplete().Item;
             Assert.AreEqual(MotionKind.Inclusive, res.Item2);
             Assert.AreEqual(OperationKind.CharacterWise, res.Item3);
@@ -331,7 +341,7 @@ namespace VimCoreTest
         [Test, Description("Needs to cross the end of the line")]
         public void EndOfWord2()
         {
-            Initialize("foo   ","bar");
+            Create("foo   ","bar");
             var point = new SnapshotPoint(_snapshot, 4);
             var res = Process(point, 1, "e").AsComplete().Item;
             var span = new SnapshotSpan(
@@ -345,7 +355,7 @@ namespace VimCoreTest
         [Test]
         public void EndOfWord3()
         {
-            Initialize("foo bar baz jaz");
+            Create("foo bar baz jaz");
             var res = Process(new SnapshotPoint(_snapshot, 0), 2, "e").AsComplete().Item;
             var span = new SnapshotSpan(_snapshot, 0, 7);
             Assert.AreEqual(span, res.Item1);
@@ -356,7 +366,7 @@ namespace VimCoreTest
         [Test, Description("Work across blank lines")]
         public void EndOfWord4()
         {
-            Initialize("foo   ", "", "bar");
+            Create("foo   ", "", "bar");
             var point = new SnapshotPoint(_snapshot, 4);
             var res = Process(point, 1, "e").AsComplete().Item;
             var span = new SnapshotSpan(
@@ -370,7 +380,7 @@ namespace VimCoreTest
         [Test, Description("Go off the end ofthe buffer")]
         public void EndOfWord5()
         {
-            Initialize("foo   ", "", "bar");
+            Create("foo   ", "", "bar");
             var point = new SnapshotPoint(_snapshot, 4);
             var res = Process(point, 400, "e").AsComplete().Item;
             var span = new SnapshotSpan(
@@ -380,5 +390,70 @@ namespace VimCoreTest
             Assert.AreEqual(MotionKind.Inclusive, res.Item2);
             Assert.AreEqual(OperationKind.CharacterWise, res.Item3);
         }
+
+        [Test]
+        public void ForwardChar1()
+        {
+            Create("foo bar baz");
+            ProcessComplete(0,1,"fo", "fo", MotionKind.Inclusive, OperationKind.CharacterWise);
+            ProcessComplete(0,1,"ff", "f", MotionKind.Inclusive, OperationKind.CharacterWise);
+            ProcessComplete(1,1,"fo", "o", MotionKind.Inclusive, OperationKind.CharacterWise);
+            ProcessComplete(1,1,"fb", "oo b", MotionKind.Inclusive, OperationKind.CharacterWise);
+        }
+
+        [Test]
+        public void ForwardChar2()
+        {
+            Create("foo bar baz");
+            var res = Process(0, 1, "fq");
+            Assert.IsTrue(res.IsError);
+        }
+
+        [Test]
+        public void ForwardChar3()
+        {
+            Create("foo bar baz");
+            ProcessComplete(0, 2, "fo", "foo", MotionKind.Inclusive, OperationKind.CharacterWise);
+        }
+
+        [Test,Description("Bad count gets nothing in gVim")]
+        public void ForwardChar4()
+        {
+            Create("foo bar baz");
+            var res = Process(0, 300, "fo");
+            Assert.IsTrue(res.IsError);
+        }
+
+        [Test]
+        public void ForwardTillChar1()
+        {
+            Create("foo bar baz");
+            ProcessComplete(0,1,"to", "f", MotionKind.Inclusive, OperationKind.CharacterWise);
+            ProcessComplete(1,1,"tb", "oo ", MotionKind.Inclusive, OperationKind.CharacterWise);
+        }
+
+        [Test]
+        public void ForwardTillChar2()
+        {
+            Create("foo bar baz");
+            var res = Process(0, 1, "tq");
+            Assert.IsTrue(res.IsError);
+        }
+
+        [Test]
+        public void ForwardTillChar3()
+        {
+            Create("foo bar baz");
+            ProcessComplete(0, 2, "to", "fo", MotionKind.Inclusive, OperationKind.CharacterWise);
+        }
+
+        [Test,Description("Bad count gets nothing in gVim")]
+        public void ForwardTillChar4()
+        {
+            Create("foo bar baz");
+            var res = Process(0, 300, "to");
+            Assert.IsTrue(res.IsError);
+        }
     }   
+    
 }

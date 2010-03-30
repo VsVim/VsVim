@@ -33,10 +33,42 @@ module internal MotionCapture =
         let rec inner (ki:KeyInput) =
             match ki.Key with 
             | VimKey.EscapeKey -> Cancel
-            | VimKey.EnterKey -> Error("Invalid Motion")
+            | VimKey.EnterKey -> Error(Resources.MotionCapture_InvalidMotion)
             | _ -> InvalidMotion("Invalid Motion", inner)
         InvalidMotion("Invalid Motion",inner)
-    
+
+    let private FindCountCharOnLine start count targetChar = 
+        let line = SnapshotPointUtil.GetContainingLine start
+        let matches = 
+            SnapshotSpan(start, line.End)
+            |> SnapshotSpanUtil.GetPoints 
+            |> Seq.filter (fun x -> x.GetChar() = targetChar)
+            |> List.ofSeq
+        if count <= List.length matches then List.nth matches (count - 1) |> Some
+        else None
+
+    /// Handle the 'f' motion.  Forward till the next occurance of the specified character on
+    /// this line
+    let private ForwardCharMotion start count = 
+        let inner (ki:KeyInput) =
+            match FindCountCharOnLine start count ki.Char with
+            | None -> MotionResult.Error(Resources.MotionCapture_InvalidMotion)
+            | Some(point) -> 
+                let span = SnapshotSpan(start, point.Add(1))
+                Complete(span, MotionKind.Inclusive, OperationKind.CharacterWise)
+        NeedMoreInputWithEscape inner
+
+    /// Handle the 't' motion.  Forward till the next occurance of the specified character on
+    /// this line
+    let private ForwardTillCharMotion start count = 
+        let inner (ki:KeyInput) =
+            match FindCountCharOnLine start count ki.Char with
+            | None -> MotionResult.Error(Resources.MotionCapture_InvalidMotion)
+            | Some(point) -> 
+                let span = SnapshotSpan(start, point)
+                Complete(span, MotionKind.Inclusive, OperationKind.CharacterWise)
+        NeedMoreInputWithEscape inner
+        
     /// Implement the w/W motion
     let private WordMotion start kind originalCount =
         let rec inner curPoint curCount = 
@@ -134,6 +166,8 @@ module internal MotionCapture =
                 | 'a' -> AllWordMotion start count
                 | 'e' -> EndOfWordMotion start count WordKind.NormalWord
                 | 'E' -> EndOfWordMotion start count WordKind.BigWord
+                | 'f' -> ForwardCharMotion start count
+                | 't' -> ForwardTillCharMotion start count
                 
                 /// Simple left right motions
                 | 'h' -> 

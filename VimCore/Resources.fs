@@ -3,6 +3,7 @@
 namespace Vim
 
 module internal Resources =
+    let MotionCapture_InvalidMotion = "Invalid Motion"
     let SelectionTracker_AlreadyRunning = "Already running"
     let SelectionTracker_NotRunning = "Not Running"
     let VisualMode_Banner = "--Visual--"
