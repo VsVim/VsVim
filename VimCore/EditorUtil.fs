@@ -67,12 +67,23 @@ module internal SnapshotUtil =
 /// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
 /// include any Vim specific logic
 module internal SnapshotSpanUtil =
-    
+
     let GetPoints (span:SnapshotSpan) = 
         let tss = span.Snapshot 
         let startPos = span.Start.Position
-        let endPos = min (tss.Length-1) span.End.Position
-        seq { for i in  startPos .. endPos do yield SnapshotPoint(tss, i) }
+        if span.Length = 0 then Seq.empty 
+        else 
+            let max = span.Length-1
+            seq { for i in 0 .. max do yield SnapshotPoint(tss, startPos+i) }
+
+    let GetPointsBackward (span:SnapshotSpan) =
+        let tss = span.Snapshot
+        let startPos = span.Start.Position
+        let length = span.Length
+        seq { for i in 1 .. length do 
+                let offset = length - i
+                yield SnapshotPoint(tss, startPos + offset) }
+
 
 /// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
 /// include any Vim specific logic
@@ -87,6 +98,12 @@ module internal SnapshotLineUtil =
 
     /// Get the points on the particular line including the line break
     let GetPointsIncludingLineBreak line = GetExtentIncludingLineBreak line |> SnapshotSpanUtil.GetPoints
+
+    /// Get the points on the particular line in reverse
+    let GetPointsBackward line = GetExtent line |> SnapshotSpanUtil.GetPointsBackward
+
+    /// Get the points on the particular line including the line break in reverse
+    let GetPointsIncludingLineBreakBackward line = GetExtentIncludingLineBreak line |> SnapshotSpanUtil.GetPointsBackward
 
 /// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
 /// include any Vim specific logic
@@ -193,43 +210,53 @@ module internal SnapshotPointUtil =
     let GetSpans point kind = 
         let tss = GetSnapshot point
         let startLine = GetContainingLine point
-        
-        // If the point is within the exetend of the line push it back to the end 
-        // of the line
-        let point = if point.Position > startLine.End.Position then startLine.End else point
-        
+        let inLineBreak = point.Position >= startLine.End.Position 
         let middle = GetLines point kind |> Seq.skip 1 |> Seq.map SnapshotLineUtil.GetExtent
-        let forward = seq {
-            yield new SnapshotSpan(point, startLine.End)
-            yield! middle
-            
-            // Be careful not to wrap unless specified
-            if startLine.Start <> point  && kind = SearchKind.ForwardWithWrap then
-                yield new SnapshotSpan(startLine.Start, point)
-            }
-        let backward = seq {
-            yield new SnapshotSpan(startLine.Start, point)
-            yield! middle
-            
-            // Be careful not to wrap unless specified
-            if startLine.End <> point && kind = SearchKind.BackwardWithWrap then
-                yield new SnapshotSpan(point, startLine.End)
-            }
 
+        let getForward wrap = seq {
+            if point.Position < startLine.End.Position then yield SnapshotSpan(point, startLine.End)
+            yield! middle
+            if wrap && point.Position <> startLine.Start.Position  then 
+                let endPoint = if inLineBreak then startLine.End else point
+                yield SnapshotSpan(startLine.Start, endPoint)
+        }
+        let getBackward wrap = seq {
+
+            // First line. Don't forget it can be a 0 length line
+            if inLineBreak then yield startLine.Extent
+            elif startLine.Length > 0 then yield SnapshotSpan(startLine.Start, point.Add(1))
+
+            yield! middle
+
+            if point.Position + 1 < startLine.End.Position then
+                let lastSpan = SnapshotSpan(point.Add(1), startLine.End)
+                if wrap && lastSpan.Length > 0 then yield lastSpan
+        } 
+        
         match kind with
-            | SearchKind.Forward -> forward
-            | SearchKind.ForwardWithWrap -> forward
-            | SearchKind.Backward -> backward
-            | SearchKind.BackwardWithWrap -> backward
+            | SearchKind.Forward -> getForward false
+            | SearchKind.ForwardWithWrap -> getForward true
+            | SearchKind.Backward -> getBackward false
+            | SearchKind.BackwardWithWrap -> getBackward true
             | _ -> failwith "Invalid enum value"
 
     /// Start searching the snapshot at the given point and return the buffer as a 
-    /// sequence of SnapshotPoints.  The first point returned will be the passed
-    /// in SnapshotPoint 
-    let GetPoints point kind =
+    /// sequence of SnapshotPoints.  The first point returned will be the point passed
+    /// in
+    let GetPoints point wrap =
+        let kind = if wrap then SearchKind.ForwardWithWrap else SearchKind.Forward
         GetSpans point kind 
         |> Seq.map SnapshotSpanUtil.GetPoints
         |> Seq.concat       
+
+    /// Start searching the snapshot at the given point and return the buffer as a 
+    /// sequence of SnapshotPoints in reverse.  The first point returned will be 
+    /// the point passed in
+    let GetPointsBackward point wrap =
+        let kind = if wrap then SearchKind.BackwardWithWrap else SearchKind.Backward
+        GetSpans point kind
+        |> Seq.map SnapshotSpanUtil.GetPointsBackward 
+        |> Seq.concat
 
     /// Get the character associated with the current point.  Returns None for the last character
     /// in the buffer which has no representable value

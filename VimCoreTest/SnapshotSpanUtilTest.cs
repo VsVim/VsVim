@@ -77,5 +77,84 @@ namespace VimCoreTest
             Assert.AreEqual('o', points[2].GetChar());
         }
 
+        [Test]
+        public void GetPoints4()
+        {
+            Create("foo", "bar");
+            var points = SnapshotSpanUtil.GetPoints(_buffer.GetLine(0).Extent);
+            var chars = points.Select(x => x.GetChar()).ToList();
+            CollectionAssert.AreEqual(new char[] {'f', 'o', 'o'}, chars);
+        }
+
+        [Test]
+        public void GetPoints5()
+        {
+            Create("foo bar");
+            var points = SnapshotSpanUtil.GetPoints(new SnapshotSpan(_buffer.CurrentSnapshot, 0, 0));
+            Assert.AreEqual(0, points.Count());
+        }
+
+        [Test]
+        public void GetPointsBackward1()
+        {
+            Create("foo");
+            var span = _buffer.GetLine(0).Extent;
+            var points = SnapshotSpanUtil.GetPointsBackward(span).ToList();
+            Assert.AreEqual(3, points.Count);
+            Assert.AreEqual('o', points[0].GetChar());
+            Assert.AreEqual('o', points[1].GetChar());
+            Assert.AreEqual('f', points[2].GetChar());
+        }
+
+        [Test]
+        public void GetPointsBackward2()
+        {
+            Create("foo", "bar");
+            var span = _buffer.GetLine(1).Extent;
+            var points = SnapshotSpanUtil.GetPointsBackward(span).ToList();
+            Assert.AreEqual(3, points.Count);
+            Assert.AreEqual('r', points[0].GetChar());
+            Assert.AreEqual('a', points[1].GetChar());
+            Assert.AreEqual('b', points[2].GetChar());
+        }
+
+        [Test]
+        public void GetPointsBackward3()
+        {
+            Create("foo", "bar");
+            var span = new SnapshotSpan(_buffer.CurrentSnapshot, 0, 1);
+            var point = SnapshotSpanUtil.GetPointsBackward(span).Single();
+            Assert.AreEqual('f', point.GetChar());
+        }
+
+        [Test]
+        public void GetPointsBackward4()
+        {
+            Create("foo", "bar");
+            var span = new SnapshotSpan(_buffer.CurrentSnapshot, 0, 2);
+            var points = SnapshotSpanUtil.GetPointsBackward(span).Select(x => x.GetChar()).ToList();
+            CollectionAssert.AreEqual(new char[] { 'o', 'f' }, points);
+        }
+
+        [Test]
+        public void GetPointsBackward5()
+        {
+            Create("foo", "bar");
+            var span = _buffer.GetLine(0).Extent;
+            var points = SnapshotSpanUtil.GetPointsBackward(span).ToList();
+            Assert.AreEqual(3, points.Count);
+            Assert.AreEqual('o', points[0].GetChar());
+            Assert.AreEqual('o', points[1].GetChar());
+            Assert.AreEqual('f', points[2].GetChar());
+        }
+
+        [Test]
+        public void GetPointsBackward6()
+        {
+            Create("foo bar");
+            var points = SnapshotSpanUtil.GetPointsBackward(new SnapshotSpan(_buffer.CurrentSnapshot, 0, 0));
+            Assert.AreEqual(0, points.Count());
+        }
+
     }
 }

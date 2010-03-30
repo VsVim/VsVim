@@ -304,10 +304,7 @@ namespace VimCoreTest
                 .GetWordSpans(_buffer.CurrentSnapshot.GetLineFromLineNumber(0).End.Subtract(1), WordKind.NormalWord, SearchKind.Backward)
                 .Select(x => x.GetText())
                 .ToList();
-            Assert.AreEqual(3, words.Count);
-            Assert.AreEqual("ba", words[0]);
-            Assert.AreEqual("bar", words[1]);
-            Assert.AreEqual("foo", words[2]);
+            CollectionAssert.AreEqual(new string[] { "baz", "bar", "foo" }, words);
         }
 
         [Test]
