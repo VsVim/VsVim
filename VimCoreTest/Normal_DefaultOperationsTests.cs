@@ -344,6 +344,34 @@ namespace VimCoreTest
         }
 
         [Test]
+        public void InsertLineAbove3()
+        {
+            // Verify that insert line below behaves properly in the face of edits happening in response to our edit
+            Create("foo bar", "baz");
+
+            bool didEdit = false;
+
+            _view.TextBuffer.Changed += (sender, e) =>
+            {
+                if (didEdit)
+                    return;
+
+                using (var edit = _view.TextBuffer.CreateEdit())
+                {
+                    edit.Insert(0, "a ");
+                    edit.Apply();
+                }
+
+                didEdit = true;
+            };
+
+            _operations.InsertLineAbove();
+            var buffer = _view.TextBuffer;
+            var line = buffer.CurrentSnapshot.GetLineFromLineNumber(0);
+            Assert.AreEqual("a ", line.GetText());
+        }
+
+        [Test]
         public void InsertLineBelow()
         {
             Create("foo", "bar", "baz");
@@ -406,6 +434,34 @@ namespace VimCoreTest
             Assert.AreEqual(0, line.LineBreakLength);
             Assert.AreEqual("baz", line.GetText());
             Assert.AreEqual("baz", line.GetTextIncludingLineBreak());
+        }
+
+        [Test]
+        public void InsertLineBelow6()
+        {
+            // Verify that insert line below behaves properly in the face of edits happening in response to our edit
+            Create("foo bar", "baz");
+
+            bool didEdit = false;
+
+            _view.TextBuffer.Changed += (sender, e) =>
+            {
+                if (didEdit)
+                    return;
+
+                using (var edit = _view.TextBuffer.CreateEdit())
+                {
+                    edit.Insert(0, "a ");
+                    edit.Apply();
+                }
+
+                didEdit = true;
+            };
+
+            _operations.InsertLineBelow();
+            var buffer = _view.TextBuffer;
+            var line = buffer.CurrentSnapshot.GetLineFromLineNumber(0);
+            Assert.AreEqual("a foo bar", line.GetText());
         }
 
         [Test]

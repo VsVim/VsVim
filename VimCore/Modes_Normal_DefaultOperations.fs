@@ -128,8 +128,8 @@ type internal DefaultOperations
             let point = ViewUtil.GetCaretPoint _textView
             let line = point.GetContainingLine()
             let buffer = line.Snapshot.TextBuffer
-            let tss = buffer.Replace(new Span(line.End.Position,0), System.Environment.NewLine)
-            let newLine = tss.GetLineFromLineNumber(line.LineNumber+1)
+            buffer.Replace(new Span(line.End.Position,0), System.Environment.NewLine) |> ignore
+            let newLine = buffer.CurrentSnapshot.GetLineFromLineNumber(line.LineNumber+1)
         
             // Move the caret to the same indent position as the previous line
             let indent = TssUtil.FindIndentPosition(line)
@@ -141,8 +141,8 @@ type internal DefaultOperations
             let point = ViewUtil.GetCaretPoint _textView
             let line = point.GetContainingLine()
             let buffer = line.Snapshot.TextBuffer
-            let tss = buffer.Replace(new Span(line.Start.Position,0), System.Environment.NewLine)
-            let line = tss.GetLineFromLineNumber(line.LineNumber)
+            buffer.Replace(new Span(line.Start.Position,0), System.Environment.NewLine) |> ignore
+            let line = buffer.CurrentSnapshot.GetLineFromLineNumber(line.LineNumber)
             ViewUtil.MoveCaretToPoint _textView line.Start |> ignore
             line
                 
