@@ -287,6 +287,18 @@ namespace VimCoreTest
             Assert.AreEqual("foohey", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
         }
 
+        [Test, Description("Verify LineWise PasteAfterCursor places the caret at the beginning of non-whitespace.")]
+        public void PasteAfter11()
+        {
+            Create("foo", "bar");
+            _view.Caret.MoveTo(_view.TextSnapshot.GetLineFromLineNumber(0).End);
+            _operations.PasteAfterCursor("  hey" + Environment.NewLine, 1, OperationKind.LineWise, false);
+            Assert.AreEqual("  hey", _view.TextSnapshot.GetLineFromLineNumber(1).GetText());
+            var position = _view.Caret.Position.BufferPosition;
+            var line = position.GetContainingLine();
+            Assert.AreEqual(2, position.Position - line.Start);
+        }
+
         [Test]
         public void PasteBefore1()
         {
@@ -322,8 +334,20 @@ namespace VimCoreTest
             Assert.AreEqual("foohey", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
         }
 
+        [Test, Description("Verify LineWise PasteBeforeCursor places the caret at the beginning of non-whitespace.")]
+        public void PasteBefore5()
+        {
+            Create("foo", "bar");
+            _view.Caret.MoveTo(_view.TextSnapshot.GetLineFromLineNumber(0).End);
+            _operations.PasteBeforeCursor("  hey" + Environment.NewLine, 8, OperationKind.LineWise, false);
+            Assert.AreEqual("  hey", _view.TextSnapshot.GetLineFromLineNumber(1).GetText());
+            var position = _view.Caret.Position.BufferPosition;
+            var line = position.GetContainingLine();
+            Assert.AreEqual(2, position.Position - line.Start);
+        }
+
         [Test]
-        public void InsertLiveAbove1()
+        public void InsertLineAbove1()
         {
             Create("foo");
             _operations.InsertLineAbove();
