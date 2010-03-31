@@ -121,12 +121,12 @@ type internal SelectionTracker
             let caret = ViewUtil.GetCaretPoint _textView
             if _anchorPoint.Position.Position < caret.Position then 
                 let first = _anchorPoint.Position.GetContainingLine().Start
-                let last = caret.GetContainingLine().End
+                let last = caret.GetContainingLine().EndIncludingLineBreak
                 let span = SnapshotSpan(first,last)
                 _textView.Selection.Select(span, false)
             else 
                 let first = caret.GetContainingLine().Start
-                let last = _anchorPoint.Position.GetContainingLine().End
+                let last = _anchorPoint.Position.GetContainingLine().EndIncludingLineBreak
                 let span = SnapshotSpan(first,last)
                 _textView.Selection.Select(span, false)
         | SelectionMode.Block -> selectStandard()

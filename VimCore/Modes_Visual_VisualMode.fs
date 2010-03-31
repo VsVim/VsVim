@@ -83,7 +83,10 @@ type internal VisualMode
             seq {
                 yield (InputUtil.CharToKeyInput('y'), 
                     (fun _ (reg:Register) -> 
-                        _operations.YankText (_selectionTracker.SelectedText) MotionKind.Inclusive OperationKind.CharacterWise reg
+                        let opKind = match _kind with
+                                     | ModeKind.VisualLine -> OperationKind.LineWise
+                                     | _ -> OperationKind.CharacterWise
+                        k_operations.YankText (_selectionTracker.SelectedText) MotionKind.Inclusive opKind reg
                         VisualModeResult.SwitchPreviousMode))
                 yield (InputUtil.CharToKeyInput('Y'),
                     (fun _ (reg:Register) ->

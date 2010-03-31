@@ -233,6 +233,19 @@ namespace VimCoreTest
             _operations.Verify();
         }
 
+        [Test, Description("Yank in visual line mode should always be a linewise yank")]
+        public void YankLines2()
+        {
+            Create2(ModeKind.VisualLine, null, "foo", "bar");
+            var tss = _buffer.CurrentSnapshot;
+            var line = tss.GetLineFromLineNumber(0);
+            _tracker.Setup(x => x.SelectedText).Returns("foo" + Environment.NewLine).Verifiable();
+            _operations.Setup(x => x.YankText("foo" + Environment.NewLine, MotionKind.Inclusive, OperationKind.LineWise, _map.DefaultRegister)).Verifiable();
+            _mode.Process('y');
+            _tracker.Verify();
+            _operations.Verify();
+        }
+
         [Test]
         public void DeleteSelection1()
         {
