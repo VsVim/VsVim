@@ -26,7 +26,7 @@ namespace VsVim
     [Export(typeof(IVimBufferCreationListener))]
     [Export(typeof(IVsTextViewCreationListener))]
     [ContentType(Constants.ContentType)]
-    [TextViewRole(PredefinedTextViewRoles.Editable)]
+    [TextViewRole(PredefinedTextViewRoles.Document)]
     internal sealed class HostFactory : IWpfTextViewCreationListener, IVimBufferCreationListener, IVsTextViewCreationListener
     {
         private readonly KeyBindingService _keyBindingService;

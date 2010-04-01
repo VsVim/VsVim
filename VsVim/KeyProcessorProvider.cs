@@ -12,7 +12,7 @@ namespace VsVim
     [Export(typeof(IKeyProcessorProvider))]
     [Order(Before = "VisualStudioKeyProcessor")]
     [Name("VsVim")]
-    [TextViewRole(PredefinedTextViewRoles.Editable)]
+    [TextViewRole(PredefinedTextViewRoles.Document)]
     [ContentType(Constants.ContentType)]
     public sealed class KeyProcessorProvider : IKeyProcessorProvider
     {

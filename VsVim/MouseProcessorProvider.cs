@@ -12,7 +12,7 @@ namespace VsVim
     [Export(typeof(IMouseProcessorProvider))]
     [ContentType("text")]
     [Name("VsVimMouseProcessorProvider")]
-    [TextViewRole(PredefinedTextViewRoles.Editable)]
+    [TextViewRole(PredefinedTextViewRoles.Document)]
     public class MouseProcessorProvider : IMouseProcessorProvider
     {
         private readonly IVim _vim;
