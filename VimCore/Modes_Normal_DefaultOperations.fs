@@ -109,8 +109,9 @@ type internal DefaultOperations
                 // For a LineWise paste we want to place the cursor at the start
                 // of the next line
                 let caretLineNumber = caret.GetContainingLine().LineNumber
-                let nextLine = _textView.TextSnapshot.GetLineFromLineNumber(caretLineNumber+1)
-                ViewUtil.MoveCaretToPoint _textView nextLine.Start |> ignore
+                let nextLine = _textView.TextSnapshot.GetLineFromLineNumber(caretLineNumber + 1)
+                let point = TssUtil.FindFirstNonWhitespaceCharacter nextLine
+                ViewUtil.MoveCaretToPoint _textView point |> ignore
  
         /// Paste the text before the cursor
         member x.PasteBeforeCursor text count opKind moveCursor = 
@@ -120,16 +121,18 @@ type internal DefaultOperations
             if moveCursor then
                 ViewUtil.MoveCaretToPoint _textView span.End |> ignore
             else if opKind = OperationKind.LineWise then
-                // For a LineWise paste we want to place the cursor at the start of this line
-                let line = caret.GetContainingLine()
-                ViewUtil.MoveCaretToPoint _textView line.Start |> ignore
+                // For a LineWise paste we want to place the cursor at the start of this line. caret is a a snapshot
+                // point from the old snapshot, so we need to find the same line in the new snapshot
+                let line = _textView.TextSnapshot.GetLineFromLineNumber(caret.GetContainingLine().LineNumber)
+                let point = TssUtil.FindFirstNonWhitespaceCharacter line
+                ViewUtil.MoveCaretToPoint _textView point |> ignore
 
         member x.InsertLineBelow () =
             let point = ViewUtil.GetCaretPoint _textView
             let line = point.GetContainingLine()
             let buffer = line.Snapshot.TextBuffer
-            let tss = buffer.Replace(new Span(line.End.Position,0), System.Environment.NewLine)
-            let newLine = tss.GetLineFromLineNumber(line.LineNumber+1)
+            buffer.Replace(new Span(line.End.Position,0), System.Environment.NewLine) |> ignore
+            let newLine = buffer.CurrentSnapshot.GetLineFromLineNumber(line.LineNumber+1)
         
             // Move the caret to the same indent position as the previous line
             let indent = TssUtil.FindIndentPosition(line)
@@ -141,8 +144,8 @@ type internal DefaultOperations
             let point = ViewUtil.GetCaretPoint _textView
             let line = point.GetContainingLine()
             let buffer = line.Snapshot.TextBuffer
-            let tss = buffer.Replace(new Span(line.Start.Position,0), System.Environment.NewLine)
-            let line = tss.GetLineFromLineNumber(line.LineNumber)
+            buffer.Replace(new Span(line.Start.Position,0), System.Environment.NewLine) |> ignore
+            let line = buffer.CurrentSnapshot.GetLineFromLineNumber(line.LineNumber)
             ViewUtil.MoveCaretToPoint _textView line.Start |> ignore
             line
                 

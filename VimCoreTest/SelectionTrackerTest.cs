@@ -106,6 +106,15 @@ namespace VimCoreTest
             Assert.AreEqual(view.Selection.AnchorPoint.Position.Position, tracker.AnchorPoint.Position.Position);
         }
 
+        [Test, Description("Line mode should include the entire line with linebreak")]
+        public void Start5()
+        {
+            Create(SelectionMode.Line, "foo", "bar");
+            _context.RunAll();
+            Assert.AreEqual(_view.TextBuffer.GetLineFromLineNumber(0).Start, _view.Selection.Start.Position);
+            Assert.AreEqual(_view.TextBuffer.GetLineFromLineNumber(0).EndIncludingLineBreak, _view.Selection.End.Position);
+        }
+
         [Test,ExpectedException(typeof(InvalidOperationException))]
         public void Stop1()
         {
