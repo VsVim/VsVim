@@ -503,7 +503,7 @@ namespace VimCoreTest
             _statusUtil.Verify(x => x.OnError(Resources.CommandMode_NotSupported_SubstituteConfirm));
         }
 
-        [Test]
+        [Test,Ignore]
         public void Substitute15()
         {
             Create("foo bar baz");
