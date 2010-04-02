@@ -298,7 +298,7 @@ type internal CommonOperations
         member x.ScrollPages dir count = 
             let func =
                 match dir with
-                | ScrollDirection.Down -> _operations.ScrollPageDown 
+                | ScrollDirection.Down -> _operations.ScrollPageDown
                 | ScrollDirection.Up -> _operations.ScrollPageUp
                 | _ -> failwith "Invalid enum value"
             for i = 1 to count do
