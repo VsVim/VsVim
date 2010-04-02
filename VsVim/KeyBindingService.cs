@@ -10,6 +10,7 @@ using System.ComponentModel.Composition;
 using System.Windows;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Shell;
+using IOleServiceProvider = Microsoft.VisualStudio.OLE.Interop.IServiceProvider;
 
 namespace VsVim
 {
@@ -23,10 +24,9 @@ namespace VsVim
         private bool _hasChecked;
 
         [ImportingConstructor]
-        public KeyBindingService(SVsServiceProvider sp)
+        public KeyBindingService(IOleServiceProvider sp)
         {
-            var oleSp = sp.GetOleServiceProvider();
-            _vsShell = oleSp.GetService<SVsUIShell, IVsUIShell>();
+            _vsShell = sp.GetService<SVsUIShell, IVsUIShell>();
         }
 
         public void OneTimeCheckForConflictingKeyBindings(_DTE dte, IVimBuffer buffer)
