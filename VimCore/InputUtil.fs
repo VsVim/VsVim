@@ -89,6 +89,12 @@ module InputUtil =
                 | VimKey.F10Key -> 0x79
                 | VimKey.F11Key -> 0x7a
                 | VimKey.F12Key -> 0x7b
+                | VimKey.MultiplyKey -> 0x6A
+                | VimKey.AddKey -> 0x6B
+                | VimKey.SeparatorKey -> 0x6C
+                | VimKey.SubtractKey -> 0x6D
+                | VimKey.DecimalKey -> 0x6E
+                | VimKey.DivideKey -> 0x6F
                 | _ -> failwith "Invalid Enum value"
             Some(code)
         

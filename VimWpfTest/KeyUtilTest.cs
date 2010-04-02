@@ -73,6 +73,12 @@ namespace Vim.UI.Wpf.Test
             WellKnownBothWays(VimKey.F12Key, Key.F12);
             WellKnownBothWays(VimKey.DeleteKey, Key.Delete);
             WellKnownBothWays(VimKey.EscapeKey, Key.Escape);
+            WellKnownBothWays(VimKey.MultiplyKey, Key.Multiply);
+            WellKnownBothWays(VimKey.AddKey, Key.Add);
+            WellKnownBothWays(VimKey.SeparatorKey, Key.Separator);
+            WellKnownBothWays(VimKey.SubtractKey, Key.Subtract);
+            WellKnownBothWays(VimKey.DecimalKey, Key.Decimal);
+            WellKnownBothWays(VimKey.DivideKey, Key.Divide);
         }
 
         [Test]
