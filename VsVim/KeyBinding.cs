@@ -17,7 +17,6 @@ namespace VsVim
     /// </summary>
     public sealed class KeyBinding
     {
-        private static string[] s_modifierPrefix = new string[] { "Shift", "Alt", "Ctrl" };
         private readonly Lazy<string> _commandString;
 
         public readonly string Scope;
@@ -28,6 +27,9 @@ namespace VsVim
             get { return KeyInputs.First(); }
         }
 
+        /// <summary>
+        /// Visual Studio string which is the equivalent of this KeyBinding instance
+        /// </summary>
         public string CommandString
         {
             get { return _commandString.Value; }
@@ -57,8 +59,9 @@ namespace VsVim
             {
                 if (!isFirst)
                 {
-                    builder.Append(',');
+                    builder.Append(", ");
                 }
+                isFirst = false;
                 AppendCommandForSingle(input, builder);
             }
 
@@ -67,29 +70,47 @@ namespace VsVim
 
         private void AppendCommandForSingle(KeyInput input, StringBuilder builder)
         {
+            if (0 != (input.KeyModifiers & KeyModifiers.Control))
+            {
+                builder.Append("Ctrl+");
+            }
+            if (0 != (input.KeyModifiers & KeyModifiers.Shift))
+            {
+                builder.Append("Shift+");
+            }
+            if (0 != (input.KeyModifiers & KeyModifiers.Alt))
+            {
+                builder.Append("Alt+");
+            }
+
             EnsureVsMap();
+            var query = s_vsMap.Where(x => x.Value == input.Key);
+            if (Char.IsLetter(input.Char))
+            {
+                builder.Append(Char.ToUpper(input.Char));
+            }
+            else if (query.Any())
+            {
+                builder.Append(query.First().Key);
+            }
+            else if (input.Char == ' ')
+            {
+                builder.Append("Space");
+            }
+            else
+            {
+                builder.Append(input.Char);
+            }
         }
 
         public override string ToString()
         {
-            var builder = new StringBuilder();
-            builder.Append(Scope);
-            builder.Append("::");
-            var isfirst = true;
-            foreach (var input in KeyInputs)
-            {
-                if (!isfirst)
-                {
-                    builder.Append(',');
-                }
-                isfirst = false;
-                builder.AppendFormat("{0}+{1}", input.Key, input.KeyModifiers);
-            }
-            return builder.ToString();
+            return CommandString;
         }
 
         #region Parsing Methods
 
+        private static string[] s_modifierPrefix = new string[] { "Shift", "Alt", "Ctrl" };
         private static Dictionary<string, VimKey> s_vsMap;
 
         private static void BuildVsMap()
@@ -99,13 +120,34 @@ namespace VsVim
             map.Add("Up Arrow", VimKey.UpKey);
             map.Add("Left Arrow", VimKey.LeftKey);
             map.Add("Right Arrow", VimKey.RightKey);
-            map.Add("bkspce", VimKey.BackKey);
+            map.Add("Bkspce", VimKey.BackKey);
             map.Add("PgDn", VimKey.PageDownKey);
             map.Add("PgUp", VimKey.PageUpKey);
             map.Add("Ins", VimKey.InsertKey);
             map.Add("Del", VimKey.DeleteKey);
             map.Add("Esc", VimKey.EscapeKey);
             map.Add("Break", VimKey.BreakKey);
+            map.Add("Num +", VimKey.AddKey);
+            map.Add("Num -", VimKey.SubtractKey);
+            map.Add("Num /", VimKey.DivideKey);
+            map.Add("Num *", VimKey.MultiplyKey);
+            map.Add("Enter", VimKey.EnterKey);
+            map.Add("Tab", VimKey.TabKey);
+            map.Add("Home", VimKey.HomeKey);
+            map.Add("End", VimKey.EndKey);
+            map.Add("F1", VimKey.F1Key);
+            map.Add("F2", VimKey.F2Key);
+            map.Add("F3", VimKey.F3Key);
+            map.Add("F4", VimKey.F4Key);
+            map.Add("F5", VimKey.F5Key);
+            map.Add("F6", VimKey.F6Key);
+            map.Add("F7", VimKey.F7Key);
+            map.Add("F8", VimKey.F8Key);
+            map.Add("F9", VimKey.F9Key);
+            map.Add("F10", VimKey.F10Key);
+            map.Add("F11", VimKey.F11Key);
+            map.Add("F12", VimKey.F12Key);
+
             s_vsMap = map;
         }
 
@@ -198,7 +240,7 @@ namespace VsVim
             if (keystroke.StartsWith("Num ", StringComparison.OrdinalIgnoreCase))
             {
                 ki = null;
-                switch ( keystroke.ToLower())
+                switch (keystroke.ToLower())
                 {
                     case "num +":
                         ki = InputUtil.VimKeyToKeyInput(VimKey.AddKey);
