@@ -131,6 +131,7 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
+    <Compile Include="TestOptionsPage.cs" />
     <Compile Include="VsCommandFilter.cs" />
     <Compile Include="VsVimHost.cs" />
   </ItemGroup>

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Vim.UI.Wpf.Properties;
+using System.Collections.ObjectModel;
 
 namespace Vim.UI.Wpf
 {
@@ -10,18 +11,21 @@ namespace Vim.UI.Wpf
     {
         private readonly IVimBuffer _buffer;
         private readonly CommandMarginControl _margin;
+        private readonly ReadOnlyCollection<Lazy<IOptionsPageFactory>> _optionsPageFactory;
         private bool _ignoreNextKeyProcessedEvent;
 
-        internal CommandMarginController(IVimBuffer buffer, CommandMarginControl control)
+        internal CommandMarginController(IVimBuffer buffer, CommandMarginControl control, IEnumerable<Lazy<IOptionsPageFactory>> optionsPageFactory)
         {
             _buffer = buffer;
             _margin = control;
+            _optionsPageFactory = optionsPageFactory.ToList().AsReadOnly();
 
             _buffer.SwitchedMode += OnSwitchMode;
             _buffer.KeyInputProcessed += OnKeyInputProcessed;
             _buffer.KeyInputReceived += OnKeyInputReceived;
             _buffer.StatusMessage += OnStatusMessage;
             _buffer.ErrorMessage += OnErrorMessage;
+            _margin.OptionsClicked += OnOptionsClicked;
         }
 
         private void OnSwitchMode(object sender, IMode mode)
@@ -102,6 +106,17 @@ namespace Vim.UI.Wpf
         {
             _margin.StatusLine = message;
             _ignoreNextKeyProcessedEvent = _buffer.IsProcessingInput;
+        }
+
+        private void OnOptionsClicked(object sender, EventArgs e)
+        {
+            var window = new OptionsWindow();
+            _optionsPageFactory
+                .Select(x => x.Value)
+                .Select(x => x.CreateOptionsPage())
+                .ToList()
+                .ForEach(x => window.OptionPages.Add(x));
+            window.ShowDialog();
         }
     }
 }
