@@ -30,6 +30,32 @@ namespace VsVim
 
         #region Command
 
+        public static IEnumerable<string> GetCommandStrings(this Command command)
+        {
+            if (null == command)
+            {
+                throw new ArgumentException("command");
+            }
+
+            var name = command.Name;
+            var bindings = command.Bindings as object[];
+            if (bindings != null)
+            {
+                return bindings
+                    .Where(x => x is string)
+                    .Cast<string>()
+                    .Where(x => !String.IsNullOrEmpty(x));
+            }
+
+            var singleBinding = command.Bindings as string;
+            if (singleBinding != null)
+            {
+                return Enumerable.Repeat(singleBinding, 1);
+            }
+
+            return Enumerable.Empty<string>();
+        }
+
         public static IEnumerable<CommandKeyBinding> GetKeyBindings(this Command command)
         {
             if (null == command)
@@ -37,34 +63,12 @@ namespace VsVim
                 throw new ArgumentNullException("command");
             }
 
-            var name = command.Name;
-            var bindings = command.Bindings as object[];
-            if (bindings != null)
-            {
-                var bindingStrings = bindings
-                    .Where(x => x is string)
-                    .Cast<string>()
-                    .Where(x => !String.IsNullOrEmpty(x));
-                return ParseBindingStrings(name, bindingStrings);
-            }
-
-            var singleBinding = command.Bindings as string;
-            if (singleBinding != null)
-            {
-                return ParseBindingStrings(name, Enumerable.Repeat(singleBinding, 1));
-            }
-
-            return Enumerable.Empty<CommandKeyBinding>();
-        }
-
-        private static IEnumerable<CommandKeyBinding> ParseBindingStrings(string name, IEnumerable<string> bindings)
-        {
-            foreach (var cur in bindings)
+            foreach ( var cur in command.GetCommandStrings())
             {
                 KeyBinding binding;
-                if (KeyBinding.TryParse(cur, out binding))
+                if ( KeyBinding.TryParse(cur, out binding))
                 {
-                    yield return new CommandKeyBinding(name, binding);
+                    yield return new CommandKeyBinding(command.Name, binding);
                 }
             }
         }

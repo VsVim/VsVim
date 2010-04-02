@@ -153,6 +153,29 @@ namespace VsVimTest
             Assert.AreEqual(VimKey.PageUpKey, b.FirstKeyInput.Key);
         }
 
+        [Test]
+        [Description("Ensure we can parse all available Visual Studio commands")]
+        public void ParseAllVsCommands()
+        {
+            foreach (var line in TestResources.VsCommands.Split(new string[] { Environment.NewLine },StringSplitOptions.RemoveEmptyEntries))
+            {
+                KeyBinding binding;
+                Assert.IsTrue(KeyBinding.TryParse(line, out binding), "Could not parse - " + line);
+            }
+        }
+
+        [Test]
+        [Description("Ensure the re-generated strings all match the original")]
+        public void CommandStringAllVsCommands()
+        {
+            foreach (var line in TestResources.VsCommands.Split(new string[] { Environment.NewLine },StringSplitOptions.RemoveEmptyEntries))
+            {
+                KeyBinding binding;
+                Assert.IsTrue(KeyBinding.TryParse(line, out binding));
+                Assert.AreEqual(line, binding.CommandString);
+            }
+
+        }
 
     }
 }

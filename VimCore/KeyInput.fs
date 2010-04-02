@@ -33,6 +33,10 @@ type VimKey =
     | F10Key = 26
     | F11Key = 27
     | F12Key = 28
+    | MultiplyKey = 29
+    | DivideKey = 30
+    | SubtractKey = 31
+    | AddKey = 32
 
 [<System.Flags>]
 type KeyModifiers = 

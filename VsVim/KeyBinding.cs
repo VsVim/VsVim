@@ -15,8 +15,9 @@ namespace VsVim
     /// KeyBinding in Visual Studio as set through the Key board part of the Environment options
     /// panel
     /// </summary>
-    public struct KeyBinding
+    public sealed class KeyBinding
     {
+        private readonly Lazy<string> _commandString;
         public readonly string Scope;
         public readonly IEnumerable<KeyInput> KeyInputs;
 
@@ -25,16 +26,46 @@ namespace VsVim
             get { return KeyInputs.First(); }
         }
 
+        public string CommandString
+        {
+            get { return _commandString.Value; }
+        }
+
         public KeyBinding(string scope, KeyInput input)
         {
             Scope = scope;
             KeyInputs = Enumerable.Repeat(input, 1);
+            _commandString = new Lazy<string>(CreateCommandString);
         }
 
         public KeyBinding(string scope, IEnumerable<KeyInput> inputs)
         {
             Scope = scope;
             KeyInputs = inputs.ToList();
+            _commandString = new Lazy<string>(CreateCommandString);
+        }
+
+        private string CreateCommandString()
+        {
+            var builder = new StringBuilder();
+            builder.Append(Scope);
+            builder.Append("::");
+            var isFirst = true;
+            foreach (var input in KeyInputs)
+            {
+                if (!isFirst)
+                {
+                    builder.Append(',');
+                }
+                AppendCommandForSingle(input, builder);
+            }
+
+            return builder.ToString();
+        }
+
+        private void AppendCommandForSingle(KeyInput input, StringBuilder builder)
+        {
+            EnsureVsMap();
         }
 
         public override string ToString()
@@ -45,7 +76,7 @@ namespace VsVim
             var isfirst = true;
             foreach (var input in KeyInputs)
             {
-                if ( !isfirst ) 
+                if (!isfirst)
                 {
                     builder.Append(',');
                 }
@@ -84,10 +115,10 @@ namespace VsVim
             }
         }
 
-        private static bool TryConvertToModifierKeys(string mod, out KeyModifiers modKeys )
+        private static bool TryConvertToModifierKeys(string mod, out KeyModifiers modKeys)
         {
             var comp = StringComparer.OrdinalIgnoreCase;
-            if ( comp.Equals(mod, "shift+"))
+            if (comp.Equals(mod, "shift+"))
             {
                 modKeys = KeyModifiers.Shift;
             }
@@ -95,11 +126,11 @@ namespace VsVim
             {
                 modKeys = KeyModifiers.Control;
             }
-            else if ( comp.Equals(mod, "alt+"))
+            else if (comp.Equals(mod, "alt+"))
             {
                 modKeys = KeyModifiers.Alt;
             }
-            else 
+            else
             {
                 modKeys = KeyModifiers.None;
                 return false;
@@ -143,7 +174,7 @@ namespace VsVim
             }
             catch (Exception)
             {
-                
+
             }
 
             return null;
@@ -200,7 +231,7 @@ namespace VsVim
                 return null;
             }
 
-            if (mod != KeyModifiers.None )
+            if (mod != KeyModifiers.None)
             {
                 ki = new KeyInput(ki.Char, ki.Key, ki.KeyModifiers | mod);
             }
