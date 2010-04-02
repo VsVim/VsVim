@@ -91,12 +91,6 @@ namespace VsVimTest
             KeyBinding.Parse("::ctrl+notavalidkey");
         }
 
-        [Test, ExpectedException(typeof(ArgumentException)), Description("Not supported because simply put I don't understand it")]
-        public void BadParse3()
-        {
-            KeyBinding.Parse("::Num *");
-        }
-
         [Test]
         public void VsKeyBackSpace()
         {
@@ -151,6 +145,20 @@ namespace VsVimTest
         {
             var b = KeyBinding.Parse("::PgUp");
             Assert.AreEqual(VimKey.PageUpKey, b.FirstKeyInput.Key);
+        }
+
+        [Test]
+        public void VsNum1()
+        {
+            var b = KeyBinding.Parse("::Num +");
+            Assert.AreEqual(VimKey.AddKey, b.FirstKeyInput.Key);
+        }
+
+        [Test]
+        public void VsNum2()
+        {
+            var b = KeyBinding.Parse("::Num *");
+            Assert.AreEqual(VimKey.MultiplyKey, b.FirstKeyInput.Key);
         }
 
         [Test]

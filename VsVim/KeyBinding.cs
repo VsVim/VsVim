@@ -17,7 +17,9 @@ namespace VsVim
     /// </summary>
     public sealed class KeyBinding
     {
+        private static string[] s_modifierPrefix = new string[] { "Shift", "Alt", "Ctrl" };
         private readonly Lazy<string> _commandString;
+
         public readonly string Scope;
         public readonly IEnumerable<KeyInput> KeyInputs;
 
@@ -118,15 +120,15 @@ namespace VsVim
         private static bool TryConvertToModifierKeys(string mod, out KeyModifiers modKeys)
         {
             var comp = StringComparer.OrdinalIgnoreCase;
-            if (comp.Equals(mod, "shift+"))
+            if (comp.Equals(mod, "shift"))
             {
                 modKeys = KeyModifiers.Shift;
             }
-            else if (comp.Equals(mod, "ctrl+"))
+            else if (comp.Equals(mod, "ctrl"))
             {
                 modKeys = KeyModifiers.Control;
             }
-            else if (comp.Equals(mod, "alt+"))
+            else if (comp.Equals(mod, "alt"))
             {
                 modKeys = KeyModifiers.Alt;
             }
@@ -187,14 +189,35 @@ namespace VsVim
         {
             EnsureVsMap();
             VimKey wellKnownKey;
-            if (!s_vsMap.TryGetValue(keystroke, out wellKnownKey))
+            if (s_vsMap.TryGetValue(keystroke, out wellKnownKey))
             {
-                ki = null;
-                return false;
+                ki = InputUtil.VimKeyToKeyInput(wellKnownKey);
+                return true;
             }
 
-            ki = InputUtil.VimKeyToKeyInput(wellKnownKey);
-            return true;
+            if (keystroke.StartsWith("Num ", StringComparison.OrdinalIgnoreCase))
+            {
+                ki = null;
+                switch ( keystroke.ToLower())
+                {
+                    case "num +":
+                        ki = InputUtil.VimKeyToKeyInput(VimKey.AddKey);
+                        break;
+                    case "num /":
+                        ki = InputUtil.VimKeyToKeyInput(VimKey.DivideKey);
+                        break;
+                    case "num *":
+                        ki = InputUtil.VimKeyToKeyInput(VimKey.MultiplyKey);
+                        break;
+                    case "num -":
+                        ki = InputUtil.VimKeyToKeyInput(VimKey.SubtractKey);
+                        break;
+                }
+                return ki != null;
+            }
+
+            ki = null;
+            return false;
         }
 
         private static KeyInput ParseOne(string entry)
@@ -205,27 +228,27 @@ namespace VsVim
                 return ConvertToKeyInput(entry);
             }
 
-            KeyInput ki = null;
-            var match = Regex.Match(entry, @"^([\w ]+\+)+(.+)$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+            // First get rid of the Modifiers
             var mod = KeyModifiers.None;
-            if (match.Success)
+            while (s_modifierPrefix.Any(x => entry.StartsWith(x, StringComparison.OrdinalIgnoreCase)))
             {
-                foreach (var cap in match.Groups[1].Captures.Cast<Capture>())
+                var index = entry.IndexOf('+');
+                if (index < 0)
                 {
-                    var modKeys = KeyModifiers.None;
-                    if (!TryConvertToModifierKeys(cap.Value, out modKeys))
-                    {
-                        return null;
-                    }
-                    mod |= modKeys;
+                    return null;
                 }
-                ki = ConvertToKeyInput(match.Groups[2].Value);
-            }
-            else
-            {
-                ki = ConvertToKeyInput(entry);
+
+                var value = entry.Substring(0, index);
+                var modKeys = KeyModifiers.None;
+                if (!TryConvertToModifierKeys(value, out modKeys))
+                {
+                    return null;
+                }
+                mod |= modKeys;
+                entry = entry.Substring(index + 1).TrimStart();
             }
 
+            var ki = ConvertToKeyInput(entry);
             if (ki == null)
             {
                 return null;
@@ -260,12 +283,6 @@ namespace VsVim
             keyBinding = default(KeyBinding);
             var scopeEnd = binding.IndexOf(':');
             if (scopeEnd < 0)
-            {
-                return false;
-            }
-
-            // Num key binding not supported at this time
-            if (binding.IndexOf("Num") >= 0)
             {
                 return false;
             }
