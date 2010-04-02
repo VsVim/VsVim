@@ -43,16 +43,7 @@ namespace VsVim
                 buffer.AllModes.Select(x => x.Commands).SelectMany(x => x));
             hashSet.Add(buffer.Settings.GlobalSettings.DisableCommand);
             var commands = dte.Commands.GetCommands();
-
-            var allCommands = commands.SelectMany(x => x.GetCommandStrings()).ToArray();
-            System.IO.File.WriteAllLines(@"c:\users\jaredp\all.txt", allCommands);
-
             var list = FindConflictingCommands(commands, hashSet);
-
-            var conflicting = list.SelectMany(x => x.GetCommandStrings()).ToArray();
-            System.IO.File.WriteAllLines(@"c:\users\jaredp\conflicting.txt", conflicting);
-
-
             if (list.Count > 0)
             {
                 var msg = new StringBuilder();
@@ -154,5 +145,7 @@ namespace VsVim
 
             return false;
         }
+
+
     }
 }
