@@ -8,6 +8,9 @@ using EnvDTE;
 using System.ComponentModel.Composition.Primitives;
 using System.ComponentModel.Composition;
 using System.Windows;
+using Microsoft.VisualStudio.Shell.Interop;
+using Microsoft.VisualStudio.Shell;
+using IOleServiceProvider = Microsoft.VisualStudio.OLE.Interop.IServiceProvider;
 
 namespace VsVim
 {
@@ -17,7 +20,14 @@ namespace VsVim
     [Export(typeof(KeyBindingService))]
     public sealed class KeyBindingService
     {
+        private readonly IVsUIShell _vsShell;
         private bool _hasChecked;
+
+        [ImportingConstructor]
+        public KeyBindingService(IOleServiceProvider sp)
+        {
+            _vsShell = sp.GetService<SVsUIShell, IVsUIShell>();
+        }
 
         public void OneTimeCheckForConflictingKeyBindings(_DTE dte, IVimBuffer buffer)
         {
@@ -56,13 +66,16 @@ namespace VsVim
                     msg.AppendLine();
                 }
 
-                var res = MessageBox.Show(
-                    caption: "VsVim: Remove Conflicting Key Bindings",
-                    messageBoxText: msg.ToString(),
-                    button: MessageBoxButton.YesNo);
-                if (res == MessageBoxResult.Yes)
+                using (var modalDisplay = _vsShell.EnableModelessDialog())
                 {
-                    list.ForEach(x => x.SafeResetBindings());
+                    var res = MessageBox.Show(
+                        caption: "VsVim: Remove Conflicting Key Bindings",
+                        messageBoxText: msg.ToString(),
+                        button: MessageBoxButton.YesNo);
+                    if (res == MessageBoxResult.Yes)
+                    {
+                        list.ForEach(x => x.SafeResetBindings());
+                    }
                 }
             }
         }

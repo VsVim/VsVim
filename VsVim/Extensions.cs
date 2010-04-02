@@ -14,6 +14,8 @@ using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Editor;
 using Microsoft.VisualStudio;
+using IOleServiceProvider = Microsoft.VisualStudio.OLE.Interop.IServiceProvider;
+using Microsoft.VisualStudio.Shell.Interop;
 
 namespace VsVim
 {
@@ -182,14 +184,37 @@ namespace VsVim
 
         #endregion
 
-        #region IServiceProvider
-        
-        public static TInterface GetService<TService, TInterface>(this Microsoft.VisualStudio.OLE.Interop.IServiceProvider sp)
+        #region IVsUIShell
+
+        private sealed class ModelessUtil : IDisposable
+        {
+            private readonly IVsUIShell _vsShell;
+            public ModelessUtil(IVsUIShell vsShell)
+            {
+                _vsShell = vsShell;
+                vsShell.EnableModeless(0);
+            }
+            public void Dispose()
+            {
+                _vsShell.EnableModeless(-1); 
+            }
+        }
+
+        public static IDisposable EnableModelessDialog(this IVsUIShell vsShell)
+        {
+            return new ModelessUtil(vsShell);
+        }
+
+        #endregion
+
+        #region IOleServiceProvider
+
+        public static TInterface GetService<TService, TInterface>(this IOleServiceProvider sp)
         {
             return (TInterface)GetService(sp, typeof(TService).GUID, typeof(TInterface).GUID);
         }
 
-        public static object GetService(this Microsoft.VisualStudio.OLE.Interop.IServiceProvider sp, Guid serviceGuid, Guid interfaceGuid)
+        public static object GetService(this IOleServiceProvider sp, Guid serviceGuid, Guid interfaceGuid)
         {
             var ppvObject = IntPtr.Zero;
             if (0 != sp.QueryService(ref serviceGuid, ref interfaceGuid, out ppvObject))
@@ -208,6 +233,15 @@ namespace VsVim
                     Marshal.Release(ppvObject);
                 }
             }
+        }
+
+        #endregion
+
+        #region IServiceProvider
+
+        public static IOleServiceProvider GetOleServiceProvider(this System.IServiceProvider sp)
+        {
+            return (IOleServiceProvider)sp.GetService(typeof(IOleServiceProvider));
         }
 
         #endregion
