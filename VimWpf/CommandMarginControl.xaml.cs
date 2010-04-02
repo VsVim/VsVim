@@ -24,11 +24,6 @@ namespace Vim.UI.Wpf
             typeof(string),
             typeof(CommandMarginControl));
 
-        public static readonly DependencyProperty RightStatusLineProperty = DependencyProperty.Register(
-            "RightStatusLine",
-            typeof(string),
-            typeof(CommandMarginControl));
-
         /// <summary>
         /// The primary status line for Vim
         /// </summary>
@@ -38,15 +33,25 @@ namespace Vim.UI.Wpf
             set { SetValue(StatusLineProperty, value); }
         }
 
-        public string RightStatusLine
-        {
-            get { return (string)GetValue(RightStatusLineProperty); }
-            set { SetValue(StatusLineProperty, value); }
-        }
+        public event EventHandler OptionsClicked;
 
         public CommandMarginControl()
         {
             InitializeComponent();
+        }
+
+        private void PropertiesCommandCanExecute(object sender, CanExecuteRoutedEventArgs e)
+        {
+            e.CanExecute = true;
+        }
+
+        private void PropertiesCommandExecuted(object sender, ExecutedRoutedEventArgs e)
+        {
+            var savedEvent = OptionsClicked;
+            if (savedEvent != null)
+            {
+                savedEvent(this, EventArgs.Empty);
+            }
         }
     }
 }

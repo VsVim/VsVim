@@ -7,6 +7,13 @@
              d:DesignHeight="25" d:DesignWidth="419"
              x:Name="commandMarginControl"
              >
+
+    <UserControl.CommandBindings>
+        <CommandBinding 
+            Command="Properties" 
+            Executed="PropertiesCommandExecuted"
+            CanExecute="PropertiesCommandCanExecute" />
+    </UserControl.CommandBindings>
     <Grid
         DataContext="{Binding ElementName=commandMarginControl}">
 
@@ -15,8 +22,8 @@
         </Grid.RowDefinitions>
 
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="4*" />
-            <ColumnDefinition Width="1*" />
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="Auto" />
         </Grid.ColumnDefinitions>
 
         <TextBox 
@@ -25,11 +32,12 @@
             Text="{Binding Path=StatusLine}" 
             IsReadOnly="True" />
 
-        <TextBox
+        <Button
             Grid.Row="0"
             Grid.Column="1"
-            Text="{Binding Path=RightStatusLine}"
-            IsReadOnly="True" />
+            Content="Options"
+            Command="Properties"
+            />
 
     </Grid>
 

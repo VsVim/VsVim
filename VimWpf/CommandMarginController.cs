@@ -26,7 +26,6 @@ namespace Vim.UI.Wpf
 
         private void OnSwitchMode(object sender, IMode mode)
         {
-            _margin.RightStatusLine = String.Empty;
             switch (mode.ModeKind)
             {
                 case ModeKind.Normal:
