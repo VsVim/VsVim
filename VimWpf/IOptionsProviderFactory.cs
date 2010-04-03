@@ -5,8 +5,8 @@ using System.Text;
 
 namespace Vim.UI.Wpf
 {
-    public interface IOptionsPageFactory
+    public interface IOptionsProviderFactory
     {
-        IOptionsPage CreateOptionsPage();
+        IOptionsProvider CreateOptionsProvider();
     }
 }

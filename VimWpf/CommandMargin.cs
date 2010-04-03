@@ -15,11 +15,11 @@ namespace Vim.UI.Wpf
         private readonly CommandMarginController _controller;
         private readonly IVimBuffer _buffer;
 
-        public CommandMargin(IVimBuffer buffer, IEnumerable<Lazy<IOptionsPageFactory>> optionsPageFactories)
+        public CommandMargin(IVimBuffer buffer, IEnumerable<Lazy<IOptionsProviderFactory>> optionsProviderFactories)
         {
             _buffer = buffer;
             _margin.StatusLine = "Welcome to Vim";
-            _controller = new CommandMarginController(buffer, _margin, optionsPageFactories);
+            _controller = new CommandMarginController(buffer, _margin, optionsProviderFactories);
         }
 
         public FrameworkElement VisualElement

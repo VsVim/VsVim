@@ -11,20 +11,15 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
-using System.Collections.ObjectModel;
 
-namespace Vim.UI.Wpf
+namespace VsVim.UI
 {
-    public partial class OptionsWindow : Window
+    /// <summary>
+    /// Interaction logic for ConflictingKeyBindingControl.xaml
+    /// </summary>
+    public partial class ConflictingKeyBindingControl : Window
     {
-        private ObservableCollection<IOptionsPage> _pages = new ObservableCollection<IOptionsPage>();
-
-        public ObservableCollection<IOptionsPage> OptionPages
-        {
-            get { return _pages; }
-        }
-
-        public OptionsWindow()
+        public ConflictingKeyBindingControl()
         {
             InitializeComponent();
         }

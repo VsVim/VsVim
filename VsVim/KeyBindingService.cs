@@ -11,6 +11,7 @@ using System.Windows;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Shell;
 using IOleServiceProvider = Microsoft.VisualStudio.OLE.Interop.IServiceProvider;
+using System.Collections.ObjectModel;
 
 namespace VsVim
 {
@@ -44,11 +45,36 @@ namespace VsVim
             CheckForConflictingKeyBindings(dte, buffer);
         }
 
+        private void Hack()
+        {
+            var scope1 = new UI.ScopeData() { Name = "Scope1" };
+            scope1.KeyBindings.Add(new UI.KeyBindingData() { Name="Key Binding 1", IsChecked=true, Keys="SomeKeys" });
+            scope1.KeyBindings.Add(new UI.KeyBindingData() { Name="Key Binding 2", IsChecked=true, Keys="SomeKeys" });
+            scope1.KeyBindings.Add(new UI.KeyBindingData() { Name="Key Binding 3", IsChecked=true, Keys="SomeKeys" });
+
+            var scope2 = new UI.ScopeData() { Name = "Scope2" };
+            scope2.KeyBindings.Add(new UI.KeyBindingData() { Name="Key Binding 1", IsChecked=true, Keys="SomeKeys" });
+            scope2.KeyBindings.Add(new UI.KeyBindingData() { Name="Key Binding 2", IsChecked=false, Keys="SomeKeys" });
+            scope2.KeyBindings.Add(new UI.KeyBindingData() { Name="Key Binding 3", IsChecked=true, Keys="SomeKeys" });
+
+            var col = new ObservableCollection<UI.ScopeData>();
+            col.Add(scope1);
+            col.Add(scope2);
+
+            var window = new UI.ConflictingKeyBindingControl();
+            window.DataContext = col;
+            using (var mode = _vsShell.EnableModelessDialog())
+            {
+                window.ShowDialog();
+            }
+        }
+
         /// <summary>
         /// Check for and remove conflicting key bindings
         /// </summary>
         private void CheckForConflictingKeyBindings(_DTE dte, IVimBuffer buffer)
         {
+            Hack();
             var hashSet = new HashSet<KeyInput>(
                 buffer.AllModes.Select(x => x.Commands).SelectMany(x => x));
             hashSet.Add(buffer.Settings.GlobalSettings.DisableCommand);
