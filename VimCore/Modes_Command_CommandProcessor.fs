@@ -111,7 +111,9 @@ type internal CommandProcessor
             yield ("<", "", this.ProcessShiftLeft)
             yield (">", "", this.ProcessShiftRight)
             yield ("write","w", this.ProcessWrite)
+            yield ("wall", "wa", this.ProcessWriteAll)
             yield ("quit", "q", this.ProcessQuit)
+            yield ("qall", "qa", this.ProcessQuitAll)
             yield ("tabnext", "tabn", this.ProcessTabNext)
             yield ("tabprevious", "tabp", this.ProcessTabPrevious)
             yield ("tabNext", "tabN", this.ProcessTabPrevious)
@@ -291,9 +293,16 @@ type internal CommandProcessor
         if StringUtil.isNullOrEmpty name then _operations.Save()
         else _operations.SaveAs name
 
+    member private x.ProcessWriteAll _ _ _ = 
+        _operations.SaveAll()
+
     member private x.ProcessQuit _ _ hasBang =
         let checkDirty = not hasBang
         _operations.Close checkDirty
+
+    member private x.ProcessQuitAll _ _ hasBang =
+        let checkDirty = not hasBang
+        _operations.CloseAll checkDirty
 
     member private x.ProcessTabNext rest _ _ =
         let count,rest = RangeUtil.ParseNumber rest

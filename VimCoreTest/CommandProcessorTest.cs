@@ -986,6 +986,24 @@ namespace VimCoreTest
         }
 
         [Test]
+        public void WriteAll1()
+        {
+            Create("");
+            _operations.Setup(x => x.SaveAll()).Verifiable();
+            RunCommand("wa");
+            _operations.Verify();
+        }
+
+        [Test]
+        public void WriteAll2()
+        {
+            Create("");
+            _operations.Setup(x => x.SaveAll()).Verifiable();
+            RunCommand("wall");
+            _operations.Verify();
+        }
+
+        [Test]
         public void Quit1()
         {
             Create("");
@@ -1009,6 +1027,33 @@ namespace VimCoreTest
             Create("");
             _operations.Setup(x => x.Close(false)).Verifiable();
             RunCommand("q!");
+            _operations.Verify();
+        }
+
+        [Test]
+        public void QuitAll1()
+        {
+            Create("");
+            _operations.Setup(x => x.CloseAll(true)).Verifiable();
+            RunCommand("qall");
+            _operations.Verify();
+        }
+
+        [Test]
+        public void QuitAll2()
+        {
+            Create("");
+            _operations.Setup(x => x.CloseAll(false)).Verifiable();
+            RunCommand("qall!");
+            _operations.Verify();
+        }
+
+        [Test]
+        public void QuitAll3()
+        {
+            Create("");
+            _operations.Setup(x => x.CloseAll(true)).Verifiable();
+            RunCommand("qa");
             _operations.Verify();
         }
 

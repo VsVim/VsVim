@@ -86,6 +86,11 @@ namespace VimCoreTest
             throw new NotImplementedException();
         }
 
+        void IVimHost.CloseAllFiles(bool checkDirty)
+        {
+            throw new NotImplementedException();
+        }
+
         void IVimHost.SaveCurrentFile()
         {
             throw new NotImplementedException();
@@ -96,6 +101,10 @@ namespace VimCoreTest
             throw new NotImplementedException();
         }
 
+        void IVimHost.SaveAllFiles()
+        {
+            throw new NotImplementedException();
+        }
 
         void IVimHost.GoToNextTab(int count)
         {

@@ -334,7 +334,9 @@ type internal CommonOperations
 
         member x.Save() = _host.SaveCurrentFile()
         member x.SaveAs fileName = _host.SaveCurrentFileAs fileName
+        member x.SaveAll() = _host.SaveAllFiles()
         member x.Close checkDirty = _host.CloseCurrentFile checkDirty
+        member x.CloseAll checkDirty = _host.CloseAllFiles checkDirty
         member x.GoToNextTab count = _host.GoToNextTab count
         member x.GoToPreviousTab count = _host.GoToPreviousTab count
         
