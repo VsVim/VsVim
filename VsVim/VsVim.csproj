@@ -78,7 +78,7 @@
       <HintPath>..\References\Microsoft.VisualStudio.Platform.VSEditor.Interop.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="Microsoft.VisualStudio.Shell, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
+    <Reference Include="Microsoft.VisualStudio.Shell.10.0, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
     <Reference Include="Microsoft.VisualStudio.Shell.Immutable.10.0, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
     <Reference Include="Microsoft.VisualStudio.Shell.Interop, Version=7.1.40304.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
     <Reference Include="Microsoft.VisualStudio.Shell.Interop.10.0, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
@@ -143,6 +143,9 @@
     <Compile Include="UI\ConflictingKeyBindingControl.xaml.cs">
       <DependentUpon>ConflictingKeyBindingControl.xaml</DependentUpon>
     </Compile>
+    <Compile Include="UI\ConflictingKeyBindingDialog.xaml.cs">
+      <DependentUpon>ConflictingKeyBindingDialog.xaml</DependentUpon>
+    </Compile>
     <Compile Include="UI\KeyBindingData.cs" />
     <Compile Include="UI\ScopeData.cs" />
     <Compile Include="VsCommandFilter.cs" />
@@ -185,6 +188,10 @@
   </ItemGroup>
   <ItemGroup>
     <Page Include="UI\ConflictingKeyBindingControl.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="UI\ConflictingKeyBindingDialog.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

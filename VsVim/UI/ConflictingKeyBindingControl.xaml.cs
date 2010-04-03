@@ -11,17 +11,33 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using System.Collections.ObjectModel;
 
 namespace VsVim.UI
 {
     /// <summary>
     /// Interaction logic for ConflictingKeyBindingControl.xaml
     /// </summary>
-    public partial class ConflictingKeyBindingControl : Window
+    public partial class ConflictingKeyBindingControl : UserControl
     {
+        private ObservableCollection<KeyBindingData> _removedKeyBindingData = new ObservableCollection<KeyBindingData>();
+        private ObservableCollection<KeyBindingData> _conflictingKeyBindingData = new ObservableCollection<KeyBindingData>();
+
+        public ObservableCollection<KeyBindingData> RemovedKeyBindingData
+        {
+            get { return _removedKeyBindingData; }
+        }
+
+        public ObservableCollection<KeyBindingData> ConflictingKeyBindingData
+        {
+            get { return _conflictingKeyBindingData; }
+        }
+        
         public ConflictingKeyBindingControl()
         {
             InitializeComponent();
+            _removedListBox.DataContext = _removedKeyBindingData;
+            _conflictingListBox.DataContext = _conflictingKeyBindingData;
         }
     }
 }
