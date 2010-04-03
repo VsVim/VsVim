@@ -131,7 +131,6 @@
     <Compile Include="CommandUtilTest.cs" />
     <Compile Include="EditCommandTest.cs" />
     <Compile Include="ExtensionsTest.cs" />
-    <Compile Include="FakeServiceProvider.cs" />
     <Compile Include="KeyBindingServiceTest.cs" />
     <Compile Include="KeyBindingTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

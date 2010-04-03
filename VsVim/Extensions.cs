@@ -4,7 +4,6 @@ using System.Linq;
 using System.Text;
 using EnvDTE;
 using Microsoft.FSharp.Core;
-using Microsoft.VisualStudio.OLE.Interop;
 using System.Runtime.InteropServices;
 using Microsoft.VisualStudio.Utilities;
 using Vim;
@@ -14,7 +13,6 @@ using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Editor;
 using Microsoft.VisualStudio;
-using IOleServiceProvider = Microsoft.VisualStudio.OLE.Interop.IServiceProvider;
 using Microsoft.VisualStudio.Shell.Interop;
 
 namespace VsVim
@@ -99,37 +97,6 @@ namespace VsVim
 
         #endregion
 
-        #region IObjectWithSite
-
-        public static Microsoft.VisualStudio.OLE.Interop.IServiceProvider GetServiceProvider(this IObjectWithSite ows)
-        {
-            var ptr = IntPtr.Zero;
-            try
-            {
-                var guid = typeof(Microsoft.VisualStudio.OLE.Interop.IServiceProvider).GUID;
-                ows.GetSite(ref guid, out ptr);
-                if (ptr == IntPtr.Zero)
-                {
-                    return null;
-                }
-                var site = Marshal.GetObjectForIUnknown(ptr);
-                if (site == null)
-                {
-                    return null;
-                }
-                return site as Microsoft.VisualStudio.OLE.Interop.IServiceProvider;
-            }
-            finally
-            {
-                if (ptr != IntPtr.Zero)
-                {
-                    Marshal.Release(ptr);
-                }
-            }
-        }
-
-        #endregion
-
         #region PropertyCollection
 
         public static void AddTypedProperty<T>(this PropertyCollection col, T value)
@@ -207,41 +174,11 @@ namespace VsVim
 
         #endregion
 
-        #region IOleServiceProvider
-
-        public static TInterface GetService<TService, TInterface>(this IOleServiceProvider sp)
-        {
-            return (TInterface)GetService(sp, typeof(TService).GUID, typeof(TInterface).GUID);
-        }
-
-        public static object GetService(this IOleServiceProvider sp, Guid serviceGuid, Guid interfaceGuid)
-        {
-            var ppvObject = IntPtr.Zero;
-            if (0 != sp.QueryService(ref serviceGuid, ref interfaceGuid, out ppvObject))
-            {
-                throw new InvalidOperationException();
-            }
-
-            try
-            {
-                return Marshal.GetObjectForIUnknown(ppvObject);
-            }
-            finally
-            {
-                if (ppvObject != IntPtr.Zero)
-                {
-                    Marshal.Release(ppvObject);
-                }
-            }
-        }
-
-        #endregion
-
         #region IServiceProvider
 
-        public static IOleServiceProvider GetOleServiceProvider(this System.IServiceProvider sp)
+        public static TInterface GetService<TService, TInterface>(this IServiceProvider sp)
         {
-            return (IOleServiceProvider)sp.GetService(typeof(IOleServiceProvider));
+            return (TInterface)sp.GetService(typeof(TService));
         }
 
         #endregion
@@ -298,25 +235,5 @@ namespace VsVim
 
         #endregion
 
-        #region IVsEditorAdaptersFactoryService
-
-        public static Microsoft.VisualStudio.OLE.Interop.IServiceProvider GetServiceProvider(this IVsEditorAdaptersFactoryService adapters, ITextBuffer textBuffer)
-        {
-            var vsTextLines = adapters.GetBufferAdapter(textBuffer) as IVsTextLines;
-            if (vsTextLines == null)
-            {
-                return null;
-            }
-
-            var objectWithSite = vsTextLines as IObjectWithSite;
-            if (objectWithSite == null)
-            {
-                return null;
-            }
-
-            return objectWithSite.GetServiceProvider();
-        }
-
-        #endregion
     }
 }
