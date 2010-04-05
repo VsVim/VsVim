@@ -6,8 +6,10 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:VsVim.UI;assembly="
              mc:Ignorable="d" 
-             d:DesignHeight="348" d:DesignWidth="487"
-             Title="VsVim Options" SizeToContent="WidthAndHeight">
+             d:DesignHeight="400" d:DesignWidth="600"
+             MaxHeight="400"
+             MaxWidth="600"
+             Title="VsVim Options" SizeToContent="Manual" >
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="*" />

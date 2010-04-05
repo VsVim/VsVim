@@ -114,7 +114,7 @@ namespace Vim.UI.Wpf
             var provider = _optionsProviderFactory.Select(x => x.Value.CreateOptionsProvider()).Where(x => x != null).FirstOrDefault();
             if (provider != null)
             {
-                provider.ShowDialog();
+                provider.ShowDialog(_buffer);
             }
             else
             {
