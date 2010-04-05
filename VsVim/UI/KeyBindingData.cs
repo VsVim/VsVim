@@ -8,6 +8,11 @@ namespace VsVim.UI
 {
     public sealed class KeyBindingData :DependencyObject
     {
+        public static readonly DependencyProperty ScopeProperty = DependencyProperty.Register(
+            "Scope",
+            typeof(string),
+            typeof(KeyBindingData));
+
         public static readonly DependencyProperty NameProperty = DependencyProperty.Register(
             "Name",
             typeof(string),
@@ -18,15 +23,16 @@ namespace VsVim.UI
             typeof(string),
             typeof(KeyBindingData));
 
-        public static readonly DependencyProperty CommandIdProperty = DependencyProperty.Register(
-            "CommandId",
-            typeof(Guid),
-            typeof(KeyBindingData));
-
         public static readonly DependencyProperty IsCheckedProperty = DependencyProperty.Register(
             "IsChecked",
             typeof(bool),
             typeof(KeyBindingData));
+
+        public string Scope
+        {
+            get { return (string)GetValue(ScopeProperty); }
+            set { SetValue(ScopeProperty, value); }
+        }
 
         public string Name
         {
@@ -40,16 +46,22 @@ namespace VsVim.UI
             set { SetValue(KeysProperty, value); }
         }
 
-        public Guid CommandId
-        {
-            get { return (Guid)GetValue(CommandIdProperty); }
-            set { SetValue(CommandIdProperty, value); }
-        }
-
         public bool IsChecked
         {
             get { return (bool)GetValue(IsCheckedProperty); }
             set { SetValue(IsCheckedProperty, value); }
+        }
+
+        public KeyBindingData()
+        {
+
+        }
+
+        public KeyBindingData(CommandKeyBinding binding)
+        {
+            Scope = binding.KeyBinding.Scope;
+            Name = binding.Name;
+            Keys = binding.KeyBinding.CommandString;
         }
     }
 }
