@@ -85,9 +85,7 @@ namespace VsVim
             {
                 buffer.Close();
                 _filterMap.Remove(buffer);
-                ITextViewDebugUtil.Detach(textView);
             };
-            ITextViewDebugUtil.Attach(textView);
         }
 
         void IVsTextViewCreationListener.VsTextViewCreated(IVsTextView vsView)
