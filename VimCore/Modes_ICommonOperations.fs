@@ -136,8 +136,14 @@ type ICommonOperations =
     /// Save the current document as the specified file
     abstract SaveAs : string -> unit
 
+    /// Save all files
+    abstract SaveAll : unit -> unit
+
     /// Close the current file
     abstract Close : checkDirty : bool -> unit
+
+    /// Close all open files
+    abstract CloseAll : checkDirty : bool -> unit
 
     /// Scroll the buffer by count lines in the given direction
     abstract ScrollLines : ScrollDirection -> count:int -> unit

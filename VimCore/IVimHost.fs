@@ -34,9 +34,14 @@ type IVimHost =
     /// Save the current document as a new file with the specified name
     abstract SaveCurrentFileAs : string -> unit
 
+    /// Saves all files
+    abstract SaveAllFiles : unit -> unit
+
     /// Close the current file
     abstract CloseCurrentFile : checkDirty:bool -> unit
 
+    /// Closes all files
+    abstract CloseAllFiles : checkDirty:bool -> unit
 
 
 

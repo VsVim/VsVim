@@ -195,9 +195,19 @@ namespace VsVim
             SafeExecuteCommand("File.SaveSelectedItemsAs " + fileName);
         }
 
+        void IVimHost.SaveAllFiles()
+        {
+            SafeExecuteCommand("File.SaveAll");
+        }
+
         void IVimHost.CloseCurrentFile(bool checkDirty)
         {
             SafeExecuteCommand("File.Close");
+        }
+
+        void IVimHost.CloseAllFiles(bool checkDirty)
+        {
+            SafeExecuteCommand("Window.CloseAllDocuments");
         }
 
         void IVimHost.GoToNextTab(int count)
