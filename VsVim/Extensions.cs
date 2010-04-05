@@ -87,6 +87,18 @@ namespace VsVim
             }
         }
 
+        public static void SafeSetBindings(this Command command, KeyBinding binding)
+        {
+            try
+            {
+                command.Bindings = new object[] { binding.CommandString };
+            }
+            catch (COMException)
+            {
+
+            }
+        }
+
         #endregion
 
         #region Commands

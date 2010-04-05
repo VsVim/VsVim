@@ -13,6 +13,7 @@ using Microsoft.VisualStudio.Shell;
 using System.Collections.ObjectModel;
 using Microsoft.Internal.VisualStudio.PlatformUI;
 using System.Threading;
+using VsVim.UI;
 
 namespace VsVim
 {
@@ -83,41 +84,79 @@ namespace VsVim
                 buffer.AllModes.Select(x => x.Commands).SelectMany(x => x));
             hashSet.Add(buffer.Settings.GlobalSettings.DisableCommand);
             var commands = dte.Commands.GetCommands();
-            var list = FindConflictingCommands(commands, hashSet);
+            var list = FindConflictingCommandsAndBindings(commands, hashSet);
             if (list.Count > 0)
             {
                 var msg = new StringBuilder();
-                msg.AppendLine("Conflicting key bindings found.  Remove?");
-                foreach (var item in list)
-                {
-                    const int maxLen = 50;
-                    var name = item.Name.Length > maxLen ? item.Name.Substring(0, maxLen) + "..." : item.Name;
-                    msg.AppendFormat("\t{0}", name);
-                    msg.AppendLine();
-                }
-
+                msg.AppendLine("Conflicting key bindings found.  Would you like to inspect and remove?");
                 using (var modalDisplay = _vsShell.EnableModelessDialog())
                 {
                     var res = MessageBox.Show(
-                        caption: "VsVim: Remove Conflicting Key Bindings",
+                        caption: "VsVim",
                         messageBoxText: msg.ToString(),
                         button: MessageBoxButton.YesNo);
                     if (res == MessageBoxResult.Yes)
                     {
-                        list.ForEach(x => x.SafeResetBindings());
+                        DoShowOptionsDialog(dte, FindKeyBindingsMarkedAsRemoved(), list.Select(x => x.Item2));
                     }
                 }
             }
         }
 
-        /// <summary>
-        /// Find all of the Command instances which have conflicting key bindings
-        /// </summary>
+        private void DoShowOptionsDialog(
+            _DTE dte,
+            IEnumerable<CommandKeyBinding> previouslyRemovedKeyBindings,
+            IEnumerable<CommandKeyBinding> conflictingKeyBindings)
+        {
+            var window = new UI.ConflictingKeyBindingDialog();
+            var removed = window.ConflictingKeyBindingControl.RemovedKeyBindingData;
+            removed.AddRange(previouslyRemovedKeyBindings.Select(x => new KeyBindingData(x)));
+            var current = window.ConflictingKeyBindingControl.ConflictingKeyBindingData;
+            current.AddRange(conflictingKeyBindings.Select(x => new KeyBindingData(x)));
+            var ret = window.ShowModal();
+            if (ret.HasValue && ret.Value)
+            {
+                var commands = dte.Commands.GetCommands().ToList();
+                var comp = StringComparer.OrdinalIgnoreCase;
+
+                // Remove all of the removed bindings
+                foreach (var cur in removed)
+                {
+                    var command = commands.Where(x => comp.Equals(cur.Name, x.Name)).FirstOrDefault();
+                    if (command != null)
+                    {
+                        command.SafeResetBindings();
+                    }
+                }
+
+                // Restore all of the conflicting ones
+                foreach (var cur in current)
+                {
+                    var command = commands.Where(x => comp.Equals(cur.Name, x.Name)).FirstOrDefault();
+                    KeyBinding binding;
+                    if (command != null && KeyBinding.TryParse(cur.Keys, out binding))
+                    {
+                        command.SafeSetBindings(binding);
+                    }
+                }
+            }
+        }
+
         public static List<Command> FindConflictingCommands(
             IEnumerable<Command> commands,
             HashSet<KeyInput> neededInputs)
         {
-            var list = new List<Command>();
+            return FindConflictingCommandsAndBindings(commands, neededInputs).Select(x => x.Item1).ToList();
+        }
+
+        /// <summary>
+        /// Find all of the Command instances which have conflicting key bindings
+        /// </summary>
+        public static List<Tuple<Command, CommandKeyBinding>> FindConflictingCommandsAndBindings(
+            IEnumerable<Command> commands,
+            HashSet<KeyInput> neededInputs)
+        {
+            var list = new List<Tuple<Command, CommandKeyBinding>>();
             foreach (var cmd in commands.ToList())
             {
                 foreach (var binding in cmd.GetKeyBindings())
@@ -130,7 +169,7 @@ namespace VsVim
                     var input = binding.KeyBinding.FirstKeyInput;
                     if (neededInputs.Contains(input))
                     {
-                        list.Add(cmd);
+                        list.Add(Tuple.Create(cmd, binding));
                         break;
                     }
                 }
@@ -192,7 +231,7 @@ namespace VsVim
         /// <summary>
         /// Find all of the key bindings which have been removed
         /// </summary>
-        public static List<CommandKeyBinding> FindRemovedKeyBindings()
+        public static List<CommandKeyBinding> FindKeyBindingsMarkedAsRemoved()
         {
             var settings = Settings.Settings.Default;
             IEnumerable<Tuple<string, string>> source = null;
