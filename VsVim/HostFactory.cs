@@ -76,10 +76,6 @@ namespace VsVim
 
         void IVimBufferCreationListener.VimBufferCreated(IVimBuffer buffer)
         {
-            var dte = (_DTE)_serviceProvider.GetService(typeof(_DTE));
-            buffer.ErrorMessage += (unused, msg) => dte.StatusBar.Text = msg;
-            buffer.StatusMessage += (unused, msg) => dte.StatusBar.Text = msg;
-
             var textView = buffer.TextView;
             textView.Closed += (x, y) =>
             {
