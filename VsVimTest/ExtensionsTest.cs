@@ -24,7 +24,7 @@ namespace VsVimTest
             var com = new Mock<EnvDTE.Command>();
             com.Setup(x => x.Bindings).Returns(new object[] { "::f" });
             com.Setup(x => x.Name).Returns("name");
-            var list = Extensions.GetKeyBindings(com.Object).ToList();
+            var list = Extensions.GetCommandKeyBindings(com.Object).ToList();
             Assert.AreEqual(1, list.Count);
             Assert.AreEqual('f', list[0].KeyBinding.FirstKeyInput.Char);
             Assert.AreEqual("name", list[0].Name);
@@ -36,7 +36,7 @@ namespace VsVimTest
             var com = new Mock<EnvDTE.Command>();
             com.Setup(x => x.Bindings).Returns(new object[] { "foo::f", "bar::b" });
             com.Setup(x => x.Name).Returns("name");
-            var list = Extensions.GetKeyBindings(com.Object).ToList();
+            var list = Extensions.GetCommandKeyBindings(com.Object).ToList();
             Assert.AreEqual(2, list.Count);
             Assert.AreEqual('f', list[0].KeyBinding.FirstKeyInput.Char);
             Assert.AreEqual("foo", list[0].KeyBinding.Scope);
@@ -50,7 +50,7 @@ namespace VsVimTest
             var com = new Mock<EnvDTE.Command>();
             com.Setup(x => x.Bindings).Returns("::f");
             com.Setup(x => x.Name).Returns("name");
-            var list = Extensions.GetKeyBindings(com.Object).ToList();
+            var list = Extensions.GetCommandKeyBindings(com.Object).ToList();
             Assert.AreEqual(1, list.Count);
             Assert.AreEqual('f', list[0].KeyBinding.FirstKeyInput.Char);
             Assert.AreEqual(String.Empty, list[0].KeyBinding.Scope);
@@ -62,7 +62,7 @@ namespace VsVimTest
             var com = new Mock<EnvDTE.Command>();
             com.Setup(x => x.Bindings).Returns(new object[] { "::notavalidkey" });
             com.Setup(x => x.Name).Returns("name");
-            var e = Extensions.GetKeyBindings(com.Object).ToList();
+            var e = Extensions.GetCommandKeyBindings(com.Object).ToList();
             Assert.AreEqual(0, e.Count);
         }
 

@@ -65,11 +65,10 @@ namespace VsVim
                 _vim.LoadVimRc(func);
             }
 
-            var dte = (_DTE)_serviceProvider.GetService(typeof(_DTE));
             Action doCheck = () =>
                 {
                     // Run the key binding check now
-                    _keyBindingService.OneTimeCheckForConflictingKeyBindings(dte, buffer);
+                    _keyBindingService.OneTimeCheckForConflictingKeyBindings(buffer);
                 };
 
             Dispatcher.CurrentDispatcher.BeginInvoke(doCheck, null);

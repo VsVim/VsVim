@@ -34,13 +34,8 @@ namespace VsVim
             _dte = sp.GetService<SDTE, _DTE>();
         }
 
-        public void OneTimeCheckForConflictingKeyBindings(_DTE dte, IVimBuffer buffer)
+        public void OneTimeCheckForConflictingKeyBindings(IVimBuffer buffer)
         {
-            if (dte == null)
-            {
-                throw new ArgumentNullException("dte");
-            }
-
             if (_hasChecked)
             {
                 return;
@@ -52,14 +47,27 @@ namespace VsVim
         /// <summary>
         /// Check for and remove conflicting key bindings
         /// </summary>
-        private void CheckForConflictingKeyBindings(IVimBuffer buffer)
+        public CommandKeyBindingSnapshot CalculateCommandKeyBindingSnapshot(IVimBuffer buffer)
         {
             var hashSet = new HashSet<KeyInput>(
                 buffer.AllModes.Select(x => x.Commands).SelectMany(x => x));
             hashSet.Add(buffer.Settings.GlobalSettings.DisableCommand);
             var snapshot = new CommandsSnapshot(_dte);
-            var list = FindConflictingCommandKeyBindings(snapshot, hashSet);
-            if (list.Count > 0)
+            var conflicting = FindConflictingCommandKeyBindings(snapshot, hashSet);
+            var removed = FindRemovedKeyBindings(snapshot);
+            return new CommandKeyBindingSnapshot(
+                snapshot,
+                removed,
+                conflicting);
+        }
+
+        /// <summary>
+        /// Check for and remove conflicting key bindings
+        /// </summary>
+        private void CheckForConflictingKeyBindings(IVimBuffer buffer)
+        {
+            var snapshot = CalculateCommandKeyBindingSnapshot(buffer);
+            if (snapshot.Conflicting.Any())
             {
                 var msg = new StringBuilder();
                 msg.AppendLine("Conflicting key bindings found.  Would you like to inspect and remove?");
@@ -71,53 +79,9 @@ namespace VsVim
                         button: MessageBoxButton.YesNo);
                     if (res == MessageBoxResult.Yes)
                     {
-                        DoShowOptionsDialog(snapshot, FindKeyBindingsMarkedAsRemoved(), list);
+                        UI.ConflictingKeyBindingDialog.DoShow(snapshot);
                     }
                 }
-            }
-        }
-
-        private void DoShowOptionsDialog(
-            CommandsSnapshot snapshot,
-            IEnumerable<CommandKeyBinding> previouslyRemovedKeyBindings,
-            IEnumerable<CommandKeyBinding> conflictingKeyBindings)
-        {
-            var window = new UI.ConflictingKeyBindingDialog();
-            var removed = window.ConflictingKeyBindingControl.RemovedKeyBindingData;
-            removed.AddRange(previouslyRemovedKeyBindings.Select(x => new KeyBindingData(x)));
-            var current = window.ConflictingKeyBindingControl.ConflictingKeyBindingData;
-            current.AddRange(conflictingKeyBindings.Select(x => new KeyBindingData(x)));
-            var ret = window.ShowModal();
-            if (ret.HasValue && ret.Value)
-            {
-                // Remove all of the removed bindings
-                foreach (var cur in removed)
-                {
-                    var tuple = snapshot.TryGetCommand(cur.Name);
-                    if ( tuple.Item1 )
-                    {
-                        tuple.Item2.SafeResetBindings();
-                    }
-                }
-
-                // Restore all of the conflicting ones
-                foreach (var cur in current)
-                {
-                    KeyBinding binding;
-                    var tuple = snapshot.TryGetCommand(cur.Name);
-                    if ( tuple.Item1 && KeyBinding.TryParse(cur.Keys, out binding))
-                    {
-                        tuple.Item2.SafeSetBindings(binding);
-                    }
-                }
-
-                var settings = Settings.Settings.Default;
-                settings.RemovedBindings = 
-                    removed
-                    .Select(x => new Settings.CommandBindingSetting() { Name = x.Name, CommandString = x.Keys })
-                    .ToArray();
-                settings.HaveUpdatedKeyBindings = true;
-                settings.Save();
             }
         }
 

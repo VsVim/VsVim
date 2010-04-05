@@ -124,6 +124,7 @@
     <Compile Include="ITextViewDebugUtil.cs" />
     <Compile Include="KeyBinding.cs" />
     <Compile Include="KeyBindingService.cs" />
+    <Compile Include="CommandKeyBindingSnapshot.cs" />
     <Compile Include="KeyProcessorProvider.cs" />
     <Compile Include="MouseProcessorProvider.cs" />
     <Compile Include="NativeMethods.cs" />
