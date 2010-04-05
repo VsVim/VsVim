@@ -10,7 +10,6 @@ using System.ComponentModel.Composition;
 using System.Windows;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Shell;
-using IOleServiceProvider = Microsoft.VisualStudio.OLE.Interop.IServiceProvider;
 using System.Collections.ObjectModel;
 using Microsoft.Internal.VisualStudio.PlatformUI;
 using System.Threading;
@@ -27,7 +26,7 @@ namespace VsVim
         private bool _hasChecked;
 
         [ImportingConstructor]
-        public KeyBindingService(IOleServiceProvider sp)
+        public KeyBindingService(SVsServiceProvider sp)
         {
             _vsShell = sp.GetService<SVsUIShell, IVsUIShell>();
         }

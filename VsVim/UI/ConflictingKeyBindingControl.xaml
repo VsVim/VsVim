@@ -4,7 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              mc:Ignorable="d" 
-             d:DesignHeight="391" d:DesignWidth="614" >
+             d:DesignHeight="300" d:DesignWidth="400" >
     <UserControl.Resources>
         <DataTemplate x:Key="keyBindingItemTemplate">
             <StackPanel Orientation="Horizontal">
@@ -17,9 +17,10 @@
     
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="293*" />
             <ColumnDefinition Width="Auto" />
-            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="178*" />
+            <ColumnDefinition Width="115*" />
         </Grid.ColumnDefinitions>
 
         <Grid.RowDefinitions>
@@ -72,21 +73,17 @@
         </Grid>
 
         <Label
-            Grid.Column="2"
-            Grid.Row="0"
-            Content="Conflicting Key Bindings" />
+            Grid.Column="2" Content="Conflicting Key Bindings" Grid.ColumnSpan="2" />
 
         <ListBox 
             Name="_conflictingListBox"
             Grid.Column="2"
             Grid.Row="1"
             ItemsSource="{Binding}"
-            ItemTemplate="{StaticResource keyBindingItemTemplate}" />
+            ItemTemplate="{StaticResource keyBindingItemTemplate}" Grid.ColumnSpan="2" />
 
         <DockPanel
-            Grid.Row="2"
-            Grid.Column="0"
-            Grid.ColumnSpan="3"
+            Grid.Row="2" Grid.ColumnSpan="4"
             LastChildFill="False">
 
             <Button 
