@@ -124,6 +124,31 @@ namespace VimCoreTest
             Assert.IsTrue(ran);
         }
 
+        [Test]
+        public void KeyInputBuffered1()
+        {
+            DisableKeyRemap();
+            var ki = new KeyInput('f');
+            _normalMode.Setup(x => x.Process(ki)).Returns(ProcessResult.Processed);
+            var ran = false;
+            _buffer.KeyInputBuffered += (s, i) => { ran = true; };
+            _buffer.ProcessInput(ki);
+            Assert.IsFalse(ran);
+        }
+
+        [Test]
+        public void KeyInputBuffered2()
+        {
+            var ki = new KeyInput('f');
+            _keyMap
+                .Setup(x => x.GetKeyMappingResult(ki, It.IsAny<KeyRemapMode>()))
+                .Returns(KeyMappingResult.MappingNeedsMoreInput);
+            var ran = false;
+            _buffer.KeyInputBuffered += (s, i) => { ran = true; };
+            _buffer.ProcessInput(ki);
+            Assert.IsTrue(ran);
+        }
+
         [Test, Description("Close should call OnLeave for the active mode")]
         public void Close1()
         {

@@ -48,6 +48,7 @@ type internal VimBuffer
 
     let _keyInputProcessedEvent = new Event<_>()
     let _keyInputReceivedEvent = new Event<_>()
+    let _keyInputBufferedEvent = new Event<_>()
     let _errorMessageEvent = new Event<_>()
     let _statusMessageEvent = new Event<_>()
     let _statusMessageLongEvent = new Event<_>()
@@ -133,6 +134,7 @@ type internal VimBuffer
         | NoMapping -> doProcess i 
         | MappingNeedsMoreInput -> 
             _remapInput <- keyInputs |> List.ofSeq |> Some
+            _keyInputBufferedEvent.Trigger i
             true
         | RecursiveMapping(_) -> 
             x.RaiseErrorMessage Resources.Vim_RecursiveMapping
@@ -179,6 +181,8 @@ type internal VimBuffer
         member x.KeyInputProcessed = _keyInputProcessedEvent.Publish
         [<CLIEvent>]
         member x.KeyInputReceived = _keyInputReceivedEvent.Publish
+        [<CLIEvent>]
+        member x.KeyInputBuffered = _keyInputBufferedEvent.Publish
         [<CLIEvent>]
         member x.ErrorMessage = _errorMessageEvent.Publish
         [<CLIEvent>]

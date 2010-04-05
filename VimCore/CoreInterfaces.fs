@@ -415,6 +415,11 @@ and IVimBuffer =
     [<CLIEvent>]
     abstract KeyInputReceived : IEvent<KeyInput>
 
+    /// Raised when a key is recieved but not immediately processed.  Occurs when a
+    /// key remapping has more than one source key strokes
+    [<CLIEvent>]
+    abstract KeyInputBuffered : IEvent<KeyInput>
+
     /// Raised when an error is encountered
     [<CLIEvent>]
     abstract ErrorMessage : IEvent<string>

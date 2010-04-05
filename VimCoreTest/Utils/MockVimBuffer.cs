@@ -133,6 +133,8 @@ namespace VimCoreTest.Utils
 
         public event Microsoft.FSharp.Control.FSharpHandler<KeyInput> KeyInputReceived;
 
+        public event Microsoft.FSharp.Control.FSharpHandler<KeyInput> KeyInputBuffered;
+
 #pragma warning restore 67
 
         public event Microsoft.FSharp.Control.FSharpHandler<IMode> SwitchedMode;
@@ -172,5 +174,7 @@ namespace VimCoreTest.Utils
         {
             get { throw new NotImplementedException(); }
         }
+
+
     }
 }
