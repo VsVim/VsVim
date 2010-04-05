@@ -59,13 +59,16 @@
                 Grid.Row="1"
                 Grid.Column="0"
                 Margin="3"
-                Content="&lt;&lt;" />
+                Content="&lt;&lt;"
+                Click="OnRemoveSelectedClick"
+                />
 
             <Button
                 Grid.Row="2"
                 Grid.Column="0"
                 Margin="3"
-                Content=">>" />
+                Content=">>" 
+                Click="OnResetSelectedClick" />
         </Grid>
 
         <Label
@@ -86,9 +89,23 @@
             Grid.ColumnSpan="3"
             LastChildFill="False">
 
-            <Button DockPanel.Dock="Right" Content="Remove All Conflicting" />
-            <Button DockPanel.Dock="Right" Margin="0,0,5,0" Content="Remove Selected" />
-            <Button DockPanel.Dock="Right" Margin="0,0,5,0" Content="Reset All" />
+            <Button 
+                DockPanel.Dock="Right" 
+                Content="Remove All Conflicting" 
+                Click="OnRemoveAllConflictingClick" />
+
+            <Button 
+                DockPanel.Dock="Right" 
+                Margin="0,0,5,0" 
+                Content="Remove Selected"
+                Click="OnRemoveSelectedClick" />
+
+            <Button 
+                DockPanel.Dock="Right" 
+                Margin="0,0,5,0" 
+                Content="Reset All"
+                Click="OnResetAllClick" />
+
         </DockPanel>
 
     </Grid>

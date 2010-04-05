@@ -16,6 +16,7 @@ using Microsoft.VisualStudio.Editor;
 using Microsoft.VisualStudio;
 using IOleServiceProvider = Microsoft.VisualStudio.OLE.Interop.IServiceProvider;
 using Microsoft.VisualStudio.Shell.Interop;
+using System.Collections.ObjectModel;
 
 namespace VsVim
 {
@@ -300,6 +301,7 @@ namespace VsVim
 
         #region IVsEditorAdaptersFactoryService
 
+
         public static Microsoft.VisualStudio.OLE.Interop.IServiceProvider GetServiceProvider(this IVsEditorAdaptersFactoryService adapters, ITextBuffer textBuffer)
         {
             var vsTextLines = adapters.GetBufferAdapter(textBuffer) as IVsTextLines;
@@ -315,6 +317,30 @@ namespace VsVim
             }
 
             return objectWithSite.GetServiceProvider();
+        }
+
+        #endregion
+
+        #region ObservableCollection<T>
+
+        public static void AddRange<T>(this ObservableCollection<T> col, IEnumerable<T> enumerable)
+        {
+            foreach (var cur in enumerable)
+            {
+                col.Add(cur);
+            }
+        }
+
+        #endregion
+
+        #region IEnumerable<T>
+
+        public static void ForEach<T>(this IEnumerable<T> enumerable, Action<T> del)
+        {
+            foreach (var cur in enumerable)
+            {
+                del(cur);
+            }
         }
 
         #endregion

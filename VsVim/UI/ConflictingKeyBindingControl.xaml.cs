@@ -39,5 +39,35 @@ namespace VsVim.UI
             _removedListBox.DataContext = _removedKeyBindingData;
             _conflictingListBox.DataContext = _conflictingKeyBindingData;
         }
+
+        private void OnRemoveAllConflictingClick(object sender, RoutedEventArgs e)
+        {
+            _conflictingKeyBindingData.ForEach(x => x.IsChecked = false);
+            _removedKeyBindingData.AddRange(_conflictingKeyBindingData);
+            _conflictingKeyBindingData.Clear();
+        }
+
+        private void OnResetAllClick(object sender, RoutedEventArgs e)
+        {
+            _removedKeyBindingData.ForEach(x => x.IsChecked=false);
+            _conflictingKeyBindingData.AddRange(_removedKeyBindingData);
+            _removedKeyBindingData.Clear();
+        }
+
+        private void OnRemoveSelectedClick(object sender, RoutedEventArgs e)
+        {
+            var list = _conflictingKeyBindingData.Where(x => x.IsChecked).ToList();
+            list.ForEach(x => x.IsChecked = false);
+            list.ForEach(x => _conflictingKeyBindingData.Remove(x));
+            _removedKeyBindingData.AddRange(list);
+        }
+
+        private void OnResetSelectedClick(object sender, RoutedEventArgs e)
+        {
+            var list = _removedKeyBindingData.Where(x => x.IsChecked).ToList();
+            list.ForEach(x => x.IsChecked = false);
+            list.ForEach(x => _removedKeyBindingData.Remove(x));
+            _conflictingKeyBindingData.AddRange(list);
+        }
     }
 }

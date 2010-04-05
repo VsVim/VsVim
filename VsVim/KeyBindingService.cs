@@ -13,6 +13,7 @@ using Microsoft.VisualStudio.Shell;
 using IOleServiceProvider = Microsoft.VisualStudio.OLE.Interop.IServiceProvider;
 using System.Collections.ObjectModel;
 using Microsoft.Internal.VisualStudio.PlatformUI;
+using System.Threading;
 
 namespace VsVim
 {
@@ -48,18 +49,29 @@ namespace VsVim
 
         private void Hack()
         {
-            var window = new UI.ConflictingKeyBindingDialog();
-            var removed = window.ConflictingKeyBindingControl.RemovedKeyBindingData;
-            removed.Add(new UI.KeyBindingData() { Name="Key Binding 1", IsChecked=true, Keys="SomeKeys" });
-            removed.Add(new UI.KeyBindingData() { Name="Key Binding 2", IsChecked=true, Keys="SomeKeys" });
-            removed.Add(new UI.KeyBindingData() { Name="Key Binding 3", IsChecked=true, Keys="SomeKeys" });
+            Action func = () =>
+            {
+                var window = new UI.ConflictingKeyBindingDialog();
+                var removed = window.ConflictingKeyBindingControl.RemovedKeyBindingData;
+                removed.Add(new UI.KeyBindingData() { Name = "Key Binding 1", IsChecked = true, Keys = "SomeKeys" });
+                removed.Add(new UI.KeyBindingData() { Name = "Key Binding 2", IsChecked = true, Keys = "SomeKeys" });
+                removed.Add(new UI.KeyBindingData() { Name = "Key Binding 3", IsChecked = true, Keys = "SomeKeys" });
 
-            var current = window.ConflictingKeyBindingControl.ConflictingKeyBindingData;
-            current.Add(new UI.KeyBindingData() { Name="Key Binding 1", IsChecked=true, Keys="SomeKeys" });
-            current.Add(new UI.KeyBindingData() { Name="Key Binding 2", IsChecked=false, Keys="SomeKeys" });
-            current.Add(new UI.KeyBindingData() { Name="Key Binding 3", IsChecked=true, Keys="SomeKeys" });
+                var current = window.ConflictingKeyBindingControl.ConflictingKeyBindingData;
+                current.Add(new UI.KeyBindingData() { Name = "Key Binding 1", IsChecked = true, Keys = "SomeKeys" });
+                current.Add(new UI.KeyBindingData() { Name = "Key Binding 2", IsChecked = false, Keys = "SomeKeys" });
+                current.Add(new UI.KeyBindingData() { Name = "Key Binding 3", IsChecked = true, Keys = "SomeKeys" });
 
-            WindowHelper.ShowModal(window);
+                WindowHelper.ShowModal(window);
+            };
+
+            // Hack to work around the solution loading dialog problem
+            var context = SynchronizationContext.Current;
+            ThreadPool.QueueUserWorkItem( x =>
+                {
+                    System.Threading.Thread.Sleep(TimeSpan.FromSeconds(5));
+                    context.Post(unused => func(), null);
+                });
         }
 
         /// <summary>
