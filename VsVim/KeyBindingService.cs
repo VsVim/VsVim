@@ -41,7 +41,20 @@ namespace VsVim
                 return;
             }
             _hasChecked = true;
-            CheckForConflictingKeyBindings(buffer);
+
+            // HACK:
+            // This is a horrible hack to work around the solution load dialog which displays
+            // on project load.  This dialog while active is listed as the foreground window
+            // of Visual Studio and as such all modal dialogs become children of that window.  
+            // It then goes away, orphans the windows and makes VS unusable.  Inserting an 
+            // artifical delay here to work around this until I find out a definitive 
+            // way to avoid this
+            var context = SynchronizationContext.Current;
+            ThreadPool.QueueUserWorkItem(unused =>
+                {
+                    System.Threading.Thread.Sleep(TimeSpan.FromSeconds(5));
+                    context.Post(unused2 => CalculateCommandKeyBindingSnapshot(buffer), null);
+                });
         }
 
         /// <summary>
