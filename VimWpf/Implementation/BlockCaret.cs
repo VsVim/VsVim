@@ -72,7 +72,7 @@ namespace Vim.UI.Wpf.Implementation
                 {
                     var caret = _view.Caret;
                     var line = caret.ContainingTextViewLine;
-                    return line.VisibilityState != VisibilityState.Unattached;
+                    return line.VisibilityState != VisibilityState.Unattached && _view.HasAggregateFocus;
                 }
                 catch (InvalidOperationException)
                 {
@@ -108,8 +108,10 @@ namespace Vim.UI.Wpf.Implementation
             _formatMap = formatMap;
             _layer = layer;
 
-            _view.LayoutChanged += OnLayoutChanged;
-            _view.Caret.PositionChanged += OnCaretChanged;
+            _view.LayoutChanged += OnCaretEvent;
+            _view.GotAggregateFocus += OnCaretEvent;
+            _view.LostAggregateFocus += OnCaretEvent;
+            _view.Caret.PositionChanged += OnCaretEvent;
 
             var caretBlinkTime = NativeMethods.GetCaretBlinkTime();
             var caretBlinkTimeSpan = new TimeSpan(0, 0, 0, 0, caretBlinkTime);
@@ -125,12 +127,7 @@ namespace Vim.UI.Wpf.Implementation
         {
         }
 
-        private void OnLayoutChanged(object sender, EventArgs e)
-        {
-            UpdateCaret();
-        }
-
-        private void OnCaretChanged(object sender, EventArgs e)
+        private void OnCaretEvent(object sender, EventArgs e)
         {
             UpdateCaret();
         }
@@ -315,8 +312,10 @@ namespace Vim.UI.Wpf.Implementation
         public void Destroy()
         {
             MaybeDestroyBlockCaretDisplay();
-            _view.LayoutChanged -= OnLayoutChanged;
-            _view.Caret.PositionChanged -= OnCaretChanged;
+            _view.LayoutChanged -= OnCaretEvent;
+            _view.GotAggregateFocus -= OnCaretEvent;
+            _view.LostAggregateFocus -= OnCaretEvent;
+            _view.Caret.PositionChanged -= OnCaretEvent;
             _view.Caret.IsHidden = false;
         }
     }
