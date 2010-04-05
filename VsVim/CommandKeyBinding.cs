@@ -5,7 +5,7 @@ using System.Text;
 
 namespace VsVim
 {
-    public struct CommandKeyBinding
+    public sealed class CommandKeyBinding
     {
         public readonly string Name;
         public readonly KeyBinding KeyBinding;

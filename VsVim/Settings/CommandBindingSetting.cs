@@ -8,7 +8,6 @@ namespace VsVim.Settings
     public sealed class CommandBindingSetting
     {
         public string Name {get;set;}
-        public string GuidRaw { get; set; }
         public string CommandString { get; set; }
     }
 }

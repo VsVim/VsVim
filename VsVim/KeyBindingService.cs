@@ -66,7 +66,7 @@ namespace VsVim
 
             // Hack to work around the solution loading dialog problem
             var context = SynchronizationContext.Current;
-            ThreadPool.QueueUserWorkItem( x =>
+            ThreadPool.QueueUserWorkItem(x =>
                 {
                     System.Threading.Thread.Sleep(TimeSpan.FromSeconds(5));
                     context.Post(unused => func(), null);
@@ -187,6 +187,35 @@ namespace VsVim
             }
 
             return false;
+        }
+
+        /// <summary>
+        /// Find all of the key bindings which have been removed
+        /// </summary>
+        public static List<CommandKeyBinding> FindRemovedKeyBindings()
+        {
+            var settings = Settings.Settings.Default;
+            IEnumerable<Tuple<string, string>> source = null;
+            if (settings.HaveUpdatedKeyBindings)
+            {
+                source = settings.RemovedBindings.Select(x => Tuple.Create(x.Name, x.CommandString));
+            }
+            else
+            {
+                source = Constants.CommonlyUnboundCommands.Select(x => Tuple.Create(x.Item1, x.Item3));
+            }
+
+            var list = new List<CommandKeyBinding>();
+            foreach (var tuple in source)
+            {
+                KeyBinding binding;
+                if (KeyBinding.TryParse(tuple.Item2, out binding))
+                {
+                    list.Add(new CommandKeyBinding(tuple.Item1, binding));
+                }
+            }
+
+            return list;
         }
 
 
