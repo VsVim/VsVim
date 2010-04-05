@@ -15,7 +15,7 @@ namespace VsVim
     /// KeyBinding in Visual Studio as set through the Key board part of the Environment options
     /// panel
     /// </summary>
-    public sealed class KeyBinding
+    public sealed class KeyBinding : IEquatable<KeyBinding>
     {
         private readonly Lazy<string> _commandString;
 
@@ -48,6 +48,43 @@ namespace VsVim
             KeyInputs = inputs.ToList();
             _commandString = new Lazy<string>(CreateCommandString);
         }
+
+        #region Equality
+
+        public override int GetHashCode()
+        {
+            return Scope.GetHashCode() ^ CommandString.GetHashCode();
+        }
+
+        public override bool Equals(object obj)
+        {
+            var other = obj as KeyBinding;
+            return Equals(other);
+        }
+
+        public bool Equals(KeyBinding other)
+        {
+            if ( Object.ReferenceEquals(other, null))
+            {
+                return false;
+            }
+            var comp = StringComparer.OrdinalIgnoreCase;
+            return
+                comp.Equals(Scope, other.Scope)
+                && comp.Equals(CommandString, other.CommandString);
+        }
+
+        public static bool operator ==(KeyBinding left, KeyBinding right)
+        {
+            return EqualityComparer<KeyBinding>.Default.Equals(left,right);
+        }
+
+        public static bool operator !=(KeyBinding left, KeyBinding right)
+        {
+            return !EqualityComparer<KeyBinding>.Default.Equals(left,right);
+        }
+
+        #endregion
 
         private string CreateCommandString()
         {

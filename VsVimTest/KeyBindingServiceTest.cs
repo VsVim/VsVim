@@ -7,6 +7,7 @@ using System.Linq;
 using Vim;
 using Moq;
 using System.Windows.Input;
+using VsVim.Settings;
 
 namespace VsVimTest
 {
@@ -118,6 +119,27 @@ namespace VsVimTest
         {
             var binding = CreateCommandKeyBinding(InputUtil.VimKeyToKeyInput(VimKey.LeftKey));
             Assert.IsTrue(KeyBindingService.ShouldSkip(binding));
+        }
+
+        [Test, Description("Use the old key bindings if we havn't recorded them being messed with on this machine")]
+        public void FindRemovedKeyBindings1()
+        {
+            Settings.Default.HaveUpdatedKeyBindings = false;
+            var list = KeyBindingService.FindKeyBindingsMarkedAsRemoved();
+            Assert.AreEqual(VsVim.Constants.CommonlyUnboundCommands.Length, list.Count);
+        }
+
+        [Test]
+        public void FindRemovedKeyBindings2()
+        {
+            Settings.Default.HaveUpdatedKeyBindings = true;
+            Settings.Default.RemovedBindings = new CommandBindingSetting[] {
+                new CommandBindingSetting() { Name="foo", CommandString = "Scope::Ctrl+J" },
+                new CommandBindingSetting() { Name="bar", CommandString = "Scope::Ctrl+J" } };
+            var list = KeyBindingService.FindKeyBindingsMarkedAsRemoved();
+            Assert.AreEqual(2, list.Count);
+            Assert.AreEqual("foo", list[0].Name);
+            Assert.AreEqual("bar", list[1].Name);
         }
     }
 }
