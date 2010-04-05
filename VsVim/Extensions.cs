@@ -57,7 +57,7 @@ namespace VsVim
             return Enumerable.Empty<string>();
         }
 
-        public static IEnumerable<CommandKeyBinding> GetKeyBindings(this Command command)
+        public static IEnumerable<CommandKeyBinding> GetCommandKeyBindings(this Command command)
         {
             if (null == command)
             {
@@ -72,6 +72,16 @@ namespace VsVim
                     yield return new CommandKeyBinding(command.Name, binding);
                 }
             }
+        }
+
+        public static IEnumerable<KeyBinding> GetKeyBindings(this Command command)
+        {
+            return GetCommandKeyBindings(command).Select(x => x.KeyBinding);
+        }
+
+        public static bool HasKeyBinding(this Command command, KeyBinding binding)
+        {
+            return GetCommandKeyBindings(command).Any(x => x.KeyBinding == binding);
         }
 
         public static void SafeResetBindings(this Command command)

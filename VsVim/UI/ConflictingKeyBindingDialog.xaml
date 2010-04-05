@@ -1,6 +1,6 @@
-﻿<DialogWindow x:Class="VsVim.UI.ConflictingKeyBindingDialog"
-             xmlns="clr-namespace:Microsoft.VisualStudio.PlatformUI;assembly=Microsoft.VisualStudio.Shell.10.0"
-             xmlns:wpf="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+﻿<vs:DialogWindow x:Class="VsVim.UI.ConflictingKeyBindingDialog"
+             xmlns:vs="clr-namespace:Microsoft.VisualStudio.PlatformUI;assembly=Microsoft.VisualStudio.Shell.10.0"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
@@ -8,7 +8,39 @@
              mc:Ignorable="d" 
              d:DesignHeight="348" d:DesignWidth="487"
              Title="VsVim Options" SizeToContent="WidthAndHeight">
-    <wpf:DockPanel LastChildFill="True">
-        <local:ConflictingKeyBindingControl x:Name="_bindingControl" />
-    </wpf:DockPanel>
-</DialogWindow>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <local:ConflictingKeyBindingControl 
+            Grid.Column="0"
+            Grid.Row="0"
+            x:Name="_bindingControl" />
+
+        <DockPanel
+            Grid.Column="0"
+            Grid.Row="1"
+            LastChildFill="False" >
+            
+            <Button 
+                DockPanel.Dock="Right"
+                Content="Cancel"
+                IsCancel="True"
+                Click="OnCancelClick"/>
+
+            <Button 
+                DockPanel.Dock="Right"
+                Margin="0,0,3,0"
+                IsDefault="True"
+                Content="OK"
+                Click="OnOkClick "/>
+        
+        </DockPanel>
+    </Grid>
+</vs:DialogWindow>

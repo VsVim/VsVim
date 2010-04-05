@@ -24,12 +24,14 @@ namespace VsVim
     public sealed class KeyBindingService
     {
         private readonly IVsUIShell _vsShell;
+        private readonly _DTE _dte;
         private bool _hasChecked;
 
         [ImportingConstructor]
         public KeyBindingService(SVsServiceProvider sp)
         {
             _vsShell = sp.GetService<SVsUIShell, IVsUIShell>();
+            _dte = sp.GetService<SDTE, _DTE>();
         }
 
         public void OneTimeCheckForConflictingKeyBindings(_DTE dte, IVimBuffer buffer)
@@ -44,47 +46,19 @@ namespace VsVim
                 return;
             }
             _hasChecked = true;
-            CheckForConflictingKeyBindings(dte, buffer);
-        }
-
-        private void Hack()
-        {
-            Action func = () =>
-            {
-                var window = new UI.ConflictingKeyBindingDialog();
-                var removed = window.ConflictingKeyBindingControl.RemovedKeyBindingData;
-                removed.Add(new UI.KeyBindingData() { Name = "Key Binding 1", IsChecked = true, Keys = "SomeKeys" });
-                removed.Add(new UI.KeyBindingData() { Name = "Key Binding 2", IsChecked = true, Keys = "SomeKeys" });
-                removed.Add(new UI.KeyBindingData() { Name = "Key Binding 3", IsChecked = true, Keys = "SomeKeys" });
-
-                var current = window.ConflictingKeyBindingControl.ConflictingKeyBindingData;
-                current.Add(new UI.KeyBindingData() { Name = "Key Binding 1", IsChecked = true, Keys = "SomeKeys" });
-                current.Add(new UI.KeyBindingData() { Name = "Key Binding 2", IsChecked = false, Keys = "SomeKeys" });
-                current.Add(new UI.KeyBindingData() { Name = "Key Binding 3", IsChecked = true, Keys = "SomeKeys" });
-
-                WindowHelper.ShowModal(window);
-            };
-
-            // Hack to work around the solution loading dialog problem
-            var context = SynchronizationContext.Current;
-            ThreadPool.QueueUserWorkItem(x =>
-                {
-                    System.Threading.Thread.Sleep(TimeSpan.FromSeconds(5));
-                    context.Post(unused => func(), null);
-                });
+            CheckForConflictingKeyBindings(buffer);
         }
 
         /// <summary>
         /// Check for and remove conflicting key bindings
         /// </summary>
-        private void CheckForConflictingKeyBindings(_DTE dte, IVimBuffer buffer)
+        private void CheckForConflictingKeyBindings(IVimBuffer buffer)
         {
-            Hack();
             var hashSet = new HashSet<KeyInput>(
                 buffer.AllModes.Select(x => x.Commands).SelectMany(x => x));
             hashSet.Add(buffer.Settings.GlobalSettings.DisableCommand);
-            var commands = dte.Commands.GetCommands();
-            var list = FindConflictingCommandsAndBindings(commands, hashSet);
+            var snapshot = new CommandsSnapshot(_dte);
+            var list = FindConflictingCommandKeyBindings(snapshot, hashSet);
             if (list.Count > 0)
             {
                 var msg = new StringBuilder();
@@ -97,14 +71,14 @@ namespace VsVim
                         button: MessageBoxButton.YesNo);
                     if (res == MessageBoxResult.Yes)
                     {
-                        DoShowOptionsDialog(dte, FindKeyBindingsMarkedAsRemoved(), list.Select(x => x.Item2));
+                        DoShowOptionsDialog(snapshot, FindKeyBindingsMarkedAsRemoved(), list);
                     }
                 }
             }
         }
 
         private void DoShowOptionsDialog(
-            _DTE dte,
+            CommandsSnapshot snapshot,
             IEnumerable<CommandKeyBinding> previouslyRemovedKeyBindings,
             IEnumerable<CommandKeyBinding> conflictingKeyBindings)
         {
@@ -116,62 +90,52 @@ namespace VsVim
             var ret = window.ShowModal();
             if (ret.HasValue && ret.Value)
             {
-                var commands = dte.Commands.GetCommands().ToList();
-                var comp = StringComparer.OrdinalIgnoreCase;
-
                 // Remove all of the removed bindings
                 foreach (var cur in removed)
                 {
-                    var command = commands.Where(x => comp.Equals(cur.Name, x.Name)).FirstOrDefault();
-                    if (command != null)
+                    var tuple = snapshot.TryGetCommand(cur.Name);
+                    if ( tuple.Item1 )
                     {
-                        command.SafeResetBindings();
+                        tuple.Item2.SafeResetBindings();
                     }
                 }
 
                 // Restore all of the conflicting ones
                 foreach (var cur in current)
                 {
-                    var command = commands.Where(x => comp.Equals(cur.Name, x.Name)).FirstOrDefault();
                     KeyBinding binding;
-                    if (command != null && KeyBinding.TryParse(cur.Keys, out binding))
+                    var tuple = snapshot.TryGetCommand(cur.Name);
+                    if ( tuple.Item1 && KeyBinding.TryParse(cur.Keys, out binding))
                     {
-                        command.SafeSetBindings(binding);
+                        tuple.Item2.SafeSetBindings(binding);
                     }
                 }
-            }
-        }
 
-        public static List<Command> FindConflictingCommands(
-            IEnumerable<Command> commands,
-            HashSet<KeyInput> neededInputs)
-        {
-            return FindConflictingCommandsAndBindings(commands, neededInputs).Select(x => x.Item1).ToList();
+                var settings = Settings.Settings.Default;
+                settings.RemovedBindings = 
+                    removed
+                    .Select(x => new Settings.CommandBindingSetting() { Name = x.Name, CommandString = x.Keys })
+                    .ToArray();
+                settings.HaveUpdatedKeyBindings = true;
+                settings.Save();
+            }
         }
 
         /// <summary>
         /// Find all of the Command instances which have conflicting key bindings
         /// </summary>
-        public static List<Tuple<Command, CommandKeyBinding>> FindConflictingCommandsAndBindings(
-            IEnumerable<Command> commands,
+        public static List<CommandKeyBinding> FindConflictingCommandKeyBindings(
+            CommandsSnapshot snapshot,
             HashSet<KeyInput> neededInputs)
         {
-            var list = new List<Tuple<Command, CommandKeyBinding>>();
-            foreach (var cmd in commands.ToList())
+            var list = new List<CommandKeyBinding>();
+            foreach (var binding in snapshot.CommandKeyBindings.Where(x => !ShouldSkip(x)))
             {
-                foreach (var binding in cmd.GetKeyBindings())
+                var input = binding.KeyBinding.FirstKeyInput;
+                if (neededInputs.Contains(input))
                 {
-                    if (ShouldSkip(binding))
-                    {
-                        continue;
-                    }
-
-                    var input = binding.KeyBinding.FirstKeyInput;
-                    if (neededInputs.Contains(input))
-                    {
-                        list.Add(Tuple.Create(cmd, binding));
-                        break;
-                    }
+                    list.Add(binding);
+                    break;
                 }
             }
 
@@ -226,6 +190,11 @@ namespace VsVim
             }
 
             return false;
+        }
+
+        public static List<CommandKeyBinding> FindRemovedKeyBindings(CommandsSnapshot snapshot)
+        {
+            return FindKeyBindingsMarkedAsRemoved().Where(x => !snapshot.IsKeyBindingActive(x.KeyBinding)).ToList();
         }
 
         /// <summary>

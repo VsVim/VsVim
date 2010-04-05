@@ -29,5 +29,15 @@ namespace VsVim.UI
         {
             InitializeComponent();
         }
+
+        private void OnCancelClick(object sender, RoutedEventArgs e)
+        {
+            DialogResult = false;
+        }
+
+        private void OnOkClick(object sender, RoutedEventArgs e)
+        {
+            DialogResult = true;
+        }
     }
 }
