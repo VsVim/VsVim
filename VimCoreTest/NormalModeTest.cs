@@ -1959,7 +1959,6 @@ namespace VimCoreTest
             _operations.Setup(x => x.JumpNext(1)).Verifiable();
             _mode.Process(InputUtil.VimKeyToKeyInput(VimKey.TabKey));
             _operations.Verify();
-
         }
 
         [Test]

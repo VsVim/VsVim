@@ -160,7 +160,9 @@ namespace VsVim
                 case VSConstants.VSStd2KCmdID.DOWN:
                     ki = InputUtil.VimKeyToKeyInput(VimKey.DownKey);
                     break;
-
+                case VSConstants.VSStd2KCmdID.TAB:
+                    ki = InputUtil.VimKeyToKeyInput(VimKey.TabKey);
+                    break;
 
                 default:
                     break;
