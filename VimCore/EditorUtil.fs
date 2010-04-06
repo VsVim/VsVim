@@ -271,3 +271,12 @@ module internal SnapshotPointUtil =
         match TryGetChar point with
         | Some(c) -> c
         | None -> defaultValue
+
+    /// Get points on the containing line starting from the passed in value.  Will return 
+    /// "count" points or the number of remaining points on the line, whichever is fewer
+    let GetPointsOnContainingLine point count =
+        let line = GetContainingLine point
+        let length = line.End.Position - point.Position
+        let length = min count length
+        let span = SnapshotSpan(point, length)
+        SnapshotSpanUtil.GetPoints span

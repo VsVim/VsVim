@@ -339,4 +339,3 @@ type internal CommonOperations
         member x.CloseAll checkDirty = _host.CloseAllFiles checkDirty
         member x.GoToNextTab count = _host.GoToNextTab count
         member x.GoToPreviousTab count = _host.GoToPreviousTab count
-        

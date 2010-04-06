@@ -450,7 +450,50 @@ namespace VimCoreTest
             var str = points.Select(x => x.GetChar().ToString()).Aggregate((x, y) => x + y);
             Assert.AreEqual("rab oof", str);
         }
-     
+
+        [Test]
+        public void GetPointsOnContainingLine1()
+        {
+            Create("foo", "baz");
+            var start = _buffer.CurrentSnapshot.GetLineSpan(0).Start;
+            var points = SnapshotPointUtil.GetPointsOnContainingLine(start, 1).ToList();
+            CollectionAssert.AreEqual(
+                new SnapshotPoint[] { start },
+                points);
+        }
+
+        [Test]
+        public void GetPointsOnContainingLine2()
+        {
+            Create("foo", "baz");
+            var start = _buffer.CurrentSnapshot.GetLineSpan(0).Start;
+            var points = SnapshotPointUtil.GetPointsOnContainingLine(start, 2).ToList();
+            CollectionAssert.AreEqual(
+                new SnapshotPoint[] { start, start.Add(1) },
+                points);
+        }
+
+        [Test]
+        public void GetPointsOnContainingLine3()
+        {
+            Create("foo", "baz");
+            var start = _buffer.CurrentSnapshot.GetLineSpan(0).Start;
+            var points = SnapshotPointUtil.GetPointsOnContainingLine(start, 400).ToList();
+            CollectionAssert.AreEqual(
+                new SnapshotPoint[] { start, start.Add(1), start.Add(2)},
+                points);
+        }
+
+        [Test]
+        public void GetPointsOnContainingLine4()
+        {
+            Create("foo", "baz");
+            var start = _buffer.CurrentSnapshot.GetLineSpan(0).Start.Add(1);
+            var points = SnapshotPointUtil.GetPointsOnContainingLine(start, 400).ToList();
+            CollectionAssert.AreEqual(
+                new SnapshotPoint[] { start, start.Add(1) },
+                points);
+        }
 
     }
 }
