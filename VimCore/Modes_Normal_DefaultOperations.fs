@@ -239,6 +239,21 @@ type internal DefaultOperations
                 | Some(c) when c = 0 -> lastLineNumber
                 | Some(c) -> c
             x.GoToLineCore line
+
+        member x.ChangeLetterCaseAtCursor count = 
+            let point = ViewUtil.GetCaretPoint _textView
+            let line = SnapshotPointUtil.GetContainingLine point
+            let count = min count (line.End.Position - point.Position)
+            let span = SnapshotSpan(point, count)
+            x.CommonImpl.ChangeLetterCase span
+
+            if line.Length > 0 then
+                
+                // Because we aren't changing the length of the buffer it's OK 
+                // to calculate with respect to the points before the edit
+                let pos = point.Position + count
+                let pos = min pos (line.End.Position-1)
+                ViewUtil.MoveCaretToPosition _textView pos |> ignore
             
 
 

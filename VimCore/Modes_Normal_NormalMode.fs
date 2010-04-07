@@ -345,6 +345,7 @@ type internal NormalMode
             yield (InputUtil.CharToKeyInput('%'), (fun _ _ -> _operations.GoToMatch() |> ignore))
             yield (InputUtil.VimKeyAndModifiersToKeyInput VimKey.PageDownKey KeyModifiers.Control, (fun count _ -> _operations.GoToNextTab count))
             yield (InputUtil.VimKeyAndModifiersToKeyInput VimKey.PageUpKey KeyModifiers.Control, (fun count _ -> _operations.GoToPreviousTab count))
+            yield (InputUtil.CharToKeyInput('~'), (fun count _ -> _operations.ChangeLetterCaseAtCursor count))
         }
 
         // Similar to completeOpts but take the conditional count value

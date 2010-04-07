@@ -58,5 +58,8 @@ type IOperations =
     /// Find and move to the next match from the last search   
     abstract FindNextMatch : count:int -> unit
 
+    /// Change the case of the character at cursor
+    abstract ChangeLetterCaseAtCursor : count:int -> unit 
+
     inherit Modes.ICommonOperations
 

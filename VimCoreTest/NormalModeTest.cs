@@ -1091,6 +1091,24 @@ namespace VimCoreTest
             _operations.Verify();
         }
 
+        [Test]
+        public void Edit_Tilde1()
+        {
+            CreateBuffer("foo");
+            _operations.Setup(x => x.ChangeLetterCaseAtCursor(1)).Verifiable();
+            _mode.Process("~");
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Edit_Tilde2()
+        {
+            CreateBuffer("foo");
+            _operations.Setup(x => x.ChangeLetterCaseAtCursor(30)).Verifiable();
+            _mode.Process("30~");
+            _operations.Verify();
+        }
+
         #endregion
 
         #region Yank

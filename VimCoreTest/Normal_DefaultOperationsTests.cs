@@ -842,5 +842,32 @@ namespace VimCoreTest
             _operations.InsertText("hey",1);
             Assert.AreEqual("bheyar", _view.TextSnapshot.GetText());
         }
+
+        [Test]
+        public void ChangeLetterCaseAtCursor1()
+        {
+            Create("bar", "baz");
+            _operations.ChangeLetterCaseAtCursor(1);
+            Assert.AreEqual("Bar", _view.GetLineSpan(0).GetText());
+            Assert.AreEqual(1, _view.GetCaretPoint().Position);
+        }
+
+        [Test]
+        public void ChangeLetterCaseAtCursor2()
+        {
+            Create("bar", "baz");
+            _operations.ChangeLetterCaseAtCursor(2);
+            Assert.AreEqual("BAr", _view.GetLineSpan(0).GetText());
+            Assert.AreEqual(2, _view.GetCaretPoint().Position);
+        }
+
+        [Test]
+        public void ChangeLetterCaseAtCursor3()
+        {
+            Create("bar", "baz");
+            _operations.ChangeLetterCaseAtCursor(300);
+            Assert.AreEqual("BAR", _view.GetLineSpan(0).GetText());
+            Assert.AreEqual(2, _view.GetCaretPoint().Position);
+        }
     }
 }
