@@ -185,3 +185,9 @@ module internal NullableUtil =
             HasValue (x.Value)
         else
             Null 
+
+    let toOption (x:System.Nullable<_>) =
+        if x.HasValue then
+            Some x.Value
+        else
+            None

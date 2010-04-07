@@ -228,7 +228,30 @@ namespace VimCoreTest
             Assert.IsFalse(_search.InSearch);
         }
 
+        [Test, Description("Backspace with blank search query cancels search")]
+        public void Backspace1()
+        {
+            Create("foo bar");
+            _search.Begin(SearchKind.Forward);
+            var result = _search.Process(InputUtil.VimKeyToKeyInput(VimKey.BackKey));
+            Assert.IsTrue(result.IsSearchCancelled);
+        }
 
+        [Test, Description("Backspace with text doesn't crash")]
+        public void Backspace2()
+        {
+            Create("foo bar");
+            _textSearch
+                .Setup(x => x.FindNext(0, It.IsAny<bool>(), It.IsAny<FindData>()))
+                .Returns<SnapshotSpan?>(null)
+                .Verifiable();
+            _search.Begin(SearchKind.Forward);
+            _search.Process(InputUtil.CharToKeyInput('b'));
+            var result = _search.Process(InputUtil.VimKeyToKeyInput(VimKey.BackKey));
+            Assert.IsTrue(result.IsSearchNeedMore);
+            Assert.IsTrue(_search.LastSearch.Pattern == "");
+            _textSearch.Verify();
+        }
 
     /*
         [Test]
