@@ -77,7 +77,7 @@ type internal NormalMode
         _incrementalSearch.Begin kind
         inner
     
-    member this.WaitForMotion ki count doneFunc = 
+    member this.WaitForMotionCore doneFunc = 
         let rec f (result:MotionResult) = 
             match result with 
                 | MotionResult.Complete (span) -> 
@@ -94,8 +94,13 @@ type internal NormalMode
                     NormalModeResult.Complete
                 | Cancel -> 
                     NormalModeResult.Complete
-        f (MotionCapture.ProcessView _bufferData.TextView ki count)
-        
+        let func ki count = MotionCapture.ProcessView _bufferData.TextView ki count |> f
+        func
+
+    member this.WaitForMotion ki count doneFunc = (this.WaitForMotionCore doneFunc) ki count
+    member this.WaitForMotionAsResult doneFunc = 
+        let func = this.WaitForMotionCore doneFunc
+        NormalModeResult.NeedMoreInput (fun ki count _ -> func ki count)
         
     // Respond to the d command.  Need the finish motion
     member this.WaitDelete =
