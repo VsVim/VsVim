@@ -1085,5 +1085,78 @@ namespace VimCoreTest
             Assert.AreEqual(_view.GetLine(2).Start, _view.GetCaretPoint());
             _editorOpts.Verify();
         }
+
+        [Test]
+        public void ChangeLetterCase1()
+        {
+            CreateLines("foo", "bar");
+            _operations.ChangeLetterCase(_buffer.GetLineSpan(0));
+            Assert.AreEqual("FOO", _buffer.GetLineSpan(0).GetText());
+        }
+
+        [Test]
+        public void ChangeLetterCase2()
+        {
+            CreateLines("fOo", "bar");
+            _operations.ChangeLetterCase(_buffer.GetLineSpan(0));
+            Assert.AreEqual("FoO", _buffer.GetLineSpan(0).GetText());
+        }
+
+        [Test]
+        public void ChangeLetterCase3()
+        {
+            CreateLines("fOo", "bar");
+            _operations.ChangeLetterCase(_buffer.GetLineSpan(0,1));
+            Assert.AreEqual("FoO", _buffer.GetLineSpan(0).GetText());
+            Assert.AreEqual("BAR", _buffer.GetLineSpan(1).GetText());
+        }
+
+        [Test]
+        public void ChangeLetterCase4()
+        {
+            CreateLines("f12o", "bar");
+            _operations.ChangeLetterCase(_buffer.GetLineSpan(0));
+            Assert.AreEqual("F12O", _buffer.GetLineSpan(0).GetText());
+        }
+
+        [Test]
+        public void MakeLettersLowercase1()
+        {
+            CreateLines("FOO", "BAR");
+            _operations.MakeLettersLowercase(_buffer.GetLineSpan(0));
+            Assert.AreEqual("foo", _buffer.GetLineSpan(0).GetText());
+        }
+
+        [Test]
+        public void MakeLettersLowercase2()
+        {
+            CreateLines("FOO", "BAR");
+            _operations.MakeLettersLowercase(_buffer.GetLineSpan(1));
+            Assert.AreEqual("bar", _buffer.GetLineSpan(1).GetText());
+        }
+
+        [Test]
+        public void MakeLettersLowercase3()
+        {
+            CreateLines("FoO123", "BAR");
+            _operations.MakeLettersLowercase(_buffer.GetLineSpan(0));
+            Assert.AreEqual("foo123", _buffer.GetLineSpan(0).GetText());
+        }
+
+        [Test]
+        public void MakeLettersUppercase1()
+        {
+            CreateLines("foo123", "bar");
+            _operations.MakeLettersUppercase(_buffer.GetLineSpan(0));
+            Assert.AreEqual("FOO123", _buffer.GetLineSpan(0).GetText());
+        }
+
+        [Test]
+        public void MakeLettersUppercase2()
+        {
+            CreateLines("fOo123", "bar");
+            _operations.MakeLettersUppercase(_buffer.GetLineSpan(0));
+            Assert.AreEqual("FOO123", _buffer.GetLineSpan(0).GetText());
+        }
     }
 }

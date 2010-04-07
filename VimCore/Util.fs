@@ -171,7 +171,12 @@ module internal CharUtil =
     let IsDigit x = System.Char.IsDigit(x)
     let IsWhiteSpace x = System.Char.IsWhiteSpace(x)
     let IsLetter x = System.Char.IsLetter(x)
+    let IsUpper x = System.Char.IsUpper(x)
+    let IsLower x = System.Char.IsLower(x)
     let IsLetterOrDigit x = System.Char.IsLetterOrDigit(x)
+    let ToLower x = System.Char.ToLower(x)
+    let ToUpper x = System.Char.ToUpper(x)
+    let ChangeCase x = if IsUpper x then ToLower x else ToUpper x
 
 module internal NullableUtil = 
 

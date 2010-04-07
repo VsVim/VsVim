@@ -150,3 +150,12 @@ type ICommonOperations =
 
     /// Scroll the buffer by the specified number of pages in the given direction
     abstract ScrollPages : ScrollDirection -> count:int -> unit
+
+    /// Change the case of all letters appearing in the given span
+    abstract ChangeLetterCase : SnapshotSpan -> unit
+
+    /// Make the letters on the given span lower case
+    abstract MakeLettersLowercase : SnapshotSpan -> unit
+
+    /// Make the letters on the given span upper case
+    abstract MakeLettersUppercase : SnapshotSpan -> unit

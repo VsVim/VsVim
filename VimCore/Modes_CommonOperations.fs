@@ -61,6 +61,17 @@ type internal CommonOperations
             edit.Replace(line.Extent.Span, text) |> ignore
         edit.Apply() |> ignore
 
+    /// Change the letters on the given span by applying the specified function
+    /// to each of them
+    member x.ChangeLettersOnSpan span changeFunc =
+        use edit = _textView.TextBuffer.CreateEdit()
+        SnapshotSpanUtil.GetPoints span 
+        |> Seq.map (fun x -> x.Position,x.GetChar())
+        |> Seq.filter (fun (_,c) -> CharUtil.IsLetter c)
+        |> Seq.map (fun (pos,c) -> (pos, changeFunc c))
+        |> Seq.iter (fun (pos,c) -> edit.Replace(new Span(pos,1), StringUtil.ofChar c) |> ignore)
+        edit.Apply() |> ignore
+
     interface ICommonOperations with
         member x.TextView = _textView 
         member x.EditorOperations = _operations
@@ -351,3 +362,6 @@ type internal CommonOperations
         member x.CloseAll checkDirty = _host.CloseAllFiles checkDirty
         member x.GoToNextTab count = _host.GoToNextTab count
         member x.GoToPreviousTab count = _host.GoToPreviousTab count
+        member x.ChangeLetterCase span = x.ChangeLettersOnSpan span CharUtil.ChangeCase
+        member x.MakeLettersLowercase span = x.ChangeLettersOnSpan span CharUtil.ToLower
+        member x.MakeLettersUppercase span = x.ChangeLettersOnSpan span CharUtil.ToUpper
