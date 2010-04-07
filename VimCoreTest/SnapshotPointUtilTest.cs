@@ -118,33 +118,6 @@ namespace VimCoreTest
             var next = SnapshotPointUtil.GetNextPointWithWrap(_buffer.CurrentSnapshot.GetLineFromLineNumber(1).End);
             Assert.AreEqual(_buffer.CurrentSnapshot.GetLineFromLineNumber(0).Start, next);
         }
-        [Test]
-        public void GetNextPoint1()
-        {
-            Create("foo", "baz");
-            var line = _buffer.CurrentSnapshot.GetLineFromLineNumber(0);
-            var next = SnapshotPointUtil.GetNextPoint(line.Start);
-            Assert.AreEqual(1, next.Position);
-        }
-
-        [Test, Description("End of line should wrap")]
-        public void GetNextPoint2()
-        {
-            Create("foo", "bar");
-            var line = _buffer.CurrentSnapshot.GetLineFromLineNumber(0);
-            var next = SnapshotPointUtil.GetNextPoint(line.End);
-            line = _buffer.CurrentSnapshot.GetLineFromLineNumber(1);
-            Assert.AreEqual(line.Start, next);
-        }
-
-        [Test, Description("Don't around the buffer")]
-        public void GetNextPoint3()
-        {
-            Create("foo", "bar");
-            var point = _buffer.CurrentSnapshot.GetLineFromLineNumber(1).End;
-            var next = SnapshotPointUtil.GetNextPoint(point);
-            Assert.AreEqual(next, point);
-        }
 
         [Test]
         public void GetPreviousPointWithWrap1()
@@ -386,7 +359,7 @@ namespace VimCoreTest
         {
             Create("foo", "bar");
             var start = SnapshotUtil.GetStartPoint(_buffer.CurrentSnapshot);
-            foreach (var cur in SnapshotPointUtil.GetPoints(start, true))
+            foreach (var cur in SnapshotPointUtil.GetPoints(start, SearchKind.ForwardWithWrap))
             {
                 var notUsed = cur.GetChar();
             }
@@ -397,7 +370,7 @@ namespace VimCoreTest
         {
             Create("foo bar");
             var start = SnapshotUtil.GetStartPoint(_buffer.CurrentSnapshot).Add(1);
-            var first = SnapshotPointUtil.GetPoints(start, true).First();
+            var first = SnapshotPointUtil.GetPoints(start, SearchKind.ForwardWithWrap).First();
             Assert.AreEqual('o', first.GetChar());
         }
 
@@ -406,47 +379,47 @@ namespace VimCoreTest
         {
             Create("foo bar");
             var start = SnapshotUtil.GetStartPoint(_buffer.CurrentSnapshot);
-            var points = SnapshotPointUtil.GetPoints(start, true);
+            var points = SnapshotPointUtil.GetPoints(start, SearchKind.ForwardWithWrap);
             var str = points.Select(x => x.GetChar().ToString()).Aggregate((x, y) => x + y);
             Assert.AreEqual("foo bar", str);
         }
 
         [Test, Description("All points should be valid")]
-        public void GetPointsBackward1()
+        public void GetPoints4()
         {
             Create("foo", "bar");
             var start = SnapshotUtil.GetStartPoint(_buffer.CurrentSnapshot);
-            foreach (var cur in SnapshotPointUtil.GetPointsBackward(start, true))
+            foreach (var cur in SnapshotPointUtil.GetPoints(start, SearchKind.BackwardWithWrap))
             {
                 var notUsed = cur.GetChar();
             }
         }
 
         [Test]
-        public void GetPointsBackward2()
+        public void GetPoints5()
         {
             Create("foo bar");
             var start = SnapshotUtil.GetStartPoint(_buffer.CurrentSnapshot).Add(1);
-            var first = SnapshotPointUtil.GetPointsBackward(start, true).First();
+            var first = SnapshotPointUtil.GetPoints(start, SearchKind.BackwardWithWrap).First();
             Assert.AreEqual('o', first.GetChar());
         }
 
         [Test]
-        public void GetPointsBackward3()
+        public void GetPoints6()
         {
             Create("foo bar");
             var start = SnapshotUtil.GetStartPoint(_buffer.CurrentSnapshot);
-            var points = SnapshotPointUtil.GetPointsBackward(start, true);
+            var points = SnapshotPointUtil.GetPoints(start, SearchKind.BackwardWithWrap);
             var str = points.Select(x => x.GetChar().ToString()).Aggregate((x, y) => x + y);
             Assert.AreEqual("frab oo", str);
         }
 
         [Test]
-        public void GetPointsBackward4()
+        public void GetPoints7()
         {
             Create("foo bar");
             var start = _buffer.CurrentSnapshot.GetLineSpan(0).End;
-            var points = SnapshotPointUtil.GetPointsBackward(start, true);
+            var points = SnapshotPointUtil.GetPoints(start, SearchKind.BackwardWithWrap);
             var str = points.Select(x => x.GetChar().ToString()).Aggregate((x, y) => x + y);
             Assert.AreEqual("rab oof", str);
         }

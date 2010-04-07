@@ -165,5 +165,13 @@ namespace VimCoreTest
             Assert.AreEqual(_view.GetLineSpanIncludingLineBreak(0, 1), _tracker.SelectedLines);
         }
 
+        [Test]
+        public void HasAggregateFocus1()
+        {
+            var caret = new Mock<ITextCaret>();
+            var view = new Mock<ITextView>();
+
+        }
+
     }
 }

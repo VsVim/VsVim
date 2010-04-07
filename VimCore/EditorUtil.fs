@@ -36,8 +36,8 @@ module internal SnapshotUtil =
         let lineNumber = GetValidLineNumberOrLast tss lineNumber
         tss.GetLineFromLineNumber(lineNumber)
 
-    /// Get the lines in the ITextSnapshot as a seq in forward.  
-    let GetLinesForward tss startLine wrap =
+    /// Get the lines in the ITextSnapshot as a seq in forward fashion
+    let private GetLinesForwardCore tss startLine wrap =
         let endLine = GetLastLineNumber tss
         let endLine = tss.LineCount - 1
         let forward = seq { for i in startLine .. endLine -> i }
@@ -48,9 +48,9 @@ module internal SnapshotUtil =
                     let front = seq { for i in 0 .. (startLine-1) -> i}
                     Seq.append forward front
         range |> Seq.map (fun x -> tss.GetLineFromLineNumber(x))  
-        
+
     /// Get the lines in the ITextSnapshot as a seq in reverse order
-    let GetLinesBackward (tss : ITextSnapshot) startLine wrap =
+    let private GetLinesBackwardCore (tss : ITextSnapshot) startLine wrap =
         let rev s = s |> List.ofSeq |> List.rev |> Seq.ofList
         let endLine = tss.LineCount - 1
         let all = seq { for i in 0 .. endLine -> i }
@@ -63,6 +63,14 @@ module internal SnapshotUtil =
                     Seq.append backward tail
         range |> Seq.map (fun x -> tss.GetLineFromLineNumber(x))                     
 
+    /// Get the lines in the buffer with the specified direction
+    let GetLines tss startLine kind =
+        match kind with 
+        | SearchKind.Forward -> GetLinesForwardCore tss startLine false
+        | SearchKind.ForwardWithWrap -> GetLinesForwardCore tss startLine true
+        | SearchKind.Backward -> GetLinesBackwardCore tss startLine false
+        | SearchKind.BackwardWithWrap -> GetLinesBackwardCore tss startLine true
+        | _ -> failwith "Invalid enum value"
     
 /// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
 /// include any Vim specific logic
@@ -140,18 +148,6 @@ module internal SnapshotPointUtil =
             | true -> endSpan
             | false -> new SnapshotSpan(point,1)
 
-    /// Get the next point in the buffer without wrap.  Will throw if you run off the end of 
-    /// the ITextSnapshot
-    let GetNextPoint point = 
-        let tss = GetSnapshot point
-        let line = GetContainingLine point
-        if point.Position >= line.End.Position then
-            let num = line.LineNumber+1
-            if num = tss.LineCount then point
-            else tss.GetLineFromLineNumber(num).Start
-        else
-            point.Add(1)    
-
     /// Get the next point in the buffer with wrap
     let GetNextPointWithWrap point = 
         let tss = GetSnapshot point
@@ -199,12 +195,7 @@ module internal SnapshotPointUtil =
     let GetLines point kind =
         let tss = GetSnapshot point
         let startLine = point.GetContainingLine().LineNumber
-        match kind with 
-            | SearchKind.Forward -> SnapshotUtil.GetLinesForward tss startLine false
-            | SearchKind.ForwardWithWrap -> SnapshotUtil.GetLinesForward tss startLine true
-            | SearchKind.Backward -> SnapshotUtil.GetLinesBackward tss startLine false
-            | SearchKind.BackwardWithWrap -> SnapshotUtil.GetLinesBackward tss startLine true
-            | _ -> failwith "Invalid enum value"
+        SnapshotUtil.GetLines tss startLine kind 
 
     /// Start searching the snapshot at the given point and return the buffer as a 
     /// sequence of SnapshotSpans.  One will be returned per line in the buffer.  The
@@ -246,20 +237,13 @@ module internal SnapshotPointUtil =
     /// Start searching the snapshot at the given point and return the buffer as a 
     /// sequence of SnapshotPoints.  The first point returned will be the point passed
     /// in
-    let GetPoints point wrap =
-        let kind = if wrap then SearchKind.ForwardWithWrap else SearchKind.Forward
+    let GetPoints point kind =
+        let mapFunc = 
+            if SearchKindUtil.IsForward kind then SnapshotSpanUtil.GetPoints
+            else SnapshotSpanUtil.GetPointsBackward 
         GetSpans point kind 
-        |> Seq.map SnapshotSpanUtil.GetPoints
+        |> Seq.map mapFunc
         |> Seq.concat       
-
-    /// Start searching the snapshot at the given point and return the buffer as a 
-    /// sequence of SnapshotPoints in reverse.  The first point returned will be 
-    /// the point passed in
-    let GetPointsBackward point wrap =
-        let kind = if wrap then SearchKind.BackwardWithWrap else SearchKind.Backward
-        GetSpans point kind
-        |> Seq.map SnapshotSpanUtil.GetPointsBackward 
-        |> Seq.concat
 
     /// Get the character associated with the current point.  Returns None for the last character
     /// in the buffer which has no representable value
