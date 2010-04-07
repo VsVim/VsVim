@@ -168,20 +168,32 @@ type internal CommonOperations
             let regValue = {Value=span.GetText();MotionKind = motion; OperationKind = operation};
             reg.UpdateValue (regValue)
         
-        member x.PasteAfter (point:SnapshotPoint) text opKind = 
-            let buffer = point.Snapshot.TextBuffer
-            let replaceSpan = 
+        member x.PasteAfter point text opKind = 
+            let buffer = SnapshotPointUtil.GetBuffer point
+            let line = SnapshotPointUtil.GetContainingLine point
+
+            let doLineWise() = 
+                let span = SnapshotSpan(line.EndIncludingLineBreak,0) 
+                if line.LineBreakLength > 0 then 
+                    (span, text, 0)
+                else 
+                    // when there is a 0 length line break we are at the end of
+                    // the file and must insert an additional newline
+                    let text = System.Environment.NewLine + text
+                    (span, text, System.Environment.NewLine.Length)
+
+            let doCharacterWise() = 
+                let point =  if point.Position < line.End.Position then point.Add(1) else point
+                let span =  SnapshotSpan(point,0)
+                (span, text, 0)
+
+            let replaceSpan, replaceText, offset = 
                 match opKind with
-                | OperationKind.LineWise ->
-                    let line = point.GetContainingLine()
-                    new SnapshotSpan(line.EndIncludingLineBreak, 0)
-                | OperationKind.CharacterWise ->
-                    let line = point.GetContainingLine()
-                    let point =  if point.Position < line.End.Position then point.Add(1) else point
-                    new SnapshotSpan(point,0)
+                | OperationKind.LineWise -> doLineWise()
+                | OperationKind.CharacterWise -> doCharacterWise()
                 | _ -> failwith "Invalid Enum Value"
-            let tss = buffer.Replace(replaceSpan.Span, text)
-            new SnapshotSpan(tss, replaceSpan.End.Position, text.Length)
+            let tss = buffer.Replace(replaceSpan.Span, replaceText)
+            new SnapshotSpan(tss, replaceSpan.End.Position + offset , text.Length)
         
         member x.PasteBefore (point:SnapshotPoint) text opKind =
             let buffer = point.Snapshot.TextBuffer

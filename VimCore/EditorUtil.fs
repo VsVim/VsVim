@@ -112,8 +112,11 @@ module internal SnapshotPointUtil =
     /// Get the ITextSnapshotLine containing the specified SnapshotPoint
     let GetContainingLine (point:SnapshotPoint) = point.GetContainingLine()
 
-    /// Get the ITextSnapshot containing the SnapshotPoin
+    /// Get the ITextSnapshot containing the SnapshotPoint
     let GetSnapshot (point:SnapshotPoint) = point.Snapshot
+
+    /// Get the ITextBuffer containting the SnapshotPoint
+    let GetBuffer (point:SnapshotPoint) = point.Snapshot.TextBuffer
 
     /// Get the line range passed in.  If the count of lines exceeds the amount of lines remaining
     /// in the buffer, the span will be truncated to the final line

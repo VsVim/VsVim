@@ -299,6 +299,16 @@ namespace VimCoreTest
             Assert.AreEqual(2, position.Position - line.Start);
         }
 
+        [Test, Description("Verify linewise paste at the end of the buffer works")]
+        public void PasteAfter12()
+        {
+            Create("foo", "bar");
+            _view.Caret.MoveTo(_view.GetLineSpan(1).End);
+            _operations.PasteAfterCursor("hey", 1, OperationKind.LineWise, false);
+            Assert.AreEqual("hey", _view.GetLineSpan(2).GetText());
+            Assert.AreEqual(_view.GetCaretPoint(), _view.GetLineSpan(2).Start);
+        }
+
         [Test]
         public void PasteBefore1()
         {

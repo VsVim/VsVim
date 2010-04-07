@@ -306,6 +306,16 @@ namespace VimCoreTest
             Assert.AreEqual("fooyay", buffer.CurrentSnapshot.GetLineFromLineNumber(0).GetText());
         }
 
+        [Test, Description("Line wise paste at the end of the file should add a new line")]
+        public void PasteAfter7()
+        {
+            CreateLines("foo", "bar");
+            var point = _buffer.GetLineSpan(1).Start;
+            _operations.PasteAfter(point, "foo", OperationKind.LineWise);
+            Assert.AreEqual(3, _buffer.CurrentSnapshot.LineCount);
+            Assert.AreEqual("foo", _buffer.GetLineSpan(2).GetText());
+        }
+
         [Test]
         public void PasteBefore1()
         {
