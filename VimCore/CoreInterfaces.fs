@@ -221,6 +221,7 @@ module GlobalSettingNames =
     let ShiftWidthName = "shiftwidth"
     let HighlightSearchName = "hlsearch"
     let StartOfLineName = "startofline"
+    let TildeOpName = "tildeop"
     let DoubleEscape = "vsvimdoubleescape"
     let VimRcName = "vimrc"
     let VimRcPathsName = "vimrcpaths"
@@ -260,6 +261,9 @@ and IVimGlobalSettings =
     abstract IgnoreCase : bool with get, set
     abstract ShiftWidth : int with get, set
     abstract StartOfLine : bool with get, set
+
+    /// Controls the behavior of ~ in normal mode
+    abstract TildeOp : bool with get,set
 
     /// Whether or not to highlight previous search patterns matching cases
     abstract HighlightSearch : bool with get,set

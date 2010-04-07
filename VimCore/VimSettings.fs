@@ -117,6 +117,7 @@ type internal GlobalSettings() =
             ( StartOfLineName, "sol", ToggleKind, ToggleValue(true) );
             ( ShiftWidthName, "sw", NumberKind, NumberValue(4) );
             ( HighlightSearchName, "hls", ToggleKind, ToggleValue(false) );
+            ( TildeOpName, "top", ToggleKind, ToggleValue(false) );
             ( VimRcName, VimRcName, StringKind, StringValue(System.String.Empty) );
             ( VimRcPathsName, VimRcPathsName, StringKind, StringValue(System.String.Empty) );
             ( DoubleEscape, DoubleEscape, ToggleKind, ToggleValue(false) );
@@ -147,6 +148,9 @@ type internal GlobalSettings() =
         member x.StartOfLine 
             with get() = _map.GetBoolValue StartOfLineName
             and set value = _map.TrySetValue StartOfLineName (ToggleValue(value)) |> ignore
+        member x.TildeOp
+            with get() = _map.GetBoolValue TildeOpName
+            and set value = _map.TrySetValue TildeOpName (ToggleValue(value)) |> ignore
         member x.DoubleEscape
             with get() = _map.GetBoolValue DoubleEscape
             and set value = _map.TrySetValue DoubleEscape (ToggleValue(value)) |> ignore
