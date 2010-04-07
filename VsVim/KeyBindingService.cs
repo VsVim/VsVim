@@ -106,13 +106,13 @@ namespace VsVim
             HashSet<KeyInput> neededInputs)
         {
             var list = new List<CommandKeyBinding>();
-            foreach (var binding in snapshot.CommandKeyBindings.Where(x => !ShouldSkip(x)))
+            var all =  snapshot.CommandKeyBindings.Where(x => !ShouldSkip(x));
+            foreach (var binding in all)
             {
                 var input = binding.KeyBinding.FirstKeyInput;
                 if (neededInputs.Contains(input))
                 {
                     list.Add(binding);
-                    break;
                 }
             }
 

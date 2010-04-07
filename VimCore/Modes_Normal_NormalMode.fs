@@ -284,6 +284,17 @@ type internal NormalMode
             finally
                 _isInRepeatLastChange <- false
 
+    /// Handle the ~.  This is a special key because it's behavior changes based on the tildeop option
+    member private this.HandleTilde count =
+        if _bufferData.Settings.GlobalSettings.TildeOp then
+            let func (span,_,_) = 
+                _operations.ChangeLetterCase span
+                NormalModeResult.Complete
+            this.WaitForMotionAsResult func
+        else
+            _operations.ChangeLetterCaseAtCursor count
+            NormalModeResult.Complete
+
     member private this.BuildMotionOperationsMap =
         let wrap func = 
             fun count reg -> 
@@ -350,7 +361,6 @@ type internal NormalMode
             yield (InputUtil.CharToKeyInput('%'), (fun _ _ -> _operations.GoToMatch() |> ignore))
             yield (InputUtil.VimKeyAndModifiersToKeyInput VimKey.PageDownKey KeyModifiers.Control, (fun count _ -> _operations.GoToNextTab count))
             yield (InputUtil.VimKeyAndModifiersToKeyInput VimKey.PageUpKey KeyModifiers.Control, (fun count _ -> _operations.GoToPreviousTab count))
-            yield (InputUtil.CharToKeyInput('~'), (fun count _ -> _operations.ChangeLetterCaseAtCursor count))
         }
 
         // Similar to completeOpts but take the conditional count value
@@ -390,6 +400,7 @@ type internal NormalMode
             |> Seq.append ((InputUtil.CharToKeyInput('.'),true, fun count _ ->
                 this.RepeatLastChange count
                 NormalModeResult.CompleteNotCommand) |> Seq.singleton)
+            |> Seq.append ((InputUtil.CharToKeyInput('~'),true, (fun count _ -> this.HandleTilde (CountOrDefault count))) |> Seq.singleton) 
             |> Seq.append (changeOpts |> Seq.map (fun (ki,kind,func) -> (ki,false,fun count reg -> func (CountOrDefault count) reg; NormalModeResult.SwitchMode kind)))
             |> Seq.map (fun (ki,isRepeatable,func) -> {KeyInput=ki;IsRepeatable=isRepeatable;RunFunc=func})
             |> Seq.append (this.BuildMotionOperationsMap |> Seq.map (fun (ki,func) -> {KeyInput=ki;IsRepeatable=true;RunFunc=func}))

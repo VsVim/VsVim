@@ -1109,6 +1109,24 @@ namespace VimCoreTest
             _operations.Verify();
         }
 
+        [Test, Description("When TildeOp is set it becomes a motion command")]
+        public void Edit_Tilde3()
+        {
+            CreateBuffer("foo");
+            _bufferData.Object.Settings.GlobalSettings.TildeOp = true;
+            _mode.Process("~");
+        }
+
+        [Test]
+        public void Edit_Tilde4()
+        {
+            CreateBuffer("foo");
+            _bufferData.Object.Settings.GlobalSettings.TildeOp = true;
+            _operations.Setup(x => x.ChangeLetterCase(_view.TextBuffer.GetLineSpan(0,0))).Verifiable();
+            _mode.Process("~aw");
+            _operations.Verify();
+        }
+
         #endregion
 
         #region Yank
