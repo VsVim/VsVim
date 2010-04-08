@@ -6,7 +6,7 @@ using Vim.UI.Wpf;
 using Vim;
 using System.ComponentModel.Composition;
 
-namespace VsVim
+namespace VsVim.Implementation
 {
     [Export(typeof(IOptionsProviderFactory))]
     internal sealed class OptionsProviderFatory : IOptionsProviderFactory

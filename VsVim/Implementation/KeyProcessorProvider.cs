@@ -7,7 +7,7 @@ using System.ComponentModel.Composition;
 using Vim;
 using Microsoft.VisualStudio.Utilities;
 
-namespace VsVim
+namespace VsVim.Implementation
 {
     [Export(typeof(IKeyProcessorProvider))]
     [Order(Before = "VisualStudioKeyProcessor")]

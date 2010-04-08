@@ -7,7 +7,7 @@ using System.ComponentModel.Composition;
 using Microsoft.VisualStudio.Utilities;
 using Vim;
 
-namespace VsVim
+namespace VsVim.Implementation
 {
     [Export(typeof(IMouseProcessorProvider))]
     [ContentType("text")]
