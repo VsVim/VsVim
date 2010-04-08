@@ -9,7 +9,6 @@ using System.Windows.Input;
 
 namespace Vim.UI.Wpf
 {
-
     /// <summary>
     /// The purpose of this component is to manage the transition between the start of a 
     /// selection to the completion.  Visual Mode must be started at the start of the selection

@@ -161,7 +161,7 @@ namespace Vim.UI.Wpf.Implementation
         private Color? TryCalculateCaretColor()
         {
             var properties = _formatMap.GetProperties(EditorFormatDefinitionNames.BlockCaret);
-            var key = "ForegroundColor";
+            var key = EditorFormatDefinition.ForegroundColorId;
             if (properties.Contains(key))
             {
                 return (Color)properties[key];

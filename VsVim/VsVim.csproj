@@ -122,6 +122,9 @@
     <Compile Include="Extensions.cs" />
     <Compile Include="HostFactory.cs" />
     <Compile Include="IKeyBindingService.cs" />
+    <Compile Include="Implementation\ConflictingKeyBindingMargin.cs" />
+    <Compile Include="Implementation\ConflictingKeyBindingMarginProvider.cs" />
+    <Compile Include="Implementation\EditorFormatDefinitions.cs" />
     <Compile Include="KeyBindingUtil.cs" />
     <Compile Include="KeyBinding.cs" />
     <Compile Include="Implementation\KeyBindingService.cs" />
@@ -148,6 +151,9 @@
     </Compile>
     <Compile Include="UI\ConflictingKeyBindingDialog.xaml.cs">
       <DependentUpon>ConflictingKeyBindingDialog.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="UI\ConflictingKeyBindingMarginControl.xaml.cs">
+      <DependentUpon>ConflictingKeyBindingMarginControl.xaml</DependentUpon>
     </Compile>
     <Compile Include="UI\KeyBindingData.cs" />
     <Compile Include="UI\ScopeData.cs" />
@@ -195,6 +201,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="UI\ConflictingKeyBindingDialog.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="UI\ConflictingKeyBindingMarginControl.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
