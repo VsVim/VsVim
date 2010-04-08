@@ -77,6 +77,7 @@ type internal NormalMode
         _incrementalSearch.Begin kind
         inner
     
+    /// Wait for a motion sequence to complete and then call "doneFunc" with the resulting data
     member this.WaitForMotionCore doneFunc = 
         let rec f (result:MotionResult) = 
             match result with 
@@ -101,6 +102,16 @@ type internal NormalMode
     member this.WaitForMotionAsResult doneFunc = 
         let func = this.WaitForMotionCore doneFunc
         NormalModeResult.NeedMoreInput (fun ki count _ -> func ki count)
+
+    /// Wait for the next key stroke.  If it's the passed in char then execute the foundCharFunc
+    /// method otherwise wait for the motion to complete and execute foundMotionFunc
+    member this.WaitForMotionOrChar targetChar foundCharFunc foundMotionFunc =
+        let inner (ki:KeyInput) count reg =
+            if ki.Char = targetChar then foundCharFunc count reg 
+            else 
+                let func (span,motionKind,opKind) = foundMotionFunc span motionKind opKind 
+                this.WaitForMotion ki count func
+        inner
         
     // Respond to the d command.  Need the finish motion
     member this.WaitDelete =
@@ -189,7 +200,7 @@ type internal NormalMode
                 NormalModeResult.CompleteRepeatable(count,reg) 
         _isInReplace <- true
         inner
-        
+
     /// Handles commands which begin with g in normal mode.  This should be called when the g char is
     /// already processed
     member x.WaitCharGCommand =
@@ -343,7 +354,7 @@ type internal NormalMode
             yield (InputUtil.CharToKeyInput('#'), (fun count _ -> _operations.MoveToPreviousOccuranceOfWordAtCursor true count))
             yield (InputUtil.CharToKeyInput('u'), (fun count _ -> _bufferData.VimHost.Undo this.TextBuffer count))
             yield (InputUtil.CharToKeyInput('D'), (fun count reg -> _operations.DeleteLinesFromCursor count reg))
-            yield (KeyInput('r', KeyModifiers.Control), (fun count _ -> _bufferData.VimHost.Redo this.TextBuffer count))
+            yield (InputUtil.CharAndModifiersToKeyInput 'r' KeyModifiers.Control, (fun count _ -> _bufferData.VimHost.Redo this.TextBuffer count))
             yield (InputUtil.CharAndModifiersToKeyInput 'u' KeyModifiers.Control, (fun count _ -> _operations.ScrollLines ScrollDirection.Up count))
             yield (InputUtil.CharAndModifiersToKeyInput 'd' KeyModifiers.Control, (fun count _ -> _operations.ScrollLines ScrollDirection.Down count))
             yield (InputUtil.CharAndModifiersToKeyInput 'f' KeyModifiers.Control, (fun count _ -> _operations.ScrollPages ScrollDirection.Down count))
@@ -353,11 +364,11 @@ type internal NormalMode
             yield (InputUtil.CharAndModifiersToKeyInput 'b' KeyModifiers.Control, (fun count _ -> _operations.ScrollPages ScrollDirection.Up count))
             yield (InputUtil.VimKeyAndModifiersToKeyInput VimKey.UpKey KeyModifiers.Shift, (fun count _ -> _operations.ScrollPages ScrollDirection.Up count))
             yield (InputUtil.VimKeyToKeyInput VimKey.PageUpKey , (fun count _ -> _operations.ScrollPages ScrollDirection.Up count)) 
-            yield (KeyInput(']', KeyModifiers.Control), (fun _ _ -> _operations.GoToDefinitionWrapper()))
+            yield (InputUtil.CharAndModifiersToKeyInput ']' KeyModifiers.Control, (fun _ _ -> _operations.GoToDefinitionWrapper()))
             yield (InputUtil.CharToKeyInput('Y'), (fun count reg -> _operations.YankLines count reg))
             yield (InputUtil.VimKeyToKeyInput VimKey.TabKey, (fun count _ -> _operations.JumpNext count))
-            yield (KeyInput('i', KeyModifiers.Control), (fun count _ -> _operations.JumpNext count))
-            yield (KeyInput('o', KeyModifiers.Control), (fun count _ -> _operations.JumpPrevious count))
+            yield (InputUtil.CharAndModifiersToKeyInput 'i' KeyModifiers.Control, (fun count _ -> _operations.JumpNext count))
+            yield (InputUtil.CharAndModifiersToKeyInput 'o' KeyModifiers.Control, (fun count _ -> _operations.JumpPrevious count))
             yield (InputUtil.CharToKeyInput('%'), (fun _ _ -> _operations.GoToMatch() |> ignore))
             yield (InputUtil.VimKeyAndModifiersToKeyInput VimKey.PageDownKey KeyModifiers.Control, (fun count _ -> _operations.GoToNextTab count))
             yield (InputUtil.VimKeyAndModifiersToKeyInput VimKey.PageUpKey KeyModifiers.Control, (fun count _ -> _operations.GoToPreviousTab count))
@@ -379,7 +390,7 @@ type internal NormalMode
             yield (InputUtil.CharToKeyInput('O'), ModeKind.Insert, (fun _ _ -> _operations.InsertLineAbove() |> ignore))
             yield (InputUtil.CharToKeyInput('v'), ModeKind.VisualCharacter, doNothing)
             yield (InputUtil.CharToKeyInput('V'), ModeKind.VisualLine, doNothing)
-            yield (KeyInput('q', KeyModifiers.Control), ModeKind.VisualBlock, doNothing)
+            yield (InputUtil.CharAndModifiersToKeyInput 'q' KeyModifiers.Control, ModeKind.VisualBlock, doNothing)
             yield (InputUtil.CharToKeyInput('s'), ModeKind.Insert, (fun count reg -> _operations.DeleteCharacterAtCursor count reg))
             yield (InputUtil.CharToKeyInput('C'), ModeKind.Insert, (fun count reg -> _operations.DeleteLinesFromCursor count reg))
             yield (InputUtil.CharToKeyInput('S'), ModeKind.Insert, (fun count reg -> _operations.DeleteLines count reg))
