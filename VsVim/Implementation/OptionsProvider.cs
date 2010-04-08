@@ -5,6 +5,9 @@ using System.Text;
 using Vim.UI.Wpf;
 using Vim;
 using System.ComponentModel.Composition;
+using Microsoft.VisualStudio.Shell;
+using EnvDTE;
+using Microsoft.VisualStudio.Shell.Interop;
 
 namespace VsVim.Implementation
 {
@@ -13,29 +16,30 @@ namespace VsVim.Implementation
     {
         private sealed class Provider : IOptionsProvider
         {
-            private readonly KeyBindingService _keyBindingService;
-            internal Provider(KeyBindingService keyBindingService)
+            private readonly _DTE _dte;
+            internal Provider(_DTE dte)
             {
-                _keyBindingService = keyBindingService;
+                _dte = dte;
             }
             public void ShowDialog(IVimBuffer buffer)
             {
-                var snapshot = _keyBindingService.CalculateCommandKeyBindingSnapshot(buffer);
+                var util = new KeyBindingUtil(_dte);
+                var snapshot = util.CreateCommandKeyBindingSnapshot(buffer);
                 UI.ConflictingKeyBindingDialog.DoShow(snapshot);
             }
         }
 
-        private readonly KeyBindingService _keyBindingService;
+        private readonly _DTE _dte;
 
         [ImportingConstructor]
-        internal OptionsProviderFatory(KeyBindingService service)
+        internal OptionsProviderFatory(SVsServiceProvider provider)
         {
-            _keyBindingService = service;
+            _dte = provider.GetService<SDTE, _DTE>();
         }
 
         public IOptionsProvider CreateOptionsProvider()
         {
-            return new Provider(_keyBindingService);
+            return new Provider(_dte);
         }
     }
 }

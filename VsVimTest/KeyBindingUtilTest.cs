@@ -12,10 +12,9 @@ using VsVim.Settings;
 namespace VsVimTest
 {
     [TestFixture()]
-    public class KeyBindingServiceTest
+    public class KeyBindingUtilTest
     {
-
-        public IEnumerable<Command> Create(params string[] args)
+        private static IEnumerable<Command> CreateCommands(params string[] args)
         {
             foreach (var binding in args)
             {
@@ -28,109 +27,110 @@ namespace VsVimTest
             }
         }
 
-        private CommandsSnapshot CreateSnapshot(params string[] args)
-        {
-            return new CommandsSnapshot(Create(args));
-        }
-
-        public static CommandKeyBinding CreateCommandKeyBinding(KeyInput input, string name = "again", string scope = "Global")
+        private static CommandKeyBinding CreateCommandKeyBinding(KeyInput input, string name = "again", string scope = "Global")
         {
             var key = new VsVim.KeyBinding(scope, input);
             return new CommandKeyBinding(name, key);
         }
 
+        private static KeyBindingUtil Create(params string[] args)
+        {
+            var snapshot = new CommandsSnapshot(CreateCommands(args));
+            return new KeyBindingUtil(snapshot);
+        }
+
         [Test()]
         public void FindConflictingCommands1()
         {
-            var commands = CreateSnapshot("::ctrl+h");
+            var util = Create("::ctrl+h");
             var inputs = new KeyInput[] { InputUtil.CharAndModifiersToKeyInput('h', KeyModifiers.Control) };
-            var list = KeyBindingService.FindConflictingCommandKeyBindings(commands, new HashSet<KeyInput>(inputs));
+            var list = util.FindConflictingCommandKeyBindings(new HashSet<KeyInput>(inputs));
             Assert.AreEqual(1, list.Count);
         }
 
         [Test]
         public void FindConflictingCommands2()
         {
-            var commands = CreateSnapshot("::h");
+            var util = Create("::h");
             var inputs = new KeyInput[] { new KeyInput('z') };
-            var list = KeyBindingService.FindConflictingCommandKeyBindings(commands, new HashSet<KeyInput>(inputs));
+            var list = util.FindConflictingCommandKeyBindings(new HashSet<KeyInput>(inputs));
             Assert.AreEqual(0, list.Count);
         }
 
         [Test, Description("Conflicting key on first")]
         public void FindConflictingCommands3()
         {
-            var commands = CreateSnapshot("::ctrl+z, h");
+            var util = Create("::ctrl+z, h");
             var inputs = new KeyInput[] { InputUtil.CharAndModifiersToKeyInput('z', KeyModifiers.Control) };
-            var list = KeyBindingService.FindConflictingCommandKeyBindings(commands, new HashSet<KeyInput>(inputs));
+            var list = util.FindConflictingCommandKeyBindings(new HashSet<KeyInput>(inputs));
             Assert.AreEqual(1, list.Count);
         }
 
         [Test, Description("Only check first key")]
         public void FindConflictingCommands4()
         {
-            var commands = CreateSnapshot("::h, z");
+            var util = Create("::h, z");
             var inputs = new KeyInput[] { new KeyInput('z') };
-            var list = KeyBindingService.FindConflictingCommandKeyBindings(commands, new HashSet<KeyInput>(inputs));
+            var list = util.FindConflictingCommandKeyBindings(new HashSet<KeyInput>(inputs));
             Assert.AreEqual(0, list.Count);
         }
 
         [Test]
         public void FindConflictingCommands5()
         {
-            var commands = CreateSnapshot("::a","::ctrl+z, h");
+            var util = Create("::a","::ctrl+z, h");
             var inputs = new KeyInput[] { InputUtil.CharAndModifiersToKeyInput('z', KeyModifiers.Control) };
-            var list = KeyBindingService.FindConflictingCommandKeyBindings(commands, new HashSet<KeyInput>(inputs));
+            var list = util.FindConflictingCommandKeyBindings(new HashSet<KeyInput>(inputs));
             Assert.AreEqual(1, list.Count);
         }
 
         [Test]
         public void FindConflictingCommands6()
         {
-            var commands = CreateSnapshot("Global::ctrl+a", "Text Editor::ctrl+z");
+            var util = Create("Global::ctrl+a", "Text Editor::ctrl+z");
             var inputs = new KeyInput[] { 
                 InputUtil.CharAndModifiersToKeyInput('a', KeyModifiers.Control),
                 InputUtil.CharAndModifiersToKeyInput('z', KeyModifiers.Control) };
-            var list = KeyBindingService.FindConflictingCommandKeyBindings(commands, new HashSet<KeyInput>(inputs));
+            var list = util.FindConflictingCommandKeyBindings(new HashSet<KeyInput>(inputs));
             Assert.AreEqual(2, list.Count);
         }
 
         [Test]
         public void FindConflictingCommands7()
         {
-            var commands = CreateSnapshot("balgh::a", "aoeu::z");
+            var util = Create("balgh::a", "aoeu::z");
             var inputs = new KeyInput[] { new KeyInput('z'), new KeyInput('a') };
-            var list = KeyBindingService.FindConflictingCommandKeyBindings(commands, new HashSet<KeyInput>(inputs));
+            var list = util.FindConflictingCommandKeyBindings(new HashSet<KeyInput>(inputs));
             Assert.AreEqual(0, list.Count);
         }
 
         [Test]
         public void IsImportantScope1()
         {
-            Assert.IsTrue(KeyBindingService.IsImportantScope("Global"));
-            Assert.IsTrue(KeyBindingService.IsImportantScope("Text Editor"));
-            Assert.IsTrue(KeyBindingService.IsImportantScope(String.Empty));
+            Assert.IsTrue(KeyBindingUtil.IsImportantScope("Global"));
+            Assert.IsTrue(KeyBindingUtil.IsImportantScope("Text Editor"));
+            Assert.IsTrue(KeyBindingUtil.IsImportantScope(String.Empty));
         }
 
         [Test]
         public void IsImportantScope2()
         {
-            Assert.IsFalse(KeyBindingService.IsImportantScope("blah"));
-            Assert.IsFalse(KeyBindingService.IsImportantScope("VC Image Editor"));
+            Assert.IsFalse(KeyBindingUtil.IsImportantScope("blah"));
+            Assert.IsFalse(KeyBindingUtil.IsImportantScope("VC Image Editor"));
         }
 
         [Test]
         public void ShouldSkip1()
         {
             var binding = CreateCommandKeyBinding(InputUtil.VimKeyToKeyInput(VimKey.LeftKey));
-            Assert.IsTrue(KeyBindingService.ShouldSkip(binding));
+            Assert.IsTrue(KeyBindingUtil.ShouldSkip(binding));
         }
 
         [Test, Description("Use the old key bindings if we havn't recorded them being messed with on this machine")]
         public void FindRemovedKeyBindings1()
         {
             Settings.Default.HaveUpdatedKeyBindings = false;
-            var list = KeyBindingService.FindKeyBindingsMarkedAsRemoved();
+            var list = KeyBindingUtil.FindKeyBindingsMarkedAsRemoved();
             Assert.AreEqual(VsVim.Constants.CommonlyUnboundCommands.Length, list.Count);
         }
 
@@ -141,7 +141,7 @@ namespace VsVimTest
             Settings.Default.RemovedBindings = new CommandBindingSetting[] {
                 new CommandBindingSetting() { Name="foo", CommandString = "Scope::Ctrl+J" },
                 new CommandBindingSetting() { Name="bar", CommandString = "Scope::Ctrl+J" } };
-            var list = KeyBindingService.FindKeyBindingsMarkedAsRemoved();
+            var list = KeyBindingUtil.FindKeyBindingsMarkedAsRemoved();
             Assert.AreEqual(2, list.Count);
             Assert.AreEqual("foo", list[0].Name);
             Assert.AreEqual("bar", list[1].Name);

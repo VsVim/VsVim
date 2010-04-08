@@ -17,96 +17,49 @@ using VsVim.UI;
 
 namespace VsVim
 {
-    /// <summary>
-    /// Responsible for dealing with the conflicting key bindings inside of Visual Studio
-    /// </summary>
-    [Export(typeof(KeyBindingService))]
-    public sealed class KeyBindingService
+    internal sealed class KeyBindingUtil
     {
-        private readonly IVsUIShell _vsShell;
-        private readonly _DTE _dte;
-        private bool _hasChecked;
+        private readonly CommandsSnapshot _snapshot;        
 
-        [ImportingConstructor]
-        public KeyBindingService(SVsServiceProvider sp)
+        internal KeyBindingUtil(CommandsSnapshot snapshot)
         {
-            _vsShell = sp.GetService<SVsUIShell, IVsUIShell>();
-            _dte = sp.GetService<SDTE, _DTE>();
+            _snapshot = snapshot;
         }
 
-        public void OneTimeCheckForConflictingKeyBindings(IVimBuffer buffer)
+        internal KeyBindingUtil(_DTE dte)
+            : this(new CommandsSnapshot(dte))
         {
-            if (_hasChecked)
-            {
-                return;
-            }
-            _hasChecked = true;
 
-            // HACK:
-            // This is a horrible hack to work around the solution load dialog which displays
-            // on project load.  This dialog while active is listed as the foreground window
-            // of Visual Studio and as such all modal dialogs become children of that window.  
-            // It then goes away, orphans the windows and makes VS unusable.  Inserting an 
-            // artifical delay here to work around this until I find out a definitive 
-            // way to avoid this
-            var context = SynchronizationContext.Current;
-            ThreadPool.QueueUserWorkItem(unused =>
-                {
-                    System.Threading.Thread.Sleep(TimeSpan.FromSeconds(5));
-                    context.Post(unused2 => CalculateCommandKeyBindingSnapshot(buffer), null);
-                });
         }
 
         /// <summary>
         /// Check for and remove conflicting key bindings
         /// </summary>
-        public CommandKeyBindingSnapshot CalculateCommandKeyBindingSnapshot(IVimBuffer buffer)
+        internal CommandKeyBindingSnapshot CreateCommandKeyBindingSnapshot(IVimBuffer buffer)
         {
             var hashSet = new HashSet<KeyInput>(
                 buffer.AllModes.Select(x => x.Commands).SelectMany(x => x));
             hashSet.Add(buffer.Settings.GlobalSettings.DisableCommand);
-            var snapshot = new CommandsSnapshot(_dte);
-            var conflicting = FindConflictingCommandKeyBindings(snapshot, hashSet);
-            var removed = FindRemovedKeyBindings(snapshot);
+            return CreateCommandKeyBindingSnapshot(hashSet);
+        }
+
+        internal CommandKeyBindingSnapshot CreateCommandKeyBindingSnapshot(HashSet<KeyInput> needed)
+        {
+            var conflicting = FindConflictingCommandKeyBindings(needed);
+            var removed = FindRemovedKeyBindings();
             return new CommandKeyBindingSnapshot(
-                snapshot,
+                _snapshot,
                 removed,
                 conflicting);
         }
 
         /// <summary>
-        /// Check for and remove conflicting key bindings
-        /// </summary>
-        private void CheckForConflictingKeyBindings(IVimBuffer buffer)
-        {
-            var snapshot = CalculateCommandKeyBindingSnapshot(buffer);
-            if (snapshot.Conflicting.Any())
-            {
-                var msg = new StringBuilder();
-                msg.AppendLine("Conflicting key bindings found.  Would you like to inspect and remove?");
-                using (var modalDisplay = _vsShell.EnableModelessDialog())
-                {
-                    var res = MessageBox.Show(
-                        caption: "VsVim",
-                        messageBoxText: msg.ToString(),
-                        button: MessageBoxButton.YesNo);
-                    if (res == MessageBoxResult.Yes)
-                    {
-                        UI.ConflictingKeyBindingDialog.DoShow(snapshot);
-                    }
-                }
-            }
-        }
-
-        /// <summary>
         /// Find all of the Command instances which have conflicting key bindings
         /// </summary>
-        public static List<CommandKeyBinding> FindConflictingCommandKeyBindings(
-            CommandsSnapshot snapshot,
-            HashSet<KeyInput> neededInputs)
+        internal List<CommandKeyBinding> FindConflictingCommandKeyBindings( HashSet<KeyInput> neededInputs)
         {
             var list = new List<CommandKeyBinding>();
-            var all =  snapshot.CommandKeyBindings.Where(x => !ShouldSkip(x));
+            var all =  _snapshot.CommandKeyBindings.Where(x => !ShouldSkip(x));
             foreach (var binding in all)
             {
                 var input = binding.KeyBinding.FirstKeyInput;
@@ -119,10 +72,15 @@ namespace VsVim
             return list;
         }
 
+        internal List<CommandKeyBinding> FindRemovedKeyBindings()
+        {
+            return FindKeyBindingsMarkedAsRemoved().Where(x => !_snapshot.IsKeyBindingActive(x.KeyBinding)).ToList();
+        }
+
         /// <summary>
         /// Should this be skipped when removing conflicting bindings?
         /// </summary>
-        public static bool ShouldSkip(CommandKeyBinding binding)
+        internal static bool ShouldSkip(CommandKeyBinding binding)
         {
             if (!IsImportantScope(binding.KeyBinding.Scope))
             {
@@ -148,7 +106,7 @@ namespace VsVim
             return false;
         }
 
-        public static bool IsImportantScope(string scope)
+        internal static bool IsImportantScope(string scope)
         {
             var comp = StringComparer.OrdinalIgnoreCase;
             if (comp.Equals("Global", scope))
@@ -169,15 +127,11 @@ namespace VsVim
             return false;
         }
 
-        public static List<CommandKeyBinding> FindRemovedKeyBindings(CommandsSnapshot snapshot)
-        {
-            return FindKeyBindingsMarkedAsRemoved().Where(x => !snapshot.IsKeyBindingActive(x.KeyBinding)).ToList();
-        }
 
         /// <summary>
         /// Find all of the key bindings which have been removed
         /// </summary>
-        public static List<CommandKeyBinding> FindKeyBindingsMarkedAsRemoved()
+        internal static List<CommandKeyBinding> FindKeyBindingsMarkedAsRemoved()
         {
             var settings = Settings.Settings.Default;
             IEnumerable<Tuple<string, string>> source = null;
@@ -202,7 +156,5 @@ namespace VsVim
 
             return list;
         }
-
-
     }
 }

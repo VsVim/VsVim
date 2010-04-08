@@ -121,8 +121,10 @@
     <Compile Include="CommandUtil.cs" />
     <Compile Include="Extensions.cs" />
     <Compile Include="HostFactory.cs" />
+    <Compile Include="IKeyBindingService.cs" />
+    <Compile Include="KeyBindingUtil.cs" />
     <Compile Include="KeyBinding.cs" />
-    <Compile Include="KeyBindingService.cs" />
+    <Compile Include="Implementation\KeyBindingService.cs" />
     <Compile Include="CommandKeyBindingSnapshot.cs" />
     <Compile Include="Implementation\KeyProcessorProvider.cs" />
     <Compile Include="Implementation\MouseProcessorProvider.cs" />

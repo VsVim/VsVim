@@ -29,7 +29,7 @@ namespace VsVim
     [TextViewRole(PredefinedTextViewRoles.Document)]
     internal sealed class HostFactory : IWpfTextViewCreationListener, IVimBufferCreationListener, IVsTextViewCreationListener
     {
-        private readonly KeyBindingService _keyBindingService;
+        private readonly IKeyBindingService _keyBindingService;
         private readonly ITextEditorFactoryService _editorFactoryService;
         private readonly IServiceProvider _serviceProvider;
         private readonly IVim _vim;
@@ -41,7 +41,7 @@ namespace VsVim
         public HostFactory(
             IVim vim,
             ITextEditorFactoryService editorFactoryService,
-            KeyBindingService keyBindingService,
+            IKeyBindingService keyBindingService,
             SVsServiceProvider serviceProvider,
             IVsEditorAdaptersFactoryService adaptersFactory,
             IVimHost host)
@@ -68,7 +68,7 @@ namespace VsVim
             Action doCheck = () =>
                 {
                     // Run the key binding check now
-                    _keyBindingService.OneTimeCheckForConflictingKeyBindings(buffer);
+                    _keyBindingService.RunConflictingKeyBindingStateCheck(buffer, (x, y) => _keyBindingService.ResolveAnyConflicts());
                 };
 
             Dispatcher.CurrentDispatcher.BeginInvoke(doCheck, null);
