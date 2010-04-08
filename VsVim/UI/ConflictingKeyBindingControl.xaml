@@ -88,18 +88,19 @@
 
             <Button 
                 DockPanel.Dock="Right" 
+                Margin="5"
                 Content="Remove All Conflicting" 
                 Click="OnRemoveAllConflictingClick" />
 
             <Button 
                 DockPanel.Dock="Right" 
-                Margin="0,0,5,0" 
+                Margin="5" 
                 Content="Remove Selected"
                 Click="OnRemoveSelectedClick" />
 
             <Button 
                 DockPanel.Dock="Right" 
-                Margin="0,0,5,0" 
+                Margin="5"
                 Content="Reset All"
                 Click="OnResetAllClick" />
 

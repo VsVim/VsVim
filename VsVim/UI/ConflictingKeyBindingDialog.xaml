@@ -34,11 +34,12 @@
                 DockPanel.Dock="Right"
                 Content="Cancel"
                 IsCancel="True"
+                Margin="5"
                 Click="OnCancelClick"/>
 
             <Button 
                 DockPanel.Dock="Right"
-                Margin="0,0,3,0"
+                Margin="5"
                 IsDefault="True"
                 Content="OK"
                 Click="OnOkClick "/>
