@@ -10,7 +10,7 @@ namespace VsVim
     {
         HasNotChecked,
         FoundConflicts,
-        NoConflicts
+        ConflictsIgnoredOrResolved
     }
 
     /// <summary>
@@ -37,5 +37,10 @@ namespace VsVim
         /// Resolve any conflicts which may exist
         /// </summary>
         void ResolveAnyConflicts();
+
+        /// <summary>
+        /// Ignore the conflicts
+        /// </summary>
+        void IgnoreAnyConflicts(); 
     }
 }

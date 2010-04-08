@@ -14,19 +14,6 @@ namespace VsVimTest
     [TestFixture()]
     public class KeyBindingUtilTest
     {
-        private static IEnumerable<Command> CreateCommands(params string[] args)
-        {
-            foreach (var binding in args)
-            {
-                var localBinding = binding;
-                var mock = new Mock<Command>(MockBehavior.Strict);
-                mock.Setup(x => x.Bindings).Returns(localBinding);
-                mock.Setup(x => x.Name).Returns("example command");
-                mock.Setup(x => x.LocalizedName).Returns("example command");
-                yield return mock.Object;
-            }
-        }
-
         private static CommandKeyBinding CreateCommandKeyBinding(KeyInput input, string name = "again", string scope = "Global")
         {
             var key = new VsVim.KeyBinding(scope, input);
@@ -35,7 +22,8 @@ namespace VsVimTest
 
         private static KeyBindingUtil Create(params string[] args)
         {
-            var snapshot = new CommandsSnapshot(CreateCommands(args));
+            var all = MockObjectFactory.CreateCommandList(args).Select(x => x.Object);
+            var snapshot = new CommandsSnapshot(all);
             return new KeyBindingUtil(snapshot);
         }
 

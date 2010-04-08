@@ -37,6 +37,18 @@ namespace VsVim.Implementation
         public ConflictingKeyBindingState ConflictingKeyBindingState
         {
             get { return _state; }
+            private set
+            {
+                if (_state != value)
+                {
+                    _state = value;
+                    var list = ConflictingKeyBindingStateChanged;
+                    if (list != null)
+                    {
+                        list(this, EventArgs.Empty);
+                    }
+                }
+            }
         }
 
         public event EventHandler ConflictingKeyBindingStateChanged;
@@ -53,17 +65,17 @@ namespace VsVim.Implementation
             _snapshot = util.CreateCommandKeyBindingSnapshot(buffer);
             if (_snapshot.Conflicting.Any())
             {
-                _state = ConflictingKeyBindingState.FoundConflicts;
+                ConflictingKeyBindingState = ConflictingKeyBindingState.FoundConflicts;
             }
             else
             {
-                _state = ConflictingKeyBindingState.NoConflicts;
+                ConflictingKeyBindingState = ConflictingKeyBindingState.ConflictsIgnoredOrResolved;
             }
         }
 
         public void ResetConflictingKeyBindingState()
         {
-            _state = ConflictingKeyBindingState.HasNotChecked;
+            ConflictingKeyBindingState = ConflictingKeyBindingState.HasNotChecked;
             _snapshot = null;
         }
 
@@ -75,7 +87,13 @@ namespace VsVim.Implementation
             }
 
             UI.ConflictingKeyBindingDialog.DoShow(_snapshot);
-            _state = ConflictingKeyBindingState.NoConflicts;
+            ConflictingKeyBindingState = ConflictingKeyBindingState.ConflictsIgnoredOrResolved;
+            _snapshot = null;
+        }
+
+        public void IgnoreAnyConflicts()
+        {
+            ConflictingKeyBindingState = ConflictingKeyBindingState.ConflictsIgnoredOrResolved;
             _snapshot = null;
         }
     }
