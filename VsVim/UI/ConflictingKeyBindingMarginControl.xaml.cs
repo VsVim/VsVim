@@ -20,9 +20,9 @@ namespace VsVim.UI
     public partial class ConflictingKeyBindingMarginControl : UserControl
     {
         /// <summary>
-        /// Raised when the Remove button is clicked
+        /// Raised when the Configure button is clicked
         /// </summary>
-        public event EventHandler RemoveClick;
+        public event EventHandler ConfigureClick;
 
         /// <summary>
         /// Raised when the Ignore button is clicked
@@ -34,9 +34,9 @@ namespace VsVim.UI
             InitializeComponent();
         }
 
-        private void OnRemoveClick(object sender, RoutedEventArgs e)
+        private void OnConfigureClick(object sender, RoutedEventArgs e)
         {
-            var list = RemoveClick;
+            var list = ConfigureClick;
             if (list != null)
             {
                 list(this, RoutedEventArgs.Empty);
