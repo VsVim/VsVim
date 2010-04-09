@@ -5,6 +5,7 @@ open Vim
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Operations
 open Microsoft.VisualStudio.Text.Editor
+open NullableUtil
 
 type internal IncrementalSearchData = {
     Start : ITrackingPoint;
@@ -49,15 +50,20 @@ type internal IncrementalSearch
                 ViewUtil.MoveCaretToPoint _textView point |> ignore
 
             let doSearch (searchData:SearchData) =
-                let findData = FindData(searchData.Pattern, _textView.TextSnapshot, searchData.Options, _navigator)
-                let point = ViewUtil.GetCaretPoint _textView
-                let ret= _search.FindNext(point.Position, SearchKindUtil.IsWrap searchData.Kind, findData)
-                if ret.HasValue then 
-                    let span = ret.Value
+                let ret =
+                    match searchData.Pattern.Length with
+                    | 0 -> None
+                    | _ ->
+                        let findData = FindData(searchData.Pattern, _textView.TextSnapshot, searchData.Options, _navigator)
+                        let point = ViewUtil.GetCaretPoint _textView
+                        _search.FindNext(point.Position, SearchKindUtil.IsWrap searchData.Kind, findData) |> toOption
+
+                match ret with
+                | Some(span) ->
                     ViewUtil.MoveCaretToPoint _textView span.Start |> ignore
                     _currentSearchUpdated.Trigger (searchData, SearchFound(span)) 
                     _data <- Some { data with SearchData = searchData; SearchResult = SearchFound(span) }
-                else
+                | None ->
                     resetView()
                     _currentSearchUpdated.Trigger (searchData,SearchNotFound)
                     _data <- Some { data with SearchData = searchData; SearchResult = SearchNotFound }
@@ -68,6 +74,11 @@ type internal IncrementalSearch
                 let searchData = { previousSearch with Pattern=newPattern}
                 doSearch searchData
 
+            let cancelSearch = 
+                _data <- None
+                _currentSearchCancelled.Trigger data.SearchData
+                SearchCancelled
+
             match ki.Key with 
             | VimKey.EnterKey -> 
                 _data <- None
@@ -76,16 +87,15 @@ type internal IncrementalSearch
                 SearchComplete
             | VimKey.EscapeKey -> 
                 resetView()
-                _data <- None
-                _currentSearchCancelled.Trigger data.SearchData
-                SearchCancelled
+                cancelSearch
             | VimKey.BackKey -> 
                 resetView()
-                let pattern = 
-                    if pattern.Length = 1 then System.String.Empty
-                    else pattern.Substring(0, pattern.Length - 1)
-                doSearchWithNewPattern pattern 
-                SearchNeedMore
+                match pattern.Length with
+                | 0 -> cancelSearch
+                | _ -> 
+                    let pattern = pattern.Substring(0, pattern.Length - 1)
+                    doSearchWithNewPattern pattern
+                    SearchNeedMore
             | _ -> 
                 let c = ki.Char
                 let pattern = pattern + (c.ToString())
