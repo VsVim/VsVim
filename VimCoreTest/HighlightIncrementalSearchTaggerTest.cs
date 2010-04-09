@@ -10,6 +10,7 @@ using Vim;
 using Microsoft.VisualStudio.Text.Operations;
 using VimCoreTest.Utils;
 using Microsoft.VisualStudio.Text.Tagging;
+using Microsoft.FSharp.Core;
 
 namespace VimCoreTest
 {
@@ -20,8 +21,8 @@ namespace VimCoreTest
         private ITagger<TextMarkerTag> _tagger;
         private ITextBuffer _textBuffer;
         private Mock<IVimGlobalSettings> _settings;
-        private Mock<IIncrementalSearch> _search;
-        private Mock<ITextSearchService> _searchService;
+        private Mock<ISearchService> _search;
+        private Mock<ITextStructureNavigator> _nav;
 
         private static string[] DefaultText = new string[] { 
             "this is the default text value for searching",
@@ -36,13 +37,13 @@ namespace VimCoreTest
             lines = lines.Length > 0 ? lines : DefaultText;
             _textBuffer = EditorUtil.CreateBuffer(lines);
             _settings = new Mock<IVimGlobalSettings>();
-            _search = new Mock<IIncrementalSearch>();
-            _searchService = new Mock<ITextSearchService>(MockBehavior.Strict);
+            _search = new Mock<ISearchService>();
+            _nav = new Mock<ITextStructureNavigator>(MockBehavior.Strict);
             _taggerRaw = new HighlightIncrementalSearchTagger(
                 _textBuffer,
                 _settings.Object,
-                _search.Object,
-                _searchService.Object);
+                _nav.Object,
+                _search.Object);
             _tagger = _taggerRaw;
 
             if (forSearch)
@@ -93,12 +94,12 @@ namespace VimCoreTest
         public void GetTags3()
         {
             Init(lines: "foo is the bar", lastSearch: "foo");
-            _searchService
-                .Setup(x => x.FindNext(0, false, It.IsAny<FindData>()))
-                .Returns(new SnapshotSpan(_textBuffer.CurrentSnapshot, 0, 3));
-            _searchService
-                .Setup(x => x.FindNext(3, false, It.IsAny<FindData>()))
-                .Returns<SnapshotSpan?>(null);
+            _search
+                .Setup(x => x.FindNextPattern(It.IsAny<string>(), new SnapshotPoint(_textBuffer.CurrentSnapshot,0), SearchKind.ForwardWithWrap, _nav.Object))
+                .Returns(FSharpOption.Create(new SnapshotSpan(_textBuffer.CurrentSnapshot, 0, 3)));
+            _search
+                .Setup(x => x.FindNextPattern(It.IsAny<string>(), new SnapshotPoint(_textBuffer.CurrentSnapshot,3), SearchKind.ForwardWithWrap, _nav.Object))
+                .Returns(FSharpOption<SnapshotSpan>.None);
             var ret = _taggerRaw.GetTags(new NormalizedSnapshotSpanCollection(new SnapshotSpan(_textBuffer.CurrentSnapshot, 0, _textBuffer.CurrentSnapshot.Length)));
             Assert.AreEqual(1, ret.Count());
             Assert.AreEqual(new SnapshotSpan(_textBuffer.CurrentSnapshot, 0, 3), ret.Single().Span);
@@ -108,9 +109,9 @@ namespace VimCoreTest
         public void GetTags4()
         {
             Init(lines: "foo is the bar", lastSearch: "foo");
-            _searchService
-                .Setup(x => x.FindNext(0, false, It.IsAny<FindData>()))
-                .Returns(new SnapshotSpan(_textBuffer.CurrentSnapshot, 4, 3));
+            _search
+                .Setup(x => x.FindNextPattern(It.IsAny<string>(), _textBuffer.GetPoint(0), SearchKind.ForwardWithWrap, _nav.Object))
+                .Returns(FSharpOption.Create(_textBuffer.GetSpan(4,3)));
             var ret = _taggerRaw.GetTags(new NormalizedSnapshotSpanCollection(new SnapshotSpan(_textBuffer.CurrentSnapshot, 0, 3)));
             Assert.AreEqual(0, ret.Count());
         }
@@ -119,36 +120,13 @@ namespace VimCoreTest
         public void GetTags5()
         {
             Init(lines: "foo is the bar", lastSearch: "foo");
-            _searchService
-                .Setup(x => x.FindNext(0, false, It.IsAny<FindData>()))
-                .Returns(new SnapshotSpan(_textBuffer.CurrentSnapshot, 2, 3));
+            _search
+                .Setup(x => x.FindNextPattern(It.IsAny<string>(), _textBuffer.GetPoint(0), SearchKind.ForwardWithWrap, _nav.Object))
+                .Returns(FSharpOption.Create(_textBuffer.GetSpan(2,3)));
             var ret = _taggerRaw.GetTags(new NormalizedSnapshotSpanCollection(new SnapshotSpan(_textBuffer.CurrentSnapshot, 0, 3)));
             Assert.AreEqual(1, ret.Count());
             Assert.AreEqual(new SnapshotSpan(_textBuffer.CurrentSnapshot, 2, 3), ret.Single().Span);
         }
 
-        /// <summary>
-        /// Removing as a test method until I can figure out why the Moq.Raise method does 
-        /// not play nicely with F# defined events
-        /// </summary>
-        public void TagsChanged1()
-        {
-            Init(lines: "foo is the bar", lastSearch: null);
-            var didSee = false;
-            _tagger.TagsChanged += (sender, span) =>
-                {
-                    Assert.AreEqual(new SnapshotSpan(_textBuffer.CurrentSnapshot, 0, _textBuffer.CurrentSnapshot.Length), span);
-                    didSee = true;
-                };
-
-            var data =
-                Tuple.Create<SearchData, SearchResult>(
-                    new SearchData("foo", SearchKind.Forward, FindOptions.None),
-                    SearchResult.NewSearchFound(new SnapshotSpan(_textBuffer.CurrentSnapshot, 0, 3)));
-            _search.Raise(
-                x => x.CurrentSearchCompleted += null,
-                data);
-            Assert.IsTrue(didSee);
-        }
     }
 }

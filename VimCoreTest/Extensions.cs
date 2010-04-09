@@ -270,6 +270,15 @@ namespace VimCoreTest
             return buffer.CurrentSnapshot.GetLineSpan(startLine, endLine);
         }
 
+        public static SnapshotPoint GetPoint(this ITextBuffer buffer, int position)
+        {
+            return new SnapshotPoint(buffer.CurrentSnapshot, position);
+        }
+
+        public static SnapshotSpan GetSpan(this ITextBuffer buffer, int start, int length)
+        {
+            return buffer.CurrentSnapshot.GetSpan(start, length);
+        }
 
         #endregion
 
@@ -291,7 +300,18 @@ namespace VimCoreTest
             return new SnapshotSpan(start.Start, end.EndIncludingLineBreak);
         }
 
+        public static SnapshotPoint GetPoint(this ITextSnapshot tss, int position)
+        {
+            return new SnapshotPoint(tss, position);
+        }
+
+        public static SnapshotSpan GetSpan(this ITextSnapshot tss, int start, int length)
+        {
+            return new SnapshotSpan(tss, start, length);
+        }
+
         #endregion
+
 
         internal static SnapshotSpan GetSpan(this ITextSelection selection)
         {

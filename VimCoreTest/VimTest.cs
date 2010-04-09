@@ -24,7 +24,7 @@ namespace VimCoreTest
         private Mock<IVimHost> _host;
         private Mock<IKeyMap> _keyMap;
         private Mock<IChangeTracker> _changeTracker;
-        private Mock<ISearchInformation> _searchInfo;
+        private Mock<ISearchService> _searchInfo;
         private Vim.Vim _vimRaw;
         private IVim _vim;
         private Dictionary<string, string> _savedEnvironment = new Dictionary<string, string>();
@@ -39,7 +39,7 @@ namespace VimCoreTest
             _keyMap = new Mock<IKeyMap>(MockBehavior.Strict);
             _changeTracker = new Mock<IChangeTracker>(MockBehavior.Strict);
             _host = new Mock<IVimHost>(MockBehavior.Strict);
-            _searchInfo = new Mock<ISearchInformation>(MockBehavior.Strict);
+            _searchInfo = new Mock<ISearchService>(MockBehavior.Strict);
             _vimRaw = new Vim.Vim(
                 _host.Object,
                 _factory.Object,

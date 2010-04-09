@@ -15,11 +15,12 @@ type internal DefaultOperations
     _statusUtil : IStatusUtil,
     _settings : IVimLocalSettings,
     _normalWordNav : ITextStructureNavigator,
-    _searchService : ITextSearchService,
     _jumpList : IJumpList,
     _incrementalSearch : IIncrementalSearch) =
 
     inherit CommonOperations(_textView, _operations, _host, _jumpList, _settings)
+
+    let _search = _incrementalSearch.SearchService
 
     member private x.CommonImpl = x :> ICommonOperations
 
@@ -41,44 +42,43 @@ type internal DefaultOperations
         match TssUtil.FindCurrentFullWordSpan point WordKind.NormalWord with
         | None -> _statusUtil.OnError Resources.NormalMode_NoWordUnderCursor
         | Some(span) ->
-            let options = if isWholeWord then FindOptions.WholeWord else FindOptions.None
-            let options = if _settings.GlobalSettings.IgnoreCase then options else options ||| FindOptions.MatchCase
+            let extraOptions = if isWholeWord then FindOptions.WholeWord else FindOptions.None
+            let kind = if isWrap then SearchKind.ForwardWithWrap else SearchKind.Forward
             let count = max 0 (count-1)
             let word = span.GetText()
-            let rec doFind count pos = 
-                let data = FindData(word, point.Snapshot, options,_normalWordNav)
-                let found = _searchService.FindNext(pos, isWrap, data) 
-                if found.HasValue && count > 1 then
-                    let nextPos = found.Value.End.Position
-                    doFind (count-1) nextPos 
-                elif found.HasValue then
-                    ViewUtil.MoveCaretToPoint _textView found.Value.Start |> ignore
-            doFind count span.End.Position
+            let rec doFind count point = 
+                let searchData = _search.CreateSearchData word kind
+                let searchData = {searchData with Options = searchData.Options ||| extraOptions }
+                match (_search.FindNextResult searchData point _normalWordNav),count > 1 with
+                | Some(span),true -> doFind (count-1) span.End
+                | Some(span),false -> ViewUtil.MoveCaretToPoint _textView span.Start |> ignore
+                | _ -> ()
+            doFind count span.End
 
     member x.MoveToPreviousWordCore isWrap isWholeWord count = 
         let point = ViewUtil.GetCaretPoint _textView
         match TssUtil.FindCurrentFullWordSpan point WordKind.NormalWord with
         | None -> _statusUtil.OnError Resources.NormalMode_NoWordUnderCursor
         | Some(span) ->
-            let options = if isWholeWord then FindOptions.WholeWord else FindOptions.None
-            let options = if _settings.GlobalSettings.IgnoreCase then options else options ||| FindOptions.MatchCase
-            let options = options ||| FindOptions.SearchReverse
+            let extraOptions = if isWholeWord then FindOptions.WholeWord else FindOptions.None
+            let kind = if isWrap then SearchKind.ForwardWithWrap else SearchKind.Forward
             let count = max 0 (count-1)
-            let getNextPos (span:SnapshotSpan) = 
+            let getNextPoint (span:SnapshotSpan) = 
                 let pos = span.Start.Position-1
-                if pos >= 0 then pos 
-                elif isWrap then point.Snapshot.Length
-                else 0
+                if pos >= 0 then span.Start.Subtract(1)
+                elif isWrap then SnapshotUtil.GetEndPoint point.Snapshot
+                else SnapshotUtil.GetStartPoint point.Snapshot
             let word = span.GetText()
-            let rec doFind count pos = 
-                let data = FindData(word, point.Snapshot, options,_normalWordNav)
-                let found = _searchService.FindNext(pos, isWrap, data) 
-                if found.HasValue && count > 1 then
-                    let nextPos = getNextPos found.Value
+            let rec doFind count point = 
+                let searchData = _search.CreateSearchData word kind
+                let searchData = {searchData with Options = searchData.Options ||| extraOptions }
+                match (_search.FindNextResult searchData point _normalWordNav),count > 1 with
+                | Some(span),true -> 
+                    let nextPos = getNextPoint span
                     doFind (count-1) nextPos 
-                elif found.HasValue then
-                    ViewUtil.MoveCaretToPoint _textView found.Value.Start |> ignore
-            doFind count (getNextPos span)
+                | Some(span),false -> ViewUtil.MoveCaretToPoint _textView span.Start |> ignore
+                | _ -> ()
+            doFind count (getNextPoint span)
 
 
     member x.GoToLineCore line =

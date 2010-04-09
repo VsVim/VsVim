@@ -27,16 +27,16 @@ namespace VimCoreTest
         private Mock<IVimGlobalSettings> _globalSettings;
         private Mock<IVimLocalSettings> _settings;
         private Mock<IIncrementalSearch> _search;
+        private Mock<ISearchService> _searchService;
         private Mock<IStatusUtil> _statusUtil;
 
         private void Create(params string[] lines)
         {
-            Create(null, null, null, lines);
+            Create(null, null, lines);
         }
 
         private void Create(
             IEditorOperations editorOpts = null,
-            ITextSearchService searchService = null,
             ITextStructureNavigator baseNav = null,
             params string[] lines)
         {
@@ -52,15 +52,16 @@ namespace VimCoreTest
                 _view = EditorUtil.CreateView(lines);
             }
 
-            searchService = searchService ?? EditorUtil.FactoryService.textSearchService;
             baseNav = baseNav ?? (new Mock<ITextStructureNavigator>(MockBehavior.Strict)).Object;
             var nav = TssUtil.CreateTextStructureNavigator(WordKind.NormalWord, baseNav);
             _globalSettings = MockObjectFactory.CreateGlobalSettings(ignoreCase: true);
             _settings = MockObjectFactory.CreateLocalSettings(_globalSettings.Object);
             _jumpList = new Mock<IJumpList>(MockBehavior.Strict);
+            _searchService = new Mock<ISearchService>(MockBehavior.Strict);
             _search = new Mock<IIncrementalSearch>(MockBehavior.Strict);
+            _search.SetupGet(x => x.SearchService).Returns(_searchService.Object);
             _statusUtil = new Mock<IStatusUtil>(MockBehavior.Strict);
-            _operationsRaw = new DefaultOperations(_view, editorOpts, _host.Object, _statusUtil.Object, _settings.Object, nav, searchService, _jumpList.Object, _search.Object);
+            _operationsRaw = new DefaultOperations(_view, editorOpts, _host.Object, _statusUtil.Object, _settings.Object, nav, _jumpList.Object, _search.Object);
             _operations = _operationsRaw;
         }
 
@@ -730,7 +731,7 @@ namespace VimCoreTest
         public void FindNextMatch1()
         {
             Create("foo bar");
-            _search.SetupGet(x => x.LastSearch).Returns(new SearchData(String.Empty, SearchKind.ForwardWithWrap, FindOptions.None));
+            _searchService.SetupGet(x => x.LastSearch).Returns(new SearchData(String.Empty, SearchKind.ForwardWithWrap, FindOptions.None));
             _statusUtil.Setup(x => x.OnError(Resources.NormalMode_NoPreviousSearch)).Verifiable();
             _operations.FindNextMatch(1);
             _statusUtil.Verify();
@@ -740,7 +741,7 @@ namespace VimCoreTest
         public void FindNextMatch2()
         {
             Create("foo bar");
-            _search.SetupGet(x => x.LastSearch).Returns(new SearchData("foo", SearchKind.ForwardWithWrap, FindOptions.None)).Verifiable();
+            _searchService.SetupGet(x => x.LastSearch).Returns(new SearchData("foo", SearchKind.ForwardWithWrap, FindOptions.None)).Verifiable();
             _search.Setup(x => x.FindNextMatch(2)).Returns(false).Verifiable();
             _statusUtil.Setup(x => x.OnError(Resources.NormalMode_PatternNotFound("foo"))).Verifiable();
             _operations.FindNextMatch(2);
@@ -752,7 +753,7 @@ namespace VimCoreTest
         public void FindNextMatch3()
         {
             Create("foo bar");
-            _search.SetupGet(x => x.LastSearch).Returns(new SearchData("foo", SearchKind.ForwardWithWrap, FindOptions.None)).Verifiable();
+            _searchService.SetupGet(x => x.LastSearch).Returns(new SearchData("foo", SearchKind.ForwardWithWrap, FindOptions.None)).Verifiable();
             _search.Setup(x => x.FindNextMatch(2)).Returns(true).Verifiable();
             _operations.FindNextMatch(2);
             _search.Verify();

@@ -9,7 +9,8 @@ open NullableUtil
 
 type internal IncrementalSearchData = {
     Start : ITrackingPoint;
-    SearchData : SearchData; 
+    Kind : SearchKind;
+    Pattern : string
     SearchResult : SearchResult;
     }
 
@@ -26,15 +27,18 @@ type internal IncrementalSearch
     let _currentSearchCancelled = Event<SearchData>()
 
     member private x.Begin kind = 
-        let searchData = _search.CreateSearchData StringUtil.empty kind
         let pos = (ViewUtil.GetCaretPoint _textView).Position
         let start = _textView.TextSnapshot.CreateTrackingPoint(pos, PointTrackingMode.Negative)
         let data = {
             Start = start
-            SearchData  = searchData
+            Pattern = StringUtil.empty
+            Kind = kind
             SearchResult = SearchNotFound }
         _data <- Some data
-        _currentSearchUpdated.Trigger (data.SearchData,SearchNotFound)
+
+        // Raise the event
+        let searchData = _search.CreateSearchData data.Pattern data.Kind 
+        _currentSearchUpdated.Trigger (searchData,SearchNotFound)
 
     /// Process the next key stroke in the incremental search
     member private x.ProcessCore (ki:KeyInput) = 
@@ -47,40 +51,38 @@ type internal IncrementalSearch
                 let point = data.Start.GetPoint _textView.TextSnapshot
                 ViewUtil.MoveCaretToPoint _textView point |> ignore
 
-            let doSearch (searchData:SearchData) =
+            let doSearch pattern = 
+                let searchData = _search.CreateSearchData pattern data.Kind
                 let ret =
-                    match searchData.Pattern.Length with
-                    | 0 -> None
-                    | _ -> 
+                    if StringUtil.isNullOrEmpty pattern then None
+                    else
                         let point = ViewUtil.GetCaretPoint _textView
-                        _search.FindNextResult searchData point _navigator
+                        _search.FindNextPattern pattern point data.Kind _navigator
 
                 match ret with
                 | Some(span) ->
                     ViewUtil.MoveCaretToPoint _textView span.Start |> ignore
                     _currentSearchUpdated.Trigger (searchData, SearchFound(span)) 
-                    _data <- Some { data with SearchData = searchData; SearchResult = SearchFound(span) }
+                    _data <- Some { data with Pattern = pattern; SearchResult = SearchFound(span) }
                 | None ->
                     resetView()
                     _currentSearchUpdated.Trigger (searchData,SearchNotFound)
-                    _data <- Some { data with SearchData = searchData; SearchResult = SearchNotFound }
+                    _data <- Some { data with Pattern = pattern; SearchResult = SearchNotFound }
 
-            let previousSearch = data.SearchData
-            let pattern = previousSearch.Pattern
-            let doSearchWithNewPattern newPattern = 
-                let searchData = { previousSearch with Pattern=newPattern}
-                doSearch searchData
+            let pattern = data.Pattern
+            let doSearchWithNewPattern newPattern =  doSearch newPattern
 
             let cancelSearch = 
                 _data <- None
-                _currentSearchCancelled.Trigger data.SearchData
+                _currentSearchCancelled.Trigger (_search.CreateSearchData data.Pattern data.Kind)
                 SearchCancelled
 
             match ki.Key with 
             | VimKey.EnterKey -> 
+                let searchData = _search.CreateSearchData data.Pattern data.Kind
                 _data <- None
-                _search.LastSearch <- previousSearch
-                _currentSearchCompleted.Trigger (data.SearchData,data.SearchResult)
+                _search.LastSearch <- searchData
+                _currentSearchCompleted.Trigger (searchData,data.SearchResult)
                 SearchComplete
             | VimKey.EscapeKey -> 
                 resetView()
@@ -129,7 +131,7 @@ type internal IncrementalSearch
         member x.WordNavigator = _navigator
         member x.CurrentSearch = 
             match _data with 
-            | Some(data) -> Some data.SearchData
+            | Some(data) -> Some (_search.CreateSearchData data.Pattern data.Kind)
             | None -> None
         member x.Process ki = x.ProcessCore ki
         member x.Begin kind = x.Begin kind
