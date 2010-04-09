@@ -22,6 +22,10 @@ type internal SearchService
         let options = x.CreateFindOptions kind 
         { Pattern = pattern; Kind = kind; Options = options }
 
+    member private x.CreateSearchDataWithOptions pattern kind extraOptions = 
+        let data = x.CreateSearchData pattern kind
+        { data with Options = data.Options ||| extraOptions }
+
     member private x.FindNextPattern pattern point kind nav = 
         let data = x.CreateSearchData pattern kind
         x.FindNextResult data point nav
@@ -41,6 +45,7 @@ type internal SearchService
         [<CLIEvent>]
         member x.LastSearchChanged = _lastSearchChanged.Publish
         member x.CreateSearchData pattern kind = x.CreateSearchData pattern kind
+        member x.CreateSearchDataWithOptions pattern kind extraOptions = x.CreateSearchDataWithOptions pattern kind extraOptions
         member x.FindNextPattern pattern point kind nav = x.FindNextPattern pattern point kind nav
         member x.FindNextResult searchData point nav = x.FindNextResult searchData point nav
 

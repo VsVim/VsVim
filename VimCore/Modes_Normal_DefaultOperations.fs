@@ -47,8 +47,7 @@ type internal DefaultOperations
             let count = max 0 (count-1)
             let word = span.GetText()
             let rec doFind count point = 
-                let searchData = _search.CreateSearchData word kind
-                let searchData = {searchData with Options = searchData.Options ||| extraOptions }
+                let searchData = _search.CreateSearchDataWithOptions word kind extraOptions
                 match (_search.FindNextResult searchData point _normalWordNav),count > 1 with
                 | Some(span),true -> doFind (count-1) span.End
                 | Some(span),false -> ViewUtil.MoveCaretToPoint _textView span.Start |> ignore
@@ -61,7 +60,7 @@ type internal DefaultOperations
         | None -> _statusUtil.OnError Resources.NormalMode_NoWordUnderCursor
         | Some(span) ->
             let extraOptions = if isWholeWord then FindOptions.WholeWord else FindOptions.None
-            let kind = if isWrap then SearchKind.ForwardWithWrap else SearchKind.Forward
+            let kind = if isWrap then SearchKind.BackwardWithWrap else SearchKind.Backward
             let count = max 0 (count-1)
             let getNextPoint (span:SnapshotSpan) = 
                 let pos = span.Start.Position-1
@@ -70,8 +69,7 @@ type internal DefaultOperations
                 else SnapshotUtil.GetStartPoint point.Snapshot
             let word = span.GetText()
             let rec doFind count point = 
-                let searchData = _search.CreateSearchData word kind
-                let searchData = {searchData with Options = searchData.Options ||| extraOptions }
+                let searchData = _search.CreateSearchDataWithOptions word kind extraOptions
                 match (_search.FindNextResult searchData point _normalWordNav),count > 1 with
                 | Some(span),true -> 
                     let nextPos = getNextPoint span

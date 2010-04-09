@@ -156,6 +156,9 @@ type ISearchService =
     /// Create a SearchData structure from the given input
     abstract CreateSearchData : pattern:string -> SearchKind -> SearchData
 
+    /// Create a SearchData structure from the given input with additional options
+    abstract CreateSearchDataWithOptions : pattern:string -> SearchKind -> FindOptions -> SearchData
+
     /// Find the next occurance of the pattern in the buffer starting at the 
     /// given SnapshotPoint
     abstract FindNextPattern : pattern:string -> SnapshotPoint -> SearchKind -> ITextStructureNavigator -> SnapshotSpan option
