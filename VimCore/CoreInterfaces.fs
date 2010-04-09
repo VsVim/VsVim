@@ -134,7 +134,7 @@ type SearchResult =
 
 type SearchData = {
     Pattern : string;
-    Kind: SearchKind;
+    Kind : SearchKind
     Options : FindOptions;
 }
 
@@ -143,10 +143,33 @@ type SearchProcessResult =
     | SearchCancelled 
     | SearchNeedMore
 
+/// Global information about searches within Vim
+type ISearchService = 
+
+    /// Last search performed
+    abstract LastSearch : SearchData with get, set
+
+    /// Raised when the LastSearch value changes
+    [<CLIEvent>]
+    abstract LastSearchChanged : IEvent<SearchData>
+
+    /// Create a SearchData structure from the given input
+    abstract CreateSearchData : pattern:string -> SearchKind -> SearchData
+
+    /// Find the next occurance of the pattern in the buffer starting at the 
+    /// given SnapshotPoint
+    abstract FindNextPattern : pattern:string -> SnapshotPoint -> SearchKind -> ITextStructureNavigator -> SnapshotSpan option
+
+    /// Find the next occurance of the pattern in the buffer starting at the 
+    /// given SnapshotPoint
+    abstract FindNextResult : SearchData -> SnapshotPoint -> ITextStructureNavigator -> SnapshotSpan option
+
 type IIncrementalSearch = 
     abstract InSearch : bool
     abstract CurrentSearch : SearchData option
-    abstract LastSearch : SearchData with get, set
+
+    /// ISearchInformation instance this incremental search is associated with
+    abstract SearchService : ISearchService
 
     /// The ITextStructureNavigator used for finding 'word' values in the ITextBuffer
     abstract WordNavigator : ITextStructureNavigator
@@ -309,7 +332,10 @@ and IVim =
 
     /// IChangeTracker for this IVim instance
     abstract ChangeTracker : IChangeTracker
-    
+
+    /// ISearchService for this IVim instance
+    abstract SearchService : ISearchService
+
     /// Is the VimRc loaded
     abstract IsVimRcLoaded : bool
 

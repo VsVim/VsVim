@@ -19,7 +19,7 @@ type internal VimBufferFactory
         _completionWindowBrokerFactoryService : IDisplayWindowBrokerFactoryService,
         _textSearchService : ITextSearchService,
         _textStructureNavigatorSelectorService : ITextStructureNavigatorSelectorService,
-        _tlcService : ITrackingLineColumnService ) =
+        _tlcService : ITrackingLineColumnService )=
 
     member x.CreateBuffer (vim:IVim) view = 
         let editOperations = _editorOperationsFactoryService.GetEditorOperations(view)
@@ -36,7 +36,7 @@ type internal VimBufferFactory
         let statusUtil = x.CreateStatusUtil bufferRaw 
         let wordNav = x.CreateTextStructureNavigator view.TextBuffer WordKind.NormalWord
         let broker = _completionWindowBrokerFactoryService.CreateDisplayWindowBroker view
-        let normalIncrementalSearch = Vim.Modes.Normal.IncrementalSearch(view, localSettings, _textSearchService, wordNav) :> IIncrementalSearch
+        let normalIncrementalSearch = Vim.Modes.Normal.IncrementalSearch(view, localSettings, wordNav, vim.SearchService) :> IIncrementalSearch
         let normalOpts = Modes.Normal.DefaultOperations(view,editOperations,_host, statusUtil, localSettings,wordNav,_textSearchService,jumpList, normalIncrementalSearch) :> Modes.Normal.IOperations
         let commandOpts = Modes.Command.DefaultOperations(view,editOperations,_host, statusUtil, jumpList, localSettings, vim.KeyMap) :> Modes.Command.IOperations
         let commandProcessor = Modes.Command.CommandProcessor(buffer, commandOpts, statusUtil) :> Modes.Command.ICommandProcessor
@@ -92,7 +92,8 @@ type internal Vim
         _registerMap : IRegisterMap,
         _markMap : IMarkMap,
         _keyMap : IKeyMap,
-        _changeTracker : IChangeTracker ) =
+        _changeTracker : IChangeTracker,
+        _search : ISearchService ) =
 
 
     static let _vimRcEnvironmentVariables = ["HOME";"VIM";"USERPROFILE"]
@@ -104,8 +105,10 @@ type internal Vim
         host : IVimHost,
         bufferFactoryService : IVimBufferFactory,
         tlcService : ITrackingLineColumnService,
-        [<ImportMany>] bufferCreationListeners : Lazy<IVimBufferCreationListener> seq ) =
+        [<ImportMany>] bufferCreationListeners : Lazy<IVimBufferCreationListener> seq,
+        [<Import>] search : ITextSearchService ) =
         let tracker = ChangeTracker() 
+        let globalSettings = GlobalSettings() :> IVimGlobalSettings
         let listeners = 
             new Lazy<IVimBufferCreationListener>( fun () -> tracker :> IVimBufferCreationListener)
             |> Seq.singleton
@@ -115,11 +118,12 @@ type internal Vim
             host,
             bufferFactoryService,
             listeners,
-            GlobalSettings() :> IVimGlobalSettings,
+            globalSettings,
             RegisterMap() :> IRegisterMap,
             MarkMap(tlcService) :> IMarkMap,
             KeyMap() :> IKeyMap,
-            tracker :> IChangeTracker )
+            tracker :> IChangeTracker,
+            SearchService(search, globalSettings) :> ISearchService)
 
     member x.CreateVimBufferCore view = 
         if _bufferMap.ContainsKey(view) then invalidArg "view" Resources.Vim_ViewAlreadyHasBuffer
@@ -170,6 +174,7 @@ type internal Vim
         member x.MarkMap = _markMap
         member x.KeyMap = _keyMap
         member x.ChangeTracker = _changeTracker
+        member x.SearchService = _search
         member x.IsVimRcLoaded = not (System.String.IsNullOrEmpty(_settings.VimRc))
         member x.RegisterMap = _registerMap 
         member x.Settings = _settings

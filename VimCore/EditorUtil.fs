@@ -116,6 +116,9 @@ module internal SnapshotLineUtil =
 /// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
 /// include any Vim specific logic
 module internal SnapshotPointUtil =
+
+    /// Get the position
+    let GetPosition (point:SnapshotPoint) = point.Position
    
     /// Get the ITextSnapshotLine containing the specified SnapshotPoint
     let GetContainingLine (point:SnapshotPoint) = point.GetContainingLine()

@@ -17,18 +17,16 @@ type internal IncrementalSearch
     (
         _textView : ITextView,
         _settings : IVimLocalSettings,
-        _search : ITextSearchService,
-        _navigator : ITextStructureNavigator ) =
+        _navigator : ITextStructureNavigator,
+        _search : ISearchService) =
 
     let mutable _data : IncrementalSearchData option = None
-    let mutable _lastSearch = { Pattern = System.String.Empty; Kind = SearchKind.ForwardWithWrap; Options = FindOptions.None }
     let _currentSearchUpdated = Event<SearchData * SearchResult>()
     let _currentSearchCompleted = Event<SearchData * SearchResult>()
     let _currentSearchCancelled = Event<SearchData>()
 
     member private x.Begin kind = 
-        let options = NormalModeUtil.CreateFindOptions kind _settings.GlobalSettings
-        let searchData = { Pattern = System.String.Empty; Kind = kind; Options = options }
+        let searchData = _search.CreateSearchData StringUtil.empty kind
         let pos = (ViewUtil.GetCaretPoint _textView).Position
         let start = _textView.TextSnapshot.CreateTrackingPoint(pos, PointTrackingMode.Negative)
         let data = {
@@ -53,10 +51,9 @@ type internal IncrementalSearch
                 let ret =
                     match searchData.Pattern.Length with
                     | 0 -> None
-                    | _ ->
-                        let findData = FindData(searchData.Pattern, _textView.TextSnapshot, searchData.Options, _navigator)
+                    | _ -> 
                         let point = ViewUtil.GetCaretPoint _textView
-                        _search.FindNext(point.Position, SearchKindUtil.IsWrap searchData.Kind, findData) |> toOption
+                        _search.FindNextResult searchData point _navigator
 
                 match ret with
                 | Some(span) ->
@@ -82,7 +79,7 @@ type internal IncrementalSearch
             match ki.Key with 
             | VimKey.EnterKey -> 
                 _data <- None
-                _lastSearch <- previousSearch
+                _search.LastSearch <- previousSearch
                 _currentSearchCompleted.Trigger (data.SearchData,data.SearchResult)
                 SearchComplete
             | VimKey.EscapeKey -> 
@@ -112,30 +109,28 @@ type internal IncrementalSearch
         let doSearch (searchData:SearchData) = 
             let caret = ViewUtil.GetCaretPoint _textView
             let next = getNextPoint caret searchData.Kind
-            let findData = FindData(searchData.Pattern, _textView.TextSnapshot, searchData.Options, _navigator)
-            let nullable = _search.FindNext(next.Position, SearchKindUtil.IsForward(searchData.Kind), findData)
-            if nullable.HasValue then
-                ViewUtil.MoveCaretToPoint _textView nullable.Value.Start |> ignore
-            nullable.HasValue
+            match _search.FindNextResult searchData next _navigator with
+            | Some(span) -> 
+                ViewUtil.MoveCaretToPoint _textView span.Start |> ignore
+                true
+            | None -> false
 
         let rec doSearchWithCount searchData count = 
             if not (doSearch searchData) then false
             elif count > 1 then doSearchWithCount searchData (count-1)
             else true
 
-        if System.String.IsNullOrEmpty(_lastSearch.Pattern) then false
-        else doSearchWithCount _lastSearch count
+        if System.String.IsNullOrEmpty(_search.LastSearch.Pattern) then false
+        else doSearchWithCount _search.LastSearch count
 
     interface IIncrementalSearch with
         member x.InSearch = Option.isSome _data
+        member x.SearchService = _search
         member x.WordNavigator = _navigator
         member x.CurrentSearch = 
             match _data with 
             | Some(data) -> Some data.SearchData
             | None -> None
-        member x.LastSearch 
-            with get() = _lastSearch 
-            and set value = _lastSearch <- value
         member x.Process ki = x.ProcessCore ki
         member x.Begin kind = x.Begin kind
         member x.FindNextMatch count = x.FindNextMatch count

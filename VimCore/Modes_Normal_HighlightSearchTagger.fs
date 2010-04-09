@@ -15,8 +15,8 @@ type internal HighlightIncrementalSearchTagger
     ( 
         _textBuffer : ITextBuffer,
         _settings : IVimGlobalSettings,
-        _search : IIncrementalSearch,
-        _searchService : ITextSearchService ) as this =
+        _wordNav : ITextStructureNavigator,
+        _search : ISearchService ) as this = 
 
     let _tagsChanged = new Event<System.EventHandler<SnapshotSpanEventArgs>, SnapshotSpanEventArgs>()
     let mutable _lastSearchData : SearchData option = None
@@ -29,14 +29,10 @@ type internal HighlightIncrementalSearchTagger
             let allSpan = SnapshotSpan(snapshot, 0, snapshot.Length)
             _tagsChanged.Trigger (this,SnapshotSpanEventArgs(allSpan))
 
-        _search.CurrentSearchCompleted
-        |> Event.add (fun (data,result) -> 
+        _search.LastSearchChanged 
+        |> Event.add (fun data -> 
             
-            _lastSearchData <- 
-                match result with
-                | SearchFound(_) -> Some(data)
-                | SearchNotFound -> None
-
+            _lastSearchData <- Some data
             raiseAllChanged() )
 
         // Up cast here to work around the F# bug which prevents accessing a CLIEvent from
@@ -46,20 +42,18 @@ type internal HighlightIncrementalSearchTagger
         |> Event.add (fun _ -> raiseAllChanged())
         
     member private x.GetTagsCore (col:NormalizedSnapshotSpanCollection) = 
-        let options = NormalModeUtil.CreateFindOptions SearchKind.Forward _settings
+        let searchData = _search.LastSearch
         let withSpan pattern (span:SnapshotSpan) =  
-            span.Start.Position
-            |> Seq.unfold (fun pos -> 
-                if pos >= span.Length then None
+            span.Start
+            |> Seq.unfold (fun point -> 
+                if point.Position >= span.Length then None
                 else
-                    let findData = FindData(pattern, _textBuffer.CurrentSnapshot, options, _search.WordNavigator)
-                    match _searchService.FindNext(pos, false, findData) with
-                    | Null -> None
-                    | HasValue(foundSpan) -> 
-                        if foundSpan.Start.Position <= span.End.Position then Some(foundSpan, foundSpan.End.Position)
+                    match _search.FindNextResult searchData point _wordNav with
+                    | None -> None
+                    | Some(foundSpan) -> 
+                        if foundSpan.Start.Position <= span.End.Position then Some(foundSpan, foundSpan.End)
                         else None )
                     
-        let searchData = _search.LastSearch
         if StringUtil.isNullOrEmpty searchData.Pattern then Seq.empty
         else 
             let tag = TextMarkerTag("vsvim_highlightsearch")
@@ -84,14 +78,13 @@ type internal HighlightIncrementalSearchTagger
 [<TagType(typeof<TextMarkerTag>)>]
 type internal HighlightIncrementalSearchTaggerProvider
     [<ImportingConstructor>]
-    ( _vim : IVim, _searchService : ITextSearchService ) = 
+    ( _vim : IVim ) = 
 
     interface ITaggerProvider with 
         member x.CreateTagger<'T when 'T :> ITag> (textBuffer) = 
             match _vim.GetBufferForBuffer textBuffer with
             | None -> null
             | Some(buffer) ->
-                let normal = buffer.NormalMode
-                let search = normal.IncrementalSearch
-                let tagger = HighlightIncrementalSearchTagger(textBuffer, buffer.Settings.GlobalSettings, search, _searchService)
+                let nav = buffer.NormalMode.IncrementalSearch.WordNavigator
+                let tagger = HighlightIncrementalSearchTagger(textBuffer, buffer.Settings.GlobalSettings, nav, _vim.SearchService)
                 tagger :> obj :?> ITagger<'T>

@@ -217,10 +217,11 @@ type internal DefaultOperations
         member x.JumpNext count = x.JumpCore count (fun () -> _jumpList.MoveNext())
         member x.JumpPrevious count = x.JumpCore count (fun() -> _jumpList.MovePrevious())
         member x.FindNextMatch count =
-            if StringUtil.isNullOrEmpty _incrementalSearch.LastSearch.Pattern then 
+            let last = _incrementalSearch.SearchService.LastSearch
+            if StringUtil.isNullOrEmpty last.Pattern then 
                 _statusUtil.OnError Resources.NormalMode_NoPreviousSearch
             elif not (_incrementalSearch.FindNextMatch count) then
-                _statusUtil.OnError (Resources.NormalMode_PatternNotFound _incrementalSearch.LastSearch.Pattern)
+                _statusUtil.OnError (Resources.NormalMode_PatternNotFound last.Pattern)
     
         member x.GoToLineOrFirst count =
             let line =

@@ -5,6 +5,9 @@ namespace Vim
 
 module internal StringUtil =
 
+    [<CompiledName("Empty")>]
+    let empty = System.String.Empty
+
     [<CompiledName("FindFirst")>]
     let findFirst (input:seq<char>) index del =
         let found = 
