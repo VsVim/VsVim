@@ -44,15 +44,20 @@ type internal DefaultOperations
         | Some(span) ->
             let extraOptions = if isWholeWord then FindOptions.WholeWord else FindOptions.None
             let kind = if isWrap then SearchKind.ForwardWithWrap else SearchKind.Forward
-            let count = max 0 (count-1)
             let word = span.GetText()
+            let searchData = _search.CreateSearchDataWithOptions word kind extraOptions
+            let count = max 0 (count-1)
+
+            // Repeat the search at the given point while there is a valid position and
+            // still more "count" times to do it
             let rec doFind count point = 
-                let searchData = _search.CreateSearchDataWithOptions word kind extraOptions
                 match (_search.FindNextResult searchData point _normalWordNav),count > 1 with
                 | Some(span),true -> doFind (count-1) span.End
                 | Some(span),false -> ViewUtil.MoveCaretToPoint _textView span.Start |> ignore
                 | _ -> ()
+
             doFind count span.End
+            _search.LastSearch <- searchData
 
     member x.MoveToPreviousWordCore isWrap isWholeWord count = 
         let point = ViewUtil.GetCaretPoint _textView
@@ -61,15 +66,18 @@ type internal DefaultOperations
         | Some(span) ->
             let extraOptions = if isWholeWord then FindOptions.WholeWord else FindOptions.None
             let kind = if isWrap then SearchKind.BackwardWithWrap else SearchKind.Backward
+            let word = span.GetText()
+            let searchData = _search.CreateSearchDataWithOptions word kind extraOptions
             let count = max 0 (count-1)
+
+            // Get the next point given the previous span 
             let getNextPoint (span:SnapshotSpan) = 
                 let pos = span.Start.Position-1
                 if pos >= 0 then span.Start.Subtract(1)
                 elif isWrap then SnapshotUtil.GetEndPoint point.Snapshot
                 else SnapshotUtil.GetStartPoint point.Snapshot
-            let word = span.GetText()
+
             let rec doFind count point = 
-                let searchData = _search.CreateSearchDataWithOptions word kind extraOptions
                 match (_search.FindNextResult searchData point _normalWordNav),count > 1 with
                 | Some(span),true -> 
                     let nextPos = getNextPoint span
@@ -77,6 +85,7 @@ type internal DefaultOperations
                 | Some(span),false -> ViewUtil.MoveCaretToPoint _textView span.Start |> ignore
                 | _ -> ()
             doFind count (getNextPoint span)
+            _search.LastSearch <- searchData
 
 
     member x.GoToLineCore line =

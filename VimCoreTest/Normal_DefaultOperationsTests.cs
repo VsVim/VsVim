@@ -557,6 +557,28 @@ namespace VimCoreTest
             Assert.AreEqual(_view.GetLine(1).Start, _view.GetCaretPoint());
         }
 
+        [Test, Description("Moving to next occurance of a word should update the LastSearch")]
+        public void MoveToNextOccuranceOfWordAtCursor8()
+        {
+            Create("foo bar", "foo");
+            _operations.MoveToNextOccuranceOfWordAtCursor(true, 1);
+            Assert.AreEqual(_view.GetLine(1).Start, _view.Caret.Position.BufferPosition);
+            Assert.AreEqual("foo", _searchService.LastSearch.Pattern);
+            Assert.IsTrue(FindOptions.WholeWord == (FindOptions.WholeWord & _searchService.LastSearch.Options));
+        }
+
+        [Test, Description("When there is no word under the cursor, don't update the LastSearch")]
+        public void MoveToNextOccuranceOfWordAtCursor9()
+        {
+            Create("  foo bar baz");
+            var data  = _searchService.CreateSearchData("foo", SearchKind.ForwardWithWrap);
+            _searchService.LastSearch = data;
+            _statusUtil.Setup(x => x.OnError(Resources.NormalMode_NoWordUnderCursor)).Verifiable();
+            _operations.MoveToNextOccuranceOfWordAtCursor(true, 1);
+            _statusUtil.Verify();
+            Assert.AreEqual(data, _searchService.LastSearch);
+        }
+
         [Test]
         public void MoveToPreviousOccuranceOfWordAtCursor1()
         {
@@ -591,6 +613,29 @@ namespace VimCoreTest
             _view.MoveCaretTo(_view.GetLine(2).Start);
             _operations.MoveToPreviousOccuranceOfWordAtCursor(true, 1);
             Assert.AreEqual(0, _view.GetCaretPoint().Position);
+        }
+
+        [Test]
+        public void MoveToPreviousOccuranceOfWordAtCursor5()
+        {
+            Create("foo bar", "again foo", "foo");
+            _view.MoveCaretTo(_view.GetLine(2).Start.Position);
+            _operations.MoveToPreviousOccuranceOfWordAtCursor(false, 3);
+            Assert.AreEqual(0, _view.Caret.Position.BufferPosition.Position);
+            Assert.AreEqual("foo", _searchService.LastSearch.Pattern);
+            Assert.AreEqual(SearchKind.Backward, _searchService.LastSearch.Kind);
+            Assert.IsTrue(FindOptions.WholeWord == (FindOptions.WholeWord & _searchService.LastSearch.Options));
+        }
+
+        [Test]
+        public void MoveToPreviousOccuranceOfWordAtCursor6()
+        {
+            Create("    foo bar");
+            var data = _searchService.CreateSearchData("foo", SearchKind.ForwardWithWrap);
+            _searchService.LastSearch = data;
+            _statusUtil.Setup(x => x.OnError(Resources.NormalMode_NoWordUnderCursor)).Verifiable();
+            _operations.MoveToPreviousOccuranceOfWordAtCursor(true, 1);
+            Assert.AreEqual(data, _searchService.LastSearch);
         }
 
         [Test]
