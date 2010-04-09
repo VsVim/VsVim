@@ -319,13 +319,17 @@ type internal CommonOperations
             _textView.Caret.EnsureVisible()
     
         member x.ScrollPages dir count = 
-            let func =
+            let func,getLine =
                 match dir with
-                | ScrollDirection.Down -> _operations.ScrollPageDown
-                | ScrollDirection.Up -> _operations.ScrollPageUp
+                | ScrollDirection.Down -> (_operations.ScrollPageDown, fun () -> _textView.TextViewLines.LastVisibleLine)
+                | ScrollDirection.Up -> (_operations.ScrollPageUp, fun () -> _textView.TextViewLines.FirstVisibleLine)
                 | _ -> failwith "Invalid enum value"
             for i = 1 to count do
                 func()
+
+            // Scrolling itself does not move the caret.  Must be manually moved
+            let line = getLine()
+            _textView.Caret.MoveTo(line) |> ignore
 
         member x.DeleteSpan span motionKind opKind reg = x.DeleteSpan span motionKind opKind reg
     
