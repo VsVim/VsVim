@@ -100,7 +100,7 @@ namespace VsVim
             }
 
             var buffer = opt.Value;
-            var filter = new VsCommandFilter(buffer, vsView);
+            var filter = new VsCommandFilter(buffer, vsView, _serviceProvider);
             _filterMap.Add(buffer, filter);
         }
     }

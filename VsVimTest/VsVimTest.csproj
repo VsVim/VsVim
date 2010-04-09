@@ -143,6 +143,7 @@
       <DependentUpon>TestResources.resx</DependentUpon>
     </Compile>
     <Compile Include="Utils\CharPointer.cs" />
+    <Compile Include="VsCommandFilterTest.cs" />
     <Compile Include="VsVimHostTest.cs" />
   </ItemGroup>
   <ItemGroup>
