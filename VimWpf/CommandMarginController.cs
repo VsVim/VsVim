@@ -78,7 +78,7 @@ namespace Vim.UI.Wpf
                         if (search.InSearch && search.CurrentSearch.HasValue())
                         {
                             var data = search.CurrentSearch.Value;
-                            _margin.StatusLine = "/" + data.Pattern;
+                            _margin.StatusLine = "/" + data.Text.RawText;
                         }
                         else
                         {

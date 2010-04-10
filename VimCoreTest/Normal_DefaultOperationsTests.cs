@@ -563,15 +563,14 @@ namespace VimCoreTest
             Create("foo bar", "foo");
             _operations.MoveToNextOccuranceOfWordAtCursor(true, 1);
             Assert.AreEqual(_view.GetLine(1).Start, _view.Caret.Position.BufferPosition);
-            Assert.AreEqual("foo", _searchService.LastSearch.Pattern);
-            Assert.IsTrue(SearchOptions.MatchWord == (SearchOptions.MatchWord & _searchService.LastSearch.Options));
+            Assert.AreEqual(SearchText.NewWholeWord("foo"), _searchService.LastSearch.Text);
         }
 
         [Test, Description("When there is no word under the cursor, don't update the LastSearch")]
         public void MoveToNextOccuranceOfWordAtCursor9()
         {
             Create("  foo bar baz");
-            var data = new SearchData("foo", SearchKind.ForwardWithWrap, SearchOptions.None);
+            var data = new SearchData(SearchText.NewPattern("foo"), SearchKind.ForwardWithWrap, SearchOptions.None);
             _searchService.LastSearch = data;
             _statusUtil.Setup(x => x.OnError(Resources.NormalMode_NoWordUnderCursor)).Verifiable();
             _operations.MoveToNextOccuranceOfWordAtCursor(true, 1);
@@ -622,16 +621,14 @@ namespace VimCoreTest
             _view.MoveCaretTo(_view.GetLine(2).Start.Position);
             _operations.MoveToPreviousOccuranceOfWordAtCursor(false, 3);
             Assert.AreEqual(0, _view.Caret.Position.BufferPosition.Position);
-            Assert.AreEqual("foo", _searchService.LastSearch.Pattern);
-            Assert.AreEqual(SearchKind.Backward, _searchService.LastSearch.Kind);
-            Assert.IsTrue(SearchOptions.MatchWord == (SearchOptions.MatchWord & _searchService.LastSearch.Options));
+            Assert.AreEqual(SearchText.NewWholeWord("foo"), _searchService.LastSearch.Text);
         }
 
         [Test]
         public void MoveToPreviousOccuranceOfWordAtCursor6()
         {
             Create("    foo bar");
-            var data = new SearchData("foo", SearchKind.ForwardWithWrap, SearchOptions.None);
+            var data = new SearchData(SearchText.NewPattern("foo"), SearchKind.ForwardWithWrap, SearchOptions.None);
             _searchService.LastSearch = data;
             _statusUtil.Setup(x => x.OnError(Resources.NormalMode_NoWordUnderCursor)).Verifiable();
             _operations.MoveToPreviousOccuranceOfWordAtCursor(true, 1);
@@ -776,7 +773,7 @@ namespace VimCoreTest
         public void FindNextMatch1()
         {
             Create("foo bar");
-            _searchService.LastSearch = new SearchData(String.Empty, SearchKind.ForwardWithWrap, SearchOptions.None);
+            _searchService.LastSearch = new SearchData(SearchText.NewPattern(String.Empty), SearchKind.ForwardWithWrap, SearchOptions.None);
             _statusUtil.Setup(x => x.OnError(Resources.NormalMode_NoPreviousSearch)).Verifiable();
             _operations.FindNextMatch(1);
             _statusUtil.Verify();
@@ -786,7 +783,7 @@ namespace VimCoreTest
         public void FindNextMatch2()
         {
             Create("foo bar");
-            _searchService.LastSearch = new SearchData("foo", SearchKind.ForwardWithWrap, SearchOptions.None);
+            _searchService.LastSearch = new SearchData(SearchText.NewPattern("foo"), SearchKind.ForwardWithWrap, SearchOptions.None);
             _search.Setup(x => x.FindNextMatch(2)).Returns(false).Verifiable();
             _statusUtil.Setup(x => x.OnError(Resources.NormalMode_PatternNotFound("foo"))).Verifiable();
             _operations.FindNextMatch(2);
@@ -798,7 +795,7 @@ namespace VimCoreTest
         public void FindNextMatch3()
         {
             Create("foo bar");
-            _searchService.LastSearch = new SearchData("foo", SearchKind.ForwardWithWrap, SearchOptions.None);
+            _searchService.LastSearch = new SearchData(SearchText.NewPattern("foo"), SearchKind.ForwardWithWrap, SearchOptions.None);
             _search.Setup(x => x.FindNextMatch(2)).Returns(true).Verifiable();
             _operations.FindNextMatch(2);
             _search.Verify();

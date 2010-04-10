@@ -91,6 +91,28 @@ namespace VimCoreTest
 
         #endregion
 
+        #region SearchText
+
+        internal static Vim.SearchText.Pattern AsPattern(this SearchText text)
+        {
+            Assert.IsTrue(text.IsPattern);
+            return (SearchText.Pattern)text;
+        }
+
+        internal static Vim.SearchText.StraightText AsStraightText(this SearchText text)
+        {
+            Assert.IsTrue(text.IsStraightText);
+            return (SearchText.StraightText)text;
+        }
+
+        internal static Vim.SearchText.WholeWord AsWholeWord(this SearchText text)
+        {
+            Assert.IsTrue(text.IsWholeWord);
+            return (SearchText.WholeWord)text;
+        }
+
+        #endregion
+
         #region NormalModeCommand
 
         internal static NormalModeCommand.RepeatableCommand AsRepeatabelCommand(this NormalModeCommand command)
