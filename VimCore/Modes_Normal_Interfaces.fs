@@ -38,16 +38,10 @@ type IOperations =
     abstract GoToLineOrLast : int option -> unit
 
     /// Move to the next occurance of the word under the cursor
-    abstract MoveToNextOccuranceOfWordAtCursor : isWrap:bool -> count:int -> unit
-
-    /// Move to the previous occurance of the word under the cursor
-    abstract MoveToPreviousOccuranceOfWordAtCursor : isWrap:bool -> count:int -> unit
+    abstract MoveToNextOccuranceOfWordAtCursor : SearchKind -> count:int -> unit
 
     /// Move to the next occurance of the word under the cursor
-    abstract MoveToNextOccuranceOfPartialWordAtCursor : count:int -> unit
-
-    /// Move to the previous occurance of the word under the cursor
-    abstract MoveToPreviousOccuranceOfPartialWordAtCursor : count:int -> unit
+    abstract MoveToNextOccuranceOfPartialWordAtCursor : SearchKind -> count:int -> unit
 
     /// Jump to the next item in the jump list
     abstract JumpNext : count:int -> unit

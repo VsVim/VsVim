@@ -214,8 +214,8 @@ type internal NormalMode
             | 'p' -> _operations.PasteAfterCursor reg.StringValue 1 reg.Value.OperationKind true |> ignore
             | 'P' -> _operations.PasteBeforeCursor reg.StringValue 1 reg.Value.OperationKind true |> ignore
             | '_' -> _operations.EditorOperations.MoveToLastNonWhiteSpaceCharacter(false)
-            | '*' -> _operations.MoveToNextOccuranceOfPartialWordAtCursor count
-            | '#' -> _operations.MoveToPreviousOccuranceOfPartialWordAtCursor count
+            | '*' -> _operations.MoveToNextOccuranceOfPartialWordAtCursor SearchKind.ForwardWithWrap count
+            | '#' -> _operations.MoveToNextOccuranceOfPartialWordAtCursor SearchKind.BackwardWithWrap count
             | 'g' -> _operations.GoToLineOrFirst countOpt
             | 't' -> _operations.GoToNextTab count
             | 'T' -> _operations.GoToPreviousTab count
@@ -350,8 +350,8 @@ type internal NormalMode
             yield (InputUtil.CharToKeyInput('P'), (fun count reg -> _operations.PasteBeforeCursor reg.StringValue count reg.Value.OperationKind false))
             yield (InputUtil.CharToKeyInput('0'), (fun _ _ -> _operations.EditorOperations.MoveToStartOfLine(false))) 
             yield (InputUtil.CharToKeyInput('n'), (fun count _ -> _operations.FindNextMatch count))
-            yield (InputUtil.CharToKeyInput('*'), (fun count _ -> _operations.MoveToNextOccuranceOfWordAtCursor true count))
-            yield (InputUtil.CharToKeyInput('#'), (fun count _ -> _operations.MoveToPreviousOccuranceOfWordAtCursor true count))
+            yield (InputUtil.CharToKeyInput('*'), (fun count _ -> _operations.MoveToNextOccuranceOfWordAtCursor SearchKind.ForwardWithWrap count))
+            yield (InputUtil.CharToKeyInput('#'), (fun count _ -> _operations.MoveToNextOccuranceOfWordAtCursor SearchKind.BackwardWithWrap count))
             yield (InputUtil.CharToKeyInput('u'), (fun count _ -> _bufferData.VimHost.Undo this.TextBuffer count))
             yield (InputUtil.CharToKeyInput('D'), (fun count reg -> _operations.DeleteLinesFromCursor count reg))
             yield (InputUtil.CharAndModifiersToKeyInput 'r' KeyModifiers.Control, (fun count _ -> _bufferData.VimHost.Redo this.TextBuffer count))

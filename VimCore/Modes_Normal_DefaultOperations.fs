@@ -37,58 +37,28 @@ type internal DefaultOperations
                 let ret = x.CommonImpl.NavigateToPoint (VirtualSnapshotPoint(point))
                 if not ret then _host.Beep()
 
-    member private x.MoveToNextWordCore isWrap isWholeWord count = 
+    member private x.MoveToNextWordCore kind count isWholeWord = 
         let point = ViewUtil.GetCaretPoint _textView
         match TssUtil.FindCurrentFullWordSpan point WordKind.NormalWord with
         | None -> _statusUtil.OnError Resources.NormalMode_NoWordUnderCursor
         | Some(span) ->
+
             // Build up the SearchData structure
             let word = span.GetText()
             let text = if isWholeWord then WholeWord(word) else StraightText(word)
-            let kind = if isWrap then SearchKind.ForwardWithWrap else SearchKind.Forward
             let data = {Text=text; Kind = kind; Options = SearchOptions.AllowIgnoreCase }
-            let count = max 0 (count-1)
 
-            // Repeat the search at the given point while there is a valid position and
-            // still more "count" times to do it
-            let rec doFind count point = 
-                match (_search.FindNext data point _normalWordNav),count > 1 with
-                | Some(span),true -> doFind (count-1) span.End
-                | Some(span),false -> ViewUtil.MoveCaretToPoint _textView span.Start |> ignore
-                | _ -> ()
+            // When forward the search will be starting on the current word so it will 
+            // always match.  Without modification a count of 1 would simply find the word 
+            // under the cursor.  Increment the count by 1 here so that it will find
+            // the current word as the 0th match (so to speak)
+            let count = if SearchKindUtil.IsForward kind then count + 1 else count 
 
-            doFind count span.End
+            match _search.FindNextMultiple data point _normalWordNav count with
+            | Some(span) -> ViewUtil.MoveCaretToPoint _textView span.Start |> ignore
+            | None -> ()
+
             _search.LastSearch <- data
-
-    member x.MoveToPreviousWordCore isWrap isWholeWord count = 
-        let point = ViewUtil.GetCaretPoint _textView
-        match TssUtil.FindCurrentFullWordSpan point WordKind.NormalWord with
-        | None -> _statusUtil.OnError Resources.NormalMode_NoWordUnderCursor
-        | Some(span) ->
-            // Build up the SearchData structure
-            let word = span.GetText()
-            let text = if isWholeWord then WholeWord(word) else StraightText(word)
-            let kind = if isWrap then SearchKind.BackwardWithWrap else SearchKind.Backward
-            let data = {Text=text; Kind=kind; Options=SearchOptions.AllowIgnoreCase }
-            let count = max 0 (count-1)
-
-            // Get the next point given the previous span 
-            let getNextPoint (span:SnapshotSpan) = 
-                let pos = span.Start.Position-1
-                if pos >= 0 then span.Start.Subtract(1)
-                elif isWrap then SnapshotUtil.GetEndPoint point.Snapshot
-                else SnapshotUtil.GetStartPoint point.Snapshot
-
-            let rec doFind count point = 
-                match (_search.FindNext data point _normalWordNav),count > 1 with
-                | Some(span),true -> 
-                    let nextPos = getNextPoint span
-                    doFind (count-1) nextPos 
-                | Some(span),false -> ViewUtil.MoveCaretToPoint _textView span.Start |> ignore
-                | _ -> ()
-            doFind count (getNextPoint span)
-            _search.LastSearch <- data
-
 
     member x.GoToLineCore line =
         let snapshot = _textView.TextSnapshot
@@ -211,18 +181,8 @@ type internal DefaultOperations
             | Vim.Modes.Succeeded -> ()
             | Vim.Modes.Failed(msg) -> _statusUtil.OnError msg
 
-        member x.MoveToNextOccuranceOfWordAtCursor isWrap count = 
-            x.MoveToNextWordCore isWrap true count
-
-        member x.MoveToPreviousOccuranceOfWordAtCursor isWrap count = 
-            x.MoveToPreviousWordCore isWrap true count
-
-        member x.MoveToNextOccuranceOfPartialWordAtCursor count = 
-            x.MoveToNextWordCore true false count
-    
-        member x.MoveToPreviousOccuranceOfPartialWordAtCursor count =
-            x.MoveToPreviousWordCore true false count
-
+        member x.MoveToNextOccuranceOfWordAtCursor kind count =  x.MoveToNextWordCore kind count true
+        member x.MoveToNextOccuranceOfPartialWordAtCursor kind count = x.MoveToNextWordCore kind count false
         member x.JumpNext count = x.JumpCore count (fun () -> _jumpList.MoveNext())
         member x.JumpPrevious count = x.JumpCore count (fun() -> _jumpList.MovePrevious())
         member x.FindNextMatch count =

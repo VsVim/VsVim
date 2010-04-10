@@ -1649,7 +1649,7 @@ namespace VimCoreTest
         public void NextWord1()
         {
             CreateBuffer("foo bar");
-            _operations.Setup(x => x.MoveToNextOccuranceOfWordAtCursor(true, 1)).Verifiable();
+            _operations.Setup(x => x.MoveToNextOccuranceOfWordAtCursor(SearchKind.ForwardWithWrap, 1)).Verifiable();
             _mode.Process("*");
             _operations.Verify();
         }
@@ -1658,7 +1658,7 @@ namespace VimCoreTest
         public void NextWord2()
         {
             CreateBuffer("foo bar");
-            _operations.Setup(x => x.MoveToNextOccuranceOfWordAtCursor(true, 4)).Verifiable();
+            _operations.Setup(x => x.MoveToNextOccuranceOfWordAtCursor(SearchKind.ForwardWithWrap, 4)).Verifiable();
             _mode.Process("4*");
             _operations.Verify();
         }
@@ -1667,7 +1667,7 @@ namespace VimCoreTest
         public void PreviousWord1()
         {
             CreateBuffer("foo bar");
-            _operations.Setup(x => x.MoveToPreviousOccuranceOfWordAtCursor(true, 1)).Verifiable();
+            _operations.Setup(x => x.MoveToNextOccuranceOfWordAtCursor(SearchKind.BackwardWithWrap, 1)).Verifiable();
             _mode.Process("#");
             _operations.Verify();
         }
@@ -1676,7 +1676,7 @@ namespace VimCoreTest
         public void PreviousWord2()
         {
             CreateBuffer("foo bar");
-            _operations.Setup(x => x.MoveToPreviousOccuranceOfWordAtCursor(true, 4)).Verifiable();
+            _operations.Setup(x => x.MoveToNextOccuranceOfWordAtCursor(SearchKind.BackwardWithWrap, 4)).Verifiable();
             _mode.Process("4#");
             _operations.Verify();
         }
@@ -1685,7 +1685,7 @@ namespace VimCoreTest
         public void NextPartialWord1()
         {
             CreateBuffer("foo bar");
-            _operations.Setup(x => x.MoveToNextOccuranceOfPartialWordAtCursor(1)).Verifiable();
+            _operations.Setup(x => x.MoveToNextOccuranceOfPartialWordAtCursor(SearchKind.ForwardWithWrap, 1)).Verifiable();
             _mode.Process("g*");
             _operations.Verify();
         }
@@ -1694,7 +1694,7 @@ namespace VimCoreTest
         public void PreviousPartialWord1()
         {
             CreateBuffer("foo bar");
-            _operations.Setup(x => x.MoveToPreviousOccuranceOfPartialWordAtCursor(1)).Verifiable();
+            _operations.Setup(x => x.MoveToNextOccuranceOfPartialWordAtCursor(SearchKind.BackwardWithWrap, 1)).Verifiable();
             _mode.Process("g#");
             _operations.Verify();
         }

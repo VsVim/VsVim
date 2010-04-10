@@ -504,7 +504,7 @@ namespace VimCoreTest
         {
             Create("  foo bar baz");
             _statusUtil.Setup(x => x.OnError(Resources.NormalMode_NoWordUnderCursor)).Verifiable();
-            _operations.MoveToNextOccuranceOfWordAtCursor(true, 1);
+            _operations.MoveToNextOccuranceOfWordAtCursor(SearchKind.ForwardWithWrap, 1);
             _statusUtil.Verify();
         }
 
@@ -512,7 +512,7 @@ namespace VimCoreTest
         public void MoveToNextOccuranceOfWordAtCursor2()
         {
             Create("foo bar", "foo");
-            _operations.MoveToNextOccuranceOfWordAtCursor(true, 1);
+            _operations.MoveToNextOccuranceOfWordAtCursor(SearchKind.ForwardWithWrap, 1);
             Assert.AreEqual(_view.GetLine(1).Start, _view.Caret.Position.BufferPosition);
         }
 
@@ -520,7 +520,7 @@ namespace VimCoreTest
         public void MoveToNextOccuranceOfWordAtCursor3()
         {
             Create("foo bar", "baz foo");
-            _operations.MoveToNextOccuranceOfWordAtCursor(false, 1);
+            _operations.MoveToNextOccuranceOfWordAtCursor(SearchKind.ForwardWithWrap, 1);
             Assert.AreEqual(_view.GetLine(1).Start.Add(4), _view.Caret.Position.BufferPosition);
         }
 
@@ -528,7 +528,7 @@ namespace VimCoreTest
         public void MoveToNextOccuranceOfWordAtCursor4()
         {
             Create("fuz bar", "baz foo");
-            _operations.MoveToNextOccuranceOfWordAtCursor(false, 1);
+            _operations.MoveToNextOccuranceOfWordAtCursor(SearchKind.ForwardWithWrap, 1);
             Assert.AreEqual(0, _view.Caret.Position.BufferPosition.Position);
         }
 
@@ -536,8 +536,8 @@ namespace VimCoreTest
         public void MoveToNextOccuranceOfWordAtCursor5()
         {
             Create("foo bar foo", "foo");
-            _operations.MoveToNextOccuranceOfWordAtCursor(false, 3);
-            Assert.AreEqual(_view.GetLine(1).Start, _view.Caret.Position.BufferPosition);
+            _operations.MoveToNextOccuranceOfWordAtCursor(SearchKind.ForwardWithWrap, 3);
+            Assert.AreEqual(_view.GetLine(0).Start, _view.Caret.Position.BufferPosition);
         }
 
         [Test]
@@ -545,7 +545,7 @@ namespace VimCoreTest
         {
             Create("foo bar baz", "foo");
             _view.MoveCaretTo(_view.GetLine(1).Start.Position);
-            _operations.MoveToNextOccuranceOfWordAtCursor(true, 1);
+            _operations.MoveToNextOccuranceOfWordAtCursor(SearchKind.ForwardWithWrap, 1);
             Assert.AreEqual(0, _view.Caret.Position.BufferPosition.Position);
         }
 
@@ -553,7 +553,7 @@ namespace VimCoreTest
         public void MoveToNextOccuranceOfWordAtCursor7()
         {
             Create("foo foobar baz", "foo");
-            _operations.MoveToNextOccuranceOfWordAtCursor(true, 1);
+            _operations.MoveToNextOccuranceOfWordAtCursor(SearchKind.ForwardWithWrap, 1);
             Assert.AreEqual(_view.GetLine(1).Start, _view.GetCaretPoint());
         }
 
@@ -561,7 +561,7 @@ namespace VimCoreTest
         public void MoveToNextOccuranceOfWordAtCursor8()
         {
             Create("foo bar", "foo");
-            _operations.MoveToNextOccuranceOfWordAtCursor(true, 1);
+            _operations.MoveToNextOccuranceOfWordAtCursor(SearchKind.ForwardWithWrap, 1);
             Assert.AreEqual(_view.GetLine(1).Start, _view.Caret.Position.BufferPosition);
             Assert.AreEqual(SearchText.NewWholeWord("foo"), _searchService.LastSearch.Text);
         }
@@ -573,65 +573,65 @@ namespace VimCoreTest
             var data = new SearchData(SearchText.NewPattern("foo"), SearchKind.ForwardWithWrap, SearchOptions.None);
             _searchService.LastSearch = data;
             _statusUtil.Setup(x => x.OnError(Resources.NormalMode_NoWordUnderCursor)).Verifiable();
-            _operations.MoveToNextOccuranceOfWordAtCursor(true, 1);
+            _operations.MoveToNextOccuranceOfWordAtCursor(SearchKind.ForwardWithWrap, 1);
             _statusUtil.Verify();
             Assert.AreEqual(data, _searchService.LastSearch);
         }
 
         [Test]
-        public void MoveToPreviousOccuranceOfWordAtCursor1()
+        public void MoveToNextOccuranceOfWordAtCursor10()
         {
             Create("foo bar", "foo");
             _view.MoveCaretTo(_view.GetLine(1).Start.Position);
-            _operations.MoveToPreviousOccuranceOfWordAtCursor(false, 1);
+            _operations.MoveToNextOccuranceOfWordAtCursor(SearchKind.BackwardWithWrap, 1);
             Assert.AreEqual(0, _view.Caret.Position.BufferPosition.Position);
         }
 
         [Test]
-        public void MoveToPreviousOccuranceOfWordAtCursor2()
+        public void MoveToNextOccuranceOfWordAtCursor11()
         {
             Create("foo bar", "again foo", "foo");
             _view.MoveCaretTo(_view.GetLine(2).Start.Position);
-            _operations.MoveToPreviousOccuranceOfWordAtCursor(false, 3);
+            _operations.MoveToNextOccuranceOfWordAtCursor(SearchKind.BackwardWithWrap, 2);
             Assert.AreEqual(0, _view.Caret.Position.BufferPosition.Position);
         }
 
         [Test]
-        public void MoveToPreviousOccuranceOfWordAtCursor3()
+        public void MoveToNextOccuranceOfWordAtCursor12()
         {
             Create("foo bar", "again foo", "foo");
             _view.MoveCaretTo(_view.GetLine(2).Start.Position);
-            _operations.MoveToPreviousOccuranceOfWordAtCursor(true, 4);
+            _operations.MoveToNextOccuranceOfWordAtCursor(SearchKind.BackwardWithWrap, 3);
             Assert.AreEqual(_view.GetLine(2).Start.Position, _view.Caret.Position.BufferPosition.Position);
         }
 
         [Test]
-        public void MoveToPreviousOccuranceOfWordAtCursor4()
+        public void MoveToNextOccuranceOfWordAtCursor13()
         {
             Create("foo", "foobar", "foo");
             _view.MoveCaretTo(_view.GetLine(2).Start);
-            _operations.MoveToPreviousOccuranceOfWordAtCursor(true, 1);
+            _operations.MoveToNextOccuranceOfWordAtCursor(SearchKind.BackwardWithWrap, 1);
             Assert.AreEqual(0, _view.GetCaretPoint().Position);
         }
 
         [Test]
-        public void MoveToPreviousOccuranceOfWordAtCursor5()
+        public void MoveToNextOccuranceOfWordAtCursor14()
         {
             Create("foo bar", "again foo", "foo");
             _view.MoveCaretTo(_view.GetLine(2).Start.Position);
-            _operations.MoveToPreviousOccuranceOfWordAtCursor(false, 3);
+            _operations.MoveToNextOccuranceOfWordAtCursor(SearchKind.BackwardWithWrap, 2);
             Assert.AreEqual(0, _view.Caret.Position.BufferPosition.Position);
             Assert.AreEqual(SearchText.NewWholeWord("foo"), _searchService.LastSearch.Text);
         }
 
         [Test]
-        public void MoveToPreviousOccuranceOfWordAtCursor6()
+        public void MoveToNextOccuranceOfWordAtCursor15()
         {
             Create("    foo bar");
             var data = new SearchData(SearchText.NewPattern("foo"), SearchKind.ForwardWithWrap, SearchOptions.None);
             _searchService.LastSearch = data;
             _statusUtil.Setup(x => x.OnError(Resources.NormalMode_NoWordUnderCursor)).Verifiable();
-            _operations.MoveToPreviousOccuranceOfWordAtCursor(true, 1);
+            _operations.MoveToNextOccuranceOfWordAtCursor(SearchKind.BackwardWithWrap, 1);
             Assert.AreEqual(data, _searchService.LastSearch);
         }
 
