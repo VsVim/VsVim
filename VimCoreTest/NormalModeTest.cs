@@ -1701,6 +1701,46 @@ namespace VimCoreTest
 
         #endregion
 
+        #region Search
+
+        [Test]
+        public void Search_n_1()
+        {
+            CreateBuffer("foo");
+            _operations.Setup(x => x.MoveToNextOccuranceOfLastSearch(1, false)).Verifiable();
+            _mode.Process("n");
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Search_n_2()
+        {
+            CreateBuffer("foo");
+            _operations.Setup(x => x.MoveToNextOccuranceOfLastSearch(2, false)).Verifiable();
+            _mode.Process("2n");
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Search_N_1()
+        {
+            CreateBuffer("foo");
+            _operations.Setup(x => x.MoveToNextOccuranceOfLastSearch(1, true)).Verifiable();
+            _mode.Process("N");
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Search_N_2()
+        {
+            CreateBuffer("foo");
+            _operations.Setup(x => x.MoveToNextOccuranceOfLastSearch(2, true)).Verifiable();
+            _mode.Process("2N");
+            _operations.Verify();
+        }
+
+        #endregion
+
         #region Shift
 
         [Test]

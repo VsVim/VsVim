@@ -60,6 +60,28 @@ type internal DefaultOperations
 
             _search.LastSearch <- data
 
+    member private x.MoveToNextOccuranceOfLastSearchCore count isReverse = 
+        let search = _incrementalSearch.SearchService
+        let last = search.LastSearch
+        let last = 
+            if isReverse then { last with Kind = SearchKindUtil.Reverse last.Kind }
+            else last
+
+        if StringUtil.isNullOrEmpty last.Text.RawText then 
+            _statusUtil.OnError Resources.NormalMode_NoPreviousSearch
+        else
+
+            // When forward the search will be starting on the current word so it will 
+            // always match.  Without modification a count of 1 would simply find the word 
+            // under the cursor.  Increment the count by 1 here so that it will find
+            // the current word as the 0th match (so to speak)
+            let count = if SearchKindUtil.IsForward last.Kind then count + 1 else count 
+
+            let point = ViewUtil.GetCaretPoint _textView
+            match _search.FindNextMultiple last point _normalWordNav count with
+            | Some(span) -> ViewUtil.MoveCaretToPoint _textView span.Start |> ignore
+            | None -> _statusUtil.OnError (Resources.NormalMode_PatternNotFound last.Text.RawText)
+
     member x.GoToLineCore line =
         let snapshot = _textView.TextSnapshot
         let lastLineNumber = snapshot.LineCount - 1
@@ -185,13 +207,8 @@ type internal DefaultOperations
         member x.MoveToNextOccuranceOfPartialWordAtCursor kind count = x.MoveToNextWordCore kind count false
         member x.JumpNext count = x.JumpCore count (fun () -> _jumpList.MoveNext())
         member x.JumpPrevious count = x.JumpCore count (fun() -> _jumpList.MovePrevious())
-        member x.FindNextMatch count =
-            let last = _incrementalSearch.SearchService.LastSearch
-            if StringUtil.isNullOrEmpty last.Text.RawText then 
-                _statusUtil.OnError Resources.NormalMode_NoPreviousSearch
-            elif not (_incrementalSearch.FindNextMatch count) then
-                _statusUtil.OnError (Resources.NormalMode_PatternNotFound last.Text.RawText)
-    
+        member x.MoveToNextOccuranceOfLastSearch count isReverse = x.MoveToNextOccuranceOfLastSearchCore count isReverse
+
         member x.GoToLineOrFirst count =
             let line =
                 match count with

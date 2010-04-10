@@ -197,9 +197,6 @@ type IIncrementalSearch =
     /// Called when a search is about to begin
     abstract Begin : SearchKind -> unit
 
-    /// Find the next match of the LastSearch
-    abstract FindNextMatch : count:int -> bool
-
     [<CLIEvent>]
     abstract CurrentSearchUpdated : IEvent<SearchData * SearchResult>
 

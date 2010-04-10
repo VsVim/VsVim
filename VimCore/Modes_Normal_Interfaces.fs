@@ -43,14 +43,14 @@ type IOperations =
     /// Move to the next occurance of the word under the cursor
     abstract MoveToNextOccuranceOfPartialWordAtCursor : SearchKind -> count:int -> unit
 
+    /// Move to the next "count" occurance of the last search
+    abstract MoveToNextOccuranceOfLastSearch : count:int -> isReverse:bool -> unit
+
     /// Jump to the next item in the jump list
     abstract JumpNext : count:int -> unit
 
     /// Jump to the previous item in the jump list
     abstract JumpPrevious : count:int -> unit
-
-    /// Find and move to the next match from the last search   
-    abstract FindNextMatch : count:int -> unit
 
     /// Change the case of the character at cursor
     abstract ChangeLetterCaseAtCursor : count:int -> unit 

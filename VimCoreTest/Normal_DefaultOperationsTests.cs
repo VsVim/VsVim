@@ -633,6 +633,48 @@ namespace VimCoreTest
             _statusUtil.Setup(x => x.OnError(Resources.NormalMode_NoWordUnderCursor)).Verifiable();
             _operations.MoveToNextOccuranceOfWordAtCursor(SearchKind.BackwardWithWrap, 1);
             Assert.AreEqual(data, _searchService.LastSearch);
+            _statusUtil.Verify();
+        }
+
+        [Test]
+        public void MoveToNextOccuranceOfLastSearch1()
+        {
+            Create("foo bar baz");
+            var data = new SearchData(SearchText.NewPattern("beat"), SearchKind.ForwardWithWrap, SearchOptions.None);
+            _searchService.LastSearch = data;
+            _statusUtil.Setup(x => x.OnError(Resources.NormalMode_PatternNotFound("beat"))).Verifiable();
+            _operations.MoveToNextOccuranceOfLastSearch(1, false);
+            _statusUtil.Verify();
+        }
+
+        [Test, Description("Should not start on the current word")]
+        public void MoveToNextOccuranceOfLastSearch2()
+        {
+            Create("foo bar","foo");
+            var data = new SearchData(SearchText.NewPattern("foo"), SearchKind.ForwardWithWrap, SearchOptions.None);
+            _searchService.LastSearch = data;
+            _operations.MoveToNextOccuranceOfLastSearch(1, false);
+            Assert.AreEqual(_view.GetLine(1).Start, _view.GetCaretPoint());
+        }
+
+        [Test]
+        public void MoveToNextOccuranceOfLastSearch3()
+        {
+            Create("foo bar","foo");
+            var data = new SearchData(SearchText.NewPattern("foo"), SearchKind.ForwardWithWrap, SearchOptions.None);
+            _searchService.LastSearch = data;
+            _operations.MoveToNextOccuranceOfLastSearch(2, false);
+            Assert.AreEqual(0, _view.GetCaretPoint());
+        }
+
+        [Test]
+        public void MoveToNextOccuranceOfLastSearch4()
+        {
+            Create("foo bar","foo");
+            var data = new SearchData(SearchText.NewPattern("foo"), SearchKind.BackwardWithWrap, SearchOptions.None);
+            _searchService.LastSearch = data;
+            _operations.MoveToNextOccuranceOfLastSearch(1, false);
+            Assert.AreEqual(_view.GetLine(1).Start, _view.GetCaretPoint());
         }
 
         [Test]
@@ -775,7 +817,7 @@ namespace VimCoreTest
             Create("foo bar");
             _searchService.LastSearch = new SearchData(SearchText.NewPattern(String.Empty), SearchKind.ForwardWithWrap, SearchOptions.None);
             _statusUtil.Setup(x => x.OnError(Resources.NormalMode_NoPreviousSearch)).Verifiable();
-            _operations.FindNextMatch(1);
+            _operations.MoveToNextOccuranceOfLastSearch(1, isReverse:false);
             _statusUtil.Verify();
         }
 
@@ -783,10 +825,9 @@ namespace VimCoreTest
         public void FindNextMatch2()
         {
             Create("foo bar");
-            _searchService.LastSearch = new SearchData(SearchText.NewPattern("foo"), SearchKind.ForwardWithWrap, SearchOptions.None);
-            _search.Setup(x => x.FindNextMatch(2)).Returns(false).Verifiable();
-            _statusUtil.Setup(x => x.OnError(Resources.NormalMode_PatternNotFound("foo"))).Verifiable();
-            _operations.FindNextMatch(2);
+            _searchService.LastSearch = new SearchData(SearchText.NewPattern("again"), SearchKind.ForwardWithWrap, SearchOptions.None);
+            _statusUtil.Setup(x => x.OnError(Resources.NormalMode_PatternNotFound("again"))).Verifiable();
+            _operations.MoveToNextOccuranceOfLastSearch(2, isReverse:false);
             _statusUtil.Verify();
             _search.Verify();
         }
@@ -796,9 +837,7 @@ namespace VimCoreTest
         {
             Create("foo bar");
             _searchService.LastSearch = new SearchData(SearchText.NewPattern("foo"), SearchKind.ForwardWithWrap, SearchOptions.None);
-            _search.Setup(x => x.FindNextMatch(2)).Returns(true).Verifiable();
-            _operations.FindNextMatch(2);
-            _search.Verify();
+            _operations.MoveToNextOccuranceOfLastSearch(2, isReverse:false);
         }
 
         [Test]

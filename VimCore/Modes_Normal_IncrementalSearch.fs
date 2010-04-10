@@ -100,30 +100,6 @@ type internal IncrementalSearch
                 doSearchWithNewPattern pattern
                 SearchNeedMore
 
-
-    member private x.FindNextMatch (count:int) =
-        let getNextPoint current kind = 
-            match SearchKindUtil.IsForward kind with 
-            | true -> SnapshotPointUtil.GetNextPointWithWrap current
-            | false -> SnapshotPointUtil.GetPreviousPointWithWrap current
-
-        let doSearch (searchData:SearchData) = 
-            let caret = ViewUtil.GetCaretPoint _textView
-            let next = getNextPoint caret searchData.Kind
-            match _search.FindNext searchData next _navigator with
-            | Some(span) -> 
-                ViewUtil.MoveCaretToPoint _textView span.Start |> ignore
-                true
-            | None -> false
-
-        let rec doSearchWithCount searchData count = 
-            if not (doSearch searchData) then false
-            elif count > 1 then doSearchWithCount searchData (count-1)
-            else true
-
-        if System.String.IsNullOrEmpty(_search.LastSearch.Text.RawText) then false
-        else doSearchWithCount _search.LastSearch count
-
     interface IIncrementalSearch with
         member x.InSearch = Option.isSome _data
         member x.SearchService = _search
@@ -134,7 +110,6 @@ type internal IncrementalSearch
             | None -> None
         member x.Process ki = x.ProcessCore ki
         member x.Begin kind = x.Begin kind
-        member x.FindNextMatch count = x.FindNextMatch count
         [<CLIEvent>]
         member x.CurrentSearchUpdated = _currentSearchUpdated.Publish
         [<CLIEvent>]
