@@ -812,35 +812,6 @@ namespace VimCoreTest
         }
 
         [Test]
-        public void FindNextMatch1()
-        {
-            Create("foo bar");
-            _searchService.LastSearch = new SearchData(SearchText.NewPattern(String.Empty), SearchKind.ForwardWithWrap, SearchOptions.None);
-            _statusUtil.Setup(x => x.OnError(Resources.NormalMode_NoPreviousSearch)).Verifiable();
-            _operations.MoveToNextOccuranceOfLastSearch(1, isReverse:false);
-            _statusUtil.Verify();
-        }
-
-        [Test]
-        public void FindNextMatch2()
-        {
-            Create("foo bar");
-            _searchService.LastSearch = new SearchData(SearchText.NewPattern("again"), SearchKind.ForwardWithWrap, SearchOptions.None);
-            _statusUtil.Setup(x => x.OnError(Resources.NormalMode_PatternNotFound("again"))).Verifiable();
-            _operations.MoveToNextOccuranceOfLastSearch(2, isReverse:false);
-            _statusUtil.Verify();
-            _search.Verify();
-        }
-
-        [Test]
-        public void FindNextMatch3()
-        {
-            Create("foo bar");
-            _searchService.LastSearch = new SearchData(SearchText.NewPattern("foo"), SearchKind.ForwardWithWrap, SearchOptions.None);
-            _operations.MoveToNextOccuranceOfLastSearch(2, isReverse:false);
-        }
-
-        [Test]
         public void GoToLineOrFirst1()
         {
             Create("foo", "bar", "baz");
