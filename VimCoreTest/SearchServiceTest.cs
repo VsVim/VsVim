@@ -6,6 +6,8 @@ using NUnit.Framework;
 using Moq;
 using Vim;
 using Microsoft.VisualStudio.Text.Operations;
+using VimCoreTest.Utils;
+using Microsoft.VisualStudio.Text;
 
 namespace VimCoreTest
 {
@@ -26,6 +28,34 @@ namespace VimCoreTest
             _textSearch = _factory.Create<ITextSearchService>();
             _searchRaw = new SearchService(_textSearch.Object, _settings.Object);
             _search = _searchRaw;
+        }
+
+        private void AssertFindNextPattern(string pattern, SearchKind kind, FindOptions options, int position = 2)
+        {
+            var isWrap = SearchKindUtil.IsWrap(kind);
+            var snapshot = MockObjectFactory.CreateTextSnapshot(10);
+            var nav = _factory.Create<ITextStructureNavigator>();
+            var findData = new FindData(pattern, snapshot.Object, options, nav.Object);
+            _textSearch
+                .Setup(x => x.FindNext(position, isWrap, findData))
+                .Returns<SnapshotSpan?>(null)
+                .Verifiable();
+            _search.FindNextPattern(pattern, new SnapshotPoint(snapshot.Object, position), kind, nav.Object);
+            _factory.Verify();
+        }
+
+        private void AssertFindNextResult(SearchData data, FindOptions options, int position = 2)
+        {
+            var isWrap = SearchKindUtil.IsWrap(data.Kind);
+            var snapshot = MockObjectFactory.CreateTextSnapshot(10);
+            var nav = _factory.Create<ITextStructureNavigator>();
+            var findData = new FindData(data.Pattern, snapshot.Object, options, nav.Object);
+            _textSearch
+                .Setup(x => x.FindNext(position, isWrap, findData))
+                .Returns<SnapshotSpan?>(null)
+                .Verifiable();
+            _search.FindNextResult(data, new SnapshotPoint(snapshot.Object, position), nav.Object);
+            _factory.Verify();
         }
 
         [Test]
@@ -97,6 +127,42 @@ namespace VimCoreTest
             Assert.AreEqual(FindOptions.WholeWord, options);
         }
 
+        [Test]
+        public void FindNextPattern1()
+        {
+            _settings.SetupGet(x => x.IgnoreCase).Returns(true).Verifiable();
+            AssertFindNextPattern("foo", SearchKind.Forward, FindOptions.UseRegularExpressions);
+        }
+
+        [Test]
+        public void FindNextPattern2()
+        {
+            _settings.SetupGet(x => x.IgnoreCase).Returns(false).Verifiable();
+            AssertFindNextPattern("foo", SearchKind.Forward, FindOptions.MatchCase | FindOptions.UseRegularExpressions);
+        }
+
+        [Test]
+        public void FindNextPattern3()
+        {
+            _settings.SetupGet(x => x.IgnoreCase).Returns(false).Verifiable();
+            AssertFindNextPattern("foo", SearchKind.Backward, FindOptions.MatchCase | FindOptions.SearchReverse | FindOptions.UseRegularExpressions);
+        }
+
+        [Test]
+        public void FindNextResult1()
+        {
+            _settings.SetupGet(x => x.IgnoreCase).Returns(true).Verifiable();
+            var data = new SearchData("foo", SearchKind.ForwardWithWrap, SearchOptions.None);
+            AssertFindNextResult(data, FindOptions.None);
+        }
+
+        [Test]
+        public void FindNextResult2()
+        {
+            _settings.SetupGet(x => x.IgnoreCase).Returns(true).Verifiable();
+            var data = new SearchData("foo", SearchKind.ForwardWithWrap, SearchOptions.MatchWord);
+            AssertFindNextResult(data, FindOptions.WholeWord);
+        }
     }
 
 }

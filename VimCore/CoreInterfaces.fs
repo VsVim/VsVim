@@ -167,7 +167,8 @@ type ISearchService =
     abstract CreateSearchDataWithOptions : pattern:string -> SearchKind -> SearchOptions -> SearchData
 
     /// Find the next occurance of the pattern in the buffer starting at the 
-    /// given SnapshotPoint
+    /// given SnapshotPoint.  The value "pattern" will be matched as a regular 
+    /// expression
     abstract FindNextPattern : pattern:string -> SnapshotPoint -> SearchKind -> ITextStructureNavigator -> SnapshotSpan option
 
     /// Find the next occurance of the pattern in the buffer starting at the 
