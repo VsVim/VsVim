@@ -169,7 +169,7 @@ type ISearchService =
     /// Find the next occurance of the pattern in the buffer starting at the 
     /// given SnapshotPoint.  The value "pattern" will be matched as a regular 
     /// expression
-    abstract FindNextPattern : pattern:string -> SnapshotPoint -> SearchKind -> ITextStructureNavigator -> SnapshotSpan option
+    abstract FindNextPattern : pattern:string -> SearchKind -> SnapshotPoint -> ITextStructureNavigator -> SnapshotSpan option
 
     /// Find the next occurance of the pattern in the buffer starting at the 
     /// given SnapshotPoint

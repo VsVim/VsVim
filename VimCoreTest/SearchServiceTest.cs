@@ -40,7 +40,7 @@ namespace VimCoreTest
                 .Setup(x => x.FindNext(position, isWrap, findData))
                 .Returns<SnapshotSpan?>(null)
                 .Verifiable();
-            _search.FindNextPattern(pattern, new SnapshotPoint(snapshot.Object, position), kind, nav.Object);
+            _search.FindNextPattern(pattern, kind ,new SnapshotPoint(snapshot.Object, position), nav.Object);
             _factory.Verify();
         }
 

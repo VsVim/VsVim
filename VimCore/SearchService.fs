@@ -26,7 +26,7 @@ type internal SearchService
     member private x.CreateSearchDataWithOptions pattern kind options = 
         { Pattern = pattern; Kind = kind; Options = options }
 
-    member private x.FindNextPattern pattern point kind nav = 
+    member private x.FindNextPattern pattern kind point nav = 
         let data = x.CreateSearchDataWithOptions pattern kind SearchOptions.Regex
         x.FindNextResult data point nav
 

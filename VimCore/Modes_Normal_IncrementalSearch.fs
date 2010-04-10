@@ -57,7 +57,7 @@ type internal IncrementalSearch
                     if StringUtil.isNullOrEmpty pattern then None
                     else
                         let point = ViewUtil.GetCaretPoint _textView
-                        _search.FindNextPattern pattern point data.Kind _navigator
+                        _search.FindNextPattern pattern data.Kind point _navigator
 
                 match ret with
                 | Some(span) ->
