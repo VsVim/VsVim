@@ -135,14 +135,28 @@ type SearchResult =
 [<System.Flags>]
 type SearchOptions = 
     | None = 0x0
-    | Regex = 0x1
-    | MatchWord = 0x2
 
+    /// Consider the "ignorecase" option when doing the search
+    | AllowIgnoreCase = 0x1
+
+    /// Consider the "smartcase" option when doing the search
+    | AllowSmartCase = 0x2
+
+type SearchText =
+    | Pattern of string
+    | WholeWord of string
+    | StraightText of string
+    with 
+        member x.RawText =
+            match x with
+            | Pattern(p) -> p
+            | WholeWord(p) -> p
+            | StraightText(p) -> p
 
 type SearchData = {
-    Pattern : string;
+    Text : SearchText;
     Kind : SearchKind;
-    Options : SearchOptions;
+    Options : SearchOptions
 }
 
 type SearchProcessResult =
@@ -160,20 +174,9 @@ type ISearchService =
     [<CLIEvent>]
     abstract LastSearchChanged : IEvent<SearchData>
 
-    /// Create a SearchData structure from the given input
-    abstract CreateSearchData : pattern:string -> SearchKind -> SearchData
-
-    /// Create a SearchData structure from the given input with additional options
-    abstract CreateSearchDataWithOptions : pattern:string -> SearchKind -> SearchOptions -> SearchData
-
-    /// Find the next occurance of the pattern in the buffer starting at the 
-    /// given SnapshotPoint.  The value "pattern" will be matched as a regular 
-    /// expression
-    abstract FindNextPattern : pattern:string -> SearchKind -> SnapshotPoint -> ITextStructureNavigator -> SnapshotSpan option
-
     /// Find the next occurance of the pattern in the buffer starting at the 
     /// given SnapshotPoint
-    abstract FindNextResult : SearchData -> SnapshotPoint -> ITextStructureNavigator -> SnapshotSpan option
+    abstract FindNext : SearchData -> SnapshotPoint -> ITextStructureNavigator -> SnapshotSpan option
 
 type IIncrementalSearch = 
     abstract InSearch : bool

@@ -33,9 +33,6 @@ namespace VimCoreTest
             _textView = EditorUtil.CreateView(lines);
             _factory = new MockFactory(MockBehavior.Strict);
             _searchService = _factory.Create<ISearchService>();
-            _searchService
-                .Setup(x => x.CreateSearchData(It.IsAny<string>(), It.IsAny<SearchKind>()))
-                .Returns<string,SearchKind>((pattern,kind) => new SearchData(pattern,kind, SearchOptions.None));
             _nav = _factory.Create<ITextStructureNavigator>();
             _globalSettings = MockObjectFactory.CreateGlobalSettings(ignoreCase: true);
             _settings = MockObjectFactory.CreateLocalSettings(_globalSettings.Object);
@@ -91,7 +88,7 @@ namespace VimCoreTest
         public void LastSearch1()
         {
             Create("foo bar");
-            _searchService.SetupSet(x => x.LastSearch = new SearchData("foo", SearchKind.ForwardWithWrap, SearchOptions.None)).Verifiable();
+            _searchService.SetupSet(x => x.LastSearch = new SearchData("foo", SearchKind.ForwardWithWrap, SearchOptions.AllowSmartCase)).Verifiable();
             _searchService
                 .Setup(x => x.FindNextPattern(It.IsAny<string>(), SearchKind.ForwardWithWrap, It.IsAny<SnapshotPoint>(), _nav.Object))
                 .Returns(FSharpOption<SnapshotSpan>.None)
@@ -221,7 +218,7 @@ namespace VimCoreTest
         public void InSearch2()
         {
             Create("foo bar");
-            _searchService.SetupSet(x => x.LastSearch = new SearchData("", SearchKind.Forward, SearchOptions.None));
+            _searchService.SetupSet(x => x.LastSearch = new SearchData("", SearchKind.Forward, SearchOptions.AllowSmartCase));
             _search.Begin(SearchKind.Forward);
             _search.Process(InputUtil.VimKeyToKeyInput(VimKey.EnterKey));
             Assert.IsFalse(_search.InSearch);

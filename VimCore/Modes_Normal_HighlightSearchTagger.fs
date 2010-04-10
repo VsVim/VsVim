@@ -42,23 +42,25 @@ type internal HighlightIncrementalSearchTagger
         |> Event.add (fun _ -> raiseAllChanged())
         
     member private x.GetTagsCore (col:NormalizedSnapshotSpanCollection) = 
-        let searchData = _search.LastSearch
-        let withSpan pattern (span:SnapshotSpan) =  
+        // Build up the search information
+        let searchData = { _search.LastSearch with Kind = SearchKind.Forward }
+            
+        let withSpan (span:SnapshotSpan) =  
             span.Start
             |> Seq.unfold (fun point -> 
                 if point.Position >= span.Length then None
                 else
-                    match _search.FindNextResult searchData point _wordNav with
+                    match _search.FindNext searchData point _wordNav with
                     | None -> None
                     | Some(foundSpan) -> 
                         if foundSpan.Start.Position <= span.End.Position then Some(foundSpan, foundSpan.End)
                         else None )
                     
-        if StringUtil.isNullOrEmpty searchData.Pattern then Seq.empty
+        if StringUtil.isNullOrEmpty searchData.Text.RawText then Seq.empty
         else 
             let tag = TextMarkerTag("vsvim_highlightsearch")
             col 
-            |> Seq.map (fun span -> withSpan searchData.Pattern span) 
+            |> Seq.map (fun span -> withSpan span) 
             |> Seq.concat
             |> Seq.map (fun span -> TagSpan(span,tag) :> ITagSpan<TextMarkerTag> )
 

@@ -42,32 +42,34 @@ type internal DefaultOperations
         match TssUtil.FindCurrentFullWordSpan point WordKind.NormalWord with
         | None -> _statusUtil.OnError Resources.NormalMode_NoWordUnderCursor
         | Some(span) ->
-            let extraOptions = if isWholeWord then SearchOptions.MatchWord else SearchOptions.None
-            let kind = if isWrap then SearchKind.ForwardWithWrap else SearchKind.Forward
+            // Build up the SearchData structure
             let word = span.GetText()
-            let searchData = _search.CreateSearchDataWithOptions word kind extraOptions
+            let text = if isWholeWord then WholeWord(word) else StraightText(word)
+            let kind = if isWrap then SearchKind.ForwardWithWrap else SearchKind.Forward
+            let data = {Text=text; Kind = kind; Options = SearchOptions.AllowIgnoreCase }
             let count = max 0 (count-1)
 
             // Repeat the search at the given point while there is a valid position and
             // still more "count" times to do it
             let rec doFind count point = 
-                match (_search.FindNextResult searchData point _normalWordNav),count > 1 with
+                match (_search.FindNext data point _normalWordNav),count > 1 with
                 | Some(span),true -> doFind (count-1) span.End
                 | Some(span),false -> ViewUtil.MoveCaretToPoint _textView span.Start |> ignore
                 | _ -> ()
 
             doFind count span.End
-            _search.LastSearch <- searchData
+            _search.LastSearch <- data
 
     member x.MoveToPreviousWordCore isWrap isWholeWord count = 
         let point = ViewUtil.GetCaretPoint _textView
         match TssUtil.FindCurrentFullWordSpan point WordKind.NormalWord with
         | None -> _statusUtil.OnError Resources.NormalMode_NoWordUnderCursor
         | Some(span) ->
-            let extraOptions = if isWholeWord then SearchOptions.MatchWord else SearchOptions.None
-            let kind = if isWrap then SearchKind.BackwardWithWrap else SearchKind.Backward
+            // Build up the SearchData structure
             let word = span.GetText()
-            let searchData = _search.CreateSearchDataWithOptions word kind extraOptions
+            let text = if isWholeWord then WholeWord(word) else StraightText(word)
+            let kind = if isWrap then SearchKind.BackwardWithWrap else SearchKind.Backward
+            let data = {Text=text; Kind=kind; Options=SearchOptions.AllowIgnoreCase }
             let count = max 0 (count-1)
 
             // Get the next point given the previous span 
@@ -78,14 +80,14 @@ type internal DefaultOperations
                 else SnapshotUtil.GetStartPoint point.Snapshot
 
             let rec doFind count point = 
-                match (_search.FindNextResult searchData point _normalWordNav),count > 1 with
+                match (_search.FindNext data point _normalWordNav),count > 1 with
                 | Some(span),true -> 
                     let nextPos = getNextPoint span
                     doFind (count-1) nextPos 
                 | Some(span),false -> ViewUtil.MoveCaretToPoint _textView span.Start |> ignore
                 | _ -> ()
             doFind count (getNextPoint span)
-            _search.LastSearch <- searchData
+            _search.LastSearch <- data
 
 
     member x.GoToLineCore line =
@@ -225,10 +227,10 @@ type internal DefaultOperations
         member x.JumpPrevious count = x.JumpCore count (fun() -> _jumpList.MovePrevious())
         member x.FindNextMatch count =
             let last = _incrementalSearch.SearchService.LastSearch
-            if StringUtil.isNullOrEmpty last.Pattern then 
+            if StringUtil.isNullOrEmpty last.Text.RawText then 
                 _statusUtil.OnError Resources.NormalMode_NoPreviousSearch
             elif not (_incrementalSearch.FindNextMatch count) then
-                _statusUtil.OnError (Resources.NormalMode_PatternNotFound last.Pattern)
+                _statusUtil.OnError (Resources.NormalMode_PatternNotFound last.Text.RawText)
     
         member x.GoToLineOrFirst count =
             let line =

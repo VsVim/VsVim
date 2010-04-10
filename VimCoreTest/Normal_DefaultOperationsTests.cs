@@ -571,7 +571,7 @@ namespace VimCoreTest
         public void MoveToNextOccuranceOfWordAtCursor9()
         {
             Create("  foo bar baz");
-            var data  = _searchService.CreateSearchData("foo", SearchKind.ForwardWithWrap);
+            var data = new SearchData("foo", SearchKind.ForwardWithWrap, SearchOptions.None);
             _searchService.LastSearch = data;
             _statusUtil.Setup(x => x.OnError(Resources.NormalMode_NoWordUnderCursor)).Verifiable();
             _operations.MoveToNextOccuranceOfWordAtCursor(true, 1);
@@ -631,7 +631,7 @@ namespace VimCoreTest
         public void MoveToPreviousOccuranceOfWordAtCursor6()
         {
             Create("    foo bar");
-            var data = _searchService.CreateSearchData("foo", SearchKind.ForwardWithWrap);
+            var data = new SearchData("foo", SearchKind.ForwardWithWrap, SearchOptions.None);
             _searchService.LastSearch = data;
             _statusUtil.Setup(x => x.OnError(Resources.NormalMode_NoWordUnderCursor)).Verifiable();
             _operations.MoveToPreviousOccuranceOfWordAtCursor(true, 1);
