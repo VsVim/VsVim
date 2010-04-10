@@ -35,7 +35,7 @@ namespace VimCoreTest
             _searchService = _factory.Create<ISearchService>();
             _searchService
                 .Setup(x => x.CreateSearchData(It.IsAny<string>(), It.IsAny<SearchKind>()))
-                .Returns<string,SearchKind>((pattern,kind) => new SearchData(pattern,kind, FindOptions.None));
+                .Returns<string,SearchKind>((pattern,kind) => new SearchData(pattern,kind, SearchOptions.None));
             _nav = _factory.Create<ITextStructureNavigator>();
             _globalSettings = MockObjectFactory.CreateGlobalSettings(ignoreCase: true);
             _settings = MockObjectFactory.CreateLocalSettings(_globalSettings.Object);
@@ -73,7 +73,7 @@ namespace VimCoreTest
         public void Process2()
         {
             Create("foo bar");
-            _searchService.SetupSet(x => x.LastSearch = new SearchData("", SearchKind.ForwardWithWrap, FindOptions.None)).Verifiable();
+            _searchService.SetupSet(x => x.LastSearch = new SearchData("", SearchKind.ForwardWithWrap, SearchOptions.None)).Verifiable();
             _search.Begin(SearchKind.ForwardWithWrap);
             Assert.IsTrue(_search.Process(InputUtil.VimKeyToKeyInput(VimKey.EnterKey)).IsSearchComplete);
             _searchService.Verify();
@@ -91,7 +91,7 @@ namespace VimCoreTest
         public void LastSearch1()
         {
             Create("foo bar");
-            _searchService.SetupSet(x => x.LastSearch = new SearchData("foo", SearchKind.ForwardWithWrap, FindOptions.None)).Verifiable();
+            _searchService.SetupSet(x => x.LastSearch = new SearchData("foo", SearchKind.ForwardWithWrap, SearchOptions.None)).Verifiable();
             _searchService
                 .Setup(x => x.FindNextPattern(It.IsAny<string>(), It.IsAny<SnapshotPoint>(), SearchKind.ForwardWithWrap, _nav.Object))
                 .Returns(FSharpOption<SnapshotSpan>.None)
@@ -109,11 +109,11 @@ namespace VimCoreTest
                 .Returns(FSharpOption<SnapshotSpan>.None)
                 .Verifiable();
 
-            _searchService.SetupSet(x => x.LastSearch = new SearchData("foo bar", SearchKind.ForwardWithWrap, FindOptions.None)).Verifiable();
+            _searchService.SetupSet(x => x.LastSearch = new SearchData("foo bar", SearchKind.ForwardWithWrap, SearchOptions.None)).Verifiable();
             ProcessWithEnter("foo bar");
             _factory.Verify();
 
-            _searchService.SetupSet(x => x.LastSearch = new SearchData("bar", SearchKind.ForwardWithWrap, FindOptions.None)).Verifiable();
+            _searchService.SetupSet(x => x.LastSearch = new SearchData("bar", SearchKind.ForwardWithWrap, SearchOptions.None)).Verifiable();
             ProcessWithEnter("bar");
             _factory.Verify();
         }
@@ -155,7 +155,7 @@ namespace VimCoreTest
         public void Status3()
         {
             Create("foo bar");
-            _searchService.SetupSet(x => x.LastSearch = new SearchData("foo", SearchKind.ForwardWithWrap, FindOptions.None)).Verifiable();
+            _searchService.SetupSet(x => x.LastSearch = new SearchData("foo", SearchKind.ForwardWithWrap, SearchOptions.None)).Verifiable();
             _searchService
                 .Setup(x => x.FindNextPattern(It.IsAny<string>(), It.IsAny<SnapshotPoint>(), SearchKind.ForwardWithWrap, _nav.Object))
                 .Returns(FSharpOption<SnapshotSpan>.None);
@@ -221,7 +221,7 @@ namespace VimCoreTest
         public void InSearch2()
         {
             Create("foo bar");
-            _searchService.SetupSet(x => x.LastSearch = new SearchData("", SearchKind.Forward, FindOptions.None));
+            _searchService.SetupSet(x => x.LastSearch = new SearchData("", SearchKind.Forward, SearchOptions.None));
             _search.Begin(SearchKind.Forward);
             _search.Process(InputUtil.VimKeyToKeyInput(VimKey.EnterKey));
             Assert.IsFalse(_search.InSearch);
@@ -253,7 +253,7 @@ namespace VimCoreTest
         public void Backspace2()
         {
             Create("foo bar");
-            _searchService.SetupSet(x => x.LastSearch = new SearchData("", SearchKind.Forward, FindOptions.None));
+            _searchService.SetupSet(x => x.LastSearch = new SearchData("", SearchKind.Forward, SearchOptions.None));
             _searchService
                 .Setup(x => x.FindNextPattern(It.IsAny<string>(), It.IsAny<SnapshotPoint>(), SearchKind.Forward, _nav.Object))
                 .Returns(FSharpOption<SnapshotSpan>.None)

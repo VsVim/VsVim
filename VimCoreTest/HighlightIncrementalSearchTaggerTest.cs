@@ -54,7 +54,7 @@ namespace VimCoreTest
 
             if (lastSearch != null)
             {
-                _search.SetupGet(x => x.LastSearch).Returns(new SearchData(lastSearch, SearchKind.Forward, FindOptions.None));
+                _search.SetupGet(x => x.LastSearch).Returns(new SearchData(lastSearch, SearchKind.Forward, SearchOptions.None));
             }
         }
 
@@ -81,7 +81,7 @@ namespace VimCoreTest
             _settings.Setup(x => x.HighlightSearch).Returns(true).Verifiable();
             _search
                 .SetupGet(x => x.LastSearch)
-                .Returns(new SearchData(String.Empty, SearchKind.Forward, FindOptions.None))
+                .Returns(new SearchData(String.Empty, SearchKind.Forward, SearchOptions.None))
                 .Verifiable();
             var ret = _taggerRaw.GetTags(new NormalizedSnapshotSpanCollection(new SnapshotSpan(_textBuffer.CurrentSnapshot, 0, 2)));
             Assert.AreEqual(0, ret.Count());
@@ -93,7 +93,7 @@ namespace VimCoreTest
         public void GetTags3()
         {
             Init(lines: "foo is the bar", lastSearch: "foo");
-            var data = new SearchData("foo", SearchKind.Forward, FindOptions.None);
+            var data = new SearchData("foo", SearchKind.Forward, SearchOptions.None);
             _search
                 .Setup(x => x.FindNextResult(data, _textBuffer.GetPoint(0), _nav.Object))
                 .Returns(FSharpOption.Create(new SnapshotSpan(_textBuffer.CurrentSnapshot, 0, 3)));
@@ -109,7 +109,7 @@ namespace VimCoreTest
         public void GetTags4()
         {
             Init(lines: "foo is the bar", lastSearch: "foo");
-            var data = new SearchData("foo", SearchKind.Forward, FindOptions.None);
+            var data = new SearchData("foo", SearchKind.Forward, SearchOptions.None);
             _search
                 .Setup(x => x.FindNextResult(data, _textBuffer.GetPoint(0), _nav.Object))
                 .Returns(FSharpOption.Create(_textBuffer.GetSpan(4,3)));
@@ -121,7 +121,7 @@ namespace VimCoreTest
         public void GetTags5()
         {
             Init(lines: "foo is the bar", lastSearch: "foo");
-            var data = new SearchData("foo", SearchKind.Forward, FindOptions.None);
+            var data = new SearchData("foo", SearchKind.Forward, SearchOptions.None);
             _search
                 .Setup(x => x.FindNextResult(data, _textBuffer.GetPoint(0), _nav.Object))
                 .Returns(FSharpOption.Create(_textBuffer.GetSpan(2,3)));

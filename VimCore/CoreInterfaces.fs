@@ -132,10 +132,17 @@ type SearchResult =
     | SearchFound of SnapshotSpan
     | SearchNotFound 
 
+[<System.Flags>]
+type SearchOptions = 
+    | None = 0x0
+    | Regex = 0x1
+    | MatchWord = 0x2
+
+
 type SearchData = {
     Pattern : string;
-    Kind : SearchKind
-    Options : FindOptions;
+    Kind : SearchKind;
+    Options : SearchOptions;
 }
 
 type SearchProcessResult =
@@ -157,7 +164,7 @@ type ISearchService =
     abstract CreateSearchData : pattern:string -> SearchKind -> SearchData
 
     /// Create a SearchData structure from the given input with additional options
-    abstract CreateSearchDataWithOptions : pattern:string -> SearchKind -> FindOptions -> SearchData
+    abstract CreateSearchDataWithOptions : pattern:string -> SearchKind -> SearchOptions -> SearchData
 
     /// Find the next occurance of the pattern in the buffer starting at the 
     /// given SnapshotPoint

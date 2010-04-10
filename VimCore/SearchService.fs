@@ -10,21 +10,21 @@ type internal SearchService
         _search : ITextSearchService,
         _settings : IVimGlobalSettings ) = 
 
-    let mutable _lastSearch = { Pattern = System.String.Empty; Kind = SearchKind.ForwardWithWrap; Options = FindOptions.None }
+    let mutable _lastSearch = { Pattern = System.String.Empty; Kind = SearchKind.ForwardWithWrap; Options = SearchOptions.None }
     let _lastSearchChanged = Event<SearchData>()
 
-    member private x.CreateFindOptions kind =
-        let options = if not _settings.IgnoreCase then FindOptions.MatchCase else FindOptions.None
-        let options = if SearchKindUtil.IsBackward kind then options ||| FindOptions.SearchReverse else options
-        options
+    member private x.CreateFindOptions kind searchOptions =
+        let caseOptions = if not _settings.IgnoreCase then FindOptions.MatchCase else FindOptions.None
+        let revOptions = if SearchKindUtil.IsBackward kind then FindOptions.SearchReverse else FindOptions.None
+        let wordOptions = if Utils.IsFlagSet searchOptions SearchOptions.MatchWord then FindOptions.WholeWord else FindOptions.None
+        let regexOptions = if Utils.IsFlagSet searchOptions SearchOptions.Regex then FindOptions.UseRegularExpressions else FindOptions.None
+        caseOptions ||| revOptions ||| wordOptions ||| regexOptions
 
     member private x.CreateSearchData pattern kind = 
-        let options = x.CreateFindOptions kind 
-        { Pattern = pattern; Kind = kind; Options = options }
+        { Pattern = pattern; Kind = kind; Options = SearchOptions.None }
 
-    member private x.CreateSearchDataWithOptions pattern kind extraOptions = 
-        let data = x.CreateSearchData pattern kind
-        { data with Options = data.Options ||| extraOptions }
+    member private x.CreateSearchDataWithOptions pattern kind options = 
+        { Pattern = pattern; Kind = kind; Options = options }
 
     member private x.FindNextPattern pattern point kind nav = 
         let data = x.CreateSearchData pattern kind
@@ -33,7 +33,8 @@ type internal SearchService
     member private x.FindNextResult (searchData:SearchData) point nav = 
         let tss = SnapshotPointUtil.GetSnapshot point
         let pos = SnapshotPointUtil.GetPosition point
-        let findData = FindData(searchData.Pattern, tss, searchData.Options, nav) 
+        let opts = x.CreateFindOptions searchData.Kind searchData.Options
+        let findData = FindData(searchData.Pattern, tss, opts, nav) 
         _search.FindNext(pos, (SearchKindUtil.IsWrap searchData.Kind), findData) |> NullableUtil.toOption
 
     interface ISearchService with

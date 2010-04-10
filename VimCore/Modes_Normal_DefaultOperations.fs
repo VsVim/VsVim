@@ -42,7 +42,7 @@ type internal DefaultOperations
         match TssUtil.FindCurrentFullWordSpan point WordKind.NormalWord with
         | None -> _statusUtil.OnError Resources.NormalMode_NoWordUnderCursor
         | Some(span) ->
-            let extraOptions = if isWholeWord then FindOptions.WholeWord else FindOptions.None
+            let extraOptions = if isWholeWord then SearchOptions.MatchWord else SearchOptions.None
             let kind = if isWrap then SearchKind.ForwardWithWrap else SearchKind.Forward
             let word = span.GetText()
             let searchData = _search.CreateSearchDataWithOptions word kind extraOptions
@@ -64,7 +64,7 @@ type internal DefaultOperations
         match TssUtil.FindCurrentFullWordSpan point WordKind.NormalWord with
         | None -> _statusUtil.OnError Resources.NormalMode_NoWordUnderCursor
         | Some(span) ->
-            let extraOptions = if isWholeWord then FindOptions.WholeWord else FindOptions.None
+            let extraOptions = if isWholeWord then SearchOptions.MatchWord else SearchOptions.None
             let kind = if isWrap then SearchKind.BackwardWithWrap else SearchKind.Backward
             let word = span.GetText()
             let searchData = _search.CreateSearchDataWithOptions word kind extraOptions

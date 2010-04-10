@@ -31,45 +31,72 @@ namespace VimCoreTest
         [Test]
         public void CreateSearchData1()
         {
-            _settings.SetupGet(x => x.IgnoreCase).Returns(true).Verifiable();
             var data = _search.CreateSearchData("foo", SearchKind.Backward);
             Assert.AreEqual("foo", data.Pattern);
             Assert.AreEqual(SearchKind.Backward, data.Kind);
-            Assert.AreEqual(FindOptions.SearchReverse, data.Options);
+            Assert.AreEqual(SearchOptions.None, data.Options);
             _factory.Verify();
         }
 
         [Test]
         public void CreateSearchData2()
         {
-            _settings.SetupGet(x => x.IgnoreCase).Returns(false).Verifiable();
             var data = _search.CreateSearchData("foo", SearchKind.Backward);
             Assert.AreEqual("foo", data.Pattern);
             Assert.AreEqual(SearchKind.Backward, data.Kind);
-            Assert.AreEqual(FindOptions.SearchReverse | FindOptions.MatchCase, data.Options);
-            _factory.Verify();
-        }
-
-        [Test]
-        public void CreateSearchData3()
-        {
-            _settings.SetupGet(x => x.IgnoreCase).Returns(false).Verifiable();
-            var data = _search.CreateSearchData("foo", SearchKind.ForwardWithWrap);
-            Assert.AreEqual("foo", data.Pattern);
-            Assert.AreEqual(SearchKind.ForwardWithWrap, data.Kind);
-            Assert.AreEqual(FindOptions.MatchCase, data.Options);
+            Assert.AreEqual(SearchOptions.None, data.Options);
             _factory.Verify();
         }
 
         [Test]
         public void CreateSearchDataWithOptions1()
         {
-            _settings.SetupGet(x => x.IgnoreCase).Returns(false).Verifiable();
-            var data = _search.CreateSearchDataWithOptions("foo", SearchKind.ForwardWithWrap, FindOptions.WholeWord);
+            var data = _search.CreateSearchDataWithOptions("foo", SearchKind.ForwardWithWrap, SearchOptions.MatchWord);
             Assert.AreEqual("foo", data.Pattern);
             Assert.AreEqual(SearchKind.ForwardWithWrap, data.Kind);
-            Assert.AreEqual(FindOptions.MatchCase | FindOptions.WholeWord, data.Options);
-            _factory.Verify();
+            Assert.AreEqual(SearchOptions.MatchWord, data.Options);
         }
+
+        [Test]
+        public void CreateFindOptions1()
+        {
+            _settings.SetupGet(x => x.IgnoreCase).Returns(true).Verifiable();
+            var options = _searchRaw.CreateFindOptions(SearchKind.Forward, SearchOptions.None);
+            Assert.AreEqual(FindOptions.None, options);
+        }
+
+        [Test]
+        public void CreateFindOptions2()
+        {
+            _settings.SetupGet(x => x.IgnoreCase).Returns(false).Verifiable();
+            var options = _searchRaw.CreateFindOptions(SearchKind.Forward, SearchOptions.None);
+            Assert.AreEqual(FindOptions.MatchCase, options);
+        }
+
+        [Test]
+        public void CreateFindOptions3()
+        {
+            _settings.SetupGet(x => x.IgnoreCase).Returns(true).Verifiable();
+            var options = _searchRaw.CreateFindOptions(SearchKind.Backward, SearchOptions.None);
+            Assert.AreEqual(FindOptions.SearchReverse, options);
+        }
+
+        [Test]
+        public void CreateFindOptions4()
+        {
+            _settings.SetupGet(x => x.IgnoreCase).Returns(true).Verifiable();
+            var options = _searchRaw.CreateFindOptions(SearchKind.Backward, SearchOptions.Regex);
+            Assert.AreEqual(FindOptions.SearchReverse | FindOptions.UseRegularExpressions, options);
+        }
+
+        [Test]
+        public void CreateFindOptions5()
+        {
+            _settings.SetupGet(x => x.IgnoreCase).Returns(true).Verifiable();
+            var options = _searchRaw.CreateFindOptions(SearchKind.Forward, SearchOptions.MatchWord);
+            Assert.AreEqual(FindOptions.WholeWord, options);
+        }
+
     }
+
 }
