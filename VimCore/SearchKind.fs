@@ -20,4 +20,14 @@ module internal SearchKindUtil =
         | SearchKind.BackwardWithWrap -> true
         | SearchKind.ForwardWithWrap -> true
         | _ -> false
+
+    /// Reverse the direction of the given SearchKind
+    let Reverse x =
+        match x with
+        | SearchKind.Forward -> SearchKind.Backward
+        | SearchKind.ForwardWithWrap -> SearchKind.BackwardWithWrap
+        | SearchKind.Backward -> SearchKind.Forward
+        | SearchKind.BackwardWithWrap -> SearchKind.ForwardWithWrap
+        | _ -> failwith "Invalid enum value"
+
     

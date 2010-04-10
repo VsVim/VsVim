@@ -30,12 +30,40 @@ type internal SearchService
 
         caseOptions ||| revOptions ||| searchKindOptions
 
-    member private x.FindNext (searchData:SearchData) point nav =
+    member private x.FindNextMultiple (searchData:SearchData) point nav count =
+
         let tss = SnapshotPointUtil.GetSnapshot point
-        let pos = SnapshotPointUtil.GetPosition point
+        let isWrap = SearchKindUtil.IsWrap searchData.Kind
         let opts = x.CreateFindOptions searchData.Text searchData.Kind searchData.Options
         let findData = FindData(searchData.Text.RawText, tss, opts, nav) 
-        _search.FindNext(pos, (SearchKindUtil.IsWrap searchData.Kind), findData) |> NullableUtil.toOption
+        
+        // Create a function which will give us the next search position
+        let getNextPoint = 
+            if SearchKindUtil.IsForward searchData.Kind then
+                (fun (span:SnapshotSpan) -> span.End |> Some)
+            else 
+                let isWrap = SearchKindUtil.IsWrap searchData.Kind
+                (fun (span:SnapshotSpan) -> 
+                    if span.Start.Position = 0 && isWrap then SnapshotUtil.GetEndPoint tss |> Some
+                    elif span.Start.Position = 0 then None
+                    else span.Start.Subtract(1) |> Some )
+                    
+        // Recursive loop to perform the search "count" times
+        let rec doFind count position = 
+            let result = _search.FindNext(position, isWrap, findData) |> NullableUtil.toOption
+            match result,count > 1 with
+            | Some(span),false -> Some(span)
+            | Some(span),true -> 
+                match getNextPoint span with
+                | Some(point) -> doFind (count-1) point.Position
+                | None -> None
+            | _ -> None
+
+        let count = max 1 count
+        let pos = SnapshotPointUtil.GetPosition point
+        doFind count pos
+
+    member private x.FindNext searchData point nav = x.FindNextMultiple searchData point nav 1
 
     interface ISearchService with
         member x.LastSearch 
@@ -46,5 +74,6 @@ type internal SearchService
         [<CLIEvent>]
         member x.LastSearchChanged = _lastSearchChanged.Publish
         member x.FindNext searchData point nav = x.FindNext searchData point nav
+        member x.FindNextMultiple searchData point nav count = x.FindNextMultiple searchData point nav count
 
 

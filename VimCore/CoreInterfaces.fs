@@ -178,6 +178,9 @@ type ISearchService =
     /// given SnapshotPoint
     abstract FindNext : SearchData -> SnapshotPoint -> ITextStructureNavigator -> SnapshotSpan option
 
+    /// Find the next Nth occurance of the pattern
+    abstract FindNextMultiple : SearchData -> SnapshotPoint -> ITextStructureNavigator -> count:int -> SnapshotSpan option
+
 type IIncrementalSearch = 
     abstract InSearch : bool
     abstract CurrentSearch : SearchData option

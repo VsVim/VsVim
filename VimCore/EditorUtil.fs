@@ -17,14 +17,10 @@ module internal SnapshotUtil =
     let GetLastLineNumber (tss:ITextSnapshot) = tss.LineCount - 1 
         
     /// Get the end point of the snapshot
-    let GetEndPoint (tss:ITextSnapshot) =
-        let line = GetLastLine tss
-        line.End
+    let GetEndPoint (tss:ITextSnapshot) = SnapshotPoint(tss, tss.Length)
         
     /// Get the start point of the snapshot
-    let GetStartPoint (tss:ITextSnapshot) =
-        let first = tss.GetLineFromLineNumber(0)
-        first.Start
+    let GetStartPoint (tss:ITextSnapshot) = SnapshotPoint(tss, 0)
 
     /// Get the line number back if it's valid and if not the last line in the snapshot
     let GetValidLineNumberOrLast (tss:ITextSnapshot) lineNumber = 

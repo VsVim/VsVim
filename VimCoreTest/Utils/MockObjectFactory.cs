@@ -146,17 +146,29 @@ namespace VimCoreTest.Utils
         internal static Mock<ITextBuffer> CreateTextBuffer()
         {
             var mock = new Mock<ITextBuffer>(MockBehavior.Strict);
+            mock.SetupGet(x => x.Properties).Returns(new Microsoft.VisualStudio.Utilities.PropertyCollection());
+            return mock;
+        }
+
+        internal static Mock<ITextVersion> CreateTextVersion(int? versionNumber = null)
+        {
+            var number = versionNumber ?? 1;
+            var mock = new Mock<ITextVersion>(MockBehavior.Strict);
+            mock.SetupGet(x => x.VersionNumber).Returns(number);
             return mock;
         }
 
         internal static Mock<ITextSnapshot> CreateTextSnapshot(
             int length,
-            ITextBuffer buffer = null )
+            ITextBuffer buffer = null,
+            int? versionNumber = null)
         {
+
             buffer = buffer ?? CreateTextBuffer().Object;
             var mock = new Mock<ITextSnapshot>(MockBehavior.Strict);
             mock.SetupGet(x => x.Length).Returns(length);
             mock.SetupGet(x => x.TextBuffer).Returns(buffer);
+            mock.SetupGet(x => x.Version).Returns(CreateTextVersion(versionNumber).Object);
             return mock;
         }
 

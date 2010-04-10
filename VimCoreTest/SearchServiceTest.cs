@@ -23,7 +23,7 @@ namespace VimCoreTest
         [SetUp]
         public void SetUp()
         {
-            _factory = new MockFactory(MockBehavior.Loose);
+            _factory = new MockFactory(MockBehavior.Strict);
             _settings = _factory.Create<IVimGlobalSettings>();
             _textSearch = _factory.Create<ITextSearchService>();
             _searchRaw = new SearchService(_textSearch.Object, _settings.Object);
@@ -143,6 +143,102 @@ namespace VimCoreTest
             var data = new SearchData(SearchText.NewPattern("foo"), SearchKind.Forward, SearchOptions.None);
             AssertFindNext(data, FindOptions.MatchCase | FindOptions.UseRegularExpressions);
         }
+
+        [Test]
+        public void FindNextMulitple1()
+        {
+            var tss = MockObjectFactory.CreateTextSnapshot(42).Object;
+            var nav = _factory.Create<ITextStructureNavigator>();
+            var data = new FindData("foo", tss, FindOptions.UseRegularExpressions | FindOptions.MatchCase, nav.Object);
+            _textSearch
+                .Setup(x => x.FindNext(10, true, data))
+                .Returns(new SnapshotSpan(tss, 11, 3))
+                .Verifiable();
+            var searchData = new SearchData(SearchText.NewPattern("foo"), SearchKind.ForwardWithWrap, SearchOptions.None);
+            var ret = _search.FindNextMultiple(searchData, new SnapshotPoint(tss, 10), nav.Object,1);
+            Assert.IsTrue(ret.HasValue());
+            Assert.AreEqual(new SnapshotSpan(tss, 11, 3), ret.Value);
+            _factory.Verify();
+        }
+
+        [Test]
+        public void FindNextMulitple2()
+        {
+            var tss = MockObjectFactory.CreateTextSnapshot(42).Object;
+            var nav = _factory.Create<ITextStructureNavigator>();
+            var data = new FindData("foo", tss, FindOptions.UseRegularExpressions | FindOptions.MatchCase, nav.Object);
+            _textSearch
+                .Setup(x => x.FindNext(10, true, data))
+                .Returns(new SnapshotSpan(tss, 11, 3))
+                .Verifiable();
+            _textSearch
+                .Setup(x => x.FindNext(14, true, data))
+                .Returns((SnapshotSpan?)null)
+                .Verifiable();
+            var searchData = new SearchData(SearchText.NewPattern("foo"), SearchKind.ForwardWithWrap, SearchOptions.None);
+            var ret = _search.FindNextMultiple(searchData, new SnapshotPoint(tss, 10), nav.Object, 2);
+            Assert.IsFalse(ret.HasValue());
+            _factory.Verify();
+        }
+
+        [Test, Description("In a normal back search stop at 0")]
+        public void FindNextMulitple3()
+        {
+            var tss = MockObjectFactory.CreateTextSnapshot(42).Object;
+            var nav = _factory.Create<ITextStructureNavigator>();
+            var data = new FindData("foo", tss, FindOptions.UseRegularExpressions | FindOptions.MatchCase | FindOptions.SearchReverse, nav.Object);
+            _textSearch
+                .Setup(x => x.FindNext(10, false, data))
+                .Returns(new SnapshotSpan(tss, 0, 3))
+                .Verifiable();
+            var searchData = new SearchData(SearchText.NewPattern("foo"), SearchKind.Backward, SearchOptions.None);
+            var ret = _search.FindNextMultiple(searchData, new SnapshotPoint(tss, 10), nav.Object, 2);
+            Assert.IsFalse(ret.HasValue());
+            _factory.Verify();
+        }
+
+        [Test]
+        public void FindNextMulitple4()
+        {
+            var tss = MockObjectFactory.CreateTextSnapshot(42).Object;
+            var nav = _factory.Create<ITextStructureNavigator>();
+            var data = new FindData("foo", tss, FindOptions.UseRegularExpressions | FindOptions.MatchCase | FindOptions.SearchReverse, nav.Object);
+            _textSearch
+                .Setup(x => x.FindNext(10, true, data))
+                .Returns(new SnapshotSpan(tss, 0, 3))
+                .Verifiable();
+            _textSearch
+                .Setup(x => x.FindNext(42, true, data))
+                .Returns(new SnapshotSpan(tss, 10, 3))
+                .Verifiable();
+            var searchData = new SearchData(SearchText.NewPattern("foo"), SearchKind.BackwardWithWrap, SearchOptions.None);
+            var ret = _search.FindNextMultiple(searchData, new SnapshotPoint(tss, 10), nav.Object, 2);
+            Assert.IsTrue(ret.HasValue());
+            Assert.AreEqual(new SnapshotSpan(tss, 10, 3), ret.Value);
+            _factory.Verify();
+        }
+
+        [Test]
+        public void FindNextMulitple5()
+        {
+            var tss = MockObjectFactory.CreateTextSnapshot(42).Object;
+            var nav = _factory.Create<ITextStructureNavigator>();
+            var data = new FindData("foo", tss, FindOptions.UseRegularExpressions | FindOptions.MatchCase, nav.Object);
+            _textSearch
+                .Setup(x => x.FindNext(10, true, data))
+                .Returns(new SnapshotSpan(tss, 0, 3))
+                .Verifiable();
+            _textSearch
+                .Setup(x => x.FindNext(3, true, data))
+                .Returns(new SnapshotSpan(tss, 10, 3))
+                .Verifiable();
+            var searchData = new SearchData(SearchText.NewPattern("foo"), SearchKind.ForwardWithWrap, SearchOptions.None);
+            var ret = _search.FindNextMultiple(searchData, new SnapshotPoint(tss, 10), nav.Object, 2);
+            Assert.IsTrue(ret.HasValue());
+            Assert.AreEqual(new SnapshotSpan(tss, 10, 3), ret.Value);
+            _factory.Verify();
+        }
+
 
     }
 
