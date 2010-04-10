@@ -118,9 +118,10 @@ type internal GlobalSettings() =
             ( ShiftWidthName, "sw", NumberKind, NumberValue(4) );
             ( HighlightSearchName, "hls", ToggleKind, ToggleValue(false) );
             ( TildeOpName, "top", ToggleKind, ToggleValue(false) );
+            ( SmartCaseName, "scs", ToggleKind, ToggleValue(false) );
             ( VimRcName, VimRcName, StringKind, StringValue(System.String.Empty) );
             ( VimRcPathsName, VimRcPathsName, StringKind, StringValue(System.String.Empty) );
-            ( DoubleEscape, DoubleEscape, ToggleKind, ToggleValue(false) );
+            ( DoubleEscapeName, DoubleEscapeName, ToggleKind, ToggleValue(false) );
         |]
 
     let _map = SettingsMap(GlobalSettings, true)
@@ -151,9 +152,12 @@ type internal GlobalSettings() =
         member x.TildeOp
             with get() = _map.GetBoolValue TildeOpName
             and set value = _map.TrySetValue TildeOpName (ToggleValue(value)) |> ignore
+        member x.SmartCase
+            with get() = _map.GetBoolValue SmartCaseName
+            and set value = _map.TrySetValue SmartCaseName (ToggleValue(value)) |> ignore
         member x.DoubleEscape
-            with get() = _map.GetBoolValue DoubleEscape
-            and set value = _map.TrySetValue DoubleEscape (ToggleValue(value)) |> ignore
+            with get() = _map.GetBoolValue DoubleEscapeName
+            and set value = _map.TrySetValue DoubleEscapeName (ToggleValue(value)) |> ignore
         member x.VimRc 
             with get() = _map.GetStringValue VimRcName
             and set value = _map.TrySetValue VimRcName (StringValue(value)) |> ignore

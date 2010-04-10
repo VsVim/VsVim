@@ -256,7 +256,8 @@ module GlobalSettingNames =
     let HighlightSearchName = "hlsearch"
     let StartOfLineName = "startofline"
     let TildeOpName = "tildeop"
-    let DoubleEscape = "vsvimdoubleescape"
+    let SmartCaseName = "smartcase"
+    let DoubleEscapeName = "vsvimdoubleescape"
     let VimRcName = "vimrc"
     let VimRcPathsName = "vimrcpaths"
 
@@ -298,6 +299,10 @@ and IVimGlobalSettings =
 
     /// Controls the behavior of ~ in normal mode
     abstract TildeOp : bool with get,set
+
+    /// Overrides the IgnoreCase setting in certain cases if the pattern contains
+    /// any upper case letters
+    abstract SmartCase : bool with get,set
 
     /// Whether or not to highlight previous search patterns matching cases
     abstract HighlightSearch : bool with get,set
