@@ -4,6 +4,7 @@ namespace Vim
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Operations
+open Microsoft.VisualStudio.Text.Outlining
 open Microsoft.VisualStudio.Language.Intellisense
 open Microsoft.VisualStudio.Text.Classification
 open System.ComponentModel.Composition
@@ -16,6 +17,7 @@ type internal VimBufferFactory
     (
         _host : IVimHost,
         _editorOperationsFactoryService : IEditorOperationsFactoryService,
+        _outliningManagerService : IOutliningManagerService,
         _completionWindowBrokerFactoryService : IDisplayWindowBrokerFactoryService,
         _textSearchService : ITextSearchService,
         _textStructureNavigatorSelectorService : ITextStructureNavigatorSelectorService,
@@ -23,6 +25,7 @@ type internal VimBufferFactory
 
     member x.CreateBuffer (vim:IVim) view = 
         let editOperations = _editorOperationsFactoryService.GetEditorOperations(view)
+        let outlining = _outliningManagerService.GetOutliningManager(view)
         let jumpList = JumpList(_tlcService) :> IJumpList
         let localSettings = LocalSettings(vim.Settings, view) :> IVimLocalSettings
         let bufferRaw = 
@@ -36,11 +39,11 @@ type internal VimBufferFactory
         let statusUtil = x.CreateStatusUtil bufferRaw 
         let wordNav = x.CreateTextStructureNavigator view.TextBuffer WordKind.NormalWord
         let broker = _completionWindowBrokerFactoryService.CreateDisplayWindowBroker view
-        let normalIncrementalSearch = Vim.Modes.Normal.IncrementalSearch(view, localSettings, wordNav, vim.SearchService) :> IIncrementalSearch
-        let normalOpts = Modes.Normal.DefaultOperations(view,editOperations,_host, statusUtil, localSettings,wordNav,jumpList, normalIncrementalSearch) :> Modes.Normal.IOperations
-        let commandOpts = Modes.Command.DefaultOperations(view,editOperations,_host, statusUtil, jumpList, localSettings, vim.KeyMap) :> Modes.Command.IOperations
+        let normalIncrementalSearch = Vim.Modes.Normal.IncrementalSearch(view, outlining, localSettings, wordNav, vim.SearchService) :> IIncrementalSearch
+        let normalOpts = Modes.Normal.DefaultOperations(view,editOperations, outlining,_host, statusUtil, localSettings,wordNav,jumpList, normalIncrementalSearch) :> Modes.Normal.IOperations
+        let commandOpts = Modes.Command.DefaultOperations(view,editOperations,outlining, _host, statusUtil, jumpList, localSettings, vim.KeyMap) :> Modes.Command.IOperations
         let commandProcessor = Modes.Command.CommandProcessor(buffer, commandOpts, statusUtil) :> Modes.Command.ICommandProcessor
-        let insertOpts = Modes.Insert.DefaultOperations(view,editOperations,_host, jumpList, localSettings) :> Modes.ICommonOperations
+        let insertOpts = Modes.Insert.DefaultOperations(view,editOperations,outlining,_host, jumpList, localSettings) :> Modes.ICommonOperations
         let visualOptsFactory kind = 
             let mode = 
                 match kind with 
@@ -49,7 +52,7 @@ type internal VimBufferFactory
                 | ModeKind.VisualLine -> Modes.Visual.SelectionMode.Line
                 | _ -> invalidArg "_kind" "Invalid kind for Visual Mode"
             let tracker = Modes.Visual.SelectionTracker(view,mode) :> Modes.Visual.ISelectionTracker
-            Modes.Visual.DefaultOperations(view,editOperations,_host, jumpList, tracker, localSettings) :> Modes.Visual.IOperations
+            Modes.Visual.DefaultOperations(view,editOperations, outlining, _host, jumpList, tracker, localSettings) :> Modes.Visual.IOperations
 
         // Normal mode values
         let modeList = 

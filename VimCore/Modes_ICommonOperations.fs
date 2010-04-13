@@ -55,6 +55,13 @@ type ICommonOperations =
     /// jump list
     abstract NavigateToPoint : VirtualSnapshotPoint -> bool
 
+    /// Ensure the caret is visible including both on screen and not in a collapsed outlining
+    /// region
+    abstract EnsureCaretVisible : unit -> unit
+
+    /// Move the caret to a given point on the screen
+    abstract MoveCaretToPoint : SnapshotPoint -> unit
+
     /// Move the caret count spaces left on the same line
     abstract MoveCaretLeft : count : int -> unit
 

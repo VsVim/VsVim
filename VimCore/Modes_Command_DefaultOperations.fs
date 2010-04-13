@@ -6,6 +6,7 @@ open Vim.Modes
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Operations
+open Microsoft.VisualStudio.Text.Outlining
 open System.Text.RegularExpressions
 open Vim.RegexUtil
 
@@ -13,12 +14,13 @@ type internal DefaultOperations
     (
         _textView : ITextView,
         _operations : IEditorOperations, 
+        _outlining : IOutliningManager,
         _host : IVimHost,
         _statusUtil : IStatusUtil,
         _jumpList : IJumpList,
         _settings : IVimLocalSettings,
         _keyMap : IKeyMap) =
-    inherit CommonOperations(_textView, _operations, _host, _jumpList, _settings) 
+    inherit CommonOperations(_textView, _operations, _outlining, _host, _jumpList, _settings) 
 
     /// Format the setting for use in output
     let FormatSetting(setting:Setting) = 

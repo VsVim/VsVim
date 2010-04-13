@@ -3,6 +3,8 @@
 namespace Vim
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Operations
+open Microsoft.VisualStudio.Text.Editor
+open Microsoft.VisualStudio.Text.Outlining
 
 /// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
 /// include any Vim specific logic
@@ -266,3 +268,24 @@ module internal SnapshotPointUtil =
         let length = min count length
         let span = SnapshotSpan(point, length)
         SnapshotSpanUtil.GetPoints span
+
+/// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
+/// include any Vim specific logic
+module internal TextViewUtil =
+
+    let GetCaret (textView:ITextView) = textView.Caret
+
+    let GetCaretPoint (textView:ITextView) = textView.Caret.Position.BufferPosition
+
+    /// Ensure that the caret is both on screen and not in the middle of any outlining region
+    let EnsureCaretVisible textView (outliningManager:IOutliningManager) = 
+        let caret = GetCaret textView
+        caret.EnsureVisible()
+        let point = GetCaretPoint textView
+        outliningManager.ExpandAll(SnapshotSpan(point,0), fun _ -> true) |> ignore
+
+    let MoveCaretToPoint textView (point:SnapshotPoint) outliningManager = 
+        let caret = GetCaret textView
+        caret.MoveTo(point) |> ignore
+        EnsureCaretVisible textView outliningManager
+

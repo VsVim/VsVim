@@ -13,6 +13,7 @@ using Microsoft.VisualStudio.Text;
 using Microsoft.FSharp.Core;
 using Microsoft.FSharp.Control;
 using Microsoft.VisualStudio.Text.Operations;
+using Microsoft.VisualStudio.Text.Outlining;
 
 namespace VimCoreTest
 {
@@ -25,6 +26,7 @@ namespace VimCoreTest
         private Mock<ITextStructureNavigator> _nav;
         private Mock<IVimGlobalSettings> _globalSettings;
         private Mock<IVimLocalSettings> _settings;
+        private Mock<IOutliningManager> _outiling;
         private ITextView _textView;
         private IncrementalSearch _searchRaw;
         private IIncrementalSearch _search;
@@ -37,8 +39,10 @@ namespace VimCoreTest
             _nav = _factory.Create<ITextStructureNavigator>();
             _globalSettings = MockObjectFactory.CreateGlobalSettings(ignoreCase: true);
             _settings = MockObjectFactory.CreateLocalSettings(_globalSettings.Object);
+            _outiling = new Mock<IOutliningManager>(MockBehavior.Strict);
             _searchRaw = new IncrementalSearch(
                 _textView,
+                _outiling.Object,
                 _settings.Object,
                 _nav.Object,
                 _searchService.Object);

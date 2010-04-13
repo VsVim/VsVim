@@ -5,6 +5,7 @@ open Vim
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Operations
 open Microsoft.VisualStudio.Text.Editor
+open Microsoft.VisualStudio.Text.Outlining
 open NullableUtil
 
 type internal IncrementalSearchData = {
@@ -16,6 +17,7 @@ type internal IncrementalSearchData = {
 type internal IncrementalSearch
     (
         _textView : ITextView,
+        _outlining : IOutliningManager,
         _settings : IVimLocalSettings,
         _navigator : ITextStructureNavigator,
         _search : ISearchService) =
@@ -47,7 +49,7 @@ type internal IncrementalSearch
 
             let resetView() = 
                 let point = data.Start.GetPoint _textView.TextSnapshot
-                ViewUtil.MoveCaretToPoint _textView point |> ignore
+                TextViewUtil.MoveCaretToPoint _textView point _outlining 
 
             let doSearch pattern = 
                 let searchData = {data.SearchData with Text=Pattern(pattern)}
@@ -60,7 +62,7 @@ type internal IncrementalSearch
 
                 match ret with
                 | Some(span) ->
-                    ViewUtil.MoveCaretToPoint _textView span.Start |> ignore
+                    TextViewUtil.MoveCaretToPoint _textView span.Start _outlining 
                     _currentSearchUpdated.Trigger (searchData, SearchFound(span)) 
                     _data <- Some { data with SearchData = searchData; SearchResult = SearchFound(span) }
                 | None ->

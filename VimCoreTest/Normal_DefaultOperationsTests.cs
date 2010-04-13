@@ -13,6 +13,7 @@ using Microsoft.VisualStudio.Text.Operations;
 using Microsoft.VisualStudio.Text;
 using System.Windows.Input;
 using Vim.Modes;
+using Microsoft.VisualStudio.Text.Outlining;
 
 namespace VimCoreTest
 {
@@ -27,6 +28,8 @@ namespace VimCoreTest
         private Mock<IVimGlobalSettings> _globalSettings;
         private Mock<IVimLocalSettings> _settings;
         private Mock<IIncrementalSearch> _search;
+        private Mock<IOutliningManager> _outlining;
+            
         private ISearchService _searchService;
         private Mock<IStatusUtil> _statusUtil;
 
@@ -61,7 +64,8 @@ namespace VimCoreTest
             _search = new Mock<IIncrementalSearch>(MockBehavior.Strict);
             _search.SetupGet(x => x.SearchService).Returns(_searchService);
             _statusUtil = new Mock<IStatusUtil>(MockBehavior.Strict);
-            _operationsRaw = new DefaultOperations(_view, editorOpts, _host.Object, _statusUtil.Object, _settings.Object, nav, _jumpList.Object, _search.Object);
+            _outlining = new Mock<IOutliningManager>(MockBehavior.Strict);
+            _operationsRaw = new DefaultOperations(_view, editorOpts, _outlining.Object, _host.Object, _statusUtil.Object, _settings.Object, nav, _jumpList.Object, _search.Object);
             _operations = _operationsRaw;
         }
 

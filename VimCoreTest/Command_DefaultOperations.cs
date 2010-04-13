@@ -12,6 +12,7 @@ using Vim.Modes;
 using Vim.Modes.Command;
 using Moq;
 using Microsoft.VisualStudio.Text.Operations;
+using Microsoft.VisualStudio.Text.Outlining;
 
 namespace VimCoreTest
 {
@@ -27,6 +28,7 @@ namespace VimCoreTest
         private Mock<IJumpList> _jumpList;
         private Mock<IVimLocalSettings> _settings;
         private Mock<IKeyMap> _keyMap;
+        private Mock<IOutliningManager> _outlining;
 
         private void Create(params string[] lines)
         {
@@ -37,7 +39,8 @@ namespace VimCoreTest
             _settings = new Mock<IVimLocalSettings>(MockBehavior.Strict);
             _keyMap = new Mock<IKeyMap>(MockBehavior.Strict);
             _statusUtil = new Mock<IStatusUtil>(MockBehavior.Strict);
-            _operationsRaw = new DefaultOperations(_view, _editOpts.Object, _host.Object, _statusUtil.Object,_jumpList.Object, _settings.Object, _keyMap.Object);
+            _outlining = new Mock<IOutliningManager>(MockBehavior.Strict);
+            _operationsRaw = new DefaultOperations(_view, _editOpts.Object, _outlining.Object, _host.Object, _statusUtil.Object,_jumpList.Object, _settings.Object, _keyMap.Object);
             _operations = _operationsRaw;
         }
 

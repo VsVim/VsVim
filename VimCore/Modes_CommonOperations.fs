@@ -5,12 +5,14 @@ open Vim
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Operations
+open Microsoft.VisualStudio.Text.Outlining
 
 [<AbstractClass>]
 type internal CommonOperations 
     (
         _textView : ITextView,
         _operations : IEditorOperations,
+        _outlining : IOutliningManager,
         _host : IVimHost,
         _jumpList : IJumpList,
         _settings : IVimLocalSettings ) =
@@ -18,7 +20,7 @@ type internal CommonOperations
     member private x.NavigateToPoint (point:VirtualSnapshotPoint) = 
         let buf = point.Position.Snapshot.TextBuffer
         if buf = _textView.TextBuffer then 
-            ViewUtil.MoveCaretToPoint _textView point.Position |> ignore
+            x.MoveCaretToPoint point.Position
             true
         else  _host.NavigateTo point 
 
@@ -60,6 +62,10 @@ type internal CommonOperations
             let text = fixText (line.GetText())
             edit.Replace(line.Extent.Span, text) |> ignore
         edit.Apply() |> ignore
+
+    member x.EnsureCaretVisible () = TextViewUtil.EnsureCaretVisible _textView _outlining
+
+    member x.MoveCaretToPoint point = TextViewUtil.MoveCaretToPoint _textView point _outlining
 
     /// Change the letters on the given span by applying the specified function
     /// to each of them
@@ -154,7 +160,7 @@ type internal CommonOperations
         member x.JumpToMark ident (map:IMarkMap) = 
             let before = ViewUtil.GetCaretPoint _textView
             let jumpLocal (point:VirtualSnapshotPoint) = 
-                ViewUtil.MoveCaretToPoint _textView point.Position |> ignore
+                x.MoveCaretToPoint point.Position
                 _jumpList.Add before |> ignore
                 Succeeded
             if not (map.IsLocalMark ident) then 
@@ -224,14 +230,14 @@ type internal CommonOperations
             _operations.ResetSelection()
             let caret = ViewUtil.GetCaretPoint _textView
             let span = MotionUtil.CharLeft caret count
-            ViewUtil.MoveCaretToPoint _textView span.Start |> ignore
+            x.MoveCaretToPoint span.Start
     
         /// Move the cursor count spaces to the right
         member x.MoveCaretRight count =
             _operations.ResetSelection()
             let caret = ViewUtil.GetCaretPoint _textView
             let span = MotionUtil.CharRight caret count
-            ViewUtil.MoveCaretToPoint _textView span.End  |> ignore
+            x.MoveCaretToPoint span.End
     
         /// Move the cursor count spaces up 
         member x.MoveCaretUp count =
@@ -262,7 +268,7 @@ type internal CommonOperations
             let line = SnapshotUtil.GetValidLineOrLast caret.Snapshot (line.LineNumber + count)
             let point = TssUtil.FindFirstNonWhitespaceCharacter line
             _operations.ResetSelection()
-            ViewUtil.MoveCaretToPoint _textView point |> ignore
+            x.MoveCaretToPoint point 
 
         member x.MoveWordForward kind count = 
             let rec inner pos count = 
@@ -271,7 +277,7 @@ type internal CommonOperations
                     let nextPos = TssUtil.FindNextWordPosition pos kind
                     inner nextPos (count-1)
             let pos = inner (ViewUtil.GetCaretPoint _textView) count
-            ViewUtil.MoveCaretToPoint _textView pos |> ignore
+            x.MoveCaretToPoint pos 
             
         member x.MoveWordBackward kind count = 
             let rec inner pos count =
@@ -280,7 +286,7 @@ type internal CommonOperations
                     let prevPos = TssUtil.FindPreviousWordPosition pos kind
                     inner prevPos (count-1)
             let pos = inner (ViewUtil.GetCaretPoint _textView) count
-            ViewUtil.MoveCaretToPoint _textView pos |> ignore
+            x.MoveCaretToPoint pos 
 
         member x.ShiftSpanRight span = x.ShiftSpanRight span
 
@@ -369,3 +375,5 @@ type internal CommonOperations
         member x.ChangeLetterCase span = x.ChangeLettersOnSpan span CharUtil.ChangeCase
         member x.MakeLettersLowercase span = x.ChangeLettersOnSpan span CharUtil.ToLower
         member x.MakeLettersUppercase span = x.ChangeLettersOnSpan span CharUtil.ToUpper
+        member x.EnsureCaretVisible () = x.EnsureCaretVisible()
+        member x.MoveCaretToPoint point = x.MoveCaretToPoint point

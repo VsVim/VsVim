@@ -10,6 +10,7 @@ using Moq;
 using Vim;
 using VimCoreTest.Utils;
 using Microsoft.VisualStudio.Text.Operations;
+using Microsoft.VisualStudio.Text.Outlining;
 
 namespace VimCoreTest
 {
@@ -19,7 +20,7 @@ namespace VimCoreTest
 
         private class OperationsImpl : CommonOperations
         {
-            internal OperationsImpl(ITextView view, IEditorOperations opts, IVimHost host, IJumpList jumpList, IVimLocalSettings settings) : base(view, opts, host, jumpList, settings) { }
+            internal OperationsImpl(ITextView view, IEditorOperations opts, IOutliningManager outlining, IVimHost host, IJumpList jumpList, IVimLocalSettings settings) : base(view, opts, outlining, host, jumpList, settings) { }
         }
 
         private IWpfTextView _view;
@@ -29,6 +30,7 @@ namespace VimCoreTest
         private Mock<IJumpList> _jumpList;
         private Mock<IVimLocalSettings> _settings;
         private Mock<IVimGlobalSettings> _globalSettings;
+        private Mock<IOutliningManager> _outlining;
         private ICommonOperations _operations;
         private CommonOperations _operationsRaw;
 
@@ -42,9 +44,11 @@ namespace VimCoreTest
             _editorOpts = new Mock<IEditorOperations>(MockBehavior.Strict);
             _settings = new Mock<IVimLocalSettings>(MockBehavior.Strict);
             _globalSettings = new Mock<IVimGlobalSettings>(MockBehavior.Strict);
+            _outlining = new Mock<IOutliningManager>(MockBehavior.Strict);
             _globalSettings.SetupGet(x => x.ShiftWidth).Returns(2);
             _settings.SetupGet(x => x.GlobalSettings).Returns(_globalSettings.Object);
-            _operationsRaw = new OperationsImpl(_view, _editorOpts.Object, _host.Object, _jumpList.Object,_settings.Object);
+
+            _operationsRaw = new OperationsImpl(_view, _editorOpts.Object, _outlining.Object, _host.Object, _jumpList.Object,_settings.Object);
             _operations = _operationsRaw;
         }
 

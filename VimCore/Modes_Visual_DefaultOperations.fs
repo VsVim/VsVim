@@ -4,6 +4,7 @@ namespace Vim.Modes.Visual
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Operations
 open Microsoft.VisualStudio.Text.Editor
+open Microsoft.VisualStudio.Text.Outlining
 open Vim.Modes
 open Vim
 
@@ -11,11 +12,12 @@ type internal DefaultOperations
     ( 
         _textView : ITextView,
         _operations : IEditorOperations,
+        _outlining : IOutliningManager,
         _host : IVimHost,
         _jumpList : IJumpList,
         _tracker : ISelectionTracker,
         _settings : IVimLocalSettings ) =
-    inherit CommonOperations(_textView, _operations, _host, _jumpList, _settings)
+    inherit CommonOperations(_textView, _operations, _outlining, _host, _jumpList, _settings)
 
     member private x.CommonOperations = x :> ICommonOperations
 

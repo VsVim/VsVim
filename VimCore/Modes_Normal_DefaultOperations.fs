@@ -6,11 +6,13 @@ open Vim.Modes
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Operations
+open Microsoft.VisualStudio.Text.Outlining
 
 type internal DefaultOperations
     (
     _textView : ITextView,
     _operations : IEditorOperations,
+    _outlining : IOutliningManager,
     _host : IVimHost,
     _statusUtil : IStatusUtil,
     _settings : IVimLocalSettings,
@@ -18,7 +20,7 @@ type internal DefaultOperations
     _jumpList : IJumpList,
     _incrementalSearch : IIncrementalSearch) =
 
-    inherit CommonOperations(_textView, _operations, _host, _jumpList, _settings)
+    inherit CommonOperations(_textView, _operations, _outlining, _host, _jumpList, _settings)
 
     let _search = _incrementalSearch.SearchService
 
@@ -55,7 +57,7 @@ type internal DefaultOperations
             let count = if SearchKindUtil.IsForward kind then count + 1 else count 
 
             match _search.FindNextMultiple data point _normalWordNav count with
-            | Some(span) -> ViewUtil.MoveCaretToPoint _textView span.Start |> ignore
+            | Some(span) -> x.CommonImpl.MoveCaretToPoint span.Start 
             | None -> ()
 
             _search.LastSearch <- data
@@ -79,7 +81,7 @@ type internal DefaultOperations
 
             let point = ViewUtil.GetCaretPoint _textView
             match _search.FindNextMultiple last point _normalWordNav count with
-            | Some(span) -> ViewUtil.MoveCaretToPoint _textView span.Start |> ignore
+            | Some(span) -> x.CommonImpl.MoveCaretToPoint span.Start 
             | None -> _statusUtil.OnError (Resources.NormalMode_PatternNotFound last.Text.RawText)
 
     member x.GoToLineCore line =
@@ -105,14 +107,14 @@ type internal DefaultOperations
             let caret = ViewUtil.GetCaretPoint _textView
             let span = x.CommonImpl.PasteAfter caret text opKind
             if moveCursor then
-                ViewUtil.MoveCaretToPoint _textView span.End |> ignore
+                x.CommonImpl.MoveCaretToPoint span.End 
             else if opKind = OperationKind.LineWise then
                 // For a LineWise paste we want to place the cursor at the start
                 // of the next line
                 let caretLineNumber = caret.GetContainingLine().LineNumber
                 let nextLine = _textView.TextSnapshot.GetLineFromLineNumber(caretLineNumber + 1)
                 let point = TssUtil.FindFirstNonWhitespaceCharacter nextLine
-                ViewUtil.MoveCaretToPoint _textView point |> ignore
+                x.CommonImpl.MoveCaretToPoint point 
  
         /// Paste the text before the cursor
         member x.PasteBeforeCursor text count opKind moveCursor = 
@@ -120,13 +122,13 @@ type internal DefaultOperations
             let caret = ViewUtil.GetCaretPoint _textView
             let span = x.CommonImpl.PasteBefore caret text opKind
             if moveCursor then
-                ViewUtil.MoveCaretToPoint _textView span.End |> ignore
+                x.CommonImpl.MoveCaretToPoint span.End 
             else if opKind = OperationKind.LineWise then
                 // For a LineWise paste we want to place the cursor at the start of this line. caret is a a snapshot
                 // point from the old snapshot, so we need to find the same line in the new snapshot
                 let line = _textView.TextSnapshot.GetLineFromLineNumber(caret.GetContainingLine().LineNumber)
                 let point = TssUtil.FindFirstNonWhitespaceCharacter line
-                ViewUtil.MoveCaretToPoint _textView point |> ignore
+                x.CommonImpl.MoveCaretToPoint point 
 
         member x.InsertLineBelow () =
             let point = ViewUtil.GetCaretPoint _textView
@@ -147,7 +149,7 @@ type internal DefaultOperations
             let buffer = line.Snapshot.TextBuffer
             buffer.Replace(new Span(line.Start.Position,0), System.Environment.NewLine) |> ignore
             let line = buffer.CurrentSnapshot.GetLineFromLineNumber(line.LineNumber)
-            ViewUtil.MoveCaretToPoint _textView line.Start |> ignore
+            x.CommonImpl.MoveCaretToPoint line.Start 
             line
                 
         /// Implement the r command in normal mode.  

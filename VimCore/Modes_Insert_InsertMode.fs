@@ -51,4 +51,4 @@ type internal InsertMode
             let line = point.GetContainingLine()
             if line.Start <> point then
                 let point = point.Subtract(1)
-                ViewUtil.MoveCaretToPoint _data.TextView point |> ignore
+                _operations.MoveCaretToPoint point

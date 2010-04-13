@@ -10,6 +10,7 @@ using Microsoft.VisualStudio.Text;
 using VimCoreTest.Utils;
 using Microsoft.VisualStudio.Text.Operations;
 using Vim;
+using Microsoft.VisualStudio.Text.Outlining;
 
 namespace VimCoreTest
 {
@@ -22,6 +23,7 @@ namespace VimCoreTest
         private Mock<IVimHost> _host;
         private Mock<IJumpList> _jumpList;
         private Mock<IVimLocalSettings> _settings;
+        private Mock<IOutliningManager> _outlining;
         private IOperations _operations;
 
         private void Create(params string[] lines)
@@ -31,8 +33,9 @@ namespace VimCoreTest
             _tracker = new Mock<ISelectionTracker>(MockBehavior.Strict);
             _jumpList = new Mock<IJumpList>(MockBehavior.Strict);
             _host = new Mock<IVimHost>(MockBehavior.Strict);
+            _outlining = new Mock<IOutliningManager>(MockBehavior.Strict);
             _settings = new Mock<IVimLocalSettings>(MockBehavior.Strict);
-            _operations = new DefaultOperations(_view, _editorOpts.Object, _host.Object, _jumpList.Object, _tracker.Object, _settings.Object);
+            _operations = new DefaultOperations(_view, _editorOpts.Object, _outlining.Object, _host.Object, _jumpList.Object, _tracker.Object, _settings.Object);
         }
 
         [Test]
