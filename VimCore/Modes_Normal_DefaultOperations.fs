@@ -57,7 +57,9 @@ type internal DefaultOperations
             let count = if SearchKindUtil.IsForward kind then count + 1 else count 
 
             match _search.FindNextMultiple data point _normalWordNav count with
-            | Some(span) -> x.CommonImpl.MoveCaretToPoint span.Start 
+            | Some(span) -> 
+                x.CommonImpl.MoveCaretToPoint span.Start 
+                x.CommonImpl.EnsureCaretOnScreenAndTextExpanded()
             | None -> ()
 
             _search.LastSearch <- data
@@ -81,7 +83,9 @@ type internal DefaultOperations
 
             let point = TextViewUtil.GetCaretPoint _textView
             match _search.FindNextMultiple last point _normalWordNav count with
-            | Some(span) -> x.CommonImpl.MoveCaretToPoint span.Start 
+            | Some(span) -> 
+                x.CommonImpl.MoveCaretToPoint span.Start 
+                x.CommonImpl.EnsureCaretOnScreenAndTextExpanded()
             | None -> _statusUtil.OnError (Resources.NormalMode_PatternNotFound last.Text.RawText)
 
     member x.GoToLineCore line =

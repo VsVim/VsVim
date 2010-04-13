@@ -198,10 +198,15 @@ namespace VimCoreTest
             CreateLines("foo", "bar");
             var map = new MarkMap(new TrackingLineColumnService());
             map.SetLocalMark(new SnapshotPoint(_view.TextSnapshot, 0), 'a');
+            _outlining
+                .Setup(x => x.ExpandAll(new SnapshotSpan(_view.TextSnapshot, 0, 0), It.IsAny<Predicate<ICollapsed>>()))
+                .Returns<IEnumerable<ICollapsed>>(null)
+                .Verifiable();
             _jumpList.Setup(x => x.Add(_view.GetCaretPoint())).Verifiable();
             var res = _operations.JumpToMark('a', map);
             Assert.IsTrue(res.IsSucceeded);
             _jumpList.Verify();
+            _outlining.Verify();
         }
 
         [Test]
@@ -222,9 +227,14 @@ namespace VimCoreTest
             map.SetMark(new SnapshotPoint(_view.TextSnapshot, 0), 'A');
             _host.Setup(x => x.NavigateTo(new VirtualSnapshotPoint(_view.TextSnapshot,0))).Returns(true);
             _jumpList.Setup(x => x.Add(_view.GetCaretPoint())).Verifiable();
+            _outlining
+                .Setup(x => x.ExpandAll(new SnapshotSpan(_view.TextSnapshot, 0, 0), It.IsAny<Predicate<ICollapsed>>()))
+                .Returns<IEnumerable<ICollapsed>>(null)
+                .Verifiable();
             var res = _operations.JumpToMark('A', map);
             Assert.IsTrue(res.IsSucceeded);
             _jumpList.Verify();
+            _outlining.Verify();
         }
 
         [Test, Description("Jump to global mark and jump fails")]

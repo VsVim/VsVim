@@ -121,10 +121,11 @@ namespace VimCoreTest.Utils
         }
 
         internal static Mock<ITextView> CreateTextView(
-            ITextBuffer buffer,
+            ITextBuffer buffer = null,
             ITextCaret caret = null,
             ITextSelection selection = null)
         {
+            buffer = buffer ?? CreateTextBuffer(addSnapshot:true).Object;
             caret = caret ?? CreateCaret().Object;
             selection = selection ?? CreateSelection().Object;
             var view = new Mock<ITextView>(MockBehavior.Strict);
@@ -143,10 +144,14 @@ namespace VimCoreTest.Utils
             return Tuple.Create(view, caret, selection);
         }
 
-        internal static Mock<ITextBuffer> CreateTextBuffer()
+        internal static Mock<ITextBuffer> CreateTextBuffer(bool addSnapshot=false)
         {
             var mock = new Mock<ITextBuffer>(MockBehavior.Strict);
             mock.SetupGet(x => x.Properties).Returns(new Microsoft.VisualStudio.Utilities.PropertyCollection());
+            if (addSnapshot)
+            {
+                mock.SetupGet(x => x.CurrentSnapshot).Returns(CreateTextSnapshot(42).Object);
+            }
             return mock;
         }
 

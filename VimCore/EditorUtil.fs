@@ -279,22 +279,36 @@ module internal TextViewUtil =
 
     let GetCaretPoint (textView:ITextView) = textView.Caret.Position.BufferPosition
 
-    /// Ensure that the caret is both on screen and not in the middle of any outlining region
-    let EnsureCaretVisible textView (outliningManager:IOutliningManager) = 
+    /// Ensure the caret is currently on the visible screen
+    let EnsureCaretOnScreen textView = 
         let caret = GetCaret textView
         caret.EnsureVisible()
+
+    /// Ensure the text pointed to by the caret is currently expanded
+    let EnsureCaretTextExpanded textView (outliningManager:IOutliningManager) = 
         let point = GetCaretPoint textView
         outliningManager.ExpandAll(SnapshotSpan(point,0), fun _ -> true) |> ignore
 
-    let MoveCaretToPoint textView (point:SnapshotPoint) outliningManager = 
+    /// Ensure that the caret is both on screen and not in the middle of any outlining region
+    let EnsureCaretOnScreenAndTextExpanded textView outliningManager =
+        EnsureCaretOnScreen textView
+        EnsureCaretTextExpanded textView outliningManager
+
+    /// Move the caret to the given point and ensure it is on screen.  Will not expand any outlining regions
+    let MoveCaretToPoint textView (point:SnapshotPoint) = 
         let caret = GetCaret textView
         caret.MoveTo(point) |> ignore
-        EnsureCaretVisible textView outliningManager
+        EnsureCaretOnScreen textView 
 
-    let MoveCaretToVirtualPoint textView (point:VirtualSnapshotPoint) outliningManager = MoveCaretToPoint textView point.Position outliningManager
+    /// Move the caret to the given point and ensure it is on screen.  Will not expand any outlining regions
+    let MoveCaretToVirtualPoint textView (point:VirtualSnapshotPoint) = 
+        let caret = GetCaret textView
+        caret.MoveTo(point) |> ignore
+        EnsureCaretOnScreen textView 
 
-    let MoveCaretToPosition textView (pos:int) outliningManager = 
+    /// Move the caret to the given position and ensure it is on screen.  Will not expand any outlining regions
+    let MoveCaretToPosition textView (pos:int) = 
         let tss = GetSnapshot textView
         let point = SnapshotPoint(tss, pos)
-        MoveCaretToPoint textView point outliningManager
+        MoveCaretToPoint textView point 
 

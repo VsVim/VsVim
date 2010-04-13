@@ -49,7 +49,8 @@ type internal IncrementalSearch
 
             let resetView() = 
                 let point = data.Start.GetPoint _textView.TextSnapshot
-                TextViewUtil.MoveCaretToPoint _textView point _outlining 
+                TextViewUtil.MoveCaretToPoint _textView point 
+                TextViewUtil.EnsureCaretOnScreenAndTextExpanded _textView _outlining
 
             let doSearch pattern = 
                 let searchData = {data.SearchData with Text=Pattern(pattern)}
@@ -62,7 +63,8 @@ type internal IncrementalSearch
 
                 match ret with
                 | Some(span) ->
-                    TextViewUtil.MoveCaretToPoint _textView span.Start _outlining 
+                    TextViewUtil.MoveCaretToPoint _textView span.Start 
+                    TextViewUtil.EnsureCaretOnScreenAndTextExpanded _textView _outlining
                     _currentSearchUpdated.Trigger (searchData, SearchFound(span)) 
                     _data <- Some { data with SearchData = searchData; SearchResult = SearchFound(span) }
                 | None ->

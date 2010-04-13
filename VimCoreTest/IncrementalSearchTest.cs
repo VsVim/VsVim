@@ -26,7 +26,7 @@ namespace VimCoreTest
         private Mock<ITextStructureNavigator> _nav;
         private Mock<IVimGlobalSettings> _globalSettings;
         private Mock<IVimLocalSettings> _settings;
-        private Mock<IOutliningManager> _outiling;
+        private Mock<IOutliningManager> _outlining;
         private ITextView _textView;
         private IncrementalSearch _searchRaw;
         private IIncrementalSearch _search;
@@ -39,10 +39,11 @@ namespace VimCoreTest
             _nav = _factory.Create<ITextStructureNavigator>();
             _globalSettings = MockObjectFactory.CreateGlobalSettings(ignoreCase: true);
             _settings = MockObjectFactory.CreateLocalSettings(_globalSettings.Object);
-            _outiling = new Mock<IOutliningManager>(MockBehavior.Strict);
+            _outlining = new Mock<IOutliningManager>(MockBehavior.Strict);
+            _outlining.Setup(x => x.ExpandAll(It.IsAny<SnapshotSpan>(), It.IsAny<Predicate<ICollapsed>>())).Returns<IEnumerable<ICollapsed>>(null);
             _searchRaw = new IncrementalSearch(
                 _textView,
-                _outiling.Object,
+                _outlining.Object,
                 _settings.Object,
                 _nav.Object,
                 _searchService.Object);

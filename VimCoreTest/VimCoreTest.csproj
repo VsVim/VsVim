@@ -172,6 +172,7 @@
     <Compile Include="SnapshotUtilTest.cs" />
     <Compile Include="TextUtilTest.cs" />
     <Compile Include="TextUtilTest2.cs" />
+    <Compile Include="TextViewUtilTest.cs" />
     <Compile Include="TrackingLineColumnTest.cs" />
     <Compile Include="TssUtilTest.cs" />
     <Compile Include="Utils\EditorUtil.cs" />

@@ -44,11 +44,7 @@ type internal InsertMode
             else Processed
         member x.OnEnter () = ()
         member x.OnLeave () = 
-            
             // When leaving insert mode the caret should move one to the left on the
             // same line
-            let point = TextViewUtil.GetCaretPoint _data.TextView
-            let line = point.GetContainingLine()
-            if line.Start <> point then
-                let point = point.Subtract(1)
-                _operations.MoveCaretToPoint point
+            _operations.MoveCaretLeft 1 
+            

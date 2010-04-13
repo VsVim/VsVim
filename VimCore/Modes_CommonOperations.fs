@@ -20,7 +20,8 @@ type internal CommonOperations
     member private x.NavigateToPoint (point:VirtualSnapshotPoint) = 
         let buf = point.Position.Snapshot.TextBuffer
         if buf = _textView.TextBuffer then 
-            x.MoveCaretToPoint point.Position
+            TextViewUtil.MoveCaretToPoint _textView point.Position
+            TextViewUtil.EnsureCaretOnScreenAndTextExpanded _textView _outlining
             true
         else  _host.NavigateTo point 
 
@@ -62,10 +63,6 @@ type internal CommonOperations
             let text = fixText (line.GetText())
             edit.Replace(line.Extent.Span, text) |> ignore
         edit.Apply() |> ignore
-
-    member x.EnsureCaretVisible () = TextViewUtil.EnsureCaretVisible _textView _outlining
-
-    member x.MoveCaretToPoint point = TextViewUtil.MoveCaretToPoint _textView point _outlining
 
     /// Change the letters on the given span by applying the specified function
     /// to each of them
@@ -160,7 +157,8 @@ type internal CommonOperations
         member x.JumpToMark ident (map:IMarkMap) = 
             let before = TextViewUtil.GetCaretPoint _textView
             let jumpLocal (point:VirtualSnapshotPoint) = 
-                x.MoveCaretToPoint point.Position
+                TextViewUtil.MoveCaretToPoint _textView point.Position
+                TextViewUtil.EnsureCaretOnScreenAndTextExpanded _textView _outlining
                 _jumpList.Add before |> ignore
                 Succeeded
             if not (map.IsLocalMark ident) then 
@@ -230,14 +228,14 @@ type internal CommonOperations
             _operations.ResetSelection()
             let caret = TextViewUtil.GetCaretPoint _textView
             let span = MotionUtil.CharLeft caret count
-            x.MoveCaretToPoint span.Start
+            TextViewUtil.MoveCaretToPoint _textView span.Start
     
         /// Move the cursor count spaces to the right
         member x.MoveCaretRight count =
             _operations.ResetSelection()
             let caret = TextViewUtil.GetCaretPoint _textView
             let span = MotionUtil.CharRight caret count
-            x.MoveCaretToPoint span.End
+            TextViewUtil.MoveCaretToPoint _textView span.End
     
         /// Move the cursor count spaces up 
         member x.MoveCaretUp count =
@@ -268,7 +266,7 @@ type internal CommonOperations
             let line = SnapshotUtil.GetValidLineOrLast caret.Snapshot (line.LineNumber + count)
             let point = TssUtil.FindFirstNonWhitespaceCharacter line
             _operations.ResetSelection()
-            x.MoveCaretToPoint point 
+            TextViewUtil.MoveCaretToPoint _textView point 
 
         member x.MoveWordForward kind count = 
             let rec inner pos count = 
@@ -277,7 +275,7 @@ type internal CommonOperations
                     let nextPos = TssUtil.FindNextWordPosition pos kind
                     inner nextPos (count-1)
             let pos = inner (TextViewUtil.GetCaretPoint _textView) count
-            x.MoveCaretToPoint pos 
+            TextViewUtil.MoveCaretToPoint _textView pos 
             
         member x.MoveWordBackward kind count = 
             let rec inner pos count =
@@ -286,7 +284,7 @@ type internal CommonOperations
                     let prevPos = TssUtil.FindPreviousWordPosition pos kind
                     inner prevPos (count-1)
             let pos = inner (TextViewUtil.GetCaretPoint _textView) count
-            x.MoveCaretToPoint pos 
+            TextViewUtil.MoveCaretToPoint _textView pos 
 
         member x.ShiftSpanRight span = x.ShiftSpanRight span
 
@@ -375,5 +373,6 @@ type internal CommonOperations
         member x.ChangeLetterCase span = x.ChangeLettersOnSpan span CharUtil.ChangeCase
         member x.MakeLettersLowercase span = x.ChangeLettersOnSpan span CharUtil.ToLower
         member x.MakeLettersUppercase span = x.ChangeLettersOnSpan span CharUtil.ToUpper
-        member x.EnsureCaretVisible () = x.EnsureCaretVisible()
-        member x.MoveCaretToPoint point = x.MoveCaretToPoint point
+        member x.EnsureCaretOnScreen () = TextViewUtil.EnsureCaretOnScreen _textView 
+        member x.EnsureCaretOnScreenAndTextExpanded () = TextViewUtil.EnsureCaretOnScreenAndTextExpanded _textView _outlining
+        member x.MoveCaretToPoint point =  TextViewUtil.MoveCaretToPoint _textView point 

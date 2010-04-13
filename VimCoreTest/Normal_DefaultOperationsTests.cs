@@ -69,6 +69,18 @@ namespace VimCoreTest
             _operations = _operationsRaw;
         }
 
+        private void AllowOutlineExpansion(bool verify=false)
+        {
+            var res = 
+                _outlining
+                    .Setup(x => x.ExpandAll(It.IsAny<SnapshotSpan>(), It.IsAny<Predicate<ICollapsed>>()))
+                    .Returns<IEnumerable<ICollapsible>>(null);
+            if ( verify )
+            {
+                res.Verifiable();
+            }
+        }
+
         [Test]
         public void DeleteCharacterAtCursor1()
         {
@@ -516,14 +528,17 @@ namespace VimCoreTest
         public void MoveToNextOccuranceOfWordAtCursor2()
         {
             Create("foo bar", "foo");
+            AllowOutlineExpansion(verify: true);
             _operations.MoveToNextOccuranceOfWordAtCursor(SearchKind.ForwardWithWrap, 1);
             Assert.AreEqual(_view.GetLine(1).Start, _view.Caret.Position.BufferPosition);
+            _outlining.Verify();
         }
 
         [Test]
         public void MoveToNextOccuranceOfWordAtCursor3()
         {
             Create("foo bar", "baz foo");
+            AllowOutlineExpansion();
             _operations.MoveToNextOccuranceOfWordAtCursor(SearchKind.ForwardWithWrap, 1);
             Assert.AreEqual(_view.GetLine(1).Start.Add(4), _view.Caret.Position.BufferPosition);
         }
@@ -532,6 +547,7 @@ namespace VimCoreTest
         public void MoveToNextOccuranceOfWordAtCursor4()
         {
             Create("fuz bar", "baz foo");
+            AllowOutlineExpansion();
             _operations.MoveToNextOccuranceOfWordAtCursor(SearchKind.ForwardWithWrap, 1);
             Assert.AreEqual(0, _view.Caret.Position.BufferPosition.Position);
         }
@@ -540,6 +556,7 @@ namespace VimCoreTest
         public void MoveToNextOccuranceOfWordAtCursor5()
         {
             Create("foo bar foo", "foo");
+            AllowOutlineExpansion();
             _operations.MoveToNextOccuranceOfWordAtCursor(SearchKind.ForwardWithWrap, 3);
             Assert.AreEqual(_view.GetLine(0).Start, _view.Caret.Position.BufferPosition);
         }
@@ -548,6 +565,7 @@ namespace VimCoreTest
         public void MoveToNextOccuranceOfWordAtCursor6()
         {
             Create("foo bar baz", "foo");
+            AllowOutlineExpansion();
             _view.MoveCaretTo(_view.GetLine(1).Start.Position);
             _operations.MoveToNextOccuranceOfWordAtCursor(SearchKind.ForwardWithWrap, 1);
             Assert.AreEqual(0, _view.Caret.Position.BufferPosition.Position);
@@ -557,6 +575,7 @@ namespace VimCoreTest
         public void MoveToNextOccuranceOfWordAtCursor7()
         {
             Create("foo foobar baz", "foo");
+            AllowOutlineExpansion();
             _operations.MoveToNextOccuranceOfWordAtCursor(SearchKind.ForwardWithWrap, 1);
             Assert.AreEqual(_view.GetLine(1).Start, _view.GetCaretPoint());
         }
@@ -565,6 +584,7 @@ namespace VimCoreTest
         public void MoveToNextOccuranceOfWordAtCursor8()
         {
             Create("foo bar", "foo");
+            AllowOutlineExpansion();
             _operations.MoveToNextOccuranceOfWordAtCursor(SearchKind.ForwardWithWrap, 1);
             Assert.AreEqual(_view.GetLine(1).Start, _view.Caret.Position.BufferPosition);
             Assert.AreEqual(SearchText.NewWholeWord("foo"), _searchService.LastSearch.Text);
@@ -586,6 +606,7 @@ namespace VimCoreTest
         public void MoveToNextOccuranceOfWordAtCursor10()
         {
             Create("foo bar", "foo");
+            AllowOutlineExpansion();
             _view.MoveCaretTo(_view.GetLine(1).Start.Position);
             _operations.MoveToNextOccuranceOfWordAtCursor(SearchKind.BackwardWithWrap, 1);
             Assert.AreEqual(0, _view.Caret.Position.BufferPosition.Position);
@@ -595,6 +616,7 @@ namespace VimCoreTest
         public void MoveToNextOccuranceOfWordAtCursor11()
         {
             Create("foo bar", "again foo", "foo");
+            AllowOutlineExpansion();
             _view.MoveCaretTo(_view.GetLine(2).Start.Position);
             _operations.MoveToNextOccuranceOfWordAtCursor(SearchKind.BackwardWithWrap, 2);
             Assert.AreEqual(0, _view.Caret.Position.BufferPosition.Position);
@@ -604,6 +626,7 @@ namespace VimCoreTest
         public void MoveToNextOccuranceOfWordAtCursor12()
         {
             Create("foo bar", "again foo", "foo");
+            AllowOutlineExpansion();
             _view.MoveCaretTo(_view.GetLine(2).Start.Position);
             _operations.MoveToNextOccuranceOfWordAtCursor(SearchKind.BackwardWithWrap, 3);
             Assert.AreEqual(_view.GetLine(2).Start.Position, _view.Caret.Position.BufferPosition.Position);
@@ -613,6 +636,7 @@ namespace VimCoreTest
         public void MoveToNextOccuranceOfWordAtCursor13()
         {
             Create("foo", "foobar", "foo");
+            AllowOutlineExpansion();
             _view.MoveCaretTo(_view.GetLine(2).Start);
             _operations.MoveToNextOccuranceOfWordAtCursor(SearchKind.BackwardWithWrap, 1);
             Assert.AreEqual(0, _view.GetCaretPoint().Position);
@@ -622,6 +646,7 @@ namespace VimCoreTest
         public void MoveToNextOccuranceOfWordAtCursor14()
         {
             Create("foo bar", "again foo", "foo");
+            AllowOutlineExpansion();
             _view.MoveCaretTo(_view.GetLine(2).Start.Position);
             _operations.MoveToNextOccuranceOfWordAtCursor(SearchKind.BackwardWithWrap, 2);
             Assert.AreEqual(0, _view.Caret.Position.BufferPosition.Position);
@@ -641,6 +666,18 @@ namespace VimCoreTest
         }
 
         [Test]
+        public void MoveToNextOccuranceOfWordAtCursor16()
+        {
+            Create("foo bar", "again foo", "foo");
+            AllowOutlineExpansion();
+            _view.MoveCaretTo(_view.GetLine(2).Start.Position);
+            _operations.MoveToNextOccuranceOfWordAtCursor(SearchKind.BackwardWithWrap, 2);
+            Assert.AreEqual(0, _view.Caret.Position.BufferPosition.Position);
+            Assert.AreEqual(SearchText.NewWholeWord("foo"), _searchService.LastSearch.Text);
+            _outlining.Verify();
+        }
+
+        [Test]
         public void MoveToNextOccuranceOfLastSearch1()
         {
             Create("foo bar baz");
@@ -655,6 +692,7 @@ namespace VimCoreTest
         public void MoveToNextOccuranceOfLastSearch2()
         {
             Create("foo bar","foo");
+            AllowOutlineExpansion();
             var data = new SearchData(SearchText.NewPattern("foo"), SearchKind.ForwardWithWrap, SearchOptions.None);
             _searchService.LastSearch = data;
             _operations.MoveToNextOccuranceOfLastSearch(1, false);
@@ -665,6 +703,7 @@ namespace VimCoreTest
         public void MoveToNextOccuranceOfLastSearch3()
         {
             Create("foo bar","foo");
+            AllowOutlineExpansion();
             var data = new SearchData(SearchText.NewPattern("foo"), SearchKind.ForwardWithWrap, SearchOptions.None);
             _searchService.LastSearch = data;
             _operations.MoveToNextOccuranceOfLastSearch(2, false);
@@ -675,10 +714,23 @@ namespace VimCoreTest
         public void MoveToNextOccuranceOfLastSearch4()
         {
             Create("foo bar","foo");
+            AllowOutlineExpansion();
             var data = new SearchData(SearchText.NewPattern("foo"), SearchKind.BackwardWithWrap, SearchOptions.None);
             _searchService.LastSearch = data;
             _operations.MoveToNextOccuranceOfLastSearch(1, false);
             Assert.AreEqual(_view.GetLine(1).Start, _view.GetCaretPoint());
+        }
+
+        [Test]
+        public void MoveToNextOccuranceOfLastSearch5()
+        {
+            Create("foo bar","foo");
+            var data = new SearchData(SearchText.NewPattern("foo"), SearchKind.BackwardWithWrap, SearchOptions.None);
+            AllowOutlineExpansion(verify:true);
+            _searchService.LastSearch = data;
+            _operations.MoveToNextOccuranceOfLastSearch(1, false);
+            Assert.AreEqual(_view.GetLine(1).Start, _view.GetCaretPoint());
+            _outlining.Verify();
         }
 
         [Test]
@@ -720,11 +772,13 @@ namespace VimCoreTest
         public void JumpNext4()
         {
             Create("foo", "bar");
+            AllowOutlineExpansion(verify: true);
             _jumpList.Setup(x => x.MoveNext()).Returns(true);
             _jumpList.SetupGet(x => x.Current).Returns(FSharpOption.Create(new SnapshotPoint(_view.TextSnapshot, 1)));
             _operations.JumpNext(1);
             _host.Verify();
             Assert.AreEqual(1, _view.GetCaretPoint().Position);
+            _outlining.Verify();
         }
 
         [Test]
@@ -778,11 +832,13 @@ namespace VimCoreTest
         public void JumpPrevious4()
         {
             Create("foo", "bar");
+            AllowOutlineExpansion(verify:true);
             _jumpList.Setup(x => x.MovePrevious()).Returns(true);
             _jumpList.SetupGet(x => x.Current).Returns(FSharpOption.Create(new SnapshotPoint(_view.TextSnapshot, 1)));
             _operations.JumpPrevious(1);
             _host.Verify();
             Assert.AreEqual(1, _view.GetCaretPoint().Position);
+            _outlining.Verify();
         }
 
         [Test]

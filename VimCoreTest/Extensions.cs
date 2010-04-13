@@ -11,6 +11,7 @@ using Microsoft.FSharp.Core;
 using System.Windows.Input;
 using NUnit.Framework;
 using Microsoft.FSharp.Collections;
+using Microsoft.VisualStudio.Text.Outlining;
 
 namespace VimCoreTest
 {
@@ -333,7 +334,6 @@ namespace VimCoreTest
         }
 
         #endregion
-
 
         internal static SnapshotSpan GetSpan(this ITextSelection selection)
         {

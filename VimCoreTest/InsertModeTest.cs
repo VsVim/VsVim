@@ -127,18 +127,20 @@ namespace VimCoreTest
         public void Cursor1()
         {
             CreateBuffer("faa bar");
+            _operations.Setup(x => x.MoveCaretLeft(1)).Verifiable();
             _view.MoveCaretTo(1);
             _mode.OnLeave();
-            Assert.AreEqual(0, _view.Caret.Position.BufferPosition.Position);
+            _operations.Verify();
         }
 
         [Test, Description("Don't crash at the start of the file")]
         public void Cursor2()
         {
             CreateBuffer("faa bar");
+            _operations.Setup(x => x.MoveCaretLeft(1)).Verifiable();
             _view.MoveCaretTo(0);
             _mode.OnLeave();
-            Assert.AreEqual(0, _view.Caret.Position.BufferPosition.Position);
+            _operations.Verify();
         }
 
         [Test, Description("Don't move past the start of the line")]
@@ -146,9 +148,10 @@ namespace VimCoreTest
         {
             CreateBuffer("foo", "bar");
             var point = _view.GetLine(1).Start;
+            _operations.Setup(x => x.MoveCaretLeft(1)).Verifiable();
             _view.Caret.MoveTo(point);
             _mode.OnLeave();
-            Assert.AreEqual(point, _view.Caret.Position.BufferPosition);
+            _operations.Verify();
         }
 
     }
