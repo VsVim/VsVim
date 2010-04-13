@@ -29,7 +29,7 @@ type internal IncrementalSearch
     let _currentSearchCancelled = Event<SearchData>()
 
     member private x.Begin kind = 
-        let pos = (ViewUtil.GetCaretPoint _textView).Position
+        let pos = (TextViewUtil.GetCaretPoint _textView).Position
         let start = _textView.TextSnapshot.CreateTrackingPoint(pos, PointTrackingMode.Negative)
         let data = {
             Start = start
@@ -56,7 +56,7 @@ type internal IncrementalSearch
                 let ret =
                     if StringUtil.isNullOrEmpty pattern then None
                     else
-                        let point = ViewUtil.GetCaretPoint _textView
+                        let point = TextViewUtil.GetCaretPoint _textView
                         let options = SearchOptions.AllowIgnoreCase ||| SearchOptions.AllowIgnoreCase
                         _search.FindNext searchData point _navigator 
 

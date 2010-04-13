@@ -66,7 +66,7 @@ type internal NormalMode
     
     /// Begin an incremental search.  Called when the user types / into the editor
     member this.BeginIncrementalSearch (kind:SearchKind) =
-        let before = ViewUtil.GetCaretPoint _bufferData.TextView
+        let before = TextViewUtil.GetCaretPoint _bufferData.TextView
         let rec inner (ki:KeyInput) _ _ = 
             match _incrementalSearch.Process ki with
             | SearchComplete -> 
@@ -132,7 +132,7 @@ type internal NormalMode
         let inner (ki:KeyInput) count reg =
             match ki.Char with 
                 | 'y' -> 
-                    let point = ViewUtil.GetCaretPoint _bufferData.TextView
+                    let point = TextViewUtil.GetCaretPoint _bufferData.TextView
                     let point = point.GetContainingLine().Start
                     let span = SnapshotPointUtil.GetLineRangeSpanIncludingLineBreak point count
                     _operations.Yank span MotionKind.Inclusive OperationKind.LineWise reg 
@@ -149,7 +149,7 @@ type internal NormalMode
         let inner (ki:KeyInput) count reg =
             match ki.Char with 
                 | 'c' -> 
-                    let point = ViewUtil.GetCaretPoint _bufferData.TextView
+                    let point = TextViewUtil.GetCaretPoint _bufferData.TextView
                     let span = SnapshotPointUtil.GetLineRangeSpanIncludingLineBreak point count
                     let span = SnapshotSpan(point.GetContainingLine().Start,span.End)
                     _operations.DeleteSpan span MotionKind.Inclusive OperationKind.LineWise reg |> ignore
@@ -209,7 +209,7 @@ type internal NormalMode
             match ki.Char with
             | 'J' -> 
                 let view = _bufferData.TextView
-                let caret = ViewUtil.GetCaretPoint view
+                let caret = TextViewUtil.GetCaretPoint view
                 _operations.Join caret Modes.JoinKind.KeepEmptySpaces count |> ignore
             | 'p' -> _operations.PasteAfterCursor reg.StringValue 1 reg.Value.OperationKind true |> ignore
             | 'P' -> _operations.PasteBeforeCursor reg.StringValue 1 reg.Value.OperationKind true |> ignore
@@ -258,7 +258,7 @@ type internal NormalMode
     /// Process the m[a-z] command.  Called when the m has been input so wait for the next key
     member x.WaitMark = 
         let waitForKey (ki:KeyInput) _ _ =
-            let cursor = ViewUtil.GetCaretPoint _bufferData.TextView
+            let cursor = TextViewUtil.GetCaretPoint _bufferData.TextView
             let res = _operations.SetMark _bufferData cursor ki.Char 
             match res with
             | Modes.Failed(_) -> _bufferData.VimHost.Beep()

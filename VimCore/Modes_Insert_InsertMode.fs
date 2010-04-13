@@ -47,7 +47,7 @@ type internal InsertMode
             
             // When leaving insert mode the caret should move one to the left on the
             // same line
-            let point = ViewUtil.GetCaretPoint _data.TextView
+            let point = TextViewUtil.GetCaretPoint _data.TextView
             let line = point.GetContainingLine()
             if line.Start <> point then
                 let point = point.Subtract(1)

@@ -74,7 +74,7 @@ type internal SelectionTracker
         _originalSelectionMode <- selection.Mode
         if selection.IsEmpty then
             // Do the initial selection update
-            let caretPoint = ViewUtil.GetCaretPoint _textView 
+            let caretPoint = TextViewUtil.GetCaretPoint _textView 
             _anchorPoint <- VirtualSnapshotPoint(caretPoint)
             x.UpdateSelection()
         else 
@@ -118,7 +118,7 @@ type internal SelectionTracker
         match _mode with
         | SelectionMode.Character -> selectStandard()
         | SelectionMode.Line ->
-            let caret = ViewUtil.GetCaretPoint _textView
+            let caret = TextViewUtil.GetCaretPoint _textView
             if _anchorPoint.Position.Position < caret.Position then 
                 let first = _anchorPoint.Position.GetContainingLine().Start
                 let last = caret.GetContainingLine().EndIncludingLineBreak

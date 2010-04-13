@@ -40,7 +40,7 @@ type internal DefaultOperations
                 if not ret then _host.Beep()
 
     member private x.MoveToNextWordCore kind count isWholeWord = 
-        let point = ViewUtil.GetCaretPoint _textView
+        let point = TextViewUtil.GetCaretPoint _textView
         match TssUtil.FindCurrentFullWordSpan point WordKind.NormalWord with
         | None -> _statusUtil.OnError Resources.NormalMode_NoWordUnderCursor
         | Some(span) ->
@@ -79,7 +79,7 @@ type internal DefaultOperations
             // the current word as the 0th match (so to speak)
             let count = if SearchKindUtil.IsForward last.Kind then count + 1 else count 
 
-            let point = ViewUtil.GetCaretPoint _textView
+            let point = TextViewUtil.GetCaretPoint _textView
             match _search.FindNextMultiple last point _normalWordNav count with
             | Some(span) -> x.CommonImpl.MoveCaretToPoint span.Start 
             | None -> _statusUtil.OnError (Resources.NormalMode_PatternNotFound last.Text.RawText)
@@ -93,7 +93,7 @@ type internal DefaultOperations
             _textView.Caret.MoveTo( textLine.Start ) |> ignore
             _operations.MoveToStartOfLineAfterWhiteSpace(false)
         else 
-            let point = ViewUtil.GetCaretPoint _textView
+            let point = TextViewUtil.GetCaretPoint _textView
             let _,column = SnapshotPointUtil.GetLineColumn point
             let column = min column textLine.Length
             let point = textLine.Start.Add(column)
@@ -104,7 +104,7 @@ type internal DefaultOperations
         /// Paste the given text after the cursor
         member x.PasteAfterCursor text count opKind moveCursor = 
             let text = StringUtil.repeat text count 
-            let caret = ViewUtil.GetCaretPoint _textView
+            let caret = TextViewUtil.GetCaretPoint _textView
             let span = x.CommonImpl.PasteAfter caret text opKind
             if moveCursor then
                 x.CommonImpl.MoveCaretToPoint span.End 
@@ -119,7 +119,7 @@ type internal DefaultOperations
         /// Paste the text before the cursor
         member x.PasteBeforeCursor text count opKind moveCursor = 
             let text = StringUtil.repeat text count 
-            let caret = ViewUtil.GetCaretPoint _textView
+            let caret = TextViewUtil.GetCaretPoint _textView
             let span = x.CommonImpl.PasteBefore caret text opKind
             if moveCursor then
                 x.CommonImpl.MoveCaretToPoint span.End 
@@ -131,7 +131,7 @@ type internal DefaultOperations
                 x.CommonImpl.MoveCaretToPoint point 
 
         member x.InsertLineBelow () =
-            let point = ViewUtil.GetCaretPoint _textView
+            let point = TextViewUtil.GetCaretPoint _textView
             let line = point.GetContainingLine()
             let buffer = line.Snapshot.TextBuffer
             buffer.Replace(new Span(line.End.Position,0), System.Environment.NewLine) |> ignore
@@ -140,11 +140,11 @@ type internal DefaultOperations
             // Move the caret to the same indent position as the previous line
             let indent = TssUtil.FindIndentPosition(line)
             let point = new VirtualSnapshotPoint(newLine, indent)
-            ViewUtil.MoveCaretToVirtualPoint _textView point |> ignore
+            TextViewUtil.MoveCaretToVirtualPoint _textView point |> ignore
             newLine
     
         member x.InsertLineAbove () = 
-            let point = ViewUtil.GetCaretPoint _textView
+            let point = TextViewUtil.GetCaretPoint _textView
             let line = point.GetContainingLine()
             let buffer = line.Snapshot.TextBuffer
             buffer.Replace(new Span(line.Start.Position,0), System.Environment.NewLine) |> ignore
@@ -154,7 +154,7 @@ type internal DefaultOperations
                 
         /// Implement the r command in normal mode.  
         member x.ReplaceChar (ki:KeyInput) count = 
-            let point = ViewUtil.GetCaretPoint _textView
+            let point = TextViewUtil.GetCaretPoint _textView
 
             // Make sure the replace string is valid
             if (point.Position + count) > point.GetContainingLine().End.Position then
@@ -173,7 +173,7 @@ type internal DefaultOperations
     
         /// Yank lines from the buffer.  Implements the Y command
         member x.YankLines count reg =
-            let point = ViewUtil.GetCaretPoint _textView
+            let point = TextViewUtil.GetCaretPoint _textView
             let point = point.GetContainingLine().Start
             let span = SnapshotPointUtil.GetLineRangeSpanIncludingLineBreak point count
             x.CommonImpl.Yank span MotionKind.Inclusive OperationKind.LineWise reg |> ignore
@@ -181,7 +181,7 @@ type internal DefaultOperations
     
         /// Implement the normal mode x command
         member x.DeleteCharacterAtCursor count reg =
-            let point = ViewUtil.GetCaretPoint _textView
+            let point = TextViewUtil.GetCaretPoint _textView
             let line = point.GetContainingLine()
             let count = min (count) (line.End.Position-point.Position)
             let span = new SnapshotSpan(point, count)
@@ -189,12 +189,12 @@ type internal DefaultOperations
     
         /// Implement the normal mode X command
         member x.DeleteCharacterBeforeCursor count reg = 
-            let point = ViewUtil.GetCaretPoint _textView
+            let point = TextViewUtil.GetCaretPoint _textView
             let range = TssUtil.GetReverseCharacterSpan point count
             x.CommonImpl.DeleteSpan range MotionKind.Exclusive OperationKind.CharacterWise reg |> ignore
     
         member x.JoinAtCaret count =     
-            let start = ViewUtil.GetCaretPoint _textView
+            let start = TextViewUtil.GetCaretPoint _textView
             let kind = Vim.Modes.JoinKind.RemoveEmptySpaces
             let res = x.CommonImpl.Join start kind count
             if not res then
@@ -230,7 +230,7 @@ type internal DefaultOperations
             x.GoToLineCore line
 
         member x.ChangeLetterCaseAtCursor count = 
-            let point = ViewUtil.GetCaretPoint _textView
+            let point = TextViewUtil.GetCaretPoint _textView
             let line = SnapshotPointUtil.GetContainingLine point
             let count = min count (line.End.Position - point.Position)
             let span = SnapshotSpan(point, count)
@@ -242,7 +242,7 @@ type internal DefaultOperations
                 // to calculate with respect to the points before the edit
                 let pos = point.Position + count
                 let pos = min pos (line.End.Position-1)
-                ViewUtil.MoveCaretToPosition _textView pos |> ignore
+                TextViewUtil.MoveCaretToPosition _textView pos |> ignore
             
 
 

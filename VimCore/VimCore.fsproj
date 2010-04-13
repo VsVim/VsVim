@@ -51,8 +51,6 @@
     <Compile Include="TssUtil.fs" />
     <Compile Include="MotionUtil.fsi" />
     <Compile Include="MotionUtil.fs" />
-    <Compile Include="ViewUtil.fsi" />
-    <Compile Include="ViewUtil.fs" />
     <Compile Include="CountCapture.fs" />
     <Compile Include="OperationKind.fs" />
     <Compile Include="MotionKind.fs" />

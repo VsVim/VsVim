@@ -185,7 +185,7 @@ module internal MotionCapture =
                 | _ -> HitInvalidMotion
 
     let ProcessView (view:ITextView) (ki:KeyInput) count = 
-        let start = ViewUtil.GetCaretPoint view
+        let start = TextViewUtil.GetCaretPoint view
         ProcessInput start ki count
 
       

@@ -55,7 +55,7 @@ module internal RangeUtil =
         
     /// Get the range for the currently selected line
     let RangeForCurrentLine view =
-        let point = ViewUtil.GetCaretPoint view
+        let point = TextViewUtil.GetCaretPoint view
         let line = point.GetContainingLine()
         Range.SingleLine(line)
 

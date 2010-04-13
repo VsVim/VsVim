@@ -273,6 +273,8 @@ module internal SnapshotPointUtil =
 /// include any Vim specific logic
 module internal TextViewUtil =
 
+    let GetSnapshot (textView:ITextView) = textView.TextSnapshot
+
     let GetCaret (textView:ITextView) = textView.Caret
 
     let GetCaretPoint (textView:ITextView) = textView.Caret.Position.BufferPosition
@@ -288,4 +290,11 @@ module internal TextViewUtil =
         let caret = GetCaret textView
         caret.MoveTo(point) |> ignore
         EnsureCaretVisible textView outliningManager
+
+    let MoveCaretToVirtualPoint textView (point:VirtualSnapshotPoint) outliningManager = MoveCaretToPoint textView point.Position outliningManager
+
+    let MoveCaretToPosition textView (pos:int) outliningManager = 
+        let tss = GetSnapshot textView
+        let point = SnapshotPoint(tss, pos)
+        MoveCaretToPoint textView point outliningManager
 

@@ -119,7 +119,7 @@ type internal CommonOperations
     
             let joinLineAndMoveCaret lineNumber =
                 let caret = joinLine _textView.TextBuffer lineNumber
-                ViewUtil.MoveCaretToPosition _textView caret |> ignore
+                TextViewUtil.MoveCaretToPosition _textView caret |> ignore
     
             let rec inner count = 
                 let tss = _textView.TextBuffer.CurrentSnapshot
@@ -134,7 +134,7 @@ type internal CommonOperations
             inner count
                 
         member x.GoToDefinition () = 
-            let before = ViewUtil.GetCaretPoint _textView
+            let before = TextViewUtil.GetCaretPoint _textView
             if _host.GoToDefinition() then
                 _jumpList.Add before |> ignore
                 Succeeded
@@ -158,7 +158,7 @@ type internal CommonOperations
         member x.NavigateToPoint point = x.NavigateToPoint point
                 
         member x.JumpToMark ident (map:IMarkMap) = 
-            let before = ViewUtil.GetCaretPoint _textView
+            let before = TextViewUtil.GetCaretPoint _textView
             let jumpLocal (point:VirtualSnapshotPoint) = 
                 x.MoveCaretToPoint point.Position
                 _jumpList.Add before |> ignore
@@ -228,21 +228,21 @@ type internal CommonOperations
         /// Move the cursor count spaces left
         member x.MoveCaretLeft count = 
             _operations.ResetSelection()
-            let caret = ViewUtil.GetCaretPoint _textView
+            let caret = TextViewUtil.GetCaretPoint _textView
             let span = MotionUtil.CharLeft caret count
             x.MoveCaretToPoint span.Start
     
         /// Move the cursor count spaces to the right
         member x.MoveCaretRight count =
             _operations.ResetSelection()
-            let caret = ViewUtil.GetCaretPoint _textView
+            let caret = TextViewUtil.GetCaretPoint _textView
             let span = MotionUtil.CharRight caret count
             x.MoveCaretToPoint span.End
     
         /// Move the cursor count spaces up 
         member x.MoveCaretUp count =
             _operations.ResetSelection()
-            let caret = ViewUtil.GetCaretPoint _textView
+            let caret = TextViewUtil.GetCaretPoint _textView
             let current = caret.GetContainingLine()
             let count = 
                 if current.LineNumber - count > 0 then count
@@ -253,7 +253,7 @@ type internal CommonOperations
         /// Move the cursor count spaces down
         member x.MoveCaretDown count =
             _operations.ResetSelection()
-            let caret = ViewUtil.GetCaretPoint _textView
+            let caret = TextViewUtil.GetCaretPoint _textView
             let line = caret.GetContainingLine()
             let tss = line.Snapshot
             let count = 
@@ -263,7 +263,7 @@ type internal CommonOperations
                 _operations.MoveLineDown(false)
 
         member x.MoveCaretDownToFirstNonWhitespaceCharacter count = 
-            let caret = ViewUtil.GetCaretPoint _textView
+            let caret = TextViewUtil.GetCaretPoint _textView
             let line = caret.GetContainingLine()
             let line = SnapshotUtil.GetValidLineOrLast caret.Snapshot (line.LineNumber + count)
             let point = TssUtil.FindFirstNonWhitespaceCharacter line
@@ -276,7 +276,7 @@ type internal CommonOperations
                 else 
                     let nextPos = TssUtil.FindNextWordPosition pos kind
                     inner nextPos (count-1)
-            let pos = inner (ViewUtil.GetCaretPoint _textView) count
+            let pos = inner (TextViewUtil.GetCaretPoint _textView) count
             x.MoveCaretToPoint pos 
             
         member x.MoveWordBackward kind count = 
@@ -285,7 +285,7 @@ type internal CommonOperations
                 else 
                     let prevPos = TssUtil.FindPreviousWordPosition pos kind
                     inner prevPos (count-1)
-            let pos = inner (ViewUtil.GetCaretPoint _textView) count
+            let pos = inner (TextViewUtil.GetCaretPoint _textView) count
             x.MoveCaretToPoint pos 
 
         member x.ShiftSpanRight span = x.ShiftSpanRight span
@@ -293,18 +293,18 @@ type internal CommonOperations
         member x.ShiftSpanLeft span = x.ShiftSpanLeft span
 
         member x.ShiftLinesRight count = 
-            let point = ViewUtil.GetCaretPoint _textView
+            let point = TextViewUtil.GetCaretPoint _textView
             let span = SnapshotPointUtil.GetLineRangeSpan point count
             x.ShiftSpanRight span
 
         member x.ShiftLinesLeft count =
-            let point = ViewUtil.GetCaretPoint _textView
+            let point = TextViewUtil.GetCaretPoint _textView
             let span = SnapshotPointUtil.GetLineRangeSpan point count
             x.ShiftSpanLeft span
             
         member x.InsertText text count = 
             let text = StringUtil.repeat text count 
-            let point = ViewUtil.GetCaretPoint _textView
+            let point = TextViewUtil.GetCaretPoint _textView
             use edit = _textView.TextBuffer.CreateEdit()
             edit.Insert(point.Position, text) |> ignore
             edit.Apply()                    
@@ -312,7 +312,7 @@ type internal CommonOperations
         member x.ScrollLines dir count =
             let lines = _settings.Scroll
             let tss = _textView.TextSnapshot
-            let caretPoint = ViewUtil.GetCaretPoint _textView
+            let caretPoint = TextViewUtil.GetCaretPoint _textView
             let curLine = caretPoint.GetContainingLine().LineNumber
             let newLine = 
                 match dir with
@@ -340,27 +340,27 @@ type internal CommonOperations
         member x.DeleteSpan span motionKind opKind reg = x.DeleteSpan span motionKind opKind reg
     
         member x.DeleteLines count reg = 
-            let point = ViewUtil.GetCaretPoint _textView
+            let point = TextViewUtil.GetCaretPoint _textView
             let point = point.GetContainingLine().Start
             let span = SnapshotPointUtil.GetLineRangeSpan point count
             let span = SnapshotSpan(point, span.End)
             x.DeleteSpan span MotionKind.Inclusive OperationKind.LineWise reg |> ignore
 
         member x.DeleteLinesFromCursor count reg = 
-            let point = ViewUtil.GetCaretPoint _textView
+            let point = TextViewUtil.GetCaretPoint _textView
             let span = SnapshotPointUtil.GetLineRangeSpan point count
             let span = SnapshotSpan(point, span.End)
             x.DeleteSpan span MotionKind.Inclusive OperationKind.CharacterWise reg |> ignore
 
         member x.DeleteLinesIncludingLineBreak count reg = 
-            let point = ViewUtil.GetCaretPoint _textView
+            let point = TextViewUtil.GetCaretPoint _textView
             let point = point.GetContainingLine().Start
             let span = SnapshotPointUtil.GetLineRangeSpanIncludingLineBreak point count
             let span = SnapshotSpan(point, span.End)
             x.DeleteSpan span MotionKind.Inclusive OperationKind.LineWise reg |> ignore
 
         member x.DeleteLinesIncludingLineBreakFromCursor count reg = 
-            let point = ViewUtil.GetCaretPoint _textView
+            let point = TextViewUtil.GetCaretPoint _textView
             let span = SnapshotPointUtil.GetLineRangeSpanIncludingLineBreak point count
             let span = SnapshotSpan(point, span.End)
             x.DeleteSpan span MotionKind.Inclusive OperationKind.CharacterWise reg |> ignore

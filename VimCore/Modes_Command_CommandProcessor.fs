@@ -210,7 +210,7 @@ type internal CommandProcessor
             match range with 
             | Some(s) -> s
             | None -> 
-                let point = ViewUtil.GetCaretPoint _data.TextView
+                let point = TextViewUtil.GetCaretPoint _data.TextView
                 SnapshotSpan(point,0)
 
         match count with 
@@ -257,7 +257,7 @@ type internal CommandProcessor
         // Figure out the line number
         let line = 
             match range with 
-            | None -> (ViewUtil.GetCaretPoint _data.TextView).GetContainingLine()
+            | None -> (TextViewUtil.GetCaretPoint _data.TextView).GetContainingLine()
             | Some(range) ->
                 match range with 
                 | Range.SingleLine(line) -> line
@@ -485,7 +485,7 @@ type internal CommandProcessor
     
     member private x.ParseInput (originalInputs :char list) =
         let withRange (range:Range option) (inputs:char list) = x.ParseCommand inputs range
-        let point = ViewUtil.GetCaretPoint _data.TextView
+        let point = TextViewUtil.GetCaretPoint _data.TextView
         match RangeUtil.ParseRange point _data.MarkMap originalInputs with
         | ParseRangeResult.Succeeded(range, inputs) -> 
             if inputs |> List.isEmpty then
