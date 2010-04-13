@@ -27,7 +27,7 @@ namespace VsVim.Implementation
             _control = new ConflictingKeyBindingMarginControl();
             _control.Background = GetBackgroundColor(formatMap);
 
-            _control.ConfigureClick += OnRemoveClick;
+            _control.ConfigureClick += OnConfigureClick;
             _control.IgnoreClick += OnIgnoreClick;
             _keyBindingService.ConflictingKeyBindingStateChanged += OnStateChanged;
 
@@ -49,12 +49,12 @@ namespace VsVim.Implementation
 
         private void Unsubscribe()
         {
-            _control.ConfigureClick -= OnRemoveClick;
+            _control.ConfigureClick -= OnConfigureClick;
             _control.IgnoreClick -= OnIgnoreClick;
             _keyBindingService.ConflictingKeyBindingStateChanged -= OnStateChanged;
         }
 
-        private void OnRemoveClick(object sender, EventArgs e)
+        private void OnConfigureClick(object sender, EventArgs e)
         {
             _keyBindingService.ResolveAnyConflicts();
         }

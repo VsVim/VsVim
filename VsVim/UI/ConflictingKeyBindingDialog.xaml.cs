@@ -41,7 +41,7 @@ namespace VsVim.UI
             DialogResult = true;
         }
 
-        public static void DoShow(CommandKeyBindingSnapshot snapshot)
+        public static bool DoShow(CommandKeyBindingSnapshot snapshot)
         {
             var window = new ConflictingKeyBindingDialog();
             var removed = window.ConflictingKeyBindingControl.RemovedKeyBindingData;
@@ -80,6 +80,8 @@ namespace VsVim.UI
                 settings.HaveUpdatedKeyBindings = true;
                 settings.Save();
             }
+
+            return ret.HasValue && ret.Value;
         }
     }
 }

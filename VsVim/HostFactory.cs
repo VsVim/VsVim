@@ -68,7 +68,10 @@ namespace VsVim
             Action doCheck = () =>
                 {
                     // Run the key binding check now
-                    _keyBindingService.RunConflictingKeyBindingStateCheck(buffer, (x, y) => { });
+                    if (_keyBindingService.ConflictingKeyBindingState == ConflictingKeyBindingState.HasNotChecked)
+                    {
+                        _keyBindingService.RunConflictingKeyBindingStateCheck(buffer, (x, y) => { });
+                    }
                 };
 
             Dispatcher.CurrentDispatcher.BeginInvoke(doCheck, null);

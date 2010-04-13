@@ -29,6 +29,12 @@ namespace VsVim
         void RunConflictingKeyBindingStateCheck(IVimBuffer buffer, Action<ConflictingKeyBindingState, CommandKeyBindingSnapshot> onComplete);
 
         /// <summary>
+        /// Start the check for conflicting key bindings.  This method will return immediately but can
+        /// operate asynchrounously.  If the check has already run this method will exit immediately
+        /// </summary>
+        void RunConflictingKeyBindingStateCheck(IEnumerable<KeyInput> neededInputs, Action<ConflictingKeyBindingState, CommandKeyBindingSnapshot> onComplete);
+
+        /// <summary>
         /// Reset the checked state of the key binding service
         /// </summary>
         void ResetConflictingKeyBindingState();
