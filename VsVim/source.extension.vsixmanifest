@@ -7,6 +7,7 @@
     <Description xml:space="preserve">VIM emulation layer for Visual Studio</Description>
     <Locale>1033</Locale>
     <MoreInfoUrl>http://blogs.msdn.com/jaredpar</MoreInfoUrl>
+    <GettingStartedGuide>http://wiki.github.com/jaredpar/VsVim/faq</GettingStartedGuide>
     <SupportedProducts>
       <VisualStudio Version="10.0">
         <Edition>Pro</Edition>
