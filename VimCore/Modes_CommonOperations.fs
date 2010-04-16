@@ -227,15 +227,15 @@ type internal CommonOperations
         member x.MoveCaretLeft count = 
             _operations.ResetSelection()
             let caret = TextViewUtil.GetCaretPoint _textView
-            let span = MotionUtil.CharLeft caret count
-            TextViewUtil.MoveCaretToPoint _textView span.Start
+            let leftPoint = SnapshotPointUtil.GetPreviousPointOnLine caret count
+            TextViewUtil.MoveCaretToPoint _textView leftPoint
     
         /// Move the cursor count spaces to the right
         member x.MoveCaretRight count =
             _operations.ResetSelection()
             let caret = TextViewUtil.GetCaretPoint _textView
-            let span = MotionUtil.CharRight caret count
-            TextViewUtil.MoveCaretToPoint _textView span.End
+            let rightPoint = SnapshotPointUtil.GetNextPointOnLine caret count
+            TextViewUtil.MoveCaretToPoint _textView rightPoint
     
         /// Move the cursor count spaces up 
         member x.MoveCaretUp count =

@@ -10,23 +10,11 @@ module internal MotionUtil =
 
     /// Get the span by moving count characters to the left.  Do not move past the start
     /// of the current physical line
-    let CharLeft (point:SnapshotPoint) count =
-        let line = point.GetContainingLine()
-        let start = line.Start
-        if count > point.Position - start.Position then
-            new SnapshotSpan(start, point)
-        else 
-            new SnapshotSpan(point.Subtract(count),point)
+    let CharLeft point count = SnapshotPointUtil.GetPreviousPointOnLineSpan point count
 
     /// Get the span by moving count characters to thi right.  Do not move past the end 
     /// of the current textual part of the physical line
-    let CharRight (point:SnapshotPoint) count =
-        let line = point.GetContainingLine()
-        let endPoint = line.End
-        if count < endPoint.Position - point.Position then
-            new SnapshotSpan(point, point.Add(count))
-        else
-            new SnapshotSpan(point, endPoint)
+    let CharRight point count = SnapshotPointUtil.GetNextPointOnLineSpan point count
 
     /// Get the span caused by moving the character up "count" lines.  Maintin the current
     /// offset into the line if possible

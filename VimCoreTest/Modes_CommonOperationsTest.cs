@@ -414,12 +414,22 @@ namespace VimCoreTest
             CreateLines("foo", "bar");
             var line = _view.TextSnapshot.GetLineFromLineNumber(0);
             _editorOpts.Setup(x => x.ResetSelection());
-            _view.Caret.MoveTo(line.End);
+            _view.Caret.MoveTo(line.End.Subtract(1));
             _operations.MoveCaretRight(1);
-            Assert.AreEqual(line.End, _view.Caret.Position.BufferPosition);
+            Assert.AreEqual(line.End.Subtract(1), _view.Caret.Position.BufferPosition);
             _editorOpts.Verify();
         }
 
+        [Test, Description("If already past the line, MoveCaretRight should not move the caret at all")]
+        public void MoveCaretRight6()
+        {
+            CreateLines("foo", "bar");
+            _editorOpts.Setup(x => x.ResetSelection()).Verifiable();
+            _view.Caret.MoveTo(_view.GetLine(0).End);
+            _operations.MoveCaretRight(1);
+            Assert.AreEqual(_view.GetLine(0).End, _view.GetCaretPoint());
+            _editorOpts.Verify();
+        }
 
         [Test]
         public void MoveCaretLeft1()
