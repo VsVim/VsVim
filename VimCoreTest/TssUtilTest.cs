@@ -378,6 +378,47 @@ namespace VimCoreTest
             Assert.AreEqual(_buffer.GetLine(0).Start.Add(2), point);
         }
 
+        [Test]
+        public void FindNextOccurranceOfCharOnLine1()
+        {
+            Create("foo bar jaz");
+            var next = TssUtil.FindNextOccurranceOfCharOnLine(_buffer.GetLine(0).Start, 'o', 1);
+            Assert.IsTrue(next.HasValue());
+            Assert.AreEqual(1, next.Value.Position);
+        }
 
+        [Test]
+        public void FindNextOccurranceOfCharOnLine2()
+        {
+            Create("foo bar jaz");
+            var next = TssUtil.FindNextOccurranceOfCharOnLine(_buffer.GetLine(0).Start, 'q', 1);
+            Assert.IsFalse(next.HasValue());
+        }
+
+        [Test, Description("Search starts on then next char")]
+        public void FindNextOccurranceOfCharOnLine3()
+        {
+            Create("foo bar jaz");
+            var next = TssUtil.FindNextOccurranceOfCharOnLine(_buffer.GetLine(0).Start, 'f', 1);
+            Assert.IsFalse(next.HasValue());
+        }
+
+        [Test]
+        public void FindNextOccurranceOfCharOnLine4()
+        {
+            Create("foo bar jaz");
+            var next = TssUtil.FindNextOccurranceOfCharOnLine(_buffer.GetLine(0).Start, 'a', 2);
+            Assert.IsTrue(next.HasValue());
+            Assert.AreEqual(9, next.Value.Position);
+        }
+
+        [Test]
+        public void FindTillNextOccuranceOfCharOnLine1()
+        {
+            Create("foo bar jaz");
+            var next = TssUtil.FindTillNextOccurranceOfCharOnLine(_buffer.GetLine(0).Start, 'o', 1);
+            Assert.IsTrue(next.HasValue());
+            Assert.AreEqual(0, next.Value.Position);
+        }
     }
 }

@@ -37,37 +37,22 @@ module internal MotionCapture =
             | _ -> InvalidMotion("Invalid Motion", inner)
         InvalidMotion("Invalid Motion",inner)
 
-    let private FindCountCharOnLine start count targetChar = 
-        let line = SnapshotPointUtil.GetContainingLine start
-        let matches = 
-            SnapshotSpan(start, line.End)
-            |> SnapshotSpanUtil.GetPoints 
-            |> Seq.filter (fun x -> x.GetChar() = targetChar)
-            |> List.ofSeq
-        if count <= List.length matches then List.nth matches (count - 1) |> Some
-        else None
-
-    /// Handle the 'f' motion.  Forward till the next occurance of the specified character on
-    /// this line
-    let private ForwardCharMotion start count = 
+    let private ForwardCharMotionCore start count func = 
         let inner (ki:KeyInput) =
-            match FindCountCharOnLine start count ki.Char with
+            match func start ki.Char count with
             | None -> MotionResult.Error(Resources.MotionCapture_InvalidMotion)
-            | Some(point) -> 
+            | Some(point:SnapshotPoint) -> 
                 let span = SnapshotSpan(start, point.Add(1))
                 Complete(span, MotionKind.Inclusive, OperationKind.CharacterWise)
         NeedMoreInputWithEscape inner
 
+    /// Handle the 'f' motion.  Forward to the next occurance of the specified character on
+    /// this line
+    let private ForwardCharMotion start count = ForwardCharMotionCore start count TssUtil.FindNextOccurranceOfCharOnLine
+
     /// Handle the 't' motion.  Forward till the next occurance of the specified character on
     /// this line
-    let private ForwardTillCharMotion start count = 
-        let inner (ki:KeyInput) =
-            match FindCountCharOnLine start count ki.Char with
-            | None -> MotionResult.Error(Resources.MotionCapture_InvalidMotion)
-            | Some(point) -> 
-                let span = SnapshotSpan(start, point)
-                Complete(span, MotionKind.Inclusive, OperationKind.CharacterWise)
-        NeedMoreInputWithEscape inner
+    let private ForwardTillCharMotion start count = ForwardCharMotionCore start count TssUtil.FindTillNextOccurranceOfCharOnLine
         
     /// Implement the w/W motion
     let private WordMotion start kind originalCount =

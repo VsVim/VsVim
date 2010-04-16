@@ -102,10 +102,6 @@ module internal TssUtil =
         let span = FindPreviousWordSpan point kind 
         span.Start
 
-    let FindNextOccurrenceOfCharacter (startPoint:SnapshotPoint) (toFind:char) : SnapshotPoint option = failwith ""
-        
-    let FindPreviousOccurrenceOfCharacter (startPoint:SnapshotPoint) (toFind:char) : SnapshotPoint option = failwith ""
-            
     let FindIndentPosition (line:ITextSnapshotLine) =
         let text = line.GetText()
         match text |> Seq.tryFindIndex (fun c -> not (System.Char.IsWhiteSpace(c))) with
@@ -165,3 +161,37 @@ module internal TssUtil =
             Some(span)
         with
             | :? System.ArgumentException -> None
+
+    let FindNextOccurranceOfCharOnLine point targetChar count = 
+        match SnapshotPointUtil.TryGetNextPointOnLine point with
+        | None -> None
+        | Some(point) ->
+            let matches =
+                SnapshotPointUtil.GetPointsOnContainingLineFrom point
+                |> Seq.filter (fun p -> p.GetChar() = targetChar)
+                |> List.ofSeq
+            let index = count - 1 
+            if index < matches.Length then List.nth matches index |> Some
+            else None
+
+    let FindTillNextOccurranceOfCharOnLine point targetChar count =
+        match FindNextOccurranceOfCharOnLine point targetChar count with
+        | None -> None
+        | Some(point) -> SnapshotPointUtil.TryGetPreviousPointOnLine point
+
+    let FindPreviousOccurranceOfCharOnLine point targetChar count =
+        match SnapshotPointUtil.TryGetPreviousPointOnLine point with
+        | None -> None
+        | Some(point) ->
+            let matches =
+                SnapshotPointUtil.GetPointsOnContainingLineBackwardsFrom point
+                |> Seq.filter (fun p -> p.GetChar() = targetChar)
+                |> List.ofSeq
+            let index = count - 1
+            if index < matches.Length then List.nth matches index |> Some
+            else None
+
+    let FindTillPreviousOccurranceOfCharOnLine point targetChar count =
+        match FindPreviousOccurranceOfCharOnLine point targetChar count with
+        | None -> None
+        | Some(point) -> SnapshotPointUtil.TryGetNextPointOnLine point

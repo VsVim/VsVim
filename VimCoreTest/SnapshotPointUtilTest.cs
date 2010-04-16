@@ -425,50 +425,6 @@ namespace VimCoreTest
         }
 
         [Test]
-        public void GetPointsOnContainingLine1()
-        {
-            Create("foo", "baz");
-            var start = _buffer.CurrentSnapshot.GetLineSpan(0).Start;
-            var points = SnapshotPointUtil.GetPointsOnContainingLine(start, 1).ToList();
-            CollectionAssert.AreEqual(
-                new SnapshotPoint[] { start },
-                points);
-        }
-
-        [Test]
-        public void GetPointsOnContainingLine2()
-        {
-            Create("foo", "baz");
-            var start = _buffer.CurrentSnapshot.GetLineSpan(0).Start;
-            var points = SnapshotPointUtil.GetPointsOnContainingLine(start, 2).ToList();
-            CollectionAssert.AreEqual(
-                new SnapshotPoint[] { start, start.Add(1) },
-                points);
-        }
-
-        [Test]
-        public void GetPointsOnContainingLine3()
-        {
-            Create("foo", "baz");
-            var start = _buffer.CurrentSnapshot.GetLineSpan(0).Start;
-            var points = SnapshotPointUtil.GetPointsOnContainingLine(start, 400).ToList();
-            CollectionAssert.AreEqual(
-                new SnapshotPoint[] { start, start.Add(1), start.Add(2)},
-                points);
-        }
-
-        [Test]
-        public void GetPointsOnContainingLine4()
-        {
-            Create("foo", "baz");
-            var start = _buffer.CurrentSnapshot.GetLineSpan(0).Start.Add(1);
-            var points = SnapshotPointUtil.GetPointsOnContainingLine(start, 400).ToList();
-            CollectionAssert.AreEqual(
-                new SnapshotPoint[] { start, start.Add(1) },
-                points);
-        }
-
-        [Test]
         public void TryGetNextPointOnLine1()
         {
             Create("foo", "bar");
@@ -683,6 +639,46 @@ namespace VimCoreTest
                 _buffer.GetLine(0).Start.Add(2),
                 400);
             Assert.AreEqual(new SnapshotSpan(_buffer.CurrentSnapshot, 0, 2), span);
+        }
+
+        [Test]
+        public void GetPointsOnContainingLineFrom1()
+        {
+            Create("foo", "bar", "baz");
+            var points = SnapshotPointUtil.GetPointsOnContainingLineFrom(_buffer.GetLine(0).Start).Select(x => x.GetChar());
+            CollectionAssert.AreEqual("foo", points);
+        }
+
+        [Test]
+        public void GetPointsOnContainingLineFrom2()
+        {
+            Create("foo", "bar", "baz");
+            var points = SnapshotPointUtil.GetPointsOnContainingLineFrom(_buffer.GetLine(0).Start.Add(1)).Select(x => x.GetChar());
+            CollectionAssert.AreEqual("oo", points);
+        }
+
+        [Test]
+        public void GetPointsOnContainingLineBackwardsFrom1()
+        {
+            Create("foo", "bar", "baz");
+            var points = SnapshotPointUtil.GetPointsOnContainingLineBackwardsFrom(_buffer.GetLine(0).End).Select(x => x.GetChar());
+            CollectionAssert.AreEqual("oof", points);
+        }
+
+        [Test]
+        public void GetPointsOnContainingLineBackwardsFrom2()
+        {
+            Create("foo", "bar", "baz");
+            var points = SnapshotPointUtil.GetPointsOnContainingLineBackwardsFrom(_buffer.GetLine(1).End).Select(x => x.GetChar());
+            CollectionAssert.AreEqual("rab", points);
+        }
+
+        [Test]
+        public void GetPointsOnContainingLineBackwardsFrom3()
+        {
+            Create("foo", "bar", "baz");
+            var points = SnapshotPointUtil.GetPointsOnContainingLineBackwardsFrom(_buffer.GetLine(1).End.Subtract(2)).Select(x => x.GetChar());
+            CollectionAssert.AreEqual("ab", points);
         }
     }
 }

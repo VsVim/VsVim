@@ -396,8 +396,7 @@ namespace VimCoreTest
         {
             Create("foo bar baz");
             ProcessComplete(0,1,"fo", "fo", MotionKind.Inclusive, OperationKind.CharacterWise);
-            ProcessComplete(0,1,"ff", "f", MotionKind.Inclusive, OperationKind.CharacterWise);
-            ProcessComplete(1,1,"fo", "o", MotionKind.Inclusive, OperationKind.CharacterWise);
+            ProcessComplete(1,1,"fo", "oo", MotionKind.Inclusive, OperationKind.CharacterWise);
             ProcessComplete(1,1,"fb", "oo b", MotionKind.Inclusive, OperationKind.CharacterWise);
         }
 
