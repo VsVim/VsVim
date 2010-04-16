@@ -269,6 +269,46 @@ module internal SnapshotPointUtil =
         let span = SnapshotSpan(point, length)
         SnapshotSpanUtil.GetPoints span
 
+    /// Try and get the previous point on the same line.  If this is at the start of the line 
+    /// None will be returned
+    let TryGetPreviousPointOnLine point = 
+        let line = GetContainingLine point
+        let start = line.Start
+        if point.Position > start.Position then point.Subtract(1) |> Some
+        else None
+
+    /// Get the previous point on the same line.  If this is the start of the line then the
+    /// original input will be returned
+    let GetPreviousPointOnLine point count = 
+        let rec inner point count = 
+            let point = 
+                match TryGetPreviousPointOnLine point with 
+                | Some(previous) -> previous
+                | None -> point
+            if count = 1 then point
+            else inner point (count-1)
+        inner point count
+
+    /// Try and get the next point on the same line.  If this is the end of the line or if
+    /// the point is within the line break then None will be returned
+    let TryGetNextPointOnLine point =
+        let line = GetContainingLine point
+        let endPoint = line.End
+        if point.Position + 1 < endPoint.Position then point.Add(1) |> Some
+        else None
+
+    /// Get the next point on the same line.  If this is the end of the line or if the 
+    /// point is within the line break then the original value will be returned
+    let GetNextPointOnLine point count =
+        let rec inner point count = 
+            let point = 
+                match TryGetNextPointOnLine point with 
+                | Some(previous) -> previous
+                | None -> point
+            if count = 1 then point
+            else inner point (count-1)
+        inner point count
+
 /// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
 /// include any Vim specific logic
 module internal TextViewUtil =

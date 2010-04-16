@@ -468,5 +468,129 @@ namespace VimCoreTest
                 points);
         }
 
+        [Test]
+        public void TryGetNextPointOnLine1()
+        {
+            Create("foo", "bar");
+            var point = _buffer.GetLine(0).Start;
+            var res = SnapshotPointUtil.TryGetNextPointOnLine(point);
+            Assert.IsTrue(res.HasValue());
+            Assert.AreEqual(point.Add(1), res.Value);
+        }
+
+        [Test]
+        public void TryGetNextPointOnLine2()
+        {
+            Create("foo", "bar");
+            var point = _buffer.GetLine(0).End;
+            var res = SnapshotPointUtil.TryGetNextPointOnLine(point);
+            Assert.IsFalse(res.HasValue());
+        }
+
+        [Test]
+        public void TryGetNextPointOnLine3()
+        {
+            Create("foo", "bar");
+            var point = _buffer.GetLine(0).Start.Add(1);
+            var res = SnapshotPointUtil.TryGetNextPointOnLine(point);
+            Assert.IsTrue(res.HasValue());
+            Assert.AreEqual(point.Add(1), res.Value);
+        }
+
+        [Test]
+        public void TryGetPreviousPointOnLine1()
+        {
+            Create("foo", "bar");
+            var point = _buffer.GetLine(0).End.Subtract(1);
+            var res = SnapshotPointUtil.TryGetPreviousPointOnLine(point);
+            Assert.IsTrue(res.HasValue());
+            Assert.AreEqual(point.Subtract(1), res.Value);
+        }
+
+        [Test]
+        public void TryGetPreviousPointOnLine2()
+        {
+            Create("foo", "bar");
+            var point = _buffer.GetLine(0).Start.Add(1);
+            var res = SnapshotPointUtil.TryGetPreviousPointOnLine(point);
+            Assert.IsTrue(res.HasValue());
+            Assert.AreEqual(_buffer.GetLine(0).Start, res.Value);
+        }
+
+        [Test]
+        public void TryGetPreviousPointOnLine3()
+        {
+            Create("foo", "bar");
+            var point = _buffer.GetLine(0).Start;
+            var res = SnapshotPointUtil.TryGetPreviousPointOnLine(point);
+            Assert.IsFalse(res.HasValue());
+        }
+
+        [Test]
+        public void GetNextPointOnLine1()
+        {
+            Create("foo", "bar");
+            var point = _buffer.GetLine(0).Start;
+            var nextPoint = SnapshotPointUtil.GetNextPointOnLine(point, 2);
+            Assert.AreEqual(point.Add(2), nextPoint);
+        }
+
+        [Test]
+        public void GetNextPointOnLine2()
+        {
+            Create("foo", "bar");
+            var point = _buffer.GetLine(0).Start;
+            var nextPoint = SnapshotPointUtil.GetNextPointOnLine(point, 400);
+            Assert.AreEqual(point.Add(2), nextPoint);
+        }
+
+        [Test, Description("Don't throw for any point in the buffer")]
+        public void GetNextPointOnLine3()
+        {
+            Create("foo", "bar", "baz", "", "again");
+            foreach (var point in SnapshotPointUtil.GetPoints(_buffer.GetLine(0).Start, SearchKind.ForwardWithWrap))
+            {
+                SnapshotPointUtil.GetNextPointOnLine(point, 1);
+                SnapshotPointUtil.GetNextPointOnLine(point, 100);
+            }
+        }
+
+        [Test, Description("Don't throw for any point in the buffer")]
+        public void GetPreviousPointOnLine1()
+        {
+            Create("foo", "bar", "baz", "", "again");
+            foreach (var point in SnapshotPointUtil.GetPoints(_buffer.GetLine(0).Start, SearchKind.ForwardWithWrap))
+            {
+                SnapshotPointUtil.GetPreviousPointOnLine(point, 1);
+                SnapshotPointUtil.GetPreviousPointOnLine(point, 100);
+            }
+        }
+
+        [Test]
+        public void GetPreviousPointOnLine2()
+        {
+            Create("foo", "bar", "baz", "", "again");
+            var point = _buffer.GetLine(0).Start;
+            var previousPoint = SnapshotPointUtil.GetPreviousPointOnLine(point, 1);
+            Assert.AreEqual(point, previousPoint);
+        }
+
+        [Test]
+        public void GetPreviousPointOnLine3()
+        {
+            Create("foo", "bar", "baz", "", "again");
+            var point = _buffer.GetLine(0).Start.Add(1);
+            var previousPoint = SnapshotPointUtil.GetPreviousPointOnLine(point, 1);
+            Assert.AreEqual(point.Subtract(1), previousPoint);
+        }
+
+        [Test]
+        public void GetPreviousPointOnLine4()
+        {
+            Create("foo", "bar", "baz", "", "again");
+            var point = _buffer.GetLine(0).Start.Add(2);
+            var previousPoint = SnapshotPointUtil.GetPreviousPointOnLine(point, 2);
+            Assert.AreEqual(point.Subtract(2), previousPoint);
+        }
     }
 }
