@@ -281,13 +281,18 @@ module internal SnapshotPointUtil =
     /// original input will be returned
     let GetPreviousPointOnLine point count = 
         let rec inner point count = 
-            let point = 
+            if 0 = count then point
+            else 
                 match TryGetPreviousPointOnLine point with 
-                | Some(previous) -> previous
+                | Some(previous) -> inner previous (count-1)
                 | None -> point
-            if count = 1 then point
-            else inner point (count-1)
         inner point count
+
+    /// Get the span of going "count" previous points on the line with the original "point"
+    /// value being the End (exclusive) point on the Span
+    let GetPreviousPointOnLineSpan point count = 
+        let start = GetPreviousPointOnLine point count
+        SnapshotSpan(start, point)
 
     /// Try and get the next point on the same line.  If this is the end of the line or if
     /// the point is within the line break then None will be returned
@@ -301,13 +306,23 @@ module internal SnapshotPointUtil =
     /// point is within the line break then the original value will be returned
     let GetNextPointOnLine point count =
         let rec inner point count = 
-            let point = 
+            if 0 = count then point
+            else
                 match TryGetNextPointOnLine point with 
-                | Some(previous) -> previous
+                | Some(next) -> inner next (count-1)
                 | None -> point
-            if count = 1 then point
-            else inner point (count-1)
         inner point count
+
+    /// Get the span of going "count" next points on the line with the passed in
+    /// point being the Start of the returned Span
+    let GetNextPointOnLineSpan point count =
+        let line = GetContainingLine point
+        if point.Position >= line.End.Position then SnapshotSpan(point,point)
+        else
+            let endPosition = min line.End.Position (point.Position+count)
+            let endPoint = SnapshotPoint(line.Snapshot, endPosition)
+            SnapshotSpan(point, endPoint)
+            
 
 /// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
 /// include any Vim specific logic

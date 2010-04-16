@@ -76,6 +76,16 @@ namespace VimCoreTest
             Assert.AreEqual(line.End, res.End);
         }
 
+        [Test, Description("End of the line should get the last character")]
+        public void CharRight4()
+        {
+            Initialize("foo", "bar");
+            var start = _buffer.GetLine(0).Start.Add(2);
+            var res = MotionUtil.CharRight(start, 1);
+            Assert.AreEqual(1, res.Length);
+            Assert.AreEqual(start, res.Start);
+        }
+
         [Test]
         public void CharUp1()
         {
