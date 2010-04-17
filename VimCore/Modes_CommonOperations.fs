@@ -269,21 +269,13 @@ type internal CommonOperations
             TextViewUtil.MoveCaretToPoint _textView point 
 
         member x.MoveWordForward kind count = 
-            let rec inner pos count = 
-                if count = 0 then pos
-                else 
-                    let nextPos = TssUtil.FindNextWordPosition pos kind
-                    inner nextPos (count-1)
-            let pos = inner (TextViewUtil.GetCaretPoint _textView) count
+            let caret = TextViewUtil.GetCaretPoint _textView
+            let pos = TssUtil.FindNextWordPosition caret count kind
             TextViewUtil.MoveCaretToPoint _textView pos 
             
         member x.MoveWordBackward kind count = 
-            let rec inner pos count =
-                if count = 0 then pos
-                else 
-                    let prevPos = TssUtil.FindPreviousWordPosition pos kind
-                    inner prevPos (count-1)
-            let pos = inner (TextViewUtil.GetCaretPoint _textView) count
+            let caret = TextViewUtil.GetCaretPoint _textView
+            let pos = TssUtil.FindPreviousWordPosition caret count kind
             TextViewUtil.MoveCaretToPoint _textView pos 
 
         member x.ShiftSpanRight span = x.ShiftSpanRight span

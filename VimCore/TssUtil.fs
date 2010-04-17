@@ -94,13 +94,23 @@ module internal TssUtil =
                         else startSpan
             | None -> fullSearch point
 
-    let FindNextWordPosition point kind =
-        let span = FindNextWordSpan point kind
-        span.Start
-           
-    let FindPreviousWordPosition point kind  =
-        let span = FindPreviousWordSpan point kind 
-        span.Start
+    let FindNextWordPosition point count kind =
+        let rec inner pos count = 
+            if count = 0 then pos
+            else 
+                let span = FindNextWordSpan point kind
+                let nextPos = span.Start
+                inner nextPos (count-1)
+        inner point count 
+
+    let FindPreviousWordPosition point count kind  =
+        let rec inner pos count =
+            if count = 0 then pos
+            else 
+                let span = FindPreviousWordSpan point kind 
+                let prevPos = span.Start
+                inner prevPos (count-1)
+        inner point count 
 
     let FindIndentPosition (line:ITextSnapshotLine) =
         let text = line.GetText()

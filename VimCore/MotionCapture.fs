@@ -42,22 +42,16 @@ module internal MotionCapture =
     let private ForwardTillCharMotion start count = ForwardCharMotionCore start count TssUtil.FindTillNextOccurranceOfCharOnLine
         
     /// Implement the w/W motion
-    let private WordMotion start kind originalCount =
-        let rec inner curPoint curCount = 
-            let next = TssUtil.FindNextWordPosition curPoint kind
-            match curCount with 
-            | 1 -> 
-                // When the next word crosses a line boundary for the last count then 
-                // we stop the motion on the current line.  This does not appear to be 
-                // called out in the documentation but is evident in the behavior
-                let span = 
-                    if next.GetContainingLine().LineNumber <> curPoint.GetContainingLine().LineNumber then
-                        new SnapshotSpan(start, curPoint.GetContainingLine().End)
-                    else
-                        new SnapshotSpan(start,next)
-                {Span=span;IsForward=true;MotionKind=MotionKind.Exclusive;OperationKind=OperationKind.CharacterWise}
-            | _ -> inner next (curCount-1)
-        inner start originalCount      
+    let private WordMotionForward start count kind =
+        let endPoint = TssUtil.FindNextWordPosition start count kind  
+        let span = SnapshotSpan(start,endPoint)
+        {Span=span; IsForward=true; MotionKind=MotionKind.Exclusive; OperationKind=OperationKind.CharacterWise}
+
+    /// Implement the b/B motion
+    let private WordMotionBackward start count kind =
+        let startPoint = TssUtil.FindPreviousWordPosition start count kind
+        let span = SnapshotSpan(startPoint,start)
+        {Span=span; IsForward=false; MotionKind=MotionKind.Exclusive; OperationKind=OperationKind.CharacterWise}
         
     /// Implement the aw motion.  This is called once the a key is seen.
     let private AllWordMotion start count =        
@@ -65,7 +59,7 @@ module internal MotionCapture =
             let start = match TssUtil.FindCurrentFullWordSpan start kind with 
                             | Some (s) -> s.Start
                             | None -> start
-            WordMotion start kind count
+            WordMotionForward start count kind 
         let inner (ki:KeyInput) = 
             match ki.Char with
                 | 'w' -> func WordKind.NormalWord |> Complete
@@ -83,7 +77,7 @@ module internal MotionCapture =
 
                 // Move start to the first word if we're currently on whitespace
                 let start = 
-                    if System.Char.IsWhiteSpace(start.GetChar()) then TssUtil.FindNextWordPosition start kind
+                    if System.Char.IsWhiteSpace(start.GetChar()) then TssUtil.FindNextWordPosition start 1 kind 
                     else start
 
                 if start = snapshotEnd then snapshotEnd
@@ -115,6 +109,15 @@ module internal MotionCapture =
                     | None -> new SnapshotSpan(start,0)
         {Span=span; IsForward=false; MotionKind=MotionKind.Exclusive; OperationKind=OperationKind.CharacterWise} 
 
+    /// Handle the lines down to first non-whitespace motion
+    let private LineDownToFirstNonWhitespace start count =
+        let line = SnapshotPointUtil.GetContainingLine start
+        let number = line.LineNumber + count
+        let endLine = SnapshotUtil.GetValidLineOrLast line.Snapshot number
+        let point = TssUtil.FindFirstNonWhitespaceCharacter endLine
+        let span = SnapshotSpan(start, point.Add(1)) // Add 1 since it's inclusive
+        {Span=span; IsForward=true; MotionKind=MotionKind.Inclusive; OperationKind=OperationKind.LineWise}
+
     let private CharLeftMotion start count = 
         let prev = SnapshotPointUtil.GetPreviousPointOnLine start count 
         if prev = start then None
@@ -135,8 +138,10 @@ module internal MotionCapture =
 
     let SimpleMotions =  
         seq { 
-            yield (InputUtil.CharToKeyInput 'w', fun start count -> WordMotion start WordKind.NormalWord count |> Some)
-            yield (InputUtil.CharToKeyInput 'W', fun start count -> WordMotion start WordKind.BigWord count |> Some)
+            yield (InputUtil.CharToKeyInput 'w', fun start count -> WordMotionForward start count WordKind.NormalWord |> Some)
+            yield (InputUtil.CharToKeyInput 'W', fun start count -> WordMotionForward start count WordKind.BigWord |> Some)
+            yield (InputUtil.CharToKeyInput 'b', fun start count -> WordMotionBackward start count WordKind.NormalWord |> Some)
+            yield (InputUtil.CharToKeyInput 'B', fun start count -> WordMotionBackward start count WordKind.BigWord |> Some)
             yield (InputUtil.CharToKeyInput '$', fun start count -> EndOfLineMotion start count |> Some)
             yield (InputUtil.CharToKeyInput '^', fun start count -> BeginingOfLineMotion start |> Some)
             yield (InputUtil.CharToKeyInput 'e', fun start count -> EndOfWordMotion start count WordKind.NormalWord |> Some)
@@ -155,6 +160,9 @@ module internal MotionCapture =
             yield (InputUtil.VimKeyToKeyInput VimKey.DownKey, fun start count -> LineDownMotion start count)
             yield (InputUtil.CharAndModifiersToKeyInput 'n' KeyModifiers.Control, fun start count -> LineDownMotion start count)
             yield (InputUtil.CharAndModifiersToKeyInput 'j' KeyModifiers.Control, fun start count -> LineDownMotion start count)
+            yield (InputUtil.CharToKeyInput '+', fun start count -> LineDownToFirstNonWhitespace start count |> Some)
+            yield (InputUtil.CharAndModifiersToKeyInput 'm' KeyModifiers.Control, fun start count -> LineDownToFirstNonWhitespace start count |> Some)
+            yield (InputUtil.VimKeyToKeyInput VimKey.EnterKey, fun start count -> LineDownToFirstNonWhitespace start count |> Some)
         }
 
     let ComplexMotions = 

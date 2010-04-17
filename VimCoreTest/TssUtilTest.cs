@@ -42,7 +42,7 @@ namespace VimCoreTest
         public void FindNextWordPosition1()
         {
             Create("foo bar");
-            var p = TssUtil.FindNextWordPosition(new SnapshotPoint(_snapshot, 1), WordKind.NormalWord);
+            var p = TssUtil.FindNextWordPosition(new SnapshotPoint(_snapshot, 1), 1, WordKind.NormalWord);
             Assert.AreEqual(4, p.Position);
         }
 
@@ -50,7 +50,7 @@ namespace VimCoreTest
         public void FindNextWordPosition2()
         {
             Create("foo bar");
-            var p = TssUtil.FindNextWordPosition(new SnapshotPoint(_snapshot, 0), WordKind.NormalWord);
+            var p = TssUtil.FindNextWordPosition(new SnapshotPoint(_snapshot, 0), 1, WordKind.NormalWord);
             Assert.AreEqual(4, p.Position);
         }
 
@@ -59,7 +59,7 @@ namespace VimCoreTest
         {
             Create("foo", "bar baz");
             var line = _snapshot.GetLineFromLineNumber(1);
-            var p = TssUtil.FindNextWordPosition(line.Start, WordKind.NormalWord);
+            var p = TssUtil.FindNextWordPosition(line.Start, 1, WordKind.NormalWord);
             Assert.AreNotEqual(line.Start, p);
         }
 
@@ -70,17 +70,17 @@ namespace VimCoreTest
             var line = _snapshot.GetLineFromLineNumber(1);
             var p = line.Start+4;
             Assert.AreEqual('c', p.GetChar());
-            var p2 = TssUtil.FindNextWordPosition(line.Start + 4, WordKind.NormalWord);
+            var p2 = TssUtil.FindNextWordPosition(line.Start + 4, 1, WordKind.NormalWord);
             Assert.AreNotEqual(p2, p);
             Assert.AreEqual(p+4, p2);
         }
 
-        [Test, Description("Find word accross line boundary")]
+        [Test, Description("Find word across line boundary")]
         public void FindNextWordPosition5()
         {
             Create("foo", "bar daz");
             var line = _snapshot.GetLineFromLineNumber(0);
-            var point = TssUtil.FindNextWordPosition(line.End, WordKind.NormalWord);
+            var point = TssUtil.FindNextWordPosition(line.End, 1, WordKind.NormalWord);
             var other = _snapshot.GetLineFromLineNumber(1);
             Assert.AreEqual(other.Start, point);
         }
@@ -91,7 +91,7 @@ namespace VimCoreTest
             Create("foo bar");
             var line = _snapshot.GetLineFromLineNumber(0);
             var point = line.Start.Add(5);
-            var other = TssUtil.FindNextWordPosition(point, WordKind.NormalWord);
+            var other = TssUtil.FindNextWordPosition(point, 1, WordKind.NormalWord);
             Assert.AreEqual(line.End, other);
         }   
 
