@@ -37,13 +37,13 @@ type IOperations =
     /// GoTo the specified line number or the last line if no value is specified
     abstract GoToLineOrLast : int option -> unit
 
-    /// Move to the next occurance of the word under the cursor
+    /// Move to the next occurrence of the word under the cursor
     abstract MoveToNextOccuranceOfWordAtCursor : SearchKind -> count:int -> unit
 
-    /// Move to the next occurance of the word under the cursor
+    /// Move to the next occurrence of the word under the cursor
     abstract MoveToNextOccuranceOfPartialWordAtCursor : SearchKind -> count:int -> unit
 
-    /// Move to the next "count" occurance of the last search
+    /// Move to the next "count" occurrence of the last search
     abstract MoveToNextOccuranceOfLastSearch : count:int -> isReverse:bool -> unit
 
     /// Jump to the next item in the jump list

@@ -420,5 +420,66 @@ namespace VimCoreTest
             Assert.IsTrue(next.HasValue());
             Assert.AreEqual(0, next.Value.Position);
         }
+
+        [Test]
+        public void FindTillNextOccuranceOfCharOnLine2()
+        {
+            Create("foo bar baz");
+            var next = TssUtil.FindTillNextOccurranceOfCharOnLine(_buffer.GetPoint(0), 'o', 1);
+            Assert.IsTrue(next.HasValue());
+            Assert.AreEqual(0, next.Value.Position);
+        }
+
+        [Test]
+        public void FindPreviousOccuranceOfCharOnLine1()
+        {
+            Create("foo bar baz");
+            var prev = TssUtil.FindPreviousOccurranceOfCharOnLine(_buffer.GetPoint(0), 'f', 1);
+            Assert.IsFalse(prev.HasValue());
+        }
+
+        [Test]
+        public void FindPreviousOccuranceOfCharOnLine2()
+        {
+            Create("foo bar baz");
+            var prev = TssUtil.FindPreviousOccurranceOfCharOnLine(_buffer.GetPoint(5), 'f', 1);
+            Assert.IsTrue(prev.HasValue());
+            Assert.AreEqual(0, prev.Value.Position);
+        }
+
+        [Test]
+        public void FindPreviousOccuranceOfCharOnLine3()
+        {
+            Create("foo bar baz");
+            var prev = TssUtil.FindPreviousOccurranceOfCharOnLine(_buffer.GetPoint(5), 'o', 2);
+            Assert.IsTrue(prev.HasValue());
+            Assert.AreEqual(1, prev.Value.Position);
+        }
+
+        [Test]
+        public void FindTillPreviousOccuranceOfCharOnLine1()
+        {
+            Create("foo","bar","baz");
+            var prev = TssUtil.FindTillPreviousOccurranceOfCharOnLine(_buffer.GetLine(2).Start, 'r', 1);
+            Assert.IsFalse(prev.HasValue());
+        }
+
+        [Test]
+        public void FindTillPreviousOccuranceOfCharOnLine2()
+        {
+            Create("foo", "bar", "baz");
+            var prev = TssUtil.FindTillPreviousOccurranceOfCharOnLine(_buffer.GetLine(1).End, 'r', 1);
+            Assert.IsFalse(prev.HasValue());
+        }
+
+        [Test]
+        public void FindTillPreviousOccuranceOfCharOnLine3()
+        {
+            Create("foo", "bar", "baz");
+            var prev = TssUtil.FindTillPreviousOccurranceOfCharOnLine(_buffer.GetLine(1).End, 'b', 1);
+            Assert.IsTrue(prev.HasValue());
+            Assert.AreEqual(_buffer.GetLine(1).Start.Add(1), prev.Value);
+        }
+
     }
 }

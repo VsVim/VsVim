@@ -228,7 +228,7 @@ type internal DefaultOperations
             let line = 
                 match count with
                 | None -> lastLineNumber
-                // Surprisingly 0 goes to the last line nmuber in gVim
+                // Surprisingly 0 goes to the last line number in gVim
                 | Some(c) when c = 0 -> lastLineNumber
                 | Some(c) -> c
             x.GoToLineCore line

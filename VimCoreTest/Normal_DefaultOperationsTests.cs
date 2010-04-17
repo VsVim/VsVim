@@ -982,5 +982,12 @@ namespace VimCoreTest
             Assert.AreEqual("BAR", _view.GetLineSpan(0).GetText());
             Assert.AreEqual(2, _view.GetCaretPoint().Position);
         }
+
+        [Test]
+        public void MoveToNextOccuranceOfCharAtCursor1()
+        {
+            Create("dog kicked the ball");
+
+        }
     }
 }

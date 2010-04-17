@@ -29,5 +29,4 @@ module internal SearchKindUtil =
         | SearchKind.Backward -> SearchKind.Forward
         | SearchKind.BackwardWithWrap -> SearchKind.ForwardWithWrap
         | _ -> failwith "Invalid enum value"
-
     
