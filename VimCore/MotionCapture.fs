@@ -135,23 +135,33 @@ module internal MotionCapture =
 
     let SimpleMotions =  
         seq { 
-            yield ('w', fun start count -> WordMotion start WordKind.NormalWord count |> Some)
-            yield ('W', fun start count -> WordMotion start WordKind.BigWord count |> Some)
-            yield ('$', fun start count -> EndOfLineMotion start count |> Some)
-            yield ('^', fun start count -> BeginingOfLineMotion start |> Some)
-            yield ('e', fun start count -> EndOfWordMotion start count WordKind.NormalWord |> Some)
-            yield ('E', fun start count -> EndOfWordMotion start count WordKind.BigWord |> Some)
-            yield ('h', fun start count -> CharLeftMotion start count )
-            yield ('l', fun start count -> CharRightMotion start count )
-            yield ('k', fun start count -> LineUpMotion start count)
-            yield ('j', fun start count -> LineDownMotion start count)
+            yield (InputUtil.CharToKeyInput 'w', fun start count -> WordMotion start WordKind.NormalWord count |> Some)
+            yield (InputUtil.CharToKeyInput 'W', fun start count -> WordMotion start WordKind.BigWord count |> Some)
+            yield (InputUtil.CharToKeyInput '$', fun start count -> EndOfLineMotion start count |> Some)
+            yield (InputUtil.CharToKeyInput '^', fun start count -> BeginingOfLineMotion start |> Some)
+            yield (InputUtil.CharToKeyInput 'e', fun start count -> EndOfWordMotion start count WordKind.NormalWord |> Some)
+            yield (InputUtil.CharToKeyInput 'E', fun start count -> EndOfWordMotion start count WordKind.BigWord |> Some)
+            yield (InputUtil.CharToKeyInput 'h', fun start count -> CharLeftMotion start count )
+            yield (InputUtil.VimKeyToKeyInput VimKey.LeftKey, fun start count -> CharLeftMotion start count)
+            yield (InputUtil.VimKeyToKeyInput VimKey.BackKey, fun start count -> CharLeftMotion start count)
+            yield (InputUtil.CharAndModifiersToKeyInput 'h' KeyModifiers.Control, fun start count -> CharLeftMotion start count)
+            yield (InputUtil.CharToKeyInput 'l', fun start count -> CharRightMotion start count )
+            yield (InputUtil.VimKeyToKeyInput VimKey.RightKey, fun start count -> CharRightMotion start count)
+            yield (InputUtil.CharToKeyInput ' ', fun start count -> CharRightMotion start count)
+            yield (InputUtil.CharToKeyInput 'k', fun start count -> LineUpMotion start count)
+            yield (InputUtil.VimKeyToKeyInput VimKey.UpKey, fun start count -> LineUpMotion start count)
+            yield (InputUtil.CharAndModifiersToKeyInput 'p' KeyModifiers.Control, fun start count -> LineUpMotion start count)
+            yield (InputUtil.CharToKeyInput 'j', fun start count -> LineDownMotion start count)
+            yield (InputUtil.VimKeyToKeyInput VimKey.DownKey, fun start count -> LineDownMotion start count)
+            yield (InputUtil.CharAndModifiersToKeyInput 'n' KeyModifiers.Control, fun start count -> LineDownMotion start count)
+            yield (InputUtil.CharAndModifiersToKeyInput 'j' KeyModifiers.Control, fun start count -> LineDownMotion start count)
         }
 
     let ComplexMotions = 
         seq {
-            yield ('a', false, fun start count -> AllWordMotion start count)
-            yield ('f', true, fun start count -> ForwardCharMotion start count)
-            yield ('t', true, fun start count -> ForwardTillCharMotion start count)
+            yield (InputUtil.CharToKeyInput 'a', false, fun start count -> AllWordMotion start count)
+            yield (InputUtil.CharToKeyInput 'f', true, fun start count -> ForwardCharMotion start count)
+            yield (InputUtil.CharToKeyInput 't', true, fun start count -> ForwardTillCharMotion start count)
         }
 
     let AllMotionsCore =
@@ -178,7 +188,7 @@ module internal MotionCapture =
         if ki.Key = VimKey.EscapeKey then Cancel
         elif ki.IsDigit then ProcessCount ki (ProcessInput start) count
         else 
-            match Map.tryFind ki.Char MotionCommandsMap with
+            match Map.tryFind ki MotionCommandsMap with
             | Some(command) -> 
                 match command with 
                 | SimpleMotionCommand(_,func) -> 
