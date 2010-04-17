@@ -147,7 +147,21 @@ module internal MotionCapture =
             yield ('j', fun start count -> LineDownMotion start count)
         }
 
-    let SimpleMotionsMap =  SimpleMotions |> Map.ofSeq
+    let ComplexMotions = 
+        seq {
+            yield ('a', false, fun start count -> AllWordMotion start count)
+            yield ('f', true, fun start count -> ForwardCharMotion start count)
+            yield ('t', true, fun start count -> ForwardTillCharMotion start count)
+        }
+
+    let AllMotionsCore =
+        let simple = SimpleMotions |> Seq.map (fun (c,func) -> (c,SimpleMotionCommand(c,func)))
+        let complex = ComplexMotions |> Seq.map (fun (c,isMovement,func) -> (c,ComplexMotionCommand(c,isMovement,func)))
+        simple |> Seq.append complex
+
+    let MotionCommnads = AllMotionsCore |> Seq.map (fun (_,command) -> command)
+
+    let MotionCommandsMap = AllMotionsCore |> Map.ofSeq
 
     /// Process a count prefix to the motion.  
     let private ProcessCount (ki:KeyInput) (completeFunc:KeyInput -> int -> MotionResult) startCount =
@@ -164,18 +178,16 @@ module internal MotionCapture =
         if ki.Key = VimKey.EscapeKey then Cancel
         elif ki.IsDigit then ProcessCount ki (ProcessInput start) count
         else 
-            match Map.tryFind ki.Char SimpleMotionsMap with
-            | Some(func) -> 
-                let res = func start count
-                match res with
-                | None -> Error Resources.MotionCapture_InvalidMotion
-                | Some(data) -> Complete data
-            | None ->
-                match ki.Char with 
-                | 'a' -> AllWordMotion start count
-                | 'f' -> ForwardCharMotion start count
-                | 't' -> ForwardTillCharMotion start count
-                | _ -> HitInvalidMotion
+            match Map.tryFind ki.Char MotionCommandsMap with
+            | Some(command) -> 
+                match command with 
+                | SimpleMotionCommand(_,func) -> 
+                    let res = func start count
+                    match res with
+                    | None -> Error Resources.MotionCapture_InvalidMotion
+                    | Some(data) -> Complete data
+                | ComplexMotionCommand(_,_,func) -> func start count
+            | None -> HitInvalidMotion
 
     let ProcessView (view:ITextView) (ki:KeyInput) count = 
         let start = TextViewUtil.GetCaretPoint view

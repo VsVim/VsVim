@@ -16,7 +16,7 @@ type MotionData = {
     OperationKind : OperationKind 
 }
 
-type internal MotionResult = 
+type MotionResult = 
     | Complete of MotionData 
     
     /// Motion needs more input to be completed
@@ -36,4 +36,10 @@ type MotionCommand =
     /// Simple motion which comprises of a char and a function which given a start point
     /// and count will produce the motion.  None is returned in the case the motion 
     /// is not valid
-    | SimpleMotion of char * (SnapshotPoint -> int -> MotionData option)
+    | SimpleMotionCommand of char * (SnapshotPoint -> int -> MotionData option)
+
+    /// Complex motion commands take more than one keystroke to complete.  For example 
+    /// the f,t,F and T commands all require at least one additional input.  The bool
+    /// in the middle of the tuple indicates whether or not the motion can be 
+    /// used as a cursor movement operation  
+    | ComplexMotionCommand of char * bool * (SnapshotPoint -> int -> MotionResult)
