@@ -117,23 +117,6 @@ namespace VimCoreTest
             Assert.AreEqual("foo bar", res.AsComplete().Item.Span.GetText());
         }
 
-        [Test]
-        public void Word6()
-        {
-            Create("foo bar", "baz");
-            var res = Process(4, 1, "w");
-            Assert.IsTrue(res.IsComplete);
-            Assert.AreEqual("bar", res.AsComplete().Item.Span.GetText());
-        }
-
-        [Test]
-        public void Word7()
-        {
-            Create("foo bar", "  baz");
-            var res = Process(4, 1, "w");
-            Assert.IsTrue(res.IsComplete);
-            Assert.AreEqual("bar", res.AsComplete().Item.Span.GetText());
-        }
 
         [Test]
         public void BadInput()
@@ -452,6 +435,24 @@ namespace VimCoreTest
             Create("foo bar baz");
             var res = Process(0, 300, "to");
             Assert.IsTrue(res.IsError);
+        }
+
+        [Test]
+        public void OperationSpan1()
+        {
+            Create("foo bar", "baz");
+            var data = Process(4, 1, "w").AsComplete().Item;
+            Assert.AreEqual("bar" + Environment.NewLine, data.Span.GetText());
+            Assert.AreEqual("bar", data.OperationSpan.GetText());
+        }
+
+        [Test]
+        public void OperationSpan2()
+        {
+            Create("foo bar", "  baz");
+            var data = Process(4, 1, "w").AsComplete().Item;
+            Assert.AreEqual("bar" + Environment.NewLine + "  ", data.Span.GetText());
+            Assert.AreEqual("bar", data.OperationSpan.GetText());
         }
     }   
     

@@ -40,7 +40,7 @@ module internal TssUtil =
     /// Find the start of the next word from the specified point.  If the cursor is currently
     /// on a word then this word will not be considered.  If there are no more words GetEndPoint
     /// will be returned
-    val FindNextWordPosition : SnapshotPoint -> int -> WordKind -> SnapshotPoint
+    val FindNextWordStart : SnapshotPoint -> int -> WordKind -> SnapshotPoint
 
     /// Find and return the SnapshotPoint representing the first non-whitespace character on
     /// the given ITextSnapshotLine
@@ -50,7 +50,7 @@ module internal TssUtil =
     /// used to find the position of the start of the current or previous word.  Unless we 
     /// are currently at the start of a word, in which case it should go back to the previous
     /// one
-    val FindPreviousWordPosition : SnapshotPoint -> int -> WordKind -> SnapshotPoint
+    val FindPreviousWordStart : SnapshotPoint -> int -> WordKind -> SnapshotPoint
 
     /// Find the next "count" occurrence of the given "char" on the specified line
     val FindNextOccurranceOfCharOnLine : SnapshotPoint -> char -> int -> SnapshotPoint option

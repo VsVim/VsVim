@@ -103,16 +103,6 @@ type internal NormalMode
         let func = this.WaitForMotionCore doneFunc
         NormalModeResult.NeedMoreInput (fun ki count _ -> func ki count)
 
-    /// Wait for the next key stroke.  If it's the passed in char then execute the foundCharFunc
-    /// method otherwise wait for the motion to complete and execute foundMotionFunc
-    member this.WaitForMotionOrChar targetChar foundCharFunc foundMotionFunc =
-        let inner (ki:KeyInput) count reg =
-            if ki.Char = targetChar then foundCharFunc count reg 
-            else 
-                let func (data:MotionData)  = foundMotionFunc data.Span data.MotionKind data.OperationKind
-                this.WaitForMotion ki count func
-        inner
-        
     // Respond to the d command.  Need the finish motion
     member this.WaitDelete =
         let inner (ki:KeyInput) count reg =
@@ -122,7 +112,7 @@ type internal NormalMode
                     NormalModeResult.CompleteRepeatable(count,reg)
                 | _ -> 
                     let func (data:MotionData) = 
-                        _operations.DeleteSpan data.Span data.MotionKind data.OperationKind reg |> ignore
+                        _operations.DeleteSpan data.OperationSpan data.MotionKind data.OperationKind reg |> ignore
                         NormalModeResult.CompleteRepeatable(count,reg)
                     this.WaitForMotion ki count func
         inner
@@ -139,7 +129,7 @@ type internal NormalMode
                     NormalModeResult.CompleteRepeatable (count,reg)
                 | _ ->
                     let inner (data:MotionData) =
-                        _operations.Yank data.Span data.MotionKind data.OperationKind reg
+                        _operations.Yank data.OperationSpan data.MotionKind data.OperationKind reg
                         NormalModeResult.CompleteRepeatable (count,reg)
                     this.WaitForMotion ki count inner
         inner 
@@ -156,7 +146,7 @@ type internal NormalMode
                     NormalModeResult.SwitchMode ModeKind.Insert
                 | _ -> 
                     let func (data:MotionData) = 
-                        _operations.DeleteSpan data.Span data.MotionKind data.OperationKind reg |> ignore
+                        _operations.DeleteSpan data.OperationSpan data.MotionKind data.OperationKind reg |> ignore
                         NormalModeResult.SwitchMode ModeKind.Insert
                     this.WaitForMotion ki count func
         inner
@@ -170,7 +160,7 @@ type internal NormalMode
                     NormalModeResult.CompleteRepeatable(count,reg)
                 | _ ->
                     let inner2 (data:MotionData) =
-                        _operations.ShiftSpanLeft data.Span
+                        _operations.ShiftSpanLeft data.OperationSpan
                         NormalModeResult.CompleteRepeatable(count,reg)
                     this.WaitForMotion ki count inner2
         inner                                            
@@ -185,7 +175,7 @@ type internal NormalMode
                     NormalModeResult.CompleteRepeatable(count,reg) 
                 | _ ->
                     let inner2 (data:MotionData) = 
-                        _operations.ShiftSpanRight data.Span
+                        _operations.ShiftSpanRight data.OperationSpan
                         NormalModeResult.CompleteRepeatable(count,reg) 
                     this.WaitForMotion ki count inner2
         inner
@@ -307,15 +297,39 @@ type internal NormalMode
             NormalModeResult.Complete
 
     member private this.BuildMotionOperationsMap =
-        let wrap func = 
-            fun count reg -> 
+
+        // Wrap a simple motion command
+        let wrapSimple func = 
+            fun count _ -> 
                 let count = CountOrDefault count
                 func count
-                _operations.EditorOperations.ResetSelection()
                 NormalModeResult.CompleteNotCommand
+
+        // Wrap a complex motion command
+        let wrapComplex func = 
+            
+            /// Process a MovementResult
+            let rec inner result = 
+                match result with
+                | Vim.Modes.MovementComplete -> NormalModeResult.CompleteNotCommand
+                | Vim.Modes.MovementNeedMore func -> 
+                    let func2 ki _ _ = func ki |> inner
+                    NormalModeResult.NeedMoreInput func2
+                | Vim.Modes.MovementError msg -> 
+                    _statusUtil.OnError msg
+                    NormalModeResult.CompleteNotCommand
+
+            fun count _ ->
+                let count = CountOrDefault count
+                func count |> inner
+
+        let doMap ki command =
+            match command with
+            | Vim.Modes.SimpleMovementCommand(func) -> (ki, wrapSimple func)
+            | Vim.Modes.ComplexMovementCommand(func) -> (ki, wrapComplex func)
+
         let factory = Vim.Modes.CommandFactory(_operations)
-        factory.CreateMovementCommands() 
-            |> Seq.map (fun (ki,com) -> (ki,wrap com))
+        factory.CreateMovementCommands() |> Seq.map (fun (ki,command) -> doMap ki command)
 
     member this.BuildOperationsMap = 
         let waitOps = seq {

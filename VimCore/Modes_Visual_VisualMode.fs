@@ -58,7 +58,11 @@ type internal VisualMode
                 VisualModeResult.Complete
         let factory = Vim.Modes.CommandFactory(_operations)
         factory.CreateMovementCommands()
-            |> Seq.map (fun (ki,com) -> (ki,wrap com))
+        |> Seq.map (fun (ki,command) ->
+            match command with
+            | Vim.Modes.ComplexMovementCommand(_) -> None
+            | Vim.Modes.SimpleMovementCommand(func) -> (ki, wrap func) |> Some )
+        |> SeqUtil.filterToSome 
 
     member private x.ProcessGChar count reg  =
         let inner (ki:KeyInput) =  

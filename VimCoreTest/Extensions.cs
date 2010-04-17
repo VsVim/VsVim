@@ -307,6 +307,11 @@ namespace VimCoreTest
 
         #region ITextSnapshot
 
+        public static ITextSnapshotLine GetLine(this ITextSnapshot tss, int lineNumber)
+        {
+            return tss.GetLineFromLineNumber(lineNumber);
+        }
+
         public static SnapshotSpan GetLineSpan(this ITextSnapshot tss, int startLine, int endLine = -1)
         {
             endLine = endLine >= 0 ? endLine : startLine;

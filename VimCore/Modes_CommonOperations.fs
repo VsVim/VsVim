@@ -270,12 +270,12 @@ type internal CommonOperations
 
         member x.MoveWordForward kind count = 
             let caret = TextViewUtil.GetCaretPoint _textView
-            let pos = TssUtil.FindNextWordPosition caret count kind
+            let pos = TssUtil.FindNextWordStart caret count kind
             TextViewUtil.MoveCaretToPoint _textView pos 
             
         member x.MoveWordBackward kind count = 
             let caret = TextViewUtil.GetCaretPoint _textView
-            let pos = TssUtil.FindPreviousWordPosition caret count kind
+            let pos = TssUtil.FindPreviousWordStart caret count kind
             TextViewUtil.MoveCaretToPoint _textView pos 
 
         member x.ShiftSpanRight span = x.ShiftSpanRight span
@@ -373,6 +373,7 @@ type internal CommonOperations
                 if data.IsForward then data.Span.End
                 else data.Span.Start
             TextViewUtil.MoveCaretToPoint _textView point
+            _operations.ResetSelection()
         member x.Beep () = _host.Beep()
 
 

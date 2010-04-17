@@ -43,13 +43,13 @@ module internal MotionCapture =
         
     /// Implement the w/W motion
     let private WordMotionForward start count kind =
-        let endPoint = TssUtil.FindNextWordPosition start count kind  
+        let endPoint = TssUtil.FindNextWordStart start count kind  
         let span = SnapshotSpan(start,endPoint)
         {Span=span; IsForward=true; MotionKind=MotionKind.Exclusive; OperationKind=OperationKind.CharacterWise}
 
     /// Implement the b/B motion
     let private WordMotionBackward start count kind =
-        let startPoint = TssUtil.FindPreviousWordPosition start count kind
+        let startPoint = TssUtil.FindPreviousWordStart start count kind
         let span = SnapshotSpan(startPoint,start)
         {Span=span; IsForward=false; MotionKind=MotionKind.Exclusive; OperationKind=OperationKind.CharacterWise}
         
@@ -77,7 +77,7 @@ module internal MotionCapture =
 
                 // Move start to the first word if we're currently on whitespace
                 let start = 
-                    if System.Char.IsWhiteSpace(start.GetChar()) then TssUtil.FindNextWordPosition start 1 kind 
+                    if System.Char.IsWhiteSpace(start.GetChar()) then TssUtil.FindNextWordStart start 1 kind 
                     else start
 
                 if start = snapshotEnd then snapshotEnd

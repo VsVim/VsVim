@@ -14,7 +14,24 @@ type MotionData = {
     IsForward : bool 
     MotionKind : MotionKind
     OperationKind : OperationKind 
-}
+} with
+    
+    /// Span is the true result of the motion.  However some commands only process a
+    /// subset of the.  This exception is covered in the help page :help exclusive.
+    ///
+    /// Note: The documentation on that page is incorrect.  It mentions that the exception
+    /// only exists if the motion ends in column one.  In implementation though it 
+    /// exists if the motion ends on the first non-blank
+    member x.OperationSpan = 
+        if x.MotionKind = MotionKind.Inclusive then x.Span
+        else 
+            let line = SnapshotPointUtil.GetContainingLine x.Span.End
+            let point = TssUtil.FindFirstNonWhitespaceCharacter line
+            if point = x.Span.End && line.LineNumber <> 0 then 
+                let lineAbove = line.Snapshot.GetLineFromLineNumber(line.LineNumber-1)
+                SnapshotSpan(x.Span.Start, lineAbove.End)
+            else x.Span
+        
 
 type MotionResult = 
     | Complete of MotionData 

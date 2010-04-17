@@ -94,18 +94,18 @@ module internal TssUtil =
                         else startSpan
             | None -> fullSearch point
 
-    let FindNextWordPosition point count kind =
-        let rec inner pos count = 
-            if count = 0 then pos
+    let FindNextWordStart point count kind =
+        let rec inner point count = 
+            if count = 0 then point
             else 
                 let span = FindNextWordSpan point kind
                 let nextPos = span.Start
                 inner nextPos (count-1)
         inner point count 
 
-    let FindPreviousWordPosition point count kind  =
-        let rec inner pos count =
-            if count = 0 then pos
+    let FindPreviousWordStart point count kind  =
+        let rec inner point count =
+            if count = 0 then point
             else 
                 let span = FindPreviousWordSpan point kind 
                 let prevPos = span.Start

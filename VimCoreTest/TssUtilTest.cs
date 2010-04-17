@@ -39,61 +39,69 @@ namespace VimCoreTest
 
 
         [Test]
-        public void FindNextWordPosition1()
+        public void FindNextWordStart1()
         {
             Create("foo bar");
-            var p = TssUtil.FindNextWordPosition(new SnapshotPoint(_snapshot, 1), 1, WordKind.NormalWord);
+            var p = TssUtil.FindNextWordStart(new SnapshotPoint(_snapshot, 1), 1, WordKind.NormalWord);
             Assert.AreEqual(4, p.Position);
         }
 
-        [Test, Description("Start of word should give bakc the current word")]
-        public void FindNextWordPosition2()
+        [Test, Description("Start of word should give back the current word")]
+        public void FindNextWordStart2()
         {
             Create("foo bar");
-            var p = TssUtil.FindNextWordPosition(new SnapshotPoint(_snapshot, 0), 1, WordKind.NormalWord);
+            var p = TssUtil.FindNextWordStart(new SnapshotPoint(_snapshot, 0), 1, WordKind.NormalWord);
             Assert.AreEqual(4, p.Position);
         }
 
         [Test, Description("Start on non-first line")]
-        public void FindNextWordPosition3()
+        public void FindNextWordStart3()
         {
             Create("foo", "bar baz");
             var line = _snapshot.GetLineFromLineNumber(1);
-            var p = TssUtil.FindNextWordPosition(line.Start, 1, WordKind.NormalWord);
+            var p = TssUtil.FindNextWordStart(line.Start, 1, WordKind.NormalWord);
             Assert.AreNotEqual(line.Start, p);
         }
 
         [Test, Description("Start on non-first line with non-first word")]
-        public void FindNextWordPosition4()
+        public void FindNextWordStart4()
         {
             Create("foo", "bar caz dang");
             var line = _snapshot.GetLineFromLineNumber(1);
             var p = line.Start+4;
             Assert.AreEqual('c', p.GetChar());
-            var p2 = TssUtil.FindNextWordPosition(line.Start + 4, 1, WordKind.NormalWord);
+            var p2 = TssUtil.FindNextWordStart(line.Start + 4, 1, WordKind.NormalWord);
             Assert.AreNotEqual(p2, p);
             Assert.AreEqual(p+4, p2);
         }
 
         [Test, Description("Find word across line boundary")]
-        public void FindNextWordPosition5()
+        public void FindNextWordStart5()
         {
             Create("foo", "bar daz");
             var line = _snapshot.GetLineFromLineNumber(0);
-            var point = TssUtil.FindNextWordPosition(line.End, 1, WordKind.NormalWord);
+            var point = TssUtil.FindNextWordStart(line.End, 1, WordKind.NormalWord);
             var other = _snapshot.GetLineFromLineNumber(1);
             Assert.AreEqual(other.Start, point);
         }
 
         [Test, Description("At end of buffer it should give back the last point")]
-        public void FindNextWordPosition6()
+        public void FindNextWordStart6()
         {
             Create("foo bar");
             var line = _snapshot.GetLineFromLineNumber(0);
             var point = line.Start.Add(5);
-            var other = TssUtil.FindNextWordPosition(point, 1, WordKind.NormalWord);
+            var other = TssUtil.FindNextWordStart(point, 1, WordKind.NormalWord);
             Assert.AreEqual(line.End, other);
-        }   
+        }
+
+        [Test]
+        public void FindNextWordStart7()
+        {
+            Create("foo bar jazz");
+            var next = TssUtil.FindNextWordStart(_snapshot.GetPoint(0), 2, WordKind.NormalWord);
+            Assert.AreEqual('j', next.GetChar());
+        }
 
         [Test, Description("Make sure we don't throw if we are in the Line break")]
         public void FindNextWordSpan1()
@@ -172,6 +180,22 @@ namespace VimCoreTest
         }
 
         [Test]
+        public void FindPreviousWordStart1()
+        {
+            Create("foo bar jazz dog");
+            var prev = TssUtil.FindPreviousWordStart(_snapshot.GetLine(0).End, 1, WordKind.NormalWord);
+            Assert.AreEqual('d', prev.GetChar());
+        }
+
+        [Test]
+        public void FindPreviousWordStart2()
+        {
+            Create("foo bar jazz dog");
+            var prev = TssUtil.FindPreviousWordStart(_snapshot.GetLine(0).End, 2, WordKind.NormalWord);
+            Assert.AreEqual('j', prev.GetChar());
+        }
+
+        [Test]
         public void FindIndentPosition()
         {
             Create("  foo");
@@ -186,7 +210,6 @@ namespace VimCoreTest
             var line = _snapshot.GetLineFromLineNumber(0);
             Assert.AreEqual(0, TssUtil.FindIndentPosition(line));
         }
-
 
         [Test]
         public void GetReverseCharacterSpan1()
@@ -225,9 +248,6 @@ namespace VimCoreTest
             var opt = TssUtil.FindCurrentWordSpan(line.End, WordKind.NormalWord);
             Assert.IsTrue(opt.IsNone());
         }
-
-
-
 
         [Test]
         public void GetWordSpans1()
