@@ -8,8 +8,16 @@ type MotionKind =
     | Exclusive
     | Inclusive
 
+/// Data about a complete motion operation. 
+type MotionData = {
+    Span : SnapshotSpan
+    IsForward : bool 
+    MotionKind : MotionKind
+    OperationKind : OperationKind 
+}
+
 type internal MotionResult = 
-    | Complete of (SnapshotSpan * MotionKind * OperationKind)
+    | Complete of MotionData 
     
     /// Motion needs more input to be completed
     | NeedMoreInput of (KeyInput -> MotionResult)

@@ -58,9 +58,9 @@ namespace VimCoreTest
             var res = Process(startPosition, count, input);
             var tuple = res.AsComplete().Item;
             Assert.IsTrue(res.IsComplete);
-            Assert.AreEqual(match, tuple.Item1.GetText());
-            Assert.AreEqual(motionKind, tuple.Item2);
-            Assert.AreEqual(opKind, tuple.Item3);
+            Assert.AreEqual(match, tuple.Span.GetText());
+            Assert.AreEqual(motionKind, tuple.MotionKind);
+            Assert.AreEqual(opKind, tuple.OperationKind);
         }
 
 
@@ -71,11 +71,11 @@ namespace VimCoreTest
             var res = MotionCapture.ProcessInput(new SnapshotPoint(_snapshot, 0), InputUtil.CharToKeyInput('w'), 1);
             Assert.IsTrue(res.IsComplete);
             var res2 = (MotionResult.Complete)res;
-            var span = res2.Item.Item1;
+            var span = res2.Item.Span;
             Assert.AreEqual(4, span.Length);
             Assert.AreEqual("foo ", span.GetText());
-            Assert.AreEqual(MotionKind.Exclusive, res2.Item.Item2);
-            Assert.AreEqual(OperationKind.CharacterWise, res2.Item.Item3);
+            Assert.AreEqual(MotionKind.Exclusive, res2.Item.MotionKind);
+            Assert.AreEqual(OperationKind.CharacterWise, res2.Item.OperationKind);
         }
 
 
@@ -85,7 +85,7 @@ namespace VimCoreTest
             Create("foo bar");
             var res = MotionCapture.ProcessInput(new SnapshotPoint(_snapshot, 1), InputUtil.CharToKeyInput('w'), 1);
             Assert.IsTrue(res.IsComplete);
-            var span = res.AsComplete().Item.Item1;
+            var span = res.AsComplete().Item.Span;
             Assert.AreEqual(3, span.Length);
             Assert.AreEqual("oo ", span.GetText());
         }
@@ -96,7 +96,7 @@ namespace VimCoreTest
             Create("foo bar baz");
             var res = Process(0, 2, "w");
             Assert.IsTrue(res.IsComplete);
-            Assert.AreEqual("foo bar ", res.AsComplete().Item.Item1.GetText());
+            Assert.AreEqual("foo bar ", res.AsComplete().Item.Span.GetText());
         }
 
         [Test, Description("Count across lines")]
@@ -105,7 +105,7 @@ namespace VimCoreTest
             Create("foo bar", "baz jaz");
             var res = Process(0, 3, "w");
             Assert.IsTrue(res.IsComplete);
-            Assert.AreEqual("foo bar" + Environment.NewLine + "baz ", res.AsComplete().Item.Item1.GetText());
+            Assert.AreEqual("foo bar" + Environment.NewLine + "baz ", res.AsComplete().Item.Span.GetText());
         }
 
         [Test, Description("Count off the end of the buffer")]
@@ -114,7 +114,7 @@ namespace VimCoreTest
             Create("foo bar");
             var res = Process(0, 10, "w");
             Assert.IsTrue(res.IsComplete);
-            Assert.AreEqual("foo bar", res.AsComplete().Item.Item1.GetText());
+            Assert.AreEqual("foo bar", res.AsComplete().Item.Span.GetText());
         }
 
         [Test]
@@ -123,7 +123,7 @@ namespace VimCoreTest
             Create("foo bar", "baz");
             var res = Process(4, 1, "w");
             Assert.IsTrue(res.IsComplete);
-            Assert.AreEqual("bar", res.AsComplete().Item.Item1.GetText());
+            Assert.AreEqual("bar", res.AsComplete().Item.Span.GetText());
         }
 
         [Test]
@@ -132,7 +132,7 @@ namespace VimCoreTest
             Create("foo bar", "  baz");
             var res = Process(4, 1, "w");
             Assert.IsTrue(res.IsComplete);
-            Assert.AreEqual("bar", res.AsComplete().Item.Item1.GetText());
+            Assert.AreEqual("bar", res.AsComplete().Item.Span.GetText());
         }
 
         [Test]
@@ -146,7 +146,7 @@ namespace VimCoreTest
         }
 
 
-        [Test, Description("Keep gettnig input until it's escaped")]
+        [Test, Description("Keep getting input until it's escaped")]
         public void BadInput2()
         {
             Create("foo bar");
@@ -165,11 +165,11 @@ namespace VimCoreTest
             var ki = InputUtil.CharToKeyInput('$');
             var res = MotionCapture.ProcessInput(new SnapshotPoint(_snapshot, 0), ki, 0);
             Assert.IsTrue(res.IsComplete);
-            var span = res.AsComplete().Item.Item1;
+            var span = res.AsComplete().Item.Span;
             Assert.AreEqual("foo bar", span.GetText());
             var tuple = res.AsComplete().Item;
-            Assert.AreEqual(MotionKind.Inclusive, tuple.Item2);
-            Assert.AreEqual(OperationKind.CharacterWise, tuple.Item3);
+            Assert.AreEqual(MotionKind.Inclusive, tuple.MotionKind);
+            Assert.AreEqual(OperationKind.CharacterWise, tuple.OperationKind);
         }
 
         [Test]
@@ -179,7 +179,7 @@ namespace VimCoreTest
             var ki = InputUtil.CharToKeyInput('$');
             var res = MotionCapture.ProcessInput(new SnapshotPoint(_snapshot, 1), ki, 0);
             Assert.IsTrue(res.IsComplete);
-            var span = res.AsComplete().Item.Item1;
+            var span = res.AsComplete().Item.Span;
             Assert.AreEqual("oo bar", span.GetText());
         }
 
@@ -191,9 +191,9 @@ namespace VimCoreTest
             var res = MotionCapture.ProcessInput(new SnapshotPoint(_snapshot, 0), ki, 2);
             Assert.IsTrue(res.IsComplete);
             var tuple = res.AsComplete().Item;
-            Assert.AreEqual("foo" + Environment.NewLine + "bar", tuple.Item1.GetText());
-            Assert.AreEqual(MotionKind.Inclusive, tuple.Item2);
-            Assert.AreEqual(OperationKind.CharacterWise, tuple.Item3);
+            Assert.AreEqual("foo" + Environment.NewLine + "bar", tuple.Span.GetText());
+            Assert.AreEqual(MotionKind.Inclusive, tuple.MotionKind);
+            Assert.AreEqual(OperationKind.CharacterWise, tuple.OperationKind);
         }
 
         [Test]
@@ -204,9 +204,9 @@ namespace VimCoreTest
             var res = MotionCapture.ProcessInput(new SnapshotPoint(_snapshot, 0), ki, 3);
             Assert.IsTrue(res.IsComplete);
             var tuple = res.AsComplete().Item;
-            Assert.AreEqual("foo" + Environment.NewLine + "bar" + Environment.NewLine +"baz", tuple.Item1.GetText());
-            Assert.AreEqual(MotionKind.Inclusive, tuple.Item2);
-            Assert.AreEqual(OperationKind.CharacterWise, tuple.Item3);
+            Assert.AreEqual("foo" + Environment.NewLine + "bar" + Environment.NewLine +"baz", tuple.Span.GetText());
+            Assert.AreEqual(MotionKind.Inclusive, tuple.MotionKind);
+            Assert.AreEqual(OperationKind.CharacterWise, tuple.OperationKind);
         }
 
         [Test,Description("Make sure counts past the end of the buffer don't crash")]
@@ -217,7 +217,7 @@ namespace VimCoreTest
             var res = MotionCapture.ProcessInput(new SnapshotPoint(_snapshot, 0), ki, 300);
             Assert.IsTrue(res.IsComplete);
             var tuple = res.AsComplete().Item;
-            Assert.AreEqual("foo", tuple.Item1.GetText());
+            Assert.AreEqual("foo", tuple.Span.GetText());
         }
 
         [Test]
@@ -228,9 +228,9 @@ namespace VimCoreTest
             var res = MotionCapture.ProcessInput(_buffer.CurrentSnapshot.GetLineFromLineNumber(0).End, ki, 1);
             Assert.IsTrue(res.IsComplete);
             var tuple = res.AsComplete().Item;
-            Assert.AreEqual("foo", tuple.Item1.GetText());
-            Assert.AreEqual(MotionKind.Exclusive, tuple.Item2);
-            Assert.AreEqual(OperationKind.CharacterWise, tuple.Item3);
+            Assert.AreEqual("foo", tuple.Span.GetText());
+            Assert.AreEqual(MotionKind.Exclusive, tuple.MotionKind);
+            Assert.AreEqual(OperationKind.CharacterWise, tuple.OperationKind);
         }
 
         [Test, Description("Make sure it goes to the first non-whitespace character")]
@@ -241,9 +241,9 @@ namespace VimCoreTest
             var res = MotionCapture.ProcessInput(_buffer.CurrentSnapshot.GetLineFromLineNumber(0).End, ki, 1);
             Assert.IsTrue(res.IsComplete);
             var tuple = res.AsComplete().Item;
-            Assert.AreEqual("foo", tuple.Item1.GetText());
-            Assert.AreEqual(MotionKind.Exclusive, tuple.Item2);
-            Assert.AreEqual(OperationKind.CharacterWise, tuple.Item3);
+            Assert.AreEqual("foo", tuple.Span.GetText());
+            Assert.AreEqual(MotionKind.Exclusive, tuple.MotionKind);
+            Assert.AreEqual(OperationKind.CharacterWise, tuple.OperationKind);
         }
 
         [Test]
@@ -252,7 +252,7 @@ namespace VimCoreTest
             Create("foo bar baz");
             var res  = Process(0, 1, "2w");
             Assert.IsTrue(res.IsComplete);
-            var span = res.AsComplete().Item.Item1;
+            var span = res.AsComplete().Item.Span;
             Assert.AreEqual("foo bar ", span.GetText());
         }
 
@@ -262,7 +262,7 @@ namespace VimCoreTest
             Create("foo bar baz");
             var res = Process(0, 1, "1w");
             Assert.IsTrue(res.IsComplete);
-            var span = res.AsComplete().Item.Item1;
+            var span = res.AsComplete().Item.Span;
             Assert.AreEqual("foo ", span.GetText());
         }
 
@@ -272,7 +272,7 @@ namespace VimCoreTest
             Create("foo bar");
             var res = Process(0, 1, "aw");
             Assert.IsTrue(res.IsComplete);
-            Assert.AreEqual("foo ", res.AsComplete().Item.Item1.GetText());
+            Assert.AreEqual("foo ", res.AsComplete().Item.Span.GetText());
         }
 
         [Test]
@@ -281,7 +281,7 @@ namespace VimCoreTest
             Create("foo bar");
             var res = Process(1, 1, "aw");
             Assert.IsTrue(res.IsComplete);
-            Assert.AreEqual("foo ", res.AsComplete().Item.Item1.GetText());
+            Assert.AreEqual("foo ", res.AsComplete().Item.Span.GetText());
         }
 
         [Test]
@@ -290,7 +290,7 @@ namespace VimCoreTest
             Create("foo bar baz");
             var res = Process(1, 1, "2aw");
             Assert.IsTrue(res.IsComplete);
-            Assert.AreEqual("foo bar ", res.AsComplete().Item.Item1.GetText());
+            Assert.AreEqual("foo bar ", res.AsComplete().Item.Span.GetText());
         }
 
         [Test]
@@ -299,7 +299,7 @@ namespace VimCoreTest
             Create("foo bar");
             var res = Process(2, 1, "2h");
             Assert.IsTrue(res.IsComplete);
-            Assert.AreEqual("fo", res.AsComplete().Item.Item1.GetText());
+            Assert.AreEqual("fo", res.AsComplete().Item.Span.GetText());
         }
 
         [Test, Description("Make sure that counts are multiplied")]
@@ -307,7 +307,7 @@ namespace VimCoreTest
         {
             Create("food bar");
             var res = Process(4, 2, "2h");
-            Assert.AreEqual("food", res.AsComplete().Item.Item1.GetText());
+            Assert.AreEqual("food", res.AsComplete().Item.Span.GetText());
         }
 
         [Test]
@@ -315,8 +315,8 @@ namespace VimCoreTest
         {
             Create("foo");
             var res = Process(0, 1, "2l");
-            Assert.AreEqual("fo", res.AsComplete().Item.Item1.GetText());
-            Assert.AreEqual(OperationKind.CharacterWise, res.AsComplete().Item.Item3);
+            Assert.AreEqual("fo", res.AsComplete().Item.Span.GetText());
+            Assert.AreEqual(OperationKind.CharacterWise, res.AsComplete().Item.OperationKind);
         }
 
         [Test]
@@ -324,8 +324,8 @@ namespace VimCoreTest
         {
             Create("foo", "bar");
             var res = Process(_snapshot.GetLineFromLineNumber(1).Start.Position, 1, "k");
-            Assert.AreEqual(OperationKind.LineWise, res.AsComplete().Item.Item3);
-            Assert.AreEqual("foo" + Environment.NewLine + "bar", res.AsComplete().Item.Item1.GetText());
+            Assert.AreEqual(OperationKind.LineWise, res.AsComplete().Item.OperationKind);
+            Assert.AreEqual("foo" + Environment.NewLine + "bar", res.AsComplete().Item.Span.GetText());
         }
 
         [Test]
@@ -333,9 +333,9 @@ namespace VimCoreTest
         {
             Create("foo bar");
             var res = Process(new SnapshotPoint(_snapshot, 0), 1, "e").AsComplete().Item;
-            Assert.AreEqual(MotionKind.Inclusive, res.Item2);
-            Assert.AreEqual(OperationKind.CharacterWise, res.Item3);
-            Assert.AreEqual(new SnapshotSpan(_snapshot, 0, 3), res.Item1);
+            Assert.AreEqual(MotionKind.Inclusive, res.MotionKind);
+            Assert.AreEqual(OperationKind.CharacterWise, res.OperationKind);
+            Assert.AreEqual(new SnapshotSpan(_snapshot, 0, 3), res.Span);
         }
 
         [Test, Description("Needs to cross the end of the line")]
@@ -347,9 +347,9 @@ namespace VimCoreTest
             var span = new SnapshotSpan(
                 point,
                 _snapshot.GetLineFromLineNumber(1).Start.Add(3));
-            Assert.AreEqual(span, res.Item1);
-            Assert.AreEqual(MotionKind.Inclusive, res.Item2);
-            Assert.AreEqual(OperationKind.CharacterWise, res.Item3);
+            Assert.AreEqual(span, res.Span);
+            Assert.AreEqual(MotionKind.Inclusive, res.MotionKind);
+            Assert.AreEqual(OperationKind.CharacterWise, res.OperationKind);
         }
 
         [Test]
@@ -358,9 +358,9 @@ namespace VimCoreTest
             Create("foo bar baz jaz");
             var res = Process(new SnapshotPoint(_snapshot, 0), 2, "e").AsComplete().Item;
             var span = new SnapshotSpan(_snapshot, 0, 7);
-            Assert.AreEqual(span, res.Item1);
-            Assert.AreEqual(MotionKind.Inclusive, res.Item2);
-            Assert.AreEqual(OperationKind.CharacterWise, res.Item3);
+            Assert.AreEqual(span, res.Span);
+            Assert.AreEqual(MotionKind.Inclusive, res.MotionKind);
+            Assert.AreEqual(OperationKind.CharacterWise, res.OperationKind);
         }
 
         [Test, Description("Work across blank lines")]
@@ -372,12 +372,12 @@ namespace VimCoreTest
             var span = new SnapshotSpan(
                 point,
                 _snapshot.GetLineFromLineNumber(2).Start.Add(3));
-            Assert.AreEqual(span, res.Item1);
-            Assert.AreEqual(MotionKind.Inclusive, res.Item2);
-            Assert.AreEqual(OperationKind.CharacterWise, res.Item3);
+            Assert.AreEqual(span, res.Span);
+            Assert.AreEqual(MotionKind.Inclusive, res.MotionKind);
+            Assert.AreEqual(OperationKind.CharacterWise, res.OperationKind);
         }
 
-        [Test, Description("Go off the end ofthe buffer")]
+        [Test, Description("Go off the end of the buffer")]
         public void EndOfWord5()
         {
             Create("foo   ", "", "bar");
@@ -386,9 +386,9 @@ namespace VimCoreTest
             var span = new SnapshotSpan(
                 point,
                 SnapshotUtil.GetEndPoint(_snapshot));
-            Assert.AreEqual(span, res.Item1);
-            Assert.AreEqual(MotionKind.Inclusive, res.Item2);
-            Assert.AreEqual(OperationKind.CharacterWise, res.Item3);
+            Assert.AreEqual(span, res.Span);
+            Assert.AreEqual(MotionKind.Inclusive, res.MotionKind);
+            Assert.AreEqual(OperationKind.CharacterWise, res.OperationKind);
         }
 
         [Test]

@@ -109,7 +109,7 @@ type internal NormalMode
         let inner (ki:KeyInput) count reg =
             if ki.Char = targetChar then foundCharFunc count reg 
             else 
-                let func (span,motionKind,opKind) = foundMotionFunc span motionKind opKind 
+                let func (data:MotionData)  = foundMotionFunc data.Span data.MotionKind data.OperationKind
                 this.WaitForMotion ki count func
         inner
         
@@ -121,8 +121,8 @@ type internal NormalMode
                     _operations.DeleteLinesIncludingLineBreak count reg 
                     NormalModeResult.CompleteRepeatable(count,reg)
                 | _ -> 
-                    let func (span,motionKind,opKind)= 
-                        _operations.DeleteSpan span motionKind opKind reg |> ignore
+                    let func (data:MotionData) = 
+                        _operations.DeleteSpan data.Span data.MotionKind data.OperationKind reg |> ignore
                         NormalModeResult.CompleteRepeatable(count,reg)
                     this.WaitForMotion ki count func
         inner
@@ -138,8 +138,8 @@ type internal NormalMode
                     _operations.Yank span MotionKind.Inclusive OperationKind.LineWise reg 
                     NormalModeResult.CompleteRepeatable (count,reg)
                 | _ ->
-                    let inner (ss:SnapshotSpan,motionKind,opKind) = 
-                        _operations.Yank ss motionKind opKind reg 
+                    let inner (data:MotionData) =
+                        _operations.Yank data.Span data.MotionKind data.OperationKind reg
                         NormalModeResult.CompleteRepeatable (count,reg)
                     this.WaitForMotion ki count inner
         inner 
@@ -155,8 +155,8 @@ type internal NormalMode
                     _operations.DeleteSpan span MotionKind.Inclusive OperationKind.LineWise reg |> ignore
                     NormalModeResult.SwitchMode ModeKind.Insert
                 | _ -> 
-                    let func (span,motionKind,opKind)= 
-                        _operations.DeleteSpan span motionKind opKind reg |> ignore
+                    let func (data:MotionData) = 
+                        _operations.DeleteSpan data.Span data.MotionKind data.OperationKind reg |> ignore
                         NormalModeResult.SwitchMode ModeKind.Insert
                     this.WaitForMotion ki count func
         inner
@@ -169,8 +169,8 @@ type internal NormalMode
                     _operations.ShiftLinesLeft count
                     NormalModeResult.CompleteRepeatable(count,reg)
                 | _ ->
-                    let inner2 (span:SnapshotSpan,_,_) =
-                        _operations.ShiftSpanLeft span 
+                    let inner2 (data:MotionData) =
+                        _operations.ShiftSpanLeft data.Span
                         NormalModeResult.CompleteRepeatable(count,reg)
                     this.WaitForMotion ki count inner2
         inner                                            
@@ -184,8 +184,8 @@ type internal NormalMode
                     _operations.ShiftLinesRight count
                     NormalModeResult.CompleteRepeatable(count,reg) 
                 | _ ->
-                    let inner2 (span:SnapshotSpan,_,_) =
-                        _operations.ShiftSpanRight span 
+                    let inner2 (data:MotionData) = 
+                        _operations.ShiftSpanRight data.Span
                         NormalModeResult.CompleteRepeatable(count,reg) 
                     this.WaitForMotion ki count inner2
         inner
@@ -298,8 +298,8 @@ type internal NormalMode
     /// Handle the ~.  This is a special key because it's behavior changes based on the tildeop option
     member private this.HandleTilde count =
         if _bufferData.Settings.GlobalSettings.TildeOp then
-            let func (span,_,_) = 
-                _operations.ChangeLetterCase span
+            let func (data:MotionData) =
+                _operations.ChangeLetterCase data.Span
                 NormalModeResult.Complete
             this.WaitForMotionAsResult func
         else
