@@ -368,3 +368,11 @@ type internal CommonOperations
         member x.EnsureCaretOnScreen () = TextViewUtil.EnsureCaretOnScreen _textView 
         member x.EnsureCaretOnScreenAndTextExpanded () = TextViewUtil.EnsureCaretOnScreenAndTextExpanded _textView _outlining
         member x.MoveCaretToPoint point =  TextViewUtil.MoveCaretToPoint _textView point 
+        member x.MoveCaretToMotionData (data:MotionData) =
+            let point = 
+                if data.IsForward then data.Span.End
+                else data.Span.Start
+            TextViewUtil.MoveCaretToPoint _textView point
+        member x.Beep () = _host.Beep()
+
+

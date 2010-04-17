@@ -34,6 +34,9 @@ type ICommonOperations =
     /// Associated IEditorOperations
     abstract EditorOperations : IEditorOperations
 
+    /// Run the beep operation
+    abstract Beep : unit -> unit
+
     /// Implements the Join command.  Returns false in the case the join command cannot
     /// be complete (such as joining at the end of the buffer)
     abstract Join : SnapshotPoint -> JoinKind -> count : int -> bool
@@ -58,16 +61,19 @@ type ICommonOperations =
     /// Ensure the caret is on the visible screen
     abstract EnsureCaretOnScreen : unit -> unit
 
-    /// Ensure the caret is on screen and that it is not in a collasped region
+    /// Ensure the caret is on screen and that it is not in a collapsed region
     abstract EnsureCaretOnScreenAndTextExpanded : unit -> unit
 
     /// Move the caret to a given point on the screen
     abstract MoveCaretToPoint : SnapshotPoint -> unit
 
+    /// Move the caret to the MotionData value
+    abstract MoveCaretToMotionData : MotionData -> unit
+
     /// Move the caret count spaces left on the same line
     abstract MoveCaretLeft : count : int -> unit
 
-    /// Move the cursor countt spaces right on the same line
+    /// Move the cursor count spaces right on the same line
     abstract MoveCaretRight : count : int -> unit
 
     /// Move the cursor up count lines

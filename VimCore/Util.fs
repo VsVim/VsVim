@@ -162,6 +162,15 @@ module internal SeqUtil =
         | Some(value) -> value
         | None -> defaultValue 
 
+    /// Filter the list removing all None's 
+    let filterToSome sequence =
+        seq {
+            for cur in sequence do
+                match cur with
+                | Some(value) -> yield value
+                | None -> ()
+        }
+    
 module internal MapUtil =
 
     /// Get the set of keys in the Map

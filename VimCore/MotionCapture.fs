@@ -177,7 +177,7 @@ module internal MotionCapture =
         let complex = ComplexMotions |> Seq.map (fun (c,isMovement,func) -> (c,ComplexMotionCommand(c,isMovement,func)))
         simple |> Seq.append complex
 
-    let MotionCommnads = AllMotionsCore |> Seq.map (fun (_,command) -> command)
+    let MotionCommands = AllMotionsCore |> Seq.map (fun (_,command) -> command)
 
     let MotionCommandsMap = AllMotionsCore |> Map.ofSeq
 

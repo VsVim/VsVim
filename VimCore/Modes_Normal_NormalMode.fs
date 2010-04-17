@@ -420,7 +420,7 @@ type internal NormalMode
             |> Map.ofSeq
         l
    
-    /// Repsonible for getting the count                
+    /// Responsible for getting the count                
     member this.GetCount (ki:KeyInput) = 
         let rec inner ki (func: KeyInput -> CountResult) = 
             match func ki with

@@ -8,6 +8,8 @@ module internal MotionCapture =
     val ProcessView : ITextView -> KeyInput -> int -> MotionResult
     val ProcessInput : SnapshotPoint -> KeyInput -> int -> MotionResult
 
+    /// The available MotionCommand values
+    val MotionCommands : seq<MotionCommand>
       
     
     
