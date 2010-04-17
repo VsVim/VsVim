@@ -12,11 +12,11 @@ module internal MotionUtil =
     /// of the current physical line
     let CharLeft point count = SnapshotPointUtil.GetPreviousPointOnLineSpan point count
 
-    /// Get the span by moving count characters to thi right.  Do not move past the end 
+    /// Get the span by moving count characters to the right.  Do not move past the end 
     /// of the current textual part of the physical line
     let CharRight point count = SnapshotPointUtil.GetNextPointOnLineSpan point count
 
-    /// Get the span caused by moving the character up "count" lines.  Maintin the current
+    /// Get the span caused by moving the character up "count" lines.  Maintain the current
     /// offset into the line if possible
     let CharUp (point:SnapshotPoint) count =
         let tss = point.Snapshot
@@ -29,7 +29,7 @@ module internal MotionUtil =
         new SnapshotSpan(newPoint, point)
 
     /// Get the span caused by moving the character down "count" lines.  Maintain the current
-    /// offest into the line if possible and don't go beyond the end of the buffer
+    /// offset into the line if possible and don't go beyond the end of the buffer
     let CharDown (point:SnapshotPoint) count =
         let tss = point.Snapshot
         let originalLine = point.GetContainingLine()

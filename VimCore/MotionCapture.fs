@@ -4,20 +4,6 @@ namespace Vim
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor;
 
-type internal MotionResult = 
-    | Complete of (SnapshotSpan * MotionKind * OperationKind)
-    
-    /// Motion needs more input to be completed
-    | NeedMoreInput of (KeyInput -> MotionResult)
-    
-    /// Indicates the motion is currently in an invalid state and 
-    /// won't ever complete.  But the utility will still provide a 
-    /// function to capture input until the motion action is completed
-    /// with a completing key
-    | InvalidMotion of string * (KeyInput -> MotionResult) 
-    | Error of string
-    | Cancel
-       
 module internal MotionCapture = 
 
     let NeedMoreInputWithEscape func =
@@ -46,11 +32,11 @@ module internal MotionCapture =
                 Complete(span, MotionKind.Inclusive, OperationKind.CharacterWise)
         NeedMoreInputWithEscape inner
 
-    /// Handle the 'f' motion.  Forward to the next occurance of the specified character on
+    /// Handle the 'f' motion.  Forward to the next occurrence of the specified character on
     /// this line
     let private ForwardCharMotion start count = ForwardCharMotionCore start count TssUtil.FindNextOccurranceOfCharOnLine
 
-    /// Handle the 't' motion.  Forward till the next occurance of the specified character on
+    /// Handle the 't' motion.  Forward till the next occurrence of the specified character on
     /// this line
     let private ForwardTillCharMotion start count = ForwardCharMotionCore start count TssUtil.FindTillNextOccurranceOfCharOnLine
         
@@ -62,7 +48,7 @@ module internal MotionCapture =
             | 1 -> 
                 // When the next word crosses a line boundary for the last count then 
                 // we stop the motion on the current line.  This does not appear to be 
-                // caled out in the documentation but is evident in the behavior
+                // called out in the documentation but is evident in the behavior
                 let span = 
                     if next.GetContainingLine().LineNumber <> curPoint.GetContainingLine().LineNumber then
                         new SnapshotSpan(start, curPoint.GetContainingLine().End)
