@@ -29,3 +29,11 @@ type internal MotionResult =
     | InvalidMotion of string * (KeyInput -> MotionResult) 
     | Error of string
     | Cancel
+
+/// Represents the types of MotionCommands which exist
+type MotionCommand = 
+
+    /// Simple motion which comprises of a char and a function which given a start point
+    /// and count will produce the motion.  None is returned in the case the motion 
+    /// is not valid
+    | SimpleMotion of char * (SnapshotPoint -> int -> MotionData option)

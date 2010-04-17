@@ -40,7 +40,7 @@ module internal MotionUtil =
         let newPoint = (CharRight newLine.Start offset).End
         new SnapshotSpan(point, newPoint)     
         
-    /// Get the span of "count" lines upward careful not to run off the begining of the
+    /// Get the span of "count" lines upward careful not to run off the beginning of the
     /// buffer.  Implementation of the "k" motion
     let LineUp (point:SnapshotPoint) count =     
         let tss = point.Snapshot

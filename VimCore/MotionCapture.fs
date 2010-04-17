@@ -55,8 +55,7 @@ module internal MotionCapture =
                         new SnapshotSpan(start, curPoint.GetContainingLine().End)
                     else
                         new SnapshotSpan(start,next)
-                let data = {Span=span;IsForward=true;MotionKind=MotionKind.Exclusive;OperationKind=OperationKind.CharacterWise}
-                Complete data
+                {Span=span;IsForward=true;MotionKind=MotionKind.Exclusive;OperationKind=OperationKind.CharacterWise}
             | _ -> inner next (curCount-1)
         inner start originalCount      
         
@@ -69,8 +68,8 @@ module internal MotionCapture =
             WordMotion start kind count
         let inner (ki:KeyInput) = 
             match ki.Char with
-                | 'w' -> func WordKind.NormalWord
-                | 'W' -> func WordKind.BigWord
+                | 'w' -> func WordKind.NormalWord |> Complete
+                | 'W' -> func WordKind.BigWord |> Complete
                 | _ -> HitInvalidMotion
         NeedMoreInputWithEscape inner
 
@@ -96,15 +95,13 @@ module internal MotionCapture =
 
         let endPoint = inner start count
         let span = SnapshotSpan(start,endPoint)
-        let data = {Span=span;IsForward=true;MotionKind=MotionKind.Inclusive;OperationKind=OperationKind.CharacterWise}
-        Complete data
+        {Span=span; IsForward=true; MotionKind=MotionKind.Inclusive; OperationKind=OperationKind.CharacterWise}
     
     /// Implement an end of line motion.  Typically in response to the $ key.  Even though
     /// this motion deals with lines, it's still a character wise motion motion. 
     let private EndOfLineMotion (start:SnapshotPoint) count = 
         let span = SnapshotPointUtil.GetLineRangeSpan start count
-        let data = {Span=span;IsForward=true;MotionKind=MotionKind.Inclusive;OperationKind=OperationKind.CharacterWise}
-        Complete data
+        {Span=span; IsForward=true; MotionKind=MotionKind.Inclusive; OperationKind=OperationKind.CharacterWise}
 
     /// Find the first non-whitespace character as the start of the span.  This is an exclusive
     /// motion so be careful we don't go to far forward
@@ -116,9 +113,42 @@ module internal MotionCapture =
         let span = match found with 
                     | Some p -> new SnapshotSpan(p, start)
                     | None -> new SnapshotSpan(start,0)
-        let data = {Span=span; IsForward=false; MotionKind=MotionKind.Exclusive; OperationKind=OperationKind.CharacterWise}
-        Complete data
-    
+        {Span=span; IsForward=false; MotionKind=MotionKind.Exclusive; OperationKind=OperationKind.CharacterWise} 
+
+    let private CharLeftMotion start count = 
+        let prev = SnapshotPointUtil.GetPreviousPointOnLine start count 
+        if prev = start then None
+        else {Span=SnapshotSpan(prev,start); IsForward=false; MotionKind=MotionKind.Exclusive; OperationKind=OperationKind.CharacterWise } |> Some
+
+    let private CharRightMotion start count =
+        let next = SnapshotPointUtil.GetNextPointOnLine start count 
+        if next = start then None
+        else {Span=SnapshotSpan(start,next); IsForward=true; MotionKind=MotionKind.Exclusive; OperationKind=OperationKind.CharacterWise } |> Some
+
+    let private LineUpMotion start count =
+        let span = MotionUtil.LineUp start count
+        {Span=span; IsForward=false; MotionKind=MotionKind.Inclusive; OperationKind=OperationKind.LineWise } |> Some
+
+    let private LineDownMotion start count =
+        let span = MotionUtil.LineDown start count
+        {Span=span; IsForward=true; MotionKind=MotionKind.Inclusive; OperationKind=OperationKind.LineWise } |> Some
+
+    let SimpleMotions =  
+        seq { 
+            yield ('w', fun start count -> WordMotion start WordKind.NormalWord count |> Some)
+            yield ('W', fun start count -> WordMotion start WordKind.BigWord count |> Some)
+            yield ('$', fun start count -> EndOfLineMotion start count |> Some)
+            yield ('^', fun start count -> BeginingOfLineMotion start |> Some)
+            yield ('e', fun start count -> EndOfWordMotion start count WordKind.NormalWord |> Some)
+            yield ('E', fun start count -> EndOfWordMotion start count WordKind.BigWord |> Some)
+            yield ('h', fun start count -> CharLeftMotion start count )
+            yield ('l', fun start count -> CharRightMotion start count )
+            yield ('k', fun start count -> LineUpMotion start count)
+            yield ('j', fun start count -> LineDownMotion start count)
+        }
+
+    let SimpleMotionsMap =  SimpleMotions |> Map.ofSeq
+
     /// Process a count prefix to the motion.  
     let private ProcessCount (ki:KeyInput) (completeFunc:KeyInput -> int -> MotionResult) startCount =
         let rec inner (processFunc: KeyInput->CountResult) (ki:KeyInput)  =               
@@ -134,30 +164,17 @@ module internal MotionCapture =
         if ki.Key = VimKey.EscapeKey then Cancel
         elif ki.IsDigit then ProcessCount ki (ProcessInput start) count
         else 
-            match ki.Char with
-                | 'w' -> WordMotion start WordKind.NormalWord count
-                | 'W' -> WordMotion start WordKind.BigWord count
-                | '$' -> EndOfLineMotion start count
-                | '^' -> BeginingOfLineMotion start 
+            match Map.tryFind ki.Char SimpleMotionsMap with
+            | Some(func) -> 
+                let res = func start count
+                match res with
+                | None -> Error Resources.MotionCapture_InvalidMotion
+                | Some(data) -> Complete data
+            | None ->
+                match ki.Char with 
                 | 'a' -> AllWordMotion start count
-                | 'e' -> EndOfWordMotion start count WordKind.NormalWord
-                | 'E' -> EndOfWordMotion start count WordKind.BigWord
                 | 'f' -> ForwardCharMotion start count
                 | 't' -> ForwardTillCharMotion start count
-                
-                /// Simple left right motions
-                | 'h' -> 
-                    let span = MotionUtil.CharLeft start count
-                    Complete {Span=span; IsForward=false; MotionKind=MotionKind.Exclusive; OperationKind=OperationKind.CharacterWise}
-                | 'l' ->
-                    let span = MotionUtil.CharRight start count
-                    Complete {Span=span; IsForward=true; MotionKind=MotionKind.Exclusive; OperationKind=OperationKind.CharacterWise}
-                | 'k' ->
-                    let span = MotionUtil.LineUp start count
-                    Complete {Span=span; IsForward=false; MotionKind=MotionKind.Inclusive; OperationKind=OperationKind.LineWise}
-                | 'j' ->
-                    let span = MotionUtil.LineDown start count
-                    Complete {Span=span; IsForward=true; MotionKind=MotionKind.Inclusive; OperationKind=OperationKind.LineWise}
                 | _ -> HitInvalidMotion
 
     let ProcessView (view:ITextView) (ki:KeyInput) count = 
