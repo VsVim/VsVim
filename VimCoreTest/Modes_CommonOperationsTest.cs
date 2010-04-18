@@ -1192,7 +1192,7 @@ namespace VimCoreTest
             var data = new MotionData(
                 new SnapshotSpan(_buffer.CurrentSnapshot, 1, 2),
                 true,
-                MotionKind.Exclusive,
+                MotionKind.Inclusive,
                 OperationKind.CharacterWise,
                 FSharpOption<SnapshotPoint>.None);
             _operations.MoveCaretToMotionData(data);
@@ -1207,7 +1207,7 @@ namespace VimCoreTest
             var data = new MotionData(
                 new SnapshotSpan(_buffer.CurrentSnapshot, 0, 1),
                 true,
-                MotionKind.Exclusive,
+                MotionKind.Inclusive,
                 OperationKind.CharacterWise,
                 FSharpOption<SnapshotPoint>.None);
             _operations.MoveCaretToMotionData(data);
@@ -1222,7 +1222,7 @@ namespace VimCoreTest
             var data = new MotionData(
                 new SnapshotSpan(_buffer.CurrentSnapshot, 0, 0),
                 true,
-                MotionKind.Exclusive,
+                MotionKind.Inclusive,
                 OperationKind.CharacterWise,
                 FSharpOption<SnapshotPoint>.None);
             _operations.MoveCaretToMotionData(data);
@@ -1237,11 +1237,41 @@ namespace VimCoreTest
             var data = new MotionData(
                 new SnapshotSpan(_buffer.CurrentSnapshot, 0, 3),
                 false,
-                MotionKind.Exclusive,
+                MotionKind.Inclusive,
                 OperationKind.CharacterWise,
                 FSharpOption<SnapshotPoint>.None);
             _operations.MoveCaretToMotionData(data);
             Assert.AreEqual(0, _view.GetCaretPoint().Position);
+        }
+
+        [Test, Description("Exclusive motions should go to End")]
+        public void MoveCaretToMotionData5()
+        {
+            Create("foo", "bar", "baz");
+            _editorOpts.Setup(x => x.ResetSelection());
+            var data = new MotionData(
+                new SnapshotSpan(_buffer.CurrentSnapshot, 1, 2),
+                true,
+                MotionKind.Exclusive,
+                OperationKind.CharacterWise,
+                FSharpOption<SnapshotPoint>.None);
+            _operations.MoveCaretToMotionData(data);
+            Assert.AreEqual(3, _view.GetCaretPoint().Position);
+        }
+
+        [Test]
+        public void MoveCaretToMotionData6()
+        {
+            Create("foo", "bar", "baz");
+            _editorOpts.Setup(x => x.ResetSelection());
+            var data = new MotionData(
+                new SnapshotSpan(_buffer.CurrentSnapshot, 0, 1),
+                true,
+                MotionKind.Exclusive,
+                OperationKind.CharacterWise,
+                FSharpOption<SnapshotPoint>.None);
+            _operations.MoveCaretToMotionData(data);
+            Assert.AreEqual(1, _view.GetCaretPoint().Position);
         }
     }
 }

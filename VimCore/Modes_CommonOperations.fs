@@ -372,7 +372,10 @@ type internal CommonOperations
 
             // Move the caret to the last valid point on the span.  
             let point = 
-                if data.IsForward && data.Span.Length > 0 then data.Span.End.Subtract(1)
+                if data.IsForward then
+                    if data.MotionKind = MotionKind.Exclusive then data.Span.End
+                    elif data.MotionKind = MotionKind.Inclusive && data.Span.Length > 0 then data.Span.End.Subtract(1)
+                    else data.Span.Start
                 else data.Span.Start
             TextViewUtil.MoveCaretToPoint _textView point
             _operations.ResetSelection()

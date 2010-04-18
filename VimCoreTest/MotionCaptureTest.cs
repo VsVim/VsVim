@@ -495,6 +495,16 @@ namespace VimCoreTest
             Assert.AreEqual(OperationKind.CharacterWise, data.OperationKind);
         }
 
+        [Test]
+        public void CharRightMotion1()
+        {
+            Create("foo bar");
+            var data = Process(0, 1, "l").AsComplete().Item;
+            Assert.AreEqual("f", data.Span.GetText());
+            Assert.AreEqual(MotionKind.Exclusive, data.MotionKind);
+            Assert.AreEqual(OperationKind.CharacterWise, data.OperationKind);
+        }
+
     }   
     
 }
