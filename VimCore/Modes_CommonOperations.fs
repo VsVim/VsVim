@@ -369,8 +369,10 @@ type internal CommonOperations
         member x.EnsureCaretOnScreenAndTextExpanded () = TextViewUtil.EnsureCaretOnScreenAndTextExpanded _textView _outlining
         member x.MoveCaretToPoint point =  TextViewUtil.MoveCaretToPoint _textView point 
         member x.MoveCaretToMotionData (data:MotionData) =
+
+            // Move the caret to the last valid point on the span.  
             let point = 
-                if data.IsForward then data.Span.End
+                if data.IsForward && data.Span.Length > 0 then data.Span.End.Subtract(1)
                 else data.Span.Start
             TextViewUtil.MoveCaretToPoint _textView point
             _operations.ResetSelection()

@@ -33,6 +33,16 @@ module internal MotionCapture =
                 Complete data
         NeedMoreInputWithEscape inner
 
+    let private BackwardCharMotionCore (start:SnapshotPoint) count func = 
+        let inner (ki:KeyInput) =
+            match func start ki.Char count with
+            | None -> MotionResult.Error(Resources.MotionCapture_InvalidMotion)
+            | Some(point:SnapshotPoint) ->
+                let span = SnapshotSpan(point, start)
+                let data = {Span=span; IsForward=false; OperationKind=OperationKind.CharacterWise; MotionKind=MotionKind.Exclusive; Column=None}
+                Complete data
+        NeedMoreInputWithEscape inner
+
     /// Handle the 'f' motion.  Forward to the next occurrence of the specified character on
     /// this line
     let private ForwardCharMotion start count = ForwardCharMotionCore start count TssUtil.FindNextOccurranceOfCharOnLine
@@ -40,6 +50,13 @@ module internal MotionCapture =
     /// Handle the 't' motion.  Forward till the next occurrence of the specified character on
     /// this line
     let private ForwardTillCharMotion start count = ForwardCharMotionCore start count TssUtil.FindTillNextOccurranceOfCharOnLine
+
+    /// Handle the 'F' motion.  Backward to the previous occurrence of the specified character
+    /// on this line
+    let private BackwardCharMotion start count = BackwardCharMotionCore start count TssUtil.FindPreviousOccurranceOfCharOnLine
+
+    /// Handle the 'T' motion.  Backward till to the previous occurrence of the specified character
+    let private BackwardTillCharMotion start count = BackwardCharMotionCore start count TssUtil.FindTillPreviousOccurranceOfCharOnLine
         
     /// Implement the w/W motion
     let private WordMotionForward start count kind =
@@ -180,6 +197,8 @@ module internal MotionCapture =
             yield (InputUtil.CharToKeyInput 'a', false, fun start count -> AllWordMotion start count)
             yield (InputUtil.CharToKeyInput 'f', true, fun start count -> ForwardCharMotion start count)
             yield (InputUtil.CharToKeyInput 't', true, fun start count -> ForwardTillCharMotion start count)
+            yield (InputUtil.CharToKeyInput 'F', true, fun start count -> BackwardCharMotion start count)
+            yield (InputUtil.CharToKeyInput 'T', true, fun start count -> BackwardTillCharMotion start count)
         }
 
     let AllMotionsCore =

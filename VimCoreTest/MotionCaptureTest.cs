@@ -454,6 +454,47 @@ namespace VimCoreTest
             Assert.AreEqual("bar" + Environment.NewLine + "  ", data.Span.GetText());
             Assert.AreEqual("bar", data.OperationSpan.GetText());
         }
+
+        [Test]
+        public void BackwardCharMotion1()
+        {
+            Create("the boy kicked the ball");
+            var data = Process(_buffer.GetLine(0).End.Position, 1, "Fb").AsComplete().Item;
+            Assert.AreEqual("ball", data.Span.GetText());
+            Assert.AreEqual(MotionKind.Exclusive, data.MotionKind);
+            Assert.AreEqual(OperationKind.CharacterWise, data.OperationKind);
+        }
+
+        [Test]
+        public void BackwardCharMotion2()
+        {
+            Create("the boy kicked the ball");
+            var data = Process(_buffer.GetLine(0).End.Position, 2, "Fb").AsComplete().Item;
+            Assert.AreEqual("boy kicked the ball", data.Span.GetText());
+            Assert.AreEqual(MotionKind.Exclusive, data.MotionKind);
+            Assert.AreEqual(OperationKind.CharacterWise, data.OperationKind);
+        }
+
+        [Test]
+        public void BackwardTillCharMotion1()
+        {
+            Create("the boy kicked the ball");
+            var data = Process(_buffer.GetLine(0).End.Position, 1, "Tb").AsComplete().Item;
+            Assert.AreEqual("all", data.Span.GetText());
+            Assert.AreEqual(MotionKind.Exclusive, data.MotionKind);
+            Assert.AreEqual(OperationKind.CharacterWise, data.OperationKind);
+        }
+
+        [Test]
+        public void BackwardTillCharMotion2()
+        {
+            Create("the boy kicked the ball");
+            var data = Process(_buffer.GetLine(0).End.Position, 2, "Tb").AsComplete().Item;
+            Assert.AreEqual("oy kicked the ball", data.Span.GetText());
+            Assert.AreEqual(MotionKind.Exclusive, data.MotionKind);
+            Assert.AreEqual(OperationKind.CharacterWise, data.OperationKind);
+        }
+
     }   
     
 }
