@@ -29,7 +29,7 @@ module internal MotionCapture =
             | None -> MotionResult.Error(Resources.MotionCapture_InvalidMotion)
             | Some(point:SnapshotPoint) -> 
                 let span = SnapshotSpan(start, point.Add(1))
-                let data = {Span=span;IsForward=true;OperationKind=OperationKind.CharacterWise;MotionKind=MotionKind.Inclusive}
+                let data = {Span=span; IsForward=true; OperationKind=OperationKind.CharacterWise; MotionKind=MotionKind.Inclusive; Column=None}
                 Complete data
         NeedMoreInputWithEscape inner
 
@@ -45,13 +45,13 @@ module internal MotionCapture =
     let private WordMotionForward start count kind =
         let endPoint = TssUtil.FindNextWordStart start count kind  
         let span = SnapshotSpan(start,endPoint)
-        {Span=span; IsForward=true; MotionKind=MotionKind.Exclusive; OperationKind=OperationKind.CharacterWise}
+        {Span=span; IsForward=true; MotionKind=MotionKind.Exclusive; OperationKind=OperationKind.CharacterWise; Column=None}
 
     /// Implement the b/B motion
     let private WordMotionBackward start count kind =
         let startPoint = TssUtil.FindPreviousWordStart start count kind
         let span = SnapshotSpan(startPoint,start)
-        {Span=span; IsForward=false; MotionKind=MotionKind.Exclusive; OperationKind=OperationKind.CharacterWise}
+        {Span=span; IsForward=false; MotionKind=MotionKind.Exclusive; OperationKind=OperationKind.CharacterWise; Column=None}
         
     /// Implement the aw motion.  This is called once the a key is seen.
     let private AllWordMotion start count =        
@@ -89,13 +89,13 @@ module internal MotionCapture =
 
         let endPoint = inner start count
         let span = SnapshotSpan(start,endPoint)
-        {Span=span; IsForward=true; MotionKind=MotionKind.Inclusive; OperationKind=OperationKind.CharacterWise}
+        {Span=span; IsForward=true; MotionKind=MotionKind.Inclusive; OperationKind=OperationKind.CharacterWise; Column=None}
     
     /// Implement an end of line motion.  Typically in response to the $ key.  Even though
     /// this motion deals with lines, it's still a character wise motion motion. 
     let private EndOfLineMotion (start:SnapshotPoint) count = 
         let span = SnapshotPointUtil.GetLineRangeSpan start count
-        {Span=span; IsForward=true; MotionKind=MotionKind.Inclusive; OperationKind=OperationKind.CharacterWise}
+        {Span=span; IsForward=true; MotionKind=MotionKind.Inclusive; OperationKind=OperationKind.CharacterWise; Column=None}
 
     /// Find the first non-whitespace character as the start of the span.  This is an exclusive
     /// motion so be careful we don't go to far forward
@@ -107,7 +107,7 @@ module internal MotionCapture =
         let span = match found with 
                     | Some p -> new SnapshotSpan(p, start)
                     | None -> new SnapshotSpan(start,0)
-        {Span=span; IsForward=false; MotionKind=MotionKind.Exclusive; OperationKind=OperationKind.CharacterWise} 
+        {Span=span; IsForward=false; MotionKind=MotionKind.Exclusive; OperationKind=OperationKind.CharacterWise; Column=None} 
 
     /// Handle the lines down to first non-whitespace motion
     let private LineDownToFirstNonWhitespace start count =
@@ -116,17 +116,17 @@ module internal MotionCapture =
         let endLine = SnapshotUtil.GetValidLineOrLast line.Snapshot number
         let point = TssUtil.FindFirstNonWhitespaceCharacter endLine
         let span = SnapshotSpan(start, point.Add(1)) // Add 1 since it's inclusive
-        {Span=span; IsForward=true; MotionKind=MotionKind.Inclusive; OperationKind=OperationKind.LineWise}
+        {Span=span; IsForward=true; MotionKind=MotionKind.Inclusive; OperationKind=OperationKind.LineWise; Column=None}
 
     let private CharLeftMotion start count = 
         let prev = SnapshotPointUtil.GetPreviousPointOnLine start count 
         if prev = start then None
-        else {Span=SnapshotSpan(prev,start); IsForward=false; MotionKind=MotionKind.Exclusive; OperationKind=OperationKind.CharacterWise } |> Some
+        else {Span=SnapshotSpan(prev,start); IsForward=false; MotionKind=MotionKind.Exclusive; OperationKind=OperationKind.CharacterWise; Column=None} |> Some
 
     let private CharRightMotion start count =
         let next = SnapshotPointUtil.GetNextPointOnLine start count 
         if next = start then None
-        else {Span=SnapshotSpan(start,next); IsForward=true; MotionKind=MotionKind.Exclusive; OperationKind=OperationKind.CharacterWise } |> Some
+        else {Span=SnapshotSpan(start,next); IsForward=true; MotionKind=MotionKind.Exclusive; OperationKind=OperationKind.CharacterWise; Column=None } |> Some
 
     /// Get the span of "count" lines upward careful not to run off the beginning of the
     /// buffer.  Implementation of the "k" motion
@@ -135,7 +135,7 @@ module internal MotionCapture =
         let startLineNumber = max 0 (endLine.LineNumber - count)
         let startLine = SnapshotUtil.GetLine endLine.Snapshot startLineNumber
         let span = SnapshotSpan(startLine.Start, endLine.End)
-        {Span=span; IsForward=false; MotionKind=MotionKind.Inclusive; OperationKind=OperationKind.LineWise } |> Some
+        {Span=span; IsForward=false; MotionKind=MotionKind.Inclusive; OperationKind=OperationKind.LineWise; Column=None } |> Some
 
     /// Get the span of "count" lines downward careful not to run off the end of the
     /// buffer.  Implementation of the "j" motion
@@ -144,7 +144,7 @@ module internal MotionCapture =
         let endLineNumber = startLine.LineNumber + count
         let endLine = SnapshotUtil.GetValidLineOrLast startLine.Snapshot endLineNumber
         let span = SnapshotSpan(startLine.Start, endLine.End)            
-        {Span=span; IsForward=true; MotionKind=MotionKind.Inclusive; OperationKind=OperationKind.LineWise } |> Some
+        {Span=span; IsForward=true; MotionKind=MotionKind.Inclusive; OperationKind=OperationKind.LineWise; Column=None } |> Some
 
     let SimpleMotions =  
         seq { 

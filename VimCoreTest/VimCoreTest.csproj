@@ -139,6 +139,7 @@
     <Compile Include="CommandParseUtilTest.cs" />
     <Compile Include="CommandProcessorTest.cs" />
     <Compile Include="Command_DefaultOperations.cs" />
+    <Compile Include="MotionDataTest.cs" />
     <Compile Include="SearchServiceTest.cs" />
     <Compile Include="SnapshotSpanUtilTest.cs" />
     <Compile Include="SnapshotLineUtilTest.cs" />
@@ -162,7 +163,6 @@
     <Compile Include="KeyInputTest.cs" />
     <Compile Include="MarkMapTest.cs" />
     <Compile Include="MotionCaptureTest.cs" />
-    <Compile Include="MotionUtilTests.cs" />
     <Compile Include="NormalModeTest.cs" />
     <Compile Include="Normal_DefaultOperationsTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
