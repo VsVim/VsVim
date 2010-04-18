@@ -16,6 +16,9 @@ module internal SnapshotUtil =
         let lastIndex = tss.LineCount - 1
         tss.GetLineFromLineNumber(lastIndex)   
 
+    /// Get the line for the specified number
+    let GetLine (tss:ITextSnapshot) lineNumber = tss.GetLineFromLineNumber lineNumber
+
     let GetLastLineNumber (tss:ITextSnapshot) = tss.LineCount - 1 
         
     /// Get the end point of the snapshot
@@ -127,7 +130,7 @@ module internal SnapshotPointUtil =
     /// Get the ITextSnapshot containing the SnapshotPoint
     let GetSnapshot (point:SnapshotPoint) = point.Snapshot
 
-    /// Get the ITextBuffer containting the SnapshotPoint
+    /// Get the ITextBuffer containing the SnapshotPoint
     let GetBuffer (point:SnapshotPoint) = point.Snapshot.TextBuffer
 
     /// Is the passed in SnapshotPoint inside the line break portion of the line
@@ -273,7 +276,7 @@ module internal SnapshotPointUtil =
         | Some(c) -> c
         | None -> defaultValue
 
-    /// Get the points on the containting line starting at the passed in value.  If the passed in start
+    /// Get the points on the containing line starting at the passed in value.  If the passed in start
     /// point is inside the line break, an empty sequence will be returned
     let GetPointsOnContainingLineFrom startPoint = 
         if IsInsideLineBreak startPoint then Seq.empty

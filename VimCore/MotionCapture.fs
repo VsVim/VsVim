@@ -128,12 +128,22 @@ module internal MotionCapture =
         if next = start then None
         else {Span=SnapshotSpan(start,next); IsForward=true; MotionKind=MotionKind.Exclusive; OperationKind=OperationKind.CharacterWise } |> Some
 
-    let private LineUpMotion start count =
-        let span = MotionUtil.LineUp start count
+    /// Get the span of "count" lines upward careful not to run off the beginning of the
+    /// buffer.  Implementation of the "k" motion
+    let private LineUpMotion point count =     
+        let endLine = SnapshotPointUtil.GetContainingLine point
+        let startLineNumber = max 0 (endLine.LineNumber - count)
+        let startLine = SnapshotUtil.GetLine endLine.Snapshot startLineNumber
+        let span = SnapshotSpan(startLine.Start, endLine.End)
         {Span=span; IsForward=false; MotionKind=MotionKind.Inclusive; OperationKind=OperationKind.LineWise } |> Some
 
-    let private LineDownMotion start count =
-        let span = MotionUtil.LineDown start count
+    /// Get the span of "count" lines downward careful not to run off the end of the
+    /// buffer.  Implementation of the "j" motion
+    let private LineDownMotion point count = 
+        let startLine = SnapshotPointUtil.GetContainingLine point
+        let endLineNumber = startLine.LineNumber + count
+        let endLine = SnapshotUtil.GetValidLineOrLast startLine.Snapshot endLineNumber
+        let span = SnapshotSpan(startLine.Start, endLine.End)            
         {Span=span; IsForward=true; MotionKind=MotionKind.Inclusive; OperationKind=OperationKind.LineWise } |> Some
 
     let SimpleMotions =  

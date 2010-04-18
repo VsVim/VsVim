@@ -49,8 +49,6 @@
     <Compile Include="EditorUtil.fs" />
     <Compile Include="TssUtil.fsi" />
     <Compile Include="TssUtil.fs" />
-    <Compile Include="MotionUtil.fsi" />
-    <Compile Include="MotionUtil.fs" />
     <Compile Include="CountCapture.fs" />
     <Compile Include="OperationKind.fs" />
     <Compile Include="MotionData.fs" />
