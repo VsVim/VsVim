@@ -16,6 +16,33 @@ type internal MovementCommand =
 
 type internal CommandFactory( _operations : ICommonOperations) = 
 
+    member private x.CreateStandardMovementCommands () = 
+        let moveLeft = fun count -> _operations.MoveCaretLeft(count)
+        let moveRight = fun count -> _operations.MoveCaretRight(count)
+        let moveUp = fun count -> _operations.MoveCaretUp(count)
+        let moveDown = fun count -> _operations.MoveCaretDown(count)
+
+        let s : seq<KeyInput * MovementCommand> = 
+            seq {
+                yield (InputUtil.CharToKeyInput('h'), moveLeft)
+                yield (InputUtil.VimKeyToKeyInput VimKey.LeftKey, moveLeft)
+                yield (InputUtil.VimKeyToKeyInput VimKey.BackKey, moveLeft)
+                yield (KeyInput('h', KeyModifiers.Control), moveLeft)
+                yield (InputUtil.CharToKeyInput('l'), moveRight)
+                yield (InputUtil.VimKeyToKeyInput VimKey.RightKey, moveRight)
+                yield (InputUtil.CharToKeyInput ' ', moveRight)
+                yield (InputUtil.CharToKeyInput('k'), moveUp)
+                yield (InputUtil.VimKeyToKeyInput VimKey.UpKey, moveUp)
+                yield (KeyInput('p', KeyModifiers.Control), moveUp)
+                yield (InputUtil.CharToKeyInput('j'), moveDown)
+                yield (InputUtil.VimKeyToKeyInput VimKey.DownKey, moveDown)
+                yield (KeyInput('n', KeyModifiers.Control),moveDown)
+                yield (KeyInput('j', KeyModifiers.Control),moveDown)        
+            }
+
+            |> Seq.map (fun (x,y) -> x,SimpleMovementCommand y)
+        s
+
     member private x.CreateMovementsFromMotions() =
         let processResult opt = 
             match opt with
@@ -53,4 +80,11 @@ type internal CommandFactory( _operations : ICommonOperations) =
         |> SeqUtil.filterToSome
 
     /// The sequence of commands which move the cursor.  Applicable in both Normal and Visual Mode
-    member x.CreateMovementCommands() = x.CreateMovementsFromMotions()
+    member x.CreateMovementCommands() = 
+        let standard = x.CreateStandardMovementCommands()
+        let taken = standard |> Seq.map (fun (x,_) -> x) |> Set.ofSeq
+        let motion = 
+            x.CreateMovementsFromMotions()
+            |> Seq.filter (fun (ki,_) -> not (taken.Contains ki))
+        standard |> Seq.append motion
+
