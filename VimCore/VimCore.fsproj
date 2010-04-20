@@ -52,11 +52,11 @@
     <Compile Include="CountCapture.fs" />
     <Compile Include="OperationKind.fs" />
     <Compile Include="MotionData.fs" />
-    <Compile Include="MotionCapture.fsi" />
-    <Compile Include="MotionCapture.fs" />
     <Compile Include="Register.fs" />
     <Compile Include="CoreInterfaces.fs" />
     <Compile Include="MefInterfaces.fs" />
+    <Compile Include="MotionCapture.fsi" />
+    <Compile Include="MotionCapture.fs" />
     <Compile Include="RegexUtil.fs" />
     <Compile Include="Modes_ICommonOperations.fs" />
     <Compile Include="Modes_CommonOperations.fs" />
