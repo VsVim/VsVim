@@ -43,6 +43,7 @@ type internal CommandFactory( _operations : ICommonOperations) =
             |> Seq.map (fun (x,y) -> x,SimpleMovementCommand y)
         s
 
+    /// Build up a set of MotionCommand values from applicable Motion values
     member private x.CreateMovementsFromMotions() =
         let processResult opt = 
             match opt with
@@ -79,7 +80,8 @@ type internal CommandFactory( _operations : ICommonOperations) =
         |> Seq.map filterMotionCommand
         |> SeqUtil.filterToSome
 
-    /// The sequence of commands which move the cursor.  Applicable in both Normal and Visual Mode
+    /// Returns the set of commands which move the cursor.  This includes all motions which are 
+    /// valid as movements.  Several of these are overriden with custom movement behavior though.
     member x.CreateMovementCommands() = 
         let standard = x.CreateStandardMovementCommands()
         let taken = standard |> Seq.map (fun (x,_) -> x) |> Set.ofSeq
