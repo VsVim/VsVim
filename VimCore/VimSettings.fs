@@ -119,6 +119,7 @@ type internal GlobalSettings() =
             ( HighlightSearchName, "hls", ToggleKind, ToggleValue(false) );
             ( TildeOpName, "top", ToggleKind, ToggleValue(false) );
             ( SmartCaseName, "scs", ToggleKind, ToggleValue(false) );
+            ( VisualBell, "vb", ToggleKind, ToggleValue(false) );
             ( VimRcName, VimRcName, StringKind, StringValue(System.String.Empty) );
             ( VimRcPathsName, VimRcPathsName, StringKind, StringValue(System.String.Empty) );
             ( DoubleEscapeName, DoubleEscapeName, ToggleKind, ToggleValue(false) );
@@ -155,6 +156,9 @@ type internal GlobalSettings() =
         member x.SmartCase
             with get() = _map.GetBoolValue SmartCaseName
             and set value = _map.TrySetValue SmartCaseName (ToggleValue(value)) |> ignore
+        member x.VisualBell
+            with get() = _map.GetBoolValue VisualBell
+            and set value = _map.TrySetValue VisualBell (ToggleValue(value)) |> ignore
         member x.DoubleEscape
             with get() = _map.GetBoolValue DoubleEscapeName
             and set value = _map.TrySetValue DoubleEscapeName (ToggleValue(value)) |> ignore

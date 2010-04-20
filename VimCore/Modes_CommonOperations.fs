@@ -381,6 +381,6 @@ type internal CommonOperations
                 else data.Span.Start
             TextViewUtil.MoveCaretToPoint _textView point
             _operations.ResetSelection()
-        member x.Beep () = _host.Beep()
+        member x.Beep () = if not _settings.GlobalSettings.VisualBell then _host.Beep()
 
 

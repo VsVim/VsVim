@@ -260,6 +260,7 @@ module GlobalSettingNames =
     let StartOfLineName = "startofline"
     let TildeOpName = "tildeop"
     let SmartCaseName = "smartcase"
+    let VisualBell = "visualbell"
     let DoubleEscapeName = "vsvimdoubleescape"
     let VimRcName = "vimrc"
     let VimRcPathsName = "vimrcpaths"
@@ -309,6 +310,9 @@ and IVimGlobalSettings =
 
     /// Whether or not to highlight previous search patterns matching cases
     abstract HighlightSearch : bool with get,set
+
+    /// Whether or not to use a visual indicator of errors instead of a beep
+    abstract VisualBell : bool with get,set
 
     /// Affects behavior of <ESC> in Insert Mode.  <ESC> is overloaded some environments to be both 
     /// an exit of Insert mode and a dismisser of intellisense.  The default behavior of insert 

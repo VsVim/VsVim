@@ -26,6 +26,7 @@ namespace VimCoreTest
 
         private IWpfTextView _view;
         private ITextBuffer _buffer;
+        private MockFactory _factory;
         private Mock<IEditorOperations> _editorOpts;
         private Mock<IVimHost> _host;
         private Mock<IJumpList> _jumpList;
@@ -40,12 +41,13 @@ namespace VimCoreTest
             _view = Utils.EditorUtil.CreateView(lines);
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 0));
             _buffer = _view.TextBuffer;
-            _host = new Mock<IVimHost>(MockBehavior.Strict);
-            _jumpList = new Mock<IJumpList>(MockBehavior.Strict);
-            _editorOpts = new Mock<IEditorOperations>(MockBehavior.Strict);
-            _settings = new Mock<IVimLocalSettings>(MockBehavior.Strict);
-            _globalSettings = new Mock<IVimGlobalSettings>(MockBehavior.Strict);
-            _outlining = new Mock<IOutliningManager>(MockBehavior.Strict);
+            _factory = new MockFactory(MockBehavior.Strict);
+            _host = _factory.Create<IVimHost>();
+            _jumpList = _factory.Create<IJumpList>();
+            _editorOpts = _factory.Create<IEditorOperations>();
+            _settings = _factory.Create<IVimLocalSettings>();
+            _globalSettings = _factory.Create<IVimGlobalSettings>();
+            _outlining = _factory.Create<IOutliningManager>();
             _globalSettings.SetupGet(x => x.ShiftWidth).Returns(2);
             _settings.SetupGet(x => x.GlobalSettings).Returns(_globalSettings.Object);
 
@@ -1290,6 +1292,25 @@ namespace VimCoreTest
             _host.Setup(x => x.Redo(_buffer, 1)).Verifiable();
             _operations.Redo(1);
             _host.Verify();
+        }
+
+        [Test]
+        public void Beep1()
+        {
+            Create(String.Empty);
+            _globalSettings.Setup(x => x.VisualBell).Returns(false).Verifiable();
+            _host.Setup(x => x.Beep()).Verifiable();
+            _operations.Beep();
+            _factory.Verify();
+        }
+
+        [Test]
+        public void Beep2()
+        {
+            Create(String.Empty);
+            _globalSettings.Setup(x => x.VisualBell).Returns(true).Verifiable();
+            _operations.Beep();
+            _factory.Verify();
         }
     }
 }
