@@ -29,7 +29,7 @@ type internal SettingsMap
         _settings <- _settings |> Map.add settingName setting
         _settingChangedEvent.Trigger setting
 
-    member x.TrySetValue settingName value =
+    member x.TrySetValue settingNameOrAbbrev value =
 
         /// Determine if the value and the kind are compatible
         let doesValueMatchKind kind = 
@@ -40,23 +40,23 @@ type internal SettingsMap
             | (_, NoValue) -> true
             | _ -> false
 
-        match x.GetSetting settingName with
+        match x.GetSetting settingNameOrAbbrev with
         | None -> false
         | Some(setting) ->
             if doesValueMatchKind setting.Kind then
                 let setting = { setting with Value=value }
-                _settings <- _settings |> Map.add settingName setting
+                _settings <- _settings |> Map.add setting.Name setting
                 _settingChangedEvent.Trigger setting
                 true
             else false
 
-    member x.TrySetValueFromString settingName strValue = 
-        match x.GetSetting settingName with
+    member x.TrySetValueFromString settingNameOrAbbrev strValue = 
+        match x.GetSetting settingNameOrAbbrev with
         | None -> false
         | Some(setting) ->
             match x.ConvertStringToValue strValue setting.Kind with
             | None -> false
-            | Some(value) -> x.TrySetValue settingName value
+            | Some(value) -> x.TrySetValue setting.Name value
 
     member x.GetSetting settingName = 
         match _settings |> Map.tryFind settingName with

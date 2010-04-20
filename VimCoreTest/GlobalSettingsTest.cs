@@ -32,5 +32,22 @@ namespace VimCoreTest
             Assert.IsTrue(all.Any(x => x.Name == GlobalSettingNames.ShiftWidthName));
         }
 
+        [Test]
+        public void SetByAbbreviation1()
+        {
+            var global = CreateGlobal();
+            Assert.IsTrue(global.TrySetValueFromString("sw", "2"));
+            Assert.AreEqual(2, global.ShiftWidth);
+        }
+
+        [Test]
+        public void SetByAbbreviation2()
+        {
+            var global = CreateGlobal();
+            Assert.IsFalse(global.IgnoreCase);
+            Assert.IsTrue(global.TrySetValueFromString("ic", "true"));
+            Assert.IsTrue(global.IgnoreCase);
+        }
+
     }
 }

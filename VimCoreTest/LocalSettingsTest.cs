@@ -69,5 +69,6 @@ namespace VimCoreTest
             var res = _local.AllSettings;
             _global.Verify();
         }
+
     }
 }
