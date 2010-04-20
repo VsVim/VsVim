@@ -173,7 +173,7 @@ type internal Vim
             true
 
     interface IVim with
-        member x.Host = _host
+        member x.VimHost = _host
         member x.MarkMap = _markMap
         member x.KeyMap = _keyMap
         member x.ChangeTracker = _changeTracker

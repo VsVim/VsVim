@@ -18,7 +18,6 @@ namespace VimCoreTest
     {
         private IVimBuffer m_buffer;
         private IWpfTextView m_view;
-        private FakeVimHost m_host;
 
         static string[] s_lines = new string[]
             {
@@ -33,7 +32,6 @@ namespace VimCoreTest
             m_view = tuple.Item1;
             var service = EditorUtil.FactoryService;
             m_buffer = service.vim.CreateBuffer(m_view);
-            m_host = (FakeVimHost)service.vim.Host;
         }
 
         [SetUp]

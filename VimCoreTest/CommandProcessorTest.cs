@@ -24,7 +24,6 @@ namespace VimCoreTest
         private Mock<IVimBuffer> _bufferData;
         private CommandProcessor _processorRaw;
         private ICommandProcessor _processor;
-        private FakeVimHost _host;
         private IRegisterMap _map;
         private Mock<IEditorOperations> _editOpts;
         private Mock<IOperations> _operations;
@@ -35,7 +34,6 @@ namespace VimCoreTest
             _view = Utils.EditorUtil.CreateView(lines);
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 0));
             _map = new RegisterMap();
-            _host = new FakeVimHost();
             _editOpts = new Mock<IEditorOperations>(MockBehavior.Strict);
             _operations = new Mock<IOperations>(MockBehavior.Strict);
             _operations.SetupGet(x => x.EditorOperations).Returns(_editOpts.Object);
@@ -43,7 +41,7 @@ namespace VimCoreTest
             _bufferData = MockObjectFactory.CreateVimBuffer(
                 _view,
                 "test",
-                MockObjectFactory.CreateVim(_map, host: _host).Object);
+                MockObjectFactory.CreateVim(_map).Object);
             _processorRaw = new Vim.Modes.Command.CommandProcessor(_bufferData.Object, _operations.Object, _statusUtil.Object);
             _processor = _processorRaw;
         }
@@ -546,16 +544,18 @@ namespace VimCoreTest
         public void Redo1()
         {
             Create("foo bar");
+            _operations.Setup(x => x.Redo(1)).Verifiable();
             RunCommand("red");
-            Assert.AreEqual(1, _host.RedoCount);
+            _operations.Verify();
         }
 
         [Test]
         public void Redo2()
         {
             Create("foo bar");
+            _operations.Setup(x => x.Redo(1)).Verifiable();
             RunCommand("redo");
-            Assert.AreEqual(1, _host.RedoCount);
+            _operations.Verify();
         }
 
         [Test]
@@ -563,7 +563,6 @@ namespace VimCoreTest
         {
             Create("foo");
             RunCommand("real");
-            Assert.AreEqual(0, _host.RedoCount);
             _statusUtil.Verify(x => x.OnError(Resources.CommandMode_CannotRun("real")));
         }
 
@@ -571,16 +570,18 @@ namespace VimCoreTest
         public void Undo1()
         {
             Create("foo");
+            _operations.Setup(x => x.Undo(1));
             RunCommand("u");
-            Assert.AreEqual(1, _host.UndoCount);
+            _operations.Verify();
         }
 
         [Test]
         public void Undo2()
         {
             Create("foo");
+            _operations.Setup(x => x.Undo(1));
             RunCommand("undo");
-            Assert.AreEqual(1, _host.UndoCount);
+            _operations.Verify();
         }
 
         [Test]
@@ -588,7 +589,6 @@ namespace VimCoreTest
         {
             Create("foo");
             RunCommand("unreal");
-            Assert.AreEqual(0, _host.UndoCount);
             _statusUtil.Verify(x => x.OnError(Resources.CommandMode_CannotRun("unreal")));
         }
 
@@ -612,16 +612,18 @@ namespace VimCoreTest
         public void Edit1()
         {
             Create("foo");
+            _operations.Setup(x => x.ShowOpenFileDialog()).Verifiable();
             RunCommand("e");
-            Assert.AreEqual(1, _host.ShowOpenFileDialogCount);
+            _operations.Verify();
         }
 
         [Test]
         public void Edit2()
         {
             Create("foo");
+            _operations.Setup(x => x.ShowOpenFileDialog()).Verifiable();
             RunCommand("edi");
-            Assert.AreEqual(1, _host.ShowOpenFileDialogCount);
+            _operations.Verify();
         }
 
         [Test]

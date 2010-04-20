@@ -37,6 +37,12 @@ type ICommonOperations =
     /// Run the beep operation
     abstract Beep : unit -> unit
 
+    /// Undo the buffer changes "count" times
+    abstract Undo : count:int -> unit
+
+    /// Redo the buffer changes "count" times
+    abstract Redo : count:int -> unit
+
     /// Implements the Join command.  Returns false in the case the join command cannot
     /// be complete (such as joining at the end of the buffer)
     abstract Join : SnapshotPoint -> JoinKind -> count : int -> bool

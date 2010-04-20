@@ -341,7 +341,7 @@ and IVimLocalSettings =
 
 /// Vim instance.  Global for a group of buffers
 and IVim =
-    abstract Host : IVimHost
+    abstract VimHost : IVimHost
     abstract MarkMap : IMarkMap
     abstract RegisterMap : IRegisterMap
     abstract Settings : IVimGlobalSettings
@@ -403,9 +403,6 @@ and IVimBuffer =
 
     /// Jump list
     abstract JumpList : IJumpList
-
-    /// IVimHost for the buffer
-    abstract VimHost : IVimHost
 
     /// ModeKind of the current IMode in the buffer
     abstract ModeKind : ModeKind

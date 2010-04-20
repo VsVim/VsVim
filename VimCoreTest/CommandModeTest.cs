@@ -24,7 +24,6 @@ namespace VimCoreTest
         private Mock<ICommandProcessor> _processor;
         private CommandMode _modeRaw;
         private ICommandMode _mode;
-        private FakeVimHost _host;
 
         [SetUp]
         public void SetUp()
@@ -34,9 +33,7 @@ namespace VimCoreTest
             _view = new Mock<IWpfTextView>(MockBehavior.Strict);
             _view.SetupGet(x => x.Caret).Returns(_caret.Object);
             
-            _host = new FakeVimHost();
             _bufferData = MockObjectFactory.CreateVimBuffer(view:_view.Object);
-            _bufferData.SetupGet(x => x.VimHost).Returns(_host);
             _processor = new Mock<ICommandProcessor>(MockBehavior.Strict);
             _modeRaw = new CommandMode(Tuple.Create(_bufferData.Object, _processor.Object));
             _mode = _modeRaw;

@@ -27,6 +27,9 @@ type IOperations =
     /// Handle the :edit command
     abstract EditFile : fileName : string -> unit
 
+    /// Show the open file dialog
+    abstract ShowOpenFileDialog : unit -> unit
+
     /// Put the text into the file 
     abstract Put : text : string -> ITextSnapshotLine -> isAfter : bool -> unit
 

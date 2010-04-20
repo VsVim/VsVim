@@ -43,11 +43,6 @@ namespace VimCoreTest
 
         public void Create(params string[] lines)
         {
-            CreateBuffer(new FakeVimHost(), lines);
-        }
-
-        public void CreateBuffer(IVimHost host, params string[] lines)
-        {
             _view = Utils.EditorUtil.CreateView(lines);
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 0));
             _map = new RegisterMap();
@@ -61,7 +56,7 @@ namespace VimCoreTest
             _bufferData = MockFactory.CreateVimBuffer(
                 _view,
                 "test",
-                MockFactory.CreateVim(_map, host : host, changeTracker:_changeTracker.Object).Object,
+                MockFactory.CreateVim(_map,changeTracker:_changeTracker.Object).Object,
                 _jumpList.Object);
             _operations = new Mock<IOperations>(MockBehavior.Strict);
             _operations.SetupGet(x => x.EditorOperations).Returns(_editorOperations.Object);
@@ -680,10 +675,10 @@ namespace VimCoreTest
         [Test]
         public void Scroll_zInvalid()
         {
-            var host = new FakeVimHost();
-            CreateBuffer(host, String.Empty);
+            Create(String.Empty);
+            _operations.Setup(x => x.Beep()).Verifiable();
             _mode.Process("z;");
-            Assert.IsTrue(host.BeepCount > 0);
+            _operations.Verify();
         }
 
         #endregion
@@ -881,11 +876,10 @@ namespace VimCoreTest
         [Test]
         public void Edit_r_4()
         {
-            var host = new FakeVimHost();
-            CreateBuffer(host, "food");
+            Create("food");
+            _operations.Setup(x => x.Beep()).Verifiable();
             _operations.Setup(x => x.ReplaceChar(It.IsAny<KeyInput>(), 200)).Returns(false).Verifiable();
             _mode.Process("200ru");
-            Assert.IsTrue(host.BeepCount > 0);
             _operations.Verify();
         }
 
@@ -1832,39 +1826,38 @@ namespace VimCoreTest
         [Test]
         public void Undo1()
         {
-            var host = new FakeVimHost();
-            CreateBuffer(host, "foo");
-            Assert.AreEqual(0, host.UndoCount);
+            Create("foo");
+            _operations.Setup(x => x.Undo(1)).Verifiable();
             _mode.Process("u");
-            Assert.AreEqual(1, host.UndoCount);
+            _operations.Verify();
         }
 
         [Test]
         public void Undo2()
         {
-            var host = new FakeVimHost();
-            CreateBuffer(host, "foo");
+            Create("foo");
+            _operations.Setup(x => x.Undo(2)).Verifiable();
             _mode.Process("2u");
-            Assert.AreEqual(2, host.UndoCount);
+            _operations.Verify();
         }
 
         [Test]
         public void Redo1()
         {
-            var host = new FakeVimHost();
-            CreateBuffer(host, "foo");
+            Create("foo");
+            _operations.Setup(x => x.Redo(1)).Verifiable();
             _mode.Process(new KeyInput('r', KeyModifiers.Control));
-            Assert.AreEqual(1, host.RedoCount);
+            _operations.Verify();
         }
 
         [Test]
         public void Redo2()
         {
-            var host = new FakeVimHost();
-            CreateBuffer(host, "bar");
+            Create("bar");
+            _operations.Setup(x => x.Redo(2)).Verifiable();
             _mode.Process('2');
             _mode.Process(new KeyInput('r', KeyModifiers.Control));
-            Assert.AreEqual(2, host.RedoCount);
+            _operations.Verify();
         }
 
         [Test]
@@ -1965,12 +1958,11 @@ namespace VimCoreTest
         [Test, Description("Bad mark should beep")]
         public void Mark4()
         {
-            var host = new FakeVimHost();
-            CreateBuffer(host, s_lines);
+            Create(s_lines);
+            _operations.Setup(x => x.Beep()).Verifiable();
             _operations.Setup(x => x.SetMark(_bufferData.Object, _view.Caret.Position.BufferPosition, ';')).Returns(Result.NewFailed("foo")).Verifiable();
             _mode.Process(InputUtil.CharToKeyInput('m'));
             _mode.Process(InputUtil.CharToKeyInput(';'));
-            Assert.IsTrue(host.BeepCount > 0);
             _operations.Verify();
         }
 
@@ -2209,7 +2201,7 @@ namespace VimCoreTest
         public void CommandExecuted3()
         {
             Create("foo");
-            _operations.Setup(x => x.MoveCaretLeft(1));
+            _operations.Setup(x => x.Beep()).Verifiable();
             var didSee = false;
             _mode.CommandExecuted += (unused, command) =>
                 {
@@ -2218,6 +2210,7 @@ namespace VimCoreTest
                 };
             _mode.Process(";");
             Assert.IsTrue(didSee);
+            _operations.Verify();
         }
 
         [Test, Description("Make sure movement keys don't register as executed commands")]
@@ -2294,12 +2287,12 @@ namespace VimCoreTest
         [Test]
         public void RepeatLastChange1()
         {
-            var host = new Mock<IVimHost>();
-            CreateBuffer(host.Object,"foo");
+            Create("foo");
+            _operations.Setup(x => x.Beep()).Verifiable();
             _changeTracker.SetupGet(x => x.LastChange).Returns(FSharpOption<RepeatableChange>.None).Verifiable();
             _mode.Process('.');
-            host.Verify(x => x.Beep());
             _changeTracker.Verify();
+            _operations.Verify();
         }
 
         [Test]

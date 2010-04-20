@@ -59,7 +59,6 @@ type internal NormalMode
 
     member this.TextView = _bufferData.TextView
     member this.TextBuffer = _bufferData.TextBuffer
-    member this.VimHost = _bufferData.VimHost
     member this.CaretPoint = _bufferData.TextView.Caret.Position.BufferPosition
     member this.Settings = _bufferData.Settings
     member this.IncrementalSearch = _incrementalSearch
@@ -186,7 +185,7 @@ type internal NormalMode
             if ki.Key = VimKey.EscapeKey then NormalModeResult.CompleteNotCommand
             else 
                 if not (_operations.ReplaceChar ki count) then
-                    _bufferData.VimHost.Beep()
+                    _operations.Beep()
                 NormalModeResult.CompleteRepeatable(count,reg) 
         _isInReplace <- true
         inner
@@ -210,8 +209,7 @@ type internal NormalMode
             | 't' -> _operations.GoToNextTab count
             | 'T' -> _operations.GoToPreviousTab count
             | _ ->
-                _bufferData.VimHost.Beep()
-                ()
+                _operations.Beep()
             NormalModeResult.CompleteRepeatable(count,reg)
         inner
 
@@ -232,7 +230,7 @@ type internal NormalMode
                     _operations.EditorOperations.ScrollLineBottom() 
                     _operations.EditorOperations.MoveToStartOfLineAfterWhiteSpace(false) 
                 | 'b' -> _operations.EditorOperations.ScrollLineBottom() 
-                | _ -> _bufferData.VimHost.Beep()
+                | _ -> _operations.Beep()
             NormalModeResult.Complete
         inner
 
@@ -251,7 +249,7 @@ type internal NormalMode
             let cursor = TextViewUtil.GetCaretPoint _bufferData.TextView
             let res = _operations.SetMark _bufferData cursor ki.Char 
             match res with
-            | Modes.Failed(_) -> _bufferData.VimHost.Beep()
+            | Modes.Failed(_) -> _operations.Beep()
             | _ -> ()
             NormalModeResult.Complete
         waitForKey
@@ -274,7 +272,7 @@ type internal NormalMode
             _isInRepeatLastChange <- true
             try
                 match _bufferData.Vim.ChangeTracker.LastChange with
-                | None -> _bufferData.VimHost.Beep()
+                | None -> _operations.Beep()
                 | Some(lastChange) ->
                     match lastChange with
                     | TextChange(newText) -> _operations.InsertText newText (CountOrDefault countOpt) |> ignore
@@ -367,9 +365,9 @@ type internal NormalMode
             yield (InputUtil.CharToKeyInput('N'), (fun count _ -> _operations.MoveToNextOccuranceOfLastSearch count true))
             yield (InputUtil.CharToKeyInput('*'), (fun count _ -> _operations.MoveToNextOccuranceOfWordAtCursor SearchKind.ForwardWithWrap count))
             yield (InputUtil.CharToKeyInput('#'), (fun count _ -> _operations.MoveToNextOccuranceOfWordAtCursor SearchKind.BackwardWithWrap count))
-            yield (InputUtil.CharToKeyInput('u'), (fun count _ -> _bufferData.VimHost.Undo this.TextBuffer count))
+            yield (InputUtil.CharToKeyInput('u'), (fun count _ -> _operations.Undo count))
             yield (InputUtil.CharToKeyInput('D'), (fun count reg -> _operations.DeleteLinesFromCursor count reg))
-            yield (InputUtil.CharAndModifiersToKeyInput 'r' KeyModifiers.Control, (fun count _ -> _bufferData.VimHost.Redo this.TextBuffer count))
+            yield (InputUtil.CharAndModifiersToKeyInput 'r' KeyModifiers.Control, (fun count _ -> _operations.Redo count))
             yield (InputUtil.CharAndModifiersToKeyInput 'u' KeyModifiers.Control, (fun count _ -> _operations.ScrollLines ScrollDirection.Up count))
             yield (InputUtil.CharAndModifiersToKeyInput 'd' KeyModifiers.Control, (fun count _ -> _operations.ScrollLines ScrollDirection.Down count))
             yield (InputUtil.CharAndModifiersToKeyInput 'f' KeyModifiers.Control, (fun count _ -> _operations.ScrollPages ScrollDirection.Down count))
@@ -459,7 +457,7 @@ type internal NormalMode
             match Map.tryFind ki _operationMap with
             | Some op ->  op.RunFunc count reg 
             | None -> 
-                this.VimHost.Beep()
+                _operations.Beep()
                 NormalModeResult.Complete
 
     /// Reset the internal data for the NormalMode instance

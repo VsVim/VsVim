@@ -128,7 +128,7 @@ type internal VisualMode
         match Map.tryFind ki _operationsMap with
         | Some(op) -> op _data.Count _data.Register
         | None -> 
-            _buffer.VimHost.Beep()
+            _operations.Beep()
             VisualModeResult.Complete
 
     member private x.ProcessInput ki = 

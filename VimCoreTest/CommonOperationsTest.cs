@@ -16,7 +16,7 @@ using Microsoft.FSharp.Core;
 namespace VimCoreTest
 {
     [TestFixture]
-    public class Modes_CommonOperationsTest
+    public class CommonOperationsTest
     {
 
         private class OperationsImpl : CommonOperations
@@ -1272,6 +1272,24 @@ namespace VimCoreTest
                 FSharpOption<SnapshotPoint>.None);
             _operations.MoveCaretToMotionData(data);
             Assert.AreEqual(1, _view.GetCaretPoint().Position);
+        }
+
+        [Test]
+        public void Undo1()
+        {
+            Create(String.Empty);
+            _host.Setup(x => x.Undo(_buffer,1)).Verifiable();
+            _operations.Undo(1);
+            _host.Verify();
+        }
+
+        [Test]
+        public void Redo1()
+        {
+            Create(String.Empty);
+            _host.Setup(x => x.Redo(_buffer, 1)).Verifiable();
+            _operations.Redo(1);
+            _host.Verify();
         }
     }
 }

@@ -36,7 +36,6 @@ namespace VimCoreTest
 
         public void Create2(
             ModeKind kind=ModeKind.VisualCharacter, 
-            IVimHost host= null,
             params string[] lines)
         {
             _buffer = EditorUtil.CreateBuffer(lines);
@@ -52,11 +51,10 @@ namespace VimCoreTest
             _tracker.Setup(x => x.Start());
             _operations = new Mock<IOperations>(MockBehavior.Strict);
             _operations.SetupGet(x => x.SelectionTracker).Returns(_tracker.Object);
-            host = host ?? new FakeVimHost();
             _bufferData = MockObjectFactory.CreateVimBuffer(
                 _view.Object,
                 "test",
-                MockObjectFactory.CreateVim(_map, host: host).Object);
+                MockObjectFactory.CreateVim(_map).Object);
             _modeRaw = new Vim.Modes.Visual.VisualMode(Tuple.Create<IVimBuffer, IOperations, ModeKind>(_bufferData.Object, _operations.Object, kind));
             _mode = _modeRaw;
             _mode.OnEnter();
@@ -138,14 +136,14 @@ namespace VimCoreTest
         [Test,Description("Must handle arbitrary input to prevent changes but don't list it as a command")]
         public void PreventInput1()
         {
-            var host = new FakeVimHost();
-            Create2(host:host,lines:"foo");
+            Create(lines:"foo");
             var input = InputUtil.CharToKeyInput(',');
+            _operations.Setup(x => x.Beep()).Verifiable();
             Assert.IsFalse(_mode.Commands.Any(x => x.Char == input.Char));
             Assert.IsTrue(_mode.CanProcess(input));
             var ret = _mode.Process(input);
             Assert.IsTrue(ret.IsProcessed);
-            Assert.AreEqual(1, host.BeepCount);
+            _operations.Verify();
         }
 
         #region Movement

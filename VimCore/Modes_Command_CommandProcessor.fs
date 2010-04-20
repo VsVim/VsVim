@@ -227,7 +227,7 @@ type internal CommandProcessor
             rest 
                 |> CommandParseUtil.SkipWhitespace
                 |> StringUtil.ofCharSeq
-        if System.String.IsNullOrEmpty name then _data.VimHost.ShowOpenFileDialog()
+        if System.String.IsNullOrEmpty name then _operations.ShowOpenFileDialog()
         else _operations.EditFile name
 
     /// Parse out the Yank command
@@ -328,12 +328,12 @@ type internal CommandProcessor
 
     member private x.ProcessUndo rest _ _ =
         match Seq.isEmpty rest with
-        | true -> _data.VimHost.Undo _data.TextBuffer 1
+        | true -> _operations.Undo 1
         | false -> _statusUtil.OnError x.BadMessage
 
     member private x.ProcessRedo rest _ _ =
         match Seq.isEmpty rest with
-        | true -> _data.VimHost.Redo _data.TextBuffer 1
+        | true -> _operations.Redo 1
         | false -> _statusUtil.OnError x.BadMessage
 
     member private x.ProcessMarks rest _ _ =

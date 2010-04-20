@@ -53,6 +53,8 @@ type internal DefaultOperations
     interface IOperations with
         member x.EditFile fileName = _host.OpenFile fileName
 
+        member x.ShowOpenFileDialog () = _host.ShowOpenFileDialog()
+
         /// Implement the :pu[t] command
         member x.Put (text:string) (line:ITextSnapshotLine) isAfter =
 

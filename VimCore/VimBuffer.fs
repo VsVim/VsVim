@@ -150,13 +150,12 @@ type internal VimBuffer
                  
     interface IVimBuffer with
         member x.Vim = _vim
-        member x.VimHost = _vim.Host
         member x.TextView = _textView
         member x.TextBuffer = _textView.TextBuffer
         member x.TextSnapshot = _textView.TextSnapshot
         member x.BufferedRemapKeyInputs = x.BufferedRemapKeyInputs 
         member x.IsProcessingInput = _isProcessingInput
-        member x.Name = _vim.Host.GetName _textView.TextBuffer
+        member x.Name = _vim.VimHost.GetName _textView.TextBuffer
         member x.MarkMap = _vim.MarkMap
         member x.JumpList = _jumpList
         member x.ModeKind = x.Mode.ModeKind

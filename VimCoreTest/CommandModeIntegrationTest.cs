@@ -27,7 +27,7 @@ namespace VimCoreTest
             host = new FakeVimHost();
             var service = Utils.EditorUtil.FactoryService;
             buffer = service.vim.CreateBuffer(view);
-            host = (FakeVimHost)service.vim.Host;
+            host = (FakeVimHost)service.vim.VimHost;
         }
 
         [SetUp]

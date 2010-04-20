@@ -355,6 +355,8 @@ type internal CommonOperations
             let span = SnapshotSpan(point, span.End)
             x.DeleteSpan span MotionKind.Inclusive OperationKind.CharacterWise reg |> ignore
 
+        member x.Undo count = _host.Undo _textView.TextBuffer count
+        member x.Redo count = _host.Redo _textView.TextBuffer count
         member x.Save() = _host.SaveCurrentFile()
         member x.SaveAs fileName = _host.SaveCurrentFileAs fileName
         member x.SaveAll() = _host.SaveAllFiles()

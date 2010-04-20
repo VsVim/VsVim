@@ -45,7 +45,7 @@ namespace VimCoreTest.Utils
             mock.Setup(x => x.RegisterMap).Returns(registerMap);
             mock.Setup(x => x.MarkMap).Returns(map);
             mock.Setup(x => x.Settings).Returns(settings);
-            mock.Setup(x => x.Host).Returns(host);
+            mock.Setup(x => x.VimHost).Returns(host);
             mock.Setup(x => x.KeyMap).Returns(keyMap);
             mock.Setup(x => x.ChangeTracker).Returns(changeTracker);
             return mock;
@@ -101,7 +101,6 @@ namespace VimCoreTest.Utils
             mock.SetupGet(x => x.TextBuffer).Returns(() => view.TextBuffer);
             mock.SetupGet(x => x.TextSnapshot).Returns(() => view.TextSnapshot);
             mock.SetupGet(x => x.Name).Returns(name);
-            mock.SetupGet(x => x.VimHost).Returns(vim.Host);
             mock.SetupGet(x => x.Settings).Returns(settings);
             mock.SetupGet(x => x.MarkMap).Returns(vim.MarkMap);
             mock.SetupGet(x => x.RegisterMap).Returns(vim.RegisterMap);
