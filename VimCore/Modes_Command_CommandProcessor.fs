@@ -83,7 +83,8 @@ type internal CommandProcessor
     ( 
         _data : IVimBuffer, 
         _operations : IOperations,
-        _statusUtil : IStatusUtil ) as this = 
+        _statusUtil : IStatusUtil,
+        _fileSystem : IFileSystem ) as this = 
 
     let mutable _command : System.String = System.String.Empty
 
@@ -362,9 +363,9 @@ type internal CommandProcessor
         let file = rest |> StringUtil.ofCharSeq
         if bang then _statusUtil.OnError Resources.CommandMode_NotSupported_SourceNormal
         else
-            match Utils.ReadAllLines file with
+            match _fileSystem.ReadAllLines file with
             | None -> _statusUtil.OnError (Resources.CommandMode_CouldNotOpenFile file)
-            | Some(_,lines) ->
+            | Some(lines) ->
                 lines 
                 |> Seq.map (fun command -> command |> List.ofSeq)
                 |> Seq.iter x.RunCommand

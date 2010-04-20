@@ -42,7 +42,7 @@ type internal VimBufferFactory
         let normalIncrementalSearch = Vim.Modes.Normal.IncrementalSearch(view, outlining, localSettings, wordNav, vim.SearchService) :> IIncrementalSearch
         let normalOpts = Modes.Normal.DefaultOperations(view,editOperations, outlining,_host, statusUtil, localSettings,wordNav,jumpList, normalIncrementalSearch) :> Modes.Normal.IOperations
         let commandOpts = Modes.Command.DefaultOperations(view,editOperations,outlining, _host, statusUtil, jumpList, localSettings, vim.KeyMap) :> Modes.Command.IOperations
-        let commandProcessor = Modes.Command.CommandProcessor(buffer, commandOpts, statusUtil) :> Modes.Command.ICommandProcessor
+        let commandProcessor = Modes.Command.CommandProcessor(buffer, commandOpts, statusUtil, FileSystem() :> IFileSystem) :> Modes.Command.ICommandProcessor
         let insertOpts = Modes.Insert.DefaultOperations(view,editOperations,outlining,_host, jumpList, localSettings) :> Modes.ICommonOperations
         let visualOptsFactory kind = 
             let mode = 
@@ -98,9 +98,6 @@ type internal Vim
         _changeTracker : IChangeTracker,
         _search : ISearchService ) =
 
-
-    static let _vimRcEnvironmentVariables = ["HOME";"VIM";"USERPROFILE"]
-
     let _bufferMap = new System.Collections.Generic.Dictionary<ITextView, IVimBuffer>()
 
     [<ImportingConstructor>]
@@ -148,20 +145,12 @@ type internal Vim
         | Some(buffer) -> buffer
         | None -> x.CreateVimBufferCore view
 
-    static member LoadVimRc (vim:IVim) (createViewFunc : (unit -> ITextView)) =
+    static member LoadVimRc (vim:IVim) (fileSystem:IFileSystem) (createViewFunc : (unit -> ITextView)) =
         let settings = vim.Settings
         settings.VimRc <- System.String.Empty
 
-        let getPaths var =
-            match System.Environment.GetEnvironmentVariable(var) with
-            | null -> Seq.empty
-            | value ->
-                let files = [".vimrc"; "_vimrc" ]
-                files |> Seq.map (fun file -> Path.Combine(value,file)) 
-        let paths = _vimRcEnvironmentVariables |> Seq.map getPaths |> Seq.concat
-        settings.VimRcPaths <- paths |> String.concat ";"
-
-        match paths |> Seq.tryPick Utils.ReadAllLines with
+        settings.VimRcPaths <- fileSystem.GetVimRcDirectories() |> String.concat ";"
+        match fileSystem.LoadVimRc() with
         | None -> false
         | Some(path,lines) ->
             settings.VimRc <- path
@@ -190,7 +179,7 @@ type internal Vim
             match keys |> Seq.isEmpty with
             | true -> None
             | false -> keys |> Seq.head |> x.GetBufferCore
-        member x.LoadVimRc createViewFunc = Vim.LoadVimRc x createViewFunc
+        member x.LoadVimRc fileSystem createViewFunc = Vim.LoadVimRc x fileSystem createViewFunc
                 
 
         

@@ -139,6 +139,7 @@
     <Compile Include="CommandParseUtilTest.cs" />
     <Compile Include="CommandProcessorTest.cs" />
     <Compile Include="Command_DefaultOperations.cs" />
+    <Compile Include="FileSystemTest.cs" />
     <Compile Include="MotionDataTest.cs" />
     <Compile Include="SearchServiceTest.cs" />
     <Compile Include="SnapshotSpanUtilTest.cs" />

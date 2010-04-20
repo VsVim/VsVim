@@ -6,6 +6,28 @@ open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Operations
 open System.Diagnostics
 
+/// Abstracts away VsVim's interaction with the file system to facilitate testing
+type IFileSystem =
+
+    /// Set of environment variables considered when loooking for VimRC paths
+    abstract EnvironmentVariables : list<string>
+
+    /// Set of file names considered (in preference order) when looking for vim rc files
+    abstract VimRcFileNames : list<string>
+    
+    /// Get the directories to probe for RC files
+    abstract GetVimRcDirectories : unit -> seq<string>
+
+    /// Get the file paths in preference order for vim rc files
+    abstract GetVimRcFilePaths : unit -> seq<string>
+
+    /// Attempts to load the contents of the .VimRC and return both the path the file
+    /// was loaded from and it's contents a
+    abstract LoadVimRc : unit -> (string * string[]) option
+
+    /// Attempt to read all of the lines from the given file 
+    abstract ReadAllLines : path:string -> string[] option
+
 type ModeKind = 
     | Normal = 1
     | Insert = 2
@@ -72,7 +94,6 @@ type IKeyMap =
     /// Clear the Key mappings for all modes
     abstract ClearAll : unit -> unit
 
-    
 type IMarkMap =
     abstract IsLocalMark : char -> bool
     abstract GetLocalMark : ITextBuffer -> char -> VirtualSnapshotPoint option
@@ -379,7 +400,7 @@ and IVim =
     abstract RemoveBuffer : ITextView -> bool
 
     /// Load the VimRc file.  If the file was previously, a new load will be attempted
-    abstract LoadVimRc : createViewFunc:(unit -> ITextView) -> bool
+    abstract LoadVimRc : IFileSystem -> createViewFunc:(unit -> ITextView) -> bool
 
     
 /// Main interface for the Vim editor engine so to speak. 

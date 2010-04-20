@@ -28,6 +28,7 @@ namespace VimCoreTest
         private Mock<IEditorOperations> _editOpts;
         private Mock<IOperations> _operations;
         private Mock<IStatusUtil> _statusUtil;
+        private Mock<IFileSystem> _fileSystem;
 
         public void Create(params string[] lines)
         {
@@ -38,11 +39,12 @@ namespace VimCoreTest
             _operations = new Mock<IOperations>(MockBehavior.Strict);
             _operations.SetupGet(x => x.EditorOperations).Returns(_editOpts.Object);
             _statusUtil = new Mock<IStatusUtil>();
+            _fileSystem = new Mock<IFileSystem>(MockBehavior.Strict);
             _bufferData = MockObjectFactory.CreateVimBuffer(
                 _view,
                 "test",
                 MockObjectFactory.CreateVim(_map).Object);
-            _processorRaw = new Vim.Modes.Command.CommandProcessor(_bufferData.Object, _operations.Object, _statusUtil.Object);
+            _processorRaw = new Vim.Modes.Command.CommandProcessor(_bufferData.Object, _operations.Object, _statusUtil.Object, _fileSystem.Object);
             _processor = _processorRaw;
         }
 
