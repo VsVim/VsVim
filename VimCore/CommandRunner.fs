@@ -8,6 +8,9 @@ type internal CommandData = {
     Count : int option;
     CommandString : string;
     IsWaitingForMoreInput : bool;
+
+    /// Reverse ordered List of all KeyInput for a given command
+    Inputs : KeyInput list;
 }
 
 /// Implementation of the ICommandRunner interface.  
@@ -24,6 +27,7 @@ type internal CommandRunner
         Count = None;
         CommandString = StringUtil.empty;
         IsWaitingForMoreInput = false; 
+        Inputs = List.empty;
     }
     
     let mutable _commands : Command list = List.Empty
@@ -37,6 +41,7 @@ type internal CommandRunner
     /// The full command string of the current input
     let mutable _commandString = StringUtil.empty
 
+    /// Returns the current count if set or otherwise will return 1 
     let CountOrDefault = 
         match _data.Count with
         | None -> 1
@@ -46,7 +51,7 @@ type internal CommandRunner
     member private x.WaitForRegister (ki:KeyInput) = 
         let reg = _registerMap.GetRegister ki.Char
         _data <- { _data with Register = reg }
-        CommandResult.CommandNeedMoreInput x.RunCore
+        CommandResult.CommandNeedMoreInput x.RunCheckForCountAndRegister
 
     /// Used to wait for a count value to complete.  Passed in the initial digit 
     /// in the count
@@ -58,7 +63,7 @@ type internal CommandRunner
             else
                 let count = System.Int32.Parse(num)
                 _data <- { _data with Count = Some count }
-                x.RunCore ki 
+                x.RunCheckForCountAndRegister ki
         inner (initialDigit.Char.ToString())
 
     /// Used to wait for a MotionCommand to complete.  Will call the passed in function 
@@ -133,10 +138,39 @@ type internal CommandRunner
         else CommandNeedMoreInput x.WaitForCommand
 
     /// Starting point for processing input 
-    member private x.RunCore (ki:KeyInput) = 
+    member private x.RunCheckForCountAndRegister (ki:KeyInput) = 
         if ki.Char = '"' then CommandNeedMoreInput x.WaitForRegister
         elif ki.IsDigit then CommandNeedMoreInput (x.WaitForCount ki)
         else x.WaitForCommand ki
+
+    /// Function which handles all incoming input
+    member private x.Run (ki:KeyInput) =
+        if ki.Key = VimKey.EscapeKey then 
+            x.Reset()
+            CommandCancelled
+        else
+            _data <- {_data with Inputs = ki :: _data.Inputs }
+            let result = _runFunc ki 
+            match result with
+            | CommandCompleted -> ()
+            | CommandCancelled -> x.Reset()
+            | CommandError -> ()
+            | CommandNeedMoreInput(func) -> _runFunc <- func
+            result
+            
+    member private x.Add command = _commands <- command :: _commands
+    member private x.Reset () =
+        _data <- _emptyData
+        _runFunc <- x.RunCheckForCountAndRegister 
+
+    interface ICommandRunner with
+        member x.Commands = _commands |> Seq.ofList
+        member x.IsWaitingForMoreInput = _data.IsWaitingForMoreInput
+        member x.Add command = x.Add command
+        member x.Reset () = x.Reset()
+        member x.Run ki = x.Run ki
+
+
 
 
 
