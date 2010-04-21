@@ -18,7 +18,7 @@ type internal CommandRunner
     ( 
         _textView : ITextView,
         _registerMap : IRegisterMap,
-        _statusUtil : IStatusUtil ) =
+        _statusUtil : IStatusUtil ) as this =
 
     /// Represents the empty state for processing commands.  Holds all of the default
     /// values
@@ -46,6 +46,9 @@ type internal CommandRunner
         match _data.Count with
         | None -> 1
         | Some(count) -> count
+
+    do
+        _runFunc <- this.RunCheckForCountAndRegister
 
     /// Used to wait for the character after the " which signals the Register 
     member private x.WaitForRegister (ki:KeyInput) = 

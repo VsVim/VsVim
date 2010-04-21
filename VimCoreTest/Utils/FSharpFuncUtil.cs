@@ -13,10 +13,9 @@ namespace VimCoreTest.Utils
             return (arg) => func(arg);
         }
 
-        public static FSharpFunc<T,TResult> Create<T,TResult>(Func<T,TResult> func)
+        public static FSharpFunc<T,TResult> Create<T,TResult>(Converter<T,TResult> func)
         {
-            var c1 = CreateConverter(func);
-            return FSharpFunc<T,TResult>.FromConverter(c1);
+            return FSharpFunc<T,TResult>.FromConverter(func);
         }
     }
 }

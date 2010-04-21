@@ -31,7 +31,7 @@ namespace VsVim
 
         #region Command
 
-        public static IEnumerable<string> GetCommandStrings(this Command command)
+        public static IEnumerable<string> GetCommandStrings(this EnvDTE.Command command)
         {
             if (null == command)
             {
@@ -57,7 +57,7 @@ namespace VsVim
             return Enumerable.Empty<string>();
         }
 
-        public static IEnumerable<CommandKeyBinding> GetCommandKeyBindings(this Command command)
+        public static IEnumerable<CommandKeyBinding> GetCommandKeyBindings(this EnvDTE.Command command)
         {
             if (null == command)
             {
@@ -74,17 +74,17 @@ namespace VsVim
             }
         }
 
-        public static IEnumerable<KeyBinding> GetKeyBindings(this Command command)
+        public static IEnumerable<KeyBinding> GetKeyBindings(this EnvDTE.Command command)
         {
             return GetCommandKeyBindings(command).Select(x => x.KeyBinding);
         }
 
-        public static bool HasKeyBinding(this Command command, KeyBinding binding)
+        public static bool HasKeyBinding(this EnvDTE.Command command, KeyBinding binding)
         {
             return GetCommandKeyBindings(command).Any(x => x.KeyBinding == binding);
         }
 
-        public static void SafeResetBindings(this Command command)
+        public static void SafeResetBindings(this EnvDTE.Command command)
         {
             try
             {
@@ -97,7 +97,7 @@ namespace VsVim
             }
         }
 
-        public static void SafeSetBindings(this Command command, KeyBinding binding)
+        public static void SafeSetBindings(this EnvDTE.Command command, KeyBinding binding)
         {
             try
             {
@@ -113,9 +113,9 @@ namespace VsVim
 
         #region Commands
 
-        public static IEnumerable<Command> GetCommands(this Commands commands)
+        public static IEnumerable<EnvDTE.Command> GetCommands(this Commands commands)
         {
-            return commands.Cast<Command>();
+            return commands.Cast<EnvDTE.Command>();
         }
 
         #endregion
