@@ -25,7 +25,7 @@ type internal NormalMode
         _bufferData : IVimBuffer, 
         _operations : IOperations,
         _incrementalSearch : IIncrementalSearch,
-        _statusUtil : Vim.Modes.IStatusUtil,
+        _statusUtil : IStatusUtil,
         _displayWindowBroker : IDisplayWindowBroker ) =
 
     let _commandExecutedEvent = Event<_>()

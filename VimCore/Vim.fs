@@ -74,7 +74,7 @@ type internal VimBufferFactory
         TssUtil.CreateTextStructureNavigator wordKind baseImpl
 
     member private x.CreateStatusUtil (buffer:VimBuffer) =
-        { new Vim.Modes.IStatusUtil with 
+        { new IStatusUtil with 
             member x.OnStatus msg = buffer.RaiseStatusMessage msg
             member x.OnError msg = buffer.RaiseErrorMessage msg
             member x.OnStatusLong msgSeq = buffer.RaiseStatusMessageLong msgSeq }

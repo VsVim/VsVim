@@ -6,10 +6,68 @@ open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Operations
 open System.Diagnostics
 
+type CommandResult =   
+    | CommandCompleted 
+    | CommandNeedMoreInput of (KeyInput -> CommandResult)
+    | CommandError
+    | CommandCancelled 
+
+/// Representation of commands within Vim.  
+type Command = 
+    
+    /// Represents a Command which has no motion modifiers.  The delegate takes an
+    /// optional count and a Register.  If unspecified the default register will be
+    /// used  
+    | SimpleCommand of string * (int option -> Register -> CommandResult)
+
+    /// Represents a Command prefix which has an associated motion.  The delegate takes
+    /// an optional count, a Register and a MotionData value.  If unspecified the default
+    /// register will be used
+    | MotionCommand of string * (int option -> Register -> MotionData -> CommandResult)
+
+    with 
+
+    /// The raw command string
+    member x.RawCommand = 
+        match x with
+        | SimpleCommand(value,_ ) -> value
+        | MotionCommand(value,_) -> value
+
+
+/// Responsible for managing a set of Commands and running them
+type ICommandRunner =
+    
+    /// Set of Commands currently supported
+    abstract Commands : Command seq
+
+    /// True if waiting on more input
+    abstract IsWaitingForMoreInput : bool
+
+    /// Add a Command 
+    abstract Add : Command -> unit
+
+    /// Process the given KeyInput 
+    abstract Run : KeyInput -> CommandResult
+
+    /// If currently waiting for more input on a Command, reset to the 
+    /// initial state
+    abstract Reset : unit -> unit
+
+type IStatusUtil =
+
+    /// Raised when there is a special status message that needs to be reported
+    abstract OnStatus : string -> unit
+
+    /// Raised when there is a long status message that needs to be reported
+    abstract OnStatusLong : string seq -> unit 
+
+    /// Raised when there is an error message that needs to be reported
+    abstract OnError : string -> unit 
+
 /// Abstracts away VsVim's interaction with the file system to facilitate testing
 type IFileSystem =
 
-    /// Set of environment variables considered when loooking for VimRC paths
+    /// Set of environment variables considered when looking for VimRC paths
     abstract EnvironmentVariables : list<string>
 
     /// Set of file names considered (in preference order) when looking for vim rc files
@@ -148,7 +206,7 @@ type IRegisterMap =
     abstract IsRegisterName : char -> bool
     abstract GetRegister : char -> Register
     
-/// Result of an individual searh
+/// Result of an individual search
 type SearchResult =
     | SearchFound of SnapshotSpan
     | SearchNotFound 
