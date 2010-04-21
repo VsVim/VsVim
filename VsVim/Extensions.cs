@@ -20,15 +20,6 @@ namespace VsVim
 {
     public static class Extensions
     {
-        #region FSharpOption<T>
-
-        public static bool IsSome<T>(this FSharpOption<T> opt)
-        {
-            return FSharpOption<T>.get_IsSome(opt);
-        }
-
-        #endregion
-
         #region Command
 
         public static IEnumerable<string> GetCommandStrings(this Command command)

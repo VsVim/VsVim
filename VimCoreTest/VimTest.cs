@@ -11,6 +11,7 @@ using System.IO;
 using Vim.Modes.Command;
 using Microsoft.FSharp.Core;
 using Microsoft.FSharp.Collections;
+using Vim.Extensions;
 
 namespace VimCoreTest
 {

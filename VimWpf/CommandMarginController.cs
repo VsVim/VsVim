@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Vim.UI.Wpf.Properties;
+using Vim.Extensions;
 using System.Collections.ObjectModel;
 using System.Windows;
 
@@ -75,7 +76,7 @@ namespace Vim.UI.Wpf
                     {
                         var mode = _buffer.NormalMode;
                         var search = mode.IncrementalSearch;
-                        if (search.InSearch && search.CurrentSearch.HasValue())
+                        if (search.InSearch && search.CurrentSearch.IsSome())
                         {
                             var data = search.CurrentSearch.Value;
                             _margin.StatusLine = "/" + data.Text.RawText;

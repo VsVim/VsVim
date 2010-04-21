@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Windows.Input;
 using System.Collections.ObjectModel;
+using Vim.Extensions;
 
 namespace Vim.UI.Wpf
 {
@@ -40,7 +41,7 @@ namespace Vim.UI.Wpf
         {
             var virtualKey = KeyInterop.VirtualKeyFromKey(key);
             var opt = InputUtil.TryVirtualKeyCodeToKeyInput(virtualKey);
-            return opt.HasValue()
+            return opt.IsSome()
                 ? Tuple.Create(opt.Value,virtualKey)
                 : null;
         }
@@ -116,7 +117,7 @@ namespace Vim.UI.Wpf
         {
             var list = CoreChars
                 .Select(x => Tuple.Create(x, InputUtil.TryCharToVirtualKeyAndModifiers(x)))
-                .Where(x => x.Item2.HasValue())
+                .Where(x => x.Item2.IsSome())
                 .Select(x => Tuple.Create(x.Item1, x.Item2.Value.Item1, x.Item2.Value.Item2))
                 .ToList();
             return new ReadOnlyCollection<Tuple<char, int, KeyModifiers>>(list);

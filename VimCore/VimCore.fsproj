@@ -98,6 +98,7 @@
     <Compile Include="FileSystem.fs" />
     <Compile Include="Vim.fs" />
     <Compile Include="MefComponents.fs" />
+    <Compile Include="FSharpExtensions.fs" />
     <Compile Include="AssemblyInfo.fs" />
   </ItemGroup>
   <ItemGroup>

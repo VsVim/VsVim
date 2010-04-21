@@ -11,6 +11,7 @@ using Microsoft.VisualStudio.Text.Operations;
 using VimCoreTest.Utils;
 using Microsoft.VisualStudio.Text.Tagging;
 using Microsoft.FSharp.Core;
+using Vim.Extensions;
 
 namespace VimCoreTest
 {

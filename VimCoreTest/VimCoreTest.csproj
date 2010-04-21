@@ -179,7 +179,6 @@
     <Compile Include="Utils\EditorUtil.cs" />
     <Compile Include="Extensions.cs" />
     <Compile Include="Utils\FSharpFuncUtil.cs" />
-    <Compile Include="Utils\FSharpOption.cs" />
     <Compile Include="Utils\MatchUtil.cs" />
     <Compile Include="Utils\MockNormalMode.cs" />
     <Compile Include="Utils\MockObjectFactory.cs" />

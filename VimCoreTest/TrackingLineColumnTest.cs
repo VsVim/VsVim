@@ -7,6 +7,7 @@ using Microsoft.VisualStudio.Text;
 using VimCoreTest.Utils;
 using Vim;
 using Microsoft.FSharp.Core;
+using Vim.Extensions;
 
 namespace VimCoreTest
 {

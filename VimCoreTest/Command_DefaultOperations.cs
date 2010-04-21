@@ -13,6 +13,7 @@ using Vim.Modes.Command;
 using Moq;
 using Microsoft.VisualStudio.Text.Operations;
 using Microsoft.VisualStudio.Text.Outlining;
+using Vim.Extensions;
 
 namespace VimCoreTest
 {

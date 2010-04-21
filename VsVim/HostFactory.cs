@@ -9,6 +9,7 @@ using Microsoft.VisualStudio.Editor;
 using System.Diagnostics;
 using System.Collections.Generic;
 using Vim;
+using Vim.Extensions;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Text.Classification;
 using Microsoft.VisualStudio.Text.Operations;

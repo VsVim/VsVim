@@ -12,6 +12,7 @@ using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text.Editor;
 using Moq;
 using Range = Vim.Modes.Command.Range;
+using Vim.Extensions;
 
 namespace VimCoreTest
 {
