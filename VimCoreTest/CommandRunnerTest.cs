@@ -62,9 +62,9 @@ namespace VimCoreTest
             return Command.NewMotionCommand(name, fsharpFunc);
         }
 
-        private CommandResult Run(string command)
+        private FSharpOption<CommandResult> Run(string command)
         {
-            CommandResult last = null;
+            FSharpOption<CommandResult> last = null;
             foreach (var c in command)
             {
                 last = _runner.Run(InputUtil.CharToKeyInput(c));
@@ -311,7 +311,7 @@ namespace VimCoreTest
         {
             Create("hello world");
             _runner.Add(CreateSimpleCommand("cat", (count, reg) => CommandResult.CommandCompleted));
-            Assert.IsTrue(Run("c").IsCommandNeedMoreInput);
+            Assert.IsTrue(Run("c").IsNone());
             Assert.IsTrue(_runner.IsWaitingForMoreInput);
         }
 
@@ -320,7 +320,7 @@ namespace VimCoreTest
         {
             Create("hello world");
             _runner.Add(CreateSimpleCommand("cat", (count, reg) => CommandResult.CommandCompleted));
-            Assert.IsTrue(Run("ca").IsCommandNeedMoreInput);
+            Assert.IsTrue(Run("ca").IsNone());
             Assert.IsTrue(_runner.IsWaitingForMoreInput);
         }
 
@@ -329,7 +329,7 @@ namespace VimCoreTest
         {
             Create("hello world");
             _runner.Add(CreateSimpleCommand("cat", (count, reg) => CommandResult.CommandCompleted));
-            Assert.IsTrue(Run("cat").IsCommandCompleted);
+            Assert.IsTrue(Run("cat").Value.IsCommandCompleted);
             Assert.IsFalse(_runner.IsWaitingForMoreInput);
         }
 
@@ -338,8 +338,8 @@ namespace VimCoreTest
         {
             Create("hello world");
             _runner.Add(CreateSimpleCommand("cat", (count, reg) => CommandResult.CommandCompleted));
-            Assert.IsTrue(Run("ca").IsCommandNeedMoreInput);
-            Assert.IsTrue(_runner.Run(InputUtil.VimKeyToKeyInput(VimKey.EscapeKey)).IsCommandCancelled);
+            Assert.IsTrue(Run("ca").IsNone());
+            Assert.IsTrue(_runner.Run(InputUtil.VimKeyToKeyInput(VimKey.EscapeKey)).Value.IsCommandCancelled);
             Assert.IsFalse(_runner.IsWaitingForMoreInput);
         }
 
@@ -349,8 +349,8 @@ namespace VimCoreTest
         {
             Create("hello world");
             _runner.Add(CreateMotionCommand("cat", (count, reg, data) => CommandResult.CommandCompleted));
-            Assert.IsTrue(Run("cata").IsCommandNeedMoreInput);
-            Assert.IsTrue(_runner.Run(InputUtil.VimKeyToKeyInput(VimKey.EscapeKey)).IsCommandCancelled);
+            Assert.IsTrue(Run("cata").IsNone());
+            Assert.IsTrue(_runner.Run(InputUtil.VimKeyToKeyInput(VimKey.EscapeKey)).Value.IsCommandCancelled);
             Assert.IsFalse(_runner.IsWaitingForMoreInput);
         }
 

@@ -3,6 +3,10 @@
 namespace Vim
 open Microsoft.VisualStudio.Text.Editor
 
+type internal KeyInputResult = 
+    | RanCommand of CommandResult
+    | NeedMoreInput of (KeyInput -> KeyInputResult)
+
 type internal CommandData = {
     Register : Register;
     Count : int option;
@@ -32,11 +36,11 @@ type internal CommandRunner
     
     let mutable _commands : Command list = List.Empty
 
-    /// Contains all of the stateful data for a Command operation
+    /// Contains all of the state data for a Command operation
     let mutable _data = _emptyData
 
     /// The current function which handles running input
-    let mutable _runFunc : KeyInput -> CommandResult = fun _ -> CommandCompleted
+    let mutable _runFunc : KeyInput -> KeyInputResult = fun _ -> RanCommand CommandCancelled
 
     /// The full command string of the current input
     let mutable _commandString = StringUtil.empty
@@ -54,7 +58,7 @@ type internal CommandRunner
     member private x.WaitForRegister (ki:KeyInput) = 
         let reg = _registerMap.GetRegister ki.Char
         _data <- { _data with Register = reg }
-        CommandResult.CommandNeedMoreInput x.RunCheckForCountAndRegister
+        NeedMoreInput x.RunCheckForCountAndRegister
 
     /// Used to wait for a count value to complete.  Passed in the initial digit 
     /// in the count
@@ -62,7 +66,7 @@ type internal CommandRunner
         let rec inner (num:string) (ki:KeyInput) = 
             if ki.IsDigit then
                 let num = num + ki.Char.ToString()
-                CommandNeedMoreInput (inner num)
+                NeedMoreInput (inner num)
             else
                 let count = System.Int32.Parse(num)
                 _data <- { _data with Count = Some count }
@@ -74,25 +78,25 @@ type internal CommandRunner
     member private x.WaitForMotion onMotionComplete (initialInput : KeyInput option) =
         let rec inner (result:MotionResult) = 
             match result with 
-                | MotionResult.Complete (data) -> onMotionComplete data
-                | NeedMoreInput (moreFunc) ->
+                | MotionResult.Complete (data) -> onMotionComplete data |> RanCommand
+                | MotionResult.NeedMoreInput (moreFunc) ->
                     let func ki = moreFunc ki |> inner
-                    CommandNeedMoreInput func
+                    NeedMoreInput func
                 | InvalidMotion (msg,moreFunc) ->
                     _statusUtil.OnError msg
                     let func ki = moreFunc ki |> inner
-                    CommandNeedMoreInput func
+                    NeedMoreInput func
                 | Error (msg) ->
                     _statusUtil.OnError msg
-                    CommandCompleted
-                | Cancel -> CommandCancelled
+                    RanCommand (CommandError (msg))
+                | Cancel -> RanCommand CommandCancelled
 
         let runInitialMotion ki =
             let point = TextViewUtil.GetCaretPoint _textView
             MotionCapture.ProcessInput point ki x.CountOrDefault |> inner
 
         match initialInput with
-        | None -> CommandNeedMoreInput runInitialMotion
+        | None -> NeedMoreInput runInitialMotion
         | Some(ki) -> runInitialMotion ki
 
     /// Waits for a completed command to be entered
@@ -111,7 +115,7 @@ type internal CommandRunner
         // Run the passed in command
         let runCommand command = 
             match command with
-            | SimpleCommand(_,func) -> func _data.Count _data.Register 
+            | SimpleCommand(_,func) -> func _data.Count _data.Register |> RanCommand
             | MotionCommand(_,func) -> 
                 // Can't just call this.  It's possible there is a non-motion command with a 
                 // longer command name
@@ -119,7 +123,7 @@ type internal CommandRunner
                     _commands 
                     |> Seq.filter (fun command -> command.RawCommand.StartsWith(name, System.StringComparison.Ordinal))
                 if Seq.isEmpty withPrefix then x.WaitForMotion (fun data -> func _data.Count _data.Register data) None
-                else CommandNeedMoreInput x.WaitForCommand
+                else NeedMoreInput x.WaitForCommand
 
         let matches = findMatches name
         if matches.Length = 1 then matches |> List.head |> runCommand
@@ -132,35 +136,36 @@ type internal CommandRunner
           if previousMatches.Length = 1 then 
             let command = previousMatches |> List.head
             match command with
-            | SimpleCommand(_,_) -> CommandNeedMoreInput x.WaitForCommand
+            | SimpleCommand(_,_) -> NeedMoreInput x.WaitForCommand
             | MotionCommand(_,func) -> 
                 let last = name.Chars(name.Length-1) |> InputUtil.CharToKeyInput
                 x.WaitForMotion (fun data -> func _data.Count _data.Register data) (Some last)
-          else CommandNeedMoreInput x.WaitForCommand
+          else NeedMoreInput x.WaitForCommand
 
-        else CommandNeedMoreInput x.WaitForCommand
+        else NeedMoreInput x.WaitForCommand
 
     /// Starting point for processing input 
     member private x.RunCheckForCountAndRegister (ki:KeyInput) = 
-        if ki.Char = '"' then CommandNeedMoreInput x.WaitForRegister
-        elif ki.IsDigit then CommandNeedMoreInput (x.WaitForCount ki)
+        if ki.Char = '"' then NeedMoreInput x.WaitForRegister
+        elif ki.IsDigit then NeedMoreInput (x.WaitForCount ki)
         else x.WaitForCommand ki
 
     /// Function which handles all incoming input
     member private x.Run (ki:KeyInput) =
         if ki.Key = VimKey.EscapeKey then 
             x.Reset()
-            CommandCancelled
+            Some CommandCancelled
         else
             _data <- {_data with Inputs = ki :: _data.Inputs }
-            let result = _runFunc ki 
-            match result with
-            | CommandCompleted -> x.Reset()
-            | CommandCancelled -> x.Reset()
-            | CommandError -> x.Reset()
-            | CommandNeedMoreInput(func) -> 
-                _data <- { _data with IsWaitingForMoreInput= true }
-                _runFunc <- func
+            let result = 
+                match _runFunc ki with
+                | RanCommand(commandResult) -> 
+                    x.Reset()
+                    Some commandResult
+                | NeedMoreInput(func) ->
+                    _data <- { _data with IsWaitingForMoreInput= true }
+                    _runFunc <- func
+                    None
             result
             
     member private x.Add command = _commands <- command :: _commands

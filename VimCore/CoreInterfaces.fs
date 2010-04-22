@@ -8,8 +8,7 @@ open System.Diagnostics
 
 type CommandResult =   
     | CommandCompleted 
-    | CommandNeedMoreInput of (KeyInput -> CommandResult)
-    | CommandError
+    | CommandError of string
     | CommandCancelled 
 
 /// Representation of commands within Vim.  
@@ -46,8 +45,9 @@ type ICommandRunner =
     /// Add a Command 
     abstract Add : Command -> unit
 
-    /// Process the given KeyInput 
-    abstract Run : KeyInput -> CommandResult
+    /// Process the given KeyInput.  If the command completed it will return a result.  A
+    /// None value implies more input is needed to finish the operation
+    abstract Run : KeyInput -> CommandResult option
 
     /// If currently waiting for more input on a Command, reset to the 
     /// initial state
