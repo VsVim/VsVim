@@ -64,27 +64,39 @@ type internal CommandFactory( _operations : ICommonOperations) =
                     func startPoint count |> processResult
                 SimpleCommand (name,inner) |> Some
             | ComplexMotionCommand(_,false,_) -> None
-            | ComplexMotionCommand(name,true,func) -> None
+            | ComplexMotionCommand(name,true,func) -> 
                 
-//                let coreFunc count = 
-//                    let rec inner result =  
-//                        match result with
-//                        | Complete (data) -> 
-//                            _operations.MoveCaretToMotionData data
-//                            MovementComplete
-//                        | MotionResult.NeedMoreInput (func) -> MovementNeedMore (fun ki -> func ki |> inner)
-//                        | InvalidMotion (_,func) -> MovementNeedMore (fun ki -> func ki |> inner)
-//                        | Cancel -> MovementComplete
-//                        | MotionResult.Error (msg) -> MovementError msg
-//
-//                    let startPoint = TextViewUtil.GetCaretPoint _operations.TextView
-//                    let initialResult = func startPoint count
-//                    inner initialResult
-//                (ki,ComplexMovementCommand coreFunc) |> Some
+                let coreFunc count _ = 
+                    let rec inner result =  
+                        match result with
+                        | Complete (data) -> 
+                            _operations.MoveCaretToMotionData data
+                            CommandResult.Completed
+                        | MotionResult.NeedMoreInput (func) -> NeedMoreKeyInput (fun ki -> func ki |> inner)
+                        | InvalidMotion (_,func) -> NeedMoreKeyInput (fun ki -> func ki |> inner)
+                        | Cancel -> CommandResult.Cancelled
+                        | MotionResult.Error (msg) -> CommandResult.Error msg
+
+                    let count = CommandUtil.CountOrDefault count
+                    let startPoint = TextViewUtil.GetCaretPoint _operations.TextView
+                    let initialResult = func startPoint count
+                    inner initialResult
+                SimpleCommand (name, coreFunc) |> Some
 
         MotionCapture.MotionCommands
         |> Seq.map filterMotionCommand
         |> SeqUtil.filterToSome
+
+    /// Returns the set of commands which move the cursor.  This includes all motions which are 
+    /// valid as movements.  Several of these are overridden with custom movement behavior though.
+    member x.CreateMovementCommands() = 
+        let standard = x.CreateStandardMovementCommands()
+        let taken = standard |> Seq.map (fun command -> command.CommandName) |> Set.ofSeq
+        let motion = 
+            x.CreateMovementsFromMotions()
+            |> Seq.filter (fun command -> not (taken.Contains command.CommandName))
+        standard |> Seq.append motion
+
 
     member private x.CreateStandardMovementCommandsOld () = 
         x.CreateStandardMovementCommandsCore()
@@ -137,7 +149,4 @@ type internal CommandFactory( _operations : ICommonOperations) =
             |> Seq.filter (fun (name,_) -> not (taken.Contains name.KeyInputs.Head))
             |> Seq.map (fun (name,op) -> name.KeyInputs.Head,op)
         standard |> Seq.append motion
-
-    /// Returns the set of commands which move the cursor.  This includes all motions which are 
-    /// valid as movements.  Several of these are overridden with custom movement behavior though.
 

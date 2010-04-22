@@ -59,7 +59,7 @@ type CommandResult =
     | Cancelled 
 
 /// The actual command name
-[<CustomEquality; NoComparison>]
+[<CustomEquality; CustomComparison>]
 type CommandName =
     | EmptyName 
     | OneKeyInput of KeyInput
@@ -108,7 +108,20 @@ type CommandName =
             | _ -> ListUtil.contentsEqual x.KeyInputs y.KeyInputs
         | _ -> false
 
-
+    interface System.IComparable with
+        member x.CompareTo yobj = 
+            match yobj with
+            | :? CommandName as y -> 
+                let rec inner (left:KeyInput list) (right:KeyInput list) =
+                    if left.IsEmpty && right.IsEmpty then 0
+                    elif left.IsEmpty then -1
+                    elif right.IsEmpty then 1
+                    elif left.Head < right.Head then -1
+                    elif left.Head > right.Head then 1
+                    else inner (List.tail left) (List.tail right)
+                inner x.KeyInputs y.KeyInputs
+            | _ -> failwith "Cannot compare values of different types"
+            
 
 /// Representation of commands within Vim.  
 type Command = 
