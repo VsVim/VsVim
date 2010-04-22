@@ -384,5 +384,16 @@ namespace VimCoreTest
             Assert.IsTrue(didRun);
         }
 
+        [Test]
+        public void Reset1()
+        {
+            Create("hello world");
+            _runner.Add(CreateSimpleCommand("abc", (x, y) => CommandResult.CommandCompleted));
+            Run("a");
+            Assert.IsTrue(_runner.IsWaitingForMoreInput);
+            _runner.Reset();
+            Assert.IsFalse(_runner.IsWaitingForMoreInput);
+        }
+
     }
 }
