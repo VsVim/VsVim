@@ -19,7 +19,7 @@ module internal MotionCapture =
         let rec inner (ki:KeyInput) =
             match ki.Key with 
             | VimKey.EscapeKey -> Cancel
-            | VimKey.EnterKey -> Error(Resources.MotionCapture_InvalidMotion)
+            | VimKey.EnterKey -> MotionResult.Error(Resources.MotionCapture_InvalidMotion)
             | _ -> InvalidMotion("Invalid Motion", inner)
         InvalidMotion("Invalid Motion",inner)
 
@@ -231,7 +231,7 @@ module internal MotionCapture =
                 | SimpleMotionCommand(_,func) -> 
                     let res = func start count
                     match res with
-                    | None -> Error Resources.MotionCapture_InvalidMotion
+                    | None -> MotionResult.Error Resources.MotionCapture_InvalidMotion
                     | Some(data) -> Complete data
                 | ComplexMotionCommand(_,_,func) -> func start count
             | None -> HitInvalidMotion

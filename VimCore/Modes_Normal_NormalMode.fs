@@ -89,7 +89,7 @@ type internal NormalMode
                     _statusUtil.OnError msg
                     let inputFunc ki _ _ = f (moreFunc ki)
                     NormalModeResult.NeedMoreInput inputFunc 
-                | Error (msg) ->
+                | MotionResult.Error (msg) ->
                     _statusUtil.OnError msg
                     NormalModeResult.Complete
                 | Cancel -> 

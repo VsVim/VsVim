@@ -43,7 +43,7 @@ type internal CommandRunner
     let mutable _data = _emptyData
 
     /// The current function which handles running input
-    let mutable _runFunc : KeyInput -> KeyInputResult = fun _ -> RanCommand CommandCancelled
+    let mutable _runFunc : KeyInput -> KeyInputResult = fun _ -> RanCommand Cancelled
 
     /// The full command string of the current input
     let mutable _commandString = StringUtil.empty
@@ -89,10 +89,10 @@ type internal CommandRunner
                     _statusUtil.OnError msg
                     let func ki = moreFunc ki |> inner
                     NeedMoreInput func
-                | Error (msg) ->
+                | MotionResult.Error (msg) ->
                     _statusUtil.OnError msg
-                    RanCommand (CommandError (msg))
-                | Cancel -> RanCommand CommandCancelled
+                    RanCommand (Error (msg))
+                | Cancel -> RanCommand Cancelled
 
         let runInitialMotion ki =
             let point = TextViewUtil.GetCaretPoint _textView
@@ -167,7 +167,7 @@ type internal CommandRunner
     member private x.Run (ki:KeyInput) =
         if ki.Key = VimKey.EscapeKey then 
             x.Reset()
-            Some CommandCancelled
+            Some Cancelled
         else
             _data <- {_data with Inputs = ki :: _data.Inputs }
             let result = 

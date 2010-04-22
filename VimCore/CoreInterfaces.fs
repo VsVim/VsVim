@@ -6,10 +6,56 @@ open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Operations
 open System.Diagnostics
 
+type IStatusUtil =
+
+    /// Raised when there is a special status message that needs to be reported
+    abstract OnStatus : string -> unit
+
+    /// Raised when there is a long status message that needs to be reported
+    abstract OnStatusLong : string seq -> unit 
+
+    /// Raised when there is an error message that needs to be reported
+    abstract OnError : string -> unit 
+
+/// Abstracts away VsVim's interaction with the file system to facilitate testing
+type IFileSystem =
+
+    /// Set of environment variables considered when looking for VimRC paths
+    abstract EnvironmentVariables : list<string>
+
+    /// Set of file names considered (in preference order) when looking for vim rc files
+    abstract VimRcFileNames : list<string>
+    
+    /// Get the directories to probe for RC files
+    abstract GetVimRcDirectories : unit -> seq<string>
+
+    /// Get the file paths in preference order for vim rc files
+    abstract GetVimRcFilePaths : unit -> seq<string>
+
+    /// Attempts to load the contents of the .VimRC and return both the path the file
+    /// was loaded from and it's contents a
+    abstract LoadVimRc : unit -> (string * string[]) option
+
+    /// Attempt to read all of the lines from the given file 
+    abstract ReadAllLines : path:string -> string[] option
+
+type ModeKind = 
+    | Normal = 1
+    | Insert = 2
+    | Command = 3
+    | VisualCharacter = 4
+    | VisualLine = 5
+    | VisualBlock = 6 
+
+    // Mode when Vim is disabled via the user
+    | Disabled = 42
+
 type CommandResult =   
-    | CommandCompleted 
-    | CommandError of string
-    | CommandCancelled 
+    | Completed 
+    | CompleteSwitchMode of ModeKind
+    | CompleteSwitchPreviousMode 
+    | Error of string
+    | Cancelled 
 
 /// Representation of commands within Vim.  
 type Command = 
@@ -60,49 +106,6 @@ type ICommandRunner =
     /// initial state
     abstract Reset : unit -> unit
 
-type IStatusUtil =
-
-    /// Raised when there is a special status message that needs to be reported
-    abstract OnStatus : string -> unit
-
-    /// Raised when there is a long status message that needs to be reported
-    abstract OnStatusLong : string seq -> unit 
-
-    /// Raised when there is an error message that needs to be reported
-    abstract OnError : string -> unit 
-
-/// Abstracts away VsVim's interaction with the file system to facilitate testing
-type IFileSystem =
-
-    /// Set of environment variables considered when looking for VimRC paths
-    abstract EnvironmentVariables : list<string>
-
-    /// Set of file names considered (in preference order) when looking for vim rc files
-    abstract VimRcFileNames : list<string>
-    
-    /// Get the directories to probe for RC files
-    abstract GetVimRcDirectories : unit -> seq<string>
-
-    /// Get the file paths in preference order for vim rc files
-    abstract GetVimRcFilePaths : unit -> seq<string>
-
-    /// Attempts to load the contents of the .VimRC and return both the path the file
-    /// was loaded from and it's contents a
-    abstract LoadVimRc : unit -> (string * string[]) option
-
-    /// Attempt to read all of the lines from the given file 
-    abstract ReadAllLines : path:string -> string[] option
-
-type ModeKind = 
-    | Normal = 1
-    | Insert = 2
-    | Command = 3
-    | VisualCharacter = 4
-    | VisualLine = 5
-    | VisualBlock = 6 
-
-    // Mode when Vim is disabled via the user
-    | Disabled = 42
 
 /// Modes for a key remapping
 type KeyRemapMode =

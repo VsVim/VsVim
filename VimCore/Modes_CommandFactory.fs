@@ -44,7 +44,7 @@ type internal CommandFactory( _operations : ICommonOperations) =
         |> Seq.map (fun (ki,func) ->
             let funcWithReg opt reg = 
                 func (CommandUtil.CountOrDefault opt)
-                CommandCompleted
+                Completed
             SimpleCommand ([ki],funcWithReg))
 
     member private x.CreateStandardMovementCommandsOld () = 
@@ -77,7 +77,7 @@ type internal CommandFactory( _operations : ICommonOperations) =
                         | MotionResult.NeedMoreInput (func) -> MovementNeedMore (fun ki -> func ki |> inner)
                         | InvalidMotion (_,func) -> MovementNeedMore (fun ki -> func ki |> inner)
                         | Cancel -> MovementComplete
-                        | Error (msg) -> MovementError msg
+                        | MotionResult.Error (msg) -> MovementError msg
 
                     let startPoint = TextViewUtil.GetCaretPoint _operations.TextView
                     let initialResult = func startPoint count
