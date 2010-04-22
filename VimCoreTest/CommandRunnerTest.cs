@@ -5,6 +5,7 @@ using System.Text;
 using NUnit.Framework;
 using Moq;
 using Vim;
+using Vim.Extensions;
 using Microsoft.VisualStudio.Text.Editor;
 using VimCoreTest.Utils;
 using Microsoft.FSharp.Core;
@@ -283,7 +284,7 @@ namespace VimCoreTest
             var didRun = false;
             _runner.Add(CreateSimpleCommand("a", (count, reg) =>
                 {
-                    Assert.IsTrue(count.HasValue());
+                    Assert.IsTrue(count.IsSome());
                     Assert.AreEqual(2, count.Value);
                     Assert.AreSame(_registerMap.GetRegister('d'), reg);
                     didRun = true;
@@ -300,7 +301,7 @@ namespace VimCoreTest
             var didRun = false;
             _runner.Add(CreateSimpleCommand("a", (count, reg) =>
                 {
-                    Assert.IsTrue(count.HasValue());
+                    Assert.IsTrue(count.IsSome());
                     Assert.AreEqual(2, count.Value);
                     Assert.AreSame(_registerMap.GetRegister('d'), reg);
                     didRun = true;
