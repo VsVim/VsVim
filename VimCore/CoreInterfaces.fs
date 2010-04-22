@@ -60,6 +60,7 @@ type CommandResult =
 /// The actual command name
 [<CustomEquality; NoComparison>]
 type CommandName =
+    | EmptyName 
     | OneKeyInput of KeyInput
     | TwoKeyInputs of KeyInput * KeyInput
     | ManyKeyInputs of KeyInput list
@@ -68,6 +69,7 @@ type CommandName =
     /// Get the list of KeyInput which represent this CommandName
     member x.KeyInputs =
         match x with 
+        | EmptyName -> List.empty
         | OneKeyInput(ki) -> [ki]
         | TwoKeyInputs(k1,k2) -> [k1;k2]
         | ManyKeyInputs(list) -> list
@@ -80,12 +82,14 @@ type CommandName =
     /// resulting value
     member x.Add (ki) =
         match x with 
+        | EmptyName -> OneKeyInput ki
         | OneKeyInput(previous) -> TwoKeyInputs(previous,ki)
         | TwoKeyInputs(p1,p2) -> ManyKeyInputs [p1;p2;ki]
         | ManyKeyInputs(list) -> ManyKeyInputs (list @ [ki])
 
     override x.GetHashCode() = 
         match x with
+        | EmptyName -> 1
         | OneKeyInput(ki) -> ki.GetHashCode()
         | TwoKeyInputs(k1,k2) -> k1.GetHashCode() ^^^ k2.GetHashCode()
         | ManyKeyInputs(list) -> 
@@ -132,7 +136,6 @@ module CommandUtil =
         match opt with 
         | Some(count) -> count
         | None -> 1
-
 
 /// Responsible for managing a set of Commands and running them
 type ICommandRunner =

@@ -12,9 +12,8 @@ type internal CommandData = {
     Count : int option;
     IsWaitingForMoreInput : bool;
 
-    /// In order list for all of the KeyInput values which participate in the command.  Does
-    /// not include the KeyInput for Register and Count values
-    CommandInputs : KeyInput list;
+    /// Name of the current command
+    CommandName : CommandName;
 
     /// Reverse ordered List of all KeyInput for a given command
     Inputs : KeyInput list;
@@ -32,7 +31,7 @@ type internal CommandRunner
     let _emptyData = { 
         Register = _registerMap.DefaultRegister;
         Count = None;
-        CommandInputs = List.empty;
+        CommandName = EmptyName;
         IsWaitingForMoreInput = false; 
         Inputs = List.empty;
     }
@@ -105,22 +104,23 @@ type internal CommandRunner
     /// Waits for a completed command to be entered
     member private x.WaitForCommand (ki:KeyInput) = 
 
-        let previousCommandInputs = _data.CommandInputs
-        let commandInputs = previousCommandInputs @ [ki]
-        _data <- { _data with CommandInputs = commandInputs }
-        x.RunCommand commandInputs previousCommandInputs ki
+        let previousName = _data.CommandName
+        let commandName = previousName.Add ki
+        _data <- { _data with CommandName = commandName }
+        x.RunCommand commandName previousName ki
     
     /// Try and run a command with the given name
-    member private x.RunCommand commandInputs previousCommandInputs currentInput = 
+    member private x.RunCommand commandName previousCommandName currentInput = 
 
         // Find any commands matching the given name
-        let findMatches commandInputs =  
+        let findMatches commandName =  
             _commands 
-            |> Seq.filter (fun command -> ListUtil.contentsEqual command.CommandName.KeyInputs commandInputs) 
+            |> Seq.filter (fun command -> command.CommandName = commandName)
             |> List.ofSeq
 
         // Find any commands which have the given prefix
-        let findPrefixMatches commandInputs = 
+        let findPrefixMatches (commandName:CommandName) =
+            let commandInputs = commandName.KeyInputs
             let count = List.length commandInputs
             let commandInputsSeq = commandInputs |> Seq.ofList
             _commands
@@ -129,24 +129,24 @@ type internal CommandRunner
                 let short = command.CommandName.KeyInputs |> Seq.ofList |> Seq.take count
                 SeqUtil.contentsEqual commandInputsSeq short)
 
-        // Run the passed in command
-        let runCommand command = 
+
+        let matches = findMatches commandName
+        if matches.Length = 1 then 
+            let command = matches |> List.head
             match command with
             | SimpleCommand(_,func) -> func _data.Count _data.Register |> RanCommand
             | MotionCommand(_,func) -> 
                 // Can't just call this.  It's possible there is a non-motion command with a 
                 // longer command commandInputs
-                let withPrefix = findPrefixMatches commandInputs
+                let withPrefix = findPrefixMatches commandName
                 if Seq.isEmpty withPrefix then x.WaitForMotion (fun data -> func _data.Count _data.Register data) None
                 else NeedMoreInput x.WaitForCommand
 
-        let matches = findMatches commandInputs
-        if matches.Length = 1 then matches |> List.head |> runCommand
-        elif matches.Length = 0 && commandInputs.Length > 1 then
+        elif matches.Length = 0 && commandName.KeyInputs.Length > 1 then
            
           // It's possible to have 2 commands with similar prefixes where one of them is a MotionCommand.  In this
           // case we can now resolve the ambiguity
-          let previousMatches = findMatches previousCommandInputs
+          let previousMatches = findMatches previousCommandName
           if previousMatches.Length = 1 then 
             let command = previousMatches |> List.head
             match command with
