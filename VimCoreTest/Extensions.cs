@@ -175,6 +175,15 @@ namespace VimCoreTest
 
         #endregion
 
+        #region RunKeyInputResult
+
+        public static RunKeyInputResult.RanCommand AsRanCommand(this RunKeyInputResult result)
+        {
+            return (RunKeyInputResult.RanCommand)result;
+        }
+
+        #endregion
+
         #region IMode
 
         public static bool CanProcess(this IMode mode, VimKey key)

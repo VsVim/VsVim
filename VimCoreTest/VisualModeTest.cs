@@ -55,7 +55,7 @@ namespace VimCoreTest
                 _view.Object,
                 "test",
                 MockObjectFactory.CreateVim(_map).Object);
-            var runner = new CommandRunner(_view.Object, _map, (new Mock<IStatusUtil>()).Object);
+            var runner = new CommandRunner(Tuple.Create((ITextView)_view.Object, _map, (new Mock<IStatusUtil>()).Object));
             _modeRaw = new Vim.Modes.Visual.VisualMode(Tuple.Create<IVimBuffer, IOperations, ModeKind,ICommandRunner>(_bufferData.Object, _operations.Object, kind, runner));
             _mode = _modeRaw;
             _mode.OnEnter();

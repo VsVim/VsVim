@@ -173,6 +173,19 @@ module CommandUtil =
         | 2 -> TwoKeyInputs ((name.Chars(0) |> InputUtil.CharToKeyInput), (name.Chars(1) |> InputUtil.CharToKeyInput))
         | _ -> name |> Seq.map InputUtil.CharToKeyInput |> List.ofSeq |> ManyKeyInputs
 
+/// Represents the types of actions which are taken when an ICommandRunner is presented
+/// with a KeyInput to run
+type RunKeyInputResult = 
+    
+    /// Ran a command which produced the attached result 
+    | RanCommand of CommandResult
+
+    /// More input is needed to determine if there is a matching command or not
+    | NeedMoreKeyInput 
+
+    /// The ICommandRunner was asked to process a KeyInput when it was already in
+    /// the middle of processing one.  This KeyInput was hence ignored
+    | NestedRunDetected
 
 /// Responsible for managing a set of Commands and running them
 type ICommandRunner =
@@ -188,7 +201,7 @@ type ICommandRunner =
 
     /// Process the given KeyInput.  If the command completed it will return a result.  A
     /// None value implies more input is needed to finish the operation
-    abstract Run : KeyInput -> CommandResult option
+    abstract Run : KeyInput -> RunKeyInputResult
 
     /// If currently waiting for more input on a Command, reset to the 
     /// initial state

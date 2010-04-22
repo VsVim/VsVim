@@ -29,10 +29,10 @@ namespace VimCoreTest
             _factory = new MockFactory(MockBehavior.Strict);
             _statusUtil = _factory.Create<IStatusUtil>();
             _registerMap = new RegisterMap();
-            _runnerRaw = new CommandRunner(
+            _runnerRaw = new CommandRunner(Tuple.Create(
                 _textView,
                 _registerMap,
-                _statusUtil.Object);
+                _statusUtil.Object));
             _runner = _runnerRaw;
         }
 
@@ -67,9 +67,9 @@ namespace VimCoreTest
             return Command.NewMotionCommand(commandName, fsharpFunc);
         }
 
-        private FSharpOption<CommandResult> Run(string command)
+        private RunKeyInputResult Run(string command)
         {
-            FSharpOption<CommandResult> last = null;
+            RunKeyInputResult last = null;
             foreach (var c in command)
             {
                 last = _runner.Run(InputUtil.CharToKeyInput(c));
@@ -316,7 +316,7 @@ namespace VimCoreTest
         {
             Create("hello world");
             _runner.Add(CreateSimpleCommand("cat", (count, reg) => CommandResult.Completed));
-            Assert.IsTrue(Run("c").IsNone());
+            Assert.IsTrue(Run("c").IsNeedMoreKeyInput);
             Assert.IsTrue(_runner.IsWaitingForMoreInput);
         }
 
@@ -325,7 +325,7 @@ namespace VimCoreTest
         {
             Create("hello world");
             _runner.Add(CreateSimpleCommand("cat", (count, reg) => CommandResult.Completed));
-            Assert.IsTrue(Run("ca").IsNone());
+            Assert.IsTrue(Run("ca").IsNeedMoreKeyInput);
             Assert.IsTrue(_runner.IsWaitingForMoreInput);
         }
 
@@ -334,7 +334,7 @@ namespace VimCoreTest
         {
             Create("hello world");
             _runner.Add(CreateSimpleCommand("cat", (count, reg) => CommandResult.Completed));
-            Assert.IsTrue(Run("cat").Value.IsCompleted);
+            Assert.IsTrue(Run("cat").IsRanCommand);
             Assert.IsFalse(_runner.IsWaitingForMoreInput);
         }
 
@@ -343,8 +343,8 @@ namespace VimCoreTest
         {
             Create("hello world");
             _runner.Add(CreateSimpleCommand("cat", (count, reg) => CommandResult.Completed));
-            Assert.IsTrue(Run("ca").IsNone());
-            Assert.IsTrue(_runner.Run(InputUtil.VimKeyToKeyInput(VimKey.EscapeKey)).Value.IsCancelled);
+            Assert.IsTrue(Run("ca").IsNeedMoreKeyInput);
+            Assert.IsTrue(_runner.Run(InputUtil.VimKeyToKeyInput(VimKey.EscapeKey)).AsRanCommand().Item.IsCancelled);
             Assert.IsFalse(_runner.IsWaitingForMoreInput);
         }
 
@@ -354,8 +354,8 @@ namespace VimCoreTest
         {
             Create("hello world");
             _runner.Add(CreateMotionCommand("cat", (count, reg, data) => CommandResult.Completed));
-            Assert.IsTrue(Run("cata").IsNone());
-            Assert.IsTrue(_runner.Run(InputUtil.VimKeyToKeyInput(VimKey.EscapeKey)).Value.IsCancelled);
+            Assert.IsTrue(Run("cata").IsNeedMoreKeyInput);
+            Assert.IsTrue(_runner.Run(InputUtil.VimKeyToKeyInput(VimKey.EscapeKey)).AsRanCommand().Item.IsCancelled);
             Assert.IsFalse(_runner.IsWaitingForMoreInput);
         }
 
@@ -438,6 +438,38 @@ namespace VimCoreTest
             isDone = true;
             Run("bar");
             Assert.AreEqual("oodb", seen);
+        }
+
+        [Test]
+        public void NestedRun1()
+        {
+            Create("hello world");
+            _runner.Add(CreateSimpleCommand("a", (x,y) =>
+                {
+                    var res = _runner.Run(InputUtil.CharToKeyInput('a'));
+                    Assert.IsTrue(res.IsNestedRunDetected);
+                    return CommandResult.Completed;
+                }));
+
+            var res2 = _runner.Run(InputUtil.CharToKeyInput('a'));
+            Assert.IsTrue(res2.IsRanCommand);
+            Assert.IsTrue(res2.AsRanCommand().Item.IsCompleted);
+        }
+
+        [Test]
+        public void NestedRun2()
+        {
+            Create("hello world");
+            _runner.Add(CreateSimpleCommand("a", (x,y) =>
+                {
+                    var res = _runner.Run(InputUtil.CharToKeyInput('a'));
+                    Assert.IsTrue(res.IsNestedRunDetected);
+                    return CommandResult.Cancelled;
+                }));
+
+            var res2 = _runner.Run(InputUtil.CharToKeyInput('a'));
+            Assert.IsTrue(res2.IsRanCommand);
+            Assert.IsTrue(res2.AsRanCommand().Item.IsCancelled);
         }
 
     }

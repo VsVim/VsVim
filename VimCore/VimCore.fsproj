@@ -96,6 +96,7 @@
     <Compile Include="ChangeTracker.fs" />
     <Compile Include="VimSettings.fs" />
     <Compile Include="FileSystem.fs" />
+    <Compile Include="CommandRunner.fsi" />
     <Compile Include="CommandRunner.fs" />
     <Compile Include="Vim.fs" />
     <Compile Include="MefComponents.fs" />

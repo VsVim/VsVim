@@ -124,13 +124,14 @@ type internal VisualMode
                 ProcessResult.SwitchPreviousMode
             else
                 match _runner.Run ki with
-                | None -> ProcessResult.Processed
-                | Some(result) ->
+                | RunKeyInputResult.NeedMoreKeyInput -> ProcessResult.Processed
+                | RunKeyInputResult.NestedRunDetected -> ProcessResult.Processed
+                | RunKeyInputResult.RanCommand(result) ->
                     match result with
                     | Completed -> ProcessResult.Processed
                     | CompleteSwitchMode(kind) -> ProcessResult.SwitchMode kind
                     | CompleteSwitchPreviousMode -> ProcessResult.SwitchPreviousMode
-                    | NeedMoreKeyInput(_) -> ProcessResult.Processed
+                    | CommandResult.NeedMoreKeyInput(_) -> ProcessResult.Processed
                     | Error(_) -> ProcessResult.Processed
                     | Cancelled -> ProcessResult.Processed
     

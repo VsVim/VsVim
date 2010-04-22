@@ -3,9 +3,9 @@
 namespace Vim
 open Microsoft.VisualStudio.Text.Editor
 
-type internal KeyInputResult = 
+type internal RunResult = 
     | RanCommand of CommandResult
-    | NeedMoreInput of (KeyInput -> KeyInputResult)
+    | NeedMore of (KeyInput -> RunResult)
 
 type internal CommandData = {
     Register : Register;
@@ -42,10 +42,13 @@ type internal CommandRunner
     let mutable _data = _emptyData
 
     /// The current function which handles running input
-    let mutable _runFunc : KeyInput -> KeyInputResult = fun _ -> RanCommand Cancelled
+    let mutable _runFunc : KeyInput -> RunResult = fun _ -> RunResult.RanCommand Cancelled
 
     /// The full command string of the current input
     let mutable _commandString = StringUtil.empty
+
+    /// True during the running of a particular KeyInput 
+    let mutable _inRun = false
 
     do
         _runFunc <- this.RunCheckForCountAndRegister
@@ -60,7 +63,7 @@ type internal CommandRunner
     member private x.WaitForRegister (ki:KeyInput) = 
         let reg = _registerMap.GetRegister ki.Char
         _data <- { _data with Register = reg }
-        NeedMoreInput x.RunCheckForCountAndRegister
+        NeedMore x.RunCheckForCountAndRegister
 
     /// Used to wait for a count value to complete.  Passed in the initial digit 
     /// in the count
@@ -68,7 +71,7 @@ type internal CommandRunner
         let rec inner (num:string) (ki:KeyInput) = 
             if ki.IsDigit then
                 let num = num + ki.Char.ToString()
-                NeedMoreInput (inner num)
+                NeedMore (inner num)
             else
                 let count = System.Int32.Parse(num)
                 _data <- { _data with Count = Some count }
@@ -83,11 +86,11 @@ type internal CommandRunner
                 | MotionResult.Complete (data) -> onMotionComplete data |> RanCommand
                 | MotionResult.NeedMoreInput (moreFunc) ->
                     let func ki = moreFunc ki |> inner
-                    NeedMoreInput func
+                    NeedMore func
                 | InvalidMotion (msg,moreFunc) ->
                     _statusUtil.OnError msg
                     let func ki = moreFunc ki |> inner
-                    NeedMoreInput func
+                    NeedMore func
                 | MotionResult.Error (msg) ->
                     _statusUtil.OnError msg
                     RanCommand (Error (msg))
@@ -98,7 +101,7 @@ type internal CommandRunner
             MotionCapture.ProcessInput point ki x.CountOrDefault |> inner
 
         match initialInput with
-        | None -> NeedMoreInput runInitialMotion
+        | None -> NeedMore runInitialMotion
         | Some(ki) -> runInitialMotion ki
 
     /// Certain commands require additional data on top of their initial command 
@@ -146,7 +149,7 @@ type internal CommandRunner
                 // longer command commandInputs
                 let withPrefix = findPrefixMatches commandName
                 if Seq.isEmpty withPrefix then x.WaitForMotion (fun data -> func _data.Count _data.Register data) None
-                else NeedMoreInput x.WaitForCommand
+                else NeedMore x.WaitForCommand
 
         elif matches.Length = 0 && commandName.KeyInputs.Length > 1 then
            
@@ -156,42 +159,49 @@ type internal CommandRunner
           if previousMatches.Length = 1 then 
             let command = previousMatches |> List.head
             match command with
-            | SimpleCommand(_,_) -> NeedMoreInput x.WaitForCommand
+            | SimpleCommand(_,_) -> NeedMore x.WaitForCommand
             | MotionCommand(_,func) -> 
                 x.WaitForMotion (fun data -> func _data.Count _data.Register data) (Some currentInput)
-          else NeedMoreInput x.WaitForCommand
+          else NeedMore x.WaitForCommand
 
-        else NeedMoreInput x.WaitForCommand
+        else NeedMore x.WaitForCommand
 
     /// Starting point for processing input 
     member private x.RunCheckForCountAndRegister (ki:KeyInput) = 
-        if ki.Char = '"' then NeedMoreInput x.WaitForRegister
-        elif ki.IsDigit then NeedMoreInput (x.WaitForCount ki)
+        if ki.Char = '"' then NeedMore x.WaitForRegister
+        elif ki.IsDigit then NeedMore (x.WaitForCount ki)
         else x.WaitForCommand ki
 
     /// Function which handles all incoming input
     member private x.Run (ki:KeyInput) =
         if ki.Key = VimKey.EscapeKey then 
             x.Reset()
-            Some Cancelled
+            Cancelled |> RunKeyInputResult.RanCommand
+        elif _inRun then 
+            RunKeyInputResult.NestedRunDetected
         else
             _data <- {_data with Inputs = ki :: _data.Inputs }
-            let result = 
+
+            /// Common operation to handle the case where more input is needed
+            let doNeedMore func = 
+                _data <- { _data with IsWaitingForMoreInput= true }
+                _runFunc <- func
+                RunKeyInputResult.NeedMoreKeyInput
+
+            _inRun <- true
+            try
+
                 match _runFunc ki with
+                | NeedMore(func) -> doNeedMore func
                 | RanCommand(commandResult) -> 
                     match commandResult with
-                    | NeedMoreKeyInput (func) ->
-                        _data <- { _data with IsWaitingForMoreInput= true }
-                        _runFunc <- x.WaitForAdditionalCommandInput func
-                        None
+                    | CommandResult.NeedMoreKeyInput(func) -> doNeedMore (x.WaitForAdditionalCommandInput func)
                     | _ -> 
                         x.Reset()
-                        Some commandResult
-                | NeedMoreInput(func) ->
-                    _data <- { _data with IsWaitingForMoreInput= true }
-                    _runFunc <- func
-                    None
-            result
+                        RunKeyInputResult.RanCommand commandResult
+
+            finally
+                _inRun <-false
             
     member private x.Add command = _commands <- command :: _commands
     member private x.Reset () =

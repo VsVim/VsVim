@@ -72,8 +72,8 @@ type internal CommandFactory( _operations : ICommonOperations) =
                         | Complete (data) -> 
                             _operations.MoveCaretToMotionData data
                             CommandResult.Completed
-                        | MotionResult.NeedMoreInput (func) -> NeedMoreKeyInput (fun ki -> func ki |> inner)
-                        | InvalidMotion (_,func) -> NeedMoreKeyInput (fun ki -> func ki |> inner)
+                        | MotionResult.NeedMoreInput (func) -> CommandResult.NeedMoreKeyInput (fun ki -> func ki |> inner)
+                        | InvalidMotion (_,func) -> CommandResult.NeedMoreKeyInput (fun ki -> func ki |> inner)
                         | Cancel -> CommandResult.Cancelled
                         | MotionResult.Error (msg) -> CommandResult.Error msg
 
