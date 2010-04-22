@@ -37,6 +37,7 @@ type internal VimBufferFactory
         let buffer = bufferRaw :> IVimBuffer
 
         let statusUtil = x.CreateStatusUtil bufferRaw 
+        let createCommandRunner() = CommandRunner (view, vim.RegisterMap, statusUtil) :>ICommandRunner
         let wordNav = x.CreateTextStructureNavigator view.TextBuffer WordKind.NormalWord
         let broker = _completionWindowBrokerFactoryService.CreateDisplayWindowBroker view
         let normalIncrementalSearch = Vim.Modes.Normal.IncrementalSearch(view, outlining, localSettings, wordNav, vim.SearchService) :> IIncrementalSearch
@@ -53,7 +54,7 @@ type internal VimBufferFactory
                 | _ -> invalidArg "_kind" "Invalid kind for Visual Mode"
             let tracker = Modes.Visual.SelectionTracker(view,mode) :> Modes.Visual.ISelectionTracker
             Modes.Visual.DefaultOperations(view,editOperations, outlining, _host, jumpList, tracker, localSettings) :> Modes.Visual.IOperations
-
+    
         // Normal mode values
         let modeList = 
             [
@@ -61,9 +62,9 @@ type internal VimBufferFactory
                 ((Modes.Command.CommandMode(buffer, commandProcessor)) :> IMode);
                 ((Modes.Insert.InsertMode(buffer,insertOpts,broker)) :> IMode);
                 (DisabledMode(buffer) :> IMode);
-                ((Modes.Visual.VisualMode(buffer, (visualOptsFactory ModeKind.VisualBlock), ModeKind.VisualBlock)) :> IMode);
-                ((Modes.Visual.VisualMode(buffer, (visualOptsFactory ModeKind.VisualLine), ModeKind.VisualLine)) :> IMode);
-                ((Modes.Visual.VisualMode(buffer, (visualOptsFactory ModeKind.VisualCharacter), ModeKind.VisualCharacter)) :> IMode);
+                ((Modes.Visual.VisualMode(buffer, (visualOptsFactory ModeKind.VisualBlock), ModeKind.VisualBlock, createCommandRunner())) :> IMode);
+                ((Modes.Visual.VisualMode(buffer, (visualOptsFactory ModeKind.VisualLine), ModeKind.VisualLine, createCommandRunner())) :> IMode);
+                ((Modes.Visual.VisualMode(buffer, (visualOptsFactory ModeKind.VisualCharacter), ModeKind.VisualCharacter, createCommandRunner())) :> IMode);
             ]
         modeList |> List.iter (fun m -> bufferRaw.AddMode m)
         buffer.SwitchMode ModeKind.Normal |> ignore
