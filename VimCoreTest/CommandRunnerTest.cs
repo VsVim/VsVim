@@ -43,7 +43,8 @@ namespace VimCoreTest
                     return FSharpFuncUtil.Create(del);
                 };
             var fsharpFunc = FSharpFuncUtil.Create(outerFunc);
-            return Command.NewSimpleCommand(name, fsharpFunc);
+            var list = name.Select(InputUtil.CharToKeyInput).ToFSharpList();
+            return Command.NewSimpleCommand(list, fsharpFunc);
         }
 
         private Command CreateMotionCommand(string name, Func<FSharpOption<int>, Register, MotionData, CommandResult> func)
@@ -59,7 +60,8 @@ namespace VimCoreTest
                     return FSharpFuncUtil.Create(func2);
                 };
             var fsharpFunc = FSharpFuncUtil.Create(func1);
-            return Command.NewMotionCommand(name, fsharpFunc);
+            var list = name.Select(InputUtil.CharToKeyInput).ToFSharpList();
+            return Command.NewMotionCommand(list, fsharpFunc);
         }
 
         private FSharpOption<CommandResult> Run(string command)

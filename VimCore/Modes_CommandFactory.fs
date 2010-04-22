@@ -43,9 +43,9 @@ type internal CommandFactory( _operations : ICommonOperations) =
         x.CreateStandardMovementCommandsCore()
         |> Seq.map (fun (ki,func) ->
             let funcWithReg opt reg = 
-                func (CommandUtil2.CountOrDefault opt)
+                func (CommandUtil.CountOrDefault opt)
                 CommandCompleted
-            SimpleCommand (ki.Char.ToString(),funcWithReg))
+            SimpleCommand ([ki],funcWithReg))
 
     member private x.CreateStandardMovementCommandsOld () = 
         x.CreateStandardMovementCommandsCore()

@@ -17,22 +17,22 @@ type Command =
     /// Represents a Command which has no motion modifiers.  The delegate takes an
     /// optional count and a Register.  If unspecified the default register will be
     /// used  
-    | SimpleCommand of string * (int option -> Register -> CommandResult)
+    | SimpleCommand of KeyInput list * (int option -> Register -> CommandResult)
 
     /// Represents a Command prefix which has an associated motion.  The delegate takes
     /// an optional count, a Register and a MotionData value.  If unspecified the default
     /// register will be used
-    | MotionCommand of string * (int option -> Register -> MotionData -> CommandResult)
+    | MotionCommand of KeyInput list * (int option -> Register -> MotionData -> CommandResult)
 
     with 
 
-    /// The raw command string
+    /// The raw command inputs
     member x.RawCommand = 
         match x with
         | SimpleCommand(value,_ ) -> value
         | MotionCommand(value,_) -> value
 
-module CommandUtil2 = 
+module CommandUtil = 
 
     let CountOrDefault opt = 
         match opt with 

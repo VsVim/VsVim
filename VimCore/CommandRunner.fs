@@ -10,8 +10,11 @@ type internal KeyInputResult =
 type internal CommandData = {
     Register : Register;
     Count : int option;
-    CommandString : string;
     IsWaitingForMoreInput : bool;
+
+    /// In order list for all of the KeyInput values which participate in the command.  Does
+    /// not include the KeyInput for Register and Count values
+    CommandInputs : KeyInput list;
 
     /// Reverse ordered List of all KeyInput for a given command
     Inputs : KeyInput list;
@@ -29,7 +32,7 @@ type internal CommandRunner
     let _emptyData = { 
         Register = _registerMap.DefaultRegister;
         Count = None;
-        CommandString = StringUtil.empty;
+        CommandInputs = List.empty;
         IsWaitingForMoreInput = false; 
         Inputs = List.empty;
     }
@@ -102,15 +105,29 @@ type internal CommandRunner
     /// Waits for a completed command to be entered
     member private x.WaitForCommand (ki:KeyInput) = 
 
-        let commandString = _data.CommandString + (ki.Char.ToString())
-        _data <- { _data with CommandString = commandString }
-        x.RunCommand commandString
+        let previousCommandInputs = _data.CommandInputs
+        let commandInputs = previousCommandInputs @ [ki]
+        _data <- { _data with CommandInputs = commandInputs }
+        x.RunCommand commandInputs previousCommandInputs ki
     
     /// Try and run a command with the given name
-    member private x.RunCommand name = 
+    member private x.RunCommand commandInputs previousCommandInputs currentInput = 
 
         // Find any commands matching the given name
-        let findMatches name =  _commands |> Seq.filter (fun command -> StringUtil.isEqual command.RawCommand name) |> List.ofSeq
+        let findMatches commandInputs =  
+            _commands 
+            |> Seq.filter (fun command -> ListUtil.contentsEqual command.RawCommand commandInputs) 
+            |> List.ofSeq
+
+        // Find any commands which have the given prefix
+        let findPrefixMatches commandInputs = 
+            let count = List.length commandInputs
+            let commandInputsSeq = commandInputs |> Seq.ofList
+            _commands
+            |> Seq.filter (fun command -> command.RawCommand.Length >= count)
+            |> Seq.filter (fun command -> 
+                let short = command.RawCommand |> Seq.ofList |> Seq.take count
+                SeqUtil.contentsEqual commandInputsSeq short)
 
         // Run the passed in command
         let runCommand command = 
@@ -118,28 +135,24 @@ type internal CommandRunner
             | SimpleCommand(_,func) -> func _data.Count _data.Register |> RanCommand
             | MotionCommand(_,func) -> 
                 // Can't just call this.  It's possible there is a non-motion command with a 
-                // longer command name
-                let withPrefix = 
-                    _commands 
-                    |> Seq.filter (fun command -> command.RawCommand.StartsWith(name, System.StringComparison.Ordinal))
+                // longer command commandInputs
+                let withPrefix = findPrefixMatches commandInputs
                 if Seq.isEmpty withPrefix then x.WaitForMotion (fun data -> func _data.Count _data.Register data) None
                 else NeedMoreInput x.WaitForCommand
 
-        let matches = findMatches name
+        let matches = findMatches commandInputs
         if matches.Length = 1 then matches |> List.head |> runCommand
-        elif matches.Length = 0 && name.Length > 1 then
+        elif matches.Length = 0 && commandInputs.Length > 1 then
            
           // It's possible to have 2 commands with similar prefixes where one of them is a MotionCommand.  In this
           // case we can now resolve the ambiguity
-          let previousName = name.Substring(0, name.Length - 1)
-          let previousMatches = findMatches previousName
+          let previousMatches = findMatches previousCommandInputs
           if previousMatches.Length = 1 then 
             let command = previousMatches |> List.head
             match command with
             | SimpleCommand(_,_) -> NeedMoreInput x.WaitForCommand
             | MotionCommand(_,func) -> 
-                let last = name.Chars(name.Length-1) |> InputUtil.CharToKeyInput
-                x.WaitForMotion (fun data -> func _data.Count _data.Register data) (Some last)
+                x.WaitForMotion (fun data -> func _data.Count _data.Register data) (Some currentInput)
           else NeedMoreInput x.WaitForCommand
 
         else NeedMoreInput x.WaitForCommand

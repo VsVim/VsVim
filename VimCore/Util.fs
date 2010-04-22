@@ -98,6 +98,19 @@ module internal ListUtil =
             let _,tail = l |> divide
             skip (count-1) tail
 
+    let rec contentsEqual left right = 
+        if List.length left <> List.length right then false
+        else
+            let leftData = tryHead left
+            let rightData = tryHead right
+            match leftData,rightData with
+            | None,None -> true
+            | Some(_),None -> false
+            | None,Some(_) -> false
+            | Some(leftHead,leftRest),Some(rightHead,rightRest) -> 
+                if leftHead = rightHead then contentsEqual leftRest rightRest
+                else false
+        
 module internal SeqUtil =
     
     /// Try and get the head of the Sequence.  Will return the head of list and tail 
@@ -160,7 +173,26 @@ module internal SeqUtil =
                 | Some(value) -> yield value
                 | None -> ()
         }
-    
+
+    let contentsEqual (left:'a seq) (right:'a seq) = 
+        use leftEnumerator = left.GetEnumerator()        
+        use rightEnumerator = right.GetEnumerator()
+
+        let mutable areEqual = false
+        let mutable isDone = false
+        while not isDone do
+            let leftMove = leftEnumerator.MoveNext()
+            let rightMove = rightEnumerator.MoveNext()
+            isDone <- 
+                if not leftMove && not rightMove then
+                    areEqual <- true
+                    true
+                elif leftMove <> rightMove then true
+                elif leftEnumerator.Current <> rightEnumerator.Current then true
+                else false
+
+        areEqual
+            
 module internal MapUtil =
 
     /// Get the set of keys in the Map
