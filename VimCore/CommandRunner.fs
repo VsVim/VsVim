@@ -101,6 +101,12 @@ type internal CommandRunner
         | None -> NeedMoreInput runInitialMotion
         | Some(ki) -> runInitialMotion ki
 
+    /// Certain commands require additional data on top of their initial command 
+    /// name.  They will return NeedMoreKeyInput until they receive it all
+    member private x.WaitForAdditionalCommandInput func =
+        let inner ki = func ki |> RanCommand
+        inner
+
     /// Waits for a completed command to be entered
     member private x.WaitForCommand (ki:KeyInput) = 
 
@@ -173,8 +179,14 @@ type internal CommandRunner
             let result = 
                 match _runFunc ki with
                 | RanCommand(commandResult) -> 
-                    x.Reset()
-                    Some commandResult
+                    match commandResult with
+                    | NeedMoreKeyInput (func) ->
+                        _data <- { _data with IsWaitingForMoreInput= true }
+                        _runFunc <- x.WaitForAdditionalCommandInput func
+                        None
+                    | _ -> 
+                        x.Reset()
+                        Some commandResult
                 | NeedMoreInput(func) ->
                     _data <- { _data with IsWaitingForMoreInput= true }
                     _runFunc <- func

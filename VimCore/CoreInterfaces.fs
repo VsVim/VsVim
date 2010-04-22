@@ -54,6 +54,7 @@ type CommandResult =
     | Completed 
     | CompleteSwitchMode of ModeKind
     | CompleteSwitchPreviousMode 
+    | NeedMoreKeyInput of (KeyInput -> CommandResult)
     | Error of string
     | Cancelled 
 

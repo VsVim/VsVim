@@ -47,6 +47,45 @@ type internal CommandFactory( _operations : ICommonOperations) =
                 Completed
             SimpleCommand (OneKeyInput ki,funcWithReg))
 
+    /// Build up a set of MotionCommand values from applicable Motion values
+    member private x.CreateMovementsFromMotions() =
+        let processResult opt = 
+            match opt with
+            | None -> _operations.Beep()
+            | Some(data) -> _operations.MoveCaretToMotionData data
+            CommandResult.Completed
+
+        let filterMotionCommand command = 
+            match command with
+            | SimpleMotionCommand(name,func) -> 
+                let inner count _ = 
+                    let count = CommandUtil.CountOrDefault count
+                    let startPoint = TextViewUtil.GetCaretPoint _operations.TextView
+                    func startPoint count |> processResult
+                SimpleCommand (name,inner) |> Some
+            | ComplexMotionCommand(_,false,_) -> None
+            | ComplexMotionCommand(name,true,func) -> None
+                
+//                let coreFunc count = 
+//                    let rec inner result =  
+//                        match result with
+//                        | Complete (data) -> 
+//                            _operations.MoveCaretToMotionData data
+//                            MovementComplete
+//                        | MotionResult.NeedMoreInput (func) -> MovementNeedMore (fun ki -> func ki |> inner)
+//                        | InvalidMotion (_,func) -> MovementNeedMore (fun ki -> func ki |> inner)
+//                        | Cancel -> MovementComplete
+//                        | MotionResult.Error (msg) -> MovementError msg
+//
+//                    let startPoint = TextViewUtil.GetCaretPoint _operations.TextView
+//                    let initialResult = func startPoint count
+//                    inner initialResult
+//                (ki,ComplexMovementCommand coreFunc) |> Some
+
+        MotionCapture.MotionCommands
+        |> Seq.map filterMotionCommand
+        |> SeqUtil.filterToSome
+
     member private x.CreateStandardMovementCommandsOld () = 
         x.CreateStandardMovementCommandsCore()
         |> Seq.map (fun (x,y) -> x,SimpleMovementCommand y)

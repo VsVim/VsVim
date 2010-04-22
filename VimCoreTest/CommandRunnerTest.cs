@@ -39,7 +39,7 @@ namespace VimCoreTest
         {
             Converter<FSharpOption<int>, FSharpFunc<Register, CommandResult>> outerFunc = count =>
                 {
-                    Converter<Register,CommandResult> del = register => func(count,register);
+                    Converter<Register, CommandResult> del = register => func(count, register);
                     return FSharpFuncUtil.Create(del);
                 };
             var fsharpFunc = FSharpFuncUtil.Create(outerFunc);
@@ -50,7 +50,7 @@ namespace VimCoreTest
 
         private Command CreateMotionCommand(string name, Func<FSharpOption<int>, Register, MotionData, CommandResult> func)
         {
-            Converter<FSharpOption<int>, FSharpFunc<Register, FSharpFunc<MotionData,CommandResult>>> func1 = count =>
+            Converter<FSharpOption<int>, FSharpFunc<Register, FSharpFunc<MotionData, CommandResult>>> func1 = count =>
                 {
                     Converter<Register, FSharpFunc<MotionData, CommandResult>> func2 = register =>
                     {
@@ -363,9 +363,9 @@ namespace VimCoreTest
         {
             Create("foo bar");
             var didRun = false;
-            _runner.Add(CreateMotionCommand("a", (count,reg,data) =>
+            _runner.Add(CreateMotionCommand("a", (count, reg, data) =>
                 {
-                    Assert.AreEqual(new SnapshotSpan(_textView.GetLine(0).Start,4), data.Span);
+                    Assert.AreEqual(new SnapshotSpan(_textView.GetLine(0).Start, 4), data.Span);
                     didRun = true;
                     return CommandResult.Completed;
                 }));
@@ -378,9 +378,9 @@ namespace VimCoreTest
         {
             Create("foo bar");
             var didRun = false;
-            _runner.Add(CreateMotionCommand("a", (count,reg,data) =>
+            _runner.Add(CreateMotionCommand("a", (count, reg, data) =>
                 {
-                    Assert.AreEqual(new SnapshotSpan(_textView.GetLine(0).Start,4), data.Span);
+                    Assert.AreEqual(new SnapshotSpan(_textView.GetLine(0).Start, 4), data.Span);
                     didRun = true;
                     return CommandResult.Completed;
                 }));
@@ -397,6 +397,46 @@ namespace VimCoreTest
             Assert.IsTrue(_runner.IsWaitingForMoreInput);
             _runner.Reset();
             Assert.IsFalse(_runner.IsWaitingForMoreInput);
+        }
+
+        [Test]
+        public void CommandWithAdditionalInput1()
+        {
+            Create("hello world");
+            var isDone = false;
+            var seen = String.Empty;
+            FSharpFunc<KeyInput,CommandResult> repeat = null;
+            Converter<KeyInput,CommandResult> func = ki =>
+            {
+                seen = seen + ki.Char.ToString();
+                return isDone ? CommandResult.Completed : CommandResult.NewNeedMoreKeyInput(repeat);
+            };
+            repeat = FSharpFunc<KeyInput,CommandResult>.FromConverter(func);
+            _runner.Add(CreateSimpleCommand("f", (x, y) => CommandResult.NewNeedMoreKeyInput(repeat)));
+
+            Run("food");
+            Assert.AreEqual("ood", seen);
+        }
+
+        [Test]
+        public void CommandWithAdditionalInput2()
+        {
+            Create("hello world");
+            var isDone = false;
+            var seen = String.Empty;
+            FSharpFunc<KeyInput,CommandResult> repeat = null;
+            Converter<KeyInput,CommandResult> func = ki =>
+            {
+                seen = seen + ki.Char.ToString();
+                return isDone ? CommandResult.Completed : CommandResult.NewNeedMoreKeyInput(repeat);
+            };
+            repeat = FSharpFunc<KeyInput,CommandResult>.FromConverter(func);
+            _runner.Add(CreateSimpleCommand("f", (x, y) => CommandResult.NewNeedMoreKeyInput(repeat)));
+
+            Run("food");
+            isDone = true;
+            Run("bar");
+            Assert.AreEqual("oodb", seen);
         }
 
     }
