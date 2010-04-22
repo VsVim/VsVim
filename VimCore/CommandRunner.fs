@@ -41,14 +41,14 @@ type internal CommandRunner
     /// The full command string of the current input
     let mutable _commandString = StringUtil.empty
 
+    do
+        _runFunc <- this.RunCheckForCountAndRegister
+
     /// Returns the current count if set or otherwise will return 1 
-    let CountOrDefault = 
+    member x.CountOrDefault = 
         match _data.Count with
         | None -> 1
         | Some(count) -> count
-
-    do
-        _runFunc <- this.RunCheckForCountAndRegister
 
     /// Used to wait for the character after the " which signals the Register 
     member private x.WaitForRegister (ki:KeyInput) = 
@@ -89,7 +89,7 @@ type internal CommandRunner
 
         let runInitialMotion ki =
             let point = TextViewUtil.GetCaretPoint _textView
-            MotionCapture.ProcessInput point ki CountOrDefault |> inner
+            MotionCapture.ProcessInput point ki x.CountOrDefault |> inner
 
         match initialInput with
         | None -> CommandNeedMoreInput runInitialMotion
@@ -155,10 +155,12 @@ type internal CommandRunner
             _data <- {_data with Inputs = ki :: _data.Inputs }
             let result = _runFunc ki 
             match result with
-            | CommandCompleted -> ()
+            | CommandCompleted -> x.Reset()
             | CommandCancelled -> x.Reset()
-            | CommandError -> ()
-            | CommandNeedMoreInput(func) -> _runFunc <- func
+            | CommandError -> x.Reset()
+            | CommandNeedMoreInput(func) -> 
+                _data <- { _data with IsWaitingForMoreInput= true }
+                _runFunc <- func
             result
             
     member private x.Add command = _commands <- command :: _commands

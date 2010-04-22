@@ -8,6 +8,7 @@ using Vim;
 using Microsoft.VisualStudio.Text.Editor;
 using VimCoreTest.Utils;
 using Microsoft.FSharp.Core;
+using Microsoft.VisualStudio.Text;
 
 namespace VimCoreTest
 {
@@ -16,7 +17,7 @@ namespace VimCoreTest
     {
         private MockFactory _factory;
         private Mock<IStatusUtil> _statusUtil;
-        private RegisterMap _registerMap;
+        private IRegisterMap _registerMap;
         private ITextView _textView;
         private CommandRunner _runnerRaw;
         private ICommandRunner _runner;
@@ -138,5 +139,250 @@ namespace VimCoreTest
             Assert.AreEqual(1, count1);
             Assert.AreEqual(0, count2);
         }
+
+        [Test]
+        [Description("Prefix is ambiguous and neither should match")]
+        public void Run_CommandMatch5()
+        {
+            Create(String.Empty);
+            var count1 = 0;
+            _runner.Add(CreateMotionCommand("aa", (count, reg, data) => { count1++; return CommandResult.CommandCompleted; }));
+            var count2 = 0;
+            _runner.Add(CreateSimpleCommand("aab", (count, reg) => { count2++; return CommandResult.CommandCompleted; }));
+            Run("aa");
+            Assert.AreEqual(0, count1);
+            Assert.AreEqual(0, count2);
+        }
+
+        [Test]
+        public void Run_CommandMatch6()
+        {
+            Create(String.Empty);
+            var count1 = 0;
+            _runner.Add(CreateMotionCommand("aa", (count, reg, data) => { count1++; return CommandResult.CommandCompleted; }));
+            var count2 = 0;
+            _runner.Add(CreateSimpleCommand("aab", (count, reg) => { count2++; return CommandResult.CommandCompleted; }));
+            Run("aab");
+            Assert.AreEqual(0, count1);
+            Assert.AreEqual(1, count2);
+        }
+
+        [Test]
+        public void Run_CommandMatch7()
+        {
+            Create("foo bar");
+            var count1 = 0;
+            _runner.Add(CreateMotionCommand("aa", (count, reg, data) => { count1++; return CommandResult.CommandCompleted; }));
+            var count2 = 0;
+            _runner.Add(CreateSimpleCommand("aab", (count, reg) => { count2++; return CommandResult.CommandCompleted; }));
+            Run("aaw");
+            Assert.AreEqual(1, count1);
+            Assert.AreEqual(0, count2);
+        }
+
+        [Test]
+        public void Run_Count1()
+        {
+            Create(String.Empty);
+            var didRun = false;
+            _runner.Add(CreateSimpleCommand("a", (count, reg) =>
+                {
+                    Assert.IsTrue(count.IsNone());
+                    didRun = true;
+                    return CommandResult.CommandCompleted;
+                }));
+            Run("a");
+            Assert.IsTrue(didRun);
+        }
+
+        [Test]
+        public void Run_Count2()
+        {
+            Create(String.Empty);
+            var didRun = false;
+            _runner.Add(CreateSimpleCommand("a", (count, reg) =>
+                {
+                    Assert.IsTrue(count.IsSome());
+                    Assert.AreEqual(1, count.Value);
+                    didRun = true;
+                    return CommandResult.CommandCompleted;
+                }));
+            Run("1a");
+            Assert.IsTrue(didRun);
+        }
+
+        [Test]
+        public void Run_Count3()
+        {
+            Create(String.Empty);
+            var didRun = false;
+            _runner.Add(CreateSimpleCommand("a", (count, reg) =>
+                {
+                    Assert.IsTrue(count.IsSome());
+                    Assert.AreEqual(42, count.Value);
+                    didRun = true;
+                    return CommandResult.CommandCompleted;
+                }));
+            Run("42a");
+            Assert.IsTrue(didRun);
+        }
+
+        [Test]
+        public void Run_Register1()
+        {
+            Create(String.Empty);
+            var didRun = false;
+            _runner.Add(CreateSimpleCommand("a", (count, reg) =>
+                {
+                    Assert.AreSame(_registerMap.DefaultRegister, reg);
+                    didRun = true;
+                    return CommandResult.CommandCompleted;
+                }));
+            Run("a");
+            Assert.IsTrue(didRun);
+        }
+
+        [Test]
+        public void Run_Register2()
+        {
+            Create(String.Empty);
+            var didRun = false;
+            _runner.Add(CreateSimpleCommand("a", (count, reg) =>
+                {
+                    Assert.AreSame(_registerMap.GetRegister('c'), reg);
+                    didRun = true;
+                    return CommandResult.CommandCompleted;
+                }));
+            Run("\"ca");
+            Assert.IsTrue(didRun);
+        }
+
+        [Test]
+        public void Run_Register3()
+        {
+            Create(String.Empty);
+            var didRun = false;
+            _runner.Add(CreateSimpleCommand("a", (count, reg) =>
+                {
+                    Assert.AreSame(_registerMap.GetRegister('d'), reg);
+                    didRun = true;
+                    return CommandResult.CommandCompleted;
+                }));
+            Run("\"da");
+            Assert.IsTrue(didRun);
+        }
+
+        [Test]
+        public void Run_CountAndRegister1()
+        {
+            Create(String.Empty);
+            var didRun = false;
+            _runner.Add(CreateSimpleCommand("a", (count, reg) =>
+                {
+                    Assert.IsTrue(count.HasValue());
+                    Assert.AreEqual(2, count.Value);
+                    Assert.AreSame(_registerMap.GetRegister('d'), reg);
+                    didRun = true;
+                    return CommandResult.CommandCompleted;
+                }));
+            Run("\"d2a");
+            Assert.IsTrue(didRun);
+        }
+
+        [Test]
+        public void Run_CountAndRegister2()
+        {
+            Create(String.Empty);
+            var didRun = false;
+            _runner.Add(CreateSimpleCommand("a", (count, reg) =>
+                {
+                    Assert.IsTrue(count.HasValue());
+                    Assert.AreEqual(2, count.Value);
+                    Assert.AreSame(_registerMap.GetRegister('d'), reg);
+                    didRun = true;
+                    return CommandResult.CommandCompleted;
+                }));
+            Run("2\"da");
+            Assert.IsTrue(didRun);
+        }
+
+        [Test]
+        public void IsWaitingForMoreInput1()
+        {
+            Create("hello world");
+            _runner.Add(CreateSimpleCommand("cat", (count, reg) => CommandResult.CommandCompleted));
+            Assert.IsTrue(Run("c").IsCommandNeedMoreInput);
+            Assert.IsTrue(_runner.IsWaitingForMoreInput);
+        }
+
+        [Test]
+        public void IsWaitingForMoreInput2()
+        {
+            Create("hello world");
+            _runner.Add(CreateSimpleCommand("cat", (count, reg) => CommandResult.CommandCompleted));
+            Assert.IsTrue(Run("ca").IsCommandNeedMoreInput);
+            Assert.IsTrue(_runner.IsWaitingForMoreInput);
+        }
+
+        [Test]
+        public void IsWaitingForMoreInput3()
+        {
+            Create("hello world");
+            _runner.Add(CreateSimpleCommand("cat", (count, reg) => CommandResult.CommandCompleted));
+            Assert.IsTrue(Run("cat").IsCommandCompleted);
+            Assert.IsFalse(_runner.IsWaitingForMoreInput);
+        }
+
+        [Test]
+        public void IsWaitingForMoreInput4()
+        {
+            Create("hello world");
+            _runner.Add(CreateSimpleCommand("cat", (count, reg) => CommandResult.CommandCompleted));
+            Assert.IsTrue(Run("ca").IsCommandNeedMoreInput);
+            Assert.IsTrue(_runner.Run(InputUtil.VimKeyToKeyInput(VimKey.EscapeKey)).IsCommandCancelled);
+            Assert.IsFalse(_runner.IsWaitingForMoreInput);
+        }
+
+        [Test]
+        [Description("Cancel in a motion")]
+        public void IsWaitingForMoreInput5()
+        {
+            Create("hello world");
+            _runner.Add(CreateMotionCommand("cat", (count, reg, data) => CommandResult.CommandCompleted));
+            Assert.IsTrue(Run("cata").IsCommandNeedMoreInput);
+            Assert.IsTrue(_runner.Run(InputUtil.VimKeyToKeyInput(VimKey.EscapeKey)).IsCommandCancelled);
+            Assert.IsFalse(_runner.IsWaitingForMoreInput);
+        }
+
+        [Test]
+        public void Run_Motion1()
+        {
+            Create("foo bar");
+            var didRun = false;
+            _runner.Add(CreateMotionCommand("a", (count,reg,data) =>
+                {
+                    Assert.AreEqual(new SnapshotSpan(_textView.GetLine(0).Start,4), data.Span);
+                    didRun = true;
+                    return CommandResult.CommandCompleted;
+                }));
+            Run("aw");
+            Assert.IsTrue(didRun);
+        }
+
+        [Test]
+        public void Run_Motion2()
+        {
+            Create("foo bar");
+            var didRun = false;
+            _runner.Add(CreateMotionCommand("a", (count,reg,data) =>
+                {
+                    Assert.AreEqual(new SnapshotSpan(_textView.GetLine(0).Start,4), data.Span);
+                    didRun = true;
+                    return CommandResult.CommandCompleted;
+                }));
+            Run("aaw");
+            Assert.IsTrue(didRun);
+        }
+
     }
 }
