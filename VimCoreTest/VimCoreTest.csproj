@@ -180,6 +180,7 @@
     <Compile Include="TssUtilTest.cs" />
     <Compile Include="Utils\EditorUtil.cs" />
     <Compile Include="Extensions.cs" />
+    <Compile Include="Utils\EqualityUtil.cs" />
     <Compile Include="Utils\FSharpFuncUtil.cs" />
     <Compile Include="Utils\FSharpOption.cs" />
     <Compile Include="Utils\MatchUtil.cs" />
