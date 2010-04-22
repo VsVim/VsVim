@@ -72,17 +72,3 @@ type MotionResult =
     | InvalidMotion of string * (KeyInput -> MotionResult) 
     | Error of string
     | Cancel
-
-/// Represents the types of MotionCommands which exist
-type MotionCommand = 
-
-    /// Simple motion which comprises of a single KeyInput and a function which given 
-    /// a start point and count will produce the motion.  None is returned in the 
-    /// case the motion is not valid
-    | SimpleMotionCommand of KeyInput * (SnapshotPoint -> int -> MotionData option)
-
-    /// Complex motion commands take more than one KeyInput to complete.  For example 
-    /// the f,t,F and T commands all require at least one additional input.  The bool
-    /// in the middle of the tuple indicates whether or not the motion can be 
-    /// used as a cursor movement operation  
-    | ComplexMotionCommand of KeyInput * bool * (SnapshotPoint -> int -> MotionResult)

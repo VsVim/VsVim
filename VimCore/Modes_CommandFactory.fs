@@ -95,7 +95,8 @@ type internal CommandFactory( _operations : ICommonOperations) =
         let taken = standard |> Seq.map (fun (x,_) -> x) |> Set.ofSeq
         let motion = 
             x.CreateMovementsFromMotionsOld()
-            |> Seq.filter (fun (ki,_) -> not (taken.Contains ki))
+            |> Seq.filter (fun (name,_) -> not (taken.Contains name.KeyInputs.Head))
+            |> Seq.map (fun (name,op) -> name.KeyInputs.Head,op)
         standard |> Seq.append motion
 
     /// Returns the set of commands which move the cursor.  This includes all motions which are 

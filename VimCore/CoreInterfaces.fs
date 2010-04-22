@@ -130,12 +130,35 @@ type Command =
         | SimpleCommand(value,_ ) -> value
         | MotionCommand(value,_) -> value
 
+
+/// Represents the types of MotionCommands which exist
+type MotionCommand = 
+
+    /// Simple motion which comprises of a single KeyInput and a function which given 
+    /// a start point and count will produce the motion.  None is returned in the 
+    /// case the motion is not valid
+    | SimpleMotionCommand of CommandName * (SnapshotPoint -> int -> MotionData option)
+
+    /// Complex motion commands take more than one KeyInput to complete.  For example 
+    /// the f,t,F and T commands all require at least one additional input.  The bool
+    /// in the middle of the tuple indicates whether or not the motion can be 
+    /// used as a cursor movement operation  
+    | ComplexMotionCommand of CommandName * bool * (SnapshotPoint -> int -> MotionResult)
+
 module CommandUtil = 
 
     let CountOrDefault opt = 
         match opt with 
         | Some(count) -> count
         | None -> 1
+
+    let CreateCommandName name =
+        match StringUtil.length name with
+        | 0 -> EmptyName
+        | 1 -> OneKeyInput (name.Chars(0) |> InputUtil.CharToKeyInput)
+        | 2 -> TwoKeyInputs ((name.Chars(0) |> InputUtil.CharToKeyInput), (name.Chars(1) |> InputUtil.CharToKeyInput))
+        | _ -> name |> Seq.map InputUtil.CharToKeyInput |> List.ofSeq |> ManyKeyInputs
+
 
 /// Responsible for managing a set of Commands and running them
 type ICommandRunner =
