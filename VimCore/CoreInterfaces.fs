@@ -32,6 +32,13 @@ type Command =
         | SimpleCommand(value,_ ) -> value
         | MotionCommand(value,_) -> value
 
+module CommandUtil2 = 
+
+    let CountOrDefault opt = 
+        match opt with 
+        | Some(count) -> count
+        | None -> 1
+
 
 /// Responsible for managing a set of Commands and running them
 type ICommandRunner =

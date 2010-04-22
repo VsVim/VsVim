@@ -46,7 +46,7 @@ namespace VsVim
             }
 
             EditCommand command;
-            if (!CommandUtil.TryConvert(commandGroup, commandId, pvaIn, out command))
+            if (!OleCommandUtil.TryConvert(commandGroup, commandId, pvaIn, out command))
             {
                 return false;
             }
@@ -66,7 +66,7 @@ namespace VsVim
         int IOleCommandTarget.Exec(ref Guid commandGroup, uint commandId, uint nCmdexecopt, IntPtr pvaIn, IntPtr pvaOut)
         {
             KeyInput ki = null;
-            if (CommandUtil.IsDebugIgnore(commandGroup, commandId)
+            if (OleCommandUtil.IsDebugIgnore(commandGroup, commandId)
                 || !TryConvert(commandGroup, commandId, pvaIn, out ki)
                 || !_buffer.ProcessInput(ki))
             {

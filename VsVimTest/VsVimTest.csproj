@@ -128,7 +128,7 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="CommandUtilTest.cs" />
+    <Compile Include="OleCommandUtilTest.cs" />
     <Compile Include="EditCommandTest.cs" />
     <Compile Include="ExtensionsTest.cs" />
     <Compile Include="KeyBindingDataTest.cs" />

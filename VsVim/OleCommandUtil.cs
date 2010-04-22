@@ -10,7 +10,7 @@ using System.Windows.Input;
 
 namespace VsVim
 {
-    internal static class CommandUtil
+    internal static class OleCommandUtil
     {
         /// <summary>
         /// Is this a command we should immediately filter out in debug mode so that I can see what is actually 
