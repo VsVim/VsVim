@@ -5,6 +5,7 @@ using System.Text;
 using NUnit.Framework;
 using Microsoft.VisualStudio.Text;
 using Vim;
+using Vim.Extensions;
 using VimCoreTest.Utils;
 using Moq;
 

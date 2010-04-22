@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using NUnit.Framework;
 using Vim;
+using Vim.Extensions;
 using Microsoft.VisualStudio.Text;
 using System.Windows.Input;
 using System.Windows.Media;

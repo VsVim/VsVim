@@ -15,6 +15,7 @@ using MockFactory = VimCoreTest.Utils.MockObjectFactory;
 using Vim.Modes.Normal;
 using Vim.Modes;
 using Microsoft.VisualStudio.Text.Operations;
+using Vim.Extensions;
 
 namespace VimCoreTest
 {

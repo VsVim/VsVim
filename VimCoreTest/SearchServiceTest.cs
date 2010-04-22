@@ -5,6 +5,7 @@ using System.Text;
 using NUnit.Framework;
 using Moq;
 using Vim;
+using Vim.Extensions;
 using Microsoft.VisualStudio.Text.Operations;
 using VimCoreTest.Utils;
 using Microsoft.VisualStudio.Text;
@@ -156,7 +157,7 @@ namespace VimCoreTest
                 .Verifiable();
             var searchData = new SearchData(SearchText.NewPattern("foo"), SearchKind.ForwardWithWrap, SearchOptions.None);
             var ret = _search.FindNextMultiple(searchData, new SnapshotPoint(tss, 10), nav.Object,1);
-            Assert.IsTrue(ret.HasValue());
+            Assert.IsTrue(ret.IsSome());
             Assert.AreEqual(new SnapshotSpan(tss, 11, 3), ret.Value);
             _factory.Verify();
         }
@@ -177,7 +178,7 @@ namespace VimCoreTest
                 .Verifiable();
             var searchData = new SearchData(SearchText.NewPattern("foo"), SearchKind.ForwardWithWrap, SearchOptions.None);
             var ret = _search.FindNextMultiple(searchData, new SnapshotPoint(tss, 10), nav.Object, 2);
-            Assert.IsFalse(ret.HasValue());
+            Assert.IsFalse(ret.IsSome());
             _factory.Verify();
         }
 
@@ -193,7 +194,7 @@ namespace VimCoreTest
                 .Verifiable();
             var searchData = new SearchData(SearchText.NewPattern("foo"), SearchKind.Backward, SearchOptions.None);
             var ret = _search.FindNextMultiple(searchData, new SnapshotPoint(tss, 10), nav.Object, 2);
-            Assert.IsFalse(ret.HasValue());
+            Assert.IsFalse(ret.IsSome());
             _factory.Verify();
         }
 
@@ -213,7 +214,7 @@ namespace VimCoreTest
                 .Verifiable();
             var searchData = new SearchData(SearchText.NewPattern("foo"), SearchKind.BackwardWithWrap, SearchOptions.None);
             var ret = _search.FindNextMultiple(searchData, new SnapshotPoint(tss, 10), nav.Object, 2);
-            Assert.IsTrue(ret.HasValue());
+            Assert.IsTrue(ret.IsSome());
             Assert.AreEqual(new SnapshotSpan(tss, 10, 3), ret.Value);
             _factory.Verify();
         }
@@ -234,7 +235,7 @@ namespace VimCoreTest
                 .Verifiable();
             var searchData = new SearchData(SearchText.NewPattern("foo"), SearchKind.ForwardWithWrap, SearchOptions.None);
             var ret = _search.FindNextMultiple(searchData, new SnapshotPoint(tss, 10), nav.Object, 2);
-            Assert.IsTrue(ret.HasValue());
+            Assert.IsTrue(ret.IsSome());
             Assert.AreEqual(new SnapshotSpan(tss, 10, 3), ret.Value);
             _factory.Verify();
         }

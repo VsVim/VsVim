@@ -14,6 +14,7 @@ using Microsoft.FSharp.Core;
 using Microsoft.FSharp.Control;
 using Microsoft.VisualStudio.Text.Operations;
 using Microsoft.VisualStudio.Text.Outlining;
+using Vim.Extensions;
 
 namespace VimCoreTest
 {
@@ -230,7 +231,7 @@ namespace VimCoreTest
             _search.Begin(SearchKind.Forward);
             _search.Process(InputUtil.VimKeyToKeyInput(VimKey.EnterKey));
             Assert.IsFalse(_search.InSearch);
-            Assert.IsFalse(_search.CurrentSearch.HasValue());
+            Assert.IsFalse(_search.CurrentSearch.IsSome());
         }
 
         [Test, Description("Cancelling needs to remove the CurrentSearch")]

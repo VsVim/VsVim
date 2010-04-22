@@ -5,6 +5,7 @@ using System.Text;
 using NUnit.Framework;
 using Microsoft.VisualStudio.Text;
 using Vim;
+using Vim.Extensions;
 
 namespace VimCoreTest
 {
@@ -430,7 +431,7 @@ namespace VimCoreTest
             Create("foo", "bar");
             var point = _buffer.GetLine(0).Start;
             var res = SnapshotPointUtil.TryGetNextPointOnLine(point);
-            Assert.IsTrue(res.HasValue());
+            Assert.IsTrue(res.IsSome());
             Assert.AreEqual(point.Add(1), res.Value);
         }
 
@@ -440,7 +441,7 @@ namespace VimCoreTest
             Create("foo", "bar");
             var point = _buffer.GetLine(0).End;
             var res = SnapshotPointUtil.TryGetNextPointOnLine(point);
-            Assert.IsFalse(res.HasValue());
+            Assert.IsFalse(res.IsSome());
         }
 
         [Test]
@@ -449,7 +450,7 @@ namespace VimCoreTest
             Create("foo", "bar");
             var point = _buffer.GetLine(0).Start.Add(1);
             var res = SnapshotPointUtil.TryGetNextPointOnLine(point);
-            Assert.IsTrue(res.HasValue());
+            Assert.IsTrue(res.IsSome());
             Assert.AreEqual(point.Add(1), res.Value);
         }
 
@@ -459,7 +460,7 @@ namespace VimCoreTest
             Create("foo", "bar");
             var point = _buffer.GetLine(0).End.Subtract(1);
             var res = SnapshotPointUtil.TryGetPreviousPointOnLine(point);
-            Assert.IsTrue(res.HasValue());
+            Assert.IsTrue(res.IsSome());
             Assert.AreEqual(point.Subtract(1), res.Value);
         }
 
@@ -469,7 +470,7 @@ namespace VimCoreTest
             Create("foo", "bar");
             var point = _buffer.GetLine(0).Start.Add(1);
             var res = SnapshotPointUtil.TryGetPreviousPointOnLine(point);
-            Assert.IsTrue(res.HasValue());
+            Assert.IsTrue(res.IsSome());
             Assert.AreEqual(_buffer.GetLine(0).Start, res.Value);
         }
 
@@ -479,7 +480,7 @@ namespace VimCoreTest
             Create("foo", "bar");
             var point = _buffer.GetLine(0).Start;
             var res = SnapshotPointUtil.TryGetPreviousPointOnLine(point);
-            Assert.IsFalse(res.HasValue());
+            Assert.IsFalse(res.IsSome());
         }
 
         [Test]

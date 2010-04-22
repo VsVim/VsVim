@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using NUnit.Framework;
 using Vim;
+using Vim.Extensions;
 using Microsoft.VisualStudio.Text;
 using Microsoft.FSharp.Core;
 
@@ -403,7 +404,7 @@ namespace VimCoreTest
         {
             Create("foo bar jaz");
             var next = TssUtil.FindNextOccurranceOfCharOnLine(_buffer.GetLine(0).Start, 'o', 1);
-            Assert.IsTrue(next.HasValue());
+            Assert.IsTrue(next.IsSome());
             Assert.AreEqual(1, next.Value.Position);
         }
 
@@ -412,7 +413,7 @@ namespace VimCoreTest
         {
             Create("foo bar jaz");
             var next = TssUtil.FindNextOccurranceOfCharOnLine(_buffer.GetLine(0).Start, 'q', 1);
-            Assert.IsFalse(next.HasValue());
+            Assert.IsFalse(next.IsSome());
         }
 
         [Test, Description("Search starts on then next char")]
@@ -420,7 +421,7 @@ namespace VimCoreTest
         {
             Create("foo bar jaz");
             var next = TssUtil.FindNextOccurranceOfCharOnLine(_buffer.GetLine(0).Start, 'f', 1);
-            Assert.IsFalse(next.HasValue());
+            Assert.IsFalse(next.IsSome());
         }
 
         [Test]
@@ -428,7 +429,7 @@ namespace VimCoreTest
         {
             Create("foo bar jaz");
             var next = TssUtil.FindNextOccurranceOfCharOnLine(_buffer.GetLine(0).Start, 'a', 2);
-            Assert.IsTrue(next.HasValue());
+            Assert.IsTrue(next.IsSome());
             Assert.AreEqual(9, next.Value.Position);
         }
 
@@ -437,7 +438,7 @@ namespace VimCoreTest
         {
             Create("foo bar jaz");
             var next = TssUtil.FindTillNextOccurranceOfCharOnLine(_buffer.GetLine(0).Start, 'o', 1);
-            Assert.IsTrue(next.HasValue());
+            Assert.IsTrue(next.IsSome());
             Assert.AreEqual(0, next.Value.Position);
         }
 
@@ -446,7 +447,7 @@ namespace VimCoreTest
         {
             Create("foo bar baz");
             var next = TssUtil.FindTillNextOccurranceOfCharOnLine(_buffer.GetPoint(0), 'o', 1);
-            Assert.IsTrue(next.HasValue());
+            Assert.IsTrue(next.IsSome());
             Assert.AreEqual(0, next.Value.Position);
         }
 
@@ -455,7 +456,7 @@ namespace VimCoreTest
         {
             Create("foo bar baz");
             var prev = TssUtil.FindPreviousOccurranceOfCharOnLine(_buffer.GetPoint(0), 'f', 1);
-            Assert.IsFalse(prev.HasValue());
+            Assert.IsFalse(prev.IsSome());
         }
 
         [Test]
@@ -463,7 +464,7 @@ namespace VimCoreTest
         {
             Create("foo bar baz");
             var prev = TssUtil.FindPreviousOccurranceOfCharOnLine(_buffer.GetPoint(5), 'f', 1);
-            Assert.IsTrue(prev.HasValue());
+            Assert.IsTrue(prev.IsSome());
             Assert.AreEqual(0, prev.Value.Position);
         }
 
@@ -472,7 +473,7 @@ namespace VimCoreTest
         {
             Create("foo bar baz");
             var prev = TssUtil.FindPreviousOccurranceOfCharOnLine(_buffer.GetPoint(5), 'o', 2);
-            Assert.IsTrue(prev.HasValue());
+            Assert.IsTrue(prev.IsSome());
             Assert.AreEqual(1, prev.Value.Position);
         }
 
@@ -481,7 +482,7 @@ namespace VimCoreTest
         {
             Create("foo","bar","baz");
             var prev = TssUtil.FindTillPreviousOccurranceOfCharOnLine(_buffer.GetLine(2).Start, 'r', 1);
-            Assert.IsFalse(prev.HasValue());
+            Assert.IsFalse(prev.IsSome());
         }
 
         [Test]
@@ -489,7 +490,7 @@ namespace VimCoreTest
         {
             Create("foo", "bar", "baz");
             var prev = TssUtil.FindTillPreviousOccurranceOfCharOnLine(_buffer.GetLine(1).End, 'r', 1);
-            Assert.IsFalse(prev.HasValue());
+            Assert.IsFalse(prev.IsSome());
         }
 
         [Test]
@@ -497,7 +498,7 @@ namespace VimCoreTest
         {
             Create("foo", "bar", "baz");
             var prev = TssUtil.FindTillPreviousOccurranceOfCharOnLine(_buffer.GetLine(1).End, 'b', 1);
-            Assert.IsTrue(prev.HasValue());
+            Assert.IsTrue(prev.IsSome());
             Assert.AreEqual(_buffer.GetLine(1).Start.Add(1), prev.Value);
         }
 

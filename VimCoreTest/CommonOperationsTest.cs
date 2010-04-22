@@ -8,6 +8,7 @@ using Microsoft.VisualStudio.Text;
 using Vim.Modes;
 using Moq;
 using Vim;
+using Vim.Extensions;
 using VimCoreTest.Utils;
 using Microsoft.VisualStudio.Text.Operations;
 using Microsoft.VisualStudio.Text.Outlining;

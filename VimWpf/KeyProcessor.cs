@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Windows.Input;
+using Vim.Extensions;
 
 namespace Vim.UI.Wpf
 {
@@ -66,7 +67,7 @@ namespace Vim.UI.Wpf
                 }
 
                 var opt = InputUtil.TryCharToKeyInput(args.Text[0]);
-                if (!opt.HasValue())
+                if (!opt.IsSome())
                 {
                     return false;
                 }

@@ -175,25 +175,6 @@ namespace VimCoreTest
 
         #endregion
 
-        #region Option
-
-        public static bool IsNone<T>(this FSharpOption<T> option)
-        {
-            return FSharpOption<T>.get_IsNone(option);
-        }
-
-        public static bool IsSome<T>(this FSharpOption<T> option)
-        {
-            return FSharpOption<T>.get_IsSome(option);
-        }
-
-        public static bool HasValue<T>(this FSharpOption<T> option)
-        {
-            return FSharpOption<T>.get_IsSome(option);
-        }
-
-        #endregion
-
         #region IMode
 
         public static bool CanProcess(this IMode mode, VimKey key)

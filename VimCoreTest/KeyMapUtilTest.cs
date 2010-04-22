@@ -5,6 +5,7 @@ using System.Text;
 using NUnit.Framework;
 using Vim;
 using System.Windows.Input;
+using Vim.Extensions;
 
 namespace VimCoreTest
 {
