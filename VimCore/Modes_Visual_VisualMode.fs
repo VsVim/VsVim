@@ -57,7 +57,7 @@ type internal VisualMode
                 x.EndExplicitMove()
                 VisualModeResult.Complete
         let factory = Vim.Modes.CommandFactory(_operations)
-        factory.CreateMovementCommands()
+        factory.CreateMovementCommandsOld()
         |> Seq.map (fun (ki,command) ->
             match command with
             | Vim.Modes.ComplexMovementCommand(_) -> None

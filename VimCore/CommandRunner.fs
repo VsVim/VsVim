@@ -116,7 +116,7 @@ type internal CommandRunner
         // Find any commands matching the given name
         let findMatches commandInputs =  
             _commands 
-            |> Seq.filter (fun command -> ListUtil.contentsEqual command.RawCommand commandInputs) 
+            |> Seq.filter (fun command -> ListUtil.contentsEqual command.CommandName.KeyInputs commandInputs) 
             |> List.ofSeq
 
         // Find any commands which have the given prefix
@@ -124,9 +124,9 @@ type internal CommandRunner
             let count = List.length commandInputs
             let commandInputsSeq = commandInputs |> Seq.ofList
             _commands
-            |> Seq.filter (fun command -> command.RawCommand.Length >= count)
+            |> Seq.filter (fun command -> command.CommandName.KeyInputs.Length >= count)
             |> Seq.filter (fun command -> 
-                let short = command.RawCommand |> Seq.ofList |> Seq.take count
+                let short = command.CommandName.KeyInputs |> Seq.ofList |> Seq.take count
                 SeqUtil.contentsEqual commandInputsSeq short)
 
         // Run the passed in command

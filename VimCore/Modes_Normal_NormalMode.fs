@@ -327,7 +327,7 @@ type internal NormalMode
             | Vim.Modes.ComplexMovementCommand(func) -> (ki, wrapComplex func)
 
         let factory = Vim.Modes.CommandFactory(_operations)
-        factory.CreateMovementCommands() |> Seq.map (fun (ki,command) -> doMap ki command)
+        factory.CreateMovementCommandsOld() |> Seq.map (fun (ki,command) -> doMap ki command)
 
     member this.BuildOperationsMap = 
         let waitOps = seq {

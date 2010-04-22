@@ -57,23 +57,71 @@ type CommandResult =
     | Error of string
     | Cancelled 
 
+/// The actual command name
+[<CustomEquality; NoComparison>]
+type CommandName =
+    | OneKeyInput of KeyInput
+    | TwoKeyInputs of KeyInput * KeyInput
+    | ManyKeyInputs of KeyInput list
+    with 
+
+    /// Get the list of KeyInput which represent this CommandName
+    member x.KeyInputs =
+        match x with 
+        | OneKeyInput(ki) -> [ki]
+        | TwoKeyInputs(k1,k2) -> [k1;k2]
+        | ManyKeyInputs(list) -> list
+
+    /// A string representation of the name.  It is unreliable to use this for anything
+    /// other than display as two distinct KeyInput values can map to a single char
+    member x.Name = x.KeyInputs |> Seq.map (fun ki -> ki.Char) |> StringUtil.ofCharSeq
+
+    /// Add a KeyInput to the end of this CommandName and return the 
+    /// resulting value
+    member x.Add (ki) =
+        match x with 
+        | OneKeyInput(previous) -> TwoKeyInputs(previous,ki)
+        | TwoKeyInputs(p1,p2) -> ManyKeyInputs [p1;p2;ki]
+        | ManyKeyInputs(list) -> ManyKeyInputs (list @ [ki])
+
+    override x.GetHashCode() = 
+        match x with
+        | OneKeyInput(ki) -> ki.GetHashCode()
+        | TwoKeyInputs(k1,k2) -> k1.GetHashCode() ^^^ k2.GetHashCode()
+        | ManyKeyInputs(list) -> 
+            list 
+            |> Seq.ofList
+            |> Seq.map (fun ki -> ki.GetHashCode())
+            |> Seq.sum
+
+    override x.Equals(yobj) =
+        match yobj with
+        | :? CommandName as y -> 
+            match x,y with
+            | OneKeyInput(left),OneKeyInput(right) -> left = right
+            | TwoKeyInputs(l1,l2),TwoKeyInputs(r1,r2) -> l1 = r1 && l2 = r2
+            | _ -> ListUtil.contentsEqual x.KeyInputs y.KeyInputs
+        | _ -> false
+
+
+
 /// Representation of commands within Vim.  
 type Command = 
     
     /// Represents a Command which has no motion modifiers.  The delegate takes an
     /// optional count and a Register.  If unspecified the default register will be
     /// used  
-    | SimpleCommand of KeyInput list * (int option -> Register -> CommandResult)
+    | SimpleCommand of CommandName * (int option -> Register -> CommandResult)
 
     /// Represents a Command prefix which has an associated motion.  The delegate takes
     /// an optional count, a Register and a MotionData value.  If unspecified the default
     /// register will be used
-    | MotionCommand of KeyInput list * (int option -> Register -> MotionData -> CommandResult)
+    | MotionCommand of CommandName * (int option -> Register -> MotionData -> CommandResult)
 
     with 
 
     /// The raw command inputs
-    member x.RawCommand = 
+    member x.CommandName = 
         match x with
         | SimpleCommand(value,_ ) -> value
         | MotionCommand(value,_) -> value
@@ -550,11 +598,11 @@ and IVimBuffer =
     [<CLIEvent>]
     abstract KeyInputProcessed : IEvent<KeyInput * ProcessResult>
 
-    /// Raised when a KeyInput is recieved by the buffer
+    /// Raised when a KeyInput is received by the buffer
     [<CLIEvent>]
     abstract KeyInputReceived : IEvent<KeyInput>
 
-    /// Raised when a key is recieved but not immediately processed.  Occurs when a
+    /// Raised when a key is received but not immediately processed.  Occurs when a
     /// key remapping has more than one source key strokes
     [<CLIEvent>]
     abstract KeyInputBuffered : IEvent<KeyInput>

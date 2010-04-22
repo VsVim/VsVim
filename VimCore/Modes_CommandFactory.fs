@@ -45,14 +45,14 @@ type internal CommandFactory( _operations : ICommonOperations) =
             let funcWithReg opt reg = 
                 func (CommandUtil.CountOrDefault opt)
                 Completed
-            SimpleCommand ([ki],funcWithReg))
+            SimpleCommand (OneKeyInput ki,funcWithReg))
 
     member private x.CreateStandardMovementCommandsOld () = 
         x.CreateStandardMovementCommandsCore()
         |> Seq.map (fun (x,y) -> x,SimpleMovementCommand y)
 
     /// Build up a set of MotionCommand values from applicable Motion values
-    member private x.CreateMovementsFromMotions() =
+    member private x.CreateMovementsFromMotionsOld() =
         let processResult opt = 
             match opt with
             | None -> _operations.Beep()
@@ -89,12 +89,15 @@ type internal CommandFactory( _operations : ICommonOperations) =
         |> SeqUtil.filterToSome
 
     /// Returns the set of commands which move the cursor.  This includes all motions which are 
-    /// valid as movements.  Several of these are overriden with custom movement behavior though.
-    member x.CreateMovementCommands() = 
+    /// valid as movements.  Several of these are overridden with custom movement behavior though.
+    member x.CreateMovementCommandsOld() = 
         let standard = x.CreateStandardMovementCommandsOld()
         let taken = standard |> Seq.map (fun (x,_) -> x) |> Set.ofSeq
         let motion = 
-            x.CreateMovementsFromMotions()
+            x.CreateMovementsFromMotionsOld()
             |> Seq.filter (fun (ki,_) -> not (taken.Contains ki))
         standard |> Seq.append motion
+
+    /// Returns the set of commands which move the cursor.  This includes all motions which are 
+    /// valid as movements.  Several of these are overridden with custom movement behavior though.
 

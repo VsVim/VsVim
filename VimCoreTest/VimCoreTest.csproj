@@ -136,6 +136,7 @@
     <Compile Include="ChangeTrackerTest.cs" />
     <Compile Include="CommandModeIntegrationTest.cs" />
     <Compile Include="CommandModeTest.cs" />
+    <Compile Include="CommandNameTest.cs" />
     <Compile Include="CommandParseUtilTest.cs" />
     <Compile Include="CommandProcessorTest.cs" />
     <Compile Include="CommandRunnerTest.cs" />
