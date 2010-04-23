@@ -5,19 +5,10 @@ open Vim
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
 
-
-/// Operation in the normal mode
-type internal Operation =  {
-    KeyInput : Vim.KeyInput;
-    IsRepeatable : bool;
-    RunFunc : int option -> Register -> NormalModeResult
-}
-
-type internal CommandData = {
-    Count : int option;
-    Register : Register;
-    KeyInputs : KeyInput list;
-    Command : string
+type internal NormalModeData = {
+    IsOperatorPending : bool;
+    IsInRepeatLastChange : bool;
+    IsInReplace : bool;
 }
 
 type internal NormalMode 
@@ -26,82 +17,41 @@ type internal NormalMode
         _operations : IOperations,
         _incrementalSearch : IIncrementalSearch,
         _statusUtil : IStatusUtil,
-        _displayWindowBroker : IDisplayWindowBroker ) =
+        _displayWindowBroker : IDisplayWindowBroker,
+        _runner : ICommandRunner ) =
 
     let _commandExecutedEvent = Event<_>()
 
-    /// Command specific data (count,register,KeyInput list)  The KeyInput list
-    /// value is a list of the KeyInputs for the current command.  The head of 
-    /// the list is the most recent KeyInput
-    let mutable _data = {Count=None;Register=_bufferData.RegisterMap.DefaultRegister;KeyInputs=List.empty;Command=""}
+    /// Reset state for data in Normal Mode
+    let _emptyData = {
+        IsOperatorPending = false;
+        IsInRepeatLastChange = false;
+        IsInReplace = false;
+    }
 
-    let mutable _operationMap : Map<KeyInput,Operation> = Map.empty
-
-    /// Function used to process the next piece of input
-    let mutable _runFunc : KeyInput -> int option -> Register -> NormalModeResult = (fun _ _ _ -> NormalModeResult.Complete)
-
-    /// Whether or not we are waiting for at least the second keystroke
-    /// of a given command
-    let mutable _waitingForMoreInput = false
-
-    /// Are we in the operator pending mode?
-    let mutable _isOperatingPending = false;
-
-    /// True when in the middle of a repeat last change operation
-    let mutable _isInRepeatLastChange = false
-
-    let mutable _isInReplace = false;
-
-    let CountOrDefault count =
-        match count with 
-        | Some(c) -> c
-        | None -> 1
+    /// Contains the state information for Normal mode
+    let mutable _data = _emptyData
 
     member this.TextView = _bufferData.TextView
     member this.TextBuffer = _bufferData.TextBuffer
     member this.CaretPoint = _bufferData.TextView.Caret.Position.BufferPosition
     member this.Settings = _bufferData.Settings
     member this.IncrementalSearch = _incrementalSearch
+
     
     /// Begin an incremental search.  Called when the user types / into the editor
     member this.BeginIncrementalSearch (kind:SearchKind) =
         let before = TextViewUtil.GetCaretPoint _bufferData.TextView
-        let rec inner (ki:KeyInput) _ _ = 
+        let rec inner (ki:KeyInput) = 
             match _incrementalSearch.Process ki with
             | SearchComplete -> 
                 _bufferData.JumpList.Add before |> ignore
-                NormalModeResult.Complete 
-            | SearchCancelled -> NormalModeResult.Complete
-            | SearchNeedMore ->  NormalModeResult.NeedMoreInput inner
+                Completed
+            | SearchCancelled -> Completed
+            | SearchNeedMore ->  CommandResult.NeedMoreKeyInput inner
         _incrementalSearch.Begin kind
-        inner
+        (fun _ _ -> CommandResult.NeedMoreKeyInput inner)
     
-    /// Wait for a motion sequence to complete and then call "doneFunc" with the resulting data
-    member this.WaitForMotionCore doneFunc = 
-        let rec f (result:MotionResult) = 
-            match result with 
-                | MotionResult.Complete (span) -> 
-                    doneFunc span
-                | NeedMoreInput (moreFunc) ->
-                    let inputFunc ki _ _ = f (moreFunc ki)
-                    NormalModeResult.NeedMoreInput inputFunc
-                | InvalidMotion (msg,moreFunc) ->
-                    _statusUtil.OnError msg
-                    let inputFunc ki _ _ = f (moreFunc ki)
-                    NormalModeResult.NeedMoreInput inputFunc 
-                | MotionResult.Error (msg) ->
-                    _statusUtil.OnError msg
-                    NormalModeResult.Complete
-                | Cancel -> 
-                    NormalModeResult.Complete
-        let func ki count = MotionCapture.ProcessView _bufferData.TextView ki count |> f
-        func
-
-    member this.WaitForMotion ki count doneFunc = (this.WaitForMotionCore doneFunc) ki count
-    member this.WaitForMotionAsResult doneFunc = 
-        let func = this.WaitForMotionCore doneFunc
-        NormalModeResult.NeedMoreInput (fun ki count _ -> func ki count)
-
     // Respond to the d command.  Need the finish motion
     member this.WaitDelete =
         let inner (ki:KeyInput) count reg =
@@ -329,6 +279,58 @@ type internal NormalMode
         let factory = Vim.Modes.CommandFactory(_operations)
         factory.CreateMovementCommandsOld() |> Seq.map (fun (ki,command) -> doMap ki command)
 
+    /// Create the set of Command values which are not repeatable 
+    member this.CreateNonRepeatableCommands() = 
+
+        let wrapOperation func ki =
+            let res = func ki
+            _commandExecutedEvent.Trigger NonRepeatableCommand
+            res
+
+        seq {
+            yield ("/", this.BeginIncrementalSearch SearchKind.ForwardWithWrap)
+            yield ("?", this.BeginIncrementalSearch SearchKind.BackwardWithWrap)
+        }
+        |> Seq.map (fun (str,func) -> 
+            let name = CommandUtil.CreateCommandName str
+            SimpleCommand(name,func))
+
+    /// Create the set of Command values which are repeatable
+    member this.CreateRepeatableCommands() =
+
+        let wrapOperation command func ki = 
+            let res = func ki
+            _commandExecutedEvent.Trigger (RepeatableCommand command)
+            res
+
+        let simple = 
+            seq {
+                yield ("dd", fun count reg -> _operations.DeleteLinesIncludingLineBreak count reg)
+            }
+            |> Seq.map (fun (str,func) ->
+                let name = CommandUtil.CreateCommandName str
+                let inner command count reg = 
+                    func (CommandUtil.CountOrDefault count) reg
+                    _commandExecutedEvent.Trigger (RepeatableCommand command)
+                    CommandResult.Completed
+                SimpleCommand(name, inner)
+    
+        let complex : seq<string*(int -> Register -> MotionData -> unit)> =
+            seq {
+                yield ("d", fun count reg data -> _operations.DeleteSpan data.OperationSpan 
+
+        let inner (ki:KeyInput) count reg =
+            match ki.Char with 
+                | 'd' -> 
+                    _operations.DeleteLinesIncludingLineBreak count reg 
+                    NormalModeResult.CompleteRepeatable(count,reg)
+                | _ -> 
+                    let func (data:MotionData) = 
+                        _operations.DeleteSpan data.OperationSpan data.MotionKind data.OperationKind reg |> ignore
+                        NormalModeResult.CompleteRepeatable(count,reg)
+                    this.WaitForMotion ki count func
+        inner
+
     member this.BuildOperationsMap = 
         let waitOps = seq {
             yield (InputUtil.CharToKeyInput('d'), (fun () -> this.WaitDelete))
@@ -338,8 +340,6 @@ type internal NormalMode
 
         // Similar to waitOpts but contains items which should not go to OperatorPending
         let waitOps2 = seq {
-            yield (InputUtil.CharToKeyInput('/'), (fun () -> this.BeginIncrementalSearch SearchKind.ForwardWithWrap))
-            yield (InputUtil.CharToKeyInput('?'), (fun () -> this.BeginIncrementalSearch SearchKind.BackwardWithWrap))
             yield (InputUtil.CharToKeyInput('m'), (fun () -> this.WaitMark))
             yield (InputUtil.CharToKeyInput('<'), (fun () -> this.WaitShiftLeft))
             yield (InputUtil.CharToKeyInput('>'), (fun () -> this.WaitShiftRight))
