@@ -147,8 +147,8 @@ type internal NormalMode
                     let point = point.GetContainingLine().Start
                     let span = SnapshotPointUtil.GetLineRangeSpanIncludingLineBreak point count
                     _operations.Yank span MotionKind.Inclusive OperationKind.LineWise reg  )
-                yield ("<", CommandKind.Repeatable, fun count _ -> _operations.ShiftLinesLeft count)
-                yield (">", CommandKind.Repeatable, fun count _ -> _operations.ShiftLinesRight count)
+                yield ("<<", CommandKind.Repeatable, fun count _ -> _operations.ShiftLinesLeft count)
+                yield (">>", CommandKind.Repeatable, fun count _ -> _operations.ShiftLinesRight count)
                 yield ("gJ", CommandKind.Repeatable, fun count reg -> 
                     let view = _bufferData.TextView
                     let caret = TextViewUtil.GetCaretPoint view
@@ -174,7 +174,7 @@ type internal NormalMode
 
         let doSwitch =
             seq {
-                yield ("c", ModeSwitch.SwitchMode ModeKind.Insert, fun count reg ->  
+                yield ("cc", ModeSwitch.SwitchMode ModeKind.Insert, fun count reg ->  
                     let point = TextViewUtil.GetCaretPoint _bufferData.TextView
                     let span = SnapshotPointUtil.GetLineRangeSpanIncludingLineBreak point count
                     let span = SnapshotSpan(point.GetContainingLine().Start,span.End)

@@ -216,7 +216,10 @@ type internal CommandRunner
             finally
                 _inRun <-false
             
-    member x.Add (command:Command) = _commandMap <- Map.add command.CommandName command _commandMap
+    member x.Add (command:Command) = 
+        if Map.containsKey command.CommandName _commandMap then 
+            invalidArg "command" Resources.CommandRunner_CommandNameAlreadyAdded
+        _commandMap <- Map.add command.CommandName command _commandMap
     member x.Remove (name:CommandName) = _commandMap <- Map.remove name _commandMap
     member x.Reset () =
         _data <- _emptyData

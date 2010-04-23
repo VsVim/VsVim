@@ -113,6 +113,47 @@ namespace VimCoreTest
         }
 
         [Test]
+        [ExpectedException(typeof(ArgumentException))]
+        public void Add3()
+        {
+            Create(String.Empty);
+            var command1 = CreateSimpleCommand("foo", (x, y) => CommandResult.NewCompleted(ModeSwitch.NoSwitch));
+            _runner.Add(command1);
+            _runner.Add(command1);
+        }
+
+        [Test]
+        [ExpectedException(typeof(ArgumentException))]
+        public void Add4()
+        {
+            Create(String.Empty);
+            var command1 = CreateSimpleCommand("foo", (x, y) => CommandResult.NewCompleted(ModeSwitch.NoSwitch));
+            var command2 = CreateMotionCommand("foo", (x, y, z) => CommandResult.NewCompleted(ModeSwitch.NoSwitch));
+            _runner.Add(command1);
+            _runner.Add(command2);
+        }
+
+        [Test]
+        public void Remove1()
+        {
+            Create(String.Empty);
+            var command1 = CreateSimpleCommand("foo", (x, y) => CommandResult.NewCompleted(ModeSwitch.NoSwitch));
+            var command2 = CreateSimpleCommand("bar", (x, y) => CommandResult.NewCompleted(ModeSwitch.NoSwitch));
+            _runner.Add(command1);
+            _runner.Remove(command1.CommandName);
+            Assert.AreEqual(0, _runner.Commands.Count());
+        }
+
+        [Test]
+        [Description("Don't throw when removing a command that's not present")]
+        public void Remove2()
+        {
+            Create(String.Empty);
+            _runner.Remove(CommandUtil.CreateCommandName("foo"));
+            Assert.AreEqual(0, _runner.Commands.Count());
+        }
+
+        [Test]
         public void Run_CommandMatch1()
         {
             Create(String.Empty);
