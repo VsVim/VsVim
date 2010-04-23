@@ -47,19 +47,22 @@ type internal VisualMode
         factory.CreateMovementCommands()
         |> Seq.map (fun (command) ->
             match command with
-            | SimpleCommand (name,func) -> SimpleCommand (name,wrapSimple func)
-            | MotionCommand (name,func) -> MotionCommand (name, wrapComplex func) )
+            | Command.NonRepeatableCommand (name,func) -> Command.NonRepeatableCommand (name,wrapSimple func) |> Some
+            | Command.RepeatableCommand (name,func) -> Command.RepeatableCommand (name,wrapSimple func) |> Some
+            | Command.MotionCommand (name,func) -> Command.MotionCommand (name, wrapComplex func) |> Some
+            | Command.LongCommand (name,func) -> None )
+        |> SeqUtil.filterToSome
 
     member private x.BuildOperationsSequence() =
         let deleteSelection _ reg = 
             _operations.DeleteSelection reg |> ignore
-            CommandResult.CompleteSwitchPreviousMode
+            CommandResult.Completed ModeSwitch.SwitchPreviousMode
         let changeSelection _ reg = 
             _operations.DeleteSelection reg |> ignore
-            CommandResult.CompleteSwitchMode ModeKind.Insert
+            CommandResult.Completed (ModeSwitch.SwitchMode ModeKind.Insert)
         let changeLines _ reg = 
             _operations.DeleteSelectedLines reg |> ignore
-            CommandResult.CompleteSwitchMode ModeKind.Insert
+            CommandResult.Completed (ModeSwitch.SwitchMode ModeKind.Insert)
 
         /// Commands consisting of a single character
         let simples =
@@ -70,7 +73,7 @@ type internal VisualMode
                                      | ModeKind.VisualLine -> OperationKind.LineWise
                                      | _ -> OperationKind.CharacterWise
                         _operations.YankText (_selectionTracker.SelectedText) MotionKind.Inclusive opKind reg
-                        CompleteSwitchPreviousMode))
+                        CommandResult.Completed ModeSwitch.SwitchPreviousMode))
                 yield (InputUtil.CharToKeyInput('Y'),
                     (fun _ (reg:Register) ->
                         let selection = _buffer.TextView.Selection
@@ -78,7 +81,7 @@ type internal VisualMode
                         let endPoint = selection.End.Position.GetContainingLine().EndIncludingLineBreak
                         let span = SnapshotSpan(startPoint,endPoint)
                         _operations.Yank span MotionKind.Inclusive OperationKind.LineWise reg
-                        CompleteSwitchPreviousMode))
+                        CommandResult.Completed ModeSwitch.SwitchPreviousMode))
                 yield (InputUtil.CharToKeyInput('d'), deleteSelection)
                 yield (InputUtil.CharToKeyInput('x'), deleteSelection)
                 yield (InputUtil.VimKeyToKeyInput VimKey.DeleteKey, deleteSelection)
@@ -89,9 +92,9 @@ type internal VisualMode
                 yield (InputUtil.CharToKeyInput('J'), 
                         (fun _ _ ->         
                             _operations.JoinSelection JoinKind.RemoveEmptySpaces|> ignore
-                            CompleteSwitchPreviousMode))
+                            CommandResult.Completed ModeSwitch.SwitchPreviousMode))
                 }
-            |> Seq.map (fun (ki,func) -> SimpleCommand (OneKeyInput ki,func))
+            |> Seq.map (fun (ki,func) -> Command.NonRepeatableCommand (OneKeyInput ki,func))
 
 
         /// Commands consisting of more than a single character
@@ -99,8 +102,8 @@ type internal VisualMode
             seq { 
                 yield ("gJ", fun _ _ -> _operations.JoinSelection JoinKind.KeepEmptySpaces |> ignore)
             }
-            |> Seq.map (fun (str,func) -> (str, fun count reg -> func count reg; CompleteSwitchPreviousMode))
-            |> Seq.map (fun (name,func) -> SimpleCommand (CommandUtil.CreateCommandName name,func))
+            |> Seq.map (fun (str,func) -> (str, fun count reg -> func count reg; CommandResult.Completed ModeSwitch.SwitchPreviousMode))
+            |> Seq.map (fun (name,func) -> Command.NonRepeatableCommand (CommandUtil.CreateCommandName name,func))
 
         Seq.append simples complex
 
@@ -126,14 +129,13 @@ type internal VisualMode
                 match _runner.Run ki with
                 | RunKeyInputResult.NeedMoreKeyInput -> ProcessResult.Processed
                 | RunKeyInputResult.NestedRunDetected -> ProcessResult.Processed
-                | RunKeyInputResult.RanCommand(result) ->
-                    match result with
-                    | Completed -> ProcessResult.Processed
-                    | CompleteSwitchMode(kind) -> ProcessResult.SwitchMode kind
-                    | CompleteSwitchPreviousMode -> ProcessResult.SwitchPreviousMode
-                    | CommandResult.NeedMoreKeyInput(_) -> ProcessResult.Processed
-                    | Error(_) -> ProcessResult.Processed
-                    | Cancelled -> ProcessResult.Processed
+                | RunKeyInputResult.CommandRan(_,modeSwitch) ->
+                    match modeSwitch with
+                    | ModeSwitch.NoSwitch -> ProcessResult.Processed
+                    | ModeSwitch.SwitchMode(kind) -> ProcessResult.SwitchMode kind
+                    | ModeSwitch.SwitchPreviousMode -> ProcessResult.SwitchPreviousMode
+                | RunKeyInputResult.CommandErrored(_) -> ProcessResult.SwitchPreviousMode
+                | RunKeyInputResult.CommandCancelled -> ProcessResult.SwitchPreviousMode
     
         member x.OnEnter () = 
             x.EnsureCommandsBuilt()

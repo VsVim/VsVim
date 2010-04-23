@@ -44,8 +44,8 @@ type internal CommandFactory( _operations : ICommonOperations) =
         |> Seq.map (fun (ki,func) ->
             let funcWithReg opt reg = 
                 func (CommandUtil.CountOrDefault opt)
-                Completed
-            SimpleCommand (OneKeyInput ki,funcWithReg))
+                Completed NoSwitch
+            Command.NonRepeatableCommand (OneKeyInput ki,funcWithReg))
 
     /// Build up a set of MotionCommand values from applicable Motion values
     member private x.CreateMovementsFromMotions() =
@@ -53,7 +53,7 @@ type internal CommandFactory( _operations : ICommonOperations) =
             match opt with
             | None -> _operations.Beep()
             | Some(data) -> _operations.MoveCaretToMotionData data
-            CommandResult.Completed
+            CommandResult.Completed NoSwitch
 
         let filterMotionCommand command = 
             match command with
@@ -62,7 +62,7 @@ type internal CommandFactory( _operations : ICommonOperations) =
                     let count = CommandUtil.CountOrDefault count
                     let startPoint = TextViewUtil.GetCaretPoint _operations.TextView
                     func startPoint count |> processResult
-                SimpleCommand (name,inner) |> Some
+                Command.NonRepeatableCommand(name,inner) |> Some
             | ComplexMotionCommand(_,false,_) -> None
             | ComplexMotionCommand(name,true,func) -> 
                 
@@ -71,17 +71,17 @@ type internal CommandFactory( _operations : ICommonOperations) =
                         match result with
                         | Complete (data) -> 
                             _operations.MoveCaretToMotionData data
-                            CommandResult.Completed
-                        | MotionResult.NeedMoreInput (func) -> CommandResult.NeedMoreKeyInput (fun ki -> func ki |> inner)
-                        | InvalidMotion (_,func) -> CommandResult.NeedMoreKeyInput (fun ki -> func ki |> inner)
-                        | Cancel -> CommandResult.Cancelled
-                        | MotionResult.Error (msg) -> CommandResult.Error msg
+                            CommandResult.Completed NoSwitch |> LongCommandResult.Finished
+                        | MotionResult.NeedMoreInput (func) -> LongCommandResult.NeedMoreInput (fun ki -> func ki |> inner)
+                        | InvalidMotion (_,func) -> LongCommandResult.NeedMoreInput (fun ki -> func ki |> inner)
+                        | Cancel -> LongCommandResult.Cancelled
+                        | MotionResult.Error (msg) -> CommandResult.Error msg |> LongCommandResult.Finished
 
                     let count = CommandUtil.CountOrDefault count
                     let startPoint = TextViewUtil.GetCaretPoint _operations.TextView
                     let initialResult = func startPoint count
                     inner initialResult
-                SimpleCommand (name, coreFunc) |> Some
+                Command.LongCommand(name, coreFunc) |> Some
 
         MotionCapture.MotionCommands
         |> Seq.map filterMotionCommand

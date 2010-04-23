@@ -82,7 +82,7 @@ type internal NormalMode
             match result with 
                 | MotionResult.Complete (span) -> 
                     doneFunc span
-                | NeedMoreInput (moreFunc) ->
+                | MotionResult.NeedMoreInput (moreFunc) ->
                     let inputFunc ki _ _ = f (moreFunc ki)
                     NormalModeResult.NeedMoreInput inputFunc
                 | InvalidMotion (msg,moreFunc) ->

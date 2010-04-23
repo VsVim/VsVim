@@ -10,7 +10,7 @@ module internal MotionCapture =
         let inner (ki:KeyInput) = 
             if ki.Key = VimKey.EscapeKey then Cancel
             else func(ki)
-        NeedMoreInput(inner)
+        MotionResult.NeedMoreInput(inner)
 
     /// When an invalid motion is given just wait for enter and then report and invalid 
     /// motion error.  Update the status to let the user know that we are currently
