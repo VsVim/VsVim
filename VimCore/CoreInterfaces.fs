@@ -50,14 +50,6 @@ type ModeKind =
     // Mode when Vim is disabled via the user
     | Disabled = 42
 
-type CommandResult =   
-    | Completed 
-    | CompleteSwitchMode of ModeKind
-    | CompleteSwitchPreviousMode 
-    | NeedMoreKeyInput of (KeyInput -> CommandResult)
-    | Error of string
-    | Cancelled 
-
 /// The actual command name
 [<CustomEquality; CustomComparison>]
 type CommandName =
@@ -121,29 +113,73 @@ type CommandName =
                     else inner (List.tail left) (List.tail right)
                 inner x.KeyInputs y.KeyInputs
             | _ -> failwith "Cannot compare values of different types"
+
+type ModeSwitch =
+    | NoSwitch
+    | SwitchMode of ModeKind
+    | SwitchPreviousMode 
             
+type CommandResult =   
+    | Completed  of ModeSwitch
+    | Error of string
+
+type LongCommandResult =
+    | Finished of CommandResult
+    | Cancelled
+    | NeedMoreInput of (KeyInput -> LongCommandResult)
+
+/// Information about the kind of Command
+type CommandKind =
+    /// Relates to the movement of the cursor
+    | Movement
+    /// A Command which can be repeated
+    | Repeatable
+    /// A Command which cannot be repeated
+    | NotRepeatable
+    /// A Command which should not be considered when looking at last changes
+    | Special
 
 /// Representation of commands within Vim.  
 type Command = 
     
-    /// Represents a Command which has no motion modifiers.  The delegate takes an
-    /// optional count and a Register.  If unspecified the default register will be
-    /// used  
-    | SimpleCommand of CommandName * (int option -> Register -> CommandResult)
+    /// Represents a Command which has no motion modifiers.  The  delegate takes 
+    /// an optional count and a Register.  If unspecified the default register
+    /// will be used
+    | SimpleCommand of CommandName * CommandKind * (int option -> Register -> CommandResult)
 
     /// Represents a Command prefix which has an associated motion.  The delegate takes
     /// an optional count, a Register and a MotionData value.  If unspecified the default
     /// register will be used
-    | MotionCommand of CommandName * (int option -> Register -> MotionData -> CommandResult)
+    | MotionCommand of CommandName * CommandKind * (int option -> Register -> MotionData -> CommandResult)
+
+    /// Represents a command which has a Name but then has additional unspecified input
+    /// which needs to be dealt with specially by the command.  These commands are not
+    /// repeatable
+    | LongCommand of CommandName * CommandKind * (int option -> Register -> LongCommandResult)
 
     with 
 
     /// The raw command inputs
     member x.CommandName = 
         match x with
-        | SimpleCommand(value,_ ) -> value
-        | MotionCommand(value,_) -> value
+        | SimpleCommand(value,_,_ ) -> value
+        | MotionCommand(value,_,_) -> value
+        | LongCommand(value,_,_) -> value
 
+    /// The kind of the Command
+    member x.CommandKind =
+        match x with
+        | SimpleCommand(_,value,_ ) -> value
+        | MotionCommand(_,value,_) -> value
+        | LongCommand(_,value,_) -> value
+
+/// The information about the particular run of a Command
+type CommandRunData = {
+    Command : Command;
+    Register : Register;
+    Count : int option;
+    MotionData : MotionData option;
+}
 
 /// Represents the types of MotionCommands which exist
 type MotionCommand = 
@@ -177,8 +213,14 @@ module CommandUtil =
 /// with a KeyInput to run
 type RunKeyInputResult = 
     
-    /// Ran a command which produced the attached result 
-    | RanCommand of CommandResult
+    /// Ran a command which produced the attached result.  
+    | CommandRan of CommandRunData * ModeSwitch
+
+    /// Command was cancelled
+    | CommandCancelled 
+
+    /// Command ran but resulted in an error
+    | CommandErrored of CommandRunData * string
 
     /// More input is needed to determine if there is a matching command or not
     | NeedMoreKeyInput 
@@ -206,7 +248,6 @@ type ICommandRunner =
     /// If currently waiting for more input on a Command, reset to the 
     /// initial state
     abstract Reset : unit -> unit
-
 
 /// Modes for a key remapping
 type KeyRemapMode =
@@ -364,11 +405,11 @@ type ISearchService =
     [<CLIEvent>]
     abstract LastSearchChanged : IEvent<SearchData>
 
-    /// Find the next occurance of the pattern in the buffer starting at the 
+    /// Find the next occurrence of the pattern in the buffer starting at the 
     /// given SnapshotPoint
     abstract FindNext : SearchData -> SnapshotPoint -> ITextStructureNavigator -> SnapshotSpan option
 
-    /// Find the next Nth occurance of the pattern
+    /// Find the next Nth occurrence of the pattern
     abstract FindNextMultiple : SearchData -> SnapshotPoint -> ITextStructureNavigator -> count:int -> SnapshotSpan option
 
 type IIncrementalSearch = 
