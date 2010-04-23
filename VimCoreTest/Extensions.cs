@@ -177,9 +177,14 @@ namespace VimCoreTest
 
         #region RunKeyInputResult
 
-        public static RunKeyInputResult.RanCommand AsRanCommand(this RunKeyInputResult result)
+        public static RunKeyInputResult.CommandRan AsCommandRan(this RunKeyInputResult result)
         {
-            return (RunKeyInputResult.RanCommand)result;
+            return (RunKeyInputResult.CommandRan)result;
+        }
+
+        public static RunKeyInputResult.CommandErrored AsCommandErrored(this RunKeyInputResult result)
+        {
+            return (RunKeyInputResult.CommandErrored)result;
         }
 
         #endregion
