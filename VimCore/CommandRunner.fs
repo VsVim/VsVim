@@ -166,15 +166,14 @@ type internal CommandRunner
         if matches.Length = 1 then 
             let command = matches |> List.head
             match command with
-            | Command.RepeatableCommand(_,func) -> runCommand command func
-            | Command.NonRepeatableCommand(_,func) -> runCommand command func
-            | Command.MotionCommand(_,func) -> 
+            | Command.SimpleCommand(_,_,func) -> runCommand command func
+            | Command.MotionCommand(_,_,func) -> 
                 // Can't just call this.  It's possible there is a non-motion command with a 
                 // longer command commandInputs
                 let withPrefix = findPrefixMatches commandName
                 if Seq.isEmpty withPrefix then x.WaitForMotion command func None
                 else NeedMore x.WaitForCommand
-            | Command.LongCommand(_,func) -> x.WaitForLongCommand command func
+            | Command.LongCommand(_,_,func) -> x.WaitForLongCommand command func
 
         elif matches.Length = 0 && commandName.KeyInputs.Length > 1 then
            
@@ -184,10 +183,9 @@ type internal CommandRunner
           if previousMatches.Length = 1 then 
             let command = previousMatches |> List.head
             match command with
-            | Command.RepeatableCommand(_,_) -> NeedMore x.WaitForCommand
-            | Command.NonRepeatableCommand(_,_) -> NeedMore x.WaitForCommand
-            | Command.LongCommand(_,_) -> NeedMore x.WaitForCommand
-            | Command.MotionCommand(_,func) -> x.WaitForMotion command func (Some currentInput)
+            | Command.SimpleCommand(_) -> NeedMore x.WaitForCommand
+            | Command.LongCommand(_) -> NeedMore x.WaitForCommand
+            | Command.MotionCommand(_,_,func) -> x.WaitForMotion command func (Some currentInput)
           else NeedMore x.WaitForCommand
 
         else NeedMore x.WaitForCommand

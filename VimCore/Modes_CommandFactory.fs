@@ -45,7 +45,7 @@ type internal CommandFactory( _operations : ICommonOperations) =
             let funcWithReg opt reg = 
                 func (CommandUtil.CountOrDefault opt)
                 Completed NoSwitch
-            Command.NonRepeatableCommand (OneKeyInput ki,funcWithReg))
+            Command.SimpleCommand (OneKeyInput ki,CommandKind.Movement, funcWithReg))
 
     /// Build up a set of MotionCommand values from applicable Motion values
     member private x.CreateMovementsFromMotions() =
@@ -62,7 +62,7 @@ type internal CommandFactory( _operations : ICommonOperations) =
                     let count = CommandUtil.CountOrDefault count
                     let startPoint = TextViewUtil.GetCaretPoint _operations.TextView
                     func startPoint count |> processResult
-                Command.NonRepeatableCommand(name,inner) |> Some
+                Command.SimpleCommand(name,CommandKind.Movement,inner) |> Some
             | ComplexMotionCommand(_,false,_) -> None
             | ComplexMotionCommand(name,true,func) -> 
                 
@@ -81,7 +81,7 @@ type internal CommandFactory( _operations : ICommonOperations) =
                     let startPoint = TextViewUtil.GetCaretPoint _operations.TextView
                     let initialResult = func startPoint count
                     inner initialResult
-                Command.LongCommand(name, coreFunc) |> Some
+                Command.LongCommand(name, CommandKind.Movement, coreFunc) |> Some
 
         MotionCapture.MotionCommands
         |> Seq.map filterMotionCommand

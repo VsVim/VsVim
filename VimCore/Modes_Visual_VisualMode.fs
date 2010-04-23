@@ -47,10 +47,9 @@ type internal VisualMode
         factory.CreateMovementCommands()
         |> Seq.map (fun (command) ->
             match command with
-            | Command.NonRepeatableCommand (name,func) -> Command.NonRepeatableCommand (name,wrapSimple func) |> Some
-            | Command.RepeatableCommand (name,func) -> Command.RepeatableCommand (name,wrapSimple func) |> Some
-            | Command.MotionCommand (name,func) -> Command.MotionCommand (name, wrapComplex func) |> Some
-            | Command.LongCommand (name,func) -> None )
+            | Command.SimpleCommand(name,kind,func) -> Command.SimpleCommand (name,kind, wrapSimple func) |> Some
+            | Command.MotionCommand (name,kind,func) -> Command.MotionCommand (name, kind,wrapComplex func) |> Some
+            | Command.LongCommand (name,kind,func) -> None )
         |> SeqUtil.filterToSome
 
     member private x.BuildOperationsSequence() =
@@ -94,7 +93,7 @@ type internal VisualMode
                             _operations.JoinSelection JoinKind.RemoveEmptySpaces|> ignore
                             CommandResult.Completed ModeSwitch.SwitchPreviousMode))
                 }
-            |> Seq.map (fun (ki,func) -> Command.NonRepeatableCommand (OneKeyInput ki,func))
+            |> Seq.map (fun (ki,func) -> Command.SimpleCommand(OneKeyInput ki,CommandKind.NotRepeatable, func))
 
 
         /// Commands consisting of more than a single character
@@ -103,7 +102,7 @@ type internal VisualMode
                 yield ("gJ", fun _ _ -> _operations.JoinSelection JoinKind.KeepEmptySpaces |> ignore)
             }
             |> Seq.map (fun (str,func) -> (str, fun count reg -> func count reg; CommandResult.Completed ModeSwitch.SwitchPreviousMode))
-            |> Seq.map (fun (name,func) -> Command.NonRepeatableCommand (CommandUtil.CreateCommandName name,func))
+            |> Seq.map (fun (name,func) -> Command.SimpleCommand (CommandUtil.CreateCommandName name, CommandKind.NotRepeatable, func))
 
         Seq.append simples complex
 

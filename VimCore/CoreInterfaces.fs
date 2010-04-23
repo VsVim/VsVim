@@ -128,38 +128,48 @@ type LongCommandResult =
     | Cancelled
     | NeedMoreInput of (KeyInput -> LongCommandResult)
 
+/// Information about the kind of Command
+type CommandKind =
+    /// Relates to the movement of the cursor
+    | Movement
+    /// A Command which can be repeated
+    | Repeatable
+    /// A Command which cannot be repeated
+    | NotRepeatable
+
 /// Representation of commands within Vim.  
 type Command = 
     
-    /// Represents a Command which has no motion modifiers and can be repeated.  The 
-    /// delegate takes an optional count and a Register.  If unspecified the default 
-    /// register will be used  
-    | RepeatableCommand of CommandName * (int option -> Register -> CommandResult)
-
-    /// Represents a Command which has no motion modifiers and can be repeated.  The 
-    /// delegate takes an optional count and a Register.  If unspecified the default 
-    /// register will be used  
-    | NonRepeatableCommand of CommandName * (int option -> Register -> CommandResult)
+    /// Represents a Command which has no motion modifiers.  The  delegate takes 
+    /// an optional count and a Register.  If unspecified the default register
+    /// will be used
+    | SimpleCommand of CommandName * CommandKind * (int option -> Register -> CommandResult)
 
     /// Represents a Command prefix which has an associated motion.  The delegate takes
     /// an optional count, a Register and a MotionData value.  If unspecified the default
     /// register will be used
-    | MotionCommand of CommandName * (int option -> Register -> MotionData -> CommandResult)
+    | MotionCommand of CommandName * CommandKind * (int option -> Register -> MotionData -> CommandResult)
 
     /// Represents a command which has a Name but then has additional unspecified input
     /// which needs to be dealt with specially by the command.  These commands are not
     /// repeatable
-    | LongCommand of CommandName * (int option -> Register -> LongCommandResult)
+    | LongCommand of CommandName * CommandKind * (int option -> Register -> LongCommandResult)
 
     with 
 
     /// The raw command inputs
     member x.CommandName = 
         match x with
-        | RepeatableCommand(value,_ ) -> value
-        | NonRepeatableCommand(value,_ ) -> value
-        | MotionCommand(value,_) -> value
-        | LongCommand(value,_) -> value
+        | SimpleCommand(value,_,_ ) -> value
+        | MotionCommand(value,_,_) -> value
+        | LongCommand(value,_,_) -> value
+
+    /// The kind of the Command
+    member x.CommandKind =
+        match x with
+        | SimpleCommand(_,value,_ ) -> value
+        | MotionCommand(_,value,_) -> value
+        | LongCommand(_,value,_) -> value
 
 /// The information about the particular run of a Command
 type CommandRunData = {
