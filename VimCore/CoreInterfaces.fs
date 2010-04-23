@@ -121,6 +121,13 @@ type CommandName =
             | _ -> ListUtil.contentsEqual x.KeyInputs y.KeyInputs
         | _ -> false
 
+    override x.ToString() =
+        x.KeyInputs
+        |> Seq.map (fun ki ->
+            if ki.Key = VimKey.NotWellKnownKey then ki.Char.ToString()
+            else System.String.Format("<{0}>", ki.Key)  )
+        |> StringUtil.ofStringSeq
+
     interface System.IComparable with
         member x.CompareTo yobj = 
             match yobj with
@@ -134,6 +141,7 @@ type CommandName =
                     else inner (List.tail left) (List.tail right)
                 inner x.KeyInputs y.KeyInputs
             | _ -> failwith "Cannot compare values of different types"
+
 
 type ModeSwitch =
     | NoSwitch

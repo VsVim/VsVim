@@ -58,6 +58,13 @@ module internal StringUtil =
     [<CompiledName("OfChar")>]
     let ofChar c = System.String(c,1)
 
+    [<CompiledName("OfStringSeq")>]
+    let ofStringSeq (strings : string seq) = 
+        let builder = System.Text.StringBuilder()
+        for value in strings do
+            builder.Append(value) |> ignore
+        builder.ToString()
+
     [<CompiledName("IsNullOrEmpty")>]
     let isNullOrEmpty str = System.String.IsNullOrEmpty(str)
 

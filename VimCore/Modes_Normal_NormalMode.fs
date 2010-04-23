@@ -40,7 +40,7 @@ type internal NormalMode
     member this.Command = failwith "Need to implement command again"
 
     /// Begin an incremental search.  Called when the user types / into the editor
-    member this.BeginIncrementalSearch (kind:SearchKind) =
+    member this.BeginIncrementalSearch (kind:SearchKind) count reg =
         let before = TextViewUtil.GetCaretPoint _bufferData.TextView
         let rec inner (ki:KeyInput) = 
             match _incrementalSearch.Process ki with
@@ -50,7 +50,7 @@ type internal NormalMode
             | SearchCancelled -> LongCommandResult.Cancelled
             | SearchNeedMore ->  LongCommandResult.NeedMoreInput inner
         _incrementalSearch.Begin kind
-        (fun _ _ -> LongCommandResult.NeedMoreInput inner)
+        LongCommandResult.NeedMoreInput inner
     
     member private x.ReplaceChar count reg = 
         let inner (ki:KeyInput) = 
@@ -120,8 +120,8 @@ type internal NormalMode
     member this.CreateLongCommands() = 
 
         seq {
-            yield ("/", CommandKind.Movement, this.BeginIncrementalSearch SearchKind.ForwardWithWrap)
-            yield ("?", CommandKind.Movement, this.BeginIncrementalSearch SearchKind.BackwardWithWrap)
+            yield ("/", CommandKind.Movement, fun count reg -> this.BeginIncrementalSearch SearchKind.ForwardWithWrap count reg)
+            yield ("?", CommandKind.Movement, fun count reg -> this.BeginIncrementalSearch SearchKind.BackwardWithWrap count reg)
             yield ("r", CommandKind.NotRepeatable, fun count reg -> this.ReplaceChar count reg)
             yield ("'", CommandKind.Movement, fun count reg -> this.WaitJumpToMark count reg)
             yield ("`", CommandKind.Movement, fun count reg -> this.WaitJumpToMark count reg)
@@ -343,7 +343,6 @@ type internal NormalMode
         _data <- _emptyData
     
     member this.ProcessCore (ki:KeyInput) =
-
         if ki.Key = VimKey.EscapeKey then 
             ProcessResult.SwitchPreviousMode
         else
@@ -393,7 +392,9 @@ type internal NormalMode
             else false
 
         member this.Process ki = this.ProcessCore ki
-        member this.OnEnter ()  = this.Reset()
+        member this.OnEnter () = 
+            this.EnsureCommands()
+            this.Reset()
         member this.OnLeave () = ()
     
 
