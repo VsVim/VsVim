@@ -6,6 +6,7 @@ open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
 
 type internal NormalModeData = {
+    Command : string;
     IsOperatorPending : bool;
     IsInRepeatLastChange : bool;
     IsInReplace : bool;
@@ -24,6 +25,7 @@ type internal NormalMode
 
     /// Reset state for data in Normal Mode
     let _emptyData = {
+        Command = StringUtil.empty;
         IsOperatorPending = false;
         IsInRepeatLastChange = false;
         IsInReplace = false;
@@ -37,7 +39,7 @@ type internal NormalMode
     member this.CaretPoint = _bufferData.TextView.Caret.Position.BufferPosition
     member this.Settings = _bufferData.Settings
     member this.IncrementalSearch = _incrementalSearch
-    member this.Command = failwith "Need to implement command again"
+    member this.Command = _data.Command
 
     /// Begin an incremental search.  Called when the user types / into the editor
     member this.BeginIncrementalSearch (kind:SearchKind) count reg =
@@ -227,7 +229,7 @@ type internal NormalMode
     
         let complex : seq<string * (int -> Register -> MotionData -> unit)> =
             seq {
-                yield ("d", fun count reg data -> _operations.DeleteSpan data.OperationSpan |> ignore)
+                yield ("d", fun count reg data -> _operations.DeleteSpan data.OperationSpan data.MotionKind data.OperationKind reg |> ignore)
                 yield ("y", fun count reg data -> _operations.Yank data.OperationSpan data.MotionKind data.OperationKind reg)
                 yield ("c", fun count reg data -> _operations.DeleteSpan data.OperationSpan data.MotionKind data.OperationKind reg |> ignore)
                 yield ("<", fun _ _ data -> _operations.ShiftSpanLeft data.OperationSpan)
@@ -344,8 +346,12 @@ type internal NormalMode
     
     member this.ProcessCore (ki:KeyInput) =
         if ki.Key = VimKey.EscapeKey then 
+            this.Reset()
             ProcessResult.SwitchPreviousMode
         else
+            let command = _data.Command + ki.Char.ToString()
+            _data <- {_data with Command=command }
+
             match _runner.Run ki with
             | RunKeyInputResult.NeedMoreKeyInput -> ProcessResult.Processed
             | RunKeyInputResult.NestedRunDetected -> ProcessResult.Processed
