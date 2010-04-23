@@ -116,9 +116,9 @@ type internal VisualMode
 
     interface IMode with
         member x.VimBuffer = _buffer
-        member x.Commands = 
+        member x.CommandNames = 
             x.EnsureCommandsBuilt()
-            _runner.Commands |> Seq.map (fun command -> command.CommandName.KeyInputs.Head)
+            _runner.Commands |> Seq.map (fun command -> command.CommandName)
         member x.ModeKind = _kind
         member x.CanProcess (ki:KeyInput) = true
         member x.Process (ki : KeyInput) =  

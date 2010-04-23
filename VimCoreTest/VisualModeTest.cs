@@ -65,7 +65,8 @@ namespace VimCoreTest
         public void Commands1()
         {
             Create("foo");
-            Assert.IsTrue(_mode.Commands.Contains(InputUtil.VimKeyToKeyInput(VimKey.EscapeKey)));
+            var name = CommandName.NewOneKeyInput(InputUtil.VimKeyToKeyInput(VimKey.EscapeKey));
+            Assert.IsTrue(_mode.CommandNames.Contains(name));
         }
 
         [Test,Description("Movement commands")]
@@ -82,10 +83,11 @@ namespace VimCoreTest
                 InputUtil.VimKeyToKeyInput(VimKey.UpKey),
                 InputUtil.VimKeyToKeyInput(VimKey.DownKey),
                 InputUtil.VimKeyToKeyInput(VimKey.BackKey) };
-            var commands = _mode.Commands.ToList();
+            var commands = _mode.CommandNames.ToList();
             foreach (var item in list)
             {
-                Assert.Contains(item, commands); 
+                var name = CommandName.NewOneKeyInput(item);
+                Assert.Contains(name, commands);
             }
         }
 
@@ -140,7 +142,7 @@ namespace VimCoreTest
             Create(lines:"foo");
             var input = InputUtil.CharToKeyInput(',');
             _operations.Setup(x => x.Beep()).Verifiable();
-            Assert.IsFalse(_mode.Commands.Any(x => x.Char == input.Char));
+            Assert.IsFalse(_mode.CommandNames.Any(x => x.KeyInputs.First().Char == input.Char));
             Assert.IsTrue(_mode.CanProcess(input));
             var ret = _mode.Process(input);
             Assert.IsTrue(ret.IsProcessed);

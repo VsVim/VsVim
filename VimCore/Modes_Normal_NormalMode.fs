@@ -378,9 +378,9 @@ type internal NormalMode
         member this.IsInReplace = _data.IsInReplace
         member this.VimBuffer = _bufferData
         member this.Command = this.Command
-        member this.Commands = 
+        member this.CommandNames = 
             this.EnsureCommands()
-            _runner.Commands |> Seq.map (fun command -> command.CommandName.KeyInputs.Head)
+            _runner.Commands |> Seq.map (fun command -> command.CommandName)
 
         member this.ModeKind = ModeKind.Normal
 

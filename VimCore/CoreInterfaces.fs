@@ -779,7 +779,7 @@ and IMode =
     abstract ModeKind : ModeKind
 
     /// Sequence of commands handled by the Mode.  
-    abstract Commands : seq<KeyInput>
+    abstract CommandNames : seq<CommandName>
 
     /// Can the mode process this particular KeyIput at the current time
     abstract CanProcess : KeyInput -> bool

@@ -49,7 +49,7 @@ namespace VimCoreTest.Utils
             throw new NotImplementedException();
         }
 
-        public IEnumerable<KeyInput> Commands
+        public IEnumerable<CommandName> CommandNames
         {
             get { throw new NotImplementedException(); }
         }

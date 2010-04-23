@@ -37,7 +37,7 @@ namespace VimCoreTest
         [Test]
         public void Commands1()
         {
-            Assert.IsTrue(_mode.Commands.First().Equals(GlobalSettings.DisableCommand));
+            Assert.IsTrue(_mode.CommandNames.First().KeyInputs.First().Equals(GlobalSettings.DisableCommand));
         }
 
         [Test]

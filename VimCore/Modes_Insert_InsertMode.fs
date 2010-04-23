@@ -30,7 +30,7 @@ type internal InsertMode
 
     interface IMode with 
         member x.VimBuffer = _data
-        member x.Commands = _commands |> Seq.ofList
+        member x.CommandNames =  _commands |> Seq.map OneKeyInput
         member x.ModeKind = ModeKind.Insert
         member x.CanProcess (ki:KeyInput) = 
             match _commands |> List.tryFind (fun d -> d = ki) with

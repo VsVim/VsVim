@@ -1916,8 +1916,9 @@ namespace VimCoreTest
         {
             Create(s_lines);
             var def = new KeyInput(']', KeyModifiers.Control);
+            var name = CommandName.NewOneKeyInput(def);
             Assert.IsTrue(_mode.CanProcess(def));
-            Assert.IsTrue(_mode.Commands.Contains(def));
+            Assert.IsTrue(_mode.CommandNames.Contains(name));
         }
 
         [Test]
@@ -1934,7 +1935,7 @@ namespace VimCoreTest
         {
             Create(s_lines);
             Assert.IsTrue(_mode.CanProcess(InputUtil.CharToKeyInput('m')));
-            Assert.IsTrue(_mode.Commands.Contains(InputUtil.CharToKeyInput('m')));
+            Assert.IsTrue(_mode.CommandNames.Any(x => x.KeyInputs.First().Char == 'm'));
         }
 
         [Test, Description("Once we are in mark mode we can process anything")]
@@ -1972,8 +1973,8 @@ namespace VimCoreTest
             Create(s_lines);
             Assert.IsTrue(_mode.CanProcess(InputUtil.CharToKeyInput('\'')));
             Assert.IsTrue(_mode.CanProcess(InputUtil.CharToKeyInput('`')));
-            Assert.IsTrue(_mode.Commands.Contains(InputUtil.CharToKeyInput('\'')));
-            Assert.IsTrue(_mode.Commands.Contains(InputUtil.CharToKeyInput('`')));
+            Assert.IsTrue(_mode.CommandNames.Any(x => x.KeyInputs.First().Char == '\''));
+            Assert.IsTrue(_mode.CommandNames.Any(x => x.KeyInputs.First().Char == '`'));
         }
 
         [Test]
