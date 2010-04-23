@@ -302,6 +302,10 @@ type ICommandRunner =
     /// initial state
     abstract ResetState : unit -> unit
 
+    /// Raised when a command is successfully run
+    [<CLIEvent>]
+    abstract CommandRan : IEvent<CommandRunData * CommandResult>
+
 /// Modes for a key remapping
 type KeyRemapMode =
     | Normal 

@@ -654,5 +654,57 @@ namespace VimCoreTest
             Assert.AreSame(command1, _runner.State.AsNotFinishedWithCommand().Item);
         }
 
+        [Test]
+        public void CommandRan1()
+        {
+            Create("hello world");
+            var didSee = false;
+            var command1 = CreateSimpleCommand("c", (x, y) => CommandResult.NewCompleted(ModeSwitch.NoSwitch));
+            _runner.Add(command1);
+            _runner.CommandRan += (notUsed,tuple) =>
+                {
+                    Assert.AreSame(command1, tuple.Item1.Command);
+                    Assert.IsTrue(tuple.Item2.IsCompleted);
+                    didSee = true;
+                };
+            _runner.Run('c');
+            Assert.IsTrue(didSee);
+        }
+
+        [Test]
+        public void CommandRan2()
+        {
+            Create("hello world");
+            var didSee = false;
+            var command1 = CreateSimpleCommand("c", (x, y) => CommandResult.NewCompleted(ModeSwitch.NoSwitch));
+            _runner.Add(command1);
+            _runner.CommandRan += (notUsed,tuple) =>
+                {
+                    Assert.AreSame(command1, tuple.Item1.Command);
+                    Assert.AreEqual(2, tuple.Item1.Count.Value);
+                    Assert.IsTrue(tuple.Item2.IsCompleted);
+                    didSee = true;
+                };
+            _runner.Run('2');
+            _runner.Run('c');
+            Assert.IsTrue(didSee);
+        }
+
+        [Test]
+        public void CommandRan3()
+        {
+            Create("hello world");
+            var didSee = false;
+            var command1 = CreateSimpleCommand("cat", (x, y) => CommandResult.NewCompleted(ModeSwitch.NoSwitch));
+            _runner.Add(command1);
+            _runner.CommandRan += (notUsed,tuple) =>
+                {
+                    didSee = true;
+                };
+            _runner.Run('c');
+            _runner.Run(InputUtil.VimKeyToKeyInput(VimKey.EscapeKey));
+            Assert.IsFalse(didSee);
+        }
+
     }
 }

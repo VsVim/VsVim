@@ -38,6 +38,8 @@ type internal CommandRunner
         Inputs = List.empty;
         State = CommandRunnerState.NoInput
     }
+
+    let _commandRanEvent = Event<_>()
     
     let mutable _commandMap : Map<CommandName,Command> = Map.empty
 
@@ -46,9 +48,6 @@ type internal CommandRunner
 
     /// The current function which handles running input
     let mutable _runFunc : KeyInput -> RunResult = fun _ -> RunResult.CancelledCommand
-
-    /// The full command string of the current input
-    let mutable _commandString = StringUtil.empty
 
     /// True during the running of a particular KeyInput 
     let mutable _inRun = false
@@ -236,6 +235,7 @@ type internal CommandRunner
                     RunKeyInputResult.NoMatchingCommand
                 | RunResult.RanCommand(data,result) -> 
                     x.ResetState()
+                    _commandRanEvent.Trigger (data,result)
                     match result with
                     | CommandResult.Completed(modeSwitch) -> RunKeyInputResult.CommandRan (data,modeSwitch)
                     | CommandResult.Error(msg) -> RunKeyInputResult.CommandErrored (data,msg)
@@ -265,6 +265,8 @@ type internal CommandRunner
         member x.Remove name = x.Remove name
         member x.ResetState () = x.ResetState()
         member x.Run ki = x.Run ki
+        [<CLIEvent>]
+        member x.CommandRan = _commandRanEvent.Publish
 
 
 
