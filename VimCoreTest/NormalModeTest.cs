@@ -62,7 +62,15 @@ namespace VimCoreTest
             _operations = new Mock<IOperations>(MockBehavior.Strict);
             _operations.SetupGet(x => x.EditorOperations).Returns(_editorOperations.Object);
             _operations.SetupGet(x => x.TextView).Returns(_view);
-            _modeRaw = new Vim.Modes.Normal.NormalMode(Tuple.Create(_bufferData.Object, _operations.Object, _incrementalSearch.Object, _statusUtil.Object, _displayWindowBroker.Object));
+
+            var runner = new CommandRunner(Tuple.Create((ITextView)_view, _map, _statusUtil.Object));
+            _modeRaw = new Vim.Modes.Normal.NormalMode(Tuple.Create(
+                _bufferData.Object,
+                _operations.Object,
+                _incrementalSearch.Object,
+                _statusUtil.Object,
+                _displayWindowBroker.Object,
+                (ICommandRunner)runner));
             _mode = _modeRaw;
             _mode.OnEnter();
         }
@@ -1814,15 +1822,6 @@ namespace VimCoreTest
         #endregion
 
         #region Misc
-
-        [Test]
-        public void Register1()
-        {
-            Create("foo");
-            Assert.AreEqual('_', _modeRaw.Register.Name);
-            _mode.Process("\"c");
-            Assert.AreEqual('c', _modeRaw.Register.Name);
-        }
 
         [Test]
         public void Undo1()

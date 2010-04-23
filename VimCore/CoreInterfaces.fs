@@ -50,7 +50,17 @@ type ModeKind =
     // Mode when Vim is disabled via the user
     | Disabled = 42
 
-/// The actual command name
+/// The actual command name.  This is a wrapper over the collection of KeyInput 
+/// values which make up a command name.  
+///
+/// The intent of this type is that two values are equal if the sequence of 
+/// KeyInputs are Equal.  So a OneKeyInput can be equal to a ManyKeyInputs if the
+/// have the same values
+///
+/// It is not possible to simple store this as a string as it is possible, and 
+/// in fact likely due to certain virtual key codes which are unable to be mapped,
+/// for KeyInput values will map to a single char.  Hence to maintain proper semantics
+/// we have to use KeyInput values directly.
 [<CustomEquality; CustomComparison>]
 type CommandName =
     | EmptyName 
@@ -79,6 +89,17 @@ type CommandName =
         | OneKeyInput(previous) -> TwoKeyInputs(previous,ki)
         | TwoKeyInputs(p1,p2) -> ManyKeyInputs [p1;p2;ki]
         | ManyKeyInputs(list) -> ManyKeyInputs (list @ [ki])
+
+    /// Does the name start with the given KeyInput
+    member x.StartsWith target = 
+        match x with 
+        | EmptyName -> false
+        | OneKeyInput(ki) -> target = ki
+        | TwoKeyInputs(ki,_) -> target = ki
+        | ManyKeyInputs(list) ->
+            match ListUtil.tryHeadOnly list with
+            | None -> false
+            | Some(ki) -> target = ki
 
     override x.GetHashCode() = 
         match x with
@@ -238,8 +259,12 @@ type ICommandRunner =
     /// True if waiting on more input
     abstract IsWaitingForMoreInput : bool
 
-    /// Add a Command 
+    /// Add a Command.  If there is already a Command with the same name an exception will
+    /// be raised
     abstract Add : Command -> unit
+
+    /// Remove a command with the specified name
+    abstract Remove : CommandName -> unit
 
     /// Process the given KeyInput.  If the command completed it will return a result.  A
     /// None value implies more input is needed to finish the operation

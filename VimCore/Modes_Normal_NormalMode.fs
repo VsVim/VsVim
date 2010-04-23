@@ -37,6 +37,7 @@ type internal NormalMode
     member this.CaretPoint = _bufferData.TextView.Caret.Position.BufferPosition
     member this.Settings = _bufferData.Settings
     member this.IncrementalSearch = _incrementalSearch
+    member this.Command = failwith "Need to implement command again"
 
     /// Begin an incremental search.  Called when the user types / into the editor
     member this.BeginIncrementalSearch (kind:SearchKind) =
@@ -328,83 +329,50 @@ type internal NormalMode
     
         Seq.append completeOps completeOps2 |> Seq.append changeOps
    
-    /// Reset the internal data for the NormalMode instance
-    member this.ResetData() = 
-        _data <- {Count=None;Register=_bufferData.RegisterMap.DefaultRegister;KeyInputs=List.empty;Command=""}
-        _runFunc <- this.StartCore
-        _waitingForMoreInput <- false
-        _isOperatingPending <- false
-        _isInReplace <- false
-        if _operationMap.Count = 0 then
-            _operationMap <- this.BuildOperationsMap
+    member private this.EnsureCommands() = 
+        if _runner.Commands |> Seq.isEmpty then
+            this.CreateSimpleCommands()
+            |> Seq.append (this.CreateMovementCommands())
+            |> Seq.append (this.CreateMotionCommands())
+            |> Seq.append (this.CreateLongCommands())
+            |> Seq.append (this.CreateCommandsOld())
+            |> Seq.iter _runner.Add
 
-    member this.Register = _data.Register   
-    member this.Count = _data.Count
-    member this.Command = _data.Command
+    member this.Reset() =
+        _runner.Reset()
+        _data <- _emptyData
+    
+    member this.ProcessCore (ki:KeyInput) =
 
-    member this.ProcessCore ki =
-
-        // Update the command string
-        let commandInputs = ki :: _data.KeyInputs
-        let command = _data.Command + (ki.Char.ToString())
-        _data <- {_data with KeyInputs=commandInputs;Command=command }
-
-        let rec inner ki = 
-            match _runFunc ki this.Count this.Register with
-                | NormalModeResult.Complete ->
-                    this.ResetData()
-                    _commandExecutedEvent.Trigger NonRepeatableCommand
-                    Processed
-                | NormalModeResult.CompleteNotCommand ->
-                    this.ResetData()
-                    Processed
-                | NormalModeResult.CompleteRepeatable(count,reg) ->
-                    let commandInputs = _data.KeyInputs
-                    this.ResetData()
-                    _commandExecutedEvent.Trigger (RepeatableCommand((commandInputs |> List.rev),count,reg))
-                    Processed
-                | NormalModeResult.NeedMoreInput(f) ->
-                    _runFunc <- (fun ki count reg -> f ki (CountOrDefault count) reg)
-                    _waitingForMoreInput <- true
-                    Processed
-                | NormalModeResult.NeedMoreInput2(f) ->
-                    _runFunc <- f 
-                    _waitingForMoreInput <- true
-                    Processed
-                | NormalModeResult.OperatorPending(f) ->
-                    _runFunc <- (fun ki count reg -> f ki (CountOrDefault count) reg)
-                    _waitingForMoreInput <- true
-                    _isOperatingPending <- true
-                    Processed
-                | NormalModeResult.SwitchMode (kind) -> 
-                    this.ResetData() // Make sure to reset information when switching modes
-                    ProcessResult.SwitchMode kind
-                | CountComplete (count,nextKi) ->
-                    _data <- {_data with Count=Some(count);KeyInputs=[nextKi]};
-                    _runFunc <- this.StartCore
-
-                    // Do not go to Process or ProcessCore here because it will record the key for 
-                    // a second time
-                    inner nextKi
-                | RegisterComplete (reg) ->     
-                    _data <- {_data with Register=reg;KeyInputs=List.empty }
-                    _runFunc <- this.StartCore
-                    _waitingForMoreInput <- false
-                    Processed
-
-        inner ki
+        if ki.Key = VimKey.EscapeKey then 
+            ProcessResult.SwitchPreviousMode
+        else
+            match _runner.Run ki with
+            | RunKeyInputResult.NeedMoreKeyInput -> ProcessResult.Processed
+            | RunKeyInputResult.NestedRunDetected -> ProcessResult.Processed
+            | RunKeyInputResult.CommandRan(_,modeSwitch) ->
+                this.Reset()
+                match modeSwitch with
+                | ModeSwitch.NoSwitch -> ProcessResult.Processed
+                | ModeSwitch.SwitchMode(kind) -> ProcessResult.SwitchMode kind
+                | ModeSwitch.SwitchPreviousMode -> ProcessResult.SwitchPreviousMode
+            | RunKeyInputResult.CommandErrored(_) -> 
+                this.Reset()
+                ProcessResult.Processed
+            | RunKeyInputResult.CommandCancelled -> 
+                this.Reset()
+                ProcessResult.Processed
     
     interface INormalMode with 
-        member this.IsOperatorPending = _isOperatingPending
-        member this.IsWaitingForInput = _waitingForMoreInput
+        member this.IsOperatorPending = _data.IsOperatorPending
+        member this.IsWaitingForInput = _runner.IsWaitingForMoreInput
         member this.IncrementalSearch = _incrementalSearch
-        member this.IsInReplace = _isInReplace
+        member this.IsInReplace = _data.IsInReplace
         member this.VimBuffer = _bufferData
         member this.Command = this.Command
         member this.Commands = 
-            _operationMap
-                |> Map.toSeq
-                |> Seq.map (fun (k,v) -> k)
+            this.EnsureCommands()
+            _runner.Commands |> Seq.map (fun command -> command.CommandName.KeyInputs.Head)
 
         member this.ModeKind = ModeKind.Normal
 
@@ -412,16 +380,20 @@ type internal NormalMode
         member this.CommandExecuted = _commandExecutedEvent.Publish
 
         member this.CanProcess (ki:KeyInput) =
+            let doesCommandStartWith ki =
+                _runner.Commands 
+                |> Seq.filter (fun command -> command.CommandName.StartsWith ki)
+                |> SeqUtil.isNotEmpty
+
             if _displayWindowBroker.IsSmartTagWindowActive then false                
-            elif _waitingForMoreInput then  true
+            elif _runner.IsWaitingForMoreInput then  true
             elif CharUtil.IsLetterOrDigit(ki.Char) then true
-            elif _operationMap.ContainsKey ki then true
+            elif doesCommandStartWith ki then true
             elif InputUtil.CoreCharactersSet |> Set.contains ki.Char then true
             else false
 
         member this.Process ki = this.ProcessCore ki
-        member this.OnEnter ()  =
-            this.ResetData()
+        member this.OnEnter ()  = this.Reset()
         member this.OnLeave () = ()
     
 

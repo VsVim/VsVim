@@ -37,7 +37,7 @@ type internal CommandRunner
         Inputs = List.empty;
     }
     
-    let mutable _commands : Command list = List.Empty
+    let mutable _commandMap : Map<CommandName,Command> = Map.empty
 
     /// Contains all of the state data for a Command operation
     let mutable _data = _emptyData
@@ -139,18 +139,13 @@ type internal CommandRunner
     /// Try and run a command with the given name
     member private x.RunCommand commandName previousCommandName currentInput = 
 
-        // Find any commands matching the given name
-        let findMatches commandName =  
-            _commands 
-            |> Seq.filter (fun command -> command.CommandName = commandName)
-            |> List.ofSeq
-
         // Find any commands which have the given prefix
         let findPrefixMatches (commandName:CommandName) =
             let commandInputs = commandName.KeyInputs
             let count = List.length commandInputs
             let commandInputsSeq = commandInputs |> Seq.ofList
-            _commands
+            _commandMap
+            |> Seq.map (fun pair -> pair.Value)
             |> Seq.filter (fun command -> command.CommandName.KeyInputs.Length >= count)
             |> Seq.filter (fun command -> 
                 let short = command.CommandName.KeyInputs |> Seq.ofList |> Seq.take count
@@ -162,9 +157,8 @@ type internal CommandRunner
             let result = func _data.Count _data.Register 
             RanCommand (data,result)
 
-        let matches = findMatches commandName
-        if matches.Length = 1 then 
-            let command = matches |> List.head
+        match Map.tryFind commandName _commandMap with
+        | Some(command) ->
             match command with
             | Command.SimpleCommand(_,_,func) -> runCommand command func
             | Command.MotionCommand(_,_,func) -> 
@@ -174,21 +168,18 @@ type internal CommandRunner
                 if Seq.isEmpty withPrefix then x.WaitForMotion command func None
                 else NeedMore x.WaitForCommand
             | Command.LongCommand(_,_,func) -> x.WaitForLongCommand command func
-
-        elif matches.Length = 0 && commandName.KeyInputs.Length > 1 then
-           
-          // It's possible to have 2 commands with similar prefixes where one of them is a MotionCommand.  In this
-          // case we can now resolve the ambiguity
-          let previousMatches = findMatches previousCommandName
-          if previousMatches.Length = 1 then 
-            let command = previousMatches |> List.head
-            match command with
-            | Command.SimpleCommand(_) -> NeedMore x.WaitForCommand
-            | Command.LongCommand(_) -> NeedMore x.WaitForCommand
-            | Command.MotionCommand(_,_,func) -> x.WaitForMotion command func (Some currentInput)
-          else NeedMore x.WaitForCommand
-
-        else NeedMore x.WaitForCommand
+        | None -> 
+            if commandName.KeyInputs.Length > 1 then
+                // It's possible to have 2 commands with similar prefixes where one of them is a MotionCommand.  In this
+                // case we can now resolve the ambiguity
+                match Map.tryFind previousCommandName _commandMap with
+                | Some(command) ->
+                    match command with
+                    | Command.SimpleCommand(_) -> NeedMore x.WaitForCommand
+                    | Command.LongCommand(_) -> NeedMore x.WaitForCommand
+                    | Command.MotionCommand(_,_,func) -> x.WaitForMotion command func (Some currentInput)
+                | None -> NeedMore x.WaitForCommand
+            else NeedMore x.WaitForCommand
 
     /// Starting point for processing input 
     member private x.RunCheckForCountAndRegister (ki:KeyInput) = 
@@ -225,15 +216,17 @@ type internal CommandRunner
             finally
                 _inRun <-false
             
-    member private x.Add command = _commands <- command :: _commands
-    member private x.Reset () =
+    member x.Add (command:Command) = _commandMap <- Map.add command.CommandName command _commandMap
+    member x.Remove (name:CommandName) = _commandMap <- Map.remove name _commandMap
+    member x.Reset () =
         _data <- _emptyData
         _runFunc <- x.RunCheckForCountAndRegister 
 
     interface ICommandRunner with
-        member x.Commands = _commands |> Seq.ofList
+        member x.Commands = _commandMap |> Seq.map (fun pair -> pair.Value)
         member x.IsWaitingForMoreInput = _data.IsWaitingForMoreInput
         member x.Add command = x.Add command
+        member x.Remove name = x.Remove name
         member x.Reset () = x.Reset()
         member x.Run ki = x.Run ki
 
