@@ -258,11 +258,31 @@ type RunKeyInputResult =
     /// the middle of processing one.  This KeyInput was hence ignored
     | NestedRunDetected
 
+    /// No command which matches the given input
+    | NoMatchingCommand 
+
+/// Represents the different states of the ICommandRunner with respect to running a Command
+type CommandRunnerState =
+
+    /// This is the start state.  No input is on the queue and there is no interesting state
+    | NoInput
+
+    /// At least one KeyInput was run but it was not enough to disambiguate which Command to 
+    /// run.  
+    | NotEnoughInput
+
+    /// Waiting for a Motion or Long Command to complete.  Enough input is present to determine this
+    /// is the command to execute but not enough to complete the execution of the command
+    | NotFinishWithCommand of Command
+
 /// Responsible for managing a set of Commands and running them
 type ICommandRunner =
     
     /// Set of Commands currently supported
     abstract Commands : Command seq
+
+    /// Current state of the ICommandRunner
+    abstract State : CommandRunnerState
 
     /// True if waiting on more input
     abstract IsWaitingForMoreInput : bool
@@ -280,7 +300,7 @@ type ICommandRunner =
 
     /// If currently waiting for more input on a Command, reset to the 
     /// initial state
-    abstract Reset : unit -> unit
+    abstract ResetState : unit -> unit
 
 /// Modes for a key remapping
 type KeyRemapMode =

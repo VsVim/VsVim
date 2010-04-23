@@ -341,7 +341,7 @@ type internal NormalMode
             |> Seq.iter _runner.Add
 
     member this.Reset() =
-        _runner.Reset()
+        _runner.ResetState()
         _data <- _emptyData
     
     member this.ProcessCore (ki:KeyInput) =
@@ -365,6 +365,9 @@ type internal NormalMode
                 this.Reset()
                 ProcessResult.Processed
             | RunKeyInputResult.CommandCancelled -> 
+                this.Reset()
+                ProcessResult.Processed
+            | RunKeyInputResult.NoMatchingCommand ->
                 this.Reset()
                 ProcessResult.Processed
     

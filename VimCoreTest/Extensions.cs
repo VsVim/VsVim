@@ -302,6 +302,7 @@ namespace VimCoreTest
 
         #region ITextSnapshot
 
+
         public static ITextSnapshotLine GetLine(this ITextSnapshot tss, int lineNumber)
         {
             return tss.GetLineFromLineNumber(lineNumber);
@@ -331,6 +332,24 @@ namespace VimCoreTest
         public static SnapshotSpan GetSpan(this ITextSnapshot tss, int start, int length)
         {
             return new SnapshotSpan(tss, start, length);
+        }
+
+        #endregion
+
+        #region ICommandRunner
+
+        internal static RunKeyInputResult Run(this ICommandRunner runner, char c)
+        {
+            return runner.Run(InputUtil.CharToKeyInput(c));
+        }
+
+        #endregion
+
+        #region CommandRunnerState
+
+        internal static CommandRunnerState.NotFinishWithCommand AsNotFinishedWithCommand(this CommandRunnerState state)
+        {
+            return (CommandRunnerState.NotFinishWithCommand)state;
         }
 
         #endregion

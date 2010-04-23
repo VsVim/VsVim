@@ -366,6 +366,34 @@ namespace VimCoreTest
         }
 
         [Test]
+        public void Run_NoMatchingCommand1()
+        {
+            Create("hello world");
+            _runner.Add(CreateSimpleCommand("cat", (count, reg) => CommandResult.NewCompleted(ModeSwitch.NoSwitch)));
+            Assert.IsTrue(_runner.Run('b').IsNoMatchingCommand);
+        }
+
+        [Test]
+        public void Run_NoMatchingCommand2()
+        {
+            Create("hello world");
+            _runner.Add(CreateSimpleCommand("cat", (count, reg) => CommandResult.NewCompleted(ModeSwitch.NoSwitch)));
+            Assert.IsTrue(_runner.Run('c').IsNeedMoreKeyInput);
+            Assert.IsTrue(_runner.Run('b').IsNoMatchingCommand);
+        }
+
+        [Test]
+        public void Run_NoMatchingCommand3()
+        {
+            Create("hello world");
+            _runner.Add(CreateSimpleCommand("cot", (count, reg) => CommandResult.NewCompleted(ModeSwitch.NoSwitch)));
+            _runner.Add(CreateSimpleCommand("cook", (count, reg) => CommandResult.NewCompleted(ModeSwitch.NoSwitch)));
+            Assert.IsTrue(_runner.Run('c').IsNeedMoreKeyInput);
+            Assert.IsTrue(_runner.Run('o').IsNeedMoreKeyInput);
+            Assert.IsTrue(_runner.Run('b').IsNoMatchingCommand);
+        }
+
+        [Test]
         public void IsWaitingForMoreInput1()
         {
             Create("hello world");
@@ -450,7 +478,7 @@ namespace VimCoreTest
             _runner.Add(CreateSimpleCommand("abc", (x, y) => CommandResult.NewCompleted(ModeSwitch.NoSwitch)));
             Run("a");
             Assert.IsTrue(_runner.IsWaitingForMoreInput);
-            _runner.Reset();
+            _runner.ResetState();
             Assert.IsFalse(_runner.IsWaitingForMoreInput);
         }
 
@@ -549,6 +577,81 @@ namespace VimCoreTest
 
             var res2 = _runner.Run(InputUtil.CharToKeyInput('a'));
             Assert.IsTrue(res2.IsCommandRan);
+        }
+
+        [Test]
+        public void State1()
+        {
+            Create("hello world");
+            Assert.IsTrue(_runner.State.IsNoInput);
+        }
+
+        [Test]
+        public void State2()
+        {
+            Create("hello world");
+            Assert.IsTrue(_runner.Run('c').IsNoMatchingCommand);
+            Assert.IsTrue(_runner.State.IsNoInput);
+        }
+
+        [Test]
+        public void State3()
+        {
+            Create("hello world");
+            _runner.Add(CreateSimpleCommand("cat", (count, reg) => CommandResult.NewCompleted(ModeSwitch.NoSwitch)));
+            _runner.Run('c');
+            Assert.IsTrue(_runner.State.IsNotEnoughInput);
+        }
+
+        [Test]
+        public void State4()
+        {
+            Create("hello world");
+            _runner.Add(CreateSimpleCommand("cat", (count, reg) => CommandResult.NewCompleted(ModeSwitch.NoSwitch)));
+            _runner.Run('c');
+            _runner.Run(InputUtil.VimKeyToKeyInput(VimKey.EscapeKey));
+            Assert.IsTrue(_runner.State.IsNoInput);
+        }
+
+        [Test]
+        public void State5()
+        {
+            Create("hello world");
+            var command1 = CreateMotionCommand("c", (x, y, z) => CommandResult.NewCompleted(ModeSwitch.NoSwitch));
+            _runner.Add(command1);
+            _runner.Run('c');
+            Assert.IsTrue(_runner.State.IsNotFinishWithCommand);
+            Assert.AreSame(command1, _runner.State.AsNotFinishedWithCommand().Item);
+        }
+
+        [Test]
+        public void State6()
+        {
+            Create("hello world");
+            var command1 = CreateMotionCommand("c", (x, y, z) => CommandResult.NewCompleted(ModeSwitch.NoSwitch));
+            _runner.Add(command1);
+            _runner.Run('c');
+            _runner.Run('w');
+            Assert.IsTrue(_runner.State.IsNoInput);
+        }
+
+        [Test]
+        public void State7()
+        {
+            Create("hello world");
+            var seen = string.Empty;
+            FSharpFunc<KeyInput, LongCommandResult> repeat = null;
+            Converter<KeyInput, LongCommandResult> func = ki =>
+            {
+                seen += ki.Char.ToString();
+                return LongCommandResult.NewNeedMoreInput(repeat);
+            };
+            repeat = FSharpFunc<KeyInput, LongCommandResult>.FromConverter(func);
+            var command1 = CreateLongCommand("f", (x, y) => LongCommandResult.NewNeedMoreInput(repeat));
+            _runner.Add(command1);
+            _runner.Run('f');
+            Assert.IsTrue(_runner.State.IsNotFinishWithCommand);
+            Assert.AreSame(command1, _runner.State.AsNotFinishedWithCommand().Item);
         }
 
     }

@@ -135,12 +135,13 @@ type internal VisualMode
                     | ModeSwitch.SwitchPreviousMode -> ProcessResult.SwitchPreviousMode
                 | RunKeyInputResult.CommandErrored(_) -> ProcessResult.SwitchPreviousMode
                 | RunKeyInputResult.CommandCancelled -> ProcessResult.SwitchPreviousMode
+                | RunKeyInputResult.NoMatchingCommand -> ProcessResult.Processed
     
         member x.OnEnter () = 
             x.EnsureCommandsBuilt()
             _selectionTracker.Start()
         member x.OnLeave () = 
-            _runner.Reset()
+            _runner.ResetState()
             _selectionTracker.Stop()
 
     interface IVisualMode with
