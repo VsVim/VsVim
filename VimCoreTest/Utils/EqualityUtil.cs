@@ -169,8 +169,8 @@ namespace VimCoreTest.Utils
             {
                 if ( !Object.ReferenceEquals(value, null) )
                 {
-                    Assert.IsFalse(_compareWithInequalityOperator(default(T), value));
-                    Assert.IsFalse(_compareWithInequalityOperator(value, default(T)));
+                    Assert.IsTrue(_compareWithInequalityOperator(default(T), value));
+                    Assert.IsTrue(_compareWithInequalityOperator(value, default(T)));
                 }
             }
         }

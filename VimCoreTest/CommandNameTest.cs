@@ -47,7 +47,7 @@ namespace VimCoreTest
             EqualityUtil.RunAll(
                 (left, right) => left == right,
                 (left, right) => left != right,
-                true,
+                false,
                 true,
                 EqualityUnit.Create(CreateOne('a')).WithEqualValues(CreateOne('a')),
                 EqualityUnit.Create(CreateOne('a')).WithNotEqualValues(CreateOne('b')),

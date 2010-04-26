@@ -122,6 +122,9 @@ type CommandName =
             | _ -> ListUtil.contentsEqual x.KeyInputs y.KeyInputs
         | _ -> false
 
+    static member op_Equality(this,other) = System.Collections.Generic.EqualityComparer<CommandName>.Default.Equals(this,other)
+    static member op_Inequality(this,other) = not (System.Collections.Generic.EqualityComparer<CommandName>.Default.Equals(this,other))
+
     override x.ToString() =
         x.KeyInputs
         |> Seq.map (fun ki ->
