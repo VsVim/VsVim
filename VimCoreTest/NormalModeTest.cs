@@ -2220,96 +2220,127 @@ namespace VimCoreTest
         public void RepeatLastChange4()
         {
             Create("");
-            throw new Exception("Need to implement");
-            //_changeTracker
-            //    .SetupGet(x => x.LastChange)
-            //    .Returns(FSharpOption.Create(RepeatableChange.NewCommandChange(
-            //        (new KeyInput[] { InputUtil.CharToKeyInput('h')}).ToFSharpList(),
-            //        1,
-            //        new Register('c'))))
-            //    .Verifiable();
-            //_operations.Setup(x => x.MoveCaretLeft(1)).Verifiable();
-            //_mode.Process(".");
-            //_operations.Verify();
-            //_changeTracker.Verify();
+            var didRun = false;
+            var data = 
+                VimUtil.CreateCommandRunData(
+                    VimUtil.CreateSimpleCommand("d", (x, y) => { didRun = true; }),
+                    _map.DefaultRegister,
+                    1);
+            _changeTracker
+                .SetupGet(x => x.LastChange)
+                .Returns(FSharpOption.Create(RepeatableChange.NewCommandChange(data)))
+                .Verifiable();
+            _mode.Process(".");
+            _operations.Verify();
+            _changeTracker.Verify();
+            Assert.IsTrue(didRun);
         }
 
         [Test]
         public void RepeatLastChange5()
         {
             Create("");
-            throw new Exception("Need to implement");
-            //_changeTracker
-            //    .SetupGet(x => x.LastChange)
-            //    .Returns(FSharpOption.Create(RepeatableChange.NewNormalModeChange(
-            //        (new KeyInput[] { InputUtil.CharToKeyInput('h')}).ToFSharpList(),
-            //        3,
-            //        new Register('c'))))
-            //    .Verifiable();
-            //_operations.Setup(x => x.MoveCaretLeft(3)).Verifiable();
-            //_mode.Process(".");
-            //_operations.Verify();
-            //_changeTracker.Verify();
+            var didRun = false;
+            var data = 
+                VimUtil.CreateCommandRunData(
+                    VimUtil.CreateSimpleCommand("c", (x, y) => { didRun = true; }),
+                    _map.DefaultRegister,
+                    1);
+            _changeTracker
+                .SetupGet(x => x.LastChange)
+                .Returns(FSharpOption.Create(RepeatableChange.NewCommandChange(data)))
+                .Verifiable();
+            _mode.Process(".");
+            _operations.Verify();
+            _changeTracker.Verify();
+            Assert.IsTrue(didRun);
         }
 
-        [Test]
+        [Test, Description("No new count should use last count")]
         public void RepeatLastChange6()
         {
             Create("");
-            throw new Exception("Need to implement");
-            //_changeTracker
-            //    .SetupGet(x => x.LastChange)
-            //    .Returns(FSharpOption.Create(RepeatableChange.NewNormalModeChange(
-            //        (new KeyInput[] { InputUtil.CharToKeyInput('h')}).ToFSharpList(),
-            //        3,
-            //        new Register('c'))))
-            //    .Verifiable();
-            //_operations.Setup(x => x.MoveCaretLeft(2)).Verifiable();
-            //_mode.Process("2.");
-            //_operations.Verify();
-            //_changeTracker.Verify();
+            var didRun = false;
+            var data =
+                VimUtil.CreateCommandRunData(
+                    VimUtil.CreateSimpleCommand("c", (x, y) =>
+                    {
+                        Assert.AreEqual(2, y.Value);
+                        didRun = true;
+                    }),
+                    _map.DefaultRegister,
+                    2);
+            _changeTracker
+                .SetupGet(x => x.LastChange)
+                .Returns(FSharpOption.Create(RepeatableChange.NewCommandChange(data)))
+                .Verifiable();
+            _mode.Process(".");
+            _operations.Verify();
+            _changeTracker.Verify();
+            Assert.IsTrue(didRun);
         }
 
-        [Test, Description("Executing . should not clear the last command")]
+        [Test, Description("New Count sohuld replace old count")]
         public void RepeatLastChange7()
         {
             Create("");
-            throw new Exception("Need to implement");
-            //var count = 0;
-            //_changeTracker
-            //    .SetupGet(x => x.LastChange)
-            //    .Returns(FSharpOption.Create(RepeatableChange.NewNormalModeChange(
-            //        (new KeyInput[] { InputUtil.CharToKeyInput('h') }).ToFSharpList(),
-            //        3,
-            //        new Register('c'))))
-            //    .Callback(() => { count++; });
-
-            //_operations.Setup(x => x.MoveCaretLeft(3)).Verifiable();
-            //_mode.Process(".");
-            //_mode.Process(".");
-            //_mode.Process(".");
-            //_operations.Verify();
-            //_changeTracker.Verify();
-            //Assert.AreEqual(3, count);
+            var didRun = false;
+            var data =
+                VimUtil.CreateCommandRunData(
+                    VimUtil.CreateSimpleCommand("c", (x, y) =>
+                    {
+                        Assert.AreEqual(4, y.Value);
+                        didRun = true;
+                    }),
+                    _map.DefaultRegister,
+                    2);
+            _changeTracker
+                .SetupGet(x => x.LastChange)
+                .Returns(FSharpOption.Create(RepeatableChange.NewCommandChange(data)))
+                .Verifiable();
+            _mode.Process("4.");
+            _operations.Verify();
+            _changeTracker.Verify();
+            Assert.IsTrue(didRun);
         }
 
-        [Test, Description("Guard against a possible stack overflow with a recursive . repeat")]
+        [Test, Description("Executing . should not clear the last command")]
         public void RepeatLastChange8()
         {
             Create("");
-            throw new Exception("Need to implement");
-            //_changeTracker
-            //    .SetupGet(x => x.LastChange)
-            //    .Returns(FSharpOption.Create(RepeatableChange.NewNormalModeChange(
-            //        (new KeyInput[] { InputUtil.CharToKeyInput('.') }).ToFSharpList(),
-            //        3,
-            //        new Register('c'))))
-            //    .Verifiable();
+            var runCount = 0;
+            var data =
+                VimUtil.CreateCommandRunData(
+                    VimUtil.CreateSimpleCommand("c", (x, y) => { runCount++; }),
+                    _map.DefaultRegister);
+            _changeTracker
+                .SetupGet(x => x.LastChange)
+                .Returns(FSharpOption.Create(RepeatableChange.NewCommandChange(data)))
+                .Verifiable();
+            _mode.Process(".");
+            _mode.Process(".");
+            _mode.Process(".");
+            Assert.AreEqual(3, runCount);
+            _operations.Verify();
+            _changeTracker.Verify();
+        }
 
-            //_statusUtil.Setup(x => x.OnError(Resources.NormalMode_RecursiveRepeatDetected)).Verifiable();
-            //_mode.Process(".");
-            //_statusUtil.Verify();
-            //_changeTracker.Verify();
+        [Test, Description("Guard against a possible stack overflow with a recursive . repeat")]
+        public void RepeatLastChange9()
+        {
+            Create("");
+            var data =
+                VimUtil.CreateCommandRunData(
+                    VimUtil.CreateSimpleCommand("c", (x, y) => { _mode.Process('.'); }),
+                    _map.DefaultRegister);
+            _changeTracker
+                .SetupGet(x => x.LastChange)
+                .Returns(FSharpOption.Create(RepeatableChange.NewCommandChange(data)))
+                .Verifiable();
+            _statusUtil.Setup(x => x.OnError(Resources.NormalMode_RecursiveRepeatDetected)).Verifiable();
+            _mode.Process(".");
+            _changeTracker.Verify();
+            _statusUtil.Verify();
         }
 
         #endregion

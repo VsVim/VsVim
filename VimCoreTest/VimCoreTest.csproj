@@ -188,6 +188,7 @@
     <Compile Include="Utils\MockVimBuffer.cs" />
     <Compile Include="Utils\TestableSynchronizationContext.cs" />
     <Compile Include="Utils\TextUndoHistoryRegistry.cs" />
+    <Compile Include="Utils\VimUtil.cs" />
     <Compile Include="ViewUtilTest.cs" />
     <Compile Include="VimBufferFactoryIntegrationTest.cs" />
     <Compile Include="VimBufferTests.cs" />
