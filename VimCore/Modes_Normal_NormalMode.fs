@@ -40,6 +40,9 @@ type internal NormalMode
     member this.Settings = _bufferData.Settings
     member this.IncrementalSearch = _incrementalSearch
     member this.Command = _data.Command
+    member this.Commands = 
+        this.EnsureCommands()
+        _runner.Commands
 
     /// Begin an incremental search.  Called when the user types / into the editor
     member this.BeginIncrementalSearch (kind:SearchKind) count reg =
@@ -227,22 +230,24 @@ type internal NormalMode
     /// Create all motion commands
     member this.CreateMotionCommands() =
     
-        let complex : seq<string * (int -> Register -> MotionData -> unit)> =
+        let complex : seq<string * ModeKind option * (int -> Register -> MotionData -> unit)> =
             seq {
-                yield ("d", fun count reg data -> _operations.DeleteSpan data.OperationSpan data.MotionKind data.OperationKind reg |> ignore)
-                yield ("y", fun count reg data -> _operations.Yank data.OperationSpan data.MotionKind data.OperationKind reg)
-                yield ("c", fun count reg data -> _operations.DeleteSpan data.OperationSpan data.MotionKind data.OperationKind reg |> ignore)
-                yield ("<", fun _ _ data -> _operations.ShiftSpanLeft data.OperationSpan)
-                yield (">", fun _ _ data -> _operations.ShiftSpanRight data.OperationSpan)
+                yield ("d", None, fun count reg data -> _operations.DeleteSpan data.OperationSpan data.MotionKind data.OperationKind reg |> ignore)
+                yield ("y", None, fun count reg data -> _operations.Yank data.OperationSpan data.MotionKind data.OperationKind reg)
+                yield ("c", Some ModeKind.Insert, fun count reg data -> _operations.DeleteSpan data.OperationSpan data.MotionKind data.OperationKind reg |> ignore)
+                yield ("<", None, fun _ _ data -> _operations.ShiftSpanLeft data.OperationSpan)
+                yield (">", None, fun _ _ data -> _operations.ShiftSpanRight data.OperationSpan)
             }
 
         complex
-        |> Seq.map (fun (str,func) ->
+        |> Seq.map (fun (str,modeKindOpt, func) ->
             let name = CommandUtil.CreateCommandName str
             let func2 count reg data =
                 let count = CommandUtil.CountOrDefault count
                 func count reg data
-                CommandResult.Completed ModeSwitch.NoSwitch
+                match modeKindOpt with
+                | None -> CommandResult.Completed ModeSwitch.NoSwitch
+                | Some(modeKind) -> CommandResult.Completed (ModeSwitch.SwitchMode modeKind)
             MotionCommand(name, CommandKind.NotRepeatable, func2))
 
     /// Create all of the movement commands

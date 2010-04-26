@@ -62,6 +62,7 @@ type ModeKind =
 /// for KeyInput values will map to a single char.  Hence to maintain proper semantics
 /// we have to use KeyInput values directly.
 [<CustomEquality; CustomComparison>]
+[<DebuggerDisplay("{ToString(),nq}")>]
 type CommandName =
     | EmptyName 
     | OneKeyInput of KeyInput
@@ -169,6 +170,7 @@ type CommandKind =
     | Special
 
 /// Representation of commands within Vim.  
+[<DebuggerDisplay("{ToString(),nq}")>]
 type Command = 
     
     /// Represents a Command which has no motion modifiers.  The  delegate takes 
@@ -201,6 +203,9 @@ type Command =
         | SimpleCommand(_,value,_ ) -> value
         | MotionCommand(_,value,_) -> value
         | LongCommand(_,value,_) -> value
+
+    override x.ToString() = System.String.Format("{0} -> {1}", x.CommandName, x.CommandKind)
+
 
 /// The information about the particular run of a Command
 type CommandRunData = {

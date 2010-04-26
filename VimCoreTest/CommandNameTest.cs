@@ -51,7 +51,9 @@ namespace VimCoreTest
                 true,
                 EqualityUnit.Create(CreateOne('a')).WithEqualValues(CreateOne('a')),
                 EqualityUnit.Create(CreateOne('a')).WithNotEqualValues(CreateOne('b')),
-                EqualityUnit.Create(CreateOne('a')).WithEqualValues(CreateMany('a')));
+                EqualityUnit.Create(CreateOne('a')).WithEqualValues(CreateMany('a')),
+                EqualityUnit.Create(CreateOne('D')).WithEqualValues(CommandUtil.CreateCommandName("D")),
+                EqualityUnit.Create(CommandName.NewOneKeyInput(InputUtil.CharToKeyInput('D'))).WithEqualValues(CommandUtil.CreateCommandName("D")));
         }
     }
 }

@@ -2159,94 +2159,28 @@ namespace VimCoreTest
         }
 
         [Test]
-        public void CommandExecuted1()
+        public void Commands1()
         {
             Create("foo");
-            _operations.Setup(x => x.DeleteLinesFromCursor(1, _map.DefaultRegister));
-            var didSee = false;
-            _mode.CommandExecuted += (unused, command) =>
-                {
-                    Assert.IsTrue(command.IsRepeatableCommand);
-                    var com = command.AsRepeatabelCommand();
-                    Assert.AreEqual(1, com.Item2);
-                    var inputs = com.Item1.ToList();
-                    Assert.AreEqual(1, inputs.Count);
-                    Assert.AreEqual(InputUtil.CharToKeyInput('D'), inputs[0]);
-                    didSee = true;
-                };
-            _mode.Process('D');
-            Assert.IsTrue(didSee);
+            var all = _modeRaw.Commands.ToList();
+            var found = _modeRaw.Commands.Single(x => x.CommandName.Equals(CommandUtil.CreateCommandName("D")));
+            Assert.AreEqual(CommandKind.Repeatable, found.CommandKind);
         }
 
         [Test]
-        public void CommandExecuted2()
+        public void Commands2()
         {
             Create("foo");
-            _operations.Setup(x => x.DeleteLinesFromCursor(2, _map.DefaultRegister));
-            var didSee = false;
-            _mode.CommandExecuted += (unused, command) =>
-                {
-                    Assert.IsTrue(command.IsRepeatableCommand);
-                    var com = command.AsRepeatabelCommand();
-                    Assert.AreEqual(2, com.Item2);
-                    var inputs = com.Item1.ToList();
-                    Assert.AreEqual(1, inputs.Count);
-                    Assert.AreEqual(InputUtil.CharToKeyInput('D'), inputs[0]);
-                    didSee = true;
-                };
-            _mode.Process("2D");
-            Assert.IsTrue(didSee);
+            var found = _modeRaw.Commands.Single(x => x.CommandName.Equals(CommandUtil.CreateCommandName("h")));
+            Assert.AreNotEqual(CommandKind.Repeatable, found.CommandKind, "Movements should not be repeatable");  
         }
 
         [Test]
-        public void CommandExecuted3()
+        public void Commands3()
         {
-            Create("foo");
-            _operations.Setup(x => x.Beep()).Verifiable();
-            var didSee = false;
-            _mode.CommandExecuted += (unused, command) =>
-                {
-                    Assert.IsTrue(command.IsNonRepeatableCommand);
-                    didSee = true;
-                };
-            _mode.Process(";");
-            Assert.IsTrue(didSee);
-            _operations.Verify();
-        }
-
-        [Test, Description("Make sure movement keys don't register as executed commands")]
-        public void CommandExecuted4()
-        {
-            Create("foo");
-            _operations.Setup(x => x.MoveCaretLeft(1));
-            var didSee = false;
-            _mode.CommandExecuted += (unused, command) =>
-                {
-                    didSee = true;
-                };
-            _mode.Process('h');
-            Assert.IsFalse(didSee);
-        }
-
-        [Test]
-        public void CommandExecuted5()
-        {
-            Create(s_lines);
-            _operations.Setup(x => x.DeleteLinesIncludingLineBreak(2, _map.DefaultRegister));
-            var didSee = false;
-            _mode.CommandExecuted += (unused, command) =>
-                {
-                    Assert.IsTrue(command.IsRepeatableCommand);
-                    var com = command.AsRepeatabelCommand();
-                    Assert.AreEqual(2, com.Item2);
-                    var inputs = com.Item1.ToList();
-                    Assert.AreEqual(2, inputs.Count);
-                    Assert.AreEqual(InputUtil.CharToKeyInput('d'), inputs[0]);
-                    Assert.AreEqual(InputUtil.CharToKeyInput('d'), inputs[1]);
-                    didSee = true;
-                };
-            _mode.Process("2dd");
-            Assert.IsTrue(didSee);
+            Create("foo", "bar", "baz");
+            var found = _modeRaw.Commands.Single(x => x.CommandName.Equals(CommandUtil.CreateCommandName("dd")));
+            Assert.AreEqual(CommandKind.Repeatable, found.CommandKind);
         }
 
         private void AssertIsRepeatable(string initialCommand, string repeatCommand = null, int? count = null)
@@ -2265,24 +2199,6 @@ namespace VimCoreTest
                 };
             _mode.Process(initialCommand);
             Assert.IsTrue(didSee);
-        }
-
-        [Test]
-        public void CommandExecute4()
-        {
-            Create("foo", "bar", "baz");
-            _operations.Setup(x => x.DeleteLinesIncludingLineBreak(1, _map.DefaultRegister));
-            AssertIsRepeatable("dd");
-        }
-
-        [Test]
-        public void CommandExecute5()
-        {
-            Create("foo", "bar", "baz");
-            _operations
-                .Setup(x => x.DeleteSpan(It.IsAny<SnapshotSpan>(), It.IsAny<MotionKind>(), It.IsAny<OperationKind>(), _map.DefaultRegister))
-                .Returns<ITextSnapshot>(null);
-            AssertIsRepeatable("d$");
         }
 
         [Test]
