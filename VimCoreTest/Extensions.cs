@@ -114,16 +114,6 @@ namespace VimCoreTest
 
         #endregion
 
-        #region NormalModeCommand
-
-        internal static NormalModeCommand.RepeatableCommand AsRepeatabelCommand(this NormalModeCommand command)
-        {
-            Assert.IsTrue(command.IsRepeatableCommand);
-            return (NormalModeCommand.RepeatableCommand)command;
-        }
-
-        #endregion
-
         #region RepeatableChange
 
         internal static RepeatableChange.TextChange AsTextChange(this RepeatableChange change)

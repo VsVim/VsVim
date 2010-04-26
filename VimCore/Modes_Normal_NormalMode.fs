@@ -21,8 +21,6 @@ type internal NormalMode
         _displayWindowBroker : IDisplayWindowBroker,
         _runner : ICommandRunner ) =
 
-    let _commandExecutedEvent = Event<_>()
-
     /// Reset state for data in Normal Mode
     let _emptyData = {
         Command = StringUtil.empty;
@@ -383,14 +381,12 @@ type internal NormalMode
         member this.IsInReplace = _data.IsInReplace
         member this.VimBuffer = _bufferData
         member this.Command = this.Command
+        member this.CommandRunner = _runner
         member this.CommandNames = 
             this.EnsureCommands()
             _runner.Commands |> Seq.map (fun command -> command.CommandName)
 
         member this.ModeKind = ModeKind.Normal
-
-        [<CLIEvent>] 
-        member this.CommandExecuted = _commandExecutedEvent.Publish
 
         member this.CanProcess (ki:KeyInput) =
             let doesCommandStartWith ki =

@@ -176,5 +176,21 @@ namespace VimCoreTest.Utils
         }
 
 
+
+
+        public IVisualMode VisualBlockMode
+        {
+            get { throw new NotImplementedException(); }
+        }
+
+        public IVisualMode VisualCharacterMode
+        {
+            get { throw new NotImplementedException(); }
+        }
+
+        public IVisualMode VisualLineMode
+        {
+            get { throw new NotImplementedException(); }
+        }
     }
 }

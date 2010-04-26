@@ -2183,24 +2183,6 @@ namespace VimCoreTest
             Assert.AreEqual(CommandKind.Repeatable, found.CommandKind);
         }
 
-        private void AssertIsRepeatable(string initialCommand, string repeatCommand = null, int? count = null)
-        {
-            repeatCommand = repeatCommand ?? initialCommand;
-            count = count ?? 1;
-            var didSee = false;
-            _mode.CommandExecuted += (unused, command) =>
-                {
-                    Assert.IsTrue(command.IsRepeatableCommand);
-                    var com = command.AsRepeatabelCommand();
-                    var data = new string(com.Item1.Select(x => x.Char).ToArray());
-                    Assert.AreEqual(repeatCommand, data);
-                    Assert.AreEqual(count.Value, com.Item2);
-                    didSee = true;
-                };
-            _mode.Process(initialCommand);
-            Assert.IsTrue(didSee);
-        }
-
         [Test]
         public void RepeatLastChange1()
         {
@@ -2238,91 +2220,96 @@ namespace VimCoreTest
         public void RepeatLastChange4()
         {
             Create("");
-            _changeTracker
-                .SetupGet(x => x.LastChange)
-                .Returns(FSharpOption.Create(RepeatableChange.NewNormalModeChange(
-                    (new KeyInput[] { InputUtil.CharToKeyInput('h')}).ToFSharpList(),
-                    1,
-                    new Register('c'))))
-                .Verifiable();
-            _operations.Setup(x => x.MoveCaretLeft(1)).Verifiable();
-            _mode.Process(".");
-            _operations.Verify();
-            _changeTracker.Verify();
+            throw new Exception("Need to implement");
+            //_changeTracker
+            //    .SetupGet(x => x.LastChange)
+            //    .Returns(FSharpOption.Create(RepeatableChange.NewCommandChange(
+            //        (new KeyInput[] { InputUtil.CharToKeyInput('h')}).ToFSharpList(),
+            //        1,
+            //        new Register('c'))))
+            //    .Verifiable();
+            //_operations.Setup(x => x.MoveCaretLeft(1)).Verifiable();
+            //_mode.Process(".");
+            //_operations.Verify();
+            //_changeTracker.Verify();
         }
 
         [Test]
         public void RepeatLastChange5()
         {
             Create("");
-            _changeTracker
-                .SetupGet(x => x.LastChange)
-                .Returns(FSharpOption.Create(RepeatableChange.NewNormalModeChange(
-                    (new KeyInput[] { InputUtil.CharToKeyInput('h')}).ToFSharpList(),
-                    3,
-                    new Register('c'))))
-                .Verifiable();
-            _operations.Setup(x => x.MoveCaretLeft(3)).Verifiable();
-            _mode.Process(".");
-            _operations.Verify();
-            _changeTracker.Verify();
+            throw new Exception("Need to implement");
+            //_changeTracker
+            //    .SetupGet(x => x.LastChange)
+            //    .Returns(FSharpOption.Create(RepeatableChange.NewNormalModeChange(
+            //        (new KeyInput[] { InputUtil.CharToKeyInput('h')}).ToFSharpList(),
+            //        3,
+            //        new Register('c'))))
+            //    .Verifiable();
+            //_operations.Setup(x => x.MoveCaretLeft(3)).Verifiable();
+            //_mode.Process(".");
+            //_operations.Verify();
+            //_changeTracker.Verify();
         }
 
         [Test]
         public void RepeatLastChange6()
         {
             Create("");
-            _changeTracker
-                .SetupGet(x => x.LastChange)
-                .Returns(FSharpOption.Create(RepeatableChange.NewNormalModeChange(
-                    (new KeyInput[] { InputUtil.CharToKeyInput('h')}).ToFSharpList(),
-                    3,
-                    new Register('c'))))
-                .Verifiable();
-            _operations.Setup(x => x.MoveCaretLeft(2)).Verifiable();
-            _mode.Process("2.");
-            _operations.Verify();
-            _changeTracker.Verify();
+            throw new Exception("Need to implement");
+            //_changeTracker
+            //    .SetupGet(x => x.LastChange)
+            //    .Returns(FSharpOption.Create(RepeatableChange.NewNormalModeChange(
+            //        (new KeyInput[] { InputUtil.CharToKeyInput('h')}).ToFSharpList(),
+            //        3,
+            //        new Register('c'))))
+            //    .Verifiable();
+            //_operations.Setup(x => x.MoveCaretLeft(2)).Verifiable();
+            //_mode.Process("2.");
+            //_operations.Verify();
+            //_changeTracker.Verify();
         }
 
         [Test, Description("Executing . should not clear the last command")]
         public void RepeatLastChange7()
         {
             Create("");
-            var count = 0;
-            _changeTracker
-                .SetupGet(x => x.LastChange)
-                .Returns(FSharpOption.Create(RepeatableChange.NewNormalModeChange(
-                    (new KeyInput[] { InputUtil.CharToKeyInput('h') }).ToFSharpList(),
-                    3,
-                    new Register('c'))))
-                .Callback(() => { count++; });
+            throw new Exception("Need to implement");
+            //var count = 0;
+            //_changeTracker
+            //    .SetupGet(x => x.LastChange)
+            //    .Returns(FSharpOption.Create(RepeatableChange.NewNormalModeChange(
+            //        (new KeyInput[] { InputUtil.CharToKeyInput('h') }).ToFSharpList(),
+            //        3,
+            //        new Register('c'))))
+            //    .Callback(() => { count++; });
 
-            _operations.Setup(x => x.MoveCaretLeft(3)).Verifiable();
-            _mode.Process(".");
-            _mode.Process(".");
-            _mode.Process(".");
-            _operations.Verify();
-            _changeTracker.Verify();
-            Assert.AreEqual(3, count);
+            //_operations.Setup(x => x.MoveCaretLeft(3)).Verifiable();
+            //_mode.Process(".");
+            //_mode.Process(".");
+            //_mode.Process(".");
+            //_operations.Verify();
+            //_changeTracker.Verify();
+            //Assert.AreEqual(3, count);
         }
 
         [Test, Description("Guard against a possible stack overflow with a recursive . repeat")]
         public void RepeatLastChange8()
         {
             Create("");
-            _changeTracker
-                .SetupGet(x => x.LastChange)
-                .Returns(FSharpOption.Create(RepeatableChange.NewNormalModeChange(
-                    (new KeyInput[] { InputUtil.CharToKeyInput('.') }).ToFSharpList(),
-                    3,
-                    new Register('c'))))
-                .Verifiable();
+            throw new Exception("Need to implement");
+            //_changeTracker
+            //    .SetupGet(x => x.LastChange)
+            //    .Returns(FSharpOption.Create(RepeatableChange.NewNormalModeChange(
+            //        (new KeyInput[] { InputUtil.CharToKeyInput('.') }).ToFSharpList(),
+            //        3,
+            //        new Register('c'))))
+            //    .Verifiable();
 
-            _statusUtil.Setup(x => x.OnError(Resources.NormalMode_RecursiveRepeatDetected)).Verifiable();
-            _mode.Process(".");
-            _statusUtil.Verify();
-            _changeTracker.Verify();
+            //_statusUtil.Setup(x => x.OnError(Resources.NormalMode_RecursiveRepeatDetected)).Verifiable();
+            //_mode.Process(".");
+            //_statusUtil.Verify();
+            //_changeTracker.Verify();
         }
 
         #endregion

@@ -145,8 +145,8 @@ type internal VisualMode
             _selectionTracker.Stop()
 
     interface IVisualMode with
-        member x.Operations = _operations
         member x.InExplicitMove = x.InExplicitMove
+        member x.CommandRunner = _runner
 
 
 

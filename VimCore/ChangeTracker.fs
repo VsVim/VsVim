@@ -14,7 +14,10 @@ type internal ChangeTracker() =
     let mutable _currentTextChange : (ITextBuffer * Span) option = None
     
     member private x.OnVimBufferCreated (buffer:IVimBuffer) =
-        buffer.NormalMode.CommandExecuted |> Event.add x.OnCommandExecuted
+        buffer.NormalMode.CommandRunner.CommandRan |> Event.add x.OnCommandRan
+        buffer.VisualLineMode.CommandRunner.CommandRan |> Event.add x.OnCommandRan
+        buffer.VisualBlockMode.CommandRunner.CommandRan |> Event.add x.OnCommandRan
+        buffer.VisualCharacterMode.CommandRunner.CommandRan |> Event.add x.OnCommandRan
         buffer.SwitchedMode |> Event.add (fun _ -> _currentTextChange <- None)
 
         // Listen to the ITextBuffer.Change event.  It's important to unsubscribe to this as the ITextBuffer
@@ -22,10 +25,13 @@ type internal ChangeTracker() =
         let handler = buffer.TextBuffer.Changed |> Observable.subscribe (fun args -> x.OnTextChanged buffer args)
         buffer.TextView.Closed |> Event.add (fun _ -> handler.Dispose())
 
-    member private x.OnCommandExecuted command = 
-        match command with
-        | NonRepeatableCommand -> _last <- None
-        | RepeatableCommand(keyInputs,count,reg) -> _last <- NormalModeChange(keyInputs,count,reg) |> Some
+    member private x.OnCommandRan ((data:CommandRunData),_) = 
+        let command = data.Command
+        match command.CommandKind with
+        | CommandKind.Movement -> () // Movement commands don't participate in the change stack
+        | CommandKind.Special -> () // Special commands don't participate in the change stack
+        | CommandKind.NotRepeatable -> _last <- None
+        | CommandKind.Repeatable -> _last <- CommandChange data |> Some
 
     member private x.OnTextChanged (buffer:IVimBuffer) args =
 

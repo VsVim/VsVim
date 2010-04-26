@@ -13,21 +13,10 @@ namespace VimCoreTest.Utils
         public bool IsWaitingForInputImpl= false;
         public bool IsInReplaceImpl = false;
 
-        void RaisCommandexecuted(NormalModeCommand command)
-        {
-            var e = CommandExecuted;
-            if (e != null)
-            {
-                e(this, command);
-            }
-        }
-
         public string Command
         {
             get { throw new NotImplementedException(); }
         }
-
-        public event Microsoft.FSharp.Control.FSharpHandler<NormalModeCommand> CommandExecuted;
 
         public IIncrementalSearch IncrementalSearch
         {
@@ -83,6 +72,11 @@ namespace VimCoreTest.Utils
         public bool IsInReplace
         {
             get { return IsInReplaceImpl; }
+        }
+
+        public ICommandRunner CommandRunner
+        {
+            get { throw new NotImplementedException(); }
         }
     }
 }

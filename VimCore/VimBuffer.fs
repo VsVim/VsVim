@@ -61,6 +61,9 @@ type internal VimBuffer
     /// Get the current mode
     member x.Mode = _modeMap.Mode
     member x.NormalMode = _modeMap.GetMode ModeKind.Normal :?> INormalMode
+    member x.VisualLineMode = _modeMap.GetMode ModeKind.VisualLine :?> IVisualMode
+    member x.VisualCharacterMode = _modeMap.GetMode ModeKind.VisualCharacter :?> IVisualMode
+    member x.VisualBlockMode = _modeMap.GetMode ModeKind.VisualBlock :?> IVisualMode
     member x.CommandMode = _modeMap.GetMode ModeKind.Command :?> ICommandMode
     member x.DisabledMode = _modeMap.GetMode ModeKind.Disabled :?> IDisabledMode
 
@@ -161,6 +164,9 @@ type internal VimBuffer
         member x.ModeKind = x.Mode.ModeKind
         member x.Mode = x.Mode
         member x.NormalMode = x.NormalMode
+        member x.VisualLineMode = x.VisualLineMode
+        member x.VisualCharacterMode = x.VisualCharacterMode
+        member x.VisualBlockMode = x.VisualBlockMode
         member x.CommandMode = x.CommandMode
         member x.DisabledMode = x.DisabledMode
         member x.AllModes = _modeMap.Modes

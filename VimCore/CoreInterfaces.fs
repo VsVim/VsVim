@@ -713,6 +713,9 @@ and IVimBuffer =
     abstract NormalMode : INormalMode 
     abstract CommandMode : ICommandMode 
     abstract DisabledMode : IDisabledMode
+    abstract VisualLineMode : IVisualMode
+    abstract VisualBlockMode : IVisualMode
+    abstract VisualCharacterMode : IVisualMode
 
     /// Sequence of available Modes
     abstract AllModes : seq<IMode>
@@ -804,6 +807,9 @@ and INormalMode =
     /// Buffered input for the current command
     abstract Command : string 
 
+    /// The ICommandRunner implementation associated with NormalMode
+    abstract CommandRunner : ICommandRunner 
+
     /// Is in the middle of an operator pending 
     abstract IsOperatorPending : bool
 
@@ -816,10 +822,6 @@ and INormalMode =
     /// The IIncrementalSearch instance for normal mode
     abstract IncrementalSearch : IIncrementalSearch
 
-    /// Raised when a command is executed
-    [<CLIEvent>]
-    abstract CommandExecuted : IEvent<NormalModeCommand>
-
     inherit IMode
 
 and ICommandMode = 
@@ -831,6 +833,18 @@ and ICommandMode =
     abstract RunCommand : string -> unit
 
     inherit IMode
+
+and IVisualMode = 
+
+    /// True during the duration of an explicit caret move from within Visual Mode.  Will be 
+    /// false in cases where the caret is moved by a non-Vim item such as the user clicking
+    /// or a third party component repositioning the caret
+    abstract InExplicitMove : bool
+
+    /// The ICommandRunner implementation associated with NormalMode
+    abstract CommandRunner : ICommandRunner 
+
+    inherit IMode 
     
 and IDisabledMode =
     
@@ -839,16 +853,11 @@ and IDisabledMode =
 
     inherit IMode
 
-/// Command executed in normal mode
-and NormalModeCommand =
-    | NonRepeatableCommand
-    | RepeatableCommand of KeyInput list * int * Register 
-
 and IChangeTracker =
     
     abstract LastChange : RepeatableChange option
 
 and RepeatableChange =
-    | NormalModeChange of KeyInput list * int * Register
+    | CommandChange of CommandRunData
     | TextChange of string
 
