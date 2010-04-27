@@ -88,23 +88,25 @@ type internal NormalMode
 
     /// Implements the '.' operator.  This is a special command in that it cannot be easily routed 
     /// to interfaces like ICommonOperations due to the complexity of repeating the command here.  
-    member private this.RepeatLastChange countOpt =  
-        failwith "Need to re-implement repeat last change"
-//        if _isInRepeatLastChange then _statusUtil.OnError Resources.NormalMode_RecursiveRepeatDetected
-//        else
-//            _isInRepeatLastChange <- true
-//            try
-//                match _bufferData.Vim.ChangeTracker.LastChange with
-//                | None -> _operations.Beep()
-//                | Some(lastChange) ->
-//                    match lastChange with
-//                    | TextChange(newText) -> _operations.InsertText newText (CountOrDefault countOpt) |> ignore
-//                    | NormalModeChange(keyInputs,count,_) -> 
-//                        let count = match countOpt with | Some(c) -> c | None -> count
-//                        _data <- {_data with Count=Some(count); }
-//                        keyInputs |> Seq.iter (fun ki -> this.ProcessCore ki |> ignore)
-//            finally
-//                _isInRepeatLastChange <- false
+    member private this.RepeatLastChange countOpt reg =  
+        if _data.IsInRepeatLastChange then _statusUtil.OnError Resources.NormalMode_RecursiveRepeatDetected
+        else
+            _data <- { _data with IsInRepeatLastChange = true }
+            try
+                match _bufferData.Vim.ChangeTracker.LastChange with
+                | None -> _operations.Beep()
+                | Some(lastChange) ->
+                    match lastChange with
+                    | TextChange(newText) -> _operations.InsertText newText (CommandUtil.CountOrDefault countOpt) |> ignore
+                    | CommandChange(data) -> 
+                        let countOpt = match countOpt with | Some(count) -> Some(count) | None -> data.Count
+                        let reg = data.Register
+                        match data.Command with 
+                        | SimpleCommand(_,_,func) -> func countOpt reg |> ignore
+                        | MotionCommand(_) -> _statusUtil.OnError (Resources.NormalMode_RepeatNotSupportedOnCommand data.Command.CommandName.Name)
+                        | LongCommand(_) -> _statusUtil.OnError (Resources.NormalMode_RepeatNotSupportedOnCommand data.Command.CommandName.Name)
+            finally
+                _data <- { _data with IsInRepeatLastChange = false }
 
     /// Handle the ~.  This is a special key because it's behavior changes based on the tildeop option
     member private this.HandleTilde count =
@@ -196,7 +198,7 @@ type internal NormalMode
         let needCountAsOpt = 
             seq {
                 yield ("gg", CommandKind.Movement, fun count _ -> _operations.GoToLineOrFirst count)
-                yield (".", CommandKind.Special, fun count _ -> this.RepeatLastChange count)
+                yield (".", CommandKind.Special, fun count reg -> this.RepeatLastChange count reg)
             }
             |> Seq.map(fun (str,kind,func) -> 
                 let name = CommandUtil.CreateCommandName str

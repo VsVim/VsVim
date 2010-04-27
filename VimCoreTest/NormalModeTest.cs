@@ -2265,7 +2265,7 @@ namespace VimCoreTest
                 VimUtil.CreateCommandRunData(
                     VimUtil.CreateSimpleCommand("c", (x, y) =>
                     {
-                        Assert.AreEqual(2, y.Value);
+                        Assert.AreEqual(2, x.Value);
                         didRun = true;
                     }),
                     _map.DefaultRegister,
@@ -2289,7 +2289,7 @@ namespace VimCoreTest
                 VimUtil.CreateCommandRunData(
                     VimUtil.CreateSimpleCommand("c", (x, y) =>
                     {
-                        Assert.AreEqual(4, y.Value);
+                        Assert.AreEqual(4, x.Value);
                         didRun = true;
                     }),
                     _map.DefaultRegister,
@@ -2331,7 +2331,7 @@ namespace VimCoreTest
             Create("");
             var data =
                 VimUtil.CreateCommandRunData(
-                    VimUtil.CreateSimpleCommand("c", (x, y) => { _mode.Process('.'); }),
+                    VimUtil.CreateSimpleCommand("c", (x, y) => { _modeRaw.RepeatLastChange(FSharpOption.Create(42), _map.DefaultRegister); }),
                     _map.DefaultRegister);
             _changeTracker
                 .SetupGet(x => x.LastChange)
