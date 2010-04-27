@@ -54,6 +54,7 @@ type internal CommandMode
             _data.TextView.Caret.IsHidden <- true
         member x.OnLeave () = 
             _data.TextView.Caret.IsHidden <- false
+        member x.OnClose() = ()
 
         member x.RunCommand command = 
             _processor.RunCommand (command |> List.ofSeq)

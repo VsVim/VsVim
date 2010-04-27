@@ -45,14 +45,14 @@ namespace VimCoreTest
             _keyMap = new Mock<IKeyMap>(MockBehavior.Strict);
             _host = new Mock<IVimHost>(MockBehavior.Strict);
             _vim = MockObjectFactory.CreateVim(map:_markMap, settings:_globalSettings.Object, keyMap:_keyMap.Object, host:_host.Object);
-            _disabledMode = new Mock<IMode>(MockBehavior.Strict);
+            _disabledMode = new Mock<IMode>(MockBehavior.Loose);
             _disabledMode.SetupGet(x => x.ModeKind).Returns(ModeKind.Disabled);
-            _normalMode = new Mock<INormalMode>(MockBehavior.Strict);
+            _normalMode = new Mock<INormalMode>(MockBehavior.Loose);
             _normalMode.Setup(x => x.OnEnter());
             _normalMode.SetupGet(x => x.ModeKind).Returns(ModeKind.Normal);
             _normalMode.SetupGet(x => x.IsOperatorPending).Returns(false);
             _normalMode.SetupGet(x => x.IsWaitingForInput).Returns(false);
-            _insertMode = new Mock<IMode>(MockBehavior.Strict);
+            _insertMode = new Mock<IMode>(MockBehavior.Loose);
             _insertMode.SetupGet(x => x.ModeKind).Returns(ModeKind.Insert);
             _jumpList = new Mock<IJumpList>(MockBehavior.Strict);
             _rawBuffer = new VimBuffer(
@@ -172,6 +172,16 @@ namespace VimCoreTest
             _buffer.Close();
             Assert.IsTrue(_markMap.GetLocalMark(_view.TextBuffer, 'c').IsNone());
             _vim.Verify();
+        }
+
+        [Test, Description("Close should call OnClose for every IMode")]
+        public void Close4()
+        {
+            _vim.Setup(x => x.RemoveBuffer(_view)).Returns(true).Verifiable();
+            _buffer.Close();
+            _normalMode.Verify(x => x.OnClose());
+            _insertMode.Verify(x => x.OnClose());
+            _disabledMode.Verify(x => x.OnClose());
         }
 
         [Test,Description("Disable command should be preprocessed")]

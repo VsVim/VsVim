@@ -408,5 +408,6 @@ type internal NormalMode
             this.EnsureCommands()
             this.Reset()
         member this.OnLeave () = ()
+        member this.OnClose() = ()
     
 

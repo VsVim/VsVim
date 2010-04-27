@@ -143,6 +143,7 @@ type internal VisualMode
         member x.OnLeave () = 
             _runner.ResetState()
             _selectionTracker.Stop()
+        member x.OnClose() = ()
 
     interface IVisualMode with
         member x.InExplicitMove = x.InExplicitMove

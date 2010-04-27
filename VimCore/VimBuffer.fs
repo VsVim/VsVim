@@ -199,5 +199,6 @@ type internal VimBuffer
         member x.CanProcessInput ki = x.CanProcessInput ki
         member x.Close () = 
             x.Mode.OnLeave()
+            _modeMap.Modes |> Seq.iter (fun x -> x.OnClose())
             _vim.MarkMap.DeleteAllMarksForBuffer _textView.TextBuffer
             _vim.RemoveBuffer _textView |> ignore

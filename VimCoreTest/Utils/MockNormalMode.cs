@@ -78,5 +78,11 @@ namespace VimCoreTest.Utils
         {
             get { throw new NotImplementedException(); }
         }
+
+
+        public void OnClose()
+        {
+            throw new NotImplementedException();
+        }
     }
 }

@@ -25,6 +25,7 @@ type internal DisabledMode( _data : IVimBuffer ) =
                 ProcessResult.ProcessNotHandled
         member x.OnEnter() = ()
         member x.OnLeave() = ()
+        member x.OnClose() = ()
     
     
 

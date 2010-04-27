@@ -804,6 +804,10 @@ and IMode =
     /// Called when the mode is left
     abstract OnLeave : unit -> unit
 
+    /// Called when the owning IVimBuffer is closed so that the mode can free up 
+    /// any resources including event handlers
+    abstract OnClose : unit -> unit
+
 
 and INormalMode =
 

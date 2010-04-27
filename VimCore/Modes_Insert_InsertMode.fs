@@ -47,4 +47,4 @@ type internal InsertMode
             // When leaving insert mode the caret should move one to the left on the
             // same line
             _operations.MoveCaretLeft 1 
-            
+        member x.OnClose() = ()
