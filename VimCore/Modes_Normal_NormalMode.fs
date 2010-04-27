@@ -19,7 +19,7 @@ type internal NormalMode
         _incrementalSearch : IIncrementalSearch,
         _statusUtil : IStatusUtil,
         _displayWindowBroker : IDisplayWindowBroker,
-        _runner : ICommandRunner ) =
+        _runner : ICommandRunner ) as this =
 
     /// Reset state for data in Normal Mode
     let _emptyData = {
@@ -32,15 +32,46 @@ type internal NormalMode
     /// Contains the state information for Normal mode
     let mutable _data = _emptyData
 
+    let mutable _globalSettingsChangedHandler : System.IDisposable = null
+
+    do
+        // Up cast here to work around the F# bug which prevents accessing a CLIEvent from
+        // a derived type
+        let settings = _bufferData.Settings.GlobalSettings :> IVimSettings
+        _globalSettingsChangedHandler <- settings.SettingChanged.Subscribe this.OnGlobalSettingsChanged
+
     member this.TextView = _bufferData.TextView
     member this.TextBuffer = _bufferData.TextBuffer
     member this.CaretPoint = _bufferData.TextView.Caret.Position.BufferPosition
     member this.Settings = _bufferData.Settings
     member this.IncrementalSearch = _incrementalSearch
+    member this.IsCommandRunnerPopulated = _runner.Commands |> SeqUtil.isNotEmpty
     member this.Command = _data.Command
     member this.Commands = 
         this.EnsureCommands()
         _runner.Commands
+
+    member private this.EnsureCommands() = 
+        if not this.IsCommandRunnerPopulated then
+            this.CreateSimpleCommands()
+            |> Seq.append (this.CreateMovementCommands())
+            |> Seq.append (this.CreateMotionCommands())
+            |> Seq.append (this.CreateLongCommands())
+            |> Seq.append (this.CreateCommandsOld())
+            |> Seq.iter _runner.Add
+
+            // Add in the special ~ command
+            let _,command = this.GetTildeCommand()
+            _runner.Add command
+
+    /// Raised when a global setting is changed
+    member private this.OnGlobalSettingsChanged (setting:Setting) = 
+        
+        // If the tildeop setting changes we need to update how we handle it
+        if StringUtil.isEqual setting.Name GlobalSettingNames.TildeOpName && this.IsCommandRunnerPopulated then
+            let name,command = this.GetTildeCommand()
+            _runner.Remove name
+            _runner.Add command
 
     /// Begin an incremental search.  Called when the user types / into the editor
     member this.BeginIncrementalSearch (kind:SearchKind) count reg =
@@ -108,18 +139,22 @@ type internal NormalMode
             finally
                 _data <- { _data with IsInRepeatLastChange = false }
 
-    /// Handle the ~.  This is a special key because it's behavior changes based on the tildeop option
-    member private this.HandleTilde count =
-        failwith "Need to re-implement this"
-//        if _bufferData.Settings.GlobalSettings.TildeOp then
-//            let func (data:MotionData) =
-//                _operations.ChangeLetterCase data.Span
-//                NormalModeResult.Complete
-//            this.WaitForMotionAsResult func
-//        else
-//            _operations.ChangeLetterCaseAtCursor count
-//            NormalModeResult.Complete
-//
+    /// Get the informatoin on how to handle the tilde command based on the current setting for tildeop
+    member private this.GetTildeCommand count =
+        let name = InputUtil.CharToKeyInput '~' |> OneKeyInput
+        let command = 
+            if _bufferData.Settings.GlobalSettings.TildeOp then
+                let func count reg (data:MotionData) = 
+                    _operations.ChangeLetterCase data.OperationSpan
+                    CommandResult.Completed ModeSwitch.NoSwitch
+                MotionCommand(name, CommandKind.NotRepeatable, func)
+            else
+                let func count _ = 
+                    let count = CommandUtil.CountOrDefault count
+                    _operations.ChangeLetterCaseAtCursor count
+                    CommandResult.Completed ModeSwitch.NoSwitch
+                SimpleCommand(name, CommandKind.Repeatable, func)
+        name,command
 
     /// Create the set of Command values which are not repeatable 
     member this.CreateLongCommands() = 
@@ -336,15 +371,6 @@ type internal NormalMode
     
         Seq.append completeOps completeOps2 |> Seq.append changeOps
    
-    member private this.EnsureCommands() = 
-        if _runner.Commands |> Seq.isEmpty then
-            this.CreateSimpleCommands()
-            |> Seq.append (this.CreateMovementCommands())
-            |> Seq.append (this.CreateMotionCommands())
-            |> Seq.append (this.CreateLongCommands())
-            |> Seq.append (this.CreateCommandsOld())
-            |> Seq.iter _runner.Add
-
     member this.Reset() =
         _runner.ResetState()
         _data <- _emptyData
@@ -408,6 +434,6 @@ type internal NormalMode
             this.EnsureCommands()
             this.Reset()
         member this.OnLeave () = ()
-        member this.OnClose() = ()
+        member this.OnClose() = _globalSettingsChangedHandler.Dispose()
     
 
