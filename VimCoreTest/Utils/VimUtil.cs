@@ -36,7 +36,7 @@ namespace VimCoreTest.Utils
             return Command.NewSimpleCommand(commandName, CommandFlags.None, fsharpFunc);
         }
 
-        internal static Command CreateLongCommand(string name, Func<FSharpOption<int>, Register, LongCommandResult> func)
+        internal static Command CreateLongCommand(string name, Func<FSharpOption<int>, Register, LongCommandResult> func, CommandFlags flags = CommandFlags.None)
         {
             Converter<FSharpOption<int>, FSharpFunc<Register, LongCommandResult>> outerFunc = count =>
                 {
@@ -46,7 +46,31 @@ namespace VimCoreTest.Utils
             var fsharpFunc = FSharpFuncUtil.Create(outerFunc);
             var list = name.Select(InputUtil.CharToKeyInput).ToFSharpList();
             var commandName = CommandName.NewManyKeyInputs(list);
-            return Command.NewLongCommand(commandName, CommandFlags.None, fsharpFunc);
+            return Command.NewLongCommand(commandName, flags, fsharpFunc);
+        }
+
+        internal static Command CreateLongCommand(string name, Func<KeyInput, bool> func, CommandFlags flags = CommandFlags.None)
+        {
+            return CreateLongCommand(
+                name,
+                (x, y) =>
+                {
+                    FSharpFunc<KeyInput, LongCommandResult> realFunc = null;
+                    Converter<KeyInput, LongCommandResult> func2 = ki =>
+                        {
+                            if (func(ki))
+                            {
+                                return LongCommandResult.NewFinished(CommandResult.NewCompleted(ModeSwitch.NoSwitch));
+                            }
+                            else
+                            {
+                                return LongCommandResult.NewNeedMoreInput(realFunc);
+                            }
+                        };
+                    realFunc = func2;
+                    return LongCommandResult.NewNeedMoreInput(realFunc);
+                },
+                flags);
         }
 
         internal static Command CreateMotionCommand(string name, Action<FSharpOption<int>, Register, MotionData> del)
@@ -55,7 +79,7 @@ namespace VimCoreTest.Utils
                 name,
                 (x, y, z) =>
                 {
-                    del(x, y ,z);
+                    del(x, y, z);
                     return CommandResult.NewCompleted(ModeSwitch.NoSwitch);
                 });
         }

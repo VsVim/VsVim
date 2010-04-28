@@ -361,6 +361,60 @@ namespace VimCoreTest
         }
 
         [Test]
+        public void Run_Escape1()
+        {
+            Create("hello world");
+            var didSee = false;
+            _runner.Add(VimUtil.CreateLongCommand(
+                "c",
+                ki =>
+                {
+                    if (ki.Key == VimKey.EscapeKey) { didSee = true; return true; }
+                    else { return false; }
+                },
+                CommandFlags.None));
+            _runner.Run('c');
+            Assert.IsTrue(_runner.Run(InputUtil.VimKeyToKeyInput(VimKey.EscapeKey)).IsCommandCancelled);
+            Assert.IsFalse(didSee);
+        }
+
+        [Test]
+        public void Run_Escape2()
+        {
+            Create("hello world");
+            var didSee = false;
+            _runner.Add(VimUtil.CreateLongCommand(
+                "c",
+                ki =>
+                {
+                    if (ki.Key == VimKey.EscapeKey) { didSee = true; }
+                    return false;
+                },
+                CommandFlags.HandlesEscape));
+            _runner.Run('c');
+            Assert.IsTrue(_runner.Run(InputUtil.VimKeyToKeyInput(VimKey.EscapeKey)).IsNeedMoreKeyInput);
+            Assert.IsTrue(didSee);
+        }
+
+        [Test]
+        public void Run_Escape3()
+        {
+            Create("hello world");
+            var didSee = false;
+            _runner.Add(VimUtil.CreateLongCommand(
+                "c",
+                ki =>
+                {
+                    if (ki.Key == VimKey.EscapeKey) { didSee = true; return true; }
+                    return false;
+                },
+                CommandFlags.HandlesEscape));
+            _runner.Run('c');
+            Assert.IsTrue(_runner.Run(InputUtil.VimKeyToKeyInput(VimKey.EscapeKey)).IsCommandRan);
+            Assert.IsTrue(didSee);
+        }
+
+        [Test]
         public void IsWaitingForMoreInput1()
         {
             Create("hello world");

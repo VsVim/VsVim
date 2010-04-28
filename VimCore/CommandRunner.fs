@@ -214,9 +214,17 @@ type internal CommandRunner
         elif ki.IsDigit && ki.Char <> '0' then x.WaitForCount ki
         else x.WaitForCommand ki
 
+    /// Should the Esacpe key cancel the current command
+    member private x.ShouldEscapeCancelCurrentCommand () = 
+        match _data.State with
+        | CommandRunnerState.NoInput -> true
+        | CommandRunnerState.NotEnoughInput -> true
+        | CommandRunnerState.NotEnoughMatchingPrefix(_) -> true
+        | CommandRunnerState.NotFinishWithCommand (command) -> not command.HandlesEscape
+
     /// Function which handles all incoming input
     member private x.Run (ki:KeyInput) =
-        if ki.Key = VimKey.EscapeKey then 
+        if ki.Key = VimKey.EscapeKey && x.ShouldEscapeCancelCurrentCommand() then 
             x.ResetState()
             RunKeyInputResult.CommandCancelled
         elif _inRun then 
