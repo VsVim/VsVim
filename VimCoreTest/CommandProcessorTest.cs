@@ -15,6 +15,8 @@ using System.IO;
 using Microsoft.FSharp.Collections;
 using Vim.Modes;
 using VimCoreTest.Mock;
+using Microsoft.FSharp.Core;
+using Vim.Extensions;
 
 namespace VimCoreTest
 {
@@ -759,8 +761,10 @@ namespace VimCoreTest
         public void Source1()
         {
             Create("boo");
+            _fileSystem.Setup(x => x.ReadAllLines(It.IsAny<string>())).Returns(FSharpOption<string[]>.None).Verifiable();
             RunCommand("source");
             _statusUtil.Verify(x => x.OnError(Resources.CommandMode_CouldNotOpenFile(String.Empty)));
+            _fileSystem.Verify();
         }
 
         [Test]
@@ -774,23 +778,22 @@ namespace VimCoreTest
         [Test]
         public void Source3()
         {
-            var name = Path.GetTempFileName();
-            File.WriteAllText(name, "set noignorecase");
-
+            var text = new string[] { "set noignorecase" };
+            _fileSystem.Setup(x => x.ReadAllLines("blah.txt")).Returns(FSharpOption.Create(text)).Verifiable();
             _operations.Setup(x => x.ResetSetting("ignorecase")).Verifiable();
-            RunCommand("source " + name);
+            RunCommand("source blah.txt");
             _operations.Verify();
+            _fileSystem.Verify();
         }
 
         [Test]
         public void Source4()
         {
-            var name = Path.GetTempFileName();
-            File.WriteAllLines(name, new string[] { "set noignorecase", "set nofoo" });
-
+            var text = new string[] { "set noignorecase", "set nofoo" };
+            _fileSystem.Setup(x => x.ReadAllLines("blah.txt")).Returns(FSharpOption.Create(text)).Verifiable();
             _operations.Setup(x => x.ResetSetting("ignorecase")).Verifiable();
             _operations.Setup(x => x.ResetSetting("foo")).Verifiable();
-            RunCommand("source " + name);
+            RunCommand("source blah.txt"); 
             _operations.Verify();
         }
 

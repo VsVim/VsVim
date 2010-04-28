@@ -611,6 +611,20 @@ namespace VimCoreTest
         }
 
         [Test]
+        public void State8()
+        {
+            Create("hello world");
+            var command1 = VimUtil.CreateSimpleCommand("cc", (x,y) => {});
+            var command2 = VimUtil.CreateMotionCommand("c", (x, y, z) => { });
+            _runner.Add(command1);
+            _runner.Add(command2);
+            _runner.Run('c');
+            Assert.IsTrue(_runner.State.IsNotEnoughMatchingPrefix);
+            Assert.AreSame(command2, _runner.State.AsNotEnoughMatchingPrefix().Item1);
+            Assert.IsTrue(_runner.State.AsNotEnoughMatchingPrefix().Item2.Contains(command1));
+        }
+
+        [Test]
         public void CommandRan1()
         {
             Create("hello world");

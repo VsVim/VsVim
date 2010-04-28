@@ -7,7 +7,6 @@ open Microsoft.VisualStudio.Text.Editor
 
 type internal NormalModeData = {
     Command : string;
-    IsOperatorPending : bool;
     IsInRepeatLastChange : bool;
     IsInReplace : bool;
 }
@@ -24,7 +23,6 @@ type internal NormalMode
     /// Reset state for data in Normal Mode
     let _emptyData = {
         Command = StringUtil.empty;
-        IsOperatorPending = false;
         IsInRepeatLastChange = false;
         IsInReplace = false;
     }
@@ -50,6 +48,19 @@ type internal NormalMode
     member this.Commands = 
         this.EnsureCommands()
         _runner.Commands
+
+    member this.IsOperatorPending = 
+        let isOperator command = 
+            match command with 
+            | SimpleCommand(_) -> false
+            | LongCommand(_) -> false
+            | MotionCommand(_,kind,_) -> kind <> CommandKind.Movement
+
+        match _runner.State with
+        | NoInput -> false
+        | NotEnoughInput -> false
+        | NotEnoughMatchingPrefix(command,_) -> isOperator command
+        | NotFinishWithCommand(command) -> isOperator command
 
     member private this.EnsureCommands() = 
         if not this.IsCommandRunnerPopulated then
@@ -403,7 +414,7 @@ type internal NormalMode
                 ProcessResult.Processed
     
     interface INormalMode with 
-        member this.IsOperatorPending = _data.IsOperatorPending
+        member this.IsOperatorPending = this.IsOperatorPending
         member this.IsWaitingForInput = _runner.IsWaitingForMoreInput
         member this.IncrementalSearch = _incrementalSearch
         member this.IsInReplace = _data.IsInReplace

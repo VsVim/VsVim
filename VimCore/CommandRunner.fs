@@ -179,7 +179,10 @@ type internal CommandRunner
                     findPrefixMatches commandName
                     |> Seq.filter (fun c -> c.CommandName <> command.CommandName)
                 if Seq.isEmpty withPrefix then x.WaitForMotion command func None
-                else NeedMore x.WaitForCommand
+                else 
+                    let state = NotEnoughMatchingPrefix (command, withPrefix |> List.ofSeq)
+                    _data <- {_data with State = state }
+                    NeedMore x.WaitForCommand
             | Command.LongCommand(_,_,func) -> x.WaitForLongCommand command func
         | None -> 
             let result = 
@@ -260,6 +263,7 @@ type internal CommandRunner
             | CommandRunnerState.NoInput -> false
             | CommandRunnerState.NotEnoughInput -> true
             | CommandRunnerState.NotFinishWithCommand(_) -> true
+            | CommandRunnerState.NotEnoughMatchingPrefix(_) -> true
 
         member x.Add command = x.Add command
         member x.Remove name = x.Remove name

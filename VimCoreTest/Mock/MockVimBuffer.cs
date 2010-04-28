@@ -18,6 +18,10 @@ namespace VimCoreTest.Mock
         public ITextView TextViewImpl;
         public IMode ModeImpl;
         public ModeKind ModeKindImpl;
+        public INormalMode NormalModeImpl;
+        public IVisualMode VisualBlockModeImpl;
+        public IVisualMode VisualCharacterModeImpl;
+        public IVisualMode VisualLineModeImpl;
 
         public void RaiseSwitchedMode(IMode mode)
         {
@@ -99,7 +103,7 @@ namespace VimCoreTest.Mock
 
         public INormalMode NormalMode
         {
-            get { return (INormalMode)ModeImpl; }
+            get { return NormalModeImpl; }
         }
 
         public bool ProcessChar(char value)
@@ -175,22 +179,19 @@ namespace VimCoreTest.Mock
             get { throw new NotImplementedException(); }
         }
 
-
-
-
         public IVisualMode VisualBlockMode
         {
-            get { throw new NotImplementedException(); }
+            get { return VisualBlockModeImpl; }
         }
 
         public IVisualMode VisualCharacterMode
         {
-            get { throw new NotImplementedException(); }
+            get { return VisualCharacterModeImpl; }
         }
 
         public IVisualMode VisualLineMode
         {
-            get { throw new NotImplementedException(); }
+            get { return VisualLineModeImpl; }
         }
     }
 }

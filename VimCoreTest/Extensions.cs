@@ -342,6 +342,11 @@ namespace VimCoreTest
             return (CommandRunnerState.NotFinishWithCommand)state;
         }
 
+        internal static CommandRunnerState.NotEnoughMatchingPrefix AsNotEnoughMatchingPrefix(this CommandRunnerState state)
+        {
+            return (CommandRunnerState.NotEnoughMatchingPrefix)state;
+        }
+
         #endregion
 
         internal static SnapshotSpan GetSpan(this ITextSelection selection)

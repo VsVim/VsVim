@@ -22,6 +22,7 @@ namespace VimCoreTest.Utils
                 });
         }
 
+
         internal static Command CreateSimpleCommand(string name, Func<FSharpOption<int>, Register, CommandResult> func)
         {
             Converter<FSharpOption<int>, FSharpFunc<Register, CommandResult>> outerFunc = count =>
@@ -46,6 +47,17 @@ namespace VimCoreTest.Utils
             var list = name.Select(InputUtil.CharToKeyInput).ToFSharpList();
             var commandName = CommandName.NewManyKeyInputs(list);
             return Command.NewLongCommand(commandName, CommandKind.NotRepeatable, fsharpFunc);
+        }
+
+        internal static Command CreateMotionCommand(string name, Action<FSharpOption<int>, Register, MotionData> del)
+        {
+            return CreateMotionCommand(
+                name,
+                (x, y, z) =>
+                {
+                    del(x, y ,z);
+                    return CommandResult.NewCompleted(ModeSwitch.NoSwitch);
+                });
         }
 
         internal static Command CreateMotionCommand(string name, Func<FSharpOption<int>, Register, MotionData, CommandResult> func)

@@ -21,7 +21,6 @@ namespace VimCoreTest
         private ITextBuffer _textBuffer;
         private Mock<ITextView> _textView;
         private MockVimBuffer _buffer;
-        private MockNormalMode _normalMode;
 
         private void CreateForText(params string[] lines)
         {
@@ -31,8 +30,13 @@ namespace VimCoreTest
             _buffer = new MockVimBuffer();
             _buffer.TextViewImpl = _textView.Object;
             _buffer.TextBufferImpl = _textBuffer;
-            _normalMode = new MockNormalMode();
-            _buffer.ModeImpl = _normalMode;
+
+            var factory = new MockFactory(MockBehavior.Loose);
+            factory.DefaultValue = DefaultValue.Mock;
+            _buffer.NormalModeImpl = factory.Create<INormalMode>().Object;
+            _buffer.VisualBlockModeImpl = factory.Create<IVisualMode>().Object;
+            _buffer.VisualCharacterModeImpl = factory.Create<IVisualMode>().Object;
+            _buffer.VisualLineModeImpl = factory.Create<IVisualMode>().Object;
             _trackerRaw = new ChangeTracker();
             _tracker = _trackerRaw;
             _trackerRaw.OnVimBufferCreated(_buffer);

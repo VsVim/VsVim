@@ -279,6 +279,12 @@ type CommandRunnerState =
     /// run.  
     | NotEnoughInput
 
+    /// There exist many pairs of commands where one is a Motion and another is a Simple command
+    /// where the name of the Motion is a prefix of the Simple command.  The MotionCommand is 
+    /// captured in the first item of the tuple and all other commands with a matching prefix are
+    /// captured in the list
+    | NotEnoughMatchingPrefix of Command * Command list
+
     /// Waiting for a Motion or Long Command to complete.  Enough input is present to determine this
     /// is the command to execute but not enough to complete the execution of the command
     | NotFinishWithCommand of Command
