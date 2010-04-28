@@ -12,6 +12,7 @@ using System.Windows.Input;
 using Microsoft.VisualStudio.Text.Operations;
 using Moq;
 using Microsoft.FSharp.Collections;
+using VimCoreTest.Mock;
 
 namespace VimCoreTest
 {

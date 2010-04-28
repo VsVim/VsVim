@@ -14,6 +14,7 @@ using Moq;
 using System.IO;
 using Microsoft.FSharp.Collections;
 using Vim.Modes;
+using VimCoreTest.Mock;
 
 namespace VimCoreTest
 {

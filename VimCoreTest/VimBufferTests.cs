@@ -15,6 +15,7 @@ using Moq;
 using Microsoft.VisualStudio.Text.Operations;
 using Microsoft.FSharp.Core;
 using Vim.Modes.Normal;
+using VimCoreTest.Mock;
 
 namespace VimCoreTest
 {

@@ -6,7 +6,7 @@ using Vim;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 
-namespace VimCoreTest.Utils
+namespace VimCoreTest.Mock
 {
     /// <summary>
     /// There is either a bug in F# or Moq which prevents the raising of events through an IMock if 

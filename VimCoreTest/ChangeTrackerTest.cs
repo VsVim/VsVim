@@ -9,6 +9,7 @@ using Microsoft.VisualStudio.Text.Editor;
 using Moq;
 using Microsoft.VisualStudio.Text;
 using VimCoreTest.Utils;
+using VimCoreTest.Mock;
 
 namespace VimCoreTest
 {
@@ -25,7 +26,7 @@ namespace VimCoreTest
         private void CreateForText(params string[] lines)
         {
             _textBuffer = Utils.EditorUtil.CreateBuffer(lines);
-            _textView = Utils.MockObjectFactory.CreateTextView(_textBuffer);
+            _textView = Mock.MockObjectFactory.CreateTextView(_textBuffer);
             _textView.SetupGet(x => x.HasAggregateFocus).Returns(true);
             _buffer = new MockVimBuffer();
             _buffer.TextViewImpl = _textView.Object;

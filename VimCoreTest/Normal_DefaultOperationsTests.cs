@@ -15,6 +15,7 @@ using System.Windows.Input;
 using Vim.Modes;
 using Microsoft.VisualStudio.Text.Outlining;
 using Vim.Extensions;
+using VimCoreTest.Mock;
 
 namespace VimCoreTest
 {

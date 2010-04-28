@@ -15,6 +15,7 @@ using Microsoft.FSharp.Control;
 using Microsoft.VisualStudio.Text.Operations;
 using Microsoft.VisualStudio.Text.Outlining;
 using Vim.Extensions;
+using VimCoreTest.Mock;
 
 namespace VimCoreTest
 {

@@ -38,7 +38,7 @@ namespace VimCoreTest
             _globalSettings = new Mock<IVimGlobalSettings>(MockBehavior.Strict);
             _localSettings = new Mock<IVimLocalSettings>(MockBehavior.Strict);
             _localSettings.SetupGet(x => x.GlobalSettings).Returns(_globalSettings.Object);
-            _data = Utils.MockObjectFactory.CreateVimBuffer(
+            _data = Mock.MockObjectFactory.CreateVimBuffer(
                 _view,
                 settings:_localSettings.Object,
                 vim:_vim.Object);

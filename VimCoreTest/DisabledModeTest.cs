@@ -7,6 +7,7 @@ using Vim;
 using Moq;
 using VimCoreTest.Utils;
 using GlobalSettings = Vim.GlobalSettings;
+using VimCoreTest.Mock;
 
 namespace VimCoreTest
 {

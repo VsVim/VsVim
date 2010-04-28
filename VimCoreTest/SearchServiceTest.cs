@@ -9,6 +9,7 @@ using Vim.Extensions;
 using Microsoft.VisualStudio.Text.Operations;
 using VimCoreTest.Utils;
 using Microsoft.VisualStudio.Text;
+using VimCoreTest.Mock;
 
 namespace VimCoreTest
 {

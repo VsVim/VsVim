@@ -12,6 +12,7 @@ using Vim.Modes;
 using VimCoreTest.Utils;
 using Microsoft.VisualStudio.Text;
 using System.Windows.Input;
+using VimCoreTest.Mock;
 
 namespace VimCoreTest
 {

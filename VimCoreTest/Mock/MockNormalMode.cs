@@ -4,11 +4,12 @@ using System.Linq;
 using System.Text;
 using Vim;
 
-namespace VimCoreTest.Utils
+namespace VimCoreTest.Mock
 {
     public class MockNormalMode : INormalMode
     {
         public IVimBuffer VimBufferImpl = null;
+        public ICommandRunner CommandRunnerImpl = null;
         public bool IsOperatorPendingImpl = false;
         public bool IsWaitingForInputImpl= false;
         public bool IsInReplaceImpl = false;
@@ -76,7 +77,7 @@ namespace VimCoreTest.Utils
 
         public ICommandRunner CommandRunner
         {
-            get { throw new NotImplementedException(); }
+            get { return CommandRunnerImpl; }
         }
 
 

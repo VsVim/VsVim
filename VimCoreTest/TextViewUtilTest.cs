@@ -7,6 +7,7 @@ using VimCoreTest.Utils;
 using Microsoft.VisualStudio.Text;
 using Vim;
 using Microsoft.VisualStudio.Text.Editor;
+using VimCoreTest.Mock;
 
 namespace VimCoreTest
 {
