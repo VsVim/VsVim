@@ -211,7 +211,7 @@ type internal CommandRunner
     /// Starting point for processing input 
     member private x.RunCheckForCountAndRegister (ki:KeyInput) = 
         if ki.Char = '"' then x.WaitForRegister()
-        elif ki.IsDigit then x.WaitForCount ki
+        elif ki.IsDigit && ki.Char <> '0' then x.WaitForCount ki
         else x.WaitForCommand ki
 
     /// Function which handles all incoming input

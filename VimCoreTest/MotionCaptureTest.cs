@@ -204,7 +204,50 @@ namespace VimCoreTest
         }
 
         [Test]
-        public void StartOfLine1()
+        public void BeginingOfLine1()
+        {
+            Create("foo");
+            var data = MotionCapture.ProcessInput(
+                _buffer.GetPoint(1),
+                InputUtil.CharToKeyInput('0'),
+                1).AsComplete().Item;
+            Assert.AreEqual(new SnapshotSpan(_buffer.CurrentSnapshot, 0, 1), data.OperationSpan);
+            Assert.AreEqual(MotionKind.Exclusive, data.MotionKind);
+            Assert.AreEqual(OperationKind.CharacterWise, data.OperationKind);
+            Assert.IsFalse(data.IsForward);
+        }
+
+        [Test]
+        public void BeginingOfLine2()
+        {
+            Create("foo");
+            var data = MotionCapture.ProcessInput(
+                _buffer.GetPoint(2),
+                InputUtil.CharToKeyInput('0'),
+                1).AsComplete().Item;
+            Assert.AreEqual(new SnapshotSpan(_buffer.CurrentSnapshot, 0, 2), data.OperationSpan);
+            Assert.AreEqual(MotionKind.Exclusive, data.MotionKind);
+            Assert.AreEqual(OperationKind.CharacterWise, data.OperationKind);
+            Assert.IsFalse(data.IsForward);
+        }
+
+        [Test]
+        [Description("Go to begining even if there is whitespace")]
+        public void BeginingOfLine3()
+        {
+            Create("  foo");
+            var data = MotionCapture.ProcessInput(
+                _buffer.GetPoint(4),
+                InputUtil.CharToKeyInput('0'),
+                1).AsComplete().Item;
+            Assert.AreEqual(new SnapshotSpan(_buffer.CurrentSnapshot, 0, 4), data.OperationSpan);
+            Assert.AreEqual(MotionKind.Exclusive, data.MotionKind);
+            Assert.AreEqual(OperationKind.CharacterWise, data.OperationKind);
+            Assert.IsFalse(data.IsForward);
+        }
+
+        [Test]
+        public void FirstNonWhitespaceOnLine1()
         {
             Create("foo");
             var ki = InputUtil.CharToKeyInput('^');
@@ -217,7 +260,7 @@ namespace VimCoreTest
         }
 
         [Test, Description("Make sure it goes to the first non-whitespace character")]
-        public void StartOfLine2()
+        public void FirstNonWhitespaceOnLine2()
         {
             Create("  foo");
             var ki = InputUtil.CharToKeyInput('^');
@@ -504,6 +547,7 @@ namespace VimCoreTest
             Assert.AreEqual(MotionKind.Exclusive, data.MotionKind);
             Assert.AreEqual(OperationKind.CharacterWise, data.OperationKind);
         }
+
 
     }   
     

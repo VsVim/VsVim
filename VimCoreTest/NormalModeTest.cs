@@ -444,10 +444,10 @@ namespace VimCoreTest
         public void Move_0()
         {
             Create("foo bar baz");
-            _editorOperations.Setup(x => x.MoveToStartOfLine(false)).Verifiable();
+            _operations.Setup(x => x.MoveCaretToMotionData(It.IsAny<MotionData>())).Verifiable();
             _view.MoveCaretTo(3);
             _mode.Process('0');
-            _editorOperations.Verify();
+            _operations.Verify();
         }
 
         [Test]
@@ -2341,6 +2341,14 @@ namespace VimCoreTest
             _mode.Process(".");
             _changeTracker.Verify();
             _statusUtil.Verify();
+        }
+
+        [Test]
+        public void Escape1()
+        {
+            Create(string.Empty);
+            var res = _mode.Process(InputUtil.VimKeyToKeyInput(VimKey.EscapeKey));
+            Assert.IsTrue(res.IsProcessed);
         }
 
         #endregion

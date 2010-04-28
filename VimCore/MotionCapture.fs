@@ -116,7 +116,7 @@ module internal MotionCapture =
 
     /// Find the first non-whitespace character as the start of the span.  This is an exclusive
     /// motion so be careful we don't go to far forward
-    let private BeginingOfLineMotion (start:SnapshotPoint) =
+    let private FirstNonWhitespaceOnLine (start:SnapshotPoint) =
         let line = start.GetContainingLine()
         let found = SnapshotLineUtil.GetPoints line
                         |> Seq.filter (fun x -> x.Position < start.Position)
@@ -125,6 +125,14 @@ module internal MotionCapture =
                     | Some p -> new SnapshotSpan(p, start)
                     | None -> new SnapshotSpan(start,0)
         {Span=span; IsForward=false; MotionKind=MotionKind.Exclusive; OperationKind=OperationKind.CharacterWise; Column=None} 
+
+    /// Move to the begining of the line.  Interestingly since this command is bound to the '0' it 
+    /// can't be associated with a count.  Doing a command like 30 binds as count 30 vs. count 3 
+    /// for command '0'
+    let private BeginingOfLineMotion start =
+        let line = SnapshotPointUtil.GetContainingLine start
+        let span = SnapshotSpan(line.Start, start)
+        {Span=span; IsForward=false; MotionKind=MotionKind.Exclusive; OperationKind=OperationKind.CharacterWise; Column=None}
 
     /// Handle the lines down to first non-whitespace motion
     let private LineDownToFirstNonWhitespace start count =
@@ -170,7 +178,8 @@ module internal MotionCapture =
             yield (InputUtil.CharToKeyInput 'b', fun start count -> WordMotionBackward start count WordKind.NormalWord |> Some)
             yield (InputUtil.CharToKeyInput 'B', fun start count -> WordMotionBackward start count WordKind.BigWord |> Some)
             yield (InputUtil.CharToKeyInput '$', fun start count -> EndOfLineMotion start count |> Some)
-            yield (InputUtil.CharToKeyInput '^', fun start count -> BeginingOfLineMotion start |> Some)
+            yield (InputUtil.CharToKeyInput '^', fun start count -> FirstNonWhitespaceOnLine start |> Some)
+            yield (InputUtil.CharToKeyInput '0', fun start count -> BeginingOfLineMotion start |> Some)
             yield (InputUtil.CharToKeyInput 'e', fun start count -> EndOfWordMotion start count WordKind.NormalWord |> Some)
             yield (InputUtil.CharToKeyInput 'E', fun start count -> EndOfWordMotion start count WordKind.BigWord |> Some)
             yield (InputUtil.CharToKeyInput 'h', fun start count -> CharLeftMotion start count )
@@ -223,7 +232,7 @@ module internal MotionCapture =
     let rec ProcessInput start (ki:KeyInput) count =
         let count = if count < 1 then 1 else count
         if ki.Key = VimKey.EscapeKey then Cancel
-        elif ki.IsDigit then ProcessCount ki (ProcessInput start) count
+        elif ki.IsDigit && ki.Char <> '0' then ProcessCount ki (ProcessInput start) count
         else 
             match Map.tryFind ki MotionCommandsMap with
             | Some(command) -> 

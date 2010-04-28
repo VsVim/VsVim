@@ -310,7 +310,6 @@ type internal NormalMode
                 yield (InputUtil.CharToKeyInput('X'),  (fun count reg -> _operations.DeleteCharacterBeforeCursor count reg))
                 yield (InputUtil.CharToKeyInput('p'), (fun count reg -> _operations.PasteAfterCursor reg.StringValue count reg.Value.OperationKind false))
                 yield (InputUtil.CharToKeyInput('P'), (fun count reg -> _operations.PasteBeforeCursor reg.StringValue count reg.Value.OperationKind false))
-                yield (InputUtil.CharToKeyInput('0'), (fun _ _ -> _operations.EditorOperations.MoveToStartOfLine(false))) 
                 yield (InputUtil.CharToKeyInput('n'), (fun count _ -> _operations.MoveToNextOccuranceOfLastSearch count false))
                 yield (InputUtil.CharToKeyInput('N'), (fun count _ -> _operations.MoveToNextOccuranceOfLastSearch count true))
                 yield (InputUtil.CharToKeyInput('*'), (fun count _ -> _operations.MoveToNextOccuranceOfWordAtCursor SearchKind.ForwardWithWrap count))
@@ -389,7 +388,7 @@ type internal NormalMode
     member this.ProcessCore (ki:KeyInput) =
         if ki.Key = VimKey.EscapeKey then 
             this.Reset()
-            ProcessResult.SwitchPreviousMode
+            ProcessResult.Processed
         else
             let command = _data.Command + ki.Char.ToString()
             _data <- {_data with Command=command }
@@ -411,6 +410,7 @@ type internal NormalMode
                 ProcessResult.Processed
             | RunKeyInputResult.NoMatchingCommand ->
                 this.Reset()
+                _operations.Beep()
                 ProcessResult.Processed
     
     interface INormalMode with 

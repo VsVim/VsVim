@@ -243,6 +243,17 @@ namespace VimCoreTest
         }
 
         [Test]
+        [Description("0 is not a valid count")]
+        public void Run_Count4()
+        {
+            Create(string.Empty);
+            var didRun = false;
+            _runner.Add(VimUtil.CreateSimpleCommand("a", (count, reg) => { didRun = true; }));
+            Assert.IsTrue(_runner.Run('0').IsNoMatchingCommand);
+            Assert.IsFalse(didRun);
+        }
+
+        [Test]
         public void Run_Register1()
         {
             Create(String.Empty);
