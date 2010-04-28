@@ -54,7 +54,7 @@ type internal NormalMode
             match command with 
             | SimpleCommand(_) -> false
             | LongCommand(_) -> false
-            | MotionCommand(_,kind,_) -> kind <> CommandKind.Movement
+            | MotionCommand(_) -> not command.IsMovement
 
         match _runner.State with
         | NoInput -> false
@@ -158,25 +158,25 @@ type internal NormalMode
                 let func count reg (data:MotionData) = 
                     _operations.ChangeLetterCase data.OperationSpan
                     CommandResult.Completed ModeSwitch.NoSwitch
-                MotionCommand(name, CommandKind.NotRepeatable, func)
+                MotionCommand(name, CommandFlags.None, func)
             else
                 let func count _ = 
                     let count = CommandUtil.CountOrDefault count
                     _operations.ChangeLetterCaseAtCursor count
                     CommandResult.Completed ModeSwitch.NoSwitch
-                SimpleCommand(name, CommandKind.Repeatable, func)
+                SimpleCommand(name, CommandFlags.None, func)
         name,command
 
     /// Create the set of Command values which are not repeatable 
     member this.CreateLongCommands() = 
 
         seq {
-            yield ("/", CommandKind.Movement, fun count reg -> this.BeginIncrementalSearch SearchKind.ForwardWithWrap count reg)
-            yield ("?", CommandKind.Movement, fun count reg -> this.BeginIncrementalSearch SearchKind.BackwardWithWrap count reg)
-            yield ("r", CommandKind.NotRepeatable, fun count reg -> this.ReplaceChar count reg)
-            yield ("'", CommandKind.Movement, fun count reg -> this.WaitJumpToMark count reg)
-            yield ("`", CommandKind.Movement, fun count reg -> this.WaitJumpToMark count reg)
-            yield ("m", CommandKind.Movement, fun count reg -> this.WaitMark count reg)
+            yield ("/", CommandFlags.Movement ||| CommandFlags.HandlesEscape, fun count reg -> this.BeginIncrementalSearch SearchKind.ForwardWithWrap count reg)
+            yield ("?", CommandFlags.Movement, fun count reg -> this.BeginIncrementalSearch SearchKind.BackwardWithWrap count reg)
+            yield ("r", CommandFlags.None, fun count reg -> this.ReplaceChar count reg) 
+            yield ("'", CommandFlags.Movement, fun count reg -> this.WaitJumpToMark count reg)
+            yield ("`", CommandFlags.Movement, fun count reg -> this.WaitJumpToMark count reg)
+            yield ("m", CommandFlags.Movement, fun count reg -> this.WaitMark count reg)
         }
         |> Seq.map (fun (str,kind, func) -> 
             let name = CommandUtil.CreateCommandName str
@@ -190,34 +190,34 @@ type internal NormalMode
 
         let noSwitch = 
             seq {
-                yield ("dd", CommandKind.Repeatable, fun count reg -> _operations.DeleteLinesIncludingLineBreak count reg)
-                yield ("yy", CommandKind.Repeatable, fun count reg -> 
+                yield ("dd", CommandFlags.Repeatable, fun count reg -> _operations.DeleteLinesIncludingLineBreak count reg)
+                yield ("yy", CommandFlags.Repeatable, fun count reg -> 
                     let point = TextViewUtil.GetCaretPoint _bufferData.TextView
                     let point = point.GetContainingLine().Start
                     let span = SnapshotPointUtil.GetLineRangeSpanIncludingLineBreak point count
                     _operations.Yank span MotionKind.Inclusive OperationKind.LineWise reg  )
-                yield ("<<", CommandKind.Repeatable, fun count _ -> _operations.ShiftLinesLeft count)
-                yield (">>", CommandKind.Repeatable, fun count _ -> _operations.ShiftLinesRight count)
-                yield ("gJ", CommandKind.Repeatable, fun count reg -> 
+                yield ("<<", CommandFlags.Repeatable, fun count _ -> _operations.ShiftLinesLeft count)
+                yield (">>", CommandFlags.Repeatable, fun count _ -> _operations.ShiftLinesRight count)
+                yield ("gJ", CommandFlags.Repeatable, fun count reg -> 
                     let view = _bufferData.TextView
                     let caret = TextViewUtil.GetCaretPoint view
                     _operations.Join caret Modes.JoinKind.KeepEmptySpaces count |> ignore )
-                yield ("gp", CommandKind.Repeatable, fun count reg -> _operations.PasteAfterCursor reg.StringValue 1 reg.Value.OperationKind true |> ignore)
-                yield ("gP", CommandKind.Repeatable, fun count reg -> _operations.PasteBeforeCursor reg.StringValue 1 reg.Value.OperationKind true |> ignore)
-                yield ("g_", CommandKind.Movement, fun _ _ -> _operations.EditorOperations.MoveToLastNonWhiteSpaceCharacter(false))
-                yield ("g*", CommandKind.Movement, fun count _ -> _operations.MoveToNextOccuranceOfPartialWordAtCursor SearchKind.ForwardWithWrap count)
-                yield ("g#", CommandKind.Movement, fun count _ -> _operations.MoveToNextOccuranceOfPartialWordAtCursor SearchKind.BackwardWithWrap count)
-                yield ("gt", CommandKind.Movement, fun count _ -> _operations.GoToNextTab count)
-                yield ("gT", CommandKind.Movement, fun count _ -> _operations.GoToPreviousTab count)
-                yield ("zt", CommandKind.Movement, fun _ _ ->  _operations.EditorOperations.ScrollLineTop())
-                yield ("z.", CommandKind.Movement, fun _ _ -> 
+                yield ("gp", CommandFlags.Repeatable, fun count reg -> _operations.PasteAfterCursor reg.StringValue 1 reg.Value.OperationKind true |> ignore)
+                yield ("gP", CommandFlags.Repeatable, fun count reg -> _operations.PasteBeforeCursor reg.StringValue 1 reg.Value.OperationKind true |> ignore)
+                yield ("g_", CommandFlags.Movement, fun _ _ -> _operations.EditorOperations.MoveToLastNonWhiteSpaceCharacter(false))
+                yield ("g*", CommandFlags.Movement, fun count _ -> _operations.MoveToNextOccuranceOfPartialWordAtCursor SearchKind.ForwardWithWrap count)
+                yield ("g#", CommandFlags.Movement, fun count _ -> _operations.MoveToNextOccuranceOfPartialWordAtCursor SearchKind.BackwardWithWrap count)
+                yield ("gt", CommandFlags.Movement, fun count _ -> _operations.GoToNextTab count)
+                yield ("gT", CommandFlags.Movement, fun count _ -> _operations.GoToPreviousTab count)
+                yield ("zt", CommandFlags.Movement, fun _ _ ->  _operations.EditorOperations.ScrollLineTop())
+                yield ("z.", CommandFlags.Movement, fun _ _ -> 
                     _operations.EditorOperations.ScrollLineCenter() 
                     _operations.EditorOperations.MoveToStartOfLineAfterWhiteSpace(false) )
-                yield ("zz", CommandKind.Movement, fun _ _ -> _operations.EditorOperations.ScrollLineCenter() )
-                yield ("z-", CommandKind.Movement, fun _ _ ->
+                yield ("zz", CommandFlags.Movement, fun _ _ -> _operations.EditorOperations.ScrollLineCenter() )
+                yield ("z-", CommandFlags.Movement, fun _ _ ->
                     _operations.EditorOperations.ScrollLineBottom() 
                     _operations.EditorOperations.MoveToStartOfLineAfterWhiteSpace(false) )
-                yield ("zb", CommandKind.Movement, fun _ _ -> _operations.EditorOperations.ScrollLineBottom() )
+                yield ("zb", CommandFlags.Movement, fun _ _ -> _operations.EditorOperations.ScrollLineBottom() )
             }
             |> Seq.map(fun (str,kind,func) -> (str,kind,func,CommandResult.Completed ModeSwitch.NoSwitch))
 
@@ -229,7 +229,7 @@ type internal NormalMode
                     let span = SnapshotSpan(point.GetContainingLine().Start,span.End)
                     _operations.DeleteSpan span MotionKind.Inclusive OperationKind.LineWise reg |> ignore )
             }
-            |> Seq.map(fun (str,switch,func) -> (str,CommandKind.NotRepeatable,func,CommandResult.Completed switch))
+            |> Seq.map(fun (str,switch,func) -> (str,CommandFlags.None,func,CommandResult.Completed switch))
 
         let allWithCount = 
             Seq.append noSwitch doSwitch 
@@ -243,8 +243,8 @@ type internal NormalMode
 
         let needCountAsOpt = 
             seq {
-                yield ("gg", CommandKind.Movement, fun count _ -> _operations.GoToLineOrFirst count)
-                yield (".", CommandKind.Special, fun count reg -> this.RepeatLastChange count reg)
+                yield ("gg", CommandFlags.Movement, fun count _ -> _operations.GoToLineOrFirst count)
+                yield (".", CommandFlags.Special, fun count reg -> this.RepeatLastChange count reg)
             }
             |> Seq.map(fun (str,kind,func) -> 
                 let name = CommandUtil.CreateCommandName str
@@ -257,7 +257,7 @@ type internal NormalMode
             seq { 
                 yield (
                     [InputUtil.CharToKeyInput('z'); InputUtil.VimKeyToKeyInput(VimKey.EnterKey)],
-                    CommandKind.Movement,
+                    CommandFlags.Movement,
                     fun count reg -> 
                         _operations.EditorOperations.ScrollLineTop()
                         _operations.EditorOperations.MoveToStartOfLineAfterWhiteSpace(false) )
@@ -294,7 +294,7 @@ type internal NormalMode
                 match modeKindOpt with
                 | None -> CommandResult.Completed ModeSwitch.NoSwitch
                 | Some(modeKind) -> CommandResult.Completed (ModeSwitch.SwitchMode modeKind)
-            MotionCommand(name, CommandKind.NotRepeatable, func2))
+            MotionCommand(name, CommandFlags.None, func2))
 
     /// Create all of the movement commands
     member this.CreateMovementCommands() =
@@ -340,7 +340,7 @@ type internal NormalMode
                         let count = CommandUtil.CountOrDefault count
                         func count reg
                         CommandResult.Completed ModeSwitch.NoSwitch
-                    SimpleCommand(name, CommandKind.Repeatable, func2))
+                    SimpleCommand(name, CommandFlags.Repeatable, func2))
     
     
         // Similar to completeOps but take the conditional count value
@@ -353,7 +353,7 @@ type internal NormalMode
                     let func2 count reg =
                         func count reg 
                         CommandResult.Completed ModeSwitch.NoSwitch
-                    SimpleCommand(name, CommandKind.Repeatable, func2) )
+                    SimpleCommand(name, CommandFlags.Movement, func2) )
 
         let doNothing _ _ = ()
         let changeOps = 
@@ -377,7 +377,7 @@ type internal NormalMode
                         let count = CommandUtil.CountOrDefault count
                         func count reg 
                         CommandResult.Completed (ModeSwitch.SwitchMode mode)
-                    SimpleCommand(name, CommandKind.Repeatable, func2))
+                    SimpleCommand(name, CommandFlags.Repeatable, func2))
     
         Seq.append completeOps completeOps2 |> Seq.append changeOps
    

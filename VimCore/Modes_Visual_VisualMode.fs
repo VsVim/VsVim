@@ -93,7 +93,7 @@ type internal VisualMode
                             _operations.JoinSelection JoinKind.RemoveEmptySpaces|> ignore
                             CommandResult.Completed ModeSwitch.SwitchPreviousMode))
                 }
-            |> Seq.map (fun (ki,func) -> Command.SimpleCommand(OneKeyInput ki,CommandKind.NotRepeatable, func))
+            |> Seq.map (fun (ki,func) -> Command.SimpleCommand(OneKeyInput ki,CommandFlags.None, func))
 
 
         /// Commands consisting of more than a single character
@@ -102,7 +102,7 @@ type internal VisualMode
                 yield ("gJ", fun _ _ -> _operations.JoinSelection JoinKind.KeepEmptySpaces |> ignore)
             }
             |> Seq.map (fun (str,func) -> (str, fun count reg -> func count reg; CommandResult.Completed ModeSwitch.SwitchPreviousMode))
-            |> Seq.map (fun (name,func) -> Command.SimpleCommand (CommandUtil.CreateCommandName name, CommandKind.NotRepeatable, func))
+            |> Seq.map (fun (name,func) -> Command.SimpleCommand (CommandUtil.CreateCommandName name, CommandFlags.None, func))
 
         Seq.append simples complex
 

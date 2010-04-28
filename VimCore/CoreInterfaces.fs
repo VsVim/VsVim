@@ -161,16 +161,19 @@ type LongCommandResult =
     | Cancelled
     | NeedMoreInput of (KeyInput -> LongCommandResult)
 
-/// Information about the kind of Command
-type CommandKind =
+/// Information about the attributes of Command
+[<System.Flags>]
+type CommandFlags =
+    | None = 0x0
     /// Relates to the movement of the cursor
-    | Movement
+    | Movement = 0x1
     /// A Command which can be repeated
-    | Repeatable
-    /// A Command which cannot be repeated
-    | NotRepeatable
+    | Repeatable = 0x2
     /// A Command which should not be considered when looking at last changes
-    | Special
+    | Special = 0x4
+    /// Can handle the escape key if provided as part of a Motion or Long command extra
+    /// input
+    | HandlesEscape = 0x8
 
 /// Representation of commands within Vim.  
 [<DebuggerDisplay("{ToString(),nq}")>]
@@ -179,17 +182,17 @@ type Command =
     /// Represents a Command which has no motion modifiers.  The  delegate takes 
     /// an optional count and a Register.  If unspecified the default register
     /// will be used
-    | SimpleCommand of CommandName * CommandKind * (int option -> Register -> CommandResult)
+    | SimpleCommand of CommandName * CommandFlags * (int option -> Register -> CommandResult)
 
     /// Represents a Command prefix which has an associated motion.  The delegate takes
     /// an optional count, a Register and a MotionData value.  If unspecified the default
     /// register will be used
-    | MotionCommand of CommandName * CommandKind * (int option -> Register -> MotionData -> CommandResult)
+    | MotionCommand of CommandName * CommandFlags * (int option -> Register -> MotionData -> CommandResult)
 
     /// Represents a command which has a Name but then has additional unspecified input
     /// which needs to be dealt with specially by the command.  These commands are not
-    /// repeatable
-    | LongCommand of CommandName * CommandKind * (int option -> Register -> LongCommandResult)
+    /// repeatable.  
+    | LongCommand of CommandName * CommandFlags * (int option -> Register -> LongCommandResult) 
 
     with 
 
@@ -201,13 +204,25 @@ type Command =
         | LongCommand(value,_,_) -> value
 
     /// The kind of the Command
-    member x.CommandKind =
+    member x.CommandFlags =
         match x with
         | SimpleCommand(_,value,_ ) -> value
         | MotionCommand(_,value,_) -> value
         | LongCommand(_,value,_) -> value
 
-    override x.ToString() = System.String.Format("{0} -> {1}", x.CommandName, x.CommandKind)
+    /// Is the Repeatable flag set
+    member x.IsRepeatable = Utils.IsFlagSet x.CommandFlags CommandFlags.Repeatable
+
+    /// Is the HandlesEscape flag set
+    member x.HandlesEscape = Utils.IsFlagSet x.CommandFlags CommandFlags.HandlesEscape
+
+    /// Is the Movement flag set
+    member x.IsMovement = Utils.IsFlagSet x.CommandFlags CommandFlags.Movement
+
+    /// Is the Special flag set
+    member x.IsSpecial = Utils.IsFlagSet x.CommandFlags CommandFlags.Special
+
+    override x.ToString() = System.String.Format("{0} -> {1}", x.CommandName, x.CommandFlags)
 
 
 /// The information about the particular run of a Command

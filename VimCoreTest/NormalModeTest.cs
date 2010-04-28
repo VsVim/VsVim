@@ -2164,7 +2164,7 @@ namespace VimCoreTest
             Create("foo");
             var all = _modeRaw.Commands.ToList();
             var found = _modeRaw.Commands.Single(x => x.CommandName.Equals(CommandUtil.CreateCommandName("D")));
-            Assert.AreEqual(CommandKind.Repeatable, found.CommandKind);
+            Assert.AreEqual(CommandFlags.Repeatable, found.CommandFlags);
         }
 
         [Test]
@@ -2172,7 +2172,7 @@ namespace VimCoreTest
         {
             Create("foo");
             var found = _modeRaw.Commands.Single(x => x.CommandName.Equals(CommandUtil.CreateCommandName("h")));
-            Assert.AreNotEqual(CommandKind.Repeatable, found.CommandKind, "Movements should not be repeatable");  
+            Assert.AreNotEqual(CommandFlags.Repeatable, found.CommandFlags, "Movements should not be repeatable");  
         }
 
         [Test]
@@ -2180,7 +2180,7 @@ namespace VimCoreTest
         {
             Create("foo", "bar", "baz");
             var found = _modeRaw.Commands.Single(x => x.CommandName.Equals(CommandUtil.CreateCommandName("dd")));
-            Assert.AreEqual(CommandKind.Repeatable, found.CommandKind);
+            Assert.AreEqual(CommandFlags.Repeatable, found.CommandFlags);
         }
 
         [Test]

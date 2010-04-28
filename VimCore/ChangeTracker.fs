@@ -27,11 +27,11 @@ type internal ChangeTracker() =
 
     member private x.OnCommandRan ((data:CommandRunData),_) = 
         let command = data.Command
-        match command.CommandKind with
-        | CommandKind.Movement -> () // Movement commands don't participate in the change stack
-        | CommandKind.Special -> () // Special commands don't participate in the change stack
-        | CommandKind.NotRepeatable -> _last <- None
-        | CommandKind.Repeatable -> _last <- CommandChange data |> Some
+        if command.IsMovement || command.IsSpecial then
+            // Movement and special commandsd don't participate in change tracking
+            ()
+        elif command.IsRepeatable then _last <- CommandChange data |> Some
+        else _last <- None
 
     member private x.OnTextChanged (buffer:IVimBuffer) args =
 
