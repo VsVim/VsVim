@@ -27,14 +27,19 @@ module internal SnapshotUtil =
     /// Get the start point of the snapshot
     let GetStartPoint (tss:ITextSnapshot) = SnapshotPoint(tss, 0)
 
-    /// Get the line number back if it's valid and if not the last line in the snapshot
-    let GetValidLineNumberOrLast (tss:ITextSnapshot) lineNumber = 
-        if lineNumber >= tss.LineCount then tss.LineCount-1 else lineNumber
+    /// Is the Line Number valid
+    let IsLineNumberValid (tss:ITextSnapshot) lineNumber = lineNumber >= 0 && lineNumber < tss.LineCount
 
     /// Get a valid line for the specified number if it's valid and the last line if it's
     /// not
-    let GetValidLineOrLast (tss:ITextSnapshot) lineNumber =
-        let lineNumber = GetValidLineNumberOrLast tss lineNumber
+    let GetLineOrLast tss lineNumber =
+        let lineNumber = if IsLineNumberValid tss lineNumber then lineNumber else GetLastLineNumber tss 
+        tss.GetLineFromLineNumber(lineNumber)
+
+    /// Get a valid line for the specified number if it's valid and the last line if it's
+    /// not
+    let GetLineOrFirst tss lineNumber =
+        let lineNumber = if IsLineNumberValid tss lineNumber then lineNumber else 0
         tss.GetLineFromLineNumber(lineNumber)
 
     /// Get the lines in the ITextSnapshot as a seq in forward fashion
@@ -191,7 +196,7 @@ module internal SnapshotPointUtil =
     let GetLineRangeSpan start count = 
         let startLine = GetContainingLine start
         let tss = startLine.Snapshot
-        let last = SnapshotUtil.GetValidLineOrLast tss (startLine.LineNumber+(count-1))
+        let last = SnapshotUtil.GetLineOrLast tss (startLine.LineNumber+(count-1))
         new SnapshotSpan(start, last.End)
 
     /// Functions exactly line GetLineRangeSpan except it will include the final line up until
@@ -199,7 +204,7 @@ module internal SnapshotPointUtil =
     let GetLineRangeSpanIncludingLineBreak (start:SnapshotPoint) count =
         let tss = start.Snapshot
         let startLine = start.GetContainingLine()
-        let last = SnapshotUtil.GetValidLineOrLast tss (startLine.LineNumber+(count-1))
+        let last = SnapshotUtil.GetLineOrLast tss (startLine.LineNumber+(count-1))
         new SnapshotSpan(start, last.EndIncludingLineBreak)
 
     /// Get the line and column information for a given SnapshotPoint

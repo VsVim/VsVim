@@ -263,7 +263,7 @@ type internal CommonOperations
         member x.MoveCaretDownToFirstNonWhitespaceCharacter count = 
             let caret = TextViewUtil.GetCaretPoint _textView
             let line = caret.GetContainingLine()
-            let line = SnapshotUtil.GetValidLineOrLast caret.Snapshot (line.LineNumber + count)
+            let line = SnapshotUtil.GetLineOrLast caret.Snapshot (line.LineNumber + count)
             let point = TssUtil.FindFirstNonWhitespaceCharacter line
             _operations.ResetSelection()
             TextViewUtil.MoveCaretToPoint _textView point 

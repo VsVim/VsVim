@@ -35,21 +35,6 @@ namespace VimCoreTest
         }
 
         [Test]
-        public void GetValidLineNumberOrLast()
-        {
-            Create("foo", "bar");
-            Assert.AreEqual(1, SnapshotUtil.GetValidLineNumberOrLast(_snapshot, 1));
-            Assert.AreEqual(0, SnapshotUtil.GetValidLineNumberOrLast(_snapshot, 0));
-        }
-
-        [Test]
-        public void GetValidLineNumberOrLast2()
-        {
-            Create("foo", "bar");
-            Assert.AreEqual(1, SnapshotUtil.GetValidLineNumberOrLast(_snapshot, 200));
-        }
-
-        [Test]
         public void GetStartPoint()
         {
             Create("foo bar");

@@ -135,13 +135,21 @@ module internal MotionCapture =
         {Span=span; IsForward=false; MotionKind=MotionKind.Exclusive; OperationKind=OperationKind.CharacterWise; Column=None}
 
     /// Handle the lines down to first non-whitespace motion
-    let private LineDownToFirstNonWhitespace start count =
+    let private LineDownToFirstNonWhitespaceMotion start count =
         let line = SnapshotPointUtil.GetContainingLine start
         let number = line.LineNumber + count
-        let endLine = SnapshotUtil.GetValidLineOrLast line.Snapshot number
+        let endLine = SnapshotUtil.GetLineOrLast line.Snapshot number
         let point = TssUtil.FindFirstNonWhitespaceCharacter endLine
         let span = SnapshotSpan(start, point.Add(1)) // Add 1 since it's inclusive
         {Span=span; IsForward=true; MotionKind=MotionKind.Inclusive; OperationKind=OperationKind.LineWise; Column=None}
+
+    /// Handle the - motion
+    let private LineUpToFirstNonWhitespaceMotion point count =
+        let endLine = SnapshotPointUtil.GetContainingLine point
+        let startLine = SnapshotUtil.GetLineOrFirst endLine.Snapshot (endLine.LineNumber - count)
+        let span = SnapshotSpan(startLine.Start, endLine.End)
+        let column = TssUtil.FindFirstNonWhitespaceCharacter startLine
+        {Span=span; IsForward=false; MotionKind=MotionKind.Inclusive; OperationKind=OperationKind.LineWise; Column= Some column.Position} |> Some
 
     let private CharLeftMotion start count = 
         let prev = SnapshotPointUtil.GetPreviousPointOnLine start count 
@@ -167,7 +175,7 @@ module internal MotionCapture =
     let private LineDownMotion point count = 
         let startLine = SnapshotPointUtil.GetContainingLine point
         let endLineNumber = startLine.LineNumber + count
-        let endLine = SnapshotUtil.GetValidLineOrLast startLine.Snapshot endLineNumber
+        let endLine = SnapshotUtil.GetLineOrLast startLine.Snapshot endLineNumber
         let span = SnapshotSpan(startLine.Start, endLine.End)            
         {Span=span; IsForward=true; MotionKind=MotionKind.Inclusive; OperationKind=OperationKind.LineWise; Column=None } |> Some
 
@@ -196,9 +204,10 @@ module internal MotionCapture =
             yield (InputUtil.VimKeyToKeyInput VimKey.DownKey, fun start count -> LineDownMotion start count)
             yield (InputUtil.CharAndModifiersToKeyInput 'n' KeyModifiers.Control, fun start count -> LineDownMotion start count)
             yield (InputUtil.CharAndModifiersToKeyInput 'j' KeyModifiers.Control, fun start count -> LineDownMotion start count)
-            yield (InputUtil.CharToKeyInput '+', fun start count -> LineDownToFirstNonWhitespace start count |> Some)
-            yield (InputUtil.CharAndModifiersToKeyInput 'm' KeyModifiers.Control, fun start count -> LineDownToFirstNonWhitespace start count |> Some)
-            yield (InputUtil.VimKeyToKeyInput VimKey.EnterKey, fun start count -> LineDownToFirstNonWhitespace start count |> Some)
+            yield (InputUtil.CharToKeyInput '+', fun start count -> LineDownToFirstNonWhitespaceMotion start count |> Some)
+            yield (InputUtil.CharAndModifiersToKeyInput 'm' KeyModifiers.Control, fun start count -> LineDownToFirstNonWhitespaceMotion start count |> Some)
+            yield (InputUtil.VimKeyToKeyInput VimKey.EnterKey, fun start count -> LineDownToFirstNonWhitespaceMotion start count |> Some)
+            yield (InputUtil.CharToKeyInput '-', fun start count -> LineUpToFirstNonWhitespaceMotion start count)
         }
 
     let ComplexMotions = 
