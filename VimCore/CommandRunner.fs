@@ -27,6 +27,7 @@ type internal CommandRunner
     ( 
         _textView : ITextView,
         _registerMap : IRegisterMap,
+        _capture : IMotionCapture,
         _statusUtil : IStatusUtil ) as this =
 
     /// Represents the empty state for processing commands.  Holds all of the default
@@ -113,7 +114,7 @@ type internal CommandRunner
         let runInitialMotion ki =
             let point = TextViewUtil.GetCaretPoint _textView
             let count = CommandUtil.CountOrDefault _data.Count
-            MotionCapture.ProcessInput point ki count |> inner
+            _capture.ProcessInput point ki count |> inner
 
         match initialInput with
         | None -> NeedMore runInitialMotion

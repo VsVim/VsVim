@@ -310,6 +310,16 @@ type MotionCommand =
     /// used as a cursor movement operation  
     | ComplexMotionCommand of CommandName * bool * (SnapshotPoint -> int -> MotionResult)
 
+type IMotionCapture =
+    
+    /// Set of supported MotionCommand
+    abstract MotionCommands : seq<MotionCommand>
+
+    abstract ProcessInput : SnapshotPoint -> KeyInput -> int -> MotionResult
+
+    abstract ProcessView : ITextView -> KeyInput -> int -> MotionResult
+
+
 module CommandUtil = 
 
     let CountOrDefault opt = 

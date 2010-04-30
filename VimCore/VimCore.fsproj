@@ -55,7 +55,6 @@
     <Compile Include="Register.fs" />
     <Compile Include="CoreInterfaces.fs" />
     <Compile Include="MefInterfaces.fs" />
-    <Compile Include="MotionCapture.fsi" />
     <Compile Include="MotionCapture.fs" />
     <Compile Include="RegexUtil.fs" />
     <Compile Include="Modes_ICommonOperations.fs" />

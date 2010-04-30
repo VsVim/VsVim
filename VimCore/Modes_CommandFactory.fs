@@ -14,7 +14,7 @@ type internal MovementCommand =
     | SimpleMovementCommand of (int -> unit) 
     | ComplexMovementCommand of (int -> MovementResult)
 
-type internal CommandFactory( _operations : ICommonOperations) = 
+type internal CommandFactory( _operations : ICommonOperations, _capture : IMotionCapture ) = 
 
     member private x.CreateStandardMovementCommandsCore () = 
         let moveLeft = fun count -> _operations.MoveCaretLeft(count)
@@ -83,7 +83,7 @@ type internal CommandFactory( _operations : ICommonOperations) =
                     inner initialResult
                 Command.LongCommand(name, CommandFlags.Movement, coreFunc) |> Some
 
-        MotionCapture.MotionCommands
+        _capture.MotionCommands
         |> Seq.map filterMotionCommand
         |> SeqUtil.filterToSome
 
@@ -135,7 +135,7 @@ type internal CommandFactory( _operations : ICommonOperations) =
                     inner initialResult
                 (ki,ComplexMovementCommand coreFunc) |> Some
 
-        MotionCapture.MotionCommands
+        _capture.MotionCommands
         |> Seq.map filterMotionCommand
         |> SeqUtil.filterToSome
 

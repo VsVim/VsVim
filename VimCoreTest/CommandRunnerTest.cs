@@ -29,9 +29,11 @@ namespace VimCoreTest
             _factory = new MockFactory(MockBehavior.Strict);
             _statusUtil = _factory.Create<IStatusUtil>();
             _registerMap = new RegisterMap();
+            var capture = new MotionCapture(new MotionUtil(new Vim.GlobalSettings()));
             _runnerRaw = new CommandRunner(Tuple.Create(
                 _textView,
                 _registerMap,
+                (IMotionCapture)capture,
                 _statusUtil.Object));
             _runner = _runnerRaw;
         }

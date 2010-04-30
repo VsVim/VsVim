@@ -18,7 +18,8 @@ type internal NormalMode
         _incrementalSearch : IIncrementalSearch,
         _statusUtil : IStatusUtil,
         _displayWindowBroker : IDisplayWindowBroker,
-        _runner : ICommandRunner ) as this =
+        _runner : ICommandRunner,
+        _capture : IMotionCapture ) as this = 
 
     /// Reset state for data in Normal Mode
     let _emptyData = {
@@ -298,7 +299,7 @@ type internal NormalMode
 
     /// Create all of the movement commands
     member this.CreateMovementCommands() =
-        let factory = Vim.Modes.CommandFactory(_operations)
+        let factory = Vim.Modes.CommandFactory(_operations, _capture)
         factory.CreateMovementCommands()
 
     member this.CreateCommandsOld() =

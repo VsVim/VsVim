@@ -63,14 +63,16 @@ namespace VimCoreTest
             _operations.SetupGet(x => x.EditorOperations).Returns(_editorOperations.Object);
             _operations.SetupGet(x => x.TextView).Returns(_view);
 
-            var runner = new CommandRunner(Tuple.Create((ITextView)_view, _map, _statusUtil.Object));
+            var capture = new MotionCapture(new MotionUtil(_bufferData.Object.Settings.GlobalSettings));
+            var runner = new CommandRunner(Tuple.Create((ITextView)_view, _map,(IMotionCapture)capture, _statusUtil.Object));
             _modeRaw = new Vim.Modes.Normal.NormalMode(Tuple.Create(
                 _bufferData.Object,
                 _operations.Object,
                 _incrementalSearch.Object,
                 _statusUtil.Object,
                 _displayWindowBroker.Object,
-                (ICommandRunner)runner));
+                (ICommandRunner)runner,
+                (IMotionCapture)capture));
             _mode = _modeRaw;
             _mode.OnEnter();
         }

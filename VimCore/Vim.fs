@@ -25,6 +25,8 @@ type internal VimBufferFactory
 
     member x.CreateBuffer (vim:IVim) view = 
         let editOperations = _editorOperationsFactoryService.GetEditorOperations(view)
+        let motionUtil = MotionUtil(vim.Settings) :> IMotionUtil
+        let capture = MotionCapture(motionUtil) :> IMotionCapture
         let outlining = _outliningManagerService.GetOutliningManager(view)
         let jumpList = JumpList(_tlcService) :> IJumpList
         let localSettings = LocalSettings(vim.Settings, view) :> IVimLocalSettings
@@ -37,7 +39,7 @@ type internal VimBufferFactory
         let buffer = bufferRaw :> IVimBuffer
 
         let statusUtil = x.CreateStatusUtil bufferRaw 
-        let createCommandRunner() = CommandRunner (view, vim.RegisterMap, statusUtil) :>ICommandRunner
+        let createCommandRunner() = CommandRunner (view, vim.RegisterMap, capture,statusUtil) :>ICommandRunner
         let wordNav = x.CreateTextStructureNavigator view.TextBuffer WordKind.NormalWord
         let broker = _completionWindowBrokerFactoryService.CreateDisplayWindowBroker view
         let normalIncrementalSearch = Vim.Modes.Normal.IncrementalSearch(view, outlining, localSettings, wordNav, vim.SearchService) :> IIncrementalSearch
@@ -58,13 +60,13 @@ type internal VimBufferFactory
         // Normal mode values
         let modeList = 
             [
-                ((Modes.Normal.NormalMode(buffer, normalOpts, normalIncrementalSearch,statusUtil,broker, createCommandRunner())) :> IMode);
+                ((Modes.Normal.NormalMode(buffer, normalOpts, normalIncrementalSearch,statusUtil,broker, createCommandRunner(),capture)) :> IMode);
                 ((Modes.Command.CommandMode(buffer, commandProcessor)) :> IMode);
                 ((Modes.Insert.InsertMode(buffer,insertOpts,broker)) :> IMode);
                 (DisabledMode(buffer) :> IMode);
-                ((Modes.Visual.VisualMode(buffer, (visualOptsFactory ModeKind.VisualBlock), ModeKind.VisualBlock, createCommandRunner())) :> IMode);
-                ((Modes.Visual.VisualMode(buffer, (visualOptsFactory ModeKind.VisualLine), ModeKind.VisualLine, createCommandRunner())) :> IMode);
-                ((Modes.Visual.VisualMode(buffer, (visualOptsFactory ModeKind.VisualCharacter), ModeKind.VisualCharacter, createCommandRunner())) :> IMode);
+                ((Modes.Visual.VisualMode(buffer, (visualOptsFactory ModeKind.VisualBlock), ModeKind.VisualBlock, createCommandRunner(),capture)) :> IMode);
+                ((Modes.Visual.VisualMode(buffer, (visualOptsFactory ModeKind.VisualLine), ModeKind.VisualLine, createCommandRunner(),capture)) :> IMode);
+                ((Modes.Visual.VisualMode(buffer, (visualOptsFactory ModeKind.VisualCharacter), ModeKind.VisualCharacter, createCommandRunner(),capture)) :> IMode);
             ]
         modeList |> List.iter (fun m -> bufferRaw.AddMode m)
         buffer.SwitchMode ModeKind.Normal |> ignore

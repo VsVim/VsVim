@@ -12,7 +12,8 @@ type internal VisualMode
         _buffer : IVimBuffer,
         _operations : IOperations,
         _kind : ModeKind,
-        _runner : ICommandRunner ) = 
+        _runner : ICommandRunner,
+        _capture : IMotionCapture ) = 
 
     let _selectionTracker = _operations.SelectionTracker 
 
@@ -43,7 +44,7 @@ type internal VisualMode
                 x.EndExplicitMove()
                 res
 
-        let factory = Vim.Modes.CommandFactory(_operations)
+        let factory = Vim.Modes.CommandFactory(_operations, _capture)
         factory.CreateMovementCommands()
         |> Seq.map (fun (command) ->
             match command with
