@@ -23,8 +23,9 @@ type MotionData = {
     OperationKind : OperationKind 
 
     /// In addition to recording the Span certain line wise operations like j and k also
-    /// record data about the desired column within the span.  This value holds the result
-    Column : SnapshotPoint option
+    /// record data about the desired column within the span.  This value may or may not
+    /// be a valid point within the line
+    Column : int option
 } with
     
     /// Span is the true result of the motion.  However some commands only process a
@@ -47,16 +48,14 @@ type MotionData = {
     /// the first line of a forward motion or the last point on the last line in a non
     /// forward motion
     member x.ColumnOrFirstPoint = 
-        match x.Column with
-        | Some(point) -> point
-        | None -> 
-            if x.IsForward then
-                let line = SnapshotPointUtil.GetContainingLine x.Span.Start
-                line.Start
-            else
-                let line = SnapshotPointUtil.GetContainingLine x.Span.End
-                line.End
-
+        let column =
+            match x.Column with
+            | Some(value) -> value
+            | None -> 0
+        let line = 
+            if x.IsForward then SnapshotPointUtil.GetContainingLine x.Span.Start
+            else SnapshotPointUtil.GetContainingLine x.Span.End
+        VirtualSnapshotPoint(line, column)
         
 
 type MotionResult = 

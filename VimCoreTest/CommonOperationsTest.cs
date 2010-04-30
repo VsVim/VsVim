@@ -1197,7 +1197,7 @@ namespace VimCoreTest
                 true,
                 MotionKind.Inclusive,
                 OperationKind.CharacterWise,
-                FSharpOption<SnapshotPoint>.None);
+                FSharpOption<int>.None);
             _operations.MoveCaretToMotionData(data);
             Assert.AreEqual(2, _view.GetCaretPoint().Position);
         }
@@ -1212,7 +1212,7 @@ namespace VimCoreTest
                 true,
                 MotionKind.Inclusive,
                 OperationKind.CharacterWise,
-                FSharpOption<SnapshotPoint>.None);
+                FSharpOption<int>.None);
             _operations.MoveCaretToMotionData(data);
             Assert.AreEqual(0, _view.GetCaretPoint().Position);
         }
@@ -1227,7 +1227,7 @@ namespace VimCoreTest
                 true,
                 MotionKind.Inclusive,
                 OperationKind.CharacterWise,
-                FSharpOption<SnapshotPoint>.None);
+                FSharpOption<int>.None);
             _operations.MoveCaretToMotionData(data);
             Assert.AreEqual(0, _view.GetCaretPoint().Position);
         }
@@ -1242,7 +1242,7 @@ namespace VimCoreTest
                 false,
                 MotionKind.Inclusive,
                 OperationKind.CharacterWise,
-                FSharpOption<SnapshotPoint>.None);
+                FSharpOption<int>.None);
             _operations.MoveCaretToMotionData(data);
             Assert.AreEqual(0, _view.GetCaretPoint().Position);
         }
@@ -1257,7 +1257,7 @@ namespace VimCoreTest
                 true,
                 MotionKind.Exclusive,
                 OperationKind.CharacterWise,
-                FSharpOption<SnapshotPoint>.None);
+                FSharpOption<int>.None);
             _operations.MoveCaretToMotionData(data);
             Assert.AreEqual(3, _view.GetCaretPoint().Position);
         }
@@ -1272,7 +1272,7 @@ namespace VimCoreTest
                 true,
                 MotionKind.Exclusive,
                 OperationKind.CharacterWise,
-                FSharpOption<SnapshotPoint>.None);
+                FSharpOption<int>.None);
             _operations.MoveCaretToMotionData(data);
             Assert.AreEqual(1, _view.GetCaretPoint().Position);
         }

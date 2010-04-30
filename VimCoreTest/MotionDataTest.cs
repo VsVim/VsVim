@@ -22,7 +22,7 @@ namespace VimCoreTest
                 true,
                 MotionKind.Inclusive,
                 OperationKind.LineWise,
-                FSharpOption<SnapshotPoint>.None);
+                FSharpOption<int>.None);
             Assert.AreEqual(0, data.ColumnOrFirstPoint.Position);
         }
 
@@ -35,7 +35,7 @@ namespace VimCoreTest
                 false,
                 MotionKind.Inclusive,
                 OperationKind.LineWise,
-                FSharpOption<SnapshotPoint>.None);
+                FSharpOption<int>.None);
             Assert.AreEqual(buffer.GetLine(0).End, data.ColumnOrFirstPoint);
         }
     }
