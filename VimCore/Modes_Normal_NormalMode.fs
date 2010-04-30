@@ -426,8 +426,9 @@ type internal NormalMode
 
         member this.CanProcess (ki:KeyInput) =
             let doesCommandStartWith ki =
+                let name = OneKeyInput ki
                 _runner.Commands 
-                |> Seq.filter (fun command -> command.CommandName.StartsWith ki)
+                |> Seq.filter (fun command -> command.CommandName.StartsWith name)
                 |> SeqUtil.isNotEmpty
 
             if _displayWindowBroker.IsSmartTagWindowActive then false                

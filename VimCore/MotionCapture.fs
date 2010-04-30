@@ -91,21 +91,28 @@ type internal MotionCapture (_util :IMotionUtil ) =
             seq {
                 yield (InputUtil.CharToKeyInput 'G', fun start countOpt -> _util.LineOrLastToFirstNonWhitespace start countOpt |> Some)
             } |> Seq.map (fun (ki,func) -> SimpleMotionCommand(OneKeyInput ki, func))
-        Seq.append needCount needCountOpt
+
+        let needCountOpt2 =
+            seq {
+                yield ( CommandUtil.CreateCommandName "gg", fun start countOpt -> _util.LineOrFirstToFirstNonWhitespace start countOpt |> Some)
+            } |> Seq.map (fun (name,func) -> SimpleMotionCommand(name, func))
+        Seq.append needCount needCountOpt |> Seq.append needCountOpt2
     
     let ComplexMotions = 
-        seq {
-            yield (InputUtil.CharToKeyInput 'a', false, fun start count -> AllWordMotion start count)
-            yield (InputUtil.CharToKeyInput 'f', true, fun start count -> WaitCharThen start count _util.ForwardChar)
-            yield (InputUtil.CharToKeyInput 't', true, fun start count -> WaitCharThen start count _util.ForwardTillChar)
-            yield (InputUtil.CharToKeyInput 'F', true, fun start count -> WaitCharThen start count _util.BackwardChar)
-            yield (InputUtil.CharToKeyInput 'T', true, fun start count -> WaitCharThen start count _util.BackwardTillChar)
-        } |> Seq.map (fun (ki,isMovement,func) ->
-                let func2 start count =
-                    let count = CommandUtil.CountOrDefault count
-                    func start count
-                ComplexMotionCommand(OneKeyInput ki, isMovement,func2))
-
+        let needCount = 
+            seq {
+                yield (InputUtil.CharToKeyInput 'a', false, fun start count -> AllWordMotion start count)
+                yield (InputUtil.CharToKeyInput 'f', true, fun start count -> WaitCharThen start count _util.ForwardChar)
+                yield (InputUtil.CharToKeyInput 't', true, fun start count -> WaitCharThen start count _util.ForwardTillChar)
+                yield (InputUtil.CharToKeyInput 'F', true, fun start count -> WaitCharThen start count _util.BackwardChar)
+                yield (InputUtil.CharToKeyInput 'T', true, fun start count -> WaitCharThen start count _util.BackwardTillChar)
+            } |> Seq.map (fun (ki,isMovement,func) ->
+                    let func2 start count =
+                        let count = CommandUtil.CountOrDefault count
+                        func start count
+                    ComplexMotionCommand(OneKeyInput ki, isMovement,func2))
+        needCount
+    
     let AllMotionsCore =
         let simple = SimpleMotions 
         let complex = ComplexMotions 
@@ -115,6 +122,26 @@ type internal MotionCapture (_util :IMotionUtil ) =
 
     let MotionCommandsMap = AllMotionsCore |> Seq.map (fun command ->  (command.CommandName,command)) |> Map.ofSeq
 
+    let rec WaitForCommandName start count ki =
+        let rec inner (previousName:CommandName) ki =
+            let runCommand command = 
+                match command with 
+                | SimpleMotionCommand(_,func) -> 
+                    let res = func start count
+                    match res with
+                    | None -> MotionResult.Error Resources.MotionCapture_InvalidMotion
+                    | Some(data) -> Complete data
+                | ComplexMotionCommand(_,_,func) -> func start count
+    
+            let name = previousName.Add ki
+            match Map.tryFind name MotionCommandsMap with
+            | Some(command) -> runCommand command
+            | None -> 
+                let res = MotionCommandsMap |> Seq.filter (fun pair -> pair.Key.StartsWith name) 
+                if Seq.isEmpty res then HitInvalidMotion
+                else NeedMoreInputWithEscape (inner name)
+        inner EmptyName ki
+    
     /// Process a count prefix to the motion.  
     let ProcessCount (ki:KeyInput) (completeFunc:KeyInput -> int option -> MotionResult) startCount =
         let startCount = CommandUtil.CountOrDefault startCount
@@ -124,23 +151,12 @@ type internal MotionCapture (_util :IMotionUtil ) =
                     let fullCount = startCount * count
                     completeFunc nextKi (Some fullCount)
                 | NeedMore(nextFunc) -> NeedMoreInputWithEscape (inner nextFunc)
-        inner (CountCapture.Process) ki               
-        
+        inner (CountCapture.Process) ki
+
     let rec ProcessInput start (ki:KeyInput) count =
         if ki.Key = VimKey.EscapeKey then Cancel
         elif ki.IsDigit && ki.Char <> '0' then ProcessCount ki (ProcessInput start) count
-        else 
-            let name = OneKeyInput ki
-            match Map.tryFind name MotionCommandsMap with
-            | Some(command) -> 
-                match command with 
-                | SimpleMotionCommand(_,func) -> 
-                    let res = func start count
-                    match res with
-                    | None -> MotionResult.Error Resources.MotionCapture_InvalidMotion
-                    | Some(data) -> Complete data
-                | ComplexMotionCommand(_,_,func) -> func start count
-            | None -> HitInvalidMotion
+        else WaitForCommandName start count ki
 
     let ProcessView (view:ITextView) (ki:KeyInput) count = 
         let start = TextViewUtil.GetCaretPoint view

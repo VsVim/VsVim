@@ -160,16 +160,18 @@ type CommandName =
         | TwoKeyInputs(p1,p2) -> ManyKeyInputs [p1;p2;ki]
         | ManyKeyInputs(list) -> ManyKeyInputs (list @ [ki])
 
-    /// Does the name start with the given KeyInput
-    member x.StartsWith target = 
-        match x with 
-        | EmptyName -> false
-        | OneKeyInput(ki) -> target = ki
-        | TwoKeyInputs(ki,_) -> target = ki
-        | ManyKeyInputs(list) ->
-            match ListUtil.tryHeadOnly list with
-            | None -> false
-            | Some(ki) -> target = ki
+    /// Does the name start with the given CommandName
+    member x.StartsWith (targetName:CommandName) = 
+        match targetName,x with
+        | EmptyName, _ -> true
+        | OneKeyInput(leftKi), OneKeyInput(rightKi) ->  leftKi = rightKi
+        | OneKeyInput(leftKi), TwoKeyInputs(rightKi,_) -> leftKi = rightKi
+        | _ -> 
+            let left = targetName.KeyInputs 
+            let right = x.KeyInputs
+            if left.Length < right.Length then
+                SeqUtil.contentsEqual (left |> Seq.ofList) (right |> Seq.ofList |> Seq.take left.Length)
+            else false
 
     override x.GetHashCode() = 
         match x with

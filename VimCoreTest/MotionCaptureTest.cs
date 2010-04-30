@@ -10,6 +10,7 @@ using Microsoft.VisualStudio.Text;
 using VimCoreTest.Utils;
 using Moq;
 using Vim.Extensions;
+using Microsoft.FSharp.Core;
 
 namespace VimCoreTest
 {
@@ -30,13 +31,15 @@ namespace VimCoreTest
             _capture = _captureRaw;
         }
 
-        internal MotionResult Process(string input, int count)
+        internal MotionResult Process(string input, int? count)
         {
-            Assert.IsTrue(count > 0, "this will cause an almost infinite loop");
+            var realCount = count.HasValue
+                ? FSharpOption.Create(count.Value)
+                : FSharpOption<int>.None;
             var res = _capture.ProcessInput(
                 _point,
                 InputUtil.CharToKeyInput(input[0]),
-                FSharpOption.Create(count));
+                realCount);
             foreach (var cur in input.Skip(1))
             {
                 Assert.IsTrue(res.IsNeedMoreInput);
@@ -47,7 +50,7 @@ namespace VimCoreTest
             return res;
         }
 
-        internal void ProcessComplete(string input, int count)
+        internal void ProcessComplete(string input, int? count=null)
         {
             Assert.IsTrue(Process(input, count).IsComplete);
         }
@@ -77,7 +80,7 @@ namespace VimCoreTest
         public void Word2()
         {
             _util
-                .Setup(x => x.WordForward(WordKind.NormalWord, _point, 1))
+                .Setup(x => x.WordForward(WordKind.NormalWord, _point, 2))
                 .Returns(CreateMotionData())
                 .Verifiable();
             ProcessComplete("w", 2);
@@ -278,6 +281,60 @@ namespace VimCoreTest
             _util.Verify();
         }
 
+        [Test]
+        public void Motion_G1()
+        {
+            _util
+                .Setup(x => x.LineOrLastToFirstNonWhitespace(_point, FSharpOption<int>.None))
+                .Returns(CreateMotionData())
+                .Verifiable();
+            ProcessComplete("G");
+            _util.Verify();
+        }
+
+        [Test]
+        public void Motion_G2()
+        {
+            _util
+                .Setup(x => x.LineOrLastToFirstNonWhitespace(_point, FSharpOption.Create(1)))
+                .Returns(CreateMotionData())
+                .Verifiable();
+            ProcessComplete("1G");
+            _util.Verify();
+        }
+
+        [Test]
+        public void Motion_G3()
+        {
+            _util
+                .Setup(x => x.LineOrLastToFirstNonWhitespace(_point, FSharpOption.Create(42)))
+                .Returns(CreateMotionData())
+                .Verifiable();
+            ProcessComplete("42G");
+            _util.Verify();
+        }
+
+        [Test]
+        public void Motion_gg1()
+        {
+            _util
+                .Setup(x => x.LineOrFirstToFirstNonWhitespace(_point, FSharpOption<int>.None))
+                .Returns(CreateMotionData())
+                .Verifiable();
+            ProcessComplete("gg");
+            _util.Verify();
+        }
+
+        [Test]
+        public void Motion_gg2()
+        {
+            _util
+                .Setup(x => x.LineOrFirstToFirstNonWhitespace(_point, FSharpOption.Create(2)))
+                .Returns(CreateMotionData())
+                .Verifiable();
+            ProcessComplete("2gg");
+            _util.Verify();
+        }
     }
 
 }

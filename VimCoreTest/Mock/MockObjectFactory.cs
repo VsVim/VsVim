@@ -176,12 +176,11 @@ namespace VimCoreTest.Mock
             return mock;
         }
 
-        internal static SnapshotPoint CreateSnapshotPoint(
-            int position,
-            ITextSnapshot snapshot = null)
+        internal static SnapshotPoint CreateSnapshotPoint( int position )
         {
-            snapshot = snapshot ?? CreateTextSnapshot(position + 1).Object;
-            return new SnapshotPoint(snapshot, position);
+            var snapshot = CreateTextSnapshot(position + 1);
+            snapshot.Setup(x => x.GetText(It.IsAny<int>(), It.IsAny<int>())).Returns("Mocked ToString()");
+            return new SnapshotPoint(snapshot.Object, position);
         }
     }
 }
