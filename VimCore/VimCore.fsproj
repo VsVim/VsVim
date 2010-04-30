@@ -85,6 +85,7 @@
     <Compile Include="Modes_Visual_VisualMode.fsi" />
     <Compile Include="Modes_Visual_VisualMode.fs" />
     <Compile Include="VimBuffer.fs" />
+    <Compile Include="MotionUtil.fs" />
     <Compile Include="SearchService.fs" />
     <Compile Include="RegisterMap.fs" />
     <Compile Include="DisabledMode.fs" />

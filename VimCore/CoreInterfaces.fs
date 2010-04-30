@@ -39,6 +39,69 @@ type IFileSystem =
     /// Attempt to read all of the lines from the given file 
     abstract ReadAllLines : path:string -> string[] option
 
+/// Responsible for implementing all of the Motion information
+type IMotionUtil = 
+
+    /// Left "count" characters
+    abstract CharLeft: SnapshotPoint -> int -> MotionData option
+
+    /// Right "count" characters
+    abstract CharRight: SnapshotPoint -> int -> MotionData option
+    
+    /// Forward to the next occurance of the specified char on the line
+    abstract ForwardChar : char -> SnapshotPoint -> int -> MotionData option
+
+    /// Handle the 't' motion.  Forward till the next occurrence of the specified character on
+    /// this line
+    abstract ForwardTillChar : char -> SnapshotPoint -> int -> MotionData option
+
+    /// Handle the 'F' motion.  Backward to the previous occurrence of the specified character
+    /// on this line
+    abstract BackwardChar : char -> SnapshotPoint -> int -> MotionData option
+
+    /// Handle the 'T' motion.  Backward till to the previous occurrence of the specified character
+    abstract BackwardTillChar : char -> SnapshotPoint -> int -> MotionData option
+        
+    /// Implement the w/W motion
+    abstract WordForward : WordKind -> SnapshotPoint -> int -> MotionData
+
+    /// Implement the b/B motion
+    abstract WordBackward : WordKind -> SnapshotPoint -> int -> MotionData 
+        
+    /// Implement the aw motion.  This is called once the a key is seen.
+    abstract AllWord : WordKind -> SnapshotPoint -> int -> MotionData
+
+    /// Implement the 'e' motion.  This goes to the end of the current word.  If we're
+    /// not currently on a word it will find the next word and then go to the end of that
+    abstract EndOfWord : WordKind -> SnapshotPoint -> int -> MotionData
+    
+    /// Implement an end of line motion.  Typically in response to the $ key.  Even though
+    /// this motion deals with lines, it's still a character wise motion motion. 
+    abstract EndOfLine : SnapshotPoint -> int -> MotionData
+
+    /// Find the first non-whitespace character as the start of the span.  This is an exclusive
+    /// motion so be careful we don't go to far forward
+    abstract FirstNonWhitespaceOnLine : SnapshotPoint -> MotionData 
+
+    /// Move to the begining of the line.  Interestingly since this command is bound to the '0' it 
+    /// can't be associated with a count.  Doing a command like 30 binds as count 30 vs. count 3 
+    /// for command '0'
+    abstract BeginingOfLine : SnapshotPoint -> MotionData
+
+    /// Handle the lines down to first non-whitespace motion
+    abstract LineDownToFirstNonWhitespace : SnapshotPoint -> int -> MotionData 
+
+    /// Handle the - motion
+    abstract LineUpToFirstNonWhitespace : SnapshotPoint -> int -> MotionData
+
+    /// Get the span of "count" lines upward careful not to run off the beginning of the
+    /// buffer.  Implementation of the "k" motion
+    abstract LineUp : SnapshotPoint -> int -> MotionData
+
+    /// Get the span of "count" lines downward careful not to run off the end of the
+    /// buffer.  Implementation of the "j" motion
+    abstract LineDown : SnapshotPoint -> int -> MotionData
+
 type ModeKind = 
     | Normal = 1
     | Insert = 2
