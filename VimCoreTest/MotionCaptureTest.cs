@@ -36,7 +36,7 @@ namespace VimCoreTest
             var res = _capture.ProcessInput(
                 _point,
                 InputUtil.CharToKeyInput(input[0]),
-                count);
+                FSharpOption.Create(count));
             foreach (var cur in input.Skip(1))
             {
                 Assert.IsTrue(res.IsNeedMoreInput);

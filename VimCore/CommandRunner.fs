@@ -114,7 +114,7 @@ type internal CommandRunner
         let runInitialMotion ki =
             let point = TextViewUtil.GetCaretPoint _textView
             let count = CommandUtil.CountOrDefault _data.Count
-            _capture.ProcessInput point ki count |> inner
+            _capture.ProcessInput point ki (Some count) |> inner
 
         match initialInput with
         | None -> NeedMore runInitialMotion

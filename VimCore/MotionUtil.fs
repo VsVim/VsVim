@@ -22,6 +22,20 @@ type internal MotionUtil ( _settings : IVimGlobalSettings) =
             let span = SnapshotSpan(point, start)
             {Span=span; IsForward=false; OperationKind=OperationKind.CharacterWise; MotionKind=MotionKind.Exclusive; Column=None} |> Some
 
+    member private x.LineToLineFirstNonWhitespaceMotion (originLine:ITextSnapshotLine) (endLine:ITextSnapshotLine) =
+        let _,column = TssUtil.FindFirstNonWhitespaceCharacter endLine |> SnapshotPointUtil.GetLineColumn
+        let span,isForward = 
+            if originLine.LineNumber < endLine.LineNumber then
+                let span = SnapshotSpan(originLine.Start, endLine.End)
+                (span, true)
+            elif originLine.LineNumber > endLine.LineNumber then
+                let span = SnapshotSpan(endLine.Start, originLine.End)
+                (span, false)
+            else 
+                let span = SnapshotSpan(endLine.Start, endLine.End)
+                (span, true)
+        {Span=span; IsForward=isForward; OperationKind=OperationKind.LineWise; MotionKind=MotionKind.Inclusive; Column= Some column }
+
     interface IMotionUtil with
         member x.ForwardChar c start count = x.ForwardCharMotionCore c start count TssUtil.FindNextOccurranceOfCharOnLine
         member x.ForwardTillChar c start count = x.ForwardCharMotionCore c start count TssUtil.FindTillNextOccurranceOfCharOnLine
@@ -113,6 +127,21 @@ type internal MotionUtil ( _settings : IVimGlobalSettings) =
             let endLine = SnapshotUtil.GetLineOrLast startLine.Snapshot endLineNumber
             let span = SnapshotSpan(startLine.Start, endLine.End)            
             {Span=span; IsForward=true; MotionKind=MotionKind.Inclusive; OperationKind=OperationKind.LineWise; Column=None } 
-
+        member x.LineOrFirstToFirstNonWhitespace point numberOpt = 
+            let originLine = SnapshotPointUtil.GetContainingLine point
+            let tss= originLine.Snapshot
+            let endLine = 
+                match numberOpt with
+                | Some(number) ->  SnapshotUtil.GetLineOrFirst tss (TssUtil.VimLineToTssLine number)
+                | None -> SnapshotUtil.GetFirstLine tss 
+            x.LineToLineFirstNonWhitespaceMotion originLine endLine
+        member x.LineOrLastToFirstNonWhitespace point numberOpt = 
+            let originLine = SnapshotPointUtil.GetContainingLine point
+            let tss= originLine.Snapshot
+            let endLine = 
+                match numberOpt with
+                | Some(number) ->  SnapshotUtil.GetLineOrLast tss (TssUtil.VimLineToTssLine number)
+                | None -> SnapshotUtil.GetFirstLine tss 
+            x.LineToLineFirstNonWhitespaceMotion originLine endLine
 
 

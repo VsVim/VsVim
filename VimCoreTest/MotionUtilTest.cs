@@ -404,6 +404,90 @@ namespace VimCoreTest
             Assert.AreEqual(OperationKind.CharacterWise, data.OperationKind);
         }
 
+        [Test]
+        public void LineOrFirstToFirstNonWhitespace1()
+        {
+            Create("foo", "bar", "baz");
+            var data = _util.LineOrFirstToFirstNonWhitespace(_buffer.GetLine(1).Start, FSharpOption.Create(0));
+            Assert.AreEqual(_buffer.GetLineSpan(0, 1), data.Span);
+            Assert.IsFalse(data.IsForward);
+            Assert.AreEqual(OperationKind.LineWise, data.OperationKind);
+            Assert.AreEqual(MotionKind.Inclusive, data.MotionKind);
+            Assert.AreEqual(0, data.Column.Value);
+        }
+
+        [Test]
+        public void LineOrFirstToFirstNonWhitespace2()
+        {
+            Create("foo", "bar", "baz");
+            var data = _util.LineOrFirstToFirstNonWhitespace(_buffer.GetLine(0).Start, FSharpOption.Create(2));
+            Assert.AreEqual(_buffer.GetLineSpan(0, 1), data.Span);
+            Assert.IsTrue(data.IsForward);
+            Assert.AreEqual(OperationKind.LineWise, data.OperationKind);
+            Assert.AreEqual(MotionKind.Inclusive, data.MotionKind);
+            Assert.AreEqual(0, data.Column.Value);
+        }
+
+        [Test]
+        public void LineOrFirstToFirstNonWhitespace3()
+        {
+            Create("foo", "  bar", "baz");
+            var data = _util.LineOrFirstToFirstNonWhitespace(_buffer.GetLine(0).Start, FSharpOption.Create(2));
+            Assert.AreEqual(_buffer.GetLineSpan(0, 1), data.Span);
+            Assert.IsTrue(data.IsForward);
+            Assert.AreEqual(OperationKind.LineWise, data.OperationKind);
+            Assert.AreEqual(MotionKind.Inclusive, data.MotionKind);
+            Assert.AreEqual(2, data.Column.Value);
+        }
+
+        [Test]
+        public void LineOrFirstToFirstNonWhitespace4()
+        {
+            Create("foo", "  bar", "baz");
+            var data = _util.LineOrFirstToFirstNonWhitespace(_buffer.GetLine(0).Start, FSharpOption.Create(500));
+            Assert.AreEqual(_buffer.GetLineSpan(0, 0), data.Span);
+            Assert.IsTrue(data.IsForward);
+            Assert.AreEqual(OperationKind.LineWise, data.OperationKind);
+            Assert.AreEqual(MotionKind.Inclusive, data.MotionKind);
+            Assert.AreEqual(0, data.Column.Value);
+        }
+
+        [Test]
+        public void LineOrLastToFirstNonWhitespace1()
+        {
+            Create("foo", "bar", "baz");
+            var data = _util.LineOrLastToFirstNonWhitespace(_buffer.GetLine(0).Start, FSharpOption.Create(2));
+            Assert.AreEqual(_buffer.GetLineSpan(0, 1), data.Span);
+            Assert.IsTrue(data.IsForward);
+            Assert.AreEqual(OperationKind.LineWise, data.OperationKind);
+            Assert.AreEqual(MotionKind.Inclusive, data.MotionKind);
+            Assert.AreEqual(0, data.Column.Value);
+        }        
+
+        [Test]
+        public void LineOrLastToFirstNonWhitespace2()
+        {
+            Create("foo", "bar", "baz");
+            var data = _util.LineOrLastToFirstNonWhitespace(_buffer.GetLine(1).Start, FSharpOption.Create(0));
+            Assert.AreEqual(_buffer.GetLineSpan(0, 1), data.Span);
+            Assert.IsFalse(data.IsForward);
+            Assert.AreEqual(OperationKind.LineWise, data.OperationKind);
+            Assert.AreEqual(MotionKind.Inclusive, data.MotionKind);
+            Assert.AreEqual(0, data.Column.Value);
+        }        
+
+        [Test]
+        public void LineOrLastToFirstNonWhitespace3()
+        {
+            Create("foo", "bar", "baz");
+            var data = _util.LineOrLastToFirstNonWhitespace(_buffer.GetLine(1).Start, FSharpOption.Create(500));
+            Assert.AreEqual(_buffer.GetLineSpan(1, 2), data.Span);
+            Assert.IsTrue(data.IsForward);
+            Assert.AreEqual(OperationKind.LineWise, data.OperationKind);
+            Assert.AreEqual(MotionKind.Inclusive, data.MotionKind);
+            Assert.AreEqual(0, data.Column.Value);
+        }        
+
     }   
     
 }

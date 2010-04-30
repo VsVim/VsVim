@@ -223,7 +223,12 @@ namespace VimCoreTest
 
         #endregion
 
-        #region ITextView
+        #region ITextView 
+
+        public static SnapshotPoint GetPoint(this ITextView textView, int position)
+        {
+            return new SnapshotPoint(textView.TextSnapshot, position);
+        }
 
         public static ITextSnapshotLine GetLine(this ITextView textView, int line)
         {

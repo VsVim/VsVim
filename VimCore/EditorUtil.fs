@@ -19,6 +19,9 @@ module internal SnapshotUtil =
     /// Get the line for the specified number
     let GetLine (tss:ITextSnapshot) lineNumber = tss.GetLineFromLineNumber lineNumber
 
+    /// Get the first line in the snapshot
+    let GetFirstLine tss = GetLine tss 0
+
     let GetLastLineNumber (tss:ITextSnapshot) = tss.LineCount - 1 
         
     /// Get the end point of the snapshot

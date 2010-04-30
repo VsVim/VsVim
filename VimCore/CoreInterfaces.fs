@@ -102,6 +102,12 @@ type IMotionUtil =
     /// buffer.  Implementation of the "j" motion
     abstract LineDown : SnapshotPoint -> int -> MotionData
 
+    /// Go to the specified line number or the first line if no line number is provided 
+    abstract LineOrFirstToFirstNonWhitespace : SnapshotPoint -> int option -> MotionData 
+
+    /// Go to the specified line number or the last line of no line number is provided
+    abstract LineOrLastToFirstNonWhitespace : SnapshotPoint -> int option -> MotionData 
+
 type ModeKind = 
     | Normal = 1
     | Insert = 2
@@ -302,22 +308,29 @@ type MotionCommand =
     /// Simple motion which comprises of a single KeyInput and a function which given 
     /// a start point and count will produce the motion.  None is returned in the 
     /// case the motion is not valid
-    | SimpleMotionCommand of CommandName * (SnapshotPoint -> int -> MotionData option)
+    | SimpleMotionCommand of CommandName * (SnapshotPoint -> int option -> MotionData option)
 
     /// Complex motion commands take more than one KeyInput to complete.  For example 
     /// the f,t,F and T commands all require at least one additional input.  The bool
     /// in the middle of the tuple indicates whether or not the motion can be 
     /// used as a cursor movement operation  
-    | ComplexMotionCommand of CommandName * bool * (SnapshotPoint -> int -> MotionResult)
+    | ComplexMotionCommand of CommandName * bool * (SnapshotPoint -> int option -> MotionResult)
+
+    with
+
+    member x.CommandName = 
+        match x with
+        | SimpleMotionCommand(name,_) -> name
+        | ComplexMotionCommand(name,_,_) -> name
 
 type IMotionCapture =
     
     /// Set of supported MotionCommand
     abstract MotionCommands : seq<MotionCommand>
 
-    abstract ProcessInput : SnapshotPoint -> KeyInput -> int -> MotionResult
+    abstract ProcessInput : SnapshotPoint -> KeyInput -> int option -> MotionResult
 
-    abstract ProcessView : ITextView -> KeyInput -> int -> MotionResult
+    abstract ProcessView : ITextView -> KeyInput -> int option -> MotionResult
 
 
 module CommandUtil = 

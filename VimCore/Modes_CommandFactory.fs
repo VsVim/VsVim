@@ -5,15 +5,6 @@ open Vim
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
 
-type internal MovementResult =
-    | MovementComplete
-    | MovementNeedMore of (KeyInput -> MovementResult)
-    | MovementError of string
-
-type internal MovementCommand = 
-    | SimpleMovementCommand of (int -> unit) 
-    | ComplexMovementCommand of (int -> MovementResult)
-
 type internal CommandFactory( _operations : ICommonOperations, _capture : IMotionCapture ) = 
 
     member private x.CreateStandardMovementCommandsCore () = 
@@ -59,7 +50,6 @@ type internal CommandFactory( _operations : ICommonOperations, _capture : IMotio
             match command with
             | SimpleMotionCommand(name,func) -> 
                 let inner count _ = 
-                    let count = CommandUtil.CountOrDefault count
                     let startPoint = TextViewUtil.GetCaretPoint _operations.TextView
                     func startPoint count |> processResult
                 Command.SimpleCommand(name,CommandFlags.Movement,inner) |> Some
@@ -77,7 +67,6 @@ type internal CommandFactory( _operations : ICommonOperations, _capture : IMotio
                         | Cancel -> LongCommandResult.Cancelled
                         | MotionResult.Error (msg) -> CommandResult.Error msg |> LongCommandResult.Finished
 
-                    let count = CommandUtil.CountOrDefault count
                     let startPoint = TextViewUtil.GetCaretPoint _operations.TextView
                     let initialResult = func startPoint count
                     inner initialResult
@@ -95,58 +84,5 @@ type internal CommandFactory( _operations : ICommonOperations, _capture : IMotio
         let motion = 
             x.CreateMovementsFromMotions()
             |> Seq.filter (fun command -> not (taken.Contains command.CommandName))
-        standard |> Seq.append motion
-
-
-    member private x.CreateStandardMovementCommandsOld () = 
-        x.CreateStandardMovementCommandsCore()
-        |> Seq.map (fun (x,y) -> x,SimpleMovementCommand y)
-
-    /// Build up a set of MotionCommand values from applicable Motion values
-    member private x.CreateMovementsFromMotionsOld() =
-        let processResult opt = 
-            match opt with
-            | None -> _operations.Beep()
-            | Some(data) -> _operations.MoveCaretToMotionData data
-
-        let filterMotionCommand command = 
-            match command with
-            | SimpleMotionCommand(ki,func) -> 
-                let inner count = 
-                    let startPoint = TextViewUtil.GetCaretPoint _operations.TextView
-                    func startPoint count |> processResult
-                Some (ki,SimpleMovementCommand inner)
-            | ComplexMotionCommand(ki,false,func) -> None
-            | ComplexMotionCommand(ki,true,func) -> 
-                
-                let coreFunc count = 
-                    let rec inner result =  
-                        match result with
-                        | Complete (data) -> 
-                            _operations.MoveCaretToMotionData data
-                            MovementComplete
-                        | MotionResult.NeedMoreInput (func) -> MovementNeedMore (fun ki -> func ki |> inner)
-                        | InvalidMotion (_,func) -> MovementNeedMore (fun ki -> func ki |> inner)
-                        | Cancel -> MovementComplete
-                        | MotionResult.Error (msg) -> MovementError msg
-
-                    let startPoint = TextViewUtil.GetCaretPoint _operations.TextView
-                    let initialResult = func startPoint count
-                    inner initialResult
-                (ki,ComplexMovementCommand coreFunc) |> Some
-
-        _capture.MotionCommands
-        |> Seq.map filterMotionCommand
-        |> SeqUtil.filterToSome
-
-    /// Returns the set of commands which move the cursor.  This includes all motions which are 
-    /// valid as movements.  Several of these are overridden with custom movement behavior though.
-    member x.CreateMovementCommandsOld() = 
-        let standard = x.CreateStandardMovementCommandsOld()
-        let taken = standard |> Seq.map (fun (x,_) -> x) |> Set.ofSeq
-        let motion = 
-            x.CreateMovementsFromMotionsOld()
-            |> Seq.filter (fun (name,_) -> not (taken.Contains name.KeyInputs.Head))
-            |> Seq.map (fun (name,op) -> name.KeyInputs.Head,op)
         standard |> Seq.append motion
 
