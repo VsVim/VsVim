@@ -386,33 +386,29 @@ type internal NormalMode
         _data <- _emptyData
     
     member this.ProcessCore (ki:KeyInput) =
-        if ki.Key = VimKey.EscapeKey then 
+        let command = _data.Command + ki.Char.ToString()
+        _data <- {_data with Command=command }
+
+        match _runner.Run ki with
+        | RunKeyInputResult.NeedMoreKeyInput -> ProcessResult.Processed
+        | RunKeyInputResult.NestedRunDetected -> ProcessResult.Processed
+        | RunKeyInputResult.CommandRan(_,modeSwitch) ->
+            this.Reset()
+            match modeSwitch with
+            | ModeSwitch.NoSwitch -> ProcessResult.Processed
+            | ModeSwitch.SwitchMode(kind) -> ProcessResult.SwitchMode kind
+            | ModeSwitch.SwitchPreviousMode -> ProcessResult.SwitchPreviousMode
+        | RunKeyInputResult.CommandErrored(_) -> 
             this.Reset()
             ProcessResult.Processed
-        else
-            let command = _data.Command + ki.Char.ToString()
-            _data <- {_data with Command=command }
+        | RunKeyInputResult.CommandCancelled -> 
+            this.Reset()
+            ProcessResult.Processed
+        | RunKeyInputResult.NoMatchingCommand ->
+            this.Reset()
+            _operations.Beep()
+            ProcessResult.Processed
 
-            match _runner.Run ki with
-            | RunKeyInputResult.NeedMoreKeyInput -> ProcessResult.Processed
-            | RunKeyInputResult.NestedRunDetected -> ProcessResult.Processed
-            | RunKeyInputResult.CommandRan(_,modeSwitch) ->
-                this.Reset()
-                match modeSwitch with
-                | ModeSwitch.NoSwitch -> ProcessResult.Processed
-                | ModeSwitch.SwitchMode(kind) -> ProcessResult.SwitchMode kind
-                | ModeSwitch.SwitchPreviousMode -> ProcessResult.SwitchPreviousMode
-            | RunKeyInputResult.CommandErrored(_) -> 
-                this.Reset()
-                ProcessResult.Processed
-            | RunKeyInputResult.CommandCancelled -> 
-                this.Reset()
-                ProcessResult.Processed
-            | RunKeyInputResult.NoMatchingCommand ->
-                this.Reset()
-                _operations.Beep()
-                ProcessResult.Processed
-    
     interface INormalMode with 
         member this.IsOperatorPending = this.IsOperatorPending
         member this.IsWaitingForInput = _runner.IsWaitingForMoreInput

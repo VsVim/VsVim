@@ -135,7 +135,9 @@ type internal VisualMode
                     | ModeSwitch.SwitchPreviousMode -> ProcessResult.SwitchPreviousMode
                 | RunKeyInputResult.CommandErrored(_) -> ProcessResult.SwitchPreviousMode
                 | RunKeyInputResult.CommandCancelled -> ProcessResult.SwitchPreviousMode
-                | RunKeyInputResult.NoMatchingCommand -> ProcessResult.Processed
+                | RunKeyInputResult.NoMatchingCommand -> 
+                    _operations.Beep()
+                    ProcessResult.Processed
     
         member x.OnEnter () = 
             x.EnsureCommandsBuilt()

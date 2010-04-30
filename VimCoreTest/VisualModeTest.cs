@@ -62,16 +62,8 @@ namespace VimCoreTest
             _mode.OnEnter();
         }
 
-        [Test, Description("Escape is used to exit visual mode")]
-        public void Commands1()
-        {
-            Create("foo");
-            var name = CommandName.NewOneKeyInput(InputUtil.VimKeyToKeyInput(VimKey.EscapeKey));
-            Assert.IsTrue(_mode.CommandNames.Contains(name));
-        }
-
         [Test,Description("Movement commands")]
-        public void Commands2()
+        public void Commands1()
         {
             Create("foo");
             var list = new KeyInput[] {
