@@ -44,6 +44,16 @@ namespace VimCoreTest
 
         public void Create(params string[] lines)
         {
+            CreateCore(null, lines);
+        }
+
+        public void Create(IMotionUtil motionUtil, params string[] lines)
+        {
+            CreateCore(motionUtil, lines);
+        }
+
+        public void CreateCore(IMotionUtil motionUtil, params string[] lines)
+        {
             _view = Utils.EditorUtil.CreateView(lines);
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 0));
             _map = new RegisterMap();
@@ -63,7 +73,8 @@ namespace VimCoreTest
             _operations.SetupGet(x => x.EditorOperations).Returns(_editorOperations.Object);
             _operations.SetupGet(x => x.TextView).Returns(_view);
 
-            var capture = new MotionCapture(new MotionUtil(_bufferData.Object.Settings.GlobalSettings));
+            motionUtil = motionUtil ?? new MotionUtil(new Vim.GlobalSettings());
+            var capture = new MotionCapture(motionUtil);
             var runner = new CommandRunner(Tuple.Create((ITextView)_view, _map,(IMotionCapture)capture, _statusUtil.Object));
             _modeRaw = new Vim.Modes.Normal.NormalMode(Tuple.Create(
                 _bufferData.Object,
@@ -75,6 +86,17 @@ namespace VimCoreTest
                 (IMotionCapture)capture));
             _mode = _modeRaw;
             _mode.OnEnter();
+        }
+
+        private MotionData CreateMotionData(SnapshotSpan? span = null)
+        {
+            span = span ?? new SnapshotSpan(_view.TextSnapshot, 0, 3);
+            return new MotionData(
+                span.Value,
+                true,
+                MotionKind.Exclusive,
+                OperationKind.LineWise,
+                FSharpOption<int>.None);
         }
 
         [TearDown]
@@ -167,6 +189,54 @@ namespace VimCoreTest
             Create(s_lines);
             Assert.IsTrue(_mode.CanProcess(InputUtil.VimKeyToKeyInput(VimKey.EnterKey)));
             Assert.IsTrue(_mode.CanProcess(InputUtil.VimKeyToKeyInput(VimKey.TabKey)));
+        }
+
+        #endregion
+
+        #region Motion
+
+        private void AssertMotion(
+            string motionName, 
+            Action<Mock<IMotionUtil>, SnapshotPoint, FSharpOption<int>, MotionData> setupMock,
+            bool isMovement = true)
+        {
+            if (isMovement)
+            {
+                var mock = new Mock<IMotionUtil>(MockBehavior.Strict);
+                Create(mock.Object, s_lines);
+                var data = CreateMotionData();
+                var point = _view.GetPoint(0);
+                setupMock(mock, point, FSharpOption<int>.None, data);
+                _operations.Setup(x => x.MoveCaretToMotionData(data)).Verifiable();
+                _mode.Process(motionName);
+                mock.Verify();
+                _operations.Verify();
+            }
+        }
+
+
+        [Test]
+        public void Motion_G()
+        {
+            AssertMotion(
+                "G",
+                (util, point, count, data) =>
+                    util
+                        .Setup(x => x.LineOrLastToFirstNonWhitespace(point, count))
+                        .Returns(data)
+                        .Verifiable());
+        }
+
+        [Test]
+        public void Motion_gg()
+        {
+            AssertMotion(
+                "gg",
+                (util, point, count, data) =>
+                    util
+                        .Setup(x => x.LineOrFirstToFirstNonWhitespace(point, count))
+                        .Returns(data)
+                        .Verifiable());
         }
 
         #endregion
@@ -459,42 +529,6 @@ namespace VimCoreTest
             _editorOperations.Setup(x => x.MoveToLastNonWhiteSpaceCharacter(false)).Verifiable();
             _mode.Process("g_");
             _editorOperations.Verify();
-        }
-
-        [Test]
-        public void Move_G_1()
-        {
-            Create(s_lines);
-            _operations.Setup(x => x.GoToLineOrLast(FSharpOption<int>.None)).Verifiable();
-            _mode.Process('G');
-            _operations.Verify();
-        }
-
-        [Test]
-        public void Move_G_2()
-        {
-            Create(s_lines);
-            _operations.Setup(x => x.GoToLineOrLast(FSharpOption.Create(42))).Verifiable();
-            _mode.Process("42G");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void Move_gg_1()
-        {
-            Create(s_lines);
-            _operations.Setup(x => x.GoToLineOrFirst(FSharpOption<int>.None)).Verifiable();
-            _mode.Process("gg");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void Move_gg_2()
-        {
-            Create(s_lines);
-            _operations.Setup(x => x.GoToLineOrFirst(FSharpOption.Create(42))).Verifiable();
-            _mode.Process("42gg");
-            _operations.Verify();
         }
 
         [Test]

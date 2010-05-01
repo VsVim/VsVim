@@ -244,7 +244,6 @@ type internal NormalMode
 
         let needCountAsOpt = 
             seq {
-                yield ("gg", CommandFlags.Movement, fun count _ -> _operations.GoToLineOrFirst count)
                 yield (".", CommandFlags.Special, fun count reg -> this.RepeatLastChange count reg)
             }
             |> Seq.map(fun (str,kind,func) -> 
@@ -347,7 +346,6 @@ type internal NormalMode
         // Similar to completeOps but take the conditional count value
         let completeOps2 = 
             seq {
-                yield (InputUtil.CharToKeyInput('G'), (fun count _ -> _operations.GoToLineOrLast(count)))
                 yield (InputUtil.VimKeyAndModifiersToKeyInput VimKey.HomeKey KeyModifiers.Control , (fun count _ -> _operations.GoToLineOrFirst(count)))
             } |> Seq.map (fun (ki,func) ->
                     let name = OneKeyInput(ki)
