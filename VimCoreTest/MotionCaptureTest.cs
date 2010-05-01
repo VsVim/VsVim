@@ -7,12 +7,12 @@ using Vim;
 using System.Windows.Input;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text;
-using VimCoreTest.Utils;
+using VimCore.Test.Utils;
 using Moq;
 using Vim.Extensions;
 using Microsoft.FSharp.Core;
 
-namespace VimCoreTest
+namespace VimCore.Test
 {
     [TestFixture]
     public class MotionCaptureTest

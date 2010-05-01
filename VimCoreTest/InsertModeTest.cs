@@ -11,7 +11,7 @@ using Microsoft.VisualStudio.Text;
 using Vim.Modes;
 using Moq;
 
-namespace VimCoreTest
+namespace VimCore.Test
 {
     /// <summary>
     /// Summary description for InputMode

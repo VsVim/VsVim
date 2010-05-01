@@ -7,7 +7,7 @@ using Vim;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text;
 
-namespace VimCoreTest
+namespace VimCore.Test
 {
     /// <summary>
     /// Summary description for ViewUtilTest

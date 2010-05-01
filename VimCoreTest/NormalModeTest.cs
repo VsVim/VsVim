@@ -8,16 +8,16 @@ using Microsoft.VisualStudio.Text;
 using System.Windows.Input;
 using System.Windows.Media;
 using Microsoft.VisualStudio.Text.Editor;
-using VimCoreTest.Utils;
+using VimCore.Test.Utils;
 using Microsoft.FSharp.Core;
 using Moq;
-using MockFactory = VimCoreTest.Mock.MockObjectFactory;
+using MockFactory = VimCore.Test.Mock.MockObjectFactory;
 using Vim.Modes.Normal;
 using Vim.Modes;
 using Microsoft.VisualStudio.Text.Operations;
 using Vim.Extensions;
 
-namespace VimCoreTest
+namespace VimCore.Test
 {
     [TestFixture]
     public class NormalModeTest

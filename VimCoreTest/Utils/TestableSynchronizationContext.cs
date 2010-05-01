@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 
-namespace VimCoreTest.Utils
+namespace VimCore.Test.Utils
 {
     internal sealed class TestableSynchronizationContext : SynchronizationContext
     {

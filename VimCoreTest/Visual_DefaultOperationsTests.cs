@@ -7,12 +7,12 @@ using Moq;
 using Vim.Modes.Visual;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text;
-using VimCoreTest.Utils;
+using VimCore.Test.Utils;
 using Microsoft.VisualStudio.Text.Operations;
 using Vim;
 using Microsoft.VisualStudio.Text.Outlining;
 
-namespace VimCoreTest
+namespace VimCore.Test
 {
     [TestFixture]
     public class Visual_DefaultOperationsTests

@@ -8,10 +8,10 @@ using Microsoft.VisualStudio.Text;
 using System.Windows.Input;
 using System.Windows.Media;
 using Microsoft.VisualStudio.Text.Editor;
-using VimCoreTest.Utils;
+using VimCore.Test.Utils;
 using Moq;
 
-namespace VimCoreTest
+namespace VimCore.Test
 {
     [TestFixture]
     public class IntegrationTests

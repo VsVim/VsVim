@@ -6,7 +6,7 @@ using NUnit.Framework;
 using Moq;
 using Vim;
 using Microsoft.VisualStudio.Text.Editor;
-using VimCoreTest.Utils;
+using VimCore.Test.Utils;
 using Vim.Modes.Normal;
 using System.Windows.Input;
 using Microsoft.VisualStudio.Text;
@@ -15,9 +15,9 @@ using Microsoft.FSharp.Control;
 using Microsoft.VisualStudio.Text.Operations;
 using Microsoft.VisualStudio.Text.Outlining;
 using Vim.Extensions;
-using VimCoreTest.Mock;
+using VimCore.Test.Mock;
 
-namespace VimCoreTest
+namespace VimCore.Test
 {
     [TestFixture]
     public class IncrementalSearchTest

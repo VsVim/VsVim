@@ -6,7 +6,7 @@ using NUnit.Framework;
 using Vim;
 using Microsoft.FSharp.Core;
 
-namespace VimCoreTest
+namespace VimCore.Test
 {
     /// <summary>
     /// Summary description for InputUtilTest

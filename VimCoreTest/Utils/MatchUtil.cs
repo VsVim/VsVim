@@ -6,7 +6,7 @@ using Microsoft.FSharp.Collections;
 using Moq;
 using Vim;
 
-namespace VimCoreTest.Utils
+namespace VimCore.Test.Utils
 {
     internal static class MatchUtil
     {

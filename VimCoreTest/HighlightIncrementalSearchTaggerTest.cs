@@ -8,12 +8,12 @@ using Moq;
 using Microsoft.VisualStudio.Text;
 using Vim;
 using Microsoft.VisualStudio.Text.Operations;
-using VimCoreTest.Utils;
+using VimCore.Test.Utils;
 using Microsoft.VisualStudio.Text.Tagging;
 using Microsoft.FSharp.Core;
 using Vim.Extensions;
 
-namespace VimCoreTest
+namespace VimCore.Test
 {
     [TestFixture]
     public class HighlightIncrementalSearchTaggerTest

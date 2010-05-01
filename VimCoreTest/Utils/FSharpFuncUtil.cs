@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using Microsoft.FSharp.Core;
 
-namespace VimCoreTest.Utils
+namespace VimCore.Test.Utils
 {
     public static class FSharpFuncUtil
     {

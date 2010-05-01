@@ -7,7 +7,7 @@ using Vim;
 using System.Windows.Input;
 using Vim.Extensions;
 
-namespace VimCoreTest
+namespace VimCore.Test
 {
     [TestFixture]
     public class KeyMapUtilTest

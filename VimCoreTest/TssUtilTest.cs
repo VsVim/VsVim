@@ -8,7 +8,7 @@ using Vim.Extensions;
 using Microsoft.VisualStudio.Text;
 using Microsoft.FSharp.Core;
 
-namespace VimCoreTest
+namespace VimCore.Test
 {
     /// <summary>
     /// Summary description for TssUtilTest

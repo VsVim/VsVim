@@ -9,12 +9,12 @@ using Vim.Modes.Visual;
 using Moq;
 using Microsoft.VisualStudio.Text.Operations;
 using Vim.Modes;
-using VimCoreTest.Utils;
+using VimCore.Test.Utils;
 using Microsoft.VisualStudio.Text;
 using System.Windows.Input;
-using VimCoreTest.Mock;
+using VimCore.Test.Mock;
 
-namespace VimCoreTest
+namespace VimCore.Test
 {
     [TestFixture]
     public class VisualModeTest

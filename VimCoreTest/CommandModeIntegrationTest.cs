@@ -8,7 +8,7 @@ using System.Windows.Input;
 using Microsoft.VisualStudio.Text.Editor;
 using Moq;
 
-namespace VimCoreTest
+namespace VimCore.Test
 {
     /// <summary>
     /// Summary description for CommandModeTest

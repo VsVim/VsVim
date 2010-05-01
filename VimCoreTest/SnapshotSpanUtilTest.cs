@@ -6,7 +6,7 @@ using NUnit.Framework;
 using Microsoft.VisualStudio.Text;
 using Vim;
 
-namespace VimCoreTest
+namespace VimCore.Test
 {
     [TestFixture]
     public class SnapshotSpanUtilTest

@@ -3,13 +3,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using NUnit.Framework;
-using VimCoreTest.Utils;
+using VimCore.Test.Utils;
 using Microsoft.VisualStudio.Text;
 using Vim;
 using Microsoft.VisualStudio.Text.Editor;
-using VimCoreTest.Mock;
+using VimCore.Test.Mock;
 
-namespace VimCoreTest
+namespace VimCore.Test
 {
     [TestFixture]
     public class TextViewUtilTest

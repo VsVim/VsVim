@@ -14,7 +14,9 @@ namespace Vim.UI.Wpf
         private readonly IVimBuffer _buffer;
         private readonly CommandMarginControl _margin;
         private readonly ReadOnlyCollection<Lazy<IOptionsProviderFactory>> _optionsProviderFactory;
-        private bool _ignoreNextKeyProcessedEvent;
+        private bool _inKeyInputEvent;
+        private string _message;
+        private IMode _modeSwitch;
 
         internal CommandMarginController(IVimBuffer buffer, CommandMarginControl control, IEnumerable<Lazy<IOptionsProviderFactory>> optionsProviderFactory)
         {
@@ -25,12 +27,52 @@ namespace Vim.UI.Wpf
             _buffer.SwitchedMode += OnSwitchMode;
             _buffer.KeyInputProcessed += OnKeyInputProcessed;
             _buffer.KeyInputReceived += OnKeyInputReceived;
+            _buffer.KeyInputBuffered += OnKeyInputBuffered;
             _buffer.StatusMessage += OnStatusMessage;
+            _buffer.StatusMessageLong += OnStatusMessageLong;
             _buffer.ErrorMessage += OnErrorMessage;
             _margin.OptionsClicked += OnOptionsClicked;
         }
 
-        private void OnSwitchMode(object sender, IMode mode)
+        private void KeyInputEventComplete()
+        {
+            _inKeyInputEvent = false;
+
+            try
+            {
+                if (!String.IsNullOrEmpty(_message))
+                {
+                    _margin.StatusLine = _message;
+                }
+                else if (_modeSwitch != null)
+                {
+                    UpdateForSwitchMode(_modeSwitch);
+                }
+                else
+                {
+                    UpdateForNoEvent();
+                }
+            }
+            finally
+            {
+                _message = null;
+                _modeSwitch = null;
+            }
+        }
+
+        private void MessageEvent(string message)
+        {
+            if (_inKeyInputEvent)
+            {
+                _message = message;
+            }
+            else
+            {
+                _margin.StatusLine = message;
+            }
+        }
+
+        private void UpdateForSwitchMode(IMode mode)
         {
             switch (mode.ModeKind)
             {
@@ -59,14 +101,8 @@ namespace Vim.UI.Wpf
             }
         }
 
-        private void OnKeyInputProcessed(object sender, Tuple<KeyInput, ProcessResult> tuple)
+        private void UpdateForNoEvent()
         {
-            if (_ignoreNextKeyProcessedEvent)
-            {
-                _ignoreNextKeyProcessedEvent = false;
-                return;
-            }
-
             switch (_buffer.ModeKind)
             {
                 case ModeKind.Command:
@@ -93,21 +129,49 @@ namespace Vim.UI.Wpf
             }
         }
 
+        #region Event Handlers
+
+        private void OnSwitchMode(object sender, IMode mode)
+        {
+            if (_inKeyInputEvent)
+            {
+                _modeSwitch = mode;
+            }
+            else
+            {
+                UpdateForSwitchMode(mode);
+            }
+        }
+
+        private void OnKeyInputProcessed(object sender, Tuple<KeyInput, ProcessResult> tuple)
+        {
+            KeyInputEventComplete();
+        }
+
         private void OnKeyInputReceived(object sender, KeyInput input)
         {
+            _inKeyInputEvent = true;
+        }
 
+        private void OnKeyInputBuffered(object sender, KeyInput input)
+        {
+            KeyInputEventComplete();
         }
 
         private void OnStatusMessage(object sender, string message)
         {
-            _margin.StatusLine = message;
-            _ignoreNextKeyProcessedEvent = _buffer.IsProcessingInput;
+            MessageEvent(message);
+        }
+
+        private void OnStatusMessageLong(object sender, IEnumerable<string> lines)
+        {
+            var message = lines.Aggregate((x, y) => x + Environment.NewLine + y);
+            MessageEvent(message);
         }
 
         private void OnErrorMessage(object sender, string message)
         {
-            _margin.StatusLine = message;
-            _ignoreNextKeyProcessedEvent = _buffer.IsProcessingInput;
+            MessageEvent(message);
         }
 
         private void OnOptionsClicked(object sender, EventArgs e)
@@ -122,5 +186,7 @@ namespace Vim.UI.Wpf
                 MessageBox.Show("No options provider available");
             }
         }
+
+        #endregion
     }
 }

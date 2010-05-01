@@ -13,7 +13,7 @@ using Microsoft.VisualStudio.Text;
 using VsVim.Properties;
 using Microsoft.VisualStudio.TextManager.Interop;
 using Microsoft.VisualStudio.Editor;
-using VimCoreTest.Utils;
+using VimCore.Test.Utils;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Text.Operations;
 using Microsoft.VisualStudio.Shell;

@@ -5,11 +5,11 @@ using System.Text;
 using NUnit.Framework;
 using Moq;
 using Vim;
-using VimCoreTest.Utils;
+using VimCore.Test.Utils;
 using Microsoft.VisualStudio.Text;
 using Vim.Extensions;
 
-namespace VimCoreTest
+namespace VimCore.Test
 {
     [TestFixture]
     public class JumpListTest

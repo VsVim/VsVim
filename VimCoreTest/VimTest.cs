@@ -5,7 +5,7 @@ using System.Text;
 using NUnit.Framework;
 using Moq;
 using Vim;
-using VimCoreTest.Utils;
+using VimCore.Test.Utils;
 using Microsoft.VisualStudio.Text.Editor;
 using System.IO;
 using Vim.Modes.Command;
@@ -13,7 +13,7 @@ using Microsoft.FSharp.Core;
 using Microsoft.FSharp.Collections;
 using Vim.Extensions;
 
-namespace VimCoreTest
+namespace VimCore.Test
 {
     [TestFixture]
     public class VimTest

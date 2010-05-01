@@ -8,10 +8,10 @@ using Vim.Extensions;
 using Microsoft.VisualStudio.Text.Editor;
 using Moq;
 using Microsoft.VisualStudio.Text;
-using VimCoreTest.Utils;
-using VimCoreTest.Mock;
+using VimCore.Test.Utils;
+using VimCore.Test.Mock;
 
-namespace VimCoreTest
+namespace VimCore.Test
 {
     [TestFixture]
     public class ChangeTrackerTest

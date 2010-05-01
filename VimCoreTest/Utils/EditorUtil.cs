@@ -13,7 +13,7 @@ using Microsoft.VisualStudio.Text.Operations;
 using Microsoft.VisualStudio.Text.Classification;
 using Vim;
 
-namespace VimCoreTest.Utils
+namespace VimCore.Test.Utils
 {
     public static class EditorUtil
     {

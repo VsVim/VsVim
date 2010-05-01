@@ -5,7 +5,7 @@ using System.Text;
 using NUnit.Framework;
 using Vim;
 
-namespace VimCoreTest
+namespace VimCore.Test
 {
     [TestFixture]
     public class KeyMapTest

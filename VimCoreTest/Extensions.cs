@@ -13,7 +13,7 @@ using NUnit.Framework;
 using Microsoft.FSharp.Collections;
 using Microsoft.VisualStudio.Text.Outlining;
 
-namespace VimCoreTest
+namespace VimCore.Test
 {
     internal static class Extensions
     {

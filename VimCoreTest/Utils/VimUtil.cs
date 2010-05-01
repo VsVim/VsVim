@@ -6,7 +6,7 @@ using Vim;
 using Microsoft.FSharp.Core;
 using Vim.Extensions;
 
-namespace VimCoreTest.Utils
+namespace VimCore.Test.Utils
 {
     internal static class VimUtil
     {

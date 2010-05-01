@@ -5,11 +5,11 @@ using System.Text;
 using NUnit.Framework;
 using Vim;
 using Moq;
-using VimCoreTest.Utils;
+using VimCore.Test.Utils;
 using GlobalSettings = Vim.GlobalSettings;
-using VimCoreTest.Mock;
+using VimCore.Test.Mock;
 
-namespace VimCoreTest
+namespace VimCore.Test
 {
     [TestFixture]
     public class DisabledModeTest

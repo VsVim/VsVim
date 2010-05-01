@@ -9,12 +9,12 @@ using Vim.Modes;
 using Moq;
 using Vim;
 using Vim.Extensions;
-using VimCoreTest.Utils;
+using VimCore.Test.Utils;
 using Microsoft.VisualStudio.Text.Operations;
 using Microsoft.VisualStudio.Text.Outlining;
 using Microsoft.FSharp.Core;
 
-namespace VimCoreTest
+namespace VimCore.Test
 {
     [TestFixture]
     public class CommonOperationsTest

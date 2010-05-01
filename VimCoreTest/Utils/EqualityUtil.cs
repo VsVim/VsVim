@@ -5,7 +5,7 @@ using System.Linq;
 using System.Reflection;
 using NUnit.Framework;
  
-namespace VimCoreTest.Utils
+namespace VimCore.Test.Utils
 {
     public class EqualityUnit<T>
     {

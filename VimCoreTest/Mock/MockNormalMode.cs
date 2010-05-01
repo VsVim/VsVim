@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using Vim;
 
-namespace VimCoreTest.Mock
+namespace VimCore.Test.Mock
 {
     public class MockNormalMode : INormalMode
     {

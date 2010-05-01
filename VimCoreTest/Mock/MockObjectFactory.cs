@@ -8,7 +8,7 @@ using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Operations;
 using Microsoft.VisualStudio.Text;
 
-namespace VimCoreTest.Mock
+namespace VimCore.Test.Mock
 {
     internal static class MockObjectFactory
     {

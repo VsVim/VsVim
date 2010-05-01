@@ -6,7 +6,7 @@ using Vim;
 using Microsoft.VisualStudio.Text;
 using System.ComponentModel.Composition;
 
-namespace VimCoreTest
+namespace VimCore.Test
 {
     [Export(typeof(IVimHost))]
     internal sealed class FakeVimHost : IVimHost

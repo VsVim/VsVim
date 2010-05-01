@@ -10,7 +10,7 @@ using Vim.Modes.Visual;
 using Microsoft.VisualStudio.Text;
 using System.Windows.Input;
 using System.Windows.Threading;
-using VimCoreTest.Utils;
+using VimCore.Test.Utils;
 
 namespace Vim.UI.Wpf.Test
 {

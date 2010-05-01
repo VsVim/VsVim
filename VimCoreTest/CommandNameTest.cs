@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using NUnit.Framework;
 using Vim;
-using VimCoreTest.Utils;
+using VimCore.Test.Utils;
 
-namespace VimCoreTest
+namespace VimCore.Test
 {
     [TestFixture]
     public class CommandNameTest

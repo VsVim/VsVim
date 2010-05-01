@@ -7,7 +7,7 @@ using Vim;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text;
-using VimCoreTest.Utils;
+using VimCore.Test.Utils;
 using Vim.Modes;
 using Vim.Modes.Command;
 using Moq;
@@ -15,7 +15,7 @@ using Microsoft.VisualStudio.Text.Operations;
 using Microsoft.VisualStudio.Text.Outlining;
 using Vim.Extensions;
 
-namespace VimCoreTest
+namespace VimCore.Test
 {
     [TestFixture]
     public class Command_DefaultOperations

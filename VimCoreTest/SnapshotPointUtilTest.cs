@@ -7,7 +7,7 @@ using Microsoft.VisualStudio.Text;
 using Vim;
 using Vim.Extensions;
 
-namespace VimCoreTest
+namespace VimCore.Test
 {
     [TestFixture]
     public class SnapshotPointUtilTest

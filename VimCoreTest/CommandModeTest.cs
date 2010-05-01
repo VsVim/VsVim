@@ -6,15 +6,15 @@ using NUnit.Framework;
 using Vim;
 using Vim.Modes.Command;
 using Microsoft.VisualStudio.Text.Editor;
-using VimCoreTest.Utils;
+using VimCore.Test.Utils;
 using Microsoft.VisualStudio.Text;
 using System.Windows.Input;
 using Microsoft.VisualStudio.Text.Operations;
 using Moq;
 using Microsoft.FSharp.Collections;
-using VimCoreTest.Mock;
+using VimCore.Test.Mock;
 
-namespace VimCoreTest
+namespace VimCore.Test
 {
     [TestFixture, RequiresSTA]
     public class CommandModeTest

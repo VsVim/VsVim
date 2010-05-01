@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using NUnit.Framework;
 using Vim.Modes.Normal;
-using VimCoreTest.Utils;
+using VimCore.Test.Utils;
 using Moq;
 using Vim;
 using Microsoft.FSharp.Core;
@@ -15,9 +15,9 @@ using System.Windows.Input;
 using Vim.Modes;
 using Microsoft.VisualStudio.Text.Outlining;
 using Vim.Extensions;
-using VimCoreTest.Mock;
+using VimCore.Test.Mock;
 
-namespace VimCoreTest
+namespace VimCore.Test
 {
     [TestFixture]
     public class Normal_DefaultOperationsTests

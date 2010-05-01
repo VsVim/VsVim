@@ -7,11 +7,11 @@ using Moq;
 using Vim;
 using Vim.Extensions;
 using Microsoft.VisualStudio.Text.Editor;
-using VimCoreTest.Utils;
+using VimCore.Test.Utils;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
 
-namespace VimCoreTest
+namespace VimCore.Test
 {
     [TestFixture]
     public class CommandRunnerTest
