@@ -96,5 +96,14 @@ namespace VsVimTest
             Assert.AreEqual(InputUtil.VimKeyToKeyInput(VimKey.TabKey), command.KeyInput);
             Assert.IsFalse(command.IsInput);
         }
+
+        [Test]
+        public void F1Help1()
+        {
+            EditCommand command;
+            Assert.IsTrue(OleCommandUtil.TryConvert(VSConstants.GUID_VSStandardCommandSet97, (uint)VSConstants.VSStd97CmdID.F1Help, out command));
+            Assert.AreEqual(InputUtil.VimKeyToKeyInput(VimKey.F1Key), command.KeyInput);
+            Assert.IsFalse(command.IsInput);
+        }
    }
 }

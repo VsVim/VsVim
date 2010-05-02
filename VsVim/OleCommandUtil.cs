@@ -191,6 +191,10 @@ namespace VsVim
                     ki = InputUtil.VimKeyToKeyInput(VimKey.DeleteKey);
                     kind = EditCommandKind.Delete;
                     break;
+                case VSConstants.VSStd97CmdID.F1Help:
+                    ki = InputUtil.VimKeyToKeyInput(VimKey.F1Key);
+                    kind = EditCommandKind.Unknown;
+                    break;
             }
 
             return ki != null;
