@@ -73,7 +73,7 @@ namespace Vim.UI.Wpf
                 }
 
                 var ki = opt.Value;
-                return _buffer.CanProcessInput(ki) && _buffer.ProcessInput(ki);
+                return _buffer.CanProcess(ki) && _buffer.Process(ki);
             }
         }
 
@@ -95,7 +95,7 @@ namespace Vim.UI.Wpf
             if (IsInputKey(args.Key))
             {
                 var ki = KeyUtil.ConvertToKeyInput(args.Key, args.KeyboardDevice.Modifiers);
-                isHandled = _buffer.CanProcessInput(ki) && _buffer.ProcessInput(ki);
+                isHandled = _buffer.CanProcess(ki) && _buffer.Process(ki);
             }
 
             if (isHandled)

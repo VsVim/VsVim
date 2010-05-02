@@ -35,7 +35,7 @@ namespace VimCore.Test.Mock
             get { throw new NotImplementedException(); }
         }
 
-        public bool CanProcessInput(KeyInput value)
+        public bool CanProcess(KeyInput value)
         {
             throw new NotImplementedException();
         }
@@ -105,7 +105,7 @@ namespace VimCore.Test.Mock
             throw new NotImplementedException();
         }
 
-        public bool ProcessInput(KeyInput value)
+        public bool Process(KeyInput value)
         {
             throw new NotImplementedException();
         }

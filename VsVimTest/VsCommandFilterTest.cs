@@ -48,14 +48,14 @@ namespace VsVimTest
         [Test]
         public void TryConvert1()
         {
-            _buffer.Setup(x => x.CanProcessInput(It.IsAny<KeyInput>())).Returns(true);
+            _buffer.Setup(x => x.CanProcess(It.IsAny<KeyInput>())).Returns(true);
             AssertCanConvert2K(VSConstants.VSStd2KCmdID.TAB, InputUtil.VimKeyToKeyInput(VimKey.TabKey));
         }
 
         [Test]
         public void TryConvert2()
         {
-            _buffer.Setup(x => x.CanProcessInput(It.IsAny<KeyInput>())).Returns(false);
+            _buffer.Setup(x => x.CanProcess(It.IsAny<KeyInput>())).Returns(false);
             AssertCannotConvert2K(VSConstants.VSStd2KCmdID.TAB);
         }
 
@@ -63,7 +63,7 @@ namespace VsVimTest
         public void TryConvert3()
         {
             _vsExt.Setup(x => x.IsInAutomationFunction()).Returns(1);
-            _buffer.Setup(x => x.CanProcessInput(It.IsAny<KeyInput>())).Returns(true);
+            _buffer.Setup(x => x.CanProcess(It.IsAny<KeyInput>())).Returns(true);
             AssertCannotConvert2K(VSConstants.VSStd2KCmdID.TAB);
         }
 

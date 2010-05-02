@@ -52,7 +52,7 @@ namespace VsVim
             }
 
             // If the current state of the buffer cannot process the command then do not convert it 
-            if (!_buffer.CanProcessInput(command.KeyInput))
+            if (!_buffer.CanProcess(command.KeyInput))
             {
                 return false;
             }
@@ -68,7 +68,7 @@ namespace VsVim
             KeyInput ki = null;
             if (OleCommandUtil.IsDebugIgnore(commandGroup, commandId)
                 || !TryConvert(commandGroup, commandId, pvaIn, out ki)
-                || !_buffer.ProcessInput(ki))
+                || !_buffer.Process(ki))
             {
                 return _nextTarget.Exec(commandGroup, commandId, nCmdexecopt, pvaIn, pvaOut);
             }
@@ -81,7 +81,7 @@ namespace VsVim
             KeyInput ki = null;
             if (1 == cCmds
                 && TryConvert(pguidCmdGroup, prgCmds[0].cmdID, pCmdText, out ki)
-                && _buffer.CanProcessInput(ki))
+                && _buffer.CanProcess(ki))
             {
                 prgCmds[0].cmdf = (uint)(OLECMDF.OLECMDF_ENABLED | OLECMDF.OLECMDF_SUPPORTED);
                 return NativeMethods.S_OK;

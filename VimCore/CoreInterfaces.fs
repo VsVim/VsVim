@@ -844,12 +844,14 @@ and IVimBuffer =
     /// Get the specified Mode
     abstract GetMode : ModeKind -> IMode
     
-    /// Process the char in question and return whether or not it was handled
-    abstract ProcessChar : char -> bool
-    
     /// Process the KeyInput and return whether or not the input was completely handled
-    abstract ProcessInput : KeyInput -> bool
-    abstract CanProcessInput : KeyInput -> bool
+    abstract Process : KeyInput -> bool
+
+    /// Can the passed in KeyInput be consumed by the current state of IVimBuffer.  The
+    /// provided KeyInput will participate in remapping based on the current mode
+    abstract CanProcess: KeyInput -> bool
+
+    /// Switch the current mode to the provided value
     abstract SwitchMode : ModeKind -> IMode
 
     /// Switch the buffer back to the previous mode which is returned

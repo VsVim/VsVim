@@ -212,12 +212,22 @@ namespace VimCore.Test
 
         #region IVimBuffer
 
+        public static bool ProcessChar(this IVimBuffer buf, char c)
+        {
+            return buf.Process(InputUtil.CharToKeyInput(c));
+        }
+
+        public static void ProcessAsString(this IVimBuffer buf, string input)
+        {
+            ProcessInputAsString(buf, input);
+        }
+
         public static void ProcessInputAsString(this IVimBuffer buf, string input)
         {
             foreach (var c in input)
             {
                 var i = InputUtil.CharToKeyInput(c);
-                buf.ProcessInput(i);
+                buf.Process(i);
             }
         }
 
