@@ -486,7 +486,41 @@ namespace VimCore.Test
             Assert.AreEqual(OperationKind.LineWise, data.OperationKind);
             Assert.AreEqual(MotionKind.Inclusive, data.MotionKind);
             Assert.AreEqual(0, data.Column.Value);
-        }        
+        }
+
+        [Test]
+        public void LastNonWhitespaceOnLine1()
+        {
+            Create("foo", "bar ");
+            var data = _util.LastNonWhitespaceOnLine(_buffer.GetPoint(0), 1);
+            Assert.AreEqual(_buffer.GetLineSpan(0), data.Span);
+            Assert.IsTrue(data.IsForward);
+            Assert.AreEqual(OperationKind.CharacterWise, data.OperationKind);
+            Assert.AreEqual(MotionKind.Inclusive, data.MotionKind);
+        }
+
+        [Test]
+        public void LastNonWhitespaceOnLine2()
+        {
+            Create("foo", "bar ","jaz");
+            var data = _util.LastNonWhitespaceOnLine(_buffer.GetPoint(0), 2);
+            Assert.AreEqual(new SnapshotSpan(_buffer.GetPoint(0), _buffer.GetLine(1).Start.Add(3)), data.Span);
+            Assert.IsTrue(data.IsForward);
+            Assert.AreEqual(OperationKind.CharacterWise, data.OperationKind);
+            Assert.AreEqual(MotionKind.Inclusive, data.MotionKind);
+        }
+
+        [Test]
+        public void LastNonWhitespaceOnLine3()
+        {
+            Create("foo", "bar ","jaz","");
+            var data = _util.LastNonWhitespaceOnLine(_buffer.GetPoint(0), 300);
+            Assert.AreEqual(new SnapshotSpan(_buffer.CurrentSnapshot, 0, _buffer.CurrentSnapshot.Length), data.Span);
+            Assert.IsTrue(data.IsForward);
+            Assert.AreEqual(OperationKind.CharacterWise, data.OperationKind);
+            Assert.AreEqual(MotionKind.Inclusive, data.MotionKind);
+        }
+
 
     }   
     

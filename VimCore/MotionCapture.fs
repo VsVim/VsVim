@@ -60,6 +60,7 @@ type internal MotionCapture (_util :IMotionUtil ) =
                 yield (InputUtil.CharToKeyInput 'b', fun start count -> _util.WordBackward WordKind.NormalWord start count |> Some)
                 yield (InputUtil.CharToKeyInput 'B', fun start count -> _util.WordBackward WordKind.BigWord start count |> Some)
                 yield (InputUtil.CharToKeyInput '$', fun start count -> _util.EndOfLine start count |> Some)
+                yield (InputUtil.VimKeyToKeyInput VimKey.EndKey, fun start count -> _util.EndOfLine start count |> Some)
                 yield (InputUtil.CharToKeyInput '^', fun start count -> _util.FirstNonWhitespaceOnLine start |> Some)
                 yield (InputUtil.CharToKeyInput '0', fun start count -> _util.BeginingOfLine start |> Some)
                 yield (InputUtil.CharToKeyInput 'e', fun start count -> _util.EndOfWord WordKind.NormalWord start count |> Some)
@@ -87,6 +88,15 @@ type internal MotionCapture (_util :IMotionUtil ) =
                         let count = CommandUtil.CountOrDefault count
                         func start count
                     SimpleMotionCommand(OneKeyInput ki, func2)  )
+        let needCount2 = 
+            seq { 
+                yield ("g_", fun start count -> _util.LastNonWhitespaceOnLine start count |> Some)
+            } |> Seq.map (fun (str,func) ->
+                    let name = CommandUtil.CreateCommandName str
+                    let func2 start count =
+                        let count = CommandUtil.CountOrDefault count
+                        func start count
+                    SimpleMotionCommand(name, func2)  )
         let needCountOpt =
             seq {
                 yield (InputUtil.CharToKeyInput 'G', fun start countOpt -> _util.LineOrLastToFirstNonWhitespace start countOpt |> Some)
@@ -96,7 +106,7 @@ type internal MotionCapture (_util :IMotionUtil ) =
             seq {
                 yield ( CommandUtil.CreateCommandName "gg", fun start countOpt -> _util.LineOrFirstToFirstNonWhitespace start countOpt |> Some)
             } |> Seq.map (fun (name,func) -> SimpleMotionCommand(name, func))
-        Seq.append needCount needCountOpt |> Seq.append needCountOpt2
+        Seq.append needCount needCountOpt |> Seq.append needCountOpt2 |> Seq.append needCount2
     
     let ComplexMotions = 
         let needCount = 

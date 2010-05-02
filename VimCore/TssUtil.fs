@@ -153,6 +153,11 @@ module internal TssUtil =
         |> SnapshotLineUtil.GetPoints
         |> SeqUtil.tryFindOrDefault (fun p -> not (CharUtil.IsWhiteSpace (p.GetChar()))) (line.Start)
 
+    let FindLastNonWhitespaceCharacter line =
+        line
+        |> SnapshotLineUtil.GetPointsBackward
+        |> SeqUtil.tryFindOrDefault (fun p -> not (CharUtil.IsWhiteSpace (p.GetChar()))) (line.Start)
+
     let CreateTextStructureNavigator wordKind (baseImpl:ITextStructureNavigator) = 
         { new ITextStructureNavigator with 
             member x.ContentType = baseImpl.ContentType

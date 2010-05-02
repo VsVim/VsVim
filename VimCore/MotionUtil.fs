@@ -143,5 +143,14 @@ type internal MotionUtil ( _settings : IVimGlobalSettings) =
                 | Some(number) ->  SnapshotUtil.GetLineOrLast tss (TssUtil.VimLineToTssLine number)
                 | None -> SnapshotUtil.GetFirstLine tss 
             x.LineToLineFirstNonWhitespaceMotion originLine endLine
+        member x.LastNonWhitespaceOnLine start count = 
+            let startLine = SnapshotPointUtil.GetContainingLine start
+            let snapshot = startLine.Snapshot
+            let number = startLine.LineNumber + (count-1)
+            let endLine = SnapshotUtil.GetLineOrLast snapshot number
+            let endPoint = TssUtil.FindLastNonWhitespaceCharacter endLine
+            let endPoint = if SnapshotUtil.GetEndPoint snapshot = endPoint then endPoint else endPoint.Add(1)
+            let span = SnapshotSpan(start,endPoint)
+            {Span=span; IsForward=true; MotionKind=MotionKind.Inclusive; OperationKind=OperationKind.CharacterWise; Column=None}
 
 

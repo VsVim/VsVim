@@ -83,6 +83,10 @@ type IMotionUtil =
     /// motion so be careful we don't go to far forward
     abstract FirstNonWhitespaceOnLine : SnapshotPoint -> MotionData 
 
+    /// Find the last non-whitespace character on the line.  Count causes it to go "count" lines
+    /// down and perform the search
+    abstract LastNonWhitespaceOnLine : SnapshotPoint -> int -> MotionData
+
     /// Move to the begining of the line.  Interestingly since this command is bound to the '0' it 
     /// can't be associated with a count.  Doing a command like 30 binds as count 30 vs. count 3 
     /// for command '0'

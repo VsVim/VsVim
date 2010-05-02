@@ -46,6 +46,10 @@ module internal TssUtil =
     /// the given ITextSnapshotLine
     val FindFirstNonWhitespaceCharacter : ITextSnapshotLine -> SnapshotPoint
 
+    /// Find and return the SnapshotPoint representing the last non-whitespace character on
+    /// the given ITextSnapshotLine
+    val FindLastNonWhitespaceCharacter : ITextSnapshotLine -> SnapshotPoint
+
     /// This function is mainly a backing for the "b" command mode command.  It is really
     /// used to find the position of the start of the current or previous word.  Unless we 
     /// are currently at the start of a word, in which case it should go back to the previous

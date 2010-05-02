@@ -107,7 +107,7 @@ namespace VimCore.Test
         }
 
         [Test]
-        public void EndOfLine1()
+        public void Motion_Dollar1()
         {
             _util
                 .Setup(x => x.EndOfLine(_point,1))
@@ -118,13 +118,24 @@ namespace VimCore.Test
         }
 
         [Test]
-        public void EndOfLine2()
+        public void Motion_Dollar2()
         {
             _util
                 .Setup(x => x.EndOfLine(_point,2))
                 .Returns(CreateMotionData())
                 .Verifiable();
             ProcessComplete("$", 2);
+            _util.Verify();
+        }
+
+        [Test]
+        public void Motion_End()
+        {
+            _util
+                .Setup(x => x.EndOfLine(_point, 1))
+                .Returns(CreateMotionData())
+                .Verifiable();
+            _capture.ProcessInput(_point, InputUtil.VimKeyToKeyInput(VimKey.EndKey), FSharpOption<int>.None);
             _util.Verify();
         }
 
@@ -333,6 +344,28 @@ namespace VimCore.Test
                 .Returns(CreateMotionData())
                 .Verifiable();
             ProcessComplete("2gg");
+            _util.Verify();
+        }
+
+        [Test]
+        public void Motion_g_1()
+        {
+            _util
+                .Setup(x => x.LastNonWhitespaceOnLine(_point, 1))
+                .Returns(CreateMotionData())
+                .Verifiable();
+            ProcessComplete("g_");
+            _util.Verify();
+        }
+
+        [Test]
+        public void Motion_g_2()
+        {
+            _util
+                .Setup(x => x.LastNonWhitespaceOnLine(_point, 2))
+                .Returns(CreateMotionData())
+                .Verifiable();
+            ProcessComplete("2g_");
             _util.Verify();
         }
     }

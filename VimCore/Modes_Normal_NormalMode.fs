@@ -205,7 +205,6 @@ type internal NormalMode
                     _operations.Join caret Modes.JoinKind.KeepEmptySpaces count |> ignore )
                 yield ("gp", CommandFlags.Repeatable, fun count reg -> _operations.PasteAfterCursor reg.StringValue 1 reg.Value.OperationKind true |> ignore)
                 yield ("gP", CommandFlags.Repeatable, fun count reg -> _operations.PasteBeforeCursor reg.StringValue 1 reg.Value.OperationKind true |> ignore)
-                yield ("g_", CommandFlags.Movement, fun _ _ -> _operations.EditorOperations.MoveToLastNonWhiteSpaceCharacter(false))
                 yield ("g*", CommandFlags.Movement, fun count _ -> _operations.MoveToNextOccuranceOfPartialWordAtCursor SearchKind.ForwardWithWrap count)
                 yield ("g#", CommandFlags.Movement, fun count _ -> _operations.MoveToNextOccuranceOfPartialWordAtCursor SearchKind.BackwardWithWrap count)
                 yield ("gt", CommandFlags.Movement, fun count _ -> _operations.GoToNextTab count)
