@@ -18,9 +18,10 @@ type internal DefaultOperations
     _settings : IVimLocalSettings,
     _normalWordNav : ITextStructureNavigator,
     _jumpList : IJumpList,
-    _incrementalSearch : IIncrementalSearch) =
+    _incrementalSearch : IIncrementalSearch,
+    _undoRedoOperations : IUndoRedoOperations ) =
 
-    inherit CommonOperations(_textView, _operations, _outlining, _host, _jumpList, _settings)
+    inherit CommonOperations(_textView, _operations, _outlining, _host, _jumpList, _settings, _undoRedoOperations)
 
     let _search = _incrementalSearch.SearchService
 

@@ -22,7 +22,7 @@ namespace VimCore.Test
 
         private class OperationsImpl : CommonOperations
         {
-            internal OperationsImpl(ITextView view, IEditorOperations opts, IOutliningManager outlining, IVimHost host, IJumpList jumpList, IVimLocalSettings settings) : base(view, opts, outlining, host, jumpList, settings) { }
+            internal OperationsImpl(ITextView view, IEditorOperations opts, IOutliningManager outlining, IVimHost host, IJumpList jumpList, IVimLocalSettings settings, IUndoRedoOperations undoRedoOpts) : base(view, opts, outlining, host, jumpList, settings, undoRedoOpts) { }
         }
 
         private IWpfTextView _view;
@@ -34,6 +34,7 @@ namespace VimCore.Test
         private Mock<IVimLocalSettings> _settings;
         private Mock<IVimGlobalSettings> _globalSettings;
         private Mock<IOutliningManager> _outlining;
+        private Mock<IUndoRedoOperations> _undoRedoOperations;
         private ICommonOperations _operations;
         private CommonOperations _operationsRaw;
 
@@ -51,8 +52,9 @@ namespace VimCore.Test
             _outlining = _factory.Create<IOutliningManager>();
             _globalSettings.SetupGet(x => x.ShiftWidth).Returns(2);
             _settings.SetupGet(x => x.GlobalSettings).Returns(_globalSettings.Object);
+            _undoRedoOperations = _factory.Create<IUndoRedoOperations>();
 
-            _operationsRaw = new OperationsImpl(_view, _editorOpts.Object, _outlining.Object, _host.Object, _jumpList.Object,_settings.Object);
+            _operationsRaw = new OperationsImpl(_view, _editorOpts.Object, _outlining.Object, _host.Object, _jumpList.Object,_settings.Object, _undoRedoOperations.Object);
             _operations = _operationsRaw;
         }
 
@@ -1281,18 +1283,18 @@ namespace VimCore.Test
         public void Undo1()
         {
             Create(String.Empty);
-            _host.Setup(x => x.Undo(_buffer,1)).Verifiable();
+            _undoRedoOperations.Setup(x => x.Undo(1)).Verifiable();
             _operations.Undo(1);
-            _host.Verify();
+            _undoRedoOperations.Verify();
         }
 
         [Test]
         public void Redo1()
         {
             Create(String.Empty);
-            _host.Setup(x => x.Redo(_buffer, 1)).Verifiable();
+            _undoRedoOperations.Setup(x => x.Redo(1)).Verifiable();
             _operations.Redo(1);
-            _host.Verify();
+            _undoRedoOperations.Verify();
         }
 
         [Test]

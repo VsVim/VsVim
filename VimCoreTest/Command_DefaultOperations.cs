@@ -30,6 +30,7 @@ namespace VimCore.Test
         private Mock<IVimLocalSettings> _settings;
         private Mock<IKeyMap> _keyMap;
         private Mock<IOutliningManager> _outlining;
+        private Mock<IUndoRedoOperations> _undoRedoOperations;
 
         private void Create(params string[] lines)
         {
@@ -41,7 +42,8 @@ namespace VimCore.Test
             _keyMap = new Mock<IKeyMap>(MockBehavior.Strict);
             _statusUtil = new Mock<IStatusUtil>(MockBehavior.Strict);
             _outlining = new Mock<IOutliningManager>(MockBehavior.Strict);
-            _operationsRaw = new DefaultOperations(_view, _editOpts.Object, _outlining.Object, _host.Object, _statusUtil.Object,_jumpList.Object, _settings.Object, _keyMap.Object);
+            _undoRedoOperations = new Mock<IUndoRedoOperations>(MockBehavior.Strict);
+            _operationsRaw = new DefaultOperations(_view, _editOpts.Object, _outlining.Object, _host.Object, _statusUtil.Object,_jumpList.Object, _settings.Object, _keyMap.Object, _undoRedoOperations.Object);
             _operations = _operationsRaw;
         }
 

@@ -39,6 +39,18 @@ type IFileSystem =
     /// Attempt to read all of the lines from the given file 
     abstract ReadAllLines : path:string -> string[] option
 
+/// Wraps all of the undo and redo operations
+type IUndoRedoOperations = 
+
+    /// StatusUtil instance that is used to report errors
+    abstract StatusUtil : IStatusUtil
+
+    /// Undo the last "count" operations
+    abstract Undo : count:int -> unit
+
+    /// Redo the last "count" operations
+    abstract Redo : count:int -> unit
+
 /// Responsible for implementing all of the Motion information
 type IMotionUtil = 
 
@@ -790,7 +802,6 @@ and IVim =
     /// Load the VimRc file.  If the file was previously, a new load will be attempted
     abstract LoadVimRc : IFileSystem -> createViewFunc:(unit -> ITextView) -> bool
 
-    
 /// Main interface for the Vim editor engine so to speak. 
 and IVimBuffer =
 

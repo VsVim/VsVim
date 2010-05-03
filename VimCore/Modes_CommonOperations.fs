@@ -15,7 +15,8 @@ type internal CommonOperations
         _outlining : IOutliningManager,
         _host : IVimHost,
         _jumpList : IJumpList,
-        _settings : IVimLocalSettings ) =
+        _settings : IVimLocalSettings,
+        _undoRedoOperations : IUndoRedoOperations ) =
 
     member private x.NavigateToPoint (point:VirtualSnapshotPoint) = 
         let buf = point.Position.Snapshot.TextBuffer
@@ -355,8 +356,8 @@ type internal CommonOperations
             let span = SnapshotSpan(point, span.End)
             x.DeleteSpan span MotionKind.Inclusive OperationKind.CharacterWise reg |> ignore
 
-        member x.Undo count = _host.Undo _textView.TextBuffer count
-        member x.Redo count = _host.Redo _textView.TextBuffer count
+        member x.Undo count = _undoRedoOperations.Undo count
+        member x.Redo count = _undoRedoOperations.Redo count
         member x.Save() = _host.SaveCurrentFile()
         member x.SaveAs fileName = _host.SaveCurrentFileAs fileName
         member x.SaveAll() = _host.SaveAllFiles()

@@ -180,6 +180,7 @@
     <Compile Include="TextViewUtilTest.cs" />
     <Compile Include="TrackingLineColumnTest.cs" />
     <Compile Include="TssUtilTest.cs" />
+    <Compile Include="UndoRedoOperationsTest.cs" />
     <Compile Include="Utils\EditorUtil.cs" />
     <Compile Include="Extensions.cs" />
     <Compile Include="Utils\EqualityUtil.cs" />

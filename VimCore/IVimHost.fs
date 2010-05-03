@@ -7,8 +7,6 @@ open Microsoft.VisualStudio.Text.Editor
 type IVimHost =
     abstract Beep : unit -> unit
     abstract OpenFile : string -> unit
-    abstract Undo : ITextBuffer -> count:int -> unit
-    abstract Redo : ITextBuffer -> count:int -> unit
 
     /// Go to the definition of the value under the cursor
     abstract GoToDefinition : unit -> bool

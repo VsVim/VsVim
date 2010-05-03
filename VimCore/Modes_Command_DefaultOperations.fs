@@ -19,8 +19,9 @@ type internal DefaultOperations
         _statusUtil : IStatusUtil,
         _jumpList : IJumpList,
         _settings : IVimLocalSettings,
-        _keyMap : IKeyMap) =
-    inherit CommonOperations(_textView, _operations, _outlining, _host, _jumpList, _settings) 
+        _keyMap : IKeyMap,
+        _undoRedoOperations : IUndoRedoOperations) =
+    inherit CommonOperations(_textView, _operations, _outlining, _host, _jumpList, _settings, _undoRedoOperations) 
 
     /// Format the setting for use in output
     let FormatSetting(setting:Setting) = 

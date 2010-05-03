@@ -13,8 +13,6 @@ namespace VimCore.Test
     {
         public int BeepCount { get; set; }
         public string LastFileOpen { get; set; }
-        public int UndoCount { get; set; }
-        public int RedoCount { get; set; }
         public int GoToDefinitionCount { get; set; }
         public int GoToMatchCount { get; set; }
         public bool GoToDefinitionReturn { get; set; }
@@ -43,11 +41,6 @@ namespace VimCore.Test
             LastFileOpen = p;
         }
 
-        void IVimHost.Undo(ITextBuffer buffer, int count)
-        {
-            UndoCount += count;
-        }
-
         bool IVimHost.GoToDefinition()
         {
             GoToDefinitionCount++;
@@ -58,11 +51,6 @@ namespace VimCore.Test
         {
             NavigateToData = point;
             return NavigateToReturn;
-        }
-
-        void IVimHost.Redo(ITextBuffer value, int count)
-        {
-            RedoCount += count;
         }
 
         string IVimHost.GetName(ITextBuffer textBuffer)

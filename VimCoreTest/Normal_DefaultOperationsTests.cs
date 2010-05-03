@@ -31,6 +31,7 @@ namespace VimCore.Test
         private Mock<IVimLocalSettings> _settings;
         private Mock<IIncrementalSearch> _search;
         private Mock<IOutliningManager> _outlining;
+        private Mock<IUndoRedoOperations> _undoRedoOperations;
             
         private ISearchService _searchService;
         private Mock<IStatusUtil> _statusUtil;
@@ -67,7 +68,8 @@ namespace VimCore.Test
             _search.SetupGet(x => x.SearchService).Returns(_searchService);
             _statusUtil = new Mock<IStatusUtil>(MockBehavior.Strict);
             _outlining = new Mock<IOutliningManager>(MockBehavior.Strict);
-            _operationsRaw = new DefaultOperations(_view, editorOpts, _outlining.Object, _host.Object, _statusUtil.Object, _settings.Object, nav, _jumpList.Object, _search.Object);
+            _undoRedoOperations = new Mock<IUndoRedoOperations>(MockBehavior.Strict);
+            _operationsRaw = new DefaultOperations(_view, editorOpts, _outlining.Object, _host.Object, _statusUtil.Object, _settings.Object, nav, _jumpList.Object, _search.Object, _undoRedoOperations.Object);
             _operations = _operationsRaw;
         }
 

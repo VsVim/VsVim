@@ -117,15 +117,6 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="VimHost_CannotRedo" xml:space="preserve">
-    <value>Cannot redo change</value>
-  </data>
-  <data name="VimHost_CannotUndo" xml:space="preserve">
-    <value>Cannot undo change</value>
-  </data>
-  <data name="VimHost_NoUndoRedoSupport" xml:space="preserve">
-    <value>Undo/Redo is not available for this file</value>
-  </data>
   <data name="VsVimFactoryService_UnableToCreateBuffer" xml:space="preserve">
     <value>Unable to create Vim for the current buffer</value>
   </data>

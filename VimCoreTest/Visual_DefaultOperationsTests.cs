@@ -24,6 +24,7 @@ namespace VimCore.Test
         private Mock<IJumpList> _jumpList;
         private Mock<IVimLocalSettings> _settings;
         private Mock<IOutliningManager> _outlining;
+        private Mock<IUndoRedoOperations> _undoRedoOperations;
         private IOperations _operations;
 
         private void Create(params string[] lines)
@@ -35,7 +36,8 @@ namespace VimCore.Test
             _host = new Mock<IVimHost>(MockBehavior.Strict);
             _outlining = new Mock<IOutliningManager>(MockBehavior.Strict);
             _settings = new Mock<IVimLocalSettings>(MockBehavior.Strict);
-            _operations = new DefaultOperations(_view, _editorOpts.Object, _outlining.Object, _host.Object, _jumpList.Object, _tracker.Object, _settings.Object);
+            _undoRedoOperations = new Mock<IUndoRedoOperations>(MockBehavior.Strict);
+            _operations = new DefaultOperations(_view, _editorOpts.Object, _outlining.Object, _host.Object, _jumpList.Object, _tracker.Object, _settings.Object, _undoRedoOperations.Object);
         }
 
         [Test]

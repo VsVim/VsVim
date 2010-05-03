@@ -44,3 +44,8 @@ module internal Resources =
     let Range_ConnectionMissing = Range_Invalid "Expected , or ;"
 
     let CommandRunner_CommandNameAlreadyAdded = "A Command with the given name is already present"
+
+    let UndoRedo_NotSupported = "Undo / Redo is not supported on this buffer"
+    let UndoRedo_CannotUndo = "Cannot undo the last action"
+    let UndoRedo_CannotRedo = "Cannot redo the last action"
+
