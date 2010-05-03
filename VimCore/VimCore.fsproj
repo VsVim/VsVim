@@ -94,6 +94,7 @@
     <Compile Include="ChangeTracker.fs" />
     <Compile Include="VimSettings.fs" />
     <Compile Include="FileSystem.fs" />
+    <Compile Include="UndoRedoOperations.fsi" />
     <Compile Include="UndoRedoOperations.fs" />
     <Compile Include="CommandRunner.fsi" />
     <Compile Include="CommandRunner.fs" />
