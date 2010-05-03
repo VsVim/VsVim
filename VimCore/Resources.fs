@@ -12,6 +12,7 @@ module internal Resources =
     let Common_GotoDefFailed word = sprintf "Could not navigate to definition of %s" word
     let Common_MarkInvalid = "Argument must be a letter or forward / back quote"
     let Common_MarkNotSet = "Mark not set"
+    let Common_BulkEdit = "VsVim Bulk Edit"
 
     let NormalMode_PatternNotFound pattern = sprintf "Pattern not found: %s" pattern
     let NormalMode_NoPreviousSearch = "No previous search"

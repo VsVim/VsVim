@@ -383,5 +383,13 @@ type internal CommonOperations
             TextViewUtil.MoveCaretToPoint _textView point
             _operations.ResetSelection()
         member x.Beep () = if not _settings.GlobalSettings.VisualBell then _host.Beep()
+        member x.ApplyAsSingleEdit description spans doEdit =
+            let description = 
+                match description with
+                | None -> Resources.Common_BulkEdit
+                | Some(d) -> d
+            use transaction = _undoRedoOperations.CreateUndoTransaction description
+            spans |> Seq.iter doEdit 
+            transaction.Complete()
 
 

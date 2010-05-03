@@ -32,6 +32,9 @@ type ICommonOperations =
     /// Redo the buffer changes "count" times
     abstract Redo : count:int -> unit
 
+    /// Apply the specified edit for all provided SnapshotSpan's as a single undo transaction
+    abstract ApplyAsSingleEdit : description:string option -> SnapshotSpan seq -> (SnapshotSpan -> unit) -> unit
+
     /// Implements the Join command.  Returns false in the case the join command cannot
     /// be complete (such as joining at the end of the buffer)
     abstract Join : SnapshotPoint -> JoinKind -> count : int -> bool

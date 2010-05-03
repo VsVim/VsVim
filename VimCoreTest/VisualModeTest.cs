@@ -13,6 +13,7 @@ using VimCore.Test.Utils;
 using Microsoft.VisualStudio.Text;
 using System.Windows.Input;
 using VimCore.Test.Mock;
+using Microsoft.FSharp.Core;
 
 namespace VimCore.Test
 {
@@ -61,6 +62,23 @@ namespace VimCore.Test
             _modeRaw = new Vim.Modes.Visual.VisualMode(Tuple.Create<IVimBuffer, IOperations, ModeKind,ICommandRunner, IMotionCapture>(_bufferData.Object, _operations.Object, kind, runner, capture));
             _mode = _modeRaw;
             _mode.OnEnter();
+        }
+
+        public void SetupApplyAsSingleEdit()
+        {
+            _operations
+                .Setup(x => x.ApplyAsSingleEdit(
+                                It.IsAny<FSharpOption<string>>(),
+                                It.IsAny<IEnumerable<SnapshotSpan>>(),
+                                It.IsAny<FSharpFunc<SnapshotSpan, Unit>>()))
+                .Callback<FSharpOption<string>,IEnumerable<SnapshotSpan>, FSharpFunc<SnapshotSpan,Unit>>((unused, spans, func) =>
+                {
+                    foreach (var span in spans)
+                    {
+                        func.Invoke(span);
+                    }
+                })
+                .Verifiable();
         }
 
         [Test,Description("Movement commands")]
@@ -381,6 +399,43 @@ namespace VimCore.Test
             Assert.AreEqual(ModeKind.Insert, res.AsSwitchMode().Item);
         }
 
+        [Test]
+        public void ChangeCase1()
+        {
+            Create("foo bar", "baz");
+            var span = _buffer.GetSpan(0,3);
+            _operations
+                .Setup(x => x.ChangeLetterCase(span))
+                .Verifiable();
+            _selection
+                .SetupGet(x => x.SelectedSpans)
+                .Returns(new NormalizedSnapshotSpanCollection(span))
+                .Verifiable();
+            _mode.Process('~');
+            _selection.Verify();
+            _operations.Verify();
+        }
+
+        [Test]
+        public void ChangeCase2()
+        {
+            Create("foo bar baz");
+            SetupApplyAsSingleEdit();
+            var spans = new SnapshotSpan[] { _buffer.GetSpan(0, 2), _buffer.GetSpan(3, 2) };
+            var count = 0;
+            _operations
+                .Setup(x => x.ChangeLetterCase(It.IsAny<SnapshotSpan>()))
+                .Callback(() => {count++;})
+                .Verifiable();
+            _selection
+                .SetupGet(x => x.SelectedSpans)
+                .Returns(new NormalizedSnapshotSpanCollection(spans))
+                .Verifiable();
+            _mode.Process('~');
+            _selection.Verify();
+            _operations.Verify();
+            Assert.AreEqual(count, 2);
+        }
 
         #endregion
     }

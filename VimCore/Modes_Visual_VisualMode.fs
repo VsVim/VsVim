@@ -54,6 +54,19 @@ type internal VisualMode
         |> SeqUtil.filterToSome
 
     member private x.BuildOperationsSequence() =
+
+        let editOverSpanOperation description func result = 
+            let selection = _buffer.TextView.Selection
+            let spans = selection.SelectedSpans
+            match spans.Count with
+            | 0 -> result
+            | 1 -> 
+                func (spans.Item(0))
+                result
+            | _ -> 
+                _operations.ApplyAsSingleEdit description (spans :> SnapshotSpan seq) func
+                result
+            
         let deleteSelection _ reg = 
             _operations.DeleteSelection reg |> ignore
             CommandResult.Completed ModeSwitch.SwitchPreviousMode
@@ -66,6 +79,7 @@ type internal VisualMode
 
         /// Commands consisting of a single character
         let simples =
+            let resultSwitchPrevious = CommandResult.Completed ModeSwitch.SwitchPreviousMode
             seq {
                 yield (InputUtil.CharToKeyInput('y'), 
                     (fun _ (reg:Register) -> 
@@ -93,7 +107,8 @@ type internal VisualMode
                         (fun _ _ ->         
                             _operations.JoinSelection JoinKind.RemoveEmptySpaces|> ignore
                             CommandResult.Completed ModeSwitch.SwitchPreviousMode))
-                }
+                yield (InputUtil.CharToKeyInput('~'), (fun _ _ -> editOverSpanOperation None _operations.ChangeLetterCase resultSwitchPrevious))
+            }
             |> Seq.map (fun (ki,func) -> Command.SimpleCommand(OneKeyInput ki,CommandFlags.None, func))
 
 
