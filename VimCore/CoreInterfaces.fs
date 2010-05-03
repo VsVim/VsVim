@@ -39,6 +39,17 @@ type IFileSystem =
     /// Attempt to read all of the lines from the given file 
     abstract ReadAllLines : path:string -> string[] option
 
+/// Wraps an ITextUndoTransaction so we can avoid all of the null checks
+type IUndoTransaction =
+
+    /// Call when it completes
+    abstract Complete : unit -> unit
+
+    /// Cancels the transaction
+    abstract Cancel : unit -> unit
+
+    inherit System.IDisposable
+
 /// Wraps all of the undo and redo operations
 type IUndoRedoOperations = 
 
@@ -50,6 +61,9 @@ type IUndoRedoOperations =
 
     /// Redo the last "count" operations
     abstract Redo : count:int -> unit
+
+    /// Creates an Undo Transaction
+    abstract CreateUndoTransaction : name:string -> IUndoTransaction
 
 /// Responsible for implementing all of the Motion information
 type IMotionUtil = 

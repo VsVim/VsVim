@@ -118,5 +118,25 @@ namespace VimCore.Test
             _factory.Verify();
         }
 
+        [Test]
+        public void CreateUndoTransaction1()
+        {
+            Create(haveHistory: false);
+            var transaction = _operationsRaw.CreateUndoTransaction("foo");
+            Assert.IsNotNull(transaction);
+            _factory.Verify();
+        }
+
+        [Test]
+        public void CreateUndoTransaction2()
+        {
+            Create();
+            var mock = _factory.Create<ITextUndoTransaction>();
+            _history.Setup(x => x.CreateTransaction("foo")).Returns(mock.Object).Verifiable();
+            var transaction = _operationsRaw.CreateUndoTransaction("foo");
+            Assert.IsNotNull(transaction);
+            _factory.Verify();
+        }
+
     }
 }
