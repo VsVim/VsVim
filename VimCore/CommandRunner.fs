@@ -112,9 +112,8 @@ type internal CommandRunner
                 | Cancel -> CancelledCommand
 
         let runInitialMotion ki =
-            let point = TextViewUtil.GetCaretPoint _textView
             let count = CommandUtil.CountOrDefault _data.Count
-            _capture.ProcessInput point ki (Some count) |> inner
+            _capture.GetMotion ki (Some count) |> inner
 
         match initialInput with
         | None -> NeedMore runInitialMotion

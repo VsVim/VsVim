@@ -4,7 +4,10 @@ namespace Vim
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor;
 
-type internal MotionCapture (_util :IMotionUtil ) = 
+type internal MotionCapture 
+    (
+        _textView : ITextView,
+        _util :IMotionUtil ) = 
 
     let NeedMoreInputWithEscape func =
         let inner (ki:KeyInput) = 
@@ -163,19 +166,16 @@ type internal MotionCapture (_util :IMotionUtil ) =
                 | NeedMore(nextFunc) -> NeedMoreInputWithEscape (inner nextFunc)
         inner (CountCapture.Process) ki
 
-    let rec ProcessInput start (ki:KeyInput) count =
+    let rec GetMotion (ki:KeyInput) count =
+        let start = TextViewUtil.GetCaretPoint _textView
         if ki.Key = VimKey.EscapeKey then Cancel
-        elif ki.IsDigit && ki.Char <> '0' then ProcessCount ki (ProcessInput start) count
+        elif ki.IsDigit && ki.Char <> '0' then ProcessCount ki GetMotion count
         else WaitForCommandName start count ki
 
-    let ProcessView (view:ITextView) (ki:KeyInput) count = 
-        let start = TextViewUtil.GetCaretPoint view
-        ProcessInput start ki count
-
     interface IMotionCapture with
+        member x.TextView = _textView
         member x.MotionCommands = MotionCommands
-        member x.ProcessInput start ki count = ProcessInput start ki count
-        member x.ProcessView view ki count = ProcessView view ki count
+        member x.GetMotion ki count = GetMotion ki count
 
       
     

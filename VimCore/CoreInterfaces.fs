@@ -355,14 +355,17 @@ type MotionCommand =
         | SimpleMotionCommand(name,_) -> name
         | ComplexMotionCommand(name,_,_) -> name
 
+/// Responsible for capturing motions on a given ITextView
 type IMotionCapture =
+
+    /// Associated ITextView
+    abstract TextView : ITextView
     
     /// Set of supported MotionCommand
     abstract MotionCommands : seq<MotionCommand>
 
-    abstract ProcessInput : SnapshotPoint -> KeyInput -> int option -> MotionResult
-
-    abstract ProcessView : ITextView -> KeyInput -> int option -> MotionResult
+    /// Get the motion starting with the given KeyInput
+    abstract GetMotion : KeyInput -> int option -> MotionResult
 
 
 module CommandUtil = 

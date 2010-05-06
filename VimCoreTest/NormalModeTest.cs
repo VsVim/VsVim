@@ -74,7 +74,7 @@ namespace VimCore.Test
             _operations.SetupGet(x => x.TextView).Returns(_view);
 
             motionUtil = motionUtil ?? new MotionUtil(new Vim.GlobalSettings());
-            var capture = new MotionCapture(motionUtil);
+            var capture = new MotionCapture(_view, motionUtil);
             var runner = new CommandRunner(Tuple.Create((ITextView)_view, _map,(IMotionCapture)capture, _statusUtil.Object));
             _modeRaw = new Vim.Modes.Normal.NormalMode(Tuple.Create(
                 _bufferData.Object,

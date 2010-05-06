@@ -18,6 +18,7 @@ namespace VimCore.Test
     public class MotionCaptureTest
     {
         private SnapshotPoint _point;
+        private Mock<ITextView> _textView;
         private Mock<IMotionUtil> _util;
         private MotionCapture _captureRaw;
         private IMotionCapture _capture;
@@ -25,9 +26,15 @@ namespace VimCore.Test
         [SetUp]
         public void Create()
         {
-            _point = Mock.MockObjectFactory.CreateSnapshotPoint(0);
             _util = new Mock<IMotionUtil>(MockBehavior.Strict);
-            _captureRaw = new MotionCapture(_util.Object);
+            _point = Mock.MockObjectFactory.CreateSnapshotPoint(0);
+            var caret = new Mock<ITextCaret>(MockBehavior.Strict);
+            caret.SetupGet(x => x.Position).Returns(new CaretPosition(
+                new VirtualSnapshotPoint(_point),
+                (new Mock<IMappingPoint>().Object),
+                PositionAffinity.Predecessor));
+            _textView = Mock.MockObjectFactory.CreateTextView(caret: caret.Object);
+            _captureRaw = new MotionCapture(_textView.Object, _util.Object);
             _capture = _captureRaw;
         }
 
@@ -36,8 +43,7 @@ namespace VimCore.Test
             var realCount = count.HasValue
                 ? FSharpOption.Create(count.Value)
                 : FSharpOption<int>.None;
-            var res = _capture.ProcessInput(
-                _point,
+            var res = _capture.GetMotion(
                 InputUtil.CharToKeyInput(input[0]),
                 realCount);
             foreach (var cur in input.Skip(1))
@@ -135,7 +141,7 @@ namespace VimCore.Test
                 .Setup(x => x.EndOfLine(_point, 1))
                 .Returns(CreateMotionData())
                 .Verifiable();
-            _capture.ProcessInput(_point, InputUtil.VimKeyToKeyInput(VimKey.EndKey), FSharpOption<int>.None);
+            _capture.GetMotion(InputUtil.VimKeyToKeyInput(VimKey.EndKey), FSharpOption<int>.None);
             _util.Verify();
         }
 
