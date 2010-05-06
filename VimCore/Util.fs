@@ -110,6 +110,13 @@ module internal ListUtil =
             | Some(leftHead,leftRest),Some(rightHead,rightRest) -> 
                 if leftHead = rightHead then contentsEqual leftRest rightRest
                 else false
+
+    let rec contains value l =
+        match l with
+        | h::t -> 
+            if h = value then true
+            else contains value t
+        | [] -> false
         
 module internal SeqUtil =
     

@@ -111,6 +111,31 @@ namespace VimCore.Test
         }
 
         [Test]
+        public void Control_OpenBracket1()
+        {
+            var ki = InputUtil.CharAndModifiersToKeyInput('[', KeyModifiers.Control);
+            var name = CommandName.NewOneKeyInput(ki);
+            Assert.IsTrue(_mode.CommandNames.Contains(name));
+        }
+
+        [Test]
+        public void Control_OpenBraket2()
+        {
+            _globalSettings.SetupGet(x => x.DoubleEscape).Returns(false);
+            _broker
+                .SetupGet(x => x.IsCompletionWindowActive)
+                .Returns(true)
+                .Verifiable();
+            _broker
+                .Setup(x => x.DismissCompletionWindow())
+                .Verifiable();
+            var ki = InputUtil.CharAndModifiersToKeyInput('[', KeyModifiers.Control);
+            var res = _mode.Process(ki);
+            Assert.IsTrue(res.IsSwitchMode);
+            Assert.AreEqual(ModeKind.Normal, res.AsSwitchMode().Item);
+        }
+
+        [Test]
         public void ShiftLeft1()
         {
             CreateBuffer("    foo");

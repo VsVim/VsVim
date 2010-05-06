@@ -11,9 +11,11 @@ type internal InsertMode
         _data : IVimBuffer, 
         _operations : Modes.ICommonOperations,
         _broker : IDisplayWindowBroker) =
-    let _commands = [
+
+    let _escapeCommands = [
         InputUtil.VimKeyToKeyInput VimKey.EscapeKey;
-        KeyInput('d', KeyModifiers.Control); ]
+        InputUtil.CharAndModifiersToKeyInput '[' KeyModifiers.Control ]
+    let _commands = KeyInput('d', KeyModifiers.Control) :: _escapeCommands
 
     /// Process the CTRL-D combination and do a shift left
     member private this.ShiftLeft() = _operations.ShiftLinesLeft 1
@@ -37,7 +39,7 @@ type internal InsertMode
             | Some _ -> true
             | None -> false
         member x.Process (ki : KeyInput) = 
-            if ki = InputUtil.VimKeyToKeyInput(VimKey.EscapeKey) then x.ProcessEscape()
+            if ListUtil.contains ki _escapeCommands then x.ProcessEscape()
             elif ki = KeyInput('d', KeyModifiers.Control) then 
                 x.ShiftLeft()
                 ProcessResult.Processed
