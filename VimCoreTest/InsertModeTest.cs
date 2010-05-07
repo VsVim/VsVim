@@ -44,7 +44,7 @@ namespace VimCore.Test
                 vim:_vim.Object);
             _operations = new Mock<ICommonOperations>(MockBehavior.Strict);
             _broker = new Mock<IDisplayWindowBroker>(MockBehavior.Strict);
-            _modeRaw = new Vim.Modes.Insert.InsertMode(Tuple.Create<IVimBuffer,ICommonOperations,IDisplayWindowBroker>(_data.Object,_operations.Object,_broker.Object));
+            _modeRaw = new Vim.Modes.Insert.InsertMode(_data.Object,_operations.Object,_broker.Object);
             _mode = _modeRaw;
         }
 

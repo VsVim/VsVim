@@ -36,7 +36,7 @@ namespace VimCore.Test
             
             _bufferData = MockObjectFactory.CreateVimBuffer(view:_view.Object);
             _processor = new Mock<ICommandProcessor>(MockBehavior.Strict);
-            _modeRaw = new CommandMode(Tuple.Create(_bufferData.Object, _processor.Object));
+            _modeRaw = new CommandMode(_bufferData.Object, _processor.Object);
             _mode = _modeRaw;
         }
 

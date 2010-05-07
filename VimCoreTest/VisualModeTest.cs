@@ -59,7 +59,7 @@ namespace VimCore.Test
                 MockObjectFactory.CreateVim(_map).Object);
             var capture = new MotionCapture(_view.Object, new MotionUtil(_bufferData.Object.Settings.GlobalSettings));
             var runner = new CommandRunner(Tuple.Create((ITextView)_view.Object, _map, (IMotionCapture)capture, (new Mock<IStatusUtil>()).Object));
-            _modeRaw = new Vim.Modes.Visual.VisualMode(Tuple.Create<IVimBuffer, IOperations, ModeKind,ICommandRunner, IMotionCapture>(_bufferData.Object, _operations.Object, kind, runner, capture));
+            _modeRaw = new Vim.Modes.Visual.VisualMode(_bufferData.Object, _operations.Object, kind, runner, capture);
             _mode = _modeRaw;
             _mode.OnEnter();
         }
