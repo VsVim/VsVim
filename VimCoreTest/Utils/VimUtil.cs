@@ -25,12 +25,7 @@ namespace VimCore.Test.Utils
 
         internal static Command CreateSimpleCommand(string name, Func<FSharpOption<int>, Register, CommandResult> func)
         {
-            Converter<FSharpOption<int>, FSharpFunc<Register, CommandResult>> outerFunc = count =>
-                {
-                    Converter<Register, CommandResult> del = register => func(count, register);
-                    return FSharpFuncUtil.Create(del);
-                };
-            var fsharpFunc = FSharpFuncUtil.Create(outerFunc);
+            var fsharpFunc = FSharpFuncUtil.Create(func);
             var list = name.Select(InputUtil.CharToKeyInput).ToFSharpList();
             var commandName = CommandName.NewManyKeyInputs(list);
             return Command.NewSimpleCommand(commandName, CommandFlags.None, fsharpFunc);
@@ -38,12 +33,7 @@ namespace VimCore.Test.Utils
 
         internal static Command CreateLongCommand(string name, Func<FSharpOption<int>, Register, LongCommandResult> func, CommandFlags flags = CommandFlags.None)
         {
-            Converter<FSharpOption<int>, FSharpFunc<Register, LongCommandResult>> outerFunc = count =>
-                {
-                    Converter<Register, LongCommandResult> del = register => func(count, register);
-                    return FSharpFuncUtil.Create(del);
-                };
-            var fsharpFunc = FSharpFuncUtil.Create(outerFunc);
+            var fsharpFunc = FSharpFuncUtil.Create(func);
             var list = name.Select(InputUtil.CharToKeyInput).ToFSharpList();
             var commandName = CommandName.NewManyKeyInputs(list);
             return Command.NewLongCommand(commandName, flags, fsharpFunc);
@@ -86,33 +76,56 @@ namespace VimCore.Test.Utils
 
         internal static Command CreateMotionCommand(string name, Func<FSharpOption<int>, Register, MotionData, CommandResult> func)
         {
-            Converter<FSharpOption<int>, FSharpFunc<Register, FSharpFunc<MotionData, CommandResult>>> func1 = count =>
-                {
-                    Converter<Register, FSharpFunc<MotionData, CommandResult>> func2 = register =>
-                    {
-                        Converter<MotionData, CommandResult> func3 = data => func(count, register, data);
-                        return FSharpFuncUtil.Create(func3);
-                    };
-
-                    return FSharpFuncUtil.Create(func2);
-                };
-            var fsharpFunc = FSharpFuncUtil.Create(func1);
+            var fsharpFunc = FSharpFuncUtil.Create(func);
             var list = name.Select(InputUtil.CharToKeyInput).ToFSharpList();
             var commandName = CommandName.NewManyKeyInputs(list);
             return Command.NewMotionCommand(commandName, CommandFlags.None, fsharpFunc);
         }
 
+        internal static MotionCommand CreateSimpleMotion(string name, Func<MotionData> func)
+        {
+            var fsharpFunc = FSharpFuncUtil.Create<FSharpOption<int>, FSharpOption<MotionData>>(unused => FSharpOption.Create(func()));
+            var commandName = CommandUtil.CreateCommandName(name);
+            return MotionCommand.NewSimpleMotionCommand(
+                commandName,
+                fsharpFunc);
+        }
+
         internal static CommandRunData CreateCommandRunData(
             Command command,
             Register register,
-            int? count = null)
+            int? count = null,
+            MotionRunData motionRunData = null)
         {
             var countOpt = count != null ? FSharpOption.Create(count.Value) : FSharpOption<int>.None;
+            var motion = motionRunData != null
+                ? FSharpOption.Create(motionRunData)
+                : FSharpOption<MotionRunData>.None;
             return new CommandRunData(
                 command,
                 register,
                 countOpt,
-                FSharpOption<MotionRunData>.None);
+                motion);
         }
+
+        internal static MotionRunData CreateMotionRunData(
+            MotionCommand motionCommand,
+            int? count = null,
+            Func<MotionData> func = null)
+        {
+            func = func ?? (() => null);
+            Converter<FSharpOption<int>, FSharpOption<MotionData>> conv = unused =>
+                {
+                    var res = func();
+                    if (res == null) { return FSharpOption<MotionData>.None; }
+                    else { return FSharpOption.Create(res); }
+                };
+            var countOpt = count != null ? FSharpOption.Create(count.Value) : FSharpOption<int>.None;
+            return new MotionRunData(
+                motionCommand,
+                countOpt,
+                FSharpFuncUtil.Create(conv));
+        }
+            
     }
 }

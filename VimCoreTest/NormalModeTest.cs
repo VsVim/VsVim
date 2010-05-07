@@ -2380,6 +2380,36 @@ namespace VimCore.Test
         }
 
         [Test]
+        [Description("Repeat with a motion")]
+        public void RepeatLastChange10()
+        {
+            Create("foobar");
+            var didRunCommand = false;
+            var didRunMotion = false;
+            var data = 
+                VimUtil.CreateCommandRunData(
+                    VimUtil.CreateMotionCommand("c", (x, y, motionData) => { didRunCommand = true; }),
+                    _map.DefaultRegister,
+                    1,
+                    VimUtil.CreateMotionRunData(
+                        VimUtil.CreateSimpleMotion("w", () => null),
+                        null,
+                        () => {
+                            didRunMotion = true;
+                            return CreateMotionData();
+                        }));
+            _changeTracker
+                .SetupGet(x => x.LastChange)
+                .Returns(FSharpOption.Create(RepeatableChange.NewCommandChange(data)))
+                .Verifiable();
+            _mode.Process(".");
+            _operations.Verify();
+            _changeTracker.Verify();
+            Assert.IsTrue(didRunCommand);
+            Assert.IsTrue(didRunMotion);
+        }
+
+        [Test]
         public void Escape1()
         {
             Create(string.Empty);

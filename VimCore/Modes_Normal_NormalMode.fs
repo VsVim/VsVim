@@ -144,10 +144,24 @@ type internal NormalMode
                     | CommandChange(data) -> 
                         let countOpt = match countOpt with | Some(count) -> Some(count) | None -> data.Count
                         let reg = data.Register
+                        let commandName = data.Command.CommandName.Name
                         match data.Command with 
                         | SimpleCommand(_,_,func) -> func countOpt reg |> ignore
-                        | MotionCommand(_) -> _statusUtil.OnError (Resources.NormalMode_RepeatNotSupportedOnCommand data.Command.CommandName.Name)
-                        | LongCommand(_) -> _statusUtil.OnError (Resources.NormalMode_RepeatNotSupportedOnCommand data.Command.CommandName.Name)
+                        | MotionCommand(_,_,func) -> 
+
+                            // Repeating a motion based command is a bit more complex because we need to
+                            // first re-run the motion to get the span to be processed
+                            match data.MotionRunData with
+                            | None -> _statusUtil.OnError (Resources.NormalMode_RepeatNotSupportedOnCommand commandName)
+                            | Some(motionRunData) ->
+
+                                // Repeat the motion and process the results
+                                let motionName = motionRunData.MotionCommand.CommandName.Name
+                                match motionRunData.MotionFunction motionRunData.Count with
+                                | None ->  _statusUtil.OnError (Resources.NormalMode_UnableToRepeatMotion commandName motionName)
+                                | Some(motionData) -> func countOpt reg motionData |> ignore
+
+                        | LongCommand(_) -> _statusUtil.OnError (Resources.NormalMode_RepeatNotSupportedOnCommand commandName)
             finally
                 _data <- { _data with IsInRepeatLastChange = false }
 
@@ -159,13 +173,13 @@ type internal NormalMode
                 let func count reg (data:MotionData) = 
                     _operations.ChangeLetterCase data.OperationSpan
                     CommandResult.Completed ModeSwitch.NoSwitch
-                MotionCommand(name, CommandFlags.None, func)
+                MotionCommand(name, CommandFlags.Repeatable, func)
             else
                 let func count _ = 
                     let count = CommandUtil.CountOrDefault count
                     _operations.ChangeLetterCaseAtCursor count
                     CommandResult.Completed ModeSwitch.NoSwitch
-                SimpleCommand(name, CommandFlags.None, func)
+                SimpleCommand(name, CommandFlags.Repeatable, func)
         name,command
 
     /// Create the set of Command values which are not repeatable 
@@ -293,7 +307,7 @@ type internal NormalMode
                 match modeKindOpt with
                 | None -> CommandResult.Completed ModeSwitch.NoSwitch
                 | Some(modeKind) -> CommandResult.Completed (ModeSwitch.SwitchMode modeKind)
-            MotionCommand(name, CommandFlags.None, func2))
+            MotionCommand(name, CommandFlags.Repeatable, func2))
 
     /// Create all of the movement commands
     member this.CreateMovementCommands() =
