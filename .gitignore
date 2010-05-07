@@ -23,6 +23,7 @@ TestResult.xml
 
 # NUnit files
 VsVim.VisualState.xml
+VsVim.sln.VisualState.xml
 
 # Directories 
 */obj/
