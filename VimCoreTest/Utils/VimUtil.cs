@@ -105,16 +105,14 @@ namespace VimCore.Test.Utils
         internal static CommandRunData CreateCommandRunData(
             Command command,
             Register register,
-            int? count = null,
-            MotionData data = null)
+            int? count = null)
         {
-            var opt = data != null ? FSharpOption.Create(data) : FSharpOption<MotionData>.None;
             var countOpt = count != null ? FSharpOption.Create(count.Value) : FSharpOption<int>.None;
             return new CommandRunData(
                 command,
                 register,
                 countOpt,
-                opt);
+                FSharpOption<MotionRunData>.None);
         }
     }
 }

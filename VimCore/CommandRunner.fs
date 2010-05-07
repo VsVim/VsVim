@@ -62,7 +62,7 @@ type internal CommandRunner
             Command=command;
             Register = _data.Register;
             Count = _data.Count;
-            MotionData = motionDataOpt; }
+            MotionRunData = motionDataOpt; }
 
     /// Used to wait for the character after the " which signals the Register 
     member private x.WaitForRegister() = 
@@ -95,8 +95,8 @@ type internal CommandRunner
         _data <- { _data with State = NotFinishWithCommand(command) }
         let rec inner (result:MotionResult) = 
             match result with 
-                | MotionResult.Complete (motionData,_) -> 
-                    let data = x.CreateCommandRunData command (Some motionData)
+                | MotionResult.Complete (motionData,motionRunData) ->
+                    let data = x.CreateCommandRunData command (Some motionRunData)
                     let result = onMotionComplete data.Count data.Register motionData
                     RanCommand (data,result)
                 | MotionResult.NeedMoreInput (moreFunc) ->

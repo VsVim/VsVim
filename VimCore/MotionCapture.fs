@@ -121,20 +121,22 @@ type internal MotionCapture
     let MotionCommandsMap = AllMotionsCore |> Seq.map (fun command ->  (command.CommandName,command)) |> Map.ofSeq
 
     /// Run a normal motion function
-    let RunMotionFunction func count =
+    let RunMotionFunction command func count =
         let res = func count
         match res with
         | None -> MotionResult.Error Resources.MotionCapture_InvalidMotion
-        | Some(data) -> MotionResult.Complete (data,func)
+        | Some(data) -> 
+            let runData = {MotionCommand=command; Count=count; MotionFunction = func}
+            MotionResult.Complete (data,runData)
 
     /// Run a complex motion operation
-    let rec RunComplexMotion func count = 
+    let rec RunComplexMotion command func count = 
         let rec inner result =
             match result with
             | ComplexMotionResult.Cancelled -> MotionResult.Cancelled
             | ComplexMotionResult.Error(msg) -> MotionResult.Error msg
             | ComplexMotionResult.NeedMoreInput(func) -> MotionResult.NeedMoreInput (fun ki -> func ki |> inner)
-            | ComplexMotionResult.Finished(func) -> RunMotionFunction func count
+            | ComplexMotionResult.Finished(func) -> RunMotionFunction command func count
         func() |> inner
 
     let rec WaitForCommandName count ki =
@@ -145,8 +147,8 @@ type internal MotionCapture
                 match Map.tryFind name MotionCommandsMap with
                 | Some(command) -> 
                     match command with 
-                    | SimpleMotionCommand(_,func) -> RunMotionFunction func count
-                    | ComplexMotionCommand(_,_,func) -> RunComplexMotion func count
+                    | SimpleMotionCommand(_,func) -> RunMotionFunction command func count
+                    | ComplexMotionCommand(_,_,func) -> RunComplexMotion command func count
                 | None -> 
                     let res = MotionCommandsMap |> Seq.filter (fun pair -> pair.Key.StartsWith name) 
                     if Seq.isEmpty res then MotionResult.Error Resources.MotionCapture_InvalidMotion

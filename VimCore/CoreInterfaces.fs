@@ -328,15 +328,6 @@ type Command =
 
     override x.ToString() = System.String.Format("{0} -> {1}", x.CommandName, x.CommandFlags)
 
-
-/// The information about the particular run of a Command
-type CommandRunData = {
-    Command : Command;
-    Register : Register;
-    Count : int option;
-    MotionData : MotionData option;
-}
-
 type MotionFunction = int option -> MotionData option
 
 type ComplexMotionResult =
@@ -346,11 +337,6 @@ type ComplexMotionResult =
     | Error of string
     | NeedMoreInput of (KeyInput -> ComplexMotionResult)
 
-type MotionResult = 
-    | Complete of MotionData * MotionFunction
-    | NeedMoreInput of (KeyInput -> MotionResult)
-    | Error of string
-    | Cancelled
 
 /// Represents the types of MotionCommands which exist
 type MotionCommand = 
@@ -373,6 +359,29 @@ type MotionCommand =
         | SimpleMotionCommand(name,_) -> name
         | ComplexMotionCommand(name,_,_) -> name
 
+type MotionRunData = {
+    MotionCommand : MotionCommand;
+    Count : int option
+    MotionFunction : MotionFunction
+}
+
+/// The information about the particular run of a Command
+type CommandRunData = {
+    Command : Command;
+    Register : Register;
+    Count : int option;
+
+    /// For commands which took a motion this will hold the relevant information
+    /// on how the motion was ran
+    MotionRunData : MotionRunData option
+}
+
+type MotionResult = 
+    | Complete of MotionData * MotionRunData
+    | NeedMoreInput of (KeyInput -> MotionResult)
+    | Error of string
+    | Cancelled
+
 /// Responsible for capturing motions on a given ITextView
 type IMotionCapture =
 
@@ -384,7 +393,6 @@ type IMotionCapture =
 
     /// Get the motion starting with the given KeyInput
     abstract GetMotion : KeyInput -> int option -> MotionResult
-
 
 module CommandUtil = 
 
