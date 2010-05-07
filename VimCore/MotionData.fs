@@ -56,17 +56,4 @@ type MotionData = {
             if x.IsForward then SnapshotPointUtil.GetContainingLine x.Span.Start
             else SnapshotPointUtil.GetContainingLine x.Span.End
         VirtualSnapshotPoint(line, column)
-
-type MotionResult = 
-    | Complete of MotionData 
-    
-    /// Motion needs more input to be completed
-    | NeedMoreInput of (KeyInput -> MotionResult)
-    
-    /// Indicates the motion is currently in an invalid state and 
-    /// won't ever complete.  But the utility will still provide a 
-    /// function to capture input until the motion action is completed
-    /// with a completing key
-    | InvalidMotion of string * (KeyInput -> MotionResult) 
-    | Error of string
-    | Cancel
+        

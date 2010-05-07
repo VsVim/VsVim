@@ -95,21 +95,17 @@ type internal CommandRunner
         _data <- { _data with State = NotFinishWithCommand(command) }
         let rec inner (result:MotionResult) = 
             match result with 
-                | MotionResult.Complete (motionData) -> 
+                | MotionResult.Complete (motionData,_) -> 
                     let data = x.CreateCommandRunData command (Some motionData)
                     let result = onMotionComplete data.Count data.Register motionData
                     RanCommand (data,result)
                 | MotionResult.NeedMoreInput (moreFunc) ->
                     let func ki = moreFunc ki |> inner
                     NeedMore func
-                | InvalidMotion (msg,moreFunc) ->
-                    _statusUtil.OnError msg
-                    let func ki = moreFunc ki |> inner
-                    NeedMore func
                 | MotionResult.Error (msg) ->
                     _statusUtil.OnError msg
                     CancelledCommand
-                | Cancel -> CancelledCommand
+                | MotionResult.Cancelled -> CancelledCommand
 
         let runInitialMotion ki =
             let count = CommandUtil.CountOrDefault _data.Count

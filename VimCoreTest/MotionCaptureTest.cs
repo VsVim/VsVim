@@ -90,20 +90,7 @@ namespace VimCore.Test
         public void BadInput()
         {
             var res = Process("z", 1);
-            Assert.IsTrue(res.IsInvalidMotion);
-            res = res.AsInvalidMotion().Item2.Invoke(InputUtil.VimKeyToKeyInput(VimKey.EscapeKey));
-            Assert.IsTrue(res.IsCancel);
-        }
-
-        [Test, Description("Keep getting input until it's escaped")]
-        public void BadInput2()
-        {
-            var res = Process("z", 1);
-            Assert.IsTrue(res.IsInvalidMotion);
-            res = res.AsInvalidMotion().Item2.Invoke(InputUtil.CharToKeyInput('a'));
-            Assert.IsTrue(res.IsInvalidMotion);
-            res = res.AsInvalidMotion().Item2.Invoke(InputUtil.VimKeyToKeyInput(VimKey.EscapeKey));
-            Assert.IsTrue(res.IsCancel);
+            Assert.IsTrue(res.IsError);
         }
 
         [Test]

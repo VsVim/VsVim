@@ -337,19 +337,34 @@ type CommandRunData = {
     MotionData : MotionData option;
 }
 
+type MotionFunction = int option -> MotionData option
+
+type ComplexMotionResult =
+    /// Enough input was provided to produce a simple motion style function
+    | Finished of MotionFunction 
+    | Cancelled
+    | Error of string
+    | NeedMoreInput of (KeyInput -> ComplexMotionResult)
+
+type MotionResult = 
+    | Complete of MotionData * MotionFunction
+    | NeedMoreInput of (KeyInput -> MotionResult)
+    | Error of string
+    | Cancelled
+
 /// Represents the types of MotionCommands which exist
 type MotionCommand = 
 
     /// Simple motion which comprises of a single KeyInput and a function which given 
     /// a start point and count will produce the motion.  None is returned in the 
     /// case the motion is not valid
-    | SimpleMotionCommand of CommandName * (int option -> MotionData option)
+    | SimpleMotionCommand of CommandName * MotionFunction
 
     /// Complex motion commands take more than one KeyInput to complete.  For example 
     /// the f,t,F and T commands all require at least one additional input.  The bool
     /// in the middle of the tuple indicates whether or not the motion can be 
     /// used as a cursor movement operation  
-    | ComplexMotionCommand of CommandName * bool * (int option -> MotionResult)
+    | ComplexMotionCommand of CommandName * bool * ( unit -> ComplexMotionResult )
 
     with
 

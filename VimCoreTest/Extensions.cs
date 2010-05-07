@@ -44,12 +44,6 @@ namespace VimCore.Test
             return (MotionResult.Complete)res;
         }
 
-        internal static MotionResult.InvalidMotion AsInvalidMotion(this MotionResult res)
-        {
-            Assert.IsTrue(res.IsInvalidMotion);
-            return (MotionResult.InvalidMotion)res;
-        }
-
         #endregion
 
         #region ModeUtil.Result

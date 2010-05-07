@@ -57,15 +57,19 @@ type internal CommandFactory( _operations : ICommonOperations, _capture : IMotio
                 let coreFunc count _ = 
                     let rec inner result =  
                         match result with
-                        | Complete (data) -> 
-                            _operations.MoveCaretToMotionData data
-                            CommandResult.Completed NoSwitch |> LongCommandResult.Finished
-                        | MotionResult.NeedMoreInput (func) -> LongCommandResult.NeedMoreInput (fun ki -> func ki |> inner)
-                        | InvalidMotion (_,func) -> LongCommandResult.NeedMoreInput (fun ki -> func ki |> inner)
-                        | Cancel -> LongCommandResult.Cancelled
-                        | MotionResult.Error (msg) -> CommandResult.Error msg |> LongCommandResult.Finished
+                        | ComplexMotionResult.Finished(func) ->
+                            let res = 
+                                match func count with
+                                | None -> CommandResult.Error Resources.MotionCapture_InvalidMotion
+                                | Some(data) -> 
+                                    _operations.MoveCaretToMotionData data
+                                    CommandResult.Completed NoSwitch 
+                            res |> LongCommandResult.Finished
+                        | ComplexMotionResult.NeedMoreInput (func) -> LongCommandResult.NeedMoreInput (fun ki -> func ki |> inner)
+                        | ComplexMotionResult.Cancelled -> LongCommandResult.Cancelled
+                        | ComplexMotionResult.Error (msg) -> CommandResult.Error msg |> LongCommandResult.Finished
 
-                    let initialResult = func count
+                    let initialResult = func()
                     inner initialResult
                 Command.LongCommand(name, CommandFlags.Movement, coreFunc) |> Some
 
