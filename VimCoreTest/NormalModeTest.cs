@@ -73,7 +73,7 @@ namespace VimCore.Test
             _operations.SetupGet(x => x.EditorOperations).Returns(_editorOperations.Object);
             _operations.SetupGet(x => x.TextView).Returns(_view);
 
-            motionUtil = motionUtil ?? new MotionUtil(new Vim.GlobalSettings());
+            motionUtil = motionUtil ?? new MotionUtil(_view, new Vim.GlobalSettings());
             var capture = new MotionCapture(_view, motionUtil);
             var runner = new CommandRunner(Tuple.Create((ITextView)_view, _map,(IMotionCapture)capture, _statusUtil.Object));
             _modeRaw = new Vim.Modes.Normal.NormalMode(
@@ -222,7 +222,7 @@ namespace VimCore.Test
                 "G",
                 (util, point, count, data) =>
                     util
-                        .Setup(x => x.LineOrLastToFirstNonWhitespace(point, count))
+                        .Setup(x => x.LineOrLastToFirstNonWhitespace(count))
                         .Returns(data)
                         .Verifiable());
         }
@@ -234,7 +234,7 @@ namespace VimCore.Test
                 "gg",
                 (util, point, count, data) =>
                     util
-                        .Setup(x => x.LineOrFirstToFirstNonWhitespace(point, count))
+                        .Setup(x => x.LineOrFirstToFirstNonWhitespace(count))
                         .Returns(data)
                         .Verifiable());
         }

@@ -6,16 +6,23 @@ open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Operations
 
-type internal MotionUtil ( _settings : IVimGlobalSettings) = 
+type internal MotionUtil 
+    ( 
+        _textView : ITextView,
+        _settings : IVimGlobalSettings) = 
 
-    member private x.ForwardCharMotionCore c start count func = 
+    member x.StartPoint = TextViewUtil.GetCaretPoint _textView
+
+    member private x.ForwardCharMotionCore c count func = 
+        let start = x.StartPoint
         match func start c count with
         | None -> None 
         | Some(point:SnapshotPoint) -> 
             let span = SnapshotSpan(start, point.Add(1))
             {Span=span; IsForward=true; OperationKind=OperationKind.CharacterWise; MotionKind=MotionKind.Inclusive; Column=None} |> Some
 
-    member private x.BackwardCharMotionCore c (start:SnapshotPoint) count func = 
+    member private x.BackwardCharMotionCore c count func = 
+        let start = x.StartPoint
         match func start c count with
         | None -> None
         | Some(point:SnapshotPoint) ->
@@ -37,26 +44,31 @@ type internal MotionUtil ( _settings : IVimGlobalSettings) =
         {Span=span; IsForward=isForward; OperationKind=OperationKind.LineWise; MotionKind=MotionKind.Inclusive; Column= Some column }
 
     interface IMotionUtil with
-        member x.ForwardChar c start count = x.ForwardCharMotionCore c start count TssUtil.FindNextOccurranceOfCharOnLine
-        member x.ForwardTillChar c start count = x.ForwardCharMotionCore c start count TssUtil.FindTillNextOccurranceOfCharOnLine
-        member x.BackwardChar c start count = x.BackwardCharMotionCore c start count TssUtil.FindPreviousOccurranceOfCharOnLine 
-        member x.BackwardTillChar c start count = x.BackwardCharMotionCore c start count TssUtil.FindTillPreviousOccurranceOfCharOnLine
-        member x.WordForward kind start count = 
+        member x.TextView = _textView
+        member x.ForwardChar c count = x.ForwardCharMotionCore c count TssUtil.FindNextOccurranceOfCharOnLine
+        member x.ForwardTillChar c count = x.ForwardCharMotionCore c count TssUtil.FindTillNextOccurranceOfCharOnLine
+        member x.BackwardChar c count = x.BackwardCharMotionCore c count TssUtil.FindPreviousOccurranceOfCharOnLine 
+        member x.BackwardTillChar c count = x.BackwardCharMotionCore c count TssUtil.FindTillPreviousOccurranceOfCharOnLine
+        member x.WordForward kind count = 
+            let start = x.StartPoint
             let endPoint = TssUtil.FindNextWordStart start count kind  
             let span = SnapshotSpan(start,endPoint)
             {Span=span; IsForward=true; MotionKind=MotionKind.Exclusive; OperationKind=OperationKind.CharacterWise; Column=None}
-        member x.WordBackward kind start count =
+        member x.WordBackward kind count =
+            let start = x.StartPoint
             let startPoint = TssUtil.FindPreviousWordStart start count kind
             let span = SnapshotSpan(startPoint,start)
             {Span=span; IsForward=false; MotionKind=MotionKind.Exclusive; OperationKind=OperationKind.CharacterWise; Column=None}
-        member x.AllWord kind start count = 
+        member x.AllWord kind count = 
+            let start = x.StartPoint
             let start = match TssUtil.FindCurrentFullWordSpan start kind with 
                             | Some (s) -> s.Start
                             | None -> start
             let endPoint = TssUtil.FindNextWordStart start count kind  
             let span = SnapshotSpan(start,endPoint)
             {Span=span; IsForward=true; MotionKind=MotionKind.Exclusive; OperationKind=OperationKind.CharacterWise; Column=None}
-        member x.EndOfWord kind start count = 
+        member x.EndOfWord kind count = 
+            let start = x.StartPoint
             let tss = SnapshotPointUtil.GetSnapshot start
             let snapshotEnd = SnapshotUtil.GetEndPoint tss
             let rec inner start count = 
@@ -78,10 +90,12 @@ type internal MotionUtil ( _settings : IVimGlobalSettings) =
             let endPoint = inner start count
             let span = SnapshotSpan(start,endPoint)
             {Span=span; IsForward=true; MotionKind=MotionKind.Inclusive; OperationKind=OperationKind.CharacterWise; Column=None}
-        member x.EndOfLine start count = 
+        member x.EndOfLine count = 
+            let start = x.StartPoint
             let span = SnapshotPointUtil.GetLineRangeSpan start count
             {Span=span; IsForward=true; MotionKind=MotionKind.Inclusive; OperationKind=OperationKind.CharacterWise; Column=None}
-        member x.FirstNonWhitespaceOnLine (start:SnapshotPoint) =
+        member x.FirstNonWhitespaceOnLine () =
+            let start = x.StartPoint
             let line = start.GetContainingLine()
             let found = SnapshotLineUtil.GetPoints line
                             |> Seq.filter (fun x -> x.Position < start.Position)
@@ -90,44 +104,52 @@ type internal MotionUtil ( _settings : IVimGlobalSettings) =
                         | Some p -> new SnapshotSpan(p, start)
                         | None -> new SnapshotSpan(start,0)
             {Span=span; IsForward=false; MotionKind=MotionKind.Exclusive; OperationKind=OperationKind.CharacterWise; Column=None} 
-        member x.BeginingOfLine start =
+        member x.BeginingOfLine () =
+            let start = x.StartPoint
             let line = SnapshotPointUtil.GetContainingLine start
             let span = SnapshotSpan(line.Start, start)
             {Span=span; IsForward=false; MotionKind=MotionKind.Exclusive; OperationKind=OperationKind.CharacterWise; Column=None}
-        member x.LineDownToFirstNonWhitespace start count =
+        member x.LineDownToFirstNonWhitespace count =
+            let start = x.StartPoint
             let line = SnapshotPointUtil.GetContainingLine start
             let number = line.LineNumber + count
             let endLine = SnapshotUtil.GetLineOrLast line.Snapshot number
             let point = TssUtil.FindFirstNonWhitespaceCharacter endLine
             let span = SnapshotSpan(start, point.Add(1)) // Add 1 since it's inclusive
             {Span=span; IsForward=true; MotionKind=MotionKind.Inclusive; OperationKind=OperationKind.LineWise; Column=None}
-        member x.LineUpToFirstNonWhitespace point count =
+        member x.LineUpToFirstNonWhitespace count =
+            let point = x.StartPoint
             let endLine = SnapshotPointUtil.GetContainingLine point
             let startLine = SnapshotUtil.GetLineOrFirst endLine.Snapshot (endLine.LineNumber - count)
             let span = SnapshotSpan(startLine.Start, endLine.End)
             let column = TssUtil.FindFirstNonWhitespaceCharacter startLine
             {Span=span; IsForward=false; MotionKind=MotionKind.Inclusive; OperationKind=OperationKind.LineWise; Column= Some column.Position} 
-        member x.CharLeft start count = 
+        member x.CharLeft count = 
+            let start = x.StartPoint
             let prev = SnapshotPointUtil.GetPreviousPointOnLine start count 
             if prev = start then None
             else {Span=SnapshotSpan(prev,start); IsForward=false; MotionKind=MotionKind.Exclusive; OperationKind=OperationKind.CharacterWise; Column=None} |> Some
-        member x.CharRight start count =
+        member x.CharRight count =
+            let start = x.StartPoint
             let next = SnapshotPointUtil.GetNextPointOnLine start count 
             if next = start then None
             else {Span=SnapshotSpan(start,next); IsForward=true; MotionKind=MotionKind.Exclusive; OperationKind=OperationKind.CharacterWise; Column=None } |> Some
-        member x.LineUp point count =     
+        member x.LineUp count =     
+            let point = x.StartPoint
             let endLine = SnapshotPointUtil.GetContainingLine point
             let startLineNumber = max 0 (endLine.LineNumber - count)
             let startLine = SnapshotUtil.GetLine endLine.Snapshot startLineNumber
             let span = SnapshotSpan(startLine.Start, endLine.End)
             {Span=span; IsForward=false; MotionKind=MotionKind.Inclusive; OperationKind=OperationKind.LineWise; Column=None } 
-        member x.LineDown point count = 
+        member x.LineDown count = 
+            let point = x.StartPoint
             let startLine = SnapshotPointUtil.GetContainingLine point
             let endLineNumber = startLine.LineNumber + count
             let endLine = SnapshotUtil.GetLineOrLast startLine.Snapshot endLineNumber
             let span = SnapshotSpan(startLine.Start, endLine.End)            
             {Span=span; IsForward=true; MotionKind=MotionKind.Inclusive; OperationKind=OperationKind.LineWise; Column=None } 
-        member x.LineOrFirstToFirstNonWhitespace point numberOpt = 
+        member x.LineOrFirstToFirstNonWhitespace numberOpt = 
+            let point = x.StartPoint
             let originLine = SnapshotPointUtil.GetContainingLine point
             let tss= originLine.Snapshot
             let endLine = 
@@ -135,7 +157,8 @@ type internal MotionUtil ( _settings : IVimGlobalSettings) =
                 | Some(number) ->  SnapshotUtil.GetLineOrFirst tss (TssUtil.VimLineToTssLine number)
                 | None -> SnapshotUtil.GetFirstLine tss 
             x.LineToLineFirstNonWhitespaceMotion originLine endLine
-        member x.LineOrLastToFirstNonWhitespace point numberOpt = 
+        member x.LineOrLastToFirstNonWhitespace numberOpt = 
+            let point = x.StartPoint
             let originLine = SnapshotPointUtil.GetContainingLine point
             let tss= originLine.Snapshot
             let endLine = 
@@ -143,7 +166,8 @@ type internal MotionUtil ( _settings : IVimGlobalSettings) =
                 | Some(number) ->  SnapshotUtil.GetLineOrLast tss (TssUtil.VimLineToTssLine number)
                 | None -> SnapshotUtil.GetFirstLine tss 
             x.LineToLineFirstNonWhitespaceMotion originLine endLine
-        member x.LastNonWhitespaceOnLine start count = 
+        member x.LastNonWhitespaceOnLine count = 
+            let start = x.StartPoint
             let startLine = SnapshotPointUtil.GetContainingLine start
             let snapshot = startLine.Snapshot
             let number = startLine.LineNumber + (count-1)

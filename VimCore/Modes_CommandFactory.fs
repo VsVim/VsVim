@@ -49,9 +49,7 @@ type internal CommandFactory( _operations : ICommonOperations, _capture : IMotio
         let filterMotionCommand command = 
             match command with
             | SimpleMotionCommand(name,func) -> 
-                let inner count _ = 
-                    let startPoint = TextViewUtil.GetCaretPoint _operations.TextView
-                    func startPoint count |> processResult
+                let inner count _ =  func count |> processResult
                 Command.SimpleCommand(name,CommandFlags.Movement,inner) |> Some
             | ComplexMotionCommand(_,false,_) -> None
             | ComplexMotionCommand(name,true,func) -> 
@@ -67,8 +65,7 @@ type internal CommandFactory( _operations : ICommonOperations, _capture : IMotio
                         | Cancel -> LongCommandResult.Cancelled
                         | MotionResult.Error (msg) -> CommandResult.Error msg |> LongCommandResult.Finished
 
-                    let startPoint = TextViewUtil.GetCaretPoint _operations.TextView
-                    let initialResult = func startPoint count
+                    let initialResult = func count
                     inner initialResult
                 Command.LongCommand(name, CommandFlags.Movement, coreFunc) |> Some
 

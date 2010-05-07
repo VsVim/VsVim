@@ -56,7 +56,6 @@ type MotionData = {
             if x.IsForward then SnapshotPointUtil.GetContainingLine x.Span.Start
             else SnapshotPointUtil.GetContainingLine x.Span.End
         VirtualSnapshotPoint(line, column)
-        
 
 type MotionResult = 
     | Complete of MotionData 

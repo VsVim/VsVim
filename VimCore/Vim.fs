@@ -26,7 +26,7 @@ type internal VimBufferFactory
 
     member x.CreateBuffer (vim:IVim) view = 
         let editOperations = _editorOperationsFactoryService.GetEditorOperations(view)
-        let motionUtil = MotionUtil(vim.Settings) :> IMotionUtil
+        let motionUtil = MotionUtil(view, vim.Settings) :> IMotionUtil
         let capture = MotionCapture(view, motionUtil) :> IMotionCapture
         let outlining = _outliningManagerService.GetOutliningManager(view)
         let jumpList = JumpList(_tlcService) :> IJumpList

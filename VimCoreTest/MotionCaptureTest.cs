@@ -17,7 +17,6 @@ namespace VimCore.Test
     [TestFixture]
     public class MotionCaptureTest
     {
-        private SnapshotPoint _point;
         private Mock<ITextView> _textView;
         private Mock<IMotionUtil> _util;
         private MotionCapture _captureRaw;
@@ -27,13 +26,7 @@ namespace VimCore.Test
         public void Create()
         {
             _util = new Mock<IMotionUtil>(MockBehavior.Strict);
-            _point = Mock.MockObjectFactory.CreateSnapshotPoint(0);
-            var caret = new Mock<ITextCaret>(MockBehavior.Strict);
-            caret.SetupGet(x => x.Position).Returns(new CaretPosition(
-                new VirtualSnapshotPoint(_point),
-                (new Mock<IMappingPoint>().Object),
-                PositionAffinity.Predecessor));
-            _textView = Mock.MockObjectFactory.CreateTextView(caret: caret.Object);
+            _textView = Mock.MockObjectFactory.CreateTextView();
             _captureRaw = new MotionCapture(_textView.Object, _util.Object);
             _capture = _captureRaw;
         }
@@ -63,8 +56,9 @@ namespace VimCore.Test
 
         internal MotionData CreateMotionData()
         {
+            var point = Mock.MockObjectFactory.CreateSnapshotPoint(42);
             return new MotionData(
-                new SnapshotSpan(_point, _point),
+                new SnapshotSpan(point, point),
                 true,
                 MotionKind.Inclusive,
                 OperationKind.CharacterWise,
@@ -75,7 +69,7 @@ namespace VimCore.Test
         public void Word1()
         {
             _util
-                .Setup(x => x.WordForward(WordKind.NormalWord, _point, 1))
+                .Setup(x => x.WordForward(WordKind.NormalWord, 1))
                 .Returns(CreateMotionData())
                 .Verifiable();
             ProcessComplete("w", 1);
@@ -86,7 +80,7 @@ namespace VimCore.Test
         public void Word2()
         {
             _util
-                .Setup(x => x.WordForward(WordKind.NormalWord, _point, 2))
+                .Setup(x => x.WordForward(WordKind.NormalWord, 2))
                 .Returns(CreateMotionData())
                 .Verifiable();
             ProcessComplete("w", 2);
@@ -116,7 +110,7 @@ namespace VimCore.Test
         public void Motion_Dollar1()
         {
             _util
-                .Setup(x => x.EndOfLine(_point,1))
+                .Setup(x => x.EndOfLine(1))
                 .Returns(CreateMotionData())
                 .Verifiable();
             ProcessComplete("$", 1);
@@ -127,7 +121,7 @@ namespace VimCore.Test
         public void Motion_Dollar2()
         {
             _util
-                .Setup(x => x.EndOfLine(_point,2))
+                .Setup(x => x.EndOfLine(2))
                 .Returns(CreateMotionData())
                 .Verifiable();
             ProcessComplete("$", 2);
@@ -138,7 +132,7 @@ namespace VimCore.Test
         public void Motion_End()
         {
             _util
-                .Setup(x => x.EndOfLine(_point, 1))
+                .Setup(x => x.EndOfLine(1))
                 .Returns(CreateMotionData())
                 .Verifiable();
             _capture.GetMotion(InputUtil.VimKeyToKeyInput(VimKey.EndKey), FSharpOption<int>.None);
@@ -149,7 +143,7 @@ namespace VimCore.Test
         public void BeginingOfLine1()
         {
             _util
-                .Setup(x => x.BeginingOfLine(_point))
+                .Setup(x => x.BeginingOfLine())
                 .Returns(CreateMotionData())
                 .Verifiable();
             ProcessComplete("0", 1);
@@ -160,7 +154,7 @@ namespace VimCore.Test
         public void FirstNonWhitespaceOnLine1()
         {
             _util
-                .Setup(x => x.FirstNonWhitespaceOnLine(_point))
+                .Setup(x => x.FirstNonWhitespaceOnLine())
                 .Returns(CreateMotionData())
                 .Verifiable();
             ProcessComplete("^", 1);
@@ -171,7 +165,7 @@ namespace VimCore.Test
         public void AllWord1()
         {
             _util
-                .Setup(x => x.AllWord(WordKind.NormalWord, _point, 1))
+                .Setup(x => x.AllWord(WordKind.NormalWord, 1))
                 .Returns(CreateMotionData())
                 .Verifiable();
             ProcessComplete("aw", 1);
@@ -182,7 +176,7 @@ namespace VimCore.Test
         public void AllWord2()
         {
             _util
-                .Setup(x => x.AllWord(WordKind.NormalWord, _point, 2))
+                .Setup(x => x.AllWord(WordKind.NormalWord, 2))
                 .Returns(CreateMotionData())
                 .Verifiable();
             ProcessComplete("aw", 2);
@@ -193,7 +187,7 @@ namespace VimCore.Test
         public void CharLeft1()
         {
             _util
-                .Setup(x => x.CharLeft(_point, 1))
+                .Setup(x => x.CharLeft(1))
                 .Returns(FSharpOption.Create(CreateMotionData()))
                 .Verifiable();
             ProcessComplete("h",1);
@@ -204,7 +198,7 @@ namespace VimCore.Test
         public void CharLeft2()
         {
             _util
-                .Setup(x => x.CharLeft(_point, 2))
+                .Setup(x => x.CharLeft(2))
                 .Returns(FSharpOption.Create(CreateMotionData()))
                 .Verifiable();
             ProcessComplete("2h",1);
@@ -215,7 +209,7 @@ namespace VimCore.Test
         public void CharRight1()
         {
             _util
-                .Setup(x => x.CharRight(_point, 2))
+                .Setup(x => x.CharRight(2))
                 .Returns(FSharpOption.Create(CreateMotionData()))
                 .Verifiable();
             ProcessComplete("2l",1);
@@ -226,7 +220,7 @@ namespace VimCore.Test
         public void LineUp1()
         {
             _util
-                .Setup(x => x.LineUp(_point, 1))
+                .Setup(x => x.LineUp(1))
                 .Returns(CreateMotionData())
                 .Verifiable();
             ProcessComplete("k", 1);
@@ -237,7 +231,7 @@ namespace VimCore.Test
         public void EndOfWord1()
         {
             _util
-                .Setup(x => x.EndOfWord(WordKind.NormalWord, _point, 1))
+                .Setup(x => x.EndOfWord(WordKind.NormalWord, 1))
                 .Returns(CreateMotionData())
                 .Verifiable();
             ProcessComplete("e", 1);
@@ -247,7 +241,7 @@ namespace VimCore.Test
         public void EndOfWord2()
         {
             _util
-                .Setup(x => x.EndOfWord(WordKind.BigWord, _point, 1))
+                .Setup(x => x.EndOfWord(WordKind.BigWord, 1))
                 .Returns(CreateMotionData())
                 .Verifiable();
             ProcessComplete("E", 1);
@@ -258,7 +252,7 @@ namespace VimCore.Test
         public void ForwardChar1()
         {
             _util
-                .Setup(x => x.ForwardChar('c', _point,1))
+                .Setup(x => x.ForwardChar('c', 1))
                 .Returns(FSharpOption.Create(CreateMotionData()))
                 .Verifiable();
             ProcessComplete("fc", 1);
@@ -269,7 +263,7 @@ namespace VimCore.Test
         public void ForwardTillChar1()
         {
             _util
-                .Setup(x => x.ForwardTillChar('c', _point,1))
+                .Setup(x => x.ForwardTillChar('c', 1))
                 .Returns(FSharpOption.Create(CreateMotionData()))
                 .Verifiable();
             ProcessComplete("tc", 1);
@@ -280,7 +274,7 @@ namespace VimCore.Test
         public void BackwardCharMotion1()
         {
             _util
-                .Setup(x => x.BackwardChar('c', _point,1))
+                .Setup(x => x.BackwardChar('c', 1))
                 .Returns(FSharpOption.Create(CreateMotionData()))
                 .Verifiable();
             ProcessComplete("Fc", 1);
@@ -291,7 +285,7 @@ namespace VimCore.Test
         public void BackwardTillCharMotion1()
         {
             _util
-                .Setup(x => x.BackwardTillChar('c', _point,1))
+                .Setup(x => x.BackwardTillChar('c', 1))
                 .Returns(FSharpOption.Create(CreateMotionData()))
                 .Verifiable();
             ProcessComplete("Tc", 1);
@@ -302,7 +296,7 @@ namespace VimCore.Test
         public void Motion_G1()
         {
             _util
-                .Setup(x => x.LineOrLastToFirstNonWhitespace(_point, FSharpOption<int>.None))
+                .Setup(x => x.LineOrLastToFirstNonWhitespace( FSharpOption<int>.None))
                 .Returns(CreateMotionData())
                 .Verifiable();
             ProcessComplete("G");
@@ -313,7 +307,7 @@ namespace VimCore.Test
         public void Motion_G2()
         {
             _util
-                .Setup(x => x.LineOrLastToFirstNonWhitespace(_point, FSharpOption.Create(1)))
+                .Setup(x => x.LineOrLastToFirstNonWhitespace(FSharpOption.Create(1)))
                 .Returns(CreateMotionData())
                 .Verifiable();
             ProcessComplete("1G");
@@ -324,7 +318,7 @@ namespace VimCore.Test
         public void Motion_G3()
         {
             _util
-                .Setup(x => x.LineOrLastToFirstNonWhitespace(_point, FSharpOption.Create(42)))
+                .Setup(x => x.LineOrLastToFirstNonWhitespace( FSharpOption.Create(42)))
                 .Returns(CreateMotionData())
                 .Verifiable();
             ProcessComplete("42G");
@@ -335,7 +329,7 @@ namespace VimCore.Test
         public void Motion_gg1()
         {
             _util
-                .Setup(x => x.LineOrFirstToFirstNonWhitespace(_point, FSharpOption<int>.None))
+                .Setup(x => x.LineOrFirstToFirstNonWhitespace(FSharpOption<int>.None))
                 .Returns(CreateMotionData())
                 .Verifiable();
             ProcessComplete("gg");
@@ -346,7 +340,7 @@ namespace VimCore.Test
         public void Motion_gg2()
         {
             _util
-                .Setup(x => x.LineOrFirstToFirstNonWhitespace(_point, FSharpOption.Create(2)))
+                .Setup(x => x.LineOrFirstToFirstNonWhitespace( FSharpOption.Create(2)))
                 .Returns(CreateMotionData())
                 .Verifiable();
             ProcessComplete("2gg");
@@ -357,7 +351,7 @@ namespace VimCore.Test
         public void Motion_g_1()
         {
             _util
-                .Setup(x => x.LastNonWhitespaceOnLine(_point, 1))
+                .Setup(x => x.LastNonWhitespaceOnLine(1))
                 .Returns(CreateMotionData())
                 .Verifiable();
             ProcessComplete("g_");
@@ -368,7 +362,7 @@ namespace VimCore.Test
         public void Motion_g_2()
         {
             _util
-                .Setup(x => x.LastNonWhitespaceOnLine(_point, 2))
+                .Setup(x => x.LastNonWhitespaceOnLine(2))
                 .Returns(CreateMotionData())
                 .Verifiable();
             ProcessComplete("2g_");

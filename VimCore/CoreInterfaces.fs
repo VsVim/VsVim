@@ -68,75 +68,78 @@ type IUndoRedoOperations =
 /// Responsible for implementing all of the Motion information
 type IMotionUtil = 
 
+    /// ITextView associated with the IMotionUtil
+    abstract TextView : ITextView 
+
     /// Left "count" characters
-    abstract CharLeft: SnapshotPoint -> int -> MotionData option
+    abstract CharLeft: int -> MotionData option
 
     /// Right "count" characters
-    abstract CharRight: SnapshotPoint -> int -> MotionData option
+    abstract CharRight: int -> MotionData option
     
     /// Forward to the next occurance of the specified char on the line
-    abstract ForwardChar : char -> SnapshotPoint -> int -> MotionData option
+    abstract ForwardChar : char -> int -> MotionData option
 
     /// Handle the 't' motion.  Forward till the next occurrence of the specified character on
     /// this line
-    abstract ForwardTillChar : char -> SnapshotPoint -> int -> MotionData option
+    abstract ForwardTillChar : char -> int -> MotionData option
 
     /// Handle the 'F' motion.  Backward to the previous occurrence of the specified character
     /// on this line
-    abstract BackwardChar : char -> SnapshotPoint -> int -> MotionData option
+    abstract BackwardChar : char -> int -> MotionData option
 
     /// Handle the 'T' motion.  Backward till to the previous occurrence of the specified character
-    abstract BackwardTillChar : char -> SnapshotPoint -> int -> MotionData option
+    abstract BackwardTillChar : char -> int -> MotionData option
         
     /// Implement the w/W motion
-    abstract WordForward : WordKind -> SnapshotPoint -> int -> MotionData
+    abstract WordForward : WordKind -> int -> MotionData
 
     /// Implement the b/B motion
-    abstract WordBackward : WordKind -> SnapshotPoint -> int -> MotionData 
+    abstract WordBackward : WordKind -> int -> MotionData 
         
     /// Implement the aw motion.  This is called once the a key is seen.
-    abstract AllWord : WordKind -> SnapshotPoint -> int -> MotionData
+    abstract AllWord : WordKind -> int -> MotionData
 
     /// Implement the 'e' motion.  This goes to the end of the current word.  If we're
     /// not currently on a word it will find the next word and then go to the end of that
-    abstract EndOfWord : WordKind -> SnapshotPoint -> int -> MotionData
+    abstract EndOfWord : WordKind -> int -> MotionData
     
     /// Implement an end of line motion.  Typically in response to the $ key.  Even though
     /// this motion deals with lines, it's still a character wise motion motion. 
-    abstract EndOfLine : SnapshotPoint -> int -> MotionData
+    abstract EndOfLine : int -> MotionData
 
     /// Find the first non-whitespace character as the start of the span.  This is an exclusive
     /// motion so be careful we don't go to far forward
-    abstract FirstNonWhitespaceOnLine : SnapshotPoint -> MotionData 
+    abstract FirstNonWhitespaceOnLine : unit -> MotionData 
 
     /// Find the last non-whitespace character on the line.  Count causes it to go "count" lines
     /// down and perform the search
-    abstract LastNonWhitespaceOnLine : SnapshotPoint -> int -> MotionData
+    abstract LastNonWhitespaceOnLine : int -> MotionData
 
     /// Move to the begining of the line.  Interestingly since this command is bound to the '0' it 
     /// can't be associated with a count.  Doing a command like 30 binds as count 30 vs. count 3 
     /// for command '0'
-    abstract BeginingOfLine : SnapshotPoint -> MotionData
+    abstract BeginingOfLine : unit -> MotionData
 
     /// Handle the lines down to first non-whitespace motion
-    abstract LineDownToFirstNonWhitespace : SnapshotPoint -> int -> MotionData 
+    abstract LineDownToFirstNonWhitespace : int -> MotionData 
 
     /// Handle the - motion
-    abstract LineUpToFirstNonWhitespace : SnapshotPoint -> int -> MotionData
+    abstract LineUpToFirstNonWhitespace : int -> MotionData
 
     /// Get the span of "count" lines upward careful not to run off the beginning of the
     /// buffer.  Implementation of the "k" motion
-    abstract LineUp : SnapshotPoint -> int -> MotionData
+    abstract LineUp : int -> MotionData
 
     /// Get the span of "count" lines downward careful not to run off the end of the
     /// buffer.  Implementation of the "j" motion
-    abstract LineDown : SnapshotPoint -> int -> MotionData
+    abstract LineDown : int -> MotionData
 
     /// Go to the specified line number or the first line if no line number is provided 
-    abstract LineOrFirstToFirstNonWhitespace : SnapshotPoint -> int option -> MotionData 
+    abstract LineOrFirstToFirstNonWhitespace : int option -> MotionData 
 
     /// Go to the specified line number or the last line of no line number is provided
-    abstract LineOrLastToFirstNonWhitespace : SnapshotPoint -> int option -> MotionData 
+    abstract LineOrLastToFirstNonWhitespace : int option -> MotionData 
 
 type ModeKind = 
     | Normal = 1
@@ -340,13 +343,13 @@ type MotionCommand =
     /// Simple motion which comprises of a single KeyInput and a function which given 
     /// a start point and count will produce the motion.  None is returned in the 
     /// case the motion is not valid
-    | SimpleMotionCommand of CommandName * (SnapshotPoint -> int option -> MotionData option)
+    | SimpleMotionCommand of CommandName * (int option -> MotionData option)
 
     /// Complex motion commands take more than one KeyInput to complete.  For example 
     /// the f,t,F and T commands all require at least one additional input.  The bool
     /// in the middle of the tuple indicates whether or not the motion can be 
     /// used as a cursor movement operation  
-    | ComplexMotionCommand of CommandName * bool * (SnapshotPoint -> int option -> MotionResult)
+    | ComplexMotionCommand of CommandName * bool * (int option -> MotionResult)
 
     with
 
