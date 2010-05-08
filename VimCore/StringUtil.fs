@@ -82,3 +82,6 @@ module internal StringUtil =
     let isEqual left right = 
         let comp = System.StringComparer.Ordinal
         comp.Equals(left,right)
+
+    [<CompiledName("Split")>]
+    let split c (value:string) = value.Split( [| c |])

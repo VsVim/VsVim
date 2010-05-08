@@ -109,6 +109,9 @@ module internal SnapshotSpanUtil =
 /// include any Vim specific logic
 module internal SnapshotLineUtil =
 
+    /// Length of the line
+    let GetLength (line:ITextSnapshotLine) = line.Length
+
     let GetExtent (line:ITextSnapshotLine) = line.Extent
 
     let GetExtentIncludingLineBreak (line:ITextSnapshotLine) = line.ExtentIncludingLineBreak
@@ -368,6 +371,8 @@ module internal TextViewUtil =
     let GetCaret (textView:ITextView) = textView.Caret
 
     let GetCaretPoint (textView:ITextView) = textView.Caret.Position.BufferPosition
+
+    let GetCaretLine textView = GetCaretPoint textView |> SnapshotPointUtil.GetContainingLine
 
     /// Ensure the caret is currently on the visible screen
     let EnsureCaretOnScreen textView = 

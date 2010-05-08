@@ -172,8 +172,10 @@ type internal GlobalSettings() =
         member x.VimRcPaths 
             with get() = _map.GetStringValue VimRcPathsName
             and set value = _map.TrySetValue VimRcPathsName (StringValue(value)) |> ignore
-
         member x.DisableCommand = DisableCommandLet
+        member x.IsVirtualEditOneMore = 
+            let value = _map.GetStringValue VirtualEdit
+            StringUtil.split ',' value |> Seq.exists (fun x -> StringUtil.isEqual "onemore" x)
 
         [<CLIEvent>]
         member x.SettingChanged = _map.SettingChanged

@@ -49,5 +49,29 @@ namespace VimCore.Test
             Assert.IsTrue(global.IgnoreCase);
         }
 
+        [Test]
+        public void IsVirtualEditOneMore1()
+        {
+            var global = CreateGlobal();
+            global.VirtualEdit = String.Empty;
+            Assert.IsFalse(global.IsVirtualEditOneMore);
+        }
+
+        [Test]
+        public void IsVirtualEditOneMore2()
+        {
+            var global = CreateGlobal();
+            global.VirtualEdit = "onemore";
+            Assert.IsTrue(global.IsVirtualEditOneMore);
+        }
+
+        [Test]
+        public void IsVirtualEditOneMore3()
+        {
+            var global = CreateGlobal();
+            global.VirtualEdit = "onemore,blah";
+            Assert.IsTrue(global.IsVirtualEditOneMore);
+        }
+
     }
 }

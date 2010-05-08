@@ -788,6 +788,9 @@ and IVimGlobalSettings =
     /// Holds the VirtualEdit string.  
     abstract VirtualEdit : string with get,set
 
+    /// Is the onemore option inside of VirtualEdit set
+    abstract IsVirtualEditOneMore : bool with get
+
     /// Retrieves the location of the loaded VimRC file.  Will be the empty string if the load 
     /// did not succeed or has not been tried
     abstract VimRc : string with get, set

@@ -18,6 +18,23 @@ type internal CommonOperations
         _settings : IVimLocalSettings,
         _undoRedoOperations : IUndoRedoOperations ) =
 
+    /// The caret sometimes needs to be adjusted after an Up or Down movement.  Caret position
+    /// and virtual space is actually quite a predicamite for VsVim because of how Vim standard 
+    /// works.  Vim has no concept of Virtual Space and is designed to work in a fixed width
+    /// font buffer.  Visual Studio has essentially the exact opposite.  Non-fixed width fonts are
+    /// the most problematic because it makes the natural Vim motion of column based up and down
+    /// make little sense visually.  Instead we rely on the core editor for up and down motions.
+    ///
+    /// The one exception has to do with the VirtualEdit setting.  By default the 'l' motion will 
+    /// only move you to the last character on the line and no further.  Visual Studio up and down
+    /// though acts like virtualedit=onemore.  We correct this here
+    member private x.AdjustCaretAfterUpDownMove() =
+        if not _settings.GlobalSettings.IsVirtualEditOneMore then 
+            let point = TextViewUtil.GetCaretPoint _textView
+            let line = SnapshotPointUtil.GetContainingLine point
+            if point.Position >= line.End.Position && line.Length > 0 then 
+                TextViewUtil.MoveCaretToPoint _textView (line.End.Subtract(1))
+
     member private x.NavigateToPoint (point:VirtualSnapshotPoint) = 
         let buf = point.Position.Snapshot.TextBuffer
         if buf = _textView.TextBuffer then 
@@ -248,7 +265,8 @@ type internal CommonOperations
                 else current.LineNumber 
             for i = 1 to count do   
                 _operations.MoveLineUp(false)
-            
+            x.AdjustCaretAfterUpDownMove()
+
         /// Move the cursor count spaces down
         member x.MoveCaretDown count =
             _operations.ResetSelection()
@@ -260,6 +278,7 @@ type internal CommonOperations
                 else (tss.LineCount - line.LineNumber) - 1 
             for i = 1 to count do
                 _operations.MoveLineDown(false)
+            x.AdjustCaretAfterUpDownMove()
 
         member x.MoveCaretDownToFirstNonWhitespaceCharacter count = 
             let caret = TextViewUtil.GetCaretPoint _textView

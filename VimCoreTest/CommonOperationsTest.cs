@@ -486,6 +486,7 @@ namespace VimCore.Test
         public void MoveCaretUp1()
         {
             Create("foo", "bar", "baz");
+            _globalSettings.SetupGet(x => x.IsVirtualEditOneMore).Returns(true);
             var line = _view.TextSnapshot.GetLineFromLineNumber(1);
             _view.Caret.MoveTo(line.Start);
             _editorOpts.Setup(x => x.ResetSelection()).Verifiable();
@@ -498,6 +499,7 @@ namespace VimCore.Test
         public void MoveCaretUp2()
         {
             Create("foo", "bar", "baz");
+            _globalSettings.SetupGet(x => x.IsVirtualEditOneMore).Returns(true);
             var first = _view.TextSnapshot.Lines.First();
             _view.Caret.MoveTo(first.End);
             _editorOpts.Setup(x => x.ResetSelection()).Verifiable();
@@ -511,6 +513,7 @@ namespace VimCore.Test
         {
             Create("foo", "bar");
             var tss = _view.TextSnapshot;
+            _globalSettings.SetupGet(x => x.IsVirtualEditOneMore).Returns(true);
             _view.Caret.MoveTo(tss.GetLineFromLineNumber(1).Start.Add(1));
             _editorOpts.Setup(x => x.ResetSelection()).Verifiable();
             _editorOpts.Setup(x => x.MoveLineUp(false)).Verifiable();
@@ -522,6 +525,7 @@ namespace VimCore.Test
         public void MoveCaretUp4()
         {
             Create("foo", "bar", "baz", "jaz");
+            _globalSettings.SetupGet(x => x.IsVirtualEditOneMore).Returns(true);
             _view.Caret.MoveTo(_view.TextSnapshot.GetLineFromLineNumber(3).Start);
             var count = 0;
             _editorOpts.Setup(x => x.ResetSelection()).Verifiable();
@@ -535,6 +539,7 @@ namespace VimCore.Test
         public void MoveCaretUp5()
         {
             Create("foo", "bar", "baz", "jaz");
+            _globalSettings.SetupGet(x => x.IsVirtualEditOneMore).Returns(true);
             _view.Caret.MoveTo(_view.TextSnapshot.GetLineFromLineNumber(3).Start);
             var count = 0;
             _editorOpts.Setup(x => x.ResetSelection()).Verifiable();
@@ -542,6 +547,38 @@ namespace VimCore.Test
             _operations.MoveCaretUp(2);
             Assert.AreEqual(2, count);
             _editorOpts.Verify();
+        }
+
+        [Test]
+        public void MoveCaretUp6()
+        {
+            Create("smaller", "foo bar baz");
+            _view.MoveCaretTo(_view.GetLine(1).End);
+            _globalSettings.SetupGet(x => x.IsVirtualEditOneMore).Returns(false);
+            _editorOpts.Setup(x => x.ResetSelection()).Verifiable();
+            _editorOpts
+                .Setup(x => x.MoveLineUp(false))
+                .Callback(() => _view.MoveCaretTo(_view.GetLine(0).End))
+                .Verifiable();
+            _operations.MoveCaretUp(1);
+            var point = _buffer.GetLine(0).End.Subtract(1);
+            Assert.AreEqual(point, _view.GetCaretPoint());
+        }
+
+        [Test]
+        public void MoveCaretUp7()
+        {
+            Create("foo bar baz", "", "smaller aoeu ao aou ");
+            _view.MoveCaretTo(_view.GetLine(2).End);
+            _globalSettings.SetupGet(x => x.IsVirtualEditOneMore).Returns(false);
+            _editorOpts.Setup(x => x.ResetSelection()).Verifiable();
+            _editorOpts
+                .Setup(x => x.MoveLineUp(false))
+                .Callback(() => _view.MoveCaretTo(_view.GetLine(1).End))
+                .Verifiable();
+            _operations.MoveCaretUp(1);
+            var point = _buffer.GetLine(1).End;
+            Assert.AreEqual(point, _view.GetCaretPoint());
         }
 
         [Test, Description("At end of line should wrap to the start of the next line if there is a word")]
@@ -616,6 +653,7 @@ namespace VimCore.Test
         public void MoveCaretDown1()
         {
             Create("foo", "bar", "baz");
+            _globalSettings.SetupGet(x => x.IsVirtualEditOneMore).Returns(true);
             _editorOpts.Setup(x => x.ResetSelection()).Verifiable();
             _editorOpts.Setup(x => x.MoveLineDown(false)).Verifiable();
             _operations.MoveCaretDown(1);
@@ -626,6 +664,7 @@ namespace VimCore.Test
         public void MoveCaretDown2()
         {
             Create("bar", "baz", "aeu");
+            _globalSettings.SetupGet(x => x.IsVirtualEditOneMore).Returns(true);
             var last = _view.TextSnapshot.Lines.Last();
             _view.Caret.MoveTo(last.Start);
             _editorOpts.Setup(x => x.ResetSelection()).Verifiable();
@@ -638,6 +677,7 @@ namespace VimCore.Test
         public void MoveCaretDown3()
         {
             Create("foo", "bar", "baz");
+            _globalSettings.SetupGet(x => x.IsVirtualEditOneMore).Returns(true);
             var tss = _view.TextSnapshot;
             var line = tss.GetLineFromLineNumber(tss.LineCount - 2);
             _view.Caret.MoveTo(line.Start);
@@ -651,6 +691,7 @@ namespace VimCore.Test
         public void MoveCaretDown4()
         {
             Create("foo", "bar", "baz");
+            _globalSettings.SetupGet(x => x.IsVirtualEditOneMore).Returns(true);
             var tss = _view.TextSnapshot;
             var line = tss.GetLineFromLineNumber(tss.LineCount - 1);
             _view.Caret.MoveTo(line.Start);
@@ -663,6 +704,7 @@ namespace VimCore.Test
         public void MoveCaretDown5()
         {
             Create("foo", "bar", "baz", "jaz");
+            _globalSettings.SetupGet(x => x.IsVirtualEditOneMore).Returns(true);
             var count = 0;
             _editorOpts.Setup(x => x.ResetSelection()).Verifiable();
             _editorOpts
@@ -679,6 +721,7 @@ namespace VimCore.Test
         {
             Create("foo", "bar", "baz", "jaz");
             var count = 0;
+            _globalSettings.SetupGet(x => x.IsVirtualEditOneMore).Returns(true);
             _editorOpts.Setup(x => x.ResetSelection()).Verifiable();
             _editorOpts
                 .Setup(x => x.MoveLineDown(false))
@@ -687,6 +730,36 @@ namespace VimCore.Test
             _operations.MoveCaretDown(2);
             Assert.AreEqual(2, count);
             _editorOpts.Verify();
+        }
+
+        [Test]
+        public void MoveCaretDown7()
+        {
+            Create("foo bar baz", "smaller");
+            _globalSettings.SetupGet(x => x.IsVirtualEditOneMore).Returns(false);
+            _editorOpts.Setup(x => x.ResetSelection()).Verifiable();
+            _editorOpts
+                .Setup(x => x.MoveLineDown(false))
+                .Callback(() => _view.MoveCaretTo(_view.GetLine(1).End))
+                .Verifiable();
+            _operations.MoveCaretDown(1);
+            var point = _buffer.GetLine(1).End.Subtract(1);
+            Assert.AreEqual(point, _view.GetCaretPoint());
+        }
+
+        [Test]
+        public void MoveCaretDown8()
+        {
+            Create("foo bar baz", "", "smaller");
+            _globalSettings.SetupGet(x => x.IsVirtualEditOneMore).Returns(false);
+            _editorOpts.Setup(x => x.ResetSelection()).Verifiable();
+            _editorOpts
+                .Setup(x => x.MoveLineDown(false))
+                .Callback(() => _view.MoveCaretTo(_view.GetLine(1).End))
+                .Verifiable();
+            _operations.MoveCaretDown(1);
+            var point = _buffer.GetLine(1).End;
+            Assert.AreEqual(point, _view.GetCaretPoint());
         }
 
         [Test]
