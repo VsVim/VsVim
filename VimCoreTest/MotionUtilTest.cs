@@ -201,6 +201,17 @@ namespace VimCore.Test
             Assert.AreEqual(OperationKind.CharacterWise, tuple.OperationKind);
         }
 
+        [Test, Description("Make sure to ignore tabs")]
+        public void FirstNonWhitespaceOnLine3()
+        {
+            var text = "\tfoo";
+            Create(text);
+            _textView.MoveCaretTo(_buffer.GetLineFromLineNumber(0).End);
+            var tuple = _util.FirstNonWhitespaceOnLine();
+            Assert.AreEqual(text.IndexOf('f'), tuple.Span.Start);
+            Assert.IsFalse(tuple.IsForward);
+        }
+
         [Test]
         public void AllWord1()
         {

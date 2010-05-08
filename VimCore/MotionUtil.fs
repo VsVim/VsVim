@@ -99,7 +99,7 @@ type internal MotionUtil
             let line = start.GetContainingLine()
             let found = SnapshotLineUtil.GetPoints line
                             |> Seq.filter (fun x -> x.Position < start.Position)
-                            |> Seq.tryFind (fun x-> x.GetChar() <> ' ')
+                            |> Seq.tryFind (fun x-> not (CharUtil.IsWhiteSpace (x.GetChar())))
             let span = match found with 
                         | Some p -> new SnapshotSpan(p, start)
                         | None -> new SnapshotSpan(start,0)
