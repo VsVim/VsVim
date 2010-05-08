@@ -120,6 +120,7 @@ type internal GlobalSettings() =
             ( TildeOpName, "top", ToggleKind, ToggleValue(false) );
             ( SmartCaseName, "scs", ToggleKind, ToggleValue(false) );
             ( VisualBell, "vb", ToggleKind, ToggleValue(false) );
+            ( VirtualEdit, "ve", StringKind, StringValue(StringUtil.empty));
             ( VimRcName, VimRcName, StringKind, StringValue(System.String.Empty) );
             ( VimRcPathsName, VimRcPathsName, StringKind, StringValue(System.String.Empty) );
             ( DoubleEscapeName, DoubleEscapeName, ToggleKind, ToggleValue(false) );
@@ -159,6 +160,9 @@ type internal GlobalSettings() =
         member x.VisualBell
             with get() = _map.GetBoolValue VisualBell
             and set value = _map.TrySetValue VisualBell (ToggleValue(value)) |> ignore
+        member x.VirtualEdit
+            with get() = _map.GetStringValue VirtualEdit
+            and set value = _map.TrySetValue VirtualEdit (StringValue(value)) |> ignore
         member x.DoubleEscape
             with get() = _map.GetBoolValue DoubleEscapeName
             and set value = _map.TrySetValue DoubleEscapeName (ToggleValue(value)) |> ignore

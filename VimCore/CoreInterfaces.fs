@@ -725,6 +725,7 @@ module GlobalSettingNames =
     let TildeOpName = "tildeop"
     let SmartCaseName = "smartcase"
     let VisualBell = "visualbell"
+    let VirtualEdit = "virtualedit"
     let DoubleEscapeName = "vsvimdoubleescape"
     let VimRcName = "vimrc"
     let VimRcPathsName = "vimrcpaths"
@@ -783,6 +784,9 @@ and IVimGlobalSettings =
     /// mode is to dismiss intellisense and enter normal mode.  When this option is set it will 
     /// just dismiss intellisense
     abstract DoubleEscape:bool with get,set
+
+    /// Holds the VirtualEdit string.  
+    abstract VirtualEdit : string with get,set
 
     /// Retrieves the location of the loaded VimRC file.  Will be the empty string if the load 
     /// did not succeed or has not been tried
