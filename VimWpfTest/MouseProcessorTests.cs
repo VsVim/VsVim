@@ -87,6 +87,19 @@ namespace Vim.UI.Wpf.Test
             _buffer.Verify();
         }
 
+        [Test, Description("Block selection should enter block visual mode")]
+        public void SelectionEvent5()
+        {
+            Create("foo bar");
+            _buffer.Setup(x => x.ModeKind).Returns(ModeKind.Normal).Verifiable();
+            _buffer.Setup(x => x.SwitchMode(ModeKind.VisualBlock)).Returns(_visualMode.Object).Verifiable();
+            _textView.Selection.Mode = TextSelectionMode.Box;
+            _textView.Selection.Select(new SnapshotSpan(_textView.TextSnapshot, 0, 3), false);
+            _mouseDevice.SetupGet(x => x.LeftButtonState).Returns(MouseButtonState.Released).Verifiable();
+            Dispatcher.CurrentDispatcher.DoEvents();
+            _buffer.Verify();
+        }
+
         [Test, Description("Only care about the left button")]
         public void MouseButtonUp1()
         {
