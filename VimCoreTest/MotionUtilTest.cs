@@ -9,6 +9,7 @@ using System.Windows.Input;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text;
 using VimCore.Test.Utils;
+using Microsoft.FSharp.Core;
 
 namespace VimCore.Test
 {
@@ -509,6 +510,19 @@ namespace VimCore.Test
             _textView.MoveCaretTo(_buffer.GetLine(1).Start);
             var data = _util.LineOrLastToFirstNonWhitespace(FSharpOption.Create(500));
             Assert.AreEqual(_buffer.GetLineSpan(1, 2), data.Span);
+            Assert.IsTrue(data.IsForward);
+            Assert.AreEqual(OperationKind.LineWise, data.OperationKind);
+            Assert.AreEqual(MotionKind.Inclusive, data.MotionKind);
+            Assert.AreEqual(0, data.Column.Value);
+        }
+
+        [Test]
+        public void LineOrLastToFirstNonWhitespace4()
+        {
+            Create("foo", "bar", "baz");
+            var data = _util.LineOrLastToFirstNonWhitespace(FSharpOption<int>.None);
+            var span = new SnapshotSpan(_buffer.CurrentSnapshot, 0, _buffer.CurrentSnapshot.Length);
+            Assert.AreEqual(span, data.Span);
             Assert.IsTrue(data.IsForward);
             Assert.AreEqual(OperationKind.LineWise, data.OperationKind);
             Assert.AreEqual(MotionKind.Inclusive, data.MotionKind);

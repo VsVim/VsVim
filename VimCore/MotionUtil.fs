@@ -164,7 +164,7 @@ type internal MotionUtil
             let endLine = 
                 match numberOpt with
                 | Some(number) ->  SnapshotUtil.GetLineOrLast tss (TssUtil.VimLineToTssLine number)
-                | None -> SnapshotUtil.GetFirstLine tss 
+                | None -> SnapshotUtil.GetLastLine tss 
             x.LineToLineFirstNonWhitespaceMotion originLine endLine
         member x.LastNonWhitespaceOnLine count = 
             let start = x.StartPoint
