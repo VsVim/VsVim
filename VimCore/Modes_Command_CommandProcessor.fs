@@ -276,7 +276,7 @@ type internal CommandProcessor
             | Some(count) -> RangeUtil.ApplyCount range count
             | None -> range
         let span = RangeUtil.GetSnapshotSpan range
-        _operations.ShiftSpanLeft span 
+        _operations.ShiftSpanLeft 1 span 
 
     member private x.ProcessShiftRight (rest:char list) (range: Range option) _ =
         let count,rest = rest |> RangeUtil.ParseNumber
@@ -286,7 +286,7 @@ type internal CommandProcessor
             | Some(count) -> RangeUtil.ApplyCount range count
             | None -> range
         let span = RangeUtil.GetSnapshotSpan range
-        _operations.ShiftSpanRight span 
+        _operations.ShiftSpanRight 1 span 
 
     member private x.ProcessWrite (rest:char list) _ _ = 
         let name = rest |> StringUtil.ofCharSeq 

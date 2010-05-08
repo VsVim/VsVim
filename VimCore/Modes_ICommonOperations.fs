@@ -137,11 +137,12 @@ type ICommonOperations =
     /// Shift the count lines starting at the cursor left by the "ShiftWidth" setting
     abstract ShiftLinesLeft :  count:int -> unit
 
-    /// Shift the lines in the span to the right by the "ShiftWidth" setting
-    abstract ShiftSpanRight : SnapshotSpan -> unit
+    /// Shift the lines in the span to the right by the "ShiftWidth" setting multiplied
+    /// by the multiplier
+    abstract ShiftSpanRight : multiplier:int -> SnapshotSpan -> unit
 
     /// Shift the lines in the span to the right by the "ShiftWidth" setting
-    abstract ShiftSpanLeft : SnapshotSpan -> unit
+    abstract ShiftSpanLeft : multiplier:int -> SnapshotSpan -> unit
 
     /// Save the current document
     abstract Save : unit -> unit

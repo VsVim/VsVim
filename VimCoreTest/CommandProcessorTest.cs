@@ -199,7 +199,7 @@ namespace VimCore.Test
         {
             Create("     foo", "bar", "baz");
             _operations
-                .Setup(x => x.ShiftSpanLeft(_view.TextSnapshot.GetLineFromLineNumber(0).ExtentIncludingLineBreak))
+                .Setup(x => x.ShiftSpanLeft(1, _view.TextSnapshot.GetLineFromLineNumber(0).ExtentIncludingLineBreak))
                 .Verifiable();
             RunCommand("<");
             _operations.Verify();
@@ -214,7 +214,7 @@ namespace VimCore.Test
                 tss.GetLineFromLineNumber(0).Start,
                 tss.GetLineFromLineNumber(1).EndIncludingLineBreak);
             _operations
-                .Setup(x => x.ShiftSpanLeft(span))
+                .Setup(x => x.ShiftSpanLeft(1, span))
                 .Verifiable();
             RunCommand("1,2<");
             _operations.Verify();
@@ -229,7 +229,7 @@ namespace VimCore.Test
                 tss.GetLineFromLineNumber(0).Start,
                 tss.GetLineFromLineNumber(1).EndIncludingLineBreak);
             _operations
-                .Setup(x => x.ShiftSpanLeft(span))
+                .Setup(x => x.ShiftSpanLeft(1, span))
                 .Verifiable();
             RunCommand("< 2");
             _operations.Verify();
@@ -240,7 +240,7 @@ namespace VimCore.Test
         {
             Create("foo", "bar", "baz");
             _operations
-                .Setup(x => x.ShiftSpanRight(_view.TextSnapshot.GetLineFromLineNumber(0).ExtentIncludingLineBreak))
+                .Setup(x => x.ShiftSpanRight(1, _view.TextSnapshot.GetLineFromLineNumber(0).ExtentIncludingLineBreak))
                 .Verifiable();
             RunCommand(">");
             _operations.Verify();
@@ -255,7 +255,7 @@ namespace VimCore.Test
                 tss.GetLineFromLineNumber(0).Start,
                 tss.GetLineFromLineNumber(1).EndIncludingLineBreak);
             _operations
-                .Setup(x => x.ShiftSpanRight(span))
+                .Setup(x => x.ShiftSpanRight(1, span))
                 .Verifiable();
             RunCommand("1,2>");
             _operations.Verify();
@@ -270,7 +270,7 @@ namespace VimCore.Test
                 tss.GetLineFromLineNumber(0).Start,
                 tss.GetLineFromLineNumber(1).EndIncludingLineBreak);
             _operations
-                .Setup(x => x.ShiftSpanRight(span))
+                .Setup(x => x.ShiftSpanRight(1, span))
                 .Verifiable();
             RunCommand("> 2");
             _operations.Verify();

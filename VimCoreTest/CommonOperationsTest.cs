@@ -766,7 +766,7 @@ namespace VimCore.Test
         {
             Create("foo");
             var span = _buffer.CurrentSnapshot.GetLineFromLineNumber(0).Extent;
-            _operations.ShiftSpanRight(span);
+            _operations.ShiftSpanRight(1, span);
             Assert.AreEqual("  foo", _buffer.CurrentSnapshot.GetLineFromLineNumber(0).GetText());
         }
 
@@ -775,7 +775,7 @@ namespace VimCore.Test
         {
             Create("foo");
             var span = _buffer.CurrentSnapshot.GetLineFromLineNumber(0).Extent;
-            _operations.ShiftSpanLeft(span);
+            _operations.ShiftSpanLeft(1, span);
             Assert.AreEqual("foo", _buffer.CurrentSnapshot.GetLineFromLineNumber(0).GetText());
         }
 
@@ -784,7 +784,7 @@ namespace VimCore.Test
         {
             Create("");
             var span = _buffer.CurrentSnapshot.GetLineFromLineNumber(0).Extent;
-            _operations.ShiftSpanLeft(span);
+            _operations.ShiftSpanLeft(1, span);
             Assert.AreEqual("", _buffer.CurrentSnapshot.GetLineFromLineNumber(0).GetText());
         }
 
@@ -795,7 +795,7 @@ namespace VimCore.Test
             var span = new SnapshotSpan(
                 _buffer.CurrentSnapshot.GetLineFromLineNumber(0).Start,
                 _buffer.CurrentSnapshot.GetLineFromLineNumber(1).End);
-            _operations.ShiftSpanLeft(span);
+            _operations.ShiftSpanLeft(1, span);
             Assert.AreEqual("foo", _buffer.CurrentSnapshot.GetLineFromLineNumber(0).GetText());
             Assert.AreEqual("bar", _buffer.CurrentSnapshot.GetLineFromLineNumber(1).GetText());
         }
@@ -805,7 +805,7 @@ namespace VimCore.Test
         {
             Create("   foo");
             var span = _buffer.CurrentSnapshot.GetLineFromLineNumber(0).Extent;
-            _operations.ShiftSpanLeft(span);
+            _operations.ShiftSpanLeft(1, span);
             Assert.AreEqual(" foo", _buffer.CurrentSnapshot.GetLineFromLineNumber(0).GetText());
         }
 

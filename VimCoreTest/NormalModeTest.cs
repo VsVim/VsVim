@@ -1815,7 +1815,7 @@ namespace VimCore.Test
                 tss.GetLineFromLineNumber(0).Start,
                 tss.GetLineFromLineNumber(1).End);
             _operations
-                .Setup(x => x.ShiftSpanRight(span))
+                .Setup(x => x.ShiftSpanRight(1, span))
                 .Verifiable();
             _mode.Process(">j");
             _operations.Verify();

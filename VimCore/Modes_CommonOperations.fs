@@ -32,8 +32,8 @@ type internal CommonOperations
         reg.UpdateValue(regValue) 
         tss.TextBuffer.Delete(span.Span)
 
-    member x.ShiftSpanRight (span:SnapshotSpan) = 
-        let text = new System.String(' ', _settings.GlobalSettings.ShiftWidth)
+    member x.ShiftSpanRight multiplier (span:SnapshotSpan) = 
+        let text = new System.String(' ', _settings.GlobalSettings.ShiftWidth * multiplier)
         let buf = span.Snapshot.TextBuffer
         let startLineNumber = span.Start.GetContainingLine().LineNumber
         let endLineNumber = span.End.GetContainingLine().LineNumber
@@ -44,8 +44,8 @@ type internal CommonOperations
         
         edit.Apply() |> ignore
         
-    member x.ShiftSpanLeft (span:SnapshotSpan) =
-        let count = _settings.GlobalSettings.ShiftWidth
+    member x.ShiftSpanLeft multiplier (span:SnapshotSpan) =
+        let count = _settings.GlobalSettings.ShiftWidth * multiplier
         let fixText (text:string) = 
             let count = min count (text.Length) // Deal with count being greater than line length
             let count = 
@@ -279,19 +279,19 @@ type internal CommonOperations
             let pos = TssUtil.FindPreviousWordStart caret count kind
             TextViewUtil.MoveCaretToPoint _textView pos 
 
-        member x.ShiftSpanRight span = x.ShiftSpanRight span
+        member x.ShiftSpanRight multiplier span = x.ShiftSpanRight multiplier span
 
-        member x.ShiftSpanLeft span = x.ShiftSpanLeft span
+        member x.ShiftSpanLeft multiplier span = x.ShiftSpanLeft multiplier span
 
         member x.ShiftLinesRight count = 
             let point = TextViewUtil.GetCaretPoint _textView
             let span = SnapshotPointUtil.GetLineRangeSpan point count
-            x.ShiftSpanRight span
+            x.ShiftSpanRight 1 span
 
         member x.ShiftLinesLeft count =
             let point = TextViewUtil.GetCaretPoint _textView
             let span = SnapshotPointUtil.GetLineRangeSpan point count
-            x.ShiftSpanLeft span
+            x.ShiftSpanLeft 1 span
             
         member x.InsertText text count = 
             let text = StringUtil.repeat text count 

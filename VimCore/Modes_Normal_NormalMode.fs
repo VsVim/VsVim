@@ -294,8 +294,8 @@ type internal NormalMode
                 yield ("d", None, fun count reg data -> _operations.DeleteSpan data.OperationSpan data.MotionKind data.OperationKind reg |> ignore)
                 yield ("y", None, fun count reg data -> _operations.Yank data.OperationSpan data.MotionKind data.OperationKind reg)
                 yield ("c", Some ModeKind.Insert, fun count reg data -> _operations.DeleteSpan data.OperationSpan data.MotionKind data.OperationKind reg |> ignore)
-                yield ("<", None, fun _ _ data -> _operations.ShiftSpanLeft data.OperationSpan)
-                yield (">", None, fun _ _ data -> _operations.ShiftSpanRight data.OperationSpan)
+                yield ("<", None, fun _ _ data -> _operations.ShiftSpanLeft 1 data.OperationSpan)
+                yield (">", None, fun _ _ data -> _operations.ShiftSpanRight 1 data.OperationSpan)
             }
 
         complex

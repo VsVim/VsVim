@@ -81,6 +81,17 @@ namespace VimCore.Test
                 .Verifiable();
         }
 
+        public SnapshotSpan[] SetupBlockSelection()
+        {
+            SetupApplyAsSingleEdit();
+            var spans = new SnapshotSpan[] { _buffer.GetSpan(0, 2), _buffer.GetSpan(3, 2) };
+            _selection
+                .SetupGet(x => x.SelectedSpans)
+                .Returns(new NormalizedSnapshotSpanCollection(spans))
+                .Verifiable();
+            return spans;
+        }
+
         [Test,Description("Movement commands")]
         public void Commands1()
         {
@@ -420,21 +431,115 @@ namespace VimCore.Test
         public void ChangeCase2()
         {
             Create("foo bar baz");
-            SetupApplyAsSingleEdit();
-            var spans = new SnapshotSpan[] { _buffer.GetSpan(0, 2), _buffer.GetSpan(3, 2) };
+            var spans = SetupBlockSelection();
             var count = 0;
             _operations
                 .Setup(x => x.ChangeLetterCase(It.IsAny<SnapshotSpan>()))
                 .Callback(() => {count++;})
                 .Verifiable();
-            _selection
-                .SetupGet(x => x.SelectedSpans)
-                .Returns(new NormalizedSnapshotSpanCollection(spans))
-                .Verifiable();
             _mode.Process('~');
             _selection.Verify();
             _operations.Verify();
             Assert.AreEqual(count, 2);
+        }
+
+        [Test]
+        public void ShiftLeft1()
+        {
+            Create("foo bar baz");
+            var span = _buffer.GetSpan(0, 3);
+            _operations
+                .Setup(x => x.ShiftSpanLeft(1, span))
+                .Verifiable();
+            _selection
+                .SetupGet(x => x.SelectedSpans)
+                .Returns(new NormalizedSnapshotSpanCollection(span))
+                .Verifiable();
+            _mode.Process('<');
+            _operations.Verify();
+            _selection.Verify();
+        }
+
+        [Test]
+        public void ShiftLeft2()
+        {
+            Create("foo bar baz");
+            var span = _buffer.GetSpan(0, 3);
+            _operations
+                .Setup(x => x.ShiftSpanLeft(2, span))
+                .Verifiable();
+            _selection
+                .SetupGet(x => x.SelectedSpans)
+                .Returns(new NormalizedSnapshotSpanCollection(span))
+                .Verifiable();
+            _mode.Process("2<");
+            _operations.Verify();
+            _selection.Verify();
+        }
+
+        [Test]
+        public void ShiftLeft3()
+        {
+            Create("foo bar baz");
+            var spans = SetupBlockSelection();
+            var count = 0;
+            _operations
+                .Setup(x => x.ShiftSpanLeft(1, It.IsAny<SnapshotSpan>()))
+                .Callback(() => { count++; });
+            _mode.Process("<");
+            _operations.Verify();
+            _selection.Verify();
+            Assert.AreEqual(spans.Length, count);
+        }
+
+
+        [Test]
+        public void ShiftRight1()
+        {
+            Create("foo bar baz");
+            var span = _buffer.GetSpan(0, 3);
+            _operations
+                .Setup(x => x.ShiftSpanRight(1, span))
+                .Verifiable();
+            _selection
+                .SetupGet(x => x.SelectedSpans)
+                .Returns(new NormalizedSnapshotSpanCollection(span))
+                .Verifiable();
+            _mode.Process('>');
+            _operations.Verify();
+            _selection.Verify();
+        }
+
+        [Test]
+        public void ShiftRight2()
+        {
+            Create("foo bar baz");
+            var span = _buffer.GetSpan(0, 3);
+            _operations
+                .Setup(x => x.ShiftSpanRight(2, span))
+                .Verifiable();
+            _selection
+                .SetupGet(x => x.SelectedSpans)
+                .Returns(new NormalizedSnapshotSpanCollection(span))
+                .Verifiable();
+            _mode.Process("2>");
+            _operations.Verify();
+            _selection.Verify();
+        }
+
+        [Test]
+        public void ShiftRight3()
+        {
+            Create("foo bar baz");
+            var spans = SetupBlockSelection();
+            var count = 0;
+            _operations
+                .Setup(x => x.ShiftSpanRight(1, It.IsAny<SnapshotSpan>()))
+                .Callback(() => { count++; });
+            _mode.Process(">");
+            _operations.Verify();
+            _selection.Verify();
+            Assert.AreEqual(spans.Length, count);
         }
 
         #endregion

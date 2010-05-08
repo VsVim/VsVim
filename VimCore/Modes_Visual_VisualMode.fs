@@ -107,7 +107,20 @@ type internal VisualMode
                         (fun _ _ ->         
                             _operations.JoinSelection JoinKind.RemoveEmptySpaces|> ignore
                             CommandResult.Completed ModeSwitch.SwitchPreviousMode))
-                yield (InputUtil.CharToKeyInput('~'), (fun _ _ -> editOverSpanOperation None _operations.ChangeLetterCase resultSwitchPrevious))
+                yield (
+                    InputUtil.CharToKeyInput '~', 
+                    (fun _ _ -> editOverSpanOperation None _operations.ChangeLetterCase resultSwitchPrevious))
+                yield (
+                    InputUtil.CharToKeyInput '<', 
+                    (fun count _ -> 
+                        let count = CommandUtil.CountOrDefault count
+                        editOverSpanOperation None (_operations.ShiftSpanLeft count) resultSwitchPrevious))
+                yield (
+                    InputUtil.CharToKeyInput '>',
+                    (fun count _ -> 
+                        let count = CommandUtil.CountOrDefault count
+                        editOverSpanOperation None (_operations.ShiftSpanRight count) resultSwitchPrevious))
+
             }
             |> Seq.map (fun (ki,func) -> Command.SimpleCommand(OneKeyInput ki,CommandFlags.None, func))
 
