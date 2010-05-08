@@ -47,6 +47,9 @@ type internal InsertMode
         member x.OnEnter () = ()
         member x.OnLeave () = 
             // When leaving insert mode the caret should move one to the left on the
-            // same line
-            _operations.MoveCaretLeft 1 
+            // same line.  The one complication is that if the user closes the ITextView while
+            // insert mode is active the view will be closed during OnLeave.  Moving the
+            // caret here will cause an exception
+            if not _data.TextView.IsClosed then
+                _operations.MoveCaretLeft 1 
         member x.OnClose() = ()

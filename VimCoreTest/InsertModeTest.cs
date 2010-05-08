@@ -22,36 +22,29 @@ namespace VimCore.Test
         private Mock<IVimBuffer> _data;
         private Vim.Modes.Insert.InsertMode _modeRaw;
         private IMode _mode;
-        private ITextBuffer _buffer;
-        private IWpfTextView _view;
+        private Mock<ITextView> _textView;
         private Mock<ICommonOperations> _operations;
         private Mock<IDisplayWindowBroker> _broker;
         private Mock<IVimGlobalSettings> _globalSettings;
         private Mock<IVimLocalSettings> _localSettings;
         private Mock<IVim> _vim;
 
-        public void CreateBuffer(params string[] lines)
+        [SetUp]
+        public void SetUp()
         {
-            _view = Utils.EditorUtil.CreateView(lines);
-            _buffer = _view.TextBuffer;
+            _textView = new Mock<ITextView>(MockBehavior.Strict);
             _vim = new Mock<IVim>();
             _globalSettings = new Mock<IVimGlobalSettings>(MockBehavior.Strict);
             _localSettings = new Mock<IVimLocalSettings>(MockBehavior.Strict);
             _localSettings.SetupGet(x => x.GlobalSettings).Returns(_globalSettings.Object);
             _data = Mock.MockObjectFactory.CreateVimBuffer(
-                _view,
+                _textView.Object,
                 settings:_localSettings.Object,
                 vim:_vim.Object);
             _operations = new Mock<ICommonOperations>(MockBehavior.Strict);
             _broker = new Mock<IDisplayWindowBroker>(MockBehavior.Strict);
             _modeRaw = new Vim.Modes.Insert.InsertMode(_data.Object,_operations.Object,_broker.Object);
             _mode = _modeRaw;
-        }
-
-        [SetUp]
-        public void Init()
-        {
-            CreateBuffer("foo bar baz", "boy kick ball");
         }
 
         [Test, Description("Must process escape")]
@@ -138,7 +131,6 @@ namespace VimCore.Test
         [Test]
         public void ShiftLeft1()
         {
-            CreateBuffer("    foo");
             _operations
                 .Setup(x => x.ShiftLinesLeft(1))
                 .Verifiable(); ;
@@ -149,35 +141,24 @@ namespace VimCore.Test
         }
 
         [Test]
-        public void Cursor1()
+        public void OnLeave1()
         {
-            CreateBuffer("faa bar");
+            _textView.SetupGet(x => x.IsClosed).Returns(false).Verifiable();
             _operations.Setup(x => x.MoveCaretLeft(1)).Verifiable();
-            _view.MoveCaretTo(1);
             _mode.OnLeave();
+            _textView.Verify();
             _operations.Verify();
         }
 
-        [Test, Description("Don't crash at the start of the file")]
-        public void Cursor2()
+        [Test]
+        [Description("If the view is closed moving the caret will throw")]
+        public void OnLeave2()
         {
-            CreateBuffer("faa bar");
-            _operations.Setup(x => x.MoveCaretLeft(1)).Verifiable();
-            _view.MoveCaretTo(0);
+            _textView.SetupGet(x => x.IsClosed).Returns(true).Verifiable();
             _mode.OnLeave();
-            _operations.Verify();
+            _textView.Verify();
         }
 
-        [Test, Description("Don't move past the start of the line")]
-        public void Cursor3()
-        {
-            CreateBuffer("foo", "bar");
-            var point = _view.GetLine(1).Start;
-            _operations.Setup(x => x.MoveCaretLeft(1)).Verifiable();
-            _view.Caret.MoveTo(point);
-            _mode.OnLeave();
-            _operations.Verify();
-        }
 
     }
 }
