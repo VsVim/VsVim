@@ -252,8 +252,17 @@ type internal CommonOperations
         member x.MoveCaretRight count =
             _operations.ResetSelection()
             let caret = TextViewUtil.GetCaretPoint _textView
-            let rightPoint = SnapshotPointUtil.GetNextPointOnLine caret count
-            TextViewUtil.MoveCaretToPoint _textView rightPoint
+
+            if SnapshotPointUtil.IsLastPointOnLine caret then
+
+                // If we are an the last point of the line then only move if VirtualEdit=onemore
+                let line = SnapshotPointUtil.GetContainingLine caret
+                if _settings.GlobalSettings.IsVirtualEditOneMore && line.Length > 0 then 
+                    TextViewUtil.MoveCaretToPoint _textView line.End
+            else
+
+                let rightPoint = SnapshotPointUtil.GetNextPointOnLine caret count
+                TextViewUtil.MoveCaretToPoint _textView rightPoint
     
         /// Move the cursor count spaces up 
         member x.MoveCaretUp count =

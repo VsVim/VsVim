@@ -332,6 +332,12 @@ module internal SnapshotPointUtil =
         let start = GetPreviousPointOnLine point count
         SnapshotSpan(start, point)
 
+    /// Is this the last point on the line?
+    let IsLastPointOnLine point = 
+        let line = GetContainingLine point
+        if line.Length = 0 then point = line.Start
+        else point.Position + 1 = line.End.Position
+
     /// Try and get the next point on the same line.  If this is the end of the line or if
     /// the point is within the line break then None will be returned
     let TryGetNextPointOnLine point =

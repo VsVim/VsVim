@@ -419,11 +419,13 @@ namespace VimCore.Test
         {
             Create("foo", "bar");
             var line = _view.TextSnapshot.GetLineFromLineNumber(0);
+            _globalSettings.SetupGet(x => x.IsVirtualEditOneMore).Returns(false).Verifiable();
             _editorOpts.Setup(x => x.ResetSelection());
             _view.Caret.MoveTo(line.End.Subtract(1));
             _operations.MoveCaretRight(1);
             Assert.AreEqual(line.End.Subtract(1), _view.Caret.Position.BufferPosition);
             _editorOpts.Verify();
+            _globalSettings.Verify();
         }
 
         [Test, Description("If already past the line, MoveCaretRight should not move the caret at all")]
@@ -435,6 +437,19 @@ namespace VimCore.Test
             _operations.MoveCaretRight(1);
             Assert.AreEqual(_view.GetLine(0).End, _view.GetCaretPoint());
             _editorOpts.Verify();
+        }
+
+        [Test, Description("Move past the end of the line if VirtualEdit=onemore is set")]
+        public void MoveCaretRight7()
+        {
+            Create("foo", "bar");
+            _editorOpts.Setup(x => x.ResetSelection()).Verifiable();
+            _view.Caret.MoveTo(_view.GetLine(0).End.Subtract(1));
+            _globalSettings.SetupGet(x => x.IsVirtualEditOneMore).Returns(true).Verifiable();
+            _operations.MoveCaretRight(1);
+            Assert.AreEqual(_view.GetLine(0).End, _view.GetCaretPoint());
+            _editorOpts.Verify();
+            _globalSettings.Verify();
         }
 
         [Test]
