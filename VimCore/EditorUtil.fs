@@ -380,6 +380,8 @@ module internal TextViewUtil =
 
     let GetCaretLine textView = GetCaretPoint textView |> SnapshotPointUtil.GetContainingLine
 
+    let GetCaretPointAndLine textView = (GetCaretPoint textView),(GetCaretLine textView)
+
     /// Ensure the caret is currently on the visible screen
     let EnsureCaretOnScreen textView = 
         let caret = GetCaret textView

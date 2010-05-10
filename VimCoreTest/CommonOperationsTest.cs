@@ -1129,6 +1129,29 @@ namespace VimCore.Test
         }
 
         [Test]
+        [Description("Deleting the last line should change the line count")]
+        public void DeleteLinesIncludingLineBreak3()
+        {
+            Create("foo", "bar");
+            var reg = new Register('c');
+            _view.MoveCaretTo(_view.GetLine(1).Start);
+            _operations.DeleteLinesIncludingLineBreak(1, reg);
+            Assert.AreEqual(Environment.NewLine + "bar", reg.StringValue);
+            Assert.AreEqual(1, _view.TextSnapshot.LineCount);
+        }
+
+        [Test]
+        public void DeleteLinesIncludingLineBreak4()
+        {
+            Create("foo");
+            var reg = new Register('c');
+            _operations.DeleteLinesIncludingLineBreak(1, reg);
+            Assert.AreEqual("foo", reg.StringValue);
+            Assert.AreEqual(1, _view.TextSnapshot.LineCount);
+            Assert.AreEqual(String.Empty, _view.TextSnapshot.GetText());
+        }
+
+        [Test]
         public void DeleteLinesIncludingLineBreakFromCursor1()
         {
             Create("foo", "bar", "baz", "jaz");

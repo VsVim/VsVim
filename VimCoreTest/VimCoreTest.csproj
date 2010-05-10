@@ -145,6 +145,7 @@
     <Compile Include="Mock\MockCommandRunner.cs" />
     <Compile Include="MotionDataTest.cs" />
     <Compile Include="MotionUtilTest.cs" />
+    <Compile Include="NormalModeIntegrationTest.cs" />
     <Compile Include="SearchServiceTest.cs" />
     <Compile Include="SnapshotSpanUtilTest.cs" />
     <Compile Include="SnapshotLineUtilTest.cs" />

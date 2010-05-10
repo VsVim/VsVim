@@ -366,16 +366,29 @@ type internal CommonOperations
             x.DeleteSpan span MotionKind.Inclusive OperationKind.LineWise reg |> ignore
 
         member x.DeleteLinesFromCursor count reg = 
-            let point = TextViewUtil.GetCaretPoint _textView
+            let point,line = TextViewUtil.GetCaretPointAndLine _textView
             let span = SnapshotPointUtil.GetLineRangeSpan point count
             let span = SnapshotSpan(point, span.End)
             x.DeleteSpan span MotionKind.Inclusive OperationKind.CharacterWise reg |> ignore
 
+        /// Delete count lines from the cursor.  The last line is an unfortunate special case here 
+        /// as it does not have a line break.  Hence in order to delete the line we must delete the 
+        /// line break at the end of the preceeding line.  
+        ///
+        /// This cannot be normalized by always deleting the line break from the previous line because
+        /// it would still break for the first line.  This is an unfortunate special case we must 
+        /// deal with
         member x.DeleteLinesIncludingLineBreak count reg = 
-            let point = TextViewUtil.GetCaretPoint _textView
-            let point = point.GetContainingLine().Start
-            let span = SnapshotPointUtil.GetLineRangeSpanIncludingLineBreak point count
-            let span = SnapshotSpan(point, span.End)
+            let point,line = TextViewUtil.GetCaretPointAndLine _textView
+            let snapshot = point.Snapshot
+            let span = 
+                if 1 = count && line.LineNumber = SnapshotUtil.GetLastLineNumber snapshot && snapshot.LineCount > 1 then
+                    let above = snapshot.GetLineFromLineNumber (line.LineNumber-1)
+                    SnapshotSpan(above.End, line.End)
+                else
+                    let point = line.Start
+                    let span = SnapshotPointUtil.GetLineRangeSpanIncludingLineBreak point count
+                    SnapshotSpan(point, span.End)
             x.DeleteSpan span MotionKind.Inclusive OperationKind.LineWise reg |> ignore
 
         member x.DeleteLinesIncludingLineBreakFromCursor count reg = 
