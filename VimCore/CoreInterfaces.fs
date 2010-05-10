@@ -611,11 +611,18 @@ type SearchText =
     | WholeWord of string
     | StraightText of string
     with 
-        member x.RawText =
-            match x with
-            | Pattern(p) -> p
-            | WholeWord(p) -> p
-            | StraightText(p) -> p
+    member x.RawText =
+        match x with
+        | Pattern(p) -> p
+        | WholeWord(p) -> p
+        | StraightText(p) -> p
+    
+    /// Is this a pattern
+    member x.IsPatternText = 
+        match x with
+        | Pattern(_) -> true
+        | WholeWord(_) -> false
+        | StraightText(_) -> false
 
 type SearchData = {
     Text : SearchText;

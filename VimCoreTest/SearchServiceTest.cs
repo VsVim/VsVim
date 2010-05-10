@@ -241,7 +241,51 @@ namespace VimCore.Test
             _factory.Verify();
         }
 
+        [Test]
+        public void BadRegex1()
+        {
+            var tss = MockObjectFactory.CreateTextSnapshot(42).Object;
+            var nav = _factory.Create<ITextStructureNavigator>();
+            _textSearch
+                .Setup(x => x.FindNext(0, true, It.IsAny<FindData>()))
+                .Throws(new InvalidOperationException())
+                .Verifiable();
+            var searchData = new SearchData(SearchText.NewPattern("f("), SearchKind.ForwardWithWrap, SearchOptions.None);
+            var ret = _search.FindNext(searchData, new SnapshotPoint(tss, 0), nav.Object);
+            Assert.IsTrue(ret.IsNone());
+            _factory.Verify();
+        }
 
+
+        [Test]
+        public void BadRegex2()
+        {
+            var tss = MockObjectFactory.CreateTextSnapshot(42).Object;
+            var nav = _factory.Create<ITextStructureNavigator>();
+            _textSearch
+                .Setup(x => x.FindNext(0, true, It.IsAny<FindData>()))
+                .Throws(new InvalidOperationException())
+                .Verifiable();
+            var searchData = new SearchData(SearchText.NewPattern("f("), SearchKind.ForwardWithWrap, SearchOptions.None);
+            var ret = _search.FindNextMultiple(searchData, new SnapshotPoint(tss, 0), nav.Object, 2);
+            Assert.IsTrue(ret.IsNone());
+            _factory.Verify();
+        }
+
+        [Test]
+        [Description("An InvalidOperationException from a non-regex shouldn't be handled")]
+        public void BadRegex3()
+        {
+            var tss = MockObjectFactory.CreateTextSnapshot(42).Object;
+            var nav = _factory.Create<ITextStructureNavigator>();
+            _textSearch
+                .Setup(x => x.FindNext(0, true, It.IsAny<FindData>()))
+                .Throws(new InvalidOperationException())
+                .Verifiable();
+            var searchData = new SearchData(SearchText.NewStraightText("f("), SearchKind.ForwardWithWrap, SearchOptions.None);
+            Assert.Throws<InvalidOperationException>(() => _search.FindNext(searchData, new SnapshotPoint(tss, 0), nav.Object));
+            _factory.Verify();
+        }
     }
 
 }
