@@ -119,8 +119,9 @@ type internal GlobalSettings() =
             ( HighlightSearchName, "hls", ToggleKind, ToggleValue(false) );
             ( TildeOpName, "top", ToggleKind, ToggleValue(false) );
             ( SmartCaseName, "scs", ToggleKind, ToggleValue(false) );
-            ( VisualBell, "vb", ToggleKind, ToggleValue(false) );
-            ( VirtualEdit, "ve", StringKind, StringValue(StringUtil.empty));
+            ( VisualBellName, "vb", ToggleKind, ToggleValue(false) );
+            ( VirtualEditName, "ve", StringKind, StringValue(StringUtil.empty));
+            ( ScrollOffsetName, "so", NumberKind, NumberValue(0) );
             ( VimRcName, VimRcName, StringKind, StringValue(System.String.Empty) );
             ( VimRcPathsName, VimRcPathsName, StringKind, StringValue(System.String.Empty) );
             ( DoubleEscapeName, DoubleEscapeName, ToggleKind, ToggleValue(false) );
@@ -158,11 +159,14 @@ type internal GlobalSettings() =
             with get() = _map.GetBoolValue SmartCaseName
             and set value = _map.TrySetValue SmartCaseName (ToggleValue(value)) |> ignore
         member x.VisualBell
-            with get() = _map.GetBoolValue VisualBell
-            and set value = _map.TrySetValue VisualBell (ToggleValue(value)) |> ignore
+            with get() = _map.GetBoolValue VisualBellName
+            and set value = _map.TrySetValue VisualBellName (ToggleValue(value)) |> ignore
         member x.VirtualEdit
-            with get() = _map.GetStringValue VirtualEdit
-            and set value = _map.TrySetValue VirtualEdit (StringValue(value)) |> ignore
+            with get() = _map.GetStringValue VirtualEditName
+            and set value = _map.TrySetValue VirtualEditName (StringValue(value)) |> ignore
+        member x.ScrollOffset
+            with get() = _map.GetNumberValue ScrollOffsetName
+            and set value = _map.TrySetValue ScrollOffsetName (NumberValue(value)) |> ignore
         member x.DoubleEscape
             with get() = _map.GetBoolValue DoubleEscapeName
             and set value = _map.TrySetValue DoubleEscapeName (ToggleValue(value)) |> ignore
@@ -174,7 +178,7 @@ type internal GlobalSettings() =
             and set value = _map.TrySetValue VimRcPathsName (StringValue(value)) |> ignore
         member x.DisableCommand = DisableCommandLet
         member x.IsVirtualEditOneMore = 
-            let value = _map.GetStringValue VirtualEdit
+            let value = _map.GetStringValue VirtualEditName
             StringUtil.split ',' value |> Seq.exists (fun x -> StringUtil.isEqual "onemore" x)
 
         [<CLIEvent>]

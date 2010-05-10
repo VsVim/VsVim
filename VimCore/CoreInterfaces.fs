@@ -731,8 +731,9 @@ module GlobalSettingNames =
     let StartOfLineName = "startofline"
     let TildeOpName = "tildeop"
     let SmartCaseName = "smartcase"
-    let VisualBell = "visualbell"
-    let VirtualEdit = "virtualedit"
+    let VisualBellName = "visualbell"
+    let VirtualEditName = "virtualedit"
+    let ScrollOffsetName = "scrolloff"
     let DoubleEscapeName = "vsvimdoubleescape"
     let VimRcName = "vimrc"
     let VimRcPathsName = "vimrcpaths"
@@ -786,17 +787,22 @@ and IVimGlobalSettings =
     /// Whether or not to use a visual indicator of errors instead of a beep
     abstract VisualBell : bool with get,set
 
+    /// Holds the VirtualEdit string.  
+    abstract VirtualEdit : string with get,set
+
+    /// Holds the scroll offset value which is the number of lines to keep visible
+    /// above the cursor after a move operation
+    abstract ScrollOffset : int with get,set
+
+    /// Is the onemore option inside of VirtualEdit set
+    abstract IsVirtualEditOneMore : bool with get
+
     /// Affects behavior of <ESC> in Insert Mode.  <ESC> is overloaded some environments to be both 
     /// an exit of Insert mode and a dismisser of intellisense.  The default behavior of insert 
     /// mode is to dismiss intellisense and enter normal mode.  When this option is set it will 
     /// just dismiss intellisense
     abstract DoubleEscape:bool with get,set
 
-    /// Holds the VirtualEdit string.  
-    abstract VirtualEdit : string with get,set
-
-    /// Is the onemore option inside of VirtualEdit set
-    abstract IsVirtualEditOneMore : bool with get
 
     /// Retrieves the location of the loaded VimRC file.  Will be the empty string if the load 
     /// did not succeed or has not been tried
