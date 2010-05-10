@@ -23,19 +23,6 @@ type internal MotionCapture
         let inner (ki:KeyInput) = ComplexMotionResult.Finished (func ki.Char)
         NeedMoreInputWithEscape inner
 
-    let AllWordMotion () =        
-        let inner (ki:KeyInput) = 
-            let withKind kind = 
-                let wrapped count = 
-                    let count = CommandUtil.CountOrDefault count
-                    _util.AllWord kind count |> Some
-                ComplexMotionResult.Finished wrapped
-            match ki.Char with
-                | 'w' -> withKind WordKind.NormalWord
-                | 'W' -> withKind WordKind.BigWord
-                | _ -> ComplexMotionResult.Error Resources.MotionCapture_InvalidMotion
-        NeedMoreInputWithEscape inner
-
     let WaitCharThen func =
         let inner (ki:KeyInput) = 
             let func count = 
@@ -83,6 +70,8 @@ type internal MotionCapture
         let needCount2 = 
             seq { 
                 yield ("g_", fun count -> _util.LastNonWhitespaceOnLine count |> Some)
+                yield ("aw", fun count -> _util.AllWord WordKind.NormalWord count |> Some)
+                yield ("aW", fun count -> _util.AllWord WordKind.BigWord count |> Some)
             } |> Seq.map (fun (str,func) ->
                     let name = CommandUtil.CreateCommandName str
                     let func2 count =
@@ -103,7 +92,6 @@ type internal MotionCapture
     let ComplexMotions = 
         let needCount = 
             seq {
-                yield (InputUtil.CharToKeyInput 'a', false, fun ()-> AllWordMotion() )
                 yield (InputUtil.CharToKeyInput 'f', true, fun () -> WaitCharThen _util.ForwardChar)
                 yield (InputUtil.CharToKeyInput 't', true, fun () -> WaitCharThen _util.ForwardTillChar)
                 yield (InputUtil.CharToKeyInput 'F', true, fun () -> WaitCharThen _util.BackwardChar)

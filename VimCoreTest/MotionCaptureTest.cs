@@ -148,8 +148,9 @@ namespace VimCore.Test
             _util.Verify();
         }
 
+
         [Test]
-        public void AllWord1()
+        public void Motion_aw1()
         {
             _util
                 .Setup(x => x.AllWord(WordKind.NormalWord, 1))
@@ -160,13 +161,24 @@ namespace VimCore.Test
         }
 
         [Test]
-        public void AllWord2()
+        public void Motion_aw2()
         {
             _util
                 .Setup(x => x.AllWord(WordKind.NormalWord, 2))
                 .Returns(CreateMotionData())
                 .Verifiable();
             ProcessComplete("aw", 2);
+            _util.Verify();
+        }
+
+        [Test]
+        public void Motion_aW1()
+        {
+            _util
+                .Setup(x => x.AllWord(WordKind.BigWord, 1))
+                .Returns(CreateMotionData())
+                .Verifiable();
+            ProcessComplete("aW",1);
             _util.Verify();
         }
 
