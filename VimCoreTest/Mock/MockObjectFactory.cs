@@ -7,6 +7,7 @@ using Moq;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Operations;
 using Microsoft.VisualStudio.Text;
+using Microsoft.VisualStudio.Text.Formatting;
 
 namespace VimCore.Test.Mock
 {
@@ -141,6 +142,41 @@ namespace VimCore.Test.Mock
             var selection = CreateSelection();
             var view = CreateTextView(buffer, caret.Object, selection.Object);
             return Tuple.Create(view, caret, selection);
+        }
+
+        internal static Tuple<Mock<ITextView>,MockFactory> CreateTextViewWithVisibleLines(
+            ITextBuffer buffer, 
+            int startLine, 
+            int? endLine = null,
+            int? caretPosition = null)
+        {
+            var factory = new MockFactory(MockBehavior.Strict);
+            var endLineValue = endLine ?? startLine;
+            var caretPositionValue = caretPosition ?? buffer.GetLine(startLine).Start.Position;
+            var caret = factory.Create<ITextCaret>();
+            caret.SetupGet(x => x.Position).Returns(
+                new CaretPosition(
+                    new VirtualSnapshotPoint(buffer.GetPoint(caretPositionValue)),
+                    factory.Create<IMappingPoint>().Object,
+                    PositionAffinity.Predecessor));
+
+            var firstLine = factory.Create<ITextViewLine>();
+            firstLine.SetupGet(x => x.Start).Returns(buffer.GetLine(startLine).Start);
+
+            var lastLine = factory.Create<ITextViewLine>();
+            lastLine.SetupGet(x => x.End).Returns(buffer.GetLine(endLineValue).End);
+
+            var lines = factory.Create<ITextViewLineCollection>();
+            lines.SetupGet(x => x.FirstVisibleLine).Returns(firstLine.Object);
+            lines.SetupGet(x => x.LastVisibleLine).Returns(lastLine.Object);
+
+            var view = factory.Create<ITextView>();
+            view.SetupGet(x => x.TextBuffer).Returns(buffer);
+            view.SetupGet(x => x.TextViewLines).Returns(lines.Object);
+            view.SetupGet(x => x.Caret).Returns(caret.Object);
+            view.SetupGet(x => x.InLayout).Returns(false);
+            view.SetupGet(x => x.TextSnapshot).Returns(() => buffer.CurrentSnapshot);
+            return Tuple.Create(view, factory);
         }
 
         internal static Mock<ITextBuffer> CreateTextBuffer(bool addSnapshot=false)

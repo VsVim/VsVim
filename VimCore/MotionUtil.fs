@@ -13,6 +13,17 @@ type internal MotionUtil
 
     member x.StartPoint = TextViewUtil.GetCaretPoint _textView
 
+    /// Apply the startofline option to the given MotionData
+    member private x.ApplyStartOfLineOption (motionData:MotionData) =
+        if not _settings.StartOfLine then motionData 
+        else
+            let endLine = 
+                if motionData.IsForward then SnapshotPointUtil.GetContainingLine motionData.Span.End
+                else SnapshotPointUtil.GetContainingLine motionData.Span.Start
+            let point = TssUtil.FindFirstNonWhitespaceCharacter endLine
+            let _,column = SnapshotPointUtil.GetLineColumn point
+            { motionData with Column=Some column }
+
     member private x.ForwardCharMotionCore c count func = 
         let start = x.StartPoint
         match func start c count with
@@ -176,5 +187,18 @@ type internal MotionUtil
             let endPoint = if SnapshotUtil.GetEndPoint snapshot = endPoint then endPoint else endPoint.Add(1)
             let span = SnapshotSpan(start,endPoint)
             {Span=span; IsForward=true; MotionKind=MotionKind.Inclusive; OperationKind=OperationKind.CharacterWise; Column=None}
+        member x.LineFromTopOfVisibleWindow countOpt = 
+            let caretPoint,caretLine = TextViewUtil.GetCaretPointAndLine _textView
+            let lines = TextViewUtil.GetVisibleSnapshotLines _textView |> List.ofSeq
+            let span = 
+                if lines.Length = 0 then caretLine.Extent
+                else  
+                    let count = (CommandUtil.CountOrDefault countOpt) 
+                    let count = min count lines.Length
+                    let startLine = lines.Head
+                    SnapshotPointUtil.GetLineRangeSpan startLine.Start count
+            let isForward = caretPoint.Position <= span.End.Position
+            {Span=span; IsForward=isForward; MotionKind=MotionKind.Inclusive; OperationKind=OperationKind.LineWise; Column=None}
+            |> x.ApplyStartOfLineOption
 
 

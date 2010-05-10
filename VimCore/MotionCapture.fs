@@ -81,6 +81,7 @@ type internal MotionCapture
         let needCountOpt =
             seq {
                 yield (InputUtil.CharToKeyInput 'G', fun countOpt -> _util.LineOrLastToFirstNonWhitespace countOpt |> Some)
+                yield (InputUtil.CharToKeyInput 'H', fun countOpt -> _util.LineFromTopOfVisibleWindow countOpt |> Some)
             } |> Seq.map (fun (ki,func) -> SimpleMotionCommand(OneKeyInput ki, func))
 
         let needCountOpt2 =

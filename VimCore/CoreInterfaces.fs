@@ -141,6 +141,10 @@ type IMotionUtil =
     /// Go to the specified line number or the last line of no line number is provided
     abstract LineOrLastToFirstNonWhitespace : int option -> MotionData 
 
+    /// Go to the "count - 1" line from the top of the visible window.  If the count exceeds
+    /// the number of visible lines it will end on the last visible line
+    abstract LineFromTopOfVisibleWindow : int option -> MotionData
+
 type ModeKind = 
     | Normal = 1
     | Insert = 2

@@ -172,6 +172,17 @@ namespace VimCore.Test
         }
 
         [Test]
+        public void Motion_H()
+        {
+            _util
+                .Setup(x => x.LineFromTopOfVisibleWindow(FSharpOption<int>.None))
+                .Returns(CreateMotionData())
+                .Verifiable();
+            ProcessComplete("H");
+            _util.Verify();
+        }
+
+        [Test]
         public void Motion_aW1()
         {
             _util

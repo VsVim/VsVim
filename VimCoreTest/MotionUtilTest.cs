@@ -10,6 +10,9 @@ using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text;
 using VimCore.Test.Utils;
 using Microsoft.FSharp.Core;
+using Moq;
+using Microsoft.VisualStudio.Text.Formatting;
+using VimCore.Test.Mock;
 
 namespace VimCore.Test
 {
@@ -37,7 +40,12 @@ namespace VimCore.Test
 
         public void Create(params string[] lines)
         {
-            _textView = Utils.EditorUtil.CreateView(lines);
+            Create(Utils.EditorUtil.CreateView(lines));
+        }
+
+        public void Create(ITextView textView)
+        {
+            _textView = textView;
             _buffer = _textView.TextBuffer;
             _settings = new Vim.GlobalSettings();
             _utilRaw = new MotionUtil(_textView, _settings);
@@ -573,7 +581,45 @@ namespace VimCore.Test
             Assert.AreEqual(MotionKind.Inclusive, data.MotionKind);
         }
 
+        [Test]
+        public void LineFromTopOfVisibleWindow1()
+        {
+            var buffer = EditorUtil.CreateBuffer("foo", "bar", "baz");
+            var tuple = MockObjectFactory.CreateTextViewWithVisibleLines(buffer, 0, 1);
+            Create(tuple.Item1.Object);
+            var data = _util.LineFromTopOfVisibleWindow(FSharpOption<int>.None);
+            Assert.AreEqual(buffer.GetLineSpan(0), data.Span);
+            Assert.AreEqual(MotionKind.Inclusive, data.MotionKind);
+            Assert.AreEqual(OperationKind.LineWise, data.OperationKind);
+            Assert.IsTrue(data.IsForward);
+        }
 
+        [Test]
+        public void LineFromTopOfVisibleWindow2()
+        {
+            var buffer = EditorUtil.CreateBuffer("foo", "bar", "baz", "jazz");
+            var tuple = MockObjectFactory.CreateTextViewWithVisibleLines(buffer, 0, 2);
+            Create(tuple.Item1.Object);
+            var data = _util.LineFromTopOfVisibleWindow(FSharpOption.Create(2));
+            Assert.AreEqual(buffer.GetLineSpan(0,1), data.Span);
+            Assert.AreEqual(MotionKind.Inclusive, data.MotionKind);
+            Assert.AreEqual(OperationKind.LineWise, data.OperationKind);
+            Assert.IsTrue(data.IsForward);
+        }
+
+        [Test]
+        [Description("From visible line not caret point")]
+        public void LineFromTopOfVisibleWindow3()
+        {
+            var buffer = EditorUtil.CreateBuffer("foo", "bar", "baz", "jazz");
+            var tuple = MockObjectFactory.CreateTextViewWithVisibleLines(buffer, 0, 2, caretPosition:buffer.GetLine(2).Start.Position);
+            Create(tuple.Item1.Object);
+            var data = _util.LineFromTopOfVisibleWindow(FSharpOption.Create(2));
+            Assert.AreEqual(buffer.GetLineSpan(0,1), data.Span);
+            Assert.AreEqual(MotionKind.Inclusive, data.MotionKind);
+            Assert.AreEqual(OperationKind.LineWise, data.OperationKind);
+            Assert.IsFalse(data.IsForward);
+        }
     }   
     
 }

@@ -382,6 +382,19 @@ module internal TextViewUtil =
 
     let GetCaretPointAndLine textView = (GetCaretPoint textView),(GetCaretLine textView)
 
+    /// Returns a sequence of ITextSnapshotLines representing the visible lines in the buffer
+    let GetVisibleSnapshotLines (textView:ITextView) =
+        if textView.InLayout then Seq.empty
+        else 
+            let lines = textView.TextViewLines
+            let startNumber = lines.FirstVisibleLine.Start.GetContainingLine().LineNumber
+            let endNumber = lines.LastVisibleLine.End.GetContainingLine().LineNumber
+            let snapshot = textView.TextSnapshot
+            seq {
+                for i = startNumber to endNumber do
+                    yield SnapshotUtil.GetLine snapshot i
+            }
+
     /// Ensure the caret is currently on the visible screen
     let EnsureCaretOnScreen textView = 
         let caret = GetCaret textView

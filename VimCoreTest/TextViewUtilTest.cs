@@ -28,5 +28,35 @@ namespace VimCore.Test
             caret.Verify();
         }
 
+        [Test]
+        public void GetVisibleSnapshotLines1()
+        {
+            var buffer = EditorUtil.CreateBuffer("foo", "bar", "dog", "jazz");
+            var tuple = MockObjectFactory.CreateTextViewWithVisibleLines(buffer, 0, 2);
+            var lines = TextViewUtil.GetVisibleSnapshotLines(tuple.Item1.Object).ToList();
+            CollectionAssert.AreEqual(new int[] { 0, 1, 2}, lines.Select(x => x.LineNumber));
+        }
+
+        [Test]
+        public void GetVisibleSnapshotLines2()
+        {
+            var buffer = EditorUtil.CreateBuffer("foo", "bar", "dog", "jazz");
+            var tuple = MockObjectFactory.CreateTextViewWithVisibleLines(buffer, 1, 2);
+            var lines = TextViewUtil.GetVisibleSnapshotLines(tuple.Item1.Object).ToList();
+            CollectionAssert.AreEqual(new int[] { 1, 2}, lines.Select(x => x.LineNumber));
+        }
+
+        [Test]
+        [Description("During a layout just return an empty sequence")]
+        public void GetVisibleSnapshotLines3()
+        {
+            var buffer = EditorUtil.CreateBuffer("foo", "bar", "dog", "jazz");
+            var tuple = MockObjectFactory.CreateTextViewWithVisibleLines(buffer, 1, 2);
+            var view = tuple.Item1;
+            view.SetupGet(x => x.InLayout).Returns(true);
+            var lines = TextViewUtil.GetVisibleSnapshotLines(view.Object).ToList();
+            Assert.AreEqual(0, lines.Count);
+        }
+
     }
 }
