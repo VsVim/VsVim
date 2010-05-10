@@ -239,6 +239,18 @@ namespace VimCore.Test
                         .Verifiable());
         }
 
+        [Test]
+        public void Motion_g_()
+        {
+            AssertMotion(
+                "g_",
+                (util, point, count, data) =>
+                    util
+                    .Setup(x => x.LastNonWhitespaceOnLine(CommandUtil.CountOrDefault(count)))
+                    .Returns(data)
+                    .Verifiable());
+        }
+
         #endregion
 
         #region Movement
@@ -523,15 +535,6 @@ namespace VimCore.Test
         }
 
         [Test]
-        public void Move_gUnderscore_1()
-        {
-            Create("foo bar ");
-            _editorOperations.Setup(x => x.MoveToLastNonWhiteSpaceCharacter(false)).Verifiable();
-            _mode.Process("g_");
-            _editorOperations.Verify();
-        }
-
-        [Test]
         public void Move_CHome_1()
         {
             Create(s_lines);
@@ -734,30 +737,18 @@ namespace VimCore.Test
         public void BadMotion1()
         {
             Create(s_lines);
-            _statusUtil.Setup(x => x.OnError(It.IsAny<string>())).Verifiable();
+            _statusUtil.Setup(x => x.OnError(Resources.MotionCapture_InvalidMotion));
             _mode.Process("d@");
             _statusUtil.Verify();
         }
 
-        [Test, Description("Typing in invalid motion should produce a warning")]
+        [Test, Description("Invalid motion should bring us back to normal state")]
         public void BadMotion2()
-        {
-            Create(s_lines);
-            _statusUtil.Setup(x => x.OnError(It.IsAny<string>())).Verifiable();
-            _mode.Process("d@aoeuaoeu");
-            _statusUtil.Verify();
-        }
-
-        [Test, Description("Enter must cancel an invalid motion")]
-        public void BadMotion3()
         {
             Create(s_lines);
             _statusUtil.Setup(x => x.OnError(It.IsAny<string>())).Verifiable();
             _mode.Process("d@");
             var res = _mode.Process(InputUtil.CharToKeyInput('i'));
-            Assert.IsTrue(res.IsProcessed);
-            _mode.Process(VimKey.EnterKey);
-            res = _mode.Process(InputUtil.CharToKeyInput('i'));
             Assert.IsTrue(res.IsSwitchMode);
             _statusUtil.Verify();
         }
@@ -790,6 +781,7 @@ namespace VimCore.Test
             _mode.Process("50l");
             _operations.Verify();
         }
+
 
         #endregion
 

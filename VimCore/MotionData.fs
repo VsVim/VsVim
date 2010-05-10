@@ -44,16 +44,4 @@ type MotionData = {
                 SnapshotSpan(x.Span.Start, lineAbove.End)
             else x.Span
 
-    /// Returns the value of Column if it exists.  If not it will get the first point on
-    /// the first line of a forward motion or the last point on the last line in a non
-    /// forward motion
-    member x.ColumnOrFirstPoint = 
-        let column =
-            match x.Column with
-            | Some(value) -> value
-            | None -> 0
-        let line = 
-            if x.IsForward then SnapshotPointUtil.GetContainingLine x.Span.Start
-            else SnapshotPointUtil.GetContainingLine x.Span.End
-        VirtualSnapshotPoint(line, column)
         
