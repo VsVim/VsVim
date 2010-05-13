@@ -91,13 +91,15 @@ namespace VimCore.Test.Mock
             string name = null,
             IVim vim = null,
             IJumpList jumpList = null,
-            IVimLocalSettings settings = null )
+            IVimLocalSettings settings = null,
+            MockFactory factory = null )
         {
+            factory = factory ?? new MockFactory(MockBehavior.Strict);
             name = name ?? "test";
             vim = vim ?? CreateVim().Object;
-            jumpList = jumpList ?? (new Mock<IJumpList>(MockBehavior.Strict)).Object;
+            jumpList = jumpList ?? (factory.Create<IJumpList>().Object);
             settings = settings ?? new LocalSettings(vim.Settings, view);
-            var mock = new Mock<IVimBuffer>(MockBehavior.Strict);
+            var mock = factory.Create<IVimBuffer>();
             mock.SetupGet(x => x.TextView).Returns(view);
             mock.SetupGet(x => x.TextBuffer).Returns(() => view.TextBuffer);
             mock.SetupGet(x => x.TextSnapshot).Returns(() => view.TextSnapshot);

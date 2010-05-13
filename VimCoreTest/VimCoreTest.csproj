@@ -141,6 +141,7 @@
     <Compile Include="CommandProcessorTest.cs" />
     <Compile Include="CommandRunnerTest.cs" />
     <Compile Include="Command_DefaultOperations.cs" />
+    <Compile Include="InsertModeIntegrationTest.cs" />
     <Compile Include="FileSystemTest.cs" />
     <Compile Include="Mock\MockCommandRunner.cs" />
     <Compile Include="MotionDataTest.cs" />

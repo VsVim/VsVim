@@ -21,13 +21,17 @@ type internal InsertMode
     member private this.ShiftLeft() = _operations.ShiftLinesLeft 1
 
     member private this.ProcessEscape() =
+
         if _broker.IsCompletionWindowActive then
             _broker.DismissCompletionWindow()
 
             if _data.Settings.GlobalSettings.DoubleEscape then ProcessResult.Processed
-            else ProcessResult.SwitchMode ModeKind.Normal
+            else 
+                _operations.MoveCaretLeft 1 
+                ProcessResult.SwitchMode ModeKind.Normal
 
         else
+            _operations.MoveCaretLeft 1 
             ProcessResult.SwitchMode ModeKind.Normal
 
     interface IMode with 
@@ -45,11 +49,5 @@ type internal InsertMode
                 ProcessResult.Processed
             else Processed
         member x.OnEnter () = ()
-        member x.OnLeave () = 
-            // When leaving insert mode the caret should move one to the left on the
-            // same line.  The one complication is that if the user closes the ITextView while
-            // insert mode is active the view will be closed during OnLeave.  Moving the
-            // caret here will cause an exception
-            if not _data.TextView.IsClosed then
-                _operations.MoveCaretLeft 1 
+        member x.OnLeave () = ()
         member x.OnClose() = ()

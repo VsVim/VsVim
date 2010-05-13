@@ -19,6 +19,7 @@ namespace VimCore.Test
     [TestFixture]
     public class InsertModeTest
     {
+        private MockFactory _factory;
         private Mock<IVimBuffer> _data;
         private Vim.Modes.Insert.InsertMode _modeRaw;
         private IMode _mode;
@@ -32,17 +33,20 @@ namespace VimCore.Test
         [SetUp]
         public void SetUp()
         {
-            _textView = new Mock<ITextView>(MockBehavior.Strict);
-            _vim = new Mock<IVim>();
-            _globalSettings = new Mock<IVimGlobalSettings>(MockBehavior.Strict);
-            _localSettings = new Mock<IVimLocalSettings>(MockBehavior.Strict);
+            _factory = new MockFactory(MockBehavior.Strict);
+            _factory.DefaultValue = DefaultValue.Mock;
+            _textView = _factory.Create<ITextView>();
+            _vim = _factory.Create<IVim>(MockBehavior.Loose);
+            _globalSettings = _factory.Create<IVimGlobalSettings>();
+            _localSettings = _factory.Create<IVimLocalSettings>();
             _localSettings.SetupGet(x => x.GlobalSettings).Returns(_globalSettings.Object);
             _data = Mock.MockObjectFactory.CreateVimBuffer(
                 _textView.Object,
                 settings:_localSettings.Object,
-                vim:_vim.Object);
-            _operations = new Mock<ICommonOperations>(MockBehavior.Strict);
-            _broker = new Mock<IDisplayWindowBroker>(MockBehavior.Strict);
+                vim:_vim.Object,
+                factory: _factory);
+            _operations = _factory.Create<ICommonOperations>();
+            _broker = _factory.Create<IDisplayWindowBroker>();
             _modeRaw = new Vim.Modes.Insert.InsertMode(_data.Object,_operations.Object,_broker.Object);
             _mode = _modeRaw;
         }
@@ -67,9 +71,10 @@ namespace VimCore.Test
                 .SetupGet(x => x.IsCompletionWindowActive)
                 .Returns(false)
                 .Verifiable();
+            _operations.Setup(x => x.MoveCaretLeft(1)).Verifiable();
             var res = _mode.Process(VimKey.EscapeKey);
             Assert.IsTrue(res.IsSwitchMode);
-            _broker.Verify();
+            _factory.Verify();
         }
 
         [Test]
@@ -83,9 +88,11 @@ namespace VimCore.Test
             _broker
                 .Setup(x => x.DismissCompletionWindow())
                 .Verifiable();
+            _operations.Setup(x => x.MoveCaretLeft(1)).Verifiable();
             var res = _mode.Process(VimKey.EscapeKey);
             Assert.IsTrue(res.IsSwitchMode);
             Assert.AreEqual(ModeKind.Normal, res.AsSwitchMode().Item);
+            _factory.Verify();
         }
 
         [Test, Description("Double escape will only dismiss intellisense")]
@@ -101,6 +108,7 @@ namespace VimCore.Test
                 .Verifiable();
             var res = _mode.Process(VimKey.EscapeKey);
             Assert.IsTrue(res.IsProcessed);
+            _factory.Verify();
         }
 
         [Test]
@@ -122,10 +130,12 @@ namespace VimCore.Test
             _broker
                 .Setup(x => x.DismissCompletionWindow())
                 .Verifiable();
+            _operations.Setup(x => x.MoveCaretLeft(1)).Verifiable();
             var ki = InputUtil.CharAndModifiersToKeyInput('[', KeyModifiers.Control);
             var res = _mode.Process(ki);
             Assert.IsTrue(res.IsSwitchMode);
             Assert.AreEqual(ModeKind.Normal, res.AsSwitchMode().Item);
+            _factory.Verify();
         }
 
         [Test]
@@ -136,29 +146,15 @@ namespace VimCore.Test
                 .Verifiable(); ;
             var res = _mode.Process(new KeyInput('d', KeyModifiers.Control));
             Assert.IsTrue(res.IsProcessed);
-            _operations.Verify();
-            _globalSettings.Verify();
+            _factory.Verify();
         }
 
         [Test]
         public void OnLeave1()
         {
-            _textView.SetupGet(x => x.IsClosed).Returns(false).Verifiable();
-            _operations.Setup(x => x.MoveCaretLeft(1)).Verifiable();
             _mode.OnLeave();
-            _textView.Verify();
-            _operations.Verify();
+            _factory.Verify();
         }
-
-        [Test]
-        [Description("If the view is closed moving the caret will throw")]
-        public void OnLeave2()
-        {
-            _textView.SetupGet(x => x.IsClosed).Returns(true).Verifiable();
-            _mode.OnLeave();
-            _textView.Verify();
-        }
-
 
     }
 }
