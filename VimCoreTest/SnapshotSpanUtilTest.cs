@@ -156,5 +156,32 @@ namespace VimCore.Test
             Assert.AreEqual(0, points.Count());
         }
 
+        [Test]
+        public void GetEndLine1()
+        {
+            Create("a", "b", "c");
+            var span = _buffer.GetLine(0).ExtentIncludingLineBreak;
+            var endLine = SnapshotSpanUtil.GetEndLine(span);
+            Assert.AreEqual(0, endLine.LineNumber);
+        }
+
+        [Test]
+        public void GetEndLine2()
+        {
+            Create("a", "b", "c");
+            var span = _buffer.GetLine(2).ExtentIncludingLineBreak;
+            var endLine = SnapshotSpanUtil.GetEndLine(span);
+            Assert.AreEqual(2, endLine.LineNumber);
+        }
+
+        [Test]
+        public void GetEndLine3()
+        {
+            Create("", "b", "c");
+            var span = _buffer.GetLine(0).ExtentIncludingLineBreak;
+            var endLine = SnapshotSpanUtil.GetEndLine(span);
+            Assert.AreEqual(0, endLine.LineNumber);
+        }
+
     }
 }

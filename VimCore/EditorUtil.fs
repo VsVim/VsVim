@@ -104,6 +104,19 @@ module internal SnapshotSpanUtil =
                 let offset = length - i
                 yield SnapshotPoint(tss, startPos + offset) }
 
+    /// Get the first line in the SnapshotSpan
+    let GetStartLine (span:SnapshotSpan) = span.Start.GetContainingLine()
+
+    /// Get the end line in the SnapshotSpan.  Remember that End is not a part of the Span
+    /// but instead the first point after the Span.  This is important when the Span is 
+    /// ITextSnapshotLine.ExtentIncludingLineBreak as it is in Visual Mode
+    let GetEndLine (span:SnapshotSpan) = 
+        if span.Length > 0 then span.End.Subtract(1).GetContainingLine()
+        else GetStartLine span
+
+    /// Get the start and end line of the SnapshotSpan.  Remember that End is not a part of
+    /// the span but instead the first point after the span
+    let GetStartAndEndLine span = GetStartLine span,GetEndLine span
 
 /// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
 /// include any Vim specific logic

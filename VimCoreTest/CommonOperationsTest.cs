@@ -858,6 +858,16 @@ namespace VimCore.Test
             Assert.AreEqual("  foo", _buffer.CurrentSnapshot.GetLineFromLineNumber(0).GetText());
         }
 
+        [Test]
+        public void ShiftSpanRight2()
+        {
+            Create("a", "b", "c");
+            var span = _buffer.GetLine(0).ExtentIncludingLineBreak;
+            _operations.ShiftSpanRight(1, span);
+            Assert.AreEqual("  a", _buffer.GetLine(0).GetText());
+            Assert.AreEqual("b", _buffer.GetLine(1).GetText());
+        }
+
         [Test, Description("Only shift whitespace")]
         public void ShiftSpanLeft1()
         {
@@ -895,6 +905,16 @@ namespace VimCore.Test
             var span = _buffer.CurrentSnapshot.GetLineFromLineNumber(0).Extent;
             _operations.ShiftSpanLeft(1, span);
             Assert.AreEqual(" foo", _buffer.CurrentSnapshot.GetLineFromLineNumber(0).GetText());
+        }
+
+        [Test]
+        public void ShiftSpanLeft5()
+        {
+            Create("  a", "  b", "c");
+            var span = _buffer.GetLine(0).ExtentIncludingLineBreak;
+            _operations.ShiftSpanLeft(1, span);
+            Assert.AreEqual("a", _buffer.GetLine(0).GetText());
+            Assert.AreEqual("  b", _buffer.GetLine(1).GetText());
         }
 
         [Test]

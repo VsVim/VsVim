@@ -52,10 +52,9 @@ type internal CommonOperations
     member x.ShiftSpanRight multiplier (span:SnapshotSpan) = 
         let text = new System.String(' ', _settings.GlobalSettings.ShiftWidth * multiplier)
         let buf = span.Snapshot.TextBuffer
-        let startLineNumber = span.Start.GetContainingLine().LineNumber
-        let endLineNumber = span.End.GetContainingLine().LineNumber
+        let startLine,endLine = SnapshotSpanUtil.GetStartAndEndLine span
         use edit = buf.CreateEdit()
-        for i = startLineNumber to endLineNumber do
+        for i = startLine.LineNumber to endLine.LineNumber do
             let line = span.Snapshot.GetLineFromLineNumber(i)
             edit.Replace(line.Start.Position,0,text) |> ignore
         
@@ -73,10 +72,9 @@ type internal CommonOperations
                     | None -> count
             text.Substring(count)                 
         let buf = span.Snapshot.TextBuffer
-        let startLineNumber = span.Start.GetContainingLine().LineNumber
-        let endLineNumber = span.End.GetContainingLine().LineNumber
+        let startLine,endLine = SnapshotSpanUtil.GetStartAndEndLine span
         use edit = buf.CreateEdit()
-        for i = startLineNumber to endLineNumber do
+        for i = startLine.LineNumber to endLine.LineNumber do
             let line = span.Snapshot.GetLineFromLineNumber(i)
             let text = fixText (line.GetText())
             edit.Replace(line.Extent.Span, text) |> ignore
