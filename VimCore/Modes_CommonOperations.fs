@@ -241,48 +241,52 @@ type internal CommonOperations
     
         /// Move the cursor count spaces left
         member x.MoveCaretLeft count = 
-            _operations.ResetSelection()
             let caret = TextViewUtil.GetCaretPoint _textView
             let leftPoint = SnapshotPointUtil.GetPreviousPointOnLine caret count
-            TextViewUtil.MoveCaretToPoint _textView leftPoint
+            if caret <> leftPoint then
+                _operations.ResetSelection()
+                TextViewUtil.MoveCaretToPoint _textView leftPoint
     
         /// Move the cursor count spaces to the right
         member x.MoveCaretRight count =
-            _operations.ResetSelection()
             let caret = TextViewUtil.GetCaretPoint _textView
+            let doMove point = 
+                if point <> caret then
+                    _operations.ResetSelection()
+                    TextViewUtil.MoveCaretToPoint _textView point
 
             if SnapshotPointUtil.IsLastPointOnLine caret then
 
                 // If we are an the last point of the line then only move if VirtualEdit=onemore
                 let line = SnapshotPointUtil.GetContainingLine caret
                 if _settings.GlobalSettings.IsVirtualEditOneMore && line.Length > 0 then 
-                    TextViewUtil.MoveCaretToPoint _textView line.End
+                    doMove line.End
             else
 
                 let rightPoint = SnapshotPointUtil.GetNextPointOnLine caret count
-                TextViewUtil.MoveCaretToPoint _textView rightPoint
+                doMove rightPoint
     
         /// Move the cursor count spaces up 
         member x.MoveCaretUp count =
-            _operations.ResetSelection()
             let caret = TextViewUtil.GetCaretPoint _textView
             let current = caret.GetContainingLine()
             let count = 
                 if current.LineNumber - count > 0 then count
                 else current.LineNumber 
+            if count > 0 then _operations.ResetSelection()
             for i = 1 to count do   
                 _operations.MoveLineUp(false)
             x.AdjustCaretAfterUpDownMove()
 
         /// Move the cursor count spaces down
         member x.MoveCaretDown count =
-            _operations.ResetSelection()
             let caret = TextViewUtil.GetCaretPoint _textView
             let line = caret.GetContainingLine()
             let tss = line.Snapshot
             let count = 
                 if line.LineNumber + count < tss.LineCount then count
                 else (tss.LineCount - line.LineNumber) - 1 
+            if count > 0 then _operations.ResetSelection()
             for i = 1 to count do
                 _operations.MoveLineDown(false)
             x.AdjustCaretAfterUpDownMove()

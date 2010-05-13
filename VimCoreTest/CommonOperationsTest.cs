@@ -397,7 +397,6 @@ namespace VimCore.Test
             var tss = _view.TextSnapshot;
             var endPoint = tss.GetLineFromLineNumber(0).End;
             _view.Caret.MoveTo(endPoint);
-            _editorOpts.Setup(x => x.ResetSelection()).Verifiable();
             _operations.MoveCaretRight(1);
             Assert.AreEqual(endPoint, _view.Caret.Position.BufferPosition);
         }
@@ -408,10 +407,8 @@ namespace VimCore.Test
             Create("foo", "bar");
             var last = _view.TextSnapshot.Lines.Last();
             _view.Caret.MoveTo(last.End);
-            _editorOpts.Setup(x => x.ResetSelection()).Verifiable();
             _operations.MoveCaretRight(1);
             Assert.AreEqual(last.End, _view.Caret.Position.BufferPosition);
-            _editorOpts.Verify();
         }
 
         [Test, Description("Don't go off the end of the current line")]
@@ -432,11 +429,9 @@ namespace VimCore.Test
         public void MoveCaretRight6()
         {
             Create("foo", "bar");
-            _editorOpts.Setup(x => x.ResetSelection()).Verifiable();
             _view.Caret.MoveTo(_view.GetLine(0).End);
             _operations.MoveCaretRight(1);
             Assert.AreEqual(_view.GetLine(0).End, _view.GetCaretPoint());
-            _editorOpts.Verify();
         }
 
         [Test, Description("Move past the end of the line if VirtualEdit=onemore is set")]
@@ -467,10 +462,8 @@ namespace VimCore.Test
         public void MoveCaretLeft2()
         {
             Create("foo", "bar");
-            _editorOpts.Setup(x => x.ResetSelection()).Verifiable();
             _operations.MoveCaretLeft(1);
             Assert.AreEqual(0, _view.Caret.Position.BufferPosition.Position);
-            _editorOpts.Verify();
         }
 
         [Test]
@@ -491,10 +484,8 @@ namespace VimCore.Test
             Create("foo", "bar");
             var line = _view.TextSnapshot.GetLineFromLineNumber(1);
             _view.Caret.MoveTo(line.Start);
-            _editorOpts.Setup(x => x.ResetSelection()).Verifiable();
             _operations.MoveCaretLeft(1);
             Assert.AreEqual(line.Start, _view.Caret.Position.BufferPosition);
-            _editorOpts.Verify();
         }
 
         [Test]
@@ -517,10 +508,8 @@ namespace VimCore.Test
             _globalSettings.SetupGet(x => x.IsVirtualEditOneMore).Returns(true);
             var first = _view.TextSnapshot.Lines.First();
             _view.Caret.MoveTo(first.End);
-            _editorOpts.Setup(x => x.ResetSelection()).Verifiable();
             _operations.MoveCaretUp(1);
             Assert.AreEqual(first.End, _view.Caret.Position.BufferPosition);
-            _editorOpts.Verify();
         }
 
         [Test, Description("Move caret up should respect column positions")]
@@ -594,6 +583,16 @@ namespace VimCore.Test
             _operations.MoveCaretUp(1);
             var point = _buffer.GetLine(1).End;
             Assert.AreEqual(point, _view.GetCaretPoint());
+        }
+
+        [Test]
+        [Description("Should not reset the selection if the move is not possible")]
+        public void MoveCaretUp8()
+        {
+            Create("foo", "bar");
+            _globalSettings.SetupGet(x => x.IsVirtualEditOneMore).Returns(false);
+            _operations.MoveCaretUp(1);
+            Assert.AreEqual(0, _view.GetCaretPoint().Position);
         }
 
         [Test, Description("At end of line should wrap to the start of the next line if there is a word")]
@@ -682,10 +681,8 @@ namespace VimCore.Test
             _globalSettings.SetupGet(x => x.IsVirtualEditOneMore).Returns(true);
             var last = _view.TextSnapshot.Lines.Last();
             _view.Caret.MoveTo(last.Start);
-            _editorOpts.Setup(x => x.ResetSelection()).Verifiable();
             _operations.MoveCaretDown(1);
             Assert.AreEqual(last.Start, _view.Caret.Position.BufferPosition);
-            _editorOpts.Verify();
         }
 
         [Test, Description("Move caret down should not crash if the line is the second to last line.  In other words, the last real line")]
@@ -710,9 +707,7 @@ namespace VimCore.Test
             var tss = _view.TextSnapshot;
             var line = tss.GetLineFromLineNumber(tss.LineCount - 1);
             _view.Caret.MoveTo(line.Start);
-            _editorOpts.Setup(x => x.ResetSelection()).Verifiable();
             _operations.MoveCaretDown(1);
-            _editorOpts.Verify();
         }
 
         [Test]
