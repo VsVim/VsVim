@@ -52,14 +52,13 @@ namespace VimCore.Test
             _tracker = new Mock<ISelectionTracker>(MockBehavior.Strict);
             _tracker.Setup(x => x.Start());
             _operations = new Mock<IOperations>(MockBehavior.Strict);
-            _operations.SetupGet(x => x.SelectionTracker).Returns(_tracker.Object);
             _bufferData = MockObjectFactory.CreateVimBuffer(
                 _view.Object,
                 "test",
                 MockObjectFactory.CreateVim(_map).Object);
             var capture = new MotionCapture(_view.Object, new MotionUtil(_view.Object, _bufferData.Object.Settings.GlobalSettings));
             var runner = new CommandRunner(Tuple.Create((ITextView)_view.Object, _map, (IMotionCapture)capture, (new Mock<IStatusUtil>()).Object));
-            _modeRaw = new Vim.Modes.Visual.VisualMode(_bufferData.Object, _operations.Object, kind, runner, capture);
+            _modeRaw = new Vim.Modes.Visual.VisualMode(_bufferData.Object, _operations.Object, kind, runner, capture, _tracker.Object);
             _mode = _modeRaw;
             _mode.OnEnter();
         }
@@ -276,7 +275,6 @@ namespace VimCore.Test
             Create("foo", "bar");
             _operations
                 .Setup(x => x.DeleteSelection(_map.DefaultRegister))
-                .Returns<ITextSnapshot>(null)
                 .Verifiable();
             _mode.Process("d");
             _operations.Verify();
@@ -288,7 +286,6 @@ namespace VimCore.Test
             Create("foo", "bar");
             _operations
                 .Setup(x => x.DeleteSelection(_map.GetRegister('c')))
-                .Returns<ITextSnapshot>(null)
                 .Verifiable();
             _mode.Process("\"cd");
             _operations.Verify();
@@ -300,7 +297,6 @@ namespace VimCore.Test
             Create("foo", "bar");
             _operations
                 .Setup(x => x.DeleteSelection(_map.DefaultRegister))
-                .Returns<ITextSnapshot>(null)
                 .Verifiable();
             _mode.Process("x");
             _operations.Verify();
@@ -312,7 +308,6 @@ namespace VimCore.Test
             Create("foo", "bar");
             _operations
                 .Setup(x => x.DeleteSelection(_map.DefaultRegister))
-                .Returns<ITextSnapshot>(null)
                 .Verifiable();
             _mode.Process(VimKey.DeleteKey);
             _operations.Verify();
@@ -351,7 +346,6 @@ namespace VimCore.Test
             Create("foo", "bar");
             _operations
                 .Setup(x => x.DeleteSelection(_map.DefaultRegister))
-                .Returns((ITextSnapshot)null)
                 .Verifiable();
             var res = _mode.Process('c');
             Assert.IsTrue(res.IsSwitchMode);
@@ -364,7 +358,6 @@ namespace VimCore.Test
             Create("foo", "bar");
             _operations
                 .Setup(x => x.DeleteSelection(_map.GetRegister('b')))
-                .Returns((ITextSnapshot)null)
                 .Verifiable();
             var res = _mode.Process("\"bc");
             Assert.IsTrue(res.IsSwitchMode);
@@ -377,7 +370,6 @@ namespace VimCore.Test
             Create("foo", "bar");
             _operations
                 .Setup(x => x.DeleteSelection(_map.DefaultRegister))
-                .Returns((ITextSnapshot)null)
                 .Verifiable();
             var res = _mode.Process('s');
             Assert.IsTrue(res.IsSwitchMode);

@@ -84,4 +84,4 @@ module internal StringUtil =
         comp.Equals(left,right)
 
     [<CompiledName("Split")>]
-    let split c (value:string) = value.Split( [| c |])
+    let split c (value:string) = value.Split( [| c |]) 

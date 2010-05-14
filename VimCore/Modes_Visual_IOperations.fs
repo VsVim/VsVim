@@ -10,11 +10,8 @@ open Vim.Modes
 type IOperations = 
     inherit ICommonOperations
     
-    /// The ISelectionTracker assaciotade with this instance
-    abstract SelectionTracker : ISelectionTracker 
-
     /// Delete the selection and put the result into the specified register
-    abstract DeleteSelection : Register -> ITextSnapshot
+    abstract DeleteSelection : Register -> unit
 
     /// Delete the selected lines
     abstract DeleteSelectedLines : Register -> ITextSnapshot

@@ -62,7 +62,16 @@ type internal VimBufferFactory
                 | ModeKind.VisualLine -> Modes.Visual.SelectionMode.Line
                 | _ -> invalidArg "_kind" "Invalid kind for Visual Mode"
             let tracker = Modes.Visual.SelectionTracker(view,mode) :> Modes.Visual.ISelectionTracker
-            Modes.Visual.DefaultOperations(view,editOperations, outlining, _host, jumpList, tracker, localSettings,undoRedoOperations) :> Modes.Visual.IOperations
+            let opts = Modes.Visual.DefaultOperations(view,editOperations, outlining, _host, jumpList, localSettings,undoRedoOperations,kind) :> Modes.Visual.IOperations
+            (tracker, opts)
+
+        let visualModeList =
+            [ ModeKind.VisualBlock; ModeKind.VisualCharacter; ModeKind.VisualLine ]
+            |> Seq.ofList
+            |> Seq.map (fun kind -> 
+                let tracker, opts = visualOptsFactory kind
+                ((Modes.Visual.VisualMode(buffer, opts, kind, createCommandRunner(),capture, tracker)) :> IMode) )
+            |> List.ofSeq
     
         // Normal mode values
         let modeList = 
@@ -71,10 +80,7 @@ type internal VimBufferFactory
                 ((Modes.Command.CommandMode(buffer, commandProcessor)) :> IMode);
                 ((Modes.Insert.InsertMode(buffer,insertOpts,broker)) :> IMode);
                 (DisabledMode(buffer) :> IMode);
-                ((Modes.Visual.VisualMode(buffer, (visualOptsFactory ModeKind.VisualBlock), ModeKind.VisualBlock, createCommandRunner(),capture)) :> IMode);
-                ((Modes.Visual.VisualMode(buffer, (visualOptsFactory ModeKind.VisualLine), ModeKind.VisualLine, createCommandRunner(),capture)) :> IMode);
-                ((Modes.Visual.VisualMode(buffer, (visualOptsFactory ModeKind.VisualCharacter), ModeKind.VisualCharacter, createCommandRunner(),capture)) :> IMode);
-            ]
+            ] @ visualModeList
         modeList |> List.iter (fun m -> bufferRaw.AddMode m)
         buffer.SwitchMode ModeKind.Normal |> ignore
         bufferRaw

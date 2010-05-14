@@ -13,9 +13,8 @@ type internal VisualMode
         _operations : IOperations,
         _kind : ModeKind,
         _runner : ICommandRunner,
-        _capture : IMotionCapture ) = 
-
-    let _selectionTracker = _operations.SelectionTracker 
+        _capture : IMotionCapture,
+        _selectionTracker : ISelectionTracker ) = 
 
     let mutable _builtCommands = false
 

@@ -379,7 +379,6 @@ module internal SnapshotPointUtil =
             let endPosition = min line.End.Position (point.Position+count)
             let endPoint = SnapshotPoint(line.Snapshot, endPosition)
             SnapshotSpan(point, endPoint)
-            
 
 /// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
 /// include any Vim specific logic
