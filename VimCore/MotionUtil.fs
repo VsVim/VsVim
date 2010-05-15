@@ -13,13 +13,17 @@ type internal MotionUtil
 
     member x.StartPoint = TextViewUtil.GetCaretPoint _textView
 
+    member private x.SpanAndForwardFromLines (line1:ITextSnapshotLine) (line2:ITextSnapshotLine) = 
+        if line1.LineNumber <= line2.LineNumber then SnapshotSpan(line1.Start, line2.End),true
+        else SnapshotSpan(line2.Start, line1.End),false
+
     /// Apply the startofline option to the given MotionData
     member private x.ApplyStartOfLineOption (motionData:MotionData) =
         if not _settings.StartOfLine then motionData 
         else
             let endLine = 
-                if motionData.IsForward then SnapshotPointUtil.GetContainingLine motionData.Span.End
-                else SnapshotPointUtil.GetContainingLine motionData.Span.Start
+                if motionData.IsForward then SnapshotSpanUtil.GetEndLine motionData.Span
+                else SnapshotSpanUtil.GetStartLine motionData.Span
             let point = TssUtil.FindFirstNonWhitespaceCharacter endLine
             let _,column = SnapshotPointUtil.GetLineColumn point
             { motionData with Column=Some column }
@@ -200,5 +204,29 @@ type internal MotionUtil
             let isForward = caretPoint.Position <= span.End.Position
             {Span=span; IsForward=isForward; MotionKind=MotionKind.Inclusive; OperationKind=OperationKind.LineWise; Column=None}
             |> x.ApplyStartOfLineOption
-
-
+        member x.LineFromBottomOfVisibleWindow countOpt =
+            let caretPoint,caretLine = TextViewUtil.GetCaretPointAndLine _textView
+            let lines = TextViewUtil.GetVisibleSnapshotLines _textView |> List.ofSeq
+            let span,isForward = 
+                if lines.Length = 0 then caretLine.Extent,true
+                else
+                    let endLine = 
+                        match countOpt with 
+                        | None -> List.nth lines (lines.Length-1)
+                        | Some(count) ->    
+                            let count = lines.Length - count
+                            List.nth lines count
+                    x.SpanAndForwardFromLines caretLine endLine
+            {Span=span; IsForward=isForward; MotionKind=MotionKind.Inclusive; OperationKind=OperationKind.LineWise; Column=None}
+            |> x.ApplyStartOfLineOption
+        member x.LineInMiddleOfVisibleWindow () =
+            let caretLine = TextViewUtil.GetCaretLine _textView
+            let lines = TextViewUtil.GetVisibleSnapshotLines _textView |> List.ofSeq
+            let middleLine =
+                if lines.Length = 0 then caretLine
+                else 
+                    let index = lines.Length / 2
+                    List.nth lines index
+            let span,isForward = x.SpanAndForwardFromLines caretLine middleLine
+            {Span=span; IsForward=isForward; MotionKind=MotionKind.Inclusive; OperationKind=OperationKind.LineWise; Column=None}
+            |> x.ApplyStartOfLineOption

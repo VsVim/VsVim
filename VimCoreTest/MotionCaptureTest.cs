@@ -378,6 +378,39 @@ namespace VimCore.Test
             ProcessComplete("2g_");
             _util.Verify();
         }
+
+        [Test]
+        public void Motion_M_1()
+        {
+            _util
+                .Setup(x => x.LineInMiddleOfVisibleWindow())
+                .Returns(CreateMotionData())
+                .Verifiable();
+            ProcessComplete("M");
+            _util.Verify();
+        }
+
+        [Test]
+        public void Motion_L_1()
+        {
+            _util
+                .Setup(x => x.LineFromBottomOfVisibleWindow(FSharpOption.Create(2)))
+                .Returns(CreateMotionData())
+                .Verifiable();
+            ProcessComplete("2L");
+            _util.Verify();
+        }
+
+        [Test]
+        public void Motion_L_2()
+        {
+            _util
+                .Setup(x => x.LineFromBottomOfVisibleWindow(FSharpOption<int>.None))
+                .Returns(CreateMotionData())
+                .Verifiable();
+            ProcessComplete("L");
+            _util.Verify();
+        }
     }
 
 }

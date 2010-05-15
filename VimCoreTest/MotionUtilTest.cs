@@ -620,6 +620,95 @@ namespace VimCore.Test
             Assert.AreEqual(OperationKind.LineWise, data.OperationKind);
             Assert.IsFalse(data.IsForward);
         }
+
+        [Test]
+        public void LineFromTopOfVisibleWindow4()
+        {
+            var buffer = EditorUtil.CreateBuffer("  foo", "bar");
+            var tuple = MockObjectFactory.CreateTextViewWithVisibleLines(buffer, 0, 1, caretPosition: buffer.GetLine(1).End);
+            Create(tuple.Item1.Object);
+            var data = _util.LineFromTopOfVisibleWindow(FSharpOption<int>.None);
+            Assert.AreEqual(2, data.Column.Value);
+        }
+
+        [Test]
+        public void LineFromTopOfVisibleWindow5()
+        {
+            var buffer = EditorUtil.CreateBuffer("  foo", "bar");
+            var tuple = MockObjectFactory.CreateTextViewWithVisibleLines(buffer, 0, 1, caretPosition: buffer.GetLine(1).End);
+            Create(tuple.Item1.Object);
+            _settings.StartOfLine = false;
+            var data = _util.LineFromTopOfVisibleWindow(FSharpOption<int>.None);
+            Assert.IsTrue(data.Column.IsNone());
+        }
+
+        [Test]
+        public void LineFromBottomOfVisibleWindow1()
+        {
+            var buffer = EditorUtil.CreateBuffer("a", "b", "c", "d");
+            var tuple = MockObjectFactory.CreateTextViewWithVisibleLines(buffer, 0, 2);
+            Create(tuple.Item1.Object);
+            var data = _util.LineFromBottomOfVisibleWindow(FSharpOption<int>.None);
+            Assert.AreEqual(new SnapshotSpan(_buffer.GetPoint(0), _buffer.GetLine(2).End), data.Span);
+            Assert.IsTrue(data.IsForward);
+            Assert.AreEqual(OperationKind.LineWise, data.OperationKind);
+        }
+        
+        [Test]
+        public void LineFromBottomOfVisibleWindow2()
+        {
+            var buffer = EditorUtil.CreateBuffer("a", "b", "c", "d");
+            var tuple = MockObjectFactory.CreateTextViewWithVisibleLines(buffer, 0, 2);
+            Create(tuple.Item1.Object);
+            var data = _util.LineFromBottomOfVisibleWindow(FSharpOption.Create(2));
+            Assert.AreEqual(new SnapshotSpan(_buffer.GetPoint(0), _buffer.GetLine(1).End), data.Span);
+            Assert.IsTrue(data.IsForward);
+            Assert.AreEqual(OperationKind.LineWise, data.OperationKind);
+        }
+
+        [Test]
+        public void LineFromBottomOfVisibleWindow3()
+        {
+            var buffer = EditorUtil.CreateBuffer("a", "b", "c", "d");
+            var tuple = MockObjectFactory.CreateTextViewWithVisibleLines(buffer, 0, 2, caretPosition:buffer.GetLine(2).End);
+            Create(tuple.Item1.Object);
+            var data = _util.LineFromBottomOfVisibleWindow(FSharpOption.Create(2));
+            Assert.AreEqual(new SnapshotSpan(_buffer.GetLine(1).Start, _buffer.GetLine(2).End), data.Span);
+            Assert.IsFalse(data.IsForward);
+            Assert.AreEqual(OperationKind.LineWise, data.OperationKind);
+        }
+
+        [Test]
+        public void LineFromBottomOfVisibleWindow4()
+        {
+            var buffer = EditorUtil.CreateBuffer("a", "b", "  c", "d");
+            var tuple = MockObjectFactory.CreateTextViewWithVisibleLines(buffer, 0, 2);
+            Create(tuple.Item1.Object);
+            var data = _util.LineFromBottomOfVisibleWindow(FSharpOption<int>.None);
+            Assert.AreEqual(2, data.Column.Value);
+        }
+
+        [Test]
+        public void LineFromBottomOfVisibleWindow5()
+        {
+            var buffer = EditorUtil.CreateBuffer("a", "b", "  c", "d");
+            var tuple = MockObjectFactory.CreateTextViewWithVisibleLines(buffer, 0, 2);
+            Create(tuple.Item1.Object);
+            _settings.StartOfLine = false;
+            var data = _util.LineFromBottomOfVisibleWindow(FSharpOption<int>.None);
+            Assert.IsTrue(data.Column.IsNone());
+        }
+
+        [Test]
+        public void LineFromMiddleOfWindow1()
+        {
+            var buffer = EditorUtil.CreateBuffer("a", "b", "c", "d");
+            var tuple = MockObjectFactory.CreateTextViewWithVisibleLines(buffer, 0, 2);
+            Create(tuple.Item1.Object);
+            var data = _util.LineInMiddleOfVisibleWindow();
+            Assert.AreEqual(new SnapshotSpan(_buffer.GetPoint(0), _buffer.GetLine(1).End), data.Span);
+            Assert.AreEqual(OperationKind.LineWise, data.OperationKind);
+        }
     }   
     
 }
