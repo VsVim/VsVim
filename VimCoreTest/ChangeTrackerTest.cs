@@ -16,6 +16,7 @@ namespace VimCore.Test
     [TestFixture]
     public class ChangeTrackerTest
     {
+        private MockFactory _factory;
         private ChangeTracker _trackerRaw;
         private IChangeTracker _tracker;
         private ITextBuffer _textBuffer;
@@ -31,12 +32,12 @@ namespace VimCore.Test
             _buffer.TextViewImpl = _textView.Object;
             _buffer.TextBufferImpl = _textBuffer;
 
-            var factory = new MockFactory(MockBehavior.Loose);
-            factory.DefaultValue = DefaultValue.Mock;
-            _buffer.NormalModeImpl = factory.Create<INormalMode>().Object;
-            _buffer.VisualBlockModeImpl = factory.Create<IVisualMode>().Object;
-            _buffer.VisualCharacterModeImpl = factory.Create<IVisualMode>().Object;
-            _buffer.VisualLineModeImpl = factory.Create<IVisualMode>().Object;
+            _factory = new MockFactory(MockBehavior.Loose);
+            _factory.DefaultValue = DefaultValue.Mock;
+            _buffer.NormalModeImpl = _factory.Create<INormalMode>().Object;
+            _buffer.VisualBlockModeImpl = _factory.Create<IVisualMode>().Object;
+            _buffer.VisualCharacterModeImpl = _factory.Create<IVisualMode>().Object;
+            _buffer.VisualLineModeImpl = _factory.Create<IVisualMode>().Object;
             _trackerRaw = new ChangeTracker();
             _tracker = _trackerRaw;
             _trackerRaw.OnVimBufferCreated(_buffer);
@@ -146,6 +147,15 @@ namespace VimCore.Test
                 edit.Insert(7, "b");
                 edit.Apply();
             }
+            Assert.IsFalse(_tracker.LastChange.IsSome());
+        }
+
+        [Test, Description("Don't process edits while we are processing KeyInput")]
+        public void BufferChange11()
+        {
+            CreateForText("foo bar");
+            _buffer.IsProcessingInputImpl = true;
+            _textBuffer.Insert(0, "again");
             Assert.IsFalse(_tracker.LastChange.IsSome());
         }
 

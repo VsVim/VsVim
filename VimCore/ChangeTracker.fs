@@ -36,8 +36,12 @@ type internal ChangeTracker() =
     member private x.OnTextChanged (buffer:IVimBuffer) args =
 
         // Ignore changes which do not happen on focused windows.  Doing otherwise allows
-        // random tools to break this feature
-        if buffer.TextView.HasAggregateFocus then
+        // random tools to break this feature.  
+        // 
+        // We also cannot process a text change while we are processing input.  Otherwise text
+        // changes which are made as part of a command will be processed as user input.  This 
+        // breaks the "." operator
+        if buffer.TextView.HasAggregateFocus && not buffer.IsProcessingInput then
 
             // Also at this time we only support contiguous changes (or rather a single change)
             if args.Changes.Count = 1 then

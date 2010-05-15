@@ -24,6 +24,7 @@ namespace VimCore.Test.Mock
         public IVisualMode VisualLineModeImpl;
         public ICommandMode CommandModeImpl;
         public IDisabledMode DisabledModeImpl;
+        public bool IsProcessingInputImpl;
 
         public IEnumerable<IMode> AllModes
         {
@@ -67,7 +68,7 @@ namespace VimCore.Test.Mock
 
         public bool IsProcessingInput
         {
-            get { throw new NotImplementedException(); }
+            get { return IsProcessingInputImpl; }
         }
 
         public IJumpList JumpList

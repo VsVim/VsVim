@@ -32,5 +32,17 @@ namespace VimCore.Test
             Assert.AreEqual("foo", _textView.TextSnapshot.GetText());
             Assert.AreEqual(1, _textView.TextSnapshot.LineCount);
         }
+
+        [Test]
+        public void dot_Repeated()
+        {
+            CreateBuffer("the fox chased the bird");
+            _buffer.ProcessInputAsString("dw");
+            Assert.AreEqual("fox chased the bird", _textView.TextSnapshot.GetText());
+            _buffer.ProcessInputAsString(".");
+            Assert.AreEqual("chased the bird", _textView.TextSnapshot.GetText());
+            _buffer.ProcessInputAsString(".");
+            Assert.AreEqual("the bird", _textView.TextSnapshot.GetText());
+        }
     }
 }
