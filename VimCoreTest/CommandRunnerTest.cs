@@ -30,11 +30,11 @@ namespace VimCore.Test
             _statusUtil = _factory.Create<IStatusUtil>();
             _registerMap = new RegisterMap();
             var capture = new MotionCapture(_textView, new MotionUtil(_textView, new Vim.GlobalSettings()));
-            _runnerRaw = new CommandRunner(Tuple.Create(
+            _runnerRaw = new CommandRunner(
                 _textView,
                 _registerMap,
                 (IMotionCapture)capture,
-                _statusUtil.Object));
+                _statusUtil.Object);
             _runner = _runnerRaw;
         }
 
