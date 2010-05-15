@@ -19,3 +19,7 @@ type IOperations =
     /// Joins the selected lines
     abstract JoinSelection : JoinKind -> bool 
 
+    /// Paste the specified text over the selection and put the previous text into the specified 
+    /// register
+    abstract PasteOverSelection : string -> Register -> unit
+

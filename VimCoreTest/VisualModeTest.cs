@@ -20,6 +20,7 @@ namespace VimCore.Test
     [TestFixture]
     public class VisualModeTest
     {
+        private MockFactory _factory;
         private Mock<IWpfTextView> _view;
         private Mock<ITextCaret> _caret;
         private Mock<ITextSelection> _selection;
@@ -41,21 +42,23 @@ namespace VimCore.Test
             params string[] lines)
         {
             _buffer = EditorUtil.CreateBuffer(lines);
-            _caret = new Mock<ITextCaret>(MockBehavior.Strict);
-            _view = new Mock<IWpfTextView>(MockBehavior.Strict);
-            _selection = new Mock<ITextSelection>(MockBehavior.Strict);
+            _factory = new MockFactory(MockBehavior.Strict);
+            _caret = _factory.Create<ITextCaret>();
+            _view = _factory.Create<IWpfTextView>();
+            _selection = _factory.Create<ITextSelection>();
             _view.SetupGet(x => x.Caret).Returns(_caret.Object);
             _view.SetupGet(x => x.Selection).Returns(_selection.Object);
             _view.SetupGet(x => x.TextBuffer).Returns(_buffer);
             _view.SetupGet(x => x.TextSnapshot).Returns(() => _buffer.CurrentSnapshot);
             _map = new RegisterMap();
-            _tracker = new Mock<ISelectionTracker>(MockBehavior.Strict);
+            _tracker = _factory.Create<ISelectionTracker>();
             _tracker.Setup(x => x.Start());
-            _operations = new Mock<IOperations>(MockBehavior.Strict);
+            _operations = _factory.Create<IOperations>();
             _bufferData = MockObjectFactory.CreateVimBuffer(
                 _view.Object,
                 "test",
-                MockObjectFactory.CreateVim(_map).Object);
+                MockObjectFactory.CreateVim(_map).Object,
+                factory:_factory);
             var capture = new MotionCapture(_view.Object, new MotionUtil(_view.Object, _bufferData.Object.Settings.GlobalSettings));
             var runner = new CommandRunner(Tuple.Create((ITextView)_view.Object, _map, (IMotionCapture)capture, (new Mock<IStatusUtil>()).Object));
             _modeRaw = new Vim.Modes.Visual.VisualMode(_bufferData.Object, _operations.Object, kind, runner, capture, _tracker.Object);
@@ -532,6 +535,40 @@ namespace VimCore.Test
             _operations.Verify();
             _selection.Verify();
             Assert.AreEqual(spans.Length, count);
+        }
+
+        [Test]
+        public void Put1()
+        {
+            Create("foo bar");
+            _operations
+                .Setup(x => x.PasteOverSelection("", _map.DefaultRegister))
+                .Verifiable();
+            _mode.Process('p');
+            _factory.Verify();
+        }
+
+        [Test]
+        public void Put2()
+        {
+            Create("foo bar");
+            _operations
+                .Setup(x => x.PasteOverSelection("", _map.GetRegister('c')))
+                .Verifiable();
+            _mode.Process("\"cp");
+            _factory.Verify();
+        }
+
+        [Test]
+        public void Put3()
+        {
+            Create("foo bar");
+            _map.DefaultRegister.UpdateValue("again");
+            _operations
+                .Setup(x => x.PasteOverSelection("again", _map.DefaultRegister))
+                .Verifiable();
+            _mode.Process('p');
+            _factory.Verify();
         }
 
         #endregion

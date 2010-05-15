@@ -119,7 +119,11 @@ type internal VisualMode
                     (fun count _ -> 
                         let count = CommandUtil.CountOrDefault count
                         editOverSpanOperation None (_operations.ShiftSpanRight count) resultSwitchPrevious))
-
+                yield (
+                    InputUtil.CharToKeyInput 'p',
+                    (fun _ reg -> 
+                        _operations.PasteOverSelection reg.StringValue reg
+                        CommandResult.Completed ModeSwitch.SwitchPreviousMode ) )
             }
             |> Seq.map (fun (ki,func) -> Command.SimpleCommand(OneKeyInput ki,CommandFlags.None, func))
 

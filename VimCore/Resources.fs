@@ -36,6 +36,9 @@ module internal Resources =
     let CommandMode_CouldNotOpenFile file = sprintf "Could not open file \"%s\"" file
     let CommandMode_NoSuchMapping = "No such mapping"
 
+    let VisualMode_BoxSelectionNotSupported = "Box selection is not supported for this operation"
+    let VisualMode_MultiSelectNotSupported = "Multiple selections is not supported for this operation"
+
     let Vim_ViewAlreadyHasBuffer = "View is already associated with an IVimBuffer"
     let Vim_RecursiveMapping = "Recursive key mapping detected"
 
