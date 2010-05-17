@@ -418,11 +418,14 @@ type internal CommonOperations
 
             // Move the caret to the last valid point on the span.  
             let point = 
-                if data.IsForward then
-                    if data.MotionKind = MotionKind.Exclusive then data.Span.End
-                    elif data.MotionKind = MotionKind.Inclusive && data.Span.Length > 0 then data.Span.End.Subtract(1)
+                if data.OperationKind = OperationKind.LineWise then 
+                    if data.IsForward then SnapshotSpanUtil.GetEndLine data.Span |> SnapshotLineUtil.GetEnd
+                    else SnapshotSpanUtil.GetStartLine data.Span |> SnapshotLineUtil.GetStart
+                else
+                    if data.IsForward then
+                        if data.MotionKind = MotionKind.Exclusive then data.Span.End
+                        else SnapshotPointUtil.GetPreviousPointOnLine data.Span.End 1
                     else data.Span.Start
-                else data.Span.Start
             TextViewUtil.MoveCaretToPoint _textView point
             _operations.ResetSelection()
         member x.Beep () = if not _settings.GlobalSettings.VisualBell then _host.Beep()

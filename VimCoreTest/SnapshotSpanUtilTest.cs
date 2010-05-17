@@ -183,5 +183,15 @@ namespace VimCore.Test
             Assert.AreEqual(0, endLine.LineNumber);
         }
 
+        [Test]
+        [Description("0 length end of buffer line")]
+        public void GetEndLine4()
+        {
+            Create("a", "");
+            var span = new SnapshotSpan(_buffer.CurrentSnapshot, 0, _buffer.CurrentSnapshot.Length);
+            var endLine = SnapshotSpanUtil.GetEndLine(span);
+            Assert.AreEqual(1, endLine.LineNumber);
+        }
+
     }
 }

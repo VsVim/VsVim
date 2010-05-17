@@ -1316,6 +1316,7 @@ namespace VimCore.Test
         }
 
         [Test]
+        [Description("Inclusive motions need to put the caret on End-1 in most cases.  See e as an example of why")]
         public void MoveCaretToMotionData1()
         {
             Create("foo", "bar", "baz");
@@ -1403,6 +1404,22 @@ namespace VimCore.Test
                 FSharpOption<int>.None);
             _operations.MoveCaretToMotionData(data);
             Assert.AreEqual(1, _view.GetCaretPoint().Position);
+        }
+
+        [Test]
+        [Description("Motion to empty last line")]
+        public void MoveCaretToMotionData7()
+        {
+            Create("foo", "bar", "");
+            _editorOpts.Setup(x => x.ResetSelection());
+            var data = new MotionData(
+                new SnapshotSpan(_buffer.CurrentSnapshot, 0, _buffer.CurrentSnapshot.Length),
+                true,
+                MotionKind.Inclusive,
+                OperationKind.LineWise,
+                FSharpOption<int>.None);
+            _operations.MoveCaretToMotionData(data);
+            Assert.AreEqual(2, _view.GetCaretPoint().GetContainingLine().LineNumber);
         }
 
         [Test]

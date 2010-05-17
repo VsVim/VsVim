@@ -111,8 +111,16 @@ module internal SnapshotSpanUtil =
     /// but instead the first point after the Span.  This is important when the Span is 
     /// ITextSnapshotLine.ExtentIncludingLineBreak as it is in Visual Mode
     let GetEndLine (span:SnapshotSpan) = 
-        if span.Length > 0 then span.End.Subtract(1).GetContainingLine()
-        else GetStartLine span
+        let doNormal() = 
+            if span.Length > 0 then span.End.Subtract(1).GetContainingLine()
+            else GetStartLine span
+
+        let snapshot = span.Snapshot
+        if SnapshotUtil.GetEndPoint snapshot = span.End then 
+            let line = span.End.GetContainingLine()
+            if line.Length = 0 then line
+            else doNormal()
+        else doNormal()
 
     /// Get the start and end line of the SnapshotSpan.  Remember that End is not a part of
     /// the span but instead the first point after the span
@@ -124,6 +132,15 @@ module internal SnapshotLineUtil =
 
     /// Length of the line
     let GetLength (line:ITextSnapshotLine) = line.Length
+
+    /// Get the start point
+    let GetStart (line:ITextSnapshotLine) = line.Start
+
+    /// Get the end point
+    let GetEnd (line:ITextSnapshotLine) = line.End
+
+    /// Get the end point including the line break
+    let GetEndIncludingLineBreak (line:ITextSnapshotLine) = line.EndIncludingLineBreak
 
     let GetExtent (line:ITextSnapshotLine) = line.Extent
 
