@@ -174,44 +174,6 @@ namespace VimCore.Test
             _operations.Verify();
         }
 
-        #region Movement
-
-        public void MoveLeft1()
-        {
-            Create("foo", "bar");
-            _operations.Setup(x => x.MoveCaretLeft(1)).Verifiable();
-            _mode.Process('h');
-            _operations.Verify();
-        }
-
-        public void MoveWordLeft1()
-        {
-            Create("foo", "bar");
-            _operations.Setup(x => x.MoveWordForward(WordKind.NormalWord,1)).Verifiable();
-            _mode.Process('w');
-            _operations.Verify();
-        }
-
-        public void MoveDollar1()
-        {
-            Create("foo", "bar");
-            var editOpts = new Mock<IEditorOperations>(MockBehavior.Strict);
-            editOpts.Setup(x => x.MoveToEndOfLine(false)).Verifiable();
-            _operations.Setup(x => x.EditorOperations).Returns(editOpts.Object);
-            _mode.Process('$');
-            editOpts.Verify();
-        }
-
-        public void MoveEnter1()
-        {
-            Create("foo bar");
-            _operations.Setup(x => x.MoveCaretDownToFirstNonWhitespaceCharacter(1)).Verifiable();
-            _mode.Process(VimKey.EnterKey);
-            _operations.Verify();
-        }
-
-        #endregion
-
         #region Operations
 
         [Test]

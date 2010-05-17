@@ -1193,56 +1193,6 @@ namespace VimCore.Test
         }
 
         [Test]
-        public void MoveCaretDownToFirstNonWhitespaceCharacter1()
-        {
-            Create("foo", "bar");
-            _editorOpts.Setup(x => x.ResetSelection()).Verifiable();
-            _operations.MoveCaretDownToFirstNonWhitespaceCharacter(1);
-            Assert.AreEqual(_view.GetLine(1).Start, _view.GetCaretPoint());
-            _editorOpts.Verify();
-        }
-
-        [Test]
-        public void MoveCaretDownToFirstNonWhitespaceCharacter2()
-        {
-            Create("foo", " bar");
-            _editorOpts.Setup(x => x.ResetSelection()).Verifiable();
-            _operations.MoveCaretDownToFirstNonWhitespaceCharacter(1);
-            Assert.AreEqual(_view.GetLine(1).Start.Add(1), _view.GetCaretPoint());
-            _editorOpts.Verify();
-        }
-
-        [Test]
-        public void MoveCaretDownToFirstNonWhitespaceCharacter3()
-        {
-            Create("foo", "  bar", "baz");
-            _editorOpts.Setup(x => x.ResetSelection()).Verifiable();
-            _operations.MoveCaretDownToFirstNonWhitespaceCharacter(1);
-            Assert.AreEqual(_view.GetLine(1).Start.Add(2), _view.GetCaretPoint());
-            _editorOpts.Verify();
-        }
-
-        [Test]
-        public void MoveCaretDownToFirstNonWhitespaceCharacter4()
-        {
-            Create("foo", "  bar", " baz");
-            _editorOpts.Setup(x => x.ResetSelection()).Verifiable();
-            _operations.MoveCaretDownToFirstNonWhitespaceCharacter(2);
-            Assert.AreEqual(_view.GetLine(2).Start.Add(1), _view.GetCaretPoint());
-            _editorOpts.Verify();
-        }
-
-        [Test]
-        public void MoveCaretDownToFirstNonWhitespaceCharacter5()
-        {
-            Create("foo", "  bar", "baz");
-            _editorOpts.Setup(x => x.ResetSelection()).Verifiable();
-            _operations.MoveCaretDownToFirstNonWhitespaceCharacter(300);
-            Assert.AreEqual(_view.GetLine(2).Start, _view.GetCaretPoint());
-            _editorOpts.Verify();
-        }
-
-        [Test]
         public void ChangeLetterCase1()
         {
             Create("foo", "bar");

@@ -80,9 +80,6 @@ type ICommonOperations =
     /// Move the cursor down count lines
     abstract MoveCaretDown : count : int -> unit
 
-    /// Move the cursor down count lines to the first non-blank
-    abstract MoveCaretDownToFirstNonWhitespaceCharacter : count:int -> unit
-
     /// Move the cursor forward count WordKind's 
     abstract MoveWordForward : WordKind -> count : int -> unit
 
