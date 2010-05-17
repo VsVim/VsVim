@@ -5,10 +5,11 @@ using System.Text;
 using NUnit.Framework;
 using Microsoft.VisualStudio.Text;
 using Vim;
-using VimCoreTest.Utils;
+using Vim.Extensions;
+using VimCore.Test.Utils;
 using Moq;
 
-namespace VimCoreTest
+namespace VimCore.Test
 {
     [TestFixture]
     public class MarkMapTest

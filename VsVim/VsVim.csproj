@@ -118,7 +118,7 @@
     <Compile Include="EditCommand.cs" />
     <Compile Include="CommandKeyBinding.cs" />
     <Compile Include="EditCommandKind.cs" />
-    <Compile Include="CommandUtil.cs" />
+    <Compile Include="OleCommandUtil.cs" />
     <Compile Include="Extensions.cs" />
     <Compile Include="HostFactory.cs" />
     <Compile Include="IKeyBindingService.cs" />

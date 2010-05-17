@@ -9,15 +9,18 @@ using Vim.Modes.Visual;
 using Moq;
 using Microsoft.VisualStudio.Text.Operations;
 using Vim.Modes;
-using VimCoreTest.Utils;
+using VimCore.Test.Utils;
 using Microsoft.VisualStudio.Text;
 using System.Windows.Input;
+using VimCore.Test.Mock;
+using Microsoft.FSharp.Core;
 
-namespace VimCoreTest
+namespace VimCore.Test
 {
     [TestFixture]
     public class VisualModeTest
     {
+        private MockFactory _factory;
         private Mock<IWpfTextView> _view;
         private Mock<ITextCaret> _caret;
         private Mock<ITextSelection> _selection;
@@ -36,41 +39,63 @@ namespace VimCoreTest
 
         public void Create2(
             ModeKind kind=ModeKind.VisualCharacter, 
-            IVimHost host= null,
             params string[] lines)
         {
             _buffer = EditorUtil.CreateBuffer(lines);
-            _caret = new Mock<ITextCaret>(MockBehavior.Strict);
-            _view = new Mock<IWpfTextView>(MockBehavior.Strict);
-            _selection = new Mock<ITextSelection>(MockBehavior.Strict);
+            _factory = new MockFactory(MockBehavior.Strict);
+            _caret = _factory.Create<ITextCaret>();
+            _view = _factory.Create<IWpfTextView>();
+            _selection = _factory.Create<ITextSelection>();
             _view.SetupGet(x => x.Caret).Returns(_caret.Object);
             _view.SetupGet(x => x.Selection).Returns(_selection.Object);
             _view.SetupGet(x => x.TextBuffer).Returns(_buffer);
             _view.SetupGet(x => x.TextSnapshot).Returns(() => _buffer.CurrentSnapshot);
             _map = new RegisterMap();
-            _tracker = new Mock<ISelectionTracker>(MockBehavior.Strict);
+            _tracker = _factory.Create<ISelectionTracker>();
             _tracker.Setup(x => x.Start());
-            _operations = new Mock<IOperations>(MockBehavior.Strict);
-            _operations.SetupGet(x => x.SelectionTracker).Returns(_tracker.Object);
-            host = host ?? new FakeVimHost();
+            _operations = _factory.Create<IOperations>();
             _bufferData = MockObjectFactory.CreateVimBuffer(
                 _view.Object,
                 "test",
-                MockObjectFactory.CreateVim(_map, host: host).Object);
-            _modeRaw = new Vim.Modes.Visual.VisualMode(Tuple.Create<IVimBuffer, IOperations, ModeKind>(_bufferData.Object, _operations.Object, kind));
+                MockObjectFactory.CreateVim(_map).Object,
+                factory:_factory);
+            var capture = new MotionCapture(_view.Object, new MotionUtil(_view.Object, _bufferData.Object.Settings.GlobalSettings));
+            var runner = new CommandRunner(_view.Object, _map, (IMotionCapture)capture, (new Mock<IStatusUtil>()).Object);
+            _modeRaw = new Vim.Modes.Visual.VisualMode(_bufferData.Object, _operations.Object, kind, runner, capture, _tracker.Object);
             _mode = _modeRaw;
             _mode.OnEnter();
         }
 
-        [Test, Description("Escape is used to exit visual mode")]
-        public void Commands1()
+        public void SetupApplyAsSingleEdit()
         {
-            Create("foo");
-            Assert.IsTrue(_mode.Commands.Contains(InputUtil.VimKeyToKeyInput(VimKey.EscapeKey)));
+            _operations
+                .Setup(x => x.ApplyAsSingleEdit(
+                                It.IsAny<FSharpOption<string>>(),
+                                It.IsAny<IEnumerable<SnapshotSpan>>(),
+                                It.IsAny<FSharpFunc<SnapshotSpan, Unit>>()))
+                .Callback<FSharpOption<string>,IEnumerable<SnapshotSpan>, FSharpFunc<SnapshotSpan,Unit>>((unused, spans, func) =>
+                {
+                    foreach (var span in spans)
+                    {
+                        func.Invoke(span);
+                    }
+                })
+                .Verifiable();
+        }
+
+        public SnapshotSpan[] SetupBlockSelection()
+        {
+            SetupApplyAsSingleEdit();
+            var spans = new SnapshotSpan[] { _buffer.GetSpan(0, 2), _buffer.GetSpan(3, 2) };
+            _selection
+                .SetupGet(x => x.SelectedSpans)
+                .Returns(new NormalizedSnapshotSpanCollection(spans))
+                .Verifiable();
+            return spans;
         }
 
         [Test,Description("Movement commands")]
-        public void Commands2()
+        public void Commands1()
         {
             Create("foo");
             var list = new KeyInput[] {
@@ -83,10 +108,11 @@ namespace VimCoreTest
                 InputUtil.VimKeyToKeyInput(VimKey.UpKey),
                 InputUtil.VimKeyToKeyInput(VimKey.DownKey),
                 InputUtil.VimKeyToKeyInput(VimKey.BackKey) };
-            var commands = _mode.Commands.ToList();
+            var commands = _mode.CommandNames.ToList();
             foreach (var item in list)
             {
-                Assert.Contains(item, commands); 
+                var name = CommandName.NewOneKeyInput(item);
+                Assert.Contains(name, commands);
             }
         }
 
@@ -138,14 +164,14 @@ namespace VimCoreTest
         [Test,Description("Must handle arbitrary input to prevent changes but don't list it as a command")]
         public void PreventInput1()
         {
-            var host = new FakeVimHost();
-            Create2(host:host,lines:"foo");
+            Create(lines:"foo");
             var input = InputUtil.CharToKeyInput(',');
-            Assert.IsFalse(_mode.Commands.Any(x => x.Char == input.Char));
+            _operations.Setup(x => x.Beep()).Verifiable();
+            Assert.IsFalse(_mode.CommandNames.Any(x => x.KeyInputs.First().Char == input.Char));
             Assert.IsTrue(_mode.CanProcess(input));
             var ret = _mode.Process(input);
             Assert.IsTrue(ret.IsProcessed);
-            Assert.AreEqual(1, host.BeepCount);
+            _operations.Verify();
         }
 
         #region Movement
@@ -252,7 +278,6 @@ namespace VimCoreTest
             Create("foo", "bar");
             _operations
                 .Setup(x => x.DeleteSelection(_map.DefaultRegister))
-                .Returns<ITextSnapshot>(null)
                 .Verifiable();
             _mode.Process("d");
             _operations.Verify();
@@ -264,7 +289,6 @@ namespace VimCoreTest
             Create("foo", "bar");
             _operations
                 .Setup(x => x.DeleteSelection(_map.GetRegister('c')))
-                .Returns<ITextSnapshot>(null)
                 .Verifiable();
             _mode.Process("\"cd");
             _operations.Verify();
@@ -276,7 +300,6 @@ namespace VimCoreTest
             Create("foo", "bar");
             _operations
                 .Setup(x => x.DeleteSelection(_map.DefaultRegister))
-                .Returns<ITextSnapshot>(null)
                 .Verifiable();
             _mode.Process("x");
             _operations.Verify();
@@ -288,7 +311,6 @@ namespace VimCoreTest
             Create("foo", "bar");
             _operations
                 .Setup(x => x.DeleteSelection(_map.DefaultRegister))
-                .Returns<ITextSnapshot>(null)
                 .Verifiable();
             _mode.Process(VimKey.DeleteKey);
             _operations.Verify();
@@ -327,7 +349,6 @@ namespace VimCoreTest
             Create("foo", "bar");
             _operations
                 .Setup(x => x.DeleteSelection(_map.DefaultRegister))
-                .Returns((ITextSnapshot)null)
                 .Verifiable();
             var res = _mode.Process('c');
             Assert.IsTrue(res.IsSwitchMode);
@@ -340,7 +361,6 @@ namespace VimCoreTest
             Create("foo", "bar");
             _operations
                 .Setup(x => x.DeleteSelection(_map.GetRegister('b')))
-                .Returns((ITextSnapshot)null)
                 .Verifiable();
             var res = _mode.Process("\"bc");
             Assert.IsTrue(res.IsSwitchMode);
@@ -353,7 +373,6 @@ namespace VimCoreTest
             Create("foo", "bar");
             _operations
                 .Setup(x => x.DeleteSelection(_map.DefaultRegister))
-                .Returns((ITextSnapshot)null)
                 .Verifiable();
             var res = _mode.Process('s');
             Assert.IsTrue(res.IsSwitchMode);
@@ -386,6 +405,173 @@ namespace VimCoreTest
             Assert.AreEqual(ModeKind.Insert, res.AsSwitchMode().Item);
         }
 
+        [Test]
+        public void ChangeCase1()
+        {
+            Create("foo bar", "baz");
+            var span = _buffer.GetSpan(0,3);
+            _operations
+                .Setup(x => x.ChangeLetterCase(span))
+                .Verifiable();
+            _selection
+                .SetupGet(x => x.SelectedSpans)
+                .Returns(new NormalizedSnapshotSpanCollection(span))
+                .Verifiable();
+            _mode.Process('~');
+            _selection.Verify();
+            _operations.Verify();
+        }
+
+        [Test]
+        public void ChangeCase2()
+        {
+            Create("foo bar baz");
+            var spans = SetupBlockSelection();
+            var count = 0;
+            _operations
+                .Setup(x => x.ChangeLetterCase(It.IsAny<SnapshotSpan>()))
+                .Callback(() => {count++;})
+                .Verifiable();
+            _mode.Process('~');
+            _selection.Verify();
+            _operations.Verify();
+            Assert.AreEqual(count, 2);
+        }
+
+        [Test]
+        public void ShiftLeft1()
+        {
+            Create("foo bar baz");
+            var span = _buffer.GetSpan(0, 3);
+            _operations
+                .Setup(x => x.ShiftSpanLeft(1, span))
+                .Verifiable();
+            _selection
+                .SetupGet(x => x.SelectedSpans)
+                .Returns(new NormalizedSnapshotSpanCollection(span))
+                .Verifiable();
+            _mode.Process('<');
+            _operations.Verify();
+            _selection.Verify();
+        }
+
+        [Test]
+        public void ShiftLeft2()
+        {
+            Create("foo bar baz");
+            var span = _buffer.GetSpan(0, 3);
+            _operations
+                .Setup(x => x.ShiftSpanLeft(2, span))
+                .Verifiable();
+            _selection
+                .SetupGet(x => x.SelectedSpans)
+                .Returns(new NormalizedSnapshotSpanCollection(span))
+                .Verifiable();
+            _mode.Process("2<");
+            _operations.Verify();
+            _selection.Verify();
+        }
+
+        [Test]
+        public void ShiftLeft3()
+        {
+            Create("foo bar baz");
+            var spans = SetupBlockSelection();
+            var count = 0;
+            _operations
+                .Setup(x => x.ShiftSpanLeft(1, It.IsAny<SnapshotSpan>()))
+                .Callback(() => { count++; });
+            _mode.Process("<");
+            _operations.Verify();
+            _selection.Verify();
+            Assert.AreEqual(spans.Length, count);
+        }
+
+
+        [Test]
+        public void ShiftRight1()
+        {
+            Create("foo bar baz");
+            var span = _buffer.GetSpan(0, 3);
+            _operations
+                .Setup(x => x.ShiftSpanRight(1, span))
+                .Verifiable();
+            _selection
+                .SetupGet(x => x.SelectedSpans)
+                .Returns(new NormalizedSnapshotSpanCollection(span))
+                .Verifiable();
+            _mode.Process('>');
+            _operations.Verify();
+            _selection.Verify();
+        }
+
+        [Test]
+        public void ShiftRight2()
+        {
+            Create("foo bar baz");
+            var span = _buffer.GetSpan(0, 3);
+            _operations
+                .Setup(x => x.ShiftSpanRight(2, span))
+                .Verifiable();
+            _selection
+                .SetupGet(x => x.SelectedSpans)
+                .Returns(new NormalizedSnapshotSpanCollection(span))
+                .Verifiable();
+            _mode.Process("2>");
+            _operations.Verify();
+            _selection.Verify();
+        }
+
+        [Test]
+        public void ShiftRight3()
+        {
+            Create("foo bar baz");
+            var spans = SetupBlockSelection();
+            var count = 0;
+            _operations
+                .Setup(x => x.ShiftSpanRight(1, It.IsAny<SnapshotSpan>()))
+                .Callback(() => { count++; });
+            _mode.Process(">");
+            _operations.Verify();
+            _selection.Verify();
+            Assert.AreEqual(spans.Length, count);
+        }
+
+        [Test]
+        public void Put1()
+        {
+            Create("foo bar");
+            _map.DefaultRegister.UpdateValue("");
+            _operations
+                .Setup(x => x.PasteOverSelection("", _map.DefaultRegister))
+                .Verifiable();
+            _mode.Process('p');
+            _factory.Verify();
+        }
+
+        [Test]
+        public void Put2()
+        {
+            Create("foo bar");
+            _map.DefaultRegister.UpdateValue("");
+            _operations
+                .Setup(x => x.PasteOverSelection("", _map.GetRegister('c')))
+                .Verifiable();
+            _mode.Process("\"cp");
+            _factory.Verify();
+        }
+
+        [Test]
+        public void Put3()
+        {
+            Create("foo bar");
+            _map.DefaultRegister.UpdateValue("again");
+            _operations
+                .Setup(x => x.PasteOverSelection("again", _map.DefaultRegister))
+                .Verifiable();
+            _mode.Process('p');
+            _factory.Verify();
+        }
 
         #endregion
     }

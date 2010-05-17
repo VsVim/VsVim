@@ -9,4 +9,4 @@ open Vim.Modes
 
 type internal VisualMode =
     interface IVisualMode
-    new : (IVimBuffer * IOperations * ModeKind ) -> VisualMode
+    new : IVimBuffer * IOperations * ModeKind * ICommandRunner * IMotionCapture * ISelectionTracker -> VisualMode

@@ -18,9 +18,10 @@ type internal DefaultOperations
     _settings : IVimLocalSettings,
     _normalWordNav : ITextStructureNavigator,
     _jumpList : IJumpList,
-    _incrementalSearch : IIncrementalSearch) =
+    _incrementalSearch : IIncrementalSearch,
+    _undoRedoOperations : IUndoRedoOperations ) =
 
-    inherit CommonOperations(_textView, _operations, _outlining, _host, _jumpList, _settings)
+    inherit CommonOperations(_textView, _operations, _outlining, _host, _jumpList, _settings, _undoRedoOperations)
 
     let _search = _incrementalSearch.SearchService
 
@@ -228,7 +229,7 @@ type internal DefaultOperations
             let line = 
                 match count with
                 | None -> lastLineNumber
-                // Surprisingly 0 goes to the last line nmuber in gVim
+                // Surprisingly 0 goes to the last line number in gVim
                 | Some(c) when c = 0 -> lastLineNumber
                 | Some(c) -> c
             x.GoToLineCore line

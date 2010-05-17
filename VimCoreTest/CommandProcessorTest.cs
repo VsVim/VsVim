@@ -6,7 +6,7 @@ using NUnit.Framework;
 using Vim;
 using Vim.Modes.Command;
 using Microsoft.VisualStudio.Text.Editor;
-using VimCoreTest.Utils;
+using VimCore.Test.Utils;
 using Microsoft.VisualStudio.Text;
 using System.Windows.Input;
 using Microsoft.VisualStudio.Text.Operations;
@@ -14,8 +14,11 @@ using Moq;
 using System.IO;
 using Microsoft.FSharp.Collections;
 using Vim.Modes;
+using VimCore.Test.Mock;
+using Microsoft.FSharp.Core;
+using Vim.Extensions;
 
-namespace VimCoreTest
+namespace VimCore.Test
 {
     [TestFixture, RequiresSTA]
     public class CommandProcessorTest
@@ -24,27 +27,27 @@ namespace VimCoreTest
         private Mock<IVimBuffer> _bufferData;
         private CommandProcessor _processorRaw;
         private ICommandProcessor _processor;
-        private FakeVimHost _host;
         private IRegisterMap _map;
         private Mock<IEditorOperations> _editOpts;
         private Mock<IOperations> _operations;
         private Mock<IStatusUtil> _statusUtil;
+        private Mock<IFileSystem> _fileSystem;
 
         public void Create(params string[] lines)
         {
             _view = Utils.EditorUtil.CreateView(lines);
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 0));
             _map = new RegisterMap();
-            _host = new FakeVimHost();
             _editOpts = new Mock<IEditorOperations>(MockBehavior.Strict);
             _operations = new Mock<IOperations>(MockBehavior.Strict);
             _operations.SetupGet(x => x.EditorOperations).Returns(_editOpts.Object);
             _statusUtil = new Mock<IStatusUtil>();
+            _fileSystem = new Mock<IFileSystem>(MockBehavior.Strict);
             _bufferData = MockObjectFactory.CreateVimBuffer(
                 _view,
                 "test",
-                MockObjectFactory.CreateVim(_map, host: _host).Object);
-            _processorRaw = new Vim.Modes.Command.CommandProcessor(_bufferData.Object, _operations.Object, _statusUtil.Object);
+                MockObjectFactory.CreateVim(_map).Object);
+            _processorRaw = new Vim.Modes.Command.CommandProcessor(_bufferData.Object, _operations.Object, _statusUtil.Object, _fileSystem.Object);
             _processor = _processorRaw;
         }
 
@@ -196,7 +199,7 @@ namespace VimCoreTest
         {
             Create("     foo", "bar", "baz");
             _operations
-                .Setup(x => x.ShiftSpanLeft(_view.TextSnapshot.GetLineFromLineNumber(0).ExtentIncludingLineBreak))
+                .Setup(x => x.ShiftSpanLeft(1, _view.TextSnapshot.GetLineFromLineNumber(0).ExtentIncludingLineBreak))
                 .Verifiable();
             RunCommand("<");
             _operations.Verify();
@@ -211,7 +214,7 @@ namespace VimCoreTest
                 tss.GetLineFromLineNumber(0).Start,
                 tss.GetLineFromLineNumber(1).EndIncludingLineBreak);
             _operations
-                .Setup(x => x.ShiftSpanLeft(span))
+                .Setup(x => x.ShiftSpanLeft(1, span))
                 .Verifiable();
             RunCommand("1,2<");
             _operations.Verify();
@@ -226,7 +229,7 @@ namespace VimCoreTest
                 tss.GetLineFromLineNumber(0).Start,
                 tss.GetLineFromLineNumber(1).EndIncludingLineBreak);
             _operations
-                .Setup(x => x.ShiftSpanLeft(span))
+                .Setup(x => x.ShiftSpanLeft(1, span))
                 .Verifiable();
             RunCommand("< 2");
             _operations.Verify();
@@ -237,7 +240,7 @@ namespace VimCoreTest
         {
             Create("foo", "bar", "baz");
             _operations
-                .Setup(x => x.ShiftSpanRight(_view.TextSnapshot.GetLineFromLineNumber(0).ExtentIncludingLineBreak))
+                .Setup(x => x.ShiftSpanRight(1, _view.TextSnapshot.GetLineFromLineNumber(0).ExtentIncludingLineBreak))
                 .Verifiable();
             RunCommand(">");
             _operations.Verify();
@@ -252,7 +255,7 @@ namespace VimCoreTest
                 tss.GetLineFromLineNumber(0).Start,
                 tss.GetLineFromLineNumber(1).EndIncludingLineBreak);
             _operations
-                .Setup(x => x.ShiftSpanRight(span))
+                .Setup(x => x.ShiftSpanRight(1, span))
                 .Verifiable();
             RunCommand("1,2>");
             _operations.Verify();
@@ -267,7 +270,7 @@ namespace VimCoreTest
                 tss.GetLineFromLineNumber(0).Start,
                 tss.GetLineFromLineNumber(1).EndIncludingLineBreak);
             _operations
-                .Setup(x => x.ShiftSpanRight(span))
+                .Setup(x => x.ShiftSpanRight(1, span))
                 .Verifiable();
             RunCommand("> 2");
             _operations.Verify();
@@ -546,16 +549,18 @@ namespace VimCoreTest
         public void Redo1()
         {
             Create("foo bar");
+            _operations.Setup(x => x.Redo(1)).Verifiable();
             RunCommand("red");
-            Assert.AreEqual(1, _host.RedoCount);
+            _operations.Verify();
         }
 
         [Test]
         public void Redo2()
         {
             Create("foo bar");
+            _operations.Setup(x => x.Redo(1)).Verifiable();
             RunCommand("redo");
-            Assert.AreEqual(1, _host.RedoCount);
+            _operations.Verify();
         }
 
         [Test]
@@ -563,7 +568,6 @@ namespace VimCoreTest
         {
             Create("foo");
             RunCommand("real");
-            Assert.AreEqual(0, _host.RedoCount);
             _statusUtil.Verify(x => x.OnError(Resources.CommandMode_CannotRun("real")));
         }
 
@@ -571,16 +575,18 @@ namespace VimCoreTest
         public void Undo1()
         {
             Create("foo");
+            _operations.Setup(x => x.Undo(1));
             RunCommand("u");
-            Assert.AreEqual(1, _host.UndoCount);
+            _operations.Verify();
         }
 
         [Test]
         public void Undo2()
         {
             Create("foo");
+            _operations.Setup(x => x.Undo(1));
             RunCommand("undo");
-            Assert.AreEqual(1, _host.UndoCount);
+            _operations.Verify();
         }
 
         [Test]
@@ -588,7 +594,6 @@ namespace VimCoreTest
         {
             Create("foo");
             RunCommand("unreal");
-            Assert.AreEqual(0, _host.UndoCount);
             _statusUtil.Verify(x => x.OnError(Resources.CommandMode_CannotRun("unreal")));
         }
 
@@ -612,16 +617,18 @@ namespace VimCoreTest
         public void Edit1()
         {
             Create("foo");
+            _operations.Setup(x => x.ShowOpenFileDialog()).Verifiable();
             RunCommand("e");
-            Assert.AreEqual(1, _host.ShowOpenFileDialogCount);
+            _operations.Verify();
         }
 
         [Test]
         public void Edit2()
         {
             Create("foo");
+            _operations.Setup(x => x.ShowOpenFileDialog()).Verifiable();
             RunCommand("edi");
-            Assert.AreEqual(1, _host.ShowOpenFileDialogCount);
+            _operations.Verify();
         }
 
         [Test]
@@ -754,8 +761,10 @@ namespace VimCoreTest
         public void Source1()
         {
             Create("boo");
+            _fileSystem.Setup(x => x.ReadAllLines(It.IsAny<string>())).Returns(FSharpOption<string[]>.None).Verifiable();
             RunCommand("source");
             _statusUtil.Verify(x => x.OnError(Resources.CommandMode_CouldNotOpenFile(String.Empty)));
+            _fileSystem.Verify();
         }
 
         [Test]
@@ -769,23 +778,22 @@ namespace VimCoreTest
         [Test]
         public void Source3()
         {
-            var name = Path.GetTempFileName();
-            File.WriteAllText(name, "set noignorecase");
-
+            var text = new string[] { "set noignorecase" };
+            _fileSystem.Setup(x => x.ReadAllLines("blah.txt")).Returns(FSharpOption.Create(text)).Verifiable();
             _operations.Setup(x => x.ResetSetting("ignorecase")).Verifiable();
-            RunCommand("source " + name);
+            RunCommand("source blah.txt");
             _operations.Verify();
+            _fileSystem.Verify();
         }
 
         [Test]
         public void Source4()
         {
-            var name = Path.GetTempFileName();
-            File.WriteAllLines(name, new string[] { "set noignorecase", "set nofoo" });
-
+            var text = new string[] { "set noignorecase", "set nofoo" };
+            _fileSystem.Setup(x => x.ReadAllLines("blah.txt")).Returns(FSharpOption.Create(text)).Verifiable();
             _operations.Setup(x => x.ResetSetting("ignorecase")).Verifiable();
             _operations.Setup(x => x.ResetSetting("foo")).Verifiable();
-            RunCommand("source " + name);
+            RunCommand("source blah.txt"); 
             _operations.Verify();
         }
 

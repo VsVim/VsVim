@@ -7,7 +7,7 @@ using Vim;
 using Moq;
 using Microsoft.VisualStudio.Text.Editor;
 
-namespace VimCoreTest
+namespace VimCore.Test
 {
     [TestFixture]
     public class LocalSettingsTest : SettingsCommonTest
@@ -69,5 +69,6 @@ namespace VimCoreTest
             var res = _local.AllSettings;
             _global.Verify();
         }
+
     }
 }

@@ -68,7 +68,7 @@ type internal IncrementalSearchTagger
 
 [<Export(typeof<ITaggerProvider>)>]
 [<ContentType("text")>]
-[<TextViewRole(PredefinedTextViewRoles.Editable)>]
+[<TextViewRole(PredefinedTextViewRoles.Document)>]
 [<TagType(typeof<TextMarkerTag>)>]
 type internal IncrementalSearchTaggerProvider
     [<ImportingConstructor>]

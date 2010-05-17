@@ -49,16 +49,13 @@
     <Compile Include="EditorUtil.fs" />
     <Compile Include="TssUtil.fsi" />
     <Compile Include="TssUtil.fs" />
-    <Compile Include="MotionUtil.fsi" />
-    <Compile Include="MotionUtil.fs" />
     <Compile Include="CountCapture.fs" />
     <Compile Include="OperationKind.fs" />
-    <Compile Include="MotionKind.fs" />
-    <Compile Include="MotionCapture.fsi" />
-    <Compile Include="MotionCapture.fs" />
+    <Compile Include="MotionData.fs" />
     <Compile Include="Register.fs" />
     <Compile Include="CoreInterfaces.fs" />
     <Compile Include="MefInterfaces.fs" />
+    <Compile Include="MotionCapture.fs" />
     <Compile Include="RegexUtil.fs" />
     <Compile Include="Modes_ICommonOperations.fs" />
     <Compile Include="Modes_CommonOperations.fs" />
@@ -72,7 +69,6 @@
     <Compile Include="Modes_Command_CommandMode.fs" />
     <Compile Include="Modes_Normal_Interfaces.fs" />
     <Compile Include="Modes_Normal_DefaultOperations.fs" />
-    <Compile Include="Modes_Normal_Common.fs" />
     <Compile Include="Modes_Normal_IncrementalSearch.fs" />
     <Compile Include="Modes_Normal_NormalMode.fsi" />
     <Compile Include="Modes_Normal_NormalMode.fs" />
@@ -85,10 +81,10 @@
     <Compile Include="Modes_Visual_SelectionTracker.fs" />
     <Compile Include="Modes_Visual_IOperations.fs" />
     <Compile Include="Modes_Visual_DefaultOperations.fs" />
-    <Compile Include="Modes_Visual_IVisualMode.fs" />
     <Compile Include="Modes_Visual_VisualMode.fsi" />
     <Compile Include="Modes_Visual_VisualMode.fs" />
     <Compile Include="VimBuffer.fs" />
+    <Compile Include="MotionUtil.fs" />
     <Compile Include="SearchService.fs" />
     <Compile Include="RegisterMap.fs" />
     <Compile Include="DisabledMode.fs" />
@@ -97,8 +93,14 @@
     <Compile Include="JumpList.fs" />
     <Compile Include="ChangeTracker.fs" />
     <Compile Include="VimSettings.fs" />
+    <Compile Include="FileSystem.fs" />
+    <Compile Include="UndoRedoOperations.fsi" />
+    <Compile Include="UndoRedoOperations.fs" />
+    <Compile Include="CommandRunner.fsi" />
+    <Compile Include="CommandRunner.fs" />
     <Compile Include="Vim.fs" />
     <Compile Include="MefComponents.fs" />
+    <Compile Include="FSharpExtensions.fs" />
     <Compile Include="AssemblyInfo.fs" />
   </ItemGroup>
   <ItemGroup>

@@ -5,14 +5,15 @@ using System.Text;
 using NUnit.Framework;
 using Moq;
 using Vim;
-using VimCoreTest.Utils;
+using VimCore.Test.Utils;
 using Microsoft.VisualStudio.Text.Editor;
 using System.IO;
 using Vim.Modes.Command;
 using Microsoft.FSharp.Core;
 using Microsoft.FSharp.Collections;
+using Vim.Extensions;
 
-namespace VimCoreTest
+namespace VimCore.Test
 {
     [TestFixture]
     public class VimTest
@@ -27,7 +28,6 @@ namespace VimCoreTest
         private Mock<ISearchService> _searchInfo;
         private Vim.Vim _vimRaw;
         private IVim _vim;
-        private Dictionary<string, string> _savedEnvironment = new Dictionary<string, string>();
 
         [SetUp]
         public void Setup()
@@ -51,24 +51,6 @@ namespace VimCoreTest
                 _changeTracker.Object,
                 _searchInfo.Object);
             _vim = _vimRaw;
-            _savedEnvironment = new Dictionary<string, string>();
-        }
-
-        private void SaveAndClear()
-        {
-            foreach (var name in Vim.Vim._vimRcEnvironmentVariables)
-            {
-                _savedEnvironment[name] = Environment.GetEnvironmentVariable(name);
-                Environment.SetEnvironmentVariable(name, null);
-            }
-        }
-
-        private void Restore()
-        {
-            foreach (var pair in _savedEnvironment)
-            {
-                Environment.SetEnvironmentVariable(pair.Key, pair.Value);
-            }
         }
 
         [Test]
@@ -155,36 +137,27 @@ namespace VimCoreTest
         [Test]
         public void LoadVimRc1()
         {
-            SaveAndClear();
-            try
-            {
-                _settings.SetupSet(x => x.VimRc = String.Empty).Verifiable();
-                _settings.SetupSet(x => x.VimRcPaths = String.Empty).Verifiable();
-                Assert.IsFalse(_vim.LoadVimRc(FSharpFuncUtil.Create<Unit,ITextView>(_ => null)));
-                _settings.Verify();
-            }
-            finally
-            {
-                Restore();
-            }
+            _settings.SetupSet(x => x.VimRc = String.Empty).Verifiable();
+            _settings.SetupSet(x => x.VimRcPaths = String.Empty).Verifiable();
+            var fs = new Mock<IFileSystem>(MockBehavior.Strict);
+            fs.Setup(x => x.GetVimRcDirectories()).Returns(new string[] { }).Verifiable();
+            fs.Setup(x => x.LoadVimRc()).Returns(FSharpOption<Tuple<string, string[]>>.None).Verifiable();
+            Assert.IsFalse(_vim.LoadVimRc(fs.Object, FSharpFuncUtil.Create<Unit, ITextView>(_ => null)));
+            fs.Verify();
+            _settings.Verify();
         }
 
         [Test]
         public void LoadVimRc2()
         {
-            SaveAndClear();
-            try
-            {
-                _settings.SetupSet(x => x.VimRc = String.Empty).Verifiable();
-                _settings.SetupSet(x => x.VimRcPaths = @"c:\.vimrc;c:\_vimrc").Verifiable();
-                Environment.SetEnvironmentVariable("HOME", @"c:\");
-                Assert.IsFalse(_vim.LoadVimRc(FSharpFuncUtil.Create<Unit,ITextView>(_ => null)));
-                _settings.Verify();
-            }
-            finally
-            {
-                Restore();
-            }
+            _settings.SetupSet(x => x.VimRc = String.Empty).Verifiable();
+            _settings.SetupSet(x => x.VimRcPaths = "foo").Verifiable();
+            var fs = new Mock<IFileSystem>(MockBehavior.Strict);
+            fs.Setup(x => x.GetVimRcDirectories()).Returns(new string[] { "foo" }).Verifiable();
+            fs.Setup(x => x.LoadVimRc()).Returns(FSharpOption<Tuple<string, string[]>>.None).Verifiable();
+            Assert.IsFalse(_vim.LoadVimRc(fs.Object, FSharpFuncUtil.Create<Unit, ITextView>(_ => null)));
+            _settings.Verify();
+            fs.Verify();
         }
 
         [Test]
@@ -196,31 +169,24 @@ namespace VimCoreTest
             var buffer = new Mock<IVimBuffer>(MockBehavior.Strict);
             commandMode.Setup(x => x.RunCommand("set noignorecase")).Verifiable();
             buffer.Setup(x => x.CommandMode).Returns(commandMode.Object);
-
             var createViewFunc = FSharpFuncUtil.Create<Microsoft.FSharp.Core.Unit, ITextView>(_ => view.Object);
             _factory.Setup(x => x.CreateBuffer(_vim, view.Object)).Returns(buffer.Object);
 
-            SaveAndClear();
-            try
-            {
-                // Update the vimrc file
-                var path = Environment.GetEnvironmentVariable("TMP");
-                Assert.IsFalse(string.IsNullOrEmpty(path));
-                var file = Path.Combine(path, ".vimrc");
-                Environment.SetEnvironmentVariable("HOME", path);
-                File.WriteAllText(file, "set noignorecase");
+            var fileName = "foo";
+            var contents = new string[] { "set noignorecase" };
+            var tuple = Tuple.Create(fileName, contents);
 
-                _settings.SetupProperty(x => x.VimRc);
-                _settings.SetupSet(x => x.VimRcPaths = It.IsAny<string>()).Verifiable();
-                Assert.IsTrue(_vim.LoadVimRc(createViewFunc));
-                Assert.AreEqual(file, _settings.Object.VimRc);
-                _settings.Verify();
-                commandMode.Verify();
-            }
-            finally
-            {
-                Restore();
-            }
+            _settings.SetupProperty(x => x.VimRc);
+            _settings.SetupProperty(x => x.VimRcPaths);
+
+            var fs = new Mock<IFileSystem>(MockBehavior.Strict);
+            fs.Setup(x => x.GetVimRcDirectories()).Returns(new string[] { "" }).Verifiable();
+            fs.Setup(x => x.LoadVimRc()).Returns(FSharpOption.Create(tuple)).Verifiable();
+
+            Assert.IsTrue(_vim.LoadVimRc(fs.Object, createViewFunc));
+            _settings.Verify();
+            commandMode.Verify();
+            fs.Verify();
         }
     }
 }

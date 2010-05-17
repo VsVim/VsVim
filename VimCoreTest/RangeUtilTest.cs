@@ -5,15 +5,16 @@ using System.Text;
 using NUnit.Framework;
 using Vim.Modes.Command;
 using Vim;
-using VimCoreTest.Utils;
+using VimCore.Test.Utils;
 using Microsoft.VisualStudio.Text;
 using Microsoft.FSharp.Collections;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text.Editor;
 using Moq;
 using Range = Vim.Modes.Command.Range;
+using Vim.Extensions;
 
-namespace VimCoreTest
+namespace VimCore.Test
 {
     [TestFixture]
     public class RangeUtilTest

@@ -94,18 +94,24 @@ module internal TssUtil =
                         else startSpan
             | None -> fullSearch point
 
-    let FindNextWordPosition point kind =
-        let span = FindNextWordSpan point kind
-        span.Start
-           
-    let FindPreviousWordPosition point kind  =
-        let span = FindPreviousWordSpan point kind 
-        span.Start
+    let FindNextWordStart point count kind =
+        let rec inner point count = 
+            if count = 0 then point
+            else 
+                let span = FindNextWordSpan point kind
+                let nextPos = span.Start
+                inner nextPos (count-1)
+        inner point count 
 
-    let FindNextOccurrenceOfCharacter (startPoint:SnapshotPoint) (toFind:char) : SnapshotPoint option = failwith ""
-        
-    let FindPreviousOccurrenceOfCharacter (startPoint:SnapshotPoint) (toFind:char) : SnapshotPoint option = failwith ""
-            
+    let FindPreviousWordStart point count kind  =
+        let rec inner point count =
+            if count = 0 then point
+            else 
+                let span = FindPreviousWordSpan point kind 
+                let prevPos = span.Start
+                inner prevPos (count-1)
+        inner point count 
+
     let FindIndentPosition (line:ITextSnapshotLine) =
         let text = line.GetText()
         match text |> Seq.tryFindIndex (fun c -> not (System.Char.IsWhiteSpace(c))) with
@@ -147,6 +153,11 @@ module internal TssUtil =
         |> SnapshotLineUtil.GetPoints
         |> SeqUtil.tryFindOrDefault (fun p -> not (CharUtil.IsWhiteSpace (p.GetChar()))) (line.Start)
 
+    let FindLastNonWhitespaceCharacter line =
+        line
+        |> SnapshotLineUtil.GetPointsBackward
+        |> SeqUtil.tryFindOrDefault (fun p -> not (CharUtil.IsWhiteSpace (p.GetChar()))) (line.Start)
+
     let CreateTextStructureNavigator wordKind (baseImpl:ITextStructureNavigator) = 
         { new ITextStructureNavigator with 
             member x.ContentType = baseImpl.ContentType
@@ -165,3 +176,37 @@ module internal TssUtil =
             Some(span)
         with
             | :? System.ArgumentException -> None
+
+    let FindNextOccurranceOfCharOnLine point targetChar count = 
+        match SnapshotPointUtil.TryGetNextPointOnLine point with
+        | None -> None
+        | Some(point) ->
+            let matches =
+                SnapshotPointUtil.GetPointsOnContainingLineFrom point
+                |> Seq.filter (fun p -> p.GetChar() = targetChar)
+                |> List.ofSeq
+            let index = count - 1 
+            if index < matches.Length then List.nth matches index |> Some
+            else None
+
+    let FindTillNextOccurranceOfCharOnLine point targetChar count =
+        match FindNextOccurranceOfCharOnLine point targetChar count with
+        | None -> None
+        | Some(point) -> SnapshotPointUtil.TryGetPreviousPointOnLine point
+
+    let FindPreviousOccurranceOfCharOnLine point targetChar count =
+        match SnapshotPointUtil.TryGetPreviousPointOnLine point with
+        | None -> None
+        | Some(point) ->
+            let matches =
+                SnapshotPointUtil.GetPointsOnContainingLineBackwardsFrom point
+                |> Seq.filter (fun p -> p.GetChar() = targetChar)
+                |> List.ofSeq
+            let index = count - 1
+            if index < matches.Length then List.nth matches index |> Some
+            else None
+
+    let FindTillPreviousOccurranceOfCharOnLine point targetChar count =
+        match FindPreviousOccurranceOfCharOnLine point targetChar count with
+        | None -> None
+        | Some(point) -> SnapshotPointUtil.TryGetNextPointOnLine point

@@ -4,18 +4,20 @@ using System.Collections.Generic;
 using System.Linq;
 using NUnit.Framework;
 using Vim;
+using Vim.Extensions;
 using Microsoft.VisualStudio.Text;
 using System.Windows.Input;
 using System.Windows.Media;
 using Microsoft.VisualStudio.Text.Editor;
-using VimCoreTest.Utils;
+using VimCore.Test.Utils;
 using Microsoft.FSharp.Collections;
 using Moq;
 using Microsoft.VisualStudio.Text.Operations;
 using Microsoft.FSharp.Core;
 using Vim.Modes.Normal;
+using VimCore.Test.Mock;
 
-namespace VimCoreTest
+namespace VimCore.Test
 {
     [TestFixture]
     public class VimBufferTests
@@ -44,14 +46,14 @@ namespace VimCoreTest
             _keyMap = new Mock<IKeyMap>(MockBehavior.Strict);
             _host = new Mock<IVimHost>(MockBehavior.Strict);
             _vim = MockObjectFactory.CreateVim(map:_markMap, settings:_globalSettings.Object, keyMap:_keyMap.Object, host:_host.Object);
-            _disabledMode = new Mock<IMode>(MockBehavior.Strict);
+            _disabledMode = new Mock<IMode>(MockBehavior.Loose);
             _disabledMode.SetupGet(x => x.ModeKind).Returns(ModeKind.Disabled);
-            _normalMode = new Mock<INormalMode>(MockBehavior.Strict);
+            _normalMode = new Mock<INormalMode>(MockBehavior.Loose);
             _normalMode.Setup(x => x.OnEnter());
             _normalMode.SetupGet(x => x.ModeKind).Returns(ModeKind.Normal);
             _normalMode.SetupGet(x => x.IsOperatorPending).Returns(false);
             _normalMode.SetupGet(x => x.IsWaitingForInput).Returns(false);
-            _insertMode = new Mock<IMode>(MockBehavior.Strict);
+            _insertMode = new Mock<IMode>(MockBehavior.Loose);
             _insertMode.SetupGet(x => x.ModeKind).Returns(ModeKind.Insert);
             _jumpList = new Mock<IJumpList>(MockBehavior.Strict);
             _rawBuffer = new VimBuffer(
@@ -120,7 +122,7 @@ namespace VimCoreTest
             _normalMode.Setup(x => x.Process(ki)).Returns(ProcessResult.Processed);
             var ran = false;
             _buffer.KeyInputProcessed += (s, i) => { ran = true; };
-            _buffer.ProcessInput(ki);
+            _buffer.Process(ki);
             Assert.IsTrue(ran);
         }
 
@@ -132,7 +134,7 @@ namespace VimCoreTest
             _normalMode.Setup(x => x.Process(ki)).Returns(ProcessResult.Processed);
             var ran = false;
             _buffer.KeyInputBuffered += (s, i) => { ran = true; };
-            _buffer.ProcessInput(ki);
+            _buffer.Process(ki);
             Assert.IsFalse(ran);
         }
 
@@ -145,7 +147,7 @@ namespace VimCoreTest
                 .Returns(KeyMappingResult.MappingNeedsMoreInput);
             var ran = false;
             _buffer.KeyInputBuffered += (s, i) => { ran = true; };
-            _buffer.ProcessInput(ki);
+            _buffer.Process(ki);
             Assert.IsTrue(ran);
         }
 
@@ -173,13 +175,23 @@ namespace VimCoreTest
             _vim.Verify();
         }
 
+        [Test, Description("Close should call OnClose for every IMode")]
+        public void Close4()
+        {
+            _vim.Setup(x => x.RemoveBuffer(_view)).Returns(true).Verifiable();
+            _buffer.Close();
+            _normalMode.Verify(x => x.OnClose());
+            _insertMode.Verify(x => x.OnClose());
+            _disabledMode.Verify(x => x.OnClose());
+        }
+
         [Test,Description("Disable command should be preprocessed")]
         public void Disable1()
         {
             DisableKeyRemap();
             _normalMode.Setup(x => x.OnLeave());
             _disabledMode.Setup(x => x.OnEnter()).Verifiable();
-            _buffer.ProcessInput(Vim.GlobalSettings.DisableCommand);
+            _buffer.Process(Vim.GlobalSettings.DisableCommand);
             _disabledMode.Verify();
         }
 
@@ -272,7 +284,7 @@ namespace VimCoreTest
                 .Returns(KeyMappingResult.NewSingleKey(oldKi));
             _normalMode.SetupGet(x => x.IsOperatorPending).Returns(true);
             _normalMode.Setup(x => x.Process(oldKi)).Returns(ProcessResult.Processed).Verifiable();
-            Assert.IsTrue(_buffer.ProcessInput(oldKi));
+            Assert.IsTrue(_buffer.Process(oldKi));
             _normalMode.Verify();
         }
 
@@ -283,7 +295,7 @@ namespace VimCoreTest
             _normalMode.SetupGet(x => x.IsOperatorPending).Returns(false);
             _normalMode.SetupGet(x => x.IsWaitingForInput).Returns(true);
             _normalMode.Setup(x => x.Process(oldKi)).Returns(ProcessResult.Processed).Verifiable();
-            Assert.IsTrue(_buffer.ProcessInput(oldKi));
+            Assert.IsTrue(_buffer.Process(oldKi));
             _normalMode.Verify();
         }
 
@@ -382,6 +394,41 @@ namespace VimCoreTest
             _normalMode.Setup(x => x.Process(It.IsAny<KeyInput>())).Returns(ProcessResult.Processed);
             _buffer.ProcessChar('b');
             Assert.AreEqual(0, _buffer.BufferedRemapKeyInputs.Count());
+        }
+
+        [Test]
+        public void CanProcess1()
+        {
+            var ki = InputUtil.CharToKeyInput('c');
+            _keyMap
+                .Setup(x => x.GetKeyMappingResult(ki, KeyRemapMode.Normal))
+                .Returns(KeyMappingResult.NoMapping)
+                .Verifiable();
+            _normalMode
+                .Setup(x => x.CanProcess(ki))
+                .Returns(true)
+                .Verifiable();
+            Assert.IsTrue(_buffer.CanProcess(ki));
+            _normalMode.Verify();
+            _keyMap.Verify();
+        }
+
+        [Test]
+        public void CanProcess2()
+        {
+            var ki = InputUtil.CharToKeyInput('c');
+            var ki2 = InputUtil.CharToKeyInput('d');
+            _keyMap
+                .Setup(x => x.GetKeyMappingResult(ki, KeyRemapMode.Normal))
+                .Returns(KeyMappingResult.NewSingleKey(ki2))
+                .Verifiable();
+            _normalMode
+                .Setup(x => x.CanProcess(ki2))
+                .Returns(true)
+                .Verifiable();
+            Assert.IsTrue(_buffer.CanProcess(ki));
+            _normalMode.Verify();
+            _keyMap.Verify();
         }
 
     }

@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using NUnit.Framework;
 using Vim.Modes.Normal;
-using VimCoreTest.Utils;
+using VimCore.Test.Utils;
 using Moq;
 using Vim;
 using Microsoft.FSharp.Core;
@@ -14,8 +14,10 @@ using Microsoft.VisualStudio.Text;
 using System.Windows.Input;
 using Vim.Modes;
 using Microsoft.VisualStudio.Text.Outlining;
+using Vim.Extensions;
+using VimCore.Test.Mock;
 
-namespace VimCoreTest
+namespace VimCore.Test
 {
     [TestFixture]
     public class Normal_DefaultOperationsTests
@@ -29,6 +31,7 @@ namespace VimCoreTest
         private Mock<IVimLocalSettings> _settings;
         private Mock<IIncrementalSearch> _search;
         private Mock<IOutliningManager> _outlining;
+        private Mock<IUndoRedoOperations> _undoRedoOperations;
             
         private ISearchService _searchService;
         private Mock<IStatusUtil> _statusUtil;
@@ -65,7 +68,8 @@ namespace VimCoreTest
             _search.SetupGet(x => x.SearchService).Returns(_searchService);
             _statusUtil = new Mock<IStatusUtil>(MockBehavior.Strict);
             _outlining = new Mock<IOutliningManager>(MockBehavior.Strict);
-            _operationsRaw = new DefaultOperations(_view, editorOpts, _outlining.Object, _host.Object, _statusUtil.Object, _settings.Object, nav, _jumpList.Object, _search.Object);
+            _undoRedoOperations = new Mock<IUndoRedoOperations>(MockBehavior.Strict);
+            _operationsRaw = new DefaultOperations(_view, editorOpts, _outlining.Object, _host.Object, _statusUtil.Object, _settings.Object, nav, _jumpList.Object, _search.Object, _undoRedoOperations.Object);
             _operations = _operationsRaw;
         }
 
@@ -981,6 +985,13 @@ namespace VimCoreTest
             _operations.ChangeLetterCaseAtCursor(300);
             Assert.AreEqual("BAR", _view.GetLineSpan(0).GetText());
             Assert.AreEqual(2, _view.GetCaretPoint().Position);
+        }
+
+        [Test]
+        public void MoveToNextOccuranceOfCharAtCursor1()
+        {
+            Create("dog kicked the ball");
+
         }
     }
 }

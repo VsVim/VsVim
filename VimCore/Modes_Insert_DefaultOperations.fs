@@ -13,5 +13,6 @@ type internal DefaultOperations
         _editorOpts : IEditorOperations, 
         _outlining : IOutliningManager,
         _host : IVimHost, _jumpList : IJumpList, 
-        _settings : IVimLocalSettings) =
-    inherit Modes.CommonOperations(_textView, _editorOpts, _outlining, _host, _jumpList, _settings)
+        _settings : IVimLocalSettings,
+        _undoRedoOperations : IUndoRedoOperations) =
+    inherit Modes.CommonOperations(_textView, _editorOpts, _outlining, _host, _jumpList, _settings, _undoRedoOperations)

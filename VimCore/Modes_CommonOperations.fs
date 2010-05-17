@@ -15,7 +15,25 @@ type internal CommonOperations
         _outlining : IOutliningManager,
         _host : IVimHost,
         _jumpList : IJumpList,
-        _settings : IVimLocalSettings ) =
+        _settings : IVimLocalSettings,
+        _undoRedoOperations : IUndoRedoOperations ) =
+
+    /// The caret sometimes needs to be adjusted after an Up or Down movement.  Caret position
+    /// and virtual space is actually quite a predicamite for VsVim because of how Vim standard 
+    /// works.  Vim has no concept of Virtual Space and is designed to work in a fixed width
+    /// font buffer.  Visual Studio has essentially the exact opposite.  Non-fixed width fonts are
+    /// the most problematic because it makes the natural Vim motion of column based up and down
+    /// make little sense visually.  Instead we rely on the core editor for up and down motions.
+    ///
+    /// The one exception has to do with the VirtualEdit setting.  By default the 'l' motion will 
+    /// only move you to the last character on the line and no further.  Visual Studio up and down
+    /// though acts like virtualedit=onemore.  We correct this here
+    member private x.AdjustCaretAfterUpDownMove() =
+        if not _settings.GlobalSettings.IsVirtualEditOneMore then 
+            let point = TextViewUtil.GetCaretPoint _textView
+            let line = SnapshotPointUtil.GetContainingLine point
+            if point.Position >= line.End.Position && line.Length > 0 then 
+                TextViewUtil.MoveCaretToPoint _textView (line.End.Subtract(1))
 
     member private x.NavigateToPoint (point:VirtualSnapshotPoint) = 
         let buf = point.Position.Snapshot.TextBuffer
@@ -31,20 +49,19 @@ type internal CommonOperations
         reg.UpdateValue(regValue) 
         tss.TextBuffer.Delete(span.Span)
 
-    member x.ShiftSpanRight (span:SnapshotSpan) = 
-        let text = new System.String(' ', _settings.GlobalSettings.ShiftWidth)
+    member x.ShiftSpanRight multiplier (span:SnapshotSpan) = 
+        let text = new System.String(' ', _settings.GlobalSettings.ShiftWidth * multiplier)
         let buf = span.Snapshot.TextBuffer
-        let startLineNumber = span.Start.GetContainingLine().LineNumber
-        let endLineNumber = span.End.GetContainingLine().LineNumber
+        let startLine,endLine = SnapshotSpanUtil.GetStartAndEndLine span
         use edit = buf.CreateEdit()
-        for i = startLineNumber to endLineNumber do
+        for i = startLine.LineNumber to endLine.LineNumber do
             let line = span.Snapshot.GetLineFromLineNumber(i)
             edit.Replace(line.Start.Position,0,text) |> ignore
         
         edit.Apply() |> ignore
         
-    member x.ShiftSpanLeft (span:SnapshotSpan) =
-        let count = _settings.GlobalSettings.ShiftWidth
+    member x.ShiftSpanLeft multiplier (span:SnapshotSpan) =
+        let count = _settings.GlobalSettings.ShiftWidth * multiplier
         let fixText (text:string) = 
             let count = min count (text.Length) // Deal with count being greater than line length
             let count = 
@@ -55,10 +72,9 @@ type internal CommonOperations
                     | None -> count
             text.Substring(count)                 
         let buf = span.Snapshot.TextBuffer
-        let startLineNumber = span.Start.GetContainingLine().LineNumber
-        let endLineNumber = span.End.GetContainingLine().LineNumber
+        let startLine,endLine = SnapshotSpanUtil.GetStartAndEndLine span
         use edit = buf.CreateEdit()
-        for i = startLineNumber to endLineNumber do
+        for i = startLine.LineNumber to endLine.LineNumber do
             let line = span.Snapshot.GetLineFromLineNumber(i)
             let text = fixText (line.GetText())
             edit.Replace(line.Extent.Span, text) |> ignore
@@ -225,80 +241,87 @@ type internal CommonOperations
     
         /// Move the cursor count spaces left
         member x.MoveCaretLeft count = 
-            _operations.ResetSelection()
             let caret = TextViewUtil.GetCaretPoint _textView
-            let span = MotionUtil.CharLeft caret count
-            TextViewUtil.MoveCaretToPoint _textView span.Start
+            let leftPoint = SnapshotPointUtil.GetPreviousPointOnLine caret count
+            if caret <> leftPoint then
+                _operations.ResetSelection()
+                TextViewUtil.MoveCaretToPoint _textView leftPoint
     
         /// Move the cursor count spaces to the right
         member x.MoveCaretRight count =
-            _operations.ResetSelection()
             let caret = TextViewUtil.GetCaretPoint _textView
-            let span = MotionUtil.CharRight caret count
-            TextViewUtil.MoveCaretToPoint _textView span.End
+            let doMove point = 
+                if point <> caret then
+                    _operations.ResetSelection()
+                    TextViewUtil.MoveCaretToPoint _textView point
+
+            if SnapshotPointUtil.IsLastPointOnLine caret then
+
+                // If we are an the last point of the line then only move if VirtualEdit=onemore
+                let line = SnapshotPointUtil.GetContainingLine caret
+                if _settings.GlobalSettings.IsVirtualEditOneMore && line.Length > 0 then 
+                    doMove line.End
+            else
+
+                let rightPoint = SnapshotPointUtil.GetNextPointOnLine caret count
+                doMove rightPoint
     
         /// Move the cursor count spaces up 
         member x.MoveCaretUp count =
-            _operations.ResetSelection()
             let caret = TextViewUtil.GetCaretPoint _textView
             let current = caret.GetContainingLine()
             let count = 
                 if current.LineNumber - count > 0 then count
                 else current.LineNumber 
+            if count > 0 then _operations.ResetSelection()
             for i = 1 to count do   
                 _operations.MoveLineUp(false)
-            
+            x.AdjustCaretAfterUpDownMove()
+
         /// Move the cursor count spaces down
         member x.MoveCaretDown count =
-            _operations.ResetSelection()
             let caret = TextViewUtil.GetCaretPoint _textView
             let line = caret.GetContainingLine()
             let tss = line.Snapshot
             let count = 
                 if line.LineNumber + count < tss.LineCount then count
                 else (tss.LineCount - line.LineNumber) - 1 
+            if count > 0 then _operations.ResetSelection()
             for i = 1 to count do
                 _operations.MoveLineDown(false)
+            x.AdjustCaretAfterUpDownMove()
 
         member x.MoveCaretDownToFirstNonWhitespaceCharacter count = 
             let caret = TextViewUtil.GetCaretPoint _textView
             let line = caret.GetContainingLine()
-            let line = SnapshotUtil.GetValidLineOrLast caret.Snapshot (line.LineNumber + count)
+            let line = SnapshotUtil.GetLineOrLast caret.Snapshot (line.LineNumber + count)
             let point = TssUtil.FindFirstNonWhitespaceCharacter line
             _operations.ResetSelection()
             TextViewUtil.MoveCaretToPoint _textView point 
 
         member x.MoveWordForward kind count = 
-            let rec inner pos count = 
-                if count = 0 then pos
-                else 
-                    let nextPos = TssUtil.FindNextWordPosition pos kind
-                    inner nextPos (count-1)
-            let pos = inner (TextViewUtil.GetCaretPoint _textView) count
+            let caret = TextViewUtil.GetCaretPoint _textView
+            let pos = TssUtil.FindNextWordStart caret count kind
             TextViewUtil.MoveCaretToPoint _textView pos 
             
         member x.MoveWordBackward kind count = 
-            let rec inner pos count =
-                if count = 0 then pos
-                else 
-                    let prevPos = TssUtil.FindPreviousWordPosition pos kind
-                    inner prevPos (count-1)
-            let pos = inner (TextViewUtil.GetCaretPoint _textView) count
+            let caret = TextViewUtil.GetCaretPoint _textView
+            let pos = TssUtil.FindPreviousWordStart caret count kind
             TextViewUtil.MoveCaretToPoint _textView pos 
 
-        member x.ShiftSpanRight span = x.ShiftSpanRight span
+        member x.ShiftSpanRight multiplier span = x.ShiftSpanRight multiplier span
 
-        member x.ShiftSpanLeft span = x.ShiftSpanLeft span
+        member x.ShiftSpanLeft multiplier span = x.ShiftSpanLeft multiplier span
 
         member x.ShiftLinesRight count = 
             let point = TextViewUtil.GetCaretPoint _textView
             let span = SnapshotPointUtil.GetLineRangeSpan point count
-            x.ShiftSpanRight span
+            x.ShiftSpanRight 1 span
 
         member x.ShiftLinesLeft count =
             let point = TextViewUtil.GetCaretPoint _textView
             let span = SnapshotPointUtil.GetLineRangeSpan point count
-            x.ShiftSpanLeft span
+            x.ShiftSpanLeft 1 span
             
         member x.InsertText text count = 
             let text = StringUtil.repeat text count 
@@ -345,16 +368,29 @@ type internal CommonOperations
             x.DeleteSpan span MotionKind.Inclusive OperationKind.LineWise reg |> ignore
 
         member x.DeleteLinesFromCursor count reg = 
-            let point = TextViewUtil.GetCaretPoint _textView
+            let point,line = TextViewUtil.GetCaretPointAndLine _textView
             let span = SnapshotPointUtil.GetLineRangeSpan point count
             let span = SnapshotSpan(point, span.End)
             x.DeleteSpan span MotionKind.Inclusive OperationKind.CharacterWise reg |> ignore
 
+        /// Delete count lines from the cursor.  The last line is an unfortunate special case here 
+        /// as it does not have a line break.  Hence in order to delete the line we must delete the 
+        /// line break at the end of the preceeding line.  
+        ///
+        /// This cannot be normalized by always deleting the line break from the previous line because
+        /// it would still break for the first line.  This is an unfortunate special case we must 
+        /// deal with
         member x.DeleteLinesIncludingLineBreak count reg = 
-            let point = TextViewUtil.GetCaretPoint _textView
-            let point = point.GetContainingLine().Start
-            let span = SnapshotPointUtil.GetLineRangeSpanIncludingLineBreak point count
-            let span = SnapshotSpan(point, span.End)
+            let point,line = TextViewUtil.GetCaretPointAndLine _textView
+            let snapshot = point.Snapshot
+            let span = 
+                if 1 = count && line.LineNumber = SnapshotUtil.GetLastLineNumber snapshot && snapshot.LineCount > 1 then
+                    let above = snapshot.GetLineFromLineNumber (line.LineNumber-1)
+                    SnapshotSpan(above.End, line.End)
+                else
+                    let point = line.Start
+                    let span = SnapshotPointUtil.GetLineRangeSpanIncludingLineBreak point count
+                    SnapshotSpan(point, span.End)
             x.DeleteSpan span MotionKind.Inclusive OperationKind.LineWise reg |> ignore
 
         member x.DeleteLinesIncludingLineBreakFromCursor count reg = 
@@ -363,6 +399,8 @@ type internal CommonOperations
             let span = SnapshotSpan(point, span.End)
             x.DeleteSpan span MotionKind.Inclusive OperationKind.CharacterWise reg |> ignore
 
+        member x.Undo count = _undoRedoOperations.Undo count
+        member x.Redo count = _undoRedoOperations.Redo count
         member x.Save() = _host.SaveCurrentFile()
         member x.SaveAs fileName = _host.SaveCurrentFileAs fileName
         member x.SaveAll() = _host.SaveAllFiles()
@@ -376,3 +414,28 @@ type internal CommonOperations
         member x.EnsureCaretOnScreen () = TextViewUtil.EnsureCaretOnScreen _textView 
         member x.EnsureCaretOnScreenAndTextExpanded () = TextViewUtil.EnsureCaretOnScreenAndTextExpanded _textView _outlining
         member x.MoveCaretToPoint point =  TextViewUtil.MoveCaretToPoint _textView point 
+        member x.MoveCaretToMotionData (data:MotionData) =
+
+            // Move the caret to the last valid point on the span.  
+            let point = 
+                if data.OperationKind = OperationKind.LineWise then 
+                    if data.IsForward then SnapshotSpanUtil.GetEndLine data.Span |> SnapshotLineUtil.GetEnd
+                    else SnapshotSpanUtil.GetStartLine data.Span |> SnapshotLineUtil.GetStart
+                else
+                    if data.IsForward then
+                        if data.MotionKind = MotionKind.Exclusive then data.Span.End
+                        else SnapshotPointUtil.GetPreviousPointOnLine data.Span.End 1
+                    else data.Span.Start
+            TextViewUtil.MoveCaretToPoint _textView point
+            _operations.ResetSelection()
+        member x.Beep () = if not _settings.GlobalSettings.VisualBell then _host.Beep()
+        member x.ApplyAsSingleEdit description spans doEdit =
+            let description = 
+                match description with
+                | None -> Resources.Common_BulkEdit
+                | Some(d) -> d
+            use transaction = _undoRedoOperations.CreateUndoTransaction description
+            spans |> Seq.iter doEdit 
+            transaction.Complete()
+
+

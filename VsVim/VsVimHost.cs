@@ -92,58 +92,6 @@ namespace VsVim
             Console.Beep();
         }
 
-        void IVimHost.Undo(ITextBuffer buffer, int count)
-        {
-            var undoManager = _undoManagerProvider.GetTextBufferUndoManager(buffer);
-            if ( undoManager == null || undoManager.TextBufferUndoHistory == null )
-            {
-                UpdateStatus(Resources.VimHost_NoUndoRedoSupport);
-                return;
-            }
-
-            var history = undoManager.TextBufferUndoHistory;
-            for (int i = 0; i < count; i++)
-            {
-                try
-                {
-                    if (history.CanUndo)
-                    {
-                        history.Undo(count);
-                    }
-                }
-                catch (NotSupportedException)
-                {
-                    UpdateStatus(Resources.VimHost_CannotUndo);
-                }
-            }
-        }
-
-        void IVimHost.Redo(ITextBuffer buffer, int count)
-        {
-            var undoManager = _undoManagerProvider.GetTextBufferUndoManager(buffer);
-            if (undoManager == null || undoManager.TextBufferUndoHistory == null)
-            {
-                UpdateStatus(Resources.VimHost_NoUndoRedoSupport);
-                return;
-            }
-
-            var history = undoManager.TextBufferUndoHistory;
-            for (int i = 0; i < count; i++)
-            {
-                try
-                {
-                    if (history.CanRedo)
-                    {
-                        history.Redo(count);
-                    }
-                }
-                catch (NotSupportedException)
-                {
-                    UpdateStatus(Resources.VimHost_CannotRedo);
-                }
-            }
-        }
-
         bool IVimHost.GoToDefinition()
         {
             return SafeExecuteCommand("Edit.GoToDefinition");

@@ -6,9 +6,10 @@ using NUnit.Framework;
 using Vim;
 using Moq;
 using Microsoft.VisualStudio.Text.Editor;
-using VimCoreTest.Utils;
+using VimCore.Test.Utils;
+using Vim.Extensions;
 
-namespace VimCoreTest
+namespace VimCore.Test
 {
     [TestFixture]
     public class VimIntegrationTests

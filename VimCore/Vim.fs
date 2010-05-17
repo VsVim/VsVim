@@ -21,10 +21,13 @@ type internal VimBufferFactory
         _completionWindowBrokerFactoryService : IDisplayWindowBrokerFactoryService,
         _textSearchService : ITextSearchService,
         _textStructureNavigatorSelectorService : ITextStructureNavigatorSelectorService,
-        _tlcService : ITrackingLineColumnService )=
+        _tlcService : ITrackingLineColumnService,
+        _undoManagerProvider : ITextBufferUndoManagerProvider ) =
 
     member x.CreateBuffer (vim:IVim) view = 
         let editOperations = _editorOperationsFactoryService.GetEditorOperations(view)
+        let motionUtil = MotionUtil(view, vim.Settings) :> IMotionUtil
+        let capture = MotionCapture(view, motionUtil) :> IMotionCapture
         let outlining = _outliningManagerService.GetOutliningManager(view)
         let jumpList = JumpList(_tlcService) :> IJumpList
         let localSettings = LocalSettings(vim.Settings, view) :> IVimLocalSettings
@@ -37,13 +40,20 @@ type internal VimBufferFactory
         let buffer = bufferRaw :> IVimBuffer
 
         let statusUtil = x.CreateStatusUtil bufferRaw 
+        let undoRedoOperations = 
+            let history = 
+                let manager = _undoManagerProvider.GetTextBufferUndoManager(view.TextBuffer)
+                if manager = null then None
+                else manager.TextBufferUndoHistory |> Some
+            UndoRedoOperations(statusUtil, history) :> IUndoRedoOperations
+        let createCommandRunner() = CommandRunner (view, vim.RegisterMap, capture,statusUtil) :>ICommandRunner
         let wordNav = x.CreateTextStructureNavigator view.TextBuffer WordKind.NormalWord
         let broker = _completionWindowBrokerFactoryService.CreateDisplayWindowBroker view
         let normalIncrementalSearch = Vim.Modes.Normal.IncrementalSearch(view, outlining, localSettings, wordNav, vim.SearchService) :> IIncrementalSearch
-        let normalOpts = Modes.Normal.DefaultOperations(view,editOperations, outlining,_host, statusUtil, localSettings,wordNav,jumpList, normalIncrementalSearch) :> Modes.Normal.IOperations
-        let commandOpts = Modes.Command.DefaultOperations(view,editOperations,outlining, _host, statusUtil, jumpList, localSettings, vim.KeyMap) :> Modes.Command.IOperations
-        let commandProcessor = Modes.Command.CommandProcessor(buffer, commandOpts, statusUtil) :> Modes.Command.ICommandProcessor
-        let insertOpts = Modes.Insert.DefaultOperations(view,editOperations,outlining,_host, jumpList, localSettings) :> Modes.ICommonOperations
+        let normalOpts = Modes.Normal.DefaultOperations(view,editOperations, outlining,_host, statusUtil, localSettings,wordNav,jumpList, normalIncrementalSearch, undoRedoOperations) :> Modes.Normal.IOperations
+        let commandOpts = Modes.Command.DefaultOperations(view,editOperations,outlining, _host, statusUtil, jumpList, localSettings, vim.KeyMap, undoRedoOperations) :> Modes.Command.IOperations
+        let commandProcessor = Modes.Command.CommandProcessor(buffer, commandOpts, statusUtil, FileSystem() :> IFileSystem) :> Modes.Command.ICommandProcessor
+        let insertOpts = Modes.Insert.DefaultOperations(view,editOperations,outlining,_host, jumpList, localSettings, undoRedoOperations) :> Modes.ICommonOperations
         let visualOptsFactory kind = 
             let mode = 
                 match kind with 
@@ -52,19 +62,25 @@ type internal VimBufferFactory
                 | ModeKind.VisualLine -> Modes.Visual.SelectionMode.Line
                 | _ -> invalidArg "_kind" "Invalid kind for Visual Mode"
             let tracker = Modes.Visual.SelectionTracker(view,mode) :> Modes.Visual.ISelectionTracker
-            Modes.Visual.DefaultOperations(view,editOperations, outlining, _host, jumpList, tracker, localSettings) :> Modes.Visual.IOperations
+            let opts = Modes.Visual.DefaultOperations(view,editOperations, outlining, _host, jumpList, localSettings,undoRedoOperations,kind, statusUtil) :> Modes.Visual.IOperations
+            (tracker, opts)
 
+        let visualModeList =
+            [ ModeKind.VisualBlock; ModeKind.VisualCharacter; ModeKind.VisualLine ]
+            |> Seq.ofList
+            |> Seq.map (fun kind -> 
+                let tracker, opts = visualOptsFactory kind
+                ((Modes.Visual.VisualMode(buffer, opts, kind, createCommandRunner(),capture, tracker)) :> IMode) )
+            |> List.ofSeq
+    
         // Normal mode values
         let modeList = 
             [
-                ((Modes.Normal.NormalMode(buffer, normalOpts, normalIncrementalSearch,statusUtil,broker)) :> IMode);
+                ((Modes.Normal.NormalMode(buffer, normalOpts, normalIncrementalSearch,statusUtil,broker, createCommandRunner(),capture)) :> IMode);
                 ((Modes.Command.CommandMode(buffer, commandProcessor)) :> IMode);
                 ((Modes.Insert.InsertMode(buffer,insertOpts,broker)) :> IMode);
                 (DisabledMode(buffer) :> IMode);
-                ((Modes.Visual.VisualMode(buffer, (visualOptsFactory ModeKind.VisualBlock), ModeKind.VisualBlock)) :> IMode);
-                ((Modes.Visual.VisualMode(buffer, (visualOptsFactory ModeKind.VisualLine), ModeKind.VisualLine)) :> IMode);
-                ((Modes.Visual.VisualMode(buffer, (visualOptsFactory ModeKind.VisualCharacter), ModeKind.VisualCharacter)) :> IMode);
-            ]
+            ] @ visualModeList
         modeList |> List.iter (fun m -> bufferRaw.AddMode m)
         buffer.SwitchMode ModeKind.Normal |> ignore
         bufferRaw
@@ -74,7 +90,7 @@ type internal VimBufferFactory
         TssUtil.CreateTextStructureNavigator wordKind baseImpl
 
     member private x.CreateStatusUtil (buffer:VimBuffer) =
-        { new Vim.Modes.IStatusUtil with 
+        { new IStatusUtil with 
             member x.OnStatus msg = buffer.RaiseStatusMessage msg
             member x.OnError msg = buffer.RaiseErrorMessage msg
             member x.OnStatusLong msgSeq = buffer.RaiseStatusMessageLong msgSeq }
@@ -97,9 +113,6 @@ type internal Vim
         _keyMap : IKeyMap,
         _changeTracker : IChangeTracker,
         _search : ISearchService ) =
-
-
-    static let _vimRcEnvironmentVariables = ["HOME";"VIM";"USERPROFILE"]
 
     let _bufferMap = new System.Collections.Generic.Dictionary<ITextView, IVimBuffer>()
 
@@ -148,20 +161,12 @@ type internal Vim
         | Some(buffer) -> buffer
         | None -> x.CreateVimBufferCore view
 
-    static member LoadVimRc (vim:IVim) (createViewFunc : (unit -> ITextView)) =
+    static member LoadVimRc (vim:IVim) (fileSystem:IFileSystem) (createViewFunc : (unit -> ITextView)) =
         let settings = vim.Settings
         settings.VimRc <- System.String.Empty
 
-        let getPaths var =
-            match System.Environment.GetEnvironmentVariable(var) with
-            | null -> Seq.empty
-            | value ->
-                let files = [".vimrc"; "_vimrc" ]
-                files |> Seq.map (fun file -> Path.Combine(value,file)) 
-        let paths = _vimRcEnvironmentVariables |> Seq.map getPaths |> Seq.concat
-        settings.VimRcPaths <- paths |> String.concat ";"
-
-        match paths |> Seq.tryPick Utils.ReadAllLines with
+        settings.VimRcPaths <- fileSystem.GetVimRcDirectories() |> String.concat ";"
+        match fileSystem.LoadVimRc() with
         | None -> false
         | Some(path,lines) ->
             settings.VimRc <- path
@@ -173,7 +178,7 @@ type internal Vim
             true
 
     interface IVim with
-        member x.Host = _host
+        member x.VimHost = _host
         member x.MarkMap = _markMap
         member x.KeyMap = _keyMap
         member x.ChangeTracker = _changeTracker
@@ -190,7 +195,7 @@ type internal Vim
             match keys |> Seq.isEmpty with
             | true -> None
             | false -> keys |> Seq.head |> x.GetBufferCore
-        member x.LoadVimRc createViewFunc = Vim.LoadVimRc x createViewFunc
+        member x.LoadVimRc fileSystem createViewFunc = Vim.LoadVimRc x fileSystem createViewFunc
                 
 
         

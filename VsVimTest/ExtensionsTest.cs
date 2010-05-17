@@ -5,6 +5,7 @@ using System.Text;
 using NUnit.Framework;
 using Moq;
 using VsVim;
+using Vim.Extensions;
 using System.Windows.Input;
 using Microsoft.VisualStudio.Utilities;
 using System.Windows;

@@ -19,8 +19,9 @@ type internal DefaultOperations
         _statusUtil : IStatusUtil,
         _jumpList : IJumpList,
         _settings : IVimLocalSettings,
-        _keyMap : IKeyMap) =
-    inherit CommonOperations(_textView, _operations, _outlining, _host, _jumpList, _settings) 
+        _keyMap : IKeyMap,
+        _undoRedoOperations : IUndoRedoOperations) =
+    inherit CommonOperations(_textView, _operations, _outlining, _host, _jumpList, _settings, _undoRedoOperations) 
 
     /// Format the setting for use in output
     let FormatSetting(setting:Setting) = 
@@ -52,6 +53,8 @@ type internal DefaultOperations
 
     interface IOperations with
         member x.EditFile fileName = _host.OpenFile fileName
+
+        member x.ShowOpenFileDialog () = _host.ShowOpenFileDialog()
 
         /// Implement the :pu[t] command
         member x.Put (text:string) (line:ITextSnapshotLine) isAfter =

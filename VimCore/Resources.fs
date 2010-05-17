@@ -12,12 +12,15 @@ module internal Resources =
     let Common_GotoDefFailed word = sprintf "Could not navigate to definition of %s" word
     let Common_MarkInvalid = "Argument must be a letter or forward / back quote"
     let Common_MarkNotSet = "Mark not set"
+    let Common_BulkEdit = "VsVim Bulk Edit"
 
     let NormalMode_PatternNotFound pattern = sprintf "Pattern not found: %s" pattern
     let NormalMode_NoPreviousSearch = "No previous search"
     let NormalMode_NoWordUnderCursor = "No word under cursor"
     let NormalMode_NoStringUnderCursor = "No string under cursor"
     let NormalMode_RecursiveRepeatDetected = "Recursive repeat command detected"
+    let NormalMode_RepeatNotSupportedOnCommand name = sprintf "Repeat not yet supported on command %s" name
+    let NormalMode_UnableToRepeatMotion commandName motionName= sprintf "Unable to repeat motion %s for command %s " motionName commandName
 
     let CommandMode_InvalidCommand = "Invalid command"
     let CommandMode_PatternNotFound pattern = NormalMode_PatternNotFound pattern
@@ -33,6 +36,9 @@ module internal Resources =
     let CommandMode_CouldNotOpenFile file = sprintf "Could not open file \"%s\"" file
     let CommandMode_NoSuchMapping = "No such mapping"
 
+    let VisualMode_BoxSelectionNotSupported = "Box selection is not supported for this operation"
+    let VisualMode_MultiSelectNotSupported = "Multiple selections is not supported for this operation"
+
     let Vim_ViewAlreadyHasBuffer = "View is already associated with an IVimBuffer"
     let Vim_RecursiveMapping = "Recursive key mapping detected"
 
@@ -41,3 +47,10 @@ module internal Resources =
     let Range_MarkNotValidInFile = Range_Invalid "Mark is invalid in this file"
     let Range_EmptyRange = Range_Invalid "Expected a range"
     let Range_ConnectionMissing = Range_Invalid "Expected , or ;"
+
+    let CommandRunner_CommandNameAlreadyAdded = "A Command with the given name is already present"
+
+    let UndoRedo_NotSupported = "Undo / Redo is not supported on this buffer"
+    let UndoRedo_CannotUndo = "Cannot undo the last action"
+    let UndoRedo_CannotRedo = "Cannot redo the last action"
+

@@ -72,7 +72,11 @@ namespace Vim.UI.Wpf
                 {
                     if (!IsSelectionChanging && !_selection.IsEmpty && !IsAnyVisualMode)
                     {
-                        var mode = (IVisualMode)(_buffer.SwitchMode(ModeKind.VisualCharacter));
+                        var modeKind = _selection.Mode == TextSelectionMode.Stream
+                            ? ModeKind.VisualCharacter
+                            : ModeKind.VisualBlock;
+
+                        var mode = (IVisualMode)(_buffer.SwitchMode(modeKind));
 
                         // If the left mouse button is pressed then we are in the middle of 
                         // a mouse selection event and need to record the data

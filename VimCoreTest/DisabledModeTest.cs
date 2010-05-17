@@ -5,15 +5,15 @@ using System.Text;
 using NUnit.Framework;
 using Vim;
 using Moq;
-using VimCoreTest.Utils;
+using VimCore.Test.Utils;
 using GlobalSettings = Vim.GlobalSettings;
+using VimCore.Test.Mock;
 
-namespace VimCoreTest
+namespace VimCore.Test
 {
     [TestFixture]
     public class DisabledModeTest
     {
-        private FakeVimHost _host;
         private Mock<IVimLocalSettings> _settings;
         private Mock<IVimBuffer> _bufferData;
         private DisabledMode _modeRaw;
@@ -22,11 +22,9 @@ namespace VimCoreTest
         [SetUp]
         public void Init()
         {
-            _host = new FakeVimHost();
             _settings = MockObjectFactory.CreateLocalSettings();
             _bufferData = new Mock<IVimBuffer>(MockBehavior.Strict);
             _bufferData.SetupGet(x => x.Settings).Returns(_settings.Object);
-            _bufferData.SetupGet(x => x.VimHost).Returns(_host);
             _modeRaw = new DisabledMode(_bufferData.Object);
             _mode = _modeRaw;
         }
@@ -40,7 +38,7 @@ namespace VimCoreTest
         [Test]
         public void Commands1()
         {
-            Assert.IsTrue(_mode.Commands.First().Equals(GlobalSettings.DisableCommand));
+            Assert.IsTrue(_mode.CommandNames.First().KeyInputs.First().Equals(GlobalSettings.DisableCommand));
         }
 
         [Test]

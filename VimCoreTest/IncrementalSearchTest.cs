@@ -6,7 +6,7 @@ using NUnit.Framework;
 using Moq;
 using Vim;
 using Microsoft.VisualStudio.Text.Editor;
-using VimCoreTest.Utils;
+using VimCore.Test.Utils;
 using Vim.Modes.Normal;
 using System.Windows.Input;
 using Microsoft.VisualStudio.Text;
@@ -14,8 +14,10 @@ using Microsoft.FSharp.Core;
 using Microsoft.FSharp.Control;
 using Microsoft.VisualStudio.Text.Operations;
 using Microsoft.VisualStudio.Text.Outlining;
+using Vim.Extensions;
+using VimCore.Test.Mock;
 
-namespace VimCoreTest
+namespace VimCore.Test
 {
     [TestFixture]
     public class IncrementalSearchTest
@@ -230,7 +232,7 @@ namespace VimCoreTest
             _search.Begin(SearchKind.Forward);
             _search.Process(InputUtil.VimKeyToKeyInput(VimKey.EnterKey));
             Assert.IsFalse(_search.InSearch);
-            Assert.IsFalse(_search.CurrentSearch.HasValue());
+            Assert.IsFalse(_search.CurrentSearch.IsSome());
         }
 
         [Test, Description("Cancelling needs to remove the CurrentSearch")]

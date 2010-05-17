@@ -23,7 +23,7 @@ type internal CommandMode
     interface ICommandMode with 
         member x.VimBuffer = _data 
         member x.Command = _command
-        member x.Commands = Seq.empty
+        member x.CommandNames = Seq.empty
         member x.ModeKind = ModeKind.Command
         member x.CanProcess ki = true
         member x.Process ki = 
@@ -54,6 +54,7 @@ type internal CommandMode
             _data.TextView.Caret.IsHidden <- true
         member x.OnLeave () = 
             _data.TextView.Caret.IsHidden <- false
+        member x.OnClose() = ()
 
         member x.RunCommand command = 
             _processor.RunCommand (command |> List.ofSeq)

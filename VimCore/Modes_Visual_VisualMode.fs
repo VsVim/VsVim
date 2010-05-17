@@ -7,79 +7,78 @@ open Microsoft.VisualStudio.Text.Editor
 open Vim
 open Vim.Modes
 
-type internal VisualModeResult =
-    | Complete
-    | SwitchPreviousMode
-    | SwitchInsertMode
-    | NeedMore
-
-type internal Operation = int -> Register -> VisualModeResult
-
-type internal CommandData =  {
-    RunFunc : KeyInput -> VisualModeResult;
-    IsWaitingForData: bool;
-    Count : int;
-    Register : Register } 
-
 type internal VisualMode
     (
         _buffer : IVimBuffer,
         _operations : IOperations,
-        _kind : ModeKind ) = 
+        _kind : ModeKind,
+        _runner : ICommandRunner,
+        _capture : IMotionCapture,
+        _selectionTracker : ISelectionTracker ) = 
 
-    let _selectionTracker = _operations.SelectionTracker 
+    let mutable _builtCommands = false
 
     /// Tracks the count of explicit moves we are seeing.  Normally an explicit character
     /// move causes the selection to be removed.  Updating this counter is a way of our 
     /// consumers to tell us the caret move is legal
     let mutable _explicitMoveCount = 0
 
-    let mutable _operationsMap : Map<KeyInput,Operation> = Map.empty
-
-    let mutable _data = { RunFunc = (fun _ -> VisualModeResult.Complete); IsWaitingForData = false; Count=1;Register = _buffer.RegisterMap.DefaultRegister }
-
     member x.InExplicitMove = _explicitMoveCount > 0
     member x.BeginExplicitMove() = _explicitMoveCount <- _explicitMoveCount + 1
     member x.EndExplicitMove() = _explicitMoveCount <- _explicitMoveCount - 1
 
-    member private x.ResetCommandData() =
-        _data <- {
-            RunFunc=x.ProcessInput;
-            IsWaitingForData=false;
-            Count=1;
-            Register=_buffer.RegisterMap.DefaultRegister }
-
     member private x.BuildMoveSequence() = 
-        let wrap func = 
+
+        let wrapSimple func = 
             fun count reg ->
                 x.BeginExplicitMove()
-                func(count) 
+                let res = func count reg
                 x.EndExplicitMove()
-                VisualModeResult.Complete
-        let factory = Vim.Modes.CommandFactory(_operations)
-        factory.CreateMovementCommands()
-            |> Seq.map (fun (ki,com) -> (ki,wrap com))
+                res
 
-    member private x.ProcessGChar count reg  =
-        let inner (ki:KeyInput) =  
-            match ki.Char with 
-            | 'J' -> _operations.JoinSelection JoinKind.KeepEmptySpaces |> ignore
-            | _ -> ()
-            VisualModeResult.SwitchPreviousMode
-        _data <- {_data with RunFunc=inner }
-        VisualModeResult.NeedMore
+        let wrapComplex func = 
+            fun count reg data ->
+                x.BeginExplicitMove()
+                let res = func count reg data
+                x.EndExplicitMove()
+                res
+
+        let factory = Vim.Modes.CommandFactory(_operations, _capture)
+        factory.CreateMovementCommands()
+        |> Seq.map (fun (command) ->
+            match command with
+            | Command.SimpleCommand(name,kind,func) -> Command.SimpleCommand (name,kind, wrapSimple func) |> Some
+            | Command.MotionCommand (name,kind,func) -> Command.MotionCommand (name, kind,wrapComplex func) |> Some
+            | Command.LongCommand (name,kind,func) -> None )
+        |> SeqUtil.filterToSome
 
     member private x.BuildOperationsSequence() =
+
+        let editOverSpanOperation description func result = 
+            let selection = _buffer.TextView.Selection
+            let spans = selection.SelectedSpans
+            match spans.Count with
+            | 0 -> result
+            | 1 -> 
+                func (spans.Item(0))
+                result
+            | _ -> 
+                _operations.ApplyAsSingleEdit description (spans :> SnapshotSpan seq) func
+                result
+            
         let deleteSelection _ reg = 
             _operations.DeleteSelection reg |> ignore
-            VisualModeResult.SwitchPreviousMode
+            CommandResult.Completed ModeSwitch.SwitchPreviousMode
         let changeSelection _ reg = 
             _operations.DeleteSelection reg |> ignore
-            VisualModeResult.SwitchInsertMode
+            CommandResult.Completed (ModeSwitch.SwitchMode ModeKind.Insert)
         let changeLines _ reg = 
             _operations.DeleteSelectedLines reg |> ignore
-            VisualModeResult.SwitchInsertMode
-        let s : seq<KeyInput * Operation> = 
+            CommandResult.Completed (ModeSwitch.SwitchMode ModeKind.Insert)
+
+        /// Commands consisting of a single character
+        let simples =
+            let resultSwitchPrevious = CommandResult.Completed ModeSwitch.SwitchPreviousMode
             seq {
                 yield (InputUtil.CharToKeyInput('y'), 
                     (fun _ (reg:Register) -> 
@@ -87,7 +86,7 @@ type internal VisualMode
                                      | ModeKind.VisualLine -> OperationKind.LineWise
                                      | _ -> OperationKind.CharacterWise
                         _operations.YankText (_selectionTracker.SelectedText) MotionKind.Inclusive opKind reg
-                        VisualModeResult.SwitchPreviousMode))
+                        CommandResult.Completed ModeSwitch.SwitchPreviousMode))
                 yield (InputUtil.CharToKeyInput('Y'),
                     (fun _ (reg:Register) ->
                         let selection = _buffer.TextView.Selection
@@ -95,7 +94,7 @@ type internal VisualMode
                         let endPoint = selection.End.Position.GetContainingLine().EndIncludingLineBreak
                         let span = SnapshotSpan(startPoint,endPoint)
                         _operations.Yank span MotionKind.Inclusive OperationKind.LineWise reg
-                        VisualModeResult.SwitchPreviousMode))
+                        CommandResult.Completed ModeSwitch.SwitchPreviousMode))
                 yield (InputUtil.CharToKeyInput('d'), deleteSelection)
                 yield (InputUtil.CharToKeyInput('x'), deleteSelection)
                 yield (InputUtil.VimKeyToKeyInput VimKey.DeleteKey, deleteSelection)
@@ -103,91 +102,86 @@ type internal VisualMode
                 yield (InputUtil.CharToKeyInput('s'), changeSelection)
                 yield (InputUtil.CharToKeyInput('C'), changeLines)
                 yield (InputUtil.CharToKeyInput('S'), changeLines)
-                yield (InputUtil.CharToKeyInput('g'), x.ProcessGChar)
                 yield (InputUtil.CharToKeyInput('J'), 
                         (fun _ _ ->         
                             _operations.JoinSelection JoinKind.RemoveEmptySpaces|> ignore
-                            VisualModeResult.SwitchPreviousMode))
-                }
-        s
+                            CommandResult.Completed ModeSwitch.SwitchPreviousMode))
+                yield (
+                    InputUtil.CharToKeyInput '~', 
+                    (fun _ _ -> editOverSpanOperation None _operations.ChangeLetterCase resultSwitchPrevious))
+                yield (
+                    InputUtil.CharToKeyInput '<', 
+                    (fun count _ -> 
+                        let count = CommandUtil.CountOrDefault count
+                        editOverSpanOperation None (_operations.ShiftSpanLeft count) resultSwitchPrevious))
+                yield (
+                    InputUtil.CharToKeyInput '>',
+                    (fun count _ -> 
+                        let count = CommandUtil.CountOrDefault count
+                        editOverSpanOperation None (_operations.ShiftSpanRight count) resultSwitchPrevious))
+                yield (
+                    InputUtil.CharToKeyInput 'p',
+                    (fun _ reg -> 
+                        _operations.PasteOverSelection reg.StringValue reg
+                        CommandResult.Completed ModeSwitch.SwitchPreviousMode ) )
+            }
+            |> Seq.map (fun (ki,func) -> Command.SimpleCommand(OneKeyInput ki,CommandFlags.None, func))
 
-    member private x.EnsureOperationsMap () = 
-        if _operationsMap.Count = 0 then
+
+        /// Commands consisting of more than a single character
+        let complex = 
+            seq { 
+                yield ("gJ", fun _ _ -> _operations.JoinSelection JoinKind.KeepEmptySpaces |> ignore)
+            }
+            |> Seq.map (fun (str,func) -> (str, fun count reg -> func count reg; CommandResult.Completed ModeSwitch.SwitchPreviousMode))
+            |> Seq.map (fun (name,func) -> Command.SimpleCommand (CommandUtil.CreateCommandName name, CommandFlags.Repeatable, func))
+
+        Seq.append simples complex
+
+    member private x.EnsureCommandsBuilt() =
+        if not _builtCommands then
             let map = 
                 x.BuildMoveSequence() 
                 |> Seq.append (x.BuildOperationsSequence())
-                |> Map.ofSeq
-                |> Map.add (InputUtil.VimKeyToKeyInput VimKey.EscapeKey) (fun _ _ -> SwitchPreviousMode)
-            _operationsMap <- map
-
-    member private x.ProcessInputCore ki = 
-        match Map.tryFind ki _operationsMap with
-        | Some(op) -> op _data.Count _data.Register
-        | None -> 
-            _buffer.VimHost.Beep()
-            VisualModeResult.Complete
-
-    member private x.ProcessInput ki = 
-        if ki.Char = '"' then
-            let waitReg (ki:KeyInput) = 
-                let reg = _buffer.RegisterMap.GetRegister (ki.Char)
-                _data <- { _data with
-                            RunFunc=x.ProcessInput;
-                            Register=reg;
-                            IsWaitingForData=false; }
-                NeedMore
-            _data <- { _data with RunFunc=waitReg; IsWaitingForData=true }
-            NeedMore
-        elif ki.IsDigit then
-            let rec waitCount (ki:KeyInput) (getResult: KeyInput->CountResult) = 
-                let res = getResult ki
-                match res with 
-                | CountResult.Complete(count,ki) ->
-                    _data <- { _data with
-                                RunFunc=x.ProcessInput;
-                                Count=count;
-                                IsWaitingForData=false; }
-                    x.ProcessInput ki 
-                | CountResult.NeedMore(nextFunc) -> 
-                    let runFunc = fun ki -> waitCount ki nextFunc
-                    _data <- { _data with
-                                RunFunc=runFunc;
-                                IsWaitingForData=true };
-                    VisualModeResult.NeedMore
-            waitCount ki (CountCapture.Process)
-        else 
-            x.ProcessInputCore ki
+                |> Seq.iter _runner.Add 
+            _builtCommands <- true
 
     interface IMode with
         member x.VimBuffer = _buffer
-        member x.Commands = 
-            x.EnsureOperationsMap()
-            _operationsMap |> Seq.map (fun pair -> pair.Key)
+        member x.CommandNames = 
+            x.EnsureCommandsBuilt()
+            _runner.Commands |> Seq.map (fun command -> command.CommandName)
         member x.ModeKind = _kind
         member x.CanProcess (ki:KeyInput) = true
         member x.Process (ki : KeyInput) =  
             if ki.Key = VimKey.EscapeKey then
                 ProcessResult.SwitchPreviousMode
             else
-                let res = _data.RunFunc ki
-                match res with
-                | VisualModeResult.Complete -> 
-                    x.ResetCommandData()
+                match _runner.Run ki with
+                | RunKeyInputResult.NeedMoreKeyInput -> ProcessResult.Processed
+                | RunKeyInputResult.NestedRunDetected -> ProcessResult.Processed
+                | RunKeyInputResult.CommandRan(_,modeSwitch) ->
+                    match modeSwitch with
+                    | ModeSwitch.NoSwitch -> ProcessResult.Processed
+                    | ModeSwitch.SwitchMode(kind) -> ProcessResult.SwitchMode kind
+                    | ModeSwitch.SwitchPreviousMode -> ProcessResult.SwitchPreviousMode
+                | RunKeyInputResult.CommandErrored(_) -> ProcessResult.SwitchPreviousMode
+                | RunKeyInputResult.CommandCancelled -> ProcessResult.SwitchPreviousMode
+                | RunKeyInputResult.NoMatchingCommand -> 
+                    _operations.Beep()
                     ProcessResult.Processed
-                | VisualModeResult.SwitchPreviousMode -> ProcessResult.SwitchPreviousMode
-                | VisualModeResult.SwitchInsertMode -> ProcessResult.SwitchMode ModeKind.Insert
-                | VisualModeResult.NeedMore -> ProcessResult.Processed
     
         member x.OnEnter () = 
-            x.ResetCommandData()
-            x.EnsureOperationsMap()
+            x.EnsureCommandsBuilt()
             _selectionTracker.Start()
         member x.OnLeave () = 
+            _runner.ResetState()
             _selectionTracker.Stop()
+        member x.OnClose() = ()
 
     interface IVisualMode with
-        member x.Operations = _operations
         member x.InExplicitMove = x.InExplicitMove
+        member x.CommandRunner = _runner
 
 
 

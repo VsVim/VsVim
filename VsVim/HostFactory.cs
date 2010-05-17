@@ -9,6 +9,7 @@ using Microsoft.VisualStudio.Editor;
 using System.Diagnostics;
 using System.Collections.Generic;
 using Vim;
+using Vim.Extensions;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Text.Classification;
 using Microsoft.VisualStudio.Text.Operations;
@@ -36,6 +37,7 @@ namespace VsVim
         private readonly IVsEditorAdaptersFactoryService _adaptersFactory;
         private readonly Dictionary<IVimBuffer, VsCommandFilter> _filterMap = new Dictionary<IVimBuffer, VsCommandFilter>();
         private readonly IVimHost _host;
+        private readonly IFileSystem _fileSystem;
 
         [ImportingConstructor]
         public HostFactory(
@@ -44,7 +46,8 @@ namespace VsVim
             IKeyBindingService keyBindingService,
             SVsServiceProvider serviceProvider,
             IVsEditorAdaptersFactoryService adaptersFactory,
-            IVimHost host)
+            IVimHost host,
+            IFileSystem fileSystem)
         {
             _vim = vim;
             _keyBindingService = keyBindingService;
@@ -52,6 +55,7 @@ namespace VsVim
             _serviceProvider = serviceProvider;
             _adaptersFactory = adaptersFactory;
             _host = host;
+            _fileSystem = fileSystem;
         }
 
         void IWpfTextViewCreationListener.TextViewCreated(IWpfTextView textView)
@@ -62,7 +66,7 @@ namespace VsVim
             if (!_vim.IsVimRcLoaded && String.IsNullOrEmpty(_vim.Settings.VimRcPaths))
             {
                 var func = FSharpFunc<Unit, ITextView>.FromConverter(_ => _editorFactoryService.CreateTextView());
-                _vim.LoadVimRc(func);
+                _vim.LoadVimRc(_fileSystem, func);
             }
 
             Action doCheck = () =>
@@ -70,7 +74,14 @@ namespace VsVim
                     // Run the key binding check now
                     if (_keyBindingService.ConflictingKeyBindingState == ConflictingKeyBindingState.HasNotChecked)
                     {
-                        _keyBindingService.RunConflictingKeyBindingStateCheck(buffer, (x, y) => { });
+                        if (Settings.Settings.Default.IgnoredConflictingKeyBinding)
+                        {
+                            _keyBindingService.IgnoreAnyConflicts();
+                        }
+                        else
+                        {
+                            _keyBindingService.RunConflictingKeyBindingStateCheck(buffer, (x, y) => { });
+                        }
                     }
                 };
 

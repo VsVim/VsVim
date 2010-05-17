@@ -6,7 +6,7 @@ using NUnit.Framework;
 using Microsoft.VisualStudio.Text;
 using Vim;
 
-namespace VimCoreTest
+namespace VimCore.Test
 {
     [TestFixture]
     public class SnapshotSpanUtilTest
@@ -154,6 +154,43 @@ namespace VimCoreTest
             Create("foo bar");
             var points = SnapshotSpanUtil.GetPointsBackward(new SnapshotSpan(_buffer.CurrentSnapshot, 0, 0));
             Assert.AreEqual(0, points.Count());
+        }
+
+        [Test]
+        public void GetEndLine1()
+        {
+            Create("a", "b", "c");
+            var span = _buffer.GetLine(0).ExtentIncludingLineBreak;
+            var endLine = SnapshotSpanUtil.GetEndLine(span);
+            Assert.AreEqual(0, endLine.LineNumber);
+        }
+
+        [Test]
+        public void GetEndLine2()
+        {
+            Create("a", "b", "c");
+            var span = _buffer.GetLine(2).ExtentIncludingLineBreak;
+            var endLine = SnapshotSpanUtil.GetEndLine(span);
+            Assert.AreEqual(2, endLine.LineNumber);
+        }
+
+        [Test]
+        public void GetEndLine3()
+        {
+            Create("", "b", "c");
+            var span = _buffer.GetLine(0).ExtentIncludingLineBreak;
+            var endLine = SnapshotSpanUtil.GetEndLine(span);
+            Assert.AreEqual(0, endLine.LineNumber);
+        }
+
+        [Test]
+        [Description("0 length end of buffer line")]
+        public void GetEndLine4()
+        {
+            Create("a", "");
+            var span = new SnapshotSpan(_buffer.CurrentSnapshot, 0, _buffer.CurrentSnapshot.Length);
+            var endLine = SnapshotSpanUtil.GetEndLine(span);
+            Assert.AreEqual(1, endLine.LineNumber);
         }
 
     }

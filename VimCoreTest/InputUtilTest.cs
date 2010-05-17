@@ -6,7 +6,7 @@ using NUnit.Framework;
 using Vim;
 using Microsoft.FSharp.Core;
 
-namespace VimCoreTest
+namespace VimCore.Test
 {
     /// <summary>
     /// Summary description for InputUtilTest
@@ -51,6 +51,13 @@ namespace VimCoreTest
             var ki = InputUtil.CharToKeyInput('%');
             Assert.AreEqual('%', ki.Char);
             Assert.AreEqual(KeyModifiers.Shift, ki.KeyModifiers);
+        }
+
+        [Test]
+        public void Tilde1()
+        {
+            var ki = InputUtil.CharToKeyInput('~');
+            Assert.AreEqual('~', ki.Char);
         }
 
         [Test, Description("In the case of a bad key it should return the default key")]

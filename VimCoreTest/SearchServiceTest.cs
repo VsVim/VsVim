@@ -5,11 +5,13 @@ using System.Text;
 using NUnit.Framework;
 using Moq;
 using Vim;
+using Vim.Extensions;
 using Microsoft.VisualStudio.Text.Operations;
-using VimCoreTest.Utils;
+using VimCore.Test.Utils;
 using Microsoft.VisualStudio.Text;
+using VimCore.Test.Mock;
 
-namespace VimCoreTest
+namespace VimCore.Test
 {
     [TestFixture]
     public class SearchServiceTest
@@ -156,7 +158,7 @@ namespace VimCoreTest
                 .Verifiable();
             var searchData = new SearchData(SearchText.NewPattern("foo"), SearchKind.ForwardWithWrap, SearchOptions.None);
             var ret = _search.FindNextMultiple(searchData, new SnapshotPoint(tss, 10), nav.Object,1);
-            Assert.IsTrue(ret.HasValue());
+            Assert.IsTrue(ret.IsSome());
             Assert.AreEqual(new SnapshotSpan(tss, 11, 3), ret.Value);
             _factory.Verify();
         }
@@ -177,7 +179,7 @@ namespace VimCoreTest
                 .Verifiable();
             var searchData = new SearchData(SearchText.NewPattern("foo"), SearchKind.ForwardWithWrap, SearchOptions.None);
             var ret = _search.FindNextMultiple(searchData, new SnapshotPoint(tss, 10), nav.Object, 2);
-            Assert.IsFalse(ret.HasValue());
+            Assert.IsFalse(ret.IsSome());
             _factory.Verify();
         }
 
@@ -193,7 +195,7 @@ namespace VimCoreTest
                 .Verifiable();
             var searchData = new SearchData(SearchText.NewPattern("foo"), SearchKind.Backward, SearchOptions.None);
             var ret = _search.FindNextMultiple(searchData, new SnapshotPoint(tss, 10), nav.Object, 2);
-            Assert.IsFalse(ret.HasValue());
+            Assert.IsFalse(ret.IsSome());
             _factory.Verify();
         }
 
@@ -213,7 +215,7 @@ namespace VimCoreTest
                 .Verifiable();
             var searchData = new SearchData(SearchText.NewPattern("foo"), SearchKind.BackwardWithWrap, SearchOptions.None);
             var ret = _search.FindNextMultiple(searchData, new SnapshotPoint(tss, 10), nav.Object, 2);
-            Assert.IsTrue(ret.HasValue());
+            Assert.IsTrue(ret.IsSome());
             Assert.AreEqual(new SnapshotSpan(tss, 10, 3), ret.Value);
             _factory.Verify();
         }
@@ -234,12 +236,56 @@ namespace VimCoreTest
                 .Verifiable();
             var searchData = new SearchData(SearchText.NewPattern("foo"), SearchKind.ForwardWithWrap, SearchOptions.None);
             var ret = _search.FindNextMultiple(searchData, new SnapshotPoint(tss, 10), nav.Object, 2);
-            Assert.IsTrue(ret.HasValue());
+            Assert.IsTrue(ret.IsSome());
             Assert.AreEqual(new SnapshotSpan(tss, 10, 3), ret.Value);
             _factory.Verify();
         }
 
+        [Test]
+        public void BadRegex1()
+        {
+            var tss = MockObjectFactory.CreateTextSnapshot(42).Object;
+            var nav = _factory.Create<ITextStructureNavigator>();
+            _textSearch
+                .Setup(x => x.FindNext(0, true, It.IsAny<FindData>()))
+                .Throws(new InvalidOperationException())
+                .Verifiable();
+            var searchData = new SearchData(SearchText.NewPattern("f("), SearchKind.ForwardWithWrap, SearchOptions.None);
+            var ret = _search.FindNext(searchData, new SnapshotPoint(tss, 0), nav.Object);
+            Assert.IsTrue(ret.IsNone());
+            _factory.Verify();
+        }
 
+
+        [Test]
+        public void BadRegex2()
+        {
+            var tss = MockObjectFactory.CreateTextSnapshot(42).Object;
+            var nav = _factory.Create<ITextStructureNavigator>();
+            _textSearch
+                .Setup(x => x.FindNext(0, true, It.IsAny<FindData>()))
+                .Throws(new InvalidOperationException())
+                .Verifiable();
+            var searchData = new SearchData(SearchText.NewPattern("f("), SearchKind.ForwardWithWrap, SearchOptions.None);
+            var ret = _search.FindNextMultiple(searchData, new SnapshotPoint(tss, 0), nav.Object, 2);
+            Assert.IsTrue(ret.IsNone());
+            _factory.Verify();
+        }
+
+        [Test]
+        [Description("An InvalidOperationException from a non-regex shouldn't be handled")]
+        public void BadRegex3()
+        {
+            var tss = MockObjectFactory.CreateTextSnapshot(42).Object;
+            var nav = _factory.Create<ITextStructureNavigator>();
+            _textSearch
+                .Setup(x => x.FindNext(0, true, It.IsAny<FindData>()))
+                .Throws(new InvalidOperationException())
+                .Verifiable();
+            var searchData = new SearchData(SearchText.NewStraightText("f("), SearchKind.ForwardWithWrap, SearchOptions.None);
+            Assert.Throws<InvalidOperationException>(() => _search.FindNext(searchData, new SnapshotPoint(tss, 0), nav.Object));
+            _factory.Verify();
+        }
     }
 
 }

@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using Vim;
+using Vim.Extensions;
 using System.Diagnostics;
 using System.Windows.Input;
 using Vim.UI.Wpf;

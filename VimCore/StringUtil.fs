@@ -58,6 +58,13 @@ module internal StringUtil =
     [<CompiledName("OfChar")>]
     let ofChar c = System.String(c,1)
 
+    [<CompiledName("OfStringSeq")>]
+    let ofStringSeq (strings : string seq) = 
+        let builder = System.Text.StringBuilder()
+        for value in strings do
+            builder.Append(value) |> ignore
+        builder.ToString()
+
     [<CompiledName("IsNullOrEmpty")>]
     let isNullOrEmpty str = System.String.IsNullOrEmpty(str)
 
@@ -75,3 +82,6 @@ module internal StringUtil =
     let isEqual left right = 
         let comp = System.StringComparer.Ordinal
         comp.Equals(left,right)
+
+    [<CompiledName("Split")>]
+    let split c (value:string) = value.Split( [| c |]) 

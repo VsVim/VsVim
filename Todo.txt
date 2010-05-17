@@ -1,0 +1,3 @@
+Remove failiwth in normal mode
+NormalMode.CanProcess is inefficent because it looks through a list
+CommandRunner adding and removing 

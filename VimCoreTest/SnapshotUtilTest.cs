@@ -6,7 +6,7 @@ using NUnit.Framework;
 using Microsoft.VisualStudio.Text;
 using Vim;
 
-namespace VimCoreTest
+namespace VimCore.Test
 {
     [TestFixture]
     public class SnapshotUtilTest
@@ -32,21 +32,6 @@ namespace VimCoreTest
         {
             _buffer = null;
             _snapshot = null;
-        }
-
-        [Test]
-        public void GetValidLineNumberOrLast()
-        {
-            Create("foo", "bar");
-            Assert.AreEqual(1, SnapshotUtil.GetValidLineNumberOrLast(_snapshot, 1));
-            Assert.AreEqual(0, SnapshotUtil.GetValidLineNumberOrLast(_snapshot, 0));
-        }
-
-        [Test]
-        public void GetValidLineNumberOrLast2()
-        {
-            Create("foo", "bar");
-            Assert.AreEqual(1, SnapshotUtil.GetValidLineNumberOrLast(_snapshot, 200));
         }
 
         [Test]

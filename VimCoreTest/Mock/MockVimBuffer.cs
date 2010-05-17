@@ -6,7 +6,7 @@ using Vim;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 
-namespace VimCoreTest.Utils
+namespace VimCore.Test.Mock
 {
     /// <summary>
     /// There is either a bug in F# or Moq which prevents the raising of events through an IMock if 
@@ -18,14 +18,13 @@ namespace VimCoreTest.Utils
         public ITextView TextViewImpl;
         public IMode ModeImpl;
         public ModeKind ModeKindImpl;
-
-        public void RaiseSwitchedMode(IMode mode)
-        {
-            if ( SwitchedMode != null )
-            {
-                SwitchedMode(this, mode);
-            }
-        }
+        public INormalMode NormalModeImpl;
+        public IVisualMode VisualBlockModeImpl;
+        public IVisualMode VisualCharacterModeImpl;
+        public IVisualMode VisualLineModeImpl;
+        public ICommandMode CommandModeImpl;
+        public IDisabledMode DisabledModeImpl;
+        public bool IsProcessingInputImpl;
 
         public IEnumerable<IMode> AllModes
         {
@@ -37,7 +36,7 @@ namespace VimCoreTest.Utils
             get { throw new NotImplementedException(); }
         }
 
-        public bool CanProcessInput(KeyInput value)
+        public bool CanProcess(KeyInput value)
         {
             throw new NotImplementedException();
         }
@@ -49,12 +48,12 @@ namespace VimCoreTest.Utils
 
         public ICommandMode CommandMode
         {
-            get { throw new NotImplementedException(); }
+            get { return CommandModeImpl; }
         }
 
         public IDisabledMode DisabledMode
         {
-            get { throw new NotImplementedException(); }
+            get { return DisabledModeImpl; }
         }
 
         public IMode GetMode(ModeKind value)
@@ -69,7 +68,7 @@ namespace VimCoreTest.Utils
 
         public bool IsProcessingInput
         {
-            get { throw new NotImplementedException(); }
+            get { return IsProcessingInputImpl; }
         }
 
         public IJumpList JumpList
@@ -99,7 +98,7 @@ namespace VimCoreTest.Utils
 
         public INormalMode NormalMode
         {
-            get { return (INormalMode)ModeImpl; }
+            get { return NormalModeImpl; }
         }
 
         public bool ProcessChar(char value)
@@ -107,7 +106,7 @@ namespace VimCoreTest.Utils
             throw new NotImplementedException();
         }
 
-        public bool ProcessInput(KeyInput value)
+        public bool Process(KeyInput value)
         {
             throw new NotImplementedException();
         }
@@ -122,7 +121,62 @@ namespace VimCoreTest.Utils
             get { throw new NotImplementedException(); }
         }
 
-#pragma warning disable 67
+        public void RaiseSwitchedMode(IMode mode)
+        {
+            if ( SwitchedMode != null )
+            {
+                SwitchedMode(this, mode);
+            }
+        }
+
+        public void RaiseStatusMessage(string message)
+        {
+            if (StatusMessage != null)
+            {
+                StatusMessage(this, message);
+            }
+        }
+
+        public void RaiseStatusMessageLong(params string[] lines)
+        {
+            if (StatusMessageLong != null)
+            {
+                StatusMessageLong(this, lines);
+            }
+        }
+
+        public void RaiseErrorMessage(string message)
+        {
+            if (ErrorMessage != null)
+            {
+                ErrorMessage(this, message);
+            }
+        }
+
+        public void RaiseKeyInputProcessed(KeyInput ki, ProcessResult result)
+        {
+            if (KeyInputProcessed != null)
+            {
+                KeyInputProcessed(this, Tuple.Create(ki, result));
+            }
+        }
+
+        public void RaiseKeyInputReceived(KeyInput ki)
+        {
+            if (KeyInputReceived != null)
+            {
+                KeyInputReceived(this, ki);
+            }
+        }
+
+        public void RaiseKeyInputBuffered(KeyInput ki)
+        {
+            if (KeyInputBuffered != null)
+            {
+                KeyInputBuffered(this, ki);
+            }
+        }
+
         public event Microsoft.FSharp.Control.FSharpHandler<string> StatusMessage;
 
         public event Microsoft.FSharp.Control.FSharpHandler<IEnumerable<string>> StatusMessageLong;
@@ -134,8 +188,6 @@ namespace VimCoreTest.Utils
         public event Microsoft.FSharp.Control.FSharpHandler<KeyInput> KeyInputReceived;
 
         public event Microsoft.FSharp.Control.FSharpHandler<KeyInput> KeyInputBuffered;
-
-#pragma warning restore 67
 
         public event Microsoft.FSharp.Control.FSharpHandler<IMode> SwitchedMode;
 
@@ -175,6 +227,19 @@ namespace VimCoreTest.Utils
             get { throw new NotImplementedException(); }
         }
 
+        public IVisualMode VisualBlockMode
+        {
+            get { return VisualBlockModeImpl; }
+        }
 
+        public IVisualMode VisualCharacterMode
+        {
+            get { return VisualCharacterModeImpl; }
+        }
+
+        public IVisualMode VisualLineMode
+        {
+            get { return VisualLineModeImpl; }
+        }
     }
 }

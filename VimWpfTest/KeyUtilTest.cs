@@ -50,6 +50,7 @@ namespace Vim.UI.Wpf.Test
             KeyToKeyInput('-', Key.OemMinus);
             KeyToKeyInput('=', Key.OemPlus);
             KeyToKeyInput('+', Key.OemPlus, ModifierKeys.Shift);
+            KeyToKeyInput('~', Key.OemTilde, ModifierKeys.Shift);
         }
 
         [Test]

@@ -87,6 +87,7 @@
     <Reference Include="PresentationFramework" />
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Xaml" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -97,6 +98,7 @@
   <ItemGroup>
     <Compile Include="BlockCaretControllerTest.cs" />
     <Compile Include="BlockCaretTest.cs" />
+    <Compile Include="CommandMarginControllerTest.cs" />
     <Compile Include="Extensions.cs" />
     <Compile Include="KeyUtilTest.cs" />
     <Compile Include="MouseProcessorTests.cs" />

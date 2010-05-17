@@ -4,30 +4,20 @@ using System.Linq;
 using System.Text;
 using Vim;
 
-namespace VimCoreTest.Utils
+namespace VimCore.Test.Mock
 {
     public class MockNormalMode : INormalMode
     {
         public IVimBuffer VimBufferImpl = null;
+        public ICommandRunner CommandRunnerImpl = null;
         public bool IsOperatorPendingImpl = false;
         public bool IsWaitingForInputImpl= false;
         public bool IsInReplaceImpl = false;
-
-        void RaisCommandexecuted(NormalModeCommand command)
-        {
-            var e = CommandExecuted;
-            if (e != null)
-            {
-                e(this, command);
-            }
-        }
 
         public string Command
         {
             get { throw new NotImplementedException(); }
         }
-
-        public event Microsoft.FSharp.Control.FSharpHandler<NormalModeCommand> CommandExecuted;
 
         public IIncrementalSearch IncrementalSearch
         {
@@ -49,7 +39,7 @@ namespace VimCoreTest.Utils
             throw new NotImplementedException();
         }
 
-        public IEnumerable<KeyInput> Commands
+        public IEnumerable<CommandName> CommandNames
         {
             get { throw new NotImplementedException(); }
         }
@@ -83,6 +73,17 @@ namespace VimCoreTest.Utils
         public bool IsInReplace
         {
             get { return IsInReplaceImpl; }
+        }
+
+        public ICommandRunner CommandRunner
+        {
+            get { return CommandRunnerImpl; }
+        }
+
+
+        public void OnClose()
+        {
+            throw new NotImplementedException();
         }
     }
 }

@@ -6,6 +6,153 @@ open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Operations
 open System.Diagnostics
 
+type IStatusUtil =
+
+    /// Raised when there is a special status message that needs to be reported
+    abstract OnStatus : string -> unit
+
+    /// Raised when there is a long status message that needs to be reported
+    abstract OnStatusLong : string seq -> unit 
+
+    /// Raised when there is an error message that needs to be reported
+    abstract OnError : string -> unit 
+
+/// Abstracts away VsVim's interaction with the file system to facilitate testing
+type IFileSystem =
+
+    /// Set of environment variables considered when looking for VimRC paths
+    abstract EnvironmentVariables : list<string>
+
+    /// Set of file names considered (in preference order) when looking for vim rc files
+    abstract VimRcFileNames : list<string>
+    
+    /// Get the directories to probe for RC files
+    abstract GetVimRcDirectories : unit -> seq<string>
+
+    /// Get the file paths in preference order for vim rc files
+    abstract GetVimRcFilePaths : unit -> seq<string>
+
+    /// Attempts to load the contents of the .VimRC and return both the path the file
+    /// was loaded from and it's contents a
+    abstract LoadVimRc : unit -> (string * string[]) option
+
+    /// Attempt to read all of the lines from the given file 
+    abstract ReadAllLines : path:string -> string[] option
+
+/// Wraps an ITextUndoTransaction so we can avoid all of the null checks
+type IUndoTransaction =
+
+    /// Call when it completes
+    abstract Complete : unit -> unit
+
+    /// Cancels the transaction
+    abstract Cancel : unit -> unit
+
+    inherit System.IDisposable
+
+/// Wraps all of the undo and redo operations
+type IUndoRedoOperations = 
+
+    /// StatusUtil instance that is used to report errors
+    abstract StatusUtil : IStatusUtil
+
+    /// Undo the last "count" operations
+    abstract Undo : count:int -> unit
+
+    /// Redo the last "count" operations
+    abstract Redo : count:int -> unit
+
+    /// Creates an Undo Transaction
+    abstract CreateUndoTransaction : name:string -> IUndoTransaction
+
+/// Responsible for implementing all of the Motion information
+type IMotionUtil = 
+
+    /// ITextView associated with the IMotionUtil
+    abstract TextView : ITextView 
+
+    /// Left "count" characters
+    abstract CharLeft: int -> MotionData option
+
+    /// Right "count" characters
+    abstract CharRight: int -> MotionData option
+    
+    /// Forward to the next occurance of the specified char on the line
+    abstract ForwardChar : char -> int -> MotionData option
+
+    /// Handle the 't' motion.  Forward till the next occurrence of the specified character on
+    /// this line
+    abstract ForwardTillChar : char -> int -> MotionData option
+
+    /// Handle the 'F' motion.  Backward to the previous occurrence of the specified character
+    /// on this line
+    abstract BackwardChar : char -> int -> MotionData option
+
+    /// Handle the 'T' motion.  Backward till to the previous occurrence of the specified character
+    abstract BackwardTillChar : char -> int -> MotionData option
+        
+    /// Implement the w/W motion
+    abstract WordForward : WordKind -> int -> MotionData
+
+    /// Implement the b/B motion
+    abstract WordBackward : WordKind -> int -> MotionData 
+        
+    /// Implement the aw motion.  This is called once the a key is seen.
+    abstract AllWord : WordKind -> int -> MotionData
+
+    /// Implement the 'e' motion.  This goes to the end of the current word.  If we're
+    /// not currently on a word it will find the next word and then go to the end of that
+    abstract EndOfWord : WordKind -> int -> MotionData
+    
+    /// Implement an end of line motion.  Typically in response to the $ key.  Even though
+    /// this motion deals with lines, it's still a character wise motion motion. 
+    abstract EndOfLine : int -> MotionData
+
+    /// Find the first non-whitespace character as the start of the span.  This is an exclusive
+    /// motion so be careful we don't go to far forward
+    abstract FirstNonWhitespaceOnLine : unit -> MotionData 
+
+    /// Find the last non-whitespace character on the line.  Count causes it to go "count" lines
+    /// down and perform the search
+    abstract LastNonWhitespaceOnLine : int -> MotionData
+
+    /// Move to the begining of the line.  Interestingly since this command is bound to the '0' it 
+    /// can't be associated with a count.  Doing a command like 30 binds as count 30 vs. count 3 
+    /// for command '0'
+    abstract BeginingOfLine : unit -> MotionData
+
+    /// Handle the lines down to first non-whitespace motion
+    abstract LineDownToFirstNonWhitespace : int -> MotionData 
+
+    /// Handle the - motion
+    abstract LineUpToFirstNonWhitespace : int -> MotionData
+
+    /// Get the span of "count" lines upward careful not to run off the beginning of the
+    /// buffer.  Implementation of the "k" motion
+    abstract LineUp : int -> MotionData
+
+    /// Get the span of "count" lines downward careful not to run off the end of the
+    /// buffer.  Implementation of the "j" motion
+    abstract LineDown : int -> MotionData
+
+    /// Go to the specified line number or the first line if no line number is provided 
+    abstract LineOrFirstToFirstNonWhitespace : int option -> MotionData 
+
+    /// Go to the specified line number or the last line of no line number is provided
+    abstract LineOrLastToFirstNonWhitespace : int option -> MotionData 
+
+    /// Go to the "count - 1" line from the top of the visible window.  If the count exceeds
+    /// the number of visible lines it will end on the last visible line
+    abstract LineFromTopOfVisibleWindow : int option -> MotionData
+
+    /// Go to the "count -1" line from the bottom of the visible window.  If the count 
+    /// exceeds the number of visible lines it will end on the first visible line
+    abstract LineFromBottomOfVisibleWindow : int option -> MotionData
+
+    /// Go to the middle line in the visible window.  
+    abstract LineInMiddleOfVisibleWindow : unit -> MotionData
+
+
 type ModeKind = 
     | Normal = 1
     | Insert = 2
@@ -16,6 +163,336 @@ type ModeKind =
 
     // Mode when Vim is disabled via the user
     | Disabled = 42
+
+/// The actual command name.  This is a wrapper over the collection of KeyInput 
+/// values which make up a command name.  
+///
+/// The intent of this type is that two values are equal if the sequence of 
+/// KeyInputs are Equal.  So a OneKeyInput can be equal to a ManyKeyInputs if the
+/// have the same values
+///
+/// It is not possible to simple store this as a string as it is possible, and 
+/// in fact likely due to certain virtual key codes which are unable to be mapped,
+/// for KeyInput values will map to a single char.  Hence to maintain proper semantics
+/// we have to use KeyInput values directly.
+[<CustomEquality; CustomComparison>]
+[<DebuggerDisplay("{ToString(),nq}")>]
+type CommandName =
+    | EmptyName 
+    | OneKeyInput of KeyInput
+    | TwoKeyInputs of KeyInput * KeyInput
+    | ManyKeyInputs of KeyInput list
+    with 
+
+    /// Get the list of KeyInput which represent this CommandName
+    member x.KeyInputs =
+        match x with 
+        | EmptyName -> List.empty
+        | OneKeyInput(ki) -> [ki]
+        | TwoKeyInputs(k1,k2) -> [k1;k2]
+        | ManyKeyInputs(list) -> list
+
+    /// A string representation of the name.  It is unreliable to use this for anything
+    /// other than display as two distinct KeyInput values can map to a single char
+    member x.Name = x.KeyInputs |> Seq.map (fun ki -> ki.Char) |> StringUtil.ofCharSeq
+
+    /// Add a KeyInput to the end of this CommandName and return the 
+    /// resulting value
+    member x.Add (ki) =
+        match x with 
+        | EmptyName -> OneKeyInput ki
+        | OneKeyInput(previous) -> TwoKeyInputs(previous,ki)
+        | TwoKeyInputs(p1,p2) -> ManyKeyInputs [p1;p2;ki]
+        | ManyKeyInputs(list) -> ManyKeyInputs (list @ [ki])
+
+    /// Does the name start with the given CommandName
+    member x.StartsWith (targetName:CommandName) = 
+        match targetName,x with
+        | EmptyName, _ -> true
+        | OneKeyInput(leftKi), OneKeyInput(rightKi) ->  leftKi = rightKi
+        | OneKeyInput(leftKi), TwoKeyInputs(rightKi,_) -> leftKi = rightKi
+        | _ -> 
+            let left = targetName.KeyInputs 
+            let right = x.KeyInputs
+            if left.Length < right.Length then
+                SeqUtil.contentsEqual (left |> Seq.ofList) (right |> Seq.ofList |> Seq.take left.Length)
+            else false
+
+    override x.GetHashCode() = 
+        match x with
+        | EmptyName -> 1
+        | OneKeyInput(ki) -> ki.GetHashCode()
+        | TwoKeyInputs(k1,k2) -> k1.GetHashCode() ^^^ k2.GetHashCode()
+        | ManyKeyInputs(list) -> 
+            list 
+            |> Seq.ofList
+            |> Seq.map (fun ki -> ki.GetHashCode())
+            |> Seq.sum
+
+    override x.Equals(yobj) =
+        match yobj with
+        | :? CommandName as y -> 
+            match x,y with
+            | OneKeyInput(left),OneKeyInput(right) -> left = right
+            | TwoKeyInputs(l1,l2),TwoKeyInputs(r1,r2) -> l1 = r1 && l2 = r2
+            | _ -> ListUtil.contentsEqual x.KeyInputs y.KeyInputs
+        | _ -> false
+
+    static member op_Equality(this,other) = System.Collections.Generic.EqualityComparer<CommandName>.Default.Equals(this,other)
+    static member op_Inequality(this,other) = not (System.Collections.Generic.EqualityComparer<CommandName>.Default.Equals(this,other))
+
+    override x.ToString() =
+        x.KeyInputs
+        |> Seq.map (fun ki ->
+            if ki.Key = VimKey.NotWellKnownKey then ki.Char.ToString()
+            else System.String.Format("<{0}>", ki.Key)  )
+        |> StringUtil.ofStringSeq
+
+    interface System.IComparable with
+        member x.CompareTo yobj = 
+            match yobj with
+            | :? CommandName as y -> 
+                let rec inner (left:KeyInput list) (right:KeyInput list) =
+                    if left.IsEmpty && right.IsEmpty then 0
+                    elif left.IsEmpty then -1
+                    elif right.IsEmpty then 1
+                    elif left.Head < right.Head then -1
+                    elif left.Head > right.Head then 1
+                    else inner (List.tail left) (List.tail right)
+                inner x.KeyInputs y.KeyInputs
+            | _ -> failwith "Cannot compare values of different types"
+
+
+type ModeSwitch =
+    | NoSwitch
+    | SwitchMode of ModeKind
+    | SwitchPreviousMode 
+            
+type CommandResult =   
+    | Completed  of ModeSwitch
+    | Error of string
+
+type LongCommandResult =
+    | Finished of CommandResult
+    | Cancelled
+    | NeedMoreInput of (KeyInput -> LongCommandResult)
+
+/// Information about the attributes of Command
+[<System.Flags>]
+type CommandFlags =
+    | None = 0x0
+    /// Relates to the movement of the cursor
+    | Movement = 0x1
+    /// A Command which can be repeated
+    | Repeatable = 0x2
+    /// A Command which should not be considered when looking at last changes
+    | Special = 0x4
+    /// Can handle the escape key if provided as part of a Motion or Long command extra
+    /// input
+    | HandlesEscape = 0x8
+
+/// Representation of commands within Vim.  
+[<DebuggerDisplay("{ToString(),nq}")>]
+type Command = 
+    
+    /// Represents a Command which has no motion modifiers.  The  delegate takes 
+    /// an optional count and a Register.  If unspecified the default register
+    /// will be used
+    | SimpleCommand of CommandName * CommandFlags * (int option -> Register -> CommandResult)
+
+    /// Represents a Command prefix which has an associated motion.  The delegate takes
+    /// an optional count, a Register and a MotionData value.  If unspecified the default
+    /// register will be used
+    | MotionCommand of CommandName * CommandFlags * (int option -> Register -> MotionData -> CommandResult)
+
+    /// Represents a command which has a Name but then has additional unspecified input
+    /// which needs to be dealt with specially by the command.  These commands are not
+    /// repeatable.  
+    | LongCommand of CommandName * CommandFlags * (int option -> Register -> LongCommandResult) 
+
+    with 
+
+    /// The raw command inputs
+    member x.CommandName = 
+        match x with
+        | SimpleCommand(value,_,_ ) -> value
+        | MotionCommand(value,_,_) -> value
+        | LongCommand(value,_,_) -> value
+
+    /// The kind of the Command
+    member x.CommandFlags =
+        match x with
+        | SimpleCommand(_,value,_ ) -> value
+        | MotionCommand(_,value,_) -> value
+        | LongCommand(_,value,_) -> value
+
+    /// Is the Repeatable flag set
+    member x.IsRepeatable = Utils.IsFlagSet x.CommandFlags CommandFlags.Repeatable
+
+    /// Is the HandlesEscape flag set
+    member x.HandlesEscape = Utils.IsFlagSet x.CommandFlags CommandFlags.HandlesEscape
+
+    /// Is the Movement flag set
+    member x.IsMovement = Utils.IsFlagSet x.CommandFlags CommandFlags.Movement
+
+    /// Is the Special flag set
+    member x.IsSpecial = Utils.IsFlagSet x.CommandFlags CommandFlags.Special
+
+    override x.ToString() = System.String.Format("{0} -> {1}", x.CommandName, x.CommandFlags)
+
+type MotionFunction = int option -> MotionData option
+
+type ComplexMotionResult =
+    /// Enough input was provided to produce a simple motion style function
+    | Finished of MotionFunction 
+    | Cancelled
+    | Error of string
+    | NeedMoreInput of (KeyInput -> ComplexMotionResult)
+
+
+/// Represents the types of MotionCommands which exist
+type MotionCommand = 
+
+    /// Simple motion which comprises of a single KeyInput and a function which given 
+    /// a start point and count will produce the motion.  None is returned in the 
+    /// case the motion is not valid
+    | SimpleMotionCommand of CommandName * MotionFunction
+
+    /// Complex motion commands take more than one KeyInput to complete.  For example 
+    /// the f,t,F and T commands all require at least one additional input.  The bool
+    /// in the middle of the tuple indicates whether or not the motion can be 
+    /// used as a cursor movement operation  
+    | ComplexMotionCommand of CommandName * bool * ( unit -> ComplexMotionResult )
+
+    with
+
+    member x.CommandName = 
+        match x with
+        | SimpleMotionCommand(name,_) -> name
+        | ComplexMotionCommand(name,_,_) -> name
+
+type MotionRunData = {
+    MotionCommand : MotionCommand;
+    Count : int option
+    MotionFunction : MotionFunction
+}
+
+/// The information about the particular run of a Command
+type CommandRunData = {
+    Command : Command;
+    Register : Register;
+    Count : int option;
+
+    /// For commands which took a motion this will hold the relevant information
+    /// on how the motion was ran
+    MotionRunData : MotionRunData option
+}
+
+type MotionResult = 
+    | Complete of MotionData * MotionRunData
+    | NeedMoreInput of (KeyInput -> MotionResult)
+    | Error of string
+    | Cancelled
+
+/// Responsible for capturing motions on a given ITextView
+type IMotionCapture =
+
+    /// Associated ITextView
+    abstract TextView : ITextView
+    
+    /// Set of supported MotionCommand
+    abstract MotionCommands : seq<MotionCommand>
+
+    /// Get the motion starting with the given KeyInput
+    abstract GetMotion : KeyInput -> int option -> MotionResult
+
+module CommandUtil = 
+
+    let CountOrDefault opt = 
+        match opt with 
+        | Some(count) -> count
+        | None -> 1
+
+    let CreateCommandName name =
+        match StringUtil.length name with
+        | 0 -> EmptyName
+        | 1 -> OneKeyInput (name.Chars(0) |> InputUtil.CharToKeyInput)
+        | 2 -> TwoKeyInputs ((name.Chars(0) |> InputUtil.CharToKeyInput), (name.Chars(1) |> InputUtil.CharToKeyInput))
+        | _ -> name |> Seq.map InputUtil.CharToKeyInput |> List.ofSeq |> ManyKeyInputs
+
+/// Represents the types of actions which are taken when an ICommandRunner is presented
+/// with a KeyInput to run
+type RunKeyInputResult = 
+    
+    /// Ran a command which produced the attached result.  
+    | CommandRan of CommandRunData * ModeSwitch
+
+    /// Command was cancelled
+    | CommandCancelled 
+
+    /// Command ran but resulted in an error
+    | CommandErrored of CommandRunData * string
+
+    /// More input is needed to determine if there is a matching command or not
+    | NeedMoreKeyInput 
+
+    /// The ICommandRunner was asked to process a KeyInput when it was already in
+    /// the middle of processing one.  This KeyInput was hence ignored
+    | NestedRunDetected
+
+    /// No command which matches the given input
+    | NoMatchingCommand 
+
+/// Represents the different states of the ICommandRunner with respect to running a Command
+type CommandRunnerState =
+
+    /// This is the start state.  No input is on the queue and there is no interesting state
+    | NoInput
+
+    /// At least one KeyInput was run but it was not enough to disambiguate which Command to 
+    /// run.  
+    | NotEnoughInput
+
+    /// There exist many pairs of commands where one is a Motion and another is a Simple command
+    /// where the name of the Motion is a prefix of the Simple command.  The MotionCommand is 
+    /// captured in the first item of the tuple and all other commands with a matching prefix are
+    /// captured in the list
+    | NotEnoughMatchingPrefix of Command * Command list
+
+    /// Waiting for a Motion or Long Command to complete.  Enough input is present to determine this
+    /// is the command to execute but not enough to complete the execution of the command
+    | NotFinishWithCommand of Command
+
+/// Responsible for managing a set of Commands and running them
+type ICommandRunner =
+    
+    /// Set of Commands currently supported
+    abstract Commands : Command seq
+
+    /// Current state of the ICommandRunner
+    abstract State : CommandRunnerState
+
+    /// True if waiting on more input
+    abstract IsWaitingForMoreInput : bool
+
+    /// Add a Command.  If there is already a Command with the same name an exception will
+    /// be raised
+    abstract Add : Command -> unit
+
+    /// Remove a command with the specified name
+    abstract Remove : CommandName -> unit
+
+    /// Process the given KeyInput.  If the command completed it will return a result.  A
+    /// None value implies more input is needed to finish the operation
+    abstract Run : KeyInput -> RunKeyInputResult
+
+    /// If currently waiting for more input on a Command, reset to the 
+    /// initial state
+    abstract ResetState : unit -> unit
+
+    /// Raised when a command is successfully run
+    [<CLIEvent>]
+    abstract CommandRan : IEvent<CommandRunData * CommandResult>
 
 /// Modes for a key remapping
 type KeyRemapMode =
@@ -72,7 +549,6 @@ type IKeyMap =
     /// Clear the Key mappings for all modes
     abstract ClearAll : unit -> unit
 
-    
 type IMarkMap =
     abstract IsLocalMark : char -> bool
     abstract GetLocalMark : ITextBuffer -> char -> VirtualSnapshotPoint option
@@ -127,7 +603,7 @@ type IRegisterMap =
     abstract IsRegisterName : char -> bool
     abstract GetRegister : char -> Register
     
-/// Result of an individual searh
+/// Result of an individual search
 type SearchResult =
     | SearchFound of SnapshotSpan
     | SearchNotFound 
@@ -147,11 +623,18 @@ type SearchText =
     | WholeWord of string
     | StraightText of string
     with 
-        member x.RawText =
-            match x with
-            | Pattern(p) -> p
-            | WholeWord(p) -> p
-            | StraightText(p) -> p
+    member x.RawText =
+        match x with
+        | Pattern(p) -> p
+        | WholeWord(p) -> p
+        | StraightText(p) -> p
+    
+    /// Is this a pattern
+    member x.IsPatternText = 
+        match x with
+        | Pattern(_) -> true
+        | WholeWord(_) -> false
+        | StraightText(_) -> false
 
 type SearchData = {
     Text : SearchText;
@@ -174,11 +657,11 @@ type ISearchService =
     [<CLIEvent>]
     abstract LastSearchChanged : IEvent<SearchData>
 
-    /// Find the next occurance of the pattern in the buffer starting at the 
+    /// Find the next occurrence of the pattern in the buffer starting at the 
     /// given SnapshotPoint
     abstract FindNext : SearchData -> SnapshotPoint -> ITextStructureNavigator -> SnapshotSpan option
 
-    /// Find the next Nth occurance of the pattern
+    /// Find the next Nth occurrence of the pattern
     abstract FindNextMultiple : SearchData -> SnapshotPoint -> ITextStructureNavigator -> count:int -> SnapshotSpan option
 
 type IIncrementalSearch = 
@@ -260,6 +743,9 @@ module GlobalSettingNames =
     let StartOfLineName = "startofline"
     let TildeOpName = "tildeop"
     let SmartCaseName = "smartcase"
+    let VisualBellName = "visualbell"
+    let VirtualEditName = "virtualedit"
+    let ScrollOffsetName = "scrolloff"
     let DoubleEscapeName = "vsvimdoubleescape"
     let VimRcName = "vimrc"
     let VimRcPathsName = "vimrcpaths"
@@ -310,11 +796,25 @@ and IVimGlobalSettings =
     /// Whether or not to highlight previous search patterns matching cases
     abstract HighlightSearch : bool with get,set
 
+    /// Whether or not to use a visual indicator of errors instead of a beep
+    abstract VisualBell : bool with get,set
+
+    /// Holds the VirtualEdit string.  
+    abstract VirtualEdit : string with get,set
+
+    /// Holds the scroll offset value which is the number of lines to keep visible
+    /// above the cursor after a move operation
+    abstract ScrollOffset : int with get,set
+
+    /// Is the onemore option inside of VirtualEdit set
+    abstract IsVirtualEditOneMore : bool with get
+
     /// Affects behavior of <ESC> in Insert Mode.  <ESC> is overloaded some environments to be both 
     /// an exit of Insert mode and a dismisser of intellisense.  The default behavior of insert 
     /// mode is to dismiss intellisense and enter normal mode.  When this option is set it will 
     /// just dismiss intellisense
     abstract DoubleEscape:bool with get,set
+
 
     /// Retrieves the location of the loaded VimRC file.  Will be the empty string if the load 
     /// did not succeed or has not been tried
@@ -341,7 +841,7 @@ and IVimLocalSettings =
 
 /// Vim instance.  Global for a group of buffers
 and IVim =
-    abstract Host : IVimHost
+    abstract VimHost : IVimHost
     abstract MarkMap : IMarkMap
     abstract RegisterMap : IRegisterMap
     abstract Settings : IVimGlobalSettings
@@ -375,9 +875,8 @@ and IVim =
     abstract RemoveBuffer : ITextView -> bool
 
     /// Load the VimRc file.  If the file was previously, a new load will be attempted
-    abstract LoadVimRc : createViewFunc:(unit -> ITextView) -> bool
+    abstract LoadVimRc : IFileSystem -> createViewFunc:(unit -> ITextView) -> bool
 
-    
 /// Main interface for the Vim editor engine so to speak. 
 and IVimBuffer =
 
@@ -404,9 +903,6 @@ and IVimBuffer =
     /// Jump list
     abstract JumpList : IJumpList
 
-    /// IVimHost for the buffer
-    abstract VimHost : IVimHost
-
     /// ModeKind of the current IMode in the buffer
     abstract ModeKind : ModeKind
 
@@ -419,6 +915,9 @@ and IVimBuffer =
     abstract NormalMode : INormalMode 
     abstract CommandMode : ICommandMode 
     abstract DisabledMode : IDisabledMode
+    abstract VisualLineMode : IVisualMode
+    abstract VisualBlockMode : IVisualMode
+    abstract VisualCharacterMode : IVisualMode
 
     /// Sequence of available Modes
     abstract AllModes : seq<IMode>
@@ -431,12 +930,14 @@ and IVimBuffer =
     /// Get the specified Mode
     abstract GetMode : ModeKind -> IMode
     
-    /// Process the char in question and return whether or not it was handled
-    abstract ProcessChar : char -> bool
-    
     /// Process the KeyInput and return whether or not the input was completely handled
-    abstract ProcessInput : KeyInput -> bool
-    abstract CanProcessInput : KeyInput -> bool
+    abstract Process : KeyInput -> bool
+
+    /// Can the passed in KeyInput be consumed by the current state of IVimBuffer.  The
+    /// provided KeyInput will participate in remapping based on the current mode
+    abstract CanProcess: KeyInput -> bool
+
+    /// Switch the current mode to the provided value
     abstract SwitchMode : ModeKind -> IMode
 
     /// Switch the buffer back to the previous mode which is returned
@@ -460,11 +961,11 @@ and IVimBuffer =
     [<CLIEvent>]
     abstract KeyInputProcessed : IEvent<KeyInput * ProcessResult>
 
-    /// Raised when a KeyInput is recieved by the buffer
+    /// Raised when a KeyInput is received by the buffer
     [<CLIEvent>]
     abstract KeyInputReceived : IEvent<KeyInput>
 
-    /// Raised when a key is recieved but not immediately processed.  Occurs when a
+    /// Raised when a key is received but not immediately processed.  Occurs when a
     /// key remapping has more than one source key strokes
     [<CLIEvent>]
     abstract KeyInputBuffered : IEvent<KeyInput>
@@ -490,7 +991,7 @@ and IMode =
     abstract ModeKind : ModeKind
 
     /// Sequence of commands handled by the Mode.  
-    abstract Commands : seq<KeyInput>
+    abstract CommandNames : seq<CommandName>
 
     /// Can the mode process this particular KeyIput at the current time
     abstract CanProcess : KeyInput -> bool
@@ -504,11 +1005,18 @@ and IMode =
     /// Called when the mode is left
     abstract OnLeave : unit -> unit
 
+    /// Called when the owning IVimBuffer is closed so that the mode can free up 
+    /// any resources including event handlers
+    abstract OnClose : unit -> unit
+
 
 and INormalMode =
 
     /// Buffered input for the current command
     abstract Command : string 
+
+    /// The ICommandRunner implementation associated with NormalMode
+    abstract CommandRunner : ICommandRunner 
 
     /// Is in the middle of an operator pending 
     abstract IsOperatorPending : bool
@@ -522,10 +1030,6 @@ and INormalMode =
     /// The IIncrementalSearch instance for normal mode
     abstract IncrementalSearch : IIncrementalSearch
 
-    /// Raised when a command is executed
-    [<CLIEvent>]
-    abstract CommandExecuted : IEvent<NormalModeCommand>
-
     inherit IMode
 
 and ICommandMode = 
@@ -537,6 +1041,18 @@ and ICommandMode =
     abstract RunCommand : string -> unit
 
     inherit IMode
+
+and IVisualMode = 
+
+    /// True during the duration of an explicit caret move from within Visual Mode.  Will be 
+    /// false in cases where the caret is moved by a non-Vim item such as the user clicking
+    /// or a third party component repositioning the caret
+    abstract InExplicitMove : bool
+
+    /// The ICommandRunner implementation associated with NormalMode
+    abstract CommandRunner : ICommandRunner 
+
+    inherit IMode 
     
 and IDisabledMode =
     
@@ -545,16 +1061,11 @@ and IDisabledMode =
 
     inherit IMode
 
-/// Command executed in normal mode
-and NormalModeCommand =
-    | NonRepeatableCommand
-    | RepeatableCommand of KeyInput list * int * Register 
-
 and IChangeTracker =
     
     abstract LastChange : RepeatableChange option
 
 and RepeatableChange =
-    | NormalModeChange of KeyInput list * int * Register
+    | CommandChange of CommandRunData
     | TextChange of string
 

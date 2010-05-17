@@ -61,14 +61,32 @@ type internal VimBuffer
     /// Get the current mode
     member x.Mode = _modeMap.Mode
     member x.NormalMode = _modeMap.GetMode ModeKind.Normal :?> INormalMode
+    member x.VisualLineMode = _modeMap.GetMode ModeKind.VisualLine :?> IVisualMode
+    member x.VisualCharacterMode = _modeMap.GetMode ModeKind.VisualCharacter :?> IVisualMode
+    member x.VisualBlockMode = _modeMap.GetMode ModeKind.VisualBlock :?> IVisualMode
     member x.CommandMode = _modeMap.GetMode ModeKind.Command :?> ICommandMode
     member x.DisabledMode = _modeMap.GetMode ModeKind.Disabled :?> IDisabledMode
+
+    /// Current KeyRemapMode which should be used when calculating keyboard mappings
+    member x.KeyRemapMode = 
+        match _modeMap.Mode.ModeKind with
+        | ModeKind.Insert -> Some (KeyRemapMode.Insert)
+        | ModeKind.Normal -> 
+            let mode = x.NormalMode
+            if mode.IsOperatorPending then Some(KeyRemapMode.OperatorPending)
+            elif mode.IsWaitingForInput then None
+            else Some(KeyRemapMode.Normal)
+        | ModeKind.Command -> Some(KeyRemapMode.Command)
+        | ModeKind.VisualBlock -> Some(KeyRemapMode.Visual)
+        | ModeKind.VisualCharacter -> Some(KeyRemapMode.Visual)
+        | ModeKind.VisualLine -> Some(KeyRemapMode.Visual)
+        | _ -> None
 
     /// Switch to the desired mode
     member x.SwitchMode kind = _modeMap.SwitchMode kind
 
     // Actuall process the input key.  Raise the change event on an actual change
-    member x.ProcessInput (i:KeyInput) : bool = 
+    member x.Process (i:KeyInput) : bool = 
 
         // Actually process the given piece of input
         let doProcess i = 
@@ -97,19 +115,7 @@ type internal VimBuffer
             ret
 
         // Calculate the current remapMode
-        let remapMode = 
-            match _modeMap.Mode.ModeKind with
-            | ModeKind.Insert -> Some (KeyRemapMode.Insert)
-            | ModeKind.Normal -> 
-                let mode = x.NormalMode
-                if mode.IsOperatorPending then Some(KeyRemapMode.OperatorPending)
-                elif mode.IsWaitingForInput then None
-                else Some(KeyRemapMode.Normal)
-            | ModeKind.Command -> Some(KeyRemapMode.Command)
-            | ModeKind.VisualBlock -> Some(KeyRemapMode.Visual)
-            | ModeKind.VisualCharacter -> Some(KeyRemapMode.Visual)
-            | ModeKind.VisualLine -> Some(KeyRemapMode.Visual)
-            | _ -> None
+        let remapMode = x.KeyRemapMode
 
         // Raise the event that we recieved the key
         _keyInputReceivedEvent.Trigger(i)
@@ -143,25 +149,39 @@ type internal VimBuffer
     
     member x.AddMode mode = _modeMap.AddMode mode
             
-    member x.CanProcessInput ki =  x.Mode.CanProcess ki || ki = _vim.Settings.DisableCommand
+    member x.CanProcess ki =  
+        let ki = 
+            match x.KeyRemapMode with 
+            | None -> ki
+            | Some(remapMode) ->
+                match _vim.KeyMap.GetKeyMappingResult ki remapMode with
+                | SingleKey(ki) -> ki
+                | NoMapping -> ki
+                | MappingNeedsMoreInput -> ki
+                | RecursiveMapping(_) -> ki
+                | KeySequence(kiSeq) -> Seq.head kiSeq
+        x.Mode.CanProcess ki || ki = _vim.Settings.DisableCommand
+
     member x.RaiseErrorMessage msg = _errorMessageEvent.Trigger msg
     member x.RaiseStatusMessage msg = _statusMessageEvent.Trigger msg
     member x.RaiseStatusMessageLong msgSeq = _statusMessageLongEvent.Trigger msgSeq
                  
     interface IVimBuffer with
         member x.Vim = _vim
-        member x.VimHost = _vim.Host
         member x.TextView = _textView
         member x.TextBuffer = _textView.TextBuffer
         member x.TextSnapshot = _textView.TextSnapshot
         member x.BufferedRemapKeyInputs = x.BufferedRemapKeyInputs 
         member x.IsProcessingInput = _isProcessingInput
-        member x.Name = _vim.Host.GetName _textView.TextBuffer
+        member x.Name = _vim.VimHost.GetName _textView.TextBuffer
         member x.MarkMap = _vim.MarkMap
         member x.JumpList = _jumpList
         member x.ModeKind = x.Mode.ModeKind
         member x.Mode = x.Mode
         member x.NormalMode = x.NormalMode
+        member x.VisualLineMode = x.VisualLineMode
+        member x.VisualCharacterMode = x.VisualCharacterMode
+        member x.VisualBlockMode = x.VisualBlockMode
         member x.CommandMode = x.CommandMode
         member x.DisabledMode = x.DisabledMode
         member x.AllModes = _modeMap.Modes
@@ -169,9 +189,6 @@ type internal VimBuffer
         member x.RegisterMap = _vim.RegisterMap
         member x.GetRegister c = _vim.RegisterMap.GetRegister c
         member x.GetMode kind = _modeMap.GetMode kind
-        member x.ProcessChar c = 
-            let ki = InputUtil.CharToKeyInput c
-            x.ProcessInput ki
         member x.SwitchMode kind = x.SwitchMode kind
         member x.SwitchPreviousMode () = _modeMap.SwitchPreviousMode()
 
@@ -190,9 +207,10 @@ type internal VimBuffer
         [<CLIEvent>]
         member x.StatusMessageLong = _statusMessageLongEvent.Publish
 
-        member x.ProcessInput ki = x.ProcessInput ki
-        member x.CanProcessInput ki = x.CanProcessInput ki
+        member x.Process ki = x.Process ki
+        member x.CanProcess ki = x.CanProcess ki
         member x.Close () = 
             x.Mode.OnLeave()
+            _modeMap.Modes |> Seq.iter (fun x -> x.OnClose())
             _vim.MarkMap.DeleteAllMarksForBuffer _textView.TextBuffer
             _vim.RemoveBuffer _textView |> ignore

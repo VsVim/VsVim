@@ -38,7 +38,11 @@ namespace VsVim
         internal CommandKeyBindingSnapshot CreateCommandKeyBindingSnapshot(IVimBuffer buffer)
         {
             var hashSet = new HashSet<KeyInput>(
-                buffer.AllModes.Select(x => x.Commands).SelectMany(x => x));
+                buffer.AllModes
+                .Select(x => x.CommandNames)
+                .SelectMany(x => x)
+                .Where(x => x.KeyInputs.Length > 0)
+                .Select(x => x.KeyInputs.First()));
             hashSet.Add(buffer.Settings.GlobalSettings.DisableCommand);
             return CreateCommandKeyBindingSnapshot(hashSet);
         }

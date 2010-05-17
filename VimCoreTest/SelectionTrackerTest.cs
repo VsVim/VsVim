@@ -6,12 +6,12 @@ using NUnit.Framework;
 using Vim.Modes.Visual;
 using Moq;
 using Microsoft.VisualStudio.Text.Editor;
-using VimCoreTest.Utils;
+using VimCore.Test.Utils;
 using Microsoft.VisualStudio.Text;
 using Microsoft.FSharp.Core;
 using System.Threading;
 
-namespace VimCoreTest
+namespace VimCore.Test
 {
     [TestFixture]
     public class SelectionTrackerTest

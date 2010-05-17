@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Windows.Input;
+using Vim.Extensions;
 
 namespace Vim.UI.Wpf
 {
@@ -66,13 +67,13 @@ namespace Vim.UI.Wpf
                 }
 
                 var opt = InputUtil.TryCharToKeyInput(args.Text[0]);
-                if (!opt.HasValue())
+                if (!opt.IsSome())
                 {
                     return false;
                 }
 
                 var ki = opt.Value;
-                return _buffer.CanProcessInput(ki) && _buffer.ProcessInput(ki);
+                return _buffer.CanProcess(ki) && _buffer.Process(ki);
             }
         }
 
@@ -94,7 +95,7 @@ namespace Vim.UI.Wpf
             if (IsInputKey(args.Key))
             {
                 var ki = KeyUtil.ConvertToKeyInput(args.Key, args.KeyboardDevice.Modifiers);
-                isHandled = _buffer.CanProcessInput(ki) && _buffer.ProcessInput(ki);
+                isHandled = _buffer.CanProcess(ki) && _buffer.Process(ki);
             }
 
             if (isHandled)

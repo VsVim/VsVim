@@ -7,7 +7,7 @@ using Vim.Modes.Command;
 using Vim;
 using Microsoft.FSharp.Collections;
 
-namespace VimCoreTest
+namespace VimCore.Test
 {
     [TestFixture]
     public class CommandParseUtilTest

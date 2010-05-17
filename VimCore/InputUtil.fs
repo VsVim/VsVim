@@ -16,7 +16,7 @@ module InputUtil =
     let CoreCharacters =
         let lowerLetters = "abcdefghijklmnopqrstuvwxyz" :> char seq
         let upperLetters = lowerLetters |> Seq.map (fun x -> System.Char.ToUpper(x))
-        let other = "!@#$%^&*()[]{}-_=+\\|'\",<>./?\t\b:;\n\r`" :> char seq
+        let other = "!@#$%^&*()[]{}-_=+\\|'\",<>./?\t\b:;\n\r`~" :> char seq
         let digits = "1234567890"
         lowerLetters
         |> Seq.append upperLetters

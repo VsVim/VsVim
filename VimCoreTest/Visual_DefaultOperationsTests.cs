@@ -7,61 +7,117 @@ using Moq;
 using Vim.Modes.Visual;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text;
-using VimCoreTest.Utils;
+using VimCore.Test.Utils;
 using Microsoft.VisualStudio.Text.Operations;
 using Vim;
 using Microsoft.VisualStudio.Text.Outlining;
 
-namespace VimCoreTest
+namespace VimCore.Test
 {
     [TestFixture]
     public class Visual_DefaultOperationsTests
     {
-        private IWpfTextView _view;
+        private IWpfTextView _textView;
+        private MockFactory _factory;
         private Mock<IEditorOperations> _editorOpts;
-        private Mock<ISelectionTracker> _tracker;
         private Mock<IVimHost> _host;
         private Mock<IJumpList> _jumpList;
         private Mock<IVimLocalSettings> _settings;
         private Mock<IOutliningManager> _outlining;
+        private Mock<IUndoRedoOperations> _undoRedoOperations;
+        private Mock<IStatusUtil> _statusUtil;
         private IOperations _operations;
 
         private void Create(params string[] lines)
         {
-            _view = EditorUtil.CreateView(lines);
-            _editorOpts = new Mock<IEditorOperations>(MockBehavior.Strict);
-            _tracker = new Mock<ISelectionTracker>(MockBehavior.Strict);
-            _jumpList = new Mock<IJumpList>(MockBehavior.Strict);
-            _host = new Mock<IVimHost>(MockBehavior.Strict);
-            _outlining = new Mock<IOutliningManager>(MockBehavior.Strict);
-            _settings = new Mock<IVimLocalSettings>(MockBehavior.Strict);
-            _operations = new DefaultOperations(_view, _editorOpts.Object, _outlining.Object, _host.Object, _jumpList.Object, _tracker.Object, _settings.Object);
+            Create(ModeKind.VisualCharacter, lines);
+        }
+
+        private void Create(ModeKind kind, params string[] lines)
+        {
+            _textView = EditorUtil.CreateView(lines);
+            _factory = new MockFactory(MockBehavior.Strict);
+            _editorOpts = _factory.Create<IEditorOperations>();
+            _jumpList = _factory.Create<IJumpList>();
+            _host = _factory.Create<IVimHost>();
+            _outlining = _factory.Create<IOutliningManager>();
+            _settings = _factory.Create<IVimLocalSettings>();
+            _undoRedoOperations = _factory.Create<IUndoRedoOperations>();
+            _statusUtil = _factory.Create<IStatusUtil>();
+            _operations = new DefaultOperations(_textView, _editorOpts.Object, _outlining.Object, _host.Object, _jumpList.Object, _settings.Object, _undoRedoOperations.Object, kind, _statusUtil.Object);
+        }
+
+        private void AssertWorksOnlyOnSingleSpan(Action del)
+        {
+            Create(ModeKind.VisualLine, "the fox chases the bird");
+            _textView.Selection.Mode = TextSelectionMode.Box;
+            _statusUtil.Setup(x => x.OnError(Resources.VisualMode_BoxSelectionNotSupported));
+            del();
+            _factory.Verify();
         }
 
         [Test]
         public void DeleteSelection1()
         {
             Create("foo", "bar");
-            _view.Selection.Select(new SnapshotSpan(_view.TextSnapshot, 0, 2),false);
-            _tracker.SetupGet(x => x.SelectedText).Returns("fo").Verifiable();
+            _textView.Selection.Select(new SnapshotSpan(_textView.TextSnapshot, 0, 2),false);
             var reg = new Register('c');
             _operations.DeleteSelection(reg);
             Assert.AreEqual("fo", reg.StringValue);
-            Assert.AreEqual("o", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
-            _tracker.Verify();
+            Assert.AreEqual("o", _textView.TextSnapshot.GetLineFromLineNumber(0).GetText());
+            _factory.Verify();
+        }
+
+        [Test]
+        public void DeleteSelection2()
+        {
+            Create(ModeKind.VisualLine, "a", "b", "c");
+            _textView.Selection.Select(_textView.GetLine(0).ExtentIncludingLineBreak, false);
+            var reg = new Register('c');
+            _operations.DeleteSelection(reg);
+            Assert.AreEqual(OperationKind.LineWise, reg.Value.OperationKind);
         }
 
         [Test]
         public void DeleteSelectedLines1()
         {
             Create("foo", "bar");
-            var span = _view.GetLineSpanIncludingLineBreak(0, 0);
-            _tracker.SetupGet(x => x.SelectedLines).Returns(span).Verifiable();
+            var span = _textView.GetLine(0).ExtentIncludingLineBreak;
+            _textView.Selection.Select(span, false);
             var reg = new Register('c');
             _operations.DeleteSelectedLines(reg);
-            Assert.AreEqual(span.GetText(), reg.StringValue);
-            Assert.AreEqual(1, _view.TextSnapshot.LineCount);
-            _tracker.Verify();
+            Assert.AreEqual( span.GetText(), reg.StringValue);
+            Assert.AreEqual(1, _textView.TextSnapshot.LineCount);
+            _factory.Verify();
+        }
+
+        [Test]
+        public void PasteOverSelection1()
+        {
+            AssertWorksOnlyOnSingleSpan(() => _operations.PasteOverSelection("foo", new Register('c')));
+        }
+
+        [Test]
+        public void PasteOverSelection2()
+        {
+            Create("foo bar ");
+            _textView.Selection.Select(new SnapshotSpan(_textView.TextSnapshot, 0, 3), false);
+            var reg = new Register('c');
+            _operations.PasteOverSelection("again", reg);
+            Assert.AreEqual("again bar ", _textView.TextSnapshot.GetText());
+            Assert.AreEqual("foo", reg.StringValue);
+        }
+
+        [Test]
+        [Description("Don't delete the newline on the last line of the selection")]
+        public void PasteOverSelection3()
+        {
+            Create(ModeKind.VisualLine, "a", "b", "c");
+            _textView.Selection.Select(_textView.GetLine(0).ExtentIncludingLineBreak, false);
+            var reg = new Register('c');
+            _operations.PasteOverSelection("hey",reg);
+            Assert.AreEqual("hey", _textView.GetLine(0).GetText());
+            Assert.AreEqual(OperationKind.LineWise, reg.Value.OperationKind);
         }
     }
 }

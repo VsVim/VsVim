@@ -10,7 +10,7 @@ using System.Windows.Input;
 
 namespace VsVim
 {
-    internal static class CommandUtil
+    internal static class OleCommandUtil
     {
         /// <summary>
         /// Is this a command we should immediately filter out in debug mode so that I can see what is actually 
@@ -190,6 +190,10 @@ namespace VsVim
                 case VSConstants.VSStd97CmdID.Delete:
                     ki = InputUtil.VimKeyToKeyInput(VimKey.DeleteKey);
                     kind = EditCommandKind.Delete;
+                    break;
+                case VSConstants.VSStd97CmdID.F1Help:
+                    ki = InputUtil.VimKeyToKeyInput(VimKey.F1Key);
+                    kind = EditCommandKind.Unknown;
                     break;
             }
 

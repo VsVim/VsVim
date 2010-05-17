@@ -4,189 +4,170 @@ namespace Vim
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor;
 
-type internal MotionResult = 
-    | Complete of (SnapshotSpan * MotionKind * OperationKind)
-    
-    /// Motion needs more input to be completed
-    | NeedMoreInput of (KeyInput -> MotionResult)
-    
-    /// Indicates the motion is currently in an invalid state and 
-    /// won't ever complete.  But the utility will still provide a 
-    /// function to capture input until the motion action is completed
-    /// with a completing key
-    | InvalidMotion of string * (KeyInput -> MotionResult) 
-    | Error of string
-    | Cancel
-       
-module internal MotionCapture = 
+type internal MotionCapture 
+    (
+        _textView : ITextView,
+        _util :IMotionUtil ) = 
 
     let NeedMoreInputWithEscape func =
         let inner (ki:KeyInput) = 
-            if ki.Key = VimKey.EscapeKey then Cancel
+            if ki.Key = VimKey.EscapeKey then ComplexMotionResult.Cancelled
             else func(ki)
-        NeedMoreInput(inner)
+        ComplexMotionResult.NeedMoreInput inner
 
-    /// When an invalid motion is given just wait for enter and then report and invalid 
-    /// motion error.  Update the status to let the user know that we are currently
-    /// in an invalid state
-    let HitInvalidMotion =
-        let rec inner (ki:KeyInput) =
-            match ki.Key with 
-            | VimKey.EscapeKey -> Cancel
-            | VimKey.EnterKey -> Error(Resources.MotionCapture_InvalidMotion)
-            | _ -> InvalidMotion("Invalid Motion", inner)
-        InvalidMotion("Invalid Motion",inner)
-
-    let private FindCountCharOnLine start count targetChar = 
-        let line = SnapshotPointUtil.GetContainingLine start
-        let matches = 
-            SnapshotSpan(start, line.End)
-            |> SnapshotSpanUtil.GetPoints 
-            |> Seq.filter (fun x -> x.GetChar() = targetChar)
-            |> List.ofSeq
-        if count <= List.length matches then List.nth matches (count - 1) |> Some
-        else None
-
-    /// Handle the 'f' motion.  Forward till the next occurance of the specified character on
-    /// this line
-    let private ForwardCharMotion start count = 
-        let inner (ki:KeyInput) =
-            match FindCountCharOnLine start count ki.Char with
-            | None -> MotionResult.Error(Resources.MotionCapture_InvalidMotion)
-            | Some(point) -> 
-                let span = SnapshotSpan(start, point.Add(1))
-                Complete(span, MotionKind.Inclusive, OperationKind.CharacterWise)
+    let ForwardCharMotionCore func = 
+        let inner (ki:KeyInput) = ComplexMotionResult.Finished (func ki.Char)
         NeedMoreInputWithEscape inner
 
-    /// Handle the 't' motion.  Forward till the next occurance of the specified character on
-    /// this line
-    let private ForwardTillCharMotion start count = 
-        let inner (ki:KeyInput) =
-            match FindCountCharOnLine start count ki.Char with
-            | None -> MotionResult.Error(Resources.MotionCapture_InvalidMotion)
-            | Some(point) -> 
-                let span = SnapshotSpan(start, point)
-                Complete(span, MotionKind.Inclusive, OperationKind.CharacterWise)
+    let BackwardCharMotionCore count func = 
+        let inner (ki:KeyInput) = ComplexMotionResult.Finished (func ki.Char)
         NeedMoreInputWithEscape inner
-        
-    /// Implement the w/W motion
-    let private WordMotion start kind originalCount =
-        let rec inner curPoint curCount = 
-            let next = TssUtil.FindNextWordPosition curPoint kind
-            match curCount with 
-            | 1 -> 
-                // When the next word crosses a line boundary for the last count then 
-                // we stop the motion on the current line.  This does not appear to be 
-                // caled out in the documentation but is evident in the behavior
-                let span = 
-                    if next.GetContainingLine().LineNumber <> curPoint.GetContainingLine().LineNumber then
-                        new SnapshotSpan(start, curPoint.GetContainingLine().End)
-                    else
-                        new SnapshotSpan(start,next)
-                Complete(span, MotionKind.Exclusive, OperationKind.CharacterWise)
-            | _ -> inner next (curCount-1)
-        inner start originalCount      
-        
-    /// Implement the aw motion.  This is called once the a key is seen.
-    let private AllWordMotion start count =        
-        let func kind = 
-            let start = match TssUtil.FindCurrentFullWordSpan start kind with 
-                            | Some (s) -> s.Start
-                            | None -> start
-            WordMotion start kind count
+
+    let WaitCharThen func =
         let inner (ki:KeyInput) = 
-            match ki.Char with
-                | 'w' -> func WordKind.NormalWord
-                | 'W' -> func WordKind.BigWord
-                | _ -> HitInvalidMotion
+            let func count = 
+                let count = CommandUtil.CountOrDefault count
+                func ki.Char count
+            ComplexMotionResult.Finished func
         NeedMoreInputWithEscape inner
 
-    /// Implement the 'e' motion.  This goes to the end of the current word.  If we're
-    /// not currently on a word it will find the next word and then go to the end of that
-    let private EndOfWordMotion (start:SnapshotPoint) count kind =
-        let snapshotEnd = SnapshotUtil.GetEndPoint start.Snapshot
-        let rec inner start count = 
-            if count <= 0 || start = snapshotEnd then start
+    let SimpleMotions =  
+        let needCount = 
+            seq { 
+                yield (InputUtil.CharToKeyInput 'w', fun count -> _util.WordForward WordKind.NormalWord count |> Some)
+                yield (InputUtil.CharToKeyInput 'W', fun count -> _util.WordForward  WordKind.BigWord count |> Some)
+                yield (InputUtil.CharToKeyInput 'b', fun count -> _util.WordBackward WordKind.NormalWord count |> Some)
+                yield (InputUtil.CharToKeyInput 'B', fun count -> _util.WordBackward WordKind.BigWord count |> Some)
+                yield (InputUtil.CharToKeyInput '$', fun count -> _util.EndOfLine count |> Some)
+                yield (InputUtil.VimKeyToKeyInput VimKey.EndKey, fun count -> _util.EndOfLine count |> Some)
+                yield (InputUtil.CharToKeyInput '^', fun count -> _util.FirstNonWhitespaceOnLine() |> Some)
+                yield (InputUtil.CharToKeyInput '0', fun count -> _util.BeginingOfLine() |> Some)
+                yield (InputUtil.CharToKeyInput 'e', fun count -> _util.EndOfWord WordKind.NormalWord count |> Some)
+                yield (InputUtil.CharToKeyInput 'E', fun count -> _util.EndOfWord WordKind.BigWord count |> Some)
+                yield (InputUtil.CharToKeyInput 'h', fun count -> _util.CharLeft count)
+                yield (InputUtil.VimKeyToKeyInput VimKey.LeftKey, fun count -> _util.CharLeft count)
+                yield (InputUtil.VimKeyToKeyInput VimKey.BackKey, fun count -> _util.CharLeft count)
+                yield (InputUtil.CharAndModifiersToKeyInput 'h' KeyModifiers.Control, fun count -> _util.CharLeft count)
+                yield (InputUtil.CharToKeyInput 'l', fun count -> _util.CharRight count)
+                yield (InputUtil.VimKeyToKeyInput VimKey.RightKey, fun count -> _util.CharRight count)
+                yield (InputUtil.CharToKeyInput ' ', fun count -> _util.CharRight count)
+                yield (InputUtil.CharToKeyInput 'k', fun count -> _util.LineUp count |> Some)
+                yield (InputUtil.VimKeyToKeyInput VimKey.UpKey, fun count -> _util.LineUp count |> Some)
+                yield (InputUtil.CharAndModifiersToKeyInput 'p' KeyModifiers.Control, fun count -> _util.LineUp count |> Some)
+                yield (InputUtil.CharToKeyInput 'j', fun count -> _util.LineDown count |> Some)
+                yield (InputUtil.VimKeyToKeyInput VimKey.DownKey, fun count -> _util.LineDown count |> Some)
+                yield (InputUtil.CharAndModifiersToKeyInput 'n' KeyModifiers.Control, fun count -> _util.LineDown count |> Some)
+                yield (InputUtil.CharAndModifiersToKeyInput 'j' KeyModifiers.Control, fun count -> _util.LineDown count |> Some)
+                yield (InputUtil.CharToKeyInput '+', fun count ->  _util.LineDownToFirstNonWhitespace count |> Some)
+                yield (InputUtil.CharAndModifiersToKeyInput 'm' KeyModifiers.Control, fun count -> _util.LineDownToFirstNonWhitespace count |> Some)
+                yield (InputUtil.VimKeyToKeyInput VimKey.EnterKey, fun count -> _util.LineDownToFirstNonWhitespace count |> Some)
+                yield (InputUtil.CharToKeyInput '-', fun count -> _util.LineUpToFirstNonWhitespace count |> Some)
+            } |> Seq.map (fun (ki,func) ->
+                    let func2 count =
+                        let count = CommandUtil.CountOrDefault count
+                        func count
+                    SimpleMotionCommand(OneKeyInput ki, func2)  )
+        let needCount2 = 
+            seq { 
+                yield ("g_", fun count -> _util.LastNonWhitespaceOnLine count |> Some)
+                yield ("aw", fun count -> _util.AllWord WordKind.NormalWord count |> Some)
+                yield ("aW", fun count -> _util.AllWord WordKind.BigWord count |> Some)
+            } |> Seq.map (fun (str,func) ->
+                    let name = CommandUtil.CreateCommandName str
+                    let func2 count =
+                        let count = CommandUtil.CountOrDefault count
+                        func count
+                    SimpleMotionCommand(name, func2)  )
+        let needCountOpt =
+            seq {
+                yield (InputUtil.CharToKeyInput 'G', fun countOpt -> _util.LineOrLastToFirstNonWhitespace countOpt |> Some)
+                yield (InputUtil.CharToKeyInput 'H', fun countOpt -> _util.LineFromTopOfVisibleWindow countOpt |> Some)
+                yield (InputUtil.CharToKeyInput 'L', fun countOpt -> _util.LineFromBottomOfVisibleWindow countOpt |> Some)
+                yield (InputUtil.CharToKeyInput 'M', fun _ -> _util.LineInMiddleOfVisibleWindow () |> Some)
+            } |> Seq.map (fun (ki,func) -> SimpleMotionCommand(OneKeyInput ki, func))
+
+        let needCountOpt2 =
+            seq {
+                yield ( CommandUtil.CreateCommandName "gg", fun countOpt -> _util.LineOrFirstToFirstNonWhitespace countOpt |> Some)
+            } |> Seq.map (fun (name,func) -> SimpleMotionCommand(name, func))
+        Seq.append needCount needCountOpt |> Seq.append needCountOpt2 |> Seq.append needCount2
+    
+    let ComplexMotions = 
+        let needCount = 
+            seq {
+                yield (InputUtil.CharToKeyInput 'f', true, fun () -> WaitCharThen _util.ForwardChar)
+                yield (InputUtil.CharToKeyInput 't', true, fun () -> WaitCharThen _util.ForwardTillChar)
+                yield (InputUtil.CharToKeyInput 'F', true, fun () -> WaitCharThen _util.BackwardChar)
+                yield (InputUtil.CharToKeyInput 'T', true, fun () -> WaitCharThen _util.BackwardTillChar)
+            } |> Seq.map (fun (ki,isMovement,func) -> ComplexMotionCommand(OneKeyInput ki, isMovement,func))
+        needCount
+    
+    let AllMotionsCore =
+        let simple = SimpleMotions 
+        let complex = ComplexMotions 
+        simple |> Seq.append complex
+
+    let MotionCommands = AllMotionsCore 
+
+    let MotionCommandsMap = AllMotionsCore |> Seq.map (fun command ->  (command.CommandName,command)) |> Map.ofSeq
+
+    /// Run a normal motion function
+    let RunMotionFunction command func count =
+        let res = func count
+        match res with
+        | None -> MotionResult.Error Resources.MotionCapture_InvalidMotion
+        | Some(data) -> 
+            let runData = {MotionCommand=command; Count=count; MotionFunction = func}
+            MotionResult.Complete (data,runData)
+
+    /// Run a complex motion operation
+    let rec RunComplexMotion command func count = 
+        let rec inner result =
+            match result with
+            | ComplexMotionResult.Cancelled -> MotionResult.Cancelled
+            | ComplexMotionResult.Error(msg) -> MotionResult.Error msg
+            | ComplexMotionResult.NeedMoreInput(func) -> MotionResult.NeedMoreInput (fun ki -> func ki |> inner)
+            | ComplexMotionResult.Finished(func) -> RunMotionFunction command func count
+        func() |> inner
+
+    let rec WaitForCommandName count ki =
+        let rec inner (previousName:CommandName) (ki:KeyInput) =
+            if ki.Key = VimKey.EscapeKey then MotionResult.Cancelled 
             else
-
-                // Move start to the first word if we're currently on whitespace
-                let start = 
-                    if System.Char.IsWhiteSpace(start.GetChar()) then TssUtil.FindNextWordPosition start kind
-                    else start
-
-                if start = snapshotEnd then snapshotEnd
-                else
-                    // Get the span of the current word and the end completes the motion
-                    match TssUtil.FindCurrentFullWordSpan start kind with
-                    | None -> SnapshotUtil.GetEndPoint start.Snapshot
-                    | Some(s) -> inner s.End (count-1)
-
-        let endPoint = inner start count
-        let span = SnapshotSpan(start,endPoint)
-        Complete (span, MotionKind.Inclusive, OperationKind.CharacterWise)
-    
-    /// Implement an end of line motion.  Typically in response to the $ key.  Even though
-    /// this motion deals with lines, it's still a character wise motion motion. 
-    let private EndOfLineMotion (start:SnapshotPoint) count = 
-        let span = SnapshotPointUtil.GetLineRangeSpan start count
-        Complete (span, MotionKind.Inclusive, OperationKind.CharacterWise)
-
-    /// Find the first non-whitespace character as the start of the span.  This is an exclusive
-    /// motion so be careful we don't go to far forward
-    let private BeginingOfLineMotion (start:SnapshotPoint) =
-        let line = start.GetContainingLine()
-        let found = SnapshotLineUtil.GetPoints line
-                        |> Seq.filter (fun x -> x.Position < start.Position)
-                        |> Seq.tryFind (fun x-> x.GetChar() <> ' ')
-        let span = match found with 
-                    | Some p -> new SnapshotSpan(p, start)
-                    | None -> new SnapshotSpan(start,0)
-        Complete (span, MotionKind.Exclusive, OperationKind.CharacterWise)                    
-    
-    /// Process a count prefix to the motion.  
-    let private ProcessCount (ki:KeyInput) (completeFunc:KeyInput -> int -> MotionResult) startCount =
-        let rec inner (processFunc: KeyInput->CountResult) (ki:KeyInput)  =               
-            match processFunc ki with 
-                | CountResult.Complete(count,nextKi) -> 
-                    let fullCount = startCount * count
-                    completeFunc nextKi fullCount
-                | NeedMore(nextFunc) -> NeedMoreInputWithEscape (inner nextFunc)
-        inner (CountCapture.Process) ki               
+                let name = previousName.Add ki
+                match Map.tryFind name MotionCommandsMap with
+                | Some(command) -> 
+                    match command with 
+                    | SimpleMotionCommand(_,func) -> RunMotionFunction command func count
+                    | ComplexMotionCommand(_,_,func) -> RunComplexMotion command func count
+                | None -> 
+                    let res = MotionCommandsMap |> Seq.filter (fun pair -> pair.Key.StartsWith name) 
+                    if Seq.isEmpty res then MotionResult.Error Resources.MotionCapture_InvalidMotion
+                    else MotionResult.NeedMoreInput (inner name)
+        inner EmptyName ki
         
-    let rec ProcessInput start (ki:KeyInput) count =
-        let count = if count < 1 then 1 else count
-        if ki.Key = VimKey.EscapeKey then Cancel
-        elif ki.IsDigit then ProcessCount ki (ProcessInput start) count
-        else 
-            match ki.Char with
-                | 'w' -> WordMotion start WordKind.NormalWord count
-                | 'W' -> WordMotion start WordKind.BigWord count
-                | '$' -> EndOfLineMotion start count
-                | '^' -> BeginingOfLineMotion start 
-                | 'a' -> AllWordMotion start count
-                | 'e' -> EndOfWordMotion start count WordKind.NormalWord
-                | 'E' -> EndOfWordMotion start count WordKind.BigWord
-                | 'f' -> ForwardCharMotion start count
-                | 't' -> ForwardTillCharMotion start count
-                
-                /// Simple left right motions
-                | 'h' -> 
-                    let span = MotionUtil.CharLeft start count
-                    Complete (span, MotionKind.Exclusive, OperationKind.CharacterWise)
-                | 'l' ->
-                    let span = MotionUtil.CharRight start count
-                    Complete(span, MotionKind.Exclusive, OperationKind.CharacterWise)
-                | 'k' ->
-                    let span = MotionUtil.LineUp start count
-                    Complete(span, MotionKind.Inclusive, OperationKind.LineWise)
-                | 'j' ->
-                    let span = MotionUtil.LineDown start count
-                    Complete(span, MotionKind.Inclusive, OperationKind.LineWise)
-                | _ -> HitInvalidMotion
+    /// Process a count prefix to the motion.  
+    let ProcessCount (ki:KeyInput) (completeFunc:KeyInput -> int option -> MotionResult) startCount =
+        let startCount = CommandUtil.CountOrDefault startCount
+        let rec inner (processFunc: KeyInput->CountResult) (ki:KeyInput)  =               
+            if ki.Key = VimKey.EscapeKey then MotionResult.Cancelled 
+            else
+                match processFunc ki with 
+                    | CountResult.Complete(count,nextKi) -> 
+                        let fullCount = startCount * count
+                        completeFunc nextKi (Some fullCount)
+                    | NeedMore(nextFunc) -> MotionResult.NeedMoreInput (inner nextFunc)
+        inner (CountCapture.Process) ki
 
-    let ProcessView (view:ITextView) (ki:KeyInput) count = 
-        let start = TextViewUtil.GetCaretPoint view
-        ProcessInput start ki count
+    let rec GetMotion (ki:KeyInput) count =
+        if ki.Key = VimKey.EscapeKey then MotionResult.Cancelled
+        elif ki.IsDigit && ki.Char <> '0' then ProcessCount ki GetMotion count
+        else WaitForCommandName count ki
+
+    interface IMotionCapture with
+        member x.TextView = _textView
+        member x.MotionCommands = MotionCommands
+        member x.GetMotion ki count = GetMotion ki count
 
       
     

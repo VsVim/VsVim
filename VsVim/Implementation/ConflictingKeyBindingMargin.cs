@@ -62,6 +62,8 @@ namespace VsVim.Implementation
         private void OnIgnoreClick(object sender, EventArgs e)
         {
             _keyBindingService.IgnoreAnyConflicts();
+            Settings.Settings.Default.IgnoredConflictingKeyBinding = true;
+            Settings.Settings.Default.Save();
         }
 
         private void OnStateChanged(object sender, EventArgs e)

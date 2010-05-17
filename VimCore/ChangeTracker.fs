@@ -14,7 +14,10 @@ type internal ChangeTracker() =
     let mutable _currentTextChange : (ITextBuffer * Span) option = None
     
     member private x.OnVimBufferCreated (buffer:IVimBuffer) =
-        buffer.NormalMode.CommandExecuted |> Event.add x.OnCommandExecuted
+        buffer.NormalMode.CommandRunner.CommandRan |> Event.add x.OnCommandRan
+        buffer.VisualLineMode.CommandRunner.CommandRan |> Event.add x.OnCommandRan
+        buffer.VisualBlockMode.CommandRunner.CommandRan |> Event.add x.OnCommandRan
+        buffer.VisualCharacterMode.CommandRunner.CommandRan |> Event.add x.OnCommandRan
         buffer.SwitchedMode |> Event.add (fun _ -> _currentTextChange <- None)
 
         // Listen to the ITextBuffer.Change event.  It's important to unsubscribe to this as the ITextBuffer
@@ -22,16 +25,23 @@ type internal ChangeTracker() =
         let handler = buffer.TextBuffer.Changed |> Observable.subscribe (fun args -> x.OnTextChanged buffer args)
         buffer.TextView.Closed |> Event.add (fun _ -> handler.Dispose())
 
-    member private x.OnCommandExecuted command = 
-        match command with
-        | NonRepeatableCommand -> _last <- None
-        | RepeatableCommand(keyInputs,count,reg) -> _last <- NormalModeChange(keyInputs,count,reg) |> Some
+    member private x.OnCommandRan ((data:CommandRunData),_) = 
+        let command = data.Command
+        if command.IsMovement || command.IsSpecial then
+            // Movement and special commandsd don't participate in change tracking
+            ()
+        elif command.IsRepeatable then _last <- CommandChange data |> Some
+        else _last <- None
 
     member private x.OnTextChanged (buffer:IVimBuffer) args =
 
         // Ignore changes which do not happen on focused windows.  Doing otherwise allows
-        // random tools to break this feature
-        if buffer.TextView.HasAggregateFocus then
+        // random tools to break this feature.  
+        // 
+        // We also cannot process a text change while we are processing input.  Otherwise text
+        // changes which are made as part of a command will be processed as user input.  This 
+        // breaks the "." operator
+        if buffer.TextView.HasAggregateFocus && not buffer.IsProcessingInput then
 
             // Also at this time we only support contiguous changes (or rather a single change)
             if args.Changes.Count = 1 then

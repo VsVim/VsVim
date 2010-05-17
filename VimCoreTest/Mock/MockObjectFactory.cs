@@ -7,8 +7,9 @@ using Moq;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Operations;
 using Microsoft.VisualStudio.Text;
+using Microsoft.VisualStudio.Text.Formatting;
 
-namespace VimCoreTest.Utils
+namespace VimCore.Test.Mock
 {
     internal static class MockObjectFactory
     {
@@ -45,7 +46,7 @@ namespace VimCoreTest.Utils
             mock.Setup(x => x.RegisterMap).Returns(registerMap);
             mock.Setup(x => x.MarkMap).Returns(map);
             mock.Setup(x => x.Settings).Returns(settings);
-            mock.Setup(x => x.Host).Returns(host);
+            mock.Setup(x => x.VimHost).Returns(host);
             mock.Setup(x => x.KeyMap).Returns(keyMap);
             mock.Setup(x => x.ChangeTracker).Returns(changeTracker);
             return mock;
@@ -90,18 +91,19 @@ namespace VimCoreTest.Utils
             string name = null,
             IVim vim = null,
             IJumpList jumpList = null,
-            IVimLocalSettings settings = null )
+            IVimLocalSettings settings = null,
+            MockFactory factory = null )
         {
+            factory = factory ?? new MockFactory(MockBehavior.Strict);
             name = name ?? "test";
             vim = vim ?? CreateVim().Object;
-            jumpList = jumpList ?? (new Mock<IJumpList>(MockBehavior.Strict)).Object;
+            jumpList = jumpList ?? (factory.Create<IJumpList>().Object);
             settings = settings ?? new LocalSettings(vim.Settings, view);
-            var mock = new Mock<IVimBuffer>(MockBehavior.Strict);
+            var mock = factory.Create<IVimBuffer>();
             mock.SetupGet(x => x.TextView).Returns(view);
             mock.SetupGet(x => x.TextBuffer).Returns(() => view.TextBuffer);
             mock.SetupGet(x => x.TextSnapshot).Returns(() => view.TextSnapshot);
             mock.SetupGet(x => x.Name).Returns(name);
-            mock.SetupGet(x => x.VimHost).Returns(vim.Host);
             mock.SetupGet(x => x.Settings).Returns(settings);
             mock.SetupGet(x => x.MarkMap).Returns(vim.MarkMap);
             mock.SetupGet(x => x.RegisterMap).Returns(vim.RegisterMap);
@@ -144,6 +146,41 @@ namespace VimCoreTest.Utils
             return Tuple.Create(view, caret, selection);
         }
 
+        internal static Tuple<Mock<ITextView>,MockFactory> CreateTextViewWithVisibleLines(
+            ITextBuffer buffer, 
+            int startLine, 
+            int? endLine = null,
+            int? caretPosition = null)
+        {
+            var factory = new MockFactory(MockBehavior.Strict);
+            var endLineValue = endLine ?? startLine;
+            var caretPositionValue = caretPosition ?? buffer.GetLine(startLine).Start.Position;
+            var caret = factory.Create<ITextCaret>();
+            caret.SetupGet(x => x.Position).Returns(
+                new CaretPosition(
+                    new VirtualSnapshotPoint(buffer.GetPoint(caretPositionValue)),
+                    factory.Create<IMappingPoint>().Object,
+                    PositionAffinity.Predecessor));
+
+            var firstLine = factory.Create<ITextViewLine>();
+            firstLine.SetupGet(x => x.Start).Returns(buffer.GetLine(startLine).Start);
+
+            var lastLine = factory.Create<ITextViewLine>();
+            lastLine.SetupGet(x => x.End).Returns(buffer.GetLine(endLineValue).End);
+
+            var lines = factory.Create<ITextViewLineCollection>();
+            lines.SetupGet(x => x.FirstVisibleLine).Returns(firstLine.Object);
+            lines.SetupGet(x => x.LastVisibleLine).Returns(lastLine.Object);
+
+            var view = factory.Create<ITextView>();
+            view.SetupGet(x => x.TextBuffer).Returns(buffer);
+            view.SetupGet(x => x.TextViewLines).Returns(lines.Object);
+            view.SetupGet(x => x.Caret).Returns(caret.Object);
+            view.SetupGet(x => x.InLayout).Returns(false);
+            view.SetupGet(x => x.TextSnapshot).Returns(() => buffer.CurrentSnapshot);
+            return Tuple.Create(view, factory);
+        }
+
         internal static Mock<ITextBuffer> CreateTextBuffer(bool addSnapshot=false)
         {
             var mock = new Mock<ITextBuffer>(MockBehavior.Strict);
@@ -177,12 +214,11 @@ namespace VimCoreTest.Utils
             return mock;
         }
 
-        internal static SnapshotPoint CreateSnapshotPoint(
-            int position,
-            ITextSnapshot snapshot = null)
+        internal static SnapshotPoint CreateSnapshotPoint( int position )
         {
-            snapshot = snapshot ?? CreateTextSnapshot(position + 1).Object;
-            return new SnapshotPoint(snapshot, position);
+            var snapshot = CreateTextSnapshot(position + 1);
+            snapshot.Setup(x => x.GetText(It.IsAny<int>(), It.IsAny<int>())).Returns("Mocked ToString()");
+            return new SnapshotPoint(snapshot.Object, position);
         }
     }
 }

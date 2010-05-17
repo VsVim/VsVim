@@ -13,7 +13,7 @@ using Microsoft.VisualStudio.Text;
 using VsVim.Properties;
 using Microsoft.VisualStudio.TextManager.Interop;
 using Microsoft.VisualStudio.Editor;
-using VimCoreTest.Utils;
+using VimCore.Test.Utils;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Text.Operations;
 using Microsoft.VisualStudio.Shell;
@@ -54,72 +54,6 @@ namespace VsVimTest
             _dte = null;
             _host = null;
             _hostRaw = null;
-        }
-
-        [Test]
-        public void Undo1()
-        {
-            Create();
-            var buffer = new Mock<ITextBuffer>(MockBehavior.Strict);
-            _undoManagerProvider.Setup(x => x.GetTextBufferUndoManager(buffer.Object)).Returns((ITextBufferUndoManager)null).Verifiable();
-            _statusBar
-                .SetupSet(x => x.Text)
-                .Callback(msg => Assert.AreEqual(Resources.VimHost_NoUndoRedoSupport, msg))
-                .Verifiable();
-            _host.Undo(buffer.Object, 1);
-            _undoManagerProvider.Verify();
-            _statusBar.Verify();
-        }
-
-        [Test]
-        public void Undo2()
-        {
-            Create();
-            var buffer = new Mock<ITextBuffer>(MockBehavior.Strict);
-            var manager = new Mock<ITextBufferUndoManager>(MockBehavior.Strict);
-            var history = new Mock<ITextUndoHistory>(MockBehavior.Strict);
-            history.SetupGet(x => x.CanUndo).Throws(new NotSupportedException());
-            manager.SetupGet(x => x.TextBufferUndoHistory).Returns(history.Object);
-            _undoManagerProvider.Setup(x => x.GetTextBufferUndoManager(buffer.Object)).Returns(manager.Object);
-            _statusBar
-                .SetupSet(x => x.Text)
-                .Callback(msg => Assert.AreEqual(Resources.VimHost_CannotUndo, msg))
-                .Verifiable();
-            _host.Undo(buffer.Object, 1);
-            _statusBar.Verify();
-        }
-
-        [Test]
-        public void Redo1()
-        {
-            Create();
-            var buffer = new Mock<ITextBuffer>(MockBehavior.Strict);
-            _undoManagerProvider.Setup(x => x.GetTextBufferUndoManager(buffer.Object)).Returns((ITextBufferUndoManager)null).Verifiable();
-            _statusBar
-                .SetupSet(x => x.Text)
-                .Callback(msg => Assert.AreEqual(Resources.VimHost_NoUndoRedoSupport, msg))
-                .Verifiable();
-            _host.Redo(buffer.Object, 1);
-            _undoManagerProvider.Verify();
-            _statusBar.Verify();
-        }
-
-        [Test]
-        public void Redo2()
-        {
-            Create();
-            var buffer = new Mock<ITextBuffer>(MockBehavior.Strict);
-            var manager = new Mock<ITextBufferUndoManager>(MockBehavior.Strict);
-            var history = new Mock<ITextUndoHistory>(MockBehavior.Strict);
-            history.SetupGet(x => x.CanRedo).Throws(new NotSupportedException());
-            manager.SetupGet(x => x.TextBufferUndoHistory).Returns(history.Object);
-            _undoManagerProvider.Setup(x => x.GetTextBufferUndoManager(buffer.Object)).Returns(manager.Object);
-            _statusBar
-                .SetupSet(x => x.Text)
-                .Callback(msg => Assert.AreEqual(Resources.VimHost_CannotRedo, msg))
-                .Verifiable();
-            _host.Redo(buffer.Object, 1);
-            _statusBar.Verify();
         }
 
         [Test]

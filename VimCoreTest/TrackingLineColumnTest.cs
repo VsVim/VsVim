@@ -4,11 +4,12 @@ using System.Linq;
 using System.Text;
 using NUnit.Framework;
 using Microsoft.VisualStudio.Text;
-using VimCoreTest.Utils;
+using VimCore.Test.Utils;
 using Vim;
 using Microsoft.FSharp.Core;
+using Vim.Extensions;
 
-namespace VimCoreTest
+namespace VimCore.Test
 {
     [TestFixture]
     public class TrackingLineColumnTest

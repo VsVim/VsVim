@@ -7,14 +7,15 @@ using Vim;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text;
-using VimCoreTest.Utils;
+using VimCore.Test.Utils;
 using Vim.Modes;
 using Vim.Modes.Command;
 using Moq;
 using Microsoft.VisualStudio.Text.Operations;
 using Microsoft.VisualStudio.Text.Outlining;
+using Vim.Extensions;
 
-namespace VimCoreTest
+namespace VimCore.Test
 {
     [TestFixture]
     public class Command_DefaultOperations
@@ -29,6 +30,7 @@ namespace VimCoreTest
         private Mock<IVimLocalSettings> _settings;
         private Mock<IKeyMap> _keyMap;
         private Mock<IOutliningManager> _outlining;
+        private Mock<IUndoRedoOperations> _undoRedoOperations;
 
         private void Create(params string[] lines)
         {
@@ -40,7 +42,8 @@ namespace VimCoreTest
             _keyMap = new Mock<IKeyMap>(MockBehavior.Strict);
             _statusUtil = new Mock<IStatusUtil>(MockBehavior.Strict);
             _outlining = new Mock<IOutliningManager>(MockBehavior.Strict);
-            _operationsRaw = new DefaultOperations(_view, _editOpts.Object, _outlining.Object, _host.Object, _statusUtil.Object,_jumpList.Object, _settings.Object, _keyMap.Object);
+            _undoRedoOperations = new Mock<IUndoRedoOperations>(MockBehavior.Strict);
+            _operationsRaw = new DefaultOperations(_view, _editOpts.Object, _outlining.Object, _host.Object, _statusUtil.Object,_jumpList.Object, _settings.Object, _keyMap.Object, _undoRedoOperations.Object);
             _operations = _operationsRaw;
         }
 

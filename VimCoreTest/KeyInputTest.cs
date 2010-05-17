@@ -3,11 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using NUnit.Framework;
-using VimCoreTest;
+using VimCore.Test;
 using Vim;
 using System.Windows.Input;
 
-namespace VimCoreTest
+namespace VimCore.Test
 {
     [TestFixture]
     public class KeyInputTest

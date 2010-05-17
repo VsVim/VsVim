@@ -7,42 +7,38 @@ using Vim;
 using System.Windows.Input;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text;
-using VimCoreTest.Utils;
+using VimCore.Test.Utils;
+using Moq;
+using Vim.Extensions;
+using Microsoft.FSharp.Core;
 
-namespace VimCoreTest
+namespace VimCore.Test
 {
     [TestFixture]
     public class MotionCaptureTest
     {
-        static string[] s_lines = new string[]
-            {
-                "summary description for this line",
-                "some other line",
-                "running out of things to make up"
-            };
-
-        ITextBuffer _buffer = null;
-        ITextSnapshot _snapshot = null;
+        private Mock<ITextView> _textView;
+        private Mock<IMotionUtil> _util;
+        private MotionCapture _captureRaw;
+        private IMotionCapture _capture;
 
         [SetUp]
-        public void Init()
+        public void Create()
         {
-            Create(s_lines);
+            _util = new Mock<IMotionUtil>(MockBehavior.Strict);
+            _textView = Mock.MockObjectFactory.CreateTextView();
+            _captureRaw = new MotionCapture(_textView.Object, _util.Object);
+            _capture = _captureRaw;
         }
 
-        public void Create(params string[] lines)
+        internal MotionResult Process(string input, int? count)
         {
-            _buffer = Utils.EditorUtil.CreateBuffer(lines);
-            _snapshot = _buffer.CurrentSnapshot;
-        }
-
-        internal MotionResult Process(int startPosition, int count, string input)
-        {
-            Assert.IsTrue(count > 0, "this will cause an almost infinite loop");
-            var res = MotionCapture.ProcessInput(
-                new SnapshotPoint(_snapshot, startPosition),
+            var realCount = count.HasValue
+                ? FSharpOption.Create(count.Value)
+                : FSharpOption<int>.None;
+            var res = _capture.GetMotion(
                 InputUtil.CharToKeyInput(input[0]),
-                count);
+                realCount);
             foreach (var cur in input.Skip(1))
             {
                 Assert.IsTrue(res.IsNeedMoreInput);
@@ -51,409 +47,370 @@ namespace VimCoreTest
             }
 
             return res;
-       }
-
-        internal void ProcessComplete(int startPosition, int count, string input, string match, MotionKind motionKind, OperationKind opKind)
-        {
-            var res = Process(startPosition, count, input);
-            var tuple = res.AsComplete().Item;
-            Assert.IsTrue(res.IsComplete);
-            Assert.AreEqual(match, tuple.Item1.GetText());
-            Assert.AreEqual(motionKind, tuple.Item2);
-            Assert.AreEqual(opKind, tuple.Item3);
         }
 
+        internal void ProcessComplete(string input, int? count=null)
+        {
+            Assert.IsTrue(Process(input, count).IsComplete);
+        }
+
+        internal MotionData CreateMotionData()
+        {
+            var point = Mock.MockObjectFactory.CreateSnapshotPoint(42);
+            return new MotionData(
+                new SnapshotSpan(point, point),
+                true,
+                MotionKind.Inclusive,
+                OperationKind.CharacterWise,
+                FSharpOption.Create(42));
+        }
 
         [Test]
         public void Word1()
         {
-            Create("foo bar");
-            var res = MotionCapture.ProcessInput(new SnapshotPoint(_snapshot, 0), InputUtil.CharToKeyInput('w'), 1);
-            Assert.IsTrue(res.IsComplete);
-            var res2 = (MotionResult.Complete)res;
-            var span = res2.Item.Item1;
-            Assert.AreEqual(4, span.Length);
-            Assert.AreEqual("foo ", span.GetText());
-            Assert.AreEqual(MotionKind.Exclusive, res2.Item.Item2);
-            Assert.AreEqual(OperationKind.CharacterWise, res2.Item.Item3);
+            _util
+                .Setup(x => x.WordForward(WordKind.NormalWord, 1))
+                .Returns(CreateMotionData())
+                .Verifiable();
+            ProcessComplete("w", 1);
+            _util.Verify();
         }
-
 
         [Test]
         public void Word2()
         {
-            Create("foo bar");
-            var res = MotionCapture.ProcessInput(new SnapshotPoint(_snapshot, 1), InputUtil.CharToKeyInput('w'), 1);
-            Assert.IsTrue(res.IsComplete);
-            var span = res.AsComplete().Item.Item1;
-            Assert.AreEqual(3, span.Length);
-            Assert.AreEqual("oo ", span.GetText());
-        }
-
-        [Test, Description("Word motion with a count")]
-        public void Word3()
-        {
-            Create("foo bar baz");
-            var res = Process(0, 2, "w");
-            Assert.IsTrue(res.IsComplete);
-            Assert.AreEqual("foo bar ", res.AsComplete().Item.Item1.GetText());
-        }
-
-        [Test, Description("Count across lines")]
-        public void Word4()
-        {
-            Create("foo bar", "baz jaz");
-            var res = Process(0, 3, "w");
-            Assert.IsTrue(res.IsComplete);
-            Assert.AreEqual("foo bar" + Environment.NewLine + "baz ", res.AsComplete().Item.Item1.GetText());
-        }
-
-        [Test, Description("Count off the end of the buffer")]
-        public void Word5()
-        {
-            Create("foo bar");
-            var res = Process(0, 10, "w");
-            Assert.IsTrue(res.IsComplete);
-            Assert.AreEqual("foo bar", res.AsComplete().Item.Item1.GetText());
-        }
-
-        [Test]
-        public void Word6()
-        {
-            Create("foo bar", "baz");
-            var res = Process(4, 1, "w");
-            Assert.IsTrue(res.IsComplete);
-            Assert.AreEqual("bar", res.AsComplete().Item.Item1.GetText());
-        }
-
-        [Test]
-        public void Word7()
-        {
-            Create("foo bar", "  baz");
-            var res = Process(4, 1, "w");
-            Assert.IsTrue(res.IsComplete);
-            Assert.AreEqual("bar", res.AsComplete().Item.Item1.GetText());
+            _util
+                .Setup(x => x.WordForward(WordKind.NormalWord, 2))
+                .Returns(CreateMotionData())
+                .Verifiable();
+            ProcessComplete("w", 2);
         }
 
         [Test]
         public void BadInput()
         {
-            Create("foo bar");
-            var res = MotionCapture.ProcessInput(new SnapshotPoint(_snapshot, 0), InputUtil.CharToKeyInput('z'), 0);
-            Assert.IsTrue(res.IsInvalidMotion);
-            res = res.AsInvalidMotion().Item2.Invoke(InputUtil.VimKeyToKeyInput(VimKey.EscapeKey));
-            Assert.IsTrue(res.IsCancel);
-        }
-
-
-        [Test, Description("Keep gettnig input until it's escaped")]
-        public void BadInput2()
-        {
-            Create("foo bar");
-            var res = MotionCapture.ProcessInput(new SnapshotPoint(_snapshot, 0), InputUtil.CharToKeyInput('z'), 0);
-            Assert.IsTrue(res.IsInvalidMotion);
-            res = res.AsInvalidMotion().Item2.Invoke(InputUtil.CharToKeyInput('a'));
-            Assert.IsTrue(res.IsInvalidMotion);
-            res = res.AsInvalidMotion().Item2.Invoke(InputUtil.VimKeyToKeyInput(VimKey.EscapeKey));
-            Assert.IsTrue(res.IsCancel);
+            var res = Process("z", 1);
+            Assert.IsTrue(res.IsError);
         }
 
         [Test]
-        public void EndOfLine1()
+        public void Motion_Dollar1()
         {
-            Create("foo bar", "baz");
-            var ki = InputUtil.CharToKeyInput('$');
-            var res = MotionCapture.ProcessInput(new SnapshotPoint(_snapshot, 0), ki, 0);
-            Assert.IsTrue(res.IsComplete);
-            var span = res.AsComplete().Item.Item1;
-            Assert.AreEqual("foo bar", span.GetText());
-            var tuple = res.AsComplete().Item;
-            Assert.AreEqual(MotionKind.Inclusive, tuple.Item2);
-            Assert.AreEqual(OperationKind.CharacterWise, tuple.Item3);
+            _util
+                .Setup(x => x.EndOfLine(1))
+                .Returns(CreateMotionData())
+                .Verifiable();
+            ProcessComplete("$", 1);
+            _util.Verify();
         }
 
         [Test]
-        public void EndOfLine2()
+        public void Motion_Dollar2()
         {
-            Create("foo bar", "baz");
-            var ki = InputUtil.CharToKeyInput('$');
-            var res = MotionCapture.ProcessInput(new SnapshotPoint(_snapshot, 1), ki, 0);
-            Assert.IsTrue(res.IsComplete);
-            var span = res.AsComplete().Item.Item1;
-            Assert.AreEqual("oo bar", span.GetText());
+            _util
+                .Setup(x => x.EndOfLine(2))
+                .Returns(CreateMotionData())
+                .Verifiable();
+            ProcessComplete("$", 2);
+            _util.Verify();
         }
 
         [Test]
-        public void EndOfLineCount1()
+        public void Motion_End()
         {
-            Create("foo", "bar", "baz");
-            var ki = InputUtil.CharToKeyInput('$');
-            var res = MotionCapture.ProcessInput(new SnapshotPoint(_snapshot, 0), ki, 2);
-            Assert.IsTrue(res.IsComplete);
-            var tuple = res.AsComplete().Item;
-            Assert.AreEqual("foo" + Environment.NewLine + "bar", tuple.Item1.GetText());
-            Assert.AreEqual(MotionKind.Inclusive, tuple.Item2);
-            Assert.AreEqual(OperationKind.CharacterWise, tuple.Item3);
+            _util
+                .Setup(x => x.EndOfLine(1))
+                .Returns(CreateMotionData())
+                .Verifiable();
+            _capture.GetMotion(InputUtil.VimKeyToKeyInput(VimKey.EndKey), FSharpOption<int>.None);
+            _util.Verify();
         }
 
         [Test]
-        public void EndOfLineCount2()
+        public void BeginingOfLine1()
         {
-            Create("foo", "bar", "baz", "jar");
-            var ki = InputUtil.CharToKeyInput('$');
-            var res = MotionCapture.ProcessInput(new SnapshotPoint(_snapshot, 0), ki, 3);
-            Assert.IsTrue(res.IsComplete);
-            var tuple = res.AsComplete().Item;
-            Assert.AreEqual("foo" + Environment.NewLine + "bar" + Environment.NewLine +"baz", tuple.Item1.GetText());
-            Assert.AreEqual(MotionKind.Inclusive, tuple.Item2);
-            Assert.AreEqual(OperationKind.CharacterWise, tuple.Item3);
-        }
-
-        [Test,Description("Make sure counts past the end of the buffer don't crash")]
-        public void EndOfLineCount3()
-        {
-            Create("foo");
-            var ki = InputUtil.CharToKeyInput('$');
-            var res = MotionCapture.ProcessInput(new SnapshotPoint(_snapshot, 0), ki, 300);
-            Assert.IsTrue(res.IsComplete);
-            var tuple = res.AsComplete().Item;
-            Assert.AreEqual("foo", tuple.Item1.GetText());
+            _util
+                .Setup(x => x.BeginingOfLine())
+                .Returns(CreateMotionData())
+                .Verifiable();
+            ProcessComplete("0", 1);
+            _util.Verify();
         }
 
         [Test]
-        public void StartOfLine1()
+        public void FirstNonWhitespaceOnLine1()
         {
-            Create("foo");
-            var ki = InputUtil.CharToKeyInput('^');
-            var res = MotionCapture.ProcessInput(_buffer.CurrentSnapshot.GetLineFromLineNumber(0).End, ki, 1);
-            Assert.IsTrue(res.IsComplete);
-            var tuple = res.AsComplete().Item;
-            Assert.AreEqual("foo", tuple.Item1.GetText());
-            Assert.AreEqual(MotionKind.Exclusive, tuple.Item2);
-            Assert.AreEqual(OperationKind.CharacterWise, tuple.Item3);
+            _util
+                .Setup(x => x.FirstNonWhitespaceOnLine())
+                .Returns(CreateMotionData())
+                .Verifiable();
+            ProcessComplete("^", 1);
+            _util.Verify();
         }
 
-        [Test, Description("Make sure it goes to the first non-whitespace character")]
-        public void StartOfLine2()
+
+        [Test]
+        public void Motion_aw1()
         {
-            Create("  foo");
-            var ki = InputUtil.CharToKeyInput('^');
-            var res = MotionCapture.ProcessInput(_buffer.CurrentSnapshot.GetLineFromLineNumber(0).End, ki, 1);
-            Assert.IsTrue(res.IsComplete);
-            var tuple = res.AsComplete().Item;
-            Assert.AreEqual("foo", tuple.Item1.GetText());
-            Assert.AreEqual(MotionKind.Exclusive, tuple.Item2);
-            Assert.AreEqual(OperationKind.CharacterWise, tuple.Item3);
+            _util
+                .Setup(x => x.AllWord(WordKind.NormalWord, 1))
+                .Returns(CreateMotionData())
+                .Verifiable();
+            ProcessComplete("aw", 1);
+            _util.Verify();
         }
 
         [Test]
-        public void Count1()
+        public void Motion_aw2()
         {
-            Create("foo bar baz");
-            var res  = Process(0, 1, "2w");
-            Assert.IsTrue(res.IsComplete);
-            var span = res.AsComplete().Item.Item1;
-            Assert.AreEqual("foo bar ", span.GetText());
-        }
-
-        [Test, Description("Count of 1")]
-        public void Count2()
-        {
-            Create("foo bar baz");
-            var res = Process(0, 1, "1w");
-            Assert.IsTrue(res.IsComplete);
-            var span = res.AsComplete().Item.Item1;
-            Assert.AreEqual("foo ", span.GetText());
+            _util
+                .Setup(x => x.AllWord(WordKind.NormalWord, 2))
+                .Returns(CreateMotionData())
+                .Verifiable();
+            ProcessComplete("aw", 2);
+            _util.Verify();
         }
 
         [Test]
-        public void AllWord1()
+        public void Motion_H()
         {
-            Create("foo bar");
-            var res = Process(0, 1, "aw");
-            Assert.IsTrue(res.IsComplete);
-            Assert.AreEqual("foo ", res.AsComplete().Item.Item1.GetText());
+            _util
+                .Setup(x => x.LineFromTopOfVisibleWindow(FSharpOption<int>.None))
+                .Returns(CreateMotionData())
+                .Verifiable();
+            ProcessComplete("H");
+            _util.Verify();
         }
 
         [Test]
-        public void AllWord2()
+        public void Motion_aW1()
         {
-            Create("foo bar");
-            var res = Process(1, 1, "aw");
-            Assert.IsTrue(res.IsComplete);
-            Assert.AreEqual("foo ", res.AsComplete().Item.Item1.GetText());
-        }
-
-        [Test]
-        public void AllWord3()
-        {
-            Create("foo bar baz");
-            var res = Process(1, 1, "2aw");
-            Assert.IsTrue(res.IsComplete);
-            Assert.AreEqual("foo bar ", res.AsComplete().Item.Item1.GetText());
+            _util
+                .Setup(x => x.AllWord(WordKind.BigWord, 1))
+                .Returns(CreateMotionData())
+                .Verifiable();
+            ProcessComplete("aW",1);
+            _util.Verify();
         }
 
         [Test]
         public void CharLeft1()
         {
-            Create("foo bar");
-            var res = Process(2, 1, "2h");
-            Assert.IsTrue(res.IsComplete);
-            Assert.AreEqual("fo", res.AsComplete().Item.Item1.GetText());
+            _util
+                .Setup(x => x.CharLeft(1))
+                .Returns(FSharpOption.Create(CreateMotionData()))
+                .Verifiable();
+            ProcessComplete("h",1);
+            _util.Verify();
         }
 
-        [Test, Description("Make sure that counts are multiplied")]
+        [Test]
         public void CharLeft2()
         {
-            Create("food bar");
-            var res = Process(4, 2, "2h");
-            Assert.AreEqual("food", res.AsComplete().Item.Item1.GetText());
+            _util
+                .Setup(x => x.CharLeft(2))
+                .Returns(FSharpOption.Create(CreateMotionData()))
+                .Verifiable();
+            ProcessComplete("2h",1);
+            _util.Verify();
         }
 
         [Test]
         public void CharRight1()
         {
-            Create("foo");
-            var res = Process(0, 1, "2l");
-            Assert.AreEqual("fo", res.AsComplete().Item.Item1.GetText());
-            Assert.AreEqual(OperationKind.CharacterWise, res.AsComplete().Item.Item3);
+            _util
+                .Setup(x => x.CharRight(2))
+                .Returns(FSharpOption.Create(CreateMotionData()))
+                .Verifiable();
+            ProcessComplete("2l",1);
+            _util.Verify();
         }
 
         [Test]
         public void LineUp1()
         {
-            Create("foo", "bar");
-            var res = Process(_snapshot.GetLineFromLineNumber(1).Start.Position, 1, "k");
-            Assert.AreEqual(OperationKind.LineWise, res.AsComplete().Item.Item3);
-            Assert.AreEqual("foo" + Environment.NewLine + "bar", res.AsComplete().Item.Item1.GetText());
+            _util
+                .Setup(x => x.LineUp(1))
+                .Returns(CreateMotionData())
+                .Verifiable();
+            ProcessComplete("k", 1);
+            _util.Verify();
         }
 
         [Test]
         public void EndOfWord1()
         {
-            Create("foo bar");
-            var res = Process(new SnapshotPoint(_snapshot, 0), 1, "e").AsComplete().Item;
-            Assert.AreEqual(MotionKind.Inclusive, res.Item2);
-            Assert.AreEqual(OperationKind.CharacterWise, res.Item3);
-            Assert.AreEqual(new SnapshotSpan(_snapshot, 0, 3), res.Item1);
+            _util
+                .Setup(x => x.EndOfWord(WordKind.NormalWord, 1))
+                .Returns(CreateMotionData())
+                .Verifiable();
+            ProcessComplete("e", 1);
+            _util.Verify();
         }
 
-        [Test, Description("Needs to cross the end of the line")]
         public void EndOfWord2()
         {
-            Create("foo   ","bar");
-            var point = new SnapshotPoint(_snapshot, 4);
-            var res = Process(point, 1, "e").AsComplete().Item;
-            var span = new SnapshotSpan(
-                point,
-                _snapshot.GetLineFromLineNumber(1).Start.Add(3));
-            Assert.AreEqual(span, res.Item1);
-            Assert.AreEqual(MotionKind.Inclusive, res.Item2);
-            Assert.AreEqual(OperationKind.CharacterWise, res.Item3);
-        }
-
-        [Test]
-        public void EndOfWord3()
-        {
-            Create("foo bar baz jaz");
-            var res = Process(new SnapshotPoint(_snapshot, 0), 2, "e").AsComplete().Item;
-            var span = new SnapshotSpan(_snapshot, 0, 7);
-            Assert.AreEqual(span, res.Item1);
-            Assert.AreEqual(MotionKind.Inclusive, res.Item2);
-            Assert.AreEqual(OperationKind.CharacterWise, res.Item3);
-        }
-
-        [Test, Description("Work across blank lines")]
-        public void EndOfWord4()
-        {
-            Create("foo   ", "", "bar");
-            var point = new SnapshotPoint(_snapshot, 4);
-            var res = Process(point, 1, "e").AsComplete().Item;
-            var span = new SnapshotSpan(
-                point,
-                _snapshot.GetLineFromLineNumber(2).Start.Add(3));
-            Assert.AreEqual(span, res.Item1);
-            Assert.AreEqual(MotionKind.Inclusive, res.Item2);
-            Assert.AreEqual(OperationKind.CharacterWise, res.Item3);
-        }
-
-        [Test, Description("Go off the end ofthe buffer")]
-        public void EndOfWord5()
-        {
-            Create("foo   ", "", "bar");
-            var point = new SnapshotPoint(_snapshot, 4);
-            var res = Process(point, 400, "e").AsComplete().Item;
-            var span = new SnapshotSpan(
-                point,
-                SnapshotUtil.GetEndPoint(_snapshot));
-            Assert.AreEqual(span, res.Item1);
-            Assert.AreEqual(MotionKind.Inclusive, res.Item2);
-            Assert.AreEqual(OperationKind.CharacterWise, res.Item3);
+            _util
+                .Setup(x => x.EndOfWord(WordKind.BigWord, 1))
+                .Returns(CreateMotionData())
+                .Verifiable();
+            ProcessComplete("E", 1);
+            _util.Verify();
         }
 
         [Test]
         public void ForwardChar1()
         {
-            Create("foo bar baz");
-            ProcessComplete(0,1,"fo", "fo", MotionKind.Inclusive, OperationKind.CharacterWise);
-            ProcessComplete(0,1,"ff", "f", MotionKind.Inclusive, OperationKind.CharacterWise);
-            ProcessComplete(1,1,"fo", "o", MotionKind.Inclusive, OperationKind.CharacterWise);
-            ProcessComplete(1,1,"fb", "oo b", MotionKind.Inclusive, OperationKind.CharacterWise);
-        }
-
-        [Test]
-        public void ForwardChar2()
-        {
-            Create("foo bar baz");
-            var res = Process(0, 1, "fq");
-            Assert.IsTrue(res.IsError);
-        }
-
-        [Test]
-        public void ForwardChar3()
-        {
-            Create("foo bar baz");
-            ProcessComplete(0, 2, "fo", "foo", MotionKind.Inclusive, OperationKind.CharacterWise);
-        }
-
-        [Test,Description("Bad count gets nothing in gVim")]
-        public void ForwardChar4()
-        {
-            Create("foo bar baz");
-            var res = Process(0, 300, "fo");
-            Assert.IsTrue(res.IsError);
+            _util
+                .Setup(x => x.ForwardChar('c', 1))
+                .Returns(FSharpOption.Create(CreateMotionData()))
+                .Verifiable();
+            ProcessComplete("fc", 1);
+            _util.Verify();
         }
 
         [Test]
         public void ForwardTillChar1()
         {
-            Create("foo bar baz");
-            ProcessComplete(0,1,"to", "f", MotionKind.Inclusive, OperationKind.CharacterWise);
-            ProcessComplete(1,1,"tb", "oo ", MotionKind.Inclusive, OperationKind.CharacterWise);
+            _util
+                .Setup(x => x.ForwardTillChar('c', 1))
+                .Returns(FSharpOption.Create(CreateMotionData()))
+                .Verifiable();
+            ProcessComplete("tc", 1);
+            _util.Verify();
         }
 
         [Test]
-        public void ForwardTillChar2()
+        public void BackwardCharMotion1()
         {
-            Create("foo bar baz");
-            var res = Process(0, 1, "tq");
-            Assert.IsTrue(res.IsError);
+            _util
+                .Setup(x => x.BackwardChar('c', 1))
+                .Returns(FSharpOption.Create(CreateMotionData()))
+                .Verifiable();
+            ProcessComplete("Fc", 1);
+            _util.Verify();
         }
 
         [Test]
-        public void ForwardTillChar3()
+        public void BackwardTillCharMotion1()
         {
-            Create("foo bar baz");
-            ProcessComplete(0, 2, "to", "fo", MotionKind.Inclusive, OperationKind.CharacterWise);
+            _util
+                .Setup(x => x.BackwardTillChar('c', 1))
+                .Returns(FSharpOption.Create(CreateMotionData()))
+                .Verifiable();
+            ProcessComplete("Tc", 1);
+            _util.Verify();
         }
 
-        [Test,Description("Bad count gets nothing in gVim")]
-        public void ForwardTillChar4()
+        [Test]
+        public void Motion_G1()
         {
-            Create("foo bar baz");
-            var res = Process(0, 300, "to");
-            Assert.IsTrue(res.IsError);
+            _util
+                .Setup(x => x.LineOrLastToFirstNonWhitespace( FSharpOption<int>.None))
+                .Returns(CreateMotionData())
+                .Verifiable();
+            ProcessComplete("G");
+            _util.Verify();
         }
-    }   
-    
+
+        [Test]
+        public void Motion_G2()
+        {
+            _util
+                .Setup(x => x.LineOrLastToFirstNonWhitespace(FSharpOption.Create(1)))
+                .Returns(CreateMotionData())
+                .Verifiable();
+            ProcessComplete("1G");
+            _util.Verify();
+        }
+
+        [Test]
+        public void Motion_G3()
+        {
+            _util
+                .Setup(x => x.LineOrLastToFirstNonWhitespace( FSharpOption.Create(42)))
+                .Returns(CreateMotionData())
+                .Verifiable();
+            ProcessComplete("42G");
+            _util.Verify();
+        }
+
+        [Test]
+        public void Motion_gg1()
+        {
+            _util
+                .Setup(x => x.LineOrFirstToFirstNonWhitespace(FSharpOption<int>.None))
+                .Returns(CreateMotionData())
+                .Verifiable();
+            ProcessComplete("gg");
+            _util.Verify();
+        }
+
+        [Test]
+        public void Motion_gg2()
+        {
+            _util
+                .Setup(x => x.LineOrFirstToFirstNonWhitespace( FSharpOption.Create(2)))
+                .Returns(CreateMotionData())
+                .Verifiable();
+            ProcessComplete("2gg");
+            _util.Verify();
+        }
+
+        [Test]
+        public void Motion_g_1()
+        {
+            _util
+                .Setup(x => x.LastNonWhitespaceOnLine(1))
+                .Returns(CreateMotionData())
+                .Verifiable();
+            ProcessComplete("g_");
+            _util.Verify();
+        }
+
+        [Test]
+        public void Motion_g_2()
+        {
+            _util
+                .Setup(x => x.LastNonWhitespaceOnLine(2))
+                .Returns(CreateMotionData())
+                .Verifiable();
+            ProcessComplete("2g_");
+            _util.Verify();
+        }
+
+        [Test]
+        public void Motion_M_1()
+        {
+            _util
+                .Setup(x => x.LineInMiddleOfVisibleWindow())
+                .Returns(CreateMotionData())
+                .Verifiable();
+            ProcessComplete("M");
+            _util.Verify();
+        }
+
+        [Test]
+        public void Motion_L_1()
+        {
+            _util
+                .Setup(x => x.LineFromBottomOfVisibleWindow(FSharpOption.Create(2)))
+                .Returns(CreateMotionData())
+                .Verifiable();
+            ProcessComplete("2L");
+            _util.Verify();
+        }
+
+        [Test]
+        public void Motion_L_2()
+        {
+            _util
+                .Setup(x => x.LineFromBottomOfVisibleWindow(FSharpOption<int>.None))
+                .Returns(CreateMotionData())
+                .Verifiable();
+            ProcessComplete("L");
+            _util.Verify();
+        }
+    }
+
 }

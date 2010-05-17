@@ -8,7 +8,7 @@ using Microsoft.VisualStudio.Language.Intellisense;
 using Microsoft.VisualStudio.Text.Editor;
 using Vim;
 
-namespace VimCoreTest
+namespace VimCore.Test
 {
     [TestFixture]
     public class DisplayWindowBrokerTest

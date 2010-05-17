@@ -14,17 +14,6 @@ type Result =
     | Succeeded
     | Failed of string
 
-type IStatusUtil =
-
-    /// Raised when there is a special status message that needs to be reported
-    abstract OnStatus : string -> unit
-
-    /// Raised when there is a long status message that needs to be reported
-    abstract OnStatusLong : string seq -> unit 
-
-    /// Raised when there is an error message that needs to be reported
-    abstract OnError : string -> unit 
-
 /// Common operations
 type ICommonOperations =
 
@@ -33,6 +22,18 @@ type ICommonOperations =
 
     /// Associated IEditorOperations
     abstract EditorOperations : IEditorOperations
+
+    /// Run the beep operation
+    abstract Beep : unit -> unit
+
+    /// Undo the buffer changes "count" times
+    abstract Undo : count:int -> unit
+
+    /// Redo the buffer changes "count" times
+    abstract Redo : count:int -> unit
+
+    /// Apply the specified edit for all provided SnapshotSpan's as a single undo transaction
+    abstract ApplyAsSingleEdit : description:string option -> SnapshotSpan seq -> (SnapshotSpan -> unit) -> unit
 
     /// Implements the Join command.  Returns false in the case the join command cannot
     /// be complete (such as joining at the end of the buffer)
@@ -58,16 +59,19 @@ type ICommonOperations =
     /// Ensure the caret is on the visible screen
     abstract EnsureCaretOnScreen : unit -> unit
 
-    /// Ensure the caret is on screen and that it is not in a collasped region
+    /// Ensure the caret is on screen and that it is not in a collapsed region
     abstract EnsureCaretOnScreenAndTextExpanded : unit -> unit
 
     /// Move the caret to a given point on the screen
     abstract MoveCaretToPoint : SnapshotPoint -> unit
 
+    /// Move the caret to the MotionData value
+    abstract MoveCaretToMotionData : MotionData -> unit
+
     /// Move the caret count spaces left on the same line
     abstract MoveCaretLeft : count : int -> unit
 
-    /// Move the cursor countt spaces right on the same line
+    /// Move the cursor count spaces right on the same line
     abstract MoveCaretRight : count : int -> unit
 
     /// Move the cursor up count lines
@@ -133,11 +137,12 @@ type ICommonOperations =
     /// Shift the count lines starting at the cursor left by the "ShiftWidth" setting
     abstract ShiftLinesLeft :  count:int -> unit
 
-    /// Shift the lines in the span to the right by the "ShiftWidth" setting
-    abstract ShiftSpanRight : SnapshotSpan -> unit
+    /// Shift the lines in the span to the right by the "ShiftWidth" setting multiplied
+    /// by the multiplier
+    abstract ShiftSpanRight : multiplier:int -> SnapshotSpan -> unit
 
     /// Shift the lines in the span to the right by the "ShiftWidth" setting
-    abstract ShiftSpanLeft : SnapshotSpan -> unit
+    abstract ShiftSpanLeft : multiplier:int -> SnapshotSpan -> unit
 
     /// Save the current document
     abstract Save : unit -> unit

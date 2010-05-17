@@ -83,7 +83,8 @@ type internal CommandProcessor
     ( 
         _data : IVimBuffer, 
         _operations : IOperations,
-        _statusUtil : IStatusUtil ) as this = 
+        _statusUtil : IStatusUtil,
+        _fileSystem : IFileSystem ) as this = 
 
     let mutable _command : System.String = System.String.Empty
 
@@ -227,7 +228,7 @@ type internal CommandProcessor
             rest 
                 |> CommandParseUtil.SkipWhitespace
                 |> StringUtil.ofCharSeq
-        if System.String.IsNullOrEmpty name then _data.VimHost.ShowOpenFileDialog()
+        if System.String.IsNullOrEmpty name then _operations.ShowOpenFileDialog()
         else _operations.EditFile name
 
     /// Parse out the Yank command
@@ -275,7 +276,7 @@ type internal CommandProcessor
             | Some(count) -> RangeUtil.ApplyCount range count
             | None -> range
         let span = RangeUtil.GetSnapshotSpan range
-        _operations.ShiftSpanLeft span 
+        _operations.ShiftSpanLeft 1 span 
 
     member private x.ProcessShiftRight (rest:char list) (range: Range option) _ =
         let count,rest = rest |> RangeUtil.ParseNumber
@@ -285,7 +286,7 @@ type internal CommandProcessor
             | Some(count) -> RangeUtil.ApplyCount range count
             | None -> range
         let span = RangeUtil.GetSnapshotSpan range
-        _operations.ShiftSpanRight span 
+        _operations.ShiftSpanRight 1 span 
 
     member private x.ProcessWrite (rest:char list) _ _ = 
         let name = rest |> StringUtil.ofCharSeq 
@@ -328,12 +329,12 @@ type internal CommandProcessor
 
     member private x.ProcessUndo rest _ _ =
         match Seq.isEmpty rest with
-        | true -> _data.VimHost.Undo _data.TextBuffer 1
+        | true -> _operations.Undo 1
         | false -> _statusUtil.OnError x.BadMessage
 
     member private x.ProcessRedo rest _ _ =
         match Seq.isEmpty rest with
-        | true -> _data.VimHost.Redo _data.TextBuffer 1
+        | true -> _operations.Redo 1
         | false -> _statusUtil.OnError x.BadMessage
 
     member private x.ProcessMarks rest _ _ =
@@ -362,9 +363,9 @@ type internal CommandProcessor
         let file = rest |> StringUtil.ofCharSeq
         if bang then _statusUtil.OnError Resources.CommandMode_NotSupported_SourceNormal
         else
-            match Utils.ReadAllLines file with
+            match _fileSystem.ReadAllLines file with
             | None -> _statusUtil.OnError (Resources.CommandMode_CouldNotOpenFile file)
-            | Some(_,lines) ->
+            | Some(lines) ->
                 lines 
                 |> Seq.map (fun command -> command |> List.ofSeq)
                 |> Seq.iter x.RunCommand

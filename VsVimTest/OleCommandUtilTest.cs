@@ -10,14 +10,14 @@ using VsVimTest.Utils;
 namespace VsVimTest
 {
     [TestFixture()]
-    public class CommandUtilTest
+    public class OleCommandUtilTest
     {
         internal EditCommand ConvertTypeChar(char data)
         {
             using (var ptr = CharPointer.Create(data))
             {
                 EditCommand command;
-                Assert.IsTrue(CommandUtil.TryConvert(VSConstants.VSStd2K, (uint)VSConstants.VSStd2KCmdID.TYPECHAR, ptr.IntPtr, out command));
+                Assert.IsTrue(OleCommandUtil.TryConvert(VSConstants.VSStd2K, (uint)VSConstants.VSStd2KCmdID.TYPECHAR, ptr.IntPtr, out command));
                 return command;
             }
         }
@@ -26,7 +26,7 @@ namespace VsVimTest
         public void TypeCharNoData()
         {
             EditCommand command;
-            Assert.IsFalse(CommandUtil.TryConvert(VSConstants.GUID_VSStandardCommandSet97, (uint)VSConstants.VSStd2KCmdID.TYPECHAR, IntPtr.Zero, out command));
+            Assert.IsFalse(OleCommandUtil.TryConvert(VSConstants.GUID_VSStandardCommandSet97, (uint)VSConstants.VSStd2KCmdID.TYPECHAR, IntPtr.Zero, out command));
         }
 
         // [Test, Description("Delete key"), Ignore]
@@ -56,7 +56,7 @@ namespace VsVimTest
         public void Left1()
         {
             EditCommand command;
-            Assert.IsTrue(CommandUtil.TryConvert(VSConstants.VSStd2K, (uint)VSConstants.VSStd2KCmdID.LEFT, out command));
+            Assert.IsTrue(OleCommandUtil.TryConvert(VSConstants.VSStd2K, (uint)VSConstants.VSStd2KCmdID.LEFT, out command));
             Assert.AreEqual(InputUtil.VimKeyToKeyInput(VimKey.LeftKey), command.KeyInput);
             Assert.IsFalse(command.IsInput);
         }
@@ -65,7 +65,7 @@ namespace VsVimTest
         public void Right1()
         {
             EditCommand command;
-            Assert.IsTrue(CommandUtil.TryConvert(VSConstants.VSStd2K, (uint)VSConstants.VSStd2KCmdID.RIGHT, out command));
+            Assert.IsTrue(OleCommandUtil.TryConvert(VSConstants.VSStd2K, (uint)VSConstants.VSStd2KCmdID.RIGHT, out command));
             Assert.AreEqual(InputUtil.VimKeyToKeyInput(VimKey.RightKey), command.KeyInput);
             Assert.IsFalse(command.IsInput);
         }
@@ -74,7 +74,7 @@ namespace VsVimTest
         public void Up1()
         {
             EditCommand command;
-            Assert.IsTrue(CommandUtil.TryConvert(VSConstants.VSStd2K, (uint)VSConstants.VSStd2KCmdID.UP, out command));
+            Assert.IsTrue(OleCommandUtil.TryConvert(VSConstants.VSStd2K, (uint)VSConstants.VSStd2KCmdID.UP, out command));
             Assert.AreEqual(InputUtil.VimKeyToKeyInput(VimKey.UpKey), command.KeyInput);
             Assert.IsFalse(command.IsInput);
         }
@@ -83,7 +83,7 @@ namespace VsVimTest
         public void Down1()
         {
             EditCommand command;
-            Assert.IsTrue(CommandUtil.TryConvert(VSConstants.VSStd2K, (uint)VSConstants.VSStd2KCmdID.DOWN, out command));
+            Assert.IsTrue(OleCommandUtil.TryConvert(VSConstants.VSStd2K, (uint)VSConstants.VSStd2KCmdID.DOWN, out command));
             Assert.AreEqual(InputUtil.VimKeyToKeyInput(VimKey.DownKey), command.KeyInput);
             Assert.IsFalse(command.IsInput);
         }
@@ -92,8 +92,17 @@ namespace VsVimTest
         public void Tab1()
         {
             EditCommand command;
-            Assert.IsTrue(CommandUtil.TryConvert(VSConstants.VSStd2K, (uint)VSConstants.VSStd2KCmdID.TAB, out command));
+            Assert.IsTrue(OleCommandUtil.TryConvert(VSConstants.VSStd2K, (uint)VSConstants.VSStd2KCmdID.TAB, out command));
             Assert.AreEqual(InputUtil.VimKeyToKeyInput(VimKey.TabKey), command.KeyInput);
+            Assert.IsFalse(command.IsInput);
+        }
+
+        [Test]
+        public void F1Help1()
+        {
+            EditCommand command;
+            Assert.IsTrue(OleCommandUtil.TryConvert(VSConstants.GUID_VSStandardCommandSet97, (uint)VSConstants.VSStd97CmdID.F1Help, out command));
+            Assert.AreEqual(InputUtil.VimKeyToKeyInput(VimKey.F1Key), command.KeyInput);
             Assert.IsFalse(command.IsInput);
         }
    }

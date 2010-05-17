@@ -5,10 +5,10 @@ using System.Text;
 using NUnit.Framework;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Operations;
-using VimCoreTest.Utils;
+using VimCore.Test.Utils;
 using Microsoft.VisualStudio.Text.Editor;
 
-namespace VimCoreTest
+namespace VimCore.Test
 {
     [TestFixture]
     public class IEditorOperationsTest

@@ -13,7 +13,7 @@ using NUnit.Framework;
 using Microsoft.FSharp.Collections;
 using Microsoft.VisualStudio.Text.Outlining;
 
-namespace VimCoreTest
+namespace VimCore.Test
 {
     internal static class Extensions
     {
@@ -42,12 +42,6 @@ namespace VimCoreTest
         {
             Assert.IsTrue(res.IsComplete);
             return (MotionResult.Complete)res;
-        }
-
-        internal static MotionResult.InvalidMotion AsInvalidMotion(this MotionResult res)
-        {
-            Assert.IsTrue(res.IsInvalidMotion);
-            return (MotionResult.InvalidMotion)res;
         }
 
         #endregion
@@ -114,16 +108,6 @@ namespace VimCoreTest
 
         #endregion
 
-        #region NormalModeCommand
-
-        internal static NormalModeCommand.RepeatableCommand AsRepeatabelCommand(this NormalModeCommand command)
-        {
-            Assert.IsTrue(command.IsRepeatableCommand);
-            return (NormalModeCommand.RepeatableCommand)command;
-        }
-
-        #endregion
-
         #region RepeatableChange
 
         internal static RepeatableChange.TextChange AsTextChange(this RepeatableChange change)
@@ -175,21 +159,16 @@ namespace VimCoreTest
 
         #endregion
 
-        #region Option
+        #region RunKeyInputResult
 
-        public static bool IsNone<T>(this FSharpOption<T> option)
+        public static RunKeyInputResult.CommandRan AsCommandRan(this RunKeyInputResult result)
         {
-            return FSharpOption<T>.get_IsNone(option);
+            return (RunKeyInputResult.CommandRan)result;
         }
 
-        public static bool IsSome<T>(this FSharpOption<T> option)
+        public static RunKeyInputResult.CommandErrored AsCommandErrored(this RunKeyInputResult result)
         {
-            return FSharpOption<T>.get_IsSome(option);
-        }
-
-        public static bool HasValue<T>(this FSharpOption<T> option)
-        {
-            return FSharpOption<T>.get_IsSome(option);
+            return (RunKeyInputResult.CommandErrored)result;
         }
 
         #endregion
@@ -227,18 +206,33 @@ namespace VimCoreTest
 
         #region IVimBuffer
 
+        public static bool ProcessChar(this IVimBuffer buf, char c)
+        {
+            return buf.Process(InputUtil.CharToKeyInput(c));
+        }
+
+        public static void ProcessAsString(this IVimBuffer buf, string input)
+        {
+            ProcessInputAsString(buf, input);
+        }
+
         public static void ProcessInputAsString(this IVimBuffer buf, string input)
         {
             foreach (var c in input)
             {
                 var i = InputUtil.CharToKeyInput(c);
-                buf.ProcessInput(i);
+                buf.Process(i);
             }
         }
 
         #endregion
 
-        #region ITextView
+        #region ITextView 
+
+        public static SnapshotPoint GetPoint(this ITextView textView, int position)
+        {
+            return new SnapshotPoint(textView.TextSnapshot, position);
+        }
 
         public static ITextSnapshotLine GetLine(this ITextView textView, int line)
         {
@@ -307,6 +301,12 @@ namespace VimCoreTest
 
         #region ITextSnapshot
 
+
+        public static ITextSnapshotLine GetLine(this ITextSnapshot tss, int lineNumber)
+        {
+            return tss.GetLineFromLineNumber(lineNumber);
+        }
+
         public static SnapshotSpan GetLineSpan(this ITextSnapshot tss, int startLine, int endLine = -1)
         {
             endLine = endLine >= 0 ? endLine : startLine;
@@ -331,6 +331,29 @@ namespace VimCoreTest
         public static SnapshotSpan GetSpan(this ITextSnapshot tss, int start, int length)
         {
             return new SnapshotSpan(tss, start, length);
+        }
+
+        #endregion
+
+        #region ICommandRunner
+
+        internal static RunKeyInputResult Run(this ICommandRunner runner, char c)
+        {
+            return runner.Run(InputUtil.CharToKeyInput(c));
+        }
+
+        #endregion
+
+        #region CommandRunnerState
+
+        internal static CommandRunnerState.NotFinishWithCommand AsNotFinishedWithCommand(this CommandRunnerState state)
+        {
+            return (CommandRunnerState.NotFinishWithCommand)state;
+        }
+
+        internal static CommandRunnerState.NotEnoughMatchingPrefix AsNotEnoughMatchingPrefix(this CommandRunnerState state)
+        {
+            return (CommandRunnerState.NotEnoughMatchingPrefix)state;
         }
 
         #endregion

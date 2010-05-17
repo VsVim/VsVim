@@ -36,7 +36,7 @@ type internal SearchService
         let isWrap = SearchKindUtil.IsWrap searchData.Kind
         let opts = x.CreateFindOptions searchData.Text searchData.Kind searchData.Options
         let findData = FindData(searchData.Text.RawText, tss, opts, nav) 
-        
+
         // Create a function which will give us the next search position
         let getNextPoint = 
             if SearchKindUtil.IsForward searchData.Kind then
@@ -50,7 +50,16 @@ type internal SearchService
                     
         // Recursive loop to perform the search "count" times
         let rec doFind count position = 
-            let result = _search.FindNext(position, isWrap, findData) |> NullableUtil.toOption
+
+            let result = 
+                try
+                    _search.FindNext(position, isWrap, findData) |> NullableUtil.toOption
+                with 
+                | :? System.InvalidOperationException ->
+                    // If the regular expression has invalid data then don't throw but return a failed match
+                    if searchData.Text.IsPatternText then None
+                    else reraise()
+
             match result,count > 1 with
             | Some(span),false -> Some(span)
             | Some(span),true -> 

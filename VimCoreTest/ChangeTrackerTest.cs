@@ -4,33 +4,40 @@ using System.Linq;
 using System.Text;
 using NUnit.Framework;
 using Vim;
+using Vim.Extensions;
 using Microsoft.VisualStudio.Text.Editor;
 using Moq;
 using Microsoft.VisualStudio.Text;
-using VimCoreTest.Utils;
+using VimCore.Test.Utils;
+using VimCore.Test.Mock;
 
-namespace VimCoreTest
+namespace VimCore.Test
 {
     [TestFixture]
     public class ChangeTrackerTest
     {
+        private MockFactory _factory;
         private ChangeTracker _trackerRaw;
         private IChangeTracker _tracker;
         private ITextBuffer _textBuffer;
         private Mock<ITextView> _textView;
         private MockVimBuffer _buffer;
-        private MockNormalMode _normalMode;
 
         private void CreateForText(params string[] lines)
         {
             _textBuffer = Utils.EditorUtil.CreateBuffer(lines);
-            _textView = Utils.MockObjectFactory.CreateTextView(_textBuffer);
+            _textView = Mock.MockObjectFactory.CreateTextView(_textBuffer);
             _textView.SetupGet(x => x.HasAggregateFocus).Returns(true);
             _buffer = new MockVimBuffer();
             _buffer.TextViewImpl = _textView.Object;
             _buffer.TextBufferImpl = _textBuffer;
-            _normalMode = new MockNormalMode();
-            _buffer.ModeImpl = _normalMode;
+
+            _factory = new MockFactory(MockBehavior.Loose);
+            _factory.DefaultValue = DefaultValue.Mock;
+            _buffer.NormalModeImpl = _factory.Create<INormalMode>().Object;
+            _buffer.VisualBlockModeImpl = _factory.Create<IVisualMode>().Object;
+            _buffer.VisualCharacterModeImpl = _factory.Create<IVisualMode>().Object;
+            _buffer.VisualLineModeImpl = _factory.Create<IVisualMode>().Object;
             _trackerRaw = new ChangeTracker();
             _tracker = _trackerRaw;
             _trackerRaw.OnVimBufferCreated(_buffer);
@@ -41,7 +48,7 @@ namespace VimCoreTest
         {
             CreateForText("foo bar");
             _textBuffer.Insert(0, "f");
-            Assert.IsTrue(_tracker.LastChange.HasValue());
+            Assert.IsTrue(_tracker.LastChange.IsSome());
             Assert.AreEqual("f", _tracker.LastChange.Value.AsTextChange().Item);
         }
 
@@ -51,7 +58,7 @@ namespace VimCoreTest
             CreateForText("foo bar");
             _textBuffer.Insert(0, "f");
             _textBuffer.Insert(1, "o");
-            Assert.IsTrue(_tracker.LastChange.HasValue());
+            Assert.IsTrue(_tracker.LastChange.IsSome());
             Assert.AreEqual("fo", _tracker.LastChange.Value.AsTextChange().Item);
         }
 
@@ -62,7 +69,7 @@ namespace VimCoreTest
             _textBuffer.Insert(0, "f");
             _textBuffer.Insert(1, "o");
             _textBuffer.Insert(2, "o");
-            Assert.IsTrue(_tracker.LastChange.HasValue());
+            Assert.IsTrue(_tracker.LastChange.IsSome());
             Assert.AreEqual("foo", _tracker.LastChange.Value.AsTextChange().Item);
         }
 
@@ -73,7 +80,7 @@ namespace VimCoreTest
             _textBuffer.Insert(0, "f");
             _textBuffer.Insert(1, "o");
             _textBuffer.Insert(0, "b");
-            Assert.IsTrue(_tracker.LastChange.HasValue());
+            Assert.IsTrue(_tracker.LastChange.IsSome());
             Assert.AreEqual("b", _tracker.LastChange.Value.AsTextChange().Item);
         }
 
@@ -84,7 +91,7 @@ namespace VimCoreTest
             _textBuffer.Insert(0, "f");
             _textBuffer.Insert(1, "o");
             _textBuffer.Insert(1, "b");
-            Assert.IsTrue(_tracker.LastChange.HasValue());
+            Assert.IsTrue(_tracker.LastChange.IsSome());
             Assert.AreEqual("b", _tracker.LastChange.Value.AsTextChange().Item);
         }
 
@@ -94,7 +101,7 @@ namespace VimCoreTest
             CreateForText("foo bar");
             _textBuffer.Insert(0, "f");
             _textBuffer.Insert(1, Environment.NewLine);
-            Assert.IsTrue(_tracker.LastChange.HasValue());
+            Assert.IsTrue(_tracker.LastChange.IsSome());
             Assert.AreEqual("f" + Environment.NewLine, _tracker.LastChange.Value.AsTextChange().Item);
         }
 
@@ -103,7 +110,7 @@ namespace VimCoreTest
         {
             CreateForText("foo bar");
             _textBuffer.Insert(0, "hey");
-            Assert.IsTrue(_tracker.LastChange.HasValue());
+            Assert.IsTrue(_tracker.LastChange.IsSome());
             Assert.AreEqual("hey", _tracker.LastChange.Value.AsTextChange().Item);
         }
 
@@ -113,7 +120,7 @@ namespace VimCoreTest
             CreateForText("foo bar");
             _textView.SetupGet(x => x.HasAggregateFocus).Returns(false);
             _textBuffer.Insert(0, "hey");
-            Assert.IsFalse(_tracker.LastChange.HasValue());
+            Assert.IsFalse(_tracker.LastChange.IsSome());
         }
 
         [Test, Description("Disconnected changes shouln't be remembered")]
@@ -126,7 +133,7 @@ namespace VimCoreTest
                 edit.Insert(7, "b");
                 edit.Apply();
             }
-            Assert.IsFalse(_tracker.LastChange.HasValue());
+            Assert.IsFalse(_tracker.LastChange.IsSome());
         }
 
         [Test, Description("Disconnected changes should clear the last change flag")]
@@ -140,7 +147,16 @@ namespace VimCoreTest
                 edit.Insert(7, "b");
                 edit.Apply();
             }
-            Assert.IsFalse(_tracker.LastChange.HasValue());
+            Assert.IsFalse(_tracker.LastChange.IsSome());
+        }
+
+        [Test, Description("Don't process edits while we are processing KeyInput")]
+        public void BufferChange11()
+        {
+            CreateForText("foo bar");
+            _buffer.IsProcessingInputImpl = true;
+            _textBuffer.Insert(0, "again");
+            Assert.IsFalse(_tracker.LastChange.IsSome());
         }
 
         [Test, Description("Switching modes should break up the text change")]
