@@ -187,7 +187,7 @@ type internal NormalMode
 
         seq {
             yield ("/", CommandFlags.Movement ||| CommandFlags.HandlesEscape, fun count reg -> this.BeginIncrementalSearch SearchKind.ForwardWithWrap count reg)
-            yield ("?", CommandFlags.Movement, fun count reg -> this.BeginIncrementalSearch SearchKind.BackwardWithWrap count reg)
+            yield ("?", CommandFlags.Movement ||| CommandFlags.HandlesEscape, fun count reg -> this.BeginIncrementalSearch SearchKind.BackwardWithWrap count reg)
             yield ("r", CommandFlags.None, fun count reg -> this.ReplaceChar count reg) 
             yield ("'", CommandFlags.Movement, fun count reg -> this.WaitJumpToMark count reg)
             yield ("`", CommandFlags.Movement, fun count reg -> this.WaitJumpToMark count reg)

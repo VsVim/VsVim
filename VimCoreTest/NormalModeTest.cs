@@ -1672,6 +1672,35 @@ namespace VimCore.Test
             _incrementalSearch.Verify();
             _jumpList.Verify();
         }
+        [Test, Description("Escape should go to incremental search")]
+        public void IncrementalSearch7()
+        {
+            Create("foo bar");
+            _incrementalSearch.Setup(x => x.Begin(SearchKind.ForwardWithWrap)).Verifiable();
+            _mode.Process('/');
+            var escapeKi = InputUtil.VimKeyToKeyInput(VimKey.EscapeKey);
+            _incrementalSearch
+                .Setup(x => x.Process(escapeKi))
+                .Returns(SearchProcessResult.SearchCancelled)
+                .Verifiable();
+            _mode.Process(escapeKi);
+            _incrementalSearch.Verify();
+        }
+
+        [Test, Description("Escape should go to incremental search")]
+        public void IncrementalSearch8()
+        {
+            Create("foo bar");
+            _incrementalSearch.Setup(x => x.Begin(SearchKind.BackwardWithWrap)).Verifiable();
+            _mode.Process('?');
+            var escapeKi = InputUtil.VimKeyToKeyInput(VimKey.EscapeKey);
+            _incrementalSearch
+                .Setup(x => x.Process(escapeKi))
+                .Returns(SearchProcessResult.SearchCancelled)
+                .Verifiable();
+            _mode.Process(escapeKi);
+            _incrementalSearch.Verify();
+        }
 
         #endregion
 
