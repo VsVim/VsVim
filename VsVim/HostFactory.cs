@@ -74,7 +74,14 @@ namespace VsVim
                     // Run the key binding check now
                     if (_keyBindingService.ConflictingKeyBindingState == ConflictingKeyBindingState.HasNotChecked)
                     {
-                        _keyBindingService.RunConflictingKeyBindingStateCheck(buffer, (x, y) => { });
+                        if (Settings.Settings.Default.IgnoredConflictingKeyBinding)
+                        {
+                            _keyBindingService.IgnoreAnyConflicts();
+                        }
+                        else
+                        {
+                            _keyBindingService.RunConflictingKeyBindingStateCheck(buffer, (x, y) => { });
+                        }
                     }
                 };
 
