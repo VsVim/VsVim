@@ -51,6 +51,9 @@ namespace VimCore.Test.Utils
             [Import]
             public IVimBufferFactory vimBufferFactory;
 
+            [Import]
+            public ITextBufferUndoManagerProvider undoManagerProvider;
+
             public Factory() { }
         }
 
@@ -118,6 +121,11 @@ namespace VimCore.Test.Utils
         public static IEditorOperations GetOperations(IWpfTextView view)
         {
             return FactoryService.editorOperationsFactory.GetEditorOperations(view);
+        }
+
+        public static ITextUndoHistory GetUndoHistory(ITextBuffer textBuffer)
+        {
+            return FactoryService.undoManagerProvider.GetTextBufferUndoManager(textBuffer).TextBufferUndoHistory;
         }
 
         public static CompositionContainer CreateContainer()

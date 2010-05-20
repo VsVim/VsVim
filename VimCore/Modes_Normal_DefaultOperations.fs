@@ -110,6 +110,8 @@ type internal DefaultOperations
         member x.PasteAfterCursor text count opKind moveCursor = 
             let text = StringUtil.repeat text count 
             let caret = TextViewUtil.GetCaretPoint _textView
+            use undoTransaction = _undoRedoOperations.CreateUndoTransaction("Paste")
+            _operations.AddBeforeTextBufferChangePrimitive()
             let span = x.CommonImpl.PasteAfter caret text opKind
             if moveCursor then
                 x.CommonImpl.MoveCaretToPoint span.End 
@@ -120,11 +122,15 @@ type internal DefaultOperations
                 let nextLine = _textView.TextSnapshot.GetLineFromLineNumber(caretLineNumber + 1)
                 let point = TssUtil.FindFirstNonWhitespaceCharacter nextLine
                 x.CommonImpl.MoveCaretToPoint point 
+            _operations.AddAfterTextBufferChangePrimitive()
+            undoTransaction.Complete()
  
         /// Paste the text before the cursor
         member x.PasteBeforeCursor text count opKind moveCursor = 
             let text = StringUtil.repeat text count 
             let caret = TextViewUtil.GetCaretPoint _textView
+            use undoTransaction = _undoRedoOperations.CreateUndoTransaction("Paste")
+            _operations.AddBeforeTextBufferChangePrimitive()
             let span = x.CommonImpl.PasteBefore caret text opKind
             if moveCursor then
                 x.CommonImpl.MoveCaretToPoint span.End 
@@ -134,11 +140,15 @@ type internal DefaultOperations
                 let line = _textView.TextSnapshot.GetLineFromLineNumber(caret.GetContainingLine().LineNumber)
                 let point = TssUtil.FindFirstNonWhitespaceCharacter line
                 x.CommonImpl.MoveCaretToPoint point 
+            _operations.AddAfterTextBufferChangePrimitive()
+            undoTransaction.Complete()
 
         member x.InsertLineBelow () =
             let point = TextViewUtil.GetCaretPoint _textView
             let line = point.GetContainingLine()
             let buffer = line.Snapshot.TextBuffer
+            use undoTransaction = _undoRedoOperations.CreateUndoTransaction("Paste")
+            _operations.AddBeforeTextBufferChangePrimitive()
             buffer.Replace(new Span(line.End.Position,0), System.Environment.NewLine) |> ignore
             let newLine = buffer.CurrentSnapshot.GetLineFromLineNumber(line.LineNumber+1)
         
@@ -146,15 +156,21 @@ type internal DefaultOperations
             let indent = TssUtil.FindIndentPosition(line)
             let point = new VirtualSnapshotPoint(newLine, indent)
             TextViewUtil.MoveCaretToVirtualPoint _textView point |> ignore
+            _operations.AddAfterTextBufferChangePrimitive()
+            undoTransaction.Complete()
             newLine
     
         member x.InsertLineAbove () = 
             let point = TextViewUtil.GetCaretPoint _textView
             let line = point.GetContainingLine()
             let buffer = line.Snapshot.TextBuffer
+            use undoTransaction = _undoRedoOperations.CreateUndoTransaction("Paste")
+            _operations.AddBeforeTextBufferChangePrimitive()
             buffer.Replace(new Span(line.Start.Position,0), System.Environment.NewLine) |> ignore
             let line = buffer.CurrentSnapshot.GetLineFromLineNumber(line.LineNumber)
             x.CommonImpl.MoveCaretToPoint line.Start 
+            _operations.AddAfterTextBufferChangePrimitive()
+            undoTransaction.Complete()
             line
                 
         /// Implement the r command in normal mode.  

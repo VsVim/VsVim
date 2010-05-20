@@ -4,6 +4,9 @@ using System.Linq;
 using System.Text;
 using System.ComponentModel.Composition;
 using Microsoft.VisualStudio.Text.Operations;
+using Moq;
+using NUnit.Framework;
+using Microsoft.VisualStudio.Utilities;
 
 namespace VimCore.Test.Utils
 {
@@ -26,7 +29,13 @@ namespace VimCore.Test.Utils
 
         public ITextUndoHistory RegisterHistory(object context)
         {
-            return null;
+            ITextUndoHistory history;
+            if (!_map.TryGetValue(context, out history))
+            {
+                history = new TextUndoHistory();
+                _map.Add(context, history);
+            }
+            return history;
         }
 
         public void RemoveHistory(ITextUndoHistory history)
