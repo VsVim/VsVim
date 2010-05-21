@@ -515,7 +515,7 @@ namespace VimCore.Test
         public void Put2()
         {
             Create("foo bar");
-            _map.DefaultRegister.UpdateValue("");
+            _map.GetRegister('c').UpdateValue("");
             _operations
                 .Setup(x => x.PasteOverSelection("", _map.GetRegister('c')))
                 .Verifiable();
