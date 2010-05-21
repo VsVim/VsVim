@@ -42,7 +42,9 @@ type internal CommandMode
                     if not (List.isEmpty _input) then 
                         _input <- List.tail _input
                         _command <- _command.Substring(0, (_command.Length - 1))
-                    Processed
+                        Processed
+                    else
+                        SwitchMode ModeKind.Normal
                 | _ -> 
                     let c = ki.Char
                     _command <-_command + (c.ToString())

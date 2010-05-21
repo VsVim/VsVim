@@ -77,8 +77,10 @@ namespace Vim.UI.Wpf
             switch (mode.ModeKind)
             {
                 case ModeKind.Normal:
-                case ModeKind.Command:
                     _margin.StatusLine = String.Empty;
+                    break;
+                case ModeKind.Command:
+                    _margin.StatusLine = ":";
                     break;
                 case ModeKind.Insert:
                     _margin.StatusLine = Resources.InsertBanner;

@@ -77,6 +77,17 @@ namespace Vim.UI.Wpf.Test
         }
 
         [Test]
+        [Description("A switch to command mode should start the status bar with a :.")]
+        public void SwitchMode5()
+        {
+            var mode = new Mock<ICommandMode>();
+            mode.SetupGet(x => x.ModeKind).Returns(ModeKind.Command);
+            _buffer.CommandModeImpl = mode.Object;
+            _buffer.RaiseSwitchedMode(_buffer.CommandModeImpl);
+            Assert.AreEqual(":", _marginControl.StatusLine);
+        }
+
+        [Test]
         public void StatusMessage1()
         {
             _buffer.RaiseStatusMessage("foo");

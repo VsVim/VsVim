@@ -65,6 +65,14 @@ namespace VimCore.Test
         }
 
         [Test]
+        public void SwitchOutFromBackspace()
+        {
+            buffer.ProcessAsString(":");
+            buffer.Process(InputUtil.VimKeyToKeyInput(VimKey.BackKey));
+            Assert.AreEqual(ModeKind.Normal, buffer.ModeKind);
+        }
+
+        [Test]
         public void JumpLine1()
         {
             buffer.ProcessAsString(":0");
