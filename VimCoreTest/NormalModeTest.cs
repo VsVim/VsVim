@@ -63,6 +63,7 @@ namespace VimCore.Test
             _statusUtil = new Mock<IStatusUtil>(MockBehavior.Strict);
             _changeTracker = new Mock<IChangeTracker>(MockBehavior.Strict);
             _displayWindowBroker = new Mock<IDisplayWindowBroker>(MockBehavior.Strict);
+            _displayWindowBroker.SetupGet(x => x.IsCompletionWindowActive).Returns(false);
             _displayWindowBroker.SetupGet(x => x.IsSmartTagWindowActive).Returns(false);
             _bufferData = MockFactory.CreateVimBuffer(
                 _view,
@@ -189,6 +190,17 @@ namespace VimCore.Test
             Create(s_lines);
             Assert.IsTrue(_mode.CanProcess(InputUtil.VimKeyToKeyInput(VimKey.EnterKey)));
             Assert.IsTrue(_mode.CanProcess(InputUtil.VimKeyToKeyInput(VimKey.TabKey)));
+        }
+
+        [Test, Description("Don't process while a completion window is open otherwise you prevent it from being used")]
+        public void CanProcess8()
+        {
+            Create(s_lines);
+            _displayWindowBroker.SetupGet(x => x.IsCompletionWindowActive).Returns(true);
+            Assert.IsFalse(_mode.CanProcess(InputUtil.VimKeyToKeyInput(VimKey.EnterKey)));
+            Assert.IsFalse(_mode.CanProcess(InputUtil.VimKeyToKeyInput(VimKey.LeftKey)));
+            Assert.IsFalse(_mode.CanProcess(InputUtil.VimKeyToKeyInput(VimKey.DownKey)));
+            Assert.IsFalse(_mode.CanProcess(InputUtil.VimKeyToKeyInput(VimKey.TabKey)));
         }
 
         #endregion
