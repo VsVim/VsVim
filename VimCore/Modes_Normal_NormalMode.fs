@@ -223,6 +223,7 @@ type internal NormalMode
                 yield ("g#", CommandFlags.Movement, fun count _ -> _operations.MoveToNextOccuranceOfPartialWordAtCursor SearchKind.BackwardWithWrap count)
                 yield ("gt", CommandFlags.Movement, fun count _ -> _operations.GoToNextTab count)
                 yield ("gT", CommandFlags.Movement, fun count _ -> _operations.GoToPreviousTab count)
+                yield ("u",  CommandFlags.Special, fun count _ -> _operations.Undo count)
                 yield ("zt", CommandFlags.Movement, fun _ _ ->  _operations.EditorOperations.ScrollLineTop())
                 yield ("z.", CommandFlags.Movement, fun _ _ -> 
                     _operations.EditorOperations.ScrollLineCenter() 
@@ -327,7 +328,6 @@ type internal NormalMode
                 yield (InputUtil.CharToKeyInput('N'), (fun count _ -> _operations.MoveToNextOccuranceOfLastSearch count true))
                 yield (InputUtil.CharToKeyInput('*'), (fun count _ -> _operations.MoveToNextOccuranceOfWordAtCursor SearchKind.ForwardWithWrap count))
                 yield (InputUtil.CharToKeyInput('#'), (fun count _ -> _operations.MoveToNextOccuranceOfWordAtCursor SearchKind.BackwardWithWrap count))
-                yield (InputUtil.CharToKeyInput('u'), (fun count _ -> _operations.Undo count))
                 yield (InputUtil.CharToKeyInput('D'), (fun count reg -> _operations.DeleteLinesFromCursor count reg))
                 yield (InputUtil.CharAndModifiersToKeyInput 'r' KeyModifiers.Control, (fun count _ -> _operations.Redo count))
                 yield (InputUtil.CharAndModifiersToKeyInput 'u' KeyModifiers.Control, (fun count _ -> _operations.ScrollLines ScrollDirection.Up count))
