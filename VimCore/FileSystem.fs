@@ -15,12 +15,14 @@ type internal FileSystem() =
     /// Read all of the lines from the file at the given path.  If this fails None
     /// will be returned
     member x.ReadAllLines path =
-        try
-            if System.String.IsNullOrEmpty path then None
-            else
+        if System.String.IsNullOrEmpty path then None
+        elif System.IO.File.Exists path then 
+            try
                 System.IO.File.ReadAllLines(path) |> Some
-        with
-            _ -> None
+            with
+                _ -> None
+        else
+            None
 
     member x.GetVimRcDirectories() = 
         let getEnvVarValue var = 
