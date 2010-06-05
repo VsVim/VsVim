@@ -10,7 +10,7 @@ using Vim;
 namespace VsVim.Implementation
 {
     [Export(typeof(IMouseProcessorProvider))]
-    [ContentType("text")]
+    [ContentType(Constants.ContentType)]
     [Name("VsVimMouseProcessorProvider")]
     [TextViewRole(PredefinedTextViewRoles.Document)]
     public class MouseProcessorProvider : IMouseProcessorProvider

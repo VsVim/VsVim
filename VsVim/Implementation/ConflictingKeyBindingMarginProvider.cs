@@ -12,7 +12,7 @@ namespace VsVim.Implementation
 {
     [Export(typeof(IWpfTextViewMarginProvider))]
     [MarginContainer(PredefinedMarginNames.Top)]
-    [ContentType("code")]
+    [ContentType("text")]
     [Name(ConflictingKeyBindingMargin.Name)]
     [TextViewRole(PredefinedTextViewRoles.Document)]
     internal sealed class ConflictingKeyBindingMarginProvider : IWpfTextViewMarginProvider
