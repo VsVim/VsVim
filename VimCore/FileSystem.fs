@@ -15,6 +15,17 @@ type internal FileSystem() =
     /// Read all of the lines from the file at the given path.  If this fails None
     /// will be returned
     member x.ReadAllLines path =
+
+        // Yes I realize I wrote an entire blog post on why File.Exists is an evil
+        // API to use and I'm using it in this code.  In this particular case though
+        // the use is OK because first and foremost we deal with the exceptions 
+        // that can be thrown.  Secondly this is only used because it makes debugging
+        // significantly easier as the exception thrown breaks. 
+        //
+        // Additionally I will likely be changing it to avoid the exception break
+        // at a future time
+        // 
+        // http://blogs.msdn.com/b/jaredpar/archive/2009/12/10/the-file-system-is-unpredictable.aspx 
         if System.String.IsNullOrEmpty path then None
         elif System.IO.File.Exists path then 
             try
