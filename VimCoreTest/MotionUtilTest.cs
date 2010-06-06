@@ -709,6 +709,40 @@ namespace VimCore.Test
             Assert.AreEqual(new SnapshotSpan(_buffer.GetPoint(0), _buffer.GetLine(1).End), data.Span);
             Assert.AreEqual(OperationKind.LineWise, data.OperationKind);
         }
+
+        [Test]
+        public void LineDownToFirstNonWhitespace1()
+        {
+            Create("a", "b", "c", "d");
+            var data = _util.LineDownToFirstNonWhitespace(1);
+            Assert.AreEqual(MotionKind.Inclusive, data.MotionKind);
+            Assert.AreEqual(OperationKind.LineWise, data.OperationKind);
+            Assert.AreEqual(_buffer.GetLineSpan(0, 1), data.Span);
+            Assert.IsTrue(data.IsForward);
+        }
+
+        [Test]
+        public void LineDownToFirstNonWhitespace2()
+        {
+            Create("a", "b", "c", "d");
+            var data = _util.LineDownToFirstNonWhitespace(2);
+            Assert.AreEqual(MotionKind.Inclusive, data.MotionKind);
+            Assert.AreEqual(OperationKind.LineWise, data.OperationKind);
+            Assert.AreEqual(_buffer.GetLineSpan(0, 2), data.Span);
+            Assert.IsTrue(data.IsForward);
+        }
+
+        [Test]
+        [Description("Count of 0 is valid for this motion")]
+        public void LineDownToFirstNonWhitespace3()
+        {
+            Create("a", "b", "c", "d");
+            var data = _util.LineDownToFirstNonWhitespace(0);
+            Assert.AreEqual(MotionKind.Inclusive, data.MotionKind);
+            Assert.AreEqual(OperationKind.LineWise, data.OperationKind);
+            Assert.AreEqual(_buffer.GetLineSpan(0), data.Span);
+            Assert.IsTrue(data.IsForward);
+        }
     }   
     
 }

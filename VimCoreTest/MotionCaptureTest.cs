@@ -411,6 +411,28 @@ namespace VimCore.Test
             ProcessComplete("L");
             _util.Verify();
         }
+
+        [Test]
+        public void Motion_underscore1()
+        {
+            _util
+                .Setup(x => x.LineDownToFirstNonWhitespace(0))
+                .Returns(CreateMotionData())
+                .Verifiable();
+            ProcessComplete("_");
+            _util.Verify();
+        }
+
+        [Test]
+        public void Motion_underscore2()
+        {
+            _util
+                .Setup(x => x.LineDownToFirstNonWhitespace(1))
+                .Returns(CreateMotionData())
+                .Verifiable();
+            ProcessComplete("2_");
+            _util.Verify();
+        }
     }
 
 }

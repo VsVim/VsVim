@@ -121,7 +121,8 @@ type IMotionUtil =
     /// for command '0'
     abstract BeginingOfLine : unit -> MotionData
 
-    /// Handle the lines down to first non-whitespace motion
+    /// Handle the lines down to first non-whitespace motion.  This is one of the motions which 
+    /// can accept a count of 0.
     abstract LineDownToFirstNonWhitespace : int -> MotionData 
 
     /// Handle the - motion

@@ -2094,7 +2094,7 @@ namespace VimCore.Test
         public void Append1()
         {
             Create("foo bar");
-            _operations.Setup(x => x.MoveCaretRight(1)).Verifiable();
+            _operations.Setup(x => x.MoveCaretForAppend()).Verifiable();
             var ret = _mode.Process('a');
             Assert.IsTrue(ret.IsSwitchMode);
             Assert.AreEqual(ModeKind.Insert, ret.AsSwitchMode().Item);

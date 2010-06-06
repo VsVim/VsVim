@@ -272,5 +272,15 @@ type internal DefaultOperations
                 let pos = min pos (line.End.Position-1)
                 TextViewUtil.MoveCaretToPosition _textView pos |> ignore
             
+        member x.MoveCaretForAppend () = 
+            let point = TextViewUtil.GetCaretPoint _textView
+            _operations.ResetSelection()
+            if SnapshotPointUtil.IsInsideLineBreak point then ()
+            elif SnapshotPointUtil.IsEndPoint point then ()
+            else 
+                let point = point.Add(1)
+                TextViewUtil.MoveCaretToPoint _textView point |> ignore
+
+
 
 

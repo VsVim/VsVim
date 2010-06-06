@@ -994,5 +994,40 @@ namespace VimCore.Test
             Create("dog kicked the ball");
 
         }
+
+        [Test]
+        public void MoveCaretForAppend1()
+        {
+            Create("foo", "bar");
+            _operations.MoveCaretForAppend();
+            Assert.AreEqual(1, _view.GetCaretPoint().Position);
+        }
+
+        [Test]
+        public void MoveCaretForAppend2()
+        {
+            Create("foo", "bar");
+            _view.MoveCaretTo(_view.GetLine(0).End.Subtract(1));
+            _operations.MoveCaretForAppend();
+            Assert.AreEqual(_view.GetLine(0).End, _view.GetCaretPoint());
+        }
+
+        [Test]
+        public void MoveCaretForAppend3()
+        {
+            Create("foo", "bar");
+            _view.MoveCaretTo(_view.GetLine(0).End);
+            _operations.MoveCaretForAppend();
+            Assert.AreEqual(_view.GetLine(0).End, _view.GetCaretPoint());
+        }
+
+        [Test]
+        public void MoveCaretForAppend4()
+        {
+            Create("foo", "bar");
+            _view.MoveCaretTo(SnapshotUtil.GetEndPoint(_view.TextSnapshot));
+            _operations.MoveCaretForAppend();
+            Assert.AreEqual(SnapshotUtil.GetEndPoint(_view.TextSnapshot), _view.GetCaretPoint());
+        }
     }
 }

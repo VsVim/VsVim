@@ -184,6 +184,11 @@ module internal SnapshotPointUtil =
         let line = GetContainingLine point
         line.Start.Position = point.Position
 
+    /// Is this the end of the Snapshot
+    let IsEndPoint point = 
+        let snapshot = GetSnapshot point
+        point = SnapshotUtil.GetEndPoint snapshot
+
     /// Get the line range passed in.  If the count of lines exceeds the amount of lines remaining
     /// in the buffer, the span will be truncated to the final line
     let GetLineSpan point =

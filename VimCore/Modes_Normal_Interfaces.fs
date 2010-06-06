@@ -46,6 +46,9 @@ type IOperations =
     /// Move to the next "count" occurrence of the last search
     abstract MoveToNextOccuranceOfLastSearch : count:int -> isReverse:bool -> unit
 
+    /// Move the caret for an append operation
+    abstract MoveCaretForAppend : unit -> unit
+
     /// Jump to the next item in the jump list
     abstract JumpNext : count:int -> unit
 
