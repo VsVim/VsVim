@@ -25,6 +25,7 @@ namespace VsVimTest
     {
         private VsVimHost _hostRaw;
         private IVimHost _host;
+        private MockFactory _factory;
         private Mock<IVsEditorAdaptersFactoryService> _editorAdaptersFactoryService;
         private Mock<ITextBufferUndoManagerProvider> _undoManagerProvider;
         private Mock<_DTE> _dte;
@@ -33,19 +34,27 @@ namespace VsVimTest
 
         private void Create()
         {
-            _undoManagerProvider = new Mock<ITextBufferUndoManagerProvider>(MockBehavior.Strict);
-            _editorAdaptersFactoryService = new Mock<IVsEditorAdaptersFactoryService>(MockBehavior.Strict);
-            _statusBar = new Mock<StatusBar>(MockBehavior.Strict);
-            _dte = new Mock<_DTE>(MockBehavior.Strict);
+            _factory = new MockFactory(MockBehavior.Strict);
+            _undoManagerProvider = _factory.Create<ITextBufferUndoManagerProvider>();
+            _editorAdaptersFactoryService = _factory.Create<IVsEditorAdaptersFactoryService>();
+            _statusBar = _factory.Create<StatusBar>();
+            _dte = _factory.Create<_DTE>();
             _dte.SetupGet(x => x.StatusBar).Returns(_statusBar.Object);
-            _textManager = new Mock<IVsTextManager>(MockBehavior.Strict);
+            _textManager = _factory.Create<IVsTextManager>();
 
-            var sp = new Mock<SVsServiceProvider>(MockBehavior.Strict);
+            // Several commands check to see if there is an active view.  By default pretend there is none
+            IVsTextView notUsed = null;
+            _textManager
+                .Setup(x => x.GetActiveView(0, null, out notUsed))
+                .Returns(VSConstants.S_OK);
+
+            var sp = _factory.Create<SVsServiceProvider>();
             sp.Setup(x => x.GetService(typeof(SVsTextManager))).Returns(_textManager.Object);
             sp.Setup(x => x.GetService(typeof(_DTE))).Returns(_dte.Object);
             _hostRaw = new VsVimHost(_undoManagerProvider.Object, _editorAdaptersFactoryService.Object, sp.Object);
             _host = _hostRaw;
         }
+
 
         [TearDown]
         public void TearDown()
@@ -67,7 +76,7 @@ namespace VsVimTest
         public void GotoDefinition2()
         {
             Create();
-            _dte.Setup(x => x.ExecuteCommand(It.IsAny<string>(), It.IsAny<string>())).Throws(new Exception());
+            _dte.Setup(x => x.ExecuteCommand(VsVimHost.CommandNameGoToDefinition, String.Empty)).Throws(new Exception());
             Assert.IsFalse(_host.GoToDefinition());
         }
 
@@ -75,7 +84,25 @@ namespace VsVimTest
         public void GotoDefinition3()
         {
             Create();
-            _dte.Setup(x => x.ExecuteCommand(It.IsAny<string>(), It.IsAny<string>()));
+            _dte.Setup(x => x.ExecuteCommand(VsVimHost.CommandNameGoToDefinition, String.Empty));
+            Assert.IsTrue(_host.GoToDefinition());
+        }
+
+        [Test]
+        public void GotoDefinition4()
+        {
+            Create();
+            var ct = EditorUtil.GetOrCreateContentType(VsVim.Constants.CPlusPlusContentType, "code");
+            var textView = EditorUtil.CreateView(ct, "hello world");
+            var mockVsTextView = _factory.Create<IVsTextView>();
+            var vsTextView = mockVsTextView.Object;
+            _textManager
+                .Setup(x => x.GetActiveView(0, null, out vsTextView))
+                .Returns(0);
+            _editorAdaptersFactoryService
+                .Setup(x => x.GetWpfTextView(mockVsTextView.Object))
+                .Returns(textView);
+            _dte.Setup(x => x.ExecuteCommand(VsVimHost.CommandNameGoToDefinition, "hello"));
             Assert.IsTrue(_host.GoToDefinition());
         }
 

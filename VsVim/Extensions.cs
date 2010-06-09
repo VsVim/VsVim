@@ -188,11 +188,36 @@ namespace VsVim
 
         #endregion
 
+        #region IVsTextManager
+
+        public static Tuple<bool, IWpfTextView> TryGetActiveTextView(this IVsTextManager vsTextManager, IVsEditorAdaptersFactoryService factoryService)
+        {
+            IVsTextView vsTextView;
+            IWpfTextView textView = null;
+            if (ErrorHandler.Succeeded(vsTextManager.GetActiveView(0, null, out vsTextView)) && vsTextView != null)
+            {
+                textView = factoryService.GetWpfTextView(vsTextView);
+            }
+
+            return Tuple.Create(textView != null, textView);
+        }
+
+        #endregion
+
         #region IServiceProvider
 
         public static TInterface GetService<TService, TInterface>(this IServiceProvider sp)
         {
             return (TInterface)sp.GetService(typeof(TService));
+        }
+
+        #endregion
+
+        #region IContentType
+
+        public static bool IsCPlusPlus(this IContentType ct)
+        {
+            return ct.IsOfType(Constants.CPlusPlusContentType);
         }
 
         #endregion

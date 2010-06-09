@@ -5,7 +5,7 @@ open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Operations
 
 
-module internal TssUtil =
+module TssUtil =
 
 
     /// Get the spans of all Words starting at the given point and searching the 

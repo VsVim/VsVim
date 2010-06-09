@@ -9,6 +9,7 @@ using Microsoft.VisualStudio.OLE.Interop;
 using System.Diagnostics;
 using Microsoft.VisualStudio.Shell.Interop;
 using Vim;
+using Vim.Extensions;
 using Microsoft.VisualStudio.TextManager.Interop;
 using Microsoft.VisualStudio.Language.Intellisense;
 using System.ComponentModel.Composition;
@@ -18,6 +19,7 @@ using Microsoft.VisualStudio;
 using System.Windows;
 using Microsoft.VisualStudio.Text.Operations;
 using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Text.Editor;
 
 
 namespace VsVim
@@ -29,6 +31,8 @@ namespace VsVim
     [Export(typeof(IVimHost))]
     internal sealed class VsVimHost : IVimHost
     {
+        internal const string CommandNameGoToDefinition = "Edit.GoToDefinition";
+
         private readonly IVsEditorAdaptersFactoryService _editorAdaptersFactoryService;
         private readonly ITextBufferUndoManagerProvider _undoManagerProvider;
         private readonly _DTE _dte;
@@ -41,9 +45,9 @@ namespace VsVim
 
         [ImportingConstructor]
         internal VsVimHost(
-            ITextBufferUndoManagerProvider undoManagerProvider, 
+            ITextBufferUndoManagerProvider undoManagerProvider,
             IVsEditorAdaptersFactoryService editorAdaptersFactoryService,
-            SVsServiceProvider serviceProvider )
+            SVsServiceProvider serviceProvider)
         {
             _undoManagerProvider = undoManagerProvider;
             _editorAdaptersFactoryService = editorAdaptersFactoryService;
@@ -56,16 +60,34 @@ namespace VsVim
             _dte.StatusBar.Text = text;
         }
 
-        private bool SafeExecuteCommand(string command)
+        private bool SafeExecuteCommand(string command, string args = "" )
         {
             try
             {
-                _dte.ExecuteCommand(command);
+                _dte.ExecuteCommand(command, args);
                 return true;
             }
             catch (Exception)
             {
                 return false;
+            }
+        }
+
+        /// <summary>
+        /// The C++ project system requires that the target of GoToDefinition be passed
+        /// as an argument to the command.  
+        /// </summary>
+        private bool GoToDefinitionCPlusPlus(IWpfTextView textView)
+        {
+            var caretPoint = textView.Caret.Position.BufferPosition;
+            var span = TssUtil.FindCurrentFullWordSpan(caretPoint, WordKind.NormalWord);
+            if (span.IsSome())
+            {
+                return SafeExecuteCommand(CommandNameGoToDefinition, span.Value.GetText());
+            }
+            else
+            {
+                return SafeExecuteCommand(CommandNameGoToDefinition);
             }
         }
 
@@ -94,7 +116,13 @@ namespace VsVim
 
         bool IVimHost.GoToDefinition()
         {
-            return SafeExecuteCommand("Edit.GoToDefinition");
+            var tuple = _textManager.TryGetActiveTextView(_editorAdaptersFactoryService);
+            if (tuple.Item1 && tuple.Item2.TextBuffer.ContentType.IsCPlusPlus())
+            {
+                return GoToDefinitionCPlusPlus(tuple.Item2);
+            }
+
+            return SafeExecuteCommand(CommandNameGoToDefinition);
         }
 
         bool IVimHost.GoToMatch()

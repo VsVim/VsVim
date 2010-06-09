@@ -12,6 +12,7 @@ using System.ComponentModel.Composition.Hosting;
 using Microsoft.VisualStudio.Text.Operations;
 using Microsoft.VisualStudio.Text.Classification;
 using Vim;
+using Microsoft.VisualStudio.Utilities;
 
 namespace VimCore.Test.Utils
 {
@@ -54,6 +55,9 @@ namespace VimCore.Test.Utils
             [Import]
             public ITextBufferUndoManagerProvider undoManagerProvider;
 
+            [Import]
+            public IContentTypeRegistryService contentTypeRegistryService;
+
             public Factory() { }
         }
 
@@ -89,12 +93,18 @@ namespace VimCore.Test.Utils
                 return m_factory;
             }
         }
-
-
         public static ITextBuffer CreateBuffer(params string[] lines)
         {
+            return CreateBuffer(null, lines);
+        }
+
+        public static ITextBuffer CreateBuffer(IContentType contentType, params string[] lines)
+        {
             var factory = FactoryService.textBufferFactory;
-            var buffer = factory.CreateTextBuffer();
+            var buffer = contentType != null
+                ? factory.CreateTextBuffer(contentType)
+                : factory.CreateTextBuffer();
+
             if (lines.Length != 0)
             {
                 var text = lines.Aggregate((x, y) => x + Environment.NewLine + y);
@@ -106,7 +116,12 @@ namespace VimCore.Test.Utils
 
         public static IWpfTextView CreateView(params string[] lines)
         {
-            var buffer = CreateBuffer(lines);
+            return CreateView(null, lines);
+        }
+
+        public static IWpfTextView CreateView(IContentType contentType, params string[] lines)
+        {
+            var buffer = CreateBuffer(contentType, lines);
             var view = FactoryService.textEditorFactory.CreateTextView(buffer);
             return view;
         }
@@ -126,6 +141,17 @@ namespace VimCore.Test.Utils
         public static ITextUndoHistory GetUndoHistory(ITextBuffer textBuffer)
         {
             return FactoryService.undoManagerProvider.GetTextBufferUndoManager(textBuffer).TextBufferUndoHistory;
+        }
+
+        public static IContentType GetOrCreateContentType(string type, string baseType)
+        {
+            var ct = FactoryService.contentTypeRegistryService.GetContentType(type);
+            if (ct == null)
+            {
+                ct = FactoryService.contentTypeRegistryService.AddContentType(type, new string[] { baseType });
+            }
+
+            return ct;
         }
 
         public static CompositionContainer CreateContainer()

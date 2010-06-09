@@ -3,7 +3,7 @@ namespace Vim
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Operations
 
-module internal TssUtil =
+module TssUtil =
 
     let ValidPos (tss:ITextSnapshot) start = 
         if start < 0 then 0
