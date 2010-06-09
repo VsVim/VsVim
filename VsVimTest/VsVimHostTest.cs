@@ -107,6 +107,25 @@ namespace VsVimTest
         }
 
         [Test]
+        [Description("Non-C++ doesn't need the work around")]
+        public void GotoDefinition5()
+        {
+            Create();
+            var ct = EditorUtil.GetOrCreateContentType("csharp", "code");
+            var textView = EditorUtil.CreateView(ct, "hello world");
+            var mockVsTextView = _factory.Create<IVsTextView>();
+            var vsTextView = mockVsTextView.Object;
+            _textManager
+                .Setup(x => x.GetActiveView(0, null, out vsTextView))
+                .Returns(0);
+            _editorAdaptersFactoryService
+                .Setup(x => x.GetWpfTextView(mockVsTextView.Object))
+                .Returns(textView);
+            _dte.Setup(x => x.ExecuteCommand(VsVimHost.CommandNameGoToDefinition, ""));
+            Assert.IsTrue(_host.GoToDefinition());
+        }
+
+        [Test]
         public void GoToMatch1()
         {
             Create();
