@@ -33,17 +33,21 @@ namespace VsVim
         }
 
         /// <summary>
-        /// Check for and remove conflicting key bindings
+        /// Compute the set of keys that conflict with and have been already been removed.
         /// </summary>
         internal CommandKeyBindingSnapshot CreateCommandKeyBindingSnapshot(IVimBuffer buffer)
         {
+            // Get the list of all KeyInputs that are the first key of a VsVim command
             var hashSet = new HashSet<KeyInput>(
                 buffer.AllModes
                 .Select(x => x.CommandNames)
                 .SelectMany(x => x)
                 .Where(x => x.KeyInputs.Length > 0)
                 .Select(x => x.KeyInputs.First()));
+
+            // Include the key used to disable VsVim
             hashSet.Add(buffer.Settings.GlobalSettings.DisableCommand);
+
             return CreateCommandKeyBindingSnapshot(hashSet);
         }
 
@@ -58,12 +62,13 @@ namespace VsVim
         }
 
         /// <summary>
-        /// Find all of the Command instances which have conflicting key bindings
+        /// Find all of the Command instances (which represent Visual Studio commands) which would conflict with any
+        /// VsVim commands that use the keys in neededInputs.
         /// </summary>
-        internal List<CommandKeyBinding> FindConflictingCommandKeyBindings( HashSet<KeyInput> neededInputs)
+        internal List<CommandKeyBinding> FindConflictingCommandKeyBindings(HashSet<KeyInput> neededInputs)
         {
             var list = new List<CommandKeyBinding>();
-            var all =  _snapshot.CommandKeyBindings.Where(x => !ShouldSkip(x));
+            var all = _snapshot.CommandKeyBindings.Where(x => !ShouldSkip(x));
             foreach (var binding in all)
             {
                 var input = binding.KeyBinding.FirstKeyInput;
@@ -76,6 +81,9 @@ namespace VsVim
             return list;
         }
 
+        /// <summary>
+        /// Returns the list of commands that were previously removed by the user and are no longer currently active.
+        /// </summary>
         internal List<CommandKeyBinding> FindRemovedKeyBindings()
         {
             return FindKeyBindingsMarkedAsRemoved().Where(x => !_snapshot.IsKeyBindingActive(x.KeyBinding)).ToList();
