@@ -7,104 +7,45 @@
              d:DesignHeight="300" d:DesignWidth="400" >
     <UserControl.Resources>
         <DataTemplate x:Key="keyBindingItemTemplate">
-            <StackPanel Orientation="Horizontal">
-                <CheckBox IsChecked="{Binding IsChecked}" Margin="0,0,5,0" />
-                <TextBlock Text="{Binding Name}" Margin="0,0,5,0"/>
-                <TextBlock Text="{Binding Keys}" />
-            </StackPanel>
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <CheckBox IsChecked="{Binding IsChecked}" Grid.Row="0" Grid.Column="0" Margin="2" />
+                <TextBlock Text="{Binding KeyName}" Grid.Row="0" Grid.Column="1" Margin="1" TextWrapping="Wrap" />
+                <TextBlock Text="{Binding DisabledCommands}" Grid.Row="1" Grid.Column="1" Margin="2" />
+            </Grid>
         </DataTemplate>
     </UserControl.Resources>
     
-    <Grid>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="293*" />
-            <ColumnDefinition Width="Auto" />
-            <ColumnDefinition Width="178*" />
-            <ColumnDefinition Width="115*" />
-        </Grid.ColumnDefinitions>
-
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
-            <RowDefinition Height="Auto" />
-        </Grid.RowDefinitions>
-
-        <Label
-            Grid.Column="0"
-            Grid.Row="0"
-            Content="Removed Key Bindings" />
-
-        <ListBox 
-            Name="_removedListBox"
-            Grid.Column="0"
-            Grid.Row="1"
-            ItemsSource="{Binding}"
-            ItemTemplate="{StaticResource keyBindingItemTemplate}" />
-
-        <Grid   
-            Grid.Column="1"
-            Grid.Row="1" >
-
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto" />
-            </Grid.ColumnDefinitions>
-
-            <Grid.RowDefinitions>
-                <RowDefinition Height="*" />
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="*" />
-            </Grid.RowDefinitions>
-
-            <Button
-                Grid.Row="1"
-                Grid.Column="0"
-                Margin="3"
-                Content="&lt;&lt;"
-                Click="OnRemoveSelectedClick"
-                />
-
-            <Button
-                Grid.Row="2"
-                Grid.Column="0"
-                Margin="3"
-                Content=">>" 
-                Click="OnResetSelectedClick" />
-        </Grid>
-
-        <Label
-            Grid.Column="2" Content="Conflicting Key Bindings" Grid.ColumnSpan="2" />
-
-        <ListBox 
-            Name="_conflictingListBox"
-            Grid.Column="2"
-            Grid.Row="1"
-            ItemsSource="{Binding}"
-            ItemTemplate="{StaticResource keyBindingItemTemplate}" Grid.ColumnSpan="2" />
-
-        <DockPanel
-            Grid.Row="2" Grid.ColumnSpan="4"
-            LastChildFill="False">
+    <DockPanel>
+        <StackPanel Orientation="Horizontal"
+                    DockPanel.Dock="Bottom"
+                    Margin="0,0,0,5">
+            
+            <Button 
+                DockPanel.Dock="Right" 
+                Content="Enable All VsVim Keybindings"
+                Margin="5,0,0,0"
+                Click="OnEnableAllVimKeysClick" />
 
             <Button 
                 DockPanel.Dock="Right" 
-                Margin="5"
-                Content="Remove All Conflicting" 
-                Click="OnRemoveAllConflictingClick" />
+                Content="Disable All VsVim Keybindings"
+                Margin="5,0,0,0"
+                Click="OnDisableAllVimKeysClick" />
+        </StackPanel>
 
-            <Button 
-                DockPanel.Dock="Right" 
-                Margin="5" 
-                Content="Remove Selected"
-                Click="OnRemoveSelectedClick" />
-
-            <Button 
-                DockPanel.Dock="Right" 
-                Margin="5"
-                Content="Reset All"
-                Click="OnResetAllClick" />
-
-        </DockPanel>
-
-    </Grid>
+        <ListBox Name="_bindingsListBox"
+                 ItemsSource="{Binding}"
+                 ItemTemplate="{StaticResource keyBindingItemTemplate}"
+                 Margin="5" />
+    </DockPanel>
 </UserControl>

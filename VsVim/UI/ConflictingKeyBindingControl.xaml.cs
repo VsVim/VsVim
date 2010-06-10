@@ -20,54 +20,27 @@ namespace VsVim.UI
     /// </summary>
     public partial class ConflictingKeyBindingControl : UserControl
     {
-        private ObservableCollection<KeyBindingData> _removedKeyBindingData = new ObservableCollection<KeyBindingData>();
-        private ObservableCollection<KeyBindingData> _conflictingKeyBindingData = new ObservableCollection<KeyBindingData>();
+        private ObservableCollection<KeyBindingData> _keyBindingList = new ObservableCollection<KeyBindingData>();
 
-        public ObservableCollection<KeyBindingData> RemovedKeyBindingData
+        public ObservableCollection<KeyBindingData> KeyBindingList
         {
-            get { return _removedKeyBindingData; }
+            get { return _keyBindingList; }
         }
 
-        public ObservableCollection<KeyBindingData> ConflictingKeyBindingData
-        {
-            get { return _conflictingKeyBindingData; }
-        }
-        
         public ConflictingKeyBindingControl()
         {
             InitializeComponent();
-            _removedListBox.DataContext = _removedKeyBindingData;
-            _conflictingListBox.DataContext = _conflictingKeyBindingData;
+            _bindingsListBox.DataContext = _keyBindingList;
         }
 
-        private void OnRemoveAllConflictingClick(object sender, RoutedEventArgs e)
+        private void OnEnableAllVimKeysClick(object sender, RoutedEventArgs e)
         {
-            _conflictingKeyBindingData.ForEach(x => x.IsChecked = false);
-            _removedKeyBindingData.AddRange(_conflictingKeyBindingData);
-            _conflictingKeyBindingData.Clear();
+            _keyBindingList.ForEach(x => x.IsChecked = true);
         }
 
-        private void OnResetAllClick(object sender, RoutedEventArgs e)
+        private void OnDisableAllVimKeysClick(object sender, RoutedEventArgs e)
         {
-            _removedKeyBindingData.ForEach(x => x.IsChecked=false);
-            _conflictingKeyBindingData.AddRange(_removedKeyBindingData);
-            _removedKeyBindingData.Clear();
-        }
-
-        private void OnRemoveSelectedClick(object sender, RoutedEventArgs e)
-        {
-            var list = _conflictingKeyBindingData.Where(x => x.IsChecked).ToList();
-            list.ForEach(x => x.IsChecked = false);
-            list.ForEach(x => _conflictingKeyBindingData.Remove(x));
-            _removedKeyBindingData.AddRange(list);
-        }
-
-        private void OnResetSelectedClick(object sender, RoutedEventArgs e)
-        {
-            var list = _removedKeyBindingData.Where(x => x.IsChecked).ToList();
-            list.ForEach(x => x.IsChecked = false);
-            list.ForEach(x => _removedKeyBindingData.Remove(x));
-            _conflictingKeyBindingData.AddRange(list);
+            _keyBindingList.ForEach(x => x.IsChecked = false);
         }
     }
 }

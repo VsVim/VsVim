@@ -44,14 +44,16 @@ namespace VsVim.UI
         public static bool DoShow(CommandKeyBindingSnapshot snapshot)
         {
             var window = new ConflictingKeyBindingDialog();
-            var removed = window.ConflictingKeyBindingControl.RemovedKeyBindingData;
-            removed.AddRange(snapshot.Removed.Select(x => new KeyBindingData(x)));
-            var current = window.ConflictingKeyBindingControl.ConflictingKeyBindingData;
-            current.AddRange(snapshot.Conflicting.Select(x => new KeyBindingData(x)));
+            var keyBindingList = window._bindingControl.KeyBindingList;
+            keyBindingList.AddRange(ComputeKeyBindingList(snapshot));
             var ret = window.ShowModal();
             if (ret.HasValue && ret.Value)
             {
                 // Remove all of the removed bindings
+                var keyBindingsByActiveState = keyBindingList.ToLookup(data => data.IsChecked);
+
+                // For VsVim commands that are active, we shall remove any other bindings
+                var removed = keyBindingsByActiveState[true].SelectMany(data => data.Bindings);
                 foreach (var cur in removed)
                 {
                     var tuple = snapshot.TryGetCommand(cur.Name);
@@ -62,26 +64,45 @@ namespace VsVim.UI
                 }
 
                 // Restore all of the conflicting ones
-                foreach (var cur in current)
+                foreach (var cur in keyBindingsByActiveState[false].SelectMany(binding => binding.Bindings))
                 {
-                    KeyBinding binding;
                     var tuple = snapshot.TryGetCommand(cur.Name);
-                    if ( tuple.Item1 && KeyBinding.TryParse(cur.Keys, out binding))
+                    if ( tuple.Item1 )
                     {
-                        tuple.Item2.SafeSetBindings(binding);
+                        tuple.Item2.SafeSetBindings(cur.KeyBinding);
                     }
                 }
 
                 var settings = Settings.Settings.Default;
                 settings.RemovedBindings = 
                     removed
-                    .Select(x => new Settings.CommandBindingSetting() { Name = x.Name, CommandString = x.Keys })
+                    .Select(x => new Settings.CommandBindingSetting() { Name = x.Name, CommandString = x.KeyBinding.CommandString })
                     .ToArray();
                 settings.HaveUpdatedKeyBindings = true;
                 settings.Save();
             }
 
             return ret.HasValue && ret.Value;
+        }
+
+        private static IEnumerable<KeyBindingData> ComputeKeyBindingList(CommandKeyBindingSnapshot snapshot)
+        {
+            // This snapshot contains a list of active keys, and keys which are still conflicting. We will group all
+            // bindings by the initial character, and will consider the entire group active as long as one key is
+            // active.
+
+            var activeBindingsGrouped = snapshot.Removed.ToLookup(binding => binding.KeyBinding.FirstKeyInput);
+            var inactiveBindingsGrouped = snapshot.Conflicting.ToLookup(binding => binding.KeyBinding.FirstKeyInput);
+
+            var allFirstKeys = activeBindingsGrouped.Select(group => group.Key)
+                               .Union(inactiveBindingsGrouped.Select(group => group.Key));
+
+            return from firstKey in allFirstKeys
+                   select new KeyBindingData(activeBindingsGrouped[firstKey].Union(inactiveBindingsGrouped[firstKey]))
+                   {
+                       IsChecked = activeBindingsGrouped.Contains(firstKey)
+                   };
+
         }
     }
 }

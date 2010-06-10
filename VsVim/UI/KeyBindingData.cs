@@ -6,20 +6,16 @@ using System.Windows;
 
 namespace VsVim.UI
 {
-    public sealed class KeyBindingData :DependencyObject
+    public sealed class KeyBindingData : DependencyObject
     {
-        public static readonly DependencyProperty ScopeProperty = DependencyProperty.Register(
-            "Scope",
+
+        public static readonly DependencyProperty KeyNameProperty = DependencyProperty.Register(
+            "KeyName",
             typeof(string),
             typeof(KeyBindingData));
 
-        public static readonly DependencyProperty NameProperty = DependencyProperty.Register(
-            "Name",
-            typeof(string),
-            typeof(KeyBindingData));
-
-        public static readonly DependencyProperty KeysProperty = DependencyProperty.Register(
-            "Keys",
+        public static readonly DependencyProperty DisabledCommandsProperty = DependencyProperty.Register(
+            "DisabledCommands",
             typeof(string),
             typeof(KeyBindingData));
 
@@ -28,22 +24,16 @@ namespace VsVim.UI
             typeof(bool),
             typeof(KeyBindingData));
 
-        public string Scope
+        public string KeyName
         {
-            get { return (string)GetValue(ScopeProperty); }
-            set { SetValue(ScopeProperty, value); }
+            get { return (string)GetValue(KeyNameProperty); }
+            set { SetValue(KeyNameProperty, value); }
         }
 
-        public string Name
+        public string DisabledCommands
         {
-            get { return (string)GetValue(NameProperty); }
-            set { SetValue(NameProperty, value); }
-        }
-
-        public string Keys
-        {
-            get { return (string)GetValue(KeysProperty); }
-            set { SetValue(KeysProperty, value); }
+            get { return (string)GetValue(DisabledCommandsProperty); }
+            set { SetValue(DisabledCommandsProperty, value); }
         }
 
         public bool IsChecked
@@ -52,16 +42,27 @@ namespace VsVim.UI
             set { SetValue(IsCheckedProperty, value); }
         }
 
+        private CommandKeyBinding[] _bindings;
+
         public KeyBindingData()
         {
 
         }
 
-        public KeyBindingData(CommandKeyBinding binding)
+        public IEnumerable<CommandKeyBinding> Bindings
         {
-            Scope = binding.KeyBinding.Scope;
-            Name = binding.Name;
-            Keys = binding.KeyBinding.CommandString;
+            get { return _bindings; }
+        }
+
+        public KeyBindingData(IEnumerable<CommandKeyBinding> bindings)
+        {
+            // All bindings passed have the same KeyInput as their first key, so get it
+            Vim.KeyInput firstKeyInput = bindings.First().KeyBinding.FirstKeyInput;
+            KeyName = KeyBinding.CreateKeyBindingStringForSingleKeyInput(firstKeyInput);
+
+            _bindings = bindings.ToArray();
+
+            DisabledCommands = "Interferes with " + string.Join(", ", bindings.Select(binding => binding.Name));
         }
     }
 }
