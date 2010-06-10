@@ -158,7 +158,6 @@
       <DependentUpon>ConflictingKeyBindingMarginControl.xaml</DependentUpon>
     </Compile>
     <Compile Include="UI\KeyBindingData.cs" />
-    <Compile Include="UI\ScopeData.cs" />
     <Compile Include="VsCommandFilter.cs" />
     <Compile Include="VsVimHost.cs" />
   </ItemGroup>
