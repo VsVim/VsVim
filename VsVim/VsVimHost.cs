@@ -1,25 +1,15 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
+using System.ComponentModel.Composition;
 using System.Linq;
 using EnvDTE;
+using Microsoft.VisualStudio.Editor;
+using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Text;
-using System.Runtime.InteropServices;
-using Microsoft.VisualStudio.OLE.Interop;
-using System.Diagnostics;
-using Microsoft.VisualStudio.Shell.Interop;
+using Microsoft.VisualStudio.Text.Editor;
+using Microsoft.VisualStudio.Text.Operations;
+using Microsoft.VisualStudio.TextManager.Interop;
 using Vim;
 using Vim.Extensions;
-using Microsoft.VisualStudio.TextManager.Interop;
-using Microsoft.VisualStudio.Language.Intellisense;
-using System.ComponentModel.Composition;
-using VsVim.Properties;
-using Microsoft.VisualStudio.Editor;
-using Microsoft.VisualStudio;
-using System.Windows;
-using Microsoft.VisualStudio.Text.Operations;
-using Microsoft.VisualStudio.Shell;
-using Microsoft.VisualStudio.Text.Editor;
 
 
 namespace VsVim
@@ -33,10 +23,10 @@ namespace VsVim
     {
         internal const string CommandNameGoToDefinition = "Edit.GoToDefinition";
 
+        private readonly ITextManager _textManager;
         private readonly IVsEditorAdaptersFactoryService _editorAdaptersFactoryService;
         private readonly ITextBufferUndoManagerProvider _undoManagerProvider;
         private readonly _DTE _dte;
-        private readonly IVsTextManager _textManager;
 
         internal _DTE DTE
         {
@@ -47,12 +37,13 @@ namespace VsVim
         internal VsVimHost(
             ITextBufferUndoManagerProvider undoManagerProvider,
             IVsEditorAdaptersFactoryService editorAdaptersFactoryService,
+            ITextManager textManager,
             SVsServiceProvider serviceProvider)
         {
             _undoManagerProvider = undoManagerProvider;
             _editorAdaptersFactoryService = editorAdaptersFactoryService;
             _dte = (_DTE)serviceProvider.GetService(typeof(_DTE));
-            _textManager = (IVsTextManager)serviceProvider.GetService(typeof(SVsTextManager));
+            _textManager = textManager;
         }
 
         private void UpdateStatus(string text)
@@ -116,7 +107,7 @@ namespace VsVim
 
         bool IVimHost.GoToDefinition()
         {
-            var tuple = _textManager.TryGetActiveTextView(_editorAdaptersFactoryService);
+            var tuple = _textManager.TryGetActiveTextView();
             if (tuple.Item1 && tuple.Item2.TextBuffer.ContentType.IsCPlusPlus())
             {
                 return GoToDefinitionCPlusPlus(tuple.Item2);
@@ -137,18 +128,7 @@ namespace VsVim
 
         bool IVimHost.NavigateTo(VirtualSnapshotPoint point)
         {
-            var snapshotLine = point.Position.GetContainingLine();
-            var column = point.Position.Position - snapshotLine.Start.Position;
-            var vsBuffer = _editorAdaptersFactoryService.GetBufferAdapter(point.Position.Snapshot.TextBuffer);
-            var viewGuid = VSConstants.LOGVIEWID_Code;
-            var hr = _textManager.NavigateToLineAndColumn(
-                vsBuffer,
-                ref viewGuid,
-                snapshotLine.LineNumber,
-                column,
-                snapshotLine.LineNumber,
-                column);
-            return ErrorHandler.Succeeded(hr);
+            return _textManager.NavigateTo(point);
         }
 
         string IVimHost.GetName(ITextBuffer buffer)

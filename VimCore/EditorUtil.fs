@@ -8,7 +8,7 @@ open Microsoft.VisualStudio.Text.Outlining
 
 /// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
 /// include any Vim specific logic
-module internal SnapshotUtil = 
+module SnapshotUtil = 
     
     /// Get the last line in the ITextSnapshot.  Avoid pulling the entire buffer into memory
     /// slowly by using the index
@@ -83,7 +83,7 @@ module internal SnapshotUtil =
     
 /// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
 /// include any Vim specific logic
-module internal SnapshotSpanUtil =
+module SnapshotSpanUtil =
 
     /// Get all of the points on the specified SnapshotSpan.  Will not return the End point
     let GetPoints (span:SnapshotSpan) = 
@@ -135,7 +135,7 @@ module internal SnapshotSpanUtil =
 
 /// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
 /// include any Vim specific logic
-module internal SnapshotLineUtil =
+module SnapshotLineUtil =
 
     /// Length of the line
     let GetLength (line:ITextSnapshotLine) = line.Length
@@ -167,7 +167,7 @@ module internal SnapshotLineUtil =
 
 /// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
 /// include any Vim specific logic
-module internal SnapshotPointUtil =
+module SnapshotPointUtil =
 
     /// Get the position
     let GetPosition (point:SnapshotPoint) = point.Position
@@ -416,7 +416,7 @@ module internal SnapshotPointUtil =
 
 /// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
 /// include any Vim specific logic
-module internal TextViewUtil =
+module TextViewUtil =
 
     let GetSnapshot (textView:ITextView) = textView.TextSnapshot
 

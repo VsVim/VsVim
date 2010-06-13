@@ -118,6 +118,8 @@
     <Compile Include="EditCommand.cs" />
     <Compile Include="CommandKeyBinding.cs" />
     <Compile Include="EditCommandKind.cs" />
+    <Compile Include="Implementation\TextManager.cs" />
+    <Compile Include="ITextManager.cs" />
     <Compile Include="OleCommandUtil.cs" />
     <Compile Include="Extensions.cs" />
     <Compile Include="HostFactory.cs" />
