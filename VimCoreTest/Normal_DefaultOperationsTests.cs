@@ -1,21 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using NUnit.Framework;
-using Vim.Modes.Normal;
-using VimCore.Test.Utils;
-using Moq;
-using Vim;
 using Microsoft.FSharp.Core;
+using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Operations;
-using Microsoft.VisualStudio.Text;
-using System.Windows.Input;
-using Vim.Modes;
 using Microsoft.VisualStudio.Text.Outlining;
+using Moq;
+using NUnit.Framework;
+using Vim;
 using Vim.Extensions;
+using Vim.Modes.Normal;
 using VimCore.Test.Mock;
+using VimCore.Test.Utils;
 
 namespace VimCore.Test
 {
@@ -58,6 +55,7 @@ namespace VimCore.Test
                 _view = EditorUtil.CreateView(lines);
             }
 
+            var editorOptions = EditorUtil.FactoryService.editorOptionsFactory.GetOptions(_view);
             baseNav = baseNav ?? (new Mock<ITextStructureNavigator>(MockBehavior.Strict)).Object;
             var nav = TssUtil.CreateTextStructureNavigator(WordKind.NormalWord, baseNav);
             _globalSettings = MockObjectFactory.CreateGlobalSettings(ignoreCase: true);
@@ -70,7 +68,7 @@ namespace VimCore.Test
             _outlining = new Mock<IOutliningManager>(MockBehavior.Strict);
             _undoRedoOperations = new Mock<IUndoRedoOperations>(MockBehavior.Strict);
             _undoRedoOperations.Setup(x => x.CreateUndoTransaction(It.IsAny<string>())).Returns<string>(name => new Vim.UndoTransaction(FSharpOption.Create(EditorUtil.GetUndoHistory(_view.TextBuffer).CreateTransaction(name))));
-            _operationsRaw = new DefaultOperations(_view, editorOpts, _outlining.Object, _host.Object, _statusUtil.Object, _settings.Object, nav, _jumpList.Object, _search.Object, _undoRedoOperations.Object);
+            _operationsRaw = new DefaultOperations(_view, editorOpts, editorOptions, _outlining.Object, _host.Object, _statusUtil.Object, _settings.Object, nav, _jumpList.Object, _search.Object, _undoRedoOperations.Object);
             _operations = _operationsRaw;
         }
 

@@ -163,6 +163,7 @@ namespace VsVim
 
         void IVimHost.CloseAllFiles(bool checkDirty)
         {
+            
             SafeExecuteCommand("Window.CloseAllDocuments");
         }
 

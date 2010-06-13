@@ -12,6 +12,7 @@ type internal DefaultOperations
     (
     _textView : ITextView,
     _operations : IEditorOperations,
+    _options : IEditorOptions,
     _outlining : IOutliningManager,
     _host : IVimHost,
     _statusUtil : IStatusUtil,
@@ -165,7 +166,8 @@ type internal DefaultOperations
                 let newLine = buffer.CurrentSnapshot.GetLineFromLineNumber(line.LineNumber+1)
             
                 // Move the caret to the same indent position as the previous line
-                let indent = TssUtil.FindIndentPosition(line)
+                let tabSize = EditorOptionsUtil.GetOptionValueOrDefault _options DefaultOptions.TabSizeOptionId 4
+                let indent = TssUtil.FindIndentPosition line tabSize
                 let point = new VirtualSnapshotPoint(newLine, indent)
                 TextViewUtil.MoveCaretToVirtualPoint _textView point |> ignore 
                 newLine )

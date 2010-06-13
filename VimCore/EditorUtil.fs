@@ -474,3 +474,17 @@ module TextViewUtil =
         let point = SnapshotPoint(tss, pos)
         MoveCaretToPoint textView point 
 
+module EditorOptionsUtil =
+
+    /// Get the option value if it exists
+    let GetOptionValue (opts:IEditorOptions) (key:EditorOptionKey<'a>) =
+        try
+            opts.GetOptionValue(key) |> Some
+        with
+            | :? System.ArgumentException-> None
+
+    let GetOptionValueOrDefault opts key defaultValue = 
+        match GetOptionValue opts key with
+        | Some(value) -> value
+        | None -> defaultValue
+

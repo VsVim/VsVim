@@ -68,7 +68,8 @@ module TssUtil =
     /// Find the point just before next "count" ocurrance of the given "char" on the specified line
     val FindTillPreviousOccurranceOfCharOnLine : SnapshotPoint -> char -> int -> SnapshotPoint option
 
-    val FindIndentPosition : ITextSnapshotLine -> int
+    /// Find the indent position for the given line.  
+    val FindIndentPosition : ITextSnapshotLine -> tabSize:int -> int
 
     /// Get the reverse character span.  This will search backwards count items until the 
     /// count is satisfied or the begining of the line is reached

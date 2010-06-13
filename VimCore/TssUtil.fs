@@ -112,11 +112,11 @@ module TssUtil =
                 inner prevPos (count-1)
         inner point count 
 
-    let FindIndentPosition (line:ITextSnapshotLine) =
-        let text = line.GetText()
-        match text |> Seq.tryFindIndex (fun c -> not (System.Char.IsWhiteSpace(c))) with
-            | Some i -> i
-            | None -> 0
+    let FindIndentPosition (line:ITextSnapshotLine) tabSize =
+        SnapshotSpanUtil.GetPoints line.Extent
+        |> Seq.map (fun p -> p.GetChar())
+        |> Seq.takeWhile CharUtil.IsWhiteSpace
+        |> Seq.fold (fun acc c -> acc + (if c = '\t' then tabSize else 1)) 0
         
     let GetReverseCharacterSpan (point:SnapshotPoint) count =
         let line = point.GetContainingLine()

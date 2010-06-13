@@ -1,18 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.Composition;
+using System.ComponentModel.Composition.Hosting;
+using System.ComponentModel.Composition.Primitives;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.ComponentModel.Composition;
-using System.ComponentModel.Composition.Primitives;
-using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Language.Intellisense;
-using Microsoft.VisualStudio.Text.Editor;
-using System.ComponentModel.Composition.Hosting;
-using Microsoft.VisualStudio.Text.Operations;
+using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Classification;
-using Vim;
+using Microsoft.VisualStudio.Text.Editor;
+using Microsoft.VisualStudio.Text.Operations;
 using Microsoft.VisualStudio.Utilities;
+using Vim;
 
 namespace VimCore.Test.Utils
 {
@@ -30,6 +29,9 @@ namespace VimCore.Test.Utils
 
             [Import]
             public IEditorOperationsFactoryService editorOperationsFactory;
+
+            [Import]
+            public IEditorOptionsFactoryService editorOptionsFactory;
 
             [Import]
             public ISignatureHelpBroker signatureBroker;

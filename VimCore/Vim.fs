@@ -17,6 +17,7 @@ type internal VimBufferFactory
     (
         _host : IVimHost,
         _editorOperationsFactoryService : IEditorOperationsFactoryService,
+        _editorOptionsFactoryService : IEditorOptionsFactoryService,
         _outliningManagerService : IOutliningManagerService,
         _completionWindowBrokerFactoryService : IDisplayWindowBrokerFactoryService,
         _textSearchService : ITextSearchService,
@@ -26,6 +27,7 @@ type internal VimBufferFactory
 
     member x.CreateBuffer (vim:IVim) view = 
         let editOperations = _editorOperationsFactoryService.GetEditorOperations(view)
+        let editOptions = _editorOptionsFactoryService.GetOptions(view)
         let motionUtil = MotionUtil(view, vim.Settings) :> IMotionUtil
         let capture = MotionCapture(view, motionUtil) :> IMotionCapture
         let outlining = _outliningManagerService.GetOutliningManager(view)
@@ -50,7 +52,7 @@ type internal VimBufferFactory
         let wordNav = x.CreateTextStructureNavigator view.TextBuffer WordKind.NormalWord
         let broker = _completionWindowBrokerFactoryService.CreateDisplayWindowBroker view
         let normalIncrementalSearch = Vim.Modes.Normal.IncrementalSearch(view, outlining, localSettings, wordNav, vim.SearchService) :> IIncrementalSearch
-        let normalOpts = Modes.Normal.DefaultOperations(view,editOperations, outlining,_host, statusUtil, localSettings,wordNav,jumpList, normalIncrementalSearch, undoRedoOperations) :> Modes.Normal.IOperations
+        let normalOpts = Modes.Normal.DefaultOperations(view,editOperations, editOptions, outlining,_host, statusUtil, localSettings,wordNav,jumpList, normalIncrementalSearch, undoRedoOperations) :> Modes.Normal.IOperations
         let commandOpts = Modes.Command.DefaultOperations(view,editOperations,outlining, _host, statusUtil, jumpList, localSettings, vim.KeyMap, undoRedoOperations) :> Modes.Command.IOperations
         let commandProcessor = Modes.Command.CommandProcessor(buffer, commandOpts, statusUtil, FileSystem() :> IFileSystem) :> Modes.Command.ICommandProcessor
         let insertOpts = Modes.Insert.DefaultOperations(view,editOperations,outlining,_host, jumpList, localSettings, undoRedoOperations) :> Modes.ICommonOperations
