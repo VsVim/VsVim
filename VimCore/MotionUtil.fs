@@ -245,3 +245,5 @@ type internal MotionUtil
             let span,isForward = x.SpanAndForwardFromLines caretLine middleLine
             {Span=span; IsForward=isForward; MotionKind=MotionKind.Inclusive; OperationKind=OperationKind.LineWise; Column=None}
             |> x.ApplyStartOfLineOption
+
+
