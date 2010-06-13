@@ -11,6 +11,7 @@ type internal MotionUtil
         _textView : ITextView,
         _settings : IVimGlobalSettings) = 
 
+    /// Caret point in the view
     member x.StartPoint = TextViewUtil.GetCaretPoint _textView
 
     member private x.SpanAndForwardFromLines (line1:ITextSnapshotLine) (line2:ITextSnapshotLine) = 
@@ -84,27 +85,42 @@ type internal MotionUtil
             {Span=span; IsForward=true; MotionKind=MotionKind.Exclusive; OperationKind=OperationKind.CharacterWise; Column=None}
         member x.EndOfWord kind count = 
             let start = x.StartPoint
-            let tss = SnapshotPointUtil.GetSnapshot start
-            let snapshotEnd = SnapshotUtil.GetEndPoint tss
-            let rec inner start count = 
-                if count <= 0 || start = snapshotEnd then start
-                else
-    
-                    // Move start to the first word if we're currently on whitespace
-                    let start = 
-                        if System.Char.IsWhiteSpace(start.GetChar()) then TssUtil.FindNextWordStart start 1 kind 
-                        else start
-    
-                    if start = snapshotEnd then snapshotEnd
-                    else
-                        // Get the span of the current word and the end completes the motion
-                        match TssUtil.FindCurrentFullWordSpan start kind with
-                        | None -> SnapshotUtil.GetEndPoint start.Snapshot
-                        | Some(s) -> inner s.End (count-1)
-    
-            let endPoint = inner start count
-            let span = SnapshotSpan(start,endPoint)
-            {Span=span; IsForward=true; MotionKind=MotionKind.Inclusive; OperationKind=OperationKind.CharacterWise; Column=None}
+            let snapshot = SnapshotPointUtil.GetSnapshot start
+            let snapshotEnd = SnapshotUtil.GetEndPoint snapshot
+
+            // Find the next point from the end of the current word
+            let findNext point = 
+                let next = 
+                    SnapshotSpan(point, snapshotEnd)
+                    |> SnapshotSpanUtil.GetPoints
+                    |> Seq.tryFind (fun p -> TextUtil.IsWordChar (p.GetChar()) kind)
+                match next with 
+                | None -> None
+                | Some(point) -> 
+                    match TssUtil.FindCurrentFullWordSpan point kind with
+                    | None -> None
+                    | Some(span) -> SnapshotSpanUtil.GetLastIncludedPoint span 
+
+            // Find the point to start the actual search from
+            let firstPoint = 
+                if start = snapshotEnd then start
+                else start.Add(1)
+
+            let rec inner point count = 
+                if count = 0 || point = snapshotEnd then Some point 
+                else 
+                    match findNext (point.Add(1)) with
+                    | None -> None
+                    | Some(point) -> inner point (count - 1)
+
+            let endPoint = inner firstPoint count
+            match endPoint with 
+            | None -> None
+            | Some(endPoint) ->
+                // Make it inclusive
+                let endPoint = if endPoint = snapshotEnd then endPoint else endPoint.Add(1)
+                let span = SnapshotSpan(start,endPoint)
+                {Span=span; IsForward=true; MotionKind=MotionKind.Inclusive; OperationKind=OperationKind.CharacterWise; Column=None} |> Some
         member x.EndOfLine count = 
             let start = x.StartPoint
             let span = SnapshotPointUtil.GetLineRangeSpan start count

@@ -102,7 +102,7 @@ type IMotionUtil =
 
     /// Implement the 'e' motion.  This goes to the end of the current word.  If we're
     /// not currently on a word it will find the next word and then go to the end of that
-    abstract EndOfWord : WordKind -> int -> MotionData
+    abstract EndOfWord : WordKind -> int -> MotionData option
     
     /// Implement an end of line motion.  Typically in response to the $ key.  Even though
     /// this motion deals with lines, it's still a character wise motion motion. 

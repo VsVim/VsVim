@@ -11,8 +11,14 @@ type internal Direction =
 module internal TextUtil =
 
     let private IsBigWordChar c = not (Char.IsWhiteSpace(c))
-    let private IsWordChar c = Char.IsLetterOrDigit(c) || c = '_'
-    let private IsWordOtherChar c = (not (IsWordChar c)) && (not (Char.IsWhiteSpace(c)))
+    let private IsNormalWordChar c = Char.IsLetterOrDigit(c) || c = '_'
+    let private IsWordOtherChar c = (not (IsNormalWordChar c)) && (not (Char.IsWhiteSpace(c)))
+
+    let IsWordChar c kind =
+        match kind with
+        | WordKind.BigWord -> IsBigWordChar c
+        | WordKind.NormalWord -> IsNormalWordChar c
+        | _ -> failwith "Invalid"
     
     let rec private GetNormalWordPredicate input index dir = 
         let nextIndex index = 
@@ -23,10 +29,10 @@ module internal TextUtil =
                 | _ -> failwith "Invalid Enum"
         
         match StringUtil.charAtOption index input with 
-            | None -> IsWordChar
+            | None -> IsNormalWordChar
             | Some c -> 
-                if IsWordChar c then
-                    IsWordChar
+                if IsNormalWordChar c then
+                    IsNormalWordChar
                 else if IsWordOtherChar c then
                     IsWordOtherChar
                 else

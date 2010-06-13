@@ -126,6 +126,13 @@ module internal SnapshotSpanUtil =
     /// the span but instead the first point after the span
     let GetStartAndEndLine span = GetStartLine span,GetEndLine span
 
+    /// Gets the last point which is actually included in the span.  This is different than
+    /// EndPoint which is the first point after the span
+    let GetLastIncludedPoint (span:SnapshotSpan) =
+        if span.Length = 0 then None
+        else span.End.Subtract(1) |> Some
+
+
 /// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
 /// include any Vim specific logic
 module internal SnapshotLineUtil =

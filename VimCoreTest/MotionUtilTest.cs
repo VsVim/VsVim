@@ -280,7 +280,7 @@ namespace VimCore.Test
         public void EndOfWord1()
         {
             Create("foo bar");
-            var res = _util.EndOfWord(WordKind.NormalWord, 1);
+            var res = _util.EndOfWord(WordKind.NormalWord, 1).Value;
             Assert.AreEqual(MotionKind.Inclusive, res.MotionKind);
             Assert.AreEqual(OperationKind.CharacterWise, res.OperationKind);
             Assert.AreEqual(new SnapshotSpan(_buffer.CurrentSnapshot, 0, 3), res.Span);
@@ -291,7 +291,7 @@ namespace VimCore.Test
         {
             Create("foo   ","bar");
             _textView.MoveCaretTo(4);
-            var res = _util.EndOfWord(WordKind.NormalWord, 1);
+            var res = _util.EndOfWord(WordKind.NormalWord, 1).Value;
             var span = new SnapshotSpan(
                 _buffer.GetPoint(4),
                 _buffer.GetLineFromLineNumber(1).Start.Add(3));
@@ -304,7 +304,7 @@ namespace VimCore.Test
         public void EndOfWord3()
         {
             Create("foo bar baz jaz");
-            var res = _util.EndOfWord(WordKind.NormalWord, 2);
+            var res = _util.EndOfWord(WordKind.NormalWord, 2).Value;
             var span = new SnapshotSpan(_buffer.CurrentSnapshot, 0, 7);
             Assert.AreEqual(span, res.Span);
             Assert.AreEqual(MotionKind.Inclusive, res.MotionKind);
@@ -316,7 +316,7 @@ namespace VimCore.Test
         {
             Create("foo   ", "", "bar");
             _textView.MoveCaretTo(4);
-            var res = _util.EndOfWord(WordKind.NormalWord, 1);
+            var res = _util.EndOfWord(WordKind.NormalWord, 1).Value;
             var span = new SnapshotSpan(
                 _buffer.GetPoint(4),
                 _buffer.GetLineFromLineNumber(2).Start.Add(3));
@@ -331,13 +331,28 @@ namespace VimCore.Test
             Create("foo   ", "", "bar");
             _textView.MoveCaretTo(4);
             var res = _util.EndOfWord(WordKind.NormalWord, 400);
-            var span = new SnapshotSpan(
-                _buffer.GetPoint(4),
-                SnapshotUtil.GetEndPoint(_buffer.CurrentSnapshot));
-            Assert.AreEqual(span, res.Span);
-            Assert.AreEqual(MotionKind.Inclusive, res.MotionKind);
-            Assert.AreEqual(OperationKind.CharacterWise, res.OperationKind);
+            Assert.IsTrue(res.IsNone());
         }
+
+        [Test]
+        [Description("On the last char of a word motion should proceed forward")]
+        public void EndOfWord6()
+        {
+            Create("foo bar baz");
+            _textView.MoveCaretTo(2);
+            var res = _util.EndOfWord(WordKind.NormalWord, 1).Value;
+            Assert.AreEqual("o bar", res.Span.GetText());
+        }
+
+        [Test]
+        public void EndOfWord7()
+        {
+            Create("foo", "bar");
+            _textView.MoveCaretTo(2);
+            var res = _util.EndOfWord(WordKind.NormalWord, 1).Value;
+            Assert.AreEqual("o" + Environment.NewLine + "bar", res.Span.GetText());
+        }
+
 
         [Test]
         public void ForwardChar1()

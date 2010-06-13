@@ -242,7 +242,7 @@ namespace VimCore.Test
         {
             _util
                 .Setup(x => x.EndOfWord(WordKind.NormalWord, 1))
-                .Returns(CreateMotionData())
+                .Returns(FSharpOption.Create(CreateMotionData()))
                 .Verifiable();
             ProcessComplete("e", 1);
             _util.Verify();
@@ -252,7 +252,7 @@ namespace VimCore.Test
         {
             _util
                 .Setup(x => x.EndOfWord(WordKind.BigWord, 1))
-                .Returns(CreateMotionData())
+                .Returns(FSharpOption.Create(CreateMotionData()))
                 .Verifiable();
             ProcessComplete("E", 1);
             _util.Verify();
