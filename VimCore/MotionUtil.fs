@@ -141,13 +141,12 @@ type internal MotionUtil
             let span = SnapshotSpan(line.Start, start)
             {Span=span; IsForward=false; MotionKind=MotionKind.Exclusive; OperationKind=OperationKind.CharacterWise; Column=None}
         member x.LineDownToFirstNonWhitespace count =
-            let start = x.StartPoint
-            let line = SnapshotPointUtil.GetContainingLine start
+            let line = x.StartPoint |> SnapshotPointUtil.GetContainingLine
             let number = line.LineNumber + count
             let endLine = SnapshotUtil.GetLineOrLast line.Snapshot number
-            let point = TssUtil.FindFirstNonWhitespaceCharacter endLine
-            let span = SnapshotSpan(start, point.Add(1)) // Add 1 since it's inclusive
-            {Span=span; IsForward=true; MotionKind=MotionKind.Inclusive; OperationKind=OperationKind.LineWise; Column=None}
+            let column = TssUtil.FindFirstNonWhitespaceCharacter endLine |> SnapshotPointUtil.GetColumn |> Some
+            let span = SnapshotSpan(line.Start, endLine.End)
+            {Span=span; IsForward=true; MotionKind=MotionKind.Inclusive; OperationKind=OperationKind.LineWise; Column=column}
         member x.LineUpToFirstNonWhitespace count =
             let point = x.StartPoint
             let endLine = SnapshotPointUtil.GetContainingLine point

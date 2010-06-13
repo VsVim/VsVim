@@ -758,6 +758,27 @@ namespace VimCore.Test
             Assert.AreEqual(_buffer.GetLineSpan(0), data.Span);
             Assert.IsTrue(data.IsForward);
         }
+
+        [Test]
+        [Description("This is a linewise motion and should return line spans")]
+        public void LineDownToFirstNonWhitespace4()
+        {
+            Create("cat", "dog", "bird");
+            _textView.MoveCaretTo(1);
+            var data = _util.LineDownToFirstNonWhitespace(1);
+            var span = _textView.GetLineSpan(0, 1);
+            Assert.AreEqual(span, data.Span);
+        }
+
+        [Test]
+        public void LineDownToFirstNonWhitespace5()
+        {
+            Create("cat", "  dog", "bird");
+            _textView.MoveCaretTo(1);
+            var data = _util.LineDownToFirstNonWhitespace(1);
+            Assert.IsTrue(data.Column.IsSome());
+            Assert.AreEqual(2, data.Column.Value);
+        }
     }   
     
 }

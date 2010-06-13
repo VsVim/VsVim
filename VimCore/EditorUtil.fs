@@ -260,6 +260,11 @@ module internal SnapshotPointUtil =
         let line = GetContainingLine point
         let column = point.Position - line.Start.Position
         (line.LineNumber,column)
+
+    /// Get the column number 
+    let GetColumn point = 
+        let _,column = GetLineColumn point 
+        column
     
     /// Get the lines of the containing ITextSnapshot as a seq 
     let GetLines point kind =
