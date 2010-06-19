@@ -35,8 +35,8 @@ type IVimHost =
     /// Saves all files
     abstract SaveAllFiles : unit -> unit
 
-    /// Close the current file
-    abstract CloseCurrentFile : checkDirty:bool -> unit
+    /// Close the given file
+    abstract Close : ITextView -> checkDirty:bool -> unit
 
     /// Closes all files
     abstract CloseAllFiles : checkDirty:bool -> unit

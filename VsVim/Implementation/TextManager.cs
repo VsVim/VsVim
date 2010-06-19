@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Linq;
-using System.Runtime.InteropServices;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Editor;
 using Microsoft.VisualStudio.Shell;
@@ -19,23 +18,40 @@ namespace VsVim.Implementation
     {
         private readonly IVsEditorAdaptersFactoryService _editorAdaptersFactoryService;
         private readonly IVsTextManager _textManager;
-        private readonly IVsRunningDocumentTable _table;
+        private readonly IVsUIShell _uiShell;
+        private readonly RunningDocumentTable _table;
         private readonly IServiceProvider _serviceProvider;
 
         public IEnumerable<ITextBuffer> TextBuffers
         {
             get
             {
-                return GetRunningDocumentCookies()
-                    .Select(x => GetTextBufferForDocCookie(x))
+                return _table
+                    .Select(x => GetTextBufferForDocCookie(x.DocCookie))
                     .Where(x => x.Item1)
                     .Select(x => x.Item2);
             }
         }
 
-        public IEnumerable<IWpfTextView> TextViews
+        public IEnumerable<ITextView> TextViews
         {
-            get { return TextBuffers.Select(x => GetTextViews(x)).SelectMany(x => x);  }
+            get { return TextBuffers.Select(x => GetTextViews(x)).SelectMany(x => x); }
+        }
+
+        public ITextView ActiveTextView
+        {
+            get
+            {
+                IVsTextView vsTextView;
+                IWpfTextView textView = null;
+                ErrorHandler.ThrowOnFailure(_textManager.GetActiveView(0, null, out vsTextView));
+                textView = _editorAdaptersFactoryService.GetWpfTextView(vsTextView);
+                if (textView == null)
+                {
+                    throw new InvalidOperationException();
+                }
+                return textView;
+            }
         }
 
         [ImportingConstructor]
@@ -46,19 +62,8 @@ namespace VsVim.Implementation
             _editorAdaptersFactoryService = editorAdaptersFactoryService;
             _serviceProvider = serviceProvider;
             _textManager = _serviceProvider.GetService<SVsTextManager, IVsTextManager>();
-            _table = _serviceProvider.GetService<SVsRunningDocumentTable, IVsRunningDocumentTable>();
-        }
-
-        public Tuple<bool, IWpfTextView> TryGetActiveTextView()
-        {
-            IVsTextView vsTextView;
-            IWpfTextView textView = null;
-            if (ErrorHandler.Succeeded(_textManager.GetActiveView(0, null, out vsTextView)) && vsTextView != null)
-            {
-                textView = _editorAdaptersFactoryService.GetWpfTextView(vsTextView);
-            }
-
-            return Tuple.Create(textView != null, textView);
+            _table = new RunningDocumentTable(_serviceProvider);
+            _uiShell = _serviceProvider.GetService<SVsUIShell, IVsUIShell>();
         }
 
         public bool NavigateTo(VirtualSnapshotPoint point)
@@ -78,18 +83,55 @@ namespace VsVim.Implementation
             return ErrorHandler.Succeeded(hr);
         }
 
+        public void Close(ITextView textView, bool checkDirty)
+        {
+            var frame = GetContainingWindowFrame(textView);
+            var value = checkDirty
+                ? __FRAMECLOSE.FRAMECLOSE_PromptSave
+                : __FRAMECLOSE.FRAMECLOSE_NoSave;
+            ErrorHandler.ThrowOnFailure(frame.CloseFrame((uint)value));
+        }
+
+        private IVsWindowFrame GetContainingWindowFrame(ITextView textView)
+        {
+            var targetView = _editorAdaptersFactoryService.GetViewAdapter(textView);
+            foreach ( var frame in _uiShell.GetDocumentWindowFrames())
+            {
+                var codeWindow = frame.GetCodeWindow();
+                IVsTextView vsTextView;
+                if (ErrorHandler.Succeeded(codeWindow.GetPrimaryView(out vsTextView)) && NativeMethods.IsSameComObject(vsTextView, targetView))
+                {
+                    return frame;
+                }
+
+                if (ErrorHandler.Succeeded(codeWindow.GetSecondaryView(out vsTextView)) && NativeMethods.IsSameComObject(vsTextView, targetView))
+                {
+                    return frame;
+                }
+            }
+
+            throw new InvalidOperationException();
+        }
+
         private IEnumerable<IWpfTextView> GetTextViews(ITextBuffer textBuffer)
+        {
+            return GetVsTextViews(textBuffer)
+                .Select(x => _editorAdaptersFactoryService.GetWpfTextView(x))
+                .Where(x => x != null);
+        }
+
+        private IEnumerable<IVsTextView> GetVsTextViews(ITextBuffer textBuffer)
         {
             var vsTextBuffer = _editorAdaptersFactoryService.GetBufferAdapter(textBuffer);
             if (vsTextBuffer == null)
             {
-                return Enumerable.Empty<IWpfTextView>();
+                return Enumerable.Empty<IVsTextView>();
             }
 
             IVsEnumTextViews vsEnum;
             ErrorHandler.ThrowOnFailure(_textManager.EnumViews(vsTextBuffer, out vsEnum));
 
-            var list = new List<IWpfTextView>();
+            var list = new List<IVsTextView>();
             var done = false;
             var array = new IVsTextView[1];
             do
@@ -99,11 +141,7 @@ namespace VsVim.Implementation
                 ErrorHandler.ThrowOnFailure(hr);
                 if (VSConstants.S_OK == hr && array[0] != null)
                 {
-                    var textView = _editorAdaptersFactoryService.GetWpfTextView(array[0]);
-                    if (textView != null)
-                    {
-                        list.Add(textView);
-                    }
+                    list.Add(array[0]);
                 }
                 else
                 {
@@ -117,71 +155,23 @@ namespace VsVim.Implementation
 
         private Tuple<bool, ITextBuffer> GetTextBufferForDocCookie(uint cookie)
         {
-            uint rdtFlags, readLocks, editLocks, itemId;
-            string document;
-            IVsHierarchy hierarchy;
-            var docData = IntPtr.Zero;
-            var hr = _table.GetDocumentInfo(
-                cookie,
-                out rdtFlags,
-                out readLocks,
-                out editLocks,
-                out document,
-                out hierarchy,
-                out itemId,
-                out docData);
+            var info = _table.GetDocumentInfo(cookie);
+            var obj = info.DocData;
+            var vsTextLines = obj as IVsTextLines;
+            var vsTextBufferProvider = obj as IVsTextBufferProvider;
             ITextBuffer buffer = null;
-            if (ErrorHandler.Failed(hr))
+            if (vsTextLines != null)
             {
-                return Tuple.Create(false, buffer);
+                buffer = _editorAdaptersFactoryService.GetDataBuffer(vsTextLines);
             }
-
-            var obj = Marshal.GetObjectForIUnknown(docData);
-            try
+            else if (vsTextBufferProvider != null
+                && ErrorHandler.Succeeded(vsTextBufferProvider.GetTextBuffer(out vsTextLines))
+                && vsTextLines != null)
             {
-                var vsTextLines = obj as IVsTextLines;
-                var vsTextBufferProvider = obj as IVsTextBufferProvider;
-                if (vsTextLines != null)
-                {
-                    buffer = _editorAdaptersFactoryService.GetDataBuffer(vsTextLines);
-                }
-                else if (vsTextBufferProvider != null
-                    && ErrorHandler.Succeeded(vsTextBufferProvider.GetTextBuffer(out vsTextLines))
-                    && vsTextLines != null)
-                {
-                    buffer = _editorAdaptersFactoryService.GetDataBuffer(vsTextLines);
-                }
-            }
-            finally
-            {
-                Marshal.Release(docData);
+                buffer = _editorAdaptersFactoryService.GetDataBuffer(vsTextLines);
             }
 
             return Tuple.Create(buffer != null, buffer);
-        }
-
-        private IEnumerable<uint> GetRunningDocumentCookies()
-        {
-            IEnumRunningDocuments enumDocs;
-            ErrorHandler.ThrowOnFailure(_table.GetRunningDocumentsEnum(out enumDocs));
-            var done = false;
-            var array = new uint[1];
-            var list = new List<uint>();
-            do
-            {
-                uint found = 0;
-                var hr = enumDocs.Next(1, array, out found);
-                ErrorHandler.ThrowOnFailure(hr);
-                if (found == 0 || VSConstants.S_FALSE == hr)
-                {
-                    done = true;
-                }
-                else
-                {
-                    list.Add(array[0]);
-                }
-            } while (!done);
-            return list;
         }
     }
 }

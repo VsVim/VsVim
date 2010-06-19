@@ -3,7 +3,6 @@ using EnvDTE;
 using Microsoft.VisualStudio.Editor;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Text;
-using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Operations;
 using Microsoft.VisualStudio.TextManager.Interop;
 using Moq;
@@ -56,7 +55,8 @@ namespace VsVimTest
         public void GotoDefinition1()
         {
             Create();
-            _textManager.Setup(x => x.TryGetActiveTextView()).Returns(Tuple.Create<bool, IWpfTextView>(false, null));
+            var textView = EditorUtil.CreateView("");
+            _textManager.SetupGet(x => x.ActiveTextView).Returns(textView);
             Assert.IsFalse(_host.GoToDefinition());
         }
 
@@ -64,7 +64,8 @@ namespace VsVimTest
         public void GotoDefinition2()
         {
             Create();
-            _textManager.Setup(x => x.TryGetActiveTextView()).Returns(Tuple.Create<bool, IWpfTextView>(false, null));
+            var textView = EditorUtil.CreateView("");
+            _textManager.SetupGet(x => x.ActiveTextView).Returns(textView);
             _dte.Setup(x => x.ExecuteCommand(VsVimHost.CommandNameGoToDefinition, String.Empty)).Throws(new Exception());
             Assert.IsFalse(_host.GoToDefinition());
         }
@@ -73,8 +74,9 @@ namespace VsVimTest
         public void GotoDefinition3()
         {
             Create();
+            var textView = EditorUtil.CreateView("");
+            _textManager.SetupGet(x => x.ActiveTextView).Returns(textView);
             _dte.Setup(x => x.ExecuteCommand(VsVimHost.CommandNameGoToDefinition, String.Empty));
-            _textManager.Setup(x => x.TryGetActiveTextView()).Returns(Tuple.Create<bool, IWpfTextView>(false, null));
             Assert.IsTrue(_host.GoToDefinition());
         }
 
@@ -84,9 +86,7 @@ namespace VsVimTest
             Create();
             var ct = EditorUtil.GetOrCreateContentType(VsVim.Constants.CPlusPlusContentType, "code");
             var textView = EditorUtil.CreateView(ct, "hello world");
-            _textManager
-                .Setup(x => x.TryGetActiveTextView())
-                .Returns(Tuple.Create(true, textView));
+            _textManager.SetupGet(x => x.ActiveTextView).Returns(textView);
             _dte.Setup(x => x.ExecuteCommand(VsVimHost.CommandNameGoToDefinition, "hello"));
             Assert.IsTrue(_host.GoToDefinition());
         }
@@ -98,9 +98,7 @@ namespace VsVimTest
             Create();
             var ct = EditorUtil.GetOrCreateContentType("csharp", "code");
             var textView = EditorUtil.CreateView(ct, "hello world");
-            _textManager
-                .Setup(x => x.TryGetActiveTextView())
-                .Returns(Tuple.Create(true, textView));
+            _textManager.SetupGet(x => x.ActiveTextView).Returns(textView);
             _dte.Setup(x => x.ExecuteCommand(VsVimHost.CommandNameGoToDefinition, ""));
             Assert.IsTrue(_host.GoToDefinition());
         }

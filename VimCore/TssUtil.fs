@@ -124,7 +124,6 @@ module TssUtil =
         if line.Start.Position = point.Position then new SnapshotSpan(point,point)
         elif diff < 0 then new SnapshotSpan(line.Start, point)
         else new SnapshotSpan(point.Subtract(count), point)
-            
 
     let GetWordSpans point wordKind searchKind = 
         let getForSpanForward span = 

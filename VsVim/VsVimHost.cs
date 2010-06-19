@@ -68,7 +68,7 @@ namespace VsVim
         /// The C++ project system requires that the target of GoToDefinition be passed
         /// as an argument to the command.  
         /// </summary>
-        private bool GoToDefinitionCPlusPlus(IWpfTextView textView)
+        private bool GoToDefinitionCPlusPlus(ITextView textView)
         {
             var caretPoint = textView.Caret.Position.BufferPosition;
             var span = TssUtil.FindCurrentFullWordSpan(caretPoint, WordKind.NormalWord);
@@ -107,10 +107,10 @@ namespace VsVim
 
         bool IVimHost.GoToDefinition()
         {
-            var tuple = _textManager.TryGetActiveTextView();
-            if (tuple.Item1 && tuple.Item2.TextBuffer.ContentType.IsCPlusPlus())
+            var textView = _textManager.ActiveTextView;
+            if (textView.TextBuffer.ContentType.IsCPlusPlus())
             {
-                return GoToDefinitionCPlusPlus(tuple.Item2);
+                return GoToDefinitionCPlusPlus(textView);
             }
 
             return SafeExecuteCommand(CommandNameGoToDefinition);
@@ -156,14 +156,13 @@ namespace VsVim
             SafeExecuteCommand("File.SaveAll");
         }
 
-        void IVimHost.CloseCurrentFile(bool checkDirty)
+        void IVimHost.Close(ITextView textView, bool checkDirty)
         {
-            SafeExecuteCommand("File.Close");
+            _textManager.Close(textView, checkDirty);
         }
 
         void IVimHost.CloseAllFiles(bool checkDirty)
         {
-            
             SafeExecuteCommand("Window.CloseAllDocuments");
         }
 

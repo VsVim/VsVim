@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 
@@ -15,17 +14,21 @@ namespace VsVim
         /// <summary>
         /// Set of all active IWpfTextViews
         /// </summary>
-        IEnumerable<IWpfTextView> TextViews { get; }
+        IEnumerable<ITextView> TextViews { get; }
 
         /// <summary>
-        /// Get and return the IWpfTextView for the active document
+        /// Returns the active IWpfITextView
         /// </summary>
-        /// <returns></returns>
-        Tuple<bool, IWpfTextView> TryGetActiveTextView();
+        ITextView ActiveTextView { get; }
 
         /// <summary>
         /// Navigate Visual Studio to the given point
         /// </summary>
         bool NavigateTo(VirtualSnapshotPoint point);
+
+        /// <summary>
+        /// Close the passed in document
+        /// </summary>
+        void Close(ITextView textView, bool checkDirty);
     }
 }
