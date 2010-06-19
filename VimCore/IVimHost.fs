@@ -27,7 +27,7 @@ type IVimHost =
     abstract ShowOpenFileDialog : unit -> unit
 
     /// Save the current document
-    abstract SaveCurrentFile : unit -> unit
+    abstract Save : ITextView -> unit
 
     /// Save the current document as a new file with the specified name
     abstract SaveCurrentFileAs : string -> unit

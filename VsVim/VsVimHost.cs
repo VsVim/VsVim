@@ -141,9 +141,9 @@ namespace VsVim
             return vsTextLines.GetFileName();
         }
 
-        void IVimHost.SaveCurrentFile()
+        void IVimHost.Save(ITextView textView)
         {
-            SafeExecuteCommand("File.SaveSelectedItems");
+            _textManager.Save(textView);
         }
 
         void IVimHost.SaveCurrentFileAs(string fileName)
@@ -153,7 +153,11 @@ namespace VsVim
 
         void IVimHost.SaveAllFiles()
         {
-            SafeExecuteCommand("File.SaveAll");
+            var all = _textManager.TextViews;
+            foreach (var textView in all)
+            {
+                _textManager.Save(textView);
+            }
         }
 
         void IVimHost.Close(ITextView textView, bool checkDirty)
@@ -163,7 +167,11 @@ namespace VsVim
 
         void IVimHost.CloseAllFiles(bool checkDirty)
         {
-            SafeExecuteCommand("Window.CloseAllDocuments");
+            var all = _textManager.TextViews.ToList();
+            foreach (var textView in all)
+            {
+                _textManager.Close(textView, checkDirty);
+            }
         }
 
         void IVimHost.GoToNextTab(int count)

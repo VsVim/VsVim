@@ -83,6 +83,12 @@ namespace VsVim.Implementation
             return ErrorHandler.Succeeded(hr);
         }
 
+        public void Save(ITextView textView)
+        {
+            var vsTextView = _editorAdaptersFactoryService.GetViewAdapter(textView);
+            VsShellUtilities.SaveFileIfDirty(vsTextView);
+        }
+
         public void Close(ITextView textView, bool checkDirty)
         {
             var frame = GetContainingWindowFrame(textView);

@@ -393,7 +393,7 @@ type internal CommonOperations
 
         member x.Undo count = _undoRedoOperations.Undo count
         member x.Redo count = _undoRedoOperations.Redo count
-        member x.Save() = _host.SaveCurrentFile()
+        member x.Save() = _host.Save _textView
         member x.SaveAs fileName = _host.SaveCurrentFileAs fileName
         member x.SaveAll() = _host.SaveAllFiles()
         member x.Close checkDirty = _host.Close _textView checkDirty

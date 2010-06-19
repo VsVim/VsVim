@@ -77,7 +77,7 @@ namespace VimCore.Test
             throw new NotImplementedException();
         }
 
-        void IVimHost.SaveCurrentFile()
+        void IVimHost.Save(ITextView textView)
         {
             throw new NotImplementedException();
         }

@@ -27,6 +27,11 @@ namespace VsVim
         bool NavigateTo(VirtualSnapshotPoint point);
 
         /// <summary>
+        /// Save file if it's dirty
+        /// </summary>
+        void Save(ITextView textView);
+
+        /// <summary>
         /// Close the passed in document
         /// </summary>
         void Close(ITextView textView, bool checkDirty);
