@@ -199,6 +199,14 @@ module internal SeqUtil =
                 else false
 
         areEqual
+
+    /// Take a maximum of count elements from the list
+    let takeMax (sequence:'a seq) count = 
+        let i = ref 0
+        sequence |> Seq.takeWhile (fun _ -> 
+            i := !i + 1
+            if !i <= count then true
+            else false )
             
 module internal MapUtil =
 

@@ -1,16 +1,14 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using NUnit.Framework;
-using Moq;
-using Vim.Modes.Visual;
-using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text;
-using VimCore.Test.Utils;
+using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Operations;
-using Vim;
 using Microsoft.VisualStudio.Text.Outlining;
+using Moq;
+using NUnit.Framework;
+using Vim;
+using Vim.Modes;
+using Vim.Modes.Visual;
+using VimCore.Test.Utils;
 
 namespace VimCore.Test
 {
@@ -44,7 +42,21 @@ namespace VimCore.Test
             _settings = _factory.Create<IVimLocalSettings>();
             _undoRedoOperations = _factory.Create<IUndoRedoOperations>();
             _statusUtil = _factory.Create<IStatusUtil>();
-            _operations = new DefaultOperations(_textView, _editorOpts.Object, _outlining.Object, _host.Object, _jumpList.Object, _settings.Object, _undoRedoOperations.Object, kind, _statusUtil.Object);
+
+            var data = new OperationsData(
+                vimHost: _host.Object,
+                textView: _textView,
+                editorOperations: _editorOpts.Object,
+                outliningManager: _outlining.Object,
+                statusUtil: _statusUtil.Object,
+                jumpList: _jumpList.Object,
+                localSettings: _settings.Object,
+                keyMap:null,
+                undoRedoOperations: _undoRedoOperations.Object,
+                editorOptions:null,
+                navigator:null);
+
+            _operations = new DefaultOperations(data, kind);
         }
 
         private void AssertWorksOnlyOnSingleSpan(Action del)

@@ -1,18 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using NUnit.Framework;
-using Microsoft.VisualStudio.Text.Editor;
+using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
-using Vim.Modes;
-using Moq;
-using Vim;
-using Vim.Extensions;
-using VimCore.Test.Utils;
+using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Operations;
 using Microsoft.VisualStudio.Text.Outlining;
-using Microsoft.FSharp.Core;
+using Moq;
+using NUnit.Framework;
+using Vim;
+using Vim.Extensions;
+using Vim.Modes;
+using VimCore.Test.Utils;
 
 namespace VimCore.Test
 {
@@ -22,7 +21,7 @@ namespace VimCore.Test
 
         private class OperationsImpl : CommonOperations
         {
-            internal OperationsImpl(ITextView view, IEditorOperations opts, IOutliningManager outlining, IVimHost host, IJumpList jumpList, IVimLocalSettings settings, IUndoRedoOperations undoRedoOpts) : base(view, opts, outlining, host, jumpList, settings, undoRedoOpts) { }
+            internal OperationsImpl(OperationsData data) : base(data) { }
         }
 
         private IWpfTextView _view;
@@ -54,7 +53,20 @@ namespace VimCore.Test
             _settings.SetupGet(x => x.GlobalSettings).Returns(_globalSettings.Object);
             _undoRedoOperations = _factory.Create<IUndoRedoOperations>();
 
-            _operationsRaw = new OperationsImpl(_view, _editorOpts.Object, _outlining.Object, _host.Object, _jumpList.Object,_settings.Object, _undoRedoOperations.Object);
+            var data = new OperationsData(
+                vimHost:_host.Object,
+                editorOperations:_editorOpts.Object,
+                textView:_view,
+                outliningManager:_outlining.Object,
+                jumpList:_jumpList.Object,
+                localSettings:_settings.Object,
+                undoRedoOperations:_undoRedoOperations.Object,
+                editorOptions:null,
+                keyMap:null,
+                navigator:null,
+                statusUtil:null);
+                
+            _operationsRaw = new OperationsImpl(data);
             _operations = _operationsRaw;
         }
 

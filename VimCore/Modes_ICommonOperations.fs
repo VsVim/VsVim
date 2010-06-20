@@ -5,6 +5,21 @@ open Vim
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Operations
+open Microsoft.VisualStudio.Text.Outlining
+
+type OperationsData = {
+    VimHost : IVimHost;
+    TextView : ITextView;
+    EditorOperations : IEditorOperations;
+    EditorOptions : IEditorOptions
+    OutliningManager : IOutliningManager;
+    JumpList : IJumpList;
+    LocalSettings : IVimLocalSettings;
+    UndoRedoOperations : IUndoRedoOperations;
+    StatusUtil : IStatusUtil;
+    KeyMap : IKeyMap;
+    Navigator : ITextStructureNavigator
+}
 
 type JoinKind = 
     | RemoveEmptySpaces
@@ -170,3 +185,5 @@ type ICommonOperations =
 
     /// Make the letters on the given span upper case
     abstract MakeLettersUppercase : SnapshotSpan -> unit
+
+

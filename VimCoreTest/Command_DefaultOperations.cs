@@ -1,19 +1,17 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using NUnit.Framework;
-using Vim;
 using Microsoft.FSharp.Core;
-using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text;
-using VimCore.Test.Utils;
-using Vim.Modes;
-using Vim.Modes.Command;
-using Moq;
+using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Operations;
 using Microsoft.VisualStudio.Text.Outlining;
+using Moq;
+using NUnit.Framework;
+using Vim;
 using Vim.Extensions;
+using Vim.Modes;
+using Vim.Modes.Command;
+using VimCore.Test.Utils;
 
 namespace VimCore.Test
 {
@@ -43,7 +41,20 @@ namespace VimCore.Test
             _statusUtil = new Mock<IStatusUtil>(MockBehavior.Strict);
             _outlining = new Mock<IOutliningManager>(MockBehavior.Strict);
             _undoRedoOperations = new Mock<IUndoRedoOperations>(MockBehavior.Strict);
-            _operationsRaw = new DefaultOperations(_view, _editOpts.Object, _outlining.Object, _host.Object, _statusUtil.Object,_jumpList.Object, _settings.Object, _keyMap.Object, _undoRedoOperations.Object);
+
+            var data = new OperationsData(
+                vimHost: _host.Object,
+                textView: _view,
+                editorOperations: _editOpts.Object,
+                outliningManager: _outlining.Object,
+                statusUtil: _statusUtil.Object,
+                jumpList: _jumpList.Object,
+                localSettings: _settings.Object,
+                keyMap: _keyMap.Object,
+                undoRedoOperations: _undoRedoOperations.Object,
+                editorOptions:null,
+                navigator:null);
+            _operationsRaw = new DefaultOperations(data);
             _operations = _operationsRaw;
         }
 

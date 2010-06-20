@@ -8,15 +8,14 @@ open Microsoft.VisualStudio.Text.Operations
 open Microsoft.VisualStudio.Text.Outlining
 
 [<AbstractClass>]
-type internal CommonOperations 
-    (
-        _textView : ITextView,
-        _operations : IEditorOperations,
-        _outlining : IOutliningManager,
-        _host : IVimHost,
-        _jumpList : IJumpList,
-        _settings : IVimLocalSettings,
-        _undoRedoOperations : IUndoRedoOperations ) =
+type internal CommonOperations ( _data : OperationsData ) =
+    let _textView = _data.TextView
+    let _operations = _data.EditorOperations;
+    let _outlining = _data.OutliningManager;
+    let _host = _data.VimHost;
+    let _jumpList = _data.JumpList;
+    let _settings = _data.LocalSettings;
+    let _undoRedoOperations = _data.UndoRedoOperations;
 
     /// The caret sometimes needs to be adjusted after an Up or Down movement.  Caret position
     /// and virtual space is actually quite a predicamite for VsVim because of how Vim standard 

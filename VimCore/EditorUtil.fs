@@ -488,3 +488,4 @@ module EditorOptionsUtil =
         | Some(value) -> value
         | None -> defaultValue
 
+

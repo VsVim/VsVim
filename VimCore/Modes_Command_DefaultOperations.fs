@@ -10,18 +10,18 @@ open Microsoft.VisualStudio.Text.Outlining
 open System.Text.RegularExpressions
 open Vim.RegexUtil
 
-type internal DefaultOperations
-    (
-        _textView : ITextView,
-        _operations : IEditorOperations, 
-        _outlining : IOutliningManager,
-        _host : IVimHost,
-        _statusUtil : IStatusUtil,
-        _jumpList : IJumpList,
-        _settings : IVimLocalSettings,
-        _keyMap : IKeyMap,
-        _undoRedoOperations : IUndoRedoOperations) =
-    inherit CommonOperations(_textView, _operations, _outlining, _host, _jumpList, _settings, _undoRedoOperations) 
+type internal DefaultOperations ( _data : OperationsData ) =
+    inherit CommonOperations(_data)
+
+    let _textView = _data.TextView
+    let _operations = _data.EditorOperations;
+    let _outlining = _data.OutliningManager;
+    let _host = _data.VimHost;
+    let _jumpList = _data.JumpList;
+    let _settings = _data.LocalSettings;
+    let _undoRedoOperations = _data.UndoRedoOperations;
+    let _keyMap = _data.KeyMap
+    let _statusUtil = _data.StatusUtil
 
     /// Format the setting for use in output
     let FormatSetting(setting:Setting) = 

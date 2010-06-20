@@ -13,6 +13,7 @@ module internal Resources =
     let Common_MarkInvalid = "Argument must be a letter or forward / back quote"
     let Common_MarkNotSet = "Mark not set"
     let Common_BulkEdit = "VsVim Bulk Edit"
+    let Common_NoFoldFound = "No fold found"
 
     let NormalMode_PatternNotFound pattern = sprintf "Pattern not found: %s" pattern
     let NormalMode_NoPreviousSearch = "No previous search"

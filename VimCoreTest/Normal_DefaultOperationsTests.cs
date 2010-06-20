@@ -10,6 +10,7 @@ using Moq;
 using NUnit.Framework;
 using Vim;
 using Vim.Extensions;
+using Vim.Modes;
 using Vim.Modes.Normal;
 using VimCore.Test.Mock;
 using VimCore.Test.Utils;
@@ -68,7 +69,21 @@ namespace VimCore.Test
             _outlining = new Mock<IOutliningManager>(MockBehavior.Strict);
             _undoRedoOperations = new Mock<IUndoRedoOperations>(MockBehavior.Strict);
             _undoRedoOperations.Setup(x => x.CreateUndoTransaction(It.IsAny<string>())).Returns<string>(name => new Vim.UndoTransaction(FSharpOption.Create(EditorUtil.GetUndoHistory(_view.TextBuffer).CreateTransaction(name))));
-            _operationsRaw = new DefaultOperations(_view, editorOpts, editorOptions, _outlining.Object, _host.Object, _statusUtil.Object, _settings.Object, nav, _jumpList.Object, _search.Object, _undoRedoOperations.Object);
+
+            var data = new OperationsData(
+                vimHost: _host.Object,
+                textView: _view,
+                editorOperations: editorOpts,
+                outliningManager: _outlining.Object,
+                statusUtil: _statusUtil.Object,
+                jumpList: _jumpList.Object,
+                localSettings: _settings.Object,
+                keyMap: null,
+                undoRedoOperations: _undoRedoOperations.Object,
+                editorOptions: null,
+                navigator: null);
+
+            _operationsRaw = new DefaultOperations(data, _search.Object);
             _operations = _operationsRaw;
         }
 

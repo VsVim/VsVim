@@ -8,22 +8,19 @@ open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Operations
 open Microsoft.VisualStudio.Text.Outlining
 
-type internal DefaultOperations
-    (
-    _textView : ITextView,
-    _operations : IEditorOperations,
-    _options : IEditorOptions,
-    _outlining : IOutliningManager,
-    _host : IVimHost,
-    _statusUtil : IStatusUtil,
-    _settings : IVimLocalSettings,
-    _normalWordNav : ITextStructureNavigator,
-    _jumpList : IJumpList,
-    _incrementalSearch : IIncrementalSearch,
-    _undoRedoOperations : IUndoRedoOperations ) =
+type internal DefaultOperations ( _data : OperationsData, _incrementalSearch : IIncrementalSearch ) =
+    inherit CommonOperations(_data)
 
-    inherit CommonOperations(_textView, _operations, _outlining, _host, _jumpList, _settings, _undoRedoOperations)
-
+    let _textView = _data.TextView
+    let _operations = _data.EditorOperations
+    let _outlining = _data.OutliningManager
+    let _host = _data.VimHost
+    let _jumpList = _data.JumpList
+    let _settings = _data.LocalSettings
+    let _undoRedoOperations = _data.UndoRedoOperations
+    let _options = _data.EditorOptions
+    let _normalWordNav =  _data.Navigator
+    let _statusUtil = _data.StatusUtil
     let _search = _incrementalSearch.SearchService
 
     member private x.CommonImpl = x :> ICommonOperations
