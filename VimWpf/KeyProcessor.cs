@@ -39,6 +39,7 @@ namespace Vim.UI.Wpf
                 case Key.RightAlt:
                 case Key.RightCtrl:
                 case Key.RightShift:
+                case Key.System:
                     return true;
                 default:
                     return false;
