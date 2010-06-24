@@ -9,7 +9,9 @@
              d:DesignHeight="400" d:DesignWidth="600"
              MaxHeight="400"
              MaxWidth="600"
-             Title="VsVim Options" SizeToContent="Manual" >
+             Title="VsVim Options"
+             SizeToContent="Manual"
+             ShowInTaskbar="False">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="*" />
