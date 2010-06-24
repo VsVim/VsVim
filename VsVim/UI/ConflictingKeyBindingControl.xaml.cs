@@ -12,6 +12,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 
 namespace VsVim.UI
 {
@@ -31,16 +32,17 @@ namespace VsVim.UI
         {
             InitializeComponent();
             _bindingsListBox.DataContext = _keyBindingList;
+            _bindingsListBox.Items.SortDescriptions.Add(new SortDescription(KeyBindingData.KeyNameProperty.Name, ListSortDirection.Ascending));
         }
 
         private void OnEnableAllVimKeysClick(object sender, RoutedEventArgs e)
         {
-            _keyBindingList.ForEach(x => x.IsChecked = true);
+            _keyBindingList.ForEach(x => x.HandledByVsVim = true);
         }
 
         private void OnDisableAllVimKeysClick(object sender, RoutedEventArgs e)
         {
-            _keyBindingList.ForEach(x => x.IsChecked = false);
+            _keyBindingList.ForEach(x => x.HandledByVsVim = false);
         }
     }
 }

@@ -8,7 +8,6 @@ namespace VsVim.UI
 {
     public sealed class KeyBindingData : DependencyObject
     {
-
         public static readonly DependencyProperty KeyNameProperty = DependencyProperty.Register(
             "KeyName",
             typeof(string),
@@ -19,8 +18,8 @@ namespace VsVim.UI
             typeof(string),
             typeof(KeyBindingData));
 
-        public static readonly DependencyProperty IsCheckedProperty = DependencyProperty.Register(
-            "IsChecked",
+        public static readonly DependencyProperty HandledByVsVimProperty = DependencyProperty.Register(
+            "HandledByVsVim",
             typeof(bool),
             typeof(KeyBindingData));
 
@@ -36,22 +35,27 @@ namespace VsVim.UI
             set { SetValue(DisabledCommandsProperty, value); }
         }
 
-        public bool IsChecked
+        public bool HandledByVsVim
         {
-            get { return (bool)GetValue(IsCheckedProperty); }
-            set { SetValue(IsCheckedProperty, value); }
+            get { return (bool)GetValue(HandledByVsVimProperty); }
+            set { SetValue(HandledByVsVimProperty, value); }
         }
 
         private CommandKeyBinding[] _bindings;
+        private List<KeyBindingHandledByOption> _handledByOptions;
 
         public KeyBindingData()
         {
-
         }
 
         public IEnumerable<CommandKeyBinding> Bindings
         {
             get { return _bindings; }
+        }
+
+        public List<KeyBindingHandledByOption> HandledByOptions
+        {
+            get { return _handledByOptions; }
         }
 
         public KeyBindingData(IEnumerable<CommandKeyBinding> bindings)
@@ -61,8 +65,11 @@ namespace VsVim.UI
             KeyName = KeyBinding.CreateKeyBindingStringForSingleKeyInput(firstKeyInput);
 
             _bindings = bindings.ToArray();
-
-            DisabledCommands = "Interferes with " + string.Join(", ", bindings.Select(binding => binding.Name));
+            _handledByOptions = new List<KeyBindingHandledByOption>()
+                                {
+                                    new KeyBindingHandledByOption { HandlerName = "Visual Studio", HandlerDetails = "Used by " + string.Join(", ", bindings.Select(binding => binding.Name)) },
+                                    new KeyBindingHandledByOption { HandlerName = "VsVim", HandlerDetails = "" }
+                                };
         }
     }
 }

@@ -6,22 +6,21 @@
              mc:Ignorable="d" 
              d:DesignHeight="300" d:DesignWidth="400" >
     <UserControl.Resources>
+        <DataTemplate x:Key="comboBoxItemTemplate">
+            <StackPanel Orientation="Vertical">
+                <TextBlock Text="{Binding HandlerName}" FontWeight="Bold" />
+                <TextBlock Text="{Binding HandlerDetails}" Width="300" Margin="10, 0, 0, 0" TextWrapping="Wrap" />
+            </StackPanel>
+        </DataTemplate>
+
         <DataTemplate x:Key="keyBindingItemTemplate">
-            <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                </Grid.RowDefinitions>
-
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-
-                <CheckBox IsChecked="{Binding IsChecked}" Grid.Row="0" Grid.Column="0" Margin="2" />
-                <TextBlock Text="{Binding KeyName}" Grid.Row="0" Grid.Column="1" Margin="1" TextWrapping="Wrap" />
-                <TextBlock Text="{Binding DisabledCommands}" Grid.Row="1" Grid.Column="1" Margin="2" />
-            </Grid>
+            <StackPanel Orientation="Horizontal" Margin="1">
+                <TextBlock Text="{Binding KeyName}" Width="120" VerticalAlignment="Center" FontWeight="Bold"/>
+                <TextBlock Text="Handled by " VerticalAlignment="Center" />
+                <ComboBox ItemsSource="{Binding HandledByOptions}"
+                          ItemTemplate="{StaticResource comboBoxItemTemplate}"
+                          />
+            </StackPanel>
         </DataTemplate>
     </UserControl.Resources>
     
@@ -32,13 +31,13 @@
             
             <Button 
                 DockPanel.Dock="Right" 
-                Content="Enable All VsVim Keybindings"
+                Content="Handle all with VsVim"
                 Margin="5,0,0,0"
                 Click="OnEnableAllVimKeysClick" />
 
             <Button 
                 DockPanel.Dock="Right" 
-                Content="Disable All VsVim Keybindings"
+                Content="Handle all with Visual Studio"
                 Margin="5,0,0,0"
                 Click="OnDisableAllVimKeysClick" />
         </StackPanel>
@@ -46,6 +45,7 @@
         <ListBox Name="_bindingsListBox"
                  ItemsSource="{Binding}"
                  ItemTemplate="{StaticResource keyBindingItemTemplate}"
+                 
                  Margin="5" />
     </DockPanel>
 </UserControl>

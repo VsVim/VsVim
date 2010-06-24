@@ -18,7 +18,7 @@ namespace VsVimTest
             var command = new CommandKeyBinding("Foo", binding);
             var data = new KeyBindingData(new CommandKeyBinding[] { command });
             Assert.AreEqual("Ctrl+Left Arrow", data.KeyName);
-            Assert.IsFalse(data.IsChecked);
+            Assert.IsFalse(data.HandledByVsVim);
         }
     }
 }

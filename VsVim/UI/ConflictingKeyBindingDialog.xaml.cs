@@ -50,21 +50,21 @@ namespace VsVim.UI
             if (ret.HasValue && ret.Value)
             {
                 // Remove all of the removed bindings
-                var keyBindingsByActiveState = keyBindingList.ToLookup(data => data.IsChecked);
+                var keyBindingsByHandled = keyBindingList.ToLookup(data => data.HandledByVsVim);
 
-                // For VsVim commands that are active, we shall remove any other bindings
-                var removed = keyBindingsByActiveState[true].SelectMany(data => data.Bindings);
+                // For commands being handled by VsVim, we shall remove any other bindings
+                var removed = keyBindingsByHandled[true].SelectMany(data => data.Bindings);
                 foreach (var cur in removed)
                 {
                     var tuple = snapshot.TryGetCommand(cur.Name);
-                    if ( tuple.Item1 )
+                    if (tuple.Item1)
                     {
                         tuple.Item2.SafeResetBindings();
                     }
                 }
 
-                // Restore all of the conflicting ones
-                foreach (var cur in keyBindingsByActiveState[false].SelectMany(binding => binding.Bindings))
+                // Restore all commands we are not handling
+                foreach (var cur in keyBindingsByHandled[false].SelectMany(binding => binding.Bindings))
                 {
                     var tuple = snapshot.TryGetCommand(cur.Name);
                     if ( tuple.Item1 )
@@ -88,19 +88,19 @@ namespace VsVim.UI
         private static IEnumerable<KeyBindingData> ComputeKeyBindingList(CommandKeyBindingSnapshot snapshot)
         {
             // This snapshot contains a list of active keys, and keys which are still conflicting. We will group all
-            // bindings by the initial character, and will consider the entire group active as long as one key is
-            // active.
+            // bindings by the initial character, and will consider the entire group as being handled by VsVim as long
+            // as one is being handled.
 
-            var activeBindingsGrouped = snapshot.Removed.ToLookup(binding => binding.KeyBinding.FirstKeyInput);
-            var inactiveBindingsGrouped = snapshot.Conflicting.ToLookup(binding => binding.KeyBinding.FirstKeyInput);
+            var handledByVsVim = snapshot.Removed.ToLookup(binding => binding.KeyBinding.FirstKeyInput);
+            var handledByVs = snapshot.Conflicting.ToLookup(binding => binding.KeyBinding.FirstKeyInput);
 
-            var allFirstKeys = activeBindingsGrouped.Select(group => group.Key)
-                               .Union(inactiveBindingsGrouped.Select(group => group.Key));
+            var allFirstKeys = handledByVsVim.Select(group => group.Key)
+                               .Union(handledByVs.Select(group => group.Key));
 
             return from firstKey in allFirstKeys
-                   select new KeyBindingData(activeBindingsGrouped[firstKey].Union(inactiveBindingsGrouped[firstKey]))
+                   select new KeyBindingData(handledByVsVim[firstKey].Union(handledByVs[firstKey]))
                    {
-                       IsChecked = activeBindingsGrouped.Contains(firstKey)
+                       HandledByVsVim = handledByVsVim.Contains(firstKey)
                    };
 
         }
