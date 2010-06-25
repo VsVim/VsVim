@@ -433,6 +433,10 @@ type internal CommonOperations ( _data : OperationsData ) =
             let regions = _outlining.GetCollapsedRegions(span) |> SeqUtil.takeMax count
             if Seq.isEmpty regions then _statusUtil.OnError Resources.Common_NoFoldFound
             else  regions |> Seq.iter (fun x -> _outlining.Expand(x) |> ignore )
+        member x.OpenAllFolds span =
+            let regions = _outlining.GetCollapsedRegions(span) 
+            if Seq.isEmpty regions then _statusUtil.OnError Resources.Common_NoFoldFound
+            else  regions |> Seq.iter (fun x -> _outlining.Expand(x) |> ignore )
         member x.CloseFold span count = 
             let pos = span |> SnapshotSpanUtil.GetStartPoint |> SnapshotPointUtil.GetPosition
             let temp = 
@@ -445,5 +449,9 @@ type internal CommonOperations ( _data : OperationsData ) =
             let regions = temp  |> SeqUtil.takeMax count
             if Seq.isEmpty regions then _statusUtil.OnError Resources.Common_NoFoldFound
             else regions |> Seq.iter (fun (_,x) -> _outlining.TryCollapse(x) |> ignore)
+        member x.CloseAllFolds span =
+            let regions = _outlining.GetAllRegions(span) 
+            if Seq.isEmpty regions then _statusUtil.OnError Resources.Common_NoFoldFound
+            else  regions |> Seq.iter (fun x -> _outlining.TryCollapse(x) |> ignore )
 
 

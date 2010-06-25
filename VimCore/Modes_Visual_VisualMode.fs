@@ -133,7 +133,9 @@ type internal VisualMode
             seq { 
                 yield ("gJ", CommandFlags.Repeatable, fun _ _ -> _operations.JoinSelection JoinKind.KeepEmptySpaces |> ignore)
                 yield ("zo", CommandFlags.Special, fun _ _ -> _operations.OpenFold _operations.SelectedSpan 1)
+                yield ("zO", CommandFlags.Special, fun _ _ -> _operations.OpenAllFolds _operations.SelectedSpan )
                 yield ("zc", CommandFlags.Special, fun _ _ -> _operations.CloseFold _operations.SelectedSpan 1)
+                yield ("zC", CommandFlags.Special, fun _ _ -> _operations.CloseAllFolds _operations.SelectedSpan )
             }
             |> Seq.map (fun (str,flags,func) -> (str, flags,fun count reg -> func count reg; CommandResult.Completed ModeSwitch.SwitchPreviousMode))
             |> Seq.map (fun (name,flags,func) -> Command.SimpleCommand (CommandUtil.CreateCommandName name, flags, func))

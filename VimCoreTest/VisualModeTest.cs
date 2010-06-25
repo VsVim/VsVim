@@ -554,6 +554,27 @@ namespace VimCore.Test
             _operations.Verify();
         }
 
+        [Test]
+        public void Fold_zO()
+        {
+            Create("foo bar");
+            var span = _buffer.GetSpan(0, 1);
+            _operations.Setup(x => x.SelectedSpan).Returns(span).Verifiable();
+            _operations.Setup(x => x.OpenAllFolds(span)).Verifiable();
+            _mode.Process("zO");
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Fold_zC()
+        {
+            Create("foo bar");
+            var span = _buffer.GetSpan(0, 1);
+            _operations.Setup(x => x.SelectedSpan).Returns(span).Verifiable();
+            _operations.Setup(x => x.CloseAllFolds(span)).Verifiable();
+            _mode.Process("zC");
+            _operations.Verify();
+        }
 
         #endregion
     }

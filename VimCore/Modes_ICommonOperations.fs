@@ -189,7 +189,14 @@ type ICommonOperations =
     /// Open count folds in the given SnapshotSpan 
     abstract OpenFold : SnapshotSpan -> count:int -> unit
 
+    /// Open all folds which inersect with the given SnapshotSpan
+    abstract OpenAllFolds : SnapshotSpan -> unit
+
     /// Close count foldse in the given SnapshotSpan
     abstract CloseFold : SnapshotSpan -> count:int -> unit
+
+    /// Close all folds which intersect with the given SnapshotSpan
+    abstract CloseAllFolds : SnapshotSpan -> unit
+
 
 

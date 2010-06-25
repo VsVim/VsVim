@@ -2574,6 +2574,13 @@ namespace VimCore.Test
             _operations.Verify();
         }
 
+        [Test]
+        public void Fold_zO_1()
+        {
+            Create(s_lines);
+            _operations.Setup(x => x.OpenFold
+        }
+
         #endregion
 
     }
