@@ -1,26 +1,17 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
+using System.ComponentModel.Composition;
 using System.Linq;
+using System.Media;
 using EnvDTE;
+using Microsoft.VisualStudio;
+using Microsoft.VisualStudio.Editor;
+using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Text;
-using System.Runtime.InteropServices;
-using Microsoft.VisualStudio.OLE.Interop;
-using System.Diagnostics;
-using Microsoft.VisualStudio.Shell.Interop;
+using Microsoft.VisualStudio.Text.Editor;
+using Microsoft.VisualStudio.Text.Operations;
+using Microsoft.VisualStudio.TextManager.Interop;
 using Vim;
 using Vim.Extensions;
-using Microsoft.VisualStudio.TextManager.Interop;
-using Microsoft.VisualStudio.Language.Intellisense;
-using System.ComponentModel.Composition;
-using VsVim.Properties;
-using Microsoft.VisualStudio.Editor;
-using Microsoft.VisualStudio;
-using System.Windows;
-using Microsoft.VisualStudio.Text.Operations;
-using Microsoft.VisualStudio.Shell;
-using Microsoft.VisualStudio.Text.Editor;
-
 
 namespace VsVim
 {
@@ -95,7 +86,7 @@ namespace VsVim
 
         void IVimHost.Beep()
         {
-            Console.Beep();
+            SystemSounds.Beep.Play();
         }
 
         void IVimHost.OpenFile(string file)
