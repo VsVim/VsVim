@@ -1,21 +1,17 @@
 ﻿using System;
-using System.Text;
-using System.Collections.Generic;
 using System.Linq;
+using Microsoft.FSharp.Core;
+using Microsoft.VisualStudio.Text;
+using Microsoft.VisualStudio.Text.Editor;
+using Microsoft.VisualStudio.Text.Operations;
+using Moq;
 using NUnit.Framework;
 using Vim;
-using Microsoft.VisualStudio.Text;
-using System.Windows.Input;
-using System.Windows.Media;
-using Microsoft.VisualStudio.Text.Editor;
-using VimCore.Test.Utils;
-using Microsoft.FSharp.Core;
-using Moq;
-using MockFactory = VimCore.Test.Mock.MockObjectFactory;
-using Vim.Modes.Normal;
-using Vim.Modes;
-using Microsoft.VisualStudio.Text.Operations;
 using Vim.Extensions;
+using Vim.Modes;
+using Vim.Modes.Normal;
+using VimCore.Test.Utils;
+using MockFactory = VimCore.Test.Mock.MockObjectFactory;
 
 namespace VimCore.Test
 {
@@ -63,8 +59,9 @@ namespace VimCore.Test
             _statusUtil = new Mock<IStatusUtil>(MockBehavior.Strict);
             _changeTracker = new Mock<IChangeTracker>(MockBehavior.Strict);
             _displayWindowBroker = new Mock<IDisplayWindowBroker>(MockBehavior.Strict);
-            _displayWindowBroker.SetupGet(x => x.IsCompletionWindowActive).Returns(false);
-            _displayWindowBroker.SetupGet(x => x.IsSmartTagWindowActive).Returns(false);
+            _displayWindowBroker.SetupGet(x => x.IsCompletionActive).Returns(false);
+            _displayWindowBroker.SetupGet(x => x.IsSignatureHelpActive).Returns(false);
+            _displayWindowBroker.SetupGet(x => x.IsSmartTagSessionActive).Returns(false);
             _bufferData = MockFactory.CreateVimBuffer(
                 _view,
                 "test",
@@ -168,7 +165,7 @@ namespace VimCore.Test
         public void CanProcess5()
         {
             Create(s_lines);
-            _displayWindowBroker.SetupGet(x => x.IsSmartTagWindowActive).Returns(true);
+            _displayWindowBroker.SetupGet(x => x.IsSmartTagSessionActive).Returns(true);
             Assert.IsFalse(_mode.CanProcess(InputUtil.VimKeyToKeyInput(VimKey.EnterKey)));
             Assert.IsFalse(_mode.CanProcess(InputUtil.VimKeyToKeyInput(VimKey.LeftKey)));
             Assert.IsFalse(_mode.CanProcess(InputUtil.VimKeyToKeyInput(VimKey.DownKey)));
@@ -196,7 +193,7 @@ namespace VimCore.Test
         public void CanProcess8()
         {
             Create(s_lines);
-            _displayWindowBroker.SetupGet(x => x.IsCompletionWindowActive).Returns(true);
+            _displayWindowBroker.SetupGet(x => x.IsCompletionActive).Returns(true);
             Assert.IsFalse(_mode.CanProcess(InputUtil.VimKeyToKeyInput(VimKey.EnterKey)));
             Assert.IsFalse(_mode.CanProcess(InputUtil.VimKeyToKeyInput(VimKey.LeftKey)));
             Assert.IsFalse(_mode.CanProcess(InputUtil.VimKeyToKeyInput(VimKey.DownKey)));

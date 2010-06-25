@@ -22,8 +22,8 @@ type internal InsertMode
 
     member private this.ProcessEscape() =
 
-        if _broker.IsCompletionWindowActive then
-            _broker.DismissCompletionWindow()
+        if _broker.IsCompletionActive || _broker.IsSignatureHelpActive || _broker.IsQuickInfoActive then
+            _broker.DismissDisplayWindows()
 
             if _data.Settings.GlobalSettings.DoubleEscape then ProcessResult.Processed
             else 

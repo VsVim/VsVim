@@ -13,13 +13,19 @@ type IDisplayWindowBroker =
     abstract TextView : ITextView 
 
     /// Is there currently a completion window active on the given ITextView
-    abstract IsCompletionWindowActive : bool
+    abstract IsCompletionActive : bool
+
+    /// Is signature help currently active
+    abstract IsSignatureHelpActive : bool
+
+    // Is Quick Info active
+    abstract IsQuickInfoActive : bool 
 
     /// Is there a smart tip window active
-    abstract IsSmartTagWindowActive : bool
+    abstract IsSmartTagSessionActive : bool
 
     /// Dismiss any completion windows on the given ITextView
-    abstract DismissCompletionWindow : unit -> unit
+    abstract DismissDisplayWindows : unit -> unit
 
 type IDisplayWindowBrokerFactoryService  =
 

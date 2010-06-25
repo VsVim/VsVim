@@ -442,8 +442,9 @@ type internal NormalMode
                 |> Seq.filter (fun command -> command.CommandName.StartsWith name)
                 |> SeqUtil.isNotEmpty
 
-            if _displayWindowBroker.IsSmartTagWindowActive then false
-            elif _displayWindowBroker.IsCompletionWindowActive then false
+            if _displayWindowBroker.IsSmartTagSessionActive then false
+            elif _displayWindowBroker.IsCompletionActive then false
+            elif _displayWindowBroker.IsSignatureHelpActive then false
             elif _runner.IsWaitingForMoreInput then  true
             elif CharUtil.IsLetterOrDigit(ki.Char) then true
             elif doesCommandStartWith ki then true

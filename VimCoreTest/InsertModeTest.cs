@@ -1,15 +1,9 @@
-﻿using System;
-using System.Text;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.Linq;
+using Microsoft.VisualStudio.Text.Editor;
+using Moq;
 using NUnit.Framework;
 using Vim;
-using System.Windows.Input;
-using Microsoft.VisualStudio.Text.Editor;
-using System.Windows.Media;
-using Microsoft.VisualStudio.Text;
 using Vim.Modes;
-using Moq;
 
 namespace VimCore.Test
 {
@@ -67,10 +61,9 @@ namespace VimCore.Test
         [Test]
         public void Escape1()
         {
-            _broker
-                .SetupGet(x => x.IsCompletionWindowActive)
-                .Returns(false)
-                .Verifiable();
+            _broker.SetupGet(x => x.IsCompletionActive).Returns(false).Verifiable();
+            _broker.SetupGet(x => x.IsQuickInfoActive).Returns(false).Verifiable();
+            _broker.SetupGet(x => x.IsSignatureHelpActive).Returns(false).Verifiable();
             _operations.Setup(x => x.MoveCaretLeft(1)).Verifiable();
             var res = _mode.Process(VimKey.EscapeKey);
             Assert.IsTrue(res.IsSwitchMode);
@@ -82,11 +75,11 @@ namespace VimCore.Test
         {
             _globalSettings.SetupGet(x => x.DoubleEscape).Returns(false);
             _broker
-                .SetupGet(x => x.IsCompletionWindowActive)
+                .SetupGet(x => x.IsCompletionActive)
                 .Returns(true)
                 .Verifiable();
             _broker
-                .Setup(x => x.DismissCompletionWindow())
+                .Setup(x => x.DismissDisplayWindows())
                 .Verifiable();
             _operations.Setup(x => x.MoveCaretLeft(1)).Verifiable();
             var res = _mode.Process(VimKey.EscapeKey);
@@ -100,11 +93,11 @@ namespace VimCore.Test
         {
             _globalSettings.SetupGet(x => x.DoubleEscape).Returns(true);
             _broker
-                .SetupGet(x => x.IsCompletionWindowActive)
+                .SetupGet(x => x.IsCompletionActive)
                 .Returns(true)
                 .Verifiable();
             _broker
-                .Setup(x => x.DismissCompletionWindow())
+                .Setup(x => x.DismissDisplayWindows())
                 .Verifiable();
             var res = _mode.Process(VimKey.EscapeKey);
             Assert.IsTrue(res.IsProcessed);
@@ -124,11 +117,11 @@ namespace VimCore.Test
         {
             _globalSettings.SetupGet(x => x.DoubleEscape).Returns(false);
             _broker
-                .SetupGet(x => x.IsCompletionWindowActive)
+                .SetupGet(x => x.IsCompletionActive)
                 .Returns(true)
                 .Verifiable();
             _broker
-                .Setup(x => x.DismissCompletionWindow())
+                .Setup(x => x.DismissDisplayWindows())
                 .Verifiable();
             _operations.Setup(x => x.MoveCaretLeft(1)).Verifiable();
             var ki = InputUtil.CharAndModifiersToKeyInput('[', KeyModifiers.Control);

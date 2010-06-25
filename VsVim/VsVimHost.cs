@@ -1,6 +1,7 @@
 ﻿using System;
 using System.ComponentModel.Composition;
 using System.Linq;
+using System.Media;
 using EnvDTE;
 using Microsoft.VisualStudio.Editor;
 using Microsoft.VisualStudio.Shell;
@@ -10,7 +11,6 @@ using Microsoft.VisualStudio.Text.Operations;
 using Microsoft.VisualStudio.TextManager.Interop;
 using Vim;
 using Vim.Extensions;
-
 
 namespace VsVim
 {
@@ -86,7 +86,7 @@ namespace VsVim
 
         void IVimHost.Beep()
         {
-            Console.Beep();
+            SystemSounds.Beep.Play();
         }
 
         void IVimHost.OpenFile(string file)
