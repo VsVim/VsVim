@@ -2536,5 +2536,45 @@ namespace VimCore.Test
 
         #endregion
 
+        #region Folding
+
+        [Test]
+        public void Fold_zo()
+        {
+            Create(s_lines);
+            _operations.Setup(x => x.OpenFold(_view.GetCaretLine().Extent, 1)).Verifiable();
+            _mode.Process("zo");
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Fold_zo_2()
+        {
+            Create(s_lines);
+            _operations.Setup(x => x.OpenFold(_view.GetCaretLine().Extent, 3)).Verifiable();
+            _mode.Process("3zo");
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Fold_zc_1()
+        {
+            Create(s_lines);
+            _operations.Setup(x => x.CloseFold(_view.GetCaretLine().Extent, 1)).Verifiable();
+            _mode.Process("zc");
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Fold_zc_2()
+        {
+            Create(s_lines);
+            _operations.Setup(x => x.CloseFold(_view.GetCaretLine().Extent, 3)).Verifiable();
+            _mode.Process("3zc");
+            _operations.Verify();
+        }
+
+        #endregion
+
     }
 }

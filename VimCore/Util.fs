@@ -181,6 +181,16 @@ module internal SeqUtil =
                 | None -> ()
         }
 
+    /// Filters the list removing all of the first tuple arguments which are None
+    let filterToSome2 (sequence : ('a option * 'b) seq) =
+        seq { 
+            for cur in sequence do
+                let first,second = cur
+                match first with
+                | Some(value) -> yield (value,second)
+                | None -> ()
+        }
+
     let contentsEqual (left:'a seq) (right:'a seq) = 
         use leftEnumerator = left.GetEnumerator()        
         use rightEnumerator = right.GetEnumerator()
@@ -200,13 +210,12 @@ module internal SeqUtil =
 
         areEqual
 
-    /// Take a maximum of count elements from the list
-    let takeMax (sequence:'a seq) count = 
+    let takeMax count (sequence:'a seq) = 
         let i = ref 0
         sequence |> Seq.takeWhile (fun _ -> 
             i := !i + 1
             if !i <= count then true
-            else false )
+            else false ) |> List.ofSeq
             
 module internal MapUtil =
 

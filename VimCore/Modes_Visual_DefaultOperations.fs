@@ -49,6 +49,12 @@ type internal DefaultOperations ( _data:OperationsData, _mode : ModeKind ) =
                 func single
 
     interface IOperations with
+        member x.SelectedSpan = 
+            let col = _textView.Selection.SelectedSpans
+            if col.Count = 0 then 
+                let caretPoint = TextViewUtil.GetCaretPoint _textView
+                SnapshotSpan(caretPoint,0)
+            else col.Item(0)
         member x.DeleteSelection (reg:Register) = 
             let value = { Value=x.SelectedText; MotionKind=MotionKind.Inclusive; OperationKind=x.OperationKind }
             reg.UpdateValue(value)

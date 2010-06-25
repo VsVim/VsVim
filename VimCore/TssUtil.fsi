@@ -79,9 +79,5 @@ module TssUtil =
     /// base implementation to fall back on
     val CreateTextStructureNavigator : WordKind -> ITextStructureNavigator -> ITextStructureNavigator
 
-    /// Map the specified tracking span to the given ITextSnapshot.  If the span cannot be mapped
-    /// due to incompatible changes in the buffer, None will be returned
-    val SafeGetTrackingSpan : ITrackingSpan -> ITextSnapshot -> SnapshotSpan option
-
 
     

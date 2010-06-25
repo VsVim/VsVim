@@ -9,6 +9,10 @@ open Vim.Modes
 
 type IOperations = 
     inherit ICommonOperations
+
+    /// Returns the span of the first selection.  If no selection is present, returns an empty span
+    /// at the caret position
+    abstract SelectedSpan : SnapshotSpan 
     
     /// Delete the selection and put the result into the specified register
     abstract DeleteSelection : Register -> unit

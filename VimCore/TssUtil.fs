@@ -20,7 +20,6 @@ module TssUtil =
             | 0 -> 0
             | _ -> line-1
 
-
     /// Wrap the TextUtil functions which operate on String and int locations into 
     /// a SnapshotPoint and SnapshotSpan version
     let WrapTextSearch (func: WordKind -> string -> int -> option<Span> ) = 
@@ -168,13 +167,6 @@ module TssUtil =
             member x.GetSpanOfFirstChild span = baseImpl.GetSpanOfFirstChild(span)
             member x.GetSpanOfNextSibling span = baseImpl.GetSpanOfNextSibling(span)
             member x.GetSpanOfPreviousSibling span = baseImpl.GetSpanOfPreviousSibling(span) }
-
-    let SafeGetTrackingSpan (trackingSpan:ITrackingSpan) (snapshot:ITextSnapshot) =
-        try
-            let span = trackingSpan.GetSpan(snapshot)
-            Some(span)
-        with
-            | :? System.ArgumentException -> None
 
     let FindNextOccurranceOfCharOnLine point targetChar count = 
         match SnapshotPointUtil.TryGetNextPointOnLine point with

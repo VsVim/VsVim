@@ -224,6 +224,8 @@ type internal NormalMode
                 yield ("gt", CommandFlags.Movement, fun count _ -> _operations.GoToNextTab count)
                 yield ("gT", CommandFlags.Movement, fun count _ -> _operations.GoToPreviousTab count)
                 yield ("u",  CommandFlags.Special, fun count _ -> _operations.Undo count)
+                yield ("zo", CommandFlags.Special, fun count _ -> _operations.OpenFold (TextViewUtil.GetCaretLineSpan _bufferData.TextView) count)
+                yield ("zc", CommandFlags.Special, fun count _ -> _operations.CloseFold (TextViewUtil.GetCaretLineSpan _bufferData.TextView) count)
                 yield ("zt", CommandFlags.Movement, fun _ _ ->  _operations.EditorOperations.ScrollLineTop())
                 yield ("z.", CommandFlags.Movement, fun _ _ -> 
                     _operations.EditorOperations.ScrollLineCenter() 

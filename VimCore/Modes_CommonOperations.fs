@@ -10,12 +10,13 @@ open Microsoft.VisualStudio.Text.Outlining
 [<AbstractClass>]
 type internal CommonOperations ( _data : OperationsData ) =
     let _textView = _data.TextView
-    let _operations = _data.EditorOperations;
-    let _outlining = _data.OutliningManager;
-    let _host = _data.VimHost;
-    let _jumpList = _data.JumpList;
-    let _settings = _data.LocalSettings;
-    let _undoRedoOperations = _data.UndoRedoOperations;
+    let _operations = _data.EditorOperations
+    let _outlining = _data.OutliningManager
+    let _host = _data.VimHost
+    let _jumpList = _data.JumpList
+    let _settings = _data.LocalSettings
+    let _undoRedoOperations = _data.UndoRedoOperations
+    let _statusUtil = _data.StatusUtil
 
     /// The caret sometimes needs to be adjusted after an Up or Down movement.  Caret position
     /// and virtual space is actually quite a predicamite for VsVim because of how Vim standard 
@@ -428,5 +429,21 @@ type internal CommonOperations ( _data : OperationsData ) =
             use transaction = _undoRedoOperations.CreateUndoTransaction description
             spans |> Seq.iter doEdit 
             transaction.Complete()
+        member x.OpenFold span count = 
+            let regions = _outlining.GetCollapsedRegions(span) |> SeqUtil.takeMax count
+            if Seq.isEmpty regions then _statusUtil.OnError Resources.Common_NoFoldFound
+            else  regions |> Seq.iter (fun x -> _outlining.Expand(x) |> ignore )
+        member x.CloseFold span count = 
+            let pos = span |> SnapshotSpanUtil.GetStartPoint |> SnapshotPointUtil.GetPosition
+            let temp = 
+                _outlining.GetAllRegions(span) 
+                |> Seq.filter (fun x -> not (x.IsCollapsed))
+                |> Seq.map (fun x -> (TrackingSpanUtil.GetSpan _textView.TextSnapshot x.Extent) ,x)
+                |> SeqUtil.filterToSome2
+                |> Seq.sortBy (fun (span,_) -> pos - span.Start.Position )
+                |> List.ofSeq
+            let regions = temp  |> SeqUtil.takeMax count
+            if Seq.isEmpty regions then _statusUtil.OnError Resources.Common_NoFoldFound
+            else regions |> Seq.iter (fun (_,x) -> _outlining.TryCollapse(x) |> ignore)
 
 

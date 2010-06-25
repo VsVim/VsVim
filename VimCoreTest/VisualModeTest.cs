@@ -1,19 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using NUnit.Framework;
-using Microsoft.VisualStudio.Text.Editor;
-using Vim;
-using Vim.Modes.Visual;
-using Moq;
-using Microsoft.VisualStudio.Text.Operations;
-using Vim.Modes;
-using VimCore.Test.Utils;
-using Microsoft.VisualStudio.Text;
-using System.Windows.Input;
-using VimCore.Test.Mock;
 using Microsoft.FSharp.Core;
+using Microsoft.VisualStudio.Text;
+using Microsoft.VisualStudio.Text.Editor;
+using Moq;
+using NUnit.Framework;
+using Vim;
+using Vim.Modes;
+using Vim.Modes.Visual;
+using VimCore.Test.Mock;
+using VimCore.Test.Utils;
 
 namespace VimCore.Test
 {
@@ -534,6 +531,29 @@ namespace VimCore.Test
             _mode.Process('p');
             _factory.Verify();
         }
+
+        [Test]
+        public void Fold_zo()
+        {
+            Create("foo bar");
+            var span = _buffer.GetSpan(0, 1);
+            _operations.Setup(x => x.SelectedSpan).Returns(span).Verifiable();
+            _operations.Setup(x => x.OpenFold(span, 1)).Verifiable();
+            _mode.Process("zo");
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Fold_zc_1()
+        {
+            Create("foo bar");
+            var span = _buffer.GetSpan(0, 1);
+            _operations.Setup(x => x.SelectedSpan).Returns(span).Verifiable();
+            _operations.Setup(x => x.CloseFold(span, 1)).Verifiable();
+            _mode.Process("zc");
+            _operations.Verify();
+        }
+
 
         #endregion
     }

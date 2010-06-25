@@ -50,7 +50,7 @@ type internal IncrementalSearchTagger
             let span = 
                 match _searchSpan with 
                 | None -> None
-                | (Some(trackingSpan)) -> TssUtil.SafeGetTrackingSpan trackingSpan snapshot
+                | (Some(trackingSpan)) -> TrackingSpanUtil.GetSpan snapshot trackingSpan
             match span with
             | None -> Seq.empty
             | Some(span) ->

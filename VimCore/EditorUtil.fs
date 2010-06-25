@@ -85,6 +85,12 @@ module SnapshotUtil =
 /// include any Vim specific logic
 module SnapshotSpanUtil =
 
+    /// Get the start point
+    let GetStartPoint (span:SnapshotSpan) = span.Start
+
+    /// Get the end point
+    let GetEndPoint (span:SnapshotSpan) = span.End
+
     /// Get all of the points on the specified SnapshotSpan.  Will not return the End point
     let GetPoints (span:SnapshotSpan) = 
         let tss = span.Snapshot 
@@ -148,6 +154,9 @@ module SnapshotLineUtil =
 
     /// Get the end point including the line break
     let GetEndIncludingLineBreak (line:ITextSnapshotLine) = line.EndIncludingLineBreak
+
+    /// Get the line number
+    let GetLineNumber (line:ITextSnapshotLine) = line.LineNumber
 
     let GetExtent (line:ITextSnapshotLine) = line.Extent
 
@@ -426,6 +435,10 @@ module TextViewUtil =
 
     let GetCaretLine textView = GetCaretPoint textView |> SnapshotPointUtil.GetContainingLine
 
+    let GetCaretLineSpan textView = textView |> GetCaretLine |> SnapshotLineUtil.GetExtent
+
+    let GetCaretLineSpanIncludingLineBreak textView = textView |> GetCaretLine |> SnapshotLineUtil.GetExtentIncludingLineBreak
+
     let GetCaretPointAndLine textView = (GetCaretPoint textView),(GetCaretLine textView)
 
     /// Returns a sequence of ITextSnapshotLines representing the visible lines in the buffer
@@ -488,4 +501,18 @@ module EditorOptionsUtil =
         | Some(value) -> value
         | None -> defaultValue
 
+module TrackingPointUtil =
+    
+    let GetPoint (snapshot:ITextSnapshot) (point:ITrackingPoint) =
+        try
+            point.GetPoint(snapshot) |> Some
+        with
+            | :? System.ArgumentException -> None
 
+module TrackingSpanUtil =
+
+    let GetSpan (snapshot:ITextSnapshot) (span:ITrackingSpan) =
+        try 
+            span.GetSpan(snapshot) |> Some
+        with
+            | :? System.ArgumentException -> None

@@ -131,10 +131,12 @@ type internal VisualMode
         /// Commands consisting of more than a single character
         let complex = 
             seq { 
-                yield ("gJ", fun _ _ -> _operations.JoinSelection JoinKind.KeepEmptySpaces |> ignore)
+                yield ("gJ", CommandFlags.Repeatable, fun _ _ -> _operations.JoinSelection JoinKind.KeepEmptySpaces |> ignore)
+                yield ("zo", CommandFlags.Special, fun _ _ -> _operations.OpenFold _operations.SelectedSpan 1)
+                yield ("zc", CommandFlags.Special, fun _ _ -> _operations.CloseFold _operations.SelectedSpan 1)
             }
-            |> Seq.map (fun (str,func) -> (str, fun count reg -> func count reg; CommandResult.Completed ModeSwitch.SwitchPreviousMode))
-            |> Seq.map (fun (name,func) -> Command.SimpleCommand (CommandUtil.CreateCommandName name, CommandFlags.Repeatable, func))
+            |> Seq.map (fun (str,flags,func) -> (str, flags,fun count reg -> func count reg; CommandResult.Completed ModeSwitch.SwitchPreviousMode))
+            |> Seq.map (fun (name,flags,func) -> Command.SimpleCommand (CommandUtil.CreateCommandName name, flags, func))
 
         Seq.append simples complex
 

@@ -186,4 +186,10 @@ type ICommonOperations =
     /// Make the letters on the given span upper case
     abstract MakeLettersUppercase : SnapshotSpan -> unit
 
+    /// Open count folds in the given SnapshotSpan 
+    abstract OpenFold : SnapshotSpan -> count:int -> unit
+
+    /// Close count foldse in the given SnapshotSpan
+    abstract CloseFold : SnapshotSpan -> count:int -> unit
+
 
