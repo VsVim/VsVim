@@ -1,11 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using NUnit.Framework;
-using Moq;
 using Microsoft.VisualStudio.Language.Intellisense;
 using Microsoft.VisualStudio.Text.Editor;
+using Moq;
+using NUnit.Framework;
 using Vim;
 
 namespace VimCore.Test
@@ -39,27 +37,27 @@ namespace VimCore.Test
         }
 
         [Test]
-        public void IsSmartTagWindowActive1()
+        public void IsSmartTagSessionActive1()
         {
             _smartTagBroker.Setup(x => x.IsSmartTagActive(_textView.Object)).Returns(false).Verifiable();
-            Assert.IsFalse(_broker.IsSmartTagWindowActive);
+            Assert.IsFalse(_broker.IsSmartTagSessionActive);
             _smartTagBroker.Verify();
         }
 
         [Test]
-        public void IsSmartTagWindowActive2()
+        public void IsSmartTagSessionActive2()
         {
             _smartTagBroker.Setup(x => x.IsSmartTagActive(_textView.Object)).Returns(true).Verifiable();
             _smartTagBroker
                 .Setup(x => x.GetSessions(_textView.Object))
                 .Returns((new List<ISmartTagSession>()).AsReadOnly())
                 .Verifiable();
-            Assert.IsFalse(_broker.IsSmartTagWindowActive);
+            Assert.IsFalse(_broker.IsSmartTagSessionActive);
             _smartTagBroker.Verify();
         }
 
         [Test]
-        public void IsSmartTagWindowActive3()
+        public void IsSmartTagSessionActive3()
         {
             var session = new Mock<ISmartTagSession>();
             session.SetupGet(x => x.State).Returns(SmartTagState.Collapsed);
@@ -69,12 +67,12 @@ namespace VimCore.Test
                 .Setup(x => x.GetSessions(_textView.Object))
                 .Returns(list)
                 .Verifiable();
-            Assert.IsFalse(_broker.IsSmartTagWindowActive);
+            Assert.IsFalse(_broker.IsSmartTagSessionActive);
             _smartTagBroker.Verify();
         }
 
         [Test]
-        public void IsSmartTagWindowActive4()
+        public void IsSmartTagSessionActive4()
         {
             var session = new Mock<ISmartTagSession>();
             session.SetupGet(x => x.State).Returns(SmartTagState.Expanded);
@@ -84,16 +82,16 @@ namespace VimCore.Test
                 .Setup(x => x.GetSessions(_textView.Object))
                 .Returns(list)
                 .Verifiable();
-            Assert.IsTrue(_broker.IsSmartTagWindowActive);
+            Assert.IsTrue(_broker.IsSmartTagSessionActive);
             _smartTagBroker.Verify();
         }
 
         [Test]
-        public void DismissCompletionWindow1()
+        public void DismissDisplayWindows1()
         {
             _quickInfoBroker.Setup(x => x.IsQuickInfoActive(_textView.Object)).Returns(true).Verifiable();
             _quickInfoBroker.Setup(x => x.GetSessions(_textView.Object)).Returns(new List<IQuickInfoSession>().AsReadOnly()).Verifiable();
-            _broker.DismissCompletionWindow();
+            _broker.DismissDisplayWindows();
             _quickInfoBroker.Verify();
         }
 

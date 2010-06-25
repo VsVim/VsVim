@@ -19,18 +19,17 @@ type internal DisplayWindowBroker
         _quickInfoBroker : IQuickInfoBroker)  =
     interface IDisplayWindowBroker with
         member x.TextView = _textView
-        member x.IsCompletionWindowActive = 
-            _completionBroker.IsCompletionActive(_textView) 
-            || _signatureBroker.IsSignatureHelpActive(_textView)
-            || _quickInfoBroker.IsQuickInfoActive(_textView)
-        member x.IsSmartTagWindowActive = 
+        member x.IsCompletionActive = _completionBroker.IsCompletionActive(_textView)
+        member x.IsSignatureHelpActive = _signatureBroker.IsSignatureHelpActive(_textView)
+        member x.IsQuickInfoActive = _quickInfoBroker.IsQuickInfoActive(_textView)
+        member x.IsSmartTagSessionActive = 
             if _smartTagBroker.IsSmartTagActive(_textView) then
                 _smartTagBroker.GetSessions(_textView) 
                 |> Seq.filter (fun x -> x.State = SmartTagState.Expanded) 
                 |> SeqUtil.isNotEmpty
             else
                 false
-        member x.DismissCompletionWindow() = 
+        member x.DismissDisplayWindows() =
             if _completionBroker.IsCompletionActive(_textView) then
                 _completionBroker.DismissAllSessions(_textView)
             if _signatureBroker.IsSignatureHelpActive(_textView) then
