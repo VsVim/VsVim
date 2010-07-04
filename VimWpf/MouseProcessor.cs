@@ -1,11 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using Microsoft.VisualStudio.Text.Editor;
-using Vim.Modes.Visual;
-using System.Windows.Threading;
 using System.Windows.Input;
+using System.Windows.Threading;
+using Microsoft.VisualStudio.Text.Editor;
 
 namespace Vim.UI.Wpf
 {
@@ -47,6 +43,11 @@ namespace Vim.UI.Wpf
             }
         }
 
+        private bool ShouldHandleEvents
+        {
+            get { return _buffer.ModeKind != ModeKind.Disabled; }
+        }
+
         public MouseProcessor(IVimBuffer buffer, IMouseDevice mouseDevice)
         {
             _buffer = buffer;
@@ -62,6 +63,11 @@ namespace Vim.UI.Wpf
 
         private void OnSelectionChanged(object sender, EventArgs e)
         {
+            if (!ShouldHandleEvents)
+            {
+                return;
+            }
+
             if (!IsSelectionChanging && !_selection.IsEmpty && !IsAnyVisualMode)
             {
                 
@@ -96,6 +102,11 @@ namespace Vim.UI.Wpf
 
         public override void PostprocessMouseLeftButtonUp(MouseButtonEventArgs e)
         {
+            if (!ShouldHandleEvents)
+            {
+                return;
+            }
+
             if (e.ChangedButton == MouseButton.Left)
             {
                 if (IsSelectionChanging)
