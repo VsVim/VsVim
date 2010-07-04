@@ -197,6 +197,14 @@ type CommandName =
     /// other than display as two distinct KeyInput values can map to a single char
     member x.Name = x.KeyInputs |> Seq.map (fun ki -> ki.Char) |> StringUtil.ofCharSeq
 
+    /// Length of the contained KeyInput's
+    member x.Length =
+        match x with
+        | EmptyName -> 0
+        | OneKeyInput(_) -> 1
+        | TwoKeyInputs(_) -> 2
+        | ManyKeyInputs(list) -> list.Length
+
     /// Add a KeyInput to the end of this CommandName and return the 
     /// resulting value
     member x.Add (ki) =
@@ -263,6 +271,23 @@ type CommandName =
                 inner x.KeyInputs y.KeyInputs
             | _ -> failwith "Cannot compare values of different types"
 
+module CommandNameUtil =
+
+    let ofSeq sequence = 
+        match Seq.length sequence with
+        | 0 -> CommandName.EmptyName
+        | 1 -> CommandName.OneKeyInput (Seq.nth 0 sequence)
+        | 2 -> CommandName.TwoKeyInputs ((Seq.nth 0 sequence),(Seq.nth 1 sequence))
+        | _ -> sequence |> List.ofSeq |> CommandName.ManyKeyInputs 
+
+    let ofList list = 
+        match list with
+        | [] -> CommandName.EmptyName
+        | [ki] -> CommandName.OneKeyInput ki
+        | _ -> 
+            match list.Length with
+            | 2 -> CommandName.TwoKeyInputs ((List.nth list 0),(List.nth list 1))
+            | _ -> CommandName.ManyKeyInputs list
 
 type ModeSwitch =
     | NoSwitch
@@ -414,12 +439,7 @@ module CommandUtil =
         | Some(count) -> count
         | None -> 1
 
-    let CreateCommandName name =
-        match StringUtil.length name with
-        | 0 -> EmptyName
-        | 1 -> OneKeyInput (name.Chars(0) |> InputUtil.CharToKeyInput)
-        | 2 -> TwoKeyInputs ((name.Chars(0) |> InputUtil.CharToKeyInput), (name.Chars(1) |> InputUtil.CharToKeyInput))
-        | _ -> name |> Seq.map InputUtil.CharToKeyInput |> List.ofSeq |> ManyKeyInputs
+    let CreateCommandName name = name |> Seq.map InputUtil.CharToKeyInput |> CommandNameUtil.ofSeq
 
 /// Represents the types of actions which are taken when an ICommandRunner is presented
 /// with a KeyInput to run

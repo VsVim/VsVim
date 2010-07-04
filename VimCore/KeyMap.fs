@@ -122,25 +122,16 @@ module internal KeyMapUtil =
 
     /// Try to convert the passed in string to multiple KeyInput values.  Returns true only
     /// if the entire list succesfully parses
-    let TryStringToKeyInputList (data:string) =
-        data |> SplitIntoKeyNotationEntries |> List.map TryStringToKeyInput |> SeqUtil.allOrNone
+    let TryStringToCommandName (data:string) =
+        match data |> SplitIntoKeyNotationEntries |> List.map TryStringToKeyInput |> SeqUtil.allOrNone with
+        | Some(list) -> list |> CommandNameUtil.ofList |> Some
+        | None -> None
 
-type internal RemapModeMap = Map<string, (KeyInput list * bool)>
+type internal RemapModeMap = Map<CommandName, (CommandName * bool)>
 
 type internal KeyMap() =
     
     let mutable _map : Map<KeyRemapMode, RemapModeMap> = Map.empty
-
-    /// Convert the KeyInput list back to an actual string key.  Can't use the input string because
-    /// several input values map back to the same KeyInput sequence
-    static member private KeyInputSequenceToKey (l:KeyInput seq) = l |> Seq.map (fun ki -> ki.Char) |> StringUtil.ofCharSeq
-
-    static member private UserInputToKey input =
-        if StringUtil.isNullOrEmpty input then None
-        else
-            match KeyMapUtil.TryStringToKeyInputList input with
-            | None -> None
-            | Some(list) -> KeyMap.KeyInputSequenceToKey list |> Some
 
     member x.GetKeyMapping (ki:KeyInput) mode = 
         let keyInputs = ki |> Seq.singleton
@@ -171,8 +162,8 @@ type internal KeyMap() =
         if StringUtil.isNullOrEmpty rhs then
             false
         else
-            let key = KeyMap.UserInputToKey lhs
-            let rhs = KeyMapUtil.TryStringToKeyInputList rhs
+            let key = KeyMapUtil.TryStringToCommandName lhs
+            let rhs = KeyMapUtil.TryStringToCommandName rhs
             match key,rhs with
             | Some(key),Some(rightList) ->
                 let value = (rightList,allowRemap)
@@ -183,7 +174,7 @@ type internal KeyMap() =
             | _ -> false
 
     member x.Unmap lhs mode = 
-        match KeyMap.UserInputToKey lhs with
+        match KeyMapUtil.TryStringToCommandName lhs with
         | None -> false
         | Some(key) ->
             let modeMap = x.GetRemapModeMap mode
@@ -200,8 +191,8 @@ type internal KeyMap() =
     member private x.GetKeyMappingCore keyInputs mode =
         let modeMap = x.GetRemapModeMap mode
 
-        let rec inner keyInputs set : (KeyMappingResult * Set<string> )=
-            let key = KeyMap.KeyInputSequenceToKey keyInputs
+        let rec inner keyInputs set : (KeyMappingResult * Set<CommandName> )=
+            let key = CommandNameUtil.ofSeq keyInputs
             if Set.contains key set then (RecursiveMapping keyInputs ,set)
             else
                 match modeMap |> Map.tryFind key with
@@ -217,15 +208,15 @@ type internal KeyMap() =
                 | Some(mappedKeyInputs,allowRemap) -> 
                     let set = set |> Set.add key
                     if not allowRemap then 
-                        if mappedKeyInputs |> List.length > 1 then ((mappedKeyInputs |> Seq.ofList |> KeySequence),set)
-                        else (mappedKeyInputs |> List.head |> SingleKey,set)
+                        if mappedKeyInputs.Length > 1 then  ((mappedKeyInputs.KeyInputs |> Seq.ofList |> KeySequence),set)
+                        else (mappedKeyInputs.KeyInputs |> List.head |> SingleKey,set)
                     else
                         
                         // Time for a recursive mapping attempt
                         let mutable anyRecursive = false
                         let mutable set = set
                         let list = new System.Collections.Generic.List<KeyInput>()
-                        for mappedKi in mappedKeyInputs do
+                        for mappedKi in mappedKeyInputs.KeyInputs do
                             let mappedKiSeq = mappedKi |> Seq.singleton
                             let result,newSet = inner mappedKiSeq set
                             set <- newSet

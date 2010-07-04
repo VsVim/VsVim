@@ -1,10 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using System.Linq;
 using NUnit.Framework;
 using Vim;
-using System.Windows.Input;
 using Vim.Extensions;
 
 namespace VimCore.Test
@@ -85,9 +81,9 @@ namespace VimCore.Test
         [Test]
         public void TryStringToKeyInputList1()
         {
-            var opt = KeyMapUtil.TryStringToKeyInputList("ab");
+            var opt = KeyMapUtil.TryStringToCommandName("ab");
             Assert.IsTrue(opt.IsSome());
-            var list = opt.Value.ToList();
+            var list = opt.Value.KeyInputs.ToList();
             Assert.AreEqual(2, list.Count);
             Assert.AreEqual('a', list[0].Char);
             Assert.AreEqual('b', list[1].Char);
@@ -96,16 +92,16 @@ namespace VimCore.Test
         [Test]
         public void TryStringToKeyInputList2()
         {
-            var opt = KeyMapUtil.TryStringToKeyInputList("<foo");
+            var opt = KeyMapUtil.TryStringToCommandName("<foo");
             Assert.IsTrue(opt.IsNone());
         }
 
         [Test]
         public void TryStringToKeyInputList3()
         {
-            var opt = KeyMapUtil.TryStringToKeyInputList("<Home>a");
+            var opt = KeyMapUtil.TryStringToCommandName("<Home>a");
             Assert.IsTrue(opt.IsSome());
-            var list = opt.Value.ToList();
+            var list = opt.Value.KeyInputs.ToList();
             Assert.AreEqual(2, list.Count);
             Assert.AreEqual(InputUtil.VimKeyToKeyInput(VimKey.HomeKey), list[0]);
             Assert.AreEqual('a', list[1].Char);
@@ -114,9 +110,9 @@ namespace VimCore.Test
         [Test]
         public void TryStringToKeyInputList4()
         {
-            var opt = KeyMapUtil.TryStringToKeyInputList("<C-x><C-o>");
+            var opt = KeyMapUtil.TryStringToCommandName("<C-x><C-o>");
             Assert.IsTrue(opt.IsSome());
-            var list = opt.Value.ToList();
+            var list = opt.Value.KeyInputs.ToList();
             Assert.AreEqual(2, list.Count);
             Assert.AreEqual('x', list[0].Char);
             Assert.AreEqual('o', list[1].Char);
