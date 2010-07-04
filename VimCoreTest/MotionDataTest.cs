@@ -1,12 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using NUnit.Framework;
-using VimCore.Test.Utils;
-using Vim;
+﻿using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
-using Microsoft.FSharp.Core;
+using NUnit.Framework;
+using Vim;
+using VimCore.Test.Utils;
 
 namespace VimCore.Test
 {
@@ -24,6 +20,19 @@ namespace VimCore.Test
                 OperationKind.CharacterWise,
                 FSharpOption<int>.None);
             Assert.AreEqual("foo", data.OperationSpan.GetText());
+        }
+
+        [Test]
+        public void OperationSpan2()
+        {
+            var buffer = EditorUtil.CreateBuffer("foo", "  bar");
+            var data = new MotionData(
+                new SnapshotSpan(buffer.GetLine(1).Start.Add(1), 1),
+                true,
+                MotionKind.Exclusive,
+                OperationKind.CharacterWise,
+                FSharpOption<int>.None);
+            Assert.AreEqual(new SnapshotSpan(buffer.GetLine(1).Start.Add(1), 1), data.OperationSpan);
         }
     }
 }
