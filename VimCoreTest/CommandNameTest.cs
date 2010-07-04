@@ -11,25 +11,25 @@ namespace VimCore.Test
     [TestFixture]
     public class CommandNameTest
     {
-        private CommandName CreateOne(char c)
+        private KeyInputSet CreateOne(char c)
         {
-            return CommandName.NewOneKeyInput(InputUtil.CharToKeyInput(c));
+            return KeyInputSet.NewOneKeyInput(InputUtil.CharToKeyInput(c));
         }
 
-        private CommandName CreateTwo(char c1, char c2)
+        private KeyInputSet CreateTwo(char c1, char c2)
         {
-            return CommandName.NewTwoKeyInputs(InputUtil.CharToKeyInput(c1), InputUtil.CharToKeyInput(c2));
+            return KeyInputSet.NewTwoKeyInputs(InputUtil.CharToKeyInput(c1), InputUtil.CharToKeyInput(c2));
         }
 
-        private CommandName CreateMany(params char[] all)
+        private KeyInputSet CreateMany(params char[] all)
         {
-            return CommandName.NewManyKeyInputs(all.Select(InputUtil.CharToKeyInput).ToFSharpList());
+            return KeyInputSet.NewManyKeyInputs(all.Select(InputUtil.CharToKeyInput).ToFSharpList());
         }
 
         [Test]
         public void Add1()
         {
-            var name1 = CommandName.NewOneKeyInput(InputUtil.CharToKeyInput('c'));
+            var name1 = KeyInputSet.NewOneKeyInput(InputUtil.CharToKeyInput('c'));
             var name2 = name1.Add(InputUtil.CharToKeyInput('a'));
             Assert.AreEqual("ca", name2.Name);
         }
@@ -37,7 +37,7 @@ namespace VimCore.Test
         [Test]
         public void Name1()
         {
-            var name1 = CommandName.NewOneKeyInput(InputUtil.CharToKeyInput('c'));
+            var name1 = KeyInputSet.NewOneKeyInput(InputUtil.CharToKeyInput('c'));
             Assert.AreEqual("c", name1.Name);
         }
 
@@ -53,7 +53,7 @@ namespace VimCore.Test
                 EqualityUnit.Create(CreateOne('a')).WithNotEqualValues(CreateOne('b')),
                 EqualityUnit.Create(CreateOne('a')).WithEqualValues(CreateMany('a')),
                 EqualityUnit.Create(CreateOne('D')).WithEqualValues(CommandUtil.CreateCommandName("D")),
-                EqualityUnit.Create(CommandName.NewOneKeyInput(InputUtil.CharToKeyInput('D'))).WithEqualValues(CommandUtil.CreateCommandName("D")));
+                EqualityUnit.Create(KeyInputSet.NewOneKeyInput(InputUtil.CharToKeyInput('D'))).WithEqualValues(CommandUtil.CreateCommandName("D")));
         }
     }
 }

@@ -108,7 +108,7 @@ namespace VimCore.Test
         public void Control_OpenBracket1()
         {
             var ki = InputUtil.CharAndModifiersToKeyInput('[', KeyModifiers.Control);
-            var name = CommandName.NewOneKeyInput(ki);
+            var name = KeyInputSet.NewOneKeyInput(ki);
             Assert.IsTrue(_mode.CommandNames.Contains(name));
         }
 

@@ -108,7 +108,7 @@ namespace VimCore.Test
             var commands = _mode.CommandNames.ToList();
             foreach (var item in list)
             {
-                var name = CommandName.NewOneKeyInput(item);
+                var name = KeyInputSet.NewOneKeyInput(item);
                 Assert.Contains(name, commands);
             }
         }

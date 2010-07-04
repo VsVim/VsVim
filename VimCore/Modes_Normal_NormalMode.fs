@@ -144,7 +144,7 @@ type internal NormalMode
                     | CommandChange(data) -> 
                         let countOpt = match countOpt with | Some(count) -> Some(count) | None -> data.Count
                         let reg = data.Register
-                        let commandName = data.Command.CommandName.Name
+                        let commandName = data.Command.KeyInputSet.Name
                         match data.Command with 
                         | SimpleCommand(_,_,func) -> func countOpt reg |> ignore
                         | MotionCommand(_,_,func) -> 
@@ -156,7 +156,7 @@ type internal NormalMode
                             | Some(motionRunData) ->
 
                                 // Repeat the motion and process the results
-                                let motionName = motionRunData.MotionCommand.CommandName.Name
+                                let motionName = motionRunData.MotionCommand.KeyInputSet.Name
                                 match motionRunData.MotionFunction motionRunData.Count with
                                 | None ->  _statusUtil.OnError (Resources.NormalMode_UnableToRepeatMotion commandName motionName)
                                 | Some(motionData) -> func countOpt reg motionData |> ignore
@@ -282,7 +282,7 @@ type internal NormalMode
 
             }
             |> Seq.map(fun (list,kind,func) -> 
-                let name = CommandName.ManyKeyInputs list
+                let name = KeyInputSet.ManyKeyInputs list
                 let func2 count reg =
                     let count = CommandUtil.CountOrDefault count
                     func count reg
@@ -435,7 +435,7 @@ type internal NormalMode
         member this.CommandRunner = _runner
         member this.CommandNames = 
             this.EnsureCommands()
-            _runner.Commands |> Seq.map (fun command -> command.CommandName)
+            _runner.Commands |> Seq.map (fun command -> command.KeyInputSet)
 
         member this.ModeKind = ModeKind.Normal
 
@@ -443,7 +443,7 @@ type internal NormalMode
             let doesCommandStartWith ki =
                 let name = OneKeyInput ki
                 _runner.Commands 
-                |> Seq.filter (fun command -> command.CommandName.StartsWith name)
+                |> Seq.filter (fun command -> command.KeyInputSet.StartsWith name)
                 |> SeqUtil.isNotEmpty
 
             if _displayWindowBroker.IsSmartTagSessionActive then false

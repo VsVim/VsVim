@@ -39,7 +39,7 @@ namespace VimCore.Test.Mock
             throw new NotImplementedException();
         }
 
-        public IEnumerable<CommandName> CommandNames
+        public IEnumerable<KeyInputSet> CommandNames
         {
             get { throw new NotImplementedException(); }
         }

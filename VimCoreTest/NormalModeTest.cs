@@ -1953,7 +1953,7 @@ namespace VimCore.Test
         {
             Create(s_lines);
             var def = new KeyInput(']', KeyModifiers.Control);
-            var name = CommandName.NewOneKeyInput(def);
+            var name = KeyInputSet.NewOneKeyInput(def);
             Assert.IsTrue(_mode.CanProcess(def));
             Assert.IsTrue(_mode.CommandNames.Contains(name));
         }
@@ -2200,7 +2200,7 @@ namespace VimCore.Test
         {
             Create("foo");
             var all = _modeRaw.Commands.ToList();
-            var found = _modeRaw.Commands.Single(x => x.CommandName.Equals(CommandUtil.CreateCommandName("D")));
+            var found = _modeRaw.Commands.Single(x => x.KeyInputSet.Equals(CommandUtil.CreateCommandName("D")));
             Assert.AreEqual(CommandFlags.Repeatable, found.CommandFlags);
         }
 
@@ -2208,7 +2208,7 @@ namespace VimCore.Test
         public void Commands2()
         {
             Create("foo");
-            var found = _modeRaw.Commands.Single(x => x.CommandName.Equals(CommandUtil.CreateCommandName("h")));
+            var found = _modeRaw.Commands.Single(x => x.KeyInputSet.Equals(CommandUtil.CreateCommandName("h")));
             Assert.AreNotEqual(CommandFlags.Repeatable, found.CommandFlags, "Movements should not be repeatable");  
         }
 
@@ -2216,7 +2216,7 @@ namespace VimCore.Test
         public void Commands3()
         {
             Create("foo", "bar", "baz");
-            var found = _modeRaw.Commands.Single(x => x.CommandName.Equals(CommandUtil.CreateCommandName("dd")));
+            var found = _modeRaw.Commands.Single(x => x.KeyInputSet.Equals(CommandUtil.CreateCommandName("dd")));
             Assert.AreEqual(CommandFlags.Repeatable, found.CommandFlags);
         }
 

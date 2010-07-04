@@ -110,7 +110,7 @@ type internal MotionCapture
 
     let MotionCommands = AllMotionsCore 
 
-    let MotionCommandsMap = AllMotionsCore |> Seq.map (fun command ->  (command.CommandName,command)) |> Map.ofSeq
+    let MotionCommandsMap = AllMotionsCore |> Seq.map (fun command ->  (command.KeyInputSet,command)) |> Map.ofSeq
 
     /// Run a normal motion function
     let RunMotionFunction command func count =
@@ -132,7 +132,7 @@ type internal MotionCapture
         func() |> inner
 
     let rec WaitForCommandName count ki =
-        let rec inner (previousName:CommandName) (ki:KeyInput) =
+        let rec inner (previousName:KeyInputSet) (ki:KeyInput) =
             if ki.Key = VimKey.EscapeKey then MotionResult.Cancelled 
             else
                 let name = previousName.Add ki
@@ -145,7 +145,7 @@ type internal MotionCapture
                     let res = MotionCommandsMap |> Seq.filter (fun pair -> pair.Key.StartsWith name) 
                     if Seq.isEmpty res then MotionResult.Error Resources.MotionCapture_InvalidMotion
                     else MotionResult.NeedMoreInput (inner name)
-        inner EmptyName ki
+        inner Empty ki
         
     /// Process a count prefix to the motion.  
     let ProcessCount (ki:KeyInput) (completeFunc:KeyInput -> int option -> MotionResult) startCount =

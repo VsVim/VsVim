@@ -98,7 +98,7 @@ namespace VimCore.Test
             var command1 = VimUtil.CreateSimpleCommand("foo", (x, y) => CommandResult.NewCompleted(ModeSwitch.NoSwitch));
             var command2 = VimUtil.CreateSimpleCommand("bar", (x, y) => CommandResult.NewCompleted(ModeSwitch.NoSwitch));
             _runner.Add(command1);
-            _runner.Remove(command1.CommandName);
+            _runner.Remove(command1.KeyInputSet);
             Assert.AreEqual(0, _runner.Commands.Count());
         }
 

@@ -124,10 +124,10 @@ module internal KeyMapUtil =
     /// if the entire list succesfully parses
     let TryStringToCommandName (data:string) =
         match data |> SplitIntoKeyNotationEntries |> List.map TryStringToKeyInput |> SeqUtil.allOrNone with
-        | Some(list) -> list |> CommandNameUtil.ofList |> Some
+        | Some(list) -> list |> KeyInputSetUtil.ofList |> Some
         | None -> None
 
-type internal RemapModeMap = Map<CommandName, (CommandName * bool)>
+type internal RemapModeMap = Map<KeyInputSet, (KeyInputSet * bool)>
 
 type internal KeyMap() =
     
@@ -191,8 +191,8 @@ type internal KeyMap() =
     member private x.GetKeyMappingCore keyInputs mode =
         let modeMap = x.GetRemapModeMap mode
 
-        let rec inner keyInputs set : (KeyMappingResult * Set<CommandName> )=
-            let key = CommandNameUtil.ofSeq keyInputs
+        let rec inner keyInputs set : (KeyMappingResult * Set<KeyInputSet> )=
+            let key = KeyInputSetUtil.ofSeq keyInputs
             if Set.contains key set then (RecursiveMapping keyInputs ,set)
             else
                 match modeMap |> Map.tryFind key with

@@ -14,7 +14,7 @@ type internal CommandData = {
     Count : int option;
 
     /// Name of the current command
-    CommandName : CommandName;
+    KeyInputSet : KeyInputSet;
 
     /// Reverse ordered List of all KeyInput for a given command
     Inputs : KeyInput list;
@@ -35,14 +35,14 @@ type internal CommandRunner
     let _emptyData = { 
         Register = _registerMap.DefaultRegister;
         Count = None;
-        CommandName = EmptyName;
+        KeyInputSet = Empty;
         Inputs = List.empty;
         State = CommandRunnerState.NoInput
     }
 
     let _commandRanEvent = Event<_>()
     
-    let mutable _commandMap : Map<CommandName,Command> = Map.empty
+    let mutable _commandMap : Map<KeyInputSet,Command> = Map.empty
 
     /// Contains all of the state data for a Command operation
     let mutable _data = _emptyData
@@ -123,9 +123,9 @@ type internal CommandRunner
 
     /// Waits for a completed command to be entered
     member private x.WaitForCommand (ki:KeyInput) = 
-        let previousName = _data.CommandName
+        let previousName = _data.KeyInputSet
         let commandName = previousName.Add ki
-        _data <- { _data with CommandName = commandName; State = NotEnoughInput }
+        _data <- { _data with KeyInputSet = commandName; State = NotEnoughInput }
         x.RunCommand commandName previousName ki
 
     /// Wait for a long command to complete
@@ -145,15 +145,15 @@ type internal CommandRunner
     member private x.RunCommand commandName previousCommandName currentInput = 
 
         // Find any commands which have the given prefix
-        let findPrefixMatches (commandName:CommandName) =
+        let findPrefixMatches (commandName:KeyInputSet) =
             let commandInputs = commandName.KeyInputs
             let count = List.length commandInputs
             let commandInputsSeq = commandInputs |> Seq.ofList
             _commandMap
             |> Seq.map (fun pair -> pair.Value)
-            |> Seq.filter (fun command -> command.CommandName.KeyInputs.Length >= count)
+            |> Seq.filter (fun command -> command.KeyInputSet.KeyInputs.Length >= count)
             |> Seq.filter (fun command -> 
-                let short = command.CommandName.KeyInputs |> Seq.ofList |> Seq.take count
+                let short = command.KeyInputSet.KeyInputs |> Seq.ofList |> Seq.take count
                 SeqUtil.contentsEqual commandInputsSeq short)
 
         // Run the specified command
@@ -173,7 +173,7 @@ type internal CommandRunner
                 // matching prefix we can't bind to the command yet
                 let withPrefix = 
                     findPrefixMatches commandName
-                    |> Seq.filter (fun c -> c.CommandName <> command.CommandName)
+                    |> Seq.filter (fun c -> c.KeyInputSet <> command.KeyInputSet)
                 if Seq.isEmpty withPrefix then x.WaitForMotion command func None
                 else 
                     let state = NotEnoughMatchingPrefix (command, withPrefix |> List.ofSeq)
@@ -251,10 +251,10 @@ type internal CommandRunner
                 _inRun <-false
             
     member x.Add (command:Command) = 
-        if Map.containsKey command.CommandName _commandMap then 
+        if Map.containsKey command.KeyInputSet _commandMap then 
             invalidArg "command" Resources.CommandRunner_CommandNameAlreadyAdded
-        _commandMap <- Map.add command.CommandName command _commandMap
-    member x.Remove (name:CommandName) = _commandMap <- Map.remove name _commandMap
+        _commandMap <- Map.add command.KeyInputSet command _commandMap
+    member x.Remove (name:KeyInputSet) = _commandMap <- Map.remove name _commandMap
     member x.ResetState () =
         _data <- _emptyData
         _runFunc <- x.RunCheckForCountAndRegister 

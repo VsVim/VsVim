@@ -154,7 +154,7 @@ type internal VisualMode
         member x.VimBuffer = _buffer
         member x.CommandNames = 
             x.EnsureCommandsBuilt()
-            _runner.Commands |> Seq.map (fun command -> command.CommandName)
+            _runner.Commands |> Seq.map (fun command -> command.KeyInputSet)
         member x.ModeKind = _kind
         member x.CanProcess (ki:KeyInput) = true
         member x.Process (ki : KeyInput) =  

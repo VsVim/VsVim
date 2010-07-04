@@ -178,17 +178,17 @@ type ModeKind =
 /// we have to use KeyInput values directly.
 [<CustomEquality; CustomComparison>]
 [<DebuggerDisplay("{ToString(),nq}")>]
-type CommandName =
-    | EmptyName 
+type KeyInputSet =
+    | Empty
     | OneKeyInput of KeyInput
     | TwoKeyInputs of KeyInput * KeyInput
     | ManyKeyInputs of KeyInput list
     with 
 
-    /// Get the list of KeyInput which represent this CommandName
+    /// Get the list of KeyInput which represent this KeyInputSet
     member x.KeyInputs =
         match x with 
-        | EmptyName -> List.empty
+        | Empty -> List.empty
         | OneKeyInput(ki) -> [ki]
         | TwoKeyInputs(k1,k2) -> [k1;k2]
         | ManyKeyInputs(list) -> list
@@ -200,24 +200,24 @@ type CommandName =
     /// Length of the contained KeyInput's
     member x.Length =
         match x with
-        | EmptyName -> 0
+        | Empty -> 0
         | OneKeyInput(_) -> 1
         | TwoKeyInputs(_) -> 2
         | ManyKeyInputs(list) -> list.Length
 
-    /// Add a KeyInput to the end of this CommandName and return the 
+    /// Add a KeyInput to the end of this KeyInputSet and return the 
     /// resulting value
     member x.Add (ki) =
         match x with 
-        | EmptyName -> OneKeyInput ki
+        | Empty -> OneKeyInput ki
         | OneKeyInput(previous) -> TwoKeyInputs(previous,ki)
         | TwoKeyInputs(p1,p2) -> ManyKeyInputs [p1;p2;ki]
         | ManyKeyInputs(list) -> ManyKeyInputs (list @ [ki])
 
-    /// Does the name start with the given CommandName
-    member x.StartsWith (targetName:CommandName) = 
+    /// Does the name start with the given KeyInputSet
+    member x.StartsWith (targetName:KeyInputSet) = 
         match targetName,x with
-        | EmptyName, _ -> true
+        | Empty, _ -> true
         | OneKeyInput(leftKi), OneKeyInput(rightKi) ->  leftKi = rightKi
         | OneKeyInput(leftKi), TwoKeyInputs(rightKi,_) -> leftKi = rightKi
         | _ -> 
@@ -229,7 +229,7 @@ type CommandName =
 
     override x.GetHashCode() = 
         match x with
-        | EmptyName -> 1
+        | Empty -> 1
         | OneKeyInput(ki) -> ki.GetHashCode()
         | TwoKeyInputs(k1,k2) -> k1.GetHashCode() ^^^ k2.GetHashCode()
         | ManyKeyInputs(list) -> 
@@ -240,15 +240,15 @@ type CommandName =
 
     override x.Equals(yobj) =
         match yobj with
-        | :? CommandName as y -> 
+        | :? KeyInputSet as y -> 
             match x,y with
             | OneKeyInput(left),OneKeyInput(right) -> left = right
             | TwoKeyInputs(l1,l2),TwoKeyInputs(r1,r2) -> l1 = r1 && l2 = r2
             | _ -> ListUtil.contentsEqual x.KeyInputs y.KeyInputs
         | _ -> false
 
-    static member op_Equality(this,other) = System.Collections.Generic.EqualityComparer<CommandName>.Default.Equals(this,other)
-    static member op_Inequality(this,other) = not (System.Collections.Generic.EqualityComparer<CommandName>.Default.Equals(this,other))
+    static member op_Equality(this,other) = System.Collections.Generic.EqualityComparer<KeyInputSet>.Default.Equals(this,other)
+    static member op_Inequality(this,other) = not (System.Collections.Generic.EqualityComparer<KeyInputSet>.Default.Equals(this,other))
 
     override x.ToString() =
         x.KeyInputs
@@ -260,7 +260,7 @@ type CommandName =
     interface System.IComparable with
         member x.CompareTo yobj = 
             match yobj with
-            | :? CommandName as y -> 
+            | :? KeyInputSet as y -> 
                 let rec inner (left:KeyInput list) (right:KeyInput list) =
                     if left.IsEmpty && right.IsEmpty then 0
                     elif left.IsEmpty then -1
@@ -271,23 +271,23 @@ type CommandName =
                 inner x.KeyInputs y.KeyInputs
             | _ -> failwith "Cannot compare values of different types"
 
-module CommandNameUtil =
+module KeyInputSetUtil =
 
     let ofSeq sequence = 
         match Seq.length sequence with
-        | 0 -> CommandName.EmptyName
-        | 1 -> CommandName.OneKeyInput (Seq.nth 0 sequence)
-        | 2 -> CommandName.TwoKeyInputs ((Seq.nth 0 sequence),(Seq.nth 1 sequence))
-        | _ -> sequence |> List.ofSeq |> CommandName.ManyKeyInputs 
+        | 0 -> KeyInputSet.Empty
+        | 1 -> KeyInputSet.OneKeyInput (Seq.nth 0 sequence)
+        | 2 -> KeyInputSet.TwoKeyInputs ((Seq.nth 0 sequence),(Seq.nth 1 sequence))
+        | _ -> sequence |> List.ofSeq |> KeyInputSet.ManyKeyInputs 
 
     let ofList list = 
         match list with
-        | [] -> CommandName.EmptyName
-        | [ki] -> CommandName.OneKeyInput ki
+        | [] -> KeyInputSet.Empty
+        | [ki] -> KeyInputSet.OneKeyInput ki
         | _ -> 
             match list.Length with
-            | 2 -> CommandName.TwoKeyInputs ((List.nth list 0),(List.nth list 1))
-            | _ -> CommandName.ManyKeyInputs list
+            | 2 -> KeyInputSet.TwoKeyInputs ((List.nth list 0),(List.nth list 1))
+            | _ -> KeyInputSet.ManyKeyInputs list
 
 type ModeSwitch =
     | NoSwitch
@@ -324,22 +324,22 @@ type Command =
     /// Represents a Command which has no motion modifiers.  The  delegate takes 
     /// an optional count and a Register.  If unspecified the default register
     /// will be used
-    | SimpleCommand of CommandName * CommandFlags * (int option -> Register -> CommandResult)
+    | SimpleCommand of KeyInputSet * CommandFlags * (int option -> Register -> CommandResult)
 
     /// Represents a Command prefix which has an associated motion.  The delegate takes
     /// an optional count, a Register and a MotionData value.  If unspecified the default
     /// register will be used
-    | MotionCommand of CommandName * CommandFlags * (int option -> Register -> MotionData -> CommandResult)
+    | MotionCommand of KeyInputSet * CommandFlags * (int option -> Register -> MotionData -> CommandResult)
 
     /// Represents a command which has a Name but then has additional unspecified input
     /// which needs to be dealt with specially by the command.  These commands are not
     /// repeatable.  
-    | LongCommand of CommandName * CommandFlags * (int option -> Register -> LongCommandResult) 
+    | LongCommand of KeyInputSet * CommandFlags * (int option -> Register -> LongCommandResult) 
 
     with 
 
     /// The raw command inputs
-    member x.CommandName = 
+    member x.KeyInputSet = 
         match x with
         | SimpleCommand(value,_,_ ) -> value
         | MotionCommand(value,_,_) -> value
@@ -364,7 +364,7 @@ type Command =
     /// Is the Special flag set
     member x.IsSpecial = Utils.IsFlagSet x.CommandFlags CommandFlags.Special
 
-    override x.ToString() = System.String.Format("{0} -> {1}", x.CommandName, x.CommandFlags)
+    override x.ToString() = System.String.Format("{0} -> {1}", x.KeyInputSet, x.CommandFlags)
 
 type MotionFunction = int option -> MotionData option
 
@@ -382,17 +382,17 @@ type MotionCommand =
     /// Simple motion which comprises of a single KeyInput and a function which given 
     /// a start point and count will produce the motion.  None is returned in the 
     /// case the motion is not valid
-    | SimpleMotionCommand of CommandName * MotionFunction
+    | SimpleMotionCommand of KeyInputSet * MotionFunction
 
     /// Complex motion commands take more than one KeyInput to complete.  For example 
     /// the f,t,F and T commands all require at least one additional input.  The bool
     /// in the middle of the tuple indicates whether or not the motion can be 
     /// used as a cursor movement operation  
-    | ComplexMotionCommand of CommandName * bool * ( unit -> ComplexMotionResult )
+    | ComplexMotionCommand of KeyInputSet * bool * ( unit -> ComplexMotionResult )
 
     with
 
-    member x.CommandName = 
+    member x.KeyInputSet = 
         match x with
         | SimpleMotionCommand(name,_) -> name
         | ComplexMotionCommand(name,_,_) -> name
@@ -439,7 +439,7 @@ module CommandUtil =
         | Some(count) -> count
         | None -> 1
 
-    let CreateCommandName name = name |> Seq.map InputUtil.CharToKeyInput |> CommandNameUtil.ofSeq
+    let CreateCommandName name = name |> Seq.map InputUtil.CharToKeyInput |> KeyInputSetUtil.ofSeq
 
 /// Represents the types of actions which are taken when an ICommandRunner is presented
 /// with a KeyInput to run
@@ -501,7 +501,7 @@ type ICommandRunner =
     abstract Add : Command -> unit
 
     /// Remove a command with the specified name
-    abstract Remove : CommandName -> unit
+    abstract Remove : KeyInputSet -> unit
 
     /// Process the given KeyInput.  If the command completed it will return a result.  A
     /// None value implies more input is needed to finish the operation
@@ -1012,7 +1012,7 @@ and IMode =
     abstract ModeKind : ModeKind
 
     /// Sequence of commands handled by the Mode.  
-    abstract CommandNames : seq<CommandName>
+    abstract CommandNames : seq<KeyInputSet>
 
     /// Can the mode process this particular KeyIput at the current time
     abstract CanProcess : KeyInput -> bool

@@ -27,7 +27,7 @@ namespace VimCore.Test.Utils
         {
             var fsharpFunc = FSharpFuncUtil.Create(func);
             var list = name.Select(InputUtil.CharToKeyInput).ToFSharpList();
-            var commandName = CommandName.NewManyKeyInputs(list);
+            var commandName = KeyInputSet.NewManyKeyInputs(list);
             return Command.NewSimpleCommand(commandName, CommandFlags.None, fsharpFunc);
         }
 
@@ -35,7 +35,7 @@ namespace VimCore.Test.Utils
         {
             var fsharpFunc = FSharpFuncUtil.Create(func);
             var list = name.Select(InputUtil.CharToKeyInput).ToFSharpList();
-            var commandName = CommandName.NewManyKeyInputs(list);
+            var commandName = KeyInputSet.NewManyKeyInputs(list);
             return Command.NewLongCommand(commandName, flags, fsharpFunc);
         }
 
@@ -78,7 +78,7 @@ namespace VimCore.Test.Utils
         {
             var fsharpFunc = FSharpFuncUtil.Create(func);
             var list = name.Select(InputUtil.CharToKeyInput).ToFSharpList();
-            var commandName = CommandName.NewManyKeyInputs(list);
+            var commandName = KeyInputSet.NewManyKeyInputs(list);
             return Command.NewMotionCommand(commandName, CommandFlags.None, fsharpFunc);
         }
 

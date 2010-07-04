@@ -81,9 +81,9 @@ type internal CommandFactory( _operations : ICommonOperations, _capture : IMotio
     /// valid as movements.  Several of these are overridden with custom movement behavior though.
     member x.CreateMovementCommands() = 
         let standard = x.CreateStandardMovementCommands()
-        let taken = standard |> Seq.map (fun command -> command.CommandName) |> Set.ofSeq
+        let taken = standard |> Seq.map (fun command -> command.KeyInputSet) |> Set.ofSeq
         let motion = 
             x.CreateMovementsFromMotions()
-            |> Seq.filter (fun command -> not (taken.Contains command.CommandName))
+            |> Seq.filter (fun command -> not (taken.Contains command.KeyInputSet))
         standard |> Seq.append motion
 

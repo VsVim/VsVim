@@ -27,7 +27,7 @@ namespace VimCore.Test.Mock
             get { throw new NotImplementedException(); }
         }
 
-        public void Remove(CommandName value)
+        public void Remove(KeyInputSet value)
         {
             throw new NotImplementedException();
         }
