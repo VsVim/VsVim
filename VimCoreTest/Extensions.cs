@@ -1,17 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
+using System.Windows.Threading;
+using Microsoft.FSharp.Collections;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
+using NUnit.Framework;
 using Vim;
 using Vim.Modes;
-using System.Windows.Threading;
-using Microsoft.FSharp.Core;
-using System.Windows.Input;
-using NUnit.Framework;
-using Microsoft.FSharp.Collections;
-using Microsoft.VisualStudio.Text.Outlining;
 
 namespace VimCore.Test
 {
@@ -57,6 +53,7 @@ namespace VimCore.Test
 
         #region ParseRangeResult
 
+
         internal static Vim.Modes.Command.ParseRangeResult.Succeeded AsSucceeded(this Vim.Modes.Command.ParseRangeResult res)
         {
             return (Vim.Modes.Command.ParseRangeResult.Succeeded)res;
@@ -69,19 +66,34 @@ namespace VimCore.Test
 
         #endregion
 
-        #region KeyMappingResult
+        #region IKeyMap
 
-
-        internal static Vim.KeyMappingResult.SingleKey AsSingleKey(this KeyMappingResult res)
+        internal static IEnumerable<KeyInput> GetKeyMapping(this IKeyMap keyMap, KeyInput ki, KeyRemapMode mode)
         {
-            Assert.IsTrue(res.IsSingleKey);
-            return (KeyMappingResult.SingleKey)res;
+            var set = KeyInputSet.NewOneKeyInput(ki);
+            return keyMap.GetKeyMapping(set, mode).AsMapped().Item.KeyInputs;
         }
 
-        internal static KeyMappingResult.KeySequence AsKeySequence(this KeyMappingResult res)
+        internal static KeyMappingResult GetKeyMappingResult(this IKeyMap keyMap, KeyInput ki, KeyRemapMode mode)
         {
-            Assert.IsTrue(res.IsKeySequence);
-            return (KeyMappingResult.KeySequence)res;
+            var set = KeyInputSet.NewOneKeyInput(ki);
+            return keyMap.GetKeyMapping(set, mode);
+        }
+
+        #endregion
+
+        #region KeyMappingResult
+
+        internal static Vim.KeyMappingResult.Mapped AsMapped(this KeyMappingResult res)
+        {
+            Assert.IsTrue(res.IsMapped);
+            return (KeyMappingResult.Mapped)res;
+        }
+
+        internal static Vim.KeyMappingResult.RecursiveMapping AsRecursiveMapping(this KeyMappingResult res)
+        {
+            Assert.IsTrue(res.IsRecursiveMapping);
+            return (KeyMappingResult.RecursiveMapping)res;
         }
 
         #endregion

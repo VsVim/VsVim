@@ -1,11 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using Microsoft.VisualStudio.Text.Editor;
-using Vim.Modes.Visual;
-using System.Windows.Threading;
 using System.Windows.Input;
+using System.Windows.Threading;
+using Microsoft.VisualStudio.Text.Editor;
 
 namespace Vim.UI.Wpf
 {
@@ -64,7 +60,6 @@ namespace Vim.UI.Wpf
         {
             if (!IsSelectionChanging && !_selection.IsEmpty && !IsAnyVisualMode)
             {
-                
                 // Actually process the selection event during background processing.  The editor commonly
                 // implements operations as a selection + edit combination.  Delete Previous word for instance
                 // works this way.  By processing later we can see if this selection is persisted

@@ -185,6 +185,14 @@ type KeyInputSet =
     | ManyKeyInputs of KeyInput list
     with 
 
+    /// Returns the first KeyInput if preseent
+    member x.FirstKeyInput = 
+        match x with 
+        | Empty -> None
+        | OneKeyInput(ki) -> Some ki
+        | TwoKeyInputs(ki,_) -> Some ki
+        | ManyKeyInputs(list) -> ListUtil.tryHeadOnly list
+
     /// Get the list of KeyInput which represent this KeyInputSet
     member x.KeyInputs =
         match x with 
@@ -288,6 +296,8 @@ module KeyInputSetUtil =
             match list.Length with
             | 2 -> KeyInputSet.TwoKeyInputs ((List.nth list 0),(List.nth list 1))
             | _ -> KeyInputSet.ManyKeyInputs list
+
+    let ofChar c = c |> InputUtil.CharToKeyInput |> OneKeyInput
 
 type ModeSwitch =
     | NoSwitch
@@ -530,12 +540,11 @@ type KeyMappingResult =
     /// No mapping exists 
     | NoMapping 
 
-    | SingleKey of KeyInput 
-
-    | KeySequence of KeyInput seq
+    /// Mapped to the specified KeyInputSet
+    | Mapped of KeyInputSet 
 
     /// The mapping encountered a recursive element that had to be broken 
-    | RecursiveMapping of KeyInput seq
+    | RecursiveMapping of KeyInputSet
 
     /// More input is needed to resolve this mapping
     | MappingNeedsMoreInput
@@ -547,14 +556,8 @@ type IKeyMap =
     /// then a sequence of a single element containing the passed in key will be returned.  
     /// If a recursive mapping is detected it will not be persued and treated instead as 
     /// if the recursion did not exist
-    abstract GetKeyMapping : KeyInput -> KeyRemapMode -> KeyInput seq
+    abstract GetKeyMapping : KeyInputSet -> KeyRemapMode -> KeyMappingResult
 
-    /// Get the key mapping for the specified KeyInput
-    abstract GetKeyMappingResult : KeyInput -> KeyRemapMode -> KeyMappingResult
-
-    /// Get the key mapping result from the specified set of keys
-    abstract GetKeyMappingResultFromMultiple : KeyInput seq -> KeyRemapMode -> KeyMappingResult
-    
     /// Map the given key sequence without allowing for remaping
     abstract MapWithNoRemap : lhs:string -> rhs:string -> KeyRemapMode -> bool
 

@@ -44,7 +44,7 @@ type internal VimBuffer
 
     /// This is the buffered input when a remap request needs more than one 
     /// element
-    let mutable _remapInput : KeyInput list option = None
+    let mutable _remapInput : KeyInputSet option = None
 
     let _keyInputProcessedEvent = new Event<_>()
     let _keyInputReceivedEvent = new Event<_>()
@@ -56,7 +56,7 @@ type internal VimBuffer
     member x.BufferedRemapKeyInputs =
         match _remapInput with
         | None -> List.empty
-        | Some(keyInputs) -> keyInputs
+        | Some(keyInputSet) -> keyInputSet.KeyInputs
     
     /// Get the current mode
     member x.Mode = _modeMap.Mode
@@ -120,32 +120,35 @@ type internal VimBuffer
         // Raise the event that we recieved the key
         _keyInputReceivedEvent.Trigger(i)
 
-        let remapResult,keyInputs = 
+        let remapResult,keyInputSet = 
             match _remapInput,remapMode with
             | Some(buffered),Some(remapMode) -> 
-                let keyInputs = buffered |> SeqUtil.appendSingle i 
-                (_vim.KeyMap.GetKeyMappingResultFromMultiple keyInputs remapMode),keyInputs
+                let keyInputSet = buffered.Add(i)
+                (_vim.KeyMap.GetKeyMapping keyInputSet remapMode),keyInputSet
             | Some(buffered),None -> 
-                let keyInputs = buffered |> SeqUtil.appendSingle i 
-                KeySequence(keyInputs),keyInputs
-            | None,Some(remapMode) -> (_vim.KeyMap.GetKeyMappingResult i remapMode,Seq.singleton i)
-            | None,None -> (SingleKey(i),Seq.singleton(i))
+                let keyInputSet = buffered.Add(i)
+                (Mapped keyInputSet),keyInputSet
+            | None,Some(remapMode) -> 
+                let keyInputSet = OneKeyInput i
+                (_vim.KeyMap.GetKeyMapping keyInputSet remapMode,keyInputSet)
+            | None,None -> 
+                let keyInputSet = OneKeyInput i
+                (Mapped keyInputSet),keyInputSet
 
         // Clear out the _remapInput at this point.  It will be reset if the mapping needs more 
         // data
         _remapInput <- None
 
         match remapResult with
-        | SingleKey(ki) -> doProcess ki
         | NoMapping -> doProcess i 
         | MappingNeedsMoreInput -> 
-            _remapInput <- keyInputs |> List.ofSeq |> Some
+            _remapInput <- Some keyInputSet
             _keyInputBufferedEvent.Trigger i
             true
         | RecursiveMapping(_) -> 
             x.RaiseErrorMessage Resources.Vim_RecursiveMapping
             true
-        | KeySequence(kiSeq) -> kiSeq |> Seq.map doProcess |> SeqUtil.last
+        | Mapped(keyInputSet) -> keyInputSet.KeyInputs |> Seq.map doProcess |> SeqUtil.last
     
     member x.AddMode mode = _modeMap.AddMode mode
             
@@ -154,12 +157,14 @@ type internal VimBuffer
             match x.KeyRemapMode with 
             | None -> ki
             | Some(remapMode) ->
-                match _vim.KeyMap.GetKeyMappingResult ki remapMode with
-                | SingleKey(ki) -> ki
+                match _vim.KeyMap.GetKeyMapping (OneKeyInput ki) remapMode with
+                | Mapped(keyInputSet) -> 
+                    match keyInputSet.FirstKeyInput with
+                    | Some(mapped) -> mapped
+                    | None -> ki
                 | NoMapping -> ki
                 | MappingNeedsMoreInput -> ki
                 | RecursiveMapping(_) -> ki
-                | KeySequence(kiSeq) -> Seq.head kiSeq
         x.Mode.CanProcess ki || ki = _vim.Settings.DisableCommand
 
     member x.RaiseErrorMessage msg = _errorMessageEvent.Trigger msg

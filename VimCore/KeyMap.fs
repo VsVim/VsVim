@@ -133,19 +133,6 @@ type internal KeyMap() =
     
     let mutable _map : Map<KeyRemapMode, RemapModeMap> = Map.empty
 
-    member x.GetKeyMapping (ki:KeyInput) mode = 
-        let keyInputs = ki |> Seq.singleton
-        match x.GetKeyMappingCore keyInputs mode with
-        | NoMapping -> keyInputs
-        | SingleKey(ki) -> ki |> Seq.singleton
-        | KeySequence(mappedKeys) -> mappedKeys
-        | RecursiveMapping(mappedKeys) -> mappedKeys
-        | MappingNeedsMoreInput -> keyInputs
-
-    member x.GetKeyMappingResult ki mode = 
-        let keyInputs = ki |> Seq.singleton
-        x.GetKeyMappingCore keyInputs mode
-
     member x.MapWithNoRemap lhs rhs mode = x.MapCore lhs rhs mode false
     member x.MapWithRemap lhs rhs mode = x.MapCore lhs rhs mode true
 
@@ -185,15 +172,13 @@ type internal KeyMap() =
             else
                 false
 
-    /// Get the key mapping for the passed in data.  Returns a tuple of (KeyInput list,bool,Set<KeyInput>)
-    /// where the bool value is true if there is a recursive mapping.  The Set parameter
-    /// tracks the KeyInput values we've already seen in order to detect recursion 
-    member private x.GetKeyMappingCore keyInputs mode =
+    /// Get the key mapping for the passed in data.  Returns a KeyMappingResult represeting the 
+    /// mapping
+    member private x.GetKeyMapping keyInputSet mode =
         let modeMap = x.GetRemapModeMap mode
 
-        let rec inner keyInputs set : (KeyMappingResult * Set<KeyInputSet> )=
-            let key = KeyInputSetUtil.ofSeq keyInputs
-            if Set.contains key set then (RecursiveMapping keyInputs ,set)
+        let rec inner key set : (KeyMappingResult * Set<KeyInputSet> )=
+            if Set.contains key set then (RecursiveMapping key,set)
             else
                 match modeMap |> Map.tryFind key with
                 | None -> 
@@ -207,40 +192,34 @@ type internal KeyMap() =
                     else NoMapping,set
                 | Some(mappedKeyInputs,allowRemap) -> 
                     let set = set |> Set.add key
-                    if not allowRemap then 
-                        if mappedKeyInputs.Length > 1 then  ((mappedKeyInputs.KeyInputs |> Seq.ofList |> KeySequence),set)
-                        else (mappedKeyInputs.KeyInputs |> List.head |> SingleKey,set)
-                    else
+                    if not allowRemap then (Mapped mappedKeyInputs), set
+                    else  
                         
                         // Time for a recursive mapping attempt
                         let mutable anyRecursive = false
                         let mutable set = set
                         let list = new System.Collections.Generic.List<KeyInput>()
                         for mappedKi in mappedKeyInputs.KeyInputs do
-                            let mappedKiSeq = mappedKi |> Seq.singleton
-                            let result,newSet = inner mappedKiSeq set
+                            let result,newSet = inner (OneKeyInput mappedKi) set
                             set <- newSet
 
                             match result with
                             | NoMapping -> list.Add(mappedKi)
-                            | SingleKey(ki) -> list.Add(ki)
-                            | KeySequence(remappedSeq) -> list.AddRange(remappedSeq)
+                            | Mapped(keyInputSet) -> list.AddRange(keyInputSet.KeyInputs)
                             | RecursiveMapping(_) ->
                                 list.Add(mappedKi)
                                 anyRecursive <- true
                             | MappingNeedsMoreInput-> list.Add(mappedKi)
 
-                        if anyRecursive then (RecursiveMapping(list :> KeyInput seq),set)
-                        elif list.Count = 1 then (SingleKey (list.Item(0)),set)
-                        else (KeySequence(list :> KeyInput seq),set)
+                        let keyInputSet = list |> KeyInputSetUtil.ofSeq 
+                        if anyRecursive then (RecursiveMapping keyInputSet, set)
+                        else (Mapped keyInputSet, set)
     
-        let res,_ = inner keyInputs Set.empty
+        let res,_ = inner keyInputSet Set.empty
         res
     
     interface IKeyMap with
         member x.GetKeyMapping ki mode = x.GetKeyMapping ki mode
-        member x.GetKeyMappingResult ki mode = x.GetKeyMappingResult ki mode
-        member x.GetKeyMappingResultFromMultiple keyInputs mode = x.GetKeyMappingCore keyInputs mode
         member x.MapWithNoRemap lhs rhs mode = x.MapWithNoRemap lhs rhs mode
         member x.MapWithRemap lhs rhs mode = x.MapWithRemap lhs rhs mode
         member x.Unmap lhs mode = x.Unmap lhs mode

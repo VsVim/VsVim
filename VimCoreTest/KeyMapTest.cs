@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using System.Linq;
 using NUnit.Framework;
 using Vim;
 
@@ -121,8 +118,9 @@ namespace VimCore.Test
             var map = new KeyMap();
             Assert.IsTrue(map.MapWithRemap("a", "b", KeyRemapMode.Normal));
             Assert.IsTrue(map.MapWithRemap("b", "a", KeyRemapMode.Normal));
-            var ret = map.GetKeyMapping(InputUtil.CharToKeyInput('a'), KeyRemapMode.Normal).Single();
-            Assert.AreEqual('b', ret.Char);
+            var ret = map.GetKeyMapping(KeyInputSetUtil.ofChar('a'), KeyRemapMode.Normal);
+            Assert.IsTrue(ret.IsRecursiveMapping);
+            Assert.AreEqual('b', ret.AsRecursiveMapping().Item.KeyInputs.Single().Char);
         }
 
         [Test]
@@ -149,8 +147,8 @@ namespace VimCore.Test
             var map = new KeyMap();
             Assert.IsTrue(map.MapWithNoRemap("a", "b", KeyRemapMode.Normal));
             var res = map.GetKeyMappingResult(InputUtil.CharToKeyInput('a'), KeyRemapMode.Normal);
-            Assert.IsTrue(res.IsSingleKey);
-            Assert.AreEqual('b', res.AsSingleKey().item.Char);
+            Assert.IsTrue(res.IsMapped);
+            Assert.AreEqual('b', res.AsMapped().Item.KeyInputs.Single().Char);
         }
 
         [Test]
@@ -159,8 +157,8 @@ namespace VimCore.Test
             var map = new KeyMap();
             Assert.IsTrue(map.MapWithNoRemap("a", "bc", KeyRemapMode.Normal));
             var res = map.GetKeyMappingResult(InputUtil.CharToKeyInput('a'), KeyRemapMode.Normal);
-            Assert.IsTrue(res.IsKeySequence);
-            var list = res.AsKeySequence().Item.ToList();
+            Assert.IsTrue(res.IsMapped);
+            var list = res.AsMapped().Item.KeyInputs.ToList();
             Assert.AreEqual(2, list.Count);
             Assert.AreEqual('b', list[0].Char);
             Assert.AreEqual('c', list[1].Char);
@@ -192,8 +190,8 @@ namespace VimCore.Test
             Assert.IsTrue(map.MapWithNoRemap("a", "b", KeyRemapMode.Insert));
             map.Clear(KeyRemapMode.Normal);
             var res = map.GetKeyMappingResult(InputUtil.CharToKeyInput('a'), KeyRemapMode.Insert);
-            Assert.IsTrue(res.IsSingleKey);
-            Assert.AreEqual('b', res.AsSingleKey().Item.Char);
+            Assert.IsTrue(res.IsMapped);
+            Assert.AreEqual('b', res.AsMapped().Item.KeyInputs.Single().Char);
         }
 
         [Test]
@@ -225,7 +223,7 @@ namespace VimCore.Test
             var map = new KeyMap();
             Assert.IsTrue(map.MapWithNoRemap("a", "b", KeyRemapMode.Normal));
             Assert.IsFalse(map.Unmap("a", KeyRemapMode.Insert));
-            Assert.IsTrue(map.GetKeyMappingResult(InputUtil.CharToKeyInput('a'), KeyRemapMode.Normal).IsSingleKey);
+            Assert.IsTrue(map.GetKeyMappingResult(InputUtil.CharToKeyInput('a'), KeyRemapMode.Normal).IsMapped);
         }
 
         [Test]
@@ -234,10 +232,9 @@ namespace VimCore.Test
             IKeyMap map = new KeyMap();
             map.MapWithNoRemap("aa", "b", KeyRemapMode.Normal);
 
-            var input = "aa".Select(InputUtil.CharToKeyInput);
-            var res = map.GetKeyMappingResultFromMultiple(input, KeyRemapMode.Normal);
-            Assert.IsTrue(res.IsSingleKey);
-            Assert.AreEqual('b', res.AsSingleKey().Item.Char);
+            var input = "aa".Select(InputUtil.CharToKeyInput).ToFSharpList();
+            var res = map.GetKeyMapping(KeyInputSet.NewManyKeyInputs(input), KeyRemapMode.Normal);
+            Assert.AreEqual('b', res.AsMapped().Item.KeyInputs.Single().Char);
         }
 
         [Test]
@@ -246,8 +243,8 @@ namespace VimCore.Test
             IKeyMap map = new KeyMap();
             map.MapWithNoRemap("aa", "b", KeyRemapMode.Normal);
 
-            var input = "a".Select(InputUtil.CharToKeyInput);
-            var res = map.GetKeyMappingResultFromMultiple(input, KeyRemapMode.Normal);
+            var input = "a".Select(InputUtil.CharToKeyInput).ToFSharpList();
+            var res = map.GetKeyMapping(KeyInputSet.NewManyKeyInputs(input), KeyRemapMode.Normal);
             Assert.IsTrue(res.IsMappingNeedsMoreInput);
         }
     }
