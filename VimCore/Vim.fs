@@ -24,7 +24,8 @@ type internal VimBufferFactory
         _textSearchService : ITextSearchService,
         _textStructureNavigatorSelectorService : ITextStructureNavigatorSelectorService,
         _tlcService : ITrackingLineColumnService,
-        _undoManagerProvider : ITextBufferUndoManagerProvider ) =
+        _undoManagerProvider : ITextBufferUndoManagerProvider,
+        _foldManagerFactory : IFoldManagerFactory ) =
 
     member x.CreateBuffer (vim:IVim) view = 
         let editOperations = _editorOperationsFactoryService.GetEditorOperations(view)
@@ -33,6 +34,7 @@ type internal VimBufferFactory
         let capture = MotionCapture(view, motionUtil) :> IMotionCapture
         let outlining = _outliningManagerService.GetOutliningManager(view)
         let jumpList = JumpList(_tlcService) :> IJumpList
+        let foldManager = _foldManagerFactory.GetFoldManager(view.TextBuffer)
         let localSettings = LocalSettings(vim.Settings, view) :> IVimLocalSettings
         let bufferRaw = 
             VimBuffer( 
@@ -61,7 +63,8 @@ type internal VimBufferFactory
             UndoRedoOperations=undoRedoOperations;
             StatusUtil=statusUtil;
             KeyMap=vim.KeyMap;
-            Navigator=wordNav }
+            Navigator=wordNav;
+            FoldManager=foldManager }
 
         let createCommandRunner() = CommandRunner (view, vim.RegisterMap, capture,statusUtil) :>ICommandRunner
         let broker = _completionWindowBrokerFactoryService.CreateDisplayWindowBroker view

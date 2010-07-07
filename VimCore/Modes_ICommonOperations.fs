@@ -18,7 +18,8 @@ type OperationsData = {
     UndoRedoOperations : IUndoRedoOperations;
     StatusUtil : IStatusUtil;
     KeyMap : IKeyMap;
-    Navigator : ITextStructureNavigator
+    Navigator : ITextStructureNavigator;
+    FoldManager : IFoldManager;
 }
 
 type JoinKind = 
@@ -37,6 +38,9 @@ type ICommonOperations =
 
     /// Associated IEditorOperations
     abstract EditorOperations : IEditorOperations
+
+    /// Associated IFoldManager
+    abstract FoldManager : IFoldManager
 
     /// Run the beep operation
     abstract Beep : unit -> unit

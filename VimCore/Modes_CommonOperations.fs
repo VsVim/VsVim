@@ -94,6 +94,7 @@ type internal CommonOperations ( _data : OperationsData ) =
     interface ICommonOperations with
         member x.TextView = _textView 
         member x.EditorOperations = _operations
+        member x.FoldManager = _data.FoldManager
 
         member x.Join (start:SnapshotPoint) (kind:JoinKind) count = 
     

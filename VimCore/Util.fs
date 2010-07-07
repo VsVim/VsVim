@@ -246,3 +246,16 @@ module internal NullableUtil =
             Some x.Value
         else
             None
+
+module internal OptionUtil =
+    
+    /// Combine an option with another value.  If the option has no value then the result
+    /// is None.  If the option has a value the result is an Option of a tuple of the original
+    /// value and the passed in one
+    let combine opt value =
+        match opt with
+        | Some(optValue) -> Some (optValue,value)
+        | None -> None
+
+    /// Combine an option with another value.  Same as combine but takes a tuple'd argument
+    let combine2 (opt,value) = combine opt value

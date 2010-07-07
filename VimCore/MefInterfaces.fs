@@ -78,3 +78,31 @@ type IVimBufferCreationListener =
     /// Called whenever an IVimBuffer is created
     abstract VimBufferCreated : IVimBuffer -> unit
 
+/// Supports the creation and deletion of folds within a ITextBuffer
+type IFoldManager = 
+
+    /// Associated ITextBuffer
+    abstract TextBuffer : ITextBuffer
+
+    /// Gets snapshot spans for all of the currently existing folds
+    abstract Folds : SnapshotSpan seq
+
+    /// Create a fold for the given Span.  The fold will actually be for the
+    /// entire lines at the start and end of the span
+    abstract CreateFold : SnapshotSpan -> unit 
+
+    /// Delete a fold which crosses the given SnapshotPoint.  Returns false if 
+    /// there was no fold to be deleted
+    abstract DeleteFold : SnapshotPoint -> bool
+
+    /// Raised when the collection of folds are updated
+    [<CLIEvent>]
+    abstract FoldsUpdated: IEvent<System.EventArgs>
+
+/// Supports the get and creation of IFoldManager for a given ITextBuffer
+type IFoldManagerFactory =
+    
+    abstract GetFoldManager : ITextBuffer -> IFoldManager
+
+
+

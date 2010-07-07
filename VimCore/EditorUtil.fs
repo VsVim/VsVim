@@ -30,6 +30,12 @@ module SnapshotUtil =
     /// Get the start point of the snapshot
     let GetStartPoint (tss:ITextSnapshot) = SnapshotPoint(tss, 0)
 
+    /// Get the full span of the buffer 
+    let GetFullSpan tss = 
+        let startPoint = GetStartPoint tss
+        let endPoint = GetEndPoint tss
+        SnapshotSpan(startPoint,endPoint)
+
     /// Is the Line Number valid
     let IsLineNumberValid (tss:ITextSnapshot) lineNumber = lineNumber >= 0 && lineNumber < tss.LineCount
 

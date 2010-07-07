@@ -81,7 +81,8 @@ namespace VimCore.Test
                 keyMap: null,
                 undoRedoOperations: _undoRedoOperations.Object,
                 editorOptions: null,
-                navigator: null);
+                navigator: null,
+                foldManager:null);
 
             _operationsRaw = new DefaultOperations(data, _search.Object);
             _operations = _operationsRaw;

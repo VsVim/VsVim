@@ -6,6 +6,7 @@ open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Operations
 
+
 type UndoTransaction (_transaction : ITextUndoTransaction option ) =
 
     interface IUndoTransaction with

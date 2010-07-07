@@ -64,7 +64,8 @@ namespace VimCore.Test
                 editorOptions:null,
                 keyMap:null,
                 navigator:null,
-                statusUtil:null);
+                statusUtil:null,
+                foldManager:null);
                 
             _operationsRaw = new OperationsImpl(data);
             _operations = _operationsRaw;

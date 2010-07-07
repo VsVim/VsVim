@@ -301,6 +301,7 @@ type internal NormalMode
                 yield ("c", Some ModeKind.Insert, fun count reg data -> _operations.DeleteSpan data.OperationSpan data.MotionKind data.OperationKind reg |> ignore)
                 yield ("<", None, fun _ _ data -> _operations.ShiftSpanLeft 1 data.OperationSpan)
                 yield (">", None, fun _ _ data -> _operations.ShiftSpanRight 1 data.OperationSpan)
+                yield ("zf", None, fun _ _ data -> _operations.FoldManager.CreateFold data.OperationSpan)
             }
 
         complex
