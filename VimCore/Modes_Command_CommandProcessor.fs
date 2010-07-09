@@ -98,26 +98,27 @@ type internal CommandProcessor
 
     do
         let normalSeq = seq {
-            yield ("edit", "e", this.ProcessEdit)
+            yield ("<", "", this.ProcessShiftLeft)
+            yield (">", "", this.ProcessShiftRight)
             yield ("delete","d", this.ProcessDelete)
+            yield ("edit", "e", this.ProcessEdit)
+            yield ("fold", "fo", this.ProcessFold)
             yield ("join", "j", this.ProcessJoin)
             yield ("marks", "", this.ProcessMarks)
             yield ("put", "pu", this.ProcessPut)
+            yield ("quit", "q", this.ProcessQuit)
+            yield ("qall", "qa", this.ProcessQuitAll)
+            yield ("redo", "red", this.ProcessRedo)
             yield ("set", "se", this.ProcessSet)
             yield ("source","so", this.ProcessSource)
             yield ("substitute", "s", this.ProcessSubstitute)
-            yield ("redo", "red", this.ProcessRedo)
-            yield ("undo", "u", this.ProcessUndo)
-            yield ("yank", "y", this.ProcessYank)
-            yield ("<", "", this.ProcessShiftLeft)
-            yield (">", "", this.ProcessShiftRight)
-            yield ("write","w", this.ProcessWrite)
-            yield ("wall", "wa", this.ProcessWriteAll)
-            yield ("quit", "q", this.ProcessQuit)
-            yield ("qall", "qa", this.ProcessQuitAll)
             yield ("tabnext", "tabn", this.ProcessTabNext)
             yield ("tabprevious", "tabp", this.ProcessTabPrevious)
             yield ("tabNext", "tabN", this.ProcessTabPrevious)
+            yield ("undo", "u", this.ProcessUndo)
+            yield ("write","w", this.ProcessWrite)
+            yield ("wall", "wa", this.ProcessWriteAll)
+            yield ("yank", "y", this.ProcessYank)
             yield ("$", "", fun _ _ _ -> _operations.EditorOperations.MoveToEndOfDocument(false))
         }
 
@@ -230,6 +231,11 @@ type internal CommandProcessor
                 |> StringUtil.ofCharSeq
         if System.String.IsNullOrEmpty name then _operations.ShowOpenFileDialog()
         else _operations.EditFile name
+
+    /// Parse out the fold command and create the fold
+    member private x.ProcessFold _ (range : Range option) _ =
+        let span = RangeUtil.RangeOrCurrentLine _data.TextView range |> RangeUtil.GetSnapshotSpan
+        _operations.FoldManager.CreateFold span
 
     /// Parse out the Yank command
     member private x.ProcessYank (rest:char list) (range: Range option) _ =

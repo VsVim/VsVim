@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Windows.Threading;
-using Microsoft.FSharp.Collections;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using NUnit.Framework;
@@ -397,28 +395,6 @@ namespace VimCore.Test
                 frame);
             Dispatcher.PushFrame(frame);
 
-        }
-
-        internal static FSharpList<T> ToFSharpList<T>(this IEnumerable<T> enumerable)
-        {
-            var retList = FSharpList<T>.Empty;
-            var list = enumerable as IList<T>;
-            if (list != null)
-            {
-                for (var i = list.Count - 1; i >= 0; i--)
-                {
-                    retList = new FSharpList<T>(list[i], retList);
-                }
-            }
-            else
-            {
-                foreach (var cur in enumerable.Reverse())
-                {
-                    retList = new FSharpList<T>(cur, retList);
-                }
-            }
-
-            return retList;
         }
 
     }

@@ -1,9 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using System.Linq;
 using NUnit.Framework;
 using Vim;
+using Vim.Extensions;
 using VimCore.Test.Utils;
 
 namespace VimCore.Test

@@ -237,6 +237,10 @@ type internal NormalMode
                     _operations.EditorOperations.ScrollLineBottom() 
                     _operations.EditorOperations.MoveToStartOfLineAfterWhiteSpace(false) )
                 yield ("zb", CommandFlags.Movement, fun _ _ -> _operations.EditorOperations.ScrollLineBottom() )
+                yield ("zF", CommandFlags.Special, fun count _ -> _operations.FoldLines count)
+                yield ("zd", CommandFlags.Special, fun _ _ -> _operations.DeleteOneFoldAtCursor() )
+                yield ("zD", CommandFlags.Special, fun _ _ -> _operations.DeleteAllFoldsAtCursor() )
+                yield ("zE", CommandFlags.Special, fun _ _ -> _operations.FoldManager.DeleteAllFolds() )
             }
             |> Seq.map(fun (str,kind,func) -> (str,kind,func,CommandResult.Completed ModeSwitch.NoSwitch))
 

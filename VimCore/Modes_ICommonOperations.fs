@@ -202,5 +202,15 @@ type ICommonOperations =
     /// Close all folds which intersect with the given SnapshotSpan
     abstract CloseAllFolds : SnapshotSpan -> unit
 
+    /// Fold count lines under the cursor
+    abstract FoldLines : count:int -> unit
+
+    /// Delete one folds at the cursor
+    abstract DeleteOneFoldAtCursor : unit -> unit
+
+    /// Delete all folds at the cursor
+    abstract DeleteAllFoldsAtCursor : unit -> unit
+
+
 
 

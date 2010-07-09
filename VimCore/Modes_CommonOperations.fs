@@ -454,5 +454,24 @@ type internal CommonOperations ( _data : OperationsData ) =
             let regions = _outlining.GetAllRegions(span) 
             if Seq.isEmpty regions then _statusUtil.OnError Resources.Common_NoFoldFound
             else  regions |> Seq.iter (fun x -> _outlining.TryCollapse(x) |> ignore )
+        member x.FoldLines count = 
+            if count > 1 then 
+                let caretLine = TextViewUtil.GetCaretLine _textView
+                let span = SnapshotSpanUtil.ExtendDownIncludingLineBreak caretLine.Extent (count-1)
+                _data.FoldManager.CreateFold span
+        member x.DeleteOneFoldAtCursor () = 
+            let point = TextViewUtil.GetCaretPoint _textView
+            if not ( _data.FoldManager.DeleteFold point ) then
+                _statusUtil.OnError Resources.Common_NoFoldFound
+        member x.DeleteAllFoldsAtCursor () =
+            let deleteAtCaret () = 
+                let point = TextViewUtil.GetCaretPoint _textView
+                _data.FoldManager.DeleteFold point
+            if not (deleteAtCaret()) then
+                _statusUtil.OnError Resources.Common_NoFoldFound
+            else
+                while deleteAtCaret() do
+                    // Keep on deleteing 
+                    ()
 
 

@@ -136,6 +136,14 @@ type internal VisualMode
                 yield ("zO", CommandFlags.Special, fun _ _ -> _operations.OpenAllFolds _operations.SelectedSpan )
                 yield ("zc", CommandFlags.Special, fun _ _ -> _operations.CloseFold _operations.SelectedSpan 1)
                 yield ("zC", CommandFlags.Special, fun _ _ -> _operations.CloseAllFolds _operations.SelectedSpan )
+                yield ("zf", CommandFlags.Special, fun _ _ -> _operations.FoldManager.CreateFold _operations.SelectedSpan)
+                yield ("zd", CommandFlags.Special, fun _ _ -> _operations.DeleteOneFoldAtCursor() )
+                yield ("zD", CommandFlags.Special, fun _ _ -> _operations.DeleteAllFoldsAtCursor() )
+                yield ("zE", CommandFlags.Special, fun _ _ -> _operations.FoldManager.DeleteAllFolds() )
+                yield ("zF", CommandFlags.Special, fun count _ -> 
+                    let count = CommandUtil.CountOrDefault count
+                    let span = SnapshotSpanUtil.ExtendDownIncludingLineBreak _operations.SelectedSpan (count-1)
+                    _operations.FoldManager.CreateFold span )
             }
             |> Seq.map (fun (str,flags,func) -> (str, flags,fun count reg -> func count reg; CommandResult.Completed ModeSwitch.SwitchPreviousMode))
             |> Seq.map (fun (name,flags,func) -> Command.SimpleCommand (CommandUtil.CreateCommandName name, flags, func))

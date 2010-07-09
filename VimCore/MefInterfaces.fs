@@ -95,6 +95,9 @@ type IFoldManager =
     /// there was no fold to be deleted
     abstract DeleteFold : SnapshotPoint -> bool
 
+    /// Delete all of the folds in the buffer
+    abstract DeleteAllFolds : unit -> unit
+
     /// Raised when the collection of folds are updated
     [<CLIEvent>]
     abstract FoldsUpdated: IEvent<System.EventArgs>

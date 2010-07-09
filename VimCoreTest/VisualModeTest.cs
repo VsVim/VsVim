@@ -28,6 +28,7 @@ namespace VimCore.Test
         private IRegisterMap _map;
         private Mock<IOperations> _operations;
         private Mock<ISelectionTracker> _tracker;
+        private Mock<IFoldManager> _foldManager;
 
         public void Create(params string[] lines)
         {
@@ -50,7 +51,9 @@ namespace VimCore.Test
             _map = new RegisterMap();
             _tracker = _factory.Create<ISelectionTracker>();
             _tracker.Setup(x => x.Start());
+            _foldManager = _factory.Create<IFoldManager>();
             _operations = _factory.Create<IOperations>();
+            _operations.SetupGet(x => x.FoldManager).Returns(_foldManager.Object);
             _bufferData = MockObjectFactory.CreateVimBuffer(
                 _view.Object,
                 "test",
@@ -540,7 +543,7 @@ namespace VimCore.Test
             _operations.Setup(x => x.SelectedSpan).Returns(span).Verifiable();
             _operations.Setup(x => x.OpenFold(span, 1)).Verifiable();
             _mode.Process("zo");
-            _operations.Verify();
+            _factory.Verify();
         }
 
         [Test]
@@ -551,7 +554,7 @@ namespace VimCore.Test
             _operations.Setup(x => x.SelectedSpan).Returns(span).Verifiable();
             _operations.Setup(x => x.CloseFold(span, 1)).Verifiable();
             _mode.Process("zc");
-            _operations.Verify();
+            _factory.Verify();
         }
 
         [Test]
@@ -562,7 +565,7 @@ namespace VimCore.Test
             _operations.Setup(x => x.SelectedSpan).Returns(span).Verifiable();
             _operations.Setup(x => x.OpenAllFolds(span)).Verifiable();
             _mode.Process("zO");
-            _operations.Verify();
+            _factory.Verify();
         }
 
         [Test]
@@ -573,7 +576,67 @@ namespace VimCore.Test
             _operations.Setup(x => x.SelectedSpan).Returns(span).Verifiable();
             _operations.Setup(x => x.CloseAllFolds(span)).Verifiable();
             _mode.Process("zC");
-            _operations.Verify();
+            _factory.Verify();
+        }
+
+        [Test]
+        public void Fold_zf()
+        {
+            Create("foo bar");
+            var span = _buffer.GetSpan(0, 1);
+            _operations.Setup(x => x.SelectedSpan).Returns(span).Verifiable();
+            _foldManager.Setup(x => x.CreateFold(span)).Verifiable();
+            _mode.Process("zf");
+            _factory.Verify();
+        }
+
+        [Test]
+        public void Fold_zF_1()
+        {
+            Create("the", "quick", "brown", "fox");
+            var span = _buffer.GetSpan(0, 1);
+            _operations.Setup(x => x.SelectedSpan).Returns(span);
+            _foldManager.Setup(x => x.CreateFold(_buffer.GetLineSpanIncludingLineBreak(0,0))).Verifiable();
+            _mode.Process("zF");
+            _factory.Verify();
+        }
+
+        [Test]
+        public void Fold_zF_2()
+        {
+            Create("the", "quick", "brown", "fox");
+            var span = _buffer.GetSpan(0, 1);
+            _operations.Setup(x => x.SelectedSpan).Returns(span).Verifiable();
+            _foldManager.Setup(x => x.CreateFold(_buffer.GetLineSpanIncludingLineBreak(0, 1))).Verifiable();
+            _mode.Process("2zF");
+            _factory.Verify();
+        }
+
+        [Test]
+        public void Fold_zd()
+        {
+            Create("foo bar");
+            _operations.Setup(x => x.DeleteOneFoldAtCursor()).Verifiable();
+            _mode.Process("zd");
+            _factory.Verify();
+        }
+
+        [Test]
+        public void Fold_zD()
+        {
+            Create("foo bar");
+            _operations.Setup(x => x.DeleteAllFoldsAtCursor()).Verifiable();
+            _mode.Process("zD");
+            _factory.Verify();
+        }
+
+        [Test]
+        public void Fold_zE()
+        {
+            Create("foo bar");
+            _foldManager.Setup(x => x.DeleteAllFolds()).Verifiable();
+            _mode.Process("zE");
+            _factory.Verify();
         }
 
         #endregion

@@ -30,6 +30,7 @@ namespace VimCore.Test
         private Mock<IStatusUtil> _statusUtil;
         private Mock<IChangeTracker> _changeTracker;
         private Mock<IDisplayWindowBroker> _displayWindowBroker;
+        private Mock<IFoldManager> _foldManager;
 
         static string[] s_lines = new string[]
             {
@@ -58,6 +59,7 @@ namespace VimCore.Test
             _jumpList = new Mock<IJumpList>(MockBehavior.Strict);
             _statusUtil = new Mock<IStatusUtil>(MockBehavior.Strict);
             _changeTracker = new Mock<IChangeTracker>(MockBehavior.Strict);
+            _foldManager = new Mock<IFoldManager>(MockBehavior.Strict);
             _displayWindowBroker = new Mock<IDisplayWindowBroker>(MockBehavior.Strict);
             _displayWindowBroker.SetupGet(x => x.IsCompletionActive).Returns(false);
             _displayWindowBroker.SetupGet(x => x.IsSignatureHelpActive).Returns(false);
@@ -70,6 +72,7 @@ namespace VimCore.Test
             _operations = new Mock<IOperations>(MockBehavior.Strict);
             _operations.SetupGet(x => x.EditorOperations).Returns(_editorOperations.Object);
             _operations.SetupGet(x => x.TextView).Returns(_view);
+            _operations.SetupGet(x => x.FoldManager).Returns(_foldManager.Object);
 
             motionUtil = motionUtil ?? new MotionUtil(_view, new Vim.GlobalSettings());
             var capture = new MotionCapture(_view, motionUtil);
@@ -2590,6 +2593,60 @@ namespace VimCore.Test
             _operations.Setup(x => x.CloseAllFolds(_view.GetCaretLine().Extent)).Verifiable();
             _mode.Process("zC");
             _operations.Verify();
+        }
+
+        [Test]
+        public void Fold_zf_1()
+        {
+            Create("the quick brown", "fox jumped"," over the dog");
+            _foldManager.Setup(x => x.CreateFold(_view.TextBuffer.GetSpan(0, 4))).Verifiable();
+            _mode.Process("zfw");
+            _foldManager.Verify();
+        }
+
+        [Test]
+        public void Fold_zF_1()
+        {
+            Create("the quick brown", "fox jumped"," over the dog");
+            _operations.Setup(x => x.FoldLines(1)).Verifiable();
+            _mode.Process("zF");
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Fold_zF_2()
+        {
+            Create("the quick brown", "fox jumped"," over the dog");
+            _operations.Setup(x => x.FoldLines(2)).Verifiable();
+            _mode.Process("2zF");
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Fold_zd_1()
+        {
+            Create("the quick brown", "fox jumped"," over the dog");
+            _operations.Setup(x => x.DeleteOneFoldAtCursor()).Verifiable();
+            _mode.Process("zd");
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Fold_zD_1()
+        {
+            Create("the quick brown", "fox jumped"," over the dog");
+            _operations.Setup(x => x.DeleteAllFoldsAtCursor()).Verifiable();
+            _mode.Process("zD");
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Fold_zE_1()
+        {
+            Create("the quick brown", "fox jumped"," over the dog");
+            _foldManager.Setup(x => x.DeleteAllFolds()).Verifiable();
+            _mode.Process("zE");
+            _foldManager.Verify();
         }
 
         #endregion

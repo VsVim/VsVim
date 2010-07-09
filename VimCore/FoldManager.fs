@@ -24,10 +24,11 @@ type FoldManager(_textBuffer : ITextBuffer) =
         |> Seq.sortBy (fun span -> span.Start.Position)
     member x.CreateFold span = 
         let startLine,endLine = SnapshotSpanUtil.GetStartAndEndLine span
-        let span = SnapshotSpan(startLine.Start, endLine.EndIncludingLineBreak)
-        let span = _textBuffer.CurrentSnapshot.CreateTrackingSpan(span.Span, SpanTrackingMode.EdgeInclusive)
-        _folds <- span :: _folds
-        _updated.Trigger System.EventArgs.Empty
+        if startLine.LineNumber < endLine.LineNumber then
+            let span = SnapshotSpan(startLine.Start, endLine.EndIncludingLineBreak)
+            let span = _textBuffer.CurrentSnapshot.CreateTrackingSpan(span.Span, SpanTrackingMode.EdgeInclusive)
+            _folds <- span :: _folds
+            _updated.Trigger System.EventArgs.Empty
     member x.DeleteFold (point:SnapshotPoint) = 
         let snapshot = _textBuffer.CurrentSnapshot
         let data = 
@@ -44,12 +45,16 @@ type FoldManager(_textBuffer : ITextBuffer) =
                 true
         _updated.Trigger System.EventArgs.Empty
         ret
+    member x.DeleteAllFolds () =
+        _folds <- List.empty
+        _updated.Trigger System.EventArgs.Empty
 
     interface IFoldManager with
         member x.TextBuffer = _textBuffer
         member x.Folds = x.Folds
         member x.CreateFold span = x.CreateFold span
         member x.DeleteFold point = x.DeleteFold point
+        member x.DeleteAllFolds () = x.DeleteAllFolds()
         [<CLIEvent>]
         member x.FoldsUpdated = _updated.Publish
 
