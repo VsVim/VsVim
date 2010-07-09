@@ -30,6 +30,7 @@ namespace VimCore.Test
         private Mock<IIncrementalSearch> _search;
         private Mock<IOutliningManager> _outlining;
         private Mock<IUndoRedoOperations> _undoRedoOperations;
+        private Mock<IEditorOptions> _options;
             
         private ISearchService _searchService;
         private Mock<IStatusUtil> _statusUtil;
@@ -61,6 +62,9 @@ namespace VimCore.Test
             var nav = TssUtil.CreateTextStructureNavigator(WordKind.NormalWord, baseNav);
             _globalSettings = MockObjectFactory.CreateGlobalSettings(ignoreCase: true);
             _settings = MockObjectFactory.CreateLocalSettings(_globalSettings.Object);
+            _options = new Mock<IEditorOptions>(MockBehavior.Strict);
+            _options.Setup(x => x.GetOptionValue<int>(It.IsAny<string>())).Throws(new ArgumentException());
+            _options.Setup(x => x.GetOptionValue<int>(It.IsAny<EditorOptionKey<int>>())).Throws(new ArgumentException());
             _jumpList = new Mock<IJumpList>(MockBehavior.Strict);
             _searchService = new SearchService(EditorUtil.FactoryService.textSearchService, _globalSettings.Object);
             _search = new Mock<IIncrementalSearch>(MockBehavior.Strict);
@@ -80,7 +84,7 @@ namespace VimCore.Test
                 localSettings: _settings.Object,
                 keyMap: null,
                 undoRedoOperations: _undoRedoOperations.Object,
-                editorOptions: null,
+                editorOptions: _options.Object,
                 navigator: null,
                 foldManager:null);
 
