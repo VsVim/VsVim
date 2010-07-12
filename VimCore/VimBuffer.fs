@@ -41,10 +41,12 @@ type internal VimBuffer
 
     let mutable _modeMap = ModeMap()
     let mutable _isProcessingInput = false
+    let mutable _isClosed = false
 
     /// This is the buffered input when a remap request needs more than one 
     /// element
     let mutable _remapInput : KeyInputSet option = None
+
 
     let _keyInputProcessedEvent = new Event<_>()
     let _keyInputReceivedEvent = new Event<_>()
@@ -52,6 +54,7 @@ type internal VimBuffer
     let _errorMessageEvent = new Event<_>()
     let _statusMessageEvent = new Event<_>()
     let _statusMessageLongEvent = new Event<_>()
+    let _closedEvent = new Event<_>()
 
     member x.BufferedRemapKeyInputs =
         match _remapInput with
@@ -211,11 +214,18 @@ type internal VimBuffer
         member x.StatusMessage = _statusMessageEvent.Publish
         [<CLIEvent>]
         member x.StatusMessageLong = _statusMessageLongEvent.Publish
+        [<CLIEvent>]
+        member x.Closed = _closedEvent.Publish
 
         member x.Process ki = x.Process ki
         member x.CanProcess ki = x.CanProcess ki
         member x.Close () = 
-            x.Mode.OnLeave()
-            _modeMap.Modes |> Seq.iter (fun x -> x.OnClose())
-            _vim.MarkMap.DeleteAllMarksForBuffer _textView.TextBuffer
-            _vim.RemoveBuffer _textView |> ignore
+            if _isClosed then invalidOp Resources.VimBuffer_AlreadyClosed
+            else
+                try
+                    x.Mode.OnLeave()
+                    _modeMap.Modes |> Seq.iter (fun x -> x.OnClose())
+                    _vim.RemoveBuffer _textView |> ignore
+                    _closedEvent.Trigger System.EventArgs.Empty
+                finally 
+                    _isClosed <- true

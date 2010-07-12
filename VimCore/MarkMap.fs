@@ -4,7 +4,6 @@ namespace Vim
 open Microsoft.VisualStudio.Text
 open System.Collections.Generic
 
-[<Sealed>]
 type MarkMap( _tlcService : ITrackingLineColumnService ) =
 
     let mutable _localMap = new Dictionary<ITextBuffer,(char*ITrackingLineColumn) list>();
@@ -151,6 +150,7 @@ type MarkMap( _tlcService : ITrackingLineColumnService ) =
         member x.GetGlobalMarks () = x.GetGlobalMarks()
         member x.DeleteLocalMark buf c = x.DeleteLocalMark buf c 
         member x.DeleteAllMarks () = x.DeleteAllMarks()
-        member x.DeleteAllMarksForBuffer buf = x.DeleteAllMarksForBuffer buf
-    
-    
+
+    interface IVimBufferCreationListener with
+        member x.VimBufferCreated buffer = 
+            buffer.Closed |> Event.add (fun _ -> x.DeleteAllMarksForBuffer buffer.TextBuffer)

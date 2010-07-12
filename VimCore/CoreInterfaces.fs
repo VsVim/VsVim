@@ -598,8 +598,6 @@ type IMarkMap =
     /// Delete the specified local mark on the ITextBuffer
     abstract DeleteLocalMark : ITextBuffer -> char -> bool
     abstract DeleteAllMarks : unit -> unit
-    abstract DeleteAllMarksForBuffer : ITextBuffer -> unit
-
 
 /// Jump list information
 type IJumpList = 
@@ -923,6 +921,8 @@ and IVimBuffer =
 
     /// Owning IVim instance
     abstract Vim : IVim
+
+    /// Associated IMarkMap
     abstract MarkMap : IMarkMap
 
     /// Jump list
@@ -1006,6 +1006,10 @@ and IVimBuffer =
     /// Raised when a long status message is encountered
     [<CLIEvent>]
     abstract StatusMessageLong : IEvent<string seq>
+
+    /// Raised when the IVimBuffer is being closed
+    [<CLIEvent>]
+    abstract Closed : IEvent<System.EventArgs>
 
 and IMode =
 

@@ -1,10 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using Vim;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
+using Vim;
 
 namespace VimCore.Test.Mock
 {
@@ -129,6 +127,14 @@ namespace VimCore.Test.Mock
             }
         }
 
+        public void RaiseClosed()
+        {
+            if (Closed != null)
+            {
+                Closed(this, EventArgs.Empty);
+            }
+        }
+
         public void RaiseStatusMessage(string message)
         {
             if (StatusMessage != null)
@@ -190,6 +196,8 @@ namespace VimCore.Test.Mock
         public event Microsoft.FSharp.Control.FSharpHandler<KeyInput> KeyInputBuffered;
 
         public event Microsoft.FSharp.Control.FSharpHandler<IMode> SwitchedMode;
+
+        public event Microsoft.FSharp.Control.FSharpHandler<EventArgs> Closed;
 
 
         public IMode SwitchMode(ModeKind value)

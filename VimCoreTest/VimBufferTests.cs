@@ -1,5 +1,4 @@
 ﻿using System.Linq;
-using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Moq;
 using NUnit.Framework;
@@ -154,20 +153,8 @@ namespace VimCore.Test
             _vim.Verify();
         }
 
-        [Test, Description("Close should clear out the mark map")]
-        public void Close3()
-        {
-            _markMap.SetLocalMark(new SnapshotPoint(_view.TextSnapshot, 0), 'c');
-            _vim.Setup(x => x.RemoveBuffer(_view)).Returns(true).Verifiable();
-            _normalMode.Setup(x => x.OnLeave());
-            _buffer.SwitchMode(ModeKind.Normal);
-            _buffer.Close();
-            Assert.IsTrue(_markMap.GetLocalMark(_view.TextBuffer, 'c').IsNone());
-            _vim.Verify();
-        }
-
         [Test, Description("Close should call OnClose for every IMode")]
-        public void Close4()
+        public void Close3()
         {
             _vim.Setup(x => x.RemoveBuffer(_view)).Returns(true).Verifiable();
             _buffer.Close();
@@ -420,6 +407,25 @@ namespace VimCore.Test
             Assert.IsTrue(_buffer.CanProcess(ki));
             _normalMode.Verify();
             _keyMap.Verify();
+        }
+
+        [Test]
+        public void Closed1()
+        {
+            _vim.Setup(x => x.RemoveBuffer(_view)).Returns(true).Verifiable();
+            var didSee = false;
+            _buffer.Closed += delegate { didSee = true; };
+            _buffer.Close();
+            Assert.IsTrue(didSee);
+        }
+
+        [Test]
+        [ExpectedException(typeof(System.InvalidOperationException))]
+        public void Closed2()
+        {
+            _vim.Setup(x => x.RemoveBuffer(_view)).Returns(true).Verifiable();
+            _buffer.Close();
+            _buffer.Close();
         }
 
     }

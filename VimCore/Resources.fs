@@ -43,6 +43,8 @@ module internal Resources =
     let Vim_ViewAlreadyHasBuffer = "View is already associated with an IVimBuffer"
     let Vim_RecursiveMapping = "Recursive key mapping detected"
 
+    let VimBuffer_AlreadyClosed = "IVimBuffer instance is already closed"
+
     let Range_Invalid msg = sprintf "Invalid Range: %s" msg
     let Range_MarkMissingIdentifier = Range_Invalid "Missing mark after '"
     let Range_MarkNotValidInFile = Range_Invalid "Mark is invalid in this file"

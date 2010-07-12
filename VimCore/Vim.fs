@@ -141,12 +141,13 @@ type internal Vim
         bufferFactoryService : IVimBufferFactory,
         tlcService : ITrackingLineColumnService,
         [<ImportMany>] bufferCreationListeners : Lazy<IVimBufferCreationListener> seq,
-        [<Import>] search : ITextSearchService ) =
+        search : ITextSearchService ) =
+        let markMap = MarkMap(tlcService)
         let tracker = ChangeTracker() 
         let globalSettings = GlobalSettings() :> IVimGlobalSettings
         let listeners = 
-            new Lazy<IVimBufferCreationListener>( fun () -> tracker :> IVimBufferCreationListener)
-            |> Seq.singleton
+            [tracker :> IVimBufferCreationListener; markMap :> IVimBufferCreationListener]
+            |> Seq.map (fun t -> new Lazy<IVimBufferCreationListener>(fun () -> t))
             |> Seq.append bufferCreationListeners 
             |> List.ofSeq
         Vim(
@@ -155,7 +156,7 @@ type internal Vim
             listeners,
             globalSettings,
             RegisterMap() :> IRegisterMap,
-            MarkMap(tlcService) :> IMarkMap,
+            markMap :> IMarkMap,
             KeyMap() :> IKeyMap,
             tracker :> IChangeTracker,
             SearchService(search, globalSettings) :> ISearchService)
