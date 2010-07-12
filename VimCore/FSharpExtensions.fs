@@ -11,14 +11,14 @@ module public OptionExtensions =
     [<Extension>]
     let IsNone opt = Option.isNone opt
 
+module public FSharpOption =
+
+    let Create value = value |> Some
+
 [<Extension>]
 module public SeqExtensions =
 
     [<Extension>]
     let ToFSharpList sequence = List.ofSeq sequence
-
-module public FSharpOption =
-
-    let Create value = value |> Some
 
 

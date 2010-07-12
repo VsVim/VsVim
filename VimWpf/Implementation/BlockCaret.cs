@@ -1,15 +1,12 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
-using Microsoft.VisualStudio.Text;
-using Microsoft.VisualStudio.Text.Editor;
-using Microsoft.VisualStudio.Text.Classification;
 using System.Windows.Threading;
+using Microsoft.VisualStudio.Text;
+using Microsoft.VisualStudio.Text.Classification;
+using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Formatting;
-using System.Windows;
 
 namespace Vim.UI.Wpf.Implementation
 {
@@ -21,7 +18,7 @@ namespace Vim.UI.Wpf.Implementation
             internal readonly Image Image;
             internal readonly Color? Color;
             internal readonly SnapshotPoint Point;
-            internal double YDisplayOffset;
+            internal readonly double YDisplayOffset;
 
             internal CaretData(CaretDisplay caretDisplay, Image image, Color? color, SnapshotPoint point, double displayOffset)
             {
@@ -190,18 +187,31 @@ namespace Vim.UI.Wpf.Implementation
         /// </summary>
         private Size CalculateCaretSize()
         {
+            const double defaultWidth = 5.0;
+            const double defaultHeight = 10.0;
+
             var caret = _view.Caret;
             var line = caret.ContainingTextViewLine;
             Size caretSize;
             if (IsRealCaretVisible)
             {
+                // Get the size of the character to which we need to paint the caret.  Special case
+                // tab here because it's too big.  When there is a tab we use the default height
+                // and width
                 var point = caret.Position.BufferPosition;
-                var bounds = line.GetCharacterBounds(point);
-                caretSize = new Size(bounds.Width, bounds.Height);
+                if (point.Position < _view.TextSnapshot.Length && point.GetChar() != '\t')
+                {
+                    var bounds = line.GetCharacterBounds(point);
+                    caretSize = new Size(bounds.Width, bounds.Height);
+                }
+                else
+                {
+                    caretSize = new Size(defaultWidth, line.IsValid ? line.Height : defaultHeight);
+                }
             }
             else
             {
-                caretSize = new Size(5.0, line.IsValid ? line.Height : 10.0);
+                caretSize = new Size(defaultWidth, line.IsValid ? line.Height : defaultHeight);
             }
 
             return caretSize;
