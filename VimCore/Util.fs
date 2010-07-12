@@ -225,6 +225,7 @@ module internal MapUtil =
 module internal CharUtil =
     let IsDigit x = System.Char.IsDigit(x)
     let IsWhiteSpace x = System.Char.IsWhiteSpace(x)
+    let IsNotWhiteSpace x = not (System.Char.IsWhiteSpace(x))
     let IsLetter x = System.Char.IsLetter(x)
     let IsUpper x = System.Char.IsUpper(x)
     let IsLower x = System.Char.IsLower(x)
@@ -232,6 +233,10 @@ module internal CharUtil =
     let ToLower x = System.Char.ToLower(x)
     let ToUpper x = System.Char.ToUpper(x)
     let ChangeCase x = if IsUpper x then ToLower x else ToUpper x
+    let LettersLower = ['a'..'z']
+    let LettersUpper = ['A'..'Z']
+    let Letters = Seq.append LettersLower LettersUpper 
+    let Digits = ['0'..'9']
 
 module internal NullableUtil = 
 
@@ -259,3 +264,16 @@ module internal OptionUtil =
 
     /// Combine an option with another value.  Same as combine but takes a tuple'd argument
     let combine2 (opt,value) = combine opt value
+
+    /// Combine an option with another value.  If the option has no value then the result
+    /// is None.  If the option has a value the result is an Option of a tuple of the original
+    /// value and the passed in one
+    let combineRev value opt =
+        match opt with
+        | Some(optValue) -> Some (value, optValue)
+        | None -> None
+
+    /// Combine an option with another value.  Same as combine but takes a tuple'd argument
+    let combineRev2 (value,opt) = combine opt value
+
+

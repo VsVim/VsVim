@@ -4,33 +4,80 @@ namespace Vim
 open Microsoft.VisualStudio.Text
 open System.Collections.Generic
 
+type BufferMarkData =  {
+    TextBuffer : ITextBuffer;
+    Marks : (char*ITrackingLineColumn) list;
+    LastSelection : ITrackingSpan option
+}
+
 type MarkMap( _tlcService : ITrackingLineColumnService ) =
 
-    let mutable _localMap = new Dictionary<ITextBuffer,(char*ITrackingLineColumn) list>();
+    /// Set of char's for all possible local marks
+    static let _localMarkSet = 
+        CharUtil.LettersLower
+        |> Seq.append ['>';'<']
+        |> Set.ofSeq
+
+    /// Set of char's for all updatable local marks
+    static let _updatableLocalMarkSet = CharUtil.Letters |> Set.ofSeq
+
+    let mutable _localMap = new Dictionary<ITextBuffer,BufferMarkData>()
     let mutable _globalList : (char*ITrackingLineColumn) seq = Seq.empty
 
     /// Is this mark local to a buffer
-    static member IsLocalMark c =
-        if System.Char.IsDigit(c) then false
-        else if System.Char.IsLetter(c) && System.Char.IsUpper(c) then false
-        else true
+    static member IsLocalMark c = Set.contains c _localMarkSet
 
-    member private x.GetLocalList (buffer:ITextBuffer) =
-        let empty : (char*ITrackingLineColumn) list = List.empty
-        let mutable list = empty 
-        if _localMap.TryGetValue(buffer, &list) then
-            list
-        else
-            empty
+    /// Get or create the BufferMarkData for the given ITextBuffer. 
+    member private x.GetOrCreateBufferMarkData buffer = 
+        let ret,data = _localMap.TryGetValue(buffer)
+        if ret then data
+        else 
+            let data = { TextBuffer=buffer;Marks=List.empty; LastSelection=None }
+            _localMap.Item(buffer) <- data
+            data
+
+    member private x.GetSelectionMarkCore (data:BufferMarkData) (reduceFunc : SnapshotSpan -> SnapshotSpan ) =
+        let snapshot = data.TextBuffer.CurrentSnapshot
+        match data.LastSelection with
+        | None -> None
+        | Some(selection) ->
+            match TrackingSpanUtil.GetSpan snapshot selection with
+            | None -> None
+            | Some(span) ->
+                let first =
+                    reduceFunc span
+                    |> SnapshotSpanUtil.GetPoints
+                    |> Seq.tryFind (fun p -> CharUtil.IsNotWhiteSpace (p.GetChar()))
+                let point = 
+                    match first with
+                    | None -> span.Start 
+                    | Some(p) -> p
+                point |> VirtualSnapshotPointUtil.OfPoint |> Some
+
+    member private x.GetSelectionStartMark data =
+        x.GetSelectionMarkCore data SnapshotSpanUtil.ReduceToStartLine
+
+    member private x.GetSelectionEndMark data =
+        x.GetSelectionMarkCore data SnapshotSpanUtil.ReduceToEndLine
 
     /// Try and get the local mark for the specified char <param name="c"/>.  If it does not
     /// exist then the value None will be returned.  The mark is always returned for the 
     /// current ITextSnapshot of the <param name="buffer"> 
-    member x.GetLocalMark buffer (ident:char) =
-        let list = x.GetLocalList buffer
-        match list |> Seq.tryFind (fun (c,m) -> c = ident) with
-        | Some(_,tlc) -> tlc.VirtualPoint 
-        | None -> None
+    member x.GetLocalMark buffer ident =
+        let ret,data = _localMap.TryGetValue(buffer) 
+        if ret then 
+            if CharUtil.IsLetter ident then 
+                let list = data.Marks
+                match list |> Seq.tryFind (fun (c,m) -> c = ident) with
+                | Some(_,tlc) -> tlc.VirtualPoint 
+                | None -> None
+            else
+                match ident with
+                | '<' -> x.GetSelectionStartMark data
+                | '>' -> x.GetSelectionEndMark data
+                | _ -> None
+                       
+        else None
 
     /// Get the mark relative to the specified buffer
     member x.GetMark buffer (ident:char) =
@@ -48,7 +95,8 @@ type MarkMap( _tlcService : ITrackingLineColumnService ) =
         if not (MarkMap.IsLocalMark ident) then failwith "Invalid"
         let tlc = _tlcService.CreateForPoint point
         let buffer = tlc.TextBuffer
-        let list = x.GetLocalList buffer
+        let data = x.GetOrCreateBufferMarkData buffer
+        let list = data.Marks
 
         let prev = list |> List.tryFind (fun (c,_) -> c = ident)
         let list = 
@@ -60,7 +108,7 @@ type MarkMap( _tlcService : ITrackingLineColumnService ) =
                 list |> Seq.ofList |> Seq.filter (fun (c,_) -> c <> ident) |> List.ofSeq
             | None -> list
         let list = [(ident,tlc)] @ list
-        _localMap.Item(buffer) <- list
+        _localMap.Item(buffer) <- { data with Marks = list }
 
     /// Set the mark for the <param name="point"/> inside the corresponding buffer.  
     member x.SetMark (point:SnapshotPoint) (ident:char) = 
@@ -96,19 +144,16 @@ type MarkMap( _tlcService : ITrackingLineColumnService ) =
     member x.DeleteLocalMark buffer (ident:char) =
         if not (MarkMap.IsLocalMark ident) then failwith "Invalid"
         let isDelete = x.GetLocalMark buffer ident |> Option.isSome
-        let list = 
-            x.GetLocalList buffer
-            |> List.filter (fun (c,_) -> c <> ident)
-        if list |> List.isEmpty then
-            _localMap.Remove(buffer) |> ignore
-        else
-            _localMap.Item(buffer) <- list
+        let data = x.GetOrCreateBufferMarkData buffer
+        let list = data.Marks |> List.filter (fun (c,_) -> c <> ident)
+        _localMap.Item(buffer) <- {data with Marks = list }
         isDelete
 
     /// Delete all of the marks being tracked
     member x.DeleteAllMarks () = 
         _localMap.Values 
-        |> Seq.concat 
+        |> Seq.map (fun d -> d.Marks )
+        |> Seq.concat
         |> Seq.iter (fun (_,tlc) -> tlc.Close())
         _globalList |> Seq.iter (fun (_,tlc) -> tlc.Close())
         _localMap.Clear()
@@ -116,9 +161,9 @@ type MarkMap( _tlcService : ITrackingLineColumnService ) =
     
     /// Delete all of the marks for the specified buffer
     member x.DeleteAllMarksForBuffer buffer =
-        let found,list = _localMap.TryGetValue(buffer)
+        let found,data = _localMap.TryGetValue(buffer)
         if found then 
-            list |> List.iter (fun (_,tlc) -> tlc.Close())
+            data.Marks |> List.iter (fun (_,tlc) -> tlc.Close())
             _localMap.Remove(buffer) |> ignore
 
         _globalList
@@ -126,12 +171,11 @@ type MarkMap( _tlcService : ITrackingLineColumnService ) =
         |> Seq.iter (fun (_,tlc) -> tlc.Close())
         _globalList <- _globalList |> Seq.filter (fun (_,tlc) -> tlc.TextBuffer <> buffer)
 
-    member x.GetLocalMarks (buffer:ITextBuffer) = 
-        let tss = buffer.CurrentSnapshot
-        buffer
-        |> x.GetLocalList
-        |> Seq.map (fun (c,tlc) -> (c,tlc.VirtualPoint))
-        |> Seq.choose (fun (c,opt) -> if Option.isSome opt then Some (c, Option.get opt) else None)
+    member x.GetLocalMarks buffer = 
+        _localMarkSet
+        |> Set.toSeq
+        |> Seq.map (fun c -> OptionUtil.combineRev c (x.GetLocalMark buffer c))
+        |> SeqUtil.filterToSome
 
     member x.GetGlobalMarks () = 
         _globalList 
@@ -153,4 +197,21 @@ type MarkMap( _tlcService : ITrackingLineColumnService ) =
 
     interface IVimBufferCreationListener with
         member x.VimBufferCreated buffer = 
+
+            let updateLastSelection () =
+                let selection = buffer.TextView.Selection
+                if selection.IsEmpty then ()
+                else 
+                    match TextSelectionUtil.GetOverarchingSelectedSpan selection with
+                    | None -> ()
+                    | Some(span) -> 
+                        let lastSelected = span.Snapshot.CreateTrackingSpan(span.Span, SpanTrackingMode.EdgeExclusive) |> Some
+                        let data = x.GetOrCreateBufferMarkData buffer.TextBuffer
+                        let data = {data with LastSelection=lastSelected }
+                        _localMap.Item(buffer.TextBuffer) <- data 
+            updateLastSelection()
+    
+            buffer.TextView.Selection.SelectionChanged 
+            |> Event.add (fun _ -> updateLastSelection() )
+
             buffer.Closed |> Event.add (fun _ -> x.DeleteAllMarksForBuffer buffer.TextBuffer)

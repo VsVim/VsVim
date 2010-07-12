@@ -94,8 +94,14 @@ module SnapshotSpanUtil =
     /// Get the start point
     let GetStartPoint (span:SnapshotSpan) = span.Start
 
+    /// Get the start position
+    let GetStartPosition (span:SnapshotSpan) = span.Start.Position
+
     /// Get the end point
     let GetEndPoint (span:SnapshotSpan) = span.End
+
+    /// Get the end position
+    let GetEndPosition (span:SnapshotSpan) = span.End.Position
 
     /// Get all of the points on the specified SnapshotSpan.  Will not return the End point
     let GetPoints (span:SnapshotSpan) = 
@@ -138,6 +144,11 @@ module SnapshotSpanUtil =
     /// the span but instead the first point after the span
     let GetStartAndEndLine span = GetStartLine span,GetEndLine span
 
+    /// Is this a multiline SnapshotSpan
+    let IsMultiline span = 
+        let startLine,endLine = GetStartAndEndLine span
+        startLine.LineNumber < endLine.LineNumber
+
     /// Gets the last point which is actually included in the span.  This is different than
     /// EndPoint which is the first point after the span
     let GetLastIncludedPoint (span:SnapshotSpan) =
@@ -158,6 +169,20 @@ module SnapshotSpanUtil =
         let span = ExtendDown span lineCount
         let endLine = GetEndLine span
         SnapshotSpan(span.Start, endLine.EndIncludingLineBreak)
+
+    /// Reduces the SnapshotSpan to the subspan of the first line
+    let ReduceToStartLine span = 
+        if IsMultiline span then 
+            let line = GetStartLine span
+            SnapshotSpan(span.Start, line.EndIncludingLineBreak)
+        else span
+
+    /// Reduces the SnapshotSpan to the subspan of the last line
+    let ReduceToEndLine span = 
+        if IsMultiline span then 
+            let line = GetEndLine span
+            SnapshotSpan(line.Start, span.End)
+        else span
 
 
 /// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
@@ -444,6 +469,10 @@ module SnapshotPointUtil =
             let endPoint = SnapshotPoint(line.Snapshot, endPosition)
             SnapshotSpan(point, endPoint)
 
+module VirtualSnapshotPointUtil =
+    
+    let OfPoint (point:SnapshotPoint) = VirtualSnapshotPoint(point)
+
 /// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
 /// include any Vim specific logic
 module TextViewUtil =
@@ -508,6 +537,20 @@ module TextViewUtil =
         let point = SnapshotPoint(tss, pos)
         MoveCaretToPoint textView point 
 
+module TextSelectionUtil = 
+
+    /// Returns the SnapshotSpan which represents the total of the selection.  This is a SnapshotSpan of the left
+    /// most and right most point point in any of the selected spans 
+    let GetOverarchingSelectedSpan (selection:ITextSelection) = 
+        if selection.IsEmpty || 0 = selection.SelectedSpans.Count then None
+        else
+            let spans = selection.SelectedSpans
+            let min = spans |> Seq.map SnapshotSpanUtil.GetStartPosition |> Seq.min
+            let max = spans |> Seq.map SnapshotSpanUtil.GetEndPosition |> Seq.max
+            let span = Span.FromBounds(min,max)
+            let snapshot = spans.Item(0).Snapshot
+            SnapshotSpan(snapshot, span) |> Some
+
 module EditorOptionsUtil =
 
     /// Get the option value if it exists
@@ -537,3 +580,5 @@ module TrackingSpanUtil =
             span.GetSpan(snapshot) |> Some
         with
             | :? System.ArgumentException -> None
+
+

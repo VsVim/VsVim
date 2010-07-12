@@ -149,6 +149,7 @@
     <Compile Include="MotionUtilTest.cs" />
     <Compile Include="NormalModeIntegrationTest.cs" />
     <Compile Include="SearchServiceTest.cs" />
+    <Compile Include="TextSelectionUtilTest.cs" />
     <Compile Include="SnapshotSpanUtilTest.cs" />
     <Compile Include="SnapshotLineUtilTest.cs" />
     <Compile Include="SnapshotPointUtilTest.cs" />
