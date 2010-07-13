@@ -195,7 +195,11 @@ namespace VsVim
             }
         }
 
-        #endregion
+        void IVimHost.BuildSolution()
+        {
+            SafeExecuteCommand("Build.BuildSolution");
+        }
 
+        #endregion
     }
 }
