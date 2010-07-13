@@ -25,6 +25,7 @@ namespace VimCore.Test
         private IOperations _operations;
         private DefaultOperations _operationsRaw;
         private ITextView _view;
+        private Mock<IEditorOptions> _bufferOptions;
         private Mock<IVimHost> _host;
         private Mock<IJumpList> _jumpList;
         private Mock<IVimGlobalSettings> _globalSettings;
@@ -60,6 +61,8 @@ namespace VimCore.Test
 
             baseNav = baseNav ?? (new Mock<ITextStructureNavigator>(MockBehavior.Strict)).Object;
             var nav = TssUtil.CreateTextStructureNavigator(WordKind.NormalWord, baseNav);
+            _bufferOptions = new Mock<IEditorOptions>(MockBehavior.Strict);
+            _bufferOptions.Setup(x => x.GetOptionValue(DefaultOptions.TabSizeOptionId)).Returns(4);
             _globalSettings = MockObjectFactory.CreateGlobalSettings(ignoreCase: true);
             _settings = MockObjectFactory.CreateLocalSettings(_globalSettings.Object);
             _jumpList = new Mock<IJumpList>(MockBehavior.Strict);
@@ -70,7 +73,7 @@ namespace VimCore.Test
             _outlining = new Mock<IOutliningManager>(MockBehavior.Strict);
             _undoRedoOperations = new Mock<IUndoRedoOperations>(MockBehavior.Strict);
             _undoRedoOperations.Setup(x => x.CreateUndoTransaction(It.IsAny<string>())).Returns<string>(name => new Vim.UndoTransaction(FSharpOption.Create(EditorUtil.GetUndoHistory(_view.TextBuffer).CreateTransaction(name))));
-            _operationsRaw = new DefaultOperations(_view, editorOpts, _outlining.Object, _host.Object, _statusUtil.Object, _settings.Object, nav, _jumpList.Object, _search.Object, _undoRedoOperations.Object);
+            _operationsRaw = new DefaultOperations(_view, _bufferOptions.Object, editorOpts, _outlining.Object, _host.Object, _statusUtil.Object, _settings.Object, nav, _jumpList.Object, _search.Object, _undoRedoOperations.Object);
             _operations = _operationsRaw;
         }
 

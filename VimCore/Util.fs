@@ -216,6 +216,12 @@ module internal CharUtil =
     let ToUpper x = System.Char.ToUpper(x)
     let ChangeCase x = if IsUpper x then ToLower x else ToUpper x
 
+    let (|WhiteSpace|NonWhiteSpace|) char =
+        if IsWhiteSpace char then
+            WhiteSpace
+        else
+            NonWhiteSpace
+
 module internal NullableUtil = 
 
     let (|HasValue|Null|) (x:System.Nullable<_>) =

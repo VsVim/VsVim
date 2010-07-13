@@ -17,6 +17,7 @@ type internal VimBufferFactory
     (
         _host : IVimHost,
         _editorOperationsFactoryService : IEditorOperationsFactoryService,
+        _editorOptionsFactoryService : IEditorOptionsFactoryService,
         _outliningManagerService : IOutliningManagerService,
         _completionWindowBrokerFactoryService : IDisplayWindowBrokerFactoryService,
         _textSearchService : ITextSearchService,
@@ -49,11 +50,12 @@ type internal VimBufferFactory
         let createCommandRunner() = CommandRunner (view, vim.RegisterMap, capture,statusUtil) :>ICommandRunner
         let wordNav = x.CreateTextStructureNavigator view.TextBuffer WordKind.NormalWord
         let broker = _completionWindowBrokerFactoryService.CreateDisplayWindowBroker view
+        let bufferOptions = _editorOptionsFactoryService.GetOptions(view.TextBuffer)
         let normalIncrementalSearch = Vim.Modes.Normal.IncrementalSearch(view, outlining, localSettings, wordNav, vim.SearchService) :> IIncrementalSearch
-        let normalOpts = Modes.Normal.DefaultOperations(view,editOperations, outlining,_host, statusUtil, localSettings,wordNav,jumpList, normalIncrementalSearch, undoRedoOperations) :> Modes.Normal.IOperations
-        let commandOpts = Modes.Command.DefaultOperations(view,editOperations,outlining, _host, statusUtil, jumpList, localSettings, vim.KeyMap, undoRedoOperations) :> Modes.Command.IOperations
+        let normalOpts = Modes.Normal.DefaultOperations(view, bufferOptions, editOperations, outlining, _host, statusUtil, localSettings,wordNav,jumpList, normalIncrementalSearch, undoRedoOperations) :> Modes.Normal.IOperations
+        let commandOpts = Modes.Command.DefaultOperations(view, editOperations, outlining, _host, statusUtil, jumpList, localSettings, vim.KeyMap, undoRedoOperations) :> Modes.Command.IOperations
         let commandProcessor = Modes.Command.CommandProcessor(buffer, commandOpts, statusUtil, FileSystem() :> IFileSystem) :> Modes.Command.ICommandProcessor
-        let insertOpts = Modes.Insert.DefaultOperations(view,editOperations,outlining,_host, jumpList, localSettings, undoRedoOperations) :> Modes.ICommonOperations
+        let insertOpts = Modes.Insert.DefaultOperations(view, editOperations,outlining,_host, jumpList, localSettings, undoRedoOperations) :> Modes.ICommonOperations
         let visualOptsFactory kind = 
             let mode = 
                 match kind with 
@@ -62,7 +64,7 @@ type internal VimBufferFactory
                 | ModeKind.VisualLine -> Modes.Visual.SelectionMode.Line
                 | _ -> invalidArg "_kind" "Invalid kind for Visual Mode"
             let tracker = Modes.Visual.SelectionTracker(view,mode) :> Modes.Visual.ISelectionTracker
-            let opts = Modes.Visual.DefaultOperations(view,editOperations, outlining, _host, jumpList, localSettings,undoRedoOperations,kind, statusUtil) :> Modes.Visual.IOperations
+            let opts = Modes.Visual.DefaultOperations(view, editOperations, outlining, _host, jumpList, localSettings,undoRedoOperations,kind, statusUtil) :> Modes.Visual.IOperations
             (tracker, opts)
 
         let visualModeList =

@@ -2,6 +2,7 @@
 namespace Vim
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Operations
+open CharUtil
 
 module TssUtil =
 
@@ -112,11 +113,16 @@ module TssUtil =
                 inner prevPos (count-1)
         inner point count 
 
-    let FindIndentPosition (line:ITextSnapshotLine) =
+    let FindIndentPosition tabWidth (line:ITextSnapshotLine) =
         let text = line.GetText()
-        match text |> Seq.tryFindIndex (fun c -> not (System.Char.IsWhiteSpace(c))) with
-            | Some i -> i
-            | None -> 0
+        let rec inner start accum =
+            if start = text.Length then accum
+            else
+                match text.[start] with
+                | NonWhiteSpace -> accum
+                | '\t' -> inner (start + 1) (accum + tabWidth - (accum % tabWidth))
+                | _ -> inner (start + 1) (accum + 1)
+        inner 0 0 
         
     let GetReverseCharacterSpan (point:SnapshotPoint) count =
         let line = point.GetContainingLine()

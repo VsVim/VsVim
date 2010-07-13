@@ -201,7 +201,7 @@ namespace VimCore.Test
         {
             Create("  foo");
             var line = _snapshot.GetLineFromLineNumber(0);
-            Assert.AreEqual(2, TssUtil.FindIndentPosition(line));
+            Assert.AreEqual(2, TssUtil.FindIndentPosition(4, line));
         }
 
         [Test]
@@ -209,7 +209,15 @@ namespace VimCore.Test
         {
             Create("foo");
             var line = _snapshot.GetLineFromLineNumber(0);
-            Assert.AreEqual(0, TssUtil.FindIndentPosition(line));
+            Assert.AreEqual(0, TssUtil.FindIndentPosition(4, line));
+        }
+
+        [Test]
+        public void FindIndentPosition3()
+        {
+            Create("\tfoo");
+            var line = _snapshot.GetLineFromLineNumber(0);
+            Assert.AreEqual(4, TssUtil.FindIndentPosition(4, line));
         }
 
         [Test]
