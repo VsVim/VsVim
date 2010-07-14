@@ -567,22 +567,32 @@ namespace VimCore.Test
         #region Scroll
 
         [Test]
-        public void ScrollUp1()
+        public void MoveCaretAndScrollUp1()
         {
             Create("foo", "bar");
-            _operations.Setup(x => x.ScrollLines(ScrollDirection.Up, 1)).Verifiable();
+            _operations.Setup(x => x.MoveCaretAndScrollLines(ScrollDirection.Up, 1)).Verifiable();
             _mode.Process(new KeyInput('u', KeyModifiers.Control));
             _operations.Verify();
         }
 
         [Test, Description("Don't break at line 0")]
-        public void ScrollUp2()
+        public void MoveCaretAndScrollUp2()
         {
             Create("foo", "bar");
             _view.Caret.MoveTo(_view.TextSnapshot.GetLineFromLineNumber(0).End);
-            _operations.Setup(x => x.ScrollLines(ScrollDirection.Up, 2)).Verifiable();
+            _operations.Setup(x => x.MoveCaretAndScrollLines(ScrollDirection.Up, 2)).Verifiable();
             _mode.Process('2');
             _mode.Process(new KeyInput('u', KeyModifiers.Control));
+            _operations.Verify();
+        }
+
+        [Test]
+        public void MoveCaretAndScrollDown1()
+        {
+            Create("foo", "bar");
+            _view.Caret.MoveTo(_view.TextSnapshot.GetLineFromLineNumber(0).End);
+            _operations.Setup(x => x.MoveCaretAndScrollLines(ScrollDirection.Down, 1)).Verifiable();
+            _mode.Process(new KeyInput('d', KeyModifiers.Control));
             _operations.Verify();
         }
 
@@ -590,9 +600,30 @@ namespace VimCore.Test
         public void ScrollDown1()
         {
             Create("foo", "bar");
-            _view.Caret.MoveTo(_view.TextSnapshot.GetLineFromLineNumber(0).End);
+            _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 0));
             _operations.Setup(x => x.ScrollLines(ScrollDirection.Down, 1)).Verifiable();
-            _mode.Process(new KeyInput('d', KeyModifiers.Control));
+            _mode.Process(new KeyInput('e', KeyModifiers.Control));
+            _operations.Verify();
+        }
+
+        [Test]
+        public void ScrollDown2()
+        {
+            Create("foo", "bar");
+            _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 0));
+            _operations.Setup(x => x.ScrollLines(ScrollDirection.Down, 3)).Verifiable();
+            _mode.Process('3');
+            _mode.Process(new KeyInput('e', KeyModifiers.Control));
+            _operations.Verify();
+        }
+
+        [Test]
+        public void ScrollUp()
+        {
+            Create("foo", "bar");
+            _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 0));
+            _operations.Setup(x => x.ScrollLines(ScrollDirection.Up, 1)).Verifiable();
+            _mode.Process(new KeyInput('y', KeyModifiers.Control));
             _operations.Verify();
         }
 
