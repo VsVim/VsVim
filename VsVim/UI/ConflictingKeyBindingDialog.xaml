@@ -17,7 +17,7 @@
              SizeToContent="Manual"
              ShowInTaskbar="False"
              TextOptions.TextFormattingMode="Display"
-             >
+             WindowStartupLocation="CenterOwner">
 
     <vs:DialogWindow.Resources>
         <local:ComboBoxTemplateSelector x:Key="ComboBoxTemplateSelector" />
@@ -39,6 +39,7 @@
                 <TextBlock Text="Handled by " VerticalAlignment="Center" />
                 <ComboBox ItemsSource="{Binding HandledByOptions}"
                           ItemTemplateSelector="{StaticResource ComboBoxTemplateSelector}"
+                          SelectedItem="{Binding SelectedHandledByOption}"
                           />
             </StackPanel>
         </DataTemplate>

@@ -3,24 +3,18 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Windows;
+using System.Collections.ObjectModel;
 
 namespace VsVim.UI
 {
     public sealed class KeyBindingData : DependencyObject
     {
+        private KeyBindingHandledByOption _visualStudioOption;
+        private KeyBindingHandledByOption _vsVimOption;
+
         public static readonly DependencyProperty KeyNameProperty = DependencyProperty.Register(
             "KeyName",
             typeof(string),
-            typeof(KeyBindingData));
-
-        public static readonly DependencyProperty DisabledCommandsProperty = DependencyProperty.Register(
-            "DisabledCommands",
-            typeof(string),
-            typeof(KeyBindingData));
-
-        public static readonly DependencyProperty HandledByVsVimProperty = DependencyProperty.Register(
-            "HandledByVsVim",
-            typeof(bool),
             typeof(KeyBindingData));
 
         public string KeyName
@@ -29,33 +23,35 @@ namespace VsVim.UI
             set { SetValue(KeyNameProperty, value); }
         }
 
-        public string DisabledCommands
-        {
-            get { return (string)GetValue(DisabledCommandsProperty); }
-            set { SetValue(DisabledCommandsProperty, value); }
-        }
-
         public bool HandledByVsVim
         {
-            get { return (bool)GetValue(HandledByVsVimProperty); }
-            set { SetValue(HandledByVsVimProperty, value); }
+            get { return SelectedHandledByOption == _vsVimOption; }
+            set
+            {
+                SelectedHandledByOption = value ? _vsVimOption : _visualStudioOption;
+            }
         }
 
-        private CommandKeyBinding[] _bindings;
-        private List<KeyBindingHandledByOption> _handledByOptions;
+        public static readonly DependencyProperty SelectedHandledByOptionProperty = DependencyProperty.Register(
+            "SelectedHandledByOption",
+            typeof(KeyBindingHandledByOption),
+            typeof(KeyBindingData));
+        public KeyBindingHandledByOption SelectedHandledByOption
+        {
+            get { return (KeyBindingHandledByOption)GetValue(SelectedHandledByOptionProperty); }
+            set { SetValue(SelectedHandledByOptionProperty, value); }
+        }
+
+        private ObservableCollection<KeyBindingHandledByOption> _handledByOptions = new ObservableCollection<KeyBindingHandledByOption>();
+        public ObservableCollection<KeyBindingHandledByOption> HandledByOptions
+        {
+            get { return _handledByOptions; }
+        }
+
+        public IEnumerable<CommandKeyBinding> Bindings { get; private set; }
 
         public KeyBindingData()
         {
-        }
-
-        public IEnumerable<CommandKeyBinding> Bindings
-        {
-            get { return _bindings; }
-        }
-
-        public List<KeyBindingHandledByOption> HandledByOptions
-        {
-            get { return _handledByOptions; }
         }
 
         public KeyBindingData(IEnumerable<CommandKeyBinding> bindings)
@@ -64,12 +60,12 @@ namespace VsVim.UI
             Vim.KeyInput firstKeyInput = bindings.First().KeyBinding.FirstKeyInput;
             KeyName = KeyBinding.CreateKeyBindingStringForSingleKeyInput(firstKeyInput);
 
-            _bindings = bindings.ToArray();
-            _handledByOptions = new List<KeyBindingHandledByOption>()
-                                {
-                                    new KeyBindingHandledByOption("Visual Studio", bindings.Select(binding => binding.Name)),
-                                    new KeyBindingHandledByOption("VsVim", Enumerable.Empty<string>())
-                                };
+            Bindings = bindings.ToArray();
+            _handledByOptions.AddRange(
+                new [] {
+                     _visualStudioOption = new KeyBindingHandledByOption("Visual Studio", bindings.Select(binding => binding.Name)),
+                     _vsVimOption = new KeyBindingHandledByOption("VsVim", Enumerable.Empty<string>())
+                });
         }
     }
 }
