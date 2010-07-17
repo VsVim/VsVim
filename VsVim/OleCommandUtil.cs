@@ -34,10 +34,9 @@ namespace VsVim
         {
             switch (commandId)
             {
-                // A lot of my debugging is essentially figuring out which command is messing up
-                // normal mode.  Unfortunately VS likes to throw a lot of commands all of the time.  I 
-                // list them here so they don' come through my default mode where I can then set a 
-                // break point
+                // A lot of my debugging is essentially figuring out which command is messing up normal mode.
+                // Unfortunately VS likes to throw a lot of commands all of the time.  I list them here so they don't
+                // come through my default mode where I can then set a break point
                 case VSConstants.VSStd2KCmdID.SolutionPlatform:
                 case VSConstants.VSStd2KCmdID.FILESYSTEMEDITOR:
                 case VSConstants.VSStd2KCmdID.REGISTRYEDITOR:
