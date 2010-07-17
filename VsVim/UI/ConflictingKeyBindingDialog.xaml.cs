@@ -13,6 +13,8 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 using Microsoft.VisualStudio.PlatformUI;
 using Vim;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
 
 namespace VsVim.UI
 {
@@ -21,14 +23,45 @@ namespace VsVim.UI
     /// </summary>
     public partial class ConflictingKeyBindingDialog : DialogWindow 
     {
-        public ConflictingKeyBindingControl ConflictingKeyBindingControl
-        {
-            get { return _bindingControl; }
-        }
+        private ObservableCollection<KeyBindingData> _keyBindingList = new ObservableCollection<KeyBindingData>();
 
-        public ConflictingKeyBindingDialog()
+        public ConflictingKeyBindingDialog(CommandKeyBindingSnapshot snapshot)
         {
             InitializeComponent();
+            ComputeKeyBindings(snapshot);
+
+            BindingsListBox.ItemsSource = _keyBindingList;
+            BindingsListBox.Items.SortDescriptions.Add(new SortDescription("KeyName", ListSortDirection.Ascending));
+        }
+
+        private void ComputeKeyBindings(CommandKeyBindingSnapshot snapshot)
+        {
+            // This snapshot contains a list of active keys, and keys which are still conflicting. We will group all
+            // bindings by the initial character, and will consider the entire group as being handled by VsVim as long
+            // as one is being handled.
+
+            var handledByVsVim = snapshot.Removed.ToLookup(binding => binding.KeyBinding.FirstKeyInput);
+            var handledByVs = snapshot.Conflicting.ToLookup(binding => binding.KeyBinding.FirstKeyInput);
+
+            var allFirstKeys = handledByVsVim.Select(group => group.Key)
+                               .Union(handledByVs.Select(group => group.Key));
+
+            foreach (var firstKey in allFirstKeys)
+            {
+                KeyBindingData data = new KeyBindingData(handledByVsVim[firstKey].Union(handledByVs[firstKey]));
+                data.HandledByVsVim = handledByVsVim.Contains(firstKey);
+                _keyBindingList.Add(data);
+            }
+        }
+
+        private void OnEnableAllVimKeysClick(object sender, RoutedEventArgs e)
+        {
+            _keyBindingList.ForEach(x => x.HandledByVsVim = true);
+        }
+
+        private void OnDisableAllVimKeysClick(object sender, RoutedEventArgs e)
+        {
+            _keyBindingList.ForEach(x => x.HandledByVsVim = false);
         }
 
         private void OnCancelClick(object sender, RoutedEventArgs e)
@@ -41,15 +74,7 @@ namespace VsVim.UI
             DialogResult = true;
         }
 
-        public static bool DoShow(CommandKeyBindingSnapshot snapshot)
-        {
-            var window = new ConflictingKeyBindingDialog();
-            var keyBindingList = window._bindingControl.KeyBindingList;
-            keyBindingList.AddRange(ComputeKeyBindingList(snapshot));
-            var ret = window.ShowModal();
-            if (ret.HasValue && ret.Value)
-            {
-                // Remove all of the removed bindings
+        /* Remove all of the removed bindings
                 var keyBindingsByHandled = keyBindingList.ToLookup(data => data.HandledByVsVim);
 
                 // For commands being handled by VsVim, we shall remove any other bindings
@@ -82,27 +107,7 @@ namespace VsVim.UI
                 settings.Save();
             }
 
-            return ret.HasValue && ret.Value;
-        }
+            return ret.HasValue && ret.Value; } */
 
-        private static IEnumerable<KeyBindingData> ComputeKeyBindingList(CommandKeyBindingSnapshot snapshot)
-        {
-            // This snapshot contains a list of active keys, and keys which are still conflicting. We will group all
-            // bindings by the initial character, and will consider the entire group as being handled by VsVim as long
-            // as one is being handled.
-
-            var handledByVsVim = snapshot.Removed.ToLookup(binding => binding.KeyBinding.FirstKeyInput);
-            var handledByVs = snapshot.Conflicting.ToLookup(binding => binding.KeyBinding.FirstKeyInput);
-
-            var allFirstKeys = handledByVsVim.Select(group => group.Key)
-                               .Union(handledByVs.Select(group => group.Key));
-
-            return from firstKey in allFirstKeys
-                   select new KeyBindingData(handledByVsVim[firstKey].Union(handledByVs[firstKey]))
-                   {
-                       HandledByVsVim = handledByVsVim.Contains(firstKey)
-                   };
-
-        }
     }
 }

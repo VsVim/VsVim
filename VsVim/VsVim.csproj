@@ -148,9 +148,7 @@
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
       <DependentUpon>Settings.settings</DependentUpon>
     </Compile>
-    <Compile Include="UI\ConflictingKeyBindingControl.xaml.cs">
-      <DependentUpon>ConflictingKeyBindingControl.xaml</DependentUpon>
-    </Compile>
+    <Compile Include="UI\ComboBoxTemplateSelector.cs" />
     <Compile Include="UI\ConflictingKeyBindingDialog.xaml.cs">
       <DependentUpon>ConflictingKeyBindingDialog.xaml</DependentUpon>
     </Compile>
@@ -198,10 +196,6 @@
     </Content>
   </ItemGroup>
   <ItemGroup>
-    <Page Include="UI\ConflictingKeyBindingControl.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
     <Page Include="UI\ConflictingKeyBindingDialog.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>

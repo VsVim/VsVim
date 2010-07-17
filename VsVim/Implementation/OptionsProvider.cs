@@ -21,11 +21,12 @@ namespace VsVim.Implementation
             {
                 _dte = dte;
             }
+
             public void ShowDialog(IVimBuffer buffer)
             {
                 var util = new KeyBindingUtil(_dte);
                 var snapshot = util.CreateCommandKeyBindingSnapshot(buffer);
-                UI.ConflictingKeyBindingDialog.DoShow(snapshot);
+                new UI.ConflictingKeyBindingDialog(snapshot).ShowDialog();
             }
         }
 

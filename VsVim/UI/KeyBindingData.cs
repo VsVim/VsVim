@@ -67,8 +67,8 @@ namespace VsVim.UI
             _bindings = bindings.ToArray();
             _handledByOptions = new List<KeyBindingHandledByOption>()
                                 {
-                                    new KeyBindingHandledByOption { HandlerName = "Visual Studio", HandlerDetails = "Used by " + string.Join(", ", bindings.Select(binding => binding.Name)) },
-                                    new KeyBindingHandledByOption { HandlerName = "VsVim", HandlerDetails = "" }
+                                    new KeyBindingHandledByOption("Visual Studio", bindings.Select(binding => binding.Name)),
+                                    new KeyBindingHandledByOption("VsVim", Enumerable.Empty<string>())
                                 };
         }
     }
