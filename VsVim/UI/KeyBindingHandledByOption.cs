@@ -24,7 +24,8 @@ namespace VsVim.UI
             // Do we have any large groups?
             foreach (var group in commandsByFirstDottedName)
             {
-                if ((group.Key == "Test" || group.Key == "Refactor" || group.Key == "TestResults") && group.Count() >= 3)
+                if ((group.Key == "Test" || group.Key == "Refactor" ||
+                     group.Key == "TestResults" || group.Key == "Debug") && group.Count() >= 3)
                 {
                     // Let's remove those
                     cleanedUpCommands.RemoveAll(command => group.Contains(command));
@@ -32,6 +33,7 @@ namespace VsVim.UI
                     // In it's place, we'll insert a nice shortcut
                     switch (group.Key)
                     {
+                        case "Debug": cleanedUpCommands.Add("Debugging"); break;
                         case "Refactor": cleanedUpCommands.Add("Refactoring"); break;
                         case "Test": cleanedUpCommands.Add("Testing"); break;
                         case "TestResults": cleanedUpCommands.Add("Test Results"); break;
@@ -47,6 +49,14 @@ namespace VsVim.UI
                     {
                         cleanedUpCommands.RemoveAll(command => outliningCommands.Contains(command));
                         cleanedUpCommands.Add("Outlining");
+                    }
+
+                    // And a bunch of bookmark commands?
+                    var bookmarkCommands = group.Where(command => command.Contains("Bookmark")).ToList();
+                    if (bookmarkCommands.Count >= 3)
+                    {
+                        cleanedUpCommands.RemoveAll(command => bookmarkCommands.Contains(command));
+                        cleanedUpCommands.Add("Bookmarks");
                     }
                 }
             }
