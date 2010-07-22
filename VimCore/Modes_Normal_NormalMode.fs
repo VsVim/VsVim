@@ -31,13 +31,13 @@ type internal NormalMode
     /// Contains the state information for Normal mode
     let mutable _data = _emptyData
 
-    let mutable _globalSettingsChangedHandler : System.IDisposable = null
+    let _eventHandlers = DisposableBag()
 
     do
         // Up cast here to work around the F# bug which prevents accessing a CLIEvent from
         // a derived type
         let settings = _bufferData.Settings.GlobalSettings :> IVimSettings
-        _globalSettingsChangedHandler <- settings.SettingChanged.Subscribe this.OnGlobalSettingsChanged
+        settings.SettingChanged.Subscribe this.OnGlobalSettingsChanged |> _eventHandlers.Add
 
     member this.TextView = _bufferData.TextView
     member this.TextBuffer = _bufferData.TextBuffer
@@ -458,6 +458,6 @@ type internal NormalMode
             this.EnsureCommands()
             this.Reset()
         member this.OnLeave () = ()
-        member this.OnClose() = _globalSettingsChangedHandler.Dispose()
+        member this.OnClose() = _eventHandlers.DisposeAll()
     
 

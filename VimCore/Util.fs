@@ -30,6 +30,13 @@ and internal ToggleHandler<'T>
             _handler <- None
         | None -> ()
 
+type internal DisposableBag() = 
+    let mutable _toDispose : System.IDisposable list = List.empty
+    member x.DisposeAll () = 
+        _toDispose |> List.iter (fun x -> x.Dispose()) 
+        _toDispose <- List.empty
+    member x.Add d = _toDispose <- d :: _toDispose 
+
 /// F# friendly typed wrapper around the WeakReference class 
 type internal WeakReference<'T>( _weak : System.WeakReference ) =
     member x.Target = 

@@ -1,17 +1,12 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using NUnit.Framework;
-using Moq;
-using Vim;
-using VimCore.Test.Utils;
-using Microsoft.VisualStudio.Text.Editor;
-using System.IO;
-using Vim.Modes.Command;
-using Microsoft.FSharp.Core;
 using Microsoft.FSharp.Collections;
+using Microsoft.FSharp.Core;
+using Microsoft.VisualStudio.Text.Editor;
+using Moq;
+using NUnit.Framework;
+using Vim;
 using Vim.Extensions;
+using VimCore.Test.Utils;
 
 namespace VimCore.Test
 {
@@ -165,6 +160,7 @@ namespace VimCore.Test
         {
             // Setup the buffer creation
             var view = new Mock<IWpfTextView>(MockBehavior.Strict);
+            view.Setup(x => x.Close()).Verifiable();
             var commandMode = new Mock<ICommandMode>(MockBehavior.Strict);
             var buffer = new Mock<IVimBuffer>(MockBehavior.Strict);
             commandMode.Setup(x => x.RunCommand("set noignorecase")).Verifiable();
@@ -187,6 +183,7 @@ namespace VimCore.Test
             _settings.Verify();
             commandMode.Verify();
             fs.Verify();
+            view.Verify();
         }
     }
 }

@@ -176,7 +176,7 @@ type internal Vim
             let buffer = vim.GetOrCreateBuffer view
             let mode = buffer.CommandMode
             lines |> Seq.iter mode.RunCommand
-            vim.RemoveBuffer view |> ignore
+            view.Close()
             true
 
     interface IVim with
