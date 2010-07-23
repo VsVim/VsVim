@@ -37,11 +37,14 @@ type MotionData = {
     member x.OperationSpan = 
         if x.MotionKind = MotionKind.Inclusive then x.Span
         else 
-            let line = SnapshotPointUtil.GetContainingLine x.Span.End
-            let point = TssUtil.FindFirstNonWhitespaceCharacter line
-            if point = x.Span.End && line.LineNumber <> 0 then 
-                let lineAbove = line.Snapshot.GetLineFromLineNumber(line.LineNumber-1)
-                SnapshotSpan(x.Span.Start, lineAbove.End)
+            // Intentionally look at .End here because we need to find the line 
+            // on which this span will end.  Need to see across line breaks
+            let startLine = SnapshotSpanUtil.GetStartLine x.Span
+            let endLine = x.Span.End.GetContainingLine()
+            if endLine.LineNumber > startLine.LineNumber then
+                let point = TssUtil.FindFirstNonWhitespaceCharacter endLine
+                if point = x.Span.End then
+                    let lineAbove = endLine.Snapshot.GetLineFromLineNumber(endLine.LineNumber-1)
+                    SnapshotSpan(x.Span.Start, lineAbove.End)
+                else x.Span
             else x.Span
-
-        

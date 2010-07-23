@@ -43,6 +43,11 @@ namespace Vim.UI.Wpf
             }
         }
 
+        private bool ShouldHandleEvents
+        {
+            get { return _buffer.ModeKind != ModeKind.Disabled; }
+        }
+
         public MouseProcessor(IVimBuffer buffer, IMouseDevice mouseDevice)
         {
             _buffer = buffer;
@@ -58,6 +63,11 @@ namespace Vim.UI.Wpf
 
         private void OnSelectionChanged(object sender, EventArgs e)
         {
+            if (!ShouldHandleEvents)
+            {
+                return;
+            }
+
             if (!IsSelectionChanging && !_selection.IsEmpty && !IsAnyVisualMode)
             {
                 // Actually process the selection event during background processing.  The editor commonly
@@ -91,6 +101,11 @@ namespace Vim.UI.Wpf
 
         public override void PostprocessMouseLeftButtonUp(MouseButtonEventArgs e)
         {
+            if (!ShouldHandleEvents)
+            {
+                return;
+            }
+
             if (e.ChangedButton == MouseButton.Left)
             {
                 if (IsSelectionChanging)

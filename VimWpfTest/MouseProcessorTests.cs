@@ -1,15 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using NUnit.Framework;
+﻿using System.Windows.Input;
+using System.Windows.Threading;
+using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Moq;
-using Vim;
-using Vim.Modes.Visual;
-using Microsoft.VisualStudio.Text;
-using System.Windows.Input;
-using System.Windows.Threading;
+using NUnit.Framework;
 using VimCore.Test.Utils;
 
 namespace Vim.UI.Wpf.Test
@@ -29,6 +23,7 @@ namespace Vim.UI.Wpf.Test
             _visualMode = new Mock<IVisualMode>(MockBehavior.Strict);
             _buffer = new Mock<IVimBuffer>(MockBehavior.Strict);
             _buffer.SetupGet(x => x.TextView).Returns(_textView);
+            _buffer.SetupGet(x => x.ModeKind).Returns(ModeKind.Normal);
             _mouseDevice = new Mock<IMouseDevice>(MockBehavior.Strict);
             _processor = new MouseProcessor(_buffer.Object, _mouseDevice.Object);
         }
