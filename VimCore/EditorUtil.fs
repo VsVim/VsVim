@@ -39,6 +39,11 @@ module SnapshotUtil =
     /// Is the Line Number valid
     let IsLineNumberValid (tss:ITextSnapshot) lineNumber = lineNumber >= 0 && lineNumber < tss.LineCount
 
+    /// Is the Span valid in this ITextSnapshot
+    let IsSpanValid (tss:ITextSnapshot) (span:Span) = 
+        let length = tss.Length
+        span.Start < tss.Length && span.End <= tss.Length
+
     /// Get a valid line for the specified number if it's valid and the last line if it's
     /// not
     let GetLineOrLast tss lineNumber =

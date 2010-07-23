@@ -149,6 +149,7 @@
     <Compile Include="MotionUtilTest.cs" />
     <Compile Include="NormalModeIntegrationTest.cs" />
     <Compile Include="SearchServiceTest.cs" />
+    <Compile Include="TextChangeTrackerTest.cs" />
     <Compile Include="TextSelectionUtilTest.cs" />
     <Compile Include="SnapshotSpanUtilTest.cs" />
     <Compile Include="SnapshotLineUtilTest.cs" />
@@ -194,6 +195,7 @@
     <Compile Include="Mock\MockNormalMode.cs" />
     <Compile Include="Mock\MockObjectFactory.cs" />
     <Compile Include="Mock\MockVimBuffer.cs" />
+    <Compile Include="Utils\MouseDevice.cs" />
     <Compile Include="Utils\TestableSynchronizationContext.cs" />
     <Compile Include="Utils\TextUndoHistory.cs" />
     <Compile Include="Utils\TextUndoHistoryRegistry.cs" />

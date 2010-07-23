@@ -100,7 +100,6 @@
     <Compile Include="BlockCaretController.cs" />
     <Compile Include="CommandMarginController.cs" />
     <Compile Include="Implementation\EditorFormatDefinitions.cs" />
-    <Compile Include="IMouseDevice.cs" />
     <Compile Include="Implementation\BlockCaret.cs" />
     <Compile Include="Implementation\BlockCaretFactoryService.cs" />
     <Compile Include="CommandMargin.cs" />

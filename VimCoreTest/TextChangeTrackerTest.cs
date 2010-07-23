@@ -1,0 +1,152 @@
+﻿using Microsoft.VisualStudio.Text;
+using Microsoft.VisualStudio.Text.Editor;
+using Moq;
+using NUnit.Framework;
+using Vim;
+using VimCore.Test.Mock;
+using VimCore.Test.Utils;
+
+namespace VimCore.Test
+{
+    [TestFixture]
+    public class TextChangeTrackerTest
+    {
+        private MockFactory _factory;
+        private ITextBuffer _textBuffer;
+        private Mock<ITextView> _textView;
+        private Mock<ITextCaret> _textCaret;
+        private Mock<IMouseDevice> _mouse;
+        private MockVimBuffer _vimBuffer;
+        private TextChangeTracker _tracker;
+        private string _lastChange;
+
+        protected void Create(params string[] lines)
+        {
+            _textBuffer = EditorUtil.CreateBuffer(lines);
+            _factory = new MockFactory(MockBehavior.Loose);
+            _textCaret = _factory.Create<ITextCaret>();
+            _textView = _factory.Create<ITextView>();
+            _textView.SetupGet(x => x.Caret).Returns(_textCaret.Object);
+            _textView.SetupGet(x => x.HasAggregateFocus).Returns(true);
+            _mouse = _factory.Create<IMouseDevice>();
+            _vimBuffer = new MockVimBuffer()
+            {
+                TextViewImpl = _textView.Object,
+                TextBufferImpl = _textBuffer
+            };
+            _tracker = new TextChangeTracker(_vimBuffer, _mouse.Object);
+            _tracker.Changed += (sender, data) => { _lastChange = data; };
+        }
+
+        [TearDown]
+        public void TearDown()
+        {
+            _tracker = null;
+            _textBuffer = null;
+            _lastChange = null;
+        }
+
+        [Test]
+        public void TypeForward1()
+        {
+            Create("the quick brown fox");
+            _textBuffer.Insert(0, "a");
+            Assert.IsNull(_lastChange);
+            Assert.AreEqual("a", _tracker.CurrentChange);
+        }
+
+        [Test]
+        public void TypeForward2()
+        {
+            Create("the quick brown fox");
+            _textBuffer.Insert(0, "a");
+            _textBuffer.Insert(1, "b");
+            Assert.IsNull(_lastChange);
+            Assert.AreEqual("ab", _tracker.CurrentChange);
+        }
+
+        [Test]
+        public void TypeForward3()
+        {
+            Create("the quick brown fox");
+            _textBuffer.Insert(0, "a");
+            _textBuffer.Insert(1, "b");
+            _textBuffer.Insert(2, "c");
+            Assert.IsNull(_lastChange);
+            Assert.AreEqual("abc", _tracker.CurrentChange);
+        }
+
+        [Test]
+        public void TypeForward_AddMany1()
+        {
+            Create("the quick brown fox");
+            _textBuffer.Insert(0, "a");
+            _textBuffer.Insert(1, "bcd");
+            Assert.IsNull(_lastChange);
+            Assert.AreEqual("abcd", _tracker.CurrentChange);
+        }
+
+        [Test]
+        public void TypeForward_AddMany2()
+        {
+            Create("the quick brown fox");
+            _textBuffer.Insert(0, "ab");
+            _textBuffer.Insert(2, "cde");
+            Assert.IsNull(_lastChange);
+            Assert.AreEqual("abcde", _tracker.CurrentChange);
+        }
+
+        [Test]
+        [Description("Mouse click should complete the change")]
+        public void CaretMove1()
+        {
+            Create("the quick brown fox");
+            _textBuffer.Insert(0, "a");
+            _mouse.SetupGet(x => x.IsLeftButtonPressed).Returns(true).Verifiable();
+            _textCaret.Raise(x => x.PositionChanged += null, (CaretPositionChangedEventArgs)null);
+            Assert.AreEqual("a", _lastChange);
+            Assert.AreEqual("", _tracker.CurrentChange);
+            _factory.Verify();
+        }
+
+        [Test]
+        [Description("Normal caret movement (as part of an edit) shouldn't complete changse")]
+        public void CaretMove2()
+        {
+            Create("the quick brown fox");
+            _mouse.SetupGet(x => x.IsLeftButtonPressed).Returns(false).Verifiable();
+            _textBuffer.Insert(0, "a");
+            _textCaret.Raise(x => x.PositionChanged += null, (CaretPositionChangedEventArgs)null);
+            _textBuffer.Insert(1, "b");
+            Assert.IsNull(_lastChange);
+            Assert.AreEqual("ab", _tracker.CurrentChange);
+            _factory.Verify();
+        }
+
+        [Test]
+        [Description("Commit style events with no change shoudn't raise the Changed event")]
+        public void ChangedEvent1()
+        {
+            Create("the quick brown fox");
+            var didRun = false;
+            _tracker.Changed += delegate { didRun = true; };
+            _mouse.SetupGet(x => x.IsLeftButtonPressed).Returns(true).Verifiable();
+            _textCaret.Raise(x => x.PositionChanged += null, (CaretPositionChangedEventArgs)null);
+            Assert.IsFalse(didRun);
+        }
+
+        [Test]
+        [Description("Don't double raise the event")]
+        public void ChangedEvent2()
+        {
+            Create("the quick brown fox");
+            _textBuffer.Insert(1, "b");
+            _mouse.SetupGet(x => x.IsLeftButtonPressed).Returns(true).Verifiable();
+            _textCaret.Raise(x => x.PositionChanged += null, (CaretPositionChangedEventArgs)null);
+            var didRun = false;
+            _tracker.Changed += delegate { didRun = true; };
+            _textCaret.Raise(x => x.PositionChanged += null, (CaretPositionChangedEventArgs)null);
+            Assert.IsFalse(didRun);
+        }
+    }
+}

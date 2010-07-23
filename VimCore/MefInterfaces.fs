@@ -107,5 +107,10 @@ type IFoldManagerFactory =
     
     abstract GetFoldManager : ITextBuffer -> IFoldManager
 
+/// Abstract representation of the mouse
+type IMouseDevice = 
+    
+    // Is the left button pressed
+    abstract IsLeftButtonPressed : bool
 
 

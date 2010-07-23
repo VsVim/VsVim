@@ -1,13 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using Vim;
-using Moq;
-using Microsoft.VisualStudio.Text.Editor;
-using Microsoft.VisualStudio.Text.Operations;
 using Microsoft.VisualStudio.Text;
+using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Formatting;
+using Microsoft.VisualStudio.Text.Operations;
+using Moq;
+using Vim;
 
 namespace VimCore.Test.Mock
 {
@@ -34,14 +31,16 @@ namespace VimCore.Test.Mock
             IVimGlobalSettings settings = null,
             IVimHost host = null,
             IKeyMap keyMap = null,
-            IChangeTracker changeTracker = null)
+            IChangeTracker changeTracker = null,
+            IMouseDevice mouseDevice = null)
         {
             registerMap = registerMap ?? CreateRegisterMap().Object;
             map = map ?? new MarkMap(new TrackingLineColumnService());
             settings = settings ?? new GlobalSettings();
             host = host ?? new FakeVimHost();
             keyMap = keyMap ?? (new KeyMap());
-            changeTracker = changeTracker ?? new ChangeTracker();
+            mouseDevice = mouseDevice ?? (new Mock<IMouseDevice>(MockBehavior.Loose)).Object;
+            changeTracker = changeTracker ?? new ChangeTracker(mouseDevice);
             var mock = new Mock<IVim>(MockBehavior.Strict);
             mock.Setup(x => x.RegisterMap).Returns(registerMap);
             mock.Setup(x => x.MarkMap).Returns(map);

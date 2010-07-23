@@ -49,7 +49,7 @@ namespace Vim.UI.Wpf.Test
             Create("foo bar");
             _buffer.Setup(x => x.ModeKind).Returns(ModeKind.Normal).Verifiable();
             _buffer.Setup(x => x.SwitchMode(ModeKind.VisualCharacter)).Returns(_visualMode.Object).Verifiable();
-            _mouseDevice.SetupGet(x => x.LeftButtonState).Returns(MouseButtonState.Pressed).Verifiable();
+            _mouseDevice.SetupGet(x => x.IsLeftButtonPressed).Returns(true).Verifiable();
             _textView.Selection.Select(new SnapshotSpan(_textView.TextSnapshot, 0, 3), false);
             Dispatcher.CurrentDispatcher.DoEvents();
             Assert.IsTrue(_processor.IsSelectionChanging);
@@ -63,7 +63,7 @@ namespace Vim.UI.Wpf.Test
             Create("foo bar");
             _buffer.Setup(x => x.ModeKind).Returns(ModeKind.Normal).Verifiable();
             _buffer.Setup(x => x.SwitchMode(ModeKind.VisualCharacter)).Returns(_visualMode.Object).Verifiable();
-            _mouseDevice.SetupGet(x => x.LeftButtonState).Returns(MouseButtonState.Released).Verifiable();
+            _mouseDevice.SetupGet(x => x.IsLeftButtonPressed).Returns(false).Verifiable();
             _textView.Selection.Select(new SnapshotSpan(_textView.TextSnapshot, 0, 3), false);
             Dispatcher.CurrentDispatcher.DoEvents();
             Assert.IsFalse(_processor.IsSelectionChanging);
@@ -77,7 +77,7 @@ namespace Vim.UI.Wpf.Test
             _buffer.Setup(x => x.ModeKind).Returns(ModeKind.Normal).Verifiable();
             _textView.Selection.Select(new SnapshotSpan(_textView.TextSnapshot, 0, 3), false);
             _textView.Selection.Clear();
-            _mouseDevice.SetupGet(x => x.LeftButtonState).Returns(MouseButtonState.Released).Verifiable();
+            _mouseDevice.SetupGet(x => x.IsLeftButtonPressed).Returns(false).Verifiable();
             Dispatcher.CurrentDispatcher.DoEvents();
             _buffer.Verify();
         }
@@ -90,7 +90,7 @@ namespace Vim.UI.Wpf.Test
             _buffer.Setup(x => x.SwitchMode(ModeKind.VisualBlock)).Returns(_visualMode.Object).Verifiable();
             _textView.Selection.Mode = TextSelectionMode.Box;
             _textView.Selection.Select(new SnapshotSpan(_textView.TextSnapshot, 0, 3), false);
-            _mouseDevice.SetupGet(x => x.LeftButtonState).Returns(MouseButtonState.Released).Verifiable();
+            _mouseDevice.SetupGet(x => x.IsLeftButtonPressed).Returns(false).Verifiable();
             Dispatcher.CurrentDispatcher.DoEvents();
             _buffer.Verify();
         }

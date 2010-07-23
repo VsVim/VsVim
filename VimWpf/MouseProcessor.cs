@@ -85,7 +85,7 @@ namespace Vim.UI.Wpf
 
                         // If the left mouse button is pressed then we are in the middle of 
                         // a mouse selection event and need to record the data
-                        if (_mouseDevice.LeftButtonState == MouseButtonState.Pressed)
+                        if (_mouseDevice.IsLeftButtonPressed)
                         {
                             _isSelectionChanging = true;
                         }
