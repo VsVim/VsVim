@@ -97,6 +97,47 @@ namespace VimCore.Test
         }
 
         [Test]
+        public void Delete1()
+        {
+            Create("the quick brown fox");
+            _textBuffer.Insert(0, "ab");
+            _textBuffer.Delete(new Span(1, 1));
+            Assert.IsNull(_lastChange);
+            Assert.AreEqual("a", _tracker.CurrentChange);
+        }
+
+        [Test]
+        public void Delete2()
+        {
+            Create("the quick brown fox");
+            _textBuffer.Insert(0, "abc");
+            _textBuffer.Delete(new Span(2, 1));
+            _textBuffer.Delete(new Span(1, 1));
+            Assert.IsNull(_lastChange);
+            Assert.AreEqual("a", _tracker.CurrentChange);
+        }
+
+        [Test]
+        public void Delete3()
+        {
+            Create("the quick brown fox");
+            _textBuffer.Insert(0, "abc");
+            _textBuffer.Delete(new Span(2, 1));
+            Assert.IsNull(_lastChange);
+            Assert.AreEqual("ab", _tracker.CurrentChange);
+        }
+
+        [Test]
+        public void Replace1()
+        {
+            Create("the quick brown fox");
+            _textBuffer.Insert(0, "a");
+            _textBuffer.Replace(new Span(0, 1), "b");
+            Assert.IsNull(_lastChange);
+            Assert.AreEqual("b", _tracker.CurrentChange);
+        }
+
+        [Test]
         [Description("Mouse click should complete the change")]
         public void CaretMove1()
         {
@@ -146,6 +187,26 @@ namespace VimCore.Test
             var didRun = false;
             _tracker.Changed += delegate { didRun = true; };
             _textCaret.Raise(x => x.PositionChanged += null, (CaretPositionChangedEventArgs)null);
+            Assert.IsFalse(didRun);
+        }
+
+        [Test]
+        public void SwitchMode1()
+        {
+            Create("the quick brown fox");
+            _textBuffer.Insert(1, "b");
+            _vimBuffer.RaiseSwitchedMode(null);
+            Assert.AreEqual("b", _lastChange);
+        }
+
+        [Test]
+        [Description("Don't run if there are no changes")]
+        public void SwitchMode2()
+        {
+            Create("the quick brown fox");
+            var didRun = false;
+            _tracker.Changed += delegate { didRun = true; };
+            _vimBuffer.RaiseSwitchedMode(null);
             Assert.IsFalse(didRun);
         }
     }
