@@ -191,6 +191,7 @@
     <Compile Include="Extensions.cs" />
     <Compile Include="Utils\EqualityUtil.cs" />
     <Compile Include="Utils\FSharpFuncUtil.cs" />
+    <Compile Include="Utils\KeyboardDevice.cs" />
     <Compile Include="Utils\MatchUtil.cs" />
     <Compile Include="Mock\MockNormalMode.cs" />
     <Compile Include="Mock\MockObjectFactory.cs" />

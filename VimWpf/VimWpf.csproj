@@ -109,6 +109,7 @@
     <Compile Include="CommandMarginProvider.cs" />
     <Compile Include="IBlockCaret.cs" />
     <Compile Include="IBlockCaretFactoryService.cs" />
+    <Compile Include="Implementation\KeyboardDeviceImpl.cs" />
     <Compile Include="Implementation\MouseDeviceImpl.cs" />
     <Compile Include="IOptionsProvider.cs" />
     <Compile Include="IOptionsProviderFactory.cs" />

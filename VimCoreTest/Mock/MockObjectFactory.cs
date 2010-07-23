@@ -32,6 +32,7 @@ namespace VimCore.Test.Mock
             IVimHost host = null,
             IKeyMap keyMap = null,
             IChangeTracker changeTracker = null,
+            IKeyboardDevice keyboardDevice = null,
             IMouseDevice mouseDevice = null)
         {
             registerMap = registerMap ?? CreateRegisterMap().Object;
@@ -39,8 +40,9 @@ namespace VimCore.Test.Mock
             settings = settings ?? new GlobalSettings();
             host = host ?? new FakeVimHost();
             keyMap = keyMap ?? (new KeyMap());
+            keyboardDevice = keyboardDevice ?? (new Mock<IKeyboardDevice>(MockBehavior.Loose)).Object;
             mouseDevice = mouseDevice ?? (new Mock<IMouseDevice>(MockBehavior.Loose)).Object;
-            changeTracker = changeTracker ?? new ChangeTracker(mouseDevice);
+            changeTracker = changeTracker ?? new ChangeTracker(keyboardDevice, mouseDevice);
             var mock = new Mock<IVim>(MockBehavior.Strict);
             mock.Setup(x => x.RegisterMap).Returns(registerMap);
             mock.Setup(x => x.MarkMap).Returns(map);

@@ -117,5 +117,5 @@ type IMouseDevice =
 type IKeyboardDevice = 
 
     /// Is the given key pressed
-    abstract IsKeyPressed : KeyInput -> bool
+    abstract IsKeyDown : KeyInput -> bool
 

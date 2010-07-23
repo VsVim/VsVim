@@ -10,6 +10,7 @@ open Microsoft.VisualStudio.Text.Operations
 type internal TextChangeTracker
     ( 
         _buffer : IVimBuffer,
+        _keyboard : IKeyboardDevice,
         _mouse : IMouseDevice ) as this =
 
     let _bag = DisposableBag()
@@ -105,8 +106,19 @@ type internal TextChangeTracker
     /// we need to complete the change.
     member private x.OnCaretPositionChanged () = 
         if _mouse.IsLeftButtonPressed then x.ChangeCompleted()
+        elif _buffer.ModeKind = ModeKind.Insert then 
+            let keyMove = 
+                [ VimKey.LeftKey; VimKey.RightKey; VimKey.UpKey; VimKey.DownKey ]
+                |> Seq.map (fun k -> InputUtil.VimKeyToKeyInput k)
+                |> Seq.filter (fun k -> _keyboard.IsKeyDown k)
+                |> SeqUtil.isNotEmpty
+            if keyMove then x.ChangeCompleted()
+            
 
-type internal ChangeTracker( _mouse : IMouseDevice ) =
+type internal ChangeTracker
+    ( 
+        _keyboardDevice : IKeyboardDevice,
+        _mouse : IMouseDevice ) =
 
     let mutable _last : RepeatableChange option = None
     
@@ -116,7 +128,7 @@ type internal ChangeTracker( _mouse : IMouseDevice ) =
         buffer.VisualBlockMode.CommandRunner.CommandRan |> Event.add x.OnCommandRan
         buffer.VisualCharacterMode.CommandRunner.CommandRan |> Event.add x.OnCommandRan
 
-        let tracker = TextChangeTracker(buffer, _mouse)
+        let tracker = TextChangeTracker(buffer, _keyboardDevice, _mouse)
         tracker.Changed |> Event.add x.OnTextChanged 
         buffer.Closed |> Event.add (fun _ -> tracker.Destroy());
 

@@ -62,6 +62,24 @@ namespace Vim.UI.Wpf
             return res;
         }
 
+        public static ModifierKeys ConvertToModifierKeys(KeyModifiers keys)
+        {
+            var res = ModifierKeys.None;
+            if ( 0 != (keys & KeyModifiers.Shift ) )
+            {
+                res |= ModifierKeys.Shift;
+            }
+            if ( 0 != (keys & KeyModifiers.Control) )
+            {
+                res |= ModifierKeys.Control;
+            }
+            if ( 0 != (keys & KeyModifiers.Alt) )
+            {
+                res |= ModifierKeys.Alt;
+            }
+            return res;
+        }
+
         public static KeyInput ConvertToKeyInput(Key key)
         {
             var tuple = TryConvertToKeyInput(key);
@@ -119,6 +137,19 @@ namespace Vim.UI.Wpf
                 .Select(x => Tuple.Create(x.Item1, x.Item2.Value.Item1, x.Item2.Value.Item2))
                 .ToList();
             return new ReadOnlyCollection<Tuple<char, int, KeyModifiers>>(list);
+        }
+
+        public static Tuple<Key,ModifierKeys> ConvertToKeyAndModifiers(KeyInput input)
+        {
+            var mods = ConvertToModifierKeys(input.KeyModifiers);
+            var option = InputUtil.TryCharToVirtualKeyAndModifiers(input.Char);
+            var key = Key.None;
+            if ( option.IsSome() )
+            {
+                key = KeyInterop.KeyFromVirtualKey(option.Value.Item1);
+            }
+
+            return Tuple.Create(key, mods);
         }
     }
 }

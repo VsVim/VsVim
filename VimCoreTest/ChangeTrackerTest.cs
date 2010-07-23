@@ -16,6 +16,7 @@ namespace VimCore.Test
         private ITextBuffer _textBuffer;
         private Mock<ITextView> _textView;
         private Mock<IMouseDevice> _mouseDevice;
+        private Mock<IKeyboardDevice> _keyboardDevice;
         private MockVimBuffer _buffer;
 
         private void CreateForText(params string[] lines)
@@ -24,6 +25,7 @@ namespace VimCore.Test
             _textView = Mock.MockObjectFactory.CreateTextView(_textBuffer);
             _textView.SetupGet(x => x.HasAggregateFocus).Returns(true);
             _mouseDevice = new Mock<IMouseDevice>(MockBehavior.Strict);
+            _keyboardDevice = new Mock<IKeyboardDevice>(MockBehavior.Strict);
             _buffer = new MockVimBuffer();
             _buffer.TextViewImpl = _textView.Object;
             _buffer.TextBufferImpl = _textBuffer;
@@ -34,7 +36,7 @@ namespace VimCore.Test
             _buffer.VisualBlockModeImpl = _factory.Create<IVisualMode>().Object;
             _buffer.VisualCharacterModeImpl = _factory.Create<IVisualMode>().Object;
             _buffer.VisualLineModeImpl = _factory.Create<IVisualMode>().Object;
-            _trackerRaw = new ChangeTracker(_mouseDevice.Object);
+            _trackerRaw = new ChangeTracker(_keyboardDevice.Object, _mouseDevice.Object);
             _tracker = _trackerRaw;
             _trackerRaw.OnVimBufferCreated(_buffer);
         }

@@ -16,6 +16,7 @@ namespace VimCore.Test
         private Mock<ITextView> _textView;
         private Mock<ITextCaret> _textCaret;
         private Mock<IMouseDevice> _mouse;
+        private Mock<IKeyboardDevice> _keyboard;
         private MockVimBuffer _vimBuffer;
         private TextChangeTracker _tracker;
         private string _lastChange;
@@ -29,12 +30,13 @@ namespace VimCore.Test
             _textView.SetupGet(x => x.Caret).Returns(_textCaret.Object);
             _textView.SetupGet(x => x.HasAggregateFocus).Returns(true);
             _mouse = _factory.Create<IMouseDevice>();
+            _keyboard = _factory.Create<IKeyboardDevice>();
             _vimBuffer = new MockVimBuffer()
             {
                 TextViewImpl = _textView.Object,
                 TextBufferImpl = _textBuffer
             };
-            _tracker = new TextChangeTracker(_vimBuffer, _mouse.Object);
+            _tracker = new TextChangeTracker(_vimBuffer, _keyboard.Object, _mouse.Object);
             _tracker.Changed += (sender, data) => { _lastChange = data; };
         }
 
