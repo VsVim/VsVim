@@ -93,5 +93,5 @@ type internal HighlightIncrementalSearchTaggerProvider
             | None -> null
             | Some(buffer) ->
                 let nav = buffer.NormalMode.IncrementalSearch.WordNavigator
-                let tagger = HighlightIncrementalSearchTagger(textBuffer, buffer.Settings.GlobalSettings, nav, _vim.SearchService)
+                let tagger = new HighlightIncrementalSearchTagger(textBuffer, buffer.Settings.GlobalSettings, nav, _vim.SearchService)
                 tagger :> obj :?> ITagger<'T>

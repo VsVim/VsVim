@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using Vim.Modes.Normal;
 
 namespace Vim.UI.Wpf
 {
@@ -20,6 +16,7 @@ namespace Vim.UI.Wpf
             _buffer.SwitchedMode += OnCaretRelatedEvent;
             _buffer.KeyInputProcessed += OnCaretRelatedEvent;
             _buffer.KeyInputReceived += OnCaretRelatedEvent;
+            _buffer.Closed += OnBufferClosed;
             UpdateCaret();
         }
 
@@ -31,6 +28,11 @@ namespace Vim.UI.Wpf
         private void OnCaretRelatedEvent(object sender, object args)
         {
             UpdateCaret();
+        }
+
+        private void OnBufferClosed(object sender, EventArgs args)
+        {
+            _blockCaret.Destroy();
         }
 
         private void UpdateCaret()

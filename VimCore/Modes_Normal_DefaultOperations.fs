@@ -163,12 +163,8 @@ type internal DefaultOperations ( _data : OperationsData, _incrementalSearch : I
                 let newLine = buffer.CurrentSnapshot.GetLineFromLineNumber(line.LineNumber+1)
             
                 // Move the caret to the same indent position as the previous line
-<<<<<<< HEAD
                 let tabSize = EditorOptionsUtil.GetOptionValueOrDefault _options DefaultOptions.TabSizeOptionId 4
                 let indent = TssUtil.FindIndentPosition line tabSize
-=======
-                let indent = TssUtil.FindIndentPosition (_bufferOptions.GetOptionValue DefaultOptions.TabSizeOptionId) line
->>>>>>> master
                 let point = new VirtualSnapshotPoint(newLine, indent)
                 TextViewUtil.MoveCaretToVirtualPoint _textView point |> ignore 
                 newLine )
