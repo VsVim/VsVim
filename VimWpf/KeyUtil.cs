@@ -1,9 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Windows.Input;
 using System.Collections.ObjectModel;
+using System.Linq;
+using System.Windows.Input;
 using Vim.Extensions;
 
 namespace Vim.UI.Wpf
@@ -69,7 +67,7 @@ namespace Vim.UI.Wpf
             var tuple = TryConvertToKeyInput(key);
             return tuple != null
                 ? tuple.Item1
-                : new KeyInput(Char.MinValue);
+                : InputUtil.CharToKeyInput(Char.MinValue);
         }
 
         public static KeyInput ConvertToKeyInput(Key key, ModifierKeys modifierKeys)
@@ -78,7 +76,7 @@ namespace Vim.UI.Wpf
             var tuple = TryConvertToKeyInput(key);
             if (tuple == null)
             {
-                return new KeyInput(Char.MinValue, modKeys);
+                return new KeyInput(Char.MinValue, VimKey.NotWellKnownKey, modKeys);
             }
 
             if ((modKeys & KeyModifiers.Shift) == 0)

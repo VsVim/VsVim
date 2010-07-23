@@ -107,7 +107,7 @@ namespace VimCore.Test
         [Test]
         public void Control_OpenBracket1()
         {
-            var ki = InputUtil.CharAndModifiersToKeyInput('[', KeyModifiers.Control);
+            var ki = InputUtil.CharWithControlToKeyInput('[');
             var name = KeyInputSet.NewOneKeyInput(ki);
             Assert.IsTrue(_mode.CommandNames.Contains(name));
         }
@@ -124,7 +124,7 @@ namespace VimCore.Test
                 .Setup(x => x.DismissDisplayWindows())
                 .Verifiable();
             _operations.Setup(x => x.MoveCaretLeft(1)).Verifiable();
-            var ki = InputUtil.CharAndModifiersToKeyInput('[', KeyModifiers.Control);
+            var ki = InputUtil.CharWithControlToKeyInput('[');
             var res = _mode.Process(ki);
             Assert.IsTrue(res.IsSwitchMode);
             Assert.AreEqual(ModeKind.Normal, res.AsSwitchMode().Item);
@@ -137,7 +137,7 @@ namespace VimCore.Test
             _operations
                 .Setup(x => x.ShiftLinesLeft(1))
                 .Verifiable(); ;
-            var res = _mode.Process(new KeyInput('d', KeyModifiers.Control));
+            var res = _mode.Process(InputUtil.CharWithControlToKeyInput('d'));
             Assert.IsTrue(res.IsProcessed);
             _factory.Verify();
         }

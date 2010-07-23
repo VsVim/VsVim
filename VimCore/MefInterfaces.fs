@@ -113,4 +113,9 @@ type IMouseDevice =
     /// Is the left button pressed
     abstract IsLeftButtonPressed : bool
 
+/// Abstract representation of the keyboard 
+type IKeyboardDevice = 
+
+    /// Is the given key pressed
+    abstract IsKeyPressed : KeyInput -> bool
 

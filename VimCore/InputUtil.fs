@@ -120,13 +120,13 @@ module InputUtil =
         | None -> None
         | Some(virtualKey,modKeys) -> 
             match Map.tryFind virtualKey VimKeyMap with
-            | None -> KeyInput(ch,modKeys) |> Some
+            | None -> KeyInput(ch, VimKey.NotWellKnownKey, modKeys) |> Some
             | Some(_,vimKey) -> KeyInput(ch, vimKey, modKeys) |> Some
 
     let CharToKeyInput c = 
         match TryCharToKeyInput c with
         | Some ki -> ki
-        | None -> KeyInput(c, KeyModifiers.None)
+        | None -> KeyInput(c, VimKey.NotWellKnownKey, KeyModifiers.None)
 
     let TryVirtualKeyCodeToKeyInput virtualKey = 
         match Map.tryFind virtualKey VimKeyMap with
@@ -134,19 +134,11 @@ module InputUtil =
         | None -> 
             match TryVirtualKeyCodeToChar virtualKey with
             | None -> None
-            | Some(ch) -> KeyInput(ch) |> Some
-
-    let VirtualKeyCodeToKeyInput virtualKey = 
-        let ch = 
-            match TryVirtualKeyCodeToChar virtualKey with
-            | None -> System.Char.MinValue
-            | Some(ch) -> ch
-        KeyInput(ch)
+            | Some(ch) -> KeyInput(ch, VimKey.NotWellKnownKey, KeyModifiers.None) |> Some
 
     let VimKeyToKeyInput vimKey = 
-        let bad = KeyInput(System.Char.MinValue)
         match TryVimKeyToVirtualKeyCode vimKey with
-        | None -> bad
+        | None -> KeyInput(System.Char.MinValue, VimKey.NotWellKnownKey, KeyModifiers.None)
         | Some(virtualKey) -> 
             match TryVirtualKeyCodeToChar virtualKey with
             | None -> KeyInput(System.Char.MinValue, vimKey, KeyModifiers.None)
@@ -156,6 +148,10 @@ module InputUtil =
         
     let VimKeyAndModifiersToKeyInput vimKey modKeys = vimKey |> VimKeyToKeyInput |> SetModifiers modKeys
 
-    let CharAndModifiersToKeyInput ch modKeys = ch |> CharToKeyInput |> SetModifiers modKeys
+    let CharWithControlToKeyInput ch = 
+        let ki = ch |> CharToKeyInput 
+        KeyInput(ki.Char, ki.Key, ki.KeyModifiers ||| KeyModifiers.Control)
 
-    
+    let CharWithAltToKeyInput ch = 
+        let ki = ch |> CharToKeyInput 
+        KeyInput(ki.Char, ki.Key, ki.KeyModifiers ||| KeyModifiers.Alt)

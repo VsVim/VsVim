@@ -108,7 +108,7 @@ namespace VimCore.Test
         public void KeyInputProcessed1()
         {
             DisableKeyRemap();
-            var ki = new KeyInput('f');
+            var ki = InputUtil.CharToKeyInput('f');
             _normalMode.Setup(x => x.Process(ki)).Returns(ProcessResult.Processed);
             var ran = false;
             _buffer.KeyInputProcessed += (s, i) => { ran = true; };
@@ -120,7 +120,7 @@ namespace VimCore.Test
         public void KeyInputBuffered1()
         {
             DisableKeyRemap();
-            var ki = new KeyInput('f');
+            var ki = InputUtil.CharToKeyInput('f');
             _normalMode.Setup(x => x.Process(ki)).Returns(ProcessResult.Processed);
             var ran = false;
             _buffer.KeyInputBuffered += (s, i) => { ran = true; };
@@ -131,7 +131,7 @@ namespace VimCore.Test
         [Test]
         public void KeyInputBuffered2()
         {
-            var ki = new KeyInput('f');
+            var ki = InputUtil.CharToKeyInput('f');
             _keyMap
                 .Setup(x => x.GetKeyMapping(KeyInputSet.NewOneKeyInput(ki), It.IsAny<KeyRemapMode>()))
                 .Returns(KeyMappingResult.MappingNeedsMoreInput);

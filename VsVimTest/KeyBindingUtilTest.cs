@@ -1,12 +1,9 @@
-﻿using VsVim;
-using NUnit.Framework;
-using System;
-using EnvDTE;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using NUnit.Framework;
 using Vim;
-using Moq;
-using System.Windows.Input;
+using VsVim;
 using VsVim.Settings;
 
 namespace VsVimTest
@@ -31,7 +28,7 @@ namespace VsVimTest
         public void FindConflictingCommands1()
         {
             var util = Create("::ctrl+h");
-            var inputs = new KeyInput[] { InputUtil.CharAndModifiersToKeyInput('h', KeyModifiers.Control) };
+            var inputs = new KeyInput[] { InputUtil.CharWithControlToKeyInput('h') };
             var list = util.FindConflictingCommandKeyBindings(new HashSet<KeyInput>(inputs));
             Assert.AreEqual(1, list.Count);
         }
@@ -40,7 +37,7 @@ namespace VsVimTest
         public void FindConflictingCommands2()
         {
             var util = Create("::h");
-            var inputs = new KeyInput[] { new KeyInput('z') };
+            var inputs = new KeyInput[] { InputUtil.CharToKeyInput('z') };
             var list = util.FindConflictingCommandKeyBindings(new HashSet<KeyInput>(inputs));
             Assert.AreEqual(0, list.Count);
         }
@@ -49,7 +46,7 @@ namespace VsVimTest
         public void FindConflictingCommands3()
         {
             var util = Create("::ctrl+z, h");
-            var inputs = new KeyInput[] { InputUtil.CharAndModifiersToKeyInput('z', KeyModifiers.Control) };
+            var inputs = new KeyInput[] { InputUtil.CharWithControlToKeyInput('z') };
             var list = util.FindConflictingCommandKeyBindings(new HashSet<KeyInput>(inputs));
             Assert.AreEqual(1, list.Count);
         }
@@ -58,7 +55,7 @@ namespace VsVimTest
         public void FindConflictingCommands4()
         {
             var util = Create("::h, z");
-            var inputs = new KeyInput[] { new KeyInput('z') };
+            var inputs = new KeyInput[] { InputUtil.CharToKeyInput('z') };
             var list = util.FindConflictingCommandKeyBindings(new HashSet<KeyInput>(inputs));
             Assert.AreEqual(0, list.Count);
         }
@@ -67,7 +64,7 @@ namespace VsVimTest
         public void FindConflictingCommands5()
         {
             var util = Create("::a","::ctrl+z, h");
-            var inputs = new KeyInput[] { InputUtil.CharAndModifiersToKeyInput('z', KeyModifiers.Control) };
+            var inputs = new KeyInput[] { InputUtil.CharWithControlToKeyInput('z') };
             var list = util.FindConflictingCommandKeyBindings(new HashSet<KeyInput>(inputs));
             Assert.AreEqual(1, list.Count);
         }
@@ -77,8 +74,8 @@ namespace VsVimTest
         {
             var util = Create("Global::ctrl+a", "Text Editor::ctrl+z");
             var inputs = new KeyInput[] { 
-                InputUtil.CharAndModifiersToKeyInput('a', KeyModifiers.Control),
-                InputUtil.CharAndModifiersToKeyInput('z', KeyModifiers.Control) };
+                InputUtil.CharWithControlToKeyInput('a'),
+                InputUtil.CharWithControlToKeyInput('z') };
             var list = util.FindConflictingCommandKeyBindings(new HashSet<KeyInput>(inputs));
             Assert.AreEqual(2, list.Count);
         }
@@ -87,7 +84,7 @@ namespace VsVimTest
         public void FindConflictingCommands7()
         {
             var util = Create("balgh::a", "aoeu::z");
-            var inputs = new KeyInput[] { new KeyInput('z'), new KeyInput('a') };
+            var inputs = new KeyInput[] { InputUtil.CharToKeyInput('z'), InputUtil.CharToKeyInput('a') };
             var list = util.FindConflictingCommandKeyBindings(new HashSet<KeyInput>(inputs));
             Assert.AreEqual(0, list.Count);
         }

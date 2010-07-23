@@ -421,7 +421,7 @@ namespace VimCore.Test
         {
             Create(s_lines);
             _operations.Setup(x => x.MoveCaretUp(1)).Verifiable();
-            _mode.Process(new KeyInput('p', KeyModifiers.Control));
+            _mode.Process(InputUtil.CharWithControlToKeyInput('p'));
             _operations.Verify();
         }
 
@@ -430,7 +430,7 @@ namespace VimCore.Test
         {
             Create(s_lines);
             _operations.Setup(x => x.MoveCaretDown(1)).Verifiable();
-            _mode.Process(new KeyInput('n', KeyModifiers.Control));
+            _mode.Process(InputUtil.CharWithControlToKeyInput('n'));
             _operations.Verify();
         }
 
@@ -439,7 +439,7 @@ namespace VimCore.Test
         {
             Create(s_lines);
             _operations.Setup(x => x.MoveCaretLeft(1)).Verifiable();
-            _mode.Process(new KeyInput('h', KeyModifiers.Control));
+            _mode.Process(InputUtil.CharWithControlToKeyInput('h'));
             _operations.Verify();
         }
 
@@ -574,7 +574,7 @@ namespace VimCore.Test
         {
             Create("foo", "bar");
             _operations.Setup(x => x.MoveCaretAndScrollLines(ScrollDirection.Up, 1)).Verifiable();
-            _mode.Process(new KeyInput('u', KeyModifiers.Control));
+            _mode.Process(InputUtil.CharWithControlToKeyInput('u'));
             _operations.Verify();
         }
 
@@ -585,7 +585,7 @@ namespace VimCore.Test
             _view.Caret.MoveTo(_view.TextSnapshot.GetLineFromLineNumber(0).End);
             _operations.Setup(x => x.MoveCaretAndScrollLines(ScrollDirection.Up, 2)).Verifiable();
             _mode.Process('2');
-            _mode.Process(new KeyInput('u', KeyModifiers.Control));
+            _mode.Process(InputUtil.CharWithControlToKeyInput('u'));
             _operations.Verify();
         }
 
@@ -595,7 +595,7 @@ namespace VimCore.Test
             Create("foo", "bar");
             _view.Caret.MoveTo(_view.TextSnapshot.GetLineFromLineNumber(0).End);
             _operations.Setup(x => x.MoveCaretAndScrollLines(ScrollDirection.Down, 1)).Verifiable();
-            _mode.Process(new KeyInput('d', KeyModifiers.Control));
+            _mode.Process(InputUtil.CharWithControlToKeyInput('d'));
             _operations.Verify();
         }
 
@@ -605,7 +605,7 @@ namespace VimCore.Test
             Create("foo", "bar");
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 0));
             _operations.Setup(x => x.ScrollLines(ScrollDirection.Down, 1)).Verifiable();
-            _mode.Process(new KeyInput('e', KeyModifiers.Control));
+            _mode.Process(InputUtil.CharWithControlToKeyInput('e'));
             _operations.Verify();
         }
 
@@ -616,7 +616,7 @@ namespace VimCore.Test
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 0));
             _operations.Setup(x => x.ScrollLines(ScrollDirection.Down, 3)).Verifiable();
             _mode.Process('3');
-            _mode.Process(new KeyInput('e', KeyModifiers.Control));
+            _mode.Process(InputUtil.CharWithControlToKeyInput('e'));
             _operations.Verify();
         }
 
@@ -626,7 +626,7 @@ namespace VimCore.Test
             Create("foo", "bar");
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 0));
             _operations.Setup(x => x.ScrollLines(ScrollDirection.Up, 1)).Verifiable();
-            _mode.Process(new KeyInput('y', KeyModifiers.Control));
+            _mode.Process(InputUtil.CharWithControlToKeyInput('y'));
             _operations.Verify();
         }
 
@@ -646,7 +646,7 @@ namespace VimCore.Test
         {
             Create("foo bar");
             _operations.Setup(x => x.ScrollPages(ScrollDirection.Down, 1)).Verifiable();
-            _mode.Process(InputUtil.CharAndModifiersToKeyInput('f', KeyModifiers.Control));
+            _mode.Process(InputUtil.CharWithControlToKeyInput('f'));
             _operations.Verify();
         }
 
@@ -656,7 +656,7 @@ namespace VimCore.Test
             Create("foo bar");
             _operations.Setup(x => x.ScrollPages(ScrollDirection.Down, 2)).Verifiable();
             _mode.Process('2');
-            _mode.Process(InputUtil.CharAndModifiersToKeyInput('f', KeyModifiers.Control));
+            _mode.Process(InputUtil.CharWithControlToKeyInput('f'));
             _operations.Verify();
         }
 
@@ -683,7 +683,7 @@ namespace VimCore.Test
         {
             Create("foo bar");
             _operations.Setup(x => x.ScrollPages(ScrollDirection.Up, 1)).Verifiable();
-            _mode.Process(InputUtil.CharAndModifiersToKeyInput('b', KeyModifiers.Control));
+            _mode.Process(InputUtil.CharWithControlToKeyInput('b'));
             _operations.Verify();
         }
 
@@ -693,7 +693,7 @@ namespace VimCore.Test
             Create("foo bar");
             _operations.Setup(x => x.ScrollPages(ScrollDirection.Up, 2)).Verifiable();
             _mode.Process('2');
-            _mode.Process(InputUtil.CharAndModifiersToKeyInput('b', KeyModifiers.Control));
+            _mode.Process(InputUtil.CharWithControlToKeyInput('b'));
             _operations.Verify();
         }
 
@@ -1917,7 +1917,7 @@ namespace VimCore.Test
         {
             Create("foo");
             _operations.Setup(x => x.Redo(1)).Verifiable();
-            _mode.Process(new KeyInput('r', KeyModifiers.Control));
+            _mode.Process(InputUtil.CharWithControlToKeyInput('r'));
             _operations.Verify();
         }
 
@@ -1927,7 +1927,7 @@ namespace VimCore.Test
             Create("bar");
             _operations.Setup(x => x.Redo(2)).Verifiable();
             _mode.Process('2');
-            _mode.Process(new KeyInput('r', KeyModifiers.Control));
+            _mode.Process(InputUtil.CharWithControlToKeyInput('r'));
             _operations.Verify();
         }
 
@@ -1975,7 +1975,7 @@ namespace VimCore.Test
         [Test]
         public void GoToDefinition1()
         {
-            var def = new KeyInput(']', KeyModifiers.Control);
+            var def = InputUtil.CharWithControlToKeyInput(']');
             Create("foo");
             _operations.Setup(x => x.GoToDefinitionWrapper()).Verifiable();
             _mode.Process(def);
@@ -1986,7 +1986,7 @@ namespace VimCore.Test
         public void GoToDefinition2()
         {
             Create(s_lines);
-            var def = new KeyInput(']', KeyModifiers.Control);
+            var def = InputUtil.CharWithControlToKeyInput(']');
             var name = KeyInputSet.NewOneKeyInput(def);
             Assert.IsTrue(_mode.CanProcess(def));
             Assert.IsTrue(_mode.CommandNames.Contains(name));
@@ -2014,7 +2014,7 @@ namespace VimCore.Test
         {
             Create(s_lines);
             _mode.Process(InputUtil.CharToKeyInput('m'));
-            Assert.IsTrue(_mode.CanProcess(new KeyInput('c', KeyModifiers.Control)));
+            Assert.IsTrue(_mode.CanProcess(InputUtil.CharWithControlToKeyInput('c')));
         }
 
         [Test]
@@ -2079,7 +2079,7 @@ namespace VimCore.Test
         {
             Create(s_lines);
             _operations.Setup(x => x.JumpNext(1)).Verifiable();
-            _mode.Process(new KeyInput('i', KeyModifiers.Control));
+            _mode.Process(InputUtil.CharWithControlToKeyInput('i'));
             _operations.Verify();
         }
 
@@ -2089,7 +2089,7 @@ namespace VimCore.Test
             Create(s_lines);
             _operations.Setup(x => x.JumpNext(2)).Verifiable();
             _mode.Process('2');
-            _mode.Process(new KeyInput('i', KeyModifiers.Control));
+            _mode.Process(InputUtil.CharWithControlToKeyInput('i'));
             _operations.Verify();
         }
 
@@ -2107,7 +2107,7 @@ namespace VimCore.Test
         {
             Create(s_lines);
             _operations.Setup(x => x.JumpPrevious(1)).Verifiable();
-            _mode.Process(new KeyInput('o', KeyModifiers.Control));
+            _mode.Process(InputUtil.CharWithControlToKeyInput('o'));
             _operations.Verify();
         }
 
@@ -2117,7 +2117,7 @@ namespace VimCore.Test
             Create(s_lines);
             _operations.Setup(x => x.JumpPrevious(2)).Verifiable();
             _mode.Process('2');
-            _mode.Process(new KeyInput('o', KeyModifiers.Control));
+            _mode.Process(InputUtil.CharWithControlToKeyInput('o'));
             _operations.Verify();
         }
 
@@ -2478,7 +2478,7 @@ namespace VimCore.Test
         public void VisualMode3()
         {
             Create(s_lines);
-            var res = _mode.Process(new KeyInput('q', KeyModifiers.Control));
+            var res = _mode.Process(InputUtil.CharWithControlToKeyInput('q'));
             Assert.IsTrue(res.IsSwitchMode);
             Assert.AreEqual(ModeKind.VisualBlock, res.AsSwitchMode().Item);
         }

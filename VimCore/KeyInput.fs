@@ -53,9 +53,6 @@ type KeyInput
         _key:VimKey,
         _modKey:KeyModifiers) =
 
-    new (c) = KeyInput(c,VimKey.NotWellKnownKey,KeyModifiers.None)
-    new (c,modKey) = KeyInput(c,VimKey.NotWellKnownKey,modKey)
-
     member x.Char = _literal
     member x.Key = _key
     member x.KeyModifiers = _modKey

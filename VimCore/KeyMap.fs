@@ -8,11 +8,11 @@ module internal KeyMapUtil =
 
     let private ManualKeyList = 
         [
-            ("<Nul>",InputUtil.CharToKeyInput '@' |> InputUtil.SetModifiers KeyModifiers.Control);
+            ("<Nul>",InputUtil.CharWithControlToKeyInput '@');
             ("<Bs>", InputUtil.VimKeyToKeyInput VimKey.BackKey);
             ("<Tab>",InputUtil.VimKeyToKeyInput VimKey.TabKey);
             ("<NL>", InputUtil.VimKeyToKeyInput VimKey.EnterKey);
-            ("<FF>", InputUtil.CharToKeyInput 'l' |> InputUtil.SetModifiers KeyModifiers.Control);
+            ("<FF>", InputUtil.CharWithControlToKeyInput 'l');
             ("<CR>", InputUtil.VimKeyToKeyInput VimKey.EnterKey);
             ("<Return>", InputUtil.VimKeyToKeyInput VimKey.EnterKey);
             ("<Enter>", InputUtil.VimKeyToKeyInput VimKey.EnterKey);
@@ -67,7 +67,7 @@ module internal KeyMapUtil =
         let toMod = toModShort |> Seq.append lowerCaseLetters
         let doMod toMod prefix modKeys = 
             let changePrefix (name:string) = sprintf "<%s-%s" prefix (name.Substring(1))
-            toMod |> Seq.map (fun (name,ki) -> (changePrefix name),(ki |> InputUtil.SetModifiers modKeys))
+            toMod |> Seq.map (fun (name,(ki:KeyInput)) -> (changePrefix name),(KeyInput(ki.Char, ki.Key, modKeys)))
 
         // Don' run the modifier on the lower case letters for Shift.  They have to be recreated with different
         // modifiers
