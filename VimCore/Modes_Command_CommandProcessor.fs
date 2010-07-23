@@ -120,6 +120,7 @@ type internal CommandProcessor
             yield ("wall", "wa", this.ProcessWriteAll)
             yield ("yank", "y", this.ProcessYank)
             yield ("$", "", fun _ _ _ -> _operations.EditorOperations.MoveToEndOfDocument(false))
+            yield ("make", "mak", this.ProcessMake)
         }
 
         let mapClearSeq = seq {
@@ -320,6 +321,9 @@ type internal CommandProcessor
         let count,rest = RangeUtil.ParseNumber rest
         let count = match count with | Some(c) -> c | None -> 1
         _operations.GoToPreviousTab count
+
+    member private x.ProcessMake _ _ bang =
+        _data.Vim.VimHost.BuildSolution()
 
     /// Implements the :delete command
     member private x.ProcessDelete (rest:char list) (range:Range option) _ =

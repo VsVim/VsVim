@@ -20,6 +20,7 @@ type internal HighlightIncrementalSearchTagger
 
     let _tagsChanged = new Event<System.EventHandler<SnapshotSpanEventArgs>, SnapshotSpanEventArgs>()
     let mutable _lastSearchData : SearchData option = None
+    let _eventHandlers = DisposableBag()
 
     do 
         let raiseAllChanged () = 
@@ -30,16 +31,17 @@ type internal HighlightIncrementalSearchTagger
             _tagsChanged.Trigger (this,SnapshotSpanEventArgs(allSpan))
 
         _search.LastSearchChanged 
-        |> Event.add (fun data -> 
-            
+        |> Observable.subscribe (fun data -> 
             _lastSearchData <- Some data
             raiseAllChanged() )
+        |> _eventHandlers.Add
 
         // Up cast here to work around the F# bug which prevents accessing a CLIEvent from
         // a derived type
         (_settings :> IVimSettings).SettingChanged 
-        |> Event.filter (fun args -> StringUtil.isEqual args.Name GlobalSettingNames.HighlightSearchName)
-        |> Event.add (fun _ -> raiseAllChanged())
+        |> Observable.filter (fun args -> StringUtil.isEqual args.Name GlobalSettingNames.HighlightSearchName)
+        |> Observable.subscribe (fun _ -> raiseAllChanged())
+        |> _eventHandlers.Add
         
     member private x.GetTagsCore (col:NormalizedSnapshotSpanCollection) = 
         // Build up the search information
@@ -73,6 +75,9 @@ type internal HighlightIncrementalSearchTagger
         member x.GetTags col = x.GetTags col
         [<CLIEvent>]
         member x.TagsChanged = _tagsChanged.Publish
+
+    interface System.IDisposable with
+        member x.Dispose() = _eventHandlers.DisposeAll()
 
 [<Export(typeof<ITaggerProvider>)>]
 [<ContentType("text")>]

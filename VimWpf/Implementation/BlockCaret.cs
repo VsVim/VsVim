@@ -37,6 +37,7 @@ namespace Vim.UI.Wpf.Implementation
         private readonly DispatcherTimer _blinkTimer;
         private CaretData? _caretData;
         private CaretDisplay _caretDisplay;
+        private bool _isDestroyed;
 
         private const double _caretOpacity = 0.65;
 
@@ -109,6 +110,7 @@ namespace Vim.UI.Wpf.Implementation
             _view.GotAggregateFocus += OnCaretEvent;
             _view.LostAggregateFocus += OnCaretEvent;
             _view.Caret.PositionChanged += OnCaretEvent;
+            _view.Closed += OnTextViewClosed;
 
             var caretBlinkTime = NativeMethods.GetCaretBlinkTime();
             var caretBlinkTimeSpan = new TimeSpan(0, 0, 0, 0, caretBlinkTime);
@@ -136,6 +138,11 @@ namespace Vim.UI.Wpf.Implementation
                 var data = _caretData.Value;
                 data.Image.Opacity = data.Image.Opacity == 0.0 ? _caretOpacity : 0.0;
             }
+        }
+
+        private void OnTextViewClosed(object sender, EventArgs e)
+        {
+            _blinkTimer.IsEnabled = false;
         }
 
         private void DestroyBlockCaretDisplay()
@@ -319,14 +326,38 @@ namespace Vim.UI.Wpf.Implementation
             }
         }
 
+        /// <summary>
+        /// Destroy all of the caret related data such that the caret is free for collection.  In particular
+        /// make sure to disable the DispatchTimer as keeping it alive will prevent collection
+        /// </summary>
+        private void DestroyCore()
+        {
+            _isDestroyed = true;
+            _blinkTimer.IsEnabled = false;
+            MaybeDestroyBlockCaretDisplay();
+
+            if (!_view.IsClosed)
+            {
+                _view.LayoutChanged -= OnCaretEvent;
+                _view.GotAggregateFocus -= OnCaretEvent;
+                _view.LostAggregateFocus -= OnCaretEvent;
+                _view.Caret.PositionChanged -= OnCaretEvent;
+                _view.Caret.IsHidden = false;
+                _view.Closed -= OnTextViewClosed;
+            }
+        }
+
+        private void MaybeDestroy()
+        {
+            if (!_isDestroyed)
+            {
+                DestroyCore();
+            }
+        }
+
         public void Destroy()
         {
-            MaybeDestroyBlockCaretDisplay();
-            _view.LayoutChanged -= OnCaretEvent;
-            _view.GotAggregateFocus -= OnCaretEvent;
-            _view.LostAggregateFocus -= OnCaretEvent;
-            _view.Caret.PositionChanged -= OnCaretEvent;
-            _view.Caret.IsHidden = false;
+            MaybeDestroy();
         }
     }
 

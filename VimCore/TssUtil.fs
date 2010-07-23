@@ -2,6 +2,7 @@
 namespace Vim
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Operations
+open CharUtil
 
 module TssUtil =
 

@@ -41,5 +41,8 @@ type IVimHost =
     /// Closes all files
     abstract CloseAllFiles : checkDirty:bool -> unit
 
+    /// Builds the solution
+    abstract BuildSolution : unit -> unit
+
 
 

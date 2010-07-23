@@ -994,7 +994,7 @@ namespace VimCore.Test
             _view.Caret.MoveTo(_view.TextSnapshot.GetLineFromLineNumber(1).End);
             _editorOpts.Setup(x => x.ResetSelection());
             _settings.SetupGet(x => x.Scroll).Returns(42).Verifiable();
-            _operations.ScrollLines(ScrollDirection.Up, 1);
+            _operations.MoveCaretAndScrollLines(ScrollDirection.Up, 1);
             Assert.AreEqual(0, _view.Caret.Position.BufferPosition.GetContainingLine().LineNumber);
             _settings.Verify();
         }
@@ -1006,7 +1006,7 @@ namespace VimCore.Test
             _view.Caret.MoveTo(_view.TextSnapshot.GetLineFromLineNumber(0).End);
             _editorOpts.Setup(x => x.ResetSelection());
             _settings.SetupGet(x => x.Scroll).Returns(42).Verifiable();
-            _operations.ScrollLines(ScrollDirection.Up, 1);
+            _operations.MoveCaretAndScrollLines(ScrollDirection.Up, 1);
             Assert.AreEqual(0, _view.Caret.Position.BufferPosition.GetContainingLine().LineNumber);
             _settings.Verify();
         }
@@ -1018,7 +1018,7 @@ namespace VimCore.Test
             _view.Caret.MoveTo(_view.TextSnapshot.GetLineFromLineNumber(0).End);
             _editorOpts.Setup(x => x.ResetSelection());
             _settings.SetupGet(x => x.Scroll).Returns(42).Verifiable();
-            _operations.ScrollLines(ScrollDirection.Down, 1);
+            _operations.MoveCaretAndScrollLines(ScrollDirection.Down, 1);
             Assert.AreEqual(1, _view.Caret.Position.BufferPosition.GetContainingLine().LineNumber);
             _settings.Verify();
         }

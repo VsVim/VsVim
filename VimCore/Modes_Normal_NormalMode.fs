@@ -31,13 +31,13 @@ type internal NormalMode
     /// Contains the state information for Normal mode
     let mutable _data = _emptyData
 
-    let mutable _globalSettingsChangedHandler : System.IDisposable = null
+    let _eventHandlers = DisposableBag()
 
     do
         // Up cast here to work around the F# bug which prevents accessing a CLIEvent from
         // a derived type
         let settings = _bufferData.Settings.GlobalSettings :> IVimSettings
-        _globalSettingsChangedHandler <- settings.SettingChanged.Subscribe this.OnGlobalSettingsChanged
+        settings.SettingChanged.Subscribe this.OnGlobalSettingsChanged |> _eventHandlers.Add
 
     member this.TextView = _bufferData.TextView
     member this.TextBuffer = _bufferData.TextBuffer
@@ -339,8 +339,10 @@ type internal NormalMode
                 yield (InputUtil.CharToKeyInput('#'), (fun count _ -> _operations.MoveToNextOccuranceOfWordAtCursor SearchKind.BackwardWithWrap count))
                 yield (InputUtil.CharToKeyInput('D'), (fun count reg -> _operations.DeleteLinesFromCursor count reg))
                 yield (InputUtil.CharAndModifiersToKeyInput 'r' KeyModifiers.Control, (fun count _ -> _operations.Redo count))
-                yield (InputUtil.CharAndModifiersToKeyInput 'u' KeyModifiers.Control, (fun count _ -> _operations.ScrollLines ScrollDirection.Up count))
-                yield (InputUtil.CharAndModifiersToKeyInput 'd' KeyModifiers.Control, (fun count _ -> _operations.ScrollLines ScrollDirection.Down count))
+                yield (InputUtil.CharAndModifiersToKeyInput 'u' KeyModifiers.Control, (fun count _ -> _operations.MoveCaretAndScrollLines ScrollDirection.Up count))
+                yield (InputUtil.CharAndModifiersToKeyInput 'd' KeyModifiers.Control, (fun count _ -> _operations.MoveCaretAndScrollLines ScrollDirection.Down count))
+                yield (InputUtil.CharAndModifiersToKeyInput 'y' KeyModifiers.Control, (fun count _ -> _operations.ScrollLines ScrollDirection.Up count))
+                yield (InputUtil.CharAndModifiersToKeyInput 'e' KeyModifiers.Control, (fun count _ -> _operations.ScrollLines ScrollDirection.Down count))
                 yield (InputUtil.CharAndModifiersToKeyInput 'f' KeyModifiers.Control, (fun count _ -> _operations.ScrollPages ScrollDirection.Down count))
                 yield (InputUtil.VimKeyAndModifiersToKeyInput VimKey.DownKey KeyModifiers.Shift, (fun count _ -> _operations.ScrollPages ScrollDirection.Down count))
                 yield (InputUtil.VimKeyToKeyInput VimKey.PageDownKey, (fun count _ -> _operations.ScrollPages ScrollDirection.Down count)) 
@@ -465,6 +467,6 @@ type internal NormalMode
             this.EnsureCommands()
             this.Reset()
         member this.OnLeave () = ()
-        member this.OnClose() = _globalSettingsChangedHandler.Dispose()
+        member this.OnClose() = _eventHandlers.DisposeAll()
     
 

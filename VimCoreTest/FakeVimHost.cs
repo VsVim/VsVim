@@ -101,5 +101,10 @@ namespace VimCore.Test
         {
             throw new NotImplementedException();
         }
+
+        public void BuildSolution()
+        {
+            throw new NotImplementedException();
+        }
     }
 }

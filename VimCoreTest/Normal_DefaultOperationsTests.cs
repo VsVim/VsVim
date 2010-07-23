@@ -23,6 +23,7 @@ namespace VimCore.Test
         private IOperations _operations;
         private DefaultOperations _operationsRaw;
         private ITextView _view;
+        private Mock<IEditorOptions> _bufferOptions;
         private Mock<IVimHost> _host;
         private Mock<IJumpList> _jumpList;
         private Mock<IVimGlobalSettings> _globalSettings;
@@ -60,6 +61,8 @@ namespace VimCore.Test
             var editorOptions = EditorUtil.FactoryService.editorOptionsFactory.GetOptions(_view);
             baseNav = baseNav ?? (new Mock<ITextStructureNavigator>(MockBehavior.Strict)).Object;
             var nav = TssUtil.CreateTextStructureNavigator(WordKind.NormalWord, baseNav);
+            _bufferOptions = new Mock<IEditorOptions>(MockBehavior.Strict);
+            _bufferOptions.Setup(x => x.GetOptionValue(DefaultOptions.TabSizeOptionId)).Returns(4);
             _globalSettings = MockObjectFactory.CreateGlobalSettings(ignoreCase: true);
             _settings = MockObjectFactory.CreateLocalSettings(_globalSettings.Object);
             _options = new Mock<IEditorOptions>(MockBehavior.Strict);

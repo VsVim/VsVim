@@ -68,6 +68,7 @@ type internal VimBufferFactory
 
         let createCommandRunner() = CommandRunner (view, vim.RegisterMap, capture,statusUtil) :>ICommandRunner
         let broker = _completionWindowBrokerFactoryService.CreateDisplayWindowBroker view
+        let bufferOptions = _editorOptionsFactoryService.GetOptions(view.TextBuffer)
         let normalIncrementalSearch = Vim.Modes.Normal.IncrementalSearch(view, outlining, localSettings, wordNav, vim.SearchService) :> IIncrementalSearch
         let normalOpts = Modes.Normal.DefaultOperations(operationsData, normalIncrementalSearch) :> Vim.Modes.Normal.IOperations
         let commandOpts = Modes.Command.DefaultOperations(operationsData) :> Modes.Command.IOperations
@@ -194,7 +195,7 @@ type internal Vim
             let buffer = vim.GetOrCreateBuffer view
             let mode = buffer.CommandMode
             lines |> Seq.iter mode.RunCommand
-            vim.RemoveBuffer view |> ignore
+            view.Close()
             true
 
     interface IVim with

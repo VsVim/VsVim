@@ -175,7 +175,10 @@ type ICommonOperations =
     /// Close all open files
     abstract CloseAll : checkDirty : bool -> unit
 
-    /// Scroll the buffer by count lines in the given direction
+    /// Move the caret the number of lines in the given direction and scroll the view
+    abstract MoveCaretAndScrollLines : ScrollDirection -> count:int -> unit
+
+    /// Scrolls the number of lines given and keeps the caret in the view
     abstract ScrollLines : ScrollDirection -> count:int -> unit
 
     /// Scroll the buffer by the specified number of pages in the given direction

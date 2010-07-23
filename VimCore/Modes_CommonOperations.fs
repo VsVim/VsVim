@@ -323,7 +323,7 @@ type internal CommonOperations ( _data : OperationsData ) =
             edit.Insert(point.Position, text) |> ignore
             edit.Apply()                    
 
-        member x.ScrollLines dir count =
+        member x.MoveCaretAndScrollLines dir count =
             let lines = _settings.Scroll
             let tss = _textView.TextSnapshot
             let caretPoint = TextViewUtil.GetCaretPoint _textView
@@ -337,6 +337,13 @@ type internal CommonOperations ( _data : OperationsData ) =
             _operations.ResetSelection()
             _textView.Caret.MoveTo(newCaret) |> ignore
             _textView.Caret.EnsureVisible()
+
+        member x.ScrollLines dir count =
+            for i = 1 to count do
+                match dir with
+                | ScrollDirection.Down -> _operations.ScrollDownAndMoveCaretIfNecessary()
+                | ScrollDirection.Up -> _operations.ScrollUpAndMoveCaretIfNecessary()
+                | _ -> failwith "Invalid enum value"
     
         member x.ScrollPages dir count = 
             let func,getLine =
