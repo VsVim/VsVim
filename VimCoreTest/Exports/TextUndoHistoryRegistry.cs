@@ -1,14 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.ComponentModel.Composition;
 using Microsoft.VisualStudio.Text.Operations;
-using Moq;
-using NUnit.Framework;
-using Microsoft.VisualStudio.Utilities;
 
-namespace VimCore.Test.Utils
+namespace VimCore.Test.Exports
 {
     [Export(typeof(ITextUndoHistoryRegistry))]
     public sealed class TextUndoHistoryRegistry : ITextUndoHistoryRegistry

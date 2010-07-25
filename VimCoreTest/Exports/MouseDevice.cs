@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel.Composition;
 using Vim;
 
-namespace VimCore.Test.Utils
+namespace VimCore.Test.Exports
 {
     [Export(typeof(IMouseDevice))]
     public class MouseDevice : IMouseDevice
