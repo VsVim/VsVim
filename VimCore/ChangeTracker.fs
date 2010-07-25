@@ -29,7 +29,18 @@ type internal ChangeTracker
         else _last <- None
 
     member private x.OnTextChanged data = 
-        _last <- TextChange(data) |> Some
+        let useCurrent() = _last <- TextChange(data) |> Some
+        match _last with
+        | None -> _last <- TextChange(data) |> Some
+        | Some(last) ->
+            match last with
+            | LinkedChange(_) -> useCurrent()
+            | TextChange(_) -> useCurrent()
+            | CommandChange(change) -> 
+                if Utils.IsFlagSet change.Command.CommandFlags CommandFlags.LinkedWithNextTextChange then
+                    let change = LinkedChange (CommandChange change,TextChange data) 
+                    _last <- Some change
+                else useCurrent()
             
     interface IVimBufferCreationListener with
         member x.VimBufferCreated buffer = x.OnVimBufferCreated buffer

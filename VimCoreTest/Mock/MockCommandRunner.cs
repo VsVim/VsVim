@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+using Microsoft.FSharp.Control;
 using Vim;
 
 namespace VimCore.Test.Mock
@@ -13,9 +12,16 @@ namespace VimCore.Test.Mock
             throw new NotImplementedException();
         }
 
-#pragma warning disable 67
-        public event Microsoft.FSharp.Control.FSharpHandler<Tuple<CommandRunData, CommandResult>> CommandRan;
-#pragma warning restore 67
+        public event FSharpHandler<Tuple<CommandRunData, CommandResult>> CommandRan;
+
+        public void RaiseCommandRan(CommandRunData data, CommandResult result)
+        {
+            var e = CommandRan;
+            if (e != null)
+            {
+                e(this, Tuple.Create(data, result));
+            }
+        }
 
         public IEnumerable<Command> Commands
         {

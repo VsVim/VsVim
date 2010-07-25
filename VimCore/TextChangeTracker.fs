@@ -31,7 +31,7 @@ type internal TextChangeTracker
         // changes which are made as part of a command will be processed as user input.  This 
         // breaks the "." operator
         _buffer.TextBuffer.Changed 
-        |> Observable.filter (fun _ -> _buffer.TextView.HasAggregateFocus)
+        |> Observable.filter (fun _ -> _buffer.TextView.HasAggregateFocus || _buffer.ModeKind = ModeKind.Insert)
         |> Observable.filter (fun _ -> not _buffer.IsProcessingInput)
         |> Observable.subscribe (fun args -> this.OnTextChanged args)
         |> _bag.Add

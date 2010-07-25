@@ -126,6 +126,12 @@ namespace VimCore.Test
             return (RepeatableChange.TextChange)change;
         }
 
+        internal static RepeatableChange.CommandChange AsCommandChange(this RepeatableChange change)
+        {
+            Assert.IsTrue(change.IsCommandChange);
+            return (RepeatableChange.CommandChange)change;
+        }
+
         #endregion
 
         #region SettingValue

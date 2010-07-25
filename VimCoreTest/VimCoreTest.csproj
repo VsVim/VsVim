@@ -127,6 +127,7 @@
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
     </Reference>
     <Reference Include="System.Data" />
+    <Reference Include="System.Xaml" />
     <Reference Include="System.Xml" />
     <Reference Include="WindowsBase">
       <RequiredTargetFramework>3.0</RequiredTargetFramework>
@@ -145,6 +146,7 @@
     <Compile Include="InsertModeIntegrationTest.cs" />
     <Compile Include="FileSystemTest.cs" />
     <Compile Include="Mock\MockCommandRunner.cs" />
+    <Compile Include="Mock\MockTextChangeTracker.cs" />
     <Compile Include="MotionDataTest.cs" />
     <Compile Include="MotionUtilTest.cs" />
     <Compile Include="NormalModeIntegrationTest.cs" />

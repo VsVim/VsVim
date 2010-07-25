@@ -328,6 +328,9 @@ type CommandFlags =
     /// Can handle the escape key if provided as part of a Motion or Long command extra
     /// input
     | HandlesEscape = 0x8
+    /// For the purposes of change repeating the command is linked with the following
+    /// text change
+    | LinkedWithNextTextChange = 0x10
 
 /// Representation of commands within Vim.  
 [<DebuggerDisplay("{ToString(),nq}")>]
@@ -1097,7 +1100,9 @@ and IChangeTracker =
     
     abstract LastChange : RepeatableChange option
 
+/// Represents a change which is repeatable 
 and RepeatableChange =
     | CommandChange of CommandRunData
     | TextChange of string
+    | LinkedChange of RepeatableChange * RepeatableChange
 

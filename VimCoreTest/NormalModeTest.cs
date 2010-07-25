@@ -1040,6 +1040,17 @@ namespace VimCore.Test
         }
 
         [Test]
+        public void Edit_c_3()
+        {
+            Create("");
+            var command =
+                _mode.CommandRunner.Commands
+                .Where(x => x.KeyInputSet.Name == "c" && x.IsMotionCommand)
+                .Single();
+            Assert.IsTrue(0 != (CommandFlags.LinkedWithNextTextChange & command.CommandFlags));
+        }
+
+        [Test]
         public void Edit_cc_1()
         {
             Create("foo", "bar", "baz");

@@ -136,10 +136,9 @@ type internal NormalMode
         else
             _data <- { _data with IsInRepeatLastChange = true }
             try
-                match _bufferData.Vim.ChangeTracker.LastChange with
-                | None -> _operations.Beep()
-                | Some(lastChange) ->
-                    match lastChange with
+
+                let rec repeatChange change countOpt =
+                    match change with
                     | TextChange(newText) -> _operations.InsertText newText (CommandUtil.CountOrDefault countOpt) |> ignore
                     | CommandChange(data) -> 
                         let countOpt = match countOpt with | Some(count) -> Some(count) | None -> data.Count
@@ -148,20 +147,27 @@ type internal NormalMode
                         match data.Command with 
                         | SimpleCommand(_,_,func) -> func countOpt reg |> ignore
                         | MotionCommand(_,_,func) -> 
-
+    
                             // Repeating a motion based command is a bit more complex because we need to
                             // first re-run the motion to get the span to be processed
                             match data.MotionRunData with
                             | None -> _statusUtil.OnError (Resources.NormalMode_RepeatNotSupportedOnCommand commandName)
                             | Some(motionRunData) ->
-
+    
                                 // Repeat the motion and process the results
                                 let motionName = motionRunData.MotionCommand.KeyInputSet.Name
                                 match motionRunData.MotionFunction motionRunData.Count with
                                 | None ->  _statusUtil.OnError (Resources.NormalMode_UnableToRepeatMotion commandName motionName)
                                 | Some(motionData) -> func countOpt reg motionData |> ignore
-
+    
                         | LongCommand(_) -> _statusUtil.OnError (Resources.NormalMode_RepeatNotSupportedOnCommand commandName)
+                    | LinkedChange(left, right) ->
+                        repeatChange left countOpt
+                        repeatChange right None
+
+                match _bufferData.Vim.ChangeTracker.LastChange with
+                | None -> _operations.Beep()
+                | Some(lastChange) -> repeatChange lastChange countOpt 
             finally
                 _data <- { _data with IsInRepeatLastChange = false }
 
@@ -298,18 +304,18 @@ type internal NormalMode
     /// Create all motion commands
     member this.CreateMotionCommands() =
     
-        let complex : seq<string * ModeKind option * (int -> Register -> MotionData -> unit)> =
+        let complex : seq<string * CommandFlags * ModeKind option * (int -> Register -> MotionData -> unit)> =
             seq {
-                yield ("d", None, fun count reg data -> _operations.DeleteSpan data.OperationSpan data.MotionKind data.OperationKind reg |> ignore)
-                yield ("y", None, fun count reg data -> _operations.Yank data.OperationSpan data.MotionKind data.OperationKind reg)
-                yield ("c", Some ModeKind.Insert, fun count reg data -> _operations.DeleteSpan data.OperationSpan data.MotionKind data.OperationKind reg |> ignore)
-                yield ("<", None, fun _ _ data -> _operations.ShiftSpanLeft 1 data.OperationSpan)
-                yield (">", None, fun _ _ data -> _operations.ShiftSpanRight 1 data.OperationSpan)
-                yield ("zf", None, fun _ _ data -> _operations.FoldManager.CreateFold data.OperationSpan)
+                yield ("d", CommandFlags.None, None, fun count reg data -> _operations.DeleteSpan data.OperationSpan data.MotionKind data.OperationKind reg |> ignore)
+                yield ("y", CommandFlags.None, None, fun count reg data -> _operations.Yank data.OperationSpan data.MotionKind data.OperationKind reg)
+                yield ("c", CommandFlags.LinkedWithNextTextChange, Some ModeKind.Insert, fun count reg data -> _operations.DeleteSpan data.OperationSpan data.MotionKind data.OperationKind reg |> ignore)
+                yield ("<", CommandFlags.None, None, fun _ _ data -> _operations.ShiftSpanLeft 1 data.OperationSpan)
+                yield (">", CommandFlags.None, None, fun _ _ data -> _operations.ShiftSpanRight 1 data.OperationSpan)
+                yield ("zf", CommandFlags.None, None, fun _ _ data -> _operations.FoldManager.CreateFold data.OperationSpan)
             }
 
         complex
-        |> Seq.map (fun (str,modeKindOpt, func) ->
+        |> Seq.map (fun (str, extraFlags, modeKindOpt, func) ->
             let name = CommandUtil.CreateCommandName str
             let func2 count reg data =
                 let count = CommandUtil.CountOrDefault count
@@ -317,7 +323,8 @@ type internal NormalMode
                 match modeKindOpt with
                 | None -> CommandResult.Completed ModeSwitch.NoSwitch
                 | Some(modeKind) -> CommandResult.Completed (ModeSwitch.SwitchMode modeKind)
-            MotionCommand(name, CommandFlags.Repeatable, func2))
+            let flags = extraFlags ||| CommandFlags.Repeatable
+            MotionCommand(name, flags, func2))
 
     /// Create all of the movement commands
     member this.CreateMovementCommands() =

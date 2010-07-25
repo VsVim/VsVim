@@ -1,13 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+using Microsoft.VisualStudio.Text.Editor;
+using Moq;
 using NUnit.Framework;
 using Vim;
-using Moq;
-using Microsoft.VisualStudio.Text.Editor;
-using VimCore.Test.Utils;
 using Vim.Extensions;
+using VimCore.Test.Utils;
 
 namespace VimCore.Test
 {
@@ -54,5 +51,6 @@ namespace VimCore.Test
             var vimBuffer = _vim.CreateBuffer(view);
             var vimBuffer2 = _vim.CreateBuffer(view);
         }
+
     }
 }
