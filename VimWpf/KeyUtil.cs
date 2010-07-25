@@ -151,5 +151,10 @@ namespace Vim.UI.Wpf
 
             return Tuple.Create(key, mods);
         }
+
+        public static Key ConvertToKey(KeyInput input)
+        {
+            return ConvertToKeyAndModifiers(input).Item1;
+        }
     }
 }

@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using NUnit.Framework;
 using System.Windows.Input;
+using NUnit.Framework;
 
 namespace Vim.UI.Wpf.Test
 {
@@ -128,6 +126,29 @@ namespace Vim.UI.Wpf.Test
             Assert.AreEqual(VimKey.F12Key, ki.Key);
             Assert.AreEqual(KeyModifiers.Shift | KeyModifiers.Control, ki.KeyModifiers);
         }
+
+        [Test]
+        public void ConvertToKey1()
+        {
+            var ki = InputUtil.CharToKeyInput('c');
+            Assert.AreEqual(Key.C, KeyUtil.ConvertToKey(ki));
+        }
+
+        [Test]
+        public void ConvertToKey2()
+        {
+            var ki = InputUtil.CharWithControlToKeyInput('c');
+            Assert.AreEqual(Key.C, KeyUtil.ConvertToKey(ki));
+        }
+
+        [Test]
+        public void ConvertToKey3()
+        {
+            var ki = InputUtil.CharWithControlToKeyInput('c');
+            Assert.AreEqual(ModifierKeys.Control, KeyUtil.ConvertToKeyAndModifiers(ki).Item2);
+        }
+
+
 
     }
 }
