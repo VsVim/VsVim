@@ -119,3 +119,20 @@ type IKeyboardDevice =
     /// Is the given key pressed
     abstract IsKeyDown : KeyInput -> bool
 
+/// Tracks changes to the IVimBuffer
+type ITextChangeTracker =
+
+    /// Associated IVimBuffer
+    abstract VimBuffer : IVimBuffer
+
+    /// Current change
+    abstract CurrentChange : string
+
+    /// Raised when a change is completed
+    [<CLIEvent>]
+    abstract ChangeCompleted : IEvent<string>
+
+/// Manages the ITextChangeTracker instances
+type ITextChangeTrackerFactory =
+
+    abstract GetTextChangeTracker : IVimBuffer -> ITextChangeTracker

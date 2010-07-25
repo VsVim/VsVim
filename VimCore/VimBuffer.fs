@@ -5,6 +5,7 @@ namespace Vim
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Operations
+open Microsoft.VisualStudio.Utilities
 
 type internal ModeMap() = 
     let mutable _modeMap : Map<ModeKind,IMode> = Map.empty
@@ -39,6 +40,7 @@ type internal VimBuffer
         _jumpList : IJumpList,
         _settings : IVimLocalSettings ) =
 
+    let _properties = PropertyCollection()
     let mutable _modeMap = ModeMap()
     let mutable _isProcessingInput = false
     let mutable _isClosed = false
@@ -229,3 +231,6 @@ type internal VimBuffer
                     _closedEvent.Trigger System.EventArgs.Empty
                 finally 
                     _isClosed <- true
+
+    interface IPropertyOwner with
+        member x.Properties = _properties

@@ -143,10 +143,9 @@ type internal Vim
         tlcService : ITrackingLineColumnService,
         [<ImportMany>] bufferCreationListeners : Lazy<IVimBufferCreationListener> seq,
         search : ITextSearchService,
-        mouse : IMouseDevice,
-        keyboard : IKeyboardDevice ) =
+        textChangeTrackerFactory : ITextChangeTrackerFactory ) =
         let markMap = MarkMap(tlcService)
-        let tracker = ChangeTracker(keyboard, mouse) 
+        let tracker = ChangeTracker(textChangeTrackerFactory)
         let globalSettings = GlobalSettings() :> IVimGlobalSettings
         let listeners = 
             [tracker :> IVimBufferCreationListener; markMap :> IVimBufferCreationListener]

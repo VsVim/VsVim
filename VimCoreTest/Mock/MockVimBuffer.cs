@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
+using Microsoft.VisualStudio.Utilities;
 using Vim;
 
 namespace VimCore.Test.Mock
@@ -23,6 +24,12 @@ namespace VimCore.Test.Mock
         public ICommandMode CommandModeImpl;
         public IDisabledMode DisabledModeImpl;
         public bool IsProcessingInputImpl;
+        public PropertyCollection PropertiesImpl;
+
+        public PropertyCollection Properties
+        {
+            get { return PropertiesImpl; }
+        }
 
         public IEnumerable<IMode> AllModes
         {

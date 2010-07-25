@@ -5,6 +5,7 @@ open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Operations
 open Microsoft.VisualStudio.Text.Outlining
+open Microsoft.VisualStudio.Utilities
 open System.Diagnostics
 
 type IStatusUtil =
@@ -1010,6 +1011,8 @@ and IVimBuffer =
     /// Raised when the IVimBuffer is being closed
     [<CLIEvent>]
     abstract Closed : IEvent<System.EventArgs>
+
+    inherit IPropertyOwner
 
 and IMode =
 

@@ -18,7 +18,8 @@ namespace VimCore.Test
         private Mock<IMouseDevice> _mouse;
         private Mock<IKeyboardDevice> _keyboard;
         private MockVimBuffer _vimBuffer;
-        private TextChangeTracker _tracker;
+        private TextChangeTracker _trackerRaw;
+        private ITextChangeTracker _tracker;
         private string _lastChange;
 
         protected void Create(params string[] lines)
@@ -36,8 +37,9 @@ namespace VimCore.Test
                 TextViewImpl = _textView.Object,
                 TextBufferImpl = _textBuffer
             };
-            _tracker = new TextChangeTracker(_vimBuffer, _keyboard.Object, _mouse.Object);
-            _tracker.Changed += (sender, data) => { _lastChange = data; };
+            _trackerRaw = new TextChangeTracker(_vimBuffer, _keyboard.Object, _mouse.Object);
+            _tracker = _trackerRaw;
+            _tracker.ChangeCompleted += (sender, data) => { _lastChange = data; };
         }
 
         [TearDown]
@@ -167,12 +169,12 @@ namespace VimCore.Test
         }
 
         [Test]
-        [Description("Commit style events with no change shoudn't raise the Changed event")]
+        [Description("Commit style events with no change shoudn't raise the ChangeCompleted event")]
         public void ChangedEvent1()
         {
             Create("the quick brown fox");
             var didRun = false;
-            _tracker.Changed += delegate { didRun = true; };
+            _tracker.ChangeCompleted += delegate { didRun = true; };
             _mouse.SetupGet(x => x.IsLeftButtonPressed).Returns(true).Verifiable();
             _textCaret.Raise(x => x.PositionChanged += null, (CaretPositionChangedEventArgs)null);
             Assert.IsFalse(didRun);
@@ -187,7 +189,7 @@ namespace VimCore.Test
             _mouse.SetupGet(x => x.IsLeftButtonPressed).Returns(true).Verifiable();
             _textCaret.Raise(x => x.PositionChanged += null, (CaretPositionChangedEventArgs)null);
             var didRun = false;
-            _tracker.Changed += delegate { didRun = true; };
+            _tracker.ChangeCompleted += delegate { didRun = true; };
             _textCaret.Raise(x => x.PositionChanged += null, (CaretPositionChangedEventArgs)null);
             Assert.IsFalse(didRun);
         }
@@ -207,7 +209,7 @@ namespace VimCore.Test
         {
             Create("the quick brown fox");
             var didRun = false;
-            _tracker.Changed += delegate { didRun = true; };
+            _tracker.ChangeCompleted += delegate { didRun = true; };
             _vimBuffer.RaiseSwitchedMode(null);
             Assert.IsFalse(didRun);
         }
