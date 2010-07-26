@@ -18,7 +18,7 @@ module internal StringUtil =
         match Seq.isEmpty found with
             | true -> None
             | false -> Some (Seq.head found)
-            
+
     [<CompiledName("isValidIndex")>]
     let isValidIndex index (input:string) = index >= 0 && index < input.Length
             
@@ -85,3 +85,8 @@ module internal StringUtil =
 
     [<CompiledName("Split")>]
     let split c (value:string) = value.Split( [| c |]) 
+
+    [<CompiledName("Last")>]
+    let last value =
+        let index = (length value) - 1
+        value.[index]

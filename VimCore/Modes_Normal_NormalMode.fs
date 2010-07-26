@@ -217,7 +217,7 @@ type internal NormalMode
                     let point = point.GetContainingLine().Start
                     let span = SnapshotPointUtil.GetLineRangeSpanIncludingLineBreak point count
                     _operations.Yank span MotionKind.Inclusive OperationKind.LineWise reg  )
-                yield ("<<", CommandFlags.Repeatable, fun count _ -> _operations.ShiftLinesLeft count)
+                yield ("<lt><lt>", CommandFlags.Repeatable, fun count _ -> _operations.ShiftLinesLeft count)
                 yield (">>", CommandFlags.Repeatable, fun count _ -> _operations.ShiftLinesRight count)
                 yield ("gJ", CommandFlags.Repeatable, fun count reg -> 
                     let view = _bufferData.TextView
@@ -247,6 +247,36 @@ type internal NormalMode
                 yield ("zd", CommandFlags.Special, fun _ _ -> _operations.DeleteOneFoldAtCursor() )
                 yield ("zD", CommandFlags.Special, fun _ _ -> _operations.DeleteAllFoldsAtCursor() )
                 yield ("zE", CommandFlags.Special, fun _ _ -> _operations.FoldManager.DeleteAllFolds() )
+                yield ("x", CommandFlags.Repeatable, fun count reg -> _operations.DeleteCharacterAtCursor count reg)
+                yield ("<Del>", CommandFlags.Repeatable, fun count reg -> _operations.DeleteCharacterAtCursor count reg)
+                yield ("X", CommandFlags.Repeatable, fun count reg -> _operations.DeleteCharacterBeforeCursor count reg)
+                yield ("p", CommandFlags.Repeatable, fun count reg -> _operations.PasteAfterCursor reg.StringValue count reg.Value.OperationKind false)
+                yield ("P", CommandFlags.Repeatable, fun count reg -> _operations.PasteBeforeCursor reg.StringValue count reg.Value.OperationKind false)
+                yield ("n", CommandFlags.Repeatable, fun count _ -> _operations.MoveToNextOccuranceOfLastSearch count false)
+                yield ("N", CommandFlags.Repeatable, fun count _ -> _operations.MoveToNextOccuranceOfLastSearch count true)
+                yield ("*", CommandFlags.Repeatable, fun count _ -> _operations.MoveToNextOccuranceOfWordAtCursor SearchKind.ForwardWithWrap count)
+                yield ("#", CommandFlags.Repeatable, fun count _ -> _operations.MoveToNextOccuranceOfWordAtCursor SearchKind.BackwardWithWrap count)
+                yield ("D", CommandFlags.Repeatable, fun count reg -> _operations.DeleteLinesFromCursor count reg)
+                yield ("<C-r>", CommandFlags.Repeatable, fun count _ -> _operations.Redo count)
+                yield ("<C-u>", CommandFlags.Repeatable, fun count _ -> _operations.MoveCaretAndScrollLines ScrollDirection.Up count)
+                yield ("<C-d>", CommandFlags.Repeatable, fun count _ -> _operations.MoveCaretAndScrollLines ScrollDirection.Down count)
+                yield ("<C-y>", CommandFlags.Repeatable, fun count _ -> _operations.ScrollLines ScrollDirection.Up count)
+                yield ("<C-e>", CommandFlags.Repeatable, fun count _ -> _operations.ScrollLines ScrollDirection.Down count)
+                yield ("<C-f>", CommandFlags.Repeatable, fun count _ -> _operations.ScrollPages ScrollDirection.Down count)
+                yield ("<S-Down>", CommandFlags.Repeatable, fun count _ -> _operations.ScrollPages ScrollDirection.Down count)
+                yield ("<PageDown>", CommandFlags.Repeatable, fun count _ -> _operations.ScrollPages ScrollDirection.Down count)
+                yield ("J", CommandFlags.Repeatable, fun count _ -> _operations.JoinAtCaret count)
+                yield ("<C-b>", CommandFlags.Repeatable, fun count _ -> _operations.ScrollPages ScrollDirection.Up count)
+                yield ("<S-Up>", CommandFlags.Repeatable, fun count _ -> _operations.ScrollPages ScrollDirection.Up count)
+                yield ("<PageUp>", CommandFlags.Repeatable, fun count _ -> _operations.ScrollPages ScrollDirection.Up count)
+                yield ("<C-]>", CommandFlags.Repeatable, fun _ _ -> _operations.GoToDefinitionWrapper())
+                yield ("Y", CommandFlags.Repeatable, fun count reg -> _operations.YankLines count reg)
+                yield ("<Tab>", CommandFlags.Repeatable, fun count _ -> _operations.JumpNext count)
+                yield ("<C-i>", CommandFlags.Repeatable, fun count _ -> _operations.JumpNext count)
+                yield ("<C-o>", CommandFlags.Repeatable, fun count _ -> _operations.JumpPrevious count)
+                yield ("%", CommandFlags.Repeatable, fun _ _ -> _operations.GoToMatch() |> ignore)
+                yield ("<C-PageDown>", CommandFlags.Repeatable, fun count _ -> _operations.GoToNextTab count)
+                yield ("<C-PageUp>", CommandFlags.Repeatable, fun count _ -> _operations.GoToPreviousTab count)
             }
             |> Seq.map(fun (str,kind,func) -> (str,kind,func,CommandResult.Completed ModeSwitch.NoSwitch))
 
@@ -263,7 +293,7 @@ type internal NormalMode
         let allWithCount = 
             Seq.append noSwitch doSwitch 
             |> Seq.map(fun (str,kind,func,result) -> 
-                let name = CommandUtil.CreateCommandName str
+                let name = KeyNotationUtil.StringToKeyInputSet str
                 let func2 count reg =
                     let count = CommandUtil.CountOrDefault count
                     func count reg
@@ -333,47 +363,6 @@ type internal NormalMode
 
     member this.CreateCommandsOld() =
 
-        let completeOps = 
-            seq {
-                yield (InputUtil.CharToKeyInput('x'), (fun count reg -> _operations.DeleteCharacterAtCursor count reg))
-                yield (InputUtil.VimKeyToKeyInput VimKey.DeleteKey, (fun count reg -> _operations.DeleteCharacterAtCursor count reg))
-                yield (InputUtil.CharToKeyInput('X'),  (fun count reg -> _operations.DeleteCharacterBeforeCursor count reg))
-                yield (InputUtil.CharToKeyInput('p'), (fun count reg -> _operations.PasteAfterCursor reg.StringValue count reg.Value.OperationKind false))
-                yield (InputUtil.CharToKeyInput('P'), (fun count reg -> _operations.PasteBeforeCursor reg.StringValue count reg.Value.OperationKind false))
-                yield (InputUtil.CharToKeyInput('n'), (fun count _ -> _operations.MoveToNextOccuranceOfLastSearch count false))
-                yield (InputUtil.CharToKeyInput('N'), (fun count _ -> _operations.MoveToNextOccuranceOfLastSearch count true))
-                yield (InputUtil.CharToKeyInput('*'), (fun count _ -> _operations.MoveToNextOccuranceOfWordAtCursor SearchKind.ForwardWithWrap count))
-                yield (InputUtil.CharToKeyInput('#'), (fun count _ -> _operations.MoveToNextOccuranceOfWordAtCursor SearchKind.BackwardWithWrap count))
-                yield (InputUtil.CharToKeyInput('D'), (fun count reg -> _operations.DeleteLinesFromCursor count reg))
-                yield (InputUtil.CharWithControlToKeyInput 'r', (fun count _ -> _operations.Redo count))
-                yield (InputUtil.CharWithControlToKeyInput 'u', (fun count _ -> _operations.MoveCaretAndScrollLines ScrollDirection.Up count))
-                yield (InputUtil.CharWithControlToKeyInput 'd', (fun count _ -> _operations.MoveCaretAndScrollLines ScrollDirection.Down count))
-                yield (InputUtil.CharWithControlToKeyInput 'y', (fun count _ -> _operations.ScrollLines ScrollDirection.Up count))
-                yield (InputUtil.CharWithControlToKeyInput 'e', (fun count _ -> _operations.ScrollLines ScrollDirection.Down count))
-                yield (InputUtil.CharWithControlToKeyInput 'f', (fun count _ -> _operations.ScrollPages ScrollDirection.Down count))
-                yield (InputUtil.VimKeyAndModifiersToKeyInput VimKey.DownKey KeyModifiers.Shift, (fun count _ -> _operations.ScrollPages ScrollDirection.Down count))
-                yield (InputUtil.VimKeyToKeyInput VimKey.PageDownKey, (fun count _ -> _operations.ScrollPages ScrollDirection.Down count)) 
-                yield (InputUtil.CharToKeyInput('J'), (fun count _ -> _operations.JoinAtCaret count))
-                yield (InputUtil.CharWithControlToKeyInput 'b', (fun count _ -> _operations.ScrollPages ScrollDirection.Up count))
-                yield (InputUtil.VimKeyAndModifiersToKeyInput VimKey.UpKey KeyModifiers.Shift, (fun count _ -> _operations.ScrollPages ScrollDirection.Up count))
-                yield (InputUtil.VimKeyToKeyInput VimKey.PageUpKey , (fun count _ -> _operations.ScrollPages ScrollDirection.Up count)) 
-                yield (InputUtil.CharWithControlToKeyInput ']', (fun _ _ -> _operations.GoToDefinitionWrapper()))
-                yield (InputUtil.CharToKeyInput('Y'), (fun count reg -> _operations.YankLines count reg))
-                yield (InputUtil.VimKeyToKeyInput VimKey.TabKey, (fun count _ -> _operations.JumpNext count))
-                yield (InputUtil.CharWithControlToKeyInput 'i', (fun count _ -> _operations.JumpNext count))
-                yield (InputUtil.CharWithControlToKeyInput 'o', (fun count _ -> _operations.JumpPrevious count))
-                yield (InputUtil.CharToKeyInput('%'), (fun _ _ -> _operations.GoToMatch() |> ignore))
-                yield (InputUtil.VimKeyAndModifiersToKeyInput VimKey.PageDownKey KeyModifiers.Control, (fun count _ -> _operations.GoToNextTab count))
-                yield (InputUtil.VimKeyAndModifiersToKeyInput VimKey.PageUpKey KeyModifiers.Control, (fun count _ -> _operations.GoToPreviousTab count))
-            }  |> Seq.map (fun (ki,func) ->
-                    let name = OneKeyInput(ki)
-                    let func2 count reg = 
-                        let count = CommandUtil.CountOrDefault count
-                        func count reg
-                        CommandResult.Completed ModeSwitch.NoSwitch
-                    SimpleCommand(name, CommandFlags.Repeatable, func2))
-    
-    
         // Similar to completeOps but take the conditional count value
         let completeOps2 = 
             seq {
@@ -409,7 +398,7 @@ type internal NormalMode
                         CommandResult.Completed (ModeSwitch.SwitchMode mode)
                     SimpleCommand(name, CommandFlags.Repeatable, func2))
     
-        Seq.append completeOps completeOps2 |> Seq.append changeOps
+        Seq.append completeOps2 changeOps 
    
     member this.Reset() =
         _runner.ResetState()

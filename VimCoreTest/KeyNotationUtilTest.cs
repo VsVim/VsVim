@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using NUnit.Framework;
 using Vim;
 using Vim.Extensions;
@@ -8,26 +9,6 @@ namespace VimCore.Test
     [TestFixture]
     public class KeyNotationUtilTest
     {
-        [Test]
-        [Description("Make sure the shift keys are present")]
-        public void KeyNotationList1()
-        {
-            var names = KeyNotationUtil.KeyNotationList.Select(x => x.Item1);
-            Assert.IsTrue(names.Contains("<S-Left>"));
-            Assert.IsTrue(names.Contains("<S-F1>"));
-            Assert.IsTrue(names.Contains("<S-Home>"));
-        }
-
-        [Test]
-        [Description("Make sure the control keys are present")]
-        public void KeyNotationList2()
-        {
-            var names = KeyNotationUtil.KeyNotationList.Select(x => x.Item1);
-            Assert.IsTrue(names.Contains("<C-Left>"));
-            Assert.IsTrue(names.Contains("<C-F1>"));
-            Assert.IsTrue(names.Contains("<C-Home>"));
-        }
-
         [Test]
         [Description("< must be expressed as <lt>")]
         public void TryStringToKeyInput1()
@@ -116,6 +97,25 @@ namespace VimCore.Test
             Assert.AreEqual(2, list.Count);
             Assert.AreEqual('x', list[0].Char);
             Assert.AreEqual('o', list[1].Char);
+        }
+
+        [Test]
+        public void StringToKeyInput1()
+        {
+            var data = KeyNotationUtil.StringToKeyInput("<C-]>");
+            Assert.AreEqual(']', data.Char);
+        }
+
+        [Test]
+        public void StringToKeyInput2()
+        {
+            Action<string, KeyInput> verifyFunc = (data, ki) =>
+                {
+                    var parsed = KeyNotationUtil.StringToKeyInput(data);
+                    Assert.AreEqual(ki, parsed);
+                };
+            verifyFunc("<S-F11>", InputUtil.VimKeyAndModifiersToKeyInput(VimKey.F11Key, KeyModifiers.Shift));
+            verifyFunc("<c-F11>", InputUtil.VimKeyAndModifiersToKeyInput(VimKey.F11Key, KeyModifiers.Control));
         }
     }
 }

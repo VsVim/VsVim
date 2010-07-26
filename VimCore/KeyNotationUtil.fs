@@ -44,7 +44,7 @@ module internal KeyNotationUtil =
             |> Seq.map (fun (number,key) -> (sprintf "<F%d>" number),InputUtil.VimKeyToKeyInput key)
             |> List.ofSeq
 
-    /// Contains the tuple of (name,KeyInput) for all of the supported key notations
+    /// Map of the special key names to their KeyInput representation.  Does not include the <> bookends
     /// Not supported
     /// <CSI>		command sequence intro  ALT-Esc 155	*<CSI>*
     /// <xCSI>		CSI when typed in the GUI		*<xCSI>*
@@ -57,33 +57,11 @@ module internal KeyNotationUtil =
     /// <kEnter>	keypad Enter			*keypad-enter*
     /// <kPoint>	keypad Decimal point		*keypad-point*
     /// <k0> - <k9>	keypad 0 to 9			*keypad-0* *keypad-9*
-    let KeyNotationList = 
-        let allManual = ManualKeyList |> Seq.append FunctionKeys
-        let lowerCaseLetters = ['a'..'z'] |> Seq.map (fun ch -> (sprintf "<%c>" ch),(InputUtil.CharToKeyInput ch))
-        let toModShort = 
-            allManual 
-            |> Seq.append FunctionKeys 
-            |> Seq.filter (fun (_,ki) -> ki.KeyModifiers = KeyModifiers.None)
-        let toMod = toModShort |> Seq.append lowerCaseLetters
-        let doMod toMod prefix modKeys = 
-            let changePrefix (name:string) = sprintf "<%s-%s" prefix (name.Substring(1))
-            toMod |> Seq.map (fun (name,(ki:KeyInput)) -> (changePrefix name),(KeyInput(ki.Char, ki.Key, modKeys)))
-
-        // Don' run the modifier on the lower case letters for Shift.  They have to be recreated with different
-        // modifiers
-        let withShift = doMod toModShort "S" KeyModifiers.Shift
-        let withControl = doMod toMod "C" KeyModifiers.Control
-        let withMeta = doMod toMod "M" KeyModifiers.Alt
-        let withAlt = doMod toMod "A" KeyModifiers.Alt
-        let upperCaseLetters = ['A' .. 'Z'] |> Seq.map (fun ch -> (sprintf "<S-%c>" ch),InputUtil.CharToKeyInput ch)
-            
-        allManual
-        |> Seq.append withShift
-        |> Seq.append withControl
-        |> Seq.append withMeta
-        |> Seq.append withAlt
-        |> Seq.append upperCaseLetters
-        |> List.ofSeq
+    let private SpecialKeyMap = 
+        ManualKeyList
+        |> Seq.append FunctionKeys
+        |> Seq.map (fun (k,v) -> k.Substring(1,k.Length-2),v)
+        |> Map.ofSeq
 
     /// Break up a string into a set of key notation entries
     let SplitIntoKeyNotationEntries (data:string) =
@@ -107,23 +85,54 @@ module internal KeyNotationUtil =
 
     /// Try to convert the passed in string into a single KeyInput value according to the
     /// guidelines specified in :help key-notation.  
-    let TryStringToKeyInput data = 
-        
+    let TryStringToKeyInput (data:string) = 
+
+        let tryCharToKeyInput c = 
+            if Set.contains c InputUtil.CoreCharactersSet then InputUtil.CharToKeyInput c |> Some
+            else None
+
+        // Convert the string into a keyinput 
+        let convertToRaw data =
+            match Map.tryFind data SpecialKeyMap with
+            | Some(ki) -> Some ki
+            | None -> 
+                if StringUtil.length data = 1 then tryCharToKeyInput data.[0]
+                else None
+
+        // Inside the <
+        let insideLessThanGreaterThan() = 
+            if data.Length >= 3 && data.[2] = '-' then
+                let modifier = 
+                    match data.[1] |> CharUtil.ToLower with
+                    | 'c' -> KeyModifiers.Control |> Some
+                    | 's' -> KeyModifiers.Shift |> Some
+                    | 'a' -> KeyModifiers.Alt |> Some
+                    | _ -> None
+                let ki = convertToRaw (data.Substring(3, data.Length-4))
+                match modifier,ki with 
+                | Some(modifier),Some(ki) -> 
+                    let c = 
+                        if modifier = KeyModifiers.Shift && CharUtil.IsLetter ki.Char then CharUtil.ToUpper ki.Char
+                        else ki.Char
+                    KeyInput(c, ki.Key,modifier ||| ki.KeyModifiers) |> Some
+                | _ -> None
+            else 
+                convertToRaw (data.Substring(1,data.Length - 2))
+
         match StringUtil.charAtOption 0 data with
         | None -> None
         | Some('<') -> 
-            match KeyNotationList |> Seq.tryFind (fun (name,_) -> StringUtil.isEqualIgnoreCase name data) with
-            | None -> None
-            | Some(_,ki) -> Some(ki)
+            if StringUtil.last data <> '>' then None
+            else insideLessThanGreaterThan()
         | Some(c) -> 
             // If it doesn't start with a < then it must be a single character value
-            if StringUtil.length data = 1 then c |> InputUtil.CharToKeyInput |> Some
+            if data.Length = 1 then tryCharToKeyInput data.[0]
             else None
 
     let StringToKeyInput data = 
         match TryStringToKeyInput data with 
         | Some(ki) -> ki
-        | None -> invalidOp Resources.KeyNotationUtil_InvalidNotation
+        | None -> invalidOp (Resources.KeyNotationUtil_InvalidNotation data)
 
     /// Try to convert the passed in string to multiple KeyInput values.  Returns true only
     /// if the entire list succesfully parses
