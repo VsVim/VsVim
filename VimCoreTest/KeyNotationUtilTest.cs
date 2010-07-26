@@ -6,13 +6,13 @@ using Vim.Extensions;
 namespace VimCore.Test
 {
     [TestFixture]
-    public class KeyMapUtilTest
+    public class KeyNotationUtilTest
     {
         [Test]
         [Description("Make sure the shift keys are present")]
         public void KeyNotationList1()
         {
-            var names = KeyMapUtil.KeyNotationList.Select(x => x.Item1);
+            var names = KeyNotationUtil.KeyNotationList.Select(x => x.Item1);
             Assert.IsTrue(names.Contains("<S-Left>"));
             Assert.IsTrue(names.Contains("<S-F1>"));
             Assert.IsTrue(names.Contains("<S-Home>"));
@@ -22,7 +22,7 @@ namespace VimCore.Test
         [Description("Make sure the control keys are present")]
         public void KeyNotationList2()
         {
-            var names = KeyMapUtil.KeyNotationList.Select(x => x.Item1);
+            var names = KeyNotationUtil.KeyNotationList.Select(x => x.Item1);
             Assert.IsTrue(names.Contains("<C-Left>"));
             Assert.IsTrue(names.Contains("<C-F1>"));
             Assert.IsTrue(names.Contains("<C-Home>"));
@@ -32,14 +32,14 @@ namespace VimCore.Test
         [Description("< must be expressed as <lt>")]
         public void TryStringToKeyInput1()
         {
-            var opt = KeyMapUtil.TryStringToKeyInput("<");
+            var opt = KeyNotationUtil.TryStringToKeyInput("<");
             Assert.IsTrue(opt.IsNone());
         }
 
         [Test]
         public void TryStringToKeyInput2()
         {
-            var opt = KeyMapUtil.TryStringToKeyInput("<Left>");
+            var opt = KeyNotationUtil.TryStringToKeyInput("<Left>");
             Assert.IsTrue(opt.IsSome());
             Assert.AreEqual(InputUtil.VimKeyToKeyInput(VimKey.LeftKey), opt.Value);
         }
@@ -47,7 +47,7 @@ namespace VimCore.Test
         [Test]
         public void TryStringToKeyInput3()
         {
-            var opt = KeyMapUtil.TryStringToKeyInput("<Right>");
+            var opt = KeyNotationUtil.TryStringToKeyInput("<Right>");
             Assert.IsTrue(opt.IsSome());
             Assert.AreEqual(InputUtil.VimKeyToKeyInput(VimKey.RightKey), opt.Value);
         }
@@ -55,7 +55,7 @@ namespace VimCore.Test
         [Test]
         public void TryStringToKeyInput4()
         {
-            var opt = KeyMapUtil.TryStringToKeyInput("<S-A>");
+            var opt = KeyNotationUtil.TryStringToKeyInput("<S-A>");
             Assert.IsTrue(opt.IsSome());
             Assert.AreEqual(InputUtil.CharToKeyInput('A'), opt.Value);
         }
@@ -64,7 +64,7 @@ namespace VimCore.Test
         [Description("Not case sensitive")]
         public void TryStringToKeyInput5()
         {
-            var opt = KeyMapUtil.TryStringToKeyInput("<s-a>");
+            var opt = KeyNotationUtil.TryStringToKeyInput("<s-a>");
             Assert.IsTrue(opt.IsSome());
             Assert.AreEqual(InputUtil.CharToKeyInput('A'), opt.Value);
         }
@@ -72,7 +72,7 @@ namespace VimCore.Test
         [Test]
         public void TryStringToKeyInput6()
         {
-            var opt = KeyMapUtil.TryStringToKeyInput("<C-x>");
+            var opt = KeyNotationUtil.TryStringToKeyInput("<C-x>");
             Assert.IsTrue(opt.IsSome());
             Assert.AreEqual('x', opt.Value.Char);
             Assert.AreEqual(KeyModifiers.Control, opt.Value.KeyModifiers);
@@ -81,7 +81,7 @@ namespace VimCore.Test
         [Test]
         public void TryStringToKeyInputList1()
         {
-            var opt = KeyMapUtil.TryStringToCommandName("ab");
+            var opt = KeyNotationUtil.TryStringToKeyInputSet("ab");
             Assert.IsTrue(opt.IsSome());
             var list = opt.Value.KeyInputs.ToList();
             Assert.AreEqual(2, list.Count);
@@ -92,14 +92,14 @@ namespace VimCore.Test
         [Test]
         public void TryStringToKeyInputList2()
         {
-            var opt = KeyMapUtil.TryStringToCommandName("<foo");
+            var opt = KeyNotationUtil.TryStringToKeyInputSet("<foo");
             Assert.IsTrue(opt.IsNone());
         }
 
         [Test]
         public void TryStringToKeyInputList3()
         {
-            var opt = KeyMapUtil.TryStringToCommandName("<Home>a");
+            var opt = KeyNotationUtil.TryStringToKeyInputSet("<Home>a");
             Assert.IsTrue(opt.IsSome());
             var list = opt.Value.KeyInputs.ToList();
             Assert.AreEqual(2, list.Count);
@@ -110,7 +110,7 @@ namespace VimCore.Test
         [Test]
         public void TryStringToKeyInputList4()
         {
-            var opt = KeyMapUtil.TryStringToCommandName("<C-x><C-o>");
+            var opt = KeyNotationUtil.TryStringToKeyInputSet("<C-x><C-o>");
             Assert.IsTrue(opt.IsSome());
             var list = opt.Value.KeyInputs.ToList();
             Assert.AreEqual(2, list.Count);

@@ -7,6 +7,7 @@ module internal Resources =
     let SelectionTracker_AlreadyRunning = "Already running"
     let SelectionTracker_NotRunning = "Not Running"
     let VisualMode_Banner = "--Visual--"
+    let KeyNotationUtil_InvalidNotation = "Invalid key notation"
 
     let Common_GotoDefNoWordUnderCursor = "No word under cursor to go to the definition of"
     let Common_GotoDefFailed word = sprintf "Could not navigate to definition of %s" word
