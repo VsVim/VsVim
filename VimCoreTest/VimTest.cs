@@ -6,7 +6,6 @@ using Moq;
 using NUnit.Framework;
 using Vim;
 using Vim.Extensions;
-using VimCore.Test.Utils;
 
 namespace VimCore.Test
 {

@@ -192,7 +192,6 @@
     <Compile Include="Utils\EditorUtil.cs" />
     <Compile Include="Extensions.cs" />
     <Compile Include="Utils\EqualityUtil.cs" />
-    <Compile Include="Utils\FSharpFuncUtil.cs" />
     <Compile Include="Exports\KeyboardDevice.cs" />
     <Compile Include="Utils\MatchUtil.cs" />
     <Compile Include="Mock\MockNormalMode.cs" />

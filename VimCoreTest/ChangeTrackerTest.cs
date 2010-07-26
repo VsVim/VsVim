@@ -7,7 +7,6 @@ using NUnit.Framework;
 using Vim;
 using Vim.Extensions;
 using VimCore.Test.Mock;
-using VimCore.Test.Utils;
 
 namespace VimCore.Test
 {
@@ -59,7 +58,7 @@ namespace VimCore.Test
             name = name ?? KeyInputSet.NewOneKeyInput(InputUtil.CharToKeyInput('c'));
             var flagsRaw = flags ?? CommandFlags.None;
             var countRaw = count.HasValue ? FSharpOption.Create(count.Value) : FSharpOption<int>.None;
-            var funcRaw = FSharpFuncUtil.Create(func);
+            var funcRaw = func.ToFSharpFunc();
             var cmd = Command.NewSimpleCommand(
                 name,
                 flagsRaw,
