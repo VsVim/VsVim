@@ -115,20 +115,27 @@ type internal SelectionTracker
                     else VirtualSnapshotPoint(last.Position.Add(1))
                 else last
             _textView.Selection.Select(first,last)
+
         match _mode with
         | SelectionMode.Character -> selectStandard()
         | SelectionMode.Line ->
-            let caret = TextViewUtil.GetCaretPoint _textView
-            if _anchorPoint.Position.Position < caret.Position then 
-                let first = _anchorPoint.Position.GetContainingLine().Start
-                let last = caret.GetContainingLine().EndIncludingLineBreak
-                let span = SnapshotSpan(first,last)
-                _textView.Selection.Select(span, false)
-            else 
-                let first = caret.GetContainingLine().Start
-                let last = _anchorPoint.Position.GetContainingLine().EndIncludingLineBreak
-                let span = SnapshotSpan(first,last)
-                _textView.Selection.Select(span, false)
+            let caret = _textView.Caret.Position.VirtualBufferPosition
+            let first,last = 
+                if VirtualSnapshotPointUtil.GetPosition _anchorPoint <= VirtualSnapshotPointUtil.GetPosition caret then (_anchorPoint,caret)
+                else (caret,_anchorPoint)
+            let first = 
+                first
+                |> VirtualSnapshotPointUtil.GetContainingLine 
+                |> SnapshotLineUtil.GetStart
+                |> VirtualSnapshotPointUtil.OfPoint
+            let last =
+                if last.IsInVirtualSpace then last
+                else 
+                    last 
+                    |> VirtualSnapshotPointUtil.GetContainingLine
+                    |> SnapshotLineUtil.GetEndIncludingLineBreak
+                    |> VirtualSnapshotPointUtil.OfPoint
+            _textView.Selection.Select(first, last)
         | SelectionMode.Block -> selectStandard()
         | _ -> failwith "Invalid enum value"
 

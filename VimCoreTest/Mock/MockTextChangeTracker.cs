@@ -5,7 +5,9 @@ namespace VimCore.Test.Mock
 {
     class MockTextChangeTracker : ITextChangeTracker
     {
+#pragma warning disable 649
         public string CurrentChangeImpl;
+#pragma warning restore 649
         public IVimBuffer VimBufferImpl;
 
         public event FSharpHandler<string> ChangeCompleted;

@@ -478,6 +478,10 @@ module VirtualSnapshotPointUtil =
     
     let OfPoint (point:SnapshotPoint) = VirtualSnapshotPoint(point)
 
+    let GetPosition (point:VirtualSnapshotPoint) = point.Position.Position
+
+    let GetContainingLine (point:VirtualSnapshotPoint) = SnapshotPointUtil.GetContainingLine point.Position
+
 /// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
 /// include any Vim specific logic
 module TextViewUtil =
