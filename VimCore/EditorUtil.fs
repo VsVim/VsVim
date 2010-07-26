@@ -189,7 +189,6 @@ module SnapshotSpanUtil =
             SnapshotSpan(line.Start, span.End)
         else span
 
-
 /// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
 /// include any Vim specific logic
 module SnapshotLineUtil =
@@ -473,6 +472,16 @@ module SnapshotPointUtil =
             let endPosition = min line.End.Position (point.Position+count)
             let endPoint = SnapshotPoint(line.Snapshot, endPosition)
             SnapshotSpan(point, endPoint)
+
+    /// Add 1 to the given SnapshotPoint
+    let AddOne (point:SnapshotPoint) = point.Add(1)
+
+    /// Maybe add 1 to the given point.  Will return the original point
+    /// if it's the end of the Snapshot
+    let MaybeAddOne point = 
+        let endPoint = point |> GetSnapshot |> SnapshotUtil.GetEndPoint 
+        if endPoint = point then endPoint
+        else point.Add(1)
 
 module VirtualSnapshotPointUtil =
     

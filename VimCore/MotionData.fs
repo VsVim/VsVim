@@ -48,3 +48,4 @@ type MotionData = {
                     SnapshotSpan(x.Span.Start, lineAbove.End)
                 else x.Span
             else x.Span
+

@@ -1014,9 +1014,14 @@ namespace VimCore.Test
         public void Edit_c_1()
         {
             Create("foo bar");
+            var motionData = new MotionData(
+                _view.TextBuffer.GetSpan(0, 4),
+                true,
+                MotionKind.Exclusive,
+                OperationKind.CharacterWise,
+                FSharpOption<int>.None);
             _operations
-                .Setup(x => x.DeleteSpan(new SnapshotSpan(_view.TextSnapshot, 0, 4), MotionKind.Exclusive, OperationKind.CharacterWise, _map.DefaultRegister))
-                .Returns(_view.TextSnapshot)
+                .Setup(x => x.ChangeSpan(motionData, _map.DefaultRegister))
                 .Verifiable();
             var res = _mode.Process("cw");
             Assert.IsTrue(res.IsSwitchMode);
@@ -1029,9 +1034,14 @@ namespace VimCore.Test
         {
             Create("foo bar");
             var reg = _map.GetRegister('c');
+            var motionData = new MotionData(
+                _view.TextBuffer.GetSpan(0, 4),
+                true,
+                MotionKind.Exclusive,
+                OperationKind.CharacterWise,
+                FSharpOption<int>.None);
             _operations
-                .Setup(x => x.DeleteSpan(new SnapshotSpan(_view.TextSnapshot, 0, 4), MotionKind.Exclusive, OperationKind.CharacterWise, reg))
-                .Returns(_view.TextSnapshot)
+                .Setup(x => x.ChangeSpan(motionData, reg))
                 .Verifiable();
             var res = _mode.Process("\"ccw");
             Assert.IsTrue(res.IsSwitchMode);
@@ -2281,7 +2291,7 @@ namespace VimCore.Test
         {
             Create("");
             _changeTracker.SetupGet(x => x.LastChange).Returns(FSharpOption.Create(RepeatableChange.NewTextChange("h"))).Verifiable();
-            _operations.Setup(x => x.InsertText("h", 1)).Returns(_view.TextSnapshot).Verifiable();
+            _operations.Setup(x => x.InsertText("h", 1)).Verifiable();
             _mode.Process('.');
             _operations.Verify();
             _changeTracker.Verify();
@@ -2292,7 +2302,7 @@ namespace VimCore.Test
         {
             Create("");
             _changeTracker.SetupGet(x => x.LastChange).Returns(FSharpOption.Create(RepeatableChange.NewTextChange("h"))).Verifiable();
-            _operations.Setup(x => x.InsertText("h", 3)).Returns(_view.TextSnapshot).Verifiable();
+            _operations.Setup(x => x.InsertText("h", 3)).Verifiable();
             _mode.Process("3.");
             _operations.Verify();
             _changeTracker.Verify();

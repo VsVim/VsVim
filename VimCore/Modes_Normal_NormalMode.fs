@@ -139,7 +139,7 @@ type internal NormalMode
 
                 let rec repeatChange change countOpt =
                     match change with
-                    | TextChange(newText) -> _operations.InsertText newText (CommandUtil.CountOrDefault countOpt) |> ignore
+                    | TextChange(newText) -> _operations.InsertText newText (CommandUtil.CountOrDefault countOpt) 
                     | CommandChange(data) -> 
                         let countOpt = match countOpt with | Some(count) -> Some(count) | None -> data.Count
                         let reg = data.Register
@@ -306,9 +306,9 @@ type internal NormalMode
     
         let complex : seq<string * CommandFlags * ModeKind option * (int -> Register -> MotionData -> unit)> =
             seq {
-                yield ("d", CommandFlags.None, None, fun count reg data -> _operations.DeleteSpan data.OperationSpan data.MotionKind data.OperationKind reg |> ignore)
-                yield ("y", CommandFlags.None, None, fun count reg data -> _operations.Yank data.OperationSpan data.MotionKind data.OperationKind reg)
-                yield ("c", CommandFlags.LinkedWithNextTextChange, Some ModeKind.Insert, fun count reg data -> _operations.DeleteSpan data.OperationSpan data.MotionKind data.OperationKind reg |> ignore)
+                yield ("d", CommandFlags.None, None, fun _ reg data -> _operations.DeleteSpan data.OperationSpan data.MotionKind data.OperationKind reg |> ignore)
+                yield ("y", CommandFlags.None, None, fun _ reg data -> _operations.Yank data.OperationSpan data.MotionKind data.OperationKind reg)
+                yield ("c", CommandFlags.LinkedWithNextTextChange, Some ModeKind.Insert, fun _ reg data -> _operations.ChangeSpan data reg)
                 yield ("<", CommandFlags.None, None, fun _ _ data -> _operations.ShiftSpanLeft 1 data.OperationSpan)
                 yield (">", CommandFlags.None, None, fun _ _ data -> _operations.ShiftSpanRight 1 data.OperationSpan)
                 yield ("zf", CommandFlags.None, None, fun _ _ data -> _operations.FoldManager.CreateFold data.OperationSpan)

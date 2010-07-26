@@ -127,7 +127,7 @@ type ICommonOperations =
     abstract PasteBefore : SnapshotPoint -> text : string -> OperationKind -> SnapshotSpan 
 
     /// Insert the specified text at the cursor position "count" times
-    abstract InsertText : text:string -> count : int -> ITextSnapshot
+    abstract InsertText : text:string -> count : int -> unit
 
     /// Delete count lines starting from the cursor line.  The last line will 
     /// not have its break deleted
@@ -213,6 +213,9 @@ type ICommonOperations =
 
     /// Delete all folds at the cursor
     abstract DeleteAllFoldsAtCursor : unit -> unit
+
+    /// Change the text represented by the given Motion
+    abstract ChangeSpan : MotionData -> Register -> unit
 
 
 

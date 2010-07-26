@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using Microsoft.VisualStudio.Text.Operations;
 using Microsoft.VisualStudio.Utilities;
 using NUnit.Framework;
@@ -63,6 +64,7 @@ namespace VimCore.Test.Exports
 
         public TextUndoHistoryState State
         {
+            [DebuggerNonUserCode]
             get { throw new NotImplementedException(); }
         }
 

@@ -321,7 +321,17 @@ type internal CommonOperations ( _data : OperationsData ) =
             let point = TextViewUtil.GetCaretPoint _textView
             use edit = _textView.TextBuffer.CreateEdit()
             edit.Insert(point.Position, text) |> ignore
-            edit.Apply()                    
+            edit.Apply() |> ignore
+             
+            // Need to adjust the caret to the end of the inserted text.  Very important
+            // for operations like repeat
+            if not (StringUtil.isNullOrEmpty text) then
+                let snapshot = _textView.TextSnapshot
+                let position = point.Position + text.Length - 1 
+                let caret = SnapshotPoint(snapshot, position)
+                _textView.Caret.MoveTo(caret) |> ignore
+                _textView.Caret.EnsureVisible()
+                
 
         member x.MoveCaretAndScrollLines dir count =
             let lines = _settings.Scroll
@@ -480,5 +490,20 @@ type internal CommonOperations ( _data : OperationsData ) =
                 while deleteAtCaret() do
                     // Keep on deleteing 
                     ()
+        member x.ChangeSpan (data:MotionData) reg =
+            
+            // For whatever reason the change commands will remove the trailing whitespace
+            // for character wise motions
+            let span = 
+                if data.OperationKind = OperationKind.LineWise then data.OperationSpan
+                else 
+                    let point = 
+                        data.OperationSpan
+                        |> SnapshotSpanUtil.GetPointsBackward 
+                        |> Seq.tryFind (fun x -> x.GetChar() |> CharUtil.IsWhiteSpace |> not)
+                    match point with 
+                    | Some(p) -> SnapshotSpan(data.OperationSpan.Start, (SnapshotPointUtil.MaybeAddOne p))
+                    | None -> data.OperationSpan
+            x.DeleteSpan span data.MotionKind data.OperationKind reg |> ignore
 
 

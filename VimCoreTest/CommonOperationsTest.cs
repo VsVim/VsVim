@@ -1421,5 +1421,48 @@ namespace VimCore.Test
             _operations.Beep();
             _factory.Verify();
         }
+
+        [Test]
+        public void ChangeSpan1()
+        {
+            Create("foo  bar");
+            var data = new MotionData(
+                _buffer.GetSpan(0, 5),
+                true,
+                MotionKind.Inclusive,
+                OperationKind.CharacterWise,
+                FSharpOption<int>.None);
+            _operations.ChangeSpan(data, new Register('c'));
+            Assert.AreEqual("  bar", _buffer.GetLineSpan(0).GetText());
+        }
+
+        [Test]
+        [Description("Don't ignore whitespace if it's linewise")]
+        public void ChangeSpan2()
+        {
+            Create("foo  bar");
+            var data = new MotionData(
+                _buffer.GetSpan(0, 5),
+                true,
+                MotionKind.Inclusive,
+                OperationKind.LineWise,
+                FSharpOption<int>.None);
+            _operations.ChangeSpan(data, new Register('c'));
+            Assert.AreEqual("bar", _buffer.GetLineSpan(0).GetText());
+        }
+
+        [Test]
+        public void ChangeSpan3()
+        {
+            Create("foo                   bar");
+            var data = new MotionData(
+                _buffer.GetSpan(0, 10),
+                true,
+                MotionKind.Inclusive,
+                OperationKind.CharacterWise,
+                FSharpOption<int>.None);
+            _operations.ChangeSpan(data, new Register('c'));
+            Assert.AreEqual("                   bar", _buffer.GetLineSpan(0).GetText());
+        }
     }
 }

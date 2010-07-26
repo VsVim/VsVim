@@ -983,6 +983,16 @@ namespace VimCore.Test
         }
 
         [Test]
+        [Description("Caret needs to be moved to the last letter of the insert")]
+        public void InsertText4()
+        {
+            Create("bar");
+            _view.MoveCaretTo(1);
+            _operations.InsertText("hey", 1);
+            Assert.AreEqual(3, _view.GetCaretPoint().Position);
+        }
+
+        [Test]
         public void ChangeLetterCaseAtCursor1()
         {
             Create("bar", "baz");
