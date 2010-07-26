@@ -65,22 +65,56 @@ module internal KeyNotationUtil =
 
     /// Break up a string into a set of key notation entries
     let SplitIntoKeyNotationEntries (data:string) =
+        let ctrlPrefix = "ctrl-" |> List.ofSeq
+
         let rec inner (rest:char list) withData =
-            match rest |> SeqUtil.tryHeadOnly with
-            | None -> withData []
-            | Some('<') ->
+
+            // Check and see if a list starts with a given prefix 
+            let rec startsWith prefix target =
+                match ListUtil.tryHead prefix, ListUtil.tryHead target with
+                | Some(prefixHead,prefixTail),Some(targetHead,targetTail) ->
+                    if CharUtil.IsEqualIgnoreCase prefixHead targetHead then startsWith prefixTail targetTail
+                    else false
+                | None,_ -> true
+                | Some(_),None -> false
+
+            // Just finishes the continuation.  Consider throwing here in the future
+            let error() = 
+                let str = rest |> StringUtil.ofCharList
+                withData [str]
+
+            // Called when a key is processed but it needs to be followed by a _
+            // or be the completion of the data
+            let needConnectorOrEmpty rest withData = 
+                match ListUtil.tryHead rest with
+                | None -> withData [] 
+                | Some(h,t) ->
+                    if h <> '_' then error()
+                    else inner t withData 
+
+            if startsWith ctrlPrefix rest then 
+                // Handle the CTRL- prefix 
+                if rest.Length = ctrlPrefix.Length then error()
+                else
+                    let toSkip = ctrlPrefix.Length+1
+                    let str = rest |> Seq.take toSkip |> StringUtil.ofCharSeq
+                    let rest = ListUtil.skip toSkip rest
+                    needConnectorOrEmpty rest (fun next -> withData (str::next))
+            elif startsWith ['<'] rest then 
                 match rest |> List.tryFindIndex (fun c -> c = '>') with
-                | None -> 
-                    let str = rest |> StringUtil.ofCharList
-                    withData [str]
+                | None -> error()
                 | Some(index) ->
                     let length = index+1
                     let str = rest |> Seq.take length |> StringUtil.ofCharSeq
                     let rest = rest |> ListUtil.skip length
                     inner rest (fun next -> withData (str :: next))
-            | Some(c) -> 
-                let str = c |> StringUtil.ofChar
-                inner (rest |> ListUtil.skip 1) (fun next -> withData (str :: next))
+            else 
+                match ListUtil.tryHead rest with
+                | None -> withData []
+                | Some(h,t) -> 
+                    let str = h |> StringUtil.ofChar
+                    inner t (fun next -> withData (str :: next))
+
         inner (data |> List.ofSeq) (fun all -> all)
 
     /// Try to convert the passed in string into a single KeyInput value according to the
@@ -99,6 +133,17 @@ module internal KeyNotationUtil =
                 if StringUtil.length data = 1 then tryCharToKeyInput data.[0]
                 else None
 
+        // Convert and then apply the modifier
+        let convertAndApply data modifier = 
+            let ki = convertToRaw data 
+            match modifier,ki with 
+            | Some(modifier),Some(ki) -> 
+                let c = 
+                    if modifier = KeyModifiers.Shift && CharUtil.IsLetter ki.Char then CharUtil.ToUpper ki.Char
+                    else ki.Char
+                KeyInput(c, ki.Key,modifier ||| ki.KeyModifiers) |> Some
+            | _ -> None
+
         // Inside the <
         let insideLessThanGreaterThan() = 
             if data.Length >= 3 && data.[2] = '-' then
@@ -108,14 +153,7 @@ module internal KeyNotationUtil =
                     | 's' -> KeyModifiers.Shift |> Some
                     | 'a' -> KeyModifiers.Alt |> Some
                     | _ -> None
-                let ki = convertToRaw (data.Substring(3, data.Length-4))
-                match modifier,ki with 
-                | Some(modifier),Some(ki) -> 
-                    let c = 
-                        if modifier = KeyModifiers.Shift && CharUtil.IsLetter ki.Char then CharUtil.ToUpper ki.Char
-                        else ki.Char
-                    KeyInput(c, ki.Key,modifier ||| ki.KeyModifiers) |> Some
-                | _ -> None
+                convertAndApply (data.Substring(3, data.Length-4)) modifier
             else 
                 convertToRaw (data.Substring(1,data.Length - 2))
 
@@ -125,8 +163,11 @@ module internal KeyNotationUtil =
             if StringUtil.last data <> '>' then None
             else insideLessThanGreaterThan()
         | Some(c) -> 
-            // If it doesn't start with a < then it must be a single character value
-            if data.Length = 1 then tryCharToKeyInput data.[0]
+            let prefix = "CTRL-"
+            if StringUtil.startsWithIgnoreCase prefix data then
+                if data.Length < prefix.Length + 1 then None
+                else convertAndApply (data.Substring(prefix.Length)) (Some KeyModifiers.Control)
+            elif data.Length = 1 then tryCharToKeyInput data.[0]
             else None
 
     let StringToKeyInput data = 

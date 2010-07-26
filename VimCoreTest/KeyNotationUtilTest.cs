@@ -117,5 +117,51 @@ namespace VimCore.Test
             verifyFunc("<S-F11>", InputUtil.VimKeyAndModifiersToKeyInput(VimKey.F11Key, KeyModifiers.Shift));
             verifyFunc("<c-F11>", InputUtil.VimKeyAndModifiersToKeyInput(VimKey.F11Key, KeyModifiers.Control));
         }
+
+        [Test]
+        public void StringToKeyInput3()
+        {
+            Action<string, KeyInput> verifyFunc = (data, ki) =>
+                {
+                    var parsed = KeyNotationUtil.StringToKeyInput(data);
+                    Assert.AreEqual(ki, parsed);
+                };
+            verifyFunc("CTRL-j", InputUtil.CharWithControlToKeyInput('j'));
+            verifyFunc("CTRL-J", InputUtil.CharWithControlToKeyInput('J'));
+            verifyFunc("CTRL-Up", InputUtil.VimKeyAndModifiersToKeyInput(VimKey.UpKey, KeyModifiers.Control));
+        }
+
+        [Test]
+        public void SplitIntoKeyNotationEntries1()
+        {
+            CollectionAssert.AreEquivalent(
+                new string[] { "a", "b" },
+                KeyNotationUtil.SplitIntoKeyNotationEntries("ab"));
+        }
+
+        [Test]
+        public void SplitIntoKeyNotationEntries2()
+        {
+            CollectionAssert.AreEquivalent(
+                new string[] {"CTRL-j", "b"},
+                KeyNotationUtil.SplitIntoKeyNotationEntries("CTRL-j_b"));
+        }
+
+        [Test]
+        public void SplitIntoKeyNotationEntries3()
+        {
+            CollectionAssert.AreEquivalent(
+                new string[] {"CTRL-J", "b"},
+                KeyNotationUtil.SplitIntoKeyNotationEntries("CTRL-J_b"));
+        }
+
+        [Test]
+        public void SplitIntoKeyNotationEntries4()
+        {
+            CollectionAssert.AreEquivalent(
+                new string[] {"CTRL-J", "CTRL-b"},
+                KeyNotationUtil.SplitIntoKeyNotationEntries("CTRL-J_CTRL-b"));
+
+        }
     }
 }

@@ -124,6 +124,7 @@ module internal ListUtil =
             if h = value then true
             else contains value t
         | [] -> false
+
         
 module internal SeqUtil =
     
@@ -244,6 +245,12 @@ module internal CharUtil =
     let LettersUpper = ['A'..'Z']
     let Letters = Seq.append LettersLower LettersUpper 
     let Digits = ['0'..'9']
+    let IsEqual left right = left = right
+    let IsEqualIgnoreCase left right = 
+        let func c = if IsLetter c then ToLower c else c
+        let left = func left
+        let right  = func right
+        left = right
 
     let (|WhiteSpace|NonWhiteSpace|) char =
         if IsWhiteSpace char then

@@ -62,7 +62,7 @@ namespace VimCore.Test
             var cmd = Command.NewSimpleCommand(
                 name,
                 flagsRaw,
-                funcRaw);
+                func.ToFSharpFunc());
             return new CommandRunData(
                 cmd,
                 new Register('c'),

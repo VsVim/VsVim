@@ -90,3 +90,6 @@ module internal StringUtil =
     let last value =
         let index = (length value) - 1
         value.[index]
+
+    [<CompiledName("StartsWithIgnoreCase")>]
+    let startsWithIgnoreCase prefix (value:string) = value.StartsWith(prefix, System.StringComparison.OrdinalIgnoreCase)
