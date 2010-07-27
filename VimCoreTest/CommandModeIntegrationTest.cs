@@ -1,12 +1,6 @@
-﻿using System;
-using System.Text;
-using System.Collections.Generic;
-using System.Linq;
+﻿using Microsoft.VisualStudio.Text.Editor;
 using NUnit.Framework;
 using Vim;
-using System.Windows.Input;
-using Microsoft.VisualStudio.Text.Editor;
-using Moq;
 
 namespace VimCore.Test
 {
@@ -45,7 +39,7 @@ namespace VimCore.Test
         public void OpenFile1()
         {
             buffer.ProcessAsString(":e foo.cpp");
-            buffer.Process(InputUtil.VimKeyToKeyInput(VimKey.EnterKey));
+            buffer.Process(InputUtil.VimKeyToKeyInput(VimKey.Enter));
             Assert.AreEqual("foo.cpp", host.LastFileOpen);
         }
 
@@ -60,7 +54,7 @@ namespace VimCore.Test
         public void SwitchOut()
         {
             buffer.ProcessAsString(":e foo");
-            buffer.Process(InputUtil.VimKeyToKeyInput(VimKey.EscapeKey));
+            buffer.Process(InputUtil.VimKeyToKeyInput(VimKey.Escape));
             Assert.AreEqual(ModeKind.Normal, buffer.ModeKind);
         }
 
@@ -68,7 +62,7 @@ namespace VimCore.Test
         public void SwitchOutFromBackspace()
         {
             buffer.ProcessAsString(":");
-            buffer.Process(InputUtil.VimKeyToKeyInput(VimKey.BackKey));
+            buffer.Process(InputUtil.VimKeyToKeyInput(VimKey.Back));
             Assert.AreEqual(ModeKind.Normal, buffer.ModeKind);
         }
 
@@ -76,10 +70,10 @@ namespace VimCore.Test
         public void JumpLine1()
         {
             buffer.ProcessAsString(":0");
-            buffer.Process(InputUtil.VimKeyToKeyInput(VimKey.EnterKey));
+            buffer.Process(InputUtil.VimKeyToKeyInput(VimKey.Enter));
             Assert.AreEqual(0, view.Caret.Position.BufferPosition.Position);
             buffer.ProcessAsString(":1");
-            buffer.Process(InputUtil.VimKeyToKeyInput(VimKey.EnterKey));
+            buffer.Process(InputUtil.VimKeyToKeyInput(VimKey.Enter));
             Assert.AreEqual(0, view.Caret.Position.BufferPosition.Position);
         }
 
@@ -90,7 +84,7 @@ namespace VimCore.Test
         public void JumpLine2()
         {
             buffer.ProcessAsString(":2");
-            buffer.Process(InputUtil.VimKeyToKeyInput(VimKey.EnterKey));
+            buffer.Process(InputUtil.VimKeyToKeyInput(VimKey.Enter));
             Assert.AreEqual(view.TextSnapshot.GetLineFromLineNumber(1).Start, view.Caret.Position.BufferPosition);
         }
 
@@ -98,7 +92,7 @@ namespace VimCore.Test
         public void JumpLineLast()
         {
             buffer.ProcessAsString(":$");
-            buffer.Process(InputUtil.VimKeyToKeyInput(VimKey.EnterKey));
+            buffer.Process(InputUtil.VimKeyToKeyInput(VimKey.Enter));
             var tss = view.TextSnapshot;
             var last = tss.GetLineFromLineNumber(tss.LineCount - 1);
             Assert.AreEqual(last.EndIncludingLineBreak, view.Caret.Position.BufferPosition);

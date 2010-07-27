@@ -97,7 +97,7 @@ type internal VisualMode
                         CommandResult.Completed ModeSwitch.SwitchPreviousMode))
                 yield (InputUtil.CharToKeyInput('d'), deleteSelection)
                 yield (InputUtil.CharToKeyInput('x'), deleteSelection)
-                yield (InputUtil.VimKeyToKeyInput VimKey.DeleteKey, deleteSelection)
+                yield (InputUtil.VimKeyToKeyInput VimKey.Delete, deleteSelection)
                 yield (InputUtil.CharToKeyInput('c'), changeSelection)
                 yield (InputUtil.CharToKeyInput('s'), changeSelection)
                 yield (InputUtil.CharToKeyInput('C'), changeLines)
@@ -166,7 +166,7 @@ type internal VisualMode
         member x.ModeKind = _kind
         member x.CanProcess (ki:KeyInput) = true
         member x.Process (ki : KeyInput) =  
-            if ki.Key = VimKey.EscapeKey then
+            if ki.Key = VimKey.Escape then
                 ProcessResult.SwitchPreviousMode
             else
                 match _runner.Run ki with

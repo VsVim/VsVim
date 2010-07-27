@@ -101,7 +101,7 @@ type internal NormalMode
     member private x.ReplaceChar count reg = 
         let inner (ki:KeyInput) = 
             _data <- { _data with IsInReplace = false }
-            if ki.Key = VimKey.EscapeKey then LongCommandResult.Cancelled
+            if ki.Key = VimKey.Escape then LongCommandResult.Cancelled
             else 
                 if not (_operations.ReplaceChar ki count) then
                     _operations.Beep()
@@ -314,7 +314,7 @@ type internal NormalMode
         let hardName = 
             seq { 
                 yield (
-                    [InputUtil.CharToKeyInput('z'); InputUtil.VimKeyToKeyInput(VimKey.EnterKey)],
+                    [InputUtil.CharToKeyInput('z'); InputUtil.VimKeyToKeyInput(VimKey.Enter)],
                     CommandFlags.Movement,
                     fun count reg -> 
                         _operations.EditorOperations.ScrollLineTop()
@@ -366,7 +366,7 @@ type internal NormalMode
         // Similar to completeOps but take the conditional count value
         let completeOps2 = 
             seq {
-                yield (InputUtil.VimKeyAndModifiersToKeyInput VimKey.HomeKey KeyModifiers.Control , (fun count _ -> _operations.GoToLineOrFirst(count)))
+                yield (InputUtil.VimKeyAndModifiersToKeyInput VimKey.Home KeyModifiers.Control , (fun count _ -> _operations.GoToLineOrFirst(count)))
             } |> Seq.map (fun (ki,func) ->
                     let name = OneKeyInput(ki)
                     let func2 count reg =

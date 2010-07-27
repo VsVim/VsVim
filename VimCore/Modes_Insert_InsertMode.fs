@@ -13,7 +13,7 @@ type internal InsertMode
         _broker : IDisplayWindowBroker) =
 
     let _escapeCommands = [
-        InputUtil.VimKeyToKeyInput VimKey.EscapeKey;
+        InputUtil.VimKeyToKeyInput VimKey.Escape;
         InputUtil.CharWithControlToKeyInput '[' ]
     let _commands = InputUtil.CharWithControlToKeyInput 'd' :: _escapeCommands
 

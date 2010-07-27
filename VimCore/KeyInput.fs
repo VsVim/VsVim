@@ -4,41 +4,41 @@ namespace Vim
 
 /// Provides values for the well known key values used by Vim 
 type VimKey =
-    | NotWellKnownKey = 0
-    | BackKey = 1
-    | TabKey = 2
-    | EnterKey = 3
-    | EscapeKey = 4 
-    | LeftKey = 5
-    | UpKey = 6
-    | RightKey = 7
-    | DownKey = 8
-    | DeleteKey = 9
-    | HelpKey = 10
-    | EndKey = 11
-    | PageUpKey = 12
-    | PageDownKey = 13
-    | InsertKey = 14
-    | HomeKey = 15
-    | BreakKey = 16
-    | F1Key = 17
-    | F2Key = 18
-    | F3Key = 19
-    | F4Key = 20
-    | F5Key = 21
-    | F6Key = 22
-    | F7Key = 23
-    | F8Key = 24
-    | F9Key = 25
-    | F10Key = 26
-    | F11Key = 27
-    | F12Key = 28
-    | MultiplyKey = 29
-    | DivideKey = 30
-    | SeparatorKey = 31
-    | SubtractKey = 32
-    | AddKey = 33
-    | DecimalKey = 34
+    | NotWellKnown = 0
+    | Back = 1
+    | Tab = 2
+    | Enter = 3
+    | Escape = 4 
+    | Left = 5
+    | Up = 6
+    | Right = 7
+    | Down = 8
+    | Delete = 9
+    | Help = 10
+    | End = 11
+    | PageUp = 12
+    | PageDown = 13
+    | Insert = 14
+    | Home = 15
+    | Break = 16
+    | F1 = 17
+    | F2 = 18
+    | F3 = 19
+    | F4 = 20
+    | F5 = 21
+    | F6 = 22
+    | F7 = 23
+    | F8 = 24
+    | F9 = 25
+    | F10 = 26
+    | F11 = 27
+    | F12 = 28
+    | Multiply = 29
+    | Divide = 30
+    | Separator = 31
+    | Subtract = 32
+    | Add = 33
+    | Decimal = 34
 
 [<System.Flags>]
 type KeyModifiers = 
@@ -62,16 +62,16 @@ type KeyInput
     /// Determine if this a new line key.  Meant to match the Vim definition of <CR>
     member x.IsNewLine = 
         match _key with
-            | VimKey.EnterKey -> true
+            | VimKey.Enter -> true
             | _ -> false
 
     /// Is this an arrow key?
     member x.IsArrowKey = 
         match _key with
-        | VimKey.LeftKey -> true
-        | VimKey.RightKey -> true
-        | VimKey.UpKey -> true
-        | VimKey.DownKey -> true
+        | VimKey.Left -> true
+        | VimKey.Right -> true
+        | VimKey.Up -> true
+        | VimKey.Down -> true
         | _ -> false
 
     member private x.CompareTo (other:KeyInput) =

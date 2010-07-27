@@ -103,11 +103,11 @@ namespace VimCore.Test
                 InputUtil.CharToKeyInput('j'),
                 InputUtil.CharToKeyInput('k'),
                 InputUtil.CharToKeyInput('l'),
-                InputUtil.VimKeyToKeyInput(VimKey.LeftKey),
-                InputUtil.VimKeyToKeyInput(VimKey.RightKey),
-                InputUtil.VimKeyToKeyInput(VimKey.UpKey),
-                InputUtil.VimKeyToKeyInput(VimKey.DownKey),
-                InputUtil.VimKeyToKeyInput(VimKey.BackKey) };
+                InputUtil.VimKeyToKeyInput(VimKey.Left),
+                InputUtil.VimKeyToKeyInput(VimKey.Right),
+                InputUtil.VimKeyToKeyInput(VimKey.Up),
+                InputUtil.VimKeyToKeyInput(VimKey.Down),
+                InputUtil.VimKeyToKeyInput(VimKey.Back) };
             var commands = _mode.CommandNames.ToList();
             foreach (var item in list)
             {
@@ -120,7 +120,7 @@ namespace VimCore.Test
         public void Process1()
         {
             Create("foo");
-            var res = _mode.Process(InputUtil.VimKeyToKeyInput(VimKey.EscapeKey));
+            var res = _mode.Process(InputUtil.VimKeyToKeyInput(VimKey.Escape));
             Assert.IsTrue(res.IsSwitchPreviousMode);
         }
 
@@ -129,7 +129,7 @@ namespace VimCore.Test
         {
             Create("foo");
             _mode.Process('g');
-            var res = _mode.Process(VimKey.EscapeKey);
+            var res = _mode.Process(VimKey.Escape);
             Assert.IsTrue(res.IsSwitchPreviousMode);
         }
 
@@ -274,7 +274,7 @@ namespace VimCore.Test
             _operations
                 .Setup(x => x.DeleteSelection(_map.DefaultRegister))
                 .Verifiable();
-            _mode.Process(VimKey.DeleteKey);
+            _mode.Process(VimKey.Delete);
             _operations.Verify();
         }
 

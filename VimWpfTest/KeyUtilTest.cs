@@ -54,30 +54,30 @@ namespace Vim.UI.Wpf.Test
         [Test]
         public void WellKnownBothWays()
         {
-            WellKnownBothWays(VimKey.LeftKey, Key.Left);
-            WellKnownBothWays(VimKey.RightKey, Key.Right);
-            WellKnownBothWays(VimKey.UpKey, Key.Up);
-            WellKnownBothWays(VimKey.DownKey, Key.Down);
-            WellKnownBothWays(VimKey.F1Key, Key.F1);
-            WellKnownBothWays(VimKey.F2Key, Key.F2);
-            WellKnownBothWays(VimKey.F3Key, Key.F3);
-            WellKnownBothWays(VimKey.F4Key, Key.F4);
-            WellKnownBothWays(VimKey.F5Key, Key.F5);
-            WellKnownBothWays(VimKey.F6Key, Key.F6);
-            WellKnownBothWays(VimKey.F7Key, Key.F7);
-            WellKnownBothWays(VimKey.F8Key, Key.F8);
-            WellKnownBothWays(VimKey.F9Key, Key.F9);
-            WellKnownBothWays(VimKey.F10Key, Key.F10);
-            WellKnownBothWays(VimKey.F11Key, Key.F11);
-            WellKnownBothWays(VimKey.F12Key, Key.F12);
-            WellKnownBothWays(VimKey.DeleteKey, Key.Delete);
-            WellKnownBothWays(VimKey.EscapeKey, Key.Escape);
-            WellKnownBothWays(VimKey.MultiplyKey, Key.Multiply);
-            WellKnownBothWays(VimKey.AddKey, Key.Add);
-            WellKnownBothWays(VimKey.SeparatorKey, Key.Separator);
-            WellKnownBothWays(VimKey.SubtractKey, Key.Subtract);
-            WellKnownBothWays(VimKey.DecimalKey, Key.Decimal);
-            WellKnownBothWays(VimKey.DivideKey, Key.Divide);
+            WellKnownBothWays(VimKey.Left, Key.Left);
+            WellKnownBothWays(VimKey.Right, Key.Right);
+            WellKnownBothWays(VimKey.Up, Key.Up);
+            WellKnownBothWays(VimKey.Down, Key.Down);
+            WellKnownBothWays(VimKey.F1, Key.F1);
+            WellKnownBothWays(VimKey.F2, Key.F2);
+            WellKnownBothWays(VimKey.F3, Key.F3);
+            WellKnownBothWays(VimKey.F4, Key.F4);
+            WellKnownBothWays(VimKey.F5, Key.F5);
+            WellKnownBothWays(VimKey.F6, Key.F6);
+            WellKnownBothWays(VimKey.F7, Key.F7);
+            WellKnownBothWays(VimKey.F8, Key.F8);
+            WellKnownBothWays(VimKey.F9, Key.F9);
+            WellKnownBothWays(VimKey.F10, Key.F10);
+            WellKnownBothWays(VimKey.F11, Key.F11);
+            WellKnownBothWays(VimKey.F12, Key.F12);
+            WellKnownBothWays(VimKey.Delete, Key.Delete);
+            WellKnownBothWays(VimKey.Escape, Key.Escape);
+            WellKnownBothWays(VimKey.Multiply, Key.Multiply);
+            WellKnownBothWays(VimKey.Add, Key.Add);
+            WellKnownBothWays(VimKey.Separator, Key.Separator);
+            WellKnownBothWays(VimKey.Subtract, Key.Subtract);
+            WellKnownBothWays(VimKey.Decimal, Key.Decimal);
+            WellKnownBothWays(VimKey.Divide, Key.Divide);
         }
 
         [Test]
@@ -123,7 +123,7 @@ namespace Vim.UI.Wpf.Test
         public void ConvertToKeyInput5()
         {
             var ki = KeyUtil.ConvertToKeyInput(Key.F12, ModifierKeys.Shift | ModifierKeys.Control);
-            Assert.AreEqual(VimKey.F12Key, ki.Key);
+            Assert.AreEqual(VimKey.F12, ki.Key);
             Assert.AreEqual(KeyModifiers.Shift | KeyModifiers.Control, ki.KeyModifiers);
         }
 

@@ -1,12 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using NUnit.Framework;
-using VsVim;
-using System.Windows.Input;
-using KeyBinding = VsVim.KeyBinding;
 using Vim;
+using KeyBinding = VsVim.KeyBinding;
 
 namespace VsVimTest
 {
@@ -35,7 +31,7 @@ namespace VsVimTest
         {
             var b = KeyBinding.Parse("::f2");
             Assert.AreEqual(Char.MinValue, b.FirstKeyInput.Char);
-            Assert.AreEqual(VimKey.F2Key, b.FirstKeyInput.Key);
+            Assert.AreEqual(VimKey.F2, b.FirstKeyInput.Key);
         }
 
         [Test, Description("Parse a keybinding with , correctly")]
@@ -95,70 +91,70 @@ namespace VsVimTest
         public void VsKeyBackSpace()
         {
             var b = KeyBinding.Parse("::Bkspce");
-            Assert.AreEqual(VimKey.BackKey, b.FirstKeyInput.Key);
+            Assert.AreEqual(VimKey.Back, b.FirstKeyInput.Key);
         }
 
         [Test]
         public void VsKeyLeftArrow()
         {
             var b = KeyBinding.Parse("::Left Arrow");
-            Assert.AreEqual(VimKey.LeftKey, b.FirstKeyInput.Key);
+            Assert.AreEqual(VimKey.Left, b.FirstKeyInput.Key);
         }
 
         [Test]
         public void VsKeyRightArrow()
         {
             var b = KeyBinding.Parse("::Right Arrow");
-            Assert.AreEqual(VimKey.RightKey, b.FirstKeyInput.Key);
+            Assert.AreEqual(VimKey.Right, b.FirstKeyInput.Key);
         }
 
         [Test]
         public void VsKeyUpArrow()
         {
             var b = KeyBinding.Parse("::Up Arrow");
-            Assert.AreEqual(VimKey.UpKey, b.FirstKeyInput.Key);
+            Assert.AreEqual(VimKey.Up, b.FirstKeyInput.Key);
         }
 
         [Test]
         public void VsKeyDownArrow()
         {
             var b = KeyBinding.Parse("::Down Arrow");
-            Assert.AreEqual(VimKey.DownKey, b.FirstKeyInput.Key);
+            Assert.AreEqual(VimKey.Down, b.FirstKeyInput.Key);
         }
 
         [Test]
         public void VsKeyDownArrow2()
         {
             var b = KeyBinding.Parse("::Shift+Down Arrow");
-            Assert.AreEqual(VimKey.DownKey, b.FirstKeyInput.Key);
+            Assert.AreEqual(VimKey.Down, b.FirstKeyInput.Key);
         }
 
         [Test]
         public void VsKeyPageDown()
         {
             var b = KeyBinding.Parse("::PgDn");
-            Assert.AreEqual(VimKey.PageDownKey, b.FirstKeyInput.Key);
+            Assert.AreEqual(VimKey.PageDown, b.FirstKeyInput.Key);
         }
 
         [Test]
         public void VsKeyPageUp()
         {
             var b = KeyBinding.Parse("::PgUp");
-            Assert.AreEqual(VimKey.PageUpKey, b.FirstKeyInput.Key);
+            Assert.AreEqual(VimKey.PageUp, b.FirstKeyInput.Key);
         }
 
         [Test]
         public void VsNum1()
         {
             var b = KeyBinding.Parse("::Num +");
-            Assert.AreEqual(VimKey.AddKey, b.FirstKeyInput.Key);
+            Assert.AreEqual(VimKey.Add, b.FirstKeyInput.Key);
         }
 
         [Test]
         public void VsNum2()
         {
             var b = KeyBinding.Parse("::Num *");
-            Assert.AreEqual(VimKey.MultiplyKey, b.FirstKeyInput.Key);
+            Assert.AreEqual(VimKey.Multiply, b.FirstKeyInput.Key);
         }
 
         [Test]

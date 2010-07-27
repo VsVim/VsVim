@@ -1,13 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
-using System.Text.RegularExpressions;
+using System.Windows.Input;
 using Vim;
 using Vim.Extensions;
-using System.Diagnostics;
-using System.Windows.Input;
 using Vim.UI.Wpf;
 
 namespace VsVim
@@ -154,37 +151,37 @@ namespace VsVim
         private static void BuildVsMap()
         {
             var map = new Dictionary<string, VimKey>(StringComparer.OrdinalIgnoreCase);
-            map.Add("Down Arrow", VimKey.DownKey);
-            map.Add("Up Arrow", VimKey.UpKey);
-            map.Add("Left Arrow", VimKey.LeftKey);
-            map.Add("Right Arrow", VimKey.RightKey);
-            map.Add("Bkspce", VimKey.BackKey);
-            map.Add("PgDn", VimKey.PageDownKey);
-            map.Add("PgUp", VimKey.PageUpKey);
-            map.Add("Ins", VimKey.InsertKey);
-            map.Add("Del", VimKey.DeleteKey);
-            map.Add("Esc", VimKey.EscapeKey);
-            map.Add("Break", VimKey.BreakKey);
-            map.Add("Num +", VimKey.AddKey);
-            map.Add("Num -", VimKey.SubtractKey);
-            map.Add("Num /", VimKey.DivideKey);
-            map.Add("Num *", VimKey.MultiplyKey);
-            map.Add("Enter", VimKey.EnterKey);
-            map.Add("Tab", VimKey.TabKey);
-            map.Add("Home", VimKey.HomeKey);
-            map.Add("End", VimKey.EndKey);
-            map.Add("F1", VimKey.F1Key);
-            map.Add("F2", VimKey.F2Key);
-            map.Add("F3", VimKey.F3Key);
-            map.Add("F4", VimKey.F4Key);
-            map.Add("F5", VimKey.F5Key);
-            map.Add("F6", VimKey.F6Key);
-            map.Add("F7", VimKey.F7Key);
-            map.Add("F8", VimKey.F8Key);
-            map.Add("F9", VimKey.F9Key);
-            map.Add("F10", VimKey.F10Key);
-            map.Add("F11", VimKey.F11Key);
-            map.Add("F12", VimKey.F12Key);
+            map.Add("Down Arrow", VimKey.Down);
+            map.Add("Up Arrow", VimKey.Up);
+            map.Add("Left Arrow", VimKey.Left);
+            map.Add("Right Arrow", VimKey.Right);
+            map.Add("Bkspce", VimKey.Back);
+            map.Add("PgDn", VimKey.PageDown);
+            map.Add("PgUp", VimKey.PageUp);
+            map.Add("Ins", VimKey.Insert);
+            map.Add("Del", VimKey.Delete);
+            map.Add("Esc", VimKey.Escape);
+            map.Add("Break", VimKey.Break);
+            map.Add("Num +", VimKey.Add);
+            map.Add("Num -", VimKey.Subtract);
+            map.Add("Num /", VimKey.Divide);
+            map.Add("Num *", VimKey.Multiply);
+            map.Add("Enter", VimKey.Enter);
+            map.Add("Tab", VimKey.Tab);
+            map.Add("Home", VimKey.Home);
+            map.Add("End", VimKey.End);
+            map.Add("F1", VimKey.F1);
+            map.Add("F2", VimKey.F2);
+            map.Add("F3", VimKey.F3);
+            map.Add("F4", VimKey.F4);
+            map.Add("F5", VimKey.F5);
+            map.Add("F6", VimKey.F6);
+            map.Add("F7", VimKey.F7);
+            map.Add("F8", VimKey.F8);
+            map.Add("F9", VimKey.F9);
+            map.Add("F10", VimKey.F10);
+            map.Add("F11", VimKey.F11);
+            map.Add("F12", VimKey.F12);
 
             s_vsMap = map;
         }
@@ -281,16 +278,16 @@ namespace VsVim
                 switch (keystroke.ToLower())
                 {
                     case "num +":
-                        ki = InputUtil.VimKeyToKeyInput(VimKey.AddKey);
+                        ki = InputUtil.VimKeyToKeyInput(VimKey.Add);
                         break;
                     case "num /":
-                        ki = InputUtil.VimKeyToKeyInput(VimKey.DivideKey);
+                        ki = InputUtil.VimKeyToKeyInput(VimKey.Divide);
                         break;
                     case "num *":
-                        ki = InputUtil.VimKeyToKeyInput(VimKey.MultiplyKey);
+                        ki = InputUtil.VimKeyToKeyInput(VimKey.Multiply);
                         break;
                     case "num -":
-                        ki = InputUtil.VimKeyToKeyInput(VimKey.SubtractKey);
+                        ki = InputUtil.VimKeyToKeyInput(VimKey.Subtract);
                         break;
                 }
                 return ki != null;

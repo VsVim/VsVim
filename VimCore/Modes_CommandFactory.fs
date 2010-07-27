@@ -15,17 +15,17 @@ type internal CommandFactory( _operations : ICommonOperations, _capture : IMotio
 
         seq {
             yield (InputUtil.CharToKeyInput('h'), moveLeft)
-            yield (InputUtil.VimKeyToKeyInput VimKey.LeftKey, moveLeft)
-            yield (InputUtil.VimKeyToKeyInput VimKey.BackKey, moveLeft)
+            yield (InputUtil.VimKeyToKeyInput VimKey.Left, moveLeft)
+            yield (InputUtil.VimKeyToKeyInput VimKey.Back, moveLeft)
             yield (InputUtil.CharWithControlToKeyInput 'h', moveLeft)
             yield (InputUtil.CharToKeyInput('l'), moveRight)
-            yield (InputUtil.VimKeyToKeyInput VimKey.RightKey, moveRight)
+            yield (InputUtil.VimKeyToKeyInput VimKey.Right, moveRight)
             yield (InputUtil.CharToKeyInput ' ', moveRight)
             yield (InputUtil.CharToKeyInput('k'), moveUp)
-            yield (InputUtil.VimKeyToKeyInput VimKey.UpKey, moveUp)
+            yield (InputUtil.VimKeyToKeyInput VimKey.Up, moveUp)
             yield (InputUtil.CharWithControlToKeyInput 'p', moveUp)
             yield (InputUtil.CharToKeyInput('j'), moveDown)
-            yield (InputUtil.VimKeyToKeyInput VimKey.DownKey, moveDown)
+            yield (InputUtil.VimKeyToKeyInput VimKey.Down, moveDown)
             yield (InputUtil.CharWithControlToKeyInput 'n', moveDown)
             yield (InputUtil.CharWithControlToKeyInput 'j', moveDown)
         }

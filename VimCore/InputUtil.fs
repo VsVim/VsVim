@@ -57,44 +57,44 @@ module InputUtil =
     /// location
     ///   http://msdn.microsoft.com/en-us/library/ms645540(VS.85).aspx
     let TryVimKeyToVirtualKeyCode vimKey = 
-        if vimKey = VimKey.NotWellKnownKey then None
+        if vimKey = VimKey.NotWellKnown then None
         else
             let code = 
                 match vimKey with 
-                | VimKey.BackKey ->  0x8
-                | VimKey.TabKey ->  0x9
-                | VimKey.EnterKey ->  0xD
-                | VimKey.EscapeKey ->  0x1B
-                | VimKey.DeleteKey ->  0x2E
-                | VimKey.LeftKey ->  0x25
-                | VimKey.UpKey ->  0x26
-                | VimKey.RightKey ->  0x27
-                | VimKey.DownKey ->  0x28
-                | VimKey.HelpKey ->  0x2F
-                | VimKey.InsertKey ->  0x2D
-                | VimKey.HomeKey ->  0x24
-                | VimKey.EndKey ->  0x23
-                | VimKey.PageUpKey ->  0x21
-                | VimKey.PageDownKey ->  0x22
-                | VimKey.BreakKey -> 0x03
-                | VimKey.F1Key -> 0x70
-                | VimKey.F2Key -> 0x71
-                | VimKey.F3Key -> 0x72
-                | VimKey.F4Key -> 0x73
-                | VimKey.F5Key -> 0x74
-                | VimKey.F6Key -> 0x75
-                | VimKey.F7Key -> 0x76
-                | VimKey.F8Key -> 0x77
-                | VimKey.F9Key -> 0x78
-                | VimKey.F10Key -> 0x79
-                | VimKey.F11Key -> 0x7a
-                | VimKey.F12Key -> 0x7b
-                | VimKey.MultiplyKey -> 0x6A
-                | VimKey.AddKey -> 0x6B
-                | VimKey.SeparatorKey -> 0x6C
-                | VimKey.SubtractKey -> 0x6D
-                | VimKey.DecimalKey -> 0x6E
-                | VimKey.DivideKey -> 0x6F
+                | VimKey.Back ->  0x8
+                | VimKey.Tab ->  0x9
+                | VimKey.Enter ->  0xD
+                | VimKey.Escape ->  0x1B
+                | VimKey.Delete ->  0x2E
+                | VimKey.Left ->  0x25
+                | VimKey.Up ->  0x26
+                | VimKey.Right ->  0x27
+                | VimKey.Down ->  0x28
+                | VimKey.Help ->  0x2F
+                | VimKey.Insert ->  0x2D
+                | VimKey.Home ->  0x24
+                | VimKey.End ->  0x23
+                | VimKey.PageUp ->  0x21
+                | VimKey.PageDown ->  0x22
+                | VimKey.Break -> 0x03
+                | VimKey.F1 -> 0x70
+                | VimKey.F2 -> 0x71
+                | VimKey.F3 -> 0x72
+                | VimKey.F4 -> 0x73
+                | VimKey.F5 -> 0x74
+                | VimKey.F6 -> 0x75
+                | VimKey.F7 -> 0x76
+                | VimKey.F8 -> 0x77
+                | VimKey.F9 -> 0x78
+                | VimKey.F10 -> 0x79
+                | VimKey.F11 -> 0x7a
+                | VimKey.F12 -> 0x7b
+                | VimKey.Multiply -> 0x6A
+                | VimKey.Add -> 0x6B
+                | VimKey.Separator -> 0x6C
+                | VimKey.Subtract -> 0x6D
+                | VimKey.Decimal -> 0x6E
+                | VimKey.Divide -> 0x6F
                 | _ -> failwith "Invalid Enum value"
             Some(code)
         
@@ -120,13 +120,13 @@ module InputUtil =
         | None -> None
         | Some(virtualKey,modKeys) -> 
             match Map.tryFind virtualKey VimKeyMap with
-            | None -> KeyInput(ch, VimKey.NotWellKnownKey, modKeys) |> Some
+            | None -> KeyInput(ch, VimKey.NotWellKnown, modKeys) |> Some
             | Some(_,vimKey) -> KeyInput(ch, vimKey, modKeys) |> Some
 
     let CharToKeyInput c = 
         match TryCharToKeyInput c with
         | Some ki -> ki
-        | None -> KeyInput(c, VimKey.NotWellKnownKey, KeyModifiers.None)
+        | None -> KeyInput(c, VimKey.NotWellKnown, KeyModifiers.None)
 
     let TryVirtualKeyCodeToKeyInput virtualKey = 
         match Map.tryFind virtualKey VimKeyMap with
@@ -134,11 +134,11 @@ module InputUtil =
         | None -> 
             match TryVirtualKeyCodeToChar virtualKey with
             | None -> None
-            | Some(ch) -> KeyInput(ch, VimKey.NotWellKnownKey, KeyModifiers.None) |> Some
+            | Some(ch) -> KeyInput(ch, VimKey.NotWellKnown, KeyModifiers.None) |> Some
 
     let VimKeyToKeyInput vimKey = 
         match TryVimKeyToVirtualKeyCode vimKey with
-        | None -> KeyInput(System.Char.MinValue, VimKey.NotWellKnownKey, KeyModifiers.None)
+        | None -> KeyInput(System.Char.MinValue, VimKey.NotWellKnown, KeyModifiers.None)
         | Some(virtualKey) -> 
             match TryVirtualKeyCodeToChar virtualKey with
             | None -> KeyInput(System.Char.MinValue, vimKey, KeyModifiers.None)

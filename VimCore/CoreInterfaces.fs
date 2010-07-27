@@ -263,7 +263,7 @@ type KeyInputSet =
     override x.ToString() =
         x.KeyInputs
         |> Seq.map (fun ki ->
-            if ki.Key = VimKey.NotWellKnownKey then ki.Char.ToString()
+            if ki.Key = VimKey.NotWellKnown then ki.Char.ToString()
             else System.String.Format("<{0}>", ki.Key)  )
         |> StringUtil.ofStringSeq
 

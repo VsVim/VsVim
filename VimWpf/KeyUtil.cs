@@ -94,7 +94,7 @@ namespace Vim.UI.Wpf
             var tuple = TryConvertToKeyInput(key);
             if (tuple == null)
             {
-                return new KeyInput(Char.MinValue, VimKey.NotWellKnownKey, modKeys);
+                return new KeyInput(Char.MinValue, VimKey.NotWellKnown, modKeys);
             }
 
             if ((modKeys & KeyModifiers.Shift) == 0)

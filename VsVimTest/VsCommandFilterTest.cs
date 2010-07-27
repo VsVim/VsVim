@@ -1,14 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+using EnvDTE;
+using Microsoft.VisualStudio;
+using Microsoft.VisualStudio.TextManager.Interop;
+using Moq;
 using NUnit.Framework;
 using Vim;
-using Moq;
-using Microsoft.VisualStudio.TextManager.Interop;
-using Microsoft.VisualStudio;
 using VsVim;
-using EnvDTE;
 
 namespace VsVimTest
 {
@@ -49,7 +46,7 @@ namespace VsVimTest
         public void TryConvert1()
         {
             _buffer.Setup(x => x.CanProcess(It.IsAny<KeyInput>())).Returns(true);
-            AssertCanConvert2K(VSConstants.VSStd2KCmdID.TAB, InputUtil.VimKeyToKeyInput(VimKey.TabKey));
+            AssertCanConvert2K(VSConstants.VSStd2KCmdID.TAB, InputUtil.VimKeyToKeyInput(VimKey.Tab));
         }
 
         [Test]

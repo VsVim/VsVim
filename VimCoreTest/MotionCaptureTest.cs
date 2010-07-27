@@ -1,16 +1,11 @@
-﻿using System;
-using System.Text;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.Linq;
+using Microsoft.FSharp.Core;
+using Microsoft.VisualStudio.Text;
+using Microsoft.VisualStudio.Text.Editor;
+using Moq;
 using NUnit.Framework;
 using Vim;
-using System.Windows.Input;
-using Microsoft.VisualStudio.Text.Editor;
-using Microsoft.VisualStudio.Text;
-using VimCore.Test.Utils;
-using Moq;
 using Vim.Extensions;
-using Microsoft.FSharp.Core;
 
 namespace VimCore.Test
 {
@@ -122,7 +117,7 @@ namespace VimCore.Test
                 .Setup(x => x.EndOfLine(1))
                 .Returns(CreateMotionData())
                 .Verifiable();
-            _capture.GetMotion(InputUtil.VimKeyToKeyInput(VimKey.EndKey), FSharpOption<int>.None);
+            _capture.GetMotion(InputUtil.VimKeyToKeyInput(VimKey.End), FSharpOption<int>.None);
             _util.Verify();
         }
 

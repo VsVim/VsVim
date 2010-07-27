@@ -1,18 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+using Microsoft.VisualStudio.Text.Editor;
+using Moq;
 using NUnit.Framework;
 using Vim;
 using Vim.Modes.Command;
-using Microsoft.VisualStudio.Text.Editor;
-using VimCore.Test.Utils;
-using Microsoft.VisualStudio.Text;
-using System.Windows.Input;
-using Microsoft.VisualStudio.Text.Operations;
-using Moq;
-using Microsoft.FSharp.Collections;
 using VimCore.Test.Mock;
+using VimCore.Test.Utils;
 
 namespace VimCore.Test
 {
@@ -43,7 +36,7 @@ namespace VimCore.Test
         private void ProcessWithEnter(string input)
         {
             _mode.Process(input);
-            _mode.Process(InputUtil.VimKeyToKeyInput(VimKey.EnterKey));
+            _mode.Process(InputUtil.VimKeyToKeyInput(VimKey.Enter));
         }
 
         [Test, Description("Entering command mode should update the status")]
@@ -65,7 +58,7 @@ namespace VimCore.Test
         {
             _processor.Setup(x => x.RunCommand(MatchUtil.CreateForCharList("1"))).Verifiable();
             _mode.Process("1");
-            _mode.Process(InputUtil.VimKeyToKeyInput(VimKey.EnterKey));
+            _mode.Process(InputUtil.VimKeyToKeyInput(VimKey.Enter));
             _processor.Verify();
         }
 
@@ -100,7 +93,7 @@ namespace VimCore.Test
         public void Input3()
         {
             _mode.Process("foo");
-            _mode.Process(InputUtil.VimKeyToKeyInput(VimKey.BackKey));
+            _mode.Process(InputUtil.VimKeyToKeyInput(VimKey.Back));
             Assert.AreEqual("fo", _modeRaw.Command);
         }
 
@@ -108,7 +101,7 @@ namespace VimCore.Test
         public void Input4()
         {
             _mode.Process("foo");
-            _mode.Process(InputUtil.VimKeyToKeyInput(VimKey.EscapeKey));
+            _mode.Process(InputUtil.VimKeyToKeyInput(VimKey.Escape));
             Assert.AreEqual(string.Empty, _modeRaw.Command);
         }
 
@@ -116,8 +109,8 @@ namespace VimCore.Test
         public void Input5()
         {
             _mode.Process('c');
-            _mode.Process(InputUtil.VimKeyToKeyInput(VimKey.BackKey));
-            _mode.Process(InputUtil.VimKeyToKeyInput(VimKey.BackKey));
+            _mode.Process(InputUtil.VimKeyToKeyInput(VimKey.Back));
+            _mode.Process(InputUtil.VimKeyToKeyInput(VimKey.Back));
             Assert.AreEqual(String.Empty, _modeRaw.Command);
         }
 

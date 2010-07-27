@@ -105,7 +105,7 @@ type internal TextChangeTracker
         if _mouse.IsLeftButtonPressed then x.ChangeCompleted()
         elif _buffer.ModeKind = ModeKind.Insert then 
             let keyMove = 
-                [ VimKey.LeftKey; VimKey.RightKey; VimKey.UpKey; VimKey.DownKey ]
+                [ VimKey.Left; VimKey.Right; VimKey.Up; VimKey.Down ]
                 |> Seq.map (fun k -> InputUtil.VimKeyToKeyInput k)
                 |> Seq.filter (fun k -> _keyboard.IsKeyDown k)
                 |> SeqUtil.isNotEmpty

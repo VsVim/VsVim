@@ -48,13 +48,13 @@ namespace VimCore.Test
         [Test, Description("Must process escape")]
         public void CanProcess1()
         {
-            Assert.IsTrue(_mode.CanProcess(VimKey.EscapeKey));
+            Assert.IsTrue(_mode.CanProcess(VimKey.Escape));
         }
 
         [Test, Description("Do not processing anything other than Escape")]
         public void CanProcess2()
         {
-            Assert.IsFalse(_mode.CanProcess(VimKey.EnterKey));
+            Assert.IsFalse(_mode.CanProcess(VimKey.Enter));
             Assert.IsFalse(_mode.CanProcess(InputUtil.CharToKeyInput('c')));
         }
 
@@ -65,7 +65,7 @@ namespace VimCore.Test
             _broker.SetupGet(x => x.IsQuickInfoActive).Returns(false).Verifiable();
             _broker.SetupGet(x => x.IsSignatureHelpActive).Returns(false).Verifiable();
             _operations.Setup(x => x.MoveCaretLeft(1)).Verifiable();
-            var res = _mode.Process(VimKey.EscapeKey);
+            var res = _mode.Process(VimKey.Escape);
             Assert.IsTrue(res.IsSwitchMode);
             _factory.Verify();
         }
@@ -82,7 +82,7 @@ namespace VimCore.Test
                 .Setup(x => x.DismissDisplayWindows())
                 .Verifiable();
             _operations.Setup(x => x.MoveCaretLeft(1)).Verifiable();
-            var res = _mode.Process(VimKey.EscapeKey);
+            var res = _mode.Process(VimKey.Escape);
             Assert.IsTrue(res.IsSwitchMode);
             Assert.AreEqual(ModeKind.Normal, res.AsSwitchMode().Item);
             _factory.Verify();
@@ -99,7 +99,7 @@ namespace VimCore.Test
             _broker
                 .Setup(x => x.DismissDisplayWindows())
                 .Verifiable();
-            var res = _mode.Process(VimKey.EscapeKey);
+            var res = _mode.Process(VimKey.Escape);
             Assert.IsTrue(res.IsProcessed);
             _factory.Verify();
         }

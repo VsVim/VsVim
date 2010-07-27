@@ -47,7 +47,7 @@ namespace VimCore.Test
             CreateBuffer("the fox chased the bird");
             _buffer.ProcessInputAsString("cw");
             _buffer.TextBuffer.Insert(0, "hey ");
-            _buffer.Process(InputUtil.VimKeyToKeyInput(VimKey.EscapeKey));
+            _buffer.Process(InputUtil.VimKeyToKeyInput(VimKey.Escape));
             _textView.MoveCaretTo(4);
             _buffer.Process(InputUtil.CharToKeyInput('.'));
             Assert.AreEqual("hey hey fox chased the bird", _textView.TextSnapshot.GetText());
@@ -59,7 +59,7 @@ namespace VimCore.Test
             CreateBuffer("the fox chased the bird");
             _buffer.ProcessInputAsString("cw");
             _buffer.TextBuffer.Insert(0, "hey");
-            _buffer.Process(InputUtil.VimKeyToKeyInput(VimKey.EscapeKey));
+            _buffer.Process(InputUtil.VimKeyToKeyInput(VimKey.Escape));
             _textView.MoveCaretTo(4);
             _buffer.Process(InputUtil.CharToKeyInput('.'));
             Assert.AreEqual("hey hey chased the bird", _textView.TextSnapshot.GetText());
@@ -71,7 +71,7 @@ namespace VimCore.Test
             CreateBuffer("the fox chased the bird");
             _buffer.ProcessInputAsString("cw");
             _buffer.TextBuffer.Insert(0, "hey");
-            _buffer.Process(InputUtil.VimKeyToKeyInput(VimKey.EscapeKey));
+            _buffer.Process(InputUtil.VimKeyToKeyInput(VimKey.Escape));
             _textView.MoveCaretTo(4);
             _buffer.Process(InputUtil.CharToKeyInput('.'));
             _buffer.Process(InputUtil.CharToKeyInput('.'));
