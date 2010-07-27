@@ -5,12 +5,54 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:VsVim.UI;assembly="
+             xmlns:scm="clr-namespace:System.ComponentModel;assembly=WindowsBase"
              mc:Ignorable="d" 
              d:DesignHeight="400" d:DesignWidth="600"
-             MaxHeight="400"
+             MinHeight="300"
+             MinWidth="400"
+             Height="400"
+             MaxHeight="600"
              MaxWidth="600"
-             Title="VsVim Options" SizeToContent="Manual" >
-    <Grid>
+             Title="VsVim Options"
+             SizeToContent="Manual"
+             ShowInTaskbar="False"
+             TextOptions.TextFormattingMode="Display"
+             WindowStartupLocation="CenterOwner">
+
+    <vs:DialogWindow.Resources>
+        <local:ComboBoxTemplateSelector x:Key="ComboBoxTemplateSelector" />
+        
+        <DataTemplate x:Key="ComboBoxItemExpandedTemplate">
+            <StackPanel Orientation="Vertical">
+                <TextBlock Text="{Binding HandlerName}" FontWeight="Bold" />
+                <TextBlock Text="{Binding HandlerDetails}" Width="300" Margin="10, 0, 0, 0" TextWrapping="Wrap" />
+            </StackPanel>
+        </DataTemplate>
+
+        <DataTemplate x:Key="ComboBoxItemCollapsedTemplate">
+            <TextBlock Text="{Binding HandlerName}" />
+        </DataTemplate>
+
+        <DataTemplate x:Key="BindingListBoxItemTemplate">
+            <StackPanel Orientation="Horizontal" Margin="1">
+                <TextBlock Text="{Binding KeyName}" Width="120" VerticalAlignment="Center" FontWeight="Bold"/>
+                <TextBlock Text="Handled by " VerticalAlignment="Center" />
+                <ComboBox ItemsSource="{Binding HandledByOptions}"
+                          ItemTemplateSelector="{StaticResource ComboBoxTemplateSelector}"
+                          SelectedItem="{Binding SelectedHandledByOption}"
+                          />
+            </StackPanel>
+        </DataTemplate>
+    </vs:DialogWindow.Resources>
+
+    <Grid Margin="10">
+        <Grid.Resources>
+            <Style TargetType="{x:Type Button}">
+                <Setter Property="MinWidth" Value="80" />
+                <Setter Property="Padding" Value="2, 2, 2, 2" />
+            </Style>
+        </Grid.Resources>
+        
         <Grid.RowDefinitions>
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
@@ -18,32 +60,21 @@
 
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="Auto" />
         </Grid.ColumnDefinitions>
 
-        <local:ConflictingKeyBindingControl 
-            Grid.Column="0"
-            Grid.Row="0"
-            x:Name="_bindingControl" />
-
-        <DockPanel
-            Grid.Column="0"
-            Grid.Row="1"
-            LastChildFill="False" >
-            
-            <Button 
-                DockPanel.Dock="Right"
-                Content="Cancel"
-                IsCancel="True"
-                Margin="5"
-                Click="OnCancelClick"/>
-
-            <Button 
-                DockPanel.Dock="Right"
-                Margin="5"
-                IsDefault="True"
-                Content="OK"
-                Click="OnOkClick "/>
+        <ListBox Grid.ColumnSpan="2" x:Name="BindingsListBox"
+                 ItemTemplate="{StaticResource BindingListBoxItemTemplate}"
+                 Margin="0, 0, 0, 10"/>
         
-        </DockPanel>
+        <WrapPanel Grid.Column="0" Grid.Row="1">
+            <Button Content="Handle all with _VsVim" Click="OnEnableAllVimKeysClick" Margin="0, 0, 5, 0" />
+            <Button Content="Handle all with Visual _Studio" Click="OnDisableAllVimKeysClick" />
+        </WrapPanel>
+        
+        <WrapPanel Grid.Column="1" Grid.Row="1" HorizontalAlignment="Right">
+            <Button IsDefault="True" Content="_OK" Click="OnOkClick "/>
+            <Button IsCancel="True" Content="_Cancel" Click="OnCancelClick" Margin="5, 0, 0, 0"/>
+        </WrapPanel>
     </Grid>
 </vs:DialogWindow>

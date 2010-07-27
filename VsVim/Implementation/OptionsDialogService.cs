@@ -11,7 +11,7 @@ namespace VsVim.Implementation
     {
         public bool ShowConflictingKeyBindingsDialog(CommandKeyBindingSnapshot snapshot)
         {
-            return UI.ConflictingKeyBindingDialog.DoShow(snapshot);
+            return new UI.ConflictingKeyBindingDialog(snapshot).ShowDialog().Value;
         }
     }
 }

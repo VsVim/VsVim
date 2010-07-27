@@ -16,12 +16,9 @@ namespace VsVimTest
         {
             var binding = KeyBinding.Parse("Global::Ctrl+Left Arrow");
             var command = new CommandKeyBinding("Foo", binding);
-            var data = new KeyBindingData(command);
-            Assert.AreEqual(command.Name, data.Name);
-            Assert.AreEqual(command.KeyBinding.CommandString, data.Keys);
-            Assert.AreEqual(command.KeyBinding.Scope, data.Scope);
-            Assert.IsFalse(data.IsChecked);
+            var data = new KeyBindingData(new CommandKeyBinding[] { command });
+            Assert.AreEqual("Ctrl+Left Arrow", data.KeyName);
+            Assert.IsFalse(data.HandledByVsVim);
         }
-
     }
 }

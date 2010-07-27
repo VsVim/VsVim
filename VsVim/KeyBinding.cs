@@ -103,7 +103,7 @@ namespace VsVim
             return builder.ToString();
         }
 
-        private void AppendCommandForSingle(KeyInput input, StringBuilder builder)
+        private static void AppendCommandForSingle(KeyInput input, StringBuilder builder)
         {
             if (0 != (input.KeyModifiers & KeyModifiers.Control))
             {
@@ -141,6 +141,13 @@ namespace VsVim
         public override string ToString()
         {
             return CommandString;
+        }
+
+        public static string CreateKeyBindingStringForSingleKeyInput(KeyInput input)
+        {
+            StringBuilder builder = new StringBuilder();
+            AppendCommandForSingle(input, builder);
+            return builder.ToString();
         }
 
         #region Parsing Methods

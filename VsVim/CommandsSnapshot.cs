@@ -30,7 +30,7 @@ namespace VsVim
         {
         }
 
-        public CommandsSnapshot(IEnumerable<Command> commands)
+        public CommandsSnapshot(IEnumerable<EnvDTE.Command> commands)
         {
             var list = new List<CommandKeyBinding>();
             foreach (var command in commands)

@@ -3,65 +3,69 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Windows;
+using System.Collections.ObjectModel;
 
 namespace VsVim.UI
 {
-    public sealed class KeyBindingData :DependencyObject
+    public sealed class KeyBindingData : DependencyObject
     {
-        public static readonly DependencyProperty ScopeProperty = DependencyProperty.Register(
-            "Scope",
+        private KeyBindingHandledByOption _visualStudioOption;
+        private KeyBindingHandledByOption _vsVimOption;
+
+        public static readonly DependencyProperty KeyNameProperty = DependencyProperty.Register(
+            "KeyName",
             typeof(string),
             typeof(KeyBindingData));
 
-        public static readonly DependencyProperty NameProperty = DependencyProperty.Register(
-            "Name",
-            typeof(string),
+        public string KeyName
+        {
+            get { return (string)GetValue(KeyNameProperty); }
+            set { SetValue(KeyNameProperty, value); }
+        }
+
+        public bool HandledByVsVim
+        {
+            get { return SelectedHandledByOption == _vsVimOption; }
+            set
+            {
+                SelectedHandledByOption = value ? _vsVimOption : _visualStudioOption;
+            }
+        }
+
+        public static readonly DependencyProperty SelectedHandledByOptionProperty = DependencyProperty.Register(
+            "SelectedHandledByOption",
+            typeof(KeyBindingHandledByOption),
             typeof(KeyBindingData));
-
-        public static readonly DependencyProperty KeysProperty = DependencyProperty.Register(
-            "Keys",
-            typeof(string),
-            typeof(KeyBindingData));
-
-        public static readonly DependencyProperty IsCheckedProperty = DependencyProperty.Register(
-            "IsChecked",
-            typeof(bool),
-            typeof(KeyBindingData));
-
-        public string Scope
+        public KeyBindingHandledByOption SelectedHandledByOption
         {
-            get { return (string)GetValue(ScopeProperty); }
-            set { SetValue(ScopeProperty, value); }
+            get { return (KeyBindingHandledByOption)GetValue(SelectedHandledByOptionProperty); }
+            set { SetValue(SelectedHandledByOptionProperty, value); }
         }
 
-        public string Name
+        private ObservableCollection<KeyBindingHandledByOption> _handledByOptions = new ObservableCollection<KeyBindingHandledByOption>();
+        public ObservableCollection<KeyBindingHandledByOption> HandledByOptions
         {
-            get { return (string)GetValue(NameProperty); }
-            set { SetValue(NameProperty, value); }
+            get { return _handledByOptions; }
         }
 
-        public string Keys
-        {
-            get { return (string)GetValue(KeysProperty); }
-            set { SetValue(KeysProperty, value); }
-        }
-
-        public bool IsChecked
-        {
-            get { return (bool)GetValue(IsCheckedProperty); }
-            set { SetValue(IsCheckedProperty, value); }
-        }
+        public IEnumerable<CommandKeyBinding> Bindings { get; private set; }
 
         public KeyBindingData()
         {
-
         }
 
-        public KeyBindingData(CommandKeyBinding binding)
+        public KeyBindingData(IEnumerable<CommandKeyBinding> bindings)
         {
-            Scope = binding.KeyBinding.Scope;
-            Name = binding.Name;
-            Keys = binding.KeyBinding.CommandString;
+            // All bindings passed have the same KeyInput as their first key, so get it
+            Vim.KeyInput firstKeyInput = bindings.First().KeyBinding.FirstKeyInput;
+            KeyName = KeyBinding.CreateKeyBindingStringForSingleKeyInput(firstKeyInput);
+
+            Bindings = bindings.ToArray();
+            _handledByOptions.AddRange(
+                new [] {
+                     _visualStudioOption = new KeyBindingHandledByOption("Visual Studio", bindings.Select(binding => binding.Name)),
+                     _vsVimOption = new KeyBindingHandledByOption("VsVim", Enumerable.Empty<string>())
+                });
         }
     }
 }
