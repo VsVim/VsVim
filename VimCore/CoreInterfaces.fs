@@ -781,6 +781,7 @@ module LocalSettingNames =
     
     let ScrollName = "scroll"
     let NumberName = "number"
+    let CursorLineName = "cursorline"
 
 /// Represent the setting supported by the Vim implementation.  This class **IS** mutable
 /// and the values will change.  Setting names are case sensitive but the exposed property
@@ -863,6 +864,9 @@ and IVimLocalSettings =
     abstract GlobalSettings : IVimGlobalSettings
 
     abstract Scroll : int with get,set
+
+    /// Whether or not to highlight the line the cursor is on
+    abstract CursorLine : bool with get,set
 
     inherit IVimSettings
 

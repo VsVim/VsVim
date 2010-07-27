@@ -193,6 +193,7 @@ type internal LocalSettings
         [|
             ( ScrollName, "scr", NumberKind, NumberValue(25) );
             ( NumberName, "nu", ToggleKind, ToggleValue(false) )
+            ( CursorLineName, "cul", ToggleKind, ToggleValue(false) )
         |]
 
     let _map = SettingsMap(LocalSettings, false)
@@ -238,6 +239,9 @@ type internal LocalSettings
         member x.Scroll 
             with get() = _map.GetNumberValue ScrollName
             and set value = _map.TrySetValue ScrollName (NumberValue(value)) |> ignore
+        member x.CursorLine 
+            with get() = _map.GetBoolValue CursorLineName
+            and set value = _map.TrySetValue CursorLineName (ToggleValue(value)) |> ignore
 
         [<CLIEvent>]
         member x.SettingChanged = _map.SettingChanged
