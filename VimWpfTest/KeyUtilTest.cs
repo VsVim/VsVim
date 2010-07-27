@@ -77,6 +77,16 @@ namespace Vim.UI.Wpf.Test
             WellKnownBothWays(VimKey.KeypadMinus, Key.Subtract);
             WellKnownBothWays(VimKey.KeypadDecimal, Key.Decimal);
             WellKnownBothWays(VimKey.KeypadDivide, Key.Divide);
+            WellKnownBothWays(VimKey.Keypad0, Key.NumPad0);
+            WellKnownBothWays(VimKey.Keypad1, Key.NumPad1);
+            WellKnownBothWays(VimKey.Keypad2, Key.NumPad2);
+            WellKnownBothWays(VimKey.Keypad3, Key.NumPad3);
+            WellKnownBothWays(VimKey.Keypad4, Key.NumPad4);
+            WellKnownBothWays(VimKey.Keypad5, Key.NumPad5);
+            WellKnownBothWays(VimKey.Keypad6, Key.NumPad6);
+            WellKnownBothWays(VimKey.Keypad7, Key.NumPad7);
+            WellKnownBothWays(VimKey.Keypad8, Key.NumPad8);
+            WellKnownBothWays(VimKey.Keypad9, Key.NumPad9);
         }
 
         [Test]
