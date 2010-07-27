@@ -1,10 +1,6 @@
-﻿using System;
-using System.Text;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.Linq;
 using NUnit.Framework;
 using Vim;
-using Microsoft.FSharp.Core;
 
 namespace VimCore.Test
 {
@@ -72,6 +68,22 @@ namespace VimCore.Test
         {
             var key = InputUtil.VimKeyToKeyInput(VimKey.Enter);
             Assert.AreEqual(VimKey.Enter, key.Key);
+        }
+
+        [Test]
+        public void Keypad1()
+        {
+            var left = InputUtil.CharToKeyInput('+');
+            var right = InputUtil.VimKeyToKeyInput(VimKey.KeypadPlus);
+            Assert.AreNotEqual(left, right);
+        }
+
+        [Test]
+        public void Keypad2()
+        {
+            var left = InputUtil.CharToKeyInput('-');
+            var right = InputUtil.VimKeyToKeyInput(VimKey.KeypadMinus);
+            Assert.AreNotEqual(left, right);
         }
     }
 }

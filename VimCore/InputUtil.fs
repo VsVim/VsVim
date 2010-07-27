@@ -89,12 +89,21 @@ module InputUtil =
                 | VimKey.F10 -> 0x79
                 | VimKey.F11 -> 0x7a
                 | VimKey.F12 -> 0x7b
-                | VimKey.Multiply -> 0x6A
-                | VimKey.Add -> 0x6B
-                | VimKey.Separator -> 0x6C
-                | VimKey.Subtract -> 0x6D
-                | VimKey.Decimal -> 0x6E
-                | VimKey.Divide -> 0x6F
+                | VimKey.KeypadMultiply -> 0x6A
+                | VimKey.KeypadPlus -> 0x6B
+                | VimKey.KeypadMinus -> 0x6D
+                | VimKey.KeypadDecimal -> 0x6E
+                | VimKey.KeypadDivide -> 0x6F
+                | VimKey.Keypad0 -> 0x60
+                | VimKey.Keypad1 -> 0x61
+                | VimKey.Keypad2 -> 0x62
+                | VimKey.Keypad3 -> 0x63
+                | VimKey.Keypad4 -> 0x64
+                | VimKey.Keypad5 -> 0x65
+                | VimKey.Keypad6 -> 0x66
+                | VimKey.Keypad7 -> 0x67
+                | VimKey.Keypad8 -> 0x68
+                | VimKey.Keypad9 -> 0x69
                 | _ -> failwith "Invalid Enum value"
             Some(code)
         

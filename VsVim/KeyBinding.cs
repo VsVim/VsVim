@@ -162,10 +162,10 @@ namespace VsVim
             map.Add("Del", VimKey.Delete);
             map.Add("Esc", VimKey.Escape);
             map.Add("Break", VimKey.Break);
-            map.Add("Num +", VimKey.Add);
-            map.Add("Num -", VimKey.Subtract);
-            map.Add("Num /", VimKey.Divide);
-            map.Add("Num *", VimKey.Multiply);
+            map.Add("Num +", VimKey.KeypadPlus);
+            map.Add("Num -", VimKey.KeypadMinus);
+            map.Add("Num /", VimKey.KeypadDivide);
+            map.Add("Num *", VimKey.KeypadMultiply);
             map.Add("Enter", VimKey.Enter);
             map.Add("Tab", VimKey.Tab);
             map.Add("Home", VimKey.Home);
@@ -278,16 +278,16 @@ namespace VsVim
                 switch (keystroke.ToLower())
                 {
                     case "num +":
-                        ki = InputUtil.VimKeyToKeyInput(VimKey.Add);
+                        ki = InputUtil.VimKeyToKeyInput(VimKey.KeypadPlus);
                         break;
                     case "num /":
-                        ki = InputUtil.VimKeyToKeyInput(VimKey.Divide);
+                        ki = InputUtil.VimKeyToKeyInput(VimKey.KeypadDivide);
                         break;
                     case "num *":
-                        ki = InputUtil.VimKeyToKeyInput(VimKey.Multiply);
+                        ki = InputUtil.VimKeyToKeyInput(VimKey.KeypadMultiply);
                         break;
                     case "num -":
-                        ki = InputUtil.VimKeyToKeyInput(VimKey.Subtract);
+                        ki = InputUtil.VimKeyToKeyInput(VimKey.KeypadMinus);
                         break;
                 }
                 return ki != null;

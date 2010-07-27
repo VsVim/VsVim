@@ -33,12 +33,21 @@ type VimKey =
     | F10 = 26
     | F11 = 27
     | F12 = 28
-    | Multiply = 29
-    | Divide = 30
-    | Separator = 31
-    | Subtract = 32
-    | Add = 33
-    | Decimal = 34
+    | KeypadDecimal = 29
+    | Keypad0 = 30
+    | Keypad1 = 31
+    | Keypad2 = 32
+    | Keypad3 = 33
+    | Keypad4 = 34
+    | Keypad5 = 35
+    | Keypad6 = 36
+    | Keypad7 = 37
+    | Keypad8 = 38
+    | Keypad9 = 39
+    | KeypadPlus = 40
+    | KeypadMinus = 41
+    | KeypadDivide = 42
+    | KeypadMultiply = 43
 
 [<System.Flags>]
 type KeyModifiers = 

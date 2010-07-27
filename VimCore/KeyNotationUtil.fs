@@ -29,6 +29,7 @@ module internal KeyNotationUtil =
             ("<Help>", InputUtil.VimKeyToKeyInput VimKey.Help);
             ("<Insert>", InputUtil.VimKeyToKeyInput VimKey.Insert);
             ("<Home>", InputUtil.VimKeyToKeyInput VimKey.Home);
+            ("<kHome>", InputUtil.VimKeyToKeyInput VimKey.Home);
             ("<End>", InputUtil.VimKeyToKeyInput VimKey.End);
             ("<PageUp>", InputUtil.VimKeyToKeyInput VimKey.PageUp);
             ("<PageDown>", InputUtil.VimKeyToKeyInput VimKey.PageDown);
@@ -36,6 +37,21 @@ module internal KeyNotationUtil =
             ("<kEnd>", InputUtil.VimKeyToKeyInput VimKey.End);
             ("<kPageUp>", InputUtil.VimKeyToKeyInput VimKey.PageUp);
             ("<kPageDown>", InputUtil.VimKeyToKeyInput VimKey.PageDown);
+            ("<kMultiply>", InputUtil.VimKeyToKeyInput VimKey.KeypadMultiply)
+            ("<kPlus>", InputUtil.VimKeyToKeyInput VimKey.KeypadPlus)
+            ("<kDivide>", InputUtil.VimKeyToKeyInput VimKey.KeypadDivide)
+            ("<kPoint>", InputUtil.VimKeyToKeyInput VimKey.KeypadDecimal)
+            ("<kPlus>", InputUtil.VimKeyToKeyInput VimKey.KeypadPlus)
+            ("<k0>", InputUtil.VimKeyToKeyInput VimKey.Keypad0)
+            ("<k1>", InputUtil.VimKeyToKeyInput VimKey.Keypad1)
+            ("<k2>", InputUtil.VimKeyToKeyInput VimKey.Keypad2)
+            ("<k3>", InputUtil.VimKeyToKeyInput VimKey.Keypad3)
+            ("<k4>", InputUtil.VimKeyToKeyInput VimKey.Keypad4)
+            ("<k5>", InputUtil.VimKeyToKeyInput VimKey.Keypad5)
+            ("<k6>", InputUtil.VimKeyToKeyInput VimKey.Keypad6)
+            ("<k7>", InputUtil.VimKeyToKeyInput VimKey.Keypad7)
+            ("<k8>", InputUtil.VimKeyToKeyInput VimKey.Keypad8)
+            ("<k9>", InputUtil.VimKeyToKeyInput VimKey.Keypad9)
         ]
 
     let private FunctionKeys = 
@@ -50,13 +66,7 @@ module internal KeyNotationUtil =
     /// <xCSI>		CSI when typed in the GUI		*<xCSI>*
     /// <Undo>		undo key
     /// <EOL>
-    /// <kPlus>		keypad +			*keypad-plus*
-    /// <kMinus>	keypad -			*keypad-minus*
-    /// <kMultiply>	keypad *			*keypad-multiply*
-    /// <kDivide>	keypad /			*keypad-divide*
     /// <kEnter>	keypad Enter			*keypad-enter*
-    /// <kPoint>	keypad Decimal point		*keypad-point*
-    /// <k0> - <k9>	keypad 0 to 9			*keypad-0* *keypad-9*
     let private SpecialKeyMap = 
         ManualKeyList
         |> Seq.append FunctionKeys

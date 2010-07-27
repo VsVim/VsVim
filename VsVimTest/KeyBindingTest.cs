@@ -147,14 +147,14 @@ namespace VsVimTest
         public void VsNum1()
         {
             var b = KeyBinding.Parse("::Num +");
-            Assert.AreEqual(VimKey.Add, b.FirstKeyInput.Key);
+            Assert.AreEqual(VimKey.KeypadPlus, b.FirstKeyInput.Key);
         }
 
         [Test]
         public void VsNum2()
         {
             var b = KeyBinding.Parse("::Num *");
-            Assert.AreEqual(VimKey.Multiply, b.FirstKeyInput.Key);
+            Assert.AreEqual(VimKey.KeypadMultiply, b.FirstKeyInput.Key);
         }
 
         [Test]
