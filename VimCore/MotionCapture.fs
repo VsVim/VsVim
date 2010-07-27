@@ -32,60 +32,62 @@ type internal MotionCapture
         NeedMoreInputWithEscape inner
 
     let SimpleMotions =  
+        let singleToKiSet = KeyNotationUtil.StringToKeyInput >> OneKeyInput
         let needCount = 
             seq { 
-                yield (InputUtil.CharToKeyInput 'w', fun count -> _util.WordForward WordKind.NormalWord count |> Some)
-                yield (InputUtil.CharToKeyInput 'W', fun count -> _util.WordForward  WordKind.BigWord count |> Some)
-                yield (InputUtil.CharToKeyInput 'b', fun count -> _util.WordBackward WordKind.NormalWord count |> Some)
-                yield (InputUtil.CharToKeyInput 'B', fun count -> _util.WordBackward WordKind.BigWord count |> Some)
-                yield (InputUtil.CharToKeyInput '$', fun count -> _util.EndOfLine count |> Some)
-                yield (InputUtil.VimKeyToKeyInput VimKey.End, fun count -> _util.EndOfLine count |> Some)
-                yield (InputUtil.CharToKeyInput '^', fun count -> _util.FirstNonWhitespaceOnLine() |> Some)
-                yield (InputUtil.CharToKeyInput '0', fun count -> _util.BeginingOfLine() |> Some)
-                yield (InputUtil.CharToKeyInput 'e', fun count -> _util.EndOfWord WordKind.NormalWord count )
-                yield (InputUtil.CharToKeyInput 'E', fun count -> _util.EndOfWord WordKind.BigWord count )
-                yield (InputUtil.CharToKeyInput 'h', fun count -> _util.CharLeft count)
-                yield (InputUtil.VimKeyToKeyInput VimKey.Left, fun count -> _util.CharLeft count)
-                yield (InputUtil.VimKeyToKeyInput VimKey.Back, fun count -> _util.CharLeft count)
-                yield (InputUtil.CharWithControlToKeyInput 'h', fun count -> _util.CharLeft count)
-                yield (InputUtil.CharToKeyInput 'l', fun count -> _util.CharRight count)
-                yield (InputUtil.VimKeyToKeyInput VimKey.Right, fun count -> _util.CharRight count)
-                yield (InputUtil.CharToKeyInput ' ', fun count -> _util.CharRight count)
-                yield (InputUtil.CharToKeyInput 'k', fun count -> _util.LineUp count |> Some)
-                yield (InputUtil.VimKeyToKeyInput VimKey.Up, fun count -> _util.LineUp count |> Some)
-                yield (InputUtil.CharWithControlToKeyInput 'p', fun count -> _util.LineUp count |> Some)
-                yield (InputUtil.CharToKeyInput 'j', fun count -> _util.LineDown count |> Some)
-                yield (InputUtil.VimKeyToKeyInput VimKey.Down, fun count -> _util.LineDown count |> Some)
-                yield (InputUtil.CharWithControlToKeyInput 'n', fun count -> _util.LineDown count |> Some)
-                yield (InputUtil.CharWithControlToKeyInput 'j', fun count -> _util.LineDown count |> Some)
-                yield (InputUtil.CharToKeyInput '+', fun count -> _util.LineDownToFirstNonWhitespace count |> Some)
-                yield (InputUtil.CharToKeyInput '_', fun count -> _util.LineDownToFirstNonWhitespace (count-1) |> Some)
-                yield (InputUtil.CharWithControlToKeyInput 'm', fun count -> _util.LineDownToFirstNonWhitespace count |> Some)
-                yield (InputUtil.VimKeyToKeyInput VimKey.Enter, fun count -> _util.LineDownToFirstNonWhitespace count |> Some)
-                yield (InputUtil.CharToKeyInput '-', fun count -> _util.LineUpToFirstNonWhitespace count |> Some)
-            } |> Seq.map (fun (ki,func) ->
+                yield ("w", fun count -> _util.WordForward WordKind.NormalWord count |> Some)
+                yield ("W", fun count -> _util.WordForward  WordKind.BigWord count |> Some)
+                yield ("b", fun count -> _util.WordBackward WordKind.NormalWord count |> Some)
+                yield ("B", fun count -> _util.WordBackward WordKind.BigWord count |> Some)
+                yield ("$", fun count -> _util.EndOfLine count |> Some)
+                yield ("<End>", fun count -> _util.EndOfLine count |> Some)
+                yield ("^", fun count -> _util.FirstNonWhitespaceOnLine() |> Some)
+                yield ("0", fun count -> _util.BeginingOfLine() |> Some)
+                yield ("e", fun count -> _util.EndOfWord WordKind.NormalWord count )
+                yield ("E", fun count -> _util.EndOfWord WordKind.BigWord count )
+                yield ("h", fun count -> _util.CharLeft count)
+                yield ("<Left>", fun count -> _util.CharLeft count)
+                yield ("<Bs>", fun count -> _util.CharLeft count)
+                yield ("<C-h>", fun count -> _util.CharLeft count)
+                yield ("l", fun count -> _util.CharRight count)
+                yield ("<Right>", fun count -> _util.CharRight count)
+                yield ("<Space>", fun count -> _util.CharRight count)
+                yield ("k", fun count -> _util.LineUp count |> Some)
+                yield ("<Up>", fun count -> _util.LineUp count |> Some)
+                yield ("<C-p>", fun count -> _util.LineUp count |> Some)
+                yield ("j", fun count -> _util.LineDown count |> Some)
+                yield ("<Down>", fun count -> _util.LineDown count |> Some)
+                yield ("<C-n>", fun count -> _util.LineDown count |> Some)
+                yield ("<C-j>", fun count -> _util.LineDown count |> Some)
+                yield ("+", fun count -> _util.LineDownToFirstNonWhitespace count |> Some)
+                yield ("_", fun count -> _util.LineDownToFirstNonWhitespace (count-1) |> Some)
+                yield ("<C-m>", fun count -> _util.LineDownToFirstNonWhitespace count |> Some)
+                yield ("<Enter>", fun count -> _util.LineDownToFirstNonWhitespace count |> Some)
+                yield ("-", fun count -> _util.LineUpToFirstNonWhitespace count |> Some)
+            } |> Seq.map (fun (kiName,func) ->
+                    let kiSet = singleToKiSet kiName 
                     let func2 count =
                         let count = CommandUtil.CountOrDefault count
                         func count
-                    SimpleMotionCommand(OneKeyInput ki, func2)  )
+                    SimpleMotionCommand(kiSet, func2)  )
         let needCount2 = 
             seq { 
                 yield ("g_", fun count -> _util.LastNonWhitespaceOnLine count |> Some)
                 yield ("aw", fun count -> _util.AllWord WordKind.NormalWord count |> Some)
                 yield ("aW", fun count -> _util.AllWord WordKind.BigWord count |> Some)
             } |> Seq.map (fun (str,func) ->
-                    let name = CommandUtil.CreateCommandName str
+                    let name = KeyNotationUtil.StringToKeyInputSet str
                     let func2 count =
                         let count = CommandUtil.CountOrDefault count
                         func count
                     SimpleMotionCommand(name, func2)  )
         let needCountOpt =
             seq {
-                yield (InputUtil.CharToKeyInput 'G', fun countOpt -> _util.LineOrLastToFirstNonWhitespace countOpt |> Some)
-                yield (InputUtil.CharToKeyInput 'H', fun countOpt -> _util.LineFromTopOfVisibleWindow countOpt |> Some)
-                yield (InputUtil.CharToKeyInput 'L', fun countOpt -> _util.LineFromBottomOfVisibleWindow countOpt |> Some)
-                yield (InputUtil.CharToKeyInput 'M', fun _ -> _util.LineInMiddleOfVisibleWindow () |> Some)
-            } |> Seq.map (fun (ki,func) -> SimpleMotionCommand(OneKeyInput ki, func))
+                yield ("G", fun countOpt -> _util.LineOrLastToFirstNonWhitespace countOpt |> Some)
+                yield ("H", fun countOpt -> _util.LineFromTopOfVisibleWindow countOpt |> Some)
+                yield ("L", fun countOpt -> _util.LineFromBottomOfVisibleWindow countOpt |> Some)
+                yield ("M", fun _ -> _util.LineInMiddleOfVisibleWindow () |> Some)
+            } |> Seq.map (fun (ki,func) -> SimpleMotionCommand(singleToKiSet ki, func))
 
         let needCountOpt2 =
             seq {
@@ -94,13 +96,14 @@ type internal MotionCapture
         Seq.append needCount needCountOpt |> Seq.append needCountOpt2 |> Seq.append needCount2
     
     let ComplexMotions = 
+        let singleToKiSet = KeyNotationUtil.StringToKeyInput >> OneKeyInput
         let needCount = 
             seq {
-                yield (InputUtil.CharToKeyInput 'f', true, fun () -> WaitCharThen _util.ForwardChar)
-                yield (InputUtil.CharToKeyInput 't', true, fun () -> WaitCharThen _util.ForwardTillChar)
-                yield (InputUtil.CharToKeyInput 'F', true, fun () -> WaitCharThen _util.BackwardChar)
-                yield (InputUtil.CharToKeyInput 'T', true, fun () -> WaitCharThen _util.BackwardTillChar)
-            } |> Seq.map (fun (ki,isMovement,func) -> ComplexMotionCommand(OneKeyInput ki, isMovement,func))
+                yield ("f", true, fun () -> WaitCharThen _util.ForwardChar)
+                yield ("t", true, fun () -> WaitCharThen _util.ForwardTillChar)
+                yield ("F", true, fun () -> WaitCharThen _util.BackwardChar)
+                yield ("T", true, fun () -> WaitCharThen _util.BackwardTillChar)
+            } |> Seq.map (fun (ki,isMovement,func) -> ComplexMotionCommand(singleToKiSet ki, isMovement,func))
         needCount
     
     let AllMotionsCore =

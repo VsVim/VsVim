@@ -69,7 +69,6 @@ type internal NormalMode
             |> Seq.append (this.CreateMovementCommands())
             |> Seq.append (this.CreateMotionCommands())
             |> Seq.append (this.CreateLongCommands())
-            |> Seq.append (this.CreateCommandsOld())
             |> Seq.iter _runner.Add
 
             // Add in the special ~ command
@@ -280,15 +279,29 @@ type internal NormalMode
             }
             |> Seq.map(fun (str,kind,func) -> (str,kind,func,CommandResult.Completed ModeSwitch.NoSwitch))
 
+        let doNothing _ _ = ()
         let doSwitch =
             seq {
-                yield ("cc", ModeSwitch.SwitchMode ModeKind.Insert, fun count reg ->  
+                yield ("cc", ModeKind.Insert, fun count reg ->  
                     let point = TextViewUtil.GetCaretPoint _bufferData.TextView
                     let span = SnapshotPointUtil.GetLineRangeSpanIncludingLineBreak point count
                     let span = SnapshotSpan(point.GetContainingLine().Start,span.End)
                     _operations.DeleteSpan span MotionKind.Inclusive OperationKind.LineWise reg |> ignore )
+                yield ("i", ModeKind.Insert, doNothing)
+                yield ("I", ModeKind.Insert, (fun _ _ -> _operations.EditorOperations.MoveToStartOfLineAfterWhiteSpace(false)))
+                yield (":", ModeKind.Command, doNothing)
+                yield ("A", ModeKind.Insert, (fun _ _ -> _operations.EditorOperations.MoveToEndOfLine(false)))
+                yield ("o", ModeKind.Insert, (fun _ _ -> _operations.InsertLineBelow() |> ignore))
+                yield ("O", ModeKind.Insert, (fun _ _ -> _operations.InsertLineAbove() |> ignore))
+                yield ("v", ModeKind.VisualCharacter, doNothing)
+                yield ("V", ModeKind.VisualLine, doNothing)
+                yield ("<C-q>", ModeKind.VisualBlock, doNothing)
+                yield ("s", ModeKind.Insert, (fun count reg -> _operations.DeleteCharacterAtCursor count reg))
+                yield ("C", ModeKind.Insert, (fun count reg -> _operations.DeleteLinesFromCursor count reg))
+                yield ("S", ModeKind.Insert, (fun count reg -> _operations.DeleteLines count reg))
+                yield ("a", ModeKind.Insert, (fun _ _ -> _operations.MoveCaretForAppend()) )
             }
-            |> Seq.map(fun (str,switch,func) -> (str,CommandFlags.None,func,CommandResult.Completed switch))
+            |> Seq.map(fun (str,switch,func) -> (str,CommandFlags.None,func,CommandResult.Completed (ModeSwitch.SwitchMode switch)))
 
         let allWithCount = 
             Seq.append noSwitch doSwitch 
@@ -303,9 +316,10 @@ type internal NormalMode
         let needCountAsOpt = 
             seq {
                 yield (".", CommandFlags.Special, fun count reg -> this.RepeatLastChange count reg)
+                yield ("<C-Home>", CommandFlags.Movement, fun count _ -> _operations.GoToLineOrFirst(count))
             }
             |> Seq.map(fun (str,kind,func) -> 
-                let name = CommandUtil.CreateCommandName str
+                let name = KeyNotationUtil.StringToKeyInputSet str
                 let func2 count reg = 
                     func count reg
                     CommandResult.Completed ModeSwitch.NoSwitch
@@ -361,45 +375,6 @@ type internal NormalMode
         let factory = Vim.Modes.CommandFactory(_operations, _capture)
         factory.CreateMovementCommands()
 
-    member this.CreateCommandsOld() =
-
-        // Similar to completeOps but take the conditional count value
-        let completeOps2 = 
-            seq {
-                yield (InputUtil.VimKeyAndModifiersToKeyInput VimKey.Home KeyModifiers.Control , (fun count _ -> _operations.GoToLineOrFirst(count)))
-            } |> Seq.map (fun (ki,func) ->
-                    let name = OneKeyInput(ki)
-                    let func2 count reg =
-                        func count reg 
-                        CommandResult.Completed ModeSwitch.NoSwitch
-                    SimpleCommand(name, CommandFlags.Movement, func2) )
-
-        let doNothing _ _ = ()
-        let changeOps = 
-            seq {
-                yield (InputUtil.CharToKeyInput('i'), ModeKind.Insert, doNothing)
-                yield (InputUtil.CharToKeyInput('I'), ModeKind.Insert, (fun _ _ -> _operations.EditorOperations.MoveToStartOfLineAfterWhiteSpace(false)))
-                yield (InputUtil.CharToKeyInput(':'), ModeKind.Command, doNothing)
-                yield (InputUtil.CharToKeyInput('A'), ModeKind.Insert, (fun _ _ -> _operations.EditorOperations.MoveToEndOfLine(false)))
-                yield (InputUtil.CharToKeyInput('o'), ModeKind.Insert, (fun _ _ -> _operations.InsertLineBelow() |> ignore))
-                yield (InputUtil.CharToKeyInput('O'), ModeKind.Insert, (fun _ _ -> _operations.InsertLineAbove() |> ignore))
-                yield (InputUtil.CharToKeyInput('v'), ModeKind.VisualCharacter, doNothing)
-                yield (InputUtil.CharToKeyInput('V'), ModeKind.VisualLine, doNothing)
-                yield (InputUtil.CharWithControlToKeyInput 'q', ModeKind.VisualBlock, doNothing)
-                yield (InputUtil.CharToKeyInput('s'), ModeKind.Insert, (fun count reg -> _operations.DeleteCharacterAtCursor count reg))
-                yield (InputUtil.CharToKeyInput('C'), ModeKind.Insert, (fun count reg -> _operations.DeleteLinesFromCursor count reg))
-                yield (InputUtil.CharToKeyInput('S'), ModeKind.Insert, (fun count reg -> _operations.DeleteLines count reg))
-                yield (InputUtil.CharToKeyInput('a'), ModeKind.Insert, (fun _ _ -> _operations.MoveCaretForAppend()) )
-            } |> Seq.map (fun (ki,mode,func) ->
-                    let name = OneKeyInput(ki)
-                    let func2 count reg =
-                        let count = CommandUtil.CountOrDefault count
-                        func count reg 
-                        CommandResult.Completed (ModeSwitch.SwitchMode mode)
-                    SimpleCommand(name, CommandFlags.Repeatable, func2))
-    
-        Seq.append completeOps2 changeOps 
-   
     member this.Reset() =
         _runner.ResetState()
         _data <- _emptyData

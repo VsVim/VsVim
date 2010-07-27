@@ -551,7 +551,7 @@ namespace VimCore.Test
         {
             Create(s_lines);
             _operations.Setup(x => x.GoToLineOrFirst(FSharpOption<int>.None)).Verifiable();
-            _mode.Process(new KeyInput(Char.MinValue, VimKey.Home, KeyModifiers.Control));
+            _mode.Process(InputUtil.VimKeyAndModifiersToKeyInput(VimKey.Home, KeyModifiers.Control));
             _operations.Verify();
         }
 
@@ -561,7 +561,7 @@ namespace VimCore.Test
             Create(s_lines);
             _operations.Setup(x => x.GoToLineOrFirst(FSharpOption.Create(42))).Verifiable();
             _mode.Process("42");
-            _mode.Process(new KeyInput(Char.MinValue, VimKey.Home, KeyModifiers.Control));
+            _mode.Process(InputUtil.VimKeyAndModifiersToKeyInput(VimKey.Home, KeyModifiers.Control));
             _operations.Verify();
         }
 
