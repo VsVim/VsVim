@@ -81,7 +81,7 @@ namespace Vim.UI.Wpf
                             ? ModeKind.VisualCharacter
                             : ModeKind.VisualBlock;
 
-                        var mode = (IVisualMode)(_buffer.SwitchMode(modeKind));
+                        var mode = (IVisualMode)(_buffer.SwitchMode(modeKind, ModeArgument.None));
 
                         // If the left mouse button is pressed then we are in the middle of 
                         // a mouse selection event and need to record the data
@@ -117,7 +117,7 @@ namespace Vim.UI.Wpf
                 {
                     // Mouse was clicked and we are in visual mode.  Switch out to the previous
                     // mode.  Do this at background so it doesn't interfer with other processing
-                    Action func = () => _buffer.SwitchMode(ModeKind.Normal);
+                    Action func = () => _buffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
                     Dispatcher.CurrentDispatcher.BeginInvoke(
                         DispatcherPriority.Background,
                         func);

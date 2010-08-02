@@ -102,7 +102,7 @@ type internal VimBufferFactory
                 (DisabledMode(buffer) :> IMode);
             ] @ visualModeList
         modeList |> List.iter (fun m -> bufferRaw.AddMode m)
-        buffer.SwitchMode ModeKind.Normal |> ignore
+        buffer.SwitchMode ModeKind.Normal ModeArgument.None |> ignore
         bufferRaw
 
     member private x.CreateTextStructureNavigator textBuffer wordKind =

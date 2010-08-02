@@ -86,7 +86,7 @@ namespace VimCore.Test
                 (ICommandRunner)runner,
                 (IMotionCapture)capture);
             _mode = _modeRaw;
-            _mode.OnEnter();
+            _mode.OnEnter(ModeArgument.None);
         }
 
         private MotionData CreateMotionData(SnapshotSpan? span = null)

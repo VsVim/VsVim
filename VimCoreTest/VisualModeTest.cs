@@ -63,7 +63,7 @@ namespace VimCore.Test
             var runner = new CommandRunner(_view.Object, _map, (IMotionCapture)capture, (new Mock<IStatusUtil>()).Object);
             _modeRaw = new Vim.Modes.Visual.VisualMode(_bufferData.Object, _operations.Object, kind, runner, capture, _tracker.Object);
             _mode = _modeRaw;
-            _mode.OnEnter();
+            _mode.OnEnter(ModeArgument.None);
         }
 
         public void SetupApplyAsSingleEdit()
@@ -638,6 +638,16 @@ namespace VimCore.Test
             _mode.Process("zE");
             _factory.Verify();
         }
+
+        [Test]
+        public void SwitchMode1()
+        {
+            Create("foo bar");
+            var ret = _mode.Process(":");
+            Assert.IsTrue(ret.IsSwitchModeWithArgument);
+            Assert.AreEqual(ModeKind.Command, ret.AsSwitchModeWithArgument().Item1);
+            Assert.AreEqual(ModeArgument.FromVisual, ret.AsSwitchModeWithArgument().Item2);
+        } 
 
         #endregion
     }

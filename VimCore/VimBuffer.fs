@@ -16,19 +16,19 @@ type internal ModeMap() =
     member x.SwitchedEvent = _modeSwitchedEvent.Publish
     member x.Mode = Option.get _mode
     member x.Modes = _modeMap |> Map.toSeq |> Seq.map (fun (k,m) -> m)
-    member x.SwitchMode kind =
+    member x.SwitchMode kind arg =
         let prev = _mode
         let mode = _modeMap.Item kind
         _mode <- Some mode
         if Option.isSome prev then
             (Option.get prev).OnLeave()
             _previousMode <- prev
-        mode.OnEnter()
+        mode.OnEnter arg
         _modeSwitchedEvent.Trigger(mode)
         mode
     member x.SwitchPreviousMode () =
         let prev = Option.get _previousMode
-        x.SwitchMode prev.ModeKind
+        x.SwitchMode prev.ModeKind ModeArgument.None
     member x.GetMode kind = Map.find kind _modeMap
     member x.AddMode (mode:IMode) = 
         _modeMap <- Map.add (mode.ModeKind) mode _modeMap
@@ -88,7 +88,7 @@ type internal VimBuffer
         | _ -> None
 
     /// Switch to the desired mode
-    member x.SwitchMode kind = _modeMap.SwitchMode kind
+    member x.SwitchMode kind arg = _modeMap.SwitchMode kind arg
 
     // Actuall process the input key.  Raise the change event on an actual change
     member x.Process (i:KeyInput) : bool = 
@@ -99,14 +99,17 @@ type internal VimBuffer
                 _isProcessingInput <- true 
                 try
                     if i = _vim.Settings.DisableCommand && x.Mode.ModeKind <> ModeKind.Disabled then
-                        x.SwitchMode ModeKind.Disabled |> ignore
+                        x.SwitchMode ModeKind.Disabled ModeArgument.None |> ignore
                         true,SwitchMode(ModeKind.Disabled)
                     else
                         let res = x.Mode.Process i
                         let ret = 
                             match res with
                             | SwitchMode (kind) -> 
-                                x.SwitchMode kind |> ignore
+                                x.SwitchMode kind ModeArgument.None |> ignore
+                                true
+                            | SwitchModeWithArgument (kind,arg) ->
+                                x.SwitchMode kind arg |> ignore
                                 true
                             | SwitchPreviousMode -> 
                                 _modeMap.SwitchPreviousMode() |> ignore
@@ -199,7 +202,7 @@ type internal VimBuffer
         member x.RegisterMap = _vim.RegisterMap
         member x.GetRegister c = _vim.RegisterMap.GetRegister c
         member x.GetMode kind = _modeMap.GetMode kind
-        member x.SwitchMode kind = x.SwitchMode kind
+        member x.SwitchMode kind arg = x.SwitchMode kind arg
         member x.SwitchPreviousMode () = _modeMap.SwitchPreviousMode()
 
         [<CLIEvent>]

@@ -42,7 +42,7 @@ namespace VimCore.Test
         [Test, Description("Entering command mode should update the status")]
         public void StatusOnColon1()
         {
-            _mode.OnEnter();
+            _mode.OnEnter(ModeArgument.None);
             Assert.AreEqual("", _mode.Command);
         }
 
@@ -131,7 +131,7 @@ namespace VimCore.Test
         [Test]
         public void Cursor1()
         {
-            _mode.OnEnter();
+            _mode.OnEnter(ModeArgument.None);
             Assert.IsTrue(_view.Object.Caret.IsHidden);
         }
 
@@ -140,6 +140,20 @@ namespace VimCore.Test
         {
             _mode.OnLeave();
             Assert.IsFalse(_view.Object.Caret.IsHidden);
+        }
+
+        [Test]
+        public void OnEnter1()
+        {
+            _mode.OnEnter(ModeArgument.None);
+            Assert.AreEqual(String.Empty, _modeRaw.Command);
+        }
+
+        [Test]
+        public void OnEnter2()
+        {
+            _mode.OnEnter(ModeArgument.FromVisual);
+            Assert.AreEqual("'<,'>", _modeRaw.Command);
         }
     }
 }

@@ -301,9 +301,15 @@ module KeyInputSetUtil =
 
     let ofChar c = c |> InputUtil.CharToKeyInput |> OneKeyInput
 
+[<RequireQualifiedAccess>]
+type ModeArgument =
+    | None
+    | FromVisual 
+
 type ModeSwitch =
     | NoSwitch
     | SwitchMode of ModeKind
+    | SwitchModeWithArgument of ModeKind * ModeArgument
     | SwitchPreviousMode 
             
 type CommandResult =   
@@ -389,7 +395,6 @@ type ComplexMotionResult =
     | Cancelled
     | Error of string
     | NeedMoreInput of (KeyInput -> ComplexMotionResult)
-
 
 /// Represents the types of MotionCommands which exist
 type MotionCommand = 
@@ -718,6 +723,7 @@ type ProcessResult =
     | Processed
     | ProcessNotHandled
     | SwitchMode of ModeKind
+    | SwitchModeWithArgument of ModeKind * ModeArgument
     | SwitchPreviousMode
 
 type SettingKind =
@@ -969,7 +975,7 @@ and IVimBuffer =
     abstract CanProcess: KeyInput -> bool
 
     /// Switch the current mode to the provided value
-    abstract SwitchMode : ModeKind -> IMode
+    abstract SwitchMode : ModeKind -> ModeArgument -> IMode
 
     /// Switch the buffer back to the previous mode which is returned
     abstract SwitchPreviousMode : unit -> IMode
@@ -1037,7 +1043,7 @@ and IMode =
     abstract Process : KeyInput -> ProcessResult
 
     /// Called when the mode is entered
-    abstract OnEnter : unit -> unit
+    abstract OnEnter : ModeArgument -> unit
 
     /// Called when the mode is left
     abstract OnLeave : unit -> unit

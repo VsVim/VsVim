@@ -48,6 +48,6 @@ type internal InsertMode
                 x.ShiftLeft()
                 ProcessResult.Processed
             else Processed
-        member x.OnEnter () = ()
+        member x.OnEnter _ = ()
         member x.OnLeave () = ()
         member x.OnClose() = ()

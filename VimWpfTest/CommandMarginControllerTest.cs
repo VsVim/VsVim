@@ -1,11 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using NUnit.Framework;
-using VimCore.Test.Mock;
 using Moq;
+using NUnit.Framework;
 using Vim.UI.Wpf.Properties;
+using VimCore.Test.Mock;
 
 namespace Vim.UI.Wpf.Test
 {
@@ -82,9 +80,22 @@ namespace Vim.UI.Wpf.Test
         {
             var mode = new Mock<ICommandMode>();
             mode.SetupGet(x => x.ModeKind).Returns(ModeKind.Command);
+            mode.SetupGet(x => x.Command).Returns(""); 
             _buffer.CommandModeImpl = mode.Object;
             _buffer.RaiseSwitchedMode(_buffer.CommandModeImpl);
             Assert.AreEqual(":", _marginControl.StatusLine);
+        }
+
+        [Test]
+        [Description("A switch to command mode should start the status bar with a :. + the command")]
+        public void SwitchMode6()
+        {
+            var mode = new Mock<ICommandMode>();
+            mode.SetupGet(x => x.ModeKind).Returns(ModeKind.Command);
+            mode.SetupGet(x => x.Command).Returns("foo"); 
+            _buffer.CommandModeImpl = mode.Object;
+            _buffer.RaiseSwitchedMode(_buffer.CommandModeImpl);
+            Assert.AreEqual(":foo", _marginControl.StatusLine);
         }
 
         [Test]

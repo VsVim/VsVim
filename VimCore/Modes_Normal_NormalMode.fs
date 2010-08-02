@@ -391,6 +391,7 @@ type internal NormalMode
             match modeSwitch with
             | ModeSwitch.NoSwitch -> ProcessResult.Processed
             | ModeSwitch.SwitchMode(kind) -> ProcessResult.SwitchMode kind
+            | ModeSwitch.SwitchModeWithArgument(kind,arg) -> ProcessResult.SwitchModeWithArgument (kind,arg)
             | ModeSwitch.SwitchPreviousMode -> ProcessResult.SwitchPreviousMode
         | RunKeyInputResult.CommandErrored(_) -> 
             this.Reset()
@@ -434,7 +435,7 @@ type internal NormalMode
             else false
 
         member this.Process ki = this.ProcessCore ki
-        member this.OnEnter () = 
+        member this.OnEnter _ = 
             this.EnsureCommands()
             this.Reset()
         member this.OnLeave () = ()

@@ -48,7 +48,7 @@ namespace Vim.UI.Wpf.Test
         {
             Create("foo bar");
             _buffer.Setup(x => x.ModeKind).Returns(ModeKind.Normal).Verifiable();
-            _buffer.Setup(x => x.SwitchMode(ModeKind.VisualCharacter)).Returns(_visualMode.Object).Verifiable();
+            _buffer.Setup(x => x.SwitchMode(ModeKind.VisualCharacter, ModeArgument.None)).Returns(_visualMode.Object).Verifiable();
             _mouseDevice.SetupGet(x => x.IsLeftButtonPressed).Returns(true).Verifiable();
             _textView.Selection.Select(new SnapshotSpan(_textView.TextSnapshot, 0, 3), false);
             Dispatcher.CurrentDispatcher.DoEvents();
@@ -62,7 +62,7 @@ namespace Vim.UI.Wpf.Test
         {
             Create("foo bar");
             _buffer.Setup(x => x.ModeKind).Returns(ModeKind.Normal).Verifiable();
-            _buffer.Setup(x => x.SwitchMode(ModeKind.VisualCharacter)).Returns(_visualMode.Object).Verifiable();
+            _buffer.Setup(x => x.SwitchMode(ModeKind.VisualCharacter, ModeArgument.None)).Returns(_visualMode.Object).Verifiable();
             _mouseDevice.SetupGet(x => x.IsLeftButtonPressed).Returns(false).Verifiable();
             _textView.Selection.Select(new SnapshotSpan(_textView.TextSnapshot, 0, 3), false);
             Dispatcher.CurrentDispatcher.DoEvents();
@@ -87,7 +87,7 @@ namespace Vim.UI.Wpf.Test
         {
             Create("foo bar");
             _buffer.Setup(x => x.ModeKind).Returns(ModeKind.Normal).Verifiable();
-            _buffer.Setup(x => x.SwitchMode(ModeKind.VisualBlock)).Returns(_visualMode.Object).Verifiable();
+            _buffer.Setup(x => x.SwitchMode(ModeKind.VisualBlock, ModeArgument.None)).Returns(_visualMode.Object).Verifiable();
             _textView.Selection.Mode = TextSelectionMode.Box;
             _textView.Selection.Select(new SnapshotSpan(_textView.TextSnapshot, 0, 3), false);
             _mouseDevice.SetupGet(x => x.IsLeftButtonPressed).Returns(false).Verifiable();
@@ -138,7 +138,7 @@ namespace Vim.UI.Wpf.Test
             _processor.IsSelectionChanging = false;
             _processor.PostprocessMouseLeftButtonUp(new MouseButtonEventArgs(InputManager.Current.PrimaryMouseDevice, 0, MouseButton.Left));
             _buffer.Verify();
-            _buffer.Setup(x => x.SwitchMode(ModeKind.Normal)).Returns(mode.Object).Verifiable();
+            _buffer.Setup(x => x.SwitchMode(ModeKind.Normal,ModeArgument.None)).Returns(mode.Object).Verifiable();
             Dispatcher.CurrentDispatcher.DoEvents();
             _buffer.Verify();
         }

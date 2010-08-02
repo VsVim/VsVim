@@ -51,8 +51,11 @@ type internal CommandMode
                     _input <- ki :: _input
                     Processed
 
-        member x.OnEnter () =
-            _command <- System.String.Empty
+        member x.OnEnter arg =
+            _command <- 
+                match arg with
+                | ModeArgument.None -> StringUtil.empty
+                | ModeArgument.FromVisual -> "'<,'>"
             _data.TextView.Caret.IsHidden <- true
         member x.OnLeave () = 
             _data.TextView.Caret.IsHidden <- false

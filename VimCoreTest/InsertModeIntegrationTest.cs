@@ -1,10 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using Microsoft.VisualStudio.Text.Editor;
 using NUnit.Framework;
 using Vim;
-using Microsoft.VisualStudio.Text.Editor;
 using VimCore.Test.Utils;
 
 namespace VimCore.Test
@@ -21,7 +17,7 @@ namespace VimCore.Test
             _textView = tuple.Item1;
             var service = EditorUtil.FactoryService;
             _buffer = service.vim.CreateBuffer(_textView);
-            _buffer.SwitchMode(ModeKind.Insert);
+            _buffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
         }
 
         [Test]

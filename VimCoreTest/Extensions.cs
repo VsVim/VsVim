@@ -27,6 +27,11 @@ namespace VimCore.Test
             return (ProcessResult.SwitchMode)res;
         }
 
+        internal static ProcessResult.SwitchModeWithArgument AsSwitchModeWithArgument(this ProcessResult res)
+        {
+            return (ProcessResult.SwitchModeWithArgument)res;
+        }
+
         #endregion
 
         #region MotionResult

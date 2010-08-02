@@ -207,7 +207,7 @@ namespace VimCore.Test.Mock
         public event Microsoft.FSharp.Control.FSharpHandler<EventArgs> Closed;
 
 
-        public IMode SwitchMode(ModeKind value)
+        public IMode SwitchMode(ModeKind value, ModeArgument arg)
         {
             throw new NotImplementedException();
         }

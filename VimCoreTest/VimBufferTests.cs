@@ -39,7 +39,7 @@ namespace VimCore.Test
             _disabledMode = new Mock<IMode>(MockBehavior.Loose);
             _disabledMode.SetupGet(x => x.ModeKind).Returns(ModeKind.Disabled);
             _normalMode = new Mock<INormalMode>(MockBehavior.Loose);
-            _normalMode.Setup(x => x.OnEnter());
+            _normalMode.Setup(x => x.OnEnter(ModeArgument.None));
             _normalMode.SetupGet(x => x.ModeKind).Returns(ModeKind.Normal);
             _normalMode.SetupGet(x => x.IsOperatorPending).Returns(false);
             _normalMode.SetupGet(x => x.IsWaitingForInput).Returns(false);
@@ -54,7 +54,7 @@ namespace VimCore.Test
             _rawBuffer.AddMode(_normalMode.Object);
             _rawBuffer.AddMode(_insertMode.Object);
             _rawBuffer.AddMode(_disabledMode.Object);
-            _rawBuffer.SwitchMode(ModeKind.Normal);
+            _rawBuffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
             _buffer = _rawBuffer;
         }
 
@@ -71,7 +71,7 @@ namespace VimCore.Test
             var ran = false;
             _normalMode.Setup(x => x.OnLeave());
             _buffer.SwitchedMode += (s, m) => { ran = true; };
-            _buffer.SwitchMode(ModeKind.Normal);
+            _buffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
             Assert.IsTrue(ran);
         }
 
@@ -79,8 +79,8 @@ namespace VimCore.Test
         public void SwitchPreviousMode1()
         {
             _normalMode.Setup(x => x.OnLeave()).Verifiable();
-            _insertMode.Setup(x => x.OnEnter()).Verifiable();
-            _buffer.SwitchMode(ModeKind.Insert);
+            _insertMode.Setup(x => x.OnEnter(ModeArgument.None)).Verifiable();
+            _buffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
             _normalMode.Verify();
             _insertMode.Verify();
 
@@ -94,8 +94,8 @@ namespace VimCore.Test
         public void SwitchPreviousMode2()
         {
             _normalMode.Setup(x => x.OnLeave()).Verifiable();
-            _insertMode.Setup(x => x.OnEnter()).Verifiable();
-            _buffer.SwitchMode(ModeKind.Insert);
+            _insertMode.Setup(x => x.OnEnter(ModeArgument.None)).Verifiable();
+            _buffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
             _insertMode.Setup(x => x.OnLeave()).Verifiable();
 
             var ran = false;
@@ -147,7 +147,7 @@ namespace VimCore.Test
             var ran = false;
             _vim.Setup(x => x.RemoveBuffer(_view)).Returns(true).Verifiable();
             _normalMode.Setup(x => x.OnLeave()).Callback(() => { ran = true; });
-            _buffer.SwitchMode(ModeKind.Normal);
+            _buffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
             _buffer.Close();
             Assert.IsTrue(ran);
             _vim.Verify();
@@ -168,7 +168,7 @@ namespace VimCore.Test
         {
             DisableKeyRemap();
             _normalMode.Setup(x => x.OnLeave());
-            _disabledMode.Setup(x => x.OnEnter()).Verifiable();
+            _disabledMode.Setup(x => x.OnEnter(ModeArgument.None)).Verifiable();
             _buffer.Process(Vim.GlobalSettings.DisableCommand);
             _disabledMode.Verify();
         }
@@ -179,9 +179,9 @@ namespace VimCore.Test
             DisableKeyRemap();
             var prev = _buffer.ModeKind;
             _normalMode.Setup(x => x.OnLeave());
-            _insertMode.Setup(x => x.OnEnter());
+            _insertMode.Setup(x => x.OnEnter(ModeArgument.None));
             _insertMode.Setup(x => x.OnLeave()).Verifiable();
-            _buffer.SwitchMode(ModeKind.Insert);
+            _buffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
             _insertMode.Setup(x => x.Process(It.IsAny<KeyInput>())).Returns(ProcessResult.SwitchPreviousMode).Verifiable();
             Assert.IsTrue(_buffer.ProcessChar('c'));
             _insertMode.Verify();
@@ -193,9 +193,9 @@ namespace VimCore.Test
         {
             DisableKeyRemap();
             _normalMode.Setup(x => x.OnLeave());
-            _insertMode.Setup(x => x.OnEnter()).Verifiable();
+            _insertMode.Setup(x => x.OnEnter(ModeArgument.None)).Verifiable();
             _insertMode.Setup(x => x.OnLeave()).Verifiable();
-            _buffer.SwitchMode(ModeKind.Insert);
+            _buffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
             _insertMode.Setup(x => x.Process(It.IsAny<KeyInput>())).Returns(ProcessResult.SwitchPreviousMode).Verifiable();
             var raised = false;
             _buffer.SwitchedMode += (e, args) => { raised = true; };

@@ -124,6 +124,7 @@ type internal VisualMode
                     (fun _ reg -> 
                         _operations.PasteOverSelection reg.StringValue reg
                         CommandResult.Completed ModeSwitch.SwitchPreviousMode ) )
+                yield ( InputUtil.CharToKeyInput(':'), fun _ _ -> ModeSwitch.SwitchModeWithArgument (ModeKind.Command,ModeArgument.FromVisual) |> CommandResult.Completed)
             }
             |> Seq.map (fun (ki,func) -> Command.SimpleCommand(OneKeyInput ki,CommandFlags.None, func))
 
@@ -178,6 +179,7 @@ type internal VisualMode
                     match modeSwitch with
                     | ModeSwitch.NoSwitch -> ProcessResult.Processed
                     | ModeSwitch.SwitchMode(kind) -> ProcessResult.SwitchMode kind
+                    | ModeSwitch.SwitchModeWithArgument(kind,arg) -> ProcessResult.SwitchModeWithArgument (kind,arg)
                     | ModeSwitch.SwitchPreviousMode -> ProcessResult.SwitchPreviousMode
                 | RunKeyInputResult.CommandErrored(_) -> ProcessResult.SwitchPreviousMode
                 | RunKeyInputResult.CommandCancelled -> ProcessResult.SwitchPreviousMode
@@ -185,7 +187,7 @@ type internal VisualMode
                     _operations.Beep()
                     ProcessResult.Processed
     
-        member x.OnEnter () = 
+        member x.OnEnter _ = 
             x.EnsureCommandsBuilt()
             _selectionTracker.Start()
         member x.OnLeave () = 

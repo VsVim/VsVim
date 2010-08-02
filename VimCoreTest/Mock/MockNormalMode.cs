@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using Vim;
 
 namespace VimCore.Test.Mock
@@ -49,7 +47,7 @@ namespace VimCore.Test.Mock
             get { throw new NotImplementedException(); }
         }
 
-        public void OnEnter()
+        public void OnEnter(ModeArgument arg)
         {
             throw new NotImplementedException();
         }

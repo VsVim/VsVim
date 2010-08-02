@@ -1,11 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using Vim.UI.Wpf.Properties;
-using Vim.Extensions;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Windows;
+using Vim.Extensions;
+using Vim.UI.Wpf.Properties;
 
 namespace Vim.UI.Wpf
 {
@@ -80,7 +79,7 @@ namespace Vim.UI.Wpf
                     _margin.StatusLine = String.Empty;
                     break;
                 case ModeKind.Command:
-                    _margin.StatusLine = ":";
+                    _margin.StatusLine = ":" + _buffer.CommandMode.Command;
                     break;
                 case ModeKind.Insert:
                     _margin.StatusLine = Resources.InsertBanner;
