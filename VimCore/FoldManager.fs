@@ -91,7 +91,7 @@ type internal FoldTagger
 
 
 [<Export(typeof<ITaggerProvider>)>]
-[<ContentType("text")>]
+[<ContentType(Constants.ContentType)>]
 [<TextViewRole(PredefinedTextViewRoles.Document)>]
 [<TagType(typeof<OutliningRegionTag>)>]
 type FoldTaggerProvider

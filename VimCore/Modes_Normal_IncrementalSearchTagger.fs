@@ -54,7 +54,7 @@ type internal IncrementalSearchTagger
             match span with
             | None -> Seq.empty
             | Some(span) ->
-                let tag = TextMarkerTag("vsvim_incrementalsearch")
+                let tag = TextMarkerTag(Constants.IncrementalSearchTagName)
                 let tagSpan = TagSpan(span, tag) :> ITagSpan<TextMarkerTag>
                 Seq.singleton tagSpan
 
@@ -67,7 +67,7 @@ type internal IncrementalSearchTagger
         member x.TagsChanged = _tagsChanged.Publish
 
 [<Export(typeof<ITaggerProvider>)>]
-[<ContentType("text")>]
+[<ContentType(Constants.ContentType)>]
 [<TextViewRole(PredefinedTextViewRoles.Document)>]
 [<TagType(typeof<TextMarkerTag>)>]
 type internal IncrementalSearchTaggerProvider

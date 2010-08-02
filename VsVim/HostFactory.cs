@@ -1,32 +1,22 @@
 using System;
-using System.ComponentModel.Composition;
-using Microsoft.VisualStudio.Text.Editor;
-using Microsoft.VisualStudio.Utilities;
-using Microsoft.VisualStudio.TextManager.Interop;
-using System.Threading;
-using Microsoft.VisualStudio.Text;
-using Microsoft.VisualStudio.Editor;
-using System.Diagnostics;
 using System.Collections.Generic;
-using Vim;
-using Vim.Extensions;
-using Microsoft.VisualStudio.Shell.Interop;
-using Microsoft.VisualStudio.Text.Classification;
-using Microsoft.VisualStudio.Text.Operations;
-using Microsoft.VisualStudio.Language.Intellisense;
-using Microsoft.VisualStudio;
-using System.Runtime.InteropServices;
+using System.ComponentModel.Composition;
 using System.Windows.Threading;
 using Microsoft.FSharp.Core;
+using Microsoft.VisualStudio.Editor;
 using Microsoft.VisualStudio.Shell;
-using EnvDTE;
+using Microsoft.VisualStudio.Text.Editor;
+using Microsoft.VisualStudio.TextManager.Interop;
+using Microsoft.VisualStudio.Utilities;
+using Vim;
+using Vim.Extensions;
 
 namespace VsVim
 {
     [Export(typeof(IWpfTextViewCreationListener))]
     [Export(typeof(IVimBufferCreationListener))]
     [Export(typeof(IVsTextViewCreationListener))]
-    [ContentType(Constants.ContentType)]
+    [ContentType(Vim.Constants.ContentType)]
     [TextViewRole(PredefinedTextViewRoles.Document)]
     internal sealed class HostFactory : IWpfTextViewCreationListener, IVimBufferCreationListener, IVsTextViewCreationListener
     {

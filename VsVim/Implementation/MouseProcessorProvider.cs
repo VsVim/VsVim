@@ -1,16 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using System.ComponentModel.Composition;
 using Microsoft.VisualStudio.Text.Editor;
-using System.ComponentModel.Composition;
 using Microsoft.VisualStudio.Utilities;
 using Vim;
 
 namespace VsVim.Implementation
 {
     [Export(typeof(IMouseProcessorProvider))]
-    [ContentType(Constants.ContentType)]
+    [ContentType(Vim.Constants.ContentType)]
     [Name("VsVimMouseProcessorProvider")]
     [TextViewRole(PredefinedTextViewRoles.Document)]
     public class MouseProcessorProvider : IMouseProcessorProvider

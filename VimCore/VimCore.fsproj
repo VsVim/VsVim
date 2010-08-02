@@ -36,6 +36,7 @@
   <Import Project="$(ProgramFiles)\Microsoft F#\v4.0\Microsoft.FSharp.Targets" />
   <ItemGroup>
     <Compile Include="Resources.fs" />
+    <Compile Include="Constants.fs" />
     <Compile Include="Util.fs" />
     <Compile Include="IVimHost.fs" />
     <Compile Include="WordKind.fs" />

@@ -1,26 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using Microsoft.VisualStudio.Text.Classification;
-using System.ComponentModel.Composition;
-using Microsoft.VisualStudio.Utilities;
+﻿using System.ComponentModel.Composition;
 using System.Windows.Media;
+using Microsoft.VisualStudio.Text.Classification;
+using Microsoft.VisualStudio.Utilities;
 
 namespace Vim.UI.Wpf.Implementation
 {
     internal static class EditorFormatDefinitionNames
     {
-        /// <summary>
-        /// When updating this value make sure you also change the Vim.Core tagger
-        /// </summary>
-        internal const string IncrementalSearch = "vsvim_incrementalsearch";
-
-        /// <summary>
-        /// When updating this value make sure you also change the Vim.Core tagger
-        /// </summary>
-        internal const string HighlightIncrementalSearch = "vsvim_highlightsearch";
-
         /// <summary>
         /// Color of the block caret
         /// </summary>
@@ -28,7 +14,7 @@ namespace Vim.UI.Wpf.Implementation
     }
 
     [Export(typeof(EditorFormatDefinition))]
-    [Name(EditorFormatDefinitionNames.IncrementalSearch)]
+    [Name(Constants.IncrementalSearchTagName)]
     [UserVisible(true)]
     internal sealed class IncrementalSearchMarkerDefinition : MarkerFormatDefinition
     {
@@ -40,7 +26,7 @@ namespace Vim.UI.Wpf.Implementation
     }
 
     [Export(typeof(EditorFormatDefinition))]
-    [Name(EditorFormatDefinitionNames.HighlightIncrementalSearch)]
+    [Name(Constants.HighlightIncrementalSearchTagName)]
     [UserVisible(true)]
     internal sealed class HighlightIncrementalSearchMarkerDefinition : MarkerFormatDefinition
     {

@@ -1,11 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using System.ComponentModel.Composition;
 using Microsoft.VisualStudio.Text.Editor;
-using System.ComponentModel.Composition;
-using Vim;
 using Microsoft.VisualStudio.Utilities;
+using Vim;
 
 namespace VsVim.Implementation
 {
@@ -13,7 +9,7 @@ namespace VsVim.Implementation
     [Order(Before = "VisualStudioKeyProcessor")]
     [Name("VsVim")]
     [TextViewRole(PredefinedTextViewRoles.Document)]
-    [ContentType(Constants.ContentType)]
+    [ContentType(Vim.Constants.ContentType)]
     public sealed class KeyProcessorProvider : IKeyProcessorProvider
     {
         private readonly IVim _vim;
