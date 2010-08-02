@@ -199,7 +199,7 @@ type internal NormalMode
             yield ("m", CommandFlags.Movement, fun count reg -> this.WaitMark count reg)
         }
         |> Seq.map (fun (str,kind, func) -> 
-            let name = CommandUtil.CreateCommandName str
+            let name = KeyNotationUtil.StringToKeyInput str |> OneKeyInput
             let func2 count reg = 
                 let count = CommandUtil.CountOrDefault count
                 func count reg 
@@ -353,14 +353,14 @@ type internal NormalMode
                 yield ("d", CommandFlags.None, None, fun _ reg data -> _operations.DeleteSpan data.OperationSpan data.MotionKind data.OperationKind reg |> ignore)
                 yield ("y", CommandFlags.None, None, fun _ reg data -> _operations.Yank data.OperationSpan data.MotionKind data.OperationKind reg)
                 yield ("c", CommandFlags.LinkedWithNextTextChange, Some ModeKind.Insert, fun _ reg data -> _operations.ChangeSpan data reg)
-                yield ("<", CommandFlags.None, None, fun _ _ data -> _operations.ShiftSpanLeft 1 data.OperationSpan)
+                yield ("<lt>", CommandFlags.None, None, fun _ _ data -> _operations.ShiftSpanLeft 1 data.OperationSpan)
                 yield (">", CommandFlags.None, None, fun _ _ data -> _operations.ShiftSpanRight 1 data.OperationSpan)
                 yield ("zf", CommandFlags.None, None, fun _ _ data -> _operations.FoldManager.CreateFold data.OperationSpan)
             }
 
         complex
         |> Seq.map (fun (str, extraFlags, modeKindOpt, func) ->
-            let name = CommandUtil.CreateCommandName str
+            let name = KeyNotationUtil.StringToKeyInputSet str
             let func2 count reg data =
                 let count = CommandUtil.CountOrDefault count
                 func count reg data

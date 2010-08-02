@@ -91,8 +91,10 @@ type internal MotionCapture
 
         let needCountOpt2 =
             seq {
-                yield ( CommandUtil.CreateCommandName "gg", fun countOpt -> _util.LineOrFirstToFirstNonWhitespace countOpt |> Some)
-            } |> Seq.map (fun (name,func) -> SimpleMotionCommand(name, func))
+                yield ( "gg", fun countOpt -> _util.LineOrFirstToFirstNonWhitespace countOpt |> Some)
+            } |> Seq.map (fun (name,func) -> 
+                let kiSet = KeyNotationUtil.StringToKeyInputSet name
+                SimpleMotionCommand(kiSet, func))
         Seq.append needCount needCountOpt |> Seq.append needCountOpt2 |> Seq.append needCount2
     
     let ComplexMotions = 

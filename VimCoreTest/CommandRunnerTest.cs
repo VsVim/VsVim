@@ -1,15 +1,13 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using NUnit.Framework;
-using Moq;
-using Vim;
-using Vim.Extensions;
-using Microsoft.VisualStudio.Text.Editor;
-using VimCore.Test.Utils;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
+using Microsoft.VisualStudio.Text.Editor;
+using Moq;
+using NUnit.Framework;
+using Vim;
+using Vim.Extensions;
+using VimCore.Test.Utils;
 
 namespace VimCore.Test
 {
@@ -107,7 +105,7 @@ namespace VimCore.Test
         public void Remove2()
         {
             Create(String.Empty);
-            _runner.Remove(CommandUtil.CreateCommandName("foo"));
+            _runner.Remove(KeyNotationUtil.StringToKeyInputSet("foo"));
             Assert.AreEqual(0, _runner.Commands.Count());
         }
 

@@ -83,7 +83,7 @@ namespace VimCore.Test.Utils
         internal static MotionCommand CreateSimpleMotion(string name, Func<MotionData> func)
         {
             var fsharpFunc = FSharpFuncUtil.Create<FSharpOption<int>, FSharpOption<MotionData>>(unused => FSharpOption.Create(func()));
-            var commandName = CommandUtil.CreateCommandName(name);
+            var commandName = KeyNotationUtil.StringToKeyInputSet(name);
             return MotionCommand.NewSimpleMotionCommand(
                 commandName,
                 fsharpFunc);

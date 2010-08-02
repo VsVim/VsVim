@@ -454,8 +454,6 @@ module CommandUtil =
         | Some(count) -> count
         | None -> 1
 
-    let CreateCommandName name = name |> Seq.map InputUtil.CharToKeyInput |> KeyInputSetUtil.ofSeq
-
 /// Represents the types of actions which are taken when an ICommandRunner is presented
 /// with a KeyInput to run
 type RunKeyInputResult = 

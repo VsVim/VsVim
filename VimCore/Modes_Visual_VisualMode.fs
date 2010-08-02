@@ -146,7 +146,9 @@ type internal VisualMode
                     _operations.FoldManager.CreateFold span )
             }
             |> Seq.map (fun (str,flags,func) -> (str, flags,fun count reg -> func count reg; CommandResult.Completed ModeSwitch.SwitchPreviousMode))
-            |> Seq.map (fun (name,flags,func) -> Command.SimpleCommand (CommandUtil.CreateCommandName name, flags, func))
+            |> Seq.map (fun (name,flags,func) -> 
+                let name = KeyNotationUtil.StringToKeyInputSet name
+                Command.SimpleCommand (name, flags, func))
 
         Seq.append simples complex
 

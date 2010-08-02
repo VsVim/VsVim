@@ -50,8 +50,8 @@ namespace VimCore.Test
                 EqualityUnit.Create(CreateOne('a')).WithEqualValues(CreateOne('a')),
                 EqualityUnit.Create(CreateOne('a')).WithNotEqualValues(CreateOne('b')),
                 EqualityUnit.Create(CreateOne('a')).WithEqualValues(CreateMany('a')),
-                EqualityUnit.Create(CreateOne('D')).WithEqualValues(CommandUtil.CreateCommandName("D")),
-                EqualityUnit.Create(KeyInputSet.NewOneKeyInput(InputUtil.CharToKeyInput('D'))).WithEqualValues(CommandUtil.CreateCommandName("D")));
+                EqualityUnit.Create(CreateOne('D')).WithEqualValues(KeyNotationUtil.StringToKeyInputSet("D")),
+                EqualityUnit.Create(KeyInputSet.NewOneKeyInput(InputUtil.CharToKeyInput('D'))).WithEqualValues(KeyNotationUtil.StringToKeyInputSet("D")));
         }
     }
 }

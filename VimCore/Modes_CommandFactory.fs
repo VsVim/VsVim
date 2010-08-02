@@ -14,29 +14,30 @@ type internal CommandFactory( _operations : ICommonOperations, _capture : IMotio
         let moveDown = fun count -> _operations.MoveCaretDown(count)
 
         seq {
-            yield (InputUtil.CharToKeyInput('h'), moveLeft)
-            yield (InputUtil.VimKeyToKeyInput VimKey.Left, moveLeft)
-            yield (InputUtil.VimKeyToKeyInput VimKey.Back, moveLeft)
-            yield (InputUtil.CharWithControlToKeyInput 'h', moveLeft)
-            yield (InputUtil.CharToKeyInput('l'), moveRight)
-            yield (InputUtil.VimKeyToKeyInput VimKey.Right, moveRight)
-            yield (InputUtil.CharToKeyInput ' ', moveRight)
-            yield (InputUtil.CharToKeyInput('k'), moveUp)
-            yield (InputUtil.VimKeyToKeyInput VimKey.Up, moveUp)
-            yield (InputUtil.CharWithControlToKeyInput 'p', moveUp)
-            yield (InputUtil.CharToKeyInput('j'), moveDown)
-            yield (InputUtil.VimKeyToKeyInput VimKey.Down, moveDown)
-            yield (InputUtil.CharWithControlToKeyInput 'n', moveDown)
-            yield (InputUtil.CharWithControlToKeyInput 'j', moveDown)
+            yield ("h", moveLeft)
+            yield ("<Left>", moveLeft)
+            yield ("<Bs>", moveLeft)
+            yield ("CTRL-h", moveLeft)
+            yield ("l", moveRight)
+            yield ("<Right>", moveRight)
+            yield ("<Space>", moveRight)
+            yield ("k", moveUp)
+            yield ("<Up>", moveUp)
+            yield ("CTRL-p", moveUp)
+            yield ("j", moveDown)
+            yield ("<Down>", moveDown)
+            yield ("CTRL-n", moveDown)
+            yield ("CTRL-j", moveDown)
         }
 
     member private x.CreateStandardMovementCommands() =
         x.CreateStandardMovementCommandsCore()
-        |> Seq.map (fun (ki,func) ->
+        |> Seq.map (fun (notation,func) ->
+            let kiSet = notation |> KeyNotationUtil.StringToKeyInput |> OneKeyInput
             let funcWithReg opt reg = 
                 func (CommandUtil.CountOrDefault opt)
                 Completed NoSwitch
-            Command.SimpleCommand (OneKeyInput ki,CommandFlags.Movement, funcWithReg))
+            Command.SimpleCommand (kiSet,CommandFlags.Movement, funcWithReg))
 
     /// Build up a set of MotionCommand values from applicable Motion values
     member private x.CreateMovementsFromMotions() =
