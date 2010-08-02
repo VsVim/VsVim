@@ -6,11 +6,30 @@ open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Operations
 open Microsoft.VisualStudio.Text.Editor
 
+type CommandFunction = unit -> ProcessResult
+
 type internal InsertMode
     ( 
         _data : IVimBuffer, 
         _operations : Modes.ICommonOperations,
-        _broker : IDisplayWindowBroker) =
+        _broker : IDisplayWindowBroker) as this =
+
+    let mutable _commandMap : Map<KeyInput,CommandFunction> = Map.empty
+
+    do
+        let commands : (string * CommandFunction) list = 
+            [
+                ("<Esc>", this.ProcessEscape);
+                ("CTRL-[", this.ProcessEscape);
+                ("CTRL-d", this.ShiftLeft)
+            ]
+
+        _commandMap <-
+            commands 
+            |> Seq.ofList
+            |> Seq.map (fun (str,func) -> (KeyNotationUtil.StringToKeyInput str),func)
+            |> Map.ofSeq
+
 
     let _escapeCommands = [
         InputUtil.VimKeyToKeyInput VimKey.Escape;
@@ -18,9 +37,11 @@ type internal InsertMode
     let _commands = InputUtil.CharWithControlToKeyInput 'd' :: _escapeCommands
 
     /// Process the CTRL-D combination and do a shift left
-    member private this.ShiftLeft() = _operations.ShiftLinesLeft 1
+    member private this.ShiftLeft() = 
+        _operations.ShiftLinesLeft 1
+        ProcessResult.Processed
 
-    member private this.ProcessEscape() =
+    member private this.ProcessEscape () =
 
         if _broker.IsCompletionActive || _broker.IsSignatureHelpActive || _broker.IsQuickInfoActive then
             _broker.DismissDisplayWindows()
@@ -43,11 +64,9 @@ type internal InsertMode
             | Some _ -> true
             | None -> false
         member x.Process (ki : KeyInput) = 
-            if ListUtil.contains ki _escapeCommands then x.ProcessEscape()
-            elif ki = InputUtil.CharWithControlToKeyInput 'd' then
-                x.ShiftLeft()
-                ProcessResult.Processed
-            else Processed
+            match Map.tryFind ki _commandMap with
+            | Some(func) -> func()
+            | None -> Processed
         member x.OnEnter _ = ()
         member x.OnLeave () = ()
         member x.OnClose() = ()
