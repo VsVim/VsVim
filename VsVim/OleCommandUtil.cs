@@ -157,7 +157,6 @@ namespace VsVim
                 case VSConstants.VSStd2KCmdID.TAB:
                     ki = InputUtil.VimKeyToKeyInput(VimKey.Tab);
                     break;
-
                 default:
                     break;
             }

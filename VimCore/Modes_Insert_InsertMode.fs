@@ -21,7 +21,8 @@ type internal InsertMode
             [
                 ("<Esc>", this.ProcessEscape);
                 ("CTRL-[", this.ProcessEscape);
-                ("CTRL-d", this.ShiftLeft)
+                ("CTRL-d", this.ProcessShiftLeft)
+                ("CTRL-o", this.ProcessNormalModeOneCommand)
             ]
 
         _commandMap <-
@@ -31,13 +32,12 @@ type internal InsertMode
             |> Map.ofSeq
 
 
-    let _escapeCommands = [
-        InputUtil.VimKeyToKeyInput VimKey.Escape;
-        InputUtil.CharWithControlToKeyInput '[' ]
-    let _commands = InputUtil.CharWithControlToKeyInput 'd' :: _escapeCommands
+    /// Enter normal mode for a single command
+    member private this.ProcessNormalModeOneCommand() =
+        ProcessResult.SwitchModeWithArgument (ModeKind.Normal, ModeArgument.OneTimeCommand ModeKind.Insert)
 
     /// Process the CTRL-D combination and do a shift left
-    member private this.ShiftLeft() = 
+    member private this.ProcessShiftLeft() = 
         _operations.ShiftLinesLeft 1
         ProcessResult.Processed
 
@@ -57,12 +57,9 @@ type internal InsertMode
 
     interface IMode with 
         member x.VimBuffer = _data
-        member x.CommandNames =  _commands |> Seq.map OneKeyInput
+        member x.CommandNames =  _commandMap |> Seq.map (fun p -> p.Key) |> Seq.map OneKeyInput
         member x.ModeKind = ModeKind.Insert
-        member x.CanProcess (ki:KeyInput) = 
-            match _commands |> List.tryFind (fun d -> d = ki) with
-            | Some _ -> true
-            | None -> false
+        member x.CanProcess ki = Map.containsKey ki _commandMap 
         member x.Process (ki : KeyInput) = 
             match Map.tryFind ki _commandMap with
             | Some(func) -> func()

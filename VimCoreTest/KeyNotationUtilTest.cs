@@ -132,6 +132,15 @@ namespace VimCore.Test
         }
 
         [Test]
+        public void StringToKeyInput4()
+        {
+            var data = KeyNotationUtil.StringToKeyInput("CTRL-o");
+            Assert.AreEqual('o', data.Char);
+            Assert.AreEqual(KeyModifiers.Control, data.KeyModifiers);
+            Assert.AreEqual(VimKey.NotWellKnown, data.Key);
+        }
+
+        [Test]
         public void SplitIntoKeyNotationEntries1()
         {
             CollectionAssert.AreEquivalent(

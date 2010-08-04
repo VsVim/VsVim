@@ -6,10 +6,11 @@ open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
 
 type internal NormalModeData = {
-    Command : string;
-    IsInRepeatLastChange : bool;
-    IsInReplace : bool;
-}
+    Command : string
+    IsInRepeatLastChange : bool
+    IsInReplace : bool
+    OneTimeMode : ModeKind option 
+} 
 
 type internal NormalMode 
     ( 
@@ -23,9 +24,10 @@ type internal NormalMode
 
     /// Reset state for data in Normal Mode
     let _emptyData = {
-        Command = StringUtil.empty;
-        IsInRepeatLastChange = false;
-        IsInReplace = false;
+        Command = StringUtil.empty
+        IsInRepeatLastChange = false
+        IsInReplace = false
+        OneTimeMode = None
     }
 
     /// Contains the state information for Normal mode
@@ -387,12 +389,16 @@ type internal NormalMode
         | RunKeyInputResult.NeedMoreKeyInput -> ProcessResult.Processed
         | RunKeyInputResult.NestedRunDetected -> ProcessResult.Processed
         | RunKeyInputResult.CommandRan(_,modeSwitch) ->
+
+            // If we are in the one time mode then switch back to the previous
+            // mode
+            let modeSwitch = 
+                match _data.OneTimeMode with
+                | None -> modeSwitch 
+                | Some(modeKind) -> ModeSwitch.SwitchMode modeKind
+
             this.Reset()
-            match modeSwitch with
-            | ModeSwitch.NoSwitch -> ProcessResult.Processed
-            | ModeSwitch.SwitchMode(kind) -> ProcessResult.SwitchMode kind
-            | ModeSwitch.SwitchModeWithArgument(kind,arg) -> ProcessResult.SwitchModeWithArgument (kind,arg)
-            | ModeSwitch.SwitchPreviousMode -> ProcessResult.SwitchPreviousMode
+            ProcessResult.OfModeSwitch modeSwitch
         | RunKeyInputResult.CommandErrored(_) -> 
             this.Reset()
             ProcessResult.Processed
@@ -435,9 +441,16 @@ type internal NormalMode
             else false
 
         member this.Process ki = this.ProcessCore ki
-        member this.OnEnter _ = 
+        member this.OnEnter arg = 
             this.EnsureCommands()
             this.Reset()
+            
+            // Process the argument if it's applicable
+            match arg with 
+            | ModeArgument.None -> ()
+            | ModeArgument.FromVisual -> ()
+            | ModeArgument.OneTimeCommand(modeKind) -> _data <- { _data with OneTimeMode = Some modeKind }
+
         member this.OnLeave () = ()
         member this.OnClose() = _eventHandlers.DisposeAll()
     

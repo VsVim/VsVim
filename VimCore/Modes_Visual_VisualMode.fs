@@ -175,12 +175,7 @@ type internal VisualMode
                 match _runner.Run ki with
                 | RunKeyInputResult.NeedMoreKeyInput -> ProcessResult.Processed
                 | RunKeyInputResult.NestedRunDetected -> ProcessResult.Processed
-                | RunKeyInputResult.CommandRan(_,modeSwitch) ->
-                    match modeSwitch with
-                    | ModeSwitch.NoSwitch -> ProcessResult.Processed
-                    | ModeSwitch.SwitchMode(kind) -> ProcessResult.SwitchMode kind
-                    | ModeSwitch.SwitchModeWithArgument(kind,arg) -> ProcessResult.SwitchModeWithArgument (kind,arg)
-                    | ModeSwitch.SwitchPreviousMode -> ProcessResult.SwitchPreviousMode
+                | RunKeyInputResult.CommandRan(_,modeSwitch) -> ProcessResult.OfModeSwitch modeSwitch
                 | RunKeyInputResult.CommandErrored(_) -> ProcessResult.SwitchPreviousMode
                 | RunKeyInputResult.CommandCancelled -> ProcessResult.SwitchPreviousMode
                 | RunKeyInputResult.NoMatchingCommand -> 

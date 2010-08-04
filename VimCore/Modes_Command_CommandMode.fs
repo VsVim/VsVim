@@ -55,6 +55,7 @@ type internal CommandMode
             _command <- 
                 match arg with
                 | ModeArgument.None -> StringUtil.empty
+                | ModeArgument.OneTimeCommand(_) -> StringUtil.empty
                 | ModeArgument.FromVisual -> "'<,'>"
             _data.TextView.Caret.IsHidden <- true
         member x.OnLeave () = 

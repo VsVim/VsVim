@@ -304,7 +304,12 @@ module KeyInputSetUtil =
 [<RequireQualifiedAccess>]
 type ModeArgument =
     | None
+    /// Used for transitions from Visual Mode directly to Command mode
     | FromVisual 
+    /// When the given mode is to execute a single command then return to 
+    /// the previous mode.  The provided mode kind is the value which needs
+    /// to be switched to upon completion of the command
+    | OneTimeCommand of ModeKind
 
 type ModeSwitch =
     | NoSwitch
@@ -725,6 +730,13 @@ type ProcessResult =
     | SwitchMode of ModeKind
     | SwitchModeWithArgument of ModeKind * ModeArgument
     | SwitchPreviousMode
+    with
+    static member OfModeSwitch mode =
+        match mode with
+        | ModeSwitch.NoSwitch -> ProcessResult.Processed
+        | ModeSwitch.SwitchMode(kind) -> ProcessResult.SwitchMode kind
+        | ModeSwitch.SwitchModeWithArgument(kind,arg) -> ProcessResult.SwitchModeWithArgument (kind,arg)
+        | ModeSwitch.SwitchPreviousMode -> ProcessResult.SwitchPreviousMode
 
 type SettingKind =
     | NumberKind

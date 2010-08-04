@@ -2473,6 +2473,28 @@ namespace VimCore.Test
             Assert.IsTrue(res.IsProcessed);
         }
 
+        [Test]
+        public void OneTimeCommand1()
+        {
+            Create(string.Empty);
+            _operations.Setup(x => x.MoveCaretLeft(1)).Verifiable();
+            _mode.OnEnter(ModeArgument.NewOneTimeCommand(ModeKind.Insert));
+            var res = _mode.Process("h");
+            Assert.IsTrue(res.IsSwitchMode);
+            Assert.AreEqual(ModeKind.Insert, res.AsSwitchMode().Item);
+        }
+
+        [Test]
+        public void OneTimeCommand2()
+        {
+            Create(string.Empty);
+            _operations.Setup(x => x.MoveCaretLeft(1)).Verifiable();
+            _mode.OnEnter(ModeArgument.NewOneTimeCommand(ModeKind.Command));
+            var res = _mode.Process("h");
+            Assert.IsTrue(res.IsSwitchMode);
+            Assert.AreEqual(ModeKind.Command, res.AsSwitchMode().Item);
+        }
+
         #endregion
 
         #region Visual Mode

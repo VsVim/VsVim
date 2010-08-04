@@ -149,5 +149,14 @@ namespace VimCore.Test
             _factory.Verify();
         }
 
+        [Test]
+        public void NormalModeOneTimeCommand1()
+        {
+            var res = _mode.Process(KeyNotationUtil.StringToKeyInput("CTRL-o").Char);
+            Assert.IsTrue(res.IsSwitchModeWithArgument);
+            Assert.AreEqual(ModeKind.Normal, res.AsSwitchModeWithArgument().Item1);
+            Assert.IsTrue(res.AsSwitchModeWithArgument().Item2.IsOneTimeCommand);
+        }
+
     }
 }
