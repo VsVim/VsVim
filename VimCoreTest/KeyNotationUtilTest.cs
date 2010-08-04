@@ -127,8 +127,7 @@ namespace VimCore.Test
                     Assert.AreEqual(ki, parsed);
                 };
             verifyFunc("CTRL-j", InputUtil.CharWithControlToKeyInput('j'));
-            verifyFunc("CTRL-J", InputUtil.CharWithControlToKeyInput('J'));
-            verifyFunc("CTRL-Up", InputUtil.VimKeyAndModifiersToKeyInput(VimKey.Up, KeyModifiers.Control));
+            verifyFunc("CTRL-j", InputUtil.CharWithControlToKeyInput('j'));
         }
 
         [Test]
@@ -138,6 +137,23 @@ namespace VimCore.Test
             Assert.AreEqual('o', data.Char);
             Assert.AreEqual(KeyModifiers.Control, data.KeyModifiers);
             Assert.AreEqual(VimKey.NotWellKnown, data.Key);
+        }
+
+        [Test]
+        [Description("CTRL- modifiers on alphas should be lower case")]
+        public void StringToKeyInput5()
+        {
+            var ki = KeyNotationUtil.StringToKeyInput("CTRL-O");
+            Assert.AreEqual('o', ki.Char);
+            Assert.AreEqual(KeyModifiers.Control, ki.KeyModifiers);
+        }
+
+        [Test]
+        [ExpectedException(typeof(ArgumentException))]
+        [Description("Named keystrokes need to use the <C- syntax")]
+        public void StringToKeyInput6()
+        {
+            KeyNotationUtil.StringToKeyInput("CTRL-Up");
         }
 
         [Test]

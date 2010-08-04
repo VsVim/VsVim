@@ -167,6 +167,17 @@ module internal KeyNotationUtil =
             else 
                 convertToRaw (data.Substring(1,data.Length - 2))
 
+        // Original data has a CTRL- prefix.  Passed in value is the text to the
+        // right
+        let convertCtrlPrefix data = 
+            if StringUtil.length data <> 1 then None
+            else 
+                let c = StringUtil.charAt 0 data 
+                let c = 
+                    if CharUtil.IsLetter c then CharUtil.ToLower c
+                    else c
+                InputUtil.CharWithControlToKeyInput c |> Some
+
         match StringUtil.charAtOption 0 data with
         | None -> None
         | Some('<') -> 
@@ -174,16 +185,14 @@ module internal KeyNotationUtil =
             else insideLessThanGreaterThan()
         | Some(c) -> 
             let prefix = "CTRL-"
-            if StringUtil.startsWithIgnoreCase prefix data then
-                if data.Length < prefix.Length + 1 then None
-                else convertAndApply (data.Substring(prefix.Length)) (Some KeyModifiers.Control)
+            if StringUtil.startsWithIgnoreCase prefix data then convertCtrlPrefix (data.Substring(prefix.Length))
             elif data.Length = 1 then tryCharToKeyInput data.[0]
             else None
 
     let StringToKeyInput data = 
         match TryStringToKeyInput data with 
         | Some(ki) -> ki
-        | None -> invalidOp (Resources.KeyNotationUtil_InvalidNotation data)
+        | None -> invalidArg "data" (Resources.KeyNotationUtil_InvalidNotation data)
 
     /// Try to convert the passed in string to multiple KeyInput values.  Returns true only
     /// if the entire list succesfully parses
