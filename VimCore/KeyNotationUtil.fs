@@ -169,6 +169,7 @@ module internal KeyNotationUtil =
 
         // Original data has a CTRL- prefix.  Passed in value is the text to the
         // right
+        // :help CTRL-{char}
         let convertCtrlPrefix data = 
             if StringUtil.length data <> 1 then None
             else 
