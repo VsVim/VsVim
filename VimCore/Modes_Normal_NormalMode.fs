@@ -278,6 +278,9 @@ type internal NormalMode
                 yield ("%", CommandFlags.Repeatable, fun _ _ -> _operations.GoToMatch() |> ignore)
                 yield ("<C-PageDown>", CommandFlags.Repeatable, fun count _ -> _operations.GoToNextTab count)
                 yield ("<C-PageUp>", CommandFlags.Repeatable, fun count _ -> _operations.GoToPreviousTab count)
+                yield ("z<Enter>", CommandFlags.Movement, fun count _ -> 
+                        _operations.EditorOperations.ScrollLineTop()
+                        _operations.EditorOperations.MoveToStartOfLineAfterWhiteSpace(false) )
             }
             |> Seq.map(fun (str,kind,func) -> (str,kind,func,CommandResult.Completed ModeSwitch.NoSwitch))
 
@@ -327,25 +330,7 @@ type internal NormalMode
                     CommandResult.Completed ModeSwitch.NoSwitch
                 SimpleCommand(name, kind, func2))
 
-        let hardName = 
-            seq { 
-                yield (
-                    [InputUtil.CharToKeyInput('z'); InputUtil.VimKeyToKeyInput(VimKey.Enter)],
-                    CommandFlags.Movement,
-                    fun count reg -> 
-                        _operations.EditorOperations.ScrollLineTop()
-                        _operations.EditorOperations.MoveToStartOfLineAfterWhiteSpace(false) )
-
-            }
-            |> Seq.map(fun (list,kind,func) -> 
-                let name = KeyInputSet.ManyKeyInputs list
-                let func2 count reg =
-                    let count = CommandUtil.CountOrDefault count
-                    func count reg
-                    CommandResult.Completed ModeSwitch.NoSwitch 
-                SimpleCommand(name, kind, func2))
-
-        Seq.append allWithCount needCountAsOpt |> Seq.append hardName
+        Seq.append allWithCount needCountAsOpt 
 
     /// Create all motion commands
     member this.CreateMotionCommands() =
