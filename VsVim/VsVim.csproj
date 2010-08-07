@@ -145,6 +145,7 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
+    <Compile Include="ServiceProviderBag.cs" />
     <Compile Include="Settings\CommandBindingSetting.cs" />
     <Compile Include="Settings\Settings.cs" />
     <Compile Include="Settings\Settings.Designer.cs">
@@ -162,6 +163,7 @@
     <Compile Include="UI\KeyBindingData.cs" />
     <Compile Include="UI\KeyBindingHandledByOption.cs" />
     <Compile Include="VsCommandFilter.cs" />
+    <Compile Include="VsFilterKeysAdapter.cs" />
     <Compile Include="VsVimHost.cs" />
   </ItemGroup>
   <ItemGroup>

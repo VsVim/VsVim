@@ -10,6 +10,10 @@ using Microsoft.VisualStudio.TextManager.Interop;
 using Microsoft.VisualStudio.Utilities;
 using Vim;
 using Vim.Extensions;
+using IServiceProvider = System.IServiceProvider;
+using IOleServiceProvider = Microsoft.VisualStudio.OLE.Interop.IServiceProvider;
+using Microsoft.VisualStudio.OLE.Interop;
+using Microsoft.VisualStudio.Shell.Interop;
 
 namespace VsVim
 {
@@ -108,10 +112,6 @@ namespace VsVim
             var buffer = opt.Value;
             var filter = new VsCommandFilter(buffer, vsView, _serviceProvider);
             _filterMap.Add(buffer, filter);
-
-            // Install the filter keys helper
-            IVsCodeWindow codeWindow;
-            _adapter.TryGetCodeWindow(view, out codeWindow);
         }
     }
 
