@@ -102,7 +102,12 @@ namespace VimCore.Test
             throw new NotImplementedException();
         }
 
-        public void BuildSolution()
+        void IVimHost.SplitView(ITextView textView)
+        {
+            throw new NotImplementedException();
+        }
+
+        void IVimHost.BuildSolution()
         {
             throw new NotImplementedException();
         }

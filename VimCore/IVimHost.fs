@@ -44,5 +44,8 @@ type IVimHost =
     /// Builds the solution
     abstract BuildSolution : unit -> unit
 
+    /// Split the views
+    abstract SplitView : ITextView -> unit
+
 
 

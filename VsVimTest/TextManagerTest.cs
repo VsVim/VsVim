@@ -1,0 +1,83 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using NUnit.Framework;
+using VsVim.Implementation;
+using VsVim;
+using Moq;
+using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Editor;
+using VimCore.Test.Utils;
+using Microsoft.VisualStudio.Shell.Interop;
+using Microsoft.VisualStudio.TextManager.Interop;
+using Microsoft.VisualStudio.OLE.Interop;
+using Microsoft.VisualStudio;
+
+namespace VsVimTest
+{
+    [TestFixture]
+    public class TextManagerTest
+    {
+        private MockFactory _factory;
+        private Mock<IVsAdapter> _adapter;
+        private Mock<IVsEditorAdaptersFactoryService> _editorAdapter;
+        private Mock<SVsServiceProvider> _serviceProvider;
+        private Mock<IVsRunningDocumentTable> _table;
+        private TextManager _managerRaw;
+        private ITextManager _manager;
+
+        [SetUp]
+        public void Setup()
+        {
+            _factory = new MockFactory(MockBehavior.Loose);
+            _adapter = _factory.Create<IVsAdapter>();
+            _editorAdapter = _factory.Create<IVsEditorAdaptersFactoryService>();
+            _table = _factory.Create<IVsRunningDocumentTable>();
+            _serviceProvider = _factory.Create<SVsServiceProvider>();
+            _serviceProvider
+                .Setup(x => x.GetService(typeof(SVsRunningDocumentTable)))
+                .Returns(_table.Object);
+            _managerRaw = new TextManager(
+                _adapter.Object,
+                _editorAdapter.Object,
+                _serviceProvider.Object);
+            _manager = _managerRaw;
+        }
+
+        [Test]
+        public void SplitView1()
+        {
+            var view = EditorUtil.CreateView();
+            Assert.IsFalse(_manager.SplitView(view));
+        }
+
+        [Test]
+        public void SplitView2()
+        {
+            var view = EditorUtil.CreateView();
+            IVsCodeWindow codeWindow = _factory.Create<IVsCodeWindow>().Object;
+            _adapter.Setup(x => x.TryGetCodeWindow(view, out codeWindow)).Returns(true).Verifiable();
+            Assert.IsFalse(_manager.SplitView(view));
+            _factory.Verify();
+        }
+
+        [Test]
+        public void SplitView3()
+        {
+            var view = EditorUtil.CreateView();
+            var mock = _factory.Create<IVsCodeWindow>();
+            var commandTarget = mock.As<IOleCommandTarget>();
+            IVsCodeWindow codeWindow = mock.Object;
+            _adapter.Setup(x => x.TryGetCodeWindow(view, out codeWindow)).Returns(true).Verifiable();
+            var id = VSConstants.GUID_VSStandardCommandSet97;
+            commandTarget
+                .Setup(x => x.Exec(ref id, It.IsAny<uint>(), It.IsAny<uint>(), IntPtr.Zero, IntPtr.Zero))
+                .Returns(VSConstants.S_OK)
+                .Verifiable();
+            Assert.IsTrue(_manager.SplitView(view));
+            _factory.Verify();
+        }
+        
+    }
+}

@@ -197,6 +197,11 @@ namespace VsVim
             SafeExecuteCommand("Build.BuildSolution");
         }
 
+        void IVimHost.SplitView(ITextView textView)
+        {
+            _textManager.SplitView(textView);
+        }
+
         #endregion
     }
 }

@@ -10,6 +10,8 @@ using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.TextManager.Interop;
 using Vim;
+using Microsoft.VisualStudio.OLE.Interop;
+using IServiceProvider = System.IServiceProvider;
 
 namespace VsVim.Implementation
 {
@@ -96,18 +98,36 @@ namespace VsVim.Implementation
             VsShellUtilities.SaveFileIfDirty(vsTextView);
         }
 
-        public void Close(ITextView textView, bool checkDirty)
+        public bool Close(ITextView textView, bool checkDirty)
         {
             IVsWindowFrame frame;
             if (!_adapter.TryGetContainingWindowFrame(textView, out frame))
             {
-                return;
+                return false;
             }
 
             var value = checkDirty
                 ? __FRAMECLOSE.FRAMECLOSE_PromptSave
                 : __FRAMECLOSE.FRAMECLOSE_NoSave;
-            ErrorHandler.ThrowOnFailure(frame.CloseFrame((uint)value));
+            return ErrorHandler.Succeeded(frame.CloseFrame((uint)value));
+        }
+
+        public bool SplitView(ITextView textView)
+        {
+            IVsCodeWindow codeWindow;
+            if (_adapter.TryGetCodeWindow(textView, out codeWindow))
+            {
+                var target = codeWindow as IOleCommandTarget;
+                if (target != null)
+                {
+                    var group = VSConstants.GUID_VSStandardCommandSet97;
+                    var cmdId = VSConstants.VSStd97CmdID.Split;
+                    var result = target.Exec(ref group, (uint)cmdId, (uint)OLECMDEXECOPT.OLECMDEXECOPT_DODEFAULT, IntPtr.Zero, IntPtr.Zero);
+                    return VSConstants.S_OK == result;
+                }
+            }
+
+            return false;
         }
 
         private IEnumerable<IWpfTextView> GetTextViews(ITextBuffer textBuffer)

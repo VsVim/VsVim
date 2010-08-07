@@ -34,6 +34,11 @@ namespace VsVim
         /// <summary>
         /// Close the passed in document
         /// </summary>
-        void Close(ITextView textView, bool checkDirty);
+        bool Close(ITextView textView, bool checkDirty);
+
+        /// <summary>
+        /// Split the provided view
+        /// </summary>
+        bool SplitView(ITextView textView);
     }
 }

@@ -111,6 +111,7 @@ type internal CommandProcessor
             yield ("redo", "red", this.ProcessRedo)
             yield ("set", "se", this.ProcessSet)
             yield ("source","so", this.ProcessSource)
+            yield ("split", "sp", this.ProcessSplit)
             yield ("substitute", "s", this.ProcessSubstitute)
             yield ("tabnext", "tabn", this.ProcessTabNext)
             yield ("tabprevious", "tabp", this.ProcessTabPrevious)
@@ -379,6 +380,10 @@ type internal CommandProcessor
                 lines 
                 |> Seq.map (fun command -> command |> List.ofSeq)
                 |> Seq.iter x.RunCommand
+
+    /// Split the given view into 2
+    member private x.ProcessSplit _ _ _ =
+        _data.Vim.VimHost.SplitView _data.TextView
 
     member private x.ProcessSubstitute(rest:char list) (range:Range option) _ =
 

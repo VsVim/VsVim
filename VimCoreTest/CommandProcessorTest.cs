@@ -24,6 +24,7 @@ namespace VimCore.Test
     public class CommandProcessorTest
     {
         private IWpfTextView _view;
+        private MockFactory _factory;
         private Mock<IVimBuffer> _bufferData;
         private CommandProcessor _processorRaw;
         private ICommandProcessor _processor;
@@ -32,21 +33,24 @@ namespace VimCore.Test
         private Mock<IOperations> _operations;
         private Mock<IStatusUtil> _statusUtil;
         private Mock<IFileSystem> _fileSystem;
+        private Mock<IVimHost> _vimHost;
 
         public void Create(params string[] lines)
         {
             _view = Utils.EditorUtil.CreateView(lines);
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 0));
             _map = new RegisterMap();
-            _editOpts = new Mock<IEditorOperations>(MockBehavior.Strict);
-            _operations = new Mock<IOperations>(MockBehavior.Strict);
+            _factory = new MockFactory(MockBehavior.Strict);
+            _editOpts = _factory.Create<IEditorOperations>();
+            _vimHost = _factory.Create<IVimHost>();
+            _operations = _factory.Create<IOperations>();
             _operations.SetupGet(x => x.EditorOperations).Returns(_editOpts.Object);
-            _statusUtil = new Mock<IStatusUtil>();
-            _fileSystem = new Mock<IFileSystem>(MockBehavior.Strict);
+            _statusUtil = _factory.Create<IStatusUtil>(); 
+            _fileSystem = _factory.Create<IFileSystem>(MockBehavior.Strict);
             _bufferData = MockObjectFactory.CreateVimBuffer(
                 _view,
                 "test",
-                MockObjectFactory.CreateVim(_map).Object);
+                MockObjectFactory.CreateVim(_map, host:_vimHost.Object).Object);
             _processorRaw = new Vim.Modes.Command.CommandProcessor(_bufferData.Object, _operations.Object, _statusUtil.Object, _fileSystem.Object);
             _processor = _processorRaw;
         }
@@ -111,8 +115,9 @@ namespace VimCore.Test
         public void Jump3()
         {
             Create("foo");
+            _statusUtil.Setup(x => x.OnError(It.IsAny<string>())).Verifiable();
             RunCommand("400");
-            _statusUtil.Verify(x => x.OnError(It.IsAny<string>()));
+            _factory.Verify();
         }
 
         [Test]
@@ -500,10 +505,11 @@ namespace VimCore.Test
         public void Substitute14()
         {
             Create("foo bar", "baz");
+            _statusUtil.Setup(x => x.OnError(Resources.CommandMode_NotSupported_SubstituteConfirm)).Verifiable();
             var tss = _view.TextSnapshot;
             var span = new SnapshotSpan(tss, 0, tss.Length);
             RunCommand("%s/foo/bar/c");
-            _statusUtil.Verify(x => x.OnError(Resources.CommandMode_NotSupported_SubstituteConfirm));
+            _factory.Verify();
         }
 
         [Test,Ignore]
@@ -567,8 +573,9 @@ namespace VimCore.Test
         public void Redo3()
         {
             Create("foo");
+            _statusUtil.Setup(x => x.OnError(Resources.CommandMode_CannotRun("real"))).Verifiable();
             RunCommand("real");
-            _statusUtil.Verify(x => x.OnError(Resources.CommandMode_CannotRun("real")));
+            _factory.Verify();
         }
 
         [Test]
@@ -593,8 +600,9 @@ namespace VimCore.Test
         public void Undo3()
         {
             Create("foo");
+            _statusUtil.Setup(x => x.OnError(Resources.CommandMode_CannotRun("unreal"))).Verifiable();
             RunCommand("unreal");
-            _statusUtil.Verify(x => x.OnError(Resources.CommandMode_CannotRun("unreal")));
+            _factory.Verify();
         }
 
         [Test]
@@ -609,8 +617,9 @@ namespace VimCore.Test
         public void Marks2()
         {
             Create("foo");
+            _statusUtil.Setup(x => x.OnError(Resources.CommandMode_CannotRun("marksaoeu"))).Verifiable();
             RunCommand("marksaoeu");
-            _statusUtil.Verify(x => x.OnError(Resources.CommandMode_CannotRun("marksaoeu")));
+            _factory.Verify();
         }
 
         [Test]
@@ -762,17 +771,18 @@ namespace VimCore.Test
         {
             Create("boo");
             _fileSystem.Setup(x => x.ReadAllLines(It.IsAny<string>())).Returns(FSharpOption<string[]>.None).Verifiable();
+            _statusUtil.Setup(x => x.OnError(Resources.CommandMode_CouldNotOpenFile(String.Empty))).Verifiable();
             RunCommand("source");
-            _statusUtil.Verify(x => x.OnError(Resources.CommandMode_CouldNotOpenFile(String.Empty)));
-            _fileSystem.Verify();
+            _factory.Verify();
         }
 
         [Test]
         public void Source2()
         {
             Create("bar");
+            _statusUtil.Setup(x => x.OnError(Resources.CommandMode_NotSupported_SourceNormal)).Verifiable();
             RunCommand("source! boo");
-            _statusUtil.Verify(x => x.OnError(Resources.CommandMode_NotSupported_SourceNormal));
+            _factory.Verify();
         }
 
         [Test]
@@ -810,16 +820,18 @@ namespace VimCore.Test
         public void RunCommand2()
         {
             var command = "\"foo bar";
+            _statusUtil.Setup(x => x.OnError(Resources.CommandMode_CannotRun(command))).Verifiable();
             _processor.RunCommand(ListModule.OfSeq(command));
-            _statusUtil.Verify(x => x.OnError(Resources.CommandMode_CannotRun(command)));
+            _factory.Verify();
         }
 
         [Test]
         public void RunCommand3()
         {
             var command = " \"foo bar";
+            _statusUtil.Setup(x => x.OnError(Resources.CommandMode_CannotRun(command))).Verifiable();
             _processor.RunCommand(ListModule.OfSeq(command));
-            _statusUtil.Verify(x => x.OnError(Resources.CommandMode_CannotRun(command)));
+            _factory.Verify();
         }
 
         [Test]
@@ -1136,5 +1148,24 @@ namespace VimCore.Test
             RunCommand("tabNext 42");
             _operations.Verify();
         }
+
+        [Test]
+        public void Split1()
+        {
+            Create("");
+            _vimHost.Setup(x => x.SplitView(_view)).Verifiable();
+            RunCommand("split");
+            _factory.Verify();
+        }
+
+        [Test]
+        public void Split2()
+        {
+            Create("");
+            _vimHost.Setup(x => x.SplitView(_view)).Verifiable();
+            RunCommand("sp");
+            _factory.Verify();
+        }
+        
     }
  }
