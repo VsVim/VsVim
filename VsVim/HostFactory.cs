@@ -28,6 +28,7 @@ namespace VsVim
         private readonly Dictionary<IVimBuffer, VsCommandFilter> _filterMap = new Dictionary<IVimBuffer, VsCommandFilter>();
         private readonly IVimHost _host;
         private readonly IFileSystem _fileSystem;
+        private readonly IVsAdapter _adapter;
 
         [ImportingConstructor]
         public HostFactory(
@@ -37,7 +38,8 @@ namespace VsVim
             SVsServiceProvider serviceProvider,
             IVsEditorAdaptersFactoryService adaptersFactory,
             IVimHost host,
-            IFileSystem fileSystem)
+            IFileSystem fileSystem,
+            IVsAdapter adapter)
         {
             _vim = vim;
             _keyBindingService = keyBindingService;
@@ -46,6 +48,7 @@ namespace VsVim
             _adaptersFactory = adaptersFactory;
             _host = host;
             _fileSystem = fileSystem;
+            _adapter = adapter;
         }
 
         void IWpfTextViewCreationListener.TextViewCreated(IWpfTextView textView)
@@ -90,7 +93,6 @@ namespace VsVim
 
         void IVsTextViewCreationListener.VsTextViewCreated(IVsTextView vsView)
         {
-            // Once we have the Vs view, stop listening to the event
             var view = _adaptersFactory.GetWpfTextView(vsView);
             if (view == null)
             {
@@ -106,6 +108,10 @@ namespace VsVim
             var buffer = opt.Value;
             var filter = new VsCommandFilter(buffer, vsView, _serviceProvider);
             _filterMap.Add(buffer, filter);
+
+            // Install the filter keys helper
+            IVsCodeWindow codeWindow;
+            _adapter.TryGetCodeWindow(view, out codeWindow);
         }
     }
 
