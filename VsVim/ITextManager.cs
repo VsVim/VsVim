@@ -32,9 +32,16 @@ namespace VsVim
         void Save(ITextView textView);
 
         /// <summary>
-        /// Close the passed in document
+        /// Close the passed in document.  This will close the buffer.  If 
+        /// there is a split view, the entire window will be closed
         /// </summary>
-        bool Close(ITextView textView, bool checkDirty);
+        bool CloseBuffer(ITextView textView, bool checkDirty);
+
+        /// <summary>
+        /// Close the given view passed in.  If there is a split view only
+        /// the split will be closed
+        /// </summary>
+        bool CloseView(ITextView textView, bool checkDirty);
 
         /// <summary>
         /// Split the provided view

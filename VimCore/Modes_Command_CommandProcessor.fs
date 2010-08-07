@@ -100,6 +100,7 @@ type internal CommandProcessor
         let normalSeq = seq {
             yield ("<", "", this.ProcessShiftLeft)
             yield (">", "", this.ProcessShiftRight)
+            yield ("close", "clo", this.ProcessClose)
             yield ("delete","d", this.ProcessDelete)
             yield ("edit", "e", this.ProcessEdit)
             yield ("fold", "fo", this.ProcessFold)
@@ -198,6 +199,9 @@ type internal CommandProcessor
 #endif
 
     member private x.BadMessage = Resources.CommandMode_CannotRun _command
+
+    /// Process the :close command
+    member private x.ProcessClose _ _ hasBang = _data.Vim.VimHost.CloseView _data.TextView (not hasBang)
 
     /// Process the :join command
     member private x.ProcessJoin (rest:char list) (range:Range option) hasBang =

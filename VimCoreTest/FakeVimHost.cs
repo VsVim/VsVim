@@ -107,6 +107,11 @@ namespace VimCore.Test
             throw new NotImplementedException();
         }
 
+        void IVimHost.CloseView(ITextView textView, bool checkDirty)
+        {
+            throw new NotImplementedException();
+        }
+
         void IVimHost.BuildSolution()
         {
             throw new NotImplementedException();

@@ -78,6 +78,71 @@ namespace VsVimTest
             Assert.IsTrue(_manager.SplitView(view));
             _factory.Verify();
         }
-        
+
+        [Test]
+        public void CloseBuffer1()
+        {
+            var view = EditorUtil.CreateView();
+            Assert.IsFalse(_manager.CloseBuffer(view, false));
+        }
+
+        [Test]
+        public void CloseBuffer2()
+        {
+            var view = EditorUtil.CreateView();
+            var mock = _factory.Create<IVsWindowFrame>();
+            mock
+                .Setup(x => x.CloseFrame((uint)__FRAMECLOSE.FRAMECLOSE_PromptSave))
+                .Returns(VSConstants.S_OK);
+            IVsWindowFrame frame = mock.Object;
+            _adapter
+                .Setup(x => x.TryGetContainingWindowFrame(view, out frame))
+                .Returns(true)
+                .Verifiable();
+            Assert.IsTrue(_manager.CloseBuffer(view, checkDirty:true));
+            _factory.Verify();
+        }
+
+        [Test]
+        public void CloseBuffer3()
+        {
+            var view = EditorUtil.CreateView();
+            var mock = _factory.Create<IVsWindowFrame>();
+            mock
+                .Setup(x => x.CloseFrame((uint)__FRAMECLOSE.FRAMECLOSE_SaveIfDirty))
+                .Returns(VSConstants.S_OK);
+            IVsWindowFrame frame = mock.Object;
+            _adapter
+                .Setup(x => x.TryGetContainingWindowFrame(view, out frame))
+                .Returns(true)
+                .Verifiable();
+            Assert.IsTrue(_manager.CloseBuffer(view, checkDirty:false));
+            _factory.Verify();
+        }
+
+        [Test]
+        public void CloseView1()
+        {
+            var view = EditorUtil.CreateView();
+            Assert.IsFalse(_manager.CloseView(view, checkDirty:false));
+        }
+
+        [Test]
+        public void CloseView2()
+        {
+            var view = EditorUtil.CreateView();
+            var mock = _factory.Create<IVsCodeWindow>();
+            mock.MakeSplit();
+            var commandTarget = mock.As<IOleCommandTarget>();
+            IVsCodeWindow codeWindow = mock.Object;
+            _adapter.Setup(x => x.TryGetCodeWindow(view, out codeWindow)).Returns(true).Verifiable();
+            var id = VSConstants.GUID_VSStandardCommandSet97;
+            commandTarget
+                .Setup(x => x.Exec(ref id, It.IsAny<uint>(), It.IsAny<uint>(), IntPtr.Zero, IntPtr.Zero))
+                .Returns(VSConstants.S_OK)
+                .Verifiable();
+            Assert.IsTrue(_manager.CloseView(view, checkDirty:false));
+            _factory.Verify();
+        }
     }
 }

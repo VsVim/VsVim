@@ -41,11 +41,13 @@ type IVimHost =
     /// Closes all files
     abstract CloseAllFiles : checkDirty:bool -> unit
 
+    /// Close the provided view
+    abstract CloseView : ITextView -> checkDirty:bool -> unit
+
     /// Builds the solution
     abstract BuildSolution : unit -> unit
 
     /// Split the views
     abstract SplitView : ITextView -> unit
-
 
 

@@ -11,12 +11,21 @@ using Microsoft.VisualStudio.Utilities;
 using System.Windows;
 using EnvDTE;
 using System.Runtime.InteropServices;
+using Microsoft.VisualStudio.TextManager.Interop;
 
 namespace VsVimTest
 {
     [TestFixture]
     public class ExtensionsTest
     {
+        private MockFactory _factory;
+
+        [SetUp]
+        public void Setup()
+        {
+            _factory = new MockFactory(MockBehavior.Loose);
+        }
+
         #region KeyBindings
 
         [Test, Description("Bindings as an array")]
@@ -121,5 +130,14 @@ namespace VsVimTest
         }
 
         #endregion
+
+        [Test]
+        public void IsSplit1()
+        {
+            var codeWindow = _factory.Create<IVsCodeWindow>();
+            codeWindow.MakeSplit(_factory);
+            Assert.IsTrue(codeWindow.Object.IsSplit());
+            _factory.Verify();
+        }
     }
 }

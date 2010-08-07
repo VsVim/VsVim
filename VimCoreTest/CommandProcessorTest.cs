@@ -1166,6 +1166,33 @@ namespace VimCore.Test
             RunCommand("sp");
             _factory.Verify();
         }
+
+        [Test]
+        public void Close1()
+        {
+            Create("");
+            _vimHost.Setup(x => x.CloseView(_view, true)).Verifiable();
+            RunCommand(":close");
+            _factory.Verify();
+        }
+        
+        [Test]
+        public void Close2()
+        {
+            Create("");
+            _vimHost.Setup(x => x.CloseView(_view, false)).Verifiable();
+            RunCommand(":close!");
+            _factory.Verify();
+        }
+
+        [Test]
+        public void Close3()
+        {
+            Create("");
+            _vimHost.Setup(x => x.CloseView(_view, false)).Verifiable();
+            RunCommand(":clo!");
+            _factory.Verify();
+        }
         
     }
  }

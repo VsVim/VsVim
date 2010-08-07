@@ -162,7 +162,7 @@ namespace VsVim
 
         void IVimHost.Close(ITextView textView, bool checkDirty)
         {
-            _textManager.Close(textView, checkDirty);
+            _textManager.CloseBuffer(textView, checkDirty);
         }
 
         void IVimHost.CloseAllFiles(bool checkDirty)
@@ -170,8 +170,13 @@ namespace VsVim
             var all = _textManager.TextViews.ToList();
             foreach (var textView in all)
             {
-                _textManager.Close(textView, checkDirty);
+                _textManager.CloseBuffer(textView, checkDirty);
             }
+        }
+
+        void IVimHost.CloseView(ITextView textView, bool checkDirty)
+        {
+            _textManager.CloseView(textView, checkDirty);
         }
 
         void IVimHost.GoToNextTab(int count)

@@ -215,6 +215,20 @@ namespace VsVim
 
         #endregion
 
+        #region IVsCodeWindow
+
+        public static bool IsSplit(this IVsCodeWindow window)
+        {
+            IVsTextView primary;
+            IVsTextView secondary;
+            return ErrorHandler.Succeeded(window.GetPrimaryView(out primary))
+                && primary != null
+                && ErrorHandler.Succeeded(window.GetSecondaryView(out secondary))
+                && secondary != null;
+        }
+
+        #endregion
+
         #region IVsWindowFrame
 
         public static IVsCodeWindow GetCodeWindow(this IVsWindowFrame frame)

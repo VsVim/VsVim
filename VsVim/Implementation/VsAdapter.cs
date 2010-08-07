@@ -132,5 +132,6 @@ namespace VsVim.Implementation
 
             return buffer != null;
         }
+
     }
 }

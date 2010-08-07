@@ -98,7 +98,7 @@ namespace VsVim.Implementation
             VsShellUtilities.SaveFileIfDirty(vsTextView);
         }
 
-        public bool Close(ITextView textView, bool checkDirty)
+        public bool CloseBuffer(ITextView textView, bool checkDirty)
         {
             IVsWindowFrame frame;
             if (!_adapter.TryGetContainingWindowFrame(textView, out frame))
@@ -108,8 +108,21 @@ namespace VsVim.Implementation
 
             var value = checkDirty
                 ? __FRAMECLOSE.FRAMECLOSE_PromptSave
-                : __FRAMECLOSE.FRAMECLOSE_NoSave;
+                : __FRAMECLOSE.FRAMECLOSE_SaveIfDirty;
             return ErrorHandler.Succeeded(frame.CloseFrame((uint)value));
+        }
+
+        public bool CloseView(ITextView textView, bool checkDirty)
+        {
+            IVsCodeWindow codeWindow;
+            if (_adapter.TryGetCodeWindow(textView, out codeWindow) )
+            {
+                return codeWindow.IsSplit()
+                    ? SendSplit(codeWindow)
+                    : CloseBuffer(textView, checkDirty);
+            }
+
+            return false;
         }
 
         public bool SplitView(ITextView textView)
@@ -117,16 +130,26 @@ namespace VsVim.Implementation
             IVsCodeWindow codeWindow;
             if (_adapter.TryGetCodeWindow(textView, out codeWindow))
             {
-                var target = codeWindow as IOleCommandTarget;
-                if (target != null)
-                {
-                    var group = VSConstants.GUID_VSStandardCommandSet97;
-                    var cmdId = VSConstants.VSStd97CmdID.Split;
-                    var result = target.Exec(ref group, (uint)cmdId, (uint)OLECMDEXECOPT.OLECMDEXECOPT_DODEFAULT, IntPtr.Zero, IntPtr.Zero);
-                    return VSConstants.S_OK == result;
-                }
+                return SendSplit(codeWindow);
             }
 
+            return false;
+        }
+
+        /// <summary>
+        /// Send the split command.  This is really a toggle command that will split
+        /// and unsplit the window
+        /// </summary>
+        private bool SendSplit(IVsCodeWindow codeWindow)
+        {
+            var target = codeWindow as IOleCommandTarget;
+            if (target != null)
+            {
+                var group = VSConstants.GUID_VSStandardCommandSet97;
+                var cmdId = VSConstants.VSStd97CmdID.Split;
+                var result = target.Exec(ref group, (uint)cmdId, (uint)OLECMDEXECOPT.OLECMDEXECOPT_DODEFAULT, IntPtr.Zero, IntPtr.Zero);
+                return VSConstants.S_OK == result;
+            }
             return false;
         }
 
