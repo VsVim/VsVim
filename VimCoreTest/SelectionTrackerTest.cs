@@ -6,7 +6,7 @@ using NUnit.Framework;
 using Vim.Modes.Visual;
 using Moq;
 using Microsoft.VisualStudio.Text.Editor;
-using VimCore.Test.Utils;
+using Vim.UnitTest;
 using Microsoft.VisualStudio.Text;
 using Microsoft.FSharp.Core;
 using System.Threading;

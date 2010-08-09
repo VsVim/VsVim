@@ -1,7 +1,7 @@
 ﻿using Microsoft.FSharp.Control;
 using Vim;
 
-namespace VimCore.Test.Mock
+namespace Vim.UnitTest.Mock
 {
     class MockTextChangeTracker : ITextChangeTracker
     {

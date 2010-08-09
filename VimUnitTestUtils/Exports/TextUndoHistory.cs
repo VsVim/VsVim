@@ -5,7 +5,7 @@ using Microsoft.VisualStudio.Text.Operations;
 using Microsoft.VisualStudio.Utilities;
 using NUnit.Framework;
 
-namespace VimCore.Test.Exports
+namespace Vim.UnitTest.Exports
 {
     internal sealed class TextUndoHistory : ITextUndoHistory
     {

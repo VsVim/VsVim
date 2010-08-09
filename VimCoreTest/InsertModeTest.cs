@@ -4,6 +4,8 @@ using Moq;
 using NUnit.Framework;
 using Vim;
 using Vim.Modes;
+using Vim.UnitTest.Mock;
+using Vim.UnitTest;
 
 namespace VimCore.Test
 {
@@ -34,7 +36,7 @@ namespace VimCore.Test
             _globalSettings = _factory.Create<IVimGlobalSettings>();
             _localSettings = _factory.Create<IVimLocalSettings>();
             _localSettings.SetupGet(x => x.GlobalSettings).Returns(_globalSettings.Object);
-            _data = Mock.MockObjectFactory.CreateVimBuffer(
+            _data = MockObjectFactory.CreateVimBuffer(
                 _textView.Object,
                 settings:_localSettings.Object,
                 vim:_vim.Object,

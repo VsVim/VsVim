@@ -6,11 +6,11 @@ using Microsoft.VisualStudio.Text.Operations;
 using Moq;
 using Vim;
 
-namespace VimCore.Test.Mock
+namespace Vim.UnitTest.Mock
 {
-    internal static class MockObjectFactory
+    public static class MockObjectFactory
     {
-        internal static Mock<IRegisterMap> CreateRegisterMap()
+        public static Mock<IRegisterMap> CreateRegisterMap()
         {
             var mock = new Mock<IRegisterMap>();
             var reg = new Register('_');
@@ -19,13 +19,13 @@ namespace VimCore.Test.Mock
             return mock;
         }
 
-        internal static Mock<ITrackingLineColumnService> CreateTrackingLineColumnService()
+        public static Mock<ITrackingLineColumnService> CreateTrackingLineColumnService()
         {
             var mock = new Mock<ITrackingLineColumnService>(MockBehavior.Strict);
             return mock;
         }
 
-        internal static Mock<IVim> CreateVim(
+        public static Mock<IVim> CreateVim(
             IRegisterMap registerMap = null,
             MarkMap map = null,
             IVimGlobalSettings settings = null,
@@ -38,7 +38,7 @@ namespace VimCore.Test.Mock
             registerMap = registerMap ?? CreateRegisterMap().Object;
             map = map ?? new MarkMap(new TrackingLineColumnService());
             settings = settings ?? new GlobalSettings();
-            host = host ?? new FakeVimHost();
+            host = host ?? new MockVimHost();
             keyMap = keyMap ?? (new KeyMap());
             keyboardDevice = keyboardDevice ?? (new Mock<IKeyboardDevice>(MockBehavior.Loose)).Object;
             mouseDevice = mouseDevice ?? (new Mock<IMouseDevice>(MockBehavior.Loose)).Object;
@@ -53,13 +53,13 @@ namespace VimCore.Test.Mock
             return mock;
         }
 
-        internal static Mock<IEditorOperations> CreateEditorOperations()
+        public static Mock<IEditorOperations> CreateEditorOperations()
         {
             var mock = new Mock<IEditorOperations>(MockBehavior.Strict);
             return mock;
         }
 
-        internal static Mock<IVimGlobalSettings> CreateGlobalSettings(
+        public static Mock<IVimGlobalSettings> CreateGlobalSettings(
             bool? ignoreCase = null,
             int? shiftWidth = null)
         {
@@ -77,7 +77,7 @@ namespace VimCore.Test.Mock
             return mock;
         }
 
-        internal static Mock<IVimLocalSettings> CreateLocalSettings(
+        public static Mock<IVimLocalSettings> CreateLocalSettings(
             IVimGlobalSettings global = null)
         {
             global = global ?? CreateGlobalSettings().Object;
@@ -87,7 +87,7 @@ namespace VimCore.Test.Mock
         }
 
 
-        internal static Mock<IVimBuffer> CreateVimBuffer(
+        public static Mock<IVimBuffer> CreateVimBuffer(
             ITextView view,
             string name = null,
             IVim vim = null,
@@ -113,17 +113,17 @@ namespace VimCore.Test.Mock
             return mock;
         }
 
-        internal static Mock<ITextCaret> CreateCaret()
+        public static Mock<ITextCaret> CreateCaret()
         {
             return new Mock<ITextCaret>(MockBehavior.Strict);
         }
 
-        internal static Mock<ITextSelection> CreateSelection()
+        public static Mock<ITextSelection> CreateSelection()
         {
             return new Mock<ITextSelection>(MockBehavior.Strict);
         }
 
-        internal static Mock<ITextView> CreateTextView(
+        public static Mock<ITextView> CreateTextView(
             ITextBuffer buffer = null,
             ITextCaret caret = null,
             ITextSelection selection = null)
@@ -139,7 +139,7 @@ namespace VimCore.Test.Mock
             return view;
         }
 
-        internal static Tuple<Mock<ITextView>, Mock<ITextCaret>, Mock<ITextSelection>> CreateTextViewAll(ITextBuffer buffer)
+        public static Tuple<Mock<ITextView>, Mock<ITextCaret>, Mock<ITextSelection>> CreateTextViewAll(ITextBuffer buffer)
         {
             var caret = CreateCaret();
             var selection = CreateSelection();
@@ -147,7 +147,7 @@ namespace VimCore.Test.Mock
             return Tuple.Create(view, caret, selection);
         }
 
-        internal static Tuple<Mock<ITextView>,MockFactory> CreateTextViewWithVisibleLines(
+        public static Tuple<Mock<ITextView>,MockFactory> CreateTextViewWithVisibleLines(
             ITextBuffer buffer, 
             int startLine, 
             int? endLine = null,
@@ -182,7 +182,7 @@ namespace VimCore.Test.Mock
             return Tuple.Create(view, factory);
         }
 
-        internal static Mock<ITextBuffer> CreateTextBuffer(bool addSnapshot=false)
+        public static Mock<ITextBuffer> CreateTextBuffer(bool addSnapshot=false)
         {
             var mock = new Mock<ITextBuffer>(MockBehavior.Strict);
             mock.SetupGet(x => x.Properties).Returns(new Microsoft.VisualStudio.Utilities.PropertyCollection());
@@ -193,7 +193,7 @@ namespace VimCore.Test.Mock
             return mock;
         }
 
-        internal static Mock<ITextVersion> CreateTextVersion(int? versionNumber = null)
+        public static Mock<ITextVersion> CreateTextVersion(int? versionNumber = null)
         {
             var number = versionNumber ?? 1;
             var mock = new Mock<ITextVersion>(MockBehavior.Strict);
@@ -201,7 +201,7 @@ namespace VimCore.Test.Mock
             return mock;
         }
 
-        internal static Mock<ITextSnapshot> CreateTextSnapshot(
+        public static Mock<ITextSnapshot> CreateTextSnapshot(
             int length,
             ITextBuffer buffer = null,
             int? versionNumber = null)
@@ -215,7 +215,7 @@ namespace VimCore.Test.Mock
             return mock;
         }
 
-        internal static SnapshotPoint CreateSnapshotPoint( int position )
+        public static SnapshotPoint CreateSnapshotPoint( int position )
         {
             var snapshot = CreateTextSnapshot(position + 1);
             snapshot.Setup(x => x.GetText(It.IsAny<int>(), It.IsAny<int>())).Returns("Mocked ToString()");

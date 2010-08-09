@@ -4,6 +4,7 @@ using Microsoft.VisualStudio.Text;
 using NUnit.Framework;
 using Vim;
 using Vim.Extensions;
+using Vim.UnitTest;
 
 namespace VimCore.Test
 {
@@ -31,7 +32,7 @@ namespace VimCore.Test
 
         public void Create(params string[] lines)
         {
-            _buffer = Utils.EditorUtil.CreateBuffer(lines);
+            _buffer = EditorUtil.CreateBuffer(lines);
             _snapshot = _buffer.CurrentSnapshot;
         }
 

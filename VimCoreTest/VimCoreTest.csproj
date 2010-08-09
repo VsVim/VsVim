@@ -145,8 +145,6 @@
     <Compile Include="FoldManagerTest.cs" />
     <Compile Include="InsertModeIntegrationTest.cs" />
     <Compile Include="FileSystemTest.cs" />
-    <Compile Include="Mock\MockCommandRunner.cs" />
-    <Compile Include="Mock\MockTextChangeTracker.cs" />
     <Compile Include="MotionDataTest.cs" />
     <Compile Include="MotionUtilTest.cs" />
     <Compile Include="NormalModeIntegrationTest.cs" />
@@ -168,7 +166,6 @@
     <Compile Include="LocalSettingsTest.cs" />
     <Compile Include="CommonOperationsTest.cs" />
     <Compile Include="CountCaptureTest.cs" />
-    <Compile Include="FakeVimHost.cs" />
     <Compile Include="InputUtilTest.cs" />
     <Compile Include="InsertModeTest.cs" />
     <Compile Include="IntegrationTests.cs" />
@@ -189,20 +186,6 @@
     <Compile Include="TssUtilTest.cs" />
     <Compile Include="UndoRedoOperationsTest.cs" />
     <Compile Include="UndoTransactionTest.cs" />
-    <Compile Include="Utils\EditorUtil.cs" />
-    <Compile Include="Extensions.cs" />
-    <Compile Include="Utils\EqualityUtil.cs" />
-    <Compile Include="Exports\KeyboardDevice.cs" />
-    <Compile Include="Utils\MatchUtil.cs" />
-    <Compile Include="Mock\MockNormalMode.cs" />
-    <Compile Include="Mock\MockObjectFactory.cs" />
-    <Compile Include="Mock\MockVimBuffer.cs" />
-    <Compile Include="Exports\MouseDevice.cs" />
-    <Compile Include="Utils\TestableSynchronizationContext.cs" />
-    <Compile Include="Exports\TextUndoHistory.cs" />
-    <Compile Include="Exports\TextUndoHistoryRegistry.cs" />
-    <Compile Include="Exports\TextUndoTransaction.cs" />
-    <Compile Include="Utils\VimUtil.cs" />
     <Compile Include="ViewUtilTest.cs" />
     <Compile Include="VimBufferFactoryIntegrationTest.cs" />
     <Compile Include="VimBufferTests.cs" />
@@ -225,6 +208,10 @@
     <ProjectReference Include="..\VimCore\VimCore.fsproj">
       <Project>{06BE08E7-8626-40BD-877B-8D2DCA6BA451}</Project>
       <Name>VimCore</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\VimUnitTestUtils\VimUnitTestUtils.csproj">
+      <Project>{2CC4FAD2-7F56-436C-8AA7-4407D444FFA5}</Project>
+      <Name>VimUnitTestUtils</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />

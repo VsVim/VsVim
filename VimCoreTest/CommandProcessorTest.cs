@@ -6,7 +6,7 @@ using NUnit.Framework;
 using Vim;
 using Vim.Modes.Command;
 using Microsoft.VisualStudio.Text.Editor;
-using VimCore.Test.Utils;
+using Vim.UnitTest;
 using Microsoft.VisualStudio.Text;
 using System.Windows.Input;
 using Microsoft.VisualStudio.Text.Operations;
@@ -14,7 +14,7 @@ using Moq;
 using System.IO;
 using Microsoft.FSharp.Collections;
 using Vim.Modes;
-using VimCore.Test.Mock;
+using Vim.UnitTest.Mock;
 using Microsoft.FSharp.Core;
 using Vim.Extensions;
 
@@ -37,7 +37,7 @@ namespace VimCore.Test
 
         public void Create(params string[] lines)
         {
-            _view = Utils.EditorUtil.CreateView(lines);
+            _view = EditorUtil.CreateView(lines);
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 0));
             _map = new RegisterMap();
             _factory = new MockFactory(MockBehavior.Strict);

@@ -12,8 +12,8 @@ using Vim;
 using Vim.Extensions;
 using Vim.Modes;
 using Vim.Modes.Normal;
-using VimCore.Test.Mock;
-using VimCore.Test.Utils;
+using Vim.UnitTest.Mock;
+using Vim.UnitTest;
 
 namespace VimCore.Test
 {

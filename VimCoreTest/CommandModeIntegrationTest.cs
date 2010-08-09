@@ -1,6 +1,8 @@
 ﻿using Microsoft.VisualStudio.Text.Editor;
 using NUnit.Framework;
 using Vim;
+using Vim.UnitTest.Mock;
+using Vim.UnitTest;
 
 namespace VimCore.Test
 {
@@ -12,16 +14,16 @@ namespace VimCore.Test
     {
         private IVimBuffer buffer;
         private IWpfTextView view;
-        private FakeVimHost host;
+        private MockVimHost host;
 
         public void CreateBuffer(params string[] lines)
         {
-            var tuple = Utils.EditorUtil.CreateViewAndOperations(lines);
+            var tuple = EditorUtil.CreateViewAndOperations(lines);
             view = tuple.Item1;
-            host = new FakeVimHost();
-            var service = Utils.EditorUtil.FactoryService;
+            host = new MockVimHost();
+            var service = EditorUtil.FactoryService;
             buffer = service.vim.CreateBuffer(view);
-            host = (FakeVimHost)service.vim.VimHost;
+            host = (MockVimHost)service.vim.VimHost;
         }
 
         [SetUp]

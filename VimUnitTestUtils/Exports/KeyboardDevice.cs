@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel.Composition;
 using Vim;
 
-namespace VimCore.Test.Exports
+namespace Vim.UnitTest.Exports
 {
     [Export(typeof(IKeyboardDevice))]
     class KeyboardDevice : IKeyboardDevice

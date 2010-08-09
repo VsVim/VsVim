@@ -1,7 +1,7 @@
 ﻿using Microsoft.VisualStudio.Text.Editor;
 using NUnit.Framework;
 using Vim;
-using VimCore.Test.Utils;
+using Vim.UnitTest;
 
 namespace VimCore.Test
 {
@@ -13,7 +13,7 @@ namespace VimCore.Test
 
         public void CreateBuffer(params string[] lines)
         {
-            var tuple = Utils.EditorUtil.CreateViewAndOperations(lines);
+            var tuple = EditorUtil.CreateViewAndOperations(lines);
             _textView = tuple.Item1;
             var service = EditorUtil.FactoryService;
             _buffer = service.vim.CreateBuffer(_textView);

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using Moq;
 using NUnit.Framework;
 using Vim.UI.Wpf.Properties;
-using VimCore.Test.Mock;
+using Vim.UnitTest.Mock;
 
 namespace Vim.UI.Wpf.Test
 {

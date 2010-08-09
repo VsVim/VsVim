@@ -8,7 +8,7 @@ using NUnit.Framework;
 using Vim;
 using Vim.Modes;
 using Vim.Modes.Visual;
-using VimCore.Test.Utils;
+using Vim.UnitTest;
 
 namespace VimCore.Test
 {

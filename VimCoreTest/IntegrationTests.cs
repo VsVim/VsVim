@@ -8,7 +8,7 @@ using Microsoft.VisualStudio.Text;
 using System.Windows.Input;
 using System.Windows.Media;
 using Microsoft.VisualStudio.Text.Editor;
-using VimCore.Test.Utils;
+using Vim.UnitTest;
 using Moq;
 
 namespace VimCore.Test
@@ -28,7 +28,7 @@ namespace VimCore.Test
 
         public void CreateBuffer(params string[] lines)
         {
-            var tuple = Utils.EditorUtil.CreateViewAndOperations(lines);
+            var tuple = EditorUtil.CreateViewAndOperations(lines);
             m_view = tuple.Item1;
             var service = EditorUtil.FactoryService;
             m_buffer = service.vim.CreateBuffer(m_view);

@@ -4,7 +4,7 @@ using Moq;
 using NUnit.Framework;
 using Vim;
 using Vim.Extensions;
-using VimCore.Test.Utils;
+using Vim.UnitTest;
 
 namespace VimCore.Test
 {
@@ -16,7 +16,7 @@ namespace VimCore.Test
         [SetUp]
         public void Setup()
         {
-            _vim = Utils.EditorUtil.FactoryService.vim;
+            _vim = EditorUtil.FactoryService.vim;
         }
 
         [Test]

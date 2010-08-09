@@ -3,8 +3,8 @@ using Microsoft.VisualStudio.Text.Editor;
 using Moq;
 using NUnit.Framework;
 using Vim;
-using VimCore.Test.Mock;
-using VimCore.Test.Utils;
+using Vim.UnitTest.Mock;
+using Vim.UnitTest;
 
 namespace VimCore.Test
 {

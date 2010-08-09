@@ -2,7 +2,7 @@
 using NUnit.Framework;
 using Vim;
 using Vim.Extensions;
-using VimCore.Test.Utils;
+using Vim.UnitTest;
 
 namespace VimCore.Test
 {

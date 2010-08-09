@@ -13,7 +13,7 @@ using Microsoft.VisualStudio.Text.Operations;
 using Microsoft.VisualStudio.Utilities;
 using Vim;
 
-namespace VimCore.Test.Utils
+namespace Vim.UnitTest
 {
     public static class EditorUtil
     {
@@ -183,7 +183,7 @@ namespace VimCore.Test.Utils
                 list.Add(new AssemblyCatalog(typeof(EditorUtil).Assembly));
 
                 // IBlockCaret needs to be satisfied for integration tests
-                list.Add(new AssemblyCatalog(typeof(Vim.IVim).Assembly));
+                list.Add(new AssemblyCatalog(typeof(IVim).Assembly));
 
                 var catalog = new AggregateCatalog(list.ToArray());
                 return new CompositionContainer(catalog);

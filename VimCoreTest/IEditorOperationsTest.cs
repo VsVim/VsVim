@@ -5,7 +5,7 @@ using System.Text;
 using NUnit.Framework;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Operations;
-using VimCore.Test.Utils;
+using Vim.UnitTest;
 using Microsoft.VisualStudio.Text.Editor;
 
 namespace VimCore.Test

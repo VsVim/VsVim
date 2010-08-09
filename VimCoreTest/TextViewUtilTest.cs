@@ -3,11 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using NUnit.Framework;
-using VimCore.Test.Utils;
+using Vim.UnitTest;
 using Microsoft.VisualStudio.Text;
 using Vim;
 using Microsoft.VisualStudio.Text.Editor;
-using VimCore.Test.Mock;
+using Vim.UnitTest.Mock;
 
 namespace VimCore.Test
 {

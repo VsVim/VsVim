@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using Vim;
 
-namespace VimCore.Test.Mock
+namespace Vim.UnitTest.Mock
 {
     public class MockNormalMode : INormalMode
     {

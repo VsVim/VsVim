@@ -4,7 +4,7 @@ using Microsoft.FSharp.Core;
 using Vim;
 using Vim.Extensions;
 
-namespace VimCore.Test.Utils
+namespace Vim.UnitTest
 {
     internal static class VimUtil
     {

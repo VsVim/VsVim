@@ -11,7 +11,7 @@ using NUnit.Framework;
 using Vim;
 using Vim.Extensions;
 using Vim.Modes;
-using VimCore.Test.Utils;
+using Vim.UnitTest;
 
 namespace VimCore.Test
 {
@@ -39,7 +39,7 @@ namespace VimCore.Test
 
         public void Create(params string[] lines)
         {
-            _view = Utils.EditorUtil.CreateView(lines);
+            _view = EditorUtil.CreateView(lines);
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 0));
             _buffer = _view.TextBuffer;
             _factory = new MockFactory(MockBehavior.Strict);

@@ -5,7 +5,7 @@ using System.Text;
 using NUnit.Framework;
 using Vim.Modes.Command;
 using Vim;
-using VimCore.Test.Utils;
+using Vim.UnitTest;
 using Microsoft.VisualStudio.Text;
 using Microsoft.FSharp.Collections;
 using Microsoft.FSharp.Core;

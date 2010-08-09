@@ -6,7 +6,8 @@ using Moq;
 using NUnit.Framework;
 using Vim;
 using Vim.Extensions;
-using VimCore.Test.Mock;
+using Vim.UnitTest.Mock;
+using Vim.UnitTest;
 
 namespace VimCore.Test
 {
@@ -27,8 +28,8 @@ namespace VimCore.Test
 
         private void CreateForText(params string[] lines)
         {
-            _textBuffer = Utils.EditorUtil.CreateBuffer(lines);
-            _textView = Mock.MockObjectFactory.CreateTextView(_textBuffer);
+            _textBuffer = EditorUtil.CreateBuffer(lines);
+            _textView = MockObjectFactory.CreateTextView(_textBuffer);
             _textView.SetupGet(x => x.HasAggregateFocus).Returns(true);
 
             _normalModeRunner = new MockCommandRunner();

@@ -8,7 +8,7 @@ using Moq;
 using Microsoft.VisualStudio.Text;
 using Vim;
 using Microsoft.VisualStudio.Text.Operations;
-using VimCore.Test.Utils;
+using Vim.UnitTest;
 using Microsoft.VisualStudio.Text.Tagging;
 using Microsoft.FSharp.Core;
 using Vim.Extensions;

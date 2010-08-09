@@ -7,9 +7,9 @@ using Moq;
 using Vim;
 using Vim.Extensions;
 using Microsoft.VisualStudio.Text.Operations;
-using VimCore.Test.Utils;
+using Vim.UnitTest;
 using Microsoft.VisualStudio.Text;
-using VimCore.Test.Mock;
+using Vim.UnitTest.Mock;
 
 namespace VimCore.Test
 {

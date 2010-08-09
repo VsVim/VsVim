@@ -157,6 +157,10 @@
       <Project>{06BE08E7-8626-40BD-877B-8D2DCA6BA451}</Project>
       <Name>VimCore</Name>
     </ProjectReference>
+    <ProjectReference Include="..\VimUnitTestUtils\VimUnitTestUtils.csproj">
+      <Project>{2CC4FAD2-7F56-436C-8AA7-4407D444FFA5}</Project>
+      <Name>VimUnitTestUtils</Name>
+    </ProjectReference>
     <ProjectReference Include="..\VsVim\VsVim.csproj">
       <Project>{11710F28-88D6-44DD-99DB-1F0AAA8CDAA0}</Project>
       <Name>VsVim</Name>

@@ -6,6 +6,7 @@ using NUnit.Framework;
 using Vim;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text;
+using Vim.UnitTest;
 
 namespace VimCore.Test
 {
@@ -18,7 +19,7 @@ namespace VimCore.Test
 
         public void CreateView(params string[] lines)
         {
-            _view = Utils.EditorUtil.CreateView(lines);
+            _view = EditorUtil.CreateView(lines);
         }
 
         public void Init()

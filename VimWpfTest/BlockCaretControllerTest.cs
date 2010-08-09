@@ -1,11 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using NUnit.Framework;
+﻿using Microsoft.VisualStudio.Text.Editor;
 using Moq;
-using VimCore.Test.Utils;
-using Microsoft.VisualStudio.Text.Editor;
+using NUnit.Framework;
 
 namespace Vim.UI.Wpf.Test
 {

@@ -8,11 +8,11 @@ using Vim.Extensions;
 using System.Windows.Input;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text;
-using VimCore.Test.Utils;
+using Vim.UnitTest;
 using Microsoft.FSharp.Core;
 using Moq;
 using Microsoft.VisualStudio.Text.Formatting;
-using VimCore.Test.Mock;
+using Vim.UnitTest.Mock;
 
 namespace VimCore.Test
 {
@@ -40,7 +40,7 @@ namespace VimCore.Test
 
         public void Create(params string[] lines)
         {
-            Create(Utils.EditorUtil.CreateView(lines));
+            Create(EditorUtil.CreateView(lines));
         }
 
         public void Create(ITextView textView)

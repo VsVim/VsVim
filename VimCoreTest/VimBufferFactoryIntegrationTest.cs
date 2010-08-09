@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using NUnit.Framework;
 using Vim;
-using VimCore.Test.Utils;
+using Vim.UnitTest;
 using Microsoft.FSharp.Control;
 
 namespace VimCore.Test

@@ -5,9 +5,9 @@ using System.Text;
 using NUnit.Framework;
 using Vim;
 using Moq;
-using VimCore.Test.Utils;
+using Vim.UnitTest;
 using GlobalSettings = Vim.GlobalSettings;
-using VimCore.Test.Mock;
+using Vim.UnitTest.Mock;
 
 namespace VimCore.Test
 {

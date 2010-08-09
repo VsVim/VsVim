@@ -3,8 +3,8 @@ using Microsoft.VisualStudio.Text.Editor;
 using NUnit.Framework;
 using Vim;
 using Vim.Extensions;
-using VimCore.Test.Mock;
-using VimCore.Test.Utils;
+using Vim.UnitTest.Mock;
+using Vim.UnitTest;
 
 namespace VimCore.Test
 {
@@ -34,7 +34,7 @@ namespace VimCore.Test
 
         private void Create(params string[] lines)
         {
-            _textView = Utils.EditorUtil.CreateView(lines);
+            _textView = EditorUtil.CreateView(lines);
             _buffer = _textView.TextBuffer;
             var vimBuffer = new MockVimBuffer() { TextViewImpl = _textView, TextBufferImpl = _textView.TextBuffer };
             _mapListener.VimBufferCreated(vimBuffer);
@@ -173,7 +173,7 @@ namespace VimCore.Test
         public void DeleteLocalMark4()
         {
             Create("foo");
-            var buffer2 = Utils.EditorUtil.CreateBuffer("baz");
+            var buffer2 = EditorUtil.CreateBuffer("baz");
             _mapRaw.SetLocalMark(new SnapshotPoint(_buffer.CurrentSnapshot, 0), 'a');
             _mapRaw.SetLocalMark(new SnapshotPoint(buffer2.CurrentSnapshot, 0), 'a');
             Assert.IsTrue(_mapRaw.DeleteLocalMark(buffer2, 'a'));

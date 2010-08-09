@@ -6,6 +6,7 @@ using Moq;
 using NUnit.Framework;
 using Vim;
 using Vim.Extensions;
+using Vim.UnitTest.Mock;
 
 namespace VimCore.Test
 {
@@ -21,7 +22,7 @@ namespace VimCore.Test
         public void Create()
         {
             _util = new Mock<IMotionUtil>(MockBehavior.Strict);
-            _textView = Mock.MockObjectFactory.CreateTextView();
+            _textView = MockObjectFactory.CreateTextView();
             _captureRaw = new MotionCapture(_textView.Object, _util.Object);
             _capture = _captureRaw;
         }
@@ -51,7 +52,7 @@ namespace VimCore.Test
 
         internal MotionData CreateMotionData()
         {
-            var point = Mock.MockObjectFactory.CreateSnapshotPoint(42);
+            var point = MockObjectFactory.CreateSnapshotPoint(42);
             return new MotionData(
                 new SnapshotSpan(point, point),
                 true,

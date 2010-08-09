@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using Microsoft.VisualStudio.Text.Operations;
 
-namespace VimCore.Test.Exports
+namespace Vim.UnitTest.Exports
 {
     [Export(typeof(ITextUndoHistoryRegistry))]
     public sealed class TextUndoHistoryRegistry : ITextUndoHistoryRegistry

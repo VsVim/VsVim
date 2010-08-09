@@ -6,7 +6,7 @@ using NUnit.Framework;
 using Moq;
 using Vim;
 using Microsoft.VisualStudio.Text.Editor;
-using VimCore.Test.Utils;
+using Vim.UnitTest;
 using Vim.Modes.Normal;
 using System.Windows.Input;
 using Microsoft.VisualStudio.Text;
@@ -15,7 +15,7 @@ using Microsoft.FSharp.Control;
 using Microsoft.VisualStudio.Text.Operations;
 using Microsoft.VisualStudio.Text.Outlining;
 using Vim.Extensions;
-using VimCore.Test.Mock;
+using Vim.UnitTest.Mock;
 
 namespace VimCore.Test
 {

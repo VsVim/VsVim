@@ -8,7 +8,7 @@ using VsVim;
 using Moq;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Editor;
-using VimCore.Test.Utils;
+using Vim.UnitTest;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.TextManager.Interop;
 using Microsoft.VisualStudio.OLE.Interop;

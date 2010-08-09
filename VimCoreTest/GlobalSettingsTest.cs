@@ -5,7 +5,7 @@ using System.Text;
 using NUnit.Framework;
 using Vim;
 using GlobalSettings = Vim.GlobalSettings;
-using VimCore.Test.Utils;
+using Vim.UnitTest;
 
 namespace VimCore.Test
 {

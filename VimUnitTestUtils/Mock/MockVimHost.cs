@@ -1,13 +1,14 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
 using System.ComponentModel.Composition;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
-using Vim;
 
-namespace VimCore.Test
+namespace Vim.UnitTest.Mock
 {
-    [Export(typeof(IVimHost))]
-    internal sealed class FakeVimHost : IVimHost
+    public class MockVimHost : IVimHost
     {
         public int BeepCount { get; set; }
         public string LastFileOpen { get; set; }
@@ -20,8 +21,7 @@ namespace VimCore.Test
         public bool NavigateToReturn { get; set; }
         public int ShowOpenFileDialogCount { get; set; }
 
-        [ImportingConstructor]
-        public FakeVimHost()
+        public MockVimHost()
         {
             GoToDefinitionReturn = true;
             IsCompletionWindowActive = false;

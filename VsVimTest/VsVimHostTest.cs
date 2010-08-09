@@ -8,7 +8,7 @@ using Microsoft.VisualStudio.TextManager.Interop;
 using Moq;
 using NUnit.Framework;
 using Vim;
-using VimCore.Test.Utils;
+using Vim.UnitTest;
 using VsVim;
 
 namespace VsVimTest

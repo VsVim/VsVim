@@ -11,7 +11,7 @@ using Vim;
 using Vim.Extensions;
 using Vim.Modes;
 using Vim.Modes.Command;
-using VimCore.Test.Utils;
+using Vim.UnitTest;
 
 namespace VimCore.Test
 {

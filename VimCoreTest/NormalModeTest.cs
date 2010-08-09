@@ -10,8 +10,8 @@ using Vim;
 using Vim.Extensions;
 using Vim.Modes;
 using Vim.Modes.Normal;
-using VimCore.Test.Utils;
-using MockFactory = VimCore.Test.Mock.MockObjectFactory;
+using Vim.UnitTest;
+using MockFactory = Vim.UnitTest.Mock.MockObjectFactory;
 
 namespace VimCore.Test
 {
@@ -52,7 +52,7 @@ namespace VimCore.Test
 
         public void CreateCore(IMotionUtil motionUtil, params string[] lines)
         {
-            _view = Utils.EditorUtil.CreateView(lines);
+            _view = EditorUtil.CreateView(lines);
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 0));
             _map = new RegisterMap();
             _editorOperations = new Mock<IEditorOperations>();

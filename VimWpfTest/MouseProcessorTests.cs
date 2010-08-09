@@ -4,7 +4,7 @@ using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Moq;
 using NUnit.Framework;
-using VimCore.Test.Utils;
+using Vim.UnitTest;
 
 namespace Vim.UI.Wpf.Test
 {
@@ -39,7 +39,7 @@ namespace Vim.UI.Wpf.Test
         {
             Create("foo bar");
             _buffer.SetupGet(x => x.ModeKind).Returns(ModeKind.VisualCharacter).Verifiable();
-            _textView.Selection.Select(new SnapshotSpan(_textView.TextSnapshot, 0,3), false);
+            _textView.Selection.Select(new SnapshotSpan(_textView.TextSnapshot, 0, 3), false);
             _buffer.Verify();
         }
 
@@ -138,7 +138,7 @@ namespace Vim.UI.Wpf.Test
             _processor.IsSelectionChanging = false;
             _processor.PostprocessMouseLeftButtonUp(new MouseButtonEventArgs(InputManager.Current.PrimaryMouseDevice, 0, MouseButton.Left));
             _buffer.Verify();
-            _buffer.Setup(x => x.SwitchMode(ModeKind.Normal,ModeArgument.None)).Returns(mode.Object).Verifiable();
+            _buffer.Setup(x => x.SwitchMode(ModeKind.Normal, ModeArgument.None)).Returns(mode.Object).Verifiable();
             Dispatcher.CurrentDispatcher.DoEvents();
             _buffer.Verify();
         }
