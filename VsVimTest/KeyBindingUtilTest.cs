@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using NUnit.Framework;
 using Vim;
+using Vim.UnitTest.Mock;
 using VsVim;
 using VsVim.Settings;
 
@@ -63,7 +64,7 @@ namespace VsVimTest
         [Test]
         public void FindConflictingCommands5()
         {
-            var util = Create("::a","::ctrl+z, h");
+            var util = Create("::a", "::ctrl+z, h");
             var inputs = new KeyInput[] { InputUtil.CharWithControlToKeyInput('z') };
             var list = util.FindConflictingCommandKeyBindings(new HashSet<KeyInput>(inputs));
             Assert.AreEqual(1, list.Count);

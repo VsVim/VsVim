@@ -5,6 +5,7 @@ using Microsoft.VisualStudio.TextManager.Interop;
 using Moq;
 using NUnit.Framework;
 using Vim;
+using Vim.UnitTest.Mock;
 using VsVim;
 
 namespace VsVimTest
@@ -39,7 +40,7 @@ namespace VsVimTest
         {
             KeyInput ki;
             Assert.IsTrue(_filter.TryConvert(VSConstants.VSStd2K, (uint)id, IntPtr.Zero, out ki));
-            Assert.AreEqual(expected,ki);
+            Assert.AreEqual(expected, ki);
         }
 
         [Test]

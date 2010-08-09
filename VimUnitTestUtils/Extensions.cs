@@ -4,7 +4,6 @@ using System.Windows.Threading;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using NUnit.Framework;
-using Vim;
 using Vim.Modes;
 using Vim.Modes.Command;
 
@@ -248,7 +247,7 @@ namespace Vim.UnitTest
 
         #endregion
 
-        #region ITextView 
+        #region ITextView
 
         public static SnapshotPoint GetPoint(this ITextView textView, int position)
         {
@@ -260,13 +259,13 @@ namespace Vim.UnitTest
             return textView.TextSnapshot.GetLineFromLineNumber(line);
         }
 
-        public static SnapshotSpan GetLineSpanIncludingLineBreak(this ITextView textView, int startLine, int endLine=-1)
+        public static SnapshotSpan GetLineSpanIncludingLineBreak(this ITextView textView, int startLine, int endLine = -1)
         {
             endLine = endLine >= 0 ? endLine : startLine;
             return textView.TextSnapshot.GetLineSpanIncludingLineBreak(startLine, endLine);
         }
 
-        public static SnapshotSpan GetLineSpan(this ITextView textView, int startLine, int endLine=-1)
+        public static SnapshotSpan GetLineSpan(this ITextView textView, int startLine, int endLine = -1)
         {
             endLine = endLine >= 0 ? endLine : startLine;
             return textView.TextSnapshot.GetLineSpan(startLine, endLine);
@@ -296,7 +295,7 @@ namespace Vim.UnitTest
             return buffer.CurrentSnapshot.GetLineFromLineNumber(line);
         }
 
-        public static SnapshotSpan GetLineSpanIncludingLineBreak(this ITextBuffer buffer, int startLine, int endLine=-1)
+        public static SnapshotSpan GetLineSpanIncludingLineBreak(this ITextBuffer buffer, int startLine, int endLine = -1)
         {
             endLine = endLine >= 0 ? endLine : startLine;
             return buffer.CurrentSnapshot.GetLineSpanIncludingLineBreak(startLine, endLine);
@@ -379,6 +378,21 @@ namespace Vim.UnitTest
 
         #endregion
 
+        #region Dispatcher
+
+        public static void DoEvents(this System.Windows.Threading.Dispatcher dispatcher)
+        {
+            var frame = new DispatcherFrame();
+            Action<DispatcherFrame> action = _ => { frame.Continue = false; };
+            dispatcher.BeginInvoke(
+                DispatcherPriority.Background,
+                action,
+                frame);
+            Dispatcher.PushFrame(frame);
+        }
+
+        #endregion
+
         public static SnapshotSpan GetSpan(this ITextSelection selection)
         {
             var span = new SnapshotSpan(selection.Start.Position, selection.End.Position);
@@ -394,18 +408,6 @@ namespace Vim.UnitTest
         public static SnapshotPoint GetCaretPoint(this ITextView view)
         {
             return view.Caret.Position.BufferPosition;
-        }
-
-        public static void DoEvents(this System.Windows.Threading.Dispatcher dispatcher)
-        {
-            var frame = new DispatcherFrame();
-            Action<DispatcherFrame> action = _ => { frame.Continue = false; };
-            dispatcher.BeginInvoke(
-                DispatcherPriority.Background,
-                action,
-                frame);
-            Dispatcher.PushFrame(frame);
-
         }
 
     }

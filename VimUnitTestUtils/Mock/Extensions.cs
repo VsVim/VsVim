@@ -1,20 +1,17 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using Moq;
-using Microsoft.VisualStudio.TextManager.Interop;
-using Microsoft.VisualStudio.Text.Editor;
-using VsVim;
-using Microsoft.VisualStudio.OLE.Interop;
-using Microsoft.VisualStudio.Editor;
 using Microsoft.VisualStudio;
+using Microsoft.VisualStudio.Editor;
+using Microsoft.VisualStudio.OLE.Interop;
+using Microsoft.VisualStudio.Text.Editor;
+using Microsoft.VisualStudio.TextManager.Interop;
+using Moq;
+using VsVim;
 
 namespace VsVimTest
 {
-    internal static class VsVimTestExtensions
+    public static class VsVimTestExtensions
     {
-        internal static void MakeSplit(
+        public static void MakeSplit(
             this Mock<IVsCodeWindow> mock,
             Mock<IVsAdapter> adapter,
             MockFactory factory = null)
@@ -24,7 +21,7 @@ namespace VsVimTest
             MakeSecondaryView(mock, adapter, factory.Create<ITextView>().Object, factory);
         }
 
-        internal static Mock<IVsTextView> MakePrimaryView(
+        public static Mock<IVsTextView> MakePrimaryView(
             this Mock<IVsCodeWindow> window,
             Mock<IVsAdapter> adapter,
             ITextView textView,
@@ -39,7 +36,7 @@ namespace VsVimTest
             return vsViewMock;
         }
 
-        internal static Mock<IVsTextView> MakeSecondaryView(
+        public static Mock<IVsTextView> MakeSecondaryView(
             this Mock<IVsCodeWindow> window,
             Mock<IVsAdapter> adapter,
             ITextView textView,
@@ -54,7 +51,7 @@ namespace VsVimTest
             return vsViewMock;
         }
 
-        internal static Mock<IVsCodeWindow> MakeCodeWindow(
+        public static Mock<IVsCodeWindow> MakeCodeWindow(
             this Mock<IVsAdapter> adapter,
             ITextView textView,
             MockFactory factory = null)
@@ -66,7 +63,7 @@ namespace VsVimTest
             return mock;
         }
 
-        internal static Tuple<Mock<IVsCodeWindow>,Mock<IOleCommandTarget>> MakeCodeWindowAndCommandTarget(
+        public static Tuple<Mock<IVsCodeWindow>, Mock<IOleCommandTarget>> MakeCodeWindowAndCommandTarget(
             this Mock<IVsAdapter> adapter,
             ITextView textView,
             MockFactory factory = null)

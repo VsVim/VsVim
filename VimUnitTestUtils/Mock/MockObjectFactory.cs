@@ -1,10 +1,13 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using EnvDTE;
+using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Formatting;
 using Microsoft.VisualStudio.Text.Operations;
 using Moq;
-using Vim;
 
 namespace Vim.UnitTest.Mock
 {
@@ -93,7 +96,7 @@ namespace Vim.UnitTest.Mock
             IVim vim = null,
             IJumpList jumpList = null,
             IVimLocalSettings settings = null,
-            MockFactory factory = null )
+            MockFactory factory = null)
         {
             factory = factory ?? new MockFactory(MockBehavior.Strict);
             name = name ?? "test";
@@ -128,7 +131,7 @@ namespace Vim.UnitTest.Mock
             ITextCaret caret = null,
             ITextSelection selection = null)
         {
-            buffer = buffer ?? CreateTextBuffer(addSnapshot:true).Object;
+            buffer = buffer ?? CreateTextBuffer(addSnapshot: true).Object;
             caret = caret ?? CreateCaret().Object;
             selection = selection ?? CreateSelection().Object;
             var view = new Mock<ITextView>(MockBehavior.Strict);
@@ -147,9 +150,9 @@ namespace Vim.UnitTest.Mock
             return Tuple.Create(view, caret, selection);
         }
 
-        public static Tuple<Mock<ITextView>,MockFactory> CreateTextViewWithVisibleLines(
-            ITextBuffer buffer, 
-            int startLine, 
+        public static Tuple<Mock<ITextView>, MockFactory> CreateTextViewWithVisibleLines(
+            ITextBuffer buffer,
+            int startLine,
             int? endLine = null,
             int? caretPosition = null)
         {
@@ -182,7 +185,7 @@ namespace Vim.UnitTest.Mock
             return Tuple.Create(view, factory);
         }
 
-        public static Mock<ITextBuffer> CreateTextBuffer(bool addSnapshot=false)
+        public static Mock<ITextBuffer> CreateTextBuffer(bool addSnapshot = false)
         {
             var mock = new Mock<ITextBuffer>(MockBehavior.Strict);
             mock.SetupGet(x => x.Properties).Returns(new Microsoft.VisualStudio.Utilities.PropertyCollection());
@@ -215,11 +218,57 @@ namespace Vim.UnitTest.Mock
             return mock;
         }
 
-        public static SnapshotPoint CreateSnapshotPoint( int position )
+        public static SnapshotPoint CreateSnapshotPoint(int position)
         {
             var snapshot = CreateTextSnapshot(position + 1);
             snapshot.Setup(x => x.GetText(It.IsAny<int>(), It.IsAny<int>())).Returns("Mocked ToString()");
             return new SnapshotPoint(snapshot.Object, position);
+        }
+
+        public static Mock<IServiceProvider> CreateServiceProvider(params Tuple<Type, object>[] serviceList)
+        {
+            var mock = new Mock<IServiceProvider>(MockBehavior.Strict);
+            foreach (var tuple in serviceList)
+            {
+                mock.Setup(x => x.GetService(tuple.Item1)).Returns(tuple.Item2);
+            }
+
+            return mock;
+        }
+
+        public static Mock<SVsServiceProvider> CreateVsServiceProvider(params Tuple<Type, object>[] serviceList)
+        {
+            var mock = CreateServiceProvider(serviceList);
+            return mock.As<SVsServiceProvider>();
+        }
+
+        public static IEnumerable<Mock<EnvDTE.Command>> CreateCommandList(params string[] args)
+        {
+            foreach (var binding in args)
+            {
+                var localBinding = binding;
+                var mock = new Mock<EnvDTE.Command>(MockBehavior.Strict);
+                mock.Setup(x => x.Bindings).Returns(localBinding);
+                mock.Setup(x => x.Name).Returns("example command");
+                mock.Setup(x => x.LocalizedName).Returns("example command");
+                yield return mock;
+            }
+        }
+
+        public static Mock<EnvDTE.Commands> CreateCommands(IEnumerable<EnvDTE.Command> commands)
+        {
+            var mock = new Mock<EnvDTE.Commands>(MockBehavior.Strict);
+            mock.Setup(x => x.GetEnumerator()).Returns(commands.GetEnumerator());
+            return mock;
+        }
+
+        public static Mock<_DTE> CreateDteWithCommands(params string[] args)
+        {
+            var commandList = CreateCommandList(args).Select(x => x.Object);
+            var commands = CreateCommands(commandList);
+            var dte = new Mock<_DTE>();
+            dte.SetupGet(x => x.Commands).Returns(commands.Object);
+            return dte;
         }
     }
 }
