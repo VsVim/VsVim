@@ -91,7 +91,7 @@ namespace VsVim
             return true;
         }
 
-        internal static bool TryConvert(Guid commandGroup, uint commandId, IntPtr pVariableIn, out KeyInput ki, out EditCommandKind kind )
+        internal static bool TryConvert(Guid commandGroup, uint commandId, IntPtr pVariableIn, out KeyInput ki, out EditCommandKind kind)
         {
             if (VSConstants.GUID_VSStandardCommandSet97 == commandGroup)
             {
@@ -118,12 +118,14 @@ namespace VsVim
                 case VSConstants.VSStd2KCmdID.TYPECHAR:
                     if (pVariantIn == IntPtr.Zero)
                     {
-                        return false;
+                        ki = InputUtil.CharToKeyInput(Char.MinValue);
                     }
-
-                    var obj = Marshal.GetObjectForNativeVariant(pVariantIn);
-                    var c = (char)(ushort)obj;
-                    ki = InputUtil.CharToKeyInput(c);
+                    else
+                    {
+                        var obj = Marshal.GetObjectForNativeVariant(pVariantIn);
+                        var c = (char)(ushort)obj;
+                        ki = InputUtil.CharToKeyInput(c);
+                    }
                     kind = EditCommandKind.TypeChar;
                     break;
                 case VSConstants.VSStd2KCmdID.RETURN:

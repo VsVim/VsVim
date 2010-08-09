@@ -1,46 +1,147 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using Microsoft.VisualStudio.Shell.Interop;
-using Microsoft.VisualStudio.OLE.Interop;
-using IServiceProvider = System.IServiceProvider;
-using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio;
+using Microsoft.VisualStudio.OLE.Interop;
+using Microsoft.VisualStudio.Shell.Interop;
+using Microsoft.VisualStudio.Text.Editor;
+using Microsoft.VisualStudio.TextManager.Interop;
+using Vim;
 
 namespace VsVim
 {
     /// <summary>
-    /// In Debug Mode when Vim is enabled certain key strokes are incorrectly interpretted 
-    /// as being edits when Vim actually processes them as commands. The only place which 
-    /// is configurable is the translation of the accelerator keys.  We need to lie about
-    /// the keys in debug mode so Visual Studio won't interpret them as edits
+    /// In several modes where the native COM adapter layer is considered readonly, the
+    /// IVsCodeWindow implementation will block keystrokes it interprets to be edit
+    /// commands.  This includes items like Backspace, Enter, etc ...
+    /// 
+    /// This check is most frequently done while debugging in 64 bit mode (since ENC edits
+    /// are illegal).  But also done in C# generated metadata file.  Really it will happen
+    /// anytime the editor considers the view to be readonly as specified in 
+    /// VsCodeWindowAdapter::IsReadOnly.  We must mimic that function
+    ///
+    /// When we detect this situation we avoid having keystrokes be translated as 
+    /// Command's by interpcepting the TranslateAccelerator method.  If a command is created
+    /// which is considered an edit then we simply return E_FAIL instead.  This causes the 
+    /// message to be ignored and propagated up
+    /// 
     /// </summary>
     internal sealed class VsFilterKeysAdapter : IVsFilterKeys
     {
-        private readonly IServiceProvider _serviceProvider;
+        private static readonly object s_key = new object();
+        private const string FieldName = "_filterKeys";
+
         private readonly IVsFilterKeys _filterKeys;
+        private readonly IVsTextLines _textLines;
+        private readonly IVsCodeWindow _codeWindow;
+        private readonly IVimBuffer _buffer;
+        private readonly IEditorOptions _editorOptions;
 
         internal VsFilterKeysAdapter(
-            IServiceProvider serviceProvider,
-            IVsFilterKeys filterKeys)
+            IVsFilterKeys filterKeys,
+            IVsCodeWindow codeWindow,
+            IVsTextLines textLines,
+            IEditorOptions editorOptions,
+            IVimBuffer buffer)
         {
-            _serviceProvider = serviceProvider;
             _filterKeys = filterKeys;
+            _buffer = buffer;
+            _textLines = textLines;
+            _codeWindow = codeWindow;
+            _editorOptions = editorOptions;
+
+            _buffer.Closed += delegate { Uninstall(); };
         }
-        
-        public int TranslateAccelerator(MSG[] pMsg, uint dwFlags, out Guid pguidCmd, out uint pdwCmd)
+
+        int IVsFilterKeys.TranslateAccelerator(MSG[] msg, uint flags, out Guid commandGroup, out uint command)
         {
-            switch (VsShellUtilities.GetDebugMode(_serviceProvider))
+            var hr = _filterKeys.TranslateAccelerator(msg, flags, out commandGroup, out command);
+            if (ErrorHandler.Succeeded(hr)
+                && IsReadOnly()
+                && IsEditCommand(commandGroup, command))
             {
-                case DBGMODE.DBGMODE_Break:
-                case DBGMODE.DBGMODE_Run:
-                    pguidCmd = Guid.Empty;
-                    pdwCmd = 0;
-                    return VSConstants.E_FAIL;
-                default:
-                    return _filterKeys.TranslateAccelerator(pMsg, dwFlags, out pguidCmd, out pdwCmd);
+                commandGroup = Guid.Empty;
+                command = 0;
+                return VSConstants.E_FAIL;
             }
+
+            return hr;
+        }
+
+        /// <summary>
+        /// Mimic the VsCodeWindowAdapter::IsReadOnly method.  We only want to intercept keys
+        /// when this is true
+        /// </summary>
+        internal bool IsReadOnly()
+        {
+            if (EditorOptionsUtil.GetOptionValueOrDefault(_editorOptions, DefaultTextViewOptions.ViewProhibitUserInputId, false))
+            {
+                return true;
+            }
+
+            uint flags;
+            if (ErrorHandler.Succeeded(_textLines.GetStateFlags(out flags))
+                && 0 != (flags & (uint)BUFFERSTATEFLAGS.BSF_USER_READONLY))
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        internal bool IsEditCommand(Guid commandGroup, uint commandId)
+        {
+            EditCommand command;
+            return OleCommandUtil.TryConvert(commandGroup, commandId, out command)
+                && command.IsInput;
+        }
+
+        /// <summary>
+        /// Uninstall the adapter
+        /// </summary>
+        private void Uninstall()
+        {
+            var type = _codeWindow.GetType();
+            var flags = System.Reflection.BindingFlags.Instance
+                | System.Reflection.BindingFlags.NonPublic;
+            var field = type.GetField(FieldName, flags);
+            field.SetValue(_codeWindow, _filterKeys);
+        }
+
+
+        /// <summary>
+        /// Try and install the IVsFilterKeys adapter for the given ITextView.
+        /// </summary>
+        internal static bool TryInstallFilterKeysAdapter(
+            IVsAdapter adapter,
+            IEditorOptionsFactoryService optionsFactory,
+            IVimBuffer buffer)
+        {
+            var textView = buffer.TextView;
+            if (textView.Properties.ContainsProperty(s_key))
+            {
+                return true;
+            }
+
+            var editorOptions = optionsFactory.GetOptions(buffer.TextView);
+            var textLines = adapter.EditorAdapter.GetBufferAdapter(buffer.TextBuffer) as IVsTextLines;
+            IVsCodeWindow codeWindow;
+            if (!adapter.TryGetCodeWindow(textView, out codeWindow) || textLines == null || editorOptions == null)
+            {
+                return false;
+            }
+
+            var type = codeWindow.GetType();
+            var flags = System.Reflection.BindingFlags.Instance
+                | System.Reflection.BindingFlags.NonPublic;
+            var field = type.GetField(FieldName, flags);
+            var oldValue = field.GetValue(codeWindow) as IVsFilterKeys;
+            if (oldValue == null)
+            {
+                return false;
+            }
+
+            var filterKeysAdapter = new VsFilterKeysAdapter(oldValue, codeWindow, textLines, editorOptions, buffer);
+            field.SetValue(codeWindow, filterKeysAdapter);
+            return true;
         }
     }
 }

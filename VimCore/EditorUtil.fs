@@ -577,6 +577,7 @@ module EditorOptionsUtil =
             opts.GetOptionValue(key) |> Some
         with
             | :? System.ArgumentException-> None
+            | :? System.InvalidOperationException -> None
 
     let GetOptionValueOrDefault opts key defaultValue = 
         match GetOptionValue opts key with

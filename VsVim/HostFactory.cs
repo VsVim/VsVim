@@ -11,9 +11,6 @@ using Microsoft.VisualStudio.Utilities;
 using Vim;
 using Vim.Extensions;
 using IServiceProvider = System.IServiceProvider;
-using IOleServiceProvider = Microsoft.VisualStudio.OLE.Interop.IServiceProvider;
-using Microsoft.VisualStudio.OLE.Interop;
-using Microsoft.VisualStudio.Shell.Interop;
 
 namespace VsVim
 {
@@ -26,6 +23,7 @@ namespace VsVim
     {
         private readonly IKeyBindingService _keyBindingService;
         private readonly ITextEditorFactoryService _editorFactoryService;
+        private readonly IEditorOptionsFactoryService _editorOptionsFactoryService;
         private readonly IServiceProvider _serviceProvider;
         private readonly IVim _vim;
         private readonly IVsEditorAdaptersFactoryService _adaptersFactory;
@@ -38,6 +36,7 @@ namespace VsVim
         public HostFactory(
             IVim vim,
             ITextEditorFactoryService editorFactoryService,
+            IEditorOptionsFactoryService editorOptionsFactoryService,
             IKeyBindingService keyBindingService,
             SVsServiceProvider serviceProvider,
             IVsEditorAdaptersFactoryService adaptersFactory,
@@ -48,6 +47,7 @@ namespace VsVim
             _vim = vim;
             _keyBindingService = keyBindingService;
             _editorFactoryService = editorFactoryService;
+            _editorOptionsFactoryService = editorOptionsFactoryService;
             _serviceProvider = serviceProvider;
             _adaptersFactory = adaptersFactory;
             _host = host;
@@ -112,6 +112,9 @@ namespace VsVim
             var buffer = opt.Value;
             var filter = new VsCommandFilter(buffer, vsView, _serviceProvider);
             _filterMap.Add(buffer, filter);
+
+            // Try and install the IVsFilterKeys adapter 
+            VsFilterKeysAdapter.TryInstallFilterKeysAdapter(_adapter, _editorOptionsFactoryService, buffer);
         }
     }
 
