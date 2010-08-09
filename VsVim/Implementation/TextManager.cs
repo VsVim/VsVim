@@ -3,14 +3,13 @@ using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Linq;
 using Microsoft.VisualStudio;
-using Microsoft.VisualStudio.Editor;
+using Microsoft.VisualStudio.OLE.Interop;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.TextManager.Interop;
 using Vim;
-using Microsoft.VisualStudio.OLE.Interop;
 using IServiceProvider = System.IServiceProvider;
 
 namespace VsVim.Implementation
@@ -112,7 +111,7 @@ namespace VsVim.Implementation
         public bool CloseView(ITextView textView, bool checkDirty)
         {
             IVsCodeWindow codeWindow;
-            if (_adapter.TryGetCodeWindow(textView, out codeWindow) )
+            if (_adapter.TryGetCodeWindow(textView, out codeWindow))
             {
                 return codeWindow.IsSplit()
                     ? SendSplit(codeWindow)
@@ -151,7 +150,7 @@ namespace VsVim.Implementation
                 return false;
             }
 
-            return otherTextView.VisualElement.Focus();
+            return ErrorHandler.Succeeded(otherVsView.SendExplicitFocus());
         }
 
         public bool MoveViewDown(ITextView textView)
@@ -165,14 +164,14 @@ namespace VsVim.Implementation
             {
                 return false;
             }
-            
+
             var otherTextView = _adapter.EditorAdapter.GetWpfTextView(otherVsView);
-            if ( otherTextView == null || otherTextView == textView)
+            if (otherTextView == null || otherTextView == textView)
             {
                 return false;
             }
 
-            return otherTextView.VisualElement.Focus();
+            return ErrorHandler.Succeeded(otherVsView.SendExplicitFocus());
         }
 
         /// <summary>
