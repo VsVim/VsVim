@@ -129,7 +129,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="VsVimTestExtensions.cs" />
-    <Compile Include="IVsEditorAdaptersFactory.cs" />
     <Compile Include="OleCommandUtilTest.cs" />
     <Compile Include="EditCommandTest.cs" />
     <Compile Include="ExtensionsTest.cs" />

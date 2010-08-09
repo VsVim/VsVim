@@ -13,6 +13,7 @@ using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.TextManager.Interop;
 using Microsoft.VisualStudio.OLE.Interop;
 using Microsoft.VisualStudio;
+using Microsoft.VisualStudio.Text.Editor;
 
 namespace VsVimTest
 {
@@ -21,7 +22,6 @@ namespace VsVimTest
     {
         private MockFactory _factory;
         private Mock<IVsAdapter> _adapter;
-        private Mock<IVsEditorAdaptersFactoryService> _editorAdapter;
         private Mock<SVsServiceProvider> _serviceProvider;
         private Mock<IVsRunningDocumentTable> _table;
         private TextManager _managerRaw;
@@ -32,7 +32,7 @@ namespace VsVimTest
         {
             _factory = new MockFactory(MockBehavior.Loose);
             _adapter = _factory.Create<IVsAdapter>();
-            _editorAdapter = _factory.Create<IVsEditorAdaptersFactoryService>();
+            _adapter.SetupGet(x => x.EditorAdapter).Returns(_factory.Create<IVsEditorAdaptersFactoryService>().Object);
             _table = _factory.Create<IVsRunningDocumentTable>();
             _serviceProvider = _factory.Create<SVsServiceProvider>();
             _serviceProvider
@@ -40,7 +40,6 @@ namespace VsVimTest
                 .Returns(_table.Object);
             _managerRaw = new TextManager(
                 _adapter.Object,
-                _editorAdapter.Object,
                 _serviceProvider.Object);
             _manager = _managerRaw;
         }
@@ -131,11 +130,9 @@ namespace VsVimTest
         public void CloseView2()
         {
             var view = EditorUtil.CreateView();
-            var mock = _factory.Create<IVsCodeWindow>();
-            mock.MakeSplit();
-            var commandTarget = mock.As<IOleCommandTarget>();
-            IVsCodeWindow codeWindow = mock.Object;
-            _adapter.Setup(x => x.TryGetCodeWindow(view, out codeWindow)).Returns(true).Verifiable();
+            var tuple = _adapter.MakeCodeWindowAndCommandTarget(view, _factory);
+            tuple.Item1.MakeSplit(_adapter);
+            var commandTarget = tuple.Item2;
             var id = VSConstants.GUID_VSStandardCommandSet97;
             commandTarget
                 .Setup(x => x.Exec(ref id, It.IsAny<uint>(), It.IsAny<uint>(), IntPtr.Zero, IntPtr.Zero))
@@ -144,5 +141,13 @@ namespace VsVimTest
             Assert.IsTrue(_manager.CloseView(view, checkDirty:false));
             _factory.Verify();
         }
+
+        [Test]
+        public void MoveViewUp1()
+        {
+            var view = EditorUtil.CreateView();
+            Assert.IsFalse(_manager.MoveViewUp(view));
+        }
+
     }
 }

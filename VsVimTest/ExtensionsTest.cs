@@ -12,6 +12,7 @@ using System.Windows;
 using EnvDTE;
 using System.Runtime.InteropServices;
 using Microsoft.VisualStudio.TextManager.Interop;
+using Microsoft.VisualStudio.Editor;
 
 namespace VsVimTest
 {
@@ -135,7 +136,9 @@ namespace VsVimTest
         public void IsSplit1()
         {
             var codeWindow = _factory.Create<IVsCodeWindow>();
-            codeWindow.MakeSplit(_factory);
+            var adapter = _factory.Create<IVsAdapter>();
+            adapter.SetupGet(x => x.EditorAdapter).Returns(_factory.Create<IVsEditorAdaptersFactoryService>().Object);
+            codeWindow.MakeSplit(adapter, factory : _factory);
             Assert.IsTrue(codeWindow.Object.IsSplit());
             _factory.Verify();
         }

@@ -5,6 +5,7 @@ using System.Text;
 using Moq;
 using EnvDTE;
 using Microsoft.VisualStudio.Shell;
+using VsVim;
 
 namespace VsVimTest
 {

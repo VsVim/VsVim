@@ -207,6 +207,15 @@ namespace VsVim
             _textManager.SplitView(textView);
         }
 
+        void IVimHost.MoveViewDown(ITextView textView)
+        {
+            _textManager.MoveViewDown(textView);
+        }
+
+        void IVimHost.MoveViewUp(ITextView textView)
+        {
+            _textManager.MoveViewUp(textView);
+        }
         #endregion
     }
 }

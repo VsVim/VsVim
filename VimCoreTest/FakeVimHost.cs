@@ -116,5 +116,15 @@ namespace VimCore.Test
         {
             throw new NotImplementedException();
         }
+
+        void IVimHost.MoveViewDown(ITextView textView)
+        {
+            throw new NotImplementedException();
+        }
+
+        void IVimHost.MoveViewUp(ITextView textView)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

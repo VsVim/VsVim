@@ -31,6 +31,7 @@ namespace VimCore.Test
         private Mock<IChangeTracker> _changeTracker;
         private Mock<IDisplayWindowBroker> _displayWindowBroker;
         private Mock<IFoldManager> _foldManager;
+        private Mock<IVimHost> _host;
 
         static string[] s_lines = new string[]
             {
@@ -60,6 +61,7 @@ namespace VimCore.Test
             _statusUtil = new Mock<IStatusUtil>(MockBehavior.Strict);
             _changeTracker = new Mock<IChangeTracker>(MockBehavior.Strict);
             _foldManager = new Mock<IFoldManager>(MockBehavior.Strict);
+            _host = new Mock<IVimHost>(MockBehavior.Loose);
             _displayWindowBroker = new Mock<IDisplayWindowBroker>(MockBehavior.Strict);
             _displayWindowBroker.SetupGet(x => x.IsCompletionActive).Returns(false);
             _displayWindowBroker.SetupGet(x => x.IsSignatureHelpActive).Returns(false);
@@ -67,7 +69,7 @@ namespace VimCore.Test
             _bufferData = MockFactory.CreateVimBuffer(
                 _view,
                 "test",
-                MockFactory.CreateVim(_map,changeTracker:_changeTracker.Object).Object,
+                MockFactory.CreateVim(_map,changeTracker:_changeTracker.Object, host:_host.Object).Object,
                 _jumpList.Object);
             _operations = new Mock<IOperations>(MockBehavior.Strict);
             _operations.SetupGet(x => x.EditorOperations).Returns(_editorOperations.Object);
@@ -2725,5 +2727,44 @@ namespace VimCore.Test
 
         #endregion
 
+        #region Split View
+
+        [Test]
+        public void MoveViewUp1()
+        {
+            Create(string.Empty);
+            _mode.Process(KeyNotationUtil.StringToKeyInput("CTRL-w"));
+            _mode.Process(KeyNotationUtil.StringToKeyInput("CTRL-k"));
+            _host.Verify(x => x.MoveViewUp(_view));
+        }
+
+        [Test]
+        public void MoveViewUp2()
+        {
+            Create(string.Empty);
+            _mode.Process(KeyNotationUtil.StringToKeyInput("CTRL-w"));
+            _mode.Process(KeyNotationUtil.StringToKeyInput("k"));
+            _host.Verify(x => x.MoveViewUp(_view));
+        }
+
+        [Test]
+        public void MoveViewDown1()
+        {
+            Create(string.Empty);
+            _mode.Process(KeyNotationUtil.StringToKeyInput("CTRL-w"));
+            _mode.Process(KeyNotationUtil.StringToKeyInput("CTRL-j"));
+            _host.Verify(x => x.MoveViewDown(_view));
+        }
+
+        [Test]
+        public void MoveViewDown2()
+        {
+            Create(string.Empty);
+            _mode.Process(KeyNotationUtil.StringToKeyInput("CTRL-w"));
+            _mode.Process(KeyNotationUtil.StringToKeyInput("j"));
+            _host.Verify(x => x.MoveViewDown(_view));
+        }
+
+        #endregion
     }
 }

@@ -276,6 +276,10 @@ type internal NormalMode
                 yield ("<C-i>", CommandFlags.Repeatable, fun count _ -> _operations.JumpNext count)
                 yield ("<C-o>", CommandFlags.Repeatable, fun count _ -> _operations.JumpPrevious count)
                 yield ("%", CommandFlags.Repeatable, fun _ _ -> _operations.GoToMatch() |> ignore)
+                yield ("<C-w><C-j>", CommandFlags.Movement, fun _ _ -> _bufferData.Vim.VimHost.MoveViewDown(this.TextView))
+                yield ("<C-w>j", CommandFlags.Movement, fun _ _ -> _bufferData.Vim.VimHost.MoveViewDown(this.TextView))
+                yield ("<C-w><C-k>", CommandFlags.Movement, fun _ _ -> _bufferData.Vim.VimHost.MoveViewUp(this.TextView))
+                yield ("<C-w>k", CommandFlags.Movement, fun _ _ -> _bufferData.Vim.VimHost.MoveViewUp(this.TextView))
                 yield ("<C-PageDown>", CommandFlags.Repeatable, fun count _ -> _operations.GoToNextTab count)
                 yield ("<C-PageUp>", CommandFlags.Repeatable, fun count _ -> _operations.GoToPreviousTab count)
                 yield ("z<Enter>", CommandFlags.Movement, fun count _ -> 

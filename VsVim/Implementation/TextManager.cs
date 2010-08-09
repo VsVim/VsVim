@@ -19,7 +19,6 @@ namespace VsVim.Implementation
     internal sealed class TextManager : ITextManager
     {
         private readonly IVsAdapter _adapter;
-        private readonly IVsEditorAdaptersFactoryService _editorAdaptersFactoryService;
         private readonly IVsTextManager _textManager;
         private readonly RunningDocumentTable _table;
         private readonly IServiceProvider _serviceProvider;
@@ -53,7 +52,7 @@ namespace VsVim.Implementation
                 IVsTextView vsTextView;
                 IWpfTextView textView = null;
                 ErrorHandler.ThrowOnFailure(_textManager.GetActiveView(0, null, out vsTextView));
-                textView = _editorAdaptersFactoryService.GetWpfTextView(vsTextView);
+                textView = _adapter.EditorAdapter.GetWpfTextView(vsTextView);
                 if (textView == null)
                 {
                     throw new InvalidOperationException();
@@ -65,11 +64,9 @@ namespace VsVim.Implementation
         [ImportingConstructor]
         internal TextManager(
             IVsAdapter adapter,
-            IVsEditorAdaptersFactoryService editorAdaptersFactoryService,
             SVsServiceProvider serviceProvider)
         {
             _adapter = adapter;
-            _editorAdaptersFactoryService = editorAdaptersFactoryService;
             _serviceProvider = serviceProvider;
             _textManager = _serviceProvider.GetService<SVsTextManager, IVsTextManager>();
             _table = new RunningDocumentTable(_serviceProvider);
@@ -80,7 +77,7 @@ namespace VsVim.Implementation
             var tuple = SnapshotPointUtil.GetLineColumn(point.Position);
             var line = tuple.Item1;
             var column = tuple.Item2;
-            var vsBuffer = _editorAdaptersFactoryService.GetBufferAdapter(point.Position.Snapshot.TextBuffer);
+            var vsBuffer = _adapter.EditorAdapter.GetBufferAdapter(point.Position.Snapshot.TextBuffer);
             var viewGuid = VSConstants.LOGVIEWID_Code;
             var hr = _textManager.NavigateToLineAndColumn(
                 vsBuffer,
@@ -94,7 +91,7 @@ namespace VsVim.Implementation
 
         public void Save(ITextView textView)
         {
-            var vsTextView = _editorAdaptersFactoryService.GetViewAdapter(textView);
+            var vsTextView = _adapter.EditorAdapter.GetViewAdapter(textView);
             VsShellUtilities.SaveFileIfDirty(vsTextView);
         }
 
@@ -136,6 +133,48 @@ namespace VsVim.Implementation
             return false;
         }
 
+        public bool MoveViewUp(ITextView textView)
+        {
+            var vsView = _adapter.EditorAdapter.GetViewAdapter(textView);
+            IVsTextView otherVsView;
+            IVsCodeWindow codeWindow;
+            if (vsView == null
+                || !_adapter.TryGetCodeWindow(textView, out codeWindow)
+                || !codeWindow.TryGetSecondaryView(out otherVsView))
+            {
+                return false;
+            }
+
+            var otherTextView = _adapter.EditorAdapter.GetWpfTextView(otherVsView);
+            if (otherTextView == null || otherTextView == textView)
+            {
+                return false;
+            }
+
+            return otherTextView.VisualElement.Focus();
+        }
+
+        public bool MoveViewDown(ITextView textView)
+        {
+            var vsView = _adapter.EditorAdapter.GetViewAdapter(textView);
+            IVsTextView otherVsView;
+            IVsCodeWindow codeWindow;
+            if (vsView == null
+                || !_adapter.TryGetCodeWindow(textView, out codeWindow)
+                || !codeWindow.TryGetPrimaryView(out otherVsView))
+            {
+                return false;
+            }
+            
+            var otherTextView = _adapter.EditorAdapter.GetWpfTextView(otherVsView);
+            if ( otherTextView == null || otherTextView == textView)
+            {
+                return false;
+            }
+
+            return otherTextView.VisualElement.Focus();
+        }
+
         /// <summary>
         /// Send the split command.  This is really a toggle command that will split
         /// and unsplit the window
@@ -156,7 +195,7 @@ namespace VsVim.Implementation
         private IEnumerable<IWpfTextView> GetTextViews(ITextBuffer textBuffer)
         {
             return _adapter.GetTextViews(textBuffer)
-                .Select(x => _editorAdaptersFactoryService.GetWpfTextView(x))
+                .Select(x => _adapter.EditorAdapter.GetWpfTextView(x))
                 .Where(x => x != null);
         }
     }

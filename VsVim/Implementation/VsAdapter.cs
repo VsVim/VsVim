@@ -22,6 +22,11 @@ namespace VsVim.Implementation
         private readonly RunningDocumentTable _table;
         private readonly IServiceProvider _serviceProvider;
 
+        public IVsEditorAdaptersFactoryService EditorAdapter
+        {
+            get { return _editorAdaptersFactoryService; }
+        }
+
         [ImportingConstructor]
         internal VsAdapter(
             IVsEditorAdaptersFactoryService editorAdaptersFactoryService,

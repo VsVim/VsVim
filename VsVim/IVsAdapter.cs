@@ -6,6 +6,7 @@ using Microsoft.VisualStudio.TextManager.Interop;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Text;
+using Microsoft.VisualStudio.Editor;
 
 namespace VsVim
 {
@@ -15,6 +16,11 @@ namespace VsVim
     /// </summary>
     public interface IVsAdapter
     {
+        /// <summary>
+        /// Core Editor Adapter factory service
+        /// </summary>
+        IVsEditorAdaptersFactoryService EditorAdapter { get; }
+
         /// <summary>
         /// Get the IVsCodeWindow for the given ITextView.  Multiple ITextView
         /// instances may resolve to the same IVsCodeWindow

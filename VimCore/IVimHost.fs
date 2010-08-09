@@ -50,4 +50,10 @@ type IVimHost =
     /// Split the views
     abstract SplitView : ITextView -> unit
 
+    /// Move to the view above the current one
+    abstract MoveViewUp : ITextView -> unit
+
+    /// Move to the view below the current one
+    abstract MoveViewDown : ITextView -> unit
+
 

@@ -217,14 +217,30 @@ namespace VsVim
 
         #region IVsCodeWindow
 
+        /// <summary>
+        /// Is this window currently in a split mode?
+        /// </summary>
         public static bool IsSplit(this IVsCodeWindow window)
         {
             IVsTextView primary;
             IVsTextView secondary;
-            return ErrorHandler.Succeeded(window.GetPrimaryView(out primary))
-                && primary != null
-                && ErrorHandler.Succeeded(window.GetSecondaryView(out secondary))
-                && secondary != null;
+            return TryGetPrimaryView(window, out primary) && TryGetSecondaryView(window, out secondary);
+        }
+
+        /// <summary>
+        /// Get the primary view of the code window.  Is actually the one on bottom
+        /// </summary>
+        public static bool TryGetPrimaryView(this IVsCodeWindow codeWindow, out IVsTextView textView)
+        {
+            return ErrorHandler.Succeeded(codeWindow.GetPrimaryView(out textView)) && textView != null;
+        }
+
+        /// <summary>
+        /// Get the secondary view of the code window.  Is actually the one on top
+        /// </summary>
+        public static bool TryGetSecondaryView(this IVsCodeWindow codeWindow, out IVsTextView textView)
+        {
+            return ErrorHandler.Succeeded(codeWindow.GetSecondaryView(out textView)) && textView != null;
         }
 
         #endregion

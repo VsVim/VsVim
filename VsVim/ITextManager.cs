@@ -47,5 +47,17 @@ namespace VsVim
         /// Split the provided view
         /// </summary>
         bool SplitView(ITextView textView);
+
+        /// <summary>
+        /// Move to the view above the current one.  Returns false if there is no 
+        /// view above this one
+        /// </summary>
+        bool MoveViewUp(ITextView textView);
+
+        /// <summary>
+        /// Move to the view below the passed in one.  Returns fales if there is 
+        /// no view below this one
+        /// </summary>
+        bool MoveViewDown(ITextView textView);
     }
 }
