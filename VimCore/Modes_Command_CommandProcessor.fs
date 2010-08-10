@@ -309,9 +309,7 @@ type internal CommandProcessor
     member private x.ProcessWriteAll _ _ _ = 
         _operations.SaveAll()
 
-    member private x.ProcessQuit _ _ hasBang =
-        let checkDirty = not hasBang
-        _operations.Close checkDirty
+    member private x.ProcessQuit _ _ hasBang = _data.Vim.VimHost.CloseView _data.TextView (not hasBang)
 
     member private x.ProcessQuitAll _ _ hasBang =
         let checkDirty = not hasBang

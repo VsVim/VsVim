@@ -1,22 +1,16 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using NUnit.Framework;
-using Vim;
-using Vim.Modes.Command;
-using Microsoft.VisualStudio.Text.Editor;
-using Vim.UnitTest;
+using Microsoft.FSharp.Collections;
+using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
-using System.Windows.Input;
+using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Operations;
 using Moq;
-using System.IO;
-using Microsoft.FSharp.Collections;
-using Vim.Modes;
-using Vim.UnitTest.Mock;
-using Microsoft.FSharp.Core;
+using NUnit.Framework;
+using Vim;
 using Vim.Extensions;
+using Vim.Modes.Command;
+using Vim.UnitTest;
+using Vim.UnitTest.Mock;
 
 namespace VimCore.Test
 {
@@ -45,12 +39,12 @@ namespace VimCore.Test
             _vimHost = _factory.Create<IVimHost>();
             _operations = _factory.Create<IOperations>();
             _operations.SetupGet(x => x.EditorOperations).Returns(_editOpts.Object);
-            _statusUtil = _factory.Create<IStatusUtil>(); 
+            _statusUtil = _factory.Create<IStatusUtil>();
             _fileSystem = _factory.Create<IFileSystem>(MockBehavior.Strict);
             _bufferData = MockObjectFactory.CreateVimBuffer(
                 _view,
                 "test",
-                MockObjectFactory.CreateVim(_map, host:_vimHost.Object).Object);
+                MockObjectFactory.CreateVim(_map, host: _vimHost.Object).Object);
             _processorRaw = new Vim.Modes.Command.CommandProcessor(_bufferData.Object, _operations.Object, _statusUtil.Object, _fileSystem.Object);
             _processor = _processorRaw;
         }
@@ -512,7 +506,7 @@ namespace VimCore.Test
             _factory.Verify();
         }
 
-        [Test,Ignore]
+        [Test, Ignore]
         public void Substitute15()
         {
             Create("foo bar baz");
@@ -803,7 +797,7 @@ namespace VimCore.Test
             _fileSystem.Setup(x => x.ReadAllLines("blah.txt")).Returns(FSharpOption.Create(text)).Verifiable();
             _operations.Setup(x => x.ResetSetting("ignorecase")).Verifiable();
             _operations.Setup(x => x.ResetSetting("foo")).Verifiable();
-            RunCommand("source blah.txt"); 
+            RunCommand("source blah.txt");
             _operations.Verify();
         }
 
@@ -956,7 +950,7 @@ namespace VimCore.Test
             TestUnmap("vunmap a ", "a", KeyRemapMode.Visual, KeyRemapMode.Select);
             TestUnmap("vunm a ", "a", KeyRemapMode.Visual, KeyRemapMode.Select);
             TestUnmap("xunmap a", "a", KeyRemapMode.Visual);
-            TestUnmap("xunm a ", "a",  KeyRemapMode.Visual);
+            TestUnmap("xunm a ", "a", KeyRemapMode.Visual);
             TestUnmap("sunmap a ", "a", KeyRemapMode.Select);
             TestUnmap("ounmap a ", "a", KeyRemapMode.OperatorPending);
             TestUnmap("ounm a ", "a", KeyRemapMode.OperatorPending);
@@ -1027,27 +1021,27 @@ namespace VimCore.Test
         public void Quit1()
         {
             Create("");
-            _operations.Setup(x => x.Close(true)).Verifiable();
+            _vimHost.Setup(x => x.CloseView(_view, true)).Verifiable();
             RunCommand("quit");
-            _operations.Verify();
+            _factory.Verify();
         }
 
         [Test]
         public void Quit2()
         {
             Create("");
-            _operations.Setup(x => x.Close(true)).Verifiable();
+            _vimHost.Setup(x => x.CloseView(_view, true)).Verifiable();
             RunCommand("q");
-            _operations.Verify();
+            _factory.Verify();
         }
 
         [Test]
         public void Quit3()
         {
             Create("");
-            _operations.Setup(x => x.Close(false)).Verifiable();
+            _vimHost.Setup(x => x.CloseView(_view, false)).Verifiable();
             RunCommand("q!");
-            _operations.Verify();
+            _factory.Verify();
         }
 
         [Test]
@@ -1175,7 +1169,7 @@ namespace VimCore.Test
             RunCommand(":close");
             _factory.Verify();
         }
-        
+
         [Test]
         public void Close2()
         {
@@ -1193,6 +1187,6 @@ namespace VimCore.Test
             RunCommand(":clo!");
             _factory.Verify();
         }
-        
+
     }
- }
+}
