@@ -54,19 +54,19 @@ namespace VimCore.Test
             _undoRedoOperations = _factory.Create<IUndoRedoOperations>();
 
             var data = new OperationsData(
-                vimHost:_host.Object,
-                editorOperations:_editorOpts.Object,
-                textView:_view,
-                outliningManager:_outlining.Object,
-                jumpList:_jumpList.Object,
-                localSettings:_settings.Object,
-                undoRedoOperations:_undoRedoOperations.Object,
-                editorOptions:null,
-                keyMap:null,
-                navigator:null,
-                statusUtil:null,
-                foldManager:null);
-                
+                vimHost: _host.Object,
+                editorOperations: _editorOpts.Object,
+                textView: _view,
+                outliningManager: _outlining.Object,
+                jumpList: _jumpList.Object,
+                localSettings: _settings.Object,
+                undoRedoOperations: _undoRedoOperations.Object,
+                editorOptions: null,
+                keyMap: null,
+                navigator: null,
+                statusUtil: null,
+                foldManager: null);
+
             _operationsRaw = new OperationsImpl(data);
             _operations = _operationsRaw;
         }
@@ -202,7 +202,7 @@ namespace VimCore.Test
         [Test, Description("Invalid mark character")]
         public void SetMark2()
         {
-            Create("bar"); 
+            Create("bar");
             var map = new MarkMap(new TrackingLineColumnService());
             var vimBuffer = new Mock<IVimBuffer>(MockBehavior.Strict);
             vimBuffer.SetupGet(x => x.MarkMap).Returns(map);
@@ -244,7 +244,7 @@ namespace VimCore.Test
             Create("foo", "bar");
             var map = new MarkMap(new TrackingLineColumnService());
             map.SetMark(new SnapshotPoint(_view.TextSnapshot, 0), 'A');
-            _host.Setup(x => x.NavigateTo(new VirtualSnapshotPoint(_view.TextSnapshot,0))).Returns(true);
+            _host.Setup(x => x.NavigateTo(new VirtualSnapshotPoint(_view.TextSnapshot, 0))).Returns(true);
             _jumpList.Setup(x => x.Add(_view.GetCaretPoint())).Verifiable();
             _outlining
                 .Setup(x => x.ExpandAll(new SnapshotSpan(_view.TextSnapshot, 0, 0), It.IsAny<Predicate<ICollapsed>>()))
@@ -263,7 +263,7 @@ namespace VimCore.Test
             var view = EditorUtil.CreateView("foo", "bar");
             var map = new MarkMap(new TrackingLineColumnService());
             map.SetMark(new SnapshotPoint(view.TextSnapshot, 0), 'A');
-            _host.Setup(x => x.NavigateTo(new VirtualSnapshotPoint(view.TextSnapshot,0))).Returns(false);
+            _host.Setup(x => x.NavigateTo(new VirtualSnapshotPoint(view.TextSnapshot, 0))).Returns(false);
             var res = _operations.JumpToMark('A', map);
             Assert.IsTrue(res.IsFailed);
             Assert.AreEqual(Resources.Common_MarkInvalid, res.AsFailed().Item);
@@ -612,12 +612,12 @@ namespace VimCore.Test
         public void MoveWordForward1()
         {
             Create(
-                "foo bar baz", 
+                "foo bar baz",
                 "boy kick ball",
                 "a big dog");
             var line1 = _view.TextSnapshot.GetLineFromLineNumber(0);
             _view.Caret.MoveTo(line1.End);
-            _operations.MoveWordForward(WordKind.NormalWord,1);
+            _operations.MoveWordForward(WordKind.NormalWord, 1);
             var line2 = _view.TextSnapshot.GetLineFromLineNumber(1);
             Assert.AreEqual(line2.Start, _view.Caret.Position.BufferPosition);
         }
@@ -626,12 +626,12 @@ namespace VimCore.Test
         public void MoveWordForward2()
         {
             Create(
-                "foo bar baz", 
+                "foo bar baz",
                 "boy kick ball",
                 "a big dog");
             var line = _view.TextSnapshot.GetLineFromLineNumber(0);
             _view.Caret.MoveTo(line.Start);
-            _operations.MoveWordForward(WordKind.NormalWord,1);
+            _operations.MoveWordForward(WordKind.NormalWord, 1);
             Assert.AreEqual(4, _view.Caret.Position.BufferPosition.Position);
         }
 
@@ -641,7 +641,7 @@ namespace VimCore.Test
             Create("foo bar");
             var line = _view.TextSnapshot.GetLineFromLineNumber(0);
             _view.Caret.MoveTo(line.End);
-            _operations.MoveWordBackward(WordKind.NormalWord,1);
+            _operations.MoveWordBackward(WordKind.NormalWord, 1);
             Assert.AreEqual(4, _view.Caret.Position.BufferPosition.Position);
         }
 
@@ -651,7 +651,7 @@ namespace VimCore.Test
             Create("foo bar");
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 4));
             Assert.AreEqual('b', _view.Caret.Position.BufferPosition.GetChar());
-            _operations.MoveWordBackward(WordKind.NormalWord,1);
+            _operations.MoveWordBackward(WordKind.NormalWord, 1);
             Assert.AreEqual(0, _view.Caret.Position.BufferPosition.Position);
         }
 
@@ -661,7 +661,7 @@ namespace VimCore.Test
             Create("foo bar");
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 5));
             Assert.AreEqual('a', _view.Caret.Position.BufferPosition.GetChar());
-            _operations.MoveWordBackward(WordKind.NormalWord,1);
+            _operations.MoveWordBackward(WordKind.NormalWord, 1);
             Assert.AreEqual(4, _view.Caret.Position.BufferPosition.Position);
         }
 
@@ -671,7 +671,7 @@ namespace VimCore.Test
             Create("foo bar", "baz");
             var line = _view.TextSnapshot.GetLineFromLineNumber(1);
             _view.Caret.MoveTo(line.Start);
-            _operations.MoveWordBackward(WordKind.NormalWord,1);
+            _operations.MoveWordBackward(WordKind.NormalWord, 1);
             Assert.AreEqual(4, _view.Caret.Position.BufferPosition.Position);
         }
 
@@ -1225,7 +1225,7 @@ namespace VimCore.Test
         public void ChangeLetterCase3()
         {
             Create("fOo", "bar");
-            _operations.ChangeLetterCase(_buffer.GetLineSpan(0,1));
+            _operations.ChangeLetterCase(_buffer.GetLineSpan(0, 1));
             Assert.AreEqual("FoO", _buffer.GetLineSpan(0).GetText());
             Assert.AreEqual("BAR", _buffer.GetLineSpan(1).GetText());
         }
@@ -1385,6 +1385,53 @@ namespace VimCore.Test
             Assert.AreEqual(2, _view.GetCaretPoint().GetContainingLine().LineNumber);
         }
 
+        [Test]
+        [Description("Need to respect the specified column")]
+        public void MoveCaretToMotionData8()
+        {
+            Create("foo", "bar", "");
+            _editorOpts.Setup(x => x.ResetSelection());
+            var data = new MotionData(
+                _buffer.GetLineSpan(0, 1),
+                true,
+                MotionKind.Inclusive,
+                OperationKind.LineWise,
+                FSharpOption.Create(1));
+            _operations.MoveCaretToMotionData(data);
+            Assert.AreEqual(Tuple.Create(1, 1), SnapshotPointUtil.GetLineColumn(_view.GetCaretPoint()));
+        }
+
+        [Test]
+        [Description("Ignore column if it's past the end of the line")]
+        public void MoveCaretToMotionData9()
+        {
+            Create("foo", "bar", "");
+            _editorOpts.Setup(x => x.ResetSelection());
+            var data = new MotionData(
+                _buffer.GetLineSpan(0, 1),
+                true,
+                MotionKind.Inclusive,
+                OperationKind.LineWise,
+                FSharpOption.Create(100));
+            _operations.MoveCaretToMotionData(data);
+            Assert.AreEqual(Tuple.Create(1, 3), SnapshotPointUtil.GetLineColumn(_view.GetCaretPoint()));
+        }
+
+        [Test]
+        [Description("Need to respect the specified column")]
+        public void MoveCaretToMotionData10()
+        {
+            Create("foo", "bar", "");
+            _editorOpts.Setup(x => x.ResetSelection());
+            var data = new MotionData(
+                _buffer.GetLineSpan(0, 1),
+                true,
+                MotionKind.Inclusive,
+                OperationKind.LineWise,
+                FSharpOption.Create(0));
+            _operations.MoveCaretToMotionData(data);
+            Assert.AreEqual(Tuple.Create(1, 0), SnapshotPointUtil.GetLineColumn(_view.GetCaretPoint()));
+        }
         [Test]
         public void Undo1()
         {

@@ -473,6 +473,9 @@ module SnapshotPointUtil =
             let endPoint = SnapshotPoint(line.Snapshot, endPosition)
             SnapshotSpan(point, endPoint)
 
+    /// Add the given coun to the SnapshotPoint
+    let Add count (point:SnapshotPoint) = point.Add(count)
+
     /// Add 1 to the given SnapshotPoint
     let AddOne (point:SnapshotPoint) = point.Add(1)
 
