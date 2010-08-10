@@ -105,6 +105,13 @@ module internal ListUtil =
             let _,tail = l |> divide
             skip (count-1) tail
 
+    let rec skipWhile predicate l = 
+        match l with
+        | h::t -> 
+            if predicate h then skipWhile predicate t
+            else l
+        | [] -> l
+
     let rec contentsEqual left right = 
         if List.length left <> List.length right then false
         else

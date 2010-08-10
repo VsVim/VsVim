@@ -506,7 +506,7 @@ namespace VimCore.Test
             _factory.Verify();
         }
 
-        [Test, Ignore]
+        [Test]
         public void Substitute15()
         {
             Create("foo bar baz");

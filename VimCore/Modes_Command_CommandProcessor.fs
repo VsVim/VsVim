@@ -387,6 +387,7 @@ type internal CommandProcessor
     member private x.ProcessSplit _ _ _ =
         _data.Vim.VimHost.SplitView _data.TextView
 
+    /// Process the :substitute command. 
     member private x.ProcessSubstitute(rest:char list) (range:Range option) _ =
 
         // Used to parse out the flags on the :s command
@@ -404,16 +405,23 @@ type internal CommandProcessor
             rest |> Seq.fold (fun f c -> (charToOption c) ||| f) SubstituteFlags.None 
 
         let doParse rest badParse goodParse =
-            let parseOne (rest: char seq) notFound found = 
-                let prefix = rest |> Seq.takeWhile (fun ki -> ki = '/' ) 
-                if Seq.length prefix <> 1 then notFound()
-                else
-                    let rest = rest |> Seq.skip 1
-                    let data = rest |> Seq.takeWhile (fun c -> c <> '/' ) |> StringUtil.ofCharSeq
-                    found data (rest |> Seq.skip data.Length)
+
+            // Parse one element out of the sequence.  We expect the rest to 
+            // be pointed at a string prefixed with '/'.  "found" will be called
+            // with both the text after the '/' and the remainder of the string
+            let parseOne rest notFound found =
+                match rest with
+                | [] -> notFound()
+                | h::t -> 
+                    if h <> '/' then notFound()
+                    else 
+                        let rest = t |> Seq.ofList
+                        let data = rest |> Seq.takeWhile (fun c -> c <> '/') |> StringUtil.ofCharSeq
+                        found data (t |> ListUtil.skip data.Length)
+
             parseOne rest (fun () -> badParse() ) (fun search rest -> 
                 parseOne rest (fun () -> badParse()) (fun replace rest ->  
-                    let rest = rest |> Seq.skipWhile (fun c -> c = '/')
+                    let rest = rest |> ListUtil.skipWhile (fun c -> c = '/')
                     let flagsInput = rest |> Seq.takeWhile (fun c -> not (CharUtil.IsWhiteSpace c))
                     let flags = parseFlags flagsInput
                     let flags = 
