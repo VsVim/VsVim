@@ -41,9 +41,9 @@
     <Compile Include="IVimHost.fs" />
     <Compile Include="WordKind.fs" />
     <Compile Include="SearchKind.fs" />
+    <Compile Include="VimKey.fs" />
+    <Compile Include="KeyInput.fsi" />
     <Compile Include="KeyInput.fs" />
-    <Compile Include="InputUtil.fsi" />
-    <Compile Include="InputUtil.fs" />
     <Compile Include="StringUtil.fs" />
     <Compile Include="TextUtil.fsi" />
     <Compile Include="TextUtil.fs" />

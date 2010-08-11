@@ -1,7 +1,25 @@
-﻿#light
+﻿
+#light
 
 namespace Vim
 
+[<Sealed>]
+type KeyInput =
+
+    new : char * VimKey * KeyModifiers -> KeyInput
+    member Char : char
+    member Key : VimKey
+    member KeyModifiers : KeyModifiers
+    member HasShiftModifier : bool
+    member IsDigit : bool
+
+    /// Determine if this a new line key.  Meant to match the Vim definition of <CR>
+    member IsNewLine : bool
+
+    /// Is this an arrow key?
+    member IsArrowKey : bool 
+
+    interface System.IComparable 
 
 module InputUtil = 
     
