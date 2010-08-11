@@ -3,14 +3,18 @@
 namespace Vim
 open System.Runtime.InteropServices
 
+type VirtualKeyCode = int
+
 [<Sealed>]
 type KeyInput
     (
-        _literal:char,
+        _virtualKeyCode : VirtualKeyCode,
         _key:VimKey,
-        _modKey:KeyModifiers) =
+        _modKey:KeyModifiers, 
+        _literal:char) =
 
     member x.Char = _literal
+    member x.VirtualKeyCode = _virtualKeyCode
     member x.Key = _key
     member x.KeyModifiers = _modKey
     member x.HasShiftModifier = _modKey = KeyModifiers.Shift
@@ -32,13 +36,14 @@ type KeyInput
         | _ -> false
 
     member private x.CompareTo (other:KeyInput) =
+        let comp = compare x.VirtualKeyCode other.VirtualKeyCode
+        if comp <> 0 then comp
+        else 
         let comp = compare x.Char other.Char
-        if comp <> 0 then 
-            comp
+        if comp <> 0 then  comp
         else
             let comp = compare x.Key other.Key
-            if comp <> 0 then 
-                comp
+            if comp <> 0 then  comp
             else
                 compare x.KeyModifiers other.KeyModifiers
                     
@@ -50,14 +55,15 @@ type KeyInput
         | _ -> false
 
     override x.ToString() = System.String.Format("{0}:{1}:{2}", x.Char, x.Key, x.KeyModifiers);
+
+    static member op_Equality(this,other) = System.Collections.Generic.EqualityComparer<KeyInput>.Default.Equals(this,other)
+    static member op_Inequality(this,other) = not (System.Collections.Generic.EqualityComparer<KeyInput>.Default.Equals(this,other))
    
     interface System.IComparable with
         member x.CompareTo yObj =
             match yObj with
             | :? KeyInput as y -> x.CompareTo y
             | _ -> invalidArg "yObj" "Cannot compare values of different types"  
-        
-
 
 module InputUtil = 
 
@@ -184,38 +190,38 @@ module InputUtil =
         | None -> None
         | Some(virtualKey,modKeys) -> 
             match Map.tryFind virtualKey VimKeyMap with
-            | None -> KeyInput(ch, VimKey.NotWellKnown, modKeys) |> Some
-            | Some(_,vimKey) -> KeyInput(ch, vimKey, modKeys) |> Some
+            | None -> KeyInput(virtualKey, VimKey.NotWellKnown, modKeys, ch) |> Some
+            | Some(_,vimKey) -> KeyInput(virtualKey, vimKey, modKeys, ch) |> Some
 
     let CharToKeyInput c = 
         match TryCharToKeyInput c with
         | Some ki -> ki
-        | None -> KeyInput(c, VimKey.NotWellKnown, KeyModifiers.None)
+        | None -> KeyInput(0, VimKey.NotWellKnown, KeyModifiers.None, c)
 
     let TryVirtualKeyCodeToKeyInput virtualKey = 
         match Map.tryFind virtualKey VimKeyMap with
-        | Some(ch,vimKey) -> KeyInput(ch,vimKey,KeyModifiers.None) |> Some
+        | Some(ch,vimKey) -> KeyInput(virtualKey, vimKey,KeyModifiers.None, ch) |> Some
         | None -> 
             match TryVirtualKeyCodeToChar virtualKey with
             | None -> None
-            | Some(ch) -> KeyInput(ch, VimKey.NotWellKnown, KeyModifiers.None) |> Some
+            | Some(ch) -> KeyInput(virtualKey, VimKey.NotWellKnown, KeyModifiers.None, ch) |> Some
 
     let VimKeyToKeyInput vimKey = 
         match TryVimKeyToVirtualKeyCode vimKey with
-        | None -> KeyInput(System.Char.MinValue, VimKey.NotWellKnown, KeyModifiers.None)
+        | None -> KeyInput(0, VimKey.NotWellKnown, KeyModifiers.None, System.Char.MinValue)
         | Some(virtualKey) -> 
             match TryVirtualKeyCodeToChar virtualKey with
-            | None -> KeyInput(System.Char.MinValue, vimKey, KeyModifiers.None)
-            | Some(ch) -> KeyInput(ch, vimKey, KeyModifiers.None)
+            | None -> KeyInput(0, vimKey, KeyModifiers.None, System.Char.MinValue)
+            | Some(ch) -> KeyInput(virtualKey, vimKey, KeyModifiers.None, ch)
         
-    let SetModifiers modKeys (ki:KeyInput) = KeyInput(ki.Char,ki.Key, modKeys)
+    let SetModifiers modKeys (ki:KeyInput) = KeyInput(ki.VirtualKeyCode, ki.Key, modKeys, ki.Char)
         
     let VimKeyAndModifiersToKeyInput vimKey modKeys = vimKey |> VimKeyToKeyInput |> SetModifiers modKeys
 
     let CharWithControlToKeyInput ch = 
         let ki = ch |> CharToKeyInput 
-        KeyInput(ki.Char, ki.Key, ki.KeyModifiers ||| KeyModifiers.Control)
+        KeyInput(ki.VirtualKeyCode, ki.Key, ki.KeyModifiers ||| KeyModifiers.Control, ki.Char)
 
     let CharWithAltToKeyInput ch = 
         let ki = ch |> CharToKeyInput 
-        KeyInput(ki.Char, ki.Key, ki.KeyModifiers ||| KeyModifiers.Alt)
+        KeyInput(ki.VirtualKeyCode, ki.Key, ki.KeyModifiers ||| KeyModifiers.Alt, ki.Char)

@@ -151,7 +151,7 @@ module internal KeyNotationUtil =
                 let c = 
                     if modifier = KeyModifiers.Shift && CharUtil.IsLetter ki.Char then CharUtil.ToUpper ki.Char
                     else ki.Char
-                KeyInput(c, ki.Key,modifier ||| ki.KeyModifiers) |> Some
+                KeyInput(ki.VirtualKeyCode, ki.Key,modifier ||| ki.KeyModifiers, c) |> Some
             | _ -> None
 
         // Inside the <

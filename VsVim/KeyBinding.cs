@@ -62,7 +62,7 @@ namespace VsVim
 
         public bool Equals(KeyBinding other)
         {
-            if ( Object.ReferenceEquals(other, null))
+            if (Object.ReferenceEquals(other, null))
             {
                 return false;
             }
@@ -74,12 +74,12 @@ namespace VsVim
 
         public static bool operator ==(KeyBinding left, KeyBinding right)
         {
-            return EqualityComparer<KeyBinding>.Default.Equals(left,right);
+            return EqualityComparer<KeyBinding>.Default.Equals(left, right);
         }
 
         public static bool operator !=(KeyBinding left, KeyBinding right)
         {
-            return !EqualityComparer<KeyBinding>.Default.Equals(left,right);
+            return !EqualityComparer<KeyBinding>.Default.Equals(left, right);
         }
 
         #endregion
@@ -238,9 +238,10 @@ namespace VsVim
                     if (Char.IsLetter(v.Char) && 0 != (KeyModifiers.Shift & v.KeyModifiers))
                     {
                         return new KeyInput(
-                            Char.ToLower(v.Char),
+                            v.VirtualKeyCode,
                             v.Key,
-                            v.KeyModifiers & ~KeyModifiers.Shift);
+                            v.KeyModifiers & ~KeyModifiers.Shift,
+                            Char.ToLower(v.Char));
                     }
 
                     return v;
@@ -340,7 +341,7 @@ namespace VsVim
 
             if (mod != KeyModifiers.None)
             {
-                ki = new KeyInput(ki.Char, ki.Key, ki.KeyModifiers | mod);
+                ki = new KeyInput(ki.VirtualKeyCode, ki.Key, ki.KeyModifiers | mod, ki.Char);
             }
 
             return ki;

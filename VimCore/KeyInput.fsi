@@ -3,14 +3,30 @@
 
 namespace Vim
 
+/// Virtual Key Codes are typed as int's
+type VirtualKeyCode = int
+
 [<Sealed>]
 type KeyInput =
 
-    new : char * VimKey * KeyModifiers -> KeyInput
+    new : VirtualKeyCode * VimKey * KeyModifiers * char -> KeyInput
+
+    /// The virtual key code for the KeyInput
+    member VirtualKeyCode : VirtualKeyCode
+
+    /// The character representation of this input 
     member Char : char
+
+    /// The VimKey for this KeyInput.  
     member Key : VimKey
+
+    /// The modifier keys needed to produce this input
     member KeyModifiers : KeyModifiers
+
+    /// Does this have the shift modifier?
     member HasShiftModifier : bool
+
+    /// Is the character for this KeyInput a digit
     member IsDigit : bool
 
     /// Determine if this a new line key.  Meant to match the Vim definition of <CR>
@@ -18,6 +34,9 @@ type KeyInput =
 
     /// Is this an arrow key?
     member IsArrowKey : bool 
+
+    static member op_Equality : KeyInput * KeyInput -> bool
+    static member op_Inequality : KeyInput * KeyInput -> bool
 
     interface System.IComparable 
 
@@ -30,13 +49,13 @@ module InputUtil =
     val CoreCharactersSet : Set<char>
 
     /// Try and convert a char to a virtualKey and ModifierKeys pair
-    val TryCharToVirtualKeyAndModifiers : char -> (int * KeyModifiers) option
+    val TryCharToVirtualKeyAndModifiers : char -> (VirtualKeyCode * KeyModifiers) option
 
     /// Try and convert the given char to a KeyInput value
     val TryCharToKeyInput : char -> option<KeyInput>    
 
     /// Try and convert the given virtual key to a char
-    val TryVirtualKeyCodeToKeyInput : int -> option<KeyInput>
+    val TryVirtualKeyCodeToKeyInput : VirtualKeyCode -> option<KeyInput>
 
     /// Convert the specified VimKey code to a KeyInput 
     val VimKeyToKeyInput : VimKey -> KeyInput

@@ -35,19 +35,19 @@ namespace Vim.UI.Wpf
             }
         }
 
-        private static Tuple<KeyInput,int> TryConvertToKeyInput(Key key)
+        private static Tuple<KeyInput, int> TryConvertToKeyInput(Key key)
         {
             var virtualKey = KeyInterop.VirtualKeyFromKey(key);
             var opt = InputUtil.TryVirtualKeyCodeToKeyInput(virtualKey);
             return opt.IsSome()
-                ? Tuple.Create(opt.Value,virtualKey)
+                ? Tuple.Create(opt.Value, virtualKey)
                 : null;
         }
 
         public static KeyModifiers ConvertToKeyModifiers(ModifierKeys keys)
         {
             var res = KeyModifiers.None;
-            if ( 0 != (keys & ModifierKeys.Shift))
+            if (0 != (keys & ModifierKeys.Shift))
             {
                 res = res | KeyModifiers.Shift;
             }
@@ -65,15 +65,15 @@ namespace Vim.UI.Wpf
         public static ModifierKeys ConvertToModifierKeys(KeyModifiers keys)
         {
             var res = ModifierKeys.None;
-            if ( 0 != (keys & KeyModifiers.Shift ) )
+            if (0 != (keys & KeyModifiers.Shift))
             {
                 res |= ModifierKeys.Shift;
             }
-            if ( 0 != (keys & KeyModifiers.Control) )
+            if (0 != (keys & KeyModifiers.Control))
             {
                 res |= ModifierKeys.Control;
             }
-            if ( 0 != (keys & KeyModifiers.Alt) )
+            if (0 != (keys & KeyModifiers.Alt))
             {
                 res |= ModifierKeys.Alt;
             }
@@ -94,15 +94,15 @@ namespace Vim.UI.Wpf
             var tuple = TryConvertToKeyInput(key);
             if (tuple == null)
             {
-                return new KeyInput(Char.MinValue, VimKey.NotWellKnown, modKeys);
+                return new KeyInput(0, VimKey.NotWellKnown, modKeys, Char.MinValue);
             }
 
             if ((modKeys & KeyModifiers.Shift) == 0)
             {
                 var temp = tuple.Item1;
-                return new KeyInput(temp.Char, temp.Key, modKeys);
+                return new KeyInput(temp.VirtualKeyCode, temp.Key, modKeys, temp.Char);
             }
-            
+
             // The shift flag is tricky.  There is no good API available to translate a virtualKey 
             // with an additional modifier.  Instead we define the core set of keys we care about,
             // map them to a virtualKey + ModifierKeys tuple.  We then consult this map here to see
@@ -116,11 +116,11 @@ namespace Vim.UI.Wpf
             var found = MappedCoreChars.FirstOrDefault(x => x.Item2 == virtualKey && KeyModifiers.Shift == x.Item3);
             if (found == null)
             {
-                return new KeyInput(ki.Char, ki.Key, modKeys);
+                return new KeyInput(ki.VirtualKeyCode, ki.Key, modKeys, ki.Char);
             }
             else
             {
-                return new KeyInput(found.Item1, ki.Key, modKeys);
+                return new KeyInput(ki.VirtualKeyCode, ki.Key, modKeys, found.Item1);
             }
         }
 
@@ -139,12 +139,12 @@ namespace Vim.UI.Wpf
             return new ReadOnlyCollection<Tuple<char, int, KeyModifiers>>(list);
         }
 
-        public static Tuple<Key,ModifierKeys> ConvertToKeyAndModifiers(KeyInput input)
+        public static Tuple<Key, ModifierKeys> ConvertToKeyAndModifiers(KeyInput input)
         {
             var mods = ConvertToModifierKeys(input.KeyModifiers);
             var option = InputUtil.TryCharToVirtualKeyAndModifiers(input.Char);
             var key = Key.None;
-            if ( option.IsSome() )
+            if (option.IsSome())
             {
                 key = KeyInterop.KeyFromVirtualKey(option.Value.Item1);
             }

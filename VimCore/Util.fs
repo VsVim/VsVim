@@ -303,4 +303,15 @@ module internal OptionUtil =
     /// Combine an option with another value.  Same as combine but takes a tuple'd argument
     let combineRev2 (value,opt) = combine opt value
 
+    /// Combine two options into a single option.  Only some if both are some
+    let combineBoth left right =
+        match left,right with
+        | Some(left),Some(right) -> Some(left,right)
+        | Some(_),None -> None
+        | None,Some(_) -> None
+        | None,None -> None
+
+    /// Combine two options into a single option.  Only some if both are some
+    let combineBoth2 (left,right) = combineBoth left right
+
 
