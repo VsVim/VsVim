@@ -65,7 +65,7 @@ type KeyInput
             | :? KeyInput as y -> x.CompareTo y
             | _ -> invalidArg "yObj" "Cannot compare values of different types"  
 
-module InputUtil = 
+module internal NativeMethods =
 
     /// Convert the passed in char to the corresponding Virtual Key Code 
     [<DllImport("user32.dll")>]    
@@ -73,6 +73,36 @@ module InputUtil =
 
     [<DllImport("user32.dll")>]
     extern uint32 MapVirtualKey(uint32 code, uint32 mapType)
+
+    /// Convert the virtual key + scan code into a unicode character
+    [<DllImport("user32.dll")>]
+    extern int32 ToUnicode(
+        uint32 virtualKeyCode,
+        uint32 scanCode,
+        [<In>] byte[] keyStateBuffer,
+        [<Out>] System.Text.StringBuilder buffer,
+        int32 bufferLength,
+        int32 flags)
+
+    /// Map a virtual key to a scan code
+    let MAPVK_VK_TO_VSC = 0u
+
+    /// Map a virtual key to a char
+    let MAPVK_VK_TO_CHAR = 0x02u 
+
+    /// Left shift virtual key
+    let VK_LSHIFT = 0xA0
+
+    /// Shift virtual key
+    let VK_SHIFT = 0x10
+
+    /// Control virtual key
+    let VK_CONTROL = 0x11
+
+    /// Alt virtual key
+    let VK_MENU = 0x12  
+
+module InputUtil = 
 
     let CoreCharacters =
         let lowerLetters = "abcdefghijklmnopqrstuvwxyz" :> char seq
@@ -87,7 +117,7 @@ module InputUtil =
     let CoreCharactersSet = CoreCharacters |> Set.ofSeq
 
     let TryCharToVirtualKeyAndModifiers ch =
-        let res = VkKeyScan ch
+        let res = NativeMethods.VkKeyScan ch
         let res = int res
 
         // The virtual key code is the low byte and the shift state is the high byte
@@ -102,19 +132,9 @@ module InputUtil =
             let modKeys = shiftMod ||| controlMod ||| altMod
             Some (virtualKey,modKeys)
 
-    let TryVirtualKeyCodeToChar virtualKey = 
-        if 0 = virtualKey then None
-        else   
-            // Mode to map a 
-            let MAPVK_VK_TO_CHAR = 0x02u 
-            let mapped = MapVirtualKey(uint32 virtualKey, MAPVK_VK_TO_CHAR)
-            if 0u = mapped then None
-            else 
-                let c = char mapped 
-                let c = if System.Char.IsLetter(c) then System.Char.ToLower(c) else c
-                Some(c)
-    ///
-    /// All constant values derived from the list at the following 
+
+///
+/// All constant values derived from the list at the following 
     /// location
     ///   http://msdn.microsoft.com/en-us/library/ms645540(VS.85).aspx
     let TryVimKeyToVirtualKeyCode vimKey = 
@@ -168,6 +188,18 @@ module InputUtil =
                 | _ -> failwith "Invalid Enum value"
             Some(code)
         
+    let TryVirtualKeyCodeToChar virtualKey = 
+        if 0 = virtualKey then None
+        else   
+            // Mode to map a 
+            let MAPVK_VK_TO_CHAR = 0x02u 
+            let mapped = NativeMethods.MapVirtualKey(uint32 virtualKey, MAPVK_VK_TO_CHAR)
+            if 0u = mapped then None
+            else 
+                let c = char mapped 
+                let c = if System.Char.IsLetter(c) then System.Char.ToLower(c) else c
+                Some(c)
+
     /// This is a tuple of the VimKey values listing their char,virtualKey,VimKey values
     let VimKeyMap = 
         let vimKeyToTuple vimKey = 
@@ -184,6 +216,40 @@ module InputUtil =
         |> Seq.choose (fun x -> x)
         |> Seq.map (fun (virtualKey,ch,vimKey) -> virtualKey,(ch,vimKey))
         |> Map.ofSeq
+
+
+    /// The keyboard state of the buffer
+    let KeyboardState : byte array = Array.zeroCreate 256
+    let KeyboardBuffer = new System.Text.StringBuilder(2)
+
+    let TryVirtualKeyCodeAndModifiersToKeyInput virtualKey keyModifiers =
+        match NativeMethods.MapVirtualKey(uint32 virtualKey, NativeMethods.MAPVK_VK_TO_VSC) with
+        | 0u -> None
+        | scanCode ->
+            try
+                let setBit : byte 0x80 // high order bit set
+                KeyboardState.[virtualKey] <- setBit
+                if Utils.IsFlagSet keyModifiers KeyModifiers.Shift then
+                    KeyboardState.[NativeMethods.VK_LSHIFT] <- setBit
+                if Utils.IsFlagSet keyModifiers KeyModifiers.Control then
+                    KeyboardState.[NativeMethods.VK_CONTROL] <- setBit
+                if Utils.IsFlagSet keyModifiers KeyModifiers.Alt then
+                    KeyboardState.[NativeMethods.VK_MENU] <- setBit
+
+                match NativeMethods.ToUnicode(uint32 virtualKey, scanCode, KeyboardState, KeyboardBuffer, KeyboardBuffer.Capacity, 0) with
+                | 1 -> 
+                    let vimKey = 
+                        match Map.tryFind virtualKey VimKeyMap with
+                        | None -> VimKey.NotWellKnown
+                        | Some(_,k) -> k
+                    KeyInput(virtualKey, vimKey, keyModifiers, KeyboardBuffer.[0]) |> Some
+                | _ -> None
+            finally
+                KeyboardState.[virtualKey] <- byte 0
+                KeyboardState.[NativeMethods.VK_CONTROL] <- byte 0
+                KeyboardState.[NativeMethods.VK_SHIFT] <- byte 0
+                KeyboardState.[NativeMethods.VK_MENU] <- byte 0
+
 
     let TryCharToKeyInput ch = 
         match TryCharToVirtualKeyAndModifiers ch with

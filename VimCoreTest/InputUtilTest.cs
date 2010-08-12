@@ -1,6 +1,8 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using NUnit.Framework;
 using Vim;
+using Vim.Extensions;
 
 namespace VimCore.Test
 {
@@ -85,5 +87,29 @@ namespace VimCore.Test
             var right = InputUtil.VimKeyToKeyInput(VimKey.KeypadMinus);
             Assert.AreNotEqual(left, right);
         }
+
+        [Test]
+        public void TryVirtualKeyCodeAndModifiersToKeyInput1()
+        {
+            Action<char> backandForth = c =>
+            {
+                var opt = InputUtil.TryCharToVirtualKeyAndModifiers(c);
+                Assert.IsTrue(opt.IsSome());
+                var virtualKeyCode = opt.Value.Item1;
+                var keyModifiers = opt.Value.Item2;
+                var ki1 = InputUtil.CharToKeyInput(c);
+                var ki2 = InputUtil.TryVirtualKeyCodeAndModifiersToKeyInput(virtualKeyCode, keyModifiers).Value;
+                Assert.AreEqual(ki1, ki2);
+            };
+
+            var test1 = InputUtil.TryVirtualKeyCodeAndModifiersToKeyInput(0x61, KeyModifiers.Shift).Value;
+            var test2 = InputUtil.TryVirtualKeyCodeAndModifiersToKeyInput(0x31, KeyModifiers.Shift).Value;
+            var test3 = InputUtil.TryCharToKeyInput('!').Value;
+
+
+            backandForth('!');
+            InputUtil.CoreCharacters.ToList().ForEach(backandForth);
+        }
+
     }
 }

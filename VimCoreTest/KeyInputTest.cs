@@ -38,6 +38,22 @@ namespace VimCore.Test
         }
 
         [Test]
+        public void Equality3()
+        {
+            Assert.IsTrue(InputUtil.CharToKeyInput('a') == InputUtil.CharToKeyInput('a'));
+            Assert.IsTrue(InputUtil.CharToKeyInput('b') == InputUtil.CharToKeyInput('b'));
+            Assert.IsTrue(InputUtil.CharToKeyInput('c') == InputUtil.CharToKeyInput('c'));
+        }
+
+        [Test]
+        public void Equality4()
+        {
+            Assert.IsTrue(InputUtil.CharToKeyInput('a') != InputUtil.CharToKeyInput('b'));
+            Assert.IsTrue(InputUtil.CharToKeyInput('b') != InputUtil.CharToKeyInput('c'));
+            Assert.IsTrue(InputUtil.CharToKeyInput('c') != InputUtil.CharToKeyInput('d'));
+        }
+
+        [Test]
         public void CompareTo1()
         {
             var i1 = new KeyInput('c', VimKey.NotWellKnown, KeyModifiers.None, 'c');
@@ -45,5 +61,6 @@ namespace VimCore.Test
             Assert.IsTrue(i1.CompareTo(new KeyInput(0, VimKey.NotWellKnown, KeyModifiers.None, 'c')) == 0);
             Assert.IsTrue(i1.CompareTo(new KeyInput(0, VimKey.NotWellKnown, KeyModifiers.None, 'a')) > 0);
         }
+
     }
 }

@@ -57,6 +57,9 @@ module InputUtil =
     /// Try and convert the given virtual key to a char
     val TryVirtualKeyCodeToKeyInput : VirtualKeyCode -> option<KeyInput>
 
+    /// Try and convert the given virtual key and modifiers to a char
+    val TryVirtualKeyCodeAndModifiersToKeyInput : VirtualKeyCode -> KeyModifiers -> option<KeyInput>
+
     /// Convert the specified VimKey code to a KeyInput 
     val VimKeyToKeyInput : VimKey -> KeyInput
 
