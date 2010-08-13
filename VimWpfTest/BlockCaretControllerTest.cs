@@ -146,5 +146,12 @@ namespace Vim.UI.Wpf.Test
             _controller.Update();
         }
 
+        [Test]
+        public void ReplaceMode1()
+        {
+            _buffer.SetupGet(x => x.ModeKind).Returns(ModeKind.Replace);
+            _caret.SetupSet(x => x.CaretDisplay = CaretDisplay.QuarterBlock);
+            _controller.Update();
+        }
     }
 }

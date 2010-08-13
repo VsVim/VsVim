@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Utilities;
-using Vim;
 
 namespace Vim.UnitTest.Mock
 {
@@ -23,6 +22,8 @@ namespace Vim.UnitTest.Mock
         public IVisualMode VisualLineModeImpl;
         public ICommandMode CommandModeImpl;
         public IDisabledMode DisabledModeImpl;
+        public IMode InsertModeImpl;
+        public IMode ReplaceModeImpl;
         public bool IsProcessingInputImpl;
         public PropertyCollection PropertiesImpl;
 
@@ -101,6 +102,16 @@ namespace Vim.UnitTest.Mock
             get { throw new NotImplementedException(); }
         }
 
+        public IMode InsertMode
+        {
+            get { return InsertModeImpl; }
+        }
+
+        public IMode ReplaceMode
+        {
+            get { return ReplaceModeImpl; }
+        }
+
         public INormalMode NormalMode
         {
             get { return NormalModeImpl; }
@@ -128,7 +139,7 @@ namespace Vim.UnitTest.Mock
 
         public void RaiseSwitchedMode(IMode mode)
         {
-            if ( SwitchedMode != null )
+            if (SwitchedMode != null)
             {
                 SwitchedMode(this, mode);
             }

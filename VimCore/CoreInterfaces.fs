@@ -163,6 +163,7 @@ type ModeKind =
     | VisualCharacter = 4
     | VisualLine = 5
     | VisualBlock = 6 
+    | Replace = 7
 
     // Mode when Vim is disabled via the user
     | Disabled = 42
@@ -967,6 +968,8 @@ and IVimBuffer =
     abstract VisualLineMode : IVisualMode
     abstract VisualBlockMode : IVisualMode
     abstract VisualCharacterMode : IVisualMode
+    abstract InsertMode : IMode
+    abstract ReplaceMode : IMode
 
     /// Sequence of available Modes
     abstract AllModes : seq<IMode>

@@ -84,6 +84,9 @@ namespace Vim.UI.Wpf
                 case ModeKind.Insert:
                     _margin.StatusLine = Resources.InsertBanner;
                     break;
+                case ModeKind.Replace:
+                    _margin.StatusLine = Resources.ReplaceBanner;
+                    break;
                 case ModeKind.VisualBlock:
                     _margin.StatusLine = Resources.VisualBlockBanner;
                     break;

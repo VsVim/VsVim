@@ -38,7 +38,7 @@ namespace Vim.UI.Wpf
         private void UpdateCaret()
         {
             var kind = CaretDisplay.Block;
-            switch (_buffer.ModeKind )
+            switch (_buffer.ModeKind)
             {
                 case ModeKind.Normal:
                     {
@@ -74,6 +74,9 @@ namespace Vim.UI.Wpf
                     break;
                 case ModeKind.Disabled:
                     kind = CaretDisplay.NormalCaret;
+                    break;
+                case ModeKind.Replace:
+                    kind = CaretDisplay.QuarterBlock;
                     break;
             }
 

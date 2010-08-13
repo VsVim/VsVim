@@ -98,7 +98,8 @@ type internal VimBufferFactory
             [
                 ((Modes.Normal.NormalMode(buffer, normalOpts, normalIncrementalSearch,statusUtil,broker, createCommandRunner(),capture)) :> IMode);
                 ((Modes.Command.CommandMode(buffer, commandProcessor)) :> IMode);
-                ((Modes.Insert.InsertMode(buffer,insertOpts,broker)) :> IMode);
+                ((Modes.Insert.InsertMode(buffer,insertOpts,broker, editOptions,false)) :> IMode);
+                ((Modes.Insert.InsertMode(buffer,insertOpts,broker, editOptions,true)) :> IMode);
                 (DisabledMode(buffer) :> IMode);
             ] @ visualModeList
         modeList |> List.iter (fun m -> bufferRaw.AddMode m)

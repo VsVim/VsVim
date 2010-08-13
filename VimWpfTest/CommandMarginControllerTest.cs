@@ -80,7 +80,7 @@ namespace Vim.UI.Wpf.Test
         {
             var mode = new Mock<ICommandMode>();
             mode.SetupGet(x => x.ModeKind).Returns(ModeKind.Command);
-            mode.SetupGet(x => x.Command).Returns(""); 
+            mode.SetupGet(x => x.Command).Returns("");
             _buffer.CommandModeImpl = mode.Object;
             _buffer.RaiseSwitchedMode(_buffer.CommandModeImpl);
             Assert.AreEqual(":", _marginControl.StatusLine);
@@ -92,10 +92,19 @@ namespace Vim.UI.Wpf.Test
         {
             var mode = new Mock<ICommandMode>();
             mode.SetupGet(x => x.ModeKind).Returns(ModeKind.Command);
-            mode.SetupGet(x => x.Command).Returns("foo"); 
+            mode.SetupGet(x => x.Command).Returns("foo");
             _buffer.CommandModeImpl = mode.Object;
             _buffer.RaiseSwitchedMode(_buffer.CommandModeImpl);
             Assert.AreEqual(":foo", _marginControl.StatusLine);
+        }
+
+        [Test]
+        public void SwitchMode7()
+        {
+            var mode = new Mock<IMode>();
+            mode.SetupGet(x => x.ModeKind).Returns(ModeKind.Replace);
+            _buffer.RaiseSwitchedMode(mode.Object);
+            Assert.AreEqual(Resources.ReplaceBanner, _marginControl.StatusLine);
         }
 
         [Test]

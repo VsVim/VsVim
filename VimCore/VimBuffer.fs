@@ -70,12 +70,15 @@ type internal VimBuffer
     member x.VisualCharacterMode = _modeMap.GetMode ModeKind.VisualCharacter :?> IVisualMode
     member x.VisualBlockMode = _modeMap.GetMode ModeKind.VisualBlock :?> IVisualMode
     member x.CommandMode = _modeMap.GetMode ModeKind.Command :?> ICommandMode
+    member x.InsertMode = _modeMap.GetMode ModeKind.Insert 
+    member x.ReplaceMode = _modeMap.GetMode ModeKind.Replace
     member x.DisabledMode = _modeMap.GetMode ModeKind.Disabled :?> IDisabledMode
 
     /// Current KeyRemapMode which should be used when calculating keyboard mappings
     member x.KeyRemapMode = 
         match _modeMap.Mode.ModeKind with
         | ModeKind.Insert -> Some (KeyRemapMode.Insert)
+        | ModeKind.Replace -> Some (KeyRemapMode.Insert)
         | ModeKind.Normal -> 
             let mode = x.NormalMode
             if mode.IsOperatorPending then Some(KeyRemapMode.OperatorPending)
@@ -196,6 +199,8 @@ type internal VimBuffer
         member x.VisualCharacterMode = x.VisualCharacterMode
         member x.VisualBlockMode = x.VisualBlockMode
         member x.CommandMode = x.CommandMode
+        member x.InsertMode = x.InsertMode
+        member x.ReplaceMode = x.ReplaceMode
         member x.DisabledMode = x.DisabledMode
         member x.AllModes = _modeMap.Modes
         member x.Settings = _settings

@@ -69,7 +69,7 @@ namespace VimCore.Test
             _bufferData = MockFactory.CreateVimBuffer(
                 _view,
                 "test",
-                MockFactory.CreateVim(_map,changeTracker:_changeTracker.Object, host:_host.Object).Object,
+                MockFactory.CreateVim(_map, changeTracker: _changeTracker.Object, host: _host.Object).Object,
                 _jumpList.Object);
             _operations = new Mock<IOperations>(MockBehavior.Strict);
             _operations.SetupGet(x => x.EditorOperations).Returns(_editorOperations.Object);
@@ -78,7 +78,7 @@ namespace VimCore.Test
 
             motionUtil = motionUtil ?? new MotionUtil(_view, new Vim.GlobalSettings());
             var capture = new MotionCapture(_view, motionUtil);
-            var runner = new CommandRunner(_view, _map,(IMotionCapture)capture, _statusUtil.Object);
+            var runner = new CommandRunner(_view, _map, (IMotionCapture)capture, _statusUtil.Object);
             _modeRaw = new Vim.Modes.Normal.NormalMode(
                 _bufferData.Object,
                 _operations.Object,
@@ -176,7 +176,7 @@ namespace VimCore.Test
             Assert.IsFalse(_mode.CanProcess(InputUtil.VimKeyToKeyInput(VimKey.Down)));
         }
 
-        [Test,Description("Should be able to handle ever core character")]
+        [Test, Description("Should be able to handle ever core character")]
         public void CanProcess6()
         {
             Create(s_lines);
@@ -210,7 +210,7 @@ namespace VimCore.Test
         #region Motion
 
         private void AssertMotion(
-            string motionName, 
+            string motionName,
             Action<Mock<IMotionUtil>, SnapshotPoint, FSharpOption<int>, MotionData> setupMock,
             bool isMovement = true)
         {
@@ -965,7 +965,7 @@ namespace VimCore.Test
             _operations.Verify();
         }
 
-        [Test,Description("Escape should exit replace not be a part of it")]
+        [Test, Description("Escape should exit replace not be a part of it")]
         public void Edit_r_5()
         {
             Create("foo");
@@ -1220,7 +1220,7 @@ namespace VimCore.Test
         {
             Create("foo");
             _bufferData.Object.Settings.GlobalSettings.TildeOp = true;
-            _operations.Setup(x => x.ChangeLetterCase(_view.TextBuffer.GetLineSpan(0,0))).Verifiable();
+            _operations.Setup(x => x.ChangeLetterCase(_view.TextBuffer.GetLineSpan(0, 0))).Verifiable();
             _mode.Process("~aw");
             _operations.Verify();
         }
@@ -1341,7 +1341,7 @@ namespace VimCore.Test
             Create("foo bar");
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 1));
             _operations.Setup(x => x.Yank(
-                new SnapshotSpan(_view.TextSnapshot, 0,4),
+                new SnapshotSpan(_view.TextSnapshot, 0, 4),
                 MotionKind.Exclusive,
                 OperationKind.CharacterWise,
                 _map.DefaultRegister)).Verifiable();
@@ -2266,7 +2266,7 @@ namespace VimCore.Test
         {
             Create("foo");
             var found = _modeRaw.Commands.Single(x => x.KeyInputSet.Equals(KeyNotationUtil.StringToKeyInputSet("h")));
-            Assert.AreNotEqual(CommandFlags.Repeatable, found.CommandFlags, "Movements should not be repeatable");  
+            Assert.AreNotEqual(CommandFlags.Repeatable, found.CommandFlags, "Movements should not be repeatable");
         }
 
         [Test]
@@ -2315,7 +2315,7 @@ namespace VimCore.Test
         {
             Create("");
             var didRun = false;
-            var data = 
+            var data =
                 VimUtil.CreateCommandRunData(
                     VimUtil.CreateSimpleCommand("d", (x, y) => { didRun = true; }),
                     _map.DefaultRegister,
@@ -2335,7 +2335,7 @@ namespace VimCore.Test
         {
             Create("");
             var didRun = false;
-            var data = 
+            var data =
                 VimUtil.CreateCommandRunData(
                     VimUtil.CreateSimpleCommand("c", (x, y) => { didRun = true; }),
                     _map.DefaultRegister,
@@ -2444,7 +2444,7 @@ namespace VimCore.Test
             Create("foobar");
             var didRunCommand = false;
             var didRunMotion = false;
-            var data = 
+            var data =
                 VimUtil.CreateCommandRunData(
                     VimUtil.CreateMotionCommand("c", (x, y, motionData) => { didRunCommand = true; }),
                     _map.DefaultRegister,
@@ -2452,7 +2452,8 @@ namespace VimCore.Test
                     VimUtil.CreateMotionRunData(
                         VimUtil.CreateSimpleMotion("w", () => null),
                         null,
-                        () => {
+                        () =>
+                        {
                             didRunMotion = true;
                             return CreateMotionData();
                         }));
@@ -2495,6 +2496,15 @@ namespace VimCore.Test
             var res = _mode.Process("h");
             Assert.IsTrue(res.IsSwitchMode);
             Assert.AreEqual(ModeKind.Command, res.AsSwitchMode().Item);
+        }
+
+        [Test]
+        public void ReplaceMode1()
+        {
+            Create(string.Empty);
+            var res = _mode.Process("R");
+            Assert.IsTrue(res.IsSwitchMode);
+            Assert.AreEqual(ModeKind.Replace, res.AsSwitchMode().Item);
         }
 
         #endregion
@@ -2565,7 +2575,7 @@ namespace VimCore.Test
             _mode.Process(InputUtil.VimKeyAndModifiersToKeyInput(VimKey.PageDown, KeyModifiers.Control));
             _operations.Verify();
         }
-       
+
         [Test]
         public void CPageDown_2()
         {
@@ -2674,7 +2684,7 @@ namespace VimCore.Test
         [Test]
         public void Fold_zf_1()
         {
-            Create("the quick brown", "fox jumped"," over the dog");
+            Create("the quick brown", "fox jumped", " over the dog");
             _foldManager.Setup(x => x.CreateFold(_view.TextBuffer.GetSpan(0, 4))).Verifiable();
             _mode.Process("zfw");
             _foldManager.Verify();
@@ -2683,7 +2693,7 @@ namespace VimCore.Test
         [Test]
         public void Fold_zF_1()
         {
-            Create("the quick brown", "fox jumped"," over the dog");
+            Create("the quick brown", "fox jumped", " over the dog");
             _operations.Setup(x => x.FoldLines(1)).Verifiable();
             _mode.Process("zF");
             _operations.Verify();
@@ -2692,7 +2702,7 @@ namespace VimCore.Test
         [Test]
         public void Fold_zF_2()
         {
-            Create("the quick brown", "fox jumped"," over the dog");
+            Create("the quick brown", "fox jumped", " over the dog");
             _operations.Setup(x => x.FoldLines(2)).Verifiable();
             _mode.Process("2zF");
             _operations.Verify();
@@ -2701,7 +2711,7 @@ namespace VimCore.Test
         [Test]
         public void Fold_zd_1()
         {
-            Create("the quick brown", "fox jumped"," over the dog");
+            Create("the quick brown", "fox jumped", " over the dog");
             _operations.Setup(x => x.DeleteOneFoldAtCursor()).Verifiable();
             _mode.Process("zd");
             _operations.Verify();
@@ -2710,7 +2720,7 @@ namespace VimCore.Test
         [Test]
         public void Fold_zD_1()
         {
-            Create("the quick brown", "fox jumped"," over the dog");
+            Create("the quick brown", "fox jumped", " over the dog");
             _operations.Setup(x => x.DeleteAllFoldsAtCursor()).Verifiable();
             _mode.Process("zD");
             _operations.Verify();
@@ -2719,7 +2729,7 @@ namespace VimCore.Test
         [Test]
         public void Fold_zE_1()
         {
-            Create("the quick brown", "fox jumped"," over the dog");
+            Create("the quick brown", "fox jumped", " over the dog");
             _foldManager.Setup(x => x.DeleteAllFolds()).Verifiable();
             _mode.Process("zE");
             _foldManager.Verify();

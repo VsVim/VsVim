@@ -309,6 +309,7 @@ type internal NormalMode
                 yield ("C", ModeKind.Insert, (fun count reg -> _operations.DeleteLinesFromCursor count reg))
                 yield ("S", ModeKind.Insert, (fun count reg -> _operations.DeleteLines count reg))
                 yield ("a", ModeKind.Insert, (fun _ _ -> _operations.MoveCaretForAppend()) )
+                yield ("R", ModeKind.Replace, doNothing)
             }
             |> Seq.map(fun (str,switch,func) -> (str,CommandFlags.None,func,CommandResult.Completed (ModeSwitch.SwitchMode switch)))
 

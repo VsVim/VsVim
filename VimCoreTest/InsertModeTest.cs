@@ -4,8 +4,8 @@ using Moq;
 using NUnit.Framework;
 using Vim;
 using Vim.Modes;
-using Vim.UnitTest.Mock;
 using Vim.UnitTest;
+using Vim.UnitTest.Mock;
 
 namespace VimCore.Test
 {
@@ -24,26 +24,33 @@ namespace VimCore.Test
         private Mock<IDisplayWindowBroker> _broker;
         private Mock<IVimGlobalSettings> _globalSettings;
         private Mock<IVimLocalSettings> _localSettings;
+        private Mock<IEditorOptions> _editorOptions;
         private Mock<IVim> _vim;
 
         [SetUp]
         public void SetUp()
         {
+            SetUp(insertMode: true);
+        }
+
+        public void SetUp(bool insertMode)
+        {
             _factory = new MockFactory(MockBehavior.Strict);
             _factory.DefaultValue = DefaultValue.Mock;
             _textView = _factory.Create<ITextView>();
             _vim = _factory.Create<IVim>(MockBehavior.Loose);
+            _editorOptions = _factory.Create<IEditorOptions>(MockBehavior.Loose);
             _globalSettings = _factory.Create<IVimGlobalSettings>();
             _localSettings = _factory.Create<IVimLocalSettings>();
             _localSettings.SetupGet(x => x.GlobalSettings).Returns(_globalSettings.Object);
             _data = MockObjectFactory.CreateVimBuffer(
                 _textView.Object,
-                settings:_localSettings.Object,
-                vim:_vim.Object,
+                settings: _localSettings.Object,
+                vim: _vim.Object,
                 factory: _factory);
             _operations = _factory.Create<ICommonOperations>();
             _broker = _factory.Create<IDisplayWindowBroker>();
-            _modeRaw = new Vim.Modes.Insert.InsertMode(_data.Object,_operations.Object,_broker.Object);
+            _modeRaw = new Vim.Modes.Insert.InsertMode(_data.Object, _operations.Object, _broker.Object, _editorOptions.Object, _isReplace: !insertMode);
             _mode = _modeRaw;
         }
 
@@ -158,6 +165,24 @@ namespace VimCore.Test
             Assert.IsTrue(res.IsSwitchModeWithArgument);
             Assert.AreEqual(ModeKind.Normal, res.AsSwitchModeWithArgument().Item1);
             Assert.IsTrue(res.AsSwitchModeWithArgument().Item2.IsOneTimeCommand);
+        }
+
+        [Test]
+        public void ReplaceMode1()
+        {
+            SetUp(insertMode: false);
+            Assert.AreEqual(ModeKind.Replace, _mode.ModeKind);
+        }
+
+        [Test]
+        public void ReplaceMode2()
+        {
+            SetUp(insertMode: false);
+            _editorOptions
+                .Setup(x => x.SetOptionValue(DefaultTextViewOptions.OverwriteModeId, false))
+                .Verifiable();
+            _mode.OnLeave();
+            _factory.Verify();
         }
 
     }

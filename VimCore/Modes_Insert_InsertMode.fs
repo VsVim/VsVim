@@ -12,7 +12,9 @@ type internal InsertMode
     ( 
         _data : IVimBuffer, 
         _operations : Modes.ICommonOperations,
-        _broker : IDisplayWindowBroker) as this =
+        _broker : IDisplayWindowBroker, 
+        _editorOptions : IEditorOptions,
+        _isReplace : bool ) as this =
 
     let mutable _commandMap : Map<KeyInput,CommandFunction> = Map.empty
 
@@ -58,12 +60,18 @@ type internal InsertMode
     interface IMode with 
         member x.VimBuffer = _data
         member x.CommandNames =  _commandMap |> Seq.map (fun p -> p.Key) |> Seq.map OneKeyInput
-        member x.ModeKind = ModeKind.Insert
+        member x.ModeKind = if _isReplace then ModeKind.Replace else ModeKind.Insert
         member x.CanProcess ki = Map.containsKey ki _commandMap 
         member x.Process (ki : KeyInput) = 
             match Map.tryFind ki _commandMap with
             | Some(func) -> func()
             | None -> Processed
-        member x.OnEnter _ = ()
-        member x.OnLeave () = ()
+        member x.OnEnter _ = 
+            // If this is replace mode then go ahead and setup overwrite
+            if _isReplace then
+                _editorOptions.SetOptionValue(DefaultTextViewOptions.OverwriteModeId, true)
+        member x.OnLeave () = 
+            // If this is replace mode then go ahead and undo overwrite
+            if _isReplace then
+                _editorOptions.SetOptionValue(DefaultTextViewOptions.OverwriteModeId, false)
         member x.OnClose() = ()
