@@ -8,56 +8,56 @@ module internal KeyNotationUtil =
 
     let private ManualKeyList = 
         [
-            ("<Nul>",InputUtil.CharWithControlToKeyInput '@');
-            ("<Bs>", InputUtil.VimKeyToKeyInput VimKey.Back);
-            ("<Tab>",InputUtil.VimKeyToKeyInput VimKey.Tab);
-            ("<NL>", InputUtil.VimKeyToKeyInput VimKey.Enter);
-            ("<FF>", InputUtil.CharWithControlToKeyInput 'l');
-            ("<CR>", InputUtil.VimKeyToKeyInput VimKey.Enter);
-            ("<Return>", InputUtil.VimKeyToKeyInput VimKey.Enter);
-            ("<Enter>", InputUtil.VimKeyToKeyInput VimKey.Enter);
-            ("<Esc>", InputUtil.VimKeyToKeyInput VimKey.Escape);
-            ("<Space>", InputUtil.CharToKeyInput ' ')
-            ("<lt>", InputUtil.CharToKeyInput '<');
-            ("<Bslash>", InputUtil.CharToKeyInput '\\' );
-            ("<Bar>", InputUtil.CharToKeyInput '|');
-            ("<Del>", InputUtil.VimKeyToKeyInput VimKey.Delete);
-            ("<Up>", InputUtil.VimKeyToKeyInput VimKey.Up);
-            ("<Down>", InputUtil.VimKeyToKeyInput VimKey.Down);
-            ("<Left>", InputUtil.VimKeyToKeyInput VimKey.Left);
-            ("<Right>", InputUtil.VimKeyToKeyInput VimKey.Right);
-            ("<Help>", InputUtil.VimKeyToKeyInput VimKey.Help);
-            ("<Insert>", InputUtil.VimKeyToKeyInput VimKey.Insert);
-            ("<Home>", InputUtil.VimKeyToKeyInput VimKey.Home);
-            ("<kHome>", InputUtil.VimKeyToKeyInput VimKey.Home);
-            ("<End>", InputUtil.VimKeyToKeyInput VimKey.End);
-            ("<PageUp>", InputUtil.VimKeyToKeyInput VimKey.PageUp);
-            ("<PageDown>", InputUtil.VimKeyToKeyInput VimKey.PageDown);
-            ("<kHome>", InputUtil.VimKeyToKeyInput VimKey.Home);
-            ("<kEnd>", InputUtil.VimKeyToKeyInput VimKey.End);
-            ("<kPageUp>", InputUtil.VimKeyToKeyInput VimKey.PageUp);
-            ("<kPageDown>", InputUtil.VimKeyToKeyInput VimKey.PageDown);
-            ("<kMultiply>", InputUtil.VimKeyToKeyInput VimKey.KeypadMultiply)
-            ("<kPlus>", InputUtil.VimKeyToKeyInput VimKey.KeypadPlus)
-            ("<kDivide>", InputUtil.VimKeyToKeyInput VimKey.KeypadDivide)
-            ("<kPoint>", InputUtil.VimKeyToKeyInput VimKey.KeypadDecimal)
-            ("<kPlus>", InputUtil.VimKeyToKeyInput VimKey.KeypadPlus)
-            ("<k0>", InputUtil.VimKeyToKeyInput VimKey.Keypad0)
-            ("<k1>", InputUtil.VimKeyToKeyInput VimKey.Keypad1)
-            ("<k2>", InputUtil.VimKeyToKeyInput VimKey.Keypad2)
-            ("<k3>", InputUtil.VimKeyToKeyInput VimKey.Keypad3)
-            ("<k4>", InputUtil.VimKeyToKeyInput VimKey.Keypad4)
-            ("<k5>", InputUtil.VimKeyToKeyInput VimKey.Keypad5)
-            ("<k6>", InputUtil.VimKeyToKeyInput VimKey.Keypad6)
-            ("<k7>", InputUtil.VimKeyToKeyInput VimKey.Keypad7)
-            ("<k8>", InputUtil.VimKeyToKeyInput VimKey.Keypad8)
-            ("<k9>", InputUtil.VimKeyToKeyInput VimKey.Keypad9)
+            ("<Nul>",KeyInputUtil.CharWithControlToKeyInput '@');
+            ("<Bs>", KeyInputUtil.VimKeyToKeyInput VimKey.Back);
+            ("<Tab>",KeyInputUtil.VimKeyToKeyInput VimKey.Tab);
+            ("<NL>", KeyInputUtil.VimKeyToKeyInput VimKey.Enter);
+            ("<FF>", KeyInputUtil.CharWithControlToKeyInput 'l');
+            ("<CR>", KeyInputUtil.VimKeyToKeyInput VimKey.Enter);
+            ("<Return>", KeyInputUtil.VimKeyToKeyInput VimKey.Enter);
+            ("<Enter>", KeyInputUtil.VimKeyToKeyInput VimKey.Enter);
+            ("<Esc>", KeyInputUtil.VimKeyToKeyInput VimKey.Escape);
+            ("<Space>", KeyInputUtil.CharToKeyInput ' ')
+            ("<lt>", KeyInputUtil.CharToKeyInput '<');
+            ("<Bslash>", KeyInputUtil.CharToKeyInput '\\' );
+            ("<Bar>", KeyInputUtil.CharToKeyInput '|');
+            ("<Del>", KeyInputUtil.VimKeyToKeyInput VimKey.Delete);
+            ("<Up>", KeyInputUtil.VimKeyToKeyInput VimKey.Up);
+            ("<Down>", KeyInputUtil.VimKeyToKeyInput VimKey.Down);
+            ("<Left>", KeyInputUtil.VimKeyToKeyInput VimKey.Left);
+            ("<Right>", KeyInputUtil.VimKeyToKeyInput VimKey.Right);
+            ("<Help>", KeyInputUtil.VimKeyToKeyInput VimKey.Help);
+            ("<Insert>", KeyInputUtil.VimKeyToKeyInput VimKey.Insert);
+            ("<Home>", KeyInputUtil.VimKeyToKeyInput VimKey.Home);
+            ("<kHome>", KeyInputUtil.VimKeyToKeyInput VimKey.Home);
+            ("<End>", KeyInputUtil.VimKeyToKeyInput VimKey.End);
+            ("<PageUp>", KeyInputUtil.VimKeyToKeyInput VimKey.PageUp);
+            ("<PageDown>", KeyInputUtil.VimKeyToKeyInput VimKey.PageDown);
+            ("<kHome>", KeyInputUtil.VimKeyToKeyInput VimKey.Home);
+            ("<kEnd>", KeyInputUtil.VimKeyToKeyInput VimKey.End);
+            ("<kPageUp>", KeyInputUtil.VimKeyToKeyInput VimKey.PageUp);
+            ("<kPageDown>", KeyInputUtil.VimKeyToKeyInput VimKey.PageDown);
+            ("<kMultiply>", KeyInputUtil.VimKeyToKeyInput VimKey.KeypadMultiply)
+            ("<kPlus>", KeyInputUtil.VimKeyToKeyInput VimKey.KeypadPlus)
+            ("<kDivide>", KeyInputUtil.VimKeyToKeyInput VimKey.KeypadDivide)
+            ("<kPoint>", KeyInputUtil.VimKeyToKeyInput VimKey.KeypadDecimal)
+            ("<kPlus>", KeyInputUtil.VimKeyToKeyInput VimKey.KeypadPlus)
+            ("<k0>", KeyInputUtil.VimKeyToKeyInput VimKey.Keypad0)
+            ("<k1>", KeyInputUtil.VimKeyToKeyInput VimKey.Keypad1)
+            ("<k2>", KeyInputUtil.VimKeyToKeyInput VimKey.Keypad2)
+            ("<k3>", KeyInputUtil.VimKeyToKeyInput VimKey.Keypad3)
+            ("<k4>", KeyInputUtil.VimKeyToKeyInput VimKey.Keypad4)
+            ("<k5>", KeyInputUtil.VimKeyToKeyInput VimKey.Keypad5)
+            ("<k6>", KeyInputUtil.VimKeyToKeyInput VimKey.Keypad6)
+            ("<k7>", KeyInputUtil.VimKeyToKeyInput VimKey.Keypad7)
+            ("<k8>", KeyInputUtil.VimKeyToKeyInput VimKey.Keypad8)
+            ("<k9>", KeyInputUtil.VimKeyToKeyInput VimKey.Keypad9)
         ]
 
     let private FunctionKeys = 
         [VimKey.F1;VimKey.F2;VimKey.F3;VimKey.F4;VimKey.F5;VimKey.F6;VimKey.F7;VimKey.F8;VimKey.F9;VimKey.F10;VimKey.F11;VimKey.F12]
             |> Seq.mapi (fun i k -> (i+1),k)
-            |> Seq.map (fun (number,key) -> (sprintf "<F%d>" number),InputUtil.VimKeyToKeyInput key)
+            |> Seq.map (fun (number,key) -> (sprintf "<F%d>" number),KeyInputUtil.VimKeyToKeyInput key)
             |> List.ofSeq
 
     /// Map of the special key names to their KeyInput representation.  Does not include the <> bookends
@@ -132,7 +132,7 @@ module internal KeyNotationUtil =
     let TryStringToKeyInput (data:string) = 
 
         let tryCharToKeyInput c = 
-            if Set.contains c InputUtil.CoreCharactersSet then InputUtil.CharToKeyInput c |> Some
+            if Set.contains c KeyInputUtil.CoreCharactersSet then KeyInputUtil.CharToKeyInput c |> Some
             else None
 
         // Convert the string into a keyinput 
@@ -147,11 +147,7 @@ module internal KeyNotationUtil =
         let convertAndApply data modifier = 
             let ki = convertToRaw data 
             match modifier,ki with 
-            | Some(modifier),Some(ki) -> 
-                let c = 
-                    if modifier = KeyModifiers.Shift && CharUtil.IsLetter ki.Char then CharUtil.ToUpper ki.Char
-                    else ki.Char
-                KeyInput(c, ki.Key,modifier ||| ki.KeyModifiers) |> Some
+            | Some(modifier),Some(ki) -> KeyInputUtil.ChangeKeyModifiers ki (modifier ||| ki.KeyModifiers) |> Some
             | _ -> None
 
         // Inside the <
@@ -177,7 +173,7 @@ module internal KeyNotationUtil =
                 let c = 
                     if CharUtil.IsLetter c then CharUtil.ToLower c
                     else c
-                InputUtil.CharWithControlToKeyInput c |> Some
+                KeyInputUtil.CharWithControlToKeyInput c |> Some
 
         match StringUtil.charAtOption 0 data with
         | None -> None

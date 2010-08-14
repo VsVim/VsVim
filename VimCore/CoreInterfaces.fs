@@ -300,7 +300,7 @@ module KeyInputSetUtil =
             | 2 -> KeyInputSet.TwoKeyInputs ((List.nth list 0),(List.nth list 1))
             | _ -> KeyInputSet.ManyKeyInputs list
 
-    let ofChar c = c |> InputUtil.CharToKeyInput |> OneKeyInput
+    let ofChar c = c |> KeyInputUtil.CharToKeyInput |> OneKeyInput
 
 [<RequireQualifiedAccess>]
 type ModeArgument =

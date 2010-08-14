@@ -54,7 +54,7 @@ namespace Vim.UI.Wpf.Test
             var mode = new Mock<IMode>();
             mode.SetupGet(x => x.ModeKind).Returns(ModeKind.Insert);
             _marginControl.StatusLine = String.Empty;
-            _buffer.RaiseKeyInputReceived(InputUtil.CharToKeyInput('c'));
+            _buffer.RaiseKeyInputReceived(KeyInputUtil.CharToKeyInput('c'));
             _buffer.RaiseSwitchedMode(mode.Object);
             Assert.AreEqual(String.Empty, _marginControl.StatusLine);
         }
@@ -65,7 +65,7 @@ namespace Vim.UI.Wpf.Test
         {
             var mode = new Mock<IMode>();
             mode.SetupGet(x => x.ModeKind).Returns(ModeKind.Insert);
-            var ki = InputUtil.CharToKeyInput('c');
+            var ki = KeyInputUtil.CharToKeyInput('c');
             _marginControl.StatusLine = String.Empty;
             _buffer.RaiseKeyInputReceived(ki);
             _buffer.RaiseSwitchedMode(mode.Object);
@@ -118,7 +118,7 @@ namespace Vim.UI.Wpf.Test
         [Description("Don't add it until the end of a KeyInput event")]
         public void StatusMessage2()
         {
-            var ki = InputUtil.CharToKeyInput('c');
+            var ki = KeyInputUtil.CharToKeyInput('c');
             _buffer.RaiseKeyInputReceived(ki);
             _buffer.RaiseStatusMessage("foo");
             Assert.AreEqual(String.Empty, _marginControl.StatusLine);
@@ -128,7 +128,7 @@ namespace Vim.UI.Wpf.Test
         [Description("Don't add it until the end of a KeyInput event")]
         public void StatusMessage3()
         {
-            var ki = InputUtil.CharToKeyInput('c');
+            var ki = KeyInputUtil.CharToKeyInput('c');
             _buffer.RaiseKeyInputReceived(ki);
             _buffer.RaiseStatusMessage("foo");
             _buffer.RaiseKeyInputProcessed(ki, ProcessResult.Processed);
@@ -141,7 +141,7 @@ namespace Vim.UI.Wpf.Test
         {
             var mode = new Mock<IMode>();
             mode.SetupGet(x => x.ModeKind).Returns(ModeKind.Insert);
-            var ki = InputUtil.CharToKeyInput('c');
+            var ki = KeyInputUtil.CharToKeyInput('c');
             _buffer.RaiseKeyInputReceived(ki);
             _buffer.RaiseStatusMessage("foo");
             _buffer.RaiseSwitchedMode(mode.Object);
@@ -160,7 +160,7 @@ namespace Vim.UI.Wpf.Test
         [Description("Don't update in the middle of an KeyInput event")]
         public void StatusMessageLong2()
         {
-            var ki = InputUtil.CharToKeyInput('c');
+            var ki = KeyInputUtil.CharToKeyInput('c');
             _buffer.RaiseKeyInputReceived(ki);
             _buffer.RaiseStatusMessageLong("foo", "bar");
             Assert.AreEqual(String.Empty, _marginControl.StatusLine);
@@ -170,7 +170,7 @@ namespace Vim.UI.Wpf.Test
         [Description("Don't update in the middle of an KeyInput event")]
         public void StatusMessageLong3()
         {
-            var ki = InputUtil.CharToKeyInput('c');
+            var ki = KeyInputUtil.CharToKeyInput('c');
             _buffer.RaiseKeyInputReceived(ki);
             _buffer.RaiseStatusMessageLong("foo", "bar");
             _buffer.RaiseKeyInputProcessed(ki, ProcessResult.Processed);
@@ -183,7 +183,7 @@ namespace Vim.UI.Wpf.Test
         {
             var mode = new Mock<IMode>();
             mode.SetupGet(x => x.ModeKind).Returns(ModeKind.Insert);
-            var ki = InputUtil.CharToKeyInput('c');
+            var ki = KeyInputUtil.CharToKeyInput('c');
             _buffer.RaiseKeyInputReceived(ki);
             _buffer.RaiseStatusMessageLong("foo", "bar");
             _buffer.RaiseSwitchedMode(mode.Object);
@@ -202,7 +202,7 @@ namespace Vim.UI.Wpf.Test
         [Description("Don't add it until the end of a KeyInput event")]
         public void ErrorMessage2()
         {
-            var ki = InputUtil.CharToKeyInput('c');
+            var ki = KeyInputUtil.CharToKeyInput('c');
             _buffer.RaiseKeyInputReceived(ki);
             _buffer.RaiseErrorMessage("foo");
             Assert.AreEqual(String.Empty, _marginControl.StatusLine);
@@ -212,7 +212,7 @@ namespace Vim.UI.Wpf.Test
         [Description("Don't add it until the end of a KeyInput event")]
         public void ErrorMessage3()
         {
-            var ki = InputUtil.CharToKeyInput('c');
+            var ki = KeyInputUtil.CharToKeyInput('c');
             _buffer.RaiseKeyInputReceived(ki);
             _buffer.RaiseErrorMessage("foo");
             _buffer.RaiseKeyInputProcessed(ki, ProcessResult.Processed);
@@ -225,7 +225,7 @@ namespace Vim.UI.Wpf.Test
         {
             var mode = new Mock<IMode>();
             mode.SetupGet(x => x.ModeKind).Returns(ModeKind.Insert);
-            var ki = InputUtil.CharToKeyInput('c');
+            var ki = KeyInputUtil.CharToKeyInput('c');
             _buffer.RaiseKeyInputReceived(ki);
             _buffer.RaiseErrorMessage("foo");
             _buffer.RaiseSwitchedMode(mode.Object);
@@ -244,7 +244,7 @@ namespace Vim.UI.Wpf.Test
             _buffer.ModeKindImpl = ModeKind.Normal;
             _buffer.NormalModeImpl = mode.Object;
 
-            var ki = InputUtil.CharToKeyInput('c');
+            var ki = KeyInputUtil.CharToKeyInput('c');
             _buffer.RaiseKeyInputReceived(ki);
             _buffer.RaiseKeyInputProcessed(ki, ProcessResult.Processed);
             Assert.AreEqual("foo", _marginControl.StatusLine);
@@ -260,7 +260,7 @@ namespace Vim.UI.Wpf.Test
             _buffer.ModeKindImpl = ModeKind.Command;
             _buffer.CommandModeImpl = mode.Object;
 
-            var ki = InputUtil.CharToKeyInput('c');
+            var ki = KeyInputUtil.CharToKeyInput('c');
             _buffer.RaiseKeyInputReceived(ki);
             _buffer.RaiseKeyInputProcessed(ki, ProcessResult.Processed);
             Assert.AreEqual(":foo", _marginControl.StatusLine);
@@ -275,7 +275,7 @@ namespace Vim.UI.Wpf.Test
             _buffer.ModeKindImpl = ModeKind.Disabled;
             _buffer.DisabledModeImpl = mode.Object;
 
-            var ki = InputUtil.CharToKeyInput('c');
+            var ki = KeyInputUtil.CharToKeyInput('c');
             _buffer.RaiseKeyInputReceived(ki);
             _buffer.RaiseKeyInputProcessed(ki, ProcessResult.Processed);
             Assert.AreEqual("foo", _marginControl.StatusLine);

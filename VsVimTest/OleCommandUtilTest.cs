@@ -3,10 +3,9 @@ using System.Windows.Input;
 using Microsoft.VisualStudio;
 using NUnit.Framework;
 using Vim;
-using VsVim;
-using VsVimTest.Utils;
+using VsVim.UnitTest.Utils;
 
-namespace VsVimTest
+namespace VsVim.UnitTest
 {
     [TestFixture()]
     public class OleCommandUtilTest
@@ -56,7 +55,7 @@ namespace VsVimTest
         {
             EditCommand command;
             Assert.IsTrue(OleCommandUtil.TryConvert(VSConstants.VSStd2K, (uint)VSConstants.VSStd2KCmdID.LEFT, out command));
-            Assert.AreEqual(InputUtil.VimKeyToKeyInput(VimKey.Left), command.KeyInput);
+            Assert.AreEqual(KeyInputUtil.VimKeyToKeyInput(VimKey.Left), command.KeyInput);
             Assert.IsFalse(command.IsInput);
         }
 
@@ -65,7 +64,7 @@ namespace VsVimTest
         {
             EditCommand command;
             Assert.IsTrue(OleCommandUtil.TryConvert(VSConstants.VSStd2K, (uint)VSConstants.VSStd2KCmdID.RIGHT, out command));
-            Assert.AreEqual(InputUtil.VimKeyToKeyInput(VimKey.Right), command.KeyInput);
+            Assert.AreEqual(KeyInputUtil.VimKeyToKeyInput(VimKey.Right), command.KeyInput);
             Assert.IsFalse(command.IsInput);
         }
 
@@ -74,7 +73,7 @@ namespace VsVimTest
         {
             EditCommand command;
             Assert.IsTrue(OleCommandUtil.TryConvert(VSConstants.VSStd2K, (uint)VSConstants.VSStd2KCmdID.UP, out command));
-            Assert.AreEqual(InputUtil.VimKeyToKeyInput(VimKey.Up), command.KeyInput);
+            Assert.AreEqual(KeyInputUtil.VimKeyToKeyInput(VimKey.Up), command.KeyInput);
             Assert.IsFalse(command.IsInput);
         }
 
@@ -83,7 +82,7 @@ namespace VsVimTest
         {
             EditCommand command;
             Assert.IsTrue(OleCommandUtil.TryConvert(VSConstants.VSStd2K, (uint)VSConstants.VSStd2KCmdID.DOWN, out command));
-            Assert.AreEqual(InputUtil.VimKeyToKeyInput(VimKey.Down), command.KeyInput);
+            Assert.AreEqual(KeyInputUtil.VimKeyToKeyInput(VimKey.Down), command.KeyInput);
             Assert.IsFalse(command.IsInput);
         }
 
@@ -92,7 +91,7 @@ namespace VsVimTest
         {
             EditCommand command;
             Assert.IsTrue(OleCommandUtil.TryConvert(VSConstants.VSStd2K, (uint)VSConstants.VSStd2KCmdID.TAB, out command));
-            Assert.AreEqual(InputUtil.VimKeyToKeyInput(VimKey.Tab), command.KeyInput);
+            Assert.AreEqual(KeyInputUtil.VimKeyToKeyInput(VimKey.Tab), command.KeyInput);
             Assert.IsFalse(command.IsInput);
         }
 
@@ -101,8 +100,8 @@ namespace VsVimTest
         {
             EditCommand command;
             Assert.IsTrue(OleCommandUtil.TryConvert(VSConstants.GUID_VSStandardCommandSet97, (uint)VSConstants.VSStd97CmdID.F1Help, out command));
-            Assert.AreEqual(InputUtil.VimKeyToKeyInput(VimKey.F1), command.KeyInput);
+            Assert.AreEqual(KeyInputUtil.VimKeyToKeyInput(VimKey.F1), command.KeyInput);
             Assert.IsFalse(command.IsInput);
         }
-   }
+    }
 }

@@ -6,7 +6,7 @@ using NUnit.Framework;
 using VsVim;
 using VsVim.UI;
 
-namespace VsVimTest
+namespace VsVim.UnitTest
 {
     [TestFixture]
     public class KeyBindingDataTest

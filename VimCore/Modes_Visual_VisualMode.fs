@@ -80,14 +80,14 @@ type internal VisualMode
         let simples =
             let resultSwitchPrevious = CommandResult.Completed ModeSwitch.SwitchPreviousMode
             seq {
-                yield (InputUtil.CharToKeyInput('y'), 
+                yield ("y",
                     (fun _ (reg:Register) -> 
                         let opKind = match _kind with
                                      | ModeKind.VisualLine -> OperationKind.LineWise
                                      | _ -> OperationKind.CharacterWise
                         _operations.YankText (_selectionTracker.SelectedText) MotionKind.Inclusive opKind reg
                         CommandResult.Completed ModeSwitch.SwitchPreviousMode))
-                yield (InputUtil.CharToKeyInput('Y'),
+                yield ("Y",
                     (fun _ (reg:Register) ->
                         let selection = _buffer.TextView.Selection
                         let startPoint = selection.Start.Position.GetContainingLine().Start
@@ -95,38 +95,39 @@ type internal VisualMode
                         let span = SnapshotSpan(startPoint,endPoint)
                         _operations.Yank span MotionKind.Inclusive OperationKind.LineWise reg
                         CommandResult.Completed ModeSwitch.SwitchPreviousMode))
-                yield (InputUtil.CharToKeyInput('d'), deleteSelection)
-                yield (InputUtil.CharToKeyInput('x'), deleteSelection)
-                yield (InputUtil.VimKeyToKeyInput VimKey.Delete, deleteSelection)
-                yield (InputUtil.CharToKeyInput('c'), changeSelection)
-                yield (InputUtil.CharToKeyInput('s'), changeSelection)
-                yield (InputUtil.CharToKeyInput('C'), changeLines)
-                yield (InputUtil.CharToKeyInput('S'), changeLines)
-                yield (InputUtil.CharToKeyInput('J'), 
+                yield ("d", deleteSelection)
+                yield ("x", deleteSelection)
+                yield ("<Del>", deleteSelection)
+                yield ("c", changeSelection)
+                yield ("s", changeSelection)
+                yield ("C", changeLines)
+                yield ("S", changeLines)
+                yield ("J",
                         (fun _ _ ->         
                             _operations.JoinSelection JoinKind.RemoveEmptySpaces|> ignore
                             CommandResult.Completed ModeSwitch.SwitchPreviousMode))
                 yield (
-                    InputUtil.CharToKeyInput '~', 
+                    "~",
                     (fun _ _ -> editOverSpanOperation None _operations.ChangeLetterCase resultSwitchPrevious))
                 yield (
-                    InputUtil.CharToKeyInput '<', 
+                    "<lt>",
                     (fun count _ -> 
                         let count = CommandUtil.CountOrDefault count
                         editOverSpanOperation None (_operations.ShiftSpanLeft count) resultSwitchPrevious))
                 yield (
-                    InputUtil.CharToKeyInput '>',
+                    ">",
                     (fun count _ -> 
                         let count = CommandUtil.CountOrDefault count
                         editOverSpanOperation None (_operations.ShiftSpanRight count) resultSwitchPrevious))
                 yield (
-                    InputUtil.CharToKeyInput 'p',
+                    "p",
                     (fun _ reg -> 
                         _operations.PasteOverSelection reg.StringValue reg
                         CommandResult.Completed ModeSwitch.SwitchPreviousMode ) )
-                yield ( InputUtil.CharToKeyInput(':'), fun _ _ -> ModeSwitch.SwitchModeWithArgument (ModeKind.Command,ModeArgument.FromVisual) |> CommandResult.Completed)
+                yield ( ":", fun _ _ -> ModeSwitch.SwitchModeWithArgument (ModeKind.Command,ModeArgument.FromVisual) |> CommandResult.Completed)
             }
-            |> Seq.map (fun (ki,func) -> Command.SimpleCommand(OneKeyInput ki,CommandFlags.None, func))
+            |> Seq.map (fun (str,func) -> ((KeyNotationUtil.StringToKeyInputSet str),func))
+            |> Seq.map (fun (kiSet,func) -> Command.SimpleCommand(kiSet,CommandFlags.None, func))
 
 
         /// Commands consisting of more than a single character

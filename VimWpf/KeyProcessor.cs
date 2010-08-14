@@ -67,7 +67,7 @@ namespace Vim.UI.Wpf
                     return false;
                 }
 
-                var opt = InputUtil.TryCharToKeyInput(args.Text[0]);
+                var opt = KeyInputUtil.TryCharToKeyInput(args.Text[0]);
                 if (!opt.IsSome())
                 {
                     return false;

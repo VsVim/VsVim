@@ -33,13 +33,13 @@ namespace VimCore.Test
                 ? FSharpOption.Create(count.Value)
                 : FSharpOption<int>.None;
             var res = _capture.GetMotion(
-                InputUtil.CharToKeyInput(input[0]),
+                KeyInputUtil.CharToKeyInput(input[0]),
                 realCount);
             foreach (var cur in input.Skip(1))
             {
                 Assert.IsTrue(res.IsNeedMoreInput);
                 var needMore = (MotionResult.NeedMoreInput)res;
-                res = needMore.Item.Invoke(InputUtil.CharToKeyInput(cur));
+                res = needMore.Item.Invoke(KeyInputUtil.CharToKeyInput(cur));
             }
 
             return res;
@@ -118,7 +118,7 @@ namespace VimCore.Test
                 .Setup(x => x.EndOfLine(1))
                 .Returns(CreateMotionData())
                 .Verifiable();
-            _capture.GetMotion(InputUtil.VimKeyToKeyInput(VimKey.End), FSharpOption<int>.None);
+            _capture.GetMotion(KeyInputUtil.VimKeyToKeyInput(VimKey.End), FSharpOption<int>.None);
             _util.Verify();
         }
 

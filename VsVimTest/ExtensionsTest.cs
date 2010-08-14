@@ -1,20 +1,15 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using NUnit.Framework;
-using Moq;
-using VsVim;
-using Vim.Extensions;
-using System.Windows.Input;
-using Microsoft.VisualStudio.Utilities;
-using System.Windows;
-using EnvDTE;
 using System.Runtime.InteropServices;
-using Microsoft.VisualStudio.TextManager.Interop;
+using EnvDTE;
 using Microsoft.VisualStudio.Editor;
+using Microsoft.VisualStudio.TextManager.Interop;
+using Microsoft.VisualStudio.Utilities;
+using Moq;
+using NUnit.Framework;
+using Vim.Extensions;
 
-namespace VsVimTest
+namespace VsVim.UnitTest
 {
     [TestFixture]
     public class ExtensionsTest
@@ -37,7 +32,7 @@ namespace VsVimTest
             com.Setup(x => x.Name).Returns("name");
             var list = Extensions.GetCommandKeyBindings(com.Object).ToList();
             Assert.AreEqual(1, list.Count);
-            Assert.AreEqual('f', list[0].KeyBinding.FirstKeyInput.Char);
+            Assert.AreEqual('f', list[0].KeyBinding.FirstKeyStroke.KeyInput.Char);
             Assert.AreEqual("name", list[0].Name);
         }
 
@@ -49,9 +44,9 @@ namespace VsVimTest
             com.Setup(x => x.Name).Returns("name");
             var list = Extensions.GetCommandKeyBindings(com.Object).ToList();
             Assert.AreEqual(2, list.Count);
-            Assert.AreEqual('f', list[0].KeyBinding.FirstKeyInput.Char);
+            Assert.AreEqual('f', list[0].KeyBinding.FirstKeyStroke.KeyInput.Char);
             Assert.AreEqual("foo", list[0].KeyBinding.Scope);
-            Assert.AreEqual('b', list[1].KeyBinding.FirstKeyInput.Char);
+            Assert.AreEqual('b', list[1].KeyBinding.FirstKeyStroke.KeyInput.Char);
             Assert.AreEqual("bar", list[1].KeyBinding.Scope);
         }
 
@@ -63,7 +58,7 @@ namespace VsVimTest
             com.Setup(x => x.Name).Returns("name");
             var list = Extensions.GetCommandKeyBindings(com.Object).ToList();
             Assert.AreEqual(1, list.Count);
-            Assert.AreEqual('f', list[0].KeyBinding.FirstKeyInput.Char);
+            Assert.AreEqual('f', list[0].KeyBinding.FirstKeyStroke.KeyInput.Char);
             Assert.AreEqual(String.Empty, list[0].KeyBinding.Scope);
         }
 
@@ -138,7 +133,7 @@ namespace VsVimTest
             var codeWindow = _factory.Create<IVsCodeWindow>();
             var adapter = _factory.Create<IVsAdapter>();
             adapter.SetupGet(x => x.EditorAdapter).Returns(_factory.Create<IVsEditorAdaptersFactoryService>().Object);
-            codeWindow.MakeSplit(adapter, factory : _factory);
+            codeWindow.MakeSplit(adapter, factory: _factory);
             Assert.IsTrue(codeWindow.Object.IsSplit());
             _factory.Verify();
         }

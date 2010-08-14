@@ -51,7 +51,7 @@ namespace VsVim
             _dte.StatusBar.Text = text;
         }
 
-        private bool SafeExecuteCommand(string command, string args = "" )
+        private bool SafeExecuteCommand(string command, string args = "")
         {
             try
             {
@@ -216,6 +216,7 @@ namespace VsVim
         {
             _textManager.MoveViewUp(textView);
         }
+
         #endregion
     }
 }

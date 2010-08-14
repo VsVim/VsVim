@@ -1,9 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Windows;
+﻿using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
+using System.Windows;
 
 namespace VsVim.UI
 {
@@ -57,12 +55,12 @@ namespace VsVim.UI
         public KeyBindingData(IEnumerable<CommandKeyBinding> bindings)
         {
             // All bindings passed have the same KeyInput as their first key, so get it
-            Vim.KeyInput firstKeyInput = bindings.First().KeyBinding.FirstKeyInput;
-            KeyName = KeyBinding.CreateKeyBindingStringForSingleKeyInput(firstKeyInput);
+            var firstKeyInput = bindings.First().KeyBinding.FirstKeyStroke;
+            KeyName = KeyBinding.CreateKeyBindingStringForSingleKeyStroke(firstKeyInput);
 
             Bindings = bindings.ToArray();
             _handledByOptions.AddRange(
-                new [] {
+                new[] {
                      _visualStudioOption = new KeyBindingHandledByOption("Visual Studio", bindings.Select(binding => binding.Name)),
                      _vsVimOption = new KeyBindingHandledByOption("VsVim", Enumerable.Empty<string>())
                 });

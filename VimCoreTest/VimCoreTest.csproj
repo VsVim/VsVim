@@ -166,7 +166,7 @@
     <Compile Include="LocalSettingsTest.cs" />
     <Compile Include="CommonOperationsTest.cs" />
     <Compile Include="CountCaptureTest.cs" />
-    <Compile Include="InputUtilTest.cs" />
+    <Compile Include="KeyInputUtilTest.cs" />
     <Compile Include="InsertModeTest.cs" />
     <Compile Include="IntegrationTests.cs" />
     <Compile Include="KeyInputTest.cs" />

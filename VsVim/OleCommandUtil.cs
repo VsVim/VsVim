@@ -118,46 +118,46 @@ namespace VsVim
                 case VSConstants.VSStd2KCmdID.TYPECHAR:
                     if (pVariantIn == IntPtr.Zero)
                     {
-                        ki = InputUtil.CharToKeyInput(Char.MinValue);
+                        ki = KeyInputUtil.CharToKeyInput(Char.MinValue);
                     }
                     else
                     {
                         var obj = Marshal.GetObjectForNativeVariant(pVariantIn);
                         var c = (char)(ushort)obj;
-                        ki = InputUtil.CharToKeyInput(c);
+                        ki = KeyInputUtil.CharToKeyInput(c);
                     }
                     kind = EditCommandKind.TypeChar;
                     break;
                 case VSConstants.VSStd2KCmdID.RETURN:
-                    ki = InputUtil.VimKeyToKeyInput(VimKey.Enter);
+                    ki = KeyInputUtil.VimKeyToKeyInput(VimKey.Enter);
                     kind = EditCommandKind.Return;
                     break;
                 case VSConstants.VSStd2KCmdID.CANCEL:
-                    ki = InputUtil.VimKeyToKeyInput(VimKey.Escape);
+                    ki = KeyInputUtil.VimKeyToKeyInput(VimKey.Escape);
                     kind = EditCommandKind.Cancel;
                     break;
                 case VSConstants.VSStd2KCmdID.DELETE:
-                    ki = InputUtil.VimKeyToKeyInput(VimKey.Delete);
+                    ki = KeyInputUtil.VimKeyToKeyInput(VimKey.Delete);
                     kind = EditCommandKind.Delete;
                     break;
                 case VSConstants.VSStd2KCmdID.BACKSPACE:
-                    ki = InputUtil.VimKeyToKeyInput(VimKey.Back);
+                    ki = KeyInputUtil.VimKeyToKeyInput(VimKey.Back);
                     kind = EditCommandKind.Backspace;
                     break;
                 case VSConstants.VSStd2KCmdID.LEFT:
-                    ki = InputUtil.VimKeyToKeyInput(VimKey.Left);
+                    ki = KeyInputUtil.VimKeyToKeyInput(VimKey.Left);
                     break;
                 case VSConstants.VSStd2KCmdID.RIGHT:
-                    ki = InputUtil.VimKeyToKeyInput(VimKey.Right);
+                    ki = KeyInputUtil.VimKeyToKeyInput(VimKey.Right);
                     break;
                 case VSConstants.VSStd2KCmdID.UP:
-                    ki = InputUtil.VimKeyToKeyInput(VimKey.Up);
+                    ki = KeyInputUtil.VimKeyToKeyInput(VimKey.Up);
                     break;
                 case VSConstants.VSStd2KCmdID.DOWN:
-                    ki = InputUtil.VimKeyToKeyInput(VimKey.Down);
+                    ki = KeyInputUtil.VimKeyToKeyInput(VimKey.Down);
                     break;
                 case VSConstants.VSStd2KCmdID.TAB:
-                    ki = InputUtil.VimKeyToKeyInput(VimKey.Tab);
+                    ki = KeyInputUtil.VimKeyToKeyInput(VimKey.Tab);
                     break;
                 default:
                     break;
@@ -175,19 +175,19 @@ namespace VsVim
                 case VSConstants.VSStd97CmdID.SingleChar:
                     var obj = Marshal.GetObjectForNativeVariant(pVariantIn);
                     var c = (char)(ushort)obj;
-                    ki = InputUtil.CharToKeyInput(c);
+                    ki = KeyInputUtil.CharToKeyInput(c);
                     kind = EditCommandKind.TypeChar;
                     break;
                 case VSConstants.VSStd97CmdID.Escape:
-                    ki = InputUtil.VimKeyToKeyInput(VimKey.Escape);
+                    ki = KeyInputUtil.VimKeyToKeyInput(VimKey.Escape);
                     kind = EditCommandKind.Cancel;
                     break;
                 case VSConstants.VSStd97CmdID.Delete:
-                    ki = InputUtil.VimKeyToKeyInput(VimKey.Delete);
+                    ki = KeyInputUtil.VimKeyToKeyInput(VimKey.Delete);
                     kind = EditCommandKind.Delete;
                     break;
                 case VSConstants.VSStd97CmdID.F1Help:
-                    ki = InputUtil.VimKeyToKeyInput(VimKey.F1);
+                    ki = KeyInputUtil.VimKeyToKeyInput(VimKey.F1);
                     kind = EditCommandKind.Unknown;
                     break;
             }

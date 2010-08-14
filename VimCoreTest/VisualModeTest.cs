@@ -99,15 +99,15 @@ namespace VimCore.Test
         {
             Create("foo");
             var list = new KeyInput[] {
-                InputUtil.CharToKeyInput('h'),
-                InputUtil.CharToKeyInput('j'),
-                InputUtil.CharToKeyInput('k'),
-                InputUtil.CharToKeyInput('l'),
-                InputUtil.VimKeyToKeyInput(VimKey.Left),
-                InputUtil.VimKeyToKeyInput(VimKey.Right),
-                InputUtil.VimKeyToKeyInput(VimKey.Up),
-                InputUtil.VimKeyToKeyInput(VimKey.Down),
-                InputUtil.VimKeyToKeyInput(VimKey.Back) };
+                KeyInputUtil.CharToKeyInput('h'),
+                KeyInputUtil.CharToKeyInput('j'),
+                KeyInputUtil.CharToKeyInput('k'),
+                KeyInputUtil.CharToKeyInput('l'),
+                KeyInputUtil.VimKeyToKeyInput(VimKey.Left),
+                KeyInputUtil.VimKeyToKeyInput(VimKey.Right),
+                KeyInputUtil.VimKeyToKeyInput(VimKey.Up),
+                KeyInputUtil.VimKeyToKeyInput(VimKey.Down),
+                KeyInputUtil.VimKeyToKeyInput(VimKey.Back) };
             var commands = _mode.CommandNames.ToList();
             foreach (var item in list)
             {
@@ -120,7 +120,7 @@ namespace VimCore.Test
         public void Process1()
         {
             Create("foo");
-            var res = _mode.Process(InputUtil.VimKeyToKeyInput(VimKey.Escape));
+            var res = _mode.Process(KeyInputUtil.VimKeyToKeyInput(VimKey.Escape));
             Assert.IsTrue(res.IsSwitchPreviousMode);
         }
 
@@ -165,7 +165,7 @@ namespace VimCore.Test
         public void PreventInput1()
         {
             Create(lines:"foo");
-            var input = InputUtil.CharToKeyInput(',');
+            var input = KeyInputUtil.CharToKeyInput(',');
             _operations.Setup(x => x.Beep()).Verifiable();
             Assert.IsFalse(_mode.CommandNames.Any(x => x.KeyInputs.First().Char == input.Char));
             Assert.IsTrue(_mode.CanProcess(input));
