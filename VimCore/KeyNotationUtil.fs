@@ -147,11 +147,7 @@ module internal KeyNotationUtil =
         let convertAndApply data modifier = 
             let ki = convertToRaw data 
             match modifier,ki with 
-            | Some(modifier),Some(ki) -> 
-                let c = 
-                    if modifier = KeyModifiers.Shift && CharUtil.IsLetter ki.Char then CharUtil.ToUpper ki.Char
-                    else ki.Char
-                KeyInput(ki.VirtualKeyCode, ki.Key,modifier ||| ki.KeyModifiers, c) |> Some
+            | Some(modifier),Some(ki) -> InputUtil.TryChangeKeyModifiers ki (modifier ||| ki.KeyModifiers)
             | _ -> None
 
         // Inside the <

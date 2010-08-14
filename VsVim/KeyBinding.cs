@@ -237,14 +237,13 @@ namespace VsVim
                     var v = opt.Value;
                     if (Char.IsLetter(v.Char) && 0 != (KeyModifiers.Shift & v.KeyModifiers))
                     {
-                        return new KeyInput(
-                            v.VirtualKeyCode,
-                            v.Key,
-                            v.KeyModifiers & ~KeyModifiers.Shift,
-                            Char.ToLower(v.Char));
+                        opt = InputUtil.TryChangeKeyModifiers(v, v.KeyModifiers & ~KeyModifiers.Shift);
                     }
+                }
 
-                    return v;
+                if (opt.IsSome())
+                {
+                    return opt.Value;
                 }
             }
 
@@ -341,7 +340,10 @@ namespace VsVim
 
             if (mod != KeyModifiers.None)
             {
-                ki = new KeyInput(ki.VirtualKeyCode, ki.Key, ki.KeyModifiers | mod, ki.Char);
+                var opt = InputUtil.TryChangeKeyModifiers(ki, ki.KeyModifiers | mod);
+                ki = opt.IsSome()
+                    ? opt.Value
+                    : null;
             }
 
             return ki;

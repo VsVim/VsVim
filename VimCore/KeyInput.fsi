@@ -11,9 +11,6 @@ type KeyInput =
 
     new : VirtualKeyCode * VimKey * KeyModifiers * char -> KeyInput
 
-    /// The virtual key code for the KeyInput
-    member VirtualKeyCode : VirtualKeyCode
-
     /// The character representation of this input 
     member Char : char
 
@@ -34,6 +31,10 @@ type KeyInput =
 
     /// Is this an arrow key?
     member IsArrowKey : bool 
+
+    /// The empty KeyInput.  Used in places where a KeyInput is required but no 
+    /// good mapping exists
+    static member DefaultValue : KeyInput
 
     static member op_Equality : KeyInput * KeyInput -> bool
     static member op_Inequality : KeyInput * KeyInput -> bool
@@ -59,6 +60,10 @@ module InputUtil =
 
     /// Try and convert the given virtual key and modifiers to a char
     val TryVirtualKeyCodeAndModifiersToKeyInput : VirtualKeyCode -> KeyModifiers -> option<KeyInput>
+
+    /// Try and change the key modifiers to the provided value.  This may 
+    /// change the underlying Char value 
+    val TryChangeKeyModifiers : KeyInput -> KeyModifiers -> option<KeyInput>
 
     /// Convert the specified VimKey code to a KeyInput 
     val VimKeyToKeyInput : VimKey -> KeyInput

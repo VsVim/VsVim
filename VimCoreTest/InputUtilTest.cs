@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using NUnit.Framework;
 using Vim;
@@ -12,6 +13,8 @@ namespace VimCore.Test
     [TestFixture]
     public class InputUtilTest
     {
+        public static readonly IEnumerable<char> LettersLower = "abcdefghijklmnopqrstuvwxyz";
+
         /// <summary>
         /// Make sure that all letters convert
         /// </summary>
@@ -102,13 +105,48 @@ namespace VimCore.Test
                 Assert.AreEqual(ki1, ki2);
             };
 
-            var test1 = InputUtil.TryVirtualKeyCodeAndModifiersToKeyInput(0x61, KeyModifiers.Shift).Value;
-            var test2 = InputUtil.TryVirtualKeyCodeAndModifiersToKeyInput(0x31, KeyModifiers.Shift).Value;
-            var test3 = InputUtil.TryCharToKeyInput('!').Value;
-
-
-            backandForth('!');
             InputUtil.CoreCharacters.ToList().ForEach(backandForth);
+        }
+
+        [Test]
+        [Description("Apply shift to alpha")]
+        public void TryChangeKeyModifiers1()
+        {
+            foreach (var letter in LettersLower)
+            {
+                var lower = InputUtil.CharToKeyInput(letter);
+                var upper = InputUtil.CharToKeyInput(Char.ToUpper(letter));
+                var opt = InputUtil.TryChangeKeyModifiers(lower, KeyModifiers.Shift);
+                Assert.IsTrue(opt.IsSome());
+                Assert.AreEqual(upper, opt.Value);
+            }
+        }
+
+        [Test]
+        [Description("Apply a shift remove to alhpa")]
+        public void TryChangeKeyModifiers2()
+        {
+            foreach (var letter in LettersLower)
+            {
+                var lower = InputUtil.CharToKeyInput(letter);
+                var upper = InputUtil.CharToKeyInput(Char.ToUpper(letter));
+                var opt = InputUtil.TryChangeKeyModifiers(upper, KeyModifiers.None);
+                Assert.IsTrue(opt.IsSome());
+                Assert.AreEqual(lower, opt.Value);
+            }
+        }
+
+        [Test]
+        [Description("Apply control")]
+        public void TryChangeKeyModifiers3()
+        {
+            foreach (var letter in LettersLower)
+            {
+                var lower = InputUtil.CharToKeyInput(letter);
+                var opt = InputUtil.TryChangeKeyModifiers(lower, KeyModifiers.Control);
+                Assert.IsTrue(opt.IsSome());
+                Assert.AreEqual(KeyModifiers.Control, opt.Value.KeyModifiers);
+            }
         }
 
     }

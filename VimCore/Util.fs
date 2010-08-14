@@ -61,7 +61,7 @@ module internal Utils =
         LanguagePrimitives.EnumOfValue value
 
     /// Get the declared values of the specified enumeration
-    let GetEnumValues<'T when 'T : enum<'T>>() : 'T seq=
+    let GetEnumValues<'T when 'T : enum<int>>() : 'T seq=
         System.Enum.GetValues(typeof<'T>) |> Seq.cast<'T>
 
     /// Create a regex.  Returns None if the regex has invalid characters
