@@ -9,7 +9,7 @@ using Microsoft.VisualStudio.TextManager.Interop;
 using Moq;
 using VsVim;
 
-namespace VsVimTest
+namespace VsVim.UnitTest
 {
     public static class VsVimTestExtensions
     {

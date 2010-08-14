@@ -147,7 +147,7 @@ module internal KeyNotationUtil =
         let convertAndApply data modifier = 
             let ki = convertToRaw data 
             match modifier,ki with 
-            | Some(modifier),Some(ki) -> InputUtil.TryChangeKeyModifiers ki (modifier ||| ki.KeyModifiers)
+            | Some(modifier),Some(ki) -> InputUtil.ChangeKeyModifiers ki (modifier ||| ki.KeyModifiers) |> Some
             | _ -> None
 
         // Inside the <

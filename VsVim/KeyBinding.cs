@@ -18,11 +18,11 @@ namespace VsVim
         private readonly Lazy<string> _commandString;
 
         public readonly string Scope;
-        public readonly IEnumerable<KeyInput> KeyInputs;
+        public readonly IEnumerable<KeyStroke> KeyStrokes;
 
-        public KeyInput FirstKeyInput
+        public KeyStroke FirstKeyStroke
         {
-            get { return KeyInputs.First(); }
+            get { return KeyStrokes.First(); }
         }
 
         /// <summary>
@@ -33,17 +33,17 @@ namespace VsVim
             get { return _commandString.Value; }
         }
 
-        public KeyBinding(string scope, KeyInput input)
+        public KeyBinding(string scope, KeyStroke stroke)
         {
             Scope = scope;
-            KeyInputs = Enumerable.Repeat(input, 1);
+            KeyStrokes = Enumerable.Repeat(stroke, 1);
             _commandString = new Lazy<string>(CreateCommandString);
         }
 
-        public KeyBinding(string scope, IEnumerable<KeyInput> inputs)
+        public KeyBinding(string scope, IEnumerable<KeyStroke> strokes)
         {
             Scope = scope;
-            KeyInputs = inputs.ToList();
+            KeyStrokes = strokes.ToList();
             _commandString = new Lazy<string>(CreateCommandString);
         }
 
@@ -66,6 +66,7 @@ namespace VsVim
             {
                 return false;
             }
+
             var comp = StringComparer.OrdinalIgnoreCase;
             return
                 comp.Equals(Scope, other.Scope)
@@ -90,35 +91,36 @@ namespace VsVim
             builder.Append(Scope);
             builder.Append("::");
             var isFirst = true;
-            foreach (var input in KeyInputs)
+            foreach (var stroke in KeyStrokes)
             {
                 if (!isFirst)
                 {
                     builder.Append(", ");
                 }
                 isFirst = false;
-                AppendCommandForSingle(input, builder);
+                AppendCommandForSingle(stroke, builder);
             }
 
             return builder.ToString();
         }
 
-        private static void AppendCommandForSingle(KeyInput input, StringBuilder builder)
+        private static void AppendCommandForSingle(KeyStroke stroke, StringBuilder builder)
         {
-            if (0 != (input.KeyModifiers & KeyModifiers.Control))
+            if (0 != (stroke.KeyModifiers & KeyModifiers.Control))
             {
                 builder.Append("Ctrl+");
             }
-            if (0 != (input.KeyModifiers & KeyModifiers.Shift))
+            if (0 != (stroke.KeyModifiers & KeyModifiers.Shift))
             {
                 builder.Append("Shift+");
             }
-            if (0 != (input.KeyModifiers & KeyModifiers.Alt))
+            if (0 != (stroke.KeyModifiers & KeyModifiers.Alt))
             {
                 builder.Append("Alt+");
             }
 
             EnsureVsMap();
+            var input = stroke.KeyInput;
             var query = s_vsMap.Where(x => x.Value == input.Key);
             if (Char.IsLetter(input.Char))
             {
@@ -143,10 +145,10 @@ namespace VsVim
             return CommandString;
         }
 
-        public static string CreateKeyBindingStringForSingleKeyInput(KeyInput input)
+        public static string CreateKeyBindingStringForSingleKeyStroke(KeyStroke stroke)
         {
             StringBuilder builder = new StringBuilder();
-            AppendCommandForSingle(input, builder);
+            AppendCommandForSingle(stroke, builder);
             return builder.ToString();
         }
 
@@ -225,26 +227,25 @@ namespace VsVim
             return true;
         }
 
+        /// <summary>
+        /// Convert the single character to a KeyInput. Visual Studio doesn't 
+        /// differentiate between upper and lower case alpha characters.  
+        /// Use all lower case for simplicity elsewhere
+        /// </summary>
+        private static KeyInput ConvertToKeyInput(char c)
+        {
+            c = Char.IsLetter(c) ? Char.ToLower(c) : c;
+            var opt = InputUtil.TryCharToKeyInput(c);
+            return opt.IsSome()
+                ? opt.Value
+                : null;
+        }
+
         private static KeyInput ConvertToKeyInput(string keystroke)
         {
             if (keystroke.Length == 1)
             {
-                var opt = InputUtil.TryCharToKeyInput(keystroke[0]);
-                if (opt.IsSome())
-                {
-                    // Visual Studio doesn't differentiate between upper and lower case
-                    // alpha characters.  Use all lower case for simplicity elsewhere
-                    var v = opt.Value;
-                    if (Char.IsLetter(v.Char) && 0 != (KeyModifiers.Shift & v.KeyModifiers))
-                    {
-                        opt = InputUtil.TryChangeKeyModifiers(v, v.KeyModifiers & ~KeyModifiers.Shift);
-                    }
-                }
-
-                if (opt.IsSome())
-                {
-                    return opt.Value;
-                }
+                return ConvertToKeyInput(keystroke[0]);
             }
 
             KeyInput vs = null;
@@ -304,12 +305,12 @@ namespace VsVim
             return false;
         }
 
-        private static KeyInput ParseOne(string entry)
+        private static KeyStroke ParseOne(string entry)
         {
             // If it's of length 1 it can only be a single keystroke entry
             if (entry.Length == 1)
             {
-                return ConvertToKeyInput(entry);
+                return new KeyStroke(ConvertToKeyInput(entry), KeyModifiers.None);
             }
 
             // First get rid of the Modifiers
@@ -338,15 +339,7 @@ namespace VsVim
                 return null;
             }
 
-            if (mod != KeyModifiers.None)
-            {
-                var opt = InputUtil.TryChangeKeyModifiers(ki, ki.KeyModifiers | mod);
-                ki = opt.IsSome()
-                    ? opt.Value
-                    : null;
-            }
-
-            return ki;
+            return new KeyStroke(ki, mod);
         }
 
         /// <summary>

@@ -6,10 +6,9 @@ using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Text.Editor;
 using Moq;
 using NUnit.Framework;
-using VsVim;
 using VsVim.Implementation;
 
-namespace VsVimTest
+namespace VsVim.UnitTest
 {
     [TestFixture]
     public class TextManagerTest

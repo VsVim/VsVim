@@ -116,7 +116,7 @@ namespace Vim.UI.Wpf.Test
         [Test]
         public void ConvertToKeyInput4()
         {
-            var list = new List<Tuple<char,Key>>() {
+            var list = new List<Tuple<char, Key>>() {
                     Tuple.Create('1', Key.D1),
                     Tuple.Create('2', Key.D2),
                     Tuple.Create('3', Key.D3) };

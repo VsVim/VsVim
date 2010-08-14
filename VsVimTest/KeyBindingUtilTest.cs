@@ -4,17 +4,17 @@ using System.Linq;
 using NUnit.Framework;
 using Vim;
 using Vim.UnitTest.Mock;
-using VsVim;
 using VsVim.Settings;
 
-namespace VsVimTest
+namespace VsVim.UnitTest
 {
     [TestFixture()]
     public class KeyBindingUtilTest
     {
-        private static CommandKeyBinding CreateCommandKeyBinding(KeyInput input, string name = "again", string scope = "Global")
+        private static CommandKeyBinding CreateCommandKeyBinding(KeyInput input, KeyModifiers modifiers = KeyModifiers.None, string name = "again", string scope = "Global")
         {
-            var key = new VsVim.KeyBinding(scope, input);
+            var stroke = new KeyStroke(input, modifiers);
+            var key = new VsVim.KeyBinding(scope, stroke);
             return new CommandKeyBinding(name, key);
         }
 
@@ -115,7 +115,7 @@ namespace VsVimTest
         [Test, Description("Use the old key bindings if we havn't recorded them being messed with on this machine")]
         public void FindRemovedKeyBindings1()
         {
-            Settings.Default.HaveUpdatedKeyBindings = false;
+            global::VsVim.Settings.Settings.Default.HaveUpdatedKeyBindings = false;
             var list = KeyBindingUtil.FindKeyBindingsMarkedAsRemoved();
             Assert.AreEqual(VsVim.Constants.CommonlyUnboundCommands.Length, list.Count);
         }
@@ -123,8 +123,8 @@ namespace VsVimTest
         [Test]
         public void FindRemovedKeyBindings2()
         {
-            Settings.Default.HaveUpdatedKeyBindings = true;
-            Settings.Default.RemovedBindings = new CommandBindingSetting[] {
+            global::VsVim.Settings.Settings.Default.HaveUpdatedKeyBindings = true;
+            global::VsVim.Settings.Settings.Default.RemovedBindings = new CommandBindingSetting[] {
                 new CommandBindingSetting() { Name="foo", CommandString = "Scope::Ctrl+J" },
                 new CommandBindingSetting() { Name="bar", CommandString = "Scope::Ctrl+J" } };
             var list = KeyBindingUtil.FindKeyBindingsMarkedAsRemoved();

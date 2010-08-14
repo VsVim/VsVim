@@ -1,25 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using Vim;
-using System.Windows.Input;
 using EnvDTE;
-using System.ComponentModel.Composition.Primitives;
-using System.ComponentModel.Composition;
-using System.Windows;
-using Microsoft.VisualStudio.Shell.Interop;
-using Microsoft.VisualStudio.Shell;
-using System.Collections.ObjectModel;
-using Microsoft.Internal.VisualStudio.PlatformUI;
-using System.Threading;
-using VsVim.UI;
+using Vim;
 
 namespace VsVim
 {
     internal sealed class KeyBindingUtil
     {
-        private readonly CommandsSnapshot _snapshot;        
+        private readonly CommandsSnapshot _snapshot;
 
         internal KeyBindingUtil(CommandsSnapshot snapshot)
         {
@@ -71,7 +60,7 @@ namespace VsVim
             var all = _snapshot.CommandKeyBindings.Where(x => !ShouldSkip(x));
             foreach (var binding in all)
             {
-                var input = binding.KeyBinding.FirstKeyInput;
+                var input = binding.KeyBinding.FirstKeyStroke.AggregateKeyInput;
                 if (neededInputs.Contains(input))
                 {
                     list.Add(binding);
@@ -99,12 +88,12 @@ namespace VsVim
                 return true;
             }
 
-            if (!binding.KeyBinding.KeyInputs.Any())
+            if (!binding.KeyBinding.KeyStrokes.Any())
             {
                 return true;
             }
 
-            var first = binding.KeyBinding.FirstKeyInput;
+            var first = binding.KeyBinding.FirstKeyStroke;
 
             // We don't want to remove any mappings which don't include a modifier key 
             // because it removes too many mappings.  Without this check we would for

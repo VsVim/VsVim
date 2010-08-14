@@ -122,6 +122,7 @@
     <Compile Include="Implementation\VsAdapter.cs" />
     <Compile Include="ITextManager.cs" />
     <Compile Include="IVsAdapter.cs" />
+    <Compile Include="KeyStroke.cs" />
     <Compile Include="OleCommandUtil.cs" />
     <Compile Include="Extensions.cs" />
     <Compile Include="HostFactory.cs" />

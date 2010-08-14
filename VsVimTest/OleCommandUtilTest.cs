@@ -3,10 +3,9 @@ using System.Windows.Input;
 using Microsoft.VisualStudio;
 using NUnit.Framework;
 using Vim;
-using VsVim;
-using VsVimTest.Utils;
+using VsVim.UnitTest.Utils;
 
-namespace VsVimTest
+namespace VsVim.UnitTest
 {
     [TestFixture()]
     public class OleCommandUtilTest
@@ -104,5 +103,5 @@ namespace VsVimTest
             Assert.AreEqual(InputUtil.VimKeyToKeyInput(VimKey.F1), command.KeyInput);
             Assert.IsFalse(command.IsInput);
         }
-   }
+    }
 }

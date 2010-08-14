@@ -8,7 +8,7 @@ using Vim;
 using Vim.UnitTest.Mock;
 using VsVim;
 
-namespace VsVimTest
+namespace VsVim.UnitTest
 {
     [TestFixture]
     public class VsCommandFilterTest

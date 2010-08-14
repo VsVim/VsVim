@@ -3,7 +3,7 @@ using NUnit.Framework;
 using System;
 using Vim;
 
-namespace VsVimTest
+namespace VsVim.UnitTest
 {
     
     

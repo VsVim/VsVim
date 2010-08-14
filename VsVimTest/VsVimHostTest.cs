@@ -11,7 +11,7 @@ using Vim;
 using Vim.UnitTest;
 using VsVim;
 
-namespace VsVimTest
+namespace VsVim.UnitTest
 {
     [TestFixture]
     public class VsVimHostTest

@@ -35,13 +35,10 @@ namespace Vim.UI.Wpf
             }
         }
 
-        private static Tuple<KeyInput, int> TryConvertToKeyInput(Key key)
+        public static KeyInput ConvertToKeyInput(Key key)
         {
             var virtualKey = KeyInterop.VirtualKeyFromKey(key);
-            var opt = InputUtil.TryVirtualKeyCodeToKeyInput(virtualKey);
-            return opt.IsSome()
-                ? Tuple.Create(opt.Value, virtualKey)
-                : null;
+            return InputUtil.VirtualKeyCodeToKeyInput(virtualKey);
         }
 
         public static KeyModifiers ConvertToKeyModifiers(ModifierKeys keys)
@@ -80,28 +77,11 @@ namespace Vim.UI.Wpf
             return res;
         }
 
-        public static KeyInput ConvertToKeyInput(Key key)
-        {
-            var tuple = TryConvertToKeyInput(key);
-            return tuple != null
-                ? tuple.Item1
-                : InputUtil.CharToKeyInput(Char.MinValue);
-        }
-
         public static KeyInput ConvertToKeyInput(Key key, ModifierKeys modifierKeys)
         {
             var modKeys = ConvertToKeyModifiers(modifierKeys);
-            var tuple = TryConvertToKeyInput(key);
-            if (tuple == null)
-            {
-                return new KeyInput(0, VimKey.NotWellKnown, modKeys, Char.MinValue);
-            }
-
-            var original = tuple.Item1;
-            var opt = InputUtil.TryChangeKeyModifiers(original, modKeys);
-            return opt.IsSome()
-                ? opt.Value
-                : original;
+            var original = ConvertToKeyInput(key);
+            return InputUtil.ChangeKeyModifiers(original, modKeys);
         }
 
         private static ReadOnlyCollection<char> CreateCoreChars()

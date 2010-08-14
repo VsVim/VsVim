@@ -56,10 +56,10 @@ namespace VimCore.Test
         [Test]
         public void CompareTo1()
         {
-            var i1 = new KeyInput('c', VimKey.NotWellKnown, KeyModifiers.None, 'c');
-            Assert.IsTrue(i1.CompareTo(new KeyInput(0, VimKey.NotWellKnown, KeyModifiers.None, 'z')) < 0);
-            Assert.IsTrue(i1.CompareTo(new KeyInput(0, VimKey.NotWellKnown, KeyModifiers.None, 'c')) == 0);
-            Assert.IsTrue(i1.CompareTo(new KeyInput(0, VimKey.NotWellKnown, KeyModifiers.None, 'a')) > 0);
+            var i1 = InputUtil.CharToKeyInput('c');
+            Assert.IsTrue(i1.CompareTo(InputUtil.CharToKeyInput('z')) < 0);
+            Assert.IsTrue(i1.CompareTo(InputUtil.CharToKeyInput('c')) == 0);
+            Assert.IsTrue(i1.CompareTo(InputUtil.CharToKeyInput('a')) > 0);
         }
 
     }

@@ -8,7 +8,7 @@ using Vim.UnitTest.Mock;
 using VsVim;
 using VsVim.Implementation;
 
-namespace VsVimTest
+namespace VsVim.UnitTest
 {
     [TestFixture]
     public class KeyBindingServiceTest

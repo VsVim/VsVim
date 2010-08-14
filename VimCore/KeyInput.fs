@@ -39,14 +39,14 @@ type KeyInput
         let comp = compare x.VirtualKeyCode other.VirtualKeyCode
         if comp <> 0 then comp
         else 
-        let comp = compare x.Char other.Char
-        if comp <> 0 then  comp
-        else
-            let comp = compare x.Key other.Key
+            let comp = compare x.Char other.Char
             if comp <> 0 then  comp
             else
-                compare x.KeyModifiers other.KeyModifiers
-                    
+                let comp = compare x.Key other.Key
+                if comp <> 0 then  comp
+                else
+                    compare x.KeyModifiers other.KeyModifiers
+                        
     override x.GetHashCode() = int32 _literal
     override x.Equals(obj) =
         match obj with
@@ -209,6 +209,11 @@ module InputUtil =
                 let c = if System.Char.IsLetter(c) then System.Char.ToLower(c) else c
                 Some(c)
 
+    let VirtualKeyCodeToChar virtualKey =
+        match TryVirtualKeyCodeToChar virtualKey with
+        | Some(c) -> c
+        | None -> System.Char.MinValue
+
     let TryCharToKeyInput ch = 
         match TryCharToVirtualKeyAndModifiers ch with
         | None -> None
@@ -231,47 +236,57 @@ module InputUtil =
         |> Seq.map (fun ki -> (ki.VirtualKeyCode,ki.KeyModifiers),ki)
         |> Map.ofSeq
 
-    let TryVirtualKeyCodeAndModifiersToKeyInput virtualKey keyModifiers =
-        match Map.tryFind (virtualKey,keyModifiers) CoreVirtualKeyAndModifiersMap with
-        | Some(ki) -> Some ki
+    let VirtualKeyCodeAndModifiersToKeyInput virtualKey keyModifiers =
+
+        // First consult the prebuilt map.  
+        let fromMap = 
+            match Map.tryFind (virtualKey,keyModifiers) CoreVirtualKeyAndModifiersMap with
+            | Some(ki) -> Some ki
+            | None -> 
+                let checkShift = 
+                    if Utils.IsFlagSet keyModifiers KeyModifiers.Shift then 
+        
+                        // The shift flag is tricky.  There is no good API available to translate a virtualKey 
+                        // with an additional modifier.  Instead we define the core set of keys we care about,
+                        // map them to a virtualKey + ModifierKeys tuple.  We then consult this map here to see
+                        // if we can appropriately "shift" the KeyInput value
+                        //
+                        // This feels like a very hackish solution and I'm actively seeking a better, more thorough
+                        // one.  ToUnicodeEx is likely the best bet but getting it and the dead keys working is 
+                        // very involved.  Will take care of this in a future release
+                        match Map.tryFind (virtualKey,KeyModifiers.Shift) CoreVirtualKeyAndModifiersMap with 
+                        | Some(ki) -> KeyInput(virtualKey, ki.Key, ki.KeyModifiers ||| keyModifiers, ki.Char) |> Some
+                        | None -> None
+                    else None
+                match checkShift with
+                | Some(ki) -> checkShift
+                | None -> 
+                    // Making a bad assumption that the Control and Alt keys don't affect
+                    // the char.  Will take care of in a future release
+                    match Map.tryFind (virtualKey,KeyModifiers.None) CoreVirtualKeyAndModifiersMap with 
+                    | Some(ki) -> KeyInput(virtualKey, ki.Key, keyModifiers, ki.Char) |> Some
+                    | None -> None
+
+        match fromMap with
+        | Some(ki) -> ki
         | None -> 
-            if Utils.IsFlagSet keyModifiers KeyModifiers.Shift then 
+            // If we couldn't find a prebuilt one then build manually 
+            let c = VirtualKeyCodeToChar virtualKey
+            let vimKey = 
+                match Map.tryFind virtualKey VirtualKeyCodeToVimKeyMap with
+                | Some(k) -> k
+                | None -> VimKey.NotWellKnown
+            KeyInput(virtualKey, vimKey, keyModifiers, c)
 
-                // The shift flag is tricky.  There is no good API available to translate a virtualKey 
-                // with an additional modifier.  Instead we define the core set of keys we care about,
-                // map them to a virtualKey + ModifierKeys tuple.  We then consult this map here to see
-                // if we can appropriately "shift" the KeyInput value
-                //
-                // This feels like a very hackish solution and I'm actively seeking a better, more thorough
-                // one.  ToUnicodeEx is likely the best bet but getting it and the dead keys working is 
-                // very involved.  Will take care of this in a future release
-                match Map.tryFind (virtualKey,KeyModifiers.Shift) CoreVirtualKeyAndModifiersMap with 
-                | Some(ki) -> KeyInput(virtualKey, ki.Key, ki.KeyModifiers ||| keyModifiers, ki.Char) |> Some
-                | None -> None
+    let VirtualKeyCodeToKeyInput virtualKey = VirtualKeyCodeAndModifiersToKeyInput virtualKey KeyModifiers.None
+    let ChangeKeyModifiers (ki:KeyInput) keyModifiers = VirtualKeyCodeAndModifiersToKeyInput ki.VirtualKeyCode keyModifiers
 
-            else 
-                // Making a bad assumption that the Control and Alt keys don't affect
-                // the char.  Will take care of in a future release
-                match Map.tryFind (virtualKey,KeyModifiers.None) CoreVirtualKeyAndModifiersMap with 
-                | Some(ki) -> KeyInput(virtualKey, ki.Key, keyModifiers, ki.Char) |> Some
-                | None -> None
-
-    let TryVirtualKeyCodeToKeyInput virtualKey = TryVirtualKeyCodeAndModifiersToKeyInput virtualKey KeyModifiers.None
-
-    let TryChangeKeyModifiers (ki:KeyInput) keyModifiers = 
-        TryVirtualKeyCodeAndModifiersToKeyInput ki.VirtualKeyCode keyModifiers
-
-    let VimKeyToKeyInput vimKey = 
+    let VimKeyAndModifiersToKeyInput vimKey modKeys = 
         match TryVimKeyToVirtualKeyCode vimKey with
         | None -> KeyInput(0, VimKey.NotWellKnown, KeyModifiers.None, System.Char.MinValue)
-        | Some(virtualKey) -> 
-            match TryVirtualKeyCodeToChar virtualKey with
-            | None -> KeyInput(0, vimKey, KeyModifiers.None, System.Char.MinValue)
-            | Some(ch) -> KeyInput(virtualKey, vimKey, KeyModifiers.None, ch)
-        
-    let SetModifiers modKeys (ki:KeyInput) = KeyInput(ki.VirtualKeyCode, ki.Key, modKeys, ki.Char)
-        
-    let VimKeyAndModifiersToKeyInput vimKey modKeys = vimKey |> VimKeyToKeyInput |> SetModifiers modKeys
+        | Some(virtualKey) -> VirtualKeyCodeAndModifiersToKeyInput virtualKey modKeys
+
+    let VimKeyToKeyInput vimKey = VimKeyAndModifiersToKeyInput vimKey KeyModifiers.None
 
     let CharWithControlToKeyInput ch = 
         let ki = ch |> CharToKeyInput 
