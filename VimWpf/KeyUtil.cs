@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.ObjectModel;
-using System.Linq;
 using System.Windows.Input;
 using Vim.Extensions;
 
@@ -8,33 +6,6 @@ namespace Vim.UI.Wpf
 {
     public static class KeyUtil
     {
-        private static ReadOnlyCollection<char> s_coreChars = null;
-        private static ReadOnlyCollection<Tuple<char, int, KeyModifiers>> s_mappedCoreChars;
-
-        private static ReadOnlyCollection<char> CoreChars
-        {
-            get
-            {
-                if (s_coreChars == null)
-                {
-                    s_coreChars = CreateCoreChars();
-                }
-                return s_coreChars;
-            }
-        }
-
-        private static ReadOnlyCollection<Tuple<char, int, KeyModifiers>> MappedCoreChars
-        {
-            get
-            {
-                if (s_mappedCoreChars == null)
-                {
-                    s_mappedCoreChars = CreateMappedCoreChars();
-                }
-                return s_mappedCoreChars;
-            }
-        }
-
         public static KeyInput ConvertToKeyInput(Key key)
         {
             var virtualKey = KeyInterop.VirtualKeyFromKey(key);
@@ -82,21 +53,6 @@ namespace Vim.UI.Wpf
             var modKeys = ConvertToKeyModifiers(modifierKeys);
             var original = ConvertToKeyInput(key);
             return KeyInputUtil.ChangeKeyModifiers(original, modKeys);
-        }
-
-        private static ReadOnlyCollection<char> CreateCoreChars()
-        {
-            return KeyInputUtil.CoreCharacters.ToList().AsReadOnly();
-        }
-
-        private static ReadOnlyCollection<Tuple<char, int, KeyModifiers>> CreateMappedCoreChars()
-        {
-            var list = CoreChars
-                .Select(x => Tuple.Create(x, KeyInputUtil.TryCharToVirtualKeyAndModifiers(x)))
-                .Where(x => x.Item2.IsSome())
-                .Select(x => Tuple.Create(x.Item1, x.Item2.Value.Item1, x.Item2.Value.Item2))
-                .ToList();
-            return new ReadOnlyCollection<Tuple<char, int, KeyModifiers>>(list);
         }
 
         public static Tuple<Key, ModifierKeys> ConvertToKeyAndModifiers(KeyInput input)
