@@ -235,7 +235,7 @@ namespace VsVim
         private static KeyInput ConvertToKeyInput(char c)
         {
             c = Char.IsLetter(c) ? Char.ToLower(c) : c;
-            var opt = InputUtil.TryCharToKeyInput(c);
+            var opt = KeyInputUtil.TryCharToKeyInput(c);
             return opt.IsSome()
                 ? opt.Value
                 : null;
@@ -276,7 +276,7 @@ namespace VsVim
             VimKey wellKnownKey;
             if (s_vsMap.TryGetValue(keystroke, out wellKnownKey))
             {
-                ki = InputUtil.VimKeyToKeyInput(wellKnownKey);
+                ki = KeyInputUtil.VimKeyToKeyInput(wellKnownKey);
                 return true;
             }
 
@@ -286,16 +286,16 @@ namespace VsVim
                 switch (keystroke.ToLower())
                 {
                     case "num +":
-                        ki = InputUtil.VimKeyToKeyInput(VimKey.KeypadPlus);
+                        ki = KeyInputUtil.VimKeyToKeyInput(VimKey.KeypadPlus);
                         break;
                     case "num /":
-                        ki = InputUtil.VimKeyToKeyInput(VimKey.KeypadDivide);
+                        ki = KeyInputUtil.VimKeyToKeyInput(VimKey.KeypadDivide);
                         break;
                     case "num *":
-                        ki = InputUtil.VimKeyToKeyInput(VimKey.KeypadMultiply);
+                        ki = KeyInputUtil.VimKeyToKeyInput(VimKey.KeypadMultiply);
                         break;
                     case "num -":
-                        ki = InputUtil.VimKeyToKeyInput(VimKey.KeypadMinus);
+                        ki = KeyInputUtil.VimKeyToKeyInput(VimKey.KeypadMinus);
                         break;
                 }
                 return ki != null;

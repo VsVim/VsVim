@@ -38,7 +38,7 @@ namespace Vim.UI.Wpf
         public static KeyInput ConvertToKeyInput(Key key)
         {
             var virtualKey = KeyInterop.VirtualKeyFromKey(key);
-            return InputUtil.VirtualKeyCodeToKeyInput(virtualKey);
+            return KeyInputUtil.VirtualKeyCodeToKeyInput(virtualKey);
         }
 
         public static KeyModifiers ConvertToKeyModifiers(ModifierKeys keys)
@@ -81,18 +81,18 @@ namespace Vim.UI.Wpf
         {
             var modKeys = ConvertToKeyModifiers(modifierKeys);
             var original = ConvertToKeyInput(key);
-            return InputUtil.ChangeKeyModifiers(original, modKeys);
+            return KeyInputUtil.ChangeKeyModifiers(original, modKeys);
         }
 
         private static ReadOnlyCollection<char> CreateCoreChars()
         {
-            return InputUtil.CoreCharacters.ToList().AsReadOnly();
+            return KeyInputUtil.CoreCharacters.ToList().AsReadOnly();
         }
 
         private static ReadOnlyCollection<Tuple<char, int, KeyModifiers>> CreateMappedCoreChars()
         {
             var list = CoreChars
-                .Select(x => Tuple.Create(x, InputUtil.TryCharToVirtualKeyAndModifiers(x)))
+                .Select(x => Tuple.Create(x, KeyInputUtil.TryCharToVirtualKeyAndModifiers(x)))
                 .Where(x => x.Item2.IsSome())
                 .Select(x => Tuple.Create(x.Item1, x.Item2.Value.Item1, x.Item2.Value.Item2))
                 .ToList();
@@ -102,7 +102,7 @@ namespace Vim.UI.Wpf
         public static Tuple<Key, ModifierKeys> ConvertToKeyAndModifiers(KeyInput input)
         {
             var mods = ConvertToModifierKeys(input.KeyModifiers);
-            var option = InputUtil.TryCharToVirtualKeyAndModifiers(input.Char);
+            var option = KeyInputUtil.TryCharToVirtualKeyAndModifiers(input.Char);
             var key = Key.None;
             if (option.IsSome())
             {

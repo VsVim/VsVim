@@ -10,10 +10,10 @@ namespace VsVim.UnitTest
         public void KeyStroke1()
         {
             var stroke = new KeyStroke(
-                InputUtil.CharToKeyInput('c'),
+                KeyInputUtil.CharToKeyInput('c'),
                 KeyModifiers.None);
-            Assert.AreEqual(InputUtil.CharToKeyInput('c'), stroke.KeyInput);
-            Assert.AreEqual(InputUtil.CharToKeyInput('c'), stroke.AggregateKeyInput);
+            Assert.AreEqual(KeyInputUtil.CharToKeyInput('c'), stroke.KeyInput);
+            Assert.AreEqual(KeyInputUtil.CharToKeyInput('c'), stroke.AggregateKeyInput);
             Assert.AreEqual('c', stroke.Char);
         }
 
@@ -21,10 +21,10 @@ namespace VsVim.UnitTest
         public void KeyStroke2()
         {
             var stroke = new KeyStroke(
-                InputUtil.CharToKeyInput('c'),
+                KeyInputUtil.CharToKeyInput('c'),
                 KeyModifiers.Shift);
-            Assert.AreEqual(InputUtil.CharToKeyInput('c'), stroke.KeyInput);
-            Assert.AreEqual(InputUtil.CharToKeyInput('C'), stroke.AggregateKeyInput);
+            Assert.AreEqual(KeyInputUtil.CharToKeyInput('c'), stroke.KeyInput);
+            Assert.AreEqual(KeyInputUtil.CharToKeyInput('C'), stroke.AggregateKeyInput);
             Assert.AreEqual('c', stroke.Char);
         }
 
@@ -32,10 +32,10 @@ namespace VsVim.UnitTest
         public void KeyStroke3()
         {
             var stroke = new KeyStroke(
-                InputUtil.CharToKeyInput('c'),
+                KeyInputUtil.CharToKeyInput('c'),
                 KeyModifiers.Shift | KeyModifiers.Control);
-            Assert.AreEqual(InputUtil.CharToKeyInput('c'), stroke.KeyInput);
-            Assert.AreEqual(InputUtil.CharWithControlToKeyInput('C'), stroke.AggregateKeyInput);
+            Assert.AreEqual(KeyInputUtil.CharToKeyInput('c'), stroke.KeyInput);
+            Assert.AreEqual(KeyInputUtil.CharWithControlToKeyInput('C'), stroke.AggregateKeyInput);
             Assert.AreEqual('c', stroke.Char);
         }
 
@@ -43,10 +43,10 @@ namespace VsVim.UnitTest
         public void Equals1()
         {
             var stroke1 = new KeyStroke(
-                InputUtil.CharToKeyInput('c'),
+                KeyInputUtil.CharToKeyInput('c'),
                 KeyModifiers.Shift | KeyModifiers.Control);
             var stroke2 = new KeyStroke(
-                InputUtil.CharToKeyInput('c'),
+                KeyInputUtil.CharToKeyInput('c'),
                 KeyModifiers.Shift | KeyModifiers.Control);
             Assert.AreEqual(stroke1, stroke2);
             Assert.IsTrue(stroke1 == stroke2);
@@ -57,10 +57,10 @@ namespace VsVim.UnitTest
         public void Equals2()
         {
             var stroke1 = new KeyStroke(
-                InputUtil.CharToKeyInput('d'),
+                KeyInputUtil.CharToKeyInput('d'),
                 KeyModifiers.Shift | KeyModifiers.Control);
             var stroke2 = new KeyStroke(
-                InputUtil.CharToKeyInput('c'),
+                KeyInputUtil.CharToKeyInput('c'),
                 KeyModifiers.Shift | KeyModifiers.Control);
             Assert.AreNotEqual(stroke1, stroke2);
             Assert.IsFalse(stroke1 == stroke2);

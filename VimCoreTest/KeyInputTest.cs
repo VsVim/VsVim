@@ -9,14 +9,14 @@ namespace VimCore.Test
         [Test]
         public void IsDigit1()
         {
-            var input = InputUtil.CharToKeyInput('0');
+            var input = KeyInputUtil.CharToKeyInput('0');
             Assert.IsTrue(input.IsDigit);
         }
 
         [Test]
         public void IsDigit2()
         {
-            var input = InputUtil.VimKeyToKeyInput(VimKey.Enter);
+            var input = KeyInputUtil.VimKeyToKeyInput(VimKey.Enter);
             Assert.IsFalse(input.IsDigit);
         }
 
@@ -40,26 +40,26 @@ namespace VimCore.Test
         [Test]
         public void Equality3()
         {
-            Assert.IsTrue(InputUtil.CharToKeyInput('a') == InputUtil.CharToKeyInput('a'));
-            Assert.IsTrue(InputUtil.CharToKeyInput('b') == InputUtil.CharToKeyInput('b'));
-            Assert.IsTrue(InputUtil.CharToKeyInput('c') == InputUtil.CharToKeyInput('c'));
+            Assert.IsTrue(KeyInputUtil.CharToKeyInput('a') == KeyInputUtil.CharToKeyInput('a'));
+            Assert.IsTrue(KeyInputUtil.CharToKeyInput('b') == KeyInputUtil.CharToKeyInput('b'));
+            Assert.IsTrue(KeyInputUtil.CharToKeyInput('c') == KeyInputUtil.CharToKeyInput('c'));
         }
 
         [Test]
         public void Equality4()
         {
-            Assert.IsTrue(InputUtil.CharToKeyInput('a') != InputUtil.CharToKeyInput('b'));
-            Assert.IsTrue(InputUtil.CharToKeyInput('b') != InputUtil.CharToKeyInput('c'));
-            Assert.IsTrue(InputUtil.CharToKeyInput('c') != InputUtil.CharToKeyInput('d'));
+            Assert.IsTrue(KeyInputUtil.CharToKeyInput('a') != KeyInputUtil.CharToKeyInput('b'));
+            Assert.IsTrue(KeyInputUtil.CharToKeyInput('b') != KeyInputUtil.CharToKeyInput('c'));
+            Assert.IsTrue(KeyInputUtil.CharToKeyInput('c') != KeyInputUtil.CharToKeyInput('d'));
         }
 
         [Test]
         public void CompareTo1()
         {
-            var i1 = InputUtil.CharToKeyInput('c');
-            Assert.IsTrue(i1.CompareTo(InputUtil.CharToKeyInput('z')) < 0);
-            Assert.IsTrue(i1.CompareTo(InputUtil.CharToKeyInput('c')) == 0);
-            Assert.IsTrue(i1.CompareTo(InputUtil.CharToKeyInput('a')) > 0);
+            var i1 = KeyInputUtil.CharToKeyInput('c');
+            Assert.IsTrue(i1.CompareTo(KeyInputUtil.CharToKeyInput('z')) < 0);
+            Assert.IsTrue(i1.CompareTo(KeyInputUtil.CharToKeyInput('c')) == 0);
+            Assert.IsTrue(i1.CompareTo(KeyInputUtil.CharToKeyInput('a')) > 0);
         }
 
     }

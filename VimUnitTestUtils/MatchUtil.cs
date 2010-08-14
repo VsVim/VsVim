@@ -18,14 +18,14 @@ namespace Vim.UnitTest
 
         internal static FSharpList<KeyInput> CreateForKeyInputList(string input)
         {
-            var list = input.Select(InputUtil.CharToKeyInput);
+            var list = input.Select(KeyInputUtil.CharToKeyInput);
             Predicate<FSharpList<KeyInput>> pred = otherList => Enumerable.SequenceEqual(list, otherList);
             return CreateMatch(pred);
         }
 
         internal static IEnumerable<KeyInput> CreateForKeyInputSequence(string input)
         {
-            var list = input.Select(InputUtil.CharToKeyInput);
+            var list = input.Select(KeyInputUtil.CharToKeyInput);
             Predicate<IEnumerable<KeyInput>> pred = otherList => Enumerable.SequenceEqual(list, otherList);
             return CreateMatch(pred);
         }

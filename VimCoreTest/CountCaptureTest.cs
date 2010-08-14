@@ -14,11 +14,11 @@ namespace VimCore.Test
     {
         private CountResult.Complete Process(string input)
         {
-            var res = CountCapture.Process(InputUtil.CharToKeyInput(input[0]));
+            var res = CountCapture.Process(KeyInputUtil.CharToKeyInput(input[0]));
             foreach (var cur in input.Skip(1))
             {
                 Assert.IsTrue(res.IsNeedMore);
-                var i = InputUtil.CharToKeyInput(cur);
+                var i = KeyInputUtil.CharToKeyInput(cur);
                 res = res.AsNeedMore().item.Invoke(i);
             }
 

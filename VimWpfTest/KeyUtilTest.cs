@@ -15,14 +15,14 @@ namespace Vim.UI.Wpf.Test
 
         private void KeyToKeyInput(char c, Key key, ModifierKeys mod)
         {
-            var left = InputUtil.CharToKeyInput(c);
+            var left = KeyInputUtil.CharToKeyInput(c);
             var right = KeyUtil.ConvertToKeyInput(key, mod);
             Assert.AreEqual(left, right);
         }
 
         private void WellKnownBothWays(VimKey wellKnownKey, Key key)
         {
-            var left = InputUtil.VimKeyToKeyInput(wellKnownKey);
+            var left = KeyInputUtil.VimKeyToKeyInput(wellKnownKey);
             var right = KeyUtil.ConvertToKeyInput(key);
             Assert.AreEqual(left, right);
         }
@@ -139,21 +139,21 @@ namespace Vim.UI.Wpf.Test
         [Test]
         public void ConvertToKey1()
         {
-            var ki = InputUtil.CharToKeyInput('c');
+            var ki = KeyInputUtil.CharToKeyInput('c');
             Assert.AreEqual(Key.C, KeyUtil.ConvertToKey(ki));
         }
 
         [Test]
         public void ConvertToKey2()
         {
-            var ki = InputUtil.CharWithControlToKeyInput('c');
+            var ki = KeyInputUtil.CharWithControlToKeyInput('c');
             Assert.AreEqual(Key.C, KeyUtil.ConvertToKey(ki));
         }
 
         [Test]
         public void ConvertToKey3()
         {
-            var ki = InputUtil.CharWithControlToKeyInput('c');
+            var ki = KeyInputUtil.CharWithControlToKeyInput('c');
             Assert.AreEqual(ModifierKeys.Control, KeyUtil.ConvertToKeyAndModifiers(ki).Item2);
         }
 

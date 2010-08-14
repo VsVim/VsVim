@@ -181,7 +181,7 @@ namespace VimCore.Test
         public void ReplaceChar1()
         {
             Create("foo");
-            _operations.ReplaceChar(InputUtil.CharToKeyInput('b'), 1);
+            _operations.ReplaceChar(KeyInputUtil.CharToKeyInput('b'), 1);
             Assert.AreEqual("boo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
         }
 
@@ -189,7 +189,7 @@ namespace VimCore.Test
         public void ReplaceChar2()
         {
             Create("foo");
-            _operations.ReplaceChar(InputUtil.CharToKeyInput('b'), 2);
+            _operations.ReplaceChar(KeyInputUtil.CharToKeyInput('b'), 2);
             Assert.AreEqual("bbo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
         }
 
@@ -198,7 +198,7 @@ namespace VimCore.Test
         {
             Create("foo");
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 1));
-            _operations.ReplaceChar(InputUtil.VimKeyToKeyInput(VimKey.Enter), 1);
+            _operations.ReplaceChar(KeyInputUtil.VimKeyToKeyInput(VimKey.Enter), 1);
             var tss = _view.TextSnapshot;
             Assert.AreEqual(2, tss.LineCount);
             Assert.AreEqual("f", tss.GetLineFromLineNumber(0).GetText());
@@ -210,7 +210,7 @@ namespace VimCore.Test
         {
             Create("food");
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 1));
-            Assert.IsTrue(_operations.ReplaceChar(InputUtil.VimKeyToKeyInput(VimKey.Enter), 2));
+            Assert.IsTrue(_operations.ReplaceChar(KeyInputUtil.VimKeyToKeyInput(VimKey.Enter), 2));
             var tss = _view.TextSnapshot;
             Assert.AreEqual(2, tss.LineCount);
             Assert.AreEqual("f", tss.GetLineFromLineNumber(0).GetText());
@@ -222,7 +222,7 @@ namespace VimCore.Test
         {
             Create("food");
             var tss = _view.TextSnapshot;
-            Assert.IsFalse(_operations.ReplaceChar(InputUtil.CharToKeyInput('c'), 200));
+            Assert.IsFalse(_operations.ReplaceChar(KeyInputUtil.CharToKeyInput('c'), 200));
             Assert.AreSame(tss, _view.TextSnapshot);
         }
 
@@ -230,7 +230,7 @@ namespace VimCore.Test
         public void ReplaceChar6()
         {
             Create("foo");
-            Assert.IsTrue(_operations.ReplaceChar(InputUtil.CharToKeyInput('u'), 1));
+            Assert.IsTrue(_operations.ReplaceChar(KeyInputUtil.CharToKeyInput('u'), 1));
             Assert.AreEqual(0, _view.Caret.Position.BufferPosition.Position);
         }
 

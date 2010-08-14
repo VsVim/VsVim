@@ -80,14 +80,14 @@ type internal VisualMode
         let simples =
             let resultSwitchPrevious = CommandResult.Completed ModeSwitch.SwitchPreviousMode
             seq {
-                yield (InputUtil.CharToKeyInput('y'), 
+                yield (KeyInputUtil.CharToKeyInput('y'), 
                     (fun _ (reg:Register) -> 
                         let opKind = match _kind with
                                      | ModeKind.VisualLine -> OperationKind.LineWise
                                      | _ -> OperationKind.CharacterWise
                         _operations.YankText (_selectionTracker.SelectedText) MotionKind.Inclusive opKind reg
                         CommandResult.Completed ModeSwitch.SwitchPreviousMode))
-                yield (InputUtil.CharToKeyInput('Y'),
+                yield (KeyInputUtil.CharToKeyInput('Y'),
                     (fun _ (reg:Register) ->
                         let selection = _buffer.TextView.Selection
                         let startPoint = selection.Start.Position.GetContainingLine().Start
@@ -95,36 +95,36 @@ type internal VisualMode
                         let span = SnapshotSpan(startPoint,endPoint)
                         _operations.Yank span MotionKind.Inclusive OperationKind.LineWise reg
                         CommandResult.Completed ModeSwitch.SwitchPreviousMode))
-                yield (InputUtil.CharToKeyInput('d'), deleteSelection)
-                yield (InputUtil.CharToKeyInput('x'), deleteSelection)
-                yield (InputUtil.VimKeyToKeyInput VimKey.Delete, deleteSelection)
-                yield (InputUtil.CharToKeyInput('c'), changeSelection)
-                yield (InputUtil.CharToKeyInput('s'), changeSelection)
-                yield (InputUtil.CharToKeyInput('C'), changeLines)
-                yield (InputUtil.CharToKeyInput('S'), changeLines)
-                yield (InputUtil.CharToKeyInput('J'), 
+                yield (KeyInputUtil.CharToKeyInput('d'), deleteSelection)
+                yield (KeyInputUtil.CharToKeyInput('x'), deleteSelection)
+                yield (KeyInputUtil.VimKeyToKeyInput VimKey.Delete, deleteSelection)
+                yield (KeyInputUtil.CharToKeyInput('c'), changeSelection)
+                yield (KeyInputUtil.CharToKeyInput('s'), changeSelection)
+                yield (KeyInputUtil.CharToKeyInput('C'), changeLines)
+                yield (KeyInputUtil.CharToKeyInput('S'), changeLines)
+                yield (KeyInputUtil.CharToKeyInput('J'), 
                         (fun _ _ ->         
                             _operations.JoinSelection JoinKind.RemoveEmptySpaces|> ignore
                             CommandResult.Completed ModeSwitch.SwitchPreviousMode))
                 yield (
-                    InputUtil.CharToKeyInput '~', 
+                    KeyInputUtil.CharToKeyInput '~', 
                     (fun _ _ -> editOverSpanOperation None _operations.ChangeLetterCase resultSwitchPrevious))
                 yield (
-                    InputUtil.CharToKeyInput '<', 
+                    KeyInputUtil.CharToKeyInput '<', 
                     (fun count _ -> 
                         let count = CommandUtil.CountOrDefault count
                         editOverSpanOperation None (_operations.ShiftSpanLeft count) resultSwitchPrevious))
                 yield (
-                    InputUtil.CharToKeyInput '>',
+                    KeyInputUtil.CharToKeyInput '>',
                     (fun count _ -> 
                         let count = CommandUtil.CountOrDefault count
                         editOverSpanOperation None (_operations.ShiftSpanRight count) resultSwitchPrevious))
                 yield (
-                    InputUtil.CharToKeyInput 'p',
+                    KeyInputUtil.CharToKeyInput 'p',
                     (fun _ reg -> 
                         _operations.PasteOverSelection reg.StringValue reg
                         CommandResult.Completed ModeSwitch.SwitchPreviousMode ) )
-                yield ( InputUtil.CharToKeyInput(':'), fun _ _ -> ModeSwitch.SwitchModeWithArgument (ModeKind.Command,ModeArgument.FromVisual) |> CommandResult.Completed)
+                yield ( KeyInputUtil.CharToKeyInput(':'), fun _ _ -> ModeSwitch.SwitchModeWithArgument (ModeKind.Command,ModeArgument.FromVisual) |> CommandResult.Completed)
             }
             |> Seq.map (fun (ki,func) -> Command.SimpleCommand(OneKeyInput ki,CommandFlags.None, func))
 

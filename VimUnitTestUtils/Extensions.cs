@@ -197,17 +197,17 @@ namespace Vim.UnitTest
 
         public static bool CanProcess(this IMode mode, VimKey key)
         {
-            return mode.CanProcess(InputUtil.VimKeyToKeyInput(key));
+            return mode.CanProcess(KeyInputUtil.VimKeyToKeyInput(key));
         }
 
         public static ProcessResult Process(this IMode mode, VimKey key)
         {
-            return mode.Process(InputUtil.VimKeyToKeyInput(key));
+            return mode.Process(KeyInputUtil.VimKeyToKeyInput(key));
         }
 
         public static ProcessResult Process(this IMode mode, char c)
         {
-            return mode.Process((InputUtil.CharToKeyInput(c)));
+            return mode.Process((KeyInputUtil.CharToKeyInput(c)));
         }
 
         public static ProcessResult Process(this IMode mode, string input)
@@ -215,7 +215,7 @@ namespace Vim.UnitTest
             ProcessResult last = null;
             foreach (var c in input)
             {
-                var i = InputUtil.CharToKeyInput(c);
+                var i = KeyInputUtil.CharToKeyInput(c);
                 last = mode.Process(c);
             }
 
@@ -228,7 +228,7 @@ namespace Vim.UnitTest
 
         public static bool ProcessChar(this IVimBuffer buf, char c)
         {
-            return buf.Process(InputUtil.CharToKeyInput(c));
+            return buf.Process(KeyInputUtil.CharToKeyInput(c));
         }
 
         public static void ProcessAsString(this IVimBuffer buf, string input)
@@ -240,7 +240,7 @@ namespace Vim.UnitTest
         {
             foreach (var c in input)
             {
-                var i = InputUtil.CharToKeyInput(c);
+                var i = KeyInputUtil.CharToKeyInput(c);
                 buf.Process(i);
             }
         }
@@ -359,7 +359,7 @@ namespace Vim.UnitTest
 
         public static RunKeyInputResult Run(this ICommandRunner runner, char c)
         {
-            return runner.Run(InputUtil.CharToKeyInput(c));
+            return runner.Run(KeyInputUtil.CharToKeyInput(c));
         }
 
         #endregion

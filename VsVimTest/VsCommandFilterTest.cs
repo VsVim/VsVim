@@ -47,7 +47,7 @@ namespace VsVim.UnitTest
         public void TryConvert1()
         {
             _buffer.Setup(x => x.CanProcess(It.IsAny<KeyInput>())).Returns(true);
-            AssertCanConvert2K(VSConstants.VSStd2KCmdID.TAB, InputUtil.VimKeyToKeyInput(VimKey.Tab));
+            AssertCanConvert2K(VSConstants.VSStd2KCmdID.TAB, KeyInputUtil.VimKeyToKeyInput(VimKey.Tab));
         }
 
         [Test]

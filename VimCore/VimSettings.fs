@@ -109,7 +109,7 @@ type internal SettingsMap
 
 type internal GlobalSettings() =
 
-    static let DisableCommandLet = InputUtil.VimKeyAndModifiersToKeyInput VimKey.F12 (KeyModifiers.Control ||| KeyModifiers.Shift)
+    static let DisableCommandLet = KeyInputUtil.VimKeyAndModifiersToKeyInput VimKey.F12 (KeyModifiers.Control ||| KeyModifiers.Shift)
 
     static let GlobalSettings = 
         [|

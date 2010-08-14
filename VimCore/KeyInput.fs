@@ -103,7 +103,7 @@ module internal NativeMethods =
     /// Alt virtual key
     let VK_MENU = 0x12  
 
-module InputUtil = 
+module KeyInputUtil = 
 
     let CoreCharacters =
         let lowerLetters = "abcdefghijklmnopqrstuvwxyz" :> char seq

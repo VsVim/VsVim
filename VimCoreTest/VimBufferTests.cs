@@ -108,7 +108,7 @@ namespace VimCore.Test
         public void KeyInputProcessed1()
         {
             DisableKeyRemap();
-            var ki = InputUtil.CharToKeyInput('f');
+            var ki = KeyInputUtil.CharToKeyInput('f');
             _normalMode.Setup(x => x.Process(ki)).Returns(ProcessResult.Processed);
             var ran = false;
             _buffer.KeyInputProcessed += (s, i) => { ran = true; };
@@ -120,7 +120,7 @@ namespace VimCore.Test
         public void KeyInputBuffered1()
         {
             DisableKeyRemap();
-            var ki = InputUtil.CharToKeyInput('f');
+            var ki = KeyInputUtil.CharToKeyInput('f');
             _normalMode.Setup(x => x.Process(ki)).Returns(ProcessResult.Processed);
             var ran = false;
             _buffer.KeyInputBuffered += (s, i) => { ran = true; };
@@ -131,7 +131,7 @@ namespace VimCore.Test
         [Test]
         public void KeyInputBuffered2()
         {
-            var ki = InputUtil.CharToKeyInput('f');
+            var ki = KeyInputUtil.CharToKeyInput('f');
             _keyMap
                 .Setup(x => x.GetKeyMapping(KeyInputSet.NewOneKeyInput(ki), It.IsAny<KeyRemapMode>()))
                 .Returns(KeyMappingResult.MappingNeedsMoreInput);
@@ -207,7 +207,7 @@ namespace VimCore.Test
         [Test]
         public void Remap1()
         {
-            var newKi = InputUtil.CharToKeyInput('c');
+            var newKi = KeyInputUtil.CharToKeyInput('c');
             _keyMap
                 .Setup(x => x.GetKeyMapping(KeyInputSetUtil.ofChar('b'), KeyRemapMode.Normal))
                 .Returns(KeyMappingResult.NewMapped(KeyInputSet.NewOneKeyInput(newKi)));
@@ -221,8 +221,8 @@ namespace VimCore.Test
         public void Remap2()
         {
             var list = new KeyInput[] {
-                InputUtil.CharToKeyInput('c'),
-                InputUtil.CharToKeyInput('d') };
+                KeyInputUtil.CharToKeyInput('c'),
+                KeyInputUtil.CharToKeyInput('d') };
             _keyMap
                 .Setup(x => x.GetKeyMapping(KeyInputSetUtil.ofChar('b'), KeyRemapMode.Normal))
                 .Returns(KeyMappingResult.NewMapped(KeyInputSet.NewManyKeyInputs(list.ToFSharpList())));
@@ -236,15 +236,15 @@ namespace VimCore.Test
         public void Remap3()
         {
             var list = new KeyInput[] {
-                InputUtil.CharToKeyInput('c'),
-                InputUtil.CharToKeyInput('d') };
+                KeyInputUtil.CharToKeyInput('c'),
+                KeyInputUtil.CharToKeyInput('d') };
             _keyMap
                 .Setup(x => x.GetKeyMapping(KeyInputSetUtil.ofChar('b'), KeyRemapMode.Command))
                 .Returns(KeyMappingResult.NewMapped(KeyInputSet.NewManyKeyInputs(list.ToFSharpList())));
             _keyMap
                 .Setup(x => x.GetKeyMapping(KeyInputSetUtil.ofChar('b'), KeyRemapMode.Normal))
                 .Returns(KeyMappingResult.NoMapping);
-            _normalMode.Setup(x => x.Process(InputUtil.CharToKeyInput('b'))).Returns(ProcessResult.Processed).Verifiable();
+            _normalMode.Setup(x => x.Process(KeyInputUtil.CharToKeyInput('b'))).Returns(ProcessResult.Processed).Verifiable();
             Assert.IsTrue(_buffer.ProcessChar('b'));
             _normalMode.Verify();
         }
@@ -252,8 +252,8 @@ namespace VimCore.Test
         [Test, Description("Don't send input down to normal mode if we're in operator pending")]
         public void Remap4()
         {
-            var oldKi = InputUtil.CharToKeyInput('b');
-            var newKi = InputUtil.CharToKeyInput('c');
+            var oldKi = KeyInputUtil.CharToKeyInput('b');
+            var newKi = KeyInputUtil.CharToKeyInput('c');
             _keyMap
                 .Setup(x => x.GetKeyMapping(KeyInputSet.NewOneKeyInput(oldKi), KeyRemapMode.Normal))
                 .Returns(KeyMappingResult.NewMapped(KeyInputSet.NewOneKeyInput(newKi)));
@@ -269,7 +269,7 @@ namespace VimCore.Test
         [Test, Description("Don't send input down to normal mode if we're in waitforinput")]
         public void Remap5()
         {
-            var oldKi = InputUtil.CharToKeyInput('b');
+            var oldKi = KeyInputUtil.CharToKeyInput('b');
             _normalMode.SetupGet(x => x.IsOperatorPending).Returns(false);
             _normalMode.SetupGet(x => x.IsWaitingForInput).Returns(true);
             _normalMode.Setup(x => x.Process(oldKi)).Returns(ProcessResult.Processed).Verifiable();
@@ -312,7 +312,7 @@ namespace VimCore.Test
                 .Returns(KeyMappingResult.MappingNeedsMoreInput)
                 .Verifiable();
             _buffer.ProcessChar('a');
-            var toProcess = InputUtil.CharToKeyInput('c');
+            var toProcess = KeyInputUtil.CharToKeyInput('c');
             _keyMap
                 .Setup(x => x.GetKeyMapping(It.IsAny<KeyInputSet>(), KeyRemapMode.Normal))
                 .Returns(KeyMappingResult.NewMapped(KeyInputSet.NewOneKeyInput(toProcess)))
@@ -368,7 +368,7 @@ namespace VimCore.Test
             _buffer.ProcessChar('a');
             _keyMap
                 .Setup(x => x.GetKeyMapping(It.IsAny<KeyInputSet>(), KeyRemapMode.Normal))
-                .Returns(KeyMappingResult.NewMapped(KeyInputSet.NewOneKeyInput(InputUtil.CharToKeyInput('b'))));
+                .Returns(KeyMappingResult.NewMapped(KeyInputSet.NewOneKeyInput(KeyInputUtil.CharToKeyInput('b'))));
             _normalMode.Setup(x => x.Process(It.IsAny<KeyInput>())).Returns(ProcessResult.Processed);
             _buffer.ProcessChar('b');
             Assert.AreEqual(0, _buffer.BufferedRemapKeyInputs.Count());
@@ -377,7 +377,7 @@ namespace VimCore.Test
         [Test]
         public void CanProcess1()
         {
-            var ki = InputUtil.CharToKeyInput('c');
+            var ki = KeyInputUtil.CharToKeyInput('c');
             _keyMap
                 .Setup(x => x.GetKeyMapping(KeyInputSet.NewOneKeyInput(ki), KeyRemapMode.Normal))
                 .Returns(KeyMappingResult.NoMapping)
@@ -394,8 +394,8 @@ namespace VimCore.Test
         [Test]
         public void CanProcess2()
         {
-            var ki = InputUtil.CharToKeyInput('c');
-            var ki2 = InputUtil.CharToKeyInput('d');
+            var ki = KeyInputUtil.CharToKeyInput('c');
+            var ki2 = KeyInputUtil.CharToKeyInput('d');
             _keyMap
                 .Setup(x => x.GetKeyMapping(KeyInputSet.NewOneKeyInput(ki), KeyRemapMode.Normal))
                 .Returns(KeyMappingResult.NewMapped(KeyInputSet.NewOneKeyInput(ki2)))

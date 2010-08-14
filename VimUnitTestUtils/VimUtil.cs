@@ -24,7 +24,7 @@ namespace Vim.UnitTest
         internal static Command CreateSimpleCommand(string name, Func<FSharpOption<int>, Register, CommandResult> func)
         {
             var fsharpFunc = func.ToFSharpFunc();
-            var list = name.Select(InputUtil.CharToKeyInput).ToFSharpList();
+            var list = name.Select(KeyInputUtil.CharToKeyInput).ToFSharpList();
             var commandName = KeyInputSet.NewManyKeyInputs(list);
             return Command.NewSimpleCommand(commandName, CommandFlags.None, fsharpFunc);
         }
@@ -32,7 +32,7 @@ namespace Vim.UnitTest
         internal static Command CreateLongCommand(string name, Func<FSharpOption<int>, Register, LongCommandResult> func, CommandFlags flags = CommandFlags.None)
         {
             var fsharpFunc = func.ToFSharpFunc();
-            var list = name.Select(InputUtil.CharToKeyInput).ToFSharpList();
+            var list = name.Select(KeyInputUtil.CharToKeyInput).ToFSharpList();
             var commandName = KeyInputSet.NewManyKeyInputs(list);
             return Command.NewLongCommand(commandName, flags, fsharpFunc);
         }
@@ -75,7 +75,7 @@ namespace Vim.UnitTest
         internal static Command CreateMotionCommand(string name, Func<FSharpOption<int>, Register, MotionData, CommandResult> func)
         {
             var fsharpFunc = func.ToFSharpFunc();
-            var list = name.Select(InputUtil.CharToKeyInput).ToFSharpList();
+            var list = name.Select(KeyInputUtil.CharToKeyInput).ToFSharpList();
             var commandName = KeyInputSet.NewManyKeyInputs(list);
             return Command.NewMotionCommand(commandName, CommandFlags.None, fsharpFunc);
         }

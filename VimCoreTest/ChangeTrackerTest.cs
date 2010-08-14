@@ -56,7 +56,7 @@ namespace VimCore.Test
             int? count = 0,
             MotionRunData motionRunData = null)
         {
-            name = name ?? KeyInputSet.NewOneKeyInput(InputUtil.CharToKeyInput('c'));
+            name = name ?? KeyInputSet.NewOneKeyInput(KeyInputUtil.CharToKeyInput('c'));
             var flagsRaw = flags ?? CommandFlags.None;
             var countRaw = count.HasValue ? FSharpOption.Create(count.Value) : FSharpOption<int>.None;
             var funcRaw = func.ToFSharpFunc();

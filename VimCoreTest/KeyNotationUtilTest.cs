@@ -22,7 +22,7 @@ namespace VimCore.Test
         {
             var opt = KeyNotationUtil.TryStringToKeyInput("<Left>");
             Assert.IsTrue(opt.IsSome());
-            Assert.AreEqual(InputUtil.VimKeyToKeyInput(VimKey.Left), opt.Value);
+            Assert.AreEqual(KeyInputUtil.VimKeyToKeyInput(VimKey.Left), opt.Value);
         }
 
         [Test]
@@ -30,7 +30,7 @@ namespace VimCore.Test
         {
             var opt = KeyNotationUtil.TryStringToKeyInput("<Right>");
             Assert.IsTrue(opt.IsSome());
-            Assert.AreEqual(InputUtil.VimKeyToKeyInput(VimKey.Right), opt.Value);
+            Assert.AreEqual(KeyInputUtil.VimKeyToKeyInput(VimKey.Right), opt.Value);
         }
 
         [Test]
@@ -38,7 +38,7 @@ namespace VimCore.Test
         {
             var opt = KeyNotationUtil.TryStringToKeyInput("<S-A>");
             Assert.IsTrue(opt.IsSome());
-            Assert.AreEqual(InputUtil.CharToKeyInput('A'), opt.Value);
+            Assert.AreEqual(KeyInputUtil.CharToKeyInput('A'), opt.Value);
         }
 
         [Test]
@@ -47,7 +47,7 @@ namespace VimCore.Test
         {
             var opt = KeyNotationUtil.TryStringToKeyInput("<s-a>");
             Assert.IsTrue(opt.IsSome());
-            Assert.AreEqual(InputUtil.CharToKeyInput('A'), opt.Value);
+            Assert.AreEqual(KeyInputUtil.CharToKeyInput('A'), opt.Value);
         }
 
         [Test]
@@ -84,7 +84,7 @@ namespace VimCore.Test
             Assert.IsTrue(opt.IsSome());
             var list = opt.Value.KeyInputs.ToList();
             Assert.AreEqual(2, list.Count);
-            Assert.AreEqual(InputUtil.VimKeyToKeyInput(VimKey.Home), list[0]);
+            Assert.AreEqual(KeyInputUtil.VimKeyToKeyInput(VimKey.Home), list[0]);
             Assert.AreEqual('a', list[1].Char);
         }
 
@@ -114,8 +114,8 @@ namespace VimCore.Test
                     var parsed = KeyNotationUtil.StringToKeyInput(data);
                     Assert.AreEqual(ki, parsed);
                 };
-            verifyFunc("<S-F11>", InputUtil.VimKeyAndModifiersToKeyInput(VimKey.F11, KeyModifiers.Shift));
-            verifyFunc("<c-F11>", InputUtil.VimKeyAndModifiersToKeyInput(VimKey.F11, KeyModifiers.Control));
+            verifyFunc("<S-F11>", KeyInputUtil.VimKeyAndModifiersToKeyInput(VimKey.F11, KeyModifiers.Shift));
+            verifyFunc("<c-F11>", KeyInputUtil.VimKeyAndModifiersToKeyInput(VimKey.F11, KeyModifiers.Control));
         }
 
         [Test]
@@ -126,8 +126,8 @@ namespace VimCore.Test
                     var parsed = KeyNotationUtil.StringToKeyInput(data);
                     Assert.AreEqual(ki, parsed);
                 };
-            verifyFunc("CTRL-j", InputUtil.CharWithControlToKeyInput('j'));
-            verifyFunc("CTRL-j", InputUtil.CharWithControlToKeyInput('j'));
+            verifyFunc("CTRL-j", KeyInputUtil.CharWithControlToKeyInput('j'));
+            verifyFunc("CTRL-j", KeyInputUtil.CharWithControlToKeyInput('j'));
         }
 
         [Test]

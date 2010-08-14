@@ -57,7 +57,7 @@ namespace VimCore.Test
         public void CanProcess2()
         {
             Assert.IsFalse(_mode.CanProcess(VimKey.Enter));
-            Assert.IsFalse(_mode.CanProcess(InputUtil.CharToKeyInput('c')));
+            Assert.IsFalse(_mode.CanProcess(KeyInputUtil.CharToKeyInput('c')));
         }
 
         [Test]
@@ -109,7 +109,7 @@ namespace VimCore.Test
         [Test]
         public void Control_OpenBracket1()
         {
-            var ki = InputUtil.CharWithControlToKeyInput('[');
+            var ki = KeyInputUtil.CharWithControlToKeyInput('[');
             var name = KeyInputSet.NewOneKeyInput(ki);
             Assert.IsTrue(_mode.CommandNames.Contains(name));
         }
@@ -126,7 +126,7 @@ namespace VimCore.Test
                 .Setup(x => x.DismissDisplayWindows())
                 .Verifiable();
             _operations.Setup(x => x.MoveCaretLeft(1)).Verifiable();
-            var ki = InputUtil.CharWithControlToKeyInput('[');
+            var ki = KeyInputUtil.CharWithControlToKeyInput('[');
             var res = _mode.Process(ki);
             Assert.IsTrue(res.IsSwitchMode);
             Assert.AreEqual(ModeKind.Normal, res.AsSwitchMode().Item);
@@ -139,7 +139,7 @@ namespace VimCore.Test
             _operations
                 .Setup(x => x.ShiftLinesLeft(1))
                 .Verifiable(); ;
-            var res = _mode.Process(InputUtil.CharWithControlToKeyInput('d'));
+            var res = _mode.Process(KeyInputUtil.CharWithControlToKeyInput('d'));
             Assert.IsTrue(res.IsProcessed);
             _factory.Verify();
         }

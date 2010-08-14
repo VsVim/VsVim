@@ -9,8 +9,6 @@ type VirtualKeyCode = int
 [<Sealed>]
 type KeyInput =
 
-    new : VirtualKeyCode * VimKey * KeyModifiers * char -> KeyInput
-
     /// The character representation of this input 
     member Char : char
 
@@ -19,9 +17,6 @@ type KeyInput =
 
     /// The modifier keys needed to produce this input
     member KeyModifiers : KeyModifiers
-
-    /// Does this have the shift modifier?
-    member HasShiftModifier : bool
 
     /// Is the character for this KeyInput a digit
     member IsDigit : bool
@@ -41,7 +36,7 @@ type KeyInput =
 
     interface System.IComparable 
 
-module InputUtil = 
+module KeyInputUtil = 
     
     /// The core set of characters Vim considers for input
     val CoreCharacters : char seq

@@ -41,7 +41,7 @@ namespace VimCore.Test
             RunKeyInputResult last = null;
             foreach (var c in command)
             {
-                last = _runner.Run(InputUtil.CharToKeyInput(c));
+                last = _runner.Run(KeyInputUtil.CharToKeyInput(c));
             }
             return last;
         }
@@ -374,7 +374,7 @@ namespace VimCore.Test
                 },
                 CommandFlags.None));
             _runner.Run('c');
-            Assert.IsTrue(_runner.Run(InputUtil.VimKeyToKeyInput(VimKey.Escape)).IsCommandCancelled);
+            Assert.IsTrue(_runner.Run(KeyInputUtil.VimKeyToKeyInput(VimKey.Escape)).IsCommandCancelled);
             Assert.IsFalse(didSee);
         }
 
@@ -392,7 +392,7 @@ namespace VimCore.Test
                 },
                 CommandFlags.HandlesEscape));
             _runner.Run('c');
-            Assert.IsTrue(_runner.Run(InputUtil.VimKeyToKeyInput(VimKey.Escape)).IsNeedMoreKeyInput);
+            Assert.IsTrue(_runner.Run(KeyInputUtil.VimKeyToKeyInput(VimKey.Escape)).IsNeedMoreKeyInput);
             Assert.IsTrue(didSee);
         }
 
@@ -410,7 +410,7 @@ namespace VimCore.Test
                 },
                 CommandFlags.HandlesEscape));
             _runner.Run('c');
-            Assert.IsTrue(_runner.Run(InputUtil.VimKeyToKeyInput(VimKey.Escape)).IsCommandRan);
+            Assert.IsTrue(_runner.Run(KeyInputUtil.VimKeyToKeyInput(VimKey.Escape)).IsCommandRan);
             Assert.IsTrue(didSee);
         }
 
@@ -447,7 +447,7 @@ namespace VimCore.Test
             Create("hello world");
             _runner.Add(VimUtil.CreateSimpleCommand("cat", (count, reg) => CommandResult.NewCompleted(ModeSwitch.NoSwitch)));
             Assert.IsTrue(Run("ca").IsNeedMoreKeyInput);
-            Assert.IsTrue(_runner.Run(InputUtil.VimKeyToKeyInput(VimKey.Escape)).IsCommandCancelled);
+            Assert.IsTrue(_runner.Run(KeyInputUtil.VimKeyToKeyInput(VimKey.Escape)).IsCommandCancelled);
             Assert.IsFalse(_runner.IsWaitingForMoreInput);
         }
 
@@ -458,7 +458,7 @@ namespace VimCore.Test
             Create("hello world");
             _runner.Add(VimUtil.CreateMotionCommand("cat", (count, reg, data) => CommandResult.NewCompleted(ModeSwitch.NoSwitch)));
             Assert.IsTrue(Run("cata").IsNeedMoreKeyInput);
-            Assert.IsTrue(_runner.Run(InputUtil.VimKeyToKeyInput(VimKey.Escape)).IsCommandCancelled);
+            Assert.IsTrue(_runner.Run(KeyInputUtil.VimKeyToKeyInput(VimKey.Escape)).IsCommandCancelled);
             Assert.IsFalse(_runner.IsWaitingForMoreInput);
         }
 
@@ -519,11 +519,11 @@ namespace VimCore.Test
             };
             repeat = FSharpFunc<KeyInput, LongCommandResult>.FromConverter(func);
             _runner.Add(VimUtil.CreateLongCommand("f", (x, y) => LongCommandResult.NewNeedMoreInput(repeat)));
-            Assert.IsTrue(_runner.Run(InputUtil.CharToKeyInput('f')).IsNeedMoreKeyInput);
-            Assert.IsTrue(_runner.Run(InputUtil.CharToKeyInput('o')).IsNeedMoreKeyInput);
-            Assert.IsTrue(_runner.Run(InputUtil.CharToKeyInput('d')).IsNeedMoreKeyInput);
+            Assert.IsTrue(_runner.Run(KeyInputUtil.CharToKeyInput('f')).IsNeedMoreKeyInput);
+            Assert.IsTrue(_runner.Run(KeyInputUtil.CharToKeyInput('o')).IsNeedMoreKeyInput);
+            Assert.IsTrue(_runner.Run(KeyInputUtil.CharToKeyInput('d')).IsNeedMoreKeyInput);
             isDone = true;
-            Assert.IsTrue(_runner.Run(InputUtil.CharToKeyInput('d')).IsCommandErrored);
+            Assert.IsTrue(_runner.Run(KeyInputUtil.CharToKeyInput('d')).IsCommandErrored);
             Assert.AreEqual("odd", seen);
         }
 
@@ -543,11 +543,11 @@ namespace VimCore.Test
             };
             repeat = FSharpFunc<KeyInput, LongCommandResult>.FromConverter(func);
             _runner.Add(VimUtil.CreateLongCommand("f", (x, y) => LongCommandResult.NewNeedMoreInput(repeat)));
-            Assert.IsTrue(_runner.Run(InputUtil.CharToKeyInput('f')).IsNeedMoreKeyInput);
-            Assert.IsTrue(_runner.Run(InputUtil.CharToKeyInput('o')).IsNeedMoreKeyInput);
-            Assert.IsTrue(_runner.Run(InputUtil.CharToKeyInput('d')).IsNeedMoreKeyInput);
+            Assert.IsTrue(_runner.Run(KeyInputUtil.CharToKeyInput('f')).IsNeedMoreKeyInput);
+            Assert.IsTrue(_runner.Run(KeyInputUtil.CharToKeyInput('o')).IsNeedMoreKeyInput);
+            Assert.IsTrue(_runner.Run(KeyInputUtil.CharToKeyInput('d')).IsNeedMoreKeyInput);
             isDone = true;
-            Assert.IsTrue(_runner.Run(InputUtil.CharToKeyInput('d')).IsCommandCancelled);
+            Assert.IsTrue(_runner.Run(KeyInputUtil.CharToKeyInput('d')).IsCommandCancelled);
             Assert.AreEqual("odd", seen);
         }
 
@@ -564,10 +564,10 @@ namespace VimCore.Test
             };
             repeat = FSharpFunc<KeyInput, LongCommandResult>.FromConverter(func);
             _runner.Add(VimUtil.CreateLongCommand("f", (x, y) => LongCommandResult.NewNeedMoreInput(repeat)));
-            Assert.IsTrue(_runner.Run(InputUtil.CharToKeyInput('f')).IsNeedMoreKeyInput);
-            Assert.IsTrue(_runner.Run(InputUtil.CharToKeyInput('o')).IsNeedMoreKeyInput);
-            Assert.IsTrue(_runner.Run(InputUtil.CharToKeyInput('d')).IsNeedMoreKeyInput);
-            Assert.IsTrue(_runner.Run(InputUtil.VimKeyToKeyInput(VimKey.Escape)).IsCommandCancelled);
+            Assert.IsTrue(_runner.Run(KeyInputUtil.CharToKeyInput('f')).IsNeedMoreKeyInput);
+            Assert.IsTrue(_runner.Run(KeyInputUtil.CharToKeyInput('o')).IsNeedMoreKeyInput);
+            Assert.IsTrue(_runner.Run(KeyInputUtil.CharToKeyInput('d')).IsNeedMoreKeyInput);
+            Assert.IsTrue(_runner.Run(KeyInputUtil.VimKeyToKeyInput(VimKey.Escape)).IsCommandCancelled);
         }
 
         [Test]
@@ -576,12 +576,12 @@ namespace VimCore.Test
             Create("hello world");
             _runner.Add(VimUtil.CreateSimpleCommand("a", (x,y) =>
                 {
-                    var res = _runner.Run(InputUtil.CharToKeyInput('a'));
+                    var res = _runner.Run(KeyInputUtil.CharToKeyInput('a'));
                     Assert.IsTrue(res.IsNestedRunDetected);
                     return CommandResult.NewCompleted(ModeSwitch.NoSwitch);
                 }));
 
-            var res2 = _runner.Run(InputUtil.CharToKeyInput('a'));
+            var res2 = _runner.Run(KeyInputUtil.CharToKeyInput('a'));
             Assert.IsTrue(res2.IsCommandRan);
         }
 
@@ -591,12 +591,12 @@ namespace VimCore.Test
             Create("hello world");
             _runner.Add(VimUtil.CreateSimpleCommand("a", (x,y) =>
                 {
-                    var res = _runner.Run(InputUtil.CharToKeyInput('a'));
+                    var res = _runner.Run(KeyInputUtil.CharToKeyInput('a'));
                     Assert.IsTrue(res.IsNestedRunDetected);
                     return CommandResult.NewCompleted(ModeSwitch.NoSwitch);
                 }));
 
-            var res2 = _runner.Run(InputUtil.CharToKeyInput('a'));
+            var res2 = _runner.Run(KeyInputUtil.CharToKeyInput('a'));
             Assert.IsTrue(res2.IsCommandRan);
         }
 
@@ -630,7 +630,7 @@ namespace VimCore.Test
             Create("hello world");
             _runner.Add(VimUtil.CreateSimpleCommand("cat", (count, reg) => CommandResult.NewCompleted(ModeSwitch.NoSwitch)));
             _runner.Run('c');
-            _runner.Run(InputUtil.VimKeyToKeyInput(VimKey.Escape));
+            _runner.Run(KeyInputUtil.VimKeyToKeyInput(VimKey.Escape));
             Assert.IsTrue(_runner.State.IsNoInput);
         }
 
@@ -737,7 +737,7 @@ namespace VimCore.Test
                     didSee = true;
                 };
             _runner.Run('c');
-            _runner.Run(InputUtil.VimKeyToKeyInput(VimKey.Escape));
+            _runner.Run(KeyInputUtil.VimKeyToKeyInput(VimKey.Escape));
             Assert.IsFalse(didSee);
         }
 

@@ -174,7 +174,7 @@ type internal NormalMode
 
     /// Get the informatoin on how to handle the tilde command based on the current setting for tildeop
     member private this.GetTildeCommand count =
-        let name = InputUtil.CharToKeyInput '~' |> OneKeyInput
+        let name = KeyInputUtil.CharToKeyInput '~' |> OneKeyInput
         let command = 
             if _bufferData.Settings.GlobalSettings.TildeOp then
                 let func count reg (data:MotionData) = 
@@ -426,7 +426,7 @@ type internal NormalMode
             elif _runner.IsWaitingForMoreInput then  true
             elif CharUtil.IsLetterOrDigit(ki.Char) then true
             elif doesCommandStartWith ki then true
-            elif InputUtil.CoreCharactersSet |> Set.contains ki.Char then true
+            elif KeyInputUtil.CoreCharactersSet |> Set.contains ki.Char then true
             else false
 
         member this.Process ki = this.ProcessCore ki
