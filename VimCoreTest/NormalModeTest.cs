@@ -2016,6 +2016,42 @@ namespace VimCore.Test
         }
 
         [Test]
+        public void GoTo_gd1()
+        {
+            Create("foo bar");
+            _operations.Setup(x => x.GoToLocalDeclaration()).Verifiable();
+            _mode.Process("gd");
+            _operations.Verify();
+        }
+
+        [Test]
+        public void GoTo_gd2()
+        {
+            Create("foo bar");
+            _operations.Setup(x => x.GoToLocalDeclaration()).Verifiable();
+            _mode.Process("gd");
+            _operations.Verify();
+        }
+
+        [Test]
+        public void GoTo_gD1()
+        {
+            Create("foo bar");
+            _operations.Setup(x => x.GoToGlobalDeclaration()).Verifiable();
+            _mode.Process("gD");
+            _operations.Verify();
+        }
+
+        [Test]
+        public void GoTo_gf1()
+        {
+            Create("foo bar");
+            _operations.Setup(x => x.GoToFile()).Verifiable();
+            _mode.Process("gf");
+            _operations.Verify();
+        }
+
+        [Test]
         public void GoToMatch1()
         {
             Create("foo bar");

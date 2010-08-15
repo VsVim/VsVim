@@ -38,6 +38,12 @@ type internal DefaultOperations ( _data : OperationsData, _incrementalSearch : I
                 let ret = x.CommonImpl.NavigateToPoint (VirtualSnapshotPoint(point))
                 if not ret then _host.Beep()
 
+    member private x.WordUnderCursorOrEmpty =
+        let point =  TextViewUtil.GetCaretPoint _textView
+        TssUtil.FindCurrentFullWordSpan point WordKind.BigWord
+        |> OptionUtil.getOrDefault (SnapshotSpanUtil.CreateEmpty point)
+        |> SnapshotSpanUtil.GetText
+
     member private x.MoveToNextWordCore kind count isWholeWord = 
         let point = TextViewUtil.GetCaretPoint _textView
         match TssUtil.FindCurrentFullWordSpan point WordKind.NormalWord with
@@ -231,6 +237,18 @@ type internal DefaultOperations ( _data : OperationsData, _incrementalSearch : I
             match x.CommonImpl.GoToDefinition() with
             | Vim.Modes.Succeeded -> ()
             | Vim.Modes.Failed(msg) -> _statusUtil.OnError msg
+
+
+        member x.GoToLocalDeclaration() = 
+            if not (_host.GoToLocalDeclaration _textView x.WordUnderCursorOrEmpty) then _host.Beep()
+
+        member x.GoToGlobalDeclaration () = 
+            if not (_host.GoToGlobalDeclaration _textView x.WordUnderCursorOrEmpty) then _host.Beep()
+
+        member x.GoToFile () = 
+            let text = x.WordUnderCursorOrEmpty 
+            if not (_host.GoToFile text) then 
+                _statusUtil.OnError (Resources.NormalMode_CantFindFile text)
 
         member x.MoveToNextOccuranceOfWordAtCursor kind count =  x.MoveToNextWordCore kind count true
         member x.MoveToNextOccuranceOfPartialWordAtCursor kind count = x.MoveToNextWordCore kind count false

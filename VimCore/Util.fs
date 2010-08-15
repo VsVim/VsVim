@@ -314,4 +314,10 @@ module internal OptionUtil =
     /// Combine two options into a single option.  Only some if both are some
     let combineBoth2 (left,right) = combineBoth left right
 
+    /// Get the value or the provided default
+    let getOrDefault defaultValue opt =
+        match opt with 
+        | Some(value) -> value
+        | None -> defaultValue
+
 

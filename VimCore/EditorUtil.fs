@@ -108,6 +108,9 @@ module SnapshotSpanUtil =
     /// Get the end position
     let GetEndPosition (span:SnapshotSpan) = span.End.Position
 
+    /// Get the text of the span
+    let GetText (span:SnapshotSpan) = span.GetText()
+
     /// Get all of the points on the specified SnapshotSpan.  Will not return the End point
     let GetPoints (span:SnapshotSpan) = 
         let tss = span.Snapshot 
@@ -188,6 +191,9 @@ module SnapshotSpanUtil =
             let line = GetEndLine span
             SnapshotSpan(line.Start, span.End)
         else span
+
+    /// Create an empty span at the given point
+    let CreateEmpty point = SnapshotSpan(point, 0)
 
 /// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
 /// include any Vim specific logic

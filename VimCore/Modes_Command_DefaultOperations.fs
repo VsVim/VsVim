@@ -52,7 +52,8 @@ type internal DefaultOperations ( _data : OperationsData ) =
 
 
     interface IOperations with
-        member x.EditFile fileName = _host.OpenFile fileName
+        member x.EditFile fileName = 
+            if not (_host.GoToFile fileName) then _host.Beep()
 
         member x.ShowOpenFileDialog () = _host.ShowOpenFileDialog()
 
