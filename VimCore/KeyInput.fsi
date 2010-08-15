@@ -35,6 +35,7 @@ type KeyInput =
     static member op_Inequality : KeyInput * KeyInput -> bool
 
     interface System.IComparable 
+    interface System.IEquatable<KeyInput>
 
 module KeyInputUtil = 
     

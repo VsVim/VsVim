@@ -2,6 +2,7 @@
 using System.Linq;
 using NUnit.Framework;
 using Vim;
+using Vim.UnitTest;
 
 namespace VsVim.UnitTest
 {
@@ -177,7 +178,21 @@ namespace VsVim.UnitTest
                 Assert.IsTrue(KeyBinding.TryParse(line, out binding));
                 Assert.AreEqual(line, binding.CommandString);
             }
+        }
 
+        [Test]
+        public void Equality1()
+        {
+            var value = EqualityUnit
+                .Create(KeyBinding.Parse("::b"))
+                .WithEqualValues(KeyBinding.Parse("::b"))
+                .WithNotEqualValues(KeyBinding.Parse("local::b"))
+                .WithNotEqualValues(KeyBinding.Parse("::Shift+b"))
+                .WithNotEqualValues(KeyBinding.Parse("::Left Arrow"));
+            EqualityUtil.RunAll(
+                (x, y) => x == y,
+                (x, y) => x != y,
+                values: value);
         }
 
     }

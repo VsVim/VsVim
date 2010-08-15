@@ -66,6 +66,9 @@ type KeyInput
             | :? KeyInput as y -> x.CompareTo y
             | _ -> invalidArg "yObj" "Cannot compare values of different types"  
 
+    interface System.IEquatable<KeyInput> with
+        member x.Equals other = 0 = x.CompareTo other
+
 module internal NativeMethods =
 
     /// Convert the passed in char to the corresponding Virtual Key Code 

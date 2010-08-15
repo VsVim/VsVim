@@ -1,5 +1,6 @@
 ﻿using NUnit.Framework;
 using Vim;
+using Vim.UnitTest;
 
 namespace VsVim.UnitTest
 {
@@ -65,6 +66,20 @@ namespace VsVim.UnitTest
             Assert.AreNotEqual(stroke1, stroke2);
             Assert.IsFalse(stroke1 == stroke2);
             Assert.IsTrue(stroke1 != stroke2);
+        }
+
+        [Test]
+        public void Equals3()
+        {
+            var value = EqualityUnit
+                .Create(new KeyStroke(KeyInputUtil.CharToKeyInput('c'), KeyModifiers.None))
+                .WithEqualValues(new KeyStroke(KeyInputUtil.CharToKeyInput('c'), KeyModifiers.None))
+                .WithNotEqualValues(new KeyStroke(KeyInputUtil.CharToKeyInput('d'), KeyModifiers.None))
+                .WithNotEqualValues(new KeyStroke(KeyInputUtil.CharToKeyInput('c'), KeyModifiers.Shift));
+            EqualityUtil.RunAll(
+                (x, y) => x == y,
+                (x, y) => x != y,
+                values: value);
         }
     }
 }
