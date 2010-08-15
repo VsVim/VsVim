@@ -1,13 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using Vim.UI.Wpf;
-using Vim;
-using System.ComponentModel.Composition;
-using Microsoft.VisualStudio.Shell;
+﻿using System.ComponentModel.Composition;
 using EnvDTE;
+using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
+using Vim;
+using Vim.UI.Wpf;
 
 namespace VsVim.Implementation
 {
