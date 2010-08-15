@@ -446,6 +446,14 @@ type MotionResult =
     | Error of string
     | Cancelled
 
+/// Holds the data which is global to all IMotionCapture instances
+type IMotionCaptureGlobalData =
+
+    /// Motion function used with the last f, F, t or T motion.  The 
+    // first item in the tuple is the forward version and the second item
+    // is the backwards version
+    abstract LastCharSearch : (MotionFunction * MotionFunction) option with get,set
+
 /// Responsible for capturing motions on a given ITextView
 type IMotionCapture =
 

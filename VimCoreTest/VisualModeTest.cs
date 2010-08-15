@@ -9,8 +9,8 @@ using NUnit.Framework;
 using Vim;
 using Vim.Modes;
 using Vim.Modes.Visual;
-using Vim.UnitTest.Mock;
 using Vim.UnitTest;
+using Vim.UnitTest.Mock;
 
 namespace VimCore.Test
 {
@@ -18,6 +18,7 @@ namespace VimCore.Test
     public class VisualModeTest
     {
         private MockFactory _factory;
+        private Mock<IVimHost> _host;
         private Mock<IWpfTextView> _view;
         private Mock<ITextCaret> _caret;
         private Mock<ITextSelection> _selection;
@@ -36,7 +37,7 @@ namespace VimCore.Test
         }
 
         public void Create2(
-            ModeKind kind=ModeKind.VisualCharacter, 
+            ModeKind kind = ModeKind.VisualCharacter,
             params string[] lines)
         {
             _buffer = EditorUtil.CreateBuffer(lines);
@@ -54,12 +55,17 @@ namespace VimCore.Test
             _foldManager = _factory.Create<IFoldManager>();
             _operations = _factory.Create<IOperations>();
             _operations.SetupGet(x => x.FoldManager).Returns(_foldManager.Object);
+            _host = _factory.Create<IVimHost>(MockBehavior.Loose);
             _bufferData = MockObjectFactory.CreateVimBuffer(
                 _view.Object,
                 "test",
-                MockObjectFactory.CreateVim(_map).Object,
-                factory:_factory);
-            var capture = new MotionCapture(_view.Object, new MotionUtil(_view.Object, _bufferData.Object.Settings.GlobalSettings));
+                MockObjectFactory.CreateVim(_map, host: _host.Object).Object,
+                factory: _factory);
+            var capture = new MotionCapture(
+                _host.Object,
+                _view.Object,
+                new MotionUtil(_view.Object, _bufferData.Object.Settings.GlobalSettings),
+                new MotionCaptureGlobalData());
             var runner = new CommandRunner(_view.Object, _map, (IMotionCapture)capture, (new Mock<IStatusUtil>()).Object);
             _modeRaw = new Vim.Modes.Visual.VisualMode(_bufferData.Object, _operations.Object, kind, runner, capture, _tracker.Object);
             _mode = _modeRaw;
@@ -73,7 +79,7 @@ namespace VimCore.Test
                                 It.IsAny<FSharpOption<string>>(),
                                 It.IsAny<IEnumerable<SnapshotSpan>>(),
                                 It.IsAny<FSharpFunc<SnapshotSpan, Unit>>()))
-                .Callback<FSharpOption<string>,IEnumerable<SnapshotSpan>, FSharpFunc<SnapshotSpan,Unit>>((unused, spans, func) =>
+                .Callback<FSharpOption<string>, IEnumerable<SnapshotSpan>, FSharpFunc<SnapshotSpan, Unit>>((unused, spans, func) =>
                 {
                     foreach (var span in spans)
                     {
@@ -94,7 +100,7 @@ namespace VimCore.Test
             return spans;
         }
 
-        [Test,Description("Movement commands")]
+        [Test, Description("Movement commands")]
         public void Commands1()
         {
             Create("foo");
@@ -161,11 +167,11 @@ namespace VimCore.Test
             Assert.IsFalse(_modeRaw.InExplicitMove);
         }
 
-        [Test,Description("Must handle arbitrary input to prevent changes but don't list it as a command")]
+        [Test, Description("Must handle arbitrary input to prevent changes but don't list it as a command")]
         public void PreventInput1()
         {
-            Create(lines:"foo");
-            var input = KeyInputUtil.CharToKeyInput(',');
+            Create(lines: "foo");
+            var input = KeyInputUtil.CharToKeyInput('@');
             _operations.Setup(x => x.Beep()).Verifiable();
             Assert.IsFalse(_mode.CommandNames.Any(x => x.KeyInputs.First().Char == input.Char));
             Assert.IsTrue(_mode.CanProcess(input));
@@ -210,7 +216,7 @@ namespace VimCore.Test
         [Test]
         public void YankLines1()
         {
-            Create("foo","bar");
+            Create("foo", "bar");
             var tss = _buffer.CurrentSnapshot;
             var line = tss.GetLineFromLineNumber(0);
             _selection.SetupGet(x => x.Start).Returns(new VirtualSnapshotPoint(line.Start)).Verifiable();
@@ -371,7 +377,7 @@ namespace VimCore.Test
         public void ChangeCase1()
         {
             Create("foo bar", "baz");
-            var span = _buffer.GetSpan(0,3);
+            var span = _buffer.GetSpan(0, 3);
             _operations
                 .Setup(x => x.ChangeLetterCase(span))
                 .Verifiable();
@@ -392,7 +398,7 @@ namespace VimCore.Test
             var count = 0;
             _operations
                 .Setup(x => x.ChangeLetterCase(It.IsAny<SnapshotSpan>()))
-                .Callback(() => {count++;})
+                .Callback(() => { count++; })
                 .Verifiable();
             _mode.Process('~');
             _selection.Verify();
@@ -596,7 +602,7 @@ namespace VimCore.Test
             Create("the", "quick", "brown", "fox");
             var span = _buffer.GetSpan(0, 1);
             _operations.Setup(x => x.SelectedSpan).Returns(span);
-            _foldManager.Setup(x => x.CreateFold(_buffer.GetLineSpanIncludingLineBreak(0,0))).Verifiable();
+            _foldManager.Setup(x => x.CreateFold(_buffer.GetLineSpanIncludingLineBreak(0, 0))).Verifiable();
             _mode.Process("zF");
             _factory.Verify();
         }
@@ -647,7 +653,7 @@ namespace VimCore.Test
             Assert.IsTrue(ret.IsSwitchModeWithArgument);
             Assert.AreEqual(ModeKind.Command, ret.AsSwitchModeWithArgument().Item1);
             Assert.AreEqual(ModeArgument.FromVisual, ret.AsSwitchModeWithArgument().Item2);
-        } 
+        }
 
         #endregion
     }

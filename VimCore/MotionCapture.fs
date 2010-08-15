@@ -4,24 +4,26 @@ namespace Vim
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor;
 
+type internal MotionCaptureGlobalData() =
+    let mutable _lastCharSearch : (MotionFunction * MotionFunction) option = None
+
+    interface IMotionCaptureGlobalData with
+        member x.LastCharSearch 
+            with get() = _lastCharSearch
+            and set value = _lastCharSearch <- value
+
 type internal MotionCapture 
     (
+        _host : IVimHost,
         _textView : ITextView,
-        _util :IMotionUtil ) = 
+        _util :IMotionUtil,
+        _globalData : IMotionCaptureGlobalData ) = 
 
     let NeedMoreInputWithEscape func =
         let inner (ki:KeyInput) = 
             if ki.Key = VimKey.Escape then ComplexMotionResult.Cancelled
             else func(ki)
         ComplexMotionResult.NeedMoreInput inner
-
-    let ForwardCharMotionCore func = 
-        let inner (ki:KeyInput) = ComplexMotionResult.Finished (func ki.Char)
-        NeedMoreInputWithEscape inner
-
-    let BackwardCharMotionCore count func = 
-        let inner (ki:KeyInput) = ComplexMotionResult.Finished (func ki.Char)
-        NeedMoreInputWithEscape inner
 
     let WaitCharThen func =
         let inner (ki:KeyInput) = 
@@ -30,6 +32,27 @@ type internal MotionCapture
                 func ki.Char count
             ComplexMotionResult.Finished func
         NeedMoreInputWithEscape inner
+
+    let CharSearch func backwardFunc =
+        let inner c count = 
+            let result = func c count
+            if Option.isSome result then
+                let makeMotion func count = 
+                    let count = CommandUtil.CountOrDefault count
+                    func c count
+                _globalData.LastCharSearch <- Some (makeMotion func, makeMotion backwardFunc)
+            result
+        WaitCharThen inner 
+        
+    /// Repeat the last f,F,t or T motion.  
+    let RepeatLastCharSearch direction count =
+        match _globalData.LastCharSearch with
+        | None -> 
+            _host.Beep()
+            None
+        | Some(forwardFunc,backwardFunc) ->
+            if SearchKindUtil.IsForward direction then forwardFunc count
+            else backwardFunc count
 
     let SimpleMotions =  
         let singleToKiSet = KeyNotationUtil.StringToKeyInput >> OneKeyInput
@@ -87,6 +110,8 @@ type internal MotionCapture
                 yield ("H", fun countOpt -> _util.LineFromTopOfVisibleWindow countOpt |> Some)
                 yield ("L", fun countOpt -> _util.LineFromBottomOfVisibleWindow countOpt |> Some)
                 yield ("M", fun _ -> _util.LineInMiddleOfVisibleWindow () |> Some)
+                yield (";", fun count -> RepeatLastCharSearch SearchKind.Forward count )
+                yield (",", fun count -> RepeatLastCharSearch SearchKind.Backward count )
             } |> Seq.map (fun (ki,func) -> SimpleMotionCommand(singleToKiSet ki, func))
 
         let needCountOpt2 =
@@ -101,10 +126,10 @@ type internal MotionCapture
         let singleToKiSet = KeyNotationUtil.StringToKeyInput >> OneKeyInput
         let needCount = 
             seq {
-                yield ("f", true, fun () -> WaitCharThen _util.ForwardChar)
-                yield ("t", true, fun () -> WaitCharThen _util.ForwardTillChar)
-                yield ("F", true, fun () -> WaitCharThen _util.BackwardChar)
-                yield ("T", true, fun () -> WaitCharThen _util.BackwardTillChar)
+                yield ("f", true, fun () -> CharSearch _util.ForwardChar _util.BackwardChar)
+                yield ("t", true, fun () -> CharSearch _util.ForwardTillChar _util.BackwardTillChar)
+                yield ("F", true, fun () -> CharSearch _util.BackwardChar _util.ForwardChar)
+                yield ("T", true, fun () -> CharSearch _util.BackwardTillChar _util.ForwardTillChar)
             } |> Seq.map (fun (ki,isMovement,func) -> ComplexMotionCommand(singleToKiSet ki, isMovement,func))
         needCount
     

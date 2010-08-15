@@ -8,6 +8,7 @@ using Microsoft.VisualStudio.Utilities;
 using Moq;
 using NUnit.Framework;
 using Vim.Extensions;
+using Vim.UnitTest.Mock;
 
 namespace VsVim.UnitTest
 {

@@ -14,6 +14,7 @@ open Vim.Modes
 /// Default implementation of IVim 
 [<Export(typeof<IVimBufferFactory>)>]
 type internal VimBufferFactory
+
     [<ImportingConstructor>]
     (
         _host : IVimHost,
@@ -27,11 +28,13 @@ type internal VimBufferFactory
         _undoManagerProvider : ITextBufferUndoManagerProvider,
         _foldManagerFactory : IFoldManagerFactory ) =
 
+    let _motionCaptureGlobalData = MotionCaptureGlobalData() :> IMotionCaptureGlobalData
+
     member x.CreateBuffer (vim:IVim) view = 
         let editOperations = _editorOperationsFactoryService.GetEditorOperations(view)
         let editOptions = _editorOptionsFactoryService.GetOptions(view)
         let motionUtil = MotionUtil(view, vim.Settings) :> IMotionUtil
-        let capture = MotionCapture(view, motionUtil) :> IMotionCapture
+        let capture = MotionCapture(vim.VimHost, view, motionUtil, _motionCaptureGlobalData) :> IMotionCapture
         let outlining = _outliningManagerService.GetOutliningManager(view)
         let jumpList = JumpList(_tlcService) :> IJumpList
         let foldManager = _foldManagerFactory.GetFoldManager(view.TextBuffer)

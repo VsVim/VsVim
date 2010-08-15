@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Windows;
+using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Editor;
 using Microsoft.VisualStudio.OLE.Interop;
@@ -7,9 +8,10 @@ using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.TextManager.Interop;
 using Moq;
+using Vim.Extensions;
 using VsVim;
 
-namespace VsVim.UnitTest
+namespace Vim.UnitTest.Mock
 {
     public static class VsVimTestExtensions
     {
@@ -28,7 +30,7 @@ namespace VsVim.UnitTest
             MockFactory factory)
         {
             var vsView = factory.Create<IVsTextView>();
-            var editorAdapter = Mock.Get<IVsEditorAdaptersFactoryService>(adapter.Object.EditorAdapter);
+            var editorAdapter = global::Moq.Mock.Get<IVsEditorAdaptersFactoryService>(adapter.Object.EditorAdapter);
             editorAdapter.Setup(x => x.GetViewAdapter(textView)).Returns(vsView.Object);
             editorAdapter.Setup(x => x.GetWpfTextView(vsView.Object)).Returns(textView);
             return vsView;
@@ -106,5 +108,32 @@ namespace VsVim.UnitTest
             return element;
         }
 
+        public static void MakeLastCharSearch(
+            this Mock<IMotionCaptureGlobalData> mock,
+            Action<int> forward,
+            Action<int> backward)
+        {
+            var forwardFunc = FuncUtil.CreateMotionFunc(forward);
+            var backwardFunc = FuncUtil.CreateMotionFunc(backward);
+            var value = FSharpOption.Create(Tuple.Create(forwardFunc, backwardFunc));
+            mock.SetupGet(x => x.LastCharSearch).Returns(value);
+        }
+
+        public static void MakeLastCharSearch(
+            this Mock<IMotionCaptureGlobalData> mock,
+            Func<int, MotionData> forward,
+            Func<int, MotionData> backward)
+        {
+            var forwardFunc = FuncUtil.CreateMotionFunc(forward);
+            var backwardFunc = FuncUtil.CreateMotionFunc(backward);
+            var value = FSharpOption.Create(Tuple.Create(forwardFunc, backwardFunc));
+            mock.SetupGet(x => x.LastCharSearch).Returns(value);
+        }
+
+        public static void MakeLastCharSearchNone(this Mock<IMotionCaptureGlobalData> mock)
+        {
+            var value = FSharpOption<Tuple<FSharpFunc<FSharpOption<int>, FSharpOption<MotionData>>, FSharpFunc<FSharpOption<int>, FSharpOption<MotionData>>>>.None;
+            mock.SetupGet(x => x.LastCharSearch).Returns(value);
+        }
     }
 }

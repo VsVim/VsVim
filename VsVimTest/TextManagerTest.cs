@@ -6,6 +6,7 @@ using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Text.Editor;
 using Moq;
 using NUnit.Framework;
+using Vim.UnitTest.Mock;
 using VsVim.Implementation;
 
 namespace VsVim.UnitTest

@@ -15,6 +15,7 @@ namespace VimCore.Test
     public class CommandRunnerTest
     {
         private MockFactory _factory;
+        private Mock<IVimHost> _host;
         private Mock<IStatusUtil> _statusUtil;
         private IRegisterMap _registerMap;
         private ITextView _textView;
@@ -25,9 +26,14 @@ namespace VimCore.Test
         {
             _textView = EditorUtil.CreateView(lines);
             _factory = new MockFactory(MockBehavior.Strict);
+            _host = _factory.Create<IVimHost>();
             _statusUtil = _factory.Create<IStatusUtil>();
             _registerMap = new RegisterMap();
-            var capture = new MotionCapture(_textView, new MotionUtil(_textView, new Vim.GlobalSettings()));
+            var capture = new MotionCapture(
+                _host.Object,
+                _textView,
+                new MotionUtil(_textView, new Vim.GlobalSettings()),
+                new MotionCaptureGlobalData());
             _runnerRaw = new CommandRunner(
                 _textView,
                 _registerMap,
@@ -574,7 +580,7 @@ namespace VimCore.Test
         public void NestedRun1()
         {
             Create("hello world");
-            _runner.Add(VimUtil.CreateSimpleCommand("a", (x,y) =>
+            _runner.Add(VimUtil.CreateSimpleCommand("a", (x, y) =>
                 {
                     var res = _runner.Run(KeyInputUtil.CharToKeyInput('a'));
                     Assert.IsTrue(res.IsNestedRunDetected);
@@ -589,7 +595,7 @@ namespace VimCore.Test
         public void NestedRun2()
         {
             Create("hello world");
-            _runner.Add(VimUtil.CreateSimpleCommand("a", (x,y) =>
+            _runner.Add(VimUtil.CreateSimpleCommand("a", (x, y) =>
                 {
                     var res = _runner.Run(KeyInputUtil.CharToKeyInput('a'));
                     Assert.IsTrue(res.IsNestedRunDetected);
@@ -679,7 +685,7 @@ namespace VimCore.Test
         public void State8()
         {
             Create("hello world");
-            var command1 = VimUtil.CreateSimpleCommand("cc", (x,y) => {});
+            var command1 = VimUtil.CreateSimpleCommand("cc", (x, y) => { });
             var command2 = VimUtil.CreateMotionCommand("c", (x, y, z) => { });
             _runner.Add(command1);
             _runner.Add(command2);
@@ -696,7 +702,7 @@ namespace VimCore.Test
             var didSee = false;
             var command1 = VimUtil.CreateSimpleCommand("c", (x, y) => CommandResult.NewCompleted(ModeSwitch.NoSwitch));
             _runner.Add(command1);
-            _runner.CommandRan += (notUsed,tuple) =>
+            _runner.CommandRan += (notUsed, tuple) =>
                 {
                     Assert.AreSame(command1, tuple.Item1.Command);
                     Assert.IsTrue(tuple.Item2.IsCompleted);
@@ -713,7 +719,7 @@ namespace VimCore.Test
             var didSee = false;
             var command1 = VimUtil.CreateSimpleCommand("c", (x, y) => CommandResult.NewCompleted(ModeSwitch.NoSwitch));
             _runner.Add(command1);
-            _runner.CommandRan += (notUsed,tuple) =>
+            _runner.CommandRan += (notUsed, tuple) =>
                 {
                     Assert.AreSame(command1, tuple.Item1.Command);
                     Assert.AreEqual(2, tuple.Item1.Count.Value);
@@ -732,7 +738,7 @@ namespace VimCore.Test
             var didSee = false;
             var command1 = VimUtil.CreateSimpleCommand("cat", (x, y) => CommandResult.NewCompleted(ModeSwitch.NoSwitch));
             _runner.Add(command1);
-            _runner.CommandRan += (notUsed,tuple) =>
+            _runner.CommandRan += (notUsed, tuple) =>
                 {
                     didSee = true;
                 };

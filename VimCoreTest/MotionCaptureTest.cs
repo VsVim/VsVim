@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
@@ -13,17 +14,23 @@ namespace VimCore.Test
     [TestFixture]
     public class MotionCaptureTest
     {
+        private MockFactory _factory;
+        private Mock<IMotionCaptureGlobalData> _data;
         private Mock<ITextView> _textView;
         private Mock<IMotionUtil> _util;
+        private Mock<IVimHost> _host;
         private MotionCapture _captureRaw;
         private IMotionCapture _capture;
 
         [SetUp]
         public void Create()
         {
-            _util = new Mock<IMotionUtil>(MockBehavior.Strict);
-            _textView = MockObjectFactory.CreateTextView();
-            _captureRaw = new MotionCapture(_textView.Object, _util.Object);
+            _factory = new MockFactory(MockBehavior.Strict);
+            _util = _factory.Create<IMotionUtil>();
+            _textView = MockObjectFactory.CreateTextView(factory: _factory);
+            _host = _factory.Create<IVimHost>();
+            _data = _factory.Create<IMotionCaptureGlobalData>(MockBehavior.Loose);
+            _captureRaw = new MotionCapture(_host.Object, _textView.Object, _util.Object, _data.Object);
             _capture = _captureRaw;
         }
 
@@ -45,7 +52,7 @@ namespace VimCore.Test
             return res;
         }
 
-        internal void ProcessComplete(string input, int? count=null)
+        internal void ProcessComplete(string input, int? count = null)
         {
             Assert.IsTrue(Process(input, count).IsComplete);
         }
@@ -69,7 +76,7 @@ namespace VimCore.Test
                 .Returns(CreateMotionData())
                 .Verifiable();
             ProcessComplete("w", 1);
-            _util.Verify();
+            _factory.Verify();
         }
 
         [Test]
@@ -97,7 +104,7 @@ namespace VimCore.Test
                 .Returns(CreateMotionData())
                 .Verifiable();
             ProcessComplete("$", 1);
-            _util.Verify();
+            _factory.Verify();
         }
 
         [Test]
@@ -108,7 +115,7 @@ namespace VimCore.Test
                 .Returns(CreateMotionData())
                 .Verifiable();
             ProcessComplete("$", 2);
-            _util.Verify();
+            _factory.Verify();
         }
 
         [Test]
@@ -119,7 +126,7 @@ namespace VimCore.Test
                 .Returns(CreateMotionData())
                 .Verifiable();
             _capture.GetMotion(KeyInputUtil.VimKeyToKeyInput(VimKey.End), FSharpOption<int>.None);
-            _util.Verify();
+            _factory.Verify();
         }
 
         [Test]
@@ -130,7 +137,7 @@ namespace VimCore.Test
                 .Returns(CreateMotionData())
                 .Verifiable();
             ProcessComplete("0", 1);
-            _util.Verify();
+            _factory.Verify();
         }
 
         [Test]
@@ -141,7 +148,7 @@ namespace VimCore.Test
                 .Returns(CreateMotionData())
                 .Verifiable();
             ProcessComplete("^", 1);
-            _util.Verify();
+            _factory.Verify();
         }
 
 
@@ -153,7 +160,7 @@ namespace VimCore.Test
                 .Returns(CreateMotionData())
                 .Verifiable();
             ProcessComplete("aw", 1);
-            _util.Verify();
+            _factory.Verify();
         }
 
         [Test]
@@ -164,7 +171,7 @@ namespace VimCore.Test
                 .Returns(CreateMotionData())
                 .Verifiable();
             ProcessComplete("aw", 2);
-            _util.Verify();
+            _factory.Verify();
         }
 
         [Test]
@@ -175,7 +182,7 @@ namespace VimCore.Test
                 .Returns(CreateMotionData())
                 .Verifiable();
             ProcessComplete("H");
-            _util.Verify();
+            _factory.Verify();
         }
 
         [Test]
@@ -185,8 +192,8 @@ namespace VimCore.Test
                 .Setup(x => x.AllWord(WordKind.BigWord, 1))
                 .Returns(CreateMotionData())
                 .Verifiable();
-            ProcessComplete("aW",1);
-            _util.Verify();
+            ProcessComplete("aW", 1);
+            _factory.Verify();
         }
 
         [Test]
@@ -196,8 +203,8 @@ namespace VimCore.Test
                 .Setup(x => x.CharLeft(1))
                 .Returns(FSharpOption.Create(CreateMotionData()))
                 .Verifiable();
-            ProcessComplete("h",1);
-            _util.Verify();
+            ProcessComplete("h", 1);
+            _factory.Verify();
         }
 
         [Test]
@@ -207,8 +214,8 @@ namespace VimCore.Test
                 .Setup(x => x.CharLeft(2))
                 .Returns(FSharpOption.Create(CreateMotionData()))
                 .Verifiable();
-            ProcessComplete("2h",1);
-            _util.Verify();
+            ProcessComplete("2h", 1);
+            _factory.Verify();
         }
 
         [Test]
@@ -218,8 +225,8 @@ namespace VimCore.Test
                 .Setup(x => x.CharRight(2))
                 .Returns(FSharpOption.Create(CreateMotionData()))
                 .Verifiable();
-            ProcessComplete("2l",1);
-            _util.Verify();
+            ProcessComplete("2l", 1);
+            _factory.Verify();
         }
 
         [Test]
@@ -230,7 +237,7 @@ namespace VimCore.Test
                 .Returns(CreateMotionData())
                 .Verifiable();
             ProcessComplete("k", 1);
-            _util.Verify();
+            _factory.Verify();
         }
 
         [Test]
@@ -241,7 +248,7 @@ namespace VimCore.Test
                 .Returns(FSharpOption.Create(CreateMotionData()))
                 .Verifiable();
             ProcessComplete("e", 1);
-            _util.Verify();
+            _factory.Verify();
         }
 
         public void EndOfWord2()
@@ -251,7 +258,7 @@ namespace VimCore.Test
                 .Returns(FSharpOption.Create(CreateMotionData()))
                 .Verifiable();
             ProcessComplete("E", 1);
-            _util.Verify();
+            _factory.Verify();
         }
 
         [Test]
@@ -262,7 +269,7 @@ namespace VimCore.Test
                 .Returns(FSharpOption.Create(CreateMotionData()))
                 .Verifiable();
             ProcessComplete("fc", 1);
-            _util.Verify();
+            _factory.Verify();
         }
 
         [Test]
@@ -273,7 +280,7 @@ namespace VimCore.Test
                 .Returns(FSharpOption.Create(CreateMotionData()))
                 .Verifiable();
             ProcessComplete("tc", 1);
-            _util.Verify();
+            _factory.Verify();
         }
 
         [Test]
@@ -284,7 +291,7 @@ namespace VimCore.Test
                 .Returns(FSharpOption.Create(CreateMotionData()))
                 .Verifiable();
             ProcessComplete("Fc", 1);
-            _util.Verify();
+            _factory.Verify();
         }
 
         [Test]
@@ -295,18 +302,18 @@ namespace VimCore.Test
                 .Returns(FSharpOption.Create(CreateMotionData()))
                 .Verifiable();
             ProcessComplete("Tc", 1);
-            _util.Verify();
+            _factory.Verify();
         }
 
         [Test]
         public void Motion_G1()
         {
             _util
-                .Setup(x => x.LineOrLastToFirstNonWhitespace( FSharpOption<int>.None))
+                .Setup(x => x.LineOrLastToFirstNonWhitespace(FSharpOption<int>.None))
                 .Returns(CreateMotionData())
                 .Verifiable();
             ProcessComplete("G");
-            _util.Verify();
+            _factory.Verify();
         }
 
         [Test]
@@ -317,18 +324,18 @@ namespace VimCore.Test
                 .Returns(CreateMotionData())
                 .Verifiable();
             ProcessComplete("1G");
-            _util.Verify();
+            _factory.Verify();
         }
 
         [Test]
         public void Motion_G3()
         {
             _util
-                .Setup(x => x.LineOrLastToFirstNonWhitespace( FSharpOption.Create(42)))
+                .Setup(x => x.LineOrLastToFirstNonWhitespace(FSharpOption.Create(42)))
                 .Returns(CreateMotionData())
                 .Verifiable();
             ProcessComplete("42G");
-            _util.Verify();
+            _factory.Verify();
         }
 
         [Test]
@@ -339,18 +346,18 @@ namespace VimCore.Test
                 .Returns(CreateMotionData())
                 .Verifiable();
             ProcessComplete("gg");
-            _util.Verify();
+            _factory.Verify();
         }
 
         [Test]
         public void Motion_gg2()
         {
             _util
-                .Setup(x => x.LineOrFirstToFirstNonWhitespace( FSharpOption.Create(2)))
+                .Setup(x => x.LineOrFirstToFirstNonWhitespace(FSharpOption.Create(2)))
                 .Returns(CreateMotionData())
                 .Verifiable();
             ProcessComplete("2gg");
-            _util.Verify();
+            _factory.Verify();
         }
 
         [Test]
@@ -361,7 +368,7 @@ namespace VimCore.Test
                 .Returns(CreateMotionData())
                 .Verifiable();
             ProcessComplete("g_");
-            _util.Verify();
+            _factory.Verify();
         }
 
         [Test]
@@ -372,7 +379,7 @@ namespace VimCore.Test
                 .Returns(CreateMotionData())
                 .Verifiable();
             ProcessComplete("2g_");
-            _util.Verify();
+            _factory.Verify();
         }
 
         [Test]
@@ -383,7 +390,7 @@ namespace VimCore.Test
                 .Returns(CreateMotionData())
                 .Verifiable();
             ProcessComplete("M");
-            _util.Verify();
+            _factory.Verify();
         }
 
         [Test]
@@ -394,7 +401,7 @@ namespace VimCore.Test
                 .Returns(CreateMotionData())
                 .Verifiable();
             ProcessComplete("2L");
-            _util.Verify();
+            _factory.Verify();
         }
 
         [Test]
@@ -405,7 +412,7 @@ namespace VimCore.Test
                 .Returns(CreateMotionData())
                 .Verifiable();
             ProcessComplete("L");
-            _util.Verify();
+            _factory.Verify();
         }
 
         [Test]
@@ -416,7 +423,7 @@ namespace VimCore.Test
                 .Returns(CreateMotionData())
                 .Verifiable();
             ProcessComplete("_");
-            _util.Verify();
+            _factory.Verify();
         }
 
         [Test]
@@ -427,8 +434,74 @@ namespace VimCore.Test
                 .Returns(CreateMotionData())
                 .Verifiable();
             ProcessComplete("2_");
-            _util.Verify();
+            _factory.Verify();
         }
+
+        [Test]
+        public void Motion_lastCharForward1()
+        {
+            _host.Setup(x => x.Beep()).Verifiable();
+            _data.MakeLastCharSearchNone();
+            var res = Process(";", null);
+            Assert.IsTrue(res.IsError);
+            _factory.Verify();
+        }
+
+        [Test]
+        public void Motion_lastCharForward2()
+        {
+            int? count = null;
+            _data.MakeLastCharSearch(
+                c => { count = c; },
+                _ => { throw new Exception(); });
+            var res = Process(";", null);
+            Assert.IsTrue(res.IsError);
+            Assert.AreEqual(1, count.Value);
+        }
+
+        [Test]
+        public void Motion_lastCharForward3()
+        {
+            int? count = null;
+            _data.MakeLastCharSearch(
+                c => { count = c; return CreateMotionData(); },
+                _ => { throw new Exception(); });
+            ProcessComplete("3;");
+            Assert.AreEqual(3, count.Value);
+        }
+
+        [Test]
+        public void Motion_lastCharBackward1()
+        {
+            _host.Setup(x => x.Beep()).Verifiable();
+            _data.MakeLastCharSearchNone();
+            var res = Process(",", null);
+            Assert.IsTrue(res.IsError);
+            _factory.Verify();
+        }
+
+        [Test]
+        public void Motion_lastCharBackward2()
+        {
+            int? count = null;
+            _data.MakeLastCharSearch(
+                _ => { throw new Exception(); },
+                c => { count = c; return CreateMotionData(); });
+            ProcessComplete(",");
+            Assert.AreEqual(1, count.Value);
+        }
+
+        [Test]
+        public void Motion_lastCharBackward3()
+        {
+            int? count = null;
+            _data.MakeLastCharSearch(
+                _ => { throw new Exception(); },
+                c => { count = c; return CreateMotionData(); });
+            ProcessComplete("3,");
+            Assert.AreEqual(3, count.Value);
+        }
+
     }
 
 }

@@ -116,25 +116,29 @@ namespace Vim.UnitTest.Mock
             return mock;
         }
 
-        public static Mock<ITextCaret> CreateCaret()
+        public static Mock<ITextCaret> CreateCaret(MockFactory factory = null)
         {
-            return new Mock<ITextCaret>(MockBehavior.Strict);
+            factory = factory ?? new MockFactory(MockBehavior.Strict);
+            return factory.Create<ITextCaret>();
         }
 
-        public static Mock<ITextSelection> CreateSelection()
+        public static Mock<ITextSelection> CreateSelection(MockFactory factory = null)
         {
-            return new Mock<ITextSelection>(MockBehavior.Strict);
+            factory = factory ?? new MockFactory(MockBehavior.Strict);
+            return factory.Create<ITextSelection>();
         }
 
         public static Mock<ITextView> CreateTextView(
             ITextBuffer buffer = null,
             ITextCaret caret = null,
-            ITextSelection selection = null)
+            ITextSelection selection = null,
+            MockFactory factory = null)
         {
-            buffer = buffer ?? CreateTextBuffer(addSnapshot: true).Object;
-            caret = caret ?? CreateCaret().Object;
-            selection = selection ?? CreateSelection().Object;
-            var view = new Mock<ITextView>(MockBehavior.Strict);
+            factory = factory ?? new MockFactory(MockBehavior.Strict);
+            buffer = buffer ?? CreateTextBuffer(addSnapshot: true, factory: factory).Object;
+            caret = caret ?? CreateCaret(factory: factory).Object;
+            selection = selection ?? CreateSelection(factory: factory).Object;
+            var view = factory.Create<ITextView>();
             view.SetupGet(x => x.Caret).Returns(caret);
             view.SetupGet(x => x.Selection).Returns(selection);
             view.SetupGet(x => x.TextBuffer).Returns(buffer);
@@ -185,9 +189,10 @@ namespace Vim.UnitTest.Mock
             return Tuple.Create(view, factory);
         }
 
-        public static Mock<ITextBuffer> CreateTextBuffer(bool addSnapshot = false)
+        public static Mock<ITextBuffer> CreateTextBuffer(bool addSnapshot = false, MockFactory factory = null)
         {
-            var mock = new Mock<ITextBuffer>(MockBehavior.Strict);
+            factory = factory ?? new MockFactory(MockBehavior.Strict);
+            var mock = factory.Create<ITextBuffer>();
             mock.SetupGet(x => x.Properties).Returns(new Microsoft.VisualStudio.Utilities.PropertyCollection());
             if (addSnapshot)
             {
