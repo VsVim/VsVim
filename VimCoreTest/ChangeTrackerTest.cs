@@ -6,8 +6,8 @@ using Moq;
 using NUnit.Framework;
 using Vim;
 using Vim.Extensions;
-using Vim.UnitTest.Mock;
 using Vim.UnitTest;
+using Vim.UnitTest.Mock;
 
 namespace VimCore.Test
 {
@@ -50,11 +50,12 @@ namespace VimCore.Test
         }
 
         private CommandRunData CreateCommand(
-            Func<FSharpOption<int>,Register,CommandResult> func = null,
+            Func<FSharpOption<int>, Register, CommandResult> func = null,
             KeyInputSet name = null,
             CommandFlags? flags = null,
             int? count = 0,
-            MotionRunData motionRunData = null)
+            MotionRunData motionRunData = null,
+            SnapshotSpan? visualRunData = null)
         {
             name = name ?? KeyInputSet.NewOneKeyInput(KeyInputUtil.CharToKeyInput('c'));
             var flagsRaw = flags ?? CommandFlags.None;
@@ -68,8 +69,8 @@ namespace VimCore.Test
                 cmd,
                 new Register('c'),
                 countRaw,
-                motionRunData != null ? FSharpOption.Create(motionRunData) : FSharpOption<MotionRunData>.None);
-
+                motionRunData != null ? FSharpOption.Create(motionRunData) : FSharpOption<MotionRunData>.None,
+                visualRunData != null ? FSharpOption.Create(visualRunData.Value) : FSharpOption<SnapshotSpan>.None);
         }
 
         private CommandResult CreateResult()
@@ -83,7 +84,7 @@ namespace VimCore.Test
             CreateForText("hello");
             var res = CommandResult.NewCompleted(ModeSwitch.NewSwitchMode(ModeKind.Insert));
             _normalModeRunner.RaiseCommandRan(
-                CreateCommand(flags:CommandFlags.LinkedWithNextTextChange | CommandFlags.Repeatable),
+                CreateCommand(flags: CommandFlags.LinkedWithNextTextChange | CommandFlags.Repeatable),
                 res);
             _buffer.ModeKindImpl = ModeKind.Insert;
             _textChangeTracker.RaiseChangeCompleted("foo");
@@ -116,7 +117,7 @@ namespace VimCore.Test
         public void OnCommand3()
         {
             CreateForText("hello");
-            var cmd = CreateCommand(flags: CommandFlags.Movement); 
+            var cmd = CreateCommand(flags: CommandFlags.Movement);
             _normalModeRunner.RaiseCommandRan(cmd, CreateResult());
             Assert.IsTrue(_tracker.LastChange.IsNone());
         }

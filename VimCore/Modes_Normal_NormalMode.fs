@@ -57,6 +57,7 @@ type internal NormalMode
             match command with 
             | SimpleCommand(_) -> false
             | LongCommand(_) -> false
+            | VisualCommand(_) -> false 
             | MotionCommand(_) -> not command.IsMovement
 
         match _runner.State with
@@ -162,6 +163,7 @@ type internal NormalMode
                                 | Some(motionData) -> func countOpt reg motionData |> ignore
     
                         | LongCommand(_) -> _statusUtil.OnError (Resources.NormalMode_RepeatNotSupportedOnCommand commandName)
+                        | VisualCommand(_) -> _statusUtil.OnError (Resources.NormalMode_RepeatNotSupportedOnCommand commandName)
                     | LinkedChange(left, right) ->
                         repeatChange left countOpt
                         repeatChange right None

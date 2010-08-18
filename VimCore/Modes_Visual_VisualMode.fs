@@ -16,6 +16,14 @@ type internal VisualMode
         _capture : IMotionCapture,
         _selectionTracker : ISelectionTracker ) = 
 
+    let _motionKind = MotionKind.Inclusive
+    let _operationKind, _visualKind = 
+        match _kind with
+        | ModeKind.VisualBlock -> (OperationKind.CharacterWise, VisualCommandKind.Block)
+        | ModeKind.VisualCharacter -> (OperationKind.CharacterWise, VisualCommandKind.Character)
+        | ModeKind.VisualLine -> (OperationKind.LineWise, VisualCommandKind.Line)
+        | _ -> failwith "Invalid"
+
     let mutable _builtCommands = false
 
     /// Tracks the count of explicit moves we are seeing.  Normally an explicit character
@@ -49,7 +57,8 @@ type internal VisualMode
             match command with
             | Command.SimpleCommand(name,kind,func) -> Command.SimpleCommand (name,kind, wrapSimple func) |> Some
             | Command.MotionCommand (name,kind,func) -> Command.MotionCommand (name, kind,wrapComplex func) |> Some
-            | Command.LongCommand (name,kind,func) -> None )
+            | Command.LongCommand (name,kind,func) -> None 
+            | Command.VisualCommand (name,kind,visualKind,func) -> None )
         |> SeqUtil.filterToSome
 
     member private x.BuildOperationsSequence() =
@@ -95,7 +104,6 @@ type internal VisualMode
                         let span = SnapshotSpan(startPoint,endPoint)
                         _operations.Yank span MotionKind.Inclusive OperationKind.LineWise reg
                         CommandResult.Completed ModeSwitch.SwitchPreviousMode))
-                yield ("d", deleteSelection)
                 yield ("x", deleteSelection)
                 yield ("<Del>", deleteSelection)
                 yield ("c", changeSelection)
@@ -152,7 +160,24 @@ type internal VisualMode
                 let name = KeyNotationUtil.StringToKeyInputSet name
                 Command.SimpleCommand (name, flags, func))
 
-        Seq.append simples complex
+        /// Visual Commands
+        let visualSimple = 
+            seq {
+                yield ("d", CommandFlags.Repeatable, Some ModeKind.Normal, fun count reg span -> _operations.DeleteSpan span _motionKind _operationKind reg |> ignore)
+            }
+            |> Seq.map (fun (str,flags,mode,func) ->
+                let kiSet = KeyNotationUtil.StringToKeyInputSet str
+                let modeSwitch = 
+                    match mode with
+                    | None -> ModeSwitch.SwitchPreviousMode
+                    | Some(kind) -> ModeSwitch.SwitchMode kind
+                let func2 count reg span = 
+                    let count = CommandUtil.CountOrDefault count
+                    func count reg span 
+                    CommandResult.Completed modeSwitch
+                Command.VisualCommand(kiSet, flags, _visualKind, func2) )
+                
+        Seq.append simples complex |> Seq.append visualSimple
 
     member private x.EnsureCommandsBuilt() =
         if not _builtCommands then

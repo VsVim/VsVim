@@ -197,6 +197,13 @@ module SnapshotSpanUtil =
 
 /// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
 /// include any Vim specific logic
+module VirtualSnapshotSpanUtil = 
+
+    /// Get the span 
+    let GetSnapshotSpan (span:VirtualSnapshotSpan) = span.SnapshotSpan
+
+/// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
+/// include any Vim specific logic
 module SnapshotLineUtil =
 
     /// Length of the line
@@ -568,6 +575,7 @@ module TextSelectionUtil =
 
     /// Returns the SnapshotSpan which represents the total of the selection.  This is a SnapshotSpan of the left
     /// most and right most point point in any of the selected spans 
+    /// TODO: Delete this
     let GetOverarchingSelectedSpan (selection:ITextSelection) = 
         if selection.IsEmpty || 0 = selection.SelectedSpans.Count then None
         else
@@ -577,6 +585,9 @@ module TextSelectionUtil =
             let span = Span.FromBounds(min,max)
             let snapshot = spans.Item(0).Snapshot
             SnapshotSpan(snapshot, span) |> Some
+
+    /// Gets the selection of the editor
+    let GetStreamSelectionSpan (selection:ITextSelection) = selection.StreamSelectionSpan
 
 module EditorOptionsUtil =
 
