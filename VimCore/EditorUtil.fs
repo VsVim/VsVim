@@ -152,6 +152,11 @@ module SnapshotSpanUtil =
     /// the span but instead the first point after the span
     let GetStartAndEndLine span = GetStartLine span,GetEndLine span
 
+    /// Get the number of lines in this SnapshotSpan
+    let GetLineCount span = 
+        let startLine,endLine = GetStartAndEndLine span
+        (endLine.LineNumber - startLine.LineNumber) + 1
+
     /// Is this a multiline SnapshotSpan
     let IsMultiline span = 
         let startLine,endLine = GetStartAndEndLine span
@@ -492,12 +497,17 @@ module SnapshotPointUtil =
     /// Add 1 to the given SnapshotPoint
     let AddOne (point:SnapshotPoint) = point.Add(1)
 
+    /// Try and add count to the SnapshotPoint.  Will return None if this causes
+    /// the point to go past the end of the Snapshot
+    let TryAdd point count = 
+        let pos = (GetPosition point) + count
+        let snapshot = GetSnapshot point
+        if pos > snapshot.Length then None
+        else point.Add(count) |> Some
+
     /// Maybe add 1 to the given point.  Will return the original point
     /// if it's the end of the Snapshot
-    let MaybeAddOne point = 
-        let endPoint = point |> GetSnapshot |> SnapshotUtil.GetEndPoint 
-        if endPoint = point then endPoint
-        else point.Add(1)
+    let TryAddOne point = TryAdd point 1
 
 module VirtualSnapshotPointUtil =
     

@@ -519,7 +519,12 @@ type internal CommonOperations ( _data : OperationsData ) =
                         |> SnapshotSpanUtil.GetPointsBackward 
                         |> Seq.tryFind (fun x -> x.GetChar() |> CharUtil.IsWhiteSpace |> not)
                     match point with 
-                    | Some(p) -> SnapshotSpan(data.OperationSpan.Start, (SnapshotPointUtil.MaybeAddOne p))
+                    | Some(p) -> 
+                        let endPoint = 
+                            p
+                            |> SnapshotPointUtil.TryAddOne 
+                            |> OptionUtil.getOrDefault (SnapshotUtil.GetEndPoint (p.Snapshot))
+                        SnapshotSpan(data.OperationSpan.Start, endPoint)
                     | None -> data.OperationSpan
             x.DeleteSpan span data.MotionKind data.OperationKind reg |> ignore
 

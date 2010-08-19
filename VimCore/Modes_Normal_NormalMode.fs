@@ -134,6 +134,33 @@ type internal NormalMode
     /// Implements the '.' operator.  This is a special command in that it cannot be easily routed 
     /// to interfaces like ICommonOperations due to the complexity of repeating the command here.  
     member private this.RepeatLastChange countOpt reg =  
+
+        // Build up the Span for repeating a Visual Style command
+        let buildNewSpan oldSpan kind = 
+            let oldLineCount = SnapshotSpanUtil.GetLineCount oldSpan
+            let caretPoint,caretLine = TextViewUtil.GetCaretPointAndLine _bufferData.TextView
+            let snapshot = _bufferData.TextSnapshot
+            let buildLine () = 
+                let diff = oldLineCount - 1
+                SnapshotSpanUtil.ExtendDownIncludingLineBreak caretLine.ExtentIncludingLineBreak diff
+            let buildChar () = 
+                let diff = oldLineCount - 1
+                let span = SnapshotSpanUtil.ExtendDownIncludingLineBreak caretLine.ExtentIncludingLineBreak diff
+                let endPoint = 
+                    let endLineEnd = span |> SnapshotSpanUtil.GetEndLine |> SnapshotLineUtil.GetEnd
+                    let count = 
+                        let oldEndLine = oldSpan |> SnapshotSpanUtil.GetEndLine
+                        oldSpan.End.Position - oldEndLine.Start.Position
+                    match SnapshotPointUtil.TryAdd span.End count with
+                    | None -> endLineEnd
+                    | Some(point) -> if point.Position > endLineEnd.Position then endLineEnd else point
+                SnapshotSpan(span.Start, endPoint)
+
+            match kind with 
+            | VisualCommandKind.Block -> buildLine()
+            | VisualCommandKind.Character -> buildChar()
+            | VisualCommandKind.Line -> buildLine()
+
         if _data.IsInRepeatLastChange then _statusUtil.OnError Resources.NormalMode_RecursiveRepeatDetected
         else
             _data <- { _data with IsInRepeatLastChange = true }
@@ -163,7 +190,16 @@ type internal NormalMode
                                 | Some(motionData) -> func countOpt reg motionData |> ignore
     
                         | LongCommand(_) -> _statusUtil.OnError (Resources.NormalMode_RepeatNotSupportedOnCommand commandName)
-                        | VisualCommand(_) -> _statusUtil.OnError (Resources.NormalMode_RepeatNotSupportedOnCommand commandName)
+                        | VisualCommand(_,_,kind,func) -> 
+                            // Repeating a visual command is more complex because we need to calculate the
+                            // new visual range
+                            match data.VisualRunData with
+                            | None -> _statusUtil.OnError (Resources.NormalMode_RepeatNotSupportedOnCommand commandName)
+                            | Some(oldSpan) ->
+                                let span = buildNewSpan oldSpan kind
+                                func countOpt reg span |> ignore
+
+                                
                     | LinkedChange(left, right) ->
                         repeatChange left countOpt
                         repeatChange right None
