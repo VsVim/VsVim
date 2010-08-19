@@ -19,9 +19,9 @@ type internal VisualMode
     let _motionKind = MotionKind.Inclusive
     let _operationKind, _visualKind = 
         match _kind with
-        | ModeKind.VisualBlock -> (OperationKind.CharacterWise, VisualCommandKind.Block)
-        | ModeKind.VisualCharacter -> (OperationKind.CharacterWise, VisualCommandKind.Character)
-        | ModeKind.VisualLine -> (OperationKind.LineWise, VisualCommandKind.Line)
+        | ModeKind.VisualBlock -> (OperationKind.CharacterWise, VisualKind.Block)
+        | ModeKind.VisualCharacter -> (OperationKind.CharacterWise, VisualKind.Character)
+        | ModeKind.VisualLine -> (OperationKind.LineWise, VisualKind.Line)
         | _ -> failwith "Invalid"
 
     let mutable _builtCommands = false

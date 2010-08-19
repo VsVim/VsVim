@@ -155,7 +155,6 @@ type IMotionUtil =
     /// Go to the middle line in the visible window.  
     abstract LineInMiddleOfVisibleWindow : unit -> MotionData
 
-
 type ModeKind = 
     | Normal = 1
     | Insert = 2
@@ -167,6 +166,12 @@ type ModeKind =
 
     // Mode when Vim is disabled via the user
     | Disabled = 42
+
+[<RequireQualifiedAccess>]
+type VisualKind =
+    | Character
+    | Line
+    | Block
 
 /// The actual command name.  This is a wrapper over the collection of KeyInput 
 /// values which make up a command name.  
@@ -329,12 +334,6 @@ type LongCommandResult =
     | Cancelled
     | NeedMoreInput of (KeyInput -> LongCommandResult)
 
-[<RequireQualifiedAccess>]
-type VisualCommandKind =
-    | Line
-    | Character
-    | Block
-
 /// Information about the attributes of Command
 [<System.Flags>]
 type CommandFlags =
@@ -373,7 +372,7 @@ type Command =
 
     /// Represents a command which has a name and relies on the Visual Mode Span to 
     /// be executed
-    | VisualCommand of KeyInputSet * CommandFlags * VisualCommandKind * (int option -> Register -> SnapshotSpan -> CommandResult)
+    | VisualCommand of KeyInputSet * CommandFlags * VisualKind * (int option -> Register -> SnapshotSpan -> CommandResult)
 
     with 
 

@@ -157,9 +157,9 @@ type internal NormalMode
                 SnapshotSpan(span.Start, endPoint)
 
             match kind with 
-            | VisualCommandKind.Block -> buildLine()
-            | VisualCommandKind.Character -> buildChar()
-            | VisualCommandKind.Line -> buildLine()
+            | VisualKind.Block -> buildLine()
+            | VisualKind.Character -> buildChar()
+            | VisualKind.Line -> buildLine()
 
         if _data.IsInRepeatLastChange then _statusUtil.OnError Resources.NormalMode_RecursiveRepeatDetected
         else
