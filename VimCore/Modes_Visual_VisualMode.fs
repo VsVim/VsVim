@@ -63,6 +63,15 @@ type internal VisualMode
 
     member private x.BuildOperationsSequence() =
 
+        let runVisualCommand func count reg visualSpan = 
+            match visualSpan with
+            | VisualSpan.Single(_,span) -> func count reg span
+            | VisualSpan.Multiple(_,col) -> 
+                let description = Resources.Common_BulkEdit
+                use transaction = _operations.UndoRedoOperations.CreateUndoTransaction description
+                (col :> SnapshotSpan seq) |> Seq.iter (fun span -> func count reg span)
+                transaction.Complete()
+
         let editOverSpanOperation description func result = 
             let selection = _buffer.TextView.Selection
             let spans = selection.SelectedSpans
@@ -171,10 +180,11 @@ type internal VisualMode
                     match mode with
                     | None -> ModeSwitch.SwitchPreviousMode
                     | Some(kind) -> ModeSwitch.SwitchMode kind
-                let func2 count reg span = 
+                let func2 count reg visualSpan = 
                     let count = CommandUtil.CountOrDefault count
-                    func count reg span 
+                    runVisualCommand func count reg visualSpan
                     CommandResult.Completed modeSwitch
+
                 Command.VisualCommand(kiSet, flags, _visualKind, func2) )
                 
         Seq.append simples complex |> Seq.append visualSimple

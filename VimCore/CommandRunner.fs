@@ -164,13 +164,15 @@ type internal CommandRunner
                 let data = x.CreateCommandRunData command None None
                 let result = func _data.Count _data.Register 
                 RanCommand (data,result)
-            | Command.VisualCommand(_,_,_,func) -> 
-                let span = 
-                    _textView.Selection
-                    |> TextSelectionUtil.GetStreamSelectionSpan 
-                    |> VirtualSnapshotSpanUtil.GetSnapshotSpan
-                let data = x.CreateCommandRunData command None (Some span)
-                let result = func _data.Count _data.Register span
+            | Command.VisualCommand(_,_,kind,func) -> 
+                let visualSpan = 
+                    match _textView.Selection.Mode with
+                    | TextSelectionMode.Stream -> VisualSpan.Single (kind,_textView.Selection.StreamSelectionSpan.SnapshotSpan)
+                    | TextSelectionMode.Box -> VisualSpan.Multiple (kind,_textView.Selection.SelectedSpans)
+                    | _ -> failwith "Invalid Selection Mode"
+                
+                let data = x.CreateCommandRunData command None (Some visualSpan)
+                let result = func _data.Count _data.Register visualSpan
                 RanCommand (data,result)
             | Command.MotionCommand(_,_,func) -> 
 

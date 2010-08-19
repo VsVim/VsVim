@@ -20,7 +20,8 @@ type internal NormalMode
         _statusUtil : IStatusUtil,
         _displayWindowBroker : IDisplayWindowBroker,
         _runner : ICommandRunner,
-        _capture : IMotionCapture ) as this = 
+        _capture : IMotionCapture,
+        _visualSpanCalculator : IVisualSpanCalculator ) as this =
 
     /// Reset state for data in Normal Mode
     let _emptyData = {
@@ -135,32 +136,6 @@ type internal NormalMode
     /// to interfaces like ICommonOperations due to the complexity of repeating the command here.  
     member private this.RepeatLastChange countOpt reg =  
 
-        // Build up the Span for repeating a Visual Style command
-        let buildNewSpan oldSpan kind = 
-            let oldLineCount = SnapshotSpanUtil.GetLineCount oldSpan
-            let caretPoint,caretLine = TextViewUtil.GetCaretPointAndLine _bufferData.TextView
-            let snapshot = _bufferData.TextSnapshot
-            let buildLine () = 
-                let diff = oldLineCount - 1
-                SnapshotSpanUtil.ExtendDownIncludingLineBreak caretLine.ExtentIncludingLineBreak diff
-            let buildChar () = 
-                let diff = oldLineCount - 1
-                let span = SnapshotSpanUtil.ExtendDownIncludingLineBreak caretLine.ExtentIncludingLineBreak diff
-                let endPoint = 
-                    let endLineEnd = span |> SnapshotSpanUtil.GetEndLine |> SnapshotLineUtil.GetEnd
-                    let count = 
-                        let oldEndLine = oldSpan |> SnapshotSpanUtil.GetEndLine
-                        oldSpan.End.Position - oldEndLine.Start.Position
-                    match SnapshotPointUtil.TryAdd span.End count with
-                    | None -> endLineEnd
-                    | Some(point) -> if point.Position > endLineEnd.Position then endLineEnd else point
-                SnapshotSpan(span.Start, endPoint)
-
-            match kind with 
-            | VisualKind.Block -> buildLine()
-            | VisualKind.Character -> buildChar()
-            | VisualKind.Line -> buildLine()
-
         if _data.IsInRepeatLastChange then _statusUtil.OnError Resources.NormalMode_RecursiveRepeatDetected
         else
             _data <- { _data with IsInRepeatLastChange = true }
@@ -196,7 +171,7 @@ type internal NormalMode
                             match data.VisualRunData with
                             | None -> _statusUtil.OnError (Resources.NormalMode_RepeatNotSupportedOnCommand commandName)
                             | Some(oldSpan) ->
-                                let span = buildNewSpan oldSpan kind
+                                let span = _visualSpanCalculator.CalculateForTextView _bufferData.TextView oldSpan
                                 func countOpt reg span |> ignore
 
                                 

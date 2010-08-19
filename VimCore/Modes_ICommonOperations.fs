@@ -42,6 +42,9 @@ type ICommonOperations =
     /// Associated IFoldManager
     abstract FoldManager : IFoldManager
 
+    /// Associated IUndoRedoOperations
+    abstract UndoRedoOperations : IUndoRedoOperations
+
     /// Run the beep operation
     abstract Beep : unit -> unit
 

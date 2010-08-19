@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Linq;
 using Microsoft.FSharp.Core;
-using Microsoft.VisualStudio.Text;
 using Vim.Extensions;
 
 namespace Vim.UnitTest
@@ -94,15 +93,15 @@ namespace Vim.UnitTest
             Register register,
             int? count = null,
             MotionRunData motionRunData = null,
-            SnapshotSpan? visualRunData = null)
+            VisualSpan visualRunData = null)
         {
             var countOpt = count != null ? FSharpOption.Create(count.Value) : FSharpOption<int>.None;
             var motion = motionRunData != null
                 ? FSharpOption.Create(motionRunData)
                 : FSharpOption<MotionRunData>.None;
             var visual = visualRunData != null
-                ? FSharpOption.Create(visualRunData.Value)
-                : FSharpOption<SnapshotSpan>.None;
+                ? FSharpOption.Create(visualRunData)
+                : FSharpOption<VisualSpan>.None;
             return new CommandRunData(
                 command,
                 register,

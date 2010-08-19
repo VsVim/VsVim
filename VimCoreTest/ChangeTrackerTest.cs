@@ -55,7 +55,7 @@ namespace VimCore.Test
             CommandFlags? flags = null,
             int? count = 0,
             MotionRunData motionRunData = null,
-            SnapshotSpan? visualRunData = null)
+            VisualSpan visualRunData = null)
         {
             name = name ?? KeyInputSet.NewOneKeyInput(KeyInputUtil.CharToKeyInput('c'));
             var flagsRaw = flags ?? CommandFlags.None;
@@ -70,7 +70,7 @@ namespace VimCore.Test
                 new Register('c'),
                 countRaw,
                 motionRunData != null ? FSharpOption.Create(motionRunData) : FSharpOption<MotionRunData>.None,
-                visualRunData != null ? FSharpOption.Create(visualRunData.Value) : FSharpOption<SnapshotSpan>.None);
+                visualRunData != null ? FSharpOption.Create(visualRunData) : FSharpOption<VisualSpan>.None);
         }
 
         private CommandResult CreateResult()

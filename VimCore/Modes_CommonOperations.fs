@@ -95,6 +95,7 @@ type internal CommonOperations ( _data : OperationsData ) =
         member x.TextView = _textView 
         member x.EditorOperations = _operations
         member x.FoldManager = _data.FoldManager
+        member x.UndoRedoOperations = _data.UndoRedoOperations
 
         member x.Join (start:SnapshotPoint) (kind:JoinKind) count = 
     

@@ -32,6 +32,7 @@ namespace VimCore.Test
         private Mock<IDisplayWindowBroker> _displayWindowBroker;
         private Mock<IFoldManager> _foldManager;
         private Mock<IVimHost> _host;
+        private Mock<IVisualSpanCalculator> _visualSpanCalculator;
 
         static string[] s_lines = new string[]
             {
@@ -61,6 +62,7 @@ namespace VimCore.Test
             _statusUtil = new Mock<IStatusUtil>(MockBehavior.Strict);
             _changeTracker = new Mock<IChangeTracker>(MockBehavior.Strict);
             _foldManager = new Mock<IFoldManager>(MockBehavior.Strict);
+            _visualSpanCalculator = new Mock<IVisualSpanCalculator>(MockBehavior.Strict);
             _host = new Mock<IVimHost>(MockBehavior.Loose);
             _displayWindowBroker = new Mock<IDisplayWindowBroker>(MockBehavior.Strict);
             _displayWindowBroker.SetupGet(x => x.IsCompletionActive).Returns(false);
@@ -86,7 +88,8 @@ namespace VimCore.Test
                 _statusUtil.Object,
                 _displayWindowBroker.Object,
                 (ICommandRunner)runner,
-                (IMotionCapture)capture);
+                (IMotionCapture)capture,
+                _visualSpanCalculator.Object);
             _mode = _modeRaw;
             _mode.OnEnter(ModeArgument.None);
         }

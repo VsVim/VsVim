@@ -334,6 +334,16 @@ type LongCommandResult =
     | Cancelled
     | NeedMoreInput of (KeyInput -> LongCommandResult)
 
+[<RequireQualifiedAccess>]
+type VisualSpan =
+    | Single of VisualKind * SnapshotSpan
+    | Multiple of VisualKind * NormalizedSnapshotSpanCollection
+    with
+    member x.VisualKind = 
+        match x with
+        | Single(kind,_) -> kind
+        | Multiple(kind,_) -> kind
+
 /// Information about the attributes of Command
 [<System.Flags>]
 type CommandFlags =
@@ -372,7 +382,7 @@ type Command =
 
     /// Represents a command which has a name and relies on the Visual Mode Span to 
     /// be executed
-    | VisualCommand of KeyInputSet * CommandFlags * VisualKind * (int option -> Register -> SnapshotSpan -> CommandResult)
+    | VisualCommand of KeyInputSet * CommandFlags * VisualKind * (int option -> Register -> VisualSpan -> CommandResult)
 
     with 
 
@@ -453,7 +463,7 @@ type CommandRunData = {
     MotionRunData : MotionRunData option
 
     /// For visual commands this holds the relevant span information
-    VisualRunData : SnapshotSpan option
+    VisualRunData : VisualSpan option
 }
 
 type MotionResult = 
@@ -1153,3 +1163,14 @@ and RepeatableChange =
     | TextChange of string
     | LinkedChange of RepeatableChange * RepeatableChange
 
+/// Responsible for calculating the new Span for a VisualMode change
+type IVisualSpanCalculator =
+
+    /// Calculate the new VisualSpan 
+    abstract CalculateForTextView : textView:ITextView -> oldspan:VisualSpan -> VisualSpan
+
+    /// Calculate the new VisualSpan for the the given point
+    abstract CalculateForPoint : SnapshotPoint -> oldSpan:VisualSpan  -> VisualSpan
+
+
+    
