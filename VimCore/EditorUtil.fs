@@ -111,6 +111,9 @@ module SnapshotSpanUtil =
     /// Get the text of the span
     let GetText (span:SnapshotSpan) = span.GetText()
 
+    /// Get the length of the span
+    let GetLength (span:SnapshotSpan) = span.Length
+
     /// Get all of the points on the specified SnapshotSpan.  Will not return the End point
     let GetPoints (span:SnapshotSpan) = 
         let tss = span.Snapshot 

@@ -29,16 +29,46 @@ type internal VisualSpanCalculator() =
         let diff = oldLineCount - 1
         SnapshotSpanUtil.ExtendDownIncludingLineBreak pointLine.ExtentIncludingLineBreak diff
 
+    /// Calculate the new span collection for the previous old span collection which
+    /// was in block mode.  All block spans start on the same column and have the same
+    /// length (as permitted by the length of the line).  Use the maximum length of the
+    /// old span collection as the desired length of the new span
+    member x.CalculateForBlock point (oldSpanCol:NormalizedSnapshotSpanCollection) =
+        let desiredLength = 
+            oldSpanCol
+            |> Seq.map SnapshotSpanUtil.GetLength
+            |> Seq.max
+        let snapshot = SnapshotPointUtil.GetSnapshot point
+        let line,column = SnapshotPointUtil.GetLineColumn point
+        let col = 
+            SnapshotUtil.GetLines snapshot line SearchKind.Forward
+            |> Seq.truncate (oldSpanCol.Count)
+            |> Seq.map (fun snapshotLine ->
+                let empty = snapshotLine.End |> SnapshotSpanUtil.CreateEmpty 
+                match SnapshotPointUtil.TryAdd snapshotLine.Start column with
+                | None -> empty
+                | Some(startPoint) -> 
+                    let endPoint = 
+                        if startPoint.Position + desiredLength >= snapshotLine.EndIncludingLineBreak.Position then snapshotLine.End
+                        else startPoint.Add(desiredLength)
+                    SnapshotSpan(startPoint, endPoint) )
+        let col = new NormalizedSnapshotSpanCollection(col)
+        VisualSpan.Multiple (VisualKind.Block,col)
+
     member x.CalculateForPoint point oldVisualSpan = 
         match oldVisualSpan with
         | VisualSpan.Single(kind,oldSpan) -> 
-            let span = 
-                match kind with
-                | VisualKind.Block -> failwith "Need to implement"
-                | VisualKind.Character -> x.CalculateForChar point oldSpan
-                | VisualKind.Line -> x.CalculateForLine point oldSpan
-            VisualSpan.Single(kind,span)
-        | VisualSpan.Multiple(_,_) -> failwith "Need to implement"
+            match kind with
+            | VisualKind.Block -> 
+                let col = new NormalizedSnapshotSpanCollection(oldSpan)
+                x.CalculateForBlock point col
+            | VisualKind.Character -> 
+                let span = x.CalculateForChar point oldSpan 
+                VisualSpan.Single (kind, span)
+            | VisualKind.Line -> 
+                let span = x.CalculateForLine point oldSpan
+                VisualSpan.Single (kind, span)
+        | VisualSpan.Multiple(_,oldSpanCol) -> x.CalculateForBlock point oldSpanCol
 
     member x.CalculateForTextView textView oldVisualSpan = 
         let point = TextViewUtil.GetCaretPoint textView

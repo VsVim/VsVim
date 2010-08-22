@@ -127,16 +127,6 @@ type internal VisualMode
                     "~",
                     (fun _ _ -> editOverSpanOperation None _operations.ChangeLetterCase resultSwitchPrevious))
                 yield (
-                    "<lt>",
-                    (fun count _ -> 
-                        let count = CommandUtil.CountOrDefault count
-                        editOverSpanOperation None (_operations.ShiftSpanLeft count) resultSwitchPrevious))
-                yield (
-                    ">",
-                    (fun count _ -> 
-                        let count = CommandUtil.CountOrDefault count
-                        editOverSpanOperation None (_operations.ShiftSpanRight count) resultSwitchPrevious))
-                yield (
                     "p",
                     (fun _ reg -> 
                         _operations.PasteOverSelection reg.StringValue reg
@@ -172,7 +162,21 @@ type internal VisualMode
         /// Visual Commands
         let visualSimple = 
             seq {
-                yield ("d", CommandFlags.Repeatable, Some ModeKind.Normal, fun count reg span -> _operations.DeleteSpan span _motionKind _operationKind reg |> ignore)
+                yield (
+                    "d", 
+                    CommandFlags.Repeatable, 
+                    Some ModeKind.Normal, 
+                    fun count reg span -> _operations.DeleteSpan span _motionKind _operationKind reg |> ignore)
+                yield (
+                    "<lt>",
+                    CommandFlags.Repeatable,
+                    Some ModeKind.Normal,
+                    (fun count _ span -> _operations.ShiftSpanLeft count span) )
+                yield (
+                    ">",
+                    CommandFlags.Repeatable,
+                    Some ModeKind.Normal,
+                    (fun count _ span ->  _operations.ShiftSpanRight count span))
             }
             |> Seq.map (fun (str,flags,mode,func) ->
                 let kiSet = KeyNotationUtil.StringToKeyInputSet str

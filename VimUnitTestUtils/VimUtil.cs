@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using Microsoft.FSharp.Core;
+using Microsoft.VisualStudio.Text;
 using Vim.Extensions;
 
 namespace Vim.UnitTest
@@ -79,6 +80,25 @@ namespace Vim.UnitTest
             return Command.NewMotionCommand(commandName, CommandFlags.None, fsharpFunc);
         }
 
+        internal static Command CreateVisualCommand(
+            string name = "c",
+            CommandFlags? flags = null,
+            VisualKind kind = null,
+            Func<FSharpOption<int>, Register, VisualSpan, CommandResult> func = null)
+        {
+            var flagsArg = flags ?? CommandFlags.None;
+            kind = kind ?? VisualKind.Line;
+            if (func == null)
+            {
+                func = (x, y, z) => CommandResult.NewCompleted(ModeSwitch.NoSwitch);
+            }
+            return Command.NewVisualCommand(
+                KeyNotationUtil.StringToKeyInputSet(name),
+                flagsArg,
+                kind,
+                func.ToFSharpFunc());
+        }
+
         internal static MotionCommand CreateSimpleMotion(string name, Func<MotionData> func)
         {
             var fsharpFunc = FSharpFuncUtil.Create<FSharpOption<int>, FSharpOption<MotionData>>(unused => FSharpOption.Create(func()));
@@ -128,6 +148,16 @@ namespace Vim.UnitTest
                 countOpt,
                 conv.ToFSharpFunc());
         }
+
+        internal static VisualSpan CreateVisualSpanSingle(
+            SnapshotSpan span,
+            VisualKind kind = null)
+        {
+            return VisualSpan.NewSingle(
+                kind ?? VisualKind.Line,
+                span);
+        }
+
 
     }
 }

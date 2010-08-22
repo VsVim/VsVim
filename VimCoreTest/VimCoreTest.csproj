@@ -142,6 +142,7 @@
     <Compile Include="CommandProcessorTest.cs" />
     <Compile Include="CommandRunnerTest.cs" />
     <Compile Include="Command_DefaultOperations.cs" />
+    <Compile Include="VisualModeIntegrationTest.cs" />
     <Compile Include="FoldManagerTest.cs" />
     <Compile Include="InsertModeIntegrationTest.cs" />
     <Compile Include="FileSystemTest.cs" />
@@ -192,6 +193,7 @@
     <Compile Include="VimIntegrationTests.cs" />
     <Compile Include="VimTest.cs" />
     <Compile Include="VisualModeTest.cs" />
+    <Compile Include="VisualSpanCalculatorTest.cs" />
     <Compile Include="Visual_DefaultOperationsTests.cs" />
   </ItemGroup>
   <ItemGroup>
