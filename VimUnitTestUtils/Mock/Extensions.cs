@@ -1,10 +1,12 @@
 ﻿using System;
+using System.Linq;
 using System.Windows;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Editor;
 using Microsoft.VisualStudio.OLE.Interop;
 using Microsoft.VisualStudio.Shell.Interop;
+using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.TextManager.Interop;
 using Moq;
@@ -135,5 +137,51 @@ namespace Vim.UnitTest.Mock
             var value = FSharpOption<Tuple<FSharpFunc<FSharpOption<int>, FSharpOption<MotionData>>, FSharpFunc<FSharpOption<int>, FSharpOption<MotionData>>>>.None;
             mock.SetupGet(x => x.LastCharSearch).Returns(value);
         }
+
+        public static void MakeSelection(
+            this Mock<ITextSelection> selection,
+            VirtualSnapshotSpan span)
+        {
+            selection.Setup(x => x.Mode).Returns(TextSelectionMode.Stream);
+            selection.Setup(x => x.StreamSelectionSpan).Returns(span);
+        }
+
+        public static void MakeSelection(
+            this Mock<ITextSelection> selection,
+            NormalizedSnapshotSpanCollection col)
+        {
+            selection.Setup(x => x.Mode).Returns(TextSelectionMode.Box);
+            selection.Setup(x => x.SelectedSpans).Returns(col);
+            var start = col.Min(x => x.Start);
+            var end = col.Min(x => x.End);
+            selection
+                .Setup(x => x.StreamSelectionSpan)
+                .Returns(new VirtualSnapshotSpan(new SnapshotSpan(start, end)));
+        }
+
+
+        public static void MakeSelection(
+            this Mock<ITextSelection> selection,
+            params SnapshotSpan[] spans)
+        {
+            if (spans.Length == 1)
+            {
+                MakeSelection(selection, new VirtualSnapshotSpan(spans[0]));
+            }
+            else
+            {
+                MakeSelection(selection, new NormalizedSnapshotSpanCollection(spans));
+            }
+        }
+
+        public static void MakeUndoRedoPossible(
+            this Mock<IUndoRedoOperations> mock,
+            MockFactory factory)
+        {
+            mock
+                .Setup(x => x.CreateUndoTransaction(It.IsAny<string>()))
+                .Returns(() => factory.Create<IUndoTransaction>(MockBehavior.Loose).Object);
+        }
+
     }
 }

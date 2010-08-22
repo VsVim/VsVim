@@ -113,8 +113,6 @@ type internal VisualMode
                         let span = SnapshotSpan(startPoint,endPoint)
                         _operations.Yank span MotionKind.Inclusive OperationKind.LineWise reg
                         CommandResult.Completed ModeSwitch.SwitchPreviousMode))
-                yield ("x", deleteSelection)
-                yield ("<Del>", deleteSelection)
                 yield ("c", changeSelection)
                 yield ("s", changeSelection)
                 yield ("C", changeLines)
@@ -164,6 +162,16 @@ type internal VisualMode
             seq {
                 yield (
                     "d", 
+                    CommandFlags.Repeatable, 
+                    Some ModeKind.Normal, 
+                    fun count reg span -> _operations.DeleteSpan span _motionKind _operationKind reg |> ignore)
+                yield (
+                    "x", 
+                    CommandFlags.Repeatable, 
+                    Some ModeKind.Normal, 
+                    fun count reg span -> _operations.DeleteSpan span _motionKind _operationKind reg |> ignore)
+                yield (
+                    "<Del>", 
                     CommandFlags.Repeatable, 
                     Some ModeKind.Normal, 
                     fun count reg span -> _operations.DeleteSpan span _motionKind _operationKind reg |> ignore)
