@@ -92,6 +92,12 @@ module SnapshotUtil =
         | SearchKind.BackwardWithWrap -> GetLinesBackwardCore tss startLine true
         | _ -> failwith "Invalid enum value"
 
+    /// Get the lines in the specified range
+    let GetLineRange snapshot startLineNumber endLineNumber = 
+        let count = endLineNumber - startLineNumber + 1
+        GetLines snapshot startLineNumber SearchKind.Forward
+        |> Seq.truncate count
+
 /// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
 /// include any Vim specific logic
 module SnapshotSpanUtil =
@@ -113,6 +119,9 @@ module SnapshotSpanUtil =
 
     /// Get the length of the span
     let GetLength (span:SnapshotSpan) = span.Length
+
+    /// Get the raw Span
+    let GetSpan (span:SnapshotSpan) = span.Span
 
     /// Get all of the points on the specified SnapshotSpan.  Will not return the End point
     let GetPoints (span:SnapshotSpan) = 

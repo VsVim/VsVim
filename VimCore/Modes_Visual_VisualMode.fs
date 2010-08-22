@@ -63,14 +63,10 @@ type internal VisualMode
 
     member private x.BuildOperationsSequence() =
 
-        let runVisualCommand func count reg visualSpan = 
+        let runVisualCommand funcNormal funcBlock count reg visualSpan = 
             match visualSpan with
-            | VisualSpan.Single(_,span) -> func count reg span
-            | VisualSpan.Multiple(_,col) -> 
-                let description = Resources.Common_BulkEdit
-                use transaction = _operations.UndoRedoOperations.CreateUndoTransaction description
-                (col :> SnapshotSpan seq) |> Seq.iter (fun span -> func count reg span)
-                transaction.Complete()
+            | VisualSpan.Single(_,span) -> funcNormal count reg span
+            | VisualSpan.Multiple(_,col) -> funcBlock count reg col
 
         let changeSelection _ reg = 
             _operations.DeleteSelection reg |> ignore
@@ -83,37 +79,68 @@ type internal VisualMode
         let simples =
             let resultSwitchPrevious = CommandResult.Completed ModeSwitch.SwitchPreviousMode
             seq {
-                yield ("y",
+                yield (
+                    "<C-u>", 
+                    CommandFlags.Movement, 
+                    None,
+                    fun count _ -> _operations.MoveCaretAndScrollLines ScrollDirection.Up count)
+                yield (
+                    "<C-d>", 
+                    CommandFlags.Movement, 
+                    None,
+                    fun count _ -> _operations.MoveCaretAndScrollLines ScrollDirection.Down count)
+                yield (
+                    "y",
+                    CommandFlags.Repeatable,
+                    None,
                     (fun _ (reg:Register) -> 
-                        let opKind = match _kind with
-                                     | ModeKind.VisualLine -> OperationKind.LineWise
-                                     | _ -> OperationKind.CharacterWise
-                        _operations.YankText (_selectionTracker.SelectedText) MotionKind.Inclusive opKind reg
-                        CommandResult.Completed ModeSwitch.SwitchPreviousMode))
-                yield ("Y",
+                        let opKind = 
+                            match _kind with
+                            | ModeKind.VisualLine -> OperationKind.LineWise
+                            | _ -> OperationKind.CharacterWise
+                        _operations.YankText (_selectionTracker.SelectedText) MotionKind.Inclusive opKind reg ) )
+                yield (
+                    "Y",
+                    CommandFlags.Repeatable,
+                    None,
                     (fun _ (reg:Register) ->
                         let selection = _buffer.TextView.Selection
                         let startPoint = selection.Start.Position.GetContainingLine().Start
                         let endPoint = selection.End.Position.GetContainingLine().EndIncludingLineBreak
                         let span = SnapshotSpan(startPoint,endPoint)
-                        _operations.Yank span MotionKind.Inclusive OperationKind.LineWise reg
-                        CommandResult.Completed ModeSwitch.SwitchPreviousMode))
-                yield ("C", changeLines)
-                yield ("S", changeLines)
-                yield ("J",
-                        (fun _ _ ->         
-                            _operations.JoinSelection JoinKind.RemoveEmptySpaces|> ignore
-                            CommandResult.Completed ModeSwitch.SwitchPreviousMode))
+                        _operations.Yank span MotionKind.Inclusive OperationKind.LineWise reg ))
+                yield (
+                    "C", 
+                    CommandFlags.Repeatable,
+                    Some ModeKind.Insert,
+                    fun _ reg -> _operations.DeleteSelectedLines reg |> ignore )
+                yield (
+                    "S", 
+                    CommandFlags.Repeatable,
+                    Some ModeKind.Insert,
+                    fun _ reg -> _operations.DeleteSelectedLines reg |> ignore )
+                yield (
+                    "J",
+                    CommandFlags.Repeatable,
+                    None,
+                    (fun _ _ -> _operations.JoinSelection JoinKind.RemoveEmptySpaces|> ignore ))
                 yield (
                     "p",
-                    (fun _ reg -> 
-                        _operations.PasteOverSelection reg.StringValue reg
-                        CommandResult.Completed ModeSwitch.SwitchPreviousMode ) )
-                yield ( ":", fun _ _ -> ModeSwitch.SwitchModeWithArgument (ModeKind.Command,ModeArgument.FromVisual) |> CommandResult.Completed)
+                    CommandFlags.Repeatable,
+                    None,
+                    (fun _ reg -> _operations.PasteOverSelection reg.StringValue reg ))
             }
-            |> Seq.map (fun (str,func) -> ((KeyNotationUtil.StringToKeyInputSet str),func))
-            |> Seq.map (fun (kiSet,func) -> Command.SimpleCommand(kiSet,CommandFlags.None, func))
-
+            |> Seq.map (fun (str,flags,mode,func) ->
+                let kiSet = KeyNotationUtil.StringToKeyInputSet str
+                let modeSwitch = 
+                    match mode with
+                    | None -> ModeSwitch.SwitchPreviousMode
+                    | Some(kind) -> ModeSwitch.SwitchMode kind
+                let func2 count reg = 
+                    let count = CommandUtil.CountOrDefault count
+                    func count reg 
+                    CommandResult.Completed modeSwitch
+                Command.SimpleCommand (kiSet, flags, func2) )
 
         /// Commands consisting of more than a single character
         let complex = 
@@ -137,6 +164,18 @@ type internal VisualMode
                 let name = KeyNotationUtil.StringToKeyInputSet name
                 Command.SimpleCommand (name, flags, func))
 
+        /// Commands which must customize their return
+        let customReturn = 
+            seq {
+                yield ( 
+                    ":", 
+                    CommandFlags.Special,
+                    fun _ _ -> ModeSwitch.SwitchModeWithArgument (ModeKind.Command,ModeArgument.FromVisual) |> CommandResult.Completed) 
+            }
+            |> Seq.map (fun (name,flags,func) ->
+                let name = KeyNotationUtil.StringToKeyInputSet name
+                Command.SimpleCommand (name, flags, func) )
+
         /// Visual Commands
         let visualSimple = 
             seq {
@@ -144,44 +183,52 @@ type internal VisualMode
                     "d", 
                     CommandFlags.Repeatable, 
                     Some ModeKind.Normal, 
-                    fun count reg span -> _operations.DeleteSpan span _motionKind _operationKind reg |> ignore)
+                    (fun _ reg span -> _operations.DeleteSpan span _motionKind _operationKind reg |> ignore),
+                    (fun _ reg col -> _operations.DeleteBlock col reg))
                 yield (
                     "x", 
                     CommandFlags.Repeatable, 
                     Some ModeKind.Normal, 
-                    fun count reg span -> _operations.DeleteSpan span _motionKind _operationKind reg |> ignore)
+                    (fun count reg span -> _operations.DeleteSpan span _motionKind _operationKind reg |> ignore),
+                    (fun _ reg col -> _operations.DeleteBlock col reg))
                 yield (
                     "<Del>", 
                     CommandFlags.Repeatable, 
                     Some ModeKind.Normal, 
-                    fun count reg span -> _operations.DeleteSpan span _motionKind _operationKind reg |> ignore)
+                    (fun count reg span -> _operations.DeleteSpan span _motionKind _operationKind reg |> ignore),
+                    (fun _ reg col -> _operations.DeleteBlock col reg))
                 yield (
                     "<lt>",
                     CommandFlags.Repeatable,
                     Some ModeKind.Normal,
-                    (fun count _ span -> _operations.ShiftSpanLeft count span) )
+                    (fun count _ span -> _operations.ShiftSpanLeft count span) ,
+                    (fun count _ col -> _operations.ShiftBlockLeft count col ))
                 yield (
                     ">",
                     CommandFlags.Repeatable,
                     Some ModeKind.Normal,
-                    (fun count _ span ->  _operations.ShiftSpanRight count span))
+                    (fun count _ span ->  _operations.ShiftSpanRight count span),
+                    (fun count _ col -> _operations.ShiftBlockRight count col))
                 yield (
                     "~",
                     CommandFlags.Repeatable,
                     Some ModeKind.Normal,
-                    (fun _ _ span -> _operations.ChangeLetterCase span))
+                    (fun _ _ span -> _operations.ChangeLetterCase span),
+                    (fun _ _ col -> _operations.ChangeLetterCaseBlock col))
                 yield (
                     "c", 
                     CommandFlags.Repeatable ||| CommandFlags.LinkedWithNextTextChange,
                     Some ModeKind.Insert,
-                    (fun _ reg span -> _operations.DeleteSpan span _motionKind _operationKind reg |> ignore))
+                    (fun _ reg span -> _operations.DeleteSpan span _motionKind _operationKind reg |> ignore),
+                    (fun _ reg col -> _operations.DeleteBlock col reg ))
                 yield (
                     "s", 
                     CommandFlags.Repeatable ||| CommandFlags.LinkedWithNextTextChange,
                     Some ModeKind.Insert,
-                    (fun _ reg span -> _operations.DeleteSpan span _motionKind _operationKind reg |> ignore))
+                    (fun _ reg span -> _operations.DeleteSpan span _motionKind _operationKind reg |> ignore),
+                    (fun _ reg col -> _operations.DeleteBlock col reg))
             }
-            |> Seq.map (fun (str,flags,mode,func) ->
+            |> Seq.map (fun (str,flags,mode,funcNormal,funcBlock) ->
                 let kiSet = KeyNotationUtil.StringToKeyInputSet str
                 let modeSwitch = 
                     match mode with
@@ -189,12 +236,12 @@ type internal VisualMode
                     | Some(kind) -> ModeSwitch.SwitchMode kind
                 let func2 count reg visualSpan = 
                     let count = CommandUtil.CountOrDefault count
-                    runVisualCommand func count reg visualSpan
+                    runVisualCommand funcNormal funcBlock count reg visualSpan
                     CommandResult.Completed modeSwitch
 
                 Command.VisualCommand(kiSet, flags, _visualKind, func2) )
                 
-        Seq.append simples complex |> Seq.append visualSimple
+        Seq.append simples complex |> Seq.append visualSimple |> Seq.append customReturn
 
     member private x.EnsureCommandsBuilt() =
         if not _builtCommands then

@@ -147,6 +147,9 @@ type ICommonOperations =
     /// Delete a range of text
     abstract DeleteSpan : SnapshotSpan -> MotionKind -> OperationKind -> Register -> ITextSnapshot
 
+    /// Delete a range of text
+    abstract DeleteBlock : NormalizedSnapshotSpanCollection -> Register -> unit
+
     /// Shift the count lines starting at the cursor right by the "ShiftWidth" setting
     abstract ShiftLinesRight : count:int -> unit
 
@@ -157,8 +160,15 @@ type ICommonOperations =
     /// by the multiplier
     abstract ShiftSpanRight : multiplier:int -> SnapshotSpan -> unit
 
+    /// Shift the lines in the span to the right by the "ShiftWidth" setting multiplied
+    /// by the multiplier
+    abstract ShiftBlockRight : multiplier:int -> NormalizedSnapshotSpanCollection -> unit
+
     /// Shift the lines in the span to the right by the "ShiftWidth" setting
     abstract ShiftSpanLeft : multiplier:int -> SnapshotSpan -> unit
+
+    /// Shift the lines in the span to the right by the "ShiftWidth" setting
+    abstract ShiftBlockLeft : multiplier:int -> NormalizedSnapshotSpanCollection -> unit
 
     /// Save the current document
     abstract Save : unit -> unit
@@ -186,6 +196,9 @@ type ICommonOperations =
 
     /// Change the case of all letters appearing in the given span
     abstract ChangeLetterCase : SnapshotSpan -> unit
+
+    /// Change the case of all letters appearing in the given span
+    abstract ChangeLetterCaseBlock : NormalizedSnapshotSpanCollection -> unit
 
     /// Make the letters on the given span lower case
     abstract MakeLettersLowercase : SnapshotSpan -> unit

@@ -385,18 +385,14 @@ namespace VimCore.Test
         public void ChangeCase2()
         {
             Create("foo", "bar", "baz");
-            var count = 0;
             _selection.MakeSelection(
                 _buffer.GetLineSpan(0),
                 _buffer.GetLineSpan(1));
-            _undoRedoOperations.MakeUndoRedoPossible(_factory);
             _operations
-                .Setup(x => x.ChangeLetterCase(It.IsAny<SnapshotSpan>()))
-                .Callback(() => { count++; })
+                .Setup(x => x.ChangeLetterCaseBlock(It.IsAny<NormalizedSnapshotSpanCollection>()))
                 .Verifiable();
             _mode.Process('~');
             _operations.Verify();
-            Assert.AreEqual(2, count);
         }
 
         [Test]
@@ -431,18 +427,15 @@ namespace VimCore.Test
         public void ShiftLeft3()
         {
             Create("foo", "bar", "baz");
-            var count = 0;
             _selection.MakeSelection(
                 _buffer.GetLineSpan(0),
                 _buffer.GetLineSpan(1));
-            _undoRedoOperations.MakeUndoRedoPossible(_factory);
             _operations
-                .Setup(x => x.ShiftSpanLeft(1, It.IsAny<SnapshotSpan>()))
-                .Callback(() => { count++; });
+                .Setup(x => x.ShiftBlockLeft(1, It.IsAny<NormalizedSnapshotSpanCollection>()))
+                .Verifiable();
             _mode.Process("<");
             _operations.Verify();
             _selection.Verify();
-            Assert.AreEqual(2, count);
         }
 
         [Test]
@@ -477,18 +470,15 @@ namespace VimCore.Test
         public void ShiftRight3()
         {
             Create("foo", "bar", "baz");
-            var count = 0;
             _selection.MakeSelection(
                 _buffer.GetLineSpan(0),
                 _buffer.GetLineSpan(1));
-            _undoRedoOperations.MakeUndoRedoPossible(_factory);
             _operations
-                .Setup(x => x.ShiftSpanRight(1, It.IsAny<SnapshotSpan>()))
-                .Callback(() => { count++; });
+                .Setup(x => x.ShiftBlockRight(1, It.IsAny<NormalizedSnapshotSpanCollection>()))
+                .Verifiable();
             _mode.Process(">");
             _operations.Verify();
             _selection.Verify();
-            Assert.AreEqual(2, count);
         }
 
         [Test]

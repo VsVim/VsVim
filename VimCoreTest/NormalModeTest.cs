@@ -1446,7 +1446,7 @@ namespace VimCore.Test
             var data = "baz" + Environment.NewLine;
             _operations.Setup(x => x.PasteAfterCursor(data, 1, OperationKind.LineWise, false)).Verifiable();
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 0));
-            _map.DefaultRegister.UpdateValue(new RegisterValue(data, MotionKind.Inclusive, OperationKind.LineWise));
+            _map.DefaultRegister.UpdateValue(new RegisterValue(StringData.NewSimple(data), MotionKind.Inclusive, OperationKind.LineWise));
             _mode.Process("p");
             _operations.Verify();
         }
@@ -1478,7 +1478,7 @@ namespace VimCore.Test
             var data = "baz" + Environment.NewLine;
             _operations.Setup(x => x.PasteBeforeCursor(data, 1, OperationKind.LineWise, false)).Verifiable();
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 1));
-            _map.DefaultRegister.UpdateValue(new RegisterValue(data, MotionKind.Inclusive, OperationKind.LineWise));
+            _map.DefaultRegister.UpdateValue(new RegisterValue(StringData.NewSimple(data), MotionKind.Inclusive, OperationKind.LineWise));
             _mode.Process('P');
             _operations.Verify();
         }

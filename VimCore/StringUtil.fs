@@ -93,3 +93,13 @@ module internal StringUtil =
 
     [<CompiledName("StartsWithIgnoreCase")>]
     let startsWithIgnoreCase prefix (value:string) = value.StartsWith(prefix, System.StringComparison.OrdinalIgnoreCase)
+
+    [<CompiledName("CombineWith")>]
+    let combineWith (arg:string) (values:string seq) =
+        let builder = new System.Text.StringBuilder()
+        values |> Seq.iteri (fun i str -> 
+            if i <> 0 then 
+                builder.Append(arg) |> ignore
+            builder.Append(str) |> ignore )
+        builder.ToString()
+

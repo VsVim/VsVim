@@ -381,8 +381,8 @@ type Command =
     | LongCommand of KeyInputSet * CommandFlags * (int option -> Register -> LongCommandResult) 
 
     /// Represents a command which has a name and relies on the Visual Mode Span to 
-    /// be executed
-    | VisualCommand of KeyInputSet * CommandFlags * VisualKind * (int option -> Register -> VisualSpan -> CommandResult)
+    /// execute the command
+    | VisualCommand of KeyInputSet * CommandFlags * VisualKind * (int option -> Register -> VisualSpan -> CommandResult) 
 
     with 
 

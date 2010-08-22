@@ -56,14 +56,14 @@ type internal DefaultOperations ( _data:OperationsData, _mode : ModeKind ) =
                 SnapshotSpan(caretPoint,0)
             else col.Item(0)
         member x.DeleteSelection (reg:Register) = 
-            let value = { Value=x.SelectedText; MotionKind=MotionKind.Inclusive; OperationKind=x.OperationKind }
+            let value = { Value=StringData.Simple x.SelectedText; MotionKind=MotionKind.Inclusive; OperationKind=x.OperationKind }
             reg.UpdateValue(value)
             use edit = _textView.TextBuffer.CreateEdit()
             _textView.Selection.SelectedSpans |> Seq.iter (fun span -> edit.Delete(span.Span) |> ignore)
             edit.Apply() |> ignore
         member x.DeleteSelectedLines (reg:Register) = 
             let span = x.SelectedLinesSpan
-            let value = { Value=span.GetText(); MotionKind=MotionKind.Inclusive; OperationKind=OperationKind.LineWise }
+            let value = { Value=StringData.Simple (span.GetText()); MotionKind=MotionKind.Inclusive; OperationKind=OperationKind.LineWise }
             reg.UpdateValue(value)
             use edit = _textView.TextBuffer.CreateEdit()
             edit.Delete(span.Span) |> ignore
@@ -77,7 +77,7 @@ type internal DefaultOperations ( _data:OperationsData, _mode : ModeKind ) =
             x.CommonOperations.Join start kind count 
         member x.PasteOverSelection text (reg:Register) =
             x.DoWithOnlyOneSpan (fun span ->
-                let value = { Value=x.SelectedText; MotionKind=MotionKind.Inclusive; OperationKind=x.OperationKind }
+                let value = { Value=StringData.Simple x.SelectedText; MotionKind=MotionKind.Inclusive; OperationKind=x.OperationKind }
                 reg.UpdateValue(value)
 
                 // Paste over selection should not delete the last new line.  This is not specifically 

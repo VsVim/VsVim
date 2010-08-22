@@ -43,53 +43,69 @@ type internal CommonOperations ( _data : OperationsData ) =
             true
         else  _host.NavigateTo point 
 
+    member private x.DeleteBlock col (reg:Register) =
+        let data = StringData.ofNormalizedSnasphotSpanCollection col
+        let value = {Value=data; MotionKind=MotionKind.Inclusive;OperationKind=OperationKind.CharacterWise}
+        reg.UpdateValue value
+        use edit = _textView.TextBuffer.CreateEdit()
+        col |> Seq.iter (fun span -> edit.Delete(span.Span) |> ignore)
+        edit.Apply() |> ignore
+
     member private x.DeleteSpan (span:SnapshotSpan) motionKind opKind (reg:Register) =
+        let data = span |> SnapshotSpanUtil.GetText |> StringData.Simple
         let tss = span.Snapshot
-        let regValue = {Value=span.GetText();MotionKind=motionKind;OperationKind=opKind}
+        let regValue = {Value=data ;MotionKind=motionKind;OperationKind=opKind}
         reg.UpdateValue(regValue) 
         tss.TextBuffer.Delete(span.Span)
 
-    member x.ShiftSpanRight multiplier (span:SnapshotSpan) = 
+    member x.ShiftRightCore multiplier (col:SnapshotSpan seq) = 
         let text = new System.String(' ', _settings.GlobalSettings.ShiftWidth * multiplier)
-        let buf = span.Snapshot.TextBuffer
-        let startLine,endLine = SnapshotSpanUtil.GetStartAndEndLine span
-        use edit = buf.CreateEdit()
-        for i = startLine.LineNumber to endLine.LineNumber do
-            let line = span.Snapshot.GetLineFromLineNumber(i)
-            edit.Replace(line.Start.Position,0,text) |> ignore
-        
+        use edit = _data.TextView.TextBuffer.CreateEdit()
+        col |> Seq.iter (fun span -> edit.Replace(span.Start.Position, 0, text) |> ignore)
         edit.Apply() |> ignore
-        
-    member x.ShiftSpanLeft multiplier (span:SnapshotSpan) =
+
+    member x.ShiftSpanRight multiplier span = 
+        let startLine,endLine = SnapshotSpanUtil.GetStartAndEndLine span
+        let snapshot = span.Snapshot
+        let col = 
+            SnapshotUtil.GetLineRange snapshot startLine.LineNumber endLine.LineNumber
+            |> Seq.map (fun line -> SnapshotLineUtil.GetExtentIncludingLineBreak line)
+        x.ShiftRightCore multiplier col 
+
+    member x.ShiftLeftCore multiplier (col:SnapshotSpan seq) =
         let count = _settings.GlobalSettings.ShiftWidth * multiplier
-        let fixText (text:string) = 
-            let count = min count (text.Length) // Deal with count being greater than line length
-            let count = 
-                match text |> Seq.tryFindIndex (fun x -> x <> ' ') with
-                    | Some(i) ->
-                        if i < count then i
-                        else count
-                    | None -> count
-            text.Substring(count)                 
-        let buf = span.Snapshot.TextBuffer
-        let startLine,endLine = SnapshotSpanUtil.GetStartAndEndLine span
-        use edit = buf.CreateEdit()
-        for i = startLine.LineNumber to endLine.LineNumber do
-            let line = span.Snapshot.GetLineFromLineNumber(i)
-            let text = fixText (line.GetText())
-            edit.Replace(line.Extent.Span, text) |> ignore
+        use edit = _data.TextView.TextBuffer.CreateEdit()
+        col 
+        |> Seq.iter (fun span -> 
+            let text = SnapshotSpanUtil.GetText span
+            let toReplace = 
+                let whiteSpaceLen = text |> Seq.takeWhile CharUtil.IsWhiteSpace |> Seq.length
+                min whiteSpaceLen count
+            edit.Replace(span.Start.Position, toReplace, StringUtil.empty) |> ignore )
         edit.Apply() |> ignore
+        
+    member x.ShiftSpanLeft multiplier (span:SnapshotSpan) = 
+        let startLine,endLine = SnapshotSpanUtil.GetStartAndEndLine span
+        let snapshot = span.Snapshot
+        let col = 
+            SnapshotUtil.GetLineRange snapshot startLine.LineNumber endLine.LineNumber
+            |> Seq.map (fun line -> SnapshotLineUtil.GetExtentIncludingLineBreak line)
+        x.ShiftLeftCore multiplier col 
 
     /// Change the letters on the given span by applying the specified function
     /// to each of them
-    member x.ChangeLettersOnSpan span changeFunc =
+    member x.ChangeLettersCore col changeFunc = 
         use edit = _textView.TextBuffer.CreateEdit()
-        SnapshotSpanUtil.GetPoints span 
+        col 
+        |> Seq.map SnapshotSpanUtil.GetPoints 
+        |> Seq.concat
         |> Seq.map (fun x -> x.Position,x.GetChar())
         |> Seq.filter (fun (_,c) -> CharUtil.IsLetter c)
         |> Seq.map (fun (pos,c) -> (pos, changeFunc c))
         |> Seq.iter (fun (pos,c) -> edit.Replace(new Span(pos,1), StringUtil.ofChar c) |> ignore)
         edit.Apply() |> ignore
+
+    member x.ChangeLettersOnSpan span changeFunc = x.ChangeLettersCore (Seq.singleton span) changeFunc
 
     interface ICommonOperations with
         member x.TextView = _textView 
@@ -194,11 +210,12 @@ type internal CommonOperations ( _data : OperationsData ) =
                 | None -> Failed Resources.Common_MarkNotSet
     
         member x.YankText text motion operation (reg:Register) =
-            let regValue = {Value=text;MotionKind = motion; OperationKind = operation};
+            let data = StringData.Simple text
+            let regValue = {Value=data;MotionKind = motion; OperationKind = operation};
             reg.UpdateValue (regValue)
 
         member x.Yank (span:SnapshotSpan) motion operation (reg:Register) =
-            let regValue = {Value=span.GetText();MotionKind = motion; OperationKind = operation};
+            let regValue = {Value=StringData.ofSpan span;MotionKind = motion; OperationKind = operation};
             reg.UpdateValue (regValue)
         
         member x.PasteAfter point text opKind = 
@@ -304,8 +321,9 @@ type internal CommonOperations ( _data : OperationsData ) =
             TextViewUtil.MoveCaretToPoint _textView pos 
 
         member x.ShiftSpanRight multiplier span = x.ShiftSpanRight multiplier span
-
+        member x.ShiftBlockRight multiplier block = x.ShiftRightCore multiplier block 
         member x.ShiftSpanLeft multiplier span = x.ShiftSpanLeft multiplier span
+        member x.ShiftBlockLeft multiplier block = x.ShiftLeftCore multiplier block
 
         member x.ShiftLinesRight count = 
             let point = TextViewUtil.GetCaretPoint _textView
@@ -370,6 +388,7 @@ type internal CommonOperations ( _data : OperationsData ) =
             _textView.Caret.MoveTo(line) |> ignore
 
         member x.DeleteSpan span motionKind opKind reg = x.DeleteSpan span motionKind opKind reg
+        member x.DeleteBlock col reg = x.DeleteBlock col reg
     
         member x.DeleteLines count reg = 
             let point = TextViewUtil.GetCaretPoint _textView
@@ -420,6 +439,7 @@ type internal CommonOperations ( _data : OperationsData ) =
         member x.GoToNextTab count = _host.GoToNextTab count
         member x.GoToPreviousTab count = _host.GoToPreviousTab count
         member x.ChangeLetterCase span = x.ChangeLettersOnSpan span CharUtil.ChangeCase
+        member x.ChangeLetterCaseBlock col = x.ChangeLettersCore col CharUtil.ChangeCase
         member x.MakeLettersLowercase span = x.ChangeLettersOnSpan span CharUtil.ToLower
         member x.MakeLettersUppercase span = x.ChangeLettersOnSpan span CharUtil.ToUpper
         member x.EnsureCaretOnScreen () = TextViewUtil.EnsureCaretOnScreen _textView 
