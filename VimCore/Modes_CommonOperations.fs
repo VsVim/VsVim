@@ -457,14 +457,6 @@ type internal CommonOperations ( _data : OperationsData ) =
             TextViewUtil.MoveCaretToPoint _textView point
             _operations.ResetSelection()
         member x.Beep () = if not _settings.GlobalSettings.VisualBell then _host.Beep()
-        member x.ApplyAsSingleEdit description spans doEdit =
-            let description = 
-                match description with
-                | None -> Resources.Common_BulkEdit
-                | Some(d) -> d
-            use transaction = _undoRedoOperations.CreateUndoTransaction description
-            spans |> Seq.iter doEdit 
-            transaction.Complete()
         member x.OpenFold span count = 
             let regions = _outlining.GetCollapsedRegions(span) |> SeqUtil.takeMax count
             if Seq.isEmpty regions then _statusUtil.OnError Resources.Common_NoFoldFound

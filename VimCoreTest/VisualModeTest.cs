@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Moq;
@@ -73,31 +71,6 @@ namespace VimCore.Test
             _modeRaw = new Vim.Modes.Visual.VisualMode(_bufferData.Object, _operations.Object, kind, runner, capture, _tracker.Object);
             _mode = _modeRaw;
             _mode.OnEnter(ModeArgument.None);
-        }
-
-        public void SetupApplyAsSingleEdit()
-        {
-            _operations
-                .Setup(x => x.ApplyAsSingleEdit(
-                                It.IsAny<FSharpOption<string>>(),
-                                It.IsAny<IEnumerable<SnapshotSpan>>(),
-                                It.IsAny<FSharpFunc<SnapshotSpan, Unit>>()))
-                .Callback<FSharpOption<string>, IEnumerable<SnapshotSpan>, FSharpFunc<SnapshotSpan, Unit>>((unused, spans, func) =>
-                {
-                    foreach (var span in spans)
-                    {
-                        func.Invoke(span);
-                    }
-                })
-                .Verifiable();
-        }
-
-        public SnapshotSpan[] SetupBlockSelection()
-        {
-            SetupApplyAsSingleEdit();
-            var spans = new SnapshotSpan[] { _buffer.GetSpan(0, 2), _buffer.GetSpan(3, 2) };
-            _selection.MakeSelection(spans);
-            return spans;
         }
 
         [Test, Description("Movement commands")]
@@ -327,8 +300,11 @@ namespace VimCore.Test
         public void Change1()
         {
             Create("foo", "bar");
+            var span = _buffer.GetLineSpan(0);
+            _selection.MakeSelection(span);
             _operations
-                .Setup(x => x.DeleteSelection(_map.DefaultRegister))
+                .Setup(x => x.DeleteSpan(span, MotionKind.Inclusive, OperationKind.CharacterWise, _map.DefaultRegister))
+                .Returns((ITextSnapshot)null)
                 .Verifiable();
             var res = _mode.Process('c');
             Assert.IsTrue(res.IsSwitchMode);
@@ -339,8 +315,11 @@ namespace VimCore.Test
         public void Change2()
         {
             Create("foo", "bar");
+            var span = _buffer.GetLineSpan(0);
+            _selection.MakeSelection(span);
             _operations
-                .Setup(x => x.DeleteSelection(_map.GetRegister('b')))
+                .Setup(x => x.DeleteSpan(span, MotionKind.Inclusive, OperationKind.CharacterWise, _map.GetRegister('b')))
+                .Returns((ITextSnapshot)null)
                 .Verifiable();
             var res = _mode.Process("\"bc");
             Assert.IsTrue(res.IsSwitchMode);
@@ -351,8 +330,11 @@ namespace VimCore.Test
         public void Change3()
         {
             Create("foo", "bar");
+            var span = _buffer.GetLineSpan(0);
+            _selection.MakeSelection(span);
             _operations
-                .Setup(x => x.DeleteSelection(_map.DefaultRegister))
+                .Setup(x => x.DeleteSpan(span, MotionKind.Inclusive, OperationKind.CharacterWise, _map.DefaultRegister))
+                .Returns((ITextSnapshot)null)
                 .Verifiable();
             var res = _mode.Process('s');
             Assert.IsTrue(res.IsSwitchMode);
@@ -393,10 +375,7 @@ namespace VimCore.Test
             _operations
                 .Setup(x => x.ChangeLetterCase(span))
                 .Verifiable();
-            _selection
-                .SetupGet(x => x.SelectedSpans)
-                .Returns(new NormalizedSnapshotSpanCollection(span))
-                .Verifiable();
+            _selection.MakeSelection(span);
             _mode.Process('~');
             _selection.Verify();
             _operations.Verify();
@@ -405,17 +384,19 @@ namespace VimCore.Test
         [Test]
         public void ChangeCase2()
         {
-            Create("foo bar baz");
-            var spans = SetupBlockSelection();
+            Create("foo", "bar", "baz");
             var count = 0;
+            _selection.MakeSelection(
+                _buffer.GetLineSpan(0),
+                _buffer.GetLineSpan(1));
+            _undoRedoOperations.MakeUndoRedoPossible(_factory);
             _operations
                 .Setup(x => x.ChangeLetterCase(It.IsAny<SnapshotSpan>()))
                 .Callback(() => { count++; })
                 .Verifiable();
             _mode.Process('~');
-            _selection.Verify();
             _operations.Verify();
-            Assert.AreEqual(count, 2);
+            Assert.AreEqual(2, count);
         }
 
         [Test]

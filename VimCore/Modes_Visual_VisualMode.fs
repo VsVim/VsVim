@@ -72,21 +72,6 @@ type internal VisualMode
                 (col :> SnapshotSpan seq) |> Seq.iter (fun span -> func count reg span)
                 transaction.Complete()
 
-        let editOverSpanOperation description func result = 
-            let selection = _buffer.TextView.Selection
-            let spans = selection.SelectedSpans
-            match spans.Count with
-            | 0 -> result
-            | 1 -> 
-                func (spans.Item(0))
-                result
-            | _ -> 
-                _operations.ApplyAsSingleEdit description (spans :> SnapshotSpan seq) func
-                result
-            
-        let deleteSelection _ reg = 
-            _operations.DeleteSelection reg |> ignore
-            CommandResult.Completed ModeSwitch.SwitchPreviousMode
         let changeSelection _ reg = 
             _operations.DeleteSelection reg |> ignore
             CommandResult.Completed (ModeSwitch.SwitchMode ModeKind.Insert)
@@ -113,17 +98,12 @@ type internal VisualMode
                         let span = SnapshotSpan(startPoint,endPoint)
                         _operations.Yank span MotionKind.Inclusive OperationKind.LineWise reg
                         CommandResult.Completed ModeSwitch.SwitchPreviousMode))
-                yield ("c", changeSelection)
-                yield ("s", changeSelection)
                 yield ("C", changeLines)
                 yield ("S", changeLines)
                 yield ("J",
                         (fun _ _ ->         
                             _operations.JoinSelection JoinKind.RemoveEmptySpaces|> ignore
                             CommandResult.Completed ModeSwitch.SwitchPreviousMode))
-                yield (
-                    "~",
-                    (fun _ _ -> editOverSpanOperation None _operations.ChangeLetterCase resultSwitchPrevious))
                 yield (
                     "p",
                     (fun _ reg -> 
@@ -185,6 +165,21 @@ type internal VisualMode
                     CommandFlags.Repeatable,
                     Some ModeKind.Normal,
                     (fun count _ span ->  _operations.ShiftSpanRight count span))
+                yield (
+                    "~",
+                    CommandFlags.Repeatable,
+                    Some ModeKind.Normal,
+                    (fun _ _ span -> _operations.ChangeLetterCase span))
+                yield (
+                    "c", 
+                    CommandFlags.Repeatable ||| CommandFlags.LinkedWithNextTextChange,
+                    Some ModeKind.Insert,
+                    (fun _ reg span -> _operations.DeleteSpan span _motionKind _operationKind reg |> ignore))
+                yield (
+                    "s", 
+                    CommandFlags.Repeatable ||| CommandFlags.LinkedWithNextTextChange,
+                    Some ModeKind.Insert,
+                    (fun _ reg span -> _operations.DeleteSpan span _motionKind _operationKind reg |> ignore))
             }
             |> Seq.map (fun (str,flags,mode,func) ->
                 let kiSet = KeyNotationUtil.StringToKeyInputSet str
