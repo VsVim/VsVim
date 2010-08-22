@@ -36,7 +36,7 @@ type internal CommandFactory( _operations : ICommonOperations, _capture : IMotio
             let kiSet = notation |> KeyNotationUtil.StringToKeyInput |> OneKeyInput
             let funcWithReg opt reg = 
                 func (CommandUtil.CountOrDefault opt)
-                Completed NoSwitch
+                CommandResult.Completed NoSwitch
             Command.SimpleCommand (kiSet,CommandFlags.Movement, funcWithReg))
 
     /// Build up a set of MotionCommand values from applicable Motion values

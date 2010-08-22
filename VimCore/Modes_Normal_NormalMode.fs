@@ -20,7 +20,8 @@ type internal NormalMode
         _statusUtil : IStatusUtil,
         _displayWindowBroker : IDisplayWindowBroker,
         _runner : ICommandRunner,
-        _capture : IMotionCapture ) as this = 
+        _capture : IMotionCapture,
+        _visualSpanCalculator : IVisualSpanCalculator ) as this =
 
     /// Reset state for data in Normal Mode
     let _emptyData = {
@@ -57,6 +58,7 @@ type internal NormalMode
             match command with 
             | SimpleCommand(_) -> false
             | LongCommand(_) -> false
+            | VisualCommand(_) -> false 
             | MotionCommand(_) -> not command.IsMovement
 
         match _runner.State with
@@ -133,6 +135,7 @@ type internal NormalMode
     /// Implements the '.' operator.  This is a special command in that it cannot be easily routed 
     /// to interfaces like ICommonOperations due to the complexity of repeating the command here.  
     member private this.RepeatLastChange countOpt reg =  
+
         if _data.IsInRepeatLastChange then _statusUtil.OnError Resources.NormalMode_RecursiveRepeatDetected
         else
             _data <- { _data with IsInRepeatLastChange = true }
@@ -162,6 +165,16 @@ type internal NormalMode
                                 | Some(motionData) -> func countOpt reg motionData |> ignore
     
                         | LongCommand(_) -> _statusUtil.OnError (Resources.NormalMode_RepeatNotSupportedOnCommand commandName)
+                        | VisualCommand(_,_,kind,func) -> 
+                            // Repeating a visual command is more complex because we need to calculate the
+                            // new visual range
+                            match data.VisualRunData with
+                            | None -> _statusUtil.OnError (Resources.NormalMode_RepeatNotSupportedOnCommand commandName)
+                            | Some(oldSpan) ->
+                                let span = _visualSpanCalculator.CalculateForTextView _bufferData.TextView oldSpan
+                                func countOpt reg span |> ignore
+
+                                
                     | LinkedChange(left, right) ->
                         repeatChange left countOpt
                         repeatChange right None

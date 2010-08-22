@@ -102,6 +102,7 @@
     <Compile Include="UndoRedoOperations.fs" />
     <Compile Include="CommandRunner.fsi" />
     <Compile Include="CommandRunner.fs" />
+    <Compile Include="VisualSpanCalculator.fs" />
     <Compile Include="Vim.fs" />
     <Compile Include="MefComponents.fs" />
     <Compile Include="FSharpExtensions.fs" />

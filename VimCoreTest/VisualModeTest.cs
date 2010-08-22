@@ -30,6 +30,7 @@ namespace VimCore.Test
         private Mock<IOperations> _operations;
         private Mock<ISelectionTracker> _tracker;
         private Mock<IFoldManager> _foldManager;
+        private Mock<IUndoRedoOperations> _undoRedoOperations;
 
         public void Create(params string[] lines)
         {
@@ -52,9 +53,11 @@ namespace VimCore.Test
             _map = new RegisterMap();
             _tracker = _factory.Create<ISelectionTracker>();
             _tracker.Setup(x => x.Start());
+            _undoRedoOperations = _factory.Create<IUndoRedoOperations>();
             _foldManager = _factory.Create<IFoldManager>();
             _operations = _factory.Create<IOperations>();
             _operations.SetupGet(x => x.FoldManager).Returns(_foldManager.Object);
+            _operations.SetupGet(x => x.UndoRedoOperations).Returns(_undoRedoOperations.Object);
             _host = _factory.Create<IVimHost>(MockBehavior.Loose);
             _bufferData = MockObjectFactory.CreateVimBuffer(
                 _view.Object,
@@ -93,10 +96,7 @@ namespace VimCore.Test
         {
             SetupApplyAsSingleEdit();
             var spans = new SnapshotSpan[] { _buffer.GetSpan(0, 2), _buffer.GetSpan(3, 2) };
-            _selection
-                .SetupGet(x => x.SelectedSpans)
-                .Returns(new NormalizedSnapshotSpanCollection(spans))
-                .Verifiable();
+            _selection.MakeSelection(spans);
             return spans;
         }
 
@@ -244,8 +244,11 @@ namespace VimCore.Test
         public void DeleteSelection1()
         {
             Create("foo", "bar");
+            var span = _buffer.GetLine(0).Start.GetSpan(2);
+            _selection.MakeSelection(span);
             _operations
-                .Setup(x => x.DeleteSelection(_map.DefaultRegister))
+                .Setup(x => x.DeleteSpan(span, MotionKind.Inclusive, OperationKind.CharacterWise, _map.DefaultRegister))
+                .Returns((ITextSnapshot)null)
                 .Verifiable();
             _mode.Process("d");
             _operations.Verify();
@@ -255,8 +258,11 @@ namespace VimCore.Test
         public void DeleteSelection2()
         {
             Create("foo", "bar");
+            var span = _buffer.GetLine(0).Start.GetSpan(2);
+            _selection.MakeSelection(span);
             _operations
-                .Setup(x => x.DeleteSelection(_map.GetRegister('c')))
+                .Setup(x => x.DeleteSpan(span, MotionKind.Inclusive, OperationKind.CharacterWise, _map.GetRegister('c')))
+                .Returns((ITextSnapshot)null)
                 .Verifiable();
             _mode.Process("\"cd");
             _operations.Verify();
@@ -266,8 +272,11 @@ namespace VimCore.Test
         public void DeleteSelection3()
         {
             Create("foo", "bar");
+            var span = _buffer.GetLine(0).Start.GetSpan(2);
+            _selection.MakeSelection(span);
             _operations
-                .Setup(x => x.DeleteSelection(_map.DefaultRegister))
+                .Setup(x => x.DeleteSpan(span, MotionKind.Inclusive, OperationKind.CharacterWise, _map.DefaultRegister))
+                .Returns((ITextSnapshot)null)
                 .Verifiable();
             _mode.Process("x");
             _operations.Verify();
@@ -277,8 +286,11 @@ namespace VimCore.Test
         public void DeleteSelection4()
         {
             Create("foo", "bar");
+            var span = _buffer.GetLine(0).Start.GetSpan(2);
+            _selection.MakeSelection(span);
             _operations
-                .Setup(x => x.DeleteSelection(_map.DefaultRegister))
+                .Setup(x => x.DeleteSpan(span, MotionKind.Inclusive, OperationKind.CharacterWise, _map.DefaultRegister))
+                .Returns((ITextSnapshot)null)
                 .Verifiable();
             _mode.Process(VimKey.Delete);
             _operations.Verify();
@@ -414,10 +426,7 @@ namespace VimCore.Test
             _operations
                 .Setup(x => x.ShiftSpanLeft(1, span))
                 .Verifiable();
-            _selection
-                .SetupGet(x => x.SelectedSpans)
-                .Returns(new NormalizedSnapshotSpanCollection(span))
-                .Verifiable();
+            _selection.MakeSelection(span);
             _mode.Process('<');
             _operations.Verify();
             _selection.Verify();
@@ -431,10 +440,7 @@ namespace VimCore.Test
             _operations
                 .Setup(x => x.ShiftSpanLeft(2, span))
                 .Verifiable();
-            _selection
-                .SetupGet(x => x.SelectedSpans)
-                .Returns(new NormalizedSnapshotSpanCollection(span))
-                .Verifiable();
+            _selection.MakeSelection(span);
             _mode.Process("2<");
             _operations.Verify();
             _selection.Verify();
@@ -443,18 +449,20 @@ namespace VimCore.Test
         [Test]
         public void ShiftLeft3()
         {
-            Create("foo bar baz");
-            var spans = SetupBlockSelection();
+            Create("foo", "bar", "baz");
             var count = 0;
+            _selection.MakeSelection(
+                _buffer.GetLineSpan(0),
+                _buffer.GetLineSpan(1));
+            _undoRedoOperations.MakeUndoRedoPossible(_factory);
             _operations
                 .Setup(x => x.ShiftSpanLeft(1, It.IsAny<SnapshotSpan>()))
                 .Callback(() => { count++; });
             _mode.Process("<");
             _operations.Verify();
             _selection.Verify();
-            Assert.AreEqual(spans.Length, count);
+            Assert.AreEqual(2, count);
         }
-
 
         [Test]
         public void ShiftRight1()
@@ -464,10 +472,7 @@ namespace VimCore.Test
             _operations
                 .Setup(x => x.ShiftSpanRight(1, span))
                 .Verifiable();
-            _selection
-                .SetupGet(x => x.SelectedSpans)
-                .Returns(new NormalizedSnapshotSpanCollection(span))
-                .Verifiable();
+            _selection.MakeSelection(span);
             _mode.Process('>');
             _operations.Verify();
             _selection.Verify();
@@ -481,10 +486,7 @@ namespace VimCore.Test
             _operations
                 .Setup(x => x.ShiftSpanRight(2, span))
                 .Verifiable();
-            _selection
-                .SetupGet(x => x.SelectedSpans)
-                .Returns(new NormalizedSnapshotSpanCollection(span))
-                .Verifiable();
+            _selection.MakeSelection(span);
             _mode.Process("2>");
             _operations.Verify();
             _selection.Verify();
@@ -493,16 +495,19 @@ namespace VimCore.Test
         [Test]
         public void ShiftRight3()
         {
-            Create("foo bar baz");
-            var spans = SetupBlockSelection();
+            Create("foo", "bar", "baz");
             var count = 0;
+            _selection.MakeSelection(
+                _buffer.GetLineSpan(0),
+                _buffer.GetLineSpan(1));
+            _undoRedoOperations.MakeUndoRedoPossible(_factory);
             _operations
                 .Setup(x => x.ShiftSpanRight(1, It.IsAny<SnapshotSpan>()))
                 .Callback(() => { count++; });
             _mode.Process(">");
             _operations.Verify();
             _selection.Verify();
-            Assert.AreEqual(spans.Length, count);
+            Assert.AreEqual(2, count);
         }
 
         [Test]

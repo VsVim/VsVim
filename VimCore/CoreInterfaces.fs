@@ -155,7 +155,6 @@ type IMotionUtil =
     /// Go to the middle line in the visible window.  
     abstract LineInMiddleOfVisibleWindow : unit -> MotionData
 
-
 type ModeKind = 
     | Normal = 1
     | Insert = 2
@@ -167,6 +166,12 @@ type ModeKind =
 
     // Mode when Vim is disabled via the user
     | Disabled = 42
+
+[<RequireQualifiedAccess>]
+type VisualKind =
+    | Character
+    | Line
+    | Block
 
 /// The actual command name.  This is a wrapper over the collection of KeyInput 
 /// values which make up a command name.  
@@ -317,15 +322,27 @@ type ModeSwitch =
     | SwitchMode of ModeKind
     | SwitchModeWithArgument of ModeKind * ModeArgument
     | SwitchPreviousMode 
-            
+
+[<RequireQualifiedAccess>]
 type CommandResult =   
     | Completed  of ModeSwitch
     | Error of string
 
+[<RequireQualifiedAccess>]
 type LongCommandResult =
     | Finished of CommandResult
     | Cancelled
     | NeedMoreInput of (KeyInput -> LongCommandResult)
+
+[<RequireQualifiedAccess>]
+type VisualSpan =
+    | Single of VisualKind * SnapshotSpan
+    | Multiple of VisualKind * NormalizedSnapshotSpanCollection
+    with
+    member x.VisualKind = 
+        match x with
+        | Single(kind,_) -> kind
+        | Multiple(kind,_) -> kind
 
 /// Information about the attributes of Command
 [<System.Flags>]
@@ -363,6 +380,10 @@ type Command =
     /// repeatable.  
     | LongCommand of KeyInputSet * CommandFlags * (int option -> Register -> LongCommandResult) 
 
+    /// Represents a command which has a name and relies on the Visual Mode Span to 
+    /// be executed
+    | VisualCommand of KeyInputSet * CommandFlags * VisualKind * (int option -> Register -> VisualSpan -> CommandResult)
+
     with 
 
     /// The raw command inputs
@@ -371,6 +392,7 @@ type Command =
         | SimpleCommand(value,_,_ ) -> value
         | MotionCommand(value,_,_) -> value
         | LongCommand(value,_,_) -> value
+        | VisualCommand(value,_,_,_) -> value
 
     /// The kind of the Command
     member x.CommandFlags =
@@ -378,6 +400,7 @@ type Command =
         | SimpleCommand(_,value,_ ) -> value
         | MotionCommand(_,value,_) -> value
         | LongCommand(_,value,_) -> value
+        | VisualCommand(_,value,_,_) -> value
 
     /// Is the Repeatable flag set
     member x.IsRepeatable = Utils.IsFlagSet x.CommandFlags CommandFlags.Repeatable
@@ -438,6 +461,9 @@ type CommandRunData = {
     /// For commands which took a motion this will hold the relevant information
     /// on how the motion was ran
     MotionRunData : MotionRunData option
+
+    /// For visual commands this holds the relevant span information
+    VisualRunData : VisualSpan option
 }
 
 type MotionResult = 
@@ -1137,3 +1163,14 @@ and RepeatableChange =
     | TextChange of string
     | LinkedChange of RepeatableChange * RepeatableChange
 
+/// Responsible for calculating the new Span for a VisualMode change
+type IVisualSpanCalculator =
+
+    /// Calculate the new VisualSpan 
+    abstract CalculateForTextView : textView:ITextView -> oldspan:VisualSpan -> VisualSpan
+
+    /// Calculate the new VisualSpan for the the given point
+    abstract CalculateForPoint : SnapshotPoint -> oldSpan:VisualSpan  -> VisualSpan
+
+
+    

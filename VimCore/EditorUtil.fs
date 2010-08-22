@@ -111,6 +111,9 @@ module SnapshotSpanUtil =
     /// Get the text of the span
     let GetText (span:SnapshotSpan) = span.GetText()
 
+    /// Get the length of the span
+    let GetLength (span:SnapshotSpan) = span.Length
+
     /// Get all of the points on the specified SnapshotSpan.  Will not return the End point
     let GetPoints (span:SnapshotSpan) = 
         let tss = span.Snapshot 
@@ -151,6 +154,11 @@ module SnapshotSpanUtil =
     /// Get the start and end line of the SnapshotSpan.  Remember that End is not a part of
     /// the span but instead the first point after the span
     let GetStartAndEndLine span = GetStartLine span,GetEndLine span
+
+    /// Get the number of lines in this SnapshotSpan
+    let GetLineCount span = 
+        let startLine,endLine = GetStartAndEndLine span
+        (endLine.LineNumber - startLine.LineNumber) + 1
 
     /// Is this a multiline SnapshotSpan
     let IsMultiline span = 
@@ -194,6 +202,13 @@ module SnapshotSpanUtil =
 
     /// Create an empty span at the given point
     let CreateEmpty point = SnapshotSpan(point, 0)
+
+/// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
+/// include any Vim specific logic
+module VirtualSnapshotSpanUtil = 
+
+    /// Get the span 
+    let GetSnapshotSpan (span:VirtualSnapshotSpan) = span.SnapshotSpan
 
 /// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
 /// include any Vim specific logic
@@ -485,12 +500,17 @@ module SnapshotPointUtil =
     /// Add 1 to the given SnapshotPoint
     let AddOne (point:SnapshotPoint) = point.Add(1)
 
+    /// Try and add count to the SnapshotPoint.  Will return None if this causes
+    /// the point to go past the end of the Snapshot
+    let TryAdd point count = 
+        let pos = (GetPosition point) + count
+        let snapshot = GetSnapshot point
+        if pos > snapshot.Length then None
+        else point.Add(count) |> Some
+
     /// Maybe add 1 to the given point.  Will return the original point
     /// if it's the end of the Snapshot
-    let MaybeAddOne point = 
-        let endPoint = point |> GetSnapshot |> SnapshotUtil.GetEndPoint 
-        if endPoint = point then endPoint
-        else point.Add(1)
+    let TryAddOne point = TryAdd point 1
 
 module VirtualSnapshotPointUtil =
     
@@ -568,6 +588,7 @@ module TextSelectionUtil =
 
     /// Returns the SnapshotSpan which represents the total of the selection.  This is a SnapshotSpan of the left
     /// most and right most point point in any of the selected spans 
+    /// TODO: Delete this
     let GetOverarchingSelectedSpan (selection:ITextSelection) = 
         if selection.IsEmpty || 0 = selection.SelectedSpans.Count then None
         else
@@ -577,6 +598,9 @@ module TextSelectionUtil =
             let span = Span.FromBounds(min,max)
             let snapshot = spans.Item(0).Snapshot
             SnapshotSpan(snapshot, span) |> Some
+
+    /// Gets the selection of the editor
+    let GetStreamSelectionSpan (selection:ITextSelection) = selection.StreamSelectionSpan
 
 module EditorOptionsUtil =
 

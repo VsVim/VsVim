@@ -95,6 +95,7 @@ type internal CommonOperations ( _data : OperationsData ) =
         member x.TextView = _textView 
         member x.EditorOperations = _operations
         member x.FoldManager = _data.FoldManager
+        member x.UndoRedoOperations = _data.UndoRedoOperations
 
         member x.Join (start:SnapshotPoint) (kind:JoinKind) count = 
     
@@ -519,7 +520,12 @@ type internal CommonOperations ( _data : OperationsData ) =
                         |> SnapshotSpanUtil.GetPointsBackward 
                         |> Seq.tryFind (fun x -> x.GetChar() |> CharUtil.IsWhiteSpace |> not)
                     match point with 
-                    | Some(p) -> SnapshotSpan(data.OperationSpan.Start, (SnapshotPointUtil.MaybeAddOne p))
+                    | Some(p) -> 
+                        let endPoint = 
+                            p
+                            |> SnapshotPointUtil.TryAddOne 
+                            |> OptionUtil.getOrDefault (SnapshotUtil.GetEndPoint (p.Snapshot))
+                        SnapshotSpan(data.OperationSpan.Start, endPoint)
                     | None -> data.OperationSpan
             x.DeleteSpan span data.MotionKind data.OperationKind reg |> ignore
 

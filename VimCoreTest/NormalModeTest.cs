@@ -32,6 +32,7 @@ namespace VimCore.Test
         private Mock<IDisplayWindowBroker> _displayWindowBroker;
         private Mock<IFoldManager> _foldManager;
         private Mock<IVimHost> _host;
+        private Mock<IVisualSpanCalculator> _visualSpanCalculator;
 
         static string[] s_lines = new string[]
             {
@@ -61,6 +62,7 @@ namespace VimCore.Test
             _statusUtil = new Mock<IStatusUtil>(MockBehavior.Strict);
             _changeTracker = new Mock<IChangeTracker>(MockBehavior.Strict);
             _foldManager = new Mock<IFoldManager>(MockBehavior.Strict);
+            _visualSpanCalculator = new Mock<IVisualSpanCalculator>(MockBehavior.Strict);
             _host = new Mock<IVimHost>(MockBehavior.Loose);
             _displayWindowBroker = new Mock<IDisplayWindowBroker>(MockBehavior.Strict);
             _displayWindowBroker.SetupGet(x => x.IsCompletionActive).Returns(false);
@@ -86,7 +88,8 @@ namespace VimCore.Test
                 _statusUtil.Object,
                 _displayWindowBroker.Object,
                 (ICommandRunner)runner,
-                (IMotionCapture)capture);
+                (IMotionCapture)capture,
+                _visualSpanCalculator.Object);
             _mode = _modeRaw;
             _mode.OnEnter(ModeArgument.None);
         }
@@ -2503,6 +2506,62 @@ namespace VimCore.Test
             Assert.IsTrue(didRunCommand);
             Assert.IsTrue(didRunMotion);
         }
+
+        [Test]
+        public void RepeatLastChange11()
+        {
+            Create("");
+            var data =
+                VimUtil.CreateCommandRunData(
+                    VimUtil.CreateVisualCommand(name: "c"),
+                    _map.DefaultRegister,
+                    2);
+            _changeTracker
+                .SetupGet(x => x.LastChange)
+                .Returns(FSharpOption.Create(RepeatableChange.NewCommandChange(data)))
+                .Verifiable();
+            _statusUtil
+                .Setup(x => x.OnError(Resources.NormalMode_RepeatNotSupportedOnCommand("c")))
+                .Verifiable();
+            _mode.Process(".");
+            _changeTracker.Verify();
+            _statusUtil.Verify();
+        }
+
+        [Test]
+        public void RepeatLastChange12()
+        {
+            Create("here again", "and again");
+            var didRun = false;
+            var span = VimUtil.CreateVisualSpanSingle(_view.GetLineSpan(1));
+            var data =
+                VimUtil.CreateCommandRunData(
+                    VimUtil.CreateVisualCommand(
+                        "c",
+                        CommandFlags.None,
+                        VisualKind.Line,
+                        (_, __, spanArg) =>
+                        {
+                            didRun = true;
+                            Assert.AreEqual(span, spanArg);
+                            return CommandResult.NewCompleted(ModeSwitch.NoSwitch);
+                        }),
+                    _map.DefaultRegister,
+                    1,
+                    visualRunData: VimUtil.CreateVisualSpanSingle(_view.GetLineSpan(0)));
+            _visualSpanCalculator.Setup(x => x.CalculateForTextView(
+                It.IsAny<ITextView>(),
+                It.IsAny<VisualSpan>())).Returns(span).Verifiable();
+            _changeTracker
+                .SetupGet(x => x.LastChange)
+                .Returns(FSharpOption.Create(RepeatableChange.NewCommandChange(data)))
+                .Verifiable();
+            _mode.Process(".");
+            _changeTracker.Verify();
+            _visualSpanCalculator.Verify();
+            Assert.IsTrue(didRun);
+        }
+
 
         [Test]
         public void Escape1()

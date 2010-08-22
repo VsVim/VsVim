@@ -29,6 +29,7 @@ type internal VimBufferFactory
         _foldManagerFactory : IFoldManagerFactory ) =
 
     let _motionCaptureGlobalData = MotionCaptureGlobalData() :> IMotionCaptureGlobalData
+    let _visualSpanCalculator = VisualSpanCalculator() :> IVisualSpanCalculator
 
     member x.CreateBuffer (vim:IVim) view = 
         let editOperations = _editorOperationsFactoryService.GetEditorOperations(view)
@@ -99,7 +100,7 @@ type internal VimBufferFactory
         // Normal mode values
         let modeList = 
             [
-                ((Modes.Normal.NormalMode(buffer, normalOpts, normalIncrementalSearch,statusUtil,broker, createCommandRunner(),capture)) :> IMode);
+                ((Modes.Normal.NormalMode(buffer, normalOpts, normalIncrementalSearch,statusUtil,broker, createCommandRunner(),capture, _visualSpanCalculator)) :> IMode);
                 ((Modes.Command.CommandMode(buffer, commandProcessor)) :> IMode);
                 ((Modes.Insert.InsertMode(buffer,insertOpts,broker, editOptions,false)) :> IMode);
                 ((Modes.Insert.InsertMode(buffer,insertOpts,broker, editOptions,true)) :> IMode);

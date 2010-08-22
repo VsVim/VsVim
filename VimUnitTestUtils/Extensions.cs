@@ -54,6 +54,20 @@ namespace Vim.UnitTest
 
         #endregion
 
+        #region VisualSpan
+
+        public static VisualSpan.Multiple AsMultiple(this VisualSpan span)
+        {
+            return (VisualSpan.Multiple)span;
+        }
+
+        public static VisualSpan.Single AsSingle(this VisualSpan span)
+        {
+            return (VisualSpan.Single)span;
+        }
+
+        #endregion
+
         #region ParseRangeResult
 
         internal static ParseRangeResult.Succeeded AsSucceeded(this ParseRangeResult res)
@@ -322,6 +336,7 @@ namespace Vim.UnitTest
         #region ITextSnapshot
 
 
+
         public static ITextSnapshotLine GetLine(this ITextSnapshot tss, int lineNumber)
         {
             return tss.GetLineFromLineNumber(lineNumber);
@@ -351,6 +366,15 @@ namespace Vim.UnitTest
         public static SnapshotSpan GetSpan(this ITextSnapshot tss, int start, int length)
         {
             return new SnapshotSpan(tss, start, length);
+        }
+
+        #endregion
+
+        #region ITextSnapshotPoint
+
+        public static SnapshotSpan GetSpan(this SnapshotPoint point, int length)
+        {
+            return new SnapshotSpan(point, length);
         }
 
         #endregion
