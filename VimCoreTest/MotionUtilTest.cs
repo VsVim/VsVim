@@ -46,6 +46,26 @@ namespace VimCore.Test
             _util = _utilRaw;
         }
 
+        public void AssertData(
+            MotionData data,
+            SnapshotSpan? span,
+            MotionKind motionKind,
+            OperationKind? operationKind)
+        {
+            if (span.HasValue)
+            {
+                Assert.AreEqual(span.Value, data.Span);
+            }
+            if (motionKind != null)
+            {
+                Assert.AreEqual(motionKind, data.MotionKind);
+            }
+            if (operationKind.HasValue)
+            {
+                Assert.AreEqual(operationKind.Value, data.OperationKind);
+            }
+        }
+
         [Test]
         public void WordForward1()
         {
@@ -258,16 +278,6 @@ namespace VimCore.Test
             Assert.AreEqual("f", data.Value.Span.GetText());
             Assert.AreEqual(OperationKind.CharacterWise, data.Value.OperationKind);
             Assert.AreEqual(MotionKind.Exclusive, data.Value.MotionKind);
-        }
-
-        [Test]
-        public void LineUp1()
-        {
-            Create("foo", "bar");
-            _textView.MoveCaretTo(_buffer.GetLineFromLineNumber(1).Start);
-            var data = _util.LineUp(1);
-            Assert.AreEqual(OperationKind.LineWise, data.OperationKind);
-            Assert.AreEqual("foo" + Environment.NewLine + "bar", data.Span.GetText());
         }
 
         [Test]
@@ -793,6 +803,67 @@ namespace VimCore.Test
             Assert.IsTrue(data.Column.IsSome());
             Assert.AreEqual(1, data.Column.Value);
         }
+
+        [Test]
+        public void LineDown1()
+        {
+            Create("dog", "cat", "bird");
+            var data = _util.LineDown(1);
+            AssertData(
+                data,
+                _buffer.GetLineSpanIncludingLineBreak(0, 1),
+                MotionKind.Inclusive,
+                OperationKind.LineWise);
+        }
+
+        [Test]
+        public void LineDown2()
+        {
+            Create("dog", "cat", "bird");
+            var data = _util.LineDown(2);
+            AssertData(
+                data,
+                _buffer.GetLineSpanIncludingLineBreak(0, 2),
+                MotionKind.Inclusive,
+                OperationKind.LineWise);
+        }
+
+        [Test]
+        public void LineUp1()
+        {
+            Create("dog", "cat", "bird", "horse");
+            _textView.MoveCaretTo(_textView.GetLine(2).Start);
+            var data = _util.LineUp(1);
+            AssertData(
+                data,
+                _buffer.GetLineSpanIncludingLineBreak(1, 2),
+                MotionKind.Inclusive,
+                OperationKind.LineWise);
+        }
+
+        [Test]
+        public void LineUp2()
+        {
+            Create("dog", "cat", "bird", "horse");
+            _textView.MoveCaretTo(_textView.GetLine(2).Start);
+            var data = _util.LineUp(2);
+            AssertData(
+                data,
+                _buffer.GetLineSpanIncludingLineBreak(0, 2),
+                MotionKind.Inclusive,
+                OperationKind.LineWise);
+        }
+
+        [Test]
+        public void LineUp3()
+        {
+            Create("foo", "bar");
+            _textView.MoveCaretTo(_buffer.GetLineFromLineNumber(1).Start);
+            var data = _util.LineUp(1);
+            Assert.AreEqual(OperationKind.LineWise, data.OperationKind);
+            Assert.AreEqual("foo" + Environment.NewLine + "bar", data.Span.GetText());
+        }
+
     }
 
 }

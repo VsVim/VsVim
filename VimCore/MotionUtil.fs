@@ -169,14 +169,14 @@ type internal MotionUtil
             let endLine = SnapshotPointUtil.GetContainingLine point
             let startLineNumber = max 0 (endLine.LineNumber - count)
             let startLine = SnapshotUtil.GetLine endLine.Snapshot startLineNumber
-            let span = SnapshotSpan(startLine.Start, endLine.End)
+            let span = SnapshotSpan(startLine.Start, endLine.EndIncludingLineBreak)
             {Span=span; IsForward=false; MotionKind=MotionKind.Inclusive; OperationKind=OperationKind.LineWise; Column=None } 
         member x.LineDown count = 
             let point = x.StartPoint
             let startLine = SnapshotPointUtil.GetContainingLine point
             let endLineNumber = startLine.LineNumber + count
             let endLine = SnapshotUtil.GetLineOrLast startLine.Snapshot endLineNumber
-            let span = SnapshotSpan(startLine.Start, endLine.End)            
+            let span = SnapshotSpan(startLine.Start, endLine.EndIncludingLineBreak)            
             {Span=span; IsForward=true; MotionKind=MotionKind.Inclusive; OperationKind=OperationKind.LineWise; Column=None } 
         member x.LineOrFirstToFirstNonWhitespace numberOpt = 
             let point = x.StartPoint

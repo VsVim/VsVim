@@ -77,5 +77,15 @@ namespace VimCore.Test
             _buffer.Process(KeyInputUtil.CharToKeyInput('.'));
             Assert.AreEqual("hey hehey chased the bird", _textView.TextSnapshot.GetText());
         }
+
+        [Test]
+        [Description("See issue 288")]
+        public void dj_1()
+        {
+            CreateBuffer("abc", "def", "ghi", "jkl");
+            _buffer.ProcessInputAsString("dj");
+            Assert.AreEqual("ghi", _textView.GetLine(0).GetText());
+            Assert.AreEqual("jkl", _textView.GetLine(1).GetText());
+        }
     }
 }
