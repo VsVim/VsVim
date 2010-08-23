@@ -157,7 +157,9 @@
     <Compile Include="Mock\MockObjectFactory.cs" />
     <Compile Include="Mock\MockTextChangeTracker.cs" />
     <Compile Include="Mock\MockVimBuffer.cs" />
+    <Compile Include="Mock\MockVimGlobalSettings.cs" />
     <Compile Include="Mock\MockVimHost.cs" />
+    <Compile Include="Mock\MockVimLocalSettings.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TestableSynchronizationContext.cs" />
     <Compile Include="VimUtil.cs" />

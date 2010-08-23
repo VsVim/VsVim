@@ -104,6 +104,53 @@ type internal VisualMode
                         let endPoint = selection.End.Position.GetContainingLine().EndIncludingLineBreak
                         let span = SnapshotSpan(startPoint,endPoint)
                         _operations.Yank span MotionKind.Inclusive OperationKind.LineWise reg ))
+                yield (
+                    "zo", 
+                    CommandFlags.Special, 
+                    None,
+                    fun _ _ -> _operations.OpenFold x.SelectedSpan 1)
+                yield (
+                    "zO", 
+                    CommandFlags.Special, 
+                    None,
+                    fun _ _ -> _operations.OpenAllFolds x.SelectedSpan )
+                yield (
+                    "zc", 
+                    CommandFlags.Special, 
+                    None,
+                    fun _ _ -> _operations.CloseFold x.SelectedSpan 1)
+                yield (
+                    "zC", 
+                    CommandFlags.Special, 
+                    None,
+                    fun _ _ -> _operations.CloseAllFolds x.SelectedSpan )
+                yield (
+                    "zf", 
+                    CommandFlags.Special, 
+                    None,
+                    fun _ _ -> _operations.FoldManager.CreateFold x.SelectedSpan)
+                yield (
+                    "zd", 
+                    CommandFlags.Special, 
+                    None,
+                    fun _ _ -> _operations.DeleteOneFoldAtCursor() )
+                yield (
+                    "zD", 
+                    CommandFlags.Special, 
+                    None,
+                    fun _ _ -> _operations.DeleteAllFoldsAtCursor() )
+                yield (
+                    "zE", 
+                    CommandFlags.Special, 
+                    None,
+                    fun _ _ -> _operations.FoldManager.DeleteAllFolds() )
+                yield (
+                    "zF", 
+                    CommandFlags.Special, 
+                    None,
+                    fun count _ -> 
+                        let span = SnapshotSpanUtil.ExtendDownIncludingLineBreak x.SelectedSpan (count-1)
+                        _operations.FoldManager.CreateFold span )
             }
             |> Seq.map (fun (str,flags,mode,func) ->
                 let kiSet = KeyNotationUtil.StringToKeyInputSet str
@@ -116,27 +163,6 @@ type internal VisualMode
                     func count reg 
                     CommandResult.Completed modeSwitch
                 Command.SimpleCommand (kiSet, flags, func2) )
-
-        /// Commands consisting of more than a single character
-        let complex = 
-            seq { 
-                yield ("zo", CommandFlags.Special, fun _ _ -> _operations.OpenFold x.SelectedSpan 1)
-                yield ("zO", CommandFlags.Special, fun _ _ -> _operations.OpenAllFolds x.SelectedSpan )
-                yield ("zc", CommandFlags.Special, fun _ _ -> _operations.CloseFold x.SelectedSpan 1)
-                yield ("zC", CommandFlags.Special, fun _ _ -> _operations.CloseAllFolds x.SelectedSpan )
-                yield ("zf", CommandFlags.Special, fun _ _ -> _operations.FoldManager.CreateFold x.SelectedSpan)
-                yield ("zd", CommandFlags.Special, fun _ _ -> _operations.DeleteOneFoldAtCursor() )
-                yield ("zD", CommandFlags.Special, fun _ _ -> _operations.DeleteAllFoldsAtCursor() )
-                yield ("zE", CommandFlags.Special, fun _ _ -> _operations.FoldManager.DeleteAllFolds() )
-                yield ("zF", CommandFlags.Special, fun count _ -> 
-                    let count = CommandUtil.CountOrDefault count
-                    let span = SnapshotSpanUtil.ExtendDownIncludingLineBreak x.SelectedSpan (count-1)
-                    _operations.FoldManager.CreateFold span )
-            }
-            |> Seq.map (fun (str,flags,func) -> (str, flags,fun count reg -> func count reg; CommandResult.Completed ModeSwitch.SwitchPreviousMode))
-            |> Seq.map (fun (name,flags,func) -> 
-                let name = KeyNotationUtil.StringToKeyInputSet name
-                Command.SimpleCommand (name, flags, func))
 
         /// Commands which must customize their return
         let customReturn = 
@@ -258,7 +284,7 @@ type internal VisualMode
 
                 Command.VisualCommand(kiSet, flags, _visualKind, func2) )
                 
-        Seq.append simples complex |> Seq.append visualSimple |> Seq.append customReturn
+        Seq.append simples visualSimple |> Seq.append customReturn
 
     member private x.EnsureCommandsBuilt() =
         if not _builtCommands then

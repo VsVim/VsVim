@@ -15,14 +15,16 @@ namespace Vim.UI.Wpf.Implementation
         private struct CaretData
         {
             internal readonly CaretDisplay CaretDisplay;
+            internal readonly double CaretOpacity;
             internal readonly Image Image;
             internal readonly Color? Color;
             internal readonly SnapshotPoint Point;
             internal readonly double YDisplayOffset;
 
-            internal CaretData(CaretDisplay caretDisplay, Image image, Color? color, SnapshotPoint point, double displayOffset)
+            internal CaretData(CaretDisplay caretDisplay, double caretOpacity, Image image, Color? color, SnapshotPoint point, double displayOffset)
             {
                 CaretDisplay = caretDisplay;
+                CaretOpacity = caretOpacity;
                 Image = image;
                 Color = color;
                 Point = point;
@@ -38,8 +40,7 @@ namespace Vim.UI.Wpf.Implementation
         private CaretData? _caretData;
         private CaretDisplay _caretDisplay;
         private bool _isDestroyed;
-
-        private const double _caretOpacity = 0.65;
+        private double _caretOpacity = 0.65;
 
         public ITextView TextView
         {
@@ -54,6 +55,19 @@ namespace Vim.UI.Wpf.Implementation
                 if (_caretDisplay != value)
                 {
                     _caretDisplay = value;
+                    UpdateCaret();
+                }
+            }
+        }
+
+        public double CaretOpacity
+        {
+            get { return _caretOpacity; }
+            set
+            {
+                if (_caretOpacity != value)
+                {
+                    _caretOpacity = value;
                     UpdateCaret();
                 }
             }
@@ -91,7 +105,8 @@ namespace Vim.UI.Wpf.Implementation
                     var data = _caretData.Value;
                     return data.Color != TryCalculateCaretColor()
                         || data.Point != _view.Caret.Position.BufferPosition
-                        || data.CaretDisplay != _caretDisplay;
+                        || data.CaretDisplay != _caretDisplay
+                        || data.CaretOpacity != _caretOpacity;
                 }
                 else
                 {
@@ -280,7 +295,7 @@ namespace Vim.UI.Wpf.Implementation
             image.Source = drawingImage;
 
             var point = _view.Caret.Position.BufferPosition;
-            return new CaretData(_caretDisplay, image, color, point, tuple.Item2);
+            return new CaretData(_caretDisplay, _caretOpacity, image, color, point, tuple.Item2);
         }
 
         private void CreateBlockCaretDisplay()

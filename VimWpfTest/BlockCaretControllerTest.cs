@@ -1,6 +1,7 @@
 ﻿using Microsoft.VisualStudio.Text.Editor;
 using Moq;
 using NUnit.Framework;
+using Vim.UnitTest.Mock;
 
 namespace Vim.UI.Wpf.Test
 {
@@ -10,17 +11,23 @@ namespace Vim.UI.Wpf.Test
         private Mock<ITextView> _view;
         private Mock<IVimBuffer> _buffer;
         private Mock<IBlockCaret> _caret;
+        private MockVimLocalSettings _localSettings;
+        private MockVimGlobalSettings _settings;
         private BlockCaretController _controller;
 
         [SetUp]
         public void SetUp()
         {
             _view = new Mock<ITextView>();
+            _settings = new MockVimGlobalSettings();
+            _localSettings = new MockVimLocalSettings() { GlobalSettingsImpl = _settings };
             _buffer = new Mock<IVimBuffer>();
             _buffer.SetupGet(x => x.ModeKind).Returns(ModeKind.Command);
             _buffer.SetupGet(x => x.TextView).Returns(_view.Object);
+            _buffer.SetupGet(x => x.Settings).Returns(_localSettings);
             _caret = new Mock<IBlockCaret>(MockBehavior.Strict);
             _caret.SetupSet(x => x.CaretDisplay = CaretDisplay.Invisible);
+            _caret.SetupSet(x => x.CaretOpacity = _settings.CaretOpacity);
             _controller = new BlockCaretController(_buffer.Object, _caret.Object);
         }
 
@@ -152,6 +159,22 @@ namespace Vim.UI.Wpf.Test
             _buffer.SetupGet(x => x.ModeKind).Returns(ModeKind.Replace);
             _caret.SetupSet(x => x.CaretDisplay = CaretDisplay.QuarterBlock);
             _controller.Update();
+        }
+
+        [Test]
+        public void CaretOpacity1()
+        {
+            _caret.SetupSet(x => x.CaretOpacity = 0.01d).Verifiable();
+            var setting = new Setting(
+                GlobalSettingNames.CaretOpacityName,
+                "",
+                SettingKind.StringKind,
+                SettingValue.NewStringValue(""),
+                SettingValue.NewStringValue(""),
+                true);
+            _settings.CaretOpacity = 1;
+            _settings.RaiseSettingChanged(setting);
+            _caret.Verify();
         }
     }
 }

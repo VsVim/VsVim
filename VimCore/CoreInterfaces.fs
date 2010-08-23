@@ -825,6 +825,7 @@ module GlobalSettingNames =
     let VirtualEditName = "virtualedit"
     let ScrollOffsetName = "scrolloff"
     let DoubleEscapeName = "vsvimdoubleescape"
+    let CaretOpacityName = "vsvimcaret"
     let VimRcName = "vimrc"
     let VimRcPathsName = "vimrcpaths"
 
@@ -894,7 +895,6 @@ and IVimGlobalSettings =
     /// just dismiss intellisense
     abstract DoubleEscape:bool with get,set
 
-
     /// Retrieves the location of the loaded VimRC file.  Will be the empty string if the load 
     /// did not succeed or has not been tried
     abstract VimRc : string with get, set
@@ -902,6 +902,10 @@ and IVimGlobalSettings =
     /// Set of paths considered when looking for a .vimrc file.  Will be the empty string if the 
     /// load has not been attempted yet
     abstract VimRcPaths : string with get, set
+
+    /// Opacity of the caret.  This must be an integer between values 0 and 100 which
+    /// will be converted into a double for the opacity of the caret
+    abstract CaretOpacity : int with get, set
 
     abstract DisableCommand: KeyInput;
 

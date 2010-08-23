@@ -105,8 +105,6 @@ type internal SettingsMap
         | ToggleKind -> convertToBoolean()
         | StringKind -> Some (StringValue(str))
 
-            
-
 type internal GlobalSettings() =
 
     static let DisableCommandLet = KeyInputUtil.VimKeyAndModifiersToKeyInput VimKey.F12 (KeyModifiers.Control ||| KeyModifiers.Shift)
@@ -125,6 +123,7 @@ type internal GlobalSettings() =
             ( VimRcName, VimRcName, StringKind, StringValue(System.String.Empty) );
             ( VimRcPathsName, VimRcPathsName, StringKind, StringValue(System.String.Empty) );
             ( DoubleEscapeName, DoubleEscapeName, ToggleKind, ToggleValue(false) );
+            ( CaretOpacityName, CaretOpacityName, NumberKind, NumberValue(65) );
         |]
 
     let _map = SettingsMap(GlobalSettings, true)
@@ -176,6 +175,9 @@ type internal GlobalSettings() =
         member x.VimRcPaths 
             with get() = _map.GetStringValue VimRcPathsName
             and set value = _map.TrySetValue VimRcPathsName (StringValue(value)) |> ignore
+        member x.CaretOpacity
+            with get() = _map.GetNumberValue CaretOpacityName
+            and set value = _map.TrySetValue CaretOpacityName (NumberValue(value)) |> ignore
         member x.DisableCommand = DisableCommandLet
         member x.IsVirtualEditOneMore = 
             let value = _map.GetStringValue VirtualEditName

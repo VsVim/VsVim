@@ -162,7 +162,7 @@ type internal CommandRunner
             match command with
             | Command.SimpleCommand(_,_,func) -> 
                 let data = x.CreateCommandRunData command None None
-                let result = func _data.Count _data.Register 
+                let result = func _data.Count _data.Register
                 RanCommand (data,result)
             | Command.VisualCommand(_,_,kind,func) -> 
                 let visualSpan = 

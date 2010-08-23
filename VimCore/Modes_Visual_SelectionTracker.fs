@@ -165,7 +165,7 @@ type internal SelectionTracker
             | e -> reraise()
         x.UpdateSelection()
 
-    member private x.OnCaretChanged()  = x.UpdateSelection()
+    member private x.OnCaretChanged() = x.UpdateSelection()
 
     interface ISelectionTracker with 
         member x.IsRunning = x.IsRunning

@@ -17,12 +17,22 @@ namespace Vim.UI.Wpf
             _buffer.KeyInputProcessed += OnCaretRelatedEvent;
             _buffer.KeyInputReceived += OnCaretRelatedEvent;
             _buffer.Closed += OnBufferClosed;
+            _buffer.Settings.GlobalSettings.SettingChanged += OnSettingsChanged;
             UpdateCaret();
+            UpdateCaretOpacity();
         }
 
         internal void Update()
         {
             UpdateCaret();
+        }
+
+        private void OnSettingsChanged(object sender, Setting setting)
+        {
+            if (setting.Name == GlobalSettingNames.CaretOpacityName)
+            {
+                UpdateCaretOpacity();
+            }
         }
 
         private void OnCaretRelatedEvent(object sender, object args)
@@ -33,6 +43,16 @@ namespace Vim.UI.Wpf
         private void OnBufferClosed(object sender, EventArgs args)
         {
             _blockCaret.Destroy();
+        }
+
+        private void UpdateCaretOpacity()
+        {
+            var value = _buffer.Settings.GlobalSettings.CaretOpacity;
+            if (value >= 0 && value <= 100)
+            {
+                var opacity = ((double)value / 100);
+                _blockCaret.CaretOpacity = opacity;
+            }
         }
 
         private void UpdateCaret()
