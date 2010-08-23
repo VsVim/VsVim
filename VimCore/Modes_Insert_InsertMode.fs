@@ -24,6 +24,7 @@ type internal InsertMode
                 ("<Esc>", this.ProcessEscape);
                 ("CTRL-[", this.ProcessEscape);
                 ("CTRL-d", this.ProcessShiftLeft)
+                ("CTRL-t", this.ProcessShiftRight)
                 ("CTRL-o", this.ProcessNormalModeOneCommand)
             ]
 
@@ -41,6 +42,11 @@ type internal InsertMode
     /// Process the CTRL-D combination and do a shift left
     member private this.ProcessShiftLeft() = 
         _operations.ShiftLinesLeft 1
+        ProcessResult.Processed
+
+    /// Process the CTRL-T combination and do a shift right
+    member private this.ProcessShiftRight() = 
+        _operations.ShiftLinesRight 1
         ProcessResult.Processed
 
     member private this.ProcessEscape () =

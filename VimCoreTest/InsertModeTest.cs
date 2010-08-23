@@ -185,5 +185,14 @@ namespace VimCore.Test
             _factory.Verify();
         }
 
+        [Test]
+        public void ShiftRight1()
+        {
+            SetUp();
+            _operations.Setup(x => x.ShiftLinesRight(1)).Verifiable();
+            _mode.Process(KeyNotationUtil.StringToKeyInput("CTRL-T"));
+            _factory.Verify();
+        }
+
     }
 }
