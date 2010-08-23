@@ -212,6 +212,31 @@ module SnapshotSpanUtil =
     /// Create an empty span at the given point
     let CreateEmpty point = SnapshotSpan(point, 0)
 
+    /// Get the ITextSnapshotLines included in this SnasphotSpan 
+    let GetLines span = 
+        let startLine = GetStartLine span
+        let count = GetLineCount span
+        SnapshotUtil.GetLines span.Snapshot startLine.LineNumber SearchKind.Forward
+        |> Seq.take count
+
+/// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
+/// include any Vim specific logic
+module NormalizedSnapshotSpanCollectionUtil =
+
+    /// Get the first item 
+    let GetFirst (col:NormalizedSnapshotSpanCollection) = col.[0]
+
+    /// Get the first item 
+    let GetLast (col:NormalizedSnapshotSpanCollection) = col.[col.Count-1]
+
+    /// Get the inclusive span 
+    let GetFullSpan col =
+        let first = GetFirst col
+        let last = GetLast col
+        SnapshotSpan(first.Start,last.End) 
+
+    let OfSeq (s:SnapshotSpan seq) = new NormalizedSnapshotSpanCollection(s)
+
 /// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
 /// include any Vim specific logic
 module VirtualSnapshotSpanUtil = 
@@ -253,6 +278,15 @@ module SnapshotLineUtil =
 
     /// Get the points on the particular line including the line break in reverse
     let GetPointsIncludingLineBreakBackward line = GetExtentIncludingLineBreak line |> SnapshotSpanUtil.GetPointsBackward
+
+    /// Get the length of the line break
+    let GetLineBreakLength (line:ITextSnapshotLine) = line.LengthIncludingLineBreak - line.Length
+
+    /// Get the line break span 
+    let GetLineBreakSpan line = 
+        let point = GetEnd line
+        let length = GetLineBreakLength line
+        SnapshotSpan(point,length)
 
 /// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
 /// include any Vim specific logic

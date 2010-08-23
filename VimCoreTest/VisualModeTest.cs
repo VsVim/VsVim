@@ -25,7 +25,7 @@ namespace VimCore.Test
         private VisualMode _modeRaw;
         private IMode _mode;
         private IRegisterMap _map;
-        private Mock<IOperations> _operations;
+        private Mock<ICommonOperations> _operations;
         private Mock<ISelectionTracker> _tracker;
         private Mock<IFoldManager> _foldManager;
         private Mock<IUndoRedoOperations> _undoRedoOperations;
@@ -53,7 +53,7 @@ namespace VimCore.Test
             _tracker.Setup(x => x.Start());
             _undoRedoOperations = _factory.Create<IUndoRedoOperations>();
             _foldManager = _factory.Create<IFoldManager>();
-            _operations = _factory.Create<IOperations>();
+            _operations = _factory.Create<ICommonOperations>();
             _operations.SetupGet(x => x.FoldManager).Returns(_foldManager.Object);
             _operations.SetupGet(x => x.UndoRedoOperations).Returns(_undoRedoOperations.Object);
             _host = _factory.Create<IVimHost>(MockBehavior.Loose);
@@ -272,8 +272,12 @@ namespace VimCore.Test
         [Test]
         public void Join1()
         {
-            Create("foo", "bar");
-            _operations.Setup(x => x.JoinSelection(JoinKind.RemoveEmptySpaces)).Returns(true).Verifiable();
+            Create("a", "b", "c", "d", "e");
+            var span = _buffer.GetLineSpan(0, 2);
+            _selection.MakeSelection(span);
+            _operations
+                .Setup(x => x.JoinSpan(span, JoinKind.RemoveEmptySpaces))
+                .Verifiable();
             _mode.Process('J');
             _operations.Verify();
         }
@@ -281,8 +285,12 @@ namespace VimCore.Test
         [Test]
         public void Join2()
         {
-            Create("foo", "bar");
-            _operations.Setup(x => x.JoinSelection(JoinKind.RemoveEmptySpaces)).Returns(true).Verifiable();
+            Create("a", "b", "c", "d", "e");
+            var span = _buffer.GetLineSpan(0, 3);
+            _selection.MakeSelection(span);
+            _operations
+                .Setup(x => x.JoinSpan(span, JoinKind.RemoveEmptySpaces))
+                .Verifiable();
             _mode.Process('J');
             _operations.Verify();
         }
@@ -290,8 +298,12 @@ namespace VimCore.Test
         [Test]
         public void Join3()
         {
-            Create("foo", "bar");
-            _operations.Setup(x => x.JoinSelection(JoinKind.KeepEmptySpaces)).Returns(true).Verifiable();
+            Create("a", "b", "c", "d", "e");
+            var span = _buffer.GetLineSpan(0, 3);
+            _selection.MakeSelection(span);
+            _operations
+                .Setup(x => x.JoinSpan(span, JoinKind.KeepEmptySpaces))
+                .Verifiable();
             _mode.Process("gJ");
             _operations.Verify();
         }
@@ -345,9 +357,10 @@ namespace VimCore.Test
         public void Change4()
         {
             Create("foo", "bar");
+            var span = _buffer.GetLineSpan(0);
+            _selection.MakeSelection(span);
             _operations
-                .Setup(x => x.DeleteSelectedLines(_map.DefaultRegister))
-                .Returns((ITextSnapshot)null)
+                .Setup(x => x.DeleteLinesInSpan(span, _map.DefaultRegister))
                 .Verifiable();
             var res = _mode.Process('S');
             Assert.IsTrue(res.IsSwitchMode);
@@ -358,9 +371,10 @@ namespace VimCore.Test
         public void Change5()
         {
             Create("foo", "bar");
+            var span = _buffer.GetLineSpan(0);
+            _selection.MakeSelection(span);
             _operations
-                .Setup(x => x.DeleteSelectedLines(_map.DefaultRegister))
-                .Returns((ITextSnapshot)null)
+                .Setup(x => x.DeleteLinesInSpan(span, _map.DefaultRegister))
                 .Verifiable();
             var res = _mode.Process('C');
             Assert.IsTrue(res.IsSwitchMode);
@@ -485,9 +499,10 @@ namespace VimCore.Test
         public void Put1()
         {
             Create("foo bar");
-            _map.DefaultRegister.UpdateValue("");
+            var span = _buffer.GetLineSpan(0);
+            _selection.MakeSelection(span);
             _operations
-                .Setup(x => x.PasteOverSelection("", _map.DefaultRegister))
+                .Setup(x => x.PasteOver(span, _map.DefaultRegister))
                 .Verifiable();
             _mode.Process('p');
             _factory.Verify();
@@ -497,23 +512,12 @@ namespace VimCore.Test
         public void Put2()
         {
             Create("foo bar");
-            _map.GetRegister('c').UpdateValue("");
+            var span = _buffer.GetLineSpan(0);
+            _selection.MakeSelection(span);
             _operations
-                .Setup(x => x.PasteOverSelection("", _map.GetRegister('c')))
+                .Setup(x => x.PasteOver(span, _map.GetRegister('c')))
                 .Verifiable();
             _mode.Process("\"cp");
-            _factory.Verify();
-        }
-
-        [Test]
-        public void Put3()
-        {
-            Create("foo bar");
-            _map.DefaultRegister.UpdateValue("again");
-            _operations
-                .Setup(x => x.PasteOverSelection("again", _map.DefaultRegister))
-                .Verifiable();
-            _mode.Process('p');
             _factory.Verify();
         }
 
@@ -522,7 +526,7 @@ namespace VimCore.Test
         {
             Create("foo bar");
             var span = _buffer.GetSpan(0, 1);
-            _operations.Setup(x => x.SelectedSpan).Returns(span).Verifiable();
+            _selection.MakeSelection(span);
             _operations.Setup(x => x.OpenFold(span, 1)).Verifiable();
             _mode.Process("zo");
             _factory.Verify();
@@ -533,7 +537,7 @@ namespace VimCore.Test
         {
             Create("foo bar");
             var span = _buffer.GetSpan(0, 1);
-            _operations.Setup(x => x.SelectedSpan).Returns(span).Verifiable();
+            _selection.MakeSelection(span);
             _operations.Setup(x => x.CloseFold(span, 1)).Verifiable();
             _mode.Process("zc");
             _factory.Verify();
@@ -544,7 +548,7 @@ namespace VimCore.Test
         {
             Create("foo bar");
             var span = _buffer.GetSpan(0, 1);
-            _operations.Setup(x => x.SelectedSpan).Returns(span).Verifiable();
+            _selection.MakeSelection(span);
             _operations.Setup(x => x.OpenAllFolds(span)).Verifiable();
             _mode.Process("zO");
             _factory.Verify();
@@ -555,7 +559,7 @@ namespace VimCore.Test
         {
             Create("foo bar");
             var span = _buffer.GetSpan(0, 1);
-            _operations.Setup(x => x.SelectedSpan).Returns(span).Verifiable();
+            _selection.MakeSelection(span);
             _operations.Setup(x => x.CloseAllFolds(span)).Verifiable();
             _mode.Process("zC");
             _factory.Verify();
@@ -566,7 +570,7 @@ namespace VimCore.Test
         {
             Create("foo bar");
             var span = _buffer.GetSpan(0, 1);
-            _operations.Setup(x => x.SelectedSpan).Returns(span).Verifiable();
+            _selection.MakeSelection(span);
             _foldManager.Setup(x => x.CreateFold(span)).Verifiable();
             _mode.Process("zf");
             _factory.Verify();
@@ -577,7 +581,7 @@ namespace VimCore.Test
         {
             Create("the", "quick", "brown", "fox");
             var span = _buffer.GetSpan(0, 1);
-            _operations.Setup(x => x.SelectedSpan).Returns(span);
+            _selection.MakeSelection(span);
             _foldManager.Setup(x => x.CreateFold(_buffer.GetLineSpanIncludingLineBreak(0, 0))).Verifiable();
             _mode.Process("zF");
             _factory.Verify();
@@ -588,7 +592,7 @@ namespace VimCore.Test
         {
             Create("the", "quick", "brown", "fox");
             var span = _buffer.GetSpan(0, 1);
-            _operations.Setup(x => x.SelectedSpan).Returns(span).Verifiable();
+            _selection.MakeSelection(span);
             _foldManager.Setup(x => x.CreateFold(_buffer.GetLineSpanIncludingLineBreak(0, 1))).Verifiable();
             _mode.Process("2zF");
             _factory.Verify();

@@ -194,7 +194,6 @@
     <Compile Include="VimTest.cs" />
     <Compile Include="VisualModeTest.cs" />
     <Compile Include="VisualSpanCalculatorTest.cs" />
-    <Compile Include="Visual_DefaultOperationsTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Todo.txt" />

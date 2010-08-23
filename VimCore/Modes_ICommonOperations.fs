@@ -58,6 +58,9 @@ type ICommonOperations =
     /// be complete (such as joining at the end of the buffer)
     abstract Join : SnapshotPoint -> JoinKind -> count : int -> bool
 
+    /// Join the lines in the given span 
+    abstract JoinSpan : SnapshotSpan -> JoinKind -> unit
+
     /// Attempt to GoToDefinition on the current state of the buffer.  If this operation fails, an error message will 
     /// be generated as appropriate
     abstract GoToDefinition : unit -> Result
@@ -126,6 +129,9 @@ type ICommonOperations =
     /// the new snapshot of the buffer
     abstract PasteBefore : SnapshotPoint -> text : string -> OperationKind -> SnapshotSpan 
 
+    /// Paste over the selected text
+    abstract PasteOver : SnapshotSpan -> Register -> unit
+
     /// Insert the specified text at the cursor position "count" times
     abstract InsertText : text:string -> count : int -> unit
 
@@ -143,6 +149,9 @@ type ICommonOperations =
     /// Delete from the cursor to the end of the current line and (count-1) more 
     /// lines.  
     abstract DeleteLinesIncludingLineBreakFromCursor : count:int -> Register -> unit
+
+    /// Delete the lines in the given span.  Does not include the final line break
+    abstract DeleteLinesInSpan : SnapshotSpan -> Register -> unit 
 
     /// Delete a range of text
     abstract DeleteSpan : SnapshotSpan -> MotionKind -> OperationKind -> Register -> ITextSnapshot

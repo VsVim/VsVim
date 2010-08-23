@@ -32,6 +32,9 @@ type RegisterValue = {
     MotionKind : MotionKind;
     OperationKind : OperationKind;
 }
+    with
+
+    static member CreateLineWise d = { Value = d; MotionKind=MotionKind.Inclusive; OperationKind=OperationKind.LineWise }
 
 type Register(_name:char) = 
     let mutable _value = { Value= StringData.Simple StringUtil.empty; MotionKind=MotionKind.Inclusive; OperationKind=OperationKind.CharacterWise}
@@ -39,5 +42,6 @@ type Register(_name:char) =
     member x.StringValue = _value.Value.String
     member x.Value = _value
     member x.UpdateValue v = _value <- v
+
 
 

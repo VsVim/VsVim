@@ -81,8 +81,6 @@
     <Compile Include="Modes_Insert_InsertMode.fs" />
     <Compile Include="Modes_Visual_ISelectionTracker.fs" />
     <Compile Include="Modes_Visual_SelectionTracker.fs" />
-    <Compile Include="Modes_Visual_IOperations.fs" />
-    <Compile Include="Modes_Visual_DefaultOperations.fs" />
     <Compile Include="Modes_Visual_VisualMode.fsi" />
     <Compile Include="Modes_Visual_VisualMode.fs" />
     <Compile Include="FoldManager.fs" />

@@ -86,7 +86,7 @@ type internal VimBufferFactory
                 | ModeKind.VisualLine -> Modes.Visual.SelectionMode.Line
                 | _ -> invalidArg "_kind" "Invalid kind for Visual Mode"
             let tracker = Modes.Visual.SelectionTracker(view,mode) :> Modes.Visual.ISelectionTracker
-            let opts = Modes.Visual.DefaultOperations(operationsData, kind ) :> Modes.Visual.IOperations
+            let opts = Modes.Insert.DefaultOperations(operationsData ) :> Modes.ICommonOperations
             (tracker, opts)
 
         let visualModeList =
