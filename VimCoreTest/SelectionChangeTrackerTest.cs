@@ -1,4 +1,5 @@
-﻿using System.Threading;
+﻿using System;
+using System.Threading;
 using Microsoft.VisualStudio.Text.Editor;
 using Moq;
 using NUnit.Framework;
@@ -11,19 +12,27 @@ namespace VimCore.Test
     [TestFixture]
     public class SelectionChangeTrackerTest
     {
-        private MockFactory _factory;
-        private MockVimBuffer _buffer;
-        private ITextView _textView;
+        private MockRepository _factory;
+        private Mock<IVimBuffer> _buffer;
+        private Mock<ITextSelection> _selection;
+        private Mock<ITextView> _textView;
         private TestableSynchronizationContext _context;
+        private SelectionChangeTracker _tracker;
 
         [SetUp]
         public void Setup()
         {
-            _textView = EditorUtil.CreateView("dog", "cat", "chicken", "pig");
-            _factory = new MockFactory(MockBehavior.Strict);
-            _buffer = new MockVimBuffer() { TextViewImpl = _textView, TextBufferImpl = _textView.TextBuffer };
+            _factory = new MockRepository(MockBehavior.Loose);
+            _selection = _factory.Create<ITextSelection>();
+            _textView = MockObjectFactory.CreateTextView(
+                selection: _selection.Object,
+                factory: _factory);
+            _buffer = MockObjectFactory.CreateVimBuffer(
+                view: _textView.Object,
+                factory: _factory);
             _context = new TestableSynchronizationContext();
             SynchronizationContext.SetSynchronizationContext(_context);
+            _tracker = new SelectionChangeTracker(_buffer.Object);
         }
 
         [TearDown]
@@ -33,26 +42,63 @@ namespace VimCore.Test
         }
 
         [Test]
-        [Description("Already in Visual Mode.  Nothnig to do")]
+        [Description("Already in Visual Mode.  Nothing to do")]
         public void SelectionChanged1()
         {
-            _buffer.IsProcessingInputImpl = false;
-            _buffer.ModeKindImpl = ModeKind.VisualBlock;
-            _textView.Selection.Select(_textView.GetLineSpan(0), false);
+            _buffer.SetupGet(x => x.IsProcessingInput).Returns(false).Verifiable();
+            _buffer.SetupGet(x => x.ModeKind).Returns(ModeKind.VisualCharacter).Verifiable();
+            _selection.Raise(x => x.SelectionChanged += null, (object)null, EventArgs.Empty);
             Assert.IsTrue(_context.IsEmpty);
+            _factory.Verify();
         }
 
         [Test]
-        public void EventTest()
+        [Description("Not in Visual Mode but there is no selection so nothing to do")]
+        public void SelectionChanged2()
         {
-            var didSee = false;
-            var buffer = new Mock<IVimBuffer>(MockBehavior.Loose);
-            buffer.Object.KeyInputBuffered += delegate
-            {
-                didSee = true;
-            };
-            buffer.Raise(x => x.KeyInputBuffered += null, null, KeyInputUtil.CharToKeyInput('c'));
-            Assert.IsTrue(didSee);
+            _buffer.SetupGet(x => x.IsProcessingInput).Returns(false).Verifiable();
+            _buffer.SetupGet(x => x.ModeKind).Returns(ModeKind.Normal).Verifiable();
+            _selection.SetupGet(x => x.IsEmpty).Returns(true).Verifiable();
+            _selection.Raise(x => x.SelectionChanged += null, null, EventArgs.Empty);
+            Assert.IsTrue(_context.IsEmpty);
+            _factory.Verify();
+        }
+
+        [Test]
+        public void SelectionChanged3()
+        {
+            _buffer.SetupGet(x => x.IsProcessingInput).Returns(false).Verifiable();
+            _buffer.SetupGet(x => x.ModeKind).Returns(ModeKind.Normal).Verifiable();
+            _selection.SetupGet(x => x.IsEmpty).Returns(false).Verifiable();
+            _selection.Raise(x => x.SelectionChanged += null, null, EventArgs.Empty);
+            Assert.IsFalse(_context.IsEmpty);
+            _factory.Verify();
+
+            _buffer
+                .Setup(x => x.SwitchMode(ModeKind.VisualCharacter, ModeArgument.None))
+                .Returns(_factory.Create<IMode>().Object)
+                .Verifiable();
+            _context.RunAll();
+            _factory.Verify();
+        }
+
+        [Test]
+        [Description("Make sure the selection is still valid when the post occurs")]
+        public void SelectionChanged4()
+        {
+            _buffer.SetupGet(x => x.IsProcessingInput).Returns(false).Verifiable();
+            _buffer.SetupGet(x => x.ModeKind).Returns(ModeKind.Normal).Verifiable();
+            _selection.SetupGet(x => x.IsEmpty).Returns(false).Verifiable();
+            _selection.Raise(x => x.SelectionChanged += null, null, EventArgs.Empty);
+            Assert.IsFalse(_context.IsEmpty);
+            _factory.Verify();
+
+            _selection.SetupGet(x => x.IsEmpty).Returns(true).Verifiable();
+            _buffer
+                .Setup(x => x.SwitchMode(ModeKind.VisualCharacter, ModeArgument.None))
+                .Throws(new Exception());
+            _context.RunAll();
+            _factory.Verify();
         }
 
     }

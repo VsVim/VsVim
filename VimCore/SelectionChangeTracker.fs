@@ -57,22 +57,22 @@ type internal SelectionChangeTracker
 
     member private x.OnBufferClosed() = _bag.DisposeAll()
     member private x.OnKeyInputFinished() = 
-        if _selectionDirty && not _textView.Selection.IsEmpty && _selectionDirty then x.SetModeForSelection()
+        if _selectionDirty && not _textView.Selection.IsEmpty && _selectionDirty then 
+            x.SetModeForSelection()
+            _selectionDirty <- false
 
     member private x.SetModeForSelection() = 
 
         // Update the selections.  This is called from a post callback to ensure we don't 
         // interfer with other selection + edit events
         let doUpdate () = 
-            try
-                if _selectionDirty && not x.IsAnyVisualMode && not _textView.Selection.IsEmpty then
-                    let modeKind = 
-                        if _textView.Selection.Mode = TextSelectionMode.Stream then ModeKind.VisualCharacter
-                        else ModeKind.VisualBlock
-                    _buffer.SwitchMode modeKind ModeArgument.None |> ignore
-            finally
-                _selectionDirty <- false
+            if not x.IsAnyVisualMode && not _textView.Selection.IsEmpty then
+                let modeKind = 
+                    if _textView.Selection.Mode = TextSelectionMode.Stream then ModeKind.VisualCharacter
+                    else ModeKind.VisualBlock
+                _buffer.SwitchMode modeKind ModeArgument.None |> ignore
 
-        let context = System.Threading.SynchronizationContext.Current
-        context.Post( (fun _ -> doUpdate()), null)
+        if not _textView.Selection.IsEmpty then 
+            let context = System.Threading.SynchronizationContext.Current
+            context.Post( (fun _ -> doUpdate()), null)
 
