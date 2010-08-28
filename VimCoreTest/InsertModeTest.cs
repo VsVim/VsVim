@@ -15,7 +15,7 @@ namespace VimCore.Test
     [TestFixture]
     public class InsertModeTest
     {
-        private MockFactory _factory;
+        private MockRepository _factory;
         private Mock<IVimBuffer> _data;
         private Vim.Modes.Insert.InsertMode _modeRaw;
         private IMode _mode;
@@ -35,7 +35,7 @@ namespace VimCore.Test
 
         public void SetUp(bool insertMode)
         {
-            _factory = new MockFactory(MockBehavior.Strict);
+            _factory = new MockRepository(MockBehavior.Strict);
             _factory.DefaultValue = DefaultValue.Mock;
             _textView = _factory.Create<ITextView>();
             _vim = _factory.Create<IVim>(MockBehavior.Loose);

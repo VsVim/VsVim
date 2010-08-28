@@ -16,7 +16,7 @@ namespace VimCore.Test
     [TestFixture]
     public class SearchServiceTest
     {
-        private MockFactory _factory;
+        private MockRepository _factory;
         private Mock<IVimGlobalSettings> _settings;
         private Mock<ITextSearchService> _textSearch;
         private SearchService _searchRaw;
@@ -25,7 +25,7 @@ namespace VimCore.Test
         [SetUp]
         public void SetUp()
         {
-            _factory = new MockFactory(MockBehavior.Strict);
+            _factory = new MockRepository(MockBehavior.Strict);
             _settings = _factory.Create<IVimGlobalSettings>();
             _textSearch = _factory.Create<ITextSearchService>();
             _searchRaw = new SearchService(_textSearch.Object, _settings.Object);

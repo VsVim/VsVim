@@ -14,7 +14,7 @@ namespace VsVim.UnitTest
     [TestFixture]
     public class TextManagerTest
     {
-        private MockFactory _factory;
+        private MockRepository _factory;
         private Mock<IVsAdapter> _adapter;
         private Mock<SVsServiceProvider> _serviceProvider;
         private Mock<IVsRunningDocumentTable> _table;
@@ -24,7 +24,7 @@ namespace VsVim.UnitTest
         [SetUp]
         public void Setup()
         {
-            _factory = new MockFactory(MockBehavior.Loose);
+            _factory = new MockRepository(MockBehavior.Loose);
             _adapter = _factory.Create<IVsAdapter>();
             _adapter.SetupGet(x => x.EditorAdapter).Returns(_factory.Create<IVsEditorAdaptersFactoryService>().Object);
             _table = _factory.Create<IVsRunningDocumentTable>();

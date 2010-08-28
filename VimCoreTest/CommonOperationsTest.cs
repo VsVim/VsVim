@@ -26,7 +26,7 @@ namespace VimCore.Test
 
         private IWpfTextView _view;
         private ITextBuffer _buffer;
-        private MockFactory _factory;
+        private MockRepository _factory;
         private Mock<IEditorOperations> _editorOpts;
         private Mock<IVimHost> _host;
         private Mock<IJumpList> _jumpList;
@@ -42,7 +42,7 @@ namespace VimCore.Test
             _view = EditorUtil.CreateView(lines);
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 0));
             _buffer = _view.TextBuffer;
-            _factory = new MockFactory(MockBehavior.Strict);
+            _factory = new MockRepository(MockBehavior.Strict);
             _host = _factory.Create<IVimHost>();
             _jumpList = _factory.Create<IJumpList>();
             _editorOpts = _factory.Create<IEditorOperations>();

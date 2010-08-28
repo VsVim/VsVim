@@ -20,7 +20,7 @@ namespace Vim.UnitTest.Mock
         public static void MakeSplit(
             this Mock<IVsCodeWindow> mock,
             Mock<IVsAdapter> adapter,
-            MockFactory factory)
+            MockRepository factory)
         {
             MakePrimaryView(mock, adapter, factory.Create<IWpfTextView>().Object, factory);
             MakeSecondaryView(mock, adapter, factory.Create<IWpfTextView>().Object, factory);
@@ -29,7 +29,7 @@ namespace Vim.UnitTest.Mock
         public static Mock<IVsTextView> MakeVsTextView(
             this IWpfTextView textView,
             Mock<IVsAdapter> adapter,
-            MockFactory factory)
+            MockRepository factory)
         {
             var vsView = factory.Create<IVsTextView>();
             var editorAdapter = global::Moq.Mock.Get<IVsEditorAdaptersFactoryService>(adapter.Object.EditorAdapter);
@@ -42,7 +42,7 @@ namespace Vim.UnitTest.Mock
             this Mock<IVsCodeWindow> window,
             Mock<IVsAdapter> adapter,
             IWpfTextView textView,
-            MockFactory factory)
+            MockRepository factory)
         {
             var vsViewMock = MakeVsTextView(textView, adapter, factory);
             var vsView = vsViewMock.Object;
@@ -54,9 +54,9 @@ namespace Vim.UnitTest.Mock
             this Mock<IVsCodeWindow> window,
             Mock<IVsAdapter> adapter,
             IWpfTextView textView,
-            MockFactory factory)
+            MockRepository factory)
         {
-            factory = factory ?? new MockFactory(MockBehavior.Loose);
+            factory = factory ?? new MockRepository(MockBehavior.Loose);
             var vsViewMock = MakeVsTextView(textView, adapter, factory);
             var vsView = vsViewMock.Object;
             window.Setup(x => x.GetSecondaryView(out vsView)).Returns(VSConstants.S_OK);
@@ -66,9 +66,9 @@ namespace Vim.UnitTest.Mock
         public static Mock<IVsCodeWindow> MakeCodeWindow(
             this Mock<IVsAdapter> adapter,
             ITextView textView,
-            MockFactory factory)
+            MockRepository factory)
         {
-            factory = factory ?? new MockFactory(MockBehavior.Loose);
+            factory = factory ?? new MockRepository(MockBehavior.Loose);
             var mock = factory.Create<IVsCodeWindow>();
             var obj = mock.Object;
             adapter.Setup(x => x.TryGetCodeWindow(textView, out obj)).Returns(true);
@@ -78,7 +78,7 @@ namespace Vim.UnitTest.Mock
         public static Tuple<Mock<IVsCodeWindow>, Mock<IOleCommandTarget>> MakeCodeWindowAndCommandTarget(
             this Mock<IVsAdapter> adapter,
             ITextView textView,
-            MockFactory factory)
+            MockRepository factory)
         {
             var mock1 = factory.Create<IVsCodeWindow>();
             var mock2 = mock1.As<IOleCommandTarget>();
@@ -90,7 +90,7 @@ namespace Vim.UnitTest.Mock
         public static Mock<IVsWindowFrame> MakeWindowFrame(
             this Mock<IVsAdapter> adapter,
             ITextView textView,
-            MockFactory factory)
+            MockRepository factory)
         {
             var mock = factory.Create<IVsWindowFrame>();
             IVsWindowFrame frame = mock.Object;
@@ -102,9 +102,9 @@ namespace Vim.UnitTest.Mock
 
         public static Mock<FrameworkElement> MakeVisualElement(
             this Mock<IWpfTextView> textView,
-            MockFactory factory)
+            MockRepository factory)
         {
-            factory = factory ?? new MockFactory(MockBehavior.Loose);
+            factory = factory ?? new MockRepository(MockBehavior.Loose);
             var element = factory.Create<FrameworkElement>();
             textView.SetupGet(x => x.VisualElement).Returns(element.Object);
             return element;
@@ -176,7 +176,7 @@ namespace Vim.UnitTest.Mock
 
         public static void MakeUndoRedoPossible(
             this Mock<IUndoRedoOperations> mock,
-            MockFactory factory)
+            MockRepository factory)
         {
             mock
                 .Setup(x => x.CreateUndoTransaction(It.IsAny<string>()))

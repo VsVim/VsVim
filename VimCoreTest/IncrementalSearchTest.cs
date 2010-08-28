@@ -23,7 +23,7 @@ namespace VimCore.Test
     public class IncrementalSearchTest
     {
         private static SearchOptions s_options = SearchOptions.AllowIgnoreCase | SearchOptions.AllowSmartCase;
-        private MockFactory _factory;
+        private MockRepository _factory;
         private Mock<ISearchService> _searchService;
         private Mock<ITextStructureNavigator> _nav;
         private Mock<IVimGlobalSettings> _globalSettings;
@@ -36,7 +36,7 @@ namespace VimCore.Test
         private void Create(params string[] lines)
         {
             _textView = EditorUtil.CreateView(lines);
-            _factory = new MockFactory(MockBehavior.Strict);
+            _factory = new MockRepository(MockBehavior.Strict);
             _searchService = _factory.Create<ISearchService>();
             _nav = _factory.Create<ITextStructureNavigator>();
             _globalSettings = MockObjectFactory.CreateGlobalSettings(ignoreCase: true);

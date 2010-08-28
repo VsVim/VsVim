@@ -14,7 +14,7 @@ namespace VimCore.Test
     [TestFixture]
     public class ChangeTrackerTest
     {
-        private MockFactory _factory;
+        private MockRepository _factory;
         private ChangeTracker _trackerRaw;
         private IChangeTracker _tracker;
         private ITextBuffer _textBuffer;
@@ -37,7 +37,7 @@ namespace VimCore.Test
             _buffer = new MockVimBuffer() { TextViewImpl = _textView.Object, TextBufferImpl = _textBuffer, NormalModeImpl = _normalMode };
             _textChangeTracker = new MockTextChangeTracker() { VimBufferImpl = _buffer };
 
-            _factory = new MockFactory(MockBehavior.Loose);
+            _factory = new MockRepository(MockBehavior.Loose);
             _factory.DefaultValue = DefaultValue.Mock;
             _textChangeTrackerFactory = _factory.Create<ITextChangeTrackerFactory>();
             _textChangeTrackerFactory.Setup(x => x.GetTextChangeTracker(_buffer)).Returns(_textChangeTracker);

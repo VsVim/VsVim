@@ -18,7 +18,7 @@ namespace VsVim.UnitTest
     {
         private VsVimHost _hostRaw;
         private IVimHost _host;
-        private MockFactory _factory;
+        private MockRepository _factory;
         private Mock<ITextManager> _textManager;
         private Mock<IVsEditorAdaptersFactoryService> _editorAdaptersFactoryService;
         private Mock<ITextBufferUndoManagerProvider> _undoManagerProvider;
@@ -27,7 +27,7 @@ namespace VsVim.UnitTest
 
         private void Create()
         {
-            _factory = new MockFactory(MockBehavior.Strict);
+            _factory = new MockRepository(MockBehavior.Strict);
             _undoManagerProvider = _factory.Create<ITextBufferUndoManagerProvider>();
             _editorAdaptersFactoryService = _factory.Create<IVsEditorAdaptersFactoryService>();
             _statusBar = _factory.Create<StatusBar>();

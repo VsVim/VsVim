@@ -15,7 +15,7 @@ namespace VimCore.Test
     [TestFixture]
     public class VisualModeTest
     {
-        private MockFactory _factory;
+        private MockRepository _factory;
         private Mock<IVimHost> _host;
         private Mock<IWpfTextView> _view;
         private Mock<ITextCaret> _caret;
@@ -40,7 +40,7 @@ namespace VimCore.Test
             params string[] lines)
         {
             _buffer = EditorUtil.CreateBuffer(lines);
-            _factory = new MockFactory(MockBehavior.Strict);
+            _factory = new MockRepository(MockBehavior.Strict);
             _caret = _factory.Create<ITextCaret>();
             _view = _factory.Create<IWpfTextView>();
             _selection = _factory.Create<ITextSelection>();

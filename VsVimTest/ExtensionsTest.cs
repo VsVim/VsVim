@@ -15,12 +15,12 @@ namespace VsVim.UnitTest
     [TestFixture]
     public class ExtensionsTest
     {
-        private MockFactory _factory;
+        private MockRepository _factory;
 
         [SetUp]
         public void Setup()
         {
-            _factory = new MockFactory(MockBehavior.Loose);
+            _factory = new MockRepository(MockBehavior.Loose);
         }
 
         #region KeyBindings
@@ -112,7 +112,7 @@ namespace VsVim.UnitTest
         public void SafeResetKeyBindings()
         {
             var mock = new Mock<Command>(MockBehavior.Strict);
-            mock.SetupSet(x => x.Bindings).Verifiable();
+            mock.SetupSet(x => x.Bindings = It.IsAny<object>()).Verifiable();
             mock.Object.SafeResetBindings();
             mock.Verify();
         }
@@ -121,7 +121,7 @@ namespace VsVim.UnitTest
         public void SafeResetKeyBindings2()
         {
             var mock = new Mock<Command>(MockBehavior.Strict);
-            mock.SetupSet(x => x.Bindings).Throws(new COMException()).Verifiable();
+            mock.SetupSet(x => x.Bindings = It.IsAny<object>()).Throws(new COMException()).Verifiable();
             mock.Object.SafeResetBindings();
             mock.Verify();
         }

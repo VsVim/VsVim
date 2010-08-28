@@ -14,7 +14,7 @@ namespace VimCore.Test
     [TestFixture]
     public class MotionCaptureTest
     {
-        private MockFactory _factory;
+        private MockRepository _factory;
         private Mock<IMotionCaptureGlobalData> _data;
         private Mock<ITextView> _textView;
         private Mock<IMotionUtil> _util;
@@ -25,7 +25,7 @@ namespace VimCore.Test
         [SetUp]
         public void Create()
         {
-            _factory = new MockFactory(MockBehavior.Strict);
+            _factory = new MockRepository(MockBehavior.Strict);
             _util = _factory.Create<IMotionUtil>();
             _textView = MockObjectFactory.CreateTextView(factory: _factory);
             _host = _factory.Create<IVimHost>();

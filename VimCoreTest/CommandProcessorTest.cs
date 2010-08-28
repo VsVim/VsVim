@@ -18,7 +18,7 @@ namespace VimCore.Test
     public class CommandProcessorTest
     {
         private IWpfTextView _view;
-        private MockFactory _factory;
+        private MockRepository _factory;
         private Mock<IVimBuffer> _bufferData;
         private CommandProcessor _processorRaw;
         private ICommandProcessor _processor;
@@ -34,7 +34,7 @@ namespace VimCore.Test
             _view = EditorUtil.CreateView(lines);
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 0));
             _map = new RegisterMap();
-            _factory = new MockFactory(MockBehavior.Strict);
+            _factory = new MockRepository(MockBehavior.Strict);
             _editOpts = _factory.Create<IEditorOperations>();
             _vimHost = _factory.Create<IVimHost>();
             _operations = _factory.Create<IOperations>();

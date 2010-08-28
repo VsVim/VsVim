@@ -11,7 +11,7 @@ using Vim.Extensions;
 using Vim.Modes;
 using Vim.Modes.Normal;
 using Vim.UnitTest;
-using MockFactory = Vim.UnitTest.Mock.MockObjectFactory;
+using MockRepository = Vim.UnitTest.Mock.MockObjectFactory;
 
 namespace VimCore.Test
 {
@@ -68,10 +68,10 @@ namespace VimCore.Test
             _displayWindowBroker.SetupGet(x => x.IsCompletionActive).Returns(false);
             _displayWindowBroker.SetupGet(x => x.IsSignatureHelpActive).Returns(false);
             _displayWindowBroker.SetupGet(x => x.IsSmartTagSessionActive).Returns(false);
-            _bufferData = MockFactory.CreateVimBuffer(
+            _bufferData = MockRepository.CreateVimBuffer(
                 _view,
                 "test",
-                MockFactory.CreateVim(_map, changeTracker: _changeTracker.Object, host: _host.Object).Object,
+                MockRepository.CreateVim(_map, changeTracker: _changeTracker.Object, host: _host.Object).Object,
                 _jumpList.Object);
             _operations = new Mock<IOperations>(MockBehavior.Strict);
             _operations.SetupGet(x => x.EditorOperations).Returns(_editorOperations.Object);

@@ -14,7 +14,7 @@ namespace VimCore.Test
     [TestFixture]
     public class CommandRunnerTest
     {
-        private MockFactory _factory;
+        private MockRepository _factory;
         private Mock<IVimHost> _host;
         private Mock<IStatusUtil> _statusUtil;
         private IRegisterMap _registerMap;
@@ -25,7 +25,7 @@ namespace VimCore.Test
         private void Create(params string[] lines)
         {
             _textView = EditorUtil.CreateView(lines);
-            _factory = new MockFactory(MockBehavior.Strict);
+            _factory = new MockRepository(MockBehavior.Strict);
             _host = _factory.Create<IVimHost>();
             _statusUtil = _factory.Create<IStatusUtil>();
             _registerMap = new RegisterMap();

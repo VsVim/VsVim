@@ -13,7 +13,7 @@ namespace VsVim.UnitTest
     [TestFixture]
     public class VsFilterKeysAdapterTest
     {
-        private MockFactory _factory;
+        private MockRepository _factory;
         private Mock<IVsFilterKeys> _filterKeys;
         private Mock<IVsCodeWindow> _codeWindow;
         private Mock<IVsTextLines> _textLines;
@@ -25,7 +25,7 @@ namespace VsVim.UnitTest
         [SetUp]
         public void Setup()
         {
-            _factory = new MockFactory(MockBehavior.Loose);
+            _factory = new MockRepository(MockBehavior.Loose);
             _filterKeys = _factory.Create<IVsFilterKeys>();
             _codeWindow = _factory.Create<IVsCodeWindow>();
             _textLines = _factory.Create<IVsTextLines>();
