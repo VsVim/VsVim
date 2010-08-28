@@ -220,7 +220,8 @@ namespace Vim.UnitTest.Mock
 
         public IMode SwitchMode(ModeKind value, ModeArgument arg)
         {
-            throw new NotImplementedException();
+            ModeKindImpl = value;
+            return GetMode(value);
         }
 
         public IMode SwitchPreviousMode()

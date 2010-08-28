@@ -47,6 +47,7 @@ type internal VimBufferFactory
                 jumpList,
                 localSettings)
         let buffer = bufferRaw :> IVimBuffer
+        let selectionChangeTracker = SelectionChangeTracker(buffer)
 
         let statusUtil = x.CreateStatusUtil bufferRaw 
         let undoRedoOperations = 
@@ -79,13 +80,8 @@ type internal VimBufferFactory
         let commandProcessor = Modes.Command.CommandProcessor(buffer, commandOpts, statusUtil, FileSystem() :> IFileSystem) :> Modes.Command.ICommandProcessor
         let insertOpts = Modes.Insert.DefaultOperations(operationsData) :> Modes.ICommonOperations
         let visualOptsFactory kind = 
-            let mode = 
-                match kind with 
-                | ModeKind.VisualBlock -> Modes.Visual.SelectionMode.Block
-                | ModeKind.VisualCharacter -> Modes.Visual.SelectionMode.Character
-                | ModeKind.VisualLine -> Modes.Visual.SelectionMode.Line
-                | _ -> invalidArg "_kind" "Invalid kind for Visual Mode"
-            let tracker = Modes.Visual.SelectionTracker(view,mode) :> Modes.Visual.ISelectionTracker
+            let kind = VisualKind.ofModeKind kind |> Option.get
+            let tracker = Modes.Visual.SelectionTracker(view,kind) :> Modes.Visual.ISelectionTracker
             let opts = Modes.Insert.DefaultOperations(operationsData ) :> Modes.ICommonOperations
             (tracker, opts)
 

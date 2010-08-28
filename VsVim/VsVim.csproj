@@ -137,7 +137,6 @@
     <Compile Include="Implementation\KeyBindingService.cs" />
     <Compile Include="CommandKeyBindingSnapshot.cs" />
     <Compile Include="Implementation\KeyProcessorProvider.cs" />
-    <Compile Include="Implementation\MouseProcessorProvider.cs" />
     <Compile Include="NativeMethods.cs" />
     <Compile Include="Implementation\OptionsProvider.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

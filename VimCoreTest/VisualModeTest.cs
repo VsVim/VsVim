@@ -159,7 +159,6 @@ namespace VimCore.Test
         public void Yank1()
         {
             Create("foo", "bar");
-            _tracker.SetupGet(x => x.SelectedText).Returns("foo").Verifiable();
             _operations.Setup(x => x.YankText("foo", MotionKind.Inclusive, OperationKind.CharacterWise, _map.DefaultRegister)).Verifiable();
             Assert.IsTrue(_mode.Process('y').IsSwitchPreviousMode);
             _operations.Verify();
@@ -170,7 +169,6 @@ namespace VimCore.Test
         public void Yank2()
         {
             Create("foo", "bar");
-            _tracker.SetupGet(x => x.SelectedText).Returns("foo").Verifiable();
             _operations.Setup(x => x.YankText("foo", MotionKind.Inclusive, OperationKind.CharacterWise, _map.DefaultRegister)).Verifiable();
             var res = _mode.Process('y');
             Assert.IsTrue(res.IsSwitchPreviousMode);
@@ -180,7 +178,6 @@ namespace VimCore.Test
         public void Yank3()
         {
             Create("foo", "bar");
-            _tracker.SetupGet(x => x.SelectedText).Returns("foo").Verifiable();
             _operations.Setup(x => x.YankText("foo", MotionKind.Inclusive, OperationKind.CharacterWise, _map.GetRegister('c'))).Verifiable();
             _mode.Process("\"cy");
             _operations.Verify();
@@ -206,7 +203,6 @@ namespace VimCore.Test
             Create2(ModeKind.VisualLine, null, "foo", "bar");
             var tss = _buffer.CurrentSnapshot;
             var line = tss.GetLineFromLineNumber(0);
-            _tracker.Setup(x => x.SelectedText).Returns("foo" + Environment.NewLine).Verifiable();
             _operations.Setup(x => x.YankText("foo" + Environment.NewLine, MotionKind.Inclusive, OperationKind.LineWise, _map.DefaultRegister)).Verifiable();
             _mode.Process('y');
             _tracker.Verify();

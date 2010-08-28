@@ -1,15 +1,12 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using NUnit.Framework;
-using Vim.Modes.Visual;
-using Moq;
-using Microsoft.VisualStudio.Text.Editor;
-using Vim.UnitTest;
-using Microsoft.VisualStudio.Text;
-using Microsoft.FSharp.Core;
 using System.Threading;
+using Microsoft.VisualStudio.Text;
+using Microsoft.VisualStudio.Text.Editor;
+using Moq;
+using NUnit.Framework;
+using Vim;
+using Vim.Modes.Visual;
+using Vim.UnitTest;
 
 namespace VimCore.Test
 {
@@ -21,10 +18,10 @@ namespace VimCore.Test
         private TestableSynchronizationContext _context;
         private SynchronizationContext _before;
 
-        private void Create(SelectionMode mode, params string[] lines)
+        private void Create(VisualKind kind, params string[] lines)
         {
             _view = EditorUtil.CreateView(lines);
-            _tracker = new SelectionTracker(_view, mode);
+            _tracker = new SelectionTracker(_view, kind);
             _tracker.Start();
         }
 
@@ -48,7 +45,7 @@ namespace VimCore.Test
         [Test]
         public void AnchorPoint1()
         {
-            Create(SelectionMode.Character, "foo");
+            Create(VisualKind.Character, "foo");
             _view.TextBuffer.Replace(new Span(0, 1), "h");
             Assert.AreEqual(0, _tracker.AnchorPoint.Position);
             Assert.AreSame(_view.TextSnapshot, _tracker.AnchorPoint.Position.Snapshot);
@@ -57,7 +54,7 @@ namespace VimCore.Test
         [Test, Description("Shouldn't track if it's Stopp'd")]
         public void AnchorPoint2()
         {
-            Create(SelectionMode.Character, "foo");
+            Create(VisualKind.Character, "foo");
             _tracker.Stop();
             _view.TextBuffer.Replace(new Span(0, 1), "h");
             Assert.AreNotSame(_view.TextSnapshot, _tracker.AnchorPoint.Position.Snapshot);
@@ -67,14 +64,14 @@ namespace VimCore.Test
         [ExpectedException(typeof(InvalidOperationException))]
         public void Start1()
         {
-            Create(SelectionMode.Character, "foo");
+            Create(VisualKind.Character, "foo");
             _tracker.Start();
         }
 
         [Test]
         public void Start2()
         {
-            Create(SelectionMode.Character, "foo");
+            Create(VisualKind.Character, "foo");
             Assert.AreEqual(new SnapshotPoint(_view.TextSnapshot, 0), _tracker.AnchorPoint.Position);
         }
 
@@ -91,7 +88,7 @@ namespace VimCore.Test
             view.SetupGet(x => x.Caret).Returns(realView.Caret);
             view.SetupGet(x => x.TextSnapshot).Returns(realView.TextSnapshot);
             view.SetupGet(x => x.Selection).Returns(selection.Object);
-            var tracker = new SelectionTracker(view.Object, SelectionMode.Character);
+            var tracker = new SelectionTracker(view.Object, VisualKind.Character);
             tracker.Start();
             selection.Verify();
         }
@@ -101,7 +98,7 @@ namespace VimCore.Test
         {
             var view = EditorUtil.CreateView("foo bar baz");
             view.Selection.Select(new SnapshotSpan(view.TextSnapshot, 1, 3), false);
-            var tracker = new SelectionTracker(view, SelectionMode.Character);
+            var tracker = new SelectionTracker(view, VisualKind.Character);
             tracker.Start();
             Assert.AreEqual(view.Selection.AnchorPoint.Position.Position, tracker.AnchorPoint.Position.Position);
         }
@@ -109,16 +106,16 @@ namespace VimCore.Test
         [Test, Description("Line mode should include the entire line with linebreak")]
         public void Start5()
         {
-            Create(SelectionMode.Line, "foo", "bar");
+            Create(VisualKind.Line, "foo", "bar");
             _context.RunAll();
             Assert.AreEqual(_view.TextBuffer.GetLineFromLineNumber(0).Start, _view.Selection.Start.Position);
             Assert.AreEqual(_view.TextBuffer.GetLineFromLineNumber(0).EndIncludingLineBreak, _view.Selection.End.Position);
         }
 
-        [Test,ExpectedException(typeof(InvalidOperationException))]
+        [Test, ExpectedException(typeof(InvalidOperationException))]
         public void Stop1()
         {
-            Create(SelectionMode.Character, "foo");
+            Create(VisualKind.Character, "foo");
             _tracker.Stop();
             _tracker.Stop();
         }
@@ -126,7 +123,7 @@ namespace VimCore.Test
         [Test]
         public void CaretMove1()
         {
-            Create(SelectionMode.Character, "foo");
+            Create(VisualKind.Character, "foo");
             var span = new SnapshotSpan(_view.TextSnapshot, 0, 3);
             _view.Caret.MoveTo(span.End);
             _context.RunAll();
@@ -137,7 +134,7 @@ namespace VimCore.Test
         [Test]
         public void CaretMove2()
         {
-            Create(SelectionMode.Character, "foo");
+            Create(VisualKind.Character, "foo");
             var span = new SnapshotSpan(_view.TextSnapshot, 0, 3);
             _view.Caret.MoveTo(span.End);
             _context.RunAll();
@@ -147,22 +144,6 @@ namespace VimCore.Test
             _context.RunAll();
             Assert.AreEqual(1, _view.Selection.SelectedSpans.Count);
             Assert.AreEqual(span, _view.Selection.SelectedSpans[0]);
-        }
-
-        [Test]
-        public void SelectedLines1()
-        {
-            Create(SelectionMode.Character, "foo");
-            _view.Selection.Select(new SnapshotSpan(_view.TextSnapshot, 0, 2), false);
-            Assert.AreEqual(_view.GetLineSpanIncludingLineBreak(0, 0), _tracker.SelectedLines);
-        }
-
-        [Test]
-        public void SelectedLines2()
-        {
-            Create(SelectionMode.Character, "foo", "bar", "baz");
-            _view.Selection.Select(new SnapshotSpan(_view.TextSnapshot, 0, 7), false);
-            Assert.AreEqual(_view.GetLineSpanIncludingLineBreak(0, 1), _tracker.SelectedLines);
         }
 
         [Test]

@@ -85,16 +85,6 @@ type internal VisualMode
                     None,
                     fun count _ -> _operations.MoveCaretAndScrollLines ScrollDirection.Down count)
                 yield (
-                    "y",
-                    CommandFlags.Repeatable,
-                    None,
-                    (fun _ (reg:Register) -> 
-                        let opKind = 
-                            match _kind with
-                            | ModeKind.VisualLine -> OperationKind.LineWise
-                            | _ -> OperationKind.CharacterWise
-                        _operations.YankText (_selectionTracker.SelectedText) MotionKind.Inclusive opKind reg ) )
-                yield (
                     "Y",
                     CommandFlags.Repeatable,
                     None,
@@ -270,6 +260,16 @@ type internal VisualMode
                     None,
                     (fun _ reg span -> _operations.PasteOver span reg),
                     (fun _ _ col -> ()) )
+                yield (
+                    "y",
+                    CommandFlags.None,
+                    None,
+                    (fun _ (reg:Register) span -> 
+                        let data = StringData.ofSpan span
+                        reg.UpdateValue { Value = data; MotionKind = _motionKind; OperationKind = _operationKind } ),
+                    (fun _ (reg:Register) col -> 
+                        let data = StringData.ofNormalizedSnasphotSpanCollection col
+                        reg.UpdateValue { Value = data; MotionKind = _motionKind; OperationKind = _operationKind } ))
             }
             |> Seq.map (fun (str,flags,mode,funcNormal,funcBlock) ->
                 let kiSet = KeyNotationUtil.StringToKeyInputSet str
@@ -308,7 +308,13 @@ type internal VisualMode
                 match _runner.Run ki with
                 | RunKeyInputResult.NeedMoreKeyInput -> ProcessResult.Processed
                 | RunKeyInputResult.NestedRunDetected -> ProcessResult.Processed
-                | RunKeyInputResult.CommandRan(_,modeSwitch) -> ProcessResult.OfModeSwitch modeSwitch
+                | RunKeyInputResult.CommandRan(_,modeSwitch) -> 
+                    match modeSwitch with
+                    | ModeSwitch.NoSwitch -> _selectionTracker.UpdateSelection()
+                    | ModeSwitch.SwitchMode(_) -> ()
+                    | ModeSwitch.SwitchModeWithArgument(_,_) -> ()
+                    | ModeSwitch.SwitchPreviousMode -> ()
+                    ProcessResult.OfModeSwitch modeSwitch
                 | RunKeyInputResult.CommandErrored(_) -> ProcessResult.SwitchPreviousMode
                 | RunKeyInputResult.CommandCancelled -> ProcessResult.SwitchPreviousMode
                 | RunKeyInputResult.NoMatchingCommand -> 

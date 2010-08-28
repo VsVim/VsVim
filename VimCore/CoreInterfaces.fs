@@ -172,6 +172,13 @@ type VisualKind =
     | Character
     | Line
     | Block
+    with 
+    static member ofModeKind kind = 
+        match kind with 
+        | ModeKind.VisualBlock -> VisualKind.Block |> Some
+        | ModeKind.VisualLine -> VisualKind.Line |> Some
+        | ModeKind.VisualCharacter -> VisualKind.Character |> Some
+        | _ -> None
 
 /// The actual command name.  This is a wrapper over the collection of KeyInput 
 /// values which make up a command name.  
