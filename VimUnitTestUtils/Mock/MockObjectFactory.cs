@@ -89,7 +89,6 @@ namespace Vim.UnitTest.Mock
             return mock;
         }
 
-
         public static Mock<IVimBuffer> CreateVimBuffer(
             ITextView view,
             string name = null,

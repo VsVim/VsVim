@@ -42,5 +42,18 @@ namespace VimCore.Test
             Assert.IsTrue(_context.IsEmpty);
         }
 
+        [Test]
+        public void EventTest()
+        {
+            var didSee = false;
+            var buffer = new Mock<IVimBuffer>(MockBehavior.Loose);
+            buffer.Object.KeyInputBuffered += delegate
+            {
+                didSee = true;
+            };
+            buffer.Raise(x => x.KeyInputBuffered += null, null, KeyInputUtil.CharToKeyInput('c'));
+            Assert.IsTrue(didSee);
+        }
+
     }
 }

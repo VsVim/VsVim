@@ -151,7 +151,6 @@ namespace VimCore.Test
         {
             var caret = new Mock<ITextCaret>();
             var view = new Mock<ITextView>();
-
         }
 
     }
