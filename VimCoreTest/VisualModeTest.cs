@@ -159,28 +159,31 @@ namespace VimCore.Test
         public void Yank1()
         {
             Create("foo", "bar");
-            _operations.Setup(x => x.YankText("foo", MotionKind.Inclusive, OperationKind.CharacterWise, _map.DefaultRegister)).Verifiable();
+            var span = _buffer.GetLineSpan(0);
+            _selection.MakeSelection(span);
             Assert.IsTrue(_mode.Process('y').IsSwitchPreviousMode);
-            _operations.Verify();
-            _tracker.Verify();
+            Assert.AreEqual("foo", _map.DefaultRegister.StringValue);
         }
 
         [Test, Description("Yank should go back to normal mode")]
         public void Yank2()
         {
             Create("foo", "bar");
-            _operations.Setup(x => x.YankText("foo", MotionKind.Inclusive, OperationKind.CharacterWise, _map.DefaultRegister)).Verifiable();
+            var span = _buffer.GetLineSpan(0);
+            _selection.MakeSelection(span);
             var res = _mode.Process('y');
             Assert.IsTrue(res.IsSwitchPreviousMode);
+            Assert.AreEqual("foo", _map.DefaultRegister.StringValue);
         }
 
         [Test]
         public void Yank3()
         {
             Create("foo", "bar");
-            _operations.Setup(x => x.YankText("foo", MotionKind.Inclusive, OperationKind.CharacterWise, _map.GetRegister('c'))).Verifiable();
+            var span = _buffer.GetLineSpan(0);
+            _selection.MakeSelection(span);
             _mode.Process("\"cy");
-            _operations.Verify();
+            Assert.AreEqual("foo", _map.GetRegister('c').StringValue);
         }
 
         [Test]
@@ -200,13 +203,12 @@ namespace VimCore.Test
         [Test, Description("Yank in visual line mode should always be a linewise yank")]
         public void YankLines2()
         {
-            Create2(ModeKind.VisualLine, null, "foo", "bar");
-            var tss = _buffer.CurrentSnapshot;
-            var line = tss.GetLineFromLineNumber(0);
-            _operations.Setup(x => x.YankText("foo" + Environment.NewLine, MotionKind.Inclusive, OperationKind.LineWise, _map.DefaultRegister)).Verifiable();
+            Create2(ModeKind.VisualLine, "foo", "bar");
+            var span = _buffer.GetLineSpanIncludingLineBreak(0);
+            _selection.MakeSelection(span);
             _mode.Process('y');
-            _tracker.Verify();
-            _operations.Verify();
+            Assert.AreEqual("foo" + Environment.NewLine, _map.DefaultRegister.StringValue);
+            Assert.AreEqual(OperationKind.LineWise, _map.DefaultRegister.Value.OperationKind);
         }
 
         [Test]

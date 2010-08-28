@@ -121,32 +121,6 @@ namespace VimCore.Test
         }
 
         [Test]
-        public void CaretMove1()
-        {
-            Create(VisualKind.Character, "foo");
-            var span = new SnapshotSpan(_view.TextSnapshot, 0, 3);
-            _view.Caret.MoveTo(span.End);
-            _context.RunAll();
-            Assert.AreEqual(1, _view.Selection.SelectedSpans.Count);
-            Assert.AreEqual(span, _view.Selection.SelectedSpans[0]);
-        }
-
-        [Test]
-        public void CaretMove2()
-        {
-            Create(VisualKind.Character, "foo");
-            var span = new SnapshotSpan(_view.TextSnapshot, 0, 3);
-            _view.Caret.MoveTo(span.End);
-            _context.RunAll();
-            _tracker.Stop();
-            _tracker.Start();
-            _view.Caret.MoveTo(span.Start);
-            _context.RunAll();
-            Assert.AreEqual(1, _view.Selection.SelectedSpans.Count);
-            Assert.AreEqual(span, _view.Selection.SelectedSpans[0]);
-        }
-
-        [Test]
         public void HasAggregateFocus1()
         {
             var caret = new Mock<ITextCaret>();
