@@ -77,12 +77,12 @@ type internal VisualMode
                 yield (
                     "<C-u>", 
                     CommandFlags.Movement, 
-                    None,
+                    ModeSwitch.NoSwitch |> Some,
                     fun count _ -> _operations.MoveCaretAndScrollLines ScrollDirection.Up count)
                 yield (
                     "<C-d>", 
                     CommandFlags.Movement, 
-                    None,
+                    ModeSwitch.NoSwitch |> Some,
                     fun count _ -> _operations.MoveCaretAndScrollLines ScrollDirection.Down count)
                 yield (
                     "Y",
@@ -147,7 +147,7 @@ type internal VisualMode
                 let modeSwitch = 
                     match mode with
                     | None -> ModeSwitch.SwitchPreviousMode
-                    | Some(kind) -> ModeSwitch.SwitchMode kind
+                    | Some(switch) -> switch
                 let func2 count reg = 
                     let count = CommandUtil.CountOrDefault count
                     func count reg 
