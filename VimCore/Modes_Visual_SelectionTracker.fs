@@ -107,9 +107,18 @@ type internal SelectionTracker
             | Some(point) -> VirtualSnapshotPoint(point)
             | None -> VirtualSnapshotPoint(args.After, 0)
 
+    member private x.ResetCaret() =
+        let point =
+            let caretPoint = TextViewUtil.GetCaretPoint _textView
+            if _anchorPoint.Position.Position < caretPoint.Position then _anchorPoint
+            else VirtualSnapshotPoint(caretPoint)
+        TextViewUtil.MoveCaretToVirtualPoint _textView point
+        TextViewUtil.EnsureCaretOnScreen _textView
+
     interface ISelectionTracker with 
         member x.VisualKind = _kind
         member x.IsRunning = x.IsRunning
         member x.Start () = x.Start()
         member x.Stop () = x.Stop()
+        member x.ResetCaret() = x.ResetCaret()
         member x.UpdateSelection () = x.UpdateSelection()

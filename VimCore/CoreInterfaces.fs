@@ -367,6 +367,9 @@ type CommandFlags =
     /// For the purposes of change repeating the command is linked with the following
     /// text change
     | LinkedWithNextTextChange = 0x10
+    /// For Visual Mode commands which should reset the cursor to the original point
+    /// after completing
+    | ResetCaret = 0x20
 
 /// Representation of commands within Vim.  
 [<DebuggerDisplay("{ToString(),nq}")>]

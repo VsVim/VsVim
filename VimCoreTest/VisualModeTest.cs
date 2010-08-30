@@ -51,6 +51,7 @@ namespace VimCore.Test
             _map = new RegisterMap();
             _tracker = _factory.Create<ISelectionTracker>();
             _tracker.Setup(x => x.Start());
+            _tracker.Setup(x => x.ResetCaret());
             _undoRedoOperations = _factory.Create<IUndoRedoOperations>();
             _foldManager = _factory.Create<IFoldManager>();
             _operations = _factory.Create<ICommonOperations>();
@@ -185,6 +186,20 @@ namespace VimCore.Test
             _mode.Process("\"cy");
             Assert.AreEqual("foo", _map.GetRegister('c').StringValue);
         }
+
+        [Test]
+        [Description("Yank should reset the caret")]
+        public void Yank4()
+        {
+            Create("foo", "bar");
+            var span = _buffer.GetLineSpan(0);
+            _tracker.Setup(x => x.ResetCaret()).Verifiable();
+            _selection.MakeSelection(span);
+            Assert.IsTrue(_mode.Process('y').IsSwitchPreviousMode);
+            Assert.AreEqual("foo", _map.DefaultRegister.StringValue);
+            _tracker.Verify();
+        }
+
 
         [Test]
         public void Yank_Y_1()

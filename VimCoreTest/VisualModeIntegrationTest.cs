@@ -46,5 +46,36 @@ namespace VimCore.Test
             _buffer.ProcessAsString(">..");
             Assert.AreEqual("      dog again", _textView.GetLine(0).GetText());
         }
+
+        [Test]
+        public void ResetCaretFromShiftLeft1()
+        {
+            CreateBuffer(ModeKind.VisualCharacter, "  hello", "  world");
+            var span = _textView.GetLineSpan(0, 1);
+            _textView.Selection.Select(span, false);
+            _buffer.ProcessAsString("<");
+            Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+        }
+
+        [Test]
+        public void ResetCaretFromShiftLeft2()
+        {
+            CreateBuffer(ModeKind.VisualCharacter, "  hello", "  world");
+            var span = _textView.GetLineSpan(0, 1);
+            _textView.Selection.Select(span, true);
+            _buffer.ProcessAsString("<");
+            Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+        }
+
+        [Test]
+        public void ResetCaretFromYank1()
+        {
+            CreateBuffer(ModeKind.VisualCharacter, "  hello", "  world");
+            var span = _textView.TextBuffer.GetSpan(0, 2);
+            _textView.Selection.Select(span, false);
+            _buffer.ProcessAsString("y");
+            Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+        }
+
     }
 }

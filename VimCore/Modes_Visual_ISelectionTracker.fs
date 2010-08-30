@@ -17,6 +17,9 @@ type ISelectionTracker =
     /// Update the selection based on the current position of the cursor
     abstract UpdateSelection : unit -> unit
 
+    /// Reset the caret back to the original anchor point
+    abstract ResetCaret : unit -> unit
+
     /// Start tracking the selection
     abstract Start : unit -> unit
 

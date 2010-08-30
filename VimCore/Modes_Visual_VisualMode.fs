@@ -76,7 +76,7 @@ type internal VisualMode
             seq {
                 yield (
                     "<C-u>", 
-                    CommandFlags.Movement, 
+                    CommandFlags.Movement,
                     ModeSwitch.NoSwitch |> Some,
                     fun count _ -> _operations.MoveCaretAndScrollLines ScrollDirection.Up count)
                 yield (
@@ -179,13 +179,13 @@ type internal VisualMode
                     (fun _ reg col -> _operations.DeleteBlock col reg))
                 yield (
                     "<lt>",
-                    CommandFlags.Repeatable,
+                    CommandFlags.Repeatable ||| CommandFlags.ResetCaret,
                     Some ModeKind.Normal,
                     (fun count _ span -> _operations.ShiftSpanLeft count span) ,
                     (fun count _ col -> _operations.ShiftBlockLeft count col ))
                 yield (
                     ">",
-                    CommandFlags.Repeatable,
+                    CommandFlags.Repeatable ||| CommandFlags.ResetCaret,
                     Some ModeKind.Normal,
                     (fun count _ span ->  _operations.ShiftSpanRight count span),
                     (fun count _ col -> _operations.ShiftBlockRight count col))
@@ -252,7 +252,7 @@ type internal VisualMode
                     (fun _ _ col -> ()) )
                 yield (
                     "y",
-                    CommandFlags.None,
+                    CommandFlags.ResetCaret,
                     None,
                     (fun _ (reg:Register) span -> 
                         let data = StringData.OfSpan span
@@ -262,7 +262,7 @@ type internal VisualMode
                         reg.UpdateValue { Value = data; MotionKind = _motionKind; OperationKind = _operationKind } ))
                 yield (
                     "Y",
-                    CommandFlags.None,
+                    CommandFlags.ResetCaret,
                     None,
                     (fun _ (reg:Register) span -> 
                         let data = span |> SnapshotSpanUtil.ExtendToFullLineIncludingLineBreak |> StringData.OfSpan 
@@ -310,10 +310,15 @@ type internal VisualMode
             if ki.Key = VimKey.Escape then
                 ProcessResult.SwitchPreviousMode
             else
+                let original = _buffer.TextSnapshot.Version.VersionNumber
                 match _runner.Run ki with
                 | RunKeyInputResult.NeedMoreKeyInput -> ProcessResult.Processed
                 | RunKeyInputResult.NestedRunDetected -> ProcessResult.Processed
-                | RunKeyInputResult.CommandRan(_,modeSwitch) -> 
+                | RunKeyInputResult.CommandRan(commandRanData,modeSwitch) -> 
+
+                    if Utils.IsFlagSet commandRanData.Command.CommandFlags CommandFlags.ResetCaret then
+                        _selectionTracker.ResetCaret()
+
                     match modeSwitch with
                     | ModeSwitch.NoSwitch -> _selectionTracker.UpdateSelection()
                     | ModeSwitch.SwitchMode(_) -> ()
