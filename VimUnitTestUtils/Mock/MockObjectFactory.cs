@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using EnvDTE;
@@ -262,7 +263,9 @@ namespace Vim.UnitTest.Mock
         public static Mock<EnvDTE.Commands> CreateCommands(IEnumerable<EnvDTE.Command> commands)
         {
             var mock = new Mock<EnvDTE.Commands>(MockBehavior.Strict);
+            var enumMock = mock.As<IEnumerable>();
             mock.Setup(x => x.GetEnumerator()).Returns(commands.GetEnumerator());
+            enumMock.Setup(x => x.GetEnumerator()).Returns(commands.GetEnumerator());
             return mock;
         }
 
