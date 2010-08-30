@@ -15,7 +15,7 @@ type StringData =
         | Simple(str) -> str
         | Block(l) -> l |> StringUtil.combineWith System.Environment.NewLine
 
-    static member ofNormalizedSnasphotSpanCollection (col:NormalizedSnapshotSpanCollection) = 
+    static member OfNormalizedSnasphotSpanCollection (col:NormalizedSnapshotSpanCollection) = 
         if col.Count = 1 then col.[0] |> SnapshotSpanUtil.GetText |> StringData.Simple
         else 
             col
@@ -23,7 +23,9 @@ type StringData =
             |> List.ofSeq
             |> StringData.Block
 
-    static member ofSpan span = span |> SnapshotSpanUtil.GetText |> StringData.Simple
+    static member OfSpan span = span |> SnapshotSpanUtil.GetText |> StringData.Simple
+
+    static member OfSeq seq =  seq |> NormalizedSnapshotSpanCollectionUtil.OfSeq |> StringData.OfNormalizedSnasphotSpanCollection
 
 /// Value stored in the register.  Contains contextual information on how the data
 /// was yanked from the buffer

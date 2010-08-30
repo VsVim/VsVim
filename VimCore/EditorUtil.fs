@@ -195,6 +195,16 @@ module SnapshotSpanUtil =
         let endLine = GetEndLine span
         SnapshotSpan(span.Start, endLine.EndIncludingLineBreak)
 
+    /// Extend the SnapshotSpan to be the full line at both the start and end points
+    let ExtendToFullLine span =
+        let startLine,endLine = GetStartAndEndLine span
+        SnapshotSpan(startLine.Start, endLine.End)
+
+    /// Extend the SnapshotSpan to be the full line at both the start and end points
+    let ExtendToFullLineIncludingLineBreak span =
+        let startLine,endLine = GetStartAndEndLine span
+        SnapshotSpan(startLine.Start, endLine.EndIncludingLineBreak)
+
     /// Reduces the SnapshotSpan to the subspan of the first line
     let ReduceToStartLine span = 
         if IsMultiline span then 

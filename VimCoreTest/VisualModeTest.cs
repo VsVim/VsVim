@@ -187,27 +187,34 @@ namespace VimCore.Test
         }
 
         [Test]
-        public void YankLines1()
+        public void Yank_Y_1()
         {
             Create("foo", "bar");
-            var tss = _buffer.CurrentSnapshot;
-            var line = tss.GetLineFromLineNumber(0);
-            _selection.SetupGet(x => x.Start).Returns(new VirtualSnapshotPoint(line.Start)).Verifiable();
-            _selection.SetupGet(x => x.End).Returns(new VirtualSnapshotPoint(line.End)).Verifiable();
-            _operations.Setup(x => x.Yank(line.ExtentIncludingLineBreak, MotionKind.Inclusive, OperationKind.LineWise, _map.DefaultRegister)).Verifiable();
+            var span = _buffer.GetSpan(0, 1);
+            _selection.MakeSelection(span);
             Assert.IsTrue(_mode.Process('Y').IsSwitchPreviousMode);
-            _selection.Verify();
-            _operations.Verify();
+            Assert.AreEqual(_buffer.GetLineSpanIncludingLineBreak(0).GetText(), _map.DefaultRegister.StringValue);
         }
 
-        [Test, Description("Yank in visual line mode should always be a linewise yank")]
-        public void YankLines2()
+        [Test]
+        public void Yank_Y_2()
         {
             Create2(ModeKind.VisualLine, "foo", "bar");
             var span = _buffer.GetLineSpanIncludingLineBreak(0);
             _selection.MakeSelection(span);
             _mode.Process('y');
             Assert.AreEqual("foo" + Environment.NewLine, _map.DefaultRegister.StringValue);
+            Assert.AreEqual(OperationKind.LineWise, _map.DefaultRegister.Value.OperationKind);
+        }
+
+        [Test]
+        public void Yank_Y_3()
+        {
+            Create("foo", "bar");
+            var span = _buffer.GetSpan(0, 1);
+            _selection.MakeSelection(span);
+            Assert.IsTrue(_mode.Process('Y').IsSwitchPreviousMode);
+            Assert.AreEqual(_buffer.GetLineSpanIncludingLineBreak(0).GetText(), _map.DefaultRegister.StringValue);
             Assert.AreEqual(OperationKind.LineWise, _map.DefaultRegister.Value.OperationKind);
         }
 

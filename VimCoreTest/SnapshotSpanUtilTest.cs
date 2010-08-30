@@ -1,9 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using NUnit.Framework;
+﻿using System.Linq;
 using Microsoft.VisualStudio.Text;
+using NUnit.Framework;
 using Vim;
 using Vim.UnitTest;
 
@@ -43,7 +40,7 @@ namespace VimCore.Test
                 _buffer.CurrentSnapshot.Lines
                 .Select(x => x.Extent)
                 .SelectMany(SnapshotSpanUtil.GetPoints);
-            foreach (var point in points )
+            foreach (var point in points)
             {
                 var notUsed = point.GetChar();
             }
@@ -57,7 +54,7 @@ namespace VimCore.Test
                 _buffer.CurrentSnapshot.Lines
                 .Select(x => x.ExtentIncludingLineBreak)
                 .SelectMany(SnapshotSpanUtil.GetPoints);
-            foreach (var point in points )
+            foreach (var point in points)
             {
                 var notUsed = point.GetChar();
             }
@@ -84,7 +81,7 @@ namespace VimCore.Test
             Create("foo", "bar");
             var points = SnapshotSpanUtil.GetPoints(_buffer.GetLine(0).Extent);
             var chars = points.Select(x => x.GetChar()).ToList();
-            CollectionAssert.AreEqual(new char[] {'f', 'o', 'o'}, chars);
+            CollectionAssert.AreEqual(new char[] { 'f', 'o', 'o' }, chars);
         }
 
         [Test]
@@ -192,6 +189,42 @@ namespace VimCore.Test
             var span = new SnapshotSpan(_buffer.CurrentSnapshot, 0, _buffer.CurrentSnapshot.Length);
             var endLine = SnapshotSpanUtil.GetEndLine(span);
             Assert.AreEqual(1, endLine.LineNumber);
+        }
+
+        [Test]
+        public void ExtendToFullLine1()
+        {
+            Create("dog", "cat", "chicken", "pig");
+            var span = _buffer.GetSpan(0, 1);
+            span = SnapshotSpanUtil.ExtendToFullLine(span);
+            Assert.AreEqual(_buffer.GetLineSpan(0), span);
+        }
+
+        [Test]
+        public void ExtendToFullLine2()
+        {
+            Create("dog", "cat", "chicken", "pig");
+            var span = new SnapshotSpan(_buffer.GetLine(1).Start, 0);
+            span = SnapshotSpanUtil.ExtendToFullLine(span);
+            Assert.AreEqual(_buffer.GetLineSpan(1), span);
+        }
+
+        [Test]
+        public void ExtendToFullLineIncludingLineBreak1()
+        {
+            Create("dog", "cat", "chicken", "pig");
+            var span = _buffer.GetSpan(0, 1);
+            span = SnapshotSpanUtil.ExtendToFullLineIncludingLineBreak(span);
+            Assert.AreEqual(_buffer.GetLineSpanIncludingLineBreak(0), span);
+        }
+
+        [Test]
+        public void ExtendToFullLineIncludingLineBreak2()
+        {
+            Create("dog", "cat", "chicken", "pig");
+            var span = new SnapshotSpan(_buffer.GetLine(1).Start, 0);
+            span = SnapshotSpanUtil.ExtendToFullLineIncludingLineBreak(span);
+            Assert.AreEqual(_buffer.GetLineSpanIncludingLineBreak(1), span);
         }
 
     }

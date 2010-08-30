@@ -85,16 +85,6 @@ type internal VisualMode
                     ModeSwitch.NoSwitch |> Some,
                     fun count _ -> _operations.MoveCaretAndScrollLines ScrollDirection.Down count)
                 yield (
-                    "Y",
-                    CommandFlags.Repeatable,
-                    None,
-                    (fun _ (reg:Register) ->
-                        let selection = _buffer.TextView.Selection
-                        let startPoint = selection.Start.Position.GetContainingLine().Start
-                        let endPoint = selection.End.Position.GetContainingLine().EndIncludingLineBreak
-                        let span = SnapshotSpan(startPoint,endPoint)
-                        _operations.Yank span MotionKind.Inclusive OperationKind.LineWise reg ))
-                yield (
                     "zo", 
                     CommandFlags.Special, 
                     None,
@@ -265,11 +255,26 @@ type internal VisualMode
                     CommandFlags.None,
                     None,
                     (fun _ (reg:Register) span -> 
-                        let data = StringData.ofSpan span
+                        let data = StringData.OfSpan span
                         reg.UpdateValue { Value = data; MotionKind = _motionKind; OperationKind = _operationKind } ),
                     (fun _ (reg:Register) col -> 
-                        let data = StringData.ofNormalizedSnasphotSpanCollection col
+                        let data = StringData.OfNormalizedSnasphotSpanCollection col
                         reg.UpdateValue { Value = data; MotionKind = _motionKind; OperationKind = _operationKind } ))
+                yield (
+                    "Y",
+                    CommandFlags.None,
+                    None,
+                    (fun _ (reg:Register) span -> 
+                        let data = span |> SnapshotSpanUtil.ExtendToFullLineIncludingLineBreak |> StringData.OfSpan 
+                        reg.UpdateValue { Value = data; MotionKind = _motionKind; OperationKind = OperationKind.LineWise } ),
+                    (fun _ (reg:Register) col -> 
+                        let data = 
+                            let normal() = col |> Seq.map SnapshotSpanUtil.ExtendToFullLine |> StringData.OfSeq 
+                            match _visualKind with 
+                            | VisualKind.Character -> normal()
+                            | VisualKind.Line -> normal()
+                            | VisualKind.Block -> StringData.OfNormalizedSnasphotSpanCollection col
+                        reg.UpdateValue { Value = data; MotionKind = _motionKind; OperationKind = OperationKind.LineWise} ))
             }
             |> Seq.map (fun (str,flags,mode,funcNormal,funcBlock) ->
                 let kiSet = KeyNotationUtil.StringToKeyInputSet str

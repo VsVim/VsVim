@@ -44,7 +44,7 @@ type internal CommonOperations ( _data : OperationsData ) =
         else  _host.NavigateTo point 
 
     member private x.DeleteBlock col (reg:Register) =
-        let data = StringData.ofNormalizedSnasphotSpanCollection col
+        let data = StringData.OfNormalizedSnasphotSpanCollection col
         let value = {Value=data; MotionKind=MotionKind.Inclusive;OperationKind=OperationKind.CharacterWise}
         reg.UpdateValue value
         use edit = _textView.TextBuffer.CreateEdit()
@@ -225,7 +225,7 @@ type internal CommonOperations ( _data : OperationsData ) =
             reg.UpdateValue (regValue)
 
         member x.Yank (span:SnapshotSpan) motion operation (reg:Register) =
-            let regValue = {Value=StringData.ofSpan span;MotionKind = motion; OperationKind = operation};
+            let regValue = {Value=StringData.OfSpan span;MotionKind = motion; OperationKind = operation};
             reg.UpdateValue (regValue)
         
         member x.PasteAfter point text opKind = 
