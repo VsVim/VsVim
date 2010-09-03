@@ -220,7 +220,13 @@ module SnapshotSpanUtil =
         else span
 
     /// Create an empty span at the given point
+    let Create (startPoint:SnapshotPoint) (endPoint:SnapshotPoint) = SnapshotSpan(startPoint,endPoint)
+
+    /// Create an empty span at the given point
     let CreateEmpty point = SnapshotSpan(point, 0)
+
+    /// Create a SnapshotSpan from the given bounds
+    let CreateFromBounds (startPoint:SnapshotPoint) (endPoint:SnapshotPoint) = SnapshotSpan(startPoint,endPoint)
 
     /// Get the ITextSnapshotLines included in this SnasphotSpan 
     let GetLines span = 

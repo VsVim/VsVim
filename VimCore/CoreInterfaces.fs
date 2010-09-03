@@ -104,7 +104,7 @@ type IMotionUtil =
 
     /// Implement the 'e' motion.  This goes to the end of the current word.  If we're
     /// not currently on a word it will find the next word and then go to the end of that
-    abstract EndOfWord : WordKind -> int -> MotionData option
+    abstract EndOfWord : WordKind -> int -> MotionData 
     
     /// Implement an end of line motion.  Typically in response to the $ key.  Even though
     /// this motion deals with lines, it's still a character wise motion motion. 
@@ -830,6 +830,7 @@ module GlobalSettingNames =
     let HighlightSearchName = "hlsearch"
     let StartOfLineName = "startofline"
     let TildeOpName = "tildeop"
+    let TabStopName = "tabstop"
     let SmartCaseName = "smartcase"
     let VisualBellName = "visualbell"
     let VirtualEditName = "virtualedit"
@@ -878,6 +879,9 @@ and IVimGlobalSettings =
 
     /// Controls the behavior of ~ in normal mode
     abstract TildeOp : bool with get,set
+
+    /// Controls how many spaces a tab counts for.  
+    abstract TabStop : int with get,set
 
     /// Overrides the IgnoreCase setting in certain cases if the pattern contains
     /// any upper case letters

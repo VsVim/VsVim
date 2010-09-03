@@ -231,7 +231,21 @@ module internal SeqUtil =
             i := !i + 1
             if !i <= count then true
             else false ) |> List.ofSeq
-            
+
+    /// Skip's a maximum of count elements.  If there are more than
+    /// count elements in the sequence then an empty sequence will be 
+    /// returned
+    let skipMax count (sequence:'a seq) = 
+        let inner count = 
+            seq {
+                let count = ref count
+                use e = sequence.GetEnumerator()
+                while !count > 0 && e.MoveNext() do
+                    count := !count - 1
+                while e.MoveNext() do
+                    yield e.Current }
+        inner count
+
 module internal MapUtil =
 
     /// Get the set of keys in the Map

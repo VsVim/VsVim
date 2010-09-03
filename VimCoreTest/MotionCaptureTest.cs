@@ -245,7 +245,7 @@ namespace VimCore.Test
         {
             _util
                 .Setup(x => x.EndOfWord(WordKind.NormalWord, 1))
-                .Returns(FSharpOption.Create(CreateMotionData()))
+                .Returns(CreateMotionData())
                 .Verifiable();
             ProcessComplete("e", 1);
             _factory.Verify();
@@ -255,7 +255,7 @@ namespace VimCore.Test
         {
             _util
                 .Setup(x => x.EndOfWord(WordKind.BigWord, 1))
-                .Returns(FSharpOption.Create(CreateMotionData()))
+                .Returns(CreateMotionData())
                 .Verifiable();
             ProcessComplete("E", 1);
             _factory.Verify();

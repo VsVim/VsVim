@@ -28,6 +28,7 @@ namespace Vim.UnitTest.Mock
         public int ShiftWidth { get; set; }
         public bool SmartCase { get; set; }
         public bool StartOfLine { get; set; }
+        public int TabStop { get; set; }
         public bool TildeOp { get; set; }
         public string VimRc { get; set; }
         public string VimRcPaths { get; set; }

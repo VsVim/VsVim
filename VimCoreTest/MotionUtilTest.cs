@@ -284,7 +284,7 @@ namespace VimCore.Test
         public void EndOfWord1()
         {
             Create("foo bar");
-            var res = _util.EndOfWord(WordKind.NormalWord, 1).Value;
+            var res = _util.EndOfWord(WordKind.NormalWord, 1);
             Assert.AreEqual(MotionKind.Inclusive, res.MotionKind);
             Assert.AreEqual(OperationKind.CharacterWise, res.OperationKind);
             Assert.AreEqual(new SnapshotSpan(_buffer.CurrentSnapshot, 0, 3), res.Span);
@@ -295,7 +295,7 @@ namespace VimCore.Test
         {
             Create("foo   ", "bar");
             _textView.MoveCaretTo(4);
-            var res = _util.EndOfWord(WordKind.NormalWord, 1).Value;
+            var res = _util.EndOfWord(WordKind.NormalWord, 1);
             var span = new SnapshotSpan(
                 _buffer.GetPoint(4),
                 _buffer.GetLineFromLineNumber(1).Start.Add(3));
@@ -308,7 +308,7 @@ namespace VimCore.Test
         public void EndOfWord3()
         {
             Create("foo bar baz jaz");
-            var res = _util.EndOfWord(WordKind.NormalWord, 2).Value;
+            var res = _util.EndOfWord(WordKind.NormalWord, 2);
             var span = new SnapshotSpan(_buffer.CurrentSnapshot, 0, 7);
             Assert.AreEqual(span, res.Span);
             Assert.AreEqual(MotionKind.Inclusive, res.MotionKind);
@@ -320,7 +320,7 @@ namespace VimCore.Test
         {
             Create("foo   ", "", "bar");
             _textView.MoveCaretTo(4);
-            var res = _util.EndOfWord(WordKind.NormalWord, 1).Value;
+            var res = _util.EndOfWord(WordKind.NormalWord, 1);
             var span = new SnapshotSpan(
                 _buffer.GetPoint(4),
                 _buffer.GetLineFromLineNumber(2).Start.Add(3));
@@ -335,7 +335,10 @@ namespace VimCore.Test
             Create("foo   ", "", "bar");
             _textView.MoveCaretTo(4);
             var res = _util.EndOfWord(WordKind.NormalWord, 400);
-            Assert.IsTrue(res.IsNone());
+            var span = new SnapshotSpan(
+                _textView.TextSnapshot,
+                Span.FromBounds(4, _textView.TextSnapshot.Length));
+            Assert.AreEqual(span, res.Span);
         }
 
         [Test]
@@ -344,7 +347,7 @@ namespace VimCore.Test
         {
             Create("foo bar baz");
             _textView.MoveCaretTo(2);
-            var res = _util.EndOfWord(WordKind.NormalWord, 1).Value;
+            var res = _util.EndOfWord(WordKind.NormalWord, 1);
             Assert.AreEqual("o bar", res.Span.GetText());
         }
 
@@ -353,10 +356,20 @@ namespace VimCore.Test
         {
             Create("foo", "bar");
             _textView.MoveCaretTo(2);
-            var res = _util.EndOfWord(WordKind.NormalWord, 1).Value;
+            var res = _util.EndOfWord(WordKind.NormalWord, 1);
             Assert.AreEqual("o" + Environment.NewLine + "bar", res.Span.GetText());
         }
 
+        [Test]
+        [Description("Second to last character")]
+        public void EndOfWord8()
+        {
+            Create("the dog goes around the house");
+            _textView.MoveCaretTo(1);
+            Assert.AreEqual('h', _textView.GetCaretPoint().GetChar());
+            var res = _util.EndOfWord(WordKind.NormalWord, 1);
+            Assert.AreEqual("he", res.Span.GetText());
+        }
 
         [Test]
         public void ForwardChar1()

@@ -116,6 +116,7 @@ type internal GlobalSettings() =
             ( ShiftWidthName, "sw", NumberKind, NumberValue(4) );
             ( HighlightSearchName, "hls", ToggleKind, ToggleValue(false) );
             ( TildeOpName, "top", ToggleKind, ToggleValue(false) );
+            ( TabStopName, "ts", NumberKind, NumberValue(8) );
             ( SmartCaseName, "scs", ToggleKind, ToggleValue(false) );
             ( VisualBellName, "vb", ToggleKind, ToggleValue(false) );
             ( VirtualEditName, "ve", StringKind, StringValue(StringUtil.empty));
@@ -154,6 +155,9 @@ type internal GlobalSettings() =
         member x.TildeOp
             with get() = _map.GetBoolValue TildeOpName
             and set value = _map.TrySetValue TildeOpName (ToggleValue(value)) |> ignore
+        member x.TabStop
+            with get() = _map.GetNumberValue TabStopName
+            and set value = _map.TrySetValue TabStopName (NumberValue(value)) |> ignore
         member x.SmartCase
             with get() = _map.GetBoolValue SmartCaseName
             and set value = _map.TrySetValue SmartCaseName (ToggleValue(value)) |> ignore
