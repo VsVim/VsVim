@@ -465,11 +465,17 @@ type internal CommonOperations ( _data : OperationsData ) =
         member x.MoveCaretToPoint point =  TextViewUtil.MoveCaretToPoint _textView point 
         member x.MoveCaretToMotionData (data:MotionData) =
 
-            // Move the caret to the last valid point on the span.  
+            // Reduce the Span to the line we care about 
+            let line = 
+                if data.IsForward then SnapshotSpanUtil.GetEndLine data.Span
+                else SnapshotSpanUtil.GetStartLine data.Span
+
+            // Get the point which is the last or first point valid on the 
+            // particular line / span 
             let getPointFromSpan () = 
                 if data.OperationKind = OperationKind.LineWise then 
-                    if data.IsForward then SnapshotSpanUtil.GetEndLine data.Span |> SnapshotLineUtil.GetEnd
-                    else SnapshotSpanUtil.GetStartLine data.Span |> SnapshotLineUtil.GetStart
+                    if data.IsForward then SnapshotLineUtil.GetEnd line
+                    else SnapshotLineUtil.GetStart line
                 else
                     if data.IsForward then
                         if data.MotionKind = MotionKind.Exclusive then data.Span.End
@@ -478,17 +484,9 @@ type internal CommonOperations ( _data : OperationsData ) =
 
             let point = 
                 match data.Column with
-                | Some(col) ->
-                    let _,endCol = 
-                        data.Span
-                        |> SnapshotSpanUtil.GetEndLine
-                        |> SnapshotLineUtil.GetEnd
-                        |> SnapshotPointUtil.GetLineColumn
-                    if col < endCol then 
-                        data.Span
-                        |> SnapshotSpanUtil.GetEndLine
-                        |> SnapshotLineUtil.GetStart
-                        |> SnapshotPointUtil.Add col
+                | Some(col) -> 
+                    let _,endCol = line |> SnapshotLineUtil.GetEnd |> SnapshotPointUtil.GetLineColumn
+                    if col < endCol then line.Start.Add(col)
                     else getPointFromSpan()
                 | None -> getPointFromSpan()
 

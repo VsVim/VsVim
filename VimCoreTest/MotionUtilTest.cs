@@ -530,6 +530,17 @@ namespace VimCore.Test
         }
 
         [Test]
+        public void LineOrFirstToFirstNonWhitespace5()
+        {
+            Create("  the", "dog", "jumped");
+            _textView.MoveCaretTo(_textView.GetLine(1).Start);
+            var data = _util.LineOrFirstToFirstNonWhitespace(FSharpOption<int>.None);
+            Assert.AreEqual(0, data.Span.Start.Position);
+            Assert.AreEqual(2, data.Column.Value);
+            Assert.IsFalse(data.IsForward);
+        }
+
+        [Test]
         public void LineOrLastToFirstNonWhitespace1()
         {
             Create("foo", "bar", "baz");

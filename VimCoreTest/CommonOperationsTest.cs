@@ -1432,6 +1432,39 @@ namespace VimCore.Test
             _operations.MoveCaretToMotionData(data);
             Assert.AreEqual(Tuple.Create(1, 0), SnapshotPointUtil.GetLineColumn(_view.GetCaretPoint()));
         }
+
+        [Test]
+        [Description("Reverse spans should move to the start of the span")]
+        public void MoveCaretToMotionData11()
+        {
+            Create("dog", "cat", "bear");
+            _editorOpts.Setup(x => x.ResetSelection());
+            var data = new MotionData(
+                _buffer.GetLineSpan(0, 1),
+                false,
+                MotionKind.Inclusive,
+                OperationKind.CharacterWise,
+                FSharpOption.Create(0));
+            _operations.MoveCaretToMotionData(data);
+            Assert.AreEqual(Tuple.Create(0, 0), SnapshotPointUtil.GetLineColumn(_view.GetCaretPoint()));
+        }
+
+        [Test]
+        [Description("Reverse spans should move to the start of the span and respect column")]
+        public void MoveCaretToMotionData12()
+        {
+            Create("dog", "cat", "bear");
+            _editorOpts.Setup(x => x.ResetSelection());
+            var data = new MotionData(
+                _buffer.GetLineSpan(0, 1),
+                false,
+                MotionKind.Inclusive,
+                OperationKind.CharacterWise,
+                FSharpOption.Create(2));
+            _operations.MoveCaretToMotionData(data);
+            Assert.AreEqual(Tuple.Create(0, 2), SnapshotPointUtil.GetLineColumn(_view.GetCaretPoint()));
+        }
+
         [Test]
         public void Undo1()
         {
