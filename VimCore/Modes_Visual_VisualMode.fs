@@ -85,6 +85,16 @@ type internal VisualMode
                     ModeSwitch.NoSwitch |> Some,
                     fun count _ -> _operations.MoveCaretAndScrollLines ScrollDirection.Down count)
                 yield (
+                    "<PageUp>",
+                    CommandFlags.Movement,
+                    ModeSwitch.NoSwitch |> Some,
+                    fun _ _ -> _operations.EditorOperations.PageUp(false))
+                yield (
+                    "<PageDown>",
+                    CommandFlags.Movement,
+                    ModeSwitch.NoSwitch |> Some,
+                    fun _ _ -> _operations.EditorOperations.PageDown(false))
+                yield (
                     "zo", 
                     CommandFlags.Special, 
                     None,

@@ -2,6 +2,7 @@
 using System.Linq;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
+using Microsoft.VisualStudio.Text.Operations;
 using Moq;
 using NUnit.Framework;
 using Vim;
@@ -29,6 +30,7 @@ namespace VimCore.Test
         private Mock<ISelectionTracker> _tracker;
         private Mock<IFoldManager> _foldManager;
         private Mock<IUndoRedoOperations> _undoRedoOperations;
+        private Mock<IEditorOperations> _editorOperations;
 
         public void Create(params string[] lines)
         {
@@ -54,9 +56,11 @@ namespace VimCore.Test
             _tracker.Setup(x => x.ResetCaret());
             _undoRedoOperations = _factory.Create<IUndoRedoOperations>();
             _foldManager = _factory.Create<IFoldManager>();
+            _editorOperations = _factory.Create<IEditorOperations>();
             _operations = _factory.Create<ICommonOperations>();
             _operations.SetupGet(x => x.FoldManager).Returns(_foldManager.Object);
             _operations.SetupGet(x => x.UndoRedoOperations).Returns(_undoRedoOperations.Object);
+            _operations.SetupGet(x => x.EditorOperations).Returns(_editorOperations.Object);
             _host = _factory.Create<IVimHost>(MockBehavior.Loose);
             _bufferData = MockObjectFactory.CreateVimBuffer(
                 _view.Object,
@@ -653,6 +657,26 @@ namespace VimCore.Test
             Assert.IsTrue(ret.IsSwitchModeWithArgument);
             Assert.AreEqual(ModeKind.Command, ret.AsSwitchModeWithArgument().Item1);
             Assert.AreEqual(ModeArgument.FromVisual, ret.AsSwitchModeWithArgument().Item2);
+        }
+
+        [Test]
+        public void PageUp1()
+        {
+            Create("");
+            _editorOperations.Setup(x => x.PageUp(false)).Verifiable();
+            _tracker.Setup(x => x.UpdateSelection()).Verifiable();
+            _mode.Process(KeyNotationUtil.StringToKeyInput("<PageUp>"));
+            _factory.Verify();
+        }
+
+        [Test]
+        public void PageDown1()
+        {
+            Create("");
+            _editorOperations.Setup(x => x.PageDown(false)).Verifiable();
+            _tracker.Setup(x => x.UpdateSelection()).Verifiable();
+            _mode.Process(KeyNotationUtil.StringToKeyInput("<PageDown>"));
+            _factory.Verify();
         }
 
         #endregion
