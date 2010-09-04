@@ -7,11 +7,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		VsVim.nunit = VsVim.nunit
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VsVim", "VsVim\VsVim.csproj", "{11710F28-88D6-44DD-99DB-1F0AAA8CDAA0}"
+EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "VimCore", "VimCore\VimCore.fsproj", "{06BE08E7-8626-40BD-877B-8D2DCA6BA451}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VimCoreTest", "VimCoreTest\VimCoreTest.csproj", "{B4FC7C81-E500-47C8-A884-2DBB7CA77123}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VsVim", "VsVim\VsVim.csproj", "{11710F28-88D6-44DD-99DB-1F0AAA8CDAA0}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VsVimTest", "VsVimTest\VsVimTest.csproj", "{0C79E8E6-EBBF-4342-B4C2-DCCF212A776B}"
 EndProject
