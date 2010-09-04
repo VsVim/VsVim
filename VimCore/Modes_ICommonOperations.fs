@@ -5,6 +5,22 @@ open Vim
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Operations
+open Microsoft.VisualStudio.Text.Outlining
+
+type OperationsData = {
+    VimHost : IVimHost;
+    TextView : ITextView;
+    EditorOperations : IEditorOperations;
+    EditorOptions : IEditorOptions
+    OutliningManager : IOutliningManager;
+    JumpList : IJumpList;
+    LocalSettings : IVimLocalSettings;
+    UndoRedoOperations : IUndoRedoOperations;
+    StatusUtil : IStatusUtil;
+    KeyMap : IKeyMap;
+    Navigator : ITextStructureNavigator;
+    FoldManager : IFoldManager;
+}
 
 type JoinKind = 
     | RemoveEmptySpaces
@@ -23,6 +39,12 @@ type ICommonOperations =
     /// Associated IEditorOperations
     abstract EditorOperations : IEditorOperations
 
+    /// Associated IFoldManager
+    abstract FoldManager : IFoldManager
+
+    /// Associated IUndoRedoOperations
+    abstract UndoRedoOperations : IUndoRedoOperations
+
     /// Run the beep operation
     abstract Beep : unit -> unit
 
@@ -32,12 +54,12 @@ type ICommonOperations =
     /// Redo the buffer changes "count" times
     abstract Redo : count:int -> unit
 
-    /// Apply the specified edit for all provided SnapshotSpan's as a single undo transaction
-    abstract ApplyAsSingleEdit : description:string option -> SnapshotSpan seq -> (SnapshotSpan -> unit) -> unit
-
     /// Implements the Join command.  Returns false in the case the join command cannot
     /// be complete (such as joining at the end of the buffer)
     abstract Join : SnapshotPoint -> JoinKind -> count : int -> bool
+
+    /// Join the lines in the given span 
+    abstract JoinSpan : SnapshotSpan -> JoinKind -> unit
 
     /// Attempt to GoToDefinition on the current state of the buffer.  If this operation fails, an error message will 
     /// be generated as appropriate
@@ -107,8 +129,11 @@ type ICommonOperations =
     /// the new snapshot of the buffer
     abstract PasteBefore : SnapshotPoint -> text : string -> OperationKind -> SnapshotSpan 
 
+    /// Paste over the selected text
+    abstract PasteOver : SnapshotSpan -> Register -> unit
+
     /// Insert the specified text at the cursor position "count" times
-    abstract InsertText : text:string -> count : int -> ITextSnapshot
+    abstract InsertText : text:string -> count : int -> unit
 
     /// Delete count lines starting from the cursor line.  The last line will 
     /// not have its break deleted
@@ -125,8 +150,14 @@ type ICommonOperations =
     /// lines.  
     abstract DeleteLinesIncludingLineBreakFromCursor : count:int -> Register -> unit
 
+    /// Delete the lines in the given span.  Does not include the final line break
+    abstract DeleteLinesInSpan : SnapshotSpan -> Register -> unit 
+
     /// Delete a range of text
     abstract DeleteSpan : SnapshotSpan -> MotionKind -> OperationKind -> Register -> ITextSnapshot
+
+    /// Delete a range of text
+    abstract DeleteBlock : NormalizedSnapshotSpanCollection -> Register -> unit
 
     /// Shift the count lines starting at the cursor right by the "ShiftWidth" setting
     abstract ShiftLinesRight : count:int -> unit
@@ -138,8 +169,15 @@ type ICommonOperations =
     /// by the multiplier
     abstract ShiftSpanRight : multiplier:int -> SnapshotSpan -> unit
 
+    /// Shift the lines in the span to the right by the "ShiftWidth" setting multiplied
+    /// by the multiplier
+    abstract ShiftBlockRight : multiplier:int -> NormalizedSnapshotSpanCollection -> unit
+
     /// Shift the lines in the span to the right by the "ShiftWidth" setting
     abstract ShiftSpanLeft : multiplier:int -> SnapshotSpan -> unit
+
+    /// Shift the lines in the span to the right by the "ShiftWidth" setting
+    abstract ShiftBlockLeft : multiplier:int -> NormalizedSnapshotSpanCollection -> unit
 
     /// Save the current document
     abstract Save : unit -> unit
@@ -168,8 +206,39 @@ type ICommonOperations =
     /// Change the case of all letters appearing in the given span
     abstract ChangeLetterCase : SnapshotSpan -> unit
 
+    /// Change the case of all letters appearing in the given span
+    abstract ChangeLetterCaseBlock : NormalizedSnapshotSpanCollection -> unit
+
     /// Make the letters on the given span lower case
     abstract MakeLettersLowercase : SnapshotSpan -> unit
 
     /// Make the letters on the given span upper case
     abstract MakeLettersUppercase : SnapshotSpan -> unit
+
+    /// Open count folds in the given SnapshotSpan 
+    abstract OpenFold : SnapshotSpan -> count:int -> unit
+
+    /// Open all folds which inersect with the given SnapshotSpan
+    abstract OpenAllFolds : SnapshotSpan -> unit
+
+    /// Close count foldse in the given SnapshotSpan
+    abstract CloseFold : SnapshotSpan -> count:int -> unit
+
+    /// Close all folds which intersect with the given SnapshotSpan
+    abstract CloseAllFolds : SnapshotSpan -> unit
+
+    /// Fold count lines under the cursor
+    abstract FoldLines : count:int -> unit
+
+    /// Delete one folds at the cursor
+    abstract DeleteOneFoldAtCursor : unit -> unit
+
+    /// Delete all folds at the cursor
+    abstract DeleteAllFoldsAtCursor : unit -> unit
+
+    /// Change the text represented by the given Motion
+    abstract ChangeSpan : MotionData -> Register -> unit
+
+
+
+

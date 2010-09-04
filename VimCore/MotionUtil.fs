@@ -84,43 +84,48 @@ type internal MotionUtil
             let span = SnapshotSpan(start,endPoint)
             {Span=span; IsForward=true; MotionKind=MotionKind.Exclusive; OperationKind=OperationKind.CharacterWise; Column=None}
         member x.EndOfWord kind count = 
-            let start = x.StartPoint
-            let snapshot = SnapshotPointUtil.GetSnapshot start
-            let snapshotEnd = SnapshotUtil.GetEndPoint snapshot
 
-            // Find the next point from the end of the current word
-            let findNext point = 
-                let next = 
-                    SnapshotSpan(point, snapshotEnd)
-                    |> SnapshotSpanUtil.GetPoints
-                    |> Seq.tryFind (fun p -> TextUtil.IsWordChar (p.GetChar()) kind)
-                match next with 
-                | None -> None
-                | Some(point) -> 
-                    match TssUtil.FindCurrentFullWordSpan point kind with
-                    | None -> None
-                    | Some(span) -> SnapshotSpanUtil.GetLastIncludedPoint span 
+            // Does the given point refer to a valid 'word' character?
+            let isPointWordChar point = 
+                if SnapshotPointUtil.IsEndPoint point then false
+                else TextUtil.IsWordChar (point.GetChar()) kind
 
-            // Find the point to start the actual search from
-            let firstPoint = 
-                if start = snapshotEnd then start
-                else start.Add(1)
+            // Create the appropriate MotionData structure with the provided SnapshotSpan
+            let withSpan span = {
+                Span=span 
+                IsForward=true 
+                MotionKind=MotionKind.Inclusive 
+                OperationKind=OperationKind.CharacterWise 
+                Column=None} 
 
-            let rec inner point count = 
-                if count = 0 || point = snapshotEnd then Some point 
-                else 
-                    match findNext (point.Add(1)) with
-                    | None -> None
-                    | Some(point) -> inner point (count - 1)
+            // Need to adjust the count of words that we will skip.  If we are currently 
+            // not on a word then we move forward to the first word and lose a count.  If
+            // we at the end of a word then we simply don't count it 
+            let point,count = 
+                let point = x.StartPoint
+                if isPointWordChar point then 
+                    match TssUtil.FindCurrentWordSpan point kind with
+                    | None -> point,count
+                    | Some(span) -> 
+                        match SnapshotSpanUtil.GetLastIncludedPoint span with
+                        | None -> point,count
+                        | Some(endPoint) ->
+                            if endPoint = point then (point.Add(1)),count
+                            else point,count
+                else point,(count - 1)
+            let count = max 0 (count-1)
 
-            let endPoint = inner firstPoint count
-            match endPoint with 
-            | None -> None
-            | Some(endPoint) ->
-                // Make it inclusive
-                let endPoint = if endPoint = snapshotEnd then endPoint else endPoint.Add(1)
-                let span = SnapshotSpan(start,endPoint)
-                {Span=span; IsForward=true; MotionKind=MotionKind.Inclusive; OperationKind=OperationKind.CharacterWise; Column=None} |> Some
+            // Now actually search the list of Word spans
+            let wordSpan = 
+                TssUtil.GetWordSpans point kind SearchKind.Forward
+                |> SeqUtil.skipMax count
+                |> SeqUtil.tryHeadOnly
+            match wordSpan with
+            | Some(span) -> SnapshotSpanUtil.Create x.StartPoint span.End |> withSpan
+            | None -> 
+                let snapshot = SnapshotPointUtil.GetSnapshot point
+                let endPoint = SnapshotUtil.GetEndPoint snapshot
+                SnapshotSpanUtil.Create point endPoint |> withSpan
         member x.EndOfLine count = 
             let start = x.StartPoint
             let span = SnapshotPointUtil.GetLineRangeSpan start count
@@ -169,14 +174,14 @@ type internal MotionUtil
             let endLine = SnapshotPointUtil.GetContainingLine point
             let startLineNumber = max 0 (endLine.LineNumber - count)
             let startLine = SnapshotUtil.GetLine endLine.Snapshot startLineNumber
-            let span = SnapshotSpan(startLine.Start, endLine.End)
+            let span = SnapshotSpan(startLine.Start, endLine.EndIncludingLineBreak)
             {Span=span; IsForward=false; MotionKind=MotionKind.Inclusive; OperationKind=OperationKind.LineWise; Column=None } 
         member x.LineDown count = 
             let point = x.StartPoint
             let startLine = SnapshotPointUtil.GetContainingLine point
             let endLineNumber = startLine.LineNumber + count
             let endLine = SnapshotUtil.GetLineOrLast startLine.Snapshot endLineNumber
-            let span = SnapshotSpan(startLine.Start, endLine.End)            
+            let span = SnapshotSpan(startLine.Start, endLine.EndIncludingLineBreak)            
             {Span=span; IsForward=true; MotionKind=MotionKind.Inclusive; OperationKind=OperationKind.LineWise; Column=None } 
         member x.LineOrFirstToFirstNonWhitespace numberOpt = 
             let point = x.StartPoint

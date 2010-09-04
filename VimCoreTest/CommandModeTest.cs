@@ -1,18 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+using Microsoft.VisualStudio.Text.Editor;
+using Moq;
 using NUnit.Framework;
 using Vim;
 using Vim.Modes.Command;
-using Microsoft.VisualStudio.Text.Editor;
-using VimCore.Test.Utils;
-using Microsoft.VisualStudio.Text;
-using System.Windows.Input;
-using Microsoft.VisualStudio.Text.Operations;
-using Moq;
-using Microsoft.FSharp.Collections;
-using VimCore.Test.Mock;
+using Vim.UnitTest.Mock;
+using Vim.UnitTest;
 
 namespace VimCore.Test
 {
@@ -43,13 +36,13 @@ namespace VimCore.Test
         private void ProcessWithEnter(string input)
         {
             _mode.Process(input);
-            _mode.Process(InputUtil.VimKeyToKeyInput(VimKey.EnterKey));
+            _mode.Process(KeyInputUtil.VimKeyToKeyInput(VimKey.Enter));
         }
 
         [Test, Description("Entering command mode should update the status")]
         public void StatusOnColon1()
         {
-            _mode.OnEnter();
+            _mode.OnEnter(ModeArgument.None);
             Assert.AreEqual("", _mode.Command);
         }
 
@@ -65,7 +58,7 @@ namespace VimCore.Test
         {
             _processor.Setup(x => x.RunCommand(MatchUtil.CreateForCharList("1"))).Verifiable();
             _mode.Process("1");
-            _mode.Process(InputUtil.VimKeyToKeyInput(VimKey.EnterKey));
+            _mode.Process(KeyInputUtil.VimKeyToKeyInput(VimKey.Enter));
             _processor.Verify();
         }
 
@@ -100,7 +93,7 @@ namespace VimCore.Test
         public void Input3()
         {
             _mode.Process("foo");
-            _mode.Process(InputUtil.VimKeyToKeyInput(VimKey.BackKey));
+            _mode.Process(KeyInputUtil.VimKeyToKeyInput(VimKey.Back));
             Assert.AreEqual("fo", _modeRaw.Command);
         }
 
@@ -108,7 +101,7 @@ namespace VimCore.Test
         public void Input4()
         {
             _mode.Process("foo");
-            _mode.Process(InputUtil.VimKeyToKeyInput(VimKey.EscapeKey));
+            _mode.Process(KeyInputUtil.VimKeyToKeyInput(VimKey.Escape));
             Assert.AreEqual(string.Empty, _modeRaw.Command);
         }
 
@@ -116,8 +109,8 @@ namespace VimCore.Test
         public void Input5()
         {
             _mode.Process('c');
-            _mode.Process(InputUtil.VimKeyToKeyInput(VimKey.BackKey));
-            _mode.Process(InputUtil.VimKeyToKeyInput(VimKey.BackKey));
+            _mode.Process(KeyInputUtil.VimKeyToKeyInput(VimKey.Back));
+            _mode.Process(KeyInputUtil.VimKeyToKeyInput(VimKey.Back));
             Assert.AreEqual(String.Empty, _modeRaw.Command);
         }
 
@@ -138,7 +131,7 @@ namespace VimCore.Test
         [Test]
         public void Cursor1()
         {
-            _mode.OnEnter();
+            _mode.OnEnter(ModeArgument.None);
             Assert.IsTrue(_view.Object.Caret.IsHidden);
         }
 
@@ -147,6 +140,20 @@ namespace VimCore.Test
         {
             _mode.OnLeave();
             Assert.IsFalse(_view.Object.Caret.IsHidden);
+        }
+
+        [Test]
+        public void OnEnter1()
+        {
+            _mode.OnEnter(ModeArgument.None);
+            Assert.AreEqual(String.Empty, _modeRaw.Command);
+        }
+
+        [Test]
+        public void OnEnter2()
+        {
+            _mode.OnEnter(ModeArgument.FromVisual);
+            Assert.AreEqual("'<,'>", _modeRaw.Command);
         }
     }
 }

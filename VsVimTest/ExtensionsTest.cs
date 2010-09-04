@@ -1,22 +1,28 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using NUnit.Framework;
-using Moq;
-using VsVim;
-using Vim.Extensions;
-using System.Windows.Input;
-using Microsoft.VisualStudio.Utilities;
-using System.Windows;
-using EnvDTE;
 using System.Runtime.InteropServices;
+using EnvDTE;
+using Microsoft.VisualStudio.Editor;
+using Microsoft.VisualStudio.TextManager.Interop;
+using Microsoft.VisualStudio.Utilities;
+using Moq;
+using NUnit.Framework;
+using Vim.Extensions;
+using Vim.UnitTest.Mock;
 
-namespace VsVimTest
+namespace VsVim.UnitTest
 {
     [TestFixture]
     public class ExtensionsTest
     {
+        private MockRepository _factory;
+
+        [SetUp]
+        public void Setup()
+        {
+            _factory = new MockRepository(MockBehavior.Loose);
+        }
+
         #region KeyBindings
 
         [Test, Description("Bindings as an array")]
@@ -27,7 +33,7 @@ namespace VsVimTest
             com.Setup(x => x.Name).Returns("name");
             var list = Extensions.GetCommandKeyBindings(com.Object).ToList();
             Assert.AreEqual(1, list.Count);
-            Assert.AreEqual('f', list[0].KeyBinding.FirstKeyInput.Char);
+            Assert.AreEqual('f', list[0].KeyBinding.FirstKeyStroke.KeyInput.Char);
             Assert.AreEqual("name", list[0].Name);
         }
 
@@ -39,9 +45,9 @@ namespace VsVimTest
             com.Setup(x => x.Name).Returns("name");
             var list = Extensions.GetCommandKeyBindings(com.Object).ToList();
             Assert.AreEqual(2, list.Count);
-            Assert.AreEqual('f', list[0].KeyBinding.FirstKeyInput.Char);
+            Assert.AreEqual('f', list[0].KeyBinding.FirstKeyStroke.KeyInput.Char);
             Assert.AreEqual("foo", list[0].KeyBinding.Scope);
-            Assert.AreEqual('b', list[1].KeyBinding.FirstKeyInput.Char);
+            Assert.AreEqual('b', list[1].KeyBinding.FirstKeyStroke.KeyInput.Char);
             Assert.AreEqual("bar", list[1].KeyBinding.Scope);
         }
 
@@ -53,7 +59,7 @@ namespace VsVimTest
             com.Setup(x => x.Name).Returns("name");
             var list = Extensions.GetCommandKeyBindings(com.Object).ToList();
             Assert.AreEqual(1, list.Count);
-            Assert.AreEqual('f', list[0].KeyBinding.FirstKeyInput.Char);
+            Assert.AreEqual('f', list[0].KeyBinding.FirstKeyStroke.KeyInput.Char);
             Assert.AreEqual(String.Empty, list[0].KeyBinding.Scope);
         }
 
@@ -106,7 +112,7 @@ namespace VsVimTest
         public void SafeResetKeyBindings()
         {
             var mock = new Mock<Command>(MockBehavior.Strict);
-            mock.SetupSet(x => x.Bindings).Verifiable();
+            mock.SetupSet(x => x.Bindings = It.IsAny<object>()).Verifiable();
             mock.Object.SafeResetBindings();
             mock.Verify();
         }
@@ -115,11 +121,22 @@ namespace VsVimTest
         public void SafeResetKeyBindings2()
         {
             var mock = new Mock<Command>(MockBehavior.Strict);
-            mock.SetupSet(x => x.Bindings).Throws(new COMException()).Verifiable();
+            mock.SetupSet(x => x.Bindings = It.IsAny<object>()).Throws(new COMException()).Verifiable();
             mock.Object.SafeResetBindings();
             mock.Verify();
         }
 
         #endregion
+
+        [Test]
+        public void IsSplit1()
+        {
+            var codeWindow = _factory.Create<IVsCodeWindow>();
+            var adapter = _factory.Create<IVsAdapter>();
+            adapter.SetupGet(x => x.EditorAdapter).Returns(_factory.Create<IVsEditorAdaptersFactoryService>().Object);
+            codeWindow.MakeSplit(adapter, factory: _factory);
+            Assert.IsTrue(codeWindow.Object.IsSplit());
+            _factory.Verify();
+        }
     }
 }

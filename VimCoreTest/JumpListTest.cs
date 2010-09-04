@@ -5,7 +5,7 @@ using System.Text;
 using NUnit.Framework;
 using Moq;
 using Vim;
-using VimCore.Test.Utils;
+using Vim.UnitTest;
 using Microsoft.VisualStudio.Text;
 using Vim.Extensions;
 

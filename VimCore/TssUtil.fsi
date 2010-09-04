@@ -68,8 +68,8 @@ module TssUtil =
     /// Find the point just before next "count" ocurrance of the given "char" on the specified line
     val FindTillPreviousOccurranceOfCharOnLine : SnapshotPoint -> char -> int -> SnapshotPoint option
 
-    /// Computes the number of columns a given line consumes, given the width of a tab 
-    val FindIndentPosition : int -> ITextSnapshotLine -> int
+    /// Find the indent position for the given line.  
+    val FindIndentPosition : ITextSnapshotLine -> tabSize:int -> int
 
     /// Get the reverse character span.  This will search backwards count items until the 
     /// count is satisfied or the begining of the line is reached
@@ -78,10 +78,6 @@ module TssUtil =
     /// Create an ITextStructureNavigator instance for the given WordKind with the provided 
     /// base implementation to fall back on
     val CreateTextStructureNavigator : WordKind -> ITextStructureNavigator -> ITextStructureNavigator
-
-    /// Map the specified tracking span to the given ITextSnapshot.  If the span cannot be mapped
-    /// due to incompatible changes in the buffer, None will be returned
-    val SafeGetTrackingSpan : ITrackingSpan -> ITextSnapshot -> SnapshotSpan option
 
 
     

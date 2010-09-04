@@ -60,7 +60,7 @@ type internal HighlightIncrementalSearchTagger
                     
         if StringUtil.isNullOrEmpty searchData.Text.RawText then Seq.empty
         else 
-            let tag = TextMarkerTag("vsvim_highlightsearch")
+            let tag = TextMarkerTag(Constants.HighlightIncrementalSearchTagName)
             col 
             |> Seq.map (fun span -> withSpan span) 
             |> Seq.concat
@@ -80,7 +80,7 @@ type internal HighlightIncrementalSearchTagger
         member x.Dispose() = _eventHandlers.DisposeAll()
 
 [<Export(typeof<ITaggerProvider>)>]
-[<ContentType("text")>]
+[<ContentType(Constants.ContentType)>]
 [<TextViewRole(PredefinedTextViewRoles.Document)>]
 [<TagType(typeof<TextMarkerTag>)>]
 type internal HighlightIncrementalSearchTaggerProvider

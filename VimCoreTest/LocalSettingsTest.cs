@@ -6,6 +6,7 @@ using NUnit.Framework;
 using Vim;
 using Moq;
 using Microsoft.VisualStudio.Text.Editor;
+using Vim.UnitTest;
 
 namespace VimCore.Test
 {
@@ -16,7 +17,7 @@ namespace VimCore.Test
         protected override Vim.IVimSettings Create()
         {
             var global = new Vim.GlobalSettings();
-            var view = Utils.EditorUtil.CreateView("foo");
+            var view = EditorUtil.CreateView("foo");
             return new LocalSettings(global, view);
         }
 

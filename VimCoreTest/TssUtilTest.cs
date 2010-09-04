@@ -1,12 +1,10 @@
 ﻿using System;
-using System.Text;
-using System.Collections.Generic;
 using System.Linq;
+using Microsoft.VisualStudio.Text;
 using NUnit.Framework;
 using Vim;
 using Vim.Extensions;
-using Microsoft.VisualStudio.Text;
-using Microsoft.FSharp.Core;
+using Vim.UnitTest;
 
 namespace VimCore.Test
 {
@@ -34,7 +32,7 @@ namespace VimCore.Test
 
         public void Create(params string[] lines)
         {
-            _buffer = Utils.EditorUtil.CreateBuffer(lines);
+            _buffer = EditorUtil.CreateBuffer(lines);
             _snapshot = _buffer.CurrentSnapshot;
         }
 
@@ -201,7 +199,7 @@ namespace VimCore.Test
         {
             Create("  foo");
             var line = _snapshot.GetLineFromLineNumber(0);
-            Assert.AreEqual(2, TssUtil.FindIndentPosition(4, line));
+            Assert.AreEqual(2, TssUtil.FindIndentPosition(line, 1));
         }
 
         [Test]
@@ -209,7 +207,7 @@ namespace VimCore.Test
         {
             Create("foo");
             var line = _snapshot.GetLineFromLineNumber(0);
-            Assert.AreEqual(0, TssUtil.FindIndentPosition(4, line));
+            Assert.AreEqual(0, TssUtil.FindIndentPosition(line, 1));
         }
 
         [Test]
@@ -217,7 +215,7 @@ namespace VimCore.Test
         {
             Create("\tfoo");
             var line = _snapshot.GetLineFromLineNumber(0);
-            Assert.AreEqual(4, TssUtil.FindIndentPosition(4, line));
+            Assert.AreEqual(4, TssUtil.FindIndentPosition(line, 4));
         }
 
         [Test]

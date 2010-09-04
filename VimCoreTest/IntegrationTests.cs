@@ -8,7 +8,7 @@ using Microsoft.VisualStudio.Text;
 using System.Windows.Input;
 using System.Windows.Media;
 using Microsoft.VisualStudio.Text.Editor;
-using VimCore.Test.Utils;
+using Vim.UnitTest;
 using Moq;
 
 namespace VimCore.Test
@@ -28,7 +28,7 @@ namespace VimCore.Test
 
         public void CreateBuffer(params string[] lines)
         {
-            var tuple = Utils.EditorUtil.CreateViewAndOperations(lines);
+            var tuple = EditorUtil.CreateViewAndOperations(lines);
             m_view = tuple.Item1;
             var service = EditorUtil.FactoryService;
             m_buffer = service.vim.CreateBuffer(m_view);
@@ -376,7 +376,7 @@ namespace VimCore.Test
             m_view.Caret.MoveTo(new SnapshotPoint(m_view.TextSnapshot, 0));
             m_buffer.ProcessInputAsString("/for");
             Assert.IsTrue(m_view.Caret.Position.BufferPosition.Position != 0);
-            m_buffer.Process(InputUtil.VimKeyToKeyInput(VimKey.EscapeKey));
+            m_buffer.Process(KeyInputUtil.VimKeyToKeyInput(VimKey.Escape));
             Assert.AreEqual(0, m_view.Caret.Position.BufferPosition.Position);
             Assert.AreEqual(0, m_view.Selection.GetSpan().Length);
         }
@@ -392,7 +392,7 @@ namespace VimCore.Test
             var line = m_view.TextSnapshot.GetLineFromLineNumber(1);
             Assert.AreEqual(line.Start, m_view.Caret.Position.BufferPosition);
 
-            m_buffer.Process(InputUtil.VimKeyToKeyInput(VimKey.EnterKey));
+            m_buffer.Process(KeyInputUtil.VimKeyToKeyInput(VimKey.Enter));
             Assert.AreEqual(line.Start, m_view.Caret.Position.BufferPosition);
             Assert.AreEqual(0, m_view.Selection.GetSpan().Length);
         }
@@ -405,7 +405,7 @@ namespace VimCore.Test
         {
             m_view.Caret.MoveTo(new SnapshotPoint(m_view.TextSnapshot, 0));
             m_buffer.ProcessInputAsString("/some");
-            m_buffer.Process(InputUtil.VimKeyToKeyInput(VimKey.EnterKey));
+            m_buffer.Process(KeyInputUtil.VimKeyToKeyInput(VimKey.Enter));
             m_view.Caret.MoveTo(new SnapshotPoint(m_view.TextSnapshot, 0));
             m_buffer.ProcessInputAsString("n");
             var line = m_view.TextSnapshot.GetLineFromLineNumber(1);
@@ -421,7 +421,7 @@ namespace VimCore.Test
         public void Next3()
         {
             m_buffer.ProcessInputAsString("/s");
-            m_buffer.Process(InputUtil.VimKeyToKeyInput(VimKey.EnterKey));
+            m_buffer.Process(KeyInputUtil.VimKeyToKeyInput(VimKey.Enter));
             m_view.Caret.MoveTo(new SnapshotPoint(m_view.TextSnapshot, 0));
             m_buffer.ProcessChar('n');
             Assert.AreNotEqual(0, m_view.Caret.Position.BufferPosition.Position);

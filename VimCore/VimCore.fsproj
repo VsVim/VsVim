@@ -36,13 +36,14 @@
   <Import Project="$(ProgramFiles)\Microsoft F#\v4.0\Microsoft.FSharp.Targets" />
   <ItemGroup>
     <Compile Include="Resources.fs" />
+    <Compile Include="Constants.fs" />
     <Compile Include="Util.fs" />
     <Compile Include="IVimHost.fs" />
     <Compile Include="WordKind.fs" />
     <Compile Include="SearchKind.fs" />
+    <Compile Include="VimKey.fs" />
+    <Compile Include="KeyInput.fsi" />
     <Compile Include="KeyInput.fs" />
-    <Compile Include="InputUtil.fsi" />
-    <Compile Include="InputUtil.fs" />
     <Compile Include="StringUtil.fs" />
     <Compile Include="TextUtil.fsi" />
     <Compile Include="TextUtil.fs" />
@@ -55,6 +56,7 @@
     <Compile Include="Register.fs" />
     <Compile Include="CoreInterfaces.fs" />
     <Compile Include="MefInterfaces.fs" />
+    <Compile Include="KeyNotationUtil.fs" />
     <Compile Include="MotionCapture.fs" />
     <Compile Include="RegexUtil.fs" />
     <Compile Include="Modes_ICommonOperations.fs" />
@@ -79,10 +81,10 @@
     <Compile Include="Modes_Insert_InsertMode.fs" />
     <Compile Include="Modes_Visual_ISelectionTracker.fs" />
     <Compile Include="Modes_Visual_SelectionTracker.fs" />
-    <Compile Include="Modes_Visual_IOperations.fs" />
-    <Compile Include="Modes_Visual_DefaultOperations.fs" />
     <Compile Include="Modes_Visual_VisualMode.fsi" />
     <Compile Include="Modes_Visual_VisualMode.fs" />
+    <Compile Include="SelectionChangeTracker.fs" />
+    <Compile Include="FoldManager.fs" />
     <Compile Include="VimBuffer.fs" />
     <Compile Include="MotionUtil.fs" />
     <Compile Include="SearchService.fs" />
@@ -92,12 +94,14 @@
     <Compile Include="KeyMap.fs" />
     <Compile Include="JumpList.fs" />
     <Compile Include="ChangeTracker.fs" />
+    <Compile Include="TextChangeTracker.fs" />
     <Compile Include="VimSettings.fs" />
     <Compile Include="FileSystem.fs" />
     <Compile Include="UndoRedoOperations.fsi" />
     <Compile Include="UndoRedoOperations.fs" />
     <Compile Include="CommandRunner.fsi" />
     <Compile Include="CommandRunner.fs" />
+    <Compile Include="VisualSpanCalculator.fs" />
     <Compile Include="Vim.fs" />
     <Compile Include="MefComponents.fs" />
     <Compile Include="FSharpExtensions.fs" />

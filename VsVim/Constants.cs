@@ -1,14 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
 namespace VsVim
 {
     internal static class Constants
     {
-        internal const string ContentType = "text";
-
         /// <summary>
         /// Content Type name and display name for C++ projects
         /// </summary>

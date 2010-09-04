@@ -3,7 +3,7 @@ using NUnit.Framework;
 using System;
 using Vim;
 
-namespace VsVimTest
+namespace VsVim.UnitTest
 {
     
     
@@ -17,7 +17,7 @@ namespace VsVimTest
 
         internal EditCommand Create(char c, EditCommandKind kind)
         {
-            return Create(InputUtil.CharToKeyInput(c), kind);
+            return Create(KeyInputUtil.CharToKeyInput(c), kind);
         }
 
         internal EditCommand Create(KeyInput ki, EditCommandKind kind)
@@ -28,8 +28,8 @@ namespace VsVimTest
         [Test]
         public void Ctor1()
         {
-            var command = Create(InputUtil.CharToKeyInput('a'), EditCommandKind.TypeChar);
-            Assert.AreEqual(InputUtil.CharToKeyInput('a'), command.KeyInput);
+            var command = Create(KeyInputUtil.CharToKeyInput('a'), EditCommandKind.TypeChar);
+            Assert.AreEqual(KeyInputUtil.CharToKeyInput('a'), command.KeyInput);
             Assert.AreEqual(EditCommandKind.TypeChar, command.EditCommandKind);
         }
 

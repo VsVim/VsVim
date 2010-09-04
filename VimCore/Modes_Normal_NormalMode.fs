@@ -6,10 +6,11 @@ open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
 
 type internal NormalModeData = {
-    Command : string;
-    IsInRepeatLastChange : bool;
-    IsInReplace : bool;
-}
+    Command : string
+    IsInRepeatLastChange : bool
+    IsInReplace : bool
+    OneTimeMode : ModeKind option 
+} 
 
 type internal NormalMode 
     ( 
@@ -19,13 +20,15 @@ type internal NormalMode
         _statusUtil : IStatusUtil,
         _displayWindowBroker : IDisplayWindowBroker,
         _runner : ICommandRunner,
-        _capture : IMotionCapture ) as this = 
+        _capture : IMotionCapture,
+        _visualSpanCalculator : IVisualSpanCalculator ) as this =
 
     /// Reset state for data in Normal Mode
     let _emptyData = {
-        Command = StringUtil.empty;
-        IsInRepeatLastChange = false;
-        IsInReplace = false;
+        Command = StringUtil.empty
+        IsInRepeatLastChange = false
+        IsInReplace = false
+        OneTimeMode = None
     }
 
     /// Contains the state information for Normal mode
@@ -55,6 +58,7 @@ type internal NormalMode
             match command with 
             | SimpleCommand(_) -> false
             | LongCommand(_) -> false
+            | VisualCommand(_) -> false 
             | MotionCommand(_) -> not command.IsMovement
 
         match _runner.State with
@@ -69,7 +73,6 @@ type internal NormalMode
             |> Seq.append (this.CreateMovementCommands())
             |> Seq.append (this.CreateMotionCommands())
             |> Seq.append (this.CreateLongCommands())
-            |> Seq.append (this.CreateCommandsOld())
             |> Seq.iter _runner.Add
 
             // Add in the special ~ command
@@ -101,7 +104,7 @@ type internal NormalMode
     member private x.ReplaceChar count reg = 
         let inner (ki:KeyInput) = 
             _data <- { _data with IsInReplace = false }
-            if ki.Key = VimKey.EscapeKey then LongCommandResult.Cancelled
+            if ki.Key = VimKey.Escape then LongCommandResult.Cancelled
             else 
                 if not (_operations.ReplaceChar ki count) then
                     _operations.Beep()
@@ -132,42 +135,59 @@ type internal NormalMode
     /// Implements the '.' operator.  This is a special command in that it cannot be easily routed 
     /// to interfaces like ICommonOperations due to the complexity of repeating the command here.  
     member private this.RepeatLastChange countOpt reg =  
+
         if _data.IsInRepeatLastChange then _statusUtil.OnError Resources.NormalMode_RecursiveRepeatDetected
         else
             _data <- { _data with IsInRepeatLastChange = true }
             try
-                match _bufferData.Vim.ChangeTracker.LastChange with
-                | None -> _operations.Beep()
-                | Some(lastChange) ->
-                    match lastChange with
-                    | TextChange(newText) -> _operations.InsertText newText (CommandUtil.CountOrDefault countOpt) |> ignore
+
+                let rec repeatChange change countOpt =
+                    match change with
+                    | TextChange(newText) -> _operations.InsertText newText (CommandUtil.CountOrDefault countOpt) 
                     | CommandChange(data) -> 
                         let countOpt = match countOpt with | Some(count) -> Some(count) | None -> data.Count
                         let reg = data.Register
-                        let commandName = data.Command.CommandName.Name
+                        let commandName = data.Command.KeyInputSet.Name
                         match data.Command with 
                         | SimpleCommand(_,_,func) -> func countOpt reg |> ignore
                         | MotionCommand(_,_,func) -> 
-
+    
                             // Repeating a motion based command is a bit more complex because we need to
                             // first re-run the motion to get the span to be processed
                             match data.MotionRunData with
                             | None -> _statusUtil.OnError (Resources.NormalMode_RepeatNotSupportedOnCommand commandName)
                             | Some(motionRunData) ->
-
+    
                                 // Repeat the motion and process the results
-                                let motionName = motionRunData.MotionCommand.CommandName.Name
+                                let motionName = motionRunData.MotionCommand.KeyInputSet.Name
                                 match motionRunData.MotionFunction motionRunData.Count with
                                 | None ->  _statusUtil.OnError (Resources.NormalMode_UnableToRepeatMotion commandName motionName)
                                 | Some(motionData) -> func countOpt reg motionData |> ignore
-
+    
                         | LongCommand(_) -> _statusUtil.OnError (Resources.NormalMode_RepeatNotSupportedOnCommand commandName)
+                        | VisualCommand(_,_,kind,func) -> 
+                            // Repeating a visual command is more complex because we need to calculate the
+                            // new visual range
+                            match data.VisualRunData with
+                            | None -> _statusUtil.OnError (Resources.NormalMode_RepeatNotSupportedOnCommand commandName)
+                            | Some(oldSpan) ->
+                                let span = _visualSpanCalculator.CalculateForTextView _bufferData.TextView oldSpan
+                                func countOpt reg span |> ignore
+
+                                
+                    | LinkedChange(left, right) ->
+                        repeatChange left countOpt
+                        repeatChange right None
+
+                match _bufferData.Vim.ChangeTracker.LastChange with
+                | None -> _operations.Beep()
+                | Some(lastChange) -> repeatChange lastChange countOpt 
             finally
                 _data <- { _data with IsInRepeatLastChange = false }
 
     /// Get the informatoin on how to handle the tilde command based on the current setting for tildeop
     member private this.GetTildeCommand count =
-        let name = InputUtil.CharToKeyInput '~' |> OneKeyInput
+        let name = KeyInputUtil.CharToKeyInput '~' |> OneKeyInput
         let command = 
             if _bufferData.Settings.GlobalSettings.TildeOp then
                 let func count reg (data:MotionData) = 
@@ -194,7 +214,7 @@ type internal NormalMode
             yield ("m", CommandFlags.Movement, fun count reg -> this.WaitMark count reg)
         }
         |> Seq.map (fun (str,kind, func) -> 
-            let name = CommandUtil.CreateCommandName str
+            let name = KeyNotationUtil.StringToKeyInput str |> OneKeyInput
             let func2 count reg = 
                 let count = CommandUtil.CountOrDefault count
                 func count reg 
@@ -211,7 +231,7 @@ type internal NormalMode
                     let point = point.GetContainingLine().Start
                     let span = SnapshotPointUtil.GetLineRangeSpanIncludingLineBreak point count
                     _operations.Yank span MotionKind.Inclusive OperationKind.LineWise reg  )
-                yield ("<<", CommandFlags.Repeatable, fun count _ -> _operations.ShiftLinesLeft count)
+                yield ("<lt><lt>", CommandFlags.Repeatable, fun count _ -> _operations.ShiftLinesLeft count)
                 yield (">>", CommandFlags.Repeatable, fun count _ -> _operations.ShiftLinesRight count)
                 yield ("gJ", CommandFlags.Repeatable, fun count reg -> 
                     let view = _bufferData.TextView
@@ -224,6 +244,10 @@ type internal NormalMode
                 yield ("gt", CommandFlags.Movement, fun count _ -> _operations.GoToNextTab count)
                 yield ("gT", CommandFlags.Movement, fun count _ -> _operations.GoToPreviousTab count)
                 yield ("u",  CommandFlags.Special, fun count _ -> _operations.Undo count)
+                yield ("zo", CommandFlags.Special, fun count _ -> _operations.OpenFold (TextViewUtil.GetCaretLineSpan _bufferData.TextView) count)
+                yield ("zO", CommandFlags.Special, fun _ _ -> _operations.OpenAllFolds (TextViewUtil.GetCaretLineSpan _bufferData.TextView) )
+                yield ("zc", CommandFlags.Special, fun count _ -> _operations.CloseFold (TextViewUtil.GetCaretLineSpan _bufferData.TextView) count)
+                yield ("zC", CommandFlags.Special, fun _ _ -> _operations.CloseAllFolds (TextViewUtil.GetCaretLineSpan _bufferData.TextView) )
                 yield ("zt", CommandFlags.Movement, fun _ _ ->  _operations.EditorOperations.ScrollLineTop())
                 yield ("z.", CommandFlags.Movement, fun _ _ -> 
                     _operations.EditorOperations.ScrollLineCenter() 
@@ -233,23 +257,82 @@ type internal NormalMode
                     _operations.EditorOperations.ScrollLineBottom() 
                     _operations.EditorOperations.MoveToStartOfLineAfterWhiteSpace(false) )
                 yield ("zb", CommandFlags.Movement, fun _ _ -> _operations.EditorOperations.ScrollLineBottom() )
+                yield ("zF", CommandFlags.Special, fun count _ -> _operations.FoldLines count)
+                yield ("zd", CommandFlags.Special, fun _ _ -> _operations.DeleteOneFoldAtCursor() )
+                yield ("zD", CommandFlags.Special, fun _ _ -> _operations.DeleteAllFoldsAtCursor() )
+                yield ("zE", CommandFlags.Special, fun _ _ -> _operations.FoldManager.DeleteAllFolds() )
+                yield ("x", CommandFlags.Repeatable, fun count reg -> _operations.DeleteCharacterAtCursor count reg)
+                yield ("<Del>", CommandFlags.Repeatable, fun count reg -> _operations.DeleteCharacterAtCursor count reg)
+                yield ("X", CommandFlags.Repeatable, fun count reg -> _operations.DeleteCharacterBeforeCursor count reg)
+                yield ("p", CommandFlags.Repeatable, fun count reg -> _operations.PasteAfterCursor reg.StringValue count reg.Value.OperationKind false)
+                yield ("P", CommandFlags.Repeatable, fun count reg -> _operations.PasteBeforeCursor reg.StringValue count reg.Value.OperationKind false)
+                yield ("n", CommandFlags.Repeatable, fun count _ -> _operations.MoveToNextOccuranceOfLastSearch count false)
+                yield ("N", CommandFlags.Repeatable, fun count _ -> _operations.MoveToNextOccuranceOfLastSearch count true)
+                yield ("*", CommandFlags.Repeatable, fun count _ -> _operations.MoveToNextOccuranceOfWordAtCursor SearchKind.ForwardWithWrap count)
+                yield ("#", CommandFlags.Repeatable, fun count _ -> _operations.MoveToNextOccuranceOfWordAtCursor SearchKind.BackwardWithWrap count)
+                yield ("D", CommandFlags.Repeatable, fun count reg -> _operations.DeleteLinesFromCursor count reg)
+                yield ("<C-r>", CommandFlags.Repeatable, fun count _ -> _operations.Redo count)
+                yield ("<C-u>", CommandFlags.Repeatable, fun count _ -> _operations.MoveCaretAndScrollLines ScrollDirection.Up count)
+                yield ("<C-d>", CommandFlags.Repeatable, fun count _ -> _operations.MoveCaretAndScrollLines ScrollDirection.Down count)
+                yield ("<C-y>", CommandFlags.Repeatable, fun count _ -> _operations.ScrollLines ScrollDirection.Up count)
+                yield ("<C-e>", CommandFlags.Repeatable, fun count _ -> _operations.ScrollLines ScrollDirection.Down count)
+                yield ("<C-f>", CommandFlags.Repeatable, fun count _ -> _operations.ScrollPages ScrollDirection.Down count)
+                yield ("<S-Down>", CommandFlags.Repeatable, fun count _ -> _operations.ScrollPages ScrollDirection.Down count)
+                yield ("<PageDown>", CommandFlags.Repeatable, fun count _ -> _operations.ScrollPages ScrollDirection.Down count)
+                yield ("J", CommandFlags.Repeatable, fun count _ -> _operations.JoinAtCaret count)
+                yield ("<C-b>", CommandFlags.Repeatable, fun count _ -> _operations.ScrollPages ScrollDirection.Up count)
+                yield ("<S-Up>", CommandFlags.Repeatable, fun count _ -> _operations.ScrollPages ScrollDirection.Up count)
+                yield ("<PageUp>", CommandFlags.Repeatable, fun count _ -> _operations.ScrollPages ScrollDirection.Up count)
+                yield ("<C-]>", CommandFlags.Special, fun _ _ -> _operations.GoToDefinitionWrapper())
+                yield ("gd", CommandFlags.Special, fun _ _ -> _operations.GoToLocalDeclaration())
+                yield ("gD", CommandFlags.Special, fun _ _ -> _operations.GoToGlobalDeclaration())
+                yield ("gf", CommandFlags.Special, fun _ _ -> _operations.GoToFile())
+                yield ("Y", CommandFlags.Repeatable, fun count reg -> _operations.YankLines count reg)
+                yield ("<Tab>", CommandFlags.Repeatable, fun count _ -> _operations.JumpNext count)
+                yield ("<C-i>", CommandFlags.Repeatable, fun count _ -> _operations.JumpNext count)
+                yield ("<C-o>", CommandFlags.Repeatable, fun count _ -> _operations.JumpPrevious count)
+                yield ("%", CommandFlags.Repeatable, fun _ _ -> _operations.GoToMatch() |> ignore)
+                yield ("<C-w><C-j>", CommandFlags.Movement, fun _ _ -> _bufferData.Vim.VimHost.MoveViewDown(this.TextView))
+                yield ("<C-w>j", CommandFlags.Movement, fun _ _ -> _bufferData.Vim.VimHost.MoveViewDown(this.TextView))
+                yield ("<C-w><C-k>", CommandFlags.Movement, fun _ _ -> _bufferData.Vim.VimHost.MoveViewUp(this.TextView))
+                yield ("<C-w>k", CommandFlags.Movement, fun _ _ -> _bufferData.Vim.VimHost.MoveViewUp(this.TextView))
+                yield ("<C-PageDown>", CommandFlags.Repeatable, fun count _ -> _operations.GoToNextTab count)
+                yield ("<C-PageUp>", CommandFlags.Repeatable, fun count _ -> _operations.GoToPreviousTab count)
+                yield ("z<Enter>", CommandFlags.Movement, fun count _ -> 
+                        _operations.EditorOperations.ScrollLineTop()
+                        _operations.EditorOperations.MoveToStartOfLineAfterWhiteSpace(false) )
             }
             |> Seq.map(fun (str,kind,func) -> (str,kind,func,CommandResult.Completed ModeSwitch.NoSwitch))
 
+        let doNothing _ _ = ()
         let doSwitch =
             seq {
-                yield ("cc", ModeSwitch.SwitchMode ModeKind.Insert, fun count reg ->  
+                yield ("cc", ModeKind.Insert, fun count reg ->  
                     let point = TextViewUtil.GetCaretPoint _bufferData.TextView
                     let span = SnapshotPointUtil.GetLineRangeSpanIncludingLineBreak point count
                     let span = SnapshotSpan(point.GetContainingLine().Start,span.End)
                     _operations.DeleteSpan span MotionKind.Inclusive OperationKind.LineWise reg |> ignore )
+                yield ("i", ModeKind.Insert, doNothing)
+                yield ("I", ModeKind.Insert, (fun _ _ -> _operations.EditorOperations.MoveToStartOfLineAfterWhiteSpace(false)))
+                yield (":", ModeKind.Command, doNothing)
+                yield ("A", ModeKind.Insert, (fun _ _ -> _operations.EditorOperations.MoveToEndOfLine(false)))
+                yield ("o", ModeKind.Insert, (fun _ _ -> _operations.InsertLineBelow() |> ignore))
+                yield ("O", ModeKind.Insert, (fun _ _ -> _operations.InsertLineAbove() |> ignore))
+                yield ("v", ModeKind.VisualCharacter, doNothing)
+                yield ("V", ModeKind.VisualLine, doNothing)
+                yield ("<C-q>", ModeKind.VisualBlock, doNothing)
+                yield ("s", ModeKind.Insert, (fun count reg -> _operations.DeleteCharacterAtCursor count reg))
+                yield ("C", ModeKind.Insert, (fun count reg -> _operations.DeleteLinesFromCursor count reg))
+                yield ("S", ModeKind.Insert, (fun count reg -> _operations.DeleteLines count reg))
+                yield ("a", ModeKind.Insert, (fun _ _ -> _operations.MoveCaretForAppend()) )
+                yield ("R", ModeKind.Replace, doNothing)
             }
-            |> Seq.map(fun (str,switch,func) -> (str,CommandFlags.None,func,CommandResult.Completed switch))
+            |> Seq.map(fun (str,switch,func) -> (str,CommandFlags.None,func,CommandResult.Completed (ModeSwitch.SwitchMode switch)))
 
         let allWithCount = 
             Seq.append noSwitch doSwitch 
             |> Seq.map(fun (str,kind,func,result) -> 
-                let name = CommandUtil.CreateCommandName str
+                let name = KeyNotationUtil.StringToKeyInputSet str
                 let func2 count reg =
                     let count = CommandUtil.CountOrDefault count
                     func count reg
@@ -259,142 +342,47 @@ type internal NormalMode
         let needCountAsOpt = 
             seq {
                 yield (".", CommandFlags.Special, fun count reg -> this.RepeatLastChange count reg)
+                yield ("<C-Home>", CommandFlags.Movement, fun count _ -> _operations.GoToLineOrFirst(count))
             }
             |> Seq.map(fun (str,kind,func) -> 
-                let name = CommandUtil.CreateCommandName str
+                let name = KeyNotationUtil.StringToKeyInputSet str
                 let func2 count reg = 
                     func count reg
                     CommandResult.Completed ModeSwitch.NoSwitch
                 SimpleCommand(name, kind, func2))
 
-        let hardName = 
-            seq { 
-                yield (
-                    [InputUtil.CharToKeyInput('z'); InputUtil.VimKeyToKeyInput(VimKey.EnterKey)],
-                    CommandFlags.Movement,
-                    fun count reg -> 
-                        _operations.EditorOperations.ScrollLineTop()
-                        _operations.EditorOperations.MoveToStartOfLineAfterWhiteSpace(false) )
-
-            }
-            |> Seq.map(fun (list,kind,func) -> 
-                let name = CommandName.ManyKeyInputs list
-                let func2 count reg =
-                    let count = CommandUtil.CountOrDefault count
-                    func count reg
-                    CommandResult.Completed ModeSwitch.NoSwitch 
-                SimpleCommand(name, kind, func2))
-
-        Seq.append allWithCount needCountAsOpt |> Seq.append hardName
+        Seq.append allWithCount needCountAsOpt 
 
     /// Create all motion commands
     member this.CreateMotionCommands() =
     
-        let complex : seq<string * ModeKind option * (int -> Register -> MotionData -> unit)> =
+        let complex : seq<string * CommandFlags * ModeKind option * (int -> Register -> MotionData -> unit)> =
             seq {
-                yield ("d", None, fun count reg data -> _operations.DeleteSpan data.OperationSpan data.MotionKind data.OperationKind reg |> ignore)
-                yield ("y", None, fun count reg data -> _operations.Yank data.OperationSpan data.MotionKind data.OperationKind reg)
-                yield ("c", Some ModeKind.Insert, fun count reg data -> _operations.DeleteSpan data.OperationSpan data.MotionKind data.OperationKind reg |> ignore)
-                yield ("<", None, fun _ _ data -> _operations.ShiftSpanLeft 1 data.OperationSpan)
-                yield (">", None, fun _ _ data -> _operations.ShiftSpanRight 1 data.OperationSpan)
+                yield ("d", CommandFlags.None, None, fun _ reg data -> _operations.DeleteSpan data.OperationSpan data.MotionKind data.OperationKind reg |> ignore)
+                yield ("y", CommandFlags.None, None, fun _ reg data -> _operations.Yank data.OperationSpan data.MotionKind data.OperationKind reg)
+                yield ("c", CommandFlags.LinkedWithNextTextChange, Some ModeKind.Insert, fun _ reg data -> _operations.ChangeSpan data reg)
+                yield ("<lt>", CommandFlags.None, None, fun _ _ data -> _operations.ShiftSpanLeft 1 data.OperationSpan)
+                yield (">", CommandFlags.None, None, fun _ _ data -> _operations.ShiftSpanRight 1 data.OperationSpan)
+                yield ("zf", CommandFlags.None, None, fun _ _ data -> _operations.FoldManager.CreateFold data.OperationSpan)
             }
 
         complex
-        |> Seq.map (fun (str,modeKindOpt, func) ->
-            let name = CommandUtil.CreateCommandName str
+        |> Seq.map (fun (str, extraFlags, modeKindOpt, func) ->
+            let name = KeyNotationUtil.StringToKeyInputSet str
             let func2 count reg data =
                 let count = CommandUtil.CountOrDefault count
                 func count reg data
                 match modeKindOpt with
                 | None -> CommandResult.Completed ModeSwitch.NoSwitch
                 | Some(modeKind) -> CommandResult.Completed (ModeSwitch.SwitchMode modeKind)
-            MotionCommand(name, CommandFlags.Repeatable, func2))
+            let flags = extraFlags ||| CommandFlags.Repeatable
+            MotionCommand(name, flags, func2))
 
     /// Create all of the movement commands
     member this.CreateMovementCommands() =
         let factory = Vim.Modes.CommandFactory(_operations, _capture)
         factory.CreateMovementCommands()
 
-    member this.CreateCommandsOld() =
-
-        let completeOps = 
-            seq {
-                yield (InputUtil.CharToKeyInput('x'), (fun count reg -> _operations.DeleteCharacterAtCursor count reg))
-                yield (InputUtil.VimKeyToKeyInput VimKey.DeleteKey, (fun count reg -> _operations.DeleteCharacterAtCursor count reg))
-                yield (InputUtil.CharToKeyInput('X'),  (fun count reg -> _operations.DeleteCharacterBeforeCursor count reg))
-                yield (InputUtil.CharToKeyInput('p'), (fun count reg -> _operations.PasteAfterCursor reg.StringValue count reg.Value.OperationKind false))
-                yield (InputUtil.CharToKeyInput('P'), (fun count reg -> _operations.PasteBeforeCursor reg.StringValue count reg.Value.OperationKind false))
-                yield (InputUtil.CharToKeyInput('n'), (fun count _ -> _operations.MoveToNextOccuranceOfLastSearch count false))
-                yield (InputUtil.CharToKeyInput('N'), (fun count _ -> _operations.MoveToNextOccuranceOfLastSearch count true))
-                yield (InputUtil.CharToKeyInput('*'), (fun count _ -> _operations.MoveToNextOccuranceOfWordAtCursor SearchKind.ForwardWithWrap count))
-                yield (InputUtil.CharToKeyInput('#'), (fun count _ -> _operations.MoveToNextOccuranceOfWordAtCursor SearchKind.BackwardWithWrap count))
-                yield (InputUtil.CharToKeyInput('D'), (fun count reg -> _operations.DeleteLinesFromCursor count reg))
-                yield (InputUtil.CharAndModifiersToKeyInput 'r' KeyModifiers.Control, (fun count _ -> _operations.Redo count))
-                yield (InputUtil.CharAndModifiersToKeyInput 'u' KeyModifiers.Control, (fun count _ -> _operations.MoveCaretAndScrollLines ScrollDirection.Up count))
-                yield (InputUtil.CharAndModifiersToKeyInput 'd' KeyModifiers.Control, (fun count _ -> _operations.MoveCaretAndScrollLines ScrollDirection.Down count))
-                yield (InputUtil.CharAndModifiersToKeyInput 'y' KeyModifiers.Control, (fun count _ -> _operations.ScrollLines ScrollDirection.Up count))
-                yield (InputUtil.CharAndModifiersToKeyInput 'e' KeyModifiers.Control, (fun count _ -> _operations.ScrollLines ScrollDirection.Down count))
-                yield (InputUtil.CharAndModifiersToKeyInput 'f' KeyModifiers.Control, (fun count _ -> _operations.ScrollPages ScrollDirection.Down count))
-                yield (InputUtil.VimKeyAndModifiersToKeyInput VimKey.DownKey KeyModifiers.Shift, (fun count _ -> _operations.ScrollPages ScrollDirection.Down count))
-                yield (InputUtil.VimKeyToKeyInput VimKey.PageDownKey, (fun count _ -> _operations.ScrollPages ScrollDirection.Down count)) 
-                yield (InputUtil.CharToKeyInput('J'), (fun count _ -> _operations.JoinAtCaret count))
-                yield (InputUtil.CharAndModifiersToKeyInput 'b' KeyModifiers.Control, (fun count _ -> _operations.ScrollPages ScrollDirection.Up count))
-                yield (InputUtil.VimKeyAndModifiersToKeyInput VimKey.UpKey KeyModifiers.Shift, (fun count _ -> _operations.ScrollPages ScrollDirection.Up count))
-                yield (InputUtil.VimKeyToKeyInput VimKey.PageUpKey , (fun count _ -> _operations.ScrollPages ScrollDirection.Up count)) 
-                yield (InputUtil.CharAndModifiersToKeyInput ']' KeyModifiers.Control, (fun _ _ -> _operations.GoToDefinitionWrapper()))
-                yield (InputUtil.CharToKeyInput('Y'), (fun count reg -> _operations.YankLines count reg))
-                yield (InputUtil.VimKeyToKeyInput VimKey.TabKey, (fun count _ -> _operations.JumpNext count))
-                yield (InputUtil.CharAndModifiersToKeyInput 'i' KeyModifiers.Control, (fun count _ -> _operations.JumpNext count))
-                yield (InputUtil.CharAndModifiersToKeyInput 'o' KeyModifiers.Control, (fun count _ -> _operations.JumpPrevious count))
-                yield (InputUtil.CharToKeyInput('%'), (fun _ _ -> _operations.GoToMatch() |> ignore))
-                yield (InputUtil.VimKeyAndModifiersToKeyInput VimKey.PageDownKey KeyModifiers.Control, (fun count _ -> _operations.GoToNextTab count))
-                yield (InputUtil.VimKeyAndModifiersToKeyInput VimKey.PageUpKey KeyModifiers.Control, (fun count _ -> _operations.GoToPreviousTab count))
-            }  |> Seq.map (fun (ki,func) ->
-                    let name = OneKeyInput(ki)
-                    let func2 count reg = 
-                        let count = CommandUtil.CountOrDefault count
-                        func count reg
-                        CommandResult.Completed ModeSwitch.NoSwitch
-                    SimpleCommand(name, CommandFlags.Repeatable, func2))
-    
-    
-        // Similar to completeOps but take the conditional count value
-        let completeOps2 = 
-            seq {
-                yield (InputUtil.VimKeyAndModifiersToKeyInput VimKey.HomeKey KeyModifiers.Control , (fun count _ -> _operations.GoToLineOrFirst(count)))
-            } |> Seq.map (fun (ki,func) ->
-                    let name = OneKeyInput(ki)
-                    let func2 count reg =
-                        func count reg 
-                        CommandResult.Completed ModeSwitch.NoSwitch
-                    SimpleCommand(name, CommandFlags.Movement, func2) )
-
-        let doNothing _ _ = ()
-        let changeOps = 
-            seq {
-                yield (InputUtil.CharToKeyInput('i'), ModeKind.Insert, doNothing)
-                yield (InputUtil.CharToKeyInput('I'), ModeKind.Insert, (fun _ _ -> _operations.EditorOperations.MoveToStartOfLineAfterWhiteSpace(false)))
-                yield (InputUtil.CharToKeyInput(':'), ModeKind.Command, doNothing)
-                yield (InputUtil.CharToKeyInput('A'), ModeKind.Insert, (fun _ _ -> _operations.EditorOperations.MoveToEndOfLine(false)))
-                yield (InputUtil.CharToKeyInput('o'), ModeKind.Insert, (fun _ _ -> _operations.InsertLineBelow() |> ignore))
-                yield (InputUtil.CharToKeyInput('O'), ModeKind.Insert, (fun _ _ -> _operations.InsertLineAbove() |> ignore))
-                yield (InputUtil.CharToKeyInput('v'), ModeKind.VisualCharacter, doNothing)
-                yield (InputUtil.CharToKeyInput('V'), ModeKind.VisualLine, doNothing)
-                yield (InputUtil.CharAndModifiersToKeyInput 'q' KeyModifiers.Control, ModeKind.VisualBlock, doNothing)
-                yield (InputUtil.CharToKeyInput('s'), ModeKind.Insert, (fun count reg -> _operations.DeleteCharacterAtCursor count reg))
-                yield (InputUtil.CharToKeyInput('C'), ModeKind.Insert, (fun count reg -> _operations.DeleteLinesFromCursor count reg))
-                yield (InputUtil.CharToKeyInput('S'), ModeKind.Insert, (fun count reg -> _operations.DeleteLines count reg))
-                yield (InputUtil.CharToKeyInput('a'), ModeKind.Insert, (fun _ _ -> _operations.MoveCaretForAppend()) )
-            } |> Seq.map (fun (ki,mode,func) ->
-                    let name = OneKeyInput(ki)
-                    let func2 count reg =
-                        let count = CommandUtil.CountOrDefault count
-                        func count reg 
-                        CommandResult.Completed (ModeSwitch.SwitchMode mode)
-                    SimpleCommand(name, CommandFlags.Repeatable, func2))
-    
-        Seq.append completeOps completeOps2 |> Seq.append changeOps
-   
     member this.Reset() =
         _runner.ResetState()
         _data <- _emptyData
@@ -407,11 +395,16 @@ type internal NormalMode
         | RunKeyInputResult.NeedMoreKeyInput -> ProcessResult.Processed
         | RunKeyInputResult.NestedRunDetected -> ProcessResult.Processed
         | RunKeyInputResult.CommandRan(_,modeSwitch) ->
+
+            // If we are in the one time mode then switch back to the previous
+            // mode
+            let modeSwitch = 
+                match _data.OneTimeMode with
+                | None -> modeSwitch 
+                | Some(modeKind) -> ModeSwitch.SwitchMode modeKind
+
             this.Reset()
-            match modeSwitch with
-            | ModeSwitch.NoSwitch -> ProcessResult.Processed
-            | ModeSwitch.SwitchMode(kind) -> ProcessResult.SwitchMode kind
-            | ModeSwitch.SwitchPreviousMode -> ProcessResult.SwitchPreviousMode
+            ProcessResult.OfModeSwitch modeSwitch
         | RunKeyInputResult.CommandErrored(_) -> 
             this.Reset()
             ProcessResult.Processed
@@ -433,7 +426,7 @@ type internal NormalMode
         member this.CommandRunner = _runner
         member this.CommandNames = 
             this.EnsureCommands()
-            _runner.Commands |> Seq.map (fun command -> command.CommandName)
+            _runner.Commands |> Seq.map (fun command -> command.KeyInputSet)
 
         member this.ModeKind = ModeKind.Normal
 
@@ -441,7 +434,7 @@ type internal NormalMode
             let doesCommandStartWith ki =
                 let name = OneKeyInput ki
                 _runner.Commands 
-                |> Seq.filter (fun command -> command.CommandName.StartsWith name)
+                |> Seq.filter (fun command -> command.KeyInputSet.StartsWith name)
                 |> SeqUtil.isNotEmpty
 
             if _displayWindowBroker.IsSmartTagSessionActive then false
@@ -450,13 +443,20 @@ type internal NormalMode
             elif _runner.IsWaitingForMoreInput then  true
             elif CharUtil.IsLetterOrDigit(ki.Char) then true
             elif doesCommandStartWith ki then true
-            elif InputUtil.CoreCharactersSet |> Set.contains ki.Char then true
+            elif KeyInputUtil.CoreCharactersSet |> Set.contains ki.Char then true
             else false
 
         member this.Process ki = this.ProcessCore ki
-        member this.OnEnter () = 
+        member this.OnEnter arg = 
             this.EnsureCommands()
             this.Reset()
+            
+            // Process the argument if it's applicable
+            match arg with 
+            | ModeArgument.None -> ()
+            | ModeArgument.FromVisual -> ()
+            | ModeArgument.OneTimeCommand(modeKind) -> _data <- { _data with OneTimeMode = Some modeKind }
+
         member this.OnLeave () = ()
         member this.OnClose() = _eventHandlers.DisposeAll()
     

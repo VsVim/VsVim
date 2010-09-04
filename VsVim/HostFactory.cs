@@ -1,61 +1,58 @@
 using System;
-using System.ComponentModel.Composition;
-using Microsoft.VisualStudio.Text.Editor;
-using Microsoft.VisualStudio.Utilities;
-using Microsoft.VisualStudio.TextManager.Interop;
-using System.Threading;
-using Microsoft.VisualStudio.Text;
-using Microsoft.VisualStudio.Editor;
-using System.Diagnostics;
 using System.Collections.Generic;
-using Vim;
-using Vim.Extensions;
-using Microsoft.VisualStudio.Shell.Interop;
-using Microsoft.VisualStudio.Text.Classification;
-using Microsoft.VisualStudio.Text.Operations;
-using Microsoft.VisualStudio.Language.Intellisense;
-using Microsoft.VisualStudio;
-using System.Runtime.InteropServices;
+using System.ComponentModel.Composition;
 using System.Windows.Threading;
 using Microsoft.FSharp.Core;
+using Microsoft.VisualStudio.Editor;
 using Microsoft.VisualStudio.Shell;
-using EnvDTE;
+using Microsoft.VisualStudio.Text.Editor;
+using Microsoft.VisualStudio.TextManager.Interop;
+using Microsoft.VisualStudio.Utilities;
+using Vim;
+using Vim.Extensions;
+using IServiceProvider = System.IServiceProvider;
 
 namespace VsVim
 {
     [Export(typeof(IWpfTextViewCreationListener))]
     [Export(typeof(IVimBufferCreationListener))]
     [Export(typeof(IVsTextViewCreationListener))]
-    [ContentType(Constants.ContentType)]
+    [ContentType(Vim.Constants.ContentType)]
     [TextViewRole(PredefinedTextViewRoles.Document)]
     internal sealed class HostFactory : IWpfTextViewCreationListener, IVimBufferCreationListener, IVsTextViewCreationListener
     {
         private readonly IKeyBindingService _keyBindingService;
         private readonly ITextEditorFactoryService _editorFactoryService;
+        private readonly IEditorOptionsFactoryService _editorOptionsFactoryService;
         private readonly IServiceProvider _serviceProvider;
         private readonly IVim _vim;
         private readonly IVsEditorAdaptersFactoryService _adaptersFactory;
         private readonly Dictionary<IVimBuffer, VsCommandFilter> _filterMap = new Dictionary<IVimBuffer, VsCommandFilter>();
         private readonly IVimHost _host;
         private readonly IFileSystem _fileSystem;
+        private readonly IVsAdapter _adapter;
 
         [ImportingConstructor]
         public HostFactory(
             IVim vim,
             ITextEditorFactoryService editorFactoryService,
+            IEditorOptionsFactoryService editorOptionsFactoryService,
             IKeyBindingService keyBindingService,
             SVsServiceProvider serviceProvider,
             IVsEditorAdaptersFactoryService adaptersFactory,
             IVimHost host,
-            IFileSystem fileSystem)
+            IFileSystem fileSystem,
+            IVsAdapter adapter)
         {
             _vim = vim;
             _keyBindingService = keyBindingService;
             _editorFactoryService = editorFactoryService;
+            _editorOptionsFactoryService = editorOptionsFactoryService;
             _serviceProvider = serviceProvider;
             _adaptersFactory = adaptersFactory;
             _host = host;
             _fileSystem = fileSystem;
+            _adapter = adapter;
         }
 
         void IWpfTextViewCreationListener.TextViewCreated(IWpfTextView textView)
@@ -100,7 +97,6 @@ namespace VsVim
 
         void IVsTextViewCreationListener.VsTextViewCreated(IVsTextView vsView)
         {
-            // Once we have the Vs view, stop listening to the event
             var view = _adaptersFactory.GetWpfTextView(vsView);
             if (view == null)
             {
@@ -116,6 +112,9 @@ namespace VsVim
             var buffer = opt.Value;
             var filter = new VsCommandFilter(buffer, vsView, _serviceProvider);
             _filterMap.Add(buffer, filter);
+
+            // Try and install the IVsFilterKeys adapter 
+            VsFilterKeysAdapter.TryInstallFilterKeysAdapter(_adapter, _editorOptionsFactoryService, buffer);
         }
     }
 

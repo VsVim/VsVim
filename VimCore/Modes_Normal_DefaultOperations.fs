@@ -8,22 +8,19 @@ open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Operations
 open Microsoft.VisualStudio.Text.Outlining
 
-type internal DefaultOperations
-    (
-    _textView : ITextView,
-    _bufferOptions : IEditorOptions,
-    _operations : IEditorOperations,
-    _outlining : IOutliningManager,
-    _host : IVimHost,
-    _statusUtil : IStatusUtil,
-    _settings : IVimLocalSettings,
-    _normalWordNav : ITextStructureNavigator,
-    _jumpList : IJumpList,
-    _incrementalSearch : IIncrementalSearch,
-    _undoRedoOperations : IUndoRedoOperations ) =
+type internal DefaultOperations ( _data : OperationsData, _incrementalSearch : IIncrementalSearch ) =
+    inherit CommonOperations(_data)
 
-    inherit CommonOperations(_textView, _operations, _outlining, _host, _jumpList, _settings, _undoRedoOperations)
-
+    let _textView = _data.TextView
+    let _operations = _data.EditorOperations
+    let _outlining = _data.OutliningManager
+    let _host = _data.VimHost
+    let _jumpList = _data.JumpList
+    let _settings = _data.LocalSettings
+    let _undoRedoOperations = _data.UndoRedoOperations
+    let _options = _data.EditorOptions
+    let _normalWordNav =  _data.Navigator
+    let _statusUtil = _data.StatusUtil
     let _search = _incrementalSearch.SearchService
 
     member private x.CommonImpl = x :> ICommonOperations
@@ -40,6 +37,12 @@ type internal DefaultOperations
             | Some(point) -> 
                 let ret = x.CommonImpl.NavigateToPoint (VirtualSnapshotPoint(point))
                 if not ret then _host.Beep()
+
+    member private x.WordUnderCursorOrEmpty =
+        let point =  TextViewUtil.GetCaretPoint _textView
+        TssUtil.FindCurrentFullWordSpan point WordKind.BigWord
+        |> OptionUtil.getOrDefault (SnapshotSpanUtil.CreateEmpty point)
+        |> SnapshotSpanUtil.GetText
 
     member private x.MoveToNextWordCore kind count isWholeWord = 
         let point = TextViewUtil.GetCaretPoint _textView
@@ -166,7 +169,8 @@ type internal DefaultOperations
                 let newLine = buffer.CurrentSnapshot.GetLineFromLineNumber(line.LineNumber+1)
             
                 // Move the caret to the same indent position as the previous line
-                let indent = TssUtil.FindIndentPosition (_bufferOptions.GetOptionValue DefaultOptions.TabSizeOptionId) line
+                let tabSize = EditorOptionsUtil.GetOptionValueOrDefault _options DefaultOptions.TabSizeOptionId 4
+                let indent = TssUtil.FindIndentPosition line tabSize
                 let point = new VirtualSnapshotPoint(newLine, indent)
                 TextViewUtil.MoveCaretToVirtualPoint _textView point |> ignore 
                 newLine )
@@ -233,6 +237,18 @@ type internal DefaultOperations
             match x.CommonImpl.GoToDefinition() with
             | Vim.Modes.Succeeded -> ()
             | Vim.Modes.Failed(msg) -> _statusUtil.OnError msg
+
+
+        member x.GoToLocalDeclaration() = 
+            if not (_host.GoToLocalDeclaration _textView x.WordUnderCursorOrEmpty) then _host.Beep()
+
+        member x.GoToGlobalDeclaration () = 
+            if not (_host.GoToGlobalDeclaration _textView x.WordUnderCursorOrEmpty) then _host.Beep()
+
+        member x.GoToFile () = 
+            let text = x.WordUnderCursorOrEmpty 
+            if not (_host.GoToFile text) then 
+                _statusUtil.OnError (Resources.NormalMode_CantFindFile text)
 
         member x.MoveToNextOccuranceOfWordAtCursor kind count =  x.MoveToNextWordCore kind count true
         member x.MoveToNextOccuranceOfPartialWordAtCursor kind count = x.MoveToNextWordCore kind count false

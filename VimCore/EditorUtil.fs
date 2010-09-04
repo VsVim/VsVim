@@ -8,7 +8,7 @@ open Microsoft.VisualStudio.Text.Outlining
 
 /// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
 /// include any Vim specific logic
-module internal SnapshotUtil = 
+module SnapshotUtil = 
     
     /// Get the last line in the ITextSnapshot.  Avoid pulling the entire buffer into memory
     /// slowly by using the index
@@ -30,8 +30,19 @@ module internal SnapshotUtil =
     /// Get the start point of the snapshot
     let GetStartPoint (tss:ITextSnapshot) = SnapshotPoint(tss, 0)
 
+    /// Get the full span of the buffer 
+    let GetFullSpan tss = 
+        let startPoint = GetStartPoint tss
+        let endPoint = GetEndPoint tss
+        SnapshotSpan(startPoint,endPoint)
+
     /// Is the Line Number valid
     let IsLineNumberValid (tss:ITextSnapshot) lineNumber = lineNumber >= 0 && lineNumber < tss.LineCount
+
+    /// Is the Span valid in this ITextSnapshot
+    let IsSpanValid (tss:ITextSnapshot) (span:Span) = 
+        let length = tss.Length
+        span.Start < tss.Length && span.End <= tss.Length
 
     /// Get a valid line for the specified number if it's valid and the last line if it's
     /// not
@@ -80,10 +91,37 @@ module internal SnapshotUtil =
         | SearchKind.Backward -> GetLinesBackwardCore tss startLine false
         | SearchKind.BackwardWithWrap -> GetLinesBackwardCore tss startLine true
         | _ -> failwith "Invalid enum value"
-    
+
+    /// Get the lines in the specified range
+    let GetLineRange snapshot startLineNumber endLineNumber = 
+        let count = endLineNumber - startLineNumber + 1
+        GetLines snapshot startLineNumber SearchKind.Forward
+        |> Seq.truncate count
+
 /// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
 /// include any Vim specific logic
-module internal SnapshotSpanUtil =
+module SnapshotSpanUtil =
+
+    /// Get the start point
+    let GetStartPoint (span:SnapshotSpan) = span.Start
+
+    /// Get the start position
+    let GetStartPosition (span:SnapshotSpan) = span.Start.Position
+
+    /// Get the end point
+    let GetEndPoint (span:SnapshotSpan) = span.End
+
+    /// Get the end position
+    let GetEndPosition (span:SnapshotSpan) = span.End.Position
+
+    /// Get the text of the span
+    let GetText (span:SnapshotSpan) = span.GetText()
+
+    /// Get the length of the span
+    let GetLength (span:SnapshotSpan) = span.Length
+
+    /// Get the raw Span
+    let GetSpan (span:SnapshotSpan) = span.Span
 
     /// Get all of the points on the specified SnapshotSpan.  Will not return the End point
     let GetPoints (span:SnapshotSpan) = 
@@ -126,16 +164,105 @@ module internal SnapshotSpanUtil =
     /// the span but instead the first point after the span
     let GetStartAndEndLine span = GetStartLine span,GetEndLine span
 
+    /// Get the number of lines in this SnapshotSpan
+    let GetLineCount span = 
+        let startLine,endLine = GetStartAndEndLine span
+        (endLine.LineNumber - startLine.LineNumber) + 1
+
+    /// Is this a multiline SnapshotSpan
+    let IsMultiline span = 
+        let startLine,endLine = GetStartAndEndLine span
+        startLine.LineNumber < endLine.LineNumber
+
     /// Gets the last point which is actually included in the span.  This is different than
     /// EndPoint which is the first point after the span
     let GetLastIncludedPoint (span:SnapshotSpan) =
         if span.Length = 0 then None
         else span.End.Subtract(1) |> Some
 
+    /// Extend the SnapshotSpan count lines downwards.  If the count exceeds the end of the
+    /// Snapshot it will extend to the end
+    let ExtendDown span lineCount = 
+        let startLine,endLine = GetStartAndEndLine span
+        let endLine = SnapshotUtil.GetLineOrLast span.Snapshot (endLine.LineNumber+lineCount)
+        SnapshotSpan(startLine.Start, endLine.End)
+
+    /// Extend the SnapshotSpan count lines downwards.  If the count exceeds the end of the
+    /// Snapshot it will extend to the end.  The resulting Span will include the line break
+    /// of the last line
+    let ExtendDownIncludingLineBreak span lineCount = 
+        let span = ExtendDown span lineCount
+        let endLine = GetEndLine span
+        SnapshotSpan(span.Start, endLine.EndIncludingLineBreak)
+
+    /// Extend the SnapshotSpan to be the full line at both the start and end points
+    let ExtendToFullLine span =
+        let startLine,endLine = GetStartAndEndLine span
+        SnapshotSpan(startLine.Start, endLine.End)
+
+    /// Extend the SnapshotSpan to be the full line at both the start and end points
+    let ExtendToFullLineIncludingLineBreak span =
+        let startLine,endLine = GetStartAndEndLine span
+        SnapshotSpan(startLine.Start, endLine.EndIncludingLineBreak)
+
+    /// Reduces the SnapshotSpan to the subspan of the first line
+    let ReduceToStartLine span = 
+        if IsMultiline span then 
+            let line = GetStartLine span
+            SnapshotSpan(span.Start, line.EndIncludingLineBreak)
+        else span
+
+    /// Reduces the SnapshotSpan to the subspan of the last line
+    let ReduceToEndLine span = 
+        if IsMultiline span then 
+            let line = GetEndLine span
+            SnapshotSpan(line.Start, span.End)
+        else span
+
+    /// Create an empty span at the given point
+    let Create (startPoint:SnapshotPoint) (endPoint:SnapshotPoint) = SnapshotSpan(startPoint,endPoint)
+
+    /// Create an empty span at the given point
+    let CreateEmpty point = SnapshotSpan(point, 0)
+
+    /// Create a SnapshotSpan from the given bounds
+    let CreateFromBounds (startPoint:SnapshotPoint) (endPoint:SnapshotPoint) = SnapshotSpan(startPoint,endPoint)
+
+    /// Get the ITextSnapshotLines included in this SnasphotSpan 
+    let GetLines span = 
+        let startLine = GetStartLine span
+        let count = GetLineCount span
+        SnapshotUtil.GetLines span.Snapshot startLine.LineNumber SearchKind.Forward
+        |> Seq.take count
 
 /// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
 /// include any Vim specific logic
-module internal SnapshotLineUtil =
+module NormalizedSnapshotSpanCollectionUtil =
+
+    /// Get the first item 
+    let GetFirst (col:NormalizedSnapshotSpanCollection) = col.[0]
+
+    /// Get the first item 
+    let GetLast (col:NormalizedSnapshotSpanCollection) = col.[col.Count-1]
+
+    /// Get the inclusive span 
+    let GetFullSpan col =
+        let first = GetFirst col
+        let last = GetLast col
+        SnapshotSpan(first.Start,last.End) 
+
+    let OfSeq (s:SnapshotSpan seq) = new NormalizedSnapshotSpanCollection(s)
+
+/// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
+/// include any Vim specific logic
+module VirtualSnapshotSpanUtil = 
+
+    /// Get the span 
+    let GetSnapshotSpan (span:VirtualSnapshotSpan) = span.SnapshotSpan
+
+/// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
+/// include any Vim specific logic
+module SnapshotLineUtil =
 
     /// Length of the line
     let GetLength (line:ITextSnapshotLine) = line.Length
@@ -148,6 +275,9 @@ module internal SnapshotLineUtil =
 
     /// Get the end point including the line break
     let GetEndIncludingLineBreak (line:ITextSnapshotLine) = line.EndIncludingLineBreak
+
+    /// Get the line number
+    let GetLineNumber (line:ITextSnapshotLine) = line.LineNumber
 
     let GetExtent (line:ITextSnapshotLine) = line.Extent
 
@@ -165,9 +295,18 @@ module internal SnapshotLineUtil =
     /// Get the points on the particular line including the line break in reverse
     let GetPointsIncludingLineBreakBackward line = GetExtentIncludingLineBreak line |> SnapshotSpanUtil.GetPointsBackward
 
+    /// Get the length of the line break
+    let GetLineBreakLength (line:ITextSnapshotLine) = line.LengthIncludingLineBreak - line.Length
+
+    /// Get the line break span 
+    let GetLineBreakSpan line = 
+        let point = GetEnd line
+        let length = GetLineBreakLength line
+        SnapshotSpan(point,length)
+
 /// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
 /// include any Vim specific logic
-module internal SnapshotPointUtil =
+module SnapshotPointUtil =
 
     /// Get the position
     let GetPosition (point:SnapshotPoint) = point.Position
@@ -414,9 +553,35 @@ module internal SnapshotPointUtil =
             let endPoint = SnapshotPoint(line.Snapshot, endPosition)
             SnapshotSpan(point, endPoint)
 
+    /// Add the given coun to the SnapshotPoint
+    let Add count (point:SnapshotPoint) = point.Add(count)
+
+    /// Add 1 to the given SnapshotPoint
+    let AddOne (point:SnapshotPoint) = point.Add(1)
+
+    /// Try and add count to the SnapshotPoint.  Will return None if this causes
+    /// the point to go past the end of the Snapshot
+    let TryAdd point count = 
+        let pos = (GetPosition point) + count
+        let snapshot = GetSnapshot point
+        if pos > snapshot.Length then None
+        else point.Add(count) |> Some
+
+    /// Maybe add 1 to the given point.  Will return the original point
+    /// if it's the end of the Snapshot
+    let TryAddOne point = TryAdd point 1
+
+module VirtualSnapshotPointUtil =
+    
+    let OfPoint (point:SnapshotPoint) = VirtualSnapshotPoint(point)
+
+    let GetPosition (point:VirtualSnapshotPoint) = point.Position.Position
+
+    let GetContainingLine (point:VirtualSnapshotPoint) = SnapshotPointUtil.GetContainingLine point.Position
+
 /// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
 /// include any Vim specific logic
-module internal TextViewUtil =
+module TextViewUtil =
 
     let GetSnapshot (textView:ITextView) = textView.TextSnapshot
 
@@ -425,6 +590,10 @@ module internal TextViewUtil =
     let GetCaretPoint (textView:ITextView) = textView.Caret.Position.BufferPosition
 
     let GetCaretLine textView = GetCaretPoint textView |> SnapshotPointUtil.GetContainingLine
+
+    let GetCaretLineSpan textView = textView |> GetCaretLine |> SnapshotLineUtil.GetExtent
+
+    let GetCaretLineSpanIncludingLineBreak textView = textView |> GetCaretLine |> SnapshotLineUtil.GetExtentIncludingLineBreak
 
     let GetCaretPointAndLine textView = (GetCaretPoint textView),(GetCaretLine textView)
 
@@ -473,4 +642,54 @@ module internal TextViewUtil =
         let tss = GetSnapshot textView
         let point = SnapshotPoint(tss, pos)
         MoveCaretToPoint textView point 
+
+module TextSelectionUtil = 
+
+    /// Returns the SnapshotSpan which represents the total of the selection.  This is a SnapshotSpan of the left
+    /// most and right most point point in any of the selected spans 
+    /// TODO: Delete this
+    let GetOverarchingSelectedSpan (selection:ITextSelection) = 
+        if selection.IsEmpty || 0 = selection.SelectedSpans.Count then None
+        else
+            let spans = selection.SelectedSpans
+            let min = spans |> Seq.map SnapshotSpanUtil.GetStartPosition |> Seq.min
+            let max = spans |> Seq.map SnapshotSpanUtil.GetEndPosition |> Seq.max
+            let span = Span.FromBounds(min,max)
+            let snapshot = spans.Item(0).Snapshot
+            SnapshotSpan(snapshot, span) |> Some
+
+    /// Gets the selection of the editor
+    let GetStreamSelectionSpan (selection:ITextSelection) = selection.StreamSelectionSpan
+
+module EditorOptionsUtil =
+
+    /// Get the option value if it exists
+    let GetOptionValue (opts:IEditorOptions) (key:EditorOptionKey<'a>) =
+        try
+            opts.GetOptionValue(key) |> Some
+        with
+            | :? System.ArgumentException-> None
+            | :? System.InvalidOperationException -> None
+
+    let GetOptionValueOrDefault opts key defaultValue = 
+        match GetOptionValue opts key with
+        | Some(value) -> value
+        | None -> defaultValue
+
+module TrackingPointUtil =
+    
+    let GetPoint (snapshot:ITextSnapshot) (point:ITrackingPoint) =
+        try
+            point.GetPoint(snapshot) |> Some
+        with
+            | :? System.ArgumentException -> None
+
+module TrackingSpanUtil =
+
+    let GetSpan (snapshot:ITextSnapshot) (span:ITrackingSpan) =
+        try 
+            span.GetSpan(snapshot) |> Some
+        with
+            | :? System.ArgumentException -> None
+
 

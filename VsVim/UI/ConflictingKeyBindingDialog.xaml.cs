@@ -1,34 +1,58 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Linq;
-using System.Text;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 using Microsoft.VisualStudio.PlatformUI;
-using Vim;
 
 namespace VsVim.UI
 {
     /// <summary>
     /// Interaction logic for ConflictingKeyBindingDialog.xaml
     /// </summary>
-    public partial class ConflictingKeyBindingDialog : DialogWindow 
+    public partial class ConflictingKeyBindingDialog : DialogWindow
     {
-        public ConflictingKeyBindingControl ConflictingKeyBindingControl
-        {
-            get { return _bindingControl; }
-        }
+        private readonly ObservableCollection<KeyBindingData> _keyBindingList = new ObservableCollection<KeyBindingData>();
+        private readonly CommandKeyBindingSnapshot _snapshot;
 
-        public ConflictingKeyBindingDialog()
+        public ConflictingKeyBindingDialog(CommandKeyBindingSnapshot snapshot)
         {
             InitializeComponent();
+
+            _snapshot = snapshot;
+            ComputeKeyBindings();
+
+            BindingsListBox.ItemsSource = _keyBindingList;
+            BindingsListBox.Items.SortDescriptions.Add(new SortDescription("KeyName", ListSortDirection.Ascending));
+        }
+
+        private void ComputeKeyBindings()
+        {
+            // This snapshot contains a list of active keys, and keys which are still conflicting. We will group all
+            // bindings by the initial character, and will consider the entire group as being handled by VsVim as long
+            // as one is being handled.
+
+            var handledByVsVim = _snapshot.Removed.ToLookup(binding => binding.KeyBinding.FirstKeyStroke);
+            var handledByVs = _snapshot.Conflicting.ToLookup(binding => binding.KeyBinding.FirstKeyStroke);
+
+            var allFirstKeys = handledByVsVim.Select(group => group.Key)
+                               .Union(handledByVs.Select(group => group.Key));
+
+            foreach (var firstKey in allFirstKeys)
+            {
+                KeyBindingData data = new KeyBindingData(handledByVsVim[firstKey].Union(handledByVs[firstKey]));
+                data.HandledByVsVim = handledByVsVim.Contains(firstKey);
+                _keyBindingList.Add(data);
+            }
+        }
+
+        private void OnEnableAllVimKeysClick(object sender, RoutedEventArgs e)
+        {
+            _keyBindingList.ForEach(x => x.HandledByVsVim = true);
+        }
+
+        private void OnDisableAllVimKeysClick(object sender, RoutedEventArgs e)
+        {
+            _keyBindingList.ForEach(x => x.HandledByVsVim = false);
         }
 
         private void OnCancelClick(object sender, RoutedEventArgs e)
@@ -39,49 +63,40 @@ namespace VsVim.UI
         private void OnOkClick(object sender, RoutedEventArgs e)
         {
             DialogResult = true;
+            UpdateKeyBindings();
         }
 
-        public static bool DoShow(CommandKeyBindingSnapshot snapshot)
+        void UpdateKeyBindings()
         {
-            var window = new ConflictingKeyBindingDialog();
-            var removed = window.ConflictingKeyBindingControl.RemovedKeyBindingData;
-            removed.AddRange(snapshot.Removed.Select(x => new KeyBindingData(x)));
-            var current = window.ConflictingKeyBindingControl.ConflictingKeyBindingData;
-            current.AddRange(snapshot.Conflicting.Select(x => new KeyBindingData(x)));
-            var ret = window.ShowModal();
-            if (ret.HasValue && ret.Value)
+            var keyBindingsByHandled = _keyBindingList.ToLookup(data => data.HandledByVsVim);
+
+            // For commands being handled by VsVim, we shall remove any other bindings
+            foreach (var cur in _keyBindingList.Where(binding => binding.HandledByVsVim).SelectMany(data => data.Bindings))
             {
-                // Remove all of the removed bindings
-                foreach (var cur in removed)
+                var tuple = _snapshot.TryGetCommand(cur.Name);
+                if (tuple.Item1)
                 {
-                    var tuple = snapshot.TryGetCommand(cur.Name);
-                    if ( tuple.Item1 )
-                    {
-                        tuple.Item2.SafeResetBindings();
-                    }
+                    tuple.Item2.SafeResetBindings();
                 }
-
-                // Restore all of the conflicting ones
-                foreach (var cur in current)
-                {
-                    KeyBinding binding;
-                    var tuple = snapshot.TryGetCommand(cur.Name);
-                    if ( tuple.Item1 && KeyBinding.TryParse(cur.Keys, out binding))
-                    {
-                        tuple.Item2.SafeSetBindings(binding);
-                    }
-                }
-
-                var settings = Settings.Settings.Default;
-                settings.RemovedBindings = 
-                    removed
-                    .Select(x => new Settings.CommandBindingSetting() { Name = x.Name, CommandString = x.Keys })
-                    .ToArray();
-                settings.HaveUpdatedKeyBindings = true;
-                settings.Save();
             }
 
-            return ret.HasValue && ret.Value;
+            // Restore all commands we are not handling
+            foreach (var cur in _keyBindingList.Where(binding => !binding.HandledByVsVim).SelectMany(data => data.Bindings))
+            {
+                var tuple = _snapshot.TryGetCommand(cur.Name);
+                if (tuple.Item1)
+                {
+                    tuple.Item2.SafeSetBindings(cur.KeyBinding);
+                }
+            }
+
+            var settings = Settings.Settings.Default;
+            settings.RemovedBindings =
+                _keyBindingList.Where(binding => binding.HandledByVsVim).SelectMany(data => data.Bindings)
+                .Select(x => new Settings.CommandBindingSetting() { Name = x.Name, CommandString = x.KeyBinding.CommandString })
+                .ToArray();
+            settings.HaveUpdatedKeyBindings = true;
+            settings.Save();
         }
     }
 }

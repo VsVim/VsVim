@@ -3,7 +3,6 @@ using System.ComponentModel.Composition;
 using System.Linq;
 using System.Media;
 using EnvDTE;
-using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Editor;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Text;
@@ -24,10 +23,10 @@ namespace VsVim
     {
         internal const string CommandNameGoToDefinition = "Edit.GoToDefinition";
 
+        private readonly ITextManager _textManager;
         private readonly IVsEditorAdaptersFactoryService _editorAdaptersFactoryService;
         private readonly ITextBufferUndoManagerProvider _undoManagerProvider;
         private readonly _DTE _dte;
-        private readonly IVsTextManager _textManager;
 
         internal _DTE DTE
         {
@@ -38,12 +37,13 @@ namespace VsVim
         internal VsVimHost(
             ITextBufferUndoManagerProvider undoManagerProvider,
             IVsEditorAdaptersFactoryService editorAdaptersFactoryService,
+            ITextManager textManager,
             SVsServiceProvider serviceProvider)
         {
             _undoManagerProvider = undoManagerProvider;
             _editorAdaptersFactoryService = editorAdaptersFactoryService;
             _dte = (_DTE)serviceProvider.GetService(typeof(_DTE));
-            _textManager = (IVsTextManager)serviceProvider.GetService(typeof(SVsTextManager));
+            _textManager = textManager;
         }
 
         private void UpdateStatus(string text)
@@ -51,7 +51,7 @@ namespace VsVim
             _dte.StatusBar.Text = text;
         }
 
-        private bool SafeExecuteCommand(string command, string args = "" )
+        private bool SafeExecuteCommand(string command, string args = "")
         {
             try
             {
@@ -68,18 +68,56 @@ namespace VsVim
         /// The C++ project system requires that the target of GoToDefinition be passed
         /// as an argument to the command.  
         /// </summary>
-        private bool GoToDefinitionCPlusPlus(IWpfTextView textView)
+        private bool GoToDefinitionCPlusPlus(ITextView textView, string target)
         {
-            var caretPoint = textView.Caret.Position.BufferPosition;
-            var span = TssUtil.FindCurrentFullWordSpan(caretPoint, WordKind.NormalWord);
-            if (span.IsSome())
+            if (target == null)
             {
-                return SafeExecuteCommand(CommandNameGoToDefinition, span.Value.GetText());
+                var caretPoint = textView.Caret.Position.BufferPosition;
+                var span = TssUtil.FindCurrentFullWordSpan(caretPoint, WordKind.NormalWord);
+                target = span.IsSome()
+                    ? span.Value.GetText()
+                    : null;
+            }
+
+            if (target != null)
+            {
+                return SafeExecuteCommand(CommandNameGoToDefinition, target);
             }
             else
             {
                 return SafeExecuteCommand(CommandNameGoToDefinition);
             }
+        }
+
+        private bool GoToDefinitionCore(ITextView textView, string target)
+        {
+            if (textView.TextBuffer.ContentType.IsCPlusPlus())
+            {
+                return GoToDefinitionCPlusPlus(textView, target);
+            }
+
+            return SafeExecuteCommand(CommandNameGoToDefinition);
+        }
+
+        private bool OpenFileCore(string fileName)
+        {
+            if (SafeExecuteCommand("File.OpenFile", fileName))
+            {
+                return true;
+            }
+
+            var names = _dte.GetProjects().SelectMany(x => x.GetProjecItems()).Select(x => x.Name).ToList();
+            var list = _dte.GetProjectItems(fileName);
+
+            if (list.Any())
+            {
+                var item = list.First();
+                var result = item.Open(EnvDTE.Constants.vsViewKindPrimary);
+                result.Activate();
+                return true;
+            }
+
+            return false;
         }
 
         #region IVimHost
@@ -89,31 +127,9 @@ namespace VsVim
             SystemSounds.Beep.Play();
         }
 
-        void IVimHost.OpenFile(string file)
-        {
-            var names = _dte.GetProjects().SelectMany(x => x.GetProjecItems()).Select(x => x.Name).ToList();
-            var list = _dte.GetProjectItems(file);
-
-            if (list.Any())
-            {
-                var item = list.First();
-                var result = item.Open(EnvDTE.Constants.vsViewKindPrimary);
-                result.Activate();
-                return;
-            }
-
-            Console.Beep();
-        }
-
         bool IVimHost.GoToDefinition()
         {
-            var tuple = _textManager.TryGetActiveTextView(_editorAdaptersFactoryService);
-            if (tuple.Item1 && tuple.Item2.TextBuffer.ContentType.IsCPlusPlus())
-            {
-                return GoToDefinitionCPlusPlus(tuple.Item2);
-            }
-
-            return SafeExecuteCommand(CommandNameGoToDefinition);
+            return GoToDefinitionCore(_textManager.ActiveTextView, null);
         }
 
         bool IVimHost.GoToMatch()
@@ -128,18 +144,7 @@ namespace VsVim
 
         bool IVimHost.NavigateTo(VirtualSnapshotPoint point)
         {
-            var snapshotLine = point.Position.GetContainingLine();
-            var column = point.Position.Position - snapshotLine.Start.Position;
-            var vsBuffer = _editorAdaptersFactoryService.GetBufferAdapter(point.Position.Snapshot.TextBuffer);
-            var viewGuid = VSConstants.LOGVIEWID_Code;
-            var hr = _textManager.NavigateToLineAndColumn(
-                vsBuffer,
-                ref viewGuid,
-                snapshotLine.LineNumber,
-                column,
-                snapshotLine.LineNumber,
-                column);
-            return ErrorHandler.Succeeded(hr);
+            return _textManager.NavigateTo(point);
         }
 
         string IVimHost.GetName(ITextBuffer buffer)
@@ -152,9 +157,9 @@ namespace VsVim
             return vsTextLines.GetFileName();
         }
 
-        void IVimHost.SaveCurrentFile()
+        void IVimHost.Save(ITextView textView)
         {
-            SafeExecuteCommand("File.SaveSelectedItems");
+            _textManager.Save(textView);
         }
 
         void IVimHost.SaveCurrentFileAs(string fileName)
@@ -164,17 +169,30 @@ namespace VsVim
 
         void IVimHost.SaveAllFiles()
         {
-            SafeExecuteCommand("File.SaveAll");
+            var all = _textManager.TextViews;
+            foreach (var textView in all)
+            {
+                _textManager.Save(textView);
+            }
         }
 
-        void IVimHost.CloseCurrentFile(bool checkDirty)
+        void IVimHost.Close(ITextView textView, bool checkDirty)
         {
-            SafeExecuteCommand("File.Close");
+            _textManager.CloseBuffer(textView, checkDirty);
         }
 
         void IVimHost.CloseAllFiles(bool checkDirty)
         {
-            SafeExecuteCommand("Window.CloseAllDocuments");
+            var all = _textManager.TextViews.ToList();
+            foreach (var textView in all)
+            {
+                _textManager.CloseBuffer(textView, checkDirty);
+            }
+        }
+
+        void IVimHost.CloseView(ITextView textView, bool checkDirty)
+        {
+            _textManager.CloseView(textView, checkDirty);
         }
 
         void IVimHost.GoToNextTab(int count)
@@ -198,6 +216,39 @@ namespace VsVim
         void IVimHost.BuildSolution()
         {
             SafeExecuteCommand("Build.BuildSolution");
+        }
+
+        void IVimHost.SplitView(ITextView textView)
+        {
+            _textManager.SplitView(textView);
+        }
+
+        void IVimHost.MoveViewDown(ITextView textView)
+        {
+            _textManager.MoveViewDown(textView);
+        }
+
+        void IVimHost.MoveViewUp(ITextView textView)
+        {
+            _textManager.MoveViewUp(textView);
+        }
+
+        bool IVimHost.GoToGlobalDeclaration(ITextView textView, string target)
+        {
+            return GoToDefinitionCore(textView, target);
+        }
+
+        bool IVimHost.GoToLocalDeclaration(ITextView textView, string target)
+        {
+            // This is technically incorrect as it should prefer local declarations. However 
+            // there is currently no better way in Visual Studio.  Added this method though
+            // so it's easier to plug in later should such an API become available
+            return GoToDefinitionCore(textView, target);
+        }
+
+        bool IVimHost.GoToFile(string fileName)
+        {
+            return OpenFileCore(fileName);
         }
 
         #endregion

@@ -1,11 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using Microsoft.VisualStudio.Text.Editor;
 using NUnit.Framework;
 using Vim;
-using Microsoft.VisualStudio.Text.Editor;
-using VimCore.Test.Utils;
+using Vim.UnitTest;
 
 namespace VimCore.Test
 {
@@ -17,7 +13,7 @@ namespace VimCore.Test
 
         public void CreateBuffer(params string[] lines)
         {
-            var tuple = Utils.EditorUtil.CreateViewAndOperations(lines);
+            var tuple = EditorUtil.CreateViewAndOperations(lines);
             _textView = tuple.Item1;
             var service = EditorUtil.FactoryService;
             _buffer = service.vim.CreateBuffer(_textView);
@@ -34,7 +30,7 @@ namespace VimCore.Test
         }
 
         [Test]
-        public void dot_Repeated()
+        public void dot_Repeated1()
         {
             CreateBuffer("the fox chased the bird");
             _buffer.ProcessInputAsString("dw");
@@ -43,6 +39,53 @@ namespace VimCore.Test
             Assert.AreEqual("chased the bird", _textView.TextSnapshot.GetText());
             _buffer.ProcessInputAsString(".");
             Assert.AreEqual("the bird", _textView.TextSnapshot.GetText());
+        }
+
+        [Test]
+        public void dot_LinkedTextChange1()
+        {
+            CreateBuffer("the fox chased the bird");
+            _buffer.ProcessInputAsString("cw");
+            _buffer.TextBuffer.Insert(0, "hey ");
+            _buffer.Process(KeyInputUtil.VimKeyToKeyInput(VimKey.Escape));
+            _textView.MoveCaretTo(4);
+            _buffer.Process(KeyInputUtil.CharToKeyInput('.'));
+            Assert.AreEqual("hey hey fox chased the bird", _textView.TextSnapshot.GetText());
+        }
+
+        [Test]
+        public void dot_LinkedTextChange2()
+        {
+            CreateBuffer("the fox chased the bird");
+            _buffer.ProcessInputAsString("cw");
+            _buffer.TextBuffer.Insert(0, "hey");
+            _buffer.Process(KeyInputUtil.VimKeyToKeyInput(VimKey.Escape));
+            _textView.MoveCaretTo(4);
+            _buffer.Process(KeyInputUtil.CharToKeyInput('.'));
+            Assert.AreEqual("hey hey chased the bird", _textView.TextSnapshot.GetText());
+        }
+
+        [Test]
+        public void dot_LinkedTextChange3()
+        {
+            CreateBuffer("the fox chased the bird");
+            _buffer.ProcessInputAsString("cw");
+            _buffer.TextBuffer.Insert(0, "hey");
+            _buffer.Process(KeyInputUtil.VimKeyToKeyInput(VimKey.Escape));
+            _textView.MoveCaretTo(4);
+            _buffer.Process(KeyInputUtil.CharToKeyInput('.'));
+            _buffer.Process(KeyInputUtil.CharToKeyInput('.'));
+            Assert.AreEqual("hey hehey chased the bird", _textView.TextSnapshot.GetText());
+        }
+
+        [Test]
+        [Description("See issue 288")]
+        public void dj_1()
+        {
+            CreateBuffer("abc", "def", "ghi", "jkl");
+            _buffer.ProcessInputAsString("dj");
+            Assert.AreEqual("ghi", _textView.GetLine(0).GetText());
+            Assert.AreEqual("jkl", _textView.GetLine(1).GetText());
         }
     }
 }

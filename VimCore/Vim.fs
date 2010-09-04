@@ -9,10 +9,12 @@ open Microsoft.VisualStudio.Language.Intellisense
 open Microsoft.VisualStudio.Text.Classification
 open System.ComponentModel.Composition
 open System.IO
+open Vim.Modes
 
 /// Default implementation of IVim 
 [<Export(typeof<IVimBufferFactory>)>]
 type internal VimBufferFactory
+
     [<ImportingConstructor>]
     (
         _host : IVimHost,
@@ -23,14 +25,20 @@ type internal VimBufferFactory
         _textSearchService : ITextSearchService,
         _textStructureNavigatorSelectorService : ITextStructureNavigatorSelectorService,
         _tlcService : ITrackingLineColumnService,
-        _undoManagerProvider : ITextBufferUndoManagerProvider ) =
+        _undoManagerProvider : ITextBufferUndoManagerProvider,
+        _foldManagerFactory : IFoldManagerFactory ) =
+
+    let _motionCaptureGlobalData = MotionCaptureGlobalData() :> IMotionCaptureGlobalData
+    let _visualSpanCalculator = VisualSpanCalculator() :> IVisualSpanCalculator
 
     member x.CreateBuffer (vim:IVim) view = 
         let editOperations = _editorOperationsFactoryService.GetEditorOperations(view)
+        let editOptions = _editorOptionsFactoryService.GetOptions(view)
         let motionUtil = MotionUtil(view, vim.Settings) :> IMotionUtil
-        let capture = MotionCapture(view, motionUtil) :> IMotionCapture
+        let capture = MotionCapture(vim.VimHost, view, motionUtil, _motionCaptureGlobalData) :> IMotionCapture
         let outlining = _outliningManagerService.GetOutliningManager(view)
         let jumpList = JumpList(_tlcService) :> IJumpList
+        let foldManager = _foldManagerFactory.GetFoldManager(view.TextBuffer)
         let localSettings = LocalSettings(vim.Settings, view) :> IVimLocalSettings
         let bufferRaw = 
             VimBuffer( 
@@ -39,6 +47,7 @@ type internal VimBufferFactory
                 jumpList,
                 localSettings)
         let buffer = bufferRaw :> IVimBuffer
+        let selectionChangeTracker = SelectionChangeTracker(buffer)
 
         let statusUtil = x.CreateStatusUtil bufferRaw 
         let undoRedoOperations = 
@@ -47,24 +56,33 @@ type internal VimBufferFactory
                 if manager = null then None
                 else manager.TextBufferUndoHistory |> Some
             UndoRedoOperations(statusUtil, history) :> IUndoRedoOperations
-        let createCommandRunner() = CommandRunner (view, vim.RegisterMap, capture,statusUtil) :>ICommandRunner
         let wordNav = x.CreateTextStructureNavigator view.TextBuffer WordKind.NormalWord
+        let operationsData = { 
+            VimHost=_host;
+            TextView=view;
+            EditorOperations=editOperations;
+            EditorOptions=editOptions;
+            OutliningManager=outlining;
+            JumpList=jumpList;
+            LocalSettings=localSettings;
+            UndoRedoOperations=undoRedoOperations;
+            StatusUtil=statusUtil;
+            KeyMap=vim.KeyMap;
+            Navigator=wordNav;
+            FoldManager=foldManager }
+
+        let createCommandRunner() = CommandRunner (view, vim.RegisterMap, capture,statusUtil) :>ICommandRunner
         let broker = _completionWindowBrokerFactoryService.CreateDisplayWindowBroker view
         let bufferOptions = _editorOptionsFactoryService.GetOptions(view.TextBuffer)
         let normalIncrementalSearch = Vim.Modes.Normal.IncrementalSearch(view, outlining, localSettings, wordNav, vim.SearchService) :> IIncrementalSearch
-        let normalOpts = Modes.Normal.DefaultOperations(view, bufferOptions, editOperations, outlining, _host, statusUtil, localSettings,wordNav,jumpList, normalIncrementalSearch, undoRedoOperations) :> Modes.Normal.IOperations
-        let commandOpts = Modes.Command.DefaultOperations(view, editOperations, outlining, _host, statusUtil, jumpList, localSettings, vim.KeyMap, undoRedoOperations) :> Modes.Command.IOperations
+        let normalOpts = Modes.Normal.DefaultOperations(operationsData, normalIncrementalSearch) :> Vim.Modes.Normal.IOperations
+        let commandOpts = Modes.Command.DefaultOperations(operationsData) :> Modes.Command.IOperations
         let commandProcessor = Modes.Command.CommandProcessor(buffer, commandOpts, statusUtil, FileSystem() :> IFileSystem) :> Modes.Command.ICommandProcessor
-        let insertOpts = Modes.Insert.DefaultOperations(view, editOperations,outlining,_host, jumpList, localSettings, undoRedoOperations) :> Modes.ICommonOperations
+        let insertOpts = Modes.Insert.DefaultOperations(operationsData) :> Modes.ICommonOperations
         let visualOptsFactory kind = 
-            let mode = 
-                match kind with 
-                | ModeKind.VisualBlock -> Modes.Visual.SelectionMode.Block
-                | ModeKind.VisualCharacter -> Modes.Visual.SelectionMode.Character
-                | ModeKind.VisualLine -> Modes.Visual.SelectionMode.Line
-                | _ -> invalidArg "_kind" "Invalid kind for Visual Mode"
-            let tracker = Modes.Visual.SelectionTracker(view,mode) :> Modes.Visual.ISelectionTracker
-            let opts = Modes.Visual.DefaultOperations(view, editOperations, outlining, _host, jumpList, localSettings,undoRedoOperations,kind, statusUtil) :> Modes.Visual.IOperations
+            let kind = VisualKind.ofModeKind kind |> Option.get
+            let tracker = Modes.Visual.SelectionTracker(view,kind) :> Modes.Visual.ISelectionTracker
+            let opts = Modes.Insert.DefaultOperations(operationsData ) :> Modes.ICommonOperations
             (tracker, opts)
 
         let visualModeList =
@@ -78,13 +96,14 @@ type internal VimBufferFactory
         // Normal mode values
         let modeList = 
             [
-                ((Modes.Normal.NormalMode(buffer, normalOpts, normalIncrementalSearch,statusUtil,broker, createCommandRunner(),capture)) :> IMode);
+                ((Modes.Normal.NormalMode(buffer, normalOpts, normalIncrementalSearch,statusUtil,broker, createCommandRunner(),capture, _visualSpanCalculator)) :> IMode);
                 ((Modes.Command.CommandMode(buffer, commandProcessor)) :> IMode);
-                ((Modes.Insert.InsertMode(buffer,insertOpts,broker)) :> IMode);
+                ((Modes.Insert.InsertMode(buffer,insertOpts,broker, editOptions,false)) :> IMode);
+                ((Modes.Insert.InsertMode(buffer,insertOpts,broker, editOptions,true)) :> IMode);
                 (DisabledMode(buffer) :> IMode);
             ] @ visualModeList
         modeList |> List.iter (fun m -> bufferRaw.AddMode m)
-        buffer.SwitchMode ModeKind.Normal |> ignore
+        buffer.SwitchMode ModeKind.Normal ModeArgument.None |> ignore
         bufferRaw
 
     member private x.CreateTextStructureNavigator textBuffer wordKind =
@@ -124,12 +143,14 @@ type internal Vim
         bufferFactoryService : IVimBufferFactory,
         tlcService : ITrackingLineColumnService,
         [<ImportMany>] bufferCreationListeners : Lazy<IVimBufferCreationListener> seq,
-        [<Import>] search : ITextSearchService ) =
-        let tracker = ChangeTracker() 
+        search : ITextSearchService,
+        textChangeTrackerFactory : ITextChangeTrackerFactory ) =
+        let markMap = MarkMap(tlcService)
+        let tracker = ChangeTracker(textChangeTrackerFactory)
         let globalSettings = GlobalSettings() :> IVimGlobalSettings
         let listeners = 
-            new Lazy<IVimBufferCreationListener>( fun () -> tracker :> IVimBufferCreationListener)
-            |> Seq.singleton
+            [tracker :> IVimBufferCreationListener; markMap :> IVimBufferCreationListener]
+            |> Seq.map (fun t -> new Lazy<IVimBufferCreationListener>(fun () -> t))
             |> Seq.append bufferCreationListeners 
             |> List.ofSeq
         Vim(
@@ -138,7 +159,7 @@ type internal Vim
             listeners,
             globalSettings,
             RegisterMap() :> IRegisterMap,
-            MarkMap(tlcService) :> IMarkMap,
+            markMap :> IMarkMap,
             KeyMap() :> IKeyMap,
             tracker :> IChangeTracker,
             SearchService(search, globalSettings) :> ISearchService)

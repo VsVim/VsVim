@@ -61,7 +61,7 @@ module internal Utils =
         LanguagePrimitives.EnumOfValue value
 
     /// Get the declared values of the specified enumeration
-    let GetEnumValues<'T when 'T : enum<'T>>() : 'T seq=
+    let GetEnumValues<'T when 'T : enum<int>>() : 'T seq=
         System.Enum.GetValues(typeof<'T>) |> Seq.cast<'T>
 
     /// Create a regex.  Returns None if the regex has invalid characters
@@ -105,6 +105,13 @@ module internal ListUtil =
             let _,tail = l |> divide
             skip (count-1) tail
 
+    let rec skipWhile predicate l = 
+        match l with
+        | h::t -> 
+            if predicate h then skipWhile predicate t
+            else l
+        | [] -> l
+
     let rec contentsEqual left right = 
         if List.length left <> List.length right then false
         else
@@ -124,6 +131,7 @@ module internal ListUtil =
             if h = value then true
             else contains value t
         | [] -> false
+
         
 module internal SeqUtil =
     
@@ -188,6 +196,16 @@ module internal SeqUtil =
                 | None -> ()
         }
 
+    /// Filters the list removing all of the first tuple arguments which are None
+    let filterToSome2 (sequence : ('a option * 'b) seq) =
+        seq { 
+            for cur in sequence do
+                let first,second = cur
+                match first with
+                | Some(value) -> yield (value,second)
+                | None -> ()
+        }
+
     let contentsEqual (left:'a seq) (right:'a seq) = 
         use leftEnumerator = left.GetEnumerator()        
         use rightEnumerator = right.GetEnumerator()
@@ -206,7 +224,28 @@ module internal SeqUtil =
                 else false
 
         areEqual
-            
+
+    let takeMax count (sequence:'a seq) = 
+        let i = ref 0
+        sequence |> Seq.takeWhile (fun _ -> 
+            i := !i + 1
+            if !i <= count then true
+            else false ) |> List.ofSeq
+
+    /// Skip's a maximum of count elements.  If there are more than
+    /// count elements in the sequence then an empty sequence will be 
+    /// returned
+    let skipMax count (sequence:'a seq) = 
+        let inner count = 
+            seq {
+                let count = ref count
+                use e = sequence.GetEnumerator()
+                while !count > 0 && e.MoveNext() do
+                    count := !count - 1
+                while e.MoveNext() do
+                    yield e.Current }
+        inner count
+
 module internal MapUtil =
 
     /// Get the set of keys in the Map
@@ -215,6 +254,7 @@ module internal MapUtil =
 module internal CharUtil =
     let IsDigit x = System.Char.IsDigit(x)
     let IsWhiteSpace x = System.Char.IsWhiteSpace(x)
+    let IsNotWhiteSpace x = not (System.Char.IsWhiteSpace(x))
     let IsLetter x = System.Char.IsLetter(x)
     let IsUpper x = System.Char.IsUpper(x)
     let IsLower x = System.Char.IsLower(x)
@@ -222,6 +262,16 @@ module internal CharUtil =
     let ToLower x = System.Char.ToLower(x)
     let ToUpper x = System.Char.ToUpper(x)
     let ChangeCase x = if IsUpper x then ToLower x else ToUpper x
+    let LettersLower = ['a'..'z']
+    let LettersUpper = ['A'..'Z']
+    let Letters = Seq.append LettersLower LettersUpper 
+    let Digits = ['0'..'9']
+    let IsEqual left right = left = right
+    let IsEqualIgnoreCase left right = 
+        let func c = if IsLetter c then ToLower c else c
+        let left = func left
+        let right  = func right
+        left = right
 
     let (|WhiteSpace|NonWhiteSpace|) char =
         if IsWhiteSpace char then
@@ -242,3 +292,46 @@ module internal NullableUtil =
             Some x.Value
         else
             None
+
+module internal OptionUtil =
+    
+    /// Combine an option with another value.  If the option has no value then the result
+    /// is None.  If the option has a value the result is an Option of a tuple of the original
+    /// value and the passed in one
+    let combine opt value =
+        match opt with
+        | Some(optValue) -> Some (optValue,value)
+        | None -> None
+
+    /// Combine an option with another value.  Same as combine but takes a tuple'd argument
+    let combine2 (opt,value) = combine opt value
+
+    /// Combine an option with another value.  If the option has no value then the result
+    /// is None.  If the option has a value the result is an Option of a tuple of the original
+    /// value and the passed in one
+    let combineRev value opt =
+        match opt with
+        | Some(optValue) -> Some (value, optValue)
+        | None -> None
+
+    /// Combine an option with another value.  Same as combine but takes a tuple'd argument
+    let combineRev2 (value,opt) = combine opt value
+
+    /// Combine two options into a single option.  Only some if both are some
+    let combineBoth left right =
+        match left,right with
+        | Some(left),Some(right) -> Some(left,right)
+        | Some(_),None -> None
+        | None,Some(_) -> None
+        | None,None -> None
+
+    /// Combine two options into a single option.  Only some if both are some
+    let combineBoth2 (left,right) = combineBoth left right
+
+    /// Get the value or the provided default
+    let getOrDefault defaultValue opt =
+        match opt with 
+        | Some(value) -> value
+        | None -> defaultValue
+
+

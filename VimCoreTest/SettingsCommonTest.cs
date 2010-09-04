@@ -6,6 +6,7 @@ using NUnit.Framework;
 using Vim;
 using GlobalSettings = Vim.GlobalSettings;
 using Vim.Extensions;
+using Vim.UnitTest;
 
 namespace VimCore.Test
 {

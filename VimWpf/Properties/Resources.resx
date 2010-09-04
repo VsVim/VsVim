@@ -120,6 +120,9 @@
   <data name="InsertBanner" xml:space="preserve">
     <value>-- INSERT --</value>
   </data>
+  <data name="ReplaceBanner" xml:space="preserve">
+    <value>-- REPLACE --</value>
+  </data>
   <data name="VisualBlockBanner" xml:space="preserve">
     <value>-- VISUALBLOCK --</value>
   </data>

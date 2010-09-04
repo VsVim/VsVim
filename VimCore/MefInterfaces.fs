@@ -78,3 +78,61 @@ type IVimBufferCreationListener =
     /// Called whenever an IVimBuffer is created
     abstract VimBufferCreated : IVimBuffer -> unit
 
+/// Supports the creation and deletion of folds within a ITextBuffer
+type IFoldManager = 
+
+    /// Associated ITextBuffer
+    abstract TextBuffer : ITextBuffer
+
+    /// Gets snapshot spans for all of the currently existing folds
+    abstract Folds : SnapshotSpan seq
+
+    /// Create a fold for the given Span.  The fold will actually be for the
+    /// entire lines at the start and end of the span
+    abstract CreateFold : SnapshotSpan -> unit 
+
+    /// Delete a fold which crosses the given SnapshotPoint.  Returns false if 
+    /// there was no fold to be deleted
+    abstract DeleteFold : SnapshotPoint -> bool
+
+    /// Delete all of the folds in the buffer
+    abstract DeleteAllFolds : unit -> unit
+
+    /// Raised when the collection of folds are updated
+    [<CLIEvent>]
+    abstract FoldsUpdated: IEvent<System.EventArgs>
+
+/// Supports the get and creation of IFoldManager for a given ITextBuffer
+type IFoldManagerFactory =
+    
+    abstract GetFoldManager : ITextBuffer -> IFoldManager
+
+/// Abstract representation of the mouse
+type IMouseDevice = 
+    
+    /// Is the left button pressed
+    abstract IsLeftButtonPressed : bool
+
+/// Abstract representation of the keyboard 
+type IKeyboardDevice = 
+
+    /// Is the given key pressed
+    abstract IsKeyDown : KeyInput -> bool
+
+/// Tracks changes to the IVimBuffer
+type ITextChangeTracker =
+
+    /// Associated IVimBuffer
+    abstract VimBuffer : IVimBuffer
+
+    /// Current change
+    abstract CurrentChange : string
+
+    /// Raised when a change is completed
+    [<CLIEvent>]
+    abstract ChangeCompleted : IEvent<string>
+
+/// Manages the ITextChangeTracker instances
+type ITextChangeTrackerFactory =
+
+    abstract GetTextChangeTracker : IVimBuffer -> ITextChangeTracker

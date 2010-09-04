@@ -14,7 +14,7 @@ namespace VimCore.Test
     [TestFixture]
     public class UndoRedoOperationsTest
     {
-        private MockFactory _factory;
+        private MockRepository _factory;
         private Mock<IStatusUtil> _statusUtil;
         private Mock<ITextUndoHistory> _history;
         private UndoRedoOperations _operationsRaw;
@@ -22,7 +22,7 @@ namespace VimCore.Test
 
         public void Create(bool haveHistory = true)
         {
-            _factory = new MockFactory(MockBehavior.Strict);
+            _factory = new MockRepository(MockBehavior.Strict);
             _statusUtil = _factory.Create<IStatusUtil>();
             if (haveHistory)
             {

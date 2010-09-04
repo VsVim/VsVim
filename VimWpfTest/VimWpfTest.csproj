@@ -99,9 +99,7 @@
     <Compile Include="BlockCaretControllerTest.cs" />
     <Compile Include="BlockCaretTest.cs" />
     <Compile Include="CommandMarginControllerTest.cs" />
-    <Compile Include="Extensions.cs" />
     <Compile Include="KeyUtilTest.cs" />
-    <Compile Include="MouseProcessorTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -112,6 +110,10 @@
     <ProjectReference Include="..\VimCore\VimCore.fsproj">
       <Project>{06BE08E7-8626-40BD-877B-8D2DCA6BA451}</Project>
       <Name>VimCore</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\VimUnitTestUtils\VimUnitTestUtils.csproj">
+      <Project>{2CC4FAD2-7F56-436C-8AA7-4407D444FFA5}</Project>
+      <Name>VimUnitTestUtils</Name>
     </ProjectReference>
     <ProjectReference Include="..\VimWpf\VimWpf.csproj">
       <Project>{65A749E0-F1B1-4E43-BE73-25072EE398C6}</Project>

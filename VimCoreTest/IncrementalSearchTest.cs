@@ -6,7 +6,7 @@ using NUnit.Framework;
 using Moq;
 using Vim;
 using Microsoft.VisualStudio.Text.Editor;
-using VimCore.Test.Utils;
+using Vim.UnitTest;
 using Vim.Modes.Normal;
 using System.Windows.Input;
 using Microsoft.VisualStudio.Text;
@@ -15,7 +15,7 @@ using Microsoft.FSharp.Control;
 using Microsoft.VisualStudio.Text.Operations;
 using Microsoft.VisualStudio.Text.Outlining;
 using Vim.Extensions;
-using VimCore.Test.Mock;
+using Vim.UnitTest.Mock;
 
 namespace VimCore.Test
 {
@@ -23,7 +23,7 @@ namespace VimCore.Test
     public class IncrementalSearchTest
     {
         private static SearchOptions s_options = SearchOptions.AllowIgnoreCase | SearchOptions.AllowSmartCase;
-        private MockFactory _factory;
+        private MockRepository _factory;
         private Mock<ISearchService> _searchService;
         private Mock<ITextStructureNavigator> _nav;
         private Mock<IVimGlobalSettings> _globalSettings;
@@ -36,7 +36,7 @@ namespace VimCore.Test
         private void Create(params string[] lines)
         {
             _textView = EditorUtil.CreateView(lines);
-            _factory = new MockFactory(MockBehavior.Strict);
+            _factory = new MockRepository(MockBehavior.Strict);
             _searchService = _factory.Create<ISearchService>();
             _nav = _factory.Create<ITextStructureNavigator>();
             _globalSettings = MockObjectFactory.CreateGlobalSettings(ignoreCase: true);
@@ -57,10 +57,10 @@ namespace VimCore.Test
             _search.Begin(SearchKind.ForwardWithWrap);
             foreach (var cur in value)
             {
-                var ki = InputUtil.CharToKeyInput(cur);
+                var ki = KeyInputUtil.CharToKeyInput(cur);
                 Assert.IsTrue(_search.Process(ki).IsSearchNeedMore);
             }
-            Assert.IsTrue(_search.Process(InputUtil.VimKeyToKeyInput(VimKey.EnterKey)).IsSearchComplete);
+            Assert.IsTrue(_search.Process(KeyInputUtil.VimKeyToKeyInput(VimKey.Enter)).IsSearchComplete);
         }
 
         [Test]
@@ -72,7 +72,7 @@ namespace VimCore.Test
             _searchService
                 .Setup(x => x.FindNext(data, _textView.GetCaretPoint(), _nav.Object))
                 .Returns(FSharpOption.Create(_textView.GetLineSpan(0)));
-            Assert.IsTrue(_search.Process(InputUtil.CharToKeyInput('b')).IsSearchNeedMore);
+            Assert.IsTrue(_search.Process(KeyInputUtil.CharToKeyInput('b')).IsSearchNeedMore);
         }
 
         [Test]
@@ -81,7 +81,7 @@ namespace VimCore.Test
             Create("foo bar");
             _searchService.SetupSet(x => x.LastSearch = new SearchData(SearchText.NewPattern(""), SearchKind.ForwardWithWrap, s_options)).Verifiable();
             _search.Begin(SearchKind.ForwardWithWrap);
-            Assert.IsTrue(_search.Process(InputUtil.VimKeyToKeyInput(VimKey.EnterKey)).IsSearchComplete);
+            Assert.IsTrue(_search.Process(KeyInputUtil.VimKeyToKeyInput(VimKey.Enter)).IsSearchComplete);
             _searchService.Verify();
         }
 
@@ -90,7 +90,7 @@ namespace VimCore.Test
         {
             Create("foo bar");
             _search.Begin(SearchKind.ForwardWithWrap);
-            Assert.IsTrue(_search.Process(InputUtil.VimKeyToKeyInput(VimKey.EscapeKey)).IsSearchCancelled);
+            Assert.IsTrue(_search.Process(KeyInputUtil.VimKeyToKeyInput(VimKey.Escape)).IsSearchCancelled);
         }
 
         [Test]
@@ -154,7 +154,7 @@ namespace VimCore.Test
                     Assert.IsTrue(tuple.Item2.IsSearchNotFound);
                     didRun = true;
                 };
-            _search.Process(InputUtil.CharToKeyInput('a'));
+            _search.Process(KeyInputUtil.CharToKeyInput('a'));
             Assert.IsTrue(didRun);
         }
 
@@ -186,7 +186,7 @@ namespace VimCore.Test
                 .Setup(x => x.FindNext(It.IsAny<SearchData>(), It.IsAny<SnapshotPoint>(), _nav.Object))
                 .Returns(FSharpOption<SnapshotSpan>.None);
             _search.Begin(SearchKind.Forward);
-            _search.Process(InputUtil.CharToKeyInput('B'));
+            _search.Process(KeyInputUtil.CharToKeyInput('B'));
             Assert.AreEqual("B", _search.CurrentSearch.Value.Text.RawText);
         }
 
@@ -198,7 +198,7 @@ namespace VimCore.Test
                 .Setup(x => x.FindNext(It.IsAny<SearchData>(), It.IsAny<SnapshotPoint>(), _nav.Object))
                 .Returns(FSharpOption<SnapshotSpan>.None);
             _search.Begin(SearchKind.Forward);
-            _search.Process(InputUtil.CharToKeyInput('B'));
+            _search.Process(KeyInputUtil.CharToKeyInput('B'));
             _factory.Verify();
             Assert.AreEqual("B", _search.CurrentSearch.Value.Text.RawText);
         }
@@ -211,8 +211,8 @@ namespace VimCore.Test
                 .Setup(x => x.FindNext(It.IsAny<SearchData>(), It.IsAny<SnapshotPoint>(), _nav.Object))
                 .Returns(FSharpOption<SnapshotSpan>.None);
             _search.Begin(SearchKind.ForwardWithWrap);
-            _search.Process(InputUtil.CharToKeyInput('a'));
-            _search.Process(InputUtil.CharToKeyInput('b'));
+            _search.Process(KeyInputUtil.CharToKeyInput('a'));
+            _search.Process(KeyInputUtil.CharToKeyInput('b'));
         }
 
 
@@ -230,7 +230,7 @@ namespace VimCore.Test
             Create("foo bar");
             _searchService.SetupSet(x => x.LastSearch = new SearchData(SearchText.NewPattern(""), SearchKind.Forward, SearchOptions.AllowSmartCase | SearchOptions.AllowIgnoreCase));
             _search.Begin(SearchKind.Forward);
-            _search.Process(InputUtil.VimKeyToKeyInput(VimKey.EnterKey));
+            _search.Process(KeyInputUtil.VimKeyToKeyInput(VimKey.Enter));
             Assert.IsFalse(_search.InSearch);
             Assert.IsFalse(_search.CurrentSearch.IsSome());
         }
@@ -243,7 +243,7 @@ namespace VimCore.Test
                 .Setup(x => x.FindNext(It.IsAny<SearchData>(), It.IsAny<SnapshotPoint>(), _nav.Object))
                 .Returns(FSharpOption<SnapshotSpan>.None);
             _search.Begin(SearchKind.ForwardWithWrap);
-            _search.Process(InputUtil.VimKeyToKeyInput(VimKey.EscapeKey));
+            _search.Process(KeyInputUtil.VimKeyToKeyInput(VimKey.Escape));
             Assert.IsFalse(_search.InSearch);
         }
 
@@ -252,7 +252,7 @@ namespace VimCore.Test
         {
             Create("foo bar");
             _search.Begin(SearchKind.Forward);
-            var result = _search.Process(InputUtil.VimKeyToKeyInput(VimKey.BackKey));
+            var result = _search.Process(KeyInputUtil.VimKeyToKeyInput(VimKey.Back));
             Assert.IsTrue(result.IsSearchCancelled);
         }
 
@@ -266,8 +266,8 @@ namespace VimCore.Test
                 .Returns(FSharpOption<SnapshotSpan>.None)
                 .Verifiable();
             _search.Begin(SearchKind.Forward);
-            _search.Process(InputUtil.CharToKeyInput('b'));
-            var result = _search.Process(InputUtil.VimKeyToKeyInput(VimKey.BackKey));
+            _search.Process(KeyInputUtil.CharToKeyInput('b'));
+            var result = _search.Process(KeyInputUtil.VimKeyToKeyInput(VimKey.Back));
             Assert.IsTrue(result.IsSearchNeedMore);
             _searchService.Verify();
         }

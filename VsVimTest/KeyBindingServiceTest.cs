@@ -1,16 +1,14 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using NUnit.Framework;
-using VsVim.Implementation;
-using Microsoft.VisualStudio.Shell.Interop;
-using VsVim;
-using Moq;
 using EnvDTE;
-using Vim;
+using Microsoft.VisualStudio.Shell.Interop;
+using Moq;
+using NUnit.Framework;
+using Vim.UnitTest.Mock;
+using VsVim;
+using VsVim.Implementation;
 
-namespace VsVimTest
+namespace VsVim.UnitTest
 {
     [TestFixture]
     public class KeyBindingServiceTest
@@ -19,7 +17,7 @@ namespace VsVimTest
         private Mock<IOptionsDialogService> _optionsDialogService;
         private KeyBindingService _serviceRaw;
         private IKeyBindingService _service;
-    
+
         private void Create(params string[] args)
         {
             _dte = MockObjectFactory.CreateDteWithCommands(args);
@@ -79,7 +77,7 @@ namespace VsVimTest
             Assert.IsTrue(didSee);
         }
 
-        [Test,Description("Nothing should change since we haven't checked yet")]
+        [Test, Description("Nothing should change since we haven't checked yet")]
         public void ResolveAnyConflicts1()
         {
             Create();
@@ -88,7 +86,7 @@ namespace VsVimTest
             Assert.AreEqual(ConflictingKeyBindingState.HasNotChecked, _serviceRaw.ConflictingKeyBindingState);
         }
 
-        [Test,Description("Nothing should change if they're ignored or resolved")]
+        [Test, Description("Nothing should change if they're ignored or resolved")]
         public void ResolveAnyConflicts2()
         {
             Create();

@@ -81,15 +81,15 @@ type internal IncrementalSearch
                 SearchCancelled
 
             match ki.Key with 
-            | VimKey.EnterKey -> 
+            | VimKey.Enter -> 
                 _data <- None
                 _search.LastSearch <- oldSearchData
                 _currentSearchCompleted.Trigger (oldSearchData,data.SearchResult)
                 SearchComplete
-            | VimKey.EscapeKey -> 
+            | VimKey.Escape -> 
                 resetView()
                 cancelSearch
-            | VimKey.BackKey -> 
+            | VimKey.Back -> 
                 resetView()
                 let pattern = data.SearchData.Text.RawText
                 match pattern.Length with

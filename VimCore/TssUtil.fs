@@ -21,7 +21,6 @@ module TssUtil =
             | 0 -> 0
             | _ -> line-1
 
-
     /// Wrap the TextUtil functions which operate on String and int locations into 
     /// a SnapshotPoint and SnapshotSpan version
     let WrapTextSearch (func: WordKind -> string -> int -> option<Span> ) = 
@@ -113,16 +112,11 @@ module TssUtil =
                 inner prevPos (count-1)
         inner point count 
 
-    let FindIndentPosition tabWidth (line:ITextSnapshotLine) =
-        let text = line.GetText()
-        let rec inner start accum =
-            if start = text.Length then accum
-            else
-                match text.[start] with
-                | NonWhiteSpace -> accum
-                | '\t' -> inner (start + 1) (accum + tabWidth - (accum % tabWidth))
-                | _ -> inner (start + 1) (accum + 1)
-        inner 0 0 
+    let FindIndentPosition (line:ITextSnapshotLine) tabSize =
+        SnapshotSpanUtil.GetPoints line.Extent
+        |> Seq.map (fun p -> p.GetChar())
+        |> Seq.takeWhile CharUtil.IsWhiteSpace
+        |> Seq.fold (fun acc c -> acc + (if c = '\t' then tabSize else 1)) 0
         
     let GetReverseCharacterSpan (point:SnapshotPoint) count =
         let line = point.GetContainingLine()
@@ -130,7 +124,6 @@ module TssUtil =
         if line.Start.Position = point.Position then new SnapshotSpan(point,point)
         elif diff < 0 then new SnapshotSpan(line.Start, point)
         else new SnapshotSpan(point.Subtract(count), point)
-            
 
     let GetWordSpans point wordKind searchKind = 
         let getForSpanForward span = 
@@ -175,13 +168,6 @@ module TssUtil =
             member x.GetSpanOfFirstChild span = baseImpl.GetSpanOfFirstChild(span)
             member x.GetSpanOfNextSibling span = baseImpl.GetSpanOfNextSibling(span)
             member x.GetSpanOfPreviousSibling span = baseImpl.GetSpanOfPreviousSibling(span) }
-
-    let SafeGetTrackingSpan (trackingSpan:ITrackingSpan) (snapshot:ITextSnapshot) =
-        try
-            let span = trackingSpan.GetSpan(snapshot)
-            Some(span)
-        with
-            | :? System.ArgumentException -> None
 
     let FindNextOccurranceOfCharOnLine point targetChar count = 
         match SnapshotPointUtil.TryGetNextPointOnLine point with

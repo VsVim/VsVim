@@ -7,12 +7,14 @@ module internal Resources =
     let SelectionTracker_AlreadyRunning = "Already running"
     let SelectionTracker_NotRunning = "Not Running"
     let VisualMode_Banner = "--Visual--"
+    let KeyNotationUtil_InvalidNotation notation = sprintf "%s is an invalid key notatin" notation
 
     let Common_GotoDefNoWordUnderCursor = "No word under cursor to go to the definition of"
     let Common_GotoDefFailed word = sprintf "Could not navigate to definition of %s" word
     let Common_MarkInvalid = "Argument must be a letter or forward / back quote"
     let Common_MarkNotSet = "Mark not set"
     let Common_BulkEdit = "VsVim Bulk Edit"
+    let Common_NoFoldFound = "No fold found"
 
     let NormalMode_PatternNotFound pattern = sprintf "Pattern not found: %s" pattern
     let NormalMode_NoPreviousSearch = "No previous search"
@@ -21,6 +23,7 @@ module internal Resources =
     let NormalMode_RecursiveRepeatDetected = "Recursive repeat command detected"
     let NormalMode_RepeatNotSupportedOnCommand name = sprintf "Repeat not yet supported on command %s" name
     let NormalMode_UnableToRepeatMotion commandName motionName= sprintf "Unable to repeat motion %s for command %s " motionName commandName
+    let NormalMode_CantFindFile fileName = sprintf "Can't find file for %s in path" fileName
 
     let CommandMode_InvalidCommand = "Invalid command"
     let CommandMode_PatternNotFound pattern = NormalMode_PatternNotFound pattern
@@ -41,6 +44,8 @@ module internal Resources =
 
     let Vim_ViewAlreadyHasBuffer = "View is already associated with an IVimBuffer"
     let Vim_RecursiveMapping = "Recursive key mapping detected"
+
+    let VimBuffer_AlreadyClosed = "IVimBuffer instance is already closed"
 
     let Range_Invalid msg = sprintf "Invalid Range: %s" msg
     let Range_MarkMissingIdentifier = Range_Invalid "Missing mark after '"

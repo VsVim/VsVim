@@ -100,7 +100,6 @@
     <Compile Include="BlockCaretController.cs" />
     <Compile Include="CommandMarginController.cs" />
     <Compile Include="Implementation\EditorFormatDefinitions.cs" />
-    <Compile Include="IMouseDevice.cs" />
     <Compile Include="Implementation\BlockCaret.cs" />
     <Compile Include="Implementation\BlockCaretFactoryService.cs" />
     <Compile Include="CommandMargin.cs" />
@@ -110,12 +109,12 @@
     <Compile Include="CommandMarginProvider.cs" />
     <Compile Include="IBlockCaret.cs" />
     <Compile Include="IBlockCaretFactoryService.cs" />
+    <Compile Include="Implementation\KeyboardDeviceImpl.cs" />
     <Compile Include="Implementation\MouseDeviceImpl.cs" />
     <Compile Include="IOptionsProvider.cs" />
     <Compile Include="IOptionsProviderFactory.cs" />
     <Compile Include="KeyProcessor.cs" />
     <Compile Include="KeyUtil.cs" />
-    <Compile Include="MouseProcessor.cs" />
     <Compile Include="NativeMethods.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Properties\Resources.Designer.cs">

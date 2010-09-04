@@ -1,43 +1,41 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using System.Linq;
 using NUnit.Framework;
 using Vim;
-using VimCore.Test.Utils;
+using Vim.Extensions;
+using Vim.UnitTest;
 
 namespace VimCore.Test
 {
     [TestFixture]
     public class CommandNameTest
     {
-        private CommandName CreateOne(char c)
+        private KeyInputSet CreateOne(char c)
         {
-            return CommandName.NewOneKeyInput(InputUtil.CharToKeyInput(c));
+            return KeyInputSet.NewOneKeyInput(KeyInputUtil.CharToKeyInput(c));
         }
 
-        private CommandName CreateTwo(char c1, char c2)
+        private KeyInputSet CreateTwo(char c1, char c2)
         {
-            return CommandName.NewTwoKeyInputs(InputUtil.CharToKeyInput(c1), InputUtil.CharToKeyInput(c2));
+            return KeyInputSet.NewTwoKeyInputs(KeyInputUtil.CharToKeyInput(c1), KeyInputUtil.CharToKeyInput(c2));
         }
 
-        private CommandName CreateMany(params char[] all)
+        private KeyInputSet CreateMany(params char[] all)
         {
-            return CommandName.NewManyKeyInputs(all.Select(InputUtil.CharToKeyInput).ToFSharpList());
+            return KeyInputSet.NewManyKeyInputs(all.Select(KeyInputUtil.CharToKeyInput).ToFSharpList());
         }
 
         [Test]
         public void Add1()
         {
-            var name1 = CommandName.NewOneKeyInput(InputUtil.CharToKeyInput('c'));
-            var name2 = name1.Add(InputUtil.CharToKeyInput('a'));
+            var name1 = KeyInputSet.NewOneKeyInput(KeyInputUtil.CharToKeyInput('c'));
+            var name2 = name1.Add(KeyInputUtil.CharToKeyInput('a'));
             Assert.AreEqual("ca", name2.Name);
         }
 
         [Test]
         public void Name1()
         {
-            var name1 = CommandName.NewOneKeyInput(InputUtil.CharToKeyInput('c'));
+            var name1 = KeyInputSet.NewOneKeyInput(KeyInputUtil.CharToKeyInput('c'));
             Assert.AreEqual("c", name1.Name);
         }
 
@@ -52,8 +50,8 @@ namespace VimCore.Test
                 EqualityUnit.Create(CreateOne('a')).WithEqualValues(CreateOne('a')),
                 EqualityUnit.Create(CreateOne('a')).WithNotEqualValues(CreateOne('b')),
                 EqualityUnit.Create(CreateOne('a')).WithEqualValues(CreateMany('a')),
-                EqualityUnit.Create(CreateOne('D')).WithEqualValues(CommandUtil.CreateCommandName("D")),
-                EqualityUnit.Create(CommandName.NewOneKeyInput(InputUtil.CharToKeyInput('D'))).WithEqualValues(CommandUtil.CreateCommandName("D")));
+                EqualityUnit.Create(CreateOne('D')).WithEqualValues(KeyNotationUtil.StringToKeyInputSet("D")),
+                EqualityUnit.Create(KeyInputSet.NewOneKeyInput(KeyInputUtil.CharToKeyInput('D'))).WithEqualValues(KeyNotationUtil.StringToKeyInputSet("D")));
         }
     }
 }

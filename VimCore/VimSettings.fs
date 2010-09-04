@@ -105,11 +105,9 @@ type internal SettingsMap
         | ToggleKind -> convertToBoolean()
         | StringKind -> Some (StringValue(str))
 
-            
-
 type internal GlobalSettings() =
 
-    static let DisableCommandLet = InputUtil.VimKeyAndModifiersToKeyInput VimKey.F12Key (KeyModifiers.Control ||| KeyModifiers.Shift)
+    static let DisableCommandLet = KeyInputUtil.VimKeyAndModifiersToKeyInput VimKey.F12 (KeyModifiers.Control ||| KeyModifiers.Shift)
 
     static let GlobalSettings = 
         [|
@@ -118,6 +116,7 @@ type internal GlobalSettings() =
             ( ShiftWidthName, "sw", NumberKind, NumberValue(4) );
             ( HighlightSearchName, "hls", ToggleKind, ToggleValue(false) );
             ( TildeOpName, "top", ToggleKind, ToggleValue(false) );
+            ( TabStopName, "ts", NumberKind, NumberValue(8) );
             ( SmartCaseName, "scs", ToggleKind, ToggleValue(false) );
             ( VisualBellName, "vb", ToggleKind, ToggleValue(false) );
             ( VirtualEditName, "ve", StringKind, StringValue(StringUtil.empty));
@@ -125,6 +124,7 @@ type internal GlobalSettings() =
             ( VimRcName, VimRcName, StringKind, StringValue(System.String.Empty) );
             ( VimRcPathsName, VimRcPathsName, StringKind, StringValue(System.String.Empty) );
             ( DoubleEscapeName, DoubleEscapeName, ToggleKind, ToggleValue(false) );
+            ( CaretOpacityName, CaretOpacityName, NumberKind, NumberValue(65) );
         |]
 
     let _map = SettingsMap(GlobalSettings, true)
@@ -155,6 +155,9 @@ type internal GlobalSettings() =
         member x.TildeOp
             with get() = _map.GetBoolValue TildeOpName
             and set value = _map.TrySetValue TildeOpName (ToggleValue(value)) |> ignore
+        member x.TabStop
+            with get() = _map.GetNumberValue TabStopName
+            and set value = _map.TrySetValue TabStopName (NumberValue(value)) |> ignore
         member x.SmartCase
             with get() = _map.GetBoolValue SmartCaseName
             and set value = _map.TrySetValue SmartCaseName (ToggleValue(value)) |> ignore
@@ -176,6 +179,9 @@ type internal GlobalSettings() =
         member x.VimRcPaths 
             with get() = _map.GetStringValue VimRcPathsName
             and set value = _map.TrySetValue VimRcPathsName (StringValue(value)) |> ignore
+        member x.CaretOpacity
+            with get() = _map.GetNumberValue CaretOpacityName
+            and set value = _map.TrySetValue CaretOpacityName (NumberValue(value)) |> ignore
         member x.DisableCommand = DisableCommandLet
         member x.IsVirtualEditOneMore = 
             let value = _map.GetStringValue VirtualEditName
@@ -193,6 +199,7 @@ type internal LocalSettings
         [|
             ( ScrollName, "scr", NumberKind, NumberValue(25) );
             ( NumberName, "nu", ToggleKind, ToggleValue(false) )
+            ( CursorLineName, "cul", ToggleKind, ToggleValue(false) )
         |]
 
     let _map = SettingsMap(LocalSettings, false)
@@ -238,6 +245,9 @@ type internal LocalSettings
         member x.Scroll 
             with get() = _map.GetNumberValue ScrollName
             and set value = _map.TrySetValue ScrollName (NumberValue(value)) |> ignore
+        member x.CursorLine 
+            with get() = _map.GetBoolValue CursorLineName
+            and set value = _map.TrySetValue CursorLineName (ToggleValue(value)) |> ignore
 
         [<CLIEvent>]
         member x.SettingChanged = _map.SettingChanged

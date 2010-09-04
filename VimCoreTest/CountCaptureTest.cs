@@ -5,7 +5,7 @@ using System.Text;
 using NUnit.Framework;
 using Vim;
 using System.Windows.Input;
-using VimCore.Test.Utils;
+using Vim.UnitTest;
 
 namespace VimCore.Test
 {
@@ -14,11 +14,11 @@ namespace VimCore.Test
     {
         private CountResult.Complete Process(string input)
         {
-            var res = CountCapture.Process(InputUtil.CharToKeyInput(input[0]));
+            var res = CountCapture.Process(KeyInputUtil.CharToKeyInput(input[0]));
             foreach (var cur in input.Skip(1))
             {
                 Assert.IsTrue(res.IsNeedMore);
-                var i = InputUtil.CharToKeyInput(cur);
+                var i = KeyInputUtil.CharToKeyInput(cur);
                 res = res.AsNeedMore().item.Invoke(i);
             }
 
@@ -32,7 +32,7 @@ namespace VimCore.Test
             var res = Process("A");
 
             Assert.AreEqual(1, res.Item1);
-            Assert.AreEqual(VimKey.NotWellKnownKey, res.Item2.Key);
+            Assert.AreEqual(VimKey.NotWellKnown, res.Item2.Key);
             Assert.AreEqual(KeyModifiers.Shift, res.Item2.KeyModifiers);
         }
 

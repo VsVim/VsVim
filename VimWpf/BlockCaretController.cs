@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using Vim.Modes.Normal;
 
 namespace Vim.UI.Wpf
 {
@@ -20,7 +16,10 @@ namespace Vim.UI.Wpf
             _buffer.SwitchedMode += OnCaretRelatedEvent;
             _buffer.KeyInputProcessed += OnCaretRelatedEvent;
             _buffer.KeyInputReceived += OnCaretRelatedEvent;
+            _buffer.Closed += OnBufferClosed;
+            _buffer.Settings.GlobalSettings.SettingChanged += OnSettingsChanged;
             UpdateCaret();
+            UpdateCaretOpacity();
         }
 
         internal void Update()
@@ -28,15 +27,38 @@ namespace Vim.UI.Wpf
             UpdateCaret();
         }
 
+        private void OnSettingsChanged(object sender, Setting setting)
+        {
+            if (setting.Name == GlobalSettingNames.CaretOpacityName)
+            {
+                UpdateCaretOpacity();
+            }
+        }
+
         private void OnCaretRelatedEvent(object sender, object args)
         {
             UpdateCaret();
         }
 
+        private void OnBufferClosed(object sender, EventArgs args)
+        {
+            _blockCaret.Destroy();
+        }
+
+        private void UpdateCaretOpacity()
+        {
+            var value = _buffer.Settings.GlobalSettings.CaretOpacity;
+            if (value >= 0 && value <= 100)
+            {
+                var opacity = ((double)value / 100);
+                _blockCaret.CaretOpacity = opacity;
+            }
+        }
+
         private void UpdateCaret()
         {
             var kind = CaretDisplay.Block;
-            switch (_buffer.ModeKind )
+            switch (_buffer.ModeKind)
             {
                 case ModeKind.Normal:
                     {
@@ -72,6 +94,9 @@ namespace Vim.UI.Wpf
                     break;
                 case ModeKind.Disabled:
                     kind = CaretDisplay.NormalCaret;
+                    break;
+                case ModeKind.Replace:
+                    kind = CaretDisplay.QuarterBlock;
                     break;
             }
 

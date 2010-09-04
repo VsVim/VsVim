@@ -1,21 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using NUnit.Framework;
-using Vim.Modes.Normal;
-using VimCore.Test.Utils;
-using Moq;
-using Vim;
 using Microsoft.FSharp.Core;
+using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Operations;
-using Microsoft.VisualStudio.Text;
-using System.Windows.Input;
-using Vim.Modes;
 using Microsoft.VisualStudio.Text.Outlining;
+using Moq;
+using NUnit.Framework;
+using Vim;
 using Vim.Extensions;
-using VimCore.Test.Mock;
+using Vim.Modes;
+using Vim.Modes.Normal;
+using Vim.UnitTest;
+using Vim.UnitTest.Mock;
 
 namespace VimCore.Test
 {
@@ -33,7 +31,8 @@ namespace VimCore.Test
         private Mock<IIncrementalSearch> _search;
         private Mock<IOutliningManager> _outlining;
         private Mock<IUndoRedoOperations> _undoRedoOperations;
-            
+        private Mock<IEditorOptions> _options;
+
         private ISearchService _searchService;
         private Mock<IStatusUtil> _statusUtil;
 
@@ -59,12 +58,16 @@ namespace VimCore.Test
                 _view = EditorUtil.CreateView(lines);
             }
 
+            var editorOptions = EditorUtil.FactoryService.editorOptionsFactory.GetOptions(_view);
             baseNav = baseNav ?? (new Mock<ITextStructureNavigator>(MockBehavior.Strict)).Object;
             var nav = TssUtil.CreateTextStructureNavigator(WordKind.NormalWord, baseNav);
             _bufferOptions = new Mock<IEditorOptions>(MockBehavior.Strict);
             _bufferOptions.Setup(x => x.GetOptionValue(DefaultOptions.TabSizeOptionId)).Returns(4);
             _globalSettings = MockObjectFactory.CreateGlobalSettings(ignoreCase: true);
             _settings = MockObjectFactory.CreateLocalSettings(_globalSettings.Object);
+            _options = new Mock<IEditorOptions>(MockBehavior.Strict);
+            _options.Setup(x => x.GetOptionValue<int>(It.IsAny<string>())).Throws(new ArgumentException());
+            _options.Setup(x => x.GetOptionValue<int>(It.IsAny<EditorOptionKey<int>>())).Throws(new ArgumentException());
             _jumpList = new Mock<IJumpList>(MockBehavior.Strict);
             _searchService = new SearchService(EditorUtil.FactoryService.textSearchService, _globalSettings.Object);
             _search = new Mock<IIncrementalSearch>(MockBehavior.Strict);
@@ -73,17 +76,32 @@ namespace VimCore.Test
             _outlining = new Mock<IOutliningManager>(MockBehavior.Strict);
             _undoRedoOperations = new Mock<IUndoRedoOperations>(MockBehavior.Strict);
             _undoRedoOperations.Setup(x => x.CreateUndoTransaction(It.IsAny<string>())).Returns<string>(name => new Vim.UndoTransaction(FSharpOption.Create(EditorUtil.GetUndoHistory(_view.TextBuffer).CreateTransaction(name))));
-            _operationsRaw = new DefaultOperations(_view, _bufferOptions.Object, editorOpts, _outlining.Object, _host.Object, _statusUtil.Object, _settings.Object, nav, _jumpList.Object, _search.Object, _undoRedoOperations.Object);
+
+            var data = new OperationsData(
+                vimHost: _host.Object,
+                textView: _view,
+                editorOperations: editorOpts,
+                outliningManager: _outlining.Object,
+                statusUtil: _statusUtil.Object,
+                jumpList: _jumpList.Object,
+                localSettings: _settings.Object,
+                keyMap: null,
+                undoRedoOperations: _undoRedoOperations.Object,
+                editorOptions: _options.Object,
+                navigator: null,
+                foldManager: null);
+
+            _operationsRaw = new DefaultOperations(data, _search.Object);
             _operations = _operationsRaw;
         }
 
-        private void AllowOutlineExpansion(bool verify=false)
+        private void AllowOutlineExpansion(bool verify = false)
         {
-            var res = 
+            var res =
                 _outlining
                     .Setup(x => x.ExpandAll(It.IsAny<SnapshotSpan>(), It.IsAny<Predicate<ICollapsed>>()))
                     .Returns<IEnumerable<ICollapsible>>(null);
-            if ( verify )
+            if (verify)
             {
                 res.Verifiable();
             }
@@ -163,7 +181,7 @@ namespace VimCore.Test
         public void ReplaceChar1()
         {
             Create("foo");
-            _operations.ReplaceChar(InputUtil.CharToKeyInput('b'), 1);
+            _operations.ReplaceChar(KeyInputUtil.CharToKeyInput('b'), 1);
             Assert.AreEqual("boo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
         }
 
@@ -171,7 +189,7 @@ namespace VimCore.Test
         public void ReplaceChar2()
         {
             Create("foo");
-            _operations.ReplaceChar(InputUtil.CharToKeyInput('b'), 2);
+            _operations.ReplaceChar(KeyInputUtil.CharToKeyInput('b'), 2);
             Assert.AreEqual("bbo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
         }
 
@@ -180,7 +198,7 @@ namespace VimCore.Test
         {
             Create("foo");
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 1));
-            _operations.ReplaceChar(InputUtil.VimKeyToKeyInput(VimKey.EnterKey), 1);
+            _operations.ReplaceChar(KeyInputUtil.VimKeyToKeyInput(VimKey.Enter), 1);
             var tss = _view.TextSnapshot;
             Assert.AreEqual(2, tss.LineCount);
             Assert.AreEqual("f", tss.GetLineFromLineNumber(0).GetText());
@@ -192,7 +210,7 @@ namespace VimCore.Test
         {
             Create("food");
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 1));
-            Assert.IsTrue(_operations.ReplaceChar(InputUtil.VimKeyToKeyInput(VimKey.EnterKey), 2));
+            Assert.IsTrue(_operations.ReplaceChar(KeyInputUtil.VimKeyToKeyInput(VimKey.Enter), 2));
             var tss = _view.TextSnapshot;
             Assert.AreEqual(2, tss.LineCount);
             Assert.AreEqual("f", tss.GetLineFromLineNumber(0).GetText());
@@ -204,7 +222,7 @@ namespace VimCore.Test
         {
             Create("food");
             var tss = _view.TextSnapshot;
-            Assert.IsFalse(_operations.ReplaceChar(InputUtil.CharToKeyInput('c'), 200));
+            Assert.IsFalse(_operations.ReplaceChar(KeyInputUtil.CharToKeyInput('c'), 200));
             Assert.AreSame(tss, _view.TextSnapshot);
         }
 
@@ -212,7 +230,7 @@ namespace VimCore.Test
         public void ReplaceChar6()
         {
             Create("foo");
-            Assert.IsTrue(_operations.ReplaceChar(InputUtil.CharToKeyInput('u'), 1));
+            Assert.IsTrue(_operations.ReplaceChar(KeyInputUtil.CharToKeyInput('u'), 1));
             Assert.AreEqual(0, _view.Caret.Position.BufferPosition.Position);
         }
 
@@ -699,7 +717,7 @@ namespace VimCore.Test
         [Test, Description("Should not start on the current word")]
         public void MoveToNextOccuranceOfLastSearch2()
         {
-            Create("foo bar","foo");
+            Create("foo bar", "foo");
             AllowOutlineExpansion();
             var data = new SearchData(SearchText.NewPattern("foo"), SearchKind.ForwardWithWrap, SearchOptions.None);
             _searchService.LastSearch = data;
@@ -710,7 +728,7 @@ namespace VimCore.Test
         [Test]
         public void MoveToNextOccuranceOfLastSearch3()
         {
-            Create("foo bar","foo");
+            Create("foo bar", "foo");
             AllowOutlineExpansion();
             var data = new SearchData(SearchText.NewPattern("foo"), SearchKind.ForwardWithWrap, SearchOptions.None);
             _searchService.LastSearch = data;
@@ -721,7 +739,7 @@ namespace VimCore.Test
         [Test]
         public void MoveToNextOccuranceOfLastSearch4()
         {
-            Create("foo bar","foo");
+            Create("foo bar", "foo");
             AllowOutlineExpansion();
             var data = new SearchData(SearchText.NewPattern("foo"), SearchKind.BackwardWithWrap, SearchOptions.None);
             _searchService.LastSearch = data;
@@ -732,9 +750,9 @@ namespace VimCore.Test
         [Test]
         public void MoveToNextOccuranceOfLastSearch5()
         {
-            Create("foo bar","foo");
+            Create("foo bar", "foo");
             var data = new SearchData(SearchText.NewPattern("foo"), SearchKind.BackwardWithWrap, SearchOptions.None);
-            AllowOutlineExpansion(verify:true);
+            AllowOutlineExpansion(verify: true);
             _searchService.LastSearch = data;
             _operations.MoveToNextOccuranceOfLastSearch(1, false);
             Assert.AreEqual(_view.GetLine(1).Start, _view.GetCaretPoint());
@@ -840,7 +858,7 @@ namespace VimCore.Test
         public void JumpPrevious4()
         {
             Create("foo", "bar");
-            AllowOutlineExpansion(verify:true);
+            AllowOutlineExpansion(verify: true);
             _jumpList.Setup(x => x.MovePrevious()).Returns(true);
             _jumpList.SetupGet(x => x.Current).Returns(FSharpOption.Create(new SnapshotPoint(_view.TextSnapshot, 1)));
             _operations.JumpPrevious(1);
@@ -960,8 +978,18 @@ namespace VimCore.Test
         {
             Create("bar");
             _view.MoveCaretTo(1);
-            _operations.InsertText("hey",1);
+            _operations.InsertText("hey", 1);
             Assert.AreEqual("bheyar", _view.TextSnapshot.GetText());
+        }
+
+        [Test]
+        [Description("Caret needs to be moved to the last letter of the insert")]
+        public void InsertText4()
+        {
+            Create("bar");
+            _view.MoveCaretTo(1);
+            _operations.InsertText("hey", 1);
+            Assert.AreEqual(3, _view.GetCaretPoint().Position);
         }
 
         [Test]
@@ -1031,6 +1059,64 @@ namespace VimCore.Test
             _view.MoveCaretTo(SnapshotUtil.GetEndPoint(_view.TextSnapshot));
             _operations.MoveCaretForAppend();
             Assert.AreEqual(SnapshotUtil.GetEndPoint(_view.TextSnapshot), _view.GetCaretPoint());
+        }
+
+        [Test]
+        public void GoToGlobalDeclaration1()
+        {
+            Create("foo bar");
+            _host.Setup(x => x.GoToGlobalDeclaration(_view, "foo")).Returns(true).Verifiable();
+            _operations.GoToGlobalDeclaration();
+            _host.Verify();
+        }
+
+        [Test]
+        public void GoToGlobalDeclaration2()
+        {
+            Create("foo bar");
+            _host.Setup(x => x.GoToGlobalDeclaration(_view, "foo")).Returns(false).Verifiable();
+            _host.Setup(x => x.Beep()).Verifiable();
+            _operations.GoToGlobalDeclaration();
+            _host.Verify();
+        }
+
+        [Test]
+        public void GoToLocalDeclaration1()
+        {
+            Create("foo bar");
+            _host.Setup(x => x.GoToLocalDeclaration(_view, "foo")).Returns(true).Verifiable();
+            _operations.GoToLocalDeclaration();
+            _host.Verify();
+        }
+
+        [Test]
+        public void GoToLocalDeclaration2()
+        {
+            Create("foo bar");
+            _host.Setup(x => x.GoToLocalDeclaration(_view, "foo")).Returns(false).Verifiable();
+            _host.Setup(x => x.Beep()).Verifiable();
+            _operations.GoToLocalDeclaration();
+            _host.Verify();
+        }
+
+        [Test]
+        public void GoToFile1()
+        {
+            Create("foo bar");
+            _host.Setup(x => x.GoToFile("foo")).Returns(true).Verifiable();
+            _operations.GoToFile();
+            _host.Verify();
+        }
+
+        [Test]
+        public void GoToFile2()
+        {
+            Create("foo bar");
+            _host.Setup(x => x.GoToFile("foo")).Returns(false).Verifiable();
+            _statusUtil.Setup(x => x.OnError(Resources.NormalMode_CantFindFile("foo"))).Verifiable();
+            _operations.GoToFile();
+            _statusUtil.Verify();
+            _host.Verify();
         }
     }
 }

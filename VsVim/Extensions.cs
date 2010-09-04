@@ -1,20 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
-using System.Text;
+using System.Runtime.InteropServices;
 using EnvDTE;
 using Microsoft.FSharp.Core;
-using System.Runtime.InteropServices;
-using Microsoft.VisualStudio.Utilities;
-using Vim;
-using System.Windows.Input;
-using Microsoft.VisualStudio.TextManager.Interop;
-using Microsoft.VisualStudio.Text.Editor;
-using Microsoft.VisualStudio.Text;
-using Microsoft.VisualStudio.Editor;
 using Microsoft.VisualStudio;
+using Microsoft.VisualStudio.Editor;
 using Microsoft.VisualStudio.Shell.Interop;
-using System.Collections.ObjectModel;
+using Microsoft.VisualStudio.Text.Editor;
+using Microsoft.VisualStudio.TextManager.Interop;
+using Microsoft.VisualStudio.Utilities;
 
 namespace VsVim
 {
@@ -55,10 +51,10 @@ namespace VsVim
                 throw new ArgumentNullException("command");
             }
 
-            foreach ( var cur in command.GetCommandStrings())
+            foreach (var cur in command.GetCommandStrings())
             {
                 KeyBinding binding;
-                if ( KeyBinding.TryParse(cur, out binding))
+                if (KeyBinding.TryParse(cur, out binding))
                 {
                     yield return new CommandKeyBinding(command.Name, binding);
                 }
@@ -177,13 +173,96 @@ namespace VsVim
             }
             public void Dispose()
             {
-                _vsShell.EnableModeless(-1); 
+                _vsShell.EnableModeless(-1);
             }
         }
 
         public static IDisposable EnableModelessDialog(this IVsUIShell vsShell)
         {
             return new ModelessUtil(vsShell);
+        }
+
+        public static List<IVsWindowFrame> GetDocumentWindowFrames(this IVsUIShell vsShell)
+        {
+            IEnumWindowFrames enumFrames;
+            ErrorHandler.ThrowOnFailure(vsShell.GetDocumentWindowEnum(out enumFrames));
+            return enumFrames.GetContents();
+        }
+
+        #endregion
+
+        #region IEnumWindowFrames
+
+        public static List<IVsWindowFrame> GetContents(this IEnumWindowFrames enumFrames)
+        {
+            var list = new List<IVsWindowFrame>();
+            var array = new IVsWindowFrame[16];
+            while (true)
+            {
+                uint num;
+                ErrorHandler.ThrowOnFailure(enumFrames.Next((uint)array.Length, array, out num));
+                if (0 == num)
+                {
+                    return list;
+                }
+
+                for (var i = 0; i < num; i++)
+                {
+                    list.Add(array[i]);
+                }
+            }
+        }
+
+        #endregion
+
+        #region IVsCodeWindow
+
+        /// <summary>
+        /// Is this window currently in a split mode?
+        /// </summary>
+        public static bool IsSplit(this IVsCodeWindow window)
+        {
+            IVsTextView primary;
+            IVsTextView secondary;
+            return TryGetPrimaryView(window, out primary) && TryGetSecondaryView(window, out secondary);
+        }
+
+        /// <summary>
+        /// Get the primary view of the code window.  Is actually the one on bottom
+        /// </summary>
+        public static bool TryGetPrimaryView(this IVsCodeWindow codeWindow, out IVsTextView textView)
+        {
+            return ErrorHandler.Succeeded(codeWindow.GetPrimaryView(out textView)) && textView != null;
+        }
+
+        /// <summary>
+        /// Get the secondary view of the code window.  Is actually the one on top
+        /// </summary>
+        public static bool TryGetSecondaryView(this IVsCodeWindow codeWindow, out IVsTextView textView)
+        {
+            return ErrorHandler.Succeeded(codeWindow.GetSecondaryView(out textView)) && textView != null;
+        }
+
+        #endregion
+
+        #region IVsWindowFrame
+
+        public static IVsCodeWindow GetCodeWindow(this IVsWindowFrame frame)
+        {
+            var iid = typeof(IVsCodeWindow).GUID;
+            var ptr = IntPtr.Zero;
+            try
+            {
+                ErrorHandler.ThrowOnFailure(frame.QueryViewInterface(ref iid, out ptr));
+                return (IVsCodeWindow)Marshal.GetObjectForIUnknown(ptr);
+            }
+            finally
+            {
+                if (ptr != IntPtr.Zero)
+                {
+                    Marshal.Release(ptr);
+                }
+            }
         }
 
         #endregion
@@ -245,7 +324,7 @@ namespace VsVim
             }
         }
 
-        #endregion 
+        #endregion
 
         #region Project
 

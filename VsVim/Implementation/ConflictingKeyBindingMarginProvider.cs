@@ -1,18 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using Microsoft.VisualStudio.Text.Editor;
-using System.ComponentModel.Composition;
-using Vim;
-using Microsoft.VisualStudio.Utilities;
+﻿using System.ComponentModel.Composition;
 using Microsoft.VisualStudio.Text.Classification;
+using Microsoft.VisualStudio.Text.Editor;
+using Microsoft.VisualStudio.Utilities;
+using Vim;
 
 namespace VsVim.Implementation
 {
     [Export(typeof(IWpfTextViewMarginProvider))]
     [MarginContainer(PredefinedMarginNames.Top)]
-    [ContentType("text")]
+    [ContentType(Vim.Constants.ContentType)]
     [Name(ConflictingKeyBindingMargin.Name)]
     [TextViewRole(PredefinedTextViewRoles.Document)]
     internal sealed class ConflictingKeyBindingMarginProvider : IWpfTextViewMarginProvider

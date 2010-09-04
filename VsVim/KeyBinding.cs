@@ -1,13 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
-using System.Text.RegularExpressions;
+using System.Windows.Input;
 using Vim;
 using Vim.Extensions;
-using System.Diagnostics;
-using System.Windows.Input;
 using Vim.UI.Wpf;
 
 namespace VsVim
@@ -21,11 +18,11 @@ namespace VsVim
         private readonly Lazy<string> _commandString;
 
         public readonly string Scope;
-        public readonly IEnumerable<KeyInput> KeyInputs;
+        public readonly IEnumerable<KeyStroke> KeyStrokes;
 
-        public KeyInput FirstKeyInput
+        public KeyStroke FirstKeyStroke
         {
-            get { return KeyInputs.First(); }
+            get { return KeyStrokes.First(); }
         }
 
         /// <summary>
@@ -36,17 +33,17 @@ namespace VsVim
             get { return _commandString.Value; }
         }
 
-        public KeyBinding(string scope, KeyInput input)
+        public KeyBinding(string scope, KeyStroke stroke)
         {
             Scope = scope;
-            KeyInputs = Enumerable.Repeat(input, 1);
+            KeyStrokes = Enumerable.Repeat(stroke, 1);
             _commandString = new Lazy<string>(CreateCommandString);
         }
 
-        public KeyBinding(string scope, IEnumerable<KeyInput> inputs)
+        public KeyBinding(string scope, IEnumerable<KeyStroke> strokes)
         {
             Scope = scope;
-            KeyInputs = inputs.ToList();
+            KeyStrokes = strokes.ToList();
             _commandString = new Lazy<string>(CreateCommandString);
         }
 
@@ -65,10 +62,11 @@ namespace VsVim
 
         public bool Equals(KeyBinding other)
         {
-            if ( Object.ReferenceEquals(other, null))
+            if (Object.ReferenceEquals(other, null))
             {
                 return false;
             }
+
             var comp = StringComparer.OrdinalIgnoreCase;
             return
                 comp.Equals(Scope, other.Scope)
@@ -77,12 +75,12 @@ namespace VsVim
 
         public static bool operator ==(KeyBinding left, KeyBinding right)
         {
-            return EqualityComparer<KeyBinding>.Default.Equals(left,right);
+            return EqualityComparer<KeyBinding>.Default.Equals(left, right);
         }
 
         public static bool operator !=(KeyBinding left, KeyBinding right)
         {
-            return !EqualityComparer<KeyBinding>.Default.Equals(left,right);
+            return !EqualityComparer<KeyBinding>.Default.Equals(left, right);
         }
 
         #endregion
@@ -93,35 +91,36 @@ namespace VsVim
             builder.Append(Scope);
             builder.Append("::");
             var isFirst = true;
-            foreach (var input in KeyInputs)
+            foreach (var stroke in KeyStrokes)
             {
                 if (!isFirst)
                 {
                     builder.Append(", ");
                 }
                 isFirst = false;
-                AppendCommandForSingle(input, builder);
+                AppendCommandForSingle(stroke, builder);
             }
 
             return builder.ToString();
         }
 
-        private void AppendCommandForSingle(KeyInput input, StringBuilder builder)
+        private static void AppendCommandForSingle(KeyStroke stroke, StringBuilder builder)
         {
-            if (0 != (input.KeyModifiers & KeyModifiers.Control))
+            if (0 != (stroke.KeyModifiers & KeyModifiers.Control))
             {
                 builder.Append("Ctrl+");
             }
-            if (0 != (input.KeyModifiers & KeyModifiers.Shift))
+            if (0 != (stroke.KeyModifiers & KeyModifiers.Shift))
             {
                 builder.Append("Shift+");
             }
-            if (0 != (input.KeyModifiers & KeyModifiers.Alt))
+            if (0 != (stroke.KeyModifiers & KeyModifiers.Alt))
             {
                 builder.Append("Alt+");
             }
 
             EnsureVsMap();
+            var input = stroke.KeyInput;
             var query = s_vsMap.Where(x => x.Value == input.Key);
             if (Char.IsLetter(input.Char))
             {
@@ -146,6 +145,13 @@ namespace VsVim
             return CommandString;
         }
 
+        public static string CreateKeyBindingStringForSingleKeyStroke(KeyStroke stroke)
+        {
+            StringBuilder builder = new StringBuilder();
+            AppendCommandForSingle(stroke, builder);
+            return builder.ToString();
+        }
+
         #region Parsing Methods
 
         private static string[] s_modifierPrefix = new string[] { "Shift", "Alt", "Ctrl" };
@@ -154,37 +160,37 @@ namespace VsVim
         private static void BuildVsMap()
         {
             var map = new Dictionary<string, VimKey>(StringComparer.OrdinalIgnoreCase);
-            map.Add("Down Arrow", VimKey.DownKey);
-            map.Add("Up Arrow", VimKey.UpKey);
-            map.Add("Left Arrow", VimKey.LeftKey);
-            map.Add("Right Arrow", VimKey.RightKey);
-            map.Add("Bkspce", VimKey.BackKey);
-            map.Add("PgDn", VimKey.PageDownKey);
-            map.Add("PgUp", VimKey.PageUpKey);
-            map.Add("Ins", VimKey.InsertKey);
-            map.Add("Del", VimKey.DeleteKey);
-            map.Add("Esc", VimKey.EscapeKey);
-            map.Add("Break", VimKey.BreakKey);
-            map.Add("Num +", VimKey.AddKey);
-            map.Add("Num -", VimKey.SubtractKey);
-            map.Add("Num /", VimKey.DivideKey);
-            map.Add("Num *", VimKey.MultiplyKey);
-            map.Add("Enter", VimKey.EnterKey);
-            map.Add("Tab", VimKey.TabKey);
-            map.Add("Home", VimKey.HomeKey);
-            map.Add("End", VimKey.EndKey);
-            map.Add("F1", VimKey.F1Key);
-            map.Add("F2", VimKey.F2Key);
-            map.Add("F3", VimKey.F3Key);
-            map.Add("F4", VimKey.F4Key);
-            map.Add("F5", VimKey.F5Key);
-            map.Add("F6", VimKey.F6Key);
-            map.Add("F7", VimKey.F7Key);
-            map.Add("F8", VimKey.F8Key);
-            map.Add("F9", VimKey.F9Key);
-            map.Add("F10", VimKey.F10Key);
-            map.Add("F11", VimKey.F11Key);
-            map.Add("F12", VimKey.F12Key);
+            map.Add("Down Arrow", VimKey.Down);
+            map.Add("Up Arrow", VimKey.Up);
+            map.Add("Left Arrow", VimKey.Left);
+            map.Add("Right Arrow", VimKey.Right);
+            map.Add("Bkspce", VimKey.Back);
+            map.Add("PgDn", VimKey.PageDown);
+            map.Add("PgUp", VimKey.PageUp);
+            map.Add("Ins", VimKey.Insert);
+            map.Add("Del", VimKey.Delete);
+            map.Add("Esc", VimKey.Escape);
+            map.Add("Break", VimKey.Break);
+            map.Add("Num +", VimKey.KeypadPlus);
+            map.Add("Num -", VimKey.KeypadMinus);
+            map.Add("Num /", VimKey.KeypadDivide);
+            map.Add("Num *", VimKey.KeypadMultiply);
+            map.Add("Enter", VimKey.Enter);
+            map.Add("Tab", VimKey.Tab);
+            map.Add("Home", VimKey.Home);
+            map.Add("End", VimKey.End);
+            map.Add("F1", VimKey.F1);
+            map.Add("F2", VimKey.F2);
+            map.Add("F3", VimKey.F3);
+            map.Add("F4", VimKey.F4);
+            map.Add("F5", VimKey.F5);
+            map.Add("F6", VimKey.F6);
+            map.Add("F7", VimKey.F7);
+            map.Add("F8", VimKey.F8);
+            map.Add("F9", VimKey.F9);
+            map.Add("F10", VimKey.F10);
+            map.Add("F11", VimKey.F11);
+            map.Add("F12", VimKey.F12);
 
             s_vsMap = map;
         }
@@ -221,26 +227,25 @@ namespace VsVim
             return true;
         }
 
+        /// <summary>
+        /// Convert the single character to a KeyInput. Visual Studio doesn't 
+        /// differentiate between upper and lower case alpha characters.  
+        /// Use all lower case for simplicity elsewhere
+        /// </summary>
+        private static KeyInput ConvertToKeyInput(char c)
+        {
+            c = Char.IsLetter(c) ? Char.ToLower(c) : c;
+            var opt = KeyInputUtil.TryCharToKeyInput(c);
+            return opt.IsSome()
+                ? opt.Value
+                : null;
+        }
+
         private static KeyInput ConvertToKeyInput(string keystroke)
         {
             if (keystroke.Length == 1)
             {
-                var opt = InputUtil.TryCharToKeyInput(keystroke[0]);
-                if (opt.IsSome())
-                {
-                    // Visual Studio doesn't differentiate between upper and lower case
-                    // alpha characters.  Use all lower case for simplicity elsewhere
-                    var v = opt.Value;
-                    if (Char.IsLetter(v.Char) && 0 != (KeyModifiers.Shift & v.KeyModifiers))
-                    {
-                        return new KeyInput(
-                            Char.ToLower(v.Char),
-                            v.Key,
-                            v.KeyModifiers & ~KeyModifiers.Shift);
-                    }
-
-                    return v;
-                }
+                return ConvertToKeyInput(keystroke[0]);
             }
 
             KeyInput vs = null;
@@ -271,7 +276,7 @@ namespace VsVim
             VimKey wellKnownKey;
             if (s_vsMap.TryGetValue(keystroke, out wellKnownKey))
             {
-                ki = InputUtil.VimKeyToKeyInput(wellKnownKey);
+                ki = KeyInputUtil.VimKeyToKeyInput(wellKnownKey);
                 return true;
             }
 
@@ -281,16 +286,16 @@ namespace VsVim
                 switch (keystroke.ToLower())
                 {
                     case "num +":
-                        ki = InputUtil.VimKeyToKeyInput(VimKey.AddKey);
+                        ki = KeyInputUtil.VimKeyToKeyInput(VimKey.KeypadPlus);
                         break;
                     case "num /":
-                        ki = InputUtil.VimKeyToKeyInput(VimKey.DivideKey);
+                        ki = KeyInputUtil.VimKeyToKeyInput(VimKey.KeypadDivide);
                         break;
                     case "num *":
-                        ki = InputUtil.VimKeyToKeyInput(VimKey.MultiplyKey);
+                        ki = KeyInputUtil.VimKeyToKeyInput(VimKey.KeypadMultiply);
                         break;
                     case "num -":
-                        ki = InputUtil.VimKeyToKeyInput(VimKey.SubtractKey);
+                        ki = KeyInputUtil.VimKeyToKeyInput(VimKey.KeypadMinus);
                         break;
                 }
                 return ki != null;
@@ -300,12 +305,12 @@ namespace VsVim
             return false;
         }
 
-        private static KeyInput ParseOne(string entry)
+        private static KeyStroke ParseOne(string entry)
         {
             // If it's of length 1 it can only be a single keystroke entry
             if (entry.Length == 1)
             {
-                return ConvertToKeyInput(entry);
+                return new KeyStroke(ConvertToKeyInput(entry), KeyModifiers.None);
             }
 
             // First get rid of the Modifiers
@@ -334,12 +339,7 @@ namespace VsVim
                 return null;
             }
 
-            if (mod != KeyModifiers.None)
-            {
-                ki = new KeyInput(ki.Char, ki.Key, ki.KeyModifiers | mod);
-            }
-
-            return ki;
+            return new KeyStroke(ki, mod);
         }
 
         /// <summary>

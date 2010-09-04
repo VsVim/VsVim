@@ -6,24 +6,19 @@ open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Operations
 
-type internal ChangeTracker() =
+type internal ChangeTracker
+    (   _textChangeTrackerFactory : ITextChangeTrackerFactory ) =
 
     let mutable _last : RepeatableChange option = None
-    
-    /// Tracks the current active text change.  This will grow as the user edits
-    let mutable _currentTextChange : (ITextBuffer * Span) option = None
     
     member private x.OnVimBufferCreated (buffer:IVimBuffer) =
         buffer.NormalMode.CommandRunner.CommandRan |> Event.add x.OnCommandRan
         buffer.VisualLineMode.CommandRunner.CommandRan |> Event.add x.OnCommandRan
         buffer.VisualBlockMode.CommandRunner.CommandRan |> Event.add x.OnCommandRan
         buffer.VisualCharacterMode.CommandRunner.CommandRan |> Event.add x.OnCommandRan
-        buffer.SwitchedMode |> Event.add (fun _ -> _currentTextChange <- None)
 
-        // Listen to the ITextBuffer.Change event.  It's important to unsubscribe to this as the ITextBuffer
-        // can live much longer than an IVimBuffer instance
-        let handler = buffer.TextBuffer.Changed |> Observable.subscribe (fun args -> x.OnTextChanged buffer args)
-        buffer.TextView.Closed |> Event.add (fun _ -> handler.Dispose())
+        let tracker = _textChangeTrackerFactory.GetTextChangeTracker buffer
+        tracker.ChangeCompleted |> Event.add x.OnTextChanged 
 
     member private x.OnCommandRan ((data:CommandRunData),_) = 
         let command = data.Command
@@ -33,40 +28,20 @@ type internal ChangeTracker() =
         elif command.IsRepeatable then _last <- CommandChange data |> Some
         else _last <- None
 
-    member private x.OnTextChanged (buffer:IVimBuffer) args =
-
-        // Ignore changes which do not happen on focused windows.  Doing otherwise allows
-        // random tools to break this feature.  
-        // 
-        // We also cannot process a text change while we are processing input.  Otherwise text
-        // changes which are made as part of a command will be processed as user input.  This 
-        // breaks the "." operator
-        if buffer.TextView.HasAggregateFocus && not buffer.IsProcessingInput then
-
-            // Also at this time we only support contiguous changes (or rather a single change)
-            if args.Changes.Count = 1 then
-                let change = args.Changes.Item(0)
-    
-                let useCurrentChange () = 
-                    _currentTextChange <- (buffer.TextBuffer,change.NewSpan) |> Some
-                    _last <- TextChange(change.NewText) |> Some
-    
-                match _currentTextChange with
-                | None -> useCurrentChange()
-                | Some(oldBuffer,span) -> 
-    
-                    // Make sure this is a contiguous change that is not a delete
-                    if span.End = change.OldPosition && change.OldLength = 0 && oldBuffer = buffer.TextBuffer then
-                        let span = Span(span.Start, span.Length + change.NewLength)
-                        _currentTextChange <- (buffer.TextBuffer,span) |> Some
-                        _last <- TextChange(buffer.TextBuffer.CurrentSnapshot.GetText(span)) |> Some
-                    else 
-                        useCurrentChange()
-            else 
-                _last <- None
-                _currentTextChange <- None
+    member private x.OnTextChanged data = 
+        let useCurrent() = _last <- TextChange(data) |> Some
+        match _last with
+        | None -> _last <- TextChange(data) |> Some
+        | Some(last) ->
+            match last with
+            | LinkedChange(_) -> useCurrent()
+            | TextChange(_) -> useCurrent()
+            | CommandChange(change) -> 
+                if Utils.IsFlagSet change.Command.CommandFlags CommandFlags.LinkedWithNextTextChange then
+                    let change = LinkedChange (CommandChange change,TextChange data) 
+                    _last <- Some change
+                else useCurrent()
             
-
     interface IVimBufferCreationListener with
         member x.VimBufferCreated buffer = x.OnVimBufferCreated buffer
 

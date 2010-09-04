@@ -98,26 +98,29 @@ type internal CommandProcessor
 
     do
         let normalSeq = seq {
-            yield ("edit", "e", this.ProcessEdit)
+            yield ("<", "", this.ProcessShiftLeft)
+            yield (">", "", this.ProcessShiftRight)
+            yield ("close", "clo", this.ProcessClose)
             yield ("delete","d", this.ProcessDelete)
+            yield ("edit", "e", this.ProcessEdit)
+            yield ("fold", "fo", this.ProcessFold)
             yield ("join", "j", this.ProcessJoin)
             yield ("marks", "", this.ProcessMarks)
             yield ("put", "pu", this.ProcessPut)
-            yield ("set", "se", this.ProcessSet)
-            yield ("source","so", this.ProcessSource)
-            yield ("substitute", "s", this.ProcessSubstitute)
-            yield ("redo", "red", this.ProcessRedo)
-            yield ("undo", "u", this.ProcessUndo)
-            yield ("yank", "y", this.ProcessYank)
-            yield ("<", "", this.ProcessShiftLeft)
-            yield (">", "", this.ProcessShiftRight)
-            yield ("write","w", this.ProcessWrite)
-            yield ("wall", "wa", this.ProcessWriteAll)
             yield ("quit", "q", this.ProcessQuit)
             yield ("qall", "qa", this.ProcessQuitAll)
+            yield ("redo", "red", this.ProcessRedo)
+            yield ("set", "se", this.ProcessSet)
+            yield ("source","so", this.ProcessSource)
+            yield ("split", "sp", this.ProcessSplit)
+            yield ("substitute", "s", this.ProcessSubstitute)
             yield ("tabnext", "tabn", this.ProcessTabNext)
             yield ("tabprevious", "tabp", this.ProcessTabPrevious)
             yield ("tabNext", "tabN", this.ProcessTabPrevious)
+            yield ("undo", "u", this.ProcessUndo)
+            yield ("write","w", this.ProcessWrite)
+            yield ("wall", "wa", this.ProcessWriteAll)
+            yield ("yank", "y", this.ProcessYank)
             yield ("$", "", fun _ _ _ -> _operations.EditorOperations.MoveToEndOfDocument(false))
             yield ("make", "mak", this.ProcessMake)
         }
@@ -197,6 +200,9 @@ type internal CommandProcessor
 
     member private x.BadMessage = Resources.CommandMode_CannotRun _command
 
+    /// Process the :close command
+    member private x.ProcessClose _ _ hasBang = _data.Vim.VimHost.CloseView _data.TextView (not hasBang)
+
     /// Process the :join command
     member private x.ProcessJoin (rest:char list) (range:Range option) hasBang =
         let kind = if hasBang then JoinKind.KeepEmptySpaces else JoinKind.RemoveEmptySpaces
@@ -231,6 +237,11 @@ type internal CommandProcessor
                 |> StringUtil.ofCharSeq
         if System.String.IsNullOrEmpty name then _operations.ShowOpenFileDialog()
         else _operations.EditFile name
+
+    /// Parse out the fold command and create the fold
+    member private x.ProcessFold _ (range : Range option) _ =
+        let span = RangeUtil.RangeOrCurrentLine _data.TextView range |> RangeUtil.GetSnapshotSpan
+        _operations.FoldManager.CreateFold span
 
     /// Parse out the Yank command
     member private x.ProcessYank (rest:char list) (range: Range option) _ =
@@ -298,9 +309,7 @@ type internal CommandProcessor
     member private x.ProcessWriteAll _ _ _ = 
         _operations.SaveAll()
 
-    member private x.ProcessQuit _ _ hasBang =
-        let checkDirty = not hasBang
-        _operations.Close checkDirty
+    member private x.ProcessQuit _ _ hasBang = _data.Vim.VimHost.CloseView _data.TextView (not hasBang)
 
     member private x.ProcessQuitAll _ _ hasBang =
         let checkDirty = not hasBang
@@ -374,6 +383,11 @@ type internal CommandProcessor
                 |> Seq.map (fun command -> command |> List.ofSeq)
                 |> Seq.iter x.RunCommand
 
+    /// Split the given view into 2
+    member private x.ProcessSplit _ _ _ =
+        _data.Vim.VimHost.SplitView _data.TextView
+
+    /// Process the :substitute command. 
     member private x.ProcessSubstitute(rest:char list) (range:Range option) _ =
 
         // Used to parse out the flags on the :s command
@@ -391,16 +405,23 @@ type internal CommandProcessor
             rest |> Seq.fold (fun f c -> (charToOption c) ||| f) SubstituteFlags.None 
 
         let doParse rest badParse goodParse =
-            let parseOne (rest: char seq) notFound found = 
-                let prefix = rest |> Seq.takeWhile (fun ki -> ki = '/' ) 
-                if Seq.length prefix <> 1 then notFound()
-                else
-                    let rest = rest |> Seq.skip 1
-                    let data = rest |> Seq.takeWhile (fun c -> c <> '/' ) |> StringUtil.ofCharSeq
-                    found data (rest |> Seq.skip data.Length)
+
+            // Parse one element out of the sequence.  We expect the rest to 
+            // be pointed at a string prefixed with '/'.  "found" will be called
+            // with both the text after the '/' and the remainder of the string
+            let parseOne rest notFound found =
+                match rest with
+                | [] -> notFound()
+                | h::t -> 
+                    if h <> '/' then notFound()
+                    else 
+                        let rest = t |> Seq.ofList
+                        let data = rest |> Seq.takeWhile (fun c -> c <> '/') |> StringUtil.ofCharSeq
+                        found data (t |> ListUtil.skip data.Length)
+
             parseOne rest (fun () -> badParse() ) (fun search rest -> 
                 parseOne rest (fun () -> badParse()) (fun replace rest ->  
-                    let rest = rest |> Seq.skipWhile (fun c -> c = '/')
+                    let rest = rest |> ListUtil.skipWhile (fun c -> c = '/')
                     let flagsInput = rest |> Seq.takeWhile (fun c -> not (CharUtil.IsWhiteSpace c))
                     let flags = parseFlags flagsInput
                     let flags = 

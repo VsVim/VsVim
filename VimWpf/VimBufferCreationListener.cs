@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.ComponentModel.Composition;
+﻿using System.ComponentModel.Composition;
 using Microsoft.VisualStudio.Text.Editor;
 
 namespace Vim.UI.Wpf
@@ -11,11 +7,15 @@ namespace Vim.UI.Wpf
     internal sealed class VimBufferCreationListener : IVimBufferCreationListener
     {
         private readonly IBlockCaretFactoryService _blockCaretFactoryService;
+        private readonly IEditorOptionsFactoryService _editorOptionsFatoryService;
 
         [ImportingConstructor]
-        internal VimBufferCreationListener(IBlockCaretFactoryService blockCaretFactoryService)
+        internal VimBufferCreationListener(
+            IBlockCaretFactoryService blockCaretFactoryService,
+            IEditorOptionsFactoryService editorOptionsFactoryService)
         {
             _blockCaretFactoryService = blockCaretFactoryService;
+            _editorOptionsFatoryService = editorOptionsFactoryService;
         }
 
         public void VimBufferCreated(IVimBuffer buffer)
@@ -29,6 +29,17 @@ namespace Vim.UI.Wpf
             // Setup the block caret 
             var caret = _blockCaretFactoryService.CreateBlockCaret(textView);
             var caretController = new BlockCaretController(buffer, caret);
+
+            buffer.Settings.SettingChanged += (_, args) => OnSettingChanged(buffer, args);
+        }
+
+        private void OnSettingChanged(IVimBuffer buffer, Setting args)
+        {
+            if (args.Name == LocalSettingNames.CursorLineName)
+            {
+                var options = _editorOptionsFatoryService.GetOptions(buffer.TextView);
+                options.SetOptionValue(DefaultWpfViewOptions.EnableHighlightCurrentLineId, buffer.Settings.CursorLine);
+            }
         }
     }
 }

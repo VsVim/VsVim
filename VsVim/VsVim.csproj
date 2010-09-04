@@ -80,7 +80,9 @@
     </Reference>
     <Reference Include="Microsoft.VisualStudio.Shell.10.0, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
     <Reference Include="Microsoft.VisualStudio.Shell.Immutable.10.0, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
-    <Reference Include="Microsoft.VisualStudio.Shell.Interop, Version=7.1.40304.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
+    <Reference Include="Microsoft.VisualStudio.Shell.Interop, Version=7.1.40304.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+      <EmbedInteropTypes>False</EmbedInteropTypes>
+    </Reference>
     <Reference Include="Microsoft.VisualStudio.Shell.Interop.10.0, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
       <EmbedInteropTypes>False</EmbedInteropTypes>
     </Reference>
@@ -118,6 +120,11 @@
     <Compile Include="EditCommand.cs" />
     <Compile Include="CommandKeyBinding.cs" />
     <Compile Include="EditCommandKind.cs" />
+    <Compile Include="Implementation\TextManager.cs" />
+    <Compile Include="Implementation\VsAdapter.cs" />
+    <Compile Include="ITextManager.cs" />
+    <Compile Include="IVsAdapter.cs" />
+    <Compile Include="KeyStroke.cs" />
     <Compile Include="OleCommandUtil.cs" />
     <Compile Include="Extensions.cs" />
     <Compile Include="HostFactory.cs" />
@@ -132,7 +139,6 @@
     <Compile Include="Implementation\KeyBindingService.cs" />
     <Compile Include="CommandKeyBindingSnapshot.cs" />
     <Compile Include="Implementation\KeyProcessorProvider.cs" />
-    <Compile Include="Implementation\MouseProcessorProvider.cs" />
     <Compile Include="NativeMethods.cs" />
     <Compile Include="Implementation\OptionsProvider.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -148,9 +154,7 @@
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
       <DependentUpon>Settings.settings</DependentUpon>
     </Compile>
-    <Compile Include="UI\ConflictingKeyBindingControl.xaml.cs">
-      <DependentUpon>ConflictingKeyBindingControl.xaml</DependentUpon>
-    </Compile>
+    <Compile Include="UI\ComboBoxTemplateSelector.cs" />
     <Compile Include="UI\ConflictingKeyBindingDialog.xaml.cs">
       <DependentUpon>ConflictingKeyBindingDialog.xaml</DependentUpon>
     </Compile>
@@ -158,8 +162,9 @@
       <DependentUpon>ConflictingKeyBindingMarginControl.xaml</DependentUpon>
     </Compile>
     <Compile Include="UI\KeyBindingData.cs" />
-    <Compile Include="UI\ScopeData.cs" />
+    <Compile Include="UI\KeyBindingHandledByOption.cs" />
     <Compile Include="VsCommandFilter.cs" />
+    <Compile Include="VsFilterKeysAdapter.cs" />
     <Compile Include="VsVimHost.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -198,10 +203,6 @@
     </Content>
   </ItemGroup>
   <ItemGroup>
-    <Page Include="UI\ConflictingKeyBindingControl.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
     <Page Include="UI\ConflictingKeyBindingDialog.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
