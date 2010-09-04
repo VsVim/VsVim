@@ -4,6 +4,7 @@ using Moq;
 using NUnit.Framework;
 using Vim.UI.Wpf.Properties;
 using Vim.UnitTest.Mock;
+using Vim.Extensions;
 
 namespace Vim.UI.Wpf.Test
 {
@@ -105,6 +106,17 @@ namespace Vim.UI.Wpf.Test
             mode.SetupGet(x => x.ModeKind).Returns(ModeKind.Replace);
             _buffer.RaiseSwitchedMode(mode.Object);
             Assert.AreEqual(Resources.ReplaceBanner, _marginControl.StatusLine);
+        }
+
+        [Test]
+        public void SwitchMode8()
+        {
+            var mode = new Mock<INormalMode>();
+            mode.SetupGet(x => x.ModeKind).Returns(ModeKind.Normal);
+            mode.SetupGet(x => x.OneTimeMode).Returns(FSharpOption.Create(ModeKind.Insert));
+            _buffer.NormalModeImpl = mode.Object;
+            _buffer.RaiseSwitchedMode(mode.Object);
+            Assert.AreEqual(Resources.PendingInsertBanner, _marginControl.StatusLine);
         }
 
         [Test]

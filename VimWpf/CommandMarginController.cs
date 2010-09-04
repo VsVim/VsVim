@@ -76,7 +76,16 @@ namespace Vim.UI.Wpf
             switch (mode.ModeKind)
             {
                 case ModeKind.Normal:
-                    _margin.StatusLine = String.Empty;
+
+                    if (_buffer.NormalMode.OneTimeMode.Is(ModeKind.Insert))
+                    {
+                        _margin.StatusLine = Resources.PendingInsertBanner;
+                    }
+                    else
+                    {
+                        _margin.StatusLine = String.Empty;
+                    }
+
                     break;
                 case ModeKind.Command:
                     _margin.StatusLine = ":" + _buffer.CommandMode.Command;

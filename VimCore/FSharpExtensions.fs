@@ -11,6 +11,12 @@ module public OptionExtensions =
     [<Extension>]
     let IsNone opt = Option.isNone opt
 
+    [<Extension>]
+    let Is (opt:'a option, value) =
+        match opt with 
+        | Some(toTest) -> toTest = value
+        | None         -> false
+
 module public FSharpOption =
 
     let Create value = value |> Some

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Vim;
+using Microsoft.FSharp.Core;
 
 namespace Vim.UnitTest.Mock
 {
@@ -47,6 +48,11 @@ namespace Vim.UnitTest.Mock
             get { throw new NotImplementedException(); }
         }
 
+        public FSharpOption<ModeKind> OneTimeMode
+        {
+            get { throw new NotImplementedException(); }
+        }
+
         public void OnEnter(ModeArgument arg)
         {
             throw new NotImplementedException();
@@ -67,7 +73,6 @@ namespace Vim.UnitTest.Mock
             get { return VimBufferImpl; }
         }
 
-
         public bool IsInReplace
         {
             get { return IsInReplaceImpl; }
@@ -78,10 +83,11 @@ namespace Vim.UnitTest.Mock
             get { return CommandRunnerImpl; }
         }
 
-
         public void OnClose()
         {
             throw new NotImplementedException();
         }
+
+
     }
 }

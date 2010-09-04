@@ -70,6 +70,15 @@ namespace Vim.UI.Wpf.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to -- (insert) --.
+        /// </summary>
+        internal static string PendingInsertBanner {
+            get {
+                return ResourceManager.GetString("PendingInsertBanner", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to -- REPLACE --.
         /// </summary>
         internal static string ReplaceBanner {
