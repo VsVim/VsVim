@@ -429,6 +429,7 @@ type internal NormalMode
             _runner.Commands |> Seq.map (fun command -> command.KeyInputSet)
 
         member this.ModeKind = ModeKind.Normal
+        member this.OneTimeMode = _data.OneTimeMode
 
         member this.CanProcess (ki:KeyInput) =
             let doesCommandStartWith ki =

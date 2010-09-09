@@ -1140,6 +1140,9 @@ and INormalMode =
     /// The IIncrementalSearch instance for normal mode
     abstract IncrementalSearch : IIncrementalSearch
 
+    /// If we are a one-time normal mode, the mode kind we will return to
+    abstract OneTimeMode : ModeKind option
+
     inherit IMode
 
 and ICommandMode = 
