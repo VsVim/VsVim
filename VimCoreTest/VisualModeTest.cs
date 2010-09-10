@@ -46,10 +46,13 @@ namespace VimCore.Test
             _caret = _factory.Create<ITextCaret>();
             _view = _factory.Create<IWpfTextView>();
             _selection = _factory.Create<ITextSelection>();
+            _selection.Setup(x => x.Clear());
+            _selection.SetupSet(x => x.Mode = TextSelectionMode.Stream);
             _view.SetupGet(x => x.Caret).Returns(_caret.Object);
             _view.SetupGet(x => x.Selection).Returns(_selection.Object);
             _view.SetupGet(x => x.TextBuffer).Returns(_buffer);
             _view.SetupGet(x => x.TextSnapshot).Returns(() => _buffer.CurrentSnapshot);
+            _view.SetupGet(x => x.IsClosed).Returns(false);
             _map = new RegisterMap();
             _tracker = _factory.Create<ISelectionTracker>();
             _tracker.Setup(x => x.Start());

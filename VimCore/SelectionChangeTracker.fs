@@ -21,6 +21,9 @@ type internal SelectionChangeTracker
 
     let _textView = _buffer.TextView
     let _bag = DisposableBag()
+
+    /// Did the selection change while we were in the middle of processing 
+    /// key input and not in Visual Mode 
     let mutable _selectionDirty = false
 
     do
@@ -51,28 +54,49 @@ type internal SelectionChangeTracker
                 _selectionDirty <- false
             else 
                 _selectionDirty <- true
-        elif not x.IsAnyVisualMode then
-            _selectionDirty <- true
+        else
             x.SetModeForSelection()
 
     member private x.OnBufferClosed() = _bag.DisposeAll()
-    member private x.OnKeyInputFinished() = 
-        if _selectionDirty && not _textView.Selection.IsEmpty && _selectionDirty then 
-            x.SetModeForSelection()
-            _selectionDirty <- false
 
+    /// Linked to the KeyInputProcessed event.  If the selection changed while processing keyinput
+    /// and we weren't in Visual Mode then we need to update the selection
+    member private x.OnKeyInputFinished() = 
+        if _selectionDirty then
+            _selectionDirty <- false
+            x.SetModeForSelection()
+
+    /// Update the mode based on the current Selection
     member private x.SetModeForSelection() = 
+
+        // What should the mode be based on the current selection
+        let desiredMode () = 
+            let inner = 
+                if _textView.Selection.IsEmpty then 
+                    if x.IsAnyVisualMode then Some ModeKind.Normal
+                    else None
+                elif _textView.Selection.Mode = TextSelectionMode.Stream then Some ModeKind.VisualCharacter 
+                else Some ModeKind.VisualBlock
+            match inner with 
+            | None -> None
+            | Some(kind) -> if kind <> _buffer.ModeKind then Some kind else None 
 
         // Update the selections.  This is called from a post callback to ensure we don't 
         // interfer with other selection + edit events
         let doUpdate () = 
-            if not x.IsAnyVisualMode && not _textView.Selection.IsEmpty then
-                let modeKind = 
-                    if _textView.Selection.Mode = TextSelectionMode.Stream then ModeKind.VisualCharacter
-                    else ModeKind.VisualBlock
-                _buffer.SwitchMode modeKind ModeArgument.None |> ignore
+            if not  _selectionDirty then 
+                match desiredMode() with
+                | None -> ()
+                | Some(modeKind) -> _buffer.SwitchMode modeKind ModeArgument.None |> ignore
 
-        if not _textView.Selection.IsEmpty then 
+        match desiredMode() with
+        | None ->
+            // No mode change is desired.  However the selection has changed and Visual Mode 
+            // caches information about the original selection.  Update that information now
+            if x.IsAnyVisualMode then
+                let mode = _buffer.Mode :?> IVisualMode
+                mode.SyncSelection()
+        | Some(_) -> 
             let context = System.Threading.SynchronizationContext.Current
             context.Post( (fun _ -> doUpdate()), null)
 

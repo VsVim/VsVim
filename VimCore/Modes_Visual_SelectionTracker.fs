@@ -47,12 +47,6 @@ type internal SelectionTracker
         if not _running then invalidOp Resources.SelectionTracker_NotRunning
         _textChangedHandler.Remove()
 
-        // On teardown we will get calls to Stop when the view is closed.  It's invalid to access 
-        // the selection at that point
-        if not _textView.IsClosed then
-            _textView.Selection.Clear()
-            _textView.Selection.Mode <- TextSelectionMode.Stream
-
         _running <- false
 
     /// Update the selection based on the current state of the view

@@ -783,6 +783,15 @@ type ProcessResult =
         | ModeSwitch.SwitchModeWithArgument(kind,arg) -> ProcessResult.SwitchModeWithArgument (kind,arg)
         | ModeSwitch.SwitchPreviousMode -> ProcessResult.SwitchPreviousMode
 
+    // Is this any type of mode switch
+    member x.IsAnySwitch =
+        match x with
+        | Processed -> false
+        | ProcessNotHandled -> false
+        | SwitchMode(_) -> true
+        | SwitchModeWithArgument(_,_) -> true
+        | SwitchPreviousMode -> true
+
 type SettingKind =
     | NumberKind
     | StringKind    
@@ -1164,6 +1173,10 @@ and IVisualMode =
 
     /// The ICommandRunner implementation associated with NormalMode
     abstract CommandRunner : ICommandRunner 
+
+    /// Asks Visual Mode to reset what it perceives to be the original selection.  Instead it 
+    /// views the current selection as the original selection for entering the mode
+    abstract SyncSelection : unit -> unit
 
     inherit IMode 
     

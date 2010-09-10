@@ -42,11 +42,15 @@ namespace VimCore.Test
         }
 
         [Test]
-        [Description("Already in Visual Mode.  Nothing to do")]
+        [Description("Already in Visual Mode must resync the selection")]
         public void SelectionChanged1()
         {
+            var mode = _factory.Create<IVisualMode>();
+            mode.Setup(x => x.SyncSelection()).Verifiable();
             _buffer.SetupGet(x => x.IsProcessingInput).Returns(false).Verifiable();
             _buffer.SetupGet(x => x.ModeKind).Returns(ModeKind.VisualCharacter).Verifiable();
+            _buffer.SetupGet(x => x.Mode).Returns(mode.Object).Verifiable();
+            _selection.SetupGet(x => x.Mode).Returns(TextSelectionMode.Stream).Verifiable();
             _selection.Raise(x => x.SelectionChanged += null, (object)null, EventArgs.Empty);
             Assert.IsTrue(_context.IsEmpty);
             _factory.Verify();
@@ -100,6 +104,53 @@ namespace VimCore.Test
             _context.RunAll();
             _factory.Verify();
         }
+
+        [Test]
+        [Description("Selection changes while in Visual Mode should reset the selection")]
+        public void SelectionChanged5()
+        {
+            var mode = _factory.Create<IVisualMode>();
+            mode.Setup(x => x.SyncSelection()).Verifiable();
+            _buffer.SetupGet(x => x.IsProcessingInput).Returns(false).Verifiable();
+            _buffer.SetupGet(x => x.ModeKind).Returns(ModeKind.VisualCharacter).Verifiable();
+            _buffer.SetupGet(x => x.Mode).Returns(mode.Object).Verifiable();
+            _selection.SetupGet(x => x.IsEmpty).Returns(false).Verifiable();
+            _selection.SetupGet(x => x.Mode).Returns(TextSelectionMode.Stream).Verifiable();
+            _selection.Raise(x => x.SelectionChanged += null, null, EventArgs.Empty);
+            Assert.IsTrue(_context.IsEmpty);
+            _factory.Verify();
+        }
+
+        [Test]
+        [Description("Selection changes while in Visual Mode should reset the mode")]
+        public void SelectionChanged6()
+        {
+            _buffer.SetupGet(x => x.IsProcessingInput).Returns(false).Verifiable();
+            _selection.Raise(x => x.SelectionChanged += null, null, EventArgs.Empty);
+            Assert.IsFalse(_context.IsEmpty);
+            _factory.Verify();
+
+            _selection.SetupGet(x => x.IsEmpty).Returns(false).Verifiable();
+            _buffer
+                .Setup(x => x.SwitchMode(ModeKind.VisualCharacter, ModeArgument.None))
+                .Returns(_factory.Create<IMode>().Object)
+                .Verifiable();
+            _context.RunAll();
+            _factory.Verify();
+        }
+
+        [Test]
+        [Description("Don't switch out of non-normal mode")]
+        public void SelectionChanged7()
+        {
+            _buffer.SetupGet(x => x.IsProcessingInput).Returns(false).Verifiable();
+            _buffer.SetupGet(x => x.ModeKind).Returns(ModeKind.Insert).Verifiable();
+            _selection.SetupGet(x => x.IsEmpty).Returns(true).Verifiable();
+            _selection.Raise(x => x.SelectionChanged += null, null, EventArgs.Empty);
+            Assert.IsTrue(_context.IsEmpty);
+            _factory.Verify();
+        }
+
 
     }
 }

@@ -83,6 +83,7 @@
     <Compile Include="Modes_Visual_SelectionTracker.fs" />
     <Compile Include="Modes_Visual_VisualMode.fsi" />
     <Compile Include="Modes_Visual_VisualMode.fs" />
+    <Compile Include="SelectionChangeTracker.fsi" />
     <Compile Include="SelectionChangeTracker.fs" />
     <Compile Include="FoldManager.fs" />
     <Compile Include="VimBuffer.fs" />

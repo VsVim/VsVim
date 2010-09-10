@@ -317,30 +317,42 @@ type internal VisualMode
         member x.ModeKind = _kind
         member x.CanProcess (ki:KeyInput) = true
         member x.Process (ki : KeyInput) =  
-            if ki.Key = VimKey.Escape then
-                ProcessResult.SwitchPreviousMode
-            else
-                let original = _buffer.TextSnapshot.Version.VersionNumber
-                match _runner.Run ki with
-                | RunKeyInputResult.NeedMoreKeyInput -> ProcessResult.Processed
-                | RunKeyInputResult.NestedRunDetected -> ProcessResult.Processed
-                | RunKeyInputResult.CommandRan(commandRanData,modeSwitch) -> 
 
-                    if Utils.IsFlagSet commandRanData.Command.CommandFlags CommandFlags.ResetCaret then
-                        _selectionTracker.ResetCaret()
-
-                    match modeSwitch with
-                    | ModeSwitch.NoSwitch -> _selectionTracker.UpdateSelection()
-                    | ModeSwitch.SwitchMode(_) -> ()
-                    | ModeSwitch.SwitchModeWithArgument(_,_) -> ()
-                    | ModeSwitch.SwitchPreviousMode -> ()
-                    ProcessResult.OfModeSwitch modeSwitch
-                | RunKeyInputResult.CommandErrored(_) -> ProcessResult.SwitchPreviousMode
-                | RunKeyInputResult.CommandCancelled -> ProcessResult.SwitchPreviousMode
-                | RunKeyInputResult.NoMatchingCommand -> 
-                    _operations.Beep()
-                    ProcessResult.Processed
+            let result = 
+                if ki.Key = VimKey.Escape then
+                    ProcessResult.SwitchPreviousMode
+                else
+                    let original = _buffer.TextSnapshot.Version.VersionNumber
+                    match _runner.Run ki with
+                    | RunKeyInputResult.NeedMoreKeyInput -> ProcessResult.Processed
+                    | RunKeyInputResult.NestedRunDetected -> ProcessResult.Processed
+                    | RunKeyInputResult.CommandRan(commandRanData,modeSwitch) -> 
     
+                        if Utils.IsFlagSet commandRanData.Command.CommandFlags CommandFlags.ResetCaret then
+                            _selectionTracker.ResetCaret()
+
+                        match modeSwitch with
+                        | ModeSwitch.NoSwitch -> _selectionTracker.UpdateSelection()
+                        | ModeSwitch.SwitchMode(_) -> ()
+                        | ModeSwitch.SwitchModeWithArgument(_,_) -> ()
+                        | ModeSwitch.SwitchPreviousMode -> ()
+                        ProcessResult.OfModeSwitch modeSwitch
+                    | RunKeyInputResult.CommandErrored(_) -> ProcessResult.SwitchPreviousMode
+                    | RunKeyInputResult.CommandCancelled -> ProcessResult.SwitchPreviousMode
+                    | RunKeyInputResult.NoMatchingCommand -> 
+                        _operations.Beep()
+                        ProcessResult.Processed
+
+            // If we are switching out Visual Mode then reset the selection
+            if result.IsAnySwitch then
+                // On teardown we will get calls to Stop when the view is closed.  It's invalid to access 
+                // the selection at that point
+                let textView = _buffer.TextView
+                if not textView.IsClosed then
+                    textView.Selection.Clear()
+                    textView.Selection.Mode <- TextSelectionMode.Stream
+
+            result
         member x.OnEnter _ = 
             x.EnsureCommandsBuilt()
             _selectionTracker.Start()
@@ -352,6 +364,10 @@ type internal VisualMode
     interface IVisualMode with
         member x.InExplicitMove = x.InExplicitMove
         member x.CommandRunner = _runner
+        member x.SyncSelection () = 
+            if _selectionTracker.IsRunning then
+                _selectionTracker.Stop()
+                _selectionTracker.Start()
 
 
 
