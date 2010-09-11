@@ -151,6 +151,23 @@ namespace VimCore.Test
             _factory.Verify();
         }
 
+        [Test]
+        [Description("Visual Studio does not guarantee the SynchronizationContext is set")]
+        public void BadSynchronizationContext()
+        {
+            SynchronizationContext.SetSynchronizationContext(null);
+            _buffer.SetupGet(x => x.IsProcessingInput).Returns(false).Verifiable();
+            _buffer.SetupGet(x => x.ModeKind).Returns(ModeKind.Normal).Verifiable();
+            _buffer
+                .Setup(x => x.SwitchMode(ModeKind.VisualCharacter, ModeArgument.None))
+                .Returns(_factory.Create<IMode>().Object)
+                .Verifiable();
+            _selection.SetupGet(x => x.IsEmpty).Returns(false).Verifiable();
+            _selection.Raise(x => x.SelectionChanged += null, null, EventArgs.Empty);
+            _factory.Verify();
+            Assert.IsTrue(_context.IsEmpty);     // Shouldn't be accessible
+        }
+
 
     }
 }

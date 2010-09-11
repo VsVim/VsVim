@@ -97,6 +97,9 @@ type internal SelectionChangeTracker
                 let mode = _buffer.Mode :?> IVisualMode
                 mode.SyncSelection()
         | Some(_) -> 
+            // It's not guaranteed that this will be set.  Visual Studio for instance will
+            // null this out in certain WPF designer scenarios
             let context = System.Threading.SynchronizationContext.Current
-            context.Post( (fun _ -> doUpdate()), null)
+            if context <> null then context.Post( (fun _ -> doUpdate()), null)
+            else doUpdate()
 
