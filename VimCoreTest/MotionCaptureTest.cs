@@ -502,6 +502,49 @@ namespace VimCore.Test
             Assert.AreEqual(3, count.Value);
         }
 
+        [Test]
+        public void Motion_SentenceForward1()
+        {
+            _util
+                .Setup(x => x.SentenceForward(1))
+                .Returns(CreateMotionData())
+                .Verifiable();
+            ProcessComplete(")");
+            _factory.Verify();
+        }
+
+        [Test]
+        public void Motion_SentenceForward2()
+        {
+            _util
+                .Setup(x => x.SentenceForward(2))
+                .Returns(CreateMotionData())
+                .Verifiable();
+            ProcessComplete("2)");
+            _factory.Verify();
+        }
+
+        [Test]
+        public void Motion_SentenceBackward1()
+        {
+            _util
+                .Setup(x => x.SentenceBackward(1))
+                .Returns(CreateMotionData())
+                .Verifiable();
+            ProcessComplete("(");
+            _factory.Verify();
+        }
+
+        [Test]
+        public void Motion_SentenceBackward2()
+        {
+            _util
+                .Setup(x => x.SentenceBackward(3))
+                .Returns(CreateMotionData())
+                .Verifiable();
+            ProcessComplete("3(");
+            _factory.Verify();
+        }
     }
 
 }

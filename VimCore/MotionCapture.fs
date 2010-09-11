@@ -87,6 +87,8 @@ type internal MotionCapture
                 yield ("<C-m>", fun count -> _util.LineDownToFirstNonWhitespace count |> Some)
                 yield ("<Enter>", fun count -> _util.LineDownToFirstNonWhitespace count |> Some)
                 yield ("-", fun count -> _util.LineUpToFirstNonWhitespace count |> Some)
+                yield ("(", fun count -> _util.SentenceBackward count |> Some)
+                yield (")", fun count -> _util.SentenceForward count |> Some)
             } |> Seq.map (fun (kiName,func) ->
                     let kiSet = singleToKiSet kiName 
                     let func2 count =

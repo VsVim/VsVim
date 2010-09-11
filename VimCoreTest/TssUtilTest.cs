@@ -67,11 +67,11 @@ namespace VimCore.Test
         {
             Create("foo", "bar caz dang");
             var line = _snapshot.GetLineFromLineNumber(1);
-            var p = line.Start+4;
+            var p = line.Start + 4;
             Assert.AreEqual('c', p.GetChar());
             var p2 = TssUtil.FindNextWordStart(line.Start + 4, 1, WordKind.NormalWord);
             Assert.AreNotEqual(p2, p);
-            Assert.AreEqual(p+4, p2);
+            Assert.AreEqual(p + 4, p2);
         }
 
         [Test, Description("Find word across line boundary")]
@@ -243,7 +243,7 @@ namespace VimCore.Test
             var line = _buffer.CurrentSnapshot.GetLineFromLineNumber(0);
             var span = TssUtil.GetReverseCharacterSpan(line.Start.Add(2), 200);
             Assert.AreEqual("fo", span.GetText());
-        }        
+        }
 
 
 
@@ -284,7 +284,7 @@ namespace VimCore.Test
             Assert.AreEqual("baz", words[2]);
         }
 
-        [Test, Description("End of the buffer with wrap") ]
+        [Test, Description("End of the buffer with wrap")]
         public void GetWordSpans3()
         {
             Create("foo bar baz");
@@ -347,7 +347,7 @@ namespace VimCore.Test
         public void FindAnyWordSpan2()
         {
             Create("foo bar baz");
-            var span = TssUtil.FindAnyWordSpan(new SnapshotSpan(_buffer.CurrentSnapshot, 0,2), WordKind.BigWord, SearchKind.Forward);
+            var span = TssUtil.FindAnyWordSpan(new SnapshotSpan(_buffer.CurrentSnapshot, 0, 2), WordKind.BigWord, SearchKind.Forward);
             Assert.IsTrue(span.IsSome());
             Assert.AreEqual("fo", span.Value.GetText());
         }
@@ -370,7 +370,7 @@ namespace VimCore.Test
                 WordKind.NormalWord,
                 SearchKind.BackwardWithWrap);
             Assert.IsTrue(span.IsSome());
-            Assert.AreEqual("ba", span.Value.GetText());            
+            Assert.AreEqual("ba", span.Value.GetText());
         }
 
         [Test]
@@ -486,7 +486,7 @@ namespace VimCore.Test
         [Test]
         public void FindTillPreviousOccuranceOfCharOnLine1()
         {
-            Create("foo","bar","baz");
+            Create("foo", "bar", "baz");
             var prev = TssUtil.FindTillPreviousOccurranceOfCharOnLine(_buffer.GetLine(2).Start, 'r', 1);
             Assert.IsFalse(prev.IsSome());
         }
@@ -506,6 +506,96 @@ namespace VimCore.Test
             var prev = TssUtil.FindTillPreviousOccurranceOfCharOnLine(_buffer.GetLine(1).End, 'b', 1);
             Assert.IsTrue(prev.IsSome());
             Assert.AreEqual(_buffer.GetLine(1).Start.Add(1), prev.Value);
+        }
+
+        [Test]
+        public void GetSentences1()
+        {
+            Create("a. b.");
+            var ret = TssUtil.GetSentences(_snapshot.GetPoint(0), SearchKind.Forward);
+            CollectionAssert.AreEquivalent(
+                new string[] { "a.", " b." },
+                ret.Select(x => x.GetText()).ToList());
+        }
+
+        [Test]
+        public void GetSentences2()
+        {
+            Create("a! b.");
+            var ret = TssUtil.GetSentences(_snapshot.GetPoint(0), SearchKind.Forward);
+            CollectionAssert.AreEquivalent(
+                new string[] { "a!", " b." },
+                ret.Select(x => x.GetText()).ToList());
+        }
+
+        [Test]
+        public void GetSentences3()
+        {
+            Create("a? b.");
+            var ret = TssUtil.GetSentences(_snapshot.GetPoint(0), SearchKind.Forward);
+            CollectionAssert.AreEquivalent(
+                new string[] { "a?", " b." },
+                ret.Select(x => x.GetText()).ToList());
+        }
+
+        [Test]
+        public void GetSentences4()
+        {
+            Create("a? b.");
+            var ret = TssUtil.GetSentences(_snapshot.GetEndPoint(), SearchKind.Forward);
+            CollectionAssert.AreEquivalent(
+                new string[] { },
+                ret.Select(x => x.GetText()).ToList());
+        }
+
+        [Test]
+        public void GetSentences5()
+        {
+            Create("a? b.");
+            var ret = TssUtil.GetSentences(_snapshot.GetEndPoint(), SearchKind.Backward);
+            CollectionAssert.AreEquivalent(
+                new string[] { " b.", "a?" },
+                ret.Select(x => x.GetText()).ToList());
+        }
+
+        [Test]
+        public void GetSentences6()
+        {
+            Create("a? b.");
+            var ret = TssUtil.GetSentences(_snapshot.GetPoint(2), SearchKind.Backward);
+            CollectionAssert.AreEquivalent(
+                new string[] { "a?" },
+                ret.Select(x => x.GetText()).ToList());
+        }
+
+        [Test]
+        public void GetSentences7()
+        {
+            Create("a?)]' b.");
+            var ret = TssUtil.GetSentences(_snapshot.GetPoint(0), SearchKind.Forward);
+            CollectionAssert.AreEquivalent(
+                new string[] { "a?)]'", " b." },
+                ret.Select(x => x.GetText()).ToList());
+        }
+
+        [Test]
+        public void GetSentences8()
+        {
+            Create("a?) b.");
+            var ret = TssUtil.GetSentences(_snapshot.GetEndPoint(), SearchKind.Backward);
+            CollectionAssert.AreEquivalent(
+                new string[] { " b.", "a?)" },
+                ret.Select(x => x.GetText()).ToList());
+        }
+
+        [Test]
+        public void GetSentences9()
+        {
+            Create("a?) b.");
+            var ret = TssUtil.GetSentences(_snapshot.GetPoint(3), SearchKind.BackwardWithWrap);
+            CollectionAssert.AreEquivalent(
+                new string[] { "a?)", " b." },
+                ret.Select(x => x.GetText()).ToList());
         }
 
     }

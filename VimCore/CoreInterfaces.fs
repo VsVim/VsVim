@@ -155,6 +155,12 @@ type IMotionUtil =
     /// Go to the middle line in the visible window.  
     abstract LineInMiddleOfVisibleWindow : unit -> MotionData
 
+    /// Count sentences forward
+    abstract SentenceForward : count:int -> MotionData
+
+    /// Count sentences backward 
+    abstract SentenceBackward : count:int -> MotionData
+
 type ModeKind = 
     | Normal = 1
     | Insert = 2

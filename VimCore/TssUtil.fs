@@ -202,3 +202,74 @@ module TssUtil =
         match FindPreviousOccurranceOfCharOnLine point targetChar count with
         | None -> None
         | Some(point) -> SnapshotPointUtil.TryGetNextPointOnLine point
+
+    let SentenceEndChars = ['.'; '!'; '?']
+    let SentenceTrailingChars = [')';']'; '"'; '\'']
+
+    let GetSentences point kind = 
+
+        // Get the sentences for the given span in a forward fashion
+        let forSpanForward span = 
+            seq {
+                
+                let startPoint = ref (SnapshotSpanUtil.GetStartPoint span)
+                let inEnd = ref false
+                for point in SnapshotSpanUtil.GetPoints span do
+                    let char = SnapshotPointUtil.GetChar point
+                    if not !inEnd then 
+                        if ListUtil.contains char SentenceEndChars then inEnd := true
+                        else ()
+                    else 
+                        if ListUtil.contains char SentenceTrailingChars then ()
+                        else
+                            yield SnapshotSpan(!startPoint,point)
+                            startPoint := point
+                            inEnd := false
+
+                // Catch the remainder of the span which may not end in a sentence delimeter
+                if !startPoint <> span.End then yield SnapshotSpan(!startPoint,span.End)
+            }
+
+        // Get the sentences for the given span in a backward fashion
+        let forSpanBackward span = 
+            seq {
+                // Start of the previous sentence point.  Should be the end point
+                // of the next returned SnapshotSpan
+                let endPoint = ref (SnapshotSpanUtil.GetEndPoint span)
+
+                // If we see a tail character while enumerating backwards this will
+                // note the point before the first tail character
+                let tailPoint : SnapshotPoint option ref = ref None
+
+                for point in SnapshotSpanUtil.GetPointsBackward span do
+                    let char = SnapshotPointUtil.GetChar point
+                    if ListUtil.contains char SentenceEndChars then
+                        let startPoint = 
+                            match !tailPoint with
+                            | None -> point.Add(1) // don't include the end char
+                            | Some(t) -> t
+                        if startPoint <> !endPoint then
+                            yield SnapshotSpan(startPoint, !endPoint)
+                            endPoint := startPoint
+                            tailPoint := None
+                    elif ListUtil.contains char SentenceTrailingChars && Option.isNone !tailPoint then
+                        tailPoint := Some (point.Add(1))
+                    else 
+                        tailPoint := None
+
+                // Get the begining of the span
+                if !endPoint <> span.Start then yield SnapshotSpan(span.Start, !endPoint)
+            }
+
+        let snapshot = SnapshotPointUtil.GetSnapshot point
+        let above = SnapshotSpan(SnapshotUtil.GetStartPoint snapshot, point)
+        let below = SnapshotSpan(point, SnapshotUtil.GetEndPoint snapshot)
+        match kind with
+        | SearchKind.Forward -> below |> forSpanForward
+        | SearchKind.ForwardWithWrap -> [below; above] |> Seq.map forSpanForward |> Seq.concat
+        | SearchKind.Backward -> above |> forSpanBackward
+        | SearchKind.BackwardWithWrap -> [above; below] |> Seq.map forSpanBackward |> Seq.concat
+        | _ -> failwith ""
+            
+
+

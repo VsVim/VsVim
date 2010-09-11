@@ -123,6 +123,9 @@ module SnapshotSpanUtil =
     /// Get the raw Span
     let GetSpan (span:SnapshotSpan) = span.Span
 
+    /// Get the Snapshot
+    let GetSnapshot (span:SnapshotSpan) = span.Snapshot
+
     /// Get all of the points on the specified SnapshotSpan.  Will not return the End point
     let GetPoints (span:SnapshotSpan) = 
         let tss = span.Snapshot 
@@ -219,6 +222,13 @@ module SnapshotSpanUtil =
             SnapshotSpan(line.Start, span.End)
         else span
 
+    /// Get the ITextSnapshotLines included in this SnasphotSpan 
+    let GetLines span = 
+        let startLine = GetStartLine span
+        let count = GetLineCount span
+        SnapshotUtil.GetLines span.Snapshot startLine.LineNumber SearchKind.Forward
+        |> Seq.take count
+
     /// Create an empty span at the given point
     let Create (startPoint:SnapshotPoint) (endPoint:SnapshotPoint) = SnapshotSpan(startPoint,endPoint)
 
@@ -228,12 +238,16 @@ module SnapshotSpanUtil =
     /// Create a SnapshotSpan from the given bounds
     let CreateFromBounds (startPoint:SnapshotPoint) (endPoint:SnapshotPoint) = SnapshotSpan(startPoint,endPoint)
 
-    /// Get the ITextSnapshotLines included in this SnasphotSpan 
-    let GetLines span = 
-        let startLine = GetStartLine span
-        let count = GetLineCount span
-        SnapshotUtil.GetLines span.Snapshot startLine.LineNumber SearchKind.Forward
-        |> Seq.take count
+    /// Create a span which is just combines the provided spans
+    let CreateCombined seq = 
+        let inner state span = 
+            match state with
+            | None -> Some span
+            | Some(state) ->
+                let startPos = min (GetStartPosition state) (GetStartPosition span)
+                let endPos = max (GetEndPosition state) (GetEndPosition span)
+                SnapshotSpan((GetSnapshot state), startPos,endPos) |> Some
+        seq |> Seq.fold inner None
 
 /// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
 /// include any Vim specific logic
@@ -246,7 +260,7 @@ module NormalizedSnapshotSpanCollectionUtil =
     let GetLast (col:NormalizedSnapshotSpanCollection) = col.[col.Count-1]
 
     /// Get the inclusive span 
-    let GetFullSpan col =
+    let GetCombinedSpan col =
         let first = GetFirst col
         let last = GetLast col
         SnapshotSpan(first.Start,last.End) 
@@ -472,6 +486,9 @@ module SnapshotPointUtil =
         match TryGetChar point with
         | Some(c) -> c
         | None -> defaultValue
+
+    /// Get the characeter associated with the point.  Will throw for the End point in the Snapshot
+    let GetChar (point:SnapshotPoint) = point.GetChar()
 
     /// Get the points on the containing line starting at the passed in value.  If the passed in start
     /// point is inside the line break, an empty sequence will be returned

@@ -250,5 +250,21 @@ type internal MotionUtil
             let span,isForward = x.SpanAndForwardFromLines caretLine middleLine
             {Span=span; IsForward=isForward; MotionKind=MotionKind.Inclusive; OperationKind=OperationKind.LineWise; Column=None}
             |> x.ApplyStartOfLineOption
+        member x.SentenceForward count = 
+            let caretPoint = TextViewUtil.GetCaretPoint _textView
+            let span = 
+                TssUtil.GetSentences caretPoint SearchKind.Forward
+                |> SeqUtil.takeMax count
+                |> SnapshotSpanUtil.CreateCombined 
+                |> Option.get   // GetSentences must return at least one
+            {Span=span; IsForward=true; MotionKind=MotionKind.Exclusive; OperationKind=OperationKind.CharacterWise; Column=None}
+        member x.SentenceBackward count = 
+            let caretPoint = TextViewUtil.GetCaretPoint _textView
+            let span = 
+                TssUtil.GetSentences caretPoint SearchKind.Backward
+                |> SeqUtil.takeMax count
+                |> SnapshotSpanUtil.CreateCombined 
+                |> Option.get   // GetSentences must return at least one
+            {Span=span; IsForward=false; MotionKind=MotionKind.Exclusive; OperationKind=OperationKind.CharacterWise; Column=None}
 
 

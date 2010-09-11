@@ -223,7 +223,7 @@ type internal VisualMode
                     Some ModeKind.Insert,
                     (fun _ reg span -> _operations.DeleteLinesInSpan span reg),
                     (fun _ reg col -> 
-                        let span = NormalizedSnapshotSpanCollectionUtil.GetFullSpan col 
+                        let span = NormalizedSnapshotSpanCollectionUtil.GetCombinedSpan col 
                         _operations.DeleteLinesInSpan span reg))
                 yield (
                     "C",
@@ -244,7 +244,7 @@ type internal VisualMode
                     None,
                     (fun _ _ span -> _operations.JoinSpan span JoinKind.RemoveEmptySpaces),
                     (fun _ _ col ->
-                        let span = NormalizedSnapshotSpanCollectionUtil.GetFullSpan col 
+                        let span = NormalizedSnapshotSpanCollectionUtil.GetCombinedSpan col 
                         _operations.JoinSpan span JoinKind.RemoveEmptySpaces))
                 yield (
                     "gJ",
@@ -252,7 +252,7 @@ type internal VisualMode
                     None,
                     (fun _ _ span -> _operations.JoinSpan span JoinKind.KeepEmptySpaces),
                     (fun _ _ col ->
-                        let span = NormalizedSnapshotSpanCollectionUtil.GetFullSpan col 
+                        let span = NormalizedSnapshotSpanCollectionUtil.GetCombinedSpan col 
                         _operations.JoinSpan span JoinKind.KeepEmptySpaces))
                 yield (
                     "p",

@@ -370,6 +370,11 @@ namespace Vim.UnitTest
             return new SnapshotPoint(tss, position);
         }
 
+        public static SnapshotPoint GetEndPoint(this ITextSnapshot tss)
+        {
+            return new SnapshotPoint(tss, tss.Length);
+        }
+
         public static SnapshotSpan GetSpan(this ITextSnapshot tss, int start, int length)
         {
             return new SnapshotSpan(tss, start, length);
