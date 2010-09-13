@@ -598,5 +598,26 @@ namespace VimCore.Test
                 ret.Select(x => x.GetText()).ToList());
         }
 
+        [Test]
+        [Description("Only a sentence end if followed by certain items")]
+        public void GetSentence10()
+        {
+            Create("a!b. c");
+            var ret = TssUtil.GetSentences(_snapshot.GetPoint(0), SearchKind.Forward);
+            CollectionAssert.AreEquivalent(
+                new string[] { "a!b.", " c" },
+                ret.Select(x => x.GetText()).ToList());
+        }
+
+        [Test]
+        [Description("Only a sentence end if followed by certain items")]
+        public void GetSentence11()
+        {
+            Create("a!b. c");
+            var ret = TssUtil.GetSentences(_snapshot.GetEndPoint(), SearchKind.Backward);
+            CollectionAssert.AreEquivalent(
+                new string[] { " c", "a!b." },
+                ret.Select(x => x.GetText()).ToList());
+        }
     }
 }

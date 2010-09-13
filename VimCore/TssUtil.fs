@@ -203,8 +203,15 @@ module TssUtil =
         | None -> None
         | Some(point) -> SnapshotPointUtil.TryGetNextPointOnLine point
 
+    /// Set of characters which represent the end of a sentence. 
     let SentenceEndChars = ['.'; '!'; '?']
+
+    /// Set of characters which can validly follow a sentence 
     let SentenceTrailingChars = [')';']'; '"'; '\'']
+
+    /// Set of characters which must be after the End to truly (and finally) end
+    /// the sentence. 
+    let SentenceAfterEndChars = [' '; '\t'; '\r'; '\n']
 
     let GetSentences point kind = 
 
@@ -221,9 +228,11 @@ module TssUtil =
                         else ()
                     else 
                         if ListUtil.contains char SentenceTrailingChars then ()
-                        else
+                        elif ListUtil.contains char SentenceAfterEndChars then 
                             yield SnapshotSpan(!startPoint,point)
                             startPoint := point
+                            inEnd := false
+                        else
                             inEnd := false
 
                 // Catch the remainder of the span which may not end in a sentence delimeter
@@ -243,7 +252,19 @@ module TssUtil =
 
                 for point in SnapshotSpanUtil.GetPointsBackward span do
                     let char = SnapshotPointUtil.GetChar point
-                    if ListUtil.contains char SentenceEndChars then
+
+                    // Is the character to the right a char which truly terminates the 
+                    // sentence
+                    let isRightAfterEndChar = 
+                        let right = SnapshotPointUtil.AddOne point
+                        if SnapshotPointUtil.IsEndPoint right then false
+                        else 
+                            let rightChar = SnapshotPointUtil.GetChar right
+                            ListUtil.contains rightChar SentenceAfterEndChars
+
+                    // If this is an end character and the character to the right is a terminating
+                    // character or we have tail point then it's a sentence end
+                    if ListUtil.contains char SentenceEndChars && (isRightAfterEndChar || Option.isSome !tailPoint) then
                         let startPoint = 
                             match !tailPoint with
                             | None -> point.Add(1) // don't include the end char
@@ -252,7 +273,7 @@ module TssUtil =
                             yield SnapshotSpan(startPoint, !endPoint)
                             endPoint := startPoint
                             tailPoint := None
-                    elif ListUtil.contains char SentenceTrailingChars && Option.isNone !tailPoint then
+                    elif ListUtil.contains char SentenceTrailingChars && Option.isNone !tailPoint && isRightAfterEndChar then
                         tailPoint := Some (point.Add(1))
                     else 
                         tailPoint := None
