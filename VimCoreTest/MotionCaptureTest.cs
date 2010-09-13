@@ -545,6 +545,28 @@ namespace VimCore.Test
             ProcessComplete("3(");
             _factory.Verify();
         }
+
+        [Test]
+        public void Motion_SentenceForwardFull1()
+        {
+            _util
+                .Setup(x => x.SentenceFullForward(1))
+                .Returns(CreateMotionData())
+                .Verifiable();
+            ProcessComplete("as");
+            _factory.Verify();
+        }
+
+        [Test]
+        public void Motion_SentenceForwardFull2()
+        {
+            _util
+                .Setup(x => x.SentenceFullForward(3))
+                .Returns(CreateMotionData())
+                .Verifiable();
+            ProcessComplete("3as");
+            _factory.Verify();
+        }
     }
 
 }

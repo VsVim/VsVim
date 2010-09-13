@@ -100,6 +100,7 @@ type internal MotionCapture
                 yield ("g_", fun count -> _util.LastNonWhitespaceOnLine count |> Some)
                 yield ("aw", fun count -> _util.AllWord WordKind.NormalWord count |> Some)
                 yield ("aW", fun count -> _util.AllWord WordKind.BigWord count |> Some)
+                yield ("as", fun count -> _util.SentenceFullForward count |> Some)
             } |> Seq.map (fun (str,func) ->
                     let name = KeyNotationUtil.StringToKeyInputSet str
                     let func2 count =

@@ -282,15 +282,17 @@ module TssUtil =
                 if !endPoint <> span.Start then yield SnapshotSpan(span.Start, !endPoint)
             }
 
-        let snapshot = SnapshotPointUtil.GetSnapshot point
-        let above = SnapshotSpan(SnapshotUtil.GetStartPoint snapshot, point)
-        let below = SnapshotSpan(point, SnapshotUtil.GetEndPoint snapshot)
+        let above = SnapshotSpanUtil.CreateFromStartToProvidedEnd point
+        let below = SnapshotSpanUtil.CreateFromProvidedStartToEnd point
         match kind with
         | SearchKind.Forward -> below |> forSpanForward
         | SearchKind.ForwardWithWrap -> [below; above] |> Seq.map forSpanForward |> Seq.concat
         | SearchKind.Backward -> above |> forSpanBackward
         | SearchKind.BackwardWithWrap -> [above; below] |> Seq.map forSpanBackward |> Seq.concat
         | _ -> failwith ""
-            
 
+    let GetSentenceFull point = 
+        GetSentences point SearchKind.Backward
+        |> Seq.tryFind (fun x -> x.Contains(point))
+        |> OptionUtil.getOrDefault (SnapshotSpanUtil.CreateFromStartToProvidedEnd point)
 

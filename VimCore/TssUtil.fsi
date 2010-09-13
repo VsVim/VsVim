@@ -14,6 +14,9 @@ module TssUtil =
 
     /// Get the sentences starting at the given SnapshotPoint
     val GetSentences : SnapshotPoint -> SearchKind -> seq<SnapshotSpan>
+
+    /// Get the full sentence on which the given point resides
+    val GetSentenceFull : SnapshotPoint -> SnapshotSpan
     
     /// Vim is fairly odd in that it considers the top line of the file to be both line numbers
     /// 1 and 0.  The next line is 2.  The editor is a zero based index though so we need

@@ -161,6 +161,10 @@ type IMotionUtil =
     /// Count sentences backward 
     abstract SentenceBackward : count:int -> MotionData
 
+    /// Gets count full sentences from the cursor.  If used on a blank line this will
+    /// not return a value
+    abstract SentenceFullForward : count:int -> MotionData
+
 type ModeKind = 
     | Normal = 1
     | Insert = 2

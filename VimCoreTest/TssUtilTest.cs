@@ -619,5 +619,16 @@ namespace VimCore.Test
                 new string[] { " c", "a!b." },
                 ret.Select(x => x.GetText()).ToList());
         }
+
+        [Test]
+        [Description("Blank lines are sentence boundaries")]
+        public void GetSentence12()
+        {
+            Create("a", "", "b");
+            var ret = TssUtil.GetSentences(_snapshot.GetEndPoint(), SearchKind.Backward);
+            CollectionAssert.AreEquivalent(
+                new string[] { "a" + Environment.NewLine, "" + Environment.NewLine, "b" },
+                ret.Select(x => x.GetText()).ToList());
+        }
     }
 }

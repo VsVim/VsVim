@@ -225,13 +225,6 @@ module internal SeqUtil =
 
         areEqual
 
-    let takeMax count (sequence:'a seq) = 
-        let i = ref 0
-        sequence |> Seq.takeWhile (fun _ -> 
-            i := !i + 1
-            if !i <= count then true
-            else false ) |> List.ofSeq
-
     /// Skip's a maximum of count elements.  If there are more than
     /// count elements in the sequence then an empty sequence will be 
     /// returned

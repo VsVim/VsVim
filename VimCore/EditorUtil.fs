@@ -238,7 +238,8 @@ module SnapshotSpanUtil =
     /// Create a SnapshotSpan from the given bounds
     let CreateFromBounds (startPoint:SnapshotPoint) (endPoint:SnapshotPoint) = SnapshotSpan(startPoint,endPoint)
 
-    /// Create a span which is just combines the provided spans
+    /// Create a span which is just a combination the provided spans.  It will be the 
+    /// overarching span
     let CreateCombined seq = 
         let inner state span = 
             match state with
@@ -248,6 +249,23 @@ module SnapshotSpanUtil =
                 let endPos = max (GetEndPosition state) (GetEndPosition span)
                 SnapshotSpan((GetSnapshot state), startPos,endPos) |> Some
         seq |> Seq.fold inner None
+
+    /// Creates a combined span.  In the case the provided enumeration is empty will 
+    /// return an empty span for the Snapshot 
+    let CreateCombinedOrEmpty snapshot seq = 
+        seq
+        |> CreateCombined 
+        |> OptionUtil.getOrDefault (SnapshotUtil.GetStartPoint snapshot |> CreateEmpty)
+
+    /// Create a span form the given start point to the end of the snapshot
+    let CreateFromProvidedStartToEnd (startPoint:SnapshotPoint) =
+        let endPoint = SnapshotUtil.GetEndPoint startPoint.Snapshot
+        SnapshotSpan(startPoint, endPoint)
+
+    /// Create a span from the start of the snapshot to the given end point
+    let CreateFromStartToProvidedEnd (endPoint:SnapshotPoint) = 
+        let startPoint = SnapshotPoint(endPoint.Snapshot, 0)
+        SnapshotSpan(startPoint,endPoint)
 
 /// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
 /// include any Vim specific logic

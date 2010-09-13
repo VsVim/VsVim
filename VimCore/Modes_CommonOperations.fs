@@ -494,7 +494,7 @@ type internal CommonOperations ( _data : OperationsData ) =
             _operations.ResetSelection()
         member x.Beep () = if not _settings.GlobalSettings.VisualBell then _host.Beep()
         member x.OpenFold span count = 
-            let regions = _outlining.GetCollapsedRegions(span) |> SeqUtil.takeMax count
+            let regions = _outlining.GetCollapsedRegions(span) |> Seq.truncate count
             if Seq.isEmpty regions then _statusUtil.OnError Resources.Common_NoFoldFound
             else  regions |> Seq.iter (fun x -> _outlining.Expand(x) |> ignore )
         member x.OpenAllFolds span =
@@ -510,7 +510,7 @@ type internal CommonOperations ( _data : OperationsData ) =
                 |> SeqUtil.filterToSome2
                 |> Seq.sortBy (fun (span,_) -> pos - span.Start.Position )
                 |> List.ofSeq
-            let regions = temp  |> SeqUtil.takeMax count
+            let regions = temp  |> Seq.truncate count
             if Seq.isEmpty regions then _statusUtil.OnError Resources.Common_NoFoldFound
             else regions |> Seq.iter (fun (_,x) -> _outlining.TryCollapse(x) |> ignore)
         member x.CloseAllFolds span =

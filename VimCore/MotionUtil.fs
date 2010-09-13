@@ -254,7 +254,7 @@ type internal MotionUtil
             let caretPoint = TextViewUtil.GetCaretPoint _textView
             let span = 
                 TssUtil.GetSentences caretPoint SearchKind.Forward
-                |> SeqUtil.takeMax count
+                |> Seq.truncate count
                 |> SnapshotSpanUtil.CreateCombined 
                 |> Option.get   // GetSentences must return at least one
             {Span=span; IsForward=true; MotionKind=MotionKind.Exclusive; OperationKind=OperationKind.CharacterWise; Column=None}
@@ -262,9 +262,22 @@ type internal MotionUtil
             let caretPoint = TextViewUtil.GetCaretPoint _textView
             let span = 
                 TssUtil.GetSentences caretPoint SearchKind.Backward
-                |> SeqUtil.takeMax count
+                |> Seq.truncate count
                 |> SnapshotSpanUtil.CreateCombined 
                 |> Option.get   // GetSentences must return at least one
             {Span=span; IsForward=false; MotionKind=MotionKind.Exclusive; OperationKind=OperationKind.CharacterWise; Column=None}
-
-
+        member x.SentenceFullForward count =
+            let caretPoint,caretLine = TextViewUtil.GetCaretPointAndLine _textView
+            let span = 
+                if SnapshotLineUtil.GetLength caretLine = 0 then 
+                    // This behavior is not specified in the standard but if the caret line has
+                    // 0 length then only it is included in the span 
+                    SnapshotLineUtil.GetExtentIncludingLineBreak caretLine
+                else 
+                    let startPoint = 
+                        TssUtil.GetSentenceFull caretPoint
+                        |> SnapshotSpanUtil.GetStartPoint
+                    TssUtil.GetSentences startPoint SearchKind.Forward 
+                    |> Seq.truncate count
+                    |> SnapshotSpanUtil.CreateCombinedOrEmpty caretPoint.Snapshot
+            {Span=span; IsForward=true; MotionKind=MotionKind.Exclusive; OperationKind=OperationKind.CharacterWise; Column=None}
