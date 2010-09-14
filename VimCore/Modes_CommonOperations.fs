@@ -125,7 +125,7 @@ type internal CommonOperations ( _data : OperationsData ) =
                 | RemoveEmptySpaces -> " "
 
             span 
-            |> SnapshotSpanUtil.GetLines
+            |> SnapshotSpanUtil.GetAllLines
             |> Seq.take (count-1) // Skip the last line 
             |> Seq.iter (fun line -> 
 

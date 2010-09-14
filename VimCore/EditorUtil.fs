@@ -223,11 +223,39 @@ module SnapshotSpanUtil =
         else span
 
     /// Get the ITextSnapshotLines included in this SnasphotSpan 
-    let GetLines span = 
+    let GetAllLines span = 
         let startLine = GetStartLine span
         let count = GetLineCount span
         SnapshotUtil.GetLines span.Snapshot startLine.LineNumber SearchKind.Forward
         |> Seq.take count
+
+    /// Break the SnapshotSpan into 3 separate parts.  The middle is the ITextSnapshotLine seq
+    /// for the full lines in the middle and the two edge SnapshotSpan's
+    let GetLinesAndEdges span = 
+
+        // Calculate the lead edge and the remaining span 
+        let leadEdge,span = 
+            let startLine = GetStartLine span
+            if span.Start = startLine.Start && span.Length >= startLine.LengthIncludingLineBreak then
+                None,span
+            else 
+                let length = min span.Length (startLine.LengthIncludingLineBreak - span.Start.Position)
+                let lead = SnapshotSpan(span.Start, length)
+                Some lead, SnapshotSpan(lead.End, span.End)
+
+        // Calculate the trailing edge and finish off the middle span
+        let trailingEdge,span= 
+            if not span.IsEmpty then 
+                let endPointLine = span.End.GetContainingLine()
+                if span.End = endPointLine.Start then None,span
+                else Some(SnapshotSpan(endPointLine.Start, span.End)), SnapshotSpan(span.Start, endPointLine.Start)
+            else None,span
+
+        let lines = 
+            if span.IsEmpty then Seq.empty
+            else GetAllLines span
+
+        (leadEdge, lines, trailingEdge)
 
     /// Create an empty span at the given point
     let Create (startPoint:SnapshotPoint) (endPoint:SnapshotPoint) = SnapshotSpan(startPoint,endPoint)

@@ -217,69 +217,100 @@ module TssUtil =
 
         // Get the sentences for the given span in a forward fashion
         let forSpanForward span = 
-            seq {
-                
-                let startPoint = ref (SnapshotSpanUtil.GetStartPoint span)
-                let inEnd = ref false
-                for point in SnapshotSpanUtil.GetPoints span do
-                    let char = SnapshotPointUtil.GetChar point
-                    if not !inEnd then 
-                        if ListUtil.contains char SentenceEndChars then inEnd := true
-                        else ()
-                    else 
-                        if ListUtil.contains char SentenceTrailingChars then ()
-                        elif ListUtil.contains char SentenceAfterEndChars then 
-                            yield SnapshotSpan(!startPoint,point)
-                            startPoint := point
-                            inEnd := false
-                        else
-                            inEnd := false
+            let inner span = 
+                seq {
+                    let startPoint = ref (SnapshotSpanUtil.GetStartPoint span)
+                    let inEnd = ref false
+                    for point in SnapshotSpanUtil.GetPoints span do
+                        let char = SnapshotPointUtil.GetChar point
+                        if not !inEnd then 
+                            if ListUtil.contains char SentenceEndChars then inEnd := true
+                            else ()
+                        else 
+                            if ListUtil.contains char SentenceTrailingChars then ()
+                            elif ListUtil.contains char SentenceAfterEndChars then 
+                                yield SnapshotSpan(!startPoint,point)
+                                startPoint := point
+                                inEnd := false
+                            else
+                                inEnd := false
+    
+                    // Catch the remainder of the span which may not end in a sentence delimeter
+                    if !startPoint <> span.End then yield SnapshotSpan(!startPoint,span.End)
+                }
 
-                // Catch the remainder of the span which may not end in a sentence delimeter
-                if !startPoint <> span.End then yield SnapshotSpan(!startPoint,span.End)
+            seq { 
+                let leadingEdge,lines,trailingEdge = SnapshotSpanUtil.GetLinesAndEdges span
+                let startPoint = ref span.Start
+                for line in lines do
+                    if line.Length = 0 then 
+                        // Guard against back to back newlines 
+                        if !startPoint <> line.Start then 
+                            yield! inner (SnapshotSpan(!startPoint, line.Start))
+
+                        yield line.ExtentIncludingLineBreak
+                        startPoint := line.EndIncludingLineBreak
+                if !startPoint <> span.End then 
+                    yield! inner (SnapshotSpan(!startPoint, span.End))
             }
 
         // Get the sentences for the given span in a backward fashion
         let forSpanBackward span = 
-            seq {
-                // Start of the previous sentence point.  Should be the end point
-                // of the next returned SnapshotSpan
-                let endPoint = ref (SnapshotSpanUtil.GetEndPoint span)
-
-                // If we see a tail character while enumerating backwards this will
-                // note the point before the first tail character
-                let tailPoint : SnapshotPoint option ref = ref None
-
-                for point in SnapshotSpanUtil.GetPointsBackward span do
-                    let char = SnapshotPointUtil.GetChar point
-
-                    // Is the character to the right a char which truly terminates the 
-                    // sentence
-                    let isRightAfterEndChar = 
-                        let right = SnapshotPointUtil.AddOne point
-                        if SnapshotPointUtil.IsEndPoint right then false
+            let inner span = 
+                seq {
+                    // Start of the previous sentence point.  Should be the end point
+                    // of the next returned SnapshotSpan
+                    let endPoint = ref (SnapshotSpanUtil.GetEndPoint span)
+    
+                    // If we see a tail character while enumerating backwards this will
+                    // note the point before the first tail character
+                    let tailPoint : SnapshotPoint option ref = ref None
+    
+                    for point in SnapshotSpanUtil.GetPointsBackward span do
+                        let char = SnapshotPointUtil.GetChar point
+    
+                        // Is the character to the right a char which truly terminates the 
+                        // sentence
+                        let isRightAfterEndChar = 
+                            let right = SnapshotPointUtil.AddOne point
+                            if SnapshotPointUtil.IsEndPoint right then false
+                            else 
+                                let rightChar = SnapshotPointUtil.GetChar right
+                                ListUtil.contains rightChar SentenceAfterEndChars
+    
+                        // If this is an end character and the character to the right is a terminating
+                        // character or we have tail point then it's a sentence end
+                        if ListUtil.contains char SentenceEndChars && (isRightAfterEndChar || Option.isSome !tailPoint) then
+                            let startPoint = 
+                                match !tailPoint with
+                                | None -> point.Add(1) // don't include the end char
+                                | Some(t) -> t
+                            if startPoint <> !endPoint then
+                                yield SnapshotSpan(startPoint, !endPoint)
+                                endPoint := startPoint
+                                tailPoint := None
+                        elif ListUtil.contains char SentenceTrailingChars && Option.isNone !tailPoint && isRightAfterEndChar then
+                            tailPoint := Some (point.Add(1))
                         else 
-                            let rightChar = SnapshotPointUtil.GetChar right
-                            ListUtil.contains rightChar SentenceAfterEndChars
-
-                    // If this is an end character and the character to the right is a terminating
-                    // character or we have tail point then it's a sentence end
-                    if ListUtil.contains char SentenceEndChars && (isRightAfterEndChar || Option.isSome !tailPoint) then
-                        let startPoint = 
-                            match !tailPoint with
-                            | None -> point.Add(1) // don't include the end char
-                            | Some(t) -> t
-                        if startPoint <> !endPoint then
-                            yield SnapshotSpan(startPoint, !endPoint)
-                            endPoint := startPoint
                             tailPoint := None
-                    elif ListUtil.contains char SentenceTrailingChars && Option.isNone !tailPoint && isRightAfterEndChar then
-                        tailPoint := Some (point.Add(1))
-                    else 
-                        tailPoint := None
+    
+                    // Get the begining of the span
+                    if !endPoint <> span.Start then yield SnapshotSpan(span.Start, !endPoint)
+                }
 
-                // Get the begining of the span
-                if !endPoint <> span.Start then yield SnapshotSpan(span.Start, !endPoint)
+            seq { 
+                let leadingEdge,lines,trailingEdge = SnapshotSpanUtil.GetLinesAndEdges span
+                let endPoint = ref span.End
+                for line in lines |> List.ofSeq |> List.rev do
+                    if line.Length = 0 then 
+                        // Guard against back to back newlines 
+                        if !endPoint <> line.EndIncludingLineBreak then
+                            yield! inner (SnapshotSpan(line.EndIncludingLineBreak, !endPoint))
+
+                        yield line.ExtentIncludingLineBreak
+                        endPoint := line.Start
+                if !endPoint <> span.Start then 
+                    yield! inner (SnapshotSpan(span.Start, !endPoint))
             }
 
         let above = SnapshotSpanUtil.CreateFromStartToProvidedEnd point

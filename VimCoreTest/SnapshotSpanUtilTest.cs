@@ -2,6 +2,7 @@
 using Microsoft.VisualStudio.Text;
 using NUnit.Framework;
 using Vim;
+using Vim.Extensions;
 using Vim.UnitTest;
 
 namespace VimCore.Test
@@ -227,5 +228,72 @@ namespace VimCore.Test
             Assert.AreEqual(_buffer.GetLineSpanIncludingLineBreak(1), span);
         }
 
+        [Test]
+        public void GetLinesAndEdges1()
+        {
+            Create("dog", "cat", "pig", "fox");
+            var tuple = SnapshotSpanUtil.GetLinesAndEdges(_buffer.GetLineSpanIncludingLineBreak(0, 1));
+            Assert.IsTrue(tuple.Item1.IsNone());
+            Assert.IsTrue(tuple.Item3.IsNone());
+            CollectionAssert.AreEquivalent(
+                new int[] { 0, 1 },
+                tuple.Item2.Select(x => x.LineNumber).ToList());
+        }
+
+        [Test]
+        public void GetLinesAndEdges2()
+        {
+            Create("dog", "cat", "pig", "fox");
+            var span = new SnapshotSpan(
+                _buffer.GetPoint(1),
+                _buffer.GetLine(1).EndIncludingLineBreak);
+            var tuple = SnapshotSpanUtil.GetLinesAndEdges(span);
+            Assert.AreEqual(new SnapshotSpan(span.Start, _buffer.GetLine(0).EndIncludingLineBreak), tuple.Item1.Value);
+            Assert.IsTrue(tuple.Item3.IsNone());
+            CollectionAssert.AreEquivalent(
+                new int[] { 1 },
+                tuple.Item2.Select(x => x.LineNumber).ToList());
+        }
+
+        [Test]
+        public void GetLinesAndEdges3()
+        {
+            Create("dog", "cat", "pig", "fox");
+            var span = new SnapshotSpan(
+                _buffer.GetPoint(1),
+                _buffer.GetLine(1).End);
+            var tuple = SnapshotSpanUtil.GetLinesAndEdges(span);
+            Assert.AreEqual(new SnapshotSpan(span.Start, _buffer.GetLine(0).EndIncludingLineBreak), tuple.Item1.Value);
+            Assert.AreEqual(new SnapshotSpan(_buffer.GetLine(1).Start, span.End), tuple.Item3.Value);
+            Assert.IsTrue(tuple.Item2.Count() == 0);
+        }
+
+        [Test]
+        public void GetLinesAndEdges4()
+        {
+            Create("dog", "cat", "pig", "fox");
+            var span = new SnapshotSpan(
+                _buffer.GetPoint(1),
+                _buffer.GetLine(2).End);
+            var tuple = SnapshotSpanUtil.GetLinesAndEdges(span);
+            Assert.AreEqual(new SnapshotSpan(span.Start, _buffer.GetLine(0).EndIncludingLineBreak), tuple.Item1.Value);
+            Assert.AreEqual(new SnapshotSpan(_buffer.GetLine(2).Start, span.End), tuple.Item3.Value);
+            CollectionAssert.AreEquivalent(
+               new int[] { 1 },
+               tuple.Item2.Select(x => x.LineNumber).ToList());
+        }
+
+        [Test]
+        public void GetLinesAndEdges5()
+        {
+            Create("dog", "cat", "pig", "fox");
+            var span = new SnapshotSpan(
+                _buffer.GetPoint(1),
+                _buffer.GetPoint(2));
+            var tuple = SnapshotSpanUtil.GetLinesAndEdges(span);
+            Assert.AreEqual(new SnapshotSpan(span.Start, span.End), tuple.Item1.Value);
+            Assert.IsTrue(tuple.Item3.IsNone());
+            Assert.AreEqual(0, tuple.Item2.Count());
+        }
     }
 }
