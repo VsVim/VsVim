@@ -4,9 +4,7 @@ namespace Vim
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Operations
 
-
 module TssUtil =
-
 
     /// Get the spans of all Words starting at the given point and searching the 
     /// spans with the specified Kind
@@ -17,7 +15,13 @@ module TssUtil =
 
     /// Get the full sentence on which the given point resides
     val GetSentenceFull : SnapshotPoint -> SnapshotSpan
-    
+
+    /// Get the paragraphs starting at the given SnapshotPoint
+    val GetParagraphs : SnapshotPoint -> SearchKind -> seq<Paragraph>
+
+    /// Get the paragraphs which are contained within the specified SnapshotSpan
+    val GetParagraphsInSpan : SnapshotSpan -> SearchKind -> seq<Paragraph>
+
     /// Vim is fairly odd in that it considers the top line of the file to be both line numbers
     /// 1 and 0.  The next line is 2.  The editor is a zero based index though so we need
     /// to take that into account

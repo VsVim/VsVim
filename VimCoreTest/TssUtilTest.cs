@@ -641,5 +641,88 @@ namespace VimCore.Test
                 new string[] { "a" + Environment.NewLine, "" + Environment.NewLine, "" + Environment.NewLine, "b" },
                 ret.Select(x => x.GetText()).ToList());
         }
+
+        [Test]
+        public void GetParagraphs1()
+        {
+            Create("a", "b", "", "c");
+            var ret = TssUtil.GetParagraphs(_snapshot.GetPoint(0), SearchKind.Forward);
+            CollectionAssert.AreEquivalent(
+                new string[] { "a" + Environment.NewLine + "b" + Environment.NewLine, "" + Environment.NewLine, "c" },
+                ret.Select(x => x.Span.GetText()).ToList());
+        }
+
+        [Test]
+        public void GetParagraphs2()
+        {
+            Create("a", "b", "", "c");
+            var list = TssUtil.GetParagraphs(_snapshot.GetPoint(0), SearchKind.Forward).ToList();
+            Assert.AreEqual(Paragraph.NewContent(_snapshot.GetLineSpanIncludingLineBreak(0, 1)), list[0]);
+            Assert.AreEqual(Paragraph.NewBoundary(2, _snapshot.GetLineSpanIncludingLineBreak(2)), list[1]);
+            Assert.AreEqual(Paragraph.NewContent(_snapshot.GetLineSpanIncludingLineBreak(3)), list[2]);
+        }
+
+        [Test]
+        public void GetParagraphs3()
+        {
+            Create("a", "b", "", "c");
+            var list = TssUtil.GetParagraphs(_snapshot.GetPoint(0), SearchKind.Forward).Take(1).ToList();
+            CollectionAssert.AreEquivalent(
+                new Paragraph[] {
+                    Paragraph.NewContent(_snapshot.GetLineSpanIncludingLineBreak(0,1))
+                },
+                list);
+        }
+
+        [Test]
+        public void GetParagraphs4()
+        {
+            Create("a?) b.");
+            var list = TssUtil.GetParagraphs(_snapshot.GetPoint(3), SearchKind.ForwardWithWrap).ToList();
+            CollectionAssert.AreEquivalent(
+                new Paragraph[] {
+                    Paragraph.NewContent(_snapshot.GetSpan(3, 3)),
+                    Paragraph.NewContent(_snapshot.GetSpan(0, 3))
+                },
+                list);
+        }
+
+        [Test]
+        public void GetParagraphs5()
+        {
+            Create("a?) b.");
+            var list = TssUtil.GetParagraphs(_snapshot.GetPoint(3), SearchKind.BackwardWithWrap).ToList();
+            CollectionAssert.AreEquivalent(
+                new Paragraph[] {
+                    Paragraph.NewContent(_snapshot.GetSpan(0, 3)),
+                    Paragraph.NewContent(_snapshot.GetSpan(3, 3))
+                },
+                list);
+        }
+
+        [Test]
+        public void GetParagraphsInSpan1()
+        {
+            Create("a", "b", "", "c");
+            var list = TssUtil.GetParagraphsInSpan(_snapshot.GetLineSpan(0), SearchKind.Forward).ToList();
+            CollectionAssert.AreEquivalent(
+                new Paragraph[] {
+                    Paragraph.NewContent(_snapshot.GetLineSpan(0))
+                },
+                list);
+        }
+
+        [Test]
+        [Description("Wrap should be ignored")]
+        public void GetParagraphsInSpan2()
+        {
+            Create("a", "b", "", "c");
+            var list = TssUtil.GetParagraphsInSpan(_snapshot.GetLineSpan(0), SearchKind.ForwardWithWrap).ToList();
+            CollectionAssert.AreEquivalent(
+                new Paragraph[] {
+                    Paragraph.NewContent(_snapshot.GetLineSpan(0))
+                },
+                list);
+        }
     }
 }

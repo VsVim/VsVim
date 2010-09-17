@@ -98,6 +98,7 @@ module SnapshotUtil =
         GetLines snapshot startLineNumber SearchKind.Forward
         |> Seq.truncate count
 
+
 /// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
 /// include any Vim specific logic
 module SnapshotSpanUtil =
@@ -256,6 +257,15 @@ module SnapshotSpanUtil =
             else GetAllLines span
 
         (leadEdge, lines, trailingEdge)
+
+    /// Is this an empty line.  That does this span represent the Extent or ExtentIncludingLineBreak of an 
+    /// ITextSnapshotLine which has 0 length.  Lines with greater than 0 length which contain all blanks
+    /// are not included (they are blank lines which is very different)
+    let IsEmptyLineSpan span = 
+        let line = GetStartLine span
+        line.Start = span.Start
+        && line.Length = 0 
+        && (span.End.Position >= span.End.Position && span.End.Position <= line.EndIncludingLineBreak.Position)
 
     /// Create an empty span at the given point
     let Create (startPoint:SnapshotPoint) (endPoint:SnapshotPoint) = SnapshotSpan(startPoint,endPoint)
@@ -518,6 +528,19 @@ module SnapshotPointUtil =
         GetSpans point kind 
         |> Seq.map mapFunc
         |> Seq.concat       
+
+    /// Divide the ITextSnapshot into at most 2 SnapshotSpan instances at the provided
+    /// SnapshotPoint.  If there is an above span it will be exclusive to the provided
+    /// value
+    let GetDividedSnapshotSpans point kind = 
+        let above = SnapshotSpanUtil.CreateFromStartToProvidedEnd point
+        let below = SnapshotSpanUtil.CreateFromProvidedStartToEnd point
+        match kind with
+        | SearchKind.Forward -> [below]
+        | SearchKind.ForwardWithWrap -> [below; above] 
+        | SearchKind.Backward -> [above] 
+        | SearchKind.BackwardWithWrap -> [above; below] 
+        | _ -> failwith ""
 
     /// Get the character associated with the current point.  Returns None for the last character
     /// in the buffer which has no representable value

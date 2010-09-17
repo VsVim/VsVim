@@ -29,4 +29,12 @@ module internal SearchKindUtil =
         | SearchKind.Backward -> SearchKind.Forward
         | SearchKind.BackwardWithWrap -> SearchKind.ForwardWithWrap
         | _ -> failwith "Invalid enum value"
-    
+
+    /// Remove any wrap which map be associated with this
+    let RemoveWrap x =
+        match x with
+        | SearchKind.Forward -> SearchKind.Forward
+        | SearchKind.ForwardWithWrap -> SearchKind.Forward
+        | SearchKind.Backward -> SearchKind.Backward
+        | SearchKind.BackwardWithWrap -> SearchKind.Backward
+        | _ -> failwith "Invalid enum value"
