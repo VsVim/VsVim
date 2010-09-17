@@ -1,12 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using Microsoft.VisualStudio.TextManager.Interop;
-using Microsoft.VisualStudio.Text.Editor;
+﻿using System.Collections.Generic;
+using Microsoft.VisualStudio.Editor;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Text;
-using Microsoft.VisualStudio.Editor;
+using Microsoft.VisualStudio.Text.Editor;
+using Microsoft.VisualStudio.TextManager.Interop;
 
 namespace VsVim
 {
@@ -40,6 +37,11 @@ namespace VsVim
         /// scenarios
         /// </summary>
         bool TryGetContainingWindowFrame(IVsTextView textView, out IVsWindowFrame windowFrame);
+
+        /// <summary>
+        /// Is this a Venus window
+        /// </summary>
+        bool IsVenusView(IVsTextView textView);
 
         bool TryGetTextBufferForDocCookie(uint cookie, out ITextBuffer textBuffer);
         IEnumerable<IVsTextView> GetTextViews(ITextBuffer textBuffer);

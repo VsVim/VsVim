@@ -113,9 +113,19 @@ namespace VsVim
             var filter = new VsCommandFilter(buffer, vsView, _serviceProvider);
             _filterMap.Add(buffer, filter);
 
-            // Try and install the IVsFilterKeys adapter 
-            VsFilterKeysAdapter.TryInstallFilterKeysAdapter(_adapter, _editorOptionsFactoryService, buffer);
+            // Try and install the IVsFilterKeys adapter.  This cannot be done synchronously here
+            // because Venus projects are not fully initialized at this state.  Merely querying 
+            // for properties cause them to corrupt internal state and prevents rendering of the 
+            // view.  Occurs for aspx and .js pages
+            Action install = () =>
+                {
+                    VsFilterKeysAdapter.TryInstallFilterKeysAdapter(_adapter, _editorOptionsFactoryService, buffer);
+                };
+
+            Dispatcher.CurrentDispatcher.BeginInvoke(install, null);
         }
+
+
     }
 
 }

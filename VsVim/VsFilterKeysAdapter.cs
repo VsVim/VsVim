@@ -123,16 +123,28 @@ namespace VsVim
 
             var editorOptions = optionsFactory.GetOptions(buffer.TextView);
             var textLines = adapter.EditorAdapter.GetBufferAdapter(buffer.TextBuffer) as IVsTextLines;
+            if (textLines == null)
+            {
+                return false;
+            }
+
             IVsCodeWindow codeWindow;
             if (!adapter.TryGetCodeWindow(textView, out codeWindow) || textLines == null || editorOptions == null)
             {
                 return false;
             }
 
+            // Grab the field we need to replace.  Be wary that Venus uses a different implementation
+            // and the field will not be available 
             var type = codeWindow.GetType();
             var flags = System.Reflection.BindingFlags.Instance
                 | System.Reflection.BindingFlags.NonPublic;
             var field = type.GetField(FieldName, flags);
+            if (field == null)
+            {
+                return false;
+            }
+
             var oldValue = field.GetValue(codeWindow) as IVsFilterKeys;
             if (oldValue == null)
             {
