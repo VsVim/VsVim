@@ -67,6 +67,11 @@ type IUndoRedoOperations =
     /// Creates an Undo Transaction
     abstract CreateUndoTransaction : name:string -> IUndoTransaction
 
+[<RequireQualifiedAccess>]
+type MotionArgument = 
+    | None
+    | ConsiderCloseBrace
+
 /// Responsible for implementing all of the Motion information
 type ITextViewMotionUtil = 
 
@@ -173,6 +178,15 @@ type ITextViewMotionUtil =
 
     /// Get count full sentences from the cursor.  
     abstract ParagraphFullForward : count:int -> MotionData
+
+    /// Forward a section in the editor
+    abstract SectionForward : MotionArgument -> count:int -> MotionData
+
+    /// Backward a section in the editor or to an open brace
+    abstract SectionBackwardOrOpenBrace : count:int -> MotionData
+    
+    /// Backward a section in the editor or to a close brace
+    abstract SectionBackwardOrCloseBrace : count:int -> MotionData
 
 type ModeKind = 
     | Normal = 1

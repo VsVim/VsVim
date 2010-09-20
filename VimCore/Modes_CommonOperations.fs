@@ -485,8 +485,12 @@ type internal CommonOperations ( _data : OperationsData ) =
             let point = 
                 match data.Column with
                 | Some(col) -> 
-                    let _,endCol = line |> SnapshotLineUtil.GetEnd |> SnapshotPointUtil.GetLineColumn
-                    if col < endCol then line.Start.Add(col)
+                    let colLine = 
+                        if col = 0 && data.MotionKind = MotionKind.Exclusive && SnapshotPointUtil.IsStartOfLine data.Span.End then
+                            SnapshotPointUtil.GetContainingLine data.Span.End
+                        else line
+                    let _,endCol = colLine |> SnapshotLineUtil.GetEnd |> SnapshotPointUtil.GetLineColumn
+                    if col < endCol then colLine.Start.Add(col)
                     else getPointFromSpan()
                 | None -> getPointFromSpan()
 

@@ -96,6 +96,15 @@ type internal MotionCapture
                 yield ("aW", fun _ count -> _util.AllWord WordKind.BigWord count |> Some)
                 yield ("as", fun _ count -> _util.SentenceFullForward count |> Some)
                 yield ("ap", fun _ count -> _util.ParagraphFullForward count |> Some)
+                yield ("]]", fun motionUse count -> 
+                    let arg = 
+                        match motionUse with
+                        | MotionUse.AfterOperator -> MotionArgument.ConsiderCloseBrace
+                        | MotionUse.Movement -> MotionArgument.None
+                    _util.SectionForward arg count |> Some )
+                yield ("][", fun _ count -> _util.SectionForward MotionArgument.None count |> Some)
+                yield ("[[", fun _ count -> _util.SectionBackwardOrOpenBrace count |> Some)
+                yield ("[]", fun _ count -> _util.SectionBackwardOrCloseBrace count |> Some)
             } |> Seq.map (fun (str,func) ->
                     let name = KeyNotationUtil.StringToKeyInputSet str
                     let func2 motionUse count =

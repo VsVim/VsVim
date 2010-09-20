@@ -22,6 +22,7 @@ namespace VimCore.Test
 
         private ITextBuffer _buffer;
         private ITextView _textView;
+        private ITextSnapshot _snapshot;
         private IVimGlobalSettings _settings;
         private TextViewMotionUtil _utilRaw;
         private ITextViewMotionUtil _util;
@@ -37,10 +38,18 @@ namespace VimCore.Test
             Create(EditorUtil.CreateView(lines));
         }
 
+        public void Create(int caretPosition, params string[] lines)
+        {
+            Create(lines);
+            _textView.MoveCaretTo(caretPosition);
+        }
+
         public void Create(ITextView textView)
         {
             _textView = textView;
             _buffer = _textView.TextBuffer;
+            _snapshot = _buffer.CurrentSnapshot;
+            _buffer.Changed += delegate { _snapshot = _buffer.CurrentSnapshot; };
             _settings = new Vim.GlobalSettings();
             _utilRaw = new TextViewMotionUtil(_textView, _settings);
             _util = _utilRaw;
@@ -888,6 +897,197 @@ namespace VimCore.Test
             Assert.AreEqual("foo" + Environment.NewLine + "bar", data.Span.GetText());
         }
 
+        [Test]
+        public void SectionForward1()
+        {
+            Create(0, "dog", "\fpig", "{fox");
+            var data = _util.SectionForward(MotionArgument.None, 1);
+            Assert.AreEqual(_textView.GetLineSpanIncludingLineBreak(0), data.Span);
+            Assert.AreEqual(0, data.Column.Value);
+        }
+
+        [Test]
+        public void SectionForward2()
+        {
+            Create(0, "dog", "\fpig", "fox");
+            var data = _util.SectionForward(MotionArgument.None, 2);
+            Assert.AreEqual(new SnapshotSpan(_snapshot, 0, _snapshot.Length), data.Span);
+            Assert.AreEqual(0, data.Column.Value);
+        }
+
+        [Test]
+        public void SectionForward3()
+        {
+            Create(0, "dog", "{pig", "fox");
+            var data = _util.SectionForward(MotionArgument.None, 2);
+            Assert.AreEqual(new SnapshotSpan(_snapshot, 0, _snapshot.Length), data.Span);
+            Assert.AreEqual(0, data.Column.Value);
+        }
+
+        [Test]
+        public void SectionForward4()
+        {
+            Create(0, "dog", "{pig", "{fox");
+            var data = _util.SectionForward(MotionArgument.None, 1);
+            Assert.AreEqual(_textView.GetLineSpanIncludingLineBreak(0), data.Span);
+            Assert.AreEqual(0, data.Column.Value);
+        }
+
+        [Test]
+        public void SectionForward5()
+        {
+            Create(0, "dog", "}pig", "fox");
+            var data = _util.SectionForward(MotionArgument.ConsiderCloseBrace, 1);
+            Assert.AreEqual(_textView.GetLineSpanIncludingLineBreak(0, 1), data.Span);
+            Assert.AreEqual(0, data.Column.Value);
+        }
+
+        [Test]
+        [Description("Only look for } after an operator")]
+        public void SectionForward6()
+        {
+            Create(0, "dog", "}pig", "fox");
+            var data = _util.SectionForward(MotionArgument.None, 1);
+            Assert.AreEqual(new SnapshotSpan(_snapshot, 0, _snapshot.Length), data.Span);
+            Assert.AreEqual(0, data.Column.Value);
+        }
+
+        [Test]
+        public void SectionBackwardOrOpenBrace1()
+        {
+            Create(0, "dog", "{brace", "pig", "}fox");
+            var data = _util.SectionBackwardOrOpenBrace(1);
+            Assert.IsTrue(data.Span.IsEmpty);
+        }
+
+        [Test]
+        public void SectionBackwardOrOpenBrace2()
+        {
+            Create("dog", "{brace", "pig", "}fox");
+            _textView.MoveCaretTo(_textView.GetLine(2).Start.Position);
+            var data = _util.SectionBackwardOrOpenBrace(1);
+            Assert.AreEqual(_textView.GetLineSpanIncludingLineBreak(1), data.Span);
+        }
+
+        [Test]
+        public void SectionBackwardOrOpenBrace3()
+        {
+            Create("dog", "{brace", "pig", "}fox");
+            _textView.MoveCaretTo(_textView.GetLine(2).Start.Position);
+            var data = _util.SectionBackwardOrOpenBrace(2);
+            Assert.AreEqual(_textView.GetLineSpanIncludingLineBreak(0, 1), data.Span);
+        }
+
+        [Test]
+        public void SectionBackwardOrOpenBrace4()
+        {
+            Create(0, "dog", "\fbrace", "pig", "}fox");
+            var data = _util.SectionBackwardOrOpenBrace(1);
+            Assert.IsTrue(data.Span.IsEmpty);
+        }
+
+        [Test]
+        public void SectionBackwardOrOpenBrace5()
+        {
+            Create("dog", "\fbrace", "pig", "}fox");
+            _textView.MoveCaretTo(_textView.GetLine(2).Start.Position);
+            var data = _util.SectionBackwardOrOpenBrace(1);
+            Assert.AreEqual(_textView.GetLineSpanIncludingLineBreak(1), data.Span);
+        }
+
+        [Test]
+        public void SectionBackwardOrOpenBrace6()
+        {
+            Create("dog", "\fbrace", "pig", "}fox");
+            _textView.MoveCaretTo(_textView.GetLine(2).Start.Position);
+            var data = _util.SectionBackwardOrOpenBrace(2);
+            Assert.AreEqual(_textView.GetLineSpanIncludingLineBreak(0, 1), data.Span);
+        }
+
+        [Test]
+        [Description("Ignore the brace not on first column")]
+        public void SectionBackwardOrOpenBrace7()
+        {
+            Create("dog", "\f{brace", "pig", "}fox");
+            _textView.MoveCaretTo(_textView.GetLine(2).Start.Position);
+            var data = _util.SectionBackwardOrOpenBrace(2);
+            Assert.AreEqual(_textView.GetLineSpanIncludingLineBreak(0, 1), data.Span);
+        }
+
+        [Test]
+        public void SectionBackwardOrOpenBrace8()
+        {
+            Create("dog", "{{foo", "{bar", "hello");
+            _textView.MoveCaretTo(_textView.GetLine(2).End);
+            var data = _util.SectionBackwardOrOpenBrace(2);
+            Assert.AreEqual(
+                new SnapshotSpan(
+                    _buffer.GetLine(1).Start,
+                    _buffer.GetLine(2).End),
+                data.Span);
+        }
+
+        [Test]
+        public void SectionBackwardOrCloseBrace1()
+        {
+            Create(0, "dog", "}brace", "pig", "}fox");
+            var data = _util.SectionBackwardOrCloseBrace(1);
+            Assert.IsTrue(data.Span.IsEmpty);
+        }
+
+        [Test]
+        public void SectionBackwardOrCloseBrace2()
+        {
+            Create("dog", "}brace", "pig", "}fox");
+            _textView.MoveCaretTo(_textView.GetLine(2).Start.Position);
+            var data = _util.SectionBackwardOrCloseBrace(1);
+            Assert.AreEqual(_textView.GetLineSpanIncludingLineBreak(1), data.Span);
+        }
+
+        [Test]
+        public void SectionBackwardOrCloseBrace3()
+        {
+            Create("dog", "}brace", "pig", "}fox");
+            _textView.MoveCaretTo(_textView.GetLine(2).Start.Position);
+            var data = _util.SectionBackwardOrCloseBrace(2);
+            Assert.AreEqual(_textView.GetLineSpanIncludingLineBreak(0, 1), data.Span);
+        }
+
+        [Test]
+        public void SectionBackwardOrCloseBrace4()
+        {
+            Create(0, "dog", "\fbrace", "pig", "}fox");
+            var data = _util.SectionBackwardOrCloseBrace(1);
+            Assert.IsTrue(data.Span.IsEmpty);
+        }
+
+        [Test]
+        public void SectionBackwardOrCloseBrace5()
+        {
+            Create("dog", "\fbrace", "pig", "}fox");
+            _textView.MoveCaretTo(_textView.GetLine(2).Start.Position);
+            var data = _util.SectionBackwardOrCloseBrace(1);
+            Assert.AreEqual(_textView.GetLineSpanIncludingLineBreak(1), data.Span);
+        }
+
+        [Test]
+        public void SectionBackwardOrCloseBrace6()
+        {
+            Create("dog", "\fbrace", "pig", "}fox");
+            _textView.MoveCaretTo(_textView.GetLine(2).Start.Position);
+            var data = _util.SectionBackwardOrCloseBrace(2);
+            Assert.AreEqual(_textView.GetLineSpanIncludingLineBreak(0, 1), data.Span);
+        }
+
+        [Test]
+        [Description("Ignore the brace not on first column")]
+        public void SectionBackwardOrCloseBrace7()
+        {
+            Create("dog", "\f}brace", "pig", "}fox");
+            _textView.MoveCaretTo(_textView.GetLine(2).Start.Position);
+            var data = _util.SectionBackwardOrCloseBrace(2);
+            Assert.AreEqual(_textView.GetLineSpanIncludingLineBreak(0, 1), data.Span);
+        }
     }
 
 }

@@ -70,6 +70,35 @@ type internal TextViewMotionUtil
         let isForward = SearchKindUtil.IsForward kind
         {Span=span; IsForward=isForward; MotionKind=MotionKind.Exclusive; OperationKind=OperationKind.LineWise; Column=None}
 
+    member x.SectionBackwardOrOther count otherChar = 
+        let startPoint = SnapshotUtil.GetStartPoint _textView.TextSnapshot
+        let endPoint = SnapshotUtil.GetEndPoint _textView.TextSnapshot
+
+        // Get the previous point is the chain given the "current" point.  Must move
+        // backwards to avoid infinite looping on the control chars.  Has the pleasant
+        // side effect of implementing the motion as exclusive
+        let rec getPrev point =
+            let rec inner point = 
+                if point = startPoint then startPoint
+                elif point = endPoint then inner (endPoint.Subtract(1))
+                elif SnapshotPointUtil.IsStartOfLine point then 
+                    let c = SnapshotPointUtil.GetChar point 
+                    if c = '\f' then point
+                    elif c = otherChar then point
+                    else inner (point.Subtract(1))
+                else inner (point.Subtract(1))
+            if point = startPoint then point
+            else point.Subtract(1) |> inner
+
+        let caretPoint = TextViewUtil.GetCaretPoint _textView 
+        let beginPoint = 
+            let rec inner count point = 
+                if count = 0 then point
+                else inner (count-1) (getPrev point)
+            inner count caretPoint
+        let span = SnapshotSpan(beginPoint,caretPoint)
+        {Span=span; IsForward=false; MotionKind=MotionKind.Exclusive; OperationKind=OperationKind.CharacterWise; Column=Some 0}
+
     interface ITextViewMotionUtil with
         member x.TextView = _textView
         member x.ForwardChar c count = x.ForwardCharMotionCore c count TssUtil.FindNextOccurranceOfCharOnLine
@@ -300,3 +329,39 @@ type internal TextViewMotionUtil
             let caretPoint = TextViewUtil.GetCaretPoint _textView
             let span = MotionUtil.GetFullParagraph caretPoint
             x.GetParagraphs span.Start SearchKind.Forward count 
+        member x.SectionForward motionArg count = 
+            let endPoint = SnapshotUtil.GetEndPoint _textView.TextSnapshot
+
+            // Move a single count forward from the given point
+            let rec getNext point = 
+                if point = endPoint then point
+                else
+                    let nextPoint = point.Add(1)
+                    if nextPoint = endPoint then endPoint
+                    elif SnapshotPointUtil.IsStartOfLine nextPoint then
+                        match nextPoint.GetChar() with
+                        | '\f' -> nextPoint
+                        | '{' -> nextPoint 
+                        | '}' -> 
+                            match motionArg with
+                            | MotionArgument.ConsiderCloseBrace ->
+                                let line = SnapshotPointUtil.GetContainingLine nextPoint
+                                line.EndIncludingLineBreak
+                            | MotionArgument.None -> getNext nextPoint
+                        | _ -> getNext nextPoint
+                    else getNext nextPoint
+
+            let startPoint = TextViewUtil.GetCaretPoint _textView 
+            let endPoint = 
+                let rec inner count point = 
+                    if count = 0 then point
+                    else inner (count-1) (getNext point)
+                inner count startPoint 
+
+            let span = SnapshotSpan(startPoint,endPoint)
+            {Span=span; IsForward=true; MotionKind=MotionKind.Exclusive; OperationKind=OperationKind.CharacterWise; Column=Some 0}
+
+        member x.SectionBackwardOrOpenBrace count = x.SectionBackwardOrOther count '{'
+        member x.SectionBackwardOrCloseBrace count = x.SectionBackwardOrOther count '}'
+
+    

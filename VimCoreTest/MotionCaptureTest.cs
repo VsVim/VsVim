@@ -611,6 +611,50 @@ namespace VimCore.Test
             ProcessComplete("3{");
             _factory.Verify();
         }
+
+        [Test]
+        public void Motion_SectionForward1()
+        {
+            _util
+                .Setup(x => x.SectionForward(MotionArgument.ConsiderCloseBrace, 1))
+                .Returns(CreateMotionData())
+                .Verifiable();
+            ProcessComplete("]]");
+            _factory.Verify();
+        }
+
+        [Test]
+        public void Motion_SectionForward2()
+        {
+            _util
+                .Setup(x => x.SectionForward(MotionArgument.None, 1))
+                .Returns(CreateMotionData())
+                .Verifiable();
+            ProcessComplete("][");
+            _factory.Verify();
+        }
+
+        [Test]
+        public void Motion_SectionBackwardOrOpenBrace1()
+        {
+            _util
+                .Setup(x => x.SectionBackwardOrOpenBrace(1))
+                .Returns(CreateMotionData())
+                .Verifiable();
+            ProcessComplete("[[");
+            _factory.Verify();
+        }
+
+        [Test]
+        public void Motion_SectionBackwardOrCloseBrace1()
+        {
+            _util
+                .Setup(x => x.SectionBackwardOrCloseBrace(1))
+                .Returns(CreateMotionData())
+                .Verifiable();
+            ProcessComplete("[]");
+            _factory.Verify();
+        }
     }
 
 }

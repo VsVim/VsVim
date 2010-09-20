@@ -87,5 +87,24 @@ namespace VimCore.Test
             Assert.AreEqual("ghi", _textView.GetLine(0).GetText());
             Assert.AreEqual("jkl", _textView.GetLine(1).GetText());
         }
+
+        [Test]
+        [Description("[[ motion should put the caret on the target character")]
+        public void SectionMotion1()
+        {
+            CreateBuffer("hello", "{world");
+            _buffer.ProcessInputAsString("]]");
+            Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
+        }
+
+        [Test]
+        [Description("[[ motion should put the caret on the target character")]
+        public void SectionMotion2()
+        {
+            CreateBuffer("hello", "\fworld");
+            _buffer.ProcessInputAsString("]]");
+            Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
+        }
+
     }
 }

@@ -1466,6 +1466,22 @@ namespace VimCore.Test
         }
 
         [Test]
+        [Description("Exclusive spans ending on a endline having a 0 column should position caret in the below line")]
+        public void MoveCaretToMotionData13()
+        {
+            Create("dog", "cat", "bear");
+            _editorOpts.Setup(x => x.ResetSelection());
+            var data = new MotionData(
+                _buffer.GetLineSpanIncludingLineBreak(0),
+                true,
+                MotionKind.Exclusive,
+                OperationKind.CharacterWise,
+                FSharpOption.Create(0));
+            _operations.MoveCaretToMotionData(data);
+            Assert.AreEqual(_buffer.GetLine(1).Start, _view.GetCaretPoint());
+        }
+
+        [Test]
         public void Undo1()
         {
             Create(String.Empty);
