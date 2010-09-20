@@ -48,7 +48,6 @@
     <Compile Include="TextUtil.fsi" />
     <Compile Include="TextUtil.fs" />
     <Compile Include="EditorUtil.fs" />
-    <Compile Include="RawMotionUtil.fs" />
     <Compile Include="TssUtil.fsi" />
     <Compile Include="TssUtil.fs" />
     <Compile Include="CountCapture.fs" />
