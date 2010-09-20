@@ -445,7 +445,14 @@ type Command =
 
     override x.ToString() = System.String.Format("{0} -> {1}", x.KeyInputSet, x.CommandFlags)
 
-type MotionFunction = int option -> MotionData option
+/// Context on how the motion is being used.  Several motions (]] for example)
+/// change behavior based on how they are being used
+[<RequireQualifiedAccess>]
+type MotionUse =
+    | Movement
+    | AfterOperator
+
+type MotionFunction = MotionUse -> int option -> MotionData option
 
 type ComplexMotionResult =
     /// Enough input was provided to produce a simple motion style function

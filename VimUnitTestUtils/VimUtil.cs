@@ -101,11 +101,10 @@ namespace Vim.UnitTest
 
         internal static MotionCommand CreateSimpleMotion(string name, Func<MotionData> func)
         {
-            var fsharpFunc = FSharpFuncUtil.Create<FSharpOption<int>, FSharpOption<MotionData>>(unused => FSharpOption.Create(func()));
             var commandName = KeyNotationUtil.StringToKeyInputSet(name);
             return MotionCommand.NewSimpleMotionCommand(
                 commandName,
-                fsharpFunc);
+                FuncUtil.CreateMotionFunc(func));
         }
 
         internal static CommandRunData CreateCommandRunData(
@@ -136,17 +135,11 @@ namespace Vim.UnitTest
             Func<MotionData> func = null)
         {
             func = func ?? (() => null);
-            Converter<FSharpOption<int>, FSharpOption<MotionData>> conv = unused =>
-                {
-                    var res = func();
-                    if (res == null) { return FSharpOption<MotionData>.None; }
-                    else { return FSharpOption.Create(res); }
-                };
             var countOpt = count != null ? FSharpOption.Create(count.Value) : FSharpOption<int>.None;
             return new MotionRunData(
                 motionCommand,
                 countOpt,
-                conv.ToFSharpFunc());
+                FuncUtil.CreateMotionFunc(func));
         }
 
         internal static VisualSpan CreateVisualSpanSingle(

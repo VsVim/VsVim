@@ -160,7 +160,7 @@ type internal NormalMode
     
                                 // Repeat the motion and process the results
                                 let motionName = motionRunData.MotionCommand.KeyInputSet.Name
-                                match motionRunData.MotionFunction motionRunData.Count with
+                                match motionRunData.MotionFunction MotionUse.AfterOperator motionRunData.Count with
                                 | None ->  _statusUtil.OnError (Resources.NormalMode_UnableToRepeatMotion commandName motionName)
                                 | Some(motionData) -> func countOpt reg motionData |> ignore
     

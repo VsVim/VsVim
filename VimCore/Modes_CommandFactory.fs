@@ -50,7 +50,7 @@ type internal CommandFactory( _operations : ICommonOperations, _capture : IMotio
         let filterMotionCommand command = 
             match command with
             | SimpleMotionCommand(name,func) -> 
-                let inner count _ =  func count |> processResult
+                let inner count _ =  func MotionUse.Movement count |> processResult
                 Command.SimpleCommand(name,CommandFlags.Movement,inner) |> Some
             | ComplexMotionCommand(_,false,_) -> None
             | ComplexMotionCommand(name,true,func) -> 
@@ -60,7 +60,7 @@ type internal CommandFactory( _operations : ICommonOperations, _capture : IMotio
                         match result with
                         | ComplexMotionResult.Finished(func) ->
                             let res = 
-                                match func count with
+                                match func MotionUse.Movement count with
                                 | None -> CommandResult.Error Resources.MotionCapture_InvalidMotion
                                 | Some(data) -> 
                                     _operations.MoveCaretToMotionData data
