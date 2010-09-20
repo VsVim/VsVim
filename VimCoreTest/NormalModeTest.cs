@@ -46,12 +46,12 @@ namespace VimCore.Test
             CreateCore(null, lines);
         }
 
-        public void Create(IMotionUtil motionUtil, params string[] lines)
+        public void Create(ITextViewMotionUtil motionUtil, params string[] lines)
         {
             CreateCore(motionUtil, lines);
         }
 
-        public void CreateCore(IMotionUtil motionUtil, params string[] lines)
+        public void CreateCore(ITextViewMotionUtil motionUtil, params string[] lines)
         {
             _view = EditorUtil.CreateView(lines);
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 0));
@@ -78,7 +78,7 @@ namespace VimCore.Test
             _operations.SetupGet(x => x.TextView).Returns(_view);
             _operations.SetupGet(x => x.FoldManager).Returns(_foldManager.Object);
 
-            motionUtil = motionUtil ?? new MotionUtil(_view, new Vim.GlobalSettings());
+            motionUtil = motionUtil ?? new TextViewMotionUtil(_view, new Vim.GlobalSettings());
             var capture = new MotionCapture(_host.Object, _view, motionUtil, new MotionCaptureGlobalData());
             var runner = new CommandRunner(_view, _map, (IMotionCapture)capture, _statusUtil.Object);
             _modeRaw = new Vim.Modes.Normal.NormalMode(
@@ -214,12 +214,12 @@ namespace VimCore.Test
 
         private void AssertMotion(
             string motionName,
-            Action<Mock<IMotionUtil>, SnapshotPoint, FSharpOption<int>, MotionData> setupMock,
+            Action<Mock<ITextViewMotionUtil>, SnapshotPoint, FSharpOption<int>, MotionData> setupMock,
             bool isMovement = true)
         {
             if (isMovement)
             {
-                var mock = new Mock<IMotionUtil>(MockBehavior.Strict);
+                var mock = new Mock<ITextViewMotionUtil>(MockBehavior.Strict);
                 Create(mock.Object, s_lines);
                 var data = CreateMotionData();
                 var point = _view.GetPoint(0);

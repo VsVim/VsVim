@@ -16,7 +16,7 @@ type internal MotionCapture
     (
         _host : IVimHost,
         _textView : ITextView,
-        _util :IMotionUtil,
+        _util :ITextViewMotionUtil,
         _globalData : IMotionCaptureGlobalData ) = 
 
     let NeedMoreInputWithEscape func =

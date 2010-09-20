@@ -32,7 +32,7 @@ namespace VimCore.Test
             var capture = new MotionCapture(
                 _host.Object,
                 _textView,
-                new MotionUtil(_textView, new Vim.GlobalSettings()),
+                new TextViewMotionUtil(_textView, new Vim.GlobalSettings()),
                 new MotionCaptureGlobalData());
             _runnerRaw = new CommandRunner(
                 _textView,

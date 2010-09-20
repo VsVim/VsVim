@@ -68,9 +68,9 @@ type IUndoRedoOperations =
     abstract CreateUndoTransaction : name:string -> IUndoTransaction
 
 /// Responsible for implementing all of the Motion information
-type IMotionUtil = 
+type ITextViewMotionUtil = 
 
-    /// ITextView associated with the IMotionUtil
+    /// ITextView associated with the ITextViewMotionUtil
     abstract TextView : ITextView 
 
     /// Left "count" characters

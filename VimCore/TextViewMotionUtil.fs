@@ -6,7 +6,7 @@ open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Operations
 
-type internal MotionUtil 
+type internal TextViewMotionUtil 
     ( 
         _textView : ITextView,
         _settings : IVimGlobalSettings) = 
@@ -69,7 +69,7 @@ type internal MotionUtil
         let isForward = SearchKindUtil.IsForward kind
         {Span=span; IsForward=isForward; MotionKind=MotionKind.Exclusive; OperationKind=OperationKind.LineWise; Column=None}
 
-    interface IMotionUtil with
+    interface ITextViewMotionUtil with
         member x.TextView = _textView
         member x.ForwardChar c count = x.ForwardCharMotionCore c count TssUtil.FindNextOccurranceOfCharOnLine
         member x.ForwardTillChar c count = x.ForwardCharMotionCore c count TssUtil.FindTillNextOccurranceOfCharOnLine

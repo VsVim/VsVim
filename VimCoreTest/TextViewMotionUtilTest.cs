@@ -11,7 +11,7 @@ using Vim.UnitTest.Mock;
 namespace VimCore.Test
 {
     [TestFixture]
-    public class MotionUtilTest
+    public class TextViewMotionUtilTest
     {
         static string[] s_lines = new string[]
             {
@@ -23,8 +23,8 @@ namespace VimCore.Test
         private ITextBuffer _buffer;
         private ITextView _textView;
         private IVimGlobalSettings _settings;
-        private MotionUtil _utilRaw;
-        private IMotionUtil _util;
+        private TextViewMotionUtil _utilRaw;
+        private ITextViewMotionUtil _util;
 
         [TearDown]
         public void TearDown()
@@ -42,7 +42,7 @@ namespace VimCore.Test
             _textView = textView;
             _buffer = _textView.TextBuffer;
             _settings = new Vim.GlobalSettings();
-            _utilRaw = new MotionUtil(_textView, _settings);
+            _utilRaw = new TextViewMotionUtil(_textView, _settings);
             _util = _utilRaw;
         }
 

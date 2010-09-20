@@ -149,7 +149,7 @@
     <Compile Include="InsertModeIntegrationTest.cs" />
     <Compile Include="FileSystemTest.cs" />
     <Compile Include="MotionDataTest.cs" />
-    <Compile Include="MotionUtilTest.cs" />
+    <Compile Include="TextViewMotionUtilTest.cs" />
     <Compile Include="NormalModeIntegrationTest.cs" />
     <Compile Include="SearchServiceTest.cs" />
     <Compile Include="TextChangeTrackerTest.cs" />
