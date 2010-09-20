@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Windows.Input;
-using Vim.Extensions;
 
 namespace Vim.UI.Wpf
 {
@@ -58,13 +57,7 @@ namespace Vim.UI.Wpf
         public static Tuple<Key, ModifierKeys> ConvertToKeyAndModifiers(KeyInput input)
         {
             var mods = ConvertToModifierKeys(input.KeyModifiers);
-            var option = KeyInputUtil.TryCharToVirtualKeyAndModifiers(input.Char);
-            var key = Key.None;
-            if (option.IsSome())
-            {
-                key = KeyInterop.KeyFromVirtualKey(option.Value.Item1);
-            }
-
+            var key = KeyInterop.KeyFromVirtualKey(input.VirtualKeyCode);
             return Tuple.Create(key, mods);
         }
 

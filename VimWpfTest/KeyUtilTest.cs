@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Windows.Input;
 using NUnit.Framework;
 
@@ -157,7 +158,48 @@ namespace Vim.UI.Wpf.Test
             Assert.AreEqual(ModifierKeys.Control, KeyUtil.ConvertToKeyAndModifiers(ki).Item2);
         }
 
+        [Test]
+        public void ConvertToKeyAndModifiers1()
+        {
+            var ki = KeyInputUtil.VimKeyToKeyInput(VimKey.Left);
+            var tuple = KeyUtil.ConvertToKeyAndModifiers(ki);
+            Assert.AreEqual(Key.Left, tuple.Item1);
+            Assert.AreEqual(ModifierKeys.None, tuple.Item2);
+        }
 
+        [Test]
+        public void ConvertToKeyAndModifiers2()
+        {
+            var ki = KeyInputUtil.VimKeyToKeyInput(VimKey.Right);
+            var tuple = KeyUtil.ConvertToKeyAndModifiers(ki);
+            Assert.AreEqual(Key.Right, tuple.Item1);
+            Assert.AreEqual(ModifierKeys.None, tuple.Item2);
+        }
 
+        [Test]
+        [Description("Back and forth for all characters")]
+        public void ConvertToKeyAndModifiers3()
+        {
+            foreach (var cur in KeyInputUtil.CoreCharactersSet)
+            {
+                var keyInput = KeyInputUtil.CharToKeyInput(cur);
+                var tuple = KeyUtil.ConvertToKeyAndModifiers(keyInput);
+                var keyInput2 = KeyUtil.ConvertToKeyInput(tuple.Item1, tuple.Item2);
+                Assert.AreEqual(keyInput, keyInput2);
+            }
+        }
+
+        [Test]
+        [Description("Back and forth for all Vim Keys")]
+        public void ConvertToKeyAndModifiers4()
+        {
+            foreach (var vimKey in Enum.GetValues(typeof(VimKey)).Cast<VimKey>())
+            {
+                var keyInput = KeyInputUtil.VimKeyToKeyInput(vimKey);
+                var tuple = KeyUtil.ConvertToKeyAndModifiers(keyInput);
+                var keyInput2 = KeyUtil.ConvertToKeyInput(tuple.Item1, tuple.Item2);
+                Assert.AreEqual(keyInput, keyInput2);
+            }
+        }
     }
 }

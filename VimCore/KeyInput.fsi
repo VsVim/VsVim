@@ -18,6 +18,9 @@ type KeyInput =
     /// The modifier keys needed to produce this input
     member KeyModifiers : KeyModifiers
 
+    /// Virtual Key code for this KeyInput
+    member VirtualKeyCode : VirtualKeyCode
+
     /// Is the character for this KeyInput a digit
     member IsDigit : bool
 
@@ -26,6 +29,7 @@ type KeyInput =
 
     /// Is this an arrow key?
     member IsArrowKey : bool 
+
 
     /// The empty KeyInput.  Used in places where a KeyInput is required but no 
     /// good mapping exists
