@@ -724,5 +724,29 @@ namespace VimCore.Test
                 },
                 list);
         }
+
+        [Test]
+        public void GetFullParagraph1()
+        {
+            Create("a", "b", "", "c");
+            var span = TssUtil.GetFullParagraph(_snapshot.GetLine(1).Start);
+            Assert.AreEqual(_snapshot.GetLineSpanIncludingLineBreak(0, 1), span);
+        }
+
+        [Test]
+        public void GetFullParagraph2()
+        {
+            Create("a", "b", "", "c");
+            var span = TssUtil.GetFullParagraph(_snapshot.GetLine(0).Start);
+            Assert.AreEqual(_snapshot.GetLineSpanIncludingLineBreak(0, 1), span);
+        }
+
+        [Test]
+        public void GetFullParagraph3()
+        {
+            Create("a", "b", "", "c");
+            var span = TssUtil.GetFullParagraph(_snapshot.GetLine(2).Start);
+            Assert.AreEqual(_snapshot.GetLineSpanIncludingLineBreak(2, 3), span);
+        }
     }
 }

@@ -271,6 +271,48 @@ module TssUtil =
                     else yield item
             }
 
+    let GetFullParagraph point =
+        // First move backwards to the end of the previous paragraph 
+        let searchStart = 
+            let opt = 
+                GetParagraphs point SearchKind.Backward 
+                |> Seq.skipWhile (fun p -> 
+                    match p with
+                    | Paragraph.Boundary(_) -> true
+                    | Paragraph.Content(_) -> false)
+                |> SeqUtil.tryHeadOnly
+            match opt with 
+            | None -> SnapshotUtil.GetStartPoint point.Snapshot
+            | Some(p) -> p.Span.Start
+
+        SnapshotSpan(point,0)
+        (*
+        // Now find the start and end position 
+        let endPoint =
+            
+            // Get it down to a list so we can do proper inspection without constantly
+            // recalculating paragraphs
+            let list =
+                GetParagraphs start SearchKind.Forward 
+                |> SeqUtil.takeWhileWithState false (fun p -> 
+                    match p with
+                    | Paragraph.Boundary(_) -> true
+                    | Paragraph.Content(span) -> span.Contains(point) || span.End == point )
+                |> List.ofSeq
+
+            // It's possible point was at the end of a Content boundary.  Skip that here
+            (*et list = 
+                match list with
+                | [] -> list
+                | h::t -> list *)
+
+            // |> Seq.map (fun p -> p.Span.End)
+            // |> SeqUtil.tryHeadOnly
+            // |> OptionUtil.getOrDefault (SnapshotUtil.GetEndPoint point.Snapshot)
+
+        SnapshotSpan(start, endPoint)*)
+
+
     /// Set of characters which represent the end of a sentence. 
     let SentenceEndChars = ['.'; '!'; '?']
 
