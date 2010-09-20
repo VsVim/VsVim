@@ -1466,7 +1466,7 @@ namespace VimCore.Test
         }
 
         [Test]
-        [Description("Exclusive spans ending on a endline having a 0 column should position caret in the below line")]
+        [Description("Exclusive spans going forward ending on a endline having a 0 column should position caret in the below line")]
         public void MoveCaretToMotionData13()
         {
             Create("dog", "cat", "bear");
@@ -1479,6 +1479,38 @@ namespace VimCore.Test
                 FSharpOption.Create(0));
             _operations.MoveCaretToMotionData(data);
             Assert.AreEqual(_buffer.GetLine(1).Start, _view.GetCaretPoint());
+        }
+
+        [Test]
+        [Description("Exclusive spans going backward should go through normal movements")]
+        public void MoveCaretToMotionData14()
+        {
+            Create("dog", "cat", "bear");
+            _editorOpts.Setup(x => x.ResetSelection());
+            var data = new MotionData(
+                _buffer.GetLineSpanIncludingLineBreak(0, 1),
+                false,
+                MotionKind.Exclusive,
+                OperationKind.CharacterWise,
+                FSharpOption.Create(0));
+            _operations.MoveCaretToMotionData(data);
+            Assert.AreEqual(_buffer.GetLine(0).Start, _view.GetCaretPoint());
+        }
+
+        [Test]
+        [Description("Exclusive spans going forward ending on a endline having a 0 column and starting in the middle of a span checks")]
+        public void MoveCaretToMotionData15()
+        {
+            Create("dog", "cat", "bear");
+            _editorOpts.Setup(x => x.ResetSelection());
+            var data = new MotionData(
+                _buffer.GetSpan(1, _buffer.GetLine(1).EndIncludingLineBreak.Position),
+                true,
+                MotionKind.Exclusive,
+                OperationKind.CharacterWise,
+                FSharpOption.Create(0));
+            _operations.MoveCaretToMotionData(data);
+            Assert.AreEqual(_buffer.GetLine(2).Start, _view.GetCaretPoint());
         }
 
         [Test]

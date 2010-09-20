@@ -486,7 +486,16 @@ type internal CommonOperations ( _data : OperationsData ) =
                 match data.Column with
                 | Some(col) -> 
                     let colLine = 
-                        if col = 0 && data.MotionKind = MotionKind.Exclusive && SnapshotPointUtil.IsStartOfLine data.Span.End then
+
+                        // For exclusive forward motions which have a span that ends at the
+                        // end of a line and has an explicit column 0, we want to use the 
+                        // start of the line following the span instead of the line containing
+                        // the span
+                        if col = 0 && 
+                            data.IsForward && 
+                            data.MotionKind = MotionKind.Exclusive &&
+                            SnapshotPointUtil.IsStartOfLine data.Span.End then
+
                             SnapshotPointUtil.GetContainingLine data.Span.End
                         else line
                     let _,endCol = colLine |> SnapshotLineUtil.GetEnd |> SnapshotPointUtil.GetLineColumn

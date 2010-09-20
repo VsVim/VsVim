@@ -106,5 +106,31 @@ namespace VimCore.Test
             Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
         }
 
+        [Test]
+        public void SectionMotion3()
+        {
+            CreateBuffer("foo", "{", "bar");
+            _textView.MoveCaretTo(_textView.GetLine(2).End);
+            _buffer.ProcessInputAsString("[[");
+            Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
+        }
+
+        [Test]
+        public void SectionMotion4()
+        {
+            CreateBuffer("foo", "{", "bar", "baz");
+            _textView.MoveCaretTo(_textView.GetLine(3).End);
+            _buffer.ProcessInputAsString("[[");
+            Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
+        }
+
+        [Test]
+        public void SectionMotion5()
+        {
+            CreateBuffer("foo", "{", "bar", "baz", "jazz");
+            _textView.MoveCaretTo(_textView.GetLine(4).Start);
+            _buffer.ProcessInputAsString("[[");
+            Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
+        }
     }
 }
