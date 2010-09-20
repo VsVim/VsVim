@@ -36,7 +36,6 @@ namespace VimCore.Test
             _snapshot = _buffer.CurrentSnapshot;
         }
 
-
         [Test]
         public void FindNextWordStart1()
         {
@@ -730,7 +729,7 @@ namespace VimCore.Test
         {
             Create("a", "b", "", "c");
             var span = TssUtil.GetFullParagraph(_snapshot.GetLine(1).Start);
-            Assert.AreEqual(_snapshot.GetLineSpanIncludingLineBreak(0, 1), span);
+            Assert.AreEqual(_snapshot.GetLineSpanIncludingLineBreak(0, 2), span);
         }
 
         [Test]
@@ -747,6 +746,42 @@ namespace VimCore.Test
             Create("a", "b", "", "c");
             var span = TssUtil.GetFullParagraph(_snapshot.GetLine(2).Start);
             Assert.AreEqual(_snapshot.GetLineSpanIncludingLineBreak(2, 3), span);
+        }
+
+        [Test]
+        [Description("Get from a content boundary end")]
+        public void GetFullParagraph4()
+        {
+            Create("dog", "cat", "", "pig");
+            var span = TssUtil.GetFullParagraph(_snapshot.GetLine(2).Start);
+            Assert.AreEqual(_snapshot.GetLineSpanIncludingLineBreak(2, 3), span);
+        }
+
+        [Test]
+        [Description("Get from a content boundary end with preceeding boundaries")]
+        public void GetFullParagraph5()
+        {
+            Create("", "dog", "cat", "", "pig");
+            var span = TssUtil.GetFullParagraph(_snapshot.GetLine(3).Start);
+            Assert.AreEqual(_snapshot.GetLineSpanIncludingLineBreak(3, 4), span);
+        }
+
+        [Test]
+        [Description("Get from within a content portion")]
+        public void GetFullParagraph6()
+        {
+            Create("", "dog", "cat", "", "pig");
+            var span = TssUtil.GetFullParagraph(_snapshot.GetLine(2).Start);
+            Assert.AreEqual(_snapshot.GetLineSpanIncludingLineBreak(1, 3), span);
+        }
+
+        [Test]
+        [Description("Get from within a boundary portion")]
+        public void GetFullParagraph7()
+        {
+            Create("", "dog", "cat", "", "pig");
+            var span = TssUtil.GetFullParagraph(_snapshot.GetPoint(0));
+            Assert.AreEqual(_snapshot.GetLineSpanIncludingLineBreak(0, 2), span);
         }
     }
 }

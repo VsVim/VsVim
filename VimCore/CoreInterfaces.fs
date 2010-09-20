@@ -165,6 +165,15 @@ type IMotionUtil =
     /// not return a value
     abstract SentenceFullForward : count:int -> MotionData
 
+    /// Count paragraphs forward
+    abstract ParagraphForward : count:int -> MotionData
+
+    /// Count pargraphs backwards
+    abstract ParagraphBackward : count:int -> MotionData
+
+    /// Get count full sentences from the cursor.  
+    abstract ParagraphFullForward : count:int -> MotionData
+
 type ModeKind = 
     | Normal = 1
     | Insert = 2

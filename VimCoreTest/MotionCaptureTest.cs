@@ -567,6 +567,50 @@ namespace VimCore.Test
             ProcessComplete("3as");
             _factory.Verify();
         }
+
+        [Test]
+        public void Motion_ParagraphForward1()
+        {
+            _util
+                .Setup(x => x.ParagraphForward(1))
+                .Returns(CreateMotionData())
+                .Verifiable();
+            ProcessComplete("}");
+            _factory.Verify();
+        }
+
+        [Test]
+        public void Motion_ParagraphForward2()
+        {
+            _util
+                .Setup(x => x.ParagraphForward(3))
+                .Returns(CreateMotionData())
+                .Verifiable();
+            ProcessComplete("3}");
+            _factory.Verify();
+        }
+
+        [Test]
+        public void Motion_ParagraphBackward1()
+        {
+            _util
+                .Setup(x => x.ParagraphBackward(1))
+                .Returns(CreateMotionData())
+                .Verifiable();
+            ProcessComplete("{");
+            _factory.Verify();
+        }
+
+        [Test]
+        public void Motion_ParagraphBackward2()
+        {
+            _util
+                .Setup(x => x.ParagraphBackward(3))
+                .Returns(CreateMotionData())
+                .Verifiable();
+            ProcessComplete("3{");
+            _factory.Verify();
+        }
     }
 
 }

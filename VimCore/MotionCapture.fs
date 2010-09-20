@@ -89,6 +89,8 @@ type internal MotionCapture
                 yield ("-", fun count -> _util.LineUpToFirstNonWhitespace count |> Some)
                 yield ("(", fun count -> _util.SentenceBackward count |> Some)
                 yield (")", fun count -> _util.SentenceForward count |> Some)
+                yield ("{", fun count -> _util.ParagraphBackward count |> Some)
+                yield ("}", fun count -> _util.ParagraphForward count |> Some)
             } |> Seq.map (fun (kiName,func) ->
                     let kiSet = singleToKiSet kiName 
                     let func2 count =
@@ -101,6 +103,7 @@ type internal MotionCapture
                 yield ("aw", fun count -> _util.AllWord WordKind.NormalWord count |> Some)
                 yield ("aW", fun count -> _util.AllWord WordKind.BigWord count |> Some)
                 yield ("as", fun count -> _util.SentenceFullForward count |> Some)
+                yield ("ap", fun count -> _util.ParagraphFullForward count |> Some)
             } |> Seq.map (fun (str,func) ->
                     let name = KeyNotationUtil.StringToKeyInputSet str
                     let func2 count =

@@ -59,6 +59,16 @@ type internal MotionUtil
                 (span, true)
         {Span=span; IsForward=isForward; OperationKind=OperationKind.LineWise; MotionKind=MotionKind.Inclusive; Column= Some column }
 
+    member private x.GetParagraphs point kind count = 
+        let span = 
+            TssUtil.GetParagraphs point kind 
+            |> Seq.truncate count
+            |> Seq.map (fun p -> p.Span)
+            |> SnapshotSpanUtil.CreateCombined
+            |> Option.get
+        let isForward = SearchKindUtil.IsForward kind
+        {Span=span; IsForward=isForward; MotionKind=MotionKind.Exclusive; OperationKind=OperationKind.LineWise; Column=None}
+
     interface IMotionUtil with
         member x.TextView = _textView
         member x.ForwardChar c count = x.ForwardCharMotionCore c count TssUtil.FindNextOccurranceOfCharOnLine
@@ -281,3 +291,11 @@ type internal MotionUtil
                     |> Seq.truncate count
                     |> SnapshotSpanUtil.CreateCombinedOrEmpty caretPoint.Snapshot
             {Span=span; IsForward=true; MotionKind=MotionKind.Exclusive; OperationKind=OperationKind.CharacterWise; Column=None}
+        member x.ParagraphForward count =
+            x.GetParagraphs (TextViewUtil.GetCaretPoint _textView) SearchKind.Forward count
+        member x.ParagraphBackward count =
+            x.GetParagraphs (TextViewUtil.GetCaretPoint _textView) SearchKind.Backward count
+        member x.ParagraphFullForward count =
+            let caretPoint = TextViewUtil.GetCaretPoint _textView
+            let span = TssUtil.GetFullParagraph caretPoint
+            x.GetParagraphs span.Start SearchKind.Forward count 

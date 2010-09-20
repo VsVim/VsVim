@@ -271,47 +271,69 @@ module TssUtil =
                     else yield item
             }
 
-    let GetFullParagraph point =
-        // First move backwards to the end of the previous paragraph 
-        let searchStart = 
-            let opt = 
-                GetParagraphs point SearchKind.Backward 
-                |> Seq.skipWhile (fun p -> 
-                    match p with
-                    | Paragraph.Boundary(_) -> true
-                    | Paragraph.Content(_) -> false)
+    let GetFullParagraph (point:SnapshotPoint) =
+
+        let isContent p =
+            match p with 
+            | Paragraph.Content(_) -> true
+            | Paragraph.Boundary(_) -> false
+
+        let isBoundary p =
+            match p with 
+            | Paragraph.Content(_) -> false
+            | Paragraph.Boundary(_) -> true
+
+        // Get the span when the point is not inside or at the end
+        // of a content portion.  It is instead inside of a boundary.  The
+        // 'start' param points to the end of the previous content boundary 
+        let findFromBoundary start = 
+            let endPoint = 
+                GetParagraphs start SearchKind.Forward
+                |> Seq.skipWhile isBoundary
+                |> Seq.map ( fun p -> p.Span.End )
                 |> SeqUtil.tryHeadOnly
-            match opt with 
-            | None -> SnapshotUtil.GetStartPoint point.Snapshot
-            | Some(p) -> p.Span.Start
+                |> OptionUtil.getOrDefault (SnapshotUtil.GetEndPoint point.Snapshot)
+            SnapshotSpan(start,endPoint)
 
-        SnapshotSpan(point,0)
-        (*
-        // Now find the start and end position 
-        let endPoint =
-            
-            // Get it down to a list so we can do proper inspection without constantly
-            // recalculating paragraphs
-            let list =
+        // Get the span when the point is at the end of a Content portion 
+        // of a paragraph. 
+        let findFromContentEnd () = findFromBoundary point
+
+        // Get the span when the point is within a Content portion of a 
+        // paragraph.  Take the content regino and all of the trailing Bonudary
+        // until the next Content portion.  The 'start' param points to the 
+        // start of the Content span
+        let findFromContentBody start =
+            let endPoint =
                 GetParagraphs start SearchKind.Forward 
-                |> SeqUtil.takeWhileWithState false (fun p -> 
-                    match p with
-                    | Paragraph.Boundary(_) -> true
-                    | Paragraph.Content(span) -> span.Contains(point) || span.End == point )
-                |> List.ofSeq
+                |> Seq.skip 1 // The Content 
+                |> Seq.skipWhile isBoundary
+                |> Seq.map (fun p -> p.Span.Start )
+                |> SeqUtil.tryHeadOnly
+                |> OptionUtil.getOrDefault (SnapshotUtil.GetEndPoint point.Snapshot)
+            SnapshotSpan(start, endPoint)
 
-            // It's possible point was at the end of a Content boundary.  Skip that here
-            (*et list = 
-                match list with
-                | [] -> list
-                | h::t -> list *)
-
-            // |> Seq.map (fun p -> p.Span.End)
-            // |> SeqUtil.tryHeadOnly
-            // |> OptionUtil.getOrDefault (SnapshotUtil.GetEndPoint point.Snapshot)
-
-        SnapshotSpan(start, endPoint)*)
-
+        // Deteremine where the point is so we can do the proper calculation
+        match GetParagraphs point SearchKind.Backward |> SeqUtil.tryHeadOnly with
+        | None -> findFromBoundary (SnapshotUtil.GetStartPoint point.Snapshot)
+        | Some(p)->
+            match p with
+            | Paragraph.Boundary(_,span) -> 
+                let start = 
+                    GetParagraphs point SearchKind.Backward
+                    |> Seq.skipWhile isBoundary
+                    |> Seq.map (fun p -> p.Span.End)
+                    |> SeqUtil.tryHeadOnly
+                    |> OptionUtil.getOrDefault (SnapshotUtil.GetStartPoint point.Snapshot)
+                findFromBoundary start
+            | Paragraph.Content(span) -> 
+                let fullSpan = 
+                    GetParagraphs span.Start SearchKind.Forward
+                    |> Seq.map (fun p -> p.Span)
+                    |> SeqUtil.tryHeadOnly
+                    |> Option.get
+                if fullSpan.End = point then findFromContentEnd()
+                else findFromContentBody fullSpan.Start
 
     /// Set of characters which represent the end of a sentence. 
     let SentenceEndChars = ['.'; '!'; '?']
