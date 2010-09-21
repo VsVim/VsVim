@@ -295,5 +295,37 @@ namespace VimCore.Test
             Assert.IsTrue(tuple.Item3.IsNone());
             Assert.AreEqual(0, tuple.Item2.Count());
         }
+
+        [Test]
+        [Description("Last point before end of buffer")]
+        public void GetLinesAndEdges6()
+        {
+            Create("dog", "cat", "pig", "fox");
+            var span = new SnapshotSpan(
+                _buffer.CurrentSnapshot.GetEndPoint().Subtract(1),
+                0);
+            var tuple = SnapshotSpanUtil.GetLinesAndEdges(span);
+            Assert.AreEqual(span, tuple.Item1.Value);
+            Assert.AreEqual(0, tuple.Item2.ToList().Count);
+            Assert.IsTrue(tuple.Item3.IsNone());
+        }
+
+        /// <summary>
+        /// Make sure we continue the tradition of not returning the Snapshot end point
+        /// for requests even if it was the input
+        /// </summary>
+        [Test]
+        [Description("Span staring at the end point")]
+        public void GetLinesAndEdges7()
+        {
+            Create("dog", "cat", "pig", "fox");
+            var span = new SnapshotSpan(
+                _buffer.CurrentSnapshot.GetEndPoint(),
+                0);
+            var tuple = SnapshotSpanUtil.GetLinesAndEdges(span);
+            Assert.IsTrue(tuple.Item1.IsNone());
+            Assert.AreEqual(0, tuple.Item2.ToList().Count);
+            Assert.IsTrue(tuple.Item3.IsNone());
+        }
     }
 }

@@ -1088,6 +1088,23 @@ namespace VimCore.Test
             var data = _util.SectionBackwardOrCloseBrace(2);
             Assert.AreEqual(_textView.GetLineSpanIncludingLineBreak(0, 1), data.Span);
         }
+
+        [Test]
+        public void ParagraphForward1()
+        {
+            Create("dog", "pig", "cat");
+            _textView.MoveCaretTo(_textView.TextSnapshot.GetEndPoint());
+            var data = _util.ParagraphForward(1);
+            Assert.IsTrue(data.Span.IsEmpty);
+        }
+
+        [Test]
+        public void ParagraphBackward1()
+        {
+            Create(0, "dog", "pig", "cat");
+            var data = _util.ParagraphBackward(1);
+            Assert.IsTrue(data.Span.IsEmpty);
+        }
     }
 
 }

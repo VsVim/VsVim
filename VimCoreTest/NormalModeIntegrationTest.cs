@@ -132,5 +132,13 @@ namespace VimCore.Test
             _buffer.ProcessInputAsString("[[");
             Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
         }
+
+        [Test]
+        public void ParagraphMotion1()
+        {
+            CreateBuffer("foo", "{", "bar", "baz", "jazz");
+            _textView.MoveCaretTo(_textView.TextSnapshot.GetEndPoint());
+            _buffer.ProcessInputAsString("{{");
+        }
     }
 }

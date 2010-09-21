@@ -23,10 +23,10 @@ module SnapshotUtil =
     let GetFirstLine tss = GetLine tss 0
 
     let GetLastLineNumber (tss:ITextSnapshot) = tss.LineCount - 1 
-        
+
     /// Get the end point of the snapshot
     let GetEndPoint (tss:ITextSnapshot) = SnapshotPoint(tss, tss.Length)
-        
+
     /// Get the start point of the snapshot
     let GetStartPoint (tss:ITextSnapshot) = SnapshotPoint(tss, 0)
 
@@ -237,7 +237,14 @@ module SnapshotSpanUtil =
         // Calculate the lead edge and the remaining span 
         let leadEdge,span = 
             let startLine = GetStartLine span
-            if span.Start = startLine.Start && span.Length >= startLine.LengthIncludingLineBreak then
+            if span.Start = SnapshotUtil.GetEndPoint span.Snapshot then 
+                // Special case for a 0 length span at the end of a Snapshot.  Just return 
+                // None.  Returning points or spans which start at the End point just causes
+                // problems as it forces special cases everywhere
+                None,span
+            elif span.IsEmpty then 
+                Some span,span
+            elif span.Start = startLine.Start && span.Length >= startLine.LengthIncludingLineBreak then
                 None,span
             else 
                 let length = min span.Length (startLine.LengthIncludingLineBreak - span.Start.Position)
@@ -656,6 +663,9 @@ module SnapshotPointUtil =
     /// Maybe add 1 to the given point.  Will return the original point
     /// if it's the end of the Snapshot
     let TryAddOne point = TryAdd point 1
+
+    /// Subtract the count from the SnapshotPoint
+    let SubtractOne (point:SnapshotPoint) =  point.Subtract(1)
 
 module VirtualSnapshotPointUtil =
     

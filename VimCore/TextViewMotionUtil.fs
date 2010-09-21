@@ -66,7 +66,20 @@ type internal TextViewMotionUtil
             |> Seq.truncate count
             |> Seq.map (fun p -> p.Span)
             |> SnapshotSpanUtil.CreateCombined
-            |> Option.get
+        let span = 
+            match span with 
+            | Some(span) -> span
+            | None -> 
+                // Can have no paragraphs at either end
+                if SearchKindUtil.IsBackward kind || point.Snapshot.Length = 0 then 
+                    point.Snapshot 
+                    |> SnapshotUtil.GetStartPoint 
+                    |> SnapshotSpanUtil.CreateEmpty
+                else 
+                    point.Snapshot 
+                    |> SnapshotUtil.GetEndPoint 
+                    |> SnapshotPointUtil.SubtractOne 
+                    |> SnapshotSpanUtil.CreateEmpty
         let isForward = SearchKindUtil.IsForward kind
         {Span=span; IsForward=isForward; MotionKind=MotionKind.Exclusive; OperationKind=OperationKind.LineWise; Column=None}
 
