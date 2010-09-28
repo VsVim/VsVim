@@ -183,7 +183,7 @@ namespace VimCore.Test
         public void CanProcess6()
         {
             Create(s_lines);
-            foreach (var cur in KeyInputUtil.CoreCharacters)
+            foreach (var cur in KeyInputUtil.CoreCharacterList)
             {
                 Assert.IsTrue(_mode.CanProcess(KeyInputUtil.CharToKeyInput(cur)));
             }

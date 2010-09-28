@@ -151,6 +151,17 @@ namespace Vim.UnitTest
                 span);
         }
 
+        internal static KeyInput CreateKeyInput(
+            VimKey key = VimKey.NotWellKnown,
+            KeyModifiers mod = KeyModifiers.None,
+            char? c = null)
+        {
+            return new KeyInput(
+                key,
+                mod,
+                c.HasValue ? FSharpOption<char>.Some(c.Value) : FSharpOption<char>.None);
+        }
+
 
     }
 }

@@ -9,17 +9,18 @@ namespace Vim.UI.Wpf.Implementation
     {
         private KeyboardDevice _keyboardDevice = InputManager.Current.PrimaryKeyboardDevice;
 
-        public bool IsKeyDown(KeyInput value)
+        public bool IsKeyDown(VimKey vimKey)
         {
-            var tuple = KeyUtil.ConvertToKeyAndModifiers(value);
-            return IsKeyDown(tuple.Item1, tuple.Item2);
+            Key key;
+            return KeyUtil.TryConvertToKey(vimKey, out key)
+                && IsKeyDown(key);
         }
 
-        internal bool IsKeyDown(Key key, ModifierKeys modifiers)
+        internal bool IsKeyDown(Key key)
         {
             try
             {
-                return _keyboardDevice.IsKeyDown(key) && _keyboardDevice.Modifiers == modifiers;
+                return _keyboardDevice.IsKeyDown(key);
             }
             catch (InvalidEnumArgumentException)
             {

@@ -24,17 +24,17 @@ namespace VimCore.Test
         [Test]
         public void Equality1()
         {
-            var i1 = new KeyInput(0, VimKey.NotWellKnown, KeyModifiers.None, 'c');
-            Assert.AreEqual(i1, new KeyInput(0, VimKey.NotWellKnown, KeyModifiers.None, 'c'));
-            Assert.AreNotEqual(i1, new KeyInput(0, VimKey.NotWellKnown, KeyModifiers.None, 'd'));
-            Assert.AreNotEqual(i1, new KeyInput(0, VimKey.NotWellKnown, KeyModifiers.Shift, 'c'));
-            Assert.AreNotEqual(i1, new KeyInput(0, VimKey.NotWellKnown, KeyModifiers.Alt, 'c'));
+            var i1 = VimUtil.CreateKeyInput(c: 'c');
+            Assert.AreEqual(i1, VimUtil.CreateKeyInput(c: 'c'));
+            Assert.AreNotEqual(i1, VimUtil.CreateKeyInput(c: 'd'));
+            Assert.AreNotEqual(i1, VimUtil.CreateKeyInput(c: 'c', mod: KeyModifiers.Shift));
+            Assert.AreNotEqual(i1, VimUtil.CreateKeyInput(c: 'c', mod: KeyModifiers.Alt));
         }
 
         [Test, Description("Boundary condition")]
         public void Equality2()
         {
-            var i1 = new KeyInput(0, VimKey.NotWellKnown, KeyModifiers.None, 'c');
+            var i1 = VimUtil.CreateKeyInput(c: 'c');
             Assert.AreNotEqual(i1, 42);
         }
 

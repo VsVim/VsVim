@@ -1,7 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Runtime.InteropServices;
 
 namespace Vim.UI.Wpf
@@ -15,7 +12,22 @@ namespace Vim.UI.Wpf
         internal static extern short VkKeyScan(char ch);
 
         [DllImport("user32.dll")]
+        internal static extern short VkKeyScanEx(char ch, IntPtr hkl);
+
+        [DllImport("user32.dll")]
         internal static extern uint MapVirtualKey(uint code, uint mapType);
 
+        [DllImport("user32.dll")]
+        internal static extern IntPtr GetKeyboardLayout(uint idThread);
+
+        internal static int HiWord(int number)
+        {
+            return (number >> 16) & 0xffff;
+        }
+
+        internal static int LoWord(int number)
+        {
+            return number & 0xffff;
+        }
     }
 }

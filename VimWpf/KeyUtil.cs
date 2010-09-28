@@ -1,14 +1,121 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Windows.Input;
+using Vim.Extensions;
 
 namespace Vim.UI.Wpf
 {
     public static class KeyUtil
     {
-        public static KeyInput ConvertToKeyInput(Key key)
+        private static IntPtr? _keyboardId;
+        private static Dictionary<Tuple<Key, ModifierKeys>, KeyInput> _cache;
+
+        private static Dictionary<Tuple<Key, ModifierKeys>, KeyInput> GetOrCreateCache()
         {
-            var virtualKey = KeyInterop.VirtualKeyFromKey(key);
-            return KeyInputUtil.VirtualKeyCodeToKeyInput(virtualKey);
+            if (_cache == null
+                || !_keyboardId.HasValue
+                || _keyboardId.Value != NativeMethods.GetKeyboardLayout(0))
+            {
+                CreateCache();
+            }
+
+            return _cache;
+        }
+
+        private static void CreateCache()
+        {
+            var id = NativeMethods.GetKeyboardLayout(0);
+            var cache = new Dictionary<Tuple<Key, ModifierKeys>, KeyInput>();
+
+            foreach (var current in KeyInputUtil.CoreKeyInputList)
+            {
+                // TODO: Need to fix for non-chars
+                if (current.RawChar.IsNone())
+                {
+                    continue;
+                }
+
+                int virtualKeyCode;
+                ModifierKeys modKeys;
+                if (!TryMapCharToVirtualKeyAndModifiers(id, current.Char, out virtualKeyCode, out modKeys))
+                {
+                    continue;
+                }
+
+                // Only processing items which can map to acual keys
+                var key = KeyInterop.KeyFromVirtualKey(virtualKeyCode);
+                if (Key.None == key)
+                {
+                    continue;
+                }
+
+                var tuple = Tuple.Create(key, modKeys);
+                cache[tuple] = current;
+            }
+
+            _keyboardId = id;
+            _cache = cache;
+        }
+
+        private static bool TryMapCharToVirtualKeyAndModifiers(IntPtr hkl, char c, out int virtualKeyCode, out ModifierKeys modKeys)
+        {
+            var res = NativeMethods.VkKeyScanEx(c, hkl);
+
+            // The virtual key code is the low byte and the shift state is the high byte
+            var virtualKey = res & 0xff;
+            var state = ((res >> 8) & 0xff);
+            if (virtualKey == -1 || state == -1)
+            {
+                virtualKeyCode = 0;
+                modKeys = ModifierKeys.None;
+                return false;
+            }
+
+            var shiftMod = (state & 0x1) != 0 ? ModifierKeys.Shift : ModifierKeys.None;
+            var controlMod = (state & 0x2) != 0 ? ModifierKeys.Control : ModifierKeys.None;
+            var altMod = (state & 0x4) != 0 ? ModifierKeys.Alt : ModifierKeys.None;
+            virtualKeyCode = virtualKey;
+            modKeys = shiftMod | controlMod | altMod;
+            return true;
+        }
+
+        /// <summary>
+        /// Is this the AltGr key combination.  This is not directly representable in WPF
+        /// logic but the best that can be done is to check for Alt + Control
+        /// </summary>
+        public static bool IsAltGr(ModifierKeys modifierKeys)
+        {
+            return modifierKeys == (ModifierKeys.Alt | ModifierKeys.Control);
+        }
+
+        /// <summary>
+        /// When the user is typing we get events for every single key press.  This means that 
+        /// typing something like an upper case character will cause at least 2 events to be
+        /// generated.  
+        ///  1) LeftShift 
+        ///  2) LeftShift + b
+        /// This helps us filter out items like #1 which we don't want to process
+        /// </summar>
+        public static bool IsNonInputKey(Key k)
+        {
+            switch (k)
+            {
+                case Key.LeftAlt:
+                case Key.LeftCtrl:
+                case Key.LeftShift:
+                case Key.RightAlt:
+                case Key.RightCtrl:
+                case Key.RightShift:
+                case Key.System:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        public static bool IsInputKey(Key k)
+        {
+            return !IsNonInputKey(k);
         }
 
         public static KeyModifiers ConvertToKeyModifiers(ModifierKeys keys)
@@ -47,23 +154,22 @@ namespace Vim.UI.Wpf
             return res;
         }
 
-        public static KeyInput ConvertToKeyInput(Key key, ModifierKeys modifierKeys)
+        public static bool TryConvertToKeyInput(Key key, out KeyInput keyInput)
         {
-            var modKeys = ConvertToKeyModifiers(modifierKeys);
-            var original = ConvertToKeyInput(key);
-            return KeyInputUtil.ChangeKeyModifiers(original, modKeys);
+            return TryConvertToKeyInput(key, ModifierKeys.None, out keyInput);
         }
 
-        public static Tuple<Key, ModifierKeys> ConvertToKeyAndModifiers(KeyInput input)
+        public static bool TryConvertToKeyInput(Key key, ModifierKeys modifierKeys, out KeyInput keyInput)
         {
-            var mods = ConvertToModifierKeys(input.KeyModifiers);
-            var key = KeyInterop.KeyFromVirtualKey(input.VirtualKeyCode);
-            return Tuple.Create(key, mods);
+            var tuple = Tuple.Create(key, modifierKeys);
+            return GetOrCreateCache().TryGetValue(tuple, out keyInput);
         }
 
-        public static Key ConvertToKey(KeyInput input)
+        public static bool TryConvertToKey(VimKey vimKey, out Key key)
         {
-            return ConvertToKeyAndModifiers(input).Item1;
+            // TODO: Code this 
+            key = Key.None;
+            return false;
         }
     }
 }

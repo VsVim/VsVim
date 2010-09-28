@@ -245,6 +245,7 @@ module internal MapUtil =
     let keys (map:Map<'TKey,'TValue>) = map |> Seq.map (fun pair -> pair.Key)
 
 module internal CharUtil =
+    let MinValue = System.Char.MinValue
     let IsDigit x = System.Char.IsDigit(x)
     let IsWhiteSpace x = System.Char.IsWhiteSpace(x)
     let IsNotWhiteSpace x = not (System.Char.IsWhiteSpace(x))

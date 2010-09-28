@@ -131,16 +131,12 @@ module internal KeyNotationUtil =
     /// guidelines specified in :help key-notation.  
     let TryStringToKeyInput (data:string) = 
 
-        let tryCharToKeyInput c = 
-            if Set.contains c KeyInputUtil.CoreCharactersSet then KeyInputUtil.CharToKeyInput c |> Some
-            else None
-
         // Convert the string into a keyinput 
         let convertToRaw data =
             match Map.tryFind data SpecialKeyMap with
             | Some(ki) -> Some ki
             | None -> 
-                if StringUtil.length data = 1 then tryCharToKeyInput data.[0]
+                if StringUtil.length data = 1 then KeyInputUtil.CharToKeyInput data.[0] |> Some
                 else None
 
         // Convert and then apply the modifier
@@ -183,7 +179,7 @@ module internal KeyNotationUtil =
         | Some(c) -> 
             let prefix = "CTRL-"
             if StringUtil.startsWithIgnoreCase prefix data then convertCtrlPrefix (data.Substring(prefix.Length))
-            elif data.Length = 1 then tryCharToKeyInput data.[0]
+            elif data.Length = 1 then KeyInputUtil.CharToKeyInput data.[0] |> Some
             else None
 
     let StringToKeyInput data = 

@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using NUnit.Framework;
 using Vim;
-using Vim.Extensions;
 
 namespace VimCore.Test
 {
@@ -89,23 +88,6 @@ namespace VimCore.Test
             var left = KeyInputUtil.CharToKeyInput('-');
             var right = KeyInputUtil.VimKeyToKeyInput(VimKey.KeypadMinus);
             Assert.AreNotEqual(left, right);
-        }
-
-        [Test]
-        public void TryVirtualKeyCodeAndModifiersToKeyInput1()
-        {
-            Action<char> backandForth = c =>
-            {
-                var opt = KeyInputUtil.TryCharToVirtualKeyAndModifiers(c);
-                Assert.IsTrue(opt.IsSome());
-                var virtualKeyCode = opt.Value.Item1;
-                var keyModifiers = opt.Value.Item2;
-                var ki1 = KeyInputUtil.CharToKeyInput(c);
-                var ki2 = KeyInputUtil.VirtualKeyCodeAndModifiersToKeyInput(virtualKeyCode, keyModifiers);
-                Assert.AreEqual(ki1, ki2);
-            };
-
-            KeyInputUtil.CoreCharacters.ToList().ForEach(backandForth);
         }
 
         [Test]

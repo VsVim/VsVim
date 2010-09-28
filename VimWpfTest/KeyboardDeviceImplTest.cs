@@ -19,7 +19,7 @@ namespace Vim.UI.Wpf.Test
         [Description("Don't throw on the None case")]
         public void IsKeyDown1()
         {
-            Assert.IsFalse(_deviceImpl.IsKeyDown(Key.None, ModifierKeys.None));
+            Assert.IsFalse(_deviceImpl.IsKeyDown(Key.None));
         }
     }
 }

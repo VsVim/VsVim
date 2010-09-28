@@ -31,6 +31,9 @@ type internal NormalMode
         OneTimeMode = None
     }
 
+    /// Set of all char's Vim is interested in 
+    let _coreCharSet = KeyInputUtil.CoreCharacterList |> Set.ofList
+
     /// Contains the state information for Normal mode
     let mutable _data = _emptyData
 
@@ -726,7 +729,7 @@ type internal NormalMode
             elif _runner.IsWaitingForMoreInput then  true
             elif CharUtil.IsLetterOrDigit(ki.Char) then true
             elif doesCommandStartWith ki then true
-            elif KeyInputUtil.CoreCharactersSet |> Set.contains ki.Char then true
+            elif Set.contains ki.Char _coreCharSet then true
             else false
 
         member this.Process ki = this.ProcessCore ki
