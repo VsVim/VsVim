@@ -34,7 +34,7 @@ namespace VimCore.Test
         {
             var ki = KeyInputUtil.CharToKeyInput('_');
             Assert.AreEqual('_', ki.Char);
-            Assert.AreEqual(KeyModifiers.Shift, ki.KeyModifiers);
+            Assert.AreEqual(KeyModifiers.None, ki.KeyModifiers);
         }
 
         [Test]
@@ -50,7 +50,7 @@ namespace VimCore.Test
         {
             var ki = KeyInputUtil.CharToKeyInput('%');
             Assert.AreEqual('%', ki.Char);
-            Assert.AreEqual(KeyModifiers.Shift, ki.KeyModifiers);
+            Assert.AreEqual(KeyModifiers.None, ki.KeyModifiers);
         }
 
         [Test]
@@ -129,12 +129,12 @@ namespace VimCore.Test
         }
 
         [Test]
-        [Description("Shift to non-alpha")]
+        [Description("Shift to non-alpha doesn't matter in Vim land")]
         public void ChangeKeyModifiers4()
         {
             var ki1 = KeyInputUtil.CharToKeyInput(']');
             var ki2 = KeyInputUtil.ChangeKeyModifiers(ki1, KeyModifiers.Shift);
-            Assert.AreEqual(KeyInputUtil.CharToKeyInput('}'), ki2);
+            Assert.AreEqual(KeyInputUtil.CharToKeyInput(']'), ki2);
         }
     }
 }

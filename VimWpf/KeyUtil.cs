@@ -161,8 +161,17 @@ namespace Vim.UI.Wpf
 
         public static bool TryConvertToKeyInput(Key key, ModifierKeys modifierKeys, out KeyInput keyInput)
         {
-            var tuple = Tuple.Create(key, modifierKeys);
-            return GetOrCreateCache().TryGetValue(tuple, out keyInput);
+            // Only consider the Shift modifier key when doing the lookup.  The cache only contains the 
+            // KeyInput's with no and shift modifiers.  
+            var tuple = Tuple.Create(key, modifierKeys & ModifierKeys.Shift);
+            if (GetOrCreateCache().TryGetValue(tuple, out keyInput))
+            {
+                // Reapply the modifiers
+                keyInput = KeyInputUtil.ChangeKeyModifiers(keyInput, ConvertToKeyModifiers(modifierKeys));
+                return true;
+            }
+
+            return false;
         }
 
         public static bool TryConvertToKey(VimKey vimKey, out Key key)

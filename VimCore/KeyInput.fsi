@@ -48,7 +48,8 @@ module KeyInputUtil =
     /// The set of core characters as a seq
     val CoreCharacterList : char list
 
-    /// The core set of KeyInput values that Vim is concerned with.
+    /// The core set of KeyInput values that Vim is concerned with.  With the exception of
+    /// upper case letters this doesn't include any modifiers.  
     val CoreKeyInputList : KeyInput list
 
     /// Try and convert the given char to a KeyInput value

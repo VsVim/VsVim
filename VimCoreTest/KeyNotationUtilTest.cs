@@ -136,7 +136,7 @@ namespace VimCore.Test
             var data = KeyNotationUtil.StringToKeyInput("CTRL-o");
             Assert.AreEqual('o', data.Char);
             Assert.AreEqual(KeyModifiers.Control, data.KeyModifiers);
-            Assert.AreEqual(VimKey.NotWellKnown, data.Key);
+            Assert.AreEqual(VimKey.O, data.Key);
         }
 
         [Test]
@@ -168,7 +168,7 @@ namespace VimCore.Test
         public void SplitIntoKeyNotationEntries2()
         {
             CollectionAssert.AreEquivalent(
-                new string[] {"CTRL-j", "b"},
+                new string[] { "CTRL-j", "b" },
                 KeyNotationUtil.SplitIntoKeyNotationEntries("CTRL-j_b"));
         }
 
@@ -176,7 +176,7 @@ namespace VimCore.Test
         public void SplitIntoKeyNotationEntries3()
         {
             CollectionAssert.AreEquivalent(
-                new string[] {"CTRL-J", "b"},
+                new string[] { "CTRL-J", "b" },
                 KeyNotationUtil.SplitIntoKeyNotationEntries("CTRL-J_b"));
         }
 
@@ -184,7 +184,7 @@ namespace VimCore.Test
         public void SplitIntoKeyNotationEntries4()
         {
             CollectionAssert.AreEquivalent(
-                new string[] {"CTRL-J", "CTRL-b"},
+                new string[] { "CTRL-J", "CTRL-b" },
                 KeyNotationUtil.SplitIntoKeyNotationEntries("CTRL-J_CTRL-b"));
 
         }
