@@ -1,82 +1,20 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Windows.Input;
-using Vim.Extensions;
+﻿using System.Windows.Input;
 
 namespace Vim.UI.Wpf
 {
     public static class KeyUtil
     {
-        private static IntPtr? _keyboardId;
-        private static Dictionary<Tuple<Key, ModifierKeys>, KeyInput> _cache;
+        private static KeyboardMap _keyboardMap;
 
-        private static Dictionary<Tuple<Key, ModifierKeys>, KeyInput> GetOrCreateCache()
+        private static KeyboardMap GetOrCreateKeyboardMap()
         {
-            if (_cache == null
-                || !_keyboardId.HasValue
-                || _keyboardId.Value != NativeMethods.GetKeyboardLayout(0))
+            var keyboardId = NativeMethods.GetKeyboardLayout(0);
+            if (_keyboardMap == null || _keyboardMap.KeyboardId != keyboardId)
             {
-                CreateCache();
+                _keyboardMap = new KeyboardMap(keyboardId);
             }
 
-            return _cache;
-        }
-
-        private static void CreateCache()
-        {
-            var id = NativeMethods.GetKeyboardLayout(0);
-            var cache = new Dictionary<Tuple<Key, ModifierKeys>, KeyInput>();
-
-            foreach (var current in KeyInputUtil.CoreKeyInputList)
-            {
-                // TODO: Need to fix for non-chars
-                if (current.RawChar.IsNone())
-                {
-                    continue;
-                }
-
-                int virtualKeyCode;
-                ModifierKeys modKeys;
-                if (!TryMapCharToVirtualKeyAndModifiers(id, current.Char, out virtualKeyCode, out modKeys))
-                {
-                    continue;
-                }
-
-                // Only processing items which can map to acual keys
-                var key = KeyInterop.KeyFromVirtualKey(virtualKeyCode);
-                if (Key.None == key)
-                {
-                    continue;
-                }
-
-                var tuple = Tuple.Create(key, modKeys);
-                cache[tuple] = current;
-            }
-
-            _keyboardId = id;
-            _cache = cache;
-        }
-
-        private static bool TryMapCharToVirtualKeyAndModifiers(IntPtr hkl, char c, out int virtualKeyCode, out ModifierKeys modKeys)
-        {
-            var res = NativeMethods.VkKeyScanEx(c, hkl);
-
-            // The virtual key code is the low byte and the shift state is the high byte
-            var virtualKey = res & 0xff;
-            var state = ((res >> 8) & 0xff);
-            if (virtualKey == -1 || state == -1)
-            {
-                virtualKeyCode = 0;
-                modKeys = ModifierKeys.None;
-                return false;
-            }
-
-            var shiftMod = (state & 0x1) != 0 ? ModifierKeys.Shift : ModifierKeys.None;
-            var controlMod = (state & 0x2) != 0 ? ModifierKeys.Control : ModifierKeys.None;
-            var altMod = (state & 0x4) != 0 ? ModifierKeys.Alt : ModifierKeys.None;
-            virtualKeyCode = virtualKey;
-            modKeys = shiftMod | controlMod | altMod;
-            return true;
+            return _keyboardMap;
         }
 
         /// <summary>
@@ -118,67 +56,19 @@ namespace Vim.UI.Wpf
             return !IsNonInputKey(k);
         }
 
-        public static KeyModifiers ConvertToKeyModifiers(ModifierKeys keys)
-        {
-            var res = KeyModifiers.None;
-            if (0 != (keys & ModifierKeys.Shift))
-            {
-                res = res | KeyModifiers.Shift;
-            }
-            if (0 != (keys & ModifierKeys.Alt))
-            {
-                res = res | KeyModifiers.Alt;
-            }
-            if (0 != (keys & ModifierKeys.Control))
-            {
-                res = res | KeyModifiers.Control;
-            }
-            return res;
-        }
-
-        public static ModifierKeys ConvertToModifierKeys(KeyModifiers keys)
-        {
-            var res = ModifierKeys.None;
-            if (0 != (keys & KeyModifiers.Shift))
-            {
-                res |= ModifierKeys.Shift;
-            }
-            if (0 != (keys & KeyModifiers.Control))
-            {
-                res |= ModifierKeys.Control;
-            }
-            if (0 != (keys & KeyModifiers.Alt))
-            {
-                res |= ModifierKeys.Alt;
-            }
-            return res;
-        }
-
         public static bool TryConvertToKeyInput(Key key, out KeyInput keyInput)
         {
-            return TryConvertToKeyInput(key, ModifierKeys.None, out keyInput);
+            return GetOrCreateKeyboardMap().TryGetKeyInput(key, out keyInput);
         }
 
         public static bool TryConvertToKeyInput(Key key, ModifierKeys modifierKeys, out KeyInput keyInput)
         {
-            // Only consider the Shift modifier key when doing the lookup.  The cache only contains the 
-            // KeyInput's with no and shift modifiers.  
-            var tuple = Tuple.Create(key, modifierKeys & ModifierKeys.Shift);
-            if (GetOrCreateCache().TryGetValue(tuple, out keyInput))
-            {
-                // Reapply the modifiers
-                keyInput = KeyInputUtil.ChangeKeyModifiers(keyInput, ConvertToKeyModifiers(modifierKeys));
-                return true;
-            }
-
-            return false;
+            return GetOrCreateKeyboardMap().TryGetKeyInput(key, modifierKeys, out keyInput);
         }
 
         public static bool TryConvertToKey(VimKey vimKey, out Key key)
         {
-            // TODO: Code this 
-            key = Key.None;
-            return false;
+            return GetOrCreateKeyboardMap().TryGetKey(vimKey, out key);
         }
     }
 }

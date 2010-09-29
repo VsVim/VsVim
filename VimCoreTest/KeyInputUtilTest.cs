@@ -134,7 +134,7 @@ namespace VimCore.Test
         {
             var ki1 = KeyInputUtil.CharToKeyInput(']');
             var ki2 = KeyInputUtil.ChangeKeyModifiers(ki1, KeyModifiers.Shift);
-            Assert.AreEqual(KeyInputUtil.CharToKeyInput(']'), ki2);
+            Assert.AreEqual(']', ki2.Char);
         }
     }
 }

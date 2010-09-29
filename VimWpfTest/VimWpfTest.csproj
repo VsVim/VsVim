@@ -100,6 +100,7 @@
     <Compile Include="BlockCaretTest.cs" />
     <Compile Include="CommandMarginControllerTest.cs" />
     <Compile Include="KeyboardDeviceImplTest.cs" />
+    <Compile Include="KeyboardMapTest.cs" />
     <Compile Include="KeyUtilTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

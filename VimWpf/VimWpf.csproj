@@ -113,6 +113,7 @@
     <Compile Include="Implementation\MouseDeviceImpl.cs" />
     <Compile Include="IOptionsProvider.cs" />
     <Compile Include="IOptionsProviderFactory.cs" />
+    <Compile Include="KeyboardMap.cs" />
     <Compile Include="KeyProcessor.cs" />
     <Compile Include="KeyUtil.cs" />
     <Compile Include="NativeMethods.cs" />

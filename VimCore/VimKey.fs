@@ -115,6 +115,7 @@ type VimKey =
     | Semicolon = 108   // ;
     | Colon = 109       // :
     | Tilde = 110       // ~
+    | Space = 111       //  
 
 module VimKeyUtil =
 

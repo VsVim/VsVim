@@ -68,8 +68,7 @@ module KeyInputUtil =
 
     /// Mapping of all VimKey instances with their associated char if one exists
     let VimKeyRawData = [
-        (VimKey.NotWellKnown, None)
-        (VimKey.Back, None)
+        (VimKey.Back, Some '\b')
         (VimKey.Tab, Some '\t')
         (VimKey.Enter, None)
         (VimKey.Escape, None)
@@ -178,7 +177,8 @@ module KeyInputUtil =
         (VimKey.Period, Some '.')
         (VimKey.Semicolon, Some ';')
         (VimKey.Colon, Some ':')
-        (VimKey.Tilde, Some '~') ]
+        (VimKey.Tilde, Some '~')
+        (VimKey.Space, Some ' ') ]
 
     let CoreKeyInputList  =
         let upperLetters = 
