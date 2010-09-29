@@ -20,7 +20,6 @@ namespace Vim.UnitTest
                 });
         }
 
-
         internal static Command CreateSimpleCommand(string name, Func<FSharpOption<int>, Register, CommandResult> func)
         {
             var fsharpFunc = func.ToFSharpFunc();

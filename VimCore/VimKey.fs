@@ -116,6 +116,7 @@ type VimKey =
     | Colon = 109       // :
     | Tilde = 110       // ~
     | Space = 111       //  
+    | Dollar = 112      // $
 
 module VimKeyUtil =
 

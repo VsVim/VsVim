@@ -178,7 +178,8 @@ module KeyInputUtil =
         (VimKey.Semicolon, Some ';')
         (VimKey.Colon, Some ':')
         (VimKey.Tilde, Some '~')
-        (VimKey.Space, Some ' ') ]
+        (VimKey.Space, Some ' ')
+        (VimKey.Dollar, Some '$') ]
 
     let CoreKeyInputList  =
         let upperLetters = 
@@ -228,7 +229,7 @@ module KeyInputUtil =
 
     let VimKeyToKeyInput vimKey = 
         match Map.tryFind (vimKey,KeyModifiers.None) VimKeyToKeyInputMap with
-        | None -> failwith Resources.KeyInput_InvalidVimKey
+        | None -> invalidArg "vimKey" Resources.KeyInput_InvalidVimKey
         | Some(ki) -> ki
 
     let TryVimKeyAndModifiersToKeyInput vimKey keyModifiers = 

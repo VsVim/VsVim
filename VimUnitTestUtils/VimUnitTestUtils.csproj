@@ -183,8 +183,10 @@
     <Compile Include="MatchUtil.cs" />
     <Compile Include="Mock\Extensions.cs" />
     <Compile Include="Mock\MockCommandRunner.cs" />
+    <Compile Include="Mock\MockKeyboardDevice.cs" />
     <Compile Include="Mock\MockNormalMode.cs" />
     <Compile Include="Mock\MockObjectFactory.cs" />
+    <Compile Include="Mock\MockPresentationSource.cs" />
     <Compile Include="Mock\MockTextChangeTracker.cs" />
     <Compile Include="Mock\MockVimBuffer.cs" />
     <Compile Include="Mock\MockVimGlobalSettings.cs" />
