@@ -33,6 +33,7 @@ namespace Vim.UnitTest.Mock
         public string VimRc { get; set; }
         public string VimRcPaths { get; set; }
         public string VirtualEdit { get; set; }
+        public string Selection { get; set; }
         public bool VisualBell { get; set; }
 
         public IEnumerable<Setting> AllSettings

@@ -10,6 +10,7 @@ open Vim
 type internal SelectionTracker
     (
         _textView : ITextView,
+        _settings : IVimGlobalSettings, 
         _kind : VisualKind ) as this =
 
     let mutable _anchorPoint = VirtualSnapshotPoint(_textView.TextSnapshot, 0) 
@@ -20,6 +21,10 @@ type internal SelectionTracker
     let mutable _textChangedHandler = ToggleHandler.Empty
     do 
         _textChangedHandler <- ToggleHandler.Create (_textView.TextBuffer.Changed) (fun (args:TextContentChangedEventArgs) -> this.OnTextChanged(args))
+
+    /// Should the selection currently be inclusive
+    member x.IsSelectionInclusive = 
+        StringUtil.isEqual _settings.Selection "inclusive" || StringUtil.isEqual _settings.Selection "old"
 
     /// Anchor point being tracked by the selection tracker
     member x.AnchorPoint = _anchorPoint
@@ -60,12 +65,10 @@ type internal SelectionTracker
 
         let selectStandard() = 
             let first = _anchorPoint
-            let last = _textView.Caret.Position.VirtualBufferPosition
+            let last = _textView.Caret.Position.VirtualBufferPosition 
+            let first,last = VirtualSnapshotPointUtil.OrderAscending first last
             let last = 
-                if first = last then
-                    if last.IsInVirtualSpace then VirtualSnapshotPoint(last.Position,last.VirtualSpaces+1)
-                    elif last.Position.GetContainingLine().End = last.Position then VirtualSnapshotPoint(last.Position,1)
-                    else VirtualSnapshotPoint(last.Position.Add(1))
+                if x.IsSelectionInclusive then VirtualSnapshotPointUtil.AddOneOnSameLine last 
                 else last
             _textView.Selection.Select(first,last)
 

@@ -120,6 +120,7 @@ type internal GlobalSettings() =
             ( SmartCaseName, "scs", ToggleKind, ToggleValue(false) );
             ( VisualBellName, "vb", ToggleKind, ToggleValue(false) );
             ( VirtualEditName, "ve", StringKind, StringValue(StringUtil.empty));
+            ( SelectionName, "sel", StringKind, StringValue("inclusive"));
             ( ScrollOffsetName, "so", NumberKind, NumberValue(0) );
             ( VimRcName, VimRcName, StringKind, StringValue(System.String.Empty) );
             ( VimRcPathsName, VimRcPathsName, StringKind, StringValue(System.String.Empty) );
@@ -167,6 +168,9 @@ type internal GlobalSettings() =
         member x.VirtualEdit
             with get() = _map.GetStringValue VirtualEditName
             and set value = _map.TrySetValue VirtualEditName (StringValue(value)) |> ignore
+        member x.Selection
+            with get() = _map.GetStringValue SelectionName
+            and set value = _map.TrySetValue SelectionName (StringValue(value)) |> ignore
         member x.ScrollOffset
             with get() = _map.GetNumberValue ScrollOffsetName
             and set value = _map.TrySetValue ScrollOffsetName (NumberValue(value)) |> ignore

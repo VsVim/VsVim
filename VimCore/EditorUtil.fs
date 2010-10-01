@@ -667,13 +667,38 @@ module SnapshotPointUtil =
     /// Subtract the count from the SnapshotPoint
     let SubtractOne (point:SnapshotPoint) =  point.Subtract(1)
 
+    /// Used to order two SnapshotPoint's in ascending order.  
+    let OrderAscending (left:SnapshotPoint) (right:SnapshotPoint) = 
+        if left.Position < right.Position then left,right
+        else right,left
+
 module VirtualSnapshotPointUtil =
     
     let OfPoint (point:SnapshotPoint) = VirtualSnapshotPoint(point)
 
-    let GetPosition (point:VirtualSnapshotPoint) = point.Position.Position
+    let GetPoint (point:VirtualSnapshotPoint) = point.Position
+
+    let GetPosition point = 
+        let point = GetPoint point
+        point.Position
 
     let GetContainingLine (point:VirtualSnapshotPoint) = SnapshotPointUtil.GetContainingLine point.Position
+
+    let IsInVirtualSpace (point:VirtualSnapshotPoint) = point.IsInVirtualSpace
+
+    /// Incremental the VirtualSnapshotPoint by one keeping it on the same 
+    /// line
+    let AddOneOnSameLine point =
+        if IsInVirtualSpace point then VirtualSnapshotPoint(point.Position, point.VirtualSpaces + 1)
+        else
+            let line = GetContainingLine point
+            if point.Position = line.EndIncludingLineBreak then VirtualSnapshotPoint(point.Position, 1)
+            else VirtualSnapshotPoint(point.Position.Add(1))
+
+    /// Used to order two SnapshotPoint's in ascending order.  
+    let OrderAscending (left:VirtualSnapshotPoint) (right:VirtualSnapshotPoint) = 
+        if left.CompareTo(right) < 0 then left,right 
+        else right,left
 
 /// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
 /// include any Vim specific logic

@@ -81,7 +81,7 @@ type internal VimBufferFactory
         let insertOpts = Modes.Insert.DefaultOperations(operationsData) :> Modes.ICommonOperations
         let visualOptsFactory kind = 
             let kind = VisualKind.ofModeKind kind |> Option.get
-            let tracker = Modes.Visual.SelectionTracker(view,kind) :> Modes.Visual.ISelectionTracker
+            let tracker = Modes.Visual.SelectionTracker(view,vim.Settings,kind) :> Modes.Visual.ISelectionTracker
             let opts = Modes.Insert.DefaultOperations(operationsData ) :> Modes.ICommonOperations
             (tracker, opts)
 

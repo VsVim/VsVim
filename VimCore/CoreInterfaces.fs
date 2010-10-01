@@ -883,6 +883,7 @@ module GlobalSettingNames =
     let SmartCaseName = "smartcase"
     let VisualBellName = "visualbell"
     let VirtualEditName = "virtualedit"
+    let SelectionName = "selection"
     let ScrollOffsetName = "scrolloff"
     let DoubleEscapeName = "vsvimdoubleescape"
     let CaretOpacityName = "vsvimcaret"
@@ -951,6 +952,9 @@ and IVimGlobalSettings =
 
     /// Is the onemore option inside of VirtualEdit set
     abstract IsVirtualEditOneMore : bool with get
+
+    /// Holds the Selection option
+    abstract Selection : string with get,set
 
     /// Affects behavior of <ESC> in Insert Mode.  <ESC> is overloaded some environments to be both 
     /// an exit of Insert mode and a dismisser of intellisense.  The default behavior of insert 

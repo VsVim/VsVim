@@ -142,6 +142,7 @@
     <Compile Include="CommandProcessorTest.cs" />
     <Compile Include="CommandRunnerTest.cs" />
     <Compile Include="Command_DefaultOperations.cs" />
+    <Compile Include="VirtualSnapshotPointUtilTest.cs" />
     <Compile Include="MotionUtilTest.cs" />
     <Compile Include="SelectionChangeTrackerTest.cs" />
     <Compile Include="SeqUtilTest.cs" />

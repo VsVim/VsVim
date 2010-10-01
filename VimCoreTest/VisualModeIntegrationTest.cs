@@ -138,7 +138,7 @@ namespace VimCore.Test
             _context.RunAll();
             _buffer.Process(KeyInputUtil.CharToKeyInput('l'));
             _buffer.Process(KeyInputUtil.CharToKeyInput('y'));
-            Assert.AreEqual("  w", _buffer.RegisterMap.DefaultRegister.StringValue);
+            Assert.AreEqual("  wo", _buffer.RegisterMap.DefaultRegister.StringValue);
         }
 
         [Test]
