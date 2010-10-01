@@ -45,7 +45,7 @@ namespace VimCore.Test
             CreateBuffer("dog again", "cat again", "chicken");
             EnterMode(ModeKind.VisualLine, _textView.GetLineSpanIncludingLineBreak(0, 1));
             _buffer.Settings.GlobalSettings.ShiftWidth = 2;
-            _buffer.ProcessAsString(">.");
+            _buffer.Process(">.");
             Assert.AreEqual("    dog again", _textView.GetLine(0).GetText());
         }
 
@@ -55,7 +55,7 @@ namespace VimCore.Test
             CreateBuffer("dog again", "cat again", "chicken");
             EnterMode(ModeKind.VisualLine, _textView.GetLineSpanIncludingLineBreak(0, 1));
             _buffer.Settings.GlobalSettings.ShiftWidth = 2;
-            _buffer.ProcessAsString(">..");
+            _buffer.Process(">..");
             Assert.AreEqual("      dog again", _textView.GetLine(0).GetText());
         }
 
@@ -64,7 +64,7 @@ namespace VimCore.Test
         {
             CreateBuffer("  hello", "  world");
             EnterModeWithSelection(_textView.GetLineSpan(0, 1));
-            _buffer.ProcessAsString("<");
+            _buffer.Process("<");
             Assert.AreEqual(0, _textView.GetCaretPoint().Position);
         }
 
@@ -73,7 +73,7 @@ namespace VimCore.Test
         {
             CreateBuffer("  hello", "  world");
             EnterModeWithSelection(_textView.GetLineSpan(0, 1));
-            _buffer.ProcessAsString("<");
+            _buffer.Process("<");
             Assert.AreEqual(0, _textView.GetCaretPoint().Position);
         }
 
@@ -82,7 +82,7 @@ namespace VimCore.Test
         {
             CreateBuffer("  hello", "  world");
             EnterModeWithSelection(_textView.TextBuffer.GetSpan(0, 2));
-            _buffer.ProcessAsString("y");
+            _buffer.Process("y");
             Assert.AreEqual(0, _textView.GetCaretPoint().Position);
         }
 
@@ -149,6 +149,16 @@ namespace VimCore.Test
             _buffer.Process(KeyNotationUtil.StringToKeyInput("<S-v>"));
             Assert.AreEqual(ModeKind.VisualLine, _buffer.ModeKind);
         }
+
+        [Test]
+        public void SwitchToCommandModeShouldPreserveSelection()
+        {
+            CreateBuffer("dog", "pig", "chicken");
+            EnterModeWithSelection(_textView.GetLineSpan(0, 1));
+            _buffer.Process(':');
+            Assert.IsFalse(_textView.Selection.IsEmpty);
+        }
+
 
     }
 }

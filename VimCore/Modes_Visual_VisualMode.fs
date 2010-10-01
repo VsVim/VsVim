@@ -345,10 +345,19 @@ type internal VisualMode
 
             // If we are switching out Visual Mode then reset the selection
             if result.IsAnySwitch then
+                // Is this a switch to command mode? 
+                let toCommandMode = 
+                    match result with 
+                    | ProcessResult.Processed -> false
+                    | ProcessResult.ProcessNotHandled -> false
+                    | ProcessResult.SwitchMode(kind) -> kind = ModeKind.Command
+                    | ProcessResult.SwitchModeWithArgument(kind,_) -> kind = ModeKind.Command
+                    | ProcessResult.SwitchPreviousMode -> false
+
                 // On teardown we will get calls to Stop when the view is closed.  It's invalid to access 
                 // the selection at that point
                 let textView = _buffer.TextView
-                if not textView.IsClosed then
+                if not textView.IsClosed && not toCommandMode then
                     textView.Selection.Clear()
                     textView.Selection.Mode <- TextSelectionMode.Stream
 

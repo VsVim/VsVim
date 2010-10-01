@@ -240,17 +240,17 @@ namespace Vim.UnitTest
 
         #region IVimBuffer
 
-        public static bool ProcessChar(this IVimBuffer buf, char c)
+        public static bool Process(this IVimBuffer buf, VimKey key)
+        {
+            return buf.Process(KeyInputUtil.VimKeyToKeyInput(key));
+        }
+
+        public static bool Process(this IVimBuffer buf, char c)
         {
             return buf.Process(KeyInputUtil.CharToKeyInput(c));
         }
 
-        public static void ProcessAsString(this IVimBuffer buf, string input)
-        {
-            ProcessInputAsString(buf, input);
-        }
-
-        public static void ProcessInputAsString(this IVimBuffer buf, string input)
+        public static void Process(this IVimBuffer buf, string input)
         {
             foreach (var c in input)
             {
@@ -336,6 +336,11 @@ namespace Vim.UnitTest
         public static SnapshotSpan GetSpan(this ITextBuffer buffer, int start, int length)
         {
             return buffer.CurrentSnapshot.GetSpan(start, length);
+        }
+
+        public static void SetText(this ITextBuffer buffer, string text)
+        {
+            buffer.Replace(new Span(0, buffer.CurrentSnapshot.Length), text);
         }
 
         #endregion

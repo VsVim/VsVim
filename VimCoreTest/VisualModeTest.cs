@@ -161,6 +161,25 @@ namespace VimCore.Test
             _operations.Verify();
         }
 
+        [Test]
+        [Description("Clear the selection when leaving Visual Mode")]
+        public void ChangeModeToNormalShouldClearSelection()
+        {
+            Create(lines: "foo");
+            _selection.Setup(x => x.Clear()).Verifiable();
+            _mode.Process(VimKey.Escape);
+            _factory.Verify();
+        }
+
+        [Test]
+        [Description("Selection should be visible for the command mode operation")]
+        public void ChangeModeToCommandShouldNotClearSelection()
+        {
+            Create(lines: "foo");
+            _selection.Setup(x => x.Clear()).Throws(new Exception());
+            _mode.Process(':');
+        }
+
         #region Operations
 
         [Test]

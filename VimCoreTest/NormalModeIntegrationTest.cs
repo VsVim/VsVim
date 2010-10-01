@@ -24,7 +24,7 @@ namespace VimCore.Test
         {
             CreateBuffer("foo", "bar");
             _textView.MoveCaretTo(_textView.GetLine(1).Start);
-            _buffer.ProcessAsString("dd");
+            _buffer.Process("dd");
             Assert.AreEqual("foo", _textView.TextSnapshot.GetText());
             Assert.AreEqual(1, _textView.TextSnapshot.LineCount);
         }
@@ -33,11 +33,11 @@ namespace VimCore.Test
         public void dot_Repeated1()
         {
             CreateBuffer("the fox chased the bird");
-            _buffer.ProcessInputAsString("dw");
+            _buffer.Process("dw");
             Assert.AreEqual("fox chased the bird", _textView.TextSnapshot.GetText());
-            _buffer.ProcessInputAsString(".");
+            _buffer.Process(".");
             Assert.AreEqual("chased the bird", _textView.TextSnapshot.GetText());
-            _buffer.ProcessInputAsString(".");
+            _buffer.Process(".");
             Assert.AreEqual("the bird", _textView.TextSnapshot.GetText());
         }
 
@@ -45,7 +45,7 @@ namespace VimCore.Test
         public void dot_LinkedTextChange1()
         {
             CreateBuffer("the fox chased the bird");
-            _buffer.ProcessInputAsString("cw");
+            _buffer.Process("cw");
             _buffer.TextBuffer.Insert(0, "hey ");
             _buffer.Process(KeyInputUtil.VimKeyToKeyInput(VimKey.Escape));
             _textView.MoveCaretTo(4);
@@ -57,7 +57,7 @@ namespace VimCore.Test
         public void dot_LinkedTextChange2()
         {
             CreateBuffer("the fox chased the bird");
-            _buffer.ProcessInputAsString("cw");
+            _buffer.Process("cw");
             _buffer.TextBuffer.Insert(0, "hey");
             _buffer.Process(KeyInputUtil.VimKeyToKeyInput(VimKey.Escape));
             _textView.MoveCaretTo(4);
@@ -69,7 +69,7 @@ namespace VimCore.Test
         public void dot_LinkedTextChange3()
         {
             CreateBuffer("the fox chased the bird");
-            _buffer.ProcessInputAsString("cw");
+            _buffer.Process("cw");
             _buffer.TextBuffer.Insert(0, "hey");
             _buffer.Process(KeyInputUtil.VimKeyToKeyInput(VimKey.Escape));
             _textView.MoveCaretTo(4);
@@ -83,7 +83,7 @@ namespace VimCore.Test
         public void dj_1()
         {
             CreateBuffer("abc", "def", "ghi", "jkl");
-            _buffer.ProcessInputAsString("dj");
+            _buffer.Process("dj");
             Assert.AreEqual("ghi", _textView.GetLine(0).GetText());
             Assert.AreEqual("jkl", _textView.GetLine(1).GetText());
         }
@@ -93,7 +93,7 @@ namespace VimCore.Test
         public void SectionMotion1()
         {
             CreateBuffer("hello", "{world");
-            _buffer.ProcessInputAsString("]]");
+            _buffer.Process("]]");
             Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
         }
 
@@ -102,7 +102,7 @@ namespace VimCore.Test
         public void SectionMotion2()
         {
             CreateBuffer("hello", "\fworld");
-            _buffer.ProcessInputAsString("]]");
+            _buffer.Process("]]");
             Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
         }
 
@@ -111,7 +111,7 @@ namespace VimCore.Test
         {
             CreateBuffer("foo", "{", "bar");
             _textView.MoveCaretTo(_textView.GetLine(2).End);
-            _buffer.ProcessInputAsString("[[");
+            _buffer.Process("[[");
             Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
         }
 
@@ -120,7 +120,7 @@ namespace VimCore.Test
         {
             CreateBuffer("foo", "{", "bar", "baz");
             _textView.MoveCaretTo(_textView.GetLine(3).End);
-            _buffer.ProcessInputAsString("[[");
+            _buffer.Process("[[");
             Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
         }
 
@@ -129,7 +129,7 @@ namespace VimCore.Test
         {
             CreateBuffer("foo", "{", "bar", "baz", "jazz");
             _textView.MoveCaretTo(_textView.GetLine(4).Start);
-            _buffer.ProcessInputAsString("[[");
+            _buffer.Process("[[");
             Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
         }
 
@@ -138,7 +138,7 @@ namespace VimCore.Test
         {
             CreateBuffer("foo", "{", "bar", "baz", "jazz");
             _textView.MoveCaretTo(_textView.TextSnapshot.GetEndPoint());
-            _buffer.ProcessInputAsString("{{");
+            _buffer.Process("{{");
         }
     }
 }

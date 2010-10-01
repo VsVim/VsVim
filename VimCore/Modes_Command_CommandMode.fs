@@ -12,6 +12,9 @@ type internal CommandMode
         _data : IVimBuffer, 
         _processor : ICommandProcessor) =
 
+    // Command to show when entering command from Visual Mode
+    static let FromVisualModeString = "'<,'>"
+
     let mutable _command = System.String.Empty
 
     /// Reverse list of the inputted commands
@@ -27,16 +30,31 @@ type internal CommandMode
         member x.ModeKind = ModeKind.Command
         member x.CanProcess ki = true
         member x.Process ki = 
+
+            // Command mode can be validly entered with the selection active.  Consider
+            // hitting ':' in Visual Mode.  The selection should be cleared when leaving
+            let maybeClearSelection moveCaretToStart = 
+                let selection = _data.TextView.Selection
+                if not selection.IsEmpty && not _data.TextView.IsClosed then 
+                    if moveCaretToStart then
+                        let point = selection.StreamSelectionSpan.SnapshotSpan.Start
+                        selection.Clear()
+                        TextViewUtil.MoveCaretToPoint _data.TextView point
+                    else 
+                        selection.Clear()
+
             match ki.Key with 
                 | VimKey.Enter ->
                     let command = _input |> List.rev |> Seq.map (fun ki -> ki.Char) |> List.ofSeq
                     _processor.RunCommand command
                     _input <- List.empty
                     _command <- System.String.Empty
+                    maybeClearSelection false
                     SwitchMode ModeKind.Normal
                 | VimKey.Escape ->
                     _input <- List.empty
                     _command <- System.String.Empty
+                    maybeClearSelection true
                     SwitchMode ModeKind.Normal
                 | VimKey.Back -> 
                     if not (List.isEmpty _input) then 
@@ -44,6 +62,7 @@ type internal CommandMode
                         _command <- _command.Substring(0, (_command.Length - 1))
                         Processed
                     else
+                        maybeClearSelection true
                         SwitchMode ModeKind.Normal
                 | _ -> 
                     let c = ki.Char
@@ -56,7 +75,8 @@ type internal CommandMode
                 match arg with
                 | ModeArgument.None -> StringUtil.empty
                 | ModeArgument.OneTimeCommand(_) -> StringUtil.empty
-                | ModeArgument.FromVisual -> "'<,'>"
+                | ModeArgument.FromVisual -> FromVisualModeString
+            _input <- _command |> Seq.map KeyInputUtil.CharToKeyInput |> List.ofSeq |> List.rev
             _data.TextView.Caret.IsHidden <- true
         member x.OnLeave () = 
             _data.TextView.Caret.IsHidden <- false

@@ -135,7 +135,7 @@ namespace Vim.UnitTest.Mock
             MockRepository factory = null)
         {
             factory = factory ?? new MockRepository(MockBehavior.Strict);
-            buffer = buffer ?? CreateTextBuffer(addSnapshot: true, factory: factory).Object;
+            buffer = buffer ?? CreateTextBuffer(100, factory: factory).Object;
             caret = caret ?? CreateCaret(factory: factory).Object;
             selection = selection ?? CreateSelection(factory: factory).Object;
             var view = factory.Create<ITextView>();
@@ -189,15 +189,13 @@ namespace Vim.UnitTest.Mock
             return Tuple.Create(view, factory);
         }
 
-        public static Mock<ITextBuffer> CreateTextBuffer(bool addSnapshot = false, MockRepository factory = null)
+        public static Mock<ITextBuffer> CreateTextBuffer(int? snapshotLength = null, MockRepository factory = null)
         {
             factory = factory ?? new MockRepository(MockBehavior.Strict);
             var mock = factory.Create<ITextBuffer>();
             mock.SetupGet(x => x.Properties).Returns(new Microsoft.VisualStudio.Utilities.PropertyCollection());
-            if (addSnapshot)
-            {
-                mock.SetupGet(x => x.CurrentSnapshot).Returns(CreateTextSnapshot(42).Object);
-            }
+            var snapshot = CreateTextSnapshot(snapshotLength ?? 0, mock.Object);
+            mock.SetupGet(x => x.CurrentSnapshot).Returns(snapshot.Object);
             return mock;
         }
 
