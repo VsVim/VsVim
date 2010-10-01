@@ -186,13 +186,15 @@ type internal TextViewMotionUtil
         member x.FirstNonWhitespaceOnLine () =
             let start = x.StartPoint
             let line = start.GetContainingLine()
-            let found = SnapshotLineUtil.GetPoints line
-                            |> Seq.filter (fun x -> x.Position < start.Position)
-                            |> Seq.tryFind (fun x-> not (CharUtil.IsWhiteSpace (x.GetChar())))
-            let span = match found with 
-                        | Some p -> new SnapshotSpan(p, start)
-                        | None -> new SnapshotSpan(start,0)
-            {Span=span; IsForward=false; MotionKind=MotionKind.Exclusive; OperationKind=OperationKind.CharacterWise; Column=None} 
+            let target = 
+                SnapshotLineUtil.GetPoints line
+                |> Seq.tryFind (fun x -> not (CharUtil.IsWhiteSpace (x.GetChar())) )
+                |> OptionUtil.getOrDefault line.End
+            let startPoint,endPoint,isForward = 
+                if start.Position <= target.Position then start,target,true
+                else target,start,false
+            let span = SnapshotSpanUtil.CreateFromBounds startPoint endPoint
+            {Span=span; IsForward=isForward; MotionKind=MotionKind.Exclusive; OperationKind=OperationKind.CharacterWise; Column=None} 
         member x.BeginingOfLine () =
             let start = x.StartPoint
             let line = SnapshotPointUtil.GetContainingLine start

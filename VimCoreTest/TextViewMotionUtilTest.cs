@@ -244,6 +244,34 @@ namespace VimCore.Test
         }
 
         [Test]
+        [Description("Make sure to move forward to the first non-whitespace")]
+        public void FirstNonWhitespaceOnLine4()
+        {
+            Create(0, "   bar");
+            var data = _util.FirstNonWhitespaceOnLine();
+            Assert.AreEqual(_buffer.GetSpan(0, 3), data.Span);
+        }
+
+        [Test]
+        [Description("Empty line case")]
+        public void FirstNonWhitespaceOnLine5()
+        {
+            Create(0, "");
+            var data = _util.FirstNonWhitespaceOnLine();
+            Assert.AreEqual(_buffer.GetSpan(0, 0), data.Span);
+        }
+
+        [Test]
+        [Description("Backwards case")]
+        public void FirstNonWhitespaceOnLine6()
+        {
+            Create(3, "bar");
+            var data = _util.FirstNonWhitespaceOnLine();
+            Assert.AreEqual(_buffer.GetSpan(0, 3), data.Span);
+            Assert.IsFalse(data.IsForward);
+        }
+
+        [Test]
         public void AllWord1()
         {
             Create("foo bar");
