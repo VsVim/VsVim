@@ -874,21 +874,22 @@ type Setting = {
 
 module GlobalSettingNames = 
 
-    let IgnoreCaseName = "ignorecase"
-    let ShiftWidthName = "shiftwidth"
-    let HighlightSearchName = "hlsearch"
-    let StartOfLineName = "startofline"
-    let TildeOpName = "tildeop"
-    let TabStopName = "tabstop"
-    let SmartCaseName = "smartcase"
-    let VisualBellName = "visualbell"
-    let VirtualEditName = "virtualedit"
-    let SelectionName = "selection"
-    let ScrollOffsetName = "scrolloff"
-    let DoubleEscapeName = "vsvimdoubleescape"
     let CaretOpacityName = "vsvimcaret"
+    let DoubleEscapeName = "vsvimdoubleescape"
+    let HighlightSearchName = "hlsearch"
+    let IgnoreCaseName = "ignorecase"
+    let MagicName = "magic"
+    let ScrollOffsetName = "scrolloff"
+    let SelectionName = "selection"
+    let ShiftWidthName = "shiftwidth"
+    let SmartCaseName = "smartcase"
+    let StartOfLineName = "startofline"
+    let TabStopName = "tabstop"
+    let TildeOpName = "tildeop"
     let VimRcName = "vimrc"
     let VimRcPathsName = "vimrcpaths"
+    let VirtualEditName = "virtualedit"
+    let VisualBellName = "visualbell"
 
 module LocalSettingNames =
     
@@ -927,40 +928,41 @@ and IVimGlobalSettings =
     abstract ShiftWidth : int with get, set
     abstract StartOfLine : bool with get, set
 
-    /// Controls the behavior of ~ in normal mode
-    abstract TildeOp : bool with get,set
-
-    /// Controls how many spaces a tab counts for.  
-    abstract TabStop : int with get,set
-
-    /// Overrides the IgnoreCase setting in certain cases if the pattern contains
-    /// any upper case letters
-    abstract SmartCase : bool with get,set
-
-    /// Whether or not to highlight previous search patterns matching cases
-    abstract HighlightSearch : bool with get,set
-
-    /// Whether or not to use a visual indicator of errors instead of a beep
-    abstract VisualBell : bool with get,set
-
-    /// Holds the VirtualEdit string.  
-    abstract VirtualEdit : string with get,set
-
-    /// Holds the scroll offset value which is the number of lines to keep visible
-    /// above the cursor after a move operation
-    abstract ScrollOffset : int with get,set
-
-    /// Is the onemore option inside of VirtualEdit set
-    abstract IsVirtualEditOneMore : bool with get
-
-    /// Holds the Selection option
-    abstract Selection : string with get,set
+    /// Opacity of the caret.  This must be an integer between values 0 and 100 which
+    /// will be converted into a double for the opacity of the caret
+    abstract CaretOpacity : int with get, set
 
     /// Affects behavior of <ESC> in Insert Mode.  <ESC> is overloaded some environments to be both 
     /// an exit of Insert mode and a dismisser of intellisense.  The default behavior of insert 
     /// mode is to dismiss intellisense and enter normal mode.  When this option is set it will 
     /// just dismiss intellisense
     abstract DoubleEscape:bool with get,set
+
+    /// Whether or not to highlight previous search patterns matching cases
+    abstract HighlightSearch : bool with get,set
+
+    /// Whether or not the magic option is set
+    abstract Magic : bool with get,set
+
+    /// Is the onemore option inside of VirtualEdit set
+    abstract IsVirtualEditOneMore : bool with get
+
+    /// Controls how many spaces a tab counts for.  
+    abstract TabStop : int with get,set
+
+    /// Controls the behavior of ~ in normal mode
+    abstract TildeOp : bool with get,set
+
+    /// Holds the scroll offset value which is the number of lines to keep visible
+    /// above the cursor after a move operation
+    abstract ScrollOffset : int with get,set
+
+    /// Holds the Selection option
+    abstract Selection : string with get,set
+
+    /// Overrides the IgnoreCase setting in certain cases if the pattern contains
+    /// any upper case letters
+    abstract SmartCase : bool with get,set
 
     /// Retrieves the location of the loaded VimRC file.  Will be the empty string if the load 
     /// did not succeed or has not been tried
@@ -970,9 +972,11 @@ and IVimGlobalSettings =
     /// load has not been attempted yet
     abstract VimRcPaths : string with get, set
 
-    /// Opacity of the caret.  This must be an integer between values 0 and 100 which
-    /// will be converted into a double for the opacity of the caret
-    abstract CaretOpacity : int with get, set
+    /// Holds the VirtualEdit string.  
+    abstract VirtualEdit : string with get,set
+
+    /// Whether or not to use a visual indicator of errors instead of a beep
+    abstract VisualBell : bool with get,set
 
     abstract DisableCommand: KeyInput;
 

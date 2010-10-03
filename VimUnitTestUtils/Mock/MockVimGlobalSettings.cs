@@ -35,6 +35,7 @@ namespace Vim.UnitTest.Mock
         public string VirtualEdit { get; set; }
         public string Selection { get; set; }
         public bool VisualBell { get; set; }
+        public bool Magic { get; set; }
 
         public IEnumerable<Setting> AllSettings
         {
