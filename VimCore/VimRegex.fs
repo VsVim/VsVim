@@ -24,6 +24,17 @@ type MagicKind =
     | VeryMagic
     | VeryNoMagic
 
+    with
+
+    member x.IsAnyNoMagic =
+        match x with 
+        | MagicKind.NoMagic -> true
+        | MagicKind.VeryNoMagic -> true
+        | MagicKind.Magic -> false
+        | MagicKind.VeryMagic -> false
+
+    member x.IsAnyMagic = not x.IsAnyNoMagic
+
 type Data = {
     Pattern : string 
     Index : int
@@ -87,21 +98,17 @@ type VimRegexFactory
         | 'M' -> {data with MagicKind = MagicKind.NoMagic }
         | 'v' -> {data with MagicKind = MagicKind.VeryMagic }
         | 'V' -> {data with MagicKind = MagicKind.VeryNoMagic }
-        | _ -> 
-            match data.MagicKind with
-            | MagicKind.NoMagic -> 
+        | _ ->
+            if data.MagicKind.IsAnyNoMagic then
                 match c with 
-                | '.' -> data.AppendChar '.' 
+                | '*' -> data.AppendChar '*'
+                | '.' -> data.AppendChar '.'
                 | _ -> x.ConvertNormalChar data c
-            | MagicKind.Magic -> 
+            else
                 match c with
+                | '*' -> data.AppendString @"\*"
                 | '.' -> data.AppendString @"\."
                 | _ -> x.ConvertNormalChar data c
-            | MagicKind.VeryMagic -> x.ConvertNormalChar data c
-            | MagicKind.VeryNoMagic -> 
-                match c with 
-                | '.' -> data.AppendChar '.'
-                | _  -> x.ConvertNormalChar data c
 
     /// Convert a normal unescaped char based on the 
     member x.ConvertNormalChar (data:Data) c = 
