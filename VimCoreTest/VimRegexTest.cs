@@ -36,6 +36,14 @@ namespace VimCore.Test
             }
         }
 
+        private void VerifyMatchIs(string pattern, string input, string toMatch)
+        {
+            var regex = _factory.Create(pattern);
+            var match = regex.Regex.Match(input);
+            Assert.IsTrue(match.Success);
+            Assert.AreEqual(toMatch, match.Value);
+        }
+
         [Test]
         public void LettersCase1()
         {
@@ -191,6 +199,81 @@ namespace VimCore.Test
             _settings.Magic = true;
             VerifyNotMatches(@"\V.", "a", "b");
             VerifyMatches(@"\V\.", "a", "b");
+        }
+
+        [Test]
+        public void ItemStar1()
+        {
+            VerifyMatchIs(@"ab*", "abb", "abb");
+            VerifyMatchIs(@"ab*", "cab", "ab");
+            VerifyMatchIs(@"ab*", "cabb", "abb");
+        }
+
+        [Test]
+        public void ItemStar2()
+        {
+            VerifyMatchIs(@"\Mab*", "ab*", "ab*");
+            VerifyMatchIs(@"\Mab\*", "ab", "ab");
+            VerifyMatchIs(@"\Mab\*", "caabb", "a");
+            VerifyMatchIs(@"\Mab\*", "cabb", "abb");
+        }
+
+        [Test]
+        public void ItemStar3()
+        {
+            VerifyMatchIs(@"\mab*", "abb", "abb");
+            VerifyMatchIs(@"\mab*", "cab", "ab");
+            VerifyMatchIs(@"\mab*", "cabb", "abb");
+        }
+
+        [Test]
+        public void ItemQuestion1()
+        {
+            VerifyMatchIs(@"ab?", "ab?", "ab?");
+            VerifyMatchIs(@"ab\?", "ab", "ab");
+            VerifyMatchIs(@"ab\?", "abc", "ab");
+            VerifyMatchIs(@"ab\?", "adc", "a");
+        }
+
+        [Test]
+        public void ItemQuestion2()
+        {
+            VerifyMatchIs(@"\Mab?", "ab?", "ab?");
+            VerifyMatchIs(@"\Mab\?", "ab", "ab");
+            VerifyMatchIs(@"\Mab\?", "abc", "ab");
+        }
+
+        [Test]
+        public void ItemQuestion3()
+        {
+            VerifyMatchIs(@"\vab?", "ad", "a");
+            VerifyMatchIs(@"\vab?", "ab", "ab");
+            VerifyMatchIs(@"\vab?", "abc", "ab");
+        }
+
+        [Test]
+        public void ItemEqual1()
+        {
+            VerifyMatchIs(@"ab\=", "a", "a");
+            VerifyMatchIs(@"ab\=", "ab", "ab");
+            VerifyMatchIs(@"ab\=", "abc", "ab");
+        }
+
+        [Test]
+        public void ItemEqual2()
+        {
+            VerifyMatchIs(@"\Mab=", "ab=", "ab=");
+            VerifyMatchIs(@"\Mab\=", "ab", "ab");
+            VerifyMatchIs(@"\Mab\=", "abc", "ab");
+            VerifyMatchIs(@"\Mab\=", "adc", "a");
+        }
+
+        [Test]
+        public void ItemEqual3()
+        {
+            VerifyMatchIs(@"\vab=", "a", "a");
+            VerifyMatchIs(@"\vab=", "ab", "ab");
+            VerifyMatchIs(@"\vab=", "abc", "ab");
         }
     }
 }

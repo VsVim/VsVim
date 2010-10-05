@@ -162,6 +162,9 @@ module internal SeqUtil =
     /// Return if the sequence is not empty
     let isNotEmpty s = not (s |> Seq.isEmpty)
 
+    /// Returns if any of the elements in the sequence match the provided filter
+    let any filter s = s |> Seq.filter filter |> isNotEmpty
+
     /// Maps a seq of options to an option of list where None indicates at least one 
     /// entry was None and Some indicates all entries had values
     let allOrNone s =

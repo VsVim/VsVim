@@ -11,10 +11,8 @@ type VimRegex
         _vimText : string,
         _regex : Regex ) =
 
-    /// Text of the Regular expression
     member x.Text = _vimText
-
-    /// Does the string match the text
+    member x.Regex = _regex
     member x.IsMatch input = _regex.IsMatch(input)
 
 [<RequireQualifiedAccess>]
@@ -57,6 +55,9 @@ type VimRegexFactory
     (
         _settings : IVimGlobalSettings ) =
 
+    /// Escape the given character
+    let _escape c = c |> StringUtil.ofChar |> Regex.Escape 
+
     member x.Create pattern = 
         let kind = if _settings.Magic then MagicKind.Magic else MagicKind.NoMagic
         let data = { 
@@ -66,6 +67,15 @@ type VimRegexFactory
             MagicKind = kind
             MatchCase = not _settings.IgnoreCase
             HasCaseAtom = false }
+
+        // Check for smart case here
+        let data = 
+            let isUpperLetter x = CharUtil.IsLetter x && CharUtil.IsUpper x
+            if _settings.SmartCase && data.Pattern |> Seq.filter isUpperLetter |> SeqUtil.isNotEmpty then 
+                { data with MatchCase = true }
+            else 
+                data
+
         let regex = x.Convert data
         VimRegex(pattern, regex)
 
@@ -82,15 +92,16 @@ type VimRegexFactory
                 let data = data.IncrementIndex 1
                 let data = 
                     match data.CharAtIndex with 
-                    | None -> x.ConvertNormalChar data '\\'
-                    | Some(c) -> x.ConvertEscapedChar (data.IncrementIndex 1) c
+                    | None -> x.ProcessNormalChar data '\\'
+                    | Some(c) -> x.ProcessEscapedChar (data.IncrementIndex 1) c
                 inner data
-            | Some(c) -> x.ConvertNormalChar (data.IncrementIndex 1) c |> inner
+            | Some(c) -> x.ProcessNormalChar (data.IncrementIndex 1) c |> inner
         inner data
     
     /// Process an escaped character.  Look first for global options such as ignore 
     /// case or magic and then go for magic specific characters
-    member x.ConvertEscapedChar data c  =
+    member x.ProcessEscapedChar data c  =
+        let escape c = c |> StringUtil.ofChar |> Regex.Escape 
         match c with 
         | 'C' -> {data with MatchCase = true; HasCaseAtom = true}
         | 'c' -> {data with MatchCase = false; HasCaseAtom = true }
@@ -99,43 +110,47 @@ type VimRegexFactory
         | 'v' -> {data with MagicKind = MagicKind.VeryMagic }
         | 'V' -> {data with MagicKind = MagicKind.VeryNoMagic }
         | _ ->
-            if data.MagicKind.IsAnyNoMagic then
-                match c with 
-                | '*' -> data.AppendChar '*'
-                | '.' -> data.AppendChar '.'
-                | _ -> x.ConvertNormalChar data c
-            else
+            match data.MagicKind with
+            | MagicKind.Magic -> 
                 match c with
-                | '*' -> data.AppendString @"\*"
-                | '.' -> data.AppendString @"\."
-                | _ -> x.ConvertNormalChar data c
+                | '.' -> c |> _escape |> data.AppendString
+                | _ -> x.ConvertCharAsSpecial data c
+            | MagicKind.VeryMagic -> x.ConvertCharAsNonSpecial data c
+            | MagicKind.NoMagic -> x.ConvertCharAsSpecial data c
+            | MagicKind.VeryNoMagic -> x.ConvertCharAsSpecial data c
 
     /// Convert a normal unescaped char based on the 
-    member x.ConvertNormalChar (data:Data) c = 
+    member x.ProcessNormalChar (data:Data) c = 
 
-        // Consider smart case here but only a case atom hasn't already 
-        // appeared 
-        let data = 
-            if _settings.SmartCase && not data.HasCaseAtom && CharUtil.IsLetter c && CharUtil.IsUpper c then 
-                {data with MatchCase = true }
-            else 
-                data
+        let addEscaped() = c |> _escape |> data.AppendString
 
         match data.MagicKind with
-        | MagicKind.NoMagic -> 
-            match c with
-            | '.' -> data.AppendString @"\."
-            | _ -> data.AppendChar c
+        | MagicKind.NoMagic -> addEscaped()
         | MagicKind.Magic -> 
             match c with 
-            | _ -> data.AppendChar c
-        | MagicKind.VeryMagic -> 
-            match c with 
-            | _ -> data.AppendChar c
-        | MagicKind.VeryNoMagic -> 
-            match c with 
-            | '.' -> data.AppendString @"\."
-            | _ -> data.AppendChar c
+            | '*' -> data.AppendChar '*'
+            | '.' -> data.AppendChar '.'
+            | _ -> addEscaped()
+        | MagicKind.VeryMagic -> x.ConvertCharAsSpecial data c
+        | MagicKind.VeryNoMagic -> addEscaped()
 
+    /// Convert the given character as a special character.  Interpretation
+    /// may depend on the type of magic that is currently being employed
+    member x.ConvertCharAsSpecial (data:Data) c = 
+        match c with
+        | '.' -> data.AppendChar '.'
+        | '=' -> data.AppendChar '?'
+        | '?' -> data.AppendChar '?'
+        | '*' -> data.AppendChar '*'
+        | _ -> c |> _escape |> data.AppendString
+
+    /// Convert the given character as a non-special character.  Interpertation
+    /// may depend on th etype of magic that is currently being employed
+    member x.ConvertCharAsNonSpecial (data:Data) c = 
+        match c with
+        | '=' -> data.AppendChar '?'
+        | '?' -> data.AppendChar '?'
+        | '*' -> data.AppendChar '*'
+        | _ -> c |> _escape |> data.AppendString
 
 
