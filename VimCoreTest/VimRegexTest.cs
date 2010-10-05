@@ -1,5 +1,6 @@
 ﻿using NUnit.Framework;
 using Vim;
+using Vim.Extensions;
 
 namespace VimCore.Test
 {
@@ -39,7 +40,8 @@ namespace VimCore.Test
         private void VerifyMatchIs(string pattern, string input, string toMatch)
         {
             var regex = _factory.Create(pattern);
-            var match = regex.Regex.Match(input);
+            Assert.IsTrue(regex.Regex.IsSome());
+            var match = regex.Regex.Value.Match(input);
             Assert.IsTrue(match.Success);
             Assert.AreEqual(toMatch, match.Value);
         }
@@ -274,6 +276,172 @@ namespace VimCore.Test
             VerifyMatchIs(@"\vab=", "a", "a");
             VerifyMatchIs(@"\vab=", "ab", "ab");
             VerifyMatchIs(@"\vab=", "abc", "ab");
+        }
+
+        [Test]
+        public void AtomHat1()
+        {
+            VerifyMatches(@"^m", "m");
+            VerifyMatches(@"^", "aoeu");
+        }
+
+        [Test]
+        public void AtomHat2()
+        {
+            VerifyMatches(@"\M^m", "m");
+            VerifyMatches(@"\M^", "aoeu");
+        }
+
+        [Test]
+        public void AtomHat3()
+        {
+            VerifyMatches(@"\v^m", "m");
+            VerifyMatches(@"\v^", "aoeu");
+        }
+
+        [Test]
+        [Description("Only use ^ as magic at the start of a pattern")]
+        public void AtomHat4()
+        {
+            VerifyMatchIs(@"a^", "a^", "a^");
+            VerifyMatchIs(@"\Ma^", "a^", "a^");
+        }
+
+        [Test]
+        public void AtomHat5()
+        {
+            VerifyMatches(@"\V^m", "a^m");
+            VerifyMatches(@"\V^", "a^aoeu");
+        }
+
+        [Test]
+        public void AtomBackslashHat1()
+        {
+            VerifyMatchIs(@"\^", "^", "^");
+            VerifyMatchIs(@"\^a", "^a", "^a");
+            VerifyMatchIs(@"b\^a", "b^a", "b^a");
+            VerifyNotMatches(@"\^", "a");
+        }
+
+        [Test]
+        public void AtomBackslashHat2()
+        {
+            VerifyMatches(@"\V\^m", "m");
+            VerifyMatches(@"\V\^", "aoeu");
+        }
+
+        [Test]
+        public void AtomBackslashHat3()
+        {
+            VerifyMatchIs(@"\M\^", "^", "^");
+            VerifyMatchIs(@"\M\^a", "^a", "^a");
+            VerifyMatchIs(@"\Mb\^a", "b^a", "b^a");
+            VerifyNotMatches(@"\M\^", "a");
+        }
+
+        [Test]
+        public void AtomBackslashHat4()
+        {
+            VerifyMatchIs(@"\v\^", "^", "^");
+            VerifyMatchIs(@"\v\^a", "^a", "^a");
+            VerifyMatchIs(@"\vb\^a", "b^a", "b^a");
+            VerifyNotMatches(@"\v\^", "a");
+        }
+
+        [Test]
+        public void AtomBackslashUnderscoreHat1()
+        {
+            VerifyNotMatches(@"\_", "_");
+            VerifyNotMatches(@"\_", "");
+            VerifyNotMatches(@"ab\_", "ab");
+        }
+
+        [Test]
+        public void AtomBackslashUnderscoreHat2()
+        {
+            VerifyNotMatches(@"\M\_", "_");
+            VerifyNotMatches(@"\M\_", "_");
+        }
+
+        [Test]
+        public void AtomBackslashUnderscoreHat3()
+        {
+            VerifyMatches(@"\_^", "abc");
+            VerifyMatches(@"\_^", "");
+            VerifyMatches(@"c\?\_^ab", "ab");
+        }
+
+        [Test]
+        public void AtomBackslashUnderscoreHat4()
+        {
+            VerifyMatches(@"\M\_^", "abc");
+            VerifyMatches(@"\M\_^", "");
+            VerifyMatches(@"\Mc\?\_^ab", "ab");
+        }
+
+        [Test]
+        public void AtomDollar1()
+        {
+            VerifyMatches(@"$", "");
+            VerifyMatches(@"$", "aoe");
+            VerifyMatches(@"\M$", "aoe");
+        }
+
+        [Test]
+        public void AtomDollar2()
+        {
+            VerifyMatchIs(@"a$", "baaa", "a");
+            VerifyMatchIs(@"a*$", "baaa", "aaa");
+        }
+
+        [Test]
+        public void AtomDollar3()
+        {
+            VerifyMatchIs(@"\Ma$", "baaa", "a");
+            VerifyMatchIs(@"\Ma\*$", "baaa", "aaa");
+        }
+
+        [Test]
+        public void AtomDollar4()
+        {
+            VerifyMatchIs(@"\Ma$b", "a$bz", "a$b");
+            VerifyMatchIs(@"\Ma\*$b", "aa$bz", "aa$b");
+        }
+
+        [Test]
+        public void AtomBackslashDollar1()
+        {
+            VerifyNotMatches(@"\$", "");
+            VerifyNotMatches(@"\$", "aoe");
+            VerifyNotMatches(@"\M\$", "aoe");
+        }
+
+        [Test]
+        public void AtomBackslashDollar2()
+        {
+            VerifyMatchIs(@"\$", "$", "$");
+            VerifyMatchIs(@"\$ab", "$ab", "$ab");
+        }
+
+        [Test]
+        public void AtomBackslashUnderscoreDollar1()
+        {
+            VerifyMatchIs(@"\$", "$", "$");
+            VerifyMatchIs(@"\$ab", "$ab", "$ab");
+        }
+
+        [Test]
+        public void AtomBackslashUnderscoreDollar2()
+        {
+            VerifyNotMatches(@"\_", "_");
+            VerifyNotMatches(@"\_", "");
+        }
+
+        [Test]
+        public void AtomBackslashUnderscoreDollar3()
+        {
+            VerifyMatchIs(@"\Ma\_$", "baaa", "a");
+            VerifyMatchIs(@"\Ma\*\_$", "baaa", "aaa");
         }
     }
 }
