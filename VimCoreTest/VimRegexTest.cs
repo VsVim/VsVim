@@ -443,5 +443,48 @@ namespace VimCore.Test
             VerifyMatchIs(@"\Ma\_$", "baaa", "a");
             VerifyMatchIs(@"\Ma\*\_$", "baaa", "aaa");
         }
+
+        [Test]
+        public void WordBoundary1()
+        {
+            VerifyNotMatches(@"\<word", "aword");
+            VerifyNotMatches(@"\M\<word", "aword");
+        }
+
+        [Test]
+        public void WordBoundary2()
+        {
+            VerifyMatches(@"\<word", "a word");
+            VerifyMatches(@"\M\<word", "a word");
+        }
+
+        [Test]
+        public void WordBoundary3()
+        {
+            VerifyMatchIs(@"\<word", "a word", "word");
+            VerifyMatchIs(@"\M\<word", "a word", "word");
+        }
+
+        [Test]
+        public void WordBoundary4()
+        {
+            VerifyNotMatches(@"word\>", "words");
+            VerifyNotMatches(@"\Mword\>", "words");
+        }
+
+        [Test]
+        public void WordBoundary5()
+        {
+            VerifyMatches(@"word\>", "a word again");
+            VerifyMatches(@"\Mword\>", "a word again");
+        }
+
+        [Test]
+        [Description("Boundary at the end of a line")]
+        public void WordBoundary6()
+        {
+            VerifyMatches(@"word\>", "a word");
+            VerifyMatches(@"\Mword\>", "a word");
+        }
     }
 }

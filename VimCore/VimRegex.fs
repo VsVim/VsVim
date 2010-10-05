@@ -169,6 +169,8 @@ type VimRegexFactory
         | '*' -> x.ConvertCharAsSpecial data c 
         | '?' -> x.ConvertCharAsSpecial data c 
         | '=' -> x.ConvertCharAsSpecial data c
+        | '<' -> x.ConvertCharAsSpecial data c
+        | '>' -> x.ConvertCharAsSpecial data c
         | '_' -> 
             match data.CharAtIndex with
             | None -> { data with IsBroken = true }
@@ -177,6 +179,7 @@ type VimRegexFactory
                 match c with 
                 | '^' -> data.AppendChar '^'
                 | '$' -> data.AppendChar '$'
+                | '.' -> data.AppendString @"(.|\n)"
                 | _ -> { data with IsBroken = true }
         | _ -> data.AppendEscapedChar c
 
@@ -190,5 +193,7 @@ type VimRegexFactory
         | '*' -> data.AppendChar '*'
         | '^' -> if data.IsStartOfPattern then data.AppendChar '^' else data.AppendEscapedChar '^'
         | '$' -> if data.IsEndOfPattern then data.AppendChar '$' else data.AppendEscapedChar '$'
+        | '<' -> data.AppendString @"\b"
+        | '>' -> data.AppendString @"\b"
         | _ -> data.AppendEscapedChar c
 
