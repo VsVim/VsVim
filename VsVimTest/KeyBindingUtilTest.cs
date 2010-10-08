@@ -112,16 +112,8 @@ namespace VsVim.UnitTest
             Assert.IsTrue(KeyBindingUtil.ShouldSkip(binding));
         }
 
-        [Test, Description("Use the old key bindings if we havn't recorded them being messed with on this machine")]
-        public void FindRemovedKeyBindings1()
-        {
-            global::VsVim.Settings.Settings.Default.HaveUpdatedKeyBindings = false;
-            var list = KeyBindingUtil.FindKeyBindingsMarkedAsRemoved();
-            Assert.AreEqual(VsVim.Constants.CommonlyUnboundCommands.Length, list.Count);
-        }
-
         [Test]
-        public void FindRemovedKeyBindings2()
+        public void FindRemovedKeyBindings1()
         {
             global::VsVim.Settings.Settings.Default.HaveUpdatedKeyBindings = true;
             global::VsVim.Settings.Settings.Default.RemovedBindings = new CommandBindingSetting[] {
