@@ -247,7 +247,7 @@ module SnapshotSpanUtil =
             elif span.Start = startLine.Start && span.Length >= startLine.LengthIncludingLineBreak then
                 None,span
             else 
-                let length = min span.Length (startLine.LengthIncludingLineBreak - span.Start.Position)
+                let length = min span.Length (startLine.EndIncludingLineBreak.Position - span.Start.Position)
                 let lead = SnapshotSpan(span.Start, length)
                 Some lead, SnapshotSpan(lead.End, span.End)
 

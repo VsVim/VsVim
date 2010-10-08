@@ -327,5 +327,36 @@ namespace VimCore.Test
             Assert.AreEqual(0, tuple.Item2.ToList().Count);
             Assert.IsTrue(tuple.Item3.IsNone());
         }
+
+        [Test]
+        [Description("Regression test for issue 311")]
+        public void GetLinesAndEdges8()
+        {
+            Create("long first line", "ab", "c");
+            var span = new SnapshotSpan(
+                _buffer.GetLine(1).Start.Add(1),
+                _buffer.GetEndPoint());
+            var tuple = SnapshotSpanUtil.GetLinesAndEdges(span);
+            Assert.IsTrue(tuple.Item1.IsSome());
+            Assert.AreEqual(new SnapshotSpan(span.Start, _buffer.GetLine(1).EndIncludingLineBreak), tuple.Item1.Value);
+            Assert.AreEqual(0, tuple.Item2.Count());
+            Assert.AreEqual(_buffer.GetLine(2).ExtentIncludingLineBreak, tuple.Item3.Value);
+        }
+
+        [Test]
+        [Description("Simple exhaustive test to make sure the function works for every point in a buffer")]
+        public void GetLinesAndEdges9()
+        {
+            Create(s_lines);
+            var snapshot = _buffer.CurrentSnapshot;
+            for (var i = 0; i < snapshot.Length; i++)
+            {
+                var span = new SnapshotSpan(snapshot, i, snapshot.Length - i);
+                SnapshotSpanUtil.GetLinesAndEdges(span);
+                span = new SnapshotSpan(snapshot, 0, i);
+                SnapshotSpanUtil.GetLinesAndEdges(span);
+            }
+        }
+
     }
 }
