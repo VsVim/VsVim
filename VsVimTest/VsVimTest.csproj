@@ -144,8 +144,10 @@
     </Compile>
     <Compile Include="TextManagerTest.cs" />
     <Compile Include="Utils\CharPointer.cs" />
+    <Compile Include="VsAdapterTest.cs" />
     <Compile Include="VsCommandFilterTest.cs" />
     <Compile Include="VsFilterKeysAdapterTest.cs" />
+    <Compile Include="VsKeyProcessorTest.cs" />
     <Compile Include="VsVimHostTest.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -160,6 +162,14 @@
     <ProjectReference Include="..\VimUnitTestUtils\VimUnitTestUtils.csproj">
       <Project>{2CC4FAD2-7F56-436C-8AA7-4407D444FFA5}</Project>
       <Name>VimUnitTestUtils</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\VimWpfTest\VimWpfTest.csproj">
+      <Project>{797C1463-3984-47BE-8CD2-4FF68D1E30DA}</Project>
+      <Name>VimWpfTest</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\VimWpf\VimWpf.csproj">
+      <Project>{65A749E0-F1B1-4E43-BE73-25072EE398C6}</Project>
+      <Name>VimWpf</Name>
     </ProjectReference>
     <ProjectReference Include="..\VsVim\VsVim.csproj">
       <Project>{11710F28-88D6-44DD-99DB-1F0AAA8CDAA0}</Project>

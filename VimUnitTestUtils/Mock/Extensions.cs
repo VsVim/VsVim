@@ -5,6 +5,7 @@ using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Editor;
 using Microsoft.VisualStudio.OLE.Interop;
+using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
@@ -211,6 +212,50 @@ namespace Vim.UnitTest.Mock
                 virtualPoint = new VirtualSnapshotPoint(point.Value);
             }
             AddMark(map, buffer, mark, virtualPoint);
+        }
+
+        public static Mock<IEditorOptions> MakeOptions(
+            this Mock<IEditorOptionsFactoryService> optionsFactory,
+            ITextBuffer buffer,
+            MockRepository factory = null)
+        {
+            factory = factory ?? new MockRepository(MockBehavior.Strict);
+            var options = factory.Create<IEditorOptions>();
+            optionsFactory
+                .Setup(x => x.GetOptions(buffer))
+                .Returns(options.Object);
+            return options;
+        }
+
+        public static Mock<IVsTextBuffer> MakeBufferAdapter(
+            this Mock<IVsEditorAdaptersFactoryService> adapterFactory,
+            ITextBuffer textBuffer,
+            MockRepository factory = null)
+        {
+            factory = factory ?? new MockRepository(MockBehavior.Strict);
+            var adapter = factory.Create<IVsTextBuffer>();
+            adapterFactory.Setup(x => x.GetBufferAdapter(textBuffer)).Returns(adapter.Object);
+            return adapter;
+        }
+
+        public static Mock<T> MakeService<T>(
+            this Mock<System.IServiceProvider> serviceProvider,
+            MockRepository factory = null) where T : class
+        {
+            factory = factory ?? new MockRepository(MockBehavior.Strict);
+            var service = factory.Create<T>();
+            serviceProvider.Setup(x => x.GetService(typeof(T))).Returns(service.Object);
+            return service;
+        }
+
+        public static Mock<TInterface> MakeService<TService, TInterface>(
+            this Mock<SVsServiceProvider> serviceProvider,
+            MockRepository factory = null) where TInterface : class
+        {
+            factory = factory ?? new MockRepository(MockBehavior.Strict);
+            var service = factory.Create<TInterface>();
+            serviceProvider.Setup(x => x.GetService(typeof(TService))).Returns(service.Object);
+            return service;
         }
     }
 }

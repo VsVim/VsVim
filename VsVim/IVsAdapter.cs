@@ -43,7 +43,19 @@ namespace VsVim
         /// </summary>
         bool IsVenusView(IVsTextView textView);
 
+        /// <summary>
+        /// Determine if this ITextBuffer is readonly.  This needs to mimic the behavior of 
+        /// the VsCodeWindowAdapter::IsReadOnly method.
+        /// </summary>
+        bool IsReadOnly(ITextBuffer textBuffer);
+
         bool TryGetTextBufferForDocCookie(uint cookie, out ITextBuffer textBuffer);
+
+        /// <summary>
+        /// Get all of the IVsTextView's for the given ITextBuffer
+        /// </summary>
+        /// <param name="textBuffer"></param>
+        /// <returns></returns>
         IEnumerable<IVsTextView> GetTextViews(ITextBuffer textBuffer);
     }
 }

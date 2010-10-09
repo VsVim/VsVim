@@ -13,6 +13,7 @@ fire
   1. PreTranslateMessage – Native windows messages.  May handle and swallow a message
   2. WPF and TextCompositionManager
      a. KeyDown
+     b. TranslateAccelator
      b. TextInput
  
 Now how the components in Visual Studio play together to route key input
@@ -25,7 +26,9 @@ Now how the components in Visual Studio play together to route key input
   2. WPF
     a. VisualElement raises the KeyDown.  KeyProcessor’s now come into play as they 
        indirectly subscribe to this event which they can interpret and handle. 
-    b. TextCompositionManager receives the message and after much magic raises the 
+    b. Translate Acessorator goes through the IVsChain.  This causes problems because certain
+       components (IVsFilterKeysAdapter) will intercept and swallow the keystroke.  
+    c. TextCompositionManager receives the message and after much magic raises the 
        TextInput event on KeyProcessors. 
       i. Note: How the key is entered changes which field on TextComposition has the text.  
          For normal printable input the text will be on the Text property.  For items like 
