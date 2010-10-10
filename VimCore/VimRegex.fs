@@ -93,7 +93,7 @@ type VimRegexFactory
         let options = RegexOptions.Compiled;
         let options = if data.MatchCase then options else options ||| RegexOptions.IgnoreCase
         if data.IsBroken then None
-        else Regex(data.Builder.ToString(),options) |> Some
+        else Utils.TryCreateRegex (data.Builder.ToString()) options
 
     member x.Convert (data:Data) =
         let rec inner (data:Data) : Regex option =
@@ -171,6 +171,9 @@ type VimRegexFactory
         | '=' -> x.ConvertCharAsSpecial data c
         | '<' -> x.ConvertCharAsSpecial data c
         | '>' -> x.ConvertCharAsSpecial data c
+        | '(' -> x.ConvertCharAsSpecial data c 
+        | ')' -> x.ConvertCharAsSpecial data c 
+        | '|' -> x.ConvertCharAsSpecial data c
         | '_' -> 
             match data.CharAtIndex with
             | None -> { data with IsBroken = true }
@@ -191,6 +194,9 @@ type VimRegexFactory
         | '=' -> data.AppendChar '?'
         | '?' -> data.AppendChar '?'
         | '*' -> data.AppendChar '*'
+        | '(' -> data.AppendChar '('
+        | ')' -> data.AppendChar ')'
+        | '|' -> data.AppendChar '|'
         | '^' -> if data.IsStartOfPattern then data.AppendChar '^' else data.AppendEscapedChar '^'
         | '$' -> if data.IsEndOfPattern then data.AppendChar '$' else data.AppendEscapedChar '$'
         | '<' -> data.AppendString @"\b"

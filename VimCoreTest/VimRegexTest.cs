@@ -486,5 +486,50 @@ namespace VimCore.Test
             VerifyMatches(@"word\>", "a word");
             VerifyMatches(@"\Mword\>", "a word");
         }
+
+        [Test]
+        public void Grouping1()
+        {
+            VerifyMatchIs(@"(a)", "foo(a)", "(a)");
+            VerifyMatchIs(@"(abc)", "foo(abc)", "(abc)");
+        }
+
+        [Test]
+        public void Grouping2()
+        {
+            VerifyMatchIs(@"\(ab\)", "foo(ab)", "ab");
+            VerifyMatchIs(@"\(ab\)", "abc", "ab");
+        }
+
+        [Test]
+        public void Grouping3()
+        {
+            VerifyMatchIs(@"\v(a)", "foo(a)", "a");
+            VerifyMatchIs(@"\v(abc)", "foo(abc)", "abc");
+        }
+
+        [Test]
+        public void Separator1()
+        {
+            VerifyMatchIs(@"a\|b", "foob", "b");
+            VerifyMatchIs(@"a\|b", "acat", "a");
+        }
+
+        [Test]
+        public void Separator2()
+        {
+            VerifyMatchIs(@"ab\|c", "abod", "ab");
+            VerifyMatchIs(@"ab\|c", "babod", "ab");
+            VerifyMatchIs(@"ab\|c", "bacod", "c");
+        }
+
+        [Test]
+        public void Separator3()
+        {
+            VerifyMatchIs(@"\vab|c", "abod", "ab");
+            VerifyMatchIs(@"\vab|c", "babod", "ab");
+            VerifyMatchIs(@"\vab|c", "bacod", "c");
+        }
+
     }
 }
