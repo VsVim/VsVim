@@ -4,6 +4,39 @@ namespace Vim
 open System.Text
 open System.Text.RegularExpressions
 
+module VimRegexUtils = 
+    let Escape c = c |> StringUtil.ofChar |> Regex.Escape 
+    let ConvertReplacementString (replacement:string) = 
+        let builder = StringBuilder()
+        let appendChar (c:char) = builder.Append(c) |> ignore
+        let appendString (str:string) = builder.Append(str) |> ignore
+        let rec inner index = 
+
+            // Process a character which follows an '\' in the string
+            let handleEscapeChar c = 
+                if CharUtil.IsDigit c then 
+                    appendChar '$'
+                    appendChar c
+                    inner (index + 2)
+                else 
+                    Escape c |> appendString
+                    inner (index + 2)
+
+            match StringUtil.charAtOption index replacement with
+            | None -> builder.ToString()
+            | Some(c) -> 
+                if c = '\\' then 
+                    match StringUtil.charAtOption (index + 1) replacement with 
+                    | None -> 
+                        Escape c |> appendString
+                        builder.ToString()
+                    | Some(c) -> handleEscapeChar c 
+                else 
+                    appendChar c
+                    inner (index + 1)
+
+        inner 0
+
 /// Represents a Vim style regular expression 
 [<Sealed>]
 type VimRegex 
@@ -17,6 +50,12 @@ type VimRegex
         match _regex with
         | None -> false
         | Some(regex) -> regex.IsMatch(input)
+    member x.Replace (input:string) (replacement:string) = 
+        match _regex with 
+        | None -> StringUtil.empty
+        | Some(regex) -> 
+            let replacement = VimRegexUtils.ConvertReplacementString replacement
+            regex.Replace(input, replacement) 
 
 [<RequireQualifiedAccess>]
 type MagicKind = 
@@ -114,7 +153,7 @@ type VimRegexFactory
     /// Process an escaped character.  Look first for global options such as ignore 
     /// case or magic and then go for magic specific characters
     member x.ProcessEscapedChar data c  =
-        let escape c = c |> StringUtil.ofChar |> Regex.Escape 
+        let escape = VimRegexUtils.Escape
         match c with 
         | 'C' -> {data with MatchCase = true; HasCaseAtom = true}
         | 'c' -> {data with MatchCase = false; HasCaseAtom = true }

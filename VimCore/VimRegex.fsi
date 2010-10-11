@@ -15,7 +15,11 @@ type VimRegex =
     member Regex : Regex option
 
     /// Does the string match the text
-    member IsMatch : string -> bool
+    member IsMatch : pattern:string -> bool
+
+    /// Matches the regex against the specified input and does the replacement 
+    /// as specified.  If there is currently no regex then None will be returned
+    member Replace : input:string -> replacement:string -> string 
 
 [<Sealed>]
 type VimRegexFactory = 

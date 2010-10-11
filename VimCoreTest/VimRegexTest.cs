@@ -46,6 +46,13 @@ namespace VimCore.Test
             Assert.AreEqual(toMatch, match.Value);
         }
 
+        private void VerifyReplace(string pattern, string input, string replace, string result)
+        {
+            var regex = _factory.Create(pattern);
+            Assert.IsTrue(regex.Regex.IsSome());
+            Assert.AreEqual(result, regex.Replace(input, replace));
+        }
+
         [Test]
         public void LettersCase1()
         {
@@ -509,6 +516,13 @@ namespace VimCore.Test
         }
 
         [Test]
+        public void Grouping4()
+        {
+            var regex = _factory.Create(@"\(");
+            Assert.IsTrue(regex.Regex.IsNone());
+        }
+
+        [Test]
         public void Separator1()
         {
             VerifyMatchIs(@"a\|b", "foob", "b");
@@ -531,5 +545,69 @@ namespace VimCore.Test
             VerifyMatchIs(@"\vab|c", "bacod", "c");
         }
 
+        [Test]
+        [Ignore]
+        public void ReplaceCornerCases1()
+        {
+            VerifyReplace(@"a\?", "cat", "o", "cot");
+            VerifyReplace(@"a\=", "cat", "o", "cot");
+        }
+
+        [Test]
+        [Description("Simple no-magic replace")]
+        public void Replace1()
+        {
+            VerifyReplace(@"foo", "foo bar", "bar", "bar bar");
+            VerifyReplace(@"foo", "foo bar baz", "bar", "bar bar baz");
+        }
+
+        [Test]
+        [Description("Atom match and replace")]
+        public void Replace2()
+        {
+            VerifyReplace(@"a\|b", "cat", "o", "cot");
+        }
+
+        [Test]
+        [Description("Word boundary replacements")]
+        public void Replace3()
+        {
+            VerifyReplace(@"\<foo\>", "foo bar", "bar", "bar bar");
+            VerifyReplace(@"\<foo\>", "foobar", "bar", "foobar");
+            VerifyReplace(@"\<foo\>", "foo bar baz", "bar", "bar bar baz");
+        }
+
+        [Test]
+        public void Replace4()
+        {
+            VerifyReplace(@"(ab)", "foo(ab)", "()", "foo()");
+            VerifyReplace(@"foo(ab)", "foo(ab)", "()", "()");
+            VerifyReplace(@"foo()", "foo(ab)", "()", "foo(ab)");
+        }
+
+        [Test]
+        public void Replace5()
+        {
+            VerifyReplace(@"\(ab\)", "ab", "", "");
+            VerifyReplace(@"\(ab\)", "cab", "", "c");
+            VerifyReplace(@"\(ab\)", "c(ab)", "", "c()");
+        }
+
+        [Test]
+        [Description("Replacement using the group specifier")]
+        public void Replace6()
+        {
+            VerifyReplace(@"foo\(\.*\)", "foobar", @"\1", "bar");
+            VerifyReplace(@"jaz\(\.*\)", "jaz123", @"\1", "123");
+        }
+
+        [Test]
+        [Description("Replacement using the group specifier")]
+        public void Replace7()
+        {
+            VerifyReplace(@"\(\.*\)b\(\.*\)", "abc", @"\2", "ac");
+            VerifyReplace(@"\(\.*\)b\(\.*\)", "abc", @"\1\2", "ac");
+            VerifyReplace(@"\(\.*\)b\(\.*\)", "abc", @"\1blah\2", "ablahc");
+        }
     }
 }
