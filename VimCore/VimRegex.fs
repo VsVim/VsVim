@@ -4,8 +4,16 @@ namespace Vim
 open System.Text
 open System.Text.RegularExpressions
 
+[<System.Flags>]
+type VimRegexOptions = 
+    | None = 0
+    | Compiled = 0x1
+    | IgnoreCase = 0x2
+    | OrdinalCase = 0x4
+
 module VimRegexUtils = 
     let Escape c = c |> StringUtil.ofChar |> Regex.Escape 
+
     let ConvertReplacementString (replacement:string) = 
         let builder = StringBuilder()
         let appendChar (c:char) = builder.Append(c) |> ignore
@@ -37,25 +45,48 @@ module VimRegexUtils =
 
         inner 0
 
+    let VimToBclList = 
+        [
+            (VimRegexOptions.Compiled, RegexOptions.Compiled)
+            (VimRegexOptions.IgnoreCase, RegexOptions.IgnoreCase)
+            (VimRegexOptions.OrdinalCase, RegexOptions.None)
+        ]
+
+    let ConvertToRegexOptions options = 
+        
+        let rec inner options ret = 
+            match List.tryFind (fun (vim,_) -> Utils.IsFlagSet vim options) VimToBclList with
+            | None -> ret
+            | Some(vim,bcl) ->
+                let ret = bcl ||| ret
+                let options = Utils.UnsetFlag options vim
+                inner options ret 
+        inner options RegexOptions.None
+
+    /// Create a regex.  Returns None if the regex has invalid characters
+    let TryCreateRegex pattern options =
+        try
+            let r = new Regex(pattern, options)
+            Some r
+        with 
+            | :? System.ArgumentException -> None
+
 /// Represents a Vim style regular expression 
 [<Sealed>]
 type VimRegex 
     (
         _vimText : string,
-        _regex : Regex option ) =
+        _regex : Regex ) =
 
     member x.Text = _vimText
     member x.Regex = _regex
-    member x.IsMatch input = 
-        match _regex with
-        | None -> false
-        | Some(regex) -> regex.IsMatch(input)
-    member x.Replace (input:string) (replacement:string) = 
-        match _regex with 
-        | None -> StringUtil.empty
-        | Some(regex) -> 
-            let replacement = VimRegexUtils.ConvertReplacementString replacement
-            regex.Replace(input, replacement) 
+    member x.IsMatch input = _regex.IsMatch(input)
+    member x.ReplaceAll (input:string) (replacement:string) = 
+        let replacement = VimRegexUtils.ConvertReplacementString replacement
+        _regex.Replace(input, replacement) 
+    member x.Replace (input:string) (replacement:string) (count:int) = 
+        let replacement = VimRegexUtils.ConvertReplacementString replacement
+        _regex.Replace(input, replacement, count) 
 
 [<RequireQualifiedAccess>]
 type MagicKind = 
@@ -90,6 +121,9 @@ type Data = {
 
     /// Is this the start of the pattern
     IsStartOfPattern : bool
+
+    /// The original options 
+    Options : VimRegexOptions
 }
     with
     member x.IsEndOfPattern = x.Index >= x.Pattern.Length
@@ -105,7 +139,9 @@ type VimRegexFactory
     (
         _settings : IVimGlobalSettings ) =
 
-    member x.Create pattern = 
+    member x.Create pattern = x.CreateWithOptions pattern VimRegexOptions.Compiled
+
+    member x.CreateWithOptions pattern options = 
         let kind = if _settings.Magic then MagicKind.Magic else MagicKind.NoMagic
         let data = { 
             Pattern = pattern
@@ -115,7 +151,8 @@ type VimRegexFactory
             MatchCase = not _settings.IgnoreCase
             HasCaseAtom = false 
             IsBroken = false 
-            IsStartOfPattern = true}
+            IsStartOfPattern = true
+            Options = options }
 
         // Check for smart case here
         let data = 
@@ -125,14 +162,24 @@ type VimRegexFactory
             else 
                 data
 
-        let regex = x.Convert data
-        VimRegex(pattern, regex)
+        match x.Convert data with
+        | None -> None
+        | Some(regex) -> VimRegex(pattern,regex) |> Some
 
+    // Create the actual BCL regex 
     member x.CreateRegex (data:Data) =
-        let options = RegexOptions.Compiled;
-        let options = if data.MatchCase then options else options ||| RegexOptions.IgnoreCase
+        let options = VimRegexUtils.ConvertToRegexOptions data.Options
+
+        // Now factor case into the options.  The VimRegexOptions take precedence
+        // over anything which is embedded into the string 
+        let options = 
+            if Utils.IsFlagSet data.Options VimRegexOptions.IgnoreCase then options
+            elif Utils.IsFlagSet data.Options VimRegexOptions.OrdinalCase then options
+            elif data.MatchCase then options
+            else options ||| RegexOptions.IgnoreCase
+
         if data.IsBroken then None
-        else Utils.TryCreateRegex (data.Builder.ToString()) options
+        else VimRegexUtils.TryCreateRegex (data.Builder.ToString()) options with
 
     member x.Convert (data:Data) =
         let rec inner (data:Data) : Regex option =

@@ -33,7 +33,7 @@ type internal IncrementalSearch
         let start = _textView.TextSnapshot.CreateTrackingPoint(pos, PointTrackingMode.Negative)
         let data = {
             Start = start
-            SearchData = {Text=Pattern(StringUtil.empty); Kind=kind; Options=_searchOptions }
+            SearchData = {Text=SearchText.Pattern(StringUtil.empty); Kind=kind; Options=_searchOptions }
             SearchResult = SearchNotFound }
         _data <- Some data
 
@@ -53,7 +53,7 @@ type internal IncrementalSearch
                 TextViewUtil.EnsureCaretOnScreenAndTextExpanded _textView _outlining
 
             let doSearch pattern = 
-                let searchData = {data.SearchData with Text=Pattern(pattern)}
+                let searchData = {data.SearchData with Text=SearchText.Pattern(pattern)}
                 let ret =
                     if StringUtil.isNullOrEmpty pattern then None
                     else

@@ -21,16 +21,35 @@ namespace VimCore.Test
 
         private void VerifyMatches(string pattern, params string[] inputArray)
         {
-            var regex = _factory.Create(pattern);
+            VerifyMatches(VimRegexOptions.None, pattern, inputArray);
+        }
+
+        private void VerifyMatches(VimRegexOptions options, string pattern, params string[] inputArray)
+        {
+            var opt = _factory.CreateWithOptions(pattern, options);
+            Assert.IsTrue(opt.IsSome());
+            var regex = opt.Value;
             foreach (var cur in inputArray)
             {
                 Assert.IsTrue(regex.IsMatch(cur));
             }
         }
 
+        private void VerifyNotRegex(string pattern)
+        {
+            Assert.IsTrue(_factory.Create(pattern).IsNone());
+        }
+
         private void VerifyNotMatches(string pattern, params string[] inputArray)
         {
-            var regex = _factory.Create(pattern);
+            VerifyNotMatches(VimRegexOptions.None, pattern, inputArray);
+        }
+
+        private void VerifyNotMatches(VimRegexOptions options, string pattern, params string[] inputArray)
+        {
+            var opt = _factory.CreateWithOptions(pattern, options);
+            Assert.IsTrue(opt.IsSome());
+            var regex = opt.Value;
             foreach (var cur in inputArray)
             {
                 Assert.IsFalse(regex.IsMatch(cur));
@@ -40,8 +59,8 @@ namespace VimCore.Test
         private void VerifyMatchIs(string pattern, string input, string toMatch)
         {
             var regex = _factory.Create(pattern);
-            Assert.IsTrue(regex.Regex.IsSome());
-            var match = regex.Regex.Value.Match(input);
+            Assert.IsTrue(regex.IsSome());
+            var match = regex.Value.Regex.Match(input);
             Assert.IsTrue(match.Success);
             Assert.AreEqual(toMatch, match.Value);
         }
@@ -49,8 +68,8 @@ namespace VimCore.Test
         private void VerifyReplace(string pattern, string input, string replace, string result)
         {
             var regex = _factory.Create(pattern);
-            Assert.IsTrue(regex.Regex.IsSome());
-            Assert.AreEqual(result, regex.Replace(input, replace));
+            Assert.IsTrue(regex.IsSome());
+            Assert.AreEqual(result, regex.Value.ReplaceAll(input, replace));
         }
 
         [Test]
@@ -358,16 +377,15 @@ namespace VimCore.Test
         [Test]
         public void AtomBackslashUnderscoreHat1()
         {
-            VerifyNotMatches(@"\_", "_");
-            VerifyNotMatches(@"\_", "");
-            VerifyNotMatches(@"ab\_", "ab");
+            VerifyNotRegex(@"\_");
+            VerifyNotRegex(@"ab\_");
         }
 
         [Test]
         public void AtomBackslashUnderscoreHat2()
         {
-            VerifyNotMatches(@"\M\_", "_");
-            VerifyNotMatches(@"\M\_", "_");
+            VerifyNotRegex(@"\M\_");
+            VerifyNotRegex(@"\M\_");
         }
 
         [Test]
@@ -440,8 +458,7 @@ namespace VimCore.Test
         [Test]
         public void AtomBackslashUnderscoreDollar2()
         {
-            VerifyNotMatches(@"\_", "_");
-            VerifyNotMatches(@"\_", "");
+            VerifyNotRegex(@"\_");
         }
 
         [Test]
@@ -519,7 +536,7 @@ namespace VimCore.Test
         public void Grouping4()
         {
             var regex = _factory.Create(@"\(");
-            Assert.IsTrue(regex.Regex.IsNone());
+            Assert.IsTrue(regex.IsNone());
         }
 
         [Test]
@@ -609,5 +626,28 @@ namespace VimCore.Test
             VerifyReplace(@"\(\.*\)b\(\.*\)", "abc", @"\1\2", "ac");
             VerifyReplace(@"\(\.*\)b\(\.*\)", "abc", @"\1blah\2", "ablahc");
         }
+
+        [Test]
+        [Description("Options take precedent over embedded case")]
+        public void CreateWithOptions1()
+        {
+            VerifyMatches(VimRegexOptions.IgnoreCase, @"\Cfoo", "FOO");
+            VerifyMatches(VimRegexOptions.IgnoreCase, @"\Cfoo", "fOo");
+            VerifyNotMatches(VimRegexOptions.OrdinalCase, @"\cfoo", "FOO");
+            VerifyNotMatches(VimRegexOptions.OrdinalCase, @"\cfoo", "fOo");
+        }
+
+        [Test]
+        [Description("Options take precedent over case options")]
+        public void CreateWithOptions2()
+        {
+            _settings.IgnoreCase = false;
+            VerifyMatches(VimRegexOptions.IgnoreCase, @"foo", "FOO");
+            VerifyMatches(VimRegexOptions.IgnoreCase, @"foo", "fOo");
+            _settings.IgnoreCase = true;
+            VerifyNotMatches(VimRegexOptions.OrdinalCase, @"foo", "FOO");
+            VerifyNotMatches(VimRegexOptions.OrdinalCase, @"foo", "fOo");
+        }
+
     }
 }

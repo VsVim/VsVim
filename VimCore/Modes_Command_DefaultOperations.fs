@@ -22,6 +22,7 @@ type internal DefaultOperations ( _data : OperationsData ) =
     let _undoRedoOperations = _data.UndoRedoOperations;
     let _keyMap = _data.KeyMap
     let _statusUtil = _data.StatusUtil
+    let _regexFactory = VimRegexFactory(_data.LocalSettings.GlobalSettings)
 
     /// Format the setting for use in output
     let FormatSetting(setting:Setting) = 
@@ -85,18 +86,18 @@ type internal DefaultOperations ( _data : OperationsData ) =
         member x.Substitute pattern replace (range:SnapshotSpan) flags = 
 
             /// Actually do the replace with the given regex
-            let doReplace (regex:Regex) = 
+            let doReplace (regex:VimRegex) = 
                 use edit = _textView.TextBuffer.CreateEdit()
 
                 let replaceOne (span:SnapshotSpan) (c:Capture) = 
-                    let newText = regex.Replace(c.Value, replace, 1)
+                    let newText =  regex.Replace c.Value replace 1
                     let offset = span.Start.Position
                     edit.Replace(Span(c.Index+offset, c.Length), newText) |> ignore
                 let getMatches (span:SnapshotSpan) = 
                     if Utils.IsFlagSet flags SubstituteFlags.ReplaceAll then
-                        regex.Matches(span.GetText()) |> Seq.cast<Match>
+                        regex.Regex.Matches(span.GetText()) |> Seq.cast<Match>
                     else
-                        regex.Match(span.GetText()) |> Seq.singleton
+                        regex.Regex.Match(span.GetText()) |> Seq.singleton
                 let matches = 
                     x.GetSpansInRange range
                     |> Seq.map (fun span -> getMatches span |> Seq.map (fun m -> (m,span)) )
@@ -129,12 +130,11 @@ type internal DefaultOperations ( _data : OperationsData ) =
                     _statusUtil.OnError (Resources.CommandMode_PatternNotFound pattern)
 
             let options = 
-                if Utils.IsFlagSet flags SubstituteFlags.IgnoreCase then
-                    RegexOptions.IgnoreCase
-                else    
-                    RegexOptions.None
-            let options = options ||| RegexOptions.Compiled
-            match Utils.TryCreateRegex pattern options with
+                if Utils.IsFlagSet flags SubstituteFlags.IgnoreCase then VimRegexOptions.IgnoreCase
+                elif Utils.IsFlagSet flags SubstituteFlags.OrdinalCase then VimRegexOptions.OrdinalCase 
+                else VimRegexOptions.None
+            let options = VimRegexOptions.Compiled ||| options
+            match _regexFactory.CreateWithOptions pattern options with
             | None -> _statusUtil.OnError (Resources.CommandMode_PatternNotFound pattern)
             | Some (regex) -> doReplace regex
 

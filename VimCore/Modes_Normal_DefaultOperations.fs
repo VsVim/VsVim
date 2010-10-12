@@ -52,7 +52,7 @@ type internal DefaultOperations ( _data : OperationsData, _incrementalSearch : I
 
             // Build up the SearchData structure
             let word = span.GetText()
-            let text = if isWholeWord then WholeWord(word) else StraightText(word)
+            let text = if isWholeWord then SearchText.WholeWord(word) else SearchText.StraightText(word)
             let data = {Text=text; Kind = kind; Options = SearchOptions.AllowIgnoreCase }
 
             // When forward the search will be starting on the current word so it will 
@@ -76,7 +76,7 @@ type internal DefaultOperations ( _data : OperationsData, _incrementalSearch : I
             if isReverse then { last with Kind = SearchKindUtil.Reverse last.Kind }
             else last
 
-        if StringUtil.isNullOrEmpty last.Text.RawText then 
+        if StringUtil.isNullOrEmpty last.Text.RawText then
             _statusUtil.OnError Resources.NormalMode_NoPreviousSearch
         else
 

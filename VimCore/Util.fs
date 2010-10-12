@@ -64,19 +64,10 @@ module internal Utils =
     let GetEnumValues<'T when 'T : enum<int>>() : 'T seq=
         System.Enum.GetValues(typeof<'T>) |> Seq.cast<'T>
 
-    /// Create a regex.  Returns None if the regex has invalid characters
-    let TryCreateRegex pattern options =
-        try
-            let r = new System.Text.RegularExpressions.Regex(pattern, options)
-            Some r
-        with 
-            | :? System.ArgumentException -> None
-
     /// Type safe helper method for creating a WeakReference<'T>
     let CreateWeakReference<'T when 'T : not struct> (value : 'T) = 
         let weakRef = System.WeakReference(value)
         WeakReference<'T>(weakRef)
-
 
 module internal ListUtil =
 

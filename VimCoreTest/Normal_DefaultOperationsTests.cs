@@ -64,6 +64,9 @@ namespace VimCore.Test
             _bufferOptions = new Mock<IEditorOptions>(MockBehavior.Strict);
             _bufferOptions.Setup(x => x.GetOptionValue(DefaultOptions.TabSizeOptionId)).Returns(4);
             _globalSettings = MockObjectFactory.CreateGlobalSettings(ignoreCase: true);
+            _globalSettings.SetupGet(x => x.Magic).Returns(true);
+            _globalSettings.SetupGet(x => x.IgnoreCase).Returns(true);
+            _globalSettings.SetupGet(x => x.SmartCase).Returns(false);
             _settings = MockObjectFactory.CreateLocalSettings(_globalSettings.Object);
             _options = new Mock<IEditorOptions>(MockBehavior.Strict);
             _options.Setup(x => x.GetOptionValue<int>(It.IsAny<string>())).Throws(new ArgumentException());

@@ -738,11 +738,13 @@ type SearchOptions =
     /// Consider the "smartcase" option when doing the search
     | AllowSmartCase = 0x2
 
+[<RequireQualifiedAccess>]
 type SearchText =
     | Pattern of string
     | WholeWord of string
     | StraightText of string
     with 
+
     member x.RawText =
         match x with
         | Pattern(p) -> p

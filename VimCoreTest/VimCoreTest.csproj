@@ -141,7 +141,7 @@
     <Compile Include="CommandParseUtilTest.cs" />
     <Compile Include="CommandProcessorTest.cs" />
     <Compile Include="CommandRunnerTest.cs" />
-    <Compile Include="Command_DefaultOperations.cs" />
+    <Compile Include="CommandDefaultOperationsTest.cs" />
     <Compile Include="VimRegexTest.cs" />
     <Compile Include="VirtualSnapshotPointUtilTest.cs" />
     <Compile Include="MotionUtilTest.cs" />
