@@ -168,6 +168,7 @@
     <Compile Include="UI\KeyBindingHandledByOption.cs" />
     <Compile Include="VsCommandFilter.cs" />
     <Compile Include="VsFilterKeysAdapter.cs" />
+    <Compile Include="VsKeyProcessor.cs" />
     <Compile Include="VsVimHost.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -200,6 +201,7 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
+    <Content Include="KeyboardInputRouting.txt" />
     <Content Include="License.txt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <IncludeInVSIX>true</IncludeInVSIX>

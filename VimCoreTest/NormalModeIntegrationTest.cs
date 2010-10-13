@@ -140,5 +140,40 @@ namespace VimCore.Test
             _textView.MoveCaretTo(_textView.TextSnapshot.GetEndPoint());
             _buffer.Process("{{");
         }
+
+        [Test]
+        public void RepeatLastSearch1()
+        {
+            CreateBuffer("random text", "pig dog cat", "pig dog cat", "pig dog cat");
+            _buffer.Process("/pig");
+            _buffer.Process(VimKey.Enter);
+            Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
+            _textView.MoveCaretTo(0);
+            _buffer.Process('n');
+            Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
+        }
+
+        [Test]
+        public void RepeatLastSearch2()
+        {
+            CreateBuffer("random text", "pig dog cat", "pig dog cat", "pig dog cat");
+            _buffer.Process("/pig");
+            _buffer.Process(VimKey.Enter);
+            Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
+            _buffer.Process('n');
+            Assert.AreEqual(_textView.GetLine(2).Start, _textView.GetCaretPoint());
+        }
+
+        [Test]
+        public void RepeatLastSearch3()
+        {
+            CreateBuffer("random text", "pig dog cat", "random text", "pig dog cat", "pig dog cat");
+            _buffer.Process("/pig");
+            _buffer.Process(VimKey.Enter);
+            Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
+            _textView.MoveCaretTo(_textView.GetLine(2).Start);
+            _buffer.Process('N');
+            Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
+        }
     }
 }

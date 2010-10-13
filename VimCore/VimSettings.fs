@@ -111,7 +111,6 @@ type internal GlobalSettings() =
 
     static let GlobalSettings = 
         [|
-            ( DoubleEscapeName, DoubleEscapeName, ToggleKind, ToggleValue(false) );
             ( CaretOpacityName, CaretOpacityName, NumberKind, NumberValue(65) );
             ( HighlightSearchName, "hls", ToggleKind, ToggleValue(false) );
             ( IgnoreCaseName,"ic", ToggleKind, ToggleValue(false) );
@@ -127,6 +126,7 @@ type internal GlobalSettings() =
             ( VimRcPathsName, VimRcPathsName, StringKind, StringValue(System.String.Empty) );
             ( VirtualEditName, "ve", StringKind, StringValue(StringUtil.empty));
             ( VisualBellName, "vb", ToggleKind, ToggleValue(false) );
+            ( CaretOpacityName, CaretOpacityName, NumberKind, NumberValue(65) );
         |]
 
     let _map = SettingsMap(GlobalSettings, true)
@@ -145,9 +145,6 @@ type internal GlobalSettings() =
         member x.CaretOpacity
             with get() = _map.GetNumberValue CaretOpacityName
             and set value = _map.TrySetValue CaretOpacityName (NumberValue(value)) |> ignore
-        member x.DoubleEscape
-            with get() = _map.GetBoolValue DoubleEscapeName
-            and set value = _map.TrySetValue DoubleEscapeName (ToggleValue(value)) |> ignore
         member x.HighlightSearch
             with get() = _map.GetBoolValue HighlightSearchName
             and set value = _map.TrySetValue HighlightSearchName (ToggleValue(value)) |> ignore

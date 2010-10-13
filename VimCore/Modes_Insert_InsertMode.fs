@@ -53,11 +53,8 @@ type internal InsertMode
 
         if _broker.IsCompletionActive || _broker.IsSignatureHelpActive || _broker.IsQuickInfoActive then
             _broker.DismissDisplayWindows()
-
-            if _data.Settings.GlobalSettings.DoubleEscape then ProcessResult.Processed
-            else 
-                _operations.MoveCaretLeft 1 
-                ProcessResult.SwitchMode ModeKind.Normal
+            _operations.MoveCaretLeft 1 
+            ProcessResult.SwitchMode ModeKind.Normal
 
         else
             _operations.MoveCaretLeft 1 

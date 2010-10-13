@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Windows.Input;
+using Microsoft.VisualStudio.Text;
 using Vim.Extensions;
 
 namespace Vim.UI.Wpf
@@ -14,9 +15,19 @@ namespace Vim.UI.Wpf
     ///
     /// Or simply read the keyboard feed on the same blog page.  It will humble you
     /// </summary>
-    public sealed class KeyProcessor : Microsoft.VisualStudio.Text.Editor.KeyProcessor
+    public class KeyProcessor : Microsoft.VisualStudio.Text.Editor.KeyProcessor
     {
         private readonly IVimBuffer _buffer;
+
+        public IVimBuffer VimBuffer
+        {
+            get { return _buffer; }
+        }
+
+        public ITextBuffer TextBuffer
+        {
+            get { return _buffer.TextBuffer; }
+        }
 
         public KeyProcessor(IVimBuffer buffer)
         {

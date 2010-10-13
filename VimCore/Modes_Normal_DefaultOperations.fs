@@ -80,18 +80,30 @@ type internal DefaultOperations ( _data : OperationsData, _incrementalSearch : I
             _statusUtil.OnError Resources.NormalMode_NoPreviousSearch
         else
 
-            // When forward the search will be starting on the current word so it will 
-            // always match.  Without modification a count of 1 would simply find the word 
-            // under the cursor.  Increment the count by 1 here so that it will find
-            // the current word as the 0th match (so to speak)
-            let count = if SearchKindUtil.IsForward last.Kind then count + 1 else count 
-
-            let point = TextViewUtil.GetCaretPoint _textView
-            match _search.FindNextMultiple last point _normalWordNav count with
-            | Some(span) -> 
+            let foundSpan (span:SnapshotSpan) = 
                 x.CommonImpl.MoveCaretToPoint span.Start 
                 x.CommonImpl.EnsureCaretOnScreenAndTextExpanded()
+
+            let findMore (span:SnapshotSpan) count = 
+                if count = 1 then foundSpan span
+                else 
+                    let count = count - 1 
+                    match _search.FindNextMultiple last span.End _normalWordNav count with
+                    | Some(span) -> foundSpan span
+                    | None -> _statusUtil.OnError (Resources.NormalMode_PatternNotFound last.Text.RawText)
+
+            // Make sure we don't count the current word if the cursor is positioned
+            // directly on top of the current word 
+            let caretPoint = TextViewUtil.GetCaretPoint _textView
+            match _search.FindNext last caretPoint _normalWordNav with
             | None -> _statusUtil.OnError (Resources.NormalMode_PatternNotFound last.Text.RawText)
+            | Some(span) ->
+                let count = if span.Start = caretPoint then count else count - 1 
+                if count = 0 then foundSpan span
+                else 
+                    match _search.FindNextMultiple last span.End _normalWordNav count with
+                    | Some(span) -> foundSpan span
+                    | None -> _statusUtil.OnError (Resources.NormalMode_PatternNotFound last.Text.RawText)
 
     member x.GoToLineCore line =
         let snapshot = _textView.TextSnapshot

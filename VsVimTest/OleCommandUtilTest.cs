@@ -20,6 +20,32 @@ namespace VsVim.UnitTest
             }
         }
 
+        private void VerifyConvert(VSConstants.VSStd2KCmdID cmd, VimKey vimKey, EditCommandKind kind)
+        {
+            VerifyConvert(cmd, KeyInputUtil.VimKeyToKeyInput(vimKey), kind);
+        }
+
+        private void VerifyConvert(VSConstants.VSStd2KCmdID cmd, KeyInput ki, EditCommandKind kind)
+        {
+            EditCommand command;
+            Assert.IsTrue(OleCommandUtil.TryConvert(VSConstants.VSStd2K, (uint)cmd, out command));
+            Assert.AreEqual(ki, command.KeyInput);
+            Assert.AreEqual(kind, command.EditCommandKind);
+        }
+
+        private void VerifyConvert(VSConstants.VSStd97CmdID cmd, VimKey vimKey, EditCommandKind kind)
+        {
+            VerifyConvert(cmd, KeyInputUtil.VimKeyToKeyInput(vimKey), kind);
+        }
+
+        private void VerifyConvert(VSConstants.VSStd97CmdID cmd, KeyInput ki, EditCommandKind kind)
+        {
+            EditCommand command;
+            Assert.IsTrue(OleCommandUtil.TryConvert(VSConstants.GUID_VSStandardCommandSet97, (uint)cmd, out command));
+            Assert.AreEqual(ki, command.KeyInput);
+            Assert.AreEqual(kind, command.EditCommandKind);
+        }
+
         // [Test, Description("Make sure we don't puke on missing data"),Ignore]
         public void TypeCharNoData()
         {
@@ -51,57 +77,61 @@ namespace VsVim.UnitTest
         }
 
         [Test]
-        public void Left1()
+        public void ArrowKeys()
         {
-            EditCommand command;
-            Assert.IsTrue(OleCommandUtil.TryConvert(VSConstants.VSStd2K, (uint)VSConstants.VSStd2KCmdID.LEFT, out command));
-            Assert.AreEqual(KeyInputUtil.VimKeyToKeyInput(VimKey.Left), command.KeyInput);
-            Assert.IsFalse(command.IsInput);
-        }
-
-        [Test]
-        public void Right1()
-        {
-            EditCommand command;
-            Assert.IsTrue(OleCommandUtil.TryConvert(VSConstants.VSStd2K, (uint)VSConstants.VSStd2KCmdID.RIGHT, out command));
-            Assert.AreEqual(KeyInputUtil.VimKeyToKeyInput(VimKey.Right), command.KeyInput);
-            Assert.IsFalse(command.IsInput);
-        }
-
-        [Test]
-        public void Up1()
-        {
-            EditCommand command;
-            Assert.IsTrue(OleCommandUtil.TryConvert(VSConstants.VSStd2K, (uint)VSConstants.VSStd2KCmdID.UP, out command));
-            Assert.AreEqual(KeyInputUtil.VimKeyToKeyInput(VimKey.Up), command.KeyInput);
-            Assert.IsFalse(command.IsInput);
-        }
-
-        [Test]
-        public void Down1()
-        {
-            EditCommand command;
-            Assert.IsTrue(OleCommandUtil.TryConvert(VSConstants.VSStd2K, (uint)VSConstants.VSStd2KCmdID.DOWN, out command));
-            Assert.AreEqual(KeyInputUtil.VimKeyToKeyInput(VimKey.Down), command.KeyInput);
-            Assert.IsFalse(command.IsInput);
+            VerifyConvert(VSConstants.VSStd2KCmdID.LEFT, VimKey.Left, EditCommandKind.CursorMovement);
+            VerifyConvert(VSConstants.VSStd2KCmdID.LEFT_EXT, VimKey.Left, EditCommandKind.CursorMovement);
+            VerifyConvert(VSConstants.VSStd2KCmdID.LEFT_EXT_COL, VimKey.Left, EditCommandKind.CursorMovement);
+            VerifyConvert(VSConstants.VSStd2KCmdID.RIGHT, VimKey.Right, EditCommandKind.CursorMovement);
+            VerifyConvert(VSConstants.VSStd2KCmdID.RIGHT_EXT, VimKey.Right, EditCommandKind.CursorMovement);
+            VerifyConvert(VSConstants.VSStd2KCmdID.RIGHT_EXT_COL, VimKey.Right, EditCommandKind.CursorMovement);
+            VerifyConvert(VSConstants.VSStd2KCmdID.UP, VimKey.Up, EditCommandKind.CursorMovement);
+            VerifyConvert(VSConstants.VSStd2KCmdID.UP_EXT, VimKey.Up, EditCommandKind.CursorMovement);
+            VerifyConvert(VSConstants.VSStd2KCmdID.UP_EXT_COL, VimKey.Up, EditCommandKind.CursorMovement);
+            VerifyConvert(VSConstants.VSStd2KCmdID.DOWN, VimKey.Down, EditCommandKind.CursorMovement);
+            VerifyConvert(VSConstants.VSStd2KCmdID.DOWN_EXT, VimKey.Down, EditCommandKind.CursorMovement);
+            VerifyConvert(VSConstants.VSStd2KCmdID.DOWN_EXT_COL, VimKey.Down, EditCommandKind.CursorMovement);
         }
 
         [Test]
         public void Tab1()
         {
-            EditCommand command;
-            Assert.IsTrue(OleCommandUtil.TryConvert(VSConstants.VSStd2K, (uint)VSConstants.VSStd2KCmdID.TAB, out command));
-            Assert.AreEqual(KeyInputUtil.VimKeyToKeyInput(VimKey.Tab), command.KeyInput);
-            Assert.IsFalse(command.IsInput);
+            VerifyConvert(VSConstants.VSStd2KCmdID.TAB, VimKey.Tab, EditCommandKind.TypeChar);
         }
 
         [Test]
         public void F1Help1()
         {
-            EditCommand command;
-            Assert.IsTrue(OleCommandUtil.TryConvert(VSConstants.GUID_VSStandardCommandSet97, (uint)VSConstants.VSStd97CmdID.F1Help, out command));
-            Assert.AreEqual(KeyInputUtil.VimKeyToKeyInput(VimKey.F1), command.KeyInput);
-            Assert.IsFalse(command.IsInput);
+            VerifyConvert(VSConstants.VSStd97CmdID.F1Help, VimKey.F1, EditCommandKind.Unknown);
         }
+
+        [Test]
+        public void Escape()
+        {
+            VerifyConvert(VSConstants.VSStd97CmdID.Escape, VimKey.Escape, EditCommandKind.Cancel);
+            VerifyConvert(VSConstants.VSStd2KCmdID.CANCEL, VimKey.Escape, EditCommandKind.Cancel);
+        }
+
+        [Test]
+        public void PageUp()
+        {
+            VerifyConvert(VSConstants.VSStd2KCmdID.PAGEUP, VimKey.PageUp, EditCommandKind.CursorMovement);
+            VerifyConvert(VSConstants.VSStd2KCmdID.PAGEUP_EXT, VimKey.PageUp, EditCommandKind.CursorMovement);
+        }
+
+        [Test]
+        public void PageDown()
+        {
+            VerifyConvert(VSConstants.VSStd2KCmdID.PAGEDN, VimKey.PageDown, EditCommandKind.CursorMovement);
+            VerifyConvert(VSConstants.VSStd2KCmdID.PAGEDN_EXT, VimKey.PageDown, EditCommandKind.CursorMovement);
+        }
+
+        [Test]
+        public void Backspace()
+        {
+            VerifyConvert(VSConstants.VSStd2KCmdID.BACKSPACE, VimKey.Back, EditCommandKind.Backspace);
+        }
+
+
     }
 }

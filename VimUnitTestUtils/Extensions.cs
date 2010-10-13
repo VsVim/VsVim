@@ -333,6 +333,11 @@ namespace Vim.UnitTest
             return new SnapshotPoint(buffer.CurrentSnapshot, position);
         }
 
+        public static SnapshotPoint GetEndPoint(this ITextBuffer buffer)
+        {
+            return buffer.CurrentSnapshot.GetEndPoint();
+        }
+
         public static SnapshotSpan GetSpan(this ITextBuffer buffer, int start, int length)
         {
             return buffer.CurrentSnapshot.GetSpan(start, length);

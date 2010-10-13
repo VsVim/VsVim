@@ -91,6 +91,15 @@ namespace Vim.UnitTest.Mock
         }
 
         public static Mock<IVimBuffer> CreateVimBuffer(
+            ITextBuffer textBuffer,
+            MockRepository factory = null)
+        {
+            factory = factory ?? new MockRepository(MockBehavior.Strict);
+            var textView = CreateTextView(buffer: textBuffer, factory: factory);
+            return CreateVimBuffer(view: textView.Object, factory: factory);
+        }
+
+        public static Mock<IVimBuffer> CreateVimBuffer(
             ITextView view,
             string name = null,
             IVim vim = null,

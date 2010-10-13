@@ -23,6 +23,10 @@ namespace VsVim
     /// which is considered an edit then we simply return E_FAIL instead.  This causes the 
     /// message to be ignored and propagated up
     /// 
+    /// This class might seem surperfulous at first in the face of the VsKeyProcessor 
+    /// class.  That is a class of last resort.  Handling character input at that level 
+    /// is not guaranteed to be accurate because of input conversion issues.  Much better
+    /// to let VS or Windows to convert the input for us and handle it here or in TextInput
     /// </summary>
     internal sealed class VsFilterKeysAdapter : IVsFilterKeys
     {
@@ -30,23 +34,20 @@ namespace VsVim
         private const string FieldName = "_filterKeys";
 
         private readonly IVsFilterKeys _filterKeys;
-        private readonly IVsTextLines _textLines;
         private readonly IVsCodeWindow _codeWindow;
         private readonly IVimBuffer _buffer;
-        private readonly IEditorOptions _editorOptions;
+        private readonly IVsAdapter _vsAdapter;
 
         internal VsFilterKeysAdapter(
             IVsFilterKeys filterKeys,
             IVsCodeWindow codeWindow,
-            IVsTextLines textLines,
-            IEditorOptions editorOptions,
+            IVsAdapter vsAdapter,
             IVimBuffer buffer)
         {
             _filterKeys = filterKeys;
             _buffer = buffer;
-            _textLines = textLines;
+            _vsAdapter = vsAdapter;
             _codeWindow = codeWindow;
-            _editorOptions = editorOptions;
 
             _buffer.Closed += delegate { Uninstall(); };
         }
@@ -55,7 +56,7 @@ namespace VsVim
         {
             var hr = _filterKeys.TranslateAccelerator(msg, flags, out commandGroup, out command);
             if (ErrorHandler.Succeeded(hr)
-                && IsReadOnly()
+                && _vsAdapter.IsReadOnly(_buffer.TextBuffer)
                 && IsEditCommand(commandGroup, command))
             {
                 commandGroup = Guid.Empty;
@@ -64,27 +65,6 @@ namespace VsVim
             }
 
             return hr;
-        }
-
-        /// <summary>
-        /// Mimic the VsCodeWindowAdapter::IsReadOnly method.  We only want to intercept keys
-        /// when this is true
-        /// </summary>
-        internal bool IsReadOnly()
-        {
-            if (EditorOptionsUtil.GetOptionValueOrDefault(_editorOptions, DefaultTextViewOptions.ViewProhibitUserInputId, false))
-            {
-                return true;
-            }
-
-            uint flags;
-            if (ErrorHandler.Succeeded(_textLines.GetStateFlags(out flags))
-                && 0 != (flags & (uint)BUFFERSTATEFLAGS.BSF_USER_READONLY))
-            {
-                return true;
-            }
-
-            return false;
         }
 
         internal bool IsEditCommand(Guid commandGroup, uint commandId)
@@ -121,7 +101,6 @@ namespace VsVim
                 return true;
             }
 
-            var editorOptions = optionsFactory.GetOptions(buffer.TextView);
             var textLines = adapter.EditorAdapter.GetBufferAdapter(buffer.TextBuffer) as IVsTextLines;
             if (textLines == null)
             {
@@ -129,7 +108,7 @@ namespace VsVim
             }
 
             IVsCodeWindow codeWindow;
-            if (!adapter.TryGetCodeWindow(textView, out codeWindow) || textLines == null || editorOptions == null)
+            if (!adapter.TryGetCodeWindow(textView, out codeWindow))
             {
                 return false;
             }
@@ -151,7 +130,7 @@ namespace VsVim
                 return false;
             }
 
-            var filterKeysAdapter = new VsFilterKeysAdapter(oldValue, codeWindow, textLines, editorOptions, buffer);
+            var filterKeysAdapter = new VsFilterKeysAdapter(oldValue, codeWindow, adapter, buffer);
             field.SetValue(codeWindow, filterKeysAdapter);
             return true;
         }

@@ -877,7 +877,6 @@ type Setting = {
 module GlobalSettingNames = 
 
     let CaretOpacityName = "vsvimcaret"
-    let DoubleEscapeName = "vsvimdoubleescape"
     let HighlightSearchName = "hlsearch"
     let IgnoreCaseName = "ignorecase"
     let MagicName = "magic"
@@ -888,10 +887,10 @@ module GlobalSettingNames =
     let StartOfLineName = "startofline"
     let TabStopName = "tabstop"
     let TildeOpName = "tildeop"
+    let VisualBellName = "visualbell"
+    let VirtualEditName = "virtualedit"
     let VimRcName = "vimrc"
     let VimRcPathsName = "vimrcpaths"
-    let VirtualEditName = "virtualedit"
-    let VisualBellName = "visualbell"
 
 module LocalSettingNames =
     
@@ -933,12 +932,6 @@ and IVimGlobalSettings =
     /// Opacity of the caret.  This must be an integer between values 0 and 100 which
     /// will be converted into a double for the opacity of the caret
     abstract CaretOpacity : int with get, set
-
-    /// Affects behavior of <ESC> in Insert Mode.  <ESC> is overloaded some environments to be both 
-    /// an exit of Insert mode and a dismisser of intellisense.  The default behavior of insert 
-    /// mode is to dismiss intellisense and enter normal mode.  When this option is set it will 
-    /// just dismiss intellisense
-    abstract DoubleEscape:bool with get,set
 
     /// Whether or not to highlight previous search patterns matching cases
     abstract HighlightSearch : bool with get,set

@@ -1,12 +1,11 @@
-﻿using VsVim;
+﻿using System;
 using NUnit.Framework;
-using System;
 using Vim;
 
 namespace VsVim.UnitTest
 {
-    
-    
+
+
     /// <summary>
     ///This is a test class for EditCommandTest and is intended
     ///to contain all EditCommandTest Unit Tests
@@ -47,6 +46,7 @@ namespace VsVim.UnitTest
         {
             Assert.IsFalse(Create('a', EditCommandKind.Cancel).IsInput);
             Assert.IsFalse(Create('a', EditCommandKind.Unknown).IsInput);
+            Assert.IsFalse(Create('a', EditCommandKind.CursorMovement).IsInput);
         }
 
     }

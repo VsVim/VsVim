@@ -145,19 +145,42 @@ namespace VsVim
                     kind = EditCommandKind.Backspace;
                     break;
                 case VSConstants.VSStd2KCmdID.LEFT:
+                case VSConstants.VSStd2KCmdID.LEFT_EXT:
+                case VSConstants.VSStd2KCmdID.LEFT_EXT_COL:
                     ki = KeyInputUtil.VimKeyToKeyInput(VimKey.Left);
+                    kind = EditCommandKind.CursorMovement;
                     break;
                 case VSConstants.VSStd2KCmdID.RIGHT:
+                case VSConstants.VSStd2KCmdID.RIGHT_EXT:
+                case VSConstants.VSStd2KCmdID.RIGHT_EXT_COL:
                     ki = KeyInputUtil.VimKeyToKeyInput(VimKey.Right);
+                    kind = EditCommandKind.CursorMovement;
                     break;
                 case VSConstants.VSStd2KCmdID.UP:
+                case VSConstants.VSStd2KCmdID.UP_EXT:
+                case VSConstants.VSStd2KCmdID.UP_EXT_COL:
                     ki = KeyInputUtil.VimKeyToKeyInput(VimKey.Up);
+                    kind = EditCommandKind.CursorMovement;
                     break;
                 case VSConstants.VSStd2KCmdID.DOWN:
+                case VSConstants.VSStd2KCmdID.DOWN_EXT:
+                case VSConstants.VSStd2KCmdID.DOWN_EXT_COL:
                     ki = KeyInputUtil.VimKeyToKeyInput(VimKey.Down);
+                    kind = EditCommandKind.CursorMovement;
                     break;
                 case VSConstants.VSStd2KCmdID.TAB:
                     ki = KeyInputUtil.VimKeyToKeyInput(VimKey.Tab);
+                    kind = EditCommandKind.TypeChar;
+                    break;
+                case VSConstants.VSStd2KCmdID.PAGEDN:
+                case VSConstants.VSStd2KCmdID.PAGEDN_EXT:
+                    ki = KeyInputUtil.VimKeyToKeyInput(VimKey.PageDown);
+                    kind = EditCommandKind.CursorMovement;
+                    break;
+                case VSConstants.VSStd2KCmdID.PAGEUP:
+                case VSConstants.VSStd2KCmdID.PAGEUP_EXT:
+                    ki = KeyInputUtil.VimKeyToKeyInput(VimKey.PageUp);
+                    kind = EditCommandKind.CursorMovement;
                     break;
                 default:
                     break;
