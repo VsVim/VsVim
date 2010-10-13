@@ -236,6 +236,8 @@ type VimRegexFactory
         | '.' -> data.AppendChar '.'
         | '^' -> x.ConvertCharAsSpecial data c
         | '$' -> x.ConvertCharAsSpecial data c
+        | '[' -> x.ConvertCharAsSpecial data c
+        | ']' -> x.ConvertCharAsSpecial data c
         | _ -> data.AppendEscapedChar c
 
     /// Convert the given char in the nomagic setting
@@ -260,6 +262,12 @@ type VimRegexFactory
         | '(' -> x.ConvertCharAsSpecial data c 
         | ')' -> x.ConvertCharAsSpecial data c 
         | '|' -> x.ConvertCharAsSpecial data c
+        | '[' -> if isMagic then data.AppendEscapedChar c else x.ConvertCharAsSpecial data c
+        | ']' -> x.ConvertCharAsSpecial data c
+        | 'd' -> x.ConvertCharAsSpecial data c
+        | 'D' -> x.ConvertCharAsSpecial data c
+        | 'w' -> x.ConvertCharAsSpecial data c
+        | 'W' -> x.ConvertCharAsSpecial data c
         | '_' -> 
             match data.CharAtIndex with
             | None -> { data with IsBroken = true }
@@ -287,5 +295,11 @@ type VimRegexFactory
         | '$' -> if data.IsEndOfPattern then data.AppendChar '$' else data.AppendEscapedChar '$'
         | '<' -> data.AppendString @"\b"
         | '>' -> data.AppendString @"\b"
+        | '[' -> data.AppendChar '['
+        | ']' -> data.AppendChar ']'
+        | 'd' -> data.AppendString @"\d"
+        | 'D' -> data.AppendString @"\D"
+        | 'w' -> data.AppendString @"\w"
+        | 'W' -> data.AppendString @"\W"
         | _ -> data.AppendEscapedChar c
 

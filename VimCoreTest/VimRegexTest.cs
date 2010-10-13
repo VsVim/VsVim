@@ -649,5 +649,54 @@ namespace VimCore.Test
             VerifyNotMatches(VimRegexOptions.OrdinalCase, @"foo", "fOo");
         }
 
+        [Test]
+        public void CharacterSequence1()
+        {
+            VerifyMatches(@"[abc]", "a", "b", "c");
+            VerifyMatches(@"\M\[abc]", "a", "b", "c");
+        }
+
+        [Test]
+        [Description("Range support")]
+        public void CharacterSequence2()
+        {
+            VerifyMatches(@"[a-z]", "a", "b", "c", "z");
+            VerifyMatches(@"\M\[a-c]", "a", "b", "c");
+        }
+
+        [Test]
+        public void AtomDigits()
+        {
+            VerifyMatches(@"\d", "1", "2");
+            VerifyMatches(@"\M\d", "1", "2");
+            VerifyNotMatches(@"\d", "a");
+        }
+
+        [Test]
+        public void AtomNonDigits()
+        {
+            VerifyMatches(@"\D", "a", "b");
+            VerifyMatches(@"\M\D", "a", "b");
+            VerifyNotMatches(@"\M\D", "1", "2");
+        }
+
+        [Test]
+        public void AtomWordCharacter()
+        {
+            VerifyMatches(@"\w", "a", "A", "_", "1", "4");
+            VerifyMatches(@"\M\w", "a", "A", "_", "1", "4");
+            VerifyNotMatches(@"\w", "%");
+            VerifyNotMatches(@"\M\w", "%");
+        }
+
+        [Test]
+        public void AtomNonWordCharacter()
+        {
+            VerifyNotMatches(@"\W", "a", "A", "_", "1", "4");
+            VerifyNotMatches(@"\M\W", "a", "A", "_", "1", "4");
+            VerifyMatches(@"\W", "%");
+            VerifyMatches(@"\M\W", "%");
+        }
+
     }
 }
