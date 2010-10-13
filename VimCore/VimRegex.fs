@@ -268,6 +268,18 @@ type VimRegexFactory
         | 'D' -> x.ConvertCharAsSpecial data c
         | 'w' -> x.ConvertCharAsSpecial data c
         | 'W' -> x.ConvertCharAsSpecial data c
+        | 'x' -> x.ConvertCharAsSpecial data c
+        | 'X' -> x.ConvertCharAsSpecial data c
+        | 'o' -> x.ConvertCharAsSpecial data c
+        | 'O' -> x.ConvertCharAsSpecial data c
+        | 'h' -> x.ConvertCharAsSpecial data c
+        | 'H' -> x.ConvertCharAsSpecial data c
+        | 'a' -> x.ConvertCharAsSpecial data c
+        | 'A' -> x.ConvertCharAsSpecial data c
+        | 'l' -> x.ConvertCharAsSpecial data c
+        | 'L' -> x.ConvertCharAsSpecial data c
+        | 'u' -> x.ConvertCharAsSpecial data c
+        | 'U' -> x.ConvertCharAsSpecial data c
         | '_' -> 
             match data.CharAtIndex with
             | None -> { data with IsBroken = true }
@@ -301,5 +313,17 @@ type VimRegexFactory
         | 'D' -> data.AppendString @"\D"
         | 'w' -> data.AppendString @"\w"
         | 'W' -> data.AppendString @"\W"
+        | 'x' -> data.AppendString @"[0-9A-Fa-f]"
+        | 'X' -> data.AppendString @"[^0-9A-Fa-f]"
+        | 'o' -> data.AppendString @"[0-7]"
+        | 'O' -> data.AppendString @"[^0-7]"
+        | 'h' -> data.AppendString @"[A-Za-z_]"
+        | 'H' -> data.AppendString @"[^A-Za-z_]"
+        | 'a' -> data.AppendString @"[A-Za-z]"
+        | 'A' -> data.AppendString @"[^A-Za-z]"
+        | 'l' -> data.AppendString @"[a-z]"
+        | 'L' -> data.AppendString @"[^a-z]"
+        | 'u' -> data.AppendString @"[A-Z]"
+        | 'U' -> data.AppendString @"[^A-Z]"
         | _ -> data.AppendEscapedChar c
 

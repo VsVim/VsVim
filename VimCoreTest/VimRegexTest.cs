@@ -1,4 +1,5 @@
-﻿using NUnit.Framework;
+﻿using System.Linq;
+using NUnit.Framework;
 using Vim;
 using Vim.Extensions;
 
@@ -7,6 +8,9 @@ namespace VimCore.Test
     [TestFixture]
     public class VimRegexTest
     {
+        private static readonly string[] LowerCaseLetters = "abcdefghijklmopqrstuvwxyz".Select(x => x.ToString()).ToArray();
+        private static readonly string[] UpperCaseLetters = LowerCaseLetters.Select(x => CharUtil.ToUpper(x[0]).ToString()).ToArray();
+        private static readonly string[] Digits = "0123456789".Select(x => x.ToString()).ToArray();
         private IVimGlobalSettings _settings;
         private VimRegexFactory _factory;
 
@@ -563,14 +567,6 @@ namespace VimCore.Test
         }
 
         [Test]
-        [Ignore]
-        public void ReplaceCornerCases1()
-        {
-            VerifyReplace(@"a\?", "cat", "o", "cot");
-            VerifyReplace(@"a\=", "cat", "o", "cot");
-        }
-
-        [Test]
         [Description("Simple no-magic replace")]
         public void Replace1()
         {
@@ -698,5 +694,105 @@ namespace VimCore.Test
             VerifyMatches(@"\M\W", "%");
         }
 
+        [Test]
+        public void AtomHexDigit()
+        {
+            VerifyMatches(@"\x", "0123456789abcdef".Select(x => x.ToString()).ToArray());
+            VerifyNotMatches(@"\x", "%", "^", "g", "h");
+        }
+
+        [Test]
+        public void AtomNonHexDigit()
+        {
+            VerifyNotMatches(@"\X", "0123456789abcdef".Select(x => x.ToString()).ToArray());
+            VerifyMatches(@"\X", "%", "^", "g", "h");
+        }
+
+        [Test]
+        public void AtomOctal()
+        {
+            VerifyMatches(@"\o", "01234567".Select(x => x.ToString()).ToArray());
+            VerifyNotMatches(@"\o", "%", "^", "g", "h", "8", "9");
+        }
+
+        [Test]
+        public void AtomNonOctal()
+        {
+            VerifyNotMatches(@"\O", "01234567".Select(x => x.ToString()).ToArray());
+            VerifyMatches(@"\O", "%", "^", "g", "h", "8", "9");
+        }
+
+        [Test]
+        public void AtomHeadOfWord()
+        {
+            VerifyMatches(@"\h", LowerCaseLetters);
+            VerifyMatches(@"\h", UpperCaseLetters);
+            VerifyMatches(@"\h", "_");
+            VerifyNotMatches(@"\h", Digits);
+        }
+
+        [Test]
+        public void AtomNonHeadOfWord()
+        {
+            VerifyNotMatches(@"\H", LowerCaseLetters);
+            VerifyNotMatches(@"\H", UpperCaseLetters);
+            VerifyNotMatches(@"\H", "_");
+            VerifyMatches(@"\H", Digits);
+        }
+
+        [Test]
+        public void AtomAlphabeticChar()
+        {
+            VerifyMatches(@"\a", LowerCaseLetters);
+            VerifyMatches(@"\a", UpperCaseLetters);
+            VerifyNotMatches(@"\a", Digits);
+        }
+
+        [Test]
+        public void AtomNonAlphabeticChar()
+        {
+            VerifyNotMatches(@"\A", LowerCaseLetters);
+            VerifyNotMatches(@"\A", UpperCaseLetters);
+            VerifyMatches(@"\A", "_");
+            VerifyMatches(@"\A", Digits);
+        }
+
+        [Test]
+        public void AtomLowerLetters()
+        {
+            _settings.IgnoreCase = false;
+            VerifyMatches(@"\l", LowerCaseLetters);
+            VerifyNotMatches(@"\l", UpperCaseLetters);
+            VerifyNotMatches(@"\l", Digits);
+        }
+
+        [Test]
+        public void AtomNonLowerLetters()
+        {
+            _settings.IgnoreCase = false;
+            VerifyNotMatches(@"\L", LowerCaseLetters);
+            VerifyMatches(@"\L", UpperCaseLetters);
+            VerifyMatches(@"\L", "_");
+            VerifyMatches(@"\L", Digits);
+        }
+
+        [Test]
+        public void AtomUpperLetters()
+        {
+            _settings.IgnoreCase = false;
+            VerifyMatches(@"\u", UpperCaseLetters);
+            VerifyNotMatches(@"\u", LowerCaseLetters);
+            VerifyNotMatches(@"\u", Digits);
+        }
+
+        [Test]
+        public void AtomNonUpperLetters()
+        {
+            _settings.IgnoreCase = false;
+            VerifyNotMatches(@"\U", UpperCaseLetters);
+            VerifyMatches(@"\U", LowerCaseLetters);
+            VerifyMatches(@"\U", "_");
+            VerifyMatches(@"\U", Digits);
+        }
     }
 }
