@@ -82,7 +82,6 @@ namespace VimCore.Test
         [Test]
         public void Escape2()
         {
-            _globalSettings.SetupGet(x => x.DoubleEscape).Returns(false);
             _broker
                 .SetupGet(x => x.IsCompletionActive)
                 .Returns(true)
@@ -97,22 +96,6 @@ namespace VimCore.Test
             _factory.Verify();
         }
 
-        [Test, Description("Double escape will only dismiss intellisense")]
-        public void Escape3()
-        {
-            _globalSettings.SetupGet(x => x.DoubleEscape).Returns(true);
-            _broker
-                .SetupGet(x => x.IsCompletionActive)
-                .Returns(true)
-                .Verifiable();
-            _broker
-                .Setup(x => x.DismissDisplayWindows())
-                .Verifiable();
-            var res = _mode.Process(VimKey.Escape);
-            Assert.IsTrue(res.IsProcessed);
-            _factory.Verify();
-        }
-
         [Test]
         public void Control_OpenBracket1()
         {
@@ -124,7 +107,6 @@ namespace VimCore.Test
         [Test]
         public void Control_OpenBraket2()
         {
-            _globalSettings.SetupGet(x => x.DoubleEscape).Returns(false);
             _broker
                 .SetupGet(x => x.IsCompletionActive)
                 .Returns(true)

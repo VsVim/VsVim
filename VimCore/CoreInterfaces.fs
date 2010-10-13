@@ -885,7 +885,6 @@ module GlobalSettingNames =
     let VirtualEditName = "virtualedit"
     let SelectionName = "selection"
     let ScrollOffsetName = "scrolloff"
-    let DoubleEscapeName = "vsvimdoubleescape"
     let CaretOpacityName = "vsvimcaret"
     let VimRcName = "vimrc"
     let VimRcPathsName = "vimrcpaths"
@@ -955,12 +954,6 @@ and IVimGlobalSettings =
 
     /// Holds the Selection option
     abstract Selection : string with get,set
-
-    /// Affects behavior of <ESC> in Insert Mode.  <ESC> is overloaded some environments to be both 
-    /// an exit of Insert mode and a dismisser of intellisense.  The default behavior of insert 
-    /// mode is to dismiss intellisense and enter normal mode.  When this option is set it will 
-    /// just dismiss intellisense
-    abstract DoubleEscape:bool with get,set
 
     /// Retrieves the location of the loaded VimRC file.  Will be the empty string if the load 
     /// did not succeed or has not been tried

@@ -124,7 +124,6 @@ type internal GlobalSettings() =
             ( ScrollOffsetName, "so", NumberKind, NumberValue(0) );
             ( VimRcName, VimRcName, StringKind, StringValue(System.String.Empty) );
             ( VimRcPathsName, VimRcPathsName, StringKind, StringValue(System.String.Empty) );
-            ( DoubleEscapeName, DoubleEscapeName, ToggleKind, ToggleValue(false) );
             ( CaretOpacityName, CaretOpacityName, NumberKind, NumberValue(65) );
         |]
 
@@ -174,9 +173,6 @@ type internal GlobalSettings() =
         member x.ScrollOffset
             with get() = _map.GetNumberValue ScrollOffsetName
             and set value = _map.TrySetValue ScrollOffsetName (NumberValue(value)) |> ignore
-        member x.DoubleEscape
-            with get() = _map.GetBoolValue DoubleEscapeName
-            and set value = _map.TrySetValue DoubleEscapeName (ToggleValue(value)) |> ignore
         member x.VimRc 
             with get() = _map.GetStringValue VimRcName
             and set value = _map.TrySetValue VimRcName (StringValue(value)) |> ignore
