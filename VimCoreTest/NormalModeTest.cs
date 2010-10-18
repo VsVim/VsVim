@@ -78,7 +78,9 @@ namespace VimCore.Test
             _operations.SetupGet(x => x.TextView).Returns(_view);
             _operations.SetupGet(x => x.FoldManager).Returns(_foldManager.Object);
 
-            motionUtil = motionUtil ?? new TextViewMotionUtil(_view, new Vim.GlobalSettings());
+            motionUtil = motionUtil ?? new TextViewMotionUtil(_view, new Vim.LocalSettings(
+                    new Vim.GlobalSettings(),
+                    _view));
             var capture = new MotionCapture(_host.Object, _view, motionUtil, new MotionCaptureGlobalData());
             var runner = new CommandRunner(_view, _map, (IMotionCapture)capture, _statusUtil.Object);
             _modeRaw = new Vim.Modes.Normal.NormalMode(

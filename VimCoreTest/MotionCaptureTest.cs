@@ -655,6 +655,72 @@ namespace VimCore.Test
             ProcessComplete("[]");
             _factory.Verify();
         }
+
+        [Test]
+        public void Motion_QuotedString1()
+        {
+            _util
+                .Setup(x => x.QuotedString())
+                .Returns(FSharpOption.Create(CreateMotionData()))
+                .Verifiable();
+            ProcessComplete(@"a""");
+            _factory.Verify();
+        }
+
+        [Test]
+        public void Motion_QuotedString2()
+        {
+            _util
+                .Setup(x => x.QuotedString())
+                .Returns(FSharpOption.Create(CreateMotionData()))
+                .Verifiable();
+            ProcessComplete(@"a'");
+            _factory.Verify();
+        }
+
+        [Test]
+        public void Motion_QuotedString3()
+        {
+            _util
+                .Setup(x => x.QuotedString())
+                .Returns(FSharpOption.Create(CreateMotionData()))
+                .Verifiable();
+            ProcessComplete(@"a`");
+            _factory.Verify();
+        }
+
+        [Test]
+        public void Motion_QuotedStringContents1()
+        {
+            _util
+                .Setup(x => x.QuotedStringContents())
+                .Returns(FSharpOption.Create(CreateMotionData()))
+                .Verifiable();
+            ProcessComplete(@"i""");
+            _factory.Verify();
+        }
+
+        [Test]
+        public void Motion_QuotedStringContents2()
+        {
+            _util
+                .Setup(x => x.QuotedStringContents())
+                .Returns(FSharpOption.Create(CreateMotionData()))
+                .Verifiable();
+            ProcessComplete(@"i'");
+            _factory.Verify();
+        }
+
+        [Test]
+        public void Motion_QuotedStringContents3()
+        {
+            _util
+                .Setup(x => x.QuotedStringContents())
+                .Returns(FSharpOption.Create(CreateMotionData()))
+                .Verifiable();
+            ProcessComplete(@"i`");
+            _factory.Verify();
+        }
     }
 
 }

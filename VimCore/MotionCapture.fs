@@ -58,73 +58,244 @@ type internal MotionCapture
         let singleToKiSet = KeyNotationUtil.StringToKeyInput >> OneKeyInput
         let needCount = 
             seq { 
-                yield ("w", fun _ count -> _util.WordForward WordKind.NormalWord count |> Some)
-                yield ("W", fun _ count -> _util.WordForward  WordKind.BigWord count |> Some)
-                yield ("b", fun _ count -> _util.WordBackward WordKind.NormalWord count |> Some)
-                yield ("B", fun _ count -> _util.WordBackward WordKind.BigWord count |> Some)
-                yield ("$", fun _ count -> _util.EndOfLine count |> Some)
-                yield ("<End>", fun _ count -> _util.EndOfLine count |> Some)
-                yield ("^", fun _ count -> _util.FirstNonWhitespaceOnLine() |> Some)
-                yield ("0", fun _ count -> _util.BeginingOfLine() |> Some)
-                yield ("e", fun _ count -> _util.EndOfWord WordKind.NormalWord count |> Some)
-                yield ("E", fun _ count -> _util.EndOfWord WordKind.BigWord count |> Some)
-                yield ("h", fun _ count -> _util.CharLeft count)
-                yield ("<Left>", fun _ count -> _util.CharLeft count)
-                yield ("<Bs>", fun _ count -> _util.CharLeft count)
-                yield ("<C-h>", fun _ count -> _util.CharLeft count)
-                yield ("l", fun _ count -> _util.CharRight count)
-                yield ("<Right>", fun _ count -> _util.CharRight count)
-                yield ("<Space>", fun _ count -> _util.CharRight count)
-                yield ("k", fun _ count -> _util.LineUp count |> Some)
-                yield ("<Up>", fun _ count -> _util.LineUp count |> Some)
-                yield ("<C-p>", fun _ count -> _util.LineUp count |> Some)
-                yield ("j", fun _ count -> _util.LineDown count |> Some)
-                yield ("<Down>", fun _ count -> _util.LineDown count |> Some)
-                yield ("<C-n>", fun _ count -> _util.LineDown count |> Some)
-                yield ("<C-j>", fun _ count -> _util.LineDown count |> Some)
-                yield ("+", fun _ count -> _util.LineDownToFirstNonWhitespace count |> Some)
-                yield ("_", fun _ count -> _util.LineDownToFirstNonWhitespace (count-1) |> Some)
-                yield ("<C-m>", fun _ count -> _util.LineDownToFirstNonWhitespace count |> Some)
-                yield ("<Enter>", fun _ count -> _util.LineDownToFirstNonWhitespace count |> Some)
-                yield ("-", fun _ count -> _util.LineUpToFirstNonWhitespace count |> Some)
-                yield ("(", fun _ count -> _util.SentenceBackward count |> Some)
-                yield (")", fun _ count -> _util.SentenceForward count |> Some)
-                yield ("{", fun _ count -> _util.ParagraphBackward count |> Some)
-                yield ("}", fun _ count -> _util.ParagraphForward count |> Some)
-                yield ("g_", fun _ count -> _util.LastNonWhitespaceOnLine count |> Some)
-                yield ("aw", fun _ count -> _util.AllWord WordKind.NormalWord count |> Some)
-                yield ("aW", fun _ count -> _util.AllWord WordKind.BigWord count |> Some)
-                yield ("as", fun _ count -> _util.SentenceFullForward count |> Some)
-                yield ("ap", fun _ count -> _util.ParagraphFullForward count |> Some)
-                yield ("]]", fun motionUse count -> 
-                    let arg = 
-                        match motionUse with
-                        | MotionUse.AfterOperator -> MotionArgument.ConsiderCloseBrace
-                        | MotionUse.Movement -> MotionArgument.None
-                    _util.SectionForward arg count |> Some )
-                yield ("][", fun _ count -> _util.SectionForward MotionArgument.None count |> Some)
-                yield ("[[", fun _ count -> _util.SectionBackwardOrOpenBrace count |> Some)
-                yield ("[]", fun _ count -> _util.SectionBackwardOrCloseBrace count |> Some)
-            } |> Seq.map (fun (str,func) ->
+                yield (
+                    "w", 
+                    MotionFlags.CursorMovement,
+                    fun _ count -> _util.WordForward WordKind.NormalWord count |> Some)
+                yield (
+                    "W", 
+                    MotionFlags.CursorMovement,
+                    fun _ count -> _util.WordForward  WordKind.BigWord count |> Some)
+                yield (
+                    "b", 
+                    MotionFlags.CursorMovement,
+                    fun _ count -> _util.WordBackward WordKind.NormalWord count |> Some)
+                yield (
+                    "B", 
+                    MotionFlags.CursorMovement,
+                    fun _ count -> _util.WordBackward WordKind.BigWord count |> Some)
+                yield (
+                    "$", 
+                    MotionFlags.CursorMovement,
+                    fun _ count -> _util.EndOfLine count |> Some)
+                yield (
+                    "<End>", 
+                    MotionFlags.CursorMovement,
+                    fun _ count -> _util.EndOfLine count |> Some)
+                yield (
+                    "^", 
+                    MotionFlags.CursorMovement,
+                    fun _ count -> _util.FirstNonWhitespaceOnLine() |> Some)
+                yield (
+                    "0", 
+                    MotionFlags.CursorMovement,
+                    fun _ count -> _util.BeginingOfLine() |> Some)
+                yield (
+                    "e", 
+                    MotionFlags.CursorMovement,
+                    fun _ count -> _util.EndOfWord WordKind.NormalWord count |> Some)
+                yield (
+                    "E", 
+                    MotionFlags.CursorMovement,
+                    fun _ count -> _util.EndOfWord WordKind.BigWord count |> Some)
+                yield (
+                    "h", 
+                    MotionFlags.CursorMovement,
+                    fun _ count -> _util.CharLeft count)
+                yield (
+                    "<Left>", 
+                    MotionFlags.CursorMovement,
+                    fun _ count -> _util.CharLeft count)
+                yield (
+                    "<Bs>", 
+                    MotionFlags.CursorMovement,
+                    fun _ count -> _util.CharLeft count)
+                yield (
+                    "<C-h>", 
+                    MotionFlags.CursorMovement,
+                    fun _ count -> _util.CharLeft count)
+                yield (
+                    "l", 
+                    MotionFlags.CursorMovement,
+                    fun _ count -> _util.CharRight count)
+                yield (
+                    "<Right>", 
+                    MotionFlags.CursorMovement,
+                    fun _ count -> _util.CharRight count)
+                yield (
+                    "<Space>", 
+                    MotionFlags.CursorMovement,
+                    fun _ count -> _util.CharRight count)
+                yield (
+                    "k", 
+                    MotionFlags.CursorMovement,
+                    fun _ count -> _util.LineUp count |> Some)
+                yield (
+                    "<Up>", 
+                    MotionFlags.CursorMovement,
+                    fun _ count -> _util.LineUp count |> Some)
+                yield (
+                    "<C-p>", 
+                    MotionFlags.CursorMovement,
+                    fun _ count -> _util.LineUp count |> Some)
+                yield (
+                    "j", 
+                    MotionFlags.CursorMovement,
+                    fun _ count -> _util.LineDown count |> Some)
+                yield (
+                    "<Down>", 
+                    MotionFlags.CursorMovement,
+                    fun _ count -> _util.LineDown count |> Some)
+                yield (
+                    "<C-n>", 
+                    MotionFlags.CursorMovement,
+                    fun _ count -> _util.LineDown count |> Some)
+                yield (
+                    "<C-j>", 
+                    MotionFlags.CursorMovement,
+                    fun _ count -> _util.LineDown count |> Some)
+                yield (
+                    "+", 
+                    MotionFlags.CursorMovement,
+                    fun _ count -> _util.LineDownToFirstNonWhitespace count |> Some)
+                yield (
+                    "_", 
+                    MotionFlags.CursorMovement,
+                    fun _ count -> _util.LineDownToFirstNonWhitespace (count-1) |> Some)
+                yield (
+                    "<C-m>", 
+                    MotionFlags.CursorMovement,
+                    fun _ count -> _util.LineDownToFirstNonWhitespace count |> Some)
+                yield (
+                    "<Enter>", 
+                    MotionFlags.CursorMovement,
+                    fun _ count -> _util.LineDownToFirstNonWhitespace count |> Some)
+                yield (
+                    "-", 
+                    MotionFlags.CursorMovement,
+                    fun _ count -> _util.LineUpToFirstNonWhitespace count |> Some)
+                yield (
+                    "(", 
+                    MotionFlags.CursorMovement,
+                    fun _ count -> _util.SentenceBackward count |> Some)
+                yield (
+                    ")", 
+                    MotionFlags.CursorMovement,
+                    fun _ count -> _util.SentenceForward count |> Some)
+                yield (
+                    "{", 
+                    MotionFlags.CursorMovement,
+                    fun _ count -> _util.ParagraphBackward count |> Some)
+                yield (
+                    "}", 
+                    MotionFlags.CursorMovement,
+                    fun _ count -> _util.ParagraphForward count |> Some)
+                yield (
+                    "g_", 
+                    MotionFlags.CursorMovement,
+                    fun _ count -> _util.LastNonWhitespaceOnLine count |> Some)
+                yield (
+                    "aw", 
+                    MotionFlags.TextObjectSelection,
+                    fun _ count -> _util.AllWord WordKind.NormalWord count |> Some)
+                yield (
+                    "aW", 
+                    MotionFlags.TextObjectSelection,
+                    fun _ count -> _util.AllWord WordKind.BigWord count |> Some)
+                yield (
+                    "as", 
+                    MotionFlags.CursorMovement,
+                    fun _ count -> _util.SentenceFullForward count |> Some)
+                yield (
+                    "ap", 
+                    MotionFlags.CursorMovement,
+                    fun _ count -> _util.ParagraphFullForward count |> Some)
+                yield (
+                    "]]", 
+                    MotionFlags.CursorMovement,
+                    fun motionUse count -> 
+                        let arg = 
+                            match motionUse with
+                            | MotionUse.AfterOperator -> MotionArgument.ConsiderCloseBrace
+                            | MotionUse.Movement -> MotionArgument.None
+                        _util.SectionForward arg count |> Some )
+                yield (
+                    "][", 
+                    MotionFlags.CursorMovement,
+                    fun _ count -> _util.SectionForward MotionArgument.None count |> Some)
+                yield (
+                    "[[", 
+                    MotionFlags.CursorMovement,
+                    fun _ count -> _util.SectionBackwardOrOpenBrace count |> Some)
+                yield (
+                    "[]", 
+                    MotionFlags.CursorMovement,
+                    fun _ count -> _util.SectionBackwardOrCloseBrace count |> Some)
+                yield (
+                    "a\"", 
+                    MotionFlags.TextObjectSelection,
+                    fun _ _ -> _util.QuotedString() )
+                yield (
+                    "a'", 
+                    MotionFlags.TextObjectSelection,
+                    fun _ _ -> _util.QuotedString() )
+                yield (
+                    "a`", 
+                    MotionFlags.TextObjectSelection,
+                    fun _ _ -> _util.QuotedString() )
+                yield (
+                    "i\"", 
+                    MotionFlags.TextObjectSelection,
+                    fun _ _ -> _util.QuotedStringContents() )
+                yield (
+                    "i'", 
+                    MotionFlags.TextObjectSelection,
+                    fun _ _ -> _util.QuotedStringContents() )
+                yield (
+                    "i`", 
+                    MotionFlags.TextObjectSelection,
+                    fun _ _ -> _util.QuotedStringContents() )
+            } |> Seq.map (fun (str,flags,func) ->
                     let name = KeyNotationUtil.StringToKeyInputSet str
                     let func2 motionUse count =
                         let count = CommandUtil.CountOrDefault count
                         func motionUse count
-                    SimpleMotionCommand(name, func2)  )
+                    SimpleMotionCommand(name, flags, func2)  )
         let needCountOpt =
             seq {
-                yield ("G", fun countOpt -> _util.LineOrLastToFirstNonWhitespace countOpt |> Some)
-                yield ("H", fun countOpt -> _util.LineFromTopOfVisibleWindow countOpt |> Some)
-                yield ("L", fun countOpt -> _util.LineFromBottomOfVisibleWindow countOpt |> Some)
-                yield ("M", fun _ -> _util.LineInMiddleOfVisibleWindow () |> Some)
-                yield (";", fun count -> RepeatLastCharSearch SearchKind.Forward count )
-                yield (",", fun count -> RepeatLastCharSearch SearchKind.Backward count )
-                yield ( "gg", fun countOpt -> _util.LineOrFirstToFirstNonWhitespace countOpt |> Some)
-            } |> Seq.map (fun (name,func) -> 
+                yield (
+                    "G", 
+                    MotionFlags.CursorMovement,
+                    fun countOpt -> _util.LineOrLastToFirstNonWhitespace countOpt |> Some)
+                yield (
+                    "H", 
+                    MotionFlags.CursorMovement,
+                    fun countOpt -> _util.LineFromTopOfVisibleWindow countOpt |> Some)
+                yield (
+                    "L", 
+                    MotionFlags.CursorMovement,
+                    fun countOpt -> _util.LineFromBottomOfVisibleWindow countOpt |> Some)
+                yield (
+                    "M", 
+                    MotionFlags.CursorMovement,
+                    fun _ -> _util.LineInMiddleOfVisibleWindow () |> Some)
+                yield (
+                    ";", 
+                    MotionFlags.CursorMovement,
+                    fun count -> RepeatLastCharSearch SearchKind.Forward count )
+                yield (
+                    ",", 
+                    MotionFlags.CursorMovement,
+                    fun count -> RepeatLastCharSearch SearchKind.Backward count )
+                yield ( 
+                    "gg", 
+                    MotionFlags.CursorMovement,
+                    fun countOpt -> _util.LineOrFirstToFirstNonWhitespace countOpt |> Some)
+            } |> Seq.map (fun (name,flags,func) -> 
                 let kiSet = KeyNotationUtil.StringToKeyInputSet name
                 let func2 motionUse count =
                     func count
-                SimpleMotionCommand(kiSet, func2))
+                SimpleMotionCommand(kiSet, flags, func2))
 
         Seq.append needCount needCountOpt 
     
@@ -132,11 +303,23 @@ type internal MotionCapture
         let singleToKiSet = KeyNotationUtil.StringToKeyInput >> OneKeyInput
         let needCount = 
             seq {
-                yield ("f", true, fun () -> CharSearch _util.ForwardChar _util.BackwardChar)
-                yield ("t", true, fun () -> CharSearch _util.ForwardTillChar _util.BackwardTillChar)
-                yield ("F", true, fun () -> CharSearch _util.BackwardChar _util.ForwardChar)
-                yield ("T", true, fun () -> CharSearch _util.BackwardTillChar _util.ForwardTillChar)
-            } |> Seq.map (fun (ki,isMovement,func) -> ComplexMotionCommand(singleToKiSet ki, isMovement,func))
+                yield (
+                    "f", 
+                    MotionFlags.CursorMovement,
+                    fun () -> CharSearch _util.ForwardChar _util.BackwardChar)
+                yield (
+                    "t", 
+                    MotionFlags.CursorMovement,
+                    fun () -> CharSearch _util.ForwardTillChar _util.BackwardTillChar)
+                yield (
+                    "F", 
+                    MotionFlags.CursorMovement,
+                    fun () -> CharSearch _util.BackwardChar _util.ForwardChar)
+                yield (
+                    "T", 
+                    MotionFlags.CursorMovement,
+                    fun () -> CharSearch _util.BackwardTillChar _util.ForwardTillChar)
+            } |> Seq.map (fun (ki,flags,func) -> ComplexMotionCommand(singleToKiSet ki, flags,func))
         needCount
     
     let AllMotionsCore =
@@ -175,7 +358,7 @@ type internal MotionCapture
                 match Map.tryFind name MotionCommandsMap with
                 | Some(command) -> 
                     match command with 
-                    | SimpleMotionCommand(_,func) -> RunMotionFunction command func count
+                    | SimpleMotionCommand(_,_,func) -> RunMotionFunction command func count
                     | ComplexMotionCommand(_,_,func) -> RunComplexMotion command func count
                 | None -> 
                     let res = MotionCommandsMap |> Seq.filter (fun pair -> pair.Key.StartsWith name) 

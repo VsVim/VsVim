@@ -6,11 +6,22 @@ open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Operations
 
+type QuotedStringData =  {
+        LeadingWhiteSpace : SnapshotSpan
+        LeadingQuote : SnapshotPoint
+        Contents : SnapshotSpan
+        TrailingQuote : SnapshotPoint
+        TrailingWhiteSpace : SnapshotSpan 
+} with
+    
+    member x.FullSpan = SnapshotSpanUtil.Create x.LeadingWhiteSpace.Start x.TrailingWhiteSpace.End
 
 type internal TextViewMotionUtil 
     ( 
         _textView : ITextView,
-        _settings : IVimGlobalSettings) = 
+        _localSettings : IVimLocalSettings ) = 
+
+    let _settings = _localSettings.GlobalSettings
 
     /// Caret point in the view
     member x.StartPoint = TextViewUtil.GetCaretPoint _textView
@@ -111,6 +122,100 @@ type internal TextViewMotionUtil
             inner count caretPoint
         let span = SnapshotSpan(beginPoint,caretPoint)
         {Span=span; IsForward=false; MotionKind=MotionKind.Exclusive; OperationKind=OperationKind.CharacterWise; Column=Some 0}
+
+    member x.GetQuotedStringData () = 
+        let caretPoint,caretLine = TextViewUtil.GetCaretPointAndLine _textView
+
+        // Find the quoted data structure from a given point on the line 
+        let getData startPoint = 
+
+            // Find a quote from the given point.  This takes into account escaped quotes
+            // and will only return a non-escaped one
+            let findQuote point =
+                let rec inner point inEscape = 
+                    if point = caretLine.End then None
+                    else
+                        let c = SnapshotPointUtil.GetChar point
+                        if c = '\"' then
+                            if inEscape then inner (point.Add(1)) false 
+                            else Some point
+                        elif StringUtil.containsChar _localSettings.QuoteEscape c then 
+                            inner (point.Add(1)) true
+                        else
+                            inner (point.Add(1)) false
+                inner point false
+    
+            match findQuote startPoint with
+            | None -> None
+            | Some(firstQuote) ->
+                match findQuote (firstQuote.Add(1)) with
+                | None -> None
+                | Some(secondQuote) ->
+    
+                    let span = SnapshotSpanUtil.Create (SnapshotPointUtil.AddOne firstQuote) secondQuote
+                    let isWhiteSpace = SnapshotPointUtil.GetChar >> CharUtil.IsWhiteSpace
+
+                    // Calculate the leading whitespace span.  It includes the white space just
+                    // before the leading quote.  The quote is not included in the span
+                    let leadingSpan = 
+    
+                        let isPreviousWhiteSpace point = 
+                            if point = caretLine.Start then false
+                            else 
+                                match SnapshotPointUtil.TrySubtractOne point with
+                                | None -> false
+                                | Some(prev) -> prev |> isWhiteSpace
+    
+                        let rec inner start = 
+                            if isPreviousWhiteSpace start then start |> SnapshotPointUtil.SubtractOne |> inner
+                            else SnapshotSpanUtil.Create start firstQuote
+                        inner firstQuote
+
+                    // Calculate the trailing whitespace span
+                    let trailingSpan =
+                        
+                        let isNextWhiteSpace point = 
+                            match SnapshotPointUtil.TryAddOne point with
+                            | None -> false
+                            | Some(next) ->
+                                if next.Position >= caretLine.End.Position then false
+                                else isWhiteSpace next
+    
+                        let start = SnapshotPointUtil.AddOne secondQuote
+                        let rec inner endPoint =
+                            if isNextWhiteSpace endPoint then endPoint |> SnapshotPointUtil.AddOne |> inner
+                            elif endPoint = start then SnapshotSpanUtil.CreateEmpty start
+                            else 
+                                let endPoint = SnapshotPointUtil.AddOne endPoint
+                                SnapshotSpanUtil.Create start endPoint
+                        inner start
+
+                    {
+                        LeadingWhiteSpace = leadingSpan
+                        LeadingQuote = firstQuote
+                        Contents = span
+                        TrailingQuote = secondQuote
+                        TrailingWhiteSpace = trailingSpan } |> Some
+
+        // Holds all of the QuotedStringData for the given line.  This doesn't really 
+        // understand string infrastructure and will see two quoted strings as three.  
+        let all = 
+            seq {
+                let more = ref true
+                let cur = ref caretLine.Start
+                while more.Value do
+                    match getData cur.Value with
+                    | None -> more := false
+                    | Some(data) ->
+                        yield data
+                        cur := data.TrailingQuote 
+            }
+
+        // First search for the QuotedStringData who's FullSpan includes the caret 
+        // point 
+        match all |> Seq.tryFind (fun data -> data.FullSpan.Contains caretPoint) with
+        | Some(data) -> Some data
+        | None -> SeqUtil.tryHeadOnly all
 
     interface ITextViewMotionUtil with
         member x.TextView = _textView
@@ -378,5 +483,19 @@ type internal TextViewMotionUtil
 
         member x.SectionBackwardOrOpenBrace count = x.SectionBackwardOrOther count '{'
         member x.SectionBackwardOrCloseBrace count = x.SectionBackwardOrOther count '}'
+        member x.QuotedString () = 
+            match x.GetQuotedStringData() with
+            | None -> None 
+            | Some(data) -> 
+                let span = 
+                    if not data.TrailingWhiteSpace.IsEmpty then SnapshotSpanUtil.Create data.LeadingQuote data.TrailingWhiteSpace.End
+                    else SnapshotSpanUtil.Create data.LeadingWhiteSpace.Start data.TrailingWhiteSpace.Start
+                {Span=span; IsForward=true; MotionKind=MotionKind.Inclusive; OperationKind=OperationKind.CharacterWise; Column=None} |> Some
+        member x.QuotedStringContents () = 
+            match x.GetQuotedStringData() with
+            | None -> None 
+            | Some(data) ->
+                let span = data.Contents
+                {Span=span; IsForward=true; MotionKind=MotionKind.Inclusive; OperationKind=OperationKind.CharacterWise; Column=None} |> Some
 
     

@@ -23,6 +23,7 @@ namespace VimCore.Test
         private ITextBuffer _buffer;
         private ITextView _textView;
         private ITextSnapshot _snapshot;
+        private IVimLocalSettings _localSettings;
         private IVimGlobalSettings _settings;
         private TextViewMotionUtil _utilRaw;
         private ITextViewMotionUtil _util;
@@ -51,7 +52,8 @@ namespace VimCore.Test
             _snapshot = _buffer.CurrentSnapshot;
             _buffer.Changed += delegate { _snapshot = _buffer.CurrentSnapshot; };
             _settings = new Vim.GlobalSettings();
-            _utilRaw = new TextViewMotionUtil(_textView, _settings);
+            _localSettings = new LocalSettings(_settings, _textView);
+            _utilRaw = new TextViewMotionUtil(_textView, _localSettings);
             _util = _utilRaw;
         }
 
@@ -1133,6 +1135,115 @@ namespace VimCore.Test
             var data = _util.ParagraphBackward(1);
             Assert.IsTrue(data.Span.IsEmpty);
         }
+
+        [Test]
+        public void QuotedString1()
+        {
+            Create(@"""foo""");
+            var data = _util.QuotedString();
+            Assert.IsTrue(data.IsSome());
+            AssertData(data.Value, new SnapshotSpan(_snapshot, 0, 5), MotionKind.Inclusive, OperationKind.CharacterWise);
+        }
+
+        [Test]
+        [Description("Include the leading whitespace")]
+        public void QuotedString2()
+        {
+            Create(@"  ""foo""");
+            var data = _util.QuotedString();
+            Assert.IsTrue(data.IsSome());
+            AssertData(data.Value, new SnapshotSpan(_snapshot, 0, 7), MotionKind.Inclusive, OperationKind.CharacterWise);
+        }
+
+        [Test]
+        [Description("Include the trailing whitespace")]
+        public void QuotedString3()
+        {
+            Create(@"""foo""  ");
+            var data = _util.QuotedString();
+            Assert.IsTrue(data.IsSome());
+            AssertData(data.Value, new SnapshotSpan(_snapshot, 0, 7), MotionKind.Inclusive, OperationKind.CharacterWise);
+        }
+
+        [Test]
+        [Description("Favor the trailing whitespace over leading")]
+        public void QuotedString4()
+        {
+            Create(@"  ""foo""  ");
+            var data = _util.QuotedString();
+            Assert.IsTrue(data.IsSome());
+            AssertData(data.Value, new SnapshotSpan(_snapshot, 2, 7), MotionKind.Inclusive, OperationKind.CharacterWise);
+        }
+
+        [Test]
+        [Description("Ignore the escaped quotes")]
+        public void QuotedString5()
+        {
+            Create(@"""foo\""""");
+            var data = _util.QuotedString();
+            Assert.IsTrue(data.IsSome());
+            AssertData(data.Value, new SnapshotSpan(_snapshot, 0, 7), MotionKind.Inclusive, OperationKind.CharacterWise);
+        }
+
+        [Test]
+        [Description("Ignore the escaped quotes")]
+        public void QuotedString6()
+        {
+            Create(@"""foo(""""");
+            _localSettings.QuoteEscape = @"(";
+            var data = _util.QuotedString();
+            Assert.IsTrue(data.IsSome());
+            AssertData(data.Value, new SnapshotSpan(_snapshot, 0, 7), MotionKind.Inclusive, OperationKind.CharacterWise);
+        }
+
+        [Test]
+        public void QuotedString7()
+        {
+            Create(@"foo");
+            var data = _util.QuotedString();
+            Assert.IsTrue(data.IsNone());
+        }
+
+        [Test]
+        public void QuotedString8()
+        {
+            Create(@"""foo"" ""bar""");
+            var start = _snapshot.GetText().IndexOf('b');
+            _textView.MoveCaretTo(start);
+            var data = _util.QuotedString();
+            Assert.IsTrue(data.IsSome());
+            AssertData(data.Value, new SnapshotSpan(_snapshot, start - 2, 6), MotionKind.Inclusive, OperationKind.CharacterWise);
+        }
+
+        [Test]
+        public void QuotedStringContents1()
+        {
+            Create(@"""foo""");
+            var data = _util.QuotedStringContents();
+            Assert.IsTrue(data.IsSome());
+            AssertData(data.Value, new SnapshotSpan(_snapshot, 1, 3), MotionKind.Inclusive, OperationKind.CharacterWise);
+        }
+
+        [Test]
+        public void QuotedStringContents2()
+        {
+            Create(@" ""bar""");
+            var data = _util.QuotedStringContents();
+            Assert.IsTrue(data.IsSome());
+            AssertData(data.Value, new SnapshotSpan(_snapshot, 2, 3), MotionKind.Inclusive, OperationKind.CharacterWise);
+        }
+
+        [Test]
+        public void QuotedStringContents3()
+        {
+            Create(@"""foo"" ""bar""");
+            var start = _snapshot.GetText().IndexOf('b');
+            _textView.MoveCaretTo(start);
+            var data = _util.QuotedStringContents();
+            Assert.IsTrue(data.IsSome());
+            AssertData(data.Value, new SnapshotSpan(_snapshot, start, 3), MotionKind.Inclusive, OperationKind.CharacterWise);
+        }
+
     }
 
 }

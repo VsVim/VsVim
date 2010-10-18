@@ -13,6 +13,7 @@ namespace Vim.UnitTest.Mock
         }
 
         public int Scroll { get; set; }
+        public string QuoteEscape { get; set; }
         public IEnumerable<Setting> AllSettings
         {
             get { throw new NotImplementedException(); }

@@ -98,11 +98,16 @@ namespace Vim.UnitTest
                 func.ToFSharpFunc());
         }
 
-        internal static MotionCommand CreateSimpleMotion(string name, Func<MotionData> func)
+        internal static MotionCommand CreateSimpleMotion(
+            string name,
+            Func<MotionData> func,
+            MotionFlags? flags = null)
         {
+            var flagsRaw = flags ?? MotionFlags.CursorMovement;
             var commandName = KeyNotationUtil.StringToKeyInputSet(name);
             return MotionCommand.NewSimpleMotionCommand(
                 commandName,
+                flagsRaw,
                 FuncUtil.CreateMotionFunc(func));
         }
 

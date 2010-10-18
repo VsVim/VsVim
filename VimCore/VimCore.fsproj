@@ -92,6 +92,7 @@
     <Compile Include="SelectionChangeTracker.fs" />
     <Compile Include="FoldManager.fs" />
     <Compile Include="VimBuffer.fs" />
+    <Compile Include="TextViewMotionUtil.fsi" />
     <Compile Include="TextViewMotionUtil.fs" />
     <Compile Include="SearchService.fs" />
     <Compile Include="RegisterMap.fs" />

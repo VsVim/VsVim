@@ -103,4 +103,7 @@ module internal StringUtil =
             builder.Append(str) |> ignore )
         builder.ToString()
 
+    [<CompiledName("ContainsChar")>]
+    let containsChar (arg:string) (c:char) = arg.IndexOf(c) >= 0
+
 

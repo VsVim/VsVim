@@ -202,9 +202,10 @@ type internal LocalSettings
     
     static let LocalSettings =
         [|
-            ( ScrollName, "scr", NumberKind, NumberValue(25) );
-            ( NumberName, "nu", ToggleKind, ToggleValue(false) )
             ( CursorLineName, "cul", ToggleKind, ToggleValue(false) )
+            ( NumberName, "nu", ToggleKind, ToggleValue(false) )
+            ( ScrollName, "scr", NumberKind, NumberValue(25) )
+            ( QuoteEscapeName, "qe", StringKind, StringValue(@"\") )
         |]
 
     let _map = SettingsMap(LocalSettings, false)
@@ -247,12 +248,15 @@ type internal LocalSettings
             else _global.GetSetting settingName
 
         member x.GlobalSettings = _global
-        member x.Scroll 
-            with get() = _map.GetNumberValue ScrollName
-            and set value = _map.TrySetValue ScrollName (NumberValue(value)) |> ignore
         member x.CursorLine 
             with get() = _map.GetBoolValue CursorLineName
             and set value = _map.TrySetValue CursorLineName (ToggleValue(value)) |> ignore
+        member x.Scroll 
+            with get() = _map.GetNumberValue ScrollName
+            and set value = _map.TrySetValue ScrollName (NumberValue(value)) |> ignore
+        member x.QuoteEscape
+            with get() = _map.GetStringValue QuoteEscapeName
+            and set value = _map.TrySetValue QuoteEscapeName (StringValue(value)) |> ignore
 
         [<CLIEvent>]
         member x.SettingChanged = _map.SettingChanged

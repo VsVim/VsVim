@@ -188,6 +188,12 @@ type ITextViewMotionUtil =
     /// Backward a section in the editor or to a close brace
     abstract SectionBackwardOrCloseBrace : count:int -> MotionData
 
+    /// The quoted string including the quotes
+    abstract QuotedString : unit -> MotionData option
+
+    /// The quoted string excluding the quotes
+    abstract QuotedStringContents : unit -> MotionData option
+
 type ModeKind = 
     | Normal = 1
     | Insert = 2
@@ -466,6 +472,19 @@ type MotionUse =
     | Movement
     | AfterOperator
 
+/// Flags about specific motions
+[<RequireQualifiedAccess>]
+[<System.Flags>]
+type MotionFlags =
+
+    /// This type of motion can be used to move the cursor
+    | CursorMovement = 0x1 
+
+    /// Text object selection motions.  These can be used for cursor movement inside of 
+    /// Visual Mode but otherwise need to be used only after operators.  
+    /// :help text-objects
+    | TextObjectSelection = 0x2
+
 type MotionFunction = MotionUse -> int option -> MotionData option
 
 type ComplexMotionResult =
@@ -481,20 +500,25 @@ type MotionCommand =
     /// Simple motion which comprises of a single KeyInput and a function which given 
     /// a start point and count will produce the motion.  None is returned in the 
     /// case the motion is not valid
-    | SimpleMotionCommand of KeyInputSet * MotionFunction
+    | SimpleMotionCommand of KeyInputSet * MotionFlags * MotionFunction
 
     /// Complex motion commands take more than one KeyInput to complete.  For example 
     /// the f,t,F and T commands all require at least one additional input.  The bool
     /// in the middle of the tuple indicates whether or not the motion can be 
     /// used as a cursor movement operation  
-    | ComplexMotionCommand of KeyInputSet * bool * ( unit -> ComplexMotionResult )
+    | ComplexMotionCommand of KeyInputSet * MotionFlags * ( unit -> ComplexMotionResult )
 
     with
 
     member x.KeyInputSet = 
         match x with
-        | SimpleMotionCommand(name,_) -> name
+        | SimpleMotionCommand(name,_,_) -> name
         | ComplexMotionCommand(name,_,_) -> name
+
+    member x.MotionFlags =
+        match x with 
+        | SimpleMotionCommand(_,flags,_) -> flags
+        | ComplexMotionCommand(_,flags,_) -> flags
 
 type MotionRunData = {
     MotionCommand : MotionCommand;
@@ -894,9 +918,10 @@ module GlobalSettingNames =
 
 module LocalSettingNames =
     
-    let ScrollName = "scroll"
-    let NumberName = "number"
     let CursorLineName = "cursorline"
+    let NumberName = "number"
+    let ScrollName = "scroll"
+    let QuoteEscapeName = "quoteescape"
 
 /// Represent the setting supported by the Vim implementation.  This class **IS** mutable
 /// and the values will change.  Setting names are case sensitive but the exposed property
@@ -984,10 +1009,13 @@ and IVimLocalSettings =
     /// Return the handle to the global IVimSettings instance
     abstract GlobalSettings : IVimGlobalSettings
 
-    abstract Scroll : int with get,set
-
     /// Whether or not to highlight the line the cursor is on
     abstract CursorLine : bool with get,set
+
+    abstract Scroll : int with get,set
+
+    /// Which characters escape quotes for certain motion types
+    abstract QuoteEscape : string with get,set
 
     inherit IVimSettings
 

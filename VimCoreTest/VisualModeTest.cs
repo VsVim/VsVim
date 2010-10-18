@@ -73,7 +73,7 @@ namespace VimCore.Test
             var capture = new MotionCapture(
                 _host.Object,
                 _view.Object,
-                new TextViewMotionUtil(_view.Object, _bufferData.Object.Settings.GlobalSettings),
+                new TextViewMotionUtil(_view.Object, new Vim.LocalSettings(_bufferData.Object.Settings.GlobalSettings, _view.Object)),
                 new MotionCaptureGlobalData());
             var runner = new CommandRunner(_view.Object, _map, (IMotionCapture)capture, (new Mock<IStatusUtil>()).Object);
             _modeRaw = new Vim.Modes.Visual.VisualMode(_bufferData.Object, _operations.Object, kind, runner, capture, _tracker.Object);

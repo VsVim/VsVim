@@ -47,13 +47,12 @@ type internal CommandFactory( _operations : ICommonOperations, _capture : IMotio
             | Some(data) -> _operations.MoveCaretToMotionData data
             CommandResult.Completed NoSwitch
 
-        let filterMotionCommand command = 
+        let processMotionCommand command =
             match command with
-            | SimpleMotionCommand(name,func) -> 
+            | SimpleMotionCommand(name,_,func) -> 
                 let inner count _ =  func MotionUse.Movement count |> processResult
-                Command.SimpleCommand(name,CommandFlags.Movement,inner) |> Some
-            | ComplexMotionCommand(_,false,_) -> None
-            | ComplexMotionCommand(name,true,func) -> 
+                Command.SimpleCommand(name,CommandFlags.Movement,inner) 
+            | ComplexMotionCommand(name,_,func) -> 
                 
                 let coreFunc count _ = 
                     let rec inner result =  
@@ -72,11 +71,11 @@ type internal CommandFactory( _operations : ICommonOperations, _capture : IMotio
 
                     let initialResult = func()
                     inner initialResult
-                Command.LongCommand(name, CommandFlags.Movement, coreFunc) |> Some
+                Command.LongCommand(name, CommandFlags.Movement, coreFunc) 
 
         _capture.MotionCommands
-        |> Seq.map filterMotionCommand
-        |> SeqUtil.filterToSome
+        |> Seq.filter (fun command -> Utils.IsFlagSet command.MotionFlags MotionFlags.CursorMovement)
+        |> Seq.map processMotionCommand
 
     /// Returns the set of commands which move the cursor.  This includes all motions which are 
     /// valid as movements.  Several of these are overridden with custom movement behavior though.
