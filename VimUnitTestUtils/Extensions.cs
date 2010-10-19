@@ -259,6 +259,12 @@ namespace Vim.UnitTest
             }
         }
 
+        public static Register GetRegister(this IVimBuffer buffer, char c)
+        {
+            var name = RegisterNameUtil.CharToRegister(c).Value;
+            return buffer.RegisterMap.GetRegister(name);
+        }
+
         #endregion
 
         #region ITextView
@@ -455,6 +461,12 @@ namespace Vim.UnitTest
         public static SnapshotPoint GetCaretPoint(this ITextView view)
         {
             return view.Caret.Position.BufferPosition;
+        }
+
+        public static Register GetRegister(this IRegisterMap map, char c)
+        {
+            var name = RegisterNameUtil.CharToRegister(c).Value;
+            return map.GetRegister(name);
         }
 
     }

@@ -796,7 +796,8 @@ module EditorOptionsUtil =
     /// Get the option value if it exists
     let GetOptionValue (opts:IEditorOptions) (key:EditorOptionKey<'a>) =
         try
-            opts.GetOptionValue(key) |> Some
+            if opts.IsOptionDefined(key, false) then opts.GetOptionValue(key) |> Some
+            else None
         with
             | :? System.ArgumentException-> None
             | :? System.InvalidOperationException -> None

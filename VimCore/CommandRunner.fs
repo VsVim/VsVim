@@ -69,9 +69,12 @@ type internal CommandRunner
     member private x.WaitForRegister() = 
 
         let inner (ki:KeyInput) = 
-            let reg = _registerMap.GetRegister ki.Char
-            _data <- { _data with Register = reg }
-            NeedMore x.RunCheckForCountAndRegister
+            match RegisterNameUtil.CharToRegister ki.Char with
+            | None -> NoMatchingCommand
+            | Some(name) ->
+                let reg = _registerMap.GetRegister name
+                _data <- { _data with Register = reg }
+                NeedMore x.RunCheckForCountAndRegister
 
         _data <- {_data with State = NotEnoughInput }
         NeedMore inner

@@ -67,7 +67,7 @@ namespace Vim.UnitTest.Mock
             throw new NotImplementedException();
         }
 
-        public Register GetRegister(char value)
+        public Register GetRegister(RegisterName name)
         {
             throw new NotImplementedException();
         }

@@ -1,15 +1,10 @@
 ﻿using System;
-using System.Text;
-using System.Collections.Generic;
 using System.Linq;
+using Microsoft.VisualStudio.Text;
+using Microsoft.VisualStudio.Text.Editor;
 using NUnit.Framework;
 using Vim;
-using Microsoft.VisualStudio.Text;
-using System.Windows.Input;
-using System.Windows.Media;
-using Microsoft.VisualStudio.Text.Editor;
 using Vim.UnitTest;
-using Moq;
 
 namespace VimCore.Test
 {
@@ -37,7 +32,7 @@ namespace VimCore.Test
         [SetUp]
         public void Init()
         {
-            CreateBuffer(s_lines) ;
+            CreateBuffer(s_lines);
         }
 
         #region Misc
@@ -108,7 +103,7 @@ namespace VimCore.Test
         {
             m_buffer.Process("yy");
             var tss = m_view.TextSnapshot;
-            var reg = m_buffer.GetRegister(RegisterUtil.DefaultName);
+            var reg = m_buffer.GetRegister(RegisterName.Unnamed);
             Assert.AreEqual(tss.Lines.ElementAt(0).GetTextIncludingLineBreak(), reg.StringValue);
         }
 
@@ -120,7 +115,7 @@ namespace VimCore.Test
         {
             m_buffer.Process("2yy");
             var tss = m_view.TextSnapshot;
-            var reg = m_buffer.GetRegister(RegisterUtil.DefaultName);
+            var reg = m_buffer.GetRegister(RegisterName.Unnamed);
             var span = new SnapshotSpan(
                 tss.GetLineFromLineNumber(0).Start,
                 tss.GetLineFromLineNumber(1).EndIncludingLineBreak);
@@ -138,7 +133,7 @@ namespace VimCore.Test
             var last = tss.GetLineFromLineNumber(tss.Lines.Count() - 1);
             m_view.Caret.MoveTo(last.Start);
             m_buffer.Process("2yy");
-            var reg = m_buffer.GetRegister(RegisterUtil.DefaultName);
+            var reg = m_buffer.GetRegister(RegisterName.Unnamed);
             Assert.AreEqual(last.GetTextIncludingLineBreak(), reg.StringValue);
         }
 
@@ -150,7 +145,7 @@ namespace VimCore.Test
         {
             m_view.Caret.MoveTo(new SnapshotPoint(m_view.TextSnapshot, 0));
             m_buffer.Process("yw");
-            var reg = m_buffer.GetRegister(RegisterUtil.DefaultName);
+            var reg = m_buffer.GetRegister(RegisterName.Unnamed);
             Assert.AreEqual("summary ", reg.StringValue);
         }
 
@@ -174,7 +169,7 @@ namespace VimCore.Test
         {
             m_view.Caret.MoveTo(new SnapshotPoint(m_view.TextSnapshot, 0));
             m_buffer.Process("y2w");
-            var reg = m_buffer.GetRegister(RegisterUtil.DefaultName);
+            var reg = m_buffer.GetRegister(RegisterName.Unnamed);
             Assert.AreEqual("summary description ", reg.StringValue);
         }
 
@@ -186,7 +181,7 @@ namespace VimCore.Test
         {
             m_view.Caret.MoveTo(new SnapshotPoint(m_view.TextSnapshot, 0));
             m_buffer.Process("2yw");
-            var reg = m_buffer.GetRegister(RegisterUtil.DefaultName);
+            var reg = m_buffer.GetRegister(RegisterName.Unnamed);
             Assert.AreEqual("summary description ", reg.StringValue);
         }
 
@@ -197,7 +192,7 @@ namespace VimCore.Test
             m_view.Caret.MoveTo(new SnapshotPoint(m_view.TextSnapshot, 0));
             var text = m_view.TextSnapshot.GetLineFromLineNumber(0).GetTextIncludingLineBreak();
             m_buffer.Process("dd");
-            var reg = m_buffer.GetRegister(RegisterUtil.DefaultName);
+            var reg = m_buffer.GetRegister(RegisterName.Unnamed);
             Assert.AreEqual(text, reg.StringValue);
         }
 
@@ -210,7 +205,7 @@ namespace VimCore.Test
             CreateBuffer(s_lines);
             m_view.Caret.MoveTo(new SnapshotPoint(m_view.TextSnapshot, 8));
             m_buffer.Process("dw");
-            var reg = m_buffer.GetRegister(RegisterUtil.DefaultName);
+            var reg = m_buffer.GetRegister(RegisterName.Unnamed);
             Assert.AreEqual("description ", reg.StringValue);
         }
 
@@ -235,7 +230,7 @@ namespace VimCore.Test
         {
             CreateBuffer("how is", "it going");
             m_view.Caret.MoveTo(new SnapshotPoint(m_view.TextSnapshot, 0));
-            m_buffer.GetRegister(RegisterUtil.DefaultName).UpdateValue("hey");
+            m_buffer.GetRegister(RegisterName.Unnamed).UpdateValue("hey");
             m_buffer.Process("p");
             Assert.AreEqual("hheyow is", m_view.TextSnapshot.GetLineFromLineNumber(0).GetText());
         }
@@ -245,7 +240,7 @@ namespace VimCore.Test
         {
             CreateBuffer("how is", "it going");
             m_view.Caret.MoveTo(new SnapshotPoint(m_view.TextSnapshot, 0));
-            m_buffer.GetRegister(RegisterUtil.DefaultName).UpdateValue("hey");
+            m_buffer.GetRegister(RegisterName.Unnamed).UpdateValue("hey");
             m_buffer.Process("P");
             Assert.AreEqual("heyhow is", m_view.TextSnapshot.GetLineFromLineNumber(0).GetText());
         }
@@ -255,7 +250,7 @@ namespace VimCore.Test
         {
             CreateBuffer("how is", "it going");
             m_view.Caret.MoveTo(new SnapshotPoint(m_view.TextSnapshot, 0));
-            m_buffer.GetRegister(RegisterUtil.DefaultName).UpdateValue("hey");
+            m_buffer.GetRegister(RegisterName.Unnamed).UpdateValue("hey");
             m_buffer.Process("2P");
             Assert.AreEqual("heyheyhow is", m_view.TextSnapshot.GetLineFromLineNumber(0).GetText());
         }
@@ -303,7 +298,7 @@ namespace VimCore.Test
             Assert.IsTrue(point.IsInVirtualSpace);
             Assert.AreEqual(2, point.VirtualSpaces);
         }
- 
+
         [Test]
         public void TestChar_x_1()
         {

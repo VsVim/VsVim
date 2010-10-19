@@ -46,6 +46,10 @@ namespace VsVim.UnitTest
             var buffer = _factory.Create<ITextBuffer>();
             var editorOptions = _editorOptionsFactory.MakeOptions(buffer.Object, _factory);
             editorOptions
+                .Setup(x => x.IsOptionDefined<bool>(DefaultTextViewOptions.ViewProhibitUserInputId, false))
+                .Returns(true)
+                .Verifiable();
+            editorOptions
                 .Setup(x => x.GetOptionValue<bool>(DefaultTextViewOptions.ViewProhibitUserInputId))
                 .Throws(new ArgumentException())
                 .Verifiable();
@@ -59,6 +63,10 @@ namespace VsVim.UnitTest
         {
             var buffer = _factory.Create<ITextBuffer>();
             var editorOptions = _editorOptionsFactory.MakeOptions(buffer.Object, _factory);
+            editorOptions
+                .Setup(x => x.IsOptionDefined<bool>(DefaultTextViewOptions.ViewProhibitUserInputId, false))
+                .Returns(true)
+                .Verifiable();
             editorOptions
                 .Setup(x => x.GetOptionValue<bool>(DefaultTextViewOptions.ViewProhibitUserInputId))
                 .Throws(new InvalidOperationException())
@@ -74,6 +82,10 @@ namespace VsVim.UnitTest
             var buffer = _factory.Create<ITextBuffer>();
             var editorOptions = _editorOptionsFactory.MakeOptions(buffer.Object, _factory);
             editorOptions
+                .Setup(x => x.IsOptionDefined<bool>(DefaultTextViewOptions.ViewProhibitUserInputId, false))
+                .Returns(true)
+                .Verifiable();
+            editorOptions
                 .Setup(x => x.GetOptionValue<bool>(DefaultTextViewOptions.ViewProhibitUserInputId))
                 .Returns(true)
                 .Verifiable();
@@ -86,6 +98,10 @@ namespace VsVim.UnitTest
         {
             var buffer = _factory.Create<ITextBuffer>();
             var editorOptions = _editorOptionsFactory.MakeOptions(buffer.Object, _factory);
+            editorOptions
+                .Setup(x => x.IsOptionDefined<bool>(DefaultTextViewOptions.ViewProhibitUserInputId, false))
+                .Returns(true)
+                .Verifiable();
             editorOptions
                 .Setup(x => x.GetOptionValue<bool>(DefaultTextViewOptions.ViewProhibitUserInputId))
                 .Returns(false)
@@ -105,6 +121,10 @@ namespace VsVim.UnitTest
             var buffer = _factory.Create<ITextBuffer>();
             var editorOptions = _editorOptionsFactory.MakeOptions(buffer.Object, _factory);
             editorOptions
+                .Setup(x => x.IsOptionDefined<bool>(DefaultTextViewOptions.ViewProhibitUserInputId, false))
+                .Returns(true)
+                .Verifiable();
+            editorOptions
                 .Setup(x => x.GetOptionValue<bool>(DefaultTextViewOptions.ViewProhibitUserInputId))
                 .Returns(false)
                 .Verifiable();
@@ -122,6 +142,10 @@ namespace VsVim.UnitTest
         {
             var buffer = _factory.Create<ITextBuffer>();
             var editorOptions = _editorOptionsFactory.MakeOptions(buffer.Object, _factory);
+            editorOptions
+                .Setup(x => x.IsOptionDefined<bool>(DefaultTextViewOptions.ViewProhibitUserInputId, false))
+                .Returns(true)
+                .Verifiable();
             editorOptions
                 .Setup(x => x.GetOptionValue<bool>(DefaultTextViewOptions.ViewProhibitUserInputId))
                 .Returns(false)

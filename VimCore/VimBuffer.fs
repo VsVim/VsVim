@@ -205,7 +205,7 @@ type internal VimBuffer
         member x.AllModes = _modeMap.Modes
         member x.Settings = _settings
         member x.RegisterMap = _vim.RegisterMap
-        member x.GetRegister c = _vim.RegisterMap.GetRegister c
+        member x.GetRegister name = _vim.RegisterMap.GetRegister name
         member x.GetMode kind = _modeMap.GetMode kind
         member x.SwitchMode kind arg = x.SwitchMode kind arg
         member x.SwitchPreviousMode () = _modeMap.SwitchPreviousMode()

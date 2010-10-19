@@ -71,6 +71,7 @@ namespace VimCore.Test
             _options = new Mock<IEditorOptions>(MockBehavior.Strict);
             _options.Setup(x => x.GetOptionValue<int>(It.IsAny<string>())).Throws(new ArgumentException());
             _options.Setup(x => x.GetOptionValue<int>(It.IsAny<EditorOptionKey<int>>())).Throws(new ArgumentException());
+            _options.Setup(x => x.IsOptionDefined<int>(It.IsAny<EditorOptionKey<int>>(), false)).Returns(true);
             _jumpList = new Mock<IJumpList>(MockBehavior.Strict);
             _searchService = new SearchService(EditorUtil.FactoryService.textSearchService, _globalSettings.Object);
             _search = new Mock<IIncrementalSearch>(MockBehavior.Strict);

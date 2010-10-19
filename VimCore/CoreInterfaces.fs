@@ -738,14 +738,11 @@ type IJumpList =
     /// Add a given SnapshotPoint to the jump list
     abstract Add : SnapshotPoint -> unit
 
-
 /// Map containing the various VIM registers
 type IRegisterMap = 
-    abstract DefaultRegisterName : char
     abstract DefaultRegister : Register
-    abstract RegisterNames : seq<char>
-    abstract IsRegisterName : char -> bool
-    abstract GetRegister : char -> Register
+    abstract RegisterNames : seq<RegisterName>
+    abstract GetRegister : RegisterName -> Register
     
 /// Result of an individual search
 type SearchResult =
@@ -1109,7 +1106,7 @@ and IVimBuffer =
     abstract Settings : IVimLocalSettings
     abstract RegisterMap : IRegisterMap
 
-    abstract GetRegister : char -> Register
+    abstract GetRegister : RegisterName -> Register
 
     /// Get the specified Mode
     abstract GetMode : ModeKind -> IMode

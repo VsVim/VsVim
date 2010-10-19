@@ -46,10 +46,10 @@ module internal CommandParseUtil =
     /// specified
     let SkipRegister (map:IRegisterMap) (cmd:char list) =
         let inner head tail =
-            match System.Char.IsDigit(head),map.IsRegisterName head with
+            match System.Char.IsDigit(head),RegisterNameUtil.CharToRegister head with
             | true,_ -> (map.DefaultRegister, cmd)
-            | false,true -> (map.GetRegister head, tail)
-            | false,false -> (map.DefaultRegister, cmd)
+            | false,Some(name)-> (map.GetRegister name, tail)
+            | false,None -> (map.DefaultRegister, cmd)
         ListUtil.tryProcessHead cmd inner (fun () -> (map.DefaultRegister, cmd))
 
     let ParseKeyRemapOptions (rest:char list) =

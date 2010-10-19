@@ -18,7 +18,6 @@ namespace Vim.UnitTest.Mock
         {
             var mock = new Mock<IRegisterMap>();
             var reg = new Register('_');
-            mock.Setup(x => x.DefaultRegisterName).Returns('_');
             mock.Setup(x => x.DefaultRegister).Returns(reg);
             return mock;
         }

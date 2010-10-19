@@ -2,15 +2,16 @@
 using NUnit.Framework;
 using Vim;
 using Vim.Extensions;
+using Vim.UnitTest;
 
 namespace VimCore.Test
 {
     [TestFixture]
     public class VimRegexTest
     {
-        private static readonly string[] LowerCaseLetters = "abcdefghijklmopqrstuvwxyz".Select(x => x.ToString()).ToArray();
-        private static readonly string[] UpperCaseLetters = LowerCaseLetters.Select(x => CharUtil.ToUpper(x[0]).ToString()).ToArray();
-        private static readonly string[] Digits = "0123456789".Select(x => x.ToString()).ToArray();
+        private static readonly string[] LowerCaseLetters = TestConstants.LowerCaseLetters.Select(x => x.ToString()).ToArray();
+        private static readonly string[] UpperCaseLetters = TestConstants.UpperCaseLetters.Select(x => x.ToString()).ToArray();
+        private static readonly string[] Digits = TestConstants.Digits.Select(x => x.ToString()).ToArray();
         private IVimGlobalSettings _settings;
         private VimRegexFactory _factory;
 
