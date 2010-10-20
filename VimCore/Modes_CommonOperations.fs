@@ -46,7 +46,7 @@ type internal CommonOperations ( _data : OperationsData ) =
     member private x.DeleteBlock col (reg:Register) =
         let data = StringData.OfNormalizedSnasphotSpanCollection col
         let value = {Value=data; MotionKind=MotionKind.Inclusive;OperationKind=OperationKind.CharacterWise}
-        reg.UpdateValue value
+        reg.Value <- value
         use edit = _textView.TextBuffer.CreateEdit()
         col |> Seq.iter (fun span -> edit.Delete(span.Span) |> ignore)
         edit.Apply() |> ignore
@@ -55,7 +55,7 @@ type internal CommonOperations ( _data : OperationsData ) =
         let data = span |> SnapshotSpanUtil.GetText |> StringData.Simple
         let tss = span.Snapshot
         let regValue = {Value=data ;MotionKind=motionKind;OperationKind=opKind}
-        reg.UpdateValue(regValue) 
+        reg.Value <- regValue 
         tss.TextBuffer.Delete(span.Span)
 
     member x.ShiftRightCore multiplier (col:SnapshotSpan seq) = 
@@ -222,11 +222,11 @@ type internal CommonOperations ( _data : OperationsData ) =
         member x.YankText text motion operation (reg:Register) =
             let data = StringData.Simple text
             let regValue = {Value=data;MotionKind = motion; OperationKind = operation};
-            reg.UpdateValue (regValue)
+            reg.Value <- regValue
 
         member x.Yank (span:SnapshotSpan) motion operation (reg:Register) =
             let regValue = {Value=StringData.OfSpan span;MotionKind = motion; OperationKind = operation};
-            reg.UpdateValue (regValue)
+            reg.Value <- regValue
         
         member x.PasteAfter point text opKind = 
             let buffer = SnapshotPointUtil.GetBuffer point

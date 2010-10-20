@@ -266,17 +266,17 @@ type internal VisualMode
                     None,
                     (fun _ (reg:Register) span -> 
                         let data = StringData.OfSpan span
-                        reg.UpdateValue { Value = data; MotionKind = _motionKind; OperationKind = _operationKind } ),
+                        reg.Value <- { Value = data; MotionKind = _motionKind; OperationKind = _operationKind } ),
                     (fun _ (reg:Register) col -> 
                         let data = StringData.OfNormalizedSnasphotSpanCollection col
-                        reg.UpdateValue { Value = data; MotionKind = _motionKind; OperationKind = _operationKind } ))
+                        reg.Value <- { Value = data; MotionKind = _motionKind; OperationKind = _operationKind } ))
                 yield (
                     "Y",
                     CommandFlags.ResetCaret,
                     None,
                     (fun _ (reg:Register) span -> 
                         let data = span |> SnapshotSpanUtil.ExtendToFullLineIncludingLineBreak |> StringData.OfSpan 
-                        reg.UpdateValue { Value = data; MotionKind = _motionKind; OperationKind = OperationKind.LineWise } ),
+                        reg.Value <- { Value = data; MotionKind = _motionKind; OperationKind = OperationKind.LineWise } ),
                     (fun _ (reg:Register) col -> 
                         let data = 
                             let normal() = col |> Seq.map SnapshotSpanUtil.ExtendToFullLine |> StringData.OfSeq 
@@ -284,7 +284,7 @@ type internal VisualMode
                             | VisualKind.Character -> normal()
                             | VisualKind.Line -> normal()
                             | VisualKind.Block -> StringData.OfNormalizedSnasphotSpanCollection col
-                        reg.UpdateValue { Value = data; MotionKind = _motionKind; OperationKind = OperationKind.LineWise} ))
+                        reg.Value <- { Value = data; MotionKind = _motionKind; OperationKind = OperationKind.LineWise} ))
             }
             |> Seq.map (fun (str,flags,mode,funcNormal,funcBlock) ->
                 let kiSet = KeyNotationUtil.StringToKeyInputSet str

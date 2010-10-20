@@ -143,6 +143,7 @@
     <Compile Include="CommandRunnerTest.cs" />
     <Compile Include="CommandDefaultOperationsTest.cs" />
     <Compile Include="RegisterNameTest.cs" />
+    <Compile Include="RegisterTest.cs" />
     <Compile Include="VimRegexTest.cs" />
     <Compile Include="VirtualSnapshotPointUtilTest.cs" />
     <Compile Include="MotionUtilTest.cs" />

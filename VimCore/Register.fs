@@ -390,25 +390,33 @@ type RegisterValue = {
 
     static member CreateLineWise d = { Value = d; MotionKind=MotionKind.Inclusive; OperationKind=OperationKind.LineWise }
 
-/// Represents one of the register is Vim 
-type Register( _name : RegisterName ) = 
+/// Backing of a register value
+type internal IRegisterValueBacking = 
+    abstract Value : RegisterValue with get,set
 
-    let mutable _value = { Value= StringData.Simple StringUtil.empty; MotionKind=MotionKind.Inclusive; OperationKind=OperationKind.CharacterWise}
-    let _valueChanged = Event<RegisterValue*RegisterValue>()
+type internal DefaultRegisterValueBacking() = 
+    let mutable _value = { Value=StringData.Simple StringUtil.empty; MotionKind=MotionKind.Inclusive; OperationKind=OperationKind.LineWise }
+    interface IRegisterValueBacking with
+        member x.Value 
+            with get() = _value
+            and set value = _value <- value
+
+/// Represents one of the register is Vim 
+type Register
+    internal 
+    ( 
+        _name : RegisterName,
+        _valueBacking : IRegisterValueBacking ) = 
 
     new (c:char) =
         let name = RegisterNameUtil.CharToRegister c |> Option.get
-        Register(name)
+        Register(name, DefaultRegisterValueBacking() :> IRegisterValueBacking )
+
+    new (name) = Register(name, DefaultRegisterValueBacking() :> IRegisterValueBacking )
 
     member x.Name = _name
-    member x.StringValue = _value.Value.String
-    member x.Value = _value
-    member x.UpdateValue value = 
-        let old = _value
-        _value <- value
-        _valueChanged.Trigger (old,value)
-
-    /// Raised when the Value is updated
-    [<CLIEvent>]
-    member x.ValueChanged : IEvent<RegisterValue*RegisterValue> = _valueChanged.Publish
+    member x.StringValue = _valueBacking.Value.Value.String
+    member x.Value 
+        with get () =  _valueBacking.Value
+        and set value = _valueBacking.Value <- value
 

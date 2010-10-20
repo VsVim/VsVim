@@ -6,7 +6,7 @@ type internal RegisterMap (_map: Map<RegisterName,Register> ) =
     new() = 
         let map = 
             RegisterNameUtil.RegisterNames
-            |> Seq.map (fun n -> n,Register(n))
+            |> Seq.map (fun n -> n,Register(n, DefaultRegisterValueBacking() :> IRegisterValueBacking ))
             |> Map.ofSeq
         RegisterMap(map)
 

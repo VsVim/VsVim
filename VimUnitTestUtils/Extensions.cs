@@ -455,7 +455,7 @@ namespace Vim.UnitTest
         {
             var data = StringData.NewSimple(value);
             var regValue = new RegisterValue(data, MotionKind.Inclusive, OperationKind.CharacterWise);
-            reg.UpdateValue(regValue);
+            reg.Value = regValue;
         }
 
         public static SnapshotPoint GetCaretPoint(this ITextView view)
