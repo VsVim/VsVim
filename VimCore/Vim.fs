@@ -26,7 +26,7 @@ type internal VimBufferFactory
         _textStructureNavigatorSelectorService : ITextStructureNavigatorSelectorService,
         _tlcService : ITrackingLineColumnService,
         _undoManagerProvider : ITextBufferUndoManagerProvider,
-        _foldManagerFactory : IFoldManagerFactory ) =
+        _foldManagerFactory : IFoldManagerFactory ) = 
 
     let _motionCaptureGlobalData = MotionCaptureGlobalData() :> IMotionCaptureGlobalData
     let _visualSpanCalculator = VisualSpanCalculator() :> IVisualSpanCalculator
@@ -144,7 +144,8 @@ type internal Vim
         tlcService : ITrackingLineColumnService,
         [<ImportMany>] bufferCreationListeners : Lazy<IVimBufferCreationListener> seq,
         search : ITextSearchService,
-        textChangeTrackerFactory : ITextChangeTrackerFactory ) =
+        textChangeTrackerFactory : ITextChangeTrackerFactory,
+        clipboard : IClipboardDevice ) =
         let markMap = MarkMap(tlcService)
         let tracker = ChangeTracker(textChangeTrackerFactory)
         let globalSettings = GlobalSettings() :> IVimGlobalSettings
@@ -158,7 +159,7 @@ type internal Vim
             bufferFactoryService,
             listeners,
             globalSettings,
-            RegisterMap() :> IRegisterMap,
+            RegisterMap(clipboard) :> IRegisterMap,
             markMap :> IMarkMap,
             KeyMap() :> IKeyMap,
             tracker :> IChangeTracker,

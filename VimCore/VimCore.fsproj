@@ -95,6 +95,7 @@
     <Compile Include="TextViewMotionUtil.fsi" />
     <Compile Include="TextViewMotionUtil.fs" />
     <Compile Include="SearchService.fs" />
+    <Compile Include="RegisterMap.fsi" />
     <Compile Include="RegisterMap.fs" />
     <Compile Include="DisabledMode.fs" />
     <Compile Include="MarkMap.fs" />

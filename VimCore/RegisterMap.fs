@@ -2,11 +2,24 @@
 
 namespace Vim
 
+/// IRegisterValueBacking implementation for the clipboard 
+type ClipboardRegisterValueBacking ( _device : IClipboardDevice ) =
+    interface IRegisterValueBacking with
+        member x.Value 
+            with get () = RegisterValue.CreateFromText _device.Text
+            and set value = _device.Text <- value.Value.String
+
 type internal RegisterMap (_map: Map<RegisterName,Register> ) =
-    new() = 
+    new( clipboard : IClipboardDevice ) = 
+        let clipboardBacking = ClipboardRegisterValueBacking(clipboard) :> IRegisterValueBacking
+        let getBacking name = 
+            match name with 
+            | RegisterName.SelectionAndDrop(SelectionAndDropRegister.Register_Plus) -> clipboardBacking
+            | RegisterName.SelectionAndDrop(SelectionAndDropRegister.Register_Star) -> clipboardBacking
+            | _ -> DefaultRegisterValueBacking() :> IRegisterValueBacking
         let map = 
             RegisterNameUtil.RegisterNames
-            |> Seq.map (fun n -> n,Register(n, DefaultRegisterValueBacking() :> IRegisterValueBacking ))
+            |> Seq.map (fun n -> n,Register(n, getBacking n))
             |> Map.ofSeq
         RegisterMap(map)
 

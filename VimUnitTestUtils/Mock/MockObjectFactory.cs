@@ -22,6 +22,14 @@ namespace Vim.UnitTest.Mock
             return mock;
         }
 
+        public static Mock<IClipboardDevice> CreateClipboardDevice(MockRepository factory = null)
+        {
+            factory = factory ?? new MockRepository(MockBehavior.Strict);
+            var device = factory.Create<IClipboardDevice>();
+            device.SetupProperty(x => x.Text);
+            return device;
+        }
+
         public static Mock<ITrackingLineColumnService> CreateTrackingLineColumnService()
         {
             var mock = new Mock<ITrackingLineColumnService>(MockBehavior.Strict);

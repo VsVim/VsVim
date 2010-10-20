@@ -53,7 +53,7 @@ namespace VimCore.Test
             _view.SetupGet(x => x.TextBuffer).Returns(_buffer);
             _view.SetupGet(x => x.TextSnapshot).Returns(() => _buffer.CurrentSnapshot);
             _view.SetupGet(x => x.IsClosed).Returns(false);
-            _map = new RegisterMap();
+            _map = new RegisterMap(MockObjectFactory.CreateClipboardDevice(_factory).Object);
             _tracker = _factory.Create<ISelectionTracker>();
             _tracker.Setup(x => x.Start());
             _tracker.Setup(x => x.ResetCaret());

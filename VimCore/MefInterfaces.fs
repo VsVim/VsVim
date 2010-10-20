@@ -136,3 +136,8 @@ type ITextChangeTracker =
 type ITextChangeTrackerFactory =
 
     abstract GetTextChangeTracker : IVimBuffer -> ITextChangeTracker
+
+/// Provides access to the system clipboard 
+type IClipboardDevice =
+
+    abstract Text : string with get,set

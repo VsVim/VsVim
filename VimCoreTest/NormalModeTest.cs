@@ -11,6 +11,7 @@ using Vim.Extensions;
 using Vim.Modes;
 using Vim.Modes.Normal;
 using Vim.UnitTest;
+using Vim.UnitTest.Mock;
 using MockRepository = Vim.UnitTest.Mock.MockObjectFactory;
 
 namespace VimCore.Test
@@ -55,7 +56,7 @@ namespace VimCore.Test
         {
             _view = EditorUtil.CreateView(lines);
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 0));
-            _map = new RegisterMap();
+            _map = new RegisterMap(MockObjectFactory.CreateClipboardDevice().Object);
             _editorOperations = new Mock<IEditorOperations>();
             _incrementalSearch = new Mock<IIncrementalSearch>(MockBehavior.Strict);
             _jumpList = new Mock<IJumpList>(MockBehavior.Strict);

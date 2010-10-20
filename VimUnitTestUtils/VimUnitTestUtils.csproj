@@ -172,6 +172,7 @@
   <ItemGroup>
     <Compile Include="EditorUtil.cs" />
     <Compile Include="EqualityUtil.cs" />
+    <Compile Include="Exports\ClipboardDevice.cs" />
     <Compile Include="Exports\KeyboardDevice.cs" />
     <Compile Include="Exports\MouseDevice.cs" />
     <Compile Include="Exports\TextUndoHistory.cs" />

@@ -390,6 +390,8 @@ type RegisterValue = {
 
     static member CreateLineWise d = { Value = d; MotionKind=MotionKind.Inclusive; OperationKind=OperationKind.LineWise }
 
+    static member CreateFromText text = {Value=StringData.Simple text;MotionKind=MotionKind.Inclusive; OperationKind=OperationKind.LineWise }
+
 /// Backing of a register value
 type internal IRegisterValueBacking = 
     abstract Value : RegisterValue with get,set
