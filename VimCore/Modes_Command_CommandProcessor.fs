@@ -258,7 +258,7 @@ type internal CommandProcessor
             | None -> range
 
         let span = RangeUtil.GetSnapshotSpan range
-        _operations.Yank span MotionKind.Exclusive OperationKind.LineWise reg
+        _operations.Yank span OperationKind.LineWise reg
 
     /// Parse the Put command
     member private x.ProcessPut (rest:char list) (range: Range option) bang =
@@ -338,7 +338,7 @@ type internal CommandProcessor
             | Some(count) -> RangeUtil.ApplyCount range count
             | None -> range
         let span = RangeUtil.GetSnapshotSpan range
-        _operations.DeleteSpan span MotionKind.Exclusive OperationKind.LineWise reg |> ignore
+        _operations.DeleteSpan span OperationKind.LineWise reg |> ignore
 
     member private x.ProcessUndo rest _ _ =
         match Seq.isEmpty rest with

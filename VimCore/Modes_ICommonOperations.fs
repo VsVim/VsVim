@@ -115,10 +115,10 @@ type ICommonOperations =
     abstract SetMark : IVimBuffer -> SnapshotPoint -> char -> Result
 
     /// Yank the text at the given span into the given register
-    abstract Yank : SnapshotSpan -> MotionKind -> OperationKind -> Register -> unit
+    abstract Yank : SnapshotSpan -> OperationKind -> Register -> unit
 
     /// Yank the text into the given register
-    abstract YankText : string -> MotionKind -> OperationKind -> Register -> unit
+    abstract YankText : string -> OperationKind -> Register -> unit
 
     /// Paste after the passed in position.  Don't forget that a linewise paste
     /// operation needs to occur under the cursor.  Returns the SnapshotSpan of
@@ -154,7 +154,7 @@ type ICommonOperations =
     abstract DeleteLinesInSpan : SnapshotSpan -> Register -> unit 
 
     /// Delete a range of text
-    abstract DeleteSpan : SnapshotSpan -> MotionKind -> OperationKind -> Register -> ITextSnapshot
+    abstract DeleteSpan : SnapshotSpan -> OperationKind -> Register -> ITextSnapshot
 
     /// Delete a range of text
     abstract DeleteBlock : NormalizedSnapshotSpanCollection -> Register -> unit

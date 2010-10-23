@@ -173,19 +173,19 @@ type internal VisualMode
                     "d", 
                     CommandFlags.Repeatable, 
                     Some ModeKind.Normal, 
-                    (fun _ reg span -> _operations.DeleteSpan span _motionKind _operationKind reg |> ignore),
+                    (fun _ reg span -> _operations.DeleteSpan span _operationKind reg |> ignore),
                     (fun _ reg col -> _operations.DeleteBlock col reg))
                 yield (
                     "x", 
                     CommandFlags.Repeatable, 
                     Some ModeKind.Normal, 
-                    (fun count reg span -> _operations.DeleteSpan span _motionKind _operationKind reg |> ignore),
+                    (fun count reg span -> _operations.DeleteSpan span _operationKind reg |> ignore),
                     (fun _ reg col -> _operations.DeleteBlock col reg))
                 yield (
                     "<Del>", 
                     CommandFlags.Repeatable, 
                     Some ModeKind.Normal, 
-                    (fun count reg span -> _operations.DeleteSpan span _motionKind _operationKind reg |> ignore),
+                    (fun count reg span -> _operations.DeleteSpan span _operationKind reg |> ignore),
                     (fun _ reg col -> _operations.DeleteBlock col reg))
                 yield (
                     "<lt>",
@@ -209,13 +209,13 @@ type internal VisualMode
                     "c", 
                     CommandFlags.Repeatable ||| CommandFlags.LinkedWithNextTextChange,
                     Some ModeKind.Insert,
-                    (fun _ reg span -> _operations.DeleteSpan span _motionKind _operationKind reg |> ignore),
+                    (fun _ reg span -> _operations.DeleteSpan span _operationKind reg |> ignore),
                     (fun _ reg col -> _operations.DeleteBlock col reg ))
                 yield (
                     "s", 
                     CommandFlags.Repeatable ||| CommandFlags.LinkedWithNextTextChange,
                     Some ModeKind.Insert,
-                    (fun _ reg span -> _operations.DeleteSpan span _motionKind _operationKind reg |> ignore),
+                    (fun _ reg span -> _operations.DeleteSpan span _operationKind reg |> ignore),
                     (fun _ reg col -> _operations.DeleteBlock col reg))
                 yield ( 
                     "S",
@@ -266,17 +266,17 @@ type internal VisualMode
                     None,
                     (fun _ (reg:Register) span -> 
                         let data = StringData.OfSpan span
-                        reg.Value <- { Value = data; MotionKind = _motionKind; OperationKind = _operationKind } ),
+                        reg.Value <- { Value = data; OperationKind = _operationKind } ),
                     (fun _ (reg:Register) col -> 
                         let data = StringData.OfNormalizedSnasphotSpanCollection col
-                        reg.Value <- { Value = data; MotionKind = _motionKind; OperationKind = _operationKind } ))
+                        reg.Value <- { Value = data; OperationKind = _operationKind } ))
                 yield (
                     "Y",
                     CommandFlags.ResetCaret,
                     None,
                     (fun _ (reg:Register) span -> 
                         let data = span |> SnapshotSpanUtil.ExtendToFullLineIncludingLineBreak |> StringData.OfSpan 
-                        reg.Value <- { Value = data; MotionKind = _motionKind; OperationKind = OperationKind.LineWise } ),
+                        reg.Value <- { Value = data; OperationKind = OperationKind.LineWise } ),
                     (fun _ (reg:Register) col -> 
                         let data = 
                             let normal() = col |> Seq.map SnapshotSpanUtil.ExtendToFullLine |> StringData.OfSeq 
@@ -284,7 +284,7 @@ type internal VisualMode
                             | VisualKind.Character -> normal()
                             | VisualKind.Line -> normal()
                             | VisualKind.Block -> StringData.OfNormalizedSnasphotSpanCollection col
-                        reg.Value <- { Value = data; MotionKind = _motionKind; OperationKind = OperationKind.LineWise} ))
+                        reg.Value <- { Value = data; OperationKind = OperationKind.LineWise} ))
             }
             |> Seq.map (fun (str,flags,mode,funcNormal,funcBlock) ->
                 let kiSet = KeyNotationUtil.StringToKeyInputSet str

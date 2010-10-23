@@ -12,7 +12,7 @@ namespace VimCore.Test
         {
             var backing = new MockRegisterValueBacking();
             var reg = new Register(RegisterName.Unnamed, backing);
-            reg.Value = new RegisterValue(StringData.NewSimple("foo"), MotionKind.Inclusive, OperationKind.CharacterWise);
+            reg.Value = new RegisterValue(StringData.NewSimple("foo"), OperationKind.CharacterWise);
             Assert.AreEqual("foo", backing.Value.Value.String);
         }
 
@@ -21,7 +21,7 @@ namespace VimCore.Test
         {
             var backing = new MockRegisterValueBacking();
             var reg = new Register(RegisterName.Unnamed, backing);
-            backing.Value = new RegisterValue(StringData.NewSimple("foo"), MotionKind.Inclusive, OperationKind.CharacterWise);
+            backing.Value = new RegisterValue(StringData.NewSimple("foo"), OperationKind.CharacterWise);
             Assert.AreEqual("foo", reg.StringValue);
         }
     }

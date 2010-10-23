@@ -1073,7 +1073,7 @@ namespace VimCore.Test
         {
             Create("foo", "bar", "baz");
             _operations
-                .Setup(x => x.DeleteSpan(_view.GetLineSpanIncludingLineBreak(0, 0), MotionKind.Inclusive, OperationKind.LineWise, _map.DefaultRegister))
+                .Setup(x => x.DeleteSpan(_view.GetLineSpanIncludingLineBreak(0, 0), OperationKind.LineWise, _map.DefaultRegister))
                 .Returns(_view.TextSnapshot)
                 .Verifiable();
             var res = _mode.Process("cc");
@@ -1087,7 +1087,7 @@ namespace VimCore.Test
         {
             Create("foo", "bar", "baz");
             _operations
-                .Setup(x => x.DeleteSpan(_view.GetLineSpanIncludingLineBreak(0, 1), MotionKind.Inclusive, OperationKind.LineWise, _map.DefaultRegister))
+                .Setup(x => x.DeleteSpan(_view.GetLineSpanIncludingLineBreak(0, 1), OperationKind.LineWise, _map.DefaultRegister))
                 .Returns(_view.TextSnapshot)
                 .Verifiable();
             var res = _mode.Process("2cc");
@@ -1241,7 +1241,6 @@ namespace VimCore.Test
             Create("foo");
             _operations.Setup(x => x.Yank(
                 _view.TextSnapshot.GetLineFromLineNumber(0).Extent,
-                MotionKind.Exclusive,
                 OperationKind.CharacterWise,
                 _map.DefaultRegister)).Verifiable();
             _mode.Process("yw");
@@ -1255,7 +1254,6 @@ namespace VimCore.Test
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 1));
             _operations.Setup(x => x.Yank(
                 new SnapshotSpan(_view.TextSnapshot, 1, 3),
-                MotionKind.Exclusive,
                 OperationKind.CharacterWise,
                 _map.DefaultRegister)).Verifiable();
             _mode.Process("yw");
@@ -1268,7 +1266,6 @@ namespace VimCore.Test
             Create("foo bar");
             _operations.Setup(x => x.Yank(
                 new SnapshotSpan(_view.TextSnapshot, 0, 4),
-                MotionKind.Exclusive,
                 OperationKind.CharacterWise,
                 _map.DefaultRegister)).Verifiable();
             _mode.Process("yw");
@@ -1281,7 +1278,6 @@ namespace VimCore.Test
             Create("foo bar");
             _operations.Setup(x => x.Yank(
                 new SnapshotSpan(_view.TextSnapshot, 0, 4),
-                MotionKind.Exclusive,
                 OperationKind.CharacterWise,
                 _map.GetRegister('c'))).Verifiable();
             _mode.Process("\"cyw");
@@ -1294,7 +1290,6 @@ namespace VimCore.Test
             Create("foo bar baz");
             _operations.Setup(x => x.Yank(
                 new SnapshotSpan(_view.TextSnapshot, 0, 8),
-                MotionKind.Exclusive,
                 OperationKind.CharacterWise,
                 _map.DefaultRegister)).Verifiable();
             _mode.Process("2yw");
@@ -1307,7 +1302,6 @@ namespace VimCore.Test
             Create("foo bar baz joe");
             _operations.Setup(x => x.Yank(
                 new SnapshotSpan(_view.TextSnapshot, 0, 12),
-                MotionKind.Exclusive,
                 OperationKind.CharacterWise,
                 _map.DefaultRegister)).Verifiable();
             _mode.Process("3yw");
@@ -1320,7 +1314,6 @@ namespace VimCore.Test
             Create("foo bar");
             _operations.Setup(x => x.Yank(
                 new SnapshotSpan(_view.TextSnapshot, 0, 4),
-                MotionKind.Exclusive,
                 OperationKind.CharacterWise,
                 _map.DefaultRegister)).Verifiable();
             _mode.Process("yaw");
@@ -1333,7 +1326,6 @@ namespace VimCore.Test
             Create("foo bar baz");
             _operations.Setup(x => x.Yank(
                 new SnapshotSpan(_view.TextSnapshot, 0, 8),
-                MotionKind.Exclusive,
                 OperationKind.CharacterWise,
                 _map.DefaultRegister)).Verifiable();
             _mode.Process("y2w");
@@ -1348,7 +1340,6 @@ namespace VimCore.Test
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 1));
             _operations.Setup(x => x.Yank(
                 new SnapshotSpan(_view.TextSnapshot, 0, 4),
-                MotionKind.Exclusive,
                 OperationKind.CharacterWise,
                 _map.DefaultRegister)).Verifiable();
             _mode.Process("yaw");
@@ -1370,7 +1361,6 @@ namespace VimCore.Test
             Create("foo", "bar");
             _operations.Setup(x => x.Yank(
                 _view.TextSnapshot.GetLineFromLineNumber(0).ExtentIncludingLineBreak,
-                MotionKind.Inclusive,
                 OperationKind.LineWise,
                 _map.DefaultRegister)).Verifiable();
             _mode.Process("yy");
@@ -1384,7 +1374,6 @@ namespace VimCore.Test
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 1));
             _operations.Setup(x => x.Yank(
                 _view.TextSnapshot.GetLineFromLineNumber(0).ExtentIncludingLineBreak,
-                MotionKind.Inclusive,
                 OperationKind.LineWise,
                 _map.DefaultRegister)).Verifiable();
             _mode.Process("yy");
@@ -1449,7 +1438,7 @@ namespace VimCore.Test
             var data = "baz" + Environment.NewLine;
             _operations.Setup(x => x.PasteAfterCursor(data, 1, OperationKind.LineWise, false)).Verifiable();
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 0));
-            _map.DefaultRegister.Value = new RegisterValue(StringData.NewSimple(data), MotionKind.Inclusive, OperationKind.LineWise);
+            _map.DefaultRegister.Value = new RegisterValue(StringData.NewSimple(data), OperationKind.LineWise);
             _mode.Process("p");
             _operations.Verify();
         }
@@ -1481,7 +1470,7 @@ namespace VimCore.Test
             var data = "baz" + Environment.NewLine;
             _operations.Setup(x => x.PasteBeforeCursor(data, 1, OperationKind.LineWise, false)).Verifiable();
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 1));
-            _map.DefaultRegister.Value = new RegisterValue(StringData.NewSimple(data), MotionKind.Inclusive, OperationKind.LineWise);
+            _map.DefaultRegister.Value = new RegisterValue(StringData.NewSimple(data), OperationKind.LineWise);
             _mode.Process('P');
             _operations.Verify();
         }
@@ -1576,7 +1565,6 @@ namespace VimCore.Test
             Create("foo bar baz");
             _operations.Setup(x => x.DeleteSpan(
                 new SnapshotSpan(_view.TextSnapshot, 0, 4),
-                MotionKind._unique_Exclusive,
                 OperationKind.CharacterWise,
                 _map.DefaultRegister))
                 .Returns(It.IsAny<ITextSnapshot>())
@@ -1595,7 +1583,6 @@ namespace VimCore.Test
             var span = new SnapshotSpan(point, _view.TextSnapshot.GetLineFromLineNumber(0).End);
             _operations.Setup(x => x.DeleteSpan(
                 span,
-                MotionKind.Exclusive,
                 OperationKind.CharacterWise,
                 _map.DefaultRegister))
                 .Returns(It.IsAny<ITextSnapshot>())

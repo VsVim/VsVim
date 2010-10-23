@@ -454,7 +454,7 @@ namespace Vim.UnitTest
         public static void UpdateValue(this Register reg, string value)
         {
             var data = StringData.NewSimple(value);
-            var regValue = new RegisterValue(data, MotionKind.Inclusive, OperationKind.CharacterWise);
+            var regValue = new RegisterValue(data, OperationKind.CharacterWise);
             reg.Value = regValue;
         }
 

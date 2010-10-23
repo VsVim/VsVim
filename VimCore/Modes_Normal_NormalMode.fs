@@ -257,7 +257,7 @@ type internal NormalMode
                         let point = TextViewUtil.GetCaretPoint _bufferData.TextView
                         let point = point.GetContainingLine().Start
                         let span = SnapshotPointUtil.GetLineRangeSpanIncludingLineBreak point count
-                        _operations.Yank span MotionKind.Inclusive OperationKind.LineWise reg  )
+                        _operations.Yank span OperationKind.LineWise reg  )
                 yield (
                     "<lt><lt>", 
                     CommandFlags.Repeatable, 
@@ -524,7 +524,7 @@ type internal NormalMode
                         let point = TextViewUtil.GetCaretPoint _bufferData.TextView
                         let span = SnapshotPointUtil.GetLineRangeSpanIncludingLineBreak point count
                         let span = SnapshotSpan(point.GetContainingLine().Start,span.End)
-                        _operations.DeleteSpan span MotionKind.Inclusive OperationKind.LineWise reg |> ignore )
+                        _operations.DeleteSpan span OperationKind.LineWise reg |> ignore )
                 yield (
                     "i", 
                     ModeKind.Insert, 
@@ -623,12 +623,12 @@ type internal NormalMode
                     "d", 
                     CommandFlags.None, 
                     None, 
-                    fun _ reg data -> _operations.DeleteSpan data.OperationSpan data.MotionKind data.OperationKind reg |> ignore)
+                    fun _ reg data -> _operations.DeleteSpan data.OperationSpan data.OperationKind reg |> ignore)
                 yield (
                     "y", 
                     CommandFlags.None, 
                     None, 
-                    fun _ reg data -> _operations.Yank data.OperationSpan data.MotionKind data.OperationKind reg)
+                    fun _ reg data -> _operations.Yank data.OperationSpan data.OperationKind reg)
                 yield (
                     "c", 
                     CommandFlags.LinkedWithNextTextChange, 

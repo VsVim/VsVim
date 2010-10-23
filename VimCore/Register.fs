@@ -383,21 +383,20 @@ module RegisterNameUtil =
 /// was yanked from the buffer
 type RegisterValue = {
     Value : StringData;
-    MotionKind : MotionKind;
     OperationKind : OperationKind;
 }
     with
 
-    static member CreateLineWise d = { Value = d; MotionKind=MotionKind.Inclusive; OperationKind=OperationKind.LineWise }
+    static member CreateLineWise d = { Value = d; OperationKind=OperationKind.LineWise }
 
-    static member CreateFromText text = {Value=StringData.Simple text;MotionKind=MotionKind.Inclusive; OperationKind=OperationKind.LineWise }
+    static member CreateFromText text = {Value=StringData.Simple text; OperationKind=OperationKind.LineWise }
 
 /// Backing of a register value
 type internal IRegisterValueBacking = 
     abstract Value : RegisterValue with get,set
 
 type internal DefaultRegisterValueBacking() = 
-    let mutable _value = { Value=StringData.Simple StringUtil.empty; MotionKind=MotionKind.Inclusive; OperationKind=OperationKind.LineWise }
+    let mutable _value = { Value=StringData.Simple StringUtil.empty; OperationKind=OperationKind.LineWise }
     interface IRegisterValueBacking with
         member x.Value 
             with get() = _value

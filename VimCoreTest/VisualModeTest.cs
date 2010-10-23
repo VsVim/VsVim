@@ -266,7 +266,7 @@ namespace VimCore.Test
             var span = _buffer.GetLine(0).Start.GetSpan(2);
             _selection.MakeSelection(span);
             _operations
-                .Setup(x => x.DeleteSpan(span, MotionKind.Inclusive, OperationKind.CharacterWise, _map.DefaultRegister))
+                .Setup(x => x.DeleteSpan(span, OperationKind.CharacterWise, _map.DefaultRegister))
                 .Returns((ITextSnapshot)null)
                 .Verifiable();
             _mode.Process("d");
@@ -280,7 +280,7 @@ namespace VimCore.Test
             var span = _buffer.GetLine(0).Start.GetSpan(2);
             _selection.MakeSelection(span);
             _operations
-                .Setup(x => x.DeleteSpan(span, MotionKind.Inclusive, OperationKind.CharacterWise, _map.GetRegister('c')))
+                .Setup(x => x.DeleteSpan(span, OperationKind.CharacterWise, _map.GetRegister('c')))
                 .Returns((ITextSnapshot)null)
                 .Verifiable();
             _mode.Process("\"cd");
@@ -294,7 +294,7 @@ namespace VimCore.Test
             var span = _buffer.GetLine(0).Start.GetSpan(2);
             _selection.MakeSelection(span);
             _operations
-                .Setup(x => x.DeleteSpan(span, MotionKind.Inclusive, OperationKind.CharacterWise, _map.DefaultRegister))
+                .Setup(x => x.DeleteSpan(span, OperationKind.CharacterWise, _map.DefaultRegister))
                 .Returns((ITextSnapshot)null)
                 .Verifiable();
             _mode.Process("x");
@@ -308,7 +308,7 @@ namespace VimCore.Test
             var span = _buffer.GetLine(0).Start.GetSpan(2);
             _selection.MakeSelection(span);
             _operations
-                .Setup(x => x.DeleteSpan(span, MotionKind.Inclusive, OperationKind.CharacterWise, _map.DefaultRegister))
+                .Setup(x => x.DeleteSpan(span, OperationKind.CharacterWise, _map.DefaultRegister))
                 .Returns((ITextSnapshot)null)
                 .Verifiable();
             _mode.Process(VimKey.Delete);
@@ -361,7 +361,7 @@ namespace VimCore.Test
             var span = _buffer.GetLineSpan(0);
             _selection.MakeSelection(span);
             _operations
-                .Setup(x => x.DeleteSpan(span, MotionKind.Inclusive, OperationKind.CharacterWise, _map.DefaultRegister))
+                .Setup(x => x.DeleteSpan(span, OperationKind.CharacterWise, _map.DefaultRegister))
                 .Returns((ITextSnapshot)null)
                 .Verifiable();
             var res = _mode.Process('c');
@@ -376,7 +376,7 @@ namespace VimCore.Test
             var span = _buffer.GetLineSpan(0);
             _selection.MakeSelection(span);
             _operations
-                .Setup(x => x.DeleteSpan(span, MotionKind.Inclusive, OperationKind.CharacterWise, _map.GetRegister('b')))
+                .Setup(x => x.DeleteSpan(span, OperationKind.CharacterWise, _map.GetRegister('b')))
                 .Returns((ITextSnapshot)null)
                 .Verifiable();
             var res = _mode.Process("\"bc");
@@ -391,7 +391,7 @@ namespace VimCore.Test
             var span = _buffer.GetLineSpan(0);
             _selection.MakeSelection(span);
             _operations
-                .Setup(x => x.DeleteSpan(span, MotionKind.Inclusive, OperationKind.CharacterWise, _map.DefaultRegister))
+                .Setup(x => x.DeleteSpan(span, OperationKind.CharacterWise, _map.DefaultRegister))
                 .Returns((ITextSnapshot)null)
                 .Verifiable();
             var res = _mode.Process('s');

@@ -45,16 +45,16 @@ type internal CommonOperations ( _data : OperationsData ) =
 
     member private x.DeleteBlock col (reg:Register) =
         let data = StringData.OfNormalizedSnasphotSpanCollection col
-        let value = {Value=data; MotionKind=MotionKind.Inclusive;OperationKind=OperationKind.CharacterWise}
+        let value = {Value=data; OperationKind=OperationKind.CharacterWise}
         reg.Value <- value
         use edit = _textView.TextBuffer.CreateEdit()
         col |> Seq.iter (fun span -> edit.Delete(span.Span) |> ignore)
         edit.Apply() |> ignore
 
-    member private x.DeleteSpan (span:SnapshotSpan) motionKind opKind (reg:Register) =
+    member private x.DeleteSpan (span:SnapshotSpan) opKind (reg:Register) =
         let data = span |> SnapshotSpanUtil.GetText |> StringData.Simple
         let tss = span.Snapshot
-        let regValue = {Value=data ;MotionKind=motionKind;OperationKind=opKind}
+        let regValue = {Value=data; OperationKind=opKind}
         reg.Value <- regValue 
         tss.TextBuffer.Delete(span.Span)
 
@@ -219,13 +219,13 @@ type internal CommonOperations ( _data : OperationsData ) =
                 | Some(point) -> jumpLocal point
                 | None -> Failed Resources.Common_MarkNotSet
     
-        member x.YankText text motion operation (reg:Register) =
+        member x.YankText text operation (reg:Register) =
             let data = StringData.Simple text
-            let regValue = {Value=data;MotionKind = motion; OperationKind = operation};
+            let regValue = {Value=data; OperationKind = operation};
             reg.Value <- regValue
 
-        member x.Yank (span:SnapshotSpan) motion operation (reg:Register) =
-            let regValue = {Value=StringData.OfSpan span;MotionKind = motion; OperationKind = operation};
+        member x.Yank (span:SnapshotSpan) operation (reg:Register) =
+            let regValue = {Value=StringData.OfSpan span; OperationKind = operation};
             reg.Value <- regValue
         
         member x.PasteAfter point text opKind = 
@@ -402,24 +402,24 @@ type internal CommonOperations ( _data : OperationsData ) =
             let line = getLine()
             _textView.Caret.MoveTo(line) |> ignore
 
-        member x.DeleteSpan span motionKind opKind reg = x.DeleteSpan span motionKind opKind reg
+        member x.DeleteSpan span opKind reg = x.DeleteSpan span opKind reg
         member x.DeleteBlock col reg = x.DeleteBlock col reg
         member x.DeleteLines count reg = 
             let point = TextViewUtil.GetCaretPoint _textView
             let point = point.GetContainingLine().Start
             let span = SnapshotPointUtil.GetLineRangeSpan point count
             let span = SnapshotSpan(point, span.End)
-            x.DeleteSpan span MotionKind.Inclusive OperationKind.LineWise reg |> ignore
+            x.DeleteSpan span OperationKind.LineWise reg |> ignore
         member x.DeleteLinesInSpan span reg =
             let startLine,endLine = SnapshotSpanUtil.GetStartAndEndLine span
             let span = SnapshotSpan(startLine.Start,endLine.End)
-            x.DeleteSpan span MotionKind.Inclusive OperationKind.LineWise reg |> ignore
+            x.DeleteSpan span OperationKind.LineWise reg |> ignore
 
         member x.DeleteLinesFromCursor count reg = 
             let point,line = TextViewUtil.GetCaretPointAndLine _textView
             let span = SnapshotPointUtil.GetLineRangeSpan point count
             let span = SnapshotSpan(point, span.End)
-            x.DeleteSpan span MotionKind.Inclusive OperationKind.CharacterWise reg |> ignore
+            x.DeleteSpan span OperationKind.CharacterWise reg |> ignore
 
         /// Delete count lines from the cursor.  The last line is an unfortunate special case here 
         /// as it does not have a line break.  Hence in order to delete the line we must delete the 
@@ -439,13 +439,13 @@ type internal CommonOperations ( _data : OperationsData ) =
                     let point = line.Start
                     let span = SnapshotPointUtil.GetLineRangeSpanIncludingLineBreak point count
                     SnapshotSpan(point, span.End)
-            x.DeleteSpan span MotionKind.Inclusive OperationKind.LineWise reg |> ignore
+            x.DeleteSpan span OperationKind.LineWise reg |> ignore
 
         member x.DeleteLinesIncludingLineBreakFromCursor count reg = 
             let point = TextViewUtil.GetCaretPoint _textView
             let span = SnapshotPointUtil.GetLineRangeSpanIncludingLineBreak point count
             let span = SnapshotSpan(point, span.End)
-            x.DeleteSpan span MotionKind.Inclusive OperationKind.CharacterWise reg |> ignore
+            x.DeleteSpan span OperationKind.CharacterWise reg |> ignore
 
         member x.Undo count = _undoRedoOperations.Undo count
         member x.Redo count = _undoRedoOperations.Redo count
@@ -568,6 +568,6 @@ type internal CommonOperations ( _data : OperationsData ) =
                             |> OptionUtil.getOrDefault (SnapshotUtil.GetEndPoint (p.Snapshot))
                         SnapshotSpan(data.OperationSpan.Start, endPoint)
                     | None -> data.OperationSpan
-            x.DeleteSpan span data.MotionKind data.OperationKind reg |> ignore
+            x.DeleteSpan span data.OperationKind reg |> ignore
 
 

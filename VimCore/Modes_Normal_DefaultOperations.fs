@@ -221,7 +221,7 @@ type internal DefaultOperations ( _data : OperationsData, _incrementalSearch : I
             let point = TextViewUtil.GetCaretPoint _textView
             let point = point.GetContainingLine().Start
             let span = SnapshotPointUtil.GetLineRangeSpanIncludingLineBreak point count
-            x.CommonImpl.Yank span MotionKind.Inclusive OperationKind.LineWise reg |> ignore
+            x.CommonImpl.Yank span OperationKind.LineWise reg |> ignore
 
     
         /// Implement the normal mode x command
@@ -230,13 +230,13 @@ type internal DefaultOperations ( _data : OperationsData, _incrementalSearch : I
             let line = point.GetContainingLine()
             let count = min (count) (line.End.Position-point.Position)
             let span = new SnapshotSpan(point, count)
-            x.CommonImpl.DeleteSpan span MotionKind.Exclusive OperationKind.CharacterWise reg |> ignore
+            x.CommonImpl.DeleteSpan span OperationKind.CharacterWise reg |> ignore
     
         /// Implement the normal mode X command
         member x.DeleteCharacterBeforeCursor count reg = 
             let point = TextViewUtil.GetCaretPoint _textView
             let range = TssUtil.GetReverseCharacterSpan point count
-            x.CommonImpl.DeleteSpan range MotionKind.Exclusive OperationKind.CharacterWise reg |> ignore
+            x.CommonImpl.DeleteSpan range OperationKind.CharacterWise reg |> ignore
     
         member x.JoinAtCaret count =     
             let start = TextViewUtil.GetCaretPoint _textView

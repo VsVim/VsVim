@@ -792,7 +792,6 @@ namespace VimCore.Test
             var reg = new Register('c');
             _operations.DeleteSpan(
                 _view.TextSnapshot.GetLineFromLineNumber(0).ExtentIncludingLineBreak,
-                MotionKind._unique_Exclusive,
                 OperationKind.LineWise,
                 reg);
             var tss = _view.TextSnapshot;
@@ -810,7 +809,7 @@ namespace VimCore.Test
                 tss.GetLineFromLineNumber(0).Start,
                 tss.GetLineFromLineNumber(1).EndIncludingLineBreak);
             var reg = new Register('c');
-            _operations.DeleteSpan(span, MotionKind._unique_Exclusive, OperationKind.LineWise, reg);
+            _operations.DeleteSpan(span, OperationKind.LineWise, reg);
             tss = _view.TextSnapshot;
             Assert.AreEqual(1, tss.LineCount);
             Assert.AreEqual("baz", tss.GetLineFromLineNumber(0).GetText());
@@ -823,7 +822,7 @@ namespace VimCore.Test
             Create("foo", "bar", "baz");
             var tss = _view.TextSnapshot;
             var reg = new Register('c');
-            _operations.DeleteSpan(tss.GetLineFromLineNumber(1).ExtentIncludingLineBreak, MotionKind._unique_Exclusive, OperationKind.LineWise, reg);
+            _operations.DeleteSpan(tss.GetLineFromLineNumber(1).ExtentIncludingLineBreak, OperationKind.LineWise, reg);
             tss = _view.TextSnapshot;
             Assert.AreEqual(2, tss.LineCount);
             Assert.AreEqual("foo", tss.GetLineFromLineNumber(0).GetText());
@@ -838,7 +837,6 @@ namespace VimCore.Test
             var reg = new Register('c');
             _operations.Yank(
                 _view.TextSnapshot.GetLineFromLineNumber(0).ExtentIncludingLineBreak,
-                MotionKind._unique_Exclusive,
                 OperationKind.LineWise,
                 reg);
             Assert.AreEqual("foo" + Environment.NewLine, reg.StringValue);
@@ -853,7 +851,7 @@ namespace VimCore.Test
                 tss.GetLineFromLineNumber(0).Start,
                 tss.GetLineFromLineNumber(1).EndIncludingLineBreak);
             var reg = new Register('c');
-            _operations.Yank(span, MotionKind._unique_Exclusive, OperationKind.LineWise, reg);
+            _operations.Yank(span, OperationKind.LineWise, reg);
             Assert.AreEqual(span.GetText(), reg.StringValue);
         }
 
