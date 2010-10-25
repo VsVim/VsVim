@@ -24,9 +24,8 @@ namespace Vim.UI.Wpf
             _optionsProviderFactory = optionsProviderFactory.ToList().AsReadOnly();
 
             _buffer.SwitchedMode += OnSwitchMode;
-            _buffer.KeyInputProcessed += OnKeyInputProcessed;
-            _buffer.KeyInputReceived += OnKeyInputReceived;
-            _buffer.KeyInputBuffered += OnKeyInputBuffered;
+            _buffer.KeyInputStart += OnKeyInputStart;
+            _buffer.KeyInputEnd += OnKeyInputEnd;
             _buffer.StatusMessage += OnStatusMessage;
             _buffer.StatusMessageLong += OnStatusMessageLong;
             _buffer.ErrorMessage += OnErrorMessage;
@@ -156,17 +155,12 @@ namespace Vim.UI.Wpf
             }
         }
 
-        private void OnKeyInputProcessed(object sender, Tuple<KeyInput, ProcessResult> tuple)
-        {
-            KeyInputEventComplete();
-        }
-
-        private void OnKeyInputReceived(object sender, KeyInput input)
+        private void OnKeyInputStart(object sender, KeyInput input)
         {
             _inKeyInputEvent = true;
         }
 
-        private void OnKeyInputBuffered(object sender, KeyInput input)
+        private void OnKeyInputEnd(object sender, KeyInput input)
         {
             KeyInputEventComplete();
         }

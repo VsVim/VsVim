@@ -31,6 +31,9 @@ module public SeqExtensions =
 type public FSharpFuncUtil = 
 
     [<Extension>] 
+    static member ToFSharpFunc<'a> (func:System.Func<'a>) = fun () -> func.Invoke()
+
+    [<Extension>] 
     static member ToFSharpFunc<'a,'b> (func:System.Converter<'a,'b>) = fun x -> func.Invoke(x)
 
     [<Extension>] 

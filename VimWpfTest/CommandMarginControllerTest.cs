@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using Moq;
 using NUnit.Framework;
+using Vim.Extensions;
 using Vim.UI.Wpf.Properties;
 using Vim.UnitTest.Mock;
-using Vim.Extensions;
 
 namespace Vim.UI.Wpf.Test
 {
@@ -55,7 +55,7 @@ namespace Vim.UI.Wpf.Test
             var mode = new Mock<IMode>();
             mode.SetupGet(x => x.ModeKind).Returns(ModeKind.Insert);
             _marginControl.StatusLine = String.Empty;
-            _buffer.RaiseKeyInputReceived(KeyInputUtil.CharToKeyInput('c'));
+            _buffer.RaiseKeyInputStart(KeyInputUtil.CharToKeyInput('c'));
             _buffer.RaiseSwitchedMode(mode.Object);
             Assert.AreEqual(String.Empty, _marginControl.StatusLine);
         }
@@ -68,10 +68,10 @@ namespace Vim.UI.Wpf.Test
             mode.SetupGet(x => x.ModeKind).Returns(ModeKind.Insert);
             var ki = KeyInputUtil.CharToKeyInput('c');
             _marginControl.StatusLine = String.Empty;
-            _buffer.RaiseKeyInputReceived(ki);
+            _buffer.RaiseKeyInputStart(ki);
             _buffer.RaiseSwitchedMode(mode.Object);
             Assert.AreEqual(String.Empty, _marginControl.StatusLine);
-            _buffer.RaiseKeyInputProcessed(ki, ProcessResult.Processed);
+            _buffer.RaiseKeyInputEnd(ki);
             Assert.AreEqual(Resources.InsertBanner, _marginControl.StatusLine);
         }
 
@@ -131,7 +131,7 @@ namespace Vim.UI.Wpf.Test
         public void StatusMessage2()
         {
             var ki = KeyInputUtil.CharToKeyInput('c');
-            _buffer.RaiseKeyInputReceived(ki);
+            _buffer.RaiseKeyInputStart(ki);
             _buffer.RaiseStatusMessage("foo");
             Assert.AreEqual(String.Empty, _marginControl.StatusLine);
         }
@@ -141,9 +141,9 @@ namespace Vim.UI.Wpf.Test
         public void StatusMessage3()
         {
             var ki = KeyInputUtil.CharToKeyInput('c');
-            _buffer.RaiseKeyInputReceived(ki);
+            _buffer.RaiseKeyInputStart(ki);
             _buffer.RaiseStatusMessage("foo");
-            _buffer.RaiseKeyInputProcessed(ki, ProcessResult.Processed);
+            _buffer.RaiseKeyInputEnd(ki);
             Assert.AreEqual("foo", _marginControl.StatusLine);
         }
 
@@ -154,10 +154,10 @@ namespace Vim.UI.Wpf.Test
             var mode = new Mock<IMode>();
             mode.SetupGet(x => x.ModeKind).Returns(ModeKind.Insert);
             var ki = KeyInputUtil.CharToKeyInput('c');
-            _buffer.RaiseKeyInputReceived(ki);
+            _buffer.RaiseKeyInputStart(ki);
             _buffer.RaiseStatusMessage("foo");
             _buffer.RaiseSwitchedMode(mode.Object);
-            _buffer.RaiseKeyInputProcessed(ki, ProcessResult.Processed);
+            _buffer.RaiseKeyInputEnd(ki);
             Assert.AreEqual("foo", _marginControl.StatusLine);
         }
 
@@ -173,7 +173,7 @@ namespace Vim.UI.Wpf.Test
         public void StatusMessageLong2()
         {
             var ki = KeyInputUtil.CharToKeyInput('c');
-            _buffer.RaiseKeyInputReceived(ki);
+            _buffer.RaiseKeyInputStart(ki);
             _buffer.RaiseStatusMessageLong("foo", "bar");
             Assert.AreEqual(String.Empty, _marginControl.StatusLine);
         }
@@ -183,9 +183,9 @@ namespace Vim.UI.Wpf.Test
         public void StatusMessageLong3()
         {
             var ki = KeyInputUtil.CharToKeyInput('c');
-            _buffer.RaiseKeyInputReceived(ki);
+            _buffer.RaiseKeyInputStart(ki);
             _buffer.RaiseStatusMessageLong("foo", "bar");
-            _buffer.RaiseKeyInputProcessed(ki, ProcessResult.Processed);
+            _buffer.RaiseKeyInputEnd(ki);
             Assert.AreEqual("foo" + Environment.NewLine + "bar", _marginControl.StatusLine);
         }
 
@@ -196,10 +196,10 @@ namespace Vim.UI.Wpf.Test
             var mode = new Mock<IMode>();
             mode.SetupGet(x => x.ModeKind).Returns(ModeKind.Insert);
             var ki = KeyInputUtil.CharToKeyInput('c');
-            _buffer.RaiseKeyInputReceived(ki);
+            _buffer.RaiseKeyInputStart(ki);
             _buffer.RaiseStatusMessageLong("foo", "bar");
             _buffer.RaiseSwitchedMode(mode.Object);
-            _buffer.RaiseKeyInputProcessed(ki, ProcessResult.Processed);
+            _buffer.RaiseKeyInputEnd(ki);
             Assert.AreEqual("foo" + Environment.NewLine + "bar", _marginControl.StatusLine);
         }
 
@@ -215,7 +215,7 @@ namespace Vim.UI.Wpf.Test
         public void ErrorMessage2()
         {
             var ki = KeyInputUtil.CharToKeyInput('c');
-            _buffer.RaiseKeyInputReceived(ki);
+            _buffer.RaiseKeyInputStart(ki);
             _buffer.RaiseErrorMessage("foo");
             Assert.AreEqual(String.Empty, _marginControl.StatusLine);
         }
@@ -225,9 +225,9 @@ namespace Vim.UI.Wpf.Test
         public void ErrorMessage3()
         {
             var ki = KeyInputUtil.CharToKeyInput('c');
-            _buffer.RaiseKeyInputReceived(ki);
+            _buffer.RaiseKeyInputStart(ki);
             _buffer.RaiseErrorMessage("foo");
-            _buffer.RaiseKeyInputProcessed(ki, ProcessResult.Processed);
+            _buffer.RaiseKeyInputEnd(ki);
             Assert.AreEqual("foo", _marginControl.StatusLine);
         }
 
@@ -238,10 +238,10 @@ namespace Vim.UI.Wpf.Test
             var mode = new Mock<IMode>();
             mode.SetupGet(x => x.ModeKind).Returns(ModeKind.Insert);
             var ki = KeyInputUtil.CharToKeyInput('c');
-            _buffer.RaiseKeyInputReceived(ki);
+            _buffer.RaiseKeyInputStart(ki);
             _buffer.RaiseErrorMessage("foo");
             _buffer.RaiseSwitchedMode(mode.Object);
-            _buffer.RaiseKeyInputProcessed(ki, ProcessResult.Processed);
+            _buffer.RaiseKeyInputEnd(ki);
             Assert.AreEqual("foo", _marginControl.StatusLine);
         }
 
@@ -257,8 +257,8 @@ namespace Vim.UI.Wpf.Test
             _buffer.NormalModeImpl = mode.Object;
 
             var ki = KeyInputUtil.CharToKeyInput('c');
-            _buffer.RaiseKeyInputReceived(ki);
-            _buffer.RaiseKeyInputProcessed(ki, ProcessResult.Processed);
+            _buffer.RaiseKeyInputStart(ki);
+            _buffer.RaiseKeyInputEnd(ki);
             Assert.AreEqual("foo", _marginControl.StatusLine);
             mode.Verify();
             search.Verify();
@@ -273,8 +273,8 @@ namespace Vim.UI.Wpf.Test
             _buffer.CommandModeImpl = mode.Object;
 
             var ki = KeyInputUtil.CharToKeyInput('c');
-            _buffer.RaiseKeyInputReceived(ki);
-            _buffer.RaiseKeyInputProcessed(ki, ProcessResult.Processed);
+            _buffer.RaiseKeyInputStart(ki);
+            _buffer.RaiseKeyInputEnd(ki);
             Assert.AreEqual(":foo", _marginControl.StatusLine);
             mode.Verify();
         }
@@ -288,8 +288,8 @@ namespace Vim.UI.Wpf.Test
             _buffer.DisabledModeImpl = mode.Object;
 
             var ki = KeyInputUtil.CharToKeyInput('c');
-            _buffer.RaiseKeyInputReceived(ki);
-            _buffer.RaiseKeyInputProcessed(ki, ProcessResult.Processed);
+            _buffer.RaiseKeyInputStart(ki);
+            _buffer.RaiseKeyInputEnd(ki);
             Assert.AreEqual("foo", _marginControl.StatusLine);
             mode.Verify();
         }

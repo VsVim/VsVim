@@ -1,11 +1,12 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using Microsoft.VisualStudio.Text.Editor;
 using Moq;
 using NUnit.Framework;
 using Vim;
 using Vim.Extensions;
-using Vim.UnitTest.Mock;
 using Vim.UnitTest;
+using Vim.UnitTest.Mock;
 
 namespace VimCore.Test
 {
@@ -35,7 +36,7 @@ namespace VimCore.Test
             _settings = MockObjectFactory.CreateLocalSettings(_globalSettings.Object);
             _keyMap = new Mock<IKeyMap>(MockBehavior.Strict);
             _host = new Mock<IVimHost>(MockBehavior.Strict);
-            _vim = MockObjectFactory.CreateVim(map:_markMap, settings:_globalSettings.Object, keyMap:_keyMap.Object, host:_host.Object);
+            _vim = MockObjectFactory.CreateVim(map: _markMap, settings: _globalSettings.Object, keyMap: _keyMap.Object, host: _host.Object);
             _disabledMode = new Mock<IMode>(MockBehavior.Loose);
             _disabledMode.SetupGet(x => x.ModeKind).Returns(ModeKind.Disabled);
             _normalMode = new Mock<INormalMode>(MockBehavior.Loose);
@@ -90,7 +91,7 @@ namespace VimCore.Test
             _insertMode.Verify();
         }
 
-        [Test,Description("SwitchPreviousMode should raise the SwitchedMode event")]
+        [Test, Description("SwitchPreviousMode should raise the SwitchedMode event")]
         public void SwitchPreviousMode2()
         {
             _normalMode.Setup(x => x.OnLeave()).Verifiable();
@@ -114,6 +115,81 @@ namespace VimCore.Test
             _buffer.KeyInputProcessed += (s, i) => { ran = true; };
             _buffer.Process(ki);
             Assert.IsTrue(ran);
+        }
+
+        [Test]
+        public void KeyInputStartAndEnd1()
+        {
+            DisableKeyRemap();
+            var ki = KeyInputUtil.CharToKeyInput('c');
+            _normalMode.Setup(x => x.Process(ki)).Returns(ProcessResult.Processed);
+            var count = 1;
+            _buffer.KeyInputStart += (_, args) =>
+            {
+                Assert.AreEqual(1, count++);
+                Assert.AreSame(args, ki);
+            };
+            _buffer.KeyInputEnd += (_, args) =>
+            {
+                Assert.AreEqual(2, count++);
+                Assert.AreSame(args, ki);
+            };
+            _buffer.Process(ki);
+            Assert.AreEqual(3, count);
+        }
+
+        [Test]
+        [Description("Should fire even if there is an exception")]
+        public void KeyInputStartAndEnd2()
+        {
+            DisableKeyRemap();
+            var ki = KeyInputUtil.CharToKeyInput('c');
+            _normalMode.Setup(x => x.Process(ki)).Throws(new Exception());
+            var count = 1;
+            _buffer.KeyInputStart += (_, args) =>
+            {
+                Assert.AreEqual(1, count++);
+                Assert.AreSame(args, ki);
+            };
+            _buffer.KeyInputEnd += (_, args) =>
+            {
+                Assert.AreEqual(2, count++);
+                Assert.AreSame(args, ki);
+            };
+            var caught = false;
+            try
+            {
+                _buffer.Process(ki);
+            }
+            catch
+            {
+                caught = true;
+            }
+            Assert.IsTrue(caught);
+            Assert.AreEqual(3, count);
+        }
+
+        [Test]
+        [Description("Should fire even if the KeyInput is buffered")]
+        public void KeyInputStartAndEnd3()
+        {
+            var ki = KeyInputUtil.CharToKeyInput('f');
+            _keyMap
+                .Setup(x => x.GetKeyMapping(KeyInputSet.NewOneKeyInput(ki), It.IsAny<KeyRemapMode>()))
+                .Returns(KeyMappingResult.MappingNeedsMoreInput);
+            var count = 1;
+            _buffer.KeyInputStart += (_, args) =>
+            {
+                Assert.AreEqual(1, count++);
+                Assert.AreSame(args, ki);
+            };
+            _buffer.KeyInputEnd += (_, args) =>
+            {
+                Assert.AreEqual(2, count++);
+                Assert.AreSame(args, ki);
+            };
+            _buffer.Process(ki);
+            Assert.AreEqual(3, count);
         }
 
         [Test]
@@ -163,7 +239,7 @@ namespace VimCore.Test
             _disabledMode.Verify(x => x.OnClose());
         }
 
-        [Test,Description("Disable command should be preprocessed")]
+        [Test, Description("Disable command should be preprocessed")]
         public void Disable1()
         {
             DisableKeyRemap();

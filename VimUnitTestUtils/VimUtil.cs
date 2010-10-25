@@ -8,6 +8,20 @@ namespace Vim.UnitTest
 {
     internal static class VimUtil
     {
+        internal static RegisterMap CreateRegisterMap(IClipboardDevice device)
+        {
+            return CreateRegisterMap(device, () => null);
+        }
+
+        internal static RegisterMap CreateRegisterMap(IClipboardDevice device, Func<string> func)
+        {
+            Func<FSharpOption<string>> func2 = () =>
+            {
+                var result = func();
+                return string.IsNullOrEmpty(result) ? FSharpOption<string>.None : FSharpOption.Create(result);
+            };
+            return new RegisterMap(device, func2.ToFSharpFunc());
+        }
 
         internal static Command CreateSimpleCommand(string name, Action<FSharpOption<int>, Register> del)
         {

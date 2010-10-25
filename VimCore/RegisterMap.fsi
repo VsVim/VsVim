@@ -4,6 +4,6 @@
 namespace Vim
 
 type internal RegisterMap = 
-    new : IClipboardDevice -> RegisterMap
+    new : IClipboardDevice * (unit -> string option) -> RegisterMap
 
     interface IRegisterMap

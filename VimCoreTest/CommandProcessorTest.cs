@@ -35,7 +35,7 @@ namespace VimCore.Test
             _view = EditorUtil.CreateView(lines);
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 0));
             _factory = new MockRepository(MockBehavior.Strict);
-            _map = new RegisterMap(MockObjectFactory.CreateClipboardDevice(_factory).Object);
+            _map = VimUtil.CreateRegisterMap(MockObjectFactory.CreateClipboardDevice(_factory).Object);
             _editOpts = _factory.Create<IEditorOperations>();
             _vimHost = _factory.Create<IVimHost>();
             _operations = _factory.Create<IOperations>();

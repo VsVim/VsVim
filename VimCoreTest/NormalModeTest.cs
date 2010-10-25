@@ -57,7 +57,7 @@ namespace VimCore.Test
         {
             _view = EditorUtil.CreateView(lines);
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 0));
-            _map = new RegisterMap(MockObjectFactory.CreateClipboardDevice().Object);
+            _map = VimUtil.CreateRegisterMap(MockObjectFactory.CreateClipboardDevice().Object);
             _unnamedRegister = _map.GetRegister(RegisterName.Unnamed);
             _editorOperations = new Mock<IEditorOperations>();
             _incrementalSearch = new Mock<IIncrementalSearch>(MockBehavior.Strict);

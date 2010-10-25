@@ -1026,6 +1026,10 @@ and IVim =
     abstract RegisterMap : IRegisterMap
     abstract Settings : IVimGlobalSettings
 
+    /// Buffer actively processing input.  This has no relation to the IVimBuffer
+    /// which has focus 
+    abstract ActiveBuffer : IVimBuffer option
+
     /// IKeyMap for this IVim instance
     abstract KeyMap : IKeyMap
 
@@ -1147,12 +1151,17 @@ and IVimBuffer =
 
     /// Raised when a KeyInput is received by the buffer
     [<CLIEvent>]
-    abstract KeyInputReceived : IEvent<KeyInput>
+    abstract KeyInputStart : IEvent<KeyInput>
 
     /// Raised when a key is received but not immediately processed.  Occurs when a
     /// key remapping has more than one source key strokes
     [<CLIEvent>]
     abstract KeyInputBuffered : IEvent<KeyInput>
+
+    /// Raised when a KeyInput is completed processing within the IVimBuffer.  This happens 
+    /// if the KeyInput is buffered or processed
+    [<CLIEvent>]
+    abstract KeyInputEnd : IEvent<KeyInput>
 
     /// Raised when an error is encountered
     [<CLIEvent>]

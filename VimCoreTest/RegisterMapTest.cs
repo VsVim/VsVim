@@ -14,13 +14,15 @@ namespace VimCore.Test
         private Mock<IClipboardDevice> _clipboard;
         private RegisterMap _rawMap;
         private IRegisterMap _map;
+        private string _fileName;
 
         [SetUp]
         public void Setup()
         {
             _factory = new MockRepository(MockBehavior.Strict);
             _clipboard = MockObjectFactory.CreateClipboardDevice(_factory);
-            _rawMap = new RegisterMap(_clipboard.Object);
+            _fileName = null;
+            _rawMap = VimUtil.CreateRegisterMap(_clipboard.Object, () => _fileName);
             _map = _rawMap;
         }
 
@@ -66,6 +68,19 @@ namespace VimCore.Test
         {
             _clipboard.SetupGet(x => x.Text).Throws(new Exception());
             Assert.AreEqual("", _map.GetRegister('a').StringValue);
+        }
+
+        [Test]
+        public void FileNameRegister1()
+        {
+            Assert.AreEqual("", _map.GetRegister('%').StringValue);
+        }
+
+        [Test]
+        public void FileNameRegister2()
+        {
+            _fileName = "foo";
+            Assert.AreEqual("foo", _map.GetRegister('%').StringValue);
         }
     }
 }

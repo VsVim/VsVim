@@ -14,8 +14,8 @@ namespace Vim.UI.Wpf
             _buffer = buffer;
             _blockCaret = blockCaret;
             _buffer.SwitchedMode += OnCaretRelatedEvent;
-            _buffer.KeyInputProcessed += OnCaretRelatedEvent;
-            _buffer.KeyInputReceived += OnCaretRelatedEvent;
+            _buffer.KeyInputStart += OnCaretRelatedEvent;
+            _buffer.KeyInputEnd += OnCaretRelatedEvent;
             _buffer.Closed += OnBufferClosed;
             _buffer.Settings.GlobalSettings.SettingChanged += OnSettingsChanged;
             UpdateCaret();

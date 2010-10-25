@@ -29,7 +29,7 @@ namespace VimCore.Test
             _factory = new MockRepository(MockBehavior.Strict);
             _host = _factory.Create<IVimHost>();
             _statusUtil = _factory.Create<IStatusUtil>();
-            _registerMap = new RegisterMap(MockObjectFactory.CreateClipboardDevice(_factory).Object);
+            _registerMap = VimUtil.CreateRegisterMap(MockObjectFactory.CreateClipboardDevice(_factory).Object);
             var capture = new MotionCapture(
                 _host.Object,
                 _textView,
