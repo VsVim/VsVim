@@ -153,38 +153,39 @@ type internal CommonOperations ( _data : OperationsData ) =
     /// other registers based on the type of update that is being performed.  See 
     /// :help registers for the full details
     member x.UpdateRegister (reg:Register) regOperation value = 
-        reg.Value <- value
-
-        // If this is not the unnamed register then the unnamed register needs to 
-        // be updated 
-        if reg.Name <> RegisterName.Unnamed then
-            let unnamedReg = _registerMap.GetRegister RegisterName.Unnamed
-            unnamedReg.Value <- value
-
-        // Update the numbered registers with the new values.  First shift the existing
-        // values up the stack
-        let intToName num = 
-            let c = char (num + (int '0'))
-            let name = NumberedRegister.OfChar c |> Option.get
-            RegisterName.Numbered name
-
-        // Next is insert the new value into the numbered register list.  New value goes
-        // into 0 and the rest shift up
-        for i in [9;8;7;6;5;4;3;2;1] do
-            let cur = intToName i |> _registerMap.GetRegister
-            let prev = intToName (i-1) |> _registerMap.GetRegister
-            cur.Value <- prev.Value
-        let regZero = _registerMap.GetRegister (RegisterName.Numbered NumberedRegister.Register_0)
-        regZero.Value <- value
-
-        // Possibily update the small delete register
-        if reg.Name <> RegisterName.Unnamed && regOperation = RegisterOperation.Delete then
-            match value.Value with
-            | StringData.Block(_) -> ()
-            | StringData.Simple(str) -> 
-                if not (StringUtil.containsChar str '\n') then
-                    let regSmallDelete = _registerMap.GetRegister RegisterName.SmallDelete
-                    regSmallDelete.Value <- value
+        if reg.Name <> RegisterName.Blackhole then
+            reg.Value <- value
+    
+            // If this is not the unnamed register then the unnamed register needs to 
+            // be updated 
+            if reg.Name <> RegisterName.Unnamed then
+                let unnamedReg = _registerMap.GetRegister RegisterName.Unnamed
+                unnamedReg.Value <- value
+    
+            // Update the numbered registers with the new values.  First shift the existing
+            // values up the stack
+            let intToName num = 
+                let c = char (num + (int '0'))
+                let name = NumberedRegister.OfChar c |> Option.get
+                RegisterName.Numbered name
+    
+            // Next is insert the new value into the numbered register list.  New value goes
+            // into 0 and the rest shift up
+            for i in [9;8;7;6;5;4;3;2;1] do
+                let cur = intToName i |> _registerMap.GetRegister
+                let prev = intToName (i-1) |> _registerMap.GetRegister
+                cur.Value <- prev.Value
+            let regZero = _registerMap.GetRegister (RegisterName.Numbered NumberedRegister.Register_0)
+            regZero.Value <- value
+    
+            // Possibily update the small delete register
+            if reg.Name <> RegisterName.Unnamed && regOperation = RegisterOperation.Delete then
+                match value.Value with
+                | StringData.Block(_) -> ()
+                | StringData.Simple(str) -> 
+                    if not (StringUtil.containsChar str '\n') then
+                        let regSmallDelete = _registerMap.GetRegister RegisterName.SmallDelete
+                        regSmallDelete.Value <- value
 
     interface ICommonOperations with
         member x.TextView = _textView 

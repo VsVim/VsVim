@@ -1634,5 +1634,28 @@ namespace VimCore.Test
             _operations.UpdateRegisterForSpan(reg, RegisterOperation.Delete, span, OperationKind.CharacterWise);
             AssertRegister(RegisterName.SmallDelete, "", OperationKind.LineWise);
         }
+
+        [Test]
+        [Description("Deleting to black hole register should not affect unnamed or others")]
+        public void UpdateRegisterForSpan6()
+        {
+            Create("foo bar");
+            var span = _view.GetLineSpan(0);
+            var namedReg = _registerMap.GetRegister('c');
+            _operations.UpdateRegisterForSpan(
+                namedReg,
+                RegisterOperation.Yank,
+                span,
+                OperationKind.CharacterWise);
+            _operations.UpdateRegisterForSpan(
+                _registerMap.GetRegister(RegisterName.Blackhole),
+                RegisterOperation.Delete,
+                span,
+                OperationKind.CharacterWise);
+            AssertRegister(namedReg, "foo bar", OperationKind.CharacterWise);
+            AssertRegister(RegisterName.Unnamed, "foo bar", OperationKind.CharacterWise);
+            AssertRegister(RegisterName.NewNumbered(NumberedRegister.Register_0), "foo bar", OperationKind.CharacterWise);
+            AssertRegister(RegisterName.Blackhole, "", OperationKind.LineWise);
+        }
     }
 }
