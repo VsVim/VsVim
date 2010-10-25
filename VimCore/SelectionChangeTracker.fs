@@ -47,7 +47,10 @@ type internal SelectionChangeTracker
 
     /// Raised when the selection changes.  
     member private x.OnSelectionChanged() = 
-        if _buffer.IsProcessingInput then
+        if _buffer.ModeKind = ModeKind.Disabled then
+            // If the selection changes while Vim is disabled then don't update
+            () 
+        elif _buffer.IsProcessingInput then
             if x.IsAnyVisualMode then 
                 // Do nothing.  Selection changes that occur while processing input during
                 // visual mode are the responsibility of Visual Mode to handle. 
