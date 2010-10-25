@@ -19,7 +19,7 @@ type internal RegisterMap (_map: Map<RegisterName,Register> ) =
                         match currentFileNameFunc() with
                         | None -> StringUtil.empty
                         | Some(str) -> str
-                    RegisterValue.CreateFromText text
+                    { Value=StringData.Simple text; OperationKind=OperationKind.CharacterWise }
                 and set _ = () }
 
         let getBacking name = 

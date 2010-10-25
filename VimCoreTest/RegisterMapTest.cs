@@ -74,6 +74,7 @@ namespace VimCore.Test
         public void FileNameRegister1()
         {
             Assert.AreEqual("", _map.GetRegister('%').StringValue);
+            Assert.AreEqual(OperationKind.CharacterWise, _map.GetRegister('%').Value.OperationKind);
         }
 
         [Test]
