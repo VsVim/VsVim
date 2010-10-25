@@ -16,6 +16,7 @@ type internal VisualMode
         _capture : IMotionCapture,
         _selectionTracker : ISelectionTracker ) = 
 
+    let _registerMap = _buffer.RegisterMap
     let _motionKind = MotionKind.Inclusive
     let _operationKind, _visualKind = 
         match _kind with
@@ -173,20 +174,32 @@ type internal VisualMode
                     "d", 
                     CommandFlags.Repeatable, 
                     Some ModeKind.Normal, 
-                    (fun _ reg span -> _operations.DeleteSpan span _operationKind reg |> ignore),
-                    (fun _ reg col -> _operations.DeleteBlock col reg))
+                    (fun _ reg span -> 
+                        _operations.DeleteSpan span 
+                        _operations.UpdateRegisterForSpan reg RegisterOperation.Delete span OperationKind.CharacterWise ),
+                    (fun _ reg col -> 
+                        _operations.DeleteBlock col 
+                        _operations.UpdateRegisterForCollection reg RegisterOperation.Delete col OperationKind.CharacterWise))
                 yield (
                     "x", 
                     CommandFlags.Repeatable, 
                     Some ModeKind.Normal, 
-                    (fun count reg span -> _operations.DeleteSpan span _operationKind reg |> ignore),
-                    (fun _ reg col -> _operations.DeleteBlock col reg))
+                    (fun count reg span -> 
+                        _operations.DeleteSpan span 
+                        _operations.UpdateRegisterForSpan reg RegisterOperation.Delete span _operationKind ),
+                    (fun _ reg col -> 
+                        _operations.DeleteBlock col 
+                        _operations.UpdateRegisterForCollection reg RegisterOperation.Delete col _operationKind))
                 yield (
                     "<Del>", 
                     CommandFlags.Repeatable, 
                     Some ModeKind.Normal, 
-                    (fun count reg span -> _operations.DeleteSpan span _operationKind reg |> ignore),
-                    (fun _ reg col -> _operations.DeleteBlock col reg))
+                    (fun count reg span -> 
+                        _operations.DeleteSpan span 
+                        _operations.UpdateRegisterForSpan reg RegisterOperation.Delete span _operationKind),
+                    (fun _ reg col -> 
+                        _operations.DeleteBlock col
+                        _operations.UpdateRegisterForCollection reg RegisterOperation.Delete col _operationKind))
                 yield (
                     "<lt>",
                     CommandFlags.Repeatable ||| CommandFlags.ResetCaret,
@@ -209,27 +222,40 @@ type internal VisualMode
                     "c", 
                     CommandFlags.Repeatable ||| CommandFlags.LinkedWithNextTextChange,
                     Some ModeKind.Insert,
-                    (fun _ reg span -> _operations.DeleteSpan span _operationKind reg |> ignore),
-                    (fun _ reg col -> _operations.DeleteBlock col reg ))
+                    (fun _ reg span -> 
+                        _operations.DeleteSpan span 
+                        _operations.UpdateRegisterForSpan reg RegisterOperation.Delete span _operationKind),
+                    (fun _ reg col -> 
+                        _operations.DeleteBlock col
+                        _operations.UpdateRegisterForCollection reg RegisterOperation.Delete col _operationKind))
                 yield (
                     "s", 
                     CommandFlags.Repeatable ||| CommandFlags.LinkedWithNextTextChange,
                     Some ModeKind.Insert,
-                    (fun _ reg span -> _operations.DeleteSpan span _operationKind reg |> ignore),
-                    (fun _ reg col -> _operations.DeleteBlock col reg))
+                    (fun _ reg span -> 
+                        _operations.DeleteSpan span 
+                        _operations.UpdateRegisterForSpan reg RegisterOperation.Delete span _operationKind),
+                    (fun _ reg col -> 
+                        _operations.DeleteBlock col 
+                        _operations.UpdateRegisterForCollection reg RegisterOperation.Delete col _operationKind))
                 yield ( 
                     "S",
                     CommandFlags.Repeatable ||| CommandFlags.LinkedWithNextTextChange,
                     Some ModeKind.Insert,
-                    (fun _ reg span -> _operations.DeleteLinesInSpan span reg),
+                    (fun _ reg span -> 
+                        let span = _operations.DeleteLinesInSpan span 
+                        _operations.UpdateRegisterForSpan reg RegisterOperation.Delete span OperationKind.LineWise),
                     (fun _ reg col -> 
                         let span = NormalizedSnapshotSpanCollectionUtil.GetCombinedSpan col 
-                        _operations.DeleteLinesInSpan span reg))
+                        let span = _operations.DeleteLinesInSpan span
+                        _operations.UpdateRegisterForSpan reg RegisterOperation.Delete span OperationKind.LineWise))
                 yield (
                     "C",
                     CommandFlags.Repeatable ||| CommandFlags.LinkedWithNextTextChange,
                     Some ModeKind.Insert,
-                    (fun _ reg span -> _operations.DeleteLinesInSpan span reg),
+                    (fun _ reg span -> 
+                        let span = _operations.DeleteLinesInSpan span
+                        _operations.UpdateRegisterForSpan reg RegisterOperation.Delete span OperationKind.CharacterWise),
                     (fun _ reg col -> 
                         let col = 
                             col 
@@ -237,7 +263,8 @@ type internal VisualMode
                                 let line = SnapshotSpanUtil.GetStartLine span
                                 SnapshotSpan(span.Start,line.End) )
                             |> NormalizedSnapshotSpanCollectionUtil.OfSeq
-                        _operations.DeleteBlock col reg))
+                        _operations.DeleteBlock col 
+                        _operations.UpdateRegisterForCollection reg RegisterOperation.Delete col OperationKind.CharacterWise))
                 yield (
                     "J",
                     CommandFlags.Repeatable,

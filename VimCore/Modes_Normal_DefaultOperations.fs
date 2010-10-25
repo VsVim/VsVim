@@ -216,28 +216,22 @@ type internal DefaultOperations ( _data : OperationsData, _incrementalSearch : I
                 _textView.Caret.MoveTo(point) |> ignore
                 true
     
-        /// Yank lines from the buffer.  Implements the Y command
-        member x.YankLines count reg =
-            let point = TextViewUtil.GetCaretPoint _textView
-            let point = point.GetContainingLine().Start
-            let span = SnapshotPointUtil.GetLineRangeSpanIncludingLineBreak point count
-            x.CommonImpl.Yank span OperationKind.LineWise reg |> ignore
-
-    
         /// Implement the normal mode x command
-        member x.DeleteCharacterAtCursor count reg =
+        member x.DeleteCharacterAtCursor count =
             let point = TextViewUtil.GetCaretPoint _textView
             let line = point.GetContainingLine()
             let count = min (count) (line.End.Position-point.Position)
             let span = new SnapshotSpan(point, count)
-            x.CommonImpl.DeleteSpan span OperationKind.CharacterWise reg |> ignore
+            x.CommonImpl.DeleteSpan span 
+            span
     
         /// Implement the normal mode X command
-        member x.DeleteCharacterBeforeCursor count reg = 
+        member x.DeleteCharacterBeforeCursor count = 
             let point = TextViewUtil.GetCaretPoint _textView
-            let range = TssUtil.GetReverseCharacterSpan point count
-            x.CommonImpl.DeleteSpan range OperationKind.CharacterWise reg |> ignore
-    
+            let span = TssUtil.GetReverseCharacterSpan point count
+            x.CommonImpl.DeleteSpan span
+            span
+
         member x.JoinAtCaret count =     
             let start = TextViewUtil.GetCaretPoint _textView
             let kind = Vim.Modes.JoinKind.RemoveEmptySpaces

@@ -17,6 +17,7 @@ type internal CommonOperations ( _data : OperationsData ) =
     let _settings = _data.LocalSettings
     let _undoRedoOperations = _data.UndoRedoOperations
     let _statusUtil = _data.StatusUtil
+    let _registerMap = _data.RegisterMap
 
     /// The caret sometimes needs to be adjusted after an Up or Down movement.  Caret position
     /// and virtual space is actually quite a predicamite for VsVim because of how Vim standard 
@@ -43,20 +44,14 @@ type internal CommonOperations ( _data : OperationsData ) =
             true
         else  _host.NavigateTo point 
 
-    member private x.DeleteBlock col (reg:Register) =
-        let data = StringData.OfNormalizedSnasphotSpanCollection col
-        let value = {Value=data; OperationKind=OperationKind.CharacterWise}
-        reg.Value <- value
+    member private x.DeleteBlock (col:NormalizedSnapshotSpanCollection) = 
         use edit = _textView.TextBuffer.CreateEdit()
         col |> Seq.iter (fun span -> edit.Delete(span.Span) |> ignore)
         edit.Apply() |> ignore
 
-    member private x.DeleteSpan (span:SnapshotSpan) opKind (reg:Register) =
-        let data = span |> SnapshotSpanUtil.GetText |> StringData.Simple
-        let tss = span.Snapshot
-        let regValue = {Value=data; OperationKind=opKind}
-        reg.Value <- regValue 
-        tss.TextBuffer.Delete(span.Span)
+    member private x.DeleteSpan (span:SnapshotSpan) = 
+        let buffer = span.Snapshot.TextBuffer
+        buffer.Delete(span.Span) |> ignore
 
     member x.ShiftRightCore multiplier (col:SnapshotSpan seq) = 
         let text = new System.String(' ', _settings.GlobalSettings.ShiftWidth * multiplier)
@@ -154,6 +149,43 @@ type internal CommonOperations ( _data : OperationsData ) =
             | None -> ()
             | Some(point) ->  TextViewUtil.MoveCaretToPoint _textView point 
 
+    /// Updates the given register with the specified value.  This will also update 
+    /// other registers based on the type of update that is being performed.  See 
+    /// :help registers for the full details
+    member x.UpdateRegister (reg:Register) regOperation value = 
+        reg.Value <- value
+
+        // If this is not the unnamed register then the unnamed register needs to 
+        // be updated 
+        if reg.Name <> RegisterName.Unnamed then
+            let unnamedReg = _registerMap.GetRegister RegisterName.Unnamed
+            unnamedReg.Value <- value
+
+        // Update the numbered registers with the new values.  First shift the existing
+        // values up the stack
+        let intToName num = 
+            let c = char (num + (int '0'))
+            let name = NumberedRegister.OfChar c |> Option.get
+            RegisterName.Numbered name
+
+        // Next is insert the new value into the numbered register list.  New value goes
+        // into 0 and the rest shift up
+        for i in [9;8;7;6;5;4;3;2;1] do
+            let cur = intToName i |> _registerMap.GetRegister
+            let prev = intToName (i-1) |> _registerMap.GetRegister
+            cur.Value <- prev.Value
+        let regZero = _registerMap.GetRegister (RegisterName.Numbered NumberedRegister.Register_0)
+        regZero.Value <- value
+
+        // Possibily update the small delete register
+        if reg.Name <> RegisterName.Unnamed && regOperation = RegisterOperation.Delete then
+            match value.Value with
+            | StringData.Block(_) -> ()
+            | StringData.Simple(str) -> 
+                if not (StringUtil.containsChar str '\n') then
+                    let regSmallDelete = _registerMap.GetRegister RegisterName.SmallDelete
+                    regSmallDelete.Value <- value
+
     interface ICommonOperations with
         member x.TextView = _textView 
         member x.EditorOperations = _operations
@@ -219,15 +251,6 @@ type internal CommonOperations ( _data : OperationsData ) =
                 | Some(point) -> jumpLocal point
                 | None -> Failed Resources.Common_MarkNotSet
     
-        member x.YankText text operation (reg:Register) =
-            let data = StringData.Simple text
-            let regValue = {Value=data; OperationKind = operation};
-            reg.Value <- regValue
-
-        member x.Yank (span:SnapshotSpan) operation (reg:Register) =
-            let regValue = {Value=StringData.OfSpan span; OperationKind = operation};
-            reg.Value <- regValue
-        
         member x.PasteAfter point text opKind = 
             let buffer = SnapshotPointUtil.GetBuffer point
             let line = SnapshotPointUtil.GetContainingLine point
@@ -402,25 +425,26 @@ type internal CommonOperations ( _data : OperationsData ) =
             let line = getLine()
             _textView.Caret.MoveTo(line) |> ignore
 
-        member x.DeleteSpan span opKind reg = x.DeleteSpan span opKind reg
-        member x.DeleteBlock col reg = x.DeleteBlock col reg
-        member x.DeleteLines count reg = 
+        member x.DeleteSpan span = x.DeleteSpan span 
+        member x.DeleteBlock col = x.DeleteBlock col 
+        member x.DeleteLines count = 
             let point = TextViewUtil.GetCaretPoint _textView
             let point = point.GetContainingLine().Start
             let span = SnapshotPointUtil.GetLineRangeSpan point count
             let span = SnapshotSpan(point, span.End)
-            x.DeleteSpan span OperationKind.LineWise reg |> ignore
-        member x.DeleteLinesInSpan span reg =
+            x.DeleteSpan span 
+            span
+        member x.DeleteLinesInSpan span =
             let startLine,endLine = SnapshotSpanUtil.GetStartAndEndLine span
             let span = SnapshotSpan(startLine.Start,endLine.End)
-            x.DeleteSpan span OperationKind.LineWise reg |> ignore
-
-        member x.DeleteLinesFromCursor count reg = 
+            x.DeleteSpan span 
+            span
+        member x.DeleteLinesFromCursor count = 
             let point,line = TextViewUtil.GetCaretPointAndLine _textView
             let span = SnapshotPointUtil.GetLineRangeSpan point count
             let span = SnapshotSpan(point, span.End)
-            x.DeleteSpan span OperationKind.CharacterWise reg |> ignore
-
+            x.DeleteSpan span 
+            span
         /// Delete count lines from the cursor.  The last line is an unfortunate special case here 
         /// as it does not have a line break.  Hence in order to delete the line we must delete the 
         /// line break at the end of the preceeding line.  
@@ -428,7 +452,7 @@ type internal CommonOperations ( _data : OperationsData ) =
         /// This cannot be normalized by always deleting the line break from the previous line because
         /// it would still break for the first line.  This is an unfortunate special case we must 
         /// deal with
-        member x.DeleteLinesIncludingLineBreak count reg = 
+        member x.DeleteLinesIncludingLineBreak count = 
             let point,line = TextViewUtil.GetCaretPointAndLine _textView
             let snapshot = point.Snapshot
             let span = 
@@ -439,14 +463,14 @@ type internal CommonOperations ( _data : OperationsData ) =
                     let point = line.Start
                     let span = SnapshotPointUtil.GetLineRangeSpanIncludingLineBreak point count
                     SnapshotSpan(point, span.End)
-            x.DeleteSpan span OperationKind.LineWise reg |> ignore
-
-        member x.DeleteLinesIncludingLineBreakFromCursor count reg = 
+            x.DeleteSpan span 
+            span
+        member x.DeleteLinesIncludingLineBreakFromCursor count = 
             let point = TextViewUtil.GetCaretPoint _textView
             let span = SnapshotPointUtil.GetLineRangeSpanIncludingLineBreak point count
             let span = SnapshotSpan(point, span.End)
-            x.DeleteSpan span OperationKind.CharacterWise reg |> ignore
-
+            x.DeleteSpan span
+            span
         member x.Undo count = _undoRedoOperations.Undo count
         member x.Redo count = _undoRedoOperations.Redo count
         member x.Save() = _host.Save _textView
@@ -549,7 +573,7 @@ type internal CommonOperations ( _data : OperationsData ) =
                 while deleteAtCaret() do
                     // Keep on deleteing 
                     ()
-        member x.ChangeSpan (data:MotionData) reg =
+        member x.ChangeSpan (data:MotionData) =
             
             // For whatever reason the change commands will remove the trailing whitespace
             // for character wise motions
@@ -568,6 +592,13 @@ type internal CommonOperations ( _data : OperationsData ) =
                             |> OptionUtil.getOrDefault (SnapshotUtil.GetEndPoint (p.Snapshot))
                         SnapshotSpan(data.OperationSpan.Start, endPoint)
                     | None -> data.OperationSpan
-            x.DeleteSpan span data.OperationKind reg |> ignore
+            x.DeleteSpan span
+            span
+        member x.UpdateRegisterForSpan reg regOp span opKind = 
+            let value = { Value=StringData.OfSpan span; OperationKind=opKind }
+            x.UpdateRegister reg regOp value
+        member x.UpdateRegisterForCollection reg regOp col opKind = 
+            let value = { Value=StringData.OfNormalizedSnasphotSpanCollection col; OperationKind=opKind }
+            x.UpdateRegister reg regOp value
 
 

@@ -33,10 +33,10 @@ type internal CommandRunner
     /// Represents the empty state for processing commands.  Holds all of the default
     /// values
     let _emptyData = { 
-        Register = _registerMap.DefaultRegister;
-        Count = None;
-        KeyInputSet = Empty;
-        Inputs = List.empty;
+        Register = _registerMap.GetRegister RegisterName.Unnamed
+        Count = None
+        KeyInputSet = Empty
+        Inputs = List.empty
         State = CommandRunnerState.NoInput
     }
 

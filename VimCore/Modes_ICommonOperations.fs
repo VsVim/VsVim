@@ -7,19 +7,25 @@ open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Operations
 open Microsoft.VisualStudio.Text.Outlining
 
+[<RequireQualifiedAccess>]
+type RegisterOperation = 
+    | Delete
+    | Yank
+
 type OperationsData = {
-    VimHost : IVimHost;
-    TextView : ITextView;
-    EditorOperations : IEditorOperations;
+    VimHost : IVimHost
+    TextView : ITextView
+    EditorOperations : IEditorOperations
     EditorOptions : IEditorOptions
-    OutliningManager : IOutliningManager;
-    JumpList : IJumpList;
-    LocalSettings : IVimLocalSettings;
-    UndoRedoOperations : IUndoRedoOperations;
-    StatusUtil : IStatusUtil;
-    KeyMap : IKeyMap;
-    Navigator : ITextStructureNavigator;
-    FoldManager : IFoldManager;
+    OutliningManager : IOutliningManager
+    JumpList : IJumpList
+    LocalSettings : IVimLocalSettings
+    UndoRedoOperations : IUndoRedoOperations
+    StatusUtil : IStatusUtil
+    KeyMap : IKeyMap
+    Navigator : ITextStructureNavigator
+    FoldManager : IFoldManager
+    RegisterMap : IRegisterMap 
 }
 
 type JoinKind = 
@@ -114,12 +120,6 @@ type ICommonOperations =
     /// Sets a mark at the specified point.  If this operation fails an error message will be generated
     abstract SetMark : IVimBuffer -> SnapshotPoint -> char -> Result
 
-    /// Yank the text at the given span into the given register
-    abstract Yank : SnapshotSpan -> OperationKind -> Register -> unit
-
-    /// Yank the text into the given register
-    abstract YankText : string -> OperationKind -> Register -> unit
-
     /// Paste after the passed in position.  Don't forget that a linewise paste
     /// operation needs to occur under the cursor.  Returns the SnapshotSpan of
     /// the text on the new snapshot
@@ -137,27 +137,27 @@ type ICommonOperations =
 
     /// Delete count lines starting from the cursor line.  The last line will 
     /// not have its break deleted
-    abstract DeleteLines : count:int -> Register -> unit
+    abstract DeleteLines : count:int -> SnapshotSpan
 
     /// Delete from the cursor to the end of the current line and (count-1) more 
     /// lines.  
-    abstract DeleteLinesFromCursor : count:int -> Register -> unit
+    abstract DeleteLinesFromCursor : count:int -> SnapshotSpan
 
     /// Delete count lines from the buffer starting from the cursor line
-    abstract DeleteLinesIncludingLineBreak : count:int -> Register -> unit
+    abstract DeleteLinesIncludingLineBreak : count:int -> SnapshotSpan
 
     /// Delete from the cursor to the end of the current line and (count-1) more 
     /// lines.  
-    abstract DeleteLinesIncludingLineBreakFromCursor : count:int -> Register -> unit
+    abstract DeleteLinesIncludingLineBreakFromCursor : count:int -> SnapshotSpan
 
     /// Delete the lines in the given span.  Does not include the final line break
-    abstract DeleteLinesInSpan : SnapshotSpan -> Register -> unit 
+    abstract DeleteLinesInSpan : SnapshotSpan -> SnapshotSpan
 
     /// Delete a range of text
-    abstract DeleteSpan : SnapshotSpan -> OperationKind -> Register -> ITextSnapshot
+    abstract DeleteSpan : SnapshotSpan -> unit
 
     /// Delete a range of text
-    abstract DeleteBlock : NormalizedSnapshotSpanCollection -> Register -> unit
+    abstract DeleteBlock : NormalizedSnapshotSpanCollection -> unit
 
     /// Shift the count lines starting at the cursor right by the "ShiftWidth" setting
     abstract ShiftLinesRight : count:int -> unit
@@ -236,9 +236,16 @@ type ICommonOperations =
     /// Delete all folds at the cursor
     abstract DeleteAllFoldsAtCursor : unit -> unit
 
-    /// Change the text represented by the given Motion
-    abstract ChangeSpan : MotionData -> Register -> unit
+    /// Change the text represented by the given Motion.  Returns the SnapshotSpan 
+    /// of the original ITextSnapshot which was modified.  Maybe different
+    /// than the passed in value
+    abstract ChangeSpan : MotionData -> SnapshotSpan
 
+    /// Update the register for the given register operation
+    abstract UpdateRegisterForSpan : Register -> RegisterOperation -> SnapshotSpan -> OperationKind -> unit
+
+    /// Update the register for the given register operation
+    abstract UpdateRegisterForCollection : Register -> RegisterOperation -> NormalizedSnapshotSpanCollection -> OperationKind -> unit
 
 
 

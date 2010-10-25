@@ -14,11 +14,12 @@ namespace Vim.UnitTest.Mock
 {
     public static class MockObjectFactory
     {
-        public static Mock<IRegisterMap> CreateRegisterMap()
+        public static Mock<IRegisterMap> CreateRegisterMap(MockRepository factory = null)
         {
-            var mock = new Mock<IRegisterMap>();
-            var reg = new Register('_');
-            mock.Setup(x => x.DefaultRegister).Returns(reg);
+            factory = factory ?? new MockRepository(MockBehavior.Strict);
+            var mock = factory.Create<IRegisterMap>(MockBehavior.Strict);
+            var reg = new Register(RegisterName.Unnamed);
+            mock.Setup(x => x.GetRegister(RegisterName.Unnamed)).Returns(reg);
             return mock;
         }
 

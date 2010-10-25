@@ -267,7 +267,7 @@ namespace VimCore.Test
             var didRun = false;
             _runner.Add(VimUtil.CreateSimpleCommand("a", (count, reg) =>
                 {
-                    Assert.AreSame(_registerMap.DefaultRegister, reg);
+                    Assert.AreEqual(RegisterName.Unnamed, reg.Name);
                     didRun = true;
                     return CommandResult.NewCompleted(ModeSwitch.NoSwitch);
                 }));

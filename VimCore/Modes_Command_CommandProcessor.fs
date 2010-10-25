@@ -45,12 +45,13 @@ module internal CommandParseUtil =
     /// Parse the register out of the stream.  Will return default if no register is 
     /// specified
     let SkipRegister (map:IRegisterMap) (cmd:char list) =
+        let defaultRegister = map.GetRegister RegisterName.Unnamed
         let inner head tail =
             match System.Char.IsDigit(head),RegisterNameUtil.CharToRegister head with
-            | true,_ -> (map.DefaultRegister, cmd)
+            | true,_ -> (defaultRegister, cmd)
             | false,Some(name)-> (map.GetRegister name, tail)
-            | false,None -> (map.DefaultRegister, cmd)
-        ListUtil.tryProcessHead cmd inner (fun () -> (map.DefaultRegister, cmd))
+            | false,None -> (defaultRegister, cmd)
+        ListUtil.tryProcessHead cmd inner (fun () -> (defaultRegister, cmd))
 
     let ParseKeyRemapOptions (rest:char list) =
         let rec inner (orig:char list) options =
@@ -258,7 +259,7 @@ type internal CommandProcessor
             | None -> range
 
         let span = RangeUtil.GetSnapshotSpan range
-        _operations.Yank span OperationKind.LineWise reg
+        _operations.UpdateRegisterForSpan reg RegisterOperation.Yank span OperationKind.LineWise
 
     /// Parse the Put command
     member private x.ProcessPut (rest:char list) (range: Range option) bang =
@@ -338,7 +339,8 @@ type internal CommandProcessor
             | Some(count) -> RangeUtil.ApplyCount range count
             | None -> range
         let span = RangeUtil.GetSnapshotSpan range
-        _operations.DeleteSpan span OperationKind.LineWise reg |> ignore
+        _operations.DeleteSpan span 
+        _operations.UpdateRegisterForSpan reg RegisterOperation.Delete span OperationKind.LineWise
 
     member private x.ProcessUndo rest _ _ =
         match Seq.isEmpty rest with

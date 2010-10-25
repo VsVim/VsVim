@@ -32,6 +32,7 @@ namespace VimCore.Test
         private Mock<IKeyMap> _keyMap;
         private Mock<IOutliningManager> _outlining;
         private Mock<IUndoRedoOperations> _undoRedoOperations;
+        private Mock<IRegisterMap> _registerMap;
 
         private void Create(params string[] lines)
         {
@@ -40,6 +41,7 @@ namespace VimCore.Test
             _editOpts = _factory.Create<IEditorOperations>();
             _host = _factory.Create<IVimHost>();
             _jumpList = _factory.Create<IJumpList>();
+            _registerMap = MockObjectFactory.CreateRegisterMap(factory: _factory);
             _globalSettings = _factory.Create<IVimGlobalSettings>();
             _globalSettings.SetupGet(x => x.Magic).Returns(true);
             _globalSettings.SetupGet(x => x.SmartCase).Returns(false);
@@ -62,7 +64,8 @@ namespace VimCore.Test
                 undoRedoOperations: _undoRedoOperations.Object,
                 editorOptions: null,
                 navigator: null,
-                foldManager: null);
+                foldManager: null,
+                registerMap: _registerMap.Object);
             _operationsRaw = new DefaultOperations(data);
             _operations = _operationsRaw;
         }

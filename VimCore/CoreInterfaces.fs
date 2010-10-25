@@ -740,10 +740,13 @@ type IJumpList =
 
 /// Map containing the various VIM registers
 type IRegisterMap = 
-    abstract DefaultRegister : Register
+
+    /// Gets all of the available register name values
     abstract RegisterNames : seq<RegisterName>
+
+    /// Get the register with the specified name
     abstract GetRegister : RegisterName -> Register
-    
+
 /// Result of an individual search
 type SearchResult =
     | SearchFound of SnapshotSpan

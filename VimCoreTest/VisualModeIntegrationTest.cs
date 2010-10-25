@@ -124,7 +124,7 @@ namespace VimCore.Test
             _textView.Selection.Select(_textView.GetLine(1).Extent, false);
             _buffer.Process(KeyInputUtil.CharToKeyInput('y'));
             _context.RunAll();
-            Assert.AreEqual("  world", _buffer.RegisterMap.DefaultRegister.StringValue);
+            Assert.AreEqual("  world", _buffer.RegisterMap.GetRegister(RegisterName.Unnamed).StringValue);
         }
 
         [Test]
@@ -138,7 +138,7 @@ namespace VimCore.Test
             _context.RunAll();
             _buffer.Process(KeyInputUtil.CharToKeyInput('l'));
             _buffer.Process(KeyInputUtil.CharToKeyInput('y'));
-            Assert.AreEqual("  wo", _buffer.RegisterMap.DefaultRegister.StringValue);
+            Assert.AreEqual("  wo", _buffer.RegisterMap.GetRegister(RegisterName.Unnamed).StringValue);
         }
 
         [Test]

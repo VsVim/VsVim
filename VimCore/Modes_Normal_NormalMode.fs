@@ -2,6 +2,7 @@
 
 namespace Vim.Modes.Normal
 open Vim
+open Vim.Modes
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
 
@@ -249,7 +250,9 @@ type internal NormalMode
                 yield (
                     "dd", 
                     CommandFlags.Repeatable, 
-                    fun count reg -> _operations.DeleteLinesIncludingLineBreak count reg)
+                    fun count reg -> 
+                        let span = _operations.DeleteLinesIncludingLineBreak count 
+                        _operations.UpdateRegisterForSpan reg RegisterOperation.Delete span OperationKind.LineWise)
                 yield (
                     "yy", 
                     CommandFlags.Repeatable, 
@@ -257,7 +260,7 @@ type internal NormalMode
                         let point = TextViewUtil.GetCaretPoint _bufferData.TextView
                         let point = point.GetContainingLine().Start
                         let span = SnapshotPointUtil.GetLineRangeSpanIncludingLineBreak point count
-                        _operations.Yank span OperationKind.LineWise reg  )
+                        _operations.UpdateRegisterForSpan reg RegisterOperation.Yank span OperationKind.LineWise )
                 yield (
                     "<lt><lt>", 
                     CommandFlags.Repeatable, 
@@ -360,15 +363,21 @@ type internal NormalMode
                 yield (
                     "x", 
                     CommandFlags.Repeatable, 
-                    fun count reg -> _operations.DeleteCharacterAtCursor count reg)
+                    fun count reg -> 
+                        let span = _operations.DeleteCharacterAtCursor count 
+                        _operations.UpdateRegisterForSpan reg RegisterOperation.Delete span OperationKind.CharacterWise)
                 yield (
                     "<Del>", 
                     CommandFlags.Repeatable, 
-                    fun count reg -> _operations.DeleteCharacterAtCursor count reg)
+                    fun count reg -> 
+                        let span = _operations.DeleteCharacterAtCursor count 
+                        _operations.UpdateRegisterForSpan reg RegisterOperation.Delete span OperationKind.CharacterWise)
                 yield (
                     "X", 
                     CommandFlags.Repeatable, 
-                    fun count reg -> _operations.DeleteCharacterBeforeCursor count reg)
+                    fun count reg -> 
+                        let span = _operations.DeleteCharacterBeforeCursor count
+                        _operations.UpdateRegisterForSpan reg RegisterOperation.Delete span OperationKind.CharacterWise)
                 yield (
                     "p", 
                     CommandFlags.Repeatable, 
@@ -396,7 +405,9 @@ type internal NormalMode
                 yield (
                     "D", 
                     CommandFlags.Repeatable, 
-                    fun count reg -> _operations.DeleteLinesFromCursor count reg)
+                    fun count reg -> 
+                        let span = _operations.DeleteLinesFromCursor count
+                        _operations.UpdateRegisterForSpan reg RegisterOperation.Delete span OperationKind.CharacterWise)
                 yield (
                     "<C-r>", 
                     CommandFlags.Repeatable, 
@@ -464,7 +475,13 @@ type internal NormalMode
                 yield (
                     "Y", 
                     CommandFlags.Repeatable, 
-                    fun count reg -> _operations.YankLines count reg)
+                    fun count reg -> 
+                        let point = 
+                            this.TextView 
+                            |> TextViewUtil.GetCaretLine 
+                            |> SnapshotLineUtil.GetStart
+                        let span = SnapshotPointUtil.GetLineRangeSpanIncludingLineBreak point count
+                        _operations.UpdateRegisterForSpan reg RegisterOperation.Yank span OperationKind.LineWise)
                 yield (
                     "<Tab>", 
                     CommandFlags.Repeatable, 
@@ -524,7 +541,8 @@ type internal NormalMode
                         let point = TextViewUtil.GetCaretPoint _bufferData.TextView
                         let span = SnapshotPointUtil.GetLineRangeSpanIncludingLineBreak point count
                         let span = SnapshotSpan(point.GetContainingLine().Start,span.End)
-                        _operations.DeleteSpan span OperationKind.LineWise reg |> ignore )
+                        _operations.DeleteSpan span 
+                        _operations.UpdateRegisterForSpan reg RegisterOperation.Delete span OperationKind.LineWise)
                 yield (
                     "i", 
                     ModeKind.Insert, 
@@ -564,15 +582,21 @@ type internal NormalMode
                 yield (
                     "s", 
                     ModeKind.Insert, 
-                    (fun count reg -> _operations.DeleteCharacterAtCursor count reg))
+                    (fun count reg -> 
+                        let span = _operations.DeleteCharacterAtCursor count 
+                        _operations.UpdateRegisterForSpan reg RegisterOperation.Delete span OperationKind.CharacterWise))
                 yield (
                     "C", 
                     ModeKind.Insert, 
-                    (fun count reg -> _operations.DeleteLinesFromCursor count reg))
+                    (fun count reg -> 
+                        let span = _operations.DeleteLinesFromCursor count 
+                        _operations.UpdateRegisterForSpan reg RegisterOperation.Delete span OperationKind.CharacterWise))
                 yield (
                     "S", 
                     ModeKind.Insert, 
-                    (fun count reg -> _operations.DeleteLines count reg))
+                    (fun count reg -> 
+                        let span = _operations.DeleteLines count 
+                        _operations.UpdateRegisterForSpan reg RegisterOperation.Delete span OperationKind.LineWise))
                 yield (
                     "a", 
                     ModeKind.Insert, 
@@ -623,17 +647,21 @@ type internal NormalMode
                     "d", 
                     CommandFlags.None, 
                     None, 
-                    fun _ reg data -> _operations.DeleteSpan data.OperationSpan data.OperationKind reg |> ignore)
+                    fun _ reg data -> 
+                        _operations.DeleteSpan data.OperationSpan 
+                        _operations.UpdateRegisterForSpan reg RegisterOperation.Delete data.OperationSpan data.OperationKind)
                 yield (
                     "y", 
                     CommandFlags.None, 
                     None, 
-                    fun _ reg data -> _operations.Yank data.OperationSpan data.OperationKind reg)
+                    fun _ reg data -> _operations.UpdateRegisterForSpan reg RegisterOperation.Yank data.OperationSpan data.OperationKind)
                 yield (
                     "c", 
                     CommandFlags.LinkedWithNextTextChange, 
                     Some ModeKind.Insert, 
-                    fun _ reg data -> _operations.ChangeSpan data reg)
+                    fun _ reg data -> 
+                        let span = _operations.ChangeSpan data 
+                        _operations.UpdateRegisterForSpan reg RegisterOperation.Delete span data.OperationKind)
                 yield (
                     "<lt>", 
                     CommandFlags.None, 

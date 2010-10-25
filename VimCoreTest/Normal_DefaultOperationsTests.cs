@@ -32,6 +32,7 @@ namespace VimCore.Test
         private Mock<IOutliningManager> _outlining;
         private Mock<IUndoRedoOperations> _undoRedoOperations;
         private Mock<IEditorOptions> _options;
+        private Mock<IRegisterMap> _registerMap;
 
         private ISearchService _searchService;
         private Mock<IStatusUtil> _statusUtil;
@@ -80,6 +81,7 @@ namespace VimCore.Test
             _outlining = new Mock<IOutliningManager>(MockBehavior.Strict);
             _undoRedoOperations = new Mock<IUndoRedoOperations>(MockBehavior.Strict);
             _undoRedoOperations.Setup(x => x.CreateUndoTransaction(It.IsAny<string>())).Returns<string>(name => new Vim.UndoTransaction(FSharpOption.Create(EditorUtil.GetUndoHistory(_view.TextBuffer).CreateTransaction(name))));
+            _registerMap = MockObjectFactory.CreateRegisterMap();
 
             var data = new OperationsData(
                 vimHost: _host.Object,
@@ -89,6 +91,7 @@ namespace VimCore.Test
                 statusUtil: _statusUtil.Object,
                 jumpList: _jumpList.Object,
                 localSettings: _settings.Object,
+                registerMap: _registerMap.Object,
                 keyMap: null,
                 undoRedoOperations: _undoRedoOperations.Object,
                 editorOptions: _options.Object,
@@ -115,42 +118,36 @@ namespace VimCore.Test
         public void DeleteCharacterAtCursor1()
         {
             Create("foo", "bar");
-            var reg = new Register('c');
-            _operations.DeleteCharacterAtCursor(1, reg);
+            var span = _operations.DeleteCharacterAtCursor(1);
             Assert.AreEqual("oo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
-            Assert.AreEqual("f", reg.StringValue);
+            Assert.AreEqual("f", span.GetText());
         }
 
         [Test]
         public void DeleteCharacterAtCursor2()
         {
             Create("foo", "bar");
-            var reg = new Register('c');
-            _operations.DeleteCharacterAtCursor(1, reg);
+            var span = _operations.DeleteCharacterAtCursor(1);
             Assert.AreEqual("oo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
-            Assert.AreEqual("f", reg.StringValue);
-            Assert.AreEqual(OperationKind.CharacterWise, reg.Value.OperationKind);
+            Assert.AreEqual("f", span.GetText());
         }
 
         [Test]
         public void DeleteCharacterAtCursor3()
         {
             Create("foo", "bar");
-            var reg = new Register('c');
-            _operations.DeleteCharacterAtCursor(2, reg);
+            var span = _operations.DeleteCharacterAtCursor(2);
             Assert.AreEqual("o", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
-            Assert.AreEqual("fo", reg.StringValue);
-            Assert.AreEqual(OperationKind.CharacterWise, reg.Value.OperationKind);
+            Assert.AreEqual("fo", span.GetText());
         }
         [Test]
         public void DeleteCharacterBeforeCursor1()
         {
             Create("foo");
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 1));
-            var reg = new Register('c');
-            _operations.DeleteCharacterBeforeCursor(1, reg);
+            var span = _operations.DeleteCharacterBeforeCursor(1);
             Assert.AreEqual("oo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
-            Assert.AreEqual("f", reg.StringValue);
+            Assert.AreEqual("f", span.GetText());
         }
 
         [Test, Description("Don't delete past the current line")]
@@ -158,7 +155,7 @@ namespace VimCore.Test
         {
             Create("foo", "bar");
             _view.Caret.MoveTo(_view.TextSnapshot.GetLineFromLineNumber(1).Start);
-            _operations.DeleteCharacterBeforeCursor(1, new Register('c'));
+            var span = _operations.DeleteCharacterBeforeCursor(1);
             Assert.AreEqual("bar", _view.TextSnapshot.GetLineFromLineNumber(1).GetText());
             Assert.AreEqual("foo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
         }
@@ -168,17 +165,16 @@ namespace VimCore.Test
         {
             Create("foo", "bar");
             _view.Caret.MoveTo(_view.TextSnapshot.GetLineFromLineNumber(0).Start.Add(2));
-            var reg = new Register('c');
-            _operations.DeleteCharacterBeforeCursor(2, reg);
+            var span = _operations.DeleteCharacterBeforeCursor(2);
             Assert.AreEqual("o", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
-            Assert.AreEqual("fo", reg.StringValue);
+            Assert.AreEqual("fo", span.GetText());
         }
 
         [Test]
         public void DeleteCharacterBeforeCursor4()
         {
             Create("foo");
-            _operations.DeleteCharacterBeforeCursor(2, new Register('c'));
+            var span = _operations.DeleteCharacterBeforeCursor(2);
             Assert.AreEqual("foo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
         }
         [Test]
@@ -236,30 +232,6 @@ namespace VimCore.Test
             Create("foo");
             Assert.IsTrue(_operations.ReplaceChar(KeyInputUtil.CharToKeyInput('u'), 1));
             Assert.AreEqual(0, _view.Caret.Position.BufferPosition.Position);
-        }
-
-        [Test]
-        public void YankLines1()
-        {
-            Create("foo", "bar");
-            var reg = new Register('c');
-            _operations.YankLines(1, reg);
-            Assert.AreEqual("foo" + Environment.NewLine, reg.StringValue);
-            Assert.AreEqual(OperationKind.LineWise, reg.Value.OperationKind);
-        }
-
-        [Test]
-        public void YankLines2()
-        {
-            Create("foo", "bar", "jazz");
-            var reg = new Register('c');
-            _operations.YankLines(2, reg);
-            var tss = _view.TextSnapshot;
-            var span = new SnapshotSpan(
-                tss.GetLineFromLineNumber(0).Start,
-                tss.GetLineFromLineNumber(1).EndIncludingLineBreak);
-            Assert.AreEqual(span.GetText(), reg.StringValue);
-            Assert.AreEqual(OperationKind.LineWise, reg.Value.OperationKind);
         }
 
         [Test]
