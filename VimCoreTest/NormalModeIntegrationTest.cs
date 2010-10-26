@@ -175,5 +175,41 @@ namespace VimCore.Test
             _buffer.Process('N');
             Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
         }
+
+        [Test]
+        [Description("With no virtual edit the cursor should move backwards after x")]
+        public void CursorPositionWith_x_1()
+        {
+            CreateBuffer("test");
+            _buffer.Settings.GlobalSettings.VirtualEdit = string.Empty;
+            _textView.MoveCaretTo(3);
+            _buffer.Process('x');
+            Assert.AreEqual("tes", _textView.GetLineSpan(0).GetText());
+            Assert.AreEqual(2, _textView.GetCaretPoint().Position);
+        }
+
+        [Test]
+        [Description("With virtual edit the cursor should not move and stay at the end of the line")]
+        public void CursorPositionWith_x_2()
+        {
+            CreateBuffer("test", "bar");
+            _buffer.Settings.GlobalSettings.VirtualEdit = "onemore";
+            _textView.MoveCaretTo(3);
+            _buffer.Process('x');
+            Assert.AreEqual("tes", _textView.GetLineSpan(0).GetText());
+            Assert.AreEqual(3, _textView.GetCaretPoint().Position);
+        }
+
+        [Test]
+        [Description("Caret position should remain the same in the middle of a word")]
+        public void CursorPositionWith_x_3()
+        {
+            CreateBuffer("test", "bar");
+            _buffer.Settings.GlobalSettings.VirtualEdit = string.Empty;
+            _textView.MoveCaretTo(1);
+            _buffer.Process('x');
+            Assert.AreEqual("tst", _textView.GetLineSpan(0).GetText());
+            Assert.AreEqual(1, _textView.GetCaretPoint().Position);
+        }
     }
 }

@@ -223,6 +223,11 @@ type internal DefaultOperations ( _data : OperationsData, _incrementalSearch : I
             let count = min (count) (line.End.Position-point.Position)
             let span = new SnapshotSpan(point, count)
             x.CommonImpl.DeleteSpan span 
+
+            // Need to respect the virtual edit setting here as we could have 
+            // deleted the last character on the line
+            x.CommonImpl.MoveCaretForVirtualEdit()
+
             span
     
         /// Implement the normal mode X command

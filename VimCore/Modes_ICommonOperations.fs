@@ -114,6 +114,9 @@ type ICommonOperations =
     /// Move the cursor backward count WordKind's
     abstract MoveWordBackward : WordKind -> count : int -> unit
 
+    /// Maybe adjust the caret to respect the virtual edit setting
+    abstract MoveCaretForVirtualEdit : unit -> unit
+
     /// Jumps to a given mark in the buffer.  
     abstract JumpToMark : char -> IMarkMap -> Result
 

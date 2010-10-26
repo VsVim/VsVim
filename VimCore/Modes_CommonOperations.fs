@@ -29,14 +29,14 @@ type internal CommonOperations ( _data : OperationsData ) =
     /// The one exception has to do with the VirtualEdit setting.  By default the 'l' motion will 
     /// only move you to the last character on the line and no further.  Visual Studio up and down
     /// though acts like virtualedit=onemore.  We correct this here
-    member private x.AdjustCaretAfterUpDownMove() =
+    member x.MoveCaretForVirtualEdit () =
         if not _settings.GlobalSettings.IsVirtualEditOneMore then 
             let point = TextViewUtil.GetCaretPoint _textView
             let line = SnapshotPointUtil.GetContainingLine point
             if point.Position >= line.End.Position && line.Length > 0 then 
                 TextViewUtil.MoveCaretToPoint _textView (line.End.Subtract(1))
 
-    member private x.NavigateToPoint (point:VirtualSnapshotPoint) = 
+    member x.NavigateToPoint (point:VirtualSnapshotPoint) = 
         let buf = point.Position.Snapshot.TextBuffer
         if buf = _textView.TextBuffer then 
             TextViewUtil.MoveCaretToPoint _textView point.Position
@@ -44,12 +44,12 @@ type internal CommonOperations ( _data : OperationsData ) =
             true
         else  _host.NavigateTo point 
 
-    member private x.DeleteBlock (col:NormalizedSnapshotSpanCollection) = 
+    member x.DeleteBlock (col:NormalizedSnapshotSpanCollection) = 
         use edit = _textView.TextBuffer.CreateEdit()
         col |> Seq.iter (fun span -> edit.Delete(span.Span) |> ignore)
         edit.Apply() |> ignore
 
-    member private x.DeleteSpan (span:SnapshotSpan) = 
+    member x.DeleteSpan (span:SnapshotSpan) = 
         let buffer = span.Snapshot.TextBuffer
         buffer.Delete(span.Span) |> ignore
 
@@ -334,7 +334,7 @@ type internal CommonOperations ( _data : OperationsData ) =
             if count > 0 then _operations.ResetSelection()
             for i = 1 to count do   
                 _operations.MoveLineUp(false)
-            x.AdjustCaretAfterUpDownMove()
+            x.MoveCaretForVirtualEdit()
 
         /// Move the cursor count spaces down
         member x.MoveCaretDown count =
@@ -347,7 +347,7 @@ type internal CommonOperations ( _data : OperationsData ) =
             if count > 0 then _operations.ResetSelection()
             for i = 1 to count do
                 _operations.MoveLineDown(false)
-            x.AdjustCaretAfterUpDownMove()
+            x.MoveCaretForVirtualEdit()
 
         member x.MoveWordForward kind count = 
             let caret = TextViewUtil.GetCaretPoint _textView
@@ -359,6 +359,7 @@ type internal CommonOperations ( _data : OperationsData ) =
             let pos = TssUtil.FindPreviousWordStart caret count kind
             TextViewUtil.MoveCaretToPoint _textView pos 
 
+        member x.MoveCaretForVirtualEdit () = x.MoveCaretForVirtualEdit()
         member x.ShiftSpanRight multiplier span = x.ShiftSpanRight multiplier span
         member x.ShiftBlockRight multiplier block = x.ShiftRightCore multiplier block 
         member x.ShiftSpanLeft multiplier span = x.ShiftSpanLeft multiplier span
