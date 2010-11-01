@@ -60,8 +60,8 @@ namespace VimCore.Test
         public void AssertData(
             MotionData data,
             SnapshotSpan? span,
-            MotionKind motionKind,
-            OperationKind? operationKind)
+            MotionKind motionKind = null,
+            OperationKind? operationKind = null)
         {
             if (span.HasValue)
             {
@@ -1120,12 +1120,24 @@ namespace VimCore.Test
         }
 
         [Test]
+        [Description("End of buffer should grab the last character")]
         public void ParagraphForward1()
         {
             Create("dog", "pig", "cat");
             _textView.MoveCaretTo(_textView.TextSnapshot.GetEndPoint());
             var data = _util.ParagraphForward(1);
-            Assert.IsTrue(data.Span.IsEmpty);
+            Assert.AreEqual("t", data.Span.GetText());
+        }
+
+        [Test]
+        [Description("End of buffer should grab the last character even with VirtualEdit=onemore")]
+        public void ParagraphForward2()
+        {
+            Create("dog", "pig", "cat");
+            _settings.VirtualEdit = "onemore";
+            _textView.MoveCaretTo(_textView.TextSnapshot.GetEndPoint());
+            var data = _util.ParagraphForward(1);
+            Assert.AreEqual("t", data.Span.GetText());
         }
 
         [Test]
@@ -1242,6 +1254,24 @@ namespace VimCore.Test
             var data = _util.QuotedStringContents();
             Assert.IsTrue(data.IsSome());
             AssertData(data.Value, new SnapshotSpan(_snapshot, start, 3), MotionKind.Inclusive, OperationKind.CharacterWise);
+        }
+
+        [Test]
+        public void SentencesForward1()
+        {
+            Create("a! b");
+            var data = _util.SentenceForward(1);
+            AssertData(data, new SnapshotSpan(_snapshot, 0, 2));
+        }
+
+        [Test]
+        [Description("Don't return anything when at the end of the buffer")]
+        public void SentencesForward2()
+        {
+            Create("a! b");
+            _textView.MoveCaretTo(_snapshot.Length);
+            var data = _util.SentenceForward(1);
+            AssertData(data, new SnapshotSpan(_snapshot, _snapshot.Length, 0));
         }
 
     }

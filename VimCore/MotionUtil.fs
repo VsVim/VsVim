@@ -9,7 +9,7 @@ open Microsoft.VisualStudio.Text.Operations
 /// Contains motion actions which are generally useful to components
 module MotionUtil = 
 
-    let GetParagraphs point kind = 
+    let GetParagraphs point direction = 
 
         // Get the paragraphs for the given span in a forward fashion
         let forSpanForward span = 
@@ -46,30 +46,31 @@ module MotionUtil =
             }
 
         let mapSpan = 
-            if SearchKindUtil.IsForward kind then forSpanForward
-            else forSpanBackward 
-        SnapshotPointUtil.GetDividedSnapshotSpans point kind
+            match direction with 
+            | Direction.Forward -> forSpanForward
+            | Direction.Backward -> forSpanBackward
+        SnapshotPointUtil.GetDividedSnapshotSpans point (SearchKindUtil.OfDirection direction)
         |> Seq.map mapSpan
         |> Seq.concat
 
-    let GetParagraphsInSpan span kind = 
-        let kind = SearchKindUtil.RemoveWrap kind
-        if SearchKindUtil.IsForward kind then 
+    let GetParagraphsInSpan span direction = 
+        match direction with
+        | Direction.Forward -> 
             seq {
                 let start = SnapshotSpanUtil.GetStartPoint span
                 let spans = 
-                    GetParagraphs start kind 
+                    GetParagraphs start direction
                     |> Seq.takeWhile (fun p -> p.Span.Start.Position < span.End.Position)
                 for item in spans do
                     if item.Span.End.Position > span.End.Position then 
                         yield item.ReduceToSpan (SnapshotSpan(item.Span.Start, span.End))
                     else yield item
             }
-        else 
+        | Direction.Backward ->
             seq {
                 let endPoint = SnapshotSpanUtil.GetEndPoint span
                 let spans = 
-                    GetParagraphs endPoint kind 
+                    GetParagraphs endPoint direction
                     |> Seq.takeWhile (fun p -> p.Span.End.Position > span.Start.Position)
                 for item in spans do
                     if item.Span.Start.Position < span.Start.Position then
@@ -94,7 +95,7 @@ module MotionUtil =
         // 'start' param points to the end of the previous content boundary 
         let findFromBoundary start = 
             let endPoint = 
-                GetParagraphs start SearchKind.Forward
+                GetParagraphs start Direction.Forward
                 |> Seq.skipWhile isBoundary
                 |> Seq.map ( fun p -> p.Span.End )
                 |> SeqUtil.tryHeadOnly
@@ -111,7 +112,7 @@ module MotionUtil =
         // start of the Content span
         let findFromContentBody start =
             let endPoint =
-                GetParagraphs start SearchKind.Forward 
+                GetParagraphs start Direction.Forward
                 |> Seq.skip 1 // The Content 
                 |> Seq.skipWhile isBoundary
                 |> Seq.map (fun p -> p.Span.Start )
@@ -120,13 +121,13 @@ module MotionUtil =
             SnapshotSpan(start, endPoint)
 
         // Deteremine where the point is so we can do the proper calculation
-        match GetParagraphs point SearchKind.Backward |> SeqUtil.tryHeadOnly with
+        match GetParagraphs point Direction.Backward |> SeqUtil.tryHeadOnly with
         | None -> findFromBoundary (SnapshotUtil.GetStartPoint point.Snapshot)
         | Some(p)->
             match p with
             | Paragraph.Boundary(_,span) -> 
                 let start = 
-                    GetParagraphs point SearchKind.Backward
+                    GetParagraphs point Direction.Backward
                     |> Seq.skipWhile isBoundary
                     |> Seq.map (fun p -> p.Span.End)
                     |> SeqUtil.tryHeadOnly
@@ -134,7 +135,7 @@ module MotionUtil =
                 findFromBoundary start
             | Paragraph.Content(span) -> 
                 let fullSpan = 
-                    GetParagraphs span.Start SearchKind.Forward
+                    GetParagraphs span.Start Direction.Forward
                     |> Seq.map (fun p -> p.Span)
                     |> SeqUtil.tryHeadOnly
                     |> Option.get
@@ -151,7 +152,7 @@ module MotionUtil =
     /// the sentence. 
     let SentenceAfterEndChars = [' '; '\t'; '\r'; '\n']
 
-    let GetSentences point kind = 
+    let GetSentences point direction = 
 
         // Get the sentences for the given span in a forward fashion
         let forSpanForward span = 
@@ -221,12 +222,13 @@ module MotionUtil =
 
         seq {
             let mapSpan = 
-                if SearchKindUtil.IsForward kind then forSpanForward
-                else forSpanBackward 
+                match direction with
+                | Direction.Forward -> forSpanForward
+                | Direction.Backward -> forSpanBackward
 
             let items = 
-                SnapshotPointUtil.GetDividedSnapshotSpans point kind
-                |> Seq.map (fun span -> GetParagraphsInSpan span kind)
+                SnapshotPointUtil.GetDividedSnapshotSpans point (SearchKindUtil.OfDirection direction)
+                |> Seq.map (fun span -> GetParagraphsInSpan span direction)
                 |> Seq.concat
 
             for item in items do
@@ -236,7 +238,7 @@ module MotionUtil =
         }
 
     let GetSentenceFull point = 
-        GetSentences point SearchKind.Backward
+        GetSentences point Direction.Backward
         |> Seq.tryFind (fun x -> x.Contains(point))
         |> OptionUtil.getOrDefault (SnapshotSpanUtil.CreateFromStartToProvidedEnd point)
 

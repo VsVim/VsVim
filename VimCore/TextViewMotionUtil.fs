@@ -71,9 +71,9 @@ type internal TextViewMotionUtil
                 (span, true)
         {Span=span; IsForward=isForward; OperationKind=OperationKind.LineWise; MotionKind=MotionKind.Inclusive; Column= Some column }
 
-    member private x.GetParagraphs point kind count = 
+    member x.GetParagraphs point direction count = 
         let span = 
-            MotionUtil.GetParagraphs point kind 
+            MotionUtil.GetParagraphs point direction
             |> Seq.truncate count
             |> Seq.map (fun p -> p.Span)
             |> SnapshotSpanUtil.CreateCombined
@@ -82,7 +82,7 @@ type internal TextViewMotionUtil
             | Some(span) -> span
             | None -> 
                 // Can have no paragraphs at either end
-                if SearchKindUtil.IsBackward kind || point.Snapshot.Length = 0 then 
+                if Direction.Backward = direction || point.Snapshot.Length = 0 then 
                     point.Snapshot 
                     |> SnapshotUtil.GetStartPoint 
                     |> SnapshotSpanUtil.CreateEmpty
@@ -91,7 +91,7 @@ type internal TextViewMotionUtil
                     |> SnapshotUtil.GetEndPoint 
                     |> SnapshotPointUtil.SubtractOne 
                     |> SnapshotSpanUtil.CreateEmpty
-        let isForward = SearchKindUtil.IsForward kind
+        let isForward = Direction.Forward = direction
         {Span=span; IsForward=isForward; MotionKind=MotionKind.Exclusive; OperationKind=OperationKind.LineWise; Column=None}
 
     member x.SectionBackwardOrOther count otherChar = 
@@ -411,17 +411,20 @@ type internal TextViewMotionUtil
             {Span=span; IsForward=isForward; MotionKind=MotionKind.Inclusive; OperationKind=OperationKind.LineWise; Column=None}
             |> x.ApplyStartOfLineOption
         member x.SentenceForward count = 
-            let caretPoint = TextViewUtil.GetCaretPoint _textView
-            let span = 
-                MotionUtil.GetSentences caretPoint SearchKind.Forward
-                |> Seq.truncate count
-                |> SnapshotSpanUtil.CreateCombined 
-                |> Option.get   // GetSentences must return at least one
-            {Span=span; IsForward=true; MotionKind=MotionKind.Exclusive; OperationKind=OperationKind.CharacterWise; Column=None}
+            match TextViewUtil.GetCaretPointKind _textView with 
+            | PointKind.Normal (point) -> 
+                let span = 
+                    MotionUtil.GetSentences point Direction.Forward
+                    |> Seq.truncate count
+                    |> SnapshotSpanUtil.CreateCombined 
+                    |> Option.get   // GetSentences must return at least one
+                {Span=span; IsForward=true; MotionKind=MotionKind.Exclusive; OperationKind=OperationKind.CharacterWise; Column=None}
+            | PointKind.EndPoint(_,point) -> MotionData.CreateEmptyFromPoint point MotionKind.Inclusive OperationKind.CharacterWise
+            | PointKind.ZeroLength(point) -> MotionData.CreateEmptyFromPoint point MotionKind.Inclusive OperationKind.CharacterWise
         member x.SentenceBackward count = 
             let caretPoint = TextViewUtil.GetCaretPoint _textView
             let span = 
-                MotionUtil.GetSentences caretPoint SearchKind.Backward
+                MotionUtil.GetSentences caretPoint Direction.Backward
                 |> Seq.truncate count
                 |> SnapshotSpanUtil.CreateCombined 
                 |> Option.get   // GetSentences must return at least one
@@ -437,18 +440,21 @@ type internal TextViewMotionUtil
                     let startPoint = 
                         MotionUtil.GetSentenceFull caretPoint
                         |> SnapshotSpanUtil.GetStartPoint
-                    MotionUtil.GetSentences startPoint SearchKind.Forward 
+                    MotionUtil.GetSentences startPoint Direction.Forward 
                     |> Seq.truncate count
                     |> SnapshotSpanUtil.CreateCombinedOrEmpty caretPoint.Snapshot
             {Span=span; IsForward=true; MotionKind=MotionKind.Exclusive; OperationKind=OperationKind.CharacterWise; Column=None}
         member x.ParagraphForward count =
-            x.GetParagraphs (TextViewUtil.GetCaretPoint _textView) SearchKind.Forward count
+            match TextViewUtil.GetCaretPointKind _textView with
+            | PointKind.Normal(point) -> x.GetParagraphs point Direction.Forward count
+            | PointKind.EndPoint(point,_) -> x.GetParagraphs point Direction.Forward count
+            | PointKind.ZeroLength(point) -> MotionData.CreateEmptyFromPoint point MotionKind.Inclusive OperationKind.CharacterWise
         member x.ParagraphBackward count =
-            x.GetParagraphs (TextViewUtil.GetCaretPoint _textView) SearchKind.Backward count
+            x.GetParagraphs (TextViewUtil.GetCaretPoint _textView) Direction.Backward count
         member x.ParagraphFullForward count =
             let caretPoint = TextViewUtil.GetCaretPoint _textView
             let span = MotionUtil.GetFullParagraph caretPoint
-            x.GetParagraphs span.Start SearchKind.Forward count 
+            x.GetParagraphs span.Start Direction.Forward count 
         member x.SectionForward motionArg count = 
             let endPoint = SnapshotUtil.GetEndPoint _textView.TextSnapshot
 

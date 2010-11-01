@@ -385,6 +385,16 @@ module SnapshotLineUtil =
         let length = GetLineBreakLength line
         SnapshotSpan(point,length)
 
+[<RequireQualifiedAccess>]
+type PointKind =
+    /// Normal valid point within the ITextSnapshot.  Point in question is the argument
+    | Normal of SnapshotPoint
+    /// End point of a non-zero length buffer.  Data is a tuple of the last valid
+    /// point in the Snapshot and the end point
+    | EndPoint of SnapshotPoint * SnapshotPoint
+    /// This is a zero length buffer.  Point in question is the argument
+    | ZeroLength of SnapshotPoint
+
 /// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
 /// include any Vim specific logic
 module SnapshotPointUtil =
@@ -681,6 +691,14 @@ module SnapshotPointUtil =
         if left.Position < right.Position then left,right
         else right,left
 
+    /// Get the PointKind information about this SnapshotPoint
+    let GetPointKind point = 
+        if IsEndPoint point then 
+            match TrySubtractOne point with 
+            | Some(lastPoint) -> PointKind.EndPoint(lastPoint,point)
+            | None -> PointKind.ZeroLength(point)
+        else PointKind.Normal point
+
 module VirtualSnapshotPointUtil =
     
     let OfPoint (point:SnapshotPoint) = VirtualSnapshotPoint(point)
@@ -718,6 +736,8 @@ module TextViewUtil =
     let GetCaret (textView:ITextView) = textView.Caret
 
     let GetCaretPoint (textView:ITextView) = textView.Caret.Position.BufferPosition
+
+    let GetCaretPointKind textView = textView |> GetCaretPoint |> SnapshotPointUtil.GetPointKind
 
     let GetCaretLine textView = GetCaretPoint textView |> SnapshotPointUtil.GetContainingLine
 

@@ -49,3 +49,6 @@ type MotionData = {
                 else x.Span
             else x.Span
 
+    static member CreateEmptyFromPoint point motionKind operationKind = 
+        let span = SnapshotSpanUtil.CreateWithLength point 0  
+        {Span=span; IsForward=true; MotionKind=motionKind; OperationKind=operationKind; Column=None}

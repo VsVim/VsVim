@@ -2,6 +2,11 @@
 
 namespace Vim
 
+type Direction = 
+    | Forward
+    | Backward
+
+
 type SearchKind = 
      | Forward = 1
      | ForwardWithWrap = 2
@@ -38,3 +43,8 @@ module internal SearchKindUtil =
         | SearchKind.Backward -> SearchKind.Backward
         | SearchKind.BackwardWithWrap -> SearchKind.Backward
         | _ -> failwith "Invalid enum value"
+
+    let OfDirection dir = 
+        match dir with 
+        | Direction.Forward -> SearchKind.Forward
+        | Direction.Backward -> SearchKind.Backward

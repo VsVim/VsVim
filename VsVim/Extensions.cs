@@ -291,6 +291,12 @@ namespace VsVim
 
         #endregion
 
+        #region IVsSnippetManager
+
+
+
+        #endregion
+
         #region IServiceProvider
 
         public static TInterface GetService<TService, TInterface>(this IServiceProvider sp)
