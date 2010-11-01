@@ -39,7 +39,7 @@ namespace VimCore.Test
             var realCount = count.HasValue
                 ? FSharpOption.Create(count.Value)
                 : FSharpOption<int>.None;
-            var res = _capture.GetMotion(
+            var res = _capture.GetOperatorMotion(
                 KeyInputUtil.CharToKeyInput(input[0]),
                 realCount);
             foreach (var cur in input.Skip(1))
@@ -125,7 +125,7 @@ namespace VimCore.Test
                 .Setup(x => x.EndOfLine(1))
                 .Returns(CreateMotionData())
                 .Verifiable();
-            _capture.GetMotion(KeyInputUtil.VimKeyToKeyInput(VimKey.End), FSharpOption<int>.None);
+            _capture.GetOperatorMotion(KeyInputUtil.VimKeyToKeyInput(VimKey.End), FSharpOption<int>.None);
             _factory.Verify();
         }
 
@@ -616,7 +616,7 @@ namespace VimCore.Test
         public void Motion_SectionForward1()
         {
             _util
-                .Setup(x => x.SectionForward(MotionArgument.ConsiderCloseBrace, 1))
+                .Setup(x => x.SectionForward(MotionContext.AfterOperator, 1))
                 .Returns(CreateMotionData())
                 .Verifiable();
             ProcessComplete("]]");
@@ -627,7 +627,7 @@ namespace VimCore.Test
         public void Motion_SectionForward2()
         {
             _util
-                .Setup(x => x.SectionForward(MotionArgument.None, 1))
+                .Setup(x => x.SectionForward(MotionContext.Movement, 1))
                 .Returns(CreateMotionData())
                 .Verifiable();
             ProcessComplete("][");

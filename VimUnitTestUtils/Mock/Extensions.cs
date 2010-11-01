@@ -135,7 +135,7 @@ namespace Vim.UnitTest.Mock
 
         public static void MakeLastCharSearchNone(this Mock<IMotionCaptureGlobalData> mock)
         {
-            var value = FSharpOption<Tuple<FSharpFunc<MotionUse, FSharpFunc<FSharpOption<int>, FSharpOption<MotionData>>>, FSharpFunc<MotionUse, FSharpFunc<FSharpOption<int>, FSharpOption<MotionData>>>>>.None;
+            var value = FSharpOption<Tuple<FSharpFunc<MotionArgument, FSharpOption<MotionData>>, FSharpFunc<MotionArgument, FSharpOption<MotionData>>>>.None;
             mock.SetupGet(x => x.LastCharSearch).Returns(value);
         }
 

@@ -799,7 +799,7 @@ namespace VimCore.Test
             var data = _util.LineDownToFirstNonWhitespace(1);
             Assert.AreEqual(MotionKind.Inclusive, data.MotionKind);
             Assert.AreEqual(OperationKind.LineWise, data.OperationKind);
-            Assert.AreEqual(_buffer.GetLineSpan(0, 1), data.Span);
+            Assert.AreEqual(_buffer.GetLineSpanIncludingLineBreak(0, 1), data.Span);
             Assert.IsTrue(data.IsForward);
         }
 
@@ -810,7 +810,7 @@ namespace VimCore.Test
             var data = _util.LineDownToFirstNonWhitespace(2);
             Assert.AreEqual(MotionKind.Inclusive, data.MotionKind);
             Assert.AreEqual(OperationKind.LineWise, data.OperationKind);
-            Assert.AreEqual(_buffer.GetLineSpan(0, 2), data.Span);
+            Assert.AreEqual(_buffer.GetLineSpanIncludingLineBreak(0, 2), data.Span);
             Assert.IsTrue(data.IsForward);
         }
 
@@ -822,7 +822,7 @@ namespace VimCore.Test
             var data = _util.LineDownToFirstNonWhitespace(0);
             Assert.AreEqual(MotionKind.Inclusive, data.MotionKind);
             Assert.AreEqual(OperationKind.LineWise, data.OperationKind);
-            Assert.AreEqual(_buffer.GetLineSpan(0), data.Span);
+            Assert.AreEqual(_buffer.GetLineSpanIncludingLineBreak(0), data.Span);
             Assert.IsTrue(data.IsForward);
         }
 
@@ -833,7 +833,7 @@ namespace VimCore.Test
             Create("cat", "dog", "bird");
             _textView.MoveCaretTo(1);
             var data = _util.LineDownToFirstNonWhitespace(1);
-            var span = _textView.GetLineSpan(0, 1);
+            var span = _textView.GetLineSpanIncludingLineBreak(0, 1);
             Assert.AreEqual(span, data.Span);
         }
 
@@ -931,7 +931,7 @@ namespace VimCore.Test
         public void SectionForward1()
         {
             Create(0, "dog", "\fpig", "{fox");
-            var data = _util.SectionForward(MotionArgument.None, 1);
+            var data = _util.SectionForward(MotionContext.Movement, 1);
             Assert.AreEqual(_textView.GetLineSpanIncludingLineBreak(0), data.Span);
             Assert.AreEqual(0, data.Column.Value);
         }
@@ -940,7 +940,7 @@ namespace VimCore.Test
         public void SectionForward2()
         {
             Create(0, "dog", "\fpig", "fox");
-            var data = _util.SectionForward(MotionArgument.None, 2);
+            var data = _util.SectionForward(MotionContext.Movement, 2);
             Assert.AreEqual(new SnapshotSpan(_snapshot, 0, _snapshot.Length), data.Span);
             Assert.AreEqual(0, data.Column.Value);
         }
@@ -949,7 +949,7 @@ namespace VimCore.Test
         public void SectionForward3()
         {
             Create(0, "dog", "{pig", "fox");
-            var data = _util.SectionForward(MotionArgument.None, 2);
+            var data = _util.SectionForward(MotionContext.Movement, 2);
             Assert.AreEqual(new SnapshotSpan(_snapshot, 0, _snapshot.Length), data.Span);
             Assert.AreEqual(0, data.Column.Value);
         }
@@ -958,7 +958,7 @@ namespace VimCore.Test
         public void SectionForward4()
         {
             Create(0, "dog", "{pig", "{fox");
-            var data = _util.SectionForward(MotionArgument.None, 1);
+            var data = _util.SectionForward(MotionContext.Movement, 1);
             Assert.AreEqual(_textView.GetLineSpanIncludingLineBreak(0), data.Span);
             Assert.AreEqual(0, data.Column.Value);
         }
@@ -967,7 +967,7 @@ namespace VimCore.Test
         public void SectionForward5()
         {
             Create(0, "dog", "}pig", "fox");
-            var data = _util.SectionForward(MotionArgument.ConsiderCloseBrace, 1);
+            var data = _util.SectionForward(MotionContext.AfterOperator, 1);
             Assert.AreEqual(_textView.GetLineSpanIncludingLineBreak(0, 1), data.Span);
             Assert.AreEqual(0, data.Column.Value);
         }
@@ -977,7 +977,7 @@ namespace VimCore.Test
         public void SectionForward6()
         {
             Create(0, "dog", "}pig", "fox");
-            var data = _util.SectionForward(MotionArgument.None, 1);
+            var data = _util.SectionForward(MotionContext.Movement, 1);
             Assert.AreEqual(new SnapshotSpan(_snapshot, 0, _snapshot.Length), data.Span);
             Assert.AreEqual(0, data.Column.Value);
         }

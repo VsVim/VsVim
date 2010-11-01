@@ -156,7 +156,7 @@ namespace Vim.UnitTest
             var countOpt = count != null ? FSharpOption.Create(count.Value) : FSharpOption<int>.None;
             return new MotionRunData(
                 motionCommand,
-                countOpt,
+                new MotionArgument(MotionContext.AfterOperator, FSharpOption<int>.None, countOpt),
                 FuncUtil.CreateMotionFunc(func));
         }
 

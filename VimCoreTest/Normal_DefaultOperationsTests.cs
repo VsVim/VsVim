@@ -118,6 +118,7 @@ namespace VimCore.Test
         public void DeleteCharacterAtCursor1()
         {
             Create("foo", "bar");
+            _globalSettings.SetupGet(x => x.IsVirtualEditOneMore).Returns(false);
             var span = _operations.DeleteCharacterAtCursor(1);
             Assert.AreEqual("oo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
             Assert.AreEqual("f", span.GetText());
@@ -127,6 +128,7 @@ namespace VimCore.Test
         public void DeleteCharacterAtCursor2()
         {
             Create("foo", "bar");
+            _globalSettings.SetupGet(x => x.IsVirtualEditOneMore).Returns(false);
             var span = _operations.DeleteCharacterAtCursor(1);
             Assert.AreEqual("oo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
             Assert.AreEqual("f", span.GetText());
@@ -136,10 +138,12 @@ namespace VimCore.Test
         public void DeleteCharacterAtCursor3()
         {
             Create("foo", "bar");
+            _globalSettings.SetupGet(x => x.IsVirtualEditOneMore).Returns(false);
             var span = _operations.DeleteCharacterAtCursor(2);
             Assert.AreEqual("o", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
             Assert.AreEqual("fo", span.GetText());
         }
+
         [Test]
         public void DeleteCharacterBeforeCursor1()
         {

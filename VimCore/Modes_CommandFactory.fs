@@ -47,10 +47,14 @@ type internal CommandFactory( _operations : ICommonOperations, _capture : IMotio
             | Some(data) -> _operations.MoveCaretToMotionData data
             CommandResult.Completed NoSwitch
 
+        let makeMotionArgument count = {MotionContext=MotionContext.Movement; OperatorCount=None; MotionCount=count}
+
         let processMotionCommand command =
             match command with
             | SimpleMotionCommand(name,_,func) -> 
-                let inner count _ =  func MotionUse.Movement count |> processResult
+                let inner count _ =  
+                    let arg = makeMotionArgument count
+                    func arg |> processResult
                 Command.SimpleCommand(name,CommandFlags.Movement,inner) 
             | ComplexMotionCommand(name,_,func) -> 
                 
@@ -59,7 +63,8 @@ type internal CommandFactory( _operations : ICommonOperations, _capture : IMotio
                         match result with
                         | ComplexMotionResult.Finished(func) ->
                             let res = 
-                                match func MotionUse.Movement count with
+                                let arg = makeMotionArgument count
+                                match func arg with
                                 | None -> CommandResult.Error Resources.MotionCapture_InvalidMotion
                                 | Some(data) -> 
                                     _operations.MoveCaretToMotionData data

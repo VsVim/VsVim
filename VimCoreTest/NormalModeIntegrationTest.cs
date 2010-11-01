@@ -89,6 +89,40 @@ namespace VimCore.Test
         }
 
         [Test]
+        [Description("A d with Enter should delete the line break")]
+        public void Issue317_1()
+        {
+            CreateBuffer("dog", "cat", "jazz", "band");
+            _buffer.Process("2d");
+            _buffer.Process(VimKey.Enter);
+            Assert.AreEqual("band", _textView.GetLine(0).GetText());
+        }
+
+        [Test]
+        [Description("Verify the contents after with a paste")]
+        public void Issue317_2()
+        {
+            CreateBuffer("dog", "cat", "jazz", "band");
+            _buffer.Process("2d");
+            _buffer.Process(VimKey.Enter);
+            _buffer.Process("p");
+            Assert.AreEqual("band", _textView.GetLine(0).GetText());
+            Assert.AreEqual("dog", _textView.GetLine(1).GetText());
+            Assert.AreEqual("cat", _textView.GetLine(2).GetText());
+            Assert.AreEqual("jazz", _textView.GetLine(3).GetText());
+        }
+
+        [Test]
+        [Description("Plain old Enter should just move the cursor one line")]
+        public void Issue317_3()
+        {
+            CreateBuffer("dog", "cat", "jazz", "band");
+            _buffer.Process(VimKey.Enter);
+            Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
+        }
+
+
+        [Test]
         [Description("[[ motion should put the caret on the target character")]
         public void SectionMotion1()
         {

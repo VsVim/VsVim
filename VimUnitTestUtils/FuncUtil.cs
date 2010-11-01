@@ -6,28 +6,28 @@ namespace Vim.UnitTest
 {
     public static class FuncUtil
     {
-        public static FSharpFunc<MotionUse, FSharpFunc<FSharpOption<int>, FSharpOption<MotionData>>> CreateMotionFunc(Action<int> action)
+        public static FSharpFunc<MotionArgument, FSharpOption<MotionData>> CreateMotionFunc(Action<int> action)
         {
-            Func<MotionUse, FSharpOption<int>, FSharpOption<MotionData>> func = (motionUse, count) =>
+            Func<MotionArgument, FSharpOption<MotionData>> func = arg =>
                 {
-                    action(CommandUtil.CountOrDefault(count));
+                    action(arg.Count);
                     return FSharpOption<MotionData>.None;
                 };
             return func.ToFSharpFunc();
         }
 
-        public static FSharpFunc<MotionUse, FSharpFunc<FSharpOption<int>, FSharpOption<MotionData>>> CreateMotionFunc(Func<int, MotionData> action)
+        public static FSharpFunc<MotionArgument, FSharpOption<MotionData>> CreateMotionFunc(Func<int, MotionData> action)
         {
-            Func<MotionUse, FSharpOption<int>, FSharpOption<MotionData>> func = (motionUse, count) =>
+            Func<MotionArgument, FSharpOption<MotionData>> func = arg =>
                 {
-                    return FSharpOption.Create(action(CommandUtil.CountOrDefault(count)));
+                    return FSharpOption.Create(action(arg.Count));
                 };
             return func.ToFSharpFunc();
         }
 
-        public static FSharpFunc<MotionUse, FSharpFunc<FSharpOption<int>, FSharpOption<MotionData>>> CreateMotionFunc(Func<MotionData> func)
+        public static FSharpFunc<MotionArgument, FSharpOption<MotionData>> CreateMotionFunc(Func<MotionData> func)
         {
-            Func<MotionUse, FSharpOption<int>, FSharpOption<MotionData>> inner = (motionUse, count) =>
+            Func<MotionArgument, FSharpOption<MotionData>> inner = arg =>
             {
                 var ret = func();
                 return ret != null

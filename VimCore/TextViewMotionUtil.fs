@@ -310,7 +310,7 @@ type internal TextViewMotionUtil
             let number = line.LineNumber + count
             let endLine = SnapshotUtil.GetLineOrLast line.Snapshot number
             let column = TssUtil.FindFirstNonWhitespaceCharacter endLine |> SnapshotPointUtil.GetColumn |> Some
-            let span = SnapshotSpan(line.Start, endLine.End)
+            let span = SnapshotSpan(line.Start, endLine.EndIncludingLineBreak)
             {Span=span; IsForward=true; MotionKind=MotionKind.Inclusive; OperationKind=OperationKind.LineWise; Column=column}
         member x.LineUpToFirstNonWhitespace count =
             let point = x.StartPoint
@@ -455,7 +455,7 @@ type internal TextViewMotionUtil
             let caretPoint = TextViewUtil.GetCaretPoint _textView
             let span = MotionUtil.GetFullParagraph caretPoint
             x.GetParagraphs span.Start Direction.Forward count 
-        member x.SectionForward motionArg count = 
+        member x.SectionForward context count =
             let endPoint = SnapshotUtil.GetEndPoint _textView.TextSnapshot
 
             // Move a single count forward from the given point
@@ -469,11 +469,11 @@ type internal TextViewMotionUtil
                         | '\f' -> nextPoint
                         | '{' -> nextPoint 
                         | '}' -> 
-                            match motionArg with
-                            | MotionArgument.ConsiderCloseBrace ->
+                            match context with
+                            | MotionContext.AfterOperator ->
                                 let line = SnapshotPointUtil.GetContainingLine nextPoint
                                 line.EndIncludingLineBreak
-                            | MotionArgument.None -> getNext nextPoint
+                            | MotionContext.Movement -> getNext nextPoint
                         | _ -> getNext nextPoint
                     else getNext nextPoint
 

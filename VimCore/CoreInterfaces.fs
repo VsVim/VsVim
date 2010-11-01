@@ -67,10 +67,42 @@ type IUndoRedoOperations =
     /// Creates an Undo Transaction
     abstract CreateUndoTransaction : name:string -> IUndoTransaction
 
+/// Context on how the motion is being used.  Several motions (]] for example)
+/// change behavior based on how they are being used
 [<RequireQualifiedAccess>]
-type MotionArgument = 
-    | None
-    | ConsiderCloseBrace
+type MotionContext =
+    | Movement
+    | AfterOperator
+
+/// Arguments necessary to buliding a Motion
+type MotionArgument = {
+
+    /// Context of the Motion
+    MotionContext : MotionContext
+
+    /// Count passed to the operator
+    OperatorCount : int option
+
+    /// Count passed to the motion 
+    MotionCount : int option 
+
+} with
+
+    /// Provides the raw count which is a combination of the OperatorCount
+    /// and MotionCount values.  
+    member x.RawCount = 
+        match x.MotionCount,x.OperatorCount with
+        | None,None -> None
+        | Some(c),None -> Some c
+        | None,Some(c) -> Some c
+        | Some(l),Some(r) -> Some (l*r)
+
+    /// Resolves the count to a value.  It will use the default 1 for 
+    /// any count which is not provided 
+    member x.Count = 
+        let operatorCount = x.OperatorCount |> OptionUtil.getOrDefault 1
+        let motionCount = x.MotionCount |> OptionUtil.getOrDefault 1
+        operatorCount * motionCount
 
 /// Responsible for implementing all of the Motion information
 type ITextViewMotionUtil = 
@@ -180,7 +212,7 @@ type ITextViewMotionUtil =
     abstract ParagraphFullForward : count:int -> MotionData
 
     /// Forward a section in the editor
-    abstract SectionForward : MotionArgument -> count:int -> MotionData
+    abstract SectionForward : MotionContext -> count:int-> MotionData
 
     /// Backward a section in the editor or to an open brace
     abstract SectionBackwardOrOpenBrace : count:int -> MotionData
@@ -465,12 +497,6 @@ type Command =
 
     override x.ToString() = System.String.Format("{0} -> {1}", x.KeyInputSet, x.CommandFlags)
 
-/// Context on how the motion is being used.  Several motions (]] for example)
-/// change behavior based on how they are being used
-[<RequireQualifiedAccess>]
-type MotionUse =
-    | Movement
-    | AfterOperator
 
 /// Flags about specific motions
 [<RequireQualifiedAccess>]
@@ -485,14 +511,16 @@ type MotionFlags =
     /// :help text-objects
     | TextObjectSelection = 0x2
 
-type MotionFunction = MotionUse -> int option -> MotionData option
+type MotionFunction = MotionArgument -> MotionData option
 
 type ComplexMotionResult =
     /// Enough input was provided to produce a simple motion style function
-    | Finished of MotionFunction 
+    | Finished of MotionFunction
     | Cancelled
     | Error of string
     | NeedMoreInput of (KeyInput -> ComplexMotionResult)
+
+type ComplexMotionFunction = unit -> ComplexMotionResult
 
 /// Represents the types of MotionCommands which exist
 type MotionCommand = 
@@ -506,7 +534,7 @@ type MotionCommand =
     /// the f,t,F and T commands all require at least one additional input.  The bool
     /// in the middle of the tuple indicates whether or not the motion can be 
     /// used as a cursor movement operation  
-    | ComplexMotionCommand of KeyInputSet * MotionFlags * ( unit -> ComplexMotionResult )
+    | ComplexMotionCommand of KeyInputSet * MotionFlags * ComplexMotionFunction
 
     with
 
@@ -520,9 +548,10 @@ type MotionCommand =
         | SimpleMotionCommand(_,flags,_) -> flags
         | ComplexMotionCommand(_,flags,_) -> flags
 
+/// Data about the run of a given MotionData
 type MotionRunData = {
-    MotionCommand : MotionCommand;
-    Count : int option
+    MotionCommand : MotionCommand
+    MotionArgument : MotionArgument
     MotionFunction : MotionFunction
 }
 
@@ -564,7 +593,7 @@ type IMotionCapture =
     abstract MotionCommands : seq<MotionCommand>
 
     /// Get the motion starting with the given KeyInput
-    abstract GetMotion : KeyInput -> int option -> MotionResult
+    abstract GetOperatorMotion : KeyInput -> int option -> MotionResult
 
 module CommandUtil = 
 

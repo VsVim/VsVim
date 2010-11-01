@@ -113,7 +113,7 @@ type internal CommandRunner
 
         let runInitialMotion ki =
             let count = CommandUtil.CountOrDefault _data.Count
-            _capture.GetMotion ki (Some count) |> inner
+            _capture.GetOperatorMotion ki (Some count) |> inner
 
         match initialInput with
         | None -> NeedMore runInitialMotion
