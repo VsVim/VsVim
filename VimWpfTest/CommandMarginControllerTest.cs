@@ -14,10 +14,12 @@ namespace Vim.UI.Wpf.Test
         private MockVimBuffer _buffer;
         private CommandMarginControl _marginControl;
         private CommandMarginController _controller;
+        private MockRepository _factory;
 
         [SetUp]
         public void Setup()
         {
+            _factory = new MockRepository(MockBehavior.Strict);
             _buffer = new MockVimBuffer();
             _marginControl = new CommandMarginControl();
             _marginControl.StatusLine = String.Empty;
@@ -25,6 +27,13 @@ namespace Vim.UI.Wpf.Test
                 _buffer,
                 _marginControl,
                 new List<Lazy<IOptionsProviderFactory>>());
+        }
+
+        private void SimulatKeystroke()
+        {
+            var ki = KeyInputUtil.CharToKeyInput('a');
+            _buffer.RaiseKeyInputStart(ki);
+            _buffer.RaiseKeyInputEnd(ki);
         }
 
         [Test]
@@ -248,17 +257,14 @@ namespace Vim.UI.Wpf.Test
         [Test]
         public void NoEvents1()
         {
-            var search = new Mock<IIncrementalSearch>();
-            search.SetupGet(x => x.InSearch).Returns(false).Verifiable();
             var mode = new Mock<INormalMode>();
-            mode.SetupGet(x => x.IncrementalSearch).Returns(search.Object).Verifiable();
+            var search = mode.MakeIncrementalSearch(_factory);
+            search.SetupGet(x => x.InSearch).Returns(false).Verifiable();
             mode.SetupGet(x => x.Command).Returns("foo");
             _buffer.ModeKindImpl = ModeKind.Normal;
             _buffer.NormalModeImpl = mode.Object;
 
-            var ki = KeyInputUtil.CharToKeyInput('c');
-            _buffer.RaiseKeyInputStart(ki);
-            _buffer.RaiseKeyInputEnd(ki);
+            SimulatKeystroke();
             Assert.AreEqual("foo", _marginControl.StatusLine);
             mode.Verify();
             search.Verify();
@@ -272,9 +278,7 @@ namespace Vim.UI.Wpf.Test
             _buffer.ModeKindImpl = ModeKind.Command;
             _buffer.CommandModeImpl = mode.Object;
 
-            var ki = KeyInputUtil.CharToKeyInput('c');
-            _buffer.RaiseKeyInputStart(ki);
-            _buffer.RaiseKeyInputEnd(ki);
+            SimulatKeystroke();
             Assert.AreEqual(":foo", _marginControl.StatusLine);
             mode.Verify();
         }
@@ -287,12 +291,37 @@ namespace Vim.UI.Wpf.Test
             _buffer.ModeKindImpl = ModeKind.Disabled;
             _buffer.DisabledModeImpl = mode.Object;
 
-            var ki = KeyInputUtil.CharToKeyInput('c');
-            _buffer.RaiseKeyInputStart(ki);
-            _buffer.RaiseKeyInputEnd(ki);
+            SimulatKeystroke();
             Assert.AreEqual("foo", _marginControl.StatusLine);
             mode.Verify();
         }
 
+        [Test]
+        public void Search1()
+        {
+            var mode = _factory.Create<INormalMode>();
+            _buffer.NormalModeImpl = mode.Object;
+            _buffer.ModeKindImpl = ModeKind.Normal;
+            var search = mode.MakeIncrementalSearch(_factory);
+            var data = new SearchData(SearchText.NewStraightText("cat"), SearchKind.Forward, SearchOptions.None);
+            search.SetupGet(x => x.InSearch).Returns(true).Verifiable();
+            search.SetupGet(x => x.CurrentSearch).Returns(FSharpOption.Create(data)).Verifiable();
+            SimulatKeystroke();
+            Assert.AreEqual("/cat", _marginControl.StatusLine);
+        }
+
+        [Test]
+        public void Search2()
+        {
+            var mode = _factory.Create<INormalMode>();
+            _buffer.NormalModeImpl = mode.Object;
+            _buffer.ModeKindImpl = ModeKind.Normal;
+            var search = mode.MakeIncrementalSearch(_factory);
+            var data = new SearchData(SearchText.NewStraightText("cat"), SearchKind.Backward, SearchOptions.None);
+            search.SetupGet(x => x.InSearch).Returns(true).Verifiable();
+            search.SetupGet(x => x.CurrentSearch).Returns(FSharpOption.Create(data)).Verifiable();
+            SimulatKeystroke();
+            Assert.AreEqual("?cat", _marginControl.StatusLine);
+        }
     }
 }

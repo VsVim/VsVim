@@ -13,7 +13,7 @@ type SearchKind =
      | Backward = 3
      | BackwardWithWrap = 4 
 
-module internal SearchKindUtil =
+module SearchKindUtil =
     let IsForward x =
         match x with 
             | SearchKind.Forward -> true
