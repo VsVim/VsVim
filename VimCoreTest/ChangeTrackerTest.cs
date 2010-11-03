@@ -138,7 +138,7 @@ namespace VimCore.Test
             CreateForText("hello");
             _textChangeTracker.RaiseChangeCompleted("foo");
             Assert.IsTrue(_tracker.LastChange.IsSome());
-            Assert.AreEqual("foo", _tracker.LastChange.Value.AsTextChange().Item);
+            Assert.AreEqual(TextChange.NewInsert("foo"), _tracker.LastChange.Value.AsTextChange().Item);
         }
 
         [Test]
@@ -150,7 +150,7 @@ namespace VimCore.Test
             _normalModeRunner.RaiseCommandRan(cmd, CreateResult());
             _textChangeTracker.RaiseChangeCompleted("foo");
             Assert.IsTrue(_tracker.LastChange.IsSome());
-            Assert.AreEqual("foo", _tracker.LastChange.Value.AsTextChange().Item);
+            Assert.AreEqual(TextChange.NewInsert("foo"), _tracker.LastChange.Value.AsTextChange().Item);
         }
 
     }

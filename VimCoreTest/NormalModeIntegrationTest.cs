@@ -1,4 +1,5 @@
-﻿using Microsoft.VisualStudio.Text.Editor;
+﻿using Microsoft.VisualStudio.Text;
+using Microsoft.VisualStudio.Text.Editor;
 using NUnit.Framework;
 using Vim;
 using Vim.UnitTest;
@@ -120,7 +121,6 @@ namespace VimCore.Test
             _buffer.Process(VimKey.Enter);
             Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
         }
-
 
         [Test]
         [Description("[[ motion should put the caret on the target character")]
@@ -244,6 +244,210 @@ namespace VimCore.Test
             _buffer.Process('x');
             Assert.AreEqual("tst", _textView.GetLineSpan(0).GetText());
             Assert.AreEqual(1, _textView.GetCaretPoint().Position);
+        }
+
+        [Test]
+        public void RepeatCommand_DeleteWord1()
+        {
+            CreateBuffer("the cat jumped over the dog");
+            _buffer.Process("dw");
+            _buffer.Process(".");
+            Assert.AreEqual("jumped over the dog", _textView.GetLine(0).GetText());
+        }
+
+        [Test]
+        [Description("Make sure that movement doesn't reset the last edit command")]
+        public void RepeatCommand_DeleteWord2()
+        {
+            CreateBuffer("the cat jumped over the dog");
+            _buffer.Process("dw");
+            _buffer.Process(VimKey.Right);
+            _buffer.Process(VimKey.Left);
+            _buffer.Process(".");
+            Assert.AreEqual("jumped over the dog", _textView.GetLine(0).GetText());
+        }
+
+        [Test]
+        [Description("Delete word with a count")]
+        public void RepeatCommand_DeleteWord3()
+        {
+            CreateBuffer("the cat jumped over the dog");
+            _buffer.Process("2dw");
+            _buffer.Process(".");
+            Assert.AreEqual("the dog", _textView.GetLine(0).GetText());
+        }
+
+        [Test]
+        public void RepeatCommand_DeleteLine1()
+        {
+            CreateBuffer("bear", "dog", "cat", "zebra", "fox", "jazz");
+            _buffer.Process("dd");
+            _buffer.Process(".");
+            Assert.AreEqual("cat", _textView.GetLine(0).GetText());
+        }
+
+        [Test]
+        public void RepeatCommand_DeleteLine2()
+        {
+            CreateBuffer("bear", "dog", "cat", "zebra", "fox", "jazz");
+            _buffer.Process("2dd");
+            _buffer.Process(".");
+            Assert.AreEqual("fox", _textView.GetLine(0).GetText());
+        }
+
+        [Test]
+        public void RepeatCommand_ShiftLeft1()
+        {
+            CreateBuffer("    bear", "    dog", "    cat", "    zebra", "    fox", "    jazz");
+            _buffer.Settings.GlobalSettings.ShiftWidth = 1;
+            _buffer.Process("<<");
+            _buffer.Process(".");
+            Assert.AreEqual("  bear", _textView.GetLine(0).GetText());
+        }
+
+        [Test]
+        public void RepeatCommand_ShiftLeft2()
+        {
+            CreateBuffer("    bear", "    dog", "    cat", "    zebra", "    fox", "    jazz");
+            _buffer.Settings.GlobalSettings.ShiftWidth = 1;
+            _buffer.Process("2<<");
+            _buffer.Process(".");
+            Assert.AreEqual("  bear", _textView.GetLine(0).GetText());
+            Assert.AreEqual("  dog", _textView.GetLine(1).GetText());
+        }
+
+        [Test]
+        public void RepeatCommand_ShiftRight1()
+        {
+            CreateBuffer("bear", "dog", "cat", "zebra", "fox", "jazz");
+            _buffer.Settings.GlobalSettings.ShiftWidth = 1;
+            _buffer.Process(">>");
+            _buffer.Process(".");
+            Assert.AreEqual("  bear", _textView.GetLine(0).GetText());
+        }
+
+        [Test]
+        public void RepeatCommand_ShiftRight2()
+        {
+            CreateBuffer("bear", "dog", "cat", "zebra", "fox", "jazz");
+            _buffer.Settings.GlobalSettings.ShiftWidth = 1;
+            _buffer.Process("2>>");
+            _buffer.Process(".");
+            Assert.AreEqual("  bear", _textView.GetLine(0).GetText());
+            Assert.AreEqual("  dog", _textView.GetLine(1).GetText());
+        }
+
+        [Test]
+        public void RepeatCommand_DeleteChar1()
+        {
+            CreateBuffer("longer");
+            _buffer.Process("x");
+            _buffer.Process(".");
+            Assert.AreEqual("nger", _textView.GetLine(0).GetText());
+        }
+
+        [Test]
+        public void RepeatCommand_DeleteChar2()
+        {
+            CreateBuffer("longer");
+            _buffer.Process("2x");
+            _buffer.Process(".");
+            Assert.AreEqual("er", _textView.GetLine(0).GetText());
+        }
+
+        [Test]
+        [Description("After a search operation")]
+        public void RepeatCommand_DeleteChar3()
+        {
+            CreateBuffer("bear", "dog", "cat", "zebra", "fox", "jazz");
+            _buffer.Process("/e");
+            _buffer.Process(VimKey.Enter);
+            _buffer.Process("x");
+            _buffer.Process("n");
+            _buffer.Process(".");
+            Assert.AreEqual("bar", _textView.GetLine(0).GetText());
+            Assert.AreEqual("zbra", _textView.GetLine(3).GetText());
+        }
+
+        [Test]
+        public void RepeatCommand_Put1()
+        {
+            CreateBuffer("cat");
+            _buffer.RegisterMap.GetRegister(RegisterName.Unnamed).UpdateValue("lo");
+            _buffer.Process("p");
+            _buffer.Process(".");
+            Assert.AreEqual("cloloat", _textView.GetLine(0).GetText());
+        }
+
+        [Test]
+        public void RepeatCommand_Put2()
+        {
+            CreateBuffer("cat");
+            _buffer.RegisterMap.GetRegister(RegisterName.Unnamed).UpdateValue("lo");
+            _buffer.Process("2p");
+            _buffer.Process(".");
+            Assert.AreEqual("clolololoat", _textView.GetLine(0).GetText());
+        }
+
+        [Test]
+        public void RepeatCommand_JoinLines1()
+        {
+            CreateBuffer("bear", "dog", "cat", "zebra", "fox", "jazz");
+            _buffer.Process("J");
+            _buffer.Process(".");
+            Assert.AreEqual("bear dog cat", _textView.GetLine(0).GetText());
+        }
+
+        [Test]
+        public void RepeatCommand_Change1()
+        {
+            CreateBuffer("bear", "dog", "cat", "zebra", "fox", "jazz");
+            _buffer.Process("cl");
+            _buffer.TextBuffer.Delete(new Span(_textView.GetCaretPoint(), 1));
+            _buffer.Process(VimKey.Escape);
+            _buffer.Process(VimKey.Down);
+            _buffer.Process(".");
+            Assert.AreEqual("ar", _textView.GetLine(0).GetText());
+            Assert.AreEqual("g", _textView.GetLine(1).GetText());
+        }
+
+        [Test]
+        public void RepeatCommand_Change2()
+        {
+            CreateBuffer("bear", "dog", "cat", "zebra", "fox", "jazz");
+            _buffer.Process("cl");
+            _buffer.TextBuffer.Insert(0, "u");
+            _buffer.Process(VimKey.Escape);
+            _buffer.Process(VimKey.Down);
+            _buffer.Process(".");
+            Assert.AreEqual("uear", _textView.GetLine(0).GetText());
+            Assert.AreEqual("uog", _textView.GetLine(1).GetText());
+        }
+
+        [Test]
+        public void RepeatCommand_Substitute1()
+        {
+            CreateBuffer("bear", "dog", "cat", "zebra", "fox", "jazz");
+            _buffer.Process("s");
+            _buffer.TextBuffer.Insert(0, "u");
+            _buffer.Process(VimKey.Escape);
+            _buffer.Process(VimKey.Down);
+            _buffer.Process(".");
+            Assert.AreEqual("uear", _textView.GetLine(0).GetText());
+            Assert.AreEqual("uog", _textView.GetLine(1).GetText());
+        }
+
+        [Test]
+        public void RepeatCommand_Substitute2()
+        {
+            CreateBuffer("bear", "dog", "cat", "zebra", "fox", "jazz");
+            _buffer.Process("s");
+            _buffer.TextBuffer.Insert(0, "u");
+            _buffer.Process(VimKey.Escape);
+            _buffer.Process(VimKey.Down);
+            _buffer.Process("2.");
+            Assert.AreEqual("uear", _textView.GetLine(0).GetText());
+            Assert.AreEqual("ug", _textView.GetLine(1).GetText());
         }
     }
 }

@@ -15,10 +15,10 @@ type internal TextChangeTracker
         _mouse : IMouseDevice ) as this =
 
     let _bag = DisposableBag()
-    let _changeCompletedEvent = Event<string>()
+    let _changeCompletedEvent = Event<TextChange>()
 
     /// Tracks the current active text change.  This will grow as the user edits
-    let mutable _currentTextChange : Span option = None
+    let mutable _currentTextChange : (TextChange * ITextChange) option = None
 
     do
         // Listen to the events which are relevant to changes.  Make sure to undo them when 
@@ -50,55 +50,66 @@ type internal TextChangeTracker
 
     member x.CurrentChange = 
         match _currentTextChange with
-        | None -> StringUtil.empty
-        | Some(span) -> 
-            let snapshot = _buffer.TextBuffer.CurrentSnapshot
-            if SnapshotUtil.IsSpanValid snapshot span then snapshot.GetText(span)
-            else StringUtil.empty
+        | None -> None
+        | Some(change,_) -> Some change
 
     /// The change is completed.  Raises the changed event and resets the current text change 
     /// state
     member private x.ChangeCompleted() = 
         match _currentTextChange with
         | None -> ()
-        | Some(span) -> 
-            let data = x.CurrentChange
+        | Some(change,_) -> 
             _currentTextChange <- None
-            _changeCompletedEvent.Trigger data
+            _changeCompletedEvent.Trigger change
 
     member private x.OnTextChanged (args:TextContentChangedEventArgs) = 
 
         // Also at this time we only support contiguous changes (or rather a single change)
         if args.Changes.Count = 1 then
             let change = args.Changes.Item(0)
-            match _currentTextChange with
-            | None -> _currentTextChange <- change.NewSpan |> Some
-            | Some(span) -> x.MergeChange span change
-        else 
-            x.ChangeCompleted()
+            let opt = 
+                if change.Delta > 0 then Some (TextChange.Insert change.NewText)
+                elif change.Delta < 0 then Some (TextChange.Delete change.OldLength)
+                else None
+            match opt with 
+            | None -> ()
+            | Some(textChange) ->
+                match _currentTextChange with
+                | None -> _currentTextChange <- Some(textChange, change)
+                | Some(oldTextChange,oldRawChange) -> x.MergeChange oldTextChange oldRawChange textChange change 
+            else 
+                x.ChangeCompleted()
 
-    member private x.MergeChange (span:Span) (change:ITextChange) = 
-        if change.Delta > 0 then x.MergeChangeAdd span change
-        elif change.Delta = 0 then x.MergeChangeReplace span change
-        else x.MergeChangeDelete span change
+    member private x.MergeChange oldTextChange (oldChange:ITextChange) newTextChange (newChange:ITextChange) =
 
-    member private x.MergeChangeAdd (span:Span) (change:ITextChange) =
-        if span.End = change.OldPosition then 
-            _currentTextChange <- Span.FromBounds(span.Start, change.NewEnd) |> Some
-        else 
-            x.ChangeCompleted()
-            _currentTextChange <- change.NewSpan |> Some
+        // Right now we only support merging Insert with insert and delete with delete
+        match oldTextChange,newTextChange with
+        | TextChange.Insert(t1), TextChange.Insert(t2) -> 
+            if oldChange.NewEnd = newChange.OldPosition then 
+                _currentTextChange <- Some ((TextChange.Insert (t1 + t2)), newChange)
+            else
+                x.ChangeCompleted()
+                _currentTextChange <- Some (newTextChange,newChange)
+        | TextChange.Delete(len1), TextChange.Delete(len2) -> 
+            if oldChange.NewPosition - 1= newChange.OldPosition then
+                _currentTextChange <- Some ((TextChange.Delete (len1+len2)), newChange)
+            else
+                x.ChangeCompleted()
+                _currentTextChange <- Some (newTextChange, newChange)
+        | TextChange.Insert(t1), TextChange.Delete(len1) -> 
+            if oldChange.NewEnd - 1 = newChange.OldPosition then
+                let newLength = t1.Length - len1
+                if newLength > 0 then 
+                    let text = t1.Substring(0,newLength)
+                    _currentTextChange <- Some ((TextChange.Insert(text), newChange))
+                else
+                    x.ChangeCompleted()
+            else
+                x.ChangeCompleted()
+                _currentTextChange <- Some (newTextChange, newChange)
+        | TextChange.Delete(_), TextChange.Insert(_) -> 
+            () // Not supported yet
 
-    member private x.MergeChangeReplace (span:Span) (change:ITextChange) = 
-        // Nothing to do yet
-        ()
-
-    member private x.MergeChangeDelete (span:Span) (change:ITextChange) = 
-        if span.End = change.OldEnd && change.OldLength <= span.Length then 
-            _currentTextChange <- Span(span.Start, span.Length - change.OldLength) |> Some
-        else 
-            x.ChangeCompleted()
-            
     /// This is raised when caret changes.  If this is the result of a user click then 
     /// we need to complete the change.
     member private x.OnCaretPositionChanged () = 

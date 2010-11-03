@@ -2458,7 +2458,7 @@ namespace VimCore.Test
         public void RepeatLastChange2()
         {
             Create("");
-            _changeTracker.SetupGet(x => x.LastChange).Returns(FSharpOption.Create(RepeatableChange.NewTextChange("h"))).Verifiable();
+            _changeTracker.SetupGet(x => x.LastChange).Returns(FSharpOption.Create(RepeatableChange.NewTextChange(TextChange.NewInsert("h")))).Verifiable();
             _operations.Setup(x => x.InsertText("h", 1)).Verifiable();
             _mode.Process('.');
             _operations.Verify();
@@ -2469,7 +2469,7 @@ namespace VimCore.Test
         public void RepeatLastChange3()
         {
             Create("");
-            _changeTracker.SetupGet(x => x.LastChange).Returns(FSharpOption.Create(RepeatableChange.NewTextChange("h"))).Verifiable();
+            _changeTracker.SetupGet(x => x.LastChange).Returns(FSharpOption.Create(RepeatableChange.NewTextChange(TextChange.NewInsert("h")))).Verifiable();
             _operations.Setup(x => x.InsertText("h", 3)).Verifiable();
             _mode.Process("3.");
             _operations.Verify();
@@ -2689,6 +2689,43 @@ namespace VimCore.Test
             Assert.IsTrue(didRun);
         }
 
+        [Test]
+        [Description("Verify certain commands are not actually repeatable")]
+        public void RepeatLastChange13()
+        {
+            Create(String.Empty);
+            Action<string> verify = str =>
+            {
+                var keyInputSet = KeyNotationUtil.StringToKeyInputSet(str);
+                var command = _modeRaw.Commands.Where(x => x.KeyInputSet == keyInputSet).Single();
+                Assert.IsTrue(CommandFlags.None == (command.CommandFlags & CommandFlags.Repeatable));
+            };
+
+            verify("n");
+            verify("N");
+            verify("*");
+            verify("#");
+            verify("h");
+            verify("j");
+            verify("k");
+            verify("l");
+            verify("<C-u>");
+            verify("<C-d>");
+            verify("<C-r>");
+            verify("<C-y>");
+            verify("<C-f>");
+            verify("<S-Down>");
+            verify("<PageDown>");
+            verify("<PageUp>");
+            verify("<C-b>");
+            verify("<S-Up>");
+            verify("<Tab>");
+            verify("<C-i>");
+            verify("<C-o>");
+            verify("%");
+            verify("<C-PageDown>");
+            verify("<C-PageUp>");
+        }
 
         [Test]
         public void Escape1()

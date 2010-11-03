@@ -126,11 +126,11 @@ type ITextChangeTracker =
     abstract VimBuffer : IVimBuffer
 
     /// Current change
-    abstract CurrentChange : string
+    abstract CurrentChange : TextChange option
 
     /// Raised when a change is completed
     [<CLIEvent>]
-    abstract ChangeCompleted : IEvent<string>
+    abstract ChangeCompleted : IEvent<TextChange>
 
 /// Manages the ITextChangeTracker instances
 type ITextChangeTrackerFactory =

@@ -142,7 +142,7 @@ type internal CommandRunner
             | LongCommandResult.Finished(commandResult) -> RanCommand (data,commandResult)
             | LongCommandResult.Cancelled -> CancelledCommand
             | LongCommandResult.NeedMoreInput(func) -> NeedMore (fun ki -> func ki |> inner)
-    
+
         func data.Count data.Register |> inner
 
     /// Try and run a command with the given name
@@ -210,7 +210,6 @@ type internal CommandRunner
             match result with
             | Some(value) -> value
             | None -> 
-                
                 // At this point we need to see if there will ever be a command given the 
                 // current starting point with respect to characters
                 if findPrefixMatches commandName |> Seq.isEmpty then RunResult.NoMatchingCommand

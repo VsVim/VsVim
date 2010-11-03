@@ -3,6 +3,7 @@ using Microsoft.VisualStudio.Text.Editor;
 using Moq;
 using NUnit.Framework;
 using Vim;
+using Vim.Extensions;
 using Vim.UnitTest;
 using Vim.UnitTest.Mock;
 
@@ -20,7 +21,7 @@ namespace VimCore.Test
         private MockVimBuffer _vimBuffer;
         private TextChangeTracker _trackerRaw;
         private ITextChangeTracker _tracker;
-        private string _lastChange;
+        private TextChange _lastChange;
 
         protected void Create(params string[] lines)
         {
@@ -56,7 +57,7 @@ namespace VimCore.Test
             Create("the quick brown fox");
             _textBuffer.Insert(0, "a");
             Assert.IsNull(_lastChange);
-            Assert.AreEqual("a", _tracker.CurrentChange);
+            Assert.AreEqual(TextChange.NewInsert("a"), _tracker.CurrentChange.Value);
         }
 
         [Test]
@@ -66,7 +67,7 @@ namespace VimCore.Test
             _textBuffer.Insert(0, "a");
             _textBuffer.Insert(1, "b");
             Assert.IsNull(_lastChange);
-            Assert.AreEqual("ab", _tracker.CurrentChange);
+            Assert.AreEqual(TextChange.NewInsert("ab"), _tracker.CurrentChange.Value);
         }
 
         [Test]
@@ -77,7 +78,7 @@ namespace VimCore.Test
             _textBuffer.Insert(1, "b");
             _textBuffer.Insert(2, "c");
             Assert.IsNull(_lastChange);
-            Assert.AreEqual("abc", _tracker.CurrentChange);
+            Assert.AreEqual(TextChange.NewInsert("abc"), _tracker.CurrentChange.Value);
         }
 
         [Test]
@@ -87,7 +88,7 @@ namespace VimCore.Test
             _textBuffer.Insert(0, "a");
             _textBuffer.Insert(1, "bcd");
             Assert.IsNull(_lastChange);
-            Assert.AreEqual("abcd", _tracker.CurrentChange);
+            Assert.AreEqual(TextChange.NewInsert("abcd"), _tracker.CurrentChange.Value);
         }
 
         [Test]
@@ -97,7 +98,7 @@ namespace VimCore.Test
             _textBuffer.Insert(0, "ab");
             _textBuffer.Insert(2, "cde");
             Assert.IsNull(_lastChange);
-            Assert.AreEqual("abcde", _tracker.CurrentChange);
+            Assert.AreEqual(TextChange.NewInsert("abcde"), _tracker.CurrentChange.Value);
         }
 
         [Test]
@@ -107,7 +108,7 @@ namespace VimCore.Test
             _textBuffer.Insert(0, "ab");
             _textBuffer.Delete(new Span(1, 1));
             Assert.IsNull(_lastChange);
-            Assert.AreEqual("a", _tracker.CurrentChange);
+            Assert.AreEqual(TextChange.NewInsert("a"), _tracker.CurrentChange.Value);
         }
 
         [Test]
@@ -118,7 +119,7 @@ namespace VimCore.Test
             _textBuffer.Delete(new Span(2, 1));
             _textBuffer.Delete(new Span(1, 1));
             Assert.IsNull(_lastChange);
-            Assert.AreEqual("a", _tracker.CurrentChange);
+            Assert.AreEqual(TextChange.NewInsert("a"), _tracker.CurrentChange.Value);
         }
 
         [Test]
@@ -128,17 +129,36 @@ namespace VimCore.Test
             _textBuffer.Insert(0, "abc");
             _textBuffer.Delete(new Span(2, 1));
             Assert.IsNull(_lastChange);
-            Assert.AreEqual("ab", _tracker.CurrentChange);
+            Assert.AreEqual(TextChange.NewInsert("ab"), _tracker.CurrentChange.Value);
         }
 
         [Test]
-        public void Replace1()
+        public void Delete4()
         {
             Create("the quick brown fox");
-            _textBuffer.Insert(0, "a");
-            _textBuffer.Replace(new Span(0, 1), "b");
+            _textBuffer.Delete(new Span(2, 1));
             Assert.IsNull(_lastChange);
-            Assert.AreEqual("b", _tracker.CurrentChange);
+            Assert.AreEqual(TextChange.NewDelete(1), _tracker.CurrentChange.Value);
+        }
+
+        [Test]
+        public void Delete5()
+        {
+            Create("the quick brown fox");
+            _textBuffer.Delete(new Span(2, 2));
+            Assert.IsNull(_lastChange);
+            Assert.AreEqual(TextChange.NewDelete(2), _tracker.CurrentChange.Value);
+        }
+
+        [Test]
+        [Description("Deleting backwards should join the deletes")]
+        public void Delete6()
+        {
+            Create("the quick brown fox");
+            _textBuffer.Delete(new Span(2, 1));
+            _textBuffer.Delete(new Span(1, 1));
+            Assert.IsNull(_lastChange);
+            Assert.AreEqual(TextChange.NewDelete(2), _tracker.CurrentChange.Value);
         }
 
         [Test]
@@ -149,8 +169,8 @@ namespace VimCore.Test
             _textBuffer.Insert(0, "a");
             _mouse.SetupGet(x => x.IsLeftButtonPressed).Returns(true).Verifiable();
             _textCaret.Raise(x => x.PositionChanged += null, (CaretPositionChangedEventArgs)null);
-            Assert.AreEqual("a", _lastChange);
-            Assert.AreEqual("", _tracker.CurrentChange);
+            Assert.AreEqual(TextChange.NewInsert("a"), _lastChange);
+            Assert.IsTrue(_tracker.CurrentChange.IsNone());
             _factory.Verify();
         }
 
@@ -164,7 +184,7 @@ namespace VimCore.Test
             _textCaret.Raise(x => x.PositionChanged += null, (CaretPositionChangedEventArgs)null);
             _textBuffer.Insert(1, "b");
             Assert.IsNull(_lastChange);
-            Assert.AreEqual("ab", _tracker.CurrentChange);
+            Assert.AreEqual(TextChange.NewInsert("ab"), _tracker.CurrentChange.Value);
             _factory.Verify();
         }
 
@@ -200,7 +220,7 @@ namespace VimCore.Test
             Create("the quick brown fox");
             _textBuffer.Insert(1, "b");
             _vimBuffer.RaiseSwitchedMode(null);
-            Assert.AreEqual("b", _lastChange);
+            Assert.AreEqual(TextChange.NewInsert("b"), _lastChange);
         }
 
         [Test]
@@ -213,5 +233,6 @@ namespace VimCore.Test
             _vimBuffer.RaiseSwitchedMode(null);
             Assert.IsFalse(didRun);
         }
+
     }
 }

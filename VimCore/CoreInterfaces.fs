@@ -426,7 +426,8 @@ type VisualSpan =
 [<System.Flags>]
 type CommandFlags =
     | None = 0x0
-    /// Relates to the movement of the cursor
+    /// Relates to the movement of the cursor.  A movement command does not alter the 
+    /// last command
     | Movement = 0x1
     /// A Command which can be repeated
     | Repeatable = 0x2
@@ -887,6 +888,11 @@ type ProcessResult =
         | SwitchModeWithArgument(_,_) -> true
         | SwitchPreviousMode -> true
 
+[<RequireQualifiedAccess>]
+type TextChange = 
+    | Insert of string
+    | Delete of int
+
 type SettingKind =
     | NumberKind
     | StringKind    
@@ -1301,9 +1307,9 @@ and IChangeTracker =
     abstract LastChange : RepeatableChange option
 
 /// Represents a change which is repeatable 
-and RepeatableChange =
+and [<RequireQualifiedAccess>] RepeatableChange =
     | CommandChange of CommandRunData
-    | TextChange of string
+    | TextChange of TextChange
     | LinkedChange of RepeatableChange * RepeatableChange
 
 /// Responsible for calculating the new Span for a VisualMode change
