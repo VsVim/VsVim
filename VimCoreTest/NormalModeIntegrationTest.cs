@@ -449,5 +449,71 @@ namespace VimCore.Test
             Assert.AreEqual("uear", _textView.GetLine(0).GetText());
             Assert.AreEqual("ug", _textView.GetLine(1).GetText());
         }
+
+        [Test]
+        public void RepeatCommand_TextInsert1()
+        {
+            CreateBuffer("bear", "dog", "cat", "zebra", "fox", "jazz");
+            _buffer.Process("i");
+            _buffer.TextBuffer.Insert(0, "abc");
+            _buffer.Process(VimKey.Escape);
+            Assert.AreEqual(2, _textView.GetCaretPoint().Position);
+            _buffer.Process(".");
+            Assert.AreEqual("ababccbear", _textView.GetLine(0).GetText());
+        }
+
+        [Test]
+        public void RepeatCommand_TextInsert2()
+        {
+            CreateBuffer("bear", "dog", "cat", "zebra", "fox", "jazz");
+            _buffer.Process("i");
+            _buffer.TextBuffer.Insert(0, "abc");
+            _buffer.Process(VimKey.Escape);
+            _textView.MoveCaretTo(0);
+            _buffer.Process(".");
+            Assert.AreEqual("abcabcbear", _textView.GetLine(0).GetText());
+            Assert.AreEqual(2, _textView.GetCaretPoint().Position);
+        }
+
+        [Test]
+        public void RepeatCommand_TextInsert3()
+        {
+            CreateBuffer("bear", "dog", "cat", "zebra", "fox", "jazz");
+            _buffer.Process("i");
+            _buffer.TextBuffer.Insert(0, "abc");
+            _buffer.Process(VimKey.Escape);
+            _textView.MoveCaretTo(0);
+            _buffer.Process(".");
+            _buffer.Process(".");
+            Assert.AreEqual("ababccabcbear", _textView.GetLine(0).GetText());
+        }
+
+        [Test]
+        [Description("The first repeat of I should go to the first non-blank")]
+        public void RepeatCommand_CapitalI1()
+        {
+            CreateBuffer("bear", "dog", "cat", "zebra", "fox", "jazz");
+            _buffer.Process("I");
+            _buffer.TextBuffer.Insert(0, "abc");
+            _buffer.Process(VimKey.Escape);
+            _textView.MoveCaretTo(_textView.GetLine(1).Start.Add(2));
+            _buffer.Process(".");
+            Assert.AreEqual("abcdog", _textView.GetLine(1).GetText());
+            Assert.AreEqual(_textView.GetLine(1).Start.Add(2), _textView.GetCaretPoint());
+        }
+
+        [Test]
+        [Description("The first repeat of I should go to the first non-blank")]
+        public void RepeatCommand_CapitalI2()
+        {
+            CreateBuffer("bear", "  dog", "cat", "zebra", "fox", "jazz");
+            _buffer.Process("I");
+            _buffer.TextBuffer.Insert(0, "abc");
+            _buffer.Process(VimKey.Escape);
+            _textView.MoveCaretTo(_textView.GetLine(1).Start.Add(2));
+            _buffer.Process(".");
+            Assert.AreEqual("  abcdog", _textView.GetLine(1).GetText());
+            Assert.AreEqual(_textView.GetLine(1).Start.Add(4), _textView.GetCaretPoint());
+        }
     }
 }

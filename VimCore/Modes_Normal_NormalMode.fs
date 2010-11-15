@@ -562,7 +562,7 @@ type internal NormalMode
                     doNothing)
                 yield (
                     "I", 
-                    CommandFlags.Special,
+                    CommandFlags.LinkedWithNextTextChange ||| CommandFlags.Repeatable,
                     ModeKind.Insert, 
                     (fun _ _ -> _operations.EditorOperations.MoveToStartOfLineAfterWhiteSpace(false)))
                 yield (

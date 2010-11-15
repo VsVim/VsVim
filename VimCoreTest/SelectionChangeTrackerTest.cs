@@ -152,6 +152,36 @@ namespace VimCore.Test
         }
 
         [Test]
+        [Description("Don't switch from char to line if the selection changes")]
+        public void SelectionChanged8()
+        {
+            var mode = _factory.Create<IVisualMode>();
+            mode.Setup(x => x.SyncSelection()).Verifiable();
+            _buffer.SetupGet(x => x.IsProcessingInput).Returns(false).Verifiable();
+            _buffer.SetupGet(x => x.ModeKind).Returns(ModeKind.VisualCharacter).Verifiable();
+            _buffer.SetupGet(x => x.Mode).Returns(mode.Object).Verifiable();
+            _selection.SetupGet(x => x.IsEmpty).Returns(false).Verifiable();
+            _selection.SetupGet(x => x.Mode).Returns(TextSelectionMode.Stream).Verifiable();
+            _selection.Raise(x => x.SelectionChanged += null, null, EventArgs.Empty);
+            _factory.Verify();
+        }
+
+        [Test]
+        [Description("Don't switch from line to char if the selection changes")]
+        public void SelectionChanged9()
+        {
+            var mode = _factory.Create<IVisualMode>();
+            mode.Setup(x => x.SyncSelection()).Verifiable();
+            _buffer.SetupGet(x => x.IsProcessingInput).Returns(false).Verifiable();
+            _buffer.SetupGet(x => x.ModeKind).Returns(ModeKind.VisualLine).Verifiable();
+            _buffer.SetupGet(x => x.Mode).Returns(mode.Object).Verifiable();
+            _selection.SetupGet(x => x.IsEmpty).Returns(false).Verifiable();
+            _selection.SetupGet(x => x.Mode).Returns(TextSelectionMode.Stream).Verifiable();
+            _selection.Raise(x => x.SelectionChanged += null, null, EventArgs.Empty);
+            _factory.Verify();
+        }
+
+        [Test]
         [Description("Visual Studio does not guarantee the SynchronizationContext is set")]
         public void BadSynchronizationContext()
         {
