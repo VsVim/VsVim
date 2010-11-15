@@ -1,20 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using NUnit.Framework;
-using Moq;
-using Vim;
-using Microsoft.VisualStudio.Text.Editor;
-using Vim.UnitTest;
-using Vim.Modes.Normal;
-using System.Windows.Input;
-using Microsoft.VisualStudio.Text;
 using Microsoft.FSharp.Core;
-using Microsoft.FSharp.Control;
+using Microsoft.VisualStudio.Text;
+using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Operations;
 using Microsoft.VisualStudio.Text.Outlining;
+using Moq;
+using NUnit.Framework;
+using Vim;
 using Vim.Extensions;
+using Vim.Modes.Normal;
+using Vim.UnitTest;
 using Vim.UnitTest.Mock;
 
 namespace VimCore.Test
@@ -71,7 +67,7 @@ namespace VimCore.Test
             _search.Begin(SearchKind.ForwardWithWrap);
             _searchService
                 .Setup(x => x.FindNext(data, _textView.GetCaretPoint(), _nav.Object))
-                .Returns(FSharpOption.Create(_textView.GetLineSpan(0)));
+                .Returns(FSharpOption.Create(_textView.GetLineSpan(0).Extent));
             Assert.IsTrue(_search.Process(KeyInputUtil.CharToKeyInput('b')).IsSearchNeedMore);
         }
 

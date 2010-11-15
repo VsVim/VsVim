@@ -1,6 +1,7 @@
 ﻿#light
 
 namespace Vim
+open Microsoft.VisualStudio.Text
 
 [<AbstractClass>]
 type internal ToggleHandler() =
@@ -321,5 +322,62 @@ module internal OptionUtil =
         match opt with 
         | Some(value) -> value
         | None -> defaultValue
+
+/// Represents a range of lines in an ITextSnapshot.  Different from a SnapshotSpan
+/// because it declaratively supports lines instead of a position range
+type SnapshotLineSpan 
+    (   _snapshot : ITextSnapshot,
+        _startLine : int,
+        _count : int ) =
+
+    do
+        if _startLine >= _snapshot.LineCount then
+            invalidArg "startLine" Resources.Common_InvalidLineNumber
+        if _startLine + (_count - 1) >= _snapshot.LineCount || _count < 1 then
+            invalidArg "count" Resources.Common_InvalidLineNumber
+
+    member x.Snapshot = _snapshot
+    member x.StartLineNumber = _startLine
+    member x.StartLine = _snapshot.GetLineFromLineNumber x.StartLineNumber
+    member x.Start = x.StartLine.Start
+    member x.Count = _count
+    member x.EndLineNumber = _startLine + (_count - 1)
+    member x.EndLine = _snapshot.GetLineFromLineNumber x.EndLineNumber
+    member x.End = x.EndLine.End
+    member x.EndIncludingLineBreak = x.EndLine.EndIncludingLineBreak
+    member x.Extent=
+        let startLine = x.StartLine
+        let endLine = x.EndLine
+        SnapshotSpan(startLine.Start, endLine.End)
+    member x.ExtentIncludingLineBreak = 
+        let startLine = x.StartLine
+        let endLine = x.EndLine
+        SnapshotSpan(startLine.Start, endLine.EndIncludingLineBreak)
+    member x.GetText() = x.Extent.GetText()
+    member x.GetTextIncludingLineBreak() = x.ExtentIncludingLineBreak.GetText()
+
+    // Equality Functions
+    override x.GetHashCode() = _startLine ^^^ _count
+    override x.Equals (other:obj) = 
+        match other with
+        | :? SnapshotLineSpan as other -> x.Equals(other)
+        | _ -> false
+    member x.Equals (other:SnapshotLineSpan) = 
+        other.Snapshot = _snapshot
+        && other.StartLineNumber = _startLine
+        && other.Count = _count
+    interface System.IEquatable<SnapshotLineSpan> with
+        member x.Equals other = x.Equals other
+    static member op_Equality(this,other) = 
+        System.Collections.Generic.EqualityComparer<SnapshotLineSpan>.Default.Equals(this,other)
+    static member op_Inequality(this,other) = 
+        not (System.Collections.Generic.EqualityComparer<SnapshotLineSpan>.Default.Equals(this,other))
+
+    static member CreateForSingleLine snapshot lineNumber = 
+        SnapshotLineSpan(snapshot, lineNumber, 1)
+    static member CreateForStartAndCount snapshot lineNumber count = 
+        SnapshotLineSpan(snapshot, lineNumber, count)
+    static member CreateForStartAndEndLine snapshot startLineNumber endLineNumber =
+        SnapshotLineSpan(snapshot, startLineNumber, (endLineNumber - startLineNumber) + 1)
 
 

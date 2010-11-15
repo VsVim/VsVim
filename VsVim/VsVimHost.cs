@@ -120,6 +120,23 @@ namespace VsVim
             return false;
         }
 
+        /// <summary>
+        /// Format the specified line range.  There is no inherent operation to do this
+        /// in Visual Studio.  Instead we leverage the FormatSelection command.  Need to be careful
+        /// to reset the selection after a format
+        /// </summary>
+        private void FormatLines(ITextView textView, SnapshotLineSpan range)
+        {
+            var startedWithSelection = !textView.Selection.IsEmpty;
+            textView.Selection.Clear();
+            textView.Selection.Select(range.ExtentIncludingLineBreak, false);
+            SafeExecuteCommand("Edit.FormatSelection");
+            if (!startedWithSelection)
+            {
+                textView.Selection.Clear();
+            }
+        }
+
         #region IVimHost
 
         void IVimHost.Beep()
@@ -249,6 +266,11 @@ namespace VsVim
         bool IVimHost.GoToFile(string fileName)
         {
             return OpenFileCore(fileName);
+        }
+
+        void IVimHost.FormatLines(ITextView textView, SnapshotLineSpan lineSpan)
+        {
+            FormatLines(textView, lineSpan);
         }
 
         #endregion

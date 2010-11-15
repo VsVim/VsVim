@@ -312,6 +312,19 @@ type internal VisualMode
                             | VisualKind.Line -> normal()
                             | VisualKind.Block -> StringData.OfNormalizedSnasphotSpanCollection col
                         reg.Value <- { Value = data; OperationKind = OperationKind.LineWise} ))
+                yield (
+                    "=",
+                    CommandFlags.Repeatable,
+                    None,
+                    (fun _ _ span -> 
+                        let range = SnapshotSpanUtil.GetLineSpan span
+                        _buffer.Vim.VimHost.FormatLines _buffer.TextView range),
+                    (fun _ _ col ->
+                        let range = 
+                            col
+                            |> NormalizedSnapshotSpanCollectionUtil.GetCombinedSpan
+                            |> SnapshotSpanUtil.GetLineSpan
+                        _buffer.Vim.VimHost.FormatLines _buffer.TextView range))
             }
             |> Seq.map (fun (str,flags,mode,funcNormal,funcBlock) ->
                 let kiSet = KeyNotationUtil.StringToKeyInputSet str

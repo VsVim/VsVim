@@ -318,19 +318,19 @@ type internal NormalMode
                 yield (
                     "zo", 
                     CommandFlags.Special, 
-                    fun count _ -> _operations.OpenFold (TextViewUtil.GetCaretLineSpan _bufferData.TextView) count)
+                    fun count _ -> _operations.OpenFold (TextViewUtil.GetCaretLineSpan _bufferData.TextView 1).Extent count)
                 yield (
                     "zO", 
                     CommandFlags.Special, 
-                    fun _ _ -> _operations.OpenAllFolds (TextViewUtil.GetCaretLineSpan _bufferData.TextView) )
+                    fun _ _ -> _operations.OpenAllFolds (TextViewUtil.GetCaretLineSpan _bufferData.TextView 1).Extent)
                 yield (
                     "zc", 
                     CommandFlags.Special, 
-                    fun count _ -> _operations.CloseFold (TextViewUtil.GetCaretLineSpan _bufferData.TextView) count)
+                    fun count _ -> _operations.CloseFold (TextViewUtil.GetCaretLineSpan _bufferData.TextView 1).Extent count)
                 yield (
                     "zC", 
                     CommandFlags.Special, 
-                    fun _ _ -> _operations.CloseAllFolds (TextViewUtil.GetCaretLineSpan _bufferData.TextView) )
+                    fun _ _ -> _operations.CloseAllFolds (TextViewUtil.GetCaretLineSpan _bufferData.TextView 1).Extent)
                 yield (
                     "zt", 
                     CommandFlags.Movement, 
@@ -539,6 +539,12 @@ type internal NormalMode
                     fun count _ -> 
                         _operations.EditorOperations.ScrollLineTop()
                         _operations.EditorOperations.MoveToStartOfLineAfterWhiteSpace(false) )
+                yield (
+                    "==",
+                    CommandFlags.Repeatable,
+                    fun count _ -> 
+                        let range = TextViewUtil.GetCaretLineSpan this.TextView count 
+                        _bufferData.Vim.VimHost.FormatLines this.TextView range )
             }
             |> Seq.map(fun (str,kind,func) -> (str,kind,func,CommandResult.Completed ModeSwitch.NoSwitch))
 
@@ -702,6 +708,11 @@ type internal NormalMode
                     CommandFlags.None, 
                     None, 
                     fun _ _ data -> _operations.FoldManager.CreateFold data.OperationSpan)
+                yield (
+                    "=",
+                    CommandFlags.Repeatable,
+                    None,
+                    fun _ _ data -> _bufferData.Vim.VimHost.FormatLines this.TextView data.OperationLineRange)
             }
 
         complex

@@ -1177,7 +1177,7 @@ namespace VimCore.Test
         public void ChangeLetterCase1()
         {
             Create("foo", "bar");
-            _operations.ChangeLetterCase(_buffer.GetLineSpan(0));
+            _operations.ChangeLetterCase(_buffer.GetLineSpan(0).Extent);
             Assert.AreEqual("FOO", _buffer.GetLineSpan(0).GetText());
         }
 
@@ -1185,7 +1185,7 @@ namespace VimCore.Test
         public void ChangeLetterCase2()
         {
             Create("fOo", "bar");
-            _operations.ChangeLetterCase(_buffer.GetLineSpan(0));
+            _operations.ChangeLetterCase(_buffer.GetLineSpan(0).Extent);
             Assert.AreEqual("FoO", _buffer.GetLineSpan(0).GetText());
         }
 
@@ -1193,7 +1193,7 @@ namespace VimCore.Test
         public void ChangeLetterCase3()
         {
             Create("fOo", "bar");
-            _operations.ChangeLetterCase(_buffer.GetLineSpan(0, 1));
+            _operations.ChangeLetterCase(_buffer.GetLineSpan(0, 1).Extent);
             Assert.AreEqual("FoO", _buffer.GetLineSpan(0).GetText());
             Assert.AreEqual("BAR", _buffer.GetLineSpan(1).GetText());
         }
@@ -1202,7 +1202,7 @@ namespace VimCore.Test
         public void ChangeLetterCase4()
         {
             Create("f12o", "bar");
-            _operations.ChangeLetterCase(_buffer.GetLineSpan(0));
+            _operations.ChangeLetterCase(_buffer.GetLineSpan(0).Extent);
             Assert.AreEqual("F12O", _buffer.GetLineSpan(0).GetText());
         }
 
@@ -1210,7 +1210,7 @@ namespace VimCore.Test
         public void MakeLettersLowercase1()
         {
             Create("FOO", "BAR");
-            _operations.MakeLettersLowercase(_buffer.GetLineSpan(0));
+            _operations.MakeLettersLowercase(_buffer.GetLineSpan(0).Extent);
             Assert.AreEqual("foo", _buffer.GetLineSpan(0).GetText());
         }
 
@@ -1218,7 +1218,7 @@ namespace VimCore.Test
         public void MakeLettersLowercase2()
         {
             Create("FOO", "BAR");
-            _operations.MakeLettersLowercase(_buffer.GetLineSpan(1));
+            _operations.MakeLettersLowercase(_buffer.GetLineSpan(1).Extent);
             Assert.AreEqual("bar", _buffer.GetLineSpan(1).GetText());
         }
 
@@ -1226,7 +1226,7 @@ namespace VimCore.Test
         public void MakeLettersLowercase3()
         {
             Create("FoO123", "BAR");
-            _operations.MakeLettersLowercase(_buffer.GetLineSpan(0));
+            _operations.MakeLettersLowercase(_buffer.GetLineSpan(0).Extent);
             Assert.AreEqual("foo123", _buffer.GetLineSpan(0).GetText());
         }
 
@@ -1234,7 +1234,7 @@ namespace VimCore.Test
         public void MakeLettersUppercase1()
         {
             Create("foo123", "bar");
-            _operations.MakeLettersUppercase(_buffer.GetLineSpan(0));
+            _operations.MakeLettersUppercase(_buffer.GetLineSpan(0).Extent);
             Assert.AreEqual("FOO123", _buffer.GetLineSpan(0).GetText());
         }
 
@@ -1242,7 +1242,7 @@ namespace VimCore.Test
         public void MakeLettersUppercase2()
         {
             Create("fOo123", "bar");
-            _operations.MakeLettersUppercase(_buffer.GetLineSpan(0));
+            _operations.MakeLettersUppercase(_buffer.GetLineSpan(0).Extent);
             Assert.AreEqual("FOO123", _buffer.GetLineSpan(0).GetText());
         }
 
@@ -1360,7 +1360,7 @@ namespace VimCore.Test
             Create("foo", "bar", "");
             _editorOpts.Setup(x => x.ResetSelection());
             var data = new MotionData(
-                _buffer.GetLineSpan(0, 1),
+                _buffer.GetLineSpan(0, 1).Extent,
                 true,
                 MotionKind.Inclusive,
                 OperationKind.LineWise,
@@ -1376,7 +1376,7 @@ namespace VimCore.Test
             Create("foo", "bar", "");
             _editorOpts.Setup(x => x.ResetSelection());
             var data = new MotionData(
-                _buffer.GetLineSpan(0, 1),
+                _buffer.GetLineSpan(0, 1).Extent,
                 true,
                 MotionKind.Inclusive,
                 OperationKind.LineWise,
@@ -1392,7 +1392,7 @@ namespace VimCore.Test
             Create("foo", "bar", "");
             _editorOpts.Setup(x => x.ResetSelection());
             var data = new MotionData(
-                _buffer.GetLineSpan(0, 1),
+                _buffer.GetLineSpan(0, 1).Extent,
                 true,
                 MotionKind.Inclusive,
                 OperationKind.LineWise,
@@ -1408,7 +1408,7 @@ namespace VimCore.Test
             Create("dog", "cat", "bear");
             _editorOpts.Setup(x => x.ResetSelection());
             var data = new MotionData(
-                _buffer.GetLineSpan(0, 1),
+                _buffer.GetLineSpan(0, 1).Extent,
                 false,
                 MotionKind.Inclusive,
                 OperationKind.CharacterWise,
@@ -1424,7 +1424,7 @@ namespace VimCore.Test
             Create("dog", "cat", "bear");
             _editorOpts.Setup(x => x.ResetSelection());
             var data = new MotionData(
-                _buffer.GetLineSpan(0, 1),
+                _buffer.GetLineSpan(0, 1).Extent,
                 false,
                 MotionKind.Inclusive,
                 OperationKind.CharacterWise,
@@ -1440,7 +1440,7 @@ namespace VimCore.Test
             Create("dog", "cat", "bear");
             _editorOpts.Setup(x => x.ResetSelection());
             var data = new MotionData(
-                _buffer.GetLineSpanIncludingLineBreak(0),
+                _buffer.GetLineSpan(0).ExtentIncludingLineBreak,
                 true,
                 MotionKind.Exclusive,
                 OperationKind.CharacterWise,
@@ -1456,7 +1456,7 @@ namespace VimCore.Test
             Create("dog", "cat", "bear");
             _editorOpts.Setup(x => x.ResetSelection());
             var data = new MotionData(
-                _buffer.GetLineSpanIncludingLineBreak(0, 1),
+                _buffer.GetLineSpan(0, 1).ExtentIncludingLineBreak,
                 false,
                 MotionKind.Exclusive,
                 OperationKind.CharacterWise,
@@ -1566,7 +1566,7 @@ namespace VimCore.Test
         public void UpdateRegisterForSpan1()
         {
             Create("foo bar");
-            var span = _view.GetLineSpan(0);
+            var span = _view.GetLineSpan(0).Extent;
             var reg = _registerMap.GetRegister('c');
             _operations.UpdateRegisterForSpan(
                 reg,
@@ -1584,7 +1584,7 @@ namespace VimCore.Test
         public void UpdateRegisterForSpan2()
         {
             Create("foo bar");
-            var span = _view.GetLineSpan(0);
+            var span = _view.GetLineSpan(0).Extent;
             var reg = _registerMap.GetRegister('c');
             _operations.UpdateRegisterForSpan(
                 reg,
@@ -1618,7 +1618,7 @@ namespace VimCore.Test
         public void UpdateRegisterForSpan4()
         {
             Create("foo", "bar");
-            var span = _view.GetLineSpan(0);
+            var span = _view.GetLineSpan(0).Extent;
             var reg = _registerMap.GetRegister('c');
             _operations.UpdateRegisterForSpan(reg, RegisterOperation.Delete, span, OperationKind.CharacterWise);
             AssertRegister(RegisterName.SmallDelete, "foo", OperationKind.CharacterWise);
@@ -1629,7 +1629,7 @@ namespace VimCore.Test
         public void UpdateRegisterForSpan5()
         {
             Create("foo", "bar");
-            var span = _view.GetLineSpan(0, 1);
+            var span = _view.GetLineSpan(0, 1).Extent;
             var reg = _registerMap.GetRegister('c');
             _operations.UpdateRegisterForSpan(reg, RegisterOperation.Delete, span, OperationKind.CharacterWise);
             AssertRegister(RegisterName.SmallDelete, "", OperationKind.LineWise);
@@ -1640,7 +1640,7 @@ namespace VimCore.Test
         public void UpdateRegisterForSpan6()
         {
             Create("foo bar");
-            var span = _view.GetLineSpan(0);
+            var span = _view.GetLineSpan(0).Extent;
             var namedReg = _registerMap.GetRegister('c');
             _operations.UpdateRegisterForSpan(
                 namedReg,

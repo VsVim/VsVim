@@ -279,16 +279,10 @@ namespace Vim.UnitTest
             return textView.TextSnapshot.GetLineFromLineNumber(line);
         }
 
-        public static SnapshotSpan GetLineSpanIncludingLineBreak(this ITextView textView, int startLine, int endLine = -1)
+        public static SnapshotLineSpan GetLineSpan(this ITextView textView, int startLine, int endLine = -1)
         {
             endLine = endLine >= 0 ? endLine : startLine;
-            return textView.TextSnapshot.GetLineSpanIncludingLineBreak(startLine, endLine);
-        }
-
-        public static SnapshotSpan GetLineSpan(this ITextView textView, int startLine, int endLine = -1)
-        {
-            endLine = endLine >= 0 ? endLine : startLine;
-            return textView.TextSnapshot.GetLineSpan(startLine, endLine);
+            return SnapshotLineSpan.CreateForStartAndEndLine(textView.TextSnapshot, startLine, endLine);
         }
 
         public static CaretPosition MoveCaretTo(this ITextView textView, int position)
@@ -322,16 +316,10 @@ namespace Vim.UnitTest
             return buffer.CurrentSnapshot.GetLineFromLineNumber(line);
         }
 
-        public static SnapshotSpan GetLineSpanIncludingLineBreak(this ITextBuffer buffer, int startLine, int endLine = -1)
+        public static SnapshotLineSpan GetLineSpan(this ITextBuffer buffer, int startLine, int endLine = -1)
         {
             endLine = endLine >= 0 ? endLine : startLine;
-            return buffer.CurrentSnapshot.GetLineSpanIncludingLineBreak(startLine, endLine);
-        }
-
-        public static SnapshotSpan GetLineSpan(this ITextBuffer buffer, int startLine, int endLine = -1)
-        {
-            endLine = endLine >= 0 ? endLine : startLine;
-            return buffer.CurrentSnapshot.GetLineSpan(startLine, endLine);
+            return SnapshotLineSpan.CreateForStartAndEndLine(buffer.CurrentSnapshot, startLine, endLine);
         }
 
         public static SnapshotPoint GetPoint(this ITextBuffer buffer, int position)
@@ -365,20 +353,10 @@ namespace Vim.UnitTest
             return tss.GetLineFromLineNumber(lineNumber);
         }
 
-        public static SnapshotSpan GetLineSpan(this ITextSnapshot tss, int startLine, int endLine = -1)
+        public static SnapshotLineSpan GetLineSpan(this ITextSnapshot tss, int startLine, int endLine = -1)
         {
             endLine = endLine >= 0 ? endLine : startLine;
-            var start = tss.GetLineFromLineNumber(startLine);
-            var end = tss.GetLineFromLineNumber(endLine);
-            return new SnapshotSpan(start.Start, end.End);
-        }
-
-        public static SnapshotSpan GetLineSpanIncludingLineBreak(this ITextSnapshot tss, int startLine, int endLine = -1)
-        {
-            endLine = endLine >= 0 ? endLine : startLine;
-            var start = tss.GetLineFromLineNumber(startLine);
-            var end = tss.GetLineFromLineNumber(endLine);
-            return new SnapshotSpan(start.Start, end.EndIncludingLineBreak);
+            return SnapshotLineSpan.CreateForStartAndEndLine(tss, startLine, endLine);
         }
 
         public static SnapshotPoint GetPoint(this ITextSnapshot tss, int position)

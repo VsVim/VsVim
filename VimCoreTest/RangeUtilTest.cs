@@ -270,7 +270,7 @@ namespace VimCore.Test
             var range = Parse("'A,2", map.Object);
             Assert.IsTrue(range.IsSucceeded);
             var span = RangeUtil.GetSnapshotSpan(range.AsSucceeded().Item1);
-            Assert.AreEqual(_buffer.CurrentSnapshot.GetLineSpanIncludingLineBreak(0, 1), span);
+            Assert.AreEqual(_buffer.GetLineSpan(0, 1).ExtentIncludingLineBreak, span);
         }
 
         [Test]
@@ -303,7 +303,7 @@ namespace VimCore.Test
             map.AddMark(_buffer, '>', _buffer.GetPoint(1));
             var range = Parse("'<,'>", map.Object);
             Assert.IsTrue(range.IsSucceeded);
-            Assert.AreEqual(_buffer.GetLineSpanIncludingLineBreak(0), RangeUtil.GetSnapshotSpan(range.AsSucceeded().Item1));
+            Assert.AreEqual(_buffer.GetLineSpan(0).ExtentIncludingLineBreak, RangeUtil.GetSnapshotSpan(range.AsSucceeded().Item1));
         }
 
         [Test]

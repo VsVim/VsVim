@@ -184,6 +184,11 @@ module SnapshotSpanUtil =
         if span.Length = 0 then None
         else span.End.Subtract(1) |> Some
 
+    /// Get the SnapshotLineRange for the SnapshotSpan 
+    let GetLineSpan span = 
+        let startLine,endLine = GetStartAndEndLine span
+        SnapshotLineSpan.CreateForStartAndEndLine span.Snapshot startLine.LineNumber endLine.LineNumber
+
     /// Extend the SnapshotSpan count lines downwards.  If the count exceeds the end of the
     /// Snapshot it will extend to the end
     let ExtendDown span lineCount = 
@@ -741,9 +746,9 @@ module TextViewUtil =
 
     let GetCaretLine textView = GetCaretPoint textView |> SnapshotPointUtil.GetContainingLine
 
-    let GetCaretLineSpan textView = textView |> GetCaretLine |> SnapshotLineUtil.GetExtent
-
-    let GetCaretLineSpanIncludingLineBreak textView = textView |> GetCaretLine |> SnapshotLineUtil.GetExtentIncludingLineBreak
+    let GetCaretLineSpan textView count = 
+        let lineNumber,_ = textView |> GetCaretPoint |> SnapshotPointUtil.GetLineColumn
+        SnapshotLineSpan.CreateForStartAndCount textView.TextSnapshot lineNumber count
 
     let GetCaretPointAndLine textView = (GetCaretPoint textView),(GetCaretLine textView)
 

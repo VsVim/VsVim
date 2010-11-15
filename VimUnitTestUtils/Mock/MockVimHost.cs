@@ -133,5 +133,10 @@ namespace Vim.UnitTest.Mock
         {
             throw new NotImplementedException();
         }
+
+        void IVimHost.FormatLines(ITextView value, SnapshotLineSpan range)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

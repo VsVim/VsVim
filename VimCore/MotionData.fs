@@ -27,6 +27,8 @@ type MotionData = {
     /// be a valid point within the line
     Column : int option
 } with
+
+    member x.LineRange = SnapshotSpanUtil.GetLineSpan x.Span
     
     /// Span is the true result of the motion.  However some commands only process a
     /// subset of the data.  This exception is covered in the help page :help exclusive.
@@ -48,6 +50,8 @@ type MotionData = {
                     SnapshotSpan(x.Span.Start, lineAbove.End)
                 else x.Span
             else x.Span
+
+    member x.OperationLineRange = SnapshotSpanUtil.GetLineSpan x.OperationSpan
 
     static member CreateEmptyFromPoint point motionKind operationKind = 
         let span = SnapshotSpanUtil.CreateWithLength point 0  

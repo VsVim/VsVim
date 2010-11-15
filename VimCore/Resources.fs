@@ -18,6 +18,7 @@ module internal Resources =
     let Common_MarkNotSet = "Mark not set"
     let Common_BulkEdit = "VsVim Bulk Edit"
     let Common_NoFoldFound = "No fold found"
+    let Common_InvalidLineNumber = "Invalid Line Number"
 
     let NormalMode_PatternNotFound pattern = sprintf "Pattern not found: %s" pattern
     let NormalMode_NoPreviousSearch = "No previous search"
