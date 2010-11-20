@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using NUnit.Framework;
 using Vim;
@@ -13,13 +12,28 @@ namespace VimCore.Test
     [TestFixture]
     public class KeyInputUtilTest
     {
-        public static readonly IEnumerable<char> LettersLower = "abcdefghijklmnopqrstuvwxyz";
+        public const string CharsLettersLower = "abcdefghijklmnopqrstuvwxyz";
+        public const string CharsLettersUpper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        public const string CharsRest = " !@#$%^&*()[]{}-_=+\\|'\",<>./?:;`~1234567890";
+        public const string CharsAll =
+            CharsLettersLower +
+            CharsLettersUpper +
+            CharsRest;
+
+        [Test]
+        public void CoreCharList1()
+        {
+            foreach (var cur in CharsAll)
+            {
+                CollectionAssert.Contains(KeyInputUtil.CoreCharacterList, cur);
+            }
+        }
 
         /// <summary>
         /// Make sure that all letters convert
         /// </summary>
-        [Test()]
-        public void CharToKeyTest()
+        [Test]
+        public void CharToKeyInput1()
         {
             var startLower = (int)('a');
             var startUpper = (int)('A');
@@ -31,11 +45,35 @@ namespace VimCore.Test
         }
 
         [Test]
+        [Description("All of the core characters should map back to themselves")]
+        public void CharToKeyInput2()
+        {
+            foreach (var cur in KeyInputUtil.CoreCharacterList)
+            {
+                var ki = KeyInputUtil.CharToKeyInput(cur);
+                Assert.IsTrue(ki.RawChar.IsSome());
+                Assert.AreEqual(cur, ki.Char);
+            }
+        }
+
+        [Test]
+        [Description("Verify our list of core characters map back to themselves")]
+        public void CharToKeyInput4()
+        {
+            foreach (var cur in CharsAll)
+            {
+                var ki = KeyInputUtil.CharToKeyInput(cur);
+                Assert.IsTrue(ki.RawChar.IsSome());
+                Assert.AreEqual(cur, ki.Char);
+            }
+        }
+
+        [Test]
         public void MinusKey1()
         {
             var ki = KeyInputUtil.CharToKeyInput('_');
             Assert.AreEqual('_', ki.Char);
-            Assert.AreEqual(KeyModifiers.Shift, ki.KeyModifiers);
+            Assert.AreEqual(KeyModifiers.None, ki.KeyModifiers);
         }
 
         [Test]
@@ -51,7 +89,7 @@ namespace VimCore.Test
         {
             var ki = KeyInputUtil.CharToKeyInput('%');
             Assert.AreEqual('%', ki.Char);
-            Assert.AreEqual(KeyModifiers.Shift, ki.KeyModifiers);
+            Assert.AreEqual(KeyModifiers.None, ki.KeyModifiers);
         }
 
         [Test]
@@ -61,18 +99,49 @@ namespace VimCore.Test
             Assert.AreEqual('~', ki.Char);
         }
 
-        [Test, Description("In the case of a bad key it should return the default key")]
-        public void WellKnownKeyToKeyInput1()
+        [Test]
+        [ExpectedException(typeof(ArgumentException))]
+        public void VimKeyToKeyInput1()
         {
-            var key = KeyInputUtil.VimKeyToKeyInput(VimKey.NotWellKnown);
-            Assert.IsNotNull(key);
+            KeyInputUtil.VimKeyToKeyInput(VimKey.NotWellKnown);
         }
 
         [Test]
-        public void WellKnownKeyToKeyInput2()
+        public void VimKeyToKeyInput2()
         {
             var key = KeyInputUtil.VimKeyToKeyInput(VimKey.Enter);
             Assert.AreEqual(VimKey.Enter, key.Key);
+        }
+
+        [Test]
+        public void VimKeyToKeyInput3()
+        {
+            foreach (var cur in Enum.GetValues(typeof(VimKey)).Cast<VimKey>())
+            {
+                if (cur == VimKey.NotWellKnown)
+                {
+                    continue;
+                }
+
+                var ki = KeyInputUtil.VimKeyToKeyInput(cur);
+                Assert.AreEqual(cur, ki.Key);
+            }
+        }
+
+        [Test]
+        public void VimKeyAndModifiersToKeyInput1()
+        {
+            foreach (var cur in Enum.GetValues(typeof(VimKey)).Cast<VimKey>())
+            {
+                if (cur == VimKey.NotWellKnown)
+                {
+                    continue;
+                }
+
+                var ki = KeyInputUtil.VimKeyAndModifiersToKeyInput(cur, KeyModifiers.Control);
+                Assert.AreEqual(cur, ki.Key);
+                Assert.AreEqual(KeyModifiers.Control, ki.KeyModifiers & KeyModifiers.Control);
+            }
         }
 
         [Test]
@@ -92,27 +161,10 @@ namespace VimCore.Test
         }
 
         [Test]
-        public void TryVirtualKeyCodeAndModifiersToKeyInput1()
-        {
-            Action<char> backandForth = c =>
-            {
-                var opt = KeyInputUtil.TryCharToVirtualKeyAndModifiers(c);
-                Assert.IsTrue(opt.IsSome());
-                var virtualKeyCode = opt.Value.Item1;
-                var keyModifiers = opt.Value.Item2;
-                var ki1 = KeyInputUtil.CharToKeyInput(c);
-                var ki2 = KeyInputUtil.VirtualKeyCodeAndModifiersToKeyInput(virtualKeyCode, keyModifiers);
-                Assert.AreEqual(ki1, ki2);
-            };
-
-            KeyInputUtil.CoreCharacters.ToList().ForEach(backandForth);
-        }
-
-        [Test]
         [Description("Apply shift to alpha")]
         public void ChangeKeyModifiers1()
         {
-            foreach (var letter in LettersLower)
+            foreach (var letter in CharsLettersLower)
             {
                 var lower = KeyInputUtil.CharToKeyInput(letter);
                 var upper = KeyInputUtil.CharToKeyInput(Char.ToUpper(letter));
@@ -125,7 +177,7 @@ namespace VimCore.Test
         [Description("Apply a shift remove to alhpa")]
         public void ChangeKeyModifiers2()
         {
-            foreach (var letter in LettersLower)
+            foreach (var letter in CharsLettersLower)
             {
                 var lower = KeyInputUtil.CharToKeyInput(letter);
                 var upper = KeyInputUtil.CharToKeyInput(Char.ToUpper(letter));
@@ -138,7 +190,7 @@ namespace VimCore.Test
         [Description("Apply control")]
         public void ChangeKeyModifiers3()
         {
-            foreach (var letter in LettersLower)
+            foreach (var letter in CharsLettersLower)
             {
                 var lower = KeyInputUtil.CharToKeyInput(letter);
                 var opt = KeyInputUtil.ChangeKeyModifiers(lower, KeyModifiers.Control);
@@ -147,12 +199,12 @@ namespace VimCore.Test
         }
 
         [Test]
-        [Description("Shift to non-alpha")]
+        [Description("Shift to non-alpha doesn't matter in Vim land")]
         public void ChangeKeyModifiers4()
         {
             var ki1 = KeyInputUtil.CharToKeyInput(']');
             var ki2 = KeyInputUtil.ChangeKeyModifiers(ki1, KeyModifiers.Shift);
-            Assert.AreEqual(KeyInputUtil.CharToKeyInput('}'), ki2);
+            Assert.AreEqual(']', ki2.Char);
         }
     }
 }

@@ -202,3 +202,5 @@ module TssUtil =
         match FindPreviousOccurranceOfCharOnLine point targetChar count with
         | None -> None
         | Some(point) -> SnapshotPointUtil.TryGetNextPointOnLine point
+
+

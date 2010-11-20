@@ -1,5 +1,6 @@
 ﻿using NUnit.Framework;
 using Vim;
+using Vim.UnitTest;
 
 namespace VimCore.Test
 {
@@ -23,17 +24,17 @@ namespace VimCore.Test
         [Test]
         public void Equality1()
         {
-            var i1 = new KeyInput(0, VimKey.NotWellKnown, KeyModifiers.None, 'c');
-            Assert.AreEqual(i1, new KeyInput(0, VimKey.NotWellKnown, KeyModifiers.None, 'c'));
-            Assert.AreNotEqual(i1, new KeyInput(0, VimKey.NotWellKnown, KeyModifiers.None, 'd'));
-            Assert.AreNotEqual(i1, new KeyInput(0, VimKey.NotWellKnown, KeyModifiers.Shift, 'c'));
-            Assert.AreNotEqual(i1, new KeyInput(0, VimKey.NotWellKnown, KeyModifiers.Alt, 'c'));
+            var i1 = VimUtil.CreateKeyInput(c: 'c');
+            Assert.AreEqual(i1, VimUtil.CreateKeyInput(c: 'c'));
+            Assert.AreNotEqual(i1, VimUtil.CreateKeyInput(c: 'd'));
+            Assert.AreNotEqual(i1, VimUtil.CreateKeyInput(c: 'c', mod: KeyModifiers.Shift));
+            Assert.AreNotEqual(i1, VimUtil.CreateKeyInput(c: 'c', mod: KeyModifiers.Alt));
         }
 
         [Test, Description("Boundary condition")]
         public void Equality2()
         {
-            var i1 = new KeyInput(0, VimKey.NotWellKnown, KeyModifiers.None, 'c');
+            var i1 = VimUtil.CreateKeyInput(c: 'c');
             Assert.AreNotEqual(i1, 42);
         }
 
@@ -54,6 +55,20 @@ namespace VimCore.Test
         }
 
         [Test]
+        public void Equality5()
+        {
+            var values = EqualityUnit
+                 .Create(KeyInputUtil.CharToKeyInput('c'))
+                 .WithEqualValues(KeyInputUtil.CharToKeyInput('c'))
+                 .WithNotEqualValues(KeyInputUtil.CharToKeyInput('d'))
+                 .WithNotEqualValues(KeyInputUtil.CharWithControlToKeyInput('c'));
+            EqualityUtil.RunAll(
+                (x, y) => x == y,
+                (x, y) => x != y,
+                values: values);
+        }
+
+        [Test]
         public void CompareTo1()
         {
             var i1 = KeyInputUtil.CharToKeyInput('c');
@@ -61,6 +76,7 @@ namespace VimCore.Test
             Assert.IsTrue(i1.CompareTo(KeyInputUtil.CharToKeyInput('c')) == 0);
             Assert.IsTrue(i1.CompareTo(KeyInputUtil.CharToKeyInput('a')) > 0);
         }
+
 
     }
 }

@@ -67,10 +67,47 @@ type IUndoRedoOperations =
     /// Creates an Undo Transaction
     abstract CreateUndoTransaction : name:string -> IUndoTransaction
 
-/// Responsible for implementing all of the Motion information
-type IMotionUtil = 
+/// Context on how the motion is being used.  Several motions (]] for example)
+/// change behavior based on how they are being used
+[<RequireQualifiedAccess>]
+type MotionContext =
+    | Movement
+    | AfterOperator
 
-    /// ITextView associated with the IMotionUtil
+/// Arguments necessary to buliding a Motion
+type MotionArgument = {
+
+    /// Context of the Motion
+    MotionContext : MotionContext
+
+    /// Count passed to the operator
+    OperatorCount : int option
+
+    /// Count passed to the motion 
+    MotionCount : int option 
+
+} with
+
+    /// Provides the raw count which is a combination of the OperatorCount
+    /// and MotionCount values.  
+    member x.RawCount = 
+        match x.MotionCount,x.OperatorCount with
+        | None,None -> None
+        | Some(c),None -> Some c
+        | None,Some(c) -> Some c
+        | Some(l),Some(r) -> Some (l*r)
+
+    /// Resolves the count to a value.  It will use the default 1 for 
+    /// any count which is not provided 
+    member x.Count = 
+        let operatorCount = x.OperatorCount |> OptionUtil.getOrDefault 1
+        let motionCount = x.MotionCount |> OptionUtil.getOrDefault 1
+        operatorCount * motionCount
+
+/// Responsible for implementing all of the Motion information
+type ITextViewMotionUtil = 
+
+    /// ITextView associated with the ITextViewMotionUtil
     abstract TextView : ITextView 
 
     /// Left "count" characters
@@ -104,7 +141,7 @@ type IMotionUtil =
 
     /// Implement the 'e' motion.  This goes to the end of the current word.  If we're
     /// not currently on a word it will find the next word and then go to the end of that
-    abstract EndOfWord : WordKind -> int -> MotionData option
+    abstract EndOfWord : WordKind -> int -> MotionData 
     
     /// Implement an end of line motion.  Typically in response to the $ key.  Even though
     /// this motion deals with lines, it's still a character wise motion motion. 
@@ -155,6 +192,39 @@ type IMotionUtil =
     /// Go to the middle line in the visible window.  
     abstract LineInMiddleOfVisibleWindow : unit -> MotionData
 
+    /// Count sentences forward
+    abstract SentenceForward : count:int -> MotionData
+
+    /// Count sentences backward 
+    abstract SentenceBackward : count:int -> MotionData
+
+    /// Gets count full sentences from the cursor.  If used on a blank line this will
+    /// not return a value
+    abstract SentenceFullForward : count:int -> MotionData
+
+    /// Count paragraphs forward
+    abstract ParagraphForward : count:int -> MotionData
+
+    /// Count pargraphs backwards
+    abstract ParagraphBackward : count:int -> MotionData
+
+    /// Get count full sentences from the cursor.  
+    abstract ParagraphFullForward : count:int -> MotionData
+
+    /// Forward a section in the editor
+    abstract SectionForward : MotionContext -> count:int-> MotionData
+
+    /// Backward a section in the editor or to an open brace
+    abstract SectionBackwardOrOpenBrace : count:int -> MotionData
+    
+    /// Backward a section in the editor or to a close brace
+    abstract SectionBackwardOrCloseBrace : count:int -> MotionData
+
+    /// The quoted string including the quotes
+    abstract QuotedString : unit -> MotionData option
+
+    /// The quoted string excluding the quotes
+    abstract QuotedStringContents : unit -> MotionData option
 
 type ModeKind = 
     | Normal = 1
@@ -167,6 +237,19 @@ type ModeKind =
 
     // Mode when Vim is disabled via the user
     | Disabled = 42
+
+[<RequireQualifiedAccess>]
+type VisualKind =
+    | Character
+    | Line
+    | Block
+    with 
+    static member ofModeKind kind = 
+        match kind with 
+        | ModeKind.VisualBlock -> VisualKind.Block |> Some
+        | ModeKind.VisualLine -> VisualKind.Line |> Some
+        | ModeKind.VisualCharacter -> VisualKind.Character |> Some
+        | _ -> None
 
 /// The actual command name.  This is a wrapper over the collection of KeyInput 
 /// values which make up a command name.  
@@ -317,21 +400,34 @@ type ModeSwitch =
     | SwitchMode of ModeKind
     | SwitchModeWithArgument of ModeKind * ModeArgument
     | SwitchPreviousMode 
-            
+
+[<RequireQualifiedAccess>]
 type CommandResult =   
     | Completed  of ModeSwitch
     | Error of string
 
+[<RequireQualifiedAccess>]
 type LongCommandResult =
     | Finished of CommandResult
     | Cancelled
     | NeedMoreInput of (KeyInput -> LongCommandResult)
 
+[<RequireQualifiedAccess>]
+type VisualSpan =
+    | Single of VisualKind * SnapshotSpan
+    | Multiple of VisualKind * NormalizedSnapshotSpanCollection
+    with
+    member x.VisualKind = 
+        match x with
+        | Single(kind,_) -> kind
+        | Multiple(kind,_) -> kind
+
 /// Information about the attributes of Command
 [<System.Flags>]
 type CommandFlags =
     | None = 0x0
-    /// Relates to the movement of the cursor
+    /// Relates to the movement of the cursor.  A movement command does not alter the 
+    /// last command
     | Movement = 0x1
     /// A Command which can be repeated
     | Repeatable = 0x2
@@ -343,6 +439,9 @@ type CommandFlags =
     /// For the purposes of change repeating the command is linked with the following
     /// text change
     | LinkedWithNextTextChange = 0x10
+    /// For Visual Mode commands which should reset the cursor to the original point
+    /// after completing
+    | ResetCaret = 0x20
 
 /// Representation of commands within Vim.  
 [<DebuggerDisplay("{ToString(),nq}")>]
@@ -363,6 +462,10 @@ type Command =
     /// repeatable.  
     | LongCommand of KeyInputSet * CommandFlags * (int option -> Register -> LongCommandResult) 
 
+    /// Represents a command which has a name and relies on the Visual Mode Span to 
+    /// execute the command
+    | VisualCommand of KeyInputSet * CommandFlags * VisualKind * (int option -> Register -> VisualSpan -> CommandResult) 
+
     with 
 
     /// The raw command inputs
@@ -371,6 +474,7 @@ type Command =
         | SimpleCommand(value,_,_ ) -> value
         | MotionCommand(value,_,_) -> value
         | LongCommand(value,_,_) -> value
+        | VisualCommand(value,_,_,_) -> value
 
     /// The kind of the Command
     member x.CommandFlags =
@@ -378,6 +482,7 @@ type Command =
         | SimpleCommand(_,value,_ ) -> value
         | MotionCommand(_,value,_) -> value
         | LongCommand(_,value,_) -> value
+        | VisualCommand(_,value,_,_) -> value
 
     /// Is the Repeatable flag set
     member x.IsRepeatable = Utils.IsFlagSet x.CommandFlags CommandFlags.Repeatable
@@ -393,14 +498,30 @@ type Command =
 
     override x.ToString() = System.String.Format("{0} -> {1}", x.KeyInputSet, x.CommandFlags)
 
-type MotionFunction = int option -> MotionData option
+
+/// Flags about specific motions
+[<RequireQualifiedAccess>]
+[<System.Flags>]
+type MotionFlags =
+
+    /// This type of motion can be used to move the cursor
+    | CursorMovement = 0x1 
+
+    /// Text object selection motions.  These can be used for cursor movement inside of 
+    /// Visual Mode but otherwise need to be used only after operators.  
+    /// :help text-objects
+    | TextObjectSelection = 0x2
+
+type MotionFunction = MotionArgument -> MotionData option
 
 type ComplexMotionResult =
     /// Enough input was provided to produce a simple motion style function
-    | Finished of MotionFunction 
+    | Finished of MotionFunction
     | Cancelled
     | Error of string
     | NeedMoreInput of (KeyInput -> ComplexMotionResult)
+
+type ComplexMotionFunction = unit -> ComplexMotionResult
 
 /// Represents the types of MotionCommands which exist
 type MotionCommand = 
@@ -408,24 +529,30 @@ type MotionCommand =
     /// Simple motion which comprises of a single KeyInput and a function which given 
     /// a start point and count will produce the motion.  None is returned in the 
     /// case the motion is not valid
-    | SimpleMotionCommand of KeyInputSet * MotionFunction
+    | SimpleMotionCommand of KeyInputSet * MotionFlags * MotionFunction
 
     /// Complex motion commands take more than one KeyInput to complete.  For example 
     /// the f,t,F and T commands all require at least one additional input.  The bool
     /// in the middle of the tuple indicates whether or not the motion can be 
     /// used as a cursor movement operation  
-    | ComplexMotionCommand of KeyInputSet * bool * ( unit -> ComplexMotionResult )
+    | ComplexMotionCommand of KeyInputSet * MotionFlags * ComplexMotionFunction
 
     with
 
     member x.KeyInputSet = 
         match x with
-        | SimpleMotionCommand(name,_) -> name
+        | SimpleMotionCommand(name,_,_) -> name
         | ComplexMotionCommand(name,_,_) -> name
 
+    member x.MotionFlags =
+        match x with 
+        | SimpleMotionCommand(_,flags,_) -> flags
+        | ComplexMotionCommand(_,flags,_) -> flags
+
+/// Data about the run of a given MotionData
 type MotionRunData = {
-    MotionCommand : MotionCommand;
-    Count : int option
+    MotionCommand : MotionCommand
+    MotionArgument : MotionArgument
     MotionFunction : MotionFunction
 }
 
@@ -438,6 +565,9 @@ type CommandRunData = {
     /// For commands which took a motion this will hold the relevant information
     /// on how the motion was ran
     MotionRunData : MotionRunData option
+
+    /// For visual commands this holds the relevant span information
+    VisualRunData : VisualSpan option
 }
 
 type MotionResult = 
@@ -445,6 +575,14 @@ type MotionResult =
     | NeedMoreInput of (KeyInput -> MotionResult)
     | Error of string
     | Cancelled
+
+/// Holds the data which is global to all IMotionCapture instances
+type IMotionCaptureGlobalData =
+
+    /// Motion function used with the last f, F, t or T motion.  The 
+    // first item in the tuple is the forward version and the second item
+    // is the backwards version
+    abstract LastCharSearch : (MotionFunction * MotionFunction) option with get,set
 
 /// Responsible for capturing motions on a given ITextView
 type IMotionCapture =
@@ -456,7 +594,7 @@ type IMotionCapture =
     abstract MotionCommands : seq<MotionCommand>
 
     /// Get the motion starting with the given KeyInput
-    abstract GetMotion : KeyInput -> int option -> MotionResult
+    abstract GetOperatorMotion : KeyInput -> int option -> MotionResult
 
 module CommandUtil = 
 
@@ -630,15 +768,15 @@ type IJumpList =
     /// Add a given SnapshotPoint to the jump list
     abstract Add : SnapshotPoint -> unit
 
-
 /// Map containing the various VIM registers
 type IRegisterMap = 
-    abstract DefaultRegisterName : char
-    abstract DefaultRegister : Register
-    abstract RegisterNames : seq<char>
-    abstract IsRegisterName : char -> bool
-    abstract GetRegister : char -> Register
-    
+
+    /// Gets all of the available register name values
+    abstract RegisterNames : seq<RegisterName>
+
+    /// Get the register with the specified name
+    abstract GetRegister : RegisterName -> Register
+
 /// Result of an individual search
 type SearchResult =
     | SearchFound of SnapshotSpan
@@ -654,11 +792,13 @@ type SearchOptions =
     /// Consider the "smartcase" option when doing the search
     | AllowSmartCase = 0x2
 
+[<RequireQualifiedAccess>]
 type SearchText =
     | Pattern of string
     | WholeWord of string
     | StraightText of string
     with 
+
     member x.RawText =
         match x with
         | Pattern(p) -> p
@@ -739,6 +879,20 @@ type ProcessResult =
         | ModeSwitch.SwitchModeWithArgument(kind,arg) -> ProcessResult.SwitchModeWithArgument (kind,arg)
         | ModeSwitch.SwitchPreviousMode -> ProcessResult.SwitchPreviousMode
 
+    // Is this any type of mode switch
+    member x.IsAnySwitch =
+        match x with
+        | Processed -> false
+        | ProcessNotHandled -> false
+        | SwitchMode(_) -> true
+        | SwitchModeWithArgument(_,_) -> true
+        | SwitchPreviousMode -> true
+
+[<RequireQualifiedAccess>]
+type TextChange = 
+    | Insert of string
+    | Delete of int
+
 type SettingKind =
     | NumberKind
     | StringKind    
@@ -781,24 +935,28 @@ type Setting = {
 
 module GlobalSettingNames = 
 
-    let IgnoreCaseName = "ignorecase"
-    let ShiftWidthName = "shiftwidth"
+    let CaretOpacityName = "vsvimcaret"
     let HighlightSearchName = "hlsearch"
-    let StartOfLineName = "startofline"
-    let TildeOpName = "tildeop"
+    let IgnoreCaseName = "ignorecase"
+    let MagicName = "magic"
+    let ScrollOffsetName = "scrolloff"
+    let SelectionName = "selection"
+    let ShiftWidthName = "shiftwidth"
     let SmartCaseName = "smartcase"
+    let StartOfLineName = "startofline"
+    let TabStopName = "tabstop"
+    let TildeOpName = "tildeop"
     let VisualBellName = "visualbell"
     let VirtualEditName = "virtualedit"
-    let ScrollOffsetName = "scrolloff"
-    let DoubleEscapeName = "vsvimdoubleescape"
     let VimRcName = "vimrc"
     let VimRcPathsName = "vimrcpaths"
 
 module LocalSettingNames =
     
-    let ScrollName = "scroll"
-    let NumberName = "number"
     let CursorLineName = "cursorline"
+    let NumberName = "number"
+    let ScrollName = "scroll"
+    let QuoteEscapeName = "quoteescape"
 
 /// Represent the setting supported by the Vim implementation.  This class **IS** mutable
 /// and the values will change.  Setting names are case sensitive but the exposed property
@@ -831,35 +989,35 @@ and IVimGlobalSettings =
     abstract ShiftWidth : int with get, set
     abstract StartOfLine : bool with get, set
 
-    /// Controls the behavior of ~ in normal mode
-    abstract TildeOp : bool with get,set
-
-    /// Overrides the IgnoreCase setting in certain cases if the pattern contains
-    /// any upper case letters
-    abstract SmartCase : bool with get,set
+    /// Opacity of the caret.  This must be an integer between values 0 and 100 which
+    /// will be converted into a double for the opacity of the caret
+    abstract CaretOpacity : int with get, set
 
     /// Whether or not to highlight previous search patterns matching cases
     abstract HighlightSearch : bool with get,set
 
-    /// Whether or not to use a visual indicator of errors instead of a beep
-    abstract VisualBell : bool with get,set
+    /// Whether or not the magic option is set
+    abstract Magic : bool with get,set
 
-    /// Holds the VirtualEdit string.  
-    abstract VirtualEdit : string with get,set
+    /// Is the onemore option inside of VirtualEdit set
+    abstract IsVirtualEditOneMore : bool with get
+
+    /// Controls how many spaces a tab counts for.  
+    abstract TabStop : int with get,set
+
+    /// Controls the behavior of ~ in normal mode
+    abstract TildeOp : bool with get,set
 
     /// Holds the scroll offset value which is the number of lines to keep visible
     /// above the cursor after a move operation
     abstract ScrollOffset : int with get,set
 
-    /// Is the onemore option inside of VirtualEdit set
-    abstract IsVirtualEditOneMore : bool with get
+    /// Holds the Selection option
+    abstract Selection : string with get,set
 
-    /// Affects behavior of <ESC> in Insert Mode.  <ESC> is overloaded some environments to be both 
-    /// an exit of Insert mode and a dismisser of intellisense.  The default behavior of insert 
-    /// mode is to dismiss intellisense and enter normal mode.  When this option is set it will 
-    /// just dismiss intellisense
-    abstract DoubleEscape:bool with get,set
-
+    /// Overrides the IgnoreCase setting in certain cases if the pattern contains
+    /// any upper case letters
+    abstract SmartCase : bool with get,set
 
     /// Retrieves the location of the loaded VimRC file.  Will be the empty string if the load 
     /// did not succeed or has not been tried
@@ -868,6 +1026,12 @@ and IVimGlobalSettings =
     /// Set of paths considered when looking for a .vimrc file.  Will be the empty string if the 
     /// load has not been attempted yet
     abstract VimRcPaths : string with get, set
+
+    /// Holds the VirtualEdit string.  
+    abstract VirtualEdit : string with get,set
+
+    /// Whether or not to use a visual indicator of errors instead of a beep
+    abstract VisualBell : bool with get,set
 
     abstract DisableCommand: KeyInput;
 
@@ -880,10 +1044,13 @@ and IVimLocalSettings =
     /// Return the handle to the global IVimSettings instance
     abstract GlobalSettings : IVimGlobalSettings
 
-    abstract Scroll : int with get,set
-
     /// Whether or not to highlight the line the cursor is on
     abstract CursorLine : bool with get,set
+
+    abstract Scroll : int with get,set
+
+    /// Which characters escape quotes for certain motion types
+    abstract QuoteEscape : string with get,set
 
     inherit IVimSettings
 
@@ -893,6 +1060,10 @@ and IVim =
     abstract MarkMap : IMarkMap
     abstract RegisterMap : IRegisterMap
     abstract Settings : IVimGlobalSettings
+
+    /// Buffer actively processing input.  This has no relation to the IVimBuffer
+    /// which has focus 
+    abstract ActiveBuffer : IVimBuffer option
 
     /// IKeyMap for this IVim instance
     abstract KeyMap : IKeyMap
@@ -977,7 +1148,7 @@ and IVimBuffer =
     abstract Settings : IVimLocalSettings
     abstract RegisterMap : IRegisterMap
 
-    abstract GetRegister : char -> Register
+    abstract GetRegister : RegisterName -> Register
 
     /// Get the specified Mode
     abstract GetMode : ModeKind -> IMode
@@ -1015,12 +1186,17 @@ and IVimBuffer =
 
     /// Raised when a KeyInput is received by the buffer
     [<CLIEvent>]
-    abstract KeyInputReceived : IEvent<KeyInput>
+    abstract KeyInputStart : IEvent<KeyInput>
 
     /// Raised when a key is received but not immediately processed.  Occurs when a
     /// key remapping has more than one source key strokes
     [<CLIEvent>]
     abstract KeyInputBuffered : IEvent<KeyInput>
+
+    /// Raised when a KeyInput is completed processing within the IVimBuffer.  This happens 
+    /// if the KeyInput is buffered or processed
+    [<CLIEvent>]
+    abstract KeyInputEnd : IEvent<KeyInput>
 
     /// Raised when an error is encountered
     [<CLIEvent>]
@@ -1088,6 +1264,9 @@ and INormalMode =
     /// The IIncrementalSearch instance for normal mode
     abstract IncrementalSearch : IIncrementalSearch
 
+    /// If we are a one-time normal mode, the mode kind we will return to
+    abstract OneTimeMode : ModeKind option
+
     inherit IMode
 
 and ICommandMode = 
@@ -1110,6 +1289,10 @@ and IVisualMode =
     /// The ICommandRunner implementation associated with NormalMode
     abstract CommandRunner : ICommandRunner 
 
+    /// Asks Visual Mode to reset what it perceives to be the original selection.  Instead it 
+    /// views the current selection as the original selection for entering the mode
+    abstract SyncSelection : unit -> unit
+
     inherit IMode 
     
 and IDisabledMode =
@@ -1124,8 +1307,19 @@ and IChangeTracker =
     abstract LastChange : RepeatableChange option
 
 /// Represents a change which is repeatable 
-and RepeatableChange =
+and [<RequireQualifiedAccess>] RepeatableChange =
     | CommandChange of CommandRunData
-    | TextChange of string
+    | TextChange of TextChange
     | LinkedChange of RepeatableChange * RepeatableChange
 
+/// Responsible for calculating the new Span for a VisualMode change
+type IVisualSpanCalculator =
+
+    /// Calculate the new VisualSpan 
+    abstract CalculateForTextView : textView:ITextView -> oldspan:VisualSpan -> VisualSpan
+
+    /// Calculate the new VisualSpan for the the given point
+    abstract CalculateForPoint : SnapshotPoint -> oldSpan:VisualSpan  -> VisualSpan
+
+
+    

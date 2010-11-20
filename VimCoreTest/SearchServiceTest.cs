@@ -1,14 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using NUnit.Framework;
+using Microsoft.VisualStudio.Text;
+using Microsoft.VisualStudio.Text.Operations;
 using Moq;
+using NUnit.Framework;
 using Vim;
 using Vim.Extensions;
-using Microsoft.VisualStudio.Text.Operations;
-using Vim.UnitTest;
-using Microsoft.VisualStudio.Text;
 using Vim.UnitTest.Mock;
 
 namespace VimCore.Test
@@ -16,7 +12,7 @@ namespace VimCore.Test
     [TestFixture]
     public class SearchServiceTest
     {
-        private MockFactory _factory;
+        private MockRepository _factory;
         private Mock<IVimGlobalSettings> _settings;
         private Mock<ITextSearchService> _textSearch;
         private SearchService _searchRaw;
@@ -25,8 +21,11 @@ namespace VimCore.Test
         [SetUp]
         public void SetUp()
         {
-            _factory = new MockFactory(MockBehavior.Strict);
+            _factory = new MockRepository(MockBehavior.Strict);
             _settings = _factory.Create<IVimGlobalSettings>();
+            _settings.SetupGet(x => x.Magic).Returns(true);
+            _settings.SetupGet(x => x.IgnoreCase).Returns(true);
+            _settings.SetupGet(x => x.SmartCase).Returns(false);
             _textSearch = _factory.Create<ITextSearchService>();
             _searchRaw = new SearchService(_textSearch.Object, _settings.Object);
             _search = _searchRaw;
@@ -72,7 +71,7 @@ namespace VimCore.Test
         {
             _settings.SetupGet(x => x.IgnoreCase).Returns(false).Verifiable();
             var options = _searchRaw.CreateFindOptions(SearchText.NewPattern(""), SearchKind.Forward, SearchOptions.AllowIgnoreCase);
-            Assert.AreEqual(FindOptions.UseRegularExpressions| FindOptions.MatchCase, options);
+            Assert.AreEqual(FindOptions.UseRegularExpressions | FindOptions.MatchCase, options);
             _factory.Verify();
         }
 
@@ -129,14 +128,14 @@ namespace VimCore.Test
         public void CreateFindOptions10()
         {
             var options = _searchRaw.CreateFindOptions(SearchText.NewWholeWord(""), SearchKind.Backward, SearchOptions.None);
-            Assert.AreEqual(FindOptions.WholeWord | FindOptions.MatchCase | FindOptions.SearchReverse , options);
+            Assert.AreEqual(FindOptions.WholeWord | FindOptions.MatchCase | FindOptions.SearchReverse, options);
         }
 
         [Test]
         public void FindNext1()
         {
             _settings.SetupGet(x => x.IgnoreCase).Returns(true).Verifiable();
-            AssertFindNext(new SearchData(SearchText.NewPattern("foo"), SearchKind.Forward, SearchOptions.AllowIgnoreCase), FindOptions.UseRegularExpressions); 
+            AssertFindNext(new SearchData(SearchText.NewPattern("foo"), SearchKind.Forward, SearchOptions.AllowIgnoreCase), FindOptions.UseRegularExpressions);
         }
 
         [Test]
@@ -157,7 +156,7 @@ namespace VimCore.Test
                 .Returns(new SnapshotSpan(tss, 11, 3))
                 .Verifiable();
             var searchData = new SearchData(SearchText.NewPattern("foo"), SearchKind.ForwardWithWrap, SearchOptions.None);
-            var ret = _search.FindNextMultiple(searchData, new SnapshotPoint(tss, 10), nav.Object,1);
+            var ret = _search.FindNextMultiple(searchData, new SnapshotPoint(tss, 10), nav.Object, 1);
             Assert.IsTrue(ret.IsSome());
             Assert.AreEqual(new SnapshotSpan(tss, 11, 3), ret.Value);
             _factory.Verify();

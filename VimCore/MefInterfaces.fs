@@ -117,7 +117,7 @@ type IMouseDevice =
 type IKeyboardDevice = 
 
     /// Is the given key pressed
-    abstract IsKeyDown : KeyInput -> bool
+    abstract IsKeyDown : VimKey -> bool
 
 /// Tracks changes to the IVimBuffer
 type ITextChangeTracker =
@@ -126,13 +126,18 @@ type ITextChangeTracker =
     abstract VimBuffer : IVimBuffer
 
     /// Current change
-    abstract CurrentChange : string
+    abstract CurrentChange : TextChange option
 
     /// Raised when a change is completed
     [<CLIEvent>]
-    abstract ChangeCompleted : IEvent<string>
+    abstract ChangeCompleted : IEvent<TextChange>
 
 /// Manages the ITextChangeTracker instances
 type ITextChangeTrackerFactory =
 
     abstract GetTextChangeTracker : IVimBuffer -> ITextChangeTracker
+
+/// Provides access to the system clipboard 
+type IClipboardDevice =
+
+    abstract Text : string with get,set

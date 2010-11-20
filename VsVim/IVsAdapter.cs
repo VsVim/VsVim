@@ -1,12 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using Microsoft.VisualStudio.TextManager.Interop;
-using Microsoft.VisualStudio.Text.Editor;
+﻿using System.Collections.Generic;
+using Microsoft.VisualStudio.Editor;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Text;
-using Microsoft.VisualStudio.Editor;
+using Microsoft.VisualStudio.Text.Editor;
+using Microsoft.VisualStudio.TextManager.Interop;
 
 namespace VsVim
 {
@@ -41,7 +38,24 @@ namespace VsVim
         /// </summary>
         bool TryGetContainingWindowFrame(IVsTextView textView, out IVsWindowFrame windowFrame);
 
+        /// <summary>
+        /// Is this a Venus window
+        /// </summary>
+        bool IsVenusView(IVsTextView textView);
+
+        /// <summary>
+        /// Determine if this ITextBuffer is readonly.  This needs to mimic the behavior of 
+        /// the VsCodeWindowAdapter::IsReadOnly method.
+        /// </summary>
+        bool IsReadOnly(ITextBuffer textBuffer);
+
         bool TryGetTextBufferForDocCookie(uint cookie, out ITextBuffer textBuffer);
+
+        /// <summary>
+        /// Get all of the IVsTextView's for the given ITextBuffer
+        /// </summary>
+        /// <param name="textBuffer"></param>
+        /// <returns></returns>
         IEnumerable<IVsTextView> GetTextViews(ITextBuffer textBuffer);
     }
 }

@@ -14,14 +14,14 @@ namespace VimCore.Test
     [TestFixture]
     public class UndoTransactionTest
     {
-        private MockFactory _factory;
+        private MockRepository _factory;
         private Mock<ITextUndoTransaction> _realTransaction;
         private UndoTransaction _transactionRaw;
         private IUndoTransaction _transaction;
 
         public void Create(bool haveRealTransaction = true)
         {
-            _factory = new MockFactory(MockBehavior.Strict);
+            _factory = new MockRepository(MockBehavior.Strict);
             if (haveRealTransaction)
             {
                 _realTransaction = _factory.Create<ITextUndoTransaction>();

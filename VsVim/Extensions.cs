@@ -247,14 +247,21 @@ namespace VsVim
 
         #region IVsWindowFrame
 
-        public static IVsCodeWindow GetCodeWindow(this IVsWindowFrame frame)
+        public static bool TryGetCodeWindow(this IVsWindowFrame frame, out IVsCodeWindow codeWindow)
         {
             var iid = typeof(IVsCodeWindow).GUID;
             var ptr = IntPtr.Zero;
             try
             {
                 ErrorHandler.ThrowOnFailure(frame.QueryViewInterface(ref iid, out ptr));
-                return (IVsCodeWindow)Marshal.GetObjectForIUnknown(ptr);
+                codeWindow = (IVsCodeWindow)Marshal.GetObjectForIUnknown(ptr);
+                return codeWindow != null;
+            }
+            catch (Exception)
+            {
+                // Venus will throw when querying for the code window
+                codeWindow = null;
+                return false;
             }
             finally
             {
@@ -263,6 +270,7 @@ namespace VsVim
                     Marshal.Release(ptr);
                 }
             }
+
         }
 
         #endregion
@@ -280,6 +288,12 @@ namespace VsVim
 
             return Tuple.Create(textView != null, textView);
         }
+
+        #endregion
+
+        #region IVsSnippetManager
+
+
 
         #endregion
 

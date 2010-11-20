@@ -51,7 +51,8 @@ type internal VimBuffer
 
 
     let _keyInputProcessedEvent = new Event<_>()
-    let _keyInputReceivedEvent = new Event<_>()
+    let _keyInputStartEvent = new Event<_>()
+    let _keyInputEndEvent = new Event<_>()
     let _keyInputBufferedEvent = new Event<_>()
     let _errorMessageEvent = new Event<_>()
     let _statusMessageEvent = new Event<_>()
@@ -129,37 +130,40 @@ type internal VimBuffer
         let remapMode = x.KeyRemapMode
 
         // Raise the event that we recieved the key
-        _keyInputReceivedEvent.Trigger(i)
+        _keyInputStartEvent.Trigger i
 
-        let remapResult,keyInputSet = 
-            match _remapInput,remapMode with
-            | Some(buffered),Some(remapMode) -> 
-                let keyInputSet = buffered.Add(i)
-                (_vim.KeyMap.GetKeyMapping keyInputSet remapMode),keyInputSet
-            | Some(buffered),None -> 
-                let keyInputSet = buffered.Add(i)
-                (Mapped keyInputSet),keyInputSet
-            | None,Some(remapMode) -> 
-                let keyInputSet = OneKeyInput i
-                (_vim.KeyMap.GetKeyMapping keyInputSet remapMode,keyInputSet)
-            | None,None -> 
-                let keyInputSet = OneKeyInput i
-                (Mapped keyInputSet),keyInputSet
-
-        // Clear out the _remapInput at this point.  It will be reset if the mapping needs more 
-        // data
-        _remapInput <- None
-
-        match remapResult with
-        | NoMapping -> doProcess i 
-        | MappingNeedsMoreInput -> 
-            _remapInput <- Some keyInputSet
-            _keyInputBufferedEvent.Trigger i
-            true
-        | RecursiveMapping(_) -> 
-            x.RaiseErrorMessage Resources.Vim_RecursiveMapping
-            true
-        | Mapped(keyInputSet) -> keyInputSet.KeyInputs |> Seq.map doProcess |> SeqUtil.last
+        try
+            let remapResult,keyInputSet = 
+                match _remapInput,remapMode with
+                | Some(buffered),Some(remapMode) -> 
+                    let keyInputSet = buffered.Add(i)
+                    (_vim.KeyMap.GetKeyMapping keyInputSet remapMode),keyInputSet
+                | Some(buffered),None -> 
+                    let keyInputSet = buffered.Add(i)
+                    (Mapped keyInputSet),keyInputSet
+                | None,Some(remapMode) -> 
+                    let keyInputSet = OneKeyInput i
+                    (_vim.KeyMap.GetKeyMapping keyInputSet remapMode,keyInputSet)
+                | None,None -> 
+                    let keyInputSet = OneKeyInput i
+                    (Mapped keyInputSet),keyInputSet
+    
+            // Clear out the _remapInput at this point.  It will be reset if the mapping needs more 
+            // data
+            _remapInput <- None
+    
+            match remapResult with
+            | NoMapping -> doProcess i 
+            | MappingNeedsMoreInput -> 
+                _remapInput <- Some keyInputSet
+                _keyInputBufferedEvent.Trigger i
+                true
+            | RecursiveMapping(_) -> 
+                x.RaiseErrorMessage Resources.Vim_RecursiveMapping
+                true
+            | Mapped(keyInputSet) -> keyInputSet.KeyInputs |> Seq.map doProcess |> SeqUtil.last
+        finally 
+            _keyInputEndEvent.Trigger i
     
     member x.AddMode mode = _modeMap.AddMode mode
             
@@ -205,7 +209,7 @@ type internal VimBuffer
         member x.AllModes = _modeMap.Modes
         member x.Settings = _settings
         member x.RegisterMap = _vim.RegisterMap
-        member x.GetRegister c = _vim.RegisterMap.GetRegister c
+        member x.GetRegister name = _vim.RegisterMap.GetRegister name
         member x.GetMode kind = _modeMap.GetMode kind
         member x.SwitchMode kind arg = x.SwitchMode kind arg
         member x.SwitchPreviousMode () = _modeMap.SwitchPreviousMode()
@@ -215,7 +219,9 @@ type internal VimBuffer
         [<CLIEvent>]
         member x.KeyInputProcessed = _keyInputProcessedEvent.Publish
         [<CLIEvent>]
-        member x.KeyInputReceived = _keyInputReceivedEvent.Publish
+        member x.KeyInputStart = _keyInputStartEvent.Publish
+        [<CLIEvent>]
+        member x.KeyInputEnd = _keyInputEndEvent.Publish
         [<CLIEvent>]
         member x.KeyInputBuffered = _keyInputBufferedEvent.Publish
         [<CLIEvent>]

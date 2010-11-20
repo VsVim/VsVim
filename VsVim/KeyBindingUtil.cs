@@ -128,24 +128,19 @@ namespace VsVim
             return false;
         }
 
-
         /// <summary>
         /// Find all of the key bindings which have been removed
         /// </summary>
         internal static List<CommandKeyBinding> FindKeyBindingsMarkedAsRemoved()
         {
+            var list = new List<CommandKeyBinding>();
             var settings = Settings.Settings.Default;
-            IEnumerable<Tuple<string, string>> source = null;
-            if (settings.HaveUpdatedKeyBindings)
+            if (!settings.HaveUpdatedKeyBindings)
             {
-                source = settings.RemovedBindings.Select(x => Tuple.Create(x.Name, x.CommandString));
-            }
-            else
-            {
-                source = Constants.CommonlyUnboundCommands.Select(x => Tuple.Create(x.Item1, x.Item3));
+                return list;
             }
 
-            var list = new List<CommandKeyBinding>();
+            var source = settings.RemovedBindings.Select(x => Tuple.Create(x.Name, x.CommandString));
             foreach (var tuple in source)
             {
                 KeyBinding binding;

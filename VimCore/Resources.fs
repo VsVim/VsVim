@@ -9,12 +9,16 @@ module internal Resources =
     let VisualMode_Banner = "--Visual--"
     let KeyNotationUtil_InvalidNotation notation = sprintf "%s is an invalid key notatin" notation
 
+    let KeyInput_InvalidVimKey = "Invalid Vim Key provided"
+    let KeyInput_DuplicateCharRepresentation = "Duplicate char representation detected"
+
     let Common_GotoDefNoWordUnderCursor = "No word under cursor to go to the definition of"
     let Common_GotoDefFailed word = sprintf "Could not navigate to definition of %s" word
     let Common_MarkInvalid = "Argument must be a letter or forward / back quote"
     let Common_MarkNotSet = "Mark not set"
     let Common_BulkEdit = "VsVim Bulk Edit"
     let Common_NoFoldFound = "No fold found"
+    let Common_InvalidLineNumber = "Invalid Line Number"
 
     let NormalMode_PatternNotFound pattern = sprintf "Pattern not found: %s" pattern
     let NormalMode_NoPreviousSearch = "No previous search"
@@ -23,6 +27,7 @@ module internal Resources =
     let NormalMode_RecursiveRepeatDetected = "Recursive repeat command detected"
     let NormalMode_RepeatNotSupportedOnCommand name = sprintf "Repeat not yet supported on command %s" name
     let NormalMode_UnableToRepeatMotion commandName motionName= sprintf "Unable to repeat motion %s for command %s " motionName commandName
+    let NormalMode_CantFindFile fileName = sprintf "Can't find file for %s in path" fileName
 
     let CommandMode_InvalidCommand = "Invalid command"
     let CommandMode_PatternNotFound pattern = NormalMode_PatternNotFound pattern

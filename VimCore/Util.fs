@@ -1,6 +1,7 @@
 ﻿#light
 
 namespace Vim
+open Microsoft.VisualStudio.Text
 
 [<AbstractClass>]
 type internal ToggleHandler() =
@@ -64,19 +65,10 @@ module internal Utils =
     let GetEnumValues<'T when 'T : enum<int>>() : 'T seq=
         System.Enum.GetValues(typeof<'T>) |> Seq.cast<'T>
 
-    /// Create a regex.  Returns None if the regex has invalid characters
-    let TryCreateRegex pattern options =
-        try
-            let r = new System.Text.RegularExpressions.Regex(pattern, options)
-            Some r
-        with 
-            | :? System.ArgumentException -> None
-
     /// Type safe helper method for creating a WeakReference<'T>
     let CreateWeakReference<'T when 'T : not struct> (value : 'T) = 
         let weakRef = System.WeakReference(value)
         WeakReference<'T>(weakRef)
-
 
 module internal ListUtil =
 
@@ -162,6 +154,9 @@ module internal SeqUtil =
     /// Return if the sequence is not empty
     let isNotEmpty s = not (s |> Seq.isEmpty)
 
+    /// Returns if any of the elements in the sequence match the provided filter
+    let any filter s = s |> Seq.filter filter |> isNotEmpty
+
     /// Maps a seq of options to an option of list where None indicates at least one 
     /// entry was None and Some indicates all entries had values
     let allOrNone s =
@@ -225,19 +220,27 @@ module internal SeqUtil =
 
         areEqual
 
-    let takeMax count (sequence:'a seq) = 
-        let i = ref 0
-        sequence |> Seq.takeWhile (fun _ -> 
-            i := !i + 1
-            if !i <= count then true
-            else false ) |> List.ofSeq
-            
+    /// Skip's a maximum of count elements.  If there are more than
+    /// count elements in the sequence then an empty sequence will be 
+    /// returned
+    let skipMax count (sequence:'a seq) = 
+        let inner count = 
+            seq {
+                let count = ref count
+                use e = sequence.GetEnumerator()
+                while !count > 0 && e.MoveNext() do
+                    count := !count - 1
+                while e.MoveNext() do
+                    yield e.Current }
+        inner count
+
 module internal MapUtil =
 
     /// Get the set of keys in the Map
     let keys (map:Map<'TKey,'TValue>) = map |> Seq.map (fun pair -> pair.Key)
 
 module internal CharUtil =
+    let MinValue = System.Char.MinValue
     let IsDigit x = System.Char.IsDigit(x)
     let IsWhiteSpace x = System.Char.IsWhiteSpace(x)
     let IsNotWhiteSpace x = not (System.Char.IsWhiteSpace(x))
@@ -313,5 +316,63 @@ module internal OptionUtil =
 
     /// Combine two options into a single option.  Only some if both are some
     let combineBoth2 (left,right) = combineBoth left right
+
+    /// Get the value or the provided default
+    let getOrDefault defaultValue opt =
+        match opt with 
+        | Some(value) -> value
+        | None -> defaultValue
+
+/// Represents a range of lines in an ITextSnapshot.  Different from a SnapshotSpan
+/// because it declaratively supports lines instead of a position range
+type SnapshotLineSpan 
+    (   _snapshot : ITextSnapshot,
+        _startLine : int,
+        _count : int ) =
+
+    do
+        if _startLine >= _snapshot.LineCount then
+            invalidArg "startLine" Resources.Common_InvalidLineNumber
+        if _startLine + (_count - 1) >= _snapshot.LineCount || _count < 1 then
+            invalidArg "count" Resources.Common_InvalidLineNumber
+
+    member x.Snapshot = _snapshot
+    member x.StartLineNumber = _startLine
+    member x.StartLine = _snapshot.GetLineFromLineNumber x.StartLineNumber
+    member x.Start = x.StartLine.Start
+    member x.Count = _count
+    member x.EndLineNumber = _startLine + (_count - 1)
+    member x.EndLine = _snapshot.GetLineFromLineNumber x.EndLineNumber
+    member x.End = x.EndLine.End
+    member x.EndIncludingLineBreak = x.EndLine.EndIncludingLineBreak
+    member x.Extent=
+        let startLine = x.StartLine
+        let endLine = x.EndLine
+        SnapshotSpan(startLine.Start, endLine.End)
+    member x.ExtentIncludingLineBreak = 
+        let startLine = x.StartLine
+        let endLine = x.EndLine
+        SnapshotSpan(startLine.Start, endLine.EndIncludingLineBreak)
+    member x.Lines = seq { for i in _startLine .. x.EndLineNumber do yield _snapshot.GetLineFromLineNumber(i) }
+    member x.GetText() = x.Extent.GetText()
+    member x.GetTextIncludingLineBreak() = x.ExtentIncludingLineBreak.GetText()
+
+    // Equality Functions
+    override x.GetHashCode() = _startLine ^^^ _count
+    override x.Equals (other:obj) = 
+        match other with
+        | :? SnapshotLineSpan as other -> x.Equals(other)
+        | _ -> false
+    member x.Equals (other:SnapshotLineSpan) = 
+        other.Snapshot = _snapshot
+        && other.StartLineNumber = _startLine
+        && other.Count = _count
+    interface System.IEquatable<SnapshotLineSpan> with
+        member x.Equals other = x.Equals other
+    static member op_Equality(this,other) = 
+        System.Collections.Generic.EqualityComparer<SnapshotLineSpan>.Default.Equals(this,other)
+    static member op_Inequality(this,other) = 
+        not (System.Collections.Generic.EqualityComparer<SnapshotLineSpan>.Default.Equals(this,other))
+
 
 

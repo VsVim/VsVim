@@ -1,4 +1,5 @@
-﻿using Microsoft.VisualStudio.Text.Editor;
+﻿using Microsoft.VisualStudio.Text;
+using Microsoft.VisualStudio.Text.Editor;
 using NUnit.Framework;
 using Vim;
 using Vim.UnitTest;
@@ -27,5 +28,18 @@ namespace VimCore.Test
             CreateBuffer("foo", "bar");
             _textView.Close();
         }
+
+        /// <summary>
+        /// This test is mainly a regression test against the selection change logic
+        /// </summary>
+        [Test]
+        [Description("Make sure a minor selection change doesn't move us into Normal mode")]
+        public void SelectionChange1()
+        {
+            CreateBuffer("foo", "bar");
+            _textView.SelectAndUpdateCaret(new SnapshotSpan(_textView.GetLine(0).Start, 0));
+            Assert.AreEqual(ModeKind.Insert, _buffer.ModeKind);
+        }
+
     }
 }

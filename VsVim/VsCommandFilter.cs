@@ -1,16 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 using Microsoft.VisualStudio;
-using Microsoft.VisualStudio.TextManager.Interop;
-using Microsoft.VisualStudio.Text.Editor;
-using System.Runtime.InteropServices;
-using System.Windows.Input;
-using Microsoft.FSharp.Core;
-using Vim;
 using Microsoft.VisualStudio.OLE.Interop;
-using IServiceProvider = System.IServiceProvider;
 using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.TextManager.Interop;
+using Vim;
+using IServiceProvider = System.IServiceProvider;
 
 namespace VsVim
 {
@@ -65,6 +59,21 @@ namespace VsVim
 
         int IOleCommandTarget.Exec(ref Guid commandGroup, uint commandId, uint nCmdexecopt, IntPtr pvaIn, IntPtr pvaOut)
         {
+            if (commandGroup == VSConstants.VSStd2K)
+            {
+                switch ((VSConstants.VSStd2KCmdID)commandId)
+                {
+                    case VSConstants.VSStd2KCmdID.INSERTSNIPPET:
+                    case VSConstants.VSStd2KCmdID.SnippetProp:
+                    case VSConstants.VSStd2KCmdID.SnippetRef:
+                    case VSConstants.VSStd2KCmdID.SnippetRepl:
+                    case VSConstants.VSStd2KCmdID.ECMD_INVOKESNIPPETFROMSHORTCUT:
+                    case VSConstants.VSStd2KCmdID.ECMD_CREATESNIPPET:
+                    case VSConstants.VSStd2KCmdID.ECMD_INVOKESNIPPETPICKER2:
+                        break;
+                }
+            }
+
             KeyInput ki = null;
             if (OleCommandUtil.IsDebugIgnore(commandGroup, commandId)
                 || !TryConvert(commandGroup, commandId, pvaIn, out ki)

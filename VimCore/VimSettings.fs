@@ -105,26 +105,28 @@ type internal SettingsMap
         | ToggleKind -> convertToBoolean()
         | StringKind -> Some (StringValue(str))
 
-            
-
 type internal GlobalSettings() =
 
     static let DisableCommandLet = KeyInputUtil.VimKeyAndModifiersToKeyInput VimKey.F12 (KeyModifiers.Control ||| KeyModifiers.Shift)
 
     static let GlobalSettings = 
         [|
-            ( IgnoreCaseName,"ic", ToggleKind, ToggleValue(false) );
-            ( StartOfLineName, "sol", ToggleKind, ToggleValue(true) );
-            ( ShiftWidthName, "sw", NumberKind, NumberValue(4) );
+            ( CaretOpacityName, CaretOpacityName, NumberKind, NumberValue(65) );
             ( HighlightSearchName, "hls", ToggleKind, ToggleValue(false) );
-            ( TildeOpName, "top", ToggleKind, ToggleValue(false) );
-            ( SmartCaseName, "scs", ToggleKind, ToggleValue(false) );
-            ( VisualBellName, "vb", ToggleKind, ToggleValue(false) );
-            ( VirtualEditName, "ve", StringKind, StringValue(StringUtil.empty));
+            ( IgnoreCaseName,"ic", ToggleKind, ToggleValue(false) );
+            ( MagicName, MagicName, ToggleKind, ToggleValue(true) );
+            ( ShiftWidthName, "sw", NumberKind, NumberValue(4) );
+            ( SelectionName, "sel", StringKind, StringValue("inclusive"));
             ( ScrollOffsetName, "so", NumberKind, NumberValue(0) );
+            ( SmartCaseName, "scs", ToggleKind, ToggleValue(false) );
+            ( StartOfLineName, "sol", ToggleKind, ToggleValue(true) );
+            ( TabStopName, "ts", NumberKind, NumberValue(8) );
+            ( TildeOpName, "top", ToggleKind, ToggleValue(false) );
             ( VimRcName, VimRcName, StringKind, StringValue(System.String.Empty) );
             ( VimRcPathsName, VimRcPathsName, StringKind, StringValue(System.String.Empty) );
-            ( DoubleEscapeName, DoubleEscapeName, ToggleKind, ToggleValue(false) );
+            ( VirtualEditName, "ve", StringKind, StringValue(StringUtil.empty));
+            ( VisualBellName, "vb", ToggleKind, ToggleValue(false) );
+            ( CaretOpacityName, CaretOpacityName, NumberKind, NumberValue(65) );
         |]
 
     let _map = SettingsMap(GlobalSettings, true)
@@ -140,42 +142,51 @@ type internal GlobalSettings() =
         member x.GetSetting settingName = _map.GetSetting settingName
 
         // IVimGlobalSettings 
-        member x.IgnoreCase
-            with get()  = _map.GetBoolValue IgnoreCaseName
-            and set value = _map.TrySetValue IgnoreCaseName (ToggleValue(value)) |> ignore
-        member x.ShiftWidth  
-            with get() = _map.GetNumberValue ShiftWidthName
-            and set value = _map.TrySetValue ShiftWidthName (NumberValue(value)) |> ignore
+        member x.CaretOpacity
+            with get() = _map.GetNumberValue CaretOpacityName
+            and set value = _map.TrySetValue CaretOpacityName (NumberValue(value)) |> ignore
         member x.HighlightSearch
             with get() = _map.GetBoolValue HighlightSearchName
             and set value = _map.TrySetValue HighlightSearchName (ToggleValue(value)) |> ignore
-        member x.StartOfLine 
-            with get() = _map.GetBoolValue StartOfLineName
-            and set value = _map.TrySetValue StartOfLineName (ToggleValue(value)) |> ignore
-        member x.TildeOp
-            with get() = _map.GetBoolValue TildeOpName
-            and set value = _map.TrySetValue TildeOpName (ToggleValue(value)) |> ignore
-        member x.SmartCase
-            with get() = _map.GetBoolValue SmartCaseName
-            and set value = _map.TrySetValue SmartCaseName (ToggleValue(value)) |> ignore
-        member x.VisualBell
-            with get() = _map.GetBoolValue VisualBellName
-            and set value = _map.TrySetValue VisualBellName (ToggleValue(value)) |> ignore
-        member x.VirtualEdit
-            with get() = _map.GetStringValue VirtualEditName
-            and set value = _map.TrySetValue VirtualEditName (StringValue(value)) |> ignore
+        member x.IgnoreCase
+            with get()  = _map.GetBoolValue IgnoreCaseName
+            and set value = _map.TrySetValue IgnoreCaseName (ToggleValue(value)) |> ignore
+        member x.Magic
+            with get() = _map.GetBoolValue MagicName
+            and set value = _map.TrySetValue MagicName (ToggleValue(value)) |> ignore
         member x.ScrollOffset
             with get() = _map.GetNumberValue ScrollOffsetName
             and set value = _map.TrySetValue ScrollOffsetName (NumberValue(value)) |> ignore
-        member x.DoubleEscape
-            with get() = _map.GetBoolValue DoubleEscapeName
-            and set value = _map.TrySetValue DoubleEscapeName (ToggleValue(value)) |> ignore
+        member x.Selection
+            with get() = _map.GetStringValue SelectionName
+            and set value = _map.TrySetValue SelectionName (StringValue(value)) |> ignore
+        member x.ShiftWidth  
+            with get() = _map.GetNumberValue ShiftWidthName
+            and set value = _map.TrySetValue ShiftWidthName (NumberValue(value)) |> ignore
+        member x.SmartCase
+            with get() = _map.GetBoolValue SmartCaseName
+            and set value = _map.TrySetValue SmartCaseName (ToggleValue(value)) |> ignore
+        member x.StartOfLine 
+            with get() = _map.GetBoolValue StartOfLineName
+            and set value = _map.TrySetValue StartOfLineName (ToggleValue(value)) |> ignore
+        member x.TabStop
+            with get() = _map.GetNumberValue TabStopName
+            and set value = _map.TrySetValue TabStopName (NumberValue(value)) |> ignore
+        member x.TildeOp
+            with get() = _map.GetBoolValue TildeOpName
+            and set value = _map.TrySetValue TildeOpName (ToggleValue(value)) |> ignore
         member x.VimRc 
             with get() = _map.GetStringValue VimRcName
             and set value = _map.TrySetValue VimRcName (StringValue(value)) |> ignore
         member x.VimRcPaths 
             with get() = _map.GetStringValue VimRcPathsName
             and set value = _map.TrySetValue VimRcPathsName (StringValue(value)) |> ignore
+        member x.VirtualEdit
+            with get() = _map.GetStringValue VirtualEditName
+            and set value = _map.TrySetValue VirtualEditName (StringValue(value)) |> ignore
+        member x.VisualBell
+            with get() = _map.GetBoolValue VisualBellName
+            and set value = _map.TrySetValue VisualBellName (ToggleValue(value)) |> ignore
         member x.DisableCommand = DisableCommandLet
         member x.IsVirtualEditOneMore = 
             let value = _map.GetStringValue VirtualEditName
@@ -191,9 +202,10 @@ type internal LocalSettings
     
     static let LocalSettings =
         [|
-            ( ScrollName, "scr", NumberKind, NumberValue(25) );
-            ( NumberName, "nu", ToggleKind, ToggleValue(false) )
             ( CursorLineName, "cul", ToggleKind, ToggleValue(false) )
+            ( NumberName, "nu", ToggleKind, ToggleValue(false) )
+            ( ScrollName, "scr", NumberKind, NumberValue(25) )
+            ( QuoteEscapeName, "qe", StringKind, StringValue(@"\") )
         |]
 
     let _map = SettingsMap(LocalSettings, false)
@@ -236,12 +248,15 @@ type internal LocalSettings
             else _global.GetSetting settingName
 
         member x.GlobalSettings = _global
-        member x.Scroll 
-            with get() = _map.GetNumberValue ScrollName
-            and set value = _map.TrySetValue ScrollName (NumberValue(value)) |> ignore
         member x.CursorLine 
             with get() = _map.GetBoolValue CursorLineName
             and set value = _map.TrySetValue CursorLineName (ToggleValue(value)) |> ignore
+        member x.Scroll 
+            with get() = _map.GetNumberValue ScrollName
+            and set value = _map.TrySetValue ScrollName (NumberValue(value)) |> ignore
+        member x.QuoteEscape
+            with get() = _map.GetStringValue QuoteEscapeName
+            and set value = _map.TrySetValue QuoteEscapeName (StringValue(value)) |> ignore
 
         [<CLIEvent>]
         member x.SettingChanged = _map.SettingChanged

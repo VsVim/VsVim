@@ -54,6 +54,20 @@ namespace Vim.UnitTest
 
         #endregion
 
+        #region VisualSpan
+
+        public static VisualSpan.Multiple AsMultiple(this VisualSpan span)
+        {
+            return (VisualSpan.Multiple)span;
+        }
+
+        public static VisualSpan.Single AsSingle(this VisualSpan span)
+        {
+            return (VisualSpan.Single)span;
+        }
+
+        #endregion
+
         #region ParseRangeResult
 
         internal static ParseRangeResult.Succeeded AsSucceeded(this ParseRangeResult res)
@@ -226,23 +240,29 @@ namespace Vim.UnitTest
 
         #region IVimBuffer
 
-        public static bool ProcessChar(this IVimBuffer buf, char c)
+        public static bool Process(this IVimBuffer buf, VimKey key)
+        {
+            return buf.Process(KeyInputUtil.VimKeyToKeyInput(key));
+        }
+
+        public static bool Process(this IVimBuffer buf, char c)
         {
             return buf.Process(KeyInputUtil.CharToKeyInput(c));
         }
 
-        public static void ProcessAsString(this IVimBuffer buf, string input)
-        {
-            ProcessInputAsString(buf, input);
-        }
-
-        public static void ProcessInputAsString(this IVimBuffer buf, string input)
+        public static void Process(this IVimBuffer buf, string input)
         {
             foreach (var c in input)
             {
                 var i = KeyInputUtil.CharToKeyInput(c);
                 buf.Process(i);
             }
+        }
+
+        public static Register GetRegister(this IVimBuffer buffer, char c)
+        {
+            var name = RegisterNameUtil.CharToRegister(c).Value;
+            return buffer.RegisterMap.GetRegister(name);
         }
 
         #endregion
@@ -259,21 +279,22 @@ namespace Vim.UnitTest
             return textView.TextSnapshot.GetLineFromLineNumber(line);
         }
 
-        public static SnapshotSpan GetLineSpanIncludingLineBreak(this ITextView textView, int startLine, int endLine = -1)
+        public static SnapshotLineSpan GetLineSpan(this ITextView textView, int startLine, int endLine = -1)
         {
             endLine = endLine >= 0 ? endLine : startLine;
-            return textView.TextSnapshot.GetLineSpanIncludingLineBreak(startLine, endLine);
-        }
-
-        public static SnapshotSpan GetLineSpan(this ITextView textView, int startLine, int endLine = -1)
-        {
-            endLine = endLine >= 0 ? endLine : startLine;
-            return textView.TextSnapshot.GetLineSpan(startLine, endLine);
+            return SnapshotLineSpanUtil.CreateForStartAndEndLine(textView.TextSnapshot, startLine, endLine);
         }
 
         public static CaretPosition MoveCaretTo(this ITextView textView, int position)
         {
             return textView.Caret.MoveTo(new SnapshotPoint(textView.TextSnapshot, position));
+        }
+
+        public static void SelectAndUpdateCaret(this ITextView textView, SnapshotSpan span, TextSelectionMode mode = TextSelectionMode.Stream)
+        {
+            textView.Selection.Mode = mode;
+            textView.Selection.Select(span, false);
+            MoveCaretTo(textView, span.End.Position);
         }
 
         public static ITextSnapshotLine GetCaretLine(this ITextView textView)
@@ -295,16 +316,10 @@ namespace Vim.UnitTest
             return buffer.CurrentSnapshot.GetLineFromLineNumber(line);
         }
 
-        public static SnapshotSpan GetLineSpanIncludingLineBreak(this ITextBuffer buffer, int startLine, int endLine = -1)
+        public static SnapshotLineSpan GetLineSpan(this ITextBuffer buffer, int startLine, int endLine = -1)
         {
             endLine = endLine >= 0 ? endLine : startLine;
-            return buffer.CurrentSnapshot.GetLineSpanIncludingLineBreak(startLine, endLine);
-        }
-
-        public static SnapshotSpan GetLineSpan(this ITextBuffer buffer, int startLine, int endLine = -1)
-        {
-            endLine = endLine >= 0 ? endLine : startLine;
-            return buffer.CurrentSnapshot.GetLineSpan(startLine, endLine);
+            return SnapshotLineSpanUtil.CreateForStartAndEndLine(buffer.CurrentSnapshot, startLine, endLine);
         }
 
         public static SnapshotPoint GetPoint(this ITextBuffer buffer, int position)
@@ -312,9 +327,19 @@ namespace Vim.UnitTest
             return new SnapshotPoint(buffer.CurrentSnapshot, position);
         }
 
+        public static SnapshotPoint GetEndPoint(this ITextBuffer buffer)
+        {
+            return buffer.CurrentSnapshot.GetEndPoint();
+        }
+
         public static SnapshotSpan GetSpan(this ITextBuffer buffer, int start, int length)
         {
             return buffer.CurrentSnapshot.GetSpan(start, length);
+        }
+
+        public static void SetText(this ITextBuffer buffer, string text)
+        {
+            buffer.Replace(new Span(0, buffer.CurrentSnapshot.Length), text);
         }
 
         #endregion
@@ -322,25 +347,16 @@ namespace Vim.UnitTest
         #region ITextSnapshot
 
 
+
         public static ITextSnapshotLine GetLine(this ITextSnapshot tss, int lineNumber)
         {
             return tss.GetLineFromLineNumber(lineNumber);
         }
 
-        public static SnapshotSpan GetLineSpan(this ITextSnapshot tss, int startLine, int endLine = -1)
+        public static SnapshotLineSpan GetLineSpan(this ITextSnapshot tss, int startLine, int endLine = -1)
         {
             endLine = endLine >= 0 ? endLine : startLine;
-            var start = tss.GetLineFromLineNumber(startLine);
-            var end = tss.GetLineFromLineNumber(endLine);
-            return new SnapshotSpan(start.Start, end.End);
-        }
-
-        public static SnapshotSpan GetLineSpanIncludingLineBreak(this ITextSnapshot tss, int startLine, int endLine = -1)
-        {
-            endLine = endLine >= 0 ? endLine : startLine;
-            var start = tss.GetLineFromLineNumber(startLine);
-            var end = tss.GetLineFromLineNumber(endLine);
-            return new SnapshotSpan(start.Start, end.EndIncludingLineBreak);
+            return SnapshotLineSpanUtil.CreateForStartAndEndLine(tss, startLine, endLine);
         }
 
         public static SnapshotPoint GetPoint(this ITextSnapshot tss, int position)
@@ -348,9 +364,23 @@ namespace Vim.UnitTest
             return new SnapshotPoint(tss, position);
         }
 
+        public static SnapshotPoint GetEndPoint(this ITextSnapshot tss)
+        {
+            return new SnapshotPoint(tss, tss.Length);
+        }
+
         public static SnapshotSpan GetSpan(this ITextSnapshot tss, int start, int length)
         {
             return new SnapshotSpan(tss, start, length);
+        }
+
+        #endregion
+
+        #region ITextSnapshotPoint
+
+        public static SnapshotSpan GetSpan(this SnapshotPoint point, int length)
+        {
+            return new SnapshotSpan(point, length);
         }
 
         #endregion
@@ -401,13 +431,20 @@ namespace Vim.UnitTest
 
         public static void UpdateValue(this Register reg, string value)
         {
-            var regValue = new RegisterValue(value, MotionKind.Inclusive, OperationKind.CharacterWise);
-            reg.UpdateValue(regValue);
+            var data = StringData.NewSimple(value);
+            var regValue = new RegisterValue(data, OperationKind.CharacterWise);
+            reg.Value = regValue;
         }
 
         public static SnapshotPoint GetCaretPoint(this ITextView view)
         {
             return view.Caret.Position.BufferPosition;
+        }
+
+        public static Register GetRegister(this IRegisterMap map, char c)
+        {
+            var name = RegisterNameUtil.CharToRegister(c).Value;
+            return map.GetRegister(name);
         }
 
     }

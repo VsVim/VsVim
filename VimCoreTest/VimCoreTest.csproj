@@ -141,12 +141,23 @@
     <Compile Include="CommandParseUtilTest.cs" />
     <Compile Include="CommandProcessorTest.cs" />
     <Compile Include="CommandRunnerTest.cs" />
-    <Compile Include="Command_DefaultOperations.cs" />
+    <Compile Include="CommandDefaultOperationsTest.cs" />
+    <Compile Include="SnapshotLineSpanUtilTest.cs" />
+    <Compile Include="RegisterMapTest.cs" />
+    <Compile Include="RegisterNameTest.cs" />
+    <Compile Include="RegisterTest.cs" />
+    <Compile Include="SnapshotLineSpanTest.cs" />
+    <Compile Include="VimRegexTest.cs" />
+    <Compile Include="VirtualSnapshotPointUtilTest.cs" />
+    <Compile Include="MotionUtilTest.cs" />
+    <Compile Include="SelectionChangeTrackerTest.cs" />
+    <Compile Include="SeqUtilTest.cs" />
+    <Compile Include="VisualModeIntegrationTest.cs" />
     <Compile Include="FoldManagerTest.cs" />
     <Compile Include="InsertModeIntegrationTest.cs" />
     <Compile Include="FileSystemTest.cs" />
     <Compile Include="MotionDataTest.cs" />
-    <Compile Include="MotionUtilTest.cs" />
+    <Compile Include="TextViewMotionUtilTest.cs" />
     <Compile Include="NormalModeIntegrationTest.cs" />
     <Compile Include="SearchServiceTest.cs" />
     <Compile Include="TextChangeTrackerTest.cs" />
@@ -192,7 +203,7 @@
     <Compile Include="VimIntegrationTests.cs" />
     <Compile Include="VimTest.cs" />
     <Compile Include="VisualModeTest.cs" />
-    <Compile Include="Visual_DefaultOperationsTests.cs" />
+    <Compile Include="VisualSpanCalculatorTest.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Todo.txt" />

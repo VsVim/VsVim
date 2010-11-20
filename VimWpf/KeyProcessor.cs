@@ -1,15 +1,33 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Windows.Input;
+using Microsoft.VisualStudio.Text;
 using Vim.Extensions;
 
 namespace Vim.UI.Wpf
 {
-    public sealed class KeyProcessor : Microsoft.VisualStudio.Text.Editor.KeyProcessor
+    /// <summary>
+    /// The morale of the history surrounding this type is translating key input is
+    /// **hard**.  Anytime it's done manually and expected to be 100% correct it 
+    /// likely to have a bug.  If you doubt this then I encourage you to read the 
+    /// following 10 part blog series
+    /// 
+    /// http://blogs.msdn.com/b/michkap/archive/2006/04/13/575500.aspx
+    ///
+    /// Or simply read the keyboard feed on the same blog page.  It will humble you
+    /// </summary>
+    public class KeyProcessor : Microsoft.VisualStudio.Text.Editor.KeyProcessor
     {
         private readonly IVimBuffer _buffer;
+
+        public IVimBuffer VimBuffer
+        {
+            get { return _buffer; }
+        }
+
+        public ITextBuffer TextBuffer
+        {
+            get { return _buffer.TextBuffer; }
+        }
 
         public KeyProcessor(IVimBuffer buffer)
         {
@@ -22,65 +40,26 @@ namespace Vim.UI.Wpf
         }
 
         /// <summary>
-        /// When the user is typing we get events for every single key press.  This means that 
-        /// typing something like an upper case character will cause at least 2 events to be
-        /// generated.  
-        ///  1) LeftShift 
-        ///  2) LeftShift + b
-        /// This helps us filter out items like #1 which we don't want to process
-        /// </summar>
-        private bool IsNonInputKey(Key k)
+        /// Last chance at custom handling of user input.  At this point we have the 
+        /// advantage that WPF has properly converted the user input into a char which 
+        /// can be effeciently mapped to a KeyInput value.  
+        /// </summary>
+        public override void TextInput(TextCompositionEventArgs args)
         {
-            switch (k)
-            {
-                case Key.LeftAlt:
-                case Key.LeftCtrl:
-                case Key.LeftShift:
-                case Key.RightAlt:
-                case Key.RightCtrl:
-                case Key.RightShift:
-                case Key.System:
-                    return true;
-                default:
-                    return false;
-            }
-        }
-
-        private bool IsInputKey(Key k)
-        {
-            return !IsNonInputKey(k);
-        }
-
-        private bool TryHandleTextInput(TextCompositionEventArgs args)
-        {
-            if (1 != args.Text.Length)
-            {
-                return false;
-            }
-            else
+            bool handled = false;
+            if (!String.IsNullOrEmpty(args.Text) && 1 == args.Text.Length)
             {
                 // Only want to intercept text coming from the keyboard.  Let other 
                 // components edit without having to come through us
                 var keyboard = args.Device as KeyboardDevice;
-                if (keyboard == null)
+                if (keyboard != null)
                 {
-                    return false;
+                    var ki = KeyInputUtil.CharToKeyInput(args.Text[0]);
+                    handled = _buffer.CanProcess(ki) && _buffer.Process(ki);
                 }
-
-                var opt = KeyInputUtil.TryCharToKeyInput(args.Text[0]);
-                if (!opt.IsSome())
-                {
-                    return false;
-                }
-
-                var ki = opt.Value;
-                return _buffer.CanProcess(ki) && _buffer.Process(ki);
             }
-        }
 
-        public override void TextInput(TextCompositionEventArgs args)
-        {
-            if (TryHandleTextInput(args))
+            if (handled)
             {
                 args.Handled = true;
             }
@@ -90,16 +69,62 @@ namespace Vim.UI.Wpf
             }
         }
 
+        /// <summary>
+        /// This handler is the best place to intercept keyboard input which contains
+        /// modifiers that make it unsuitable for actual textual input.  Any combination 
+        /// which can be translated into actual text input will be done so much more 
+        /// accurately by WPF and will end up in the TextInput event.
+        /// 
+        /// Attempting to manually translate the arguments here from a Key and KeyModifiers
+        /// to a char **will** fail because we lack enough information (dead keys, etc ...)
+        /// 
+        /// Instead we limit our search to the keys which we have a high degree of 
+        /// confidence can't be mapped to textual input and will still be a valid Vim
+        /// command.  Those are keys with control modifiers or those which don't map 
+        /// to characters
+        /// </summary>
         public override void KeyDown(KeyEventArgs args)
         {
-            var isHandled = false;
-            if (IsInputKey(args.Key))
+            bool handled;
+            if (!KeyUtil.IsInputKey(args.Key))
             {
-                var ki = KeyUtil.ConvertToKeyInput(args.Key, args.KeyboardDevice.Modifiers);
-                isHandled = _buffer.CanProcess(ki) && _buffer.Process(ki);
+                // Non input keys such as Alt, Control, etc ... by themselves are uninteresting
+                // to Vim
+                handled = false;
+            }
+            else if (KeyUtil.IsAltGr(args.KeyboardDevice.Modifiers))
+            {
+                // AltGr greatly confuses things becuase it's realized in WPF as Control | Alt.  So
+                // while it's possible to use Control to further modify a key which used AltGr
+                // originally the result is indistinguishable here (and in gVim).  Don't attempt
+                // to process it
+                handled = false;
+            }
+            else if (args.KeyboardDevice.Modifiers == ModifierKeys.None)
+            {
+                // When there are no keyboard modifiers then we only want to process input which 
+                // can't be represented as a char.  If it can be represented by a char then 
+                // it will appear in TextInput and we can do a much more definitive mapping
+                KeyInput ki;
+                handled = KeyUtil.TryConvertToKeyInput(args.Key, out ki) && ki.RawChar.IsNone()
+                    ? _buffer.CanProcess(ki) && _buffer.Process(ki)
+                    : false;
+            }
+            else if (0 != (args.KeyboardDevice.Modifiers & (ModifierKeys.Control | ModifierKeys.Alt)))
+            {
+                // There is a modifier and it's not just shift.  Attempt to convert the input 
+                // and see if can be handled by Vim
+                KeyInput ki;
+                handled = KeyUtil.TryConvertToKeyInput(args.Key, args.KeyboardDevice.Modifiers, out ki)
+                    && _buffer.CanProcess(ki)
+                    && _buffer.Process(ki);
+            }
+            else
+            {
+                handled = false;
             }
 
-            if (isHandled)
+            if (handled)
             {
                 args.Handled = true;
             }

@@ -38,6 +38,12 @@ type internal DefaultOperations ( _data : OperationsData, _incrementalSearch : I
                 let ret = x.CommonImpl.NavigateToPoint (VirtualSnapshotPoint(point))
                 if not ret then _host.Beep()
 
+    member private x.WordUnderCursorOrEmpty =
+        let point =  TextViewUtil.GetCaretPoint _textView
+        TssUtil.FindCurrentFullWordSpan point WordKind.BigWord
+        |> OptionUtil.getOrDefault (SnapshotSpanUtil.CreateEmpty point)
+        |> SnapshotSpanUtil.GetText
+
     member private x.MoveToNextWordCore kind count isWholeWord = 
         let point = TextViewUtil.GetCaretPoint _textView
         match TssUtil.FindCurrentFullWordSpan point WordKind.NormalWord with
@@ -46,7 +52,7 @@ type internal DefaultOperations ( _data : OperationsData, _incrementalSearch : I
 
             // Build up the SearchData structure
             let word = span.GetText()
-            let text = if isWholeWord then WholeWord(word) else StraightText(word)
+            let text = if isWholeWord then SearchText.WholeWord(word) else SearchText.StraightText(word)
             let data = {Text=text; Kind = kind; Options = SearchOptions.AllowIgnoreCase }
 
             // When forward the search will be starting on the current word so it will 
@@ -70,22 +76,34 @@ type internal DefaultOperations ( _data : OperationsData, _incrementalSearch : I
             if isReverse then { last with Kind = SearchKindUtil.Reverse last.Kind }
             else last
 
-        if StringUtil.isNullOrEmpty last.Text.RawText then 
+        if StringUtil.isNullOrEmpty last.Text.RawText then
             _statusUtil.OnError Resources.NormalMode_NoPreviousSearch
         else
 
-            // When forward the search will be starting on the current word so it will 
-            // always match.  Without modification a count of 1 would simply find the word 
-            // under the cursor.  Increment the count by 1 here so that it will find
-            // the current word as the 0th match (so to speak)
-            let count = if SearchKindUtil.IsForward last.Kind then count + 1 else count 
-
-            let point = TextViewUtil.GetCaretPoint _textView
-            match _search.FindNextMultiple last point _normalWordNav count with
-            | Some(span) -> 
+            let foundSpan (span:SnapshotSpan) = 
                 x.CommonImpl.MoveCaretToPoint span.Start 
                 x.CommonImpl.EnsureCaretOnScreenAndTextExpanded()
+
+            let findMore (span:SnapshotSpan) count = 
+                if count = 1 then foundSpan span
+                else 
+                    let count = count - 1 
+                    match _search.FindNextMultiple last span.End _normalWordNav count with
+                    | Some(span) -> foundSpan span
+                    | None -> _statusUtil.OnError (Resources.NormalMode_PatternNotFound last.Text.RawText)
+
+            // Make sure we don't count the current word if the cursor is positioned
+            // directly on top of the current word 
+            let caretPoint = TextViewUtil.GetCaretPoint _textView
+            match _search.FindNext last caretPoint _normalWordNav with
             | None -> _statusUtil.OnError (Resources.NormalMode_PatternNotFound last.Text.RawText)
+            | Some(span) ->
+                let count = if span.Start = caretPoint then count else count - 1 
+                if count = 0 then foundSpan span
+                else 
+                    match _search.FindNextMultiple last span.End _normalWordNav count with
+                    | Some(span) -> foundSpan span
+                    | None -> _statusUtil.OnError (Resources.NormalMode_PatternNotFound last.Text.RawText)
 
     member x.GoToLineCore line =
         let snapshot = _textView.TextSnapshot
@@ -198,28 +216,27 @@ type internal DefaultOperations ( _data : OperationsData, _incrementalSearch : I
                 _textView.Caret.MoveTo(point) |> ignore
                 true
     
-        /// Yank lines from the buffer.  Implements the Y command
-        member x.YankLines count reg =
-            let point = TextViewUtil.GetCaretPoint _textView
-            let point = point.GetContainingLine().Start
-            let span = SnapshotPointUtil.GetLineRangeSpanIncludingLineBreak point count
-            x.CommonImpl.Yank span MotionKind.Inclusive OperationKind.LineWise reg |> ignore
-
-    
         /// Implement the normal mode x command
-        member x.DeleteCharacterAtCursor count reg =
+        member x.DeleteCharacterAtCursor count =
             let point = TextViewUtil.GetCaretPoint _textView
             let line = point.GetContainingLine()
             let count = min (count) (line.End.Position-point.Position)
             let span = new SnapshotSpan(point, count)
-            x.CommonImpl.DeleteSpan span MotionKind.Exclusive OperationKind.CharacterWise reg |> ignore
+            x.CommonImpl.DeleteSpan span 
+
+            // Need to respect the virtual edit setting here as we could have 
+            // deleted the last character on the line
+            x.CommonImpl.MoveCaretForVirtualEdit()
+
+            span
     
         /// Implement the normal mode X command
-        member x.DeleteCharacterBeforeCursor count reg = 
+        member x.DeleteCharacterBeforeCursor count = 
             let point = TextViewUtil.GetCaretPoint _textView
-            let range = TssUtil.GetReverseCharacterSpan point count
-            x.CommonImpl.DeleteSpan range MotionKind.Exclusive OperationKind.CharacterWise reg |> ignore
-    
+            let span = TssUtil.GetReverseCharacterSpan point count
+            x.CommonImpl.DeleteSpan span
+            span
+
         member x.JoinAtCaret count =     
             let start = TextViewUtil.GetCaretPoint _textView
             let kind = Vim.Modes.JoinKind.RemoveEmptySpaces
@@ -231,6 +248,18 @@ type internal DefaultOperations ( _data : OperationsData, _incrementalSearch : I
             match x.CommonImpl.GoToDefinition() with
             | Vim.Modes.Succeeded -> ()
             | Vim.Modes.Failed(msg) -> _statusUtil.OnError msg
+
+
+        member x.GoToLocalDeclaration() = 
+            if not (_host.GoToLocalDeclaration _textView x.WordUnderCursorOrEmpty) then _host.Beep()
+
+        member x.GoToGlobalDeclaration () = 
+            if not (_host.GoToGlobalDeclaration _textView x.WordUnderCursorOrEmpty) then _host.Beep()
+
+        member x.GoToFile () = 
+            let text = x.WordUnderCursorOrEmpty 
+            if not (_host.GoToFile text) then 
+                _statusUtil.OnError (Resources.NormalMode_CantFindFile text)
 
         member x.MoveToNextOccuranceOfWordAtCursor kind count =  x.MoveToNextWordCore kind count true
         member x.MoveToNextOccuranceOfPartialWordAtCursor kind count = x.MoveToNextWordCore kind count false

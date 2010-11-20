@@ -15,7 +15,7 @@ namespace VimCore.Test
     [TestFixture]
     public class InsertModeTest
     {
-        private MockFactory _factory;
+        private MockRepository _factory;
         private Mock<IVimBuffer> _data;
         private Vim.Modes.Insert.InsertMode _modeRaw;
         private IMode _mode;
@@ -35,7 +35,7 @@ namespace VimCore.Test
 
         public void SetUp(bool insertMode)
         {
-            _factory = new MockFactory(MockBehavior.Strict);
+            _factory = new MockRepository(MockBehavior.Strict);
             _factory.DefaultValue = DefaultValue.Mock;
             _textView = _factory.Create<ITextView>();
             _vim = _factory.Create<IVim>(MockBehavior.Loose);
@@ -82,7 +82,6 @@ namespace VimCore.Test
         [Test]
         public void Escape2()
         {
-            _globalSettings.SetupGet(x => x.DoubleEscape).Returns(false);
             _broker
                 .SetupGet(x => x.IsCompletionActive)
                 .Returns(true)
@@ -97,22 +96,6 @@ namespace VimCore.Test
             _factory.Verify();
         }
 
-        [Test, Description("Double escape will only dismiss intellisense")]
-        public void Escape3()
-        {
-            _globalSettings.SetupGet(x => x.DoubleEscape).Returns(true);
-            _broker
-                .SetupGet(x => x.IsCompletionActive)
-                .Returns(true)
-                .Verifiable();
-            _broker
-                .Setup(x => x.DismissDisplayWindows())
-                .Verifiable();
-            var res = _mode.Process(VimKey.Escape);
-            Assert.IsTrue(res.IsProcessed);
-            _factory.Verify();
-        }
-
         [Test]
         public void Control_OpenBracket1()
         {
@@ -124,7 +107,6 @@ namespace VimCore.Test
         [Test]
         public void Control_OpenBraket2()
         {
-            _globalSettings.SetupGet(x => x.DoubleEscape).Returns(false);
             _broker
                 .SetupGet(x => x.IsCompletionActive)
                 .Returns(true)
@@ -182,6 +164,15 @@ namespace VimCore.Test
                 .Setup(x => x.SetOptionValue(DefaultTextViewOptions.OverwriteModeId, false))
                 .Verifiable();
             _mode.OnLeave();
+            _factory.Verify();
+        }
+
+        [Test]
+        public void ShiftRight1()
+        {
+            SetUp();
+            _operations.Setup(x => x.ShiftLinesRight(1)).Verifiable();
+            _mode.Process(KeyNotationUtil.StringToKeyInput("CTRL-T"));
             _factory.Verify();
         }
 

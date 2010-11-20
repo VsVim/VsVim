@@ -1,13 +1,27 @@
 ﻿using System;
 using System.Linq;
 using Microsoft.FSharp.Core;
-using Vim;
+using Microsoft.VisualStudio.Text;
 using Vim.Extensions;
 
 namespace Vim.UnitTest
 {
     internal static class VimUtil
     {
+        internal static RegisterMap CreateRegisterMap(IClipboardDevice device)
+        {
+            return CreateRegisterMap(device, () => null);
+        }
+
+        internal static RegisterMap CreateRegisterMap(IClipboardDevice device, Func<string> func)
+        {
+            Func<FSharpOption<string>> func2 = () =>
+            {
+                var result = func();
+                return string.IsNullOrEmpty(result) ? FSharpOption<string>.None : FSharpOption.Create(result);
+            };
+            return new RegisterMap(device, func2.ToFSharpFunc());
+        }
 
         internal static Command CreateSimpleCommand(string name, Action<FSharpOption<int>, Register> del)
         {
@@ -19,7 +33,6 @@ namespace Vim.UnitTest
                     return CommandResult.NewCompleted(ModeSwitch.NoSwitch);
                 });
         }
-
 
         internal static Command CreateSimpleCommand(string name, Func<FSharpOption<int>, Register, CommandResult> func)
         {
@@ -80,30 +93,58 @@ namespace Vim.UnitTest
             return Command.NewMotionCommand(commandName, CommandFlags.None, fsharpFunc);
         }
 
-        internal static MotionCommand CreateSimpleMotion(string name, Func<MotionData> func)
+        internal static Command CreateVisualCommand(
+            string name = "c",
+            CommandFlags? flags = null,
+            VisualKind kind = null,
+            Func<FSharpOption<int>, Register, VisualSpan, CommandResult> func = null)
         {
-            var fsharpFunc = FSharpFuncUtil.Create<FSharpOption<int>, FSharpOption<MotionData>>(unused => FSharpOption.Create(func()));
+            var flagsArg = flags ?? CommandFlags.None;
+            kind = kind ?? VisualKind.Line;
+            if (func == null)
+            {
+                func = (x, y, z) => CommandResult.NewCompleted(ModeSwitch.NoSwitch);
+            }
+            return Command.NewVisualCommand(
+                KeyNotationUtil.StringToKeyInputSet(name),
+                flagsArg,
+                kind,
+                func.ToFSharpFunc());
+        }
+
+        internal static MotionCommand CreateSimpleMotion(
+            string name,
+            Func<MotionData> func,
+            MotionFlags? flags = null)
+        {
+            var flagsRaw = flags ?? MotionFlags.CursorMovement;
             var commandName = KeyNotationUtil.StringToKeyInputSet(name);
             return MotionCommand.NewSimpleMotionCommand(
                 commandName,
-                fsharpFunc);
+                flagsRaw,
+                FuncUtil.CreateMotionFunc(func));
         }
 
         internal static CommandRunData CreateCommandRunData(
             Command command,
             Register register,
             int? count = null,
-            MotionRunData motionRunData = null)
+            MotionRunData motionRunData = null,
+            VisualSpan visualRunData = null)
         {
             var countOpt = count != null ? FSharpOption.Create(count.Value) : FSharpOption<int>.None;
             var motion = motionRunData != null
                 ? FSharpOption.Create(motionRunData)
                 : FSharpOption<MotionRunData>.None;
+            var visual = visualRunData != null
+                ? FSharpOption.Create(visualRunData)
+                : FSharpOption<VisualSpan>.None;
             return new CommandRunData(
                 command,
                 register,
                 countOpt,
-                motion);
+                motion,
+                visual);
         }
 
         internal static MotionRunData CreateMotionRunData(
@@ -112,18 +153,33 @@ namespace Vim.UnitTest
             Func<MotionData> func = null)
         {
             func = func ?? (() => null);
-            Converter<FSharpOption<int>, FSharpOption<MotionData>> conv = unused =>
-                {
-                    var res = func();
-                    if (res == null) { return FSharpOption<MotionData>.None; }
-                    else { return FSharpOption.Create(res); }
-                };
             var countOpt = count != null ? FSharpOption.Create(count.Value) : FSharpOption<int>.None;
             return new MotionRunData(
                 motionCommand,
-                countOpt,
-                conv.ToFSharpFunc());
+                new MotionArgument(MotionContext.AfterOperator, FSharpOption<int>.None, countOpt),
+                FuncUtil.CreateMotionFunc(func));
         }
-            
+
+        internal static VisualSpan CreateVisualSpanSingle(
+            SnapshotSpan span,
+            VisualKind kind = null)
+        {
+            return VisualSpan.NewSingle(
+                kind ?? VisualKind.Line,
+                span);
+        }
+
+        internal static KeyInput CreateKeyInput(
+            VimKey key = VimKey.NotWellKnown,
+            KeyModifiers mod = KeyModifiers.None,
+            char? c = null)
+        {
+            return new KeyInput(
+                key,
+                mod,
+                c.HasValue ? FSharpOption<char>.Some(c.Value) : FSharpOption<char>.None);
+        }
+
+
     }
 }

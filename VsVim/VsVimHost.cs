@@ -68,17 +68,72 @@ namespace VsVim
         /// The C++ project system requires that the target of GoToDefinition be passed
         /// as an argument to the command.  
         /// </summary>
-        private bool GoToDefinitionCPlusPlus(ITextView textView)
+        private bool GoToDefinitionCPlusPlus(ITextView textView, string target)
         {
-            var caretPoint = textView.Caret.Position.BufferPosition;
-            var span = TssUtil.FindCurrentFullWordSpan(caretPoint, WordKind.NormalWord);
-            if (span.IsSome())
+            if (target == null)
             {
-                return SafeExecuteCommand(CommandNameGoToDefinition, span.Value.GetText());
+                var caretPoint = textView.Caret.Position.BufferPosition;
+                var span = TssUtil.FindCurrentFullWordSpan(caretPoint, WordKind.NormalWord);
+                target = span.IsSome()
+                    ? span.Value.GetText()
+                    : null;
+            }
+
+            if (target != null)
+            {
+                return SafeExecuteCommand(CommandNameGoToDefinition, target);
             }
             else
             {
                 return SafeExecuteCommand(CommandNameGoToDefinition);
+            }
+        }
+
+        private bool GoToDefinitionCore(ITextView textView, string target)
+        {
+            if (textView.TextBuffer.ContentType.IsCPlusPlus())
+            {
+                return GoToDefinitionCPlusPlus(textView, target);
+            }
+
+            return SafeExecuteCommand(CommandNameGoToDefinition);
+        }
+
+        private bool OpenFileCore(string fileName)
+        {
+            if (SafeExecuteCommand("File.OpenFile", fileName))
+            {
+                return true;
+            }
+
+            var names = _dte.GetProjects().SelectMany(x => x.GetProjecItems()).Select(x => x.Name).ToList();
+            var list = _dte.GetProjectItems(fileName);
+
+            if (list.Any())
+            {
+                var item = list.First();
+                var result = item.Open(EnvDTE.Constants.vsViewKindPrimary);
+                result.Activate();
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Format the specified line range.  There is no inherent operation to do this
+        /// in Visual Studio.  Instead we leverage the FormatSelection command.  Need to be careful
+        /// to reset the selection after a format
+        /// </summary>
+        private void FormatLines(ITextView textView, SnapshotLineSpan range)
+        {
+            var startedWithSelection = !textView.Selection.IsEmpty;
+            textView.Selection.Clear();
+            textView.Selection.Select(range.ExtentIncludingLineBreak, false);
+            SafeExecuteCommand("Edit.FormatSelection");
+            if (!startedWithSelection)
+            {
+                textView.Selection.Clear();
             }
         }
 
@@ -89,31 +144,9 @@ namespace VsVim
             SystemSounds.Beep.Play();
         }
 
-        void IVimHost.OpenFile(string file)
-        {
-            var names = _dte.GetProjects().SelectMany(x => x.GetProjecItems()).Select(x => x.Name).ToList();
-            var list = _dte.GetProjectItems(file);
-
-            if (list.Any())
-            {
-                var item = list.First();
-                var result = item.Open(EnvDTE.Constants.vsViewKindPrimary);
-                result.Activate();
-                return;
-            }
-
-            Console.Beep();
-        }
-
         bool IVimHost.GoToDefinition()
         {
-            var textView = _textManager.ActiveTextView;
-            if (textView.TextBuffer.ContentType.IsCPlusPlus())
-            {
-                return GoToDefinitionCPlusPlus(textView);
-            }
-
-            return SafeExecuteCommand(CommandNameGoToDefinition);
+            return GoToDefinitionCore(_textManager.ActiveTextView, null);
         }
 
         bool IVimHost.GoToMatch()
@@ -215,6 +248,29 @@ namespace VsVim
         void IVimHost.MoveViewUp(ITextView textView)
         {
             _textManager.MoveViewUp(textView);
+        }
+
+        bool IVimHost.GoToGlobalDeclaration(ITextView textView, string target)
+        {
+            return GoToDefinitionCore(textView, target);
+        }
+
+        bool IVimHost.GoToLocalDeclaration(ITextView textView, string target)
+        {
+            // This is technically incorrect as it should prefer local declarations. However 
+            // there is currently no better way in Visual Studio.  Added this method though
+            // so it's easier to plug in later should such an API become available
+            return GoToDefinitionCore(textView, target);
+        }
+
+        bool IVimHost.GoToFile(string fileName)
+        {
+            return OpenFileCore(fileName);
+        }
+
+        void IVimHost.FormatLines(ITextView textView, SnapshotLineSpan lineSpan)
+        {
+            FormatLines(textView, lineSpan);
         }
 
         #endregion

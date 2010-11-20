@@ -3,10 +3,10 @@ namespace Vim
 open System
 open Microsoft.VisualStudio.Text
 
-type internal Direction =
-    | Neither = 0
-    | Left = 1
-    | Right = 2
+type internal TextDirection =
+    | Neither
+    | Left 
+    | Right
 
 module internal TextUtil =
 
@@ -23,10 +23,9 @@ module internal TextUtil =
     let rec private GetNormalWordPredicate input index dir = 
         let nextIndex index = 
             match dir with
-                | Direction.Left -> index - 1
-                | Direction.Right -> index + 1
-                | Direction.Neither -> -1
-                | _ -> failwith "Invalid Enum"
+                | TextDirection.Left -> index - 1
+                | TextDirection.Right -> index + 1
+                | TextDirection.Neither -> -1
         
         match StringUtil.charAtOption index input with 
             | None -> IsNormalWordChar
@@ -116,19 +115,19 @@ module internal TextUtil =
     
     let FindCurrentWordSpan kind input index = 
         let f = FindCurrentSpanCore
-        FindSpanCore f kind input index Direction.Right
+        FindSpanCore f kind input index TextDirection.Right
     let FindCurrentWord kind input index = 
         let span = FindCurrentWordSpan kind input index
         FindWordCore input span
-    let FindFullWordSpan kind input index = FindSpanCore FindFullSpanCore kind input index Direction.Right
+    let FindFullWordSpan kind input index = FindSpanCore FindFullSpanCore kind input index TextDirection.Right
     let FindFullWord kind input index = 
         let span = FindFullWordSpan kind input index
         FindWordCore input span
-    let FindPreviousWordSpan kind input index = FindSpanCore FindPreviousSpanCore kind input index Direction.Left
+    let FindPreviousWordSpan kind input index = FindSpanCore FindPreviousSpanCore kind input index TextDirection.Left
     let FindPreviousWord kind input index = 
         let span = FindPreviousWordSpan kind input index
         FindWordCore input span
-    let FindNextWordSpan kind input index = FindSpanCore FindNextSpanCore kind input index Direction.Right
+    let FindNextWordSpan kind input index = FindSpanCore FindNextSpanCore kind input index TextDirection.Right
     let FindNextWord kind input index = 
         let span = FindNextWordSpan kind input index
         FindWordCore input span

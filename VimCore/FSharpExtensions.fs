@@ -11,6 +11,12 @@ module public OptionExtensions =
     [<Extension>]
     let IsNone opt = Option.isNone opt
 
+    [<Extension>]
+    let Is (opt:'a option, value) =
+        match opt with 
+        | Some(toTest) -> toTest = value
+        | None         -> false
+
 module public FSharpOption =
 
     let Create value = value |> Some
@@ -23,6 +29,9 @@ module public SeqExtensions =
 
 [<Extension>]
 type public FSharpFuncUtil = 
+
+    [<Extension>] 
+    static member ToFSharpFunc<'a> (func:System.Func<'a>) = fun () -> func.Invoke()
 
     [<Extension>] 
     static member ToFSharpFunc<'a,'b> (func:System.Converter<'a,'b>) = fun x -> func.Invoke(x)

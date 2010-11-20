@@ -1,14 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading;
 
 namespace Vim.UnitTest
 {
-    internal sealed class TestableSynchronizationContext : SynchronizationContext
+    public sealed class TestableSynchronizationContext : SynchronizationContext
     {
         private List<Action> _list = new List<Action>();
+        public bool IsEmpty
+        {
+            get { return 0 == _list.Count; }
+        }
 
         public override void Post(SendOrPostCallback d, object state)
         {

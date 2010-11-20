@@ -13,17 +13,31 @@ namespace Vim.UI.Wpf.Test
             KeyToKeyInput(c, key, ModifierKeys.None);
         }
 
+        private KeyInput ConvertToKeyInput(Key key)
+        {
+            return ConvertToKeyInput(key, ModifierKeys.None);
+        }
+
+        private KeyInput ConvertToKeyInput(Key key, ModifierKeys modKeys)
+        {
+            KeyInput ki;
+            Assert.IsTrue(KeyUtil.TryConvertToKeyInput(key, modKeys, out ki));
+            return ki;
+        }
+
         private void KeyToKeyInput(char c, Key key, ModifierKeys mod)
         {
             var left = KeyInputUtil.CharToKeyInput(c);
-            var right = KeyUtil.ConvertToKeyInput(key, mod);
+            KeyInput right;
+            Assert.IsTrue(KeyUtil.TryConvertToKeyInput(key, mod, out right));
             Assert.AreEqual(left, right);
         }
 
         private void WellKnownBothWays(VimKey wellKnownKey, Key key)
         {
             var left = KeyInputUtil.VimKeyToKeyInput(wellKnownKey);
-            var right = KeyUtil.ConvertToKeyInput(key);
+            KeyInput right;
+            Assert.IsTrue(KeyUtil.TryConvertToKeyInput(key, out right));
             Assert.AreEqual(left, right);
         }
 
@@ -92,7 +106,7 @@ namespace Vim.UI.Wpf.Test
         [Test]
         public void ConvertToKeyInput1()
         {
-            var ki = KeyUtil.ConvertToKeyInput(Key.A, ModifierKeys.Shift);
+            var ki = ConvertToKeyInput(Key.A, ModifierKeys.Shift);
             Assert.AreEqual('A', ki.Char);
             Assert.AreEqual(KeyModifiers.Shift, ki.KeyModifiers);
         }
@@ -100,7 +114,7 @@ namespace Vim.UI.Wpf.Test
         [Test]
         public void ConvertToKeyInput2()
         {
-            var ki = KeyUtil.ConvertToKeyInput(Key.A, ModifierKeys.None);
+            var ki = ConvertToKeyInput(Key.A, ModifierKeys.None);
             Assert.AreEqual('a', ki.Char);
             Assert.AreEqual(KeyModifiers.None, ki.KeyModifiers);
         }
@@ -108,7 +122,7 @@ namespace Vim.UI.Wpf.Test
         [Test]
         public void ConvertToKeyInput3()
         {
-            var ki = KeyUtil.ConvertToKeyInput(Key.A, ModifierKeys.Control);
+            var ki = ConvertToKeyInput(Key.A, ModifierKeys.Control);
             Assert.AreEqual('a', ki.Char);
             Assert.AreEqual(KeyModifiers.Control, ki.KeyModifiers);
         }
@@ -122,7 +136,7 @@ namespace Vim.UI.Wpf.Test
                     Tuple.Create('3', Key.D3) };
             foreach (var tuple in list)
             {
-                var ki = KeyUtil.ConvertToKeyInput(tuple.Item2, ModifierKeys.None);
+                var ki = ConvertToKeyInput(tuple.Item2, ModifierKeys.None);
                 Assert.AreEqual(tuple.Item1, ki.Char);
                 Assert.AreEqual(KeyModifiers.None, ki.KeyModifiers);
             }
@@ -131,33 +145,9 @@ namespace Vim.UI.Wpf.Test
         [Test]
         public void ConvertToKeyInput5()
         {
-            var ki = KeyUtil.ConvertToKeyInput(Key.F12, ModifierKeys.Shift | ModifierKeys.Control);
+            var ki = ConvertToKeyInput(Key.F12, ModifierKeys.Shift | ModifierKeys.Control);
             Assert.AreEqual(VimKey.F12, ki.Key);
             Assert.AreEqual(KeyModifiers.Shift | KeyModifiers.Control, ki.KeyModifiers);
         }
-
-        [Test]
-        public void ConvertToKey1()
-        {
-            var ki = KeyInputUtil.CharToKeyInput('c');
-            Assert.AreEqual(Key.C, KeyUtil.ConvertToKey(ki));
-        }
-
-        [Test]
-        public void ConvertToKey2()
-        {
-            var ki = KeyInputUtil.CharWithControlToKeyInput('c');
-            Assert.AreEqual(Key.C, KeyUtil.ConvertToKey(ki));
-        }
-
-        [Test]
-        public void ConvertToKey3()
-        {
-            var ki = KeyInputUtil.CharWithControlToKeyInput('c');
-            Assert.AreEqual(ModifierKeys.Control, KeyUtil.ConvertToKeyAndModifiers(ki).Item2);
-        }
-
-
-
     }
 }

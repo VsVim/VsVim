@@ -1,15 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.ComponentModel.Composition;
-using Microsoft.VisualStudio.TextManager.Interop;
-using Microsoft.VisualStudio.Text.Editor;
-using Microsoft.VisualStudio.Shell.Interop;
+using System.Linq;
+using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Editor;
 using Microsoft.VisualStudio.Shell;
-using Microsoft.VisualStudio;
+using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Text;
+using Microsoft.VisualStudio.Text.Editor;
+using Microsoft.VisualStudio.TextManager.Interop;
+using Vim;
 
 namespace VsVim.Implementation
 {
@@ -17,6 +17,7 @@ namespace VsVim.Implementation
     internal sealed class VsAdapter : IVsAdapter
     {
         private readonly IVsEditorAdaptersFactoryService _editorAdaptersFactoryService;
+        private readonly IEditorOptionsFactoryService _editorOptionsFactoryService;
         private readonly IVsTextManager _textManager;
         private readonly IVsUIShell _uiShell;
         private readonly RunningDocumentTable _table;
@@ -30,9 +31,11 @@ namespace VsVim.Implementation
         [ImportingConstructor]
         internal VsAdapter(
             IVsEditorAdaptersFactoryService editorAdaptersFactoryService,
+            IEditorOptionsFactoryService editorOptionsFactoryService,
             SVsServiceProvider serviceProvider)
         {
             _editorAdaptersFactoryService = editorAdaptersFactoryService;
+            _editorOptionsFactoryService = editorOptionsFactoryService;
             _serviceProvider = serviceProvider;
             _textManager = _serviceProvider.GetService<SVsTextManager, IVsTextManager>();
             _table = new RunningDocumentTable(_serviceProvider);
@@ -41,15 +44,11 @@ namespace VsVim.Implementation
 
         public bool TryGetCodeWindow(ITextView textView, out IVsCodeWindow codeWindow)
         {
-            IVsWindowFrame frame;
-            if (TryGetContainingWindowFrame(textView, out frame))
-            {
-                codeWindow = frame.GetCodeWindow();
-                return true;
-            }
-
             codeWindow = null;
-            return false;
+
+            IVsWindowFrame frame;
+            return TryGetContainingWindowFrame(textView, out frame)
+                && frame.TryGetCodeWindow(out codeWindow);
         }
 
         public bool TryGetContainingWindowFrame(ITextView textView, out IVsWindowFrame windowFrame)
@@ -60,20 +59,23 @@ namespace VsVim.Implementation
 
         public bool TryGetContainingWindowFrame(IVsTextView textView, out IVsWindowFrame windowFrame)
         {
-            foreach ( var frame in _uiShell.GetDocumentWindowFrames())
+            foreach (var frame in _uiShell.GetDocumentWindowFrames())
             {
-                var codeWindow = frame.GetCodeWindow();
-                IVsTextView vsTextView;
-                if (ErrorHandler.Succeeded(codeWindow.GetPrimaryView(out vsTextView)) && NativeMethods.IsSameComObject(vsTextView, textView))
+                IVsCodeWindow codeWindow;
+                if (frame.TryGetCodeWindow(out codeWindow))
                 {
-                    windowFrame = frame;
-                    return true;
-                }
+                    IVsTextView vsTextView;
+                    if (ErrorHandler.Succeeded(codeWindow.GetPrimaryView(out vsTextView)) && NativeMethods.IsSameComObject(vsTextView, textView))
+                    {
+                        windowFrame = frame;
+                        return true;
+                    }
 
-                if (ErrorHandler.Succeeded(codeWindow.GetSecondaryView(out vsTextView)) && NativeMethods.IsSameComObject(vsTextView, textView))
-                {
-                    windowFrame = frame;
-                    return true;
+                    if (ErrorHandler.Succeeded(codeWindow.GetSecondaryView(out vsTextView)) && NativeMethods.IsSameComObject(vsTextView, textView))
+                    {
+                        windowFrame = frame;
+                        return true;
+                    }
                 }
             }
 
@@ -136,6 +138,45 @@ namespace VsVim.Implementation
             }
 
             return buffer != null;
+        }
+
+        public bool IsVenusView(IVsTextView vsTextView)
+        {
+            var textView = _editorAdaptersFactoryService.GetWpfTextView(vsTextView);
+            if (textView == null)
+            {
+                return false;
+            }
+
+            var vsTextLines = _editorAdaptersFactoryService.GetBufferAdapter(textView.TextBuffer);
+            if (vsTextLines == null)
+            {
+                return false;
+            }
+
+            Guid id;
+            return ErrorHandler.Succeeded(vsTextLines.GetLanguageServiceID(out id))
+                && id == VSConstants.CLSID_HtmlLanguageService;
+        }
+
+        public bool IsReadOnly(ITextBuffer textBuffer)
+        {
+            var editorOptions = _editorOptionsFactoryService.GetOptions(textBuffer);
+            if (editorOptions != null
+                && EditorOptionsUtil.GetOptionValueOrDefault(editorOptions, DefaultTextViewOptions.ViewProhibitUserInputId, false))
+            {
+                return true;
+            }
+
+            var textLines = _editorAdaptersFactoryService.GetBufferAdapter(textBuffer);
+            uint flags;
+            if (ErrorHandler.Succeeded(textLines.GetStateFlags(out flags))
+                && 0 != (flags & (uint)BUFFERSTATEFLAGS.BSF_USER_READONLY))
+            {
+                return true;
+            }
+
+            return false;
         }
 
     }

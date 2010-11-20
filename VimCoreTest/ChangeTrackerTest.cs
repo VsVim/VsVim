@@ -6,15 +6,15 @@ using Moq;
 using NUnit.Framework;
 using Vim;
 using Vim.Extensions;
-using Vim.UnitTest.Mock;
 using Vim.UnitTest;
+using Vim.UnitTest.Mock;
 
 namespace VimCore.Test
 {
     [TestFixture]
     public class ChangeTrackerTest
     {
-        private MockFactory _factory;
+        private MockRepository _factory;
         private ChangeTracker _trackerRaw;
         private IChangeTracker _tracker;
         private ITextBuffer _textBuffer;
@@ -37,7 +37,7 @@ namespace VimCore.Test
             _buffer = new MockVimBuffer() { TextViewImpl = _textView.Object, TextBufferImpl = _textBuffer, NormalModeImpl = _normalMode };
             _textChangeTracker = new MockTextChangeTracker() { VimBufferImpl = _buffer };
 
-            _factory = new MockFactory(MockBehavior.Loose);
+            _factory = new MockRepository(MockBehavior.Loose);
             _factory.DefaultValue = DefaultValue.Mock;
             _textChangeTrackerFactory = _factory.Create<ITextChangeTrackerFactory>();
             _textChangeTrackerFactory.Setup(x => x.GetTextChangeTracker(_buffer)).Returns(_textChangeTracker);
@@ -50,11 +50,12 @@ namespace VimCore.Test
         }
 
         private CommandRunData CreateCommand(
-            Func<FSharpOption<int>,Register,CommandResult> func = null,
+            Func<FSharpOption<int>, Register, CommandResult> func = null,
             KeyInputSet name = null,
             CommandFlags? flags = null,
             int? count = 0,
-            MotionRunData motionRunData = null)
+            MotionRunData motionRunData = null,
+            VisualSpan visualRunData = null)
         {
             name = name ?? KeyInputSet.NewOneKeyInput(KeyInputUtil.CharToKeyInput('c'));
             var flagsRaw = flags ?? CommandFlags.None;
@@ -68,8 +69,8 @@ namespace VimCore.Test
                 cmd,
                 new Register('c'),
                 countRaw,
-                motionRunData != null ? FSharpOption.Create(motionRunData) : FSharpOption<MotionRunData>.None);
-
+                motionRunData != null ? FSharpOption.Create(motionRunData) : FSharpOption<MotionRunData>.None,
+                visualRunData != null ? FSharpOption.Create(visualRunData) : FSharpOption<VisualSpan>.None);
         }
 
         private CommandResult CreateResult()
@@ -83,7 +84,7 @@ namespace VimCore.Test
             CreateForText("hello");
             var res = CommandResult.NewCompleted(ModeSwitch.NewSwitchMode(ModeKind.Insert));
             _normalModeRunner.RaiseCommandRan(
-                CreateCommand(flags:CommandFlags.LinkedWithNextTextChange | CommandFlags.Repeatable),
+                CreateCommand(flags: CommandFlags.LinkedWithNextTextChange | CommandFlags.Repeatable),
                 res);
             _buffer.ModeKindImpl = ModeKind.Insert;
             _textChangeTracker.RaiseChangeCompleted("foo");
@@ -116,7 +117,7 @@ namespace VimCore.Test
         public void OnCommand3()
         {
             CreateForText("hello");
-            var cmd = CreateCommand(flags: CommandFlags.Movement); 
+            var cmd = CreateCommand(flags: CommandFlags.Movement);
             _normalModeRunner.RaiseCommandRan(cmd, CreateResult());
             Assert.IsTrue(_tracker.LastChange.IsNone());
         }
@@ -137,7 +138,7 @@ namespace VimCore.Test
             CreateForText("hello");
             _textChangeTracker.RaiseChangeCompleted("foo");
             Assert.IsTrue(_tracker.LastChange.IsSome());
-            Assert.AreEqual("foo", _tracker.LastChange.Value.AsTextChange().Item);
+            Assert.AreEqual(TextChange.NewInsert("foo"), _tracker.LastChange.Value.AsTextChange().Item);
         }
 
         [Test]
@@ -149,7 +150,7 @@ namespace VimCore.Test
             _normalModeRunner.RaiseCommandRan(cmd, CreateResult());
             _textChangeTracker.RaiseChangeCompleted("foo");
             Assert.IsTrue(_tracker.LastChange.IsSome());
-            Assert.AreEqual("foo", _tracker.LastChange.Value.AsTextChange().Item);
+            Assert.AreEqual(TextChange.NewInsert("foo"), _tracker.LastChange.Value.AsTextChange().Item);
         }
 
     }

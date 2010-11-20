@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using EnvDTE;
@@ -13,13 +14,21 @@ namespace Vim.UnitTest.Mock
 {
     public static class MockObjectFactory
     {
-        public static Mock<IRegisterMap> CreateRegisterMap()
+        public static Mock<IRegisterMap> CreateRegisterMap(MockRepository factory = null)
         {
-            var mock = new Mock<IRegisterMap>();
-            var reg = new Register('_');
-            mock.Setup(x => x.DefaultRegisterName).Returns('_');
-            mock.Setup(x => x.DefaultRegister).Returns(reg);
+            factory = factory ?? new MockRepository(MockBehavior.Strict);
+            var mock = factory.Create<IRegisterMap>(MockBehavior.Strict);
+            var reg = new Register(RegisterName.Unnamed);
+            mock.Setup(x => x.GetRegister(RegisterName.Unnamed)).Returns(reg);
             return mock;
+        }
+
+        public static Mock<IClipboardDevice> CreateClipboardDevice(MockRepository factory = null)
+        {
+            factory = factory ?? new MockRepository(MockBehavior.Strict);
+            var device = factory.Create<IClipboardDevice>();
+            device.SetupProperty(x => x.Text);
+            return device;
         }
 
         public static Mock<ITrackingLineColumnService> CreateTrackingLineColumnService()
@@ -89,6 +98,14 @@ namespace Vim.UnitTest.Mock
             return mock;
         }
 
+        public static Mock<IVimBuffer> CreateVimBuffer(
+            ITextBuffer textBuffer,
+            MockRepository factory = null)
+        {
+            factory = factory ?? new MockRepository(MockBehavior.Strict);
+            var textView = CreateTextView(buffer: textBuffer, factory: factory);
+            return CreateVimBuffer(view: textView.Object, factory: factory);
+        }
 
         public static Mock<IVimBuffer> CreateVimBuffer(
             ITextView view,
@@ -96,9 +113,9 @@ namespace Vim.UnitTest.Mock
             IVim vim = null,
             IJumpList jumpList = null,
             IVimLocalSettings settings = null,
-            MockFactory factory = null)
+            MockRepository factory = null)
         {
-            factory = factory ?? new MockFactory(MockBehavior.Strict);
+            factory = factory ?? new MockRepository(MockBehavior.Strict);
             name = name ?? "test";
             vim = vim ?? CreateVim().Object;
             jumpList = jumpList ?? (factory.Create<IJumpList>().Object);
@@ -116,25 +133,29 @@ namespace Vim.UnitTest.Mock
             return mock;
         }
 
-        public static Mock<ITextCaret> CreateCaret()
+        public static Mock<ITextCaret> CreateCaret(MockRepository factory = null)
         {
-            return new Mock<ITextCaret>(MockBehavior.Strict);
+            factory = factory ?? new MockRepository(MockBehavior.Strict);
+            return factory.Create<ITextCaret>();
         }
 
-        public static Mock<ITextSelection> CreateSelection()
+        public static Mock<ITextSelection> CreateSelection(MockRepository factory = null)
         {
-            return new Mock<ITextSelection>(MockBehavior.Strict);
+            factory = factory ?? new MockRepository(MockBehavior.Strict);
+            return factory.Create<ITextSelection>();
         }
 
         public static Mock<ITextView> CreateTextView(
             ITextBuffer buffer = null,
             ITextCaret caret = null,
-            ITextSelection selection = null)
+            ITextSelection selection = null,
+            MockRepository factory = null)
         {
-            buffer = buffer ?? CreateTextBuffer(addSnapshot: true).Object;
-            caret = caret ?? CreateCaret().Object;
-            selection = selection ?? CreateSelection().Object;
-            var view = new Mock<ITextView>(MockBehavior.Strict);
+            factory = factory ?? new MockRepository(MockBehavior.Strict);
+            buffer = buffer ?? CreateTextBuffer(100, factory: factory).Object;
+            caret = caret ?? CreateCaret(factory: factory).Object;
+            selection = selection ?? CreateSelection(factory: factory).Object;
+            var view = factory.Create<ITextView>();
             view.SetupGet(x => x.Caret).Returns(caret);
             view.SetupGet(x => x.Selection).Returns(selection);
             view.SetupGet(x => x.TextBuffer).Returns(buffer);
@@ -150,13 +171,13 @@ namespace Vim.UnitTest.Mock
             return Tuple.Create(view, caret, selection);
         }
 
-        public static Tuple<Mock<ITextView>, MockFactory> CreateTextViewWithVisibleLines(
+        public static Tuple<Mock<ITextView>, MockRepository> CreateTextViewWithVisibleLines(
             ITextBuffer buffer,
             int startLine,
             int? endLine = null,
             int? caretPosition = null)
         {
-            var factory = new MockFactory(MockBehavior.Strict);
+            var factory = new MockRepository(MockBehavior.Strict);
             var endLineValue = endLine ?? startLine;
             var caretPositionValue = caretPosition ?? buffer.GetLine(startLine).Start.Position;
             var caret = factory.Create<ITextCaret>();
@@ -185,14 +206,13 @@ namespace Vim.UnitTest.Mock
             return Tuple.Create(view, factory);
         }
 
-        public static Mock<ITextBuffer> CreateTextBuffer(bool addSnapshot = false)
+        public static Mock<ITextBuffer> CreateTextBuffer(int? snapshotLength = null, MockRepository factory = null)
         {
-            var mock = new Mock<ITextBuffer>(MockBehavior.Strict);
+            factory = factory ?? new MockRepository(MockBehavior.Strict);
+            var mock = factory.Create<ITextBuffer>();
             mock.SetupGet(x => x.Properties).Returns(new Microsoft.VisualStudio.Utilities.PropertyCollection());
-            if (addSnapshot)
-            {
-                mock.SetupGet(x => x.CurrentSnapshot).Returns(CreateTextSnapshot(42).Object);
-            }
+            var snapshot = CreateTextSnapshot(snapshotLength ?? 0, mock.Object);
+            mock.SetupGet(x => x.CurrentSnapshot).Returns(snapshot.Object);
             return mock;
         }
 
@@ -258,7 +278,9 @@ namespace Vim.UnitTest.Mock
         public static Mock<EnvDTE.Commands> CreateCommands(IEnumerable<EnvDTE.Command> commands)
         {
             var mock = new Mock<EnvDTE.Commands>(MockBehavior.Strict);
+            var enumMock = mock.As<IEnumerable>();
             mock.Setup(x => x.GetEnumerator()).Returns(commands.GetEnumerator());
+            enumMock.Setup(x => x.GetEnumerator()).Returns(commands.GetEnumerator());
             return mock;
         }
 

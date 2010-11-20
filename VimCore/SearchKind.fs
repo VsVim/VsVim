@@ -2,13 +2,18 @@
 
 namespace Vim
 
+type Direction = 
+    | Forward
+    | Backward
+
+
 type SearchKind = 
      | Forward = 1
      | ForwardWithWrap = 2
      | Backward = 3
      | BackwardWithWrap = 4 
 
-module internal SearchKindUtil =
+module SearchKindUtil =
     let IsForward x =
         match x with 
             | SearchKind.Forward -> true
@@ -29,4 +34,17 @@ module internal SearchKindUtil =
         | SearchKind.Backward -> SearchKind.Forward
         | SearchKind.BackwardWithWrap -> SearchKind.ForwardWithWrap
         | _ -> failwith "Invalid enum value"
-    
+
+    /// Remove any wrap which map be associated with this
+    let RemoveWrap x =
+        match x with
+        | SearchKind.Forward -> SearchKind.Forward
+        | SearchKind.ForwardWithWrap -> SearchKind.Forward
+        | SearchKind.Backward -> SearchKind.Backward
+        | SearchKind.BackwardWithWrap -> SearchKind.Backward
+        | _ -> failwith "Invalid enum value"
+
+    let OfDirection dir = 
+        match dir with 
+        | Direction.Forward -> SearchKind.Forward
+        | Direction.Backward -> SearchKind.Backward

@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.Composition;
+﻿using System.ComponentModel;
+using System.ComponentModel.Composition;
 using System.Windows.Input;
 
 namespace Vim.UI.Wpf.Implementation
@@ -8,10 +9,24 @@ namespace Vim.UI.Wpf.Implementation
     {
         private KeyboardDevice _keyboardDevice = InputManager.Current.PrimaryKeyboardDevice;
 
-        public bool IsKeyDown(KeyInput value)
+        public bool IsKeyDown(VimKey vimKey)
         {
-            var tuple = KeyUtil.ConvertToKeyAndModifiers(value);
-            return _keyboardDevice.IsKeyDown(tuple.Item1) && _keyboardDevice.Modifiers == tuple.Item2;
+            Key key;
+            return KeyUtil.TryConvertToKey(vimKey, out key)
+                && IsKeyDown(key);
+        }
+
+        internal bool IsKeyDown(Key key)
+        {
+            try
+            {
+                return _keyboardDevice.IsKeyDown(key);
+            }
+            catch (InvalidEnumArgumentException)
+            {
+                // IsKeyDown will throw this exception if ther Key value is None or other non-defined keys
+                return false;
+            }
         }
     }
 }

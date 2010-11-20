@@ -6,6 +6,7 @@ using Moq;
 using NUnit.Framework;
 using Vim;
 using Vim.Extensions;
+using Vim.UnitTest.Mock;
 
 namespace VimCore.Test
 {
@@ -13,7 +14,6 @@ namespace VimCore.Test
     public class VimTest
     {
         private Mock<IVimGlobalSettings> _settings;
-        private Mock<IRegisterMap> _registerMap;
         private Mock<IMarkMap> _markMap;
         private Mock<IVimBufferFactory> _factory;
         private Mock<IVimHost> _host;
@@ -27,7 +27,6 @@ namespace VimCore.Test
         public void Setup()
         {
             _settings = new Mock<IVimGlobalSettings>(MockBehavior.Strict);
-            _registerMap = new Mock<IRegisterMap>(MockBehavior.Strict);
             _markMap = new Mock<IMarkMap>(MockBehavior.Strict);
             _factory = new Mock<IVimBufferFactory>(MockBehavior.Strict);
             _keyMap = new Mock<IKeyMap>(MockBehavior.Strict);
@@ -39,9 +38,9 @@ namespace VimCore.Test
                 _factory.Object,
                 FSharpList<Lazy<IVimBufferCreationListener>>.Empty,
                 _settings.Object,
-                _registerMap.Object,
                 _markMap.Object,
                 _keyMap.Object,
+                MockObjectFactory.CreateClipboardDevice().Object,
                 _changeTracker.Object,
                 _searchInfo.Object);
             _vim = _vimRaw;
@@ -183,6 +182,37 @@ namespace VimCore.Test
             commandMode.Verify();
             fs.Verify();
             view.Verify();
+        }
+
+        [Test]
+        public void ActiveBuffer1()
+        {
+            Assert.IsTrue(_vim.ActiveBuffer.IsNone());
+        }
+
+        [Test]
+        public void ActiveBuffer2()
+        {
+            var view = new Mock<IWpfTextView>(MockBehavior.Strict);
+            var buffer = new MockVimBuffer();
+            _factory.Setup(x => x.CreateBuffer(_vim, view.Object)).Returns(buffer);
+            var ret = _vim.CreateBuffer(view.Object);
+            buffer.RaiseKeyInputStart(KeyInputUtil.CharToKeyInput('c'));
+            var active = _vim.ActiveBuffer;
+            Assert.IsTrue(active.IsSome());
+            Assert.AreSame(buffer, active.Value);
+        }
+
+        [Test]
+        public void ActiveBuffer3()
+        {
+            var view = new Mock<IWpfTextView>(MockBehavior.Strict);
+            var buffer = new MockVimBuffer();
+            _factory.Setup(x => x.CreateBuffer(_vim, view.Object)).Returns(buffer);
+            var ret = _vim.CreateBuffer(view.Object);
+            buffer.RaiseKeyInputStart(KeyInputUtil.CharToKeyInput('c'));
+            buffer.RaiseKeyInputEnd(KeyInputUtil.CharToKeyInput('c'));
+            Assert.IsTrue(_vim.ActiveBuffer.IsNone());
         }
     }
 }

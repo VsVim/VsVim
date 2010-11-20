@@ -4,7 +4,6 @@ using System.Linq;
 using System.Text;
 using System.Windows.Input;
 using Vim;
-using Vim.Extensions;
 using Vim.UI.Wpf;
 
 namespace VsVim
@@ -235,10 +234,7 @@ namespace VsVim
         private static KeyInput ConvertToKeyInput(char c)
         {
             c = Char.IsLetter(c) ? Char.ToLower(c) : c;
-            var opt = KeyInputUtil.TryCharToKeyInput(c);
-            return opt.IsSome()
-                ? opt.Value
-                : null;
+            return KeyInputUtil.CharToKeyInput(c);
         }
 
         private static KeyInput ConvertToKeyInput(string keystroke)
@@ -257,7 +253,8 @@ namespace VsVim
             try
             {
                 var key = (Key)Enum.Parse(typeof(Key), keystroke, ignoreCase: true);
-                return KeyUtil.ConvertToKeyInput(key);
+                KeyInput ki;
+                return KeyUtil.TryConvertToKeyInput(key, out ki) ? ki : null;
             }
             catch (Exception)
             {

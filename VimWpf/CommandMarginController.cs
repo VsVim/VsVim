@@ -24,9 +24,8 @@ namespace Vim.UI.Wpf
             _optionsProviderFactory = optionsProviderFactory.ToList().AsReadOnly();
 
             _buffer.SwitchedMode += OnSwitchMode;
-            _buffer.KeyInputProcessed += OnKeyInputProcessed;
-            _buffer.KeyInputReceived += OnKeyInputReceived;
-            _buffer.KeyInputBuffered += OnKeyInputBuffered;
+            _buffer.KeyInputStart += OnKeyInputStart;
+            _buffer.KeyInputEnd += OnKeyInputEnd;
             _buffer.StatusMessage += OnStatusMessage;
             _buffer.StatusMessageLong += OnStatusMessageLong;
             _buffer.ErrorMessage += OnErrorMessage;
@@ -76,7 +75,16 @@ namespace Vim.UI.Wpf
             switch (mode.ModeKind)
             {
                 case ModeKind.Normal:
-                    _margin.StatusLine = String.Empty;
+
+                    if (_buffer.NormalMode.OneTimeMode.Is(ModeKind.Insert))
+                    {
+                        _margin.StatusLine = Resources.PendingInsertBanner;
+                    }
+                    else
+                    {
+                        _margin.StatusLine = String.Empty;
+                    }
+
                     break;
                 case ModeKind.Command:
                     _margin.StatusLine = ":" + _buffer.CommandMode.Command;
@@ -119,7 +127,8 @@ namespace Vim.UI.Wpf
                         if (search.InSearch && search.CurrentSearch.IsSome())
                         {
                             var data = search.CurrentSearch.Value;
-                            _margin.StatusLine = "/" + data.Text.RawText;
+                            var prefix = SearchKindUtil.IsForward(data.Kind) ? "/" : "?";
+                            _margin.StatusLine = prefix + data.Text.RawText;
                         }
                         else
                         {
@@ -147,17 +156,12 @@ namespace Vim.UI.Wpf
             }
         }
 
-        private void OnKeyInputProcessed(object sender, Tuple<KeyInput, ProcessResult> tuple)
-        {
-            KeyInputEventComplete();
-        }
-
-        private void OnKeyInputReceived(object sender, KeyInput input)
+        private void OnKeyInputStart(object sender, KeyInput input)
         {
             _inKeyInputEvent = true;
         }
 
-        private void OnKeyInputBuffered(object sender, KeyInput input)
+        private void OnKeyInputEnd(object sender, KeyInput input)
         {
             KeyInputEventComplete();
         }

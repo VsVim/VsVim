@@ -1,10 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using System.Linq;
 using NUnit.Framework;
 using Vim;
-using System.Windows.Input;
 using Vim.UnitTest;
 
 namespace VimCore.Test
@@ -32,7 +28,7 @@ namespace VimCore.Test
             var res = Process("A");
 
             Assert.AreEqual(1, res.Item1);
-            Assert.AreEqual(VimKey.NotWellKnown, res.Item2.Key);
+            Assert.AreEqual(VimKey.A, res.Item2.Key);
             Assert.AreEqual(KeyModifiers.Shift, res.Item2.KeyModifiers);
         }
 

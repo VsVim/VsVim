@@ -6,10 +6,21 @@ open Microsoft.VisualStudio.Text.Editor
 
 type IVimHost =
     abstract Beep : unit -> unit
-    abstract OpenFile : string -> unit
+
+    /// Format the provided lines
+    abstract FormatLines : ITextView -> SnapshotLineSpan -> unit
 
     /// Go to the definition of the value under the cursor
     abstract GoToDefinition : unit -> bool
+
+    /// Go to the local declaration of the value under the cursor
+    abstract GoToLocalDeclaration : ITextView -> string -> bool
+
+    /// Go to the local declaration of the value under the cursor
+    abstract GoToGlobalDeclaration : ITextView -> string -> bool
+
+    /// Go to the specified file name
+    abstract GoToFile : string -> bool
 
     /// Go to the matching construct of the value under the cursor
     abstract GoToMatch : unit -> bool
@@ -21,6 +32,7 @@ type IVimHost =
     abstract GoToPreviousTab: count : int -> unit
 
     abstract GetName : ITextBuffer -> string
+
     abstract NavigateTo : point : VirtualSnapshotPoint -> bool
 
     /// Display the open file dialog 

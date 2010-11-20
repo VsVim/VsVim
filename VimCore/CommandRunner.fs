@@ -33,10 +33,10 @@ type internal CommandRunner
     /// Represents the empty state for processing commands.  Holds all of the default
     /// values
     let _emptyData = { 
-        Register = _registerMap.DefaultRegister;
-        Count = None;
-        KeyInputSet = Empty;
-        Inputs = List.empty;
+        Register = _registerMap.GetRegister RegisterName.Unnamed
+        Count = None
+        KeyInputSet = Empty
+        Inputs = List.empty
         State = CommandRunnerState.NoInput
     }
 
@@ -57,20 +57,24 @@ type internal CommandRunner
         _runFunc <- this.RunCheckForCountAndRegister
 
     /// Create a CommandRunData based on the current state for the given command information
-    member private x.CreateCommandRunData command motionDataOpt = 
+    member private x.CreateCommandRunData command motionDataOpt visualDataOpt = 
         {  
-            Command=command;
-            Register = _data.Register;
-            Count = _data.Count;
-            MotionRunData = motionDataOpt; }
+            Command=command
+            Register = _data.Register
+            Count = _data.Count
+            MotionRunData = motionDataOpt
+            VisualRunData = visualDataOpt }
 
     /// Used to wait for the character after the " which signals the Register 
     member private x.WaitForRegister() = 
 
         let inner (ki:KeyInput) = 
-            let reg = _registerMap.GetRegister ki.Char
-            _data <- { _data with Register = reg }
-            NeedMore x.RunCheckForCountAndRegister
+            match RegisterNameUtil.CharToRegister ki.Char with
+            | None -> NoMatchingCommand
+            | Some(name) ->
+                let reg = _registerMap.GetRegister name
+                _data <- { _data with Register = reg }
+                NeedMore x.RunCheckForCountAndRegister
 
         _data <- {_data with State = NotEnoughInput }
         NeedMore inner
@@ -96,7 +100,7 @@ type internal CommandRunner
         let rec inner (result:MotionResult) = 
             match result with 
                 | MotionResult.Complete (motionData,motionRunData) ->
-                    let data = x.CreateCommandRunData command (Some motionRunData)
+                    let data = x.CreateCommandRunData command (Some motionRunData) None
                     let result = onMotionComplete data.Count data.Register motionData
                     RanCommand (data,result)
                 | MotionResult.NeedMoreInput (moreFunc) ->
@@ -109,7 +113,7 @@ type internal CommandRunner
 
         let runInitialMotion ki =
             let count = CommandUtil.CountOrDefault _data.Count
-            _capture.GetMotion ki (Some count) |> inner
+            _capture.GetOperatorMotion ki (Some count) |> inner
 
         match initialInput with
         | None -> NeedMore runInitialMotion
@@ -132,13 +136,13 @@ type internal CommandRunner
     member private x.WaitForLongCommand command func =
         _data <- { _data with State = NotFinishWithCommand(command) }
 
-        let data = x.CreateCommandRunData command None
+        let data = x.CreateCommandRunData command None None
         let rec inner result = 
             match result with
             | LongCommandResult.Finished(commandResult) -> RanCommand (data,commandResult)
             | LongCommandResult.Cancelled -> CancelledCommand
             | LongCommandResult.NeedMoreInput(func) -> NeedMore (fun ki -> func ki |> inner)
-    
+
         func data.Count data.Register |> inner
 
     /// Try and run a command with the given name
@@ -156,16 +160,23 @@ type internal CommandRunner
                 let short = command.KeyInputSet.KeyInputs |> Seq.ofList |> Seq.take count
                 SeqUtil.contentsEqual commandInputsSeq short)
 
-        // Run the specified command
-        let runCommand command func =  
-            let data = x.CreateCommandRunData command None
-            let result = func _data.Count _data.Register 
-            RanCommand (data,result)
-
         match Map.tryFind commandName _commandMap with
         | Some(command) ->
             match command with
-            | Command.SimpleCommand(_,_,func) -> runCommand command func
+            | Command.SimpleCommand(_,_,func) -> 
+                let data = x.CreateCommandRunData command None None
+                let result = func _data.Count _data.Register
+                RanCommand (data,result)
+            | Command.VisualCommand(_,_,kind,func) -> 
+                let visualSpan = 
+                    match _textView.Selection.Mode with
+                    | TextSelectionMode.Stream -> VisualSpan.Single (kind,_textView.Selection.StreamSelectionSpan.SnapshotSpan)
+                    | TextSelectionMode.Box -> VisualSpan.Multiple (kind,_textView.Selection.SelectedSpans)
+                    | _ -> failwith "Invalid Selection Mode"
+                
+                let data = x.CreateCommandRunData command None (Some visualSpan)
+                let result = func _data.Count _data.Register visualSpan
+                RanCommand (data,result)
             | Command.MotionCommand(_,_,func) -> 
 
                 // Can't just call this.  It's possible there is a non-motion command with a 
@@ -190,6 +201,7 @@ type internal CommandRunner
                         let waitResult =
                             match command with
                             | Command.SimpleCommand(_) -> NeedMore x.WaitForCommand 
+                            | Command.VisualCommand(_) -> NeedMore x.WaitForCommand
                             | Command.LongCommand(_) -> NeedMore x.WaitForCommand 
                             | Command.MotionCommand(_,_,func) -> x.WaitForMotion command func (Some currentInput) 
                         Some waitResult
@@ -198,7 +210,6 @@ type internal CommandRunner
             match result with
             | Some(value) -> value
             | None -> 
-                
                 // At this point we need to see if there will ever be a command given the 
                 // current starting point with respect to characters
                 if findPrefixMatches commandName |> Seq.isEmpty then RunResult.NoMatchingCommand

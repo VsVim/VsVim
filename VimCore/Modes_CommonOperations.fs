@@ -17,6 +17,7 @@ type internal CommonOperations ( _data : OperationsData ) =
     let _settings = _data.LocalSettings
     let _undoRedoOperations = _data.UndoRedoOperations
     let _statusUtil = _data.StatusUtil
+    let _registerMap = _data.RegisterMap
 
     /// The caret sometimes needs to be adjusted after an Up or Down movement.  Caret position
     /// and virtual space is actually quite a predicamite for VsVim because of how Vim standard 
@@ -28,14 +29,14 @@ type internal CommonOperations ( _data : OperationsData ) =
     /// The one exception has to do with the VirtualEdit setting.  By default the 'l' motion will 
     /// only move you to the last character on the line and no further.  Visual Studio up and down
     /// though acts like virtualedit=onemore.  We correct this here
-    member private x.AdjustCaretAfterUpDownMove() =
+    member x.MoveCaretForVirtualEdit () =
         if not _settings.GlobalSettings.IsVirtualEditOneMore then 
             let point = TextViewUtil.GetCaretPoint _textView
             let line = SnapshotPointUtil.GetContainingLine point
             if point.Position >= line.End.Position && line.Length > 0 then 
                 TextViewUtil.MoveCaretToPoint _textView (line.End.Subtract(1))
 
-    member private x.NavigateToPoint (point:VirtualSnapshotPoint) = 
+    member x.NavigateToPoint (point:VirtualSnapshotPoint) = 
         let buf = point.Position.Snapshot.TextBuffer
         if buf = _textView.TextBuffer then 
             TextViewUtil.MoveCaretToPoint _textView point.Position
@@ -43,110 +44,166 @@ type internal CommonOperations ( _data : OperationsData ) =
             true
         else  _host.NavigateTo point 
 
-    member private x.DeleteSpan (span:SnapshotSpan) motionKind opKind (reg:Register) =
-        let tss = span.Snapshot
-        let regValue = {Value=span.GetText();MotionKind=motionKind;OperationKind=opKind}
-        reg.UpdateValue(regValue) 
-        tss.TextBuffer.Delete(span.Span)
+    member x.DeleteBlock (col:NormalizedSnapshotSpanCollection) = 
+        use edit = _textView.TextBuffer.CreateEdit()
+        col |> Seq.iter (fun span -> edit.Delete(span.Span) |> ignore)
+        edit.Apply() |> ignore
 
-    member x.ShiftSpanRight multiplier (span:SnapshotSpan) = 
+    member x.DeleteSpan (span:SnapshotSpan) = 
+        let buffer = span.Snapshot.TextBuffer
+        buffer.Delete(span.Span) |> ignore
+
+    member x.ShiftRightCore multiplier (col:SnapshotSpan seq) = 
         let text = new System.String(' ', _settings.GlobalSettings.ShiftWidth * multiplier)
-        let buf = span.Snapshot.TextBuffer
-        let startLine,endLine = SnapshotSpanUtil.GetStartAndEndLine span
-        use edit = buf.CreateEdit()
-        for i = startLine.LineNumber to endLine.LineNumber do
-            let line = span.Snapshot.GetLineFromLineNumber(i)
-            edit.Replace(line.Start.Position,0,text) |> ignore
-        
+        use edit = _data.TextView.TextBuffer.CreateEdit()
+        col |> Seq.iter (fun span -> edit.Replace(span.Start.Position, 0, text) |> ignore)
         edit.Apply() |> ignore
-        
-    member x.ShiftSpanLeft multiplier (span:SnapshotSpan) =
+
+    member x.ShiftSpanRight multiplier span = 
+        let startLine,endLine = SnapshotSpanUtil.GetStartAndEndLine span
+        let snapshot = span.Snapshot
+        let col = 
+            SnapshotUtil.GetLineRange snapshot startLine.LineNumber endLine.LineNumber
+            |> Seq.map (fun line -> SnapshotLineUtil.GetExtentIncludingLineBreak line)
+        x.ShiftRightCore multiplier col 
+
+    member x.ShiftLeftCore multiplier (lineSpan:SnapshotLineSpan) = 
         let count = _settings.GlobalSettings.ShiftWidth * multiplier
-        let fixText (text:string) = 
-            let count = min count (text.Length) // Deal with count being greater than line length
-            let count = 
-                match text |> Seq.tryFindIndex (fun x -> x <> ' ') with
-                    | Some(i) ->
-                        if i < count then i
-                        else count
-                    | None -> count
-            text.Substring(count)                 
-        let buf = span.Snapshot.TextBuffer
-        let startLine,endLine = SnapshotSpanUtil.GetStartAndEndLine span
-        use edit = buf.CreateEdit()
-        for i = startLine.LineNumber to endLine.LineNumber do
-            let line = span.Snapshot.GetLineFromLineNumber(i)
-            let text = fixText (line.GetText())
-            edit.Replace(line.Extent.Span, text) |> ignore
+        use edit = _data.TextView.TextBuffer.CreateEdit()
+        lineSpan.Lines
+        |> Seq.map (fun line -> line.Extent)
+        |> Seq.iter (fun span -> 
+            let text = SnapshotSpanUtil.GetText span
+            let toReplace = 
+                let whiteSpaceLen = text |> Seq.takeWhile CharUtil.IsWhiteSpace |> Seq.length
+                min whiteSpaceLen count
+            edit.Replace(span.Start.Position, toReplace, StringUtil.empty) |> ignore )
         edit.Apply() |> ignore
+        
+    member x.ShiftSpanLeft multiplier span = 
+        let lineSpan = SnapshotLineSpanUtil.CreateForSpan span
+        x.ShiftLeftCore multiplier lineSpan
 
     /// Change the letters on the given span by applying the specified function
     /// to each of them
-    member x.ChangeLettersOnSpan span changeFunc =
+    member x.ChangeLettersCore col changeFunc = 
         use edit = _textView.TextBuffer.CreateEdit()
-        SnapshotSpanUtil.GetPoints span 
+        col 
+        |> Seq.map SnapshotSpanUtil.GetPoints 
+        |> Seq.concat
         |> Seq.map (fun x -> x.Position,x.GetChar())
         |> Seq.filter (fun (_,c) -> CharUtil.IsLetter c)
         |> Seq.map (fun (pos,c) -> (pos, changeFunc c))
         |> Seq.iter (fun (pos,c) -> edit.Replace(new Span(pos,1), StringUtil.ofChar c) |> ignore)
         edit.Apply() |> ignore
 
+    member x.ChangeLettersOnSpan span changeFunc = x.ChangeLettersCore (Seq.singleton span) changeFunc
+
+    member x.JoinCore span kind =
+
+        let count = SnapshotSpanUtil.GetLineCount span
+        if count > 1 then
+            // Create a tracking point for the caret
+            let snapshot = span.Snapshot
+            let trackingPoint = 
+                let point = span |> SnapshotSpanUtil.GetEndLine |> SnapshotLineUtil.GetStart
+                snapshot.CreateTrackingPoint(point.Position, PointTrackingMode.Positive)
+
+            use edit = _data.TextView.TextBuffer.CreateEdit()
+
+            let replace = 
+                match kind with
+                | KeepEmptySpaces -> ""
+                | RemoveEmptySpaces -> " "
+
+            span 
+            |> SnapshotSpanUtil.GetAllLines
+            |> Seq.take (count-1) // Skip the last line 
+            |> Seq.iter (fun line -> 
+
+                // Delete the line break span
+                let span = line |> SnapshotLineUtil.GetLineBreakSpan |> SnapshotSpanUtil.GetSpan
+                edit.Replace(span, replace) |> ignore
+
+                // Maybe strip the start of the next line as well
+                if SnapshotUtil.IsLineNumberValid snapshot (line.LineNumber + 1) then
+                    match kind with
+                    | KeepEmptySpaces -> ()
+                    | RemoveEmptySpaces ->
+                        let nextLine = SnapshotUtil.GetLine snapshot (line.LineNumber+1)
+                        let count =
+                            nextLine.Extent 
+                            |> SnapshotSpanUtil.GetText
+                            |> Seq.takeWhile CharUtil.IsWhiteSpace
+                            |> Seq.length
+                        if count > 0 then
+                            edit.Delete(nextLine.Start.Position,count) |> ignore
+                )
+
+            // Now position the caret on the new snapshot
+            let snapshot = edit.Apply()
+            match TrackingPointUtil.GetPoint snapshot trackingPoint with
+            | None -> ()
+            | Some(point) ->  TextViewUtil.MoveCaretToPoint _textView point 
+
+    /// Updates the given register with the specified value.  This will also update 
+    /// other registers based on the type of update that is being performed.  See 
+    /// :help registers for the full details
+    member x.UpdateRegister (reg:Register) regOperation value = 
+        if reg.Name <> RegisterName.Blackhole then
+            reg.Value <- value
+    
+            // If this is not the unnamed register then the unnamed register needs to 
+            // be updated 
+            if reg.Name <> RegisterName.Unnamed then
+                let unnamedReg = _registerMap.GetRegister RegisterName.Unnamed
+                unnamedReg.Value <- value
+    
+            // Update the numbered registers with the new values.  First shift the existing
+            // values up the stack
+            let intToName num = 
+                let c = char (num + (int '0'))
+                let name = NumberedRegister.OfChar c |> Option.get
+                RegisterName.Numbered name
+    
+            // Next is insert the new value into the numbered register list.  New value goes
+            // into 0 and the rest shift up
+            for i in [9;8;7;6;5;4;3;2;1] do
+                let cur = intToName i |> _registerMap.GetRegister
+                let prev = intToName (i-1) |> _registerMap.GetRegister
+                cur.Value <- prev.Value
+            let regZero = _registerMap.GetRegister (RegisterName.Numbered NumberedRegister.Register_0)
+            regZero.Value <- value
+    
+            // Possibily update the small delete register
+            if reg.Name <> RegisterName.Unnamed && regOperation = RegisterOperation.Delete then
+                match value.Value with
+                | StringData.Block(_) -> ()
+                | StringData.Simple(str) -> 
+                    if not (StringUtil.containsChar str '\n') then
+                        let regSmallDelete = _registerMap.GetRegister RegisterName.SmallDelete
+                        regSmallDelete.Value <- value
+
     interface ICommonOperations with
         member x.TextView = _textView 
         member x.EditorOperations = _operations
         member x.FoldManager = _data.FoldManager
+        member x.UndoRedoOperations = _data.UndoRedoOperations
 
-        member x.Join (start:SnapshotPoint) (kind:JoinKind) count = 
+        member x.Join start kind count =
     
             // Always joining at least 2 lines so we subtract to get the number of join
             // operations.  1 is a valid input though
             let count = if count > 1 then count-1 else 1
-    
-            // Join the line returning place the caret should be positioned
-            let joinLine (buffer:ITextBuffer) lineNumber =
-                let tss = buffer.CurrentSnapshot
-                use edit = buffer.CreateEdit()
-                let line = buffer.CurrentSnapshot.GetLineFromLineNumber(lineNumber)
-                let lineBreakSpan = Span(line.End.Position, line.LineBreakLength)
-    
-                // Strip out the whitespace at the start of the next line
-                let maybeStripWhiteSpace () = 
-                    let nextLine = tss.GetLineFromLineNumber(lineNumber+1)
-                    let rec countSpace (index) =
-                        if index < nextLine.Length && System.Char.IsWhiteSpace(nextLine.Start.Add(index).GetChar()) then
-                            countSpace(index+1)
-                        else
-                            index
-                    match countSpace 0 with
-                    | 0 -> ()
-                    | value -> edit.Delete(nextLine.Start.Position, value) |> ignore
-    
-                match kind with 
-                | RemoveEmptySpaces ->  
-                    edit.Replace(lineBreakSpan, " ") |> ignore
-                    maybeStripWhiteSpace()
-                | KeepEmptySpaces -> 
-                    edit.Delete(lineBreakSpan) |> ignore
-    
-                edit.Apply() |> ignore
-                line.End.Position + 1
-    
-            let joinLineAndMoveCaret lineNumber =
-                let caret = joinLine _textView.TextBuffer lineNumber
-                TextViewUtil.MoveCaretToPosition _textView caret |> ignore
-    
-            let rec inner count = 
-                let tss = _textView.TextBuffer.CurrentSnapshot
-                let lineNumber = start.GetContainingLine().LineNumber
-                if lineNumber = tss.LineCount + 1 then
-                    false
-                else
-                    joinLineAndMoveCaret lineNumber
-                    match count with
-                    | 1 -> true
-                    | _ -> inner (count-1)
-            inner count
-                
+            let number = start |> SnapshotPointUtil.GetContainingLine |> SnapshotLineUtil.GetLineNumber
+            if SnapshotUtil.IsLineNumberValid start.Snapshot (number + count) then
+                let span =  start |> SnapshotSpanUtil.CreateEmpty 
+                let span =  SnapshotSpanUtil.ExtendDown span count
+                x.JoinCore span kind
+                true
+            else false
+        member x.JoinSpan span kind = x.JoinCore span kind
+
         member x.GoToDefinition () = 
             let before = TextViewUtil.GetCaretPoint _textView
             if _host.GoToDefinition() then
@@ -192,14 +249,6 @@ type internal CommonOperations ( _data : OperationsData ) =
                 | Some(point) -> jumpLocal point
                 | None -> Failed Resources.Common_MarkNotSet
     
-        member x.YankText text motion operation (reg:Register) =
-            let regValue = {Value=text;MotionKind = motion; OperationKind = operation};
-            reg.UpdateValue (regValue)
-
-        member x.Yank (span:SnapshotSpan) motion operation (reg:Register) =
-            let regValue = {Value=span.GetText();MotionKind = motion; OperationKind = operation};
-            reg.UpdateValue (regValue)
-        
         member x.PasteAfter point text opKind = 
             let buffer = SnapshotPointUtil.GetBuffer point
             let line = SnapshotPointUtil.GetContainingLine point
@@ -239,6 +288,11 @@ type internal CommonOperations ( _data : OperationsData ) =
                 | _ -> failwith "Invalid Enum Value"
             let tss = buffer.Replace(span.Span, text) 
             new SnapshotSpan(tss,span.End.Position, text.Length)
+
+        member x.PasteOver span (reg:Register) =
+            use edit = _data.TextView.TextBuffer.CreateEdit()
+            edit.Replace(span.Span, reg.StringValue) |> ignore
+            edit.Apply() |> ignore
     
         /// Move the cursor count spaces left
         member x.MoveCaretLeft count = 
@@ -277,7 +331,7 @@ type internal CommonOperations ( _data : OperationsData ) =
             if count > 0 then _operations.ResetSelection()
             for i = 1 to count do   
                 _operations.MoveLineUp(false)
-            x.AdjustCaretAfterUpDownMove()
+            x.MoveCaretForVirtualEdit()
 
         /// Move the cursor count spaces down
         member x.MoveCaretDown count =
@@ -290,7 +344,7 @@ type internal CommonOperations ( _data : OperationsData ) =
             if count > 0 then _operations.ResetSelection()
             for i = 1 to count do
                 _operations.MoveLineDown(false)
-            x.AdjustCaretAfterUpDownMove()
+            x.MoveCaretForVirtualEdit()
 
         member x.MoveWordForward kind count = 
             let caret = TextViewUtil.GetCaretPoint _textView
@@ -302,9 +356,13 @@ type internal CommonOperations ( _data : OperationsData ) =
             let pos = TssUtil.FindPreviousWordStart caret count kind
             TextViewUtil.MoveCaretToPoint _textView pos 
 
+        member x.MoveCaretForVirtualEdit () = x.MoveCaretForVirtualEdit()
         member x.ShiftSpanRight multiplier span = x.ShiftSpanRight multiplier span
-
+        member x.ShiftBlockRight multiplier block = x.ShiftRightCore multiplier block 
         member x.ShiftSpanLeft multiplier span = x.ShiftSpanLeft multiplier span
+        member x.ShiftBlockLeft multiplier block = 
+            let lineSpan = SnapshotLineSpanUtil.CreateForNormalizedSnapshotSpanCollection block
+            x.ShiftLeftCore multiplier lineSpan
 
         member x.ShiftLinesRight count = 
             let point = TextViewUtil.GetCaretPoint _textView
@@ -368,21 +426,26 @@ type internal CommonOperations ( _data : OperationsData ) =
             let line = getLine()
             _textView.Caret.MoveTo(line) |> ignore
 
-        member x.DeleteSpan span motionKind opKind reg = x.DeleteSpan span motionKind opKind reg
-    
-        member x.DeleteLines count reg = 
+        member x.DeleteSpan span = x.DeleteSpan span 
+        member x.DeleteBlock col = x.DeleteBlock col 
+        member x.DeleteLines count = 
             let point = TextViewUtil.GetCaretPoint _textView
             let point = point.GetContainingLine().Start
             let span = SnapshotPointUtil.GetLineRangeSpan point count
             let span = SnapshotSpan(point, span.End)
-            x.DeleteSpan span MotionKind.Inclusive OperationKind.LineWise reg |> ignore
-
-        member x.DeleteLinesFromCursor count reg = 
+            x.DeleteSpan span 
+            span
+        member x.DeleteLinesInSpan span =
+            let startLine,endLine = SnapshotSpanUtil.GetStartAndEndLine span
+            let span = SnapshotSpan(startLine.Start,endLine.End)
+            x.DeleteSpan span 
+            span
+        member x.DeleteLinesFromCursor count = 
             let point,line = TextViewUtil.GetCaretPointAndLine _textView
             let span = SnapshotPointUtil.GetLineRangeSpan point count
             let span = SnapshotSpan(point, span.End)
-            x.DeleteSpan span MotionKind.Inclusive OperationKind.CharacterWise reg |> ignore
-
+            x.DeleteSpan span 
+            span
         /// Delete count lines from the cursor.  The last line is an unfortunate special case here 
         /// as it does not have a line break.  Hence in order to delete the line we must delete the 
         /// line break at the end of the preceeding line.  
@@ -390,7 +453,7 @@ type internal CommonOperations ( _data : OperationsData ) =
         /// This cannot be normalized by always deleting the line break from the previous line because
         /// it would still break for the first line.  This is an unfortunate special case we must 
         /// deal with
-        member x.DeleteLinesIncludingLineBreak count reg = 
+        member x.DeleteLinesIncludingLineBreak count = 
             let point,line = TextViewUtil.GetCaretPointAndLine _textView
             let snapshot = point.Snapshot
             let span = 
@@ -401,14 +464,14 @@ type internal CommonOperations ( _data : OperationsData ) =
                     let point = line.Start
                     let span = SnapshotPointUtil.GetLineRangeSpanIncludingLineBreak point count
                     SnapshotSpan(point, span.End)
-            x.DeleteSpan span MotionKind.Inclusive OperationKind.LineWise reg |> ignore
-
-        member x.DeleteLinesIncludingLineBreakFromCursor count reg = 
+            x.DeleteSpan span 
+            span
+        member x.DeleteLinesIncludingLineBreakFromCursor count = 
             let point = TextViewUtil.GetCaretPoint _textView
             let span = SnapshotPointUtil.GetLineRangeSpanIncludingLineBreak point count
             let span = SnapshotSpan(point, span.End)
-            x.DeleteSpan span MotionKind.Inclusive OperationKind.CharacterWise reg |> ignore
-
+            x.DeleteSpan span
+            span
         member x.Undo count = _undoRedoOperations.Undo count
         member x.Redo count = _undoRedoOperations.Redo count
         member x.Save() = _host.Save _textView
@@ -419,6 +482,7 @@ type internal CommonOperations ( _data : OperationsData ) =
         member x.GoToNextTab count = _host.GoToNextTab count
         member x.GoToPreviousTab count = _host.GoToPreviousTab count
         member x.ChangeLetterCase span = x.ChangeLettersOnSpan span CharUtil.ChangeCase
+        member x.ChangeLetterCaseBlock col = x.ChangeLettersCore col CharUtil.ChangeCase
         member x.MakeLettersLowercase span = x.ChangeLettersOnSpan span CharUtil.ToLower
         member x.MakeLettersUppercase span = x.ChangeLettersOnSpan span CharUtil.ToUpper
         member x.EnsureCaretOnScreen () = TextViewUtil.EnsureCaretOnScreen _textView 
@@ -426,11 +490,17 @@ type internal CommonOperations ( _data : OperationsData ) =
         member x.MoveCaretToPoint point =  TextViewUtil.MoveCaretToPoint _textView point 
         member x.MoveCaretToMotionData (data:MotionData) =
 
-            // Move the caret to the last valid point on the span.  
+            // Reduce the Span to the line we care about 
+            let line = 
+                if data.IsForward then SnapshotSpanUtil.GetEndLine data.Span
+                else SnapshotSpanUtil.GetStartLine data.Span
+
+            // Get the point which is the last or first point valid on the 
+            // particular line / span 
             let getPointFromSpan () = 
                 if data.OperationKind = OperationKind.LineWise then 
-                    if data.IsForward then SnapshotSpanUtil.GetEndLine data.Span |> SnapshotLineUtil.GetEnd
-                    else SnapshotSpanUtil.GetStartLine data.Span |> SnapshotLineUtil.GetStart
+                    if data.IsForward then SnapshotLineUtil.GetEnd line
+                    else SnapshotLineUtil.GetStart line
                 else
                     if data.IsForward then
                         if data.MotionKind = MotionKind.Exclusive then data.Span.End
@@ -439,33 +509,30 @@ type internal CommonOperations ( _data : OperationsData ) =
 
             let point = 
                 match data.Column with
-                | Some(col) ->
-                    let _,endCol = 
-                        data.Span
-                        |> SnapshotSpanUtil.GetEndLine
-                        |> SnapshotLineUtil.GetEnd
-                        |> SnapshotPointUtil.GetLineColumn
-                    if col < endCol then 
-                        data.Span
-                        |> SnapshotSpanUtil.GetEndLine
-                        |> SnapshotLineUtil.GetStart
-                        |> SnapshotPointUtil.Add col
+                | Some(col) -> 
+                    let colLine = 
+
+                        // For exclusive forward motions which have a span that ends at the
+                        // end of a line and has an explicit column 0, we want to use the 
+                        // start of the line following the span instead of the line containing
+                        // the span
+                        if col = 0 && 
+                            data.IsForward && 
+                            data.MotionKind = MotionKind.Exclusive &&
+                            SnapshotPointUtil.IsStartOfLine data.Span.End then
+
+                            SnapshotPointUtil.GetContainingLine data.Span.End
+                        else line
+                    let _,endCol = colLine |> SnapshotLineUtil.GetEnd |> SnapshotPointUtil.GetLineColumn
+                    if col < endCol then colLine.Start.Add(col)
                     else getPointFromSpan()
                 | None -> getPointFromSpan()
 
             TextViewUtil.MoveCaretToPoint _textView point
             _operations.ResetSelection()
         member x.Beep () = if not _settings.GlobalSettings.VisualBell then _host.Beep()
-        member x.ApplyAsSingleEdit description spans doEdit =
-            let description = 
-                match description with
-                | None -> Resources.Common_BulkEdit
-                | Some(d) -> d
-            use transaction = _undoRedoOperations.CreateUndoTransaction description
-            spans |> Seq.iter doEdit 
-            transaction.Complete()
         member x.OpenFold span count = 
-            let regions = _outlining.GetCollapsedRegions(span) |> SeqUtil.takeMax count
+            let regions = _outlining.GetCollapsedRegions(span) |> Seq.truncate count
             if Seq.isEmpty regions then _statusUtil.OnError Resources.Common_NoFoldFound
             else  regions |> Seq.iter (fun x -> _outlining.Expand(x) |> ignore )
         member x.OpenAllFolds span =
@@ -481,7 +548,7 @@ type internal CommonOperations ( _data : OperationsData ) =
                 |> SeqUtil.filterToSome2
                 |> Seq.sortBy (fun (span,_) -> pos - span.Start.Position )
                 |> List.ofSeq
-            let regions = temp  |> SeqUtil.takeMax count
+            let regions = temp  |> Seq.truncate count
             if Seq.isEmpty regions then _statusUtil.OnError Resources.Common_NoFoldFound
             else regions |> Seq.iter (fun (_,x) -> _outlining.TryCollapse(x) |> ignore)
         member x.CloseAllFolds span =
@@ -507,7 +574,7 @@ type internal CommonOperations ( _data : OperationsData ) =
                 while deleteAtCaret() do
                     // Keep on deleteing 
                     ()
-        member x.ChangeSpan (data:MotionData) reg =
+        member x.ChangeSpan (data:MotionData) =
             
             // For whatever reason the change commands will remove the trailing whitespace
             // for character wise motions
@@ -519,8 +586,20 @@ type internal CommonOperations ( _data : OperationsData ) =
                         |> SnapshotSpanUtil.GetPointsBackward 
                         |> Seq.tryFind (fun x -> x.GetChar() |> CharUtil.IsWhiteSpace |> not)
                     match point with 
-                    | Some(p) -> SnapshotSpan(data.OperationSpan.Start, (SnapshotPointUtil.MaybeAddOne p))
+                    | Some(p) -> 
+                        let endPoint = 
+                            p
+                            |> SnapshotPointUtil.TryAddOne 
+                            |> OptionUtil.getOrDefault (SnapshotUtil.GetEndPoint (p.Snapshot))
+                        SnapshotSpan(data.OperationSpan.Start, endPoint)
                     | None -> data.OperationSpan
-            x.DeleteSpan span data.MotionKind data.OperationKind reg |> ignore
+            x.DeleteSpan span
+            span
+        member x.UpdateRegisterForSpan reg regOp span opKind = 
+            let value = { Value=StringData.OfSpan span; OperationKind=opKind }
+            x.UpdateRegister reg regOp value
+        member x.UpdateRegisterForCollection reg regOp col opKind = 
+            let value = { Value=StringData.OfNormalizedSnasphotSpanCollection col; OperationKind=opKind }
+            x.UpdateRegister reg regOp value
 
 

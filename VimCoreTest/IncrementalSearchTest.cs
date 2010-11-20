@@ -1,20 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using NUnit.Framework;
-using Moq;
-using Vim;
-using Microsoft.VisualStudio.Text.Editor;
-using Vim.UnitTest;
-using Vim.Modes.Normal;
-using System.Windows.Input;
-using Microsoft.VisualStudio.Text;
 using Microsoft.FSharp.Core;
-using Microsoft.FSharp.Control;
+using Microsoft.VisualStudio.Text;
+using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Operations;
 using Microsoft.VisualStudio.Text.Outlining;
+using Moq;
+using NUnit.Framework;
+using Vim;
 using Vim.Extensions;
+using Vim.Modes.Normal;
+using Vim.UnitTest;
 using Vim.UnitTest.Mock;
 
 namespace VimCore.Test
@@ -23,7 +19,7 @@ namespace VimCore.Test
     public class IncrementalSearchTest
     {
         private static SearchOptions s_options = SearchOptions.AllowIgnoreCase | SearchOptions.AllowSmartCase;
-        private MockFactory _factory;
+        private MockRepository _factory;
         private Mock<ISearchService> _searchService;
         private Mock<ITextStructureNavigator> _nav;
         private Mock<IVimGlobalSettings> _globalSettings;
@@ -36,7 +32,7 @@ namespace VimCore.Test
         private void Create(params string[] lines)
         {
             _textView = EditorUtil.CreateView(lines);
-            _factory = new MockFactory(MockBehavior.Strict);
+            _factory = new MockRepository(MockBehavior.Strict);
             _searchService = _factory.Create<ISearchService>();
             _nav = _factory.Create<ITextStructureNavigator>();
             _globalSettings = MockObjectFactory.CreateGlobalSettings(ignoreCase: true);
@@ -71,7 +67,7 @@ namespace VimCore.Test
             _search.Begin(SearchKind.ForwardWithWrap);
             _searchService
                 .Setup(x => x.FindNext(data, _textView.GetCaretPoint(), _nav.Object))
-                .Returns(FSharpOption.Create(_textView.GetLineSpan(0)));
+                .Returns(FSharpOption.Create(_textView.GetLineSpan(0).Extent));
             Assert.IsTrue(_search.Process(KeyInputUtil.CharToKeyInput('b')).IsSearchNeedMore);
         }
 

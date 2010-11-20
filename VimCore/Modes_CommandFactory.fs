@@ -36,7 +36,7 @@ type internal CommandFactory( _operations : ICommonOperations, _capture : IMotio
             let kiSet = notation |> KeyNotationUtil.StringToKeyInput |> OneKeyInput
             let funcWithReg opt reg = 
                 func (CommandUtil.CountOrDefault opt)
-                Completed NoSwitch
+                CommandResult.Completed NoSwitch
             Command.SimpleCommand (kiSet,CommandFlags.Movement, funcWithReg))
 
     /// Build up a set of MotionCommand values from applicable Motion values
@@ -47,20 +47,24 @@ type internal CommandFactory( _operations : ICommonOperations, _capture : IMotio
             | Some(data) -> _operations.MoveCaretToMotionData data
             CommandResult.Completed NoSwitch
 
-        let filterMotionCommand command = 
+        let makeMotionArgument count = {MotionContext=MotionContext.Movement; OperatorCount=None; MotionCount=count}
+
+        let processMotionCommand command =
             match command with
-            | SimpleMotionCommand(name,func) -> 
-                let inner count _ =  func count |> processResult
-                Command.SimpleCommand(name,CommandFlags.Movement,inner) |> Some
-            | ComplexMotionCommand(_,false,_) -> None
-            | ComplexMotionCommand(name,true,func) -> 
+            | SimpleMotionCommand(name,_,func) -> 
+                let inner count _ =  
+                    let arg = makeMotionArgument count
+                    func arg |> processResult
+                Command.SimpleCommand(name,CommandFlags.Movement,inner) 
+            | ComplexMotionCommand(name,_,func) -> 
                 
                 let coreFunc count _ = 
                     let rec inner result =  
                         match result with
                         | ComplexMotionResult.Finished(func) ->
                             let res = 
-                                match func count with
+                                let arg = makeMotionArgument count
+                                match func arg with
                                 | None -> CommandResult.Error Resources.MotionCapture_InvalidMotion
                                 | Some(data) -> 
                                     _operations.MoveCaretToMotionData data
@@ -72,11 +76,11 @@ type internal CommandFactory( _operations : ICommonOperations, _capture : IMotio
 
                     let initialResult = func()
                     inner initialResult
-                Command.LongCommand(name, CommandFlags.Movement, coreFunc) |> Some
+                Command.LongCommand(name, CommandFlags.Movement, coreFunc) 
 
         _capture.MotionCommands
-        |> Seq.map filterMotionCommand
-        |> SeqUtil.filterToSome
+        |> Seq.filter (fun command -> Utils.IsFlagSet command.MotionFlags MotionFlags.CursorMovement)
+        |> Seq.map processMotionCommand
 
     /// Returns the set of commands which move the cursor.  This includes all motions which are 
     /// valid as movements.  Several of these are overridden with custom movement behavior though.

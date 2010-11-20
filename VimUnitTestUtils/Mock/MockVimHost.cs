@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.ComponentModel.Composition;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 
@@ -14,6 +10,7 @@ namespace Vim.UnitTest.Mock
         public string LastFileOpen { get; set; }
         public int GoToDefinitionCount { get; set; }
         public int GoToMatchCount { get; set; }
+        public bool GoToFileReturn { get; set; }
         public bool GoToDefinitionReturn { get; set; }
         public bool IsCompletionWindowActive { get; set; }
         public int DismissCompletionWindowCount { get; set; }
@@ -31,12 +28,6 @@ namespace Vim.UnitTest.Mock
         void IVimHost.Beep()
         {
             BeepCount++;
-        }
-
-
-        void IVimHost.OpenFile(string p)
-        {
-            LastFileOpen = p;
         }
 
         bool IVimHost.GoToDefinition()
@@ -123,6 +114,27 @@ namespace Vim.UnitTest.Mock
         }
 
         void IVimHost.MoveViewUp(ITextView textView)
+        {
+            throw new NotImplementedException();
+        }
+
+        bool IVimHost.GoToFile(string value)
+        {
+            LastFileOpen = value;
+            return GoToFileReturn;
+        }
+
+        bool IVimHost.GoToGlobalDeclaration(ITextView value, string target)
+        {
+            throw new NotImplementedException();
+        }
+
+        bool IVimHost.GoToLocalDeclaration(ITextView value, string target)
+        {
+            throw new NotImplementedException();
+        }
+
+        void IVimHost.FormatLines(ITextView value, SnapshotLineSpan range)
         {
             throw new NotImplementedException();
         }

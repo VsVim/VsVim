@@ -24,6 +24,7 @@ type internal InsertMode
                 ("<Esc>", this.ProcessEscape);
                 ("CTRL-[", this.ProcessEscape);
                 ("CTRL-d", this.ProcessShiftLeft)
+                ("CTRL-t", this.ProcessShiftRight)
                 ("CTRL-o", this.ProcessNormalModeOneCommand)
             ]
 
@@ -43,15 +44,17 @@ type internal InsertMode
         _operations.ShiftLinesLeft 1
         ProcessResult.Processed
 
+    /// Process the CTRL-T combination and do a shift right
+    member private this.ProcessShiftRight() = 
+        _operations.ShiftLinesRight 1
+        ProcessResult.Processed
+
     member private this.ProcessEscape () =
 
         if _broker.IsCompletionActive || _broker.IsSignatureHelpActive || _broker.IsQuickInfoActive then
             _broker.DismissDisplayWindows()
-
-            if _data.Settings.GlobalSettings.DoubleEscape then ProcessResult.Processed
-            else 
-                _operations.MoveCaretLeft 1 
-                ProcessResult.SwitchMode ModeKind.Normal
+            _operations.MoveCaretLeft 1 
+            ProcessResult.SwitchMode ModeKind.Normal
 
         else
             _operations.MoveCaretLeft 1 

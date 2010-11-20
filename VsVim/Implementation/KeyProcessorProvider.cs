@@ -12,18 +12,20 @@ namespace VsVim.Implementation
     [ContentType(Vim.Constants.ContentType)]
     public sealed class KeyProcessorProvider : IKeyProcessorProvider
     {
+        private readonly IVsAdapter _adapter;
         private readonly IVim _vim;
 
         [ImportingConstructor]
-        public KeyProcessorProvider(IVim vim)
+        public KeyProcessorProvider(IVim vim, IVsAdapter adapter)
         {
             _vim = vim;
+            _adapter = adapter;
         }
 
         public KeyProcessor GetAssociatedProcessor(IWpfTextView wpfTextView)
         {
             var buffer = _vim.GetOrCreateBuffer(wpfTextView);
-            return new Vim.UI.Wpf.KeyProcessor(buffer);
+            return new VsKeyProcessor(_adapter, buffer);
         }
     }
 }

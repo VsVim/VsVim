@@ -12,35 +12,45 @@ using Vim.Extensions;
 using Vim.Modes;
 using Vim.Modes.Command;
 using Vim.UnitTest;
+using Vim.UnitTest.Mock;
 
 namespace VimCore.Test
 {
     [TestFixture]
-    public class Command_DefaultOperations
+    public class CommandDefaultOperationsTest
     {
         private IOperations _operations;
         private DefaultOperations _operationsRaw;
         private ITextView _view;
+        private MockRepository _factory;
         private Mock<IEditorOperations> _editOpts;
         private Mock<IVimHost> _host;
         private Mock<IStatusUtil> _statusUtil;
         private Mock<IJumpList> _jumpList;
         private Mock<IVimLocalSettings> _settings;
+        private Mock<IVimGlobalSettings> _globalSettings;
         private Mock<IKeyMap> _keyMap;
         private Mock<IOutliningManager> _outlining;
         private Mock<IUndoRedoOperations> _undoRedoOperations;
+        private Mock<IRegisterMap> _registerMap;
 
         private void Create(params string[] lines)
         {
             _view = EditorUtil.CreateView(lines);
-            _editOpts = new Mock<IEditorOperations>(MockBehavior.Strict);
-            _host = new Mock<IVimHost>(MockBehavior.Strict);
-            _jumpList = new Mock<IJumpList>(MockBehavior.Strict);
-            _settings = new Mock<IVimLocalSettings>(MockBehavior.Strict);
-            _keyMap = new Mock<IKeyMap>(MockBehavior.Strict);
-            _statusUtil = new Mock<IStatusUtil>(MockBehavior.Strict);
-            _outlining = new Mock<IOutliningManager>(MockBehavior.Strict);
-            _undoRedoOperations = new Mock<IUndoRedoOperations>(MockBehavior.Strict);
+            _factory = new MockRepository(MockBehavior.Strict);
+            _editOpts = _factory.Create<IEditorOperations>();
+            _host = _factory.Create<IVimHost>();
+            _jumpList = _factory.Create<IJumpList>();
+            _registerMap = MockObjectFactory.CreateRegisterMap(factory: _factory);
+            _globalSettings = _factory.Create<IVimGlobalSettings>();
+            _globalSettings.SetupGet(x => x.Magic).Returns(true);
+            _globalSettings.SetupGet(x => x.SmartCase).Returns(false);
+            _globalSettings.SetupGet(x => x.IgnoreCase).Returns(true);
+            _settings = MockObjectFactory.CreateLocalSettings(global: _globalSettings.Object);
+            _keyMap = _factory.Create<IKeyMap>();
+            _statusUtil = _factory.Create<IStatusUtil>();
+            _outlining = _factory.Create<IOutliningManager>();
+            _undoRedoOperations = _factory.Create<IUndoRedoOperations>();
 
             var data = new OperationsData(
                 vimHost: _host.Object,
@@ -52,9 +62,10 @@ namespace VimCore.Test
                 localSettings: _settings.Object,
                 keyMap: _keyMap.Object,
                 undoRedoOperations: _undoRedoOperations.Object,
-                editorOptions:null,
-                navigator:null,
-                foldManager:null);
+                editorOptions: null,
+                navigator: null,
+                foldManager: null,
+                registerMap: _registerMap.Object);
             _operationsRaw = new DefaultOperations(data);
             _operations = _operationsRaw;
         }
@@ -64,7 +75,7 @@ namespace VimCore.Test
         {
             _operations = null;
         }
-        
+
         [Test]
         public void Put1()
         {
@@ -204,7 +215,7 @@ namespace VimCore.Test
         public void OperateSetting1()
         {
             Create("foO");
-            var setting = new Setting("foobar","fb", SettingKind.ToggleKind, SettingValue.NewToggleValue(true), SettingValue.NewToggleValue(true), false);
+            var setting = new Setting("foobar", "fb", SettingKind.ToggleKind, SettingValue.NewToggleValue(true), SettingValue.NewToggleValue(true), false);
             _settings.Setup(x => x.GetSetting("foobar")).Returns(FSharpOption.Create(setting)).Verifiable();
             _settings.Setup(x => x.TrySetValue("foobar", It.IsAny<SettingValue>())).Returns(true).Verifiable();
             _operations.OperateSetting("foobar");
@@ -215,7 +226,7 @@ namespace VimCore.Test
         public void OperateSetting2()
         {
             Create("foo");
-            var setting = new Setting("foobar","fb", SettingKind.ToggleKind, SettingValue.NewToggleValue(false), SettingValue.NewToggleValue(false), false);
+            var setting = new Setting("foobar", "fb", SettingKind.ToggleKind, SettingValue.NewToggleValue(false), SettingValue.NewToggleValue(false), false);
             _settings.Setup(x => x.GetSetting("foobar")).Returns(FSharpOption.Create(setting)).Verifiable();
             _settings.Setup(x => x.TrySetValue("foobar", It.IsAny<SettingValue>())).Returns(true).Verifiable();
             _operations.OperateSetting("foobar");
@@ -249,7 +260,7 @@ namespace VimCore.Test
         public void ResetSettings1()
         {
             Create("foo");
-            var setting = new Setting("foobar","fb", SettingKind.ToggleKind, SettingValue.NewToggleValue(false), SettingValue.NewToggleValue(false), false);
+            var setting = new Setting("foobar", "fb", SettingKind.ToggleKind, SettingValue.NewToggleValue(false), SettingValue.NewToggleValue(false), false);
             _settings.Setup(x => x.GetSetting("foobar")).Returns(FSharpOption.Create(setting)).Verifiable();
             _settings.Setup(x => x.TrySetValue("foobar", It.IsAny<SettingValue>())).Returns(true).Verifiable();
             _operations.ResetSetting("foobar");
@@ -260,7 +271,7 @@ namespace VimCore.Test
         public void ResetSettings2()
         {
             Create("foo");
-            var setting = new Setting("foobar","fb", SettingKind.NumberKind, SettingValue.NewToggleValue(false), SettingValue.NewToggleValue(false), false);
+            var setting = new Setting("foobar", "fb", SettingKind.NumberKind, SettingValue.NewToggleValue(false), SettingValue.NewToggleValue(false), false);
             _settings.Setup(x => x.GetSetting("foobar")).Returns(FSharpOption.Create(setting)).Verifiable();
             _statusUtil.Setup(x => x.OnError(Resources.CommandMode_InvalidArgument("foobar"))).Verifiable();
             _operations.ResetSetting("foobar");
@@ -283,7 +294,7 @@ namespace VimCore.Test
         public void InvertSettings1()
         {
             Create("foo");
-            var setting = new Setting("foobar","fb", SettingKind.ToggleKind, SettingValue.NewToggleValue(false), SettingValue.NewToggleValue(false), false);
+            var setting = new Setting("foobar", "fb", SettingKind.ToggleKind, SettingValue.NewToggleValue(false), SettingValue.NewToggleValue(false), false);
             _settings.Setup(x => x.GetSetting("foobar")).Returns(FSharpOption.Create(setting)).Verifiable();
             _settings.Setup(x => x.TrySetValue("foobar", It.IsAny<SettingValue>())).Returns(true).Verifiable();
             _operations.InvertSetting("foobar");
@@ -294,7 +305,7 @@ namespace VimCore.Test
         public void InvertSettings2()
         {
             Create("foo");
-            var setting = new Setting("foobar","fb", SettingKind.NumberKind, SettingValue.NewToggleValue(false), SettingValue.NewToggleValue(false), false);
+            var setting = new Setting("foobar", "fb", SettingKind.NumberKind, SettingValue.NewToggleValue(false), SettingValue.NewToggleValue(false), false);
             _settings.Setup(x => x.GetSetting("foobar")).Returns(FSharpOption.Create(setting)).Verifiable();
             _statusUtil.Setup(x => x.OnError(Resources.CommandMode_InvalidArgument("foobar"))).Verifiable();
             _operations.InvertSetting("foobar");
@@ -317,7 +328,7 @@ namespace VimCore.Test
         public void PrintModifiedSettings1()
         {
             Create("foobar");
-            var setting = new Setting("foobar","fb", SettingKind.NumberKind, SettingValue.NewToggleValue(false), SettingValue.NewToggleValue(false), false);
+            var setting = new Setting("foobar", "fb", SettingKind.NumberKind, SettingValue.NewToggleValue(false), SettingValue.NewToggleValue(false), false);
             _settings.Setup(x => x.AllSettings).Returns(Enumerable.Repeat(setting, 1));
             _statusUtil.Setup(x => x.OnStatusLong(It.IsAny<IEnumerable<string>>())).Verifiable();
             _operations.PrintModifiedSettings();
@@ -328,7 +339,7 @@ namespace VimCore.Test
         public void PrintAllSettings1()
         {
             Create("foobar");
-            var setting = new Setting("foobar","fb", SettingKind.NumberKind, SettingValue.NewToggleValue(false), SettingValue.NewToggleValue(false), false);
+            var setting = new Setting("foobar", "fb", SettingKind.NumberKind, SettingValue.NewToggleValue(false), SettingValue.NewToggleValue(false), false);
             _settings.Setup(x => x.AllSettings).Returns(Enumerable.Repeat(setting, 1));
             _statusUtil.Setup(x => x.OnStatusLong(It.IsAny<IEnumerable<string>>())).Verifiable();
             _operations.PrintAllSettings();
@@ -403,7 +414,7 @@ namespace VimCore.Test
         {
             Create("foo");
             _keyMap.Setup(x => x.MapWithRemap("foo", "bar", KeyRemapMode.Insert)).Returns(true).Verifiable();
-            _operations.RemapKeys("foo", "bar", Enumerable.Repeat(KeyRemapMode.Insert,1), true);
+            _operations.RemapKeys("foo", "bar", Enumerable.Repeat(KeyRemapMode.Insert, 1), true);
             _keyMap.Verify();
         }
 
@@ -412,8 +423,8 @@ namespace VimCore.Test
         {
             Create("foo");
             _statusUtil.Setup(x => x.OnError(Resources.CommandMode_NotSupported_KeyMapping("a", "b"))).Verifiable();
-            _keyMap.Setup(x => x.MapWithNoRemap("a","b",KeyRemapMode.Insert)).Returns(false).Verifiable();
-            _operations.RemapKeys("a", "b", Enumerable.Repeat(KeyRemapMode.Insert,1), false);
+            _keyMap.Setup(x => x.MapWithNoRemap("a", "b", KeyRemapMode.Insert)).Returns(false).Verifiable();
+            _operations.RemapKeys("a", "b", Enumerable.Repeat(KeyRemapMode.Insert, 1), false);
             _statusUtil.Verify();
             _keyMap.Verify();
         }
@@ -422,8 +433,8 @@ namespace VimCore.Test
         public void RemapKeys3()
         {
             Create("foo");
-            _keyMap.Setup(x => x.MapWithNoRemap("a","b",KeyRemapMode.Insert)).Returns(true).Verifiable();
-            _operations.RemapKeys("a", "b", Enumerable.Repeat(KeyRemapMode.Insert,1), false);
+            _keyMap.Setup(x => x.MapWithNoRemap("a", "b", KeyRemapMode.Insert)).Returns(true).Verifiable();
+            _operations.RemapKeys("a", "b", Enumerable.Repeat(KeyRemapMode.Insert, 1), false);
             _keyMap.Verify();
         }
 

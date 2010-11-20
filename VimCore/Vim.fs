@@ -14,6 +14,7 @@ open Vim.Modes
 /// Default implementation of IVim 
 [<Export(typeof<IVimBufferFactory>)>]
 type internal VimBufferFactory
+
     [<ImportingConstructor>]
     (
         _host : IVimHost,
@@ -25,17 +26,20 @@ type internal VimBufferFactory
         _textStructureNavigatorSelectorService : ITextStructureNavigatorSelectorService,
         _tlcService : ITrackingLineColumnService,
         _undoManagerProvider : ITextBufferUndoManagerProvider,
-        _foldManagerFactory : IFoldManagerFactory ) =
+        _foldManagerFactory : IFoldManagerFactory ) = 
+
+    let _motionCaptureGlobalData = MotionCaptureGlobalData() :> IMotionCaptureGlobalData
+    let _visualSpanCalculator = VisualSpanCalculator() :> IVisualSpanCalculator
 
     member x.CreateBuffer (vim:IVim) view = 
         let editOperations = _editorOperationsFactoryService.GetEditorOperations(view)
         let editOptions = _editorOptionsFactoryService.GetOptions(view)
-        let motionUtil = MotionUtil(view, vim.Settings) :> IMotionUtil
-        let capture = MotionCapture(view, motionUtil) :> IMotionCapture
+        let localSettings = LocalSettings(vim.Settings, view) :> IVimLocalSettings
+        let motionUtil = TextViewMotionUtil(view, localSettings) :> ITextViewMotionUtil
+        let capture = MotionCapture(vim.VimHost, view, motionUtil, _motionCaptureGlobalData) :> IMotionCapture
         let outlining = _outliningManagerService.GetOutliningManager(view)
         let jumpList = JumpList(_tlcService) :> IJumpList
         let foldManager = _foldManagerFactory.GetFoldManager(view.TextBuffer)
-        let localSettings = LocalSettings(vim.Settings, view) :> IVimLocalSettings
         let bufferRaw = 
             VimBuffer( 
                 vim,
@@ -43,6 +47,7 @@ type internal VimBufferFactory
                 jumpList,
                 localSettings)
         let buffer = bufferRaw :> IVimBuffer
+        let selectionChangeTracker = SelectionChangeTracker(buffer)
 
         let statusUtil = x.CreateStatusUtil bufferRaw 
         let undoRedoOperations = 
@@ -64,7 +69,8 @@ type internal VimBufferFactory
             StatusUtil=statusUtil;
             KeyMap=vim.KeyMap;
             Navigator=wordNav;
-            FoldManager=foldManager }
+            FoldManager=foldManager;
+            RegisterMap=vim.RegisterMap }
 
         let createCommandRunner() = CommandRunner (view, vim.RegisterMap, capture,statusUtil) :>ICommandRunner
         let broker = _completionWindowBrokerFactoryService.CreateDisplayWindowBroker view
@@ -75,14 +81,9 @@ type internal VimBufferFactory
         let commandProcessor = Modes.Command.CommandProcessor(buffer, commandOpts, statusUtil, FileSystem() :> IFileSystem) :> Modes.Command.ICommandProcessor
         let insertOpts = Modes.Insert.DefaultOperations(operationsData) :> Modes.ICommonOperations
         let visualOptsFactory kind = 
-            let mode = 
-                match kind with 
-                | ModeKind.VisualBlock -> Modes.Visual.SelectionMode.Block
-                | ModeKind.VisualCharacter -> Modes.Visual.SelectionMode.Character
-                | ModeKind.VisualLine -> Modes.Visual.SelectionMode.Line
-                | _ -> invalidArg "_kind" "Invalid kind for Visual Mode"
-            let tracker = Modes.Visual.SelectionTracker(view,mode) :> Modes.Visual.ISelectionTracker
-            let opts = Modes.Visual.DefaultOperations(operationsData, kind ) :> Modes.Visual.IOperations
+            let kind = VisualKind.ofModeKind kind |> Option.get
+            let tracker = Modes.Visual.SelectionTracker(view,vim.Settings,kind) :> Modes.Visual.ISelectionTracker
+            let opts = Modes.Insert.DefaultOperations(operationsData ) :> Modes.ICommonOperations
             (tracker, opts)
 
         let visualModeList =
@@ -96,7 +97,7 @@ type internal VimBufferFactory
         // Normal mode values
         let modeList = 
             [
-                ((Modes.Normal.NormalMode(buffer, normalOpts, normalIncrementalSearch,statusUtil,broker, createCommandRunner(),capture)) :> IMode);
+                ((Modes.Normal.NormalMode(buffer, normalOpts, normalIncrementalSearch,statusUtil,broker, createCommandRunner(),capture, _visualSpanCalculator)) :> IMode);
                 ((Modes.Command.CommandMode(buffer, commandProcessor)) :> IMode);
                 ((Modes.Insert.InsertMode(buffer,insertOpts,broker, editOptions,false)) :> IMode);
                 ((Modes.Insert.InsertMode(buffer,insertOpts,broker, editOptions,true)) :> IMode);
@@ -129,13 +130,28 @@ type internal Vim
         _bufferFactoryService : IVimBufferFactory,
         _bufferCreationListeners : Lazy<IVimBufferCreationListener> list,
         _settings : IVimGlobalSettings,
-        _registerMap : IRegisterMap,
         _markMap : IMarkMap,
         _keyMap : IKeyMap,
+        _clipboardDevice : IClipboardDevice,
         _changeTracker : IChangeTracker,
         _search : ISearchService ) =
 
-    let _bufferMap = new System.Collections.Generic.Dictionary<ITextView, IVimBuffer>()
+    /// Holds an IVimBuffer and the DisposableBag for event handlers on the IVimBuffer.  This
+    /// needs to be removed when we're done with the IVimBuffer to avoid leaks
+    let _bufferMap = new System.Collections.Generic.Dictionary<ITextView, IVimBuffer * DisposableBag>()
+
+    /// Holds the active stack of IVimBuffer instances
+    let mutable _activeBufferStack : IVimBuffer list = List.empty
+
+    let _registerMap =
+        let currentFileNameFunc() = 
+            match _activeBufferStack with
+            | [] -> None
+            | h::_ -> 
+                let name = _host.GetName h.TextBuffer 
+                let name = Path.GetFileName(name)
+                Some name
+        RegisterMap(_clipboardDevice, currentFileNameFunc) :> IRegisterMap
 
     [<ImportingConstructor>]
     new(
@@ -144,7 +160,8 @@ type internal Vim
         tlcService : ITrackingLineColumnService,
         [<ImportMany>] bufferCreationListeners : Lazy<IVimBufferCreationListener> seq,
         search : ITextSearchService,
-        textChangeTrackerFactory : ITextChangeTrackerFactory ) =
+        textChangeTrackerFactory : ITextChangeTrackerFactory,
+        clipboard : IClipboardDevice ) =
         let markMap = MarkMap(tlcService)
         let tracker = ChangeTracker(textChangeTrackerFactory)
         let globalSettings = GlobalSettings() :> IVimGlobalSettings
@@ -158,25 +175,45 @@ type internal Vim
             bufferFactoryService,
             listeners,
             globalSettings,
-            RegisterMap() :> IRegisterMap,
             markMap :> IMarkMap,
             KeyMap() :> IKeyMap,
+            clipboard,
             tracker :> IChangeTracker,
             SearchService(search, globalSettings) :> ISearchService)
 
     member x.CreateVimBufferCore view = 
         if _bufferMap.ContainsKey(view) then invalidArg "view" Resources.Vim_ViewAlreadyHasBuffer
         let buffer = _bufferFactoryService.CreateBuffer (x:>IVim) view
-        _bufferMap.Add(view, buffer)
+
+        // Setup the handlers for KeyInputStart and KeyInputEnd to accurately track the active
+        // IVimBuffer instance
+        let eventBag = DisposableBag()
+        buffer.KeyInputStart
+            |> Observable.subscribe (fun _ -> _activeBufferStack <- buffer :: _activeBufferStack )
+            |> eventBag.Add
+        buffer.KeyInputEnd 
+            |> Observable.subscribe (fun _ -> 
+                _activeBufferStack <- 
+                    match _activeBufferStack with
+                    | h::t -> t
+                    | [] -> [] )
+            |> eventBag.Add
+
+        _bufferMap.Add(view, (buffer,eventBag))
         _bufferCreationListeners |> Seq.iter (fun x -> x.Value.VimBufferCreated buffer)
         buffer
 
-    member private x.RemoveBufferCore view = _bufferMap.Remove(view)
+    member x.RemoveBufferCore view = 
+        let found,tuple= _bufferMap.TryGetValue(view)
+        if found then 
+            let _,bag = tuple
+            bag.DisposeAll()
+        _bufferMap.Remove(view)
 
-    member private x.GetBufferCore view =
+    member x.GetBufferCore view =
         let tuple = _bufferMap.TryGetValue(view)
         match tuple with 
-        | (true,buffer) -> Some buffer
+        | (true,(buffer,_)) -> Some buffer
         | (false,_) -> None
 
     member private x.GetOrCreateBufferCore view =
@@ -201,6 +238,7 @@ type internal Vim
             true
 
     interface IVim with
+        member x.ActiveBuffer = ListUtil.tryHeadOnly _activeBufferStack
         member x.VimHost = _host
         member x.MarkMap = _markMap
         member x.KeyMap = _keyMap

@@ -67,7 +67,7 @@ namespace Vim.UnitTest.Mock
             throw new NotImplementedException();
         }
 
-        public Register GetRegister(char value)
+        public Register GetRegister(RegisterName name)
         {
             throw new NotImplementedException();
         }
@@ -185,11 +185,19 @@ namespace Vim.UnitTest.Mock
             }
         }
 
-        public void RaiseKeyInputReceived(KeyInput ki)
+        public void RaiseKeyInputStart(KeyInput ki)
         {
-            if (KeyInputReceived != null)
+            if (KeyInputStart != null)
             {
-                KeyInputReceived(this, ki);
+                KeyInputStart(this, ki);
+            }
+        }
+
+        public void RaiseKeyInputEnd(KeyInput ki)
+        {
+            if (KeyInputEnd != null)
+            {
+                KeyInputEnd(this, ki);
             }
         }
 
@@ -209,7 +217,9 @@ namespace Vim.UnitTest.Mock
 
         public event Microsoft.FSharp.Control.FSharpHandler<Tuple<KeyInput, ProcessResult>> KeyInputProcessed;
 
-        public event Microsoft.FSharp.Control.FSharpHandler<KeyInput> KeyInputReceived;
+        public event Microsoft.FSharp.Control.FSharpHandler<KeyInput> KeyInputStart;
+
+        public event Microsoft.FSharp.Control.FSharpHandler<KeyInput> KeyInputEnd;
 
         public event Microsoft.FSharp.Control.FSharpHandler<KeyInput> KeyInputBuffered;
 
@@ -220,7 +230,8 @@ namespace Vim.UnitTest.Mock
 
         public IMode SwitchMode(ModeKind value, ModeArgument arg)
         {
-            throw new NotImplementedException();
+            ModeKindImpl = value;
+            return GetMode(value);
         }
 
         public IMode SwitchPreviousMode()

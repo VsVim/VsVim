@@ -12,8 +12,8 @@ using Vim;
 using Vim.Extensions;
 using Vim.Modes;
 using Vim.Modes.Normal;
-using Vim.UnitTest.Mock;
 using Vim.UnitTest;
+using Vim.UnitTest.Mock;
 
 namespace VimCore.Test
 {
@@ -32,7 +32,8 @@ namespace VimCore.Test
         private Mock<IOutliningManager> _outlining;
         private Mock<IUndoRedoOperations> _undoRedoOperations;
         private Mock<IEditorOptions> _options;
-            
+        private Mock<IRegisterMap> _registerMap;
+
         private ISearchService _searchService;
         private Mock<IStatusUtil> _statusUtil;
 
@@ -64,10 +65,14 @@ namespace VimCore.Test
             _bufferOptions = new Mock<IEditorOptions>(MockBehavior.Strict);
             _bufferOptions.Setup(x => x.GetOptionValue(DefaultOptions.TabSizeOptionId)).Returns(4);
             _globalSettings = MockObjectFactory.CreateGlobalSettings(ignoreCase: true);
+            _globalSettings.SetupGet(x => x.Magic).Returns(true);
+            _globalSettings.SetupGet(x => x.IgnoreCase).Returns(true);
+            _globalSettings.SetupGet(x => x.SmartCase).Returns(false);
             _settings = MockObjectFactory.CreateLocalSettings(_globalSettings.Object);
             _options = new Mock<IEditorOptions>(MockBehavior.Strict);
             _options.Setup(x => x.GetOptionValue<int>(It.IsAny<string>())).Throws(new ArgumentException());
             _options.Setup(x => x.GetOptionValue<int>(It.IsAny<EditorOptionKey<int>>())).Throws(new ArgumentException());
+            _options.Setup(x => x.IsOptionDefined<int>(It.IsAny<EditorOptionKey<int>>(), false)).Returns(true);
             _jumpList = new Mock<IJumpList>(MockBehavior.Strict);
             _searchService = new SearchService(EditorUtil.FactoryService.textSearchService, _globalSettings.Object);
             _search = new Mock<IIncrementalSearch>(MockBehavior.Strict);
@@ -76,6 +81,7 @@ namespace VimCore.Test
             _outlining = new Mock<IOutliningManager>(MockBehavior.Strict);
             _undoRedoOperations = new Mock<IUndoRedoOperations>(MockBehavior.Strict);
             _undoRedoOperations.Setup(x => x.CreateUndoTransaction(It.IsAny<string>())).Returns<string>(name => new Vim.UndoTransaction(FSharpOption.Create(EditorUtil.GetUndoHistory(_view.TextBuffer).CreateTransaction(name))));
+            _registerMap = MockObjectFactory.CreateRegisterMap();
 
             var data = new OperationsData(
                 vimHost: _host.Object,
@@ -85,23 +91,24 @@ namespace VimCore.Test
                 statusUtil: _statusUtil.Object,
                 jumpList: _jumpList.Object,
                 localSettings: _settings.Object,
+                registerMap: _registerMap.Object,
                 keyMap: null,
                 undoRedoOperations: _undoRedoOperations.Object,
                 editorOptions: _options.Object,
                 navigator: null,
-                foldManager:null);
+                foldManager: null);
 
             _operationsRaw = new DefaultOperations(data, _search.Object);
             _operations = _operationsRaw;
         }
 
-        private void AllowOutlineExpansion(bool verify=false)
+        private void AllowOutlineExpansion(bool verify = false)
         {
-            var res = 
+            var res =
                 _outlining
                     .Setup(x => x.ExpandAll(It.IsAny<SnapshotSpan>(), It.IsAny<Predicate<ICollapsed>>()))
                     .Returns<IEnumerable<ICollapsible>>(null);
-            if ( verify )
+            if (verify)
             {
                 res.Verifiable();
             }
@@ -111,42 +118,40 @@ namespace VimCore.Test
         public void DeleteCharacterAtCursor1()
         {
             Create("foo", "bar");
-            var reg = new Register('c');
-            _operations.DeleteCharacterAtCursor(1, reg);
+            _globalSettings.SetupGet(x => x.IsVirtualEditOneMore).Returns(false);
+            var span = _operations.DeleteCharacterAtCursor(1);
             Assert.AreEqual("oo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
-            Assert.AreEqual("f", reg.StringValue);
+            Assert.AreEqual("f", span.GetText());
         }
 
         [Test]
         public void DeleteCharacterAtCursor2()
         {
             Create("foo", "bar");
-            var reg = new Register('c');
-            _operations.DeleteCharacterAtCursor(1, reg);
+            _globalSettings.SetupGet(x => x.IsVirtualEditOneMore).Returns(false);
+            var span = _operations.DeleteCharacterAtCursor(1);
             Assert.AreEqual("oo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
-            Assert.AreEqual("f", reg.StringValue);
-            Assert.AreEqual(OperationKind.CharacterWise, reg.Value.OperationKind);
+            Assert.AreEqual("f", span.GetText());
         }
 
         [Test]
         public void DeleteCharacterAtCursor3()
         {
             Create("foo", "bar");
-            var reg = new Register('c');
-            _operations.DeleteCharacterAtCursor(2, reg);
+            _globalSettings.SetupGet(x => x.IsVirtualEditOneMore).Returns(false);
+            var span = _operations.DeleteCharacterAtCursor(2);
             Assert.AreEqual("o", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
-            Assert.AreEqual("fo", reg.StringValue);
-            Assert.AreEqual(OperationKind.CharacterWise, reg.Value.OperationKind);
+            Assert.AreEqual("fo", span.GetText());
         }
+
         [Test]
         public void DeleteCharacterBeforeCursor1()
         {
             Create("foo");
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 1));
-            var reg = new Register('c');
-            _operations.DeleteCharacterBeforeCursor(1, reg);
+            var span = _operations.DeleteCharacterBeforeCursor(1);
             Assert.AreEqual("oo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
-            Assert.AreEqual("f", reg.StringValue);
+            Assert.AreEqual("f", span.GetText());
         }
 
         [Test, Description("Don't delete past the current line")]
@@ -154,7 +159,7 @@ namespace VimCore.Test
         {
             Create("foo", "bar");
             _view.Caret.MoveTo(_view.TextSnapshot.GetLineFromLineNumber(1).Start);
-            _operations.DeleteCharacterBeforeCursor(1, new Register('c'));
+            var span = _operations.DeleteCharacterBeforeCursor(1);
             Assert.AreEqual("bar", _view.TextSnapshot.GetLineFromLineNumber(1).GetText());
             Assert.AreEqual("foo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
         }
@@ -164,17 +169,16 @@ namespace VimCore.Test
         {
             Create("foo", "bar");
             _view.Caret.MoveTo(_view.TextSnapshot.GetLineFromLineNumber(0).Start.Add(2));
-            var reg = new Register('c');
-            _operations.DeleteCharacterBeforeCursor(2, reg);
+            var span = _operations.DeleteCharacterBeforeCursor(2);
             Assert.AreEqual("o", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
-            Assert.AreEqual("fo", reg.StringValue);
+            Assert.AreEqual("fo", span.GetText());
         }
 
         [Test]
         public void DeleteCharacterBeforeCursor4()
         {
             Create("foo");
-            _operations.DeleteCharacterBeforeCursor(2, new Register('c'));
+            var span = _operations.DeleteCharacterBeforeCursor(2);
             Assert.AreEqual("foo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
         }
         [Test]
@@ -232,30 +236,6 @@ namespace VimCore.Test
             Create("foo");
             Assert.IsTrue(_operations.ReplaceChar(KeyInputUtil.CharToKeyInput('u'), 1));
             Assert.AreEqual(0, _view.Caret.Position.BufferPosition.Position);
-        }
-
-        [Test]
-        public void YankLines1()
-        {
-            Create("foo", "bar");
-            var reg = new Register('c');
-            _operations.YankLines(1, reg);
-            Assert.AreEqual("foo" + Environment.NewLine, reg.StringValue);
-            Assert.AreEqual(OperationKind.LineWise, reg.Value.OperationKind);
-        }
-
-        [Test]
-        public void YankLines2()
-        {
-            Create("foo", "bar", "jazz");
-            var reg = new Register('c');
-            _operations.YankLines(2, reg);
-            var tss = _view.TextSnapshot;
-            var span = new SnapshotSpan(
-                tss.GetLineFromLineNumber(0).Start,
-                tss.GetLineFromLineNumber(1).EndIncludingLineBreak);
-            Assert.AreEqual(span.GetText(), reg.StringValue);
-            Assert.AreEqual(OperationKind.LineWise, reg.Value.OperationKind);
         }
 
         [Test]
@@ -717,7 +697,7 @@ namespace VimCore.Test
         [Test, Description("Should not start on the current word")]
         public void MoveToNextOccuranceOfLastSearch2()
         {
-            Create("foo bar","foo");
+            Create("foo bar", "foo");
             AllowOutlineExpansion();
             var data = new SearchData(SearchText.NewPattern("foo"), SearchKind.ForwardWithWrap, SearchOptions.None);
             _searchService.LastSearch = data;
@@ -728,7 +708,7 @@ namespace VimCore.Test
         [Test]
         public void MoveToNextOccuranceOfLastSearch3()
         {
-            Create("foo bar","foo");
+            Create("foo bar", "foo");
             AllowOutlineExpansion();
             var data = new SearchData(SearchText.NewPattern("foo"), SearchKind.ForwardWithWrap, SearchOptions.None);
             _searchService.LastSearch = data;
@@ -739,7 +719,7 @@ namespace VimCore.Test
         [Test]
         public void MoveToNextOccuranceOfLastSearch4()
         {
-            Create("foo bar","foo");
+            Create("foo bar", "foo");
             AllowOutlineExpansion();
             var data = new SearchData(SearchText.NewPattern("foo"), SearchKind.BackwardWithWrap, SearchOptions.None);
             _searchService.LastSearch = data;
@@ -750,9 +730,9 @@ namespace VimCore.Test
         [Test]
         public void MoveToNextOccuranceOfLastSearch5()
         {
-            Create("foo bar","foo");
+            Create("foo bar", "foo");
             var data = new SearchData(SearchText.NewPattern("foo"), SearchKind.BackwardWithWrap, SearchOptions.None);
-            AllowOutlineExpansion(verify:true);
+            AllowOutlineExpansion(verify: true);
             _searchService.LastSearch = data;
             _operations.MoveToNextOccuranceOfLastSearch(1, false);
             Assert.AreEqual(_view.GetLine(1).Start, _view.GetCaretPoint());
@@ -858,7 +838,7 @@ namespace VimCore.Test
         public void JumpPrevious4()
         {
             Create("foo", "bar");
-            AllowOutlineExpansion(verify:true);
+            AllowOutlineExpansion(verify: true);
             _jumpList.Setup(x => x.MovePrevious()).Returns(true);
             _jumpList.SetupGet(x => x.Current).Returns(FSharpOption.Create(new SnapshotPoint(_view.TextSnapshot, 1)));
             _operations.JumpPrevious(1);
@@ -978,7 +958,7 @@ namespace VimCore.Test
         {
             Create("bar");
             _view.MoveCaretTo(1);
-            _operations.InsertText("hey",1);
+            _operations.InsertText("hey", 1);
             Assert.AreEqual("bheyar", _view.TextSnapshot.GetText());
         }
 
@@ -1059,6 +1039,72 @@ namespace VimCore.Test
             _view.MoveCaretTo(SnapshotUtil.GetEndPoint(_view.TextSnapshot));
             _operations.MoveCaretForAppend();
             Assert.AreEqual(SnapshotUtil.GetEndPoint(_view.TextSnapshot), _view.GetCaretPoint());
+        }
+
+        [Test]
+        public void GoToGlobalDeclaration1()
+        {
+            Create("foo bar");
+            _host.Setup(x => x.GoToGlobalDeclaration(_view, "foo")).Returns(true).Verifiable();
+            _operations.GoToGlobalDeclaration();
+            _host.Verify();
+        }
+
+        [Test]
+        public void GoToGlobalDeclaration2()
+        {
+            Create("foo bar");
+            _host.Setup(x => x.GoToGlobalDeclaration(_view, "foo")).Returns(false).Verifiable();
+            _host.Setup(x => x.Beep()).Verifiable();
+            _operations.GoToGlobalDeclaration();
+            _host.Verify();
+        }
+
+        [Test]
+        public void GoToLocalDeclaration1()
+        {
+            Create("foo bar");
+            _host.Setup(x => x.GoToLocalDeclaration(_view, "foo")).Returns(true).Verifiable();
+            _operations.GoToLocalDeclaration();
+            _host.Verify();
+        }
+
+        [Test]
+        public void GoToLocalDeclaration2()
+        {
+            Create("foo bar");
+            _host.Setup(x => x.GoToLocalDeclaration(_view, "foo")).Returns(false).Verifiable();
+            _host.Setup(x => x.Beep()).Verifiable();
+            _operations.GoToLocalDeclaration();
+            _host.Verify();
+        }
+
+        [Test]
+        public void GoToFile1()
+        {
+            Create("foo bar");
+            _host.Setup(x => x.GoToFile("foo")).Returns(true).Verifiable();
+            _operations.GoToFile();
+            _host.Verify();
+        }
+
+        [Test]
+        public void GoToFile2()
+        {
+            Create("foo bar");
+            _host.Setup(x => x.GoToFile("foo")).Returns(false).Verifiable();
+            _statusUtil.Setup(x => x.OnError(Resources.NormalMode_CantFindFile("foo"))).Verifiable();
+            _operations.GoToFile();
+            _statusUtil.Verify();
+            _host.Verify();
+        }
+
+        [Test]
+        public void JoinAtCaret1()
+        {
+            Create("bear", "dog", "cat", "zebra", "fox", "jazz");
+            _operations.JoinAtCaret(1);
+            Assert.AreEqual("bear dog", _view.GetLine(0).GetText());
         }
     }
 }

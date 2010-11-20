@@ -1,18 +1,17 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using NUnit.Framework;
-using Vim.Modes.Command;
-using Vim;
-using Vim.UnitTest;
-using Microsoft.VisualStudio.Text;
 using Microsoft.FSharp.Collections;
 using Microsoft.FSharp.Core;
+using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Moq;
-using Range = Vim.Modes.Command.Range;
+using NUnit.Framework;
+using Vim;
 using Vim.Extensions;
+using Vim.Modes.Command;
+using Vim.UnitTest;
+using Vim.UnitTest.Mock;
+using Range = Vim.Modes.Command.Range;
 
 namespace VimCore.Test
 {
@@ -95,7 +94,7 @@ namespace VimCore.Test
         [Test]
         public void FullFile()
         {
-            Create("foo","bar");
+            Create("foo", "bar");
             var res = Parse("%");
             var tss = _buffer.CurrentSnapshot;
             Assert.IsTrue(res.IsSucceeded);
@@ -149,7 +148,7 @@ namespace VimCore.Test
             Create("a", "b", "c");
             var res = Parse("1,2");
             Assert.IsTrue(res.IsSucceeded);
-               
+
             var span = new SnapshotSpan(
                 _buffer.CurrentSnapshot.GetLineFromLineNumber(0).Start,
                 _buffer.CurrentSnapshot.GetLineFromLineNumber(1).EndIncludingLineBreak);
@@ -159,7 +158,7 @@ namespace VimCore.Test
         [Test]
         public void ApplyCount1()
         {
-            Create("foo","bar","baz","jaz");
+            Create("foo", "bar", "baz", "jaz");
             var first = Range.NewLines(_buffer.CurrentSnapshot, 0, 0);
             var second = RangeUtil.ApplyCount(first, 2);
             Assert.IsTrue(second.IsLines);
@@ -183,7 +182,7 @@ namespace VimCore.Test
         [Test]
         public void ApplyCount3()
         {
-            Create("foo","bar","baz");
+            Create("foo", "bar", "baz");
             var v1 = Range.NewSingleLine(_buffer.CurrentSnapshot.GetLineFromLineNumber(0));
             var v2 = RangeUtil.ApplyCount(v1, 2);
             Assert.IsTrue(v2.IsLines);
@@ -213,7 +212,7 @@ namespace VimCore.Test
         [Test]
         public void RangeOrCurrentLine2()
         {
-            Create("foo","bar");
+            Create("foo", "bar");
             var mock = new Moq.Mock<ITextView>(Moq.MockBehavior.Strict);
             var range = Vim.Modes.Command.Range.NewLines(_buffer.CurrentSnapshot, 0, 0);
             var res = RangeUtil.RangeOrCurrentLine(mock.Object, FSharpOption<Vim.Modes.Command.Range>.Some(range));
@@ -228,9 +227,9 @@ namespace VimCore.Test
             var point2 = _buffer.CurrentSnapshot.GetLineFromLineNumber(1).EndIncludingLineBreak;
             var map = new MarkMap(new TrackingLineColumnService());
             map.SetLocalMark(point1, 'c');
-            var range = Parse("'c,2",map);
+            var range = Parse("'c,2", map);
             Assert.IsTrue(range.IsSucceeded);
-            Assert.AreEqual(new SnapshotSpan(point1,point2), RangeUtil.GetSnapshotSpan(range.AsSucceeded().Item1));
+            Assert.AreEqual(new SnapshotSpan(point1, point2), RangeUtil.GetSnapshotSpan(range.AsSucceeded().Item1));
         }
 
         [Test]
@@ -247,7 +246,7 @@ namespace VimCore.Test
             Assert.AreEqual(new SnapshotSpan(point1, point2), RangeUtil.GetSnapshotSpan(range.AsSucceeded().Item1));
         }
 
-        [Test,Description("Marks are the same as line numbers")]
+        [Test, Description("Marks are the same as line numbers")]
         public void ParseMark3()
         {
             Create("foo", "bar");
@@ -260,18 +259,18 @@ namespace VimCore.Test
             Assert.AreEqual(new SnapshotSpan(point1.GetContainingLine().Start, point2), RangeUtil.GetSnapshotSpan(range.AsSucceeded().Item1));
         }
 
-        [Test,Description("Global mark")]
+        [Test, Description("Global mark")]
         public void ParseMark4()
         {
-            Create("foo bar","bar","baz");
+            Create("foo bar", "bar", "baz");
             var map = new Mock<IMarkMap>(MockBehavior.Strict);
             map
                 .Setup(x => x.GetMark(_buffer, 'A'))
                 .Returns(FSharpOption.Create(new VirtualSnapshotPoint(_buffer.CurrentSnapshot, 2)));
-            var range = Parse("'A,2",map.Object);
+            var range = Parse("'A,2", map.Object);
             Assert.IsTrue(range.IsSucceeded);
             var span = RangeUtil.GetSnapshotSpan(range.AsSucceeded().Item1);
-            Assert.AreEqual(_buffer.CurrentSnapshot.GetLineSpanIncludingLineBreak(0,1), span);
+            Assert.AreEqual(_buffer.GetLineSpan(0, 1).ExtentIncludingLineBreak, span);
         }
 
         [Test]
@@ -293,6 +292,18 @@ namespace VimCore.Test
             var range = Parse("'c,2");
             Assert.IsTrue(range.IsFailed);
             Assert.AreEqual(Resources.Range_MarkNotValidInFile, range.AsFailed().Item);
+        }
+
+        [Test]
+        public void ParseMark7()
+        {
+            Create("foo bar");
+            var map = new Mock<IMarkMap>(MockBehavior.Strict);
+            map.AddMark(_buffer, '<', _buffer.GetPoint(0));
+            map.AddMark(_buffer, '>', _buffer.GetPoint(1));
+            var range = Parse("'<,'>", map.Object);
+            Assert.IsTrue(range.IsSucceeded);
+            Assert.AreEqual(_buffer.GetLineSpan(0).ExtentIncludingLineBreak, RangeUtil.GetSnapshotSpan(range.AsSucceeded().Item1));
         }
 
         [Test]
@@ -319,35 +330,35 @@ namespace VimCore.Test
         [Test]
         public void Plus4()
         {
-            Create("foo", "bar", "baz","jaz","aoeu","za,.p");
+            Create("foo", "bar", "baz", "jaz", "aoeu", "za,.p");
             ParseLineRange("1+1,3", 1, 2);
         }
 
         [Test]
         public void Minus1()
         {
-            Create("foo", "bar", "baz","jaz","aoeu","za,.p");
+            Create("foo", "bar", "baz", "jaz", "aoeu", "za,.p");
             ParseSingleLine("1-42", 0);
         }
 
         [Test]
         public void Minus2()
         {
-            Create("foo", "bar", "baz","jaz","aoeu","za,.p");
+            Create("foo", "bar", "baz", "jaz", "aoeu", "za,.p");
             ParseSingleLine("2-", 0);
         }
 
         [Test]
         public void Minus3()
         {
-            Create("foo", "bar", "baz","jaz","aoeu","za,.p");
+            Create("foo", "bar", "baz", "jaz", "aoeu", "za,.p");
             ParseSingleLine("5-3", 1);
         }
 
         [Test]
         public void Minus4()
         {
-            Create("foo", "bar", "baz","jaz","aoeu","za,.p");
+            Create("foo", "bar", "baz", "jaz", "aoeu", "za,.p");
             ParseLineRange("1,5-2", 0, 2);
         }
 
