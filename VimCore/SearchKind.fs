@@ -6,7 +6,6 @@ type Direction =
     | Forward
     | Backward
 
-
 type SearchKind = 
      | Forward = 1
      | ForwardWithWrap = 2

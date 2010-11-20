@@ -1,0 +1,5 @@
+
+F# 
+ - Util classes should contain Create methods to create 
+ - Revisit: Util classes should have Get for conversions 
+ - Should be Of for collection conversions
