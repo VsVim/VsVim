@@ -992,6 +992,17 @@ namespace VimCore.Test
         }
 
         [Test]
+        [Description("Blank lines need to expand")]
+        public void ShiftLinesRight4()
+        {
+            Create("foo", "", "bar");
+            _operations.ShiftLinesRight(3);
+            Assert.AreEqual("  foo", _buffer.GetLineSpan(0).GetText());
+            Assert.AreEqual("  ", _buffer.GetLineSpan(1).GetText());
+            Assert.AreEqual("  bar", _buffer.GetLineSpan(2).GetText());
+        }
+
+        [Test]
         public void ScrollLines1()
         {
             Create("foo", "bar");
