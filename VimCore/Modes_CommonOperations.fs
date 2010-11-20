@@ -67,10 +67,11 @@ type internal CommonOperations ( _data : OperationsData ) =
             |> Seq.map (fun line -> SnapshotLineUtil.GetExtentIncludingLineBreak line)
         x.ShiftRightCore multiplier col 
 
-    member x.ShiftLeftCore multiplier (col:SnapshotSpan seq) =
+    member x.ShiftLeftCore multiplier (lineSpan:SnapshotLineSpan) = 
         let count = _settings.GlobalSettings.ShiftWidth * multiplier
         use edit = _data.TextView.TextBuffer.CreateEdit()
-        col 
+        lineSpan.Lines
+        |> Seq.map (fun line -> line.Extent)
         |> Seq.iter (fun span -> 
             let text = SnapshotSpanUtil.GetText span
             let toReplace = 
@@ -79,13 +80,9 @@ type internal CommonOperations ( _data : OperationsData ) =
             edit.Replace(span.Start.Position, toReplace, StringUtil.empty) |> ignore )
         edit.Apply() |> ignore
         
-    member x.ShiftSpanLeft multiplier (span:SnapshotSpan) = 
-        let startLine,endLine = SnapshotSpanUtil.GetStartAndEndLine span
-        let snapshot = span.Snapshot
-        let col = 
-            SnapshotUtil.GetLineRange snapshot startLine.LineNumber endLine.LineNumber
-            |> Seq.map (fun line -> SnapshotLineUtil.GetExtentIncludingLineBreak line)
-        x.ShiftLeftCore multiplier col 
+    member x.ShiftSpanLeft multiplier span = 
+        let lineSpan = SnapshotLineSpanUtil.CreateForSpan span
+        x.ShiftLeftCore multiplier lineSpan
 
     /// Change the letters on the given span by applying the specified function
     /// to each of them
@@ -363,7 +360,9 @@ type internal CommonOperations ( _data : OperationsData ) =
         member x.ShiftSpanRight multiplier span = x.ShiftSpanRight multiplier span
         member x.ShiftBlockRight multiplier block = x.ShiftRightCore multiplier block 
         member x.ShiftSpanLeft multiplier span = x.ShiftSpanLeft multiplier span
-        member x.ShiftBlockLeft multiplier block = x.ShiftLeftCore multiplier block
+        member x.ShiftBlockLeft multiplier block = 
+            let lineSpan = SnapshotLineSpanUtil.CreateForNormalizedSnapshotSpanCollection block
+            x.ShiftLeftCore multiplier lineSpan
 
         member x.ShiftLinesRight count = 
             let point = TextViewUtil.GetCaretPoint _textView

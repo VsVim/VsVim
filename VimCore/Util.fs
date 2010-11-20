@@ -353,6 +353,7 @@ type SnapshotLineSpan
         let startLine = x.StartLine
         let endLine = x.EndLine
         SnapshotSpan(startLine.Start, endLine.EndIncludingLineBreak)
+    member x.Lines = seq { for i in _startLine .. x.EndLineNumber do yield _snapshot.GetLineFromLineNumber(i) }
     member x.GetText() = x.Extent.GetText()
     member x.GetTextIncludingLineBreak() = x.ExtentIncludingLineBreak.GetText()
 
@@ -373,11 +374,5 @@ type SnapshotLineSpan
     static member op_Inequality(this,other) = 
         not (System.Collections.Generic.EqualityComparer<SnapshotLineSpan>.Default.Equals(this,other))
 
-    static member CreateForSingleLine snapshot lineNumber = 
-        SnapshotLineSpan(snapshot, lineNumber, 1)
-    static member CreateForStartAndCount snapshot lineNumber count = 
-        SnapshotLineSpan(snapshot, lineNumber, count)
-    static member CreateForStartAndEndLine snapshot startLineNumber endLineNumber =
-        SnapshotLineSpan(snapshot, startLineNumber, (endLineNumber - startLineNumber) + 1)
 
 

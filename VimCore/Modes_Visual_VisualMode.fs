@@ -317,13 +317,13 @@ type internal VisualMode
                     CommandFlags.Repeatable,
                     None,
                     (fun _ _ span -> 
-                        let range = SnapshotSpanUtil.GetLineSpan span
+                        let range = SnapshotLineSpanUtil.CreateForSpan span
                         _buffer.Vim.VimHost.FormatLines _buffer.TextView range),
                     (fun _ _ col ->
                         let range = 
                             col
                             |> NormalizedSnapshotSpanCollectionUtil.GetCombinedSpan
-                            |> SnapshotSpanUtil.GetLineSpan
+                            |> SnapshotLineSpanUtil.CreateForSpan 
                         _buffer.Vim.VimHost.FormatLines _buffer.TextView range))
             }
             |> Seq.map (fun (str,flags,mode,funcNormal,funcBlock) ->

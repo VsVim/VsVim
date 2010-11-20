@@ -184,11 +184,6 @@ module SnapshotSpanUtil =
         if span.Length = 0 then None
         else span.End.Subtract(1) |> Some
 
-    /// Get the SnapshotLineRange for the SnapshotSpan 
-    let GetLineSpan span = 
-        let startLine,endLine = GetStartAndEndLine span
-        SnapshotLineSpan.CreateForStartAndEndLine span.Snapshot startLine.LineNumber endLine.LineNumber
-
     /// Extend the SnapshotSpan count lines downwards.  If the count exceeds the end of the
     /// Snapshot it will extend to the end
     let ExtendDown span lineCount = 
@@ -732,6 +727,24 @@ module VirtualSnapshotPointUtil =
         if left.CompareTo(right) < 0 then left,right 
         else right,left
 
+module SnapshotLineSpanUtil = 
+
+    let CreateForSingleLine snapshot lineNumber = 
+        SnapshotLineSpan(snapshot, lineNumber, 1)
+
+    let CreateForStartAndCount snapshot lineNumber count = 
+        SnapshotLineSpan(snapshot, lineNumber, count)
+
+    let CreateForStartAndEndLine snapshot startLineNumber endLineNumber =
+        SnapshotLineSpan(snapshot, startLineNumber, (endLineNumber - startLineNumber) + 1)
+
+    let CreateForSpan span = 
+        let startLine,endLine = SnapshotSpanUtil.GetStartAndEndLine span
+        CreateForStartAndEndLine span.Snapshot startLine.LineNumber endLine.LineNumber
+
+    let CreateForNormalizedSnapshotSpanCollection col = 
+        col |> NormalizedSnapshotSpanCollectionUtil.GetCombinedSpan |> CreateForSpan
+
 /// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
 /// include any Vim specific logic
 module TextViewUtil =
@@ -748,7 +761,7 @@ module TextViewUtil =
 
     let GetCaretLineSpan textView count = 
         let lineNumber,_ = textView |> GetCaretPoint |> SnapshotPointUtil.GetLineColumn
-        SnapshotLineSpan.CreateForStartAndCount textView.TextSnapshot lineNumber count
+        SnapshotLineSpanUtil.CreateForStartAndCount textView.TextSnapshot lineNumber count
 
     let GetCaretPointAndLine textView = (GetCaretPoint textView),(GetCaretLine textView)
 

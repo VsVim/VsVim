@@ -282,7 +282,7 @@ namespace Vim.UnitTest
         public static SnapshotLineSpan GetLineSpan(this ITextView textView, int startLine, int endLine = -1)
         {
             endLine = endLine >= 0 ? endLine : startLine;
-            return SnapshotLineSpan.CreateForStartAndEndLine(textView.TextSnapshot, startLine, endLine);
+            return SnapshotLineSpanUtil.CreateForStartAndEndLine(textView.TextSnapshot, startLine, endLine);
         }
 
         public static CaretPosition MoveCaretTo(this ITextView textView, int position)
@@ -319,7 +319,7 @@ namespace Vim.UnitTest
         public static SnapshotLineSpan GetLineSpan(this ITextBuffer buffer, int startLine, int endLine = -1)
         {
             endLine = endLine >= 0 ? endLine : startLine;
-            return SnapshotLineSpan.CreateForStartAndEndLine(buffer.CurrentSnapshot, startLine, endLine);
+            return SnapshotLineSpanUtil.CreateForStartAndEndLine(buffer.CurrentSnapshot, startLine, endLine);
         }
 
         public static SnapshotPoint GetPoint(this ITextBuffer buffer, int position)
@@ -356,7 +356,7 @@ namespace Vim.UnitTest
         public static SnapshotLineSpan GetLineSpan(this ITextSnapshot tss, int startLine, int endLine = -1)
         {
             endLine = endLine >= 0 ? endLine : startLine;
-            return SnapshotLineSpan.CreateForStartAndEndLine(tss, startLine, endLine);
+            return SnapshotLineSpanUtil.CreateForStartAndEndLine(tss, startLine, endLine);
         }
 
         public static SnapshotPoint GetPoint(this ITextSnapshot tss, int position)

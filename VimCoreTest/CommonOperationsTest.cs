@@ -945,6 +945,26 @@ namespace VimCore.Test
         }
 
         [Test]
+        public void ShiftLinesLeft5()
+        {
+            Create(" foo", "", "   bar");
+            _operations.ShiftLinesLeft(3);
+            Assert.AreEqual("foo", _buffer.GetLineSpan(0).GetText());
+            Assert.AreEqual("", _buffer.GetLineSpan(1).GetText());
+            Assert.AreEqual(" bar", _buffer.GetLineSpan(2).GetText());
+        }
+
+        [Test]
+        public void ShiftLinesLeft6()
+        {
+            Create(" foo", "   ", "   bar");
+            _operations.ShiftLinesLeft(3);
+            Assert.AreEqual("foo", _buffer.GetLineSpan(0).GetText());
+            Assert.AreEqual(" ", _buffer.GetLineSpan(1).GetText());
+            Assert.AreEqual(" bar", _buffer.GetLineSpan(2).GetText());
+        }
+
+        [Test]
         public void ShiftLinesRight1()
         {
             Create("foo");
