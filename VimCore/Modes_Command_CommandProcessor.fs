@@ -435,7 +435,7 @@ type internal CommandProcessor
                     if Utils.IsFlagSet flags SubstituteFlags.Invalid then badParse()
                     else goodParse search replace flags ))
 
-        let range = RangeUtil.RangeOrCurrentLine _data.TextView range |> RangeUtil.GetSnapshotSpan
+        let range = RangeUtil.RangeOrCurrentLine _data.TextView range |> RangeUtil.GetSnapshotLineRange
         if List.isEmpty rest then
             let search,replace,flags = _lastSubstitute
             _operations.Substitute search replace range flags

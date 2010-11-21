@@ -37,21 +37,6 @@ type internal DefaultOperations ( _data : OperationsData ) =
 
     member private x.CommonImpl = x :> ICommonOperations
 
-    /// Get the Line spans in the specified range
-    member x.GetSpansInRange (range:SnapshotSpan) =
-        let startLine = range.Start.GetContainingLine()
-        let endLine = range.End.GetContainingLine()
-        if startLine.LineNumber = endLine.LineNumber then  Seq.singleton range
-        else
-            let tss = startLine.Snapshot
-            seq {
-                yield SnapshotSpan(range.Start, startLine.EndIncludingLineBreak)
-                for i = startLine.LineNumber + 1 to endLine.LineNumber - 1 do
-                    yield tss.GetLineFromLineNumber(i).ExtentIncludingLineBreak
-                yield SnapshotSpan(endLine.Start, range.End)
-            }
-
-
     interface IOperations with
         member x.EditFile fileName = 
             if not (_host.GoToFile fileName) then _host.Beep()
@@ -83,7 +68,7 @@ type internal DefaultOperations ( _data : OperationsData ) =
             let point = inner line.Start
             _textView.Caret.MoveTo(point) |> ignore
 
-        member x.Substitute pattern replace (range:SnapshotSpan) flags = 
+        member x.Substitute pattern replace (range:SnapshotLineRange) flags = 
 
             /// Actually do the replace with the given regex
             let doReplace (regex:VimRegex) = 
@@ -99,7 +84,8 @@ type internal DefaultOperations ( _data : OperationsData ) =
                     else
                         regex.Regex.Match(span.GetText()) |> Seq.singleton
                 let matches = 
-                    x.GetSpansInRange range
+                    range.Lines
+                    |> Seq.map (fun line -> line.ExtentIncludingLineBreak)
                     |> Seq.map (fun span -> getMatches span |> Seq.map (fun m -> (m,span)) )
                     |> Seq.concat 
                     |> Seq.filter (fun (m,_) -> m.Success)

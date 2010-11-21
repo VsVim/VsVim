@@ -8,3 +8,7 @@ F#
        too often control this number
      - APIs taking a line number should consider returning an option.  Line numbers are less likely to be controlled
        by the user
+
+C#
+ - Member variables prefixed with _ 
+ - Buffer creation methods should be Create.  Not CreateBuffer

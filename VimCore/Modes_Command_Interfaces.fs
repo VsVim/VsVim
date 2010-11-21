@@ -34,7 +34,7 @@ type IOperations =
     abstract Put : text : string -> ITextSnapshotLine -> isAfter : bool -> unit
 
     /// Substitute Command implementation
-    abstract Substitute : pattern : string -> replace : string -> SnapshotSpan -> SubstituteFlags -> unit
+    abstract Substitute : pattern : string -> replace : string -> SnapshotLineRange -> SubstituteFlags -> unit
 
     /// For a toggle setting, switch it.  For all others display it
     abstract OperateSetting: settingName:string -> unit

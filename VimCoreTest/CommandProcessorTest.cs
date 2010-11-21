@@ -326,9 +326,9 @@ namespace VimCore.Test
         public void Substitute1()
         {
             Create("foo bar");
-            var span = _view.TextSnapshot.GetLineFromLineNumber(0).Extent;
+            var range = _view.GetLineRange(0);
             _operations
-                .Setup(x => x.Substitute("f", "b", span, SubstituteFlags.None))
+                .Setup(x => x.Substitute("f", "b", range, SubstituteFlags.None))
                 .Verifiable();
             RunCommand("s/f/b");
             _operations.Verify();
@@ -339,9 +339,9 @@ namespace VimCore.Test
         public void Substitute2()
         {
             Create("foo bar");
-            var span = _view.TextSnapshot.GetLineFromLineNumber(0).Extent;
+            var range = _view.GetLineRange(0);
             _operations
-                .Setup(x => x.Substitute("foo", "bar", span, SubstituteFlags.None))
+                .Setup(x => x.Substitute("foo", "bar", range, SubstituteFlags.None))
                 .Verifiable();
             RunCommand("s/foo/bar");
             _operations.Verify();
@@ -351,9 +351,9 @@ namespace VimCore.Test
         public void Substitute3()
         {
             Create("foo bar");
-            var span = _view.TextSnapshot.GetLineFromLineNumber(0).Extent;
+            var range = _view.GetLineRange(0);
             _operations
-                .Setup(x => x.Substitute("foo", "bar", span, SubstituteFlags.None))
+                .Setup(x => x.Substitute("foo", "bar", range, SubstituteFlags.None))
                 .Verifiable();
             RunCommand("s/foo/bar/");
             _operations.Verify();
@@ -363,9 +363,9 @@ namespace VimCore.Test
         public void Substitute4()
         {
             Create("foo bar");
-            var span = _view.TextSnapshot.GetLineFromLineNumber(0).Extent;
+            var range = _view.GetLineRange(0);
             _operations
-                .Setup(x => x.Substitute("foo", "bar", span, SubstituteFlags.ReplaceAll))
+                .Setup(x => x.Substitute("foo", "bar", range, SubstituteFlags.ReplaceAll))
                 .Verifiable();
             RunCommand("s/foo/bar/g");
             _operations.Verify();
@@ -375,9 +375,9 @@ namespace VimCore.Test
         public void Substitute5()
         {
             Create("foo bar");
-            var span = _view.TextSnapshot.GetLineFromLineNumber(0).Extent;
+            var range = _view.GetLineRange(0);
             _operations
-                .Setup(x => x.Substitute("foo", "bar", span, SubstituteFlags.IgnoreCase))
+                .Setup(x => x.Substitute("foo", "bar", range, SubstituteFlags.IgnoreCase))
                 .Verifiable();
             RunCommand("s/foo/bar/i");
             _operations.Verify();
@@ -387,9 +387,9 @@ namespace VimCore.Test
         public void Substitute6()
         {
             Create("foo bar");
-            var span = _view.TextSnapshot.GetLineFromLineNumber(0).Extent;
+            var range = _view.GetLineRange(0);
             _operations
-                .Setup(x => x.Substitute("foo", "bar", span, SubstituteFlags.IgnoreCase | SubstituteFlags.ReplaceAll))
+                .Setup(x => x.Substitute("foo", "bar", range, SubstituteFlags.IgnoreCase | SubstituteFlags.ReplaceAll))
                 .Verifiable();
             RunCommand("s/foo/bar/gi");
             _operations.Verify();
@@ -399,9 +399,9 @@ namespace VimCore.Test
         public void Substitute7()
         {
             Create("foo bar");
-            var span = _view.TextSnapshot.GetLineFromLineNumber(0).Extent;
+            var range = _view.GetLineRange(0);
             _operations
-                .Setup(x => x.Substitute("foo", "bar", span, SubstituteFlags.IgnoreCase | SubstituteFlags.ReplaceAll))
+                .Setup(x => x.Substitute("foo", "bar", range, SubstituteFlags.IgnoreCase | SubstituteFlags.ReplaceAll))
                 .Verifiable();
             RunCommand("s/foo/bar/ig");
             _operations.Verify();
@@ -412,9 +412,9 @@ namespace VimCore.Test
         public void Substitute8()
         {
             Create("foo bar");
-            var span = _view.TextSnapshot.GetLineFromLineNumber(0).Extent;
+            var range = _view.GetLineRange(0);
             _operations
-                .Setup(x => x.Substitute("foo", "bar", span, SubstituteFlags.ReportOnly))
+                .Setup(x => x.Substitute("foo", "bar", range, SubstituteFlags.ReportOnly))
                 .Verifiable();
             RunCommand("s/foo/bar/n");
             _operations.Verify();
@@ -425,10 +425,9 @@ namespace VimCore.Test
         public void Substitute9()
         {
             Create("foo bar", "baz");
-            var tss = _view.TextSnapshot;
-            var span = new SnapshotSpan(tss, 0, tss.Length);
+            var range = _view.GetLineRange(0, 1);
             _operations
-                .Setup(x => x.Substitute("foo", "bar", span, SubstituteFlags.None))
+                .Setup(x => x.Substitute("foo", "bar", range, SubstituteFlags.None))
                 .Verifiable();
             RunCommand("%s/foo/bar");
             _operations.Verify();
@@ -438,10 +437,9 @@ namespace VimCore.Test
         public void Substitute10()
         {
             Create("foo bar", "baz");
-            var tss = _view.TextSnapshot;
-            var span = new SnapshotSpan(tss, 0, tss.Length);
+            var range = _view.GetLineRange(0, 1);
             _operations
-                .Setup(x => x.Substitute("foo", "bar", span, SubstituteFlags.SuppressError))
+                .Setup(x => x.Substitute("foo", "bar", range, SubstituteFlags.SuppressError))
                 .Verifiable();
             RunCommand("%s/foo/bar/e");
             _operations.Verify();
@@ -451,10 +449,9 @@ namespace VimCore.Test
         public void Substitute11()
         {
             Create("foo bar", "baz");
-            var tss = _view.TextSnapshot;
-            var span = new SnapshotSpan(tss, 0, tss.Length);
+            var range = _view.GetLineRange(0, 1);
             _operations
-                .Setup(x => x.Substitute("foo", "bar", span, SubstituteFlags.OrdinalCase))
+                .Setup(x => x.Substitute("foo", "bar", range, SubstituteFlags.OrdinalCase))
                 .Verifiable();
             RunCommand("%s/foo/bar/I");
             _operations.Verify();
@@ -464,10 +461,9 @@ namespace VimCore.Test
         public void Substitute12()
         {
             Create("foo bar", "baz");
-            var tss = _view.TextSnapshot;
-            var span = new SnapshotSpan(tss, 0, tss.Length);
+            var range = _view.GetLineRange(0, 1);
             _operations
-                .Setup(x => x.Substitute("foo", "bar", span, SubstituteFlags.OrdinalCase))
+                .Setup(x => x.Substitute("foo", "bar", range, SubstituteFlags.OrdinalCase))
                 .Verifiable();
             RunCommand("%s/foo/bar/I");
             _operations.Verify();
@@ -479,15 +475,14 @@ namespace VimCore.Test
         public void Substitute13()
         {
             Create("foo bar", "baz");
-            var tss = _view.TextSnapshot;
-            var span = new SnapshotSpan(tss, 0, tss.Length);
+            var range = _view.GetLineRange(0, 1);
             _operations
-                .Setup(x => x.Substitute("foo", "bar", span, SubstituteFlags.OrdinalCase))
+                .Setup(x => x.Substitute("foo", "bar", range, SubstituteFlags.OrdinalCase))
                 .Verifiable();
             RunCommand("%s/foo/bar/I");
             _operations.Verify();
             _operations
-                .Setup(x => x.Substitute("foo", "bar", span, SubstituteFlags.OrdinalCase | SubstituteFlags.ReplaceAll))
+                .Setup(x => x.Substitute("foo", "bar", range, SubstituteFlags.OrdinalCase | SubstituteFlags.ReplaceAll))
                 .Verifiable();
             RunCommand("%s/foo/bar/&g");
             _operations.Verify();
@@ -498,8 +493,6 @@ namespace VimCore.Test
         {
             Create("foo bar", "baz");
             _statusUtil.Setup(x => x.OnError(Resources.CommandMode_NotSupported_SubstituteConfirm)).Verifiable();
-            var tss = _view.TextSnapshot;
-            var span = new SnapshotSpan(tss, 0, tss.Length);
             RunCommand("%s/foo/bar/c");
             _factory.Verify();
         }
@@ -508,10 +501,9 @@ namespace VimCore.Test
         public void Substitute15()
         {
             Create("foo bar baz");
-            var tss = _view.TextSnapshot;
-            var span = new SnapshotSpan(tss, 0, tss.Length);
+            var range = _view.GetLineRange(0);
             _operations
-                .Setup(x => x.Substitute("foo", "", span, SubstituteFlags.None))
+                .Setup(x => x.Substitute("foo", "", range, SubstituteFlags.None))
                 .Verifiable();
             RunCommand("%s/foo//");
             _operations.Verify();
@@ -521,10 +513,9 @@ namespace VimCore.Test
         public void Substitute16()
         {
             Create("foo bar baz");
-            var tss = _view.TextSnapshot;
-            var span = new SnapshotSpan(tss, 0, tss.Length);
+            var range = _view.GetLineRange(0);
             _operations
-                .Setup(x => x.Substitute("foo", "b", span, SubstituteFlags.None))
+                .Setup(x => x.Substitute("foo", "b", range, SubstituteFlags.None))
                 .Verifiable();
             RunCommand("%s/foo/b/");
             _operations.Verify();
@@ -534,10 +525,9 @@ namespace VimCore.Test
         public void Substitute17()
         {
             Create("foo bar baz");
-            var tss = _view.TextSnapshot;
-            var span = new SnapshotSpan(tss, 0, tss.Length);
+            var range = _view.GetLineRange(0);
             _operations
-                .Setup(x => x.Substitute("foo", "", span, SubstituteFlags.None))
+                .Setup(x => x.Substitute("foo", "", range, SubstituteFlags.None))
                 .Verifiable();
             RunCommand("%s/foo/");
             _operations.Verify();
