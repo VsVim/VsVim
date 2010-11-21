@@ -43,7 +43,6 @@ module internal RangeUtil =
 
     let private _parser = RangeParser()
 
-    /// Get the SnapshotSpan for the given Range
     let GetSnapshotSpan (r:Range) =
         match r with
         | RawSpan(span) -> span
@@ -52,21 +51,23 @@ module internal RangeUtil =
                 tss.GetLineFromLineNumber(first).Start,
                 tss.GetLineFromLineNumber(last).EndIncludingLineBreak)
         | SingleLine(line) -> line.ExtentIncludingLineBreak
-        
-    /// Get the range for the currently selected line
+
+    let GetSnapshotLineRange (r:Range) =
+        match r with
+        | RawSpan(span) -> SnapshotLineRangeUtil.CreateForSpan span
+        | SingleLine(line) -> SnapshotLineRangeUtil.CreateForLine line
+        | Lines(tss,first,last) -> SnapshotLineRangeUtil.CreateForLineNumberRange tss first last 
+
     let RangeForCurrentLine view =
         let point = TextViewUtil.GetCaretPoint view
         let line = point.GetContainingLine()
         Range.SingleLine(line)
 
-    /// Retrieve the passed in range if valid or the range for the current line
-    /// if the Range Option is empty
     let RangeOrCurrentLine view rangeOpt =
         match rangeOpt with
         | Some(range) -> range
         | None -> RangeForCurrentLine view
 
-    /// Apply the count to the given range
     let ApplyCount range count =
         let count = if count <= 1 then 1 else count-1
         let inner (tss:ITextSnapshot) startLine =
@@ -124,7 +125,6 @@ module internal RangeUtil =
             let span = new SnapshotSpan(left.Start, right.End)
             Range.RawSpan(span)
 
-    /// Parse out a number from the input string
     let ParseNumber (input:char list) =
 
         // Parse out the input into the list of digits and remaining input

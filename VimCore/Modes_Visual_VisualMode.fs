@@ -204,13 +204,13 @@ type internal VisualMode
                     "<lt>",
                     CommandFlags.Repeatable ||| CommandFlags.ResetCaret,
                     Some ModeKind.Normal,
-                    (fun count _ span -> _operations.ShiftSpanLeft count span) ,
+                    (fun count _ span -> _operations.ShiftLineRangeLeft count (SnapshotLineRangeUtil.CreateForSpan span)) ,
                     (fun count _ col -> _operations.ShiftBlockLeft count col ))
                 yield (
                     ">",
                     CommandFlags.Repeatable ||| CommandFlags.ResetCaret,
                     Some ModeKind.Normal,
-                    (fun count _ span ->  _operations.ShiftSpanRight count span),
+                    (fun count _ span ->  _operations.ShiftLineRangeRight count (SnapshotLineRangeUtil.CreateForSpan span)),
                     (fun count _ col -> _operations.ShiftBlockRight count col))
                 yield (
                     "~",
@@ -317,13 +317,13 @@ type internal VisualMode
                     CommandFlags.Repeatable,
                     None,
                     (fun _ _ span -> 
-                        let range = SnapshotLineSpanUtil.CreateForSpan span
+                        let range = SnapshotLineRangeUtil.CreateForSpan span
                         _buffer.Vim.VimHost.FormatLines _buffer.TextView range),
                     (fun _ _ col ->
                         let range = 
                             col
                             |> NormalizedSnapshotSpanCollectionUtil.GetCombinedSpan
-                            |> SnapshotLineSpanUtil.CreateForSpan 
+                            |> SnapshotLineRangeUtil.CreateForSpan 
                         _buffer.Vim.VimHost.FormatLines _buffer.TextView range))
             }
             |> Seq.map (fun (str,flags,mode,funcNormal,funcBlock) ->

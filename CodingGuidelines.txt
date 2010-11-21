@@ -3,3 +3,8 @@ F#
  - Util classes should contain Create methods to create 
  - Revisit: Util classes should have Get for conversions 
  - Should be Of for collection conversions
+ - Editor APIs 
+     - APIs taking a count should return an option or explicitly guard against count being too large.  Users
+       too often control this number
+     - APIs taking a line number should consider returning an option.  Line numbers are less likely to be controlled
+       by the user

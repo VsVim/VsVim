@@ -53,21 +53,15 @@ type internal CommonOperations ( _data : OperationsData ) =
         let buffer = span.Snapshot.TextBuffer
         buffer.Delete(span.Span) |> ignore
 
-    member x.ShiftRightCore multiplier (col:SnapshotSpan seq) = 
+    member x.ShiftLineRangeRight multiplier (lineSpan:SnapshotLineRange) =
         let text = new System.String(' ', _settings.GlobalSettings.ShiftWidth * multiplier)
         use edit = _data.TextView.TextBuffer.CreateEdit()
-        col |> Seq.iter (fun span -> edit.Replace(span.Start.Position, 0, text) |> ignore)
+        lineSpan.Lines
+        |> Seq.map (fun line -> line.Extent)
+        |> Seq.iter (fun span -> edit.Replace(span.Start.Position, 0, text) |> ignore)
         edit.Apply() |> ignore
 
-    member x.ShiftSpanRight multiplier span = 
-        let startLine,endLine = SnapshotSpanUtil.GetStartAndEndLine span
-        let snapshot = span.Snapshot
-        let col = 
-            SnapshotUtil.GetLineRange snapshot startLine.LineNumber endLine.LineNumber
-            |> Seq.map (fun line -> SnapshotLineUtil.GetExtentIncludingLineBreak line)
-        x.ShiftRightCore multiplier col 
-
-    member x.ShiftLeftCore multiplier (lineSpan:SnapshotLineSpan) = 
+    member x.ShiftLineRangeLeft multiplier (lineSpan:SnapshotLineRange) = 
         let count = _settings.GlobalSettings.ShiftWidth * multiplier
         use edit = _data.TextView.TextBuffer.CreateEdit()
         lineSpan.Lines
@@ -79,10 +73,6 @@ type internal CommonOperations ( _data : OperationsData ) =
                 min whiteSpaceLen count
             edit.Replace(span.Start.Position, toReplace, StringUtil.empty) |> ignore )
         edit.Apply() |> ignore
-        
-    member x.ShiftSpanLeft multiplier span = 
-        let lineSpan = SnapshotLineSpanUtil.CreateForSpan span
-        x.ShiftLeftCore multiplier lineSpan
 
     /// Change the letters on the given span by applying the specified function
     /// to each of them
@@ -357,23 +347,26 @@ type internal CommonOperations ( _data : OperationsData ) =
             TextViewUtil.MoveCaretToPoint _textView pos 
 
         member x.MoveCaretForVirtualEdit () = x.MoveCaretForVirtualEdit()
-        member x.ShiftSpanRight multiplier span = x.ShiftSpanRight multiplier span
-        member x.ShiftBlockRight multiplier block = x.ShiftRightCore multiplier block 
-        member x.ShiftSpanLeft multiplier span = x.ShiftSpanLeft multiplier span
+
+        member x.ShiftLineRangeRight multiplier range = x.ShiftLineRangeRight multiplier range
+
+        member x.ShiftBlockRight multiplier block = 
+            let lineSpan = SnapshotLineRangeUtil.CreateForNormalizedSnapshotSpanCollection block
+            x.ShiftLineRangeRight multiplier lineSpan
+        member x.ShiftLineRangeLeft multiplier range = x.ShiftLineRangeLeft multiplier range
+
         member x.ShiftBlockLeft multiplier block = 
-            let lineSpan = SnapshotLineSpanUtil.CreateForNormalizedSnapshotSpanCollection block
-            x.ShiftLeftCore multiplier lineSpan
+            let lineSpan = SnapshotLineRangeUtil.CreateForNormalizedSnapshotSpanCollection block
+            x.ShiftLineRangeLeft multiplier lineSpan
 
         member x.ShiftLinesRight count = 
-            let point = TextViewUtil.GetCaretPoint _textView
-            let span = SnapshotPointUtil.GetLineRangeSpan point count
-            x.ShiftSpanRight 1 span
+            let lineSpan = TextViewUtil.GetCaretLineRange _textView count
+            x.ShiftLineRangeRight 1 lineSpan
 
         member x.ShiftLinesLeft count =
-            let point = TextViewUtil.GetCaretPoint _textView
-            let span = SnapshotPointUtil.GetLineRangeSpan point count
-            x.ShiftSpanLeft 1 span
-            
+            let lineSpan= TextViewUtil.GetCaretLineRange _textView count
+            x.ShiftLineRangeLeft 1 lineSpan
+
         member x.InsertText text count = 
             let text = StringUtil.repeat text count 
             let point = TextViewUtil.GetCaretPoint _textView

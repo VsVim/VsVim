@@ -198,7 +198,7 @@ namespace VimCore.Test
             Create("dog", "cat", "chicken", "pig");
             var span = _buffer.GetSpan(0, 1);
             span = SnapshotSpanUtil.ExtendToFullLine(span);
-            Assert.AreEqual(_buffer.GetLineSpan(0).Extent, span);
+            Assert.AreEqual(_buffer.GetLineRange(0).Extent, span);
         }
 
         [Test]
@@ -207,7 +207,7 @@ namespace VimCore.Test
             Create("dog", "cat", "chicken", "pig");
             var span = new SnapshotSpan(_buffer.GetLine(1).Start, 0);
             span = SnapshotSpanUtil.ExtendToFullLine(span);
-            Assert.AreEqual(_buffer.GetLineSpan(1).Extent, span);
+            Assert.AreEqual(_buffer.GetLineRange(1).Extent, span);
         }
 
         [Test]
@@ -216,7 +216,7 @@ namespace VimCore.Test
             Create("dog", "cat", "chicken", "pig");
             var span = _buffer.GetSpan(0, 1);
             span = SnapshotSpanUtil.ExtendToFullLineIncludingLineBreak(span);
-            Assert.AreEqual(_buffer.GetLineSpan(0).ExtentIncludingLineBreak, span);
+            Assert.AreEqual(_buffer.GetLineRange(0).ExtentIncludingLineBreak, span);
         }
 
         [Test]
@@ -225,14 +225,14 @@ namespace VimCore.Test
             Create("dog", "cat", "chicken", "pig");
             var span = new SnapshotSpan(_buffer.GetLine(1).Start, 0);
             span = SnapshotSpanUtil.ExtendToFullLineIncludingLineBreak(span);
-            Assert.AreEqual(_buffer.GetLineSpan(1).ExtentIncludingLineBreak, span);
+            Assert.AreEqual(_buffer.GetLineRange(1).ExtentIncludingLineBreak, span);
         }
 
         [Test]
         public void GetLinesAndEdges1()
         {
             Create("dog", "cat", "pig", "fox");
-            var tuple = SnapshotSpanUtil.GetLinesAndEdges(_buffer.GetLineSpan(0, 1).ExtentIncludingLineBreak);
+            var tuple = SnapshotSpanUtil.GetLinesAndEdges(_buffer.GetLineRange(0, 1).ExtentIncludingLineBreak);
             Assert.IsTrue(tuple.Item1.IsNone());
             Assert.IsTrue(tuple.Item3.IsNone());
             CollectionAssert.AreEquivalent(

@@ -897,7 +897,7 @@ namespace VimCore.Test
         {
             Create("foo");
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 1));
-            var span = _view.GetLineSpan(0).Extent;
+            var span = _view.GetLineRange(0).Extent;
             _operations
                 .Setup(x => x.DeleteCharacterBeforeCursor(1))
                 .Returns(span)
@@ -914,7 +914,7 @@ namespace VimCore.Test
         {
             Create("foo", "bar");
             _view.Caret.MoveTo(_view.TextSnapshot.GetLineFromLineNumber(0).Start.Add(2));
-            var span = _view.GetLineSpan(0).Extent;
+            var span = _view.GetLineRange(0).Extent;
             _operations
                 .Setup(x => x.DeleteCharacterBeforeCursor(2))
                 .Returns(span)
@@ -982,7 +982,7 @@ namespace VimCore.Test
         public void Edit_x_1()
         {
             Create("foo");
-            var span = _view.GetLineSpan(0).Extent;
+            var span = _view.GetLineRange(0).Extent;
             _operations
                 .Setup(x => x.DeleteCharacterAtCursor(1))
                 .Returns(span)
@@ -998,7 +998,7 @@ namespace VimCore.Test
         public void Edit_2x()
         {
             Create("foo");
-            var span = _view.GetLineSpan(0).Extent;
+            var span = _view.GetLineRange(0).Extent;
             _operations
                 .Setup(x => x.DeleteCharacterAtCursor(2))
                 .Returns(span)
@@ -1015,7 +1015,7 @@ namespace VimCore.Test
         {
             Create("foo");
             var reg = _map.GetRegister('c');
-            var span = _view.GetLineSpan(0).Extent;
+            var span = _view.GetLineRange(0).Extent;
             _operations
                 .Setup(x => x.DeleteCharacterAtCursor(1))
                 .Returns(span)
@@ -1031,7 +1031,7 @@ namespace VimCore.Test
         public void Edit_Del_1()
         {
             Create("foo");
-            var span = _view.GetLineSpan(0).Extent;
+            var span = _view.GetLineRange(0).Extent;
             _operations
                 .Setup(x => x.DeleteCharacterAtCursor(1))
                 .Returns(span)
@@ -1105,7 +1105,7 @@ namespace VimCore.Test
         public void Edit_cc_1()
         {
             Create("foo", "bar", "baz");
-            var span = _view.GetLineSpan(0, 0).ExtentIncludingLineBreak;
+            var span = _view.GetLineRange(0, 0).ExtentIncludingLineBreak;
             _operations
                 .Setup(x => x.DeleteSpan(span))
                 .Verifiable();
@@ -1122,7 +1122,7 @@ namespace VimCore.Test
         public void Edit_cc_2()
         {
             Create("foo", "bar", "baz");
-            var span = _view.GetLineSpan(0, 1).ExtentIncludingLineBreak;
+            var span = _view.GetLineRange(0, 1).ExtentIncludingLineBreak;
             _operations
                 .Setup(x => x.DeleteSpan(span))
                 .Verifiable();
@@ -1139,7 +1139,7 @@ namespace VimCore.Test
         public void Edit_C_1()
         {
             Create("foo", "bar", "baz");
-            var span = _view.GetLineSpan(0).Extent;
+            var span = _view.GetLineRange(0).Extent;
             _operations
                 .Setup(x => x.DeleteLinesFromCursor(1))
                 .Returns(span)
@@ -1157,7 +1157,7 @@ namespace VimCore.Test
         public void Edit_C_2()
         {
             Create("foo", "bar", "baz");
-            var span = _view.GetLineSpan(0).Extent;
+            var span = _view.GetLineRange(0).Extent;
             _operations
                 .Setup(x => x.DeleteLinesFromCursor(1))
                 .Returns(span)
@@ -1175,7 +1175,7 @@ namespace VimCore.Test
         public void Edit_C_3()
         {
             Create("foo", "bar", "baz");
-            var span = _view.GetLineSpan(0).Extent;
+            var span = _view.GetLineRange(0).Extent;
             _operations
                 .Setup(x => x.DeleteLinesFromCursor(2))
                 .Returns(span)
@@ -1193,7 +1193,7 @@ namespace VimCore.Test
         public void Edit_s_1()
         {
             Create("foo bar");
-            var span = _view.GetLineSpan(0).Extent;
+            var span = _view.GetLineRange(0).Extent;
             _operations
                 .Setup(x => x.DeleteCharacterAtCursor(1))
                 .Returns(span)
@@ -1211,7 +1211,7 @@ namespace VimCore.Test
         public void Edit_s_2()
         {
             Create("foo bar");
-            var span = _view.GetLineSpan(0).Extent;
+            var span = _view.GetLineRange(0).Extent;
             _operations
                 .Setup(x => x.DeleteCharacterAtCursor(2))
                 .Returns(span)
@@ -1229,7 +1229,7 @@ namespace VimCore.Test
         public void Edit_s_3()
         {
             Create("foo bar");
-            var span = _view.GetLineSpan(0).Extent;
+            var span = _view.GetLineRange(0).Extent;
             _operations
                 .Setup(x => x.DeleteCharacterAtCursor(1))
                 .Returns(span)
@@ -1247,7 +1247,7 @@ namespace VimCore.Test
         public void Edit_S_1()
         {
             Create("foo", "bar", "baz");
-            var span = _view.GetLineSpan(0).Extent;
+            var span = _view.GetLineRange(0).Extent;
             _operations
                 .Setup(x => x.DeleteLines(1))
                 .Returns(span)
@@ -1265,7 +1265,7 @@ namespace VimCore.Test
         public void Edit_S_2()
         {
             Create("foo", "bar", "baz");
-            var span = _view.GetLineSpan(0).Extent;
+            var span = _view.GetLineRange(0).Extent;
             _operations
                 .Setup(x => x.DeleteLines(2))
                 .Returns(span)
@@ -1283,7 +1283,7 @@ namespace VimCore.Test
         public void Edit_S_3()
         {
             Create("foo", "bar", "baz");
-            var span = _view.GetLineSpan(0).Extent;
+            var span = _view.GetLineRange(0).Extent;
             _operations
                 .Setup(x => x.DeleteLines(300))
                 .Returns(span)
@@ -1328,7 +1328,7 @@ namespace VimCore.Test
         {
             Create("foo");
             _bufferData.Object.Settings.GlobalSettings.TildeOp = true;
-            _operations.Setup(x => x.ChangeLetterCase(_view.TextBuffer.GetLineSpan(0, 0).Extent)).Verifiable();
+            _operations.Setup(x => x.ChangeLetterCase(_view.TextBuffer.GetLineRange(0, 0).Extent)).Verifiable();
             _mode.Process("~aw");
             _operations.Verify();
         }
@@ -1486,7 +1486,7 @@ namespace VimCore.Test
         public void Yank_Y_1()
         {
             Create("foo", "bar");
-            var span = _view.GetLineSpan(0).ExtentIncludingLineBreak;
+            var span = _view.GetLineRange(0).ExtentIncludingLineBreak;
             _operations
                 .Setup(x => x.UpdateRegisterForSpan(_unnamedRegister, RegisterOperation.Yank, span, OperationKind.LineWise))
                 .Verifiable();
@@ -1498,7 +1498,7 @@ namespace VimCore.Test
         public void Yank_Y_2()
         {
             Create("foo", "bar");
-            var span = _view.GetLineSpan(0).ExtentIncludingLineBreak;
+            var span = _view.GetLineRange(0).ExtentIncludingLineBreak;
             _operations
                 .Setup(x => x.UpdateRegisterForSpan(_map.GetRegister('c'), RegisterOperation.Yank, span, OperationKind.LineWise))
                 .Verifiable();
@@ -1510,7 +1510,7 @@ namespace VimCore.Test
         public void Yank_Y_3()
         {
             Create("foo", "bar", "jazz");
-            var span = _view.GetLineSpan(0, 1).ExtentIncludingLineBreak;
+            var span = _view.GetLineRange(0, 1).ExtentIncludingLineBreak;
             _operations
                 .Setup(x => x.UpdateRegisterForSpan(_unnamedRegister, RegisterOperation.Yank, span, OperationKind.LineWise))
                 .Verifiable();
@@ -1646,7 +1646,7 @@ namespace VimCore.Test
         public void Delete_dd_1()
         {
             Create("foo", "bar");
-            var span = _view.GetLineSpan(0).ExtentIncludingLineBreak;
+            var span = _view.GetLineRange(0).ExtentIncludingLineBreak;
             _operations
                 .Setup(x => x.DeleteLinesIncludingLineBreak(1))
                 .Returns(span)
@@ -1662,7 +1662,7 @@ namespace VimCore.Test
         public void Delete_dd_2()
         {
             Create("foo", "bar");
-            var span = _view.GetLineSpan(0).ExtentIncludingLineBreak;
+            var span = _view.GetLineRange(0).ExtentIncludingLineBreak;
             _operations
                 .Setup(x => x.DeleteLinesIncludingLineBreak(2))
                 .Returns(span)
@@ -1721,7 +1721,7 @@ namespace VimCore.Test
         public void Delete_D_1()
         {
             Create("foo bar");
-            var span = _view.GetLineSpan(0).Extent;
+            var span = _view.GetLineRange(0).Extent;
             _operations
                 .Setup(x => x.DeleteLinesFromCursor(1))
                 .Returns(span)
@@ -1737,7 +1737,7 @@ namespace VimCore.Test
         public void Delete_D_2()
         {
             Create("foo bar baz");
-            var span = _view.GetLineSpan(0).Extent;
+            var span = _view.GetLineRange(0).Extent;
             _operations
                 .Setup(x => x.DeleteLinesFromCursor(1))
                 .Returns(span)
@@ -1753,7 +1753,7 @@ namespace VimCore.Test
         public void Delete_D_3()
         {
             Create("foo bar");
-            var span = _view.GetLineSpan(0).Extent;
+            var span = _view.GetLineRange(0).Extent;
             _operations
                 .Setup(x => x.DeleteLinesFromCursor(3))
                 .Returns(span)
@@ -1998,12 +1998,9 @@ namespace VimCore.Test
         public void ShiftRight3()
         {
             Create("foo", "bar");
-            var tss = _view.TextSnapshot;
-            var span = new SnapshotSpan(
-                tss.GetLineFromLineNumber(0).Start,
-                tss.GetLineFromLineNumber(1).End);
+            var range = _view.GetLineRange(0, 1);
             _operations
-                .Setup(x => x.ShiftSpanRight(1, span))
+                .Setup(x => x.ShiftLineRangeRight(1, range))
                 .Verifiable();
             _mode.Process(">j");
             _operations.Verify();
@@ -2660,7 +2657,7 @@ namespace VimCore.Test
         {
             Create("here again", "and again");
             var didRun = false;
-            var span = VimUtil.CreateVisualSpanSingle(_view.GetLineSpan(1).Extent);
+            var span = VimUtil.CreateVisualSpanSingle(_view.GetLineRange(1).Extent);
             var data =
                 VimUtil.CreateCommandRunData(
                     VimUtil.CreateVisualCommand(
@@ -2675,7 +2672,7 @@ namespace VimCore.Test
                         }),
                     _map.GetRegister(RegisterName.Unnamed),
                     1,
-                    visualRunData: VimUtil.CreateVisualSpanSingle(_view.GetLineSpan(0).Extent));
+                    visualRunData: VimUtil.CreateVisualSpanSingle(_view.GetLineRange(0).Extent));
             _visualSpanCalculator.Setup(x => x.CalculateForTextView(
                 It.IsAny<ITextView>(),
                 It.IsAny<VisualSpan>())).Returns(span).Verifiable();
@@ -2886,7 +2883,7 @@ namespace VimCore.Test
         public void FormatMotion1()
         {
             Create("foo", "bar");
-            _host.Setup(x => x.FormatLines(_view, _view.GetLineSpan(0, 0)));
+            _host.Setup(x => x.FormatLines(_view, _view.GetLineRange(0, 0)));
             _mode.Process("==");
         }
 
@@ -2894,7 +2891,7 @@ namespace VimCore.Test
         public void FormatMotion2()
         {
             Create("foo", "bar");
-            _host.Setup(x => x.FormatLines(_view, _view.GetLineSpan(0, 1)));
+            _host.Setup(x => x.FormatLines(_view, _view.GetLineRange(0, 1)));
             _mode.Process("2==");
         }
 

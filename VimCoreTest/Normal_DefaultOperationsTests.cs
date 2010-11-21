@@ -326,10 +326,10 @@ namespace VimCore.Test
         public void PasteAfter12()
         {
             Create("foo", "bar");
-            _view.Caret.MoveTo(_view.GetLineSpan(1).End);
+            _view.Caret.MoveTo(_view.GetLineRange(1).End);
             _operations.PasteAfterCursor("hey", 1, OperationKind.LineWise, false);
-            Assert.AreEqual("hey", _view.GetLineSpan(2).GetText());
-            Assert.AreEqual(_view.GetCaretPoint(), _view.GetLineSpan(2).Start);
+            Assert.AreEqual("hey", _view.GetLineRange(2).GetText());
+            Assert.AreEqual(_view.GetCaretPoint(), _view.GetLineRange(2).Start);
         }
 
         [Test]
@@ -977,7 +977,7 @@ namespace VimCore.Test
         {
             Create("bar", "baz");
             _operations.ChangeLetterCaseAtCursor(1);
-            Assert.AreEqual("Bar", _view.GetLineSpan(0).GetText());
+            Assert.AreEqual("Bar", _view.GetLineRange(0).GetText());
             Assert.AreEqual(1, _view.GetCaretPoint().Position);
         }
 
@@ -986,7 +986,7 @@ namespace VimCore.Test
         {
             Create("bar", "baz");
             _operations.ChangeLetterCaseAtCursor(2);
-            Assert.AreEqual("BAr", _view.GetLineSpan(0).GetText());
+            Assert.AreEqual("BAr", _view.GetLineRange(0).GetText());
             Assert.AreEqual(2, _view.GetCaretPoint().Position);
         }
 
@@ -995,7 +995,7 @@ namespace VimCore.Test
         {
             Create("bar", "baz");
             _operations.ChangeLetterCaseAtCursor(300);
-            Assert.AreEqual("BAR", _view.GetLineSpan(0).GetText());
+            Assert.AreEqual("BAR", _view.GetLineRange(0).GetText());
             Assert.AreEqual(2, _view.GetCaretPoint().Position);
         }
 

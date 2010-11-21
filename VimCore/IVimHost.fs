@@ -8,7 +8,7 @@ type IVimHost =
     abstract Beep : unit -> unit
 
     /// Format the provided lines
-    abstract FormatLines : ITextView -> SnapshotLineSpan -> unit
+    abstract FormatLines : ITextView -> SnapshotLineRange -> unit
 
     /// Go to the definition of the value under the cursor
     abstract GoToDefinition : unit -> bool

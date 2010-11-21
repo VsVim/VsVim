@@ -43,7 +43,7 @@ namespace VimCore.Test
         public void GetOverarchingSpan3()
         {
             var buffer = EditorUtil.CreateBuffer("foo bar");
-            var span = buffer.GetLineSpan(0).Extent;
+            var span = buffer.GetLineRange(0).Extent;
             var col = new NormalizedSnapshotSpanCollection(span);
             _selection.SetupGet(x => x.SelectedSpans).Returns(col).Verifiable();
             Assert.AreEqual(span, TextSelectionUtil.GetOverarchingSelectedSpan(_selection.Object).Value);
@@ -54,11 +54,11 @@ namespace VimCore.Test
         public void GetOverarchingSpan4()
         {
             var buffer = EditorUtil.CreateBuffer("foo", "baz", "bar");
-            var span1 = buffer.GetLineSpan(0).Extent;
-            var span2 = buffer.GetLineSpan(0, 1).Extent;
+            var span1 = buffer.GetLineRange(0).Extent;
+            var span2 = buffer.GetLineRange(0, 1).Extent;
             var col = new NormalizedSnapshotSpanCollection(new SnapshotSpan[] { span1, span2 });
             _selection.SetupGet(x => x.SelectedSpans).Returns(col).Verifiable();
-            Assert.AreEqual(buffer.GetLineSpan(0, 1).Extent, TextSelectionUtil.GetOverarchingSelectedSpan(_selection.Object).Value);
+            Assert.AreEqual(buffer.GetLineRange(0, 1).Extent, TextSelectionUtil.GetOverarchingSelectedSpan(_selection.Object).Value);
             _selection.Verify();
         }
 

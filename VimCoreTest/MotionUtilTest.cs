@@ -168,9 +168,9 @@ namespace VimCore.Test
         {
             Create("a", "b", "", "c");
             var list = MotionUtil.GetParagraphs(_snapshot.GetPoint(0), Direction.Forward).ToList();
-            Assert.AreEqual(Paragraph.NewContent(_snapshot.GetLineSpan(0, 1).ExtentIncludingLineBreak), list[0]);
-            Assert.AreEqual(Paragraph.NewBoundary(2, _snapshot.GetLineSpan(2).ExtentIncludingLineBreak), list[1]);
-            Assert.AreEqual(Paragraph.NewContent(_snapshot.GetLineSpan(3).ExtentIncludingLineBreak), list[2]);
+            Assert.AreEqual(Paragraph.NewContent(_snapshot.GetLineRange(0, 1).ExtentIncludingLineBreak), list[0]);
+            Assert.AreEqual(Paragraph.NewBoundary(2, _snapshot.GetLineRange(2).ExtentIncludingLineBreak), list[1]);
+            Assert.AreEqual(Paragraph.NewContent(_snapshot.GetLineRange(3).ExtentIncludingLineBreak), list[2]);
         }
 
         [Test]
@@ -180,7 +180,7 @@ namespace VimCore.Test
             var list = MotionUtil.GetParagraphs(_snapshot.GetPoint(0), Direction.Forward).Take(1).ToList();
             CollectionAssert.AreEquivalent(
                 new Paragraph[] {
-                    Paragraph.NewContent(_snapshot.GetLineSpan(0,1).ExtentIncludingLineBreak)
+                    Paragraph.NewContent(_snapshot.GetLineRange(0,1).ExtentIncludingLineBreak)
                 },
                 list);
         }
@@ -189,10 +189,10 @@ namespace VimCore.Test
         public void GetParagraphsInSpan1()
         {
             Create("a", "b", "", "c");
-            var list = MotionUtil.GetParagraphsInSpan(_snapshot.GetLineSpan(0).Extent, Direction.Forward).ToList();
+            var list = MotionUtil.GetParagraphsInSpan(_snapshot.GetLineRange(0).Extent, Direction.Forward).ToList();
             CollectionAssert.AreEquivalent(
                 new Paragraph[] {
-                    Paragraph.NewContent(_snapshot.GetLineSpan(0).Extent)
+                    Paragraph.NewContent(_snapshot.GetLineRange(0).Extent)
                 },
                 list);
         }
@@ -202,7 +202,7 @@ namespace VimCore.Test
         {
             Create("a", "b", "", "c");
             var span = MotionUtil.GetFullParagraph(_snapshot.GetLine(1).Start);
-            Assert.AreEqual(_snapshot.GetLineSpan(0, 2).ExtentIncludingLineBreak, span);
+            Assert.AreEqual(_snapshot.GetLineRange(0, 2).ExtentIncludingLineBreak, span);
         }
 
         [Test]
@@ -210,7 +210,7 @@ namespace VimCore.Test
         {
             Create("a", "b", "", "c");
             var span = MotionUtil.GetFullParagraph(_snapshot.GetLine(0).Start);
-            Assert.AreEqual(_snapshot.GetLineSpan(0, 1).ExtentIncludingLineBreak, span);
+            Assert.AreEqual(_snapshot.GetLineRange(0, 1).ExtentIncludingLineBreak, span);
         }
 
         [Test]
@@ -218,7 +218,7 @@ namespace VimCore.Test
         {
             Create("a", "b", "", "c");
             var span = MotionUtil.GetFullParagraph(_snapshot.GetLine(2).Start);
-            Assert.AreEqual(_snapshot.GetLineSpan(2, 3).ExtentIncludingLineBreak, span);
+            Assert.AreEqual(_snapshot.GetLineRange(2, 3).ExtentIncludingLineBreak, span);
         }
 
         [Test]
@@ -227,7 +227,7 @@ namespace VimCore.Test
         {
             Create("dog", "cat", "", "pig");
             var span = MotionUtil.GetFullParagraph(_snapshot.GetLine(2).Start);
-            Assert.AreEqual(_snapshot.GetLineSpan(2, 3).ExtentIncludingLineBreak, span);
+            Assert.AreEqual(_snapshot.GetLineRange(2, 3).ExtentIncludingLineBreak, span);
         }
 
         [Test]
@@ -236,7 +236,7 @@ namespace VimCore.Test
         {
             Create("", "dog", "cat", "", "pig");
             var span = MotionUtil.GetFullParagraph(_snapshot.GetLine(3).Start);
-            Assert.AreEqual(_snapshot.GetLineSpan(3, 4).ExtentIncludingLineBreak, span);
+            Assert.AreEqual(_snapshot.GetLineRange(3, 4).ExtentIncludingLineBreak, span);
         }
 
         [Test]
@@ -245,7 +245,7 @@ namespace VimCore.Test
         {
             Create("", "dog", "cat", "", "pig");
             var span = MotionUtil.GetFullParagraph(_snapshot.GetLine(2).Start);
-            Assert.AreEqual(_snapshot.GetLineSpan(1, 3).ExtentIncludingLineBreak, span);
+            Assert.AreEqual(_snapshot.GetLineRange(1, 3).ExtentIncludingLineBreak, span);
         }
 
         [Test]
@@ -254,7 +254,7 @@ namespace VimCore.Test
         {
             Create("", "dog", "cat", "", "pig");
             var span = MotionUtil.GetFullParagraph(_snapshot.GetPoint(0));
-            Assert.AreEqual(_snapshot.GetLineSpan(0, 2).ExtentIncludingLineBreak, span);
+            Assert.AreEqual(_snapshot.GetLineRange(0, 2).ExtentIncludingLineBreak, span);
         }
     }
 }

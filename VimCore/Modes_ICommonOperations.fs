@@ -170,14 +170,14 @@ type ICommonOperations =
 
     /// Shift the lines in the span to the right by the "ShiftWidth" setting multiplied
     /// by the multiplier
-    abstract ShiftSpanRight : multiplier:int -> SnapshotSpan -> unit
+    abstract ShiftLineRangeRight : multiplier:int -> SnapshotLineRange -> unit
 
     /// Shift the lines in the span to the right by the "ShiftWidth" setting multiplied
     /// by the multiplier
     abstract ShiftBlockRight : multiplier:int -> NormalizedSnapshotSpanCollection -> unit
 
     /// Shift the lines in the span to the right by the "ShiftWidth" setting
-    abstract ShiftSpanLeft : multiplier:int -> SnapshotSpan -> unit
+    abstract ShiftLineRangeLeft : multiplier:int -> SnapshotLineRange -> unit
 
     /// Shift the lines in the span to the right by the "ShiftWidth" setting
     abstract ShiftBlockLeft : multiplier:int -> NormalizedSnapshotSpanCollection -> unit

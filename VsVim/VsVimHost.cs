@@ -125,7 +125,7 @@ namespace VsVim
         /// in Visual Studio.  Instead we leverage the FormatSelection command.  Need to be careful
         /// to reset the selection after a format
         /// </summary>
-        private void FormatLines(ITextView textView, SnapshotLineSpan range)
+        private void FormatLines(ITextView textView, SnapshotLineRange range)
         {
             var startedWithSelection = !textView.Selection.IsEmpty;
             textView.Selection.Clear();
@@ -268,9 +268,9 @@ namespace VsVim
             return OpenFileCore(fileName);
         }
 
-        void IVimHost.FormatLines(ITextView textView, SnapshotLineSpan lineSpan)
+        void IVimHost.FormatLines(ITextView textView, SnapshotLineRange lineRange)
         {
-            FormatLines(textView, lineSpan);
+            FormatLines(textView, lineRange);
         }
 
         #endregion

@@ -279,10 +279,10 @@ namespace Vim.UnitTest
             return textView.TextSnapshot.GetLineFromLineNumber(line);
         }
 
-        public static SnapshotLineSpan GetLineSpan(this ITextView textView, int startLine, int endLine = -1)
+        public static SnapshotLineRange GetLineRange(this ITextView textView, int startLine, int endLine = -1)
         {
             endLine = endLine >= 0 ? endLine : startLine;
-            return SnapshotLineSpanUtil.CreateForStartAndEndLine(textView.TextSnapshot, startLine, endLine);
+            return SnapshotLineRangeUtil.CreateForLineNumberRange(textView.TextSnapshot, startLine, endLine);
         }
 
         public static CaretPosition MoveCaretTo(this ITextView textView, int position)
@@ -316,10 +316,10 @@ namespace Vim.UnitTest
             return buffer.CurrentSnapshot.GetLineFromLineNumber(line);
         }
 
-        public static SnapshotLineSpan GetLineSpan(this ITextBuffer buffer, int startLine, int endLine = -1)
+        public static SnapshotLineRange GetLineRange(this ITextBuffer buffer, int startLine, int endLine = -1)
         {
             endLine = endLine >= 0 ? endLine : startLine;
-            return SnapshotLineSpanUtil.CreateForStartAndEndLine(buffer.CurrentSnapshot, startLine, endLine);
+            return SnapshotLineRangeUtil.CreateForLineNumberRange(buffer.CurrentSnapshot, startLine, endLine);
         }
 
         public static SnapshotPoint GetPoint(this ITextBuffer buffer, int position)
@@ -346,17 +346,15 @@ namespace Vim.UnitTest
 
         #region ITextSnapshot
 
-
-
         public static ITextSnapshotLine GetLine(this ITextSnapshot tss, int lineNumber)
         {
             return tss.GetLineFromLineNumber(lineNumber);
         }
 
-        public static SnapshotLineSpan GetLineSpan(this ITextSnapshot tss, int startLine, int endLine = -1)
+        public static SnapshotLineRange GetLineRange(this ITextSnapshot tss, int startLine, int endLine = -1)
         {
             endLine = endLine >= 0 ? endLine : startLine;
-            return SnapshotLineSpanUtil.CreateForStartAndEndLine(tss, startLine, endLine);
+            return SnapshotLineRangeUtil.CreateForLineNumberRange(tss, startLine, endLine);
         }
 
         public static SnapshotPoint GetPoint(this ITextSnapshot tss, int position)

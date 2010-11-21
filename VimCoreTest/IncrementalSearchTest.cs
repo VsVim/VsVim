@@ -67,7 +67,7 @@ namespace VimCore.Test
             _search.Begin(SearchKind.ForwardWithWrap);
             _searchService
                 .Setup(x => x.FindNext(data, _textView.GetCaretPoint(), _nav.Object))
-                .Returns(FSharpOption.Create(_textView.GetLineSpan(0).Extent));
+                .Returns(FSharpOption.Create(_textView.GetLineRange(0).Extent));
             Assert.IsTrue(_search.Process(KeyInputUtil.CharToKeyInput('b')).IsSearchNeedMore);
         }
 

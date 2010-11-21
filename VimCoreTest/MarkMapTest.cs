@@ -274,7 +274,7 @@ namespace VimCore.Test
         public void MarkSelectionStart2()
         {
             Create("the", "quick", "fox");
-            _textView.Selection.Select(_buffer.GetLineSpan(0).Extent, false);
+            _textView.Selection.Select(_buffer.GetLineRange(0).Extent, false);
             Assert.AreEqual(0, _map.GetMark(_buffer, '<').Value.Position.Position);
         }
 
@@ -282,7 +282,7 @@ namespace VimCore.Test
         public void MarkSelectionStart3()
         {
             Create("the", "quick", "fox");
-            _textView.Selection.Select(_buffer.GetLineSpan(0).Extent, false);
+            _textView.Selection.Select(_buffer.GetLineRange(0).Extent, false);
             _textView.Selection.Clear();
             Assert.AreEqual(0, _map.GetMark(_buffer, '<').Value.Position.Position);
         }

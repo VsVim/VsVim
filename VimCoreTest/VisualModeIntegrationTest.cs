@@ -43,7 +43,7 @@ namespace VimCore.Test
         public void Repeat1()
         {
             CreateBuffer("dog again", "cat again", "chicken");
-            EnterMode(ModeKind.VisualLine, _textView.GetLineSpan(0, 1).ExtentIncludingLineBreak);
+            EnterMode(ModeKind.VisualLine, _textView.GetLineRange(0, 1).ExtentIncludingLineBreak);
             _buffer.Settings.GlobalSettings.ShiftWidth = 2;
             _buffer.Process(">.");
             Assert.AreEqual("    dog again", _textView.GetLine(0).GetText());
@@ -53,7 +53,7 @@ namespace VimCore.Test
         public void Repeat2()
         {
             CreateBuffer("dog again", "cat again", "chicken");
-            EnterMode(ModeKind.VisualLine, _textView.GetLineSpan(0, 1).ExtentIncludingLineBreak);
+            EnterMode(ModeKind.VisualLine, _textView.GetLineRange(0, 1).ExtentIncludingLineBreak);
             _buffer.Settings.GlobalSettings.ShiftWidth = 2;
             _buffer.Process(">..");
             Assert.AreEqual("      dog again", _textView.GetLine(0).GetText());
@@ -63,7 +63,7 @@ namespace VimCore.Test
         public void ResetCaretFromShiftLeft1()
         {
             CreateBuffer("  hello", "  world");
-            EnterModeWithSelection(_textView.GetLineSpan(0, 1).Extent);
+            EnterModeWithSelection(_textView.GetLineRange(0, 1).Extent);
             _buffer.Process("<");
             Assert.AreEqual(0, _textView.GetCaretPoint().Position);
         }
@@ -72,7 +72,7 @@ namespace VimCore.Test
         public void ResetCaretFromShiftLeft2()
         {
             CreateBuffer("  hello", "  world");
-            EnterModeWithSelection(_textView.GetLineSpan(0, 1).Extent);
+            EnterModeWithSelection(_textView.GetLineRange(0, 1).Extent);
             _buffer.Process("<");
             Assert.AreEqual(0, _textView.GetCaretPoint().Position);
         }
@@ -154,7 +154,7 @@ namespace VimCore.Test
         public void SwitchToCommandModeShouldPreserveSelection()
         {
             CreateBuffer("dog", "pig", "chicken");
-            EnterModeWithSelection(_textView.GetLineSpan(0, 1).Extent);
+            EnterModeWithSelection(_textView.GetLineRange(0, 1).Extent);
             _buffer.Process(':');
             Assert.IsFalse(_textView.Selection.IsEmpty);
         }

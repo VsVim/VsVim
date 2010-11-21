@@ -318,19 +318,19 @@ type internal NormalMode
                 yield (
                     "zo", 
                     CommandFlags.Special, 
-                    fun count _ -> _operations.OpenFold (TextViewUtil.GetCaretLineSpan _bufferData.TextView 1).Extent count)
+                    fun count _ -> _operations.OpenFold (TextViewUtil.GetCaretLineRange _bufferData.TextView 1).Extent count)
                 yield (
                     "zO", 
                     CommandFlags.Special, 
-                    fun _ _ -> _operations.OpenAllFolds (TextViewUtil.GetCaretLineSpan _bufferData.TextView 1).Extent)
+                    fun _ _ -> _operations.OpenAllFolds (TextViewUtil.GetCaretLineRange _bufferData.TextView 1).Extent)
                 yield (
                     "zc", 
                     CommandFlags.Special, 
-                    fun count _ -> _operations.CloseFold (TextViewUtil.GetCaretLineSpan _bufferData.TextView 1).Extent count)
+                    fun count _ -> _operations.CloseFold (TextViewUtil.GetCaretLineRange _bufferData.TextView 1).Extent count)
                 yield (
                     "zC", 
                     CommandFlags.Special, 
-                    fun _ _ -> _operations.CloseAllFolds (TextViewUtil.GetCaretLineSpan _bufferData.TextView 1).Extent)
+                    fun _ _ -> _operations.CloseAllFolds (TextViewUtil.GetCaretLineRange _bufferData.TextView 1).Extent)
                 yield (
                     "zt", 
                     CommandFlags.Movement, 
@@ -543,7 +543,7 @@ type internal NormalMode
                     "==",
                     CommandFlags.Repeatable,
                     fun count _ -> 
-                        let range = TextViewUtil.GetCaretLineSpan this.TextView count 
+                        let range = TextViewUtil.GetCaretLineRange this.TextView count 
                         _bufferData.Vim.VimHost.FormatLines this.TextView range )
             }
             |> Seq.map(fun (str,kind,func) -> (str,kind,func,CommandResult.Completed ModeSwitch.NoSwitch))
@@ -697,12 +697,12 @@ type internal NormalMode
                     "<lt>", 
                     CommandFlags.None, 
                     None, 
-                    fun _ _ data -> _operations.ShiftSpanLeft 1 data.OperationSpan)
+                    fun _ _ data -> _operations.ShiftLineRangeLeft 1 data.OperationLineRange)
                 yield (
                     ">", 
                     CommandFlags.None, 
                     None, 
-                    fun _ _ data -> _operations.ShiftSpanRight 1 data.OperationSpan)
+                    fun _ _ data -> _operations.ShiftLineRangeRight 1 data.OperationLineRange)
                 yield (
                     "zf", 
                     CommandFlags.None, 

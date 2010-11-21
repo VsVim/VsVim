@@ -209,8 +209,9 @@ namespace VimCore.Test
         public void ShiftLeft1()
         {
             Create("     foo", "bar", "baz");
+            var range = _view.GetLineRange(0);
             _operations
-                .Setup(x => x.ShiftSpanLeft(1, _view.TextSnapshot.GetLineFromLineNumber(0).ExtentIncludingLineBreak))
+                .Setup(x => x.ShiftLineRangeLeft(1, range))
                 .Verifiable();
             RunCommand("<");
             _operations.Verify();
@@ -220,12 +221,9 @@ namespace VimCore.Test
         public void ShiftLeft2()
         {
             Create("     foo", "     bar", "baz");
-            var tss = _view.TextSnapshot;
-            var span = new SnapshotSpan(
-                tss.GetLineFromLineNumber(0).Start,
-                tss.GetLineFromLineNumber(1).EndIncludingLineBreak);
+            var range = _view.GetLineRange(0, 1);
             _operations
-                .Setup(x => x.ShiftSpanLeft(1, span))
+                .Setup(x => x.ShiftLineRangeLeft(1, range))
                 .Verifiable();
             RunCommand("1,2<");
             _operations.Verify();
@@ -235,12 +233,9 @@ namespace VimCore.Test
         public void ShiftLeft3()
         {
             Create("     foo", "     bar", "baz");
-            var tss = _view.TextSnapshot;
-            var span = new SnapshotSpan(
-                tss.GetLineFromLineNumber(0).Start,
-                tss.GetLineFromLineNumber(1).EndIncludingLineBreak);
+            var range = _view.GetLineRange(0, 1);
             _operations
-                .Setup(x => x.ShiftSpanLeft(1, span))
+                .Setup(x => x.ShiftLineRangeLeft(1, range))
                 .Verifiable();
             RunCommand("< 2");
             _operations.Verify();
@@ -251,7 +246,7 @@ namespace VimCore.Test
         {
             Create("foo", "bar", "baz");
             _operations
-                .Setup(x => x.ShiftSpanRight(1, _view.TextSnapshot.GetLineFromLineNumber(0).ExtentIncludingLineBreak))
+                .Setup(x => x.ShiftLineRangeRight(1, _view.GetLineRange(0, 0)))
                 .Verifiable();
             RunCommand(">");
             _operations.Verify();
@@ -261,12 +256,8 @@ namespace VimCore.Test
         public void ShiftRight2()
         {
             Create("foo", "bar", "baz");
-            var tss = _view.TextSnapshot;
-            var span = new SnapshotSpan(
-                tss.GetLineFromLineNumber(0).Start,
-                tss.GetLineFromLineNumber(1).EndIncludingLineBreak);
             _operations
-                .Setup(x => x.ShiftSpanRight(1, span))
+                .Setup(x => x.ShiftLineRangeRight(1, _view.GetLineRange(0, 1)))
                 .Verifiable();
             RunCommand("1,2>");
             _operations.Verify();
@@ -276,12 +267,8 @@ namespace VimCore.Test
         public void ShiftRight3()
         {
             Create("foo", "bar", "baz");
-            var tss = _view.TextSnapshot;
-            var span = new SnapshotSpan(
-                tss.GetLineFromLineNumber(0).Start,
-                tss.GetLineFromLineNumber(1).EndIncludingLineBreak);
             _operations
-                .Setup(x => x.ShiftSpanRight(1, span))
+                .Setup(x => x.ShiftLineRangeRight(1, _view.GetLineRange(0, 1)))
                 .Verifiable();
             RunCommand("> 2");
             _operations.Verify();

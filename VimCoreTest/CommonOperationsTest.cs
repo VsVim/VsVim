@@ -363,10 +363,10 @@ namespace VimCore.Test
         public void PasteAfter7()
         {
             Create("foo", "bar");
-            var point = _buffer.GetLineSpan(1).Start;
+            var point = _buffer.GetLineRange(1).Start;
             _operations.PasteAfter(point, "foo", OperationKind.LineWise);
             Assert.AreEqual(3, _buffer.CurrentSnapshot.LineCount);
-            Assert.AreEqual("foo", _buffer.GetLineSpan(2).GetText());
+            Assert.AreEqual("foo", _buffer.GetLineRange(2).GetText());
         }
 
         [Test]
@@ -842,69 +842,60 @@ namespace VimCore.Test
         }
 
         [Test]
-        public void ShiftSpanRight1()
+        public void ShiftLineRangeRight1()
         {
             Create("foo");
-            var span = _buffer.CurrentSnapshot.GetLineFromLineNumber(0).Extent;
-            _operations.ShiftSpanRight(1, span);
+            _operations.ShiftLineRangeRight(1, _buffer.GetLineRange(0));
             Assert.AreEqual("  foo", _buffer.CurrentSnapshot.GetLineFromLineNumber(0).GetText());
         }
 
         [Test]
-        public void ShiftSpanRight2()
+        public void ShiftLineRangeRight2()
         {
             Create("a", "b", "c");
-            var span = _buffer.GetLine(0).ExtentIncludingLineBreak;
-            _operations.ShiftSpanRight(1, span);
+            _operations.ShiftLineRangeRight(1, _buffer.GetLineRange(0));
             Assert.AreEqual("  a", _buffer.GetLine(0).GetText());
             Assert.AreEqual("b", _buffer.GetLine(1).GetText());
         }
 
         [Test, Description("Only shift whitespace")]
-        public void ShiftSpanLeft1()
+        public void ShiftLineRangeLeft1()
         {
             Create("foo");
-            var span = _buffer.CurrentSnapshot.GetLineFromLineNumber(0).Extent;
-            _operations.ShiftSpanLeft(1, span);
+            _operations.ShiftLineRangeLeft(1, _buffer.GetLineRange(0));
             Assert.AreEqual("foo", _buffer.CurrentSnapshot.GetLineFromLineNumber(0).GetText());
         }
 
         [Test, Description("Don't puke on an empty line")]
-        public void ShiftSpanLeft2()
+        public void ShiftLineRangeLeft2()
         {
             Create("");
-            var span = _buffer.CurrentSnapshot.GetLineFromLineNumber(0).Extent;
-            _operations.ShiftSpanLeft(1, span);
+            _operations.ShiftLineRangeLeft(1, _buffer.GetLineRange(0));
             Assert.AreEqual("", _buffer.CurrentSnapshot.GetLineFromLineNumber(0).GetText());
         }
 
         [Test]
-        public void ShiftSpanLeft3()
+        public void ShiftLineRangeLeft3()
         {
             Create("  foo", "  bar");
-            var span = new SnapshotSpan(
-                _buffer.CurrentSnapshot.GetLineFromLineNumber(0).Start,
-                _buffer.CurrentSnapshot.GetLineFromLineNumber(1).End);
-            _operations.ShiftSpanLeft(1, span);
+            _operations.ShiftLineRangeLeft(1, _buffer.GetLineRange(0, 1));
             Assert.AreEqual("foo", _buffer.CurrentSnapshot.GetLineFromLineNumber(0).GetText());
             Assert.AreEqual("bar", _buffer.CurrentSnapshot.GetLineFromLineNumber(1).GetText());
         }
 
         [Test]
-        public void ShiftSpanLeft4()
+        public void ShiftLineRangeLeft4()
         {
             Create("   foo");
-            var span = _buffer.CurrentSnapshot.GetLineFromLineNumber(0).Extent;
-            _operations.ShiftSpanLeft(1, span);
+            _operations.ShiftLineRangeLeft(1, _buffer.GetLineRange(0));
             Assert.AreEqual(" foo", _buffer.CurrentSnapshot.GetLineFromLineNumber(0).GetText());
         }
 
         [Test]
-        public void ShiftSpanLeft5()
+        public void ShiftLineRangeLeft5()
         {
             Create("  a", "  b", "c");
-            var span = _buffer.GetLine(0).ExtentIncludingLineBreak;
-            _operations.ShiftSpanLeft(1, span);
+            _operations.ShiftLineRangeLeft(1, _buffer.GetLineRange(0));
             Assert.AreEqual("a", _buffer.GetLine(0).GetText());
             Assert.AreEqual("  b", _buffer.GetLine(1).GetText());
         }
@@ -914,7 +905,7 @@ namespace VimCore.Test
         {
             Create("   foo");
             _operations.ShiftLinesLeft(1);
-            Assert.AreEqual(" foo", _buffer.GetLineSpan(0).GetText());
+            Assert.AreEqual(" foo", _buffer.GetLineRange(0).GetText());
         }
 
         [Test]
@@ -922,7 +913,7 @@ namespace VimCore.Test
         {
             Create(" foo");
             _operations.ShiftLinesLeft(400);
-            Assert.AreEqual("foo", _buffer.GetLineSpan(0).GetText());
+            Assert.AreEqual("foo", _buffer.GetLineRange(0).GetText());
         }
 
         [Test]
@@ -930,18 +921,18 @@ namespace VimCore.Test
         {
             Create("   foo", "    bar");
             _operations.ShiftLinesLeft(2);
-            Assert.AreEqual(" foo", _buffer.GetLineSpan(0).GetText());
-            Assert.AreEqual("  bar", _buffer.GetLineSpan(1).GetText());
+            Assert.AreEqual(" foo", _buffer.GetLineRange(0).GetText());
+            Assert.AreEqual("  bar", _buffer.GetLineRange(1).GetText());
         }
 
         [Test]
         public void ShiftLinesLeft4()
         {
             Create(" foo", "   bar");
-            _view.MoveCaretTo(_buffer.GetLineSpan(1).Start.Position);
+            _view.MoveCaretTo(_buffer.GetLineRange(1).Start.Position);
             _operations.ShiftLinesLeft(1);
-            Assert.AreEqual(" foo", _buffer.GetLineSpan(0).GetText());
-            Assert.AreEqual(" bar", _buffer.GetLineSpan(1).GetText());
+            Assert.AreEqual(" foo", _buffer.GetLineRange(0).GetText());
+            Assert.AreEqual(" bar", _buffer.GetLineRange(1).GetText());
         }
 
         [Test]
@@ -949,9 +940,9 @@ namespace VimCore.Test
         {
             Create(" foo", "", "   bar");
             _operations.ShiftLinesLeft(3);
-            Assert.AreEqual("foo", _buffer.GetLineSpan(0).GetText());
-            Assert.AreEqual("", _buffer.GetLineSpan(1).GetText());
-            Assert.AreEqual(" bar", _buffer.GetLineSpan(2).GetText());
+            Assert.AreEqual("foo", _buffer.GetLineRange(0).GetText());
+            Assert.AreEqual("", _buffer.GetLineRange(1).GetText());
+            Assert.AreEqual(" bar", _buffer.GetLineRange(2).GetText());
         }
 
         [Test]
@@ -959,9 +950,9 @@ namespace VimCore.Test
         {
             Create(" foo", "   ", "   bar");
             _operations.ShiftLinesLeft(3);
-            Assert.AreEqual("foo", _buffer.GetLineSpan(0).GetText());
-            Assert.AreEqual(" ", _buffer.GetLineSpan(1).GetText());
-            Assert.AreEqual(" bar", _buffer.GetLineSpan(2).GetText());
+            Assert.AreEqual("foo", _buffer.GetLineRange(0).GetText());
+            Assert.AreEqual(" ", _buffer.GetLineRange(1).GetText());
+            Assert.AreEqual(" bar", _buffer.GetLineRange(2).GetText());
         }
 
         [Test]
@@ -969,7 +960,7 @@ namespace VimCore.Test
         {
             Create("foo");
             _operations.ShiftLinesRight(1);
-            Assert.AreEqual("  foo", _buffer.GetLineSpan(0).GetText());
+            Assert.AreEqual("  foo", _buffer.GetLineRange(0).GetText());
         }
 
         [Test]
@@ -977,18 +968,18 @@ namespace VimCore.Test
         {
             Create("foo", " bar");
             _operations.ShiftLinesRight(2);
-            Assert.AreEqual("  foo", _buffer.GetLineSpan(0).GetText());
-            Assert.AreEqual("   bar", _buffer.GetLineSpan(1).GetText());
+            Assert.AreEqual("  foo", _buffer.GetLineRange(0).GetText());
+            Assert.AreEqual("   bar", _buffer.GetLineRange(1).GetText());
         }
 
         [Test]
         public void ShiftLinesRight3()
         {
             Create("foo", " bar");
-            _view.MoveCaretTo(_buffer.GetLineSpan(1).Start.Position);
+            _view.MoveCaretTo(_buffer.GetLineRange(1).Start.Position);
             _operations.ShiftLinesRight(2);
-            Assert.AreEqual("foo", _buffer.GetLineSpan(0).GetText());
-            Assert.AreEqual("   bar", _buffer.GetLineSpan(1).GetText());
+            Assert.AreEqual("foo", _buffer.GetLineRange(0).GetText());
+            Assert.AreEqual("   bar", _buffer.GetLineRange(1).GetText());
         }
 
         [Test]
@@ -997,9 +988,9 @@ namespace VimCore.Test
         {
             Create("foo", "", "bar");
             _operations.ShiftLinesRight(3);
-            Assert.AreEqual("  foo", _buffer.GetLineSpan(0).GetText());
-            Assert.AreEqual("  ", _buffer.GetLineSpan(1).GetText());
-            Assert.AreEqual("  bar", _buffer.GetLineSpan(2).GetText());
+            Assert.AreEqual("  foo", _buffer.GetLineRange(0).GetText());
+            Assert.AreEqual("  ", _buffer.GetLineRange(1).GetText());
+            Assert.AreEqual("  bar", _buffer.GetLineRange(2).GetText());
         }
 
         [Test]
@@ -1082,8 +1073,8 @@ namespace VimCore.Test
             Create("foo", "bar", "baz", "jaz");
             var span = _operations.DeleteLines(1);
             Assert.AreEqual("foo", span.GetText());
-            Assert.AreEqual(String.Empty, _view.TextSnapshot.GetLineSpan(0).GetText());
-            Assert.AreEqual("bar", _view.TextSnapshot.GetLineSpan(1).GetText());
+            Assert.AreEqual(String.Empty, _view.TextSnapshot.GetLineRange(0).GetText());
+            Assert.AreEqual("bar", _view.TextSnapshot.GetLineRange(1).GetText());
             Assert.AreEqual(4, _view.TextSnapshot.LineCount);
         }
 
@@ -1094,8 +1085,8 @@ namespace VimCore.Test
             _view.MoveCaretTo(1);
             var span = _operations.DeleteLines(1);
             Assert.AreEqual("foo", span.GetText());
-            Assert.AreEqual(String.Empty, _view.TextSnapshot.GetLineSpan(0).GetText());
-            Assert.AreEqual("bar", _view.TextSnapshot.GetLineSpan(1).GetText());
+            Assert.AreEqual(String.Empty, _view.TextSnapshot.GetLineRange(0).GetText());
+            Assert.AreEqual("bar", _view.TextSnapshot.GetLineRange(1).GetText());
             Assert.AreEqual(4, _view.TextSnapshot.LineCount);
         }
 
@@ -1105,7 +1096,7 @@ namespace VimCore.Test
             Create("foo", "bar", "baz", "jaz");
             _view.MoveCaretTo(1);
             var span = _operations.DeleteLines(3000);
-            Assert.AreEqual(String.Empty, _view.TextSnapshot.GetLineSpan(0).GetText());
+            Assert.AreEqual(String.Empty, _view.TextSnapshot.GetLineRange(0).GetText());
         }
 
         [Test]
@@ -1145,7 +1136,7 @@ namespace VimCore.Test
             Create("foo", "bar", "baz", "jaz");
             var span = _operations.DeleteLinesIncludingLineBreak(1);
             Assert.AreEqual("foo" + Environment.NewLine, span.GetText());
-            Assert.AreEqual("bar", _view.TextSnapshot.GetLineSpan(0).GetText());
+            Assert.AreEqual("bar", _view.TextSnapshot.GetLineRange(0).GetText());
             Assert.AreEqual(3, _view.TextSnapshot.LineCount);
         }
 
@@ -1155,7 +1146,7 @@ namespace VimCore.Test
             Create("foo", "bar", "baz", "jaz");
             var span = _operations.DeleteLinesIncludingLineBreak(2);
             Assert.AreEqual("foo" + Environment.NewLine + "bar" + Environment.NewLine, span.GetText());
-            Assert.AreEqual("baz", _view.TextSnapshot.GetLineSpan(0).GetText());
+            Assert.AreEqual("baz", _view.TextSnapshot.GetLineRange(0).GetText());
             Assert.AreEqual(2, _view.TextSnapshot.LineCount);
         }
 
@@ -1187,8 +1178,8 @@ namespace VimCore.Test
             _view.MoveCaretTo(1);
             var span = _operations.DeleteLinesIncludingLineBreakFromCursor(1);
             Assert.AreEqual("oo" + Environment.NewLine, span.GetText());
-            Assert.AreEqual("fbar", _view.TextSnapshot.GetLineSpan(0).GetText());
-            Assert.AreEqual("baz", _view.TextSnapshot.GetLineSpan(1).GetText());
+            Assert.AreEqual("fbar", _view.TextSnapshot.GetLineRange(0).GetText());
+            Assert.AreEqual("baz", _view.TextSnapshot.GetLineRange(1).GetText());
             Assert.AreEqual(3, _view.TextSnapshot.LineCount);
         }
 
@@ -1199,8 +1190,8 @@ namespace VimCore.Test
             _view.MoveCaretTo(1);
             var span = _operations.DeleteLinesIncludingLineBreakFromCursor(2);
             Assert.AreEqual("oo" + Environment.NewLine + "bar" + Environment.NewLine, span.GetText());
-            Assert.AreEqual("fbaz", _view.TextSnapshot.GetLineSpan(0).GetText());
-            Assert.AreEqual("jaz", _view.TextSnapshot.GetLineSpan(1).GetText());
+            Assert.AreEqual("fbaz", _view.TextSnapshot.GetLineRange(0).GetText());
+            Assert.AreEqual("jaz", _view.TextSnapshot.GetLineRange(1).GetText());
             Assert.AreEqual(2, _view.TextSnapshot.LineCount);
         }
 
@@ -1208,73 +1199,73 @@ namespace VimCore.Test
         public void ChangeLetterCase1()
         {
             Create("foo", "bar");
-            _operations.ChangeLetterCase(_buffer.GetLineSpan(0).Extent);
-            Assert.AreEqual("FOO", _buffer.GetLineSpan(0).GetText());
+            _operations.ChangeLetterCase(_buffer.GetLineRange(0).Extent);
+            Assert.AreEqual("FOO", _buffer.GetLineRange(0).GetText());
         }
 
         [Test]
         public void ChangeLetterCase2()
         {
             Create("fOo", "bar");
-            _operations.ChangeLetterCase(_buffer.GetLineSpan(0).Extent);
-            Assert.AreEqual("FoO", _buffer.GetLineSpan(0).GetText());
+            _operations.ChangeLetterCase(_buffer.GetLineRange(0).Extent);
+            Assert.AreEqual("FoO", _buffer.GetLineRange(0).GetText());
         }
 
         [Test]
         public void ChangeLetterCase3()
         {
             Create("fOo", "bar");
-            _operations.ChangeLetterCase(_buffer.GetLineSpan(0, 1).Extent);
-            Assert.AreEqual("FoO", _buffer.GetLineSpan(0).GetText());
-            Assert.AreEqual("BAR", _buffer.GetLineSpan(1).GetText());
+            _operations.ChangeLetterCase(_buffer.GetLineRange(0, 1).Extent);
+            Assert.AreEqual("FoO", _buffer.GetLineRange(0).GetText());
+            Assert.AreEqual("BAR", _buffer.GetLineRange(1).GetText());
         }
 
         [Test]
         public void ChangeLetterCase4()
         {
             Create("f12o", "bar");
-            _operations.ChangeLetterCase(_buffer.GetLineSpan(0).Extent);
-            Assert.AreEqual("F12O", _buffer.GetLineSpan(0).GetText());
+            _operations.ChangeLetterCase(_buffer.GetLineRange(0).Extent);
+            Assert.AreEqual("F12O", _buffer.GetLineRange(0).GetText());
         }
 
         [Test]
         public void MakeLettersLowercase1()
         {
             Create("FOO", "BAR");
-            _operations.MakeLettersLowercase(_buffer.GetLineSpan(0).Extent);
-            Assert.AreEqual("foo", _buffer.GetLineSpan(0).GetText());
+            _operations.MakeLettersLowercase(_buffer.GetLineRange(0).Extent);
+            Assert.AreEqual("foo", _buffer.GetLineRange(0).GetText());
         }
 
         [Test]
         public void MakeLettersLowercase2()
         {
             Create("FOO", "BAR");
-            _operations.MakeLettersLowercase(_buffer.GetLineSpan(1).Extent);
-            Assert.AreEqual("bar", _buffer.GetLineSpan(1).GetText());
+            _operations.MakeLettersLowercase(_buffer.GetLineRange(1).Extent);
+            Assert.AreEqual("bar", _buffer.GetLineRange(1).GetText());
         }
 
         [Test]
         public void MakeLettersLowercase3()
         {
             Create("FoO123", "BAR");
-            _operations.MakeLettersLowercase(_buffer.GetLineSpan(0).Extent);
-            Assert.AreEqual("foo123", _buffer.GetLineSpan(0).GetText());
+            _operations.MakeLettersLowercase(_buffer.GetLineRange(0).Extent);
+            Assert.AreEqual("foo123", _buffer.GetLineRange(0).GetText());
         }
 
         [Test]
         public void MakeLettersUppercase1()
         {
             Create("foo123", "bar");
-            _operations.MakeLettersUppercase(_buffer.GetLineSpan(0).Extent);
-            Assert.AreEqual("FOO123", _buffer.GetLineSpan(0).GetText());
+            _operations.MakeLettersUppercase(_buffer.GetLineRange(0).Extent);
+            Assert.AreEqual("FOO123", _buffer.GetLineRange(0).GetText());
         }
 
         [Test]
         public void MakeLettersUppercase2()
         {
             Create("fOo123", "bar");
-            _operations.MakeLettersUppercase(_buffer.GetLineSpan(0).Extent);
-            Assert.AreEqual("FOO123", _buffer.GetLineSpan(0).GetText());
+            _operations.MakeLettersUppercase(_buffer.GetLineRange(0).Extent);
+            Assert.AreEqual("FOO123", _buffer.GetLineRange(0).GetText());
         }
 
         [Test]
@@ -1391,7 +1382,7 @@ namespace VimCore.Test
             Create("foo", "bar", "");
             _editorOpts.Setup(x => x.ResetSelection());
             var data = new MotionData(
-                _buffer.GetLineSpan(0, 1).Extent,
+                _buffer.GetLineRange(0, 1).Extent,
                 true,
                 MotionKind.Inclusive,
                 OperationKind.LineWise,
@@ -1407,7 +1398,7 @@ namespace VimCore.Test
             Create("foo", "bar", "");
             _editorOpts.Setup(x => x.ResetSelection());
             var data = new MotionData(
-                _buffer.GetLineSpan(0, 1).Extent,
+                _buffer.GetLineRange(0, 1).Extent,
                 true,
                 MotionKind.Inclusive,
                 OperationKind.LineWise,
@@ -1423,7 +1414,7 @@ namespace VimCore.Test
             Create("foo", "bar", "");
             _editorOpts.Setup(x => x.ResetSelection());
             var data = new MotionData(
-                _buffer.GetLineSpan(0, 1).Extent,
+                _buffer.GetLineRange(0, 1).Extent,
                 true,
                 MotionKind.Inclusive,
                 OperationKind.LineWise,
@@ -1439,7 +1430,7 @@ namespace VimCore.Test
             Create("dog", "cat", "bear");
             _editorOpts.Setup(x => x.ResetSelection());
             var data = new MotionData(
-                _buffer.GetLineSpan(0, 1).Extent,
+                _buffer.GetLineRange(0, 1).Extent,
                 false,
                 MotionKind.Inclusive,
                 OperationKind.CharacterWise,
@@ -1455,7 +1446,7 @@ namespace VimCore.Test
             Create("dog", "cat", "bear");
             _editorOpts.Setup(x => x.ResetSelection());
             var data = new MotionData(
-                _buffer.GetLineSpan(0, 1).Extent,
+                _buffer.GetLineRange(0, 1).Extent,
                 false,
                 MotionKind.Inclusive,
                 OperationKind.CharacterWise,
@@ -1471,7 +1462,7 @@ namespace VimCore.Test
             Create("dog", "cat", "bear");
             _editorOpts.Setup(x => x.ResetSelection());
             var data = new MotionData(
-                _buffer.GetLineSpan(0).ExtentIncludingLineBreak,
+                _buffer.GetLineRange(0).ExtentIncludingLineBreak,
                 true,
                 MotionKind.Exclusive,
                 OperationKind.CharacterWise,
@@ -1487,7 +1478,7 @@ namespace VimCore.Test
             Create("dog", "cat", "bear");
             _editorOpts.Setup(x => x.ResetSelection());
             var data = new MotionData(
-                _buffer.GetLineSpan(0, 1).ExtentIncludingLineBreak,
+                _buffer.GetLineRange(0, 1).ExtentIncludingLineBreak,
                 false,
                 MotionKind.Exclusive,
                 OperationKind.CharacterWise,
@@ -1560,7 +1551,7 @@ namespace VimCore.Test
                 OperationKind.CharacterWise,
                 FSharpOption<int>.None);
             _operations.ChangeSpan(data);
-            Assert.AreEqual("  bar", _buffer.GetLineSpan(0).GetText());
+            Assert.AreEqual("  bar", _buffer.GetLineRange(0).GetText());
         }
 
         [Test]
@@ -1575,7 +1566,7 @@ namespace VimCore.Test
                 OperationKind.LineWise,
                 FSharpOption<int>.None);
             _operations.ChangeSpan(data);
-            Assert.AreEqual("bar", _buffer.GetLineSpan(0).GetText());
+            Assert.AreEqual("bar", _buffer.GetLineRange(0).GetText());
         }
 
         [Test]
@@ -1589,7 +1580,7 @@ namespace VimCore.Test
                 OperationKind.CharacterWise,
                 FSharpOption<int>.None);
             _operations.ChangeSpan(data);
-            Assert.AreEqual("                   bar", _buffer.GetLineSpan(0).GetText());
+            Assert.AreEqual("                   bar", _buffer.GetLineRange(0).GetText());
         }
 
         [Test]
@@ -1597,7 +1588,7 @@ namespace VimCore.Test
         public void UpdateRegisterForSpan1()
         {
             Create("foo bar");
-            var span = _view.GetLineSpan(0).Extent;
+            var span = _view.GetLineRange(0).Extent;
             var reg = _registerMap.GetRegister('c');
             _operations.UpdateRegisterForSpan(
                 reg,
@@ -1615,7 +1606,7 @@ namespace VimCore.Test
         public void UpdateRegisterForSpan2()
         {
             Create("foo bar");
-            var span = _view.GetLineSpan(0).Extent;
+            var span = _view.GetLineRange(0).Extent;
             var reg = _registerMap.GetRegister('c');
             _operations.UpdateRegisterForSpan(
                 reg,
@@ -1649,7 +1640,7 @@ namespace VimCore.Test
         public void UpdateRegisterForSpan4()
         {
             Create("foo", "bar");
-            var span = _view.GetLineSpan(0).Extent;
+            var span = _view.GetLineRange(0).Extent;
             var reg = _registerMap.GetRegister('c');
             _operations.UpdateRegisterForSpan(reg, RegisterOperation.Delete, span, OperationKind.CharacterWise);
             AssertRegister(RegisterName.SmallDelete, "foo", OperationKind.CharacterWise);
@@ -1660,7 +1651,7 @@ namespace VimCore.Test
         public void UpdateRegisterForSpan5()
         {
             Create("foo", "bar");
-            var span = _view.GetLineSpan(0, 1).Extent;
+            var span = _view.GetLineRange(0, 1).Extent;
             var reg = _registerMap.GetRegister('c');
             _operations.UpdateRegisterForSpan(reg, RegisterOperation.Delete, span, OperationKind.CharacterWise);
             AssertRegister(RegisterName.SmallDelete, "", OperationKind.LineWise);
@@ -1671,7 +1662,7 @@ namespace VimCore.Test
         public void UpdateRegisterForSpan6()
         {
             Create("foo bar");
-            var span = _view.GetLineSpan(0).Extent;
+            var span = _view.GetLineRange(0).Extent;
             var namedReg = _registerMap.GetRegister('c');
             _operations.UpdateRegisterForSpan(
                 namedReg,

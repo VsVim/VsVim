@@ -142,11 +142,11 @@
     <Compile Include="CommandProcessorTest.cs" />
     <Compile Include="CommandRunnerTest.cs" />
     <Compile Include="CommandDefaultOperationsTest.cs" />
-    <Compile Include="SnapshotLineSpanUtilTest.cs" />
+    <Compile Include="SnapshotLineRangeUtilTest.cs" />
     <Compile Include="RegisterMapTest.cs" />
     <Compile Include="RegisterNameTest.cs" />
     <Compile Include="RegisterTest.cs" />
-    <Compile Include="SnapshotLineSpanTest.cs" />
+    <Compile Include="SnapshotLineRangeTest.cs" />
     <Compile Include="VimRegexTest.cs" />
     <Compile Include="VirtualSnapshotPointUtilTest.cs" />
     <Compile Include="MotionUtilTest.cs" />

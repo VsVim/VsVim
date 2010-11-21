@@ -218,7 +218,7 @@ namespace VimCore.Test
             _buffer.Settings.GlobalSettings.VirtualEdit = string.Empty;
             _textView.MoveCaretTo(3);
             _buffer.Process('x');
-            Assert.AreEqual("tes", _textView.GetLineSpan(0).GetText());
+            Assert.AreEqual("tes", _textView.GetLineRange(0).GetText());
             Assert.AreEqual(2, _textView.GetCaretPoint().Position);
         }
 
@@ -230,7 +230,7 @@ namespace VimCore.Test
             _buffer.Settings.GlobalSettings.VirtualEdit = "onemore";
             _textView.MoveCaretTo(3);
             _buffer.Process('x');
-            Assert.AreEqual("tes", _textView.GetLineSpan(0).GetText());
+            Assert.AreEqual("tes", _textView.GetLineRange(0).GetText());
             Assert.AreEqual(3, _textView.GetCaretPoint().Position);
         }
 
@@ -242,7 +242,7 @@ namespace VimCore.Test
             _buffer.Settings.GlobalSettings.VirtualEdit = string.Empty;
             _textView.MoveCaretTo(1);
             _buffer.Process('x');
-            Assert.AreEqual("tst", _textView.GetLineSpan(0).GetText());
+            Assert.AreEqual("tst", _textView.GetLineRange(0).GetText());
             Assert.AreEqual(1, _textView.GetCaretPoint().Position);
         }
 

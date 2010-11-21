@@ -288,8 +288,8 @@ type internal CommandProcessor
             match count with
             | Some(count) -> RangeUtil.ApplyCount range count
             | None -> range
-        let span = RangeUtil.GetSnapshotSpan range
-        _operations.ShiftSpanLeft 1 span 
+        let lineRange = RangeUtil.GetSnapshotLineRange range
+        _operations.ShiftLineRangeLeft 1 lineRange
 
     member private x.ProcessShiftRight (rest:char list) (range: Range option) _ =
         let count,rest = rest |> RangeUtil.ParseNumber
@@ -298,8 +298,8 @@ type internal CommandProcessor
             match count with
             | Some(count) -> RangeUtil.ApplyCount range count
             | None -> range
-        let span = RangeUtil.GetSnapshotSpan range
-        _operations.ShiftSpanRight 1 span 
+        let lineRange = RangeUtil.GetSnapshotLineRange range
+        _operations.ShiftLineRangeRight 1 lineRange
 
     member private x.ProcessWrite (rest:char list) _ _ = 
         let name = rest |> StringUtil.ofCharSeq 
