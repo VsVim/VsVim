@@ -973,6 +973,8 @@ type SubstituteFlags =
     | UsePreviousSearchPattern = 0x20
     | SuppressError = 0x40
     | OrdinalCase = 0x80
+    | Magic = 0x100
+    | Nomagic = 0x200
 
 type SubstituteData = {
     SearchPattern : string

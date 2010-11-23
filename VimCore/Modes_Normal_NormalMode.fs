@@ -288,7 +288,7 @@ type internal NormalMode
                         match data.LastSearchPattern, data.LastSubstituteData with
                         | Some(pattern), Some(data) -> 
                             let range = TextViewUtil.GetCaretLineRange _bufferData.TextView 1
-                            _operations.Substitute pattern data.Substitute range SubstituteFlags.None
+                            _operations.Substitute pattern data.Substitute range SubstituteFlags.None 
                         | _ -> () )
                 yield (
                     "gJ", 

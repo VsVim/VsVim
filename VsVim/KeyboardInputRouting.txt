@@ -36,3 +36,22 @@ Now how the components in Visual Studio play together to route key input
       ii. One of the key processors is VsKeyProcessor which will turn every character in the 
         Text property of the argument into a TYPECHAR command. 
  
+ Another way to look at it from a component perspective from when a message is recieved 
+
+  - msenv::ProcessMessage
+    - msenv::SCM_MsoStdCompMgr::FPreTranslateMessage
+      - msenv::CMsoComponent::FPreTranslateMessage
+        - msenv::CMsoComponent::MainFTranslateMessage
+          - IVsWindowManager::TranslateAccelerator
+            - IVsCodeWindow::PreTranslateMessage
+              - IVsFilterKeysAdapter::TranslateAccelerator
+          - Visual Studio Commands.
+    - IVsWindowManager::PreTranslateInput
+      - System.Windows.Interop.ComponentDispatcher.RaiseThreadMessage
+         - TextCompositionManager 
+            - KeyProcessor.KeyDown
+            - KeyProcessor.TextInput
+      - If that returns true then done
+  - TranslateMessage
+  - DispatchMessage
+    

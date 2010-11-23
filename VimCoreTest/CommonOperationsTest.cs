@@ -1798,5 +1798,25 @@ namespace VimCore.Test
             Assert.AreEqual("bot", _view.GetLine(1).GetText());
         }
 
+        [Test]
+        [Description("Respect the magic flag")]
+        public void Substitute12()
+        {
+            Create("cat", "bat");
+            _globalSettings.SetupGet(x => x.Magic).Returns(false);
+            _operations.Substitute(".", "b", _view.GetLineRange(0, 0), SubstituteFlags.Magic);
+            Assert.AreEqual("bat", _view.GetLine(0).GetText());
+        }
+
+        [Test]
+        [Description("Respect the nomagic flag")]
+        public void Substitute13()
+        {
+            Create("cat.", "bat");
+            _globalSettings.SetupGet(x => x.Magic).Returns(true);
+            _operations.Substitute(".", "s", _view.GetLineRange(0, 0), SubstituteFlags.Nomagic);
+            Assert.AreEqual("cats", _view.GetLine(0).GetText());
+        }
+
     }
 }

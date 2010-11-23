@@ -10,6 +10,8 @@ type VimRegexOptions =
     | Compiled = 0x1
     | IgnoreCase = 0x2
     | OrdinalCase = 0x4
+    | Magic = 0x8
+    | NoMagic = 0x10
 
 module VimRegexUtils = 
     let Escape c = c |> StringUtil.ofChar |> Regex.Escape 
@@ -143,6 +145,10 @@ type VimRegexFactory
 
     member x.CreateWithOptions pattern options = 
         let kind = if _settings.Magic then MagicKind.Magic else MagicKind.NoMagic
+        let kind = 
+            if Utils.IsFlagSet options VimRegexOptions.Magic then MagicKind.Magic
+            elif Utils.IsFlagSet options VimRegexOptions.NoMagic then MagicKind.NoMagic
+            else kind
         let data = { 
             Pattern = pattern
             Index = 0

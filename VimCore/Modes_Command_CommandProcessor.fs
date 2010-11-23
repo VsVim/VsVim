@@ -113,6 +113,8 @@ type internal CommandProcessor
             yield ("source","so", this.ProcessSource)
             yield ("split", "sp", this.ProcessSplit)
             yield ("substitute", "s", this.ProcessSubstitute)
+            yield ("smagic", "sm", this.ProcessSubstituteMagic)
+            yield ("snomagic", "sno", this.ProcessSubstituteNomagic)
             yield ("tabnext", "tabn", this.ProcessTabNext)
             yield ("tabprevious", "tabp", this.ProcessTabPrevious)
             yield ("tabNext", "tabN", this.ProcessTabPrevious)
@@ -392,6 +394,14 @@ type internal CommandProcessor
     member private x.ProcessSubstitute rest range _ = 
         x.ProcessSubstituteCore rest range SubstituteFlags.None
 
+    /// Process the :smagic command
+    member private x.ProcessSubstituteMagic rest range _ = 
+        x.ProcessSubstituteCore rest range SubstituteFlags.Magic
+
+    /// Process the :snomagic command
+    member private x.ProcessSubstituteNomagic rest range _ = 
+        x.ProcessSubstituteCore rest range SubstituteFlags.Nomagic
+
     /// Process the :~ command
     member private x.ProcessSubstituteWithSearchPattern rest range _ = 
         x.ProcessSubstituteCore rest range SubstituteFlags.UsePreviousSearchPattern 
@@ -517,7 +527,7 @@ type internal CommandProcessor
                 if Utils.IsFlagSet flags SubstituteFlags.Confirm then
                     _statusUtil.OnError Resources.CommandMode_NotSupported_SubstituteConfirm
                 else
-                    _operations.Substitute search replace range flags
+                    _operations.Substitute search replace range flags 
             parseFull rest badParse goodParse    
 
         else

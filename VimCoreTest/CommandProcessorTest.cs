@@ -797,6 +797,64 @@ namespace VimCore.Test
         }
 
         [Test]
+        [Description("smagic has the additional Magic flag")]
+        public void Substitute40()
+        {
+            Create("cat", "dog", "rabbit", "tree");
+            _operations
+                .Setup(x => x.Substitute("a", "b", _view.GetLineRange(0, 0), SubstituteFlags.Magic))
+                .Verifiable();
+            RunCommand("smagic/a/b");
+            _factory.Verify();
+            RunCommand("sm/a/b");
+            _factory.Verify();
+        }
+
+        [Test]
+        [Description("smagic with no arguments is a repeat")]
+        public void Substitute41()
+        {
+            Create("cat", "dog", "rabbit", "tree");
+            _vimData.LastSubstituteData = FSharpOption.Create(new SubstituteData("a", "b", SubstituteFlags.OrdinalCase));
+            _operations
+                .Setup(x => x.Substitute("a", "b", _view.GetLineRange(0, 0), SubstituteFlags.Magic))
+                .Verifiable();
+            RunCommand("smagic");
+            _factory.Verify();
+            RunCommand("sm");
+            _factory.Verify();
+        }
+
+        [Test]
+        [Description("snomagic has the additional Magic flag")]
+        public void Substitute42()
+        {
+            Create("cat", "dog", "rabbit", "tree");
+            _operations
+                .Setup(x => x.Substitute("a", "b", _view.GetLineRange(0, 0), SubstituteFlags.Nomagic))
+                .Verifiable();
+            RunCommand("snomagic/a/b");
+            _factory.Verify();
+            RunCommand("sno/a/b");
+            _factory.Verify();
+        }
+
+        [Test]
+        [Description("snomagic with no arguments is a repeat")]
+        public void Substitute43()
+        {
+            Create("cat", "dog", "rabbit", "tree");
+            _vimData.LastSubstituteData = FSharpOption.Create(new SubstituteData("a", "b", SubstituteFlags.OrdinalCase));
+            _operations
+                .Setup(x => x.Substitute("a", "b", _view.GetLineRange(0, 0), SubstituteFlags.Nomagic))
+                .Verifiable();
+            RunCommand("snomagic");
+            _factory.Verify();
+            RunCommand("sno");
+            _factory.Verify();
+        }
+
+        [Test]
         public void Redo1()
         {
             Create("foo bar");
