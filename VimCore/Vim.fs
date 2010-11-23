@@ -11,6 +11,19 @@ open System.ComponentModel.Composition
 open System.IO
 open Vim.Modes
 
+type internal VimData() =
+
+    let mutable _lastSubstituteData : SubstituteData option = None
+    let mutable _lastSearchPattern : string option = None
+
+    interface IVimData with 
+        member x.LastSubstituteData 
+            with get() = _lastSubstituteData
+            and set value = _lastSubstituteData <- value
+        member x.LastSearchPattern
+            with get() = _lastSearchPattern
+            and set value = _lastSearchPattern <- value
+
 /// Default implementation of IVim 
 [<Export(typeof<IVimBufferFactory>)>]
 type internal VimBufferFactory
@@ -58,18 +71,19 @@ type internal VimBufferFactory
             UndoRedoOperations(statusUtil, history) :> IUndoRedoOperations
         let wordNav = x.CreateTextStructureNavigator view.TextBuffer WordKind.NormalWord
         let operationsData = { 
-            VimHost=_host;
-            TextView=view;
-            EditorOperations=editOperations;
-            EditorOptions=editOptions;
-            OutliningManager=outlining;
-            JumpList=jumpList;
-            LocalSettings=localSettings;
-            UndoRedoOperations=undoRedoOperations;
-            StatusUtil=statusUtil;
-            KeyMap=vim.KeyMap;
-            Navigator=wordNav;
-            FoldManager=foldManager;
+            VimData=vim.VimData
+            VimHost=_host
+            TextView=view
+            EditorOperations=editOperations
+            EditorOptions=editOptions
+            OutliningManager=outlining
+            JumpList=jumpList
+            LocalSettings=localSettings
+            UndoRedoOperations=undoRedoOperations
+            StatusUtil=statusUtil
+            KeyMap=vim.KeyMap
+            Navigator=wordNav
+            FoldManager=foldManager
             RegisterMap=vim.RegisterMap }
 
         let createCommandRunner() = CommandRunner (view, vim.RegisterMap, capture,statusUtil) :>ICommandRunner
@@ -139,6 +153,8 @@ type internal Vim
     /// Holds an IVimBuffer and the DisposableBag for event handlers on the IVimBuffer.  This
     /// needs to be removed when we're done with the IVimBuffer to avoid leaks
     let _bufferMap = new System.Collections.Generic.Dictionary<ITextView, IVimBuffer * DisposableBag>()
+
+    let _vimData = VimData() :> IVimData
 
     /// Holds the active stack of IVimBuffer instances
     let mutable _activeBufferStack : IVimBuffer list = List.empty
@@ -239,6 +255,7 @@ type internal Vim
 
     interface IVim with
         member x.ActiveBuffer = ListUtil.tryHeadOnly _activeBufferStack
+        member x.VimData = _vimData
         member x.VimHost = _host
         member x.MarkMap = _markMap
         member x.KeyMap = _keyMap

@@ -42,6 +42,7 @@ module internal Resources =
     let CommandMode_CannotRun command = sprintf "Cannot run \"%s\"" command
     let CommandMode_CouldNotOpenFile file = sprintf "Could not open file \"%s\"" file
     let CommandMode_NoSuchMapping = "No such mapping"
+    let CommandMode_TrailingCharacters = "Trailing characters"
 
     let VisualMode_BoxSelectionNotSupported = "Box selection is not supported for this operation"
     let VisualMode_MultiSelectNotSupported = "Multiple selections is not supported for this operation"

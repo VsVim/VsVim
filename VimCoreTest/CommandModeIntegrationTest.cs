@@ -95,6 +95,5 @@ namespace VimCore.Test
             var last = tss.GetLineFromLineNumber(tss.LineCount - 1);
             Assert.AreEqual(last.EndIncludingLineBreak, _textView.Caret.Position.BufferPosition);
         }
-
     }
 }

@@ -35,6 +35,7 @@ namespace VimCore.Test
         private Mock<IVimGlobalSettings> _globalSettings;
         private Mock<IOutliningManager> _outlining;
         private Mock<IUndoRedoOperations> _undoRedoOperations;
+        private Mock<IStatusUtil> _statusUtil;
         private IRegisterMap _registerMap;
         private ICommonOperations _operations;
         private CommonOperations _operationsRaw;
@@ -51,12 +52,17 @@ namespace VimCore.Test
             _editorOpts = _factory.Create<IEditorOperations>();
             _settings = _factory.Create<IVimLocalSettings>();
             _globalSettings = _factory.Create<IVimGlobalSettings>();
+            _globalSettings.SetupGet(x => x.Magic).Returns(true);
+            _globalSettings.SetupGet(x => x.SmartCase).Returns(false);
+            _globalSettings.SetupGet(x => x.IgnoreCase).Returns(true);
             _outlining = _factory.Create<IOutliningManager>();
             _globalSettings.SetupGet(x => x.ShiftWidth).Returns(2);
+            _statusUtil = _factory.Create<IStatusUtil>();
             _settings.SetupGet(x => x.GlobalSettings).Returns(_globalSettings.Object);
             _undoRedoOperations = _factory.Create<IUndoRedoOperations>();
 
             var data = new OperationsData(
+                vimData: new VimData(),
                 vimHost: _host.Object,
                 editorOperations: _editorOpts.Object,
                 textView: _view,
@@ -68,7 +74,7 @@ namespace VimCore.Test
                 editorOptions: null,
                 keyMap: null,
                 navigator: null,
-                statusUtil: null,
+                statusUtil: _statusUtil.Object,
                 foldManager: null);
 
             _operationsRaw = new OperationsImpl(data);
@@ -1679,5 +1685,118 @@ namespace VimCore.Test
             AssertRegister(RegisterName.NewNumbered(NumberedRegister.Register_0), "foo bar", OperationKind.CharacterWise);
             AssertRegister(RegisterName.Blackhole, "", OperationKind.LineWise);
         }
+
+        [Test, Description("Only once per line")]
+        public void Substitute1()
+        {
+            Create("bar bar", "foo");
+            _operations.Substitute("bar", "again", _view.GetLineRange(0), SubstituteFlags.None);
+            Assert.AreEqual("again bar", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
+            Assert.AreEqual("foo", _view.TextSnapshot.GetLineFromLineNumber(1).GetText());
+        }
+
+        [Test, Description("Should run on every line in the span")]
+        public void Substitute2()
+        {
+            Create("bar bar", "foo bar");
+            _statusUtil.Setup(x => x.OnStatus(Resources.CommandMode_SubstituteComplete(2, 2))).Verifiable();
+            _operations.Substitute("bar", "again", _view.GetLineRange(0, 1), SubstituteFlags.None);
+            Assert.AreEqual("again bar", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
+            Assert.AreEqual("foo again", _view.TextSnapshot.GetLineFromLineNumber(1).GetText());
+            _statusUtil.Verify();
+        }
+
+        [Test, Description("Replace all if the option is set")]
+        public void Substitute3()
+        {
+            Create("bar bar", "foo bar");
+            _statusUtil.Setup(x => x.OnStatus(Resources.CommandMode_SubstituteComplete(2, 1))).Verifiable();
+            _operations.Substitute("bar", "again", _view.GetLineRange(0), SubstituteFlags.ReplaceAll);
+            Assert.AreEqual("again again", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
+            Assert.AreEqual("foo bar", _view.TextSnapshot.GetLineFromLineNumber(1).GetText());
+            _statusUtil.Verify();
+        }
+
+        [Test, Description("Ignore case")]
+        public void Substitute4()
+        {
+            Create("bar bar", "foo bar");
+            _operations.Substitute("BAR", "again", _view.GetLineRange(0), SubstituteFlags.IgnoreCase);
+            Assert.AreEqual("again bar", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
+        }
+
+        [Test, Description("Ignore case and replace all")]
+        public void Substitute5()
+        {
+            Create("bar bar", "foo bar");
+            _statusUtil.Setup(x => x.OnStatus(Resources.CommandMode_SubstituteComplete(2, 1))).Verifiable();
+            _operations.Substitute("BAR", "again", _view.GetLineRange(0), SubstituteFlags.IgnoreCase | SubstituteFlags.ReplaceAll);
+            Assert.AreEqual("again again", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
+            _statusUtil.Verify();
+        }
+
+        [Test, Description("Ignore case and replace all")]
+        public void Substitute6()
+        {
+            Create("bar bar", "foo bar");
+            _statusUtil.Setup(x => x.OnStatus(Resources.CommandMode_SubstituteComplete(2, 1))).Verifiable();
+            _operations.Substitute("BAR", "again", _view.GetLineRange(0), SubstituteFlags.IgnoreCase | SubstituteFlags.ReplaceAll);
+            Assert.AreEqual("again again", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
+            _statusUtil.Verify();
+        }
+
+        [Test, Description("No matches")]
+        public void Substitute7()
+        {
+            Create("bar bar", "foo bar");
+            var pattern = "BAR";
+            _statusUtil.Setup(x => x.OnError(Resources.CommandMode_PatternNotFound(pattern))).Verifiable();
+            _operations.Substitute("BAR", "again", _view.GetLineRange(0), SubstituteFlags.OrdinalCase);
+            _statusUtil.Verify();
+        }
+
+        [Test, Description("Invalid regex")]
+        public void Substitute8()
+        {
+            Create("bar bar", "foo bar");
+            var original = _view.TextSnapshot;
+            var pattern = "(foo";
+            _statusUtil.Setup(x => x.OnError(Resources.CommandMode_PatternNotFound(pattern))).Verifiable();
+            _operations.Substitute(pattern, "again", _view.GetLineRange(0), SubstituteFlags.OrdinalCase);
+            _statusUtil.Verify();
+            Assert.AreSame(original, _view.TextSnapshot);
+        }
+
+        [Test, Description("Report only shouldn't make any changes")]
+        public void Substitute9()
+        {
+            Create("bar bar", "foo bar");
+            var tss = _view.TextSnapshot;
+            _statusUtil.Setup(x => x.OnStatus(Resources.CommandMode_SubstituteComplete(2, 1))).Verifiable();
+            _operations.Substitute("bar", "again", _view.GetLineRange(0), SubstituteFlags.ReplaceAll | SubstituteFlags.ReportOnly);
+            _statusUtil.Verify();
+            Assert.AreSame(tss, _view.TextSnapshot);
+        }
+
+        [Test, Description("No matches and report only")]
+        public void Substitute10()
+        {
+            Create("bar bar", "foo bar");
+            var tss = _view.TextSnapshot;
+            var pattern = "BAR";
+            _operations.Substitute(pattern, "again", _view.GetLineRange(0), SubstituteFlags.OrdinalCase | SubstituteFlags.ReportOnly);
+        }
+
+        [Test]
+        [Description("Across multiple lines one match per line should be processed")]
+        public void Substitute11()
+        {
+            Create("cat", "bat");
+            _statusUtil.Setup(x => x.OnStatus(Resources.CommandMode_SubstituteComplete(2, 2))).Verifiable();
+            _operations.Substitute("a", "o", _view.GetLineRange(0, 1), SubstituteFlags.None);
+            Assert.AreEqual("cot", _view.GetLine(0).GetText());
+            Assert.AreEqual("bot", _view.GetLine(1).GetText());
+        }
+
     }
 }

@@ -23,6 +23,7 @@ namespace VimCore.Test
         private INormalMode _mode;
         private IWpfTextView _view;
         private IRegisterMap _map;
+        private IVimData _vimData;
         private Mock<IVimBuffer> _bufferData;
         private Mock<IOperations> _operations;
         private Mock<IEditorOperations> _editorOperations;
@@ -71,10 +72,11 @@ namespace VimCore.Test
             _displayWindowBroker.SetupGet(x => x.IsCompletionActive).Returns(false);
             _displayWindowBroker.SetupGet(x => x.IsSignatureHelpActive).Returns(false);
             _displayWindowBroker.SetupGet(x => x.IsSmartTagSessionActive).Returns(false);
+            _vimData = new VimData();
             _bufferData = MockRepository.CreateVimBuffer(
                 _view,
                 "test",
-                MockRepository.CreateVim(_map, changeTracker: _changeTracker.Object, host: _host.Object).Object,
+                MockRepository.CreateVim(_map, changeTracker: _changeTracker.Object, host: _host.Object, vimData: _vimData).Object,
                 _jumpList.Object);
             _operations = new Mock<IOperations>(MockBehavior.Strict);
             _operations.SetupGet(x => x.EditorOperations).Returns(_editorOperations.Object);
@@ -2761,6 +2763,34 @@ namespace VimCore.Test
             var res = _mode.Process("R");
             Assert.IsTrue(res.IsSwitchMode);
             Assert.AreEqual(ModeKind.Replace, res.AsSwitchMode().Item);
+        }
+
+        [Test]
+        [Description("Make sure it doesn't pass the flag")]
+        public void Substitute1()
+        {
+            Create("foo bar");
+            _vimData.LastSubstituteData = FSharpOption.Create(new SubstituteData("a", "b", SubstituteFlags.Confirm));
+            _operations.Setup(x => x.Substitute("a", "b", _view.GetLineRange(0, 0), SubstituteFlags.None));
+            _mode.Process("&");
+        }
+
+        [Test]
+        [Description("No last substitute should do nothing")]
+        public void Substitute2()
+        {
+            Create("foo bar");
+            _mode.Process("&");
+        }
+
+        [Test]
+        [Description("Flags are kept on full buffer substitute")]
+        public void Substitute3()
+        {
+            Create("foo bar", "baz");
+            _vimData.LastSubstituteData = FSharpOption.Create(new SubstituteData("a", "b", SubstituteFlags.Confirm));
+            _operations.Setup(x => x.Substitute("a", "b", SnapshotLineRangeUtil.CreateForSnapshot(_view.TextSnapshot), SubstituteFlags.Confirm));
+            _mode.Process("g&");
         }
 
         #endregion

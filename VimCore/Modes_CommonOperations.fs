@@ -6,18 +6,21 @@ open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Operations
 open Microsoft.VisualStudio.Text.Outlining
+open System.Text.RegularExpressions
 
 [<AbstractClass>]
 type internal CommonOperations ( _data : OperationsData ) =
     let _textView = _data.TextView
     let _operations = _data.EditorOperations
     let _outlining = _data.OutliningManager
+    let _vimData = _data.VimData
     let _host = _data.VimHost
     let _jumpList = _data.JumpList
     let _settings = _data.LocalSettings
     let _undoRedoOperations = _data.UndoRedoOperations
     let _statusUtil = _data.StatusUtil
     let _registerMap = _data.RegisterMap
+    let _regexFactory = VimRegexFactory(_data.LocalSettings.GlobalSettings)
 
     /// The caret sometimes needs to be adjusted after an Up or Down movement.  Caret position
     /// and virtual space is actually quite a predicamite for VsVim because of how Vim standard 
@@ -588,6 +591,66 @@ type internal CommonOperations ( _data : OperationsData ) =
                     | None -> data.OperationSpan
             x.DeleteSpan span
             span
+
+        member x.Substitute pattern replace (range:SnapshotLineRange) flags = 
+
+            /// Actually do the replace with the given regex
+            let doReplace (regex:VimRegex) = 
+                use edit = _textView.TextBuffer.CreateEdit()
+
+                let replaceOne (span:SnapshotSpan) (c:Capture) = 
+                    let newText =  regex.Replace c.Value replace 1
+                    let offset = span.Start.Position
+                    edit.Replace(Span(c.Index+offset, c.Length), newText) |> ignore
+                let getMatches (span:SnapshotSpan) = 
+                    if Utils.IsFlagSet flags SubstituteFlags.ReplaceAll then
+                        regex.Regex.Matches(span.GetText()) |> Seq.cast<Match>
+                    else
+                        regex.Regex.Match(span.GetText()) |> Seq.singleton
+                let matches = 
+                    range.Lines
+                    |> Seq.map (fun line -> line.ExtentIncludingLineBreak)
+                    |> Seq.map (fun span -> getMatches span |> Seq.map (fun m -> (m,span)) )
+                    |> Seq.concat 
+                    |> Seq.filter (fun (m,_) -> m.Success)
+
+                if not (Utils.IsFlagSet flags SubstituteFlags.ReportOnly) then
+                    // Actually do the edits
+                    matches |> Seq.iter (fun (m,span) -> replaceOne span m)
+
+                let updateReplaceCount () = 
+                    // Update the status
+                    let replaceCount = matches |> Seq.length
+                    let lineCount = 
+                        matches 
+                        |> Seq.map (fun (_,s) -> s.Start.GetContainingLine().LineNumber)
+                        |> Seq.distinct
+                        |> Seq.length
+                    if replaceCount > 1 then
+                        _statusUtil.OnStatus (Resources.CommandMode_SubstituteComplete replaceCount lineCount)
+
+                if edit.HasEffectiveChanges then
+                    edit.Apply() |> ignore                                
+                    updateReplaceCount()
+                elif Utils.IsFlagSet flags SubstituteFlags.ReportOnly then
+                    edit.Cancel()
+                    updateReplaceCount()
+                else 
+                    edit.Cancel()
+                    _statusUtil.OnError (Resources.CommandMode_PatternNotFound pattern)
+
+            let options = 
+                if Utils.IsFlagSet flags SubstituteFlags.IgnoreCase then VimRegexOptions.IgnoreCase
+                elif Utils.IsFlagSet flags SubstituteFlags.OrdinalCase then VimRegexOptions.OrdinalCase 
+                else VimRegexOptions.None
+            let options = VimRegexOptions.Compiled ||| options
+            match _regexFactory.CreateWithOptions pattern options with
+            | None -> _statusUtil.OnError (Resources.CommandMode_PatternNotFound pattern)
+            | Some (regex) -> 
+                doReplace regex
+                _vimData.LastSubstituteData <- Some {SearchPattern=pattern; Substitute=replace; Flags=flags}
+
+
         member x.UpdateRegisterForSpan reg regOp span opKind = 
             let value = { Value=StringData.OfSpan span; OperationKind=opKind }
             x.UpdateRegister reg regOp value

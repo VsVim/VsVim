@@ -26,6 +26,7 @@ namespace Vim.UnitTest.Mock
         public IMode ReplaceModeImpl;
         public bool IsProcessingInputImpl;
         public PropertyCollection PropertiesImpl;
+        public IVimData VimDataImpl;
 
         public PropertyCollection Properties
         {
@@ -277,6 +278,11 @@ namespace Vim.UnitTest.Mock
         public IVisualMode VisualLineMode
         {
             get { return VisualLineModeImpl; }
+        }
+
+        public IVimData VimData
+        {
+            get { return VimDataImpl; }
         }
     }
 }

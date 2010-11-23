@@ -188,6 +188,7 @@ type internal VimBuffer
                  
     interface IVimBuffer with
         member x.Vim = _vim
+        member x.VimData = _vim.VimData
         member x.TextView = _textView
         member x.TextBuffer = _textView.TextBuffer
         member x.TextSnapshot = _textView.TextSnapshot

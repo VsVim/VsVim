@@ -84,6 +84,7 @@ namespace VimCore.Test
             _registerMap = MockObjectFactory.CreateRegisterMap();
 
             var data = new OperationsData(
+                vimData: new VimData(),
                 vimHost: _host.Object,
                 textView: _view,
                 editorOperations: editorOpts,

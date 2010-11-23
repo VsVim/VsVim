@@ -281,12 +281,30 @@ type internal NormalMode
                     CommandFlags.Repeatable, 
                     fun count _ -> _operations.ShiftLinesRight count)
                 yield (
+                    "&",
+                    CommandFlags.Special,
+                    fun _ _ -> 
+                        let data = _bufferData.Vim.VimData
+                        match data.LastSearchPattern, data.LastSubstituteData with
+                        | Some(pattern), Some(data) -> 
+                            let range = TextViewUtil.GetCaretLineRange _bufferData.TextView 1
+                            _operations.Substitute pattern data.Substitute range SubstituteFlags.None
+                        | _ -> () )
+                yield (
                     "gJ", 
                     CommandFlags.Repeatable, 
                     fun count reg -> 
                         let view = _bufferData.TextView
                         let caret = TextViewUtil.GetCaretPoint view
                         _operations.Join caret Modes.JoinKind.KeepEmptySpaces count |> ignore )
+                yield (
+                    "gt", 
+                    CommandFlags.Movement, 
+                    fun count _ -> _operations.GoToNextTab count)
+                yield (
+                    "gT", 
+                    CommandFlags.Movement, 
+                    fun count _ -> _operations.GoToPreviousTab count)
                 yield (
                     "gp", 
                     CommandFlags.Repeatable, 
@@ -304,13 +322,15 @@ type internal NormalMode
                     CommandFlags.Movement, 
                     fun count _ -> _operations.MoveToNextOccuranceOfPartialWordAtCursor SearchKind.BackwardWithWrap count)
                 yield (
-                    "gt", 
-                    CommandFlags.Movement, 
-                    fun count _ -> _operations.GoToNextTab count)
-                yield (
-                    "gT", 
-                    CommandFlags.Movement, 
-                    fun count _ -> _operations.GoToPreviousTab count)
+                    "g&", 
+                    CommandFlags.Special, 
+                    fun count _ -> 
+                        let data = _bufferData.Vim.VimData
+                        match data.LastSearchPattern, data.LastSubstituteData with
+                        | Some(pattern), Some(data) -> 
+                            let range = SnapshotLineRangeUtil.CreateForSnapshot this.TextBuffer.CurrentSnapshot
+                            _operations.Substitute pattern data.Substitute range data.Flags
+                        | _ -> () )
                 yield (
                     "u",  
                     CommandFlags.Special, 

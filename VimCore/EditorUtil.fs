@@ -782,6 +782,10 @@ module VirtualSnapshotPointUtil =
 /// context
 module SnapshotLineRangeUtil = 
 
+    /// Create a range for the entire ItextSnapshot
+    let CreateForSnapshot (snapshot:ITextSnapshot) = 
+        SnapshotLineRange(snapshot, 0, snapshot.LineCount)
+
     /// Create a range for the provided ITextSnapshotLine
     let CreateForLine (line:ITextSnapshotLine) =
         SnapshotLineRange(line.Snapshot, line.LineNumber, 1)

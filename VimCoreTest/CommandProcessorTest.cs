@@ -24,6 +24,7 @@ namespace VimCore.Test
         private CommandProcessor _processorRaw;
         private ICommandProcessor _processor;
         private IRegisterMap _map;
+        private IVimData _vimData;
         private Mock<IEditorOperations> _editOpts;
         private Mock<IOperations> _operations;
         private Mock<IStatusUtil> _statusUtil;
@@ -42,10 +43,11 @@ namespace VimCore.Test
             _operations.SetupGet(x => x.EditorOperations).Returns(_editOpts.Object);
             _statusUtil = _factory.Create<IStatusUtil>();
             _fileSystem = _factory.Create<IFileSystem>(MockBehavior.Strict);
+            _vimData = new VimData();
             _bufferData = MockObjectFactory.CreateVimBuffer(
                 _view,
                 "test",
-                MockObjectFactory.CreateVim(_map, host: _vimHost.Object).Object);
+                MockObjectFactory.CreateVim(_map, host: _vimHost.Object, vimData: _vimData).Object);
             _processorRaw = new Vim.Modes.Command.CommandProcessor(_bufferData.Object, _operations.Object, _statusUtil.Object, _fileSystem.Object);
             _processor = _processorRaw;
         }
@@ -462,11 +464,10 @@ namespace VimCore.Test
         {
             Create("foo bar", "baz");
             var range = _view.GetLineRange(0, 1);
+            _vimData.LastSubstituteData = FSharpOption.Create(new SubstituteData("", "", SubstituteFlags.OrdinalCase));
             _operations
                 .Setup(x => x.Substitute("foo", "bar", range, SubstituteFlags.OrdinalCase))
                 .Verifiable();
-            RunCommand("%s/foo/bar/I");
-            _operations.Verify();
             RunCommand("%s/foo/bar/&");
             _operations.Verify();
         }
@@ -476,11 +477,7 @@ namespace VimCore.Test
         {
             Create("foo bar", "baz");
             var range = _view.GetLineRange(0, 1);
-            _operations
-                .Setup(x => x.Substitute("foo", "bar", range, SubstituteFlags.OrdinalCase))
-                .Verifiable();
-            RunCommand("%s/foo/bar/I");
-            _operations.Verify();
+            _vimData.LastSubstituteData = FSharpOption.Create(new SubstituteData("", "", SubstituteFlags.OrdinalCase));
             _operations
                 .Setup(x => x.Substitute("foo", "bar", range, SubstituteFlags.OrdinalCase | SubstituteFlags.ReplaceAll))
                 .Verifiable();
@@ -531,6 +528,272 @@ namespace VimCore.Test
                 .Verifiable();
             RunCommand("%s/foo/");
             _operations.Verify();
+        }
+
+        [Test]
+        public void Substitute18()
+        {
+            Create("cat", "dog");
+            _vimData.LastSubstituteData = FSharpOption.Create(new SubstituteData("a", "b", SubstituteFlags.ReportOnly));
+            _operations.Setup(x => x.Substitute("a", "b", _view.GetLineRange(0, 0), SubstituteFlags.None));
+            RunCommand("s");
+        }
+
+        [Test]
+        public void Substitute19()
+        {
+            Create("cat", "dog");
+            _vimData.LastSubstituteData = FSharpOption.Create(new SubstituteData("a", "b", SubstituteFlags.ReportOnly));
+            _operations.Setup(x => x.Substitute("a", "b", _view.GetLineRange(0, 0), SubstituteFlags.ReplaceAll));
+            RunCommand("s g");
+        }
+
+        [Test]
+        public void Substitute20()
+        {
+            Create("cat", "dog");
+            _vimData.LastSubstituteData = FSharpOption.Create(new SubstituteData("a", "b", SubstituteFlags.ReportOnly));
+            _operations.Setup(x => x.Substitute("a", "b", _view.GetLineRange(0, 0), SubstituteFlags.ReplaceAll));
+            RunCommand("& g");
+        }
+
+        [Test]
+        [Description("Don't allow spaces between the flags")]
+        public void Substitute21()
+        {
+            Create("cat", "dog");
+            _statusUtil.Setup(x => x.OnError(Resources.CommandMode_TrailingCharacters)).Verifiable();
+            RunCommand("&& g");
+            _factory.Verify();
+        }
+
+        [Test]
+        [Description("Space between last slash and flags is not legal")]
+        public void Substitute22()
+        {
+            Create("cat", "dog");
+            _statusUtil.Setup(x => x.OnError(Resources.CommandMode_TrailingCharacters)).Verifiable();
+            RunCommand("s/a/b/ g");
+            _factory.Verify();
+        }
+
+        [Test]
+        [Description("Space in middle of flags is also not legal")]
+        public void Substitute23()
+        {
+            Create("cat", "dog");
+            _statusUtil.Setup(x => x.OnError(Resources.CommandMode_TrailingCharacters)).Verifiable();
+            RunCommand("s/a/b/& g");
+            _factory.Verify();
+        }
+
+        [Test]
+        [Description("Count is legal after the flags")]
+        public void Substitute24()
+        {
+            Create("cat", "dog", "rabbit", "tree");
+            _operations
+                .Setup(x => x.Substitute("a", "b", _view.GetLineRange(0, 2), SubstituteFlags.None))
+                .Verifiable();
+            RunCommand("s/a/b/ 3");
+            _factory.Verify();
+        }
+
+        [Test]
+        [Description("Flags and count after the standard substitute command")]
+        public void Substitute25()
+        {
+            Create("cat", "dog", "rabbit", "tree");
+            _operations
+                .Setup(x => x.Substitute("a", "b", _view.GetLineRange(0, 2), SubstituteFlags.OrdinalCase))
+                .Verifiable();
+            RunCommand("s/a/b/I 3");
+            _factory.Verify();
+        }
+
+        [Test]
+        [Description("Repeat the last substitute when there is no last substitute")]
+        public void Substitute26()
+        {
+            Create("cat", "dog", "rabbit", "tree");
+            _vimData.LastSubstituteData = FSharpOption<SubstituteData>.None;
+            _statusUtil.Setup(x => x.OnError(Resources.CommandMode_InvalidCommand)).Verifiable();
+            RunCommand("s");
+            _factory.Verify();
+        }
+
+        [Test]
+        [Description("Repeat the substitute with no arguments should not re-use the flags")]
+        public void Substitute27()
+        {
+            Create("cat", "dog", "rabbit", "tree");
+            _vimData.LastSubstituteData = FSharpOption.Create(new SubstituteData("a", "b", SubstituteFlags.OrdinalCase));
+            _operations
+                .Setup(x => x.Substitute("a", "b", _view.GetLineRange(0, 0), SubstituteFlags.None))
+                .Verifiable();
+            RunCommand("s");
+            _factory.Verify();
+        }
+
+        [Test]
+        [Description("Repeat the substitute with flags")]
+        public void Substitute28()
+        {
+            Create("cat", "dog", "rabbit", "tree");
+            _vimData.LastSubstituteData = FSharpOption.Create(new SubstituteData("a", "b", SubstituteFlags.OrdinalCase));
+            _operations
+                .Setup(x => x.Substitute("a", "b", _view.GetLineRange(0, 0), SubstituteFlags.ReplaceAll))
+                .Verifiable();
+            RunCommand("s g");
+            _factory.Verify();
+        }
+
+        [Test]
+        [Description("Repeat using & allows a space before the flags")]
+        public void Substitute29()
+        {
+            Create("cat", "dog", "rabbit", "tree");
+            _vimData.LastSubstituteData = FSharpOption.Create(new SubstituteData("a", "b", SubstituteFlags.OrdinalCase));
+            _operations
+                .Setup(x => x.Substitute("a", "b", _view.GetLineRange(0, 0), SubstituteFlags.ReplaceAll))
+                .Verifiable();
+            RunCommand("& g");
+            _factory.Verify();
+        }
+
+        [Test]
+        [Description("Repeat using & and several flags")]
+        public void Substitute30()
+        {
+            Create("cat", "dog", "rabbit", "tree");
+            _vimData.LastSubstituteData = FSharpOption.Create(new SubstituteData("a", "b", SubstituteFlags.OrdinalCase));
+            _operations
+                .Setup(x => x.Substitute("a", "b", _view.GetLineRange(0, 0), SubstituteFlags.OrdinalCase | SubstituteFlags.ReplaceAll))
+                .Verifiable();
+            RunCommand("&&g");
+            _factory.Verify();
+        }
+
+        [Test]
+        [Description("Repeat using & and a count")]
+        public void Substitute31()
+        {
+            Create("cat", "dog", "rabbit", "tree");
+            _vimData.LastSubstituteData = FSharpOption.Create(new SubstituteData("a", "b", SubstituteFlags.OrdinalCase));
+            _operations
+                .Setup(x => x.Substitute("a", "b", _view.GetLineRange(0, 2), SubstituteFlags.None))
+                .Verifiable();
+            RunCommand("& 3");
+            _factory.Verify();
+        }
+
+        [Test]
+        [Description("Repeat using ~ uses last search not the last substitute search pattern")]
+        public void Substitute32()
+        {
+            Create("cat", "dog", "rabbit", "tree");
+            _vimData.LastSubstituteData = FSharpOption.Create(new SubstituteData("!!!", "b", SubstituteFlags.None));
+            _vimData.LastSearchPattern = FSharpOption.Create("a");
+            _operations
+                .Setup(x => x.Substitute("a", "b", _view.GetLineRange(0, 0), SubstituteFlags.None))
+                .Verifiable();
+            RunCommand("~");
+            _factory.Verify();
+
+        }
+
+        [Test]
+        [Description("Repeat using ~ does not repeat flags")]
+        public void Substitute33()
+        {
+            Create("cat", "dog", "rabbit", "tree");
+            _vimData.LastSubstituteData = FSharpOption.Create(new SubstituteData("!!!", "b", SubstituteFlags.OrdinalCase));
+            _vimData.LastSearchPattern = FSharpOption.Create("a");
+            _operations
+                .Setup(x => x.Substitute("a", "b", _view.GetLineRange(0, 0), SubstituteFlags.None))
+                .Verifiable();
+            RunCommand("~");
+            _factory.Verify();
+
+        }
+
+        [Test]
+        [Description("Repeat using ~ allows flags after a space")]
+        public void Substitute34()
+        {
+            Create("cat", "dog", "rabbit", "tree");
+            _vimData.LastSubstituteData = FSharpOption.Create(new SubstituteData("!!!", "b", SubstituteFlags.OrdinalCase));
+            _vimData.LastSearchPattern = FSharpOption.Create("a");
+            _operations
+                .Setup(x => x.Substitute("a", "b", _view.GetLineRange(0, 0), SubstituteFlags.ReplaceAll))
+                .Verifiable();
+            RunCommand("~ g");
+            _factory.Verify();
+        }
+
+        [Test]
+        [Description("Repeat using ~& does not allow flags after a space")]
+        public void Substitute35()
+        {
+            Create("cat", "dog", "rabbit", "tree");
+            _statusUtil.Setup(x => x.OnError(Resources.CommandMode_TrailingCharacters)).Verifiable();
+            RunCommand("~& g");
+            _factory.Verify();
+        }
+
+        [Test]
+        [Description("Repeat using ~ allows for a count")]
+        public void Substitute36()
+        {
+            Create("cat", "dog", "rabbit", "tree");
+            _vimData.LastSubstituteData = FSharpOption.Create(new SubstituteData("!!!", "b", SubstituteFlags.OrdinalCase));
+            _vimData.LastSearchPattern = FSharpOption.Create("a");
+            _operations
+                .Setup(x => x.Substitute("a", "b", _view.GetLineRange(0, 2), SubstituteFlags.ReplaceAll))
+                .Verifiable();
+            RunCommand("~ g 3");
+            _factory.Verify();
+        }
+
+        [Test]
+        [Description("Repeat using && needs to keep previous flags (single & does not)")]
+        public void Substitute37()
+        {
+            Create("cat", "dog", "rabbit", "tree");
+            _vimData.LastSubstituteData = FSharpOption.Create(new SubstituteData("a", "b", SubstituteFlags.OrdinalCase));
+            _operations
+                .Setup(x => x.Substitute("a", "b", _view.GetLineRange(0, 0), SubstituteFlags.OrdinalCase))
+                .Verifiable();
+            RunCommand("&&");
+            _factory.Verify();
+        }
+
+        [Test]
+        [Description("Repeat via s plus r uses last search")]
+        public void Substitute38()
+        {
+            Create("cat", "dog", "rabbit", "tree");
+            _vimData.LastSubstituteData = FSharpOption.Create(new SubstituteData("!!!", "b", SubstituteFlags.OrdinalCase));
+            _vimData.LastSearchPattern = FSharpOption.Create("a");
+            _operations
+                .Setup(x => x.Substitute("a", "b", _view.GetLineRange(0, 0), SubstituteFlags.None))
+                .Verifiable();
+            RunCommand("s r");
+            _factory.Verify();
+        }
+
+        [Test]
+        [Description("Repeat via & plus r uses last search")]
+        public void Substitute39()
+        {
+            Create("cat", "dog", "rabbit", "tree");
+            _vimData.LastSubstituteData = FSharpOption.Create(new SubstituteData("!!!", "b", SubstituteFlags.OrdinalCase));
+            _vimData.LastSearchPattern = FSharpOption.Create("a");
+            _operations
+                .Setup(x => x.Substitute("a", "b", _view.GetLineRange(0, 0), SubstituteFlags.None))
+                .Verifiable();
+            RunCommand("&r");
+            _factory.Verify();
         }
 
         [Test]
