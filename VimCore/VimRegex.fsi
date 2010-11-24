@@ -31,8 +31,11 @@ type VimRegexOptions =
 [<Sealed>]
 type VimRegex =
 
-    /// Text of the Regular expression
-    member Text : string
+    /// Vim Pattern of the Regular expression
+    member VimPattern : string
+
+    /// Pattern of the BCL version of the regular expression
+    member RegexPattern : string
 
     /// The underlying BCL Regex expression.  
     member Regex : Regex

@@ -53,7 +53,7 @@ type internal DefaultOperations ( _data : OperationsData, _incrementalSearch : I
             // Build up the SearchData structure
             let word = span.GetText()
             let text = if isWholeWord then SearchText.WholeWord(word) else SearchText.StraightText(word)
-            let data = {Text=text; Kind = kind; Options = SearchOptions.AllowIgnoreCase }
+            let data = {Text=text; Kind = kind; Options = SearchOptions.ConsiderIgnoreCase }
 
             // When forward the search will be starting on the current word so it will 
             // always match.  Without modification a count of 1 would simply find the word 

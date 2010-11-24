@@ -21,15 +21,15 @@ type internal SearchService
         | SearchText.Pattern(p) ->
             match _factory.Create p with
             | None -> None
-            | Some(regex) -> Some regex.Text
+            | Some(regex) -> Some regex.RegexPattern
         | SearchText.WholeWord(text) -> Some text
         | SearchText.StraightText(text) -> Some text
 
     member x.CreateFindOptions (text:SearchText) kind searchOptions =
         let caseOptions = 
-            if Utils.IsFlagSet searchOptions SearchOptions.AllowIgnoreCase && _settings.IgnoreCase then
+            if Utils.IsFlagSet searchOptions SearchOptions.ConsiderIgnoreCase && _settings.IgnoreCase then
                 let hasUpper () = text.RawText |> Seq.filter CharUtil.IsLetter |> Seq.filter CharUtil.IsUpper |> SeqUtil.isNotEmpty
-                if Utils.IsFlagSet searchOptions SearchOptions.AllowSmartCase && _settings.SmartCase && hasUpper() then FindOptions.MatchCase
+                if Utils.IsFlagSet searchOptions SearchOptions.ConsiderSmartCase && _settings.SmartCase && hasUpper() then FindOptions.MatchCase
                 else FindOptions.None
             else FindOptions.MatchCase
         let revOptions = if SearchKindUtil.IsBackward kind then FindOptions.SearchReverse else FindOptions.None

@@ -23,7 +23,7 @@ type internal IncrementalSearch
         _search : ISearchService) =
 
     let mutable _data : IncrementalSearchData option = None
-    let _searchOptions = SearchOptions.AllowIgnoreCase ||| SearchOptions.AllowSmartCase
+    let _searchOptions = SearchOptions.ConsiderIgnoreCase ||| SearchOptions.ConsiderSmartCase
     let _currentSearchUpdated = Event<SearchData * SearchResult>()
     let _currentSearchCompleted = Event<SearchData * SearchResult>()
     let _currentSearchCancelled = Event<SearchData>()
@@ -58,7 +58,7 @@ type internal IncrementalSearch
                     if StringUtil.isNullOrEmpty pattern then None
                     else
                         let point = TextViewUtil.GetCaretPoint _textView
-                        let options = SearchOptions.AllowIgnoreCase ||| SearchOptions.AllowIgnoreCase
+                        let options = SearchOptions.ConsiderIgnoreCase ||| SearchOptions.ConsiderIgnoreCase
                         _search.FindNext searchData point _navigator 
 
                 match ret with

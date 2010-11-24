@@ -787,10 +787,10 @@ type SearchOptions =
     | None = 0x0
 
     /// Consider the "ignorecase" option when doing the search
-    | AllowIgnoreCase = 0x1
+    | ConsiderIgnoreCase = 0x1
 
     /// Consider the "smartcase" option when doing the search
-    | AllowSmartCase = 0x2
+    | ConsiderSmartCase = 0x2
 
 [<RequireQualifiedAccess>]
 type SearchText =

@@ -18,7 +18,7 @@ namespace VimCore.Test
     [TestFixture]
     public class IncrementalSearchTest
     {
-        private static SearchOptions s_options = SearchOptions.AllowIgnoreCase | SearchOptions.AllowSmartCase;
+        private static SearchOptions s_options = SearchOptions.ConsiderIgnoreCase | SearchOptions.ConsiderSmartCase;
         private MockRepository _factory;
         private Mock<ISearchService> _searchService;
         private Mock<ITextStructureNavigator> _nav;
@@ -224,7 +224,7 @@ namespace VimCore.Test
         public void InSearch2()
         {
             Create("foo bar");
-            _searchService.SetupSet(x => x.LastSearch = new SearchData(SearchText.NewPattern(""), SearchKind.Forward, SearchOptions.AllowSmartCase | SearchOptions.AllowIgnoreCase));
+            _searchService.SetupSet(x => x.LastSearch = new SearchData(SearchText.NewPattern(""), SearchKind.Forward, SearchOptions.ConsiderSmartCase | SearchOptions.ConsiderIgnoreCase));
             _search.Begin(SearchKind.Forward);
             _search.Process(KeyInputUtil.VimKeyToKeyInput(VimKey.Enter));
             Assert.IsFalse(_search.InSearch);

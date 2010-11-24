@@ -5,6 +5,7 @@ using Moq;
 using NUnit.Framework;
 using Vim;
 using Vim.Extensions;
+using Vim.UnitTest;
 using Vim.UnitTest.Mock;
 
 namespace VimCore.Test
@@ -31,17 +32,20 @@ namespace VimCore.Test
             _search = _searchRaw;
         }
 
-        private void AssertFindNext(SearchData data, FindOptions options, int position = 2)
+        private void AssertFindNext(
+            SearchData data,
+            string searchText,
+            FindOptions options)
         {
             var isWrap = SearchKindUtil.IsWrap(data.Kind);
             var snapshot = MockObjectFactory.CreateTextSnapshot(10);
             var nav = _factory.Create<ITextStructureNavigator>();
-            var findData = new FindData(data.Text.RawText, snapshot.Object, options, nav.Object);
+            var findData = new FindData(searchText, snapshot.Object, options, nav.Object);
             _textSearch
-                .Setup(x => x.FindNext(position, isWrap, findData))
+                .Setup(x => x.FindNext(2, isWrap, findData))
                 .Returns<SnapshotSpan?>(null)
                 .Verifiable();
-            _search.FindNext(data, new SnapshotPoint(snapshot.Object, position), nav.Object);
+            _search.FindNext(data, new SnapshotPoint(snapshot.Object, 2), nav.Object);
             _factory.Verify();
         }
 
@@ -70,7 +74,7 @@ namespace VimCore.Test
         public void CreateFindOptions4()
         {
             _settings.SetupGet(x => x.IgnoreCase).Returns(false).Verifiable();
-            var options = _searchRaw.CreateFindOptions(SearchText.NewPattern(""), SearchKind.Forward, SearchOptions.AllowIgnoreCase);
+            var options = _searchRaw.CreateFindOptions(SearchText.NewPattern(""), SearchKind.Forward, SearchOptions.ConsiderIgnoreCase);
             Assert.AreEqual(FindOptions.UseRegularExpressions | FindOptions.MatchCase, options);
             _factory.Verify();
         }
@@ -79,7 +83,7 @@ namespace VimCore.Test
         public void CreateFindOptions5()
         {
             _settings.SetupGet(x => x.IgnoreCase).Returns(true).Verifiable();
-            var options = _searchRaw.CreateFindOptions(SearchText.NewPattern(""), SearchKind.Forward, SearchOptions.AllowIgnoreCase);
+            var options = _searchRaw.CreateFindOptions(SearchText.NewPattern(""), SearchKind.Forward, SearchOptions.ConsiderIgnoreCase);
             Assert.AreEqual(FindOptions.UseRegularExpressions, options);
             _factory.Verify();
         }
@@ -89,7 +93,7 @@ namespace VimCore.Test
         {
             _settings.SetupGet(x => x.IgnoreCase).Returns(true).Verifiable();
             _settings.SetupGet(x => x.SmartCase).Returns(false).Verifiable();
-            var options = _searchRaw.CreateFindOptions(SearchText.NewPattern(""), SearchKind.Forward, SearchOptions.AllowIgnoreCase | SearchOptions.AllowSmartCase);
+            var options = _searchRaw.CreateFindOptions(SearchText.NewPattern(""), SearchKind.Forward, SearchOptions.ConsiderIgnoreCase | SearchOptions.ConsiderSmartCase);
             Assert.AreEqual(FindOptions.UseRegularExpressions, options);
             _factory.Verify();
         }
@@ -99,7 +103,7 @@ namespace VimCore.Test
         {
             _settings.SetupGet(x => x.IgnoreCase).Returns(true).Verifiable();
             _settings.SetupGet(x => x.SmartCase).Returns(true).Verifiable();
-            var options = _searchRaw.CreateFindOptions(SearchText.NewPattern(""), SearchKind.Forward, SearchOptions.AllowIgnoreCase | SearchOptions.AllowSmartCase);
+            var options = _searchRaw.CreateFindOptions(SearchText.NewPattern(""), SearchKind.Forward, SearchOptions.ConsiderIgnoreCase | SearchOptions.ConsiderSmartCase);
             Assert.AreEqual(FindOptions.UseRegularExpressions, options);
             _factory.Verify();
         }
@@ -109,7 +113,7 @@ namespace VimCore.Test
         {
             _settings.SetupGet(x => x.IgnoreCase).Returns(true).Verifiable();
             _settings.SetupGet(x => x.SmartCase).Returns(true).Verifiable();
-            var options = _searchRaw.CreateFindOptions(SearchText.NewPattern("foo"), SearchKind.Forward, SearchOptions.AllowIgnoreCase | SearchOptions.AllowSmartCase);
+            var options = _searchRaw.CreateFindOptions(SearchText.NewPattern("foo"), SearchKind.Forward, SearchOptions.ConsiderIgnoreCase | SearchOptions.ConsiderSmartCase);
             Assert.AreEqual(FindOptions.UseRegularExpressions, options);
             _factory.Verify();
         }
@@ -119,7 +123,7 @@ namespace VimCore.Test
         {
             _settings.SetupGet(x => x.IgnoreCase).Returns(true).Verifiable();
             _settings.SetupGet(x => x.SmartCase).Returns(true).Verifiable();
-            var options = _searchRaw.CreateFindOptions(SearchText.NewPattern("fOo"), SearchKind.Forward, SearchOptions.AllowIgnoreCase | SearchOptions.AllowSmartCase);
+            var options = _searchRaw.CreateFindOptions(SearchText.NewPattern("fOo"), SearchKind.Forward, SearchOptions.ConsiderIgnoreCase | SearchOptions.ConsiderSmartCase);
             Assert.AreEqual(FindOptions.UseRegularExpressions | FindOptions.MatchCase, options);
             _factory.Verify();
         }
@@ -132,17 +136,46 @@ namespace VimCore.Test
         }
 
         [Test]
+        [Description("Needs to respect the ignorecase option if ConsiderIgnoreCase is specified")]
         public void FindNext1()
         {
             _settings.SetupGet(x => x.IgnoreCase).Returns(true).Verifiable();
-            AssertFindNext(new SearchData(SearchText.NewPattern("foo"), SearchKind.Forward, SearchOptions.AllowIgnoreCase), FindOptions.UseRegularExpressions);
+            var data = VimUtil.CreateSearchData(SearchText.NewPattern("foo"), options: SearchOptions.ConsiderIgnoreCase);
+            AssertFindNext(data, "foo", FindOptions.UseRegularExpressions);
         }
 
         [Test]
+        [Description("Needs to respect the noignorecase option if ConsiderIgnoreCase is specified")]
         public void FindNext2()
         {
+            _settings.SetupGet(x => x.IgnoreCase).Returns(false).Verifiable();
+            var data = new SearchData(SearchText.NewPattern("foo"), SearchKind.Forward, SearchOptions.ConsiderIgnoreCase);
+            AssertFindNext(data, "foo", FindOptions.MatchCase | FindOptions.UseRegularExpressions);
+        }
+
+        [Test]
+        [Description("Match case if not considering smart or ignore case")]
+        public void FindNext3()
+        {
+            _settings.SetupGet(x => x.IgnoreCase).Returns(true).Verifiable();
             var data = new SearchData(SearchText.NewPattern("foo"), SearchKind.Forward, SearchOptions.None);
-            AssertFindNext(data, FindOptions.MatchCase | FindOptions.UseRegularExpressions);
+            AssertFindNext(data, "foo", FindOptions.MatchCase | FindOptions.UseRegularExpressions);
+        }
+
+        [Test]
+        [Description("Verify it's using the regex and not the text")]
+        public void FindNext4()
+        {
+            var data = VimUtil.CreateSearchData(SearchText.NewPattern(@"\<the"));
+            AssertFindNext(data, @"\bthe", FindOptions.MatchCase | FindOptions.UseRegularExpressions);
+        }
+
+        [Test]
+        [Description("Verify it's using the regex and not the text")]
+        public void FindNext5()
+        {
+            var data = VimUtil.CreateSearchData(SearchText.NewPattern(@"(the"));
+            AssertFindNext(data, @"\(the", FindOptions.MatchCase | FindOptions.UseRegularExpressions);
         }
 
         [Test]
