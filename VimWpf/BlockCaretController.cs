@@ -43,6 +43,11 @@ namespace Vim.UI.Wpf
         private void OnBufferClosed(object sender, EventArgs args)
         {
             _blockCaret.Destroy();
+
+            // Have to remove the global settings event handler here.  The global settings lifetime
+            // is tied to IVim and essentially is that of the AppDomain.  Not removing the handler
+            // here will lead to a memory leak of this type and the associated IVimBuffer instances
+            _buffer.Settings.GlobalSettings.SettingChanged -= OnSettingsChanged;
         }
 
         private void UpdateCaretOpacity()
