@@ -1699,7 +1699,7 @@ namespace VimCore.Test
         public void Substitute2()
         {
             Create("bar bar", "foo bar");
-            _statusUtil.Setup(x => x.OnStatus(Resources.CommandMode_SubstituteComplete(2, 2))).Verifiable();
+            _statusUtil.Setup(x => x.OnStatus(Resources.Common_SubstituteComplete(2, 2))).Verifiable();
             _operations.Substitute("bar", "again", _view.GetLineRange(0, 1), SubstituteFlags.None);
             Assert.AreEqual("again bar", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
             Assert.AreEqual("foo again", _view.TextSnapshot.GetLineFromLineNumber(1).GetText());
@@ -1710,7 +1710,7 @@ namespace VimCore.Test
         public void Substitute3()
         {
             Create("bar bar", "foo bar");
-            _statusUtil.Setup(x => x.OnStatus(Resources.CommandMode_SubstituteComplete(2, 1))).Verifiable();
+            _statusUtil.Setup(x => x.OnStatus(Resources.Common_SubstituteComplete(2, 1))).Verifiable();
             _operations.Substitute("bar", "again", _view.GetLineRange(0), SubstituteFlags.ReplaceAll);
             Assert.AreEqual("again again", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
             Assert.AreEqual("foo bar", _view.TextSnapshot.GetLineFromLineNumber(1).GetText());
@@ -1729,7 +1729,7 @@ namespace VimCore.Test
         public void Substitute5()
         {
             Create("bar bar", "foo bar");
-            _statusUtil.Setup(x => x.OnStatus(Resources.CommandMode_SubstituteComplete(2, 1))).Verifiable();
+            _statusUtil.Setup(x => x.OnStatus(Resources.Common_SubstituteComplete(2, 1))).Verifiable();
             _operations.Substitute("BAR", "again", _view.GetLineRange(0), SubstituteFlags.IgnoreCase | SubstituteFlags.ReplaceAll);
             Assert.AreEqual("again again", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
             _statusUtil.Verify();
@@ -1739,7 +1739,7 @@ namespace VimCore.Test
         public void Substitute6()
         {
             Create("bar bar", "foo bar");
-            _statusUtil.Setup(x => x.OnStatus(Resources.CommandMode_SubstituteComplete(2, 1))).Verifiable();
+            _statusUtil.Setup(x => x.OnStatus(Resources.Common_SubstituteComplete(2, 1))).Verifiable();
             _operations.Substitute("BAR", "again", _view.GetLineRange(0), SubstituteFlags.IgnoreCase | SubstituteFlags.ReplaceAll);
             Assert.AreEqual("again again", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
             _statusUtil.Verify();
@@ -1750,7 +1750,7 @@ namespace VimCore.Test
         {
             Create("bar bar", "foo bar");
             var pattern = "BAR";
-            _statusUtil.Setup(x => x.OnError(Resources.CommandMode_PatternNotFound(pattern))).Verifiable();
+            _statusUtil.Setup(x => x.OnError(Resources.Common_PatternNotFound(pattern))).Verifiable();
             _operations.Substitute("BAR", "again", _view.GetLineRange(0), SubstituteFlags.OrdinalCase);
             _statusUtil.Verify();
         }
@@ -1761,7 +1761,7 @@ namespace VimCore.Test
             Create("bar bar", "foo bar");
             var original = _view.TextSnapshot;
             var pattern = "(foo";
-            _statusUtil.Setup(x => x.OnError(Resources.CommandMode_PatternNotFound(pattern))).Verifiable();
+            _statusUtil.Setup(x => x.OnError(Resources.Common_PatternNotFound(pattern))).Verifiable();
             _operations.Substitute(pattern, "again", _view.GetLineRange(0), SubstituteFlags.OrdinalCase);
             _statusUtil.Verify();
             Assert.AreSame(original, _view.TextSnapshot);
@@ -1772,7 +1772,7 @@ namespace VimCore.Test
         {
             Create("bar bar", "foo bar");
             var tss = _view.TextSnapshot;
-            _statusUtil.Setup(x => x.OnStatus(Resources.CommandMode_SubstituteComplete(2, 1))).Verifiable();
+            _statusUtil.Setup(x => x.OnStatus(Resources.Common_SubstituteComplete(2, 1))).Verifiable();
             _operations.Substitute("bar", "again", _view.GetLineRange(0), SubstituteFlags.ReplaceAll | SubstituteFlags.ReportOnly);
             _statusUtil.Verify();
             Assert.AreSame(tss, _view.TextSnapshot);
@@ -1792,7 +1792,7 @@ namespace VimCore.Test
         public void Substitute11()
         {
             Create("cat", "bat");
-            _statusUtil.Setup(x => x.OnStatus(Resources.CommandMode_SubstituteComplete(2, 2))).Verifiable();
+            _statusUtil.Setup(x => x.OnStatus(Resources.Common_SubstituteComplete(2, 2))).Verifiable();
             _operations.Substitute("a", "o", _view.GetLineRange(0, 1), SubstituteFlags.None);
             Assert.AreEqual("cot", _view.GetLine(0).GetText());
             Assert.AreEqual("bot", _view.GetLine(1).GetText());
@@ -1816,6 +1816,15 @@ namespace VimCore.Test
             _globalSettings.SetupGet(x => x.Magic).Returns(true);
             _operations.Substitute(".", "s", _view.GetLineRange(0, 0), SubstituteFlags.Nomagic);
             Assert.AreEqual("cats", _view.GetLine(0).GetText());
+        }
+
+        [Test]
+        [Description("Don't error when the pattern is not found if SuppressErrors is passed")]
+        public void Substitute14()
+        {
+            Create("cat", "bat");
+            _operations.Substitute("z", "b", _view.GetLineRange(0, 0), SubstituteFlags.SuppressError);
+            _factory.Verify();
         }
 
     }

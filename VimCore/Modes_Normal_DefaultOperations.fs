@@ -90,20 +90,20 @@ type internal DefaultOperations ( _data : OperationsData, _incrementalSearch : I
                     let count = count - 1 
                     match _search.FindNextMultiple last span.End _normalWordNav count with
                     | Some(span) -> foundSpan span
-                    | None -> _statusUtil.OnError (Resources.NormalMode_PatternNotFound last.Text.RawText)
+                    | None -> _statusUtil.OnError (Resources.Common_PatternNotFound last.Text.RawText)
 
             // Make sure we don't count the current word if the cursor is positioned
             // directly on top of the current word 
             let caretPoint = TextViewUtil.GetCaretPoint _textView
             match _search.FindNext last caretPoint _normalWordNav with
-            | None -> _statusUtil.OnError (Resources.NormalMode_PatternNotFound last.Text.RawText)
+            | None -> _statusUtil.OnError (Resources.Common_PatternNotFound last.Text.RawText)
             | Some(span) ->
                 let count = if span.Start = caretPoint then count else count - 1 
                 if count = 0 then foundSpan span
                 else 
                     match _search.FindNextMultiple last span.End _normalWordNav count with
                     | Some(span) -> foundSpan span
-                    | None -> _statusUtil.OnError (Resources.NormalMode_PatternNotFound last.Text.RawText)
+                    | None -> _statusUtil.OnError (Resources.Common_PatternNotFound last.Text.RawText)
 
     member x.GoToLineCore line =
         let snapshot = _textView.TextSnapshot

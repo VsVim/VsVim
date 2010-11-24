@@ -617,7 +617,7 @@ namespace VimCore.Test
         {
             Create("cat", "dog", "rabbit", "tree");
             _vimData.LastSubstituteData = FSharpOption<SubstituteData>.None;
-            _statusUtil.Setup(x => x.OnError(Resources.CommandMode_InvalidCommand)).Verifiable();
+            _statusUtil.Setup(x => x.OnError(Resources.CommandMode_NoPreviousSubstitute)).Verifiable();
             RunCommand("s");
             _factory.Verify();
         }
@@ -852,6 +852,39 @@ namespace VimCore.Test
             _factory.Verify();
             RunCommand("sno");
             _factory.Verify();
+        }
+
+        [Test]
+        [Description("The print flag")]
+        public void Substitute44()
+        {
+            Create("cat", "dog", "rabbit", "tree");
+            _operations
+                .Setup(x => x.Substitute("a", "b", _view.GetLineRange(0, 0), SubstituteFlags.PrintLast))
+                .Verifiable();
+            RunCommand("s/a/b/p");
+        }
+
+        [Test]
+        [Description("The print with number flag")]
+        public void Substitute45()
+        {
+            Create("cat", "dog", "rabbit", "tree");
+            _operations
+                .Setup(x => x.Substitute("a", "b", _view.GetLineRange(0, 0), SubstituteFlags.PrintLastWithNumber))
+                .Verifiable();
+            RunCommand("s/a/b/#");
+        }
+
+        [Test]
+        [Description("The print with list flag")]
+        public void Substitute46()
+        {
+            Create("cat", "dog", "rabbit", "tree");
+            _operations
+                .Setup(x => x.Substitute("a", "b", _view.GetLineRange(0, 0), SubstituteFlags.PrintLastWithList))
+                .Verifiable();
+            RunCommand("s/a/b/l");
         }
 
         [Test]

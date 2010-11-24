@@ -692,7 +692,7 @@ namespace VimCore.Test
             Create("foo bar baz");
             var data = new SearchData(SearchText.NewPattern("beat"), SearchKind.ForwardWithWrap, SearchOptions.None);
             _vimData.LastSearchData = data;
-            _statusUtil.Setup(x => x.OnError(Resources.NormalMode_PatternNotFound("beat"))).Verifiable();
+            _statusUtil.Setup(x => x.OnError(Resources.Common_PatternNotFound("beat"))).Verifiable();
             _operations.MoveToNextOccuranceOfLastSearch(1, false);
             _statusUtil.Verify();
         }

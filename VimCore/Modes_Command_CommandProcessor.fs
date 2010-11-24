@@ -426,6 +426,9 @@ type internal CommandProcessor
                 | 'i' -> Some SubstituteFlags.IgnoreCase
                 | 'I' -> Some SubstituteFlags.OrdinalCase
                 | 'n' -> Some SubstituteFlags.ReportOnly
+                | 'p' -> Some SubstituteFlags.PrintLast
+                | '#' -> Some SubstituteFlags.PrintLastWithNumber
+                | 'l' -> Some SubstituteFlags.PrintLastWithList
                 | _  -> None
 
             let rec inner rest continuation = 
@@ -471,10 +474,8 @@ type internal CommandProcessor
             | _ -> false
 
         if isFullParse then 
-
             // This is the full form of the substitute command.  That is the form having
             // :s/search/replace/flags
-
 
             let parseFull rest badParse goodParse =
 
@@ -506,17 +507,19 @@ type internal CommandProcessor
                                 | None -> SubstituteFlags.None
                                 | Some(data) -> (Utils.UnsetFlag flags SubstituteFlags.UsePreviousFlags) ||| data.Flags
                             else flags
-    
+
                         // Check for the previous search pattern flag
-                        let search = 
+                        let search, errorMsg  = 
                             if Utils.IsFlagSet flags SubstituteFlags.UsePreviousSearchPattern then
                                 match _regexFactory.CreateForSearchText _buffer.VimData.LastSearchData.Text with
-                                | None -> StringUtil.empty
-                                | Some(regex) -> regex.VimPattern
+                                | None -> (StringUtil.empty, Some Resources.CommandMode_NoPreviousSubstitute)
+                                | Some(regex) -> (regex.VimPattern, None)
                             else
-                                search
-    
-                        if StringUtil.isNullOrEmpty search then 
+                                (search,None)
+
+                        if Option.isSome errorMsg then
+                            badParse (Option.get errorMsg)
+                        elif StringUtil.isNullOrEmpty search then 
                             badParse Resources.CommandMode_InvalidCommand
                         elif not (List.isEmpty rest) then
                             badParse Resources.CommandMode_TrailingCharacters
@@ -538,26 +541,30 @@ type internal CommandProcessor
             // :subsitute [flags] [count]
             let flags, rest = parseAndApplyFlags rest
             let range, rest = parseAndApplyCount originalRange (rest |> Seq.skipWhile CharUtil.IsWhiteSpace)
-            let range = RangeUtil.GetSnapshotLineRange range
-
-            // Get the pattern to replace with 
-            let flags, pattern = 
-                if Utils.IsFlagSet flags SubstituteFlags.UsePreviousSearchPattern then 
-                    let flags = Utils.UnsetFlag flags SubstituteFlags.UsePreviousSearchPattern
-                    match _regexFactory.CreateForSearchText _buffer.VimData.LastSearchData.Text with
-                    | None -> (flags, StringUtil.empty)
-                    | Some(regex) -> (flags, regex.VimPattern)
-                else 
-                    match _buffer.VimData.LastSubstituteData with
-                    | None -> (flags, StringUtil.empty)
-                    | Some(data) -> (flags, data.SearchPattern)
-
             let isParseFinished = rest |> Seq.skipWhile CharUtil.IsWhiteSpace |> Seq.isEmpty
-            
-            match isParseFinished, _buffer.Vim.VimData.LastSubstituteData with
-            | true, Some(data)-> _operations.Substitute pattern data.Substitute range flags
-            | true , None -> _statusUtil.OnError Resources.CommandMode_InvalidCommand
-            | false, _ -> _statusUtil.OnError Resources.CommandMode_TrailingCharacters
+            if not isParseFinished then 
+                _statusUtil.OnError Resources.CommandMode_TrailingCharacters
+            else
+
+                match _buffer.Vim.VimData.LastSubstituteData with 
+                | None -> _statusUtil.OnError Resources.CommandMode_NoPreviousSubstitute 
+                | Some(previousData) ->
+
+                    let range = RangeUtil.GetSnapshotLineRange range
+
+                    // Get the pattern to replace with 
+                    let flags, pattern, errorMsg = 
+                        if Utils.IsFlagSet flags SubstituteFlags.UsePreviousSearchPattern then 
+                            let flags = Utils.UnsetFlag flags SubstituteFlags.UsePreviousSearchPattern
+                            match _regexFactory.CreateForSearchText _buffer.VimData.LastSearchData.Text with
+                            | None -> (flags, StringUtil.empty, Some Resources.CommandMode_InvalidCommand)
+                            | Some(regex) -> (flags, regex.VimPattern, None)
+                        else 
+                            (flags, previousData.SearchPattern, None)
+
+                    match errorMsg with
+                    | Some(msg) -> _statusUtil.OnError msg
+                    | None -> _operations.Substitute pattern previousData.Substitute range flags
 
     member private x.ProcessKeyMapClear modes hasBang =
         let modes = 

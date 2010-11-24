@@ -618,26 +618,66 @@ type internal CommonOperations ( _data : OperationsData ) =
                     // Actually do the edits
                     matches |> Seq.iter (fun (m,span) -> replaceOne span m)
 
-                let updateReplaceCount () = 
-                    // Update the status
-                    let replaceCount = matches |> Seq.length
-                    let lineCount = 
-                        matches 
-                        |> Seq.map (fun (_,s) -> s.Start.GetContainingLine().LineNumber)
-                        |> Seq.distinct
-                        |> Seq.length
-                    if replaceCount > 1 then
-                        _statusUtil.OnStatus (Resources.CommandMode_SubstituteComplete replaceCount lineCount)
+                // Update the status for the substitute operation
+                let printMessage () = 
+
+                    // Get the replace message for multiple lines
+                    let replaceMessage = 
+                        let replaceCount = matches |> Seq.length
+                        let lineCount = 
+                            matches 
+                            |> Seq.map (fun (_,s) -> s.Start.GetContainingLine().LineNumber)
+                            |> Seq.distinct
+                            |> Seq.length
+                        if replaceCount > 1 then Resources.Common_SubstituteComplete replaceCount lineCount |> Some
+                        else None
+
+                    let printReplaceMessage () =
+                        match replaceMessage with 
+                        | None -> ()
+                        | Some(msg) -> _statusUtil.OnStatus msg
+
+                    // Find the last line in the replace sequence.  This is printed out to the 
+                    // user and needs to represent the current state of the line, not the previous
+                    let lastLine = 
+                        if Seq.isEmpty matches then 
+                            None
+                        else 
+                            let _, span = matches |> SeqUtil.last 
+                            let tracking = span.Snapshot.CreateTrackingSpan(span.Span, SpanTrackingMode.EdgeInclusive)
+                            match TrackingSpanUtil.GetSpan _data.TextView.TextSnapshot tracking with
+                            | None -> None
+                            | Some(span) -> SnapshotSpanUtil.GetStartLine span |> Some
+
+                    // Now consider the options 
+                    match lastLine with 
+                    | None -> printReplaceMessage()
+                    | Some(line) ->
+
+                        let printBoth msg = 
+                            match replaceMessage with
+                            | None -> _statusUtil.OnStatus msg
+                            | Some(replaceMessage) -> _statusUtil.OnStatusLong [replaceMessage; msg]
+
+                        if Utils.IsFlagSet flags SubstituteFlags.PrintLast then
+                            printBoth (line.GetText())
+                        elif Utils.IsFlagSet flags SubstituteFlags.PrintLastWithNumber then
+                            sprintf "  %d %s" (line.LineNumber+1) (line.GetText()) |> printBoth 
+                        elif Utils.IsFlagSet flags SubstituteFlags.PrintLastWithList then
+                            sprintf "%s$" (line.GetText()) |> printBoth 
+                        else printReplaceMessage()
 
                 if edit.HasEffectiveChanges then
                     edit.Apply() |> ignore                                
-                    updateReplaceCount()
+                    printMessage()
                 elif Utils.IsFlagSet flags SubstituteFlags.ReportOnly then
                     edit.Cancel()
-                    updateReplaceCount()
+                    printMessage ()
+                elif Utils.IsFlagSet flags SubstituteFlags.SuppressError then
+                    edit.Cancel()
                 else 
                     edit.Cancel()
-                    _statusUtil.OnError (Resources.CommandMode_PatternNotFound pattern)
+                    _statusUtil.OnError (Resources.Common_PatternNotFound pattern)
 
             // Get the case options
             let options = 
@@ -653,7 +693,7 @@ type internal CommonOperations ( _data : OperationsData ) =
 
             let options = VimRegexOptions.Compiled ||| options
             match _regexFactory.CreateWithOptions pattern options with
-            | None -> _statusUtil.OnError (Resources.CommandMode_PatternNotFound pattern)
+            | None -> _statusUtil.OnError (Resources.Common_PatternNotFound pattern)
             | Some (regex) -> 
                 doReplace regex
                 _vimData.LastSubstituteData <- Some {SearchPattern=pattern; Substitute=replace; Flags=flags}

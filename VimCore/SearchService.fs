@@ -64,7 +64,7 @@ type internal SearchService
                         
             // Recursive loop to perform the search "count" times
             let rec doFind count position = 
-    
+
                 let result = 
                     try
                         _search.FindNext(position, isWrap, findData) |> NullableUtil.toOption
@@ -73,7 +73,7 @@ type internal SearchService
                         // If the regular expression has invalid data then don't throw but return a failed match
                         if searchData.Text.IsPatternText then None
                         else reraise()
-    
+
                 match result,count > 1 with
                 | Some(span),false -> Some(span)
                 | Some(span),true -> 
@@ -81,7 +81,7 @@ type internal SearchService
                     | Some(point) -> doFind (count-1) point.Position
                     | None -> None
                 | _ -> None
-    
+
             let count = max 1 count
             let pos = SnapshotPointUtil.GetPosition point
             doFind count pos

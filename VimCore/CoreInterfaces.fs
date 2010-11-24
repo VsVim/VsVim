@@ -969,6 +969,15 @@ type SubstituteFlags =
     | Magic = 0x100
     | Nomagic = 0x200
 
+    /// The p option.  Print the last replaced line
+    | PrintLast = 0x400
+
+    /// The # option.  Print the last replaced line with the line number prepended
+    | PrintLastWithNumber = 0x800
+
+    /// Print the last line as if :list was used
+    | PrintLastWithList = 0x1000
+
 type SubstituteData = {
     SearchPattern : string
     Substitute : string
