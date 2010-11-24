@@ -94,6 +94,7 @@
     <Compile Include="VimBuffer.fs" />
     <Compile Include="TextViewMotionUtil.fsi" />
     <Compile Include="TextViewMotionUtil.fs" />
+    <Compile Include="SearchService.fsi" />
     <Compile Include="SearchService.fs" />
     <Compile Include="RegisterMap.fsi" />
     <Compile Include="RegisterMap.fs" />

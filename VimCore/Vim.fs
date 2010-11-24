@@ -14,15 +14,20 @@ open Vim.Modes
 type internal VimData() =
 
     let mutable _lastSubstituteData : SubstituteData option = None
-    let mutable _lastSearchPattern : string option = None
+    let mutable _lastSearchData = { Text = SearchText.Pattern(StringUtil.empty); Kind = SearchKind.ForwardWithWrap; Options = SearchOptions.None }
+    let _lastSearchChanged = Event<SearchData>()
 
     interface IVimData with 
         member x.LastSubstituteData 
             with get() = _lastSubstituteData
             and set value = _lastSubstituteData <- value
-        member x.LastSearchPattern
-            with get() = _lastSearchPattern
-            and set value = _lastSearchPattern <- value
+        member x.LastSearchData
+            with get() = _lastSearchData
+            and set value = 
+                _lastSearchData <- value
+                _lastSearchChanged.Trigger value
+        [<CLIEvent>]
+        member x.LastSearchDataChanged = _lastSearchChanged.Publish
 
 /// Default implementation of IVim 
 [<Export(typeof<IVimBufferFactory>)>]
@@ -89,7 +94,7 @@ type internal VimBufferFactory
         let createCommandRunner() = CommandRunner (view, vim.RegisterMap, capture,statusUtil) :>ICommandRunner
         let broker = _completionWindowBrokerFactoryService.CreateDisplayWindowBroker view
         let bufferOptions = _editorOptionsFactoryService.GetOptions(view.TextBuffer)
-        let normalIncrementalSearch = Vim.Modes.Normal.IncrementalSearch(view, outlining, localSettings, wordNav, vim.SearchService) :> IIncrementalSearch
+        let normalIncrementalSearch = Vim.Modes.Normal.IncrementalSearch(view, outlining, localSettings, wordNav, vim.SearchService, vim.VimData) :> IIncrementalSearch
         let normalOpts = Modes.Normal.DefaultOperations(operationsData, normalIncrementalSearch) :> Vim.Modes.Normal.IOperations
         let commandOpts = Modes.Command.DefaultOperations(operationsData) :> Modes.Command.IOperations
         let commandProcessor = Modes.Command.CommandProcessor(buffer, commandOpts, statusUtil, FileSystem() :> IFileSystem) :> Modes.Command.ICommandProcessor

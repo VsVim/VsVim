@@ -285,11 +285,11 @@ type internal NormalMode
                     CommandFlags.Special,
                     fun _ _ -> 
                         let data = _bufferData.Vim.VimData
-                        match data.LastSearchPattern, data.LastSubstituteData with
-                        | Some(pattern), Some(data) -> 
+                        match data.LastSubstituteData with
+                        | Some(data) -> 
                             let range = TextViewUtil.GetCaretLineRange _bufferData.TextView 1
-                            _operations.Substitute pattern data.Substitute range SubstituteFlags.None 
-                        | _ -> () )
+                            _operations.Substitute data.SearchPattern data.Substitute range SubstituteFlags.None 
+                        | None -> () )
                 yield (
                     "gJ", 
                     CommandFlags.Repeatable, 
@@ -326,10 +326,10 @@ type internal NormalMode
                     CommandFlags.Special, 
                     fun count _ -> 
                         let data = _bufferData.Vim.VimData
-                        match data.LastSearchPattern, data.LastSubstituteData with
-                        | Some(pattern), Some(data) -> 
+                        match data.LastSubstituteData with
+                        | Some(data) -> 
                             let range = SnapshotLineRangeUtil.CreateForSnapshot this.TextBuffer.CurrentSnapshot
-                            _operations.Substitute pattern data.Substitute range data.Flags
+                            _operations.Substitute data.SearchPattern data.Substitute range data.Flags
                         | _ -> () )
                 yield (
                     "u",  

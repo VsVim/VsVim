@@ -10,8 +10,6 @@ type internal SearchService
         _search : ITextSearchService,
         _settings : IVimGlobalSettings ) = 
 
-    let mutable _lastSearch = { Text = SearchText.Pattern(StringUtil.empty); Kind = SearchKind.ForwardWithWrap; Options = SearchOptions.None }
-    let _lastSearchChanged = Event<SearchData>()
     let _factory = VimRegexFactory(_settings)
 
     /// Convert the given search text into the appropriate text for the
@@ -91,13 +89,6 @@ type internal SearchService
     member x.FindNext searchData point nav = x.FindNextMultiple searchData point nav 1
 
     interface ISearchService with
-        member x.LastSearch 
-            with get() = _lastSearch
-            and set value = 
-                _lastSearch <- value
-                _lastSearchChanged.Trigger value
-        [<CLIEvent>]
-        member x.LastSearchChanged = _lastSearchChanged.Publish
         member x.FindNext searchData point nav = x.FindNext searchData point nav
         member x.FindNextMultiple searchData point nav count = x.FindNextMultiple searchData point nav count
 

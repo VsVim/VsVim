@@ -22,6 +22,7 @@ type internal DefaultOperations ( _data : OperationsData, _incrementalSearch : I
     let _normalWordNav =  _data.Navigator
     let _statusUtil = _data.StatusUtil
     let _search = _incrementalSearch.SearchService
+    let _vimData = _data.VimData
 
     member private x.CommonImpl = x :> ICommonOperations
 
@@ -67,11 +68,10 @@ type internal DefaultOperations ( _data : OperationsData, _incrementalSearch : I
                 x.CommonImpl.EnsureCaretOnScreenAndTextExpanded()
             | None -> ()
 
-            _search.LastSearch <- data
+            _vimData.LastSearchData <- data
 
     member private x.MoveToNextOccuranceOfLastSearchCore count isReverse = 
-        let search = _incrementalSearch.SearchService
-        let last = search.LastSearch
+        let last = _vimData.LastSearchData
         let last = 
             if isReverse then { last with Kind = SearchKindUtil.Reverse last.Kind }
             else last

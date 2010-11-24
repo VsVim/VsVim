@@ -693,7 +693,7 @@ namespace VimCore.Test
         {
             Create("cat", "dog", "rabbit", "tree");
             _vimData.LastSubstituteData = FSharpOption.Create(new SubstituteData("!!!", "b", SubstituteFlags.None));
-            _vimData.LastSearchPattern = FSharpOption.Create("a");
+            _vimData.LastSearchData = VimUtil.CreateSearchData("a");
             _operations
                 .Setup(x => x.Substitute("a", "b", _view.GetLineRange(0, 0), SubstituteFlags.None))
                 .Verifiable();
@@ -708,7 +708,7 @@ namespace VimCore.Test
         {
             Create("cat", "dog", "rabbit", "tree");
             _vimData.LastSubstituteData = FSharpOption.Create(new SubstituteData("!!!", "b", SubstituteFlags.OrdinalCase));
-            _vimData.LastSearchPattern = FSharpOption.Create("a");
+            _vimData.LastSearchData = VimUtil.CreateSearchData("a");
             _operations
                 .Setup(x => x.Substitute("a", "b", _view.GetLineRange(0, 0), SubstituteFlags.None))
                 .Verifiable();
@@ -723,7 +723,7 @@ namespace VimCore.Test
         {
             Create("cat", "dog", "rabbit", "tree");
             _vimData.LastSubstituteData = FSharpOption.Create(new SubstituteData("!!!", "b", SubstituteFlags.OrdinalCase));
-            _vimData.LastSearchPattern = FSharpOption.Create("a");
+            _vimData.LastSearchData = VimUtil.CreateSearchData("a");
             _operations
                 .Setup(x => x.Substitute("a", "b", _view.GetLineRange(0, 0), SubstituteFlags.ReplaceAll))
                 .Verifiable();
@@ -747,7 +747,7 @@ namespace VimCore.Test
         {
             Create("cat", "dog", "rabbit", "tree");
             _vimData.LastSubstituteData = FSharpOption.Create(new SubstituteData("!!!", "b", SubstituteFlags.OrdinalCase));
-            _vimData.LastSearchPattern = FSharpOption.Create("a");
+            _vimData.LastSearchData = VimUtil.CreateSearchData("a");
             _operations
                 .Setup(x => x.Substitute("a", "b", _view.GetLineRange(0, 2), SubstituteFlags.ReplaceAll))
                 .Verifiable();
@@ -774,7 +774,7 @@ namespace VimCore.Test
         {
             Create("cat", "dog", "rabbit", "tree");
             _vimData.LastSubstituteData = FSharpOption.Create(new SubstituteData("!!!", "b", SubstituteFlags.OrdinalCase));
-            _vimData.LastSearchPattern = FSharpOption.Create("a");
+            _vimData.LastSearchData = VimUtil.CreateSearchData("a");
             _operations
                 .Setup(x => x.Substitute("a", "b", _view.GetLineRange(0, 0), SubstituteFlags.None))
                 .Verifiable();
@@ -788,7 +788,7 @@ namespace VimCore.Test
         {
             Create("cat", "dog", "rabbit", "tree");
             _vimData.LastSubstituteData = FSharpOption.Create(new SubstituteData("!!!", "b", SubstituteFlags.OrdinalCase));
-            _vimData.LastSearchPattern = FSharpOption.Create("a");
+            _vimData.LastSearchData = VimUtil.CreateSearchData("a");
             _operations
                 .Setup(x => x.Substitute("a", "b", _view.GetLineRange(0, 0), SubstituteFlags.None))
                 .Verifiable();

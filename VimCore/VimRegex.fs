@@ -145,6 +145,16 @@ type VimRegexFactory
 
     member x.Create pattern = x.CreateWithOptions pattern VimRegexOptions.Compiled
 
+    member x.CreateForSearchText text = 
+        match text with
+        | SearchText.Pattern(pattern) -> x.Create pattern
+        | SearchText.WholeWord(word) -> "\<" + word + "\>" |> x.Create
+        | SearchText.StraightText(text) -> 
+            let pattern = Regex.Escape(text)
+            match VimRegexUtils.TryCreateRegex pattern RegexOptions.Compiled with
+            | None -> None
+            | Some(regex) -> VimRegex(text, pattern, regex) |> Some
+
     member x.CreateWithOptions pattern options = 
         let kind = if _settings.Magic then MagicKind.Magic else MagicKind.NoMagic
         let kind = 

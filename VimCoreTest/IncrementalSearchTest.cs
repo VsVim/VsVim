@@ -20,6 +20,7 @@ namespace VimCore.Test
     {
         private static SearchOptions s_options = SearchOptions.ConsiderIgnoreCase | SearchOptions.ConsiderSmartCase;
         private MockRepository _factory;
+        private Mock<IVimData> _vimData;
         private Mock<ISearchService> _searchService;
         private Mock<ITextStructureNavigator> _nav;
         private Mock<IVimGlobalSettings> _globalSettings;
@@ -33,6 +34,7 @@ namespace VimCore.Test
         {
             _textView = EditorUtil.CreateView(lines);
             _factory = new MockRepository(MockBehavior.Strict);
+            _vimData = _factory.Create<IVimData>();
             _searchService = _factory.Create<ISearchService>();
             _nav = _factory.Create<ITextStructureNavigator>();
             _globalSettings = MockObjectFactory.CreateGlobalSettings(ignoreCase: true);
@@ -44,7 +46,8 @@ namespace VimCore.Test
                 _outlining.Object,
                 _settings.Object,
                 _nav.Object,
-                _searchService.Object);
+                _searchService.Object,
+                _vimData.Object);
             _search = _searchRaw;
         }
 
@@ -75,10 +78,10 @@ namespace VimCore.Test
         public void Process2()
         {
             Create("foo bar");
-            _searchService.SetupSet(x => x.LastSearch = new SearchData(SearchText.NewPattern(""), SearchKind.ForwardWithWrap, s_options)).Verifiable();
+            _vimData.SetupSet(x => x.LastSearchData = new SearchData(SearchText.NewPattern(""), SearchKind.ForwardWithWrap, s_options)).Verifiable();
             _search.Begin(SearchKind.ForwardWithWrap);
             Assert.IsTrue(_search.Process(KeyInputUtil.VimKeyToKeyInput(VimKey.Enter)).IsSearchComplete);
-            _searchService.Verify();
+            _factory.Verify();
         }
 
         [Test]
@@ -94,7 +97,7 @@ namespace VimCore.Test
         {
             Create("foo bar");
             var data = new SearchData(SearchText.NewPattern("foo"), SearchKind.ForwardWithWrap, s_options);
-            _searchService.SetupSet(x => x.LastSearch = data).Verifiable();
+            _vimData.SetupSet(x => x.LastSearchData = data).Verifiable();
             _searchService
                 .Setup(x => x.FindNext(It.IsAny<SearchData>(), It.IsAny<SnapshotPoint>(), _nav.Object))
                 .Returns(FSharpOption<SnapshotSpan>.None)
@@ -112,11 +115,11 @@ namespace VimCore.Test
                 .Returns(FSharpOption<SnapshotSpan>.None)
                 .Verifiable();
 
-            _searchService.SetupSet(x => x.LastSearch = new SearchData(SearchText.NewPattern("foo bar"), SearchKind.ForwardWithWrap, s_options)).Verifiable();
+            _vimData.SetupSet(x => x.LastSearchData = new SearchData(SearchText.NewPattern("foo bar"), SearchKind.ForwardWithWrap, s_options)).Verifiable();
             ProcessWithEnter("foo bar");
             _factory.Verify();
 
-            _searchService.SetupSet(x => x.LastSearch = new SearchData(SearchText.NewPattern("bar"), SearchKind.ForwardWithWrap, s_options)).Verifiable();
+            _vimData.SetupSet(x => x.LastSearchData = new SearchData(SearchText.NewPattern("bar"), SearchKind.ForwardWithWrap, s_options)).Verifiable();
             ProcessWithEnter("bar");
             _factory.Verify();
         }
@@ -158,7 +161,7 @@ namespace VimCore.Test
         public void Status3()
         {
             Create("foo bar");
-            _searchService.SetupSet(x => x.LastSearch = new SearchData(SearchText.NewPattern("foo"), SearchKind.ForwardWithWrap, s_options)).Verifiable();
+            _vimData.SetupSet(x => x.LastSearchData = new SearchData(SearchText.NewPattern("foo"), SearchKind.ForwardWithWrap, s_options)).Verifiable();
             _searchService
                 .Setup(x => x.FindNext(It.IsAny<SearchData>(), It.IsAny<SnapshotPoint>(), _nav.Object))
                 .Returns(FSharpOption<SnapshotSpan>.None);
@@ -224,7 +227,7 @@ namespace VimCore.Test
         public void InSearch2()
         {
             Create("foo bar");
-            _searchService.SetupSet(x => x.LastSearch = new SearchData(SearchText.NewPattern(""), SearchKind.Forward, SearchOptions.ConsiderSmartCase | SearchOptions.ConsiderIgnoreCase));
+            _vimData.SetupSet(x => x.LastSearchData = new SearchData(SearchText.NewPattern(""), SearchKind.Forward, SearchOptions.ConsiderSmartCase | SearchOptions.ConsiderIgnoreCase));
             _search.Begin(SearchKind.Forward);
             _search.Process(KeyInputUtil.VimKeyToKeyInput(VimKey.Enter));
             Assert.IsFalse(_search.InSearch);
@@ -256,7 +259,7 @@ namespace VimCore.Test
         public void Backspace2()
         {
             Create("foo bar");
-            _searchService.SetupSet(x => x.LastSearch = new SearchData(SearchText.NewPattern(""), SearchKind.Forward, SearchOptions.None));
+            _vimData.SetupSet(x => x.LastSearchData = new SearchData(SearchText.NewPattern(""), SearchKind.Forward, SearchOptions.None));
             _searchService
                 .Setup(x => x.FindNext(It.IsAny<SearchData>(), It.IsAny<SnapshotPoint>(), _nav.Object))
                 .Returns(FSharpOption<SnapshotSpan>.None)

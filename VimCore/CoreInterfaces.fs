@@ -826,13 +826,6 @@ type SearchProcessResult =
 /// Global information about searches within Vim
 type ISearchService = 
 
-    /// Last search performed
-    abstract LastSearch : SearchData with get, set
-
-    /// Raised when the LastSearch value changes
-    [<CLIEvent>]
-    abstract LastSearchChanged : IEvent<SearchData>
-
     /// Find the next occurrence of the pattern in the buffer starting at the 
     /// given SnapshotPoint
     abstract FindNext : SearchData -> SnapshotPoint -> ITextStructureNavigator -> SnapshotSpan option
@@ -989,7 +982,11 @@ type IVimData =
     abstract LastSubstituteData : SubstituteData option with get,set
 
     /// Last pattern searched for in any buffer
-    abstract LastSearchPattern : string option with get,set
+    abstract LastSearchData : SearchData with get,set
+
+    /// Raised when the LastSearch value changes
+    [<CLIEvent>]
+    abstract LastSearchDataChanged : IEvent<SearchData>
 
 /// Represent the setting supported by the Vim implementation.  This class **IS** mutable
 /// and the values will change.  Setting names are case sensitive but the exposed property

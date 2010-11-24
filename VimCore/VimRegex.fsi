@@ -58,4 +58,6 @@ type VimRegexFactory =
 
     member Create : pattern:string -> VimRegex option
 
-    member CreateWithOptions : pattern:string -> options:VimRegexOptions -> VimRegex Option
+    member CreateForSearchText : text:SearchText -> VimRegex option
+
+    member CreateWithOptions : pattern:string -> options:VimRegexOptions -> VimRegex option

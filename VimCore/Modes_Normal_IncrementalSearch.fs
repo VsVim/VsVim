@@ -20,7 +20,8 @@ type internal IncrementalSearch
         _outlining : IOutliningManager,
         _settings : IVimLocalSettings,
         _navigator : ITextStructureNavigator,
-        _search : ISearchService) =
+        _search : ISearchService,
+        _vimData : IVimData ) =
 
     let mutable _data : IncrementalSearchData option = None
     let _searchOptions = SearchOptions.ConsiderIgnoreCase ||| SearchOptions.ConsiderSmartCase
@@ -83,7 +84,7 @@ type internal IncrementalSearch
             match ki.Key with 
             | VimKey.Enter -> 
                 _data <- None
-                _search.LastSearch <- oldSearchData
+                _vimData.LastSearchData <- oldSearchData
                 _currentSearchCompleted.Trigger (oldSearchData,data.SearchResult)
                 SearchComplete
             | VimKey.Escape -> 

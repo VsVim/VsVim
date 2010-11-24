@@ -87,6 +87,8 @@ type internal CommandProcessor
         _statusUtil : IStatusUtil,
         _fileSystem : IFileSystem ) as this = 
 
+    let _regexFactory = VimRegexFactory(_buffer.Settings.GlobalSettings)
+
     let mutable _command : System.String = System.String.Empty
 
     /// List of supported commands.  The bool value on the lambda is whether or not there was a 
@@ -508,9 +510,9 @@ type internal CommandProcessor
                         // Check for the previous search pattern flag
                         let search = 
                             if Utils.IsFlagSet flags SubstituteFlags.UsePreviousSearchPattern then
-                                match _buffer.VimData.LastSearchPattern with
-                                | None -> search
-                                | Some(search) -> search
+                                match _regexFactory.CreateForSearchText _buffer.VimData.LastSearchData.Text with
+                                | None -> StringUtil.empty
+                                | Some(regex) -> regex.VimPattern
                             else
                                 search
     
@@ -542,9 +544,9 @@ type internal CommandProcessor
             let flags, pattern = 
                 if Utils.IsFlagSet flags SubstituteFlags.UsePreviousSearchPattern then 
                     let flags = Utils.UnsetFlag flags SubstituteFlags.UsePreviousSearchPattern
-                    match _buffer.VimData.LastSearchPattern with
-                    | None ->  (flags, StringUtil.empty)
-                    | Some(pattern) -> (flags, pattern)
+                    match _regexFactory.CreateForSearchText _buffer.VimData.LastSearchData.Text with
+                    | None -> (flags, StringUtil.empty)
+                    | Some(regex) -> (flags, regex.VimPattern)
                 else 
                     match _buffer.VimData.LastSubstituteData with
                     | None -> (flags, StringUtil.empty)
