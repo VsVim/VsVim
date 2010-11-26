@@ -77,7 +77,7 @@ module internal CommandParseUtil =
             found left right rest
     
 
-type CommandAction = char list -> Range option -> bool -> unit
+type CommandAction = char list -> SnapshotLineRange option -> bool -> unit
 
 /// Type which is responsible for executing command mode commands
 type internal CommandProcessor 
@@ -208,30 +208,21 @@ type internal CommandProcessor
     member private x.ProcessClose _ _ hasBang = _buffer.Vim.VimHost.CloseView _buffer.TextView (not hasBang)
 
     /// Process the :join command
-    member private x.ProcessJoin (rest:char list) (range:Range option) hasBang =
+    member private x.ProcessJoin (rest:char list) (range:SnapshotLineRange option) hasBang =
         let kind = if hasBang then JoinKind.KeepEmptySpaces else JoinKind.RemoveEmptySpaces
         let rest = CommandParseUtil.SkipWhitespace rest
         let count,rest = RangeUtil.ParseNumber rest
-        let span = 
-            match range with 
-            | Some(range) -> Some(RangeUtil.GetSnapshotSpan range)
-            | None -> None
-            
-        let range = span
+
         let range = 
             match range with 
-            | Some(s) -> s
+            | Some(range) -> RangeUtil.TryApplyCount count range
             | None -> 
-                let point = TextViewUtil.GetCaretPoint _buffer.TextView
-                SnapshotSpan(point,0)
+                match count with
+                | None -> _buffer.TextView |> RangeUtil.RangeForCurrentLine |> RangeUtil.ApplyCount 2
+                | Some(1) -> _buffer.TextView |> RangeUtil.RangeForCurrentLine |> RangeUtil.ApplyCount 2
+                | Some(count) -> _buffer.TextView |> RangeUtil.RangeForCurrentLine |> RangeUtil.ApplyCount count
 
-        match count with 
-        | Some(c) -> _operations.Join range.End kind c |> ignore
-        | None -> 
-            let startLine = range.Start.GetContainingLine().LineNumber
-            let endLine = range.End.GetContainingLine().LineNumber
-            let count = endLine - startLine
-            _operations.Join range.Start kind count |> ignore
+        _operations.Join range kind
 
     /// Parse out the :edit commnad
     member private x.ProcessEdit (rest:char list) _ hasBang = 
@@ -243,12 +234,12 @@ type internal CommandProcessor
         else _operations.EditFile name
 
     /// Parse out the fold command and create the fold
-    member private x.ProcessFold _ (range : Range option) _ =
-        let span = RangeUtil.RangeOrCurrentLine _buffer.TextView range |> RangeUtil.GetSnapshotSpan
-        _operations.FoldManager.CreateFold span
+    member private x.ProcessFold _ (range : SnapshotLineRange option) _ =
+        let range = RangeUtil.RangeOrCurrentLine _buffer.TextView range
+        _operations.FoldManager.CreateFold range.ExtentIncludingLineBreak
 
     /// Parse out the Yank command
-    member private x.ProcessYank (rest:char list) (range: Range option) _ =
+    member private x.ProcessYank (rest:char list) (range: SnapshotLineRange option) _ =
         let reg,rest = rest |> CommandParseUtil.SkipRegister _buffer.RegisterMap
         let count,rest = RangeUtil.ParseNumber rest
 
@@ -258,14 +249,13 @@ type internal CommandProcessor
         // Apply the count if present
         let range = 
             match count with             
-            | Some(count) -> RangeUtil.ApplyCount range count
+            | Some(count) -> RangeUtil.ApplyCount count range
             | None -> range
 
-        let span = RangeUtil.GetSnapshotSpan range
-        _operations.UpdateRegisterForSpan reg RegisterOperation.Yank span OperationKind.LineWise
+        _operations.UpdateRegisterForSpan reg RegisterOperation.Yank (range.ExtentIncludingLineBreak) OperationKind.LineWise
 
     /// Parse the Put command
-    member private x.ProcessPut (rest:char list) (range: Range option) bang =
+    member private x.ProcessPut (rest:char list) (range: SnapshotLineRange option) bang =
         let reg,rest = 
             rest
             |> CommandParseUtil.SkipWhitespace
@@ -275,34 +265,26 @@ type internal CommandProcessor
         let line = 
             match range with 
             | None -> (TextViewUtil.GetCaretPoint _buffer.TextView).GetContainingLine()
-            | Some(range) ->
-                match range with 
-                | Range.SingleLine(line) -> line
-                | Range.RawSpan(span) -> span.End.GetContainingLine()
-                | Range.Lines(tss,_,endLine) -> tss.GetLineFromLineNumber(endLine)
+            | Some(range) -> range.EndLine
 
         _operations.Put reg.StringValue line (not bang)
 
     /// Parse the < command
-    member private x.ProcessShiftLeft (rest:char list) (range: Range option) _ =
+    member private x.ProcessShiftLeft (rest:char list) (range: SnapshotLineRange option) _ =
         let count,rest =  rest  |> RangeUtil.ParseNumber
-        let range = RangeUtil.RangeOrCurrentLine _buffer.TextView range
         let range = 
-            match count with
-            | Some(count) -> RangeUtil.ApplyCount range count
-            | None -> range
-        let lineRange = RangeUtil.GetSnapshotLineRange range
-        _operations.ShiftLineRangeLeft 1 lineRange
+            range
+            |> RangeUtil.RangeOrCurrentLine _buffer.TextView 
+            |> RangeUtil.TryApplyCount count
+        _operations.ShiftLineRangeLeft 1 range
 
-    member private x.ProcessShiftRight (rest:char list) (range: Range option) _ =
+    member private x.ProcessShiftRight (rest:char list) (range: SnapshotLineRange option) _ =
         let count,rest = rest |> RangeUtil.ParseNumber
-        let range = RangeUtil.RangeOrCurrentLine _buffer.TextView range
         let range = 
-            match count with
-            | Some(count) -> RangeUtil.ApplyCount range count
-            | None -> range
-        let lineRange = RangeUtil.GetSnapshotLineRange range
-        _operations.ShiftLineRangeRight 1 lineRange
+            range
+            |> RangeUtil.RangeOrCurrentLine _buffer.TextView 
+            |> RangeUtil.TryApplyCount count
+        _operations.ShiftLineRangeRight 1 range
 
     member private x.ProcessWrite (rest:char list) _ _ = 
         let name = rest |> StringUtil.ofCharSeq 
@@ -333,15 +315,15 @@ type internal CommandProcessor
         _buffer.Vim.VimHost.BuildSolution()
 
     /// Implements the :delete command
-    member private x.ProcessDelete (rest:char list) (range:Range option) _ =
+    member private x.ProcessDelete (rest:char list) (range:SnapshotLineRange option) _ =
         let reg,rest = rest |> CommandParseUtil.SkipRegister _buffer.RegisterMap
         let count,rest = rest |> CommandParseUtil.SkipWhitespace |> RangeUtil.ParseNumber
-        let range = RangeUtil.RangeOrCurrentLine _buffer.TextView range
         let range = 
-            match count with
-            | Some(count) -> RangeUtil.ApplyCount range count
-            | None -> range
-        let span = RangeUtil.GetSnapshotSpan range
+            range
+            |> RangeUtil.RangeOrCurrentLine _buffer.TextView 
+            |> RangeUtil.TryApplyCount count
+
+        let span = range.ExtentIncludingLineBreak
         _operations.DeleteSpan span 
         _operations.UpdateRegisterForSpan reg RegisterOperation.Delete span OperationKind.LineWise
 
@@ -409,7 +391,7 @@ type internal CommandProcessor
         x.ProcessSubstituteCore rest range SubstituteFlags.UsePreviousSearchPattern 
 
     /// Handles the processing of the common parts of the substitute command
-    member private x.ProcessSubstituteCore (rest:char list) (range:Range option) additionalFlags =
+    member private x.ProcessSubstituteCore (rest:char list) (range:SnapshotLineRange option) additionalFlags =
 
         // Used to parse out the flags on the :s command.  Will return a tuple of the flags
         // and the remaining char list after parsing the flags
@@ -464,7 +446,7 @@ type internal CommandProcessor
             let opt, rest = rest |> List.ofSeq |> RangeUtil.ParseNumber 
             match opt with
             | None -> range,rest
-            | Some(count) -> (RangeUtil.ApplyCount range count,rest)
+            | Some(count) -> (RangeUtil.ApplyCount count range,rest)
  
         let originalRange = RangeUtil.RangeOrCurrentLine _buffer.TextView range 
 
@@ -524,7 +506,6 @@ type internal CommandProcessor
                         elif not (List.isEmpty rest) then
                             badParse Resources.CommandMode_TrailingCharacters
                         else 
-                            let range = RangeUtil.GetSnapshotLineRange range
                             goodParse search replace range flags ))
 
             let badParse msg = _statusUtil.OnError msg
@@ -549,8 +530,6 @@ type internal CommandProcessor
                 match _buffer.Vim.VimData.LastSubstituteData with 
                 | None -> _statusUtil.OnError Resources.CommandMode_NoPreviousSubstitute 
                 | Some(previousData) ->
-
-                    let range = RangeUtil.GetSnapshotLineRange range
 
                     // Get the pattern to replace with 
                     let flags, pattern, errorMsg = 
@@ -586,7 +565,7 @@ type internal CommandProcessor
         let withKeys lhs rhs _ = _operations.RemapKeys lhs rhs modes allowRemap 
         CommandParseUtil.ParseKeys rest withKeys (fun() -> _statusUtil.OnError x.BadMessage)
 
-    member private x.ParseCommand (rest:char list) (range:Range option) = 
+    member private x.ParseCommand (rest:char list) (range:SnapshotLineRange option) = 
 
         let isCommandNameChar c = 
             (not (System.Char.IsWhiteSpace(c))) 
@@ -631,14 +610,13 @@ type internal CommandProcessor
             action rest range hasBang
     
     member private x.ParseInput (originalInputs :char list) =
-        let withRange (range:Range option) (inputs:char list) = x.ParseCommand inputs range
+        let withRange (range:SnapshotLineRange option) (inputs:char list) = x.ParseCommand inputs range
         let point = TextViewUtil.GetCaretPoint _buffer.TextView
         match RangeUtil.ParseRange point _buffer.MarkMap originalInputs with
         | ParseRangeResult.Succeeded(range, inputs) -> 
             if inputs |> List.isEmpty then
-                match range with 
-                | SingleLine(line) -> _operations.EditorOperations.GotoLine(line.LineNumber) |> ignore
-                | _ -> _statusUtil.OnError("Invalid Command String")
+                if range.Count = 1 then  _operations.EditorOperations.GotoLine(range.StartLineNumber) |> ignore
+                else _statusUtil.OnError("Invalid Command String")
             else
                 withRange (Some(range)) inputs
         | NoRange -> withRange None originalInputs

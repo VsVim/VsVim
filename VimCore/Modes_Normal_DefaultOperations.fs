@@ -237,18 +237,10 @@ type internal DefaultOperations ( _data : OperationsData, _incrementalSearch : I
             x.CommonImpl.DeleteSpan span
             span
 
-        member x.JoinAtCaret count =     
-            let start = TextViewUtil.GetCaretPoint _textView
-            let kind = Vim.Modes.JoinKind.RemoveEmptySpaces
-            let res = x.CommonImpl.Join start kind count
-            if not res then
-                _host.Beep()
-
         member x.GoToDefinitionWrapper () =
             match x.CommonImpl.GoToDefinition() with
             | Vim.Modes.Succeeded -> ()
             | Vim.Modes.Failed(msg) -> _statusUtil.OnError msg
-
 
         member x.GoToLocalDeclaration() = 
             if not (_host.GoToLocalDeclaration _textView x.WordUnderCursorOrEmpty) then _host.Beep()

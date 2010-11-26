@@ -133,12 +133,8 @@ type ICommonOperations =
     /// Insert the specified text at the cursor position "count" times
     abstract InsertText : text:string -> count : int -> unit
 
-    /// Implements the Join command.  Returns false in the case the join command cannot
-    /// be complete (such as joining at the end of the buffer)
-    abstract Join : SnapshotPoint -> JoinKind -> count : int -> bool
-
-    /// Join the lines in the given span 
-    abstract JoinSpan : SnapshotSpan -> JoinKind -> unit
+    /// Joins the lines in the range
+    abstract Join : SnapshotLineRange -> JoinKind -> unit
 
     /// Jumps to a given mark in the buffer.  
     abstract JumpToMark : char -> IMarkMap -> Result

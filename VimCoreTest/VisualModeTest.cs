@@ -327,10 +327,10 @@ namespace VimCore.Test
         public void Join1()
         {
             Create("a", "b", "c", "d", "e");
-            var span = _buffer.GetLineRange(0, 2).Extent;
-            _selection.MakeSelection(span);
+            var range = _buffer.GetLineRange(0, 2);
+            _selection.MakeSelection(range.Extent);
             _operations
-                .Setup(x => x.JoinSpan(span, JoinKind.RemoveEmptySpaces))
+                .Setup(x => x.Join(range, JoinKind.RemoveEmptySpaces))
                 .Verifiable();
             _mode.Process('J');
             _operations.Verify();
@@ -340,10 +340,10 @@ namespace VimCore.Test
         public void Join2()
         {
             Create("a", "b", "c", "d", "e");
-            var span = _buffer.GetLineRange(0, 3).Extent;
-            _selection.MakeSelection(span);
+            var range = _buffer.GetLineRange(0, 3);
+            _selection.MakeSelection(range.Extent);
             _operations
-                .Setup(x => x.JoinSpan(span, JoinKind.RemoveEmptySpaces))
+                .Setup(x => x.Join(range, JoinKind.RemoveEmptySpaces))
                 .Verifiable();
             _mode.Process('J');
             _operations.Verify();
@@ -353,10 +353,10 @@ namespace VimCore.Test
         public void Join3()
         {
             Create("a", "b", "c", "d", "e");
-            var span = _buffer.GetLineRange(0, 3).Extent;
-            _selection.MakeSelection(span);
+            var range = _buffer.GetLineRange(0, 3);
+            _selection.MakeSelection(range.Extent);
             _operations
-                .Setup(x => x.JoinSpan(span, JoinKind.KeepEmptySpaces))
+                .Setup(x => x.Join(range, JoinKind.KeepEmptySpaces))
                 .Verifiable();
             _mode.Process("gJ");
             _operations.Verify();

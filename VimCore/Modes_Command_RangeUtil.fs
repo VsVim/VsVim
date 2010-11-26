@@ -4,14 +4,8 @@ namespace Vim.Modes.Command
 open Vim
 open Microsoft.VisualStudio.Text
 
-type internal Range = 
-    | RawSpan of SnapshotSpan
-    /// Start and End line of the range
-    | Lines of ITextSnapshot * int * int
-    | SingleLine of ITextSnapshotLine
-
 type internal ParseRangeResult =
-    | Succeeded of Range * char list
+    | Succeeded of SnapshotLineRange * char list
     | NoRange 
     | Failed of string 
 
@@ -21,7 +15,7 @@ type internal ItemRangeKind =
     | Mark
 
 type internal ItemRange = 
-    | ValidRange of Range * ItemRangeKind * char list
+    | ValidRange of SnapshotLineRange * ItemRangeKind * char list
     | NoRange
     | Error of string
 
@@ -43,87 +37,31 @@ module internal RangeUtil =
 
     let private _parser = RangeParser()
 
-    let GetSnapshotSpan (r:Range) =
-        match r with
-        | RawSpan(span) -> span
-        | Lines(tss,first,last) -> 
-            new SnapshotSpan(
-                tss.GetLineFromLineNumber(first).Start,
-                tss.GetLineFromLineNumber(last).EndIncludingLineBreak)
-        | SingleLine(line) -> line.ExtentIncludingLineBreak
-
-    let GetSnapshotLineRange (r:Range) =
-        match r with
-        | RawSpan(span) -> SnapshotLineRangeUtil.CreateForSpan span
-        | SingleLine(line) -> SnapshotLineRangeUtil.CreateForLine line
-        | Lines(tss,first,last) -> SnapshotLineRangeUtil.CreateForLineNumberRange tss first last 
-
-    let RangeForCurrentLine view =
-        let point = TextViewUtil.GetCaretPoint view
-        let line = point.GetContainingLine()
-        Range.SingleLine(line)
+    let RangeForCurrentLine view = view |> TextViewUtil.GetCaretLine |> SnapshotLineRangeUtil.CreateForLine
 
     let RangeOrCurrentLine view rangeOpt =
         match rangeOpt with
         | Some(range) -> range
         | None -> RangeForCurrentLine view
 
-    let ApplyCount range count =
-        let count = if count <= 1 then 1 else count-1
-        let inner (tss:ITextSnapshot) startLine =
-            let endLine = startLine + count
-            let endLine = if endLine >= tss.LineCount then tss.LineCount-1 else endLine
-            Range.Lines(tss,startLine,endLine)
-            
-        match range with 
-        | Range.Lines(tss,_,endLine) ->
-            // When a cuont is applied to a line range, the count of lines staring at the end 
-            // line is used
-            inner tss endLine
-        | Range.SingleLine(line) -> inner line.Snapshot line.LineNumber
-        | Range.RawSpan(span) -> 
-            inner span.Snapshot (span.End.GetContainingLine().LineNumber)
+    let ApplyCount count (range:SnapshotLineRange) =
+        let count = if count <= 1 then 1 else count
+        SnapshotLineRangeUtil.CreateForLineAndMaxCount range.EndLine count
 
-    /// Change the line number on the range by the given count
-    let ChangeEndLine range count =
-        let makeLines (tss:ITextSnapshot) startLine endLine =
-            let endLine = min (endLine+count) (tss.LineCount-1)
-            let endLine = max endLine 0
-            let startLine = min startLine endLine
-            Lines(tss, startLine, endLine)
-        match range with 
-        | Range.Lines(tss,startLine,endLine) -> makeLines tss startLine endLine
-        | Range.RawSpan(span) ->
-            let startLine = span.Start.GetContainingLine().LineNumber
-            let endLine = span.End.GetContainingLine().LineNumber
-            makeLines span.Snapshot startLine endLine
-        | Range.SingleLine(line) -> 
-            let num = line.LineNumber + count
-            let num = min num (line.Snapshot.LineCount-1)
-            let num = max num 0
-            SingleLine(line.Snapshot.GetLineFromLineNumber(num))
+    let TryApplyCount count range =
+        match count with 
+        | None -> range
+        | Some(count) -> ApplyCount count range
 
     /// Combine the two ranges
-    let CombineRanges left right = 
-        let getStartLine range =
-            match range with
-            | Range.Lines(tss,startLine,_) -> (tss,Some(startLine))
-            | Range.SingleLine(line) -> (line.Snapshot,Some(line.LineNumber))
-            | Range.RawSpan(span) -> (span.Snapshot,None)
-        let getEndLine range =
-            match range with
-            | Range.Lines(_,_,endLine) -> Some(endLine)
-            | Range.SingleLine(line) -> Some(line.LineNumber)
-            | Range.RawSpan(_) -> None
-        let tss,startLine = getStartLine left
-        let endLine = getEndLine right
-        match startLine,endLine with
-        | Some(startLine),Some(endLine) ->  Range.Lines(tss, startLine, endLine)
-        | _ -> 
-            let left = GetSnapshotSpan left
-            let right = GetSnapshotSpan right
-            let span = new SnapshotSpan(left.Start, right.End)
-            Range.RawSpan(span)
+    let CombineRanges (left:SnapshotLineRange) (right:SnapshotLineRange) = 
+        let startLine = 
+            if left.StartLineNumber < right.StartLineNumber then left.StartLine
+            else right.StartLine
+        let endLine =
+            if left.EndLineNumber > right.EndLineNumber then left.EndLine
+            else right.EndLine
+        SnapshotLineRangeUtil.CreateForLineRange startLine endLine
 
     let ParseNumber (input:char list) =
 
@@ -155,8 +93,7 @@ module internal RangeUtil =
         | Some(number) ->
             let number = TssUtil.VimLineToTssLine number
             if number < tss.LineCount then 
-                let line = tss.GetLineFromLineNumber(number)
-                let range = Range.SingleLine(line)
+                let range = tss.GetLineFromLineNumber(number) |> SnapshotLineRangeUtil.CreateForLine
                 ValidRange(range, LineNumber, remaining)
             else
                 let msg = sprintf "Invalid Range: Line Number %d is not a valid number in the file" number
@@ -169,8 +106,8 @@ module internal RangeUtil =
             let opt = map.GetMark point.Snapshot.TextBuffer head
             match opt with 
             | Some(point) -> 
-                let line = point.Position.GetContainingLine()
-                ValidRange(Range.SingleLine(line), Mark, tail)
+                let range = point.Position |> SnapshotPointUtil.GetContainingLine |> SnapshotLineRangeUtil.CreateForLine
+                ValidRange(range, Mark, tail)
             | None -> Error Resources.Range_MarkNotValidInFile
         ListUtil.tryProcessHead list inner (fun () -> Error Resources.Range_MarkMissingIdentifier)
 
@@ -180,15 +117,14 @@ module internal RangeUtil =
         if CharUtil.IsDigit head then
             ParseLineNumber point.Snapshot list
         else if head = '.' then
-            let line = point.GetContainingLine().LineNumber
-            let range = Range.Lines(point.Snapshot, line,line)
-            ValidRange(range,CurrentLine, list |> List.tail)
+            let range = point.GetContainingLine() |> SnapshotLineRangeUtil.CreateForLine
+            ValidRange(range, CurrentLine, list |> List.tail)
         else if head = '\'' then
             ParseMark point map (list |> List.tail)
         else
             NoRange
 
-    let private ParsePlusMinus range (list:char list) =
+    let private ParsePlusMinus (range:SnapshotLineRange) (list:char list) =
         let getCount list =
             let opt,list = ParseNumber list
             match opt with 
@@ -197,10 +133,28 @@ module internal RangeUtil =
         let inner head tail = 
             if head = '+' then 
                 let count,tail = getCount tail
-                (ChangeEndLine range count,tail)
+                let range = 
+                    if range.Count = 1 then
+                        let number = min (range.StartLineNumber + count) (range.Snapshot.LineCount - 1)
+                        range.Snapshot.GetLineFromLineNumber(number) |> SnapshotLineRangeUtil.CreateForLine
+                    else
+                        SnapshotLineRangeUtil.CreateForLineAndMaxCount range.StartLine (range.Count + count)
+                range,tail
             elif head = '-' then
                 let count,tail = getCount tail
-                (ChangeEndLine range (-count),tail)
+                let range =
+                    if range.Count = 1 then
+                        let number = max 0 (range.StartLineNumber - count)
+                        range.Snapshot.GetLineFromLineNumber(number) |> SnapshotLineRangeUtil.CreateForLine 
+                    else 
+                        let endLineNumber = max 0 (range.EndLineNumber - count)
+                        if endLineNumber = range.StartLineNumber then 
+                            SnapshotLineRangeUtil.CreateForLine range.StartLine
+                        elif endLineNumber < range.StartLineNumber then
+                            range.Snapshot.GetLineFromLineNumber(endLineNumber) |> SnapshotLineRangeUtil.CreateForLine
+                        else 
+                            SnapshotLineRangeUtil.CreateForLineRange range.StartLine (range.Snapshot.GetLineFromLineNumber(endLineNumber))
+                range,tail
             else 
                 range,list
         ListUtil.tryProcessHead list inner (fun () -> range,list)
@@ -218,7 +172,7 @@ module internal RangeUtil =
                     let fullRange = CombineRanges range rightRange
                     return! Succeeded(fullRange, remaining)
                 else if head = ';' then 
-                    let point = (GetSnapshotSpan range).Start
+                    let point = range.Start
                     let! rightRange,_,remaining = ParseItem point map tail
                     let rightRange,remaining = ParsePlusMinus rightRange remaining
                     let fullRange = CombineRanges range rightRange
@@ -234,9 +188,8 @@ module internal RangeUtil =
     let ParseRange (point:SnapshotPoint) (map:IMarkMap) (list:char list) = 
         let inner head tail =
             if head = '%' then 
-                let tss = point.Snapshot
-                let span = new SnapshotSpan(tss, 0, tss.Length)
-                ParseRangeResult.Succeeded(RawSpan(span), tail)
+                let range = SnapshotLineRangeUtil.CreateForSnapshot point.Snapshot
+                ParseRangeResult.Succeeded(range, tail)
             else
                 ParseRangeCore point map list
         ListUtil.tryProcessHead list inner (fun() -> ParseRangeResult.NoRange)

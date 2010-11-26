@@ -57,6 +57,9 @@ type SnapshotLineRange
     static member op_Inequality(this,other) = 
         not (System.Collections.Generic.EqualityComparer<SnapshotLineRange>.Default.Equals(this,other))
 
+    // Overrides
+    override x.ToString() = sprintf "%d - %d : %s" _startLine x.EndLineNumber (x.Extent.ToString()) 
+
 /// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
 /// include any Vim specific logic
 module SnapshotUtil = 

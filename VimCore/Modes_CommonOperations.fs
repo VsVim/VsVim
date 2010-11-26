@@ -92,14 +92,14 @@ type internal CommonOperations ( _data : OperationsData ) =
 
     member x.ChangeLettersOnSpan span changeFunc = x.ChangeLettersCore (Seq.singleton span) changeFunc
 
-    member x.JoinCore span kind =
+    member x.Join (range:SnapshotLineRange) kind = 
 
-        let count = SnapshotSpanUtil.GetLineCount span
-        if count > 1 then
+        if range.Count > 1 then
+
             // Create a tracking point for the caret
-            let snapshot = span.Snapshot
+            let snapshot = range.Snapshot
             let trackingPoint = 
-                let point = span |> SnapshotSpanUtil.GetEndLine |> SnapshotLineUtil.GetStart
+                let point = range.EndLine.Start 
                 snapshot.CreateTrackingPoint(point.Position, PointTrackingMode.Positive)
 
             use edit = _data.TextView.TextBuffer.CreateEdit()
@@ -109,29 +109,30 @@ type internal CommonOperations ( _data : OperationsData ) =
                 | KeepEmptySpaces -> ""
                 | RemoveEmptySpaces -> " "
 
-            span 
-            |> SnapshotSpanUtil.GetAllLines
-            |> Seq.take (count-1) // Skip the last line 
+            // First delete line breaks on all but the last line 
+            range.Lines
+            |> Seq.take (range.Count - 1)
             |> Seq.iter (fun line -> 
 
                 // Delete the line break span
                 let span = line |> SnapshotLineUtil.GetLineBreakSpan |> SnapshotSpanUtil.GetSpan
-                edit.Replace(span, replace) |> ignore
+                edit.Replace(span, replace) |> ignore )
 
-                // Maybe strip the start of the next line as well
-                if SnapshotUtil.IsLineNumberValid snapshot (line.LineNumber + 1) then
-                    match kind with
-                    | KeepEmptySpaces -> ()
-                    | RemoveEmptySpaces ->
-                        let nextLine = SnapshotUtil.GetLine snapshot (line.LineNumber+1)
+            // Remove the empty spaces from the start of all but the first line 
+            // if the option was specified
+            match kind with
+            | KeepEmptySpaces -> ()
+            | RemoveEmptySpaces ->
+                range.Lines 
+                |> Seq.skip 1
+                |> Seq.iter (fun line ->
                         let count =
-                            nextLine.Extent 
+                            line.Extent 
                             |> SnapshotSpanUtil.GetText
                             |> Seq.takeWhile CharUtil.IsWhiteSpace
                             |> Seq.length
                         if count > 0 then
-                            edit.Delete(nextLine.Start.Position,count) |> ignore
-                )
+                            edit.Delete(line.Start.Position,count) |> ignore )
 
             // Now position the caret on the new snapshot
             let snapshot = edit.Apply()
@@ -182,21 +183,7 @@ type internal CommonOperations ( _data : OperationsData ) =
         member x.EditorOperations = _operations
         member x.FoldManager = _data.FoldManager
         member x.UndoRedoOperations = _data.UndoRedoOperations
-
-        member x.Join start kind count =
-    
-            // Always joining at least 2 lines so we subtract to get the number of join
-            // operations.  1 is a valid input though
-            let count = if count > 1 then count-1 else 1
-            let number = start |> SnapshotPointUtil.GetContainingLine |> SnapshotLineUtil.GetLineNumber
-            if SnapshotUtil.IsLineNumberValid start.Snapshot (number + count) then
-                let span =  start |> SnapshotSpanUtil.CreateEmpty 
-                let span =  SnapshotSpanUtil.ExtendDown span count
-                x.JoinCore span kind
-                true
-            else false
-        member x.JoinSpan span kind = x.JoinCore span kind
-
+        member x.Join range kind = x.Join range kind
         member x.GoToDefinition () = 
             let before = TextViewUtil.GetCaretPoint _textView
             if _host.GoToDefinition() then

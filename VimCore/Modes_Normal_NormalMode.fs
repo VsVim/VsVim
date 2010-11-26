@@ -256,6 +256,13 @@ type internal NormalMode
     /// Create the simple commands
     member this.CreateSimpleCommands() =
 
+        let join count kind = 
+            let line = TextViewUtil.GetCaretLine this.TextView
+            let count = if count = 1 then 2 else count
+            match SnapshotLineRangeUtil.CreateForLineAndCount line count with
+            | None -> _bufferData.Vim.VimHost.Beep()
+            | Some(range) -> _operations.Join range kind
+
         let noSwitch = 
             seq {
                 yield (
@@ -293,10 +300,7 @@ type internal NormalMode
                 yield (
                     "gJ", 
                     CommandFlags.Repeatable, 
-                    fun count reg -> 
-                        let view = _bufferData.TextView
-                        let caret = TextViewUtil.GetCaretPoint view
-                        _operations.Join caret Modes.JoinKind.KeepEmptySpaces count |> ignore )
+                    fun count reg -> join count JoinKind.KeepEmptySpaces )
                 yield (
                     "gt", 
                     CommandFlags.Movement, 
@@ -474,7 +478,7 @@ type internal NormalMode
                 yield (
                     "J", 
                     CommandFlags.Repeatable, 
-                    fun count _ -> _operations.JoinAtCaret count)
+                    fun count _ -> join count JoinKind.RemoveEmptySpaces )
                 yield (
                     "<C-b>", 
                     CommandFlags.Special, 

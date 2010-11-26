@@ -174,25 +174,6 @@ namespace Vim.UnitTest
 
         #endregion
 
-        #region Range
-
-        internal static Range.Lines AsLines(this Range range)
-        {
-            return (Range.Lines)range;
-        }
-
-        internal static Range.RawSpan AsRawSpan(this Range range)
-        {
-            return (Range.RawSpan)range;
-        }
-
-        internal static Range.SingleLine AsSingleLine(this Range range)
-        {
-            return (Range.SingleLine)range;
-        }
-
-        #endregion
-
         #region RunKeyInputResult
 
         public static RunKeyInputResult.CommandRan AsCommandRan(this RunKeyInputResult result)

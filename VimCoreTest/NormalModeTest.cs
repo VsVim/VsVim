@@ -2084,41 +2084,56 @@ namespace VimCore.Test
         }
 
         [Test]
-        public void Join1()
+        public void Join_NoArguments()
         {
             Create("foo", "bar");
-            _operations.Setup(x => x.JoinAtCaret(1)).Verifiable();
+            _operations
+                .Setup(x => x.Join(_view.GetLineRange(0, 1), JoinKind.RemoveEmptySpaces))
+                .Verifiable();
             _mode.Process("J");
             _operations.Verify();
         }
 
         [Test]
-        public void Join2()
+        [Description("A count of 2 is the same as 1 or no count")]
+        public void Join_2IstheSameAs1()
         {
             Create("foo", "  bar", "baz");
-            _operations.Setup(x => x.JoinAtCaret(2)).Verifiable();
+            _operations
+                .Setup(x => x.Join(_view.GetLineRange(0, 1), JoinKind.RemoveEmptySpaces))
+                .Verifiable();
             _mode.Process("2J");
             _operations.Verify();
         }
 
         [Test]
-        public void Join3()
+        [Description("Join more than 1 line")]
+        public void Join_MoreThan2Lines()
         {
             Create("foo", "  bar", "baz");
-            _operations.Setup(x => x.JoinAtCaret(3)).Verifiable();
+            _operations
+                .Setup(x => x.Join(_view.GetLineRange(0, 2), JoinKind.RemoveEmptySpaces))
+                .Verifiable();
             _mode.Process("3J");
             _operations.Verify();
         }
 
         [Test]
-        public void Join4()
+        [Description("Join should beep if the count exceeds the number of lines in the buffer")]
+        public void Join_CountExceedsLinesInBuffer()
+        {
+            Create("foo", "  bar", "baz");
+            _host.Setup(x => x.Beep()).Verifiable();
+            _mode.Process("33J");
+            _host.Verify();
+        }
+
+        [Test]
+        public void Join_KeepEmptySpaces()
         {
             Create("foo", "bar");
-            _operations.Setup(x => x.Join(
-                _view.Caret.Position.BufferPosition,
-                JoinKind.KeepEmptySpaces,
-                1))
-                .Returns(true)
+            _operations
+                .Setup(x => x.Join(_view.GetLineRange(0, 1), JoinKind.KeepEmptySpaces))
                 .Verifiable();
             _mode.Process("gJ");
             _operations.Verify();

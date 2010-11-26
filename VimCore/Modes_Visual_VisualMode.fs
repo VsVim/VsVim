@@ -269,18 +269,22 @@ type internal VisualMode
                     "J",
                     CommandFlags.Repeatable,
                     None,
-                    (fun _ _ span -> _operations.JoinSpan span JoinKind.RemoveEmptySpaces),
+                    (fun _ _ span -> 
+                        let range = SnapshotLineRangeUtil.CreateForSpan span
+                        _operations.Join range JoinKind.RemoveEmptySpaces),
                     (fun _ _ col ->
-                        let span = NormalizedSnapshotSpanCollectionUtil.GetCombinedSpan col 
-                        _operations.JoinSpan span JoinKind.RemoveEmptySpaces))
+                        let range = SnapshotLineRangeUtil.CreateForNormalizedSnapshotSpanCollection col
+                        _operations.Join range JoinKind.RemoveEmptySpaces))
                 yield (
                     "gJ",
                     CommandFlags.Repeatable,
                     None,
-                    (fun _ _ span -> _operations.JoinSpan span JoinKind.KeepEmptySpaces),
+                    (fun _ _ span -> 
+                        let range = SnapshotLineRangeUtil.CreateForSpan span
+                        _operations.Join range JoinKind.KeepEmptySpaces),
                     (fun _ _ col ->
-                        let span = NormalizedSnapshotSpanCollectionUtil.GetCombinedSpan col 
-                        _operations.JoinSpan span JoinKind.KeepEmptySpaces))
+                        let range = SnapshotLineRangeUtil.CreateForNormalizedSnapshotSpanCollection col
+                        _operations.Join range JoinKind.KeepEmptySpaces))
                 yield (
                     "p",
                     CommandFlags.None,

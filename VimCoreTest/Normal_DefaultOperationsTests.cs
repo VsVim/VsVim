@@ -1101,13 +1101,5 @@ namespace VimCore.Test
             _statusUtil.Verify();
             _host.Verify();
         }
-
-        [Test]
-        public void JoinAtCaret1()
-        {
-            Create("bear", "dog", "cat", "zebra", "fox", "jazz");
-            _operations.JoinAtCaret(1);
-            Assert.AreEqual("bear dog", _view.GetLine(0).GetText());
-        }
     }
 }

@@ -188,6 +188,22 @@ namespace VimCore.Test
         }
 
         [Test]
+        public void Yank_WithRangeAndCount1()
+        {
+            Create("cat", "dog", "rabbit", "tree");
+            var range = _view.GetLineRange(1, 1);
+            _operations
+                .Setup(x => x.UpdateRegisterForSpan(
+                    _map.GetRegister(RegisterName.Unnamed),
+                    RegisterOperation.Yank,
+                    range.ExtentIncludingLineBreak,
+                    OperationKind.LineWise))
+                .Verifiable();
+            RunCommand("2y 1");
+            _operations.Verify();
+        }
+
+        [Test]
         public void Put1()
         {
             Create("foo", "bar");
@@ -1527,6 +1543,62 @@ namespace VimCore.Test
             Create("");
             _vimHost.Setup(x => x.CloseView(_view, false)).Verifiable();
             RunCommand(":clo!");
+            _factory.Verify();
+        }
+
+        [Test]
+        public void Join_NoArguments()
+        {
+            Create("dog", "cat", "tree", "rabbit");
+            _operations
+                .Setup(x => x.Join(_view.GetLineRange(0, 1), JoinKind.RemoveEmptySpaces))
+                .Verifiable();
+            RunCommand("j");
+            _factory.Verify();
+        }
+
+        [Test]
+        public void Join_WithBang()
+        {
+            Create("dog", "cat", "tree", "rabbit");
+            _operations
+                .Setup(x => x.Join(_view.GetLineRange(0, 1), JoinKind.KeepEmptySpaces))
+                .Verifiable();
+            RunCommand("j!");
+            _factory.Verify();
+        }
+
+        [Test]
+        public void Join_WithCount()
+        {
+            Create("dog", "cat", "tree", "rabbit");
+            _operations
+                .Setup(x => x.Join(_view.GetLineRange(0, 2), JoinKind.RemoveEmptySpaces))
+                .Verifiable();
+            RunCommand("j 3");
+            _factory.Verify();
+        }
+
+        [Test]
+        public void Join_WithRangeAndCount()
+        {
+            Create("dog", "cat", "tree", "rabbit");
+            _operations
+                .Setup(x => x.Join(_view.GetLineRange(1, 3), JoinKind.RemoveEmptySpaces))
+                .Verifiable();
+            RunCommand("2j 3");
+            _factory.Verify();
+        }
+
+        [Test]
+        [Description("Final count overrides the range and in case of 1 does nothing")]
+        public void Join_WithRangeAndCountOfOne()
+        {
+            Create("dog", "cat", "tree", "rabbit");
+            _operations
+                .Setup(x => x.Join(_view.GetLineRange(2, 2), JoinKind.RemoveEmptySpaces))
+                .Verifiable();
+            RunCommand("3j 1");
             _factory.Verify();
         }
 
