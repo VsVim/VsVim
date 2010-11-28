@@ -10,15 +10,32 @@ open System.Text.RegularExpressions
 type VimRegexOptions = 
     | None = 0
     | Compiled = 0x1
+
+    /// Causes the regex to ignore case.  This will override any embedded \C 
+    /// modifier in the pattern or a noignore case option 
     | IgnoreCase = 0x2
+
+    /// Causes the regex to consider case.  This will override any embedded \c 
+    /// modifier in the pattern or a noignore case option 
     | OrdinalCase = 0x4
+
+    /// Causes the regex to begin in magic mode.  This can be disabled later in
+    /// the regex with a \M specifier
+    | Magic = 0x8
+
+    /// Causes the regex to begin in nomagic mode.  This can be disabled later in
+    /// the regex with a \m specifier
+    | NoMagic = 0x10
 
 /// Represents a Vim style regular expression 
 [<Sealed>]
 type VimRegex =
 
-    /// Text of the Regular expression
-    member Text : string
+    /// Vim Pattern of the Regular expression
+    member VimPattern : string
+
+    /// Pattern of the BCL version of the regular expression
+    member RegexPattern : string
 
     /// The underlying BCL Regex expression.  
     member Regex : Regex
@@ -41,4 +58,6 @@ type VimRegexFactory =
 
     member Create : pattern:string -> VimRegex option
 
-    member CreateWithOptions : pattern:string -> options:VimRegexOptions -> VimRegex Option
+    member CreateForSearchText : text:SearchText -> VimRegex option
+
+    member CreateWithOptions : pattern:string -> options:VimRegexOptions -> VimRegex option

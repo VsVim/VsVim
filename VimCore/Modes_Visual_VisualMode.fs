@@ -204,13 +204,13 @@ type internal VisualMode
                     "<lt>",
                     CommandFlags.Repeatable ||| CommandFlags.ResetCaret,
                     Some ModeKind.Normal,
-                    (fun count _ span -> _operations.ShiftSpanLeft count span) ,
+                    (fun count _ span -> _operations.ShiftLineRangeLeft count (SnapshotLineRangeUtil.CreateForSpan span)) ,
                     (fun count _ col -> _operations.ShiftBlockLeft count col ))
                 yield (
                     ">",
                     CommandFlags.Repeatable ||| CommandFlags.ResetCaret,
                     Some ModeKind.Normal,
-                    (fun count _ span ->  _operations.ShiftSpanRight count span),
+                    (fun count _ span ->  _operations.ShiftLineRangeRight count (SnapshotLineRangeUtil.CreateForSpan span)),
                     (fun count _ col -> _operations.ShiftBlockRight count col))
                 yield (
                     "~",
@@ -269,18 +269,22 @@ type internal VisualMode
                     "J",
                     CommandFlags.Repeatable,
                     None,
-                    (fun _ _ span -> _operations.JoinSpan span JoinKind.RemoveEmptySpaces),
+                    (fun _ _ span -> 
+                        let range = SnapshotLineRangeUtil.CreateForSpan span
+                        _operations.Join range JoinKind.RemoveEmptySpaces),
                     (fun _ _ col ->
-                        let span = NormalizedSnapshotSpanCollectionUtil.GetCombinedSpan col 
-                        _operations.JoinSpan span JoinKind.RemoveEmptySpaces))
+                        let range = SnapshotLineRangeUtil.CreateForNormalizedSnapshotSpanCollection col
+                        _operations.Join range JoinKind.RemoveEmptySpaces))
                 yield (
                     "gJ",
                     CommandFlags.Repeatable,
                     None,
-                    (fun _ _ span -> _operations.JoinSpan span JoinKind.KeepEmptySpaces),
+                    (fun _ _ span -> 
+                        let range = SnapshotLineRangeUtil.CreateForSpan span
+                        _operations.Join range JoinKind.KeepEmptySpaces),
                     (fun _ _ col ->
-                        let span = NormalizedSnapshotSpanCollectionUtil.GetCombinedSpan col 
-                        _operations.JoinSpan span JoinKind.KeepEmptySpaces))
+                        let range = SnapshotLineRangeUtil.CreateForNormalizedSnapshotSpanCollection col
+                        _operations.Join range JoinKind.KeepEmptySpaces))
                 yield (
                     "p",
                     CommandFlags.None,
@@ -312,6 +316,19 @@ type internal VisualMode
                             | VisualKind.Line -> normal()
                             | VisualKind.Block -> StringData.OfNormalizedSnasphotSpanCollection col
                         reg.Value <- { Value = data; OperationKind = OperationKind.LineWise} ))
+                yield (
+                    "=",
+                    CommandFlags.Repeatable,
+                    None,
+                    (fun _ _ span -> 
+                        let range = SnapshotLineRangeUtil.CreateForSpan span
+                        _buffer.Vim.VimHost.FormatLines _buffer.TextView range),
+                    (fun _ _ col ->
+                        let range = 
+                            col
+                            |> NormalizedSnapshotSpanCollectionUtil.GetCombinedSpan
+                            |> SnapshotLineRangeUtil.CreateForSpan 
+                        _buffer.Vim.VimHost.FormatLines _buffer.TextView range))
             }
             |> Seq.map (fun (str,flags,mode,funcNormal,funcBlock) ->
                 let kiSet = KeyNotationUtil.StringToKeyInputSet str

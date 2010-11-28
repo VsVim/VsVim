@@ -18,8 +18,10 @@ module internal Resources =
     let Common_MarkNotSet = "Mark not set"
     let Common_BulkEdit = "VsVim Bulk Edit"
     let Common_NoFoldFound = "No fold found"
+    let Common_InvalidLineNumber = "Invalid Line Number"
+    let Common_PatternNotFound pattern = sprintf "Pattern not found: %s" pattern
+    let Common_SubstituteComplete subs lines = sprintf "%d substitutions on %d lines" subs lines
 
-    let NormalMode_PatternNotFound pattern = sprintf "Pattern not found: %s" pattern
     let NormalMode_NoPreviousSearch = "No previous search"
     let NormalMode_NoWordUnderCursor = "No word under cursor"
     let NormalMode_NoStringUnderCursor = "No string under cursor"
@@ -29,8 +31,6 @@ module internal Resources =
     let NormalMode_CantFindFile fileName = sprintf "Can't find file for %s in path" fileName
 
     let CommandMode_InvalidCommand = "Invalid command"
-    let CommandMode_PatternNotFound pattern = NormalMode_PatternNotFound pattern
-    let CommandMode_SubstituteComplete subs lines = sprintf "%d substitutions on %d lines" subs lines
     let CommandMode_NotSupported msg = sprintf "Command not currently supported: %s" msg
     let CommandMode_NotSupported_SubstituteConfirm = CommandMode_NotSupported "Substitute Confirm"
     let CommandMode_NotSupported_SourceNormal = "source! commands are not currently supported"
@@ -41,6 +41,8 @@ module internal Resources =
     let CommandMode_CannotRun command = sprintf "Cannot run \"%s\"" command
     let CommandMode_CouldNotOpenFile file = sprintf "Could not open file \"%s\"" file
     let CommandMode_NoSuchMapping = "No such mapping"
+    let CommandMode_TrailingCharacters = "Trailing characters"
+    let CommandMode_NoPreviousSubstitute =  "No previous substitute regular expression"
 
     let VisualMode_BoxSelectionNotSupported = "Box selection is not supported for this operation"
     let VisualMode_MultiSelectNotSupported = "Multiple selections is not supported for this operation"

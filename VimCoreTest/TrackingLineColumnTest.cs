@@ -1,13 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using Microsoft.VisualStudio.Text;
 using NUnit.Framework;
-using Microsoft.VisualStudio.Text;
-using Vim.UnitTest;
 using Vim;
-using Microsoft.FSharp.Core;
 using Vim.Extensions;
+using Vim.UnitTest;
 
 namespace VimCore.Test
 {
@@ -17,14 +12,14 @@ namespace VimCore.Test
         private TrackingLineColumnService _service;
 
         [SetUp]
-        public void SetUp() 
+        public void SetUp()
         {
             _service = new TrackingLineColumnService();
         }
 
         private ITrackingLineColumn Create(ITextBuffer buffer, int line, int column)
         {
-            return _service.Create(buffer, line ,column);
+            return _service.Create(buffer, line, column);
         }
 
         private static void AssertPoint(ITrackingLineColumn tlc, int lineNumber, int column)
@@ -48,7 +43,7 @@ namespace VimCore.Test
             Assert.AreEqual(lineNumber, line.LineNumber, "Invalid line number");
             Assert.AreEqual(column, point.Position - line.Start.Position, "Invalid column");
         }
-            
+
         [Test]
         public void SimpleEdit1()
         {
@@ -81,7 +76,7 @@ namespace VimCore.Test
         {
             var buffer = EditorUtil.CreateBuffer("foo bar", "baz");
             var tlc = Create(buffer, 0, 1);
-            buffer.Replace(buffer.CurrentSnapshot.GetLineSpanIncludingLineBreak(1, 1).Span, "hello world");
+            buffer.Replace(buffer.GetLineRange(1, 1).ExtentIncludingLineBreak.Span, "hello world");
             AssertPoint(tlc, 0, 1);
         }
 

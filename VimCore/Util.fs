@@ -1,6 +1,7 @@
 ﻿#light
 
 namespace Vim
+open Microsoft.VisualStudio.Text
 
 [<AbstractClass>]
 type internal ToggleHandler() =
@@ -321,5 +322,6 @@ module internal OptionUtil =
         match opt with 
         | Some(value) -> value
         | None -> defaultValue
+
 
 

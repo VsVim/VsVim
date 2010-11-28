@@ -16,13 +16,13 @@ type internal DefaultOperations ( _data : OperationsData ) =
     let _textView = _data.TextView
     let _operations = _data.EditorOperations;
     let _outlining = _data.OutliningManager;
-    let _host = _data.VimHost;
+    let _vimData = _data.VimData
+    let _host = _data.VimHost
     let _jumpList = _data.JumpList;
     let _settings = _data.LocalSettings;
     let _undoRedoOperations = _data.UndoRedoOperations;
     let _keyMap = _data.KeyMap
     let _statusUtil = _data.StatusUtil
-    let _regexFactory = VimRegexFactory(_data.LocalSettings.GlobalSettings)
 
     /// Format the setting for use in output
     let FormatSetting(setting:Setting) = 
@@ -36,21 +36,6 @@ type internal DefaultOperations ( _data : OperationsData ) =
         | _ -> "Invalid value"
 
     member private x.CommonImpl = x :> ICommonOperations
-
-    /// Get the Line spans in the specified range
-    member x.GetSpansInRange (range:SnapshotSpan) =
-        let startLine = range.Start.GetContainingLine()
-        let endLine = range.End.GetContainingLine()
-        if startLine.LineNumber = endLine.LineNumber then  Seq.singleton range
-        else
-            let tss = startLine.Snapshot
-            seq {
-                yield SnapshotSpan(range.Start, startLine.EndIncludingLineBreak)
-                for i = startLine.LineNumber + 1 to endLine.LineNumber - 1 do
-                    yield tss.GetLineFromLineNumber(i).ExtentIncludingLineBreak
-                yield SnapshotSpan(endLine.Start, range.End)
-            }
-
 
     interface IOperations with
         member x.EditFile fileName = 
@@ -82,61 +67,6 @@ type internal DefaultOperations ( _data : OperationsData ) =
                     inner (cur.Add(1))
             let point = inner line.Start
             _textView.Caret.MoveTo(point) |> ignore
-
-        member x.Substitute pattern replace (range:SnapshotSpan) flags = 
-
-            /// Actually do the replace with the given regex
-            let doReplace (regex:VimRegex) = 
-                use edit = _textView.TextBuffer.CreateEdit()
-
-                let replaceOne (span:SnapshotSpan) (c:Capture) = 
-                    let newText =  regex.Replace c.Value replace 1
-                    let offset = span.Start.Position
-                    edit.Replace(Span(c.Index+offset, c.Length), newText) |> ignore
-                let getMatches (span:SnapshotSpan) = 
-                    if Utils.IsFlagSet flags SubstituteFlags.ReplaceAll then
-                        regex.Regex.Matches(span.GetText()) |> Seq.cast<Match>
-                    else
-                        regex.Regex.Match(span.GetText()) |> Seq.singleton
-                let matches = 
-                    x.GetSpansInRange range
-                    |> Seq.map (fun span -> getMatches span |> Seq.map (fun m -> (m,span)) )
-                    |> Seq.concat 
-                    |> Seq.filter (fun (m,_) -> m.Success)
-
-                if not (Utils.IsFlagSet flags SubstituteFlags.ReportOnly) then
-                    // Actually do the edits
-                    matches |> Seq.iter (fun (m,span) -> replaceOne span m)
-
-                let updateReplaceCount () = 
-                    // Update the status
-                    let replaceCount = matches |> Seq.length
-                    let lineCount = 
-                        matches 
-                        |> Seq.map (fun (_,s) -> s.Start.GetContainingLine().LineNumber)
-                        |> Seq.distinct
-                        |> Seq.length
-                    if replaceCount > 1 then
-                        _statusUtil.OnStatus (Resources.CommandMode_SubstituteComplete replaceCount lineCount)
-
-                if edit.HasEffectiveChanges then
-                    edit.Apply() |> ignore                                
-                    updateReplaceCount()
-                elif Utils.IsFlagSet flags SubstituteFlags.ReportOnly then
-                    edit.Cancel()
-                    updateReplaceCount()
-                else 
-                    edit.Cancel()
-                    _statusUtil.OnError (Resources.CommandMode_PatternNotFound pattern)
-
-            let options = 
-                if Utils.IsFlagSet flags SubstituteFlags.IgnoreCase then VimRegexOptions.IgnoreCase
-                elif Utils.IsFlagSet flags SubstituteFlags.OrdinalCase then VimRegexOptions.OrdinalCase 
-                else VimRegexOptions.None
-            let options = VimRegexOptions.Compiled ||| options
-            match _regexFactory.CreateWithOptions pattern options with
-            | None -> _statusUtil.OnError (Resources.CommandMode_PatternNotFound pattern)
-            | Some (regex) -> doReplace regex
 
         member x.PrintMarks (markMap:IMarkMap) =    
             let printMark (ident:char) (point:VirtualSnapshotPoint) =

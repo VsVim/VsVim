@@ -35,6 +35,7 @@ namespace VimCore.Test
         private Mock<IRegisterMap> _registerMap;
 
         private ISearchService _searchService;
+        private IVimData _vimData;
         private Mock<IStatusUtil> _statusUtil;
 
         private void Create(params string[] lines)
@@ -62,6 +63,7 @@ namespace VimCore.Test
             var editorOptions = EditorUtil.FactoryService.editorOptionsFactory.GetOptions(_view);
             baseNav = baseNav ?? (new Mock<ITextStructureNavigator>(MockBehavior.Strict)).Object;
             var nav = TssUtil.CreateTextStructureNavigator(WordKind.NormalWord, baseNav);
+            _vimData = new VimData();
             _bufferOptions = new Mock<IEditorOptions>(MockBehavior.Strict);
             _bufferOptions.Setup(x => x.GetOptionValue(DefaultOptions.TabSizeOptionId)).Returns(4);
             _globalSettings = MockObjectFactory.CreateGlobalSettings(ignoreCase: true);
@@ -84,6 +86,7 @@ namespace VimCore.Test
             _registerMap = MockObjectFactory.CreateRegisterMap();
 
             var data = new OperationsData(
+                vimData: _vimData,
                 vimHost: _host.Object,
                 textView: _view,
                 editorOperations: editorOpts,
@@ -326,10 +329,10 @@ namespace VimCore.Test
         public void PasteAfter12()
         {
             Create("foo", "bar");
-            _view.Caret.MoveTo(_view.GetLineSpan(1).End);
+            _view.Caret.MoveTo(_view.GetLineRange(1).End);
             _operations.PasteAfterCursor("hey", 1, OperationKind.LineWise, false);
-            Assert.AreEqual("hey", _view.GetLineSpan(2).GetText());
-            Assert.AreEqual(_view.GetCaretPoint(), _view.GetLineSpan(2).Start);
+            Assert.AreEqual("hey", _view.GetLineRange(2).GetText());
+            Assert.AreEqual(_view.GetCaretPoint(), _view.GetLineRange(2).Start);
         }
 
         [Test]
@@ -593,7 +596,7 @@ namespace VimCore.Test
             AllowOutlineExpansion();
             _operations.MoveToNextOccuranceOfWordAtCursor(SearchKind.ForwardWithWrap, 1);
             Assert.AreEqual(_view.GetLine(1).Start, _view.Caret.Position.BufferPosition);
-            Assert.AreEqual(SearchText.NewWholeWord("foo"), _searchService.LastSearch.Text);
+            Assert.AreEqual(SearchText.NewWholeWord("foo"), _vimData.LastSearchData.Text);
         }
 
         [Test, Description("When there is no word under the cursor, don't update the LastSearch")]
@@ -601,11 +604,11 @@ namespace VimCore.Test
         {
             Create("  foo bar baz");
             var data = new SearchData(SearchText.NewPattern("foo"), SearchKind.ForwardWithWrap, SearchOptions.None);
-            _searchService.LastSearch = data;
+            _vimData.LastSearchData = data;
             _statusUtil.Setup(x => x.OnError(Resources.NormalMode_NoWordUnderCursor)).Verifiable();
             _operations.MoveToNextOccuranceOfWordAtCursor(SearchKind.ForwardWithWrap, 1);
             _statusUtil.Verify();
-            Assert.AreEqual(data, _searchService.LastSearch);
+            Assert.AreEqual(data, _vimData.LastSearchData);
         }
 
         [Test]
@@ -656,7 +659,7 @@ namespace VimCore.Test
             _view.MoveCaretTo(_view.GetLine(2).Start.Position);
             _operations.MoveToNextOccuranceOfWordAtCursor(SearchKind.BackwardWithWrap, 2);
             Assert.AreEqual(0, _view.Caret.Position.BufferPosition.Position);
-            Assert.AreEqual(SearchText.NewWholeWord("foo"), _searchService.LastSearch.Text);
+            Assert.AreEqual(SearchText.NewWholeWord("foo"), _vimData.LastSearchData.Text);
         }
 
         [Test]
@@ -664,10 +667,10 @@ namespace VimCore.Test
         {
             Create("    foo bar");
             var data = new SearchData(SearchText.NewPattern("foo"), SearchKind.ForwardWithWrap, SearchOptions.None);
-            _searchService.LastSearch = data;
+            _vimData.LastSearchData = data;
             _statusUtil.Setup(x => x.OnError(Resources.NormalMode_NoWordUnderCursor)).Verifiable();
             _operations.MoveToNextOccuranceOfWordAtCursor(SearchKind.BackwardWithWrap, 1);
-            Assert.AreEqual(data, _searchService.LastSearch);
+            Assert.AreEqual(data, _vimData.LastSearchData);
             _statusUtil.Verify();
         }
 
@@ -679,7 +682,7 @@ namespace VimCore.Test
             _view.MoveCaretTo(_view.GetLine(2).Start.Position);
             _operations.MoveToNextOccuranceOfWordAtCursor(SearchKind.BackwardWithWrap, 2);
             Assert.AreEqual(0, _view.Caret.Position.BufferPosition.Position);
-            Assert.AreEqual(SearchText.NewWholeWord("foo"), _searchService.LastSearch.Text);
+            Assert.AreEqual(SearchText.NewWholeWord("foo"), _vimData.LastSearchData.Text);
             _outlining.Verify();
         }
 
@@ -688,8 +691,8 @@ namespace VimCore.Test
         {
             Create("foo bar baz");
             var data = new SearchData(SearchText.NewPattern("beat"), SearchKind.ForwardWithWrap, SearchOptions.None);
-            _searchService.LastSearch = data;
-            _statusUtil.Setup(x => x.OnError(Resources.NormalMode_PatternNotFound("beat"))).Verifiable();
+            _vimData.LastSearchData = data;
+            _statusUtil.Setup(x => x.OnError(Resources.Common_PatternNotFound("beat"))).Verifiable();
             _operations.MoveToNextOccuranceOfLastSearch(1, false);
             _statusUtil.Verify();
         }
@@ -700,7 +703,7 @@ namespace VimCore.Test
             Create("foo bar", "foo");
             AllowOutlineExpansion();
             var data = new SearchData(SearchText.NewPattern("foo"), SearchKind.ForwardWithWrap, SearchOptions.None);
-            _searchService.LastSearch = data;
+            _vimData.LastSearchData = data;
             _operations.MoveToNextOccuranceOfLastSearch(1, false);
             Assert.AreEqual(_view.GetLine(1).Start, _view.GetCaretPoint());
         }
@@ -711,7 +714,7 @@ namespace VimCore.Test
             Create("foo bar", "foo");
             AllowOutlineExpansion();
             var data = new SearchData(SearchText.NewPattern("foo"), SearchKind.ForwardWithWrap, SearchOptions.None);
-            _searchService.LastSearch = data;
+            _vimData.LastSearchData = data;
             _operations.MoveToNextOccuranceOfLastSearch(2, false);
             Assert.AreEqual(0, _view.GetCaretPoint());
         }
@@ -722,7 +725,7 @@ namespace VimCore.Test
             Create("foo bar", "foo");
             AllowOutlineExpansion();
             var data = new SearchData(SearchText.NewPattern("foo"), SearchKind.BackwardWithWrap, SearchOptions.None);
-            _searchService.LastSearch = data;
+            _vimData.LastSearchData = data;
             _operations.MoveToNextOccuranceOfLastSearch(1, false);
             Assert.AreEqual(_view.GetLine(1).Start, _view.GetCaretPoint());
         }
@@ -733,7 +736,7 @@ namespace VimCore.Test
             Create("foo bar", "foo");
             var data = new SearchData(SearchText.NewPattern("foo"), SearchKind.BackwardWithWrap, SearchOptions.None);
             AllowOutlineExpansion(verify: true);
-            _searchService.LastSearch = data;
+            _vimData.LastSearchData = data;
             _operations.MoveToNextOccuranceOfLastSearch(1, false);
             Assert.AreEqual(_view.GetLine(1).Start, _view.GetCaretPoint());
             _outlining.Verify();
@@ -977,7 +980,7 @@ namespace VimCore.Test
         {
             Create("bar", "baz");
             _operations.ChangeLetterCaseAtCursor(1);
-            Assert.AreEqual("Bar", _view.GetLineSpan(0).GetText());
+            Assert.AreEqual("Bar", _view.GetLineRange(0).GetText());
             Assert.AreEqual(1, _view.GetCaretPoint().Position);
         }
 
@@ -986,7 +989,7 @@ namespace VimCore.Test
         {
             Create("bar", "baz");
             _operations.ChangeLetterCaseAtCursor(2);
-            Assert.AreEqual("BAr", _view.GetLineSpan(0).GetText());
+            Assert.AreEqual("BAr", _view.GetLineRange(0).GetText());
             Assert.AreEqual(2, _view.GetCaretPoint().Position);
         }
 
@@ -995,7 +998,7 @@ namespace VimCore.Test
         {
             Create("bar", "baz");
             _operations.ChangeLetterCaseAtCursor(300);
-            Assert.AreEqual("BAR", _view.GetLineSpan(0).GetText());
+            Assert.AreEqual("BAR", _view.GetLineRange(0).GetText());
             Assert.AreEqual(2, _view.GetCaretPoint().Position);
         }
 

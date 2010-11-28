@@ -3,8 +3,8 @@ using Microsoft.VisualStudio.Text.Editor;
 using NUnit.Framework;
 using Vim;
 using Vim.Extensions;
-using Vim.UnitTest.Mock;
 using Vim.UnitTest;
+using Vim.UnitTest.Mock;
 
 namespace VimCore.Test
 {
@@ -256,7 +256,7 @@ namespace VimCore.Test
         public void BufferLifetime1()
         {
             var textView = EditorUtil.CreateView("foo");
-            var vimBuffer = new MockVimBuffer() { TextBufferImpl = textView.TextBuffer, TextViewImpl = textView};
+            var vimBuffer = new MockVimBuffer() { TextBufferImpl = textView.TextBuffer, TextViewImpl = textView };
             _mapListener.VimBufferCreated(vimBuffer);
             _map.SetLocalMark(new SnapshotPoint(textView.TextSnapshot, 0), 'c');
             vimBuffer.RaiseClosed();
@@ -274,17 +274,17 @@ namespace VimCore.Test
         public void MarkSelectionStart2()
         {
             Create("the", "quick", "fox");
-            _textView.Selection.Select(_buffer.GetLineSpan(0), false);
-            Assert.AreEqual(0, _map.GetMark(_buffer,'<').Value.Position.Position);
+            _textView.Selection.Select(_buffer.GetLineRange(0).Extent, false);
+            Assert.AreEqual(0, _map.GetMark(_buffer, '<').Value.Position.Position);
         }
 
         [Test]
         public void MarkSelectionStart3()
         {
             Create("the", "quick", "fox");
-            _textView.Selection.Select(_buffer.GetLineSpan(0), false);
+            _textView.Selection.Select(_buffer.GetLineRange(0).Extent, false);
             _textView.Selection.Clear();
-            Assert.AreEqual(0, _map.GetMark(_buffer,'<').Value.Position.Position);
+            Assert.AreEqual(0, _map.GetMark(_buffer, '<').Value.Position.Position);
         }
 
 

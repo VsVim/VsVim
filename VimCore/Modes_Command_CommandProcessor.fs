@@ -77,20 +77,19 @@ module internal CommandParseUtil =
             found left right rest
     
 
-type CommandAction = char list -> Range option -> bool -> unit
+type CommandAction = char list -> SnapshotLineRange option -> bool -> unit
 
 /// Type which is responsible for executing command mode commands
 type internal CommandProcessor 
     ( 
-        _data : IVimBuffer, 
+        _buffer : IVimBuffer, 
         _operations : IOperations,
         _statusUtil : IStatusUtil,
         _fileSystem : IFileSystem ) as this = 
 
-    let mutable _command : System.String = System.String.Empty
+    let _regexFactory = VimRegexFactory(_buffer.Settings.GlobalSettings)
 
-    /// Last substitute operation that occured
-    let mutable _lastSubstitute : (string * string * SubstituteFlags) = ("","",SubstituteFlags.None)
+    let mutable _command : System.String = System.String.Empty
 
     /// List of supported commands.  The bool value on the lambda is whether or not there was a 
     /// bang following the command.  The two strings represent the full and short match name
@@ -106,6 +105,7 @@ type internal CommandProcessor
             yield ("edit", "e", this.ProcessEdit)
             yield ("fold", "fo", this.ProcessFold)
             yield ("join", "j", this.ProcessJoin)
+            yield ("make", "mak", this.ProcessMake)
             yield ("marks", "", this.ProcessMarks)
             yield ("put", "pu", this.ProcessPut)
             yield ("quit", "q", this.ProcessQuit)
@@ -115,6 +115,8 @@ type internal CommandProcessor
             yield ("source","so", this.ProcessSource)
             yield ("split", "sp", this.ProcessSplit)
             yield ("substitute", "s", this.ProcessSubstitute)
+            yield ("smagic", "sm", this.ProcessSubstituteMagic)
+            yield ("snomagic", "sno", this.ProcessSubstituteNomagic)
             yield ("tabnext", "tabn", this.ProcessTabNext)
             yield ("tabprevious", "tabp", this.ProcessTabPrevious)
             yield ("tabNext", "tabN", this.ProcessTabPrevious)
@@ -123,7 +125,8 @@ type internal CommandProcessor
             yield ("wall", "wa", this.ProcessWriteAll)
             yield ("yank", "y", this.ProcessYank)
             yield ("$", "", fun _ _ _ -> _operations.EditorOperations.MoveToEndOfDocument(false))
-            yield ("make", "mak", this.ProcessMake)
+            yield ("&", "&", this.ProcessSubstitute)
+            yield ("~", "~", this.ProcessSubstituteWithSearchPattern)
         }
 
         let mapClearSeq = seq {
@@ -202,33 +205,24 @@ type internal CommandProcessor
     member private x.BadMessage = Resources.CommandMode_CannotRun _command
 
     /// Process the :close command
-    member private x.ProcessClose _ _ hasBang = _data.Vim.VimHost.CloseView _data.TextView (not hasBang)
+    member private x.ProcessClose _ _ hasBang = _buffer.Vim.VimHost.CloseView _buffer.TextView (not hasBang)
 
     /// Process the :join command
-    member private x.ProcessJoin (rest:char list) (range:Range option) hasBang =
+    member private x.ProcessJoin (rest:char list) (range:SnapshotLineRange option) hasBang =
         let kind = if hasBang then JoinKind.KeepEmptySpaces else JoinKind.RemoveEmptySpaces
         let rest = CommandParseUtil.SkipWhitespace rest
         let count,rest = RangeUtil.ParseNumber rest
-        let span = 
-            match range with 
-            | Some(range) -> Some(RangeUtil.GetSnapshotSpan range)
-            | None -> None
-            
-        let range = span
+
         let range = 
             match range with 
-            | Some(s) -> s
+            | Some(range) -> RangeUtil.TryApplyCount count range
             | None -> 
-                let point = TextViewUtil.GetCaretPoint _data.TextView
-                SnapshotSpan(point,0)
+                match count with
+                | None -> _buffer.TextView |> RangeUtil.RangeForCurrentLine |> RangeUtil.ApplyCount 2
+                | Some(1) -> _buffer.TextView |> RangeUtil.RangeForCurrentLine |> RangeUtil.ApplyCount 2
+                | Some(count) -> _buffer.TextView |> RangeUtil.RangeForCurrentLine |> RangeUtil.ApplyCount count
 
-        match count with 
-        | Some(c) -> _operations.Join range.End kind c |> ignore
-        | None -> 
-            let startLine = range.Start.GetContainingLine().LineNumber
-            let endLine = range.End.GetContainingLine().LineNumber
-            let count = endLine - startLine
-            _operations.Join range.Start kind count |> ignore
+        _operations.Join range kind
 
     /// Parse out the :edit commnad
     member private x.ProcessEdit (rest:char list) _ hasBang = 
@@ -240,66 +234,57 @@ type internal CommandProcessor
         else _operations.EditFile name
 
     /// Parse out the fold command and create the fold
-    member private x.ProcessFold _ (range : Range option) _ =
-        let span = RangeUtil.RangeOrCurrentLine _data.TextView range |> RangeUtil.GetSnapshotSpan
-        _operations.FoldManager.CreateFold span
+    member private x.ProcessFold _ (range : SnapshotLineRange option) _ =
+        let range = RangeUtil.RangeOrCurrentLine _buffer.TextView range
+        _operations.FoldManager.CreateFold range.ExtentIncludingLineBreak
 
     /// Parse out the Yank command
-    member private x.ProcessYank (rest:char list) (range: Range option) _ =
-        let reg,rest = rest |> CommandParseUtil.SkipRegister _data.RegisterMap
+    member private x.ProcessYank (rest:char list) (range: SnapshotLineRange option) _ =
+        let reg,rest = rest |> CommandParseUtil.SkipRegister _buffer.RegisterMap
         let count,rest = RangeUtil.ParseNumber rest
 
         // Calculate the span to yank
-        let range = RangeUtil.RangeOrCurrentLine _data.TextView range
+        let range = RangeUtil.RangeOrCurrentLine _buffer.TextView range
         
         // Apply the count if present
         let range = 
             match count with             
-            | Some(count) -> RangeUtil.ApplyCount range count
+            | Some(count) -> RangeUtil.ApplyCount count range
             | None -> range
 
-        let span = RangeUtil.GetSnapshotSpan range
-        _operations.UpdateRegisterForSpan reg RegisterOperation.Yank span OperationKind.LineWise
+        _operations.UpdateRegisterForSpan reg RegisterOperation.Yank (range.ExtentIncludingLineBreak) OperationKind.LineWise
 
     /// Parse the Put command
-    member private x.ProcessPut (rest:char list) (range: Range option) bang =
+    member private x.ProcessPut (rest:char list) (range: SnapshotLineRange option) bang =
         let reg,rest = 
             rest
             |> CommandParseUtil.SkipWhitespace
-            |> CommandParseUtil.SkipRegister _data.RegisterMap
+            |> CommandParseUtil.SkipRegister _buffer.RegisterMap
         
         // Figure out the line number
         let line = 
             match range with 
-            | None -> (TextViewUtil.GetCaretPoint _data.TextView).GetContainingLine()
-            | Some(range) ->
-                match range with 
-                | Range.SingleLine(line) -> line
-                | Range.RawSpan(span) -> span.End.GetContainingLine()
-                | Range.Lines(tss,_,endLine) -> tss.GetLineFromLineNumber(endLine)
+            | None -> (TextViewUtil.GetCaretPoint _buffer.TextView).GetContainingLine()
+            | Some(range) -> range.EndLine
 
         _operations.Put reg.StringValue line (not bang)
 
     /// Parse the < command
-    member private x.ProcessShiftLeft (rest:char list) (range: Range option) _ =
+    member private x.ProcessShiftLeft (rest:char list) (range: SnapshotLineRange option) _ =
         let count,rest =  rest  |> RangeUtil.ParseNumber
-        let range = RangeUtil.RangeOrCurrentLine _data.TextView range
         let range = 
-            match count with
-            | Some(count) -> RangeUtil.ApplyCount range count
-            | None -> range
-        let span = RangeUtil.GetSnapshotSpan range
-        _operations.ShiftSpanLeft 1 span 
+            range
+            |> RangeUtil.RangeOrCurrentLine _buffer.TextView 
+            |> RangeUtil.TryApplyCount count
+        _operations.ShiftLineRangeLeft 1 range
 
-    member private x.ProcessShiftRight (rest:char list) (range: Range option) _ =
+    member private x.ProcessShiftRight (rest:char list) (range: SnapshotLineRange option) _ =
         let count,rest = rest |> RangeUtil.ParseNumber
-        let range = RangeUtil.RangeOrCurrentLine _data.TextView range
         let range = 
-            match count with
-            | Some(count) -> RangeUtil.ApplyCount range count
-            | None -> range
-        let span = RangeUtil.GetSnapshotSpan range
-        _operations.ShiftSpanRight 1 span 
+            range
+            |> RangeUtil.RangeOrCurrentLine _buffer.TextView 
+            |> RangeUtil.TryApplyCount count
+        _operations.ShiftLineRangeRight 1 range
 
     member private x.ProcessWrite (rest:char list) _ _ = 
         let name = rest |> StringUtil.ofCharSeq 
@@ -310,7 +295,7 @@ type internal CommandProcessor
     member private x.ProcessWriteAll _ _ _ = 
         _operations.SaveAll()
 
-    member private x.ProcessQuit _ _ hasBang = _data.Vim.VimHost.CloseView _data.TextView (not hasBang)
+    member private x.ProcessQuit _ _ hasBang = _buffer.Vim.VimHost.CloseView _buffer.TextView (not hasBang)
 
     member private x.ProcessQuitAll _ _ hasBang =
         let checkDirty = not hasBang
@@ -327,18 +312,18 @@ type internal CommandProcessor
         _operations.GoToPreviousTab count
 
     member private x.ProcessMake _ _ bang =
-        _data.Vim.VimHost.BuildSolution()
+        _buffer.Vim.VimHost.BuildSolution()
 
     /// Implements the :delete command
-    member private x.ProcessDelete (rest:char list) (range:Range option) _ =
-        let reg,rest = rest |> CommandParseUtil.SkipRegister _data.RegisterMap
+    member private x.ProcessDelete (rest:char list) (range:SnapshotLineRange option) _ =
+        let reg,rest = rest |> CommandParseUtil.SkipRegister _buffer.RegisterMap
         let count,rest = rest |> CommandParseUtil.SkipWhitespace |> RangeUtil.ParseNumber
-        let range = RangeUtil.RangeOrCurrentLine _data.TextView range
         let range = 
-            match count with
-            | Some(count) -> RangeUtil.ApplyCount range count
-            | None -> range
-        let span = RangeUtil.GetSnapshotSpan range
+            range
+            |> RangeUtil.RangeOrCurrentLine _buffer.TextView 
+            |> RangeUtil.TryApplyCount count
+
+        let span = range.ExtentIncludingLineBreak
         _operations.DeleteSpan span 
         _operations.UpdateRegisterForSpan reg RegisterOperation.Delete span OperationKind.LineWise
 
@@ -354,7 +339,7 @@ type internal CommandProcessor
 
     member private x.ProcessMarks rest _ _ =
         match Seq.isEmpty rest with
-        | true -> _operations.PrintMarks _data.MarkMap
+        | true -> _operations.PrintMarks _buffer.MarkMap
         | false -> _statusUtil.OnError x.BadMessage
 
     /// Parse out the :set command
@@ -387,68 +372,179 @@ type internal CommandProcessor
 
     /// Split the given view into 2
     member private x.ProcessSplit _ _ _ =
-        _data.Vim.VimHost.SplitView _data.TextView
+        _buffer.Vim.VimHost.SplitView _buffer.TextView
 
-    /// Process the :substitute command. 
-    member private x.ProcessSubstitute(rest:char list) (range:Range option) _ =
+    /// Process the :substitute and :& command. 
+    member private x.ProcessSubstitute rest range _ = 
+        x.ProcessSubstituteCore rest range SubstituteFlags.None
 
-        // Used to parse out the flags on the :s command
-        let rec parseFlags (rest:char seq) =
-            let charToOption c = 
+    /// Process the :smagic command
+    member private x.ProcessSubstituteMagic rest range _ = 
+        x.ProcessSubstituteCore rest range SubstituteFlags.Magic
+
+    /// Process the :snomagic command
+    member private x.ProcessSubstituteNomagic rest range _ = 
+        x.ProcessSubstituteCore rest range SubstituteFlags.Nomagic
+
+    /// Process the :~ command
+    member private x.ProcessSubstituteWithSearchPattern rest range _ = 
+        x.ProcessSubstituteCore rest range SubstituteFlags.UsePreviousSearchPattern 
+
+    /// Handles the processing of the common parts of the substitute command
+    member private x.ProcessSubstituteCore (rest:char list) (range:SnapshotLineRange option) additionalFlags =
+
+        // Used to parse out the flags on the :s command.  Will return a tuple of the flags
+        // and the remaining char list after parsing the flags
+        let parseFlags (rest:char seq) =
+
+            // Convert the given char to a flag
+            let charToFlag c = 
                 match c with 
-                | 'c' -> SubstituteFlags.Confirm
-                | '&' -> SubstituteFlags.UsePrevious
-                | 'e' -> SubstituteFlags.SuppressError
-                | 'g' -> SubstituteFlags.ReplaceAll
-                | 'i' -> SubstituteFlags.IgnoreCase
-                | 'I' -> SubstituteFlags.OrdinalCase
-                | 'n' -> SubstituteFlags.ReportOnly
-                | _ -> SubstituteFlags.Invalid
-            rest |> Seq.fold (fun f c -> (charToOption c) ||| f) SubstituteFlags.None 
+                | 'c' -> Some SubstituteFlags.Confirm
+                | '&' -> Some SubstituteFlags.UsePreviousFlags
+                | 'r' -> Some SubstituteFlags.UsePreviousSearchPattern
+                | 'e' -> Some SubstituteFlags.SuppressError
+                | 'g' -> Some SubstituteFlags.ReplaceAll
+                | 'i' -> Some SubstituteFlags.IgnoreCase
+                | 'I' -> Some SubstituteFlags.OrdinalCase
+                | 'n' -> Some SubstituteFlags.ReportOnly
+                | 'p' -> Some SubstituteFlags.PrintLast
+                | '#' -> Some SubstituteFlags.PrintLastWithNumber
+                | 'l' -> Some SubstituteFlags.PrintLastWithList
+                | _  -> None
 
-        let doParse rest badParse goodParse =
+            let rec inner rest continuation = 
+                match SeqUtil.tryHead rest with
+                | None -> continuation (SubstituteFlags.None, Seq.empty)
+                | Some(head, tail) ->
+                    match charToFlag head with
+                    | None -> continuation (SubstituteFlags.None, rest)
+                    | Some(flag) -> inner tail (fun (acc, rest) -> continuation ((flag ||| acc), rest))
 
-            // Parse one element out of the sequence.  We expect the rest to 
-            // be pointed at a string prefixed with '/'.  "found" will be called
-            // with both the text after the '/' and the remainder of the string
-            let parseOne rest notFound found =
-                match rest with
-                | [] -> notFound()
-                | h::t -> 
-                    if h <> '/' then notFound()
-                    else 
-                        let rest = t |> Seq.ofList
-                        let data = rest |> Seq.takeWhile (fun c -> c <> '/') |> StringUtil.ofCharSeq
-                        found data (t |> ListUtil.skip data.Length)
+            inner rest (fun x -> x)
 
-            parseOne rest (fun () -> badParse() ) (fun search rest -> 
-                parseOne rest (fun () -> badParse()) (fun replace rest ->  
-                    let rest = rest |> ListUtil.skipWhile (fun c -> c = '/')
-                    let flagsInput = rest |> Seq.takeWhile (fun c -> not (CharUtil.IsWhiteSpace c))
-                    let flags = parseFlags flagsInput
-                    let flags = 
-                        if Utils.IsFlagSet flags SubstituteFlags.UsePrevious then
-                            let _,_,prev = _lastSubstitute
-                            (Utils.UnsetFlag flags SubstituteFlags.UsePrevious) ||| prev
-                        else
-                            flags
-                    if Utils.IsFlagSet flags SubstituteFlags.Invalid then badParse()
-                    else goodParse search replace flags ))
+        let parseAndApplyFlags (rest:char seq) = 
+            let flags, rest = parseFlags rest
 
-        let range = RangeUtil.RangeOrCurrentLine _data.TextView range |> RangeUtil.GetSnapshotSpan
-        if List.isEmpty rest then
-            let search,replace,flags = _lastSubstitute
-            _operations.Substitute search replace range flags
-        else 
-            let badParse () = _statusUtil.OnError Resources.CommandMode_InvalidCommand
-            let goodParse search replace flags = 
+            // Apply the additional flags provided to the method
+            let flags = flags ||| additionalFlags
+
+            // Check for the UsePrevious flag and update the flags as appropriate.  Make sure
+            // to bitor them against the new flags
+            let flags = 
+                if Utils.IsFlagSet flags SubstituteFlags.UsePreviousFlags then 
+                    match _buffer.VimData.LastSubstituteData with
+                    | None -> SubstituteFlags.None
+                    | Some(data) -> (Utils.UnsetFlag flags SubstituteFlags.UsePreviousFlags) ||| data.Flags
+                else flags
+
+            (flags, rest)
+
+        // Parse out the count for the substitute.  Will apply the count if present to the
+        // range 
+        let parseAndApplyCount range rest = 
+            let opt, rest = rest |> List.ofSeq |> RangeUtil.ParseNumber 
+            match opt with
+            | None -> range,rest
+            | Some(count) -> (RangeUtil.ApplyCount count range,rest)
+ 
+        let originalRange = RangeUtil.RangeOrCurrentLine _buffer.TextView range 
+
+        let isFullParse = 
+            match rest |> Seq.skipWhile CharUtil.IsWhiteSpace |> SeqUtil.tryHeadOnly with
+            | Some('/') -> true
+            | _ -> false
+
+        if isFullParse then 
+            // This is the full form of the substitute command.  That is the form having
+            // :s/search/replace/flags
+
+            let parseFull rest badParse goodParse =
+
+                // Parse one element out of the sequence.  We expect the rest to 
+                // be pointed at a string prefixed with '/'.  "found" will be called
+                // with both the text after the '/' and the remainder of the string
+                let parseOne rest notFound found =
+                    match rest with
+                    | [] -> notFound()
+                    | h::t -> 
+                        if h <> '/' then notFound()
+                        else 
+                            let rest = t |> Seq.ofList
+                            let data = rest |> Seq.takeWhile (fun c -> c <> '/') |> StringUtil.ofCharSeq
+                            found data (t |> ListUtil.skip data.Length)
+
+                let defaultMsg = Resources.CommandMode_InvalidCommand
+                parseOne rest (fun () -> badParse defaultMsg) (fun search rest -> 
+                    parseOne rest (fun () -> badParse defaultMsg) (fun replace rest ->  
+                        let rest = rest |> ListUtil.skipWhile (fun c -> c = '/')
+                        let flags, rest = parseAndApplyFlags rest 
+                        let range, rest = parseAndApplyCount originalRange (rest |> Seq.skipWhile CharUtil.IsWhiteSpace)
+    
+                        // Check for the UsePrevious flag and update the flags as appropriate.  Make sure
+                        // to bitor them against the new flags
+                        let flags = 
+                            if Utils.IsFlagSet flags SubstituteFlags.UsePreviousFlags then 
+                                match _buffer.VimData.LastSubstituteData with
+                                | None -> SubstituteFlags.None
+                                | Some(data) -> (Utils.UnsetFlag flags SubstituteFlags.UsePreviousFlags) ||| data.Flags
+                            else flags
+
+                        // Check for the previous search pattern flag
+                        let search, errorMsg  = 
+                            if Utils.IsFlagSet flags SubstituteFlags.UsePreviousSearchPattern then
+                                match _regexFactory.CreateForSearchText _buffer.VimData.LastSearchData.Text with
+                                | None -> (StringUtil.empty, Some Resources.CommandMode_NoPreviousSubstitute)
+                                | Some(regex) -> (regex.VimPattern, None)
+                            else
+                                (search,None)
+
+                        if Option.isSome errorMsg then
+                            badParse (Option.get errorMsg)
+                        elif StringUtil.isNullOrEmpty search then 
+                            badParse Resources.CommandMode_InvalidCommand
+                        elif not (List.isEmpty rest) then
+                            badParse Resources.CommandMode_TrailingCharacters
+                        else 
+                            goodParse search replace range flags ))
+
+            let badParse msg = _statusUtil.OnError msg
+            let goodParse search replace range flags = 
                 if Utils.IsFlagSet flags SubstituteFlags.Confirm then
                     _statusUtil.OnError Resources.CommandMode_NotSupported_SubstituteConfirm
                 else
-                    _operations.Substitute search replace range flags
-                    _lastSubstitute <- (search,replace,flags)
-            doParse rest badParse goodParse    
-    
+                    _operations.Substitute search replace range flags 
+            parseFull rest badParse goodParse    
+
+        else
+
+            // This is the abbreviated form of substitute having the form 
+            // :subsitute [flags] [count]
+            let flags, rest = parseAndApplyFlags rest
+            let range, rest = parseAndApplyCount originalRange (rest |> Seq.skipWhile CharUtil.IsWhiteSpace)
+            let isParseFinished = rest |> Seq.skipWhile CharUtil.IsWhiteSpace |> Seq.isEmpty
+            if not isParseFinished then 
+                _statusUtil.OnError Resources.CommandMode_TrailingCharacters
+            else
+
+                match _buffer.Vim.VimData.LastSubstituteData with 
+                | None -> _statusUtil.OnError Resources.CommandMode_NoPreviousSubstitute 
+                | Some(previousData) ->
+
+                    // Get the pattern to replace with 
+                    let flags, pattern, errorMsg = 
+                        if Utils.IsFlagSet flags SubstituteFlags.UsePreviousSearchPattern then 
+                            let flags = Utils.UnsetFlag flags SubstituteFlags.UsePreviousSearchPattern
+                            match _regexFactory.CreateForSearchText _buffer.VimData.LastSearchData.Text with
+                            | None -> (flags, StringUtil.empty, Some Resources.CommandMode_InvalidCommand)
+                            | Some(regex) -> (flags, regex.VimPattern, None)
+                        else 
+                            (flags, previousData.SearchPattern, None)
+
+                    match errorMsg with
+                    | Some(msg) -> _statusUtil.OnError msg
+                    | None -> _operations.Substitute pattern previousData.Substitute range flags
+
     member private x.ProcessKeyMapClear modes hasBang =
         let modes = 
             if hasBang then [KeyRemapMode.Insert; KeyRemapMode.Command]
@@ -469,18 +565,20 @@ type internal CommandProcessor
         let withKeys lhs rhs _ = _operations.RemapKeys lhs rhs modes allowRemap 
         CommandParseUtil.ParseKeys rest withKeys (fun() -> _statusUtil.OnError x.BadMessage)
 
-    member private x.ParseCommand (rest:char list) (range:Range option) = 
+    member private x.ParseCommand (rest:char list) (range:SnapshotLineRange option) = 
 
         let isCommandNameChar c = 
             (not (System.Char.IsWhiteSpace(c))) 
             && c <> '!'
             && c <> '/'
 
-        // Get the name of the command
+        // Get the name of the command.  Need to special case ~ and & here as they
+        // don't quite play by normal rules
         let commandName = 
-            rest 
-            |> Seq.takeWhile isCommandNameChar
-            |> StringUtil.ofCharSeq
+            match SeqUtil.tryHeadOnly rest with
+            | Some('~') -> "~"
+            | Some('&') -> "&"
+            | _ ->  rest |> Seq.takeWhile isCommandNameChar |> StringUtil.ofCharSeq
 
         // Look for commands with that name
         let command =
@@ -512,14 +610,13 @@ type internal CommandProcessor
             action rest range hasBang
     
     member private x.ParseInput (originalInputs :char list) =
-        let withRange (range:Range option) (inputs:char list) = x.ParseCommand inputs range
-        let point = TextViewUtil.GetCaretPoint _data.TextView
-        match RangeUtil.ParseRange point _data.MarkMap originalInputs with
+        let withRange (range:SnapshotLineRange option) (inputs:char list) = x.ParseCommand inputs range
+        let point = TextViewUtil.GetCaretPoint _buffer.TextView
+        match RangeUtil.ParseRange point _buffer.MarkMap originalInputs with
         | ParseRangeResult.Succeeded(range, inputs) -> 
             if inputs |> List.isEmpty then
-                match range with 
-                | SingleLine(line) -> _operations.EditorOperations.GotoLine(line.LineNumber) |> ignore
-                | _ -> _statusUtil.OnError("Invalid Command String")
+                if range.Count = 1 then  _operations.EditorOperations.GotoLine(range.StartLineNumber) |> ignore
+                else _statusUtil.OnError("Invalid Command String")
             else
                 withRange (Some(range)) inputs
         | NoRange -> withRange None originalInputs

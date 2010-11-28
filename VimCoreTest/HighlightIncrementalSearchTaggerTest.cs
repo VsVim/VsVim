@@ -1,17 +1,15 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using NUnit.Framework;
-using Vim.Modes.Normal;
-using Moq;
-using Microsoft.VisualStudio.Text;
-using Vim;
-using Microsoft.VisualStudio.Text.Operations;
-using Vim.UnitTest;
-using Microsoft.VisualStudio.Text.Tagging;
 using Microsoft.FSharp.Core;
+using Microsoft.VisualStudio.Text;
+using Microsoft.VisualStudio.Text.Operations;
+using Microsoft.VisualStudio.Text.Tagging;
+using Moq;
+using NUnit.Framework;
+using Vim;
 using Vim.Extensions;
+using Vim.Modes.Normal;
+using Vim.UnitTest;
 
 namespace VimCore.Test
 {
@@ -21,9 +19,11 @@ namespace VimCore.Test
         private HighlightIncrementalSearchTagger _taggerRaw;
         private ITagger<TextMarkerTag> _tagger;
         private ITextBuffer _textBuffer;
+        private MockRepository _factory;
         private Mock<IVimGlobalSettings> _settings;
         private Mock<ISearchService> _search;
         private Mock<ITextStructureNavigator> _nav;
+        private Mock<IVimData> _vimData;
 
         private static string[] DefaultText = new string[] { 
             "this is the default text value for searching",
@@ -37,14 +37,17 @@ namespace VimCore.Test
         {
             lines = lines.Length > 0 ? lines : DefaultText;
             _textBuffer = EditorUtil.CreateBuffer(lines);
-            _settings = new Mock<IVimGlobalSettings>();
-            _search = new Mock<ISearchService>();
-            _nav = new Mock<ITextStructureNavigator>(MockBehavior.Strict);
+            _factory = new MockRepository(MockBehavior.Strict);
+            _settings = _factory.Create<IVimGlobalSettings>(MockBehavior.Loose);
+            _search = _factory.Create<ISearchService>(MockBehavior.Loose);
+            _nav = _factory.Create<ITextStructureNavigator>(MockBehavior.Strict);
+            _vimData = _factory.Create<IVimData>(MockBehavior.Loose);
             _taggerRaw = new HighlightIncrementalSearchTagger(
                 _textBuffer,
                 _settings.Object,
                 _nav.Object,
-                _search.Object);
+                _search.Object,
+                _vimData.Object);
             _tagger = _taggerRaw;
 
             if (forSearch)
@@ -55,7 +58,9 @@ namespace VimCore.Test
 
             if (lastSearch != null)
             {
-                _search.SetupGet(x => x.LastSearch).Returns(new SearchData(SearchText.NewPattern(lastSearch), SearchKind.Forward, SearchOptions.None));
+                _vimData
+                    .SetupGet(x => x.LastSearchData)
+                    .Returns(new SearchData(SearchText.NewPattern(lastSearch), SearchKind.Forward, SearchOptions.None));
             }
         }
 
@@ -80,8 +85,8 @@ namespace VimCore.Test
         {
             Init(forSearch: false);
             _settings.Setup(x => x.HighlightSearch).Returns(true).Verifiable();
-            _search
-                .SetupGet(x => x.LastSearch)
+            _vimData
+                .SetupGet(x => x.LastSearchData)
                 .Returns(new SearchData(SearchText.NewPattern(String.Empty), SearchKind.Forward, SearchOptions.None))
                 .Verifiable();
             var ret = _taggerRaw.GetTags(new NormalizedSnapshotSpanCollection(new SnapshotSpan(_textBuffer.CurrentSnapshot, 0, 2)));
@@ -113,7 +118,7 @@ namespace VimCore.Test
             var data = new SearchData(SearchText.NewPattern("foo"), SearchKind.Forward, SearchOptions.None);
             _search
                 .Setup(x => x.FindNext(data, _textBuffer.GetPoint(0), _nav.Object))
-                .Returns(FSharpOption.Create(_textBuffer.GetSpan(4,3)));
+                .Returns(FSharpOption.Create(_textBuffer.GetSpan(4, 3)));
             var ret = _taggerRaw.GetTags(new NormalizedSnapshotSpanCollection(new SnapshotSpan(_textBuffer.CurrentSnapshot, 0, 3)));
             Assert.AreEqual(0, ret.Count());
         }
@@ -125,7 +130,7 @@ namespace VimCore.Test
             var data = new SearchData(SearchText.NewPattern("foo"), SearchKind.Forward, SearchOptions.None);
             _search
                 .Setup(x => x.FindNext(data, _textBuffer.GetPoint(0), _nav.Object))
-                .Returns(FSharpOption.Create(_textBuffer.GetSpan(2,3)));
+                .Returns(FSharpOption.Create(_textBuffer.GetSpan(2, 3)));
             var ret = _taggerRaw.GetTags(new NormalizedSnapshotSpanCollection(new SnapshotSpan(_textBuffer.CurrentSnapshot, 0, 3)));
             Assert.AreEqual(1, ret.Count());
             Assert.AreEqual(new SnapshotSpan(_textBuffer.CurrentSnapshot, 2, 3), ret.Single().Span);

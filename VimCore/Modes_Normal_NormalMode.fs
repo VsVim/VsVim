@@ -146,9 +146,20 @@ type internal NormalMode
             try
 
                 let rec repeatChange change countOpt =
+
+                    /// Repeat a text buffer edit.  
+                    let repeatTextBufferChange change = 
+                        match change with 
+                        | TextChange.Insert(text) -> _operations.InsertText text (CommandUtil.CountOrDefault countOpt)
+                        | TextChange.Delete(count) -> 
+                            let caretPoint,caretLine = TextViewUtil.GetCaretPointAndLine this.TextView
+                            let length = min count (caretLine.EndIncludingLineBreak.Position - caretPoint.Position)
+                            let span = SnapshotSpanUtil.CreateWithLength caretPoint length
+                            _operations.DeleteSpan span
+
                     match change with
-                    | TextChange(newText) -> _operations.InsertText newText (CommandUtil.CountOrDefault countOpt) 
-                    | CommandChange(data) -> 
+                    | RepeatableChange.TextChange(change) -> repeatTextBufferChange change
+                    | RepeatableChange.CommandChange(data) -> 
                         let countOpt = match countOpt with | Some(count) -> Some(count) | None -> data.Count
                         let reg = data.Register
                         let commandName = data.Command.KeyInputSet.Name
@@ -179,7 +190,7 @@ type internal NormalMode
                                 func countOpt reg span |> ignore
 
                                 
-                    | LinkedChange(left, right) ->
+                    | RepeatableChange.LinkedChange(left, right) ->
                         repeatChange left countOpt
                         repeatChange right None
 
@@ -245,6 +256,13 @@ type internal NormalMode
     /// Create the simple commands
     member this.CreateSimpleCommands() =
 
+        let join count kind = 
+            let line = TextViewUtil.GetCaretLine this.TextView
+            let count = if count = 1 then 2 else count
+            match SnapshotLineRangeUtil.CreateForLineAndCount line count with
+            | None -> _bufferData.Vim.VimHost.Beep()
+            | Some(range) -> _operations.Join range kind
+
         let noSwitch = 
             seq {
                 yield (
@@ -270,12 +288,27 @@ type internal NormalMode
                     CommandFlags.Repeatable, 
                     fun count _ -> _operations.ShiftLinesRight count)
                 yield (
+                    "&",
+                    CommandFlags.Special,
+                    fun _ _ -> 
+                        let data = _bufferData.Vim.VimData
+                        match data.LastSubstituteData with
+                        | Some(data) -> 
+                            let range = TextViewUtil.GetCaretLineRange _bufferData.TextView 1
+                            _operations.Substitute data.SearchPattern data.Substitute range SubstituteFlags.None 
+                        | None -> () )
+                yield (
                     "gJ", 
                     CommandFlags.Repeatable, 
-                    fun count reg -> 
-                        let view = _bufferData.TextView
-                        let caret = TextViewUtil.GetCaretPoint view
-                        _operations.Join caret Modes.JoinKind.KeepEmptySpaces count |> ignore )
+                    fun count reg -> join count JoinKind.KeepEmptySpaces )
+                yield (
+                    "gt", 
+                    CommandFlags.Movement, 
+                    fun count _ -> _operations.GoToNextTab count)
+                yield (
+                    "gT", 
+                    CommandFlags.Movement, 
+                    fun count _ -> _operations.GoToPreviousTab count)
                 yield (
                     "gp", 
                     CommandFlags.Repeatable, 
@@ -293,13 +326,15 @@ type internal NormalMode
                     CommandFlags.Movement, 
                     fun count _ -> _operations.MoveToNextOccuranceOfPartialWordAtCursor SearchKind.BackwardWithWrap count)
                 yield (
-                    "gt", 
-                    CommandFlags.Movement, 
-                    fun count _ -> _operations.GoToNextTab count)
-                yield (
-                    "gT", 
-                    CommandFlags.Movement, 
-                    fun count _ -> _operations.GoToPreviousTab count)
+                    "g&", 
+                    CommandFlags.Special, 
+                    fun count _ -> 
+                        let data = _bufferData.Vim.VimData
+                        match data.LastSubstituteData with
+                        | Some(data) -> 
+                            let range = SnapshotLineRangeUtil.CreateForSnapshot this.TextBuffer.CurrentSnapshot
+                            _operations.Substitute data.SearchPattern data.Substitute range data.Flags
+                        | _ -> () )
                 yield (
                     "u",  
                     CommandFlags.Special, 
@@ -307,19 +342,19 @@ type internal NormalMode
                 yield (
                     "zo", 
                     CommandFlags.Special, 
-                    fun count _ -> _operations.OpenFold (TextViewUtil.GetCaretLineSpan _bufferData.TextView) count)
+                    fun count _ -> _operations.OpenFold (TextViewUtil.GetCaretLineRange _bufferData.TextView 1).Extent count)
                 yield (
                     "zO", 
                     CommandFlags.Special, 
-                    fun _ _ -> _operations.OpenAllFolds (TextViewUtil.GetCaretLineSpan _bufferData.TextView) )
+                    fun _ _ -> _operations.OpenAllFolds (TextViewUtil.GetCaretLineRange _bufferData.TextView 1).Extent)
                 yield (
                     "zc", 
                     CommandFlags.Special, 
-                    fun count _ -> _operations.CloseFold (TextViewUtil.GetCaretLineSpan _bufferData.TextView) count)
+                    fun count _ -> _operations.CloseFold (TextViewUtil.GetCaretLineRange _bufferData.TextView 1).Extent count)
                 yield (
                     "zC", 
                     CommandFlags.Special, 
-                    fun _ _ -> _operations.CloseAllFolds (TextViewUtil.GetCaretLineSpan _bufferData.TextView) )
+                    fun _ _ -> _operations.CloseAllFolds (TextViewUtil.GetCaretLineRange _bufferData.TextView 1).Extent)
                 yield (
                     "zt", 
                     CommandFlags.Movement, 
@@ -388,19 +423,19 @@ type internal NormalMode
                     fun count reg -> _operations.PasteBeforeCursor reg.StringValue count reg.Value.OperationKind false)
                 yield (
                     "n", 
-                    CommandFlags.Repeatable, 
+                    CommandFlags.Movement, 
                     fun count _ -> _operations.MoveToNextOccuranceOfLastSearch count false)
                 yield (
                     "N", 
-                    CommandFlags.Repeatable, 
+                    CommandFlags.Movement, 
                     fun count _ -> _operations.MoveToNextOccuranceOfLastSearch count true)
                 yield (
                     "*", 
-                    CommandFlags.Repeatable, 
+                    CommandFlags.Movement, 
                     fun count _ -> _operations.MoveToNextOccuranceOfWordAtCursor SearchKind.ForwardWithWrap count)
                 yield (
                     "#", 
-                    CommandFlags.Repeatable, 
+                    CommandFlags.Movement, 
                     fun count _ -> _operations.MoveToNextOccuranceOfWordAtCursor SearchKind.BackwardWithWrap count)
                 yield (
                     "D", 
@@ -410,51 +445,51 @@ type internal NormalMode
                         _operations.UpdateRegisterForSpan reg RegisterOperation.Delete span OperationKind.CharacterWise)
                 yield (
                     "<C-r>", 
-                    CommandFlags.Repeatable, 
+                    CommandFlags.Special, 
                     fun count _ -> _operations.Redo count)
                 yield (
                     "<C-u>", 
-                    CommandFlags.Repeatable, 
+                    CommandFlags.Movement, 
                     fun count _ -> _operations.MoveCaretAndScrollLines ScrollDirection.Up count)
                 yield (
                     "<C-d>", 
-                    CommandFlags.Repeatable, 
+                    CommandFlags.Movement, 
                     fun count _ -> _operations.MoveCaretAndScrollLines ScrollDirection.Down count)
                 yield (
                     "<C-y>", 
-                    CommandFlags.Repeatable, 
+                    CommandFlags.Special, 
                     fun count _ -> _operations.ScrollLines ScrollDirection.Up count)
                 yield (
                     "<C-e>", 
-                    CommandFlags.Repeatable, 
+                    CommandFlags.Special, 
                     fun count _ -> _operations.ScrollLines ScrollDirection.Down count)
                 yield (
                     "<C-f>", 
-                    CommandFlags.Repeatable, 
+                    CommandFlags.Special, 
                     fun count _ -> _operations.ScrollPages ScrollDirection.Down count)
                 yield (
                     "<S-Down>", 
-                    CommandFlags.Repeatable, 
+                    CommandFlags.Special, 
                     fun count _ -> _operations.ScrollPages ScrollDirection.Down count)
                 yield (
                     "<PageDown>", 
-                    CommandFlags.Repeatable, 
+                    CommandFlags.Special, 
                     fun count _ -> _operations.ScrollPages ScrollDirection.Down count)
                 yield (
                     "J", 
                     CommandFlags.Repeatable, 
-                    fun count _ -> _operations.JoinAtCaret count)
+                    fun count _ -> join count JoinKind.RemoveEmptySpaces )
                 yield (
                     "<C-b>", 
-                    CommandFlags.Repeatable, 
+                    CommandFlags.Special, 
                     fun count _ -> _operations.ScrollPages ScrollDirection.Up count)
                 yield (
                     "<S-Up>", 
-                    CommandFlags.Repeatable, 
+                    CommandFlags.Special, 
                     fun count _ -> _operations.ScrollPages ScrollDirection.Up count)
                 yield (
                     "<PageUp>", 
-                    CommandFlags.Repeatable, 
+                    CommandFlags.Special, 
                     fun count _ -> _operations.ScrollPages ScrollDirection.Up count)
                 yield (
                     "<C-]>", 
@@ -474,7 +509,7 @@ type internal NormalMode
                     fun _ _ -> _operations.GoToFile())
                 yield (
                     "Y", 
-                    CommandFlags.Repeatable, 
+                    CommandFlags.Special, 
                     fun count reg -> 
                         let point = 
                             this.TextView 
@@ -484,19 +519,19 @@ type internal NormalMode
                         _operations.UpdateRegisterForSpan reg RegisterOperation.Yank span OperationKind.LineWise)
                 yield (
                     "<Tab>", 
-                    CommandFlags.Repeatable, 
+                    CommandFlags.Movement, 
                     fun count _ -> _operations.JumpNext count)
                 yield (
                     "<C-i>", 
-                    CommandFlags.Repeatable, 
+                    CommandFlags.Movement, 
                     fun count _ -> _operations.JumpNext count)
                 yield (
                     "<C-o>", 
-                    CommandFlags.Repeatable, 
+                    CommandFlags.Movement, 
                     fun count _ -> _operations.JumpPrevious count)
                 yield (
                     "%", 
-                    CommandFlags.Repeatable, 
+                    CommandFlags.Movement, 
                     fun _ _ -> _operations.GoToMatch() |> ignore)
                 yield (
                     "<C-w><C-j>", 
@@ -516,11 +551,11 @@ type internal NormalMode
                     fun _ _ -> _bufferData.Vim.VimHost.MoveViewUp(this.TextView))
                 yield (
                     "<C-PageDown>", 
-                    CommandFlags.Repeatable, 
+                    CommandFlags.Movement, 
                     fun count _ -> _operations.GoToNextTab count)
                 yield (
                     "<C-PageUp>", 
-                    CommandFlags.Repeatable, 
+                    CommandFlags.Movement, 
                     fun count _ -> _operations.GoToPreviousTab count)
                 yield (
                     "z<Enter>", 
@@ -528,6 +563,12 @@ type internal NormalMode
                     fun count _ -> 
                         _operations.EditorOperations.ScrollLineTop()
                         _operations.EditorOperations.MoveToStartOfLineAfterWhiteSpace(false) )
+                yield (
+                    "==",
+                    CommandFlags.Repeatable,
+                    fun count _ -> 
+                        let range = TextViewUtil.GetCaretLineRange this.TextView count 
+                        _bufferData.Vim.VimHost.FormatLines this.TextView range )
             }
             |> Seq.map(fun (str,kind,func) -> (str,kind,func,CommandResult.Completed ModeSwitch.NoSwitch))
 
@@ -536,6 +577,7 @@ type internal NormalMode
             seq {
                 yield (
                     "cc", 
+                    CommandFlags.LinkedWithNextTextChange ||| CommandFlags.Repeatable,
                     ModeKind.Insert, 
                     fun count reg ->  
                         let point = TextViewUtil.GetCaretPoint _bufferData.TextView
@@ -545,68 +587,81 @@ type internal NormalMode
                         _operations.UpdateRegisterForSpan reg RegisterOperation.Delete span OperationKind.LineWise)
                 yield (
                     "i", 
+                    CommandFlags.Special,
                     ModeKind.Insert, 
                     doNothing)
                 yield (
                     "I", 
+                    CommandFlags.LinkedWithNextTextChange ||| CommandFlags.Repeatable,
                     ModeKind.Insert, 
                     (fun _ _ -> _operations.EditorOperations.MoveToStartOfLineAfterWhiteSpace(false)))
                 yield (
                     ":", 
+                    CommandFlags.Special,
                     ModeKind.Command, 
                     doNothing)
                 yield (
                     "A", 
+                    CommandFlags.Special,
                     ModeKind.Insert, 
                     (fun _ _ -> _operations.EditorOperations.MoveToEndOfLine(false)))
                 yield (
                     "o", 
+                    CommandFlags.Special,
                     ModeKind.Insert, 
                     (fun _ _ -> _operations.InsertLineBelow() |> ignore))
                 yield (
                     "O", 
+                    CommandFlags.Special,
                     ModeKind.Insert, 
                     (fun _ _ -> _operations.InsertLineAbove() |> ignore))
                 yield (
                     "v", 
+                    CommandFlags.Special,
                     ModeKind.VisualCharacter, 
                     doNothing)
                 yield (
                     "V", 
+                    CommandFlags.Special,
                     ModeKind.VisualLine, 
                     doNothing)
                 yield (
                     "<C-q>", 
+                    CommandFlags.Special,
                     ModeKind.VisualBlock, 
                     doNothing)
                 yield (
                     "s", 
+                    CommandFlags.LinkedWithNextTextChange ||| CommandFlags.Repeatable,
                     ModeKind.Insert, 
                     (fun count reg -> 
                         let span = _operations.DeleteCharacterAtCursor count 
                         _operations.UpdateRegisterForSpan reg RegisterOperation.Delete span OperationKind.CharacterWise))
                 yield (
                     "C", 
+                    CommandFlags.LinkedWithNextTextChange ||| CommandFlags.Repeatable,
                     ModeKind.Insert, 
                     (fun count reg -> 
                         let span = _operations.DeleteLinesFromCursor count 
                         _operations.UpdateRegisterForSpan reg RegisterOperation.Delete span OperationKind.CharacterWise))
                 yield (
                     "S", 
+                    CommandFlags.LinkedWithNextTextChange ||| CommandFlags.Repeatable,
                     ModeKind.Insert, 
                     (fun count reg -> 
                         let span = _operations.DeleteLines count 
                         _operations.UpdateRegisterForSpan reg RegisterOperation.Delete span OperationKind.LineWise))
                 yield (
                     "a", 
+                    CommandFlags.Special,
                     ModeKind.Insert, 
                     (fun _ _ -> _operations.MoveCaretForAppend()) )
                 yield (
                     "R", 
+                    CommandFlags.Special,
                     ModeKind.Replace, 
                     doNothing)
-            }
-            |> Seq.map(fun (str,switch,func) -> (str,CommandFlags.None,func,CommandResult.Completed (ModeSwitch.SwitchMode switch)))
+            } |> Seq.map(fun (str,flags,switch,func) -> (str,flags,func,CommandResult.Completed (ModeSwitch.SwitchMode switch)))
 
         let allWithCount = 
             Seq.append noSwitch doSwitch 
@@ -657,7 +712,7 @@ type internal NormalMode
                     fun _ reg data -> _operations.UpdateRegisterForSpan reg RegisterOperation.Yank data.OperationSpan data.OperationKind)
                 yield (
                     "c", 
-                    CommandFlags.LinkedWithNextTextChange, 
+                    CommandFlags.LinkedWithNextTextChange ||| CommandFlags.Repeatable, 
                     Some ModeKind.Insert, 
                     fun _ reg data -> 
                         let span = _operations.ChangeSpan data 
@@ -666,17 +721,22 @@ type internal NormalMode
                     "<lt>", 
                     CommandFlags.None, 
                     None, 
-                    fun _ _ data -> _operations.ShiftSpanLeft 1 data.OperationSpan)
+                    fun _ _ data -> _operations.ShiftLineRangeLeft 1 data.OperationLineRange)
                 yield (
                     ">", 
                     CommandFlags.None, 
                     None, 
-                    fun _ _ data -> _operations.ShiftSpanRight 1 data.OperationSpan)
+                    fun _ _ data -> _operations.ShiftLineRangeRight 1 data.OperationLineRange)
                 yield (
                     "zf", 
                     CommandFlags.None, 
                     None, 
                     fun _ _ data -> _operations.FoldManager.CreateFold data.OperationSpan)
+                yield (
+                    "=",
+                    CommandFlags.Repeatable,
+                    None,
+                    fun _ _ data -> _bufferData.Vim.VimHost.FormatLines this.TextView data.OperationLineRange)
             }
 
         complex

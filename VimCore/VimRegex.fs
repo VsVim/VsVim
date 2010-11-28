@@ -10,6 +10,8 @@ type VimRegexOptions =
     | Compiled = 0x1
     | IgnoreCase = 0x2
     | OrdinalCase = 0x4
+    | Magic = 0x8
+    | NoMagic = 0x10
 
 module VimRegexUtils = 
     let Escape c = c |> StringUtil.ofChar |> Regex.Escape 
@@ -75,10 +77,12 @@ module VimRegexUtils =
 [<Sealed>]
 type VimRegex 
     (
-        _vimText : string,
+        _vimPattern : string,
+        _regexPattern : string,
         _regex : Regex ) =
 
-    member x.Text = _vimText
+    member x.VimPattern = _vimPattern
+    member x.RegexPattern = _regexPattern
     member x.Regex = _regex
     member x.IsMatch input = _regex.IsMatch(input)
     member x.ReplaceAll (input:string) (replacement:string) = 
@@ -141,8 +145,22 @@ type VimRegexFactory
 
     member x.Create pattern = x.CreateWithOptions pattern VimRegexOptions.Compiled
 
+    member x.CreateForSearchText text = 
+        match text with
+        | SearchText.Pattern(pattern) -> x.Create pattern
+        | SearchText.WholeWord(word) -> "\<" + word + "\>" |> x.Create
+        | SearchText.StraightText(text) -> 
+            let pattern = Regex.Escape(text)
+            match VimRegexUtils.TryCreateRegex pattern RegexOptions.Compiled with
+            | None -> None
+            | Some(regex) -> VimRegex(text, pattern, regex) |> Some
+
     member x.CreateWithOptions pattern options = 
         let kind = if _settings.Magic then MagicKind.Magic else MagicKind.NoMagic
+        let kind = 
+            if Utils.IsFlagSet options VimRegexOptions.Magic then MagicKind.Magic
+            elif Utils.IsFlagSet options VimRegexOptions.NoMagic then MagicKind.NoMagic
+            else kind
         let data = { 
             Pattern = pattern
             Index = 0
@@ -164,7 +182,7 @@ type VimRegexFactory
 
         match x.Convert data with
         | None -> None
-        | Some(regex) -> VimRegex(pattern,regex) |> Some
+        | Some(bclPattern,regex) -> VimRegex(pattern,bclPattern, regex) |> Some
 
     // Create the actual BCL regex 
     member x.CreateRegex (data:Data) =
@@ -179,10 +197,13 @@ type VimRegexFactory
             else options ||| RegexOptions.IgnoreCase
 
         if data.IsBroken then None
-        else VimRegexUtils.TryCreateRegex (data.Builder.ToString()) options with
+        else 
+            let bclPattern = data.Builder.ToString()
+            let regex = VimRegexUtils.TryCreateRegex bclPattern options 
+            OptionUtil.combineRev bclPattern regex
 
     member x.Convert (data:Data) =
-        let rec inner (data:Data) : Regex option =
+        let rec inner (data:Data) : (string * Regex) option =
             if data.IsBroken then None
             else
                 match data.CharAtIndex with

@@ -1,9 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using NUnit.Framework;
 using Microsoft.VisualStudio.Text;
+using NUnit.Framework;
 using Vim;
 using Vim.Extensions;
 using Vim.UnitTest;
@@ -40,7 +38,7 @@ namespace VimCore.Test
         public void GetLineRangeSpan1()
         {
             Create(s_lines);
-            var span = SnapshotPointUtil.GetLineRangeSpan(new SnapshotPoint(_snapshot,0), 1);
+            var span = SnapshotPointUtil.GetLineRangeSpan(new SnapshotPoint(_snapshot, 0), 1);
             var line = _snapshot.GetLineFromLineNumber(0);
             Assert.AreEqual(line.Extent, span);
         }
@@ -318,7 +316,7 @@ namespace VimCore.Test
             var data = spans
                 .Select(x => x.GetText())
                 .ToList();
-            CollectionAssert.AreEqual(new string[] { "f", "bar", "oo"}, data);
+            CollectionAssert.AreEqual(new string[] { "f", "bar", "oo" }, data);
         }
 
         [Test, Description("Handle being given a point in the middle of a line break")]
@@ -420,7 +418,7 @@ namespace VimCore.Test
         public void GetPoints7()
         {
             Create("foo bar");
-            var start = _buffer.CurrentSnapshot.GetLineSpan(0).End;
+            var start = _buffer.CurrentSnapshot.GetLineRange(0).End;
             var points = SnapshotPointUtil.GetPoints(start, SearchKind.BackwardWithWrap);
             var str = points.Select(x => x.GetChar().ToString()).Aggregate((x, y) => x + y);
             Assert.AreEqual("rab oof", str);

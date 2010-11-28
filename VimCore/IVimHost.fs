@@ -7,6 +7,9 @@ open Microsoft.VisualStudio.Text.Editor
 type IVimHost =
     abstract Beep : unit -> unit
 
+    /// Format the provided lines
+    abstract FormatLines : ITextView -> SnapshotLineRange -> unit
+
     /// Go to the definition of the value under the cursor
     abstract GoToDefinition : unit -> bool
 
@@ -29,6 +32,7 @@ type IVimHost =
     abstract GoToPreviousTab: count : int -> unit
 
     abstract GetName : ITextBuffer -> string
+
     abstract NavigateTo : point : VirtualSnapshotPoint -> bool
 
     /// Display the open file dialog 

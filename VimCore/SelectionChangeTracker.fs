@@ -78,7 +78,9 @@ type internal SelectionChangeTracker
                 if _textView.Selection.IsEmpty then 
                     if x.IsAnyVisualMode then Some ModeKind.Normal
                     else None
-                elif _textView.Selection.Mode = TextSelectionMode.Stream then Some ModeKind.VisualCharacter 
+                elif _textView.Selection.Mode = TextSelectionMode.Stream then 
+                    if _buffer.ModeKind = ModeKind.VisualLine then Some ModeKind.VisualLine
+                    else Some ModeKind.VisualCharacter 
                 else Some ModeKind.VisualBlock
             match inner with 
             | None -> None

@@ -11,7 +11,6 @@ using Vim.Extensions;
 using Vim.Modes.Command;
 using Vim.UnitTest;
 using Vim.UnitTest.Mock;
-using Range = Vim.Modes.Command.Range;
 
 namespace VimCore.Test
 {
@@ -42,25 +41,8 @@ namespace VimCore.Test
             Assert.IsTrue(ret.IsSucceeded);
             Assert.AreEqual(0, ret.AsSucceeded().Item2.Count());
             var range = ret.AsSucceeded().Item1;
-            if (range.IsSingleLine)
-            {
-                var r = range.AsSingleLine();
-                Assert.AreEqual(startLine, r.Item.LineNumber);
-                Assert.AreEqual(endLine, r.Item.LineNumber);
-            }
-            else if (range.IsRawSpan)
-            {
-                var span = range.AsRawSpan().item;
-                Assert.AreEqual(startLine, span.Start.GetContainingLine().LineNumber);
-                Assert.AreEqual(endLine, span.End.GetContainingLine().LineNumber);
-            }
-            else
-            {
-                Assert.IsTrue(range.IsLines);
-                var lines = range.AsLines();
-                Assert.AreEqual(startLine, lines.Item2);
-                Assert.AreEqual(endLine, lines.Item3);
-            }
+            Assert.AreEqual(startLine, range.StartLineNumber);
+            Assert.AreEqual(endLine, range.EndLineNumber);
         }
 
         private void ParseSingleLine(string input, int line)
@@ -68,8 +50,8 @@ namespace VimCore.Test
             var ret = Parse(input);
             Assert.IsTrue(ret.IsSucceeded);
             var range = ret.AsSucceeded().Item1;
-            Assert.IsTrue(range.IsSingleLine);
-            Assert.AreEqual(line, range.AsSingleLine().Item.LineNumber);
+            Assert.AreEqual(1, range.Count);
+            Assert.AreEqual(line, range.StartLineNumber);
         }
 
         private ParseRangeResult CaptureComplete(SnapshotPoint point, string input, IMarkMap map = null)
@@ -98,7 +80,7 @@ namespace VimCore.Test
             var res = Parse("%");
             var tss = _buffer.CurrentSnapshot;
             Assert.IsTrue(res.IsSucceeded);
-            Assert.AreEqual(new SnapshotSpan(tss, 0, tss.Length), RangeUtil.GetSnapshotSpan(res.AsSucceeded().Item1));
+            Assert.AreEqual(new SnapshotSpan(tss, 0, tss.Length), res.AsSucceeded().Item1.ExtentIncludingLineBreak);
         }
 
         [Test]
@@ -108,7 +90,7 @@ namespace VimCore.Test
             var res = Parse("%bar");
             Assert.IsTrue(res.IsSucceeded);
             var range = res.AsSucceeded().Item1;
-            Assert.AreEqual(new SnapshotSpan(_buffer.CurrentSnapshot, 0, _buffer.CurrentSnapshot.Length), RangeUtil.GetSnapshotSpan(range));
+            Assert.AreEqual(new SnapshotSpan(_buffer.CurrentSnapshot, 0, _buffer.CurrentSnapshot.Length), range.ExtentIncludingLineBreak);
             Assert.IsTrue("bar".SequenceEqual(res.AsSucceeded().Item2));
         }
 
@@ -118,7 +100,7 @@ namespace VimCore.Test
             Create("foo", "bar");
             var res = Parse(".");
             Assert.IsTrue(res.IsSucceeded);
-            Assert.AreEqual(_buffer.CurrentSnapshot.GetLineFromLineNumber(0).ExtentIncludingLineBreak, RangeUtil.GetSnapshotSpan(res.AsSucceeded().Item1));
+            Assert.AreEqual(_buffer.GetLineRange(0), res.AsSucceeded().Item1);
         }
 
         [Test]
@@ -127,7 +109,7 @@ namespace VimCore.Test
             Create("foo", "bar");
             var res = Parse(".,.");
             Assert.IsTrue(res.IsSucceeded);
-            Assert.AreEqual(_buffer.CurrentSnapshot.GetLineFromLineNumber(0).ExtentIncludingLineBreak, RangeUtil.GetSnapshotSpan(res.AsSucceeded().Item1));
+            Assert.AreEqual(_buffer.GetLineRange(0), res.AsSucceeded().Item1);
         }
 
         [Test]
@@ -138,7 +120,7 @@ namespace VimCore.Test
             Assert.IsTrue(res.IsSucceeded);
 
             var range = res.AsSucceeded();
-            Assert.AreEqual(_buffer.CurrentSnapshot.GetLineFromLineNumber(0).ExtentIncludingLineBreak, RangeUtil.GetSnapshotSpan(range.Item1));
+            Assert.AreEqual(_buffer.GetLineRange(0), res.AsSucceeded().Item1);
             Assert.AreEqual('f', range.Item2.First());
         }
 
@@ -148,47 +130,44 @@ namespace VimCore.Test
             Create("a", "b", "c");
             var res = Parse("1,2");
             Assert.IsTrue(res.IsSucceeded);
-
-            var span = new SnapshotSpan(
-                _buffer.CurrentSnapshot.GetLineFromLineNumber(0).Start,
-                _buffer.CurrentSnapshot.GetLineFromLineNumber(1).EndIncludingLineBreak);
-            Assert.AreEqual(span, RangeUtil.GetSnapshotSpan(res.AsSucceeded().Item1));
+            Assert.AreEqual(_buffer.GetLineRange(0, 1), res.AsSucceeded().Item1);
         }
 
         [Test]
         public void ApplyCount1()
         {
             Create("foo", "bar", "baz", "jaz");
-            var first = Range.NewLines(_buffer.CurrentSnapshot, 0, 0);
-            var second = RangeUtil.ApplyCount(first, 2);
-            Assert.IsTrue(second.IsLines);
-            var lines = second.AsLines();
-            Assert.AreEqual(0, lines.Item2);
-            Assert.AreEqual(1, lines.Item3);
+            var first = _buffer.GetLineRange(0);
+            var second = RangeUtil.ApplyCount(2, first);
+            Assert.AreEqual(_buffer.GetLineRange(0, 1), second);
         }
 
         [Test, Description("Count is bound to end of the file")]
         public void ApplyCount2()
         {
             Create("foo", "bar");
-            var v1 = Range.NewLines(_buffer.CurrentSnapshot, 0, 0);
-            var v2 = RangeUtil.ApplyCount(v1, 200);
-            Assert.IsTrue(v2.IsLines);
-            var lines = v2.AsLines();
-            Assert.AreEqual(0, lines.Item2);
-            Assert.AreEqual(_buffer.CurrentSnapshot.LineCount - 1, lines.Item3);
+            var v1 = _buffer.GetLineRange(0);
+            var v2 = RangeUtil.ApplyCount(200, v1);
+            Assert.AreEqual(_buffer.GetLineRange(0, 1), v2);
         }
 
         [Test]
         public void ApplyCount3()
         {
             Create("foo", "bar", "baz");
-            var v1 = Range.NewSingleLine(_buffer.CurrentSnapshot.GetLineFromLineNumber(0));
-            var v2 = RangeUtil.ApplyCount(v1, 2);
-            Assert.IsTrue(v2.IsLines);
-            var lines = v2.AsLines();
-            Assert.AreEqual(0, lines.Item2);
-            Assert.AreEqual(1, lines.Item3);
+            var v1 = _buffer.GetLineRange(0);
+            var v2 = RangeUtil.ApplyCount(2, v1);
+            Assert.AreEqual(_buffer.GetLineRange(0, 1), v2);
+        }
+
+        [Test]
+        [Description("Count of 1 should go to the last line in the range")]
+        public void Apply_CountOfOne()
+        {
+            Create("cat", "dog", "rabbit", "tree");
+            var v1 = _buffer.GetLineRange(0, 1);
+            var v2 = RangeUtil.ApplyCount(1, v1);
+            Assert.AreEqual(SnapshotLineRangeUtil.CreateForLine(_buffer.GetLine(1)), v2);
         }
 
         [Test]
@@ -197,16 +176,15 @@ namespace VimCore.Test
             Create("foo", "bar");
             var res = Parse("1");
             Assert.IsTrue(res.IsSucceeded);
-            Assert.AreEqual(0, res.AsSucceeded().Item1.AsSingleLine().Item.LineNumber);
+            Assert.AreEqual(0, res.AsSucceeded().Item1.StartLineNumber);
         }
 
         [Test]
         public void RangeOrCurrentLine1()
         {
             var view = EditorUtil.CreateView("foo");
-            var res = RangeUtil.RangeOrCurrentLine(view, FSharpOption<Range>.None);
-            Assert.AreEqual(view.TextSnapshot.GetLineFromLineNumber(0).Extent, RangeUtil.GetSnapshotSpan(res));
-            Assert.IsTrue(res.IsSingleLine);
+            var res = RangeUtil.RangeOrCurrentLine(view, FSharpOption<SnapshotLineRange>.None);
+            Assert.AreEqual(view.GetLineRange(0), res);
         }
 
         [Test]
@@ -214,9 +192,9 @@ namespace VimCore.Test
         {
             Create("foo", "bar");
             var mock = new Moq.Mock<ITextView>(Moq.MockBehavior.Strict);
-            var range = Vim.Modes.Command.Range.NewLines(_buffer.CurrentSnapshot, 0, 0);
-            var res = RangeUtil.RangeOrCurrentLine(mock.Object, FSharpOption<Vim.Modes.Command.Range>.Some(range));
-            Assert.IsTrue(res.IsLines);
+            var range = _buffer.GetLineRange(0);
+            var res = RangeUtil.RangeOrCurrentLine(mock.Object, FSharpOption<SnapshotLineRange>.Some(range));
+            Assert.AreEqual(range, res);
         }
 
         [Test]
@@ -229,21 +207,20 @@ namespace VimCore.Test
             map.SetLocalMark(point1, 'c');
             var range = Parse("'c,2", map);
             Assert.IsTrue(range.IsSucceeded);
-            Assert.AreEqual(new SnapshotSpan(point1, point2), RangeUtil.GetSnapshotSpan(range.AsSucceeded().Item1));
+            Assert.AreEqual(new SnapshotSpan(point1, point2), range.AsSucceeded().Item1.ExtentIncludingLineBreak);
         }
 
         [Test]
         public void ParseMark2()
         {
             Create("foo", "bar");
-            var point1 = new SnapshotPoint(_buffer.CurrentSnapshot, 0);
-            var point2 = _buffer.CurrentSnapshot.GetLineFromLineNumber(1).EndIncludingLineBreak;
+            var range = _buffer.GetLineRange(0, 1);
             var map = new MarkMap(new TrackingLineColumnService());
-            map.SetLocalMark(point1, 'c');
-            map.SetLocalMark(point2, 'b');
-            var range = Parse("'c,'b", map);
-            Assert.IsTrue(range.IsSucceeded);
-            Assert.AreEqual(new SnapshotSpan(point1, point2), RangeUtil.GetSnapshotSpan(range.AsSucceeded().Item1));
+            map.SetLocalMark(range.Start, 'c');
+            map.SetLocalMark(range.End, 'b');
+            var parse = Parse("'c,'b", map);
+            Assert.IsTrue(parse.IsSucceeded);
+            Assert.AreEqual(range, parse.AsSucceeded().Item1);
         }
 
         [Test, Description("Marks are the same as line numbers")]
@@ -254,9 +231,9 @@ namespace VimCore.Test
             var point2 = _buffer.CurrentSnapshot.GetLineFromLineNumber(1).EndIncludingLineBreak;
             var map = new MarkMap(new TrackingLineColumnService());
             map.SetLocalMark(point1, 'c');
-            var range = Parse("'c,2", map);
-            Assert.IsTrue(range.IsSucceeded);
-            Assert.AreEqual(new SnapshotSpan(point1.GetContainingLine().Start, point2), RangeUtil.GetSnapshotSpan(range.AsSucceeded().Item1));
+            var parse = Parse("'c,2", map);
+            Assert.IsTrue(parse.IsSucceeded);
+            Assert.AreEqual(_buffer.GetLineRange(0, 1), parse.AsSucceeded().Item1);
         }
 
         [Test, Description("Global mark")]
@@ -267,10 +244,9 @@ namespace VimCore.Test
             map
                 .Setup(x => x.GetMark(_buffer, 'A'))
                 .Returns(FSharpOption.Create(new VirtualSnapshotPoint(_buffer.CurrentSnapshot, 2)));
-            var range = Parse("'A,2", map.Object);
-            Assert.IsTrue(range.IsSucceeded);
-            var span = RangeUtil.GetSnapshotSpan(range.AsSucceeded().Item1);
-            Assert.AreEqual(_buffer.CurrentSnapshot.GetLineSpanIncludingLineBreak(0, 1), span);
+            var parse = Parse("'A,2", map.Object);
+            Assert.IsTrue(parse.IsSucceeded);
+            Assert.AreEqual(_buffer.GetLineRange(0, 1), parse.AsSucceeded().Item1);
         }
 
         [Test]
@@ -303,7 +279,7 @@ namespace VimCore.Test
             map.AddMark(_buffer, '>', _buffer.GetPoint(1));
             var range = Parse("'<,'>", map.Object);
             Assert.IsTrue(range.IsSucceeded);
-            Assert.AreEqual(_buffer.GetLineSpanIncludingLineBreak(0), RangeUtil.GetSnapshotSpan(range.AsSucceeded().Item1));
+            Assert.AreEqual(_buffer.GetLineRange(0), range.AsSucceeded().Item1);
         }
 
         [Test]

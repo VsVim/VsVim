@@ -180,6 +180,22 @@ namespace Vim.UnitTest
                 c.HasValue ? FSharpOption<char>.Some(c.Value) : FSharpOption<char>.None);
         }
 
+        internal static SearchData CreateSearchData(
+            string pattern,
+            SearchKind kind = SearchKind.Forward,
+            SearchOptions options = SearchOptions.None)
+        {
+            return new SearchData(SearchText.NewPattern(pattern), kind, options);
+        }
+
+        internal static SearchData CreateSearchData(
+            SearchText text,
+            SearchKind kind = SearchKind.Forward,
+            SearchOptions options = SearchOptions.None)
+        {
+            return new SearchData(text, kind, options);
+        }
+
 
     }
 }

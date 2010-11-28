@@ -11,6 +11,24 @@ open System.ComponentModel.Composition
 open System.IO
 open Vim.Modes
 
+type internal VimData() =
+
+    let mutable _lastSubstituteData : SubstituteData option = None
+    let mutable _lastSearchData = { Text = SearchText.Pattern(StringUtil.empty); Kind = SearchKind.ForwardWithWrap; Options = SearchOptions.None }
+    let _lastSearchChanged = Event<SearchData>()
+
+    interface IVimData with 
+        member x.LastSubstituteData 
+            with get() = _lastSubstituteData
+            and set value = _lastSubstituteData <- value
+        member x.LastSearchData
+            with get() = _lastSearchData
+            and set value = 
+                _lastSearchData <- value
+                _lastSearchChanged.Trigger value
+        [<CLIEvent>]
+        member x.LastSearchDataChanged = _lastSearchChanged.Publish
+
 /// Default implementation of IVim 
 [<Export(typeof<IVimBufferFactory>)>]
 type internal VimBufferFactory
@@ -58,24 +76,25 @@ type internal VimBufferFactory
             UndoRedoOperations(statusUtil, history) :> IUndoRedoOperations
         let wordNav = x.CreateTextStructureNavigator view.TextBuffer WordKind.NormalWord
         let operationsData = { 
-            VimHost=_host;
-            TextView=view;
-            EditorOperations=editOperations;
-            EditorOptions=editOptions;
-            OutliningManager=outlining;
-            JumpList=jumpList;
-            LocalSettings=localSettings;
-            UndoRedoOperations=undoRedoOperations;
-            StatusUtil=statusUtil;
-            KeyMap=vim.KeyMap;
-            Navigator=wordNav;
-            FoldManager=foldManager;
+            VimData=vim.VimData
+            VimHost=_host
+            TextView=view
+            EditorOperations=editOperations
+            EditorOptions=editOptions
+            OutliningManager=outlining
+            JumpList=jumpList
+            LocalSettings=localSettings
+            UndoRedoOperations=undoRedoOperations
+            StatusUtil=statusUtil
+            KeyMap=vim.KeyMap
+            Navigator=wordNav
+            FoldManager=foldManager
             RegisterMap=vim.RegisterMap }
 
         let createCommandRunner() = CommandRunner (view, vim.RegisterMap, capture,statusUtil) :>ICommandRunner
         let broker = _completionWindowBrokerFactoryService.CreateDisplayWindowBroker view
         let bufferOptions = _editorOptionsFactoryService.GetOptions(view.TextBuffer)
-        let normalIncrementalSearch = Vim.Modes.Normal.IncrementalSearch(view, outlining, localSettings, wordNav, vim.SearchService) :> IIncrementalSearch
+        let normalIncrementalSearch = Vim.Modes.Normal.IncrementalSearch(view, outlining, localSettings, wordNav, vim.SearchService, vim.VimData) :> IIncrementalSearch
         let normalOpts = Modes.Normal.DefaultOperations(operationsData, normalIncrementalSearch) :> Vim.Modes.Normal.IOperations
         let commandOpts = Modes.Command.DefaultOperations(operationsData) :> Modes.Command.IOperations
         let commandProcessor = Modes.Command.CommandProcessor(buffer, commandOpts, statusUtil, FileSystem() :> IFileSystem) :> Modes.Command.ICommandProcessor
@@ -139,6 +158,8 @@ type internal Vim
     /// Holds an IVimBuffer and the DisposableBag for event handlers on the IVimBuffer.  This
     /// needs to be removed when we're done with the IVimBuffer to avoid leaks
     let _bufferMap = new System.Collections.Generic.Dictionary<ITextView, IVimBuffer * DisposableBag>()
+
+    let _vimData = VimData() :> IVimData
 
     /// Holds the active stack of IVimBuffer instances
     let mutable _activeBufferStack : IVimBuffer list = List.empty
@@ -239,6 +260,7 @@ type internal Vim
 
     interface IVim with
         member x.ActiveBuffer = ListUtil.tryHeadOnly _activeBufferStack
+        member x.VimData = _vimData
         member x.VimHost = _host
         member x.MarkMap = _markMap
         member x.KeyMap = _keyMap

@@ -45,7 +45,8 @@ namespace Vim.UnitTest.Mock
             IKeyMap keyMap = null,
             IChangeTracker changeTracker = null,
             IKeyboardDevice keyboardDevice = null,
-            IMouseDevice mouseDevice = null)
+            IMouseDevice mouseDevice = null,
+            IVimData vimData = null)
         {
             registerMap = registerMap ?? CreateRegisterMap().Object;
             map = map ?? new MarkMap(new TrackingLineColumnService());
@@ -55,13 +56,15 @@ namespace Vim.UnitTest.Mock
             keyboardDevice = keyboardDevice ?? (new Mock<IKeyboardDevice>(MockBehavior.Loose)).Object;
             mouseDevice = mouseDevice ?? (new Mock<IMouseDevice>(MockBehavior.Loose)).Object;
             changeTracker = changeTracker ?? new ChangeTracker(new TextChangeTrackerFactory(keyboardDevice, mouseDevice));
+            vimData = vimData ?? new VimData();
             var mock = new Mock<IVim>(MockBehavior.Strict);
-            mock.Setup(x => x.RegisterMap).Returns(registerMap);
-            mock.Setup(x => x.MarkMap).Returns(map);
-            mock.Setup(x => x.Settings).Returns(settings);
-            mock.Setup(x => x.VimHost).Returns(host);
-            mock.Setup(x => x.KeyMap).Returns(keyMap);
-            mock.Setup(x => x.ChangeTracker).Returns(changeTracker);
+            mock.SetupGet(x => x.RegisterMap).Returns(registerMap);
+            mock.SetupGet(x => x.MarkMap).Returns(map);
+            mock.SetupGet(x => x.Settings).Returns(settings);
+            mock.SetupGet(x => x.VimHost).Returns(host);
+            mock.SetupGet(x => x.KeyMap).Returns(keyMap);
+            mock.SetupGet(x => x.ChangeTracker).Returns(changeTracker);
+            mock.SetupGet(x => x.VimData).Returns(vimData);
             return mock;
         }
 
@@ -130,6 +133,7 @@ namespace Vim.UnitTest.Mock
             mock.SetupGet(x => x.RegisterMap).Returns(vim.RegisterMap);
             mock.SetupGet(x => x.JumpList).Returns(jumpList);
             mock.SetupGet(x => x.Vim).Returns(vim);
+            mock.SetupGet(x => x.VimData).Returns(vim.VimData);
             return mock;
         }
 

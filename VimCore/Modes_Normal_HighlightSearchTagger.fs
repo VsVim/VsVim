@@ -16,7 +16,8 @@ type internal HighlightIncrementalSearchTagger
         _textBuffer : ITextBuffer,
         _settings : IVimGlobalSettings,
         _wordNav : ITextStructureNavigator,
-        _search : ISearchService ) as this = 
+        _search : ISearchService,
+        _vimData : IVimData) as this =
 
     let _tagsChanged = new Event<System.EventHandler<SnapshotSpanEventArgs>, SnapshotSpanEventArgs>()
     let mutable _lastSearchData : SearchData option = None
@@ -30,7 +31,7 @@ type internal HighlightIncrementalSearchTagger
             let allSpan = SnapshotSpan(snapshot, 0, snapshot.Length)
             _tagsChanged.Trigger (this,SnapshotSpanEventArgs(allSpan))
 
-        _search.LastSearchChanged 
+        _vimData.LastSearchDataChanged 
         |> Observable.subscribe (fun data -> 
             _lastSearchData <- Some data
             raiseAllChanged() )
@@ -45,7 +46,7 @@ type internal HighlightIncrementalSearchTagger
         
     member private x.GetTagsCore (col:NormalizedSnapshotSpanCollection) = 
         // Build up the search information
-        let searchData = { _search.LastSearch with Kind = SearchKind.Forward }
+        let searchData = { _vimData.LastSearchData with Kind = SearchKind.Forward }
             
         let withSpan (span:SnapshotSpan) =  
             span.Start
@@ -93,5 +94,5 @@ type internal HighlightIncrementalSearchTaggerProvider
             | None -> null
             | Some(buffer) ->
                 let nav = buffer.NormalMode.IncrementalSearch.WordNavigator
-                let tagger = new HighlightIncrementalSearchTagger(textBuffer, buffer.Settings.GlobalSettings, nav, _vim.SearchService)
+                let tagger = new HighlightIncrementalSearchTagger(textBuffer, buffer.Settings.GlobalSettings, nav, _vim.SearchService, _vim.VimData)
                 tagger :> obj :?> ITagger<'T>

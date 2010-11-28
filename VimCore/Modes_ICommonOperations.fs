@@ -13,6 +13,7 @@ type RegisterOperation =
     | Yank
 
 type OperationsData = {
+    VimData : IVimData
     VimHost : IVimHost
     TextView : ITextView
     EditorOperations : IEditorOperations
@@ -54,18 +55,67 @@ type ICommonOperations =
     /// Run the beep operation
     abstract Beep : unit -> unit
 
-    /// Undo the buffer changes "count" times
-    abstract Undo : count:int -> unit
+    /// Change the case of all letters appearing in the given span
+    abstract ChangeLetterCase : SnapshotSpan -> unit
 
-    /// Redo the buffer changes "count" times
-    abstract Redo : count:int -> unit
+    /// Change the text represented by the given Motion.  Returns the SnapshotSpan 
+    /// of the original ITextSnapshot which was modified.  Maybe different
+    /// than the passed in value
+    abstract ChangeSpan : MotionData -> SnapshotSpan
 
-    /// Implements the Join command.  Returns false in the case the join command cannot
-    /// be complete (such as joining at the end of the buffer)
-    abstract Join : SnapshotPoint -> JoinKind -> count : int -> bool
+    /// Change the case of all letters appearing in the given span
+    abstract ChangeLetterCaseBlock : NormalizedSnapshotSpanCollection -> unit
 
-    /// Join the lines in the given span 
-    abstract JoinSpan : SnapshotSpan -> JoinKind -> unit
+    /// Close the current file
+    abstract Close : checkDirty : bool -> unit
+
+    /// Close all open files
+    abstract CloseAll : checkDirty : bool -> unit
+
+    /// Close count foldse in the given SnapshotSpan
+    abstract CloseFold : SnapshotSpan -> count:int -> unit
+
+    /// Close all folds which intersect with the given SnapshotSpan
+    abstract CloseAllFolds : SnapshotSpan -> unit
+
+    /// Delete one folds at the cursor
+    abstract DeleteOneFoldAtCursor : unit -> unit
+
+    /// Delete all folds at the cursor
+    abstract DeleteAllFoldsAtCursor : unit -> unit
+
+    /// Delete count lines starting from the cursor line.  The last line will 
+    /// not have its break deleted
+    abstract DeleteLines : count:int -> SnapshotSpan
+
+    /// Delete from the cursor to the end of the current line and (count-1) more 
+    /// lines.  
+    abstract DeleteLinesFromCursor : count:int -> SnapshotSpan
+
+    /// Delete count lines from the buffer starting from the cursor line
+    abstract DeleteLinesIncludingLineBreak : count:int -> SnapshotSpan
+
+    /// Delete from the cursor to the end of the current line and (count-1) more 
+    /// lines.  
+    abstract DeleteLinesIncludingLineBreakFromCursor : count:int -> SnapshotSpan
+
+    /// Delete the lines in the given span.  Does not include the final line break
+    abstract DeleteLinesInSpan : SnapshotSpan -> SnapshotSpan
+
+    /// Delete a range of text
+    abstract DeleteSpan : SnapshotSpan -> unit
+
+    /// Delete a range of text
+    abstract DeleteBlock : NormalizedSnapshotSpanCollection -> unit
+
+    /// Ensure the caret is on the visible screen
+    abstract EnsureCaretOnScreen : unit -> unit
+
+    /// Ensure the caret is on screen and that it is not in a collapsed region
+    abstract EnsureCaretOnScreenAndTextExpanded : unit -> unit
+
+    /// Fold count lines under the cursor
+    abstract FoldLines : count:int -> unit
 
     /// Attempt to GoToDefinition on the current state of the buffer.  If this operation fails, an error message will 
     /// be generated as appropriate
@@ -80,15 +130,20 @@ type ICommonOperations =
     /// Go to the previous "count" tab
     abstract GoToPreviousTab : count : int -> unit
 
-    /// Navigate to the given point which may occur in any ITextBuffer.  This will not update the 
-    /// jump list
-    abstract NavigateToPoint : VirtualSnapshotPoint -> bool
+    /// Insert the specified text at the cursor position "count" times
+    abstract InsertText : text:string -> count : int -> unit
 
-    /// Ensure the caret is on the visible screen
-    abstract EnsureCaretOnScreen : unit -> unit
+    /// Joins the lines in the range
+    abstract Join : SnapshotLineRange -> JoinKind -> unit
 
-    /// Ensure the caret is on screen and that it is not in a collapsed region
-    abstract EnsureCaretOnScreenAndTextExpanded : unit -> unit
+    /// Jumps to a given mark in the buffer.  
+    abstract JumpToMark : char -> IMarkMap -> Result
+
+    /// Make the letters on the given span lower case
+    abstract MakeLettersLowercase : SnapshotSpan -> unit
+
+    /// Make the letters on the given span upper case
+    abstract MakeLettersUppercase : SnapshotSpan -> unit
 
     /// Move the caret to a given point on the screen
     abstract MoveCaretToPoint : SnapshotPoint -> unit
@@ -117,11 +172,18 @@ type ICommonOperations =
     /// Maybe adjust the caret to respect the virtual edit setting
     abstract MoveCaretForVirtualEdit : unit -> unit
 
-    /// Jumps to a given mark in the buffer.  
-    abstract JumpToMark : char -> IMarkMap -> Result
+    /// Move the caret the number of lines in the given direction and scroll the view
+    abstract MoveCaretAndScrollLines : ScrollDirection -> count:int -> unit
 
-    /// Sets a mark at the specified point.  If this operation fails an error message will be generated
-    abstract SetMark : IVimBuffer -> SnapshotPoint -> char -> Result
+    /// Navigate to the given point which may occur in any ITextBuffer.  This will not update the 
+    /// jump list
+    abstract NavigateToPoint : VirtualSnapshotPoint -> bool
+
+    /// Open count folds in the given SnapshotSpan 
+    abstract OpenFold : SnapshotSpan -> count:int -> unit
+
+    /// Open all folds which inersect with the given SnapshotSpan
+    abstract OpenAllFolds : SnapshotSpan -> unit
 
     /// Paste after the passed in position.  Don't forget that a linewise paste
     /// operation needs to occur under the cursor.  Returns the SnapshotSpan of
@@ -135,52 +197,8 @@ type ICommonOperations =
     /// Paste over the selected text
     abstract PasteOver : SnapshotSpan -> Register -> unit
 
-    /// Insert the specified text at the cursor position "count" times
-    abstract InsertText : text:string -> count : int -> unit
-
-    /// Delete count lines starting from the cursor line.  The last line will 
-    /// not have its break deleted
-    abstract DeleteLines : count:int -> SnapshotSpan
-
-    /// Delete from the cursor to the end of the current line and (count-1) more 
-    /// lines.  
-    abstract DeleteLinesFromCursor : count:int -> SnapshotSpan
-
-    /// Delete count lines from the buffer starting from the cursor line
-    abstract DeleteLinesIncludingLineBreak : count:int -> SnapshotSpan
-
-    /// Delete from the cursor to the end of the current line and (count-1) more 
-    /// lines.  
-    abstract DeleteLinesIncludingLineBreakFromCursor : count:int -> SnapshotSpan
-
-    /// Delete the lines in the given span.  Does not include the final line break
-    abstract DeleteLinesInSpan : SnapshotSpan -> SnapshotSpan
-
-    /// Delete a range of text
-    abstract DeleteSpan : SnapshotSpan -> unit
-
-    /// Delete a range of text
-    abstract DeleteBlock : NormalizedSnapshotSpanCollection -> unit
-
-    /// Shift the count lines starting at the cursor right by the "ShiftWidth" setting
-    abstract ShiftLinesRight : count:int -> unit
-
-    /// Shift the count lines starting at the cursor left by the "ShiftWidth" setting
-    abstract ShiftLinesLeft :  count:int -> unit
-
-    /// Shift the lines in the span to the right by the "ShiftWidth" setting multiplied
-    /// by the multiplier
-    abstract ShiftSpanRight : multiplier:int -> SnapshotSpan -> unit
-
-    /// Shift the lines in the span to the right by the "ShiftWidth" setting multiplied
-    /// by the multiplier
-    abstract ShiftBlockRight : multiplier:int -> NormalizedSnapshotSpanCollection -> unit
-
-    /// Shift the lines in the span to the right by the "ShiftWidth" setting
-    abstract ShiftSpanLeft : multiplier:int -> SnapshotSpan -> unit
-
-    /// Shift the lines in the span to the right by the "ShiftWidth" setting
-    abstract ShiftBlockLeft : multiplier:int -> NormalizedSnapshotSpanCollection -> unit
+    /// Redo the buffer changes "count" times
+    abstract Redo : count:int -> unit
 
     /// Save the current document
     abstract Save : unit -> unit
@@ -191,14 +209,8 @@ type ICommonOperations =
     /// Save all files
     abstract SaveAll : unit -> unit
 
-    /// Close the current file
-    abstract Close : checkDirty : bool -> unit
-
-    /// Close all open files
-    abstract CloseAll : checkDirty : bool -> unit
-
-    /// Move the caret the number of lines in the given direction and scroll the view
-    abstract MoveCaretAndScrollLines : ScrollDirection -> count:int -> unit
+    /// Sets a mark at the specified point.  If this operation fails an error message will be generated
+    abstract SetMark : IVimBuffer -> SnapshotPoint -> char -> Result
 
     /// Scrolls the number of lines given and keeps the caret in the view
     abstract ScrollLines : ScrollDirection -> count:int -> unit
@@ -206,49 +218,36 @@ type ICommonOperations =
     /// Scroll the buffer by the specified number of pages in the given direction
     abstract ScrollPages : ScrollDirection -> count:int -> unit
 
-    /// Change the case of all letters appearing in the given span
-    abstract ChangeLetterCase : SnapshotSpan -> unit
+    /// Shift the count lines starting at the cursor right by the "ShiftWidth" setting
+    abstract ShiftLinesRight : count:int -> unit
 
-    /// Change the case of all letters appearing in the given span
-    abstract ChangeLetterCaseBlock : NormalizedSnapshotSpanCollection -> unit
+    /// Shift the count lines starting at the cursor left by the "ShiftWidth" setting
+    abstract ShiftLinesLeft :  count:int -> unit
 
-    /// Make the letters on the given span lower case
-    abstract MakeLettersLowercase : SnapshotSpan -> unit
+    /// Shift the lines in the span to the right by the "ShiftWidth" setting multiplied
+    /// by the multiplier
+    abstract ShiftLineRangeRight : multiplier:int -> SnapshotLineRange -> unit
 
-    /// Make the letters on the given span upper case
-    abstract MakeLettersUppercase : SnapshotSpan -> unit
+    /// Shift the lines in the span to the right by the "ShiftWidth" setting multiplied
+    /// by the multiplier
+    abstract ShiftBlockRight : multiplier:int -> NormalizedSnapshotSpanCollection -> unit
 
-    /// Open count folds in the given SnapshotSpan 
-    abstract OpenFold : SnapshotSpan -> count:int -> unit
+    /// Shift the lines in the span to the right by the "ShiftWidth" setting
+    abstract ShiftLineRangeLeft : multiplier:int -> SnapshotLineRange -> unit
 
-    /// Open all folds which inersect with the given SnapshotSpan
-    abstract OpenAllFolds : SnapshotSpan -> unit
+    /// Shift the lines in the span to the right by the "ShiftWidth" setting
+    abstract ShiftBlockLeft : multiplier:int -> NormalizedSnapshotSpanCollection -> unit
 
-    /// Close count foldse in the given SnapshotSpan
-    abstract CloseFold : SnapshotSpan -> count:int -> unit
+    /// Substitute Command implementation
+    abstract Substitute : pattern : string -> replace : string -> SnapshotLineRange -> SubstituteFlags -> unit
 
-    /// Close all folds which intersect with the given SnapshotSpan
-    abstract CloseAllFolds : SnapshotSpan -> unit
-
-    /// Fold count lines under the cursor
-    abstract FoldLines : count:int -> unit
-
-    /// Delete one folds at the cursor
-    abstract DeleteOneFoldAtCursor : unit -> unit
-
-    /// Delete all folds at the cursor
-    abstract DeleteAllFoldsAtCursor : unit -> unit
-
-    /// Change the text represented by the given Motion.  Returns the SnapshotSpan 
-    /// of the original ITextSnapshot which was modified.  Maybe different
-    /// than the passed in value
-    abstract ChangeSpan : MotionData -> SnapshotSpan
+    /// Undo the buffer changes "count" times
+    abstract Undo : count:int -> unit
 
     /// Update the register for the given register operation
     abstract UpdateRegisterForSpan : Register -> RegisterOperation -> SnapshotSpan -> OperationKind -> unit
 
     /// Update the register for the given register operation
     abstract UpdateRegisterForCollection : Register -> RegisterOperation -> NormalizedSnapshotSpanCollection -> OperationKind -> unit
-
 
 

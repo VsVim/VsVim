@@ -647,6 +647,37 @@ namespace VimCore.Test
         }
 
         [Test]
+        [Description("Magic options take precedent over nomagic settings")]
+        public void CreateWithOptions3()
+        {
+            _settings.Magic = false;
+            VerifyMatches(VimRegexOptions.Magic, @".", "a");
+        }
+
+        [Test]
+        [Description(@"Magic option is superceeded by the \M specifier")]
+        public void CreateWithOptions4()
+        {
+            _settings.Magic = false;
+            VerifyNotMatches(VimRegexOptions.Magic, @"\M.", "a");
+        }
+
+        [Test]
+        [Description("Nomagic options take precedent over magic settings")]
+        public void CreateWithOptions5()
+        {
+            _settings.Magic = true;
+            VerifyNotMatches(VimRegexOptions.NoMagic, @".", "a");
+        }
+
+        [Test]
+        [Description(@"Nomagic options is superceeded by the \m specifier")]
+        public void CreateWithOptions6()
+        {
+            VerifyMatches(VimRegexOptions.NoMagic, @"\m.", "a", "b");
+        }
+
+        [Test]
         public void CharacterSequence1()
         {
             VerifyMatches(@"[abc]", "a", "b", "c");

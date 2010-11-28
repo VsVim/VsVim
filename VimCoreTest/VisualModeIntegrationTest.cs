@@ -14,7 +14,7 @@ namespace VimCore.Test
         private IWpfTextView _textView;
         private TestableSynchronizationContext _context;
 
-        public void CreateBuffer(params string[] lines)
+        public void Create(params string[] lines)
         {
             _context = new TestableSynchronizationContext();
             SynchronizationContext.SetSynchronizationContext(_context);
@@ -42,8 +42,8 @@ namespace VimCore.Test
         [Test]
         public void Repeat1()
         {
-            CreateBuffer("dog again", "cat again", "chicken");
-            EnterMode(ModeKind.VisualLine, _textView.GetLineSpanIncludingLineBreak(0, 1));
+            Create("dog again", "cat again", "chicken");
+            EnterMode(ModeKind.VisualLine, _textView.GetLineRange(0, 1).ExtentIncludingLineBreak);
             _buffer.Settings.GlobalSettings.ShiftWidth = 2;
             _buffer.Process(">.");
             Assert.AreEqual("    dog again", _textView.GetLine(0).GetText());
@@ -52,8 +52,8 @@ namespace VimCore.Test
         [Test]
         public void Repeat2()
         {
-            CreateBuffer("dog again", "cat again", "chicken");
-            EnterMode(ModeKind.VisualLine, _textView.GetLineSpanIncludingLineBreak(0, 1));
+            Create("dog again", "cat again", "chicken");
+            EnterMode(ModeKind.VisualLine, _textView.GetLineRange(0, 1).ExtentIncludingLineBreak);
             _buffer.Settings.GlobalSettings.ShiftWidth = 2;
             _buffer.Process(">..");
             Assert.AreEqual("      dog again", _textView.GetLine(0).GetText());
@@ -62,8 +62,8 @@ namespace VimCore.Test
         [Test]
         public void ResetCaretFromShiftLeft1()
         {
-            CreateBuffer("  hello", "  world");
-            EnterModeWithSelection(_textView.GetLineSpan(0, 1));
+            Create("  hello", "  world");
+            EnterModeWithSelection(_textView.GetLineRange(0, 1).Extent);
             _buffer.Process("<");
             Assert.AreEqual(0, _textView.GetCaretPoint().Position);
         }
@@ -71,8 +71,8 @@ namespace VimCore.Test
         [Test]
         public void ResetCaretFromShiftLeft2()
         {
-            CreateBuffer("  hello", "  world");
-            EnterModeWithSelection(_textView.GetLineSpan(0, 1));
+            Create("  hello", "  world");
+            EnterModeWithSelection(_textView.GetLineRange(0, 1).Extent);
             _buffer.Process("<");
             Assert.AreEqual(0, _textView.GetCaretPoint().Position);
         }
@@ -80,7 +80,7 @@ namespace VimCore.Test
         [Test]
         public void ResetCaretFromYank1()
         {
-            CreateBuffer("  hello", "  world");
+            Create("  hello", "  world");
             EnterModeWithSelection(_textView.TextBuffer.GetSpan(0, 2));
             _buffer.Process("y");
             Assert.AreEqual(0, _textView.GetCaretPoint().Position);
@@ -90,7 +90,7 @@ namespace VimCore.Test
         [Description("Moving the caret which resets the selection should go to normal mode")]
         public void SelectionChange1()
         {
-            CreateBuffer("  hello", "  world");
+            Create("  hello", "  world");
             EnterModeWithSelection(_textView.TextBuffer.GetSpan(0, 2));
             Assert.AreEqual(ModeKind.VisualCharacter, _buffer.ModeKind);
             _textView.Selection.Select(
@@ -104,7 +104,7 @@ namespace VimCore.Test
         [Description("Moving the caret which resets the selection should go visual if there is still a selection")]
         public void SelectionChange2()
         {
-            CreateBuffer("  hello", "  world");
+            Create("  hello", "  world");
             EnterModeWithSelection(_textView.TextBuffer.GetSpan(0, 2));
             Assert.AreEqual(ModeKind.VisualCharacter, _buffer.ModeKind);
             _textView.Selection.Select(
@@ -118,7 +118,7 @@ namespace VimCore.Test
         [Description("Make sure we reset the span we need")]
         public void SelectionChange3()
         {
-            CreateBuffer("  hello", "  world");
+            Create("  hello", "  world");
             EnterModeWithSelection(_textView.GetLine(0).Extent);
             Assert.AreEqual(ModeKind.VisualCharacter, _buffer.ModeKind);
             _textView.Selection.Select(_textView.GetLine(1).Extent, false);
@@ -131,7 +131,7 @@ namespace VimCore.Test
         [Description("Make sure we reset the span we need")]
         public void SelectionChange4()
         {
-            CreateBuffer("  hello", "  world");
+            Create("  hello", "  world");
             EnterModeWithSelection(_textView.GetLine(0).Extent);
             Assert.AreEqual(ModeKind.VisualCharacter, _buffer.ModeKind);
             _textView.SelectAndUpdateCaret(new SnapshotSpan(_textView.GetLine(1).Start, 2));
@@ -145,7 +145,7 @@ namespace VimCore.Test
         [Description("Enter Visual Line Mode")]
         public void EnterVisualLine1()
         {
-            CreateBuffer("hello", "world");
+            Create("hello", "world");
             _buffer.Process(KeyNotationUtil.StringToKeyInput("<S-v>"));
             Assert.AreEqual(ModeKind.VisualLine, _buffer.ModeKind);
         }
@@ -153,12 +153,35 @@ namespace VimCore.Test
         [Test]
         public void SwitchToCommandModeShouldPreserveSelection()
         {
-            CreateBuffer("dog", "pig", "chicken");
-            EnterModeWithSelection(_textView.GetLineSpan(0, 1));
+            Create("dog", "pig", "chicken");
+            EnterModeWithSelection(_textView.GetLineRange(0, 1).Extent);
             _buffer.Process(':');
             Assert.IsFalse(_textView.Selection.IsEmpty);
         }
 
+        [Test]
+        [Description("Even though a text span is selected, substitute should operate on the line")]
+        public void Substitute1()
+        {
+            Create("the boy hit the cat", "bat");
+            EnterModeWithSelection(new SnapshotSpan(_textView.TextSnapshot, 0, 2));
+            _buffer.Process(":s/a/o");
+            _buffer.Process(VimKey.Enter);
+            Assert.AreEqual("the boy hit the cot", _textView.GetLine(0).GetText());
+            Assert.AreEqual("bat", _textView.GetLine(1).GetText());
+        }
+
+        [Test]
+        [Description("Muliline selection should cause a replace per line")]
+        public void Substitute2()
+        {
+            Create("the boy hit the cat", "bat");
+            EnterModeWithSelection(_textView.GetLineRange(0, 1).ExtentIncludingLineBreak);
+            _buffer.Process(":s/a/o");
+            _buffer.Process(VimKey.Enter);
+            Assert.AreEqual("the boy hit the cot", _textView.GetLine(0).GetText());
+            Assert.AreEqual("bot", _textView.GetLine(1).GetText());
+        }
 
     }
 }

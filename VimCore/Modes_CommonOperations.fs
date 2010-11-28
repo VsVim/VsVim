@@ -6,18 +6,21 @@ open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Operations
 open Microsoft.VisualStudio.Text.Outlining
+open System.Text.RegularExpressions
 
 [<AbstractClass>]
 type internal CommonOperations ( _data : OperationsData ) =
     let _textView = _data.TextView
     let _operations = _data.EditorOperations
     let _outlining = _data.OutliningManager
+    let _vimData = _data.VimData
     let _host = _data.VimHost
     let _jumpList = _data.JumpList
     let _settings = _data.LocalSettings
     let _undoRedoOperations = _data.UndoRedoOperations
     let _statusUtil = _data.StatusUtil
     let _registerMap = _data.RegisterMap
+    let _regexFactory = VimRegexFactory(_data.LocalSettings.GlobalSettings)
 
     /// The caret sometimes needs to be adjusted after an Up or Down movement.  Caret position
     /// and virtual space is actually quite a predicamite for VsVim because of how Vim standard 
@@ -53,24 +56,19 @@ type internal CommonOperations ( _data : OperationsData ) =
         let buffer = span.Snapshot.TextBuffer
         buffer.Delete(span.Span) |> ignore
 
-    member x.ShiftRightCore multiplier (col:SnapshotSpan seq) = 
+    member x.ShiftLineRangeRight multiplier (lineSpan:SnapshotLineRange) =
         let text = new System.String(' ', _settings.GlobalSettings.ShiftWidth * multiplier)
         use edit = _data.TextView.TextBuffer.CreateEdit()
-        col |> Seq.iter (fun span -> edit.Replace(span.Start.Position, 0, text) |> ignore)
+        lineSpan.Lines
+        |> Seq.map (fun line -> line.Extent)
+        |> Seq.iter (fun span -> edit.Replace(span.Start.Position, 0, text) |> ignore)
         edit.Apply() |> ignore
 
-    member x.ShiftSpanRight multiplier span = 
-        let startLine,endLine = SnapshotSpanUtil.GetStartAndEndLine span
-        let snapshot = span.Snapshot
-        let col = 
-            SnapshotUtil.GetLineRange snapshot startLine.LineNumber endLine.LineNumber
-            |> Seq.map (fun line -> SnapshotLineUtil.GetExtentIncludingLineBreak line)
-        x.ShiftRightCore multiplier col 
-
-    member x.ShiftLeftCore multiplier (col:SnapshotSpan seq) =
+    member x.ShiftLineRangeLeft multiplier (lineSpan:SnapshotLineRange) = 
         let count = _settings.GlobalSettings.ShiftWidth * multiplier
         use edit = _data.TextView.TextBuffer.CreateEdit()
-        col 
+        lineSpan.Lines
+        |> Seq.map (fun line -> line.Extent)
         |> Seq.iter (fun span -> 
             let text = SnapshotSpanUtil.GetText span
             let toReplace = 
@@ -78,14 +76,6 @@ type internal CommonOperations ( _data : OperationsData ) =
                 min whiteSpaceLen count
             edit.Replace(span.Start.Position, toReplace, StringUtil.empty) |> ignore )
         edit.Apply() |> ignore
-        
-    member x.ShiftSpanLeft multiplier (span:SnapshotSpan) = 
-        let startLine,endLine = SnapshotSpanUtil.GetStartAndEndLine span
-        let snapshot = span.Snapshot
-        let col = 
-            SnapshotUtil.GetLineRange snapshot startLine.LineNumber endLine.LineNumber
-            |> Seq.map (fun line -> SnapshotLineUtil.GetExtentIncludingLineBreak line)
-        x.ShiftLeftCore multiplier col 
 
     /// Change the letters on the given span by applying the specified function
     /// to each of them
@@ -102,14 +92,14 @@ type internal CommonOperations ( _data : OperationsData ) =
 
     member x.ChangeLettersOnSpan span changeFunc = x.ChangeLettersCore (Seq.singleton span) changeFunc
 
-    member x.JoinCore span kind =
+    member x.Join (range:SnapshotLineRange) kind = 
 
-        let count = SnapshotSpanUtil.GetLineCount span
-        if count > 1 then
+        if range.Count > 1 then
+
             // Create a tracking point for the caret
-            let snapshot = span.Snapshot
+            let snapshot = range.Snapshot
             let trackingPoint = 
-                let point = span |> SnapshotSpanUtil.GetEndLine |> SnapshotLineUtil.GetStart
+                let point = range.EndLine.Start 
                 snapshot.CreateTrackingPoint(point.Position, PointTrackingMode.Positive)
 
             use edit = _data.TextView.TextBuffer.CreateEdit()
@@ -119,29 +109,30 @@ type internal CommonOperations ( _data : OperationsData ) =
                 | KeepEmptySpaces -> ""
                 | RemoveEmptySpaces -> " "
 
-            span 
-            |> SnapshotSpanUtil.GetAllLines
-            |> Seq.take (count-1) // Skip the last line 
+            // First delete line breaks on all but the last line 
+            range.Lines
+            |> Seq.take (range.Count - 1)
             |> Seq.iter (fun line -> 
 
                 // Delete the line break span
                 let span = line |> SnapshotLineUtil.GetLineBreakSpan |> SnapshotSpanUtil.GetSpan
-                edit.Replace(span, replace) |> ignore
+                edit.Replace(span, replace) |> ignore )
 
-                // Maybe strip the start of the next line as well
-                if SnapshotUtil.IsLineNumberValid snapshot (line.LineNumber + 1) then
-                    match kind with
-                    | KeepEmptySpaces -> ()
-                    | RemoveEmptySpaces ->
-                        let nextLine = SnapshotUtil.GetLine snapshot (line.LineNumber+1)
+            // Remove the empty spaces from the start of all but the first line 
+            // if the option was specified
+            match kind with
+            | KeepEmptySpaces -> ()
+            | RemoveEmptySpaces ->
+                range.Lines 
+                |> Seq.skip 1
+                |> Seq.iter (fun line ->
                         let count =
-                            nextLine.Extent 
+                            line.Extent 
                             |> SnapshotSpanUtil.GetText
                             |> Seq.takeWhile CharUtil.IsWhiteSpace
                             |> Seq.length
                         if count > 0 then
-                            edit.Delete(nextLine.Start.Position,count) |> ignore
-                )
+                            edit.Delete(line.Start.Position,count) |> ignore )
 
             // Now position the caret on the new snapshot
             let snapshot = edit.Apply()
@@ -192,21 +183,7 @@ type internal CommonOperations ( _data : OperationsData ) =
         member x.EditorOperations = _operations
         member x.FoldManager = _data.FoldManager
         member x.UndoRedoOperations = _data.UndoRedoOperations
-
-        member x.Join start kind count =
-    
-            // Always joining at least 2 lines so we subtract to get the number of join
-            // operations.  1 is a valid input though
-            let count = if count > 1 then count-1 else 1
-            let number = start |> SnapshotPointUtil.GetContainingLine |> SnapshotLineUtil.GetLineNumber
-            if SnapshotUtil.IsLineNumberValid start.Snapshot (number + count) then
-                let span =  start |> SnapshotSpanUtil.CreateEmpty 
-                let span =  SnapshotSpanUtil.ExtendDown span count
-                x.JoinCore span kind
-                true
-            else false
-        member x.JoinSpan span kind = x.JoinCore span kind
-
+        member x.Join range kind = x.Join range kind
         member x.GoToDefinition () = 
             let before = TextViewUtil.GetCaretPoint _textView
             if _host.GoToDefinition() then
@@ -360,21 +337,26 @@ type internal CommonOperations ( _data : OperationsData ) =
             TextViewUtil.MoveCaretToPoint _textView pos 
 
         member x.MoveCaretForVirtualEdit () = x.MoveCaretForVirtualEdit()
-        member x.ShiftSpanRight multiplier span = x.ShiftSpanRight multiplier span
-        member x.ShiftBlockRight multiplier block = x.ShiftRightCore multiplier block 
-        member x.ShiftSpanLeft multiplier span = x.ShiftSpanLeft multiplier span
-        member x.ShiftBlockLeft multiplier block = x.ShiftLeftCore multiplier block
+
+        member x.ShiftLineRangeRight multiplier range = x.ShiftLineRangeRight multiplier range
+
+        member x.ShiftBlockRight multiplier block = 
+            let lineSpan = SnapshotLineRangeUtil.CreateForNormalizedSnapshotSpanCollection block
+            x.ShiftLineRangeRight multiplier lineSpan
+        member x.ShiftLineRangeLeft multiplier range = x.ShiftLineRangeLeft multiplier range
+
+        member x.ShiftBlockLeft multiplier block = 
+            let lineSpan = SnapshotLineRangeUtil.CreateForNormalizedSnapshotSpanCollection block
+            x.ShiftLineRangeLeft multiplier lineSpan
 
         member x.ShiftLinesRight count = 
-            let point = TextViewUtil.GetCaretPoint _textView
-            let span = SnapshotPointUtil.GetLineRangeSpan point count
-            x.ShiftSpanRight 1 span
+            let lineSpan = TextViewUtil.GetCaretLineRange _textView count
+            x.ShiftLineRangeRight 1 lineSpan
 
         member x.ShiftLinesLeft count =
-            let point = TextViewUtil.GetCaretPoint _textView
-            let span = SnapshotPointUtil.GetLineRangeSpan point count
-            x.ShiftSpanLeft 1 span
-            
+            let lineSpan= TextViewUtil.GetCaretLineRange _textView count
+            x.ShiftLineRangeLeft 1 lineSpan
+
         member x.InsertText text count = 
             let text = StringUtil.repeat text count 
             let point = TextViewUtil.GetCaretPoint _textView
@@ -596,6 +578,114 @@ type internal CommonOperations ( _data : OperationsData ) =
                     | None -> data.OperationSpan
             x.DeleteSpan span
             span
+
+        member x.Substitute pattern replace (range:SnapshotLineRange) flags = 
+
+            /// Actually do the replace with the given regex
+            let doReplace (regex:VimRegex) = 
+                use edit = _textView.TextBuffer.CreateEdit()
+
+                let replaceOne (span:SnapshotSpan) (c:Capture) = 
+                    let newText =  regex.Replace c.Value replace 1
+                    let offset = span.Start.Position
+                    edit.Replace(Span(c.Index+offset, c.Length), newText) |> ignore
+                let getMatches (span:SnapshotSpan) = 
+                    if Utils.IsFlagSet flags SubstituteFlags.ReplaceAll then
+                        regex.Regex.Matches(span.GetText()) |> Seq.cast<Match>
+                    else
+                        regex.Regex.Match(span.GetText()) |> Seq.singleton
+                let matches = 
+                    range.Lines
+                    |> Seq.map (fun line -> line.ExtentIncludingLineBreak)
+                    |> Seq.map (fun span -> getMatches span |> Seq.map (fun m -> (m,span)) )
+                    |> Seq.concat 
+                    |> Seq.filter (fun (m,_) -> m.Success)
+
+                if not (Utils.IsFlagSet flags SubstituteFlags.ReportOnly) then
+                    // Actually do the edits
+                    matches |> Seq.iter (fun (m,span) -> replaceOne span m)
+
+                // Update the status for the substitute operation
+                let printMessage () = 
+
+                    // Get the replace message for multiple lines
+                    let replaceMessage = 
+                        let replaceCount = matches |> Seq.length
+                        let lineCount = 
+                            matches 
+                            |> Seq.map (fun (_,s) -> s.Start.GetContainingLine().LineNumber)
+                            |> Seq.distinct
+                            |> Seq.length
+                        if replaceCount > 1 then Resources.Common_SubstituteComplete replaceCount lineCount |> Some
+                        else None
+
+                    let printReplaceMessage () =
+                        match replaceMessage with 
+                        | None -> ()
+                        | Some(msg) -> _statusUtil.OnStatus msg
+
+                    // Find the last line in the replace sequence.  This is printed out to the 
+                    // user and needs to represent the current state of the line, not the previous
+                    let lastLine = 
+                        if Seq.isEmpty matches then 
+                            None
+                        else 
+                            let _, span = matches |> SeqUtil.last 
+                            let tracking = span.Snapshot.CreateTrackingSpan(span.Span, SpanTrackingMode.EdgeInclusive)
+                            match TrackingSpanUtil.GetSpan _data.TextView.TextSnapshot tracking with
+                            | None -> None
+                            | Some(span) -> SnapshotSpanUtil.GetStartLine span |> Some
+
+                    // Now consider the options 
+                    match lastLine with 
+                    | None -> printReplaceMessage()
+                    | Some(line) ->
+
+                        let printBoth msg = 
+                            match replaceMessage with
+                            | None -> _statusUtil.OnStatus msg
+                            | Some(replaceMessage) -> _statusUtil.OnStatusLong [replaceMessage; msg]
+
+                        if Utils.IsFlagSet flags SubstituteFlags.PrintLast then
+                            printBoth (line.GetText())
+                        elif Utils.IsFlagSet flags SubstituteFlags.PrintLastWithNumber then
+                            sprintf "  %d %s" (line.LineNumber+1) (line.GetText()) |> printBoth 
+                        elif Utils.IsFlagSet flags SubstituteFlags.PrintLastWithList then
+                            sprintf "%s$" (line.GetText()) |> printBoth 
+                        else printReplaceMessage()
+
+                if edit.HasEffectiveChanges then
+                    edit.Apply() |> ignore                                
+                    printMessage()
+                elif Utils.IsFlagSet flags SubstituteFlags.ReportOnly then
+                    edit.Cancel()
+                    printMessage ()
+                elif Utils.IsFlagSet flags SubstituteFlags.SuppressError then
+                    edit.Cancel()
+                else 
+                    edit.Cancel()
+                    _statusUtil.OnError (Resources.Common_PatternNotFound pattern)
+
+            // Get the case options
+            let options = 
+                if Utils.IsFlagSet flags SubstituteFlags.IgnoreCase then VimRegexOptions.IgnoreCase
+                elif Utils.IsFlagSet flags SubstituteFlags.OrdinalCase then VimRegexOptions.OrdinalCase 
+                else VimRegexOptions.None
+
+            // Get the magic options
+            let options = 
+                if Utils.IsFlagSet flags SubstituteFlags.Magic then options ||| VimRegexOptions.Magic
+                elif Utils.IsFlagSet flags SubstituteFlags.Nomagic then options ||| VimRegexOptions.NoMagic
+                else options
+
+            let options = VimRegexOptions.Compiled ||| options
+            match _regexFactory.CreateWithOptions pattern options with
+            | None -> _statusUtil.OnError (Resources.Common_PatternNotFound pattern)
+            | Some (regex) -> 
+                doReplace regex
+                _vimData.LastSubstituteData <- Some {SearchPattern=pattern; Substitute=replace; Flags=flags}
+
+
         member x.UpdateRegisterForSpan reg regOp span opKind = 
             let value = { Value=StringData.OfSpan span; OperationKind=opKind }
             x.UpdateRegister reg regOp value

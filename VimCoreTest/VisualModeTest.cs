@@ -186,7 +186,7 @@ namespace VimCore.Test
         public void Yank1()
         {
             Create("foo", "bar");
-            var span = _buffer.GetLineSpan(0);
+            var span = _buffer.GetLineRange(0).Extent;
             _selection.MakeSelection(span);
             Assert.IsTrue(_mode.Process('y').IsSwitchPreviousMode);
             Assert.AreEqual("foo", _map.GetRegister(RegisterName.Unnamed).StringValue);
@@ -196,7 +196,7 @@ namespace VimCore.Test
         public void Yank2()
         {
             Create("foo", "bar");
-            var span = _buffer.GetLineSpan(0);
+            var span = _buffer.GetLineRange(0).Extent;
             _selection.MakeSelection(span);
             var res = _mode.Process('y');
             Assert.IsTrue(res.IsSwitchPreviousMode);
@@ -207,7 +207,7 @@ namespace VimCore.Test
         public void Yank3()
         {
             Create("foo", "bar");
-            var span = _buffer.GetLineSpan(0);
+            var span = _buffer.GetLineRange(0).Extent;
             _selection.MakeSelection(span);
             _mode.Process("\"cy");
             Assert.AreEqual("foo", _map.GetRegister('c').StringValue);
@@ -218,7 +218,7 @@ namespace VimCore.Test
         public void Yank4()
         {
             Create("foo", "bar");
-            var span = _buffer.GetLineSpan(0);
+            var span = _buffer.GetLineRange(0).Extent;
             _tracker.Setup(x => x.ResetCaret()).Verifiable();
             _selection.MakeSelection(span);
             Assert.IsTrue(_mode.Process('y').IsSwitchPreviousMode);
@@ -234,14 +234,14 @@ namespace VimCore.Test
             var span = _buffer.GetSpan(0, 1);
             _selection.MakeSelection(span);
             Assert.IsTrue(_mode.Process('Y').IsSwitchPreviousMode);
-            Assert.AreEqual(_buffer.GetLineSpanIncludingLineBreak(0).GetText(), _map.GetRegister(RegisterName.Unnamed).StringValue);
+            Assert.AreEqual(_buffer.GetLineRange(0).GetTextIncludingLineBreak(), _map.GetRegister(RegisterName.Unnamed).StringValue);
         }
 
         [Test]
         public void Yank_Y_2()
         {
             Create2(ModeKind.VisualLine, "foo", "bar");
-            var span = _buffer.GetLineSpanIncludingLineBreak(0);
+            var span = _buffer.GetLineRange(0).ExtentIncludingLineBreak;
             _selection.MakeSelection(span);
             _mode.Process('y');
             Assert.AreEqual("foo" + Environment.NewLine, _map.GetRegister(RegisterName.Unnamed).StringValue);
@@ -255,7 +255,7 @@ namespace VimCore.Test
             var span = _buffer.GetSpan(0, 1);
             _selection.MakeSelection(span);
             Assert.IsTrue(_mode.Process('Y').IsSwitchPreviousMode);
-            Assert.AreEqual(_buffer.GetLineSpanIncludingLineBreak(0).GetText(), _map.GetRegister(RegisterName.Unnamed).StringValue);
+            Assert.AreEqual(_buffer.GetLineRange(0).GetTextIncludingLineBreak(), _map.GetRegister(RegisterName.Unnamed).StringValue);
             Assert.AreEqual(OperationKind.LineWise, _map.GetRegister(RegisterName.Unnamed).Value.OperationKind);
         }
 
@@ -327,10 +327,10 @@ namespace VimCore.Test
         public void Join1()
         {
             Create("a", "b", "c", "d", "e");
-            var span = _buffer.GetLineSpan(0, 2);
-            _selection.MakeSelection(span);
+            var range = _buffer.GetLineRange(0, 2);
+            _selection.MakeSelection(range.Extent);
             _operations
-                .Setup(x => x.JoinSpan(span, JoinKind.RemoveEmptySpaces))
+                .Setup(x => x.Join(range, JoinKind.RemoveEmptySpaces))
                 .Verifiable();
             _mode.Process('J');
             _operations.Verify();
@@ -340,10 +340,10 @@ namespace VimCore.Test
         public void Join2()
         {
             Create("a", "b", "c", "d", "e");
-            var span = _buffer.GetLineSpan(0, 3);
-            _selection.MakeSelection(span);
+            var range = _buffer.GetLineRange(0, 3);
+            _selection.MakeSelection(range.Extent);
             _operations
-                .Setup(x => x.JoinSpan(span, JoinKind.RemoveEmptySpaces))
+                .Setup(x => x.Join(range, JoinKind.RemoveEmptySpaces))
                 .Verifiable();
             _mode.Process('J');
             _operations.Verify();
@@ -353,10 +353,10 @@ namespace VimCore.Test
         public void Join3()
         {
             Create("a", "b", "c", "d", "e");
-            var span = _buffer.GetLineSpan(0, 3);
-            _selection.MakeSelection(span);
+            var range = _buffer.GetLineRange(0, 3);
+            _selection.MakeSelection(range.Extent);
             _operations
-                .Setup(x => x.JoinSpan(span, JoinKind.KeepEmptySpaces))
+                .Setup(x => x.Join(range, JoinKind.KeepEmptySpaces))
                 .Verifiable();
             _mode.Process("gJ");
             _operations.Verify();
@@ -366,7 +366,7 @@ namespace VimCore.Test
         public void Change1()
         {
             Create("foo", "bar");
-            var span = _buffer.GetLineSpan(0);
+            var span = _buffer.GetLineRange(0).Extent;
             _selection.MakeSelection(span);
             _operations
                 .Setup(x => x.DeleteSpan(span))
@@ -384,7 +384,7 @@ namespace VimCore.Test
         public void Change2()
         {
             Create("foo", "bar");
-            var span = _buffer.GetLineSpan(0);
+            var span = _buffer.GetLineRange(0).Extent;
             _selection.MakeSelection(span);
             _operations
                 .Setup(x => x.DeleteSpan(span))
@@ -402,7 +402,7 @@ namespace VimCore.Test
         public void Change3()
         {
             Create("foo", "bar");
-            var span = _buffer.GetLineSpan(0);
+            var span = _buffer.GetLineRange(0).Extent;
             _selection.MakeSelection(span);
             _operations
                 .Setup(x => x.DeleteSpan(span))
@@ -419,7 +419,7 @@ namespace VimCore.Test
         public void Change4()
         {
             Create("foo", "bar");
-            var span = _buffer.GetLineSpan(0);
+            var span = _buffer.GetLineRange(0).Extent;
             _selection.MakeSelection(span);
             _operations
                 .Setup(x => x.DeleteLinesInSpan(span))
@@ -438,7 +438,7 @@ namespace VimCore.Test
         public void Change5()
         {
             Create("foo", "bar");
-            var span = _buffer.GetLineSpan(0);
+            var span = _buffer.GetLineRange(0).Extent;
             _selection.MakeSelection(span);
             _operations
                 .Setup(x => x.DeleteLinesInSpan(span))
@@ -472,8 +472,8 @@ namespace VimCore.Test
         {
             Create("foo", "bar", "baz");
             _selection.MakeSelection(
-                _buffer.GetLineSpan(0),
-                _buffer.GetLineSpan(1));
+                _buffer.GetLineRange(0).Extent,
+                _buffer.GetLineRange(1).Extent);
             _operations
                 .Setup(x => x.ChangeLetterCaseBlock(It.IsAny<NormalizedSnapshotSpanCollection>()))
                 .Verifiable();
@@ -487,7 +487,7 @@ namespace VimCore.Test
             Create("foo bar baz");
             var span = _buffer.GetSpan(0, 3);
             _operations
-                .Setup(x => x.ShiftSpanLeft(1, span))
+                .Setup(x => x.ShiftLineRangeLeft(1, SnapshotLineRangeUtil.CreateForSpan(span)))
                 .Verifiable();
             _selection.MakeSelection(span);
             _mode.Process('<');
@@ -501,7 +501,7 @@ namespace VimCore.Test
             Create("foo bar baz");
             var span = _buffer.GetSpan(0, 3);
             _operations
-                .Setup(x => x.ShiftSpanLeft(2, span))
+                .Setup(x => x.ShiftLineRangeLeft(2, SnapshotLineRangeUtil.CreateForSpan(span)))
                 .Verifiable();
             _selection.MakeSelection(span);
             _mode.Process("2<");
@@ -514,8 +514,8 @@ namespace VimCore.Test
         {
             Create("foo", "bar", "baz");
             _selection.MakeSelection(
-                _buffer.GetLineSpan(0),
-                _buffer.GetLineSpan(1));
+                _buffer.GetLineRange(0).Extent,
+                _buffer.GetLineRange(1).Extent);
             _operations
                 .Setup(x => x.ShiftBlockLeft(1, It.IsAny<NormalizedSnapshotSpanCollection>()))
                 .Verifiable();
@@ -530,7 +530,7 @@ namespace VimCore.Test
             Create("foo bar baz");
             var span = _buffer.GetSpan(0, 3);
             _operations
-                .Setup(x => x.ShiftSpanRight(1, span))
+                .Setup(x => x.ShiftLineRangeRight(1, SnapshotLineRangeUtil.CreateForSpan(span)))
                 .Verifiable();
             _selection.MakeSelection(span);
             _mode.Process('>');
@@ -544,7 +544,7 @@ namespace VimCore.Test
             Create("foo bar baz");
             var span = _buffer.GetSpan(0, 3);
             _operations
-                .Setup(x => x.ShiftSpanRight(2, span))
+                .Setup(x => x.ShiftLineRangeRight(2, SnapshotLineRangeUtil.CreateForSpan(span)))
                 .Verifiable();
             _selection.MakeSelection(span);
             _mode.Process("2>");
@@ -557,8 +557,8 @@ namespace VimCore.Test
         {
             Create("foo", "bar", "baz");
             _selection.MakeSelection(
-                _buffer.GetLineSpan(0),
-                _buffer.GetLineSpan(1));
+                _buffer.GetLineRange(0).Extent,
+                _buffer.GetLineRange(1).Extent);
             _operations
                 .Setup(x => x.ShiftBlockRight(1, It.IsAny<NormalizedSnapshotSpanCollection>()))
                 .Verifiable();
@@ -571,7 +571,7 @@ namespace VimCore.Test
         public void Put1()
         {
             Create("foo bar");
-            var span = _buffer.GetLineSpan(0);
+            var span = _buffer.GetLineRange(0).Extent;
             _selection.MakeSelection(span);
             _operations
                 .Setup(x => x.PasteOver(span, _map.GetRegister(RegisterName.Unnamed)))
@@ -584,7 +584,7 @@ namespace VimCore.Test
         public void Put2()
         {
             Create("foo bar");
-            var span = _buffer.GetLineSpan(0);
+            var span = _buffer.GetLineRange(0).Extent;
             _selection.MakeSelection(span);
             _operations
                 .Setup(x => x.PasteOver(span, _map.GetRegister('c')))
@@ -654,7 +654,7 @@ namespace VimCore.Test
             Create("the", "quick", "brown", "fox");
             var span = _buffer.GetSpan(0, 1);
             _selection.MakeSelection(span);
-            _foldManager.Setup(x => x.CreateFold(_buffer.GetLineSpanIncludingLineBreak(0, 0))).Verifiable();
+            _foldManager.Setup(x => x.CreateFold(_buffer.GetLineRange(0, 0).ExtentIncludingLineBreak)).Verifiable();
             _mode.Process("zF");
             _factory.Verify();
         }
@@ -665,7 +665,7 @@ namespace VimCore.Test
             Create("the", "quick", "brown", "fox");
             var span = _buffer.GetSpan(0, 1);
             _selection.MakeSelection(span);
-            _foldManager.Setup(x => x.CreateFold(_buffer.GetLineSpanIncludingLineBreak(0, 1))).Verifiable();
+            _foldManager.Setup(x => x.CreateFold(_buffer.GetLineRange(0, 1).ExtentIncludingLineBreak)).Verifiable();
             _mode.Process("2zF");
             _factory.Verify();
         }
@@ -727,6 +727,16 @@ namespace VimCore.Test
             _factory.Verify();
         }
 
+        [Test]
+        public void FormatSelection1()
+        {
+            Create("foo", "bar");
+            var span = _buffer.GetLineRange(0).Extent;
+            _selection.MakeSelection(span);
+            _host.Setup(x => x.FormatLines(_view.Object, _buffer.GetLineRange(0, 0))).Verifiable();
+            _mode.Process("=");
+            _factory.Verify();
+        }
         #endregion
     }
 }

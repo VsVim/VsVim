@@ -426,7 +426,8 @@ type VisualSpan =
 [<System.Flags>]
 type CommandFlags =
     | None = 0x0
-    /// Relates to the movement of the cursor
+    /// Relates to the movement of the cursor.  A movement command does not alter the 
+    /// last command
     | Movement = 0x1
     /// A Command which can be repeated
     | Repeatable = 0x2
@@ -786,10 +787,10 @@ type SearchOptions =
     | None = 0x0
 
     /// Consider the "ignorecase" option when doing the search
-    | AllowIgnoreCase = 0x1
+    | ConsiderIgnoreCase = 0x1
 
     /// Consider the "smartcase" option when doing the search
-    | AllowSmartCase = 0x2
+    | ConsiderSmartCase = 0x2
 
 [<RequireQualifiedAccess>]
 type SearchText =
@@ -824,13 +825,6 @@ type SearchProcessResult =
 
 /// Global information about searches within Vim
 type ISearchService = 
-
-    /// Last search performed
-    abstract LastSearch : SearchData with get, set
-
-    /// Raised when the LastSearch value changes
-    [<CLIEvent>]
-    abstract LastSearchChanged : IEvent<SearchData>
 
     /// Find the next occurrence of the pattern in the buffer starting at the 
     /// given SnapshotPoint
@@ -886,6 +880,11 @@ type ProcessResult =
         | SwitchMode(_) -> true
         | SwitchModeWithArgument(_,_) -> true
         | SwitchPreviousMode -> true
+
+[<RequireQualifiedAccess>]
+type TextChange = 
+    | Insert of string
+    | Delete of int
 
 type SettingKind =
     | NumberKind
@@ -951,6 +950,52 @@ module LocalSettingNames =
     let NumberName = "number"
     let ScrollName = "scroll"
     let QuoteEscapeName = "quoteescape"
+
+/// Flags for the substitute command
+[<System.Flags>]
+type SubstituteFlags = 
+    | None = 0
+    /// Replace all occurances on the line
+    | ReplaceAll = 0x1
+    /// Ignore case for the search pattern
+    | IgnoreCase = 0x2
+    /// Report only 
+    | ReportOnly = 0x4
+    | Confirm = 0x8
+    | UsePreviousFlags = 0x10
+    | UsePreviousSearchPattern = 0x20
+    | SuppressError = 0x40
+    | OrdinalCase = 0x80
+    | Magic = 0x100
+    | Nomagic = 0x200
+
+    /// The p option.  Print the last replaced line
+    | PrintLast = 0x400
+
+    /// The # option.  Print the last replaced line with the line number prepended
+    | PrintLastWithNumber = 0x800
+
+    /// Print the last line as if :list was used
+    | PrintLastWithList = 0x1000
+
+type SubstituteData = {
+    SearchPattern : string
+    Substitute : string
+    Flags : SubstituteFlags
+}
+
+/// Holds mutable data available to all buffers
+type IVimData = 
+
+    /// Data for the last substitute command performed
+    abstract LastSubstituteData : SubstituteData option with get,set
+
+    /// Last pattern searched for in any buffer
+    abstract LastSearchData : SearchData with get,set
+
+    /// Raised when the LastSearch value changes
+    [<CLIEvent>]
+    abstract LastSearchDataChanged : IEvent<SearchData>
 
 /// Represent the setting supported by the Vim implementation.  This class **IS** mutable
 /// and the values will change.  Setting names are case sensitive but the exposed property
@@ -1050,26 +1095,32 @@ and IVimLocalSettings =
 
 /// Vim instance.  Global for a group of buffers
 and IVim =
-    abstract VimHost : IVimHost
-    abstract MarkMap : IMarkMap
-    abstract RegisterMap : IRegisterMap
-    abstract Settings : IVimGlobalSettings
 
     /// Buffer actively processing input.  This has no relation to the IVimBuffer
     /// which has focus 
     abstract ActiveBuffer : IVimBuffer option
 
+    /// IChangeTracker for this IVim instance
+    abstract ChangeTracker : IChangeTracker
+
+    /// Is the VimRc loaded
+    abstract IsVimRcLoaded : bool
+
     /// IKeyMap for this IVim instance
     abstract KeyMap : IKeyMap
 
-    /// IChangeTracker for this IVim instance
-    abstract ChangeTracker : IChangeTracker
+    abstract MarkMap : IMarkMap
+
+    abstract RegisterMap : IRegisterMap
 
     /// ISearchService for this IVim instance
     abstract SearchService : ISearchService
 
-    /// Is the VimRc loaded
-    abstract IsVimRcLoaded : bool
+    abstract Settings : IVimGlobalSettings
+
+    abstract VimData : IVimData 
+
+    abstract VimHost : IVimHost
 
     /// Create an IVimBuffer for the given IWpfTextView
     abstract CreateBuffer : ITextView -> IVimBuffer
@@ -1077,18 +1128,18 @@ and IVim =
     /// Get the IVimBuffer associated with the given view
     abstract GetBuffer : ITextView -> IVimBuffer option
 
+    /// Get the IVimBuffer associated with the given view
+    abstract GetBufferForBuffer : ITextBuffer -> IVimBuffer option
+
     /// Get or create an IVimBuffer for the given IWpfTextView
     abstract GetOrCreateBuffer : ITextView -> IVimBuffer
 
-    /// Get the IVimBuffer associated with the given view
-    abstract GetBufferForBuffer : ITextBuffer -> IVimBuffer option
+    /// Load the VimRc file.  If the file was previously, a new load will be attempted
+    abstract LoadVimRc : IFileSystem -> createViewFunc:(unit -> ITextView) -> bool
 
     /// Remove the IVimBuffer associated with the given view.  This will not actually close
     /// the IVimBuffer but instead just removes it's association with the given view
     abstract RemoveBuffer : ITextView -> bool
-
-    /// Load the VimRc file.  If the file was previously, a new load will be attempted
-    abstract LoadVimRc : IFileSystem -> createViewFunc:(unit -> ITextView) -> bool
 
 /// Main interface for the Vim editor engine so to speak. 
 and IVimBuffer =
@@ -1111,6 +1162,9 @@ and IVimBuffer =
 
     /// Owning IVim instance
     abstract Vim : IVim
+
+    /// Associated IVimData instance
+    abstract VimData : IVimData
 
     /// Associated IMarkMap
     abstract MarkMap : IMarkMap
@@ -1301,9 +1355,9 @@ and IChangeTracker =
     abstract LastChange : RepeatableChange option
 
 /// Represents a change which is repeatable 
-and RepeatableChange =
+and [<RequireQualifiedAccess>] RepeatableChange =
     | CommandChange of CommandRunData
-    | TextChange of string
+    | TextChange of TextChange
     | LinkedChange of RepeatableChange * RepeatableChange
 
 /// Responsible for calculating the new Span for a VisualMode change

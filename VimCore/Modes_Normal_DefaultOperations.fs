@@ -22,6 +22,7 @@ type internal DefaultOperations ( _data : OperationsData, _incrementalSearch : I
     let _normalWordNav =  _data.Navigator
     let _statusUtil = _data.StatusUtil
     let _search = _incrementalSearch.SearchService
+    let _vimData = _data.VimData
 
     member private x.CommonImpl = x :> ICommonOperations
 
@@ -53,7 +54,7 @@ type internal DefaultOperations ( _data : OperationsData, _incrementalSearch : I
             // Build up the SearchData structure
             let word = span.GetText()
             let text = if isWholeWord then SearchText.WholeWord(word) else SearchText.StraightText(word)
-            let data = {Text=text; Kind = kind; Options = SearchOptions.AllowIgnoreCase }
+            let data = {Text=text; Kind = kind; Options = SearchOptions.ConsiderIgnoreCase }
 
             // When forward the search will be starting on the current word so it will 
             // always match.  Without modification a count of 1 would simply find the word 
@@ -67,11 +68,10 @@ type internal DefaultOperations ( _data : OperationsData, _incrementalSearch : I
                 x.CommonImpl.EnsureCaretOnScreenAndTextExpanded()
             | None -> ()
 
-            _search.LastSearch <- data
+            _vimData.LastSearchData <- data
 
     member private x.MoveToNextOccuranceOfLastSearchCore count isReverse = 
-        let search = _incrementalSearch.SearchService
-        let last = search.LastSearch
+        let last = _vimData.LastSearchData
         let last = 
             if isReverse then { last with Kind = SearchKindUtil.Reverse last.Kind }
             else last
@@ -90,20 +90,20 @@ type internal DefaultOperations ( _data : OperationsData, _incrementalSearch : I
                     let count = count - 1 
                     match _search.FindNextMultiple last span.End _normalWordNav count with
                     | Some(span) -> foundSpan span
-                    | None -> _statusUtil.OnError (Resources.NormalMode_PatternNotFound last.Text.RawText)
+                    | None -> _statusUtil.OnError (Resources.Common_PatternNotFound last.Text.RawText)
 
             // Make sure we don't count the current word if the cursor is positioned
             // directly on top of the current word 
             let caretPoint = TextViewUtil.GetCaretPoint _textView
             match _search.FindNext last caretPoint _normalWordNav with
-            | None -> _statusUtil.OnError (Resources.NormalMode_PatternNotFound last.Text.RawText)
+            | None -> _statusUtil.OnError (Resources.Common_PatternNotFound last.Text.RawText)
             | Some(span) ->
                 let count = if span.Start = caretPoint then count else count - 1 
                 if count = 0 then foundSpan span
                 else 
                     match _search.FindNextMultiple last span.End _normalWordNav count with
                     | Some(span) -> foundSpan span
-                    | None -> _statusUtil.OnError (Resources.NormalMode_PatternNotFound last.Text.RawText)
+                    | None -> _statusUtil.OnError (Resources.Common_PatternNotFound last.Text.RawText)
 
     member x.GoToLineCore line =
         let snapshot = _textView.TextSnapshot
@@ -237,18 +237,10 @@ type internal DefaultOperations ( _data : OperationsData, _incrementalSearch : I
             x.CommonImpl.DeleteSpan span
             span
 
-        member x.JoinAtCaret count =     
-            let start = TextViewUtil.GetCaretPoint _textView
-            let kind = Vim.Modes.JoinKind.RemoveEmptySpaces
-            let res = x.CommonImpl.Join start kind count
-            if not res then
-                _host.Beep()
-
         member x.GoToDefinitionWrapper () =
             match x.CommonImpl.GoToDefinition() with
             | Vim.Modes.Succeeded -> ()
             | Vim.Modes.Failed(msg) -> _statusUtil.OnError msg
-
 
         member x.GoToLocalDeclaration() = 
             if not (_host.GoToLocalDeclaration _textView x.WordUnderCursorOrEmpty) then _host.Beep()
