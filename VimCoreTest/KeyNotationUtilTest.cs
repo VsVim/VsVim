@@ -157,6 +157,31 @@ namespace VimCore.Test
         }
 
         [Test]
+        [Description("Case shouldn't matter")]
+        public void StringToKeyInput7()
+        {
+            var ki = KeyInputUtil.VimKeyToKeyInput(VimKey.Escape);
+            var all = new string[] { "<ESC>", "<esc>", "<Esc>" };
+            foreach ( var cur in all ) 
+            {
+                Assert.AreEqual(ki, KeyNotationUtil.StringToKeyInput(cur));
+            }
+        }
+
+        [Test]
+        [Description("Case shouldn't matter")]
+        public void StringToKeyInput8()
+        {
+            var ki = KeyInputUtil.VimKeyToKeyInput(VimKey.Space);
+            ki = KeyInputUtil.ChangeKeyModifiers(ki, KeyModifiers.Shift);
+            var all = new string[] { "<S-space>", "<S-SPACE>" };
+            foreach ( var cur in all ) 
+            {
+                Assert.AreEqual(ki, KeyNotationUtil.StringToKeyInput(cur));
+            }
+        }
+
+        [Test]
         public void SplitIntoKeyNotationEntries1()
         {
             CollectionAssert.AreEquivalent(

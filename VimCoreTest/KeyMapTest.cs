@@ -249,5 +249,14 @@ namespace VimCore.Test
             var res = map.GetKeyMapping(KeyInputSet.NewManyKeyInputs(input), KeyRemapMode.Normal);
             Assert.IsTrue(res.IsMappingNeedsMoreInput);
         }
+
+        [Test]
+        public void Issue328()
+        {
+            IKeyMap map = new KeyMap();
+            Assert.IsTrue(map.MapWithNoRemap("<S-SPACE>", "<ESC>", KeyRemapMode.Insert));
+            var res = map.GetKeyMapping(KeyInputUtil.VimKeyAndModifiersToKeyInput(VimKey.Space, KeyModifiers.Shift), KeyRemapMode.Insert);
+            Assert.AreEqual(KeyInputUtil.VimKeyToKeyInput(VimKey.Escape), res.Single());
+        }
     }
 }

@@ -2,11 +2,36 @@
 
 namespace Vim
 
+/// Thin wrapper around System.String which takes a specific comparer value
+/// Useful for creating a case insensitive string key for a Map
+type ComparableString ( _value : string, _comparer : System.StringComparer ) = 
+
+    member x.Value = _value
+                    
+    override x.GetHashCode() = _value.GetHashCode()
+    override x.Equals(obj) =
+        match obj with
+        | :? ComparableString as other -> _comparer.Equals(_value, other.Value)
+        | _ -> false
+
+    override x.ToString() = _value
+
+    interface System.IComparable with
+        member x.CompareTo yObj =
+            match yObj with
+            | :? ComparableString as other -> _comparer.Compare(_value, other.Value)
+            | _ -> invalidArg "yObj" "Cannot compare values of different types"  
+
+    interface System.IEquatable<KeyInput> with
+        member x.Equals other = _comparer.Equals(_value, other)
+
+    static member CreateOrdinalIgnoreCase value = ComparableString(value, System.StringComparer.OrdinalIgnoreCase)
+
 /// Utility class for converting Key notations into KeyInput and vice versa
 /// :help key-notation for all of the key codes
-module internal KeyNotationUtil =
+module KeyNotationUtil =
 
-    let private ManualKeyList = 
+    let ManualKeyList = 
         [
             ("<Nul>",KeyInputUtil.CharWithControlToKeyInput '@');
             ("<Bs>", KeyInputUtil.VimKeyToKeyInput VimKey.Back);
@@ -54,7 +79,7 @@ module internal KeyNotationUtil =
             ("<k9>", KeyInputUtil.VimKeyToKeyInput VimKey.Keypad9)
         ]
 
-    let private FunctionKeys = 
+    let FunctionKeys = 
         [VimKey.F1;VimKey.F2;VimKey.F3;VimKey.F4;VimKey.F5;VimKey.F6;VimKey.F7;VimKey.F8;VimKey.F9;VimKey.F10;VimKey.F11;VimKey.F12]
             |> Seq.mapi (fun i k -> (i+1),k)
             |> Seq.map (fun (number,key) -> (sprintf "<F%d>" number),KeyInputUtil.VimKeyToKeyInput key)
@@ -67,10 +92,11 @@ module internal KeyNotationUtil =
     /// <Undo>		undo key
     /// <EOL>
     /// <kEnter>	keypad Enter			*keypad-enter*
-    let private SpecialKeyMap = 
+    let SpecialKeyMap = 
         ManualKeyList
         |> Seq.append FunctionKeys
         |> Seq.map (fun (k,v) -> k.Substring(1,k.Length-2),v)
+        |> Seq.map (fun (k,v) -> (ComparableString.CreateOrdinalIgnoreCase k),v)
         |> Map.ofSeq
 
     /// Break up a string into a set of key notation entries
@@ -127,13 +153,12 @@ module internal KeyNotationUtil =
 
         inner (data |> List.ofSeq) (fun all -> all)
 
-    /// Try to convert the passed in string into a single KeyInput value according to the
-    /// guidelines specified in :help key-notation.  
     let TryStringToKeyInput (data:string) = 
 
         // Convert the string into a keyinput 
         let convertToRaw data =
-            match Map.tryFind data SpecialKeyMap with
+            let comparableData = ComparableString.CreateOrdinalIgnoreCase data
+            match Map.tryFind comparableData SpecialKeyMap with
             | Some(ki) -> Some ki
             | None -> 
                 if StringUtil.length data = 1 then KeyInputUtil.CharToKeyInput data.[0] |> Some
@@ -187,8 +212,6 @@ module internal KeyNotationUtil =
         | Some(ki) -> ki
         | None -> invalidArg "data" (Resources.KeyNotationUtil_InvalidNotation data)
 
-    /// Try to convert the passed in string to multiple KeyInput values.  Returns true only
-    /// if the entire list succesfully parses
     let TryStringToKeyInputSet data = 
         match data |> SplitIntoKeyNotationEntries |> List.map TryStringToKeyInput |> SeqUtil.allOrNone with
         | Some(list) -> list |> KeyInputSetUtil.ofList |> Some

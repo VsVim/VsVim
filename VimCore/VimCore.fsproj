@@ -61,6 +61,7 @@
     <Compile Include="MefInterfaces.fs" />
     <Compile Include="VimRegex.fsi" />
     <Compile Include="VimRegex.fs" />
+    <Compile Include="KeyNotationUtil.fsi" />
     <Compile Include="KeyNotationUtil.fs" />
     <Compile Include="MotionCapture.fs" />
     <Compile Include="RegexUtil.fs" />
