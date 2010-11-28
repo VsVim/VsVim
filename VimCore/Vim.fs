@@ -98,12 +98,11 @@ type internal VimBufferFactory
         let normalOpts = Modes.Normal.DefaultOperations(operationsData, normalIncrementalSearch) :> Vim.Modes.Normal.IOperations
         let commandOpts = Modes.Command.DefaultOperations(operationsData) :> Modes.Command.IOperations
         let commandProcessor = Modes.Command.CommandProcessor(buffer, commandOpts, statusUtil, FileSystem() :> IFileSystem) :> Modes.Command.ICommandProcessor
-        let insertOpts = Modes.Insert.DefaultOperations(operationsData) :> Modes.ICommonOperations
+        let commonOperations = Modes.CommonOperations(operationsData) :> Modes.ICommonOperations
         let visualOptsFactory kind = 
             let kind = VisualKind.ofModeKind kind |> Option.get
             let tracker = Modes.Visual.SelectionTracker(view,vim.Settings,kind) :> Modes.Visual.ISelectionTracker
-            let opts = Modes.Insert.DefaultOperations(operationsData ) :> Modes.ICommonOperations
-            (tracker, opts)
+            (tracker, commonOperations)
 
         let visualModeList =
             [ ModeKind.VisualBlock; ModeKind.VisualCharacter; ModeKind.VisualLine ]
@@ -118,8 +117,8 @@ type internal VimBufferFactory
             [
                 ((Modes.Normal.NormalMode(buffer, normalOpts, normalIncrementalSearch,statusUtil,broker, createCommandRunner(),capture, _visualSpanCalculator)) :> IMode);
                 ((Modes.Command.CommandMode(buffer, commandProcessor)) :> IMode);
-                ((Modes.Insert.InsertMode(buffer,insertOpts,broker, editOptions,false)) :> IMode);
-                ((Modes.Insert.InsertMode(buffer,insertOpts,broker, editOptions,true)) :> IMode);
+                ((Modes.Insert.InsertMode(buffer, commonOperations, broker, editOptions,false)) :> IMode);
+                ((Modes.Insert.InsertMode(buffer, commonOperations, broker, editOptions,true)) :> IMode);
                 (DisabledMode(buffer) :> IMode);
             ] @ visualModeList
         modeList |> List.iter (fun m -> bufferRaw.AddMode m)

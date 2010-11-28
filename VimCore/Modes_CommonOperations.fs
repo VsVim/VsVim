@@ -8,7 +8,6 @@ open Microsoft.VisualStudio.Text.Operations
 open Microsoft.VisualStudio.Text.Outlining
 open System.Text.RegularExpressions
 
-[<AbstractClass>]
 type internal CommonOperations ( _data : OperationsData ) =
     let _textView = _data.TextView
     let _operations = _data.EditorOperations
