@@ -1365,6 +1365,13 @@ and IDisabledMode =
 
 and ISubstituteConfirmMode =
 
+    /// The SnapshotSpan of the current matching piece of text
+    abstract CurrentMatch : SnapshotSpan option
+
+    /// Raised when the current match changes
+    [<CLIEvent>]
+    abstract CurrentMatchChanged : IEvent<SnapshotSpan option> 
+
     inherit IMode 
 
 and IChangeTracker =

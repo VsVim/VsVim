@@ -17,7 +17,7 @@ type ConfirmData = {
     SubstituteText : string
 
     /// This is the current SnapshotSpan which is presented to the user for replacement
-    CurrentSpan : SnapshotSpan 
+    CurrentMatch : SnapshotSpan 
 
     /// This is the last line number on which the substitute should occur
     LastLineNumber : int
@@ -35,6 +35,7 @@ type internal SubstituteConfirmMode
 
     let _textBuffer = _buffer.TextBuffer
     let _factory = VimRegexFactory(_buffer.Settings.GlobalSettings)
+    let _currentMatchChanged = Event<_>()
     let mutable _commandMap : Map<KeyInput, ConfirmAction> = Map.empty
     let mutable _confirmData : ConfirmData option = None
 
@@ -58,15 +59,26 @@ type internal SubstituteConfirmMode
             _operations.ScrollPages ScrollDirection.Down 1 
             ModeSwitch.NoSwitch)
 
+    member this.CurrentMatch = 
+        match _confirmData with
+        | Some(data) -> Some data.CurrentMatch
+        | None -> None
+
+    member this.ConfirmData 
+        with get() = _confirmData
+        and set value =
+            _confirmData <- value
+            _currentMatchChanged.Trigger this.CurrentMatch
+
     /// Move to the next match given provided ConfirmData 
     member this.MoveToNext (data:ConfirmData) = 
         // First we need to get the point after the Current selection.  This function
         // is called after edits so it's possible the Snapshot is different.
         let point = 
-            if data.CurrentSpan.Snapshot = _textBuffer.CurrentSnapshot then 
-                Some data.CurrentSpan.End
+            if data.CurrentMatch.Snapshot = _textBuffer.CurrentSnapshot then 
+                Some data.CurrentMatch.End
             else 
-                let point = data.CurrentSpan.Snapshot.CreateTrackingPoint((data.CurrentSpan.End.Position), PointTrackingMode.Positive)
+                let point = data.CurrentMatch.Snapshot.CreateTrackingPoint((data.CurrentMatch.End.Position), PointTrackingMode.Positive)
                 TrackingPointUtil.GetPoint _textBuffer.CurrentSnapshot point
 
         // Do the search from the given point in a line wise fashion
@@ -80,7 +92,7 @@ type internal SubstituteConfirmMode
                 if capture.Success then
                     let start = SnapshotPointUtil.Add capture.Index point
                     let span = SnapshotSpanUtil.CreateWithLength start capture.Length
-                    _confirmData <- Some {data with CurrentSpan=span}
+                    this.ConfirmData <- Some {data with CurrentMatch=span}
                     ModeSwitch.NoSwitch
                 else
                     doSearch line.EndIncludingLineBreak
@@ -96,17 +108,19 @@ type internal SubstituteConfirmMode
 
     /// Substitute the current match and move to the next
     member this.DoSubstitute (data:ConfirmData) = 
-        let text = data.Regex.Replace (data.CurrentSpan.GetText()) data.SubstituteText 1 
-        _textBuffer.Replace(data.CurrentSpan.Span, text) |> ignore
+        let text = data.Regex.Replace (data.CurrentMatch.GetText()) data.SubstituteText 1 
+        _textBuffer.Replace(data.CurrentMatch.Span, text) |> ignore
         this.MoveToNext data
 
     member this.DoSubstituteAll data = ModeSwitch.NoSwitch
 
     interface ISubstituteConfirmMode with
-        member x.VimBuffer = _buffer
-        member x.CommandNames = _commandMap |> Seq.map (fun pair -> KeyInputSet.OneKeyInput pair.Key)
-        member x.ModeKind = ModeKind.SubstituteConfirm
         member x.CanProcess ki = true
+        member x.CommandNames = _commandMap |> Seq.map (fun pair -> KeyInputSet.OneKeyInput pair.Key)
+        member x.CurrentMatch = x.CurrentMatch
+        member x.ModeKind = ModeKind.SubstituteConfirm
+        member x.VimBuffer = _buffer
+
         member x.Process ki = 
 
             // Guard against the case where confirm mode is incorrectly entered
@@ -119,8 +133,9 @@ type internal SubstituteConfirmMode
                 | None -> ProcessResult.Processed
                 | Some(func) -> func data |> ProcessResult.OfModeSwitch
 
+        member x.OnClose() = ()
         member x.OnEnter arg =
-            _confirmData <- 
+            x.ConfirmData <- 
                 match arg with
                 | ModeArgument.None -> None
                 | ModeArgument.OneTimeCommand(_) -> None
@@ -130,7 +145,10 @@ type internal SubstituteConfirmMode
                     | None -> None
                     | Some(regex) ->
                         let isReplaceAll = Utils.IsFlagSet data.Flags SubstituteFlags.ReplaceAll
-                        let data = { Regex=regex; SubstituteText=data.Substitute; CurrentSpan=span; LastLineNumber=range.EndLineNumber; IsReplaceAll=isReplaceAll}
+                        let data = { Regex=regex; SubstituteText=data.Substitute; CurrentMatch =span; LastLineNumber=range.EndLineNumber; IsReplaceAll=isReplaceAll}
                         Some data
-        member x.OnLeave () = _confirmData <- None
-        member x.OnClose() = ()
+
+        member x.OnLeave () = this.ConfirmData <- None
+
+        [<CLIEvent>]
+        member x.CurrentMatchChanged = _currentMatchChanged.Publish
