@@ -5,7 +5,7 @@ open Vim
 open Vim.Modes
 open Microsoft.VisualStudio.Text
 open System.Text.RegularExpressions
-open Vim.RegexUtil
+open Vim.RegexPatternUtil
 
 [<System.Flags>]
 type internal KeyRemapOptions =
@@ -462,7 +462,28 @@ type internal CommandProcessor
             match opt with
             | None -> range,rest
             | Some(count) -> (RangeUtil.ApplyCount count range,rest)
- 
+
+        // Called to initialize the data and move to a confirm style substitution.  Have to find the first match
+        // before passing off to confirm
+        let setupConfirmSubstitute (range:SnapshotLineRange) (data:SubstituteData) =
+            let regex = _regexFactory.CreateForSubstituteFlags data.SearchPattern data.Flags
+            match regex with
+            | None -> 
+                _statusUtil.OnError (Resources.Common_PatternNotFound data.SearchPattern)
+                RunResult.Completed
+            | Some(regex) -> 
+
+                let firstMatch = 
+                    range.Lines
+                    |> Seq.map (fun line -> line.ExtentIncludingLineBreak)
+                    |> Seq.tryPick (fun span -> RegexUtil.MatchSpan span regex.Regex)
+                match firstMatch with
+                | None -> 
+                    _statusUtil.OnError (Resources.Common_PatternNotFound data.SearchPattern)
+                    RunResult.Completed
+                | Some(span,_) ->
+                    RunResult.SubstituteConfirm (span, range, data)
+
         let originalRange = RangeUtil.RangeOrCurrentLine _buffer.TextView range 
 
         let isFullParse = 
@@ -529,8 +550,7 @@ type internal CommandProcessor
             let goodParse search replace range flags = 
                 if Utils.IsFlagSet flags SubstituteFlags.Confirm then
                     let data = {SearchPattern=search; Substitute=replace; Flags=flags}
-                    // TODO: actually get the first match
-                    RunResult.SubstituteConfirm (new SnapshotSpan(_buffer.TextSnapshot,0,0), range, data)
+                    setupConfirmSubstitute range data
                 else
                     _operations.Substitute search replace range flags 
                     RunResult.Completed

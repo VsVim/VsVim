@@ -1368,6 +1368,9 @@ and ISubstituteConfirmMode =
     /// The SnapshotSpan of the current matching piece of text
     abstract CurrentMatch : SnapshotSpan option
 
+    /// The string which will replace the current match
+    abstract CurrentSubstitute : string option
+
     /// Raised when the current match changes
     [<CLIEvent>]
     abstract CurrentMatchChanged : IEvent<SnapshotSpan option> 

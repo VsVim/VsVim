@@ -6,7 +6,6 @@ open Vim.Modes
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
 open System.Text.RegularExpressions
-open Vim.RegexUtil
 
 type ConfirmData = { 
 
@@ -70,8 +69,14 @@ type internal SubstituteConfirmMode
             _confirmData <- value
             _currentMatchChanged.Trigger this.CurrentMatch
 
+    member this.CurrentSubstitute =
+        match _confirmData with
+        | None -> None
+        | Some(data) -> data.Regex.Replace (data.CurrentMatch.GetText()) (data.SubstituteText) 1 |> Some
+
     /// Move to the next match given provided ConfirmData 
     member this.MoveToNext (data:ConfirmData) = 
+
         // First we need to get the point after the Current selection.  This function
         // is called after edits so it's possible the Snapshot is different.
         let point = 
@@ -88,13 +93,11 @@ type internal SubstituteConfirmMode
                 ModeSwitch.SwitchMode ModeKind.Normal
             else 
                 let span = SnapshotSpanUtil.CreateFromBounds point line.EndIncludingLineBreak
-                let capture = data.Regex.Regex.Match (span.GetText()) 
-                if capture.Success then
-                    let start = SnapshotPointUtil.Add capture.Index point
-                    let span = SnapshotSpanUtil.CreateWithLength start capture.Length
+                match RegexUtil.MatchSpan span data.Regex.Regex with
+                | Some(span,_) ->
                     this.ConfirmData <- Some {data with CurrentMatch=span}
                     ModeSwitch.NoSwitch
-                else
+                | None -> 
                     doSearch line.EndIncludingLineBreak
 
         match point with
@@ -118,6 +121,7 @@ type internal SubstituteConfirmMode
         member x.CanProcess ki = true
         member x.CommandNames = _commandMap |> Seq.map (fun pair -> KeyInputSet.OneKeyInput pair.Key)
         member x.CurrentMatch = x.CurrentMatch
+        member x.CurrentSubstitute = x.CurrentSubstitute
         member x.ModeKind = ModeKind.SubstituteConfirm
         member x.VimBuffer = _buffer
 
@@ -148,7 +152,10 @@ type internal SubstituteConfirmMode
                         let data = { Regex=regex; SubstituteText=data.Substitute; CurrentMatch =span; LastLineNumber=range.EndLineNumber; IsReplaceAll=isReplaceAll}
                         Some data
 
-        member x.OnLeave () = this.ConfirmData <- None
+            _buffer.TextView.Caret.IsHidden <- true
+        member x.OnLeave () = 
+            this.ConfirmData <- None
+            _buffer.TextView.Caret.IsHidden <- false
 
         [<CLIEvent>]
         member x.CurrentMatchChanged = _currentMatchChanged.Publish

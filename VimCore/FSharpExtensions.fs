@@ -17,6 +17,12 @@ module public OptionExtensions =
         | Some(toTest) -> toTest = value
         | None         -> false
 
+    [<Extension>]
+    let SomeOrDefault opt defaultValue = 
+        match opt with 
+        | Some(value) -> value
+        | None -> defaultValue
+
 module public FSharpOption =
 
     let Create value = value |> Some

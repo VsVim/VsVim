@@ -63,3 +63,6 @@ type VimRegexFactory =
     member CreateForSubstituteFlags : pattern:string -> SubstituteFlags -> VimRegex option
 
     member CreateWithOptions : pattern:string -> options:VimRegexOptions -> VimRegex option
+
+
+

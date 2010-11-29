@@ -88,6 +88,15 @@ namespace Vim.UI.Wpf.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to replace with {0} (y/n/a/q/l/^E/^Y)?.
+        /// </summary>
+        internal static string SubstituteConfirmBannerFormat {
+            get {
+                return ResourceManager.GetString("SubstituteConfirmBannerFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to -- VISUALBLOCK --.
         /// </summary>
         internal static string VisualBlockBanner {

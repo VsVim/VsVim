@@ -8,7 +8,7 @@ open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Operations
 open Microsoft.VisualStudio.Text.Outlining
 open System.Text.RegularExpressions
-open Vim.RegexUtil
+open Vim.RegexPatternUtil
 
 type internal DefaultOperations ( _data : OperationsData ) =
     inherit CommonOperations(_data)

@@ -107,6 +107,9 @@ namespace Vim.UI.Wpf
                 case ModeKind.Disabled:
                     _margin.StatusLine = _buffer.DisabledMode.HelpMessage;
                     break;
+                case ModeKind.SubstituteConfirm:
+                    UpdateSubstituteConfirmMode();
+                    break;
                 default:
                     _margin.StatusLine = String.Empty;
                     break;
@@ -136,10 +139,19 @@ namespace Vim.UI.Wpf
                         }
                     }
                     break;
+                case ModeKind.SubstituteConfirm:
+                    UpdateSubstituteConfirmMode();
+                    break;
                 case ModeKind.Disabled:
                     _margin.StatusLine = _buffer.DisabledMode.HelpMessage;
                     break;
             }
+        }
+
+        private void UpdateSubstituteConfirmMode()
+        {
+            var replace = _buffer.SubstituteConfirmMode.CurrentSubstitute.SomeOrDefault("");
+            _margin.StatusLine = String.Format(Resources.SubstituteConfirmBannerFormat, replace);
         }
 
         #region Event Handlers
