@@ -52,9 +52,9 @@ namespace VimCore.Test
             _processor = _processorRaw;
         }
 
-        private void RunCommand(string input)
+        private RunResult RunCommand(string input)
         {
-            _processor.RunCommand(Microsoft.FSharp.Collections.ListModule.OfSeq(input));
+            return _processor.RunCommand(Microsoft.FSharp.Collections.ListModule.OfSeq(input));
         }
 
         private void TestNoRemap(string input, string lhs, string rhs, params KeyRemapMode[] modes)
@@ -505,8 +505,12 @@ namespace VimCore.Test
         public void Substitute14()
         {
             Create("foo bar", "baz");
-            _statusUtil.Setup(x => x.OnError(Resources.CommandMode_NotSupported_SubstituteConfirm)).Verifiable();
-            RunCommand("%s/foo/bar/c");
+            var result = RunCommand("%s/foo/bar/c");
+            Assert.IsTrue(result.IsSubstituteConfirm);
+
+            var confirm = result.AsSubstituteConfirm();
+            Assert.AreEqual("foo", confirm.Item3.SearchPattern);
+            Assert.AreEqual("bar", confirm.Item3.Substitute);
             _factory.Verify();
         }
 

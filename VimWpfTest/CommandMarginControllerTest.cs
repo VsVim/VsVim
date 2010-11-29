@@ -129,6 +129,19 @@ namespace Vim.UI.Wpf.Test
         }
 
         [Test]
+        public void SwitchMode_SubstituteConfirm1()
+        {
+            var mode = _factory.Create<ISubstituteConfirmMode>();
+            mode.SetupGet(x => x.CurrentSubstitute).Returns(FSharpOption.Create("here")).Verifiable();
+            mode.SetupGet(x => x.ModeKind).Returns(ModeKind.SubstituteConfirm).Verifiable();
+            _buffer.SubstituteConfirmModeImpl = mode.Object;
+            _buffer.RaiseSwitchedMode(mode.Object);
+
+            Assert.AreEqual(string.Format(Resources.SubstituteConfirmBannerFormat, "here"), _marginControl.StatusLine);
+            _factory.Verify();
+        }
+
+        [Test]
         public void StatusMessage1()
         {
             _buffer.RaiseStatusMessage("foo");

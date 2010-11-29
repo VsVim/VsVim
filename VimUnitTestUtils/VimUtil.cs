@@ -196,6 +196,27 @@ namespace Vim.UnitTest
             return new SearchData(text, kind, options);
         }
 
+        internal static ModeArgument CreateSubstituteArgument(
+            SnapshotSpan span,
+            SnapshotLineRange range = null,
+            SubstituteData data = null)
+        {
+            range = range ?? SnapshotLineRangeUtil.CreateForSnapshot(span.Snapshot);
+            data = data ?? new SubstituteData("a", "b", SubstituteFlags.None);
+            return ModeArgument.NewSubsitute(span, range, data);
+        }
+
+        internal static ModeArgument CreateSubstituteArgument(
+            SnapshotSpan span,
+            string search,
+            string replace,
+            SubstituteFlags? flags = null,
+            SnapshotLineRange range = null)
+        {
+            range = range ?? SnapshotLineRangeUtil.CreateForSnapshot(span.Snapshot);
+            var data = new SubstituteData(search, replace, flags ?? SubstituteFlags.None);
+            return ModeArgument.NewSubsitute(span, range, data);
+        }
 
     }
 }

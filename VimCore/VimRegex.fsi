@@ -47,6 +47,9 @@ type VimRegex =
     /// as specified "count" times
     member Replace : input:string -> replacement:string -> count:int -> string 
 
+    /// Replace a single occurance inside the given string
+    member ReplaceOne : input:string -> replacement:string -> string 
+
     /// Matches the regex against the specified input and does the replacement 
     /// as specified.  If there is currently no regex then None will be returned
     member ReplaceAll : input:string -> replacement:string -> string 

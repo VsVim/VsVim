@@ -91,6 +91,8 @@ type VimRegex
     member x.Replace (input:string) (replacement:string) (count:int) = 
         let replacement = VimRegexUtils.ConvertReplacementString replacement
         _regex.Replace(input, replacement, count) 
+    member x.ReplaceOne (input:string) (replacement:string) =
+        x.Replace input replacement 1
 
 [<RequireQualifiedAccess>]
 type MagicKind = 

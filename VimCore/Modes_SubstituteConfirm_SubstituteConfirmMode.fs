@@ -46,7 +46,7 @@ type internal SubstituteConfirmMode
         let finished = ModeSwitch.SwitchMode ModeKind.Normal
 
         add "y" this.DoSubstitute 
-        add "l" this.DoSubstitute 
+        add "l" this.DoSubstituteLast
         add "n" this.MoveToNext
         add "<Esc>" (fun _ -> ModeSwitch.SwitchMode ModeKind.Normal)
         add "q" (fun _ -> ModeSwitch.SwitchMode ModeKind.Normal)
@@ -72,7 +72,11 @@ type internal SubstituteConfirmMode
     member this.CurrentSubstitute =
         match _confirmData with
         | None -> None
-        | Some(data) -> data.Regex.Replace (data.CurrentMatch.GetText()) (data.SubstituteText) 1 |> Some
+        | Some(data) -> data.Regex.ReplaceOne (data.CurrentMatch.GetText()) (data.SubstituteText) |> Some
+
+    member this.EndOperation () = 
+        this.ConfirmData <- None
+        ModeSwitch.SwitchMode ModeKind.Normal
 
     /// Move to the next match given provided ConfirmData 
     member this.MoveToNext (data:ConfirmData) = 
@@ -90,7 +94,7 @@ type internal SubstituteConfirmMode
         let rec doSearch point = 
             let line = SnapshotPointUtil.GetContainingLine point
             if line.LineNumber > data.LastLineNumber || SnapshotPointUtil.IsEndPoint point then
-                ModeSwitch.SwitchMode ModeKind.Normal
+                this.EndOperation()
             else 
                 let span = SnapshotSpanUtil.CreateFromBounds point line.EndIncludingLineBreak
                 match RegexUtil.MatchSpan span data.Regex.Regex with
@@ -101,7 +105,8 @@ type internal SubstituteConfirmMode
                     doSearch line.EndIncludingLineBreak
 
         match point with
-        | None -> ModeSwitch.SwitchMode ModeKind.Normal
+        | None -> 
+            this.EndOperation()
         | Some(point) -> 
             if data.IsReplaceAll then
                 doSearch point
@@ -109,13 +114,46 @@ type internal SubstituteConfirmMode
                 let line = SnapshotPointUtil.GetContainingLine point
                 doSearch line.EndIncludingLineBreak
 
-    /// Substitute the current match and move to the next
-    member this.DoSubstitute (data:ConfirmData) = 
+    member this.ReplaceCurrent (data:ConfirmData) =
         let text = data.Regex.Replace (data.CurrentMatch.GetText()) data.SubstituteText 1 
         _textBuffer.Replace(data.CurrentMatch.Span, text) |> ignore
+
+    /// Substitute the current match and move to the next
+    member this.DoSubstitute (data:ConfirmData) = 
+        this.ReplaceCurrent data
         this.MoveToNext data
 
-    member this.DoSubstituteAll data = ModeSwitch.NoSwitch
+    /// Substitute the current match and end the operation
+    member this.DoSubstituteLast (data:ConfirmData) = 
+        this.ReplaceCurrent data
+        this.EndOperation()
+
+    /// Substitute all remaining matches and exit the confirm operation
+    member this.DoSubstituteAll data = 
+
+        let lineSpans = 
+            let line = SnapshotPointUtil.GetContainingLine data.CurrentMatch.Start
+            let rest = 
+                if line.LineNumber = data.LastLineNumber || line.LineNumber = line.Snapshot.LineCount - 1 then 
+                    Seq.empty
+                else 
+                    let range = SnapshotLineRangeUtil.CreateForLineNumberRange line.Snapshot (line.LineNumber + 1) data.LastLineNumber
+                    range.Lines |> Seq.map SnapshotLineUtil.GetExtentIncludingLineBreak
+            let first = SnapshotSpanUtil.CreateFromBounds data.CurrentMatch.Start line.EndIncludingLineBreak
+            Seq.append (Seq.singleton first) rest
+
+        let doReplace = 
+            if data.IsReplaceAll then data.Regex.ReplaceAll
+            else data.Regex.ReplaceOne
+
+        let edit = _textBuffer.CreateEdit()
+        lineSpans 
+        |> Seq.iter (fun span ->
+            let text = doReplace (span.GetText()) data.SubstituteText
+            edit.Replace(span.Span, text) |> ignore)
+        if edit.HasEffectiveChanges then edit.Apply() |> ignore else edit.Cancel()
+
+        this.EndOperation()
 
     interface ISubstituteConfirmMode with
         member x.CanProcess ki = true

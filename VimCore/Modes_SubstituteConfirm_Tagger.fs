@@ -35,7 +35,7 @@ type internal SubstituteConfirmTagger
             raiseAllChanged())
         |> _eventHandlers.Add
 
-    member private x.GetTags (col:NormalizedSnapshotSpanCollection) = 
+    member x.GetTags (col:NormalizedSnapshotSpanCollection) = 
         match _currentMatch with
         | Some(currentMatch) -> 
             let tag = TextMarkerTag(Constants.HighlightIncrementalSearchTagName)

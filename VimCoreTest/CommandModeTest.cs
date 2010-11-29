@@ -68,7 +68,7 @@ namespace VimCore.Test
         [Test]
         public void StatusOnProcess()
         {
-            _processor.Setup(x => x.RunCommand(MatchUtil.CreateForCharList("1"))).Verifiable();
+            _processor.Setup(x => x.RunCommand(MatchUtil.CreateForCharList("1"))).Returns(RunResult.Completed).Verifiable();
             _mode.Process("1");
             _mode.Process(KeyInputUtil.VimKeyToKeyInput(VimKey.Enter));
             _factory.Verify();
@@ -77,10 +77,10 @@ namespace VimCore.Test
         [Test, Description("Ensure multiple commands can be processed")]
         public void DoubleCommand1()
         {
-            _processor.Setup(x => x.RunCommand(MatchUtil.CreateForCharList("2"))).Verifiable();
+            _processor.Setup(x => x.RunCommand(MatchUtil.CreateForCharList("2"))).Returns(RunResult.Completed).Verifiable();
             ProcessWithEnter("2");
             _factory.Verify();
-            _processor.Setup(x => x.RunCommand(MatchUtil.CreateForCharList("3"))).Verifiable();
+            _processor.Setup(x => x.RunCommand(MatchUtil.CreateForCharList("3"))).Returns(RunResult.Completed).Verifiable();
             ProcessWithEnter("3");
             _factory.Verify();
         }
@@ -95,7 +95,7 @@ namespace VimCore.Test
         [Test]
         public void Input2()
         {
-            _processor.Setup(x => x.RunCommand(MatchUtil.CreateForCharList("foo"))).Verifiable();
+            _processor.Setup(x => x.RunCommand(MatchUtil.CreateForCharList("foo"))).Returns(RunResult.Completed).Verifiable();
             ProcessWithEnter("foo");
             _factory.Verify();
             Assert.AreEqual(String.Empty, _modeRaw.Command);
@@ -174,6 +174,7 @@ namespace VimCore.Test
             _mode.OnEnter(ModeArgument.FromVisual);
             _processor
                 .Setup(x => x.RunCommand(MatchUtil.CreateForCharList(CommandMode.FromVisualModeString)))
+                .Returns(RunResult.Completed)
                 .Verifiable();
             _mode.Process(VimKey.Enter);
             _factory.Verify();
@@ -186,6 +187,7 @@ namespace VimCore.Test
             _mode.Process('a');
             _processor
                 .Setup(x => x.RunCommand(MatchUtil.CreateForCharList(CommandMode.FromVisualModeString + "a")))
+                .Returns(RunResult.Completed)
                 .Verifiable();
             _mode.Process(VimKey.Enter);
             _factory.Verify();
@@ -194,7 +196,7 @@ namespace VimCore.Test
         [Test]
         public void ClearSelectionOnComplete1()
         {
-            _processor.Setup(x => x.RunCommand(It.IsAny<FSharpList<char>>())).Verifiable();
+            _processor.Setup(x => x.RunCommand(It.IsAny<FSharpList<char>>())).Returns(RunResult.Completed).Verifiable();
             _selection.Setup(x => x.IsEmpty).Returns(true).Verifiable();
             _mode.Process(VimKey.Enter);
             _factory.Verify();
@@ -204,7 +206,7 @@ namespace VimCore.Test
         public void ClearSelectionOnComplete2()
         {
             _textView.Setup(x => x.IsClosed).Returns(false).Verifiable();
-            _processor.Setup(x => x.RunCommand(It.IsAny<FSharpList<char>>())).Verifiable();
+            _processor.Setup(x => x.RunCommand(It.IsAny<FSharpList<char>>())).Returns(RunResult.Completed).Verifiable();
             _selection.Setup(x => x.IsEmpty).Returns(false).Verifiable();
             _selection.Setup(x => x.Clear()).Verifiable();
             _mode.Process(VimKey.Enter);

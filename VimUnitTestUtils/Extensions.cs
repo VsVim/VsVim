@@ -188,6 +188,16 @@ namespace Vim.UnitTest
 
         #endregion
 
+        #region RunResult
+
+        public static RunResult.SubstituteConfirm AsSubstituteConfirm(this RunResult result)
+        {
+            Assert.IsTrue(result.IsSubstituteConfirm);
+            return (RunResult.SubstituteConfirm)result;
+        }
+
+        #endregion
+
         #region IMode
 
         public static bool CanProcess(this IMode mode, VimKey key)
