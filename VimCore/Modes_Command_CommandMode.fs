@@ -79,13 +79,10 @@ type internal CommandMode
                 | ModeArgument.FromVisual -> FromVisualModeString
                 | ModeArgument.Subsitute(_) -> StringUtil.empty
             _input <- _command |> Seq.map KeyInputUtil.CharToKeyInput |> List.ofSeq |> List.rev
-            _data.TextView.Caret.IsHidden <- true
-        member x.OnLeave () = 
-            _data.TextView.Caret.IsHidden <- false
+        member x.OnLeave () = ()
         member x.OnClose() = ()
 
         member x.RunCommand command = 
             _processor.RunCommand (command |> List.ofSeq)
-            
 
 

@@ -190,10 +190,8 @@ type internal SubstituteConfirmMode
                         let data = { Regex=regex; SubstituteText=data.Substitute; CurrentMatch =span; LastLineNumber=range.EndLineNumber; IsReplaceAll=isReplaceAll}
                         Some data
 
-            _buffer.TextView.Caret.IsHidden <- true
         member x.OnLeave () = 
             this.ConfirmData <- None
-            _buffer.TextView.Caret.IsHidden <- false
 
         [<CLIEvent>]
         member x.CurrentMatchChanged = _currentMatchChanged.Publish

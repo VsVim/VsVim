@@ -30,7 +30,6 @@ namespace VimCore.Test
             _textBuffer = EditorUtil.CreateBuffer(lines);
             _factory = new MockRepository(MockBehavior.Strict);
             _textCaret = _factory.Create<ITextCaret>();
-            _textCaret.SetupProperty(x => x.IsHidden);
             _textView = MockObjectFactory.CreateTextView(buffer: _textBuffer, caret: _textCaret.Object, factory: _factory);
             _buffer = MockObjectFactory.CreateVimBuffer(view: _textView.Object, factory: _factory);
             _operations = _factory.Create<ICommonOperations>();
@@ -77,7 +76,6 @@ namespace VimCore.Test
             _mode.OnEnter(ModeArgument.None);
             Assert.IsTrue(_mode.CurrentMatch.IsNone());
             Assert.IsTrue(_mode.CurrentSubstitute.IsNone());
-            Assert.IsTrue(_textCaret.Object.IsHidden);
         }
 
         [Test]
@@ -86,7 +84,6 @@ namespace VimCore.Test
             Create("cat", "dog", "rabbit", "tree");
             _mode.OnEnter(VimUtil.CreateSubstituteArgument(_textBuffer.GetLine(0).Extent, "a", "b"));
             Assert.AreEqual(_textBuffer.GetLine(0).Extent, _mode.CurrentMatch.Value);
-            Assert.IsTrue(_textCaret.Object.IsHidden);
         }
 
         [Test]

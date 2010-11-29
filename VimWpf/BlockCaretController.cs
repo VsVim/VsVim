@@ -92,6 +92,7 @@ namespace Vim.UI.Wpf
                     kind = CaretDisplay.Block;
                     break;
                 case ModeKind.Command:
+                case ModeKind.SubstituteConfirm:
                     kind = CaretDisplay.Invisible;
                     break;
                 case ModeKind.Insert:

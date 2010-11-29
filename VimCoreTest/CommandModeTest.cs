@@ -141,20 +141,6 @@ namespace VimCore.Test
         }
 
         [Test]
-        public void Cursor1()
-        {
-            _mode.OnEnter(ModeArgument.None);
-            Assert.IsTrue(_textView.Object.Caret.IsHidden);
-        }
-
-        [Test]
-        public void Cursor2()
-        {
-            _mode.OnLeave();
-            Assert.IsFalse(_textView.Object.Caret.IsHidden);
-        }
-
-        [Test]
         public void OnEnter1()
         {
             _mode.OnEnter(ModeArgument.None);
