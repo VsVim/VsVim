@@ -69,6 +69,11 @@ type internal SubstituteConfirmMode
             _confirmData <- value
             _currentMatchChanged.Trigger this.CurrentMatch
 
+            // Adjust the caret to the new location
+            match value with 
+            | None -> ()
+            | Some(data) -> _operations.MoveCaretToPoint data.CurrentMatch.Start
+
     member this.CurrentSubstitute =
         match _confirmData with
         | None -> None
