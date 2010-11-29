@@ -77,7 +77,7 @@ module internal CommandParseUtil =
             found left right rest
     
 
-type CommandAction = char list -> SnapshotLineRange option -> bool -> unit
+type CommandAction = char list -> SnapshotLineRange option -> bool -> RunResult
 
 /// Type which is responsible for executing command mode commands
 type internal CommandProcessor 
@@ -97,34 +97,41 @@ type internal CommandProcessor
     let mutable _commandList : (string * string * CommandAction) list = List.empty
 
     do
+
+        // Wrap a unit returning command into one that returns a Complete result
+        let wrap func = 
+            fun rest range bang -> 
+                func rest range bang
+                RunResult.Completed
+
         let normalSeq = seq {
-            yield ("<", "", this.ProcessShiftLeft)
-            yield (">", "", this.ProcessShiftRight)
-            yield ("close", "clo", this.ProcessClose)
-            yield ("delete","d", this.ProcessDelete)
-            yield ("edit", "e", this.ProcessEdit)
-            yield ("fold", "fo", this.ProcessFold)
-            yield ("join", "j", this.ProcessJoin)
-            yield ("make", "mak", this.ProcessMake)
-            yield ("marks", "", this.ProcessMarks)
-            yield ("put", "pu", this.ProcessPut)
-            yield ("quit", "q", this.ProcessQuit)
-            yield ("qall", "qa", this.ProcessQuitAll)
-            yield ("redo", "red", this.ProcessRedo)
-            yield ("set", "se", this.ProcessSet)
-            yield ("source","so", this.ProcessSource)
-            yield ("split", "sp", this.ProcessSplit)
+            yield ("<", "", this.ProcessShiftLeft |> wrap)
+            yield (">", "", this.ProcessShiftRight |> wrap)
+            yield ("close", "clo", this.ProcessClose |> wrap)
+            yield ("delete","d", this.ProcessDelete |> wrap)
+            yield ("edit", "e", this.ProcessEdit |> wrap)
+            yield ("fold", "fo", this.ProcessFold |> wrap)
+            yield ("join", "j", this.ProcessJoin |> wrap)
+            yield ("make", "mak", this.ProcessMake |> wrap)
+            yield ("marks", "", this.ProcessMarks |> wrap)
+            yield ("put", "pu", this.ProcessPut |> wrap)
+            yield ("quit", "q", this.ProcessQuit |> wrap)
+            yield ("qall", "qa", this.ProcessQuitAll |> wrap)
+            yield ("redo", "red", this.ProcessRedo |> wrap)
+            yield ("set", "se", this.ProcessSet |> wrap)
+            yield ("source","so", this.ProcessSource |> wrap)
+            yield ("split", "sp", this.ProcessSplit |> wrap)
             yield ("substitute", "s", this.ProcessSubstitute)
             yield ("smagic", "sm", this.ProcessSubstituteMagic)
             yield ("snomagic", "sno", this.ProcessSubstituteNomagic)
-            yield ("tabnext", "tabn", this.ProcessTabNext)
-            yield ("tabprevious", "tabp", this.ProcessTabPrevious)
-            yield ("tabNext", "tabN", this.ProcessTabPrevious)
-            yield ("undo", "u", this.ProcessUndo)
-            yield ("write","w", this.ProcessWrite)
-            yield ("wall", "wa", this.ProcessWriteAll)
-            yield ("yank", "y", this.ProcessYank)
-            yield ("$", "", fun _ _ _ -> _operations.EditorOperations.MoveToEndOfDocument(false))
+            yield ("tabnext", "tabn", this.ProcessTabNext |> wrap)
+            yield ("tabprevious", "tabp", this.ProcessTabPrevious |> wrap)
+            yield ("tabNext", "tabN", this.ProcessTabPrevious |> wrap)
+            yield ("undo", "u", this.ProcessUndo |> wrap)
+            yield ("write","w", this.ProcessWrite |> wrap)
+            yield ("wall", "wa", this.ProcessWriteAll |> wrap)
+            yield ("yank", "y", this.ProcessYank |> wrap)
+            yield ("$", "", this.ProcessEndOfDocument |> wrap)
             yield ("&", "&", this.ProcessSubstitute)
             yield ("~", "~", this.ProcessSubstituteWithSearchPattern)
         }
@@ -141,7 +148,9 @@ type internal CommandProcessor
         }
         let mapClearSeq = 
             mapClearSeq 
-            |> Seq.map (fun (name,short,modes) -> (name, short, fun _ _ hasBang -> this.ProcessKeyMapClear modes hasBang))
+            |> Seq.map (fun (name,short,modes) -> (name, short, fun _ _ hasBang -> 
+                this.ProcessKeyMapClear modes hasBang
+                RunResult.Completed))
 
 
         let unmapSeq = seq {
@@ -157,7 +166,9 @@ type internal CommandProcessor
         }
         let unmapSeq= 
             unmapSeq
-            |> Seq.map (fun (name,short, modes) -> (name,short,(fun rest _ hasBang -> this.ProcessKeyUnmap name modes hasBang rest)))
+            |> Seq.map (fun (name,short, modes) -> (name,short,(fun rest _ hasBang -> 
+                this.ProcessKeyUnmap name modes hasBang rest
+                RunResult.Completed)))
 
         let remapSeq = seq {
             yield ("map", "", true, [KeyRemapMode.Normal;KeyRemapMode.Visual; KeyRemapMode.Select;KeyRemapMode.OperatorPending])
@@ -182,7 +193,9 @@ type internal CommandProcessor
 
         let remapSeq = 
             remapSeq 
-            |> Seq.map (fun (name,short,allowRemap,modes) -> (name,short,(fun rest _ hasBang -> this.ProcessKeyMap name allowRemap modes hasBang rest)))
+            |> Seq.map (fun (name,short,allowRemap,modes) -> (name,short,(fun rest _ hasBang -> 
+                this.ProcessKeyMap name allowRemap modes hasBang rest
+                RunResult.Completed)))
 
         _commandList <- 
             normalSeq 
@@ -202,13 +215,15 @@ type internal CommandProcessor
 
 #endif
 
-    member private x.BadMessage = Resources.CommandMode_CannotRun _command
+    member x.BadMessage = Resources.CommandMode_CannotRun _command
+
+    member x.ProcessEndOfDocument _ _ _ = _operations.EditorOperations.MoveToEndOfDocument(false)
 
     /// Process the :close command
-    member private x.ProcessClose _ _ hasBang = _buffer.Vim.VimHost.CloseView _buffer.TextView (not hasBang)
+    member x.ProcessClose _ _ hasBang = _buffer.Vim.VimHost.CloseView _buffer.TextView (not hasBang)
 
     /// Process the :join command
-    member private x.ProcessJoin (rest:char list) (range:SnapshotLineRange option) hasBang =
+    member x.ProcessJoin (rest:char list) (range:SnapshotLineRange option) hasBang =
         let kind = if hasBang then JoinKind.KeepEmptySpaces else JoinKind.RemoveEmptySpaces
         let rest = CommandParseUtil.SkipWhitespace rest
         let count,rest = RangeUtil.ParseNumber rest
@@ -225,7 +240,7 @@ type internal CommandProcessor
         _operations.Join range kind
 
     /// Parse out the :edit commnad
-    member private x.ProcessEdit (rest:char list) _ hasBang = 
+    member x.ProcessEdit (rest:char list) _ hasBang = 
         let name = 
             rest 
                 |> CommandParseUtil.SkipWhitespace
@@ -234,12 +249,12 @@ type internal CommandProcessor
         else _operations.EditFile name
 
     /// Parse out the fold command and create the fold
-    member private x.ProcessFold _ (range : SnapshotLineRange option) _ =
+    member x.ProcessFold _ (range : SnapshotLineRange option) _ =
         let range = RangeUtil.RangeOrCurrentLine _buffer.TextView range
         _operations.FoldManager.CreateFold range.ExtentIncludingLineBreak
 
     /// Parse out the Yank command
-    member private x.ProcessYank (rest:char list) (range: SnapshotLineRange option) _ =
+    member x.ProcessYank (rest:char list) (range: SnapshotLineRange option) _ =
         let reg,rest = rest |> CommandParseUtil.SkipRegister _buffer.RegisterMap
         let count,rest = RangeUtil.ParseNumber rest
 
@@ -255,7 +270,7 @@ type internal CommandProcessor
         _operations.UpdateRegisterForSpan reg RegisterOperation.Yank (range.ExtentIncludingLineBreak) OperationKind.LineWise
 
     /// Parse the Put command
-    member private x.ProcessPut (rest:char list) (range: SnapshotLineRange option) bang =
+    member x.ProcessPut (rest:char list) (range: SnapshotLineRange option) bang =
         let reg,rest = 
             rest
             |> CommandParseUtil.SkipWhitespace
@@ -270,7 +285,7 @@ type internal CommandProcessor
         _operations.Put reg.StringValue line (not bang)
 
     /// Parse the < command
-    member private x.ProcessShiftLeft (rest:char list) (range: SnapshotLineRange option) _ =
+    member x.ProcessShiftLeft (rest:char list) (range: SnapshotLineRange option) _ =
         let count,rest =  rest  |> RangeUtil.ParseNumber
         let range = 
             range
@@ -278,7 +293,7 @@ type internal CommandProcessor
             |> RangeUtil.TryApplyCount count
         _operations.ShiftLineRangeLeft 1 range
 
-    member private x.ProcessShiftRight (rest:char list) (range: SnapshotLineRange option) _ =
+    member x.ProcessShiftRight (rest:char list) (range: SnapshotLineRange option) _ =
         let count,rest = rest |> RangeUtil.ParseNumber
         let range = 
             range
@@ -286,36 +301,36 @@ type internal CommandProcessor
             |> RangeUtil.TryApplyCount count
         _operations.ShiftLineRangeRight 1 range
 
-    member private x.ProcessWrite (rest:char list) _ _ = 
+    member x.ProcessWrite (rest:char list) _ _ = 
         let name = rest |> StringUtil.ofCharSeq 
         let name = name.Trim()
         if StringUtil.isNullOrEmpty name then _operations.Save()
         else _operations.SaveAs name
 
-    member private x.ProcessWriteAll _ _ _ = 
+    member x.ProcessWriteAll _ _ _ = 
         _operations.SaveAll()
 
-    member private x.ProcessQuit _ _ hasBang = _buffer.Vim.VimHost.CloseView _buffer.TextView (not hasBang)
+    member x.ProcessQuit _ _ hasBang = _buffer.Vim.VimHost.CloseView _buffer.TextView (not hasBang)
 
-    member private x.ProcessQuitAll _ _ hasBang =
+    member x.ProcessQuitAll _ _ hasBang =
         let checkDirty = not hasBang
         _operations.CloseAll checkDirty
 
-    member private x.ProcessTabNext rest _ _ =
+    member x.ProcessTabNext rest _ _ =
         let count,rest = RangeUtil.ParseNumber rest
         let count = match count with | Some(c) -> c | None -> 1
         _operations.GoToNextTab count
 
-    member private x.ProcessTabPrevious rest _ _ =
+    member x.ProcessTabPrevious rest _ _ =
         let count,rest = RangeUtil.ParseNumber rest
         let count = match count with | Some(c) -> c | None -> 1
         _operations.GoToPreviousTab count
 
-    member private x.ProcessMake _ _ bang =
+    member x.ProcessMake _ _ bang =
         _buffer.Vim.VimHost.BuildSolution()
 
     /// Implements the :delete command
-    member private x.ProcessDelete (rest:char list) (range:SnapshotLineRange option) _ =
+    member x.ProcessDelete (rest:char list) (range:SnapshotLineRange option) _ =
         let reg,rest = rest |> CommandParseUtil.SkipRegister _buffer.RegisterMap
         let count,rest = rest |> CommandParseUtil.SkipWhitespace |> RangeUtil.ParseNumber
         let range = 
@@ -327,23 +342,23 @@ type internal CommandProcessor
         _operations.DeleteSpan span 
         _operations.UpdateRegisterForSpan reg RegisterOperation.Delete span OperationKind.LineWise
 
-    member private x.ProcessUndo rest _ _ =
+    member x.ProcessUndo rest _ _ =
         match Seq.isEmpty rest with
         | true -> _operations.Undo 1
         | false -> _statusUtil.OnError x.BadMessage
 
-    member private x.ProcessRedo rest _ _ =
+    member x.ProcessRedo rest _ _ =
         match Seq.isEmpty rest with
         | true -> _operations.Redo 1
         | false -> _statusUtil.OnError x.BadMessage
 
-    member private x.ProcessMarks rest _ _ =
+    member x.ProcessMarks rest _ _ =
         match Seq.isEmpty rest with
         | true -> _operations.PrintMarks _buffer.MarkMap
         | false -> _statusUtil.OnError x.BadMessage
 
     /// Parse out the :set command
-    member private x.ProcessSet (rest:char list) _ _=
+    member x.ProcessSet (rest:char list) _ _=
         let rest,data = rest |> CommandParseUtil.SkipNonWhitespace
         if System.String.IsNullOrEmpty(data) then _operations.PrintModifiedSettings()
         else
@@ -359,7 +374,7 @@ type internal CommandProcessor
             | _ -> ()
 
     /// Used to parse out the :source command.  List is pointing past the o in :source
-    member private x.ProcessSource (rest:char list) _ bang =
+    member x.ProcessSource (rest:char list) _ bang =
         let file = rest |> StringUtil.ofCharSeq
         if bang then _statusUtil.OnError Resources.CommandMode_NotSupported_SourceNormal
         else
@@ -368,30 +383,30 @@ type internal CommandProcessor
             | Some(lines) ->
                 lines 
                 |> Seq.map (fun command -> command |> List.ofSeq)
-                |> Seq.iter x.RunCommand
+                |> Seq.iter (fun input -> x.RunCommand input |> ignore)
 
     /// Split the given view into 2
-    member private x.ProcessSplit _ _ _ =
+    member x.ProcessSplit _ _ _ =
         _buffer.Vim.VimHost.SplitView _buffer.TextView
 
     /// Process the :substitute and :& command. 
-    member private x.ProcessSubstitute rest range _ = 
+    member x.ProcessSubstitute rest range _ = 
         x.ProcessSubstituteCore rest range SubstituteFlags.None
 
     /// Process the :smagic command
-    member private x.ProcessSubstituteMagic rest range _ = 
+    member x.ProcessSubstituteMagic rest range _ = 
         x.ProcessSubstituteCore rest range SubstituteFlags.Magic
 
     /// Process the :snomagic command
-    member private x.ProcessSubstituteNomagic rest range _ = 
+    member x.ProcessSubstituteNomagic rest range _ = 
         x.ProcessSubstituteCore rest range SubstituteFlags.Nomagic
 
     /// Process the :~ command
-    member private x.ProcessSubstituteWithSearchPattern rest range _ = 
+    member x.ProcessSubstituteWithSearchPattern rest range _ = 
         x.ProcessSubstituteCore rest range SubstituteFlags.UsePreviousSearchPattern 
 
     /// Handles the processing of the common parts of the substitute command
-    member private x.ProcessSubstituteCore (rest:char list) (range:SnapshotLineRange option) additionalFlags =
+    member x.ProcessSubstituteCore (rest:char list) (range:SnapshotLineRange option) additionalFlags =
 
         // Used to parse out the flags on the :s command.  Will return a tuple of the flags
         // and the remaining char list after parsing the flags
@@ -508,12 +523,17 @@ type internal CommandProcessor
                         else 
                             goodParse search replace range flags ))
 
-            let badParse msg = _statusUtil.OnError msg
+            let badParse msg = 
+                _statusUtil.OnError msg
+                RunResult.Completed
             let goodParse search replace range flags = 
                 if Utils.IsFlagSet flags SubstituteFlags.Confirm then
-                    _statusUtil.OnError Resources.CommandMode_NotSupported_SubstituteConfirm
+                    let data = {SearchPattern=search; Substitute=replace; Flags=flags}
+                    // TODO: actually get the first match
+                    RunResult.SubstituteConfirm (new SnapshotSpan(_buffer.TextSnapshot,0,0), range, data)
                 else
                     _operations.Substitute search replace range flags 
+                    RunResult.Completed
             parseFull rest badParse goodParse    
 
         else
@@ -544,28 +564,29 @@ type internal CommandProcessor
                     match errorMsg with
                     | Some(msg) -> _statusUtil.OnError msg
                     | None -> _operations.Substitute pattern previousData.Substitute range flags
+            RunResult.Completed
 
-    member private x.ProcessKeyMapClear modes hasBang =
+    member x.ProcessKeyMapClear modes hasBang =
         let modes = 
             if hasBang then [KeyRemapMode.Insert; KeyRemapMode.Command]
             else modes
         _operations.ClearKeyMapModes modes
 
-    member private x.ProcessKeyUnmap (name:string) (modes: KeyRemapMode list) (hasBang:bool) (rest: char list) = 
+    member x.ProcessKeyUnmap (name:string) (modes: KeyRemapMode list) (hasBang:bool) (rest: char list) = 
         let modes = 
             if hasBang then [KeyRemapMode.Insert; KeyRemapMode.Command]
             else modes
         let rest,lhs = rest |> CommandParseUtil.SkipNonWhitespace
         _operations.UnmapKeys lhs modes
         
-    member private x.ProcessKeyMap (name:string) (allowRemap:bool) (modes: KeyRemapMode list) (hasBang:bool) (rest: char list) = 
+    member x.ProcessKeyMap (name:string) (allowRemap:bool) (modes: KeyRemapMode list) (hasBang:bool) (rest: char list) = 
         let modes = 
             if hasBang then [KeyRemapMode.Insert; KeyRemapMode.Command]
             else modes
         let withKeys lhs rhs _ = _operations.RemapKeys lhs rhs modes allowRemap 
         CommandParseUtil.ParseKeys rest withKeys (fun() -> _statusUtil.OnError x.BadMessage)
 
-    member private x.ParseCommand (rest:char list) (range:SnapshotLineRange option) = 
+    member x.ParseAndRunCommand (rest:char list) (range:SnapshotLineRange option) =
 
         let isCommandNameChar c = 
             (not (System.Char.IsWhiteSpace(c))) 
@@ -582,7 +603,7 @@ type internal CommandProcessor
 
         // Look for commands with that name
         let command =
-            
+
             // First look for the exact match
             let found =
                 _commandList
@@ -602,25 +623,31 @@ type internal CommandProcessor
 
 
         match command with
-        | None -> _statusUtil.OnError x.BadMessage
+        | None -> 
+            _statusUtil.OnError x.BadMessage
+            RunResult.Completed
         | Some(name,shortName,action) ->
             let rest = rest |> ListUtil.skip commandName.Length 
             let hasBang,rest = rest |> CommandParseUtil.SkipBang
             let rest = rest |> CommandParseUtil.SkipWhitespace
             action rest range hasBang
-    
-    member private x.ParseInput (originalInputs :char list) =
-        let withRange (range:SnapshotLineRange option) (inputs:char list) = x.ParseCommand inputs range
+
+    member x.ParseAndRunInput (originalInputs :char list) =
+        let withRange (range:SnapshotLineRange option) (inputs:char list) = x.ParseAndRunCommand inputs range
         let point = TextViewUtil.GetCaretPoint _buffer.TextView
         match RangeUtil.ParseRange point _buffer.MarkMap originalInputs with
         | ParseRangeResult.Succeeded(range, inputs) -> 
             if inputs |> List.isEmpty then
                 if range.Count = 1 then  _operations.EditorOperations.GotoLine(range.StartLineNumber) |> ignore
                 else _statusUtil.OnError("Invalid Command String")
+                RunResult.Completed
             else
                 withRange (Some(range)) inputs
-        | NoRange -> withRange None originalInputs
-        | ParseRangeResult.Failed(msg) -> _statusUtil.OnError msg
+        | NoRange -> 
+            withRange None originalInputs
+        | ParseRangeResult.Failed(msg) -> 
+            _statusUtil.OnError msg
+            RunResult.Completed
 
     /// Run the specified command.  This funtion can be called recursively
     member x.RunCommand (input: char list)=
@@ -634,7 +661,7 @@ type internal CommandProcessor
                 | _ -> input
 
             _command <- input |> StringUtil.ofCharSeq
-            x.ParseInput input
+            x.ParseAndRunInput input
         finally
             _command <- prev
 

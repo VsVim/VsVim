@@ -56,5 +56,5 @@ type IOperations =
 type ICommandProcessor =
 
     /// Run the specified command
-    abstract RunCommand : char list -> unit
+    abstract RunCommand : char list -> RunResult
 

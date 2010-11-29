@@ -72,6 +72,7 @@
     <Compile Include="Modes_Command_RangeUtil.fsi" />
     <Compile Include="Modes_Command_RangeUtil.fs" />
     <Compile Include="Modes_Command_DefaultOperations.fs" />
+    <Compile Include="Modes_Command_CommandProcessor.fsi" />
     <Compile Include="Modes_Command_CommandProcessor.fs" />
     <Compile Include="Modes_Command_CommandMode.fsi" />
     <Compile Include="Modes_Command_CommandMode.fs" />
@@ -88,6 +89,8 @@
     <Compile Include="Modes_Visual_SelectionTracker.fs" />
     <Compile Include="Modes_Visual_VisualMode.fsi" />
     <Compile Include="Modes_Visual_VisualMode.fs" />
+    <Compile Include="Modes_SubstituteConfirm_SubstituteConfirmMode.fsi" />
+    <Compile Include="Modes_SubstituteConfirm_SubstituteConfirmMode.fs" />
     <Compile Include="SelectionChangeTracker.fsi" />
     <Compile Include="SelectionChangeTracker.fs" />
     <Compile Include="FoldManager.fs" />

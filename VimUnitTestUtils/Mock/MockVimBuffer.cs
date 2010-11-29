@@ -22,6 +22,7 @@ namespace Vim.UnitTest.Mock
         public IVisualMode VisualLineModeImpl;
         public ICommandMode CommandModeImpl;
         public IDisabledMode DisabledModeImpl;
+        public ISubstituteConfirmMode SubstituteConfirmModeImpl;
         public IMode InsertModeImpl;
         public IMode ReplaceModeImpl;
         public bool IsProcessingInputImpl;
@@ -283,6 +284,11 @@ namespace Vim.UnitTest.Mock
         public IVimData VimData
         {
             get { return VimDataImpl; }
+        }
+
+        public ISubstituteConfirmMode SubstituteConfirmMode
+        {
+            get { return SubstituteConfirmModeImpl; }
         }
     }
 }

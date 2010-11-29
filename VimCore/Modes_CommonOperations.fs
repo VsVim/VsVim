@@ -665,20 +665,7 @@ type internal CommonOperations ( _data : OperationsData ) =
                     edit.Cancel()
                     _statusUtil.OnError (Resources.Common_PatternNotFound pattern)
 
-            // Get the case options
-            let options = 
-                if Utils.IsFlagSet flags SubstituteFlags.IgnoreCase then VimRegexOptions.IgnoreCase
-                elif Utils.IsFlagSet flags SubstituteFlags.OrdinalCase then VimRegexOptions.OrdinalCase 
-                else VimRegexOptions.None
-
-            // Get the magic options
-            let options = 
-                if Utils.IsFlagSet flags SubstituteFlags.Magic then options ||| VimRegexOptions.Magic
-                elif Utils.IsFlagSet flags SubstituteFlags.Nomagic then options ||| VimRegexOptions.NoMagic
-                else options
-
-            let options = VimRegexOptions.Compiled ||| options
-            match _regexFactory.CreateWithOptions pattern options with
+            match _regexFactory.CreateForSubstituteFlags pattern flags with
             | None -> _statusUtil.OnError (Resources.Common_PatternNotFound pattern)
             | Some (regex) -> 
                 doReplace regex

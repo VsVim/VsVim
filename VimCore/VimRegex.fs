@@ -155,6 +155,23 @@ type VimRegexFactory
             | None -> None
             | Some(regex) -> VimRegex(text, pattern, regex) |> Some
 
+    member x.CreateForSubstituteFlags pattern (flags:SubstituteFlags) =
+
+        // Get the case options
+        let options = 
+            if Utils.IsFlagSet flags SubstituteFlags.IgnoreCase then VimRegexOptions.IgnoreCase
+            elif Utils.IsFlagSet flags SubstituteFlags.OrdinalCase then VimRegexOptions.OrdinalCase 
+            else VimRegexOptions.None
+
+        // Get the magic options
+        let options = 
+            if Utils.IsFlagSet flags SubstituteFlags.Magic then options ||| VimRegexOptions.Magic
+            elif Utils.IsFlagSet flags SubstituteFlags.Nomagic then options ||| VimRegexOptions.NoMagic
+            else options
+
+        let options = VimRegexOptions.Compiled ||| options
+        x.CreateWithOptions pattern options 
+
     member x.CreateWithOptions pattern options = 
         let kind = if _settings.Magic then MagicKind.Magic else MagicKind.NoMagic
         let kind = 

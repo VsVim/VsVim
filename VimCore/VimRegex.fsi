@@ -60,4 +60,6 @@ type VimRegexFactory =
 
     member CreateForSearchText : text:SearchText -> VimRegex option
 
+    member CreateForSubstituteFlags : pattern:string -> SubstituteFlags -> VimRegex option
+
     member CreateWithOptions : pattern:string -> options:VimRegexOptions -> VimRegex option

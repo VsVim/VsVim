@@ -115,10 +115,11 @@ type internal VimBufferFactory
         // Normal mode values
         let modeList = 
             [
-                ((Modes.Normal.NormalMode(buffer, normalOpts, normalIncrementalSearch,statusUtil,broker, createCommandRunner(),capture, _visualSpanCalculator)) :> IMode);
-                ((Modes.Command.CommandMode(buffer, commandProcessor)) :> IMode);
-                ((Modes.Insert.InsertMode(buffer, commonOperations, broker, editOptions,false)) :> IMode);
-                ((Modes.Insert.InsertMode(buffer, commonOperations, broker, editOptions,true)) :> IMode);
+                ((Modes.Normal.NormalMode(buffer, normalOpts, normalIncrementalSearch,statusUtil,broker, createCommandRunner(),capture, _visualSpanCalculator)) :> IMode)
+                ((Modes.Command.CommandMode(buffer, commandProcessor)) :> IMode)
+                ((Modes.Insert.InsertMode(buffer, commonOperations, broker, editOptions,false)) :> IMode)
+                ((Modes.Insert.InsertMode(buffer, commonOperations, broker, editOptions,true)) :> IMode)
+                ((Modes.SubstituteConfirm.SubstituteConfirmMode(buffer, commonOperations) :> IMode))
                 (DisabledMode(buffer) :> IMode);
             ] @ visualModeList
         modeList |> List.iter (fun m -> bufferRaw.AddMode m)
@@ -253,7 +254,7 @@ type internal Vim
             let view = createViewFunc()
             let buffer = vim.GetOrCreateBuffer view
             let mode = buffer.CommandMode
-            lines |> Seq.iter mode.RunCommand
+            lines |> Seq.iter (fun input -> mode.RunCommand input |> ignore)
             view.Close()
             true
 

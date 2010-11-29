@@ -234,6 +234,7 @@ type ModeKind =
     | VisualLine = 5
     | VisualBlock = 6 
     | Replace = 7
+    | SubstituteConfirm = 8
 
     // Mode when Vim is disabled via the user
     | Disabled = 42
@@ -385,15 +386,54 @@ module KeyInputSetUtil =
 
     let ofChar c = c |> KeyInputUtil.CharToKeyInput |> OneKeyInput
 
+/// Flags for the substitute command
+[<System.Flags>]
+type SubstituteFlags = 
+    | None = 0
+    /// Replace all occurances on the line
+    | ReplaceAll = 0x1
+    /// Ignore case for the search pattern
+    | IgnoreCase = 0x2
+    /// Report only 
+    | ReportOnly = 0x4
+    | Confirm = 0x8
+    | UsePreviousFlags = 0x10
+    | UsePreviousSearchPattern = 0x20
+    | SuppressError = 0x40
+    | OrdinalCase = 0x80
+    | Magic = 0x100
+    | Nomagic = 0x200
+
+    /// The p option.  Print the last replaced line
+    | PrintLast = 0x400
+
+    /// The # option.  Print the last replaced line with the line number prepended
+    | PrintLastWithNumber = 0x800
+
+    /// Print the last line as if :list was used
+    | PrintLastWithList = 0x1000
+
+type SubstituteData = {
+    SearchPattern : string
+    Substitute : string
+    Flags : SubstituteFlags
+}
+
 [<RequireQualifiedAccess>]
 type ModeArgument =
     | None
+
     /// Used for transitions from Visual Mode directly to Command mode
     | FromVisual 
+
     /// When the given mode is to execute a single command then return to 
     /// the previous mode.  The provided mode kind is the value which needs
     /// to be switched to upon completion of the command
     | OneTimeCommand of ModeKind
+
+    /// Passeing the substitute to confirm to Confirm mode.  The SnapshotSpan is the first
+    /// match to process and the range is the full range to consider for a replace
+    | Subsitute of SnapshotSpan * SnapshotLineRange * SubstituteData
 
 type ModeSwitch =
     | NoSwitch
@@ -411,6 +451,11 @@ type LongCommandResult =
     | Finished of CommandResult
     | Cancelled
     | NeedMoreInput of (KeyInput -> LongCommandResult)
+
+[<RequireQualifiedAccess>]
+type RunResult = 
+    | Completed
+    | SubstituteConfirm of SnapshotSpan * SnapshotLineRange * SubstituteData
 
 [<RequireQualifiedAccess>]
 type VisualSpan =
@@ -951,39 +996,6 @@ module LocalSettingNames =
     let ScrollName = "scroll"
     let QuoteEscapeName = "quoteescape"
 
-/// Flags for the substitute command
-[<System.Flags>]
-type SubstituteFlags = 
-    | None = 0
-    /// Replace all occurances on the line
-    | ReplaceAll = 0x1
-    /// Ignore case for the search pattern
-    | IgnoreCase = 0x2
-    /// Report only 
-    | ReportOnly = 0x4
-    | Confirm = 0x8
-    | UsePreviousFlags = 0x10
-    | UsePreviousSearchPattern = 0x20
-    | SuppressError = 0x40
-    | OrdinalCase = 0x80
-    | Magic = 0x100
-    | Nomagic = 0x200
-
-    /// The p option.  Print the last replaced line
-    | PrintLast = 0x400
-
-    /// The # option.  Print the last replaced line with the line number prepended
-    | PrintLastWithNumber = 0x800
-
-    /// Print the last line as if :list was used
-    | PrintLastWithList = 0x1000
-
-type SubstituteData = {
-    SearchPattern : string
-    Substitute : string
-    Flags : SubstituteFlags
-}
-
 /// Holds mutable data available to all buffers
 type IVimData = 
 
@@ -1189,6 +1201,7 @@ and IVimBuffer =
     abstract VisualCharacterMode : IVisualMode
     abstract InsertMode : IMode
     abstract ReplaceMode : IMode
+    abstract SubstituteConfirmMode : ISubstituteConfirmMode
 
     /// Sequence of available Modes
     abstract AllModes : seq<IMode>
@@ -1323,7 +1336,7 @@ and ICommandMode =
     abstract Command : string
 
     /// Run the specified command
-    abstract RunCommand : string -> unit
+    abstract RunCommand : string -> RunResult
 
     inherit IMode
 
@@ -1349,6 +1362,10 @@ and IDisabledMode =
     abstract HelpMessage : string 
 
     inherit IMode
+
+and ISubstituteConfirmMode =
+
+    inherit IMode 
 
 and IChangeTracker =
     

@@ -3,10 +3,10 @@
 namespace Vim
 open Microsoft.VisualStudio.Text.Editor
 
-type internal RunResult = 
+type internal RunCommandResult = 
     | RanCommand of CommandRunData * CommandResult
     | CancelledCommand
-    | NeedMore of (KeyInput -> RunResult)
+    | NeedMore of (KeyInput -> RunCommandResult)
     | NoMatchingCommand
 
 type internal CommandData = {
@@ -48,7 +48,7 @@ type internal CommandRunner
     let mutable _data = _emptyData
 
     /// The current function which handles running input
-    let mutable _runFunc : KeyInput -> RunResult = fun _ -> RunResult.CancelledCommand
+    let mutable _runFunc : KeyInput -> RunCommandResult = fun _ -> RunCommandResult.CancelledCommand
 
     /// True during the running of a particular KeyInput 
     let mutable _inRun = false
@@ -212,7 +212,7 @@ type internal CommandRunner
             | None -> 
                 // At this point we need to see if there will ever be a command given the 
                 // current starting point with respect to characters
-                if findPrefixMatches commandName |> Seq.isEmpty then RunResult.NoMatchingCommand
+                if findPrefixMatches commandName |> Seq.isEmpty then RunCommandResult.NoMatchingCommand
                 else NeedMore x.WaitForCommand
                 
     /// Starting point for processing input 
@@ -242,16 +242,16 @@ type internal CommandRunner
             try
 
                 match _runFunc ki with
-                | RunResult.NeedMore(func) -> 
+                | RunCommandResult.NeedMore(func) -> 
                     _runFunc <- func
                     RunKeyInputResult.NeedMoreKeyInput
-                | RunResult.CancelledCommand -> 
+                | RunCommandResult.CancelledCommand -> 
                     x.ResetState()
                     RunKeyInputResult.CommandCancelled
-                | RunResult.NoMatchingCommand ->
+                | RunCommandResult.NoMatchingCommand ->
                     x.ResetState()
                     RunKeyInputResult.NoMatchingCommand
-                | RunResult.RanCommand(data,result) -> 
+                | RunCommandResult.RanCommand(data,result) -> 
                     x.ResetState()
                     _commandRanEvent.Trigger (data,result)
                     match result with

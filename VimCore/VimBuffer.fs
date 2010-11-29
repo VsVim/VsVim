@@ -73,6 +73,7 @@ type internal VimBuffer
     member x.CommandMode = _modeMap.GetMode ModeKind.Command :?> ICommandMode
     member x.InsertMode = _modeMap.GetMode ModeKind.Insert 
     member x.ReplaceMode = _modeMap.GetMode ModeKind.Replace
+    member x.SubstituteConfirmMode = _modeMap.GetMode ModeKind.SubstituteConfirm :?> ISubstituteConfirmMode
     member x.DisabledMode = _modeMap.GetMode ModeKind.Disabled :?> IDisabledMode
 
     /// Current KeyRemapMode which should be used when calculating keyboard mappings
@@ -206,6 +207,7 @@ type internal VimBuffer
         member x.CommandMode = x.CommandMode
         member x.InsertMode = x.InsertMode
         member x.ReplaceMode = x.ReplaceMode
+        member x.SubstituteConfirmMode = x.SubstituteConfirmMode
         member x.DisabledMode = x.DisabledMode
         member x.AllModes = _modeMap.Modes
         member x.Settings = _settings

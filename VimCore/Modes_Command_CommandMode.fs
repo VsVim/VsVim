@@ -46,11 +46,13 @@ type internal CommandMode
             match ki.Key with 
                 | VimKey.Enter ->
                     let command = _input |> List.rev |> Seq.map (fun ki -> ki.Char) |> List.ofSeq
-                    _processor.RunCommand command
+                    let result = _processor.RunCommand command 
                     _input <- List.empty
                     _command <- System.String.Empty
                     maybeClearSelection false
-                    SwitchMode ModeKind.Normal
+                    match result with
+                    | RunResult.Completed -> SwitchMode ModeKind.Normal
+                    | RunResult.SubstituteConfirm (span, range, data) -> SwitchModeWithArgument (ModeKind.SubstituteConfirm, ModeArgument.Subsitute (span, range, data))
                 | VimKey.Escape ->
                     _input <- List.empty
                     _command <- System.String.Empty
@@ -76,6 +78,7 @@ type internal CommandMode
                 | ModeArgument.None -> StringUtil.empty
                 | ModeArgument.OneTimeCommand(_) -> StringUtil.empty
                 | ModeArgument.FromVisual -> FromVisualModeString
+                | ModeArgument.Subsitute(_) -> StringUtil.empty
             _input <- _command |> Seq.map KeyInputUtil.CharToKeyInput |> List.ofSeq |> List.rev
             _data.TextView.Caret.IsHidden <- true
         member x.OnLeave () = 
