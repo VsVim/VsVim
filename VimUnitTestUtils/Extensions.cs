@@ -276,6 +276,16 @@ namespace Vim.UnitTest
             return SnapshotLineRangeUtil.CreateForLineNumberRange(textView.TextSnapshot, startLine, endLine);
         }
 
+        public static ITextSnapshotLine GetLastLine(this ITextView textView)
+        {
+            return textView.TextSnapshot.GetLastLine();
+        }
+
+        public static ITextSnapshotLine GetFirstLine(this ITextView textView)
+        {
+            return textView.TextSnapshot.GetFirstLine();
+        }
+
         public static CaretPosition MoveCaretTo(this ITextView textView, int position)
         {
             return textView.Caret.MoveTo(new SnapshotPoint(textView.TextSnapshot, position));
@@ -346,6 +356,16 @@ namespace Vim.UnitTest
         {
             endLine = endLine >= 0 ? endLine : startLine;
             return SnapshotLineRangeUtil.CreateForLineNumberRange(tss, startLine, endLine);
+        }
+
+        public static ITextSnapshotLine GetFirstLine(this ITextSnapshot tss)
+        {
+            return GetLine(tss, 0);
+        }
+
+        public static ITextSnapshotLine GetLastLine(this ITextSnapshot tss)
+        {
+            return GetLine(tss, tss.LineCount - 1);
         }
 
         public static SnapshotPoint GetPoint(this ITextSnapshot tss, int position)

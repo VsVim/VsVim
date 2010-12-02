@@ -338,5 +338,25 @@ namespace VimCore.Test
             ParseLineRange("1,5-2", 0, 2);
         }
 
+        [Test]
+        public void ParseDollar_MultiLineBuffer()
+        {
+            Create("cat", "tree", "dog");
+            ParseSingleLine("$", 2);
+        }
+
+        [Test]
+        public void ParseDollar_OneLineBuffer()
+        {
+            Create("cat");
+            ParseSingleLine("$", 0);
+        }
+
+        [Test]
+        public void ParseDollar_CurrentToEnd()
+        {
+            Create("cat", "tree", "dog");
+            ParseLineRange(".,$", 0, 2);
+        }
     }
 }

@@ -89,21 +89,19 @@ namespace VimCore.Test
         }
 
         [Test]
-        public void Jump1()
+        public void Jump_LastLine()
         {
             Create("foo", "bar", "baz");
-            var tss = _view.TextSnapshot;
-            var last = tss.LineCount - 1;
-            _editOpts.Setup(x => x.MoveToEndOfDocument(false)).Verifiable();
+            _operations.Setup(x => x.MoveCaretToPoint(_view.GetLastLine().Start)).Verifiable();
             RunCommand("$");
-            _editOpts.Verify();
+            _operations.Verify();
         }
 
         [Test]
-        public void Jump2()
+        public void Jump_LastLineWithVimLineNumber()
         {
             Create("foo", "bar");
-            _editOpts.Setup(x => x.GotoLine(1)).Verifiable();
+            _operations.Setup(x => x.MoveCaretToPoint(_view.GetLastLine().Start)).Verifiable();
             RunCommand("2");
             _editOpts.Verify();
         }

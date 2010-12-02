@@ -658,7 +658,7 @@ type internal CommandProcessor
         match RangeUtil.ParseRange point _buffer.MarkMap originalInputs with
         | ParseRangeResult.Succeeded(range, inputs) -> 
             if inputs |> List.isEmpty then
-                if range.Count = 1 then  _operations.EditorOperations.GotoLine(range.StartLineNumber) |> ignore
+                if range.Count = 1 then range.StartLine |> TssUtil.FindFirstNonWhitespaceCharacter |> _operations.MoveCaretToPoint
                 else _statusUtil.OnError("Invalid Command String")
                 RunResult.Completed
             else

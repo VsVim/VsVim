@@ -93,12 +93,23 @@ namespace VimCore.Test
         }
 
         [Test]
-        public void JumpLineLast()
+        public void JumpLineLastWithNoWhiteSpace()
         {
+            Create("dog", "cat", "tree");
             RunCommand("$");
             var tss = _textView.TextSnapshot;
             var last = tss.GetLineFromLineNumber(tss.LineCount - 1);
-            Assert.AreEqual(last.EndIncludingLineBreak, _textView.Caret.Position.BufferPosition);
+            Assert.AreEqual(last.Start, _textView.GetCaretPoint());
+        }
+
+        [Test]
+        public void JumpLineLastWithWhiteSpace()
+        {
+            Create("dog", "cat", "  tree");
+            RunCommand("$");
+            var tss = _textView.TextSnapshot;
+            var last = tss.GetLineFromLineNumber(tss.LineCount - 1);
+            Assert.AreEqual(last.Start.Add(2), _textView.GetCaretPoint());
         }
 
         [Test]
