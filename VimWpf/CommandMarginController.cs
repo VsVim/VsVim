@@ -104,6 +104,9 @@ namespace Vim.UI.Wpf
                 case ModeKind.VisualLine:
                     _margin.StatusLine = Resources.VisualLineBanner;
                     break;
+                case ModeKind.ExternalEdit:
+                    _margin.StatusLine = Resources.ExternalEditBanner;
+                    break;
                 case ModeKind.Disabled:
                     _margin.StatusLine = _buffer.DisabledMode.HelpMessage;
                     break;

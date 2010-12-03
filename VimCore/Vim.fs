@@ -120,7 +120,8 @@ type internal VimBufferFactory
                 ((Modes.Insert.InsertMode(buffer, commonOperations, broker, editOptions,false)) :> IMode)
                 ((Modes.Insert.InsertMode(buffer, commonOperations, broker, editOptions,true)) :> IMode)
                 ((Modes.SubstituteConfirm.SubstituteConfirmMode(buffer, commonOperations) :> IMode))
-                (DisabledMode(buffer) :> IMode);
+                (DisabledMode(buffer) :> IMode)
+                (ExternalEditMode(buffer) :> IMode)
             ] @ visualModeList
         modeList |> List.iter (fun m -> bufferRaw.AddMode m)
         buffer.SwitchMode ModeKind.Normal ModeArgument.None |> ignore

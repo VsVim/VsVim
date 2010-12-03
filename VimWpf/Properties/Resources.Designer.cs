@@ -61,6 +61,15 @@ namespace Vim.UI.Wpf.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to External edit detected (hit &lt;ESC&gt;to return to Insert mode).
+        /// </summary>
+        internal static string ExternalEditBanner {
+            get {
+                return ResourceManager.GetString("ExternalEditBanner", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to -- INSERT --.
         /// </summary>
         internal static string InsertBanner {

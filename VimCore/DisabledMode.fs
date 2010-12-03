@@ -27,5 +27,4 @@ type internal DisabledMode( _data : IVimBuffer ) =
         member x.OnLeave() = ()
         member x.OnClose() = ()
     
-    
 

@@ -123,6 +123,9 @@
     <Compile Include="EditCommand.cs" />
     <Compile Include="CommandKeyBinding.cs" />
     <Compile Include="EditCommandKind.cs" />
+    <Compile Include="ExternalEdit\ExternalEditMarker.cs" />
+    <Compile Include="ExternalEdit\ExternalEditKind.cs" />
+    <Compile Include="ExternalEdit\ExternalEditManager.cs" />
     <Compile Include="Implementation\TextManager.cs" />
     <Compile Include="Implementation\VsAdapter.cs" />
     <Compile Include="ITextManager.cs" />
@@ -150,6 +153,7 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
+    <Compile Include="Result.cs" />
     <Compile Include="Settings\CommandBindingSetting.cs" />
     <Compile Include="Settings\Settings.cs" />
     <Compile Include="Settings\Settings.Designer.cs">

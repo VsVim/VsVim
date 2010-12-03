@@ -8,9 +8,12 @@ using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Editor;
 using Microsoft.VisualStudio.Shell.Interop;
+using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.TextManager.Interop;
 using Microsoft.VisualStudio.Utilities;
+using Vim;
+using Vim.Extensions;
 
 namespace VsVim
 {
@@ -159,6 +162,32 @@ namespace VsVim
             }
         }
 
+        public static Result<IVsEnumLineMarkers> GetLineMarkersEnum(this IVsTextLines lines, TextSpan span)
+        {
+            IVsEnumLineMarkers markers;
+            var hresult = lines.EnumMarkers(span.iStartLine, span.iStartIndex, span.iEndLine, span.iEndIndex, 0, (uint)ENUMMARKERFLAGS.EM_ALLTYPES, out markers);
+            return Result.CreateValueOrError(markers, hresult);
+        }
+
+        public static List<IVsTextLineMarker> GetLineMarkers(this IVsTextLines lines, TextSpan span)
+        {
+            var markers = GetLineMarkersEnum(lines, span);
+            return markers.IsValue
+                ? markers.Value.GetAll()
+                : new List<IVsTextLineMarker>();
+        }
+
+        #endregion
+
+        #region IVsTextView
+
+        public static Result<IVsTextLines> GetTextLines(this IVsTextView textView)
+        {
+            IVsTextLines textLines;
+            var hresult = textView.GetBuffer(out textLines);
+            return Result.CreateValueOrError(textLines, hresult);
+        }
+
         #endregion
 
         #region IVsUIShell
@@ -291,6 +320,66 @@ namespace VsVim
 
         #endregion
 
+        #region IVsEnumLineMarkers
+
+        /// <summary>
+        /// Don't be tempted to make this an IEnumerable because multiple calls would not
+        /// produce multiple enumerations since the parameter would need to be reset
+        /// </summary>
+        public static List<IVsTextLineMarker> GetAll(this IVsEnumLineMarkers markers)
+        {
+            var list = new List<IVsTextLineMarker>();
+            do
+            {
+                IVsTextLineMarker marker;
+                var hresult = markers.Next(out marker);
+                if (ErrorHandler.Succeeded(hresult) && marker != null)
+                {
+                    list.Add(marker);
+                }
+                else
+                {
+                    break;
+                }
+
+            } while (true);
+
+            return list;
+        }
+
+        #endregion
+
+        #region IVsTextLineMarker
+
+        public static Result<TextSpan> GetCurrentSpan(this IVsTextLineMarker marker)
+        {
+            var array = new TextSpan[1];
+            var hresult = marker.GetCurrentSpan(array);
+            return Result.CreateValueOrError(array[0], hresult);
+        }
+
+        public static Result<SnapshotSpan> GetCurrentSpan(this IVsTextLineMarker marker, ITextSnapshot snapshot)
+        {
+            var span = GetCurrentSpan(marker);
+            if (span.IsError)
+            {
+                return Result.CreateError(span.HResult);
+            }
+            else
+            {
+                return span.Value.ToSnapshotSpan(snapshot);
+            }
+        }
+
+        public static Result<MARKERTYPE> GetMarkerType(this IVsTextLineMarker marker)
+        {
+            int type;
+            var hresult = marker.GetType(out type);
+            return Result.CreateValueOrError((MARKERTYPE)type, hresult);
+        }
+
+        #endregion
+
         #region IVsSnippetManager
 
 
@@ -311,6 +400,97 @@ namespace VsVim
         public static bool IsCPlusPlus(this IContentType ct)
         {
             return ct.IsOfType(Constants.CPlusPlusContentType);
+        }
+
+        #endregion
+
+        #region ITextView
+
+
+        public static Result<SnapshotLineRange> GetVisibleLineRange(this ITextView textView)
+        {
+            try
+            {
+                var lines = textView.TextViewLines;
+                if (lines.Count == 0)
+                {
+                    return Result.CreateError();
+                }
+
+                var start = lines[0].Start;
+                var end = lines[lines.Count - 1].EndIncludingLineBreak;
+                var span = new SnapshotSpan(start, end);
+                return SnapshotLineRangeUtil.CreateForSpan(span);
+            }
+            catch (Exception ex)
+            {
+                // TextViewLines can throw when the view is being laid out
+                return Result.CreateError(ex);
+            }
+        }
+
+        #endregion
+
+        #region ITextSnapshot
+
+        public static Result<SnapshotSpan> ToSnapshotSpan(this TextSpan span, ITextSnapshot snapshot)
+        {
+            try
+            {
+                var start = snapshot.GetLineFromLineNumber(span.iStartLine).Start.Add(span.iStartIndex);
+                var end = snapshot.GetLineFromLineNumber(span.iEndLine).Start.Add(span.iEndIndex + 1);
+                return new SnapshotSpan(start, end);
+            }
+            catch (Exception ex)
+            {
+                return Result.CreateError(ex);
+            }
+        }
+
+        #endregion
+
+        #region SnapshotSpan
+
+        public static TextSpan ToTextSpan(this SnapshotSpan span)
+        {
+            var start = SnapshotPointUtil.GetLineColumn(span.Start);
+            var option = SnapshotSpanUtil.GetLastIncludedPoint(span);
+            var end = option.IsSome()
+                ? SnapshotPointUtil.GetLineColumn(option.Value)
+                : start;
+            return new TextSpan() 
+            {
+                iStartLine = start.Item1,
+                iStartIndex = start.Item2,
+                iEndLine = end.Item1,
+                iEndIndex = end.Item2
+            };
+        }
+
+        public static Result<SnapshotSpan> SafeTranslateTo(this SnapshotSpan span, ITextSnapshot snapshot, SpanTrackingMode mode)
+        {
+            try
+            {
+                return span.TranslateTo(snapshot, mode);
+            }
+            catch (Exception ex)
+            {
+                return Result.CreateError(ex);
+            }
+        }
+
+        #endregion
+
+        #region SnapshotLineRange
+
+        public static TextSpan ToTextSpan(this SnapshotLineRange range)
+        {
+            return range.Extent.ToTextSpan();
+        }
+
+        public static TextSpan ToTextSpanIncludingLineBreak(this SnapshotLineRange range)
+        {
+            return range.ExtentIncludingLineBreak.ToTextSpan();
         }
 
         #endregion
@@ -386,6 +566,17 @@ namespace VsVim
             foreach (var cur in enumerable)
             {
                 del(cur);
+            }
+        }
+
+        public static IEnumerable<T> GetValues<T>(this IEnumerable<Result<T>> enumerable)
+        {
+            foreach (var cur in enumerable)
+            {
+                if (cur.IsValue)
+                {
+                    yield return cur.Value;
+                }
             }
         }
 

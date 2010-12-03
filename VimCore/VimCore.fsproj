@@ -102,6 +102,7 @@
     <Compile Include="SearchService.fs" />
     <Compile Include="RegisterMap.fsi" />
     <Compile Include="RegisterMap.fs" />
+    <Compile Include="ExternalEdit.fs" />
     <Compile Include="DisabledMode.fs" />
     <Compile Include="MarkMap.fs" />
     <Compile Include="KeyMap.fs" />

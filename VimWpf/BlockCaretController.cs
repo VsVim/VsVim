@@ -96,6 +96,7 @@ namespace Vim.UI.Wpf
                     kind = CaretDisplay.Invisible;
                     break;
                 case ModeKind.Insert:
+                case ModeKind.ExternalEdit:
                     kind = CaretDisplay.NormalCaret;
                     break;
                 case ModeKind.Disabled:

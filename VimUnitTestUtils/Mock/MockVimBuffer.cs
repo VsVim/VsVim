@@ -25,6 +25,7 @@ namespace Vim.UnitTest.Mock
         public ISubstituteConfirmMode SubstituteConfirmModeImpl;
         public IMode InsertModeImpl;
         public IMode ReplaceModeImpl;
+        public IMode ExternalEditModeImpl;
         public bool IsProcessingInputImpl;
         public PropertyCollection PropertiesImpl;
         public IVimData VimDataImpl;
@@ -289,6 +290,11 @@ namespace Vim.UnitTest.Mock
         public ISubstituteConfirmMode SubstituteConfirmMode
         {
             get { return SubstituteConfirmModeImpl; }
+        }
+
+        public IMode ExternalEditMode
+        {
+            get { return ExternalEditModeImpl; }
         }
     }
 }

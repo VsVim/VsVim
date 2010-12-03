@@ -235,6 +235,7 @@ type ModeKind =
     | VisualBlock = 6 
     | Replace = 7
     | SubstituteConfirm = 8
+    | ExternalEdit = 9
 
     // Mode when Vim is disabled via the user
     | Disabled = 42
@@ -1202,6 +1203,7 @@ and IVimBuffer =
     abstract InsertMode : IMode
     abstract ReplaceMode : IMode
     abstract SubstituteConfirmMode : ISubstituteConfirmMode
+    abstract ExternalEditMode : IMode
 
     /// Sequence of available Modes
     abstract AllModes : seq<IMode>
