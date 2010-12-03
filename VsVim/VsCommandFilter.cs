@@ -1,5 +1,4 @@
 ﻿using System;
-using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.OLE.Interop;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.TextManager.Interop;
@@ -59,40 +58,41 @@ namespace VsVim
 
         int IOleCommandTarget.Exec(ref Guid commandGroup, uint commandId, uint nCmdexecopt, IntPtr pvaIn, IntPtr pvaOut)
         {
-            if (commandGroup == VSConstants.VSStd2K)
+            KeyInput ki;
+            if (TryConvert(commandGroup, commandId, pvaIn, out ki) && _buffer.Process(ki))
             {
-                switch ((VSConstants.VSStd2KCmdID)commandId)
-                {
-                    case VSConstants.VSStd2KCmdID.INSERTSNIPPET:
-                    case VSConstants.VSStd2KCmdID.SnippetProp:
-                    case VSConstants.VSStd2KCmdID.SnippetRef:
-                    case VSConstants.VSStd2KCmdID.SnippetRepl:
-                    case VSConstants.VSStd2KCmdID.ECMD_INVOKESNIPPETFROMSHORTCUT:
-                    case VSConstants.VSStd2KCmdID.ECMD_CREATESNIPPET:
-                    case VSConstants.VSStd2KCmdID.ECMD_INVOKESNIPPETPICKER2:
-                        break;
-                }
+                return NativeMethods.S_OK;
             }
 
-            KeyInput ki = null;
-            if (OleCommandUtil.IsDebugIgnore(commandGroup, commandId)
-                || !TryConvert(commandGroup, commandId, pvaIn, out ki)
-                || !_buffer.Process(ki))
-            {
-                return _nextTarget.Exec(commandGroup, commandId, nCmdexecopt, pvaIn, pvaOut);
-            }
-
-            return NativeMethods.S_OK;
+            return _nextTarget.Exec(commandGroup, commandId, nCmdexecopt, pvaIn, pvaOut);
         }
 
         int IOleCommandTarget.QueryStatus(ref Guid pguidCmdGroup, uint cCmds, OLECMD[] prgCmds, IntPtr pCmdText)
         {
-            KeyInput ki = null;
-            if (1 == cCmds
-                && TryConvert(pguidCmdGroup, prgCmds[0].cmdID, pCmdText, out ki)
-                && _buffer.CanProcess(ki))
+            KeyInput ki;
+            if (1 == cCmds && TryConvert(pguidCmdGroup, prgCmds[0].cmdID, pCmdText, out ki))
             {
-                prgCmds[0].cmdf = (uint)(OLECMDF.OLECMDF_ENABLED | OLECMDF.OLECMDF_SUPPORTED);
+                if (_buffer.ModeKind == ModeKind.Insert && ki.Key == VimKey.Escape && _buffer.Process(ki))
+                {
+                    // R# Item
+                    // Have to special case Escape here for insert mode.  R# is typically ahead of us on the IOleCommandTarget
+                    // chain.  If a completion window is open and we wait for Exec to run R# will be ahead of us and run
+                    // their Exec call.  This will lead to them closing the completion window and not calling back into
+                    // our exec leaving us in insert mode.
+                    prgCmds[0].cmdf = 0;
+                }
+                else if (_buffer.ModeKind == ModeKind.ExternalEdit && ki.Key == VimKey.Escape && _buffer.Process(ki))
+                {
+                    // R# Item
+                    // Have to special case Escape here for external edit mode because we want escape to get us back to 
+                    // plain old insert.
+                    prgCmds[0].cmdf = 0;
+                }
+                else
+                {
+                    prgCmds[0].cmdf = (uint)(OLECMDF.OLECMDF_ENABLED | OLECMDF.OLECMDF_SUPPORTED);
+                }
+
                 return NativeMethods.S_OK;
             }
 

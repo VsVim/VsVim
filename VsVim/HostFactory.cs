@@ -6,6 +6,7 @@ using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Editor;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Text.Editor;
+using Microsoft.VisualStudio.Text.Tagging;
 using Microsoft.VisualStudio.TextManager.Interop;
 using Microsoft.VisualStudio.Utilities;
 using Vim;
@@ -28,6 +29,7 @@ namespace VsVim
         private readonly IServiceProvider _serviceProvider;
         private readonly IVim _vim;
         private readonly IVsEditorAdaptersFactoryService _adaptersFactory;
+        private readonly IViewTagAggregatorFactoryService _tagAggregatorFactoryService;
         private readonly Dictionary<IVimBuffer, VsCommandFilter> _filterMap = new Dictionary<IVimBuffer, VsCommandFilter>();
         private readonly IVimHost _host;
         private readonly IFileSystem _fileSystem;
@@ -41,6 +43,7 @@ namespace VsVim
             IKeyBindingService keyBindingService,
             SVsServiceProvider serviceProvider,
             IVsEditorAdaptersFactoryService adaptersFactory,
+            IViewTagAggregatorFactoryService tagAggregatorFactoryService,
             IVimHost host,
             IFileSystem fileSystem,
             IVsAdapter adapter)
@@ -49,6 +52,7 @@ namespace VsVim
             _keyBindingService = keyBindingService;
             _editorFactoryService = editorFactoryService;
             _editorOptionsFactoryService = editorOptionsFactoryService;
+            _tagAggregatorFactoryService = tagAggregatorFactoryService;
             _serviceProvider = serviceProvider;
             _adaptersFactory = adaptersFactory;
             _host = host;
@@ -118,7 +122,7 @@ namespace VsVim
             var vsTextLines = vsView.GetTextLines();
             if (vsTextLines.IsValue)
             {
-                ExternalEditManager.Monitor(buffer, vsTextLines.Value);
+                ExternalEditManager.Monitor(buffer, vsTextLines.Value, _tagAggregatorFactoryService);
             }
 
             // Try and install the IVsFilterKeys adapter.  This cannot be done synchronously here

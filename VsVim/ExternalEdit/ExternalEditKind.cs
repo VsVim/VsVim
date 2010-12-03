@@ -4,6 +4,7 @@ namespace VsVim.ExternalEdit
     internal enum ExternalEditKind
     {
         None,
-        Snippet
+        Snippet,
+        Resharper
     }
 }

@@ -1,8 +1,8 @@
 ﻿using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
+using Microsoft.VisualStudio.Text.Tagging;
 using Microsoft.VisualStudio.TextManager.Interop;
 using Vim;
 
@@ -12,15 +12,22 @@ namespace VsVim.ExternalEdit
     {
         private readonly IVimBuffer _buffer;
         private readonly IVsTextLines _vsTextLines;
-        private bool m_inExternalEdit;
-        private SnapshotSpan? m_ignoreSnippetMarkerSpan;
+        private readonly ITagAggregator<ITag> _tagAggregator;
+        private readonly List<ExternalEditMarker> _ignoreMarkers = new List<ExternalEditMarker>();
 
-        internal ExternalEditManager(IVimBuffer buffer, IVsTextLines vsTextLines)
+        // TODO: Share this among all ExternalEditManager instances
+        private readonly List<IExternalEditorAdapter> _externalEditorAdapters = new List<IExternalEditorAdapter>();
+        private bool _inExternalEdit;
+
+        internal ExternalEditManager(IVimBuffer buffer, IVsTextLines vsTextLines, IViewTagAggregatorFactoryService tagAggregatorFactoryService)
         {
             _vsTextLines = vsTextLines;
+            _tagAggregator = tagAggregatorFactoryService.CreateTagAggregator<ITag>(buffer.TextView);
             _buffer = buffer;
             _buffer.TextView.LayoutChanged += OnLayoutChanged;
             _buffer.SwitchedMode += OnSwitchedMode;
+            _externalEditorAdapters.Add(new SnippetExternalEditorAdapter());
+            _externalEditorAdapters.Add(new ResharperExternalEditorAdapter());
         }
 
         private void OnLayoutChanged(object sender, TextViewLayoutChangedEventArgs e)
@@ -30,7 +37,7 @@ namespace VsVim.ExternalEdit
 
         private void OnSwitchedMode(object sender, IMode newMode)
         {
-            if (m_inExternalEdit)
+            if (_inExternalEdit)
             {
                 // If we're in the middle of an external edit and the mode switches then we 
                 // need to record the current edit markers so we can ignore them going 
@@ -49,47 +56,8 @@ namespace VsVim.ExternalEdit
         private void SaveCurrentEditorMarkersForIgnore()
         {
             var span = SnapshotUtil.GetFullSpan(_buffer.TextSnapshot);
-            var markers = GetExternalEditMarkers(span);
-            SaveCurrentSnippetMarkersForIgnore(markers);
-        }
-
-        /// <summary>
-        /// For snippets just track the span for the snippet
-        /// </summary>
-        /// <param name="markers"></param>
-        private void SaveCurrentSnippetMarkersForIgnore(IEnumerable<ExternalEditMarker> markers)
-        {
-            SnapshotPoint? start = null;
-            SnapshotPoint? end = null;
-            foreach (var cur in markers.Where(x => x.ExternalEditKind == ExternalEditKind.Snippet))
-            {
-                if (start == null)
-                {
-                    start = cur.Span.Start;
-                    end = cur.Span.End;
-                }
-                else
-                {
-                    if (cur.Span.Start < start.Value)
-                    {
-                        start = cur.Span.Start;
-                    }
-
-                    if (cur.Span.End > end.Value)
-                    {
-                        end = cur.Span.End;
-                    }
-                }
-            }
-
-            if (!start.HasValue || !end.HasValue)
-            {
-                m_ignoreSnippetMarkerSpan = null;
-            }
-            else
-            {
-                m_ignoreSnippetMarkerSpan = new SnapshotSpan(start.Value, end.Value);
-            }
+            _ignoreMarkers.Clear();
+            GetExternalEditMarkers(span, _ignoreMarkers);
         }
 
         private void CheckForExternalEdit()
@@ -119,114 +87,108 @@ namespace VsVim.ExternalEdit
 
             // Not in an external edit and there are edit markers we need to consider.  Time to enter
             // external edit mode
-            if (GetExternalEditMarkers(range.Value.ExtentIncludingLineBreak).Any())
-            {
-                _buffer.SwitchMode(ModeKind.ExternalEdit, ModeArgument.None);
-                m_inExternalEdit = true;
-            }
+            _buffer.SwitchMode(ModeKind.ExternalEdit, ModeArgument.None);
+            _inExternalEdit = true;
         }
 
         private void ClearIgnoreMarkers()
         {
-            m_ignoreSnippetMarkerSpan = null;
+            _ignoreMarkers.Clear();
+        }
+
+        private List<ExternalEditMarker> GetExternalEditMarkers(SnapshotSpan span)
+        {
+            var list = new List<ExternalEditMarker>();
+            GetExternalEditMarkers(span, list);
+            return list;
+        }
+
+        private void GetExternalEditMarkers(SnapshotSpan span, List<ExternalEditMarker> list)
+        {
+            GetExternalEditMarkersFromShims(span, list);
+            GetExternalEditMarkersFromTags(span, list);
+        }
+
+        private void GetExternalEditMarkersFromTags(SnapshotSpan span, List<ExternalEditMarker> list)
+        {
+            var tags = _tagAggregator.GetTags(span);
+            foreach (var cur in tags)
+            {
+                foreach (var tagSpan in cur.Span.GetSpans(_buffer.TextSnapshot))
+                {
+                    foreach (var adapter in _externalEditorAdapters)
+                    {
+                        ExternalEditMarker marker;
+
+                        if (adapter.TryCreateExternalEditMarker(cur.Tag, tagSpan, out marker))
+                        {
+                            list.Add(marker);
+                        }
+                    }
+                }
+            }
         }
 
         /// <summary>
         /// Returns all active ExternalEditMarker instances for the given range
         /// </summary>
-        private List<ExternalEditMarker> GetExternalEditMarkers(SnapshotSpan span)
+        private void GetExternalEditMarkersFromShims(SnapshotSpan span, List<ExternalEditMarker> list)
         {
             var markers = _vsTextLines.GetLineMarkers(span.ToTextSpan());
-            var list = new List<ExternalEditMarker>();
             foreach (var marker in markers)
             {
-                ExternalEditMarker editMarker;
-                if (TryCreateExternalEditMarker(marker, out editMarker))
+                foreach (var adapter in _externalEditorAdapters)
                 {
-                    list.Add(editMarker);
+                    ExternalEditMarker editMarker;
+                    if (adapter.TryCreateExternalEditMarker(marker, _buffer.TextSnapshot, out editMarker))
+                    {
+                        list.Add(editMarker);
+                    }
                 }
             }
-
-            return list;
         }
 
         private bool ShouldIgnore(ExternalEditMarker marker)
         {
-            switch (marker.ExternalEditKind)
+            foreach ( var ignore in _ignoreMarkers)
             {
-                case ExternalEditKind.Snippet:
-                    return m_ignoreSnippetMarkerSpan.HasValue 
-                        && marker.Span.OverlapsWith(m_ignoreSnippetMarkerSpan.Value);
-                default:
-                case ExternalEditKind.None:
-                    Debug.Fail("Invalid enum value");
+                if (ignore.Span.OverlapsWith(marker.Span))
+                {
                     return true;
+                }
             }
+
+            return false;
         }
 
         private void MoveIgnoredMarkersToCurrentSnapshot()
         {
             var snapshot = _buffer.TextSnapshot;
-            if (m_ignoreSnippetMarkerSpan.HasValue)
+            var i = 0;
+            while (i < _ignoreMarkers.Count)
             {
-                var mapped = m_ignoreSnippetMarkerSpan.Value.SafeTranslateTo(snapshot, SpanTrackingMode.EdgeExclusive);
+                if (_ignoreMarkers[i].Span.Snapshot == snapshot)
+                {
+                    i++;
+                    continue;
+                }
+
+                var mapped = _ignoreMarkers[i].Span.SafeTranslateTo(snapshot, SpanTrackingMode.EdgeInclusive);
                 if (mapped.IsValue)
                 {
-                    m_ignoreSnippetMarkerSpan = mapped.Value;
+                    _ignoreMarkers[i] = new ExternalEditMarker(_ignoreMarkers[i].ExternalEditKind, mapped.Value);
                 }
                 else
                 {
-                    m_ignoreSnippetMarkerSpan = null;
+                    _ignoreMarkers.RemoveAt(i);
                 }
+                i++;
             }
         }
 
-        private bool TryCreateExternalEditMarker(IVsTextLineMarker marker, out ExternalEditMarker editMarker)
+        internal static void Monitor(IVimBuffer buffer, IVsTextLines vsTextLines, IViewTagAggregatorFactoryService tagAggregatorFactoryService)
         {
-            editMarker = new ExternalEditMarker();
-            var result = marker.GetMarkerType();
-            if (result.IsError)
-            {
-                return false;
-            }
-
-            // Predefined markers aren't a concern
-            var value = (int)result.Value;
-            if (value <= (int)MARKERTYPE.DEF_MARKER_COUNT)
-            {
-                return false;
-            }
-
-            // Get the SnapshotSpan for the marker
-            var span = marker.GetCurrentSpan(_buffer.TextSnapshot);
-            if (span.IsError)
-            {
-                return false;
-            }
-
-            switch ((int)result.Value)
-            {
-                case 15:
-                case 16:
-                case 26:
-                    // Details
-                    //  15: Snippet marker for inactive span
-                    //  16: Snippet marker for active span
-                    //  26: Tracks comment insertion for a snippet
-                    editMarker = new ExternalEditMarker(ExternalEditKind.Snippet, span.Value);
-                    return true;
-                case 25:
-                    // Kind currently unknown.  
-                    return false;
-                default:
-                    // TODO: Should remove this after development completes
-                    return false;
-            }
-        }
-
-        internal static void Monitor(IVimBuffer buffer, IVsTextLines vsTextLines)
-        {
-            new ExternalEditManager(buffer, vsTextLines);
+            new ExternalEditManager(buffer, vsTextLines, tagAggregatorFactoryService);
         }
     }
 }
