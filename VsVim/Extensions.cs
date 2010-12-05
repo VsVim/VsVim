@@ -398,7 +398,6 @@ namespace VsVim
 
         #region ITextView
 
-
         public static Result<SnapshotLineRange> GetVisibleLineRange(this ITextView textView)
         {
             try

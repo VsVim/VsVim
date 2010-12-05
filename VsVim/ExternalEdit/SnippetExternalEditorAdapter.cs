@@ -36,7 +36,7 @@ namespace VsVim.ExternalEdit
                     // Details
                     //  15: Snippet marker for inactive span
                     //  16: Snippet marker for active span
-                    //  26: Tracks comment insertion for a snippet
+                    //  26: Tracks comment insertion for a snippet don' for cursor placement
                     return new ExternalEditMarker(ExternalEditKind.Snippet, span.Value);
                 case 25:
                     // Kind currently unknown.  

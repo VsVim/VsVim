@@ -355,5 +355,37 @@ namespace Vim.UnitTest.Mock
                 .Returns(VSConstants.S_OK);
             return mock;
         }
+
+        public static Mock<ITextViewLine> CreateTextViewLine(
+            ITextSnapshotLine textLine,
+            MockRepository factory = null)
+        {
+            factory = factory ?? new MockRepository(MockBehavior.Strict);
+            var mock = factory.Create<ITextViewLine>();
+            mock.SetupGet(x => x.Start).Returns(textLine.Start);
+            mock.SetupGet(x => x.End).Returns(textLine.End);
+            mock.SetupGet(x => x.EndIncludingLineBreak).Returns(textLine.EndIncludingLineBreak);
+            return mock;
+        }
+
+        public static Mock<ITextViewLineCollection> CreateTextViewLineCollection(
+            SnapshotLineRange range,
+            MockRepository factory = null)
+        {
+            factory = factory ?? new MockRepository(MockBehavior.Strict);
+            var mock = factory.Create<ITextViewLineCollection>();
+            for (int i = 0; i < range.Count; i++)
+            {
+                var number = range.StartLineNumber + i;
+                var line = range.Snapshot.GetLineFromLineNumber(number);
+                var localIndex = i;
+                mock.Setup(x => x[localIndex]).Returns(CreateTextViewLine(line, factory).Object);
+            }
+
+            mock.SetupGet(x => x.FirstVisibleLine).Returns(CreateTextViewLine(range.StartLine, factory).Object);
+            mock.SetupGet(x => x.LastVisibleLine).Returns(CreateTextViewLine(range.EndLine, factory).Object);
+            mock.SetupGet(x => x.Count).Returns(range.Count);
+            return mock;
+        }
     }
 }

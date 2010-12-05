@@ -87,7 +87,7 @@ namespace VsVim.ExternalEdit
 
         private void CheckForExternalEdit()
         {
-            if (_buffer.ModeKind == ModeKind.ExternalEdit)
+            if (InExternalEdit)
             {
                 return;
             }
@@ -103,10 +103,7 @@ namespace VsVim.ExternalEdit
             MoveIgnoredMarkersToCurrentSnapshot();
             if (markers.All(ShouldIgnore))
             {
-                if (markers.Count == 0)
-                {
-                    ClearIgnoreMarkers();
-                }
+                ClearIgnoreMarkers();
                 return;
             }
 

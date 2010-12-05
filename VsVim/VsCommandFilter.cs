@@ -77,6 +77,9 @@ namespace VsVim
                 var handled = false;
                 if (_externalEditManager.IsResharperLoaded)
                 {
+                    // TODO: Need to change this logic so that R# actually gets the keystroke.  Could process it here
+                    // return that the command is enabled and then ignore it if it comes right back to us in exec
+
                     if (_buffer.ModeKind == ModeKind.Insert && ki.Key == VimKey.Escape && _buffer.Process(ki))
                     {
                         // Have to special case Escape here for insert mode.  R# is typically ahead of us on the IOleCommandTarget
