@@ -6,27 +6,26 @@ namespace VsVim.ExternalEdit
 {
     internal sealed class SnippetExternalEditorAdapter : IExternalEditorAdapter
     {
-        public bool TryCreateExternalEditMarker(IVsTextLineMarker marker, ITextSnapshot snapshot, out ExternalEditMarker editMarker)
+        public ExternalEditMarker? TryCreateExternalEditMarker(IVsTextLineMarker marker, ITextSnapshot snapshot)
         {
-            editMarker = new ExternalEditMarker();
             var result = marker.GetMarkerType();
             if (result.IsError)
             {
-                return false;
+                return null;
             }
 
             // Predefined markers aren't a concern
             var value = (int)result.Value;
             if (value <= (int)MARKERTYPE.DEF_MARKER_COUNT)
             {
-                return false;
+                return null;
             }
 
             // Get the SnapshotSpan for the marker
             var span = marker.GetCurrentSpan(snapshot);
             if (span.IsError)
             {
-                return false;
+                return null;
             }
 
             switch ((int)result.Value)
@@ -38,22 +37,19 @@ namespace VsVim.ExternalEdit
                     //  15: Snippet marker for inactive span
                     //  16: Snippet marker for active span
                     //  26: Tracks comment insertion for a snippet
-                    editMarker = new ExternalEditMarker(ExternalEditKind.Snippet, span.Value);
-                    return true;
+                    return new ExternalEditMarker(ExternalEditKind.Snippet, span.Value);
                 case 25:
                     // Kind currently unknown.  
-                    return false;
+                    return null;
                 default:
-                    // TODO: Should remove this after development completes
-                    return false;
+                    return null;
             }
         }
 
 
-        public bool TryCreateExternalEditMarker(ITag tag, SnapshotSpan tagSpan, out ExternalEditMarker editMarker)
+        public ExternalEditMarker? TryCreateExternalEditMarker(ITag tag, SnapshotSpan tagSpan)
         {
-            editMarker = new ExternalEditMarker();
-            return false;
+            return null;
         }
     }
 }

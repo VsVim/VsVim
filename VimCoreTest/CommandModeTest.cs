@@ -34,12 +34,12 @@ namespace VimCore.Test
             _caret = MockObjectFactory.CreateCaret(factory: _factory);
             _caret.SetupProperty(x => x.IsHidden);
             _textView = MockObjectFactory.CreateTextView(
-                buffer: _buffer,
+                textBuffer: _buffer,
                 caret: _caret.Object,
                 selection: _selection.Object,
                 factory: _factory);
 
-            _bufferData = MockObjectFactory.CreateVimBuffer(view: _textView.Object, factory: _factory);
+            _bufferData = MockObjectFactory.CreateVimBuffer(textView: _textView.Object, factory: _factory);
             _processor = _factory.Create<ICommandProcessor>();
             _modeRaw = new CommandMode(_bufferData.Object, _processor.Object);
             _mode = _modeRaw;

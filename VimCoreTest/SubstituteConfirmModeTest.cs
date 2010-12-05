@@ -30,8 +30,8 @@ namespace VimCore.Test
             _textBuffer = EditorUtil.CreateBuffer(lines);
             _factory = new MockRepository(MockBehavior.Strict);
             _textCaret = _factory.Create<ITextCaret>();
-            _textView = MockObjectFactory.CreateTextView(buffer: _textBuffer, caret: _textCaret.Object, factory: _factory);
-            _buffer = MockObjectFactory.CreateVimBuffer(view: _textView.Object, factory: _factory);
+            _textView = MockObjectFactory.CreateTextView(textBuffer: _textBuffer, caret: _textCaret.Object, factory: _factory);
+            _buffer = MockObjectFactory.CreateVimBuffer(textView: _textView.Object, factory: _factory);
             _operations = _factory.Create<ICommonOperations>();
             _operations.Setup(x => x.MoveCaretToPoint(It.IsAny<SnapshotPoint>()));
             _modeRaw = new SubstituteConfirmMode(_buffer.Object, _operations.Object);

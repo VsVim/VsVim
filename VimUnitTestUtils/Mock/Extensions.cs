@@ -267,5 +267,35 @@ namespace Vim.UnitTest.Mock
             mode.SetupGet(x => x.IncrementalSearch).Returns(mock.Object);
             return mock;
         }
+
+        public static void SetupNoEnumMarkers(this Mock<IVsTextLines> mock)
+        {
+            IVsEnumLineMarkers markers;
+            mock
+                .Setup(x => x.EnumMarkers(
+                    It.IsAny<int>(),
+                    It.IsAny<int>(),
+                    It.IsAny<int>(),
+                    It.IsAny<int>(),
+                    It.IsAny<int>(),
+                    It.IsAny<uint>(),
+                    out markers))
+                .Returns(VSConstants.E_FAIL);
+        }
+
+        public static void SetupEnumMarkers(this Mock<IVsTextLines> mock, IVsEnumLineMarkers markers)
+        {
+            var local = markers;
+            mock
+                .Setup(x => x.EnumMarkers(
+                    It.IsAny<int>(),
+                    It.IsAny<int>(),
+                    It.IsAny<int>(),
+                    It.IsAny<int>(),
+                    It.IsAny<int>(),
+                    It.IsAny<uint>(),
+                    out local))
+                .Returns(VSConstants.S_OK);
+        }
     }
 }

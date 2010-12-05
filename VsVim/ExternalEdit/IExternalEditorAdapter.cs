@@ -6,7 +6,7 @@ namespace VsVim.ExternalEdit
 {
     internal interface IExternalEditorAdapter
     {
-        bool TryCreateExternalEditMarker(IVsTextLineMarker marker, ITextSnapshot snapshot, out ExternalEditMarker editMarker);
-        bool TryCreateExternalEditMarker(ITag tag, SnapshotSpan tagSpan, out ExternalEditMarker editMarker);
+        ExternalEditMarker? TryCreateExternalEditMarker(IVsTextLineMarker marker, ITextSnapshot snapshot);
+        ExternalEditMarker? TryCreateExternalEditMarker(ITag tag, SnapshotSpan tagSpan);
     }
 }

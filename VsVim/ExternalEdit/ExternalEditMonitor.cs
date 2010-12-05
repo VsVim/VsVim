@@ -15,18 +15,29 @@ namespace VsVim.ExternalEdit
         private readonly Result<IVsTextLines> _vsTextLines;
         private readonly ITagAggregator<ITag> _tagAggregator;
         private readonly ReadOnlyCollection<IExternalEditorAdapter> _externalEditorAdapters;
-        private readonly List<ExternalEditMarker> _ignoreMarkers = new List<ExternalEditMarker>();
-        private bool _inExternalEdit;
+        private readonly List<ExternalEditMarker> _ignoredMarkers = new List<ExternalEditMarker>();
+
+        internal bool InExternalEdit { get; set; }
+
+        internal IEnumerable<ExternalEditMarker> IgnoredMarkers
+        {
+            get { return _ignoredMarkers; }
+            set
+            {
+                _ignoredMarkers.Clear();
+                _ignoredMarkers.AddRange(value);
+            }
+        }
 
         internal ExternalEditMonitor(
-            IVimBuffer buffer, 
-            Result<IVsTextLines> vsTextLines, 
+            IVimBuffer buffer,
+            Result<IVsTextLines> vsTextLines,
             ReadOnlyCollection<IExternalEditorAdapter> externalEditorAdapters,
-            IViewTagAggregatorFactoryService tagAggregatorFactoryService)
+            ITagAggregator<ITag> tagAggregator)
         {
             _vsTextLines = vsTextLines;
             _externalEditorAdapters = externalEditorAdapters;
-            _tagAggregator = tagAggregatorFactoryService.CreateTagAggregator<ITag>(buffer.TextView);
+            _tagAggregator = tagAggregator;
             _buffer = buffer;
             _buffer.TextView.LayoutChanged += OnLayoutChanged;
             _buffer.SwitchedMode += OnSwitchedMode;
@@ -37,6 +48,13 @@ namespace VsVim.ExternalEdit
             _buffer.TextView.LayoutChanged -= OnLayoutChanged;
         }
 
+        internal List<ExternalEditMarker> GetExternalEditMarkers(SnapshotSpan span)
+        {
+            var list = new List<ExternalEditMarker>();
+            GetExternalEditMarkers(span, list);
+            return list;
+        }
+
         private void OnLayoutChanged(object sender, TextViewLayoutChangedEventArgs e)
         {
             CheckForExternalEdit();
@@ -44,7 +62,7 @@ namespace VsVim.ExternalEdit
 
         private void OnSwitchedMode(object sender, IMode newMode)
         {
-            if (_inExternalEdit)
+            if (InExternalEdit)
             {
                 // If we're in the middle of an external edit and the mode switches then we 
                 // need to record the current edit markers so we can ignore them going 
@@ -63,8 +81,8 @@ namespace VsVim.ExternalEdit
         private void SaveCurrentEditorMarkersForIgnore()
         {
             var span = SnapshotUtil.GetFullSpan(_buffer.TextSnapshot);
-            _ignoreMarkers.Clear();
-            GetExternalEditMarkers(span, _ignoreMarkers);
+            _ignoredMarkers.Clear();
+            GetExternalEditMarkers(span, _ignoredMarkers);
         }
 
         private void CheckForExternalEdit()
@@ -83,7 +101,7 @@ namespace VsVim.ExternalEdit
             var markers = GetExternalEditMarkers(range.Value.ExtentIncludingLineBreak);
 
             MoveIgnoredMarkersToCurrentSnapshot();
-            if (markers.All(x => ShouldIgnore(x)))
+            if (markers.All(ShouldIgnore))
             {
                 if (markers.Count == 0)
                 {
@@ -95,19 +113,12 @@ namespace VsVim.ExternalEdit
             // Not in an external edit and there are edit markers we need to consider.  Time to enter
             // external edit mode
             _buffer.SwitchMode(ModeKind.ExternalEdit, ModeArgument.None);
-            _inExternalEdit = true;
+            InExternalEdit = true;
         }
 
         private void ClearIgnoreMarkers()
         {
-            _ignoreMarkers.Clear();
-        }
-
-        private List<ExternalEditMarker> GetExternalEditMarkers(SnapshotSpan span)
-        {
-            var list = new List<ExternalEditMarker>();
-            GetExternalEditMarkers(span, list);
-            return list;
+            _ignoredMarkers.Clear();
         }
 
         private void GetExternalEditMarkers(SnapshotSpan span, List<ExternalEditMarker> list)
@@ -125,11 +136,10 @@ namespace VsVim.ExternalEdit
                 {
                     foreach (var adapter in _externalEditorAdapters)
                     {
-                        ExternalEditMarker marker;
-
-                        if (adapter.TryCreateExternalEditMarker(cur.Tag, tagSpan, out marker))
+                        var marker = adapter.TryCreateExternalEditMarker(cur.Tag, tagSpan);
+                        if (marker.HasValue)
                         {
-                            list.Add(marker);
+                            list.Add(marker.Value);
                         }
                     }
                 }
@@ -150,10 +160,10 @@ namespace VsVim.ExternalEdit
                 {
                     foreach (var adapter in _externalEditorAdapters)
                     {
-                        ExternalEditMarker editMarker;
-                        if (adapter.TryCreateExternalEditMarker(marker, _buffer.TextSnapshot, out editMarker))
+                        var editMarker = adapter.TryCreateExternalEditMarker(marker, _buffer.TextSnapshot);
+                        if (editMarker.HasValue)
                         {
-                            list.Add(editMarker);
+                            list.Add(editMarker.Value);
                         }
                     }
                 }
@@ -162,7 +172,7 @@ namespace VsVim.ExternalEdit
 
         private bool ShouldIgnore(ExternalEditMarker marker)
         {
-            foreach ( var ignore in _ignoreMarkers)
+            foreach (var ignore in _ignoredMarkers)
             {
                 if (ignore.Span.OverlapsWith(marker.Span))
                 {
@@ -177,22 +187,22 @@ namespace VsVim.ExternalEdit
         {
             var snapshot = _buffer.TextSnapshot;
             var i = 0;
-            while (i < _ignoreMarkers.Count)
+            while (i < _ignoredMarkers.Count)
             {
-                if (_ignoreMarkers[i].Span.Snapshot == snapshot)
+                if (_ignoredMarkers[i].Span.Snapshot == snapshot)
                 {
                     i++;
                     continue;
                 }
 
-                var mapped = _ignoreMarkers[i].Span.SafeTranslateTo(snapshot, SpanTrackingMode.EdgeInclusive);
+                var mapped = _ignoredMarkers[i].Span.SafeTranslateTo(snapshot, SpanTrackingMode.EdgeInclusive);
                 if (mapped.IsValue)
                 {
-                    _ignoreMarkers[i] = new ExternalEditMarker(_ignoreMarkers[i].ExternalEditKind, mapped.Value);
+                    _ignoredMarkers[i] = new ExternalEditMarker(_ignoredMarkers[i].ExternalEditKind, mapped.Value);
                 }
                 else
                 {
-                    _ignoreMarkers.RemoveAt(i);
+                    _ignoredMarkers.RemoveAt(i);
                 }
                 i++;
             }

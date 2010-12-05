@@ -323,6 +323,11 @@ namespace Vim.UnitTest
             return buffer.CurrentSnapshot.GetEndPoint();
         }
 
+        public static SnapshotSpan GetExtent(this ITextBuffer buffer)
+        {
+            return buffer.CurrentSnapshot.GetExtent();
+        }
+
         public static SnapshotSpan GetSpan(this ITextBuffer buffer, int start, int length)
         {
             return buffer.CurrentSnapshot.GetSpan(start, length);
@@ -361,6 +366,11 @@ namespace Vim.UnitTest
         public static SnapshotSpan GetSpan(this ITextSnapshot tss, int start, int length)
         {
             return new SnapshotSpan(tss, start, length);
+        }
+
+        public static SnapshotSpan GetExtent(this ITextSnapshot snapshot)
+        {
+            return new SnapshotSpan(snapshot, 0, snapshot.Length);
         }
 
         #endregion

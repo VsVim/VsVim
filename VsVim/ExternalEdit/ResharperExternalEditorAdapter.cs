@@ -11,22 +11,19 @@ namespace VsVim.ExternalEdit
     {
         private Dictionary<Type,bool> _tagMap = new Dictionary<Type,bool>();
 
-        public bool TryCreateExternalEditMarker(IVsTextLineMarker marker, ITextSnapshot snapshot, out ExternalEditMarker editMarker)
+        public ExternalEditMarker? TryCreateExternalEditMarker(IVsTextLineMarker marker, ITextSnapshot snapshot)
         {
-            editMarker = new ExternalEditMarker();
-            return false;
+            return null;
         }
 
-        public bool TryCreateExternalEditMarker(ITag tag, SnapshotSpan tagSpan, out ExternalEditMarker editMarker)
+        public ExternalEditMarker? TryCreateExternalEditMarker(ITag tag, SnapshotSpan tagSpan)
         {
             if (IsVsAdornmentTagType(tag.GetType()) && IsEditTag(tag))
             {
-                editMarker = new ExternalEditMarker(ExternalEditKind.Resharper, tagSpan);
-                return true;
+                return  new ExternalEditMarker(ExternalEditKind.Resharper, tagSpan);
             }
 
-            editMarker = new ExternalEditMarker();
-            return false;
+            return null;
         }
 
         private bool IsVsAdornmentTagType(Type type)
