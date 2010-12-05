@@ -1,7 +1,6 @@
 ﻿using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using VsVim.Properties;
 
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
@@ -33,3 +32,4 @@ using VsVim.Properties;
 [assembly: AssemblyVersion("0.5.0.0")]
 [assembly: AssemblyFileVersion("0.5.0.0")]
 [assembly: InternalsVisibleTo("VsVim.UnitTest")]
+[assembly: InternalsVisibleTo("DynamicProxyGenAssembly2")] // Moq

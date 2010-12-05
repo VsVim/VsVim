@@ -132,7 +132,7 @@ namespace VimCore.Test
         public void OperateSetting4()
         {
             Create("foo");
-            _settings.Setup(X => X.GetSetting("foo")).Returns(FSharpOption<Setting>.None).Verifiable();
+            _settings.Setup(x => x.GetSetting("foo")).Returns(FSharpOption<Setting>.None).Verifiable();
             _statusUtil.Setup(x => x.OnError(Resources.CommandMode_UnknownOption("foo"))).Verifiable();
             _operations.OperateSetting("foo");
             _settings.Verify();
@@ -166,7 +166,7 @@ namespace VimCore.Test
         public void ResetSettings3()
         {
             Create("foo");
-            _settings.Setup(X => X.GetSetting("foo")).Returns(FSharpOption<Setting>.None).Verifiable();
+            _settings.Setup(x => x.GetSetting("foo")).Returns(FSharpOption<Setting>.None).Verifiable();
             _statusUtil.Setup(x => x.OnError(Resources.CommandMode_UnknownOption("foo"))).Verifiable();
             _operations.ResetSetting("foo");
             _settings.Verify();
@@ -200,7 +200,7 @@ namespace VimCore.Test
         public void InvertSettings3()
         {
             Create("foo");
-            _settings.Setup(X => X.GetSetting("foo")).Returns(FSharpOption<Setting>.None).Verifiable();
+            _settings.Setup(x => x.GetSetting("foo")).Returns(FSharpOption<Setting>.None).Verifiable();
             _statusUtil.Setup(x => x.OnError(Resources.CommandMode_UnknownOption("foo"))).Verifiable();
             _operations.InvertSetting("foo");
             _settings.Verify();

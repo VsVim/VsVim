@@ -15,16 +15,18 @@ namespace VsVim
     internal sealed class VsCommandFilter : IOleCommandTarget
     {
         private readonly IVimBuffer _buffer;
-        private readonly IVsTextView _textView;
-        private readonly IOleCommandTarget _nextTarget;
         private readonly IServiceProvider _serviceProvider;
+        private readonly IExternalEditorManager _externalEditManager;
+        private IOleCommandTarget _nextTarget;
 
-        internal VsCommandFilter(IVimBuffer buffer, IVsTextView view, IServiceProvider provider)
+        private VsCommandFilter(
+            IVimBuffer buffer,
+            IServiceProvider provider,
+            IExternalEditorManager externalEditorManager)
         {
             _buffer = buffer;
-            _textView = view;
             _serviceProvider = provider;
-            var hr = view.AddCommandFilter(this, out _nextTarget);
+            _externalEditManager = externalEditorManager;
         }
 
         internal bool TryConvert(Guid commandGroup, uint commandId, IntPtr pvaIn, out KeyInput kiOutput)
@@ -72,20 +74,27 @@ namespace VsVim
             KeyInput ki;
             if (1 == cCmds && TryConvert(pguidCmdGroup, prgCmds[0].cmdID, pCmdText, out ki))
             {
-                if (_buffer.ModeKind == ModeKind.Insert && ki.Key == VimKey.Escape && _buffer.Process(ki))
+                var handled = false;
+                if (_externalEditManager.IsResharperLoaded)
                 {
-                    // R# Item
-                    // Have to special case Escape here for insert mode.  R# is typically ahead of us on the IOleCommandTarget
-                    // chain.  If a completion window is open and we wait for Exec to run R# will be ahead of us and run
-                    // their Exec call.  This will lead to them closing the completion window and not calling back into
-                    // our exec leaving us in insert mode.
-                    prgCmds[0].cmdf = 0;
+                    if (_buffer.ModeKind == ModeKind.Insert && ki.Key == VimKey.Escape && _buffer.Process(ki))
+                    {
+                        // Have to special case Escape here for insert mode.  R# is typically ahead of us on the IOleCommandTarget
+                        // chain.  If a completion window is open and we wait for Exec to run R# will be ahead of us and run
+                        // their Exec call.  This will lead to them closing the completion window and not calling back into
+                        // our exec leaving us in insert mode.
+                        handled = true;
+                    }
+                    else if (_buffer.ModeKind == ModeKind.ExternalEdit && ki.Key == VimKey.Escape && _buffer.Process(ki))
+                    {
+                        // Have to special case Escape here for external edit mode because we want escape to get us back to 
+                        // plain old insert.
+                        handled = true;
+                    }
                 }
-                else if (_buffer.ModeKind == ModeKind.ExternalEdit && ki.Key == VimKey.Escape && _buffer.Process(ki))
+
+                if (handled)
                 {
-                    // R# Item
-                    // Have to special case Escape here for external edit mode because we want escape to get us back to 
-                    // plain old insert.
                     prgCmds[0].cmdf = 0;
                 }
                 else
@@ -101,6 +110,16 @@ namespace VsVim
 
         #endregion
 
+        internal static Result<VsCommandFilter> Create(
+            IVimBuffer buffer,
+            IVsTextView vsTextView,
+            IServiceProvider serviceProvider,
+            IExternalEditorManager externalEditorManager)
+        {
+            var filter = new VsCommandFilter(buffer, serviceProvider, externalEditorManager);
+            var hresult= vsTextView.AddCommandFilter(filter, out filter._nextTarget);
+            return Result.CreateValueOrError(filter, hresult);
+        }
 
     }
 }

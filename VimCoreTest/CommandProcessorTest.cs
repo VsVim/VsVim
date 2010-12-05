@@ -93,7 +93,6 @@ namespace VimCore.Test
         {
             Create("foo", "bar", "baz");
             var tss = _view.TextSnapshot;
-            var last = tss.LineCount - 1;
             _editOpts.Setup(x => x.MoveToEndOfDocument(false)).Verifiable();
             RunCommand("$");
             _editOpts.Verify();

@@ -60,7 +60,6 @@ namespace VimCore.Test
             name = name ?? KeyInputSet.NewOneKeyInput(KeyInputUtil.CharToKeyInput('c'));
             var flagsRaw = flags ?? CommandFlags.None;
             var countRaw = count.HasValue ? FSharpOption.Create(count.Value) : FSharpOption<int>.None;
-            var funcRaw = func.ToFSharpFunc();
             var cmd = Command.NewSimpleCommand(
                 name,
                 flagsRaw,

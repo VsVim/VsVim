@@ -42,6 +42,14 @@ namespace VsVim.Implementation
             _uiShell = _serviceProvider.GetService<SVsUIShell, IVsUIShell>();
         }
 
+        public Result<IVsTextLines> GetTextLines(ITextBuffer textBuffer)
+        {
+            var lines = _editorAdaptersFactoryService.GetBufferAdapter(textBuffer) as IVsTextLines;
+            return lines != null
+               ? Result.CreateValue(lines)
+               : Result.CreateError();
+        }
+
         public bool TryGetCodeWindow(ITextView textView, out IVsCodeWindow codeWindow)
         {
             codeWindow = null;

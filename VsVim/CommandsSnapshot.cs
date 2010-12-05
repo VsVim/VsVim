@@ -1,9 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using EnvDTE;
 using System.Collections.ObjectModel;
+using System.Linq;
+using EnvDTE;
 
 namespace VsVim
 {
@@ -30,7 +29,7 @@ namespace VsVim
         {
         }
 
-        public CommandsSnapshot(IEnumerable<EnvDTE.Command> commands)
+        public CommandsSnapshot(IEnumerable<Command> commands)
         {
             var list = new List<CommandKeyBinding>();
             foreach (var command in commands)

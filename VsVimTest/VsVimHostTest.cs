@@ -9,7 +9,6 @@ using Moq;
 using NUnit.Framework;
 using Vim;
 using Vim.UnitTest;
-using VsVim;
 
 namespace VsVim.UnitTest
 {
@@ -146,7 +145,7 @@ namespace VsVim.UnitTest
             var buffer = new Mock<ITextBuffer>(MockBehavior.Strict);
             var vsTextBuffer = (new Mock<IVsTextLines>(MockBehavior.Strict));
             var userData = vsTextBuffer.As<IVsUserData>();
-            var moniker = VsVim.Constants.VsUserData_FileNameMoniker;
+            var moniker = VsVim.Constants.VsUserDataFileNameMoniker;
             object ret = "foo";
             userData.Setup(x => x.GetData(ref moniker, out ret)).Returns(0);
             _editorAdaptersFactoryService.Setup(x => x.GetBufferAdapter(buffer.Object)).Returns(vsTextBuffer.Object);

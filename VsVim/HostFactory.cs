@@ -6,12 +6,10 @@ using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Editor;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Text.Editor;
-using Microsoft.VisualStudio.Text.Tagging;
 using Microsoft.VisualStudio.TextManager.Interop;
 using Microsoft.VisualStudio.Utilities;
 using Vim;
 using Vim.Extensions;
-using VsVim.ExternalEdit;
 using IServiceProvider = System.IServiceProvider;
 
 namespace VsVim
@@ -26,12 +24,11 @@ namespace VsVim
         private readonly IKeyBindingService _keyBindingService;
         private readonly ITextEditorFactoryService _editorFactoryService;
         private readonly IEditorOptionsFactoryService _editorOptionsFactoryService;
+        private readonly IExternalEditorManager _externalEditorManager;
         private readonly IServiceProvider _serviceProvider;
         private readonly IVim _vim;
         private readonly IVsEditorAdaptersFactoryService _adaptersFactory;
-        private readonly IViewTagAggregatorFactoryService _tagAggregatorFactoryService;
         private readonly Dictionary<IVimBuffer, VsCommandFilter> _filterMap = new Dictionary<IVimBuffer, VsCommandFilter>();
-        private readonly IVimHost _host;
         private readonly IFileSystem _fileSystem;
         private readonly IVsAdapter _adapter;
 
@@ -43,8 +40,7 @@ namespace VsVim
             IKeyBindingService keyBindingService,
             SVsServiceProvider serviceProvider,
             IVsEditorAdaptersFactoryService adaptersFactory,
-            IViewTagAggregatorFactoryService tagAggregatorFactoryService,
-            IVimHost host,
+            IExternalEditorManager externalEditorManager,
             IFileSystem fileSystem,
             IVsAdapter adapter)
         {
@@ -52,10 +48,9 @@ namespace VsVim
             _keyBindingService = keyBindingService;
             _editorFactoryService = editorFactoryService;
             _editorOptionsFactoryService = editorOptionsFactoryService;
-            _tagAggregatorFactoryService = tagAggregatorFactoryService;
+            _externalEditorManager = externalEditorManager;
             _serviceProvider = serviceProvider;
             _adaptersFactory = adaptersFactory;
-            _host = host;
             _fileSystem = fileSystem;
             _adapter = adapter;
         }
@@ -115,24 +110,17 @@ namespace VsVim
             }
 
             var buffer = opt.Value;
-            var filter = new VsCommandFilter(buffer, vsView, _serviceProvider);
-            _filterMap.Add(buffer, filter);
-
-            // Go ahead and start listening for external edits
-            var vsTextLines = vsView.GetTextLines();
-            if (vsTextLines.IsValue)
+            var result = VsCommandFilter.Create(buffer, vsView, _serviceProvider, _externalEditorManager);
+            if (result.IsValue)
             {
-                ExternalEditManager.Monitor(buffer, vsTextLines.Value, _tagAggregatorFactoryService);
+                _filterMap.Add(buffer, result.Value);
             }
 
             // Try and install the IVsFilterKeys adapter.  This cannot be done synchronously here
             // because Venus projects are not fully initialized at this state.  Merely querying 
             // for properties cause them to corrupt internal state and prevents rendering of the 
             // view.  Occurs for aspx and .js pages
-            Action install = () =>
-            {
-                VsFilterKeysAdapter.TryInstallFilterKeysAdapter(_adapter, _editorOptionsFactoryService, buffer);
-            };
+            Action install = () => VsFilterKeysAdapter.TryInstallFilterKeysAdapter(_adapter, _editorOptionsFactoryService, buffer);
 
             Dispatcher.CurrentDispatcher.BeginInvoke(install, null);
         }

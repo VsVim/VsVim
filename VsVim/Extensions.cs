@@ -28,7 +28,6 @@ namespace VsVim
                 throw new ArgumentException("command");
             }
 
-            var name = command.Name;
             var bindings = command.Bindings as object[];
             if (bindings != null)
             {
@@ -145,10 +144,10 @@ namespace VsVim
             try
             {
                 // GUID_VsBufferMoniker
-                var monikerId = Constants.VsUserData_FileNameMoniker;
+                var monikerId = Constants.VsUserDataFileNameMoniker;
                 var userData = (IVsUserData)lines;
-                object data = null;
-                if (Microsoft.VisualStudio.VSConstants.S_OK != userData.GetData(ref monikerId, out data)
+                object data;
+                if (VSConstants.S_OK != userData.GetData(ref monikerId, out data)
                     || String.IsNullOrEmpty(data as string))
                 {
                     return String.Empty;
@@ -361,14 +360,7 @@ namespace VsVim
         public static Result<SnapshotSpan> GetCurrentSpan(this IVsTextLineMarker marker, ITextSnapshot snapshot)
         {
             var span = GetCurrentSpan(marker);
-            if (span.IsError)
-            {
-                return Result.CreateError(span.HResult);
-            }
-            else
-            {
-                return span.Value.ToSnapshotSpan(snapshot);
-            }
+            return span.IsError ? Result.CreateError(span.HResult) : span.Value.ToSnapshotSpan(snapshot);
         }
 
         public static Result<MARKERTYPE> GetMarkerType(this IVsTextLineMarker marker)
@@ -458,7 +450,7 @@ namespace VsVim
             var end = option.IsSome()
                 ? SnapshotPointUtil.GetLineColumn(option.Value)
                 : start;
-            return new TextSpan() 
+            return new TextSpan
             {
                 iStartLine = start.Item1,
                 iStartIndex = start.Item2,

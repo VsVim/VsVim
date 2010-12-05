@@ -125,10 +125,12 @@
     <Compile Include="EditCommandKind.cs" />
     <Compile Include="ExternalEdit\ExternalEditMarker.cs" />
     <Compile Include="ExternalEdit\ExternalEditKind.cs" />
-    <Compile Include="ExternalEdit\ExternalEditManager.cs" />
+    <Compile Include="ExternalEdit\ExternalEditMonitor.cs" />
+    <Compile Include="ExternalEdit\ExternalEditorManager.cs" />
     <Compile Include="ExternalEdit\IExternalEditorAdapter.cs" />
     <Compile Include="ExternalEdit\ResharperExternalEditorAdapter.cs" />
     <Compile Include="ExternalEdit\SnippetExternalEditorAdapter.cs" />
+    <Compile Include="IExternalEditorManager.cs" />
     <Compile Include="Implementation\TextManager.cs" />
     <Compile Include="Implementation\VsAdapter.cs" />
     <Compile Include="ITextManager.cs" />

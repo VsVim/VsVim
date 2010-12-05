@@ -22,10 +22,10 @@ namespace VsVim
             {
                 switch (EditCommandKind)
                 {
-                    case VsVim.EditCommandKind.Backspace:
-                    case VsVim.EditCommandKind.TypeChar:
-                    case VsVim.EditCommandKind.Delete:
-                    case VsVim.EditCommandKind.Return:
+                    case EditCommandKind.Backspace:
+                    case EditCommandKind.TypeChar:
+                    case EditCommandKind.Delete:
+                    case EditCommandKind.Return:
                         return true;
                 }
                 return false;
