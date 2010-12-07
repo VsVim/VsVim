@@ -138,6 +138,8 @@
     <Compile Include="KeyBindingUtilTest.cs" />
     <Compile Include="KeyBindingTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="ResharperExternalEditAdapterTest.cs" />
+    <Compile Include="SnippetExternalEditAdapterTest.cs" />
     <Compile Include="TestResources.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>

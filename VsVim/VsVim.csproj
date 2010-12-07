@@ -123,13 +123,11 @@
     <Compile Include="EditCommand.cs" />
     <Compile Include="CommandKeyBinding.cs" />
     <Compile Include="EditCommandKind.cs" />
-    <Compile Include="ExternalEdit\ExternalEditMarker.cs" />
-    <Compile Include="ExternalEdit\ExternalEditKind.cs" />
     <Compile Include="ExternalEdit\ExternalEditMonitor.cs" />
     <Compile Include="ExternalEdit\ExternalEditorManager.cs" />
-    <Compile Include="ExternalEdit\IExternalEditorAdapter.cs" />
-    <Compile Include="ExternalEdit\ResharperExternalEditorAdapter.cs" />
-    <Compile Include="ExternalEdit\SnippetExternalEditorAdapter.cs" />
+    <Compile Include="ExternalEdit\IExternalEditAdapter.cs" />
+    <Compile Include="ExternalEdit\ResharperExternalEditAdapter.cs" />
+    <Compile Include="ExternalEdit\SnippetExternalEditAdapter.cs" />
     <Compile Include="IExternalEditorManager.cs" />
     <Compile Include="Implementation\TextManager.cs" />
     <Compile Include="Implementation\VsAdapter.cs" />

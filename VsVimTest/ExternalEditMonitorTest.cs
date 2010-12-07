@@ -22,7 +22,7 @@ namespace VsVim.UnitTest
         private ITextBuffer _textBuffer;
         private Mock<ITextView> _textView;
         private Mock<IVimBuffer> _buffer;
-        private Mock<IExternalEditorAdapter> _adapter;
+        private Mock<IExternalEditAdapter> _adapter;
         private Mock<ITagAggregator<ITag>> _aggregator;
         private Mock<IVsTextLines> _vsTextLines;
         private ExternalEditMonitor _monitor;
@@ -40,9 +40,9 @@ namespace VsVim.UnitTest
             _buffer = MockObjectFactory.CreateVimBuffer(textView: _textView.Object);
 
             // Have adatper ignore by default
-            _adapter = _factory.Create<IExternalEditorAdapter>(MockBehavior.Strict);
-            _adapter.Setup(x => x.TryCreateExternalEditMarker(It.IsAny<ITag>(), It.IsAny<SnapshotSpan>())).Returns((ExternalEditMarker?) null);
-            _adapter.Setup(x => x.TryCreateExternalEditMarker(It.IsAny<IVsTextLineMarker>(), It.IsAny<ITextSnapshot>())).Returns((ExternalEditMarker?) null);
+            _adapter = _factory.Create<IExternalEditAdapter>(MockBehavior.Strict);
+            _adapter.Setup(x => x.IsExternalEditTag(It.IsAny<ITag>())).Returns(false);
+            _adapter.Setup(x => x.IsExternalEditMarker(It.IsAny<IVsTextLineMarker>())).Returns(false);
 
             _aggregator = _factory.Create<ITagAggregator<ITag>>(MockBehavior.Strict);
             SetupTags();
@@ -59,8 +59,8 @@ namespace VsVim.UnitTest
                 result = Result.CreateError();
             }
 
-            var list = new List<IExternalEditorAdapter> {_adapter.Object};
-            var adapters = new ReadOnlyCollection<IExternalEditorAdapter>(list);
+            var list = new List<IExternalEditAdapter> {_adapter.Object};
+            var adapters = new ReadOnlyCollection<IExternalEditAdapter>(list);
             _monitor = new ExternalEditMonitor(
                 _buffer.Object,
                 result,
@@ -98,67 +98,76 @@ namespace VsVim.UnitTest
 
         private void SetupAdapterCreateTagAsSnippet()
         {
-            _adapter
-                .Setup(x => x.TryCreateExternalEditMarker(It.IsAny<ITag>(), It.IsAny<SnapshotSpan>()))
-                .Returns<ITag, SnapshotSpan>((_, span) => new ExternalEditMarker(ExternalEditKind.Snippet, span));
+            _adapter.Setup(x => x.IsExternalEditTag(It.IsAny<ITag>())).Returns(true);
         }
 
         private void SetupAdapterCreateMarkerAsSnippet()
         {
             _adapter
-                .Setup(x => x.TryCreateExternalEditMarker(It.IsAny<IVsTextLineMarker>(), It.IsAny<ITextSnapshot>()))
-                .Returns<IVsTextLineMarker, ITextSnapshot>((marker, snapshot) =>
-                   {
-                       var span = marker.GetCurrentSpan(snapshot).Value;
-                       return new ExternalEditMarker(ExternalEditKind.Snippet, span);
-                   });
+                .Setup(x => x.IsExternalEditMarker(It.IsAny<IVsTextLineMarker>()))
+                .Returns(true);
+        }
+
+        private void SetupExternalEditTag(SnapshotSpan span)
+        {
+            SetupTags(span);
+            SetupAdapterCreateTagAsSnippet();
+        }
+
+        private void RaiseLayoutChanged(SnapshotLineRange visibleRange = null)
+        {
+            visibleRange = visibleRange ?? _textBuffer.GetLineRange(0, _textBuffer.CurrentSnapshot.LineCount - 1);
+            _textView
+                .SetupGet(x => x.TextViewLines)
+                .Returns(MockObjectFactory.CreateTextViewLineCollection(visibleRange, _factory).Object);
+            _textView.Raise(x => x.LayoutChanged += null, null, null);
         }
 
         [Test]
-        public void GetExternalEditMarkers_WithIgnoredTags()
+        public void GetExternalEditSpans_WithIgnoredTags()
         {
             Setup("cat", "tree", "dog");
             var span = _textBuffer.GetLineRange(0).Extent;
             SetupTags(span);
-            var result = _monitor.GetExternalEditMarkers(_textBuffer.GetExtent());
+            var result = _monitor.GetExternalEditSpans(_textBuffer.GetExtent());
             Assert.AreEqual(0, result.Count);
             _factory.Verify();
         }
 
         [Test]
-        public void GetExternalEditMarkers_WithConsumedTags()
+        public void GetExternalEditSpans_WithConsumedTags()
         {
             Setup("cat", "tree", "dog");
             var span = _textBuffer.GetLineRange(0).Extent;
             SetupTags(span);
             SetupAdapterCreateTagAsSnippet();
-            var result = _monitor.GetExternalEditMarkers(_textBuffer.GetExtent());
+            var result = _monitor.GetExternalEditSpans(_textBuffer.GetExtent());
             Assert.AreEqual(1, result.Count);
-            Assert.AreEqual(span, result.Single().Span);
+            Assert.AreEqual(span, result.Single());
             _factory.Verify();
         }
 
         [Test]
-        public void GetExternalEditMarkers_WithIgnoredMarkers()
+        public void GetExternalEditSpans_WithIgnoredMarkers()
         {
             Setup("cat", "tree", "dog");
             var span = _textBuffer.GetLineRange(0).Extent;
             SetupTextMarkers(15, span);
-            var result = _monitor.GetExternalEditMarkers(_textBuffer.GetExtent());
+            var result = _monitor.GetExternalEditSpans(_textBuffer.GetExtent());
             Assert.AreEqual(0, result.Count);
             _factory.Verify();
         }
 
         [Test]
-        public void GetExternalEditMarkers_WithConsumedMarkers()
+        public void GetExternalEditSpans_WithConsumedMarkers()
         {
             Setup("cat", "tree", "dog");
             var span = _textBuffer.GetLineRange(0).Extent;
             SetupTextMarkers(15, span);
             SetupAdapterCreateMarkerAsSnippet();
-            var result = _monitor.GetExternalEditMarkers(_textBuffer.GetExtent());
+            var result = _monitor.GetExternalEditSpans(_textBuffer.GetExtent());
             Assert.AreEqual(1, result.Count);
-            Assert.AreEqual(span, result.Single().Span);
+            Assert.AreEqual(span, result.Single());
         }
 
         [Test]
@@ -179,7 +188,7 @@ namespace VsVim.UnitTest
             _buffer.Raise(x => x.SwitchedMode += null, null, null);
             var list = _monitor.IgnoredMarkers.ToList();
             Assert.AreEqual(1, list.Count);
-            Assert.AreEqual(span, list.Single().Span);
+            Assert.AreEqual(span, list.Single());
         }
 
         [Test]
@@ -193,7 +202,7 @@ namespace VsVim.UnitTest
             _buffer.Raise(x => x.SwitchedMode += null, null, null);
             var list = _monitor.IgnoredMarkers.ToList();
             Assert.AreEqual(1, list.Count);
-            Assert.AreEqual(span, list.Single().Span);
+            Assert.AreEqual(span, list.Single());
         }
 
         [Test]
@@ -202,6 +211,15 @@ namespace VsVim.UnitTest
             Setup("cat", "tree", "dog");
             _monitor.InExternalEdit = true;
             _textView.Raise(x => x.LayoutChanged += null, null, null);
+        }
+
+        [Test]
+        public void LayoutChanged_InExternalEditWithVisibleTagsDoNothing()
+        {
+            Setup("cat", "tree", "dog");
+            _monitor.InExternalEdit = true;
+            SetupExternalEditTag(_textBuffer.GetLineRange(0).Extent);
+            RaiseLayoutChanged();
         }
 
         [Test]
@@ -217,13 +235,46 @@ namespace VsVim.UnitTest
         public void LayoutChanged_VisibleLinesHaveNoMarkersShouldClearIgnored()
         {
             Setup("cat", "tree", "dog");
-            _monitor.IgnoredMarkers = new List<ExternalEditMarker> {new ExternalEditMarker(ExternalEditKind.Snippet, _textBuffer.GetLine(0).Extent)};
-            var range = _textBuffer.GetLineRange(0);
-            var col = MockObjectFactory.CreateTextViewLineCollection(range, _factory);
-            _textView.SetupGet(x => x.TextViewLines).Returns(col.Object).Verifiable();
-            _textView.Raise(x => x.LayoutChanged += null, null, null);
+            _monitor.IgnoredMarkers = new List<SnapshotSpan> {_textBuffer.GetLine(0).Extent};
+            RaiseLayoutChanged();
             Assert.AreEqual(0, _monitor.IgnoredMarkers.Count());
             _factory.Verify();
+        }
+
+        [Test]
+        public void LayoutChanged_ShouldMoveIgnoreMarkersForward()
+        {
+            Setup("cat", "tree", "dog");
+            _monitor.IgnoredMarkers = new List<SnapshotSpan> {_textBuffer.GetLine(0).Extent};
+            _textBuffer.Replace(new Span(0, 0), "big ");
+            var range = _textBuffer.GetLineRange(0);
+            SetupExternalEditTag(range.Extent);
+            RaiseLayoutChanged();
+            Assert.AreEqual(range.Extent, _monitor.IgnoredMarkers.Single());
+            _factory.Verify();
+        }
+
+        [Test]
+        public void LayoutChanged_ExternalMarkersShouldTransitionToExternalEditMode()
+        {
+            Setup("cat", "tree", "dog");
+            _buffer
+                .Setup(x => x.SwitchMode(ModeKind.ExternalEdit, ModeArgument.None))
+                .Returns(_factory.Create<IMode>().Object)
+                .Verifiable();
+            SetupExternalEditTag(_textBuffer.GetLineRange(0).Extent);
+            RaiseLayoutChanged();
+            _factory.Verify();
+        }
+
+        [Test]
+        public void LayoutChanged_IgnoredMarkersShouldBeIgnored()
+        {
+            Setup("cat", "tree", "dog");
+            var range = _textBuffer.GetLineRange(0);
+            SetupExternalEditTag(range.Extent);
+            _monitor.IgnoredMarkers = new List<SnapshotSpan> {range.Extent};
+            RaiseLayoutChanged();
         }
 
     }

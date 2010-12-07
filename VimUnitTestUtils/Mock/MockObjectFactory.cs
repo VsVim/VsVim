@@ -341,6 +341,15 @@ namespace Vim.UnitTest.Mock
             return mock;
         }
 
+
+        public static Mock<IVsTextLineMarker> CreateVsTextLineMarker(
+            TextSpan span,
+            MARKERTYPE type,
+            MockRepository factory = null)
+        {
+            return CreateVsTextLineMarker(span, (int) type, factory);
+        }
+
         public static Mock<IVsTextLineMarker> CreateVsTextLineMarker(
             TextSpan span,
             int type,

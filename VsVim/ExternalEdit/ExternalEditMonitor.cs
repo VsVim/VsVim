@@ -14,12 +14,12 @@ namespace VsVim.ExternalEdit
         private readonly IVimBuffer _buffer;
         private readonly Result<IVsTextLines> _vsTextLines;
         private readonly ITagAggregator<ITag> _tagAggregator;
-        private readonly ReadOnlyCollection<IExternalEditorAdapter> _externalEditorAdapters;
-        private readonly List<ExternalEditMarker> _ignoredMarkers = new List<ExternalEditMarker>();
+        private readonly ReadOnlyCollection<IExternalEditAdapter> _externalEditorAdapters;
+        private readonly List<SnapshotSpan> _ignoredMarkers = new List<SnapshotSpan>();
 
         internal bool InExternalEdit { get; set; }
 
-        internal IEnumerable<ExternalEditMarker> IgnoredMarkers
+        internal IEnumerable<SnapshotSpan> IgnoredMarkers
         {
             get { return _ignoredMarkers; }
             set
@@ -32,7 +32,7 @@ namespace VsVim.ExternalEdit
         internal ExternalEditMonitor(
             IVimBuffer buffer,
             Result<IVsTextLines> vsTextLines,
-            ReadOnlyCollection<IExternalEditorAdapter> externalEditorAdapters,
+            ReadOnlyCollection<IExternalEditAdapter> externalEditorAdapters,
             ITagAggregator<ITag> tagAggregator)
         {
             _vsTextLines = vsTextLines;
@@ -48,10 +48,10 @@ namespace VsVim.ExternalEdit
             _buffer.TextView.LayoutChanged -= OnLayoutChanged;
         }
 
-        internal List<ExternalEditMarker> GetExternalEditMarkers(SnapshotSpan span)
+        internal List<SnapshotSpan> GetExternalEditSpans(SnapshotSpan span)
         {
-            var list = new List<ExternalEditMarker>();
-            GetExternalEditMarkers(span, list);
+            var list = new List<SnapshotSpan>();
+            GetExternalEditSpans(span, list);
             return list;
         }
 
@@ -82,7 +82,7 @@ namespace VsVim.ExternalEdit
         {
             var span = SnapshotUtil.GetFullSpan(_buffer.TextSnapshot);
             _ignoredMarkers.Clear();
-            GetExternalEditMarkers(span, _ignoredMarkers);
+            GetExternalEditSpans(span, _ignoredMarkers);
         }
 
         private void CheckForExternalEdit()
@@ -92,18 +92,22 @@ namespace VsVim.ExternalEdit
                 return;
             }
 
+            // Only check for an external edit if there are visible lines.  In the middle of a nested layout
+            // the set of visible lines will temporarily be unavalaible
             var range = _buffer.TextView.GetVisibleLineRange();
             if (range.IsError)
             {
                 return;
             }
 
-            var markers = GetExternalEditMarkers(range.Value.ExtentIncludingLineBreak);
-
+            var markers = GetExternalEditSpans(range.Value.ExtentIncludingLineBreak);
             MoveIgnoredMarkersToCurrentSnapshot();
             if (markers.All(ShouldIgnore))
             {
-                ClearIgnoreMarkers();
+                if (markers.Count == 0)
+                {
+                    ClearIgnoreMarkers();
+                }
                 return;
             }
 
@@ -118,25 +122,24 @@ namespace VsVim.ExternalEdit
             _ignoredMarkers.Clear();
         }
 
-        private void GetExternalEditMarkers(SnapshotSpan span, List<ExternalEditMarker> list)
+        private void GetExternalEditSpans(SnapshotSpan span, List<SnapshotSpan> list)
         {
-            GetExternalEditMarkersFromShims(span, list);
-            GetExternalEditMarkersFromTags(span, list);
+            GetExternalEditSpansFromMarkers(span, list);
+            GetExternalEditSpansFromTags(span, list);
         }
 
-        private void GetExternalEditMarkersFromTags(SnapshotSpan span, List<ExternalEditMarker> list)
+        private void GetExternalEditSpansFromTags(SnapshotSpan span, List<SnapshotSpan> list)
         {
             var tags = _tagAggregator.GetTags(span);
             foreach (var cur in tags)
             {
-                foreach (var tagSpan in cur.Span.GetSpans(_buffer.TextSnapshot))
+                foreach (var adapter in _externalEditorAdapters)
                 {
-                    foreach (var adapter in _externalEditorAdapters)
+                    if (adapter.IsExternalEditTag(cur.Tag))
                     {
-                        var marker = adapter.TryCreateExternalEditMarker(cur.Tag, tagSpan);
-                        if (marker.HasValue)
+                        foreach (var tagSpan in cur.Span.GetSpans(_buffer.TextSnapshot))
                         {
-                            list.Add(marker.Value);
+                            list.Add(tagSpan);
                         }
                     }
                 }
@@ -148,7 +151,7 @@ namespace VsVim.ExternalEdit
         /// Visual Studio markers.  It's possible this is a pure Dev10 ITextBuffer though hence won't
         /// have any old style markers
         /// </summary>
-        private void GetExternalEditMarkersFromShims(SnapshotSpan span, List<ExternalEditMarker> list)
+        private void GetExternalEditSpansFromMarkers(SnapshotSpan span, List<SnapshotSpan> list)
         {
             if (_vsTextLines.IsValue)
             {
@@ -157,21 +160,24 @@ namespace VsVim.ExternalEdit
                 {
                     foreach (var adapter in _externalEditorAdapters)
                     {
-                        var editMarker = adapter.TryCreateExternalEditMarker(marker, _buffer.TextSnapshot);
-                        if (editMarker.HasValue)
+                        if (adapter.IsExternalEditMarker(marker))
                         {
-                            list.Add(editMarker.Value);
+                            var markerSpan = marker.GetCurrentSpan(_buffer.TextSnapshot);
+                            if (markerSpan.IsValue)
+                            {
+                                list.Add(markerSpan.Value);
+                            }
                         }
                     }
                 }
             }
         }
 
-        private bool ShouldIgnore(ExternalEditMarker marker)
+        private bool ShouldIgnore(SnapshotSpan marker)
         {
             foreach (var ignore in _ignoredMarkers)
             {
-                if (ignore.Span.OverlapsWith(marker.Span))
+                if (ignore.Span.OverlapsWith(marker))
                 {
                     return true;
                 }
@@ -186,16 +192,16 @@ namespace VsVim.ExternalEdit
             var i = 0;
             while (i < _ignoredMarkers.Count)
             {
-                if (_ignoredMarkers[i].Span.Snapshot == snapshot)
+                if (_ignoredMarkers[i].Snapshot == snapshot)
                 {
                     i++;
                     continue;
                 }
 
-                var mapped = _ignoredMarkers[i].Span.SafeTranslateTo(snapshot, SpanTrackingMode.EdgeInclusive);
+                var mapped = _ignoredMarkers[i].SafeTranslateTo(snapshot, SpanTrackingMode.EdgeInclusive);
                 if (mapped.IsValue)
                 {
-                    _ignoredMarkers[i] = new ExternalEditMarker(_ignoredMarkers[i].ExternalEditKind, mapped.Value);
+                    _ignoredMarkers[i] = mapped.Value;
                 }
                 else
                 {
