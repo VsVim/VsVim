@@ -148,7 +148,7 @@
     <Compile Include="TextManagerTest.cs" />
     <Compile Include="Utils\CharPointer.cs" />
     <Compile Include="VsAdapterTest.cs" />
-    <Compile Include="VsCommandFilterTest.cs" />
+    <Compile Include="VsCommandTargetTest.cs" />
     <Compile Include="VsFilterKeysAdapterTest.cs" />
     <Compile Include="VsKeyProcessorTest.cs" />
     <Compile Include="VsVimHostTest.cs" />

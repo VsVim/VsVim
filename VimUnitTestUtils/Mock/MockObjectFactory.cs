@@ -254,10 +254,17 @@ namespace Vim.UnitTest.Mock
 
         public static Mock<IServiceProvider> CreateServiceProvider(params Tuple<Type, object>[] serviceList)
         {
-            var mock = new Mock<IServiceProvider>(MockBehavior.Strict);
+            return CreateServiceProvider(null, serviceList);
+        }
+
+        public static Mock<IServiceProvider> CreateServiceProvider(MockRepository factory, params Tuple<Type, object>[] serviceList)
+        {
+            factory = factory ?? new MockRepository(MockBehavior.Strict);
+            var mock = factory.Create<IServiceProvider>();
             foreach (var tuple in serviceList)
             {
-                mock.Setup(x => x.GetService(tuple.Item1)).Returns(tuple.Item2);
+                var localTuple = tuple;
+                mock.Setup(x => x.GetService(localTuple.Item1)).Returns(localTuple.Item2);
             }
 
             return mock;
@@ -265,7 +272,12 @@ namespace Vim.UnitTest.Mock
 
         public static Mock<SVsServiceProvider> CreateVsServiceProvider(params Tuple<Type, object>[] serviceList)
         {
-            var mock = CreateServiceProvider(serviceList);
+            return CreateVsServiceProvider(null, serviceList);
+        }
+
+        public static Mock<SVsServiceProvider> CreateVsServiceProvider(MockRepository factory, params Tuple<Type, object>[] serviceList)
+        {
+            var mock = CreateServiceProvider(factory, serviceList);
             return mock.As<SVsServiceProvider>();
         }
 

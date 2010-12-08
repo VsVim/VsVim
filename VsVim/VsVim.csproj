@@ -173,7 +173,7 @@
     </Compile>
     <Compile Include="UI\KeyBindingData.cs" />
     <Compile Include="UI\KeyBindingHandledByOption.cs" />
-    <Compile Include="VsCommandFilter.cs" />
+    <Compile Include="VsCommandTarget.cs" />
     <Compile Include="VsFilterKeysAdapter.cs" />
     <Compile Include="VsKeyProcessor.cs" />
     <Compile Include="VsVimHost.cs" />

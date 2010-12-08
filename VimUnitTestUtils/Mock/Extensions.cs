@@ -11,6 +11,7 @@ using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.TextManager.Interop;
 using Moq;
+using Moq.Language.Flow;
 using Vim.Extensions;
 using VsVim;
 
@@ -296,6 +297,30 @@ namespace Vim.UnitTest.Mock
                     It.IsAny<uint>(),
                     out local))
                 .Returns(VSConstants.S_OK);
+        }
+
+        public static IReturnsResult<IOleCommandTarget> SetupQueryStatus(
+            this Mock<IOleCommandTarget> mock, 
+            Guid? command = null, 
+            int hresult = VSConstants.S_OK)
+        {
+            var commandValue = command ?? VSConstants.VSStd2K;
+            return mock.Setup(x => x.QueryStatus(
+                ref commandValue,
+                It.IsAny<uint>(),
+                It.IsAny<OLECMD[]>(),
+                It.IsAny<IntPtr>())).Returns(hresult);
+        }
+
+        public static IReturnsResult<IOleCommandTarget> SetupExec(this Mock<IOleCommandTarget> mock, Guid? command = null, int hresult = VSConstants.S_OK)
+        {
+            var commandValue = command ?? VSConstants.VSStd2K;
+            return mock.Setup(x => x.Exec(
+                ref commandValue,
+                It.IsAny<uint>(),
+                It.IsAny<uint>(),
+                It.IsAny<IntPtr>(),
+                It.IsAny<IntPtr>())).Returns(hresult);
         }
     }
 }

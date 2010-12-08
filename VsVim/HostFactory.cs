@@ -28,7 +28,7 @@ namespace VsVim
         private readonly IServiceProvider _serviceProvider;
         private readonly IVim _vim;
         private readonly IVsEditorAdaptersFactoryService _adaptersFactory;
-        private readonly Dictionary<IVimBuffer, VsCommandFilter> _filterMap = new Dictionary<IVimBuffer, VsCommandFilter>();
+        private readonly Dictionary<IVimBuffer, VsCommandTarget> _filterMap = new Dictionary<IVimBuffer, VsCommandTarget>();
         private readonly IFileSystem _fileSystem;
         private readonly IVsAdapter _adapter;
 
@@ -110,7 +110,7 @@ namespace VsVim
             }
 
             var buffer = opt.Value;
-            var result = VsCommandFilter.Create(buffer, vsView, _serviceProvider, _externalEditorManager);
+            var result = VsCommandTarget.Create(buffer, vsView, _serviceProvider, _externalEditorManager);
             if (result.IsValue)
             {
                 _filterMap.Add(buffer, result.Value);
