@@ -24,7 +24,7 @@ type internal ModeMap() =
             (Option.get prev).OnLeave()
             _previousMode <- prev
         mode.OnEnter arg
-        _modeSwitchedEvent.Trigger(mode)
+        _modeSwitchedEvent.Trigger(SwitchModeEventArgs(prev, mode))
         mode
     member x.SwitchPreviousMode () =
         let prev = Option.get _previousMode

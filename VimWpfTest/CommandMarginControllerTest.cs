@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Microsoft.FSharp.Core;
 using Moq;
 using NUnit.Framework;
 using Vim.Extensions;
@@ -43,7 +44,7 @@ namespace Vim.UI.Wpf.Test
             var mode = new Mock<INormalMode>();
             mode.SetupGet(x => x.ModeKind).Returns(ModeKind.Normal);
             _buffer.NormalModeImpl = mode.Object;
-            _buffer.RaiseSwitchedMode(_buffer.NormalModeImpl);
+            _buffer.RaiseSwitchedMode(new SwitchModeEventArgs(FSharpOption<IMode>.None, _buffer.NormalModeImpl));
             Assert.AreEqual(String.Empty, _marginControl.StatusLine);
         }
 
@@ -53,7 +54,7 @@ namespace Vim.UI.Wpf.Test
         {
             var mode = new Mock<IMode>();
             mode.SetupGet(x => x.ModeKind).Returns(ModeKind.Insert);
-            _buffer.RaiseSwitchedMode(mode.Object);
+            _buffer.RaiseSwitchedMode(new SwitchModeEventArgs(FSharpOption<IMode>.None, mode.Object));
             Assert.AreEqual(Resources.InsertBanner, _marginControl.StatusLine);
         }
 
@@ -65,7 +66,7 @@ namespace Vim.UI.Wpf.Test
             mode.SetupGet(x => x.ModeKind).Returns(ModeKind.Insert);
             _marginControl.StatusLine = String.Empty;
             _buffer.RaiseKeyInputStart(KeyInputUtil.CharToKeyInput('c'));
-            _buffer.RaiseSwitchedMode(mode.Object);
+            _buffer.RaiseSwitchedMode(new SwitchModeEventArgs(FSharpOption<IMode>.None, mode.Object));
             Assert.AreEqual(String.Empty, _marginControl.StatusLine);
         }
 
@@ -78,7 +79,7 @@ namespace Vim.UI.Wpf.Test
             var ki = KeyInputUtil.CharToKeyInput('c');
             _marginControl.StatusLine = String.Empty;
             _buffer.RaiseKeyInputStart(ki);
-            _buffer.RaiseSwitchedMode(mode.Object);
+            _buffer.RaiseSwitchedMode(new SwitchModeEventArgs(FSharpOption<IMode>.None, mode.Object));
             Assert.AreEqual(String.Empty, _marginControl.StatusLine);
             _buffer.RaiseKeyInputEnd(ki);
             Assert.AreEqual(Resources.InsertBanner, _marginControl.StatusLine);

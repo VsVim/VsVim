@@ -219,7 +219,7 @@ namespace VimCore.Test
         {
             Create("the quick brown fox");
             _textBuffer.Insert(1, "b");
-            _vimBuffer.RaiseSwitchedMode(null);
+            _vimBuffer.RaiseSwitchedMode((IMode)null);
             Assert.AreEqual(TextChange.NewInsert("b"), _lastChange);
         }
 
@@ -230,7 +230,7 @@ namespace VimCore.Test
             Create("the quick brown fox");
             var didRun = false;
             _tracker.ChangeCompleted += delegate { didRun = true; };
-            _vimBuffer.RaiseSwitchedMode(null);
+            _vimBuffer.RaiseSwitchedMode((IMode)null);
             Assert.IsFalse(didRun);
         }
 

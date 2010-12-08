@@ -159,15 +159,15 @@ namespace Vim.UI.Wpf
 
         #region Event Handlers
 
-        private void OnSwitchMode(object sender, IMode mode)
+        private void OnSwitchMode(object sender, SwitchModeEventArgs args)
         {
             if (_inKeyInputEvent)
             {
-                _modeSwitch = mode;
+                _modeSwitch = args.CurrentMode;
             }
             else
             {
-                UpdateForSwitchMode(mode);
+                UpdateForSwitchMode(args.CurrentMode);
             }
         }
 

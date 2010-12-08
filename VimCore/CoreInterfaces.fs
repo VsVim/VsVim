@@ -1154,6 +1154,20 @@ and IVim =
     /// the IVimBuffer but instead just removes it's association with the given view
     abstract RemoveBuffer : ITextView -> bool
 
+and SwitchModeEventArgs 
+    (
+        _previousMode : IMode option,
+        _currentMode : IMode ) = 
+    inherit System.EventArgs()
+
+    /// Current IMode 
+    member x.CurrentMode = _currentMode
+
+    /// Previous IMode.  Expressed as an Option because the first mode switch
+    /// has no previous one
+    member x.PreviousMode = _previousMode
+
+
 /// Main interface for the Vim editor engine so to speak. 
 and IVimBuffer =
 
@@ -1233,9 +1247,9 @@ and IVimBuffer =
     /// and it's modes
     abstract Close : unit -> unit
     
-    /// Raised when the mode is switched
+    /// Raised when the mode is switched.  Returns the old and new mode 
     [<CLIEvent>]
-    abstract SwitchedMode : IEvent<IMode>
+    abstract SwitchedMode : IEvent<SwitchModeEventArgs>
 
     /// Raised when a key is processed.  This is raised when the KeyInput is actually
     /// processed by Vim not when it is received.  

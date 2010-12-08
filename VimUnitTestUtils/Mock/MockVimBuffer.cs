@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Utilities;
@@ -142,9 +143,14 @@ namespace Vim.UnitTest.Mock
 
         public void RaiseSwitchedMode(IMode mode)
         {
+            RaiseSwitchedMode(new SwitchModeEventArgs(FSharpOption<IMode>.None, mode));
+        }
+
+        public void RaiseSwitchedMode(SwitchModeEventArgs args)
+        {
             if (SwitchedMode != null)
             {
-                SwitchedMode(this, mode);
+                SwitchedMode(this, args);
             }
         }
 
@@ -226,7 +232,7 @@ namespace Vim.UnitTest.Mock
 
         public event Microsoft.FSharp.Control.FSharpHandler<KeyInput> KeyInputBuffered;
 
-        public event Microsoft.FSharp.Control.FSharpHandler<IMode> SwitchedMode;
+        public event Microsoft.FSharp.Control.FSharpHandler<SwitchModeEventArgs> SwitchedMode;
 
         public event Microsoft.FSharp.Control.FSharpHandler<EventArgs> Closed;
 

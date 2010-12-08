@@ -9,6 +9,7 @@ using Microsoft.VisualStudio.TextManager.Interop;
 using Moq;
 using NUnit.Framework;
 using Vim;
+using Vim.Extensions;
 using Vim.UnitTest;
 using Vim.UnitTest.Mock;
 using VsVim.ExternalEdit;
@@ -38,6 +39,7 @@ namespace VsVim.UnitTest
             _textBuffer = EditorUtil.CreateBuffer(lines);
             _textView = MockObjectFactory.CreateTextView(textBuffer: _textBuffer);
             _buffer = MockObjectFactory.CreateVimBuffer(textView: _textView.Object);
+            _buffer.SetupGet(x => x.ModeKind).Returns(ModeKind.Normal).Verifiable();
 
             // Have adatper ignore by default
             _adapter = _factory.Create<IExternalEditAdapter>(MockBehavior.Strict);
@@ -83,7 +85,7 @@ namespace VsVim.UnitTest
             _aggregator.Setup(x => x.GetTags(It.IsAny<SnapshotSpan>())).Returns(list);
         }
 
-        private void SetupTextMarkers(int tagType, params SnapshotSpan[] spans)
+        private void SetupMarkers(int tagType, params SnapshotSpan[] spans)
         {
             var list = new List<IVsTextLineMarker>();
             foreach (var span in spans)
@@ -152,7 +154,7 @@ namespace VsVim.UnitTest
         {
             Setup("cat", "tree", "dog");
             var span = _textBuffer.GetLineRange(0).Extent;
-            SetupTextMarkers(15, span);
+            SetupMarkers(15, span);
             var result = _monitor.GetExternalEditSpans(_textBuffer.GetExtent());
             Assert.AreEqual(0, result.Count);
             _factory.Verify();
@@ -163,7 +165,7 @@ namespace VsVim.UnitTest
         {
             Setup("cat", "tree", "dog");
             var span = _textBuffer.GetLineRange(0).Extent;
-            SetupTextMarkers(15, span);
+            SetupMarkers(15, span);
             SetupAdapterCreateMarkerAsSnippet();
             var result = _monitor.GetExternalEditSpans(_textBuffer.GetExtent());
             Assert.AreEqual(1, result.Count);
@@ -174,52 +176,68 @@ namespace VsVim.UnitTest
         public void SwitchMode_NoActionOutsideExternalEdit()
         {
             Setup("cat", "tree", "dog");
-            _buffer.Raise(x => x.SwitchedMode += null, null, _factory.Create<IMode>().Object);
+            var mode = _factory.Create<IMode>();
+            mode.SetupGet(x => x.ModeKind).Returns(ModeKind.Normal);
+            var args = new SwitchModeEventArgs(FSharpOption.Create(mode.Object), null);
+            _buffer.Raise(x => x.SwitchedMode += null, null, args);
         }
 
+        /// <summary>
+        /// This is a very important test because we often see the transition to visual mode
+        /// before the layout and hence would ignore valid edit tags
+        /// </summary>
         [Test]
-        public void SwitchMode_InExternalEditSaveTagsAsIgnore()
+        public void SwitchMode_OldModeIsExternalThenSaveIgnoreTags()
         {
             Setup("cat", "tree", "dog");
-            _monitor.InExternalEdit = true;
             var span = _textBuffer.GetLineRange(0).Extent;
             SetupTags(span);
             SetupAdapterCreateTagAsSnippet();
-            _buffer.Raise(x => x.SwitchedMode += null, null, null);
+            var mode = _factory.Create<IMode>();
+            mode.SetupGet(x => x.ModeKind).Returns(ModeKind.ExternalEdit).Verifiable();
+            _buffer.Raise(x => x.SwitchedMode += null, null, new SwitchModeEventArgs(FSharpOption.Create(mode.Object), null));
             var list = _monitor.IgnoredMarkers.ToList();
             Assert.AreEqual(1, list.Count);
             Assert.AreEqual(span, list.Single());
+            _factory.Verify();
         }
 
         [Test]
-        public void SwitchMode_InExternalEditSaveMarkersAsIgnore()
+        public void SwitchMode_OldModeIsNotExternalThenSaveNothing()
         {
             Setup("cat", "tree", "dog");
-            _monitor.InExternalEdit = true;
             var span = _textBuffer.GetLineRange(0).Extent;
-            SetupTextMarkers(15, span);
+            SetupMarkers(15, span);
             SetupAdapterCreateMarkerAsSnippet();
-            _buffer.Raise(x => x.SwitchedMode += null, null, null);
+            var mode = _factory.Create<IMode>();
+            mode.SetupGet(x => x.ModeKind).Returns(ModeKind.Normal).Verifiable();
+            _buffer.Raise(x => x.SwitchedMode += null, null, new SwitchModeEventArgs(FSharpOption.Create(mode.Object), null));
             var list = _monitor.IgnoredMarkers.ToList();
-            Assert.AreEqual(1, list.Count);
-            Assert.AreEqual(span, list.Single());
+            Assert.AreEqual(0, list.Count);
+            _factory.Verify();
         }
 
         [Test]
-        public void LayoutChanged_InExternalEditDoNothing()
+        public void LayoutChanged_InExternalEditDoNothingIfEditMarkersStillPresent()
         {
             Setup("cat", "tree", "dog");
-            _monitor.InExternalEdit = true;
-            _textView.Raise(x => x.LayoutChanged += null, null, null);
-        }
-
-        [Test]
-        public void LayoutChanged_InExternalEditWithVisibleTagsDoNothing()
-        {
-            Setup("cat", "tree", "dog");
-            _monitor.InExternalEdit = true;
+            var span = _textBuffer.GetLineRange(0).Extent;
             SetupExternalEditTag(_textBuffer.GetLineRange(0).Extent);
-            RaiseLayoutChanged();
+            _buffer.SetupGet(x => x.ModeKind).Returns(ModeKind.ExternalEdit).Verifiable();
+            _textView.Raise(x => x.LayoutChanged += null, null, null);
+            _factory.Verify();
+        }
+
+        [Test]
+        public void LayoutChanged_InExternalEditSwitchToInsertIfNoMarkers()
+        {
+            Setup("cat", "tree", "dog");
+            var span = _textBuffer.GetLineRange(0).Extent;
+            SetupTags(span);
+            _buffer.SetupGet(x => x.ModeKind).Returns(ModeKind.ExternalEdit).Verifiable();
+            _buffer.Setup(x => x.SwitchMode(ModeKind.Insert, ModeArgument.None)).Verifiable();
+            _textView.Raise(x => x.LayoutChanged += null, null, null);
+            _factory.Verify();
         }
 
         [Test]

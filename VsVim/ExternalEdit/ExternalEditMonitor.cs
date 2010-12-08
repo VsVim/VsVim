@@ -6,6 +6,7 @@ using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Tagging;
 using Microsoft.VisualStudio.TextManager.Interop;
 using Vim;
+using Vim.Extensions;
 
 namespace VsVim.ExternalEdit
 {
@@ -16,8 +17,6 @@ namespace VsVim.ExternalEdit
         private readonly ITagAggregator<ITag> _tagAggregator;
         private readonly ReadOnlyCollection<IExternalEditAdapter> _externalEditorAdapters;
         private readonly List<SnapshotSpan> _ignoredMarkers = new List<SnapshotSpan>();
-
-        internal bool InExternalEdit { get; set; }
 
         internal IEnumerable<SnapshotSpan> IgnoredMarkers
         {
@@ -60,9 +59,9 @@ namespace VsVim.ExternalEdit
             CheckForExternalEdit();
         }
 
-        private void OnSwitchedMode(object sender, IMode newMode)
+        private void OnSwitchedMode(object sender, SwitchModeEventArgs args)
         {
-            if (InExternalEdit)
+            if ( args.PreviousMode.IsSome() && args.PreviousMode.Value.ModeKind == ModeKind.ExternalEdit)
             {
                 // If we're in the middle of an external edit and the mode switches then we 
                 // need to record the current edit markers so we can ignore them going 
@@ -87,11 +86,6 @@ namespace VsVim.ExternalEdit
 
         private void CheckForExternalEdit()
         {
-            if (InExternalEdit)
-            {
-                return;
-            }
-
             // Only check for an external edit if there are visible lines.  In the middle of a nested layout
             // the set of visible lines will temporarily be unavalaible
             var range = _buffer.TextView.GetVisibleLineRange();
@@ -107,14 +101,21 @@ namespace VsVim.ExternalEdit
                 if (markers.Count == 0)
                 {
                     ClearIgnoreMarkers();
-                }
-                return;
-            }
 
-            // Not in an external edit and there are edit markers we need to consider.  Time to enter
-            // external edit mode
-            _buffer.SwitchMode(ModeKind.ExternalEdit, ModeArgument.None);
-            InExternalEdit = true;
+                    // If we're in an external edit and all of the markers leave then transition back to
+                    // insert mode
+                    if (_buffer.ModeKind == ModeKind.ExternalEdit)
+                    {
+                        _buffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
+                    }
+                }
+            } 
+            else if (_buffer.ModeKind != ModeKind.ExternalEdit)
+            {
+                // Not in an external edit and there are edit markers we need to consider.  Time to enter
+                // external edit mode
+                _buffer.SwitchMode(ModeKind.ExternalEdit, ModeArgument.None);
+            }
         }
 
         private void ClearIgnoreMarkers()
