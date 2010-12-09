@@ -14,13 +14,13 @@ type internal KeyMap() =
     member x.Clear mode = _map <- _map |> Map.remove mode
     member x.ClearAll () = _map <- Map.empty
 
-    member private x.GetRemapModeMap mode = 
+    member x.GetRemapModeMap mode = 
         match Map.tryFind mode _map with
         | None -> Map.empty
         | Some(map) -> map
 
     /// Main API for adding a key mapping into our storage
-    member private x.MapCore (lhs:string) (rhs:string) (mode:KeyRemapMode) allowRemap = 
+    member x.MapCore (lhs:string) (rhs:string) (mode:KeyRemapMode) allowRemap = 
         if StringUtil.isNullOrEmpty rhs then
             false
         else
@@ -49,7 +49,7 @@ type internal KeyMap() =
 
     /// Get the key mapping for the passed in data.  Returns a KeyMappingResult represeting the 
     /// mapping
-    member private x.GetKeyMapping keyInputSet mode =
+    member x.GetKeyMapping keyInputSet mode =
         let modeMap = x.GetRemapModeMap mode
 
         let rec inner key set : (KeyMappingResult * Set<KeyInputSet> )=

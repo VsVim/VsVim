@@ -3060,8 +3060,8 @@ namespace VimCore.Test
         public void MoveViewUp1()
         {
             Create(string.Empty);
-            _mode.Process(KeyNotationUtil.StringToKeyInput("CTRL-w"));
-            _mode.Process(KeyNotationUtil.StringToKeyInput("CTRL-k"));
+            _mode.Process(KeyNotationUtil.StringToKeyInput("<C-w>"));
+            _mode.Process(KeyNotationUtil.StringToKeyInput("<C-k>"));
             _host.Verify(x => x.MoveViewUp(_view));
         }
 
@@ -3069,7 +3069,7 @@ namespace VimCore.Test
         public void MoveViewUp2()
         {
             Create(string.Empty);
-            _mode.Process(KeyNotationUtil.StringToKeyInput("CTRL-w"));
+            _mode.Process(KeyNotationUtil.StringToKeyInput("<C-w>"));
             _mode.Process(KeyNotationUtil.StringToKeyInput("k"));
             _host.Verify(x => x.MoveViewUp(_view));
         }
@@ -3078,8 +3078,8 @@ namespace VimCore.Test
         public void MoveViewDown1()
         {
             Create(string.Empty);
-            _mode.Process(KeyNotationUtil.StringToKeyInput("CTRL-w"));
-            _mode.Process(KeyNotationUtil.StringToKeyInput("CTRL-j"));
+            _mode.Process(KeyNotationUtil.StringToKeyInput("<C-w>"));
+            _mode.Process(KeyNotationUtil.StringToKeyInput("<C-j>"));
             _host.Verify(x => x.MoveViewDown(_view));
         }
 
@@ -3087,7 +3087,7 @@ namespace VimCore.Test
         public void MoveViewDown2()
         {
             Create(string.Empty);
-            _mode.Process(KeyNotationUtil.StringToKeyInput("CTRL-w"));
+            _mode.Process(KeyNotationUtil.StringToKeyInput("<C-w>"));
             _mode.Process(KeyNotationUtil.StringToKeyInput("j"));
             _host.Verify(x => x.MoveViewDown(_view));
         }

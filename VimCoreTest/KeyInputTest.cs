@@ -69,6 +69,12 @@ namespace VimCore.Test
         }
 
         [Test]
+        public void Equality_ControlLetterIsCaseInsensitive()
+        {
+            Assert.AreEqual(KeyInputUtil.CharWithControlToKeyInput('a'), KeyInputUtil.CharWithControlToKeyInput('A'));
+        }
+
+        [Test]
         public void CompareTo1()
         {
             var i1 = KeyInputUtil.CharToKeyInput('c');
@@ -77,6 +83,17 @@ namespace VimCore.Test
             Assert.IsTrue(i1.CompareTo(KeyInputUtil.CharToKeyInput('a')) > 0);
         }
 
+        [Test]
+        public void GetHashCode_ControlLetterIsCaseInsensitive()
+        {
+            Assert.AreEqual(KeyInputUtil.CharWithControlToKeyInput('a').GetHashCode(), KeyInputUtil.CharWithControlToKeyInput('A').GetHashCode());
+        }
+
+        [Test]
+        public void GetHashCode_ControlLetterIsCaseInsensitive2()
+        {
+            Assert.AreEqual(KeyInputUtil.CharWithControlToKeyInput('T').GetHashCode(), KeyInputUtil.CharWithControlToKeyInput('t').GetHashCode());
+        }
 
     }
 }

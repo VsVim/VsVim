@@ -38,6 +38,14 @@ namespace Vim.UI.Wpf
             get { return _keyboardId; }
         }
 
+        /// <summary>
+        /// Language Identifier of the keyboard
+        /// </summary>
+        internal int LanguageIdentifier
+        {
+            get { return NativeMethods.LoWord(_keyboardId.ToInt32()); }
+        }
+
         internal KeyboardMap(IntPtr keyboardId)
         {
             _keyboardId = keyboardId;

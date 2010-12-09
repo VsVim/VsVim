@@ -29,24 +29,38 @@ namespace VimCore.Test
             }
         }
 
-        /// <summary>
-        /// Make sure that all letters convert
-        /// </summary>
         [Test]
-        public void CharToKeyInput1()
+        public void CharToKeyInput_LowerLetters()
         {
-            var startLower = (int)('a');
-            var startUpper = (int)('A');
-            var lowerCase = Enumerable.Range(0, 26).Select(x => (char)(x + startLower));
-            var upperCase = Enumerable.Range(0, 26).Select(x => (char)(x + startUpper));
-            var all = lowerCase.Concat(upperCase);
-            Assert.IsTrue(all.All(x => KeyInputUtil.CharToKeyInput(x).Char == x));
-            Assert.IsTrue(upperCase.All(x => KeyInputUtil.CharToKeyInput(x).KeyModifiers == KeyModifiers.Shift));
+            foreach (var cur in CharsLettersLower)
+            {
+                var ki = KeyInputUtil.CharToKeyInput(cur);
+                Assert.AreEqual(cur, ki.Char);
+                Assert.AreEqual(KeyModifiers.None, ki.KeyModifiers);
+
+                var offset = ((int) cur) - ((int) 'a');
+                var key = (VimKey) ((int) VimKey.LowerA + offset);
+                Assert.AreEqual(key, ki.Key);
+            }
         }
 
         [Test]
-        [Description("All of the core characters should map back to themselves")]
-        public void CharToKeyInput2()
+        public void CharToKeyInput_UpperLetters()
+        {
+            foreach (var cur in CharsLettersUpper)
+            {
+                var ki = KeyInputUtil.CharToKeyInput(cur);
+                Assert.AreEqual(cur, ki.Char);
+                Assert.AreEqual(KeyModifiers.None, ki.KeyModifiers);
+
+                var offset = ((int) cur) - ((int) 'A');
+                var key = (VimKey) ((int) VimKey.UpperA + offset);
+                Assert.AreEqual(key, ki.Key);
+            }
+        }
+
+        [Test]
+        public void CharToKeyInput_AllCoreCharsMapToThemselves()
         {
             foreach (var cur in KeyInputUtil.CoreCharacterList)
             {
@@ -57,8 +71,7 @@ namespace VimCore.Test
         }
 
         [Test]
-        [Description("Verify our list of core characters map back to themselves")]
-        public void CharToKeyInput4()
+        public void CharToKeyInput_AllOurCharsMapToThemselves()
         {
             foreach (var cur in CharsAll)
             {
@@ -161,50 +174,35 @@ namespace VimCore.Test
         }
 
         [Test]
-        [Description("Apply shift to alpha")]
-        public void ChangeKeyModifiers1()
+        public void ChangeKeyModifiers_ShiftWontChangeAlpha()
         {
             foreach (var letter in CharsLettersLower)
             {
                 var lower = KeyInputUtil.CharToKeyInput(letter);
                 var upper = KeyInputUtil.CharToKeyInput(Char.ToUpper(letter));
-                var opt = KeyInputUtil.ChangeKeyModifiers(lower, KeyModifiers.Shift);
-                Assert.AreEqual(upper, opt);
+                var lowerWithShift = KeyInputUtil.ChangeKeyModifiers(lower, KeyModifiers.Shift);
+                Assert.AreNotEqual(lowerWithShift, upper);
             }
         }
 
         [Test]
-        [Description("Apply a shift remove to alhpa")]
-        public void ChangeKeyModifiers2()
+        public void ChangeKeyModifiers_RemoveShiftWontLowerAlpha()
         {
             foreach (var letter in CharsLettersLower)
             {
                 var lower = KeyInputUtil.CharToKeyInput(letter);
                 var upper = KeyInputUtil.CharToKeyInput(Char.ToUpper(letter));
-                var opt = KeyInputUtil.ChangeKeyModifiers(upper, KeyModifiers.None);
-                Assert.AreEqual(lower, opt);
+                var upperNoShift = KeyInputUtil.ChangeKeyModifiers(upper, KeyModifiers.None);
+                Assert.AreNotEqual(lower, upperNoShift);
             }
         }
 
         [Test]
-        [Description("Apply control")]
-        public void ChangeKeyModifiers3()
+        public void ChangeKeyModifiers_WontChangeChar()
         {
-            foreach (var letter in CharsLettersLower)
-            {
-                var lower = KeyInputUtil.CharToKeyInput(letter);
-                var opt = KeyInputUtil.ChangeKeyModifiers(lower, KeyModifiers.Control);
-                Assert.AreEqual(KeyModifiers.Control, opt.KeyModifiers);
-            }
-        }
-
-        [Test]
-        [Description("Shift to non-alpha doesn't matter in Vim land")]
-        public void ChangeKeyModifiers4()
-        {
-            var ki1 = KeyInputUtil.CharToKeyInput(']');
-            var ki2 = KeyInputUtil.ChangeKeyModifiers(ki1, KeyModifiers.Shift);
-            Assert.AreEqual(']', ki2.Char);
+            var ki = KeyInputUtil.VimKeyToKeyInput(VimKey.OpenBracket);
+            var ki2 = KeyInputUtil.ChangeKeyModifiers(ki, KeyModifiers.Shift);
+            Assert.AreEqual(ki.Char, ki2.Char);
         }
     }
 }

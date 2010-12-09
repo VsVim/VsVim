@@ -33,35 +33,35 @@ module KeyNotationUtil =
 
     let ManualKeyList = 
         [
-            ("<Nul>",KeyInputUtil.CharWithControlToKeyInput '@');
-            ("<Bs>", KeyInputUtil.VimKeyToKeyInput VimKey.Back);
-            ("<Tab>",KeyInputUtil.VimKeyToKeyInput VimKey.Tab);
-            ("<NL>", KeyInputUtil.VimKeyToKeyInput VimKey.Enter);
-            ("<FF>", KeyInputUtil.CharWithControlToKeyInput 'l');
-            ("<CR>", KeyInputUtil.VimKeyToKeyInput VimKey.Enter);
-            ("<Return>", KeyInputUtil.VimKeyToKeyInput VimKey.Enter);
-            ("<Enter>", KeyInputUtil.VimKeyToKeyInput VimKey.Enter);
-            ("<Esc>", KeyInputUtil.VimKeyToKeyInput VimKey.Escape);
+            ("<Nul>",KeyInputUtil.VimKeyAndModifiersToKeyInput VimKey.AtSign KeyModifiers.Control)
+            ("<Bs>", KeyInputUtil.VimKeyToKeyInput VimKey.Back)
+            ("<Tab>",KeyInputUtil.VimKeyToKeyInput VimKey.Tab)
+            ("<NL>", KeyInputUtil.VimKeyToKeyInput VimKey.Enter)
+            ("<FF>", KeyInputUtil.CharWithControlToKeyInput 'l')
+            ("<CR>", KeyInputUtil.VimKeyToKeyInput VimKey.Enter)
+            ("<Return>", KeyInputUtil.VimKeyToKeyInput VimKey.Enter)
+            ("<Enter>", KeyInputUtil.VimKeyToKeyInput VimKey.Enter)
+            ("<Esc>", KeyInputUtil.VimKeyToKeyInput VimKey.Escape)
             ("<Space>", KeyInputUtil.CharToKeyInput ' ')
-            ("<lt>", KeyInputUtil.CharToKeyInput '<');
-            ("<Bslash>", KeyInputUtil.CharToKeyInput '\\' );
-            ("<Bar>", KeyInputUtil.CharToKeyInput '|');
-            ("<Del>", KeyInputUtil.VimKeyToKeyInput VimKey.Delete);
-            ("<Up>", KeyInputUtil.VimKeyToKeyInput VimKey.Up);
-            ("<Down>", KeyInputUtil.VimKeyToKeyInput VimKey.Down);
-            ("<Left>", KeyInputUtil.VimKeyToKeyInput VimKey.Left);
-            ("<Right>", KeyInputUtil.VimKeyToKeyInput VimKey.Right);
-            ("<Help>", KeyInputUtil.VimKeyToKeyInput VimKey.Help);
-            ("<Insert>", KeyInputUtil.VimKeyToKeyInput VimKey.Insert);
-            ("<Home>", KeyInputUtil.VimKeyToKeyInput VimKey.Home);
-            ("<kHome>", KeyInputUtil.VimKeyToKeyInput VimKey.Home);
-            ("<End>", KeyInputUtil.VimKeyToKeyInput VimKey.End);
-            ("<PageUp>", KeyInputUtil.VimKeyToKeyInput VimKey.PageUp);
-            ("<PageDown>", KeyInputUtil.VimKeyToKeyInput VimKey.PageDown);
-            ("<kHome>", KeyInputUtil.VimKeyToKeyInput VimKey.Home);
-            ("<kEnd>", KeyInputUtil.VimKeyToKeyInput VimKey.End);
-            ("<kPageUp>", KeyInputUtil.VimKeyToKeyInput VimKey.PageUp);
-            ("<kPageDown>", KeyInputUtil.VimKeyToKeyInput VimKey.PageDown);
+            ("<lt>", KeyInputUtil.CharToKeyInput '<')
+            ("<Bslash>", KeyInputUtil.CharToKeyInput '\\' )
+            ("<Bar>", KeyInputUtil.CharToKeyInput '|')
+            ("<Del>", KeyInputUtil.VimKeyToKeyInput VimKey.Delete)
+            ("<Up>", KeyInputUtil.VimKeyToKeyInput VimKey.Up)
+            ("<Down>", KeyInputUtil.VimKeyToKeyInput VimKey.Down)
+            ("<Left>", KeyInputUtil.VimKeyToKeyInput VimKey.Left)
+            ("<Right>", KeyInputUtil.VimKeyToKeyInput VimKey.Right)
+            ("<Help>", KeyInputUtil.VimKeyToKeyInput VimKey.Help)
+            ("<Insert>", KeyInputUtil.VimKeyToKeyInput VimKey.Insert)
+            ("<Home>", KeyInputUtil.VimKeyToKeyInput VimKey.Home)
+            ("<kHome>", KeyInputUtil.VimKeyToKeyInput VimKey.Home)
+            ("<End>", KeyInputUtil.VimKeyToKeyInput VimKey.End)
+            ("<PageUp>", KeyInputUtil.VimKeyToKeyInput VimKey.PageUp)
+            ("<PageDown>", KeyInputUtil.VimKeyToKeyInput VimKey.PageDown)
+            ("<kHome>", KeyInputUtil.VimKeyToKeyInput VimKey.Home)
+            ("<kEnd>", KeyInputUtil.VimKeyToKeyInput VimKey.End)
+            ("<kPageUp>", KeyInputUtil.VimKeyToKeyInput VimKey.PageUp)
+            ("<kPageDown>", KeyInputUtil.VimKeyToKeyInput VimKey.PageDown)
             ("<kMultiply>", KeyInputUtil.VimKeyToKeyInput VimKey.KeypadMultiply)
             ("<kPlus>", KeyInputUtil.VimKeyToKeyInput VimKey.KeypadPlus)
             ("<kDivide>", KeyInputUtil.VimKeyToKeyInput VimKey.KeypadDivide)
@@ -101,7 +101,6 @@ module KeyNotationUtil =
 
     /// Break up a string into a set of key notation entries
     let SplitIntoKeyNotationEntries (data:string) =
-        let ctrlPrefix = "ctrl-" |> List.ofSeq
 
         let rec inner (rest:char list) withData =
 
@@ -119,24 +118,7 @@ module KeyNotationUtil =
                 let str = rest |> StringUtil.ofCharList
                 withData [str]
 
-            // Called when a key is processed but it needs to be followed by a _
-            // or be the completion of the data
-            let needConnectorOrEmpty rest withData = 
-                match ListUtil.tryHead rest with
-                | None -> withData [] 
-                | Some(h,t) ->
-                    if h <> '_' then error()
-                    else inner t withData 
-
-            if startsWith ctrlPrefix rest then 
-                // Handle the CTRL- prefix 
-                if rest.Length = ctrlPrefix.Length then error()
-                else
-                    let toSkip = ctrlPrefix.Length+1
-                    let str = rest |> Seq.take toSkip |> StringUtil.ofCharSeq
-                    let rest = ListUtil.skip toSkip rest
-                    needConnectorOrEmpty rest (fun next -> withData (str::next))
-            elif startsWith ['<'] rest then 
+            if startsWith ['<'] rest then 
                 match rest |> List.tryFindIndex (fun c -> c = '>') with
                 | None -> error()
                 | Some(index) ->
@@ -168,7 +150,16 @@ module KeyNotationUtil =
         let convertAndApply data modifier = 
             let ki = convertToRaw data 
             match modifier,ki with 
-            | Some(modifier),Some(ki) -> KeyInputUtil.ChangeKeyModifiers ki (modifier ||| ki.KeyModifiers) |> Some
+            | Some(modifier),Some(ki) -> 
+                if modifier = KeyModifiers.Shift && CharUtil.IsLetter ki.Char then
+                    if CharUtil.IsLower ki.Char then
+                        // The shift modifier should promote a letter into the upper form 
+                        ki.Char |> CharUtil.ToUpper |> KeyInputUtil.CharToKeyInput |> Some
+                    else
+                        // Ignore the shift modifier on an upper letter
+                        Some ki
+                else
+                    KeyInputUtil.ChangeKeyModifiers ki modifier |> Some
             | _ -> None
 
         // Inside the <
@@ -184,27 +175,14 @@ module KeyNotationUtil =
             else 
                 convertToRaw (data.Substring(1,data.Length - 2))
 
-        // Original data has a CTRL- prefix.  Passed in value is the text to the
-        // right
-        // :help CTRL-{char}
-        let convertCtrlPrefix data = 
-            if StringUtil.length data <> 1 then None
-            else 
-                let c = StringUtil.charAt 0 data 
-                let c = 
-                    if CharUtil.IsLetter c then CharUtil.ToLower c
-                    else c
-                KeyInputUtil.CharWithControlToKeyInput c |> Some
-
         match StringUtil.charAtOption 0 data with
         | None -> None
         | Some('<') -> 
-            if StringUtil.last data <> '>' then None
+            if String.length data = 1 then VimKey.LessThan |> KeyInputUtil.VimKeyToKeyInput |> Some
+            elif StringUtil.last data <> '>' then None
             else insideLessThanGreaterThan()
         | Some(c) -> 
-            let prefix = "CTRL-"
-            if StringUtil.startsWithIgnoreCase prefix data then convertCtrlPrefix (data.Substring(prefix.Length))
-            elif data.Length = 1 then KeyInputUtil.CharToKeyInput data.[0] |> Some
+            if data.Length = 1 then KeyInputUtil.CharToKeyInput data.[0] |> Some
             else None
 
     let StringToKeyInput data = 

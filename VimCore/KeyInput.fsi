@@ -21,7 +21,7 @@ type KeyInput =
     /// The VimKey for this KeyInput.  
     member Key : VimKey
 
-    /// The modifier keys needed to produce this input
+    /// The extra modifier keys applied to the VimKey value
     member KeyModifiers : KeyModifiers
 
     /// Is the character for this KeyInput a digit
@@ -40,7 +40,8 @@ type KeyInput =
     static member op_Equality : KeyInput * KeyInput -> bool
     static member op_Inequality : KeyInput * KeyInput -> bool
 
-    interface System.IComparable 
+    interface System.IComparable
+    interface System.IComparable<KeyInput>
     interface System.IEquatable<KeyInput>
 
 module KeyInputUtil = 
@@ -55,24 +56,23 @@ module KeyInputUtil =
     /// Try and convert the given char to a KeyInput value
     val CharToKeyInput : char -> KeyInput
 
+    /// Convert the passed in char and modifiers into a KeyInput value
+    val CharWithControlToKeyInput : char -> KeyInput
+
+    /// Convert the passed in char and modifiers into a KeyInput value
+    val CharWithAltToKeyInput : char -> KeyInput
+
     /// Convert the specified VimKey code to a KeyInput 
     val VimKeyToKeyInput : VimKey -> KeyInput
 
     /// Convert the specified VimKey to a KeyInput with the given KeyModifiers
     val VimKeyAndModifiersToKeyInput : VimKey -> KeyModifiers -> KeyInput
 
-    /// Try and change the key modifiers to the provided value.  This may 
-    /// change the underlying Char value.
-    ///
-    /// On the surface this seems a lot like VimKeyAndModifiersToKeyInput but
-    /// it has one important difference.  This starts with a KeyInput which 
-    /// while the other produces a predefined one.  This is more flexible in 
-    /// that it won't destroy non-core chars
+    /// Change the KeyModifiers associated with this KeyInput.  Will not change the value
+    /// of the underlying char.  Although it may produce a KeyInput that makes no 
+    /// sense.  For example it's very possible to have KeyInput('a', KeyModifiers.Shift) but
+    /// it will be extremely hard to produce that in a keyboard.  This seems odd at first 
+    /// but it's a scenario that Vim supports (or doesn't support depending on how you 
     val ChangeKeyModifiers : KeyInput -> KeyModifiers -> KeyInput
 
-    /// Convert the passed in char and modifiers into a KeyInput value
-    val CharWithControlToKeyInput : char -> KeyInput
-
-    /// Convert the passed in char and modifiers into a KeyInput value
-    val CharWithAltToKeyInput : char -> KeyInput
 

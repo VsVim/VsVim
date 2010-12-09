@@ -17,17 +17,17 @@ type internal CommandFactory( _operations : ICommonOperations, _capture : IMotio
             yield ("h", moveLeft)
             yield ("<Left>", moveLeft)
             yield ("<Bs>", moveLeft)
-            yield ("CTRL-h", moveLeft)
+            yield ("<C-h>", moveLeft)
             yield ("l", moveRight)
             yield ("<Right>", moveRight)
             yield ("<Space>", moveRight)
             yield ("k", moveUp)
             yield ("<Up>", moveUp)
-            yield ("CTRL-p", moveUp)
+            yield ("<C-p>", moveUp)
             yield ("j", moveDown)
             yield ("<Down>", moveDown)
-            yield ("CTRL-n", moveDown)
-            yield ("CTRL-j", moveDown)
+            yield ("<C-n>", moveDown)
+            yield ("<C-j>", moveDown)
         }
 
     member private x.CreateStandardMovementCommands() =

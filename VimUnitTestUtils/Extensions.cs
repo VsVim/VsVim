@@ -84,16 +84,44 @@ namespace Vim.UnitTest
 
         #region IKeyMap
 
+        public static IEnumerable<KeyInput> GetKeyMapping(this IKeyMap keyMap, char c, KeyRemapMode mode)
+        {
+            return GetKeyMapping(keyMap, KeyInputUtil.CharToKeyInput(c), mode);
+        }
+
+        public static IEnumerable<KeyInput> GetKeyMapping(this IKeyMap keyMap, string str, KeyRemapMode mode)
+        {
+            return GetKeyMapping(keyMap, KeyNotationUtil.StringToKeyInputSet(str), mode);
+        }
+
         public static IEnumerable<KeyInput> GetKeyMapping(this IKeyMap keyMap, KeyInput ki, KeyRemapMode mode)
         {
-            var set = KeyInputSet.NewOneKeyInput(ki);
-            return keyMap.GetKeyMapping(set, mode).AsMapped().Item.KeyInputs;
+            return GetKeyMapping(keyMap, KeyInputSet.NewOneKeyInput(ki), mode);
+        }
+
+        public static IEnumerable<KeyInput> GetKeyMapping(this IKeyMap keyMap, KeyInputSet kiSet, KeyRemapMode mode)
+        {
+            return keyMap.GetKeyMapping(kiSet, mode).AsMapped().Item.KeyInputs;
         }
 
         public static KeyMappingResult GetKeyMappingResult(this IKeyMap keyMap, KeyInput ki, KeyRemapMode mode)
         {
-            var set = KeyInputSet.NewOneKeyInput(ki);
+            return GetKeyMappingResult(keyMap, KeyInputSet.NewOneKeyInput(ki), mode);
+        }
+
+        public static KeyMappingResult GetKeyMappingResult(this IKeyMap keyMap, KeyInputSet set, KeyRemapMode mode)
+        {
             return keyMap.GetKeyMapping(set, mode);
+        }
+
+        public static KeyMappingResult GetKeyMappingResult(this IKeyMap keyMap, char c, KeyRemapMode mode)
+        {
+            return GetKeyMappingResult(keyMap, KeyInputUtil.CharToKeyInput(c), mode);
+        }
+
+        public static KeyMappingResult GetKeyMappingResult(this IKeyMap keyMap, string str, KeyRemapMode mode)
+        {
+            return keyMap.GetKeyMapping(KeyNotationUtil.StringToKeyInputSet(str), mode);
         }
 
         #endregion

@@ -12,6 +12,8 @@ namespace Vim.UI.Wpf
 
         public const string LanguagePortuguese = "00000816";
 
+        public const string LanguageTurkishF = "00001055";
+
         [DllImport("user32.dll")]
         internal static extern int GetCaretBlinkTime();
 

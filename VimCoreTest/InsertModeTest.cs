@@ -143,7 +143,7 @@ namespace VimCore.Test
         [Test]
         public void NormalModeOneTimeCommand1()
         {
-            var res = _mode.Process(KeyNotationUtil.StringToKeyInput("CTRL-o"));
+            var res = _mode.Process(KeyNotationUtil.StringToKeyInput("<C-o>"));
             Assert.IsTrue(res.IsSwitchModeWithArgument);
             Assert.AreEqual(ModeKind.Normal, res.AsSwitchModeWithArgument().Item1);
             Assert.IsTrue(res.AsSwitchModeWithArgument().Item2.IsOneTimeCommand);
@@ -172,7 +172,7 @@ namespace VimCore.Test
         {
             SetUp();
             _operations.Setup(x => x.ShiftLinesRight(1)).Verifiable();
-            _mode.Process(KeyNotationUtil.StringToKeyInput("CTRL-T"));
+            _mode.Process(KeyNotationUtil.StringToKeyInput("<C-T>"));
             _factory.Verify();
         }
 

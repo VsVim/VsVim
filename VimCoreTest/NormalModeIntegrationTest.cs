@@ -515,5 +515,6 @@ namespace VimCore.Test
             Assert.AreEqual("  abcdog", _textView.GetLine(1).GetText());
             Assert.AreEqual(_textView.GetLine(1).Start.Add(4), _textView.GetCaretPoint());
         }
+
     }
 }
