@@ -56,11 +56,14 @@ module KeyInputUtil =
     /// Try and convert the given char to a KeyInput value
     val CharToKeyInput : char -> KeyInput
 
-    /// Convert the passed in char and modifiers into a KeyInput value
+    /// Convert the passed in char to a KeyInput with Control
     val CharWithControlToKeyInput : char -> KeyInput
 
-    /// Convert the passed in char and modifiers into a KeyInput value
+    /// Convert the passed in char to a KeyInput with Alt
     val CharWithAltToKeyInput : char -> KeyInput
+
+    /// Convert the passed in char to a KeyInput with Shift
+    val CharWithShiftToKeyInput : char -> KeyInput
 
     /// Convert the specified VimKey code to a KeyInput 
     val VimKeyToKeyInput : VimKey -> KeyInput

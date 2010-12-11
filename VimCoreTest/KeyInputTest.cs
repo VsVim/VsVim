@@ -71,7 +71,13 @@ namespace VimCore.Test
         [Test]
         public void Equality_ControlLetterIsCaseInsensitive()
         {
-            Assert.AreEqual(KeyInputUtil.CharWithControlToKeyInput('a'), KeyInputUtil.CharWithControlToKeyInput('A'));
+            var unit = EqualityUnit.Create(KeyInputUtil.CharWithControlToKeyInput('a'))
+                .WithEqualValues(KeyInputUtil.CharWithControlToKeyInput('A'))
+                .WithNotEqualValues(KeyInputUtil.CharToKeyInput('a'));
+            EqualityUtil.RunAll(
+                (x, y) => x == y,
+                (x, y) => x != y,
+                values: unit);
         }
 
         [Test]

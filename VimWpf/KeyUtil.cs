@@ -56,6 +56,11 @@ namespace Vim.UI.Wpf
             return !IsNonInputKey(k);
         }
 
+        public static KeyInput CharAndModifiersToKeyInput(char c, ModifierKeys modifierKeys)
+        {
+            return GetOrCreateKeyboardMap().GetKeyInput(c, IsAltGr(modifierKeys) ? ModifierKeys.None : modifierKeys);
+        }
+
         public static bool TryConvertToKeyInput(Key key, out KeyInput keyInput)
         {
             return GetOrCreateKeyboardMap().TryGetKeyInput(key, out keyInput);

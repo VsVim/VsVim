@@ -295,3 +295,7 @@ module KeyInputUtil =
         let ki = ch |> CharToKeyInput 
         ChangeKeyModifiers ki (ki.KeyModifiers ||| KeyModifiers.Alt)
 
+    let CharWithShiftToKeyInput ch = 
+        let ki = ch |> CharToKeyInput  
+        ChangeKeyModifiers ki (ki.KeyModifiers ||| KeyModifiers.Shift)
+

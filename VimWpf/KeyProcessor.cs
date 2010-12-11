@@ -54,7 +54,7 @@ namespace Vim.UI.Wpf
                 var keyboard = args.Device as KeyboardDevice;
                 if (keyboard != null)
                 {
-                    var ki = KeyInputUtil.CharToKeyInput(args.Text[0]);
+                    var ki = KeyUtil.CharAndModifiersToKeyInput(args.Text[0], keyboard.Modifiers);
                     handled = _buffer.CanProcess(ki) && _buffer.Process(ki);
                 }
             }
