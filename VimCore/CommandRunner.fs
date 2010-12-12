@@ -57,16 +57,16 @@ type internal CommandRunner
         _runFunc <- this.RunCheckForCountAndRegister
 
     /// Create a CommandRunData based on the current state for the given command information
-    member private x.CreateCommandRunData command motionDataOpt visualDataOpt = 
+    member x.CreateCommandRunData command motionDataOpt visualDataOpt = 
         {  
-            Command=command
+            Command = command
             Register = _data.Register
             Count = _data.Count
             MotionRunData = motionDataOpt
             VisualRunData = visualDataOpt }
 
     /// Used to wait for the character after the " which signals the Register 
-    member private x.WaitForRegister() = 
+    member x.WaitForRegister() = 
 
         let inner (ki:KeyInput) = 
             match RegisterNameUtil.CharToRegister ki.Char with
@@ -81,7 +81,7 @@ type internal CommandRunner
 
     /// Used to wait for a count value to complete.  Passed in the initial digit 
     /// in the count
-    member private x.WaitForCount (initialDigit:KeyInput) =
+    member x.WaitForCount (initialDigit:KeyInput) =
         _data <- { _data with State = NotEnoughInput }
         let rec inner (num:string) (ki:KeyInput) = 
             if ki.IsDigit then
@@ -95,15 +95,16 @@ type internal CommandRunner
 
     /// Used to wait for a MotionCommand to complete.  Will call the passed in function 
     /// if the motion is successfully completed
-    member private x.WaitForMotion command onMotionComplete (initialInput : KeyInput option) =
-        _data <- { _data with State = NotFinishWithCommand(command) }
+    member x.WaitForMotion command onMotionComplete (initialInput : KeyInput option) =
+        _data <- { _data with State = NotFinishWithCommand(command, Some KeyRemapMode.OperatorPending) }
         let rec inner (result:MotionResult) = 
             match result with 
                 | MotionResult.Complete (motionData,motionRunData) ->
                     let data = x.CreateCommandRunData command (Some motionRunData) None
                     let result = onMotionComplete data.Count data.Register motionData
                     RanCommand (data,result)
-                | MotionResult.NeedMoreInput (moreFunc) ->
+                | MotionResult.NeedMoreInput (keyRemapMode, moreFunc) ->
+                    _data <- { _data with State = NotFinishWithCommand(command, keyRemapMode) }
                     let func ki = moreFunc ki |> inner
                     NeedMore func
                 | MotionResult.Error (msg) ->
@@ -121,32 +122,34 @@ type internal CommandRunner
 
     /// Certain commands require additional data on top of their initial command 
     /// name.  They will return NeedMoreKeyInput until they receive it all
-    member private x.WaitForAdditionalCommandInput func =
+    member x.WaitForAdditionalCommandInput func =
         let inner ki = func ki |> RanCommand
         inner
 
     /// Waits for a completed command to be entered
-    member private x.WaitForCommand (ki:KeyInput) = 
+    member x.WaitForCommand (ki:KeyInput) = 
         let previousName = _data.KeyInputSet
         let commandName = previousName.Add ki
         _data <- { _data with KeyInputSet = commandName; State = NotEnoughInput }
         x.RunCommand commandName previousName ki
 
     /// Wait for a long command to complete
-    member private x.WaitForLongCommand command func =
-        _data <- { _data with State = NotFinishWithCommand(command) }
+    member x.WaitForLongCommand command keyRemapMode func =
+        _data <- { _data with State = NotFinishWithCommand(command, keyRemapMode) }
 
         let data = x.CreateCommandRunData command None None
         let rec inner result = 
             match result with
             | LongCommandResult.Finished(commandResult) -> RanCommand (data,commandResult)
             | LongCommandResult.Cancelled -> CancelledCommand
-            | LongCommandResult.NeedMoreInput(func) -> NeedMore (fun ki -> func ki |> inner)
+            | LongCommandResult.NeedMoreInput(keyRemapMode, func) -> 
+                _data <- { _data with State = NotFinishWithCommand(command, keyRemapMode) }
+                NeedMore (fun ki -> func ki |> inner)
 
         func data.Count data.Register |> inner
 
     /// Try and run a command with the given name
-    member private x.RunCommand commandName previousCommandName currentInput = 
+    member x.RunCommand commandName previousCommandName currentInput = 
 
         // Find any commands which have the given prefix
         let findPrefixMatches (commandName:KeyInputSet) =
@@ -185,12 +188,16 @@ type internal CommandRunner
                 let withPrefix = 
                     findPrefixMatches commandName
                     |> Seq.filter (fun c -> c.KeyInputSet <> command.KeyInputSet)
-                if Seq.isEmpty withPrefix then x.WaitForMotion command func None
+                if Seq.isEmpty withPrefix then 
+                    // Nothing else matched so we are good to go for this motion.
+                    x.WaitForMotion command func None
                 else 
-                    let state = NotEnoughMatchingPrefix (command, withPrefix |> List.ofSeq)
-                    _data <- {_data with State = state }
+                    // At least one other command matched so we need at least one more piece of input to
+                    // differentiate the commands.  At this point though because the command is of the
+                    // motion variety we are in operator pending
+                    _data <- {_data with State = NotEnoughMatchingPrefix (command, withPrefix |> List.ofSeq, Some KeyRemapMode.OperatorPending)}
                     NeedMore x.WaitForCommand
-            | Command.LongCommand(_,_,func) -> x.WaitForLongCommand command func
+            | Command.LongCommand(_,_,func) -> x.WaitForLongCommand command None func
         | None -> 
             let result = 
                 if commandName.KeyInputs.Length > 1 then
@@ -216,21 +223,21 @@ type internal CommandRunner
                 else NeedMore x.WaitForCommand
                 
     /// Starting point for processing input 
-    member private x.RunCheckForCountAndRegister (ki:KeyInput) = 
+    member x.RunCheckForCountAndRegister (ki:KeyInput) = 
         if ki.Char = '"' then x.WaitForRegister()
         elif ki.IsDigit && ki.Char <> '0' then x.WaitForCount ki
         else x.WaitForCommand ki
 
     /// Should the Esacpe key cancel the current command
-    member private x.ShouldEscapeCancelCurrentCommand () = 
+    member x.ShouldEscapeCancelCurrentCommand () = 
         match _data.State with
         | CommandRunnerState.NoInput -> true
         | CommandRunnerState.NotEnoughInput -> true
         | CommandRunnerState.NotEnoughMatchingPrefix(_) -> true
-        | CommandRunnerState.NotFinishWithCommand (command) -> not command.HandlesEscape
+        | CommandRunnerState.NotFinishWithCommand (command, _) -> not command.HandlesEscape
 
     /// Function which handles all incoming input
-    member private x.Run (ki:KeyInput) =
+    member x.Run (ki:KeyInput) =
         if ki.Key = VimKey.Escape && x.ShouldEscapeCancelCurrentCommand() then 
             x.ResetState()
             RunKeyInputResult.CommandCancelled
@@ -279,6 +286,12 @@ type internal CommandRunner
             | CommandRunnerState.NotEnoughInput -> true
             | CommandRunnerState.NotFinishWithCommand(_) -> true
             | CommandRunnerState.NotEnoughMatchingPrefix(_) -> true
+        member x.KeyRemapMode = 
+            match _data.State with
+            | CommandRunnerState.NoInput -> None
+            | CommandRunnerState.NotEnoughInput -> None
+            | CommandRunnerState.NotFinishWithCommand(_, mode) -> mode
+            | CommandRunnerState.NotEnoughMatchingPrefix(_, _, mode) -> mode
 
         member x.Add command = x.Add command
         member x.Remove name = x.Remove name

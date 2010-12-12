@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using Microsoft.FSharp.Control;
-using Vim;
 
 namespace Vim.UnitTest.Mock
 {
@@ -49,6 +48,12 @@ namespace Vim.UnitTest.Mock
         }
 
         public CommandRunnerState State
+        {
+            get { throw new NotImplementedException(); }
+        }
+
+
+        public Microsoft.FSharp.Core.FSharpOption<KeyRemapMode> KeyRemapMode
         {
             get { throw new NotImplementedException(); }
         }

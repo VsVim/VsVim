@@ -19,6 +19,15 @@ type internal KeyMap() =
         | None -> Map.empty
         | Some(map) -> map
 
+    member x.GetKeyMappingsForMode mode = 
+        match Map.tryFind mode _map with
+        | None -> Seq.empty
+        | Some(map) -> 
+            map
+            |> Seq.map (fun pair -> 
+                let value,_ = pair.Value
+                pair.Key,value)
+
     /// Main API for adding a key mapping into our storage
     member x.MapCore (lhs:string) (rhs:string) (mode:KeyRemapMode) allowRemap = 
         if StringUtil.isNullOrEmpty rhs then
@@ -94,6 +103,7 @@ type internal KeyMap() =
         res
     
     interface IKeyMap with
+        member x.GetKeyMappingsForMode mode = x.GetKeyMappingsForMode mode 
         member x.GetKeyMapping ki mode = x.GetKeyMapping ki mode
         member x.MapWithNoRemap lhs rhs mode = x.MapWithNoRemap lhs rhs mode
         member x.MapWithRemap lhs rhs mode = x.MapWithRemap lhs rhs mode

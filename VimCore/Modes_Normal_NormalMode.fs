@@ -52,24 +52,14 @@ type internal NormalMode
     member this.Settings = _bufferData.Settings
     member this.IncrementalSearch = _incrementalSearch
     member this.IsCommandRunnerPopulated = _runner.Commands |> SeqUtil.isNotEmpty
+    member this.KeyRemapMode = 
+        match _runner.KeyRemapMode with
+        | Some(remapMode) -> remapMode
+        | None -> KeyRemapMode.Normal
     member this.Command = _data.Command
     member this.Commands = 
         this.EnsureCommands()
         _runner.Commands
-
-    member this.IsOperatorPending = 
-        let isOperator command = 
-            match command with 
-            | SimpleCommand(_) -> false
-            | LongCommand(_) -> false
-            | VisualCommand(_) -> false 
-            | MotionCommand(_) -> not command.IsMovement
-
-        match _runner.State with
-        | NoInput -> false
-        | NotEnoughInput -> false
-        | NotEnoughMatchingPrefix(command,_) -> isOperator command
-        | NotFinishWithCommand(command) -> isOperator command
 
     member private this.EnsureCommands() = 
         if not this.IsCommandRunnerPopulated then
@@ -101,9 +91,9 @@ type internal NormalMode
                 _bufferData.JumpList.Add before |> ignore
                 CommandResult.Completed ModeSwitch.NoSwitch |> LongCommandResult.Finished
             | SearchCancelled -> LongCommandResult.Cancelled
-            | SearchNeedMore ->  LongCommandResult.NeedMoreInput inner
+            | SearchNeedMore ->  LongCommandResult.NeedMoreInput (Some KeyRemapMode.Language, inner)
         _incrementalSearch.Begin kind
-        LongCommandResult.NeedMoreInput inner
+        LongCommandResult.NeedMoreInput (Some KeyRemapMode.Language, inner)
     
     member private x.ReplaceChar count reg = 
         let inner (ki:KeyInput) = 
@@ -114,7 +104,7 @@ type internal NormalMode
                     _operations.Beep()
                 CommandResult.Completed ModeSwitch.NoSwitch |> LongCommandResult.Finished
         _data <- { _data with IsInReplace = true }
-        LongCommandResult.NeedMoreInput inner
+        LongCommandResult.NeedMoreInput (Some KeyRemapMode.Language, inner)
 
     member x.WaitJumpToMark (count:int) (reg:Register) =
         let waitForKey (ki:KeyInput)  =
@@ -123,7 +113,7 @@ type internal NormalMode
             | Modes.Failed(msg) -> _statusUtil.OnError msg
             | _ -> ()
             CommandResult.Completed ModeSwitch.NoSwitch |> LongCommandResult.Finished
-        LongCommandResult.NeedMoreInput waitForKey
+        LongCommandResult.NeedMoreInput (Some KeyRemapMode.Language, waitForKey)
 
     /// Process the m[a-z] command.  Called when the m has been input so wait for the next key
     member x.WaitMark (count:int) (reg:Register)= 
@@ -134,7 +124,7 @@ type internal NormalMode
             | Modes.Failed(_) -> _operations.Beep()
             | _ -> ()
             CommandResult.Completed ModeSwitch.NoSwitch |> LongCommandResult.Finished
-        LongCommandResult.NeedMoreInput waitForKey
+        LongCommandResult.NeedMoreInput (Some KeyRemapMode.Language, waitForKey)
 
     /// Implements the '.' operator.  This is a special command in that it cannot be easily routed 
     /// to interfaces like ICommonOperations due to the complexity of repeating the command here.  
@@ -790,8 +780,7 @@ type internal NormalMode
             ProcessResult.Processed
 
     interface INormalMode with 
-        member this.IsOperatorPending = this.IsOperatorPending
-        member this.IsWaitingForInput = _runner.IsWaitingForMoreInput
+        member this.KeyRemapMode = this.KeyRemapMode
         member this.IncrementalSearch = _incrementalSearch
         member this.IsInReplace = _data.IsInReplace
         member this.VimBuffer = _bufferData

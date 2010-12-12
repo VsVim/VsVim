@@ -269,12 +269,16 @@ namespace Vim.UnitTest
             return buf.Process(KeyInputUtil.CharToKeyInput(c));
         }
 
-        public static void Process(this IVimBuffer buf, string input)
+        public static void Process(this IVimBuffer buf, string input, bool enter = false)
         {
             foreach (var c in input)
             {
                 var i = KeyInputUtil.CharToKeyInput(c);
                 buf.Process(i);
+            }
+            if (enter)
+            {
+                Process(buf, VimKey.Enter);
             }
         }
 

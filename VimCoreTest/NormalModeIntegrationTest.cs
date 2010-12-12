@@ -516,5 +516,40 @@ namespace VimCore.Test
             Assert.AreEqual(_textView.GetLine(1).Start.Add(4), _textView.GetCaretPoint());
         }
 
+        [Test]
+        public void Map_ToCharDoesNotUseMap()
+        {
+            CreateBuffer("bear; again: dog");
+            _buffer.Process(":map ; :", enter: true);
+            _buffer.Process("dt;");
+            Assert.AreEqual("; again: dog", _textView.GetLine(0).GetText());
+        }
+
+        [Test]
+        public void Map_AlphaToRightMotion()
+        {
+            CreateBuffer("dog");
+            _buffer.Process(":map a l", enter: true);
+            _buffer.Process("aa");
+            Assert.AreEqual(2, _textView.GetCaretPoint().Position);
+        }
+
+        [Test]
+        public void Map_OperatorPendingWithAmbiguousCommandPrefix()
+        {
+            CreateBuffer("dog chases the ball");
+            _buffer.Process(":map a w", enter: true);
+            _buffer.Process("da");
+            Assert.AreEqual("chases the ball", _textView.GetLine(0).GetText());
+        }
+
+        [Test]
+        public void Map_ReplaceDoesntUseNormalMap()
+        {
+            CreateBuffer("dog");
+            _buffer.Process(":map f g", enter: true);
+            _buffer.Process("rf");
+            Assert.AreEqual("fog", _textView.GetLine(0).GetText());
+        }
     }
 }

@@ -375,11 +375,18 @@ namespace VimCore.Test
             _runner.Add(VimUtil.CreateLongCommand(
                 "c",
                 ki =>
-                {
-                    if (ki.Key == VimKey.Escape) { didSee = true; return true; }
-                    else { return false; }
-                },
-                CommandFlags.None));
+                    {
+                        if (ki.Key == VimKey.Escape)
+                        {
+                            didSee = true;
+                            return true;
+                        }
+                        else
+                        {
+                            return false;
+                        }
+                    },
+                flags: CommandFlags.None));
             _runner.Run('c');
             Assert.IsTrue(_runner.Run(KeyInputUtil.VimKeyToKeyInput(VimKey.Escape)).IsCommandCancelled);
             Assert.IsFalse(didSee);
@@ -397,7 +404,7 @@ namespace VimCore.Test
                     if (ki.Key == VimKey.Escape) { didSee = true; }
                     return false;
                 },
-                CommandFlags.HandlesEscape));
+                flags: CommandFlags.HandlesEscape));
             _runner.Run('c');
             Assert.IsTrue(_runner.Run(KeyInputUtil.VimKeyToKeyInput(VimKey.Escape)).IsNeedMoreKeyInput);
             Assert.IsTrue(didSee);
@@ -415,7 +422,7 @@ namespace VimCore.Test
                     if (ki.Key == VimKey.Escape) { didSee = true; return true; }
                     return false;
                 },
-                CommandFlags.HandlesEscape));
+                flags: CommandFlags.HandlesEscape));
             _runner.Run('c');
             Assert.IsTrue(_runner.Run(KeyInputUtil.VimKeyToKeyInput(VimKey.Escape)).IsCommandRan);
             Assert.IsTrue(didSee);
@@ -522,10 +529,10 @@ namespace VimCore.Test
                 seen += ki.Char.ToString();
                 return isDone
                     ? LongCommandResult.NewFinished(CommandResult.NewError("foo"))
-                    : LongCommandResult.NewNeedMoreInput(repeat);
+                    : LongCommandResult.NewNeedMoreInput(FSharpOption<KeyRemapMode>.None, repeat);
             };
             repeat = FSharpFunc<KeyInput, LongCommandResult>.FromConverter(func);
-            _runner.Add(VimUtil.CreateLongCommand("f", (x, y) => LongCommandResult.NewNeedMoreInput(repeat)));
+            _runner.Add(VimUtil.CreateLongCommand("f", (x, y) => LongCommandResult.NewNeedMoreInput(FSharpOption<KeyRemapMode>.None, repeat)));
             Assert.IsTrue(_runner.Run(KeyInputUtil.CharToKeyInput('f')).IsNeedMoreKeyInput);
             Assert.IsTrue(_runner.Run(KeyInputUtil.CharToKeyInput('o')).IsNeedMoreKeyInput);
             Assert.IsTrue(_runner.Run(KeyInputUtil.CharToKeyInput('d')).IsNeedMoreKeyInput);
@@ -546,10 +553,10 @@ namespace VimCore.Test
                 seen += ki.Char.ToString();
                 return isDone
                     ? LongCommandResult.Cancelled
-                    : LongCommandResult.NewNeedMoreInput(repeat);
+                    : LongCommandResult.NewNeedMoreInput(FSharpOption<KeyRemapMode>.None, repeat);
             };
             repeat = FSharpFunc<KeyInput, LongCommandResult>.FromConverter(func);
-            _runner.Add(VimUtil.CreateLongCommand("f", (x, y) => LongCommandResult.NewNeedMoreInput(repeat)));
+            _runner.Add(VimUtil.CreateLongCommand("f", (x, y) => LongCommandResult.NewNeedMoreInput(FSharpOption<KeyRemapMode>.None, repeat)));
             Assert.IsTrue(_runner.Run(KeyInputUtil.CharToKeyInput('f')).IsNeedMoreKeyInput);
             Assert.IsTrue(_runner.Run(KeyInputUtil.CharToKeyInput('o')).IsNeedMoreKeyInput);
             Assert.IsTrue(_runner.Run(KeyInputUtil.CharToKeyInput('d')).IsNeedMoreKeyInput);
@@ -567,10 +574,10 @@ namespace VimCore.Test
             Converter<KeyInput, LongCommandResult> func = ki =>
             {
                 seen += ki.Char.ToString();
-                return LongCommandResult.NewNeedMoreInput(repeat);
+                return LongCommandResult.NewNeedMoreInput(FSharpOption<KeyRemapMode>.None, repeat);
             };
             repeat = FSharpFunc<KeyInput, LongCommandResult>.FromConverter(func);
-            _runner.Add(VimUtil.CreateLongCommand("f", (x, y) => LongCommandResult.NewNeedMoreInput(repeat)));
+            _runner.Add(VimUtil.CreateLongCommand("f", (x, y) => LongCommandResult.NewNeedMoreInput(FSharpOption<KeyRemapMode>.None, repeat)));
             Assert.IsTrue(_runner.Run(KeyInputUtil.CharToKeyInput('f')).IsNeedMoreKeyInput);
             Assert.IsTrue(_runner.Run(KeyInputUtil.CharToKeyInput('o')).IsNeedMoreKeyInput);
             Assert.IsTrue(_runner.Run(KeyInputUtil.CharToKeyInput('d')).IsNeedMoreKeyInput);
@@ -649,7 +656,7 @@ namespace VimCore.Test
             _runner.Add(command1);
             _runner.Run('c');
             Assert.IsTrue(_runner.State.IsNotFinishWithCommand);
-            Assert.AreSame(command1, _runner.State.AsNotFinishedWithCommand().Item);
+            Assert.AreSame(command1, _runner.State.AsNotFinishedWithCommand().Item1);
         }
 
         [Test]
@@ -672,14 +679,14 @@ namespace VimCore.Test
             Converter<KeyInput, LongCommandResult> func = ki =>
             {
                 seen += ki.Char.ToString();
-                return LongCommandResult.NewNeedMoreInput(repeat);
+                return LongCommandResult.NewNeedMoreInput(FSharpOption<KeyRemapMode>.None, repeat);
             };
             repeat = FSharpFunc<KeyInput, LongCommandResult>.FromConverter(func);
-            var command1 = VimUtil.CreateLongCommand("f", (x, y) => LongCommandResult.NewNeedMoreInput(repeat));
+            var command1 = VimUtil.CreateLongCommand("f", (x, y) => LongCommandResult.NewNeedMoreInput(FSharpOption<KeyRemapMode>.None, repeat));
             _runner.Add(command1);
             _runner.Run('f');
             Assert.IsTrue(_runner.State.IsNotFinishWithCommand);
-            Assert.AreSame(command1, _runner.State.AsNotFinishedWithCommand().Item);
+            Assert.AreSame(command1, _runner.State.AsNotFinishedWithCommand().Item1);
         }
 
         [Test]
@@ -748,5 +755,58 @@ namespace VimCore.Test
             Assert.IsFalse(didSee);
         }
 
+        [Test]
+        public void KeyRemapMode_DefaultIsNone()
+        {
+            Create("hello world");
+            Assert.IsTrue(_runner.KeyRemapMode.IsNone());
+        }
+
+        [Test]
+        public void KeyRemapMode_NoneWhileFindingCommand()
+        {
+            Create("hello world");
+            _runner.Add(VimUtil.CreateSimpleCommand("cat"));
+            _runner.Run('c');
+            Assert.IsTrue(_runner.KeyRemapMode.IsNone());
+        }
+
+        [Test]
+        public void KeyRemapMode_OperatorPendingWhenWaitingForMotion()
+        {
+            Create("hello world");
+            _runner.Add(VimUtil.CreateMotionCommand("d"));
+            _runner.Run('d');
+            Assert.AreEqual(KeyRemapMode.OperatorPending, _runner.KeyRemapMode.Value);
+        }
+
+        [Test]
+        public void KeyRemapMode_OperatorPendingWhenAmbiguousBetweenMotionAndCommand()
+        {
+            Create("hello world");
+            _runner.Add(VimUtil.CreateMotionCommand("d"));
+            _runner.Add(VimUtil.CreateSimpleCommand("dd"));
+            _runner.Run('d');
+            Assert.AreEqual(KeyRemapMode.OperatorPending, _runner.KeyRemapMode.Value);
+        }
+
+        [Test]
+        public void KeyRemapMode_LanguageInToArgument()
+        {
+            Create("hello world");
+            _runner.Add(VimUtil.CreateMotionCommand("d"));
+            _runner.Run('d');
+            _runner.Run('f');
+            Assert.AreEqual(KeyRemapMode.Language, _runner.KeyRemapMode.Value);
+        }
+
+        [Test]
+        public void KeyRemapMode_LongCommandPropagateMode()
+        {
+            Create("hello world");
+            _runner.Add(VimUtil.CreateLongCommand("a", ki => false, FSharpOption.Create(KeyRemapMode.Language)));
+            _runner.Run('a');
+            Assert.AreEqual(KeyRemapMode.Language, _runner.KeyRemapMode.Value);
+        }
     }
 }

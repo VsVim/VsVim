@@ -70,9 +70,12 @@ type internal CommandFactory( _operations : ICommonOperations, _capture : IMotio
                                     _operations.MoveCaretToMotionData data
                                     CommandResult.Completed NoSwitch 
                             res |> LongCommandResult.Finished
-                        | ComplexMotionResult.NeedMoreInput (func) -> LongCommandResult.NeedMoreInput (fun ki -> func ki |> inner)
-                        | ComplexMotionResult.Cancelled -> LongCommandResult.Cancelled
-                        | ComplexMotionResult.Error (msg) -> CommandResult.Error msg |> LongCommandResult.Finished
+                        | ComplexMotionResult.NeedMoreInput (keyRemapMode, func) -> 
+                            LongCommandResult.NeedMoreInput (keyRemapMode, fun ki -> func ki |> inner)
+                        | ComplexMotionResult.Cancelled -> 
+                            LongCommandResult.Cancelled
+                        | ComplexMotionResult.Error (msg) -> 
+                            CommandResult.Error msg |> LongCommandResult.Finished
 
                     let initialResult = func()
                     inner initialResult

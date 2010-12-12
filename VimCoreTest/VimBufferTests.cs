@@ -13,40 +13,41 @@ namespace VimCore.Test
     [TestFixture]
     public class VimBufferTests
     {
-        IWpfTextView _view;
-        Mock<IVim> _vim;
-        Mock<INormalMode> _normalMode;
-        Mock<IMode> _insertMode;
-        Mock<IMode> _disabledMode;
-        Mock<IJumpList> _jumpList;
-        Mock<IKeyMap> _keyMap;
-        Mock<IVimGlobalSettings> _globalSettings;
-        Mock<IVimLocalSettings> _settings;
-        Mock<IVimHost> _host;
-        VimBuffer _rawBuffer;
-        IVimBuffer _buffer;
-        MarkMap _markMap;
+        private IWpfTextView _view;
+        private MockRepository _factory;
+        private Mock<IVim> _vim;
+        private Mock<INormalMode> _normalMode;
+        private Mock<IMode> _insertMode;
+        private Mock<IMode> _disabledMode;
+        private Mock<IJumpList> _jumpList;
+        private Mock<IKeyMap> _keyMap;
+        private Mock<IVimGlobalSettings> _globalSettings;
+        private Mock<IVimLocalSettings> _settings;
+        private Mock<IVimHost> _host;
+        private VimBuffer _rawBuffer;
+        private IVimBuffer _buffer;
+        private MarkMap _markMap;
 
         [SetUp]
         public void Initialize()
         {
             _view = EditorUtil.CreateView("here we go");
             _markMap = new MarkMap(new TrackingLineColumnService());
-            _globalSettings = MockObjectFactory.CreateGlobalSettings();
-            _settings = MockObjectFactory.CreateLocalSettings(_globalSettings.Object);
-            _keyMap = new Mock<IKeyMap>(MockBehavior.Strict);
-            _host = new Mock<IVimHost>(MockBehavior.Strict);
-            _vim = MockObjectFactory.CreateVim(map: _markMap, settings: _globalSettings.Object, keyMap: _keyMap.Object, host: _host.Object);
-            _disabledMode = new Mock<IMode>(MockBehavior.Loose);
+            _factory = new MockRepository(MockBehavior.Strict);
+            _globalSettings = MockObjectFactory.CreateGlobalSettings(factory:_factory);
+            _settings = MockObjectFactory.CreateLocalSettings(_globalSettings.Object, factory:_factory);
+            _keyMap = _factory.Create<IKeyMap>();
+            _host = _factory.Create<IVimHost>(MockBehavior.Strict);
+            _vim = MockObjectFactory.CreateVim(map: _markMap, settings: _globalSettings.Object, keyMap: _keyMap.Object, host: _host.Object, factory:_factory);
+            _disabledMode = _factory.Create<IMode>(MockBehavior.Loose);
             _disabledMode.SetupGet(x => x.ModeKind).Returns(ModeKind.Disabled);
-            _normalMode = new Mock<INormalMode>(MockBehavior.Loose);
+            _normalMode = _factory.Create<INormalMode>(MockBehavior.Loose);
+            _normalMode.SetupGet(x => x.KeyRemapMode).Returns(KeyRemapMode.Normal);
             _normalMode.Setup(x => x.OnEnter(ModeArgument.None));
             _normalMode.SetupGet(x => x.ModeKind).Returns(ModeKind.Normal);
-            _normalMode.SetupGet(x => x.IsOperatorPending).Returns(false);
-            _normalMode.SetupGet(x => x.IsWaitingForInput).Returns(false);
-            _insertMode = new Mock<IMode>(MockBehavior.Loose);
+            _insertMode = _factory.Create<IMode>(MockBehavior.Loose);
             _insertMode.SetupGet(x => x.ModeKind).Returns(ModeKind.Insert);
-            _jumpList = new Mock<IJumpList>(MockBehavior.Strict);
+            _jumpList = _factory.Create<IJumpList>(MockBehavior.Strict);
             _rawBuffer = new VimBuffer(
                 _vim.Object,
                 _view,
@@ -296,7 +297,7 @@ namespace VimCore.Test
         [Test, Description("Multiple keys returned")]
         public void Remap2()
         {
-            var list = new KeyInput[] {
+            var list = new[] {
                 KeyInputUtil.CharToKeyInput('c'),
                 KeyInputUtil.CharToKeyInput('d') };
             _keyMap
@@ -336,7 +337,7 @@ namespace VimCore.Test
             _keyMap
                 .Setup(x => x.GetKeyMapping(KeyInputSet.NewOneKeyInput(oldKi), KeyRemapMode.OperatorPending))
                 .Returns(KeyMappingResult.NewMapped(KeyInputSet.NewOneKeyInput(oldKi)));
-            _normalMode.SetupGet(x => x.IsOperatorPending).Returns(true);
+            _normalMode.SetupGet(x => x.KeyRemapMode).Returns(KeyRemapMode.OperatorPending);
             _normalMode.Setup(x => x.Process(oldKi)).Returns(ProcessResult.Processed).Verifiable();
             Assert.IsTrue(_buffer.Process(oldKi));
             _normalMode.Verify();
@@ -346,9 +347,12 @@ namespace VimCore.Test
         public void Remap5()
         {
             var oldKi = KeyInputUtil.CharToKeyInput('b');
-            _normalMode.SetupGet(x => x.IsOperatorPending).Returns(false);
-            _normalMode.SetupGet(x => x.IsWaitingForInput).Returns(true);
-            _normalMode.Setup(x => x.Process(oldKi)).Returns(ProcessResult.Processed).Verifiable();
+            var newKi = KeyInputUtil.CharToKeyInput('c');
+            _keyMap
+                .Setup(x => x.GetKeyMapping(KeyInputSet.NewOneKeyInput(oldKi), KeyRemapMode.Language))
+                .Returns(KeyMappingResult.NewMapped(KeyInputSet.NewOneKeyInput(newKi)));
+            _normalMode.SetupGet(x => x.KeyRemapMode).Returns(KeyRemapMode.Language);
+            _normalMode.Setup(x => x.Process(newKi)).Returns(ProcessResult.Processed).Verifiable();
             Assert.IsTrue(_buffer.Process(oldKi));
             _normalMode.Verify();
         }

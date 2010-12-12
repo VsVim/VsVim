@@ -19,16 +19,17 @@ type internal MotionCapture
         _util :ITextViewMotionUtil,
         _globalData : IMotionCaptureGlobalData ) = 
 
-    let NeedMoreInputWithEscape func =
-        let inner (ki:KeyInput) = 
-            if ki.Key = VimKey.Escape then ComplexMotionResult.Cancelled
-            else func(ki)
-        ComplexMotionResult.NeedMoreInput inner
-
+    /// Handles the f,F,t and T motions.  These are special in that they use the language 
+    /// mapping mode (:help language-mapping) for their char input.  Most motions get handled
+    /// via operator-pending
     let CharSearch func backwardFunc =
+
         let waitCharThen func =
-            let inner (ki:KeyInput) = ComplexMotionResult.Finished (fun arg -> func ki.Char arg)
-            NeedMoreInputWithEscape inner
+            let inner (ki:KeyInput) =
+                if ki.Key = VimKey.Escape then ComplexMotionResult.Cancelled
+                else ComplexMotionResult.Finished (fun arg -> func ki.Char arg)
+            ComplexMotionResult.NeedMoreInput (Some KeyRemapMode.Language, inner)
+
         let inner c (arg:MotionArgument) = 
             let result = func c arg.Count
             if Option.isSome result then
@@ -327,7 +328,7 @@ type internal MotionCapture
             match result with
             | ComplexMotionResult.Cancelled -> MotionResult.Cancelled
             | ComplexMotionResult.Error(msg) -> MotionResult.Error msg
-            | ComplexMotionResult.NeedMoreInput(func) -> MotionResult.NeedMoreInput (fun ki -> func ki |> inner)
+            | ComplexMotionResult.NeedMoreInput(keyRemapMode, func) -> MotionResult.NeedMoreInput (keyRemapMode,(fun ki -> func ki |> inner))
             | ComplexMotionResult.Finished(func) -> x.RunMotionFunction command func arg
         func () |> inner
 
@@ -344,7 +345,7 @@ type internal MotionCapture
                 | None -> 
                     let res = MotionCommandsMap |> Seq.filter (fun pair -> pair.Key.StartsWith name) 
                     if Seq.isEmpty res then MotionResult.Error Resources.MotionCapture_InvalidMotion
-                    else MotionResult.NeedMoreInput (inner name)
+                    else MotionResult.NeedMoreInput (None, inner name)
         inner Empty ki
         
     /// Wait for the completion of the motion count
@@ -356,7 +357,7 @@ type internal MotionCapture
                 | CountResult.Complete(count,nextKi) -> 
                     let arg = {arg with MotionCount=Some count}
                     x.WaitForCommandName arg nextKi
-                | NeedMore(nextFunc) -> MotionResult.NeedMoreInput (inner nextFunc)
+                | NeedMore(nextFunc) -> MotionResult.NeedMoreInput (None, inner nextFunc)
         inner (CountCapture.Process) ki
 
     member x.GetOperatorMotion (ki:KeyInput) operatorCountOpt =

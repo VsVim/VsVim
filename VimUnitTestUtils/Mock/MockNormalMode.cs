@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using Vim;
 using Microsoft.FSharp.Core;
 
 namespace Vim.UnitTest.Mock
@@ -9,8 +8,6 @@ namespace Vim.UnitTest.Mock
     {
         public IVimBuffer VimBufferImpl = null;
         public ICommandRunner CommandRunnerImpl = null;
-        public bool IsOperatorPendingImpl = false;
-        public bool IsWaitingForInputImpl= false;
         public bool IsInReplaceImpl = false;
 
         public string Command
@@ -21,16 +18,6 @@ namespace Vim.UnitTest.Mock
         public IIncrementalSearch IncrementalSearch
         {
             get { throw new NotImplementedException(); }
-        }
-
-        public bool IsOperatorPending
-        {
-            get { return IsOperatorPendingImpl; }
-        }
-
-        public bool IsWaitingForInput
-        {
-            get { return IsWaitingForInputImpl; }
         }
 
         public bool CanProcess(KeyInput value)
@@ -89,5 +76,11 @@ namespace Vim.UnitTest.Mock
         }
 
 
+
+
+        public KeyRemapMode KeyRemapMode
+        {
+            get { throw new NotImplementedException(); }
+        }
     }
 }

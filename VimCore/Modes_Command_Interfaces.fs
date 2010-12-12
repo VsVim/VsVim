@@ -48,6 +48,8 @@ type IOperations =
     /// Print all settings to the host
     abstract PrintAllSettings : unit -> unit
 
+    /// Print out the key map
+
     /// Print a single setting out to the host
     abstract PrintSetting : settingName:string -> unit
 

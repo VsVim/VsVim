@@ -977,7 +977,6 @@ namespace VimCore.Test
             _mode.Process("200r");
             _mode.Process(KeyInputUtil.VimKeyToKeyInput(VimKey.Escape));
             Assert.IsFalse(_mode.IsInReplace);
-            Assert.IsFalse(_mode.IsWaitingForInput);
         }
 
         [Test]
@@ -1456,7 +1455,7 @@ namespace VimCore.Test
             Create(s_lines);
             _mode.Process("ya");
             _mode.Process(KeyInputUtil.VimKeyToKeyInput(VimKey.Escape));
-            Assert.IsFalse(_mode.IsWaitingForInput);
+            Assert.IsFalse(_mode.CommandRunner.IsWaitingForMoreInput);
         }
 
         [Test, Description("A yy should grab the end of line including line break information")]
@@ -1714,9 +1713,9 @@ namespace VimCore.Test
         {
             Create(s_lines);
             _mode.Process('d');
-            Assert.IsTrue(_mode.IsWaitingForInput);
+            Assert.IsTrue(_mode.CommandRunner.IsWaitingForMoreInput);
             _mode.Process(KeyInputUtil.VimKeyToKeyInput(VimKey.Escape));
-            Assert.IsFalse(_mode.IsWaitingForInput);
+            Assert.IsFalse(_mode.CommandRunner.IsWaitingForMoreInput);
         }
 
         [Test]
@@ -2336,42 +2335,50 @@ namespace VimCore.Test
         }
 
         [Test]
-        public void IsOperatorPending1()
+        public void KeyRemapMode_DefaultIsNormal()
         {
-            Create("foobar");
-            Assert.IsFalse(_mode.IsOperatorPending);
+            Create("foo bar");
+            Assert.AreEqual(KeyRemapMode.Normal, _mode.KeyRemapMode);
         }
 
         [Test]
-        public void IsOperatorPending2()
+        public void KeyRemapMode_LanguageInIncrementalSearch()
         {
             Create("foobar");
             _incrementalSearch.Setup(x => x.Begin(SearchKind.ForwardWithWrap));
             _mode.Process('/');
-            Assert.IsFalse(_mode.IsOperatorPending);
+            Assert.AreEqual(KeyRemapMode.Language, _mode.KeyRemapMode);
         }
 
         [Test]
-        public void IsOperatorPending3()
+        public void KeyRemapMode_OperatorPendingAfterY()
         {
             Create("");
             _mode.Process('y');
-            Assert.IsTrue(_mode.IsOperatorPending);
+            Assert.AreEqual(KeyRemapMode.OperatorPending, _mode.KeyRemapMode);
         }
 
         [Test]
-        public void IsOperatorPending4()
+        public void KeyRemapMode_OperatorPendingAfterD()
         {
             Create("");
             _mode.Process('d');
-            Assert.IsTrue(_mode.IsOperatorPending);
+            Assert.AreEqual(KeyRemapMode.OperatorPending, _mode.KeyRemapMode);
+        }
+
+        [Test]
+        public void KeyRemapMode_LanguageAfterF()
+        {
+            Create("");
+            _mode.Process("df");
+            Assert.AreEqual(KeyRemapMode.Language, _mode.KeyRemapMode);
         }
 
         [Test]
         public void IsWaitingForInput1()
         {
             Create("foobar");
-            Assert.IsFalse(_mode.IsWaitingForInput);
+            Assert.IsFalse(_mode.CommandRunner.IsWaitingForMoreInput);
         }
 
         [Test]
@@ -2380,7 +2387,7 @@ namespace VimCore.Test
             Create("foobar");
             _incrementalSearch.Setup(x => x.Begin(SearchKind.ForwardWithWrap));
             _mode.Process('/');
-            Assert.IsTrue(_mode.IsWaitingForInput);
+            Assert.IsTrue(_mode.CommandRunner.IsWaitingForMoreInput);
         }
 
         [Test]
@@ -2388,7 +2395,7 @@ namespace VimCore.Test
         {
             Create("");
             _mode.Process('y');
-            Assert.IsTrue(_mode.IsWaitingForInput);
+            Assert.IsTrue(_mode.CommandRunner.IsWaitingForMoreInput);
         }
 
         [Test]

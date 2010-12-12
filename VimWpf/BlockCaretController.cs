@@ -72,7 +72,7 @@ namespace Vim.UI.Wpf
                         {
                             kind = CaretDisplay.QuarterBlock;
                         }
-                        else if (mode.IsOperatorPending)
+                        else if (mode.KeyRemapMode == KeyRemapMode.OperatorPending)
                         {
                             kind = CaretDisplay.HalfBlock;
                         }

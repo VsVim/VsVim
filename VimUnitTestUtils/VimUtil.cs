@@ -23,6 +23,11 @@ namespace Vim.UnitTest
             return new RegisterMap(device, func2.ToFSharpFunc());
         }
 
+        internal static Command CreateSimpleCommand(string name)
+        {
+            return CreateSimpleCommand(name, (count,reg) => CommandResult.NewCompleted(ModeSwitch.NoSwitch));
+        }
+
         internal static Command CreateSimpleCommand(string name, Action<FSharpOption<int>, Register> del)
         {
             return CreateSimpleCommand(
@@ -50,7 +55,7 @@ namespace Vim.UnitTest
             return Command.NewLongCommand(commandName, flags, fsharpFunc);
         }
 
-        internal static Command CreateLongCommand(string name, Func<KeyInput, bool> func, CommandFlags flags = CommandFlags.None)
+        internal static Command CreateLongCommand(string name, Func<KeyInput, bool> func, FSharpOption<KeyRemapMode> keyRemapModeOption = null, CommandFlags flags = CommandFlags.None)
         {
             return CreateLongCommand(
                 name,
@@ -65,13 +70,18 @@ namespace Vim.UnitTest
                             }
                             else
                             {
-                                return LongCommandResult.NewNeedMoreInput(realFunc);
+                                return LongCommandResult.NewNeedMoreInput(keyRemapModeOption, realFunc);
                             }
                         };
                     realFunc = func2;
-                    return LongCommandResult.NewNeedMoreInput(realFunc);
+                    return LongCommandResult.NewNeedMoreInput(keyRemapModeOption, realFunc);
                 },
                 flags);
+        }
+
+        internal static Command CreateMotionCommand(string name)
+        {
+            return CreateMotionCommand(name, (count, reg, motionData) => { });
         }
 
         internal static Command CreateMotionCommand(string name, Action<FSharpOption<int>, Register, MotionData> del)

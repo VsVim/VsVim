@@ -388,6 +388,34 @@ module KeyInputSetUtil =
 
     let OfString (str:string) = str |> Seq.map KeyInputUtil.CharToKeyInput |> OfSeq
 
+/// Modes for a key remapping
+[<RequireQualifiedAccess>]
+type KeyRemapMode =
+    // Used to explicitly state no-remapping should occur
+    | None
+    | Normal 
+    | Visual 
+    | Select 
+    | OperatorPending 
+    | Insert 
+    | Command 
+    | Language 
+
+type KeyMappingResult =
+
+    /// No mapping exists 
+    | NoMapping 
+
+    /// Mapped to the specified KeyInputSet
+    | Mapped of KeyInputSet 
+
+    /// The mapping encountered a recursive element that had to be broken 
+    | RecursiveMapping of KeyInputSet
+
+    /// More input is needed to resolve this mapping
+    | MappingNeedsMoreInput
+
+
 /// Flags for the substitute command
 [<System.Flags>]
 type SubstituteFlags = 
@@ -452,7 +480,7 @@ type CommandResult =
 type LongCommandResult =
     | Finished of CommandResult
     | Cancelled
-    | NeedMoreInput of (KeyInput -> LongCommandResult)
+    | NeedMoreInput of KeyRemapMode option * (KeyInput -> LongCommandResult)
 
 [<RequireQualifiedAccess>]
 type RunResult = 
@@ -566,7 +594,7 @@ type ComplexMotionResult =
     | Finished of MotionFunction
     | Cancelled
     | Error of string
-    | NeedMoreInput of (KeyInput -> ComplexMotionResult)
+    | NeedMoreInput of KeyRemapMode option * (KeyInput -> ComplexMotionResult)
 
 type ComplexMotionFunction = unit -> ComplexMotionResult
 
@@ -617,9 +645,15 @@ type CommandRunData = {
     VisualRunData : VisualSpan option
 }
 
+[<RequireQualifiedAccess>]
 type MotionResult = 
+    /// Motion is complete.  Returns both the information about the result of the motion and the 
+    /// data necessary to repeat the motion later
     | Complete of MotionData * MotionRunData
-    | NeedMoreInput of (KeyInput -> MotionResult)
+
+    /// Motion needs more input.  
+    | NeedMoreInput of KeyRemapMode option * (KeyInput -> MotionResult)
+
     | Error of string
     | Cancelled
 
@@ -687,11 +721,13 @@ type CommandRunnerState =
     /// where the name of the Motion is a prefix of the Simple command.  The MotionCommand is 
     /// captured in the first item of the tuple and all other commands with a matching prefix are
     /// captured in the list
-    | NotEnoughMatchingPrefix of Command * Command list
+    | NotEnoughMatchingPrefix of Command * Command list * KeyRemapMode option
 
     /// Waiting for a Motion or Long Command to complete.  Enough input is present to determine this
-    /// is the command to execute but not enough to complete the execution of the command
-    | NotFinishWithCommand of Command
+    /// is the command to execute but not enough to complete the execution of the command.  The
+    /// bool in the tuple represents whether or not the next input should be processed as language 
+    /// input (:help language-mapping)
+    | NotFinishWithCommand of Command * KeyRemapMode option
 
 /// Responsible for managing a set of Commands and running them
 type ICommandRunner =
@@ -701,6 +737,11 @@ type ICommandRunner =
 
     /// Current state of the ICommandRunner
     abstract State : CommandRunnerState
+
+    /// In certain circumstances a specific type of key remapping needs to occur for input.  This 
+    /// option will have the appropriate value in those circumstances.  For example while processing
+    /// the {char} argument to f,F,t or T the Language mapping will be used
+    abstract KeyRemapMode : KeyRemapMode option
 
     /// True if waiting on more input
     abstract IsWaitingForMoreInput : bool
@@ -724,32 +765,11 @@ type ICommandRunner =
     [<CLIEvent>]
     abstract CommandRan : IEvent<CommandRunData * CommandResult>
 
-/// Modes for a key remapping
-type KeyRemapMode =
-    | Normal 
-    | Visual 
-    | Select 
-    | OperatorPending 
-    | Insert 
-    | Command 
-    | Language 
-
-type KeyMappingResult =
-
-    /// No mapping exists 
-    | NoMapping 
-
-    /// Mapped to the specified KeyInputSet
-    | Mapped of KeyInputSet 
-
-    /// The mapping encountered a recursive element that had to be broken 
-    | RecursiveMapping of KeyInputSet
-
-    /// More input is needed to resolve this mapping
-    | MappingNeedsMoreInput
-
 /// Manages the key map for Vim.  Responsible for handling all key remappings
 type IKeyMap =
+
+    /// Get all mappings for the specified mode
+    abstract GetKeyMappingsForMode : KeyRemapMode -> (KeyInputSet * KeyInputSet) seq 
 
     /// Get the mapping for the provided KeyInput for the given mode.  If no mapping exists
     /// then a sequence of a single element containing the passed in key will be returned.  
@@ -1315,11 +1335,8 @@ and INormalMode =
     /// The ICommandRunner implementation associated with NormalMode
     abstract CommandRunner : ICommandRunner 
 
-    /// Is in the middle of an operator pending 
-    abstract IsOperatorPending : bool
-
-    /// Is normal mode waiting for additional input on a command
-    abstract IsWaitingForInput : bool
+    /// Mode keys need to be remapped with currently
+    abstract KeyRemapMode : KeyRemapMode
 
     /// Is normal mode in the middle of a character replace operation
     abstract IsInReplace : bool
