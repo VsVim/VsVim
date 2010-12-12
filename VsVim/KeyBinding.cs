@@ -120,7 +120,7 @@ namespace VsVim
 
             EnsureVsMap();
             var input = stroke.KeyInput;
-            var query = s_vsMap.Where(x => x.Value == input.Key);
+            var query = _vsMap.Where(x => x.Value == input.Key);
             if (Char.IsLetter(input.Char))
             {
                 builder.Append(Char.ToUpper(input.Char));
@@ -146,15 +146,15 @@ namespace VsVim
 
         public static string CreateKeyBindingStringForSingleKeyStroke(KeyStroke stroke)
         {
-            StringBuilder builder = new StringBuilder();
+            var builder = new StringBuilder();
             AppendCommandForSingle(stroke, builder);
             return builder.ToString();
         }
 
         #region Parsing Methods
 
-        private static string[] s_modifierPrefix = new string[] { "Shift", "Alt", "Ctrl" };
-        private static Dictionary<string, VimKey> s_vsMap;
+        private static readonly string[] ModifierPrefix = new[] { "Shift", "Alt", "Ctrl" };
+        private static Dictionary<string, VimKey> _vsMap;
 
         private static void BuildVsMap()
         {
@@ -191,12 +191,12 @@ namespace VsVim
             map.Add("F11", VimKey.F11);
             map.Add("F12", VimKey.F12);
 
-            s_vsMap = map;
+            _vsMap = map;
         }
 
         private static void EnsureVsMap()
         {
-            if (null == s_vsMap)
+            if (null == _vsMap)
             {
                 BuildVsMap();
             }
@@ -271,7 +271,7 @@ namespace VsVim
         {
             EnsureVsMap();
             VimKey wellKnownKey;
-            if (s_vsMap.TryGetValue(keystroke, out wellKnownKey))
+            if (_vsMap.TryGetValue(keystroke, out wellKnownKey))
             {
                 ki = KeyInputUtil.VimKeyToKeyInput(wellKnownKey);
                 return true;
@@ -312,7 +312,7 @@ namespace VsVim
 
             // First get rid of the Modifiers
             var mod = KeyModifiers.None;
-            while (s_modifierPrefix.Any(x => entry.StartsWith(x, StringComparison.OrdinalIgnoreCase)))
+            while (ModifierPrefix.Any(x => entry.StartsWith(x, StringComparison.OrdinalIgnoreCase)))
             {
                 var index = entry.IndexOf('+');
                 if (index < 0)

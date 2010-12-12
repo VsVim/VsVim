@@ -129,6 +129,10 @@ module KeyNotationUtil =
             else 
                 match ListUtil.tryHead rest with
                 | None -> withData []
+                | Some('\\',[]) -> withData [@"\"]
+                | Some('\\',h::t) -> 
+                    let str = h |> StringUtil.ofChar
+                    inner t (fun next -> withData (str :: next))
                 | Some(h,t) -> 
                     let str = h |> StringUtil.ofChar
                     inner t (fun next -> withData (str :: next))
@@ -149,38 +153,46 @@ module KeyNotationUtil =
         // Convert and then apply the modifier
         let convertAndApply data modifier = 
             let ki = convertToRaw data 
-            match modifier,ki with 
-            | Some(modifier),Some(ki) -> 
-                if modifier = KeyModifiers.Shift && CharUtil.IsLetter ki.Char then
-                    if CharUtil.IsLower ki.Char then
-                        // The shift modifier should promote a letter into the upper form 
-                        ki.Char |> CharUtil.ToUpper |> KeyInputUtil.CharToKeyInput |> Some
-                    else
-                        // Ignore the shift modifier on an upper letter
-                        Some ki
+            match ki with 
+            | None -> None
+            | Some(ki) -> 
+                if modifier = KeyModifiers.None then
+                    Some ki
+                elif Utils.IsFlagSet modifier KeyModifiers.Shift && CharUtil.IsLetter ki.Char then
+                    let other = Utils.UnsetFlag modifier KeyModifiers.Shift
+                    let ki = 
+                        if CharUtil.IsLower ki.Char then
+                            // The shift modifier should promote a letter into the upper form 
+                            ki.Char |> CharUtil.ToUpper |> KeyInputUtil.CharToKeyInput 
+                        else
+                            // Ignore the shift modifier on an upper letter
+                            ki
+                    KeyInputUtil.ChangeKeyModifiers ki other |> Some
                 else
                     KeyInputUtil.ChangeKeyModifiers ki modifier |> Some
-            | _ -> None
 
         // Inside the <
-        let insideLessThanGreaterThan() = 
-            if data.Length >= 3 && data.[2] = '-' then
+        let rec insideLessThanGreaterThan data index modifier = 
+            if  index + 2 < String.length data && data.[index+1] = '-' then
                 let modifier = 
-                    match data.[1] |> CharUtil.ToLower with
-                    | 'c' -> KeyModifiers.Control |> Some
-                    | 's' -> KeyModifiers.Shift |> Some
-                    | 'a' -> KeyModifiers.Alt |> Some
-                    | _ -> None
-                convertAndApply (data.Substring(3, data.Length-4)) modifier
+                    match data.[index] |> CharUtil.ToLower with
+                    | 'c' -> KeyModifiers.Control ||| modifier
+                    | 's' -> KeyModifiers.Shift ||| modifier
+                    | 'a' -> KeyModifiers.Alt ||| modifier
+                    | _ -> modifier
+                insideLessThanGreaterThan data (index+2) modifier
             else 
-                convertToRaw (data.Substring(1,data.Length - 2))
+                // Need to remove the final > before converting.  
+                let length = ((String.length data) - index) - 1 
+                let rest = data.Substring(index, length)
+                convertAndApply rest modifier
 
         match StringUtil.charAtOption 0 data with
         | None -> None
         | Some('<') -> 
             if String.length data = 1 then VimKey.LessThan |> KeyInputUtil.VimKeyToKeyInput |> Some
             elif StringUtil.last data <> '>' then None
-            else insideLessThanGreaterThan()
+            else insideLessThanGreaterThan data 1 KeyModifiers.None
         | Some(c) -> 
             if data.Length = 1 then KeyInputUtil.CharToKeyInput data.[0] |> Some
             else None
@@ -192,7 +204,7 @@ module KeyNotationUtil =
 
     let TryStringToKeyInputSet data = 
         match data |> SplitIntoKeyNotationEntries |> List.map TryStringToKeyInput |> SeqUtil.allOrNone with
-        | Some(list) -> list |> KeyInputSetUtil.ofList |> Some
+        | Some(list) -> list |> KeyInputSetUtil.OfList |> Some
         | None -> None
 
     /// Convert tho String to a KeyInputSet 
@@ -200,5 +212,5 @@ module KeyNotationUtil =
         data
         |> SplitIntoKeyNotationEntries
         |> Seq.map StringToKeyInput
-        |> KeyInputSetUtil.ofSeq
+        |> KeyInputSetUtil.OfSeq
 

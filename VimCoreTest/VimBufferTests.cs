@@ -285,7 +285,7 @@ namespace VimCore.Test
         {
             var newKi = KeyInputUtil.CharToKeyInput('c');
             _keyMap
-                .Setup(x => x.GetKeyMapping(KeyInputSetUtil.ofChar('b'), KeyRemapMode.Normal))
+                .Setup(x => x.GetKeyMapping(KeyInputSetUtil.OfChar('b'), KeyRemapMode.Normal))
                 .Returns(KeyMappingResult.NewMapped(KeyInputSet.NewOneKeyInput(newKi)));
             _normalMode.Setup(x => x.Process(newKi)).Returns(ProcessResult._unique_Processed).Verifiable();
             Assert.IsTrue(_buffer.Process('b'));
@@ -300,7 +300,7 @@ namespace VimCore.Test
                 KeyInputUtil.CharToKeyInput('c'),
                 KeyInputUtil.CharToKeyInput('d') };
             _keyMap
-                .Setup(x => x.GetKeyMapping(KeyInputSetUtil.ofChar('b'), KeyRemapMode.Normal))
+                .Setup(x => x.GetKeyMapping(KeyInputSetUtil.OfChar('b'), KeyRemapMode.Normal))
                 .Returns(KeyMappingResult.NewMapped(KeyInputSet.NewManyKeyInputs(list.ToFSharpList())));
             _normalMode.Setup(x => x.Process(list[0])).Returns(ProcessResult.Processed).Verifiable();
             _normalMode.Setup(x => x.Process(list[1])).Returns(ProcessResult.Processed).Verifiable();
@@ -315,10 +315,10 @@ namespace VimCore.Test
                 KeyInputUtil.CharToKeyInput('c'),
                 KeyInputUtil.CharToKeyInput('d') };
             _keyMap
-                .Setup(x => x.GetKeyMapping(KeyInputSetUtil.ofChar('b'), KeyRemapMode.Command))
+                .Setup(x => x.GetKeyMapping(KeyInputSetUtil.OfChar('b'), KeyRemapMode.Command))
                 .Returns(KeyMappingResult.NewMapped(KeyInputSet.NewManyKeyInputs(list.ToFSharpList())));
             _keyMap
-                .Setup(x => x.GetKeyMapping(KeyInputSetUtil.ofChar('b'), KeyRemapMode.Normal))
+                .Setup(x => x.GetKeyMapping(KeyInputSetUtil.OfChar('b'), KeyRemapMode.Normal))
                 .Returns(KeyMappingResult.NoMapping);
             _normalMode.Setup(x => x.Process(KeyInputUtil.CharToKeyInput('b'))).Returns(ProcessResult.Processed).Verifiable();
             Assert.IsTrue(_buffer.Process('b'));
@@ -384,7 +384,7 @@ namespace VimCore.Test
         public void Remap8()
         {
             _keyMap
-                .Setup(x => x.GetKeyMapping(KeyInputSetUtil.ofChar('a'), KeyRemapMode.Normal))
+                .Setup(x => x.GetKeyMapping(KeyInputSetUtil.OfChar('a'), KeyRemapMode.Normal))
                 .Returns(KeyMappingResult.MappingNeedsMoreInput)
                 .Verifiable();
             _buffer.Process('a');
@@ -403,7 +403,7 @@ namespace VimCore.Test
         public void BufferedRemapKeyInputs1()
         {
             _keyMap
-                .Setup(x => x.GetKeyMapping(KeyInputSetUtil.ofChar('a'), KeyRemapMode.Normal))
+                .Setup(x => x.GetKeyMapping(KeyInputSetUtil.OfChar('a'), KeyRemapMode.Normal))
                 .Returns(KeyMappingResult.MappingNeedsMoreInput)
                 .Verifiable();
             _buffer.Process('a');
@@ -422,7 +422,7 @@ namespace VimCore.Test
         public void BufferedRemapKeyInputs3()
         {
             _keyMap
-                .Setup(x => x.GetKeyMapping(KeyInputSetUtil.ofChar('a'), KeyRemapMode.Normal))
+                .Setup(x => x.GetKeyMapping(KeyInputSetUtil.OfChar('a'), KeyRemapMode.Normal))
                 .Returns(KeyMappingResult.MappingNeedsMoreInput);
             _buffer.Process('a');
             _keyMap
@@ -439,7 +439,7 @@ namespace VimCore.Test
         public void BufferedRemapKeyInputs4()
         {
             _keyMap
-                .Setup(x => x.GetKeyMapping(KeyInputSetUtil.ofChar('a'), KeyRemapMode.Normal))
+                .Setup(x => x.GetKeyMapping(KeyInputSetUtil.OfChar('a'), KeyRemapMode.Normal))
                 .Returns(KeyMappingResult.MappingNeedsMoreInput);
             _buffer.Process('a');
             _keyMap

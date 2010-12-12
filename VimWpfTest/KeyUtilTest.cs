@@ -104,15 +104,14 @@ namespace Vim.UI.Wpf.Test
         }
 
         [Test]
-        public void ConvertToKeyInput1()
+        public void ConvertToKeyInput_AKeyAndShift()
         {
             var ki = ConvertToKeyInput(Key.A, ModifierKeys.Shift);
-            Assert.AreEqual('A', ki.Char);
-            Assert.AreEqual(KeyModifiers.Shift, ki.KeyModifiers);
+            Assert.AreEqual(KeyInputUtil.VimKeyToKeyInput(VimKey.UpperA), ki);
         }
 
         [Test]
-        public void ConvertToKeyInput2()
+        public void ConvertToKeyInput_AKey()
         {
             var ki = ConvertToKeyInput(Key.A, ModifierKeys.None);
             Assert.AreEqual('a', ki.Char);
@@ -120,7 +119,7 @@ namespace Vim.UI.Wpf.Test
         }
 
         [Test]
-        public void ConvertToKeyInput3()
+        public void ConvertToKeyInput_AKeyAndControl()
         {
             var ki = ConvertToKeyInput(Key.A, ModifierKeys.Control);
             Assert.AreEqual('a', ki.Char);

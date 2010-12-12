@@ -31,6 +31,17 @@ namespace Vim.UI.Wpf.Test
             }
         }
 
+        [TearDown]
+        public void TearDown()
+        {
+            if (_customId != IntPtr.Zero)
+            {
+                Assert.IsTrue(NativeMethods.UnloadKeyboardLayout(_customId));
+                NativeMethods.LoadKeyboardLayout(NativeMethods.LayoutEnglish, NativeMethods.KLF_ACTIVATE);
+            }
+            _customId = IntPtr.Zero;
+        }
+
         private void AssertGetKeyInput(char c1, char c2, ModifierKeys modifierKeys)
         {
             AssertGetKeyInput(KeyInputUtil.CharToKeyInput(c1), c2, modifierKeys);
@@ -44,15 +55,6 @@ namespace Vim.UI.Wpf.Test
         private void AssertGetKeyInput(KeyInput keyInput, char c, ModifierKeys modifierKeys)
         {
             Assert.AreEqual(keyInput, _map.GetKeyInput(c, modifierKeys));
-        }
-
-        [TearDown]
-        public void TearDown()
-        {
-            if (_customId != IntPtr.Zero)
-            {
-                NativeMethods.UnloadKeyboardLayout(_customId);
-            }
         }
 
         private KeyInput GetKeyInput(Key key)
@@ -88,7 +90,7 @@ namespace Vim.UI.Wpf.Test
         [Test]
         public void TryGetKeyInput3()
         {
-            Setup(NativeMethods.LanguagePortuguese);
+            Setup(NativeMethods.LayoutPortuguese);
             KeyInput ki = GetKeyInput(Key.D8, ModifierKeys.Control | ModifierKeys.Alt);
             Assert.AreEqual('[', ki.Char);
         }
@@ -116,6 +118,22 @@ namespace Vim.UI.Wpf.Test
                 AssertGetKeyInput(cur, cur, ModifierKeys.Shift);
                 AssertGetKeyInput(KeyInputUtil.CharWithControlToKeyInput(cur), cur, ModifierKeys.Control | ModifierKeys.Shift);
             }
+        }
+
+        [Test]
+        public void GetKeyInput_TurkishFAlpha()
+        {
+            Setup(NativeMethods.LayoutTurkishF);
+            AssertGetKeyInput('a', 'a', ModifierKeys.None);
+            AssertGetKeyInput('ö', 'ö', ModifierKeys.None);
+        }
+
+        [Test]
+        public void GetKeyInput_TurkishFSymbol()
+        {
+            Setup(NativeMethods.LayoutTurkishF);
+            AssertGetKeyInput('<', '<', ModifierKeys.None);
+            AssertGetKeyInput('>', '>', ModifierKeys.Shift);
         }
     }
 }

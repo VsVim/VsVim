@@ -109,6 +109,22 @@ namespace VimCore.Test
         }
 
         [Test]
+        public void MapWithNoRemap_EscapeLessThanSymbol()
+        {
+            Assert.IsTrue(_map.MapWithNoRemap("a", @"\<Home>", KeyRemapMode.Normal));
+            var result = _map.GetKeyMappingResult("a", KeyRemapMode.Normal);
+            Assert.AreEqual(KeyInputSetUtil.OfString("<Home>"), result.AsMapped().Item);
+        }
+
+        [Test]
+        public void MapWithNoRemap_HandleLessThanEscapeLiteral()
+        {
+            Assert.IsTrue(_map.MapWithNoRemap("a", "<lt>lt>", KeyRemapMode.Normal));
+            var result = _map.GetKeyMappingResult("a", KeyRemapMode.Normal);
+            Assert.AreEqual(KeyInputSetUtil.OfString("<lt>"), result.AsMapped().Item);
+        }
+
+        [Test]
         public void MapWithNoRemap_ControlAlphaIsCaseInsensitive()
         {
             Assert.IsTrue(_map.MapWithNoRemap("<C-a>", "1", KeyRemapMode.Normal));
@@ -174,7 +190,7 @@ namespace VimCore.Test
         {
             Assert.IsTrue(_map.MapWithRemap("a", "b", KeyRemapMode.Normal));
             Assert.IsTrue(_map.MapWithRemap("b", "a", KeyRemapMode.Normal));
-            var ret = _map.GetKeyMapping(KeyInputSetUtil.ofChar('a'), KeyRemapMode.Normal);
+            var ret = _map.GetKeyMapping(KeyInputSetUtil.OfChar('a'), KeyRemapMode.Normal);
             Assert.IsTrue(ret.IsRecursiveMapping);
             Assert.AreEqual('b', ret.AsRecursiveMapping().Item.KeyInputs.Single().Char);
         }

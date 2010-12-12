@@ -86,7 +86,7 @@ type internal KeyMap() =
                                 anyRecursive <- true
                             | MappingNeedsMoreInput-> list.Add(mappedKi)
 
-                        let keyInputSet = list |> KeyInputSetUtil.ofSeq 
+                        let keyInputSet = list |> KeyInputSetUtil.OfSeq 
                         if anyRecursive then (RecursiveMapping keyInputSet, set)
                         else (Mapped keyInputSet, set)
     

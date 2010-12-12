@@ -368,14 +368,14 @@ type KeyInputSet =
 
 module KeyInputSetUtil =
 
-    let ofSeq sequence = 
+    let OfSeq sequence = 
         match Seq.length sequence with
         | 0 -> KeyInputSet.Empty
         | 1 -> KeyInputSet.OneKeyInput (Seq.nth 0 sequence)
         | 2 -> KeyInputSet.TwoKeyInputs ((Seq.nth 0 sequence),(Seq.nth 1 sequence))
         | _ -> sequence |> List.ofSeq |> KeyInputSet.ManyKeyInputs 
 
-    let ofList list = 
+    let OfList list = 
         match list with
         | [] -> KeyInputSet.Empty
         | [ki] -> KeyInputSet.OneKeyInput ki
@@ -384,7 +384,9 @@ module KeyInputSetUtil =
             | 2 -> KeyInputSet.TwoKeyInputs ((List.nth list 0),(List.nth list 1))
             | _ -> KeyInputSet.ManyKeyInputs list
 
-    let ofChar c = c |> KeyInputUtil.CharToKeyInput |> OneKeyInput
+    let OfChar c = c |> KeyInputUtil.CharToKeyInput |> OneKeyInput
+
+    let OfString (str:string) = str |> Seq.map KeyInputUtil.CharToKeyInput |> OfSeq
 
 /// Flags for the substitute command
 [<System.Flags>]

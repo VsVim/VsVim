@@ -27,6 +27,10 @@ namespace Vim.UI.Wpf.Test
                 _keyboardId = NativeMethods.LoadKeyboardLayout(languageId, NativeMethods.KLF_ACTIVATE);
                 Assert.AreNotEqual(_keyboardId, IntPtr.Zero);
             }
+            else
+            {
+                _keyboardId = IntPtr.Zero;
+            }
 
             _factory = new MockRepository(MockBehavior.Strict);
             _buffer = _factory.Create<IVimBuffer>();
@@ -39,6 +43,7 @@ namespace Vim.UI.Wpf.Test
             if (_keyboardId != IntPtr.Zero)
             {
                 Assert.IsTrue(NativeMethods.UnloadKeyboardLayout(_keyboardId));
+                NativeMethods.LoadKeyboardLayout(NativeMethods.LayoutEnglish, NativeMethods.KLF_ACTIVATE);
             }
             _keyboardId = IntPtr.Zero;
         }
@@ -55,7 +60,7 @@ namespace Vim.UI.Wpf.Test
         [Description("Don't handle AltGR keys")]
         public void KeyDown1()
         {
-            Setup(NativeMethods.LanguagePortuguese);
+            Setup(NativeMethods.LayoutPortuguese);
             var arg = CreateKeyEventArgs(Key.D8, ModifierKeys.Alt | ModifierKeys.Control);
             _processor.KeyDown(arg);
             Assert.IsFalse(arg.Handled);
@@ -143,8 +148,26 @@ namespace Vim.UI.Wpf.Test
         }
 
         [Test]
-        [Description("Do pass Control and Alt modified input onto the IVimBuffer")]
-        public void KeyDown7()
+        [Description("Control + char won't end up as TextInput so we handle it directly")]
+        public void KeyDown_PassControlLetterToBuffer()
+        {
+            _buffer.Setup(x => x.CanProcess(It.IsAny<KeyInput>())).Returns(true).Verifiable();
+            _buffer.Setup(x => x.Process(It.IsAny<KeyInput>())).Returns(true).Verifiable();
+
+            for (var i = 0; i < 26; i++)
+            {
+                var key = (Key)((int)Key.A + i);
+                var arg = CreateKeyEventArgs(key, ModifierKeys.Control);
+                _processor.KeyDown(arg);
+                Assert.IsTrue(arg.Handled);
+            }
+
+            _factory.Verify();
+        }
+
+        [Test]
+        [Description("Alt + char won't end up as TextInput so we handle it directly")]
+        public void KeyDown_PassAltLetterToBuffer()
         {
             _buffer.Setup(x => x.CanProcess(It.IsAny<KeyInput>())).Returns(true).Verifiable();
             _buffer.Setup(x => x.Process(It.IsAny<KeyInput>())).Returns(true).Verifiable();
@@ -153,10 +176,6 @@ namespace Vim.UI.Wpf.Test
             {
                 var key = (Key)((int)Key.A + i);
                 var arg = CreateKeyEventArgs(key, ModifierKeys.Alt);
-                _processor.KeyDown(arg);
-                Assert.IsTrue(arg.Handled);
-
-                arg = CreateKeyEventArgs(key, ModifierKeys.Control);
                 _processor.KeyDown(arg);
                 Assert.IsTrue(arg.Handled);
             }

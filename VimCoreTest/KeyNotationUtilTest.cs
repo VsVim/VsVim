@@ -28,6 +28,18 @@ namespace VimCore.Test
             }
         }
 
+        private static void AssertMany(string input, string result)
+        {
+            AssertMany(input, KeyInputSetUtil.OfString(result));
+        }
+
+        private static void AssertMany(string input, KeyInputSet keyInputSet)
+        {
+            var opt = KeyNotationUtil.TryStringToKeyInputSet(input);
+            Assert.IsTrue(opt.IsSome());
+            Assert.AreEqual(opt.Value,keyInputSet);
+        }
+
         [Test]
         public void Single_LessThanChar()
         {
@@ -102,6 +114,18 @@ namespace VimCore.Test
         }
 
         [Test]
+        public void Single_ShiftAndControlModifier()
+        {
+            AssertSingle("<C-S-A>", KeyInputUtil.VimKeyAndModifiersToKeyInput(VimKey.UpperA, KeyModifiers.Control));
+        }
+
+        [Test]
+        public void Single_BackslashLiteral()
+        {
+            AssertSingle(@"\", VimKey.Backslash);
+        }
+
+        [Test]
         [Description("Case shouldn't matter")]
         public void Single_CaseShouldntMatter()
         {
@@ -166,6 +190,17 @@ namespace VimCore.Test
             Assert.AreEqual('o', list[1].Char);
         }
 
+        [Test]
+        public void Many_EscapeLessThanLiteral()
+        {
+            AssertMany(@"\<home>", "<home>");
+        }
+
+        [Test]
+        public void Many_LessThanEscapeLiteral()
+        {
+            AssertMany(@"<lt>lt>", "<lt>");
+        }
 
         [Test]
         public void SplitIntoKeyNotationEntries1()
