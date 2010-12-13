@@ -6,18 +6,18 @@ namespace VsVim
 {
     public struct Result<T>
     {
-        private readonly bool m_isError;
-        private readonly T m_value;
-        private readonly int m_hresult;
+        private readonly bool _isError;
+        private readonly T _value;
+        private readonly int _hresult;
 
         public bool IsValue
         {
-            get { return !m_isError; }
+            get { return !_isError; }
         }
 
         public bool IsError
         {
-            get { return m_isError; }
+            get { return _isError; }
         }
 
         public T Value
@@ -26,10 +26,10 @@ namespace VsVim
             {
                 if (!IsValue)
                 {
-                    throw Marshal.GetExceptionForHR(m_hresult);
+                    throw Marshal.GetExceptionForHR(_hresult);
                 }
 
-                return m_value;
+                return _value;
             }
         }
 
@@ -39,25 +39,25 @@ namespace VsVim
             {
                 if (IsValue)
                 {
-                    throw Marshal.GetExceptionForHR(m_hresult);
+                    throw Marshal.GetExceptionForHR(_hresult);
                 }
 
-                return m_hresult;
+                return _hresult;
             }
         }
 
         public Result(T value)
         {
-            m_value = value;
-            m_isError = false;
-            m_hresult = 0;
+            _value = value;
+            _isError = false;
+            _hresult = 0;
         }
 
         public Result(int hresult)
         {
-            m_hresult = hresult;
-            m_isError = true;
-            m_value = default(T);
+            _hresult = hresult;
+            _isError = true;
+            _value = default(T);
         }
 
         public T GetValueOrDefault(T defaultValue = default(T))

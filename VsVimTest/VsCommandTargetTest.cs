@@ -158,7 +158,8 @@ namespace VsVim.UnitTest
             _buffer.SetupGet(x => x.ModeKind).Returns(ModeKind.Insert).Verifiable();
             _externalEditorManager.SetupGet(x => x.IsResharperLoaded).Returns(true).Verifiable();
             RunQueryStatus(KeyInputUtil.EscapeKey);
-            Assert.IsTrue(_targetRaw.IgnoreNextExecIfEscape);
+            Assert.IsTrue(_targetRaw.IgnoreIfNextExecMatches.IsSome);
+            Assert.AreEqual(KeyInputUtil.EscapeKey, _targetRaw.IgnoreIfNextExecMatches.Value);
             _factory.Verify();
         }
 
@@ -171,7 +172,8 @@ namespace VsVim.UnitTest
             _buffer.SetupGet(x => x.ModeKind).Returns(ModeKind.ExternalEdit).Verifiable();
             _externalEditorManager.SetupGet(x => x.IsResharperLoaded).Returns(true).Verifiable();
             RunQueryStatus(KeyInputUtil.EscapeKey);
-            Assert.IsTrue(_targetRaw.IgnoreNextExecIfEscape);
+            Assert.IsTrue(_targetRaw.IgnoreIfNextExecMatches.IsSome);
+            Assert.AreEqual(KeyInputUtil.EscapeKey, _targetRaw.IgnoreIfNextExecMatches.Value);
             _factory.Verify();
         }
 
@@ -182,7 +184,7 @@ namespace VsVim.UnitTest
             _buffer.Setup(x => x.CanProcess(ki)).Returns(true).Verifiable();
             _externalEditorManager.SetupGet(x => x.IsResharperLoaded).Returns(true).Verifiable();
             RunQueryStatus(ki);
-            Assert.IsFalse(_targetRaw.IgnoreNextExecIfEscape);
+            Assert.IsTrue(_targetRaw.IgnoreIfNextExecMatches.IsNone);
             _factory.Verify();
         }
 
@@ -202,9 +204,9 @@ namespace VsVim.UnitTest
             var ki = KeyInputUtil.EscapeKey;
             _buffer.Setup(x => x.CanProcess(ki)).Returns(true).Verifiable();
             _nextTarget.SetupExec().Verifiable();
-            _targetRaw.IgnoreNextExecIfEscape = true;
+            _targetRaw.IgnoreIfNextExecMatches = Option.CreateValue(KeyInputUtil.EscapeKey);
             RunExec(KeyInputUtil.EscapeKey);
-            Assert.IsFalse(_targetRaw.IgnoreNextExecIfEscape);
+            Assert.IsTrue(_targetRaw.IgnoreIfNextExecMatches.IsNone);
             _factory.Verify();
         }
 
