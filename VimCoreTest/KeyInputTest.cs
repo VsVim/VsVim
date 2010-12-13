@@ -17,7 +17,7 @@ namespace VimCore.Test
         [Test]
         public void IsDigit2()
         {
-            var input = KeyInputUtil.VimKeyToKeyInput(VimKey.Enter);
+            var input = KeyInputUtil.EnterKey;
             Assert.IsFalse(input.IsDigit);
         }
 
@@ -69,6 +69,18 @@ namespace VimCore.Test
         }
 
         [Test]
+        public void Equality_ControlLetterIsCaseInsensitive()
+        {
+            var unit = EqualityUnit.Create(KeyInputUtil.CharWithControlToKeyInput('a'))
+                .WithEqualValues(KeyInputUtil.CharWithControlToKeyInput('A'))
+                .WithNotEqualValues(KeyInputUtil.CharToKeyInput('a'));
+            EqualityUtil.RunAll(
+                (x, y) => x == y,
+                (x, y) => x != y,
+                values: unit);
+        }
+
+        [Test]
         public void CompareTo1()
         {
             var i1 = KeyInputUtil.CharToKeyInput('c');
@@ -77,6 +89,17 @@ namespace VimCore.Test
             Assert.IsTrue(i1.CompareTo(KeyInputUtil.CharToKeyInput('a')) > 0);
         }
 
+        [Test]
+        public void GetHashCode_ControlLetterIsCaseInsensitive()
+        {
+            Assert.AreEqual(KeyInputUtil.CharWithControlToKeyInput('a').GetHashCode(), KeyInputUtil.CharWithControlToKeyInput('A').GetHashCode());
+        }
+
+        [Test]
+        public void GetHashCode_ControlLetterIsCaseInsensitive2()
+        {
+            Assert.AreEqual(KeyInputUtil.CharWithControlToKeyInput('T').GetHashCode(), KeyInputUtil.CharWithControlToKeyInput('t').GetHashCode());
+        }
 
     }
 }

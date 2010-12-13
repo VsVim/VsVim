@@ -82,11 +82,7 @@ type internal VimBuffer
         match _modeMap.Mode.ModeKind with
         | ModeKind.Insert -> Some (KeyRemapMode.Insert)
         | ModeKind.Replace -> Some (KeyRemapMode.Insert)
-        | ModeKind.Normal -> 
-            let mode = x.NormalMode
-            if mode.IsOperatorPending then Some(KeyRemapMode.OperatorPending)
-            elif mode.IsWaitingForInput then None
-            else Some(KeyRemapMode.Normal)
+        | ModeKind.Normal -> Some x.NormalMode.KeyRemapMode
         | ModeKind.Command -> Some(KeyRemapMode.Command)
         | ModeKind.VisualBlock -> Some(KeyRemapMode.Visual)
         | ModeKind.VisualCharacter -> Some(KeyRemapMode.Visual)

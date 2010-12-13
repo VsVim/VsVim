@@ -144,7 +144,7 @@ namespace VimCore.Test
         {
             Create("cat", "dog", "rabbit", "tree");
             _mode.OnEnter(VimUtil.CreateSubstituteArgument(_textBuffer.GetLine(0).Extent, "cat", "bird"));
-            Assert.AreEqual(ModeKind.Normal, _mode.Process(VimKey.Escape).AsSwitchMode().Item);
+            Assert.AreEqual(ModeKind.Normal, _mode.Process(KeyInputUtil.EscapeKey).AsSwitchMode().Item);
         }
 
         [Test]
@@ -231,7 +231,7 @@ namespace VimCore.Test
             _mode.OnEnter(VimUtil.CreateSubstituteArgument(_textBuffer.GetLine(0).Extent, "cat", "bird"));
             VeriyCurrentMatchChanged(
                 () => { _mode.Process('y'); },
-                expected:null);
+                expected: null);
         }
 
         [Test]
@@ -240,7 +240,7 @@ namespace VimCore.Test
             Create("cat", "cat", "rabbit", "tree");
             _mode.OnEnter(VimUtil.CreateSubstituteArgument(_textBuffer.GetLine(0).Extent, "cat", "bird"));
             VeriyCurrentMatchChanged(
-                () => { _mode.Process('y'); }, 
+                () => { _mode.Process('y'); },
                 () => _textBuffer.GetLine(1).Extent);
         }
 
@@ -249,7 +249,7 @@ namespace VimCore.Test
         {
             Create("cat", "dog", "rabbit", "tree");
             _mode.OnEnter(VimUtil.CreateSubstituteArgument(_textBuffer.GetLine(0).Extent, "cat", "bird"));
-            VeriyCurrentMatchChanged( () => { _mode.Process('n'); } );
+            VeriyCurrentMatchChanged(() => { _mode.Process('n'); });
         }
 
         [Test]
@@ -257,7 +257,7 @@ namespace VimCore.Test
         {
             Create("cat", "cat", "rabbit", "tree");
             _mode.OnEnter(VimUtil.CreateSubstituteArgument(_textBuffer.GetLine(0).Extent, "cat", "bird"));
-            VeriyCurrentMatchChanged( () => { _mode.Process('n'); }, _textBuffer.GetLine(1).Extent);
+            VeriyCurrentMatchChanged(() => { _mode.Process('n'); }, _textBuffer.GetLine(1).Extent);
         }
 
         [Test]
@@ -265,7 +265,7 @@ namespace VimCore.Test
         {
             Create("cat", "cat", "rabbit", "tree");
             _mode.OnEnter(VimUtil.CreateSubstituteArgument(_textBuffer.GetLine(0).Extent, "cat", "bird"));
-            VeriyCurrentMatchChanged( () => { _mode.Process('a'); } );
+            VeriyCurrentMatchChanged(() => { _mode.Process('a'); });
         }
     }
 }

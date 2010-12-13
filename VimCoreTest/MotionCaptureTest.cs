@@ -46,7 +46,7 @@ namespace VimCore.Test
             {
                 Assert.IsTrue(res.IsNeedMoreInput);
                 var needMore = (MotionResult.NeedMoreInput)res;
-                res = needMore.Item.Invoke(KeyInputUtil.CharToKeyInput(cur));
+                res = needMore.Item2.Invoke(KeyInputUtil.CharToKeyInput(cur));
             }
 
             return res;

@@ -22,10 +22,10 @@ type internal InsertMode
         let commands : (string * CommandFunction) list = 
             [
                 ("<Esc>", this.ProcessEscape);
-                ("CTRL-[", this.ProcessEscape);
-                ("CTRL-d", this.ProcessShiftLeft)
-                ("CTRL-t", this.ProcessShiftRight)
-                ("CTRL-o", this.ProcessNormalModeOneCommand)
+                ("<C-[>", this.ProcessEscape);
+                ("<C-d>", this.ProcessShiftLeft)
+                ("<C-t>", this.ProcessShiftRight)
+                ("<C-o>", this.ProcessNormalModeOneCommand)
             ]
 
         _commandMap <-

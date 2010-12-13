@@ -206,7 +206,7 @@ type internal DefaultOperations ( _data : OperationsData, _incrementalSearch : I
                 false
             else
                 let replaceText = 
-                    if ki.IsNewLine then System.Environment.NewLine
+                    if ki = KeyInputUtil.EnterKey then System.Environment.NewLine
                     else new System.String(ki.Char, count)
                 let span = new Span(point.Position, count)
                 let tss = _textView.TextBuffer.Replace(span, replaceText) 

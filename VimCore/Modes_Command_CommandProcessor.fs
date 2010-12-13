@@ -603,8 +603,13 @@ type internal CommandProcessor
         let modes = 
             if hasBang then [KeyRemapMode.Insert; KeyRemapMode.Command]
             else modes
-        let withKeys lhs rhs _ = _operations.RemapKeys lhs rhs modes allowRemap 
-        CommandParseUtil.ParseKeys rest withKeys (fun() -> _statusUtil.OnError x.BadMessage)
+
+        // If there are no arguments then this is a print vs. remap call
+        if rest |> Seq.skipWhile CharUtil.IsWhiteSpace |> Seq.isEmpty then 
+            _operations.PrintKeyMap modes
+        else
+            let withKeys lhs rhs _ = _operations.RemapKeys lhs rhs modes allowRemap 
+            CommandParseUtil.ParseKeys rest withKeys (fun() -> _statusUtil.OnError x.BadMessage)
 
     member x.ParseAndRunCommand (rest:char list) (range:SnapshotLineRange option) =
 
@@ -658,7 +663,7 @@ type internal CommandProcessor
         match RangeUtil.ParseRange point _buffer.MarkMap originalInputs with
         | ParseRangeResult.Succeeded(range, inputs) -> 
             if inputs |> List.isEmpty then
-                if range.Count = 1 then  _operations.EditorOperations.GotoLine(range.StartLineNumber) |> ignore
+                if range.Count = 1 then range.StartLine |> TssUtil.FindFirstNonWhitespaceCharacter |> _operations.MoveCaretToPoint
                 else _statusUtil.OnError("Invalid Command String")
                 RunResult.Completed
             else

@@ -84,16 +84,44 @@ namespace Vim.UnitTest
 
         #region IKeyMap
 
+        public static IEnumerable<KeyInput> GetKeyMapping(this IKeyMap keyMap, char c, KeyRemapMode mode)
+        {
+            return GetKeyMapping(keyMap, KeyInputUtil.CharToKeyInput(c), mode);
+        }
+
+        public static IEnumerable<KeyInput> GetKeyMapping(this IKeyMap keyMap, string str, KeyRemapMode mode)
+        {
+            return GetKeyMapping(keyMap, KeyNotationUtil.StringToKeyInputSet(str), mode);
+        }
+
         public static IEnumerable<KeyInput> GetKeyMapping(this IKeyMap keyMap, KeyInput ki, KeyRemapMode mode)
         {
-            var set = KeyInputSet.NewOneKeyInput(ki);
-            return keyMap.GetKeyMapping(set, mode).AsMapped().Item.KeyInputs;
+            return GetKeyMapping(keyMap, KeyInputSet.NewOneKeyInput(ki), mode);
+        }
+
+        public static IEnumerable<KeyInput> GetKeyMapping(this IKeyMap keyMap, KeyInputSet kiSet, KeyRemapMode mode)
+        {
+            return keyMap.GetKeyMapping(kiSet, mode).AsMapped().Item.KeyInputs;
         }
 
         public static KeyMappingResult GetKeyMappingResult(this IKeyMap keyMap, KeyInput ki, KeyRemapMode mode)
         {
-            var set = KeyInputSet.NewOneKeyInput(ki);
+            return GetKeyMappingResult(keyMap, KeyInputSet.NewOneKeyInput(ki), mode);
+        }
+
+        public static KeyMappingResult GetKeyMappingResult(this IKeyMap keyMap, KeyInputSet set, KeyRemapMode mode)
+        {
             return keyMap.GetKeyMapping(set, mode);
+        }
+
+        public static KeyMappingResult GetKeyMappingResult(this IKeyMap keyMap, char c, KeyRemapMode mode)
+        {
+            return GetKeyMappingResult(keyMap, KeyInputUtil.CharToKeyInput(c), mode);
+        }
+
+        public static KeyMappingResult GetKeyMappingResult(this IKeyMap keyMap, string str, KeyRemapMode mode)
+        {
+            return keyMap.GetKeyMapping(KeyNotationUtil.StringToKeyInputSet(str), mode);
         }
 
         #endregion
@@ -215,13 +243,18 @@ namespace Vim.UnitTest
             return mode.Process((KeyInputUtil.CharToKeyInput(c)));
         }
 
-        public static ProcessResult Process(this IMode mode, string input)
+        public static ProcessResult Process(this IMode mode, string input, bool enter = false)
         {
             ProcessResult last = null;
             foreach (var c in input)
             {
                 var i = KeyInputUtil.CharToKeyInput(c);
                 last = mode.Process(c);
+            }
+
+            if (enter)
+            {
+                last = mode.Process(KeyInputUtil.EnterKey);
             }
 
             return last;
@@ -241,12 +274,16 @@ namespace Vim.UnitTest
             return buf.Process(KeyInputUtil.CharToKeyInput(c));
         }
 
-        public static void Process(this IVimBuffer buf, string input)
+        public static void Process(this IVimBuffer buf, string input, bool enter = false)
         {
             foreach (var c in input)
             {
                 var i = KeyInputUtil.CharToKeyInput(c);
                 buf.Process(i);
+            }
+            if (enter)
+            {
+                buf.Process(KeyInputUtil.EnterKey);
             }
         }
 
@@ -274,6 +311,16 @@ namespace Vim.UnitTest
         {
             endLine = endLine >= 0 ? endLine : startLine;
             return SnapshotLineRangeUtil.CreateForLineNumberRange(textView.TextSnapshot, startLine, endLine);
+        }
+
+        public static ITextSnapshotLine GetLastLine(this ITextView textView)
+        {
+            return textView.TextSnapshot.GetLastLine();
+        }
+
+        public static ITextSnapshotLine GetFirstLine(this ITextView textView)
+        {
+            return textView.TextSnapshot.GetFirstLine();
         }
 
         public static CaretPosition MoveCaretTo(this ITextView textView, int position)
@@ -351,6 +398,16 @@ namespace Vim.UnitTest
         {
             endLine = endLine >= 0 ? endLine : startLine;
             return SnapshotLineRangeUtil.CreateForLineNumberRange(tss, startLine, endLine);
+        }
+
+        public static ITextSnapshotLine GetFirstLine(this ITextSnapshot tss)
+        {
+            return GetLine(tss, 0);
+        }
+
+        public static ITextSnapshotLine GetLastLine(this ITextSnapshot tss)
+        {
+            return GetLine(tss, tss.LineCount - 1);
         }
 
         public static SnapshotPoint GetPoint(this ITextSnapshot tss, int position)

@@ -96,7 +96,7 @@ namespace VsVim.UnitTest
         [Test]
         public void Tab1()
         {
-            VerifyConvert(VSConstants.VSStd2KCmdID.TAB, VimKey.Tab, EditCommandKind.TypeChar);
+            VerifyConvert(VSConstants.VSStd2KCmdID.TAB, KeyInputUtil.TabKey, EditCommandKind.TypeChar);
         }
 
         [Test]
@@ -108,8 +108,8 @@ namespace VsVim.UnitTest
         [Test]
         public void Escape()
         {
-            VerifyConvert(VSConstants.VSStd97CmdID.Escape, VimKey.Escape, EditCommandKind.Cancel);
-            VerifyConvert(VSConstants.VSStd2KCmdID.CANCEL, VimKey.Escape, EditCommandKind.Cancel);
+            VerifyConvert(VSConstants.VSStd97CmdID.Escape, KeyInputUtil.EscapeKey, EditCommandKind.Cancel);
+            VerifyConvert(VSConstants.VSStd2KCmdID.CANCEL, KeyInputUtil.EscapeKey, EditCommandKind.Cancel);
         }
 
         [Test]

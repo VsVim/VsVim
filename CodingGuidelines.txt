@@ -9,6 +9,9 @@ F#
      - APIs taking a line number should consider returning an option.  Line numbers are less likely to be controlled
        by the user
  - Don't use ; for multi-line object initializers
+ - To Deteremine:
+    - Should functions returning an option be prefixed with Try? Example KeyNotationUtil 
+
 
 C#
  - Member variables prefixed with _ 

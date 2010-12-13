@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using Microsoft.FSharp.Collections;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
@@ -88,21 +89,38 @@ namespace VimCore.Test
             _operations.Verify();
         }
 
+        private void TestPrintMap(string input, params KeyRemapMode[] modes)
+        {
+            _operations
+                .Setup(x => x.PrintKeyMap(It.IsAny<FSharpList<KeyRemapMode>>()))
+                .Callback<FSharpList<KeyRemapMode>>(
+                    list =>
+                    {
+                        foreach (var mode in modes)
+                        {
+                            Assert.IsTrue(list.Contains(mode));
+                        }
+                    })
+                .Verifiable();
+            RunCommand(input);
+            _factory.Verify();
+        }
+
         [Test]
-        public void Jump1()
+        public void Jump_LastLine()
         {
             Create("foo", "bar", "baz");
             var tss = _view.TextSnapshot;
             _editOpts.Setup(x => x.MoveToEndOfDocument(false)).Verifiable();
             RunCommand("$");
-            _editOpts.Verify();
+            _operations.Verify();
         }
 
         [Test]
-        public void Jump2()
+        public void Jump_LastLineWithVimLineNumber()
         {
             Create("foo", "bar");
-            _editOpts.Setup(x => x.GotoLine(1)).Verifiable();
+            _operations.Setup(x => x.MoveCaretToPoint(_view.GetLastLine().Start)).Verifiable();
             RunCommand("2");
             _editOpts.Verify();
         }
@@ -1322,6 +1340,20 @@ namespace VimCore.Test
             TestUnmap("lunmap a ", "a", KeyRemapMode.Language);
             TestUnmap("lunm a ", "a", KeyRemapMode.Language);
             TestUnmap("unmap! a ", "a", KeyRemapMode.Insert, KeyRemapMode.Command);
+        }
+
+        [Test]
+        public void PrintKeyMap_Map()
+        {
+            Create("");
+
+            TestPrintMap("map", KeyRemapMode.Normal, KeyRemapMode.Visual, KeyRemapMode.OperatorPending);
+            TestPrintMap("imap", KeyRemapMode.Insert);
+            TestPrintMap("cmap", KeyRemapMode.Command);
+            TestPrintMap("smap", KeyRemapMode.Select);
+            TestPrintMap("nmap", KeyRemapMode.Normal);
+            TestPrintMap("vmap", KeyRemapMode.Visual, KeyRemapMode.Select);
+            TestPrintMap("xmap", KeyRemapMode.Visual);
         }
 
         [Test]

@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Windows.Input;
 using Vim;
-using Vim.Extensions;
 using Vim.UI.Wpf;
 
 namespace VsVim
@@ -18,7 +17,7 @@ namespace VsVim
     /// </summary>
     internal sealed class VsKeyProcessor : KeyProcessor
     {
-        private static readonly HashSet<char> _coreCharacterSet = new HashSet<char>(KeyInputUtil.CoreCharacterList);
+        private static readonly HashSet<char> _coreCharacterSet = new HashSet<char>(KeyInputUtil.VimKeyCharList);
         private readonly IVsAdapter _adapter;
 
         internal VsKeyProcessor(IVsAdapter adapter, IVimBuffer buffer)
@@ -59,7 +58,7 @@ namespace VsVim
             {
                 // We only want to process input characters here.  All other input will eventually 
                 // be routed along a more reliable route for us to convert back to Vim KeyInput
-                if (ki.RawChar.IsSome() && _coreCharacterSet.Contains(ki.Char))
+                if (ki.IsCharOnly && _coreCharacterSet.Contains(ki.Char))
                 {
                     handled = VimBuffer.CanProcess(ki) && VimBuffer.Process(ki);
                 }

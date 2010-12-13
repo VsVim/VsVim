@@ -129,11 +129,11 @@ namespace VsVim
                     kind = EditCommandKind.TypeChar;
                     break;
                 case VSConstants.VSStd2KCmdID.RETURN:
-                    ki = KeyInputUtil.VimKeyToKeyInput(VimKey.Enter);
+                    ki = KeyInputUtil.EnterKey;
                     kind = EditCommandKind.Return;
                     break;
                 case VSConstants.VSStd2KCmdID.CANCEL:
-                    ki = KeyInputUtil.VimKeyToKeyInput(VimKey.Escape);
+                    ki = KeyInputUtil.EscapeKey;
                     kind = EditCommandKind.Cancel;
                     break;
                 case VSConstants.VSStd2KCmdID.DELETE:
@@ -169,7 +169,7 @@ namespace VsVim
                     kind = EditCommandKind.CursorMovement;
                     break;
                 case VSConstants.VSStd2KCmdID.TAB:
-                    ki = KeyInputUtil.VimKeyToKeyInput(VimKey.Tab);
+                    ki = KeyInputUtil.TabKey;
                     kind = EditCommandKind.TypeChar;
                     break;
                 case VSConstants.VSStd2KCmdID.PAGEDN:
@@ -202,7 +202,7 @@ namespace VsVim
                     kind = EditCommandKind.TypeChar;
                     break;
                 case VSConstants.VSStd97CmdID.Escape:
-                    ki = KeyInputUtil.VimKeyToKeyInput(VimKey.Escape);
+                    ki = KeyInputUtil.EscapeKey;
                     kind = EditCommandKind.Cancel;
                     break;
                 case VSConstants.VSStd97CmdID.Delete:

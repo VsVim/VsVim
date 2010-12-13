@@ -33,35 +33,35 @@ module KeyNotationUtil =
 
     let ManualKeyList = 
         [
-            ("<Nul>",KeyInputUtil.CharWithControlToKeyInput '@');
-            ("<Bs>", KeyInputUtil.VimKeyToKeyInput VimKey.Back);
-            ("<Tab>",KeyInputUtil.VimKeyToKeyInput VimKey.Tab);
-            ("<NL>", KeyInputUtil.VimKeyToKeyInput VimKey.Enter);
-            ("<FF>", KeyInputUtil.CharWithControlToKeyInput 'l');
-            ("<CR>", KeyInputUtil.VimKeyToKeyInput VimKey.Enter);
-            ("<Return>", KeyInputUtil.VimKeyToKeyInput VimKey.Enter);
-            ("<Enter>", KeyInputUtil.VimKeyToKeyInput VimKey.Enter);
-            ("<Esc>", KeyInputUtil.VimKeyToKeyInput VimKey.Escape);
+            ("<Nul>",KeyInputUtil.VimKeyAndModifiersToKeyInput VimKey.AtSign KeyModifiers.Control)
+            ("<BS>", KeyInputUtil.VimKeyToKeyInput VimKey.Back)
+            ("<Tab>",KeyInputUtil.TabKey)
+            ("<NL>", KeyInputUtil.LineFeedKey)
+            ("<FF>", KeyInputUtil.VimKeyToKeyInput VimKey.FormFeed)
+            ("<CR>", KeyInputUtil.EnterKey)
+            ("<Return>", KeyInputUtil.EnterKey)
+            ("<Enter>", KeyInputUtil.EnterKey)
+            ("<Esc>", KeyInputUtil.EscapeKey)
             ("<Space>", KeyInputUtil.CharToKeyInput ' ')
-            ("<lt>", KeyInputUtil.CharToKeyInput '<');
-            ("<Bslash>", KeyInputUtil.CharToKeyInput '\\' );
-            ("<Bar>", KeyInputUtil.CharToKeyInput '|');
-            ("<Del>", KeyInputUtil.VimKeyToKeyInput VimKey.Delete);
-            ("<Up>", KeyInputUtil.VimKeyToKeyInput VimKey.Up);
-            ("<Down>", KeyInputUtil.VimKeyToKeyInput VimKey.Down);
-            ("<Left>", KeyInputUtil.VimKeyToKeyInput VimKey.Left);
-            ("<Right>", KeyInputUtil.VimKeyToKeyInput VimKey.Right);
-            ("<Help>", KeyInputUtil.VimKeyToKeyInput VimKey.Help);
-            ("<Insert>", KeyInputUtil.VimKeyToKeyInput VimKey.Insert);
-            ("<Home>", KeyInputUtil.VimKeyToKeyInput VimKey.Home);
-            ("<kHome>", KeyInputUtil.VimKeyToKeyInput VimKey.Home);
-            ("<End>", KeyInputUtil.VimKeyToKeyInput VimKey.End);
-            ("<PageUp>", KeyInputUtil.VimKeyToKeyInput VimKey.PageUp);
-            ("<PageDown>", KeyInputUtil.VimKeyToKeyInput VimKey.PageDown);
-            ("<kHome>", KeyInputUtil.VimKeyToKeyInput VimKey.Home);
-            ("<kEnd>", KeyInputUtil.VimKeyToKeyInput VimKey.End);
-            ("<kPageUp>", KeyInputUtil.VimKeyToKeyInput VimKey.PageUp);
-            ("<kPageDown>", KeyInputUtil.VimKeyToKeyInput VimKey.PageDown);
+            ("<lt>", KeyInputUtil.CharToKeyInput '<')
+            ("<Bslash>", KeyInputUtil.CharToKeyInput '\\' )
+            ("<Bar>", KeyInputUtil.CharToKeyInput '|')
+            ("<Del>", KeyInputUtil.VimKeyToKeyInput VimKey.Delete)
+            ("<Up>", KeyInputUtil.VimKeyToKeyInput VimKey.Up)
+            ("<Down>", KeyInputUtil.VimKeyToKeyInput VimKey.Down)
+            ("<Left>", KeyInputUtil.VimKeyToKeyInput VimKey.Left)
+            ("<Right>", KeyInputUtil.VimKeyToKeyInput VimKey.Right)
+            ("<Help>", KeyInputUtil.VimKeyToKeyInput VimKey.Help)
+            ("<Insert>", KeyInputUtil.VimKeyToKeyInput VimKey.Insert)
+            ("<Home>", KeyInputUtil.VimKeyToKeyInput VimKey.Home)
+            ("<kHome>", KeyInputUtil.VimKeyToKeyInput VimKey.Home)
+            ("<End>", KeyInputUtil.VimKeyToKeyInput VimKey.End)
+            ("<PageUp>", KeyInputUtil.VimKeyToKeyInput VimKey.PageUp)
+            ("<PageDown>", KeyInputUtil.VimKeyToKeyInput VimKey.PageDown)
+            ("<kHome>", KeyInputUtil.VimKeyToKeyInput VimKey.Home)
+            ("<kEnd>", KeyInputUtil.VimKeyToKeyInput VimKey.End)
+            ("<kPageUp>", KeyInputUtil.VimKeyToKeyInput VimKey.PageUp)
+            ("<kPageDown>", KeyInputUtil.VimKeyToKeyInput VimKey.PageDown)
             ("<kMultiply>", KeyInputUtil.VimKeyToKeyInput VimKey.KeypadMultiply)
             ("<kPlus>", KeyInputUtil.VimKeyToKeyInput VimKey.KeypadPlus)
             ("<kDivide>", KeyInputUtil.VimKeyToKeyInput VimKey.KeypadDivide)
@@ -101,7 +101,6 @@ module KeyNotationUtil =
 
     /// Break up a string into a set of key notation entries
     let SplitIntoKeyNotationEntries (data:string) =
-        let ctrlPrefix = "ctrl-" |> List.ofSeq
 
         let rec inner (rest:char list) withData =
 
@@ -119,24 +118,7 @@ module KeyNotationUtil =
                 let str = rest |> StringUtil.ofCharList
                 withData [str]
 
-            // Called when a key is processed but it needs to be followed by a _
-            // or be the completion of the data
-            let needConnectorOrEmpty rest withData = 
-                match ListUtil.tryHead rest with
-                | None -> withData [] 
-                | Some(h,t) ->
-                    if h <> '_' then error()
-                    else inner t withData 
-
-            if startsWith ctrlPrefix rest then 
-                // Handle the CTRL- prefix 
-                if rest.Length = ctrlPrefix.Length then error()
-                else
-                    let toSkip = ctrlPrefix.Length+1
-                    let str = rest |> Seq.take toSkip |> StringUtil.ofCharSeq
-                    let rest = ListUtil.skip toSkip rest
-                    needConnectorOrEmpty rest (fun next -> withData (str::next))
-            elif startsWith ['<'] rest then 
+            if startsWith ['<'] rest then 
                 match rest |> List.tryFindIndex (fun c -> c = '>') with
                 | None -> error()
                 | Some(index) ->
@@ -147,6 +129,10 @@ module KeyNotationUtil =
             else 
                 match ListUtil.tryHead rest with
                 | None -> withData []
+                | Some('\\',[]) -> withData [@"\"]
+                | Some('\\',h::t) -> 
+                    let str = h |> StringUtil.ofChar
+                    inner t (fun next -> withData (str :: next))
                 | Some(h,t) -> 
                     let str = h |> StringUtil.ofChar
                     inner t (fun next -> withData (str :: next))
@@ -167,44 +153,48 @@ module KeyNotationUtil =
         // Convert and then apply the modifier
         let convertAndApply data modifier = 
             let ki = convertToRaw data 
-            match modifier,ki with 
-            | Some(modifier),Some(ki) -> KeyInputUtil.ChangeKeyModifiers ki (modifier ||| ki.KeyModifiers) |> Some
-            | _ -> None
+            match ki with 
+            | None -> None
+            | Some(ki) -> 
+                if modifier = KeyModifiers.None then
+                    Some ki
+                elif Utils.IsFlagSet modifier KeyModifiers.Shift && CharUtil.IsLetter ki.Char then
+                    let other = Utils.UnsetFlag modifier KeyModifiers.Shift
+                    let ki = 
+                        if CharUtil.IsLower ki.Char then
+                            // The shift modifier should promote a letter into the upper form 
+                            ki.Char |> CharUtil.ToUpper |> KeyInputUtil.CharToKeyInput 
+                        else
+                            // Ignore the shift modifier on an upper letter
+                            ki
+                    KeyInputUtil.ChangeKeyModifiers ki other |> Some
+                else
+                    KeyInputUtil.ChangeKeyModifiers ki modifier |> Some
 
         // Inside the <
-        let insideLessThanGreaterThan() = 
-            if data.Length >= 3 && data.[2] = '-' then
+        let rec insideLessThanGreaterThan data index modifier = 
+            if  index + 2 < String.length data && data.[index+1] = '-' then
                 let modifier = 
-                    match data.[1] |> CharUtil.ToLower with
-                    | 'c' -> KeyModifiers.Control |> Some
-                    | 's' -> KeyModifiers.Shift |> Some
-                    | 'a' -> KeyModifiers.Alt |> Some
-                    | _ -> None
-                convertAndApply (data.Substring(3, data.Length-4)) modifier
+                    match data.[index] |> CharUtil.ToLower with
+                    | 'c' -> KeyModifiers.Control ||| modifier
+                    | 's' -> KeyModifiers.Shift ||| modifier
+                    | 'a' -> KeyModifiers.Alt ||| modifier
+                    | _ -> modifier
+                insideLessThanGreaterThan data (index+2) modifier
             else 
-                convertToRaw (data.Substring(1,data.Length - 2))
-
-        // Original data has a CTRL- prefix.  Passed in value is the text to the
-        // right
-        // :help CTRL-{char}
-        let convertCtrlPrefix data = 
-            if StringUtil.length data <> 1 then None
-            else 
-                let c = StringUtil.charAt 0 data 
-                let c = 
-                    if CharUtil.IsLetter c then CharUtil.ToLower c
-                    else c
-                KeyInputUtil.CharWithControlToKeyInput c |> Some
+                // Need to remove the final > before converting.  
+                let length = ((String.length data) - index) - 1 
+                let rest = data.Substring(index, length)
+                convertAndApply rest modifier
 
         match StringUtil.charAtOption 0 data with
         | None -> None
         | Some('<') -> 
-            if StringUtil.last data <> '>' then None
-            else insideLessThanGreaterThan()
+            if String.length data = 1 then VimKey.LessThan |> KeyInputUtil.VimKeyToKeyInput |> Some
+            elif StringUtil.last data <> '>' then None
+            else insideLessThanGreaterThan data 1 KeyModifiers.None
         | Some(c) -> 
-            let prefix = "CTRL-"
-            if StringUtil.startsWithIgnoreCase prefix data then convertCtrlPrefix (data.Substring(prefix.Length))
-            elif data.Length = 1 then KeyInputUtil.CharToKeyInput data.[0] |> Some
+            if data.Length = 1 then KeyInputUtil.CharToKeyInput data.[0] |> Some
             else None
 
     let StringToKeyInput data = 
@@ -214,7 +204,7 @@ module KeyNotationUtil =
 
     let TryStringToKeyInputSet data = 
         match data |> SplitIntoKeyNotationEntries |> List.map TryStringToKeyInput |> SeqUtil.allOrNone with
-        | Some(list) -> list |> KeyInputSetUtil.ofList |> Some
+        | Some(list) -> list |> KeyInputSetUtil.OfList |> Some
         | None -> None
 
     /// Convert tho String to a KeyInputSet 
@@ -222,5 +212,21 @@ module KeyNotationUtil =
         data
         |> SplitIntoKeyNotationEntries
         |> Seq.map StringToKeyInput
-        |> KeyInputSetUtil.ofSeq
+        |> KeyInputSetUtil.OfSeq
+
+    let TryGetSpecialKeyName (keyInput:KeyInput) = 
+
+        let found = 
+            SpecialKeyMap
+            |> Seq.tryFind (fun (pair) -> 
+                let specialInput = pair.Value
+                specialInput.Key = keyInput.Key && 
+                specialInput.KeyModifiers = (specialInput.KeyModifiers &&& keyInput.KeyModifiers))
+
+        match found with 
+        | None -> None
+        | Some(pair) ->
+            let extra : KeyModifiers = Utils.UnsetFlag keyInput.KeyModifiers pair.Value.KeyModifiers
+            Some(pair.Key.Value, extra)
+
 

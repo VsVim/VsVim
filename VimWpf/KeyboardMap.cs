@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Windows.Input;
-using Vim.Extensions;
 
 namespace Vim.UI.Wpf
 {
@@ -31,17 +31,55 @@ namespace Vim.UI.Wpf
         /// <summary>
         /// Cache of Key + Modifiers to a KeyInput for the current keyboard layout
         /// </summary>
-        private readonly Dictionary<KeyType, KeyInput> _cache;
+        private readonly Dictionary<KeyType, KeyInput> _keyTypeToKeyInputMap;
+
+        /// <summary>
+        /// Cache of the char and the modifiers needed to build the char 
+        /// </summary>
+        private readonly Dictionary<char, ModifierKeys> _charToModifierMap;
 
         internal IntPtr KeyboardId
         {
             get { return _keyboardId; }
         }
 
+        /// <summary>
+        /// Language Identifier of the keyboard
+        /// </summary>
+        internal int LanguageIdentifier
+        {
+            get { return NativeMethods.LoWord(_keyboardId.ToInt32()); }
+        }
+
         internal KeyboardMap(IntPtr keyboardId)
         {
             _keyboardId = keyboardId;
-            _cache = CreateCache(keyboardId);
+            CreateCache(keyboardId, out _keyTypeToKeyInputMap, out _charToModifierMap);
+        }
+
+        /// <summary>
+        /// Try and get the KeyInput for the specified char and ModifierKeys.  This will 
+        /// check and see if this is a well known char.  Many well known chars are expected
+        /// to come with certain modifiers (for instance on US keyboard # is expected to
+        /// have Shift applied).  These will be removed from the ModifierKeys passed in and
+        /// whatever is left will be applied to the resulting KeyInput.  
+        /// </summary>
+        internal KeyInput GetKeyInput(char c, ModifierKeys modifierKeys)
+        {
+            var keyInput = KeyInputUtil.CharToKeyInput(c);
+            ModifierKeys expected;
+            if (_charToModifierMap.TryGetValue(c, out expected))
+            {
+                modifierKeys &= ~expected;
+            }
+
+            if (modifierKeys != ModifierKeys.None)
+            {
+                var keyModifiers = ConvertToKeyModifiers(modifierKeys);
+                keyInput = KeyInputUtil.ChangeKeyModifiers(keyInput, keyModifiers);
+            }
+
+            return keyInput;
         }
 
         /// <summary>
@@ -61,7 +99,7 @@ namespace Vim.UI.Wpf
         {
             // First just check and see if there is a direct mapping
             var keyType = new KeyType(key, modifierKeys);
-            if (_cache.TryGetValue(keyType, out keyInput))
+            if (_keyTypeToKeyInputMap.TryGetValue(keyType, out keyInput))
             {
                 return true;
             }
@@ -69,7 +107,7 @@ namespace Vim.UI.Wpf
             // Next consider only the shift key part of the requested modifier.  We can 
             // re-apply the original modifiers later 
             keyType = new KeyType(key, modifierKeys & ModifierKeys.Shift);
-            if (_cache.TryGetValue(keyType, out keyInput))
+            if (_keyTypeToKeyInputMap.TryGetValue(keyType, out keyInput))
             {
                 // Reapply the modifiers
                 keyInput = KeyInputUtil.ChangeKeyModifiers(keyInput, ConvertToKeyModifiers(modifierKeys));
@@ -78,7 +116,7 @@ namespace Vim.UI.Wpf
 
             // Last consider it without any modifiers and reapply
             keyType = new KeyType(key, ModifierKeys.None);
-            if (_cache.TryGetValue(keyType, out keyInput))
+            if (_keyTypeToKeyInputMap.TryGetValue(keyType, out keyInput))
             {
                 // Reapply the modifiers
                 keyInput = KeyInputUtil.ChangeKeyModifiers(keyInput, ConvertToKeyModifiers(modifierKeys));
@@ -119,18 +157,29 @@ namespace Vim.UI.Wpf
             return res;
         }
 
-        private static Dictionary<KeyType, KeyInput> CreateCache(IntPtr keyboardId)
+        private static Dictionary<KeyType, KeyInput> CreateCache(
+            IntPtr keyboardId,
+            out Dictionary<KeyType, KeyInput> cache,
+            out Dictionary<char, ModifierKeys> charToKeyModifiersMap)
         {
-            var cache = new Dictionary<KeyType, KeyInput>();
+            cache = new Dictionary<KeyType, KeyInput>();
+            charToKeyModifiersMap = new Dictionary<char, ModifierKeys>();
 
-            foreach (var current in KeyInputUtil.CoreKeyInputList)
+            foreach (var current in KeyInputUtil.AllKeyInputList)
             {
                 int virtualKeyCode;
                 ModifierKeys modKeys;
                 if (!TryGetVirtualKeyAndModifiers(keyboardId, current, out virtualKeyCode, out modKeys))
                 {
-                    Debug.Fail("Unable to map a key: " + current);
                     continue;
+                }
+
+                // If this is backed by a real character then store the modifiers which are needed
+                // to produce this char.  Later we can compare the current modifiers to this value
+                // and find the extra modifiers to apply to the KeyInput given to Vim
+                if (current.IsCharOnly)
+                {
+                    charToKeyModifiersMap[current.Char] = modKeys;
                 }
 
                 // Only processing items which can map to acual keys
@@ -152,7 +201,34 @@ namespace Vim.UI.Wpf
         /// </summary>
         private static bool TryGetVirtualKeyAndModifiers(IntPtr hkl, KeyInput keyInput, out int virtualKeyCode, out ModifierKeys modKeys)
         {
-            if (VimKeyUtil.IsKeypadKey(keyInput.Key) || !keyInput.RawChar.IsSome())
+            if (KeyInputUtil.SpecialKeyInputList.Contains(keyInput))
+            {
+                // Want to map these to the keyboard keys vs. the Vim alternative.  So for 
+                // Enter map to Enter instead of CTRL-M
+                if (keyInput == KeyInputUtil.EnterKey)
+                {
+                    virtualKeyCode = 0xD;
+                }
+                else if (keyInput == KeyInputUtil.TabKey)
+                {
+                    virtualKeyCode = 0x9;
+                }
+                else if (keyInput == KeyInputUtil.EscapeKey)
+                {
+                    virtualKeyCode = 0x1B;
+                }
+                else
+                {
+                    Debug.Assert(keyInput == KeyInputUtil.LineFeedKey);
+                    virtualKeyCode = 0;
+                    modKeys = ModifierKeys.None;
+                    return false;
+                }
+
+                modKeys = ModifierKeys.None;
+                return true;
+            }
+            else if (VimKeyUtil.IsKeypadKey(keyInput.Key) || !keyInput.IsCharOnly)
             {
                 modKeys = ModifierKeys.None;
                 return TryVimKeyToVirtualKey(keyInput.Key, out virtualKeyCode);
@@ -162,6 +238,7 @@ namespace Vim.UI.Wpf
                 return TryMapCharToVirtualKeyAndModifiers(hkl, keyInput.Char, out virtualKeyCode, out modKeys);
             }
         }
+
         /// <summary>
         ///
         /// All constant values derived from the list at the following 
@@ -175,9 +252,6 @@ namespace Vim.UI.Wpf
             switch (vimKey)
             {
                 case VimKey.Back: virtualKeyCode = 0x8; break;
-                case VimKey.Tab: virtualKeyCode = 0x9; break;
-                case VimKey.Enter: virtualKeyCode = 0xD; break;
-                case VimKey.Escape: virtualKeyCode = 0x1B; break;
                 case VimKey.Delete: virtualKeyCode = 0x2E; break;
                 case VimKey.Left: virtualKeyCode = 0x25; break;
                 case VimKey.Up: virtualKeyCode = 0x26; break;

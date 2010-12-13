@@ -34,6 +34,7 @@ _ReSharper.*
 TestResults/
 */Debug/
 */Release/
+_ReSharper.VsVim
 
 # VS Binaries
 Microsoft.VisualStudio.CoreUtility.dll

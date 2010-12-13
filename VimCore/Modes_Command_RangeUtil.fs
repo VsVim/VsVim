@@ -121,6 +121,9 @@ module internal RangeUtil =
             ValidRange(range, CurrentLine, list |> List.tail)
         else if head = '\'' then
             ParseMark point map (list |> List.tail)
+        else if head = '$' then 
+            let range = point.Snapshot |> SnapshotUtil.GetLastLine |> SnapshotLineRangeUtil.CreateForLine
+            ValidRange(range, LineNumber, list |> List.tail)
         else
             NoRange
 

@@ -120,14 +120,14 @@ namespace VsVim
 
             EnsureVsMap();
             var input = stroke.KeyInput;
-            var query = s_vsMap.Where(x => x.Value == input.Key);
-            if (Char.IsLetter(input.Char))
-            {
-                builder.Append(Char.ToUpper(input.Char));
-            }
-            else if (query.Any())
+            var query = _vsMap.Where(x => x.Value == input);
+            if (query.Any())
             {
                 builder.Append(query.First().Key);
+            }
+            else if (Char.IsLetter(input.Char))
+            {
+                builder.Append(Char.ToUpper(input.Char));
             }
             else if (input.Char == ' ')
             {
@@ -146,57 +146,57 @@ namespace VsVim
 
         public static string CreateKeyBindingStringForSingleKeyStroke(KeyStroke stroke)
         {
-            StringBuilder builder = new StringBuilder();
+            var builder = new StringBuilder();
             AppendCommandForSingle(stroke, builder);
             return builder.ToString();
         }
 
         #region Parsing Methods
 
-        private static string[] s_modifierPrefix = new string[] { "Shift", "Alt", "Ctrl" };
-        private static Dictionary<string, VimKey> s_vsMap;
+        private static readonly string[] ModifierPrefix = new[] { "Shift", "Alt", "Ctrl" };
+        private static Dictionary<string, KeyInput> _vsMap;
 
         private static void BuildVsMap()
         {
-            var map = new Dictionary<string, VimKey>(StringComparer.OrdinalIgnoreCase);
-            map.Add("Down Arrow", VimKey.Down);
-            map.Add("Up Arrow", VimKey.Up);
-            map.Add("Left Arrow", VimKey.Left);
-            map.Add("Right Arrow", VimKey.Right);
-            map.Add("Bkspce", VimKey.Back);
-            map.Add("PgDn", VimKey.PageDown);
-            map.Add("PgUp", VimKey.PageUp);
-            map.Add("Ins", VimKey.Insert);
-            map.Add("Del", VimKey.Delete);
-            map.Add("Esc", VimKey.Escape);
-            map.Add("Break", VimKey.Break);
-            map.Add("Num +", VimKey.KeypadPlus);
-            map.Add("Num -", VimKey.KeypadMinus);
-            map.Add("Num /", VimKey.KeypadDivide);
-            map.Add("Num *", VimKey.KeypadMultiply);
-            map.Add("Enter", VimKey.Enter);
-            map.Add("Tab", VimKey.Tab);
-            map.Add("Home", VimKey.Home);
-            map.Add("End", VimKey.End);
-            map.Add("F1", VimKey.F1);
-            map.Add("F2", VimKey.F2);
-            map.Add("F3", VimKey.F3);
-            map.Add("F4", VimKey.F4);
-            map.Add("F5", VimKey.F5);
-            map.Add("F6", VimKey.F6);
-            map.Add("F7", VimKey.F7);
-            map.Add("F8", VimKey.F8);
-            map.Add("F9", VimKey.F9);
-            map.Add("F10", VimKey.F10);
-            map.Add("F11", VimKey.F11);
-            map.Add("F12", VimKey.F12);
+            var map = new Dictionary<string, KeyInput>(StringComparer.OrdinalIgnoreCase);
+            map.Add("Down Arrow", KeyInputUtil.VimKeyToKeyInput(VimKey.Down));
+            map.Add("Up Arrow", KeyInputUtil.VimKeyToKeyInput(VimKey.Up));
+            map.Add("Left Arrow", KeyInputUtil.VimKeyToKeyInput(VimKey.Left));
+            map.Add("Right Arrow", KeyInputUtil.VimKeyToKeyInput(VimKey.Right));
+            map.Add("Bkspce", KeyInputUtil.VimKeyToKeyInput(VimKey.Back));
+            map.Add("PgDn", KeyInputUtil.VimKeyToKeyInput(VimKey.PageDown));
+            map.Add("PgUp", KeyInputUtil.VimKeyToKeyInput(VimKey.PageUp));
+            map.Add("Ins", KeyInputUtil.VimKeyToKeyInput(VimKey.Insert));
+            map.Add("Del", KeyInputUtil.VimKeyToKeyInput(VimKey.Delete));
+            map.Add("Esc", KeyInputUtil.EscapeKey);
+            map.Add("Break", KeyInputUtil.VimKeyToKeyInput(VimKey.Break));
+            map.Add("Num +", KeyInputUtil.VimKeyToKeyInput(VimKey.KeypadPlus));
+            map.Add("Num -", KeyInputUtil.VimKeyToKeyInput(VimKey.KeypadMinus));
+            map.Add("Num /", KeyInputUtil.VimKeyToKeyInput(VimKey.KeypadDivide));
+            map.Add("Num *", KeyInputUtil.VimKeyToKeyInput(VimKey.KeypadMultiply));
+            map.Add("Enter", KeyInputUtil.EnterKey);
+            map.Add("Tab", KeyInputUtil.TabKey);
+            map.Add("Home", KeyInputUtil.VimKeyToKeyInput(VimKey.Home));
+            map.Add("End", KeyInputUtil.VimKeyToKeyInput(VimKey.End));
+            map.Add("F1", KeyInputUtil.VimKeyToKeyInput(VimKey.F1));
+            map.Add("F2", KeyInputUtil.VimKeyToKeyInput(VimKey.F2));
+            map.Add("F3", KeyInputUtil.VimKeyToKeyInput(VimKey.F3));
+            map.Add("F4", KeyInputUtil.VimKeyToKeyInput(VimKey.F4));
+            map.Add("F5", KeyInputUtil.VimKeyToKeyInput(VimKey.F5));
+            map.Add("F6", KeyInputUtil.VimKeyToKeyInput(VimKey.F6));
+            map.Add("F7", KeyInputUtil.VimKeyToKeyInput(VimKey.F7));
+            map.Add("F8", KeyInputUtil.VimKeyToKeyInput(VimKey.F8));
+            map.Add("F9", KeyInputUtil.VimKeyToKeyInput(VimKey.F9));
+            map.Add("F10", KeyInputUtil.VimKeyToKeyInput(VimKey.F10));
+            map.Add("F11", KeyInputUtil.VimKeyToKeyInput(VimKey.F11));
+            map.Add("F12", KeyInputUtil.VimKeyToKeyInput(VimKey.F12));
 
-            s_vsMap = map;
+            _vsMap = map;
         }
 
         private static void EnsureVsMap()
         {
-            if (null == s_vsMap)
+            if (null == _vsMap)
             {
                 BuildVsMap();
             }
@@ -270,10 +270,8 @@ namespace VsVim
         private static bool TryConvertVsSpecificKey(string keystroke, out KeyInput ki)
         {
             EnsureVsMap();
-            VimKey wellKnownKey;
-            if (s_vsMap.TryGetValue(keystroke, out wellKnownKey))
+            if (_vsMap.TryGetValue(keystroke, out ki))
             {
-                ki = KeyInputUtil.VimKeyToKeyInput(wellKnownKey);
                 return true;
             }
 
@@ -312,7 +310,7 @@ namespace VsVim
 
             // First get rid of the Modifiers
             var mod = KeyModifiers.None;
-            while (s_modifierPrefix.Any(x => entry.StartsWith(x, StringComparison.OrdinalIgnoreCase)))
+            while (ModifierPrefix.Any(x => entry.StartsWith(x, StringComparison.OrdinalIgnoreCase)))
             {
                 var index = entry.IndexOf('+');
                 if (index < 0)

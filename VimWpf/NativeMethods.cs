@@ -10,7 +10,15 @@ namespace Vim.UI.Wpf
         /// </summary>
         public const uint KLF_ACTIVATE = 0x1;
 
-        public const string LanguagePortuguese = "00000816";
+        public const uint KL_NAMELENGTH = 9;
+
+        public const string LayoutEnglish = "00000409";
+
+        public const string LayoutDvorak = "00010409";
+
+        public const string LayoutPortuguese = "00000816";
+
+        public const string LayoutTurkishF = "00001055";
 
         [DllImport("user32.dll")]
         internal static extern int GetCaretBlinkTime();
@@ -26,6 +34,9 @@ namespace Vim.UI.Wpf
 
         [DllImport("user32.dll")]
         internal static extern IntPtr GetKeyboardLayout(uint idThread);
+
+        [DllImport("user32.dll")]
+        internal static extern bool GetKeyboardLayoutName(char[] name);
 
         [DllImport("user32.dll")]
         internal static extern IntPtr LoadKeyboardLayout([In] string id, uint flags);

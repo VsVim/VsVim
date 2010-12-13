@@ -42,7 +42,7 @@ namespace VsVim.UnitTest
         {
             var args = _device.CreateKeyEventArgs(key, modKeys);
             _vsProcessor.KeyDown(args);
-            Assert.AreEqual(shouldHandle, args.Handled);
+            Assert.AreEqual(shouldHandle, args.Handled, "Did not handle {0} + {1}", key, modKeys);
         }
 
         [Test]

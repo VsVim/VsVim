@@ -144,3 +144,88 @@ type internal DefaultOperations ( _data : OperationsData ) =
                 |> Seq.filter (fun x -> not x)
                 |> Seq.isEmpty
             if not allSucceeded then _statusUtil.OnError Resources.CommandMode_NoSuchMapping
+
+        // :help map-listing
+        member x.PrintKeyMap modes =
+
+            // Get the printable info for the set of modes
+            let getModeLine modes =
+                if ListUtil.contains KeyRemapMode.Normal modes 
+                    && ListUtil.contains KeyRemapMode.OperatorPending modes
+                    && ListUtil.contains KeyRemapMode.Visual modes then
+                    " "
+                elif ListUtil.contains KeyRemapMode.Command modes 
+                    && ListUtil.contains KeyRemapMode.Insert modes then
+                    "!"
+                elif ListUtil.contains KeyRemapMode.Visual modes 
+                    && ListUtil.contains KeyRemapMode.Select modes then
+                    "v"
+                elif List.length modes <> 1 then 
+                    "?"
+                else 
+                    match List.head modes with
+                    | KeyRemapMode.Normal -> "n"
+                    | KeyRemapMode.Visual -> "x"
+                    | KeyRemapMode.Select -> "s"
+                    | KeyRemapMode.OperatorPending -> "o"
+                    | KeyRemapMode.Command -> "c"
+                    | KeyRemapMode.Language -> "l"
+                    | KeyRemapMode.Insert -> "i"
+
+            // Get the printable format for the KeyInputSet 
+            let getKeyInputSetLine (keyInputSet:KeyInputSet) = 
+
+                let inner (ki:KeyInput) = 
+
+                    // Build up the prefix for the specified modifiers
+                    let rec getPrefix modifiers = 
+                        if Utils.IsFlagSet modifiers KeyModifiers.Alt then
+                            "M-" + getPrefix (Utils.UnsetFlag modifiers KeyModifiers.Alt)
+                        elif Utils.IsFlagSet modifiers KeyModifiers.Control then
+                            "C-" + getPrefix (Utils.UnsetFlag modifiers KeyModifiers.Control)
+                        elif Utils.IsFlagSet modifiers KeyModifiers.Shift then
+                            "S-" + getPrefix (Utils.UnsetFlag modifiers KeyModifiers.Shift)
+                        else 
+                            ""
+
+                    // Get the actual printable output for the raw KeyInput.  For a KeyInput with
+                    // a char this is straight forward.  Non-char KeyInput need to be special cased
+                    // though
+                    let prefix,output = 
+                        match (KeyNotationUtil.TryGetSpecialKeyName ki),ki.RawChar with
+                        | Some(name,extraModifiers), _ -> 
+                            (getPrefix extraModifiers, name)
+                        | None, Some(c) -> 
+                            let c = 
+                                if CharUtil.IsLetter c && ki.KeyModifiers <> KeyModifiers.None then CharUtil.ToUpper c 
+                                else c
+                            (getPrefix ki.KeyModifiers, StringUtil.ofChar c)
+                        | None, None -> 
+                            (getPrefix ki.KeyModifiers, "???")
+
+                    if String.length prefix = 0 then 
+                        if String.length output = 1 then output
+                        else sprintf "<%s>" output
+                    else
+                        sprintf "<%s%s>" prefix output 
+
+                keyInputSet.KeyInputs |> Seq.map inner |> String.concat ""
+
+            // Get the printable line for the provided mode, left and right side
+            let getLine modes lhs rhs = 
+                sprintf "%-5s%s %s" (getModeLine modes) (getKeyInputSetLine lhs) (getKeyInputSetLine rhs)
+
+            let lines = 
+                modes
+                |> Seq.map (fun mode -> 
+                    mode
+                    |> _keyMap.GetKeyMappingsForMode 
+                    |> Seq.map (fun (lhs,rhs) -> (mode,lhs,rhs)))
+                |> Seq.concat
+                |> Seq.groupBy (fun (mode,lhs,rhs) -> lhs)
+                |> Seq.map (fun (lhs, all) ->
+                    let modes = all |> Seq.map (fun (mode, _, _) -> mode) |> List.ofSeq
+                    let rhs = all |> Seq.map (fun (_, _, rhs) -> rhs) |> Seq.head
+                    getLine modes lhs rhs)
+
+            _statusUtil.OnStatusLong lines

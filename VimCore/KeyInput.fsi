@@ -18,17 +18,17 @@ type KeyInput =
     /// Raw character for this Key Input
     member RawChar : char option
 
+    /// Does this represent a character only.  I.E. a backing char with no modifiers
+    member IsCharOnly : bool
+
     /// The VimKey for this KeyInput.  
     member Key : VimKey
 
-    /// The modifier keys needed to produce this input
+    /// The extra modifier keys applied to the VimKey value
     member KeyModifiers : KeyModifiers
 
     /// Is the character for this KeyInput a digit
     member IsDigit : bool
-
-    /// Determine if this a new line key.  Meant to match the Vim definition of <CR>
-    member IsNewLine : bool
 
     /// Is this an arrow key?
     member IsArrowKey : bool 
@@ -40,20 +40,49 @@ type KeyInput =
     static member op_Equality : KeyInput * KeyInput -> bool
     static member op_Inequality : KeyInput * KeyInput -> bool
 
-    interface System.IComparable 
+    interface System.IComparable
+    interface System.IComparable<KeyInput>
     interface System.IEquatable<KeyInput>
 
 module KeyInputUtil = 
-    
-    /// The set of core characters as a seq
-    val CoreCharacterList : char list
 
-    /// The core set of KeyInput values that Vim is concerned with.  With the exception of
-    /// upper case letters this doesn't include any modifiers.  
-    val CoreKeyInputList : KeyInput list
+    /// The Escape / <Esc> / <C-[> Key
+    val EscapeKey : KeyInput 
+
+    /// The Tab / <Tab> / <C-I> Key
+    val TabKey : KeyInput 
+    
+    /// The LineFeed / <NL> / <C-J> key
+    val LineFeedKey : KeyInput
+
+    /// The Enter / <CR> / <Enter> / <C-M> / <Return>
+    val EnterKey : KeyInput
+
+    /// The set of special keys which have multiple real aliases back at a single
+    /// Key
+    val SpecialKeyInputList : KeyInput list
+
+    /// The KeyInput for every VimKey in the system (except Unknown)
+    val VimKeyInputList : KeyInput list
+
+    /// The set of core characters as a seq
+    val VimKeyCharList : char list
+
+    /// The core set of KeyInput values that Vim is concerned with.  This includes all of the
+    /// VimKey entries and Special KeyInput values
+    val AllKeyInputList : KeyInput list
 
     /// Try and convert the given char to a KeyInput value
     val CharToKeyInput : char -> KeyInput
+
+    /// Convert the passed in char to a KeyInput with Control
+    val CharWithControlToKeyInput : char -> KeyInput
+
+    /// Convert the passed in char to a KeyInput with Alt
+    val CharWithAltToKeyInput : char -> KeyInput
+
+    /// Convert the passed in char to a KeyInput with Shift
+    val CharWithShiftToKeyInput : char -> KeyInput
 
     /// Convert the specified VimKey code to a KeyInput 
     val VimKeyToKeyInput : VimKey -> KeyInput
@@ -61,18 +90,10 @@ module KeyInputUtil =
     /// Convert the specified VimKey to a KeyInput with the given KeyModifiers
     val VimKeyAndModifiersToKeyInput : VimKey -> KeyModifiers -> KeyInput
 
-    /// Try and change the key modifiers to the provided value.  This may 
-    /// change the underlying Char value.
-    ///
-    /// On the surface this seems a lot like VimKeyAndModifiersToKeyInput but
-    /// it has one important difference.  This starts with a KeyInput which 
-    /// while the other produces a predefined one.  This is more flexible in 
-    /// that it won't destroy non-core chars
+    /// Change the KeyModifiers associated with this KeyInput.  Will not change the value
+    /// of the underlying char.  Although it may produce a KeyInput that makes no 
+    /// sense.  For example it's very possible to have KeyInput('a', KeyModifiers.Shift) but
+    /// it will be extremely hard to produce that in a keyboard.  This seems odd at first 
+    /// but it's a scenario that Vim supports (or doesn't support depending on how you 
     val ChangeKeyModifiers : KeyInput -> KeyModifiers -> KeyInput
-
-    /// Convert the passed in char and modifiers into a KeyInput value
-    val CharWithControlToKeyInput : char -> KeyInput
-
-    /// Convert the passed in char and modifiers into a KeyInput value
-    val CharWithAltToKeyInput : char -> KeyInput
 

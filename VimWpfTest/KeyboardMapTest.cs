@@ -36,8 +36,25 @@ namespace Vim.UI.Wpf.Test
         {
             if (_customId != IntPtr.Zero)
             {
-                NativeMethods.UnloadKeyboardLayout(_customId);
+                Assert.IsTrue(NativeMethods.UnloadKeyboardLayout(_customId));
+                NativeMethods.LoadKeyboardLayout(NativeMethods.LayoutEnglish, NativeMethods.KLF_ACTIVATE);
             }
+            _customId = IntPtr.Zero;
+        }
+
+        private void AssertGetKeyInput(char c1, char c2, ModifierKeys modifierKeys)
+        {
+            AssertGetKeyInput(KeyInputUtil.CharToKeyInput(c1), c2, modifierKeys);
+        }
+
+        private void AssertGetKeyInput(VimKey key, char c, ModifierKeys modifierKeys)
+        {
+            AssertGetKeyInput(KeyInputUtil.VimKeyToKeyInput(key), c, modifierKeys);
+        }
+
+        private void AssertGetKeyInput(KeyInput keyInput, char c, ModifierKeys modifierKeys)
+        {
+            Assert.AreEqual(keyInput, _map.GetKeyInput(c, modifierKeys));
         }
 
         private KeyInput GetKeyInput(Key key)
@@ -73,11 +90,50 @@ namespace Vim.UI.Wpf.Test
         [Test]
         public void TryGetKeyInput3()
         {
-            Setup(NativeMethods.LanguagePortuguese);
+            Setup(NativeMethods.LayoutPortuguese);
             KeyInput ki = GetKeyInput(Key.D8, ModifierKeys.Control | ModifierKeys.Alt);
             Assert.AreEqual('[', ki.Char);
         }
 
+        [Test]
+        public void GetKeyInput_EnglishAlpha()
+        {
+            AssertGetKeyInput('a', 'a', ModifierKeys.None);
+            AssertGetKeyInput('A', 'A', ModifierKeys.None);
+            AssertGetKeyInput('A', 'A', ModifierKeys.Shift);
+            AssertGetKeyInput(KeyInputUtil.CharWithShiftToKeyInput('a'), 'a', ModifierKeys.Shift);
+            AssertGetKeyInput(KeyInputUtil.CharWithControlToKeyInput('a'), 'a', ModifierKeys.Control);
+            AssertGetKeyInput(KeyInputUtil.CharWithControlToKeyInput('A'), 'A', ModifierKeys.Control);
+            AssertGetKeyInput(KeyInputUtil.CharWithControlToKeyInput('A'), 'A', ModifierKeys.Control | ModifierKeys.Shift);
+        }
 
+        [Test]
+        public void GetKeyInput_EnglishSymbol()
+        {
+            var list = "!@#$%^&*()";
+            foreach (var cur in list)
+            {
+                AssertGetKeyInput(cur, cur, ModifierKeys.None);
+                AssertGetKeyInput(cur, cur, ModifierKeys.Shift);
+                AssertGetKeyInput(cur, cur, ModifierKeys.Shift);
+                AssertGetKeyInput(KeyInputUtil.CharWithControlToKeyInput(cur), cur, ModifierKeys.Control | ModifierKeys.Shift);
+            }
+        }
+
+        [Test]
+        public void GetKeyInput_TurkishFAlpha()
+        {
+            Setup(NativeMethods.LayoutTurkishF);
+            AssertGetKeyInput('a', 'a', ModifierKeys.None);
+            AssertGetKeyInput('ö', 'ö', ModifierKeys.None);
+        }
+
+        [Test]
+        public void GetKeyInput_TurkishFSymbol()
+        {
+            Setup(NativeMethods.LayoutTurkishF);
+            AssertGetKeyInput('<', '<', ModifierKeys.None);
+            AssertGetKeyInput('>', '>', ModifierKeys.Shift);
+        }
     }
 }

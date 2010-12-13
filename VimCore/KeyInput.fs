@@ -14,16 +14,23 @@ type KeyInput
 
     member x.Char = _literal |> OptionUtil.getOrDefault CharUtil.MinValue
     member x.RawChar = _literal
+    member x.IsCharOnly = Option.isSome _literal && _modKey = KeyModifiers.None
     member x.Key = _key
     member x.KeyModifiers = _modKey
     member x.HasShiftModifier = _modKey = KeyModifiers.Shift
-    member x.IsDigit = System.Char.IsDigit(x.Char)
-
-    /// Determine if this a new line key.  Meant to match the Vim definition of <CR>
-    member x.IsNewLine = 
+    member x.IsDigit = 
         match _key with
-            | VimKey.Enter -> true
-            | _ -> false
+        | VimKey.Number0 -> true
+        | VimKey.Number1 -> true
+        | VimKey.Number2 -> true
+        | VimKey.Number3 -> true
+        | VimKey.Number4 -> true
+        | VimKey.Number5 -> true
+        | VimKey.Number6 -> true
+        | VimKey.Number7 -> true
+        | VimKey.Number8 -> true
+        | VimKey.Number9 -> true
+        | _ -> false
 
     /// Is this an arrow key?
     member x.IsArrowKey = 
@@ -34,16 +41,31 @@ type KeyInput
         | VimKey.Down -> true
         | _ -> false
 
-    member private x.CompareTo (other:KeyInput) =
-        let comp = compare x.Char other.Char
-        if comp <> 0 then  comp
+    member x.IsControlAndLetter = x.KeyModifiers = KeyModifiers.Control && CharUtil.IsLetter x.Char
+
+    /// In general Vim keys compare ordinally.  The one exception is when the control
+    /// modifier is applied to a letter key.  In that case the keys compare in a case insensitive
+    /// fashion
+    member x.CompareTo (other:KeyInput) =
+        if x.IsControlAndLetter then
+            if other.IsControlAndLetter then 
+                compare (CharUtil.ToLower x.Char) (CharUtil.ToLower other.Char)
+            else 
+                -1 
+        elif other.IsControlAndLetter then 
+            1
         else
-            let comp = compare x.Key other.Key
-            if comp <> 0 then  comp
+            let comp = compare x.KeyModifiers other.KeyModifiers
+            if comp <> 0 then comp
             else
-                compare x.KeyModifiers other.KeyModifiers
+                let comp = compare x.Char other.Char
+                if comp <> 0 then comp
+                else compare x.Key other.Key
                     
-    override x.GetHashCode() = int32 x.Char
+    override x.GetHashCode() = 
+        let c = if x.IsControlAndLetter then CharUtil.ToLower x.Char else x.Char
+        int32 c
+
     override x.Equals(obj) =
         match obj with
         | :? KeyInput as other ->
@@ -64,14 +86,16 @@ type KeyInput
 
     interface System.IEquatable<KeyInput> with
         member x.Equals other = 0 = x.CompareTo other
+
+    interface System.IComparable<KeyInput> with
+        member x.CompareTo other = x.CompareTo other
+
 module KeyInputUtil = 
 
     /// Mapping of all VimKey instances with their associated char if one exists
     let VimKeyRawData = [
         (VimKey.Back, Some '\b')
-        (VimKey.Tab, Some '\t')
-        (VimKey.Enter, None)
-        (VimKey.Escape, None)
+        (VimKey.FormFeed, None)
         (VimKey.Left, None)
         (VimKey.Up, None)
         (VimKey.Right, None)
@@ -111,32 +135,58 @@ module KeyInputUtil =
         (VimKey.KeypadMinus, Some '-')
         (VimKey.KeypadDivide, Some '/')
         (VimKey.KeypadMultiply, Some '*')
-        (VimKey.A, Some 'a')
-        (VimKey.B, Some 'b')
-        (VimKey.C, Some 'c')
-        (VimKey.D, Some 'd')
-        (VimKey.E, Some 'e')
-        (VimKey.F, Some 'f')
-        (VimKey.G, Some 'g')
-        (VimKey.H, Some 'h')
-        (VimKey.I, Some 'i')
-        (VimKey.J, Some 'j')
-        (VimKey.K, Some 'k')
-        (VimKey.L, Some 'l')
-        (VimKey.M, Some 'm')
-        (VimKey.N, Some 'n')
-        (VimKey.O, Some 'o')
-        (VimKey.P, Some 'p')
-        (VimKey.Q, Some 'q')
-        (VimKey.R, Some 'r')
-        (VimKey.S, Some 's')
-        (VimKey.T, Some 't')
-        (VimKey.U, Some 'u')
-        (VimKey.V, Some 'v')
-        (VimKey.W, Some 'w')
-        (VimKey.X, Some 'x')
-        (VimKey.Y, Some 'y')
-        (VimKey.Z, Some 'z')
+        (VimKey.LowerA, Some 'a')
+        (VimKey.LowerB, Some 'b')
+        (VimKey.LowerC, Some 'c')
+        (VimKey.LowerD, Some 'd')
+        (VimKey.LowerE, Some 'e')
+        (VimKey.LowerF, Some 'f')
+        (VimKey.LowerG, Some 'g')
+        (VimKey.LowerH, Some 'h')
+        (VimKey.LowerI, Some 'i')
+        (VimKey.LowerJ, Some 'j')
+        (VimKey.LowerK, Some 'k')
+        (VimKey.LowerL, Some 'l')
+        (VimKey.LowerM, Some 'm')
+        (VimKey.LowerN, Some 'n')
+        (VimKey.LowerO, Some 'o')
+        (VimKey.LowerP, Some 'p')
+        (VimKey.LowerQ, Some 'q')
+        (VimKey.LowerR, Some 'r')
+        (VimKey.LowerS, Some 's')
+        (VimKey.LowerT, Some 't')
+        (VimKey.LowerU, Some 'u')
+        (VimKey.LowerV, Some 'v')
+        (VimKey.LowerW, Some 'w')
+        (VimKey.LowerX, Some 'x')
+        (VimKey.LowerY, Some 'y')
+        (VimKey.LowerZ, Some 'z')
+        (VimKey.UpperA, Some 'A')
+        (VimKey.UpperB, Some 'B')
+        (VimKey.UpperC, Some 'C')
+        (VimKey.UpperD, Some 'D')
+        (VimKey.UpperE, Some 'E')
+        (VimKey.UpperF, Some 'F')
+        (VimKey.UpperG, Some 'G')
+        (VimKey.UpperH, Some 'H')
+        (VimKey.UpperI, Some 'I')
+        (VimKey.UpperJ, Some 'J')
+        (VimKey.UpperK, Some 'K')
+        (VimKey.UpperL, Some 'L')
+        (VimKey.UpperM, Some 'M')
+        (VimKey.UpperN, Some 'N')
+        (VimKey.UpperO, Some 'O')
+        (VimKey.UpperP, Some 'P')
+        (VimKey.UpperQ, Some 'Q')
+        (VimKey.UpperR, Some 'R')
+        (VimKey.UpperS, Some 'S')
+        (VimKey.UpperT, Some 'T')
+        (VimKey.UpperU, Some 'U')
+        (VimKey.UpperV, Some 'V')
+        (VimKey.UpperW, Some 'W')
+        (VimKey.UpperX, Some 'X')
+        (VimKey.UpperY, Some 'Y')
+        (VimKey.UpperZ, Some 'Z')
         (VimKey.Number0, Some '0')
         (VimKey.Number1, Some '1')
         (VimKey.Number2, Some '2')
@@ -181,22 +231,28 @@ module KeyInputUtil =
         (VimKey.Space, Some ' ')
         (VimKey.Dollar, Some '$') ]
 
-    let CoreKeyInputList  =
-        let upperLetters = 
-            VimKeyRawData
-            |> Seq.ofList
-            |> Seq.filter (fun (_,c) -> 
-                match c with
-                | None -> false
-                | Some(c) -> CharUtil.IsLetter c)
-            |> Seq.map (fun (key,c) -> KeyInput(key, KeyModifiers.Shift, c |> Option.get |> CharUtil.ToUpper |> Some))
+    let EscapeKey = KeyInput(VimKey.OpenBracket, KeyModifiers.Control, Some '[')
+    let TabKey = KeyInput(VimKey.LowerI, KeyModifiers.Control, Some 'i')
+    let LineFeedKey = KeyInput(VimKey.LowerJ, KeyModifiers.Control, Some 'j')
+    let EnterKey = KeyInput(VimKey.LowerM, KeyModifiers.Control, Some 'm')
 
-        let rawDataInput =  VimKeyRawData  |> Seq.map (fun (key,c) -> KeyInput(key, KeyModifiers.None, c))
-        Seq.append rawDataInput upperLetters 
+    let SpecialKeyInputList = 
+        [
+            EscapeKey
+            TabKey
+            LineFeedKey
+            EnterKey
+        ]
+
+    let VimKeyInputList  = 
+        VimKeyRawData 
+        |> Seq.map (fun (key,charOpt) -> KeyInput(key, KeyModifiers.None, charOpt )) 
         |> List.ofSeq
 
-    let CoreCharacterList = 
-        CoreKeyInputList
+    let AllKeyInputList = List.append VimKeyInputList SpecialKeyInputList
+
+    let VimKeyCharList = 
+        VimKeyInputList
         |> Seq.map (fun ki -> ki.RawChar)
         |> SeqUtil.filterToSome
         |> Set.ofSeq
@@ -207,7 +263,7 @@ module KeyInputUtil =
     /// char.  This map holds that mapping
     let CharToKeyInputMap = 
         let inputs = 
-            CoreKeyInputList
+            VimKeyInputList
             |> Seq.map (fun ki -> OptionUtil.combine ki.RawChar ki )
             |> SeqUtil.filterToSome
             |> Seq.filter (fun (_,ki) -> not (VimKeyUtil.IsKeypadKey ki.Key))
@@ -221,37 +277,23 @@ module KeyInputUtil =
         | None -> KeyInput(VimKey.NotWellKnown, KeyModifiers.None, Some c)
         | Some(ki) -> ki
 
-    /// Map of the VimKey + KeyModifiers to KeyInput values.  
+    /// Map of the VimKey to KeyInput values.  
     let VimKeyToKeyInputMap =
-        CoreKeyInputList
-        |> Seq.map (fun ki -> (ki.Key,ki.KeyModifiers),ki)
+        VimKeyInputList
+        |> Seq.map (fun ki -> ki.Key,ki)
         |> Map.ofSeq
 
     let VimKeyToKeyInput vimKey = 
-        match Map.tryFind (vimKey,KeyModifiers.None) VimKeyToKeyInputMap with
+        match Map.tryFind vimKey VimKeyToKeyInputMap with
         | None -> invalidArg "vimKey" Resources.KeyInput_InvalidVimKey
         | Some(ki) -> ki
 
-    let TryVimKeyAndModifiersToKeyInput vimKey keyModifiers = 
-        match Map.tryFind (vimKey,keyModifiers) VimKeyToKeyInputMap with
-        | Some(ki) -> Some ki
-        | None -> 
-            let shiftOnly = keyModifiers &&& KeyModifiers.Shift 
-            match Map.tryFind (vimKey,shiftOnly) VimKeyToKeyInputMap with
-            | Some(ki) -> KeyInput(ki.Key, keyModifiers, ki.RawChar) |> Some
-            | None -> None
-
     let VimKeyAndModifiersToKeyInput vimKey keyModifiers = 
-        match TryVimKeyAndModifiersToKeyInput vimKey keyModifiers with
-        | Some(ki) -> ki
-        | None ->
-            let ki = VimKeyToKeyInput vimKey
-            KeyInput(ki.Key, keyModifiers, ki.RawChar)
+        let ki = VimKeyToKeyInput vimKey
+        KeyInput(ki.Key, keyModifiers, ki.RawChar)
 
     let ChangeKeyModifiers (ki:KeyInput) keyModifiers = 
-        match TryVimKeyAndModifiersToKeyInput ki.Key keyModifiers with
-        | Some(ki) -> ki
-        | None -> KeyInput(ki.Key, keyModifiers, ki.RawChar)
+        KeyInput(ki.Key, keyModifiers, ki.RawChar)
 
     let CharWithControlToKeyInput ch = 
         let ki = ch |> CharToKeyInput  
@@ -260,4 +302,9 @@ module KeyInputUtil =
     let CharWithAltToKeyInput ch = 
         let ki = ch |> CharToKeyInput 
         ChangeKeyModifiers ki (ki.KeyModifiers ||| KeyModifiers.Alt)
+
+    let CharWithShiftToKeyInput ch = 
+        let ki = ch |> CharToKeyInput  
+        ChangeKeyModifiers ki (ki.KeyModifiers ||| KeyModifiers.Shift)
+
 

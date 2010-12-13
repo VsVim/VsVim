@@ -49,18 +49,20 @@ namespace Vim.UnitTest.Mock
             IChangeTracker changeTracker = null,
             IKeyboardDevice keyboardDevice = null,
             IMouseDevice mouseDevice = null,
-            IVimData vimData = null)
+            IVimData vimData = null,
+            MockRepository factory = null)
         {
+            factory = factory ?? new MockRepository(MockBehavior.Strict);
             registerMap = registerMap ?? CreateRegisterMap().Object;
             map = map ?? new MarkMap(new TrackingLineColumnService());
             settings = settings ?? new GlobalSettings();
             host = host ?? new MockVimHost();
             keyMap = keyMap ?? (new KeyMap());
-            keyboardDevice = keyboardDevice ?? (new Mock<IKeyboardDevice>(MockBehavior.Loose)).Object;
-            mouseDevice = mouseDevice ?? (new Mock<IMouseDevice>(MockBehavior.Loose)).Object;
+            keyboardDevice = keyboardDevice ?? (factory.Create<IKeyboardDevice>(MockBehavior.Loose)).Object;
+            mouseDevice = mouseDevice ?? (factory.Create<IMouseDevice>(MockBehavior.Loose)).Object;
             changeTracker = changeTracker ?? new ChangeTracker(new TextChangeTrackerFactory(keyboardDevice, mouseDevice));
             vimData = vimData ?? new VimData();
-            var mock = new Mock<IVim>(MockBehavior.Strict);
+            var mock = factory.Create<IVim>(MockBehavior.Strict);
             mock.SetupGet(x => x.RegisterMap).Returns(registerMap);
             mock.SetupGet(x => x.MarkMap).Returns(map);
             mock.SetupGet(x => x.Settings).Returns(settings);
@@ -79,9 +81,11 @@ namespace Vim.UnitTest.Mock
 
         public static Mock<IVimGlobalSettings> CreateGlobalSettings(
             bool? ignoreCase = null,
-            int? shiftWidth = null)
+            int? shiftWidth = null,
+            MockRepository factory = null)
         {
-            var mock = new Mock<IVimGlobalSettings>(MockBehavior.Strict);
+            factory = factory ?? new MockRepository(MockBehavior.Strict);
+            var mock = factory.Create<IVimGlobalSettings>(MockBehavior.Strict);
             if (ignoreCase.HasValue)
             {
                 mock.SetupGet(x => x.IgnoreCase).Returns(ignoreCase.Value);
@@ -96,10 +100,12 @@ namespace Vim.UnitTest.Mock
         }
 
         public static Mock<IVimLocalSettings> CreateLocalSettings(
-            IVimGlobalSettings global = null)
+            IVimGlobalSettings global = null,
+            MockRepository factory = null)
         {
-            global = global ?? CreateGlobalSettings().Object;
-            var mock = new Mock<IVimLocalSettings>(MockBehavior.Strict);
+            factory = factory ?? new MockRepository(MockBehavior.Strict);
+            global = global ?? CreateGlobalSettings(factory:factory).Object;
+            var mock = factory.Create<IVimLocalSettings>(MockBehavior.Strict);
             mock.SetupGet(x => x.GlobalSettings).Returns(global);
             return mock;
         }

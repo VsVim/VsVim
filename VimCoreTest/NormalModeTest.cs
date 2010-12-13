@@ -130,7 +130,7 @@ namespace VimCore.Test
         public void EnterProcessing()
         {
             Create(s_lines);
-            var can = _mode.CanProcess(KeyInputUtil.VimKeyToKeyInput(VimKey.Enter));
+            var can = _mode.CanProcess(KeyInputUtil.EnterKey);
             Assert.IsTrue(can);
         }
 
@@ -181,7 +181,7 @@ namespace VimCore.Test
         {
             Create(s_lines);
             _displayWindowBroker.SetupGet(x => x.IsSmartTagSessionActive).Returns(true);
-            Assert.IsFalse(_mode.CanProcess(KeyInputUtil.VimKeyToKeyInput(VimKey.Enter)));
+            Assert.IsFalse(_mode.CanProcess(KeyInputUtil.EnterKey));
             Assert.IsFalse(_mode.CanProcess(KeyInputUtil.VimKeyToKeyInput(VimKey.Left)));
             Assert.IsFalse(_mode.CanProcess(KeyInputUtil.VimKeyToKeyInput(VimKey.Down)));
         }
@@ -190,7 +190,7 @@ namespace VimCore.Test
         public void CanProcess6()
         {
             Create(s_lines);
-            foreach (var cur in KeyInputUtil.CoreCharacterList)
+            foreach (var cur in KeyInputUtil.VimKeyCharList)
             {
                 Assert.IsTrue(_mode.CanProcess(KeyInputUtil.CharToKeyInput(cur)));
             }
@@ -200,8 +200,8 @@ namespace VimCore.Test
         public void CanProcess7()
         {
             Create(s_lines);
-            Assert.IsTrue(_mode.CanProcess(KeyInputUtil.VimKeyToKeyInput(VimKey.Enter)));
-            Assert.IsTrue(_mode.CanProcess(KeyInputUtil.VimKeyToKeyInput(VimKey.Tab)));
+            Assert.IsTrue(_mode.CanProcess(KeyInputUtil.EnterKey));
+            Assert.IsTrue(_mode.CanProcess(KeyInputUtil.TabKey));
         }
 
         [Test, Description("Don't process while a completion window is open otherwise you prevent it from being used")]
@@ -209,10 +209,10 @@ namespace VimCore.Test
         {
             Create(s_lines);
             _displayWindowBroker.SetupGet(x => x.IsCompletionActive).Returns(true);
-            Assert.IsFalse(_mode.CanProcess(KeyInputUtil.VimKeyToKeyInput(VimKey.Enter)));
+            Assert.IsFalse(_mode.CanProcess(KeyInputUtil.EnterKey));
             Assert.IsFalse(_mode.CanProcess(KeyInputUtil.VimKeyToKeyInput(VimKey.Left)));
             Assert.IsFalse(_mode.CanProcess(KeyInputUtil.VimKeyToKeyInput(VimKey.Down)));
-            Assert.IsFalse(_mode.CanProcess(KeyInputUtil.VimKeyToKeyInput(VimKey.Tab)));
+            Assert.IsFalse(_mode.CanProcess(KeyInputUtil.TabKey));
         }
 
         #endregion
@@ -505,7 +505,7 @@ namespace VimCore.Test
         {
             Create(s_lines);
             _operations.Setup(x => x.MoveCaretToMotionData(It.IsAny<MotionData>())).Verifiable();
-            _mode.Process(KeyInputUtil.VimKeyToKeyInput(VimKey.Enter));
+            _mode.Process(KeyInputUtil.EnterKey);
             _operations.Verify();
         }
 
@@ -515,7 +515,7 @@ namespace VimCore.Test
             Create(s_lines);
             _operations.Setup(x => x.MoveCaretToMotionData(It.IsAny<MotionData>())).Verifiable();
             _mode.Process('2');
-            _mode.Process(KeyInputUtil.VimKeyToKeyInput(VimKey.Enter));
+            _mode.Process(KeyInputUtil.EnterKey);
             _operations.Verify();
         }
 
@@ -648,8 +648,7 @@ namespace VimCore.Test
             Create("foo", "bar");
             _editorOperations.Setup(x => x.ScrollLineTop()).Verifiable();
             _editorOperations.Setup(x => x.MoveToStartOfLineAfterWhiteSpace(false)).Verifiable();
-            _mode.Process("z");
-            _mode.Process(VimKey.Enter);
+            _mode.Process("z", enter: true);
             _editorOperations.Verify();
         }
 
@@ -952,11 +951,10 @@ namespace VimCore.Test
         public void Edit_r_3()
         {
             Create("foo");
-            var ki = KeyInputUtil.VimKeyToKeyInput(VimKey.Enter);
+            var ki = KeyInputUtil.EnterKey;
             _operations.Setup(x => x.ReplaceChar(ki, 1)).Returns(true).Verifiable();
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 1));
-            _mode.Process("r");
-            _mode.Process(KeyInputUtil.VimKeyToKeyInput(VimKey.Enter));
+            _mode.Process("r", enter: true);
             _operations.Verify();
         }
 
@@ -975,9 +973,8 @@ namespace VimCore.Test
         {
             Create("foo");
             _mode.Process("200r");
-            _mode.Process(KeyInputUtil.VimKeyToKeyInput(VimKey.Escape));
+            _mode.Process(KeyInputUtil.EscapeKey);
             Assert.IsFalse(_mode.IsInReplace);
-            Assert.IsFalse(_mode.IsWaitingForInput);
         }
 
         [Test]
@@ -1455,8 +1452,8 @@ namespace VimCore.Test
         {
             Create(s_lines);
             _mode.Process("ya");
-            _mode.Process(KeyInputUtil.VimKeyToKeyInput(VimKey.Escape));
-            Assert.IsFalse(_mode.IsWaitingForInput);
+            _mode.Process(KeyInputUtil.EscapeKey);
+            Assert.IsFalse(_mode.CommandRunner.IsWaitingForMoreInput);
         }
 
         [Test, Description("A yy should grab the end of line including line break information")]
@@ -1714,9 +1711,9 @@ namespace VimCore.Test
         {
             Create(s_lines);
             _mode.Process('d');
-            Assert.IsTrue(_mode.IsWaitingForInput);
-            _mode.Process(KeyInputUtil.VimKeyToKeyInput(VimKey.Escape));
-            Assert.IsFalse(_mode.IsWaitingForInput);
+            Assert.IsTrue(_mode.CommandRunner.IsWaitingForMoreInput);
+            _mode.Process(KeyInputUtil.EscapeKey);
+            Assert.IsFalse(_mode.CommandRunner.IsWaitingForMoreInput);
         }
 
         [Test]
@@ -2301,7 +2298,7 @@ namespace VimCore.Test
         {
             Create(s_lines);
             _operations.Setup(x => x.JumpNext(1)).Verifiable();
-            _mode.Process(KeyInputUtil.VimKeyToKeyInput(VimKey.Tab));
+            _mode.Process(KeyInputUtil.TabKey);
             _operations.Verify();
         }
 
@@ -2336,42 +2333,50 @@ namespace VimCore.Test
         }
 
         [Test]
-        public void IsOperatorPending1()
+        public void KeyRemapMode_DefaultIsNormal()
         {
-            Create("foobar");
-            Assert.IsFalse(_mode.IsOperatorPending);
+            Create("foo bar");
+            Assert.AreEqual(KeyRemapMode.Normal, _mode.KeyRemapMode);
         }
 
         [Test]
-        public void IsOperatorPending2()
+        public void KeyRemapMode_CommandInIncrementalSearch()
         {
             Create("foobar");
             _incrementalSearch.Setup(x => x.Begin(SearchKind.ForwardWithWrap));
             _mode.Process('/');
-            Assert.IsFalse(_mode.IsOperatorPending);
+            Assert.AreEqual(KeyRemapMode.Command, _mode.KeyRemapMode);
         }
 
         [Test]
-        public void IsOperatorPending3()
+        public void KeyRemapMode_OperatorPendingAfterY()
         {
             Create("");
             _mode.Process('y');
-            Assert.IsTrue(_mode.IsOperatorPending);
+            Assert.AreEqual(KeyRemapMode.OperatorPending, _mode.KeyRemapMode);
         }
 
         [Test]
-        public void IsOperatorPending4()
+        public void KeyRemapMode_OperatorPendingAfterD()
         {
             Create("");
             _mode.Process('d');
-            Assert.IsTrue(_mode.IsOperatorPending);
+            Assert.AreEqual(KeyRemapMode.OperatorPending, _mode.KeyRemapMode);
+        }
+
+        [Test]
+        public void KeyRemapMode_LanguageAfterF()
+        {
+            Create("");
+            _mode.Process("df");
+            Assert.AreEqual(KeyRemapMode.Language, _mode.KeyRemapMode);
         }
 
         [Test]
         public void IsWaitingForInput1()
         {
             Create("foobar");
-            Assert.IsFalse(_mode.IsWaitingForInput);
+            Assert.IsFalse(_mode.CommandRunner.IsWaitingForMoreInput);
         }
 
         [Test]
@@ -2380,7 +2385,7 @@ namespace VimCore.Test
             Create("foobar");
             _incrementalSearch.Setup(x => x.Begin(SearchKind.ForwardWithWrap));
             _mode.Process('/');
-            Assert.IsTrue(_mode.IsWaitingForInput);
+            Assert.IsTrue(_mode.CommandRunner.IsWaitingForMoreInput);
         }
 
         [Test]
@@ -2388,7 +2393,7 @@ namespace VimCore.Test
         {
             Create("");
             _mode.Process('y');
-            Assert.IsTrue(_mode.IsWaitingForInput);
+            Assert.IsTrue(_mode.CommandRunner.IsWaitingForMoreInput);
         }
 
         [Test]
@@ -2745,7 +2750,7 @@ namespace VimCore.Test
         public void Escape1()
         {
             Create(string.Empty);
-            var res = _mode.Process(KeyInputUtil.VimKeyToKeyInput(VimKey.Escape));
+            var res = _mode.Process(KeyInputUtil.EscapeKey);
             Assert.IsTrue(res.IsProcessed);
         }
 
@@ -3060,8 +3065,8 @@ namespace VimCore.Test
         public void MoveViewUp1()
         {
             Create(string.Empty);
-            _mode.Process(KeyNotationUtil.StringToKeyInput("CTRL-w"));
-            _mode.Process(KeyNotationUtil.StringToKeyInput("CTRL-k"));
+            _mode.Process(KeyNotationUtil.StringToKeyInput("<C-w>"));
+            _mode.Process(KeyNotationUtil.StringToKeyInput("<C-k>"));
             _host.Verify(x => x.MoveViewUp(_view));
         }
 
@@ -3069,7 +3074,7 @@ namespace VimCore.Test
         public void MoveViewUp2()
         {
             Create(string.Empty);
-            _mode.Process(KeyNotationUtil.StringToKeyInput("CTRL-w"));
+            _mode.Process(KeyNotationUtil.StringToKeyInput("<C-w>"));
             _mode.Process(KeyNotationUtil.StringToKeyInput("k"));
             _host.Verify(x => x.MoveViewUp(_view));
         }
@@ -3078,8 +3083,8 @@ namespace VimCore.Test
         public void MoveViewDown1()
         {
             Create(string.Empty);
-            _mode.Process(KeyNotationUtil.StringToKeyInput("CTRL-w"));
-            _mode.Process(KeyNotationUtil.StringToKeyInput("CTRL-j"));
+            _mode.Process(KeyNotationUtil.StringToKeyInput("<C-w>"));
+            _mode.Process(KeyNotationUtil.StringToKeyInput("<C-j>"));
             _host.Verify(x => x.MoveViewDown(_view));
         }
 
@@ -3087,7 +3092,7 @@ namespace VimCore.Test
         public void MoveViewDown2()
         {
             Create(string.Empty);
-            _mode.Process(KeyNotationUtil.StringToKeyInput("CTRL-w"));
+            _mode.Process(KeyNotationUtil.StringToKeyInput("<C-w>"));
             _mode.Process(KeyNotationUtil.StringToKeyInput("j"));
             _host.Verify(x => x.MoveViewDown(_view));
         }

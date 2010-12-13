@@ -42,34 +42,33 @@ type internal CommandMode
                     else 
                         selection.Clear()
 
-            match ki.Key with 
-                | VimKey.Enter ->
-                    let command = _input |> List.rev |> Seq.map (fun ki -> ki.Char) |> List.ofSeq
-                    let result = _processor.RunCommand command 
-                    _input <- List.empty
-                    _command <- System.String.Empty
-                    maybeClearSelection false
-                    match result with
-                    | RunResult.Completed -> SwitchMode ModeKind.Normal
-                    | RunResult.SubstituteConfirm (span, range, data) -> SwitchModeWithArgument (ModeKind.SubstituteConfirm, ModeArgument.Subsitute (span, range, data))
-                | VimKey.Escape ->
-                    _input <- List.empty
-                    _command <- System.String.Empty
+            if ki = KeyInputUtil.EnterKey then
+                let command = _input |> List.rev |> Seq.map (fun ki -> ki.Char) |> List.ofSeq
+                let result = _processor.RunCommand command 
+                _input <- List.empty
+                _command <- System.String.Empty
+                maybeClearSelection false
+                match result with
+                | RunResult.Completed -> SwitchMode ModeKind.Normal
+                | RunResult.SubstituteConfirm (span, range, data) -> SwitchModeWithArgument (ModeKind.SubstituteConfirm, ModeArgument.Subsitute (span, range, data))
+            elif ki = KeyInputUtil.EscapeKey then
+                _input <- List.empty
+                _command <- System.String.Empty
+                maybeClearSelection true
+                SwitchMode ModeKind.Normal
+            elif ki.Key = VimKey.Back then
+                if not (List.isEmpty _input) then 
+                    _input <- List.tail _input
+                    _command <- _command.Substring(0, (_command.Length - 1))
+                    Processed
+                else
                     maybeClearSelection true
                     SwitchMode ModeKind.Normal
-                | VimKey.Back -> 
-                    if not (List.isEmpty _input) then 
-                        _input <- List.tail _input
-                        _command <- _command.Substring(0, (_command.Length - 1))
-                        Processed
-                    else
-                        maybeClearSelection true
-                        SwitchMode ModeKind.Normal
-                | _ -> 
-                    let c = ki.Char
-                    _command <-_command + (c.ToString())
-                    _input <- ki :: _input
-                    Processed
+            else 
+                let c = ki.Char
+                _command <-_command + (c.ToString())
+                _input <- ki :: _input
+                Processed
 
         member x.OnEnter arg =
             _command <- 

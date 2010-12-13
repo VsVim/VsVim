@@ -105,6 +105,7 @@
     <Compile Include="ExternalEdit.fs" />
     <Compile Include="DisabledMode.fs" />
     <Compile Include="MarkMap.fs" />
+    <Compile Include="KeyMap.fsi" />
     <Compile Include="KeyMap.fs" />
     <Compile Include="JumpList.fs" />
     <Compile Include="ChangeTracker.fs" />

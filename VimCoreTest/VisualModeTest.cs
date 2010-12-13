@@ -107,7 +107,7 @@ namespace VimCore.Test
         public void Process1()
         {
             Create("foo");
-            var res = _mode.Process(KeyInputUtil.VimKeyToKeyInput(VimKey.Escape));
+            var res = _mode.Process(KeyInputUtil.EscapeKey);
             Assert.IsTrue(res.IsSwitchPreviousMode);
         }
 
@@ -116,7 +116,7 @@ namespace VimCore.Test
         {
             Create("foo");
             _mode.Process('g');
-            var res = _mode.Process(VimKey.Escape);
+            var res = _mode.Process(KeyInputUtil.EscapeKey);
             Assert.IsTrue(res.IsSwitchPreviousMode);
         }
 
@@ -167,7 +167,7 @@ namespace VimCore.Test
         {
             Create(lines: "foo");
             _selection.Setup(x => x.Clear()).Verifiable();
-            _mode.Process(VimKey.Escape);
+            _mode.Process(KeyInputUtil.EscapeKey);
             _factory.Verify();
         }
 

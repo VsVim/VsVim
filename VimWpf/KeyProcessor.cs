@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Windows.Input;
 using Microsoft.VisualStudio.Text;
-using Vim.Extensions;
 
 namespace Vim.UI.Wpf
 {
@@ -54,7 +53,7 @@ namespace Vim.UI.Wpf
                 var keyboard = args.Device as KeyboardDevice;
                 if (keyboard != null)
                 {
-                    var ki = KeyInputUtil.CharToKeyInput(args.Text[0]);
+                    var ki = KeyUtil.CharAndModifiersToKeyInput(args.Text[0], keyboard.Modifiers);
                     handled = _buffer.CanProcess(ki) && _buffer.Process(ki);
                 }
             }
@@ -106,7 +105,7 @@ namespace Vim.UI.Wpf
                 // can't be represented as a char.  If it can be represented by a char then 
                 // it will appear in TextInput and we can do a much more definitive mapping
                 KeyInput ki;
-                handled = KeyUtil.TryConvertToKeyInput(args.Key, out ki) && ki.RawChar.IsNone()
+                handled = KeyUtil.TryConvertToKeyInput(args.Key, out ki) && !ki.IsCharOnly
                     ? _buffer.CanProcess(ki) && _buffer.Process(ki)
                     : false;
             }

@@ -28,8 +28,8 @@ namespace VimCore.Test
             var res = Process("A");
 
             Assert.AreEqual(1, res.Item1);
-            Assert.AreEqual(VimKey.A, res.Item2.Key);
-            Assert.AreEqual(KeyModifiers.Shift, res.Item2.KeyModifiers);
+            Assert.AreEqual(VimKey.UpperA, res.Item2.Key);
+            Assert.AreEqual(KeyModifiers.None, res.Item2.KeyModifiers);
         }
 
 

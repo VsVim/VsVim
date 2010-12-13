@@ -165,8 +165,7 @@ namespace VimCore.Test
         {
             Create("the boy hit the cat", "bat");
             EnterModeWithSelection(new SnapshotSpan(_textView.TextSnapshot, 0, 2));
-            _buffer.Process(":s/a/o");
-            _buffer.Process(VimKey.Enter);
+            _buffer.Process(":s/a/o", enter: true);
             Assert.AreEqual("the boy hit the cot", _textView.GetLine(0).GetText());
             Assert.AreEqual("bat", _textView.GetLine(1).GetText());
         }
@@ -177,8 +176,7 @@ namespace VimCore.Test
         {
             Create("the boy hit the cat", "bat");
             EnterModeWithSelection(_textView.GetLineRange(0, 1).ExtentIncludingLineBreak);
-            _buffer.Process(":s/a/o");
-            _buffer.Process(VimKey.Enter);
+            _buffer.Process(":s/a/o", enter: true);
             Assert.AreEqual("the boy hit the cot", _textView.GetLine(0).GetText());
             Assert.AreEqual("bot", _textView.GetLine(1).GetText());
         }

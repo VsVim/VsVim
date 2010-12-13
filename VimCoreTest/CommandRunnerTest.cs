@@ -376,12 +376,18 @@ namespace VimCore.Test
                 "c",
                 ki =>
                 {
-                    if (ki.Key == VimKey.Escape) { didSee = true; return true; }
-                    else { return false; }
-                },
-                CommandFlags.None));
+                    if (ki == KeyInputUtil.EscapeKey)
+                    {
+                        didSee = true;
+                        return true;
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                }));
             _runner.Run('c');
-            Assert.IsTrue(_runner.Run(KeyInputUtil.VimKeyToKeyInput(VimKey.Escape)).IsCommandCancelled);
+            Assert.IsTrue(_runner.Run(KeyInputUtil.EscapeKey).IsCommandCancelled);
             Assert.IsFalse(didSee);
         }
 
@@ -394,12 +400,12 @@ namespace VimCore.Test
                 "c",
                 ki =>
                 {
-                    if (ki.Key == VimKey.Escape) { didSee = true; }
+                    if (ki == KeyInputUtil.EscapeKey) { didSee = true; }
                     return false;
                 },
-                CommandFlags.HandlesEscape));
+                flags: CommandFlags.HandlesEscape));
             _runner.Run('c');
-            Assert.IsTrue(_runner.Run(KeyInputUtil.VimKeyToKeyInput(VimKey.Escape)).IsNeedMoreKeyInput);
+            Assert.IsTrue(_runner.Run(KeyInputUtil.EscapeKey).IsNeedMoreKeyInput);
             Assert.IsTrue(didSee);
         }
 
@@ -412,12 +418,12 @@ namespace VimCore.Test
                 "c",
                 ki =>
                 {
-                    if (ki.Key == VimKey.Escape) { didSee = true; return true; }
+                    if (ki == KeyInputUtil.EscapeKey) { didSee = true; return true; }
                     return false;
                 },
-                CommandFlags.HandlesEscape));
+                flags: CommandFlags.HandlesEscape));
             _runner.Run('c');
-            Assert.IsTrue(_runner.Run(KeyInputUtil.VimKeyToKeyInput(VimKey.Escape)).IsCommandRan);
+            Assert.IsTrue(_runner.Run(KeyInputUtil.EscapeKey).IsCommandRan);
             Assert.IsTrue(didSee);
         }
 
@@ -454,7 +460,7 @@ namespace VimCore.Test
             Create("hello world");
             _runner.Add(VimUtil.CreateSimpleCommand("cat", (count, reg) => CommandResult.NewCompleted(ModeSwitch.NoSwitch)));
             Assert.IsTrue(Run("ca").IsNeedMoreKeyInput);
-            Assert.IsTrue(_runner.Run(KeyInputUtil.VimKeyToKeyInput(VimKey.Escape)).IsCommandCancelled);
+            Assert.IsTrue(_runner.Run(KeyInputUtil.EscapeKey).IsCommandCancelled);
             Assert.IsFalse(_runner.IsWaitingForMoreInput);
         }
 
@@ -465,7 +471,7 @@ namespace VimCore.Test
             Create("hello world");
             _runner.Add(VimUtil.CreateMotionCommand("cat", (count, reg, data) => CommandResult.NewCompleted(ModeSwitch.NoSwitch)));
             Assert.IsTrue(Run("cata").IsNeedMoreKeyInput);
-            Assert.IsTrue(_runner.Run(KeyInputUtil.VimKeyToKeyInput(VimKey.Escape)).IsCommandCancelled);
+            Assert.IsTrue(_runner.Run(KeyInputUtil.EscapeKey).IsCommandCancelled);
             Assert.IsFalse(_runner.IsWaitingForMoreInput);
         }
 
@@ -522,10 +528,10 @@ namespace VimCore.Test
                 seen += ki.Char.ToString();
                 return isDone
                     ? LongCommandResult.NewFinished(CommandResult.NewError("foo"))
-                    : LongCommandResult.NewNeedMoreInput(repeat);
+                    : LongCommandResult.NewNeedMoreInput(FSharpOption<KeyRemapMode>.None, repeat);
             };
             repeat = FSharpFunc<KeyInput, LongCommandResult>.FromConverter(func);
-            _runner.Add(VimUtil.CreateLongCommand("f", (x, y) => LongCommandResult.NewNeedMoreInput(repeat)));
+            _runner.Add(VimUtil.CreateLongCommand("f", (x, y) => LongCommandResult.NewNeedMoreInput(FSharpOption<KeyRemapMode>.None, repeat)));
             Assert.IsTrue(_runner.Run(KeyInputUtil.CharToKeyInput('f')).IsNeedMoreKeyInput);
             Assert.IsTrue(_runner.Run(KeyInputUtil.CharToKeyInput('o')).IsNeedMoreKeyInput);
             Assert.IsTrue(_runner.Run(KeyInputUtil.CharToKeyInput('d')).IsNeedMoreKeyInput);
@@ -546,10 +552,10 @@ namespace VimCore.Test
                 seen += ki.Char.ToString();
                 return isDone
                     ? LongCommandResult.Cancelled
-                    : LongCommandResult.NewNeedMoreInput(repeat);
+                    : LongCommandResult.NewNeedMoreInput(FSharpOption<KeyRemapMode>.None, repeat);
             };
             repeat = FSharpFunc<KeyInput, LongCommandResult>.FromConverter(func);
-            _runner.Add(VimUtil.CreateLongCommand("f", (x, y) => LongCommandResult.NewNeedMoreInput(repeat)));
+            _runner.Add(VimUtil.CreateLongCommand("f", (x, y) => LongCommandResult.NewNeedMoreInput(FSharpOption<KeyRemapMode>.None, repeat)));
             Assert.IsTrue(_runner.Run(KeyInputUtil.CharToKeyInput('f')).IsNeedMoreKeyInput);
             Assert.IsTrue(_runner.Run(KeyInputUtil.CharToKeyInput('o')).IsNeedMoreKeyInput);
             Assert.IsTrue(_runner.Run(KeyInputUtil.CharToKeyInput('d')).IsNeedMoreKeyInput);
@@ -567,14 +573,14 @@ namespace VimCore.Test
             Converter<KeyInput, LongCommandResult> func = ki =>
             {
                 seen += ki.Char.ToString();
-                return LongCommandResult.NewNeedMoreInput(repeat);
+                return LongCommandResult.NewNeedMoreInput(FSharpOption<KeyRemapMode>.None, repeat);
             };
             repeat = FSharpFunc<KeyInput, LongCommandResult>.FromConverter(func);
-            _runner.Add(VimUtil.CreateLongCommand("f", (x, y) => LongCommandResult.NewNeedMoreInput(repeat)));
+            _runner.Add(VimUtil.CreateLongCommand("f", (x, y) => LongCommandResult.NewNeedMoreInput(FSharpOption<KeyRemapMode>.None, repeat)));
             Assert.IsTrue(_runner.Run(KeyInputUtil.CharToKeyInput('f')).IsNeedMoreKeyInput);
             Assert.IsTrue(_runner.Run(KeyInputUtil.CharToKeyInput('o')).IsNeedMoreKeyInput);
             Assert.IsTrue(_runner.Run(KeyInputUtil.CharToKeyInput('d')).IsNeedMoreKeyInput);
-            Assert.IsTrue(_runner.Run(KeyInputUtil.VimKeyToKeyInput(VimKey.Escape)).IsCommandCancelled);
+            Assert.IsTrue(_runner.Run(KeyInputUtil.EscapeKey).IsCommandCancelled);
         }
 
         [Test]
@@ -637,7 +643,7 @@ namespace VimCore.Test
             Create("hello world");
             _runner.Add(VimUtil.CreateSimpleCommand("cat", (count, reg) => CommandResult.NewCompleted(ModeSwitch.NoSwitch)));
             _runner.Run('c');
-            _runner.Run(KeyInputUtil.VimKeyToKeyInput(VimKey.Escape));
+            _runner.Run(KeyInputUtil.EscapeKey);
             Assert.IsTrue(_runner.State.IsNoInput);
         }
 
@@ -649,7 +655,7 @@ namespace VimCore.Test
             _runner.Add(command1);
             _runner.Run('c');
             Assert.IsTrue(_runner.State.IsNotFinishWithCommand);
-            Assert.AreSame(command1, _runner.State.AsNotFinishedWithCommand().Item);
+            Assert.AreSame(command1, _runner.State.AsNotFinishedWithCommand().Item1);
         }
 
         [Test]
@@ -672,14 +678,14 @@ namespace VimCore.Test
             Converter<KeyInput, LongCommandResult> func = ki =>
             {
                 seen += ki.Char.ToString();
-                return LongCommandResult.NewNeedMoreInput(repeat);
+                return LongCommandResult.NewNeedMoreInput(FSharpOption<KeyRemapMode>.None, repeat);
             };
             repeat = FSharpFunc<KeyInput, LongCommandResult>.FromConverter(func);
-            var command1 = VimUtil.CreateLongCommand("f", (x, y) => LongCommandResult.NewNeedMoreInput(repeat));
+            var command1 = VimUtil.CreateLongCommand("f", (x, y) => LongCommandResult.NewNeedMoreInput(FSharpOption<KeyRemapMode>.None, repeat));
             _runner.Add(command1);
             _runner.Run('f');
             Assert.IsTrue(_runner.State.IsNotFinishWithCommand);
-            Assert.AreSame(command1, _runner.State.AsNotFinishedWithCommand().Item);
+            Assert.AreSame(command1, _runner.State.AsNotFinishedWithCommand().Item1);
         }
 
         [Test]
@@ -744,9 +750,62 @@ namespace VimCore.Test
                     didSee = true;
                 };
             _runner.Run('c');
-            _runner.Run(KeyInputUtil.VimKeyToKeyInput(VimKey.Escape));
+            _runner.Run(KeyInputUtil.EscapeKey);
             Assert.IsFalse(didSee);
         }
 
+        [Test]
+        public void KeyRemapMode_DefaultIsNone()
+        {
+            Create("hello world");
+            Assert.IsTrue(_runner.KeyRemapMode.IsNone());
+        }
+
+        [Test]
+        public void KeyRemapMode_NoneWhileFindingCommand()
+        {
+            Create("hello world");
+            _runner.Add(VimUtil.CreateSimpleCommand("cat"));
+            _runner.Run('c');
+            Assert.IsTrue(_runner.KeyRemapMode.IsNone());
+        }
+
+        [Test]
+        public void KeyRemapMode_OperatorPendingWhenWaitingForMotion()
+        {
+            Create("hello world");
+            _runner.Add(VimUtil.CreateMotionCommand("d"));
+            _runner.Run('d');
+            Assert.AreEqual(KeyRemapMode.OperatorPending, _runner.KeyRemapMode.Value);
+        }
+
+        [Test]
+        public void KeyRemapMode_OperatorPendingWhenAmbiguousBetweenMotionAndCommand()
+        {
+            Create("hello world");
+            _runner.Add(VimUtil.CreateMotionCommand("d"));
+            _runner.Add(VimUtil.CreateSimpleCommand("dd"));
+            _runner.Run('d');
+            Assert.AreEqual(KeyRemapMode.OperatorPending, _runner.KeyRemapMode.Value);
+        }
+
+        [Test]
+        public void KeyRemapMode_LanguageInToArgument()
+        {
+            Create("hello world");
+            _runner.Add(VimUtil.CreateMotionCommand("d"));
+            _runner.Run('d');
+            _runner.Run('f');
+            Assert.AreEqual(KeyRemapMode.Language, _runner.KeyRemapMode.Value);
+        }
+
+        [Test]
+        public void KeyRemapMode_LongCommandPropagateMode()
+        {
+            Create("hello world");
+            _runner.Add(VimUtil.CreateLongCommand("a", ki => false, FSharpOption.Create(KeyRemapMode.Language)));
+            _runner.Run('a');
+            Assert.AreEqual(KeyRemapMode.Language, _runner.KeyRemapMode.Value);
+        }
     }
 }
