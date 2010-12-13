@@ -61,7 +61,7 @@ namespace VsVim
                 KeyInput ki;
                 if (TryConvert(commandGroup, commandId, pvaIn, out ki) && _buffer.CanProcess(ki))
                 {
-                    if (ki.Key != VimKey.Escape || !IgnoreNextExecIfEscape)
+                    if (ki != KeyInputUtil.EscapeKey || !IgnoreNextExecIfEscape)
                     {
                         if (_buffer.Process(ki))
                         {
@@ -89,7 +89,7 @@ namespace VsVim
                     // for them to dismiss their custom intellisense but their processing will swallow the 
                     // event and not propagate it to us.  So handle, return and account for the double 
                     // stroke in exec
-                    if (_buffer.ModeKind == ModeKind.Insert && ki.Key == VimKey.Escape && _buffer.Process(ki))
+                    if (_buffer.ModeKind == ModeKind.Insert && ki == KeyInputUtil.EscapeKey && _buffer.Process(ki))
                     {
                         // Have to special case Escape here for insert mode.  R# is typically ahead of us on the IOleCommandTarget
                         // chain.  If a completion window is open and we wait for Exec to run R# will be ahead of us and run
@@ -97,7 +97,7 @@ namespace VsVim
                         // our exec leaving us in insert mode.
                         IgnoreNextExecIfEscape = true;
                     }
-                    else if (_buffer.ModeKind == ModeKind.ExternalEdit && ki.Key == VimKey.Escape && _buffer.Process(ki))
+                    else if (_buffer.ModeKind == ModeKind.ExternalEdit && ki == KeyInputUtil.EscapeKey && _buffer.Process(ki))
                     {
                         // Have to special case Escape here for external edit mode because we want escape to get us back to 
                         // plain old insert.

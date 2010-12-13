@@ -53,30 +53,33 @@ namespace VsVim.UnitTest
             _target = _targetRaw;
         }
 
-        private static Tuple<Guid, uint, IntPtr> ToVsInforamtion(VimKey key)
+        private static Tuple<Guid, uint, IntPtr> ToVsInforamtion(KeyInput keyInput)
         {
-            switch (key)
+            if (keyInput == KeyInputUtil.EscapeKey)
             {
-                case VimKey.Escape:
-                    return Tuple.Create(VSConstants.VSStd2K, (uint)VSConstants.VSStd2KCmdID.CANCEL, IntPtr.Zero);
-                case VimKey.Enter:
-                    return Tuple.Create(VSConstants.VSStd2K, (uint)VSConstants.VSStd2KCmdID.RETURN, IntPtr.Zero);
-                default:
-                    Assert.Fail("Not a supported key");
-                    return null;
+                return Tuple.Create(VSConstants.VSStd2K, (uint)VSConstants.VSStd2KCmdID.CANCEL, IntPtr.Zero);
+            }
+            else if (keyInput == KeyInputUtil.EnterKey)
+            {
+                return Tuple.Create(VSConstants.VSStd2K, (uint)VSConstants.VSStd2KCmdID.RETURN, IntPtr.Zero);
+            }
+            else
+            {
+                Assert.Fail("Not a supported key");
+                return null;
             }
         }
 
-        private void RunExec(VimKey key)
+        private void RunExec(KeyInput keyInput)
         {
-            var data = ToVsInforamtion(key);
+            var data = ToVsInforamtion(keyInput);
             var guid = data.Item1;
             _target.Exec(ref guid, data.Item2, 0, data.Item3, IntPtr.Zero);
         }
 
-        private void RunQueryStatus(VimKey key)
+        private void RunQueryStatus(KeyInput keyInput)
         {
-            var data = ToVsInforamtion(key);
+            var data = ToVsInforamtion(keyInput);
             var guid = data.Item1;
             var cmds = new OLECMD[1];
             cmds[0] = new OLECMD { cmdID = data.Item2 };
@@ -100,7 +103,7 @@ namespace VsVim.UnitTest
         public void TryConvert1()
         {
             _buffer.Setup(x => x.CanProcess(It.IsAny<KeyInput>())).Returns(true);
-            AssertCanConvert2K(VSConstants.VSStd2KCmdID.TAB, KeyInputUtil.VimKeyToKeyInput(VimKey.Tab));
+            AssertCanConvert2K(VSConstants.VSStd2KCmdID.TAB, KeyInputUtil.TabKey);
         }
 
         [Test, Description("Don't convert keys when in automation")]
@@ -114,47 +117,47 @@ namespace VsVim.UnitTest
         [Test]
         public void QueryStatus_IgnoreEscapeIfCantProcess()
         {
-            _buffer.Setup(x => x.CanProcess(KeyInputUtil.VimKeyToKeyInput(VimKey.Escape))).Returns(false);
+            _buffer.Setup(x => x.CanProcess(KeyInputUtil.EscapeKey)).Returns(false);
             _nextTarget.SetupQueryStatus().Verifiable();
-            RunQueryStatus(VimKey.Escape);
+            RunQueryStatus(KeyInputUtil.EscapeKey);
             _factory.Verify();
         }
 
         [Test]
         public void QueryStatus_EnableEscapeButDontHandleNormally()
         {
-            _buffer.Setup(x => x.CanProcess(KeyInputUtil.VimKeyToKeyInput(VimKey.Escape))).Returns(true);
-            RunQueryStatus(VimKey.Escape);
+            _buffer.Setup(x => x.CanProcess(KeyInputUtil.EscapeKey)).Returns(true);
+            RunQueryStatus(KeyInputUtil.EscapeKey);
             _factory.Verify();
         }
 
         [Test]
         public void QueryStatus_EnableEscapeAndDontHandleNormally()
         {
-            _buffer.Setup(x => x.CanProcess(KeyInputUtil.VimKeyToKeyInput(VimKey.Escape))).Returns(true);
-            RunQueryStatus(VimKey.Escape);
+            _buffer.Setup(x => x.CanProcess(KeyInputUtil.EscapeKey)).Returns(true);
+            RunQueryStatus(KeyInputUtil.EscapeKey);
             _factory.Verify();
         }
 
         [Test]
         public void QueryStatus_EnableEscapeAndDontHandleInResharperPlusNormalMode()
         {
-            _buffer.Setup(x => x.CanProcess(KeyInputUtil.VimKeyToKeyInput(VimKey.Escape))).Returns(true);
+            _buffer.Setup(x => x.CanProcess(KeyInputUtil.EscapeKey)).Returns(true);
             _buffer.SetupGet(x => x.ModeKind).Returns(ModeKind.Normal).Verifiable();
             _externalEditorManager.SetupGet(x => x.IsResharperLoaded).Returns(true).Verifiable();
-            RunQueryStatus(VimKey.Escape);
+            RunQueryStatus(KeyInputUtil.EscapeKey);
             _factory.Verify();
         }
 
         [Test]
         public void QueryStatus_EnableAndHandleEscapeInResharperPlusInsert()
         {
-            var ki = KeyInputUtil.VimKeyToKeyInput(VimKey.Escape);
+            var ki = KeyInputUtil.EscapeKey;
             _buffer.Setup(x => x.CanProcess(ki)).Returns(true).Verifiable();
             _buffer.Setup(x => x.Process(ki)).Returns(true).Verifiable();
             _buffer.SetupGet(x => x.ModeKind).Returns(ModeKind.Insert).Verifiable();
             _externalEditorManager.SetupGet(x => x.IsResharperLoaded).Returns(true).Verifiable();
-            RunQueryStatus(VimKey.Escape);
+            RunQueryStatus(KeyInputUtil.EscapeKey);
             Assert.IsTrue(_targetRaw.IgnoreNextExecIfEscape);
             _factory.Verify();
         }
@@ -162,12 +165,12 @@ namespace VsVim.UnitTest
         [Test]
         public void QueryStatus_EnableAndHandleEscapeInResharperPlusExternalEdit()
         {
-            var ki = KeyInputUtil.VimKeyToKeyInput(VimKey.Escape);
+            var ki = KeyInputUtil.EscapeKey;
             _buffer.Setup(x => x.CanProcess(ki)).Returns(true).Verifiable();
             _buffer.Setup(x => x.Process(ki)).Returns(true).Verifiable();
             _buffer.SetupGet(x => x.ModeKind).Returns(ModeKind.ExternalEdit).Verifiable();
             _externalEditorManager.SetupGet(x => x.IsResharperLoaded).Returns(true).Verifiable();
-            RunQueryStatus(VimKey.Escape);
+            RunQueryStatus(KeyInputUtil.EscapeKey);
             Assert.IsTrue(_targetRaw.IgnoreNextExecIfEscape);
             _factory.Verify();
         }
@@ -175,10 +178,10 @@ namespace VsVim.UnitTest
         [Test]
         public void QueryStatus_HandleEnterNormallyInResharperMode()
         {
-            var ki = KeyInputUtil.VimKeyToKeyInput(VimKey.Enter);
+            var ki = KeyInputUtil.EnterKey;
             _buffer.Setup(x => x.CanProcess(ki)).Returns(true).Verifiable();
             _externalEditorManager.SetupGet(x => x.IsResharperLoaded).Returns(true).Verifiable();
-            RunQueryStatus(VimKey.Enter);
+            RunQueryStatus(ki);
             Assert.IsFalse(_targetRaw.IgnoreNextExecIfEscape);
             _factory.Verify();
         }
@@ -186,21 +189,21 @@ namespace VsVim.UnitTest
         [Test]
         public void Exec_PassOnIfCantHandle()
         {
-            var ki = KeyInputUtil.VimKeyToKeyInput(VimKey.Escape);
+            var ki = KeyInputUtil.EscapeKey;
             _buffer.Setup(x => x.CanProcess(ki)).Returns(false).Verifiable();
             _nextTarget.SetupExec().Verifiable();
-            RunExec(VimKey.Escape);
+            RunExec(KeyInputUtil.EscapeKey);
             _factory.Verify();
         }
 
         [Test]
         public void Exec_IgnoreIfEscapeAndSetToIgnore()
         {
-            var ki = KeyInputUtil.VimKeyToKeyInput(VimKey.Escape);
+            var ki = KeyInputUtil.EscapeKey;
             _buffer.Setup(x => x.CanProcess(ki)).Returns(true).Verifiable();
             _nextTarget.SetupExec().Verifiable();
             _targetRaw.IgnoreNextExecIfEscape = true;
-            RunExec(VimKey.Escape);
+            RunExec(KeyInputUtil.EscapeKey);
             Assert.IsFalse(_targetRaw.IgnoreNextExecIfEscape);
             _factory.Verify();
         }
@@ -208,10 +211,10 @@ namespace VsVim.UnitTest
         [Test]
         public void Exec_HandleEscapeNormally()
         {
-            var ki = KeyInputUtil.VimKeyToKeyInput(VimKey.Escape);
+            var ki = KeyInputUtil.EscapeKey;
             _buffer.Setup(x => x.CanProcess(ki)).Returns(true).Verifiable();
             _buffer.Setup(x => x.Process(ki)).Returns(true).Verifiable();
-            RunExec(VimKey.Escape);
+            RunExec(KeyInputUtil.EscapeKey);
             _factory.Verify();
         }
     }
