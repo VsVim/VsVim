@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using Microsoft.FSharp.Collections;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
@@ -86,6 +87,23 @@ namespace VimCore.Test
             _operations.Setup(x => x.UnmapKeys(lhs, modes)).Verifiable();
             RunCommand(input);
             _operations.Verify();
+        }
+
+        private void TestPrintMap(string input, params KeyRemapMode[] modes)
+        {
+            _operations
+                .Setup(x => x.PrintKeyMap(It.IsAny<FSharpList<KeyRemapMode>>()))
+                .Callback<FSharpList<KeyRemapMode>>(
+                    list =>
+                    {
+                        foreach (var mode in modes)
+                        {
+                            Assert.IsTrue(list.Contains(mode));
+                        }
+                    })
+                .Verifiable();
+            RunCommand(input);
+            _factory.Verify();
         }
 
         [Test]
@@ -1321,6 +1339,20 @@ namespace VimCore.Test
             TestUnmap("lunmap a ", "a", KeyRemapMode.Language);
             TestUnmap("lunm a ", "a", KeyRemapMode.Language);
             TestUnmap("unmap! a ", "a", KeyRemapMode.Insert, KeyRemapMode.Command);
+        }
+
+        [Test]
+        public void PrintKeyMap_Map()
+        {
+            Create("");
+
+            TestPrintMap("map", KeyRemapMode.Normal, KeyRemapMode.Visual, KeyRemapMode.OperatorPending);
+            TestPrintMap("imap", KeyRemapMode.Insert);
+            TestPrintMap("cmap", KeyRemapMode.Command);
+            TestPrintMap("smap", KeyRemapMode.Select);
+            TestPrintMap("nmap", KeyRemapMode.Normal);
+            TestPrintMap("vmap", KeyRemapMode.Visual, KeyRemapMode.Select);
+            TestPrintMap("xmap", KeyRemapMode.Visual);
         }
 
         [Test]
