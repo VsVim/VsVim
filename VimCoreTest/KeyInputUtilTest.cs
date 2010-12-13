@@ -25,7 +25,7 @@ namespace VimCore.Test
         {
             foreach (var cur in CharsAll)
             {
-                CollectionAssert.Contains(KeyInputUtil.CoreCharacterList, cur);
+                CollectionAssert.Contains(KeyInputUtil.VimKeyCharList, cur);
             }
         }
 
@@ -38,8 +38,8 @@ namespace VimCore.Test
                 Assert.AreEqual(cur, ki.Char);
                 Assert.AreEqual(KeyModifiers.None, ki.KeyModifiers);
 
-                var offset = ((int) cur) - ((int) 'a');
-                var key = (VimKey) ((int) VimKey.LowerA + offset);
+                var offset = ((int)cur) - ((int)'a');
+                var key = (VimKey)((int)VimKey.LowerA + offset);
                 Assert.AreEqual(key, ki.Key);
             }
         }
@@ -53,8 +53,8 @@ namespace VimCore.Test
                 Assert.AreEqual(cur, ki.Char);
                 Assert.AreEqual(KeyModifiers.None, ki.KeyModifiers);
 
-                var offset = ((int) cur) - ((int) 'A');
-                var key = (VimKey) ((int) VimKey.UpperA + offset);
+                var offset = ((int)cur) - ((int)'A');
+                var key = (VimKey)((int)VimKey.UpperA + offset);
                 Assert.AreEqual(key, ki.Key);
             }
         }
@@ -62,10 +62,11 @@ namespace VimCore.Test
         [Test]
         public void CharToKeyInput_AllCoreCharsMapToThemselves()
         {
-            foreach (var cur in KeyInputUtil.CoreCharacterList)
+            foreach (var cur in KeyInputUtil.VimKeyCharList)
             {
                 var ki = KeyInputUtil.CharToKeyInput(cur);
                 Assert.IsTrue(ki.RawChar.IsSome());
+                Assert.IsTrue(ki.IsCharOnly);
                 Assert.AreEqual(cur, ki.Char);
             }
         }
@@ -78,6 +79,22 @@ namespace VimCore.Test
                 var ki = KeyInputUtil.CharToKeyInput(cur);
                 Assert.IsTrue(ki.RawChar.IsSome());
                 Assert.AreEqual(cur, ki.Char);
+            }
+        }
+
+        [Test]
+        public void CoreKeyInputList_ContainsSpecialKeys()
+        {
+            var array = new[]
+            {
+                KeyInputUtil.EnterKey,
+                KeyInputUtil.EscapeKey,
+                KeyInputUtil.TabKey,
+                KeyInputUtil.LineFeedKey,
+            };
+            foreach (var cur in array)
+            {
+                Assert.IsTrue(KeyInputUtil.AllKeyInputList.Contains(cur));
             }
         }
 
@@ -117,13 +134,6 @@ namespace VimCore.Test
         public void VimKeyToKeyInput1()
         {
             KeyInputUtil.VimKeyToKeyInput(VimKey.NotWellKnown);
-        }
-
-        [Test]
-        public void VimKeyToKeyInput2()
-        {
-            var key = KeyInputUtil.VimKeyToKeyInput(VimKey.Enter);
-            Assert.AreEqual(VimKey.Enter, key.Key);
         }
 
         [Test]

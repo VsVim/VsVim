@@ -34,8 +34,7 @@ namespace VimCore.Test
         private void RunCommand(string command)
         {
             _buffer.Process(':');
-            _buffer.Process(command);
-            _buffer.Process(VimKey.Enter);
+            _buffer.Process(command, enter: true);
         }
 
         [Test]

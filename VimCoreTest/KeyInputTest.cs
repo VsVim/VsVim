@@ -17,7 +17,7 @@ namespace VimCore.Test
         [Test]
         public void IsDigit2()
         {
-            var input = KeyInputUtil.VimKeyToKeyInput(VimKey.Enter);
+            var input = KeyInputUtil.EnterKey;
             Assert.IsFalse(input.IsDigit);
         }
 

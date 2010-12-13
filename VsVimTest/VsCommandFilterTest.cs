@@ -6,7 +6,6 @@ using Moq;
 using NUnit.Framework;
 using Vim;
 using Vim.UnitTest.Mock;
-using VsVim;
 
 namespace VsVim.UnitTest
 {
@@ -47,7 +46,7 @@ namespace VsVim.UnitTest
         public void TryConvert1()
         {
             _buffer.Setup(x => x.CanProcess(It.IsAny<KeyInput>())).Returns(true);
-            AssertCanConvert2K(VSConstants.VSStd2KCmdID.TAB, KeyInputUtil.VimKeyToKeyInput(VimKey.Tab));
+            AssertCanConvert2K(VSConstants.VSStd2KCmdID.TAB, KeyInputUtil.TabKey);
         }
 
         [Test]

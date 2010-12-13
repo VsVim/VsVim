@@ -238,7 +238,7 @@ type internal CommandRunner
 
     /// Function which handles all incoming input
     member x.Run (ki:KeyInput) =
-        if ki.Key = VimKey.Escape && x.ShouldEscapeCancelCurrentCommand() then 
+        if ki = KeyInputUtil.EscapeKey && x.ShouldEscapeCancelCurrentCommand() then 
             x.ResetState()
             RunKeyInputResult.CommandCancelled
         elif _inRun then 

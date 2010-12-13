@@ -33,7 +33,7 @@ type internal NormalMode
     }
 
     /// Set of all char's Vim is interested in 
-    let _coreCharSet = KeyInputUtil.CoreCharacterList |> Set.ofList
+    let _coreCharSet = KeyInputUtil.VimKeyCharList |> Set.ofList
 
     /// Contains the state information for Normal mode
     let mutable _data = _emptyData
@@ -91,14 +91,14 @@ type internal NormalMode
                 _bufferData.JumpList.Add before |> ignore
                 CommandResult.Completed ModeSwitch.NoSwitch |> LongCommandResult.Finished
             | SearchCancelled -> LongCommandResult.Cancelled
-            | SearchNeedMore ->  LongCommandResult.NeedMoreInput (Some KeyRemapMode.Language, inner)
+            | SearchNeedMore ->  LongCommandResult.NeedMoreInput (Some KeyRemapMode.Command, inner)
         _incrementalSearch.Begin kind
-        LongCommandResult.NeedMoreInput (Some KeyRemapMode.Language, inner)
+        LongCommandResult.NeedMoreInput (Some KeyRemapMode.Command, inner)
     
     member private x.ReplaceChar count reg = 
         let inner (ki:KeyInput) = 
             _data <- { _data with IsInReplace = false }
-            if ki.Key = VimKey.Escape then LongCommandResult.Cancelled
+            if ki = KeyInputUtil.EscapeKey then LongCommandResult.Cancelled
             else 
                 if not (_operations.ReplaceChar ki count) then
                     _operations.Beep()
@@ -507,10 +507,6 @@ type internal NormalMode
                             |> SnapshotLineUtil.GetStart
                         let span = SnapshotPointUtil.GetLineRangeSpanIncludingLineBreak point count
                         _operations.UpdateRegisterForSpan reg RegisterOperation.Yank span OperationKind.LineWise)
-                yield (
-                    "<Tab>", 
-                    CommandFlags.Movement, 
-                    fun count _ -> _operations.JumpNext count)
                 yield (
                     "<C-i>", 
                     CommandFlags.Movement, 

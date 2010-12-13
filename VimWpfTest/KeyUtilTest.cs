@@ -58,7 +58,6 @@ namespace Vim.UI.Wpf.Test
             KeyToKeyInput(']', Key.OemCloseBrackets);
             KeyToKeyInput('}', Key.OemCloseBrackets, ModifierKeys.Shift);
             KeyToKeyInput('\b', Key.Back);
-            KeyToKeyInput('\t', Key.Tab);
             KeyToKeyInput('-', Key.OemMinus);
             KeyToKeyInput('=', Key.OemPlus);
             KeyToKeyInput('+', Key.OemPlus, ModifierKeys.Shift);
@@ -85,7 +84,6 @@ namespace Vim.UI.Wpf.Test
             WellKnownBothWays(VimKey.F11, Key.F11);
             WellKnownBothWays(VimKey.F12, Key.F12);
             WellKnownBothWays(VimKey.Delete, Key.Delete);
-            WellKnownBothWays(VimKey.Escape, Key.Escape);
             WellKnownBothWays(VimKey.KeypadMultiply, Key.Multiply);
             WellKnownBothWays(VimKey.KeypadPlus, Key.Add);
             WellKnownBothWays(VimKey.KeypadMinus, Key.Subtract);

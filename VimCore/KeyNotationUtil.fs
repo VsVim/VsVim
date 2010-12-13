@@ -34,14 +34,14 @@ module KeyNotationUtil =
     let ManualKeyList = 
         [
             ("<Nul>",KeyInputUtil.VimKeyAndModifiersToKeyInput VimKey.AtSign KeyModifiers.Control)
-            ("<Bs>", KeyInputUtil.VimKeyToKeyInput VimKey.Back)
-            ("<Tab>",KeyInputUtil.VimKeyToKeyInput VimKey.Tab)
-            ("<NL>", KeyInputUtil.VimKeyToKeyInput VimKey.Enter)
-            ("<FF>", KeyInputUtil.CharWithControlToKeyInput 'l')
-            ("<CR>", KeyInputUtil.VimKeyToKeyInput VimKey.Enter)
-            ("<Return>", KeyInputUtil.VimKeyToKeyInput VimKey.Enter)
-            ("<Enter>", KeyInputUtil.VimKeyToKeyInput VimKey.Enter)
-            ("<Esc>", KeyInputUtil.VimKeyToKeyInput VimKey.Escape)
+            ("<BS>", KeyInputUtil.VimKeyToKeyInput VimKey.Back)
+            ("<Tab>",KeyInputUtil.TabKey)
+            ("<NL>", KeyInputUtil.LineFeedKey)
+            ("<FF>", KeyInputUtil.VimKeyToKeyInput VimKey.FormFeed)
+            ("<CR>", KeyInputUtil.EnterKey)
+            ("<Return>", KeyInputUtil.EnterKey)
+            ("<Enter>", KeyInputUtil.EnterKey)
+            ("<Esc>", KeyInputUtil.EscapeKey)
             ("<Space>", KeyInputUtil.CharToKeyInput ' ')
             ("<lt>", KeyInputUtil.CharToKeyInput '<')
             ("<Bslash>", KeyInputUtil.CharToKeyInput '\\' )
@@ -213,4 +213,20 @@ module KeyNotationUtil =
         |> SplitIntoKeyNotationEntries
         |> Seq.map StringToKeyInput
         |> KeyInputSetUtil.OfSeq
+
+    let TryGetSpecialKeyName (keyInput:KeyInput) = 
+
+        let found = 
+            SpecialKeyMap
+            |> Seq.tryFind (fun (pair) -> 
+                let specialInput = pair.Value
+                specialInput.Key = keyInput.Key && 
+                specialInput.KeyModifiers = (specialInput.KeyModifiers &&& keyInput.KeyModifiers))
+
+        match found with 
+        | None -> None
+        | Some(pair) ->
+            let extra : KeyModifiers = Utils.UnsetFlag keyInput.KeyModifiers pair.Value.KeyModifiers
+            Some(pair.Key.Value, extra)
+
 

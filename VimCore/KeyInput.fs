@@ -14,6 +14,7 @@ type KeyInput
 
     member x.Char = _literal |> OptionUtil.getOrDefault CharUtil.MinValue
     member x.RawChar = _literal
+    member x.IsCharOnly = Option.isSome _literal && _modKey = KeyModifiers.None
     member x.Key = _key
     member x.KeyModifiers = _modKey
     member x.HasShiftModifier = _modKey = KeyModifiers.Shift
@@ -29,12 +30,6 @@ type KeyInput
         | VimKey.Number7 -> true
         | VimKey.Number8 -> true
         | VimKey.Number9 -> true
-        | _ -> false
-
-    /// Determine if this a new line key.  Meant to match the Vim definition of <CR>
-    member x.IsNewLine = 
-        match _key with
-        | VimKey.Enter -> true
         | _ -> false
 
     /// Is this an arrow key?
@@ -100,9 +95,7 @@ module KeyInputUtil =
     /// Mapping of all VimKey instances with their associated char if one exists
     let VimKeyRawData = [
         (VimKey.Back, Some '\b')
-        (VimKey.Tab, Some '\t')
-        (VimKey.Enter, None)
-        (VimKey.Escape, None)
+        (VimKey.FormFeed, None)
         (VimKey.Left, None)
         (VimKey.Up, None)
         (VimKey.Right, None)
@@ -238,13 +231,28 @@ module KeyInputUtil =
         (VimKey.Space, Some ' ')
         (VimKey.Dollar, Some '$') ]
 
-    let CoreKeyInputList  = 
+    let EscapeKey = KeyInput(VimKey.OpenBracket, KeyModifiers.Control, Some '[')
+    let TabKey = KeyInput(VimKey.LowerI, KeyModifiers.Control, Some 'i')
+    let LineFeedKey = KeyInput(VimKey.LowerJ, KeyModifiers.Control, Some 'j')
+    let EnterKey = KeyInput(VimKey.LowerM, KeyModifiers.Control, Some 'm')
+
+    let SpecialKeyInputList = 
+        [
+            EscapeKey
+            TabKey
+            LineFeedKey
+            EnterKey
+        ]
+
+    let VimKeyInputList  = 
         VimKeyRawData 
         |> Seq.map (fun (key,charOpt) -> KeyInput(key, KeyModifiers.None, charOpt )) 
         |> List.ofSeq
 
-    let CoreCharacterList = 
-        CoreKeyInputList
+    let AllKeyInputList = List.append VimKeyInputList SpecialKeyInputList
+
+    let VimKeyCharList = 
+        VimKeyInputList
         |> Seq.map (fun ki -> ki.RawChar)
         |> SeqUtil.filterToSome
         |> Set.ofSeq
@@ -255,7 +263,7 @@ module KeyInputUtil =
     /// char.  This map holds that mapping
     let CharToKeyInputMap = 
         let inputs = 
-            CoreKeyInputList
+            VimKeyInputList
             |> Seq.map (fun ki -> OptionUtil.combine ki.RawChar ki )
             |> SeqUtil.filterToSome
             |> Seq.filter (fun (_,ki) -> not (VimKeyUtil.IsKeypadKey ki.Key))
@@ -271,7 +279,7 @@ module KeyInputUtil =
 
     /// Map of the VimKey to KeyInput values.  
     let VimKeyToKeyInputMap =
-        CoreKeyInputList
+        VimKeyInputList
         |> Seq.map (fun ki -> ki.Key,ki)
         |> Map.ofSeq
 
@@ -298,4 +306,5 @@ module KeyInputUtil =
     let CharWithShiftToKeyInput ch = 
         let ki = ch |> CharToKeyInput  
         ChangeKeyModifiers ki (ki.KeyModifiers ||| KeyModifiers.Shift)
+
 

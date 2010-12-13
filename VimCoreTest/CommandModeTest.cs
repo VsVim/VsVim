@@ -47,8 +47,7 @@ namespace VimCore.Test
 
         private void ProcessWithEnter(string input)
         {
-            _mode.Process(input);
-            _mode.Process(KeyInputUtil.VimKeyToKeyInput(VimKey.Enter));
+            _mode.Process(input, enter: true);
         }
 
         [Test, Description("Entering command mode should update the status")]
@@ -69,8 +68,7 @@ namespace VimCore.Test
         public void StatusOnProcess()
         {
             _processor.Setup(x => x.RunCommand(MatchUtil.CreateForCharList("1"))).Returns(RunResult.Completed).Verifiable();
-            _mode.Process("1");
-            _mode.Process(KeyInputUtil.VimKeyToKeyInput(VimKey.Enter));
+            _mode.Process("1", enter: true);
             _factory.Verify();
         }
 
@@ -113,7 +111,7 @@ namespace VimCore.Test
         public void Input4()
         {
             _mode.Process("foo");
-            _mode.Process(KeyInputUtil.VimKeyToKeyInput(VimKey.Escape));
+            _mode.Process(KeyInputUtil.EscapeKey);
             Assert.AreEqual(string.Empty, _modeRaw.Command);
         }
 
@@ -162,7 +160,7 @@ namespace VimCore.Test
                 .Setup(x => x.RunCommand(MatchUtil.CreateForCharList(CommandMode.FromVisualModeString)))
                 .Returns(RunResult.Completed)
                 .Verifiable();
-            _mode.Process(VimKey.Enter);
+            _mode.Process(KeyInputUtil.EnterKey);
             _factory.Verify();
         }
 
@@ -175,7 +173,7 @@ namespace VimCore.Test
                 .Setup(x => x.RunCommand(MatchUtil.CreateForCharList(CommandMode.FromVisualModeString + "a")))
                 .Returns(RunResult.Completed)
                 .Verifiable();
-            _mode.Process(VimKey.Enter);
+            _mode.Process(KeyInputUtil.EnterKey);
             _factory.Verify();
         }
 
@@ -184,7 +182,7 @@ namespace VimCore.Test
         {
             _processor.Setup(x => x.RunCommand(It.IsAny<FSharpList<char>>())).Returns(RunResult.Completed).Verifiable();
             _selection.Setup(x => x.IsEmpty).Returns(true).Verifiable();
-            _mode.Process(VimKey.Enter);
+            _mode.Process(KeyInputUtil.EnterKey);
             _factory.Verify();
         }
 
@@ -195,7 +193,7 @@ namespace VimCore.Test
             _processor.Setup(x => x.RunCommand(It.IsAny<FSharpList<char>>())).Returns(RunResult.Completed).Verifiable();
             _selection.Setup(x => x.IsEmpty).Returns(false).Verifiable();
             _selection.Setup(x => x.Clear()).Verifiable();
-            _mode.Process(VimKey.Enter);
+            _mode.Process(KeyInputUtil.EnterKey);
             _factory.Verify();
         }
 
@@ -203,7 +201,7 @@ namespace VimCore.Test
         public void ClearSelectionOnComplete3()
         {
             _selection.Setup(x => x.IsEmpty).Returns(true).Verifiable();
-            _mode.Process(VimKey.Escape);
+            _mode.Process(KeyInputUtil.EscapeKey);
             _factory.Verify();
         }
 
@@ -220,7 +218,7 @@ namespace VimCore.Test
                 .Verifiable();
             _caret.Setup(x => x.MoveTo(_buffer.GetPoint(1))).Returns(new CaretPosition()).Verifiable();
             _caret.Setup(x => x.EnsureVisible()).Verifiable();
-            _mode.Process(VimKey.Escape);
+            _mode.Process(KeyInputUtil.EscapeKey);
             _factory.Verify();
         }
     }

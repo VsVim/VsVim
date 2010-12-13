@@ -37,7 +37,7 @@ namespace VimCore.Test
         {
             var opt = KeyNotationUtil.TryStringToKeyInputSet(input);
             Assert.IsTrue(opt.IsSome());
-            Assert.AreEqual(opt.Value,keyInputSet);
+            Assert.AreEqual(opt.Value, keyInputSet);
         }
 
         [Test]
@@ -129,7 +129,7 @@ namespace VimCore.Test
         [Description("Case shouldn't matter")]
         public void Single_CaseShouldntMatter()
         {
-            var ki = KeyInputUtil.VimKeyToKeyInput(VimKey.Escape);
+            var ki = KeyInputUtil.EscapeKey;
             var all = new string[] { "<ESC>", "<esc>", "<Esc>" };
             foreach (var cur in all)
             {

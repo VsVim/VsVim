@@ -26,7 +26,7 @@ type internal MotionCapture
 
         let waitCharThen func =
             let inner (ki:KeyInput) =
-                if ki.Key = VimKey.Escape then ComplexMotionResult.Cancelled
+                if ki = KeyInputUtil.EscapeKey then ComplexMotionResult.Cancelled
                 else ComplexMotionResult.Finished (fun arg -> func ki.Char arg)
             ComplexMotionResult.NeedMoreInput (Some KeyRemapMode.Language, inner)
 
@@ -159,10 +159,6 @@ type internal MotionCapture
                     fun arg -> _util.LineDownToFirstNonWhitespace (arg.Count-1) |> Some)
                 yield (
                     "<C-m>", 
-                    MotionFlags.CursorMovement,
-                    fun arg -> _util.LineDownToFirstNonWhitespace arg.Count |> Some)
-                yield (
-                    "<Enter>", 
                     MotionFlags.CursorMovement,
                     fun arg -> _util.LineDownToFirstNonWhitespace arg.Count |> Some)
                 yield (
@@ -334,7 +330,8 @@ type internal MotionCapture
 
     member x.WaitForCommandName arg ki =
         let rec inner (previousName:KeyInputSet) (ki:KeyInput) =
-            if ki.Key = VimKey.Escape then MotionResult.Cancelled 
+            if ki = KeyInputUtil.EscapeKey then 
+                MotionResult.Cancelled 
             else
                 let name = previousName.Add ki
                 match Map.tryFind name MotionCommandsMap with
@@ -351,7 +348,8 @@ type internal MotionCapture
     /// Wait for the completion of the motion count
     member x.WaitforCount ki arg =
         let rec inner (processFunc: KeyInput->CountResult) (ki:KeyInput)  =               
-            if ki.Key = VimKey.Escape then MotionResult.Cancelled 
+            if ki = KeyInputUtil.EscapeKey then 
+                MotionResult.Cancelled 
             else
                 match processFunc ki with 
                 | CountResult.Complete(count,nextKi) -> 
@@ -362,7 +360,7 @@ type internal MotionCapture
 
     member x.GetOperatorMotion (ki:KeyInput) operatorCountOpt =
         let arg = {MotionContext=MotionContext.AfterOperator; OperatorCount=operatorCountOpt; MotionCount=None}
-        if ki.Key = VimKey.Escape then MotionResult.Cancelled
+        if ki = KeyInputUtil.EscapeKey then MotionResult.Cancelled
         elif ki.IsDigit && ki.Char <> '0' then x.WaitforCount ki arg
         else x.WaitForCommandName arg ki
 

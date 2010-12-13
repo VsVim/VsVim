@@ -6,9 +6,8 @@ namespace Vim
 type VimKey =
     | NotWellKnown = 0
     | Back = 1
-    | Tab = 2
-    | Enter = 3
-    | Escape = 4 
+    | FormFeed = 2
+    // Gap 
     | Left = 5
     | Up = 6
     | Right = 7

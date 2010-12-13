@@ -205,7 +205,7 @@ namespace VimCore.Test
         {
             Create("foo");
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 1));
-            _operations.ReplaceChar(KeyInputUtil.VimKeyToKeyInput(VimKey.Enter), 1);
+            _operations.ReplaceChar(KeyInputUtil.EnterKey, 1);
             var tss = _view.TextSnapshot;
             Assert.AreEqual(2, tss.LineCount);
             Assert.AreEqual("f", tss.GetLineFromLineNumber(0).GetText());
@@ -217,7 +217,7 @@ namespace VimCore.Test
         {
             Create("food");
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 1));
-            Assert.IsTrue(_operations.ReplaceChar(KeyInputUtil.VimKeyToKeyInput(VimKey.Enter), 2));
+            Assert.IsTrue(_operations.ReplaceChar(KeyInputUtil.EnterKey, 2));
             var tss = _view.TextSnapshot;
             Assert.AreEqual(2, tss.LineCount);
             Assert.AreEqual("f", tss.GetLineFromLineNumber(0).GetText());

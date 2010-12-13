@@ -18,6 +18,9 @@ type KeyInput =
     /// Raw character for this Key Input
     member RawChar : char option
 
+    /// Does this represent a character only.  I.E. a backing char with no modifiers
+    member IsCharOnly : bool
+
     /// The VimKey for this KeyInput.  
     member Key : VimKey
 
@@ -26,9 +29,6 @@ type KeyInput =
 
     /// Is the character for this KeyInput a digit
     member IsDigit : bool
-
-    /// Determine if this a new line key.  Meant to match the Vim definition of <CR>
-    member IsNewLine : bool
 
     /// Is this an arrow key?
     member IsArrowKey : bool 
@@ -45,13 +45,32 @@ type KeyInput =
     interface System.IEquatable<KeyInput>
 
 module KeyInputUtil = 
-    
-    /// The set of core characters as a seq
-    val CoreCharacterList : char list
 
-    /// The core set of KeyInput values that Vim is concerned with.  With the exception of
-    /// upper case letters this doesn't include any modifiers.  
-    val CoreKeyInputList : KeyInput list
+    /// The Escape / <Esc> / <C-[> Key
+    val EscapeKey : KeyInput 
+
+    /// The Tab / <Tab> / <C-I> Key
+    val TabKey : KeyInput 
+    
+    /// The LineFeed / <NL> / <C-J> key
+    val LineFeedKey : KeyInput
+
+    /// The Enter / <CR> / <Enter> / <C-M> / <Return>
+    val EnterKey : KeyInput
+
+    /// The set of special keys which have multiple real aliases back at a single
+    /// Key
+    val SpecialKeyInputList : KeyInput list
+
+    /// The KeyInput for every VimKey in the system (except Unknown)
+    val VimKeyInputList : KeyInput list
+
+    /// The set of core characters as a seq
+    val VimKeyCharList : char list
+
+    /// The core set of KeyInput values that Vim is concerned with.  This includes all of the
+    /// VimKey entries and Special KeyInput values
+    val AllKeyInputList : KeyInput list
 
     /// Try and convert the given char to a KeyInput value
     val CharToKeyInput : char -> KeyInput
@@ -77,5 +96,4 @@ module KeyInputUtil =
     /// it will be extremely hard to produce that in a keyboard.  This seems odd at first 
     /// but it's a scenario that Vim supports (or doesn't support depending on how you 
     val ChangeKeyModifiers : KeyInput -> KeyModifiers -> KeyInput
-
 

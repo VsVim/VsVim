@@ -391,8 +391,6 @@ module KeyInputSetUtil =
 /// Modes for a key remapping
 [<RequireQualifiedAccess>]
 type KeyRemapMode =
-    // Used to explicitly state no-remapping should occur
-    | None
     | Normal 
     | Visual 
     | Select 

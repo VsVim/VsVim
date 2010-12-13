@@ -363,7 +363,7 @@ type internal VisualMode
         member x.Process (ki : KeyInput) =  
 
             let result = 
-                if ki.Key = VimKey.Escape then
+                if ki = KeyInputUtil.EscapeKey then
                     ProcessResult.SwitchPreviousMode
                 else
                     let original = _buffer.TextSnapshot.Version.VersionNumber

@@ -59,7 +59,7 @@ namespace VimCore.Test
                 var ki = KeyInputUtil.CharToKeyInput(cur);
                 Assert.IsTrue(_search.Process(ki).IsSearchNeedMore);
             }
-            Assert.IsTrue(_search.Process(KeyInputUtil.VimKeyToKeyInput(VimKey.Enter)).IsSearchComplete);
+            Assert.IsTrue(_search.Process(KeyInputUtil.EnterKey).IsSearchComplete);
         }
 
         [Test]
@@ -80,7 +80,7 @@ namespace VimCore.Test
             Create("foo bar");
             _vimData.SetupSet(x => x.LastSearchData = new SearchData(SearchText.NewPattern(""), SearchKind.ForwardWithWrap, s_options)).Verifiable();
             _search.Begin(SearchKind.ForwardWithWrap);
-            Assert.IsTrue(_search.Process(KeyInputUtil.VimKeyToKeyInput(VimKey.Enter)).IsSearchComplete);
+            Assert.IsTrue(_search.Process(KeyInputUtil.EnterKey).IsSearchComplete);
             _factory.Verify();
         }
 
@@ -89,7 +89,7 @@ namespace VimCore.Test
         {
             Create("foo bar");
             _search.Begin(SearchKind.ForwardWithWrap);
-            Assert.IsTrue(_search.Process(KeyInputUtil.VimKeyToKeyInput(VimKey.Escape)).IsSearchCancelled);
+            Assert.IsTrue(_search.Process(KeyInputUtil.EscapeKey).IsSearchCancelled);
         }
 
         [Test]
@@ -229,7 +229,7 @@ namespace VimCore.Test
             Create("foo bar");
             _vimData.SetupSet(x => x.LastSearchData = new SearchData(SearchText.NewPattern(""), SearchKind.Forward, SearchOptions.ConsiderSmartCase | SearchOptions.ConsiderIgnoreCase));
             _search.Begin(SearchKind.Forward);
-            _search.Process(KeyInputUtil.VimKeyToKeyInput(VimKey.Enter));
+            _search.Process(KeyInputUtil.EnterKey);
             Assert.IsFalse(_search.InSearch);
             Assert.IsFalse(_search.CurrentSearch.IsSome());
         }
@@ -242,7 +242,7 @@ namespace VimCore.Test
                 .Setup(x => x.FindNext(It.IsAny<SearchData>(), It.IsAny<SnapshotPoint>(), _nav.Object))
                 .Returns(FSharpOption<SnapshotSpan>.None);
             _search.Begin(SearchKind.ForwardWithWrap);
-            _search.Process(KeyInputUtil.VimKeyToKeyInput(VimKey.Escape));
+            _search.Process(KeyInputUtil.EscapeKey);
             Assert.IsFalse(_search.InSearch);
         }
 

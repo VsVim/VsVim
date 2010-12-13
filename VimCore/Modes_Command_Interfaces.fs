@@ -45,10 +45,11 @@ type IOperations =
     /// Print all settings which do not have their default value to the host
     abstract PrintModifiedSettings : unit -> unit
 
-    /// Print all settings to the host
+    /// Print all settings to the host.  
     abstract PrintAllSettings : unit -> unit
 
     /// Print out the key map
+    abstract PrintKeyMap : KeyRemapMode list -> unit
 
     /// Print a single setting out to the host
     abstract PrintSetting : settingName:string -> unit

@@ -313,7 +313,7 @@ namespace VimCore.Test
         {
             Assert.IsTrue(_map.MapWithNoRemap("<S-SPACE>", "<ESC>", KeyRemapMode.Insert));
             var res = _map.GetKeyMapping(KeyInputUtil.VimKeyAndModifiersToKeyInput(VimKey.Space, KeyModifiers.Shift), KeyRemapMode.Insert);
-            Assert.AreEqual(KeyInputUtil.VimKeyToKeyInput(VimKey.Escape), res.Single());
+            Assert.AreEqual(KeyInputUtil.EscapeKey, res.Single());
         }
     }
 }

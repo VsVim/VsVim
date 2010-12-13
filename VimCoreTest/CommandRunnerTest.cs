@@ -375,20 +375,19 @@ namespace VimCore.Test
             _runner.Add(VimUtil.CreateLongCommand(
                 "c",
                 ki =>
+                {
+                    if (ki == KeyInputUtil.EscapeKey)
                     {
-                        if (ki.Key == VimKey.Escape)
-                        {
-                            didSee = true;
-                            return true;
-                        }
-                        else
-                        {
-                            return false;
-                        }
-                    },
-                flags: CommandFlags.None));
+                        didSee = true;
+                        return true;
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                }));
             _runner.Run('c');
-            Assert.IsTrue(_runner.Run(KeyInputUtil.VimKeyToKeyInput(VimKey.Escape)).IsCommandCancelled);
+            Assert.IsTrue(_runner.Run(KeyInputUtil.EscapeKey).IsCommandCancelled);
             Assert.IsFalse(didSee);
         }
 
@@ -401,12 +400,12 @@ namespace VimCore.Test
                 "c",
                 ki =>
                 {
-                    if (ki.Key == VimKey.Escape) { didSee = true; }
+                    if (ki == KeyInputUtil.EscapeKey) { didSee = true; }
                     return false;
                 },
                 flags: CommandFlags.HandlesEscape));
             _runner.Run('c');
-            Assert.IsTrue(_runner.Run(KeyInputUtil.VimKeyToKeyInput(VimKey.Escape)).IsNeedMoreKeyInput);
+            Assert.IsTrue(_runner.Run(KeyInputUtil.EscapeKey).IsNeedMoreKeyInput);
             Assert.IsTrue(didSee);
         }
 
@@ -419,12 +418,12 @@ namespace VimCore.Test
                 "c",
                 ki =>
                 {
-                    if (ki.Key == VimKey.Escape) { didSee = true; return true; }
+                    if (ki == KeyInputUtil.EscapeKey) { didSee = true; return true; }
                     return false;
                 },
                 flags: CommandFlags.HandlesEscape));
             _runner.Run('c');
-            Assert.IsTrue(_runner.Run(KeyInputUtil.VimKeyToKeyInput(VimKey.Escape)).IsCommandRan);
+            Assert.IsTrue(_runner.Run(KeyInputUtil.EscapeKey).IsCommandRan);
             Assert.IsTrue(didSee);
         }
 
@@ -461,7 +460,7 @@ namespace VimCore.Test
             Create("hello world");
             _runner.Add(VimUtil.CreateSimpleCommand("cat", (count, reg) => CommandResult.NewCompleted(ModeSwitch.NoSwitch)));
             Assert.IsTrue(Run("ca").IsNeedMoreKeyInput);
-            Assert.IsTrue(_runner.Run(KeyInputUtil.VimKeyToKeyInput(VimKey.Escape)).IsCommandCancelled);
+            Assert.IsTrue(_runner.Run(KeyInputUtil.EscapeKey).IsCommandCancelled);
             Assert.IsFalse(_runner.IsWaitingForMoreInput);
         }
 
@@ -472,7 +471,7 @@ namespace VimCore.Test
             Create("hello world");
             _runner.Add(VimUtil.CreateMotionCommand("cat", (count, reg, data) => CommandResult.NewCompleted(ModeSwitch.NoSwitch)));
             Assert.IsTrue(Run("cata").IsNeedMoreKeyInput);
-            Assert.IsTrue(_runner.Run(KeyInputUtil.VimKeyToKeyInput(VimKey.Escape)).IsCommandCancelled);
+            Assert.IsTrue(_runner.Run(KeyInputUtil.EscapeKey).IsCommandCancelled);
             Assert.IsFalse(_runner.IsWaitingForMoreInput);
         }
 
@@ -581,7 +580,7 @@ namespace VimCore.Test
             Assert.IsTrue(_runner.Run(KeyInputUtil.CharToKeyInput('f')).IsNeedMoreKeyInput);
             Assert.IsTrue(_runner.Run(KeyInputUtil.CharToKeyInput('o')).IsNeedMoreKeyInput);
             Assert.IsTrue(_runner.Run(KeyInputUtil.CharToKeyInput('d')).IsNeedMoreKeyInput);
-            Assert.IsTrue(_runner.Run(KeyInputUtil.VimKeyToKeyInput(VimKey.Escape)).IsCommandCancelled);
+            Assert.IsTrue(_runner.Run(KeyInputUtil.EscapeKey).IsCommandCancelled);
         }
 
         [Test]
@@ -644,7 +643,7 @@ namespace VimCore.Test
             Create("hello world");
             _runner.Add(VimUtil.CreateSimpleCommand("cat", (count, reg) => CommandResult.NewCompleted(ModeSwitch.NoSwitch)));
             _runner.Run('c');
-            _runner.Run(KeyInputUtil.VimKeyToKeyInput(VimKey.Escape));
+            _runner.Run(KeyInputUtil.EscapeKey);
             Assert.IsTrue(_runner.State.IsNoInput);
         }
 
@@ -751,7 +750,7 @@ namespace VimCore.Test
                     didSee = true;
                 };
             _runner.Run('c');
-            _runner.Run(KeyInputUtil.VimKeyToKeyInput(VimKey.Escape));
+            _runner.Run(KeyInputUtil.EscapeKey);
             Assert.IsFalse(didSee);
         }
 

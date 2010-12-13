@@ -243,13 +243,18 @@ namespace Vim.UnitTest
             return mode.Process((KeyInputUtil.CharToKeyInput(c)));
         }
 
-        public static ProcessResult Process(this IMode mode, string input)
+        public static ProcessResult Process(this IMode mode, string input, bool enter = false)
         {
             ProcessResult last = null;
             foreach (var c in input)
             {
                 var i = KeyInputUtil.CharToKeyInput(c);
                 last = mode.Process(c);
+            }
+
+            if (enter)
+            {
+                last = mode.Process(KeyInputUtil.EnterKey);
             }
 
             return last;
@@ -278,7 +283,7 @@ namespace Vim.UnitTest
             }
             if (enter)
             {
-                Process(buf, VimKey.Enter);
+                buf.Process(KeyInputUtil.EnterKey);
             }
         }
 

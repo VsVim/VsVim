@@ -81,16 +81,15 @@ type internal IncrementalSearch
                 _currentSearchCancelled.Trigger oldSearchData
                 SearchCancelled
 
-            match ki.Key with 
-            | VimKey.Enter -> 
+            if ki = KeyInputUtil.EnterKey then
                 _data <- None
                 _vimData.LastSearchData <- oldSearchData
                 _currentSearchCompleted.Trigger (oldSearchData,data.SearchResult)
                 SearchComplete
-            | VimKey.Escape -> 
+            elif ki = KeyInputUtil.EscapeKey then
                 resetView()
                 cancelSearch
-            | VimKey.Back -> 
+            elif ki.Key = VimKey.Back then
                 resetView()
                 let pattern = data.SearchData.Text.RawText
                 match pattern.Length with
@@ -99,7 +98,7 @@ type internal IncrementalSearch
                     let pattern = pattern.Substring(0, pattern.Length - 1)
                     doSearchWithNewPattern pattern
                     SearchNeedMore
-            | _ -> 
+            else
                 let c = ki.Char
                 let pattern = data.SearchData.Text.RawText + (c.ToString())
                 doSearchWithNewPattern pattern
