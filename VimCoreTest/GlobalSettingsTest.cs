@@ -7,7 +7,7 @@ using Vim;
 using GlobalSettings = Vim.GlobalSettings;
 using Vim.UnitTest;
 
-namespace VimCore.Test
+namespace VimCore.UnitTest
 {
     [TestFixture]
     public class GlobalSettingsTest : SettingsCommonTest

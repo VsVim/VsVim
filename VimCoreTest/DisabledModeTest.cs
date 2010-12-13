@@ -9,7 +9,7 @@ using Vim.UnitTest;
 using GlobalSettings = Vim.GlobalSettings;
 using Vim.UnitTest.Mock;
 
-namespace VimCore.Test
+namespace VimCore.UnitTest
 {
     [TestFixture]
     public class DisabledModeTest

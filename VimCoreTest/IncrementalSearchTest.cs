@@ -13,7 +13,7 @@ using Vim.Modes.Normal;
 using Vim.UnitTest;
 using Vim.UnitTest.Mock;
 
-namespace VimCore.Test
+namespace VimCore.UnitTest
 {
     [TestFixture]
     public class IncrementalSearchTest

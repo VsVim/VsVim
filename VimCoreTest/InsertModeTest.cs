@@ -7,7 +7,7 @@ using Vim.Modes;
 using Vim.UnitTest;
 using Vim.UnitTest.Mock;
 
-namespace VimCore.Test
+namespace VimCore.UnitTest
 {
     /// <summary>
     /// Summary description for InputMode

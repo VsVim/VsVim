@@ -192,16 +192,14 @@ type internal DefaultOperations ( _data : OperationsData ) =
                     // a char this is straight forward.  Non-char KeyInput need to be special cased
                     // though
                     let prefix,output = 
-                        match (KeyNotationUtil.TryGetSpecialKeyName ki),ki.RawChar with
+                        match (KeyNotationUtil.TryGetSpecialKeyName ki),ki.Char with
                         | Some(name,extraModifiers), _ -> 
                             (getPrefix extraModifiers, name)
-                        | None, Some(c) -> 
+                        | None, c -> 
                             let c = 
                                 if CharUtil.IsLetter c && ki.KeyModifiers <> KeyModifiers.None then CharUtil.ToUpper c 
                                 else c
                             (getPrefix ki.KeyModifiers, StringUtil.ofChar c)
-                        | None, None -> 
-                            (getPrefix ki.KeyModifiers, "???")
 
                     if String.length prefix = 0 then 
                         if String.length output = 1 then output

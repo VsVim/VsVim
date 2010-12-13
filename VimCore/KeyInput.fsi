@@ -15,9 +15,6 @@ type KeyInput =
     /// then Char.MinValue will be returend
     member Char : char
 
-    /// Raw character for this Key Input
-    member RawChar : char option
-
     /// Does this represent a character only.  I.E. a backing char with no modifiers
     member IsCharOnly : bool
 

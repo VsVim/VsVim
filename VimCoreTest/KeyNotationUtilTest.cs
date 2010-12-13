@@ -3,7 +3,7 @@ using NUnit.Framework;
 using Vim;
 using Vim.Extensions;
 
-namespace VimCore.Test
+namespace VimCore.UnitTest
 {
     [TestFixture]
     public class KeyNotationUtilTest

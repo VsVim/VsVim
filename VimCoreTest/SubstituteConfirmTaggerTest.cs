@@ -9,7 +9,7 @@ using Vim.Extensions;
 using Vim.Modes.SubstituteConfirm;
 using Vim.UnitTest;
 
-namespace VimCore.Test
+namespace VimCore.UnitTest
 {
     [TestFixture]
     public class SubstituteConfirmTaggerTest

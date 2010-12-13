@@ -14,7 +14,7 @@ using Vim.UnitTest;
 using Vim.UnitTest.Mock;
 using MockRepository = Vim.UnitTest.Mock.MockObjectFactory;
 
-namespace VimCore.Test
+namespace VimCore.UnitTest
 {
     [TestFixture]
     public class NormalModeTest

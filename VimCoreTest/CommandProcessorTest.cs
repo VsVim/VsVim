@@ -14,7 +14,7 @@ using Vim.Modes.Command;
 using Vim.UnitTest;
 using Vim.UnitTest.Mock;
 
-namespace VimCore.Test
+namespace VimCore.UnitTest
 {
     [TestFixture, RequiresSTA]
     public class CommandProcessorTest
@@ -110,8 +110,9 @@ namespace VimCore.Test
         public void Jump_LastLine()
         {
             Create("foo", "bar", "baz");
-            var tss = _view.TextSnapshot;
-            _editOpts.Setup(x => x.MoveToEndOfDocument(false)).Verifiable();
+            _operations
+                .Setup(x => x.MoveCaretToPoint(_view.GetLastLine().Start))
+                .Verifiable();
             RunCommand("$");
             _operations.Verify();
         }

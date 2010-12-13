@@ -2,7 +2,7 @@
 using NUnit.Framework;
 using Vim;
 
-namespace VimCore.Test
+namespace VimCore.UnitTest
 {
     [TestFixture]
     public class SeqUtilTest

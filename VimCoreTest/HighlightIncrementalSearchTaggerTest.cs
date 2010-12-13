@@ -11,7 +11,7 @@ using Vim.Extensions;
 using Vim.Modes.Normal;
 using Vim.UnitTest;
 
-namespace VimCore.Test
+namespace VimCore.UnitTest
 {
     [TestFixture]
     public class HighlightIncrementalSearchTaggerTest

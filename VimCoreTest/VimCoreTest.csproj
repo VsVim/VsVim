@@ -8,7 +8,7 @@
     <ProjectGuid>{B4FC7C81-E500-47C8-A884-2DBB7CA77123}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>VimCore.Test</RootNamespace>
+    <RootNamespace>VimCore.UnitTest</RootNamespace>
     <AssemblyName>Vim.Core.UnitTest</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>

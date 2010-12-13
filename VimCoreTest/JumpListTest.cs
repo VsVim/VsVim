@@ -9,7 +9,7 @@ using Vim.UnitTest;
 using Microsoft.VisualStudio.Text;
 using Vim.Extensions;
 
-namespace VimCore.Test
+namespace VimCore.UnitTest
 {
     [TestFixture]
     public class JumpListTest

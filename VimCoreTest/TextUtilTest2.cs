@@ -5,7 +5,7 @@ using System.Linq;
 using NUnit.Framework;
 using Vim;
 
-namespace VimCore.Test
+namespace VimCore.UnitTest
 {
     /// <summary>
     /// Summary description for TextUtilTest2

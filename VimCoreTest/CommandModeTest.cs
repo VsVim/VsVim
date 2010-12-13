@@ -9,7 +9,7 @@ using Vim.Modes.Command;
 using Vim.UnitTest;
 using Vim.UnitTest.Mock;
 
-namespace VimCore.Test
+namespace VimCore.UnitTest
 {
     [TestFixture, RequiresSTA]
     public class CommandModeTest

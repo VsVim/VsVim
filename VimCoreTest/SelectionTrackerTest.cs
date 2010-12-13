@@ -8,7 +8,7 @@ using Vim;
 using Vim.Modes.Visual;
 using Vim.UnitTest;
 
-namespace VimCore.Test
+namespace VimCore.UnitTest
 {
     [TestFixture]
     public class SelectionTrackerTest

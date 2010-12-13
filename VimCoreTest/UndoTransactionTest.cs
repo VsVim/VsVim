@@ -9,7 +9,7 @@ using Vim;
 using Vim.Extensions;
 using Microsoft.FSharp.Core;
 
-namespace VimCore.Test
+namespace VimCore.UnitTest
 {
     [TestFixture]
     public class UndoTransactionTest

@@ -8,7 +8,7 @@ using Vim;
 using Vim.Extensions;
 using Vim.UnitTest.Mock;
 
-namespace VimCore.Test
+namespace VimCore.UnitTest
 {
     [TestFixture]
     public class VimTest

@@ -8,7 +8,7 @@ using Moq;
 using Microsoft.VisualStudio.Text.Editor;
 using Vim.UnitTest;
 
-namespace VimCore.Test
+namespace VimCore.UnitTest
 {
     [TestFixture]
     public class LocalSettingsTest : SettingsCommonTest
