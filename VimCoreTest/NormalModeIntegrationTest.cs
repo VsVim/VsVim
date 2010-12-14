@@ -571,5 +571,16 @@ namespace VimCore.Test
             _buffer.Process("?a", enter: true);
             Assert.AreEqual(1, _textView.GetCaretPoint().Position);
         }
+
+        [Test]
+        public void MoveEndOfWord_SeveralLines()
+        {
+            CreateBuffer("the dog kicked the", "ball. The end. Bear");
+            for (var i = 0; i < 10; i++)
+            {
+                _buffer.Process("e");
+            }
+            Assert.AreEqual(_textView.GetLine(1).End.Subtract(1), _textView.GetCaretPoint());
+        }
     }
 }

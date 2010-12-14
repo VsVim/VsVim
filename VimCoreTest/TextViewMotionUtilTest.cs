@@ -411,6 +411,51 @@ namespace VimCore.Test
         }
 
         [Test]
+        public void EndOfWord_DontStopOnPunctuation()
+        {
+            Create("A. the ball");
+            _textView.MoveCaretTo(1);
+            var data = _util.EndOfWord(WordKind.NormalWord, 1);
+            Assert.AreEqual(". the", data.OperationSpan.GetText());
+        }
+
+        [Test]
+        public void EndOfWord_DoublePunctuation()
+        {
+            Create("A.. the ball");
+            _textView.MoveCaretTo(1);
+            var data = _util.EndOfWord(WordKind.NormalWord, 1);
+            Assert.AreEqual("..", data.OperationSpan.GetText());
+        }
+
+        [Test]
+        public void EndOfWord_DoublePunctuationWithCount()
+        {
+            Create("A.. the ball");
+            _textView.MoveCaretTo(1);
+            var data = _util.EndOfWord(WordKind.NormalWord, 2);
+            Assert.AreEqual(".. the", data.OperationSpan.GetText());
+        }
+
+        [Test]
+        public void EndOfWord_DoublePunctuationIsAWord()
+        {
+            Create("A.. the ball");
+            _textView.MoveCaretTo(0);
+            var data = _util.EndOfWord(WordKind.NormalWord, 1);
+            Assert.AreEqual("A..", data.OperationSpan.GetText());
+        }
+
+        [Test]
+        public void EndOfWord_DontStopOnEndOfLine()
+        {
+            Create("A. ", "the ball");
+            _textView.MoveCaretTo(1);
+            var data = _util.EndOfWord(WordKind.NormalWord, 1);
+            Assert.AreEqual(". " + Environment.NewLine + "the", data.OperationSpan.GetText());
+        }
+
+        [Test]
         public void ForwardChar1()
         {
             Create("foo bar baz");

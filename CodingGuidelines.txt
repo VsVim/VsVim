@@ -9,6 +9,8 @@ F#
      - APIs taking a line number should consider returning an option.  Line numbers are less likely to be controlled
        by the user
  - Don't use ; for multi-line object initializers
+ - A comma in an aurgment list / tuple should be followed by a space 
+ - No space after ( or before )
  - To Deteremine:
     - Should functions returning an option be prefixed with Try? Example KeyNotationUtil 
 

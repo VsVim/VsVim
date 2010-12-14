@@ -26,12 +26,12 @@ type internal TextViewMotionUtil
     /// Caret point in the view
     member x.StartPoint = TextViewUtil.GetCaretPoint _textView
 
-    member private x.SpanAndForwardFromLines (line1:ITextSnapshotLine) (line2:ITextSnapshotLine) = 
+    member x.SpanAndForwardFromLines (line1:ITextSnapshotLine) (line2:ITextSnapshotLine) = 
         if line1.LineNumber <= line2.LineNumber then SnapshotSpan(line1.Start, line2.End),true
         else SnapshotSpan(line2.Start, line1.End),false
 
     /// Apply the startofline option to the given MotionData
-    member private x.ApplyStartOfLineOption (motionData:MotionData) =
+    member x.ApplyStartOfLineOption (motionData:MotionData) =
         if not _settings.StartOfLine then motionData 
         else
             let endLine = 
@@ -41,7 +41,7 @@ type internal TextViewMotionUtil
             let _,column = SnapshotPointUtil.GetLineColumn point
             { motionData with Column=Some column }
 
-    member private x.ForwardCharMotionCore c count func = 
+    member x.ForwardCharMotionCore c count func = 
         let start = x.StartPoint
         match func start c count with
         | None -> None 
@@ -49,7 +49,7 @@ type internal TextViewMotionUtil
             let span = SnapshotSpan(start, point.Add(1))
             {Span=span; IsForward=true; OperationKind=OperationKind.CharacterWise; MotionKind=MotionKind.Inclusive; Column=None} |> Some
 
-    member private x.BackwardCharMotionCore c count func = 
+    member x.BackwardCharMotionCore c count func = 
         let start = x.StartPoint
         match func start c count with
         | None -> None
@@ -57,7 +57,7 @@ type internal TextViewMotionUtil
             let span = SnapshotSpan(point, start)
             {Span=span; IsForward=false; OperationKind=OperationKind.CharacterWise; MotionKind=MotionKind.Exclusive; Column=None} |> Some
 
-    member private x.LineToLineFirstNonWhitespaceMotion (originLine:ITextSnapshotLine) (endLine:ITextSnapshotLine) =
+    member x.LineToLineFirstNonWhitespaceMotion (originLine:ITextSnapshotLine) (endLine:ITextSnapshotLine) =
         let _,column = TssUtil.FindFirstNonWhitespaceCharacter endLine |> SnapshotPointUtil.GetLineColumn
         let span,isForward = 
             if originLine.LineNumber < endLine.LineNumber then
@@ -243,11 +243,6 @@ type internal TextViewMotionUtil
             {Span=span; IsForward=true; MotionKind=MotionKind.Exclusive; OperationKind=OperationKind.CharacterWise; Column=None}
         member x.EndOfWord kind count = 
 
-            // Does the given point refer to a valid 'word' character?
-            let isPointWordChar point = 
-                if SnapshotPointUtil.IsEndPoint point then false
-                else TextUtil.IsWordChar (point.GetChar()) kind
-
             // Create the appropriate MotionData structure with the provided SnapshotSpan
             let withSpan span = {
                 Span=span 
@@ -256,34 +251,43 @@ type internal TextViewMotionUtil
                 OperationKind=OperationKind.CharacterWise 
                 Column=None} 
 
-            // Need to adjust the count of words that we will skip.  If we are currently 
-            // not on a word then we move forward to the first word and lose a count.  If
-            // we at the end of a word then we simply don't count it 
-            let point,count = 
-                let point = x.StartPoint
-                if isPointWordChar point then 
-                    match TssUtil.FindCurrentWordSpan point kind with
-                    | None -> point,count
-                    | Some(span) -> 
-                        match SnapshotSpanUtil.GetLastIncludedPoint span with
-                        | None -> point,count
-                        | Some(endPoint) ->
-                            if endPoint = point then (point.Add(1)),count
-                            else point,count
-                else point,(count - 1)
-            let count = max 0 (count-1)
-
-            // Now actually search the list of Word spans
-            let wordSpan = 
-                TssUtil.GetWordSpans point kind SearchKind.Forward
-                |> SeqUtil.skipMax count
+            // Move forward until we find the first non-blank and hence a word character 
+            let point =
+                SnapshotPointUtil.GetPoints x.StartPoint SearchKind.Forward
+                |> Seq.skipWhile (fun point -> point.GetChar() |> CharUtil.IsWhiteSpace)
                 |> SeqUtil.tryHeadOnly
-            match wordSpan with
-            | Some(span) -> SnapshotSpanUtil.Create x.StartPoint span.End |> withSpan
+            match point with 
             | None -> 
-                let snapshot = SnapshotPointUtil.GetSnapshot point
-                let endPoint = SnapshotUtil.GetEndPoint snapshot
-                SnapshotSpanUtil.Create point endPoint |> withSpan
+                SnapshotSpanUtil.CreateFromBounds x.StartPoint (SnapshotUtil.GetEndPoint _textView.TextSnapshot) |> withSpan
+            | Some(point) -> 
+
+                // Have a point and we are on a word.  There is a special case to consider where
+                // we started on the last character of a word.  In that case we start searching from
+                // the next point 
+                let searchPoint, count = 
+                    match TssUtil.FindCurrentWordSpan point kind with 
+                    | None -> point, count
+                    | Some(span) -> 
+                        if SnapshotSpanUtil.IsLastIncludedPoint span x.StartPoint then (span.End, count)
+                        else (span.End, count - 1)
+
+                if count = 0 then 
+                    // Getting the search point moved the 1 word count we had.  Done
+                    SnapshotSpanUtil.CreateFromBounds x.StartPoint searchPoint |> withSpan
+                else 
+                    // Need to skip (count - 1) remaining words to get to the one we're looking for
+                    let wordSpan = 
+                        TssUtil.GetWordSpans searchPoint kind SearchKind.Forward
+                        |> SeqUtil.skipMax (count - 1)
+                        |> SeqUtil.tryHeadOnly
+    
+                    match wordSpan with
+                    | Some(span) -> 
+                        SnapshotSpanUtil.Create x.StartPoint span.End |> withSpan
+                    | None -> 
+                        let endPoint = SnapshotUtil.GetEndPoint _textView.TextSnapshot
+                        SnapshotSpanUtil.Create x.StartPoint endPoint |> withSpan
+
         member x.EndOfLine count = 
             let start = x.StartPoint
             let span = SnapshotPointUtil.GetLineRangeSpan start count
