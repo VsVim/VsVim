@@ -27,15 +27,6 @@ type IOperations =
     /// Go to the definition of the word under the cursor
     abstract GoToDefinitionWrapper : unit -> unit
 
-    /// Go to the local declaration of the word under the cursor
-    abstract GoToLocalDeclaration : unit -> unit
-
-    /// Go to the global declaration of the word under the cursor
-    abstract GoToGlobalDeclaration : unit -> unit
-
-    /// Go to the file named in the word under the cursor
-    abstract GoToFile : unit -> unit
-
     /// Go to the specified line number or the first line if no value is specified
     abstract GoToLineOrFirst : int option -> unit
 

@@ -2045,5 +2045,63 @@ namespace VimCore.UnitTest
             Assert.AreEqual(_view.GetLine(1).Start, _view.GetCaretPoint());
             _outlining.Verify();
         }
+
+        [Test]
+        public void GoToGlobalDeclaration1()
+        {
+            Create("foo bar");
+            _host.Setup(x => x.GoToGlobalDeclaration(_view, "foo")).Returns(true).Verifiable();
+            _operations.GoToGlobalDeclaration();
+            _host.Verify();
+        }
+
+        [Test]
+        public void GoToGlobalDeclaration2()
+        {
+            Create("foo bar");
+            _host.Setup(x => x.GoToGlobalDeclaration(_view, "foo")).Returns(false).Verifiable();
+            _host.Setup(x => x.Beep()).Verifiable();
+            _operations.GoToGlobalDeclaration();
+            _host.Verify();
+        }
+
+        [Test]
+        public void GoToLocalDeclaration1()
+        {
+            Create("foo bar");
+            _host.Setup(x => x.GoToLocalDeclaration(_view, "foo")).Returns(true).Verifiable();
+            _operations.GoToLocalDeclaration();
+            _host.Verify();
+        }
+
+        [Test]
+        public void GoToLocalDeclaration2()
+        {
+            Create("foo bar");
+            _host.Setup(x => x.GoToLocalDeclaration(_view, "foo")).Returns(false).Verifiable();
+            _host.Setup(x => x.Beep()).Verifiable();
+            _operations.GoToLocalDeclaration();
+            _host.Verify();
+        }
+
+        [Test]
+        public void GoToFile1()
+        {
+            Create("foo bar");
+            _host.Setup(x => x.GoToFile("foo")).Returns(true).Verifiable();
+            _operations.GoToFile();
+            _host.Verify();
+        }
+
+        [Test]
+        public void GoToFile2()
+        {
+            Create("foo bar");
+            _host.Setup(x => x.GoToFile("foo")).Returns(false).Verifiable();
+            _statusUtil.Setup(x => x.OnError(Resources.NormalMode_CantFindFile("foo"))).Verifiable();
+            _operations.GoToFile();
+            _statusUtil.Verify();
+            _host.Verify();
+        }
     }
 }

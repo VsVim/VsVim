@@ -129,7 +129,7 @@ namespace Vim.UI.Wpf
                 case ModeKind.Normal:
                     {
                         var mode = _buffer.NormalMode;
-                        var search = mode.IncrementalSearch;
+                        var search = _buffer.IncrementalSearch;
                         if (search.InSearch && search.CurrentSearch.IsSome())
                         {
                             var data = search.CurrentSearch.Value;

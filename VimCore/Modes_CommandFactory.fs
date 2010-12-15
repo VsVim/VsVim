@@ -5,9 +5,16 @@ open Vim
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
 
-type internal CommandFactory( _operations : ICommonOperations, _capture : IMotionCapture ) = 
+type internal CommandFactory
+    ( 
+        _operations : ICommonOperations, 
+        _capture : IMotionCapture,
+        _incrementalSearch : IIncrementalSearch,
+        _jumpList : IJumpList ) =
 
-    member private x.CreateStandardMovementCommandsCore () = 
+    let _textView = _operations.TextView
+
+    member x.CreateStandardMovementCommandsCore () = 
         let moveLeft = fun count -> _operations.MoveCaretLeft(count)
         let moveRight = fun count -> _operations.MoveCaretRight(count)
         let moveUp = fun count -> _operations.MoveCaretUp(count)
@@ -28,19 +35,50 @@ type internal CommandFactory( _operations : ICommonOperations, _capture : IMotio
             yield ("<Down>", moveDown)
             yield ("<C-n>", moveDown)
             yield ("<C-j>", moveDown)
+            yield ("n", fun count -> _operations.MoveToNextOccuranceOfLastSearch count false)
+            yield ("N", fun count -> _operations.MoveToNextOccuranceOfLastSearch count true)
+            yield ("*", fun count -> _operations.MoveToNextOccuranceOfWordAtCursor SearchKind.ForwardWithWrap count)
+            yield ("#", fun count -> _operations.MoveToNextOccuranceOfWordAtCursor SearchKind.BackwardWithWrap count)
+            yield ("g*", fun count -> _operations.MoveToNextOccuranceOfPartialWordAtCursor SearchKind.ForwardWithWrap count)
+            yield ("g#", fun count -> _operations.MoveToNextOccuranceOfPartialWordAtCursor SearchKind.BackwardWithWrap count)
+            yield ("gd", fun _ -> _operations.GoToLocalDeclaration())
+            yield ("gD", fun  _ -> _operations.GoToGlobalDeclaration())
         }
 
-    member private x.CreateStandardMovementCommands() =
+    member x.CreateStandardMovementCommands() =
         x.CreateStandardMovementCommandsCore()
         |> Seq.map (fun (notation,func) ->
-            let kiSet = notation |> KeyNotationUtil.StringToKeyInput |> OneKeyInput
+            let kiSet = KeyNotationUtil.StringToKeyInputSet notation
             let funcWithReg opt reg = 
                 func (CommandUtil.CountOrDefault opt)
                 CommandResult.Completed NoSwitch
             Command.SimpleCommand (kiSet,CommandFlags.Movement, funcWithReg))
 
+    member x.CreateSearchCommands() = 
+
+        let searchFunc kind = 
+            let before = TextViewUtil.GetCaretPoint _textView
+            let rec inner (ki:KeyInput) = 
+                match _incrementalSearch.Process ki with
+                | SearchComplete -> 
+                    _jumpList.Add before |> ignore
+                    CommandResult.Completed ModeSwitch.NoSwitch |> LongCommandResult.Finished
+                | SearchCancelled -> LongCommandResult.Cancelled
+                | SearchNeedMore ->  LongCommandResult.NeedMoreInput (Some KeyRemapMode.Command, inner)
+            _incrementalSearch.Begin kind
+            LongCommandResult.NeedMoreInput (Some KeyRemapMode.Command, inner)
+
+        seq {
+            yield ("/", fun () -> searchFunc SearchKind.ForwardWithWrap)
+            yield ("?", fun () -> searchFunc SearchKind.BackwardWithWrap)
+        } |> Seq.map (fun (notation, func) ->
+            let keyInputSet = KeyNotationUtil.StringToKeyInputSet notation
+            let commandFunc _ _ = func()
+            let flags = CommandFlags.Movement ||| CommandFlags.HandlesEscape
+            Command.LongCommand (keyInputSet, flags, commandFunc))
+
     /// Build up a set of MotionCommand values from applicable Motion values
-    member private x.CreateMovementsFromMotions() =
+    member x.CreateMovementsFromMotions() =
         let processResult opt = 
             match opt with
             | None -> _operations.Beep()
@@ -85,13 +123,11 @@ type internal CommandFactory( _operations : ICommonOperations, _capture : IMotio
         |> Seq.filter (fun command -> Utils.IsFlagSet command.MotionFlags MotionFlags.CursorMovement)
         |> Seq.map processMotionCommand
 
-    /// Returns the set of commands which move the cursor.  This includes all motions which are 
-    /// valid as movements.  Several of these are overridden with custom movement behavior though.
     member x.CreateMovementCommands() = 
         let standard = x.CreateStandardMovementCommands()
         let taken = standard |> Seq.map (fun command -> command.KeyInputSet) |> Set.ofSeq
         let motion = 
             x.CreateMovementsFromMotions()
             |> Seq.filter (fun command -> not (taken.Contains command.KeyInputSet))
-        standard |> Seq.append motion
+        standard |> Seq.append motion |> Seq.append (x.CreateSearchCommands())
 

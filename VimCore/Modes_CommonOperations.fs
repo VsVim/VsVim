@@ -40,6 +40,12 @@ type internal CommonOperations ( _data : OperationsData ) =
             if point.Position >= line.End.Position && line.Length > 0 then 
                 TextViewUtil.MoveCaretToPoint _textView (line.End.Subtract(1))
 
+    member x.WordUnderCursorOrEmpty =
+        let point =  TextViewUtil.GetCaretPoint _textView
+        TssUtil.FindCurrentFullWordSpan point WordKind.BigWord
+        |> OptionUtil.getOrDefault (SnapshotSpanUtil.CreateEmpty point)
+        |> SnapshotSpanUtil.GetText
+
     member x.NavigateToPoint (point:VirtualSnapshotPoint) = 
         let buf = point.Position.Snapshot.TextBuffer
         if buf = _textView.TextBuffer then 
@@ -747,5 +753,16 @@ type internal CommonOperations ( _data : OperationsData ) =
         member x.UpdateRegisterForCollection reg regOp col opKind = 
             let value = { Value=StringData.OfNormalizedSnasphotSpanCollection col; OperationKind=opKind }
             x.UpdateRegister reg regOp value
+
+        member x.GoToLocalDeclaration() = 
+            if not (_host.GoToLocalDeclaration _textView x.WordUnderCursorOrEmpty) then _host.Beep()
+
+        member x.GoToGlobalDeclaration () = 
+            if not (_host.GoToGlobalDeclaration _textView x.WordUnderCursorOrEmpty) then _host.Beep()
+
+        member x.GoToFile () = 
+            let text = x.WordUnderCursorOrEmpty 
+            if not (_host.GoToFile text) then 
+                _statusUtil.OnError (Resources.NormalMode_CantFindFile text)
 
 

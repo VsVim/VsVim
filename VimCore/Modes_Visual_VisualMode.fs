@@ -37,7 +37,7 @@ type internal VisualMode
     member x.EndExplicitMove() = _explicitMoveCount <- _explicitMoveCount - 1
     member x.SelectedSpan = (TextSelectionUtil.GetStreamSelectionSpan _buffer.TextView.Selection).SnapshotSpan
 
-    member private x.BuildMoveSequence() = 
+    member x.BuildMoveSequence() = 
 
         let wrapSimple func = 
             fun count reg ->
@@ -46,24 +46,31 @@ type internal VisualMode
                 x.EndExplicitMove()
                 res
 
-        let wrapComplex func = 
+        let wrapMotion func = 
             fun count reg data ->
                 x.BeginExplicitMove()
                 let res = func count reg data
                 x.EndExplicitMove()
                 res
 
-        let factory = Vim.Modes.CommandFactory(_operations, _capture)
+        let wrapLong func = 
+            fun count reg ->
+                x.BeginExplicitMove()
+                let res = func count reg 
+                x.EndExplicitMove()
+                res
+
+        let factory = Vim.Modes.CommandFactory(_operations, _capture, _buffer.IncrementalSearch, _buffer.JumpList)
         factory.CreateMovementCommands()
         |> Seq.map (fun (command) ->
             match command with
-            | Command.SimpleCommand(name,kind,func) -> Command.SimpleCommand (name,kind, wrapSimple func) |> Some
-            | Command.MotionCommand (name,kind,func) -> Command.MotionCommand (name, kind,wrapComplex func) |> Some
-            | Command.LongCommand (name,kind,func) -> None 
-            | Command.VisualCommand (name,kind,visualKind,func) -> None )
+            | Command.SimpleCommand(name,flags,func) -> Command.SimpleCommand (name, flags, wrapSimple func) |> Some
+            | Command.MotionCommand (name,flags,func) -> Command.MotionCommand (name, flags,wrapMotion func) |> Some
+            | Command.LongCommand (name,flags,func) -> Command.LongCommand (name, flags, wrapLong func) |> Some
+            | Command.VisualCommand (name,flags,visualKind,func) -> None )
         |> SeqUtil.filterToSome
 
-    member private x.BuildOperationsSequence() =
+    member x.BuildOperationsSequence() =
 
         let runVisualCommand funcNormal funcBlock count reg visualSpan = 
             match visualSpan with
@@ -95,16 +102,6 @@ type internal VisualMode
                     CommandFlags.Movement,
                     ModeSwitch.NoSwitch |> Some,
                     fun _ _ -> _operations.EditorOperations.PageDown(false))
-                yield (
-                    "n", 
-                    CommandFlags.Movement, 
-                    ModeSwitch.NoSwitch |> Some,
-                    fun count _ -> _operations.MoveToNextOccuranceOfLastSearch count false)
-                yield (
-                    "N", 
-                    CommandFlags.Movement, 
-                    ModeSwitch.NoSwitch |> Some,
-                    fun count _ -> _operations.MoveToNextOccuranceOfLastSearch count true)
                 yield (
                     "zo", 
                     CommandFlags.Special, 
@@ -355,13 +352,20 @@ type internal VisualMode
                 
         Seq.append simples visualSimple |> Seq.append customReturn
 
-    member private x.EnsureCommandsBuilt() =
+    member x.EnsureCommandsBuilt() =
         if not _builtCommands then
             let map = 
                 x.BuildMoveSequence() 
                 |> Seq.append (x.BuildOperationsSequence())
                 |> Seq.iter _runner.Add 
             _builtCommands <- true
+
+    member x.ShouldHandleEscape = 
+        match _runner.State with
+        | CommandRunnerState.NoInput -> true
+        | CommandRunnerState.NotEnoughInput -> true
+        | CommandRunnerState.NotEnoughMatchingPrefix (_) -> true
+        | CommandRunnerState.NotFinishWithCommand (command, _) -> not (Utils.IsFlagSet command.CommandFlags CommandFlags.HandlesEscape)
 
     interface IMode with
         member x.VimBuffer = _buffer
@@ -373,13 +377,18 @@ type internal VisualMode
         member x.Process (ki : KeyInput) =  
 
             let result = 
-                if ki = KeyInputUtil.EscapeKey then
+                if ki = KeyInputUtil.EscapeKey && x.ShouldHandleEscape then
                     ProcessResult.SwitchPreviousMode
                 else
                     let original = _buffer.TextSnapshot.Version.VersionNumber
                     match _runner.Run ki with
-                    | RunKeyInputResult.NeedMoreKeyInput -> ProcessResult.Processed
-                    | RunKeyInputResult.NestedRunDetected -> ProcessResult.Processed
+                    | RunKeyInputResult.NeedMoreKeyInput -> 
+                        // Commands like incremental search can move the caret and be incomplete.  Need to 
+                        // update the selection while waiting for the next key
+                        _selectionTracker.UpdateSelection()
+                        ProcessResult.Processed
+                    | RunKeyInputResult.NestedRunDetected -> 
+                        ProcessResult.Processed
                     | RunKeyInputResult.CommandRan(commandRanData,modeSwitch) -> 
     
                         if Utils.IsFlagSet commandRanData.Command.CommandFlags CommandFlags.ResetCaret then
@@ -391,8 +400,10 @@ type internal VisualMode
                         | ModeSwitch.SwitchModeWithArgument(_,_) -> ()
                         | ModeSwitch.SwitchPreviousMode -> ()
                         ProcessResult.OfModeSwitch modeSwitch
-                    | RunKeyInputResult.CommandErrored(_) -> ProcessResult.SwitchPreviousMode
-                    | RunKeyInputResult.CommandCancelled -> ProcessResult.SwitchPreviousMode
+                    | RunKeyInputResult.CommandErrored(_) -> 
+                        ProcessResult.SwitchPreviousMode
+                    | RunKeyInputResult.CommandCancelled -> 
+                        ProcessResult.SwitchPreviousMode
                     | RunKeyInputResult.NoMatchingCommand -> 
                         _operations.Beep()
                         ProcessResult.Processed

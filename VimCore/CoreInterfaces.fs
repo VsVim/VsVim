@@ -900,7 +900,10 @@ type ISearchService =
     abstract FindNextMultiple : SearchData -> SnapshotPoint -> ITextStructureNavigator -> count:int -> SnapshotSpan option
 
 type IIncrementalSearch = 
+
+    /// True when a search is occuring
     abstract InSearch : bool
+
     abstract CurrentSearch : SearchData option
 
     /// ISearchInformation instance this incremental search is associated with
@@ -1191,11 +1194,40 @@ and SwitchModeEventArgs
 /// Main interface for the Vim editor engine so to speak. 
 and IVimBuffer =
 
+    /// Sequence of available Modes
+    abstract AllModes : seq<IMode>
+
+    /// Buffered KeyInput list.  When a key remapping has multiple source elements the input 
+    /// is buffered until it is completed or the ambiguity is removed.  
+    abstract BufferedRemapKeyInputs : KeyInput list
+
+    /// IIncrementalSearch instance associated with this IVimBuffer
+    abstract IncrementalSearch : IIncrementalSearch
+
+    /// Whether or not the IVimBuffer is currently processing input
+    abstract IsProcessingInput : bool
+
+    /// Jump list
+    abstract JumpList : IJumpList
+
+    /// Associated IMarkMap
+    abstract MarkMap : IMarkMap
+
+    /// Current mode of the buffer
+    abstract Mode : IMode
+
+    /// ModeKind of the current IMode in the buffer
+    abstract ModeKind : ModeKind
+
     /// Name of the buffer.  Used for items like Marks
     abstract Name : string
 
-    /// View of the file
-    abstract TextView : ITextView
+    /// Local settings for the buffer
+    abstract Settings : IVimLocalSettings
+
+    /// Register map for IVim.  Global to all IVimBuffer instances but provided here
+    /// for convenience
+    abstract RegisterMap : IRegisterMap
 
     /// Underyling ITextBuffer Vim is operating under
     abstract TextBuffer : ITextBuffer
@@ -1203,9 +1235,8 @@ and IVimBuffer =
     /// Current ITextSnapshot of the ITextBuffer
     abstract TextSnapshot : ITextSnapshot
 
-    /// Buffered KeyInput list.  When a key remapping has multiple source elements the input 
-    /// is buffered until it is completed or the ambiguity is removed.  
-    abstract BufferedRemapKeyInputs : KeyInput list
+    /// View of the file
+    abstract TextView : ITextView
 
     /// Owning IVim instance
     abstract Vim : IVim
@@ -1213,22 +1244,8 @@ and IVimBuffer =
     /// Associated IVimData instance
     abstract VimData : IVimData
 
-    /// Associated IMarkMap
-    abstract MarkMap : IMarkMap
-
-    /// Jump list
-    abstract JumpList : IJumpList
-
-    /// ModeKind of the current IMode in the buffer
-    abstract ModeKind : ModeKind
-
-    /// Current mode of the buffer
-    abstract Mode : IMode
-
-    /// Whether or not the IVimBuffer is currently processing input
-    abstract IsProcessingInput : bool
-
-    abstract NormalMode : INormalMode 
+    // Mode accessors
+    abstract NormalMode : INormalMode
     abstract CommandMode : ICommandMode 
     abstract DisabledMode : IDisabledMode
     abstract VisualLineMode : IVisualMode
@@ -1239,11 +1256,6 @@ and IVimBuffer =
     abstract SubstituteConfirmMode : ISubstituteConfirmMode
     abstract ExternalEditMode : IMode
 
-    /// Sequence of available Modes
-    abstract AllModes : seq<IMode>
-
-    abstract Settings : IVimLocalSettings
-    abstract RegisterMap : IRegisterMap
 
     abstract GetRegister : RegisterName -> Register
 
@@ -1354,9 +1366,6 @@ and INormalMode =
 
     /// Is normal mode in the middle of a character replace operation
     abstract IsInReplace : bool
-
-    /// The IIncrementalSearch instance for normal mode
-    abstract IncrementalSearch : IIncrementalSearch
 
     /// If we are a one-time normal mode, the mode kind we will return to
     abstract OneTimeMode : ModeKind option

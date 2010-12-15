@@ -24,6 +24,7 @@ namespace Vim.UnitTest.Mock
         public ICommandMode CommandModeImpl;
         public IDisabledMode DisabledModeImpl;
         public ISubstituteConfirmMode SubstituteConfirmModeImpl;
+        public IIncrementalSearch IncrementalSearchImpl;
         public IMode InsertModeImpl;
         public IMode ReplaceModeImpl;
         public IMode ExternalEditModeImpl;
@@ -301,6 +302,11 @@ namespace Vim.UnitTest.Mock
         public IMode ExternalEditMode
         {
             get { return ExternalEditModeImpl; }
+        }
+
+        public IIncrementalSearch IncrementalSearch
+        {
+            get { return IncrementalSearchImpl; }
         }
     }
 }

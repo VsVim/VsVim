@@ -16,12 +16,15 @@ namespace Vim.UI.Wpf.Test
         private CommandMarginControl _marginControl;
         private CommandMarginController _controller;
         private MockRepository _factory;
+        private Mock<IIncrementalSearch> _search;
 
         [SetUp]
         public void Setup()
         {
             _factory = new MockRepository(MockBehavior.Strict);
+            _search = _factory.Create<IIncrementalSearch>();
             _buffer = new MockVimBuffer();
+            _buffer.IncrementalSearchImpl = _search.Object;
             _marginControl = new CommandMarginControl();
             _marginControl.StatusLine = String.Empty;
             _controller = new CommandMarginController(
@@ -272,8 +275,7 @@ namespace Vim.UI.Wpf.Test
         public void NoEvents1()
         {
             var mode = new Mock<INormalMode>();
-            var search = mode.MakeIncrementalSearch(_factory);
-            search.SetupGet(x => x.InSearch).Returns(false).Verifiable();
+            _search.SetupGet(x => x.InSearch).Returns(false).Verifiable();
             mode.SetupGet(x => x.Command).Returns("foo");
             _buffer.ModeKindImpl = ModeKind.Normal;
             _buffer.NormalModeImpl = mode.Object;
@@ -281,7 +283,7 @@ namespace Vim.UI.Wpf.Test
             SimulatKeystroke();
             Assert.AreEqual("foo", _marginControl.StatusLine);
             mode.Verify();
-            search.Verify();
+            _factory.Verify();
         }
 
         [Test]
@@ -316,12 +318,12 @@ namespace Vim.UI.Wpf.Test
             var mode = _factory.Create<INormalMode>();
             _buffer.NormalModeImpl = mode.Object;
             _buffer.ModeKindImpl = ModeKind.Normal;
-            var search = mode.MakeIncrementalSearch(_factory);
             var data = new SearchData(SearchText.NewStraightText("cat"), SearchKind.Forward, SearchOptions.None);
-            search.SetupGet(x => x.InSearch).Returns(true).Verifiable();
-            search.SetupGet(x => x.CurrentSearch).Returns(FSharpOption.Create(data)).Verifiable();
+            _search.SetupGet(x => x.InSearch).Returns(true).Verifiable();
+            _search.SetupGet(x => x.CurrentSearch).Returns(FSharpOption.Create(data)).Verifiable();
             SimulatKeystroke();
             Assert.AreEqual("/cat", _marginControl.StatusLine);
+            _factory.Verify();
         }
 
         [Test]
@@ -330,12 +332,12 @@ namespace Vim.UI.Wpf.Test
             var mode = _factory.Create<INormalMode>();
             _buffer.NormalModeImpl = mode.Object;
             _buffer.ModeKindImpl = ModeKind.Normal;
-            var search = mode.MakeIncrementalSearch(_factory);
             var data = new SearchData(SearchText.NewStraightText("cat"), SearchKind.Backward, SearchOptions.None);
-            search.SetupGet(x => x.InSearch).Returns(true).Verifiable();
-            search.SetupGet(x => x.CurrentSearch).Returns(FSharpOption.Create(data)).Verifiable();
+            _search.SetupGet(x => x.InSearch).Returns(true).Verifiable();
+            _search.SetupGet(x => x.CurrentSearch).Returns(FSharpOption.Create(data)).Verifiable();
             SimulatKeystroke();
             Assert.AreEqual("?cat", _marginControl.StatusLine);
+            _factory.Verify();
         }
     }
 }

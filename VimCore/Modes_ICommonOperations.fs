@@ -122,6 +122,15 @@ type ICommonOperations =
     /// be generated as appropriate
     abstract GoToDefinition : unit -> Result
 
+    /// Go to the file named in the word under the cursor
+    abstract GoToFile : unit -> unit
+
+    /// Go to the local declaration of the word under the cursor
+    abstract GoToLocalDeclaration : unit -> unit
+
+    /// Go to the global declaration of the word under the cursor
+    abstract GoToGlobalDeclaration : unit -> unit
+
     /// Go to the matching construct of the value under the cursor
     abstract GoToMatch : unit -> bool
 

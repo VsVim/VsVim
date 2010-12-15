@@ -259,16 +259,6 @@ namespace Vim.UnitTest.Mock
             return service;
         }
 
-        public static Mock<IIncrementalSearch> MakeIncrementalSearch(
-            this Mock<INormalMode> mode,
-            MockRepository factory = null)
-        {
-            factory = factory ?? new MockRepository(MockBehavior.Strict);
-            var mock = factory.Create<IIncrementalSearch>();
-            mode.SetupGet(x => x.IncrementalSearch).Returns(mock.Object);
-            return mock;
-        }
-
         public static void SetupNoEnumMarkers(this Mock<IVsTextLines> mock)
         {
             IVsEnumLineMarkers markers;

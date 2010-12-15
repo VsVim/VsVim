@@ -80,7 +80,7 @@ type internal IncrementalSearchTaggerProvider
             | None -> null
             | Some(buffer) ->
                 let normal = buffer.NormalMode
-                let search = normal.IncrementalSearch
+                let search = buffer.IncrementalSearch
                 let tagger = IncrementalSearchTagger(textBuffer,search)
                 tagger :> obj :?> ITagger<'T>
 

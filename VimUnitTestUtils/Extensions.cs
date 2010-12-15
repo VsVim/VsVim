@@ -485,6 +485,24 @@ namespace Vim.UnitTest
             return span;
         }
 
+        public static void Select(this ITextSelection selection, params SnapshotSpan[] spans)
+        {
+            if (spans.Length == 1)
+            {
+                selection.Mode = TextSelectionMode.Stream;
+                selection.Clear();
+                selection.Select(spans[0], false);
+            }
+            else
+            {
+                selection.Mode = TextSelectionMode.Box;
+                foreach (var span in spans)
+                {
+                    selection.Select(span, false);
+                }
+            }
+        }
+
         public static void UpdateValue(this Register reg, string value)
         {
             var data = StringData.NewSimple(value);
@@ -495,6 +513,11 @@ namespace Vim.UnitTest
         public static SnapshotPoint GetCaretPoint(this ITextView view)
         {
             return view.Caret.Position.BufferPosition;
+        }
+
+        public static SnapshotSpan GetSelectionSpan(this ITextView textView)
+        {
+            return textView.Selection.StreamSelectionSpan.SnapshotSpan;
         }
 
         public static Register GetRegister(this IRegisterMap map, char c)

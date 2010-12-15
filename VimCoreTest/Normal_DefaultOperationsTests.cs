@@ -28,7 +28,6 @@ namespace VimCore.UnitTest
         private Mock<IJumpList> _jumpList;
         private Mock<IVimGlobalSettings> _globalSettings;
         private Mock<IVimLocalSettings> _settings;
-        private Mock<IIncrementalSearch> _search;
         private Mock<IOutliningManager> _outlining;
         private Mock<IUndoRedoOperations> _undoRedoOperations;
         private Mock<IEditorOptions> _options;
@@ -77,8 +76,6 @@ namespace VimCore.UnitTest
             _options.Setup(x => x.IsOptionDefined<int>(It.IsAny<EditorOptionKey<int>>(), false)).Returns(true);
             _jumpList = new Mock<IJumpList>(MockBehavior.Strict);
             _searchService = new SearchService(EditorUtil.FactoryService.textSearchService, _globalSettings.Object);
-            _search = new Mock<IIncrementalSearch>(MockBehavior.Strict);
-            _search.SetupGet(x => x.SearchService).Returns(_searchService);
             _statusUtil = new Mock<IStatusUtil>(MockBehavior.Strict);
             _outlining = new Mock<IOutliningManager>(MockBehavior.Strict);
             _undoRedoOperations = new Mock<IUndoRedoOperations>(MockBehavior.Strict);
@@ -102,7 +99,7 @@ namespace VimCore.UnitTest
                 foldManager: null,
                 searchService: _searchService);
 
-            _operationsRaw = new DefaultOperations(data, _search.Object);
+            _operationsRaw = new DefaultOperations(data);
             _operations = _operationsRaw;
         }
 
@@ -821,62 +818,5 @@ namespace VimCore.UnitTest
             Assert.AreEqual(SnapshotUtil.GetEndPoint(_view.TextSnapshot), _view.GetCaretPoint());
         }
 
-        [Test]
-        public void GoToGlobalDeclaration1()
-        {
-            Create("foo bar");
-            _host.Setup(x => x.GoToGlobalDeclaration(_view, "foo")).Returns(true).Verifiable();
-            _operations.GoToGlobalDeclaration();
-            _host.Verify();
-        }
-
-        [Test]
-        public void GoToGlobalDeclaration2()
-        {
-            Create("foo bar");
-            _host.Setup(x => x.GoToGlobalDeclaration(_view, "foo")).Returns(false).Verifiable();
-            _host.Setup(x => x.Beep()).Verifiable();
-            _operations.GoToGlobalDeclaration();
-            _host.Verify();
-        }
-
-        [Test]
-        public void GoToLocalDeclaration1()
-        {
-            Create("foo bar");
-            _host.Setup(x => x.GoToLocalDeclaration(_view, "foo")).Returns(true).Verifiable();
-            _operations.GoToLocalDeclaration();
-            _host.Verify();
-        }
-
-        [Test]
-        public void GoToLocalDeclaration2()
-        {
-            Create("foo bar");
-            _host.Setup(x => x.GoToLocalDeclaration(_view, "foo")).Returns(false).Verifiable();
-            _host.Setup(x => x.Beep()).Verifiable();
-            _operations.GoToLocalDeclaration();
-            _host.Verify();
-        }
-
-        [Test]
-        public void GoToFile1()
-        {
-            Create("foo bar");
-            _host.Setup(x => x.GoToFile("foo")).Returns(true).Verifiable();
-            _operations.GoToFile();
-            _host.Verify();
-        }
-
-        [Test]
-        public void GoToFile2()
-        {
-            Create("foo bar");
-            _host.Setup(x => x.GoToFile("foo")).Returns(false).Verifiable();
-            _statusUtil.Setup(x => x.OnError(Resources.NormalMode_CantFindFile("foo"))).Verifiable();
-            _operations.GoToFile();
-            _statusUtil.Verify();
-            _host.Verify();
-        }
     }
 }

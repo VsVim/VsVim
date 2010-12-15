@@ -122,5 +122,3 @@ type internal IncrementalSearch
         member x.CurrentSearchCancelled = _currentSearchCancelled.Publish
 
 
-    
-    

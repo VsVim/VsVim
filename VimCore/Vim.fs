@@ -58,12 +58,15 @@ type internal VimBufferFactory
         let outlining = _outliningManagerService.GetOutliningManager(view)
         let jumpList = JumpList(_tlcService) :> IJumpList
         let foldManager = _foldManagerFactory.GetFoldManager(view.TextBuffer)
+        let wordNav = x.CreateTextStructureNavigator view.TextBuffer WordKind.NormalWord
+        let incrementalSearch = Vim.Modes.Normal.IncrementalSearch(view, outlining, localSettings, wordNav, vim.SearchService, vim.VimData) :> IIncrementalSearch
         let bufferRaw = 
             VimBuffer( 
                 vim,
                 view,
                 jumpList,
-                localSettings)
+                localSettings,
+                incrementalSearch)
         let buffer = bufferRaw :> IVimBuffer
         let selectionChangeTracker = SelectionChangeTracker(buffer)
 
@@ -74,29 +77,27 @@ type internal VimBufferFactory
                 if manager = null then None
                 else manager.TextBufferUndoHistory |> Some
             UndoRedoOperations(statusUtil, history) :> IUndoRedoOperations
-        let wordNav = x.CreateTextStructureNavigator view.TextBuffer WordKind.NormalWord
         let operationsData = { 
-            VimData=vim.VimData
-            VimHost=_host
-            TextView=view
             EditorOperations=editOperations
             EditorOptions=editOptions
-            OutliningManager=outlining
-            JumpList=jumpList
-            LocalSettings=localSettings
-            UndoRedoOperations=undoRedoOperations
-            StatusUtil=statusUtil
-            KeyMap=vim.KeyMap
-            Navigator=wordNav
             FoldManager=foldManager
+            JumpList=jumpList
+            KeyMap=vim.KeyMap
+            LocalSettings=localSettings
+            Navigator=wordNav
+            OutliningManager=outlining
             RegisterMap=vim.RegisterMap
-            SearchService=vim.SearchService }
+            SearchService=vim.SearchService 
+            StatusUtil=statusUtil
+            TextView=view
+            UndoRedoOperations=undoRedoOperations
+            VimData=vim.VimData
+            VimHost=_host }
 
         let createCommandRunner() = CommandRunner (view, vim.RegisterMap, capture,statusUtil) :>ICommandRunner
         let broker = _completionWindowBrokerFactoryService.CreateDisplayWindowBroker view
         let bufferOptions = _editorOptionsFactoryService.GetOptions(view.TextBuffer)
-        let normalIncrementalSearch = Vim.Modes.Normal.IncrementalSearch(view, outlining, localSettings, wordNav, vim.SearchService, vim.VimData) :> IIncrementalSearch
-        let normalOpts = Modes.Normal.DefaultOperations(operationsData, normalIncrementalSearch) :> Vim.Modes.Normal.IOperations
+        let normalOpts = Modes.Normal.DefaultOperations(operationsData) :> Vim.Modes.Normal.IOperations
         let commandOpts = Modes.Command.DefaultOperations(operationsData) :> Modes.Command.IOperations
         let commandProcessor = Modes.Command.CommandProcessor(buffer, commandOpts, statusUtil, FileSystem() :> IFileSystem) :> Modes.Command.ICommandProcessor
         let commonOperations = Modes.CommonOperations(operationsData) :> Modes.ICommonOperations
@@ -116,7 +117,7 @@ type internal VimBufferFactory
         // Normal mode values
         let modeList = 
             [
-                ((Modes.Normal.NormalMode(buffer, normalOpts, normalIncrementalSearch,statusUtil,broker, createCommandRunner(),capture, _visualSpanCalculator)) :> IMode)
+                ((Modes.Normal.NormalMode(buffer, normalOpts, statusUtil,broker, createCommandRunner(),capture, _visualSpanCalculator)) :> IMode)
                 ((Modes.Command.CommandMode(buffer, commandProcessor)) :> IMode)
                 ((Modes.Insert.InsertMode(buffer, commonOperations, broker, editOptions,false)) :> IMode)
                 ((Modes.Insert.InsertMode(buffer, commonOperations, broker, editOptions,true)) :> IMode)

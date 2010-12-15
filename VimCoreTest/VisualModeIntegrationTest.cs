@@ -25,7 +25,7 @@ namespace VimCore.UnitTest
             Assert.IsTrue(_context.IsEmpty);
         }
 
-        public void EnterModeWithSelection(SnapshotSpan span, TextSelectionMode mode = TextSelectionMode.Stream)
+        private void EnterMode(SnapshotSpan span, TextSelectionMode mode = TextSelectionMode.Stream)
         {
             _textView.SelectAndUpdateCaret(span, mode);
             Assert.IsFalse(_context.IsEmpty);
@@ -33,9 +33,9 @@ namespace VimCore.UnitTest
             Assert.IsTrue(_context.IsEmpty);
         }
 
-        public void EnterMode(ModeKind kind, SnapshotSpan span, TextSelectionMode mode = TextSelectionMode.Stream)
+        private void EnterMode(ModeKind kind, SnapshotSpan span, TextSelectionMode mode = TextSelectionMode.Stream)
         {
-            EnterModeWithSelection(span, mode);
+            EnterMode(span, mode);
             _buffer.SwitchMode(kind, ModeArgument.None);
         }
 
@@ -63,7 +63,7 @@ namespace VimCore.UnitTest
         public void ResetCaretFromShiftLeft1()
         {
             Create("  hello", "  world");
-            EnterModeWithSelection(_textView.GetLineRange(0, 1).Extent);
+            EnterMode(_textView.GetLineRange(0, 1).Extent);
             _buffer.Process("<");
             Assert.AreEqual(0, _textView.GetCaretPoint().Position);
         }
@@ -72,7 +72,7 @@ namespace VimCore.UnitTest
         public void ResetCaretFromShiftLeft2()
         {
             Create("  hello", "  world");
-            EnterModeWithSelection(_textView.GetLineRange(0, 1).Extent);
+            EnterMode(_textView.GetLineRange(0, 1).Extent);
             _buffer.Process("<");
             Assert.AreEqual(0, _textView.GetCaretPoint().Position);
         }
@@ -81,7 +81,7 @@ namespace VimCore.UnitTest
         public void ResetCaretFromYank1()
         {
             Create("  hello", "  world");
-            EnterModeWithSelection(_textView.TextBuffer.GetSpan(0, 2));
+            EnterMode(_textView.TextBuffer.GetSpan(0, 2));
             _buffer.Process("y");
             Assert.AreEqual(0, _textView.GetCaretPoint().Position);
         }
@@ -91,7 +91,7 @@ namespace VimCore.UnitTest
         public void SelectionChange1()
         {
             Create("  hello", "  world");
-            EnterModeWithSelection(_textView.TextBuffer.GetSpan(0, 2));
+            EnterMode(_textView.TextBuffer.GetSpan(0, 2));
             Assert.AreEqual(ModeKind.VisualCharacter, _buffer.ModeKind);
             _textView.Selection.Select(
                 new SnapshotSpan(_textView.GetLine(1).Start, 0),
@@ -105,7 +105,7 @@ namespace VimCore.UnitTest
         public void SelectionChange2()
         {
             Create("  hello", "  world");
-            EnterModeWithSelection(_textView.TextBuffer.GetSpan(0, 2));
+            EnterMode(_textView.TextBuffer.GetSpan(0, 2));
             Assert.AreEqual(ModeKind.VisualCharacter, _buffer.ModeKind);
             _textView.Selection.Select(
                 new SnapshotSpan(_textView.GetLine(1).Start, 1),
@@ -119,7 +119,7 @@ namespace VimCore.UnitTest
         public void SelectionChange3()
         {
             Create("  hello", "  world");
-            EnterModeWithSelection(_textView.GetLine(0).Extent);
+            EnterMode(_textView.GetLine(0).Extent);
             Assert.AreEqual(ModeKind.VisualCharacter, _buffer.ModeKind);
             _textView.Selection.Select(_textView.GetLine(1).Extent, false);
             _buffer.Process(KeyInputUtil.CharToKeyInput('y'));
@@ -132,7 +132,7 @@ namespace VimCore.UnitTest
         public void SelectionChange4()
         {
             Create("  hello", "  world");
-            EnterModeWithSelection(_textView.GetLine(0).Extent);
+            EnterMode(_textView.GetLine(0).Extent);
             Assert.AreEqual(ModeKind.VisualCharacter, _buffer.ModeKind);
             _textView.SelectAndUpdateCaret(new SnapshotSpan(_textView.GetLine(1).Start, 2));
             _context.RunAll();
@@ -154,7 +154,7 @@ namespace VimCore.UnitTest
         public void SwitchToCommandModeShouldPreserveSelection()
         {
             Create("dog", "pig", "chicken");
-            EnterModeWithSelection(_textView.GetLineRange(0, 1).Extent);
+            EnterMode(_textView.GetLineRange(0, 1).Extent);
             _buffer.Process(':');
             Assert.IsFalse(_textView.Selection.IsEmpty);
         }
@@ -164,7 +164,7 @@ namespace VimCore.UnitTest
         public void Substitute1()
         {
             Create("the boy hit the cat", "bat");
-            EnterModeWithSelection(new SnapshotSpan(_textView.TextSnapshot, 0, 2));
+            EnterMode(new SnapshotSpan(_textView.TextSnapshot, 0, 2));
             _buffer.Process(":s/a/o", enter: true);
             Assert.AreEqual("the boy hit the cot", _textView.GetLine(0).GetText());
             Assert.AreEqual("bat", _textView.GetLine(1).GetText());
@@ -175,10 +175,30 @@ namespace VimCore.UnitTest
         public void Substitute2()
         {
             Create("the boy hit the cat", "bat");
-            EnterModeWithSelection(_textView.GetLineRange(0, 1).ExtentIncludingLineBreak);
+            EnterMode(_textView.GetLineRange(0, 1).ExtentIncludingLineBreak);
             _buffer.Process(":s/a/o", enter: true);
             Assert.AreEqual("the boy hit the cot", _textView.GetLine(0).GetText());
             Assert.AreEqual("bot", _textView.GetLine(1).GetText());
+        }
+
+        [Test]
+        public void IncrementalSearch_LineModeShouldSelectFullLine()
+        {
+            Create("dog", "cat", "tree");
+            EnterMode(ModeKind.VisualLine, _textView.GetLineRange(0, 1).ExtentIncludingLineBreak);
+            _buffer.Process("/c");
+            Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
+            Assert.AreEqual(_textView.GetLineRange(0, 1).ExtentIncludingLineBreak, _textView.GetSelectionSpan());
+        }
+
+        [Test]
+        public void IncrementalSearch_LineModeShouldSelectFullLineAcrossBlanks()
+        {
+            Create("dog", "", "cat", "tree");
+            EnterMode(ModeKind.VisualLine, _textView.GetLineRange(0, 1).ExtentIncludingLineBreak);
+            _buffer.Process("/ca");
+            Assert.AreEqual(_textView.GetLine(2).Start, _textView.GetCaretPoint());
+            Assert.AreEqual(_textView.GetLineRange(0, 2).ExtentIncludingLineBreak, _textView.GetSelectionSpan());
         }
 
     }

@@ -91,7 +91,7 @@ namespace Vim.UI.Wpf.Test
             var search = new Mock<IIncrementalSearch>();
             _buffer.SetupGet(x => x.NormalMode).Returns(mode.Object);
             _buffer.SetupGet(x => x.ModeKind).Returns(ModeKind.Normal);
-            mode.SetupGet(x => x.IncrementalSearch).Returns(search.Object);
+            _buffer.SetupGet(x => x.IncrementalSearch).Returns(search.Object);
 
             _caret.SetupSet(x => x.CaretDisplay = CaretDisplay.Block).Verifiable();
             _controller.Update();
@@ -105,7 +105,7 @@ namespace Vim.UI.Wpf.Test
             var search = new Mock<IIncrementalSearch>();
             _buffer.SetupGet(x => x.NormalMode).Returns(mode.Object);
             _buffer.SetupGet(x => x.ModeKind).Returns(ModeKind.Normal);
-            mode.SetupGet(x => x.IncrementalSearch).Returns(search.Object);
+            _buffer.SetupGet(x => x.IncrementalSearch).Returns(search.Object);
             search.SetupGet(x => x.InSearch).Returns(true);
 
             _caret.SetupSet(x => x.CaretDisplay = CaretDisplay.Invisible).Verifiable();

@@ -76,7 +76,7 @@ namespace Vim.UI.Wpf
                         {
                             kind = CaretDisplay.HalfBlock;
                         }
-                        else if (mode.IncrementalSearch.InSearch)
+                        else if (_buffer.IncrementalSearch.InSearch)
                         {
                             kind = CaretDisplay.Invisible;
                         }

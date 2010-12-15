@@ -38,7 +38,8 @@ type internal VimBuffer
         _vim : IVim,
         _textView : ITextView,
         _jumpList : IJumpList,
-        _settings : IVimLocalSettings ) =
+        _settings : IVimLocalSettings,
+        _incrementalSearch : IIncrementalSearch ) =
 
     let _properties = PropertyCollection()
     let mutable _modeMap = ModeMap()
@@ -191,6 +192,7 @@ type internal VimBuffer
         member x.TextBuffer = _textView.TextBuffer
         member x.TextSnapshot = _textView.TextSnapshot
         member x.BufferedRemapKeyInputs = x.BufferedRemapKeyInputs 
+        member x.IncrementalSearch = _incrementalSearch
         member x.IsProcessingInput = _isProcessingInput
         member x.Name = _vim.VimHost.GetName _textView.TextBuffer
         member x.MarkMap = _vim.MarkMap

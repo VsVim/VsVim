@@ -17,7 +17,6 @@ type internal NormalMode
     ( 
         _bufferData : IVimBuffer, 
         _operations : IOperations,
-        _incrementalSearch : IIncrementalSearch,
         _statusUtil : IStatusUtil,
         _displayWindowBroker : IDisplayWindowBroker,
         _runner : ICommandRunner,
@@ -50,7 +49,6 @@ type internal NormalMode
     member this.TextBuffer = _bufferData.TextBuffer
     member this.CaretPoint = _bufferData.TextView.Caret.Position.BufferPosition
     member this.Settings = _bufferData.Settings
-    member this.IncrementalSearch = _incrementalSearch
     member this.IsCommandRunnerPopulated = _runner.Commands |> SeqUtil.isNotEmpty
     member this.KeyRemapMode = 
         match _runner.KeyRemapMode with
@@ -82,19 +80,6 @@ type internal NormalMode
             _runner.Remove name
             _runner.Add command
 
-    /// Begin an incremental search.  Called when the user types / into the editor
-    member this.BeginIncrementalSearch (kind:SearchKind) count reg =
-        let before = TextViewUtil.GetCaretPoint _bufferData.TextView
-        let rec inner (ki:KeyInput) = 
-            match _incrementalSearch.Process ki with
-            | SearchComplete -> 
-                _bufferData.JumpList.Add before |> ignore
-                CommandResult.Completed ModeSwitch.NoSwitch |> LongCommandResult.Finished
-            | SearchCancelled -> LongCommandResult.Cancelled
-            | SearchNeedMore ->  LongCommandResult.NeedMoreInput (Some KeyRemapMode.Command, inner)
-        _incrementalSearch.Begin kind
-        LongCommandResult.NeedMoreInput (Some KeyRemapMode.Command, inner)
-    
     member private x.ReplaceChar count reg = 
         let inner (ki:KeyInput) = 
             _data <- { _data with IsInReplace = false }
@@ -212,14 +197,6 @@ type internal NormalMode
 
         seq {
             yield (
-                "/", 
-                CommandFlags.Movement ||| CommandFlags.HandlesEscape, 
-                fun count reg -> this.BeginIncrementalSearch SearchKind.ForwardWithWrap count reg)
-            yield (
-                "?", 
-                CommandFlags.Movement, 
-                fun count reg -> this.BeginIncrementalSearch SearchKind.BackwardWithWrap count reg)
-            yield (
                 "r", 
                 CommandFlags.None, 
                 fun count reg -> this.ReplaceChar count reg) 
@@ -307,14 +284,6 @@ type internal NormalMode
                     "gP", 
                     CommandFlags.Repeatable, 
                     fun count reg -> _operations.PasteBeforeCursor reg.StringValue 1 reg.Value.OperationKind true |> ignore)
-                yield (
-                    "g*", 
-                    CommandFlags.Movement, 
-                    fun count _ -> _operations.MoveToNextOccuranceOfPartialWordAtCursor SearchKind.ForwardWithWrap count)
-                yield (
-                    "g#", 
-                    CommandFlags.Movement, 
-                    fun count _ -> _operations.MoveToNextOccuranceOfPartialWordAtCursor SearchKind.BackwardWithWrap count)
                 yield (
                     "g&", 
                     CommandFlags.Special, 
@@ -420,22 +389,6 @@ type internal NormalMode
                     CommandFlags.Repeatable, 
                     fun count reg -> _operations.PasteBeforeCursor reg.StringValue count reg.Value.OperationKind false)
                 yield (
-                    "n", 
-                    CommandFlags.Movement, 
-                    fun count _ -> _operations.MoveToNextOccuranceOfLastSearch count false)
-                yield (
-                    "N", 
-                    CommandFlags.Movement, 
-                    fun count _ -> _operations.MoveToNextOccuranceOfLastSearch count true)
-                yield (
-                    "*", 
-                    CommandFlags.Movement, 
-                    fun count _ -> _operations.MoveToNextOccuranceOfWordAtCursor SearchKind.ForwardWithWrap count)
-                yield (
-                    "#", 
-                    CommandFlags.Movement, 
-                    fun count _ -> _operations.MoveToNextOccuranceOfWordAtCursor SearchKind.BackwardWithWrap count)
-                yield (
                     "D", 
                     CommandFlags.Repeatable, 
                     fun count reg -> 
@@ -493,14 +446,6 @@ type internal NormalMode
                     "<C-]>", 
                     CommandFlags.Special, 
                     fun _ _ -> _operations.GoToDefinitionWrapper())
-                yield (
-                    "gd", 
-                    CommandFlags.Special, 
-                    fun _ _ -> _operations.GoToLocalDeclaration())
-                yield (
-                    "gD", 
-                    CommandFlags.Special, 
-                    fun _ _ -> _operations.GoToGlobalDeclaration())
                 yield (
                     "gf", 
                     CommandFlags.Special, 
@@ -747,7 +692,7 @@ type internal NormalMode
 
     /// Create all of the movement commands
     member this.CreateMovementCommands() =
-        let factory = Vim.Modes.CommandFactory(_operations, _capture)
+        let factory = Vim.Modes.CommandFactory(_operations, _capture, _bufferData.IncrementalSearch, _bufferData.JumpList)
         factory.CreateMovementCommands()
 
     member this.Reset() =
@@ -785,7 +730,6 @@ type internal NormalMode
 
     interface INormalMode with 
         member this.KeyRemapMode = this.KeyRemapMode
-        member this.IncrementalSearch = _incrementalSearch
         member this.IsInReplace = _data.IsInReplace
         member this.VimBuffer = _bufferData
         member this.Command = this.Command

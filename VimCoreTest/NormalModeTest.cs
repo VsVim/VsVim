@@ -19,7 +19,7 @@ namespace VimCore.UnitTest
     [TestFixture]
     public class NormalModeTest
     {
-        private Vim.Modes.Normal.NormalMode _modeRaw;
+        private NormalMode _modeRaw;
         private INormalMode _mode;
         private IWpfTextView _view;
         private IRegisterMap _map;
@@ -77,7 +77,8 @@ namespace VimCore.UnitTest
                 _view,
                 "test",
                 MockRepository.CreateVim(_map, changeTracker: _changeTracker.Object, host: _host.Object, vimData: _vimData).Object,
-                _jumpList.Object);
+                _jumpList.Object,
+                incrementalSearch: _incrementalSearch.Object);
             _operations = new Mock<IOperations>(MockBehavior.Strict);
             _operations.SetupGet(x => x.EditorOperations).Returns(_editorOperations.Object);
             _operations.SetupGet(x => x.TextView).Returns(_view);
@@ -91,7 +92,6 @@ namespace VimCore.UnitTest
             _modeRaw = new Vim.Modes.Normal.NormalMode(
                 _bufferData.Object,
                 _operations.Object,
-                _incrementalSearch.Object,
                 _statusUtil.Object,
                 _displayWindowBroker.Object,
                 (ICommandRunner)runner,

@@ -125,6 +125,7 @@ namespace Vim.UnitTest.Mock
             IVim vim = null,
             IJumpList jumpList = null,
             IVimLocalSettings settings = null,
+            IIncrementalSearch incrementalSearch = null,
             MockRepository factory = null)
         {
             factory = factory ?? new MockRepository(MockBehavior.Strict);
@@ -143,6 +144,7 @@ namespace Vim.UnitTest.Mock
             mock.SetupGet(x => x.JumpList).Returns(jumpList);
             mock.SetupGet(x => x.Vim).Returns(vim);
             mock.SetupGet(x => x.VimData).Returns(vim.VimData);
+            mock.SetupGet(x => x.IncrementalSearch).Returns(incrementalSearch);
             return mock;
         }
 

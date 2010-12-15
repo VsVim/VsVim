@@ -8,7 +8,7 @@ open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Operations
 open Microsoft.VisualStudio.Text.Outlining
 
-type internal DefaultOperations ( _data : OperationsData, _incrementalSearch : IIncrementalSearch ) =
+type internal DefaultOperations ( _data : OperationsData) =
     inherit CommonOperations(_data)
 
     let _textView = _data.TextView
@@ -21,7 +21,7 @@ type internal DefaultOperations ( _data : OperationsData, _incrementalSearch : I
     let _options = _data.EditorOptions
     let _normalWordNav =  _data.Navigator
     let _statusUtil = _data.StatusUtil
-    let _search = _incrementalSearch.SearchService
+    let _search = _data.SearchService
     let _vimData = _data.VimData
 
     member private x.CommonImpl = x :> ICommonOperations
@@ -38,12 +38,6 @@ type internal DefaultOperations ( _data : OperationsData, _incrementalSearch : I
             | Some(point) -> 
                 let ret = x.CommonImpl.NavigateToPoint (VirtualSnapshotPoint(point))
                 if not ret then _host.Beep()
-
-    member private x.WordUnderCursorOrEmpty =
-        let point =  TextViewUtil.GetCaretPoint _textView
-        TssUtil.FindCurrentFullWordSpan point WordKind.BigWord
-        |> OptionUtil.getOrDefault (SnapshotSpanUtil.CreateEmpty point)
-        |> SnapshotSpanUtil.GetText
 
     member x.GoToLineCore line =
         let snapshot = _textView.TextSnapshot
@@ -182,16 +176,6 @@ type internal DefaultOperations ( _data : OperationsData, _incrementalSearch : I
             | Vim.Modes.Succeeded -> ()
             | Vim.Modes.Failed(msg) -> _statusUtil.OnError msg
 
-        member x.GoToLocalDeclaration() = 
-            if not (_host.GoToLocalDeclaration _textView x.WordUnderCursorOrEmpty) then _host.Beep()
-
-        member x.GoToGlobalDeclaration () = 
-            if not (_host.GoToGlobalDeclaration _textView x.WordUnderCursorOrEmpty) then _host.Beep()
-
-        member x.GoToFile () = 
-            let text = x.WordUnderCursorOrEmpty 
-            if not (_host.GoToFile text) then 
-                _statusUtil.OnError (Resources.NormalMode_CantFindFile text)
 
         member x.JumpNext count = x.JumpCore count (fun () -> _jumpList.MoveNext())
         member x.JumpPrevious count = x.JumpCore count (fun() -> _jumpList.MovePrevious())
