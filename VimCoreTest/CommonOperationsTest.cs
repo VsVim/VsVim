@@ -36,13 +36,16 @@ namespace VimCore.UnitTest
         private Mock<IOutliningManager> _outlining;
         private Mock<IUndoRedoOperations> _undoRedoOperations;
         private Mock<IStatusUtil> _statusUtil;
+        private ISearchService _searchService;
         private IRegisterMap _registerMap;
+        private IVimData _vimData;
         private ICommonOperations _operations;
         private CommonOperations _operationsRaw;
 
         public void Create(params string[] lines)
         {
             _view = EditorUtil.CreateView(lines);
+            _vimData = new VimData();
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 0));
             _buffer = _view.TextBuffer;
             _factory = new MockRepository(MockBehavior.Strict);
@@ -60,9 +63,10 @@ namespace VimCore.UnitTest
             _statusUtil = _factory.Create<IStatusUtil>();
             _settings.SetupGet(x => x.GlobalSettings).Returns(_globalSettings.Object);
             _undoRedoOperations = _factory.Create<IUndoRedoOperations>();
+            _searchService = new SearchService(EditorUtil.FactoryService.textSearchService, _globalSettings.Object);
 
             var data = new OperationsData(
-                vimData: new VimData(),
+                vimData: _vimData,
                 vimHost: _host.Object,
                 editorOperations: _editorOpts.Object,
                 textView: _view,
@@ -75,7 +79,8 @@ namespace VimCore.UnitTest
                 keyMap: null,
                 navigator: null,
                 statusUtil: _statusUtil.Object,
-                foldManager: null);
+                foldManager: null,
+                searchService:_searchService);
 
             _operationsRaw = new OperationsImpl(data);
             _operations = _operationsRaw;
@@ -86,6 +91,18 @@ namespace VimCore.UnitTest
         {
             _operations = null;
             _operationsRaw = null;
+        }
+
+        private void AllowOutlineExpansion(bool verify = false)
+        {
+            var res =
+                _outlining
+                    .Setup(x => x.ExpandAll(It.IsAny<SnapshotSpan>(), It.IsAny<Predicate<ICollapsed>>()))
+                    .Returns<IEnumerable<ICollapsible>>(null);
+            if (verify)
+            {
+                res.Verifiable();
+            }
         }
 
         void AssertRegister(Register reg, string value, OperationKind kind)
@@ -1811,5 +1828,222 @@ namespace VimCore.UnitTest
             _factory.Verify();
         }
 
+        [Test]
+        public void MoveToNextOccuranceOfWordAtCursor1()
+        {
+            Create("  foo bar baz");
+            _statusUtil.Setup(x => x.OnError(Resources.NormalMode_NoWordUnderCursor)).Verifiable();
+            _operations.MoveToNextOccuranceOfWordAtCursor(SearchKind.ForwardWithWrap, 1);
+            _statusUtil.Verify();
+        }
+
+        [Test]
+        public void MoveToNextOccuranceOfWordAtCursor2()
+        {
+            Create("foo bar", "foo");
+            AllowOutlineExpansion(verify: true);
+            _operations.MoveToNextOccuranceOfWordAtCursor(SearchKind.ForwardWithWrap, 1);
+            Assert.AreEqual(_view.GetLine(1).Start, _view.Caret.Position.BufferPosition);
+            _outlining.Verify();
+        }
+
+        [Test]
+        public void MoveToNextOccuranceOfWordAtCursor3()
+        {
+            Create("foo bar", "baz foo");
+            AllowOutlineExpansion();
+            _operations.MoveToNextOccuranceOfWordAtCursor(SearchKind.ForwardWithWrap, 1);
+            Assert.AreEqual(_view.GetLine(1).Start.Add(4), _view.Caret.Position.BufferPosition);
+        }
+
+        [Test, Description("No match shouldn't do anything")]
+        public void MoveToNextOccuranceOfWordAtCursor4()
+        {
+            Create("fuz bar", "baz foo");
+            AllowOutlineExpansion();
+            _operations.MoveToNextOccuranceOfWordAtCursor(SearchKind.ForwardWithWrap, 1);
+            Assert.AreEqual(0, _view.Caret.Position.BufferPosition.Position);
+        }
+
+        [Test, Description("With a count")]
+        public void MoveToNextOccuranceOfWordAtCursor5()
+        {
+            Create("foo bar foo", "foo");
+            AllowOutlineExpansion();
+            _operations.MoveToNextOccuranceOfWordAtCursor(SearchKind.ForwardWithWrap, 3);
+            Assert.AreEqual(_view.GetLine(0).Start, _view.Caret.Position.BufferPosition);
+        }
+
+        [Test]
+        public void MoveToNextOccuranceOfWordAtCursor6()
+        {
+            Create("foo bar baz", "foo");
+            AllowOutlineExpansion();
+            _view.MoveCaretTo(_view.GetLine(1).Start.Position);
+            _operations.MoveToNextOccuranceOfWordAtCursor(SearchKind.ForwardWithWrap, 1);
+            Assert.AreEqual(0, _view.Caret.Position.BufferPosition.Position);
+        }
+
+        [Test]
+        public void MoveToNextOccuranceOfWordAtCursor7()
+        {
+            Create("foo foobar baz", "foo");
+            AllowOutlineExpansion();
+            _operations.MoveToNextOccuranceOfWordAtCursor(SearchKind.ForwardWithWrap, 1);
+            Assert.AreEqual(_view.GetLine(1).Start, _view.GetCaretPoint());
+        }
+
+        [Test, Description("Moving to next occurance of a word should update the LastSearch")]
+        public void MoveToNextOccuranceOfWordAtCursor8()
+        {
+            Create("foo bar", "foo");
+            AllowOutlineExpansion();
+            _operations.MoveToNextOccuranceOfWordAtCursor(SearchKind.ForwardWithWrap, 1);
+            Assert.AreEqual(_view.GetLine(1).Start, _view.Caret.Position.BufferPosition);
+            Assert.AreEqual(SearchText.NewWholeWord("foo"), _vimData.LastSearchData.Text);
+        }
+
+        [Test, Description("When there is no word under the cursor, don't update the LastSearch")]
+        public void MoveToNextOccuranceOfWordAtCursor9()
+        {
+            Create("  foo bar baz");
+            var data = new SearchData(SearchText.NewPattern("foo"), SearchKind.ForwardWithWrap, SearchOptions.None);
+            _vimData.LastSearchData = data;
+            _statusUtil.Setup(x => x.OnError(Resources.NormalMode_NoWordUnderCursor)).Verifiable();
+            _operations.MoveToNextOccuranceOfWordAtCursor(SearchKind.ForwardWithWrap, 1);
+            _statusUtil.Verify();
+            Assert.AreEqual(data, _vimData.LastSearchData);
+        }
+
+        [Test]
+        public void MoveToNextOccuranceOfWordAtCursor10()
+        {
+            Create("foo bar", "foo");
+            AllowOutlineExpansion();
+            _view.MoveCaretTo(_view.GetLine(1).Start.Position);
+            _operations.MoveToNextOccuranceOfWordAtCursor(SearchKind.BackwardWithWrap, 1);
+            Assert.AreEqual(0, _view.Caret.Position.BufferPosition.Position);
+        }
+
+        [Test]
+        public void MoveToNextOccuranceOfWordAtCursor11()
+        {
+            Create("foo bar", "again foo", "foo");
+            AllowOutlineExpansion();
+            _view.MoveCaretTo(_view.GetLine(2).Start.Position);
+            _operations.MoveToNextOccuranceOfWordAtCursor(SearchKind.BackwardWithWrap, 2);
+            Assert.AreEqual(0, _view.Caret.Position.BufferPosition.Position);
+        }
+
+        [Test]
+        public void MoveToNextOccuranceOfWordAtCursor12()
+        {
+            Create("foo bar", "again foo", "foo");
+            AllowOutlineExpansion();
+            _view.MoveCaretTo(_view.GetLine(2).Start.Position);
+            _operations.MoveToNextOccuranceOfWordAtCursor(SearchKind.BackwardWithWrap, 3);
+            Assert.AreEqual(_view.GetLine(2).Start.Position, _view.Caret.Position.BufferPosition.Position);
+        }
+
+        [Test]
+        public void MoveToNextOccuranceOfWordAtCursor13()
+        {
+            Create("foo", "foobar", "foo");
+            AllowOutlineExpansion();
+            _view.MoveCaretTo(_view.GetLine(2).Start);
+            _operations.MoveToNextOccuranceOfWordAtCursor(SearchKind.BackwardWithWrap, 1);
+            Assert.AreEqual(0, _view.GetCaretPoint().Position);
+        }
+
+        [Test]
+        public void MoveToNextOccuranceOfWordAtCursor14()
+        {
+            Create("foo bar", "again foo", "foo");
+            AllowOutlineExpansion();
+            _view.MoveCaretTo(_view.GetLine(2).Start.Position);
+            _operations.MoveToNextOccuranceOfWordAtCursor(SearchKind.BackwardWithWrap, 2);
+            Assert.AreEqual(0, _view.Caret.Position.BufferPosition.Position);
+            Assert.AreEqual(SearchText.NewWholeWord("foo"), _vimData.LastSearchData.Text);
+        }
+
+        [Test]
+        public void MoveToNextOccuranceOfWordAtCursor15()
+        {
+            Create("    foo bar");
+            var data = new SearchData(SearchText.NewPattern("foo"), SearchKind.ForwardWithWrap, SearchOptions.None);
+            _vimData.LastSearchData = data;
+            _statusUtil.Setup(x => x.OnError(Resources.NormalMode_NoWordUnderCursor)).Verifiable();
+            _operations.MoveToNextOccuranceOfWordAtCursor(SearchKind.BackwardWithWrap, 1);
+            Assert.AreEqual(data, _vimData.LastSearchData);
+            _statusUtil.Verify();
+        }
+
+        [Test]
+        public void MoveToNextOccuranceOfWordAtCursor16()
+        {
+            Create("foo bar", "again foo", "foo");
+            AllowOutlineExpansion();
+            _view.MoveCaretTo(_view.GetLine(2).Start.Position);
+            _operations.MoveToNextOccuranceOfWordAtCursor(SearchKind.BackwardWithWrap, 2);
+            Assert.AreEqual(0, _view.Caret.Position.BufferPosition.Position);
+            Assert.AreEqual(SearchText.NewWholeWord("foo"), _vimData.LastSearchData.Text);
+            _outlining.Verify();
+        }
+
+        [Test]
+        public void MoveToNextOccuranceOfLastSearch1()
+        {
+            Create("foo bar baz");
+            var data = new SearchData(SearchText.NewPattern("beat"), SearchKind.ForwardWithWrap, SearchOptions.None);
+            _vimData.LastSearchData = data;
+            _statusUtil.Setup(x => x.OnError(Resources.Common_PatternNotFound("beat"))).Verifiable();
+            _operations.MoveToNextOccuranceOfLastSearch(1, false);
+            _statusUtil.Verify();
+        }
+
+        [Test, Description("Should not start on the current word")]
+        public void MoveToNextOccuranceOfLastSearch2()
+        {
+            Create("foo bar", "foo");
+            AllowOutlineExpansion();
+            var data = new SearchData(SearchText.NewPattern("foo"), SearchKind.ForwardWithWrap, SearchOptions.None);
+            _vimData.LastSearchData = data;
+            _operations.MoveToNextOccuranceOfLastSearch(1, false);
+            Assert.AreEqual(_view.GetLine(1).Start, _view.GetCaretPoint());
+        }
+
+        [Test]
+        public void MoveToNextOccuranceOfLastSearch3()
+        {
+            Create("foo bar", "foo");
+            AllowOutlineExpansion();
+            var data = new SearchData(SearchText.NewPattern("foo"), SearchKind.ForwardWithWrap, SearchOptions.None);
+            _vimData.LastSearchData = data;
+            _operations.MoveToNextOccuranceOfLastSearch(2, false);
+            Assert.AreEqual(0, _view.GetCaretPoint());
+        }
+
+        [Test]
+        public void MoveToNextOccuranceOfLastSearch4()
+        {
+            Create("foo bar", "foo");
+            AllowOutlineExpansion();
+            var data = new SearchData(SearchText.NewPattern("foo"), SearchKind.BackwardWithWrap, SearchOptions.None);
+            _vimData.LastSearchData = data;
+            _operations.MoveToNextOccuranceOfLastSearch(1, false);
+            Assert.AreEqual(_view.GetLine(1).Start, _view.GetCaretPoint());
+        }
+
+        [Test]
+        public void MoveToNextOccuranceOfLastSearch5()
+        {
+            Create("foo bar", "foo");
+            var data = new SearchData(SearchText.NewPattern("foo"), SearchKind.BackwardWithWrap, SearchOptions.None);
+            AllowOutlineExpansion(verify: true);
+            _vimData.LastSearchData = data;
+            _operations.MoveToNextOccuranceOfLastSearch(1, false);
+            Assert.AreEqual(_view.GetLine(1).Start, _view.GetCaretPoint());
+            _outlining.Verify();
+        }
     }
 }

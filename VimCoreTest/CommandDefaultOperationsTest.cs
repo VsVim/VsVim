@@ -33,6 +33,7 @@ namespace VimCore.UnitTest
         private Mock<IOutliningManager> _outlining;
         private Mock<IUndoRedoOperations> _undoRedoOperations;
         private Mock<IRegisterMap> _registerMap;
+        private ISearchService _searchService;
 
         private void Create(params string[] lines)
         {
@@ -51,6 +52,7 @@ namespace VimCore.UnitTest
             _statusUtil = _factory.Create<IStatusUtil>();
             _outlining = _factory.Create<IOutliningManager>();
             _undoRedoOperations = _factory.Create<IUndoRedoOperations>();
+            _searchService = new SearchService(EditorUtil.FactoryService.textSearchService, _globalSettings.Object);
 
             var data = new OperationsData(
                 vimData: new VimData(),
@@ -66,7 +68,8 @@ namespace VimCore.UnitTest
                 editorOptions: null,
                 navigator: null,
                 foldManager: null,
-                registerMap: _registerMap.Object);
+                registerMap: _registerMap.Object,
+                searchService: _searchService);
             _operationsRaw = new DefaultOperations(data);
             _operations = _operationsRaw;
         }
@@ -76,6 +79,7 @@ namespace VimCore.UnitTest
         {
             _operations = null;
         }
+
 
         private void AssertPrintMap(string input, string output)
         {

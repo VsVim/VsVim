@@ -57,6 +57,7 @@ namespace VimCore.UnitTest
             _tracker = _factory.Create<ISelectionTracker>();
             _tracker.Setup(x => x.Start());
             _tracker.Setup(x => x.ResetCaret());
+            _tracker.Setup(x => x.UpdateSelection());
             _undoRedoOperations = _factory.Create<IUndoRedoOperations>();
             _foldManager = _factory.Create<IFoldManager>();
             _editorOperations = _factory.Create<IEditorOperations>();
@@ -179,8 +180,6 @@ namespace VimCore.UnitTest
             _selection.Setup(x => x.Clear()).Throws(new Exception());
             _mode.Process(':');
         }
-
-        #region Operations
 
         [Test]
         public void Yank1()
@@ -737,6 +736,37 @@ namespace VimCore.UnitTest
             _mode.Process("=");
             _factory.Verify();
         }
-        #endregion
+
+        [Test]
+        public void Handle_N_NoCount()
+        {
+            Create("foo", "bar");
+            _operations.Setup(x => x.MoveToNextOccuranceOfLastSearch(1, true)).Verifiable();
+            _mode.Process("N");
+        }
+
+        [Test]
+        public void Handle_N_WithCount()
+        {
+            Create("foo", "bar");
+            _operations.Setup(x => x.MoveToNextOccuranceOfLastSearch(2, true)).Verifiable();
+            _mode.Process("2N");
+        }
+
+        [Test]
+        public void Handle_n_NoCount()
+        {
+            Create("foo", "bar");
+            _operations.Setup(x => x.MoveToNextOccuranceOfLastSearch(1, false)).Verifiable();
+            _mode.Process("n");
+        }
+
+        [Test]
+        public void Handle_n_WithCount()
+        {
+            Create("foo", "bar");
+            _operations.Setup(x => x.MoveToNextOccuranceOfLastSearch(2, false)).Verifiable();
+            _mode.Process("2n");
+        }
     }
 }

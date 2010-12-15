@@ -13,20 +13,21 @@ type RegisterOperation =
     | Yank
 
 type OperationsData = {
-    VimData : IVimData
-    VimHost : IVimHost
-    TextView : ITextView
     EditorOperations : IEditorOperations
     EditorOptions : IEditorOptions
-    OutliningManager : IOutliningManager
-    JumpList : IJumpList
-    LocalSettings : IVimLocalSettings
-    UndoRedoOperations : IUndoRedoOperations
-    StatusUtil : IStatusUtil
-    KeyMap : IKeyMap
-    Navigator : ITextStructureNavigator
     FoldManager : IFoldManager
+    JumpList : IJumpList
+    KeyMap : IKeyMap
+    LocalSettings : IVimLocalSettings
+    OutliningManager : IOutliningManager
     RegisterMap : IRegisterMap 
+    StatusUtil : IStatusUtil
+    SearchService : ISearchService
+    TextView : ITextView
+    UndoRedoOperations : IUndoRedoOperations
+    VimData : IVimData
+    VimHost : IVimHost
+    Navigator : ITextStructureNavigator
 }
 
 type JoinKind = 
@@ -163,17 +164,26 @@ type ICommonOperations =
     /// Move the cursor down count lines
     abstract MoveCaretDown : count : int -> unit
 
-    /// Move the cursor forward count WordKind's 
-    abstract MoveWordForward : WordKind -> count : int -> unit
-
-    /// Move the cursor backward count WordKind's
-    abstract MoveWordBackward : WordKind -> count : int -> unit
-
     /// Maybe adjust the caret to respect the virtual edit setting
     abstract MoveCaretForVirtualEdit : unit -> unit
 
     /// Move the caret the number of lines in the given direction and scroll the view
     abstract MoveCaretAndScrollLines : ScrollDirection -> count:int -> unit
+
+    /// Move to the next "count" occurrence of the last search
+    abstract MoveToNextOccuranceOfLastSearch : count:int -> isReverse:bool -> unit
+
+    /// Move to the next occurrence of the word under the cursor
+    abstract MoveToNextOccuranceOfWordAtCursor : SearchKind -> count:int -> unit
+
+    /// Move to the next occurrence of the word under the cursor
+    abstract MoveToNextOccuranceOfPartialWordAtCursor : SearchKind -> count:int -> unit
+
+    /// Move the cursor backward count WordKind's
+    abstract MoveWordBackward : WordKind -> count : int -> unit
+
+    /// Move the cursor forward count WordKind's 
+    abstract MoveWordForward : WordKind -> count : int -> unit
 
     /// Navigate to the given point which may occur in any ITextBuffer.  This will not update the 
     /// jump list

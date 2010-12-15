@@ -45,66 +45,6 @@ type internal DefaultOperations ( _data : OperationsData, _incrementalSearch : I
         |> OptionUtil.getOrDefault (SnapshotSpanUtil.CreateEmpty point)
         |> SnapshotSpanUtil.GetText
 
-    member private x.MoveToNextWordCore kind count isWholeWord = 
-        let point = TextViewUtil.GetCaretPoint _textView
-        match TssUtil.FindCurrentFullWordSpan point WordKind.NormalWord with
-        | None -> _statusUtil.OnError Resources.NormalMode_NoWordUnderCursor
-        | Some(span) ->
-
-            // Build up the SearchData structure
-            let word = span.GetText()
-            let text = if isWholeWord then SearchText.WholeWord(word) else SearchText.StraightText(word)
-            let data = {Text=text; Kind = kind; Options = SearchOptions.ConsiderIgnoreCase }
-
-            // When forward the search will be starting on the current word so it will 
-            // always match.  Without modification a count of 1 would simply find the word 
-            // under the cursor.  Increment the count by 1 here so that it will find
-            // the current word as the 0th match (so to speak)
-            let count = if SearchKindUtil.IsForward kind then count + 1 else count 
-
-            match _search.FindNextMultiple data point _normalWordNav count with
-            | Some(span) -> 
-                x.CommonImpl.MoveCaretToPoint span.Start 
-                x.CommonImpl.EnsureCaretOnScreenAndTextExpanded()
-            | None -> ()
-
-            _vimData.LastSearchData <- data
-
-    member private x.MoveToNextOccuranceOfLastSearchCore count isReverse = 
-        let last = _vimData.LastSearchData
-        let last = 
-            if isReverse then { last with Kind = SearchKindUtil.Reverse last.Kind }
-            else last
-
-        if StringUtil.isNullOrEmpty last.Text.RawText then
-            _statusUtil.OnError Resources.NormalMode_NoPreviousSearch
-        else
-
-            let foundSpan (span:SnapshotSpan) = 
-                x.CommonImpl.MoveCaretToPoint span.Start 
-                x.CommonImpl.EnsureCaretOnScreenAndTextExpanded()
-
-            let findMore (span:SnapshotSpan) count = 
-                if count = 1 then foundSpan span
-                else 
-                    let count = count - 1 
-                    match _search.FindNextMultiple last span.End _normalWordNav count with
-                    | Some(span) -> foundSpan span
-                    | None -> _statusUtil.OnError (Resources.Common_PatternNotFound last.Text.RawText)
-
-            // Make sure we don't count the current word if the cursor is positioned
-            // directly on top of the current word 
-            let caretPoint = TextViewUtil.GetCaretPoint _textView
-            match _search.FindNext last caretPoint _normalWordNav with
-            | None -> _statusUtil.OnError (Resources.Common_PatternNotFound last.Text.RawText)
-            | Some(span) ->
-                let count = if span.Start = caretPoint then count else count - 1 
-                if count = 0 then foundSpan span
-                else 
-                    match _search.FindNextMultiple last span.End _normalWordNav count with
-                    | Some(span) -> foundSpan span
-                    | None -> _statusUtil.OnError (Resources.Common_PatternNotFound last.Text.RawText)
-
     member x.GoToLineCore line =
         let snapshot = _textView.TextSnapshot
         let lastLineNumber = snapshot.LineCount - 1
@@ -253,11 +193,8 @@ type internal DefaultOperations ( _data : OperationsData, _incrementalSearch : I
             if not (_host.GoToFile text) then 
                 _statusUtil.OnError (Resources.NormalMode_CantFindFile text)
 
-        member x.MoveToNextOccuranceOfWordAtCursor kind count =  x.MoveToNextWordCore kind count true
-        member x.MoveToNextOccuranceOfPartialWordAtCursor kind count = x.MoveToNextWordCore kind count false
         member x.JumpNext count = x.JumpCore count (fun () -> _jumpList.MoveNext())
         member x.JumpPrevious count = x.JumpCore count (fun() -> _jumpList.MovePrevious())
-        member x.MoveToNextOccuranceOfLastSearch count isReverse = x.MoveToNextOccuranceOfLastSearchCore count isReverse
 
         member x.GoToLineOrFirst count =
             let line =

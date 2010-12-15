@@ -89,7 +89,8 @@ type internal VimBufferFactory
             KeyMap=vim.KeyMap
             Navigator=wordNav
             FoldManager=foldManager
-            RegisterMap=vim.RegisterMap }
+            RegisterMap=vim.RegisterMap
+            SearchService=vim.SearchService }
 
         let createCommandRunner() = CommandRunner (view, vim.RegisterMap, capture,statusUtil) :>ICommandRunner
         let broker = _completionWindowBrokerFactoryService.CreateDisplayWindowBroker view

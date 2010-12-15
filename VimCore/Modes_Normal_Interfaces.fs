@@ -42,15 +42,6 @@ type IOperations =
     /// GoTo the specified line number or the last line if no value is specified
     abstract GoToLineOrLast : int option -> unit
 
-    /// Move to the next occurrence of the word under the cursor
-    abstract MoveToNextOccuranceOfWordAtCursor : SearchKind -> count:int -> unit
-
-    /// Move to the next occurrence of the word under the cursor
-    abstract MoveToNextOccuranceOfPartialWordAtCursor : SearchKind -> count:int -> unit
-
-    /// Move to the next "count" occurrence of the last search
-    abstract MoveToNextOccuranceOfLastSearch : count:int -> isReverse:bool -> unit
-
     /// Move the caret for an append operation
     abstract MoveCaretForAppend : unit -> unit
 

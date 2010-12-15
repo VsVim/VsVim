@@ -71,7 +71,7 @@ type internal VisualMode
             | VisualSpan.Multiple(_,col) -> funcBlock count reg col
 
 
-        /// Commands consisting of a single character
+        /// Commands which do not need a span to operate on
         let simples =
             let resultSwitchPrevious = CommandResult.Completed ModeSwitch.SwitchPreviousMode
             seq {
@@ -95,6 +95,16 @@ type internal VisualMode
                     CommandFlags.Movement,
                     ModeSwitch.NoSwitch |> Some,
                     fun _ _ -> _operations.EditorOperations.PageDown(false))
+                yield (
+                    "n", 
+                    CommandFlags.Movement, 
+                    ModeSwitch.NoSwitch |> Some,
+                    fun count _ -> _operations.MoveToNextOccuranceOfLastSearch count false)
+                yield (
+                    "N", 
+                    CommandFlags.Movement, 
+                    ModeSwitch.NoSwitch |> Some,
+                    fun count _ -> _operations.MoveToNextOccuranceOfLastSearch count true)
                 yield (
                     "zo", 
                     CommandFlags.Special, 

@@ -329,7 +329,6 @@ type internal CommandProcessor
 
         host.Close _textView false
 
-
     member x.ProcessQuit _ _ hasBang = _buffer.Vim.VimHost.CloseView _buffer.TextView (not hasBang)
 
     member x.ProcessQuitAll _ _ hasBang =
