@@ -2813,6 +2813,24 @@ namespace VimCore.UnitTest
             _mode.Process("g&");
         }
 
+        [Test]
+        public void Handle_ZZ()
+        {
+            Create("foo bar");
+            _operations.Setup(x => x.Close(true)).Verifiable();
+            _mode.Process("ZZ");
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Handle_Q()
+        {
+            Create("foo bar");
+            _operations.Setup(x => x.Close(false)).Verifiable();
+            _mode.Process("Q");
+            _operations.Verify();
+        }
+
         #endregion
 
         #region Visual Mode

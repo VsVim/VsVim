@@ -90,6 +90,9 @@ module SnapshotUtil =
         let endPoint = GetEndPoint tss
         SnapshotSpan(startPoint,endPoint)
 
+    /// Get the text of the ITextSnapshot
+    let GetText (snapshot:ITextSnapshot) = snapshot.GetText()
+
     /// Is the Line Number valid
     let IsLineNumberValid (tss:ITextSnapshot) lineNumber = lineNumber >= 0 && lineNumber < tss.LineCount
 

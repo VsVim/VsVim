@@ -48,7 +48,7 @@ namespace VsVim.UnitTest
                 vsTextView.Object,
                 _serviceProvider.Object,
                 _externalEditorManager.Object);
-            Assert.IsTrue(result.IsValue);
+            Assert.IsTrue(result.IsSuccess);
             _targetRaw = result.Value;
             _target = _targetRaw;
         }

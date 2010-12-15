@@ -46,8 +46,8 @@ namespace VsVim.Implementation
         {
             var lines = _editorAdaptersFactoryService.GetBufferAdapter(textBuffer) as IVsTextLines;
             return lines != null
-               ? Result.CreateValue(lines)
-               : Result.CreateError();
+               ? Result.CreateSuccess(lines)
+               : Result.Error;
         }
 
         public bool TryGetCodeWindow(ITextView textView, out IVsCodeWindow codeWindow)

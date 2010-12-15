@@ -54,11 +54,11 @@ namespace VsVim.UnitTest
             {
                 _vsTextLines = _factory.Create<IVsTextLines>();
                 _vsTextLines.SetupNoEnumMarkers();
-                result = Result.CreateValue(_vsTextLines.Object);
+                result = Result.CreateSuccess(_vsTextLines.Object);
             }
             else
             {
-                result = Result.CreateError();
+                result = Result.Error;
             }
 
             var list = new List<IExternalEditAdapter> {_adapter.Object};

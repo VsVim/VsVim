@@ -88,10 +88,18 @@ namespace VsVim.Implementation
             return ErrorHandler.Succeeded(hr);
         }
 
-        public void Save(ITextView textView)
+        public Result Save(ITextView textView)
         {
-            var vsTextView = _adapter.EditorAdapter.GetViewAdapter(textView);
-            VsShellUtilities.SaveFileIfDirty(vsTextView);
+            try
+            {
+                var vsTextView = _adapter.EditorAdapter.GetViewAdapter(textView);
+                VsShellUtilities.SaveFileIfDirty(vsTextView);
+                return Result.Success;
+            }
+            catch (Exception e)
+            {
+                return Result.CreateError(e);
+            }
         }
 
         public bool CloseBuffer(ITextView textView, bool checkDirty)

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.ComponentModel.Composition;
+using System.IO;
 using System.Linq;
 using System.Media;
 using EnvDTE;
@@ -174,23 +175,37 @@ namespace VsVim
             return vsTextLines.GetFileName();
         }
 
-        void IVimHost.Save(ITextView textView)
+        bool IVimHost.Save(ITextView textView)
         {
-            _textManager.Save(textView);
+            return _textManager.Save(textView).IsSuccess;
         }
 
-        void IVimHost.SaveCurrentFileAs(string fileName)
+        bool IVimHost.SaveTextAs(string text, string fileName)
         {
-            SafeExecuteCommand("File.SaveSelectedItemsAs " + fileName);
+            try
+            {
+                File.WriteAllText(fileName, text);
+                return true;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
         }
 
-        void IVimHost.SaveAllFiles()
+        bool IVimHost.SaveAllFiles()
         {
+            var anyFailed = false;
             var all = _textManager.TextViews;
             foreach (var textView in all)
             {
-                _textManager.Save(textView);
+                if (_textManager.Save(textView).IsError)
+                {
+                    anyFailed = true;
+                }
             }
+
+            return anyFailed;
         }
 
         void IVimHost.Close(ITextView textView, bool checkDirty)

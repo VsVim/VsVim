@@ -68,17 +68,17 @@ namespace Vim.UnitTest.Mock
             throw new NotImplementedException();
         }
 
-        void IVimHost.Save(ITextView textView)
+        bool IVimHost.Save(ITextView textView)
         {
             throw new NotImplementedException();
         }
 
-        void IVimHost.SaveCurrentFileAs(string value)
+        bool IVimHost.SaveTextAs(string text, string filePath)
         {
             throw new NotImplementedException();
         }
 
-        void IVimHost.SaveAllFiles()
+        bool IVimHost.SaveAllFiles()
         {
             throw new NotImplementedException();
         }

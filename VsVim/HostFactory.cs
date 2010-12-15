@@ -111,7 +111,7 @@ namespace VsVim
 
             var buffer = opt.Value;
             var result = VsCommandTarget.Create(buffer, vsView, _serviceProvider, _externalEditorManager);
-            if (result.IsValue)
+            if (result.IsSuccess)
             {
                 _filterMap.Add(buffer, result.Value);
             }

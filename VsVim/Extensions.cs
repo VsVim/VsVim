@@ -165,13 +165,13 @@ namespace VsVim
         {
             IVsEnumLineMarkers markers;
             var hresult = lines.EnumMarkers(span.iStartLine, span.iStartIndex, span.iEndLine, span.iEndIndex, 0, (uint)ENUMMARKERFLAGS.EM_ALLTYPES, out markers);
-            return Result.CreateValueOrError(markers, hresult);
+            return Result.CreateSuccessOrError(markers, hresult);
         }
 
         public static List<IVsTextLineMarker> GetLineMarkers(this IVsTextLines lines, TextSpan span)
         {
             var markers = GetLineMarkersEnum(lines, span);
-            return markers.IsValue
+            return markers.IsSuccess
                 ? markers.Value.GetAll()
                 : new List<IVsTextLineMarker>();
         }
@@ -184,7 +184,7 @@ namespace VsVim
         {
             IVsTextLines textLines;
             var hresult = textView.GetBuffer(out textLines);
-            return Result.CreateValueOrError(textLines, hresult);
+            return Result.CreateSuccessOrError(textLines, hresult);
         }
 
         #endregion
@@ -354,7 +354,7 @@ namespace VsVim
         {
             var array = new TextSpan[1];
             var hresult = marker.GetCurrentSpan(array);
-            return Result.CreateValueOrError(array[0], hresult);
+            return Result.CreateSuccessOrError(array[0], hresult);
         }
 
         public static Result<SnapshotSpan> GetCurrentSpan(this IVsTextLineMarker marker, ITextSnapshot snapshot)
@@ -367,7 +367,7 @@ namespace VsVim
         {
             int type;
             var hresult = marker.GetType(out type);
-            return Result.CreateValueOrError((MARKERTYPE)type, hresult);
+            return Result.CreateSuccessOrError((MARKERTYPE)type, hresult);
         }
 
         #endregion
@@ -405,7 +405,7 @@ namespace VsVim
                 var lines = textView.TextViewLines;
                 if (lines.Count == 0)
                 {
-                    return Result.CreateError();
+                    return Result.Error;
                 }
 
                 var start = lines[0].Start;
@@ -564,7 +564,7 @@ namespace VsVim
         {
             foreach (var cur in enumerable)
             {
-                if (cur.IsValue)
+                if (cur.IsSuccess)
                 {
                     yield return cur.Value;
                 }

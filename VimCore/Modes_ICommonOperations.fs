@@ -201,13 +201,13 @@ type ICommonOperations =
     abstract Redo : count:int -> unit
 
     /// Save the current document
-    abstract Save : unit -> unit
+    abstract Save : unit -> bool 
 
     /// Save the current document as the specified file
-    abstract SaveAs : string -> unit
+    abstract SaveAs : string -> bool
 
     /// Save all files
-    abstract SaveAll : unit -> unit
+    abstract SaveAll : unit -> bool
 
     /// Sets a mark at the specified point.  If this operation fails an error message will be generated
     abstract SetMark : IVimBuffer -> SnapshotPoint -> char -> Result

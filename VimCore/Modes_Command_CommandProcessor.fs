@@ -6,6 +6,7 @@ open Vim.Modes
 open Microsoft.VisualStudio.Text
 open System.Text.RegularExpressions
 open Vim.RegexPatternUtil
+open Vim.VimHostExtensions
 
 [<System.Flags>]
 type internal KeyRemapOptions =
@@ -87,6 +88,7 @@ type internal CommandProcessor
         _statusUtil : IStatusUtil,
         _fileSystem : IFileSystem ) as this = 
 
+    let _textView = _buffer.TextView
     let _regexFactory = VimRegexFactory(_buffer.Settings.GlobalSettings)
 
     let mutable _command : System.String = System.String.Empty
@@ -110,6 +112,7 @@ type internal CommandProcessor
             yield ("close", "clo", this.ProcessClose |> wrap)
             yield ("delete","d", this.ProcessDelete |> wrap)
             yield ("edit", "e", this.ProcessEdit |> wrap)
+            yield ("exit", "exi", this.ProcessWriteQuit |> wrap)
             yield ("fold", "fo", this.ProcessFold |> wrap)
             yield ("join", "j", this.ProcessJoin |> wrap)
             yield ("make", "mak", this.ProcessMake |> wrap)
@@ -129,7 +132,9 @@ type internal CommandProcessor
             yield ("tabNext", "tabN", this.ProcessTabPrevious |> wrap)
             yield ("undo", "u", this.ProcessUndo |> wrap)
             yield ("write","w", this.ProcessWrite |> wrap)
+            yield ("wq", "", this.ProcessWriteQuit |> wrap)
             yield ("wall", "wa", this.ProcessWriteAll |> wrap)
+            yield ("xit", "x", this.ProcessWriteQuit |> wrap)
             yield ("yank", "y", this.ProcessYank |> wrap)
             yield ("$", "", this.ProcessEndOfDocument |> wrap)
             yield ("&", "&", this.ProcessSubstitute)
@@ -304,11 +309,26 @@ type internal CommandProcessor
     member x.ProcessWrite (rest:char list) _ _ = 
         let name = rest |> StringUtil.ofCharSeq 
         let name = name.Trim()
-        if StringUtil.isNullOrEmpty name then _operations.Save()
-        else _operations.SaveAs name
+        if StringUtil.isNullOrEmpty name then _operations.Save() |> ignore
+        else _operations.SaveAs name |> ignore
 
     member x.ProcessWriteAll _ _ _ = 
-        _operations.SaveAll()
+        _operations.SaveAll() |> ignore
+
+    member x.ProcessWriteQuit (rest:char list) range hasBang = 
+        let host = _buffer.Vim.VimHost
+        let filePath = 
+            let name = rest |> Seq.skipWhile CharUtil.IsWhiteSpace |> StringUtil.ofCharSeq
+            if StringUtil.isNullOrEmpty name then None else Some name
+
+        match range, filePath, hasBang with 
+        | None, None, _ -> host.Save _textView |> ignore  
+        | None, Some(filePath), _ -> host.SaveAs _textView filePath |> ignore
+        | Some(range), None, _ -> _statusUtil.OnError Resources.CommandMode_NoFileName
+        | Some(range), Some(filePath), _ -> host.SaveTextAs (range.GetTextIncludingLineBreak()) filePath |> ignore
+
+        host.Close _textView false
+
 
     member x.ProcessQuit _ _ hasBang = _buffer.Vim.VimHost.CloseView _buffer.TextView (not hasBang)
 

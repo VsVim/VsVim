@@ -129,7 +129,7 @@ namespace VsVim
         {
             var filter = new VsCommandTarget(buffer, serviceProvider, externalEditorManager);
             var hresult= vsTextView.AddCommandFilter(filter, out filter._nextTarget);
-            return Result.CreateValueOrError(filter, hresult);
+            return Result.CreateSuccessOrError(filter, hresult);
         }
 
     }

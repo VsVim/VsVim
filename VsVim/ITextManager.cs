@@ -29,7 +29,7 @@ namespace VsVim
         /// <summary>
         /// Save file if it's dirty
         /// </summary>
-        void Save(ITextView textView);
+        Result Save(ITextView textView);
 
         /// <summary>
         /// Close the passed in document.  This will close the buffer.  If 

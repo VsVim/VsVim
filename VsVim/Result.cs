@@ -6,27 +6,27 @@ namespace VsVim
 {
     public struct Result<T>
     {
-        private readonly bool _isError;
+        private readonly bool _isSuccess;
         private readonly T _value;
         private readonly int _hresult;
 
-        public bool IsValue
+        public bool IsSuccess
         {
-            get { return !_isError; }
+            get { return _isSuccess; }
         }
 
         public bool IsError
         {
-            get { return _isError; }
+            get { return !_isSuccess; }
         }
 
         public T Value
         {
             get
             {
-                if (!IsValue)
+                if (!IsSuccess)
                 {
-                    throw Marshal.GetExceptionForHR(_hresult);
+                    throw new InvalidOperationException();
                 }
 
                 return _value;
@@ -37,9 +37,9 @@ namespace VsVim
         {
             get
             {
-                if (IsValue)
+                if (IsSuccess)
                 {
-                    throw Marshal.GetExceptionForHR(_hresult);
+                    throw new InvalidOperationException();
                 }
 
                 return _hresult;
@@ -49,20 +49,20 @@ namespace VsVim
         public Result(T value)
         {
             _value = value;
-            _isError = false;
+            _isSuccess = true;
             _hresult = 0;
         }
 
         public Result(int hresult)
         {
             _hresult = hresult;
-            _isError = true;
+            _isSuccess = false;
             _value = default(T);
         }
 
         public T GetValueOrDefault(T defaultValue = default(T))
         {
-            return IsValue ? Value : defaultValue;
+            return IsSuccess ? Value : defaultValue;
         }
 
         public static implicit operator Result<T>(Result result)
@@ -78,26 +78,50 @@ namespace VsVim
 
     public struct Result
     {
-        private readonly int m_hresult;
+        private readonly bool _isSuccess;
+        private readonly int _hresult;
 
-        private Result(int hresult)
+        public bool IsSuccess
         {
-            m_hresult = hresult;
+            get { return _isSuccess;  }
+        }
+
+        public bool IsError
+        {
+            get { return !_isSuccess; }
         }
 
         public int HResult
         {
-            get { return m_hresult; }
+            get
+            {
+                if (!IsError)
+                {
+                    throw new InvalidOperationException();
+                }
+                return _hresult;
+            }
         }
 
-        public static Result<T> CreateValue<T>(T value)
+        private Result(int hresult)
+        {
+            _hresult = hresult;
+            _isSuccess = false;
+        }
+
+        public static Result Error
+        {
+            get { return new Result(VSConstants.E_FAIL); }
+        }
+
+        public static Result Success
+        {
+            get { return new Result(); }
+        }
+
+        public static Result<T> CreateSuccess<T>(T value)
         {
             return new Result<T>(value);
-        }
-
-        public static Result CreateError()
-        {
-            return new Result(VSConstants.E_FAIL);
         }
 
         public static Result CreateError(int value)
@@ -110,10 +134,10 @@ namespace VsVim
             return CreateError(Marshal.GetHRForException(ex));
         }
 
-        public static Result<T> CreateValueOrError<T>(T potentialValue, int hresult)
+        public static Result<T> CreateSuccessOrError<T>(T potentialValue, int hresult)
         {
             return ErrorHandler.Succeeded(hresult)
-                ? CreateValue(potentialValue)
+                ? CreateSuccess(potentialValue)
                 : new Result<T>(hresult: hresult);
         }
     }

@@ -154,7 +154,7 @@ namespace VsVim.ExternalEdit
         /// </summary>
         private void GetExternalEditSpansFromMarkers(SnapshotSpan span, List<SnapshotSpan> list)
         {
-            if (_vsTextLines.IsValue)
+            if (_vsTextLines.IsSuccess)
             {
                 var markers = _vsTextLines.Value.GetLineMarkers(span.ToTextSpan());
                 foreach (var marker in markers)
@@ -164,7 +164,7 @@ namespace VsVim.ExternalEdit
                         if (adapter.IsExternalEditMarker(marker))
                         {
                             var markerSpan = marker.GetCurrentSpan(_buffer.TextSnapshot);
-                            if (markerSpan.IsValue)
+                            if (markerSpan.IsSuccess)
                             {
                                 list.Add(markerSpan.Value);
                             }
@@ -200,7 +200,7 @@ namespace VsVim.ExternalEdit
                 }
 
                 var mapped = _ignoredMarkers[i].SafeTranslateTo(snapshot, SpanTrackingMode.EdgeInclusive);
-                if (mapped.IsValue)
+                if (mapped.IsSuccess)
                 {
                     _ignoredMarkers[i] = mapped.Value;
                 }
