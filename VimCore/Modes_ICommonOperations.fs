@@ -143,6 +143,13 @@ type ICommonOperations =
     /// Insert the specified text at the cursor position "count" times
     abstract InsertText : text:string -> count : int -> unit
 
+    /// Insert the data at the specified point with the specified OperationKind
+    abstract InsertTextAt : SnapshotPoint -> text:string-> OperationKind -> unit
+
+    /// Insert the data at the specified point with the specified OperationKind and return
+    /// the SnapshotSpan of the inserted text
+    abstract InsertTextAtWithReturn : SnapshotPoint -> text:string-> OperationKind -> SnapshotSpan
+
     /// Insert a line above the current cursor position and returns the resulting ITextSnapshotLine
     abstract InsertLineAbove : unit -> ITextSnapshotLine
 
@@ -225,6 +232,12 @@ type ICommonOperations =
 
     /// Paste over the selected text
     abstract PasteOver : SnapshotSpan -> Register -> unit
+
+    /// Put the specified StringData at the given point 
+    abstract PutAt : SnapshotPoint -> StringData -> OperationKind -> unit
+
+    /// Put the specified StringData at the given point 
+    abstract PutAtWithReturn : SnapshotPoint -> StringData -> OperationKind -> SnapshotSpan
 
     /// Redo the buffer changes "count" times
     abstract Redo : count:int -> unit

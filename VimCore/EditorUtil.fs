@@ -155,7 +155,6 @@ module SnapshotUtil =
         GetLines snapshot startLineNumber SearchKind.Forward
         |> Seq.truncate count
 
-
 /// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
 /// include any Vim specific logic
 module SnapshotSpanUtil =

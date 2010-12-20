@@ -9,6 +9,7 @@ open Microsoft.VisualStudio.Text.Outlining
 open System.Text.RegularExpressions
 
 type internal CommonOperations ( _data : OperationsData ) =
+    let _textBuffer = _data.TextView.TextBuffer
     let _textView = _data.TextView
     let _operations = _data.EditorOperations
     let _outlining = _data.OutliningManager
@@ -288,7 +289,6 @@ type internal CommonOperations ( _data : OperationsData ) =
             match opKind with
             | OperationKind.LineWise -> doLineWise()
             | OperationKind.CharacterWise -> doCharacterWise()
-            | _ -> failwith "Invalid Enum Value"
         let tss = buffer.Replace(replaceSpan.Span, replaceText)
         new SnapshotSpan(tss, replaceSpan.End.Position + offset , text.Length)
     
@@ -301,9 +301,92 @@ type internal CommonOperations ( _data : OperationsData ) =
                 new SnapshotSpan(line.Start, 0)
             | OperationKind.CharacterWise ->
                 new SnapshotSpan(point,0)
-            | _ -> failwith "Invalid Enum Value"
         let tss = buffer.Replace(span.Span, text) 
         new SnapshotSpan(tss,span.End.Position, text.Length)
+
+    member x.InsertTextAt point text opKind =
+        x.InsertTextAtWithReturn point text opKind |> ignore
+
+    member x.InsertTextAtWithReturn (point:SnapshotPoint) text opKind = 
+        let text = x.GetInsertText point text opKind
+        let position = point.Position
+        let snapshot = _textBuffer.Insert(position, text)
+        let startPoint = SnapshotPoint(snapshot, position)
+        SnapshotSpanUtil.CreateWithLength startPoint text.Length
+
+    /// Get the text to insert given a particular SnapshotPoint and OperationKind
+    member x.GetInsertText point text opKind =
+
+        let getLineWiseText() = 
+            let snapshot = SnapshotPointUtil.GetSnapshot point
+            let line = SnapshotUtil.GetLastLine snapshot
+            if point = line.End then
+                // At the end of the file we need to insert an additional
+                // newline prefix
+                System.Environment.NewLine + text
+            else
+                text
+
+        match opKind with
+        | OperationKind.LineWise -> getLineWiseText()
+        | OperationKind.CharacterWise -> text
+
+    member x.PutAt point stringData opKind =
+        x.PutAtWithReturn point stringData opKind |> ignore
+
+    member x.PutAtWithReturn point stringData opKind =
+        let edit = _textBuffer.CreateEdit()
+
+        // Delete any selections in the buffer
+        _textView.Selection.SelectedSpans
+        |> Seq.iter (fun span -> edit.Delete(span.Span) |> ignore)
+
+        match stringData with
+        | StringData.Simple(str) -> 
+
+            // Simple strings can go directly in at the position 
+            let text = x.GetInsertText point str opKind 
+            let position = point.Position
+            edit.Insert(position, text) |> ignore 
+            let snapshot = edit.Apply()
+            let startPoint = SnapshotPoint(snapshot, position)
+            SnapshotSpanUtil.CreateWithLength startPoint text.Length
+        | StringData.Block(col) -> 
+
+            // Collection strings are inserted at the original character
+            // position down the set of lines creating whitespace as needed
+            // to match the indent
+            let lineNumber, column = SnapshotPointUtil.GetLineColumn point
+
+            // First break the strings into the collection to edit against
+            // existing lines and those which need to create new lines at
+            // the end of the buffer
+            let originalSnapshot = point.Snapshot
+            let insertCol, appendCol = 
+                let lastLineNumber = SnapshotUtil.GetLastLineNumber originalSnapshot
+                let insertCount = min ((lastLineNumber - lineNumber) + 1) col.Length
+                (Seq.take insertCount col, Seq.skip insertCount col)
+
+            // Insert the text at existing lines
+            insertCol |> Seq.iteri (fun offset str -> 
+                let line = originalSnapshot.GetLineFromLineNumber (offset+lineNumber)
+                if line.Length < column then
+                    let prefix = String.replicate (line.Length - column) " "
+                    edit.Insert(line.Start.Position, prefix + str) |> ignore
+                else
+                    edit.Insert(line.Start.Position + column, str) |> ignore)
+    
+            // Add the text to the end of the buffer.
+            if not (Seq.isEmpty appendCol) then
+                let prefix = System.Environment.NewLine + (String.replicate column " ")
+                let text = Seq.fold (fun text str -> text + str) prefix appendCol
+                let endPoint = SnapshotUtil.GetEndPoint originalSnapshot
+                edit.Insert(endPoint.Position, text) |> ignore
+
+            let newSnapshot = edit.Apply()
+            let line = newSnapshot.GetLineFromLineNumber lineNumber
+            let range = SnapshotLineRangeUtil.CreateForLineAndMaxCount line col.Length 
+            range.ExtentIncludingLineBreak
 
 
     interface ICommonOperations with
@@ -450,7 +533,7 @@ type internal CommonOperations ( _data : OperationsData ) =
             x.ShiftLineRangeLeft 1 lineSpan
 
         member x.InsertText text count = 
-            let text = StringUtil.repeat text count 
+            let text = StringUtil.repeat count text
             let point = TextViewUtil.GetCaretPoint _textView
             use edit = _textView.TextBuffer.CreateEdit()
             edit.Insert(point.Position, text) |> ignore
@@ -791,7 +874,7 @@ type internal CommonOperations ( _data : OperationsData ) =
                 _statusUtil.OnError (Resources.NormalMode_CantFindFile text)
 
         member x.PasteAfterCursor text count opKind moveCursor = 
-            let text = StringUtil.repeat text count 
+            let text = StringUtil.repeat count text
             let caret = TextViewUtil.GetCaretPoint _textView
             x.WrapEditInUndoTransaction "Paste" (fun () -> 
                 let span = x.PasteAfter caret text opKind
@@ -806,7 +889,7 @@ type internal CommonOperations ( _data : OperationsData ) =
                     TextViewUtil.MoveCaretToPoint _textView point  )
  
         member x.PasteBeforeCursor text count opKind moveCursor = 
-            let text = StringUtil.repeat text count 
+            let text = StringUtil.repeat count text
             let caret = TextViewUtil.GetCaretPoint _textView
             x.WrapEditInUndoTransaction "Paste" (fun () -> 
                 let span = x.PasteBefore caret text opKind
@@ -833,6 +916,9 @@ type internal CommonOperations ( _data : OperationsData ) =
                 let point = new VirtualSnapshotPoint(newLine, indent)
                 TextViewUtil.MoveCaretToVirtualPoint _textView point |> ignore 
                 newLine )
+
+        member x.InsertTextAt point text opKind = x.InsertTextAt point text opKind
+        member x.InsertTextAtWithReturn point text opKind = x.InsertTextAtWithReturn point text opKind
     
         member x.InsertLineAbove () = 
             let point = TextViewUtil.GetCaretPoint _textView
@@ -847,6 +933,10 @@ type internal CommonOperations ( _data : OperationsData ) =
         member x.WrapEditInUndoTransaction name action = x.WrapEditInUndoTransaction name action
 
         member x.WrapEditInUndoTransactionWithReturn name action = x.WrapEditInUndoTransactionWithReturn name action
+
+        member x.PutAt point stringData opKind = x.PutAt point stringData opKind
+
+        member x.PutAtWithReturn point stringData opKind = x.PutAtWithReturn point stringData opKind
 
 
 

@@ -135,14 +135,26 @@ type internal CommandFactory
     ///  visual span func
     ///  visual block func 
     member x.CreateEditCommandsCore () = 
-
         (*
         let funcp() =
             (
                 "p",
                 CommandFlags.Repeatable,
                 ModeSwitch.NoSwitch,
-                (fun count reg -> _operations.PasteAfterCursor reg.StringValue count reg.Value.OperationKind false),
+                (fun count reg -> 
+                    // Wrap in an undo transaction so the caret position will be preserved 
+                    // during an undo
+                    _operations.WrapEditInUndoTransaction "Put" (fun () ->
+
+                        // If this is a linewise edit then we need to move the caret 
+                        // to the point at the end of the 
+                        let point = TextViewUtil.GetCaretPoint _textView
+                        let point =
+                            match reg.Value.OperationKind with 
+                            | OperationKind.LineWise -> point |> SnapshotPointUtil.GetContainingLine |> SnapshotLineUtil.GetEndIncludingLineBreak
+                            | OperationKind.CharacterWise -> point
+                        _operations
+                    _operations.PasteAfterCursor reg.StringValue count reg.Value.OperationKind false),
                 ModeSwitch.SwitchMode ModeKind.Normal,
                 (fun _ _ reg span ->
                     // Move the caret to the start of the span so that it goes back there during an undo
@@ -159,6 +171,7 @@ type internal CommandFactory
                     "P", 
                     CommandFlags.Repeatable, 
                     fun count reg -> _operations.PasteBeforeCursor reg.StringValue countreg.Value.OperationKind false)
+
         let funcCC () = 
             let getDeleteSpan (range:SnapshotLineRange) =
                 if _settings.AutoIndent then 

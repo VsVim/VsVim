@@ -389,7 +389,10 @@ type internal NormalMode
                 yield (
                     "p", 
                     CommandFlags.Repeatable, 
-                    fun count reg -> _operations.PasteAfterCursor reg.StringValue count reg.Value.OperationKind false)
+                    fun count reg -> 
+                        let point = TextViewUtil.GetCaretPoint _textView
+                        let point = point.Add(1)
+                        _operations.PutAt point (reg.Value.Value.ApplyCount count) reg.Value.OperationKind)
                 yield (
                     "P", 
                     CommandFlags.Repeatable, 
