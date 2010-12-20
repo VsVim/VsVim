@@ -54,82 +54,8 @@ type internal DefaultOperations ( _data : OperationsData) =
             let point = textLine.Start.Add(column)
             _textView.Caret.MoveTo (point) |> ignore
 
-    /// Wrap the passed in "action" inside an undo transaction.  This is needed
-    /// when making edits such as paste so that the cursor will move properly 
-    /// during an undo operation
-    member private x.WrapInUndoTransaction name action =
-        use undoTransaction = _undoRedoOperations.CreateUndoTransaction(name)
-        _operations.AddBeforeTextBufferChangePrimitive()
-        action()
-        _operations.AddAfterTextBufferChangePrimitive()
-        undoTransaction.Complete()
-
-    /// Same as WrapInUndoTransaction except provides for a return value
-    member private x.WrapInUndoTransactionWithRet name action =
-        use undoTransaction = _undoRedoOperations.CreateUndoTransaction(name)
-        _operations.AddBeforeTextBufferChangePrimitive()
-        let ret = action()
-        _operations.AddAfterTextBufferChangePrimitive()
-        undoTransaction.Complete()
-        ret
-
     interface IOperations with 
-        
-        /// Paste the given text after the cursor
-        member x.PasteAfterCursor text count opKind moveCursor = 
-            let text = StringUtil.repeat text count 
-            let caret = TextViewUtil.GetCaretPoint _textView
-            x.WrapInUndoTransaction "Paste" (fun () -> 
-                let span = x.CommonImpl.PasteAfter caret text opKind
-                if moveCursor then
-                    x.CommonImpl.MoveCaretToPoint span.End 
-                else if opKind = OperationKind.LineWise then
-                    // For a LineWise paste we want to place the cursor at the start
-                    // of the next line
-                    let caretLineNumber = caret.GetContainingLine().LineNumber
-                    let nextLine = _textView.TextSnapshot.GetLineFromLineNumber(caretLineNumber + 1)
-                    let point = TssUtil.FindFirstNonWhitespaceCharacter nextLine
-                    x.CommonImpl.MoveCaretToPoint point  )
- 
-        /// Paste the text before the cursor
-        member x.PasteBeforeCursor text count opKind moveCursor = 
-            let text = StringUtil.repeat text count 
-            let caret = TextViewUtil.GetCaretPoint _textView
-            x.WrapInUndoTransaction "Paste" (fun () -> 
-                let span = x.CommonImpl.PasteBefore caret text opKind
-                if moveCursor then
-                    x.CommonImpl.MoveCaretToPoint span.End 
-                else if opKind = OperationKind.LineWise then
-                    // For a LineWise paste we want to place the cursor at the start of this line. caret is a a snapshot
-                    // point from the old snapshot, so we need to find the same line in the new snapshot
-                    let line = _textView.TextSnapshot.GetLineFromLineNumber(caret.GetContainingLine().LineNumber)
-                    let point = TssUtil.FindFirstNonWhitespaceCharacter line
-                    x.CommonImpl.MoveCaretToPoint point )
 
-        member x.InsertLineBelow () =
-            let point = TextViewUtil.GetCaretPoint _textView
-            let line = point.GetContainingLine()
-            let buffer = line.Snapshot.TextBuffer
-            x.WrapInUndoTransactionWithRet "Paste" (fun () -> 
-                buffer.Replace(new Span(line.End.Position,0), System.Environment.NewLine) |> ignore
-                let newLine = buffer.CurrentSnapshot.GetLineFromLineNumber(line.LineNumber+1)
-            
-                // Move the caret to the same indent position as the previous line
-                let tabSize = EditorOptionsUtil.GetOptionValueOrDefault _options DefaultOptions.TabSizeOptionId 4
-                let indent = TssUtil.FindIndentPosition line tabSize
-                let point = new VirtualSnapshotPoint(newLine, indent)
-                TextViewUtil.MoveCaretToVirtualPoint _textView point |> ignore 
-                newLine )
-    
-        member x.InsertLineAbove () = 
-            let point = TextViewUtil.GetCaretPoint _textView
-            let line = point.GetContainingLine()
-            let buffer = line.Snapshot.TextBuffer
-            x.WrapInUndoTransactionWithRet "Paste" (fun() -> 
-                buffer.Replace(new Span(line.Start.Position,0), System.Environment.NewLine) |> ignore
-                let line = buffer.CurrentSnapshot.GetLineFromLineNumber(line.LineNumber)
-                x.CommonImpl.MoveCaretToPoint line.Start 
-                line )
                     
         /// Implement the r command in normal mode.  
         member x.ReplaceChar (ki:KeyInput) count = 

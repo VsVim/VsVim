@@ -571,5 +571,63 @@ namespace VimCore.UnitTest
             _buffer.Process("?a", enter: true);
             Assert.AreEqual(1, _textView.GetCaretPoint().Position);
         }
+
+        [Test]
+        public void Handel_cc_AutoIndentShouldPreserveOnSingle()
+        {
+            CreateBuffer("  dog", "  cat", "  tree");
+            _buffer.Settings.AutoIndent = true;
+            _buffer.Process("cc", enter: true);
+            Assert.AreEqual(ModeKind.Insert, _buffer.ModeKind);
+            Assert.AreEqual(2, _textView.GetCaretPoint().Position);
+            Assert.AreEqual("  ", _textView.GetLine(0).GetText());
+        }
+
+        [Test]
+        public void Handel_cc_NoAutoIndentShouldRemoveAllOnSingle()
+        {
+            CreateBuffer("  dog", "  cat");
+            _buffer.Settings.AutoIndent = false;
+            _buffer.Process("cc", enter: true);
+            Assert.AreEqual(ModeKind.Insert, _buffer.ModeKind);
+            Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+            Assert.AreEqual("", _textView.GetLine(0).GetText());
+        }
+
+        [Test]
+        public void Handel_cc_AutoIndentShouldPreserveOnMultiple()
+        {
+            CreateBuffer("  dog", "  cat", "  tree");
+            _buffer.Settings.AutoIndent = true;
+            _buffer.Process("2cc", enter: true);
+            Assert.AreEqual(ModeKind.Insert, _buffer.ModeKind);
+            Assert.AreEqual(2, _textView.GetCaretPoint().Position);
+            Assert.AreEqual("  ", _textView.GetLine(0).GetText());
+            Assert.AreEqual("  tree", _textView.GetLine(1).GetText());
+        }
+
+        [Test]
+        public void Handel_cc_AutoIndentShouldPreserveFirstOneOnMultiple()
+        {
+            CreateBuffer("    dog", "  cat", "  tree");
+            _buffer.Settings.AutoIndent = true;
+            _buffer.Process("2cc", enter: true);
+            Assert.AreEqual(ModeKind.Insert, _buffer.ModeKind);
+            Assert.AreEqual(4, _textView.GetCaretPoint().Position);
+            Assert.AreEqual("    ", _textView.GetLine(0).GetText());
+            Assert.AreEqual("  tree", _textView.GetLine(1).GetText());
+        }
+
+        [Test]
+        public void Handel_cc_NoAutoIndentShouldRemoveAllOnMultiple()
+        {
+            CreateBuffer("  dog", "  cat", "  tree");
+            _buffer.Settings.AutoIndent = false;
+            _buffer.Process("2cc", enter: true);
+            Assert.AreEqual(ModeKind.Insert, _buffer.ModeKind);
+            Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+            Assert.AreEqual("", _textView.GetLine(0).GetText());
+            Assert.AreEqual("  tree", _textView.GetLine(1).GetText());
+        }
     }
 }

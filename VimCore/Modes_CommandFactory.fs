@@ -10,7 +10,8 @@ type internal CommandFactory
         _operations : ICommonOperations, 
         _capture : IMotionCapture,
         _incrementalSearch : IIncrementalSearch,
-        _jumpList : IJumpList ) =
+        _jumpList : IJumpList,
+        _settings : IVimLocalSettings ) =
 
     let _textView = _operations.TextView
 
@@ -122,6 +123,101 @@ type internal CommandFactory
         _capture.MotionCommands
         |> Seq.filter (fun command -> Utils.IsFlagSet command.MotionFlags MotionFlags.CursorMovement)
         |> Seq.map processMotionCommand
+
+    /// Create shared edit commands between Normal and Visual Mode.  Returns a sequence of tuples
+    /// with the following form
+    ///
+    ///  name
+    ///  CommandFlags 
+    ///  Mode to switch to after in normal
+    ///  normal function
+    ///  Mode to switch to after in visual
+    ///  visual span func
+    ///  visual block func 
+    member x.CreateEditCommandsCore () = 
+
+        (*
+        let funcp() =
+            (
+                "p",
+                CommandFlags.Repeatable,
+                ModeSwitch.NoSwitch,
+                (fun count reg -> _operations.PasteAfterCursor reg.StringValue count reg.Value.OperationKind false),
+                ModeSwitch.SwitchMode ModeKind.Normal,
+                (fun _ _ reg span ->
+                    // Move the caret to the start of the span so that it goes back there during an undo
+                    TextViewUtil.MoveCaretToPoint _textView span.Start
+                    _operations.WrapEditInUndoTransction "Put" (fun () -> 
+                        _operations.PasteAfter span.Start reg.StringValue count
+
+                    
+                yield (
+                    "p", 
+                    CommandFlags.Repeatable, 
+                    fun count reg -> _operations.PasteAfterCursor reg.StringValue count reg.Value.OperationKind false)
+                yield (
+                    "P", 
+                    CommandFlags.Repeatable, 
+                    fun count reg -> _operations.PasteBeforeCursor reg.StringValue countreg.Value.OperationKind false)
+        let funcCC () = 
+            let getDeleteSpan (range:SnapshotLineRange) =
+                if _settings.AutoIndent then 
+                    let start = 
+                        range.StartLine 
+                        |> SnapshotLineUtil.GetPoints 
+                        |> Seq.skipWhile SnapshotPointUtil.IsWhitespace
+                        |> SeqUtil.tryHeadOnly
+                        |> OptionUtil.getOrDefault range.StartLine.End
+                    TextViewUtil.MoveCaretToPoint _textView start
+                    SnapshotSpanUtil.Create start range.End
+                else
+                    range.Extent
+
+            (
+                "cc",
+                CommandFlags.LinkedWithNextTextChange ||| CommandFlags.Repeatable,
+                ModeSwitch.SwitchMode ModeKind.Insert,
+                (fun count reg ->  
+                    let span = TextViewUtil.GetCaretLineRange _textView (CommandUtil.CountOrDefault count) |> getDeleteSpan
+                    _operations.DeleteSpan span 
+                    _operations.UpdateRegisterForSpan reg RegisterOperation.Delete span OperationKind.LineWise),
+                ModeSwitch.SwitchMode ModeKind.Insert,
+                (fun _ _ reg span -> 
+                    let span = span |> SnapshotLineRangeUtil.CreateForSpan |> getDeleteSpan 
+                    _operations.DeleteSpan span
+                    _operations.UpdateRegisterForSpan reg RegisterOperation.Delete span OperationKind.LineWise),
+                (fun _ _ reg col -> 
+                    _operations.DeleteBlock col 
+                    _operations.UpdateRegisterForCollection reg RegisterOperation.Delete col OperationKind.CharacterWise))
+
+        seq {   
+            yield funcCC()
+        } *)
+
+        Seq.empty
+
+    member x.CreateEditCommandsForNormalMode () = 
+        x.CreateEditCommandsCore()
+        |> Seq.map (fun (name, flags, normalSwitch, normalFunc, _, _, _) ->
+            let keyInputSet = KeyNotationUtil.StringToKeyInputSet name
+            let func count reg = 
+                normalFunc count reg
+                CommandResult.Completed normalSwitch
+            SimpleCommand(keyInputSet, flags, func))
+
+    member x.CreateEditCommandsForVisualMode visualKind = 
+        x.CreateEditCommandsCore()
+        |> Seq.map (fun (name, flags, _, _, visualSwitch, spanFunc, blockFunc) ->
+            let keyInputSet = KeyNotationUtil.StringToKeyInputSet name
+            let func count reg visualSpan = 
+                match visualSpan with
+                | VisualSpan.Single (kind, span) ->
+                    spanFunc kind count reg span
+                    CommandResult.Completed visualSwitch
+                | VisualSpan.Multiple (kind, block) ->
+                    blockFunc kind count reg block
+                    CommandResult.Completed visualSwitch
+            VisualCommand(keyInputSet, flags, visualKind, func))
 
     member x.CreateMovementCommands() = 
         let standard = x.CreateStandardMovementCommands()

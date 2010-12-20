@@ -15,14 +15,7 @@ type IOperations =
     abstract DeleteCharacterAtCursor : count:int -> SnapshotSpan
 
     abstract DeleteCharacterBeforeCursor : count:int -> SnapshotSpan
-    abstract PasteAfterCursor : text:string -> count:int -> opKind:OperationKind -> moveCursorToEnd: bool -> unit
-    abstract PasteBeforeCursor : text:string -> count:int -> opKind:OperationKind -> moveCursorToEnd:bool -> unit
 
-    /// Adds an empty line to the buffer below the cursor and returns the resulting ITextSnapshotLine
-    abstract InsertLineBelow : unit -> ITextSnapshotLine
-
-    /// Insert a line above the current cursor position and returns the resulting ITextSnapshotLine
-    abstract InsertLineAbove : unit -> ITextSnapshotLine
 
     /// Go to the definition of the word under the cursor
     abstract GoToDefinitionWrapper : unit -> unit

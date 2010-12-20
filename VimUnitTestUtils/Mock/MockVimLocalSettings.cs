@@ -44,5 +44,17 @@ namespace Vim.UnitTest.Mock
         {
             throw new NotImplementedException();
         }
+
+        public bool AutoIndent
+        {
+            get
+            {
+                throw new NotImplementedException();
+            }
+            set
+            {
+                throw new NotImplementedException();
+            }
+        }
     }
 }

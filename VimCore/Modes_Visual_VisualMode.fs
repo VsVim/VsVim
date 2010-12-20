@@ -60,14 +60,15 @@ type internal VisualMode
                 x.EndExplicitMove()
                 res
 
-        let factory = Vim.Modes.CommandFactory(_operations, _capture, _buffer.IncrementalSearch, _buffer.JumpList)
+        let factory = Vim.Modes.CommandFactory(_operations, _capture, _buffer.IncrementalSearch, _buffer.JumpList, _buffer.Settings)
         factory.CreateMovementCommands()
+        |> Seq.append (factory.CreateEditCommandsForVisualMode _visualKind)
         |> Seq.map (fun (command) ->
             match command with
-            | Command.SimpleCommand(name,flags,func) -> Command.SimpleCommand (name, flags, wrapSimple func) |> Some
-            | Command.MotionCommand (name,flags,func) -> Command.MotionCommand (name, flags,wrapMotion func) |> Some
-            | Command.LongCommand (name,flags,func) -> Command.LongCommand (name, flags, wrapLong func) |> Some
-            | Command.VisualCommand (name,flags,visualKind,func) -> None )
+            | Command.SimpleCommand(name, flags, func) -> Command.SimpleCommand (name, flags, wrapSimple func) |> Some
+            | Command.MotionCommand (name, flags, func) -> Command.MotionCommand (name, flags,wrapMotion func) |> Some
+            | Command.LongCommand (name, flags, func) -> Command.LongCommand (name, flags, wrapLong func) |> Some
+            | Command.VisualCommand (_) -> Some command)
         |> SeqUtil.filterToSome
 
     member x.BuildOperationsSequence() =

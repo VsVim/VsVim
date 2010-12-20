@@ -12,7 +12,14 @@ F#
  - To Deteremine:
     - Should functions returning an option be prefixed with Try? Example KeyNotationUtil 
 
-
 C#
  - Member variables prefixed with _ 
  - Buffer creation methods should be Create.  Not CreateBuffer
+
+ Naming
+ - Fields of specific types 
+    - ITextView -> _textView
+    - ITextBuffer -> _textBuffer
+    - IVimBuffer -> _buffer
+ - Unit Tests for handling a key combination
+    - Handle_KeyCombo_

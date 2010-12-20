@@ -442,6 +442,14 @@ module SnapshotLineUtil =
         let length = GetLineBreakLength line
         SnapshotSpan(point,length)
 
+    /// Get the indent point of the ITextSnapshotLine
+    let GetIndent line =
+        line 
+        |> GetPoints
+        |> Seq.skipWhile (fun point -> point.GetChar() |> CharUtil.IsWhiteSpace)
+        |> SeqUtil.tryHeadOnly
+        |> OptionUtil.getOrDefault (GetEnd line)
+
 [<RequireQualifiedAccess>]
 type PointKind =
     /// Normal valid point within the ITextSnapshot.  Point in question is the argument
@@ -482,6 +490,11 @@ module SnapshotPointUtil =
     let IsEndPoint point = 
         let snapshot = GetSnapshot point
         point = SnapshotUtil.GetEndPoint snapshot
+
+    /// Is this point whitespace?
+    let IsWhitespace point =
+        if IsEndPoint point then false
+        else CharUtil.IsWhiteSpace (point.GetChar())
 
     /// Get the line range passed in.  If the count of lines exceeds the amount of lines remaining
     /// in the buffer, the span will be truncated to the final line
@@ -855,6 +868,8 @@ module TextViewUtil =
     let GetCaretPointKind textView = textView |> GetCaretPoint |> SnapshotPointUtil.GetPointKind
 
     let GetCaretLine textView = GetCaretPoint textView |> SnapshotPointUtil.GetContainingLine
+
+    let GetCaretLineIndent textView = textView |> GetCaretLine |> SnapshotLineUtil.GetIndent
 
     let GetCaretLineRange textView count = 
         let line = GetCaretLine textView

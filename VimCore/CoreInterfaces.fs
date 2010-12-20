@@ -1014,7 +1014,8 @@ module GlobalSettingNames =
     let VimRcPathsName = "vimrcpaths"
 
 module LocalSettingNames =
-    
+
+    let AutoIndentName = "autoindent"
     let CursorLineName = "cursorline"
     let NumberName = "number"
     let ScrollName = "scroll"
@@ -1116,11 +1117,13 @@ and IVimGlobalSettings =
 /// global settings with non-global ones
 and IVimLocalSettings =
 
-    /// Return the handle to the global IVimSettings instance
-    abstract GlobalSettings : IVimGlobalSettings
+    abstract AutoIndent : bool with get, set
 
     /// Whether or not to highlight the line the cursor is on
     abstract CursorLine : bool with get,set
+
+    /// Return the handle to the global IVimSettings instance
+    abstract GlobalSettings : IVimGlobalSettings
 
     abstract Scroll : int with get,set
 

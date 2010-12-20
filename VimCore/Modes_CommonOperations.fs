@@ -16,6 +16,7 @@ type internal CommonOperations ( _data : OperationsData ) =
     let _host = _data.VimHost
     let _jumpList = _data.JumpList
     let _settings = _data.LocalSettings
+    let _options = _data.EditorOptions
     let _undoRedoOperations = _data.UndoRedoOperations
     let _statusUtil = _data.StatusUtil
     let _normalWordNav =  _data.Navigator
@@ -245,6 +246,66 @@ type internal CommonOperations ( _data : OperationsData ) =
                     | Some(span) -> foundSpan span
                     | None -> _statusUtil.OnError (Resources.Common_PatternNotFound last.Text.RawText)
 
+    /// Wrap the passed in "action" inside an undo transaction.  This is needed
+    /// when making edits such as paste so that the cursor will move properly 
+    /// during an undo operation
+    member x.WrapEditInUndoTransaction name action =
+        use undoTransaction = _undoRedoOperations.CreateUndoTransaction(name)
+        _operations.AddBeforeTextBufferChangePrimitive()
+        action()
+        _operations.AddAfterTextBufferChangePrimitive()
+        undoTransaction.Complete()
+
+    /// Same as WrapInUndoTransaction except provides for a return value
+    member x.WrapEditInUndoTransactionWithReturn name action =
+        use undoTransaction = _undoRedoOperations.CreateUndoTransaction(name)
+        _operations.AddBeforeTextBufferChangePrimitive()
+        let ret = action()
+        _operations.AddAfterTextBufferChangePrimitive()
+        undoTransaction.Complete()
+        ret
+
+    member x.PasteAfter point text opKind = 
+        let buffer = SnapshotPointUtil.GetBuffer point
+        let line = SnapshotPointUtil.GetContainingLine point
+
+        let doLineWise() = 
+            let span = SnapshotSpan(line.EndIncludingLineBreak,0) 
+            if line.LineBreakLength > 0 then 
+                (span, text, 0)
+            else 
+                // when there is a 0 length line break we are at the end of
+                // the file and must insert an additional newline
+                let text = System.Environment.NewLine + text
+                (span, text, System.Environment.NewLine.Length)
+
+        let doCharacterWise() = 
+            let point =  if point.Position < line.End.Position then point.Add(1) else point
+            let span =  SnapshotSpan(point,0)
+            (span, text, 0)
+
+        let replaceSpan, replaceText, offset = 
+            match opKind with
+            | OperationKind.LineWise -> doLineWise()
+            | OperationKind.CharacterWise -> doCharacterWise()
+            | _ -> failwith "Invalid Enum Value"
+        let tss = buffer.Replace(replaceSpan.Span, replaceText)
+        new SnapshotSpan(tss, replaceSpan.End.Position + offset , text.Length)
+    
+    member x.PasteBefore (point:SnapshotPoint) text opKind =
+        let buffer = point.Snapshot.TextBuffer
+        let span = 
+            match opKind with
+            | OperationKind.LineWise ->
+                let line = point.GetContainingLine()
+                new SnapshotSpan(line.Start, 0)
+            | OperationKind.CharacterWise ->
+                new SnapshotSpan(point,0)
+            | _ -> failwith "Invalid Enum Value"
+        let tss = buffer.Replace(span.Span, text) 
+        new SnapshotSpan(tss,span.End.Position, text.Length)
+
+
     interface ICommonOperations with
         member x.TextView = _textView 
         member x.EditorOperations = _operations
@@ -296,45 +357,9 @@ type internal CommonOperations ( _data : OperationsData ) =
                 | Some(point) -> jumpLocal point
                 | None -> Failed Resources.Common_MarkNotSet
     
-        member x.PasteAfter point text opKind = 
-            let buffer = SnapshotPointUtil.GetBuffer point
-            let line = SnapshotPointUtil.GetContainingLine point
+        member x.PasteAfter point text opKind = x.PasteAfter point text opKind
 
-            let doLineWise() = 
-                let span = SnapshotSpan(line.EndIncludingLineBreak,0) 
-                if line.LineBreakLength > 0 then 
-                    (span, text, 0)
-                else 
-                    // when there is a 0 length line break we are at the end of
-                    // the file and must insert an additional newline
-                    let text = System.Environment.NewLine + text
-                    (span, text, System.Environment.NewLine.Length)
-
-            let doCharacterWise() = 
-                let point =  if point.Position < line.End.Position then point.Add(1) else point
-                let span =  SnapshotSpan(point,0)
-                (span, text, 0)
-
-            let replaceSpan, replaceText, offset = 
-                match opKind with
-                | OperationKind.LineWise -> doLineWise()
-                | OperationKind.CharacterWise -> doCharacterWise()
-                | _ -> failwith "Invalid Enum Value"
-            let tss = buffer.Replace(replaceSpan.Span, replaceText)
-            new SnapshotSpan(tss, replaceSpan.End.Position + offset , text.Length)
-        
-        member x.PasteBefore (point:SnapshotPoint) text opKind =
-            let buffer = point.Snapshot.TextBuffer
-            let span = 
-                match opKind with
-                | OperationKind.LineWise ->
-                    let line = point.GetContainingLine()
-                    new SnapshotSpan(line.Start, 0)
-                | OperationKind.CharacterWise ->
-                    new SnapshotSpan(point,0)
-                | _ -> failwith "Invalid Enum Value"
-            let tss = buffer.Replace(span.Span, text) 
-            new SnapshotSpan(tss,span.End.Position, text.Length)
+        member x.PasteBefore point text opKind = x.PasteBefore point text opKind
 
         member x.PasteOver span (reg:Register) =
             use edit = _data.TextView.TextBuffer.CreateEdit()
@@ -764,5 +789,64 @@ type internal CommonOperations ( _data : OperationsData ) =
             let text = x.WordUnderCursorOrEmpty 
             if not (_host.GoToFile text) then 
                 _statusUtil.OnError (Resources.NormalMode_CantFindFile text)
+
+        member x.PasteAfterCursor text count opKind moveCursor = 
+            let text = StringUtil.repeat text count 
+            let caret = TextViewUtil.GetCaretPoint _textView
+            x.WrapEditInUndoTransaction "Paste" (fun () -> 
+                let span = x.PasteAfter caret text opKind
+                if moveCursor then
+                    TextViewUtil.MoveCaretToPoint _textView span.End 
+                else if opKind = OperationKind.LineWise then
+                    // For a LineWise paste we want to place the cursor at the start
+                    // of the next line
+                    let caretLineNumber = caret.GetContainingLine().LineNumber
+                    let nextLine = _textView.TextSnapshot.GetLineFromLineNumber(caretLineNumber + 1)
+                    let point = TssUtil.FindFirstNonWhitespaceCharacter nextLine
+                    TextViewUtil.MoveCaretToPoint _textView point  )
+ 
+        member x.PasteBeforeCursor text count opKind moveCursor = 
+            let text = StringUtil.repeat text count 
+            let caret = TextViewUtil.GetCaretPoint _textView
+            x.WrapEditInUndoTransaction "Paste" (fun () -> 
+                let span = x.PasteBefore caret text opKind
+                if moveCursor then
+                    TextViewUtil.MoveCaretToPoint _textView span.End 
+                else if opKind = OperationKind.LineWise then
+                    // For a LineWise paste we want to place the cursor at the start of this line. caret is a a snapshot
+                    // point from the old snapshot, so we need to find the same line in the new snapshot
+                    let line = _textView.TextSnapshot.GetLineFromLineNumber(caret.GetContainingLine().LineNumber)
+                    let point = TssUtil.FindFirstNonWhitespaceCharacter line
+                    TextViewUtil.MoveCaretToPoint _textView point )
+
+        member x.InsertLineBelow () =
+            let point = TextViewUtil.GetCaretPoint _textView
+            let line = point.GetContainingLine()
+            let buffer = line.Snapshot.TextBuffer
+            x.WrapEditInUndoTransactionWithReturn "Paste" (fun () -> 
+                buffer.Replace(new Span(line.End.Position,0), System.Environment.NewLine) |> ignore
+                let newLine = buffer.CurrentSnapshot.GetLineFromLineNumber(line.LineNumber+1)
+            
+                // Move the caret to the same indent position as the previous line
+                let tabSize = EditorOptionsUtil.GetOptionValueOrDefault _options DefaultOptions.TabSizeOptionId 4
+                let indent = TssUtil.FindIndentPosition line tabSize
+                let point = new VirtualSnapshotPoint(newLine, indent)
+                TextViewUtil.MoveCaretToVirtualPoint _textView point |> ignore 
+                newLine )
+    
+        member x.InsertLineAbove () = 
+            let point = TextViewUtil.GetCaretPoint _textView
+            let line = point.GetContainingLine()
+            let buffer = line.Snapshot.TextBuffer
+            x.WrapEditInUndoTransactionWithReturn "Paste" (fun() -> 
+                buffer.Replace(new Span(line.Start.Position,0), System.Environment.NewLine) |> ignore
+                let line = buffer.CurrentSnapshot.GetLineFromLineNumber(line.LineNumber)
+                TextViewUtil.MoveCaretToPoint _textView line.Start
+                line )
+
+        member x.WrapEditInUndoTransaction name action = x.WrapEditInUndoTransaction name action
+
+        member x.WrapEditInUndoTransactionWithReturn name action = x.WrapEditInUndoTransactionWithReturn name action
+
 
 

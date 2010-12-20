@@ -143,6 +143,12 @@ type ICommonOperations =
     /// Insert the specified text at the cursor position "count" times
     abstract InsertText : text:string -> count : int -> unit
 
+    /// Insert a line above the current cursor position and returns the resulting ITextSnapshotLine
+    abstract InsertLineAbove : unit -> ITextSnapshotLine
+
+    /// Adds an empty line to the buffer below the cursor and returns the resulting ITextSnapshotLine
+    abstract InsertLineBelow : unit -> ITextSnapshotLine
+
     /// Joins the lines in the range
     abstract Join : SnapshotLineRange -> JoinKind -> unit
 
@@ -209,9 +215,13 @@ type ICommonOperations =
     /// the text on the new snapshot
     abstract PasteAfter : SnapshotPoint -> text : string -> OperationKind -> SnapshotSpan
 
+    abstract PasteAfterCursor : text:string -> count:int -> opKind:OperationKind -> moveCursorToEnd: bool -> unit
+
     /// Paste the text before the passed in position.  Returns the SnapshotSpan for the text in
     /// the new snapshot of the buffer
     abstract PasteBefore : SnapshotPoint -> text : string -> OperationKind -> SnapshotSpan 
+
+    abstract PasteBeforeCursor : text:string -> count:int -> opKind:OperationKind -> moveCursorToEnd:bool -> unit
 
     /// Paste over the selected text
     abstract PasteOver : SnapshotSpan -> Register -> unit
@@ -269,4 +279,9 @@ type ICommonOperations =
     /// Update the register for the given register operation
     abstract UpdateRegisterForCollection : Register -> RegisterOperation -> NormalizedSnapshotSpanCollection -> OperationKind -> unit
 
+    /// Wrap the edit code in an undo transaction.  Ensures the caret is reset during an undo
+    abstract WrapEditInUndoTransaction : name:string -> editAction:(unit -> unit) -> unit
+
+    /// Wrap the edit code in an undo transaction.  Ensures the caret is reset during an undo
+    abstract WrapEditInUndoTransactionWithReturn : name:string -> editAction:(unit -> 'a) -> 'a
 

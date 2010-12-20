@@ -23,6 +23,9 @@ type internal NormalMode
         _capture : IMotionCapture,
         _visualSpanCalculator : IVisualSpanCalculator ) as this =
 
+    let _textView = _bufferData.TextView
+    let _settings = _bufferData.Settings
+
     /// Reset state for data in Normal Mode
     let _emptyData = {
         Command = StringUtil.empty
@@ -61,8 +64,11 @@ type internal NormalMode
 
     member private this.EnsureCommands() = 
         if not this.IsCommandRunnerPopulated then
+            let factory = Vim.Modes.CommandFactory(_operations, _capture, _bufferData.IncrementalSearch, _bufferData.JumpList, _bufferData.Settings)
+
             this.CreateSimpleCommands()
-            |> Seq.append (this.CreateMovementCommands())
+            |> Seq.append (factory.CreateMovementCommands())
+            |> Seq.append (factory.CreateEditCommandsForNormalMode())
             |> Seq.append (this.CreateMotionCommands())
             |> Seq.append (this.CreateLongCommands())
             |> Seq.iter _runner.Add
@@ -155,7 +161,7 @@ type internal NormalMode
                                 | Some(motionData) -> func countOpt reg motionData |> ignore
     
                         | LongCommand(_) -> _statusUtil.OnError (Resources.NormalMode_RepeatNotSupportedOnCommand commandName)
-                        | VisualCommand(_,_,kind,func) -> 
+                        | VisualCommand(_, _, _, func) -> 
                             // Repeating a visual command is more complex because we need to calculate the
                             // new visual range
                             match data.VisualRunData with
@@ -515,13 +521,18 @@ type internal NormalMode
         let doSwitch =
             seq {
                 yield (
-                    "cc", 
+                    "cc",
                     CommandFlags.LinkedWithNextTextChange ||| CommandFlags.Repeatable,
-                    ModeKind.Insert, 
+                    ModeKind.Insert,
                     fun count reg ->  
-                        let point = TextViewUtil.GetCaretPoint _bufferData.TextView
-                        let span = SnapshotPointUtil.GetLineRangeSpanIncludingLineBreak point count
-                        let span = SnapshotSpan(point.GetContainingLine().Start,span.End)
+                        let getDeleteSpan (range:SnapshotLineRange) =
+                            if _settings.AutoIndent then 
+                                let start = TextViewUtil.GetCaretLineIndent _textView
+                                TextViewUtil.MoveCaretToPoint _textView start
+                                SnapshotSpanUtil.Create start range.End
+                            else
+                                range.Extent
+                        let span = TextViewUtil.GetCaretLineRange _textView count |> getDeleteSpan
                         _operations.DeleteSpan span 
                         _operations.UpdateRegisterForSpan reg RegisterOperation.Delete span OperationKind.LineWise)
                 yield (
@@ -689,11 +700,6 @@ type internal NormalMode
                 | Some(modeKind) -> CommandResult.Completed (ModeSwitch.SwitchMode modeKind)
             let flags = extraFlags ||| CommandFlags.Repeatable
             MotionCommand(name, flags, func2))
-
-    /// Create all of the movement commands
-    member this.CreateMovementCommands() =
-        let factory = Vim.Modes.CommandFactory(_operations, _capture, _bufferData.IncrementalSearch, _bufferData.JumpList)
-        factory.CreateMovementCommands()
 
     member this.Reset() =
         _runner.ResetState()
