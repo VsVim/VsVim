@@ -201,5 +201,55 @@ namespace VimCore.UnitTest
             Assert.AreEqual(_textView.GetLineRange(0, 2).ExtentIncludingLineBreak, _textView.GetSelectionSpan());
         }
 
+        [Test]
+        public void Handle_p_SimpleReplacesCharSpan()
+        {
+            Create("dog", "cat", "bear", "tree");
+            EnterMode(ModeKind.VisualCharacter, _textView.GetLineRange(0).Extent);
+            _buffer.RegisterMap.GetRegister(RegisterName.Unnamed).UpdateValue("pig");
+            _buffer.Process("p");
+            Assert.AreEqual("pig", _textView.GetLine(0).GetText());
+            Assert.AreEqual("cat", _textView.GetLine(1).GetText());
+            Assert.AreEqual(2, _textView.GetCaretPoint().Position);
+        }
+
+        [Test]
+        public void Handle_p_SimpleReplacesCharSpanNotFullLine()
+        {
+            Create("dog", "cat", "bear", "tree");
+            EnterMode(ModeKind.VisualCharacter, new SnapshotSpan(_textView.TextSnapshot, 0, 2));
+            _buffer.RegisterMap.GetRegister(RegisterName.Unnamed).UpdateValue("pig");
+            _buffer.Process("p");
+            Assert.AreEqual("pigg", _textView.GetLine(0).GetText());
+            Assert.AreEqual("cat", _textView.GetLine(1).GetText());
+            Assert.AreEqual(2, _textView.GetCaretPoint().Position);
+        }
+
+        [Test]
+        public void Handle_p_SimpleReplacesCharSpanMultiline()
+        {
+            Create("dog", "cat", "bear", "tree");
+            var span = new SnapshotSpan(
+                _textView.GetLine(0).Start.Add(1),
+                _textView.GetLine(1).Start.Add(2));
+            EnterMode(ModeKind.VisualCharacter, span);
+            _buffer.RegisterMap.GetRegister(RegisterName.Unnamed).UpdateValue("pig");
+            _buffer.Process("p");
+            Assert.AreEqual("dpigt", _textView.GetLine(0).GetText());
+            Assert.AreEqual("bear", _textView.GetLine(1).GetText());
+            Assert.AreEqual(3, _textView.GetCaretPoint().Position);
+        }
+
+        [Test]
+        public void Handle_P_SimpleReplacesCharSpan()
+        {
+            Create("dog", "cat", "bear", "tree");
+            EnterMode(ModeKind.VisualCharacter, _textView.GetLineRange(0).Extent);
+            _buffer.RegisterMap.GetRegister(RegisterName.Unnamed).UpdateValue("pig");
+            _buffer.Process("P");
+            Assert.AreEqual("pig", _textView.GetLine(0).GetText());
+            Assert.AreEqual("cat", _textView.GetLine(1).GetText());
+            Assert.AreEqual(2, _textView.GetCaretPoint().Position);
+        }
     }
 }

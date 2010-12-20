@@ -4,6 +4,7 @@ using System.Windows.Threading;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using NUnit.Framework;
+using Vim.Extensions;
 using Vim.Modes;
 using Vim.Modes.Command;
 
@@ -505,9 +506,20 @@ namespace Vim.UnitTest
 
         public static void UpdateValue(this Register reg, string value)
         {
+            UpdateValue(reg, value, OperationKind.CharacterWise);
+        }
+
+        public static void UpdateValue(this Register reg, string value, OperationKind kind)
+        {
             var data = StringData.NewSimple(value);
-            var regValue = new RegisterValue(data, OperationKind.CharacterWise);
+            var regValue = new RegisterValue(data, kind);
             reg.Value = regValue;
+        }
+
+        public static void UpdateBlockValues(this Register reg, params string[] value)
+        {
+            var data = StringData.NewBlock(value.ToFSharpList());
+            reg.Value = new RegisterValue(data, OperationKind.CharacterWise);
         }
 
         public static SnapshotPoint GetCaretPoint(this ITextView view)

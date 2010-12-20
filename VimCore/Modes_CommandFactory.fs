@@ -5,6 +5,7 @@ open Vim
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
 
+
 type internal CommandFactory
     ( 
         _operations : ICommonOperations, 
@@ -137,11 +138,15 @@ type internal CommandFactory
     member x.CreateEditCommandsCore () = 
         (*
         let funcp() =
+                    
             (
                 "p",
                 CommandFlags.Repeatable,
                 ModeSwitch.NoSwitch,
                 (fun count reg -> 
+                    match reg.
+                    let point = TextViewUtil.GetCaretPoint _textView |> SnapshotPointUtil.AddOneOrCurrent
+                    _operations.PutAtAndMoveCaret point (reg.Value.Value.ApplyCount count) reg.Value.OperationKind)
                     // Wrap in an undo transaction so the caret position will be preserved 
                     // during an undo
                     _operations.WrapEditInUndoTransaction "Put" (fun () ->

@@ -31,12 +31,17 @@ type OperationsData = {
 }
 
 type JoinKind = 
-    | RemoveEmptySpaces
-    | KeepEmptySpaces
+| RemoveEmptySpaces
+| KeepEmptySpaces
 
 type Result = 
-    | Succeeded
-    | Failed of string
+| Succeeded
+| Failed of string
+
+[<RequireQualifiedAccess>]
+type PutKind =
+| Before
+| After
 
 /// Common operations
 type ICommonOperations =
@@ -235,6 +240,9 @@ type ICommonOperations =
 
     /// Put the specified StringData at the given point 
     abstract PutAt : SnapshotPoint -> StringData -> OperationKind -> unit
+
+    /// Put the specified StringData at the caret 
+    abstract PutAtCaret : StringData -> OperationKind -> PutKind -> unit
 
     /// Put the specified StringData at the given point 
     abstract PutAtWithReturn : SnapshotPoint -> StringData -> OperationKind -> SnapshotSpan

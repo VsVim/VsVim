@@ -629,5 +629,96 @@ namespace VimCore.UnitTest
             Assert.AreEqual("", _textView.GetLine(0).GetText());
             Assert.AreEqual("  tree", _textView.GetLine(1).GetText());
         }
+
+        [Test]
+        public void Handle_p_LineWiseSimpleString()
+        {
+            CreateBuffer("dog", "cat", "bear", "tree");
+            _buffer.RegisterMap.GetRegister(RegisterName.Unnamed).UpdateValue("pig\n", OperationKind.LineWise);
+            _buffer.Process("p");
+            Assert.AreEqual("dog", _textView.GetLine(0).GetText());
+            Assert.AreEqual("pig", _textView.GetLine(1).GetText());
+            Assert.AreEqual(_textView.GetCaretPoint(), _textView.GetLine(1).Start);
+        }
+
+        [Test]
+        public void Handle_p_LineWiseSimpleStringThatHasIndent()
+        {
+            CreateBuffer("dog", "cat", "bear", "tree");
+            _buffer.RegisterMap.GetRegister(RegisterName.Unnamed).UpdateValue("  pig\n", OperationKind.LineWise);
+            _buffer.Process("p");
+            Assert.AreEqual("dog", _textView.GetLine(0).GetText());
+            Assert.AreEqual("  pig", _textView.GetLine(1).GetText());
+            Assert.AreEqual(_textView.GetCaretPoint(), _textView.GetLine(1).Start.Add(2));
+        }
+
+        [Test]
+        public void Handle_p_CharacterWiseSimpleString()
+        {
+            CreateBuffer("dog", "cat", "bear", "tree");
+            _buffer.RegisterMap.GetRegister(RegisterName.Unnamed).UpdateValue("pig", OperationKind.CharacterWise);
+            _buffer.Process("p");
+            Assert.AreEqual("dpigog", _textView.GetLine(0).GetText());
+            Assert.AreEqual(_textView.GetCaretPoint(), _textView.GetLine(0).Start.Add(3));
+        }
+
+        [Test]
+        public void Handle_p_CharacterWiseBlockStringOnExistingLines()
+        {
+            CreateBuffer("dog", "cat", "bear", "tree");
+            _buffer.RegisterMap.GetRegister(RegisterName.Unnamed).UpdateBlockValues("a", "b", "c");
+            _buffer.Process("p");
+            Assert.AreEqual("daog", _textView.GetLine(0).GetText());
+            Assert.AreEqual("cbat", _textView.GetLine(1).GetText());
+            Assert.AreEqual("bcear", _textView.GetLine(2).GetText());
+            Assert.AreEqual(_textView.GetCaretPoint(), _textView.GetLine(0).Start.Add(1));
+        }
+
+        [Test]
+        public void Handle_p_CharacterWiseBlockStringOnNewLines()
+        {
+            CreateBuffer("dog");
+            _textView.MoveCaretTo(1);
+            _buffer.RegisterMap.GetRegister(RegisterName.Unnamed).UpdateBlockValues("a", "b", "c");
+            _buffer.Process("p");
+            Assert.AreEqual("doag", _textView.GetLine(0).GetText());
+            Assert.AreEqual("  b", _textView.GetLine(1).GetText());
+            Assert.AreEqual("  c", _textView.GetLine(2).GetText());
+            Assert.AreEqual(_textView.GetCaretPoint(), _textView.GetLine(0).Start.Add(2));
+        }
+
+        [Test]
+        public void Handle_P_LineWiseSimpleStringStartOfBuffer()
+        {
+            CreateBuffer("dog", "cat", "bear", "tree");
+            _buffer.RegisterMap.GetRegister(RegisterName.Unnamed).UpdateValue("pig\n", OperationKind.LineWise);
+            _buffer.Process("P");
+            Assert.AreEqual("pig", _textView.GetLine(0).GetText());
+            Assert.AreEqual("dog", _textView.GetLine(1).GetText());
+            Assert.AreEqual(_textView.GetCaretPoint(), _textView.GetLine(0).Start);
+        }
+
+        [Test]
+        public void Handle_P_LineWiseSimpleStringThatHasIndentStartOfBuffer()
+        {
+            CreateBuffer("dog", "cat", "bear", "tree");
+            _buffer.RegisterMap.GetRegister(RegisterName.Unnamed).UpdateValue("  pig\n", OperationKind.LineWise);
+            _buffer.Process("P");
+            Assert.AreEqual("  pig", _textView.GetLine(0).GetText());
+            Assert.AreEqual("dog", _textView.GetLine(1).GetText());
+            Assert.AreEqual(_textView.GetCaretPoint(), _textView.GetLine(0).Start.Add(2));
+        }
+
+        [Test]
+        public void Handle_P_CharacterWiseBlockStringOnExistingLines()
+        {
+            CreateBuffer("dog", "cat", "bear", "tree");
+            _buffer.RegisterMap.GetRegister(RegisterName.Unnamed).UpdateBlockValues("a", "b", "c");
+            _buffer.Process("P");
+            Assert.AreEqual("adog", _textView.GetLine(0).GetText());
+            Assert.AreEqual("bcat", _textView.GetLine(1).GetText());
+            Assert.AreEqual("cbear", _textView.GetLine(2).GetText());
+            Assert.AreEqual(_textView.GetCaretPoint(), _textView.GetLine(0).Start);
+        }
     }
 }

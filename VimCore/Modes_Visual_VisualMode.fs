@@ -295,10 +295,16 @@ type internal VisualMode
                         _operations.Join range JoinKind.KeepEmptySpaces))
                 yield (
                     "p",
-                    CommandFlags.None,
+                    CommandFlags.Repeatable,
                     None,
-                    (fun _ reg span -> _operations.PasteOver span reg),
-                    (fun _ _ col -> ()) )
+                    (fun count reg _ -> _operations.PutAtCaret (reg.Value.Value.ApplyCount count) reg.Value.OperationKind PutKind.Before),
+                    (fun count reg _ -> _operations.PutAtCaret (reg.Value.Value.ApplyCount count) reg.Value.OperationKind PutKind.Before))
+                yield (
+                    "P",
+                    CommandFlags.Repeatable,
+                    None,
+                    (fun count reg _ -> _operations.PutAtCaret (reg.Value.Value.ApplyCount count) reg.Value.OperationKind PutKind.Before),
+                    (fun count reg _ -> _operations.PutAtCaret (reg.Value.Value.ApplyCount count) reg.Value.OperationKind PutKind.Before))
                 yield (
                     "y",
                     CommandFlags.ResetCaret,

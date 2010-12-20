@@ -351,6 +351,7 @@ type internal CommonOperations ( _data : OperationsData ) =
             let snapshot = edit.Apply()
             let startPoint = SnapshotPoint(snapshot, position)
             SnapshotSpanUtil.CreateWithLength startPoint text.Length
+
         | StringData.Block(col) -> 
 
             // Collection strings are inserted at the original character
@@ -371,7 +372,7 @@ type internal CommonOperations ( _data : OperationsData ) =
             insertCol |> Seq.iteri (fun offset str -> 
                 let line = originalSnapshot.GetLineFromLineNumber (offset+lineNumber)
                 if line.Length < column then
-                    let prefix = String.replicate (line.Length - column) " "
+                    let prefix = String.replicate (column - line.Length) " "
                     edit.Insert(line.Start.Position, prefix + str) |> ignore
                 else
                     edit.Insert(line.Start.Position + column, str) |> ignore)
@@ -379,7 +380,7 @@ type internal CommonOperations ( _data : OperationsData ) =
             // Add the text to the end of the buffer.
             if not (Seq.isEmpty appendCol) then
                 let prefix = System.Environment.NewLine + (String.replicate column " ")
-                let text = Seq.fold (fun text str -> text + str) prefix appendCol
+                let text = Seq.fold (fun text str -> text + prefix + str) "" appendCol
                 let endPoint = SnapshotUtil.GetEndPoint originalSnapshot
                 edit.Insert(endPoint.Position, text) |> ignore
 
@@ -388,6 +389,55 @@ type internal CommonOperations ( _data : OperationsData ) =
             let range = SnapshotLineRangeUtil.CreateForLineAndMaxCount line col.Length 
             range.ExtentIncludingLineBreak
 
+    member x.PutAtCaret stringData opKind putKind = 
+
+        // Get the point at which the insertion will occur 
+        let caretPoint = TextViewUtil.GetCaretPoint _textView
+        let editPoint = 
+            match (putKind, opKind) with
+            | PutKind.After, OperationKind.CharacterWise -> 
+                SnapshotPointUtil.AddOneOrCurrent caretPoint
+            | PutKind.After, OperationKind.LineWise -> 
+                caretPoint |> SnapshotPointUtil.GetContainingLine |> SnapshotLineUtil.GetEndIncludingLineBreak
+            | PutKind.Before, OperationKind.CharacterWise -> 
+                caretPoint
+            | PutKind.Before, OperationKind.LineWise -> 
+                caretPoint |> SnapshotPointUtil.GetContainingLine |> SnapshotLineUtil.GetStart
+
+        x.WrapEditInUndoTransaction "Paste" (fun () -> 
+            x.PutAt editPoint stringData opKind 
+            let position = 
+                match opKind with 
+                | OperationKind.CharacterWise -> 
+
+                    // Characterwise will just move the cursor to the end of the text on the first line 
+                    // of the put.  The PutAt operation can delete text to the left of the caret which 
+                    // changes it's original position.  Use an ITrackingPoint to account for this
+                    let length = 
+                        match stringData with 
+                        | StringData.Simple(str) -> str.Length - 1
+                        | StringData.Block(col) -> 
+                            match col with
+                            | h::_ -> h.Length - 1
+                            | [] -> 0
+                    let length = max 0 length
+                    match TrackingPointUtil.GetPointInSnapshot editPoint PointTrackingMode.Negative _textBuffer.CurrentSnapshot with
+                    | Some(point) -> point.Position + length
+                    | None -> editPoint.Position + length   // guess if it can't be found 
+
+                | OperationKind.LineWise ->
+
+                    // Characterwise puts it on the first character of the inserted line 
+                    let line = 
+                        let number = caretPoint |> SnapshotPointUtil.GetContainingLine |> SnapshotLineUtil.GetLineNumber 
+                        match putKind with
+                        | PutKind.After -> SnapshotUtil.GetLineOrLast _textBuffer.CurrentSnapshot (number + 1)
+                        | PutKind.Before -> SnapshotUtil.GetLineOrFirst _textBuffer.CurrentSnapshot (number - 1)
+                    line |> SnapshotLineUtil.GetIndent |> SnapshotPointUtil.GetPosition
+
+            let position = min _textBuffer.CurrentSnapshot.Length position
+            let point = SnapshotPoint(_textBuffer.CurrentSnapshot, position)
+            TextViewUtil.MoveCaretToPoint _textView point)
 
     interface ICommonOperations with
         member x.TextView = _textView 
@@ -935,6 +985,8 @@ type internal CommonOperations ( _data : OperationsData ) =
         member x.WrapEditInUndoTransactionWithReturn name action = x.WrapEditInUndoTransactionWithReturn name action
 
         member x.PutAt point stringData opKind = x.PutAt point stringData opKind
+
+        member x.PutAtCaret stringData opKind putKind = x.PutAtCaret stringData opKind putKind
 
         member x.PutAtWithReturn point stringData opKind = x.PutAtWithReturn point stringData opKind
 

@@ -729,12 +729,6 @@ module SnapshotPointUtil =
             let endPoint = SnapshotPoint(line.Snapshot, endPosition)
             SnapshotSpan(point, endPoint)
 
-    /// Add the given coun to the SnapshotPoint
-    let Add count (point:SnapshotPoint) = point.Add(count)
-
-    /// Add 1 to the given SnapshotPoint
-    let AddOne (point:SnapshotPoint) = point.Add(1)
-
     /// Try and add count to the SnapshotPoint.  Will return None if this causes
     /// the point to go past the end of the Snapshot
     let TryAdd point count = 
@@ -746,6 +740,19 @@ module SnapshotPointUtil =
     /// Maybe add 1 to the given point.  Will return the original point
     /// if it's the end of the Snapshot
     let TryAddOne point = TryAdd point 1
+
+    /// Add the given coun to the SnapshotPoint
+    let Add count (point:SnapshotPoint) = point.Add(count)
+
+    /// Add 1 to the given SnapshotPoint
+    let AddOne (point:SnapshotPoint) = point.Add(1)
+
+    /// Add 1 to the given snapshot point unless it's the end of the buffer in which case just
+    /// return the passed in value
+    let AddOneOrCurrent point =
+        match TryAddOne point with
+        | None -> point
+        | Some(point) -> point
 
     /// Subtract the count from the SnapshotPoint
     let SubtractOne (point:SnapshotPoint) =  point.Subtract(1)
@@ -963,6 +970,12 @@ module TrackingPointUtil =
             point.GetPoint(snapshot) |> Some
         with
             | :? System.ArgumentException -> None
+
+    let GetPointInSnapshot point mode newSnapshot =
+        let oldSnapshot = SnapshotPointUtil.GetSnapshot point
+        let trackingPoint = oldSnapshot.CreateTrackingPoint(point.Position, mode)
+        GetPoint newSnapshot trackingPoint
+
 
 module TrackingSpanUtil =
 
