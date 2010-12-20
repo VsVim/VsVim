@@ -21,7 +21,7 @@ namespace VimCore.UnitTest
     {
         private IOperations _operations;
         private DefaultOperations _operationsRaw;
-        private ITextView _view;
+        private ITextView _textView;
         private MockRepository _factory;
         private Mock<IEditorOperations> _editOpts;
         private Mock<IVimHost> _host;
@@ -37,9 +37,11 @@ namespace VimCore.UnitTest
 
         private void Create(params string[] lines)
         {
-            _view = EditorUtil.CreateView(lines);
+            _textView = EditorUtil.CreateView(lines);
             _factory = new MockRepository(MockBehavior.Strict);
             _editOpts = _factory.Create<IEditorOperations>();
+            _editOpts.Setup(x => x.AddAfterTextBufferChangePrimitive());
+            _editOpts.Setup(x => x.AddBeforeTextBufferChangePrimitive());
             _host = _factory.Create<IVimHost>();
             _jumpList = _factory.Create<IJumpList>();
             _registerMap = MockObjectFactory.CreateRegisterMap(factory: _factory);
@@ -52,12 +54,13 @@ namespace VimCore.UnitTest
             _statusUtil = _factory.Create<IStatusUtil>();
             _outlining = _factory.Create<IOutliningManager>();
             _undoRedoOperations = _factory.Create<IUndoRedoOperations>();
+            _undoRedoOperations.Setup(x => x.CreateUndoTransaction(It.IsAny<string>())).Returns<string>(name => new UndoTransaction(FSharpOption.Create(EditorUtil.GetUndoHistory(_textView.TextBuffer).CreateTransaction(name))));
             _searchService = new SearchService(EditorUtil.FactoryService.textSearchService, _globalSettings.Object);
 
             var data = new OperationsData(
                 vimData: new VimData(),
                 vimHost: _host.Object,
-                textView: _view,
+                textView: _textView,
                 editorOperations: _editOpts.Object,
                 outliningManager: _outlining.Object,
                 statusUtil: _statusUtil.Object,
@@ -99,21 +102,21 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void Put1()
+        public void Put_Before()
         {
-            Create("foo");
-            _operations.Put("bar", _view.TextSnapshot.GetLineFromLineNumber(0), false);
+            Create("dog", "cat");
+            _operations.Put("pig", _textView.GetLine(0), false);
+            Assert.AreEqual("pig", _textView.GetLine(0).GetText());
+            Assert.AreEqual("dog", _textView.GetLine(1).GetText());
         }
 
         [Test]
-        public void Put2()
+        public void Put_After()
         {
-            Create("bar", "baz");
-            _operations.Put(" here", _view.TextSnapshot.GetLineFromLineNumber(0), true);
-            var tss = _view.TextSnapshot;
-            Assert.AreEqual("bar", tss.GetLineFromLineNumber(0).GetText());
-            Assert.AreEqual(" here", tss.GetLineFromLineNumber(1).GetText());
-            Assert.AreEqual(tss.GetLineFromLineNumber(1).Start.Add(1).Position, _view.Caret.Position.BufferPosition.Position);
+            Create("dog", "cat");
+            _operations.Put("pig", _textView.GetLine(0), true);
+            Assert.AreEqual("dog", _textView.GetLine(0).GetText());
+            Assert.AreEqual("pig", _textView.GetLine(1).GetText());
         }
 
         [Test]

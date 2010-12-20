@@ -240,6 +240,13 @@ module SnapshotSpanUtil =
         if span.Length = 0 then None
         else span.End.Subtract(1) |> Some
 
+    /// Gets the last line which is apart of this Span.  
+    let GetLastIncludedLine span = 
+        let point = GetLastIncludedPoint span
+        match point with
+        | Some(point) -> point.GetContainingLine() |> Some
+        | None -> None
+
     /// Extend the SnapshotSpan count lines downwards.  If the count exceeds the end of the
     /// Snapshot it will extend to the end
     let ExtendDown span lineCount = 

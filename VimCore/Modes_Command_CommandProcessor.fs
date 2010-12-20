@@ -281,13 +281,8 @@ type internal CommandProcessor
             |> CommandParseUtil.SkipWhitespace
             |> CommandParseUtil.SkipRegister _buffer.RegisterMap
         
-        // Figure out the line number
-        let line = 
-            match range with 
-            | None -> (TextViewUtil.GetCaretPoint _buffer.TextView).GetContainingLine()
-            | Some(range) -> range.EndLine
-
-        _operations.Put reg.StringValue line (not bang)
+        let range = RangeUtil.RangeOrCurrentLine _buffer.TextView range
+        _operations.Put reg.StringValue range.EndLine (not bang)
 
     /// Parse the < command
     member x.ProcessShiftLeft (rest:char list) (range: SnapshotLineRange option) _ =

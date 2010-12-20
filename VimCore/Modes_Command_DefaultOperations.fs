@@ -53,20 +53,15 @@ type internal DefaultOperations ( _data : OperationsData ) =
                 if text.EndsWith(System.Environment.NewLine) then text
                 else text + System.Environment.NewLine
 
-            let point = line.Start
-            let span =
-                if isAfter then x.CommonImpl.PasteAfter point text OperationKind.LineWise
-                else x.CommonImpl.PasteBefore point text OperationKind.LineWise
-
-            // Move the cursor to the first non-blank character on the last line
-            let line = span.End.Subtract(1).GetContainingLine()
-            let rec inner (cur:SnapshotPoint) = 
-                if cur = line.End || not (System.Char.IsWhiteSpace(cur.GetChar())) then
-                    cur
-                else
-                    inner (cur.Add(1))
-            let point = inner line.Start
-            _textView.Caret.MoveTo(point) |> ignore
+            x.CommonImpl.WrapEditInUndoTransaction "Paste" (fun () -> 
+                let span =
+                    let point = if isAfter then line.EndIncludingLineBreak else line.Start
+                    x.PutAtWithReturn point (StringData.Simple text) OperationKind.LineWise
+                match SnapshotSpanUtil.GetLastIncludedLine span with
+                | None -> ()
+                | Some(line) ->
+                    let point = SnapshotLineUtil.GetIndent line
+                    TextViewUtil.MoveCaretToPoint _textView point)
 
         member x.PrintMarks (markMap:IMarkMap) =    
             let printMark (ident:char) (point:VirtualSnapshotPoint) =

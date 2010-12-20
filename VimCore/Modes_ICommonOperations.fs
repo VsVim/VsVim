@@ -145,21 +145,14 @@ type ICommonOperations =
     /// Go to the previous "count" tab
     abstract GoToPreviousTab : count : int -> unit
 
-    /// Insert the specified text at the cursor position "count" times
-    abstract InsertText : text:string -> count : int -> unit
-
-    /// Insert the data at the specified point with the specified OperationKind
-    abstract InsertTextAt : SnapshotPoint -> text:string-> OperationKind -> unit
-
-    /// Insert the data at the specified point with the specified OperationKind and return
-    /// the SnapshotSpan of the inserted text
-    abstract InsertTextAtWithReturn : SnapshotPoint -> text:string-> OperationKind -> SnapshotSpan
-
     /// Insert a line above the current cursor position and returns the resulting ITextSnapshotLine
     abstract InsertLineAbove : unit -> ITextSnapshotLine
 
     /// Adds an empty line to the buffer below the cursor and returns the resulting ITextSnapshotLine
     abstract InsertLineBelow : unit -> ITextSnapshotLine
+
+    /// Insert text at the caret
+    abstract InsertText : string -> int -> unit
 
     /// Joins the lines in the range
     abstract Join : SnapshotLineRange -> JoinKind -> unit
@@ -222,27 +215,11 @@ type ICommonOperations =
     /// Open all folds which inersect with the given SnapshotSpan
     abstract OpenAllFolds : SnapshotSpan -> unit
 
-    /// Paste after the passed in position.  Don't forget that a linewise paste
-    /// operation needs to occur under the cursor.  Returns the SnapshotSpan of
-    /// the text on the new snapshot
-    abstract PasteAfter : SnapshotPoint -> text : string -> OperationKind -> SnapshotSpan
-
-    abstract PasteAfterCursor : text:string -> count:int -> opKind:OperationKind -> moveCursorToEnd: bool -> unit
-
-    /// Paste the text before the passed in position.  Returns the SnapshotSpan for the text in
-    /// the new snapshot of the buffer
-    abstract PasteBefore : SnapshotPoint -> text : string -> OperationKind -> SnapshotSpan 
-
-    abstract PasteBeforeCursor : text:string -> count:int -> opKind:OperationKind -> moveCursorToEnd:bool -> unit
-
-    /// Paste over the selected text
-    abstract PasteOver : SnapshotSpan -> Register -> unit
-
     /// Put the specified StringData at the given point 
     abstract PutAt : SnapshotPoint -> StringData -> OperationKind -> unit
 
     /// Put the specified StringData at the caret 
-    abstract PutAtCaret : StringData -> OperationKind -> PutKind -> unit
+    abstract PutAtCaret : StringData -> OperationKind -> PutKind -> moveCaretAfterText:bool-> unit
 
     /// Put the specified StringData at the given point 
     abstract PutAtWithReturn : SnapshotPoint -> StringData -> OperationKind -> SnapshotSpan

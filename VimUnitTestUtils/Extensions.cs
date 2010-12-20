@@ -303,6 +303,11 @@ namespace Vim.UnitTest
             return new SnapshotPoint(textView.TextSnapshot, position);
         }
 
+        public static SnapshotPoint GetEndPoint(this ITextView textView)
+        {
+            return textView.TextSnapshot.GetEndPoint();
+        }
+
         public static ITextSnapshotLine GetLine(this ITextView textView, int line)
         {
             return textView.TextSnapshot.GetLineFromLineNumber(line);

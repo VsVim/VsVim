@@ -285,11 +285,11 @@ type internal NormalMode
                 yield (
                     "gp", 
                     CommandFlags.Repeatable, 
-                    fun count reg -> _operations.PasteAfterCursor reg.StringValue 1 reg.Value.OperationKind true |> ignore)
+                    fun count reg -> _operations.PutAtCaret (reg.Value.Value.ApplyCount count) reg.Value.OperationKind PutKind.After true)
                 yield (
                     "gP", 
                     CommandFlags.Repeatable, 
-                    fun count reg -> _operations.PasteBeforeCursor reg.StringValue 1 reg.Value.OperationKind true |> ignore)
+                    fun count reg -> _operations.PutAtCaret (reg.Value.Value.ApplyCount count) reg.Value.OperationKind PutKind.Before true)
                 yield (
                     "g&", 
                     CommandFlags.Special, 
@@ -389,11 +389,11 @@ type internal NormalMode
                 yield (
                     "p", 
                     CommandFlags.Repeatable, 
-                    fun count reg -> _operations.PutAtCaret (reg.Value.Value.ApplyCount count) reg.Value.OperationKind PutKind.After)
+                    fun count reg -> _operations.PutAtCaret (reg.Value.Value.ApplyCount count) reg.Value.OperationKind PutKind.After false)
                 yield (
                     "P", 
                     CommandFlags.Repeatable, 
-                    fun count reg -> _operations.PutAtCaret (reg.Value.Value.ApplyCount count) reg.Value.OperationKind PutKind.Before)
+                    fun count reg -> _operations.PutAtCaret (reg.Value.Value.ApplyCount count) reg.Value.OperationKind PutKind.Before false)
                 yield (
                     "D", 
                     CommandFlags.Repeatable, 

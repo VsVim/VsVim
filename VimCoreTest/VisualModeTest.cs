@@ -558,28 +558,54 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void Put1()
+        public void Handle_p_NoArguments()
         {
             Create("foo bar");
-            var span = _textBuffer.GetLineRange(0).Extent;
-            _selection.Select(span);
+            _map.GetRegister(RegisterName.Unnamed).UpdateValue("foo", OperationKind.CharacterWise);
+            _selection.Select(_textView.GetLineRange(0).Extent);
             _operations
-                .Setup(x => x.PasteOver(span, _map.GetRegister(RegisterName.Unnamed)))
+                .Setup(x => x.PutAtCaret(It.IsAny<StringData>(), OperationKind.CharacterWise, PutKind.Before, false))
                 .Verifiable();
             _mode.Process('p');
             _factory.Verify();
         }
 
         [Test]
-        public void Put2()
+        public void Handle_p_WithRegister()
         {
             Create("foo bar");
-            var span = _textBuffer.GetLineRange(0).Extent;
-            _selection.Select(span);
+            _map.GetRegister(RegisterName.NewNamed(NamedRegister.Register_c)).UpdateValue("foo", OperationKind.CharacterWise);
+            _selection.Select(_textBuffer.GetLineRange(0).Extent);
             _operations
-                .Setup(x => x.PasteOver(span, _map.GetRegister('c')))
+                .Setup(x => x.PutAtCaret(It.IsAny<StringData>(), OperationKind.CharacterWise, PutKind.Before, false))
                 .Verifiable();
             _mode.Process("\"cp");
+            _factory.Verify();
+        }
+
+        [Test]
+        public void Handle_P_NoArguments()
+        {
+            Create("foo bar");
+            _map.GetRegister(RegisterName.Unnamed).UpdateValue("foo", OperationKind.CharacterWise);
+            _selection.Select(_textView.GetLineRange(0).Extent);
+            _operations
+                .Setup(x => x.PutAtCaret(It.IsAny<StringData>(), OperationKind.CharacterWise, PutKind.Before, false))
+                .Verifiable();
+            _mode.Process('P');
+            _factory.Verify();
+        }
+
+        [Test]
+        public void Handle_P_WithRegister()
+        {
+            Create("foo bar");
+            _map.GetRegister(RegisterName.NewNamed(NamedRegister.Register_c)).UpdateValue("foo", OperationKind.CharacterWise);
+            _selection.Select(_textBuffer.GetLineRange(0).Extent);
+            _operations
+                .Setup(x => x.PutAtCaret(It.IsAny<StringData>(), OperationKind.CharacterWise, PutKind.Before, false))
+                .Verifiable();
+            _mode.Process("\"cP");
             _factory.Verify();
         }
 

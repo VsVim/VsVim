@@ -1104,7 +1104,7 @@ namespace VimCore.UnitTest
         public void Edit_cc_1()
         {
             Create("foo", "bar", "baz");
-            var span = _view.GetLineRange(0, 0).ExtentIncludingLineBreak;
+            var span = _view.GetLineRange(0, 0).Extent;
             _operations
                 .Setup(x => x.DeleteSpan(span))
                 .Verifiable();
@@ -1121,7 +1121,7 @@ namespace VimCore.UnitTest
         public void Edit_cc_2()
         {
             Create("foo", "bar", "baz");
-            var span = _view.GetLineRange(0, 1).ExtentIncludingLineBreak;
+            var span = _view.GetLineRange(0, 1).Extent;
             _operations
                 .Setup(x => x.DeleteSpan(span))
                 .Verifiable();
@@ -1525,7 +1525,7 @@ namespace VimCore.UnitTest
         public void Paste_p()
         {
             Create("foo bar");
-            _operations.Setup(x => x.PasteAfterCursor("hey", 1, OperationKind.CharacterWise, false)).Verifiable();
+            _operations.Setup(x => x.PutAtCaret(StringData.NewSimple("hey"), OperationKind.CharacterWise, PutKind.After, false)).Verifiable();
             _map.GetRegister(RegisterName.Unnamed).UpdateValue("hey");
             _mode.Process('p');
             _operations.Verify();
@@ -1535,7 +1535,7 @@ namespace VimCore.UnitTest
         public void Paste_p_2()
         {
             Create("foo");
-            _operations.Setup(x => x.PasteAfterCursor("hey", 1, OperationKind.CharacterWise, false)).Verifiable();
+            _operations.Setup(x => x.PutAtCaret(StringData.NewSimple("hey"), OperationKind.CharacterWise, PutKind.After, false)).Verifiable();
             _map.GetRegister('j').UpdateValue("hey");
             _mode.Process("\"jp");
             _operations.Verify();
@@ -1545,10 +1545,9 @@ namespace VimCore.UnitTest
         public void Paste_p_3()
         {
             Create("foo", "bar");
-            var data = "baz" + Environment.NewLine;
-            _operations.Setup(x => x.PasteAfterCursor(data, 1, OperationKind.LineWise, false)).Verifiable();
+            _operations.Setup(x => x.PutAtCaret(StringData.NewSimple("baz\n"), OperationKind.LineWise, PutKind.After, false)).Verifiable();
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 0));
-            _map.GetRegister(RegisterName.Unnamed).Value = new RegisterValue(StringData.NewSimple(data), OperationKind.LineWise);
+            _map.GetRegister(RegisterName.Unnamed).Value = new RegisterValue(StringData.NewSimple("baz\n"), OperationKind.LineWise);
             _mode.Process("p");
             _operations.Verify();
         }
@@ -1557,7 +1556,7 @@ namespace VimCore.UnitTest
         public void Paste_2p()
         {
             Create("foo");
-            _operations.Setup(x => x.PasteAfterCursor("hey", 2, OperationKind.CharacterWise, false)).Verifiable();
+            _operations.Setup(x => x.PutAtCaret(StringData.NewSimple("heyhey"), OperationKind.CharacterWise, PutKind.After, false)).Verifiable();
             _map.GetRegister(RegisterName.Unnamed).UpdateValue("hey");
             _mode.Process("2p");
             _operations.Verify();
@@ -1567,7 +1566,7 @@ namespace VimCore.UnitTest
         public void Paste_P()
         {
             Create("foo");
-            _operations.Setup(x => x.PasteBeforeCursor("hey", 1, OperationKind.CharacterWise, false)).Verifiable();
+            _operations.Setup(x => x.PutAtCaret(StringData.NewSimple("hey"), OperationKind.CharacterWise, PutKind.Before, false)).Verifiable();
             _map.GetRegister(RegisterName.Unnamed).UpdateValue("hey");
             _mode.Process('P');
             _operations.Verify();
@@ -1577,10 +1576,9 @@ namespace VimCore.UnitTest
         public void Paste_P_2()
         {
             Create("foo", "bar");
-            var data = "baz" + Environment.NewLine;
-            _operations.Setup(x => x.PasteBeforeCursor(data, 1, OperationKind.LineWise, false)).Verifiable();
+            _operations.Setup(x => x.PutAtCaret(StringData.NewSimple("baz\n"), OperationKind.LineWise, PutKind.Before, false)).Verifiable();
             _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 1));
-            _map.GetRegister(RegisterName.Unnamed).Value = new RegisterValue(StringData.NewSimple(data), OperationKind.LineWise);
+            _map.GetRegister(RegisterName.Unnamed).Value = new RegisterValue(StringData.NewSimple("baz\n"), OperationKind.LineWise);
             _mode.Process('P');
             _operations.Verify();
         }
@@ -1589,7 +1587,7 @@ namespace VimCore.UnitTest
         public void Paste_2P()
         {
             Create("foo");
-            _operations.Setup(x => x.PasteBeforeCursor("hey", 2, OperationKind.CharacterWise, false)).Verifiable();
+            _operations.Setup(x => x.PutAtCaret(StringData.NewSimple("heyhey"), OperationKind.CharacterWise, PutKind.Before, false)).Verifiable();
             _map.GetRegister(RegisterName.Unnamed).UpdateValue("hey");
             _mode.Process("2P");
             _operations.Verify();
@@ -1599,7 +1597,7 @@ namespace VimCore.UnitTest
         public void Paste_gp_1()
         {
             Create("foo");
-            _operations.Setup(x => x.PasteAfterCursor("hey", 1, OperationKind.CharacterWise, true)).Verifiable();
+            _operations.Setup(x => x.PutAtCaret(StringData.NewSimple("hey"), OperationKind.CharacterWise, PutKind.After, true)).Verifiable();
             _map.GetRegister(RegisterName.Unnamed).UpdateValue("hey");
             _mode.Process("gp");
             _operations.Verify();
@@ -1609,7 +1607,7 @@ namespace VimCore.UnitTest
         public void Paste_gp_2()
         {
             Create("foo", "bar");
-            _operations.Setup(x => x.PasteAfterCursor("hey", 1, OperationKind.CharacterWise, true)).Verifiable();
+            _operations.Setup(x => x.PutAtCaret(StringData.NewSimple("hey"), OperationKind.CharacterWise, PutKind.After, true)).Verifiable();
             _view.Caret.MoveTo(_view.TextSnapshot.GetLineFromLineNumber(0).End);
             _map.GetRegister('c').UpdateValue("hey");
             _mode.Process("\"cgp");
@@ -1620,7 +1618,7 @@ namespace VimCore.UnitTest
         public void Paste_gP_1()
         {
             Create("foo");
-            _operations.Setup(x => x.PasteBeforeCursor("hey", 1, OperationKind.CharacterWise, true)).Verifiable();
+            _operations.Setup(x => x.PutAtCaret(StringData.NewSimple("hey"), OperationKind.CharacterWise, PutKind.Before, true)).Verifiable();
             _map.GetRegister(RegisterName.Unnamed).UpdateValue("hey");
             _mode.Process("gP");
             _operations.Verify();
@@ -1630,7 +1628,7 @@ namespace VimCore.UnitTest
         public void Paste_gP_2()
         {
             Create("foo", "bar");
-            _operations.Setup(x => x.PasteBeforeCursor("hey", 1, OperationKind.CharacterWise, true)).Verifiable();
+            _operations.Setup(x => x.PutAtCaret(StringData.NewSimple("hey"), OperationKind.CharacterWise, PutKind.Before, true)).Verifiable();
             _view.Caret.MoveTo(_view.TextSnapshot.GetLineFromLineNumber(0).End);
             _map.GetRegister(RegisterName.Unnamed).UpdateValue("hey");
             _mode.Process("gP");

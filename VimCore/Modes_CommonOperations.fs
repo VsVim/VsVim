@@ -266,71 +266,6 @@ type internal CommonOperations ( _data : OperationsData ) =
         undoTransaction.Complete()
         ret
 
-    member x.PasteAfter point text opKind = 
-        let buffer = SnapshotPointUtil.GetBuffer point
-        let line = SnapshotPointUtil.GetContainingLine point
-
-        let doLineWise() = 
-            let span = SnapshotSpan(line.EndIncludingLineBreak,0) 
-            if line.LineBreakLength > 0 then 
-                (span, text, 0)
-            else 
-                // when there is a 0 length line break we are at the end of
-                // the file and must insert an additional newline
-                let text = System.Environment.NewLine + text
-                (span, text, System.Environment.NewLine.Length)
-
-        let doCharacterWise() = 
-            let point =  if point.Position < line.End.Position then point.Add(1) else point
-            let span =  SnapshotSpan(point,0)
-            (span, text, 0)
-
-        let replaceSpan, replaceText, offset = 
-            match opKind with
-            | OperationKind.LineWise -> doLineWise()
-            | OperationKind.CharacterWise -> doCharacterWise()
-        let tss = buffer.Replace(replaceSpan.Span, replaceText)
-        new SnapshotSpan(tss, replaceSpan.End.Position + offset , text.Length)
-    
-    member x.PasteBefore (point:SnapshotPoint) text opKind =
-        let buffer = point.Snapshot.TextBuffer
-        let span = 
-            match opKind with
-            | OperationKind.LineWise ->
-                let line = point.GetContainingLine()
-                new SnapshotSpan(line.Start, 0)
-            | OperationKind.CharacterWise ->
-                new SnapshotSpan(point,0)
-        let tss = buffer.Replace(span.Span, text) 
-        new SnapshotSpan(tss,span.End.Position, text.Length)
-
-    member x.InsertTextAt point text opKind =
-        x.InsertTextAtWithReturn point text opKind |> ignore
-
-    member x.InsertTextAtWithReturn (point:SnapshotPoint) text opKind = 
-        let text = x.GetInsertText point text opKind
-        let position = point.Position
-        let snapshot = _textBuffer.Insert(position, text)
-        let startPoint = SnapshotPoint(snapshot, position)
-        SnapshotSpanUtil.CreateWithLength startPoint text.Length
-
-    /// Get the text to insert given a particular SnapshotPoint and OperationKind
-    member x.GetInsertText point text opKind =
-
-        let getLineWiseText() = 
-            let snapshot = SnapshotPointUtil.GetSnapshot point
-            let line = SnapshotUtil.GetLastLine snapshot
-            if point = line.End then
-                // At the end of the file we need to insert an additional
-                // newline prefix
-                System.Environment.NewLine + text
-            else
-                text
-
-        match opKind with
-        | OperationKind.LineWise -> getLineWiseText()
-        | OperationKind.CharacterWise -> text
-
     member x.PutAt point stringData opKind =
         x.PutAtWithReturn point stringData opKind |> ignore
 
@@ -345,7 +280,21 @@ type internal CommonOperations ( _data : OperationsData ) =
         | StringData.Simple(str) -> 
 
             // Simple strings can go directly in at the position 
-            let text = x.GetInsertText point str opKind 
+            let text = 
+                let getLineWiseText() = 
+                    let snapshot = SnapshotPointUtil.GetSnapshot point
+                    let line = SnapshotUtil.GetLastLine snapshot
+                    if point = line.End then
+                        // At the end of the file we need to insert an additional
+                        // newline prefix
+                        System.Environment.NewLine + str
+                    else
+                        str
+
+                match opKind with
+                | OperationKind.LineWise -> getLineWiseText()
+                | OperationKind.CharacterWise -> str
+
             let position = point.Position
             edit.Insert(position, text) |> ignore 
             let snapshot = edit.Apply()
@@ -389,7 +338,7 @@ type internal CommonOperations ( _data : OperationsData ) =
             let range = SnapshotLineRangeUtil.CreateForLineAndMaxCount line col.Length 
             range.ExtentIncludingLineBreak
 
-    member x.PutAtCaret stringData opKind putKind = 
+    member x.PutAtCaret stringData opKind putKind moveCaretAfterText = 
 
         // Get the point at which the insertion will occur 
         let caretPoint = TextViewUtil.GetCaretPoint _textView
@@ -411,8 +360,8 @@ type internal CommonOperations ( _data : OperationsData ) =
                 | OperationKind.CharacterWise -> 
 
                     // Characterwise will just move the cursor to the end of the text on the first line 
-                    // of the put.  The PutAt operation can delete text to the left of the caret which 
-                    // changes it's original position.  Use an ITrackingPoint to account for this
+                    // of the put.  Unless we moving the caret after the text in which case it will go
+                    // one further to the right. 
                     let length = 
                         match stringData with 
                         | StringData.Simple(str) -> str.Length - 1
@@ -421,19 +370,31 @@ type internal CommonOperations ( _data : OperationsData ) =
                             | h::_ -> h.Length - 1
                             | [] -> 0
                     let length = max 0 length
+                    let length = if moveCaretAfterText then length + 1 else length
+
+                    // The PutAt operation can delete text to the left of the caret which changes it's 
+                    // original position.  Use an ITrackingPoint to account for this.  
                     match TrackingPointUtil.GetPointInSnapshot editPoint PointTrackingMode.Negative _textBuffer.CurrentSnapshot with
                     | Some(point) -> point.Position + length
                     | None -> editPoint.Position + length   // guess if it can't be found 
 
                 | OperationKind.LineWise ->
 
-                    // Characterwise puts it on the first character of the inserted line 
-                    let line = 
-                        let number = caretPoint |> SnapshotPointUtil.GetContainingLine |> SnapshotLineUtil.GetLineNumber 
-                        match putKind with
-                        | PutKind.After -> SnapshotUtil.GetLineOrLast _textBuffer.CurrentSnapshot (number + 1)
-                        | PutKind.Before -> SnapshotUtil.GetLineOrFirst _textBuffer.CurrentSnapshot (number - 1)
-                    line |> SnapshotLineUtil.GetIndent |> SnapshotPointUtil.GetPosition
+                    if moveCaretAfterText then 
+
+                        // Move it past the last insert 
+                        let lastChange = caretPoint.Snapshot.Version.Changes |> Seq.filter (fun c -> c.Delta > 0) |> SeqUtil.last
+                        lastChange.NewPosition + 1
+
+                    else
+
+                        // Linewise puts it on the first character of the inserted line 
+                        let line = 
+                            let number = caretPoint |> SnapshotPointUtil.GetContainingLine |> SnapshotLineUtil.GetLineNumber 
+                            match putKind with
+                            | PutKind.After -> SnapshotUtil.GetLineOrLast _textBuffer.CurrentSnapshot (number + 1)
+                            | PutKind.Before -> SnapshotUtil.GetLineOrFirst _textBuffer.CurrentSnapshot (number - 1)
+                        line |> SnapshotLineUtil.GetIndent |> SnapshotPointUtil.GetPosition
 
             let position = min _textBuffer.CurrentSnapshot.Length position
             let point = SnapshotPoint(_textBuffer.CurrentSnapshot, position)
@@ -489,16 +450,7 @@ type internal CommonOperations ( _data : OperationsData ) =
                 match map.GetLocalMark _textView.TextBuffer ident with
                 | Some(point) -> jumpLocal point
                 | None -> Failed Resources.Common_MarkNotSet
-    
-        member x.PasteAfter point text opKind = x.PasteAfter point text opKind
 
-        member x.PasteBefore point text opKind = x.PasteBefore point text opKind
-
-        member x.PasteOver span (reg:Register) =
-            use edit = _data.TextView.TextBuffer.CreateEdit()
-            edit.Replace(span.Span, reg.StringValue) |> ignore
-            edit.Apply() |> ignore
-    
         /// Move the cursor count spaces left
         member x.MoveCaretLeft count = 
             let caret = TextViewUtil.GetCaretPoint _textView
@@ -923,35 +875,6 @@ type internal CommonOperations ( _data : OperationsData ) =
             if not (_host.GoToFile text) then 
                 _statusUtil.OnError (Resources.NormalMode_CantFindFile text)
 
-        member x.PasteAfterCursor text count opKind moveCursor = 
-            let text = StringUtil.repeat count text
-            let caret = TextViewUtil.GetCaretPoint _textView
-            x.WrapEditInUndoTransaction "Paste" (fun () -> 
-                let span = x.PasteAfter caret text opKind
-                if moveCursor then
-                    TextViewUtil.MoveCaretToPoint _textView span.End 
-                else if opKind = OperationKind.LineWise then
-                    // For a LineWise paste we want to place the cursor at the start
-                    // of the next line
-                    let caretLineNumber = caret.GetContainingLine().LineNumber
-                    let nextLine = _textView.TextSnapshot.GetLineFromLineNumber(caretLineNumber + 1)
-                    let point = TssUtil.FindFirstNonWhitespaceCharacter nextLine
-                    TextViewUtil.MoveCaretToPoint _textView point  )
- 
-        member x.PasteBeforeCursor text count opKind moveCursor = 
-            let text = StringUtil.repeat count text
-            let caret = TextViewUtil.GetCaretPoint _textView
-            x.WrapEditInUndoTransaction "Paste" (fun () -> 
-                let span = x.PasteBefore caret text opKind
-                if moveCursor then
-                    TextViewUtil.MoveCaretToPoint _textView span.End 
-                else if opKind = OperationKind.LineWise then
-                    // For a LineWise paste we want to place the cursor at the start of this line. caret is a a snapshot
-                    // point from the old snapshot, so we need to find the same line in the new snapshot
-                    let line = _textView.TextSnapshot.GetLineFromLineNumber(caret.GetContainingLine().LineNumber)
-                    let point = TssUtil.FindFirstNonWhitespaceCharacter line
-                    TextViewUtil.MoveCaretToPoint _textView point )
-
         member x.InsertLineBelow () =
             let point = TextViewUtil.GetCaretPoint _textView
             let line = point.GetContainingLine()
@@ -967,9 +890,6 @@ type internal CommonOperations ( _data : OperationsData ) =
                 TextViewUtil.MoveCaretToVirtualPoint _textView point |> ignore 
                 newLine )
 
-        member x.InsertTextAt point text opKind = x.InsertTextAt point text opKind
-        member x.InsertTextAtWithReturn point text opKind = x.InsertTextAtWithReturn point text opKind
-    
         member x.InsertLineAbove () = 
             let point = TextViewUtil.GetCaretPoint _textView
             let line = point.GetContainingLine()
@@ -986,7 +906,7 @@ type internal CommonOperations ( _data : OperationsData ) =
 
         member x.PutAt point stringData opKind = x.PutAt point stringData opKind
 
-        member x.PutAtCaret stringData opKind putKind = x.PutAtCaret stringData opKind putKind
+        member x.PutAtCaret stringData opKind putKind moveCaretAfterText = x.PutAtCaret stringData opKind putKind moveCaretAfterText
 
         member x.PutAtWithReturn point stringData opKind = x.PutAtWithReturn point stringData opKind
 
