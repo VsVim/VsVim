@@ -720,5 +720,22 @@ namespace VimCore.UnitTest
             Assert.AreEqual("cbear", _textView.GetLine(2).GetText());
             Assert.AreEqual(_textView.GetCaretPoint(), _textView.GetLine(0).Start);
         }
+
+        [Test]
+        public void IncrementalSearch_VeryNoMagic()
+        {
+            CreateBuffer("dog", "cat");
+            _buffer.Process(@"/\Vog", enter: true);
+            Assert.AreEqual(1, _textView.GetCaretPoint().Position);
+        }
+
+        [Test]
+        public void IncrementalSearch_CaseSensitive()
+        {
+            CreateBuffer("dogDOG", "cat");
+            _buffer.Process(@"/\COG", enter: true);
+            Assert.AreEqual(4, _textView.GetCaretPoint().Position);
+        }
+
     }
 }

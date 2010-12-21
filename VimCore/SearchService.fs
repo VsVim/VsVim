@@ -49,8 +49,6 @@ type internal SearchService
         | None -> None
         | Some(text) -> 
 
-            let findData = FindData(text, tss, opts, nav) 
-    
             // Create a function which will give us the next search position
             let getNextPoint = 
                 if SearchKindUtil.IsForward searchData.Kind then
@@ -63,7 +61,7 @@ type internal SearchService
                         else span.Start.Subtract(1) |> Some )
                         
             // Recursive loop to perform the search "count" times
-            let rec doFind count position = 
+            let rec doFind findData count position = 
 
                 let result = 
                     try
@@ -78,13 +76,24 @@ type internal SearchService
                 | Some(span),false -> Some(span)
                 | Some(span),true -> 
                     match getNextPoint span with
-                    | Some(point) -> doFind (count-1) point.Position
+                    | Some(point) -> doFind findData (count-1) point.Position
                     | None -> None
                 | _ -> None
 
-            let count = max 1 count
-            let pos = SnapshotPointUtil.GetPosition point
-            doFind count pos
+            let findData = 
+                try
+                    // Can throw in cases like having an invalidly formed regex.  Occurs
+                    // a lot via incremental searching while the user is typing
+                    FindData(text, tss, opts, nav) |> Some
+                with 
+                | :? System.ArgumentException -> None
+
+            match findData with 
+            | None -> None
+            | Some(findData) -> 
+                let count = max 1 count
+                let pos = SnapshotPointUtil.GetPosition point
+                doFind findData count pos
 
     member x.FindNext searchData point nav = x.FindNextMultiple searchData point nav 1
 
