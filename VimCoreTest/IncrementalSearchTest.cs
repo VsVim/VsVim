@@ -43,7 +43,7 @@ namespace VimCore.UnitTest
             _outlining.Setup(x => x.ExpandAll(It.IsAny<SnapshotSpan>(), It.IsAny<Predicate<ICollapsed>>())).Returns<IEnumerable<ICollapsed>>(null);
             _searchRaw = new IncrementalSearch(
                 _textView,
-                _outlining.Object,
+                FSharpOption.Create(_outlining.Object),
                 _settings.Object,
                 _nav.Object,
                 _searchService.Object,

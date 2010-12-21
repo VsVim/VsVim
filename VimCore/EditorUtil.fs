@@ -909,9 +909,12 @@ module TextViewUtil =
         caret.EnsureVisible()
 
     /// Ensure the text pointed to by the caret is currently expanded
-    let EnsureCaretTextExpanded textView (outliningManager:IOutliningManager) = 
-        let point = GetCaretPoint textView
-        outliningManager.ExpandAll(SnapshotSpan(point,0), fun _ -> true) |> ignore
+    let EnsureCaretTextExpanded textView (outliningManager:IOutliningManager option) = 
+        match outliningManager with
+        | None -> ()
+        | Some(outliningManager) -> 
+            let point = GetCaretPoint textView
+            outliningManager.ExpandAll(SnapshotSpan(point,0), fun _ -> true) |> ignore
 
     /// Ensure that the caret is both on screen and not in the middle of any outlining region
     let EnsureCaretOnScreenAndTextExpanded textView outliningManager =

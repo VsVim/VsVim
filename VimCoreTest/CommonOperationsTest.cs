@@ -73,7 +73,7 @@ namespace VimCore.UnitTest
                 vimHost: _host.Object,
                 editorOperations: _editorOpts.Object,
                 textView: _textView,
-                outliningManager: _outlining.Object,
+                outliningManager: FSharpOption.Create(_outlining.Object),
                 jumpList: _jumpList.Object,
                 localSettings: _settings.Object,
                 undoRedoOperations: _undoRedoOperations.Object,

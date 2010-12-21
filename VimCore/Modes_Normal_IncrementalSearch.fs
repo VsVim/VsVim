@@ -17,7 +17,7 @@ type internal IncrementalSearchData = {
 type internal IncrementalSearch
     (
         _textView : ITextView,
-        _outlining : IOutliningManager,
+        _outlining : IOutliningManager option,
         _settings : IVimLocalSettings,
         _navigator : ITextStructureNavigator,
         _search : ISearchService,

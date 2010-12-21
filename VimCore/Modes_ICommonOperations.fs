@@ -19,7 +19,7 @@ type OperationsData = {
     JumpList : IJumpList
     KeyMap : IKeyMap
     LocalSettings : IVimLocalSettings
-    OutliningManager : IOutliningManager
+    OutliningManager : IOutliningManager option
     RegisterMap : IRegisterMap 
     StatusUtil : IStatusUtil
     SearchService : ISearchService
