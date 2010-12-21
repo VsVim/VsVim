@@ -13,9 +13,10 @@ namespace VimCore.UnitTest
     [TestFixture]
     public class VimTest
     {
+        private MockRepository _factory;
         private Mock<IVimGlobalSettings> _settings;
         private Mock<IMarkMap> _markMap;
-        private Mock<IVimBufferFactory> _factory;
+        private Mock<IVimBufferFactory> _bufferFactory;
         private Mock<IVimHost> _host;
         private Mock<IKeyMap> _keyMap;
         private Mock<IChangeTracker> _changeTracker;
@@ -26,16 +27,17 @@ namespace VimCore.UnitTest
         [SetUp]
         public void Setup()
         {
-            _settings = new Mock<IVimGlobalSettings>(MockBehavior.Strict);
-            _markMap = new Mock<IMarkMap>(MockBehavior.Strict);
-            _factory = new Mock<IVimBufferFactory>(MockBehavior.Strict);
-            _keyMap = new Mock<IKeyMap>(MockBehavior.Strict);
-            _changeTracker = new Mock<IChangeTracker>(MockBehavior.Strict);
-            _host = new Mock<IVimHost>(MockBehavior.Strict);
-            _searchInfo = new Mock<ISearchService>(MockBehavior.Strict);
+            _factory = new MockRepository(MockBehavior.Strict);
+            _settings = _factory.Create<IVimGlobalSettings>(MockBehavior.Strict);
+            _markMap = _factory.Create<IMarkMap>(MockBehavior.Strict);
+            _bufferFactory = _factory.Create<IVimBufferFactory>(MockBehavior.Strict);
+            _keyMap = _factory.Create<IKeyMap>(MockBehavior.Strict);
+            _changeTracker = _factory.Create<IChangeTracker>(MockBehavior.Strict);
+            _host = _factory.Create<IVimHost>(MockBehavior.Strict);
+            _searchInfo = _factory.Create<ISearchService>(MockBehavior.Strict);
             _vimRaw = new Vim.Vim(
                 _host.Object,
-                _factory.Object,
+                _bufferFactory.Object,
                 FSharpList<Lazy<IVimBufferCreationListener>>.Empty,
                 _settings.Object,
                 _markMap.Object,
@@ -51,7 +53,7 @@ namespace VimCore.UnitTest
         {
             var view = new Mock<IWpfTextView>(MockBehavior.Strict);
             var buffer = new Mock<IVimBuffer>(MockBehavior.Strict);
-            _factory.Setup(x => x.CreateBuffer(_vim, view.Object)).Returns(buffer.Object);
+            _bufferFactory.Setup(x => x.CreateBuffer(_vim, view.Object)).Returns(buffer.Object);
             var ret = _vim.CreateBuffer(view.Object);
             Assert.AreSame(ret, buffer.Object);
         }
@@ -61,7 +63,7 @@ namespace VimCore.UnitTest
         {
             var view = new Mock<IWpfTextView>(MockBehavior.Strict);
             var buffer = new Mock<IVimBuffer>(MockBehavior.Strict);
-            _factory.Setup(x => x.CreateBuffer(_vim, view.Object)).Returns(buffer.Object);
+            _bufferFactory.Setup(x => x.CreateBuffer(_vim, view.Object)).Returns(buffer.Object);
             var ret = _vim.CreateBuffer(view.Object);
             var ret2 = _vim.CreateBuffer(view.Object);
         }
@@ -79,7 +81,7 @@ namespace VimCore.UnitTest
         {
             var view = new Mock<IWpfTextView>(MockBehavior.Strict);
             var buffer = new Mock<IVimBuffer>(MockBehavior.Strict);
-            _factory.Setup(x => x.CreateBuffer(_vim, view.Object)).Returns(buffer.Object);
+            _bufferFactory.Setup(x => x.CreateBuffer(_vim, view.Object)).Returns(buffer.Object);
             _vim.CreateBuffer(view.Object);
             var ret = _vim.GetBuffer(view.Object);
             Assert.IsTrue(ret.IsSome());
@@ -91,7 +93,7 @@ namespace VimCore.UnitTest
         {
             var view = new Mock<IWpfTextView>(MockBehavior.Strict);
             var buffer = new Mock<IVimBuffer>(MockBehavior.Strict);
-            _factory.Setup(x => x.CreateBuffer(_vim, view.Object)).Returns(buffer.Object);
+            _bufferFactory.Setup(x => x.CreateBuffer(_vim, view.Object)).Returns(buffer.Object);
             var ret = _vim.GetOrCreateBuffer(view.Object);
             Assert.AreSame(ret, buffer.Object);
         }
@@ -101,9 +103,9 @@ namespace VimCore.UnitTest
         {
             var view = new Mock<IWpfTextView>(MockBehavior.Strict);
             var buffer = new Mock<IVimBuffer>(MockBehavior.Strict);
-            _factory.Setup(x => x.CreateBuffer(_vim, view.Object)).Returns(buffer.Object);
+            _bufferFactory.Setup(x => x.CreateBuffer(_vim, view.Object)).Returns(buffer.Object);
             var ret1 = _vim.GetOrCreateBuffer(view.Object);
-            _factory.Setup(x => x.CreateBuffer(_vim, view.Object)).Throws(new Exception());
+            _bufferFactory.Setup(x => x.CreateBuffer(_vim, view.Object)).Throws(new Exception());
             var ret2 = _vim.GetOrCreateBuffer(view.Object);
             Assert.AreSame(ret1, ret2);
         }
@@ -120,7 +122,7 @@ namespace VimCore.UnitTest
         {
             var view = new Mock<IWpfTextView>(MockBehavior.Strict);
             var buffer = new Mock<IVimBuffer>(MockBehavior.Strict);
-            _factory.Setup(x => x.CreateBuffer(_vim, view.Object)).Returns(buffer.Object);
+            _bufferFactory.Setup(x => x.CreateBuffer(_vim, view.Object)).Returns(buffer.Object);
             _vim.CreateBuffer(view.Object);
             Assert.IsTrue(_vim.RemoveBuffer(view.Object));
             var ret = _vim.GetBuffer(view.Object);
@@ -164,7 +166,7 @@ namespace VimCore.UnitTest
             commandMode.Setup(x => x.RunCommand("set noignorecase")).Returns(RunResult.Completed).Verifiable();
             buffer.Setup(x => x.CommandMode).Returns(commandMode.Object);
             var createViewFunc = FSharpFuncUtil.Create<Microsoft.FSharp.Core.Unit, ITextView>(_ => view.Object);
-            _factory.Setup(x => x.CreateBuffer(_vim, view.Object)).Returns(buffer.Object);
+            _bufferFactory.Setup(x => x.CreateBuffer(_vim, view.Object)).Returns(buffer.Object);
 
             var fileName = "foo";
             var contents = new string[] { "set noignorecase" };
@@ -195,7 +197,7 @@ namespace VimCore.UnitTest
         {
             var view = new Mock<IWpfTextView>(MockBehavior.Strict);
             var buffer = new MockVimBuffer();
-            _factory.Setup(x => x.CreateBuffer(_vim, view.Object)).Returns(buffer);
+            _bufferFactory.Setup(x => x.CreateBuffer(_vim, view.Object)).Returns(buffer);
             var ret = _vim.CreateBuffer(view.Object);
             buffer.RaiseKeyInputStart(KeyInputUtil.CharToKeyInput('c'));
             var active = _vim.ActiveBuffer;
@@ -208,11 +210,12 @@ namespace VimCore.UnitTest
         {
             var view = new Mock<IWpfTextView>(MockBehavior.Strict);
             var buffer = new MockVimBuffer();
-            _factory.Setup(x => x.CreateBuffer(_vim, view.Object)).Returns(buffer);
+            _bufferFactory.Setup(x => x.CreateBuffer(_vim, view.Object)).Returns(buffer);
             var ret = _vim.CreateBuffer(view.Object);
             buffer.RaiseKeyInputStart(KeyInputUtil.CharToKeyInput('c'));
             buffer.RaiseKeyInputEnd(KeyInputUtil.CharToKeyInput('c'));
             Assert.IsTrue(_vim.ActiveBuffer.IsNone());
         }
+
     }
 }

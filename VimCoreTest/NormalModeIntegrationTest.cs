@@ -573,7 +573,7 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void Handel_cc_AutoIndentShouldPreserveOnSingle()
+        public void Handle_cc_AutoIndentShouldPreserveOnSingle()
         {
             CreateBuffer("  dog", "  cat", "  tree");
             _buffer.Settings.AutoIndent = true;
@@ -584,7 +584,7 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void Handel_cc_NoAutoIndentShouldRemoveAllOnSingle()
+        public void Handle_cc_NoAutoIndentShouldRemoveAllOnSingle()
         {
             CreateBuffer("  dog", "  cat");
             _buffer.Settings.AutoIndent = false;
@@ -595,7 +595,7 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void Handel_cc_AutoIndentShouldPreserveOnMultiple()
+        public void Handle_cc_AutoIndentShouldPreserveOnMultiple()
         {
             CreateBuffer("  dog", "  cat", "  tree");
             _buffer.Settings.AutoIndent = true;
@@ -607,7 +607,7 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void Handel_cc_AutoIndentShouldPreserveFirstOneOnMultiple()
+        public void Handle_cc_AutoIndentShouldPreserveFirstOneOnMultiple()
         {
             CreateBuffer("    dog", "  cat", "  tree");
             _buffer.Settings.AutoIndent = true;
@@ -619,7 +619,7 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void Handel_cc_NoAutoIndentShouldRemoveAllOnMultiple()
+        public void Handle_cc_NoAutoIndentShouldRemoveAllOnMultiple()
         {
             CreateBuffer("  dog", "  cat", "  tree");
             _buffer.Settings.AutoIndent = false;
@@ -628,6 +628,17 @@ namespace VimCore.UnitTest
             Assert.AreEqual(0, _textView.GetCaretPoint().Position);
             Assert.AreEqual("", _textView.GetLine(0).GetText());
             Assert.AreEqual("  tree", _textView.GetLine(1).GetText());
+        }
+
+        [Test]
+        public void Handle_cb_DeleteWhitespaceAtEndOfSpan()
+        {
+            CreateBuffer("public static void Main");
+            _textView.MoveCaretTo(19);
+            _buffer.Process("cb");
+            Assert.AreEqual(ModeKind.Insert, _buffer.ModeKind);
+            Assert.AreEqual("public static Main", _textView.GetLine(0).GetText());
+            Assert.AreEqual(14, _textView.GetCaretPoint().Position);
         }
 
         [Test]
