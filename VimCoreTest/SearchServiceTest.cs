@@ -305,18 +305,13 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        [Description("An InvalidOperationException from a non-regex shouldn't be handled")]
-        public void BadRegex3()
+        public void BadRegex_NoMagicSpecifierShouldBeHandled()
         {
-            var tss = MockObjectFactory.CreateTextSnapshot(42).Object;
+            var snapshot = EditorUtil.CreateBuffer("hello world");
             var nav = _factory.Create<ITextStructureNavigator>();
-            _textSearch
-                .Setup(x => x.FindNext(0, true, It.IsAny<FindData>()))
-                .Throws(new InvalidOperationException())
-                .Verifiable();
-            var searchData = new SearchData(SearchText.NewStraightText("f("), SearchKind.ForwardWithWrap, SearchOptions.None);
-            Assert.Throws<InvalidOperationException>(() => _search.FindNext(searchData, new SnapshotPoint(tss, 0), nav.Object));
-            _factory.Verify();
+            var searchData = new SearchData(SearchText.NewPattern(@"\V"), SearchKind.ForwardWithWrap, SearchOptions.None);
+            var ret = _search.FindNext(searchData, snapshot.GetPoint(0), nav.Object);
+            Assert.IsTrue(ret.IsNone());
         }
     }
 

@@ -763,9 +763,10 @@ type internal CommonOperations ( _data : OperationsData ) =
         member x.ChangeSpan (data:MotionData) =
             
             // For whatever reason the change commands will remove the trailing whitespace
-            // for character wise motions
+            // for character wise motions that are forward
             let span = 
-                if data.OperationKind = OperationKind.LineWise then data.OperationSpan
+                if data.OperationKind = OperationKind.LineWise || not data.IsForward then 
+                    data.OperationSpan
                 else 
                     let point = 
                         data.OperationSpan
