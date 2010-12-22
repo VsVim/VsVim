@@ -961,7 +961,6 @@ type SettingKind =
     | ToggleKind
 
 type SettingValue =
-    | NoValue 
     | NumberValue of int
     | StringValue of string
     | ToggleValue of bool
@@ -991,8 +990,11 @@ type Setting = {
 
     /// Is the setting value currently set to the default value
     member x.IsValueDefault = 
-        match x.Value with
-        | NoValue -> true
+        match x.Value, x.DefaultValue with
+        | CalculatedValue(_), CalculatedValue(_) -> true
+        | NumberValue(left), NumberValue(right) -> left = right
+        | StringValue(left), StringValue(right) -> left = right
+        | ToggleValue(left), ToggleValue(right) -> left = right
         | _ -> false
 
 module GlobalSettingNames = 
@@ -1160,6 +1162,10 @@ and IVim =
     abstract VimData : IVimData 
 
     abstract VimHost : IVimHost
+
+    /// The Local Setting's which were persisted from loading VimRc.  Empty if
+    /// VimRc isn't loaded yet
+    abstract VimRcLocalSettings : Setting list
 
     /// Create an IVimBuffer for the given IWpfTextView
     abstract CreateBuffer : ITextView -> IVimBuffer

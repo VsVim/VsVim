@@ -142,7 +142,6 @@ type internal VimBufferFactory
             member x.OnStatus msg = buffer.RaiseStatusMessage msg
             member x.OnError msg = buffer.RaiseErrorMessage msg
             member x.OnStatusLong msgSeq = buffer.RaiseStatusMessageLong msgSeq }
-        
 
     interface IVimBufferFactory with
         member x.CreateBuffer vim view = x.CreateBuffer vim view :> IVimBuffer
@@ -170,6 +169,10 @@ type internal Vim
 
     /// Holds the active stack of IVimBuffer instances
     let mutable _activeBufferStack : IVimBuffer list = List.empty
+
+    /// Holds the local setting information which was stored when loading the VimRc file.  This 
+    /// is applied to IVimBuffer instances which are created when there is no active IVimBuffer
+    let mutable _vimrcLocalSettings : Setting list = List.empty
 
     let _registerMap =
         let currentFileNameFunc() = 
@@ -209,23 +212,29 @@ type internal Vim
             tracker :> IChangeTracker,
             SearchService(search, globalSettings) :> ISearchService)
 
-    member x.CreateVimBufferCore view = 
+    member x.ActiveBuffer = ListUtil.tryHeadOnly _activeBufferStack
+
+    member x.CreateBuffer view (localSettingList : Setting seq)= 
         if _bufferMap.ContainsKey(view) then invalidArg "view" Resources.Vim_ViewAlreadyHasBuffer
         let buffer = _bufferFactoryService.CreateBuffer (x:>IVim) view
+
+        // Apply the specified local buffer settings
+        localSettingList |> Seq.iter (fun s -> buffer.Settings.TrySetValue s.Name s.Value |> ignore)
 
         // Setup the handlers for KeyInputStart and KeyInputEnd to accurately track the active
         // IVimBuffer instance
         let eventBag = DisposableBag()
         buffer.KeyInputStart
-            |> Observable.subscribe (fun _ -> _activeBufferStack <- buffer :: _activeBufferStack )
-            |> eventBag.Add
+        |> Observable.subscribe (fun _ -> _activeBufferStack <- buffer :: _activeBufferStack )
+        |> eventBag.Add
+
         buffer.KeyInputEnd 
-            |> Observable.subscribe (fun _ -> 
-                _activeBufferStack <- 
-                    match _activeBufferStack with
-                    | h::t -> t
-                    | [] -> [] )
-            |> eventBag.Add
+        |> Observable.subscribe (fun _ -> 
+            _activeBufferStack <- 
+                match _activeBufferStack with
+                | h::t -> t
+                | [] -> [] )
+        |> eventBag.Add
 
         _bufferMap.Add(view, (buffer,eventBag))
         _bufferCreationListeners |> Seq.iter (fun x -> x.Value.VimBufferCreated buffer)
@@ -244,31 +253,42 @@ type internal Vim
         | (true,(buffer,_)) -> Some buffer
         | (false,_) -> None
 
-    member private x.GetOrCreateBufferCore view =
+    member x.GetOrCreateBuffer view =
         match x.GetBufferCore view with
         | Some(buffer) -> buffer
-        | None -> x.CreateVimBufferCore view
+        | None -> 
+            // Determine the settings which need to be applied to the new IVimBuffer
+            let settings = 
+                match x.ActiveBuffer with
+                | Some(buffer) -> buffer.Settings.AllSettings |> Seq.filter (fun s -> not s.IsGlobal)
+                | None -> _vimrcLocalSettings |> Seq.ofList
+                
+            x.CreateBuffer view settings
 
-    static member LoadVimRc (vim:IVim) (fileSystem:IFileSystem) (createViewFunc : (unit -> ITextView)) =
-        let settings = vim.Settings
-        settings.VimRc <- System.String.Empty
+    member x.LoadVimRc (fileSystem:IFileSystem) (createViewFunc : (unit -> ITextView)) =
+        _settings.VimRc <- System.String.Empty
+        _settings.VimRcPaths <- fileSystem.GetVimRcDirectories() |> String.concat ";"
 
-        settings.VimRcPaths <- fileSystem.GetVimRcDirectories() |> String.concat ";"
         match fileSystem.LoadVimRc() with
         | None -> false
         | Some(path,lines) ->
-            settings.VimRc <- path
+            _settings.VimRc <- path
             let view = createViewFunc()
-            let buffer = vim.GetOrCreateBuffer view
+            let buffer = x.CreateBuffer view Seq.empty
             let mode = buffer.CommandMode
             lines |> Seq.iter (fun input -> mode.RunCommand input |> ignore)
+            _vimrcLocalSettings <- 
+                buffer.Settings.AllSettings 
+                |> Seq.filter (fun s -> not s.IsGlobal && not s.IsValueDefault)
+                |> List.ofSeq
             view.Close()
             true
 
     interface IVim with
-        member x.ActiveBuffer = ListUtil.tryHeadOnly _activeBufferStack
+        member x.ActiveBuffer = x.ActiveBuffer
         member x.VimData = _vimData
         member x.VimHost = _host
+        member x.VimRcLocalSettings = _vimrcLocalSettings
         member x.MarkMap = _markMap
         member x.KeyMap = _keyMap
         member x.ChangeTracker = _changeTracker
@@ -276,8 +296,8 @@ type internal Vim
         member x.IsVimRcLoaded = not (System.String.IsNullOrEmpty(_settings.VimRc))
         member x.RegisterMap = _registerMap 
         member x.Settings = _settings
-        member x.CreateBuffer view = x.CreateVimBufferCore view 
-        member x.GetOrCreateBuffer view = x.GetOrCreateBufferCore view
+        member x.CreateBuffer view = x.CreateBuffer view _vimrcLocalSettings
+        member x.GetOrCreateBuffer view = x.GetOrCreateBuffer view
         member x.RemoveBuffer view = x.RemoveBufferCore view
         member x.GetBuffer view = x.GetBufferCore view
         member x.GetBufferForBuffer textBuffer =
@@ -285,8 +305,5 @@ type internal Vim
             match keys |> Seq.isEmpty with
             | true -> None
             | false -> keys |> Seq.head |> x.GetBufferCore
-        member x.LoadVimRc fileSystem createViewFunc = Vim.LoadVimRc x fileSystem createViewFunc
-                
+        member x.LoadVimRc fileSystem createViewFunc = x.LoadVimRc fileSystem createViewFunc
 
-        
-        

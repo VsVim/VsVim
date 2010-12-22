@@ -189,7 +189,7 @@ namespace Vim.UnitTest
             return (SettingValue.StringValue)value;
         }
 
-        public static SettingValue.ToggleValue AsBooleanValue(this SettingValue value)
+        public static SettingValue.ToggleValue AsToggleValue(this SettingValue value)
         {
             Assert.IsTrue(value.IsToggleValue);
             return (SettingValue.ToggleValue)value;

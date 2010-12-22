@@ -28,11 +28,11 @@ type internal DefaultOperations ( _data : OperationsData ) =
     let FormatSetting(setting:Setting) = 
 
         match setting.Kind,setting.AggregateValue with
-        | (ToggleKind,ToggleValue(b)) -> 
+        | (SettingKind.ToggleKind, SettingValue.ToggleValue(b)) -> 
             if b then setting.Name
             else sprintf "no%s" setting.Name
-        | (StringKind,StringValue(s)) -> sprintf "%s=\"%s\"" setting.Name s
-        | (NumberKind,NumberValue(n)) -> sprintf "%s=%d" setting.Name n
+        | (SettingKind.StringKind, SettingValue.StringValue(s)) -> sprintf "%s=\"%s\"" setting.Name s
+        | (SettingKind.NumberKind, SettingValue.NumberValue(n)) -> sprintf "%s=%d" setting.Name n
         | _ -> "Invalid value"
 
     member private x.CommonImpl = x :> ICommonOperations
