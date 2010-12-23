@@ -1179,7 +1179,8 @@ and IVim =
     /// Get or create an IVimBuffer for the given IWpfTextView
     abstract GetOrCreateBuffer : ITextView -> IVimBuffer
 
-    /// Load the VimRc file.  If the file was previously, a new load will be attempted
+    /// Load the VimRc file.  If the file was previously loaded a new load will be 
+    /// attempted.  This method will throw if the 
     abstract LoadVimRc : IFileSystem -> createViewFunc:(unit -> ITextView) -> bool
 
     /// Remove the IVimBuffer associated with the given view.  This will not actually close

@@ -2,9 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Windows.Threading;
-using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Editor;
 using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.TextManager.Interop;
 using Microsoft.VisualStudio.Utilities;
@@ -22,6 +22,7 @@ namespace VsVim
     internal sealed class HostFactory : IWpfTextViewCreationListener, IVimBufferCreationListener, IVsTextViewCreationListener
     {
         private readonly IKeyBindingService _keyBindingService;
+        private readonly ITextBufferFactoryService _bufferFactoryService;
         private readonly ITextEditorFactoryService _editorFactoryService;
         private readonly IEditorOptionsFactoryService _editorOptionsFactoryService;
         private readonly IExternalEditorManager _externalEditorManager;
@@ -35,6 +36,7 @@ namespace VsVim
         [ImportingConstructor]
         public HostFactory(
             IVim vim,
+            ITextBufferFactoryService bufferFactoryService, 
             ITextEditorFactoryService editorFactoryService,
             IEditorOptionsFactoryService editorOptionsFactoryService,
             IKeyBindingService keyBindingService,
@@ -46,6 +48,7 @@ namespace VsVim
         {
             _vim = vim;
             _keyBindingService = keyBindingService;
+            _bufferFactoryService = bufferFactoryService;
             _editorFactoryService = editorFactoryService;
             _editorOptionsFactoryService = editorOptionsFactoryService;
             _externalEditorManager = externalEditorManager;
@@ -57,30 +60,38 @@ namespace VsVim
 
         void IWpfTextViewCreationListener.TextViewCreated(IWpfTextView textView)
         {
-            var buffer = _vim.GetOrCreateBuffer(textView);
-
             // Load the VimRC file if we haven't tried yet
             if (!_vim.IsVimRcLoaded && String.IsNullOrEmpty(_vim.Settings.VimRcPaths))
             {
-                var func = FSharpFunc<Unit, ITextView>.FromConverter(_ => _editorFactoryService.CreateTextView());
-                _vim.LoadVimRc(_fileSystem, func);
+                // Need to pass the LoadVimRc call a function to create an ITextView that 
+                // can be used to load the settings against.  We don't want this ITextView 
+                // coming back through TextViewCreated so give it a ITextViewRole that won't
+                // hit our filter 
+                Func<ITextView> createViewFunc = () => _editorFactoryService.CreateTextView(
+                    _bufferFactoryService.CreateTextBuffer(),
+                    _editorFactoryService.NoRoles);
+                _vim.LoadVimRc(_fileSystem, createViewFunc.ToFSharpFunc());
             }
 
+            // Create the IVimBuffer after loading the VimRc so that it gets the appropriate
+            // settings
+            var buffer = _vim.GetOrCreateBuffer(textView);
+
             Action doCheck = () =>
+            {
+                // Run the key binding check now
+                if (_keyBindingService.ConflictingKeyBindingState == ConflictingKeyBindingState.HasNotChecked)
                 {
-                    // Run the key binding check now
-                    if (_keyBindingService.ConflictingKeyBindingState == ConflictingKeyBindingState.HasNotChecked)
+                    if (Settings.Settings.Default.IgnoredConflictingKeyBinding)
                     {
-                        if (Settings.Settings.Default.IgnoredConflictingKeyBinding)
-                        {
-                            _keyBindingService.IgnoreAnyConflicts();
-                        }
-                        else
-                        {
-                            _keyBindingService.RunConflictingKeyBindingStateCheck(buffer, (x, y) => { });
-                        }
+                        _keyBindingService.IgnoreAnyConflicts();
                     }
-                };
+                    else
+                    {
+                        _keyBindingService.RunConflictingKeyBindingStateCheck(buffer, (x, y) => { });
+                    }
+                }
+            };
 
             Dispatcher.CurrentDispatcher.BeginInvoke(doCheck, null);
         }
