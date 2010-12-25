@@ -58,7 +58,15 @@ type internal MotionCapture
                     MotionFlags.CursorMovement,
                     fun arg -> _util.WordForward WordKind.NormalWord arg.Count |> Some)
                 yield (
+                    "<S-Right>",
+                    MotionFlags.CursorMovement,
+                    fun arg -> _util.WordForward WordKind.NormalWord arg.Count |> Some)
+                yield (
                     "W", 
+                    MotionFlags.CursorMovement,
+                    fun arg -> _util.WordForward  WordKind.BigWord arg.Count |> Some)
+                yield (
+                    "<C-Right>", 
                     MotionFlags.CursorMovement,
                     fun arg -> _util.WordForward  WordKind.BigWord arg.Count |> Some)
                 yield (
@@ -66,7 +74,15 @@ type internal MotionCapture
                     MotionFlags.CursorMovement,
                     fun arg -> _util.WordBackward WordKind.NormalWord arg.Count |> Some)
                 yield (
+                    "<S-Left>", 
+                    MotionFlags.CursorMovement,
+                    fun arg -> _util.WordBackward WordKind.NormalWord arg.Count |> Some)
+                yield (
                     "B", 
+                    MotionFlags.CursorMovement,
+                    fun arg -> _util.WordBackward WordKind.BigWord arg.Count |> Some)
+                yield (
+                    "<C-Left>", 
                     MotionFlags.CursorMovement,
                     fun arg -> _util.WordBackward WordKind.BigWord arg.Count |> Some)
                 yield (
