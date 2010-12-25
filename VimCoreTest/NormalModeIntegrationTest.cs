@@ -748,5 +748,31 @@ namespace VimCore.UnitTest
             Assert.AreEqual(4, _textView.GetCaretPoint().Position);
         }
 
+        [Test]
+        public void IncrementalSearch_HandlesEscape()
+        {
+            CreateBuffer("dog");
+            _buffer.Process("/do");
+            _buffer.Process(KeyInputUtil.EscapeKey);
+            Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+        }
+
+        [Test]
+        public void IncrementalSearch_HandlesEscapeInOperator()
+        {
+            CreateBuffer("dog");
+            _buffer.Process("d/do");
+            _buffer.Process(KeyInputUtil.EscapeKey);
+            Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+        }
+
+        [Test]
+        public void IncrementalSearch_UsedAsOperatorMotion()
+        {
+            CreateBuffer("dog cat tree");
+            _buffer.Process("d/cat", enter: true);
+            Assert.AreEqual("cat tree", _textView.GetLine(0).GetText());
+            Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+        }
     }
 }

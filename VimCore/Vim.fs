@@ -54,7 +54,6 @@ type internal VimBufferFactory
         let editOptions = _editorOptionsFactoryService.GetOptions(view)
         let localSettings = LocalSettings(vim.Settings, view) :> IVimLocalSettings
         let motionUtil = TextViewMotionUtil(view, localSettings) :> ITextViewMotionUtil
-        let capture = MotionCapture(vim.VimHost, view, motionUtil, _motionCaptureGlobalData) :> IMotionCapture
         let outlining = 
             // This will return null in ITextBuffer instances where there is no IOutliningManager such
             // as TFS annotated buffers.
@@ -64,6 +63,7 @@ type internal VimBufferFactory
         let foldManager = _foldManagerFactory.GetFoldManager(view.TextBuffer)
         let wordNav = x.CreateTextStructureNavigator view.TextBuffer WordKind.NormalWord
         let incrementalSearch = Vim.Modes.Normal.IncrementalSearch(view, outlining, localSettings, wordNav, vim.SearchService, vim.VimData) :> IIncrementalSearch
+        let capture = MotionCapture(vim.VimHost, view, motionUtil, incrementalSearch, jumpList, _motionCaptureGlobalData) :> IMotionCapture
         let bufferRaw = 
             VimBuffer( 
                 vim,

@@ -586,11 +586,18 @@ type MotionFlags =
     /// :help text-objects
     | TextObjectSelection = 0x2
 
+    /// The motion function wants to specially handle the esape function.  This is used 
+    /// on Complex motions such as / and ? 
+    | HandlesEscape = 0x4
+
 type MotionFunction = MotionArgument -> MotionData option
 
 type ComplexMotionResult =
-    /// Enough input was provided to produce a simple motion style function
-    | Finished of MotionFunction
+    /// The complex motion was completed and produced potentially a function that given
+    /// a MotionArgument will attempt to calculate a MotionData.  It can also optionally
+    /// return a MotionFunction used to calculate the very first instance of the 
+    /// MotionData function (useful for caching).  
+    | Finished of MotionFunction * MotionFunction option
     | Cancelled
     | Error of string
     | NeedMoreInput of KeyRemapMode option * (KeyInput -> ComplexMotionResult)

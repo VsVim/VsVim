@@ -66,13 +66,15 @@ namespace VimCore.UnitTest
                 _textView,
                 "test",
                 MockObjectFactory.CreateVim(_map, host: _host.Object).Object,
-                incrementalSearch:_incrementalSearch.Object,
+                incrementalSearch: _incrementalSearch.Object,
                 jumpList: _jumpList.Object,
                 factory: _factory);
             var capture = new MotionCapture(
                 _host.Object,
                 _textView,
                 new TextViewMotionUtil(_textView, new Vim.LocalSettings(_bufferData.Object.Settings.GlobalSettings, _textView)),
+                _incrementalSearch.Object,
+                _jumpList.Object,
                 new MotionCaptureGlobalData());
             var runner = new CommandRunner(_textView, _map, (IMotionCapture)capture, (new Mock<IStatusUtil>()).Object);
             _modeRaw = new Vim.Modes.Visual.VisualMode(_bufferData.Object, _operations.Object, kind, runner, capture, _tracker.Object);

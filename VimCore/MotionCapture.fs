@@ -17,6 +17,8 @@ type internal MotionCapture
         _host : IVimHost,
         _textView : ITextView,
         _util :ITextViewMotionUtil,
+        _incrementalSearch : IIncrementalSearch,
+        _jumpList : IJumpList,
         _globalData : IMotionCaptureGlobalData ) = 
 
     /// Handles the f,F,t and T motions.  These are special in that they use the language 
@@ -27,7 +29,7 @@ type internal MotionCapture
         let waitCharThen func =
             let inner (ki:KeyInput) =
                 if ki = KeyInputUtil.EscapeKey then ComplexMotionResult.Cancelled
-                else ComplexMotionResult.Finished (fun arg -> func ki.Char arg)
+                else ComplexMotionResult.Finished ((fun arg -> func ki.Char arg), None)
             ComplexMotionResult.NeedMoreInput (Some KeyRemapMode.Language, inner)
 
         let inner c (arg:MotionArgument) = 
@@ -37,6 +39,43 @@ type internal MotionCapture
                 _globalData.LastCharSearch <- Some (makeMotion func, makeMotion backwardFunc)
             result
         waitCharThen inner 
+
+    /// Handles incremental searches (/ and ?)
+    let IncrementalSearch kind =
+        let before = TextViewUtil.GetCaretPoint _textView
+        let rec inner (ki:KeyInput) = 
+            match _incrementalSearch.Process ki with
+            | SearchComplete -> 
+
+                // Provide a cached function here because we already calculated the 
+                // expensive data and don't want to wast time recalculating it
+                let cachedFunc (arg:MotionArgument) = 
+                    if arg.MotionContext = MotionContext.Movement then
+                        _jumpList.Add before |> ignore
+
+                    let caret = TextViewUtil.GetCaretPoint _textView
+                    if caret.Position = before.Position then 
+                        None
+                    else if before.Position < caret.Position then 
+                        {
+                            Span = SnapshotSpan(before, caret)
+                            IsForward = true
+                            MotionKind = MotionKind.Exclusive
+                            OperationKind = OperationKind.CharacterWise
+                            Column = SnapshotPointUtil.GetColumn caret |> Some } |> Some
+                    else 
+                        {
+                            Span = SnapshotSpan(caret, before)
+                            IsForward = false
+                            MotionKind = MotionKind.Exclusive
+                            OperationKind = OperationKind.CharacterWise
+                            Column = SnapshotPointUtil.GetColumn caret |> Some } |> Some
+                let func _ = None // Temporary until repeat is supported
+                ComplexMotionResult.Finished (func, Some cachedFunc)
+            | SearchCancelled -> ComplexMotionResult.Cancelled
+            | SearchNeedMore ->  ComplexMotionResult.NeedMoreInput (Some KeyRemapMode.Command, inner)
+        _incrementalSearch.Begin kind
+        ComplexMotionResult.NeedMoreInput (Some KeyRemapMode.Command, inner)
 
     /// Repeat the last f,F,t or T motion.  
     let RepeatLastCharSearch direction arg =
@@ -295,22 +334,30 @@ type internal MotionCapture
     let ComplexMotions = 
         let motionSeq : (string * MotionFlags * ComplexMotionFunction ) seq = 
             seq {
-                yield (
+                yield(
                     "f", 
                     MotionFlags.CursorMovement,
                     fun () -> CharSearch _util.ForwardChar _util.BackwardChar)
-                yield (
+                yield(
                     "t", 
                     MotionFlags.CursorMovement,
                     fun ()-> CharSearch _util.ForwardTillChar _util.BackwardTillChar)
-                yield (
+                yield(
                     "F", 
                     MotionFlags.CursorMovement,
                     fun () -> CharSearch _util.BackwardChar _util.ForwardChar)
-                yield (
+                yield(
                     "T", 
                     MotionFlags.CursorMovement,
                     fun () -> CharSearch _util.BackwardTillChar _util.ForwardTillChar)
+                yield(
+                    "/",
+                    MotionFlags.CursorMovement ||| MotionFlags.HandlesEscape,
+                    fun () -> IncrementalSearch SearchKind.ForwardWithWrap)
+                yield(
+                    "?",
+                    MotionFlags.CursorMovement ||| MotionFlags.HandlesEscape,
+                    fun () -> IncrementalSearch SearchKind.BackwardWithWrap)
             } 
         motionSeq
         |> Seq.map (fun (str,flags,func) -> 
@@ -327,21 +374,24 @@ type internal MotionCapture
     let MotionCommandsMap = AllMotionsCore |> Seq.map (fun command ->  (command.KeyInputSet,command)) |> Map.ofSeq
 
     /// Run a normal motion function
-    member x.RunMotionFunction command func arg =
+    member x.RunMotionFunction command func arg returnFunc =
         match func arg with
         | None -> MotionResult.Error Resources.MotionCapture_InvalidMotion
         | Some(data) -> 
-            let runData = {MotionCommand=command; MotionArgument=arg; MotionFunction = func}
+            let runData = {MotionCommand = command; MotionArgument = arg; MotionFunction = returnFunc}
             MotionResult.Complete (data,runData)
 
     /// Run a complex motion operation
-    member x.RunComplexMotion command func arg = 
+    member x.RunComplexMotion command func arg =
         let rec inner result =
             match result with
             | ComplexMotionResult.Cancelled -> MotionResult.Cancelled
             | ComplexMotionResult.Error(msg) -> MotionResult.Error msg
             | ComplexMotionResult.NeedMoreInput(keyRemapMode, func) -> MotionResult.NeedMoreInput (keyRemapMode,(fun ki -> func ki |> inner))
-            | ComplexMotionResult.Finished(func) -> x.RunMotionFunction command func arg
+            | ComplexMotionResult.Finished(func, cachedFunc) -> 
+                match cachedFunc with
+                | None -> x.RunMotionFunction command func arg func
+                | Some(cachedFunc) -> x.RunMotionFunction command cachedFunc arg func
         func () |> inner
 
     member x.WaitForCommandName arg ki =
@@ -353,7 +403,7 @@ type internal MotionCapture
                 match Map.tryFind name MotionCommandsMap with
                 | Some(command) -> 
                     match command with 
-                    | SimpleMotionCommand(_,_,func) -> x.RunMotionFunction command func arg
+                    | SimpleMotionCommand(_,_,func) -> x.RunMotionFunction command func arg func
                     | ComplexMotionCommand(_,_,func) -> x.RunComplexMotion command func arg
                 | None -> 
                     let res = MotionCommandsMap |> Seq.filter (fun pair -> pair.Key.StartsWith name) 

@@ -10,6 +10,7 @@ type MotionKind =
 
 /// Data about a complete motion operation. 
 type MotionData = {
+
     /// Span of the motion.  
     Span : SnapshotSpan
 

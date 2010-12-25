@@ -189,7 +189,8 @@ namespace VimCore.UnitTest
             var fileName = "foo";
             var contents = new string[] { "set ai" };
             var tuple = Tuple.Create(fileName, contents);
-            var fs = new Mock<IFileSystem>(MockBehavior.Strict);
+
+            var fs = new Mock<IFileSystem>(MockBehavior.Strict);
             fs.Setup(x => x.GetVimRcDirectories()).Returns(new string[] { "" }).Verifiable();
             fs.Setup(x => x.LoadVimRc()).Returns(FSharpOption.Create(tuple)).Verifiable();
 

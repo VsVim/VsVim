@@ -9,7 +9,11 @@ F#
      - APIs taking a line number should consider returning an option.  Line numbers are less likely to be controlled
        by the user
  - Don't use ; for multi-line object initializers
- - Add a space between values and arithmic operators and comparisions
+ - Add a space between ...
+    - Values and arithmic operators and comparisions
+    - Names and Values in record initializer expressions
+ - Don't add a space between ...
+    - Names and their types (foo:bar)
  - To Deteremine:
     - Should functions returning an option be prefixed with Try? Example KeyNotationUtil 
 

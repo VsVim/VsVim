@@ -7,7 +7,9 @@ using Moq;
 using NUnit.Framework;
 using Vim;
 using Vim.Extensions;
+using Vim.UnitTest;
 using Vim.UnitTest.Mock;
+using GlobalSettings = Vim.GlobalSettings;
 
 namespace VimCore.UnitTest
 {
@@ -16,25 +18,37 @@ namespace VimCore.UnitTest
     {
         private MockRepository _factory;
         private Mock<IMotionCaptureGlobalData> _data;
-        private Mock<ITextView> _textView;
         private Mock<ITextViewMotionUtil> _util;
         private Mock<IVimHost> _host;
+        private Mock<IJumpList> _jumpList;
+        private IVimLocalSettings _localSettings;
+        private ITextView _textView;
+        private IIncrementalSearch _incrementalSearch;
         private MotionCapture _captureRaw;
         private IMotionCapture _capture;
 
         [SetUp]
-        public void Create()
+        public void SetUp()
         {
+            _textView = EditorUtil.CreateView();
+            _localSettings = new LocalSettings(new GlobalSettings(), _textView);
+            _incrementalSearch = VimUtil.CreateIncrementalSearch(_textView, _localSettings, new VimData());
             _factory = new MockRepository(MockBehavior.Strict);
             _util = _factory.Create<ITextViewMotionUtil>();
-            _textView = MockObjectFactory.CreateTextView(factory: _factory);
             _host = _factory.Create<IVimHost>();
             _data = _factory.Create<IMotionCaptureGlobalData>(MockBehavior.Loose);
-            _captureRaw = new MotionCapture(_host.Object, _textView.Object, _util.Object, _data.Object);
+            _jumpList = _factory.Create<IJumpList>();
+            _captureRaw = new MotionCapture(
+                _host.Object,
+                _textView,
+                _util.Object,
+                _incrementalSearch,
+                _jumpList.Object,
+                _data.Object);
             _capture = _captureRaw;
         }
 
-        internal MotionResult Process(string input, int? count)
+        internal MotionResult Process(string input, int? count = 1, bool enter = false)
         {
             var realCount = count.HasValue
                 ? FSharpOption.Create(count.Value)
@@ -47,6 +61,12 @@ namespace VimCore.UnitTest
                 Assert.IsTrue(res.IsNeedMoreInput);
                 var needMore = (MotionResult.NeedMoreInput)res;
                 res = needMore.Item2.Invoke(KeyInputUtil.CharToKeyInput(cur));
+            }
+
+            if (enter)
+            {
+                var needMore = (MotionResult.NeedMoreInput)res;
+                res = needMore.Item2.Invoke(KeyInputUtil.EnterKey);
             }
 
             return res;
@@ -721,6 +741,34 @@ namespace VimCore.UnitTest
             ProcessComplete(@"i`");
             _factory.Verify();
         }
-    }
 
+        [Test]
+        public void Motion_IncrementalSearchReverse()
+        {
+            _textView.TextBuffer.SetText("hello world");
+            _textView.MoveCaretTo(_textView.GetEndPoint().Position);
+            var data = Process("?world", enter: true).AsComplete().Item1;
+            Assert.IsFalse(data.IsForward);
+            Assert.AreEqual("world", data.Span.GetText());
+        }
+
+        [Test]
+        public void Motion_IncrementalSearch()
+        {
+            _textView.SetText("hello world", caret: 0);
+            var data = Process("/world", enter: true).AsComplete().Item1;
+            Assert.IsTrue(data.IsForward);
+            Assert.AreEqual("hello ", data.Span.GetText());
+        }
+
+        [Test]
+        public void Motion_IncrementalSearchMotionIsBackwardIfWrap()
+        {
+            _textView.SetText("hello world");
+            _textView.MoveCaretTo(_textView.GetEndPoint().Position);
+            var data = Process("/world", enter: true).AsComplete().Item1;
+            Assert.IsFalse(data.IsForward);
+            Assert.AreEqual("world", data.Span.GetText());
+        }
+    }
 }

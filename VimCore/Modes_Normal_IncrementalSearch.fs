@@ -64,6 +64,9 @@ type internal IncrementalSearch
 
                 match ret with
                 | Some(span) ->
+                    // TODO: Shouldn't actually move the caret here.  Ideally we would just make the start of the 
+                    // span visible on the screen but unfortunately EnsureVisible only works for the Caret 
+                    // right now
                     TextViewUtil.MoveCaretToPoint _textView span.Start 
                     TextViewUtil.EnsureCaretOnScreenAndTextExpanded _textView _outlining
                     _currentSearchUpdated.Trigger (searchData, SearchFound(span)) 

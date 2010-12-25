@@ -56,29 +56,6 @@ type internal CommandFactory
                 CommandResult.Completed NoSwitch
             Command.SimpleCommand (kiSet,CommandFlags.Movement, funcWithReg))
 
-    member x.CreateSearchCommands() = 
-
-        let searchFunc kind = 
-            let before = TextViewUtil.GetCaretPoint _textView
-            let rec inner (ki:KeyInput) = 
-                match _incrementalSearch.Process ki with
-                | SearchComplete -> 
-                    _jumpList.Add before |> ignore
-                    CommandResult.Completed ModeSwitch.NoSwitch |> LongCommandResult.Finished
-                | SearchCancelled -> LongCommandResult.Cancelled
-                | SearchNeedMore ->  LongCommandResult.NeedMoreInput (Some KeyRemapMode.Command, inner)
-            _incrementalSearch.Begin kind
-            LongCommandResult.NeedMoreInput (Some KeyRemapMode.Command, inner)
-
-        seq {
-            yield ("/", fun () -> searchFunc SearchKind.ForwardWithWrap)
-            yield ("?", fun () -> searchFunc SearchKind.BackwardWithWrap)
-        } |> Seq.map (fun (notation, func) ->
-            let keyInputSet = KeyNotationUtil.StringToKeyInputSet notation
-            let commandFunc _ _ = func()
-            let flags = CommandFlags.Movement ||| CommandFlags.HandlesEscape
-            Command.LongCommand (keyInputSet, flags, commandFunc))
-
     /// Build up a set of MotionCommand values from applicable Motion values
     member x.CreateMovementsFromMotions() =
         let processResult opt = 
@@ -96,14 +73,15 @@ type internal CommandFactory
                     let arg = makeMotionArgument count
                     func arg |> processResult
                 Command.SimpleCommand(name,CommandFlags.Movement,inner) 
-            | ComplexMotionCommand(name,_,func) -> 
+            | ComplexMotionCommand(name, motionFlags, func) -> 
                 
                 let coreFunc count _ = 
                     let rec inner result =  
                         match result with
-                        | ComplexMotionResult.Finished(func) ->
+                        | ComplexMotionResult.Finished(func, cachedFunc) ->
                             let res = 
                                 let arg = makeMotionArgument count
+                                let func = OptionUtil.getOrDefault func cachedFunc
                                 match func arg with
                                 | None -> CommandResult.Error Resources.MotionCapture_InvalidMotion
                                 | Some(data) -> 
@@ -119,7 +97,13 @@ type internal CommandFactory
 
                     let initialResult = func()
                     inner initialResult
-                Command.LongCommand(name, CommandFlags.Movement, coreFunc) 
+
+                let flags = 
+                    if Utils.IsFlagSet motionFlags MotionFlags.HandlesEscape then 
+                        CommandFlags.Movement ||| CommandFlags.HandlesEscape
+                    else
+                        CommandFlags.Movement
+                Command.LongCommand(name, flags, coreFunc) 
 
         _capture.MotionCommands
         |> Seq.filter (fun command -> Utils.IsFlagSet command.MotionFlags MotionFlags.CursorMovement)
@@ -243,5 +227,5 @@ type internal CommandFactory
         let motion = 
             x.CreateMovementsFromMotions()
             |> Seq.filter (fun command -> not (taken.Contains command.KeyInputSet))
-        standard |> Seq.append motion |> Seq.append (x.CreateSearchCommands())
+        standard |> Seq.append motion
 

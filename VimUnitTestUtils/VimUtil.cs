@@ -2,7 +2,10 @@
 using System.Linq;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
+using Microsoft.VisualStudio.Text.Editor;
+using Microsoft.VisualStudio.Text.Outlining;
 using Vim.Extensions;
+using Vim.Modes.Normal;
 
 namespace Vim.UnitTest
 {
@@ -25,7 +28,7 @@ namespace Vim.UnitTest
 
         internal static Command CreateSimpleCommand(string name)
         {
-            return CreateSimpleCommand(name, (count,reg) => CommandResult.NewCompleted(ModeSwitch.NoSwitch));
+            return CreateSimpleCommand(name, (count, reg) => CommandResult.NewCompleted(ModeSwitch.NoSwitch));
         }
 
         internal static Command CreateSimpleCommand(string name, Action<FSharpOption<int>, Register> del)
@@ -226,6 +229,24 @@ namespace Vim.UnitTest
             range = range ?? SnapshotLineRangeUtil.CreateForSnapshot(span.Snapshot);
             var data = new SubstituteData(search, replace, flags ?? SubstituteFlags.None);
             return ModeArgument.NewSubsitute(span, range, data);
+        }
+
+        internal static IIncrementalSearch CreateIncrementalSearch(
+            ITextView textView,
+            IVimLocalSettings settings,
+            IVimData vimData,
+            ISearchService search = null,
+            IOutliningManager outliningManager = null)
+        {
+            var nav = EditorUtil.FactoryService.textStructureNavigatorSelectorService.GetTextStructureNavigator(textView.TextBuffer);
+            search = search ?? new SearchService(EditorUtil.FactoryService.textSearchService, settings.GlobalSettings);
+            return new IncrementalSearch(
+                textView,
+                outliningManager != null ? FSharpOption.Create(outliningManager) : FSharpOption<IOutliningManager>.None,
+                settings,
+                nav,
+                search,
+                vimData);
         }
 
     }

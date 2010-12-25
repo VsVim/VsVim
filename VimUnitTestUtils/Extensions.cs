@@ -346,6 +346,15 @@ namespace Vim.UnitTest
             return textView.Caret.Position.BufferPosition.GetContainingLine();
         }
 
+        public static void SetText(this ITextView textView, string text, int? caret = null)
+        {
+            SetText(textView.TextBuffer, text);
+            if (caret.HasValue)
+            {
+                MoveCaretTo(textView, caret.Value);
+            }
+        }
+
         #endregion
 
         #region ITextBuffer
