@@ -61,7 +61,7 @@ namespace VimCore.UnitTest
             _operations.SetupGet(x => x.EditorOperations).Returns(_editorOperations.Object);
             _operations.SetupGet(x => x.TextView).Returns(_textView);
             _host = _factory.Create<IVimHost>(MockBehavior.Loose);
-            _incrementalSearch = _factory.Create<IIncrementalSearch>();
+            _incrementalSearch = MockObjectFactory.CreateIncrementalSearch(factory: _factory);
             _bufferData = MockObjectFactory.CreateVimBuffer(
                 _textView,
                 "test",
@@ -805,7 +805,7 @@ namespace VimCore.UnitTest
             Create("foo", "bar");
             _incrementalSearch.Setup(x => x.Begin(SearchKind.ForwardWithWrap)).Verifiable();
             _incrementalSearch.Setup(x => x.Process(KeyInputUtil.CharToKeyInput('a'))).Returns(SearchProcessResult.SearchNeedMore).Verifiable();
-            _incrementalSearch.Setup(x => x.Process(KeyInputUtil.EnterKey)).Returns(SearchProcessResult.SearchComplete).Verifiable();
+            _incrementalSearch.Setup(x => x.Process(KeyInputUtil.EnterKey)).Returns(VimUtil.CreateSearchComplete("")).Verifiable();
             _mode.Process("/a");
             _mode.Process(KeyInputUtil.EnterKey);
             _factory.Verify();

@@ -518,6 +518,15 @@ namespace VimCore.UnitTest
         }
 
         [Test]
+        public void Repeat_DeleteWithIncrementalSearch()
+        {
+            CreateBuffer("dog cat bear tree");
+            _buffer.Process("d/a", enter: true);
+            _buffer.Process('.');
+            Assert.AreEqual("ar tree", _textView.GetLine(0).GetText());
+        }
+
+        [Test]
         public void Map_ToCharDoesNotUseMap()
         {
             CreateBuffer("bear; again: dog");

@@ -17,6 +17,23 @@ namespace Vim.UnitTest.Mock
 {
     public static class MockObjectFactory
     {
+        public static Mock<IIncrementalSearch> CreateIncrementalSearch(
+            ISearchService search = null,
+            MockRepository factory = null)
+        {
+            factory = factory ?? new MockRepository(MockBehavior.Strict);
+            search = search ?? CreateSearchService(factory: factory).Object;
+            var mock = factory.Create<IIncrementalSearch>();
+            mock.SetupGet(x => x.SearchService).Returns(search);
+            return mock;
+        }
+
+        public static Mock<ISearchService> CreateSearchService(MockRepository factory = null)
+        {
+            factory = factory ?? new MockRepository(MockBehavior.Strict);
+            return factory.Create<ISearchService>();
+        }
+
         public static Mock<IRegisterMap> CreateRegisterMap(MockRepository factory = null)
         {
             factory = factory ?? new MockRepository(MockBehavior.Strict);
@@ -104,7 +121,7 @@ namespace Vim.UnitTest.Mock
             MockRepository factory = null)
         {
             factory = factory ?? new MockRepository(MockBehavior.Strict);
-            global = global ?? CreateGlobalSettings(factory:factory).Object;
+            global = global ?? CreateGlobalSettings(factory: factory).Object;
             var mock = factory.Create<IVimLocalSettings>(MockBehavior.Strict);
             mock.SetupGet(x => x.GlobalSettings).Returns(global);
             return mock;
@@ -322,7 +339,7 @@ namespace Vim.UnitTest.Mock
 
         public static Mock<IMappingSpan> CreateMappingSpan(SnapshotSpan span, MockRepository factory = null)
         {
-            return CreateMappingSpan(new[] {span}, factory);
+            return CreateMappingSpan(new[] { span }, factory);
         }
 
         public static Mock<IMappingSpan> CreateMappingSpan(SnapshotSpan[] spans, MockRepository factory = null)
@@ -367,7 +384,7 @@ namespace Vim.UnitTest.Mock
             MARKERTYPE type,
             MockRepository factory = null)
         {
-            return CreateVsTextLineMarker(span, (int) type, factory);
+            return CreateVsTextLineMarker(span, (int)type, factory);
         }
 
         public static Mock<IVsTextLineMarker> CreateVsTextLineMarker(

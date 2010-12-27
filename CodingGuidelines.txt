@@ -12,8 +12,8 @@ F#
  - Add a space between ...
     - Values and arithmic operators and comparisions
     - Names and Values in record initializer expressions
+    - Names and their types (foo : bar)
  - Don't add a space between ...
-    - Names and their types (foo:bar)
  - To Deteremine:
     - Should functions returning an option be prefixed with Try? Example KeyNotationUtil 
 

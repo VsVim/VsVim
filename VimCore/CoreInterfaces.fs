@@ -559,16 +559,16 @@ type Command =
         | VisualCommand(_,value,_,_) -> value
 
     /// Is the Repeatable flag set
-    member x.IsRepeatable = Utils.IsFlagSet x.CommandFlags CommandFlags.Repeatable
+    member x.IsRepeatable = Util.IsFlagSet x.CommandFlags CommandFlags.Repeatable
 
     /// Is the HandlesEscape flag set
-    member x.HandlesEscape = Utils.IsFlagSet x.CommandFlags CommandFlags.HandlesEscape
+    member x.HandlesEscape = Util.IsFlagSet x.CommandFlags CommandFlags.HandlesEscape
 
     /// Is the Movement flag set
-    member x.IsMovement = Utils.IsFlagSet x.CommandFlags CommandFlags.Movement
+    member x.IsMovement = Util.IsFlagSet x.CommandFlags CommandFlags.Movement
 
     /// Is the Special flag set
-    member x.IsSpecial = Utils.IsFlagSet x.CommandFlags CommandFlags.Special
+    member x.IsSpecial = Util.IsFlagSet x.CommandFlags CommandFlags.Special
 
     override x.ToString() = System.String.Format("{0} -> {1}", x.KeyInputSet, x.CommandFlags)
 
@@ -892,7 +892,8 @@ type SearchData = {
 }
 
 type SearchProcessResult =
-    | SearchComplete 
+    | SearchNotStarted 
+    | SearchComplete of SearchData
     | SearchCancelled 
     | SearchNeedMore
 

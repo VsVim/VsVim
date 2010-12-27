@@ -61,7 +61,7 @@ namespace VimCore.UnitTest
             _map = VimUtil.CreateRegisterMap(MockObjectFactory.CreateClipboardDevice().Object);
             _unnamedRegister = _map.GetRegister(RegisterName.Unnamed);
             _editorOperations = new Mock<IEditorOperations>();
-            _incrementalSearch = new Mock<IIncrementalSearch>(MockBehavior.Strict);
+            _incrementalSearch = MockObjectFactory.CreateIncrementalSearch();
             _jumpList = new Mock<IJumpList>(MockBehavior.Strict);
             _statusUtil = new Mock<IStatusUtil>(MockBehavior.Strict);
             _changeTracker = new Mock<IChangeTracker>(MockBehavior.Strict);
@@ -1826,7 +1826,10 @@ namespace VimCore.UnitTest
             _incrementalSearch.Setup(x => x.Begin(SearchKind.ForwardWithWrap)).Verifiable();
             _jumpList.Setup(x => x.Add(_view.GetCaretPoint())).Verifiable();
             _mode.Process('/');
-            _incrementalSearch.Setup(x => x.Process(It.IsAny<KeyInput>())).Returns(SearchProcessResult.SearchComplete).Verifiable();
+            _incrementalSearch
+                .Setup(x => x.Process(It.IsAny<KeyInput>()))
+                .Returns(VimUtil.CreateSearchComplete(""))
+                .Verifiable();
             _mode.Process('b');
             _incrementalSearch.Verify();
             _jumpList.Verify();
@@ -1839,7 +1842,10 @@ namespace VimCore.UnitTest
             _incrementalSearch.Setup(x => x.Begin(SearchKind.ForwardWithWrap)).Verifiable();
             _mode.Process('/');
             var ki = KeyInputUtil.CharToKeyInput((char)7);
-            _incrementalSearch.Setup(x => x.Process(It.IsAny<KeyInput>())).Returns(SearchProcessResult.SearchComplete).Verifiable();
+            _incrementalSearch
+                .Setup(x => x.Process(It.IsAny<KeyInput>()))
+                .Returns(VimUtil.CreateSearchComplete(""))
+                .Verifiable();
             _jumpList.Setup(x => x.Add(_view.GetCaretPoint())).Verifiable();
             _mode.Process(ki);
             _incrementalSearch.Verify();
@@ -1853,7 +1859,10 @@ namespace VimCore.UnitTest
             _incrementalSearch.Setup(x => x.Begin(SearchKind.ForwardWithWrap)).Verifiable();
             _mode.Process('/');
             var ki = KeyInputUtil.CharToKeyInput('c');
-            _incrementalSearch.Setup(x => x.Process(It.IsAny<KeyInput>())).Returns(SearchProcessResult.SearchComplete).Verifiable();
+            _incrementalSearch
+                .Setup(x => x.Process(It.IsAny<KeyInput>()))
+                .Returns(VimUtil.CreateSearchComplete(""))
+                .Verifiable();
             _jumpList.Setup(x => x.Add(_view.GetCaretPoint())).Verifiable();
             _mode.Process(ki);
             _incrementalSearch.Verify();

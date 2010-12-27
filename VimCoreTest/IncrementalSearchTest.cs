@@ -69,7 +69,7 @@ namespace VimCore.UnitTest
             var data = new SearchData(SearchText.NewPattern("b"), SearchKind.ForwardWithWrap, s_options);
             _search.Begin(SearchKind.ForwardWithWrap);
             _searchService
-                .Setup(x => x.FindNext(data, _textView.GetCaretPoint(), _nav.Object))
+                .Setup(x => x.FindNext(data, _textView.GetCaretPoint().Add(1), _nav.Object))
                 .Returns(FSharpOption.Create(_textView.GetLineRange(0).Extent));
             Assert.IsTrue(_search.Process(KeyInputUtil.CharToKeyInput('b')).IsSearchNeedMore);
         }
@@ -214,7 +214,6 @@ namespace VimCore.UnitTest
             _search.Process(KeyInputUtil.CharToKeyInput('b'));
         }
 
-
         [Test]
         public void InSearch1()
         {
@@ -271,6 +270,32 @@ namespace VimCore.UnitTest
             _searchService.Verify();
         }
 
+        [Test]
+        public void SearchShouldStartAfterCaretWhenForward()
+        {
+            Create("foo bar");
+            _searchService
+                .Setup(x => x.FindNext(It.IsAny<SearchData>(), _textView.GetPoint(1), _nav.Object))
+                .Returns(FSharpOption<SnapshotSpan>.None)
+                .Verifiable();
+            _search.Begin(SearchKind.Forward);
+            _search.Process(KeyInputUtil.CharToKeyInput('b'));
+            _searchService.Verify();
+        }
+
+        [Test]
+        public void SearchShouldStartBeforeCaretWhenBackward()
+        {
+            Create("foo bar");
+            _textView.MoveCaretTo(3);
+            _searchService
+                .Setup(x => x.FindNext(It.IsAny<SearchData>(), _textView.GetPoint(2), _nav.Object))
+                .Returns(FSharpOption<SnapshotSpan>.None)
+                .Verifiable();
+            _search.Begin(SearchKind.Backward);
+            _search.Process(KeyInputUtil.CharToKeyInput('b'));
+            _searchService.Verify();
+        }
 
     }
 }

@@ -25,9 +25,9 @@ type internal SearchService
 
     member x.CreateFindOptions (text:SearchText) kind searchOptions =
         let caseOptions = 
-            if Utils.IsFlagSet searchOptions SearchOptions.ConsiderIgnoreCase && _settings.IgnoreCase then
+            if Util.IsFlagSet searchOptions SearchOptions.ConsiderIgnoreCase && _settings.IgnoreCase then
                 let hasUpper () = text.RawText |> Seq.filter CharUtil.IsLetter |> Seq.filter CharUtil.IsUpper |> SeqUtil.isNotEmpty
-                if Utils.IsFlagSet searchOptions SearchOptions.ConsiderSmartCase && _settings.SmartCase && hasUpper() then FindOptions.MatchCase
+                if Util.IsFlagSet searchOptions SearchOptions.ConsiderSmartCase && _settings.SmartCase && hasUpper() then FindOptions.MatchCase
                 else FindOptions.None
             else FindOptions.MatchCase
         let revOptions = if SearchKindUtil.IsBackward kind then FindOptions.SearchReverse else FindOptions.None

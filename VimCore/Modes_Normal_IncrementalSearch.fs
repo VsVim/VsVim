@@ -9,7 +9,12 @@ open Microsoft.VisualStudio.Text.Outlining
 open NullableUtil
 
 type internal IncrementalSearchData = {
-    Start : ITrackingPoint;
+    /// The caret point before the search started 
+    OriginalCaretPoint : ITrackingPoint 
+
+    /// The point from which the search needs to occur 
+    StartPoint : ITrackingPoint;
+
     SearchData : SearchData;
     SearchResult : SearchResult;
 }
@@ -29,38 +34,44 @@ type internal IncrementalSearch
     let _currentSearchCompleted = Event<SearchData * SearchResult>()
     let _currentSearchCancelled = Event<SearchData>()
 
-    member private x.Begin kind = 
-        let pos = (TextViewUtil.GetCaretPoint _textView).Position
-        let start = _textView.TextSnapshot.CreateTrackingPoint(pos, PointTrackingMode.Negative)
+    member x.Begin kind = 
+        let caret = TextViewUtil.GetCaretPoint _textView
+        let start = Util.GetSearchPoint kind caret
         let data = {
-            Start = start
-            SearchData = {Text=SearchText.Pattern(StringUtil.empty); Kind=kind; Options=_searchOptions }
-            SearchResult = SearchNotFound }
+            OriginalCaretPoint = caret.Snapshot.CreateTrackingPoint(caret.Position, PointTrackingMode.Negative)
+            StartPoint = start.Snapshot.CreateTrackingPoint(start.Position, PointTrackingMode.Negative)
+            SearchData = {Text = SearchText.Pattern(StringUtil.empty); Kind = kind; Options = _searchOptions}
+            SearchResult = SearchNotFound 
+        }
         _data <- Some data
 
         // Raise the event
         _currentSearchUpdated.Trigger (data.SearchData,SearchNotFound)
 
     /// Process the next key stroke in the incremental search
-    member private x.ProcessCore (ki:KeyInput) = 
+    member x.Process (ki:KeyInput) = 
 
         match _data with 
-        | None -> SearchComplete
+        | None -> SearchNotStarted
         | Some (data) -> 
 
             let resetView() = 
-                let point = data.Start.GetPoint _textView.TextSnapshot
-                TextViewUtil.MoveCaretToPoint _textView point 
-                TextViewUtil.EnsureCaretOnScreenAndTextExpanded _textView _outlining
+                match TrackingPointUtil.GetPoint _textView.TextSnapshot data.OriginalCaretPoint with
+                | None -> ()
+                | Some(point) -> 
+                    TextViewUtil.MoveCaretToPoint _textView point 
+                    TextViewUtil.EnsureCaretOnScreenAndTextExpanded _textView _outlining
 
             let doSearch pattern = 
                 let searchData = {data.SearchData with Text=SearchText.Pattern(pattern)}
                 let ret =
                     if StringUtil.isNullOrEmpty pattern then None
                     else
-                        let point = TextViewUtil.GetCaretPoint _textView
-                        let options = SearchOptions.ConsiderIgnoreCase ||| SearchOptions.ConsiderIgnoreCase
-                        _search.FindNext searchData point _navigator 
+                        match TrackingPointUtil.GetPoint _textView.TextSnapshot data.StartPoint with
+                        | None -> None
+                        | Some(point) ->
+                            let options = SearchOptions.ConsiderIgnoreCase ||| SearchOptions.ConsiderIgnoreCase
+                            _search.FindNext searchData point _navigator 
 
                 match ret with
                 | Some(span) ->
@@ -88,7 +99,7 @@ type internal IncrementalSearch
                 _data <- None
                 _vimData.LastSearchData <- oldSearchData
                 _currentSearchCompleted.Trigger (oldSearchData,data.SearchResult)
-                SearchComplete
+                SearchComplete data.SearchData
             elif ki = KeyInputUtil.EscapeKey then
                 resetView()
                 cancelSearch
@@ -115,7 +126,7 @@ type internal IncrementalSearch
             match _data with 
             | Some(data) -> Some data.SearchData
             | None -> None
-        member x.Process ki = x.ProcessCore ki
+        member x.Process ki = x.Process ki
         member x.Begin kind = x.Begin kind
         [<CLIEvent>]
         member x.CurrentSearchUpdated = _currentSearchUpdated.Publish

@@ -21,6 +21,8 @@ type internal MotionCapture
         _jumpList : IJumpList,
         _globalData : IMotionCaptureGlobalData ) = 
 
+    let _search = _incrementalSearch.SearchService
+
     /// Handles the f,F,t and T motions.  These are special in that they use the language 
     /// mapping mode (:help language-mapping) for their char input.  Most motions get handled
     /// via operator-pending
@@ -45,33 +47,48 @@ type internal MotionCapture
         let before = TextViewUtil.GetCaretPoint _textView
         let rec inner (ki:KeyInput) = 
             match _incrementalSearch.Process ki with
-            | SearchComplete -> 
+            | SearchComplete(searchData) -> 
 
-                // Provide a cached function here because we already calculated the 
-                // expensive data and don't want to wast time recalculating it
-                let cachedFunc (arg:MotionArgument) = 
+                // Create the MotionData for the provided MotionArgument and the 
+                // start and end points of the search.  Need to be careful because
+                // the start and end point can be forward or reverse
+                let getData (startPoint:SnapshotPoint) (endPoint:SnapshotPoint) (arg:MotionArgument) = 
                     if arg.MotionContext = MotionContext.Movement then
                         _jumpList.Add before |> ignore
 
-                    let caret = TextViewUtil.GetCaretPoint _textView
-                    if caret.Position = before.Position then 
+                    if startPoint.Position = endPoint.Position then
                         None
-                    else if before.Position < caret.Position then 
+                    else if startPoint.Position < endPoint.Position then 
                         {
-                            Span = SnapshotSpan(before, caret)
+                            Span = SnapshotSpan(startPoint, endPoint)
                             IsForward = true
                             MotionKind = MotionKind.Exclusive
                             OperationKind = OperationKind.CharacterWise
-                            Column = SnapshotPointUtil.GetColumn caret |> Some } |> Some
+                            Column = SnapshotPointUtil.GetColumn endPoint |> Some } |> Some
                     else 
                         {
-                            Span = SnapshotSpan(caret, before)
+                            Span = SnapshotSpan(endPoint, startPoint)
                             IsForward = false
                             MotionKind = MotionKind.Exclusive
                             OperationKind = OperationKind.CharacterWise
-                            Column = SnapshotPointUtil.GetColumn caret |> Some } |> Some
-                let func _ = None // Temporary until repeat is supported
+                            Column = SnapshotPointUtil.GetColumn endPoint |> Some } |> Some
+
+                // Provide a cached function here because we already calculated the 
+                // expensive data and don't want to wast time recalculating it
+                let cachedFunc arg = 
+                    let caret = TextViewUtil.GetCaretPoint _textView
+                    getData before caret arg
+
+                // Need to repeat the search 
+                let func arg = 
+                    let caret = TextViewUtil.GetCaretPoint _textView
+                    let start = Util.GetSearchPoint kind caret
+                    match _search.FindNext searchData start _incrementalSearch.WordNavigator with
+                    | None -> None
+                    | Some(span) -> getData caret span.Start arg
+
                 ComplexMotionResult.Finished (func, Some cachedFunc)
+            | SearchNotStarted -> ComplexMotionResult.Cancelled
             | SearchCancelled -> ComplexMotionResult.Cancelled
             | SearchNeedMore ->  ComplexMotionResult.NeedMoreInput (Some KeyRemapMode.Command, inner)
         _incrementalSearch.Begin kind

@@ -57,11 +57,11 @@ module VimRegexUtils =
     let ConvertToRegexOptions options = 
         
         let rec inner options ret = 
-            match List.tryFind (fun (vim,_) -> Utils.IsFlagSet vim options) VimToBclList with
+            match List.tryFind (fun (vim,_) -> Util.IsFlagSet vim options) VimToBclList with
             | None -> ret
             | Some(vim,bcl) ->
                 let ret = bcl ||| ret
-                let options = Utils.UnsetFlag options vim
+                let options = Util.UnsetFlag options vim
                 inner options ret 
         inner options RegexOptions.None
 
@@ -161,14 +161,14 @@ type VimRegexFactory
 
         // Get the case options
         let options = 
-            if Utils.IsFlagSet flags SubstituteFlags.IgnoreCase then VimRegexOptions.IgnoreCase
-            elif Utils.IsFlagSet flags SubstituteFlags.OrdinalCase then VimRegexOptions.OrdinalCase 
+            if Util.IsFlagSet flags SubstituteFlags.IgnoreCase then VimRegexOptions.IgnoreCase
+            elif Util.IsFlagSet flags SubstituteFlags.OrdinalCase then VimRegexOptions.OrdinalCase 
             else VimRegexOptions.None
 
         // Get the magic options
         let options = 
-            if Utils.IsFlagSet flags SubstituteFlags.Magic then options ||| VimRegexOptions.Magic
-            elif Utils.IsFlagSet flags SubstituteFlags.Nomagic then options ||| VimRegexOptions.NoMagic
+            if Util.IsFlagSet flags SubstituteFlags.Magic then options ||| VimRegexOptions.Magic
+            elif Util.IsFlagSet flags SubstituteFlags.Nomagic then options ||| VimRegexOptions.NoMagic
             else options
 
         let options = VimRegexOptions.Compiled ||| options
@@ -177,8 +177,8 @@ type VimRegexFactory
     member x.CreateWithOptions pattern options = 
         let kind = if _settings.Magic then MagicKind.Magic else MagicKind.NoMagic
         let kind = 
-            if Utils.IsFlagSet options VimRegexOptions.Magic then MagicKind.Magic
-            elif Utils.IsFlagSet options VimRegexOptions.NoMagic then MagicKind.NoMagic
+            if Util.IsFlagSet options VimRegexOptions.Magic then MagicKind.Magic
+            elif Util.IsFlagSet options VimRegexOptions.NoMagic then MagicKind.NoMagic
             else kind
         let data = { 
             Pattern = pattern
@@ -210,8 +210,8 @@ type VimRegexFactory
         // Now factor case into the options.  The VimRegexOptions take precedence
         // over anything which is embedded into the string 
         let options = 
-            if Utils.IsFlagSet data.Options VimRegexOptions.IgnoreCase then options
-            elif Utils.IsFlagSet data.Options VimRegexOptions.OrdinalCase then options
+            if Util.IsFlagSet data.Options VimRegexOptions.IgnoreCase then options
+            elif Util.IsFlagSet data.Options VimRegexOptions.OrdinalCase then options
             elif data.MatchCase then options
             else options ||| RegexOptions.IgnoreCase
 

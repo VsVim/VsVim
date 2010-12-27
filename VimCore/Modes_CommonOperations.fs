@@ -794,7 +794,7 @@ type internal CommonOperations ( _data : OperationsData ) =
                     let offset = span.Start.Position
                     edit.Replace(Span(c.Index+offset, c.Length), newText) |> ignore
                 let getMatches (span:SnapshotSpan) = 
-                    if Utils.IsFlagSet flags SubstituteFlags.ReplaceAll then
+                    if Util.IsFlagSet flags SubstituteFlags.ReplaceAll then
                         regex.Regex.Matches(span.GetText()) |> Seq.cast<Match>
                     else
                         regex.Regex.Match(span.GetText()) |> Seq.singleton
@@ -805,7 +805,7 @@ type internal CommonOperations ( _data : OperationsData ) =
                     |> Seq.concat 
                     |> Seq.filter (fun (m,_) -> m.Success)
 
-                if not (Utils.IsFlagSet flags SubstituteFlags.ReportOnly) then
+                if not (Util.IsFlagSet flags SubstituteFlags.ReportOnly) then
                     // Actually do the edits
                     matches |> Seq.iter (fun (m,span) -> replaceOne span m)
 
@@ -850,21 +850,21 @@ type internal CommonOperations ( _data : OperationsData ) =
                             | None -> _statusUtil.OnStatus msg
                             | Some(replaceMessage) -> _statusUtil.OnStatusLong [replaceMessage; msg]
 
-                        if Utils.IsFlagSet flags SubstituteFlags.PrintLast then
+                        if Util.IsFlagSet flags SubstituteFlags.PrintLast then
                             printBoth (line.GetText())
-                        elif Utils.IsFlagSet flags SubstituteFlags.PrintLastWithNumber then
+                        elif Util.IsFlagSet flags SubstituteFlags.PrintLastWithNumber then
                             sprintf "  %d %s" (line.LineNumber+1) (line.GetText()) |> printBoth 
-                        elif Utils.IsFlagSet flags SubstituteFlags.PrintLastWithList then
+                        elif Util.IsFlagSet flags SubstituteFlags.PrintLastWithList then
                             sprintf "%s$" (line.GetText()) |> printBoth 
                         else printReplaceMessage()
 
                 if edit.HasEffectiveChanges then
                     edit.Apply() |> ignore                                
                     printMessage()
-                elif Utils.IsFlagSet flags SubstituteFlags.ReportOnly then
+                elif Util.IsFlagSet flags SubstituteFlags.ReportOnly then
                     edit.Cancel()
                     printMessage ()
-                elif Utils.IsFlagSet flags SubstituteFlags.SuppressError then
+                elif Util.IsFlagSet flags SubstituteFlags.SuppressError then
                     edit.Cancel()
                 else 
                     edit.Cancel()

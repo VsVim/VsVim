@@ -174,12 +174,12 @@ type internal DefaultOperations ( _data : OperationsData ) =
 
                     // Build up the prefix for the specified modifiers
                     let rec getPrefix modifiers = 
-                        if Utils.IsFlagSet modifiers KeyModifiers.Alt then
-                            "M-" + getPrefix (Utils.UnsetFlag modifiers KeyModifiers.Alt)
-                        elif Utils.IsFlagSet modifiers KeyModifiers.Control then
-                            "C-" + getPrefix (Utils.UnsetFlag modifiers KeyModifiers.Control)
-                        elif Utils.IsFlagSet modifiers KeyModifiers.Shift then
-                            "S-" + getPrefix (Utils.UnsetFlag modifiers KeyModifiers.Shift)
+                        if Util.IsFlagSet modifiers KeyModifiers.Alt then
+                            "M-" + getPrefix (Util.UnsetFlag modifiers KeyModifiers.Alt)
+                        elif Util.IsFlagSet modifiers KeyModifiers.Control then
+                            "C-" + getPrefix (Util.UnsetFlag modifiers KeyModifiers.Control)
+                        elif Util.IsFlagSet modifiers KeyModifiers.Shift then
+                            "S-" + getPrefix (Util.UnsetFlag modifiers KeyModifiers.Shift)
                         else 
                             ""
 

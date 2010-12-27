@@ -158,8 +158,8 @@ module KeyNotationUtil =
             | Some(ki) -> 
                 if modifier = KeyModifiers.None then
                     Some ki
-                elif Utils.IsFlagSet modifier KeyModifiers.Shift && CharUtil.IsLetter ki.Char then
-                    let other = Utils.UnsetFlag modifier KeyModifiers.Shift
+                elif Util.IsFlagSet modifier KeyModifiers.Shift && CharUtil.IsLetter ki.Char then
+                    let other = Util.UnsetFlag modifier KeyModifiers.Shift
                     let ki = 
                         if CharUtil.IsLower ki.Char then
                             // The shift modifier should promote a letter into the upper form 
@@ -226,7 +226,7 @@ module KeyNotationUtil =
         match found with 
         | None -> None
         | Some(pair) ->
-            let extra : KeyModifiers = Utils.UnsetFlag keyInput.KeyModifiers pair.Value.KeyModifiers
+            let extra : KeyModifiers = Util.UnsetFlag keyInput.KeyModifiers pair.Value.KeyModifiers
             Some(pair.Key.Value, extra)
 
 

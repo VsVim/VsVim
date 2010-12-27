@@ -384,7 +384,7 @@ type internal VisualMode
         | CommandRunnerState.NoInput -> true
         | CommandRunnerState.NotEnoughInput -> true
         | CommandRunnerState.NotEnoughMatchingPrefix (_) -> true
-        | CommandRunnerState.NotFinishWithCommand (command, _) -> not (Utils.IsFlagSet command.CommandFlags CommandFlags.HandlesEscape)
+        | CommandRunnerState.NotFinishWithCommand (command, _) -> not (Util.IsFlagSet command.CommandFlags CommandFlags.HandlesEscape)
 
     interface IMode with
         member x.VimBuffer = _buffer
@@ -410,7 +410,7 @@ type internal VisualMode
                         ProcessResult.Processed
                     | RunKeyInputResult.CommandRan(commandRanData,modeSwitch) -> 
     
-                        if Utils.IsFlagSet commandRanData.Command.CommandFlags CommandFlags.ResetCaret then
+                        if Util.IsFlagSet commandRanData.Command.CommandFlags CommandFlags.ResetCaret then
                             _selectionTracker.ResetCaret()
 
                         match modeSwitch with

@@ -99,14 +99,14 @@ type internal CommandFactory
                     inner initialResult
 
                 let flags = 
-                    if Utils.IsFlagSet motionFlags MotionFlags.HandlesEscape then 
+                    if Util.IsFlagSet motionFlags MotionFlags.HandlesEscape then 
                         CommandFlags.Movement ||| CommandFlags.HandlesEscape
                     else
                         CommandFlags.Movement
                 Command.LongCommand(name, flags, coreFunc) 
 
         _capture.MotionCommands
-        |> Seq.filter (fun command -> Utils.IsFlagSet command.MotionFlags MotionFlags.CursorMovement)
+        |> Seq.filter (fun command -> Util.IsFlagSet command.MotionFlags MotionFlags.CursorMovement)
         |> Seq.map processMotionCommand
 
     /// Create shared edit commands between Normal and Visual Mode.  Returns a sequence of tuples

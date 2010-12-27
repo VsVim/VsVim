@@ -461,10 +461,10 @@ type internal CommandProcessor
             // Check for the UsePrevious flag and update the flags as appropriate.  Make sure
             // to bitor them against the new flags
             let flags = 
-                if Utils.IsFlagSet flags SubstituteFlags.UsePreviousFlags then 
+                if Util.IsFlagSet flags SubstituteFlags.UsePreviousFlags then 
                     match _buffer.VimData.LastSubstituteData with
                     | None -> SubstituteFlags.None
-                    | Some(data) -> (Utils.UnsetFlag flags SubstituteFlags.UsePreviousFlags) ||| data.Flags
+                    | Some(data) -> (Util.UnsetFlag flags SubstituteFlags.UsePreviousFlags) ||| data.Flags
                 else flags
 
             (flags, rest)
@@ -534,15 +534,15 @@ type internal CommandProcessor
                         // Check for the UsePrevious flag and update the flags as appropriate.  Make sure
                         // to bitor them against the new flags
                         let flags = 
-                            if Utils.IsFlagSet flags SubstituteFlags.UsePreviousFlags then 
+                            if Util.IsFlagSet flags SubstituteFlags.UsePreviousFlags then 
                                 match _buffer.VimData.LastSubstituteData with
                                 | None -> SubstituteFlags.None
-                                | Some(data) -> (Utils.UnsetFlag flags SubstituteFlags.UsePreviousFlags) ||| data.Flags
+                                | Some(data) -> (Util.UnsetFlag flags SubstituteFlags.UsePreviousFlags) ||| data.Flags
                             else flags
 
                         // Check for the previous search pattern flag
                         let search, errorMsg  = 
-                            if Utils.IsFlagSet flags SubstituteFlags.UsePreviousSearchPattern then
+                            if Util.IsFlagSet flags SubstituteFlags.UsePreviousSearchPattern then
                                 match _regexFactory.CreateForSearchText _buffer.VimData.LastSearchData.Text with
                                 | None -> (StringUtil.empty, Some Resources.CommandMode_NoPreviousSubstitute)
                                 | Some(regex) -> (regex.VimPattern, None)
@@ -562,7 +562,7 @@ type internal CommandProcessor
                 _statusUtil.OnError msg
                 RunResult.Completed
             let goodParse search replace range flags = 
-                if Utils.IsFlagSet flags SubstituteFlags.Confirm then
+                if Util.IsFlagSet flags SubstituteFlags.Confirm then
                     let data = {SearchPattern=search; Substitute=replace; Flags=flags}
                     setupConfirmSubstitute range data
                 else
@@ -587,8 +587,8 @@ type internal CommandProcessor
 
                     // Get the pattern to replace with 
                     let flags, pattern, errorMsg = 
-                        if Utils.IsFlagSet flags SubstituteFlags.UsePreviousSearchPattern then 
-                            let flags = Utils.UnsetFlag flags SubstituteFlags.UsePreviousSearchPattern
+                        if Util.IsFlagSet flags SubstituteFlags.UsePreviousSearchPattern then 
+                            let flags = Util.UnsetFlag flags SubstituteFlags.UsePreviousSearchPattern
                             match _regexFactory.CreateForSearchText _buffer.VimData.LastSearchData.Text with
                             | None -> (flags, StringUtil.empty, Some Resources.CommandMode_InvalidCommand)
                             | Some(regex) -> (flags, regex.VimPattern, None)

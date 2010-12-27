@@ -249,5 +249,14 @@ namespace Vim.UnitTest
                 vimData);
         }
 
+        internal static SearchProcessResult CreateSearchComplete(string text)
+        {
+            var data = new SearchData(
+                SearchText.NewStraightText(text),
+                SearchKind.Forward,
+                SearchOptions.None);
+            return SearchProcessResult.NewSearchComplete(data);
+        }
+
     }
 }
