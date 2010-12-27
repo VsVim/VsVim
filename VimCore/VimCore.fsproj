@@ -82,7 +82,6 @@
     <Compile Include="Modes_Normal_DefaultOperations.fs" />
     <Compile Include="Modes_Normal_NormalMode.fsi" />
     <Compile Include="Modes_Normal_NormalMode.fs" />
-    <Compile Include="Modes_Normal_IncrementalSearch.fs" />
     <Compile Include="Modes_Insert_InsertMode.fsi" />
     <Compile Include="Modes_Insert_InsertMode.fs" />
     <Compile Include="Modes_Visual_ISelectionTracker.fs" />
@@ -91,6 +90,8 @@
     <Compile Include="Modes_Visual_VisualMode.fs" />
     <Compile Include="Modes_SubstituteConfirm_SubstituteConfirmMode.fsi" />
     <Compile Include="Modes_SubstituteConfirm_SubstituteConfirmMode.fs" />
+    <Compile Include="IncrementalSearch.fsi" />
+    <Compile Include="IncrementalSearch.fs" />
     <Compile Include="Tagger.fsi" />
     <Compile Include="Tagger.fs" />
     <Compile Include="SelectionChangeTracker.fsi" />

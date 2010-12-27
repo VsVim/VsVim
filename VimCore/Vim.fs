@@ -62,7 +62,7 @@ type internal VimBufferFactory
         let jumpList = JumpList(_tlcService) :> IJumpList
         let foldManager = _foldManagerFactory.GetFoldManager(view.TextBuffer)
         let wordNav = x.CreateTextStructureNavigator view.TextBuffer WordKind.NormalWord
-        let incrementalSearch = Vim.Modes.Normal.IncrementalSearch(view, outlining, localSettings, wordNav, vim.SearchService, vim.VimData) :> IIncrementalSearch
+        let incrementalSearch = IncrementalSearch(view, outlining, localSettings, wordNav, vim.SearchService, vim.VimData) :> IIncrementalSearch
         let capture = MotionCapture(vim.VimHost, view, motionUtil, incrementalSearch, jumpList, _motionCaptureGlobalData) :> IMotionCapture
         let bufferRaw = 
             VimBuffer( 
