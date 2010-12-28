@@ -246,12 +246,13 @@ type VisualKind =
     | Line
     | Block
     with 
-    static member ofModeKind kind = 
+    static member OfModeKind kind = 
         match kind with 
         | ModeKind.VisualBlock -> VisualKind.Block |> Some
         | ModeKind.VisualLine -> VisualKind.Line |> Some
         | ModeKind.VisualCharacter -> VisualKind.Character |> Some
         | _ -> None
+    static member IsAnyVisual kind = VisualKind.OfModeKind kind |> Option.isSome
 
 /// The actual command name.  This is a wrapper over the collection of KeyInput 
 /// values which make up a command name.  

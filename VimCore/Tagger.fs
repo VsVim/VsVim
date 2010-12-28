@@ -11,11 +11,13 @@ open System.ComponentModel.Composition
 /// Tagger for incremental searches
 type IncrementalSearchTagger
     ( 
-        _textBuffer : ITextBuffer,
+        _buffer : IVimBuffer,
         _search : IIncrementalSearch ) as this= 
 
+    let _textBuffer = _buffer.TextBuffer
     let _tagsChanged = new Event<System.EventHandler<SnapshotSpanEventArgs>, SnapshotSpanEventArgs>()
     let mutable _searchSpan : ITrackingSpan option = None
+
     do 
         let raiseAllChanged () = 
             // Don't bother calculating the range of changed spans.  Simply raise the event for the entire 
@@ -28,11 +30,16 @@ type IncrementalSearchTagger
 
             // Make sure to reset _searchSpan before raising the event.  The editor can and will call back
             // into us synchronously and access a stale value if we don't
-            match result with
-            | SearchFound(span) -> 
-                _searchSpan <- Some(span.Snapshot.CreateTrackingSpan(span.Span, SpanTrackingMode.EdgeExclusive))
-            | SearchNotFound ->
+
+            if VisualKind.IsAnyVisual _buffer.ModeKind then
+                // Don't show any tags when we are in visual mode
                 _searchSpan <- None
+            else
+                match result with
+                | SearchFound(span) -> 
+                    _searchSpan <- Some(span.Snapshot.CreateTrackingSpan(span.Span, SpanTrackingMode.EdgeExclusive))
+                | SearchNotFound ->
+                    _searchSpan <- None
             raiseAllChanged()               
 
         let clearTags _ =
@@ -79,9 +86,8 @@ type internal IncrementalSearchTaggerProvider
             match _vim.GetBufferForBuffer textBuffer with
             | None -> null
             | Some(buffer) ->
-                let normal = buffer.NormalMode
                 let search = buffer.IncrementalSearch
-                let tagger = IncrementalSearchTagger(textBuffer,search)
+                let tagger = IncrementalSearchTagger(buffer, search)
                 tagger :> obj :?> ITagger<'T>
 
 /// Tagger for completed incremental searches

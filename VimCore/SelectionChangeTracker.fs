@@ -43,7 +43,7 @@ type internal SelectionChangeTracker
         |> Observable.subscribe (fun args -> this.OnKeyInputFinished() )
         |> _bag.Add
 
-    member private x.IsAnyVisualMode = _buffer.ModeKind |> VisualKind.ofModeKind |> Option.isSome
+    member private x.IsAnyVisualMode = VisualKind.IsAnyVisual _buffer.ModeKind
 
     /// Raised when the selection changes.  
     member private x.OnSelectionChanged() = 

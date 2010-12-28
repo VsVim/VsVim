@@ -140,7 +140,7 @@ type internal VimBufferFactory
         let commandOpts = Modes.Command.DefaultOperations(operationsData) :> Modes.Command.IOperations
         let commandProcessor = Modes.Command.CommandProcessor(buffer, commandOpts, statusUtil, FileSystem() :> IFileSystem) :> Modes.Command.ICommandProcessor
         let visualOptsFactory kind = 
-            let kind = VisualKind.ofModeKind kind |> Option.get
+            let kind = VisualKind.OfModeKind kind |> Option.get
             let tracker = Modes.Visual.SelectionTracker(view, vim.Settings, incrementalSearch, kind) :> Modes.Visual.ISelectionTracker
             (tracker, commonOperations)
 
