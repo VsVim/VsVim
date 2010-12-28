@@ -909,12 +909,15 @@ type internal CommonOperations ( _data : OperationsData ) =
             x.WrapEditInUndoTransactionWithReturn "Paste" (fun () -> 
                 buffer.Replace(new Span(line.End.Position,0), System.Environment.NewLine) |> ignore
                 let newLine = buffer.CurrentSnapshot.GetLineFromLineNumber(line.LineNumber+1)
-            
-                // Move the caret to the same indent position as the previous line
-                let tabSize = EditorOptionsUtil.GetOptionValueOrDefault _options DefaultOptions.TabSizeOptionId 4
-                let indent = TssUtil.FindIndentPosition line tabSize
-                let point = new VirtualSnapshotPoint(newLine, indent)
-                TextViewUtil.MoveCaretToVirtualPoint _textView point |> ignore 
+
+                // Update the caret indent if autoindent is set
+                if _settings.AutoIndent then
+                    let indent = line |> SnapshotLineUtil.GetIndent |> SnapshotPointUtil.GetColumn
+                    let point = new VirtualSnapshotPoint(newLine, indent)
+                    TextViewUtil.MoveCaretToVirtualPoint _textView point |> ignore 
+                else
+                    TextViewUtil.MoveCaretToPoint _textView newLine.Start |> ignore
+
                 newLine )
 
         member x.InsertLineAbove () = 
@@ -923,9 +926,17 @@ type internal CommonOperations ( _data : OperationsData ) =
             let buffer = line.Snapshot.TextBuffer
             x.WrapEditInUndoTransactionWithReturn "Paste" (fun() -> 
                 buffer.Replace(new Span(line.Start.Position,0), System.Environment.NewLine) |> ignore
-                let line = buffer.CurrentSnapshot.GetLineFromLineNumber(line.LineNumber)
-                TextViewUtil.MoveCaretToPoint _textView line.Start
-                line )
+                let newLine = buffer.CurrentSnapshot.GetLineFromLineNumber(line.LineNumber)
+
+                // Update the caret indent if autoindent is set
+                if _settings.AutoIndent then
+                    let indent = line |> SnapshotLineUtil.GetIndent |> SnapshotPointUtil.GetColumn
+                    let point = new VirtualSnapshotPoint(newLine, indent)
+                    TextViewUtil.MoveCaretToVirtualPoint _textView point |> ignore 
+                else
+                    TextViewUtil.MoveCaretToPoint _textView newLine.Start |> ignore
+
+                newLine)
 
         member x.WrapEditInUndoTransaction name action = x.WrapEditInUndoTransaction name action
 

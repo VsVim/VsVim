@@ -19,12 +19,6 @@ namespace VimCore.UnitTest
     [TestFixture]
     public class CommonOperationsTest
     {
-
-        private class OperationsImpl : CommonOperations
-        {
-            internal OperationsImpl(OperationsData data) : base(data) { }
-        }
-
         private IWpfTextView _textView;
         private ITextBuffer _textBuffer;
         private MockRepository _factory;
@@ -56,6 +50,7 @@ namespace VimCore.UnitTest
             _editorOpts.Setup(x => x.AddAfterTextBufferChangePrimitive());
             _editorOpts.Setup(x => x.AddBeforeTextBufferChangePrimitive());
             _settings = _factory.Create<IVimLocalSettings>();
+            _settings.SetupGet(x => x.AutoIndent).Returns(false);
             _globalSettings = _factory.Create<IVimGlobalSettings>();
             _globalSettings.SetupGet(x => x.Magic).Returns(true);
             _globalSettings.SetupGet(x => x.SmartCase).Returns(false);
@@ -85,7 +80,7 @@ namespace VimCore.UnitTest
                 foldManager: null,
                 searchService: _searchService);
 
-            _operationsRaw = new OperationsImpl(data);
+            _operationsRaw = new CommonOperations(data);
             _operations = _operationsRaw;
         }
 
@@ -2119,6 +2114,146 @@ namespace VimCore.UnitTest
             _operations.GoToFile();
             _statusUtil.Verify();
             _host.Verify();
+        }
+
+        [Test]
+        public void InsertLineAbove_KeepCaretAtStartWithNoAutoIndent()
+        {
+            Create("foo");
+            _operations.InsertLineAbove();
+            var point = _textView.Caret.Position.VirtualBufferPosition;
+            Assert.IsFalse(point.IsInVirtualSpace);
+            Assert.AreEqual(0, point.Position.Position);
+        }
+
+        [Test]
+        public void InsertLineAbove_MiddleOfLine()
+        {
+            Create("foo", "bar");
+            _textView.Caret.MoveTo(_textView.TextSnapshot.GetLineFromLineNumber(1).Start);
+            _operations.InsertLineAbove();
+            var point = _textView.Caret.Position.BufferPosition;
+            Assert.AreEqual(1, point.GetContainingLine().LineNumber);
+            Assert.AreEqual(String.Empty, point.GetContainingLine().GetText());
+        }
+
+        [Test]
+        [Description("Happens when a language service formats text")]
+        public void InsertLineAbove_EditInTheMiddle()
+        {
+            Create("foo bar", "baz");
+
+            bool didEdit = false;
+
+            _textView.TextBuffer.Changed += (sender, e) =>
+            {
+                if (didEdit)
+                    return;
+
+                using (var edit = _textView.TextBuffer.CreateEdit())
+                {
+                    edit.Insert(0, "a ");
+                    edit.Apply();
+                }
+
+                didEdit = true;
+            };
+
+            _operations.InsertLineAbove();
+            var buffer = _textView.TextBuffer;
+            var line = buffer.CurrentSnapshot.GetLineFromLineNumber(0);
+            Assert.AreEqual("a ", line.GetText());
+        }
+
+        [Test]
+        public void InsertLineAbove_ShouldKeepIndentWhenAutoIndentSet()
+        {
+            Create("  cat", "dog");
+            _settings.SetupGet(x => x.AutoIndent).Returns(true);
+            _operations.InsertLineAbove();
+            Assert.AreEqual(2, _textView.Caret.Position.VirtualSpaces);
+        }
+
+        [Test]
+        public void InsertLineBelow_InMiddleOfLine()
+        {
+            Create("foo", "bar", "baz");
+            var newLine = _operations.InsertLineBelow();
+            Assert.AreEqual(1, newLine.LineNumber);
+            Assert.AreEqual(String.Empty, newLine.GetText());
+
+        }
+
+        [Test]
+        public void InsertLineBelow_AtEndOfBuffer()
+        {
+            Create("foo", "bar");
+            _textView.Caret.MoveTo(_textView.TextSnapshot.GetLineFromLineNumber(_textView.TextSnapshot.LineCount - 1).Start);
+            var newLine = _operations.InsertLineBelow();
+            Assert.IsTrue(String.IsNullOrEmpty(newLine.GetText()));
+        }
+
+        [Test]
+        public void InsertLineBelow_Misc()
+        {
+            Create("foo bar", "baz");
+            _operations.InsertLineBelow();
+            var buffer = _textView.TextBuffer;
+            var line = buffer.CurrentSnapshot.GetLineFromLineNumber(0);
+            Assert.AreEqual(Environment.NewLine, line.GetLineBreakText());
+            Assert.AreEqual(2, line.LineBreakLength);
+            Assert.AreEqual("foo bar", line.GetText());
+            Assert.AreEqual("foo bar" + Environment.NewLine, line.GetTextIncludingLineBreak());
+
+            line = buffer.CurrentSnapshot.GetLineFromLineNumber(1);
+            Assert.AreEqual(Environment.NewLine, line.GetLineBreakText());
+            Assert.AreEqual(2, line.LineBreakLength);
+            Assert.AreEqual(String.Empty, line.GetText());
+            Assert.AreEqual(String.Empty + Environment.NewLine, line.GetTextIncludingLineBreak());
+
+            line = buffer.CurrentSnapshot.GetLineFromLineNumber(2);
+            Assert.AreEqual(String.Empty, line.GetLineBreakText());
+            Assert.AreEqual(0, line.LineBreakLength);
+            Assert.AreEqual("baz", line.GetText());
+            Assert.AreEqual("baz", line.GetTextIncludingLineBreak());
+        }
+
+        [Test]
+        [Description("Happens when a language service formats text")]
+        public void InsertLineBelow_EditsInTheMiddle()
+        {
+            Create("foo bar", "baz");
+
+            bool didEdit = false;
+
+            _textView.TextBuffer.Changed += (sender, e) =>
+            {
+                if (didEdit)
+                    return;
+
+                using (var edit = _textView.TextBuffer.CreateEdit())
+                {
+                    edit.Insert(0, "a ");
+                    edit.Apply();
+                }
+
+                didEdit = true;
+            };
+
+            _operations.InsertLineBelow();
+            var buffer = _textView.TextBuffer;
+            var line = buffer.CurrentSnapshot.GetLineFromLineNumber(0);
+            Assert.AreEqual("a foo bar", line.GetText());
+        }
+
+        [Test]
+        public void InsertLineBelow_KeepIndentWhenAutoIndentSet()
+        {
+            Create("  cat", "dog");
+            _settings.SetupGet(x => x.AutoIndent).Returns(true);
+            _operations.InsertLineBelow();
+            Assert.AreEqual("", _textView.GetLine(1).GetText());
+            Assert.AreEqual(2, _textView.Caret.Position.VirtualBufferPosition.VirtualSpaces);
         }
     }
 }

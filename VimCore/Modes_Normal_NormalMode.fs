@@ -645,6 +645,13 @@ type internal NormalMode
         let complex : seq<string * CommandFlags * ModeKind option * (int -> Register -> MotionData -> unit)> =
             seq {
                 yield (
+                    "c", 
+                    CommandFlags.LinkedWithNextTextChange ||| CommandFlags.Repeatable, 
+                    Some ModeKind.Insert, 
+                    fun _ reg data -> 
+                        let span = _operations.ChangeSpan data 
+                        _operations.UpdateRegisterForSpan reg RegisterOperation.Delete span data.OperationKind)
+                yield (
                     "d", 
                     CommandFlags.None, 
                     None, 
@@ -656,13 +663,6 @@ type internal NormalMode
                     CommandFlags.None, 
                     None, 
                     fun _ reg data -> _operations.UpdateRegisterForSpan reg RegisterOperation.Yank data.OperationSpan data.OperationKind)
-                yield (
-                    "c", 
-                    CommandFlags.LinkedWithNextTextChange ||| CommandFlags.Repeatable, 
-                    Some ModeKind.Insert, 
-                    fun _ reg data -> 
-                        let span = _operations.ChangeSpan data 
-                        _operations.UpdateRegisterForSpan reg RegisterOperation.Delete span data.OperationKind)
                 yield (
                     "<lt>", 
                     CommandFlags.None, 
