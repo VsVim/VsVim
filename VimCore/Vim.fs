@@ -130,7 +130,6 @@ type internal VimBufferFactory
         /// creation events.
         let selectionChangeTracker = SelectionChangeTracker(buffer)
 
-
         statusUtil.VimBuffer <- Some bufferRaw
 
         let createCommandRunner() = CommandRunner (view, vim.RegisterMap, capture,statusUtil) :>ICommandRunner

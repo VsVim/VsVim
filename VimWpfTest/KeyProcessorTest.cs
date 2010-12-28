@@ -48,7 +48,7 @@ namespace Vim.UI.Wpf.Test
             _keyboardId = IntPtr.Zero;
         }
 
-        private KeyEventArgs CreateKeyEventArgs(
+        private static KeyEventArgs CreateKeyEventArgs(
             Key key,
             ModifierKeys modKeys = ModifierKeys.None)
         {
@@ -70,7 +70,7 @@ namespace Vim.UI.Wpf.Test
         [Description("Don't handle non-input keys")]
         public void KeyDown2()
         {
-            foreach (var cur in new Key[] { Key.LeftAlt, Key.RightAlt, Key.LeftCtrl, Key.RightCtrl, Key.LeftShift, Key.RightShift })
+            foreach (var cur in new[] { Key.LeftAlt, Key.RightAlt, Key.LeftCtrl, Key.RightCtrl, Key.LeftShift, Key.RightShift })
             {
                 var arg = CreateKeyEventArgs(cur);
                 _processor.KeyDown(arg);
@@ -98,7 +98,7 @@ namespace Vim.UI.Wpf.Test
             _buffer.Setup(x => x.CanProcess(It.IsAny<KeyInput>())).Returns(true).Verifiable();
             _buffer.Setup(x => x.Process(It.IsAny<KeyInput>())).Returns(true).Verifiable();
 
-            var array = new Key[] { Key.Enter, Key.Left, Key.Right, Key.Return };
+            var array = new[] { Key.Enter, Key.Left, Key.Right, Key.Return };
             foreach (var cur in array)
             {
                 var arg = CreateKeyEventArgs(cur);
@@ -115,7 +115,7 @@ namespace Vim.UI.Wpf.Test
         {
             _buffer.Setup(x => x.CanProcess(It.IsAny<KeyInput>())).Returns(false).Verifiable();
 
-            var array = new Key[] { Key.Enter, Key.Left, Key.Right, Key.Return };
+            var array = new[] { Key.Enter, Key.Left, Key.Right, Key.Return };
             foreach (var cur in array)
             {
                 var arg = CreateKeyEventArgs(cur);
@@ -181,6 +181,38 @@ namespace Vim.UI.Wpf.Test
             }
 
             _factory.Verify();
+        }
+
+        [Test]
+        public void KeyDown_PassNonCharOnlyToBuffer()
+        {
+            _buffer.Setup(x => x.CanProcess(It.IsAny<KeyInput>())).Returns(true).Verifiable();
+            _buffer.Setup(x => x.Process(It.IsAny<KeyInput>())).Returns(true).Verifiable();
+
+            var array = new[] { Key.Left, Key.Right, Key.Up, Key.Down };
+            foreach (var key in array)
+            {
+                var modifiers = new[] { ModifierKeys.Shift, ModifierKeys.Alt, ModifierKeys.Control, ModifierKeys.None };
+                foreach (var mod in modifiers)
+                {
+                    var arg = CreateKeyEventArgs(key, mod);
+                    _processor.KeyDown(arg);
+                    Assert.IsTrue(arg.Handled);
+                }
+            }
+        }
+
+        [Test]
+        public void KeyDown_NonCharWithModifierShouldCarryModifier()
+        {
+            var ki = KeyInputUtil.VimKeyAndModifiersToKeyInput(VimKey.Left, KeyModifiers.Shift);
+            _buffer.Setup(x => x.CanProcess(ki)).Returns(true).Verifiable();
+            _buffer.Setup(x => x.Process(ki)).Returns(true).Verifiable();
+
+            var arg = CreateKeyEventArgs(Key.Left, ModifierKeys.Shift);
+            _processor.KeyDown(arg);
+            Assert.IsTrue(arg.Handled);
+            _buffer.Verify();
         }
     }
 }

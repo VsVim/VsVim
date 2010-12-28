@@ -9,7 +9,7 @@ namespace VsVim
     /// <summary>
     /// Snapshot of the current key binding state
     /// </summary>
-    public class CommandKeyBindingSnapshot
+    public sealed class CommandKeyBindingSnapshot
     {
         private readonly CommandsSnapshot _snapshot;
         private readonly ReadOnlyCollection<CommandKeyBinding> _removedBindings;

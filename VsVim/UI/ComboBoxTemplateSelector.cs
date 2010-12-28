@@ -1,9 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using System.Windows;
 using System.Windows.Controls;
-using System.Windows;
 
 namespace VsVim.UI
 {
@@ -16,12 +12,16 @@ namespace VsVim.UI
     {
         public override DataTemplate SelectTemplate(object item, DependencyObject container)
         {
-            ContentPresenter presenter = (ContentPresenter)container;
+            var presenter = (ContentPresenter)container;
 
             if (presenter.TemplatedParent is ComboBox)
+            {
                 return (DataTemplate)presenter.FindResource("ComboBoxItemCollapsedTemplate");
+            }
             else
+            {
                 return (DataTemplate)presenter.FindResource("ComboBoxItemExpandedTemplate");
+            }
         }
     }
 }
