@@ -137,7 +137,7 @@ namespace Vim.UnitTest
             return Tuple.Create(view, opts);
         }
 
-        public static IEditorOperations GetOperations(IWpfTextView view)
+        public static IEditorOperations GetOperations(ITextView view)
         {
             return FactoryService.editorOperationsFactory.GetEditorOperations(view);
         }

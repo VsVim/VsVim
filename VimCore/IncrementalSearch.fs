@@ -1,4 +1,5 @@
 ﻿namespace Vim
+
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Operations
 open Microsoft.VisualStudio.Text.Editor
@@ -6,9 +7,6 @@ open Microsoft.VisualStudio.Text.Outlining
 open NullableUtil
 
 type internal IncrementalSearchData = {
-    /// The caret point before the search started 
-    OriginalCaretPoint : ITrackingPoint 
-
     /// The point from which the search needs to occur 
     StartPoint : ITrackingPoint;
 
@@ -18,13 +16,13 @@ type internal IncrementalSearchData = {
 
 type internal IncrementalSearch
     (
-        _textView : ITextView,
-        _outlining : IOutliningManager option,
+        _operations : Modes.ICommonOperations,
         _settings : IVimLocalSettings,
         _navigator : ITextStructureNavigator,
         _search : ISearchService,
-        _vimData : IVimData ) =
+        _vimData : IVimData) =
 
+    let _textView = _operations.TextView
     let mutable _data : IncrementalSearchData option = None
     let _searchOptions = SearchOptions.ConsiderIgnoreCase ||| SearchOptions.ConsiderSmartCase
     let _currentSearchUpdated = Event<SearchData * SearchResult>()
@@ -35,7 +33,6 @@ type internal IncrementalSearch
         let caret = TextViewUtil.GetCaretPoint _textView
         let start = Util.GetSearchPoint kind caret
         let data = {
-            OriginalCaretPoint = caret.Snapshot.CreateTrackingPoint(caret.Position, PointTrackingMode.Negative)
             StartPoint = start.Snapshot.CreateTrackingPoint(start.Position, PointTrackingMode.Negative)
             SearchData = {Text = SearchText.Pattern(StringUtil.empty); Kind = kind; Options = _searchOptions}
             SearchResult = SearchNotFound 
@@ -52,12 +49,7 @@ type internal IncrementalSearch
         | None -> SearchNotStarted
         | Some (data) -> 
 
-            let resetView() = 
-                match TrackingPointUtil.GetPoint _textView.TextSnapshot data.OriginalCaretPoint with
-                | None -> ()
-                | Some(point) -> 
-                    TextViewUtil.MoveCaretToPoint _textView point 
-                    TextViewUtil.EnsureCaretOnScreenAndTextExpanded _textView _outlining
+            let resetView () = _operations.EnsureCaretOnScreenAndTextExpanded()
 
             let doSearch pattern = 
                 let searchData = {data.SearchData with Text=SearchText.Pattern(pattern)}
@@ -72,11 +64,7 @@ type internal IncrementalSearch
 
                 match ret with
                 | Some(span) ->
-                    // TODO: Shouldn't actually move the caret here.  Ideally we would just make the start of the 
-                    // span visible on the screen but unfortunately EnsureVisible only works for the Caret 
-                    // right now
-                    TextViewUtil.MoveCaretToPoint _textView span.Start 
-                    TextViewUtil.EnsureCaretOnScreenAndTextExpanded _textView _outlining
+                    _operations.EnsurePointOnScreenAndTextExpanded span.Start
                     _currentSearchUpdated.Trigger (searchData, SearchFound(span)) 
                     _data <- Some { data with SearchData = searchData; SearchResult = SearchFound(span) }
                 | None ->
@@ -95,8 +83,8 @@ type internal IncrementalSearch
             if ki = KeyInputUtil.EnterKey then
                 _data <- None
                 _vimData.LastSearchData <- oldSearchData
-                _currentSearchCompleted.Trigger (oldSearchData,data.SearchResult)
-                SearchComplete data.SearchData
+                _currentSearchCompleted.Trigger(oldSearchData, data.SearchResult)
+                SearchComplete(data.SearchData, data.SearchResult)
             elif ki = KeyInputUtil.EscapeKey then
                 resetView()
                 cancelSearch

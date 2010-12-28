@@ -1,15 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using Microsoft.FSharp.Core;
+﻿using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Operations;
-using Microsoft.VisualStudio.Text.Outlining;
 using Moq;
 using NUnit.Framework;
 using Vim;
 using Vim.Extensions;
-using Vim.Modes.Normal;
+using Vim.Modes;
 using Vim.UnitTest;
 using Vim.UnitTest.Mock;
 
@@ -25,7 +22,7 @@ namespace VimCore.UnitTest
         private Mock<ITextStructureNavigator> _nav;
         private Mock<IVimGlobalSettings> _globalSettings;
         private Mock<IVimLocalSettings> _settings;
-        private Mock<IOutliningManager> _outlining;
+        private Mock<ICommonOperations> _operations;
         private ITextView _textView;
         private IncrementalSearch _searchRaw;
         private IIncrementalSearch _search;
@@ -39,11 +36,12 @@ namespace VimCore.UnitTest
             _nav = _factory.Create<ITextStructureNavigator>();
             _globalSettings = MockObjectFactory.CreateGlobalSettings(ignoreCase: true);
             _settings = MockObjectFactory.CreateLocalSettings(_globalSettings.Object);
-            _outlining = new Mock<IOutliningManager>(MockBehavior.Strict);
-            _outlining.Setup(x => x.ExpandAll(It.IsAny<SnapshotSpan>(), It.IsAny<Predicate<ICollapsed>>())).Returns<IEnumerable<ICollapsed>>(null);
+            _operations = _factory.Create<ICommonOperations>();
+            _operations.SetupGet(x => x.TextView).Returns(_textView);
+            _operations.Setup(x => x.EnsureCaretOnScreenAndTextExpanded());
+            _operations.Setup(x => x.EnsurePointOnScreenAndTextExpanded(It.IsAny<SnapshotPoint>()));
             _searchRaw = new IncrementalSearch(
-                _textView,
-                FSharpOption.Create(_outlining.Object),
+                _operations.Object,
                 _settings.Object,
                 _nav.Object,
                 _searchService.Object,

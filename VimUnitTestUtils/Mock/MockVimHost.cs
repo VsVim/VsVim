@@ -98,11 +98,6 @@ namespace Vim.UnitTest.Mock
             throw new NotImplementedException();
         }
 
-        void IVimHost.CloseView(ITextView textView, bool checkDirty)
-        {
-            throw new NotImplementedException();
-        }
-
         void IVimHost.BuildSolution()
         {
             throw new NotImplementedException();
@@ -137,6 +132,10 @@ namespace Vim.UnitTest.Mock
         void IVimHost.FormatLines(ITextView value, SnapshotLineRange range)
         {
             throw new NotImplementedException();
+        }
+
+        public void EnsureVisible(ITextView textView, SnapshotPoint point)
+        {
         }
     }
 }

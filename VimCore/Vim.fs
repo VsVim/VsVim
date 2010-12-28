@@ -11,6 +11,23 @@ open System.ComponentModel.Composition
 open System.IO
 open Vim.Modes
 
+type internal StatusUtil() = 
+    let mutable _buffer : VimBuffer option = None
+
+    member x.VimBuffer 
+        with get () = _buffer
+        and set value = _buffer <- value
+
+    member x.DoWithBuffer func = 
+        match _buffer with
+        | None -> ()
+        | Some(buffer) -> func buffer
+
+    interface IStatusUtil with
+        member x.OnStatus msg = x.DoWithBuffer (fun buffer -> buffer.RaiseStatusMessage msg)
+        member x.OnError msg = x.DoWithBuffer (fun buffer -> buffer.RaiseErrorMessage msg)
+        member x.OnStatusLong msgSeq = x.DoWithBuffer (fun buffer -> buffer.RaiseStatusMessageLong msgSeq)
+
 type internal VimData() =
 
     let mutable _lastSubstituteData : SubstituteData option = None
@@ -19,10 +36,10 @@ type internal VimData() =
 
     interface IVimData with 
         member x.LastSubstituteData 
-            with get() = _lastSubstituteData
+            with get () = _lastSubstituteData
             and set value = _lastSubstituteData <- value
         member x.LastSearchData
-            with get() = _lastSearchData
+            with get () = _lastSearchData
             and set value = 
                 _lastSearchData <- value
                 _lastSearchChanged.Trigger value
@@ -62,7 +79,39 @@ type internal VimBufferFactory
         let jumpList = JumpList(_tlcService) :> IJumpList
         let foldManager = _foldManagerFactory.GetFoldManager(view.TextBuffer)
         let wordNav = x.CreateTextStructureNavigator view.TextBuffer WordKind.NormalWord
-        let incrementalSearch = IncrementalSearch(view, outlining, localSettings, wordNav, vim.SearchService, vim.VimData) :> IIncrementalSearch
+
+        let statusUtil = StatusUtil()
+        let undoRedoOperations = 
+            let history = 
+                let manager = _undoManagerProvider.GetTextBufferUndoManager(view.TextBuffer)
+                if manager = null then None
+                else manager.TextBufferUndoHistory |> Some
+            UndoRedoOperations(statusUtil, history) :> IUndoRedoOperations
+        let operationsData = { 
+            EditorOperations = editOperations
+            EditorOptions = editOptions
+            FoldManager = foldManager
+            JumpList = jumpList
+            KeyMap = vim.KeyMap
+            LocalSettings = localSettings
+            Navigator = wordNav
+            OutliningManager = outlining
+            RegisterMap = vim.RegisterMap
+            SearchService = vim.SearchService 
+            StatusUtil = statusUtil :> IStatusUtil
+            TextView = view
+            UndoRedoOperations = undoRedoOperations
+            VimData = vim.VimData
+            VimHost = _host }
+        let commonOperations = Modes.CommonOperations(operationsData) :> Modes.ICommonOperations
+
+        let incrementalSearch = 
+            IncrementalSearch(
+                commonOperations,
+                localSettings, 
+                wordNav, 
+                vim.SearchService, 
+                vim.VimData) :> IIncrementalSearch
         let capture = MotionCapture(vim.VimHost, view, motionUtil, incrementalSearch, jumpList, _motionCaptureGlobalData) :> IMotionCapture
         let bufferRaw = 
             VimBuffer( 
@@ -72,31 +121,17 @@ type internal VimBufferFactory
                 localSettings,
                 incrementalSearch)
         let buffer = bufferRaw :> IVimBuffer
+
+        /// Create the selection change tracker so that it will begin to monitor
+        /// selection events.  
+        ///
+        /// TODO: This feels wrong.  Either the result should be stored somewhere
+        /// or it should be exposed as a MEF service that listens to buffer 
+        /// creation events.
         let selectionChangeTracker = SelectionChangeTracker(buffer)
 
-        let statusUtil = x.CreateStatusUtil bufferRaw 
-        let undoRedoOperations = 
-            let history = 
-                let manager = _undoManagerProvider.GetTextBufferUndoManager(view.TextBuffer)
-                if manager = null then None
-                else manager.TextBufferUndoHistory |> Some
-            UndoRedoOperations(statusUtil, history) :> IUndoRedoOperations
-        let operationsData = { 
-            EditorOperations=editOperations
-            EditorOptions=editOptions
-            FoldManager=foldManager
-            JumpList=jumpList
-            KeyMap=vim.KeyMap
-            LocalSettings=localSettings
-            Navigator=wordNav
-            OutliningManager=outlining
-            RegisterMap=vim.RegisterMap
-            SearchService=vim.SearchService 
-            StatusUtil=statusUtil
-            TextView=view
-            UndoRedoOperations=undoRedoOperations
-            VimData=vim.VimData
-            VimHost=_host }
+
+        statusUtil.VimBuffer <- Some bufferRaw
 
         let createCommandRunner() = CommandRunner (view, vim.RegisterMap, capture,statusUtil) :>ICommandRunner
         let broker = _completionWindowBrokerFactoryService.CreateDisplayWindowBroker view
@@ -104,10 +139,9 @@ type internal VimBufferFactory
         let normalOpts = Modes.Normal.DefaultOperations(operationsData) :> Vim.Modes.Normal.IOperations
         let commandOpts = Modes.Command.DefaultOperations(operationsData) :> Modes.Command.IOperations
         let commandProcessor = Modes.Command.CommandProcessor(buffer, commandOpts, statusUtil, FileSystem() :> IFileSystem) :> Modes.Command.ICommandProcessor
-        let commonOperations = Modes.CommonOperations(operationsData) :> Modes.ICommonOperations
         let visualOptsFactory kind = 
             let kind = VisualKind.ofModeKind kind |> Option.get
-            let tracker = Modes.Visual.SelectionTracker(view,vim.Settings,kind) :> Modes.Visual.ISelectionTracker
+            let tracker = Modes.Visual.SelectionTracker(view, vim.Settings, incrementalSearch, kind) :> Modes.Visual.ISelectionTracker
             (tracker, commonOperations)
 
         let visualModeList =
@@ -136,12 +170,6 @@ type internal VimBufferFactory
     member private x.CreateTextStructureNavigator textBuffer wordKind =
         let baseImpl = _textStructureNavigatorSelectorService.GetTextStructureNavigator(textBuffer)
         TssUtil.CreateTextStructureNavigator wordKind baseImpl
-
-    member private x.CreateStatusUtil (buffer:VimBuffer) =
-        { new IStatusUtil with 
-            member x.OnStatus msg = buffer.RaiseStatusMessage msg
-            member x.OnError msg = buffer.RaiseErrorMessage msg
-            member x.OnStatusLong msgSeq = buffer.RaiseStatusMessageLong msgSeq }
 
     interface IVimBufferFactory with
         member x.CreateBuffer vim view = x.CreateBuffer vim view :> IVimBuffer

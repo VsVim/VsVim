@@ -187,7 +187,6 @@ namespace VimCore.UnitTest
             Create("dog", "cat", "tree");
             EnterMode(ModeKind.VisualLine, _textView.GetLineRange(0, 1).ExtentIncludingLineBreak);
             _buffer.Process("/c");
-            Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
             Assert.AreEqual(_textView.GetLineRange(0, 1).ExtentIncludingLineBreak, _textView.GetSelectionSpan());
         }
 
@@ -197,8 +196,16 @@ namespace VimCore.UnitTest
             Create("dog", "", "cat", "tree");
             EnterMode(ModeKind.VisualLine, _textView.GetLineRange(0, 1).ExtentIncludingLineBreak);
             _buffer.Process("/ca");
-            Assert.AreEqual(_textView.GetLine(2).Start, _textView.GetCaretPoint());
             Assert.AreEqual(_textView.GetLineRange(0, 2).ExtentIncludingLineBreak, _textView.GetSelectionSpan());
+        }
+
+        [Test]
+        public void IncrementalSearch_CharModeShouldExtendToSearchResult()
+        {
+            Create("dog", "cat");
+            EnterMode(ModeKind.VisualCharacter, new SnapshotSpan(_textView.GetLine(0).Start, 1));
+            _buffer.Process("/o");
+            Assert.AreEqual(new SnapshotSpan(_textView.GetLine(0).Start, 2), _textView.GetSelectionSpan());
         }
 
         [Test]

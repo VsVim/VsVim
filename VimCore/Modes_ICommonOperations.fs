@@ -72,7 +72,7 @@ type ICommonOperations =
     /// Change the case of all letters appearing in the given span
     abstract ChangeLetterCaseBlock : NormalizedSnapshotSpanCollection -> unit
 
-    /// Close the current file
+    /// Close the current buffer
     abstract Close : checkDirty : bool -> unit
 
     /// Close all open files
@@ -119,6 +119,9 @@ type ICommonOperations =
 
     /// Ensure the caret is on screen and that it is not in a collapsed region
     abstract EnsureCaretOnScreenAndTextExpanded : unit -> unit
+
+    /// Ensure the point is on screen and that it is not in a collapsed region
+    abstract EnsurePointOnScreenAndTextExpanded : SnapshotPoint -> unit
 
     /// Fold count lines under the cursor
     abstract FoldLines : count:int -> unit

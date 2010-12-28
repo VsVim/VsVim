@@ -783,5 +783,21 @@ namespace VimCore.UnitTest
             Assert.AreEqual("cat tree", _textView.GetLine(0).GetText());
             Assert.AreEqual(0, _textView.GetCaretPoint().Position);
         }
+
+        [Test]
+        public void IncrementalSearch_DontMoveCaretDuringSearch()
+        {
+            CreateBuffer("dog cat tree");
+            _buffer.Process("/cat");
+            Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+        }
+
+        [Test]
+        public void IncrementalSearch_MoveCaretAfterEnter()
+        {
+            CreateBuffer("dog cat tree");
+            _buffer.Process("/cat", enter: true);
+            Assert.AreEqual(4, _textView.GetCaretPoint().Position);
+        }
     }
 }

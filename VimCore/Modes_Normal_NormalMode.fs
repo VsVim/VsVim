@@ -305,10 +305,6 @@ type internal NormalMode
                     CommandFlags.Special, 
                     fun count _ -> _operations.Undo count)
                 yield (
-                    "Q",
-                    CommandFlags.Special,
-                    fun _ _ -> _operations.Close false |> ignore)
-                yield (
                     "zo", 
                     CommandFlags.Special, 
                     fun count _ -> _operations.OpenFold (TextViewUtil.GetCaretLineRange _bufferData.TextView 1).Extent count)

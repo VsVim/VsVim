@@ -47,7 +47,7 @@ type internal MotionCapture
         let before = TextViewUtil.GetCaretPoint _textView
         let rec inner (ki:KeyInput) = 
             match _incrementalSearch.Process ki with
-            | SearchComplete(searchData) -> 
+            | SearchComplete(searchData, searchResult) -> 
 
                 // Create the MotionData for the provided MotionArgument and the 
                 // start and end points of the search.  Need to be careful because
@@ -76,8 +76,9 @@ type internal MotionCapture
                 // Provide a cached function here because we already calculated the 
                 // expensive data and don't want to wast time recalculating it
                 let cachedFunc arg = 
-                    let caret = TextViewUtil.GetCaretPoint _textView
-                    getData before caret arg
+                    match searchResult with
+                    | SearchResult.SearchNotFound -> None
+                    | SearchResult.SearchFound(foundSpan) -> getData before foundSpan.Start arg
 
                 // Need to repeat the search 
                 let func arg = 

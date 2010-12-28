@@ -1455,7 +1455,7 @@ namespace VimCore.UnitTest
         public void Quit1()
         {
             Create("");
-            _host.Setup(x => x.CloseView(_textView, true)).Verifiable();
+            _host.Setup(x => x.Close(_textView, true)).Verifiable();
             RunCommand("quit");
             _factory.Verify();
         }
@@ -1464,7 +1464,7 @@ namespace VimCore.UnitTest
         public void Quit2()
         {
             Create("");
-            _host.Setup(x => x.CloseView(_textView, true)).Verifiable();
+            _host.Setup(x => x.Close(_textView, true)).Verifiable();
             RunCommand("q");
             _factory.Verify();
         }
@@ -1473,7 +1473,7 @@ namespace VimCore.UnitTest
         public void Quit3()
         {
             Create("");
-            _host.Setup(x => x.CloseView(_textView, false)).Verifiable();
+            _host.Setup(x => x.Close(_textView, false)).Verifiable();
             RunCommand("q!");
             _factory.Verify();
         }
@@ -1599,7 +1599,7 @@ namespace VimCore.UnitTest
         public void Close1()
         {
             Create("");
-            _host.Setup(x => x.CloseView(_textView, true)).Verifiable();
+            _host.Setup(x => x.Close(_textView, true)).Verifiable();
             RunCommand(":close");
             _factory.Verify();
         }
@@ -1608,7 +1608,7 @@ namespace VimCore.UnitTest
         public void Close2()
         {
             Create("");
-            _host.Setup(x => x.CloseView(_textView, false)).Verifiable();
+            _host.Setup(x => x.Close(_textView, false)).Verifiable();
             RunCommand(":close!");
             _factory.Verify();
         }
@@ -1617,7 +1617,7 @@ namespace VimCore.UnitTest
         public void Close3()
         {
             Create("");
-            _host.Setup(x => x.CloseView(_textView, false)).Verifiable();
+            _host.Setup(x => x.Close(_textView, false)).Verifiable();
             RunCommand(":clo!");
             _factory.Verify();
         }

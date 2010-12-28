@@ -11,6 +11,7 @@ type internal SelectionTracker
     (
         _textView : ITextView,
         _settings : IVimGlobalSettings, 
+        _incrementalSearch : IIncrementalSearch,
         _kind : VisualKind ) as this =
 
     let mutable _anchorPoint = VirtualSnapshotPoint(_textView.TextSnapshot, 0) 
@@ -18,9 +19,22 @@ type internal SelectionTracker
     /// Whether or not we are currently running
     let mutable _running = false
 
+    /// When we are in the middle of an incremental search this will 
+    /// track the most recent search result
+    let mutable _lastIncrementalSearchResult : SearchResult option = None
+
     let mutable _textChangedHandler = ToggleHandler.Empty
     do 
         _textChangedHandler <- ToggleHandler.Create (_textView.TextBuffer.Changed) (fun (args:TextContentChangedEventArgs) -> this.OnTextChanged(args))
+
+        _incrementalSearch.CurrentSearchUpdated
+        |> Observable.add (fun (_,result) -> _lastIncrementalSearchResult <- Some result)
+        
+        _incrementalSearch.CurrentSearchCancelled
+        |> Observable.add (fun _ -> _lastIncrementalSearchResult <- None)
+
+        _incrementalSearch.CurrentSearchCompleted 
+        |> Observable.add (fun _ -> _lastIncrementalSearchResult <- None)
 
     /// Should the selection currently be inclusive
     member x.IsSelectionInclusive = 
@@ -63,9 +77,27 @@ type internal SelectionTracker
             | VisualKind.Block -> TextSelectionMode.Box
         if _textView.Selection.Mode <> desiredMode then _textView.Selection.Mode <- desiredMode
 
+        // Get the end point of the desired selection.  Typically this is 
+        // just the caret.  If an incremental search is active though and 
+        // has a found result it will be the start of it
+        let endPoint = 
+            let caretPoint = _textView.Caret.Position.VirtualBufferPosition 
+            if _incrementalSearch.InSearch then
+                match _lastIncrementalSearchResult with
+                | Some(result) ->
+                    match result with
+                    | SearchResult.SearchFound(span) -> VirtualSnapshotPoint(span.Start)
+                    | SearchResult.SearchNotFound -> caretPoint
+                | None -> 
+                    caretPoint
+            else
+                caretPoint
+
+        // Set the selection based on the anchor point and the caret or the 
+        // current place of the incremental search
         let selectStandard() = 
             let first = _anchorPoint
-            let last = _textView.Caret.Position.VirtualBufferPosition 
+            let last = endPoint 
             let first,last = VirtualSnapshotPointUtil.OrderAscending first last
             let last = 
                 if x.IsSelectionInclusive then VirtualSnapshotPointUtil.AddOneOnSameLine last 
@@ -75,10 +107,11 @@ type internal SelectionTracker
         match _kind with
         | VisualKind.Character -> selectStandard()
         | VisualKind.Line ->
-            let caret = _textView.Caret.Position.VirtualBufferPosition
             let first,last = 
-                if VirtualSnapshotPointUtil.GetPosition _anchorPoint <= VirtualSnapshotPointUtil.GetPosition caret then (_anchorPoint,caret)
-                else (caret,_anchorPoint)
+                if VirtualSnapshotPointUtil.GetPosition _anchorPoint <= VirtualSnapshotPointUtil.GetPosition endPoint then 
+                    (_anchorPoint, endPoint)
+                else 
+                    (endPoint, _anchorPoint)
             let first = 
                 first
                 |> VirtualSnapshotPointUtil.GetContainingLine 

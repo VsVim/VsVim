@@ -893,7 +893,7 @@ type SearchData = {
 
 type SearchProcessResult =
     | SearchNotStarted 
-    | SearchComplete of SearchData
+    | SearchComplete of SearchData * SearchResult
     | SearchCancelled 
     | SearchNeedMore
 

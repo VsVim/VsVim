@@ -16,6 +16,7 @@ namespace VimCore.UnitTest
         private ITextView _view;
         private IVimGlobalSettings _settings;
         private SelectionTracker _tracker;
+        private Mock<IIncrementalSearch> _incrementalSearch;
         private TestableSynchronizationContext _context;
         private SynchronizationContext _before;
 
@@ -29,7 +30,8 @@ namespace VimCore.UnitTest
             _view = EditorUtil.CreateView(lines);
             _view.MoveCaretTo(caretPosition);
             _settings = new Vim.GlobalSettings();
-            _tracker = new SelectionTracker(_view, _settings, kind);
+            _incrementalSearch = new Mock<IIncrementalSearch>(MockBehavior.Loose);
+            _tracker = new SelectionTracker(_view, _settings, _incrementalSearch.Object, kind);
             _tracker.Start();
         }
 
@@ -96,7 +98,7 @@ namespace VimCore.UnitTest
             view.SetupGet(x => x.Caret).Returns(realView.Caret);
             view.SetupGet(x => x.TextSnapshot).Returns(realView.TextSnapshot);
             view.SetupGet(x => x.Selection).Returns(selection.Object);
-            var tracker = new SelectionTracker(view.Object, _settings, VisualKind.Character);
+            var tracker = new SelectionTracker(view.Object, _settings, _incrementalSearch.Object, VisualKind.Character);
             tracker.Start();
             selection.Verify();
         }
@@ -106,7 +108,7 @@ namespace VimCore.UnitTest
         {
             var view = EditorUtil.CreateView("foo bar baz");
             view.Selection.Select(new SnapshotSpan(view.TextSnapshot, 1, 3), false);
-            var tracker = new SelectionTracker(view, _settings, VisualKind.Character);
+            var tracker = new SelectionTracker(view, _settings, _incrementalSearch.Object, VisualKind.Character);
             tracker.Start();
             Assert.AreEqual(view.Selection.AnchorPoint.Position.Position, tracker.AnchorPoint.Position.Position);
         }

@@ -3,14 +3,61 @@ using System.Linq;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
+using Microsoft.VisualStudio.Text.Operations;
 using Microsoft.VisualStudio.Text.Outlining;
 using Vim.Extensions;
-using Vim.Modes.Normal;
+using Vim.Modes;
+using Vim.UnitTest.Mock;
 
 namespace Vim.UnitTest
 {
     internal static class VimUtil
     {
+        internal static ICommonOperations CreateCommonOperations(
+            ITextView textView,
+            IVimLocalSettings localSettings,
+            IOutliningManager outlining = null,
+            IStatusUtil statusUtil = null,
+            ISearchService searchService = null,
+            IUndoRedoOperations undoRedoOperations = null,
+            IVimData vimData = null,
+            IVimHost vimHost = null,
+            ITextStructureNavigator navigator = null,
+            IClipboardDevice clipboardDevice = null,
+            IFoldManager foldManager = null)
+        {
+            var editorOperations = EditorUtil.GetOperations(textView);
+            var editorOptions = EditorUtil.FactoryService.editorOptionsFactory.GetOptions(textView);
+            var jumpList = new JumpList(new TrackingLineColumnService());
+            var keyMap = new KeyMap();
+            foldManager = foldManager ?? new FoldManager(textView.TextBuffer);
+            statusUtil = statusUtil ?? new StatusUtil();
+            searchService = searchService ?? CreateSearchService(localSettings.GlobalSettings);
+            undoRedoOperations = undoRedoOperations ??
+                                 new UndoRedoOperations(statusUtil, FSharpOption<ITextUndoHistory>.None);
+            vimData = vimData ?? new VimData();
+            vimHost = vimHost ?? new MockVimHost();
+            navigator = navigator ?? CreateTextStructureNavigator(textView.TextBuffer);
+            clipboardDevice = clipboardDevice ?? new MockClipboardDevice();
+            var operationsData = new OperationsData(
+                editorOperations,
+                editorOptions,
+                foldManager,
+                jumpList,
+                keyMap,
+                localSettings,
+                outlining != null ? FSharpOption.Create(outlining) : FSharpOption<IOutliningManager>.None,
+                CreateRegisterMap(clipboardDevice),
+                statusUtil,
+                searchService,
+                textView,
+                undoRedoOperations,
+                vimData,
+                vimHost,
+                navigator);
+            return new CommonOperations(operationsData);
+        }
+
         internal static RegisterMap CreateRegisterMap(IClipboardDevice device)
         {
             return CreateRegisterMap(device, () => null);
@@ -24,6 +71,11 @@ namespace Vim.UnitTest
                 return string.IsNullOrEmpty(result) ? FSharpOption<string>.None : FSharpOption.Create(result);
             };
             return new RegisterMap(device, func2.ToFSharpFunc());
+        }
+
+        internal static ISearchService CreateSearchService(IVimGlobalSettings settings)
+        {
+            return new SearchService(EditorUtil.FactoryService.textSearchService, settings);
         }
 
         internal static Command CreateSimpleCommand(string name)
@@ -48,6 +100,11 @@ namespace Vim.UnitTest
             var list = name.Select(KeyInputUtil.CharToKeyInput).ToFSharpList();
             var commandName = KeyInputSet.NewManyKeyInputs(list);
             return Command.NewSimpleCommand(commandName, CommandFlags.None, fsharpFunc);
+        }
+
+        internal static ITextStructureNavigator CreateTextStructureNavigator(ITextBuffer textBuffer)
+        {
+            return EditorUtil.FactoryService.textStructureNavigatorSelectorService.GetTextStructureNavigator(textBuffer);
         }
 
         internal static Command CreateLongCommand(string name, Func<FSharpOption<int>, Register, LongCommandResult> func, CommandFlags flags = CommandFlags.None)
@@ -238,11 +295,15 @@ namespace Vim.UnitTest
             ISearchService search = null,
             IOutliningManager outliningManager = null)
         {
-            var nav = EditorUtil.FactoryService.textStructureNavigatorSelectorService.GetTextStructureNavigator(textView.TextBuffer);
             search = search ?? new SearchService(EditorUtil.FactoryService.textSearchService, settings.GlobalSettings);
+            var nav = CreateTextStructureNavigator(textView.TextBuffer);
+            var operations = CreateCommonOperations(
+                textView: textView,
+                localSettings: settings,
+                outlining: outliningManager,
+                vimData: vimData);
             return new IncrementalSearch(
-                textView,
-                outliningManager != null ? FSharpOption.Create(outliningManager) : FSharpOption<IOutliningManager>.None,
+                operations,
                 settings,
                 nav,
                 search,
@@ -255,7 +316,7 @@ namespace Vim.UnitTest
                 SearchText.NewStraightText(text),
                 SearchKind.Forward,
                 SearchOptions.None);
-            return SearchProcessResult.NewSearchComplete(data);
+            return SearchProcessResult.NewSearchComplete(data, SearchResult.SearchNotFound);
         }
 
     }

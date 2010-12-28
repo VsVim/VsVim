@@ -225,7 +225,7 @@ type internal CommandProcessor
     member x.ProcessEndOfDocument _ _ _ = _operations.EditorOperations.MoveToEndOfDocument(false)
 
     /// Process the :close command
-    member x.ProcessClose _ _ hasBang = _buffer.Vim.VimHost.CloseView _buffer.TextView (not hasBang)
+    member x.ProcessClose _ _ hasBang = _buffer.Vim.VimHost.Close _buffer.TextView (not hasBang)
 
     /// Process the :join command
     member x.ProcessJoin (rest:char list) (range:SnapshotLineRange option) hasBang =
@@ -324,7 +324,7 @@ type internal CommandProcessor
 
         host.Close _textView false
 
-    member x.ProcessQuit _ _ hasBang = _buffer.Vim.VimHost.CloseView _buffer.TextView (not hasBang)
+    member x.ProcessQuit _ _ hasBang = _buffer.Vim.VimHost.Close _buffer.TextView (not hasBang)
 
     member x.ProcessQuitAll _ _ hasBang =
         let checkDirty = not hasBang

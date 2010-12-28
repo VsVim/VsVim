@@ -656,6 +656,13 @@ type internal CommonOperations ( _data : OperationsData ) =
         member x.MakeLettersUppercase span = x.ChangeLettersOnSpan span CharUtil.ToUpper
         member x.EnsureCaretOnScreen () = TextViewUtil.EnsureCaretOnScreen _textView 
         member x.EnsureCaretOnScreenAndTextExpanded () = TextViewUtil.EnsureCaretOnScreenAndTextExpanded _textView _outlining
+
+        member x.EnsurePointOnScreenAndTextExpanded point = 
+            _host.EnsureVisible _textView point
+            match _outlining with
+            | None -> ()
+            | Some(outlining) -> outlining.ExpandAll(SnapshotSpan(point,0), fun _ -> true) |> ignore
+
         member x.MoveCaretToPoint point =  TextViewUtil.MoveCaretToPoint _textView point 
         member x.MoveCaretToMotionData (data:MotionData) =
 

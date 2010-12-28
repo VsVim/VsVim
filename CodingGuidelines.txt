@@ -13,7 +13,13 @@ F#
     - Values and arithmic operators and comparisions
     - Names and Values in record initializer expressions
     - Names and their types (foo : bar)
- - Don't add a space between ...
+    - Keywords and open parens
+        with get (
+        if (
+        elif (
+ - Don't add a space between
+    - Parens in everything but after keywords
+        x.Foo()
  - To Deteremine:
     - Should functions returning an option be prefixed with Try? Example KeyNotationUtil 
 

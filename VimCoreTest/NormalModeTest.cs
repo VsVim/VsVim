@@ -1824,7 +1824,6 @@ namespace VimCore.UnitTest
         {
             Create("foo bar");
             _incrementalSearch.Setup(x => x.Begin(SearchKind.ForwardWithWrap)).Verifiable();
-            _jumpList.Setup(x => x.Add(_view.GetCaretPoint())).Verifiable();
             _mode.Process('/');
             _incrementalSearch
                 .Setup(x => x.Process(It.IsAny<KeyInput>()))
@@ -1846,7 +1845,6 @@ namespace VimCore.UnitTest
                 .Setup(x => x.Process(It.IsAny<KeyInput>()))
                 .Returns(VimUtil.CreateSearchComplete(""))
                 .Verifiable();
-            _jumpList.Setup(x => x.Add(_view.GetCaretPoint())).Verifiable();
             _mode.Process(ki);
             _incrementalSearch.Verify();
             _jumpList.Verify();
@@ -1863,7 +1861,6 @@ namespace VimCore.UnitTest
                 .Setup(x => x.Process(It.IsAny<KeyInput>()))
                 .Returns(VimUtil.CreateSearchComplete(""))
                 .Verifiable();
-            _jumpList.Setup(x => x.Add(_view.GetCaretPoint())).Verifiable();
             _mode.Process(ki);
             _incrementalSearch.Verify();
             _jumpList.Verify();
@@ -2832,15 +2829,6 @@ namespace VimCore.UnitTest
             Create("foo bar");
             _operations.Setup(x => x.Close(true)).Verifiable();
             _mode.Process("ZZ");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void Handle_Q()
-        {
-            Create("foo bar");
-            _operations.Setup(x => x.Close(false)).Verifiable();
-            _mode.Process("Q");
             _operations.Verify();
         }
 
