@@ -1,5 +1,4 @@
 ﻿using System;
-using EnvDTE;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.OLE.Interop;
 using Microsoft.VisualStudio.TextManager.Interop;
@@ -16,7 +15,6 @@ namespace VsVim.UnitTest
         private MockRepository _factory;
         private Mock<IVimBuffer> _buffer;
         private Mock<IVsAdapter> _adapter;
-        private Mock<IVsExtensibility> _vsExt;
         private Mock<IExternalEditorManager> _externalEditorManager;
         private Mock<IOleCommandTarget> _nextTarget;
         private VsCommandTarget _targetRaw;
@@ -28,16 +26,14 @@ namespace VsVim.UnitTest
             _factory = new MockRepository(MockBehavior.Strict);
             _buffer = _factory.Create<IVimBuffer>(MockBehavior.Loose);
 
-            // By default don't be an in automation function
-            _vsExt = _factory.Create<IVsExtensibility>();
-            _vsExt.Setup(x => x.IsInAutomationFunction()).Returns(0);
-
             // By default resharper isn't loaded
             _externalEditorManager = _factory.Create<IExternalEditorManager>();
             _externalEditorManager.SetupGet(x => x.IsResharperLoaded).Returns(false);
 
             _nextTarget = _factory.Create<IOleCommandTarget>(MockBehavior.Loose);
             _adapter = _factory.Create<IVsAdapter>();
+            _adapter.Setup(x => x.InAutomationFunction).Returns(false);
+            _adapter.Setup(x => x.InDebugMode).Returns(false);
 
             var oldCommandFilter = _nextTarget.Object;
             var vsTextView = _factory.Create<IVsTextView>(MockBehavior.Loose);
@@ -105,10 +101,10 @@ namespace VsVim.UnitTest
             AssertCanConvert2K(VSConstants.VSStd2KCmdID.TAB, KeyInputUtil.TabKey);
         }
 
-        [Test, Description("Don't convert keys when in automation")]
-        public void TryConvert2()
+        [Test]
+        public void TryConvert_InAutomationShouldFail()
         {
-            _vsExt.Setup(x => x.IsInAutomationFunction()).Returns(1);
+            _adapter.Setup(x => x.InAutomationFunction).Returns(true);
             _buffer.Setup(x => x.CanProcess(It.IsAny<KeyInput>())).Returns(true);
             AssertCannotConvert2K(VSConstants.VSStd2KCmdID.TAB);
         }
@@ -157,8 +153,8 @@ namespace VsVim.UnitTest
             _buffer.SetupGet(x => x.ModeKind).Returns(ModeKind.Insert).Verifiable();
             _externalEditorManager.SetupGet(x => x.IsResharperLoaded).Returns(true).Verifiable();
             RunQueryStatus(KeyInputUtil.EscapeKey);
-            Assert.IsTrue(_targetRaw.IgnoreIfNextExecMatches.IsSome);
-            Assert.AreEqual(KeyInputUtil.EscapeKey, _targetRaw.IgnoreIfNextExecMatches.Value);
+            Assert.IsTrue(_targetRaw.SwallowIfNextExecMatches.IsSome);
+            Assert.AreEqual(KeyInputUtil.EscapeKey, _targetRaw.SwallowIfNextExecMatches.Value);
             _factory.Verify();
         }
 
@@ -171,8 +167,8 @@ namespace VsVim.UnitTest
             _buffer.SetupGet(x => x.ModeKind).Returns(ModeKind.ExternalEdit).Verifiable();
             _externalEditorManager.SetupGet(x => x.IsResharperLoaded).Returns(true).Verifiable();
             RunQueryStatus(KeyInputUtil.EscapeKey);
-            Assert.IsTrue(_targetRaw.IgnoreIfNextExecMatches.IsSome);
-            Assert.AreEqual(KeyInputUtil.EscapeKey, _targetRaw.IgnoreIfNextExecMatches.Value);
+            Assert.IsTrue(_targetRaw.SwallowIfNextExecMatches.IsSome);
+            Assert.AreEqual(KeyInputUtil.EscapeKey, _targetRaw.SwallowIfNextExecMatches.Value);
             _factory.Verify();
         }
 
@@ -183,7 +179,7 @@ namespace VsVim.UnitTest
             _buffer.Setup(x => x.CanProcess(ki)).Returns(true).Verifiable();
             _externalEditorManager.SetupGet(x => x.IsResharperLoaded).Returns(true).Verifiable();
             RunQueryStatus(ki);
-            Assert.IsTrue(_targetRaw.IgnoreIfNextExecMatches.IsNone);
+            Assert.IsTrue(_targetRaw.SwallowIfNextExecMatches.IsNone);
             _factory.Verify();
         }
 
@@ -198,14 +194,11 @@ namespace VsVim.UnitTest
         }
 
         [Test]
-        public void Exec_IgnoreIfEscapeAndSetToIgnore()
+        public void Exec_SwallowShouldNotPassOnTheCommandIfMatches()
         {
-            var ki = KeyInputUtil.EscapeKey;
-            _buffer.Setup(x => x.CanProcess(ki)).Returns(true).Verifiable();
-            _nextTarget.SetupExec().Verifiable();
-            _targetRaw.IgnoreIfNextExecMatches = Option.CreateValue(KeyInputUtil.EscapeKey);
+            _targetRaw.SwallowIfNextExecMatches = Option.CreateValue(KeyInputUtil.EscapeKey);
             RunExec(KeyInputUtil.EscapeKey);
-            Assert.IsTrue(_targetRaw.IgnoreIfNextExecMatches.IsNone);
+            Assert.IsTrue(_targetRaw.SwallowIfNextExecMatches.IsNone);
             _factory.Verify();
         }
 

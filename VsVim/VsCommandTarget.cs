@@ -17,7 +17,7 @@ namespace VsVim
         private readonly IExternalEditorManager _externalEditManager;
         private IOleCommandTarget _nextTarget;
 
-        internal Option<KeyInput> IgnoreIfNextExecMatches { get; set; }
+        internal Option<KeyInput> SwallowIfNextExecMatches { get; set; }
 
         private VsCommandTarget(
             IVimBuffer buffer,
@@ -55,20 +55,23 @@ namespace VsVim
             try
             {
                 KeyInput ki;
-                if (TryConvert(commandGroup, commandId, pvaIn, out ki) && _buffer.CanProcess(ki))
+                if (TryConvert(commandGroup, commandId, pvaIn, out ki))
                 {
-                    if (IgnoreIfNextExecMatches.IsNone || IgnoreIfNextExecMatches.Value != ki)
+                    // Swallow the input if it's been flagged by a previous QueryStatus
+                    if (SwallowIfNextExecMatches.IsSome && SwallowIfNextExecMatches.Value == ki)
                     {
-                        if (_buffer.Process(ki))
-                        {
-                            return NativeMethods.S_OK;
-                        }
+                        return NativeMethods.S_OK;
+                    }
+
+                    if (_buffer.CanProcess(ki) && _buffer.Process(ki))
+                    {
+                        return NativeMethods.S_OK;
                     }
                 }
             }
             finally
             {
-                IgnoreIfNextExecMatches = Option.None;
+                SwallowIfNextExecMatches = Option.None;
             }
 
             return _nextTarget.Exec(commandGroup, commandId, nCmdexecopt, pvaIn, pvaOut);
@@ -122,7 +125,7 @@ namespace VsVim
 
             if (shouldHandle && _buffer.Process(ki))
             {
-                IgnoreIfNextExecMatches = ki;
+                SwallowIfNextExecMatches = ki;
             }
         }
 
