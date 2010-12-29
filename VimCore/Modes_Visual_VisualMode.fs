@@ -179,17 +179,32 @@ type internal VisualMode
         let visualSimple = 
             seq {
                 yield (
-                    "d", 
+                    ["d"], 
                     CommandFlags.Repeatable, 
                     Some ModeKind.Normal, 
                     (fun _ reg span -> 
                         _operations.DeleteSpan span 
-                        _operations.UpdateRegisterForSpan reg RegisterOperation.Delete span OperationKind.CharacterWise ),
+                        _operations.UpdateRegisterForSpan reg RegisterOperation.Delete span OperationKind.CharacterWise),
                     (fun _ reg col -> 
                         _operations.DeleteBlock col 
                         _operations.UpdateRegisterForCollection reg RegisterOperation.Delete col OperationKind.CharacterWise))
                 yield (
-                    "x", 
+                    ["D"; "X"],
+                    CommandFlags.Repeatable,
+                    Some ModeKind.Normal,
+                    (fun _ reg span -> 
+                        let range = SnapshotLineRangeUtil.CreateForSpan span
+                        _operations.DeleteSpan range.ExtentIncludingLineBreak
+                        _operations.UpdateRegisterForSpan reg RegisterOperation.Delete range.ExtentIncludingLineBreak OperationKind.LineWise),
+                    (fun _ reg col ->
+                        let col = 
+                            col
+                            |> Seq.map (fun span -> SnapshotSpan(span.Start, span |> SnapshotSpanUtil.GetStartLine |> SnapshotLineUtil.GetEnd))
+                            |> NormalizedSnapshotSpanCollectionUtil.OfSeq
+                        _operations.DeleteBlock col
+                        _operations.UpdateRegisterForCollection reg RegisterOperation.Delete col OperationKind.CharacterWise))
+                yield (
+                    ["x"], 
                     CommandFlags.Repeatable, 
                     Some ModeKind.Normal, 
                     (fun count reg span -> 
@@ -199,7 +214,7 @@ type internal VisualMode
                         _operations.DeleteBlock col 
                         _operations.UpdateRegisterForCollection reg RegisterOperation.Delete col _operationKind))
                 yield (
-                    "<Del>", 
+                    ["<Del>"], 
                     CommandFlags.Repeatable, 
                     Some ModeKind.Normal, 
                     (fun count reg span -> 
@@ -209,25 +224,25 @@ type internal VisualMode
                         _operations.DeleteBlock col
                         _operations.UpdateRegisterForCollection reg RegisterOperation.Delete col _operationKind))
                 yield (
-                    "<lt>",
+                    ["<lt>"],
                     CommandFlags.Repeatable ||| CommandFlags.ResetCaret,
                     Some ModeKind.Normal,
                     (fun count _ span -> _operations.ShiftLineRangeLeft count (SnapshotLineRangeUtil.CreateForSpan span)) ,
                     (fun count _ col -> _operations.ShiftBlockLeft count col ))
                 yield (
-                    ">",
+                    [">"],
                     CommandFlags.Repeatable ||| CommandFlags.ResetCaret,
                     Some ModeKind.Normal,
                     (fun count _ span ->  _operations.ShiftLineRangeRight count (SnapshotLineRangeUtil.CreateForSpan span)),
                     (fun count _ col -> _operations.ShiftBlockRight count col))
                 yield (
-                    "~",
+                    ["~"],
                     CommandFlags.Repeatable,
                     Some ModeKind.Normal,
                     (fun _ _ span -> _operations.ChangeLetterCase span),
                     (fun _ _ col -> _operations.ChangeLetterCaseBlock col))
                 yield (
-                    "c", 
+                    ["c"], 
                     CommandFlags.Repeatable ||| CommandFlags.LinkedWithNextTextChange,
                     Some ModeKind.Insert,
                     (fun _ reg span -> 
@@ -237,7 +252,7 @@ type internal VisualMode
                         _operations.DeleteBlock col
                         _operations.UpdateRegisterForCollection reg RegisterOperation.Delete col _operationKind))
                 yield (
-                    "s", 
+                    ["s"], 
                     CommandFlags.Repeatable ||| CommandFlags.LinkedWithNextTextChange,
                     Some ModeKind.Insert,
                     (fun _ reg span -> 
@@ -247,7 +262,7 @@ type internal VisualMode
                         _operations.DeleteBlock col 
                         _operations.UpdateRegisterForCollection reg RegisterOperation.Delete col _operationKind))
                 yield ( 
-                    "S",
+                    ["S"],
                     CommandFlags.Repeatable ||| CommandFlags.LinkedWithNextTextChange,
                     Some ModeKind.Insert,
                     (fun _ reg span -> 
@@ -258,7 +273,7 @@ type internal VisualMode
                         let span = _operations.DeleteLinesInSpan span
                         _operations.UpdateRegisterForSpan reg RegisterOperation.Delete span OperationKind.LineWise))
                 yield (
-                    "C",
+                    ["C"],
                     CommandFlags.Repeatable ||| CommandFlags.LinkedWithNextTextChange,
                     Some ModeKind.Insert,
                     (fun _ reg span -> 
@@ -274,7 +289,7 @@ type internal VisualMode
                         _operations.DeleteBlock col 
                         _operations.UpdateRegisterForCollection reg RegisterOperation.Delete col OperationKind.CharacterWise))
                 yield (
-                    "J",
+                    ["J"],
                     CommandFlags.Repeatable,
                     None,
                     (fun _ _ span -> 
@@ -284,7 +299,7 @@ type internal VisualMode
                         let range = SnapshotLineRangeUtil.CreateForNormalizedSnapshotSpanCollection col
                         _operations.Join range JoinKind.RemoveEmptySpaces))
                 yield (
-                    "gJ",
+                    ["gJ"],
                     CommandFlags.Repeatable,
                     None,
                     (fun _ _ span -> 
@@ -294,31 +309,31 @@ type internal VisualMode
                         let range = SnapshotLineRangeUtil.CreateForNormalizedSnapshotSpanCollection col
                         _operations.Join range JoinKind.KeepEmptySpaces))
                 yield (
-                    "p",
+                    ["p"],
                     CommandFlags.Repeatable,
                     None,
                     (fun count reg _ -> _operations.PutAtCaret (reg.Value.Value.ApplyCount count) reg.Value.OperationKind PutKind.Before false),
                     (fun count reg _ -> _operations.PutAtCaret (reg.Value.Value.ApplyCount count) reg.Value.OperationKind PutKind.Before false))
                 yield (
-                    "P",
+                    ["P"],
                     CommandFlags.Repeatable,
                     None,
                     (fun count reg _ -> _operations.PutAtCaret (reg.Value.Value.ApplyCount count) reg.Value.OperationKind PutKind.Before false),
                     (fun count reg _ -> _operations.PutAtCaret (reg.Value.Value.ApplyCount count) reg.Value.OperationKind PutKind.Before false))
                 yield (
-                    "gp",
+                    ["gp"],
                     CommandFlags.Repeatable,
                     None,
                     (fun count reg _ -> _operations.PutAtCaret (reg.Value.Value.ApplyCount count) reg.Value.OperationKind PutKind.Before true),
                     (fun count reg _ -> _operations.PutAtCaret (reg.Value.Value.ApplyCount count) reg.Value.OperationKind PutKind.Before true))
                 yield (
-                    "gP",
+                    ["gP"],
                     CommandFlags.Repeatable,
                     None,
                     (fun count reg _ -> _operations.PutAtCaret (reg.Value.Value.ApplyCount count) reg.Value.OperationKind PutKind.Before true),
                     (fun count reg _ -> _operations.PutAtCaret (reg.Value.Value.ApplyCount count) reg.Value.OperationKind PutKind.Before true))
                 yield (
-                    "y",
+                    ["y"],
                     CommandFlags.ResetCaret,
                     None,
                     (fun _ (reg:Register) span -> 
@@ -328,7 +343,7 @@ type internal VisualMode
                         let data = StringData.OfNormalizedSnasphotSpanCollection col
                         reg.Value <- { Value = data; OperationKind = _operationKind } ))
                 yield (
-                    "Y",
+                    ["Y"],
                     CommandFlags.ResetCaret,
                     None,
                     (fun _ (reg:Register) span -> 
@@ -343,7 +358,7 @@ type internal VisualMode
                             | VisualKind.Block -> StringData.OfNormalizedSnasphotSpanCollection col
                         reg.Value <- { Value = data; OperationKind = OperationKind.LineWise} ))
                 yield (
-                    "=",
+                    ["="],
                     CommandFlags.Repeatable,
                     None,
                     (fun _ _ span -> 
@@ -356,19 +371,22 @@ type internal VisualMode
                             |> SnapshotLineRangeUtil.CreateForSpan 
                         _buffer.Vim.VimHost.FormatLines _buffer.TextView range))
             }
-            |> Seq.map (fun (str,flags,mode,funcNormal,funcBlock) ->
-                let kiSet = KeyNotationUtil.StringToKeyInputSet str
-                let modeSwitch = 
-                    match mode with
-                    | None -> ModeSwitch.SwitchPreviousMode
-                    | Some(kind) -> ModeSwitch.SwitchMode kind
-                let func2 count reg visualSpan = 
-                    let count = CommandUtil.CountOrDefault count
-                    runVisualCommand funcNormal funcBlock count reg visualSpan
-                    CommandResult.Completed modeSwitch
+            |> Seq.map (fun (strList,flags,mode,funcNormal,funcBlock) ->
+                strList 
+                |> Seq.map (fun str ->
+                    let kiSet = KeyNotationUtil.StringToKeyInputSet str
+                    let modeSwitch = 
+                        match mode with
+                        | None -> ModeSwitch.SwitchPreviousMode
+                        | Some(kind) -> ModeSwitch.SwitchMode kind
+                    let func2 count reg visualSpan = 
+                        let count = CommandUtil.CountOrDefault count
+                        runVisualCommand funcNormal funcBlock count reg visualSpan
+                        CommandResult.Completed modeSwitch
+    
+                    Command.VisualCommand(kiSet, flags, _visualKind, func2)))
+            |> Seq.concat
 
-                Command.VisualCommand(kiSet, flags, _visualKind, func2) )
-                
         Seq.append simples visualSimple |> Seq.append customReturn
 
     member x.EnsureCommandsBuilt() =

@@ -14,6 +14,16 @@ namespace VsVim
     public interface IVsAdapter
     {
         /// <summary>
+        /// Returns whether or not Visual Studio is currently in debug mode
+        /// </summary>
+        bool InDebugMode { get; }
+
+        /// <summary>
+        /// Returns true if we're in the middle of an automation (think macro) call
+        /// </summary>
+        bool InAutomationFunction { get; }
+
+        /// <summary>
         /// Core Editor Adapter factory service
         /// </summary>
         IVsEditorAdaptersFactoryService EditorAdapter { get; }

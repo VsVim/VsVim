@@ -36,7 +36,7 @@ namespace VsVim
         [ImportingConstructor]
         public HostFactory(
             IVim vim,
-            ITextBufferFactoryService bufferFactoryService, 
+            ITextBufferFactoryService bufferFactoryService,
             ITextEditorFactoryService editorFactoryService,
             IEditorOptionsFactoryService editorOptionsFactoryService,
             IKeyBindingService keyBindingService,
@@ -121,7 +121,7 @@ namespace VsVim
             }
 
             var buffer = opt.Value;
-            var result = VsCommandTarget.Create(buffer, vsView, _serviceProvider, _externalEditorManager);
+            var result = VsCommandTarget.Create(buffer, vsView, _adapter, _externalEditorManager);
             if (result.IsSuccess)
             {
                 _filterMap.Add(buffer, result.Value);

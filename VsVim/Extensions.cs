@@ -378,6 +378,24 @@ namespace VsVim
 
         #endregion
 
+        #region IVsMonitorSelection
+
+        public static Result<bool> IsCmdUIContextActive(this IVsMonitorSelection selection, Guid cmdId)
+        {
+            uint cookie;
+            var hresult = selection.GetCmdUIContextCookie(ref cmdId, out cookie);
+            if (ErrorHandler.Failed(hresult))
+            {
+                return Result.CreateError(hresult);
+            }
+
+            int active;
+            hresult = selection.IsCmdUIContextActive(cookie, out active);
+            return Result.CreateSuccessOrError(active != 0, hresult);
+        }
+
+        #endregion
+
         #region IServiceProvider
 
         public static TInterface GetService<TService, TInterface>(this IServiceProvider sp)

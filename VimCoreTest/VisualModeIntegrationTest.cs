@@ -39,6 +39,18 @@ namespace VimCore.UnitTest
             _buffer.SwitchMode(kind, ModeArgument.None);
         }
 
+        private void EnterBlock(params SnapshotSpan[] spans)
+        {
+            _textView.Selection.Mode = TextSelectionMode.Box;
+            _textView.Selection.Select(
+                new VirtualSnapshotPoint(spans[0].Start),
+                new VirtualSnapshotPoint(spans[spans.Length - 1].End));
+            Assert.IsFalse(_context.IsEmpty);
+            _context.RunAll();
+            Assert.IsTrue(_context.IsEmpty);
+            _buffer.SwitchMode(ModeKind.VisualBlock, ModeArgument.None);
+        }
+
         [Test]
         public void Repeat1()
         {
@@ -206,6 +218,18 @@ namespace VimCore.UnitTest
             EnterMode(ModeKind.VisualCharacter, new SnapshotSpan(_textView.GetLine(0).Start, 1));
             _buffer.Process("/o");
             Assert.AreEqual(new SnapshotSpan(_textView.GetLine(0).Start, 2), _textView.GetSelectionSpan());
+        }
+
+        [Test]
+        public void Handle_D_BlockMode()
+        {
+            Create("dog", "cat", "tree");
+            EnterBlock(
+                new SnapshotSpan(_textView.GetLine(0).Start.Add(1), 1),
+                new SnapshotSpan(_textView.GetLine(1).Start.Add(1), 1));
+            _buffer.Process("D");
+            Assert.AreEqual("d", _textView.GetLine(0).GetText());
+            Assert.AreEqual("c", _textView.GetLine(1).GetText());
         }
 
         [Test]

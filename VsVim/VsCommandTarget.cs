@@ -1,9 +1,7 @@
 ﻿using System;
 using Microsoft.VisualStudio.OLE.Interop;
-using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.TextManager.Interop;
 using Vim;
-using IServiceProvider = System.IServiceProvider;
 
 namespace VsVim
 {
@@ -15,7 +13,7 @@ namespace VsVim
     internal sealed class VsCommandTarget : IOleCommandTarget
     {
         private readonly IVimBuffer _buffer;
-        private readonly IServiceProvider _serviceProvider;
+        private readonly IVsAdapter _adapter;
         private readonly IExternalEditorManager _externalEditManager;
         private IOleCommandTarget _nextTarget;
 
@@ -23,11 +21,11 @@ namespace VsVim
 
         private VsCommandTarget(
             IVimBuffer buffer,
-            IServiceProvider provider,
+            IVsAdapter adapter,
             IExternalEditorManager externalEditorManager)
         {
             _buffer = buffer;
-            _serviceProvider = provider;
+            _adapter = adapter;
             _externalEditManager = externalEditorManager;
         }
 
@@ -37,7 +35,7 @@ namespace VsVim
 
             // Don't ever process a command when we are in an automation function.  Doing so will cause VsVim to 
             // intercept items like running Macros and certain wizard functionality
-            if (VsShellUtilities.IsInAutomationFunction(_serviceProvider))
+            if (_adapter.InAutomationFunction)
             {
                 return false;
             }
@@ -51,8 +49,6 @@ namespace VsVim
             kiOutput = command.KeyInput;
             return true;
         }
-
-        #region IOleCommandTarget implementation
 
         int IOleCommandTarget.Exec(ref Guid commandGroup, uint commandId, uint nCmdexecopt, IntPtr pvaIn, IntPtr pvaOut)
         {
@@ -103,32 +99,41 @@ namespace VsVim
         /// </summary>
         private void QueryStatusInResharper(KeyInput ki)
         {
-            if (_buffer.ModeKind == ModeKind.Insert && ki == KeyInputUtil.EscapeKey && _buffer.Process(ki))
+            var shouldHandle = false;
+            if (_buffer.ModeKind == ModeKind.Insert && ki == KeyInputUtil.EscapeKey)
             {
                 // Have to special case Escape here for insert mode.  R# is typically ahead of us on the IOleCommandTarget
                 // chain.  If a completion window is open and we wait for Exec to run R# will be ahead of us and run
                 // their Exec call.  This will lead to them closing the completion window and not calling back into
                 // our exec leaving us in insert mode.
-                IgnoreIfNextExecMatches = KeyInputUtil.EscapeKey;
+                shouldHandle = true;
             }
-            else if (_buffer.ModeKind == ModeKind.ExternalEdit && ki == KeyInputUtil.EscapeKey && _buffer.Process(ki))
+            else if (_buffer.ModeKind == ModeKind.ExternalEdit && ki == KeyInputUtil.EscapeKey)
             {
                 // Have to special case Escape here for external edit mode because we want escape to get us back to 
                 // plain old insert.
-                IgnoreIfNextExecMatches = KeyInputUtil.EscapeKey;
+                shouldHandle = true;
+            }
+            else if (_adapter.InDebugMode && (ki == KeyInputUtil.EnterKey || ki.Key == VimKey.Back))
+            {
+                // In debug mode R# will intercept Enter and Back 
+                shouldHandle = true;
+            }
+
+            if (shouldHandle && _buffer.Process(ki))
+            {
+                IgnoreIfNextExecMatches = ki;
             }
         }
-
-        #endregion
 
         internal static Result<VsCommandTarget> Create(
             IVimBuffer buffer,
             IVsTextView vsTextView,
-            IServiceProvider serviceProvider,
+            IVsAdapter adapter,
             IExternalEditorManager externalEditorManager)
         {
-            var filter = new VsCommandTarget(buffer, serviceProvider, externalEditorManager);
-            var hresult= vsTextView.AddCommandFilter(filter, out filter._nextTarget);
+            var filter = new VsCommandTarget(buffer, adapter, externalEditorManager);
+            var hresult = vsTextView.AddCommandFilter(filter, out filter._nextTarget);
             return Result.CreateSuccessOrError(filter, hresult);
         }
 

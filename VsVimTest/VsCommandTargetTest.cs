@@ -15,7 +15,7 @@ namespace VsVim.UnitTest
     {
         private MockRepository _factory;
         private Mock<IVimBuffer> _buffer;
-        private Mock<System.IServiceProvider> _serviceProvider;
+        private Mock<IVsAdapter> _adapter;
         private Mock<IVsExtensibility> _vsExt;
         private Mock<IExternalEditorManager> _externalEditorManager;
         private Mock<IOleCommandTarget> _nextTarget;
@@ -37,8 +37,7 @@ namespace VsVim.UnitTest
             _externalEditorManager.SetupGet(x => x.IsResharperLoaded).Returns(false);
 
             _nextTarget = _factory.Create<IOleCommandTarget>(MockBehavior.Loose);
-
-            _serviceProvider = MockObjectFactory.CreateServiceProvider(Tuple.Create(typeof(IVsExtensibility), (object)_vsExt.Object));
+            _adapter = _factory.Create<IVsAdapter>();
 
             var oldCommandFilter = _nextTarget.Object;
             var vsTextView = _factory.Create<IVsTextView>(MockBehavior.Loose);
@@ -46,7 +45,7 @@ namespace VsVim.UnitTest
             var result = VsCommandTarget.Create(
                 _buffer.Object,
                 vsTextView.Object,
-                _serviceProvider.Object,
+                _adapter.Object,
                 _externalEditorManager.Object);
             Assert.IsTrue(result.IsSuccess);
             _targetRaw = result.Value;

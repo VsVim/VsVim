@@ -560,6 +560,22 @@ namespace VimCore.UnitTest
         }
 
         [Test]
+        public void Handle_D_NoCountInCharacter()
+        {
+            Create("cat", "tree", "dog");
+            var range = _textView.GetLineRange(0);
+            _operations
+                .Setup(x => x.DeleteSpan(range.ExtentIncludingLineBreak))
+                .Verifiable();
+            _operations
+                .Setup(x => x.UpdateRegisterForSpan(It.IsAny<Register>(), RegisterOperation.Delete, range.ExtentIncludingLineBreak, OperationKind.LineWise))
+                .Verifiable();
+            _selection.Select(range.Extent);
+            _mode.Process("D");
+            _factory.Verify();
+        }
+
+        [Test]
         public void Handle_p_NoArguments()
         {
             Create("foo bar");
@@ -608,6 +624,22 @@ namespace VimCore.UnitTest
                 .Setup(x => x.PutAtCaret(It.IsAny<StringData>(), OperationKind.CharacterWise, PutKind.Before, false))
                 .Verifiable();
             _mode.Process("\"cP");
+            _factory.Verify();
+        }
+
+        [Test]
+        public void Handle_X_NoCountInCharacter()
+        {
+            Create("cat", "tree", "dog");
+            var range = _textView.GetLineRange(0);
+            _operations
+                .Setup(x => x.DeleteSpan(range.ExtentIncludingLineBreak))
+                .Verifiable();
+            _operations
+                .Setup(x => x.UpdateRegisterForSpan(It.IsAny<Register>(), RegisterOperation.Delete, range.ExtentIncludingLineBreak, OperationKind.LineWise))
+                .Verifiable();
+            _selection.Select(range.Extent);
+            _mode.Process("X");
             _factory.Verify();
         }
 

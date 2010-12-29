@@ -22,6 +22,21 @@ namespace VsVim.Implementation
         private readonly IVsUIShell _uiShell;
         private readonly RunningDocumentTable _table;
         private readonly IServiceProvider _serviceProvider;
+        private readonly IVsMonitorSelection _monitorSelection;
+
+        public bool InDebugMode
+        {
+            get
+            {
+                var result = _monitorSelection.IsCmdUIContextActive(VSConstants.UICONTEXT_Debugging);
+                return result.IsSuccess && result.Value;
+            }
+        }
+
+        public bool InAutomationFunction
+        {
+            get { return VsShellUtilities.IsInAutomationFunction(_serviceProvider); }
+        }
 
         public IVsEditorAdaptersFactoryService EditorAdapter
         {
@@ -40,6 +55,7 @@ namespace VsVim.Implementation
             _textManager = _serviceProvider.GetService<SVsTextManager, IVsTextManager>();
             _table = new RunningDocumentTable(_serviceProvider);
             _uiShell = _serviceProvider.GetService<SVsUIShell, IVsUIShell>();
+            _monitorSelection = _serviceProvider.GetService<SVsShellMonitorSelection, IVsMonitorSelection>();
         }
 
         public Result<IVsTextLines> GetTextLines(ITextBuffer textBuffer)
