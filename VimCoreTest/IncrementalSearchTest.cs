@@ -1,19 +1,16 @@
-﻿using System;
-using System.Collections.Generic;
-using Microsoft.FSharp.Core;
+﻿using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Operations;
-using Microsoft.VisualStudio.Text.Outlining;
 using Moq;
 using NUnit.Framework;
 using Vim;
 using Vim.Extensions;
-using Vim.Modes.Normal;
+using Vim.Modes;
 using Vim.UnitTest;
 using Vim.UnitTest.Mock;
 
-namespace VimCore.Test
+namespace VimCore.UnitTest
 {
     [TestFixture]
     public class IncrementalSearchTest
@@ -25,7 +22,7 @@ namespace VimCore.Test
         private Mock<ITextStructureNavigator> _nav;
         private Mock<IVimGlobalSettings> _globalSettings;
         private Mock<IVimLocalSettings> _settings;
-        private Mock<IOutliningManager> _outlining;
+        private Mock<ICommonOperations> _operations;
         private ITextView _textView;
         private IncrementalSearch _searchRaw;
         private IIncrementalSearch _search;
@@ -39,11 +36,12 @@ namespace VimCore.Test
             _nav = _factory.Create<ITextStructureNavigator>();
             _globalSettings = MockObjectFactory.CreateGlobalSettings(ignoreCase: true);
             _settings = MockObjectFactory.CreateLocalSettings(_globalSettings.Object);
-            _outlining = new Mock<IOutliningManager>(MockBehavior.Strict);
-            _outlining.Setup(x => x.ExpandAll(It.IsAny<SnapshotSpan>(), It.IsAny<Predicate<ICollapsed>>())).Returns<IEnumerable<ICollapsed>>(null);
+            _operations = _factory.Create<ICommonOperations>();
+            _operations.SetupGet(x => x.TextView).Returns(_textView);
+            _operations.Setup(x => x.EnsureCaretOnScreenAndTextExpanded());
+            _operations.Setup(x => x.EnsurePointOnScreenAndTextExpanded(It.IsAny<SnapshotPoint>()));
             _searchRaw = new IncrementalSearch(
-                _textView,
-                _outlining.Object,
+                _operations.Object,
                 _settings.Object,
                 _nav.Object,
                 _searchService.Object,
@@ -69,7 +67,7 @@ namespace VimCore.Test
             var data = new SearchData(SearchText.NewPattern("b"), SearchKind.ForwardWithWrap, s_options);
             _search.Begin(SearchKind.ForwardWithWrap);
             _searchService
-                .Setup(x => x.FindNext(data, _textView.GetCaretPoint(), _nav.Object))
+                .Setup(x => x.FindNext(data, _textView.GetCaretPoint().Add(1), _nav.Object))
                 .Returns(FSharpOption.Create(_textView.GetLineRange(0).Extent));
             Assert.IsTrue(_search.Process(KeyInputUtil.CharToKeyInput('b')).IsSearchNeedMore);
         }
@@ -214,7 +212,6 @@ namespace VimCore.Test
             _search.Process(KeyInputUtil.CharToKeyInput('b'));
         }
 
-
         [Test]
         public void InSearch1()
         {
@@ -271,6 +268,32 @@ namespace VimCore.Test
             _searchService.Verify();
         }
 
+        [Test]
+        public void SearchShouldStartAfterCaretWhenForward()
+        {
+            Create("foo bar");
+            _searchService
+                .Setup(x => x.FindNext(It.IsAny<SearchData>(), _textView.GetPoint(1), _nav.Object))
+                .Returns(FSharpOption<SnapshotSpan>.None)
+                .Verifiable();
+            _search.Begin(SearchKind.Forward);
+            _search.Process(KeyInputUtil.CharToKeyInput('b'));
+            _searchService.Verify();
+        }
+
+        [Test]
+        public void SearchShouldStartBeforeCaretWhenBackward()
+        {
+            Create("foo bar");
+            _textView.MoveCaretTo(3);
+            _searchService
+                .Setup(x => x.FindNext(It.IsAny<SearchData>(), _textView.GetPoint(2), _nav.Object))
+                .Returns(FSharpOption<SnapshotSpan>.None)
+                .Verifiable();
+            _search.Begin(SearchKind.Backward);
+            _search.Process(KeyInputUtil.CharToKeyInput('b'));
+            _searchService.Verify();
+        }
 
     }
 }

@@ -8,7 +8,7 @@ using Microsoft.VisualStudio.Text.Operations;
 using Vim.UnitTest;
 using Microsoft.VisualStudio.Text.Editor;
 
-namespace VimCore.Test
+namespace VimCore.UnitTest
 {
     [TestFixture]
     public class IEditorOperationsTest

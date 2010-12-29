@@ -76,7 +76,7 @@ namespace Vim.UI.Wpf
                         {
                             kind = CaretDisplay.HalfBlock;
                         }
-                        else if (mode.IncrementalSearch.InSearch)
+                        else if (_buffer.IncrementalSearch.InSearch)
                         {
                             kind = CaretDisplay.Invisible;
                         }
@@ -96,6 +96,7 @@ namespace Vim.UI.Wpf
                     kind = CaretDisplay.Invisible;
                     break;
                 case ModeKind.Insert:
+                case ModeKind.ExternalEdit:
                     kind = CaretDisplay.NormalCaret;
                     break;
                 case ModeKind.Disabled:

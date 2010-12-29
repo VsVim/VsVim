@@ -123,6 +123,12 @@
     <Compile Include="EditCommand.cs" />
     <Compile Include="CommandKeyBinding.cs" />
     <Compile Include="EditCommandKind.cs" />
+    <Compile Include="ExternalEdit\ExternalEditMonitor.cs" />
+    <Compile Include="ExternalEdit\ExternalEditorManager.cs" />
+    <Compile Include="ExternalEdit\IExternalEditAdapter.cs" />
+    <Compile Include="ExternalEdit\ResharperExternalEditAdapter.cs" />
+    <Compile Include="ExternalEdit\SnippetExternalEditAdapter.cs" />
+    <Compile Include="IExternalEditorManager.cs" />
     <Compile Include="Implementation\TextManager.cs" />
     <Compile Include="Implementation\VsAdapter.cs" />
     <Compile Include="ITextManager.cs" />
@@ -144,12 +150,14 @@
     <Compile Include="Implementation\KeyProcessorProvider.cs" />
     <Compile Include="NativeMethods.cs" />
     <Compile Include="Implementation\OptionsProvider.cs" />
+    <Compile Include="Option.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
+    <Compile Include="Result.cs" />
     <Compile Include="Settings\CommandBindingSetting.cs" />
     <Compile Include="Settings\Settings.cs" />
     <Compile Include="Settings\Settings.Designer.cs">
@@ -166,7 +174,7 @@
     </Compile>
     <Compile Include="UI\KeyBindingData.cs" />
     <Compile Include="UI\KeyBindingHandledByOption.cs" />
-    <Compile Include="VsCommandFilter.cs" />
+    <Compile Include="VsCommandTarget.cs" />
     <Compile Include="VsFilterKeysAdapter.cs" />
     <Compile Include="VsKeyProcessor.cs" />
     <Compile Include="VsVimHost.cs" />

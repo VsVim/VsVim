@@ -37,7 +37,7 @@ type internal ChangeTracker
             | RepeatableChange.LinkedChange(_) -> useCurrent()
             | RepeatableChange.TextChange(_) -> useCurrent()
             | RepeatableChange.CommandChange(change) -> 
-                if Utils.IsFlagSet change.Command.CommandFlags CommandFlags.LinkedWithNextTextChange then
+                if Util.IsFlagSet change.Command.CommandFlags CommandFlags.LinkedWithNextTextChange then
                     let change = RepeatableChange.LinkedChange (RepeatableChange.CommandChange change,RepeatableChange.TextChange data) 
                     _last <- Some change
                 else useCurrent()

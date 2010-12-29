@@ -9,12 +9,28 @@ F#
      - APIs taking a line number should consider returning an option.  Line numbers are less likely to be controlled
        by the user
  - Don't use ; for multi-line object initializers
- - A comma in an aurgment list / tuple should be followed by a space 
- - No space after ( or before )
+ - Add a space between ...
+    - Values and arithmic operators and comparisions
+    - Names and Values in record initializer expressions
+    - Names and their types (foo : bar)
+    - Keywords and open parens
+        with get (
+        if (
+        elif (
+ - Don't add a space between
+    - Parens in everything but after keywords
+        x.Foo()
  - To Deteremine:
     - Should functions returning an option be prefixed with Try? Example KeyNotationUtil 
-
 
 C#
  - Member variables prefixed with _ 
  - Buffer creation methods should be Create.  Not CreateBuffer
+
+ Naming
+ - Fields of specific types 
+    - ITextView -> _textView
+    - ITextBuffer -> _textBuffer
+    - IVimBuffer -> _buffer
+ - Unit Tests for handling a key combination
+    - Handle_KeyCombo_

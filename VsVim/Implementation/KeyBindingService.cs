@@ -1,19 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using Vim;
-using System.Windows.Input;
-using EnvDTE;
-using System.ComponentModel.Composition.Primitives;
 using System.ComponentModel.Composition;
-using System.Windows;
-using Microsoft.VisualStudio.Shell.Interop;
+using System.Linq;
+using EnvDTE;
 using Microsoft.VisualStudio.Shell;
-using System.Collections.ObjectModel;
-using Microsoft.Internal.VisualStudio.PlatformUI;
-using System.Threading;
-using VsVim.UI;
+using Microsoft.VisualStudio.Shell.Interop;
+using Vim;
 
 namespace VsVim.Implementation
 {
@@ -36,7 +28,7 @@ namespace VsVim.Implementation
             _optionsDialogService = service;
         }
 
-        internal void UpdateConflictingState(ConflictingKeyBindingState state, CommandKeyBindingSnapshot snapshot )
+        internal void UpdateConflictingState(ConflictingKeyBindingState state, CommandKeyBindingSnapshot snapshot)
         {
             _snapshot = snapshot;
             ConflictingKeyBindingState = state;
@@ -65,7 +57,7 @@ namespace VsVim.Implementation
         {
             var needed = buffer.AllModes.Select(x => x.CommandNames).SelectMany(x => x).ToList();
             needed.Add(KeyInputSet.NewOneKeyInput(buffer.Settings.GlobalSettings.DisableCommand));
-            RunConflictingKeyBindingStateCheck(needed.Select(x => x.KeyInputs.First()), onComplete); 
+            RunConflictingKeyBindingStateCheck(needed.Select(x => x.KeyInputs.First()), onComplete);
         }
 
         public void RunConflictingKeyBindingStateCheck(IEnumerable<KeyInput> neededInputs, Action<ConflictingKeyBindingState, CommandKeyBindingSnapshot> onComplete)
@@ -79,14 +71,9 @@ namespace VsVim.Implementation
             var util = new KeyBindingUtil(_dte);
             var set = new HashSet<KeyInput>(neededInputs);
             _snapshot = util.CreateCommandKeyBindingSnapshot(set);
-            if (_snapshot.Conflicting.Any())
-            {
-                ConflictingKeyBindingState = ConflictingKeyBindingState.FoundConflicts;
-            }
-            else
-            {
-                ConflictingKeyBindingState = ConflictingKeyBindingState.ConflictsIgnoredOrResolved;
-            }
+            ConflictingKeyBindingState = _snapshot.Conflicting.Any()
+                ? ConflictingKeyBindingState.FoundConflicts
+                : ConflictingKeyBindingState.ConflictsIgnoredOrResolved;
         }
 
         public void ResetConflictingKeyBindingState()

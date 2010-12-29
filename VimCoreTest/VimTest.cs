@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using Microsoft.FSharp.Collections;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text.Editor;
@@ -6,40 +8,43 @@ using Moq;
 using NUnit.Framework;
 using Vim;
 using Vim.Extensions;
+using Vim.UnitTest;
 using Vim.UnitTest.Mock;
 
-namespace VimCore.Test
+namespace VimCore.UnitTest
 {
     [TestFixture]
     public class VimTest
     {
-        private Mock<IVimGlobalSettings> _settings;
+        private MockRepository _factory;
         private Mock<IMarkMap> _markMap;
-        private Mock<IVimBufferFactory> _factory;
         private Mock<IVimHost> _host;
-        private Mock<IKeyMap> _keyMap;
         private Mock<IChangeTracker> _changeTracker;
         private Mock<ISearchService> _searchInfo;
+        private IKeyMap _keyMap;
+        private IVimGlobalSettings _settings;
+        private IVimBufferFactory _bufferFactory;
         private Vim.Vim _vimRaw;
         private IVim _vim;
 
         [SetUp]
         public void Setup()
         {
-            _settings = new Mock<IVimGlobalSettings>(MockBehavior.Strict);
-            _markMap = new Mock<IMarkMap>(MockBehavior.Strict);
-            _factory = new Mock<IVimBufferFactory>(MockBehavior.Strict);
-            _keyMap = new Mock<IKeyMap>(MockBehavior.Strict);
-            _changeTracker = new Mock<IChangeTracker>(MockBehavior.Strict);
-            _host = new Mock<IVimHost>(MockBehavior.Strict);
-            _searchInfo = new Mock<ISearchService>(MockBehavior.Strict);
+            _factory = new MockRepository(MockBehavior.Strict);
+            _settings = new Vim.GlobalSettings();
+            _markMap = _factory.Create<IMarkMap>(MockBehavior.Strict);
+            _bufferFactory = EditorUtil.FactoryService.vimBufferFactory;
+            _keyMap = new KeyMap();
+            _changeTracker = _factory.Create<IChangeTracker>(MockBehavior.Strict);
+            _host = _factory.Create<IVimHost>(MockBehavior.Strict);
+            _searchInfo = _factory.Create<ISearchService>(MockBehavior.Strict);
             _vimRaw = new Vim.Vim(
                 _host.Object,
-                _factory.Object,
+                _bufferFactory,
                 FSharpList<Lazy<IVimBufferCreationListener>>.Empty,
-                _settings.Object,
+                _settings,
                 _markMap.Object,
-                _keyMap.Object,
+                _keyMap,
                 MockObjectFactory.CreateClipboardDevice().Object,
                 _changeTracker.Object,
                 _searchInfo.Object);
@@ -47,141 +52,155 @@ namespace VimCore.Test
         }
 
         [Test]
-        public void Create1()
+        public void Create_SimpleTextView()
         {
-            var view = new Mock<IWpfTextView>(MockBehavior.Strict);
-            var buffer = new Mock<IVimBuffer>(MockBehavior.Strict);
-            _factory.Setup(x => x.CreateBuffer(_vim, view.Object)).Returns(buffer.Object);
-            var ret = _vim.CreateBuffer(view.Object);
-            Assert.AreSame(ret, buffer.Object);
+            var textView = EditorUtil.CreateView();
+            var ret = _vim.CreateBuffer(textView);
+            Assert.IsNotNull(ret);
+            Assert.AreSame(textView, ret.TextView);
         }
 
         [Test, ExpectedException(typeof(ArgumentException))]
-        public void Create2()
+        public void Create_CreateTwiceForSameViewShouldFail()
         {
-            var view = new Mock<IWpfTextView>(MockBehavior.Strict);
-            var buffer = new Mock<IVimBuffer>(MockBehavior.Strict);
-            _factory.Setup(x => x.CreateBuffer(_vim, view.Object)).Returns(buffer.Object);
-            var ret = _vim.CreateBuffer(view.Object);
-            var ret2 = _vim.CreateBuffer(view.Object);
+            var textView = EditorUtil.CreateView();
+            _vim.CreateBuffer(textView);
+            _vim.CreateBuffer(textView);
         }
 
         [Test]
-        public void GetBuffer1()
+        public void GetBuffer_ReturnNoneForViewThatHasNoBuffer()
         {
-            var view = new Mock<IWpfTextView>(MockBehavior.Strict);
-            var ret = _vim.GetBuffer(view.Object);
+            var textView = EditorUtil.CreateView();
+            var ret = _vim.GetBuffer(textView);
             Assert.IsTrue(ret.IsNone());
         }
 
         [Test]
-        public void GetBuffer2()
+        public void GetBuffer_ReturnBufferForCachedCreated()
         {
-            var view = new Mock<IWpfTextView>(MockBehavior.Strict);
-            var buffer = new Mock<IVimBuffer>(MockBehavior.Strict);
-            _factory.Setup(x => x.CreateBuffer(_vim, view.Object)).Returns(buffer.Object);
-            _vim.CreateBuffer(view.Object);
-            var ret = _vim.GetBuffer(view.Object);
-            Assert.IsTrue(ret.IsSome());
-            Assert.AreSame(ret.Value, buffer.Object);
+            var textView = EditorUtil.CreateView();
+            var bufferFromCreate = _vim.CreateBuffer(textView);
+            var bufferFromGet = _vim.GetBuffer(textView);
+            Assert.IsTrue(bufferFromGet.IsSome());
+            Assert.AreSame(bufferFromGet.Value, bufferFromCreate);
         }
 
         [Test]
-        public void GetOrCreateBuffer1()
+        public void GetOrCreateBuffer_CreateForNewView()
         {
-            var view = new Mock<IWpfTextView>(MockBehavior.Strict);
-            var buffer = new Mock<IVimBuffer>(MockBehavior.Strict);
-            _factory.Setup(x => x.CreateBuffer(_vim, view.Object)).Returns(buffer.Object);
-            var ret = _vim.GetOrCreateBuffer(view.Object);
-            Assert.AreSame(ret, buffer.Object);
+            var textView = EditorUtil.CreateView();
+            var buffer = _vim.GetOrCreateBuffer(textView);
+            Assert.AreSame(textView, buffer.TextView);
         }
 
         [Test]
-        public void GetOrCreateBuffer2()
+        public void GetOrCreateBuffer_SecondCallShouldReturnAlreadyCreatedVimBuffer()
         {
-            var view = new Mock<IWpfTextView>(MockBehavior.Strict);
-            var buffer = new Mock<IVimBuffer>(MockBehavior.Strict);
-            _factory.Setup(x => x.CreateBuffer(_vim, view.Object)).Returns(buffer.Object);
-            var ret1 = _vim.GetOrCreateBuffer(view.Object);
-            _factory.Setup(x => x.CreateBuffer(_vim, view.Object)).Throws(new Exception());
-            var ret2 = _vim.GetOrCreateBuffer(view.Object);
-            Assert.AreSame(ret1, ret2);
+            var textView = EditorUtil.CreateView();
+            var buffer1 = _vim.GetOrCreateBuffer(textView);
+            var buffer2 = _vim.GetOrCreateBuffer(textView);
+            Assert.AreSame(buffer1, buffer2);
         }
 
         [Test]
-        public void RemoveBuffer1()
+        public void GetOrCreateBuffer_ApplyVimRcSettings()
         {
-            var view = new Mock<IWpfTextView>(MockBehavior.Strict);
-            Assert.IsFalse(_vim.RemoveBuffer(view.Object));
+            var list = new List<Setting>() 
+            {
+                new Setting(LocalSettingNames.AutoIndentName, "ai", SettingKind.ToggleKind, SettingValue.NewToggleValue(true), SettingValue.NewToggleValue(true), false),
+                new Setting(LocalSettingNames.QuoteEscapeName, "", SettingKind.StringKind, SettingValue.NewStringValue("b"), SettingValue.NewStringValue("b"), false),
+            };
+            _vimRaw._vimrcLocalSettings = list.ToFSharpList();
+            var textView = EditorUtil.CreateView();
+            var buffer = _vim.GetOrCreateBuffer(textView);
+            Assert.IsTrue(buffer.Settings.AutoIndent);
+            Assert.AreEqual("b", buffer.Settings.QuoteEscape);
         }
 
         [Test]
-        public void RemoveBuffer2()
+        public void GetOrCreateBuffer_ApplyActiveBufferSettings()
         {
-            var view = new Mock<IWpfTextView>(MockBehavior.Strict);
-            var buffer = new Mock<IVimBuffer>(MockBehavior.Strict);
-            _factory.Setup(x => x.CreateBuffer(_vim, view.Object)).Returns(buffer.Object);
-            _vim.CreateBuffer(view.Object);
-            Assert.IsTrue(_vim.RemoveBuffer(view.Object));
-            var ret = _vim.GetBuffer(view.Object);
+            var textView = EditorUtil.CreateView();
+            var buffer = _vim.GetOrCreateBuffer(textView);
+            buffer.Settings.AutoIndent = true;
+            buffer.Settings.QuoteEscape = "b";
+
+            var didRun = false;
+            buffer.KeyInputStart += delegate
+            {
+                var textView2 = EditorUtil.CreateView();
+                var buffer2 = _vim.GetOrCreateBuffer(textView2);
+                Assert.IsTrue(buffer2.Settings.AutoIndent);
+                Assert.AreEqual("b", buffer2.Settings.QuoteEscape);
+                didRun = true;
+            };
+            buffer.Process('a');
+            Assert.IsTrue(didRun);
+        }
+
+        [Test]
+        public void RemoveBuffer_ReturnFalseForNonAssociatedTextView()
+        {
+            var textView = EditorUtil.CreateView();
+            Assert.IsFalse(_vim.RemoveBuffer(textView));
+        }
+
+        [Test]
+        public void RemoveBuffer_AssociatedTextView()
+        {
+            var textView = EditorUtil.CreateView();
+            _vim.CreateBuffer(textView);
+            Assert.IsTrue(_vim.RemoveBuffer(textView));
+            var ret = _vim.GetBuffer(textView);
             Assert.IsTrue(ret.IsNone());
         }
 
         [Test]
         public void LoadVimRc1()
         {
-            _settings.SetupSet(x => x.VimRc = String.Empty).Verifiable();
-            _settings.SetupSet(x => x.VimRcPaths = String.Empty).Verifiable();
+            _settings.VimRc = "invalid";
+            _settings.VimRcPaths = "invalid";
             var fs = new Mock<IFileSystem>(MockBehavior.Strict);
             fs.Setup(x => x.GetVimRcDirectories()).Returns(new string[] { }).Verifiable();
             fs.Setup(x => x.LoadVimRc()).Returns(FSharpOption<Tuple<string, string[]>>.None).Verifiable();
             Assert.IsFalse(_vim.LoadVimRc(fs.Object, FSharpFuncUtil.Create<Unit, ITextView>(_ => null)));
             fs.Verify();
-            _settings.Verify();
+            Assert.AreEqual("", _settings.VimRc);
+            Assert.AreEqual("", _settings.VimRcPaths);
         }
 
         [Test]
         public void LoadVimRc2()
         {
-            _settings.SetupSet(x => x.VimRc = String.Empty).Verifiable();
-            _settings.SetupSet(x => x.VimRcPaths = "foo").Verifiable();
             var fs = new Mock<IFileSystem>(MockBehavior.Strict);
             fs.Setup(x => x.GetVimRcDirectories()).Returns(new string[] { "foo" }).Verifiable();
             fs.Setup(x => x.LoadVimRc()).Returns(FSharpOption<Tuple<string, string[]>>.None).Verifiable();
             Assert.IsFalse(_vim.LoadVimRc(fs.Object, FSharpFuncUtil.Create<Unit, ITextView>(_ => null)));
-            _settings.Verify();
+            Assert.AreEqual("", _settings.VimRc);
+            Assert.AreEqual("foo", _settings.VimRcPaths);
             fs.Verify();
         }
 
         [Test]
         public void LoadVimRc3()
         {
-            // Setup the buffer creation
-            var view = new Mock<IWpfTextView>(MockBehavior.Strict);
-            view.Setup(x => x.Close()).Verifiable();
-            var commandMode = new Mock<ICommandMode>(MockBehavior.Strict);
-            var buffer = new Mock<IVimBuffer>(MockBehavior.Strict);
-            commandMode.Setup(x => x.RunCommand("set noignorecase")).Returns(RunResult.Completed).Verifiable();
-            buffer.Setup(x => x.CommandMode).Returns(commandMode.Object);
-            var createViewFunc = FSharpFuncUtil.Create<Microsoft.FSharp.Core.Unit, ITextView>(_ => view.Object);
-            _factory.Setup(x => x.CreateBuffer(_vim, view.Object)).Returns(buffer.Object);
-
+            // Setup the VimRc contents
             var fileName = "foo";
-            var contents = new string[] { "set noignorecase" };
+            var contents = new string[] { "set ai" };
             var tuple = Tuple.Create(fileName, contents);
-
-            _settings.SetupProperty(x => x.VimRc);
-            _settings.SetupProperty(x => x.VimRcPaths);
 
             var fs = new Mock<IFileSystem>(MockBehavior.Strict);
             fs.Setup(x => x.GetVimRcDirectories()).Returns(new string[] { "" }).Verifiable();
             fs.Setup(x => x.LoadVimRc()).Returns(FSharpOption.Create(tuple)).Verifiable();
 
-            Assert.IsTrue(_vim.LoadVimRc(fs.Object, createViewFunc));
-            _settings.Verify();
-            commandMode.Verify();
+            Func<ITextView> createViewFunc = () => EditorUtil.CreateView();
+            Assert.IsTrue(_vim.LoadVimRc(fs.Object, createViewFunc.ToFSharpFunc()));
+
+            var setting = _vim.VimRcLocalSettings.Single();
+            Assert.AreEqual(LocalSettingNames.AutoIndentName, setting.Name);
+            Assert.IsTrue(setting.Value.AsToggleValue().Item);
             fs.Verify();
-            view.Verify();
         }
 
         [Test]
@@ -193,26 +212,29 @@ namespace VimCore.Test
         [Test]
         public void ActiveBuffer2()
         {
-            var view = new Mock<IWpfTextView>(MockBehavior.Strict);
-            var buffer = new MockVimBuffer();
-            _factory.Setup(x => x.CreateBuffer(_vim, view.Object)).Returns(buffer);
-            var ret = _vim.CreateBuffer(view.Object);
-            buffer.RaiseKeyInputStart(KeyInputUtil.CharToKeyInput('c'));
+            var textView = EditorUtil.CreateView();
+            var buffer = _vim.CreateBuffer(textView);
+            var didRun = false;
+            buffer.KeyInputStart += delegate
+            {
+                didRun = true;
+                Assert.IsTrue(_vim.ActiveBuffer.IsSome());
+                Assert.AreSame(buffer, _vim.ActiveBuffer.Value);
+            };
+
+            buffer.Process('a');
             var active = _vim.ActiveBuffer;
-            Assert.IsTrue(active.IsSome());
-            Assert.AreSame(buffer, active.Value);
+            Assert.IsTrue(didRun);
         }
 
         [Test]
         public void ActiveBuffer3()
         {
-            var view = new Mock<IWpfTextView>(MockBehavior.Strict);
-            var buffer = new MockVimBuffer();
-            _factory.Setup(x => x.CreateBuffer(_vim, view.Object)).Returns(buffer);
-            var ret = _vim.CreateBuffer(view.Object);
-            buffer.RaiseKeyInputStart(KeyInputUtil.CharToKeyInput('c'));
-            buffer.RaiseKeyInputEnd(KeyInputUtil.CharToKeyInput('c'));
+            var textView = EditorUtil.CreateView();
+            var buffer = _vim.CreateBuffer(textView);
+            buffer.Process('a');
             Assert.IsTrue(_vim.ActiveBuffer.IsNone());
         }
+
     }
 }

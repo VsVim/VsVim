@@ -5,7 +5,7 @@ using NUnit.Framework;
 using Vim;
 using Vim.UnitTest;
 
-namespace VimCore.Test
+namespace VimCore.UnitTest
 {
     [TestFixture]
     public class MotionUtilTest

@@ -6,7 +6,7 @@ using Vim;
 using Vim.Extensions;
 using Vim.UnitTest;
 
-namespace VimCore.Test
+namespace VimCore.UnitTest
 {
     /// <summary>
     /// Summary description for TssUtilTest

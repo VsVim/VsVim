@@ -3,5 +3,5 @@ namespace Vim
 
 /// Represents the different type of operations that are available for Motions
 type OperationKind = 
-    | CharacterWise = 0
-    | LineWise = 1
+    | CharacterWise 
+    | LineWise 

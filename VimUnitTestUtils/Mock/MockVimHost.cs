@@ -68,17 +68,17 @@ namespace Vim.UnitTest.Mock
             throw new NotImplementedException();
         }
 
-        void IVimHost.Save(ITextView textView)
+        bool IVimHost.Save(ITextView textView)
         {
             throw new NotImplementedException();
         }
 
-        void IVimHost.SaveCurrentFileAs(string value)
+        bool IVimHost.SaveTextAs(string text, string filePath)
         {
             throw new NotImplementedException();
         }
 
-        void IVimHost.SaveAllFiles()
+        bool IVimHost.SaveAllFiles()
         {
             throw new NotImplementedException();
         }
@@ -94,11 +94,6 @@ namespace Vim.UnitTest.Mock
         }
 
         void IVimHost.SplitView(ITextView textView)
-        {
-            throw new NotImplementedException();
-        }
-
-        void IVimHost.CloseView(ITextView textView, bool checkDirty)
         {
             throw new NotImplementedException();
         }
@@ -137,6 +132,10 @@ namespace Vim.UnitTest.Mock
         void IVimHost.FormatLines(ITextView value, SnapshotLineRange range)
         {
             throw new NotImplementedException();
+        }
+
+        public void EnsureVisible(ITextView textView, SnapshotPoint point)
+        {
         }
     }
 }

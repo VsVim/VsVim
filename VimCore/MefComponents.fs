@@ -182,7 +182,7 @@ type internal TrackingLineColumnService() =
                 data.Dispose()
                 _map.Remove(tlc.TextBuffer) |> ignore
             else
-                let items = [Utils.CreateWeakReference tlc] @ rawList
+                let items = [Util.CreateWeakReference tlc] @ rawList
                 _map.Item(tlc.TextBuffer) <- { Observer = data; List = items }
         x.GetData tlc.TextBuffer found (fun () -> ())
 
@@ -191,11 +191,11 @@ type internal TrackingLineColumnService() =
     member private x.Add (tlc:TrackingLineColumn) =
         let textBuffer = tlc.TextBuffer
         let found data _ list =
-            let list = [Utils.CreateWeakReference tlc] @ list
+            let list = [Util.CreateWeakReference tlc] @ list
             _map.Item(textBuffer) <- { Observer = data; List = list }
         let notFound () =
             let observer = textBuffer.Changed |> Observable.subscribe x.OnBufferChanged
-            let data = { List = [Utils.CreateWeakReference tlc]; Observer = observer }
+            let data = { List = [Util.CreateWeakReference tlc]; Observer = observer }
             _map.Add(textBuffer,data)
         x.GetData textBuffer found notFound
 

@@ -6,7 +6,7 @@ using NUnit.Framework;
 using Vim;
 using Vim.UnitTest;
 
-namespace VimCore.Test
+namespace VimCore.UnitTest
 {
     [TestFixture]
     public class IntegrationTests
@@ -288,17 +288,6 @@ namespace VimCore.Test
             m_buffer.Process("o");
         }
 
-        [Test, Description("Make sure o will indent if the previous line was indented")]
-        public void TestChar_o_3()
-        {
-            CreateBuffer("  foo");
-            m_view.Caret.MoveTo(new SnapshotPoint(m_view.TextSnapshot, 0));
-            m_buffer.Process("o");
-            var point = m_view.Caret.Position.VirtualBufferPosition;
-            Assert.IsTrue(point.IsInVirtualSpace);
-            Assert.AreEqual(2, point.VirtualSpaces);
-        }
-
         [Test]
         public void TestChar_x_1()
         {
@@ -307,89 +296,6 @@ namespace VimCore.Test
             m_buffer.Process("x");
             Assert.AreEqual(ModeKind.Normal, m_buffer.ModeKind);
             Assert.AreEqual("ow is", m_buffer.TextView.TextSnapshot.GetLineFromLineNumber(0).GetText());
-        }
-
-        [Test]
-        public void TestChar_Search_1()
-        {
-            CreateBuffer("how is", "foo");
-            m_view.Caret.MoveTo(new SnapshotPoint(m_view.TextSnapshot, 0));
-            m_buffer.Process("/");
-            m_buffer.Process("is");
-            Assert.AreEqual(4, m_view.Caret.Position.BufferPosition.Position);
-        }
-
-        /// <summary>
-        /// Search in normal mode
-        /// </summary>
-        [Test]
-        public void NormalMode1()
-        {
-            m_view.Caret.MoveTo(new SnapshotPoint(m_view.TextSnapshot, 0));
-            m_buffer.Process("/des");
-            Assert.AreEqual(8, m_view.Caret.Position.BufferPosition.Position);
-
-            var selection = m_view.Selection;
-            Assert.AreEqual(8, selection.Start.Position);
-        }
-
-        /// <summary>
-        /// Search must cross lines down
-        /// </summary>
-        [Test]
-        public void NormalMode2()
-        {
-            m_view.Caret.MoveTo(new SnapshotPoint(m_view.TextSnapshot, 0));
-            m_buffer.Process("/some");
-            var line = m_view.TextSnapshot.GetLineFromLineNumber(1);
-            Assert.AreEqual(line.Start, m_view.Caret.Position.BufferPosition);
-
-            var selection = m_view.Selection;
-            Assert.AreEqual(line.Start, selection.Start.Position);
-        }
-
-        /// <summary>
-        /// Search must wrap
-        /// </summary>
-        [Test]
-        public void NormalMode3()
-        {
-            m_view.Caret.MoveTo(m_view.TextSnapshot.GetLineFromLineNumber(2).Start);
-            m_buffer.Process("/summary");
-            Assert.AreEqual(0, m_view.Caret.Position.BufferPosition);
-
-            var selection = m_view.Selection;
-            Assert.AreEqual(0, selection.Start.Position);
-        }
-
-        /// <summary>
-        /// Escape should reset cursor and selection
-        /// </summary>
-        [Test]
-        public void NormalModeEscape1()
-        {
-            m_view.Caret.MoveTo(new SnapshotPoint(m_view.TextSnapshot, 0));
-            m_buffer.Process("/for");
-            Assert.IsTrue(m_view.Caret.Position.BufferPosition.Position != 0);
-            m_buffer.Process(KeyInputUtil.EscapeKey);
-            Assert.AreEqual(0, m_view.Caret.Position.BufferPosition.Position);
-            Assert.AreEqual(0, m_view.Selection.GetSpan().Length);
-        }
-
-        /// <summary>
-        /// Enter should clear the selection and set the cursor
-        /// </summary>
-        [Test]
-        public void NormalModeEnter1()
-        {
-            m_view.Caret.MoveTo(new SnapshotPoint(m_view.TextSnapshot, 0));
-            m_buffer.Process("/some");
-            var line = m_view.TextSnapshot.GetLineFromLineNumber(1);
-            Assert.AreEqual(line.Start, m_view.Caret.Position.BufferPosition);
-
-            m_buffer.Process(KeyInputUtil.EnterKey);
-            Assert.AreEqual(line.Start, m_view.Caret.Position.BufferPosition);
-            Assert.AreEqual(0, m_view.Selection.GetSpan().Length);
         }
 
         /// <summary>
@@ -405,8 +311,6 @@ namespace VimCore.Test
             var line = m_view.TextSnapshot.GetLineFromLineNumber(1);
             Assert.AreEqual(line.Start, m_view.Caret.Position.BufferPosition);
         }
-
-
 
         /// <summary>
         /// Next should not start from the current cursor position

@@ -90,6 +90,9 @@ module SnapshotUtil =
         let endPoint = GetEndPoint tss
         SnapshotSpan(startPoint,endPoint)
 
+    /// Get the text of the ITextSnapshot
+    let GetText (snapshot:ITextSnapshot) = snapshot.GetText()
+
     /// Is the Line Number valid
     let IsLineNumberValid (tss:ITextSnapshot) lineNumber = lineNumber >= 0 && lineNumber < tss.LineCount
 
@@ -151,7 +154,6 @@ module SnapshotUtil =
         let count = endLineNumber - startLineNumber + 1
         GetLines snapshot startLineNumber SearchKind.Forward
         |> Seq.truncate count
-
 
 /// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
 /// include any Vim specific logic
@@ -243,6 +245,13 @@ module SnapshotSpanUtil =
         match GetLastIncludedPoint span with 
         | None -> false
         | Some(p) -> p = point 
+
+    /// Gets the last line which is apart of this Span.  
+    let GetLastIncludedLine span = 
+        let point = GetLastIncludedPoint span
+        match point with
+        | Some(point) -> point.GetContainingLine() |> Some
+        | None -> None
 
     /// Extend the SnapshotSpan count lines downwards.  If the count exceeds the end of the
     /// Snapshot it will extend to the end
@@ -445,6 +454,14 @@ module SnapshotLineUtil =
         let length = GetLineBreakLength line
         SnapshotSpan(point,length)
 
+    /// Get the indent point of the ITextSnapshotLine
+    let GetIndent line =
+        line 
+        |> GetPoints
+        |> Seq.skipWhile (fun point -> point.GetChar() |> CharUtil.IsWhiteSpace)
+        |> SeqUtil.tryHeadOnly
+        |> OptionUtil.getOrDefault (GetEnd line)
+
 [<RequireQualifiedAccess>]
 type PointKind =
     /// Normal valid point within the ITextSnapshot.  Point in question is the argument
@@ -485,6 +502,11 @@ module SnapshotPointUtil =
     let IsEndPoint point = 
         let snapshot = GetSnapshot point
         point = SnapshotUtil.GetEndPoint snapshot
+
+    /// Is this point whitespace?
+    let IsWhitespace point =
+        if IsEndPoint point then false
+        else CharUtil.IsWhiteSpace (point.GetChar())
 
     /// Get the line range passed in.  If the count of lines exceeds the amount of lines remaining
     /// in the buffer, the span will be truncated to the final line
@@ -720,12 +742,6 @@ module SnapshotPointUtil =
             let endPoint = SnapshotPoint(line.Snapshot, endPosition)
             SnapshotSpan(point, endPoint)
 
-    /// Add the given coun to the SnapshotPoint
-    let Add count (point:SnapshotPoint) = point.Add(count)
-
-    /// Add 1 to the given SnapshotPoint
-    let AddOne (point:SnapshotPoint) = point.Add(1)
-
     /// Try and add count to the SnapshotPoint.  Will return None if this causes
     /// the point to go past the end of the Snapshot
     let TryAdd point count = 
@@ -737,6 +753,19 @@ module SnapshotPointUtil =
     /// Maybe add 1 to the given point.  Will return the original point
     /// if it's the end of the Snapshot
     let TryAddOne point = TryAdd point 1
+
+    /// Add the given coun to the SnapshotPoint
+    let Add count (point:SnapshotPoint) = point.Add(count)
+
+    /// Add 1 to the given SnapshotPoint
+    let AddOne (point:SnapshotPoint) = point.Add(1)
+
+    /// Add 1 to the given snapshot point unless it's the end of the buffer in which case just
+    /// return the passed in value
+    let AddOneOrCurrent point =
+        match TryAddOne point with
+        | None -> point
+        | Some(point) -> point
 
     /// Subtract the count from the SnapshotPoint
     let SubtractOne (point:SnapshotPoint) =  point.Subtract(1)
@@ -859,6 +888,8 @@ module TextViewUtil =
 
     let GetCaretLine textView = GetCaretPoint textView |> SnapshotPointUtil.GetContainingLine
 
+    let GetCaretLineIndent textView = textView |> GetCaretLine |> SnapshotLineUtil.GetIndent
+
     let GetCaretLineRange textView count = 
         let line = GetCaretLine textView
         SnapshotLineRangeUtil.CreateForLineAndMaxCount line count
@@ -884,9 +915,12 @@ module TextViewUtil =
         caret.EnsureVisible()
 
     /// Ensure the text pointed to by the caret is currently expanded
-    let EnsureCaretTextExpanded textView (outliningManager:IOutliningManager) = 
-        let point = GetCaretPoint textView
-        outliningManager.ExpandAll(SnapshotSpan(point,0), fun _ -> true) |> ignore
+    let EnsureCaretTextExpanded textView (outliningManager:IOutliningManager option) = 
+        match outliningManager with
+        | None -> ()
+        | Some(outliningManager) -> 
+            let point = GetCaretPoint textView
+            outliningManager.ExpandAll(SnapshotSpan(point,0), fun _ -> true) |> ignore
 
     /// Ensure that the caret is both on screen and not in the middle of any outlining region
     let EnsureCaretOnScreenAndTextExpanded textView outliningManager =
@@ -952,6 +986,12 @@ module TrackingPointUtil =
             point.GetPoint(snapshot) |> Some
         with
             | :? System.ArgumentException -> None
+
+    let GetPointInSnapshot point mode newSnapshot =
+        let oldSnapshot = SnapshotPointUtil.GetSnapshot point
+        let trackingPoint = oldSnapshot.CreateTrackingPoint(point.Position, mode)
+        GetPoint newSnapshot trackingPoint
+
 
 module TrackingSpanUtil =
 

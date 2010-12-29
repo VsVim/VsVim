@@ -17,12 +17,14 @@ type internal NormalMode
     ( 
         _bufferData : IVimBuffer, 
         _operations : IOperations,
-        _incrementalSearch : IIncrementalSearch,
         _statusUtil : IStatusUtil,
         _displayWindowBroker : IDisplayWindowBroker,
         _runner : ICommandRunner,
         _capture : IMotionCapture,
         _visualSpanCalculator : IVisualSpanCalculator ) as this =
+
+    let _textView = _bufferData.TextView
+    let _settings = _bufferData.Settings
 
     /// Reset state for data in Normal Mode
     let _emptyData = {
@@ -50,7 +52,6 @@ type internal NormalMode
     member this.TextBuffer = _bufferData.TextBuffer
     member this.CaretPoint = _bufferData.TextView.Caret.Position.BufferPosition
     member this.Settings = _bufferData.Settings
-    member this.IncrementalSearch = _incrementalSearch
     member this.IsCommandRunnerPopulated = _runner.Commands |> SeqUtil.isNotEmpty
     member this.KeyRemapMode = 
         match _runner.KeyRemapMode with
@@ -63,8 +64,11 @@ type internal NormalMode
 
     member private this.EnsureCommands() = 
         if not this.IsCommandRunnerPopulated then
+            let factory = Vim.Modes.CommandFactory(_operations, _capture, _bufferData.IncrementalSearch, _bufferData.JumpList, _bufferData.Settings)
+
             this.CreateSimpleCommands()
-            |> Seq.append (this.CreateMovementCommands())
+            |> Seq.append (factory.CreateMovementCommands())
+            |> Seq.append (factory.CreateEditCommandsForNormalMode())
             |> Seq.append (this.CreateMotionCommands())
             |> Seq.append (this.CreateLongCommands())
             |> Seq.iter _runner.Add
@@ -82,19 +86,6 @@ type internal NormalMode
             _runner.Remove name
             _runner.Add command
 
-    /// Begin an incremental search.  Called when the user types / into the editor
-    member this.BeginIncrementalSearch (kind:SearchKind) count reg =
-        let before = TextViewUtil.GetCaretPoint _bufferData.TextView
-        let rec inner (ki:KeyInput) = 
-            match _incrementalSearch.Process ki with
-            | SearchComplete -> 
-                _bufferData.JumpList.Add before |> ignore
-                CommandResult.Completed ModeSwitch.NoSwitch |> LongCommandResult.Finished
-            | SearchCancelled -> LongCommandResult.Cancelled
-            | SearchNeedMore ->  LongCommandResult.NeedMoreInput (Some KeyRemapMode.Command, inner)
-        _incrementalSearch.Begin kind
-        LongCommandResult.NeedMoreInput (Some KeyRemapMode.Command, inner)
-    
     member private x.ReplaceChar count reg = 
         let inner (ki:KeyInput) = 
             _data <- { _data with IsInReplace = false }
@@ -170,7 +161,7 @@ type internal NormalMode
                                 | Some(motionData) -> func countOpt reg motionData |> ignore
     
                         | LongCommand(_) -> _statusUtil.OnError (Resources.NormalMode_RepeatNotSupportedOnCommand commandName)
-                        | VisualCommand(_,_,kind,func) -> 
+                        | VisualCommand(_, _, _, func) -> 
                             // Repeating a visual command is more complex because we need to calculate the
                             // new visual range
                             match data.VisualRunData with
@@ -211,14 +202,6 @@ type internal NormalMode
     member this.CreateLongCommands() = 
 
         seq {
-            yield (
-                "/", 
-                CommandFlags.Movement ||| CommandFlags.HandlesEscape, 
-                fun count reg -> this.BeginIncrementalSearch SearchKind.ForwardWithWrap count reg)
-            yield (
-                "?", 
-                CommandFlags.Movement, 
-                fun count reg -> this.BeginIncrementalSearch SearchKind.BackwardWithWrap count reg)
             yield (
                 "r", 
                 CommandFlags.None, 
@@ -302,19 +285,11 @@ type internal NormalMode
                 yield (
                     "gp", 
                     CommandFlags.Repeatable, 
-                    fun count reg -> _operations.PasteAfterCursor reg.StringValue 1 reg.Value.OperationKind true |> ignore)
+                    fun count reg -> _operations.PutAtCaret (reg.Value.Value.ApplyCount count) reg.Value.OperationKind PutKind.After true)
                 yield (
                     "gP", 
                     CommandFlags.Repeatable, 
-                    fun count reg -> _operations.PasteBeforeCursor reg.StringValue 1 reg.Value.OperationKind true |> ignore)
-                yield (
-                    "g*", 
-                    CommandFlags.Movement, 
-                    fun count _ -> _operations.MoveToNextOccuranceOfPartialWordAtCursor SearchKind.ForwardWithWrap count)
-                yield (
-                    "g#", 
-                    CommandFlags.Movement, 
-                    fun count _ -> _operations.MoveToNextOccuranceOfPartialWordAtCursor SearchKind.BackwardWithWrap count)
+                    fun count reg -> _operations.PutAtCaret (reg.Value.Value.ApplyCount count) reg.Value.OperationKind PutKind.Before true)
                 yield (
                     "g&", 
                     CommandFlags.Special, 
@@ -386,6 +361,10 @@ type internal NormalMode
                     CommandFlags.Special, 
                     fun _ _ -> _operations.FoldManager.DeleteAllFolds() )
                 yield (
+                    "ZZ",
+                    CommandFlags.Special,
+                    fun _ _ ->  _operations.Close(true) |> ignore )
+                yield (
                     "x", 
                     CommandFlags.Repeatable, 
                     fun count reg -> 
@@ -406,27 +385,11 @@ type internal NormalMode
                 yield (
                     "p", 
                     CommandFlags.Repeatable, 
-                    fun count reg -> _operations.PasteAfterCursor reg.StringValue count reg.Value.OperationKind false)
+                    fun count reg -> _operations.PutAtCaret (reg.Value.Value.ApplyCount count) reg.Value.OperationKind PutKind.After false)
                 yield (
                     "P", 
                     CommandFlags.Repeatable, 
-                    fun count reg -> _operations.PasteBeforeCursor reg.StringValue count reg.Value.OperationKind false)
-                yield (
-                    "n", 
-                    CommandFlags.Movement, 
-                    fun count _ -> _operations.MoveToNextOccuranceOfLastSearch count false)
-                yield (
-                    "N", 
-                    CommandFlags.Movement, 
-                    fun count _ -> _operations.MoveToNextOccuranceOfLastSearch count true)
-                yield (
-                    "*", 
-                    CommandFlags.Movement, 
-                    fun count _ -> _operations.MoveToNextOccuranceOfWordAtCursor SearchKind.ForwardWithWrap count)
-                yield (
-                    "#", 
-                    CommandFlags.Movement, 
-                    fun count _ -> _operations.MoveToNextOccuranceOfWordAtCursor SearchKind.BackwardWithWrap count)
+                    fun count reg -> _operations.PutAtCaret (reg.Value.Value.ApplyCount count) reg.Value.OperationKind PutKind.Before false)
                 yield (
                     "D", 
                     CommandFlags.Repeatable, 
@@ -485,14 +448,6 @@ type internal NormalMode
                     "<C-]>", 
                     CommandFlags.Special, 
                     fun _ _ -> _operations.GoToDefinitionWrapper())
-                yield (
-                    "gd", 
-                    CommandFlags.Special, 
-                    fun _ _ -> _operations.GoToLocalDeclaration())
-                yield (
-                    "gD", 
-                    CommandFlags.Special, 
-                    fun _ _ -> _operations.GoToGlobalDeclaration())
                 yield (
                     "gf", 
                     CommandFlags.Special, 
@@ -562,13 +517,18 @@ type internal NormalMode
         let doSwitch =
             seq {
                 yield (
-                    "cc", 
+                    "cc",
                     CommandFlags.LinkedWithNextTextChange ||| CommandFlags.Repeatable,
-                    ModeKind.Insert, 
+                    ModeKind.Insert,
                     fun count reg ->  
-                        let point = TextViewUtil.GetCaretPoint _bufferData.TextView
-                        let span = SnapshotPointUtil.GetLineRangeSpanIncludingLineBreak point count
-                        let span = SnapshotSpan(point.GetContainingLine().Start,span.End)
+                        let getDeleteSpan (range:SnapshotLineRange) =
+                            if _settings.AutoIndent then 
+                                let start = TextViewUtil.GetCaretLineIndent _textView
+                                TextViewUtil.MoveCaretToPoint _textView start
+                                SnapshotSpanUtil.Create start range.End
+                            else
+                                range.Extent
+                        let span = TextViewUtil.GetCaretLineRange _textView count |> getDeleteSpan
                         _operations.DeleteSpan span 
                         _operations.UpdateRegisterForSpan reg RegisterOperation.Delete span OperationKind.LineWise)
                 yield (
@@ -685,6 +645,13 @@ type internal NormalMode
         let complex : seq<string * CommandFlags * ModeKind option * (int -> Register -> MotionData -> unit)> =
             seq {
                 yield (
+                    "c", 
+                    CommandFlags.LinkedWithNextTextChange ||| CommandFlags.Repeatable, 
+                    Some ModeKind.Insert, 
+                    fun _ reg data -> 
+                        let span = _operations.ChangeSpan data 
+                        _operations.UpdateRegisterForSpan reg RegisterOperation.Delete span data.OperationKind)
+                yield (
                     "d", 
                     CommandFlags.None, 
                     None, 
@@ -696,13 +663,6 @@ type internal NormalMode
                     CommandFlags.None, 
                     None, 
                     fun _ reg data -> _operations.UpdateRegisterForSpan reg RegisterOperation.Yank data.OperationSpan data.OperationKind)
-                yield (
-                    "c", 
-                    CommandFlags.LinkedWithNextTextChange ||| CommandFlags.Repeatable, 
-                    Some ModeKind.Insert, 
-                    fun _ reg data -> 
-                        let span = _operations.ChangeSpan data 
-                        _operations.UpdateRegisterForSpan reg RegisterOperation.Delete span data.OperationKind)
                 yield (
                     "<lt>", 
                     CommandFlags.None, 
@@ -736,11 +696,6 @@ type internal NormalMode
                 | Some(modeKind) -> CommandResult.Completed (ModeSwitch.SwitchMode modeKind)
             let flags = extraFlags ||| CommandFlags.Repeatable
             MotionCommand(name, flags, func2))
-
-    /// Create all of the movement commands
-    member this.CreateMovementCommands() =
-        let factory = Vim.Modes.CommandFactory(_operations, _capture)
-        factory.CreateMovementCommands()
 
     member this.Reset() =
         _runner.ResetState()
@@ -777,7 +732,6 @@ type internal NormalMode
 
     interface INormalMode with 
         member this.KeyRemapMode = this.KeyRemapMode
-        member this.IncrementalSearch = _incrementalSearch
         member this.IsInReplace = _data.IsInReplace
         member this.VimBuffer = _bufferData
         member this.Command = this.Command

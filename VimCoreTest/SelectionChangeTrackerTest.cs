@@ -7,7 +7,7 @@ using Vim;
 using Vim.UnitTest;
 using Vim.UnitTest.Mock;
 
-namespace VimCore.Test
+namespace VimCore.UnitTest
 {
     [TestFixture]
     public class SelectionChangeTrackerTest
@@ -28,7 +28,7 @@ namespace VimCore.Test
                 selection: _selection.Object,
                 factory: _factory);
             _buffer = MockObjectFactory.CreateVimBuffer(
-                view: _textView.Object,
+                textView: _textView.Object,
                 factory: _factory);
             _context = new TestableSynchronizationContext();
             SynchronizationContext.SetSynchronizationContext(_context);

@@ -1,14 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using System.Linq;
 using NUnit.Framework;
 using Vim;
-using GlobalSettings = Vim.GlobalSettings;
 using Vim.Extensions;
 using Vim.UnitTest;
 
-namespace VimCore.Test
+namespace VimCore.UnitTest
 {
     [TestFixture]
     public abstract class SettingsCommonTest
@@ -72,7 +68,7 @@ namespace VimCore.Test
             Assert.IsTrue(settings.TrySetValue(GlobalSettingNames.IgnoreCaseName, SettingValue.NewToggleValue(true)));
             var value = settings.GetSetting(GlobalSettingNames.IgnoreCaseName);
             Assert.IsTrue(value.IsSome());
-            Assert.AreEqual(true, value.Value.Value.AsBooleanValue().Item);
+            Assert.AreEqual(true, value.Value.Value.AsToggleValue().Item);
         }
 
         [Test]
@@ -177,7 +173,7 @@ namespace VimCore.Test
             settings.SettingChanged += (unused, setting) =>
                 {
                     Assert.AreEqual(ToggleSettingName, setting.Name);
-                    Assert.IsTrue(setting.AggregateValue.AsBooleanValue().Item);
+                    Assert.IsTrue(setting.AggregateValue.AsToggleValue().Item);
                     didRun = true;
                 };
             settings.TrySetValue(ToggleSettingName, SettingValue.NewToggleValue(true));
@@ -192,11 +188,21 @@ namespace VimCore.Test
             settings.SettingChanged += (unused, setting) =>
                 {
                     Assert.AreEqual(ToggleSettingName, setting.Name);
-                    Assert.IsTrue(setting.AggregateValue.AsBooleanValue().Item);
+                    Assert.IsTrue(setting.AggregateValue.AsToggleValue().Item);
                     didRun = true;
                 };
             settings.TrySetValueFromString(ToggleSettingName, "true");
             Assert.IsTrue(didRun);
+        }
+
+        [Test]
+        public void SettingsShouldStartAsDefault()
+        {
+            var settings = Create();
+            foreach (var setting in settings.AllSettings)
+            {
+                Assert.IsTrue(setting.IsValueDefault);
+            }
         }
 
     }

@@ -1,15 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using NUnit.Framework;
-using Vim.UnitTest;
+﻿using System.Linq;
 using Microsoft.VisualStudio.Text;
-using Vim;
 using Microsoft.VisualStudio.Text.Editor;
+using NUnit.Framework;
+using Vim;
+using Vim.UnitTest;
 using Vim.UnitTest.Mock;
 
-namespace VimCore.Test
+namespace VimCore.UnitTest
 {
     [TestFixture]
     public class TextViewUtilTest
@@ -19,7 +16,7 @@ namespace VimCore.Test
         {
             var buffer = EditorUtil.CreateBuffer("foo","bar");
             var caret = MockObjectFactory.CreateCaret();
-            var textView = MockObjectFactory.CreateTextView(buffer:buffer, caret:caret.Object);
+            var textView = MockObjectFactory.CreateTextView(textBuffer:buffer, caret:caret.Object);
             var point = new VirtualSnapshotPoint(buffer.GetLine(0), 2); 
 
             caret.Setup(x => x.MoveTo(point)).Returns(new CaretPosition()).Verifiable();

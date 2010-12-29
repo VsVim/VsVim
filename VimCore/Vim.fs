@@ -11,6 +11,23 @@ open System.ComponentModel.Composition
 open System.IO
 open Vim.Modes
 
+type internal StatusUtil() = 
+    let mutable _buffer : VimBuffer option = None
+
+    member x.VimBuffer 
+        with get () = _buffer
+        and set value = _buffer <- value
+
+    member x.DoWithBuffer func = 
+        match _buffer with
+        | None -> ()
+        | Some(buffer) -> func buffer
+
+    interface IStatusUtil with
+        member x.OnStatus msg = x.DoWithBuffer (fun buffer -> buffer.RaiseStatusMessage msg)
+        member x.OnError msg = x.DoWithBuffer (fun buffer -> buffer.RaiseErrorMessage msg)
+        member x.OnStatusLong msgSeq = x.DoWithBuffer (fun buffer -> buffer.RaiseStatusMessageLong msgSeq)
+
 type internal VimData() =
 
     let mutable _lastSubstituteData : SubstituteData option = None
@@ -19,10 +36,10 @@ type internal VimData() =
 
     interface IVimData with 
         member x.LastSubstituteData 
-            with get() = _lastSubstituteData
+            with get () = _lastSubstituteData
             and set value = _lastSubstituteData <- value
         member x.LastSearchData
-            with get() = _lastSearchData
+            with get () = _lastSearchData
             and set value = 
                 _lastSearchData <- value
                 _lastSearchChanged.Trigger value
@@ -54,54 +71,76 @@ type internal VimBufferFactory
         let editOptions = _editorOptionsFactoryService.GetOptions(view)
         let localSettings = LocalSettings(vim.Settings, view) :> IVimLocalSettings
         let motionUtil = TextViewMotionUtil(view, localSettings) :> ITextViewMotionUtil
-        let capture = MotionCapture(vim.VimHost, view, motionUtil, _motionCaptureGlobalData) :> IMotionCapture
-        let outlining = _outliningManagerService.GetOutliningManager(view)
+        let outlining = 
+            // This will return null in ITextBuffer instances where there is no IOutliningManager such
+            // as TFS annotated buffers.
+            let ret = _outliningManagerService.GetOutliningManager(view)
+            if ret = null then None else Some ret
         let jumpList = JumpList(_tlcService) :> IJumpList
         let foldManager = _foldManagerFactory.GetFoldManager(view.TextBuffer)
-        let bufferRaw = 
-            VimBuffer( 
-                vim,
-                view,
-                jumpList,
-                localSettings)
-        let buffer = bufferRaw :> IVimBuffer
-        let selectionChangeTracker = SelectionChangeTracker(buffer)
+        let wordNav = x.CreateTextStructureNavigator view.TextBuffer WordKind.NormalWord
 
-        let statusUtil = x.CreateStatusUtil bufferRaw 
+        let statusUtil = StatusUtil()
         let undoRedoOperations = 
             let history = 
                 let manager = _undoManagerProvider.GetTextBufferUndoManager(view.TextBuffer)
                 if manager = null then None
                 else manager.TextBufferUndoHistory |> Some
             UndoRedoOperations(statusUtil, history) :> IUndoRedoOperations
-        let wordNav = x.CreateTextStructureNavigator view.TextBuffer WordKind.NormalWord
         let operationsData = { 
-            VimData=vim.VimData
-            VimHost=_host
-            TextView=view
-            EditorOperations=editOperations
-            EditorOptions=editOptions
-            OutliningManager=outlining
-            JumpList=jumpList
-            LocalSettings=localSettings
-            UndoRedoOperations=undoRedoOperations
-            StatusUtil=statusUtil
-            KeyMap=vim.KeyMap
-            Navigator=wordNav
-            FoldManager=foldManager
-            RegisterMap=vim.RegisterMap }
+            EditorOperations = editOperations
+            EditorOptions = editOptions
+            FoldManager = foldManager
+            JumpList = jumpList
+            KeyMap = vim.KeyMap
+            LocalSettings = localSettings
+            Navigator = wordNav
+            OutliningManager = outlining
+            RegisterMap = vim.RegisterMap
+            SearchService = vim.SearchService 
+            StatusUtil = statusUtil :> IStatusUtil
+            TextView = view
+            UndoRedoOperations = undoRedoOperations
+            VimData = vim.VimData
+            VimHost = _host }
+        let commonOperations = Modes.CommonOperations(operationsData) :> Modes.ICommonOperations
+
+        let incrementalSearch = 
+            IncrementalSearch(
+                commonOperations,
+                localSettings, 
+                wordNav, 
+                vim.SearchService, 
+                vim.VimData) :> IIncrementalSearch
+        let capture = MotionCapture(vim.VimHost, view, motionUtil, incrementalSearch, jumpList, _motionCaptureGlobalData) :> IMotionCapture
+        let bufferRaw = 
+            VimBuffer( 
+                vim,
+                view,
+                jumpList,
+                localSettings,
+                incrementalSearch)
+        let buffer = bufferRaw :> IVimBuffer
+
+        /// Create the selection change tracker so that it will begin to monitor
+        /// selection events.  
+        ///
+        /// TODO: This feels wrong.  Either the result should be stored somewhere
+        /// or it should be exposed as a MEF service that listens to buffer 
+        /// creation events.
+        let selectionChangeTracker = SelectionChangeTracker(buffer)
+
+        statusUtil.VimBuffer <- Some bufferRaw
 
         let createCommandRunner() = CommandRunner (view, vim.RegisterMap, capture,statusUtil) :>ICommandRunner
         let broker = _completionWindowBrokerFactoryService.CreateDisplayWindowBroker view
         let bufferOptions = _editorOptionsFactoryService.GetOptions(view.TextBuffer)
-        let normalIncrementalSearch = Vim.Modes.Normal.IncrementalSearch(view, outlining, localSettings, wordNav, vim.SearchService, vim.VimData) :> IIncrementalSearch
-        let normalOpts = Modes.Normal.DefaultOperations(operationsData, normalIncrementalSearch) :> Vim.Modes.Normal.IOperations
+        let normalOpts = Modes.Normal.DefaultOperations(operationsData) :> Vim.Modes.Normal.IOperations
         let commandOpts = Modes.Command.DefaultOperations(operationsData) :> Modes.Command.IOperations
         let commandProcessor = Modes.Command.CommandProcessor(buffer, commandOpts, statusUtil, FileSystem() :> IFileSystem) :> Modes.Command.ICommandProcessor
-        let commonOperations = Modes.CommonOperations(operationsData) :> Modes.ICommonOperations
         let visualOptsFactory kind = 
-            let kind = VisualKind.ofModeKind kind |> Option.get
-            let tracker = Modes.Visual.SelectionTracker(view,vim.Settings,kind) :> Modes.Visual.ISelectionTracker
+            let kind = VisualKind.OfModeKind kind |> Option.get
+            let tracker = Modes.Visual.SelectionTracker(view, vim.Settings, incrementalSearch, kind) :> Modes.Visual.ISelectionTracker
             (tracker, commonOperations)
 
         let visualModeList =
@@ -115,12 +154,13 @@ type internal VimBufferFactory
         // Normal mode values
         let modeList = 
             [
-                ((Modes.Normal.NormalMode(buffer, normalOpts, normalIncrementalSearch,statusUtil,broker, createCommandRunner(),capture, _visualSpanCalculator)) :> IMode)
+                ((Modes.Normal.NormalMode(buffer, normalOpts, statusUtil,broker, createCommandRunner(),capture, _visualSpanCalculator)) :> IMode)
                 ((Modes.Command.CommandMode(buffer, commandProcessor)) :> IMode)
                 ((Modes.Insert.InsertMode(buffer, commonOperations, broker, editOptions,false)) :> IMode)
                 ((Modes.Insert.InsertMode(buffer, commonOperations, broker, editOptions,true)) :> IMode)
                 ((Modes.SubstituteConfirm.SubstituteConfirmMode(buffer, commonOperations) :> IMode))
-                (DisabledMode(buffer) :> IMode);
+                (DisabledMode(buffer) :> IMode)
+                (ExternalEditMode(buffer) :> IMode)
             ] @ visualModeList
         modeList |> List.iter (fun m -> bufferRaw.AddMode m)
         buffer.SwitchMode ModeKind.Normal ModeArgument.None |> ignore
@@ -129,13 +169,6 @@ type internal VimBufferFactory
     member private x.CreateTextStructureNavigator textBuffer wordKind =
         let baseImpl = _textStructureNavigatorSelectorService.GetTextStructureNavigator(textBuffer)
         TssUtil.CreateTextStructureNavigator wordKind baseImpl
-
-    member private x.CreateStatusUtil (buffer:VimBuffer) =
-        { new IStatusUtil with 
-            member x.OnStatus msg = buffer.RaiseStatusMessage msg
-            member x.OnError msg = buffer.RaiseErrorMessage msg
-            member x.OnStatusLong msgSeq = buffer.RaiseStatusMessageLong msgSeq }
-        
 
     interface IVimBufferFactory with
         member x.CreateBuffer vim view = x.CreateBuffer vim view :> IVimBuffer
@@ -163,6 +196,10 @@ type internal Vim
 
     /// Holds the active stack of IVimBuffer instances
     let mutable _activeBufferStack : IVimBuffer list = List.empty
+
+    /// Holds the local setting information which was stored when loading the VimRc file.  This 
+    /// is applied to IVimBuffer instances which are created when there is no active IVimBuffer
+    let mutable _vimrcLocalSettings : Setting list = List.empty
 
     let _registerMap =
         let currentFileNameFunc() = 
@@ -202,23 +239,29 @@ type internal Vim
             tracker :> IChangeTracker,
             SearchService(search, globalSettings) :> ISearchService)
 
-    member x.CreateVimBufferCore view = 
+    member x.ActiveBuffer = ListUtil.tryHeadOnly _activeBufferStack
+
+    member x.CreateBuffer view (localSettingList : Setting seq)= 
         if _bufferMap.ContainsKey(view) then invalidArg "view" Resources.Vim_ViewAlreadyHasBuffer
         let buffer = _bufferFactoryService.CreateBuffer (x:>IVim) view
+
+        // Apply the specified local buffer settings
+        localSettingList |> Seq.iter (fun s -> buffer.Settings.TrySetValue s.Name s.Value |> ignore)
 
         // Setup the handlers for KeyInputStart and KeyInputEnd to accurately track the active
         // IVimBuffer instance
         let eventBag = DisposableBag()
         buffer.KeyInputStart
-            |> Observable.subscribe (fun _ -> _activeBufferStack <- buffer :: _activeBufferStack )
-            |> eventBag.Add
+        |> Observable.subscribe (fun _ -> _activeBufferStack <- buffer :: _activeBufferStack )
+        |> eventBag.Add
+
         buffer.KeyInputEnd 
-            |> Observable.subscribe (fun _ -> 
-                _activeBufferStack <- 
-                    match _activeBufferStack with
-                    | h::t -> t
-                    | [] -> [] )
-            |> eventBag.Add
+        |> Observable.subscribe (fun _ -> 
+            _activeBufferStack <- 
+                match _activeBufferStack with
+                | h::t -> t
+                | [] -> [] )
+        |> eventBag.Add
 
         _bufferMap.Add(view, (buffer,eventBag))
         _bufferCreationListeners |> Seq.iter (fun x -> x.Value.VimBufferCreated buffer)
@@ -237,31 +280,42 @@ type internal Vim
         | (true,(buffer,_)) -> Some buffer
         | (false,_) -> None
 
-    member private x.GetOrCreateBufferCore view =
+    member x.GetOrCreateBuffer view =
         match x.GetBufferCore view with
         | Some(buffer) -> buffer
-        | None -> x.CreateVimBufferCore view
+        | None -> 
+            // Determine the settings which need to be applied to the new IVimBuffer
+            let settings = 
+                match x.ActiveBuffer with
+                | Some(buffer) -> buffer.Settings.AllSettings |> Seq.filter (fun s -> not s.IsGlobal)
+                | None -> _vimrcLocalSettings |> Seq.ofList
+                
+            x.CreateBuffer view settings
 
-    static member LoadVimRc (vim:IVim) (fileSystem:IFileSystem) (createViewFunc : (unit -> ITextView)) =
-        let settings = vim.Settings
-        settings.VimRc <- System.String.Empty
+    member x.LoadVimRc (fileSystem:IFileSystem) (createViewFunc : (unit -> ITextView)) =
+        _settings.VimRc <- System.String.Empty
+        _settings.VimRcPaths <- fileSystem.GetVimRcDirectories() |> String.concat ";"
 
-        settings.VimRcPaths <- fileSystem.GetVimRcDirectories() |> String.concat ";"
         match fileSystem.LoadVimRc() with
         | None -> false
         | Some(path,lines) ->
-            settings.VimRc <- path
+            _settings.VimRc <- path
             let view = createViewFunc()
-            let buffer = vim.GetOrCreateBuffer view
+            let buffer = x.CreateBuffer view Seq.empty
             let mode = buffer.CommandMode
             lines |> Seq.iter (fun input -> mode.RunCommand input |> ignore)
+            _vimrcLocalSettings <- 
+                buffer.Settings.AllSettings 
+                |> Seq.filter (fun s -> not s.IsGlobal && not s.IsValueDefault)
+                |> List.ofSeq
             view.Close()
             true
 
     interface IVim with
-        member x.ActiveBuffer = ListUtil.tryHeadOnly _activeBufferStack
+        member x.ActiveBuffer = x.ActiveBuffer
         member x.VimData = _vimData
         member x.VimHost = _host
+        member x.VimRcLocalSettings = _vimrcLocalSettings
         member x.MarkMap = _markMap
         member x.KeyMap = _keyMap
         member x.ChangeTracker = _changeTracker
@@ -269,8 +323,8 @@ type internal Vim
         member x.IsVimRcLoaded = not (System.String.IsNullOrEmpty(_settings.VimRc))
         member x.RegisterMap = _registerMap 
         member x.Settings = _settings
-        member x.CreateBuffer view = x.CreateVimBufferCore view 
-        member x.GetOrCreateBuffer view = x.GetOrCreateBufferCore view
+        member x.CreateBuffer view = x.CreateBuffer view _vimrcLocalSettings
+        member x.GetOrCreateBuffer view = x.GetOrCreateBuffer view
         member x.RemoveBuffer view = x.RemoveBufferCore view
         member x.GetBuffer view = x.GetBufferCore view
         member x.GetBufferForBuffer textBuffer =
@@ -278,8 +332,5 @@ type internal Vim
             match keys |> Seq.isEmpty with
             | true -> None
             | false -> keys |> Seq.head |> x.GetBufferCore
-        member x.LoadVimRc fileSystem createViewFunc = Vim.LoadVimRc x fileSystem createViewFunc
-                
+        member x.LoadVimRc fileSystem createViewFunc = x.LoadVimRc fileSystem createViewFunc
 
-        
-        

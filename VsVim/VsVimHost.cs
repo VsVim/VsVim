@@ -1,7 +1,7 @@
 ﻿using System;
 using System.ComponentModel.Composition;
+using System.IO;
 using System.Linq;
-using System.Media;
 using EnvDTE;
 using Microsoft.VisualStudio.Editor;
 using Microsoft.VisualStudio.Shell;
@@ -11,6 +11,7 @@ using Microsoft.VisualStudio.Text.Operations;
 using Microsoft.VisualStudio.TextManager.Interop;
 using Vim;
 using Vim.Extensions;
+using Vim.UI.Wpf;
 
 namespace VsVim
 {
@@ -19,13 +20,12 @@ namespace VsVim
     /// the relationship with the IVimBuffer, merely implementing the host functionality
     /// </summary>
     [Export(typeof(IVimHost))]
-    internal sealed class VsVimHost : IVimHost
+    internal sealed class VsVimHost : VimHost
     {
         internal const string CommandNameGoToDefinition = "Edit.GoToDefinition";
 
         private readonly ITextManager _textManager;
         private readonly IVsEditorAdaptersFactoryService _editorAdaptersFactoryService;
-        private readonly ITextBufferUndoManagerProvider _undoManagerProvider;
         private readonly _DTE _dte;
 
         internal _DTE DTE
@@ -40,15 +40,9 @@ namespace VsVim
             ITextManager textManager,
             SVsServiceProvider serviceProvider)
         {
-            _undoManagerProvider = undoManagerProvider;
             _editorAdaptersFactoryService = editorAdaptersFactoryService;
             _dte = (_DTE)serviceProvider.GetService(typeof(_DTE));
             _textManager = textManager;
-        }
-
-        private void UpdateStatus(string text)
-        {
-            _dte.StatusBar.Text = text;
         }
 
         private bool SafeExecuteCommand(string command, string args = "")
@@ -83,10 +77,8 @@ namespace VsVim
             {
                 return SafeExecuteCommand(CommandNameGoToDefinition, target);
             }
-            else
-            {
-                return SafeExecuteCommand(CommandNameGoToDefinition);
-            }
+
+            return SafeExecuteCommand(CommandNameGoToDefinition);
         }
 
         private bool GoToDefinitionCore(ITextView textView, string target)
@@ -106,9 +98,7 @@ namespace VsVim
                 return true;
             }
 
-            var names = _dte.GetProjects().SelectMany(x => x.GetProjecItems()).Select(x => x.Name).ToList();
             var list = _dte.GetProjectItems(fileName);
-
             if (list.Any())
             {
                 var item = list.First();
@@ -125,7 +115,7 @@ namespace VsVim
         /// in Visual Studio.  Instead we leverage the FormatSelection command.  Need to be careful
         /// to reset the selection after a format
         /// </summary>
-        private void FormatLines(ITextView textView, SnapshotLineRange range)
+        public override void FormatLines(ITextView textView, SnapshotLineRange range)
         {
             var startedWithSelection = !textView.Selection.IsEmpty;
             textView.Selection.Clear();
@@ -137,34 +127,27 @@ namespace VsVim
             }
         }
 
-        #region IVimHost
-
-        void IVimHost.Beep()
-        {
-            SystemSounds.Beep.Play();
-        }
-
-        bool IVimHost.GoToDefinition()
+        public override bool GoToDefinition()
         {
             return GoToDefinitionCore(_textManager.ActiveTextView, null);
         }
 
-        bool IVimHost.GoToMatch()
+        public override bool GoToMatch()
         {
             return SafeExecuteCommand("Edit.GoToBrace");
         }
 
-        void IVimHost.ShowOpenFileDialog()
+        public override void ShowOpenFileDialog()
         {
             SafeExecuteCommand("Edit.OpenFile");
         }
 
-        bool IVimHost.NavigateTo(VirtualSnapshotPoint point)
+        public override bool NavigateTo(VirtualSnapshotPoint point)
         {
             return _textManager.NavigateTo(point);
         }
 
-        string IVimHost.GetName(ITextBuffer buffer)
+        public override string GetName(ITextBuffer buffer)
         {
             var vsTextLines = _editorAdaptersFactoryService.GetBufferAdapter(buffer) as IVsTextLines;
             if (vsTextLines == null)
@@ -174,31 +157,40 @@ namespace VsVim
             return vsTextLines.GetFileName();
         }
 
-        void IVimHost.Save(ITextView textView)
+        public override bool Save(ITextView textView)
         {
-            _textManager.Save(textView);
+            return _textManager.Save(textView).IsSuccess;
         }
 
-        void IVimHost.SaveCurrentFileAs(string fileName)
+        public override bool SaveTextAs(string text, string fileName)
         {
-            SafeExecuteCommand("File.SaveSelectedItemsAs " + fileName);
-        }
-
-        void IVimHost.SaveAllFiles()
-        {
-            var all = _textManager.TextViews;
-            foreach (var textView in all)
+            try
             {
-                _textManager.Save(textView);
+                File.WriteAllText(fileName, text);
+                return true;
+            }
+            catch (Exception)
+            {
+                return false;
             }
         }
 
-        void IVimHost.Close(ITextView textView, bool checkDirty)
+        public override bool SaveAllFiles()
         {
-            _textManager.CloseBuffer(textView, checkDirty);
+            var anyFailed = false;
+            var all = _textManager.TextViews;
+            foreach (var textView in all)
+            {
+                if (_textManager.Save(textView).IsError)
+                {
+                    anyFailed = true;
+                }
+            }
+
+            return anyFailed;
         }
 
-        void IVimHost.CloseAllFiles(bool checkDirty)
+        public override void CloseAllFiles(bool checkDirty)
         {
             var all = _textManager.TextViews.ToList();
             foreach (var textView in all)
@@ -207,12 +199,12 @@ namespace VsVim
             }
         }
 
-        void IVimHost.CloseView(ITextView textView, bool checkDirty)
+        public override void Close(ITextView textView, bool checkDirty)
         {
             _textManager.CloseView(textView, checkDirty);
         }
 
-        void IVimHost.GoToNextTab(int count)
+        public override void GoToNextTab(int count)
         {
             while (count > 0)
             {
@@ -221,7 +213,7 @@ namespace VsVim
             }
         }
 
-        void IVimHost.GoToPreviousTab(int count)
+        public override void GoToPreviousTab(int count)
         {
             while (count > 0)
             {
@@ -230,32 +222,32 @@ namespace VsVim
             }
         }
 
-        void IVimHost.BuildSolution()
+        public override void BuildSolution()
         {
             SafeExecuteCommand("Build.BuildSolution");
         }
 
-        void IVimHost.SplitView(ITextView textView)
+        public override void SplitView(ITextView textView)
         {
             _textManager.SplitView(textView);
         }
 
-        void IVimHost.MoveViewDown(ITextView textView)
+        public override void MoveViewDown(ITextView textView)
         {
             _textManager.MoveViewDown(textView);
         }
 
-        void IVimHost.MoveViewUp(ITextView textView)
+        public override void MoveViewUp(ITextView textView)
         {
             _textManager.MoveViewUp(textView);
         }
 
-        bool IVimHost.GoToGlobalDeclaration(ITextView textView, string target)
+        public override bool GoToGlobalDeclaration(ITextView textView, string target)
         {
             return GoToDefinitionCore(textView, target);
         }
 
-        bool IVimHost.GoToLocalDeclaration(ITextView textView, string target)
+        public override bool GoToLocalDeclaration(ITextView textView, string target)
         {
             // This is technically incorrect as it should prefer local declarations. However 
             // there is currently no better way in Visual Studio.  Added this method though
@@ -263,16 +255,9 @@ namespace VsVim
             return GoToDefinitionCore(textView, target);
         }
 
-        bool IVimHost.GoToFile(string fileName)
+        public override bool GoToFile(string fileName)
         {
             return OpenFileCore(fileName);
         }
-
-        void IVimHost.FormatLines(ITextView textView, SnapshotLineRange lineRange)
-        {
-            FormatLines(textView, lineRange);
-        }
-
-        #endregion
     }
 }

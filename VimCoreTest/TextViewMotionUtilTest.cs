@@ -8,7 +8,7 @@ using Vim.Extensions;
 using Vim.UnitTest;
 using Vim.UnitTest.Mock;
 
-namespace VimCore.Test
+namespace VimCore.UnitTest
 {
     [TestFixture]
     public class TextViewMotionUtilTest
@@ -61,7 +61,7 @@ namespace VimCore.Test
             MotionData data,
             SnapshotSpan? span,
             MotionKind motionKind = null,
-            OperationKind? operationKind = null)
+            OperationKind operationKind = null)
         {
             if (span.HasValue)
             {
@@ -71,9 +71,9 @@ namespace VimCore.Test
             {
                 Assert.AreEqual(motionKind, data.MotionKind);
             }
-            if (operationKind.HasValue)
+            if (operationKind != null)
             {
-                Assert.AreEqual(operationKind.Value, data.OperationKind);
+                Assert.AreEqual(operationKind, data.OperationKind);
             }
         }
 

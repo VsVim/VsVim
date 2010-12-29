@@ -1,8 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Collections.ObjectModel;
+using System.Linq;
 using EnvDTE;
 
 namespace VsVim
@@ -10,7 +9,7 @@ namespace VsVim
     /// <summary>
     /// Snapshot of the current key binding state
     /// </summary>
-    public class CommandKeyBindingSnapshot
+    public sealed class CommandKeyBindingSnapshot
     {
         private readonly CommandsSnapshot _snapshot;
         private readonly ReadOnlyCollection<CommandKeyBinding> _removedBindings;

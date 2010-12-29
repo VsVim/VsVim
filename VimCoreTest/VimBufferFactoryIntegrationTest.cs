@@ -7,7 +7,7 @@ using Vim;
 using Vim.UnitTest;
 using Microsoft.FSharp.Control;
 
-namespace VimCore.Test
+namespace VimCore.UnitTest
 {
     [TestFixture]
     public class VimBufferFactoryIntegrationTest

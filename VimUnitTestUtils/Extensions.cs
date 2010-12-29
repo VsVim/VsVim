@@ -4,6 +4,7 @@ using System.Windows.Threading;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using NUnit.Framework;
+using Vim.Extensions;
 using Vim.Modes;
 using Vim.Modes.Command;
 
@@ -188,7 +189,7 @@ namespace Vim.UnitTest
             return (SettingValue.StringValue)value;
         }
 
-        public static SettingValue.ToggleValue AsBooleanValue(this SettingValue value)
+        public static SettingValue.ToggleValue AsToggleValue(this SettingValue value)
         {
             Assert.IsTrue(value.IsToggleValue);
             return (SettingValue.ToggleValue)value;
@@ -302,6 +303,11 @@ namespace Vim.UnitTest
             return new SnapshotPoint(textView.TextSnapshot, position);
         }
 
+        public static SnapshotPoint GetEndPoint(this ITextView textView)
+        {
+            return textView.TextSnapshot.GetEndPoint();
+        }
+
         public static ITextSnapshotLine GetLine(this ITextView textView, int line)
         {
             return textView.TextSnapshot.GetLineFromLineNumber(line);
@@ -340,6 +346,15 @@ namespace Vim.UnitTest
             return textView.Caret.Position.BufferPosition.GetContainingLine();
         }
 
+        public static void SetText(this ITextView textView, string text, int? caret = null)
+        {
+            SetText(textView.TextBuffer, text);
+            if (caret.HasValue)
+            {
+                MoveCaretTo(textView, caret.Value);
+            }
+        }
+
         #endregion
 
         #region ITextBuffer
@@ -368,6 +383,11 @@ namespace Vim.UnitTest
         public static SnapshotPoint GetEndPoint(this ITextBuffer buffer)
         {
             return buffer.CurrentSnapshot.GetEndPoint();
+        }
+
+        public static SnapshotSpan GetExtent(this ITextBuffer buffer)
+        {
+            return buffer.CurrentSnapshot.GetExtent();
         }
 
         public static SnapshotSpan GetSpan(this ITextBuffer buffer, int start, int length)
@@ -418,6 +438,11 @@ namespace Vim.UnitTest
         public static SnapshotSpan GetSpan(this ITextSnapshot tss, int start, int length)
         {
             return new SnapshotSpan(tss, start, length);
+        }
+
+        public static SnapshotSpan GetExtent(this ITextSnapshot snapshot)
+        {
+            return new SnapshotSpan(snapshot, 0, snapshot.Length);
         }
 
         #endregion
@@ -475,16 +500,50 @@ namespace Vim.UnitTest
             return span;
         }
 
+        public static void Select(this ITextSelection selection, params SnapshotSpan[] spans)
+        {
+            if (spans.Length == 1)
+            {
+                selection.Mode = TextSelectionMode.Stream;
+                selection.Clear();
+                selection.Select(spans[0], false);
+            }
+            else
+            {
+                selection.Mode = TextSelectionMode.Box;
+                foreach (var span in spans)
+                {
+                    selection.Select(span, false);
+                }
+            }
+        }
+
         public static void UpdateValue(this Register reg, string value)
         {
+            UpdateValue(reg, value, OperationKind.CharacterWise);
+        }
+
+        public static void UpdateValue(this Register reg, string value, OperationKind kind)
+        {
             var data = StringData.NewSimple(value);
-            var regValue = new RegisterValue(data, OperationKind.CharacterWise);
+            var regValue = new RegisterValue(data, kind);
             reg.Value = regValue;
+        }
+
+        public static void UpdateBlockValues(this Register reg, params string[] value)
+        {
+            var data = StringData.NewBlock(value.ToFSharpList());
+            reg.Value = new RegisterValue(data, OperationKind.CharacterWise);
         }
 
         public static SnapshotPoint GetCaretPoint(this ITextView view)
         {
             return view.Caret.Position.BufferPosition;
+        }
+
+        public static SnapshotSpan GetSelectionSpan(this ITextView textView)
+        {
+            return textView.Selection.StreamSelectionSpan.SnapshotSpan;
         }
 
         public static Register GetRegister(this IRegisterMap map, char c)

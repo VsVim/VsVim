@@ -27,9 +27,8 @@ namespace VsVim.Implementation
 
         public IWpfTextViewMargin CreateMargin(IWpfTextViewHost wpfTextViewHost, IWpfTextViewMargin marginContainer)
         {
-            var buffer = _vim.GetOrCreateBuffer(wpfTextViewHost.TextView);
             var map = _formatMapService.GetEditorFormatMap(wpfTextViewHost.TextView);
-            return new ConflictingKeyBindingMargin(buffer,_keyBindingService, map);
+            return new ConflictingKeyBindingMargin(_keyBindingService, map);
         }
     }
 }

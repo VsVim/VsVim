@@ -6,6 +6,7 @@ open Vim.Modes
 open Microsoft.VisualStudio.Text
 open System.Text.RegularExpressions
 open Vim.RegexPatternUtil
+open Vim.VimHostExtensions
 
 [<System.Flags>]
 type internal KeyRemapOptions =
@@ -87,6 +88,7 @@ type internal CommandProcessor
         _statusUtil : IStatusUtil,
         _fileSystem : IFileSystem ) as this = 
 
+    let _textView = _buffer.TextView
     let _regexFactory = VimRegexFactory(_buffer.Settings.GlobalSettings)
 
     let mutable _command : System.String = System.String.Empty
@@ -110,6 +112,7 @@ type internal CommandProcessor
             yield ("close", "clo", this.ProcessClose |> wrap)
             yield ("delete","d", this.ProcessDelete |> wrap)
             yield ("edit", "e", this.ProcessEdit |> wrap)
+            yield ("exit", "exi", this.ProcessWriteQuit |> wrap)
             yield ("fold", "fo", this.ProcessFold |> wrap)
             yield ("join", "j", this.ProcessJoin |> wrap)
             yield ("make", "mak", this.ProcessMake |> wrap)
@@ -129,7 +132,9 @@ type internal CommandProcessor
             yield ("tabNext", "tabN", this.ProcessTabPrevious |> wrap)
             yield ("undo", "u", this.ProcessUndo |> wrap)
             yield ("write","w", this.ProcessWrite |> wrap)
+            yield ("wq", "", this.ProcessWriteQuit |> wrap)
             yield ("wall", "wa", this.ProcessWriteAll |> wrap)
+            yield ("xit", "x", this.ProcessWriteQuit |> wrap)
             yield ("yank", "y", this.ProcessYank |> wrap)
             yield ("$", "", this.ProcessEndOfDocument |> wrap)
             yield ("&", "&", this.ProcessSubstitute)
@@ -220,7 +225,7 @@ type internal CommandProcessor
     member x.ProcessEndOfDocument _ _ _ = _operations.EditorOperations.MoveToEndOfDocument(false)
 
     /// Process the :close command
-    member x.ProcessClose _ _ hasBang = _buffer.Vim.VimHost.CloseView _buffer.TextView (not hasBang)
+    member x.ProcessClose _ _ hasBang = _buffer.Vim.VimHost.Close _buffer.TextView (not hasBang)
 
     /// Process the :join command
     member x.ProcessJoin (rest:char list) (range:SnapshotLineRange option) hasBang =
@@ -276,13 +281,8 @@ type internal CommandProcessor
             |> CommandParseUtil.SkipWhitespace
             |> CommandParseUtil.SkipRegister _buffer.RegisterMap
         
-        // Figure out the line number
-        let line = 
-            match range with 
-            | None -> (TextViewUtil.GetCaretPoint _buffer.TextView).GetContainingLine()
-            | Some(range) -> range.EndLine
-
-        _operations.Put reg.StringValue line (not bang)
+        let range = RangeUtil.RangeOrCurrentLine _buffer.TextView range
+        _operations.Put reg.StringValue range.EndLine (not bang)
 
     /// Parse the < command
     member x.ProcessShiftLeft (rest:char list) (range: SnapshotLineRange option) _ =
@@ -304,13 +304,27 @@ type internal CommandProcessor
     member x.ProcessWrite (rest:char list) _ _ = 
         let name = rest |> StringUtil.ofCharSeq 
         let name = name.Trim()
-        if StringUtil.isNullOrEmpty name then _operations.Save()
-        else _operations.SaveAs name
+        if StringUtil.isNullOrEmpty name then _operations.Save() |> ignore
+        else _operations.SaveAs name |> ignore
 
     member x.ProcessWriteAll _ _ _ = 
-        _operations.SaveAll()
+        _operations.SaveAll() |> ignore
 
-    member x.ProcessQuit _ _ hasBang = _buffer.Vim.VimHost.CloseView _buffer.TextView (not hasBang)
+    member x.ProcessWriteQuit (rest:char list) range hasBang = 
+        let host = _buffer.Vim.VimHost
+        let filePath = 
+            let name = rest |> Seq.skipWhile CharUtil.IsWhiteSpace |> StringUtil.ofCharSeq
+            if StringUtil.isNullOrEmpty name then None else Some name
+
+        match range, filePath, hasBang with 
+        | None, None, _ -> host.Save _textView |> ignore  
+        | None, Some(filePath), _ -> host.SaveAs _textView filePath |> ignore
+        | Some(range), None, _ -> _statusUtil.OnError Resources.CommandMode_NoFileName
+        | Some(range), Some(filePath), _ -> host.SaveTextAs (range.GetTextIncludingLineBreak()) filePath |> ignore
+
+        host.Close _textView false
+
+    member x.ProcessQuit _ _ hasBang = _buffer.Vim.VimHost.Close _buffer.TextView (not hasBang)
 
     member x.ProcessQuitAll _ _ hasBang =
         let checkDirty = not hasBang
@@ -447,10 +461,10 @@ type internal CommandProcessor
             // Check for the UsePrevious flag and update the flags as appropriate.  Make sure
             // to bitor them against the new flags
             let flags = 
-                if Utils.IsFlagSet flags SubstituteFlags.UsePreviousFlags then 
+                if Util.IsFlagSet flags SubstituteFlags.UsePreviousFlags then 
                     match _buffer.VimData.LastSubstituteData with
                     | None -> SubstituteFlags.None
-                    | Some(data) -> (Utils.UnsetFlag flags SubstituteFlags.UsePreviousFlags) ||| data.Flags
+                    | Some(data) -> (Util.UnsetFlag flags SubstituteFlags.UsePreviousFlags) ||| data.Flags
                 else flags
 
             (flags, rest)
@@ -520,15 +534,15 @@ type internal CommandProcessor
                         // Check for the UsePrevious flag and update the flags as appropriate.  Make sure
                         // to bitor them against the new flags
                         let flags = 
-                            if Utils.IsFlagSet flags SubstituteFlags.UsePreviousFlags then 
+                            if Util.IsFlagSet flags SubstituteFlags.UsePreviousFlags then 
                                 match _buffer.VimData.LastSubstituteData with
                                 | None -> SubstituteFlags.None
-                                | Some(data) -> (Utils.UnsetFlag flags SubstituteFlags.UsePreviousFlags) ||| data.Flags
+                                | Some(data) -> (Util.UnsetFlag flags SubstituteFlags.UsePreviousFlags) ||| data.Flags
                             else flags
 
                         // Check for the previous search pattern flag
                         let search, errorMsg  = 
-                            if Utils.IsFlagSet flags SubstituteFlags.UsePreviousSearchPattern then
+                            if Util.IsFlagSet flags SubstituteFlags.UsePreviousSearchPattern then
                                 match _regexFactory.CreateForSearchText _buffer.VimData.LastSearchData.Text with
                                 | None -> (StringUtil.empty, Some Resources.CommandMode_NoPreviousSubstitute)
                                 | Some(regex) -> (regex.VimPattern, None)
@@ -548,7 +562,7 @@ type internal CommandProcessor
                 _statusUtil.OnError msg
                 RunResult.Completed
             let goodParse search replace range flags = 
-                if Utils.IsFlagSet flags SubstituteFlags.Confirm then
+                if Util.IsFlagSet flags SubstituteFlags.Confirm then
                     let data = {SearchPattern=search; Substitute=replace; Flags=flags}
                     setupConfirmSubstitute range data
                 else
@@ -573,8 +587,8 @@ type internal CommandProcessor
 
                     // Get the pattern to replace with 
                     let flags, pattern, errorMsg = 
-                        if Utils.IsFlagSet flags SubstituteFlags.UsePreviousSearchPattern then 
-                            let flags = Utils.UnsetFlag flags SubstituteFlags.UsePreviousSearchPattern
+                        if Util.IsFlagSet flags SubstituteFlags.UsePreviousSearchPattern then 
+                            let flags = Util.UnsetFlag flags SubstituteFlags.UsePreviousSearchPattern
                             match _regexFactory.CreateForSearchText _buffer.VimData.LastSearchData.Text with
                             | None -> (flags, StringUtil.empty, Some Resources.CommandMode_InvalidCommand)
                             | Some(regex) -> (flags, regex.VimPattern, None)

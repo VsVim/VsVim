@@ -7,7 +7,7 @@ using Vim;
 using Microsoft.VisualStudio.Text;
 using Microsoft.FSharp.Core;
 
-namespace VimCore.Test
+namespace VimCore.UnitTest
 {
     /// <summary>
     /// Summary description for TextUtilTest

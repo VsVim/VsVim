@@ -35,7 +35,7 @@ module internal StringUtil =
             | None -> failwith "Invalid index"
     
     [<CompiledName("Repeat")>]
-    let repeat (value:string) count =
+    let repeat count (value:string) =
         if 1 = count then value
         else
             let buffer = new System.Text.StringBuilder()

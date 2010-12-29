@@ -13,29 +13,35 @@ type RegisterOperation =
     | Yank
 
 type OperationsData = {
-    VimData : IVimData
-    VimHost : IVimHost
-    TextView : ITextView
     EditorOperations : IEditorOperations
     EditorOptions : IEditorOptions
-    OutliningManager : IOutliningManager
-    JumpList : IJumpList
-    LocalSettings : IVimLocalSettings
-    UndoRedoOperations : IUndoRedoOperations
-    StatusUtil : IStatusUtil
-    KeyMap : IKeyMap
-    Navigator : ITextStructureNavigator
     FoldManager : IFoldManager
+    JumpList : IJumpList
+    KeyMap : IKeyMap
+    LocalSettings : IVimLocalSettings
+    OutliningManager : IOutliningManager option
     RegisterMap : IRegisterMap 
+    StatusUtil : IStatusUtil
+    SearchService : ISearchService
+    TextView : ITextView
+    UndoRedoOperations : IUndoRedoOperations
+    VimData : IVimData
+    VimHost : IVimHost
+    Navigator : ITextStructureNavigator
 }
 
 type JoinKind = 
-    | RemoveEmptySpaces
-    | KeepEmptySpaces
+| RemoveEmptySpaces
+| KeepEmptySpaces
 
 type Result = 
-    | Succeeded
-    | Failed of string
+| Succeeded
+| Failed of string
+
+[<RequireQualifiedAccess>]
+type PutKind =
+| Before
+| After
 
 /// Common operations
 type ICommonOperations =
@@ -66,7 +72,7 @@ type ICommonOperations =
     /// Change the case of all letters appearing in the given span
     abstract ChangeLetterCaseBlock : NormalizedSnapshotSpanCollection -> unit
 
-    /// Close the current file
+    /// Close the current buffer
     abstract Close : checkDirty : bool -> unit
 
     /// Close all open files
@@ -114,12 +120,24 @@ type ICommonOperations =
     /// Ensure the caret is on screen and that it is not in a collapsed region
     abstract EnsureCaretOnScreenAndTextExpanded : unit -> unit
 
+    /// Ensure the point is on screen and that it is not in a collapsed region
+    abstract EnsurePointOnScreenAndTextExpanded : SnapshotPoint -> unit
+
     /// Fold count lines under the cursor
     abstract FoldLines : count:int -> unit
 
     /// Attempt to GoToDefinition on the current state of the buffer.  If this operation fails, an error message will 
     /// be generated as appropriate
     abstract GoToDefinition : unit -> Result
+
+    /// Go to the file named in the word under the cursor
+    abstract GoToFile : unit -> unit
+
+    /// Go to the local declaration of the word under the cursor
+    abstract GoToLocalDeclaration : unit -> unit
+
+    /// Go to the global declaration of the word under the cursor
+    abstract GoToGlobalDeclaration : unit -> unit
 
     /// Go to the matching construct of the value under the cursor
     abstract GoToMatch : unit -> bool
@@ -130,8 +148,14 @@ type ICommonOperations =
     /// Go to the previous "count" tab
     abstract GoToPreviousTab : count : int -> unit
 
-    /// Insert the specified text at the cursor position "count" times
-    abstract InsertText : text:string -> count : int -> unit
+    /// Insert a line above the current cursor position and returns the resulting ITextSnapshotLine
+    abstract InsertLineAbove : unit -> ITextSnapshotLine
+
+    /// Adds an empty line to the buffer below the cursor and returns the resulting ITextSnapshotLine
+    abstract InsertLineBelow : unit -> ITextSnapshotLine
+
+    /// Insert text at the caret
+    abstract InsertText : string -> int -> unit
 
     /// Joins the lines in the range
     abstract Join : SnapshotLineRange -> JoinKind -> unit
@@ -163,17 +187,26 @@ type ICommonOperations =
     /// Move the cursor down count lines
     abstract MoveCaretDown : count : int -> unit
 
-    /// Move the cursor forward count WordKind's 
-    abstract MoveWordForward : WordKind -> count : int -> unit
-
-    /// Move the cursor backward count WordKind's
-    abstract MoveWordBackward : WordKind -> count : int -> unit
-
     /// Maybe adjust the caret to respect the virtual edit setting
     abstract MoveCaretForVirtualEdit : unit -> unit
 
     /// Move the caret the number of lines in the given direction and scroll the view
     abstract MoveCaretAndScrollLines : ScrollDirection -> count:int -> unit
+
+    /// Move to the next "count" occurrence of the last search
+    abstract MoveToNextOccuranceOfLastSearch : count:int -> isReverse:bool -> unit
+
+    /// Move to the next occurrence of the word under the cursor
+    abstract MoveToNextOccuranceOfWordAtCursor : SearchKind -> count:int -> unit
+
+    /// Move to the next occurrence of the word under the cursor
+    abstract MoveToNextOccuranceOfPartialWordAtCursor : SearchKind -> count:int -> unit
+
+    /// Move the cursor backward count WordKind's
+    abstract MoveWordBackward : WordKind -> count : int -> unit
+
+    /// Move the cursor forward count WordKind's 
+    abstract MoveWordForward : WordKind -> count : int -> unit
 
     /// Navigate to the given point which may occur in any ITextBuffer.  This will not update the 
     /// jump list
@@ -185,29 +218,26 @@ type ICommonOperations =
     /// Open all folds which inersect with the given SnapshotSpan
     abstract OpenAllFolds : SnapshotSpan -> unit
 
-    /// Paste after the passed in position.  Don't forget that a linewise paste
-    /// operation needs to occur under the cursor.  Returns the SnapshotSpan of
-    /// the text on the new snapshot
-    abstract PasteAfter : SnapshotPoint -> text : string -> OperationKind -> SnapshotSpan
+    /// Put the specified StringData at the given point 
+    abstract PutAt : SnapshotPoint -> StringData -> OperationKind -> unit
 
-    /// Paste the text before the passed in position.  Returns the SnapshotSpan for the text in
-    /// the new snapshot of the buffer
-    abstract PasteBefore : SnapshotPoint -> text : string -> OperationKind -> SnapshotSpan 
+    /// Put the specified StringData at the caret 
+    abstract PutAtCaret : StringData -> OperationKind -> PutKind -> moveCaretAfterText:bool-> unit
 
-    /// Paste over the selected text
-    abstract PasteOver : SnapshotSpan -> Register -> unit
+    /// Put the specified StringData at the given point 
+    abstract PutAtWithReturn : SnapshotPoint -> StringData -> OperationKind -> SnapshotSpan
 
     /// Redo the buffer changes "count" times
     abstract Redo : count:int -> unit
 
     /// Save the current document
-    abstract Save : unit -> unit
+    abstract Save : unit -> bool 
 
     /// Save the current document as the specified file
-    abstract SaveAs : string -> unit
+    abstract SaveAs : string -> bool
 
     /// Save all files
-    abstract SaveAll : unit -> unit
+    abstract SaveAll : unit -> bool
 
     /// Sets a mark at the specified point.  If this operation fails an error message will be generated
     abstract SetMark : IVimBuffer -> SnapshotPoint -> char -> Result
@@ -250,4 +280,9 @@ type ICommonOperations =
     /// Update the register for the given register operation
     abstract UpdateRegisterForCollection : Register -> RegisterOperation -> NormalizedSnapshotSpanCollection -> OperationKind -> unit
 
+    /// Wrap the edit code in an undo transaction.  Ensures the caret is reset during an undo
+    abstract WrapEditInUndoTransaction : name:string -> editAction:(unit -> unit) -> unit
+
+    /// Wrap the edit code in an undo transaction.  Ensures the caret is reset during an undo
+    abstract WrapEditInUndoTransactionWithReturn : name:string -> editAction:(unit -> 'a) -> 'a
 

@@ -33,28 +33,28 @@ type IVimHost =
 
     abstract GetName : ITextBuffer -> string
 
+    /// Ensure that the given point is visible
+    abstract EnsureVisible : ITextView -> SnapshotPoint -> unit
+
     abstract NavigateTo : point : VirtualSnapshotPoint -> bool
 
     /// Display the open file dialog 
     abstract ShowOpenFileDialog : unit -> unit
 
     /// Save the current document
-    abstract Save : ITextView -> unit
+    abstract Save : ITextView -> bool 
 
     /// Save the current document as a new file with the specified name
-    abstract SaveCurrentFileAs : string -> unit
+    abstract SaveTextAs : text:string -> filePath:string -> bool 
 
     /// Saves all files
-    abstract SaveAllFiles : unit -> unit
-
-    /// Close the given file
-    abstract Close : ITextView -> checkDirty:bool -> unit
+    abstract SaveAllFiles : unit -> bool
 
     /// Closes all files
     abstract CloseAllFiles : checkDirty:bool -> unit
 
     /// Close the provided view
-    abstract CloseView : ITextView -> checkDirty:bool -> unit
+    abstract Close : ITextView -> checkDirty:bool -> unit
 
     /// Builds the solution
     abstract BuildSolution : unit -> unit
@@ -68,4 +68,9 @@ type IVimHost =
     /// Move to the view below the current one
     abstract MoveViewDown : ITextView -> unit
 
+
+module internal VimHostExtensions =
+    type IVimHost with 
+        member x.SaveAs (textView:ITextView) filePath = 
+            x.SaveTextAs (textView.TextSnapshot.GetText()) filePath
 

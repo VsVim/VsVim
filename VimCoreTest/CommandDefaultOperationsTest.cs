@@ -14,14 +14,14 @@ using Vim.Modes.Command;
 using Vim.UnitTest;
 using Vim.UnitTest.Mock;
 
-namespace VimCore.Test
+namespace VimCore.UnitTest
 {
     [TestFixture]
     public class CommandDefaultOperationsTest
     {
         private IOperations _operations;
         private DefaultOperations _operationsRaw;
-        private ITextView _view;
+        private ITextView _textView;
         private MockRepository _factory;
         private Mock<IEditorOperations> _editOpts;
         private Mock<IVimHost> _host;
@@ -33,12 +33,15 @@ namespace VimCore.Test
         private Mock<IOutliningManager> _outlining;
         private Mock<IUndoRedoOperations> _undoRedoOperations;
         private Mock<IRegisterMap> _registerMap;
+        private ISearchService _searchService;
 
         private void Create(params string[] lines)
         {
-            _view = EditorUtil.CreateView(lines);
+            _textView = EditorUtil.CreateView(lines);
             _factory = new MockRepository(MockBehavior.Strict);
             _editOpts = _factory.Create<IEditorOperations>();
+            _editOpts.Setup(x => x.AddAfterTextBufferChangePrimitive());
+            _editOpts.Setup(x => x.AddBeforeTextBufferChangePrimitive());
             _host = _factory.Create<IVimHost>();
             _jumpList = _factory.Create<IJumpList>();
             _registerMap = MockObjectFactory.CreateRegisterMap(factory: _factory);
@@ -51,13 +54,15 @@ namespace VimCore.Test
             _statusUtil = _factory.Create<IStatusUtil>();
             _outlining = _factory.Create<IOutliningManager>();
             _undoRedoOperations = _factory.Create<IUndoRedoOperations>();
+            _undoRedoOperations.Setup(x => x.CreateUndoTransaction(It.IsAny<string>())).Returns<string>(name => new UndoTransaction(FSharpOption.Create(EditorUtil.GetUndoHistory(_textView.TextBuffer).CreateTransaction(name))));
+            _searchService = new SearchService(EditorUtil.FactoryService.textSearchService, _globalSettings.Object);
 
             var data = new OperationsData(
                 vimData: new VimData(),
                 vimHost: _host.Object,
-                textView: _view,
+                textView: _textView,
                 editorOperations: _editOpts.Object,
-                outliningManager: _outlining.Object,
+                outliningManager: FSharpOption.Create(_outlining.Object),
                 statusUtil: _statusUtil.Object,
                 jumpList: _jumpList.Object,
                 localSettings: _settings.Object,
@@ -66,7 +71,8 @@ namespace VimCore.Test
                 editorOptions: null,
                 navigator: null,
                 foldManager: null,
-                registerMap: _registerMap.Object);
+                registerMap: _registerMap.Object,
+                searchService: _searchService);
             _operationsRaw = new DefaultOperations(data);
             _operations = _operationsRaw;
         }
@@ -76,6 +82,7 @@ namespace VimCore.Test
         {
             _operations = null;
         }
+
 
         private void AssertPrintMap(string input, string output)
         {
@@ -95,21 +102,21 @@ namespace VimCore.Test
         }
 
         [Test]
-        public void Put1()
+        public void Put_Before()
         {
-            Create("foo");
-            _operations.Put("bar", _view.TextSnapshot.GetLineFromLineNumber(0), false);
+            Create("dog", "cat");
+            _operations.Put("pig", _textView.GetLine(0), false);
+            Assert.AreEqual("pig", _textView.GetLine(0).GetText());
+            Assert.AreEqual("dog", _textView.GetLine(1).GetText());
         }
 
         [Test]
-        public void Put2()
+        public void Put_After()
         {
-            Create("bar", "baz");
-            _operations.Put(" here", _view.TextSnapshot.GetLineFromLineNumber(0), true);
-            var tss = _view.TextSnapshot;
-            Assert.AreEqual("bar", tss.GetLineFromLineNumber(0).GetText());
-            Assert.AreEqual(" here", tss.GetLineFromLineNumber(1).GetText());
-            Assert.AreEqual(tss.GetLineFromLineNumber(1).Start.Add(1).Position, _view.Caret.Position.BufferPosition.Position);
+            Create("dog", "cat");
+            _operations.Put("pig", _textView.GetLine(0), true);
+            Assert.AreEqual("dog", _textView.GetLine(0).GetText());
+            Assert.AreEqual("pig", _textView.GetLine(1).GetText());
         }
 
         [Test]
@@ -150,7 +157,7 @@ namespace VimCore.Test
         public void OperateSetting4()
         {
             Create("foo");
-            _settings.Setup(X => X.GetSetting("foo")).Returns(FSharpOption<Setting>.None).Verifiable();
+            _settings.Setup(x => x.GetSetting("foo")).Returns(FSharpOption<Setting>.None).Verifiable();
             _statusUtil.Setup(x => x.OnError(Resources.CommandMode_UnknownOption("foo"))).Verifiable();
             _operations.OperateSetting("foo");
             _settings.Verify();
@@ -184,7 +191,7 @@ namespace VimCore.Test
         public void ResetSettings3()
         {
             Create("foo");
-            _settings.Setup(X => X.GetSetting("foo")).Returns(FSharpOption<Setting>.None).Verifiable();
+            _settings.Setup(x => x.GetSetting("foo")).Returns(FSharpOption<Setting>.None).Verifiable();
             _statusUtil.Setup(x => x.OnError(Resources.CommandMode_UnknownOption("foo"))).Verifiable();
             _operations.ResetSetting("foo");
             _settings.Verify();
@@ -218,7 +225,7 @@ namespace VimCore.Test
         public void InvertSettings3()
         {
             Create("foo");
-            _settings.Setup(X => X.GetSetting("foo")).Returns(FSharpOption<Setting>.None).Verifiable();
+            _settings.Setup(x => x.GetSetting("foo")).Returns(FSharpOption<Setting>.None).Verifiable();
             _statusUtil.Setup(x => x.OnError(Resources.CommandMode_UnknownOption("foo"))).Verifiable();
             _operations.InvertSetting("foo");
             _settings.Verify();

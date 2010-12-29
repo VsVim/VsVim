@@ -1,11 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using Microsoft.VisualStudio.Text.Classification;
-using System.ComponentModel.Composition;
-using Microsoft.VisualStudio.Utilities;
+﻿using System.ComponentModel.Composition;
 using System.Windows.Media;
+using Microsoft.VisualStudio.Text.Classification;
+using Microsoft.VisualStudio.Utilities;
 
 namespace VsVim.Implementation
 {
@@ -23,8 +19,8 @@ namespace VsVim.Implementation
 
         internal ConflictingKeyBindingMarginFormatDefinition()
         {
-            this.DisplayName = "VsVim Conflicting Key Binding Margin";
-            this.BackgroundColor = DefaultColor;
+            DisplayName = "VsVim Conflicting Key Binding Margin";
+            BackgroundColor = DefaultColor;
         }
     }
 }

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
@@ -15,7 +14,7 @@ using Vim.Modes.Normal;
 using Vim.UnitTest;
 using Vim.UnitTest.Mock;
 
-namespace VimCore.Test
+namespace VimCore.UnitTest
 {
     [TestFixture]
     public class Normal_DefaultOperationsTests
@@ -28,7 +27,6 @@ namespace VimCore.Test
         private Mock<IJumpList> _jumpList;
         private Mock<IVimGlobalSettings> _globalSettings;
         private Mock<IVimLocalSettings> _settings;
-        private Mock<IIncrementalSearch> _search;
         private Mock<IOutliningManager> _outlining;
         private Mock<IUndoRedoOperations> _undoRedoOperations;
         private Mock<IEditorOptions> _options;
@@ -77,8 +75,6 @@ namespace VimCore.Test
             _options.Setup(x => x.IsOptionDefined<int>(It.IsAny<EditorOptionKey<int>>(), false)).Returns(true);
             _jumpList = new Mock<IJumpList>(MockBehavior.Strict);
             _searchService = new SearchService(EditorUtil.FactoryService.textSearchService, _globalSettings.Object);
-            _search = new Mock<IIncrementalSearch>(MockBehavior.Strict);
-            _search.SetupGet(x => x.SearchService).Returns(_searchService);
             _statusUtil = new Mock<IStatusUtil>(MockBehavior.Strict);
             _outlining = new Mock<IOutliningManager>(MockBehavior.Strict);
             _undoRedoOperations = new Mock<IUndoRedoOperations>(MockBehavior.Strict);
@@ -90,7 +86,7 @@ namespace VimCore.Test
                 vimHost: _host.Object,
                 textView: _view,
                 editorOperations: editorOpts,
-                outliningManager: _outlining.Object,
+                outliningManager: FSharpOption.Create(_outlining.Object),
                 statusUtil: _statusUtil.Object,
                 jumpList: _jumpList.Object,
                 localSettings: _settings.Object,
@@ -99,9 +95,10 @@ namespace VimCore.Test
                 undoRedoOperations: _undoRedoOperations.Object,
                 editorOptions: _options.Object,
                 navigator: null,
-                foldManager: null);
+                foldManager: null,
+                searchService: _searchService);
 
-            _operationsRaw = new DefaultOperations(data, _search.Object);
+            _operationsRaw = new DefaultOperations(data);
             _operations = _operationsRaw;
         }
 
@@ -241,506 +238,7 @@ namespace VimCore.Test
             Assert.AreEqual(0, _view.Caret.Position.BufferPosition.Position);
         }
 
-        [Test]
-        public void PasteAfter1()
-        {
-            Create("foo bar");
-            _operations.PasteAfterCursor("hey", 1, OperationKind.CharacterWise, false);
-            Assert.AreEqual("fheyoo bar", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
-        }
 
-        [Test, Description("Paste at end of buffer shouldn't crash")]
-        public void PasteAfter2()
-        {
-            Create("foo", "bar");
-            _view.Caret.MoveTo(SnapshotUtil.GetEndPoint(_view.TextSnapshot));
-            _operations.PasteAfterCursor("hello", 1, OperationKind.CharacterWise, false);
-            Assert.AreEqual("barhello", _view.TextSnapshot.GetLineFromLineNumber(1).GetText());
-        }
-
-        [Test]
-        public void PasteAfter3()
-        {
-            Create("foo", String.Empty);
-            _view.Caret.MoveTo(SnapshotUtil.GetEndPoint(_view.TextSnapshot));
-            _operations.PasteAfterCursor("bar", 1, OperationKind.CharacterWise, false);
-            Assert.AreEqual("bar", _view.TextSnapshot.GetLineFromLineNumber(1).GetText());
-        }
-
-        [Test, Description("Pasting a linewise motion should occur on the next line")]
-        public void PasteAfter4()
-        {
-            Create("foo", "bar");
-            _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 0));
-            _operations.PasteAfterCursor("baz" + Environment.NewLine, 1, OperationKind.LineWise, moveCursorToEnd: false);
-            Assert.AreEqual("foo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
-            Assert.AreEqual("baz", _view.TextSnapshot.GetLineFromLineNumber(1).GetText());
-        }
-
-        [Test, Description("Pasting a linewise motion should move the caret to the start of the next line")]
-        public void PasteAfter7()
-        {
-            Create("foo", "bar");
-            _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 0));
-            _operations.PasteAfterCursor("baz" + Environment.NewLine, 1, OperationKind.LineWise, false);
-            var pos = _view.Caret.Position.BufferPosition;
-            Assert.AreEqual(_view.TextSnapshot.GetLineFromLineNumber(1).Start, pos);
-        }
-
-        [Test]
-        public void PasteAfter8()
-        {
-            Create("foo");
-            _operations.PasteAfterCursor("hey", 2, OperationKind.CharacterWise, false);
-            Assert.AreEqual("fheyheyoo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
-        }
-
-        [Test]
-        public void PasteAfter9()
-        {
-            Create("foo");
-            _operations.PasteAfterCursor("hey", 1, OperationKind.CharacterWise, true);
-            Assert.AreEqual("fheyoo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
-            Assert.AreEqual(4, _view.Caret.Position.BufferPosition.Position);
-        }
-
-        [Test]
-        public void PasteAfter10()
-        {
-            Create("foo", "bar");
-            _view.Caret.MoveTo(_view.TextSnapshot.GetLineFromLineNumber(0).End);
-            _operations.PasteAfterCursor("hey", 1, OperationKind.CharacterWise, true);
-            Assert.AreEqual("foohey", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
-        }
-
-        [Test, Description("Verify LineWise PasteAfterCursor places the caret at the beginning of non-whitespace.")]
-        public void PasteAfter11()
-        {
-            Create("foo", "bar");
-            _view.Caret.MoveTo(_view.TextSnapshot.GetLineFromLineNumber(0).End);
-            _operations.PasteAfterCursor("  hey" + Environment.NewLine, 1, OperationKind.LineWise, false);
-            Assert.AreEqual("  hey", _view.TextSnapshot.GetLineFromLineNumber(1).GetText());
-            var position = _view.Caret.Position.BufferPosition;
-            var line = position.GetContainingLine();
-            Assert.AreEqual(2, position.Position - line.Start);
-        }
-
-        [Test, Description("Verify linewise paste at the end of the buffer works")]
-        public void PasteAfter12()
-        {
-            Create("foo", "bar");
-            _view.Caret.MoveTo(_view.GetLineRange(1).End);
-            _operations.PasteAfterCursor("hey", 1, OperationKind.LineWise, false);
-            Assert.AreEqual("hey", _view.GetLineRange(2).GetText());
-            Assert.AreEqual(_view.GetCaretPoint(), _view.GetLineRange(2).Start);
-        }
-
-        [Test]
-        public void PasteBefore1()
-        {
-            Create("foo");
-            _operations.PasteBeforeCursor("hey", 1, OperationKind.CharacterWise, false);
-            Assert.AreEqual("heyfoo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
-        }
-
-        [Test]
-        public void PasteBefore2()
-        {
-            Create("foo");
-            _operations.PasteBeforeCursor("hey", 2, OperationKind.CharacterWise, false);
-            Assert.AreEqual("heyheyfoo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
-        }
-
-
-        [Test]
-        public void PasteBefore3()
-        {
-            Create("foo");
-            _operations.PasteBeforeCursor("hey", 1, OperationKind.CharacterWise, true);
-            Assert.AreEqual("heyfoo", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
-            Assert.AreEqual(3, _view.Caret.Position.BufferPosition.Position);
-        }
-
-        [Test]
-        public void PasteBefore4()
-        {
-            Create("foo", "bar");
-            _view.Caret.MoveTo(_view.TextSnapshot.GetLineFromLineNumber(0).End);
-            _operations.PasteBeforeCursor("hey", 1, OperationKind.CharacterWise, true);
-            Assert.AreEqual("foohey", _view.TextSnapshot.GetLineFromLineNumber(0).GetText());
-        }
-
-        [Test, Description("Verify LineWise PasteBeforeCursor places the caret at the beginning of non-whitespace.")]
-        public void PasteBefore5()
-        {
-            Create("foo", "bar");
-            _view.Caret.MoveTo(_view.TextSnapshot.GetLineFromLineNumber(0).End);
-            _operations.PasteBeforeCursor("  hey" + Environment.NewLine, 8, OperationKind.LineWise, false);
-            Assert.AreEqual("  hey", _view.TextSnapshot.GetLineFromLineNumber(1).GetText());
-            var position = _view.Caret.Position.BufferPosition;
-            var line = position.GetContainingLine();
-            Assert.AreEqual(2, position.Position - line.Start);
-        }
-
-        [Test]
-        public void InsertLineAbove1()
-        {
-            Create("foo");
-            _operations.InsertLineAbove();
-            var point = _view.Caret.Position.VirtualBufferPosition;
-            Assert.IsFalse(point.IsInVirtualSpace);
-            Assert.AreEqual(0, point.Position.Position);
-        }
-
-        [Test]
-        public void InsertLineAbove2()
-        {
-            Create("foo", "bar");
-            _view.Caret.MoveTo(_view.TextSnapshot.GetLineFromLineNumber(1).Start);
-            _operations.InsertLineAbove();
-            var point = _view.Caret.Position.BufferPosition;
-            Assert.AreEqual(1, point.GetContainingLine().LineNumber);
-            Assert.AreEqual(String.Empty, point.GetContainingLine().GetText());
-        }
-
-        [Test]
-        public void InsertLineAbove3()
-        {
-            // Verify that insert line below behaves properly in the face of edits happening in response to our edit
-            Create("foo bar", "baz");
-
-            bool didEdit = false;
-
-            _view.TextBuffer.Changed += (sender, e) =>
-            {
-                if (didEdit)
-                    return;
-
-                using (var edit = _view.TextBuffer.CreateEdit())
-                {
-                    edit.Insert(0, "a ");
-                    edit.Apply();
-                }
-
-                didEdit = true;
-            };
-
-            _operations.InsertLineAbove();
-            var buffer = _view.TextBuffer;
-            var line = buffer.CurrentSnapshot.GetLineFromLineNumber(0);
-            Assert.AreEqual("a ", line.GetText());
-        }
-
-        [Test]
-        public void InsertLineBelow()
-        {
-            Create("foo", "bar", "baz");
-            var newLine = _operations.InsertLineBelow();
-            Assert.AreEqual(1, newLine.LineNumber);
-            Assert.AreEqual(String.Empty, newLine.GetText());
-
-        }
-
-        [Test, Description("New line at end of buffer")]
-        public void InsertLineBelow2()
-        {
-            Create("foo", "bar");
-            _view.Caret.MoveTo(_view.TextSnapshot.GetLineFromLineNumber(_view.TextSnapshot.LineCount - 1).Start);
-            var newLine = _operations.InsertLineBelow();
-            Assert.IsTrue(String.IsNullOrEmpty(newLine.GetText()));
-        }
-
-        [Test, Description("Make sure the new is actually a newline")]
-        public void InsertLineBelow3()
-        {
-            Create("foo");
-            var newLine = _operations.InsertLineBelow();
-            Assert.AreEqual(Environment.NewLine, _view.TextBuffer.CurrentSnapshot.GetLineFromLineNumber(0).GetLineBreakText());
-            Assert.AreEqual(String.Empty, _view.TextBuffer.CurrentSnapshot.GetLineFromLineNumber(1).GetLineBreakText());
-        }
-
-        [Test, Description("Make sure line inserted in the middle has correct text")]
-        public void InsertLineBelow4()
-        {
-            Create("foo", "bar");
-            _operations.InsertLineBelow();
-            var count = _view.TextSnapshot.LineCount;
-            foreach (var line in _view.TextSnapshot.Lines.Take(count - 1))
-            {
-                Assert.AreEqual(Environment.NewLine, line.GetLineBreakText());
-            }
-        }
-
-        [Test]
-        public void InsertLineBelow5()
-        {
-            Create("foo bar", "baz");
-            _operations.InsertLineBelow();
-            var buffer = _view.TextBuffer;
-            var line = buffer.CurrentSnapshot.GetLineFromLineNumber(0);
-            Assert.AreEqual(Environment.NewLine, line.GetLineBreakText());
-            Assert.AreEqual(2, line.LineBreakLength);
-            Assert.AreEqual("foo bar", line.GetText());
-            Assert.AreEqual("foo bar" + Environment.NewLine, line.GetTextIncludingLineBreak());
-
-            line = buffer.CurrentSnapshot.GetLineFromLineNumber(1);
-            Assert.AreEqual(Environment.NewLine, line.GetLineBreakText());
-            Assert.AreEqual(2, line.LineBreakLength);
-            Assert.AreEqual(String.Empty, line.GetText());
-            Assert.AreEqual(String.Empty + Environment.NewLine, line.GetTextIncludingLineBreak());
-
-            line = buffer.CurrentSnapshot.GetLineFromLineNumber(2);
-            Assert.AreEqual(String.Empty, line.GetLineBreakText());
-            Assert.AreEqual(0, line.LineBreakLength);
-            Assert.AreEqual("baz", line.GetText());
-            Assert.AreEqual("baz", line.GetTextIncludingLineBreak());
-        }
-
-        [Test]
-        public void InsertLineBelow6()
-        {
-            // Verify that insert line below behaves properly in the face of edits happening in response to our edit
-            Create("foo bar", "baz");
-
-            bool didEdit = false;
-
-            _view.TextBuffer.Changed += (sender, e) =>
-            {
-                if (didEdit)
-                    return;
-
-                using (var edit = _view.TextBuffer.CreateEdit())
-                {
-                    edit.Insert(0, "a ");
-                    edit.Apply();
-                }
-
-                didEdit = true;
-            };
-
-            _operations.InsertLineBelow();
-            var buffer = _view.TextBuffer;
-            var line = buffer.CurrentSnapshot.GetLineFromLineNumber(0);
-            Assert.AreEqual("a foo bar", line.GetText());
-        }
-
-        [Test]
-        public void MoveToNextOccuranceOfWordAtCursor1()
-        {
-            Create("  foo bar baz");
-            _statusUtil.Setup(x => x.OnError(Resources.NormalMode_NoWordUnderCursor)).Verifiable();
-            _operations.MoveToNextOccuranceOfWordAtCursor(SearchKind.ForwardWithWrap, 1);
-            _statusUtil.Verify();
-        }
-
-        [Test]
-        public void MoveToNextOccuranceOfWordAtCursor2()
-        {
-            Create("foo bar", "foo");
-            AllowOutlineExpansion(verify: true);
-            _operations.MoveToNextOccuranceOfWordAtCursor(SearchKind.ForwardWithWrap, 1);
-            Assert.AreEqual(_view.GetLine(1).Start, _view.Caret.Position.BufferPosition);
-            _outlining.Verify();
-        }
-
-        [Test]
-        public void MoveToNextOccuranceOfWordAtCursor3()
-        {
-            Create("foo bar", "baz foo");
-            AllowOutlineExpansion();
-            _operations.MoveToNextOccuranceOfWordAtCursor(SearchKind.ForwardWithWrap, 1);
-            Assert.AreEqual(_view.GetLine(1).Start.Add(4), _view.Caret.Position.BufferPosition);
-        }
-
-        [Test, Description("No match shouldn't do anything")]
-        public void MoveToNextOccuranceOfWordAtCursor4()
-        {
-            Create("fuz bar", "baz foo");
-            AllowOutlineExpansion();
-            _operations.MoveToNextOccuranceOfWordAtCursor(SearchKind.ForwardWithWrap, 1);
-            Assert.AreEqual(0, _view.Caret.Position.BufferPosition.Position);
-        }
-
-        [Test, Description("With a count")]
-        public void MoveToNextOccuranceOfWordAtCursor5()
-        {
-            Create("foo bar foo", "foo");
-            AllowOutlineExpansion();
-            _operations.MoveToNextOccuranceOfWordAtCursor(SearchKind.ForwardWithWrap, 3);
-            Assert.AreEqual(_view.GetLine(0).Start, _view.Caret.Position.BufferPosition);
-        }
-
-        [Test]
-        public void MoveToNextOccuranceOfWordAtCursor6()
-        {
-            Create("foo bar baz", "foo");
-            AllowOutlineExpansion();
-            _view.MoveCaretTo(_view.GetLine(1).Start.Position);
-            _operations.MoveToNextOccuranceOfWordAtCursor(SearchKind.ForwardWithWrap, 1);
-            Assert.AreEqual(0, _view.Caret.Position.BufferPosition.Position);
-        }
-
-        [Test]
-        public void MoveToNextOccuranceOfWordAtCursor7()
-        {
-            Create("foo foobar baz", "foo");
-            AllowOutlineExpansion();
-            _operations.MoveToNextOccuranceOfWordAtCursor(SearchKind.ForwardWithWrap, 1);
-            Assert.AreEqual(_view.GetLine(1).Start, _view.GetCaretPoint());
-        }
-
-        [Test, Description("Moving to next occurance of a word should update the LastSearch")]
-        public void MoveToNextOccuranceOfWordAtCursor8()
-        {
-            Create("foo bar", "foo");
-            AllowOutlineExpansion();
-            _operations.MoveToNextOccuranceOfWordAtCursor(SearchKind.ForwardWithWrap, 1);
-            Assert.AreEqual(_view.GetLine(1).Start, _view.Caret.Position.BufferPosition);
-            Assert.AreEqual(SearchText.NewWholeWord("foo"), _vimData.LastSearchData.Text);
-        }
-
-        [Test, Description("When there is no word under the cursor, don't update the LastSearch")]
-        public void MoveToNextOccuranceOfWordAtCursor9()
-        {
-            Create("  foo bar baz");
-            var data = new SearchData(SearchText.NewPattern("foo"), SearchKind.ForwardWithWrap, SearchOptions.None);
-            _vimData.LastSearchData = data;
-            _statusUtil.Setup(x => x.OnError(Resources.NormalMode_NoWordUnderCursor)).Verifiable();
-            _operations.MoveToNextOccuranceOfWordAtCursor(SearchKind.ForwardWithWrap, 1);
-            _statusUtil.Verify();
-            Assert.AreEqual(data, _vimData.LastSearchData);
-        }
-
-        [Test]
-        public void MoveToNextOccuranceOfWordAtCursor10()
-        {
-            Create("foo bar", "foo");
-            AllowOutlineExpansion();
-            _view.MoveCaretTo(_view.GetLine(1).Start.Position);
-            _operations.MoveToNextOccuranceOfWordAtCursor(SearchKind.BackwardWithWrap, 1);
-            Assert.AreEqual(0, _view.Caret.Position.BufferPosition.Position);
-        }
-
-        [Test]
-        public void MoveToNextOccuranceOfWordAtCursor11()
-        {
-            Create("foo bar", "again foo", "foo");
-            AllowOutlineExpansion();
-            _view.MoveCaretTo(_view.GetLine(2).Start.Position);
-            _operations.MoveToNextOccuranceOfWordAtCursor(SearchKind.BackwardWithWrap, 2);
-            Assert.AreEqual(0, _view.Caret.Position.BufferPosition.Position);
-        }
-
-        [Test]
-        public void MoveToNextOccuranceOfWordAtCursor12()
-        {
-            Create("foo bar", "again foo", "foo");
-            AllowOutlineExpansion();
-            _view.MoveCaretTo(_view.GetLine(2).Start.Position);
-            _operations.MoveToNextOccuranceOfWordAtCursor(SearchKind.BackwardWithWrap, 3);
-            Assert.AreEqual(_view.GetLine(2).Start.Position, _view.Caret.Position.BufferPosition.Position);
-        }
-
-        [Test]
-        public void MoveToNextOccuranceOfWordAtCursor13()
-        {
-            Create("foo", "foobar", "foo");
-            AllowOutlineExpansion();
-            _view.MoveCaretTo(_view.GetLine(2).Start);
-            _operations.MoveToNextOccuranceOfWordAtCursor(SearchKind.BackwardWithWrap, 1);
-            Assert.AreEqual(0, _view.GetCaretPoint().Position);
-        }
-
-        [Test]
-        public void MoveToNextOccuranceOfWordAtCursor14()
-        {
-            Create("foo bar", "again foo", "foo");
-            AllowOutlineExpansion();
-            _view.MoveCaretTo(_view.GetLine(2).Start.Position);
-            _operations.MoveToNextOccuranceOfWordAtCursor(SearchKind.BackwardWithWrap, 2);
-            Assert.AreEqual(0, _view.Caret.Position.BufferPosition.Position);
-            Assert.AreEqual(SearchText.NewWholeWord("foo"), _vimData.LastSearchData.Text);
-        }
-
-        [Test]
-        public void MoveToNextOccuranceOfWordAtCursor15()
-        {
-            Create("    foo bar");
-            var data = new SearchData(SearchText.NewPattern("foo"), SearchKind.ForwardWithWrap, SearchOptions.None);
-            _vimData.LastSearchData = data;
-            _statusUtil.Setup(x => x.OnError(Resources.NormalMode_NoWordUnderCursor)).Verifiable();
-            _operations.MoveToNextOccuranceOfWordAtCursor(SearchKind.BackwardWithWrap, 1);
-            Assert.AreEqual(data, _vimData.LastSearchData);
-            _statusUtil.Verify();
-        }
-
-        [Test]
-        public void MoveToNextOccuranceOfWordAtCursor16()
-        {
-            Create("foo bar", "again foo", "foo");
-            AllowOutlineExpansion();
-            _view.MoveCaretTo(_view.GetLine(2).Start.Position);
-            _operations.MoveToNextOccuranceOfWordAtCursor(SearchKind.BackwardWithWrap, 2);
-            Assert.AreEqual(0, _view.Caret.Position.BufferPosition.Position);
-            Assert.AreEqual(SearchText.NewWholeWord("foo"), _vimData.LastSearchData.Text);
-            _outlining.Verify();
-        }
-
-        [Test]
-        public void MoveToNextOccuranceOfLastSearch1()
-        {
-            Create("foo bar baz");
-            var data = new SearchData(SearchText.NewPattern("beat"), SearchKind.ForwardWithWrap, SearchOptions.None);
-            _vimData.LastSearchData = data;
-            _statusUtil.Setup(x => x.OnError(Resources.Common_PatternNotFound("beat"))).Verifiable();
-            _operations.MoveToNextOccuranceOfLastSearch(1, false);
-            _statusUtil.Verify();
-        }
-
-        [Test, Description("Should not start on the current word")]
-        public void MoveToNextOccuranceOfLastSearch2()
-        {
-            Create("foo bar", "foo");
-            AllowOutlineExpansion();
-            var data = new SearchData(SearchText.NewPattern("foo"), SearchKind.ForwardWithWrap, SearchOptions.None);
-            _vimData.LastSearchData = data;
-            _operations.MoveToNextOccuranceOfLastSearch(1, false);
-            Assert.AreEqual(_view.GetLine(1).Start, _view.GetCaretPoint());
-        }
-
-        [Test]
-        public void MoveToNextOccuranceOfLastSearch3()
-        {
-            Create("foo bar", "foo");
-            AllowOutlineExpansion();
-            var data = new SearchData(SearchText.NewPattern("foo"), SearchKind.ForwardWithWrap, SearchOptions.None);
-            _vimData.LastSearchData = data;
-            _operations.MoveToNextOccuranceOfLastSearch(2, false);
-            Assert.AreEqual(0, _view.GetCaretPoint());
-        }
-
-        [Test]
-        public void MoveToNextOccuranceOfLastSearch4()
-        {
-            Create("foo bar", "foo");
-            AllowOutlineExpansion();
-            var data = new SearchData(SearchText.NewPattern("foo"), SearchKind.BackwardWithWrap, SearchOptions.None);
-            _vimData.LastSearchData = data;
-            _operations.MoveToNextOccuranceOfLastSearch(1, false);
-            Assert.AreEqual(_view.GetLine(1).Start, _view.GetCaretPoint());
-        }
-
-        [Test]
-        public void MoveToNextOccuranceOfLastSearch5()
-        {
-            Create("foo bar", "foo");
-            var data = new SearchData(SearchText.NewPattern("foo"), SearchKind.BackwardWithWrap, SearchOptions.None);
-            AllowOutlineExpansion(verify: true);
-            _vimData.LastSearchData = data;
-            _operations.MoveToNextOccuranceOfLastSearch(1, false);
-            Assert.AreEqual(_view.GetLine(1).Start, _view.GetCaretPoint());
-            _outlining.Verify();
-        }
 
         [Test]
         public void JumpNext1()
@@ -1003,13 +501,6 @@ namespace VimCore.Test
         }
 
         [Test]
-        public void MoveToNextOccuranceOfCharAtCursor1()
-        {
-            Create("dog kicked the ball");
-
-        }
-
-        [Test]
         public void MoveCaretForAppend1()
         {
             Create("foo", "bar");
@@ -1044,62 +535,5 @@ namespace VimCore.Test
             Assert.AreEqual(SnapshotUtil.GetEndPoint(_view.TextSnapshot), _view.GetCaretPoint());
         }
 
-        [Test]
-        public void GoToGlobalDeclaration1()
-        {
-            Create("foo bar");
-            _host.Setup(x => x.GoToGlobalDeclaration(_view, "foo")).Returns(true).Verifiable();
-            _operations.GoToGlobalDeclaration();
-            _host.Verify();
-        }
-
-        [Test]
-        public void GoToGlobalDeclaration2()
-        {
-            Create("foo bar");
-            _host.Setup(x => x.GoToGlobalDeclaration(_view, "foo")).Returns(false).Verifiable();
-            _host.Setup(x => x.Beep()).Verifiable();
-            _operations.GoToGlobalDeclaration();
-            _host.Verify();
-        }
-
-        [Test]
-        public void GoToLocalDeclaration1()
-        {
-            Create("foo bar");
-            _host.Setup(x => x.GoToLocalDeclaration(_view, "foo")).Returns(true).Verifiable();
-            _operations.GoToLocalDeclaration();
-            _host.Verify();
-        }
-
-        [Test]
-        public void GoToLocalDeclaration2()
-        {
-            Create("foo bar");
-            _host.Setup(x => x.GoToLocalDeclaration(_view, "foo")).Returns(false).Verifiable();
-            _host.Setup(x => x.Beep()).Verifiable();
-            _operations.GoToLocalDeclaration();
-            _host.Verify();
-        }
-
-        [Test]
-        public void GoToFile1()
-        {
-            Create("foo bar");
-            _host.Setup(x => x.GoToFile("foo")).Returns(true).Verifiable();
-            _operations.GoToFile();
-            _host.Verify();
-        }
-
-        [Test]
-        public void GoToFile2()
-        {
-            Create("foo bar");
-            _host.Setup(x => x.GoToFile("foo")).Returns(false).Verifiable();
-            _statusUtil.Setup(x => x.OnError(Resources.NormalMode_CantFindFile("foo"))).Verifiable();
-            _operations.GoToFile();
-            _statusUtil.Verify();
-            _host.Verify();
-        }
     }
 }

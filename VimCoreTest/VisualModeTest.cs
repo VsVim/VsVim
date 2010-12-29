@@ -11,26 +11,27 @@ using Vim.Modes.Visual;
 using Vim.UnitTest;
 using Vim.UnitTest.Mock;
 
-namespace VimCore.Test
+namespace VimCore.UnitTest
 {
     [TestFixture]
     public class VisualModeTest
     {
         private MockRepository _factory;
+        private IWpfTextView _textView;
+        private ITextBuffer _textBuffer;
+        private ITextSelection _selection;
         private Mock<IVimHost> _host;
-        private Mock<IWpfTextView> _view;
-        private Mock<ITextCaret> _caret;
-        private Mock<ITextSelection> _selection;
-        private ITextBuffer _buffer;
         private Mock<IVimBuffer> _bufferData;
         private VisualMode _modeRaw;
         private IMode _mode;
         private IRegisterMap _map;
+        private Mock<IIncrementalSearch> _incrementalSearch;
         private Mock<ICommonOperations> _operations;
         private Mock<ISelectionTracker> _tracker;
         private Mock<IFoldManager> _foldManager;
         private Mock<IUndoRedoOperations> _undoRedoOperations;
         private Mock<IEditorOperations> _editorOperations;
+        private Mock<IJumpList> _jumpList;
 
         public void Create(params string[] lines)
         {
@@ -41,22 +42,16 @@ namespace VimCore.Test
             ModeKind kind = ModeKind.VisualCharacter,
             params string[] lines)
         {
-            _buffer = EditorUtil.CreateBuffer(lines);
+            _textView = EditorUtil.CreateView(lines);
+            _textBuffer = _textView.TextBuffer;
+            _selection = _textView.Selection;
             _factory = new MockRepository(MockBehavior.Strict);
-            _caret = _factory.Create<ITextCaret>();
-            _view = _factory.Create<IWpfTextView>();
-            _selection = _factory.Create<ITextSelection>();
-            _selection.Setup(x => x.Clear());
-            _selection.SetupSet(x => x.Mode = TextSelectionMode.Stream);
-            _view.SetupGet(x => x.Caret).Returns(_caret.Object);
-            _view.SetupGet(x => x.Selection).Returns(_selection.Object);
-            _view.SetupGet(x => x.TextBuffer).Returns(_buffer);
-            _view.SetupGet(x => x.TextSnapshot).Returns(() => _buffer.CurrentSnapshot);
-            _view.SetupGet(x => x.IsClosed).Returns(false);
             _map = VimUtil.CreateRegisterMap(MockObjectFactory.CreateClipboardDevice(_factory).Object);
             _tracker = _factory.Create<ISelectionTracker>();
             _tracker.Setup(x => x.Start());
             _tracker.Setup(x => x.ResetCaret());
+            _tracker.Setup(x => x.UpdateSelection());
+            _jumpList = _factory.Create<IJumpList>(MockBehavior.Loose);
             _undoRedoOperations = _factory.Create<IUndoRedoOperations>();
             _foldManager = _factory.Create<IFoldManager>();
             _editorOperations = _factory.Create<IEditorOperations>();
@@ -64,18 +59,24 @@ namespace VimCore.Test
             _operations.SetupGet(x => x.FoldManager).Returns(_foldManager.Object);
             _operations.SetupGet(x => x.UndoRedoOperations).Returns(_undoRedoOperations.Object);
             _operations.SetupGet(x => x.EditorOperations).Returns(_editorOperations.Object);
+            _operations.SetupGet(x => x.TextView).Returns(_textView);
             _host = _factory.Create<IVimHost>(MockBehavior.Loose);
+            _incrementalSearch = MockObjectFactory.CreateIncrementalSearch(factory: _factory);
             _bufferData = MockObjectFactory.CreateVimBuffer(
-                _view.Object,
+                _textView,
                 "test",
                 MockObjectFactory.CreateVim(_map, host: _host.Object).Object,
+                incrementalSearch: _incrementalSearch.Object,
+                jumpList: _jumpList.Object,
                 factory: _factory);
             var capture = new MotionCapture(
                 _host.Object,
-                _view.Object,
-                new TextViewMotionUtil(_view.Object, new Vim.LocalSettings(_bufferData.Object.Settings.GlobalSettings, _view.Object)),
+                _textView,
+                new TextViewMotionUtil(_textView, new Vim.LocalSettings(_bufferData.Object.Settings.GlobalSettings, _textView)),
+                _incrementalSearch.Object,
+                _jumpList.Object,
                 new MotionCaptureGlobalData());
-            var runner = new CommandRunner(_view.Object, _map, (IMotionCapture)capture, (new Mock<IStatusUtil>()).Object);
+            var runner = new CommandRunner(_textView, _map, (IMotionCapture)capture, (new Mock<IStatusUtil>()).Object);
             _modeRaw = new Vim.Modes.Visual.VisualMode(_bufferData.Object, _operations.Object, kind, runner, capture, _tracker.Object);
             _mode = _modeRaw;
             _mode.OnEnter(ModeArgument.None);
@@ -166,9 +167,9 @@ namespace VimCore.Test
         public void ChangeModeToNormalShouldClearSelection()
         {
             Create(lines: "foo");
-            _selection.Setup(x => x.Clear()).Verifiable();
+            _selection.Select(_textView.GetLine(0).Extent);
             _mode.Process(KeyInputUtil.EscapeKey);
-            _factory.Verify();
+            Assert.IsTrue(_selection.GetSpan().IsEmpty);
         }
 
         [Test]
@@ -176,18 +177,17 @@ namespace VimCore.Test
         public void ChangeModeToCommandShouldNotClearSelection()
         {
             Create(lines: "foo");
-            _selection.Setup(x => x.Clear()).Throws(new Exception());
+            _selection.Select(_textView.GetLine(0).Extent);
             _mode.Process(':');
+            Assert.IsFalse(_selection.GetSpan().IsEmpty);
         }
-
-        #region Operations
 
         [Test]
         public void Yank1()
         {
             Create("foo", "bar");
-            var span = _buffer.GetLineRange(0).Extent;
-            _selection.MakeSelection(span);
+            var span = _textBuffer.GetLineRange(0).Extent;
+            _selection.Select(span);
             Assert.IsTrue(_mode.Process('y').IsSwitchPreviousMode);
             Assert.AreEqual("foo", _map.GetRegister(RegisterName.Unnamed).StringValue);
         }
@@ -196,8 +196,8 @@ namespace VimCore.Test
         public void Yank2()
         {
             Create("foo", "bar");
-            var span = _buffer.GetLineRange(0).Extent;
-            _selection.MakeSelection(span);
+            var span = _textBuffer.GetLineRange(0).Extent;
+            _selection.Select(span);
             var res = _mode.Process('y');
             Assert.IsTrue(res.IsSwitchPreviousMode);
             Assert.AreEqual("foo", _map.GetRegister(RegisterName.Unnamed).StringValue);
@@ -207,8 +207,8 @@ namespace VimCore.Test
         public void Yank3()
         {
             Create("foo", "bar");
-            var span = _buffer.GetLineRange(0).Extent;
-            _selection.MakeSelection(span);
+            var span = _textBuffer.GetLineRange(0).Extent;
+            _selection.Select(span);
             _mode.Process("\"cy");
             Assert.AreEqual("foo", _map.GetRegister('c').StringValue);
         }
@@ -218,9 +218,9 @@ namespace VimCore.Test
         public void Yank4()
         {
             Create("foo", "bar");
-            var span = _buffer.GetLineRange(0).Extent;
+            var span = _textBuffer.GetLineRange(0).Extent;
             _tracker.Setup(x => x.ResetCaret()).Verifiable();
-            _selection.MakeSelection(span);
+            _selection.Select(span);
             Assert.IsTrue(_mode.Process('y').IsSwitchPreviousMode);
             Assert.AreEqual("foo", _map.GetRegister(RegisterName.Unnamed).StringValue);
             _tracker.Verify();
@@ -231,18 +231,18 @@ namespace VimCore.Test
         public void Yank_Y_1()
         {
             Create("foo", "bar");
-            var span = _buffer.GetSpan(0, 1);
-            _selection.MakeSelection(span);
+            var span = _textBuffer.GetSpan(0, 1);
+            _selection.Select(span);
             Assert.IsTrue(_mode.Process('Y').IsSwitchPreviousMode);
-            Assert.AreEqual(_buffer.GetLineRange(0).GetTextIncludingLineBreak(), _map.GetRegister(RegisterName.Unnamed).StringValue);
+            Assert.AreEqual(_textBuffer.GetLineRange(0).GetTextIncludingLineBreak(), _map.GetRegister(RegisterName.Unnamed).StringValue);
         }
 
         [Test]
         public void Yank_Y_2()
         {
             Create2(ModeKind.VisualLine, "foo", "bar");
-            var span = _buffer.GetLineRange(0).ExtentIncludingLineBreak;
-            _selection.MakeSelection(span);
+            var span = _textBuffer.GetLineRange(0).ExtentIncludingLineBreak;
+            _selection.Select(span);
             _mode.Process('y');
             Assert.AreEqual("foo" + Environment.NewLine, _map.GetRegister(RegisterName.Unnamed).StringValue);
             Assert.AreEqual(OperationKind.LineWise, _map.GetRegister(RegisterName.Unnamed).Value.OperationKind);
@@ -252,10 +252,10 @@ namespace VimCore.Test
         public void Yank_Y_3()
         {
             Create("foo", "bar");
-            var span = _buffer.GetSpan(0, 1);
-            _selection.MakeSelection(span);
+            var span = _textBuffer.GetSpan(0, 1);
+            _selection.Select(span);
             Assert.IsTrue(_mode.Process('Y').IsSwitchPreviousMode);
-            Assert.AreEqual(_buffer.GetLineRange(0).GetTextIncludingLineBreak(), _map.GetRegister(RegisterName.Unnamed).StringValue);
+            Assert.AreEqual(_textBuffer.GetLineRange(0).GetTextIncludingLineBreak(), _map.GetRegister(RegisterName.Unnamed).StringValue);
             Assert.AreEqual(OperationKind.LineWise, _map.GetRegister(RegisterName.Unnamed).Value.OperationKind);
         }
 
@@ -263,8 +263,8 @@ namespace VimCore.Test
         public void DeleteSelection1()
         {
             Create("foo", "bar");
-            var span = _buffer.GetLine(0).Start.GetSpan(2);
-            _selection.MakeSelection(span);
+            var span = _textBuffer.GetLine(0).Start.GetSpan(2);
+            _selection.Select(span);
             _operations
                 .Setup(x => x.DeleteSpan(span))
                 .Verifiable();
@@ -279,8 +279,8 @@ namespace VimCore.Test
         public void DeleteSelection2()
         {
             Create("foo", "bar");
-            var span = _buffer.GetLine(0).Start.GetSpan(2);
-            _selection.MakeSelection(span);
+            var span = _textBuffer.GetLine(0).Start.GetSpan(2);
+            _selection.Select(span);
             _operations
                 .Setup(x => x.DeleteSpan(span))
                 .Verifiable();
@@ -295,8 +295,8 @@ namespace VimCore.Test
         public void DeleteSelection3()
         {
             Create("foo", "bar");
-            var span = _buffer.GetLine(0).Start.GetSpan(2);
-            _selection.MakeSelection(span);
+            var span = _textBuffer.GetLine(0).Start.GetSpan(2);
+            _selection.Select(span);
             _operations
                 .Setup(x => x.DeleteSpan(span))
                 .Verifiable();
@@ -311,8 +311,8 @@ namespace VimCore.Test
         public void DeleteSelection4()
         {
             Create("foo", "bar");
-            var span = _buffer.GetLine(0).Start.GetSpan(2);
-            _selection.MakeSelection(span);
+            var span = _textBuffer.GetLine(0).Start.GetSpan(2);
+            _selection.Select(span);
             _operations
                 .Setup(x => x.DeleteSpan(span))
                 .Verifiable();
@@ -327,8 +327,8 @@ namespace VimCore.Test
         public void Join1()
         {
             Create("a", "b", "c", "d", "e");
-            var range = _buffer.GetLineRange(0, 2);
-            _selection.MakeSelection(range.Extent);
+            var range = _textBuffer.GetLineRange(0, 2);
+            _selection.Select(range.Extent);
             _operations
                 .Setup(x => x.Join(range, JoinKind.RemoveEmptySpaces))
                 .Verifiable();
@@ -340,8 +340,8 @@ namespace VimCore.Test
         public void Join2()
         {
             Create("a", "b", "c", "d", "e");
-            var range = _buffer.GetLineRange(0, 3);
-            _selection.MakeSelection(range.Extent);
+            var range = _textBuffer.GetLineRange(0, 3);
+            _selection.Select(range.Extent);
             _operations
                 .Setup(x => x.Join(range, JoinKind.RemoveEmptySpaces))
                 .Verifiable();
@@ -353,8 +353,8 @@ namespace VimCore.Test
         public void Join3()
         {
             Create("a", "b", "c", "d", "e");
-            var range = _buffer.GetLineRange(0, 3);
-            _selection.MakeSelection(range.Extent);
+            var range = _textBuffer.GetLineRange(0, 3);
+            _selection.Select(range.Extent);
             _operations
                 .Setup(x => x.Join(range, JoinKind.KeepEmptySpaces))
                 .Verifiable();
@@ -366,8 +366,8 @@ namespace VimCore.Test
         public void Change1()
         {
             Create("foo", "bar");
-            var span = _buffer.GetLineRange(0).Extent;
-            _selection.MakeSelection(span);
+            var span = _textBuffer.GetLineRange(0).Extent;
+            _selection.Select(span);
             _operations
                 .Setup(x => x.DeleteSpan(span))
                 .Verifiable();
@@ -384,8 +384,8 @@ namespace VimCore.Test
         public void Change2()
         {
             Create("foo", "bar");
-            var span = _buffer.GetLineRange(0).Extent;
-            _selection.MakeSelection(span);
+            var span = _textBuffer.GetLineRange(0).Extent;
+            _selection.Select(span);
             _operations
                 .Setup(x => x.DeleteSpan(span))
                 .Verifiable();
@@ -402,8 +402,8 @@ namespace VimCore.Test
         public void Change3()
         {
             Create("foo", "bar");
-            var span = _buffer.GetLineRange(0).Extent;
-            _selection.MakeSelection(span);
+            var span = _textBuffer.GetLineRange(0).Extent;
+            _selection.Select(span);
             _operations
                 .Setup(x => x.DeleteSpan(span))
                 .Verifiable();
@@ -419,8 +419,8 @@ namespace VimCore.Test
         public void Change4()
         {
             Create("foo", "bar");
-            var span = _buffer.GetLineRange(0).Extent;
-            _selection.MakeSelection(span);
+            var span = _textBuffer.GetLineRange(0).Extent;
+            _selection.Select(span);
             _operations
                 .Setup(x => x.DeleteLinesInSpan(span))
                 .Returns(span)
@@ -438,8 +438,8 @@ namespace VimCore.Test
         public void Change5()
         {
             Create("foo", "bar");
-            var span = _buffer.GetLineRange(0).Extent;
-            _selection.MakeSelection(span);
+            var span = _textBuffer.GetLineRange(0).Extent;
+            _selection.Select(span);
             _operations
                 .Setup(x => x.DeleteLinesInSpan(span))
                 .Returns(span)
@@ -457,23 +457,21 @@ namespace VimCore.Test
         public void ChangeCase1()
         {
             Create("foo bar", "baz");
-            var span = _buffer.GetSpan(0, 3);
+            var span = _textBuffer.GetSpan(0, 3);
             _operations
                 .Setup(x => x.ChangeLetterCase(span))
                 .Verifiable();
-            _selection.MakeSelection(span);
+            _selection.Select(span);
             _mode.Process('~');
-            _selection.Verify();
-            _operations.Verify();
         }
 
         [Test]
         public void ChangeCase2()
         {
             Create("foo", "bar", "baz");
-            _selection.MakeSelection(
-                _buffer.GetLineRange(0).Extent,
-                _buffer.GetLineRange(1).Extent);
+            _selection.Select(
+                _textBuffer.GetLineRange(0).Extent,
+                _textBuffer.GetLineRange(1).Extent);
             _operations
                 .Setup(x => x.ChangeLetterCaseBlock(It.IsAny<NormalizedSnapshotSpanCollection>()))
                 .Verifiable();
@@ -485,111 +483,163 @@ namespace VimCore.Test
         public void ShiftLeft1()
         {
             Create("foo bar baz");
-            var span = _buffer.GetSpan(0, 3);
+            var span = _textBuffer.GetSpan(0, 3);
             _operations
                 .Setup(x => x.ShiftLineRangeLeft(1, SnapshotLineRangeUtil.CreateForSpan(span)))
                 .Verifiable();
-            _selection.MakeSelection(span);
+            _selection.Select(span);
             _mode.Process('<');
             _operations.Verify();
-            _selection.Verify();
         }
 
         [Test]
         public void ShiftLeft2()
         {
             Create("foo bar baz");
-            var span = _buffer.GetSpan(0, 3);
+            var span = _textBuffer.GetSpan(0, 3);
             _operations
                 .Setup(x => x.ShiftLineRangeLeft(2, SnapshotLineRangeUtil.CreateForSpan(span)))
                 .Verifiable();
-            _selection.MakeSelection(span);
+            _selection.Select(span);
             _mode.Process("2<");
             _operations.Verify();
-            _selection.Verify();
         }
 
         [Test]
         public void ShiftLeft3()
         {
             Create("foo", "bar", "baz");
-            _selection.MakeSelection(
-                _buffer.GetLineRange(0).Extent,
-                _buffer.GetLineRange(1).Extent);
+            _selection.Select(
+                _textBuffer.GetLineRange(0).Extent,
+                _textBuffer.GetLineRange(1).Extent);
             _operations
                 .Setup(x => x.ShiftBlockLeft(1, It.IsAny<NormalizedSnapshotSpanCollection>()))
                 .Verifiable();
             _mode.Process("<");
             _operations.Verify();
-            _selection.Verify();
         }
 
         [Test]
         public void ShiftRight1()
         {
             Create("foo bar baz");
-            var span = _buffer.GetSpan(0, 3);
+            var span = _textBuffer.GetSpan(0, 3);
             _operations
                 .Setup(x => x.ShiftLineRangeRight(1, SnapshotLineRangeUtil.CreateForSpan(span)))
                 .Verifiable();
-            _selection.MakeSelection(span);
+            _selection.Select(span);
             _mode.Process('>');
             _operations.Verify();
-            _selection.Verify();
         }
 
         [Test]
         public void ShiftRight2()
         {
             Create("foo bar baz");
-            var span = _buffer.GetSpan(0, 3);
+            var span = _textBuffer.GetSpan(0, 3);
             _operations
                 .Setup(x => x.ShiftLineRangeRight(2, SnapshotLineRangeUtil.CreateForSpan(span)))
                 .Verifiable();
-            _selection.MakeSelection(span);
+            _selection.Select(span);
             _mode.Process("2>");
             _operations.Verify();
-            _selection.Verify();
         }
 
         [Test]
         public void ShiftRight3()
         {
             Create("foo", "bar", "baz");
-            _selection.MakeSelection(
-                _buffer.GetLineRange(0).Extent,
-                _buffer.GetLineRange(1).Extent);
+            _selection.Select(
+                _textBuffer.GetLineRange(0).Extent,
+                _textBuffer.GetLineRange(1).Extent);
             _operations
                 .Setup(x => x.ShiftBlockRight(1, It.IsAny<NormalizedSnapshotSpanCollection>()))
                 .Verifiable();
             _mode.Process(">");
             _operations.Verify();
-            _selection.Verify();
         }
 
         [Test]
-        public void Put1()
+        public void Handle_D_NoCountInCharacter()
+        {
+            Create("cat", "tree", "dog");
+            var range = _textView.GetLineRange(0);
+            _operations
+                .Setup(x => x.DeleteSpan(range.ExtentIncludingLineBreak))
+                .Verifiable();
+            _operations
+                .Setup(x => x.UpdateRegisterForSpan(It.IsAny<Register>(), RegisterOperation.Delete, range.ExtentIncludingLineBreak, OperationKind.LineWise))
+                .Verifiable();
+            _selection.Select(range.Extent);
+            _mode.Process("D");
+            _factory.Verify();
+        }
+
+        [Test]
+        public void Handle_p_NoArguments()
         {
             Create("foo bar");
-            var span = _buffer.GetLineRange(0).Extent;
-            _selection.MakeSelection(span);
+            _map.GetRegister(RegisterName.Unnamed).UpdateValue("foo", OperationKind.CharacterWise);
+            _selection.Select(_textView.GetLineRange(0).Extent);
             _operations
-                .Setup(x => x.PasteOver(span, _map.GetRegister(RegisterName.Unnamed)))
+                .Setup(x => x.PutAtCaret(It.IsAny<StringData>(), OperationKind.CharacterWise, PutKind.Before, false))
                 .Verifiable();
             _mode.Process('p');
             _factory.Verify();
         }
 
         [Test]
-        public void Put2()
+        public void Handle_p_WithRegister()
         {
             Create("foo bar");
-            var span = _buffer.GetLineRange(0).Extent;
-            _selection.MakeSelection(span);
+            _map.GetRegister(RegisterName.NewNamed(NamedRegister.Register_c)).UpdateValue("foo", OperationKind.CharacterWise);
+            _selection.Select(_textBuffer.GetLineRange(0).Extent);
             _operations
-                .Setup(x => x.PasteOver(span, _map.GetRegister('c')))
+                .Setup(x => x.PutAtCaret(It.IsAny<StringData>(), OperationKind.CharacterWise, PutKind.Before, false))
                 .Verifiable();
             _mode.Process("\"cp");
+            _factory.Verify();
+        }
+
+        [Test]
+        public void Handle_P_NoArguments()
+        {
+            Create("foo bar");
+            _map.GetRegister(RegisterName.Unnamed).UpdateValue("foo", OperationKind.CharacterWise);
+            _selection.Select(_textView.GetLineRange(0).Extent);
+            _operations
+                .Setup(x => x.PutAtCaret(It.IsAny<StringData>(), OperationKind.CharacterWise, PutKind.Before, false))
+                .Verifiable();
+            _mode.Process('P');
+            _factory.Verify();
+        }
+
+        [Test]
+        public void Handle_P_WithRegister()
+        {
+            Create("foo bar");
+            _map.GetRegister(RegisterName.NewNamed(NamedRegister.Register_c)).UpdateValue("foo", OperationKind.CharacterWise);
+            _selection.Select(_textBuffer.GetLineRange(0).Extent);
+            _operations
+                .Setup(x => x.PutAtCaret(It.IsAny<StringData>(), OperationKind.CharacterWise, PutKind.Before, false))
+                .Verifiable();
+            _mode.Process("\"cP");
+            _factory.Verify();
+        }
+
+        [Test]
+        public void Handle_X_NoCountInCharacter()
+        {
+            Create("cat", "tree", "dog");
+            var range = _textView.GetLineRange(0);
+            _operations
+                .Setup(x => x.DeleteSpan(range.ExtentIncludingLineBreak))
+                .Verifiable();
+            _operations
+                .Setup(x => x.UpdateRegisterForSpan(It.IsAny<Register>(), RegisterOperation.Delete, range.ExtentIncludingLineBreak, OperationKind.LineWise))
+                .Verifiable();
+            _selection.Select(range.Extent);
+            _mode.Process("X");
             _factory.Verify();
         }
 
@@ -597,8 +647,8 @@ namespace VimCore.Test
         public void Fold_zo()
         {
             Create("foo bar");
-            var span = _buffer.GetSpan(0, 1);
-            _selection.MakeSelection(span);
+            var span = _textBuffer.GetSpan(0, 1);
+            _selection.Select(span);
             _operations.Setup(x => x.OpenFold(span, 1)).Verifiable();
             _mode.Process("zo");
             _factory.Verify();
@@ -608,8 +658,8 @@ namespace VimCore.Test
         public void Fold_zc_1()
         {
             Create("foo bar");
-            var span = _buffer.GetSpan(0, 1);
-            _selection.MakeSelection(span);
+            var span = _textBuffer.GetSpan(0, 1);
+            _selection.Select(span);
             _operations.Setup(x => x.CloseFold(span, 1)).Verifiable();
             _mode.Process("zc");
             _factory.Verify();
@@ -619,8 +669,8 @@ namespace VimCore.Test
         public void Fold_zO()
         {
             Create("foo bar");
-            var span = _buffer.GetSpan(0, 1);
-            _selection.MakeSelection(span);
+            var span = _textBuffer.GetSpan(0, 1);
+            _selection.Select(span);
             _operations.Setup(x => x.OpenAllFolds(span)).Verifiable();
             _mode.Process("zO");
             _factory.Verify();
@@ -630,8 +680,8 @@ namespace VimCore.Test
         public void Fold_zC()
         {
             Create("foo bar");
-            var span = _buffer.GetSpan(0, 1);
-            _selection.MakeSelection(span);
+            var span = _textBuffer.GetSpan(0, 1);
+            _selection.Select(span);
             _operations.Setup(x => x.CloseAllFolds(span)).Verifiable();
             _mode.Process("zC");
             _factory.Verify();
@@ -641,8 +691,8 @@ namespace VimCore.Test
         public void Fold_zf()
         {
             Create("foo bar");
-            var span = _buffer.GetSpan(0, 1);
-            _selection.MakeSelection(span);
+            var span = _textBuffer.GetSpan(0, 1);
+            _selection.Select(span);
             _foldManager.Setup(x => x.CreateFold(span)).Verifiable();
             _mode.Process("zf");
             _factory.Verify();
@@ -652,9 +702,9 @@ namespace VimCore.Test
         public void Fold_zF_1()
         {
             Create("the", "quick", "brown", "fox");
-            var span = _buffer.GetSpan(0, 1);
-            _selection.MakeSelection(span);
-            _foldManager.Setup(x => x.CreateFold(_buffer.GetLineRange(0, 0).ExtentIncludingLineBreak)).Verifiable();
+            var span = _textBuffer.GetSpan(0, 1);
+            _selection.Select(span);
+            _foldManager.Setup(x => x.CreateFold(_textBuffer.GetLineRange(0, 0).ExtentIncludingLineBreak)).Verifiable();
             _mode.Process("zF");
             _factory.Verify();
         }
@@ -663,9 +713,9 @@ namespace VimCore.Test
         public void Fold_zF_2()
         {
             Create("the", "quick", "brown", "fox");
-            var span = _buffer.GetSpan(0, 1);
-            _selection.MakeSelection(span);
-            _foldManager.Setup(x => x.CreateFold(_buffer.GetLineRange(0, 1).ExtentIncludingLineBreak)).Verifiable();
+            var span = _textBuffer.GetSpan(0, 1);
+            _selection.Select(span);
+            _foldManager.Setup(x => x.CreateFold(_textBuffer.GetLineRange(0, 1).ExtentIncludingLineBreak)).Verifiable();
             _mode.Process("2zF");
             _factory.Verify();
         }
@@ -731,12 +781,66 @@ namespace VimCore.Test
         public void FormatSelection1()
         {
             Create("foo", "bar");
-            var span = _buffer.GetLineRange(0).Extent;
-            _selection.MakeSelection(span);
-            _host.Setup(x => x.FormatLines(_view.Object, _buffer.GetLineRange(0, 0))).Verifiable();
+            var span = _textBuffer.GetLineRange(0).Extent;
+            _selection.Select(span);
+            _host.Setup(x => x.FormatLines(_textView, _textBuffer.GetLineRange(0, 0))).Verifiable();
             _mode.Process("=");
             _factory.Verify();
         }
-        #endregion
+
+        [Test]
+        public void Handle_N_NoCount()
+        {
+            Create("foo", "bar");
+            _operations.Setup(x => x.MoveToNextOccuranceOfLastSearch(1, true)).Verifiable();
+            _mode.Process("N");
+        }
+
+        [Test]
+        public void Handle_N_WithCount()
+        {
+            Create("foo", "bar");
+            _operations.Setup(x => x.MoveToNextOccuranceOfLastSearch(2, true)).Verifiable();
+            _mode.Process("2N");
+        }
+
+        [Test]
+        public void Handle_n_NoCount()
+        {
+            Create("foo", "bar");
+            _operations.Setup(x => x.MoveToNextOccuranceOfLastSearch(1, false)).Verifiable();
+            _mode.Process("n");
+        }
+
+        [Test]
+        public void Handle_n_WithCount()
+        {
+            Create("foo", "bar");
+            _operations.Setup(x => x.MoveToNextOccuranceOfLastSearch(2, false)).Verifiable();
+            _mode.Process("2n");
+        }
+
+        [Test]
+        public void IncrementalSearch_ShouldHandleEscape()
+        {
+            Create("foo", "bar");
+            _incrementalSearch.Setup(x => x.Begin(SearchKind.ForwardWithWrap)).Verifiable();
+            _incrementalSearch.Setup(x => x.Process(KeyInputUtil.EscapeKey)).Returns(SearchProcessResult.SearchCancelled).Verifiable();
+            _mode.Process("/");
+            _mode.Process(KeyInputUtil.EscapeKey);
+            _factory.Verify();
+        }
+
+        [Test]
+        public void IncrementalSearch_ShouldHandleEnter()
+        {
+            Create("foo", "bar");
+            _incrementalSearch.Setup(x => x.Begin(SearchKind.ForwardWithWrap)).Verifiable();
+            _incrementalSearch.Setup(x => x.Process(KeyInputUtil.CharToKeyInput('a'))).Returns(SearchProcessResult.SearchNeedMore).Verifiable();
+            _incrementalSearch.Setup(x => x.Process(KeyInputUtil.EnterKey)).Returns(VimUtil.CreateSearchComplete("")).Verifiable();
+            _mode.Process("/a");
+            _mode.Process(KeyInputUtil.EnterKey);
+            _factory.Verify();
+        }
     }
 }

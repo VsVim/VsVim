@@ -235,6 +235,7 @@ type ModeKind =
     | VisualBlock = 6 
     | Replace = 7
     | SubstituteConfirm = 8
+    | ExternalEdit = 9
 
     // Mode when Vim is disabled via the user
     | Disabled = 42
@@ -245,12 +246,13 @@ type VisualKind =
     | Line
     | Block
     with 
-    static member ofModeKind kind = 
+    static member OfModeKind kind = 
         match kind with 
         | ModeKind.VisualBlock -> VisualKind.Block |> Some
         | ModeKind.VisualLine -> VisualKind.Line |> Some
         | ModeKind.VisualCharacter -> VisualKind.Character |> Some
         | _ -> None
+    static member IsAnyVisual kind = VisualKind.OfModeKind kind |> Option.isSome
 
 /// The actual command name.  This is a wrapper over the collection of KeyInput 
 /// values which make up a command name.  
@@ -558,16 +560,16 @@ type Command =
         | VisualCommand(_,value,_,_) -> value
 
     /// Is the Repeatable flag set
-    member x.IsRepeatable = Utils.IsFlagSet x.CommandFlags CommandFlags.Repeatable
+    member x.IsRepeatable = Util.IsFlagSet x.CommandFlags CommandFlags.Repeatable
 
     /// Is the HandlesEscape flag set
-    member x.HandlesEscape = Utils.IsFlagSet x.CommandFlags CommandFlags.HandlesEscape
+    member x.HandlesEscape = Util.IsFlagSet x.CommandFlags CommandFlags.HandlesEscape
 
     /// Is the Movement flag set
-    member x.IsMovement = Utils.IsFlagSet x.CommandFlags CommandFlags.Movement
+    member x.IsMovement = Util.IsFlagSet x.CommandFlags CommandFlags.Movement
 
     /// Is the Special flag set
-    member x.IsSpecial = Utils.IsFlagSet x.CommandFlags CommandFlags.Special
+    member x.IsSpecial = Util.IsFlagSet x.CommandFlags CommandFlags.Special
 
     override x.ToString() = System.String.Format("{0} -> {1}", x.KeyInputSet, x.CommandFlags)
 
@@ -585,11 +587,18 @@ type MotionFlags =
     /// :help text-objects
     | TextObjectSelection = 0x2
 
+    /// The motion function wants to specially handle the esape function.  This is used 
+    /// on Complex motions such as / and ? 
+    | HandlesEscape = 0x4
+
 type MotionFunction = MotionArgument -> MotionData option
 
 type ComplexMotionResult =
-    /// Enough input was provided to produce a simple motion style function
-    | Finished of MotionFunction
+    /// The complex motion was completed and produced potentially a function that given
+    /// a MotionArgument will attempt to calculate a MotionData.  It can also optionally
+    /// return a MotionFunction used to calculate the very first instance of the 
+    /// MotionData function (useful for caching).  
+    | Finished of MotionFunction * MotionFunction option
     | Cancelled
     | Error of string
     | NeedMoreInput of KeyRemapMode option * (KeyInput -> ComplexMotionResult)
@@ -884,7 +893,8 @@ type SearchData = {
 }
 
 type SearchProcessResult =
-    | SearchComplete 
+    | SearchNotStarted 
+    | SearchComplete of SearchData * SearchResult
     | SearchCancelled 
     | SearchNeedMore
 
@@ -899,7 +909,10 @@ type ISearchService =
     abstract FindNextMultiple : SearchData -> SnapshotPoint -> ITextStructureNavigator -> count:int -> SnapshotSpan option
 
 type IIncrementalSearch = 
+
+    /// True when a search is occuring
     abstract InSearch : bool
+
     abstract CurrentSearch : SearchData option
 
     /// ISearchInformation instance this incremental search is associated with
@@ -957,7 +970,6 @@ type SettingKind =
     | ToggleKind
 
 type SettingValue =
-    | NoValue 
     | NumberValue of int
     | StringValue of string
     | ToggleValue of bool
@@ -987,8 +999,11 @@ type Setting = {
 
     /// Is the setting value currently set to the default value
     member x.IsValueDefault = 
-        match x.Value with
-        | NoValue -> true
+        match x.Value, x.DefaultValue with
+        | CalculatedValue(_), CalculatedValue(_) -> true
+        | NumberValue(left), NumberValue(right) -> left = right
+        | StringValue(left), StringValue(right) -> left = right
+        | ToggleValue(left), ToggleValue(right) -> left = right
         | _ -> false
 
 module GlobalSettingNames = 
@@ -1010,7 +1025,8 @@ module GlobalSettingNames =
     let VimRcPathsName = "vimrcpaths"
 
 module LocalSettingNames =
-    
+
+    let AutoIndentName = "autoindent"
     let CursorLineName = "cursorline"
     let NumberName = "number"
     let ScrollName = "scroll"
@@ -1112,11 +1128,13 @@ and IVimGlobalSettings =
 /// global settings with non-global ones
 and IVimLocalSettings =
 
-    /// Return the handle to the global IVimSettings instance
-    abstract GlobalSettings : IVimGlobalSettings
+    abstract AutoIndent : bool with get, set
 
     /// Whether or not to highlight the line the cursor is on
     abstract CursorLine : bool with get,set
+
+    /// Return the handle to the global IVimSettings instance
+    abstract GlobalSettings : IVimGlobalSettings
 
     abstract Scroll : int with get,set
 
@@ -1154,6 +1172,10 @@ and IVim =
 
     abstract VimHost : IVimHost
 
+    /// The Local Setting's which were persisted from loading VimRc.  Empty if
+    /// VimRc isn't loaded yet
+    abstract VimRcLocalSettings : Setting list
+
     /// Create an IVimBuffer for the given IWpfTextView
     abstract CreateBuffer : ITextView -> IVimBuffer
 
@@ -1166,21 +1188,65 @@ and IVim =
     /// Get or create an IVimBuffer for the given IWpfTextView
     abstract GetOrCreateBuffer : ITextView -> IVimBuffer
 
-    /// Load the VimRc file.  If the file was previously, a new load will be attempted
+    /// Load the VimRc file.  If the file was previously loaded a new load will be 
+    /// attempted.  This method will throw if the 
     abstract LoadVimRc : IFileSystem -> createViewFunc:(unit -> ITextView) -> bool
 
     /// Remove the IVimBuffer associated with the given view.  This will not actually close
     /// the IVimBuffer but instead just removes it's association with the given view
     abstract RemoveBuffer : ITextView -> bool
 
+and SwitchModeEventArgs 
+    (
+        _previousMode : IMode option,
+        _currentMode : IMode ) = 
+    inherit System.EventArgs()
+
+    /// Current IMode 
+    member x.CurrentMode = _currentMode
+
+    /// Previous IMode.  Expressed as an Option because the first mode switch
+    /// has no previous one
+    member x.PreviousMode = _previousMode
+
+
 /// Main interface for the Vim editor engine so to speak. 
 and IVimBuffer =
+
+    /// Sequence of available Modes
+    abstract AllModes : seq<IMode>
+
+    /// Buffered KeyInput list.  When a key remapping has multiple source elements the input 
+    /// is buffered until it is completed or the ambiguity is removed.  
+    abstract BufferedRemapKeyInputs : KeyInput list
+
+    /// IIncrementalSearch instance associated with this IVimBuffer
+    abstract IncrementalSearch : IIncrementalSearch
+
+    /// Whether or not the IVimBuffer is currently processing input
+    abstract IsProcessingInput : bool
+
+    /// Jump list
+    abstract JumpList : IJumpList
+
+    /// Associated IMarkMap
+    abstract MarkMap : IMarkMap
+
+    /// Current mode of the buffer
+    abstract Mode : IMode
+
+    /// ModeKind of the current IMode in the buffer
+    abstract ModeKind : ModeKind
 
     /// Name of the buffer.  Used for items like Marks
     abstract Name : string
 
-    /// View of the file
-    abstract TextView : ITextView
+    /// Local settings for the buffer
+    abstract Settings : IVimLocalSettings
+
+    /// Register map for IVim.  Global to all IVimBuffer instances but provided here
+    /// for convenience
+    abstract RegisterMap : IRegisterMap
 
     /// Underyling ITextBuffer Vim is operating under
     abstract TextBuffer : ITextBuffer
@@ -1188,9 +1254,8 @@ and IVimBuffer =
     /// Current ITextSnapshot of the ITextBuffer
     abstract TextSnapshot : ITextSnapshot
 
-    /// Buffered KeyInput list.  When a key remapping has multiple source elements the input 
-    /// is buffered until it is completed or the ambiguity is removed.  
-    abstract BufferedRemapKeyInputs : KeyInput list
+    /// View of the file
+    abstract TextView : ITextView
 
     /// Owning IVim instance
     abstract Vim : IVim
@@ -1198,22 +1263,8 @@ and IVimBuffer =
     /// Associated IVimData instance
     abstract VimData : IVimData
 
-    /// Associated IMarkMap
-    abstract MarkMap : IMarkMap
-
-    /// Jump list
-    abstract JumpList : IJumpList
-
-    /// ModeKind of the current IMode in the buffer
-    abstract ModeKind : ModeKind
-
-    /// Current mode of the buffer
-    abstract Mode : IMode
-
-    /// Whether or not the IVimBuffer is currently processing input
-    abstract IsProcessingInput : bool
-
-    abstract NormalMode : INormalMode 
+    // Mode accessors
+    abstract NormalMode : INormalMode
     abstract CommandMode : ICommandMode 
     abstract DisabledMode : IDisabledMode
     abstract VisualLineMode : IVisualMode
@@ -1222,12 +1273,8 @@ and IVimBuffer =
     abstract InsertMode : IMode
     abstract ReplaceMode : IMode
     abstract SubstituteConfirmMode : ISubstituteConfirmMode
+    abstract ExternalEditMode : IMode
 
-    /// Sequence of available Modes
-    abstract AllModes : seq<IMode>
-
-    abstract Settings : IVimLocalSettings
-    abstract RegisterMap : IRegisterMap
 
     abstract GetRegister : RegisterName -> Register
 
@@ -1251,9 +1298,9 @@ and IVimBuffer =
     /// and it's modes
     abstract Close : unit -> unit
     
-    /// Raised when the mode is switched
+    /// Raised when the mode is switched.  Returns the old and new mode 
     [<CLIEvent>]
-    abstract SwitchedMode : IEvent<IMode>
+    abstract SwitchedMode : IEvent<SwitchModeEventArgs>
 
     /// Raised when a key is processed.  This is raised when the KeyInput is actually
     /// processed by Vim not when it is received.  
@@ -1338,9 +1385,6 @@ and INormalMode =
 
     /// Is normal mode in the middle of a character replace operation
     abstract IsInReplace : bool
-
-    /// The IIncrementalSearch instance for normal mode
-    abstract IncrementalSearch : IIncrementalSearch
 
     /// If we are a one-time normal mode, the mode kind we will return to
     abstract OneTimeMode : ModeKind option

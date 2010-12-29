@@ -9,7 +9,7 @@ using Microsoft.VisualStudio.Text.Operations;
 using Vim.Extensions;
 using Microsoft.FSharp.Core;
 
-namespace VimCore.Test
+namespace VimCore.UnitTest
 {
     [TestFixture]
     public class UndoRedoOperationsTest

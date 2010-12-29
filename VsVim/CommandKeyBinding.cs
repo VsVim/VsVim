@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
+﻿
 namespace VsVim
 {
     public sealed class CommandKeyBinding
@@ -18,7 +14,7 @@ namespace VsVim
 
         public override string ToString()
         {
-            return Name + "::" + KeyBinding.ToString();
+            return Name + "::" + KeyBinding;
         }
     }
 }

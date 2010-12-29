@@ -61,7 +61,7 @@ namespace VsVim
 
         public bool Equals(KeyBinding other)
         {
-            if (Object.ReferenceEquals(other, null))
+            if (ReferenceEquals(other, null))
             {
                 return false;
             }
@@ -244,7 +244,7 @@ namespace VsVim
                 return ConvertToKeyInput(keystroke[0]);
             }
 
-            KeyInput vs = null;
+            KeyInput vs;
             if (TryConvertVsSpecificKey(keystroke, out vs))
             {
                 return vs;

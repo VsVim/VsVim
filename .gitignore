@@ -25,6 +25,9 @@ TestResult.xml
 VsVim.VisualState.xml
 VsVim.sln.VisualState.xml
 
+# Resharper
+_ReSharper.*
+
 # Directories 
 */obj/
 */bin/

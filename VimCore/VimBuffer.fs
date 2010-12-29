@@ -24,7 +24,7 @@ type internal ModeMap() =
             (Option.get prev).OnLeave()
             _previousMode <- prev
         mode.OnEnter arg
-        _modeSwitchedEvent.Trigger(mode)
+        _modeSwitchedEvent.Trigger(SwitchModeEventArgs(prev, mode))
         mode
     member x.SwitchPreviousMode () =
         let prev = Option.get _previousMode
@@ -38,7 +38,8 @@ type internal VimBuffer
         _vim : IVim,
         _textView : ITextView,
         _jumpList : IJumpList,
-        _settings : IVimLocalSettings ) =
+        _settings : IVimLocalSettings,
+        _incrementalSearch : IIncrementalSearch ) =
 
     let _properties = PropertyCollection()
     let mutable _modeMap = ModeMap()
@@ -75,6 +76,7 @@ type internal VimBuffer
     member x.ReplaceMode = _modeMap.GetMode ModeKind.Replace
     member x.SubstituteConfirmMode = _modeMap.GetMode ModeKind.SubstituteConfirm :?> ISubstituteConfirmMode
     member x.DisabledMode = _modeMap.GetMode ModeKind.Disabled :?> IDisabledMode
+    member x.ExternalEditMode = _modeMap.GetMode ModeKind.ExternalEdit 
 
     /// Current KeyRemapMode which should be used when calculating keyboard mappings
     member x.KeyRemapMode = 
@@ -190,6 +192,7 @@ type internal VimBuffer
         member x.TextBuffer = _textView.TextBuffer
         member x.TextSnapshot = _textView.TextSnapshot
         member x.BufferedRemapKeyInputs = x.BufferedRemapKeyInputs 
+        member x.IncrementalSearch = _incrementalSearch
         member x.IsProcessingInput = _isProcessingInput
         member x.Name = _vim.VimHost.GetName _textView.TextBuffer
         member x.MarkMap = _vim.MarkMap
@@ -204,6 +207,7 @@ type internal VimBuffer
         member x.InsertMode = x.InsertMode
         member x.ReplaceMode = x.ReplaceMode
         member x.SubstituteConfirmMode = x.SubstituteConfirmMode
+        member x.ExternalEditMode = x.ExternalEditMode
         member x.DisabledMode = x.DisabledMode
         member x.AllModes = _modeMap.Modes
         member x.Settings = _settings

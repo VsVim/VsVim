@@ -108,10 +108,8 @@ namespace Vim.UI.Wpf.Implementation
                         || data.CaretDisplay != _caretDisplay
                         || data.CaretOpacity != _caretOpacity;
                 }
-                else
-                {
-                    return true;
-                }
+
+                return true;
             }
         }
 
@@ -148,7 +146,7 @@ namespace Vim.UI.Wpf.Implementation
 
         private void OnCaretBlinkTimer(object sender, EventArgs e)
         {
-            if (_caretData.HasValue && _caretData.Value.CaretDisplay != Wpf.CaretDisplay.NormalCaret)
+            if (_caretData.HasValue && _caretData.Value.CaretDisplay != CaretDisplay.NormalCaret)
             {
                 var data = _caretData.Value;
                 data.Image.Opacity = data.Image.Opacity == 0.0 ? _caretOpacity : 0.0;
@@ -179,16 +177,14 @@ namespace Vim.UI.Wpf.Implementation
         /// </summary>
         private Color? TryCalculateCaretColor()
         {
+            const string key = EditorFormatDefinition.ForegroundColorId;
             var properties = _formatMap.GetProperties(EditorFormatDefinitionNames.BlockCaret);
-            var key = EditorFormatDefinition.ForegroundColorId;
             if (properties.Contains(key))
             {
                 return (Color)properties[key];
             }
-            else
-            {
-                return null;
-            }
+
+            return null;
         }
 
         private Point GetRealCaretVisualPoint()
@@ -199,9 +195,12 @@ namespace Vim.UI.Wpf.Implementation
         private void MoveCaretImageToCaret()
         {
             var point = GetRealCaretVisualPoint();
-            var data = _caretData.Value;
-            Canvas.SetLeft(data.Image, point.X);
-            Canvas.SetTop(data.Image, point.Y + data.YDisplayOffset);
+            if (_caretData.HasValue)
+            {
+                var data = _caretData.Value;
+                Canvas.SetLeft(data.Image, point.X);
+                Canvas.SetTop(data.Image, point.Y + data.YDisplayOffset);
+            }
         }
 
         /// <summary>
@@ -243,9 +242,9 @@ namespace Vim.UI.Wpf.Implementation
         {
             switch (_caretDisplay)
             {
-                case Wpf.CaretDisplay.Block:
+                case CaretDisplay.Block:
                     return Tuple.Create(new Rect(GetRealCaretVisualPoint(), CalculateCaretSize()), 0d);
-                case Wpf.CaretDisplay.HalfBlock:
+                case CaretDisplay.HalfBlock:
                     {
                         var size = CalculateCaretSize();
                         size = new Size(size.Width, size.Height / 2);
@@ -254,7 +253,7 @@ namespace Vim.UI.Wpf.Implementation
                         point = new Point(point.X, point.Y + size.Height);
                         return Tuple.Create(new Rect(point, size), size.Height);
                     }
-                case Wpf.CaretDisplay.QuarterBlock:
+                case CaretDisplay.QuarterBlock:
                     {
                         var size = CalculateCaretSize();
                         var quarter = size.Height / 4;
@@ -265,8 +264,8 @@ namespace Vim.UI.Wpf.Implementation
                         point = new Point(point.X, point.Y + offset);
                         return Tuple.Create(new Rect(point, size), offset);
                     }
-                case Wpf.CaretDisplay.Invisible:
-                case Wpf.CaretDisplay.NormalCaret:
+                case CaretDisplay.Invisible:
+                case CaretDisplay.NormalCaret:
                     return Tuple.Create(new Rect(GetRealCaretVisualPoint(), new Size(0, 0)), 0d);
 
                 default:
@@ -290,10 +289,7 @@ namespace Vim.UI.Wpf.Implementation
             var drawingImage = new DrawingImage(drawing);
             drawingImage.Freeze();
 
-            var image = new Image();
-            image.Opacity = _caretOpacity;
-            image.Source = drawingImage;
-
+            var image = new Image { Opacity = _caretOpacity, Source = drawingImage };
             var point = _view.Caret.Position.BufferPosition;
             return new CaretData(_caretDisplay, _caretOpacity, image, color, point, tuple.Item2);
         }
@@ -309,7 +305,7 @@ namespace Vim.UI.Wpf.Implementation
                 data.Image,
                 (x, y) => { _caretData = null; });
 
-            if (_caretDisplay != Wpf.CaretDisplay.NormalCaret)
+            if (_caretDisplay != CaretDisplay.NormalCaret)
             {
                 _view.Caret.IsHidden = true;
                 MoveCaretImageToCaret();

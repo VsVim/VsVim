@@ -191,7 +191,7 @@ type internal SubstituteConfirmMode
                     match _factory.CreateForSubstituteFlags data.SearchPattern data.Flags with
                     | None -> None
                     | Some(regex) ->
-                        let isReplaceAll = Utils.IsFlagSet data.Flags SubstituteFlags.ReplaceAll
+                        let isReplaceAll = Util.IsFlagSet data.Flags SubstituteFlags.ReplaceAll
                         let data = { Regex=regex; SubstituteText=data.Substitute; CurrentMatch =span; LastLineNumber=range.EndLineNumber; IsReplaceAll=isReplaceAll}
                         Some data
 

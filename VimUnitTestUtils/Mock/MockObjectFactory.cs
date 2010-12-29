@@ -3,17 +3,37 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using EnvDTE;
+using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Formatting;
 using Microsoft.VisualStudio.Text.Operations;
+using Microsoft.VisualStudio.Text.Tagging;
+using Microsoft.VisualStudio.TextManager.Interop;
 using Moq;
 
 namespace Vim.UnitTest.Mock
 {
     public static class MockObjectFactory
     {
+        public static Mock<IIncrementalSearch> CreateIncrementalSearch(
+            ISearchService search = null,
+            MockRepository factory = null)
+        {
+            factory = factory ?? new MockRepository(MockBehavior.Strict);
+            search = search ?? CreateSearchService(factory: factory).Object;
+            var mock = factory.Create<IIncrementalSearch>();
+            mock.SetupGet(x => x.SearchService).Returns(search);
+            return mock;
+        }
+
+        public static Mock<ISearchService> CreateSearchService(MockRepository factory = null)
+        {
+            factory = factory ?? new MockRepository(MockBehavior.Strict);
+            return factory.Create<ISearchService>();
+        }
+
         public static Mock<IRegisterMap> CreateRegisterMap(MockRepository factory = null)
         {
             factory = factory ?? new MockRepository(MockBehavior.Strict);
@@ -101,7 +121,7 @@ namespace Vim.UnitTest.Mock
             MockRepository factory = null)
         {
             factory = factory ?? new MockRepository(MockBehavior.Strict);
-            global = global ?? CreateGlobalSettings(factory:factory).Object;
+            global = global ?? CreateGlobalSettings(factory: factory).Object;
             var mock = factory.Create<IVimLocalSettings>(MockBehavior.Strict);
             mock.SetupGet(x => x.GlobalSettings).Returns(global);
             return mock;
@@ -112,27 +132,28 @@ namespace Vim.UnitTest.Mock
             MockRepository factory = null)
         {
             factory = factory ?? new MockRepository(MockBehavior.Strict);
-            var textView = CreateTextView(buffer: textBuffer, factory: factory);
-            return CreateVimBuffer(view: textView.Object, factory: factory);
+            var textView = CreateTextView(textBuffer: textBuffer, factory: factory);
+            return CreateVimBuffer(textView: textView.Object, factory: factory);
         }
 
         public static Mock<IVimBuffer> CreateVimBuffer(
-            ITextView view,
+            ITextView textView,
             string name = null,
             IVim vim = null,
             IJumpList jumpList = null,
             IVimLocalSettings settings = null,
+            IIncrementalSearch incrementalSearch = null,
             MockRepository factory = null)
         {
             factory = factory ?? new MockRepository(MockBehavior.Strict);
             name = name ?? "test";
             vim = vim ?? CreateVim().Object;
             jumpList = jumpList ?? (factory.Create<IJumpList>().Object);
-            settings = settings ?? new LocalSettings(vim.Settings, view);
+            settings = settings ?? new LocalSettings(vim.Settings, textView);
             var mock = factory.Create<IVimBuffer>();
-            mock.SetupGet(x => x.TextView).Returns(view);
-            mock.SetupGet(x => x.TextBuffer).Returns(() => view.TextBuffer);
-            mock.SetupGet(x => x.TextSnapshot).Returns(() => view.TextSnapshot);
+            mock.SetupGet(x => x.TextView).Returns(textView);
+            mock.SetupGet(x => x.TextBuffer).Returns(() => textView.TextBuffer);
+            mock.SetupGet(x => x.TextSnapshot).Returns(() => textView.TextSnapshot);
             mock.SetupGet(x => x.Name).Returns(name);
             mock.SetupGet(x => x.Settings).Returns(settings);
             mock.SetupGet(x => x.MarkMap).Returns(vim.MarkMap);
@@ -140,6 +161,7 @@ namespace Vim.UnitTest.Mock
             mock.SetupGet(x => x.JumpList).Returns(jumpList);
             mock.SetupGet(x => x.Vim).Returns(vim);
             mock.SetupGet(x => x.VimData).Returns(vim.VimData);
+            mock.SetupGet(x => x.IncrementalSearch).Returns(incrementalSearch);
             return mock;
         }
 
@@ -156,20 +178,20 @@ namespace Vim.UnitTest.Mock
         }
 
         public static Mock<ITextView> CreateTextView(
-            ITextBuffer buffer = null,
+            ITextBuffer textBuffer = null,
             ITextCaret caret = null,
             ITextSelection selection = null,
             MockRepository factory = null)
         {
             factory = factory ?? new MockRepository(MockBehavior.Strict);
-            buffer = buffer ?? CreateTextBuffer(100, factory: factory).Object;
+            textBuffer = textBuffer ?? CreateTextBuffer(100, factory: factory).Object;
             caret = caret ?? CreateCaret(factory: factory).Object;
             selection = selection ?? CreateSelection(factory: factory).Object;
             var view = factory.Create<ITextView>();
             view.SetupGet(x => x.Caret).Returns(caret);
             view.SetupGet(x => x.Selection).Returns(selection);
-            view.SetupGet(x => x.TextBuffer).Returns(buffer);
-            view.SetupGet(x => x.TextSnapshot).Returns(() => buffer.CurrentSnapshot);
+            view.SetupGet(x => x.TextBuffer).Returns(textBuffer);
+            view.SetupGet(x => x.TextSnapshot).Returns(() => textBuffer.CurrentSnapshot);
             return view;
         }
 
@@ -257,10 +279,17 @@ namespace Vim.UnitTest.Mock
 
         public static Mock<IServiceProvider> CreateServiceProvider(params Tuple<Type, object>[] serviceList)
         {
-            var mock = new Mock<IServiceProvider>(MockBehavior.Strict);
+            return CreateServiceProvider(null, serviceList);
+        }
+
+        public static Mock<IServiceProvider> CreateServiceProvider(MockRepository factory, params Tuple<Type, object>[] serviceList)
+        {
+            factory = factory ?? new MockRepository(MockBehavior.Strict);
+            var mock = factory.Create<IServiceProvider>();
             foreach (var tuple in serviceList)
             {
-                mock.Setup(x => x.GetService(tuple.Item1)).Returns(tuple.Item2);
+                var localTuple = tuple;
+                mock.Setup(x => x.GetService(localTuple.Item1)).Returns(localTuple.Item2);
             }
 
             return mock;
@@ -268,7 +297,12 @@ namespace Vim.UnitTest.Mock
 
         public static Mock<SVsServiceProvider> CreateVsServiceProvider(params Tuple<Type, object>[] serviceList)
         {
-            var mock = CreateServiceProvider(serviceList);
+            return CreateVsServiceProvider(null, serviceList);
+        }
+
+        public static Mock<SVsServiceProvider> CreateVsServiceProvider(MockRepository factory, params Tuple<Type, object>[] serviceList)
+        {
+            var mock = CreateServiceProvider(factory, serviceList);
             return mock.As<SVsServiceProvider>();
         }
 
@@ -301,6 +335,103 @@ namespace Vim.UnitTest.Mock
             var dte = new Mock<_DTE>();
             dte.SetupGet(x => x.Commands).Returns(commands.Object);
             return dte;
+        }
+
+        public static Mock<IMappingSpan> CreateMappingSpan(SnapshotSpan span, MockRepository factory = null)
+        {
+            return CreateMappingSpan(new[] { span }, factory);
+        }
+
+        public static Mock<IMappingSpan> CreateMappingSpan(SnapshotSpan[] spans, MockRepository factory = null)
+        {
+            factory = factory ?? new MockRepository(MockBehavior.Strict);
+            var col = new NormalizedSnapshotSpanCollection(spans);
+            var mock = factory.Create<IMappingSpan>();
+            mock.Setup(x => x.GetSpans(spans[0].Snapshot)).Returns(col);
+            mock.Setup(x => x.GetSpans(spans[0].Snapshot.TextBuffer)).Returns(col);
+            return mock;
+        }
+
+        public static Mock<IMappingTagSpan<ITag>> CreateMappingTagSpan(
+            SnapshotSpan span,
+            ITag tag = null,
+            MockRepository factory = null)
+        {
+            return CreateMappingTagSpan(
+                CreateMappingSpan(span, factory).Object,
+                tag,
+                factory);
+        }
+
+        public static Mock<IMappingTagSpan<ITag>> CreateMappingTagSpan(
+            IMappingSpan span,
+            ITag tag = null,
+            MockRepository factory = null)
+        {
+            factory = factory ?? new MockRepository(MockBehavior.Strict);
+            var mock = factory.Create<IMappingTagSpan<ITag>>();
+            mock.SetupGet(x => x.Span).Returns(span);
+            if (tag != null)
+            {
+                mock.SetupGet(x => x.Tag).Returns(tag);
+            }
+            return mock;
+        }
+
+
+        public static Mock<IVsTextLineMarker> CreateVsTextLineMarker(
+            TextSpan span,
+            MARKERTYPE type,
+            MockRepository factory = null)
+        {
+            return CreateVsTextLineMarker(span, (int)type, factory);
+        }
+
+        public static Mock<IVsTextLineMarker> CreateVsTextLineMarker(
+            TextSpan span,
+            int type,
+            MockRepository factory = null)
+        {
+            factory = factory ?? new MockRepository(MockBehavior.Strict);
+            var mock = factory.Create<IVsTextLineMarker>();
+            mock.Setup(x => x.GetType(out type)).Returns(VSConstants.S_OK);
+            mock
+                .Setup(x => x.GetCurrentSpan(It.IsAny<TextSpan[]>()))
+                .Callback<TextSpan[]>(x => { x[0] = span; })
+                .Returns(VSConstants.S_OK);
+            return mock;
+        }
+
+        public static Mock<ITextViewLine> CreateTextViewLine(
+            ITextSnapshotLine textLine,
+            MockRepository factory = null)
+        {
+            factory = factory ?? new MockRepository(MockBehavior.Strict);
+            var mock = factory.Create<ITextViewLine>();
+            mock.SetupGet(x => x.Start).Returns(textLine.Start);
+            mock.SetupGet(x => x.End).Returns(textLine.End);
+            mock.SetupGet(x => x.EndIncludingLineBreak).Returns(textLine.EndIncludingLineBreak);
+            return mock;
+        }
+
+        public static Mock<ITextViewLineCollection> CreateTextViewLineCollection(
+            SnapshotLineRange range,
+            MockRepository factory = null)
+        {
+            factory = factory ?? new MockRepository(MockBehavior.Strict);
+            var mock = factory.Create<ITextViewLineCollection>();
+            for (int i = 0; i < range.Count; i++)
+            {
+                var number = range.StartLineNumber + i;
+                var line = range.Snapshot.GetLineFromLineNumber(number);
+                var localIndex = i;
+                mock.Setup(x => x[localIndex]).Returns(CreateTextViewLine(line, factory).Object);
+            }
+
+            mock.SetupGet(x => x.FirstVisibleLine).Returns(CreateTextViewLine(range.StartLine, factory).Object);
+            mock.SetupGet(x => x.LastVisibleLine).Returns(CreateTextViewLine(range.EndLine, factory).Object);
+            mock.SetupGet(x => x.Count).Returns(range.Count);
+            return mock;
         }
     }
 }

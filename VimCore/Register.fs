@@ -9,6 +9,11 @@ type StringData =
     | Block of string list 
     with 
 
+    member x.ApplyCount count =
+        match x with 
+        | Simple(str) -> StringUtil.repeat count str |> Simple
+        | Block(list) -> list |> List.map (StringUtil.repeat count) |> Block
+
     // TODO: Delete this and force the use of individual values
     member x.String =
         match x with 

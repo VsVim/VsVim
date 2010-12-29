@@ -37,9 +37,10 @@
   <ItemGroup>
     <Compile Include="Resources.fs" />
     <Compile Include="Constants.fs" />
-    <Compile Include="Util.fs" />
+    <Compile Include="FSharpUtil.fs" />
     <Compile Include="SearchKind.fs" />
     <Compile Include="EditorUtil.fs" />
+    <Compile Include="Util.fs" />
     <Compile Include="IVimHost.fs" />
     <Compile Include="WordKind.fs" />
     <Compile Include="VimKey.fs" />
@@ -67,6 +68,7 @@
     <Compile Include="RegexUtil.fs" />
     <Compile Include="Modes_ICommonOperations.fs" />
     <Compile Include="Modes_CommonOperations.fs" />
+    <Compile Include="Modes_CommandFactory.fsi" />
     <Compile Include="Modes_CommandFactory.fs" />
     <Compile Include="Modes_Command_Interfaces.fs" />
     <Compile Include="Modes_Command_RangeUtil.fsi" />
@@ -78,20 +80,20 @@
     <Compile Include="Modes_Command_CommandMode.fs" />
     <Compile Include="Modes_Normal_Interfaces.fs" />
     <Compile Include="Modes_Normal_DefaultOperations.fs" />
-    <Compile Include="Modes_Normal_IncrementalSearch.fs" />
     <Compile Include="Modes_Normal_NormalMode.fsi" />
     <Compile Include="Modes_Normal_NormalMode.fs" />
-    <Compile Include="Modes_Normal_IncrementalSearchTagger.fs" />
-    <Compile Include="Modes_Normal_HighlightSearchTagger.fs" />
     <Compile Include="Modes_Insert_InsertMode.fsi" />
     <Compile Include="Modes_Insert_InsertMode.fs" />
     <Compile Include="Modes_Visual_ISelectionTracker.fs" />
     <Compile Include="Modes_Visual_SelectionTracker.fs" />
     <Compile Include="Modes_Visual_VisualMode.fsi" />
     <Compile Include="Modes_Visual_VisualMode.fs" />
-    <Compile Include="Modes_SubstituteConfirm_Tagger.fs" />
     <Compile Include="Modes_SubstituteConfirm_SubstituteConfirmMode.fsi" />
     <Compile Include="Modes_SubstituteConfirm_SubstituteConfirmMode.fs" />
+    <Compile Include="IncrementalSearch.fsi" />
+    <Compile Include="IncrementalSearch.fs" />
+    <Compile Include="Tagger.fsi" />
+    <Compile Include="Tagger.fs" />
     <Compile Include="SelectionChangeTracker.fsi" />
     <Compile Include="SelectionChangeTracker.fs" />
     <Compile Include="FoldManager.fs" />
@@ -102,6 +104,7 @@
     <Compile Include="SearchService.fs" />
     <Compile Include="RegisterMap.fsi" />
     <Compile Include="RegisterMap.fs" />
+    <Compile Include="ExternalEdit.fs" />
     <Compile Include="DisabledMode.fs" />
     <Compile Include="MarkMap.fs" />
     <Compile Include="KeyMap.fsi" />

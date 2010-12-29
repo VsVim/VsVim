@@ -8,7 +8,7 @@ using Vim.Extensions;
 using Vim.UnitTest;
 using Vim.UnitTest.Mock;
 
-namespace VimCore.Test
+namespace VimCore.UnitTest
 {
     [TestFixture]
     public class VimBufferTests
@@ -24,6 +24,7 @@ namespace VimCore.Test
         private Mock<IVimGlobalSettings> _globalSettings;
         private Mock<IVimLocalSettings> _settings;
         private Mock<IVimHost> _host;
+        private Mock<IIncrementalSearch> _incrementalSearch;
         private VimBuffer _rawBuffer;
         private IVimBuffer _buffer;
         private MarkMap _markMap;
@@ -48,11 +49,13 @@ namespace VimCore.Test
             _insertMode = _factory.Create<IMode>(MockBehavior.Loose);
             _insertMode.SetupGet(x => x.ModeKind).Returns(ModeKind.Insert);
             _jumpList = _factory.Create<IJumpList>(MockBehavior.Strict);
+            _incrementalSearch = _factory.Create<IIncrementalSearch>();
             _rawBuffer = new VimBuffer(
                 _vim.Object,
                 _view,
                 _jumpList.Object,
-                _settings.Object);
+                _settings.Object,
+                _incrementalSearch.Object);
             _rawBuffer.AddMode(_normalMode.Object);
             _rawBuffer.AddMode(_insertMode.Object);
             _rawBuffer.AddMode(_disabledMode.Object);

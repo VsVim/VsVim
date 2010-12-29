@@ -11,7 +11,6 @@ using Microsoft.VisualStudio.Text.Classification;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Operations;
 using Microsoft.VisualStudio.Utilities;
-using Vim;
 
 namespace Vim.UnitTest
 {
@@ -59,6 +58,9 @@ namespace Vim.UnitTest
 
             [Import]
             public IContentTypeRegistryService contentTypeRegistryService;
+
+            [Import]
+            public ITextStructureNavigatorSelectorService textStructureNavigatorSelectorService;
 
             public Factory() { }
         }
@@ -135,7 +137,7 @@ namespace Vim.UnitTest
             return Tuple.Create(view, opts);
         }
 
-        public static IEditorOperations GetOperations(IWpfTextView view)
+        public static IEditorOperations GetOperations(ITextView view)
         {
             return FactoryService.editorOperationsFactory.GetEditorOperations(view);
         }

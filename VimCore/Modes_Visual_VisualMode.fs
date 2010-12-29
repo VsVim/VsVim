@@ -37,7 +37,7 @@ type internal VisualMode
     member x.EndExplicitMove() = _explicitMoveCount <- _explicitMoveCount - 1
     member x.SelectedSpan = (TextSelectionUtil.GetStreamSelectionSpan _buffer.TextView.Selection).SnapshotSpan
 
-    member private x.BuildMoveSequence() = 
+    member x.BuildMoveSequence() = 
 
         let wrapSimple func = 
             fun count reg ->
@@ -46,24 +46,32 @@ type internal VisualMode
                 x.EndExplicitMove()
                 res
 
-        let wrapComplex func = 
+        let wrapMotion func = 
             fun count reg data ->
                 x.BeginExplicitMove()
                 let res = func count reg data
                 x.EndExplicitMove()
                 res
 
-        let factory = Vim.Modes.CommandFactory(_operations, _capture)
+        let wrapLong func = 
+            fun count reg ->
+                x.BeginExplicitMove()
+                let res = func count reg 
+                x.EndExplicitMove()
+                res
+
+        let factory = Vim.Modes.CommandFactory(_operations, _capture, _buffer.IncrementalSearch, _buffer.JumpList, _buffer.Settings)
         factory.CreateMovementCommands()
+        |> Seq.append (factory.CreateEditCommandsForVisualMode _visualKind)
         |> Seq.map (fun (command) ->
             match command with
-            | Command.SimpleCommand(name,kind,func) -> Command.SimpleCommand (name,kind, wrapSimple func) |> Some
-            | Command.MotionCommand (name,kind,func) -> Command.MotionCommand (name, kind,wrapComplex func) |> Some
-            | Command.LongCommand (name,kind,func) -> None 
-            | Command.VisualCommand (name,kind,visualKind,func) -> None )
+            | Command.SimpleCommand(name, flags, func) -> Command.SimpleCommand (name, flags, wrapSimple func) |> Some
+            | Command.MotionCommand (name, flags, func) -> Command.MotionCommand (name, flags,wrapMotion func) |> Some
+            | Command.LongCommand (name, flags, func) -> Command.LongCommand (name, flags, wrapLong func) |> Some
+            | Command.VisualCommand (_) -> Some command)
         |> SeqUtil.filterToSome
 
-    member private x.BuildOperationsSequence() =
+    member x.BuildOperationsSequence() =
 
         let runVisualCommand funcNormal funcBlock count reg visualSpan = 
             match visualSpan with
@@ -71,7 +79,7 @@ type internal VisualMode
             | VisualSpan.Multiple(_,col) -> funcBlock count reg col
 
 
-        /// Commands consisting of a single character
+        /// Commands which do not need a span to operate on
         let simples =
             let resultSwitchPrevious = CommandResult.Completed ModeSwitch.SwitchPreviousMode
             seq {
@@ -171,17 +179,32 @@ type internal VisualMode
         let visualSimple = 
             seq {
                 yield (
-                    "d", 
+                    ["d"], 
                     CommandFlags.Repeatable, 
                     Some ModeKind.Normal, 
                     (fun _ reg span -> 
                         _operations.DeleteSpan span 
-                        _operations.UpdateRegisterForSpan reg RegisterOperation.Delete span OperationKind.CharacterWise ),
+                        _operations.UpdateRegisterForSpan reg RegisterOperation.Delete span OperationKind.CharacterWise),
                     (fun _ reg col -> 
                         _operations.DeleteBlock col 
                         _operations.UpdateRegisterForCollection reg RegisterOperation.Delete col OperationKind.CharacterWise))
                 yield (
-                    "x", 
+                    ["D"; "X"],
+                    CommandFlags.Repeatable,
+                    Some ModeKind.Normal,
+                    (fun _ reg span -> 
+                        let range = SnapshotLineRangeUtil.CreateForSpan span
+                        _operations.DeleteSpan range.ExtentIncludingLineBreak
+                        _operations.UpdateRegisterForSpan reg RegisterOperation.Delete range.ExtentIncludingLineBreak OperationKind.LineWise),
+                    (fun _ reg col ->
+                        let col = 
+                            col
+                            |> Seq.map (fun span -> SnapshotSpan(span.Start, span |> SnapshotSpanUtil.GetStartLine |> SnapshotLineUtil.GetEnd))
+                            |> NormalizedSnapshotSpanCollectionUtil.OfSeq
+                        _operations.DeleteBlock col
+                        _operations.UpdateRegisterForCollection reg RegisterOperation.Delete col OperationKind.CharacterWise))
+                yield (
+                    ["x"], 
                     CommandFlags.Repeatable, 
                     Some ModeKind.Normal, 
                     (fun count reg span -> 
@@ -191,7 +214,7 @@ type internal VisualMode
                         _operations.DeleteBlock col 
                         _operations.UpdateRegisterForCollection reg RegisterOperation.Delete col _operationKind))
                 yield (
-                    "<Del>", 
+                    ["<Del>"], 
                     CommandFlags.Repeatable, 
                     Some ModeKind.Normal, 
                     (fun count reg span -> 
@@ -201,25 +224,25 @@ type internal VisualMode
                         _operations.DeleteBlock col
                         _operations.UpdateRegisterForCollection reg RegisterOperation.Delete col _operationKind))
                 yield (
-                    "<lt>",
+                    ["<lt>"],
                     CommandFlags.Repeatable ||| CommandFlags.ResetCaret,
                     Some ModeKind.Normal,
                     (fun count _ span -> _operations.ShiftLineRangeLeft count (SnapshotLineRangeUtil.CreateForSpan span)) ,
                     (fun count _ col -> _operations.ShiftBlockLeft count col ))
                 yield (
-                    ">",
+                    [">"],
                     CommandFlags.Repeatable ||| CommandFlags.ResetCaret,
                     Some ModeKind.Normal,
                     (fun count _ span ->  _operations.ShiftLineRangeRight count (SnapshotLineRangeUtil.CreateForSpan span)),
                     (fun count _ col -> _operations.ShiftBlockRight count col))
                 yield (
-                    "~",
+                    ["~"],
                     CommandFlags.Repeatable,
                     Some ModeKind.Normal,
                     (fun _ _ span -> _operations.ChangeLetterCase span),
                     (fun _ _ col -> _operations.ChangeLetterCaseBlock col))
                 yield (
-                    "c", 
+                    ["c"], 
                     CommandFlags.Repeatable ||| CommandFlags.LinkedWithNextTextChange,
                     Some ModeKind.Insert,
                     (fun _ reg span -> 
@@ -229,7 +252,7 @@ type internal VisualMode
                         _operations.DeleteBlock col
                         _operations.UpdateRegisterForCollection reg RegisterOperation.Delete col _operationKind))
                 yield (
-                    "s", 
+                    ["s"], 
                     CommandFlags.Repeatable ||| CommandFlags.LinkedWithNextTextChange,
                     Some ModeKind.Insert,
                     (fun _ reg span -> 
@@ -239,7 +262,7 @@ type internal VisualMode
                         _operations.DeleteBlock col 
                         _operations.UpdateRegisterForCollection reg RegisterOperation.Delete col _operationKind))
                 yield ( 
-                    "S",
+                    ["S"],
                     CommandFlags.Repeatable ||| CommandFlags.LinkedWithNextTextChange,
                     Some ModeKind.Insert,
                     (fun _ reg span -> 
@@ -250,7 +273,7 @@ type internal VisualMode
                         let span = _operations.DeleteLinesInSpan span
                         _operations.UpdateRegisterForSpan reg RegisterOperation.Delete span OperationKind.LineWise))
                 yield (
-                    "C",
+                    ["C"],
                     CommandFlags.Repeatable ||| CommandFlags.LinkedWithNextTextChange,
                     Some ModeKind.Insert,
                     (fun _ reg span -> 
@@ -266,7 +289,7 @@ type internal VisualMode
                         _operations.DeleteBlock col 
                         _operations.UpdateRegisterForCollection reg RegisterOperation.Delete col OperationKind.CharacterWise))
                 yield (
-                    "J",
+                    ["J"],
                     CommandFlags.Repeatable,
                     None,
                     (fun _ _ span -> 
@@ -276,7 +299,7 @@ type internal VisualMode
                         let range = SnapshotLineRangeUtil.CreateForNormalizedSnapshotSpanCollection col
                         _operations.Join range JoinKind.RemoveEmptySpaces))
                 yield (
-                    "gJ",
+                    ["gJ"],
                     CommandFlags.Repeatable,
                     None,
                     (fun _ _ span -> 
@@ -286,13 +309,31 @@ type internal VisualMode
                         let range = SnapshotLineRangeUtil.CreateForNormalizedSnapshotSpanCollection col
                         _operations.Join range JoinKind.KeepEmptySpaces))
                 yield (
-                    "p",
-                    CommandFlags.None,
+                    ["p"],
+                    CommandFlags.Repeatable,
                     None,
-                    (fun _ reg span -> _operations.PasteOver span reg),
-                    (fun _ _ col -> ()) )
+                    (fun count reg _ -> _operations.PutAtCaret (reg.Value.Value.ApplyCount count) reg.Value.OperationKind PutKind.Before false),
+                    (fun count reg _ -> _operations.PutAtCaret (reg.Value.Value.ApplyCount count) reg.Value.OperationKind PutKind.Before false))
                 yield (
-                    "y",
+                    ["P"],
+                    CommandFlags.Repeatable,
+                    None,
+                    (fun count reg _ -> _operations.PutAtCaret (reg.Value.Value.ApplyCount count) reg.Value.OperationKind PutKind.Before false),
+                    (fun count reg _ -> _operations.PutAtCaret (reg.Value.Value.ApplyCount count) reg.Value.OperationKind PutKind.Before false))
+                yield (
+                    ["gp"],
+                    CommandFlags.Repeatable,
+                    None,
+                    (fun count reg _ -> _operations.PutAtCaret (reg.Value.Value.ApplyCount count) reg.Value.OperationKind PutKind.Before true),
+                    (fun count reg _ -> _operations.PutAtCaret (reg.Value.Value.ApplyCount count) reg.Value.OperationKind PutKind.Before true))
+                yield (
+                    ["gP"],
+                    CommandFlags.Repeatable,
+                    None,
+                    (fun count reg _ -> _operations.PutAtCaret (reg.Value.Value.ApplyCount count) reg.Value.OperationKind PutKind.Before true),
+                    (fun count reg _ -> _operations.PutAtCaret (reg.Value.Value.ApplyCount count) reg.Value.OperationKind PutKind.Before true))
+                yield (
+                    ["y"],
                     CommandFlags.ResetCaret,
                     None,
                     (fun _ (reg:Register) span -> 
@@ -302,7 +343,7 @@ type internal VisualMode
                         let data = StringData.OfNormalizedSnasphotSpanCollection col
                         reg.Value <- { Value = data; OperationKind = _operationKind } ))
                 yield (
-                    "Y",
+                    ["Y"],
                     CommandFlags.ResetCaret,
                     None,
                     (fun _ (reg:Register) span -> 
@@ -317,7 +358,7 @@ type internal VisualMode
                             | VisualKind.Block -> StringData.OfNormalizedSnasphotSpanCollection col
                         reg.Value <- { Value = data; OperationKind = OperationKind.LineWise} ))
                 yield (
-                    "=",
+                    ["="],
                     CommandFlags.Repeatable,
                     None,
                     (fun _ _ span -> 
@@ -330,28 +371,38 @@ type internal VisualMode
                             |> SnapshotLineRangeUtil.CreateForSpan 
                         _buffer.Vim.VimHost.FormatLines _buffer.TextView range))
             }
-            |> Seq.map (fun (str,flags,mode,funcNormal,funcBlock) ->
-                let kiSet = KeyNotationUtil.StringToKeyInputSet str
-                let modeSwitch = 
-                    match mode with
-                    | None -> ModeSwitch.SwitchPreviousMode
-                    | Some(kind) -> ModeSwitch.SwitchMode kind
-                let func2 count reg visualSpan = 
-                    let count = CommandUtil.CountOrDefault count
-                    runVisualCommand funcNormal funcBlock count reg visualSpan
-                    CommandResult.Completed modeSwitch
+            |> Seq.map (fun (strList,flags,mode,funcNormal,funcBlock) ->
+                strList 
+                |> Seq.map (fun str ->
+                    let kiSet = KeyNotationUtil.StringToKeyInputSet str
+                    let modeSwitch = 
+                        match mode with
+                        | None -> ModeSwitch.SwitchPreviousMode
+                        | Some(kind) -> ModeSwitch.SwitchMode kind
+                    let func2 count reg visualSpan = 
+                        let count = CommandUtil.CountOrDefault count
+                        runVisualCommand funcNormal funcBlock count reg visualSpan
+                        CommandResult.Completed modeSwitch
+    
+                    Command.VisualCommand(kiSet, flags, _visualKind, func2)))
+            |> Seq.concat
 
-                Command.VisualCommand(kiSet, flags, _visualKind, func2) )
-                
         Seq.append simples visualSimple |> Seq.append customReturn
 
-    member private x.EnsureCommandsBuilt() =
+    member x.EnsureCommandsBuilt() =
         if not _builtCommands then
             let map = 
                 x.BuildMoveSequence() 
                 |> Seq.append (x.BuildOperationsSequence())
                 |> Seq.iter _runner.Add 
             _builtCommands <- true
+
+    member x.ShouldHandleEscape = 
+        match _runner.State with
+        | CommandRunnerState.NoInput -> true
+        | CommandRunnerState.NotEnoughInput -> true
+        | CommandRunnerState.NotEnoughMatchingPrefix (_) -> true
+        | CommandRunnerState.NotFinishWithCommand (command, _) -> not (Util.IsFlagSet command.CommandFlags CommandFlags.HandlesEscape)
 
     interface IMode with
         member x.VimBuffer = _buffer
@@ -363,16 +414,21 @@ type internal VisualMode
         member x.Process (ki : KeyInput) =  
 
             let result = 
-                if ki = KeyInputUtil.EscapeKey then
+                if ki = KeyInputUtil.EscapeKey && x.ShouldHandleEscape then
                     ProcessResult.SwitchPreviousMode
                 else
                     let original = _buffer.TextSnapshot.Version.VersionNumber
                     match _runner.Run ki with
-                    | RunKeyInputResult.NeedMoreKeyInput -> ProcessResult.Processed
-                    | RunKeyInputResult.NestedRunDetected -> ProcessResult.Processed
+                    | RunKeyInputResult.NeedMoreKeyInput -> 
+                        // Commands like incremental search can move the caret and be incomplete.  Need to 
+                        // update the selection while waiting for the next key
+                        _selectionTracker.UpdateSelection()
+                        ProcessResult.Processed
+                    | RunKeyInputResult.NestedRunDetected -> 
+                        ProcessResult.Processed
                     | RunKeyInputResult.CommandRan(commandRanData,modeSwitch) -> 
     
-                        if Utils.IsFlagSet commandRanData.Command.CommandFlags CommandFlags.ResetCaret then
+                        if Util.IsFlagSet commandRanData.Command.CommandFlags CommandFlags.ResetCaret then
                             _selectionTracker.ResetCaret()
 
                         match modeSwitch with
@@ -381,8 +437,10 @@ type internal VisualMode
                         | ModeSwitch.SwitchModeWithArgument(_,_) -> ()
                         | ModeSwitch.SwitchPreviousMode -> ()
                         ProcessResult.OfModeSwitch modeSwitch
-                    | RunKeyInputResult.CommandErrored(_) -> ProcessResult.SwitchPreviousMode
-                    | RunKeyInputResult.CommandCancelled -> ProcessResult.SwitchPreviousMode
+                    | RunKeyInputResult.CommandErrored(_) -> 
+                        ProcessResult.SwitchPreviousMode
+                    | RunKeyInputResult.CommandCancelled -> 
+                        ProcessResult.SwitchPreviousMode
                     | RunKeyInputResult.NoMatchingCommand -> 
                         _operations.Beep()
                         ProcessResult.Processed

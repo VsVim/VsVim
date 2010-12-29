@@ -16,7 +16,7 @@ type internal SettingsMap
     /// Create the settings off of the default map
     let mutable _settings =
          _rawData
-         |> Seq.map (fun (name,abbrev,kind,value) -> { Name=name; Abbreviation=abbrev;Kind=kind; DefaultValue=value;Value=value; IsGlobal=_isGlobal})
+         |> Seq.map (fun (name,abbrev,kind,value) -> {Name=name; Abbreviation=abbrev; Kind=kind; DefaultValue=value; Value=value; IsGlobal=_isGlobal})
          |> Seq.map (fun setting -> (setting.Name,setting))
          |> Map.ofSeq
 
@@ -34,10 +34,9 @@ type internal SettingsMap
         /// Determine if the value and the kind are compatible
         let doesValueMatchKind kind = 
             match kind,value with
-            | (NumberKind,NumberValue(_)) -> true
-            | (StringKind,StringValue(_)) -> true
-            | (ToggleKind,ToggleValue(_)) -> true
-            | (_, NoValue) -> true
+            | (NumberKind, NumberValue(_)) -> true
+            | (StringKind, StringValue(_)) -> true
+            | (ToggleKind, ToggleValue(_)) -> true
             | _ -> false
 
         match x.GetSetting settingNameOrAbbrev with
@@ -71,26 +70,29 @@ type internal SettingsMap
     /// Get a boolean setting value.  Will throw if the setting name does not exist
     member x.GetBoolValue settingName = 
         let setting = _settings |> Map.find settingName
-        match setting.Value.AggregateValue,setting.DefaultValue.AggregateValue with 
-        | ToggleValue(b),_ -> b
-        | NoValue,ToggleValue(b) -> b
-        | _ -> failwith "Invalid"
+        match setting.Value.AggregateValue with
+        | ToggleValue(b) -> b 
+        | NumberValue(_) -> failwith "invalid"
+        | StringValue(_) -> failwith "invalid"
+        | CalculatedValue(_) -> failwith "invalid"
 
     /// Get a string setting value.  Will throw if the setting name does not exist
     member x.GetStringValue settingName =
         let setting = _settings |> Map.find settingName
-        match setting.Value.AggregateValue,setting.DefaultValue.AggregateValue with
-        | StringValue(s),_ -> s
-        | NoValue,StringValue(s) -> s
-        | _ -> failwith "Invalid"
+        match setting.Value.AggregateValue with
+        | StringValue(s) -> s
+        | NumberValue(_) -> failwith "invalid"
+        | ToggleValue(_) -> failwith "invalid"
+        | CalculatedValue(_) -> failwith "invalid"
 
     /// Get a number setting value.  Will throw if the setting name does not exist
     member x.GetNumberValue settingName =
         let setting = _settings |> Map.find settingName
-        match setting.Value.AggregateValue,setting.DefaultValue.AggregateValue with
-        | NumberValue(n),_ -> n
-        | NoValue,NumberValue(n) -> n
-        | _ -> failwith "Invalid"
+        match setting.Value.AggregateValue with
+        | NumberValue(n) -> n
+        | StringValue(_) -> failwith "invalid"
+        | ToggleValue(_) -> failwith "invalid"
+        | CalculatedValue(_) -> failwith "invalid"
 
     member x.ConvertStringToValue str kind =
         
@@ -202,17 +204,18 @@ type internal LocalSettings
     
     static let LocalSettings =
         [|
-            ( CursorLineName, "cul", ToggleKind, ToggleValue(false) )
-            ( NumberName, "nu", ToggleKind, ToggleValue(false) )
-            ( ScrollName, "scr", NumberKind, NumberValue(25) )
-            ( QuoteEscapeName, "qe", StringKind, StringValue(@"\") )
+            (AutoIndentName, "ai", ToggleKind, ToggleValue(false))
+            (CursorLineName, "cul", ToggleKind, ToggleValue(false))
+            (NumberName, "nu", ToggleKind, ToggleValue(false))
+            (ScrollName, "scr", NumberKind, NumberValue(25))
+            (QuoteEscapeName, "qe", StringKind, StringValue(@"\"))
         |]
 
     let _map = SettingsMap(LocalSettings, false)
 
     do
         let setting = _map.GetSetting ScrollName |> Option.get
-        _map.ReplaceSetting ScrollName {setting with Value=NoValue;DefaultValue=CalculatedValue(this.CalculateScroll) }
+        _map.ReplaceSetting ScrollName {setting with Value=CalculatedValue(this.CalculateScroll); DefaultValue=CalculatedValue(this.CalculateScroll) }
 
     /// Calculate the scroll value as specified in the Vim documenation.  Should be half the number of 
     /// visible lines 
@@ -248,6 +251,9 @@ type internal LocalSettings
             else _global.GetSetting settingName
 
         member x.GlobalSettings = _global
+        member x.AutoIndent
+            with get() = _map.GetBoolValue AutoIndentName
+            and set value = _map.TrySetValue AutoIndentName (ToggleValue(value)) |> ignore
         member x.CursorLine 
             with get() = _map.GetBoolValue CursorLineName
             and set value = _map.TrySetValue CursorLineName (ToggleValue(value)) |> ignore

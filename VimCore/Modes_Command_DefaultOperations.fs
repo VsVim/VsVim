@@ -28,11 +28,11 @@ type internal DefaultOperations ( _data : OperationsData ) =
     let FormatSetting(setting:Setting) = 
 
         match setting.Kind,setting.AggregateValue with
-        | (ToggleKind,ToggleValue(b)) -> 
+        | (SettingKind.ToggleKind, SettingValue.ToggleValue(b)) -> 
             if b then setting.Name
             else sprintf "no%s" setting.Name
-        | (StringKind,StringValue(s)) -> sprintf "%s=\"%s\"" setting.Name s
-        | (NumberKind,NumberValue(n)) -> sprintf "%s=%d" setting.Name n
+        | (SettingKind.StringKind, SettingValue.StringValue(s)) -> sprintf "%s=\"%s\"" setting.Name s
+        | (SettingKind.NumberKind, SettingValue.NumberValue(n)) -> sprintf "%s=%d" setting.Name n
         | _ -> "Invalid value"
 
     member private x.CommonImpl = x :> ICommonOperations
@@ -53,20 +53,15 @@ type internal DefaultOperations ( _data : OperationsData ) =
                 if text.EndsWith(System.Environment.NewLine) then text
                 else text + System.Environment.NewLine
 
-            let point = line.Start
-            let span =
-                if isAfter then x.CommonImpl.PasteAfter point text OperationKind.LineWise
-                else x.CommonImpl.PasteBefore point text OperationKind.LineWise
-
-            // Move the cursor to the first non-blank character on the last line
-            let line = span.End.Subtract(1).GetContainingLine()
-            let rec inner (cur:SnapshotPoint) = 
-                if cur = line.End || not (System.Char.IsWhiteSpace(cur.GetChar())) then
-                    cur
-                else
-                    inner (cur.Add(1))
-            let point = inner line.Start
-            _textView.Caret.MoveTo(point) |> ignore
+            x.CommonImpl.WrapEditInUndoTransaction "Paste" (fun () -> 
+                let span =
+                    let point = if isAfter then line.EndIncludingLineBreak else line.Start
+                    x.PutAtWithReturn point (StringData.Simple text) OperationKind.LineWise
+                match SnapshotSpanUtil.GetLastIncludedLine span with
+                | None -> ()
+                | Some(line) ->
+                    let point = SnapshotLineUtil.GetIndent line
+                    TextViewUtil.MoveCaretToPoint _textView point)
 
         member x.PrintMarks (markMap:IMarkMap) =    
             let printMark (ident:char) (point:VirtualSnapshotPoint) =
@@ -179,12 +174,12 @@ type internal DefaultOperations ( _data : OperationsData ) =
 
                     // Build up the prefix for the specified modifiers
                     let rec getPrefix modifiers = 
-                        if Utils.IsFlagSet modifiers KeyModifiers.Alt then
-                            "M-" + getPrefix (Utils.UnsetFlag modifiers KeyModifiers.Alt)
-                        elif Utils.IsFlagSet modifiers KeyModifiers.Control then
-                            "C-" + getPrefix (Utils.UnsetFlag modifiers KeyModifiers.Control)
-                        elif Utils.IsFlagSet modifiers KeyModifiers.Shift then
-                            "S-" + getPrefix (Utils.UnsetFlag modifiers KeyModifiers.Shift)
+                        if Util.IsFlagSet modifiers KeyModifiers.Alt then
+                            "M-" + getPrefix (Util.UnsetFlag modifiers KeyModifiers.Alt)
+                        elif Util.IsFlagSet modifiers KeyModifiers.Control then
+                            "C-" + getPrefix (Util.UnsetFlag modifiers KeyModifiers.Control)
+                        elif Util.IsFlagSet modifiers KeyModifiers.Shift then
+                            "S-" + getPrefix (Util.UnsetFlag modifiers KeyModifiers.Shift)
                         else 
                             ""
 
@@ -192,16 +187,14 @@ type internal DefaultOperations ( _data : OperationsData ) =
                     // a char this is straight forward.  Non-char KeyInput need to be special cased
                     // though
                     let prefix,output = 
-                        match (KeyNotationUtil.TryGetSpecialKeyName ki),ki.RawChar with
+                        match (KeyNotationUtil.TryGetSpecialKeyName ki),ki.Char with
                         | Some(name,extraModifiers), _ -> 
                             (getPrefix extraModifiers, name)
-                        | None, Some(c) -> 
+                        | None, c -> 
                             let c = 
                                 if CharUtil.IsLetter c && ki.KeyModifiers <> KeyModifiers.None then CharUtil.ToUpper c 
                                 else c
                             (getPrefix ki.KeyModifiers, StringUtil.ofChar c)
-                        | None, None -> 
-                            (getPrefix ki.KeyModifiers, "???")
 
                     if String.length prefix = 0 then 
                         if String.length output = 1 then output

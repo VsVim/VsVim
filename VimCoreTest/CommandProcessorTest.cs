@@ -14,12 +14,12 @@ using Vim.Modes.Command;
 using Vim.UnitTest;
 using Vim.UnitTest.Mock;
 
-namespace VimCore.Test
+namespace VimCore.UnitTest
 {
     [TestFixture, RequiresSTA]
     public class CommandProcessorTest
     {
-        private IWpfTextView _view;
+        private IWpfTextView _textView;
         private MockRepository _factory;
         private Mock<IVimBuffer> _bufferData;
         private CommandProcessor _processorRaw;
@@ -30,25 +30,25 @@ namespace VimCore.Test
         private Mock<IOperations> _operations;
         private Mock<IStatusUtil> _statusUtil;
         private Mock<IFileSystem> _fileSystem;
-        private Mock<IVimHost> _vimHost;
+        private Mock<IVimHost> _host;
 
         public void Create(params string[] lines)
         {
-            _view = EditorUtil.CreateView(lines);
-            _view.Caret.MoveTo(new SnapshotPoint(_view.TextSnapshot, 0));
+            _textView = EditorUtil.CreateView(lines);
+            _textView.Caret.MoveTo(new SnapshotPoint(_textView.TextSnapshot, 0));
             _factory = new MockRepository(MockBehavior.Strict);
             _map = VimUtil.CreateRegisterMap(MockObjectFactory.CreateClipboardDevice(_factory).Object);
             _editOpts = _factory.Create<IEditorOperations>();
-            _vimHost = _factory.Create<IVimHost>();
+            _host = _factory.Create<IVimHost>();
             _operations = _factory.Create<IOperations>();
             _operations.SetupGet(x => x.EditorOperations).Returns(_editOpts.Object);
             _statusUtil = _factory.Create<IStatusUtil>();
             _fileSystem = _factory.Create<IFileSystem>(MockBehavior.Strict);
             _vimData = new VimData();
             _bufferData = MockObjectFactory.CreateVimBuffer(
-                _view,
+                _textView,
                 "test",
-                MockObjectFactory.CreateVim(_map, host: _vimHost.Object, vimData: _vimData).Object);
+                MockObjectFactory.CreateVim(_map, host: _host.Object, vimData: _vimData).Object);
             _processorRaw = new Vim.Modes.Command.CommandProcessor(_bufferData.Object, _operations.Object, _statusUtil.Object, _fileSystem.Object);
             _processor = _processorRaw;
         }
@@ -110,7 +110,9 @@ namespace VimCore.Test
         public void Jump_LastLine()
         {
             Create("foo", "bar", "baz");
-            _operations.Setup(x => x.MoveCaretToPoint(_view.GetLastLine().Start)).Verifiable();
+            _operations
+                .Setup(x => x.MoveCaretToPoint(_textView.GetLastLine().Start))
+                .Verifiable();
             RunCommand("$");
             _operations.Verify();
         }
@@ -119,7 +121,7 @@ namespace VimCore.Test
         public void Jump_LastLineWithVimLineNumber()
         {
             Create("foo", "bar");
-            _operations.Setup(x => x.MoveCaretToPoint(_view.GetLastLine().Start)).Verifiable();
+            _operations.Setup(x => x.MoveCaretToPoint(_textView.GetLastLine().Start)).Verifiable();
             RunCommand("2");
             _editOpts.Verify();
         }
@@ -137,7 +139,7 @@ namespace VimCore.Test
         public void Yank1()
         {
             Create("foo", "bar");
-            var tss = _view.TextSnapshot;
+            var tss = _textView.TextSnapshot;
             _operations
                 .Setup(x => x.UpdateRegisterForSpan(
                     _map.GetRegister(RegisterName.Unnamed),
@@ -153,7 +155,7 @@ namespace VimCore.Test
         public void Yank2()
         {
             Create("foo", "bar", "baz");
-            var tss = _view.TextSnapshot;
+            var tss = _textView.TextSnapshot;
             var span = new SnapshotSpan(
                 tss.GetLineFromLineNumber(0).Start,
                 tss.GetLineFromLineNumber(1).EndIncludingLineBreak);
@@ -172,7 +174,7 @@ namespace VimCore.Test
         public void Yank3()
         {
             Create("foo", "bar");
-            var line = _view.TextSnapshot.GetLineFromLineNumber(0);
+            var line = _textView.TextSnapshot.GetLineFromLineNumber(0);
             _operations
                 .Setup(x => x.UpdateRegisterForSpan(
                     _map.GetRegister('c'),
@@ -188,7 +190,7 @@ namespace VimCore.Test
         public void Yank4()
         {
             Create("foo", "bar");
-            var tss = _view.TextSnapshot;
+            var tss = _textView.TextSnapshot;
             var span = new SnapshotSpan(
                 tss.GetLineFromLineNumber(0).Start,
                 tss.GetLineFromLineNumber(1).EndIncludingLineBreak);
@@ -207,7 +209,7 @@ namespace VimCore.Test
         public void Yank_WithRangeAndCount1()
         {
             Create("cat", "dog", "rabbit", "tree");
-            var range = _view.GetLineRange(1, 1);
+            var range = _textView.GetLineRange(1, 1);
             _operations
                 .Setup(x => x.UpdateRegisterForSpan(
                     _map.GetRegister(RegisterName.Unnamed),
@@ -243,7 +245,7 @@ namespace VimCore.Test
         public void ShiftLeft1()
         {
             Create("     foo", "bar", "baz");
-            var range = _view.GetLineRange(0);
+            var range = _textView.GetLineRange(0);
             _operations
                 .Setup(x => x.ShiftLineRangeLeft(1, range))
                 .Verifiable();
@@ -255,7 +257,7 @@ namespace VimCore.Test
         public void ShiftLeft2()
         {
             Create("     foo", "     bar", "baz");
-            var range = _view.GetLineRange(0, 1);
+            var range = _textView.GetLineRange(0, 1);
             _operations
                 .Setup(x => x.ShiftLineRangeLeft(1, range))
                 .Verifiable();
@@ -267,7 +269,7 @@ namespace VimCore.Test
         public void ShiftLeft3()
         {
             Create("     foo", "     bar", "baz");
-            var range = _view.GetLineRange(0, 1);
+            var range = _textView.GetLineRange(0, 1);
             _operations
                 .Setup(x => x.ShiftLineRangeLeft(1, range))
                 .Verifiable();
@@ -280,7 +282,7 @@ namespace VimCore.Test
         {
             Create("foo", "bar", "baz");
             _operations
-                .Setup(x => x.ShiftLineRangeRight(1, _view.GetLineRange(0, 0)))
+                .Setup(x => x.ShiftLineRangeRight(1, _textView.GetLineRange(0, 0)))
                 .Verifiable();
             RunCommand(">");
             _operations.Verify();
@@ -291,7 +293,7 @@ namespace VimCore.Test
         {
             Create("foo", "bar", "baz");
             _operations
-                .Setup(x => x.ShiftLineRangeRight(1, _view.GetLineRange(0, 1)))
+                .Setup(x => x.ShiftLineRangeRight(1, _textView.GetLineRange(0, 1)))
                 .Verifiable();
             RunCommand("1,2>");
             _operations.Verify();
@@ -302,7 +304,7 @@ namespace VimCore.Test
         {
             Create("foo", "bar", "baz");
             _operations
-                .Setup(x => x.ShiftLineRangeRight(1, _view.GetLineRange(0, 1)))
+                .Setup(x => x.ShiftLineRangeRight(1, _textView.GetLineRange(0, 1)))
                 .Verifiable();
             RunCommand("> 2");
             _operations.Verify();
@@ -312,7 +314,7 @@ namespace VimCore.Test
         public void Delete1()
         {
             Create("foo", "bar");
-            var span = _view.TextSnapshot.GetLineFromLineNumber(0).ExtentIncludingLineBreak;
+            var span = _textView.TextSnapshot.GetLineFromLineNumber(0).ExtentIncludingLineBreak;
             _operations
                 .Setup(x => x.DeleteSpan(span))
                 .Verifiable();
@@ -327,7 +329,7 @@ namespace VimCore.Test
         public void Delete2()
         {
             Create("foo", "bar", "baz");
-            var tss = _view.TextSnapshot;
+            var tss = _textView.TextSnapshot;
             var span = new SnapshotSpan(
                 tss.GetLineFromLineNumber(0).Start,
                 tss.GetLineFromLineNumber(1).EndIncludingLineBreak);
@@ -345,7 +347,7 @@ namespace VimCore.Test
         public void Delete3()
         {
             Create("foo", "bar", "baz");
-            var span = _view.TextSnapshot.GetLineFromLineNumber(1).ExtentIncludingLineBreak;
+            var span = _textView.TextSnapshot.GetLineFromLineNumber(1).ExtentIncludingLineBreak;
             _operations
                 .Setup(x => x.DeleteSpan(span))
                 .Verifiable();
@@ -360,7 +362,7 @@ namespace VimCore.Test
         public void Substitute1()
         {
             Create("foo bar");
-            var range = _view.GetLineRange(0);
+            var range = _textView.GetLineRange(0);
             _operations
                 .Setup(x => x.Substitute("f", "b", range, SubstituteFlags.None))
                 .Verifiable();
@@ -373,7 +375,7 @@ namespace VimCore.Test
         public void Substitute2()
         {
             Create("foo bar");
-            var range = _view.GetLineRange(0);
+            var range = _textView.GetLineRange(0);
             _operations
                 .Setup(x => x.Substitute("foo", "bar", range, SubstituteFlags.None))
                 .Verifiable();
@@ -385,7 +387,7 @@ namespace VimCore.Test
         public void Substitute3()
         {
             Create("foo bar");
-            var range = _view.GetLineRange(0);
+            var range = _textView.GetLineRange(0);
             _operations
                 .Setup(x => x.Substitute("foo", "bar", range, SubstituteFlags.None))
                 .Verifiable();
@@ -397,7 +399,7 @@ namespace VimCore.Test
         public void Substitute4()
         {
             Create("foo bar");
-            var range = _view.GetLineRange(0);
+            var range = _textView.GetLineRange(0);
             _operations
                 .Setup(x => x.Substitute("foo", "bar", range, SubstituteFlags.ReplaceAll))
                 .Verifiable();
@@ -409,7 +411,7 @@ namespace VimCore.Test
         public void Substitute5()
         {
             Create("foo bar");
-            var range = _view.GetLineRange(0);
+            var range = _textView.GetLineRange(0);
             _operations
                 .Setup(x => x.Substitute("foo", "bar", range, SubstituteFlags.IgnoreCase))
                 .Verifiable();
@@ -421,7 +423,7 @@ namespace VimCore.Test
         public void Substitute6()
         {
             Create("foo bar");
-            var range = _view.GetLineRange(0);
+            var range = _textView.GetLineRange(0);
             _operations
                 .Setup(x => x.Substitute("foo", "bar", range, SubstituteFlags.IgnoreCase | SubstituteFlags.ReplaceAll))
                 .Verifiable();
@@ -433,7 +435,7 @@ namespace VimCore.Test
         public void Substitute7()
         {
             Create("foo bar");
-            var range = _view.GetLineRange(0);
+            var range = _textView.GetLineRange(0);
             _operations
                 .Setup(x => x.Substitute("foo", "bar", range, SubstituteFlags.IgnoreCase | SubstituteFlags.ReplaceAll))
                 .Verifiable();
@@ -446,7 +448,7 @@ namespace VimCore.Test
         public void Substitute8()
         {
             Create("foo bar");
-            var range = _view.GetLineRange(0);
+            var range = _textView.GetLineRange(0);
             _operations
                 .Setup(x => x.Substitute("foo", "bar", range, SubstituteFlags.ReportOnly))
                 .Verifiable();
@@ -459,7 +461,7 @@ namespace VimCore.Test
         public void Substitute9()
         {
             Create("foo bar", "baz");
-            var range = _view.GetLineRange(0, 1);
+            var range = _textView.GetLineRange(0, 1);
             _operations
                 .Setup(x => x.Substitute("foo", "bar", range, SubstituteFlags.None))
                 .Verifiable();
@@ -471,7 +473,7 @@ namespace VimCore.Test
         public void Substitute10()
         {
             Create("foo bar", "baz");
-            var range = _view.GetLineRange(0, 1);
+            var range = _textView.GetLineRange(0, 1);
             _operations
                 .Setup(x => x.Substitute("foo", "bar", range, SubstituteFlags.SuppressError))
                 .Verifiable();
@@ -483,7 +485,7 @@ namespace VimCore.Test
         public void Substitute11()
         {
             Create("foo bar", "baz");
-            var range = _view.GetLineRange(0, 1);
+            var range = _textView.GetLineRange(0, 1);
             _operations
                 .Setup(x => x.Substitute("foo", "bar", range, SubstituteFlags.OrdinalCase))
                 .Verifiable();
@@ -495,7 +497,7 @@ namespace VimCore.Test
         public void Substitute12()
         {
             Create("foo bar", "baz");
-            var range = _view.GetLineRange(0, 1);
+            var range = _textView.GetLineRange(0, 1);
             _vimData.LastSubstituteData = FSharpOption.Create(new SubstituteData("", "", SubstituteFlags.OrdinalCase));
             _operations
                 .Setup(x => x.Substitute("foo", "bar", range, SubstituteFlags.OrdinalCase))
@@ -508,7 +510,7 @@ namespace VimCore.Test
         public void Substitute13()
         {
             Create("foo bar", "baz");
-            var range = _view.GetLineRange(0, 1);
+            var range = _textView.GetLineRange(0, 1);
             _vimData.LastSubstituteData = FSharpOption.Create(new SubstituteData("", "", SubstituteFlags.OrdinalCase));
             _operations
                 .Setup(x => x.Substitute("foo", "bar", range, SubstituteFlags.OrdinalCase | SubstituteFlags.ReplaceAll))
@@ -534,7 +536,7 @@ namespace VimCore.Test
         public void Substitute15()
         {
             Create("foo bar baz");
-            var range = _view.GetLineRange(0);
+            var range = _textView.GetLineRange(0);
             _operations
                 .Setup(x => x.Substitute("foo", "", range, SubstituteFlags.None))
                 .Verifiable();
@@ -546,7 +548,7 @@ namespace VimCore.Test
         public void Substitute16()
         {
             Create("foo bar baz");
-            var range = _view.GetLineRange(0);
+            var range = _textView.GetLineRange(0);
             _operations
                 .Setup(x => x.Substitute("foo", "b", range, SubstituteFlags.None))
                 .Verifiable();
@@ -558,7 +560,7 @@ namespace VimCore.Test
         public void Substitute17()
         {
             Create("foo bar baz");
-            var range = _view.GetLineRange(0);
+            var range = _textView.GetLineRange(0);
             _operations
                 .Setup(x => x.Substitute("foo", "", range, SubstituteFlags.None))
                 .Verifiable();
@@ -571,7 +573,7 @@ namespace VimCore.Test
         {
             Create("cat", "dog");
             _vimData.LastSubstituteData = FSharpOption.Create(new SubstituteData("a", "b", SubstituteFlags.ReportOnly));
-            _operations.Setup(x => x.Substitute("a", "b", _view.GetLineRange(0, 0), SubstituteFlags.None));
+            _operations.Setup(x => x.Substitute("a", "b", _textView.GetLineRange(0, 0), SubstituteFlags.None));
             RunCommand("s");
         }
 
@@ -580,7 +582,7 @@ namespace VimCore.Test
         {
             Create("cat", "dog");
             _vimData.LastSubstituteData = FSharpOption.Create(new SubstituteData("a", "b", SubstituteFlags.ReportOnly));
-            _operations.Setup(x => x.Substitute("a", "b", _view.GetLineRange(0, 0), SubstituteFlags.ReplaceAll));
+            _operations.Setup(x => x.Substitute("a", "b", _textView.GetLineRange(0, 0), SubstituteFlags.ReplaceAll));
             RunCommand("s g");
         }
 
@@ -589,7 +591,7 @@ namespace VimCore.Test
         {
             Create("cat", "dog");
             _vimData.LastSubstituteData = FSharpOption.Create(new SubstituteData("a", "b", SubstituteFlags.ReportOnly));
-            _operations.Setup(x => x.Substitute("a", "b", _view.GetLineRange(0, 0), SubstituteFlags.ReplaceAll));
+            _operations.Setup(x => x.Substitute("a", "b", _textView.GetLineRange(0, 0), SubstituteFlags.ReplaceAll));
             RunCommand("& g");
         }
 
@@ -629,7 +631,7 @@ namespace VimCore.Test
         {
             Create("cat", "dog", "rabbit", "tree");
             _operations
-                .Setup(x => x.Substitute("a", "b", _view.GetLineRange(0, 2), SubstituteFlags.None))
+                .Setup(x => x.Substitute("a", "b", _textView.GetLineRange(0, 2), SubstituteFlags.None))
                 .Verifiable();
             RunCommand("s/a/b/ 3");
             _factory.Verify();
@@ -641,7 +643,7 @@ namespace VimCore.Test
         {
             Create("cat", "dog", "rabbit", "tree");
             _operations
-                .Setup(x => x.Substitute("a", "b", _view.GetLineRange(0, 2), SubstituteFlags.OrdinalCase))
+                .Setup(x => x.Substitute("a", "b", _textView.GetLineRange(0, 2), SubstituteFlags.OrdinalCase))
                 .Verifiable();
             RunCommand("s/a/b/I 3");
             _factory.Verify();
@@ -665,7 +667,7 @@ namespace VimCore.Test
             Create("cat", "dog", "rabbit", "tree");
             _vimData.LastSubstituteData = FSharpOption.Create(new SubstituteData("a", "b", SubstituteFlags.OrdinalCase));
             _operations
-                .Setup(x => x.Substitute("a", "b", _view.GetLineRange(0, 0), SubstituteFlags.None))
+                .Setup(x => x.Substitute("a", "b", _textView.GetLineRange(0, 0), SubstituteFlags.None))
                 .Verifiable();
             RunCommand("s");
             _factory.Verify();
@@ -678,7 +680,7 @@ namespace VimCore.Test
             Create("cat", "dog", "rabbit", "tree");
             _vimData.LastSubstituteData = FSharpOption.Create(new SubstituteData("a", "b", SubstituteFlags.OrdinalCase));
             _operations
-                .Setup(x => x.Substitute("a", "b", _view.GetLineRange(0, 0), SubstituteFlags.ReplaceAll))
+                .Setup(x => x.Substitute("a", "b", _textView.GetLineRange(0, 0), SubstituteFlags.ReplaceAll))
                 .Verifiable();
             RunCommand("s g");
             _factory.Verify();
@@ -691,7 +693,7 @@ namespace VimCore.Test
             Create("cat", "dog", "rabbit", "tree");
             _vimData.LastSubstituteData = FSharpOption.Create(new SubstituteData("a", "b", SubstituteFlags.OrdinalCase));
             _operations
-                .Setup(x => x.Substitute("a", "b", _view.GetLineRange(0, 0), SubstituteFlags.ReplaceAll))
+                .Setup(x => x.Substitute("a", "b", _textView.GetLineRange(0, 0), SubstituteFlags.ReplaceAll))
                 .Verifiable();
             RunCommand("& g");
             _factory.Verify();
@@ -704,7 +706,7 @@ namespace VimCore.Test
             Create("cat", "dog", "rabbit", "tree");
             _vimData.LastSubstituteData = FSharpOption.Create(new SubstituteData("a", "b", SubstituteFlags.OrdinalCase));
             _operations
-                .Setup(x => x.Substitute("a", "b", _view.GetLineRange(0, 0), SubstituteFlags.OrdinalCase | SubstituteFlags.ReplaceAll))
+                .Setup(x => x.Substitute("a", "b", _textView.GetLineRange(0, 0), SubstituteFlags.OrdinalCase | SubstituteFlags.ReplaceAll))
                 .Verifiable();
             RunCommand("&&g");
             _factory.Verify();
@@ -717,7 +719,7 @@ namespace VimCore.Test
             Create("cat", "dog", "rabbit", "tree");
             _vimData.LastSubstituteData = FSharpOption.Create(new SubstituteData("a", "b", SubstituteFlags.OrdinalCase));
             _operations
-                .Setup(x => x.Substitute("a", "b", _view.GetLineRange(0, 2), SubstituteFlags.None))
+                .Setup(x => x.Substitute("a", "b", _textView.GetLineRange(0, 2), SubstituteFlags.None))
                 .Verifiable();
             RunCommand("& 3");
             _factory.Verify();
@@ -731,7 +733,7 @@ namespace VimCore.Test
             _vimData.LastSubstituteData = FSharpOption.Create(new SubstituteData("!!!", "b", SubstituteFlags.None));
             _vimData.LastSearchData = VimUtil.CreateSearchData("a");
             _operations
-                .Setup(x => x.Substitute("a", "b", _view.GetLineRange(0, 0), SubstituteFlags.None))
+                .Setup(x => x.Substitute("a", "b", _textView.GetLineRange(0, 0), SubstituteFlags.None))
                 .Verifiable();
             RunCommand("~");
             _factory.Verify();
@@ -746,7 +748,7 @@ namespace VimCore.Test
             _vimData.LastSubstituteData = FSharpOption.Create(new SubstituteData("!!!", "b", SubstituteFlags.OrdinalCase));
             _vimData.LastSearchData = VimUtil.CreateSearchData("a");
             _operations
-                .Setup(x => x.Substitute("a", "b", _view.GetLineRange(0, 0), SubstituteFlags.None))
+                .Setup(x => x.Substitute("a", "b", _textView.GetLineRange(0, 0), SubstituteFlags.None))
                 .Verifiable();
             RunCommand("~");
             _factory.Verify();
@@ -761,7 +763,7 @@ namespace VimCore.Test
             _vimData.LastSubstituteData = FSharpOption.Create(new SubstituteData("!!!", "b", SubstituteFlags.OrdinalCase));
             _vimData.LastSearchData = VimUtil.CreateSearchData("a");
             _operations
-                .Setup(x => x.Substitute("a", "b", _view.GetLineRange(0, 0), SubstituteFlags.ReplaceAll))
+                .Setup(x => x.Substitute("a", "b", _textView.GetLineRange(0, 0), SubstituteFlags.ReplaceAll))
                 .Verifiable();
             RunCommand("~ g");
             _factory.Verify();
@@ -785,7 +787,7 @@ namespace VimCore.Test
             _vimData.LastSubstituteData = FSharpOption.Create(new SubstituteData("!!!", "b", SubstituteFlags.OrdinalCase));
             _vimData.LastSearchData = VimUtil.CreateSearchData("a");
             _operations
-                .Setup(x => x.Substitute("a", "b", _view.GetLineRange(0, 2), SubstituteFlags.ReplaceAll))
+                .Setup(x => x.Substitute("a", "b", _textView.GetLineRange(0, 2), SubstituteFlags.ReplaceAll))
                 .Verifiable();
             RunCommand("~ g 3");
             _factory.Verify();
@@ -798,7 +800,7 @@ namespace VimCore.Test
             Create("cat", "dog", "rabbit", "tree");
             _vimData.LastSubstituteData = FSharpOption.Create(new SubstituteData("a", "b", SubstituteFlags.OrdinalCase));
             _operations
-                .Setup(x => x.Substitute("a", "b", _view.GetLineRange(0, 0), SubstituteFlags.OrdinalCase))
+                .Setup(x => x.Substitute("a", "b", _textView.GetLineRange(0, 0), SubstituteFlags.OrdinalCase))
                 .Verifiable();
             RunCommand("&&");
             _factory.Verify();
@@ -812,7 +814,7 @@ namespace VimCore.Test
             _vimData.LastSubstituteData = FSharpOption.Create(new SubstituteData("!!!", "b", SubstituteFlags.OrdinalCase));
             _vimData.LastSearchData = VimUtil.CreateSearchData("a");
             _operations
-                .Setup(x => x.Substitute("a", "b", _view.GetLineRange(0, 0), SubstituteFlags.None))
+                .Setup(x => x.Substitute("a", "b", _textView.GetLineRange(0, 0), SubstituteFlags.None))
                 .Verifiable();
             RunCommand("s r");
             _factory.Verify();
@@ -826,7 +828,7 @@ namespace VimCore.Test
             _vimData.LastSubstituteData = FSharpOption.Create(new SubstituteData("!!!", "b", SubstituteFlags.OrdinalCase));
             _vimData.LastSearchData = VimUtil.CreateSearchData("a");
             _operations
-                .Setup(x => x.Substitute("a", "b", _view.GetLineRange(0, 0), SubstituteFlags.None))
+                .Setup(x => x.Substitute("a", "b", _textView.GetLineRange(0, 0), SubstituteFlags.None))
                 .Verifiable();
             RunCommand("&r");
             _factory.Verify();
@@ -838,7 +840,7 @@ namespace VimCore.Test
         {
             Create("cat", "dog", "rabbit", "tree");
             _operations
-                .Setup(x => x.Substitute("a", "b", _view.GetLineRange(0, 0), SubstituteFlags.Magic))
+                .Setup(x => x.Substitute("a", "b", _textView.GetLineRange(0, 0), SubstituteFlags.Magic))
                 .Verifiable();
             RunCommand("smagic/a/b");
             _factory.Verify();
@@ -853,7 +855,7 @@ namespace VimCore.Test
             Create("cat", "dog", "rabbit", "tree");
             _vimData.LastSubstituteData = FSharpOption.Create(new SubstituteData("a", "b", SubstituteFlags.OrdinalCase));
             _operations
-                .Setup(x => x.Substitute("a", "b", _view.GetLineRange(0, 0), SubstituteFlags.Magic))
+                .Setup(x => x.Substitute("a", "b", _textView.GetLineRange(0, 0), SubstituteFlags.Magic))
                 .Verifiable();
             RunCommand("smagic");
             _factory.Verify();
@@ -867,7 +869,7 @@ namespace VimCore.Test
         {
             Create("cat", "dog", "rabbit", "tree");
             _operations
-                .Setup(x => x.Substitute("a", "b", _view.GetLineRange(0, 0), SubstituteFlags.Nomagic))
+                .Setup(x => x.Substitute("a", "b", _textView.GetLineRange(0, 0), SubstituteFlags.Nomagic))
                 .Verifiable();
             RunCommand("snomagic/a/b");
             _factory.Verify();
@@ -882,7 +884,7 @@ namespace VimCore.Test
             Create("cat", "dog", "rabbit", "tree");
             _vimData.LastSubstituteData = FSharpOption.Create(new SubstituteData("a", "b", SubstituteFlags.OrdinalCase));
             _operations
-                .Setup(x => x.Substitute("a", "b", _view.GetLineRange(0, 0), SubstituteFlags.Nomagic))
+                .Setup(x => x.Substitute("a", "b", _textView.GetLineRange(0, 0), SubstituteFlags.Nomagic))
                 .Verifiable();
             RunCommand("snomagic");
             _factory.Verify();
@@ -896,7 +898,7 @@ namespace VimCore.Test
         {
             Create("cat", "dog", "rabbit", "tree");
             _operations
-                .Setup(x => x.Substitute("a", "b", _view.GetLineRange(0, 0), SubstituteFlags.PrintLast))
+                .Setup(x => x.Substitute("a", "b", _textView.GetLineRange(0, 0), SubstituteFlags.PrintLast))
                 .Verifiable();
             RunCommand("s/a/b/p");
         }
@@ -907,7 +909,7 @@ namespace VimCore.Test
         {
             Create("cat", "dog", "rabbit", "tree");
             _operations
-                .Setup(x => x.Substitute("a", "b", _view.GetLineRange(0, 0), SubstituteFlags.PrintLastWithNumber))
+                .Setup(x => x.Substitute("a", "b", _textView.GetLineRange(0, 0), SubstituteFlags.PrintLastWithNumber))
                 .Verifiable();
             RunCommand("s/a/b/#");
         }
@@ -918,7 +920,7 @@ namespace VimCore.Test
         {
             Create("cat", "dog", "rabbit", "tree");
             _operations
-                .Setup(x => x.Substitute("a", "b", _view.GetLineRange(0, 0), SubstituteFlags.PrintLastWithList))
+                .Setup(x => x.Substitute("a", "b", _textView.GetLineRange(0, 0), SubstituteFlags.PrintLastWithList))
                 .Verifiable();
             RunCommand("s/a/b/l");
         }
@@ -1359,7 +1361,7 @@ namespace VimCore.Test
         public void Write1()
         {
             Create("");
-            _operations.Setup(x => x.Save()).Verifiable();
+            _operations.Setup(x => x.Save()).Returns(true).Verifiable();
             RunCommand("w");
             _operations.Verify();
         }
@@ -1368,7 +1370,7 @@ namespace VimCore.Test
         public void Write2()
         {
             Create("");
-            _operations.Setup(x => x.Save()).Verifiable();
+            _operations.Setup(x => x.Save()).Returns(true).Verifiable();
             RunCommand("write");
             _operations.Verify();
         }
@@ -1377,7 +1379,7 @@ namespace VimCore.Test
         public void Write3()
         {
             Create("");
-            _operations.Setup(x => x.SaveAs("foo")).Verifiable();
+            _operations.Setup(x => x.SaveAs("foo")).Returns(true).Verifiable();
             RunCommand("write foo");
             _operations.Verify();
         }
@@ -1386,7 +1388,7 @@ namespace VimCore.Test
         public void Write4()
         {
             Create("");
-            _operations.Setup(x => x.SaveAs("foo")).Verifiable();
+            _operations.Setup(x => x.SaveAs("foo")).Returns(true).Verifiable();
             RunCommand("w foo");
             _operations.Verify();
         }
@@ -1395,7 +1397,7 @@ namespace VimCore.Test
         public void WriteAll1()
         {
             Create("");
-            _operations.Setup(x => x.SaveAll()).Verifiable();
+            _operations.Setup(x => x.SaveAll()).Returns(true).Verifiable();
             RunCommand("wa");
             _operations.Verify();
         }
@@ -1404,16 +1406,56 @@ namespace VimCore.Test
         public void WriteAll2()
         {
             Create("");
-            _operations.Setup(x => x.SaveAll()).Verifiable();
+            _operations.Setup(x => x.SaveAll()).Returns(true).Verifiable();
             RunCommand("wall");
             _operations.Verify();
+        }
+
+        [Test]
+        public void WriteQuit_NoArguments()
+        {
+            Create("");
+            _host.Setup(x => x.Save(_textView)).Returns(true).Verifiable();
+            _host.Setup(x => x.Close(_textView, false)).Verifiable();
+            RunCommand("wq");
+            _factory.Verify();
+        }
+
+        [Test]
+        public void WriteQuit_WithBang()
+        {
+            Create("");
+            _host.Setup(x => x.Save(_textView)).Returns(true).Verifiable();
+            _host.Setup(x => x.Close(_textView, false)).Verifiable();
+            RunCommand("wq!");
+            _factory.Verify();
+        }
+
+        [Test]
+        public void WriteQuit_FileName()
+        {
+            Create("bar");
+            _host.Setup(x => x.SaveTextAs("bar", "foo.txt")).Returns(true).Verifiable();
+            _host.Setup(x => x.Close(_textView, false)).Verifiable();
+            RunCommand("wq foo.txt");
+            _factory.Verify();
+        }
+
+        [Test]
+        public void WriteQuit_Range()
+        {
+            Create("dog", "cat", "bear");
+            _host.Setup(x => x.SaveTextAs(It.IsAny<string>(), "foo.txt")).Returns(true).Verifiable();
+            _host.Setup(x => x.Close(_textView, false)).Verifiable();
+            RunCommand("1,2wq foo.txt");
+            _factory.Verify();
         }
 
         [Test]
         public void Quit1()
         {
             Create("");
-            _vimHost.Setup(x => x.CloseView(_view, true)).Verifiable();
+            _host.Setup(x => x.Close(_textView, true)).Verifiable();
             RunCommand("quit");
             _factory.Verify();
         }
@@ -1422,7 +1464,7 @@ namespace VimCore.Test
         public void Quit2()
         {
             Create("");
-            _vimHost.Setup(x => x.CloseView(_view, true)).Verifiable();
+            _host.Setup(x => x.Close(_textView, true)).Verifiable();
             RunCommand("q");
             _factory.Verify();
         }
@@ -1431,7 +1473,7 @@ namespace VimCore.Test
         public void Quit3()
         {
             Create("");
-            _vimHost.Setup(x => x.CloseView(_view, false)).Verifiable();
+            _host.Setup(x => x.Close(_textView, false)).Verifiable();
             RunCommand("q!");
             _factory.Verify();
         }
@@ -1539,7 +1581,7 @@ namespace VimCore.Test
         public void Split1()
         {
             Create("");
-            _vimHost.Setup(x => x.SplitView(_view)).Verifiable();
+            _host.Setup(x => x.SplitView(_textView)).Verifiable();
             RunCommand("split");
             _factory.Verify();
         }
@@ -1548,7 +1590,7 @@ namespace VimCore.Test
         public void Split2()
         {
             Create("");
-            _vimHost.Setup(x => x.SplitView(_view)).Verifiable();
+            _host.Setup(x => x.SplitView(_textView)).Verifiable();
             RunCommand("sp");
             _factory.Verify();
         }
@@ -1557,7 +1599,7 @@ namespace VimCore.Test
         public void Close1()
         {
             Create("");
-            _vimHost.Setup(x => x.CloseView(_view, true)).Verifiable();
+            _host.Setup(x => x.Close(_textView, true)).Verifiable();
             RunCommand(":close");
             _factory.Verify();
         }
@@ -1566,7 +1608,7 @@ namespace VimCore.Test
         public void Close2()
         {
             Create("");
-            _vimHost.Setup(x => x.CloseView(_view, false)).Verifiable();
+            _host.Setup(x => x.Close(_textView, false)).Verifiable();
             RunCommand(":close!");
             _factory.Verify();
         }
@@ -1575,7 +1617,7 @@ namespace VimCore.Test
         public void Close3()
         {
             Create("");
-            _vimHost.Setup(x => x.CloseView(_view, false)).Verifiable();
+            _host.Setup(x => x.Close(_textView, false)).Verifiable();
             RunCommand(":clo!");
             _factory.Verify();
         }
@@ -1585,7 +1627,7 @@ namespace VimCore.Test
         {
             Create("dog", "cat", "tree", "rabbit");
             _operations
-                .Setup(x => x.Join(_view.GetLineRange(0, 1), JoinKind.RemoveEmptySpaces))
+                .Setup(x => x.Join(_textView.GetLineRange(0, 1), JoinKind.RemoveEmptySpaces))
                 .Verifiable();
             RunCommand("j");
             _factory.Verify();
@@ -1596,7 +1638,7 @@ namespace VimCore.Test
         {
             Create("dog", "cat", "tree", "rabbit");
             _operations
-                .Setup(x => x.Join(_view.GetLineRange(0, 1), JoinKind.KeepEmptySpaces))
+                .Setup(x => x.Join(_textView.GetLineRange(0, 1), JoinKind.KeepEmptySpaces))
                 .Verifiable();
             RunCommand("j!");
             _factory.Verify();
@@ -1607,7 +1649,7 @@ namespace VimCore.Test
         {
             Create("dog", "cat", "tree", "rabbit");
             _operations
-                .Setup(x => x.Join(_view.GetLineRange(0, 2), JoinKind.RemoveEmptySpaces))
+                .Setup(x => x.Join(_textView.GetLineRange(0, 2), JoinKind.RemoveEmptySpaces))
                 .Verifiable();
             RunCommand("j 3");
             _factory.Verify();
@@ -1618,7 +1660,7 @@ namespace VimCore.Test
         {
             Create("dog", "cat", "tree", "rabbit");
             _operations
-                .Setup(x => x.Join(_view.GetLineRange(1, 3), JoinKind.RemoveEmptySpaces))
+                .Setup(x => x.Join(_textView.GetLineRange(1, 3), JoinKind.RemoveEmptySpaces))
                 .Verifiable();
             RunCommand("2j 3");
             _factory.Verify();
@@ -1630,7 +1672,7 @@ namespace VimCore.Test
         {
             Create("dog", "cat", "tree", "rabbit");
             _operations
-                .Setup(x => x.Join(_view.GetLineRange(2, 2), JoinKind.RemoveEmptySpaces))
+                .Setup(x => x.Join(_textView.GetLineRange(2, 2), JoinKind.RemoveEmptySpaces))
                 .Verifiable();
             RunCommand("3j 1");
             _factory.Verify();

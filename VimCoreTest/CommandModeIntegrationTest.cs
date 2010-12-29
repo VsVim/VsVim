@@ -8,7 +8,7 @@ using Vim.Extensions;
 using Vim.UnitTest;
 using Vim.UnitTest.Mock;
 
-namespace VimCore.Test
+namespace VimCore.UnitTest
 {
     /// <summary>
     /// Summary description for CommandModeTest
@@ -160,7 +160,6 @@ namespace VimCore.Test
         {
             Create("cat bat", "dag");
             List<string> list = null;
-            var message = String.Empty;
             _buffer.StatusMessageLong += (_, e) => { list = e.ToList(); };
             RunCommand("s/a/b/pg");
             Assert.AreEqual(Resources.Common_SubstituteComplete(2, 1), list[0]);

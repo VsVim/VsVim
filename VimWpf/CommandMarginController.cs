@@ -75,16 +75,9 @@ namespace Vim.UI.Wpf
             switch (mode.ModeKind)
             {
                 case ModeKind.Normal:
-
-                    if (_buffer.NormalMode.OneTimeMode.Is(ModeKind.Insert))
-                    {
-                        _margin.StatusLine = Resources.PendingInsertBanner;
-                    }
-                    else
-                    {
-                        _margin.StatusLine = String.Empty;
-                    }
-
+                    _margin.StatusLine = _buffer.NormalMode.OneTimeMode.Is(ModeKind.Insert)
+                        ? Resources.PendingInsertBanner
+                        : String.Empty;
                     break;
                 case ModeKind.Command:
                     _margin.StatusLine = ":" + _buffer.CommandMode.Command;
@@ -103,6 +96,9 @@ namespace Vim.UI.Wpf
                     break;
                 case ModeKind.VisualLine:
                     _margin.StatusLine = Resources.VisualLineBanner;
+                    break;
+                case ModeKind.ExternalEdit:
+                    _margin.StatusLine = Resources.ExternalEditBanner;
                     break;
                 case ModeKind.Disabled:
                     _margin.StatusLine = _buffer.DisabledMode.HelpMessage;
@@ -126,7 +122,7 @@ namespace Vim.UI.Wpf
                 case ModeKind.Normal:
                     {
                         var mode = _buffer.NormalMode;
-                        var search = mode.IncrementalSearch;
+                        var search = _buffer.IncrementalSearch;
                         if (search.InSearch && search.CurrentSearch.IsSome())
                         {
                             var data = search.CurrentSearch.Value;
@@ -156,15 +152,15 @@ namespace Vim.UI.Wpf
 
         #region Event Handlers
 
-        private void OnSwitchMode(object sender, IMode mode)
+        private void OnSwitchMode(object sender, SwitchModeEventArgs args)
         {
             if (_inKeyInputEvent)
             {
-                _modeSwitch = mode;
+                _modeSwitch = args.CurrentMode;
             }
             else
             {
-                UpdateForSwitchMode(mode);
+                UpdateForSwitchMode(args.CurrentMode);
             }
         }
 

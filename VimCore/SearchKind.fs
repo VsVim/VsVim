@@ -47,3 +47,4 @@ module SearchKindUtil =
         match dir with 
         | Direction.Forward -> SearchKind.Forward
         | Direction.Backward -> SearchKind.Backward
+

@@ -15,41 +15,16 @@ type IOperations =
     abstract DeleteCharacterAtCursor : count:int -> SnapshotSpan
 
     abstract DeleteCharacterBeforeCursor : count:int -> SnapshotSpan
-    abstract PasteAfterCursor : text:string -> count:int -> opKind:OperationKind -> moveCursorToEnd: bool -> unit
-    abstract PasteBeforeCursor : text:string -> count:int -> opKind:OperationKind -> moveCursorToEnd:bool -> unit
 
-    /// Adds an empty line to the buffer below the cursor and returns the resulting ITextSnapshotLine
-    abstract InsertLineBelow : unit -> ITextSnapshotLine
-
-    /// Insert a line above the current cursor position and returns the resulting ITextSnapshotLine
-    abstract InsertLineAbove : unit -> ITextSnapshotLine
 
     /// Go to the definition of the word under the cursor
     abstract GoToDefinitionWrapper : unit -> unit
-
-    /// Go to the local declaration of the word under the cursor
-    abstract GoToLocalDeclaration : unit -> unit
-
-    /// Go to the global declaration of the word under the cursor
-    abstract GoToGlobalDeclaration : unit -> unit
-
-    /// Go to the file named in the word under the cursor
-    abstract GoToFile : unit -> unit
 
     /// Go to the specified line number or the first line if no value is specified
     abstract GoToLineOrFirst : int option -> unit
 
     /// GoTo the specified line number or the last line if no value is specified
     abstract GoToLineOrLast : int option -> unit
-
-    /// Move to the next occurrence of the word under the cursor
-    abstract MoveToNextOccuranceOfWordAtCursor : SearchKind -> count:int -> unit
-
-    /// Move to the next occurrence of the word under the cursor
-    abstract MoveToNextOccuranceOfPartialWordAtCursor : SearchKind -> count:int -> unit
-
-    /// Move to the next "count" occurrence of the last search
-    abstract MoveToNextOccuranceOfLastSearch : count:int -> isReverse:bool -> unit
 
     /// Move the caret for an append operation
     abstract MoveCaretForAppend : unit -> unit

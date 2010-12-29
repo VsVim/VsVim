@@ -4,7 +4,7 @@ using NUnit.Framework;
 using Vim;
 using Vim.UnitTest;
 
-namespace VimCore.Test
+namespace VimCore.UnitTest
 {
     [TestFixture]
     public class NormalModeIntegrationTest
@@ -518,6 +518,15 @@ namespace VimCore.Test
         }
 
         [Test]
+        public void Repeat_DeleteWithIncrementalSearch()
+        {
+            CreateBuffer("dog cat bear tree");
+            _buffer.Process("d/a", enter: true);
+            _buffer.Process('.');
+            Assert.AreEqual("ar tree", _textView.GetLine(0).GetText());
+        }
+
+        [Test]
         public void Map_ToCharDoesNotUseMap()
         {
             CreateBuffer("bear; again: dog");
@@ -581,6 +590,225 @@ namespace VimCore.Test
                 _buffer.Process("e");
             }
             Assert.AreEqual(_textView.GetLine(1).End.Subtract(1), _textView.GetCaretPoint());
+        }
+
+        [Test]
+        public void Handle_cc_AutoIndentShouldPreserveOnSingle()
+        {
+            CreateBuffer("  dog", "  cat", "  tree");
+            _buffer.Settings.AutoIndent = true;
+            _buffer.Process("cc", enter: true);
+            Assert.AreEqual(ModeKind.Insert, _buffer.ModeKind);
+            Assert.AreEqual(2, _textView.GetCaretPoint().Position);
+            Assert.AreEqual("  ", _textView.GetLine(0).GetText());
+        }
+
+        [Test]
+        public void Handle_cc_NoAutoIndentShouldRemoveAllOnSingle()
+        {
+            CreateBuffer("  dog", "  cat");
+            _buffer.Settings.AutoIndent = false;
+            _buffer.Process("cc", enter: true);
+            Assert.AreEqual(ModeKind.Insert, _buffer.ModeKind);
+            Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+            Assert.AreEqual("", _textView.GetLine(0).GetText());
+        }
+
+        [Test]
+        public void Handle_cc_AutoIndentShouldPreserveOnMultiple()
+        {
+            CreateBuffer("  dog", "  cat", "  tree");
+            _buffer.Settings.AutoIndent = true;
+            _buffer.Process("2cc", enter: true);
+            Assert.AreEqual(ModeKind.Insert, _buffer.ModeKind);
+            Assert.AreEqual(2, _textView.GetCaretPoint().Position);
+            Assert.AreEqual("  ", _textView.GetLine(0).GetText());
+            Assert.AreEqual("  tree", _textView.GetLine(1).GetText());
+        }
+
+        [Test]
+        public void Handle_cc_AutoIndentShouldPreserveFirstOneOnMultiple()
+        {
+            CreateBuffer("    dog", "  cat", "  tree");
+            _buffer.Settings.AutoIndent = true;
+            _buffer.Process("2cc", enter: true);
+            Assert.AreEqual(ModeKind.Insert, _buffer.ModeKind);
+            Assert.AreEqual(4, _textView.GetCaretPoint().Position);
+            Assert.AreEqual("    ", _textView.GetLine(0).GetText());
+            Assert.AreEqual("  tree", _textView.GetLine(1).GetText());
+        }
+
+        [Test]
+        public void Handle_cc_NoAutoIndentShouldRemoveAllOnMultiple()
+        {
+            CreateBuffer("  dog", "  cat", "  tree");
+            _buffer.Settings.AutoIndent = false;
+            _buffer.Process("2cc", enter: true);
+            Assert.AreEqual(ModeKind.Insert, _buffer.ModeKind);
+            Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+            Assert.AreEqual("", _textView.GetLine(0).GetText());
+            Assert.AreEqual("  tree", _textView.GetLine(1).GetText());
+        }
+
+        [Test]
+        public void Handle_cb_DeleteWhitespaceAtEndOfSpan()
+        {
+            CreateBuffer("public static void Main");
+            _textView.MoveCaretTo(19);
+            _buffer.Process("cb");
+            Assert.AreEqual(ModeKind.Insert, _buffer.ModeKind);
+            Assert.AreEqual("public static Main", _textView.GetLine(0).GetText());
+            Assert.AreEqual(14, _textView.GetCaretPoint().Position);
+        }
+
+        [Test]
+        public void Handle_p_LineWiseSimpleString()
+        {
+            CreateBuffer("dog", "cat", "bear", "tree");
+            _buffer.RegisterMap.GetRegister(RegisterName.Unnamed).UpdateValue("pig\n", OperationKind.LineWise);
+            _buffer.Process("p");
+            Assert.AreEqual("dog", _textView.GetLine(0).GetText());
+            Assert.AreEqual("pig", _textView.GetLine(1).GetText());
+            Assert.AreEqual(_textView.GetCaretPoint(), _textView.GetLine(1).Start);
+        }
+
+        [Test]
+        public void Handle_p_LineWiseSimpleStringThatHasIndent()
+        {
+            CreateBuffer("dog", "cat", "bear", "tree");
+            _buffer.RegisterMap.GetRegister(RegisterName.Unnamed).UpdateValue("  pig\n", OperationKind.LineWise);
+            _buffer.Process("p");
+            Assert.AreEqual("dog", _textView.GetLine(0).GetText());
+            Assert.AreEqual("  pig", _textView.GetLine(1).GetText());
+            Assert.AreEqual(_textView.GetCaretPoint(), _textView.GetLine(1).Start.Add(2));
+        }
+
+        [Test]
+        public void Handle_p_CharacterWiseSimpleString()
+        {
+            CreateBuffer("dog", "cat", "bear", "tree");
+            _buffer.RegisterMap.GetRegister(RegisterName.Unnamed).UpdateValue("pig", OperationKind.CharacterWise);
+            _buffer.Process("p");
+            Assert.AreEqual("dpigog", _textView.GetLine(0).GetText());
+            Assert.AreEqual(_textView.GetCaretPoint(), _textView.GetLine(0).Start.Add(3));
+        }
+
+        [Test]
+        public void Handle_p_CharacterWiseBlockStringOnExistingLines()
+        {
+            CreateBuffer("dog", "cat", "bear", "tree");
+            _buffer.RegisterMap.GetRegister(RegisterName.Unnamed).UpdateBlockValues("a", "b", "c");
+            _buffer.Process("p");
+            Assert.AreEqual("daog", _textView.GetLine(0).GetText());
+            Assert.AreEqual("cbat", _textView.GetLine(1).GetText());
+            Assert.AreEqual("bcear", _textView.GetLine(2).GetText());
+            Assert.AreEqual(_textView.GetCaretPoint(), _textView.GetLine(0).Start.Add(1));
+        }
+
+        [Test]
+        public void Handle_p_CharacterWiseBlockStringOnNewLines()
+        {
+            CreateBuffer("dog");
+            _textView.MoveCaretTo(1);
+            _buffer.RegisterMap.GetRegister(RegisterName.Unnamed).UpdateBlockValues("a", "b", "c");
+            _buffer.Process("p");
+            Assert.AreEqual("doag", _textView.GetLine(0).GetText());
+            Assert.AreEqual("  b", _textView.GetLine(1).GetText());
+            Assert.AreEqual("  c", _textView.GetLine(2).GetText());
+            Assert.AreEqual(_textView.GetCaretPoint(), _textView.GetLine(0).Start.Add(2));
+        }
+
+        [Test]
+        public void Handle_P_LineWiseSimpleStringStartOfBuffer()
+        {
+            CreateBuffer("dog", "cat", "bear", "tree");
+            _buffer.RegisterMap.GetRegister(RegisterName.Unnamed).UpdateValue("pig\n", OperationKind.LineWise);
+            _buffer.Process("P");
+            Assert.AreEqual("pig", _textView.GetLine(0).GetText());
+            Assert.AreEqual("dog", _textView.GetLine(1).GetText());
+            Assert.AreEqual(_textView.GetCaretPoint(), _textView.GetLine(0).Start);
+        }
+
+        [Test]
+        public void Handle_P_LineWiseSimpleStringThatHasIndentStartOfBuffer()
+        {
+            CreateBuffer("dog", "cat", "bear", "tree");
+            _buffer.RegisterMap.GetRegister(RegisterName.Unnamed).UpdateValue("  pig\n", OperationKind.LineWise);
+            _buffer.Process("P");
+            Assert.AreEqual("  pig", _textView.GetLine(0).GetText());
+            Assert.AreEqual("dog", _textView.GetLine(1).GetText());
+            Assert.AreEqual(_textView.GetCaretPoint(), _textView.GetLine(0).Start.Add(2));
+        }
+
+        [Test]
+        public void Handle_P_CharacterWiseBlockStringOnExistingLines()
+        {
+            CreateBuffer("dog", "cat", "bear", "tree");
+            _buffer.RegisterMap.GetRegister(RegisterName.Unnamed).UpdateBlockValues("a", "b", "c");
+            _buffer.Process("P");
+            Assert.AreEqual("adog", _textView.GetLine(0).GetText());
+            Assert.AreEqual("bcat", _textView.GetLine(1).GetText());
+            Assert.AreEqual("cbear", _textView.GetLine(2).GetText());
+            Assert.AreEqual(_textView.GetCaretPoint(), _textView.GetLine(0).Start);
+        }
+
+        [Test]
+        public void IncrementalSearch_VeryNoMagic()
+        {
+            CreateBuffer("dog", "cat");
+            _buffer.Process(@"/\Vog", enter: true);
+            Assert.AreEqual(1, _textView.GetCaretPoint().Position);
+        }
+
+        [Test]
+        public void IncrementalSearch_CaseSensitive()
+        {
+            CreateBuffer("dogDOG", "cat");
+            _buffer.Process(@"/\COG", enter: true);
+            Assert.AreEqual(4, _textView.GetCaretPoint().Position);
+        }
+
+        [Test]
+        public void IncrementalSearch_HandlesEscape()
+        {
+            CreateBuffer("dog");
+            _buffer.Process("/do");
+            _buffer.Process(KeyInputUtil.EscapeKey);
+            Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+        }
+
+        [Test]
+        public void IncrementalSearch_HandlesEscapeInOperator()
+        {
+            CreateBuffer("dog");
+            _buffer.Process("d/do");
+            _buffer.Process(KeyInputUtil.EscapeKey);
+            Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+        }
+
+        [Test]
+        public void IncrementalSearch_UsedAsOperatorMotion()
+        {
+            CreateBuffer("dog cat tree");
+            _buffer.Process("d/cat", enter: true);
+            Assert.AreEqual("cat tree", _textView.GetLine(0).GetText());
+            Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+        }
+
+        [Test]
+        public void IncrementalSearch_DontMoveCaretDuringSearch()
+        {
+            CreateBuffer("dog cat tree");
+            _buffer.Process("/cat");
+            Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+        }
+
+        [Test]
+        public void IncrementalSearch_MoveCaretAfterEnter()
+        {
+            CreateBuffer("dog cat tree");
+            _buffer.Process("/cat", enter: true);
+            Assert.AreEqual(4, _textView.GetCaretPoint().Position);
         }
     }
 }
