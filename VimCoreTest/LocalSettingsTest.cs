@@ -1,11 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using System.Linq;
+using Microsoft.FSharp.Core;
+using Microsoft.VisualStudio.Text.Editor;
+using Moq;
 using NUnit.Framework;
 using Vim;
-using Moq;
-using Microsoft.VisualStudio.Text.Editor;
 using Vim.UnitTest;
 
 namespace VimCore.UnitTest
@@ -14,11 +12,11 @@ namespace VimCore.UnitTest
     public class LocalSettingsTest : SettingsCommonTest
     {
         protected override string ToggleSettingName { get { return LocalSettingNames.NumberName; } }
-        protected override Vim.IVimSettings Create()
+        protected override IVimSettings Create()
         {
             var global = new Vim.GlobalSettings();
             var view = EditorUtil.CreateView("foo");
-            return new LocalSettings(global, view);
+            return new LocalSettings(global, FSharpOption<ITextView>.Some(view));
         }
 
         private Mock<ITextView> _textView;
@@ -29,9 +27,9 @@ namespace VimCore.UnitTest
         [SetUp]
         public void SetUp()
         {
-            _textView= new Mock<ITextView>(MockBehavior.Strict);
+            _textView = new Mock<ITextView>(MockBehavior.Strict);
             _global = new Mock<IVimGlobalSettings>(MockBehavior.Strict);
-            _localRaw = new LocalSettings(_global.Object, _textView.Object);
+            _localRaw = new LocalSettings(_global.Object, FSharpOption<ITextView>.Some(_textView.Object));
             _local = _localRaw;
         }
 

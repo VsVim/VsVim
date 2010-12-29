@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using Microsoft.FSharp.Collections;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text.Editor;
@@ -106,12 +104,8 @@ namespace VimCore.UnitTest
         [Test]
         public void GetOrCreateBuffer_ApplyVimRcSettings()
         {
-            var list = new List<Setting>() 
-            {
-                new Setting(LocalSettingNames.AutoIndentName, "ai", SettingKind.ToggleKind, SettingValue.NewToggleValue(true), SettingValue.NewToggleValue(true), false),
-                new Setting(LocalSettingNames.QuoteEscapeName, "", SettingKind.StringKind, SettingValue.NewStringValue("b"), SettingValue.NewStringValue("b"), false),
-            };
-            _vimRaw._vimrcLocalSettings = list.ToFSharpList();
+            _vim.VimRcLocalSettings.AutoIndent = true;
+            _vim.VimRcLocalSettings.QuoteEscape = "b";
             var textView = EditorUtil.CreateView();
             var buffer = _vim.GetOrCreateBuffer(textView);
             Assert.IsTrue(buffer.Settings.AutoIndent);
@@ -197,9 +191,7 @@ namespace VimCore.UnitTest
             Func<ITextView> createViewFunc = () => EditorUtil.CreateView();
             Assert.IsTrue(_vim.LoadVimRc(fs.Object, createViewFunc.ToFSharpFunc()));
 
-            var setting = _vim.VimRcLocalSettings.Single();
-            Assert.AreEqual(LocalSettingNames.AutoIndentName, setting.Name);
-            Assert.IsTrue(setting.Value.AsToggleValue().Item);
+            Assert.IsTrue(_vim.VimRcLocalSettings.AutoIndent);
             fs.Verify();
         }
 

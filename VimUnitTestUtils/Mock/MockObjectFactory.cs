@@ -12,6 +12,7 @@ using Microsoft.VisualStudio.Text.Operations;
 using Microsoft.VisualStudio.Text.Tagging;
 using Microsoft.VisualStudio.TextManager.Interop;
 using Moq;
+using Vim.Extensions;
 
 namespace Vim.UnitTest.Mock
 {
@@ -149,7 +150,7 @@ namespace Vim.UnitTest.Mock
             name = name ?? "test";
             vim = vim ?? CreateVim().Object;
             jumpList = jumpList ?? (factory.Create<IJumpList>().Object);
-            settings = settings ?? new LocalSettings(vim.Settings, textView);
+            settings = settings ?? new LocalSettings(vim.Settings, FSharpOption.Create(textView));
             var mock = factory.Create<IVimBuffer>();
             mock.SetupGet(x => x.TextView).Returns(textView);
             mock.SetupGet(x => x.TextBuffer).Returns(() => textView.TextBuffer);

@@ -58,9 +58,8 @@ namespace VsVim
             _adapter = adapter;
         }
 
-        void IWpfTextViewCreationListener.TextViewCreated(IWpfTextView textView)
+        private void MaybeLoadVimRc()
         {
-            // Load the VimRC file if we haven't tried yet
             if (!_vim.IsVimRcLoaded && String.IsNullOrEmpty(_vim.Settings.VimRcPaths))
             {
                 // Need to pass the LoadVimRc call a function to create an ITextView that 
@@ -70,8 +69,19 @@ namespace VsVim
                 Func<ITextView> createViewFunc = () => _editorFactoryService.CreateTextView(
                     _bufferFactoryService.CreateTextBuffer(),
                     _editorFactoryService.NoRoles);
-                _vim.LoadVimRc(_fileSystem, createViewFunc.ToFSharpFunc());
+                if (!_vim.LoadVimRc(_fileSystem, createViewFunc.ToFSharpFunc()))
+                {
+                    // If no VimRc file is loaded add a couple of sanity settings
+                    _vim.VimRcLocalSettings.AutoIndent = true;
+                }
             }
+        }
+
+
+        void IWpfTextViewCreationListener.TextViewCreated(IWpfTextView textView)
+        {
+            // Load the VimRC file if we haven't tried yet
+            MaybeLoadVimRc();
 
             // Create the IVimBuffer after loading the VimRc so that it gets the appropriate
             // settings

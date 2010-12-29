@@ -200,9 +200,9 @@ type internal GlobalSettings() =
 type internal LocalSettings
     ( 
         _global : IVimGlobalSettings,
-        _textView : ITextView ) as this =
-    
-    static let LocalSettings =
+        _textView : ITextView option) as this =
+
+    static let LocalSettingInfo =
         [|
             (AutoIndentName, "ai", ToggleKind, ToggleValue(false))
             (CursorLineName, "cul", ToggleKind, ToggleValue(false))
@@ -211,31 +211,50 @@ type internal LocalSettings
             (QuoteEscapeName, "qe", StringKind, StringValue(@"\"))
         |]
 
-    let _map = SettingsMap(LocalSettings, false)
+    let _map = SettingsMap(LocalSettingInfo, false)
 
     do
         let setting = _map.GetSetting ScrollName |> Option.get
-        _map.ReplaceSetting ScrollName {setting with Value=CalculatedValue(this.CalculateScroll); DefaultValue=CalculatedValue(this.CalculateScroll) }
+        _map.ReplaceSetting ScrollName {
+            setting with 
+                Value = CalculatedValue(this.CalculateScroll); 
+                DefaultValue = CalculatedValue(this.CalculateScroll) }
+
+    new (settings) = LocalSettings(settings, None)
+
+    new (settings, textView : ITextView) = LocalSettings(settings, Some textView)
+
+    member x.Map = _map
 
     /// Calculate the scroll value as specified in the Vim documenation.  Should be half the number of 
     /// visible lines 
     member private x.CalculateScroll() =
         let defaultValue = 10
         let lineCount = 
-            try
-                let col = _textView.TextViewLines
-                match col.FirstVisibleLine,col.LastVisibleLine with
-                | (null,_) -> defaultValue
-                | (_,null) -> defaultValue
-                | (top,bottom) ->
-                    let topLine = top.Start.GetContainingLine()
-                    let endLine = bottom.End.GetContainingLine()
-                    (endLine.LineNumber - topLine.LineNumber) / 2
-            with 
-                // This will be thrown if we're currently in the middle of an inner layout
-                :? System.InvalidOperationException -> defaultValue
+            match _textView with
+            | None -> defaultValue
+            | Some(textView) ->
+                try
+                    let col = textView.TextViewLines
+                    match col.FirstVisibleLine,col.LastVisibleLine with
+                    | (null,_) -> defaultValue
+                    | (_,null) -> defaultValue
+                    | (top,bottom) ->
+                        let topLine = top.Start.GetContainingLine()
+                        let endLine = bottom.End.GetContainingLine()
+                        (endLine.LineNumber - topLine.LineNumber) / 2
+                with 
+                    // This will be thrown if we're currently in the middle of an inner layout
+                    :? System.InvalidOperationException -> defaultValue
         NumberValue(lineCount)
-    
+
+    static member Copy (settings : IVimLocalSettings) = 
+        let copy = LocalSettings(settings.GlobalSettings)
+        settings.AllSettings
+        |> Seq.filter (fun s -> not s.IsGlobal && not s.IsValueCalculated)
+        |> Seq.iter (fun s -> copy.Map.TrySetValue s.Name s.Value |> ignore)
+        copy :> IVimLocalSettings
+
     interface IVimLocalSettings with 
         // IVimSettings
         

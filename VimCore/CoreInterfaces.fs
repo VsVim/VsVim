@@ -997,6 +997,12 @@ type Setting = {
 
     member x.AggregateValue = x.Value.AggregateValue
 
+    /// Is the value calculated
+    member x.IsValueCalculated =
+        match x.Value with
+        | CalculatedValue(_) -> true
+        | _ -> false
+
     /// Is the setting value currently set to the default value
     member x.IsValueDefault = 
         match x.Value, x.DefaultValue with
@@ -1172,9 +1178,11 @@ and IVim =
 
     abstract VimHost : IVimHost
 
-    /// The Local Setting's which were persisted from loading VimRc.  Empty if
-    /// VimRc isn't loaded yet
-    abstract VimRcLocalSettings : Setting list
+    /// The Local Setting's which were persisted from loading VimRc.  If the 
+    /// VimRc isn't loaded yet or if no VimRc was loaded a IVimLocalSettings
+    /// with all default values will be returned.  Will store a copy of whatever 
+    /// is passed in order to prevent memory leaks from captured ITextView`s
+    abstract VimRcLocalSettings : IVimLocalSettings with get, set
 
     /// Create an IVimBuffer for the given IWpfTextView
     abstract CreateBuffer : ITextView -> IVimBuffer
@@ -1189,7 +1197,7 @@ and IVim =
     abstract GetOrCreateBuffer : ITextView -> IVimBuffer
 
     /// Load the VimRc file.  If the file was previously loaded a new load will be 
-    /// attempted.  This method will throw if the 
+    /// attempted.  Returns true if a VimRc was actually loaded
     abstract LoadVimRc : IFileSystem -> createViewFunc:(unit -> ITextView) -> bool
 
     /// Remove the IVimBuffer associated with the given view.  This will not actually close

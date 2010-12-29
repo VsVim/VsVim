@@ -69,7 +69,7 @@ type internal VimBufferFactory
     member x.CreateBuffer (vim:IVim) view = 
         let editOperations = _editorOperationsFactoryService.GetEditorOperations(view)
         let editOptions = _editorOptionsFactoryService.GetOptions(view)
-        let localSettings = LocalSettings(vim.Settings, view) :> IVimLocalSettings
+        let localSettings = LocalSettings(vim.Settings, Some view) :> IVimLocalSettings
         let motionUtil = TextViewMotionUtil(view, localSettings) :> ITextViewMotionUtil
         let outlining = 
             // This will return null in ITextBuffer instances where there is no IOutliningManager such
@@ -199,7 +199,7 @@ type internal Vim
 
     /// Holds the local setting information which was stored when loading the VimRc file.  This 
     /// is applied to IVimBuffer instances which are created when there is no active IVimBuffer
-    let mutable _vimrcLocalSettings : Setting list = List.empty
+    let mutable _vimrcLocalSettings = LocalSettings(_settings) :> IVimLocalSettings
 
     let _registerMap =
         let currentFileNameFunc() = 
@@ -241,12 +241,22 @@ type internal Vim
 
     member x.ActiveBuffer = ListUtil.tryHeadOnly _activeBufferStack
 
-    member x.CreateBuffer view (localSettingList : Setting seq)= 
+    member x.GetSettingsForNewBuffer () =
+        match x.ActiveBuffer with
+        | Some(buffer) -> buffer.Settings
+        | None -> _vimrcLocalSettings
+
+    member x.CreateBuffer view (localSettings : IVimLocalSettings option) = 
         if _bufferMap.ContainsKey(view) then invalidArg "view" Resources.Vim_ViewAlreadyHasBuffer
         let buffer = _bufferFactoryService.CreateBuffer (x:>IVim) view
 
         // Apply the specified local buffer settings
-        localSettingList |> Seq.iter (fun s -> buffer.Settings.TrySetValue s.Name s.Value |> ignore)
+        match localSettings with
+        | None -> ()
+        | Some(localSettings) ->
+            localSettings.AllSettings
+            |> Seq.filter (fun s -> not s.IsGlobal && not s.IsValueCalculated)
+            |> Seq.iter (fun s -> buffer.Settings.TrySetValue s.Name s.Value |> ignore)
 
         // Setup the handlers for KeyInputStart and KeyInputEnd to accurately track the active
         // IVimBuffer instance
@@ -285,12 +295,8 @@ type internal Vim
         | Some(buffer) -> buffer
         | None -> 
             // Determine the settings which need to be applied to the new IVimBuffer
-            let settings = 
-                match x.ActiveBuffer with
-                | Some(buffer) -> buffer.Settings.AllSettings |> Seq.filter (fun s -> not s.IsGlobal)
-                | None -> _vimrcLocalSettings |> Seq.ofList
-                
-            x.CreateBuffer view settings
+            let settings = x.GetSettingsForNewBuffer()
+            x.CreateBuffer view (Some settings)
 
     member x.LoadVimRc (fileSystem:IFileSystem) (createViewFunc : (unit -> ITextView)) =
         _settings.VimRc <- System.String.Empty
@@ -301,13 +307,10 @@ type internal Vim
         | Some(path,lines) ->
             _settings.VimRc <- path
             let view = createViewFunc()
-            let buffer = x.CreateBuffer view Seq.empty
+            let buffer = x.CreateBuffer view None
             let mode = buffer.CommandMode
             lines |> Seq.iter (fun input -> mode.RunCommand input |> ignore)
-            _vimrcLocalSettings <- 
-                buffer.Settings.AllSettings 
-                |> Seq.filter (fun s -> not s.IsGlobal && not s.IsValueDefault)
-                |> List.ofSeq
+            _vimrcLocalSettings <- LocalSettings.Copy buffer.Settings
             view.Close()
             true
 
@@ -315,7 +318,9 @@ type internal Vim
         member x.ActiveBuffer = x.ActiveBuffer
         member x.VimData = _vimData
         member x.VimHost = _host
-        member x.VimRcLocalSettings = _vimrcLocalSettings
+        member x.VimRcLocalSettings 
+            with get() = _vimrcLocalSettings
+            and set value = _vimrcLocalSettings <- LocalSettings.Copy value
         member x.MarkMap = _markMap
         member x.KeyMap = _keyMap
         member x.ChangeTracker = _changeTracker
@@ -323,7 +328,7 @@ type internal Vim
         member x.IsVimRcLoaded = not (System.String.IsNullOrEmpty(_settings.VimRc))
         member x.RegisterMap = _registerMap 
         member x.Settings = _settings
-        member x.CreateBuffer view = x.CreateBuffer view _vimrcLocalSettings
+        member x.CreateBuffer view = x.CreateBuffer view (Some (x.GetSettingsForNewBuffer()))
         member x.GetOrCreateBuffer view = x.GetOrCreateBuffer view
         member x.RemoveBuffer view = x.RemoveBufferCore view
         member x.GetBuffer view = x.GetBufferCore view
