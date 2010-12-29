@@ -40,6 +40,12 @@ namespace VsVim
                 return false;
             }
 
+            // Don't intercept commands while incremental search is active.  Don't want to interfere with it
+            if (_adapter.IsIncrementalSearchActive(_buffer.TextView))
+            {
+                return false;
+            }
+
             EditCommand command;
             if (!OleCommandUtil.TryConvert(commandGroup, commandId, pvaIn, out command))
             {

@@ -1,6 +1,7 @@
 ﻿using System;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.OLE.Interop;
+using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.TextManager.Interop;
 using Moq;
 using NUnit.Framework;
@@ -34,6 +35,7 @@ namespace VsVim.UnitTest
             _adapter = _factory.Create<IVsAdapter>();
             _adapter.Setup(x => x.InAutomationFunction).Returns(false);
             _adapter.Setup(x => x.InDebugMode).Returns(false);
+            _adapter.Setup(x => x.IsIncrementalSearchActive(It.IsAny<ITextView>())).Returns(false);
 
             var oldCommandFilter = _nextTarget.Object;
             var vsTextView = _factory.Create<IVsTextView>(MockBehavior.Loose);
@@ -106,6 +108,13 @@ namespace VsVim.UnitTest
         {
             _adapter.Setup(x => x.InAutomationFunction).Returns(true);
             _buffer.Setup(x => x.CanProcess(It.IsAny<KeyInput>())).Returns(true);
+            AssertCannotConvert2K(VSConstants.VSStd2KCmdID.TAB);
+        }
+
+        [Test]
+        public void TryConvert_InIncrementalSearchShouldFail()
+        {
+            _adapter.Setup(x => x.IsIncrementalSearchActive(It.IsAny<ITextView>())).Returns(true);
             AssertCannotConvert2K(VSConstants.VSStd2KCmdID.TAB);
         }
 

@@ -20,9 +20,15 @@ namespace VsVim
         private static readonly HashSet<char> _coreCharacterSet = new HashSet<char>(KeyInputUtil.VimKeyCharList);
         private readonly IVsAdapter _adapter;
 
+        protected override bool IgnoreTextInput
+        {
+            get { return _adapter.IsIncrementalSearchActive(TextView); }
+        }
+
         internal VsKeyProcessor(IVsAdapter adapter, IVimBuffer buffer)
             : base(buffer)
         {
+
             _adapter = adapter;
         }
 
@@ -37,6 +43,12 @@ namespace VsVim
         /// </summary>
         public override void KeyDown(KeyEventArgs args)
         {
+            // Don't intercept keystrokse if Visual Studio IncrementalSearch is active
+            if (_adapter.IsIncrementalSearchActive(TextView))
+            {
+                return;
+            }
+
             base.KeyDown(args);
             if (args.Handled)
             {

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Windows.Input;
 using Microsoft.VisualStudio.Text;
+using Microsoft.VisualStudio.Text.Editor;
 
 namespace Vim.UI.Wpf
 {
@@ -28,6 +29,11 @@ namespace Vim.UI.Wpf
             get { return _buffer.TextBuffer; }
         }
 
+        public ITextView TextView
+        {
+            get { return _buffer.TextView; }
+        }
+
         public KeyProcessor(IVimBuffer buffer)
         {
             _buffer = buffer;
@@ -39,6 +45,15 @@ namespace Vim.UI.Wpf
         }
 
         /// <summary>
+        /// Hook to allow for derived types to supress the handling of TextInput and
+        /// instead cause this to just forward it onto the base type
+        /// </summary>
+        protected virtual bool IgnoreTextInput
+        {
+            get { return false; }
+        }
+
+        /// <summary>
         /// Last chance at custom handling of user input.  At this point we have the 
         /// advantage that WPF has properly converted the user input into a char which 
         /// can be effeciently mapped to a KeyInput value.  
@@ -46,7 +61,7 @@ namespace Vim.UI.Wpf
         public override void TextInput(TextCompositionEventArgs args)
         {
             bool handled = false;
-            if (!String.IsNullOrEmpty(args.Text) && 1 == args.Text.Length)
+            if (!String.IsNullOrEmpty(args.Text) && 1 == args.Text.Length && !IgnoreTextInput)
             {
                 // Only want to intercept text coming from the keyboard.  Let other 
                 // components edit without having to come through us

@@ -10,6 +10,7 @@ using Moq;
 using NUnit.Framework;
 using Vim.UnitTest.Mock;
 using VsVim.Implementation;
+using Microsoft.VisualStudio.Text.IncrementalSearch;
 
 namespace VsVim.UnitTest
 {
@@ -19,6 +20,7 @@ namespace VsVim.UnitTest
         private MockRepository _factory;
         private Mock<IVsEditorAdaptersFactoryService> _editorAdapterFactory;
         private Mock<IEditorOptionsFactoryService> _editorOptionsFactory;
+        private Mock<IIncrementalSearchFactoryService> _incrementalSearchFactoryService;
         private Mock<SVsServiceProvider> _serviceProvider;
         private VsAdapter _adapterRaw;
         private IVsAdapter _adapter;
@@ -29,6 +31,7 @@ namespace VsVim.UnitTest
             _factory = new MockRepository(MockBehavior.Loose);
             _editorAdapterFactory = _factory.Create<IVsEditorAdaptersFactoryService>();
             _editorOptionsFactory = _factory.Create<IEditorOptionsFactoryService>();
+            _incrementalSearchFactoryService = _factory.Create<IIncrementalSearchFactoryService>();
             _serviceProvider = _factory.Create<SVsServiceProvider>();
             _serviceProvider.MakeService<SVsTextManager, IVsTextManager>(_factory);
             _serviceProvider.MakeService<SVsUIShell, IVsUIShell>(_factory);
@@ -36,6 +39,7 @@ namespace VsVim.UnitTest
             _adapterRaw = new VsAdapter(
                 _editorAdapterFactory.Object,
                 _editorOptionsFactory.Object,
+                _incrementalSearchFactoryService.Object,
                 _serviceProvider.Object);
             _adapter = _adapterRaw;
         }

@@ -35,6 +35,29 @@ namespace VsVim
         Result<IVsTextLines> GetTextLines(ITextBuffer textBuffer);
 
         /// <summary>
+        /// Get all of the IVsTextView's for the given ITextBuffer
+        /// </summary>
+        /// <param name="textBuffer"></param>
+        /// <returns></returns>
+        IEnumerable<IVsTextView> GetTextViews(ITextBuffer textBuffer);
+
+        /// <summary>
+        /// Is the buffer in the middle of a Visual Studio incremental search
+        /// </summary>
+        bool IsIncrementalSearchActive(ITextView textView);
+
+        /// <summary>
+        /// Is this a Venus window
+        /// </summary>
+        bool IsVenusView(IVsTextView textView);
+
+        /// <summary>
+        /// Determine if this ITextBuffer is readonly.  This needs to mimic the behavior of 
+        /// the VsCodeWindowAdapter::IsReadOnly method.
+        /// </summary>
+        bool IsReadOnly(ITextBuffer textBuffer);
+
+        /// <summary>
         /// Get the IVsCodeWindow for the given ITextView.  Multiple ITextView
         /// instances may resolve to the same IVsCodeWindow
         /// </summary>
@@ -54,24 +77,6 @@ namespace VsVim
         /// </summary>
         bool TryGetContainingWindowFrame(IVsTextView textView, out IVsWindowFrame windowFrame);
 
-        /// <summary>
-        /// Is this a Venus window
-        /// </summary>
-        bool IsVenusView(IVsTextView textView);
-
-        /// <summary>
-        /// Determine if this ITextBuffer is readonly.  This needs to mimic the behavior of 
-        /// the VsCodeWindowAdapter::IsReadOnly method.
-        /// </summary>
-        bool IsReadOnly(ITextBuffer textBuffer);
-
         bool TryGetTextBufferForDocCookie(uint cookie, out ITextBuffer textBuffer);
-
-        /// <summary>
-        /// Get all of the IVsTextView's for the given ITextBuffer
-        /// </summary>
-        /// <param name="textBuffer"></param>
-        /// <returns></returns>
-        IEnumerable<IVsTextView> GetTextViews(ITextBuffer textBuffer);
     }
 }

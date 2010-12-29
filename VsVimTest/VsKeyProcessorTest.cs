@@ -1,5 +1,6 @@
 ﻿using System.Windows.Input;
 using Microsoft.VisualStudio.Text;
+using Microsoft.VisualStudio.Text.Editor;
 using Moq;
 using NUnit.Framework;
 using Vim;
@@ -22,6 +23,7 @@ namespace VsVim.UnitTest
             _textBuffer = _factory.Create<ITextBuffer>();
             _adapter = _factory.Create<IVsAdapter>();
             _adapter.Setup(x => x.IsReadOnly(_textBuffer.Object)).Returns(false);
+            _adapter.Setup(x => x.IsIncrementalSearchActive(It.IsAny<ITextView>())).Returns(false);
             _buffer = MockObjectFactory.CreateVimBuffer(_textBuffer.Object);
             _vsProcessor = new VsKeyProcessor(_adapter.Object, _buffer.Object);
             _processor = _vsProcessor;
@@ -124,5 +126,14 @@ namespace VsVim.UnitTest
             }
         }
 
+        [Test]
+        public void KeyDown_DontHandleIfIncrementalSearchActive()
+        {
+            _buffer.Setup(x => x.CanProcess(It.IsAny<KeyInput>())).Returns(true).Verifiable();
+            _buffer.Setup(x => x.Process(It.IsAny<KeyInput>())).Returns(true).Verifiable();
+            VerifyHandle(Key.Enter);
+            _adapter.Setup(x => x.IsIncrementalSearchActive(It.IsAny<ITextView>())).Returns(true);
+            VerifyNotHandle(Key.Enter);
+        }
     }
 }

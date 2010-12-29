@@ -8,6 +8,7 @@ using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
+using Microsoft.VisualStudio.Text.IncrementalSearch;
 using Microsoft.VisualStudio.TextManager.Interop;
 using Vim;
 
@@ -18,6 +19,7 @@ namespace VsVim.Implementation
     {
         private readonly IVsEditorAdaptersFactoryService _editorAdaptersFactoryService;
         private readonly IEditorOptionsFactoryService _editorOptionsFactoryService;
+        private readonly IIncrementalSearchFactoryService _incrementalSearchFactoryService;
         private readonly IVsTextManager _textManager;
         private readonly IVsUIShell _uiShell;
         private readonly RunningDocumentTable _table;
@@ -47,8 +49,10 @@ namespace VsVim.Implementation
         internal VsAdapter(
             IVsEditorAdaptersFactoryService editorAdaptersFactoryService,
             IEditorOptionsFactoryService editorOptionsFactoryService,
+            IIncrementalSearchFactoryService incrementalSearchFactoryService,
             SVsServiceProvider serviceProvider)
         {
+            _incrementalSearchFactoryService = incrementalSearchFactoryService;
             _editorAdaptersFactoryService = editorAdaptersFactoryService;
             _editorOptionsFactoryService = editorOptionsFactoryService;
             _serviceProvider = serviceProvider;
@@ -203,5 +207,10 @@ namespace VsVim.Implementation
             return false;
         }
 
+        public bool IsIncrementalSearchActive(ITextView textView)
+        {
+            var search = _incrementalSearchFactoryService.GetIncrementalSearch(textView);
+            return search != null && search.IsActive;
+        }
     }
 }
