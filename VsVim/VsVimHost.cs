@@ -26,7 +26,6 @@ namespace VsVim
 
         private readonly ITextManager _textManager;
         private readonly IVsEditorAdaptersFactoryService _editorAdaptersFactoryService;
-        private readonly ITextBufferUndoManagerProvider _undoManagerProvider;
         private readonly _DTE _dte;
 
         internal _DTE DTE
@@ -41,7 +40,6 @@ namespace VsVim
             ITextManager textManager,
             SVsServiceProvider serviceProvider)
         {
-            _undoManagerProvider = undoManagerProvider;
             _editorAdaptersFactoryService = editorAdaptersFactoryService;
             _dte = (_DTE)serviceProvider.GetService(typeof(_DTE));
             _textManager = textManager;
@@ -79,10 +77,8 @@ namespace VsVim
             {
                 return SafeExecuteCommand(CommandNameGoToDefinition, target);
             }
-            else
-            {
-                return SafeExecuteCommand(CommandNameGoToDefinition);
-            }
+
+            return SafeExecuteCommand(CommandNameGoToDefinition);
         }
 
         private bool GoToDefinitionCore(ITextView textView, string target)
@@ -102,9 +98,7 @@ namespace VsVim
                 return true;
             }
 
-            var names = _dte.GetProjects().SelectMany(x => x.GetProjecItems()).Select(x => x.Name).ToList();
             var list = _dte.GetProjectItems(fileName);
-
             if (list.Any())
             {
                 var item = list.First();

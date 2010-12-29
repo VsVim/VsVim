@@ -288,17 +288,6 @@ namespace VimCore.UnitTest
             m_buffer.Process("o");
         }
 
-        [Test, Description("Make sure o will indent if the previous line was indented")]
-        public void TestChar_o_3()
-        {
-            CreateBuffer("  foo");
-            m_view.Caret.MoveTo(new SnapshotPoint(m_view.TextSnapshot, 0));
-            m_buffer.Process("o");
-            var point = m_view.Caret.Position.VirtualBufferPosition;
-            Assert.IsTrue(point.IsInVirtualSpace);
-            Assert.AreEqual(2, point.VirtualSpaces);
-        }
-
         [Test]
         public void TestChar_x_1()
         {

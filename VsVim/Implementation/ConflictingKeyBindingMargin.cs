@@ -1,13 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using Microsoft.VisualStudio.Text.Editor;
-using Vim;
-using VsVim.UI;
 using System.Windows;
-using Microsoft.VisualStudio.Text.Classification;
 using System.Windows.Media;
+using Microsoft.VisualStudio.Text.Classification;
+using Microsoft.VisualStudio.Text.Editor;
+using VsVim.UI;
 
 namespace VsVim.Implementation
 {
@@ -15,14 +11,12 @@ namespace VsVim.Implementation
     {
         internal const string Name = "Vim Conflicting KeyBinding Margin";
 
-        private readonly IVimBuffer _buffer;
         private readonly IKeyBindingService _keyBindingService;
         private readonly ConflictingKeyBindingMarginControl _control;
         private bool _enabled = true;
 
-        internal ConflictingKeyBindingMargin(IVimBuffer buffer, IKeyBindingService service, IEditorFormatMap formatMap)
+        internal ConflictingKeyBindingMargin(IKeyBindingService service, IEditorFormatMap formatMap)
         {
-            _buffer = buffer;
             _keyBindingService = service;
             _control = new ConflictingKeyBindingMarginControl();
             _control.Background = GetBackgroundColor(formatMap);
