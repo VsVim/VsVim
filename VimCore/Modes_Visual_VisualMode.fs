@@ -16,6 +16,8 @@ type internal VisualMode
         _capture : IMotionCapture,
         _selectionTracker : ISelectionTracker ) = 
 
+    let _textView = _buffer.TextView
+    let _textBuffer = _buffer.TextBuffer
     let _registerMap = _buffer.RegisterMap
     let _motionKind = MotionKind.Inclusive
     let _operationKind, _visualKind = 
@@ -36,6 +38,24 @@ type internal VisualMode
     member x.BeginExplicitMove() = _explicitMoveCount <- _explicitMoveCount + 1
     member x.EndExplicitMove() = _explicitMoveCount <- _explicitMoveCount - 1
     member x.SelectedSpan = (TextSelectionUtil.GetStreamSelectionSpan _buffer.TextView.Selection).SnapshotSpan
+
+    member x.RunReplace count register visualSpan = 
+
+        let func (keyInput : KeyInput) = 
+            let replaceSpan (span : SnapshotSpan) =
+                let replace = StringUtil.repeatChar span.Length keyInput.Char
+                _textBuffer.Replace(span.Span, replace) |> ignore
+            match visualSpan with
+            | VisualSpan.Single(_, span) -> 
+                _operations.UpdateRegisterForSpan register RegisterOperation.Delete span OperationKind.CharacterWise
+                replaceSpan span
+            | VisualSpan.Multiple(_, col) -> 
+                _operations.UpdateRegisterForCollection register RegisterOperation.Delete col OperationKind.CharacterWise
+                _operations.WrapEditInUndoTransaction "Replace" (fun () -> 
+                    col |> Seq.iter replaceSpan)
+            LongCommandResult.Finished(CommandResult.Completed(ModeSwitch.SwitchMode ModeKind.Normal))
+
+        LongCommandResult.NeedMoreInput((Some KeyRemapMode.Language), func)
 
     member x.BuildMoveSequence() = 
 
@@ -68,7 +88,8 @@ type internal VisualMode
             | Command.SimpleCommand(name, flags, func) -> Command.SimpleCommand (name, flags, wrapSimple func) |> Some
             | Command.MotionCommand (name, flags, func) -> Command.MotionCommand (name, flags,wrapMotion func) |> Some
             | Command.LongCommand (name, flags, func) -> Command.LongCommand (name, flags, wrapLong func) |> Some
-            | Command.VisualCommand (_) -> Some command)
+            | Command.VisualCommand (_) -> Some command
+            | Command.LongVisualCommand (_) -> Some command)
         |> SeqUtil.filterToSome
 
     member x.BuildOperationsSequence() =
@@ -77,7 +98,6 @@ type internal VisualMode
             match visualSpan with
             | VisualSpan.Single(_,span) -> funcNormal count reg span
             | VisualSpan.Multiple(_,col) -> funcBlock count reg col
-
 
         /// Commands which do not need a span to operate on
         let simples =
@@ -387,7 +407,21 @@ type internal VisualMode
                     Command.VisualCommand(kiSet, flags, _visualKind, func2)))
             |> Seq.concat
 
-        Seq.append simples visualSimple |> Seq.append customReturn
+        /// Visual Long Commands
+        let visualLong = 
+            seq {
+                yield (
+                    "r",
+                    CommandFlags.Repeatable, 
+                    x.RunReplace)
+            }
+            |> Seq.map (fun (str, flags, func) -> 
+                let kiSet = KeyNotationUtil.StringToKeyInputSet str
+                LongVisualCommand(kiSet, flags, _visualKind, func))
+
+        Seq.append simples visualSimple 
+        |> Seq.append customReturn
+        |> Seq.append visualLong
 
     member x.EnsureCommandsBuilt() =
         if not _builtCommands then

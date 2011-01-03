@@ -138,12 +138,24 @@ type internal NormalMode
                             let span = SnapshotSpanUtil.CreateWithLength caretPoint length
                             _operations.DeleteSpan span
 
+
                     match change with
                     | RepeatableChange.TextChange(change) -> repeatTextBufferChange change
                     | RepeatableChange.CommandChange(data) -> 
+
                         let countOpt = match countOpt with | Some(count) -> Some(count) | None -> data.Count
                         let reg = data.Register
                         let commandName = data.Command.KeyInputSet.Name
+
+                        // Repeating a visual command is more complex because we need to calculate the
+                        // new visual range
+                        let repeatVisualOperation func = 
+                            match data.VisualRunData with
+                            | None -> _statusUtil.OnError (Resources.NormalMode_RepeatNotSupportedOnCommand commandName)
+                            | Some(oldSpan) ->
+                                let span = _visualSpanCalculator.CalculateForTextView _bufferData.TextView oldSpan
+                                func countOpt reg span |> ignore
+
                         match data.Command with 
                         | SimpleCommand(_,_,func) -> func countOpt reg |> ignore
                         | MotionCommand(_,_,func) -> 
@@ -160,17 +172,13 @@ type internal NormalMode
                                 | None ->  _statusUtil.OnError (Resources.NormalMode_UnableToRepeatMotion commandName motionName)
                                 | Some(motionData) -> func countOpt reg motionData |> ignore
     
-                        | LongCommand(_) -> _statusUtil.OnError (Resources.NormalMode_RepeatNotSupportedOnCommand commandName)
+                        | LongCommand(_) -> 
+                            _statusUtil.OnError (Resources.NormalMode_RepeatNotSupportedOnCommand commandName)
                         | VisualCommand(_, _, _, func) -> 
-                            // Repeating a visual command is more complex because we need to calculate the
-                            // new visual range
-                            match data.VisualRunData with
-                            | None -> _statusUtil.OnError (Resources.NormalMode_RepeatNotSupportedOnCommand commandName)
-                            | Some(oldSpan) ->
-                                let span = _visualSpanCalculator.CalculateForTextView _bufferData.TextView oldSpan
-                                func countOpt reg span |> ignore
+                            repeatVisualOperation func
+                        | LongVisualCommand(_, _, _, func) -> 
+                            repeatVisualOperation func
 
-                                
                     | RepeatableChange.LinkedChange(left, right) ->
                         repeatChange left countOpt
                         repeatChange right None

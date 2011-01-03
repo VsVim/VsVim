@@ -43,6 +43,15 @@ module internal StringUtil =
                 buffer.Append(value) |> ignore
             buffer.ToString()
 
+    [<CompiledName("RepeatChar")>]
+    let repeatChar count (value : char) =
+        if 1 = count then (value.ToString())
+        else
+            let buffer = new System.Text.StringBuilder()
+            for i = 1 to count do
+                buffer.Append(value) |> ignore
+            buffer.ToString()
+
     /// Create a String from an array of chars
     [<CompiledName("OfCharArray")>]
     let ofCharArray (chars:char[]) = new System.String(chars)

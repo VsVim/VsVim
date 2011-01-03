@@ -628,6 +628,34 @@ namespace VimCore.UnitTest
         }
 
         [Test]
+        public void Handle_r_SingleChar()
+        {
+            Create("dog cat");
+            var span = new SnapshotSpan(_textView.TextSnapshot, 0, 1);
+            _selection.Select(span);
+            _operations
+                .Setup(x => x.UpdateRegisterForSpan(_map.GetRegister(RegisterName.Unnamed), RegisterOperation.Delete, span, OperationKind.CharacterWise))
+                .Verifiable();
+            _mode.Process("rc");
+            Assert.AreEqual("cog cat", _textView.GetLine(0).GetText());
+            _factory.Verify();
+        }
+
+        [Test]
+        public void Handle_r_DobuleChar()
+        {
+            Create("dog cat");
+            var span = new SnapshotSpan(_textView.TextSnapshot, 0, 2);
+            _selection.Select(span);
+            _operations
+                .Setup(x => x.UpdateRegisterForSpan(_map.GetRegister(RegisterName.Unnamed), RegisterOperation.Delete, span, OperationKind.CharacterWise))
+                .Verifiable();
+            _mode.Process("rc");
+            Assert.AreEqual("ccg cat", _textView.GetLine(0).GetText());
+            _factory.Verify();
+        }
+
+        [Test]
         public void Handle_X_NoCountInCharacter()
         {
             Create("cat", "tree", "dog");

@@ -541,23 +541,29 @@ type Command =
     /// execute the command
     | VisualCommand of KeyInputSet * CommandFlags * VisualKind * (int option -> Register -> VisualSpan -> CommandResult) 
 
+    /// Represents a command which has a name, extra characters and relies on the Visual 
+    /// Mode Span to execute the command
+    | LongVisualCommand of KeyInputSet * CommandFlags * VisualKind * (int option -> Register -> VisualSpan -> LongCommandResult) 
+
     with 
 
     /// The raw command inputs
     member x.KeyInputSet = 
         match x with
-        | SimpleCommand(value,_,_ ) -> value
-        | MotionCommand(value,_,_) -> value
-        | LongCommand(value,_,_) -> value
-        | VisualCommand(value,_,_,_) -> value
+        | SimpleCommand(value, _, _ ) -> value
+        | MotionCommand(value, _, _) -> value
+        | LongCommand(value, _, _) -> value
+        | VisualCommand(value, _, _, _) -> value
+        | LongVisualCommand(value, _, _, _) -> value
 
     /// The kind of the Command
     member x.CommandFlags =
         match x with
-        | SimpleCommand(_,value,_ ) -> value
-        | MotionCommand(_,value,_) -> value
-        | LongCommand(_,value,_) -> value
-        | VisualCommand(_,value,_,_) -> value
+        | SimpleCommand(_, value, _ ) -> value
+        | MotionCommand(_, value, _) -> value
+        | LongCommand(_, value, _) -> value
+        | VisualCommand(_, value, _, _) -> value
+        | LongVisualCommand(_, value, _, _) -> value
 
     /// Is the Repeatable flag set
     member x.IsRepeatable = Util.IsFlagSet x.CommandFlags CommandFlags.Repeatable

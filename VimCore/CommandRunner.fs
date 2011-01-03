@@ -65,6 +65,12 @@ type internal CommandRunner
             MotionRunData = motionDataOpt
             VisualRunData = visualDataOpt }
 
+    member x.GetVisualSpan kind = 
+        match _textView.Selection.Mode with
+        | TextSelectionMode.Stream -> VisualSpan.Single (kind,_textView.Selection.StreamSelectionSpan.SnapshotSpan)
+        | TextSelectionMode.Box -> VisualSpan.Multiple (kind,_textView.Selection.SelectedSpans)
+        | _ -> failwith "Invalid Selection Mode"
+
     /// Used to wait for the character after the " which signals the Register 
     member x.WaitForRegister() = 
 
@@ -148,6 +154,23 @@ type internal CommandRunner
 
         func data.Count data.Register |> inner
 
+    /// Wait for a long visual command to complete
+    member x.WaitForLongVisualCommand command keyRemapMode kind func =
+        _data <- { _data with State = NotFinishWithCommand(command, keyRemapMode) }
+
+        let data = x.CreateCommandRunData command None None
+        let rec inner result = 
+            match result with
+            | LongCommandResult.Finished(commandResult) -> RanCommand (data,commandResult)
+            | LongCommandResult.Cancelled -> CancelledCommand
+            | LongCommandResult.NeedMoreInput(keyRemapMode, func) -> 
+                _data <- { _data with State = NotFinishWithCommand(command, keyRemapMode) }
+                NeedMore (fun ki -> func ki |> inner)
+
+        let visualSpan = x.GetVisualSpan kind
+        let data = x.CreateCommandRunData command None (Some visualSpan)
+        func _data.Count _data.Register visualSpan |> inner
+
     /// Try and run a command with the given name
     member x.RunCommand commandName previousCommandName currentInput = 
 
@@ -171,12 +194,7 @@ type internal CommandRunner
                 let result = func _data.Count _data.Register
                 RanCommand (data,result)
             | Command.VisualCommand(_,_,kind,func) -> 
-                let visualSpan = 
-                    match _textView.Selection.Mode with
-                    | TextSelectionMode.Stream -> VisualSpan.Single (kind,_textView.Selection.StreamSelectionSpan.SnapshotSpan)
-                    | TextSelectionMode.Box -> VisualSpan.Multiple (kind,_textView.Selection.SelectedSpans)
-                    | _ -> failwith "Invalid Selection Mode"
-                
+                let visualSpan = x.GetVisualSpan kind
                 let data = x.CreateCommandRunData command None (Some visualSpan)
                 let result = func _data.Count _data.Register visualSpan
                 RanCommand (data,result)
@@ -197,7 +215,10 @@ type internal CommandRunner
                     // motion variety we are in operator pending
                     _data <- {_data with State = NotEnoughMatchingPrefix (command, withPrefix |> List.ofSeq, Some KeyRemapMode.OperatorPending)}
                     NeedMore x.WaitForCommand
-            | Command.LongCommand(_,_,func) -> x.WaitForLongCommand command None func
+            | Command.LongCommand(_,_,func) -> 
+                x.WaitForLongCommand command None func
+            | Command.LongVisualCommand(_, _, kind, func) ->
+                x.WaitForLongVisualCommand command None kind func
         | None -> 
             let result = 
                 if commandName.KeyInputs.Length > 1 then
@@ -210,6 +231,7 @@ type internal CommandRunner
                             | Command.SimpleCommand(_) -> NeedMore x.WaitForCommand 
                             | Command.VisualCommand(_) -> NeedMore x.WaitForCommand
                             | Command.LongCommand(_) -> NeedMore x.WaitForCommand 
+                            | Command.LongVisualCommand(_) -> NeedMore x.WaitForCommand 
                             | Command.MotionCommand(_,_,func) -> x.WaitForMotion command func (Some currentInput) 
                         Some waitResult
                     | None -> None
