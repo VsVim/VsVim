@@ -130,6 +130,7 @@
   <ItemGroup>
     <Compile Include="ExternalEditMonitorTest.cs" />
     <Compile Include="KeyStrokeTest.cs" />
+    <Compile Include="MemoryLeakTest.cs" />
     <Compile Include="OleCommandUtilTest.cs" />
     <Compile Include="EditCommandTest.cs" />
     <Compile Include="ExtensionsTest.cs" />

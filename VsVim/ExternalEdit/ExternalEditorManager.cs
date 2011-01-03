@@ -76,6 +76,7 @@ namespace VsVim.ExternalEdit
                 _vsAdapter.GetTextLines(value.TextBuffer),
                 new ReadOnlyCollection<IExternalEditAdapter>(_adapterList),
                 _viewTagAggregatorFactoryService.CreateTagAggregator<ITag>(value.TextView));
+            value.Closed += delegate { _monitorMap.Remove(value); };
         }
 
         private bool CheckResharperInstalled()

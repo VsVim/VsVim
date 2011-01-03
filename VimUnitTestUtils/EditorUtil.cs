@@ -11,6 +11,7 @@ using Microsoft.VisualStudio.Text.Classification;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Operations;
 using Microsoft.VisualStudio.Utilities;
+using Vim.UnitTest.Exports;
 
 namespace Vim.UnitTest
 {
@@ -158,42 +159,55 @@ namespace Vim.UnitTest
             return ct;
         }
 
+        public static List<ComposablePartCatalog> GetEditorCatalog()
+        {
+            var uri = new Uri(typeof(EditorUtil).Assembly.CodeBase);
+            var root = Path.GetDirectoryName(uri.LocalPath);
+            var list = new List<ComposablePartCatalog>();
+            list.Add(new AssemblyCatalog(Path.Combine(root, "Microsoft.VisualStudio.Platform.VSEditor.dll")));
+
+            // Not entirely sure why this is suddenly needed
+            list.Add(new AssemblyCatalog(Path.Combine(root, "Microsoft.VisualStudio.Text.Internal.dll")));
+
+            // Must include this because several editor options are actually stored as exported information 
+            // on this DLL.  Including most importantly, the tabsize information
+            list.Add(new AssemblyCatalog(Path.Combine(root, "Microsoft.VisualStudio.Text.Logic.dll")));
+
+            // Include this DLL to get several more EditorOptions including WordWrapStyle
+            list.Add(new AssemblyCatalog(Path.Combine(root, "Microsoft.VisualStudio.Text.UI.dll")));
+
+            // Include this DLL to get more EditorOptions values
+            list.Add(new AssemblyCatalog(Path.Combine(root, "Microsoft.VisualStudio.Text.UI.Wpf.dll")));
+
+            // There is no default IUndoHistoryRegistry provided so I need to provide it here just to 
+            // satisfy the MEF import.  
+            list.Add(new TypeCatalog(typeof(TextUndoHistoryRegistry)));
+
+            return list;
+        }
+
+        public static List<ComposablePartCatalog> GetUnitTestCatalog()
+        {
+            var list = GetEditorCatalog();
+
+            // IBlockCaret needs to be satisfied for integration tests
+            list.Add(new AssemblyCatalog(typeof(IVim).Assembly));
+
+            // Other Exports needed to construct VsVim
+            list.Add(new TypeCatalog(
+                typeof(ClipboardDevice),
+                typeof(KeyboardDevice),
+                typeof(MouseDevice),
+                typeof(VimHost)));
+
+            return list;
+        }
+
         public static CompositionContainer CreateContainer()
         {
-            try
-            {
-                var uri = new Uri(typeof(EditorUtil).Assembly.CodeBase);
-                var root = Path.GetDirectoryName(uri.LocalPath);
-                var list = new List<ComposablePartCatalog>();
-                list.Add(new AssemblyCatalog(Path.Combine(root, "Microsoft.VisualStudio.Platform.VSEditor.dll")));
-
-                // Not entirely sure why this is suddenly needed
-                list.Add(new AssemblyCatalog(Path.Combine(root, "Microsoft.VisualStudio.Text.Internal.dll")));
-
-                // Must include this because several editor options are actually stored as exported information 
-                // on this DLL.  Including most importantly, the tabsize information
-                list.Add(new AssemblyCatalog(Path.Combine(root, "Microsoft.VisualStudio.Text.Logic.dll")));
-
-                // Include this DLL to get several more EditorOptions including WordWrapStyle
-                list.Add(new AssemblyCatalog(Path.Combine(root, "Microsoft.VisualStudio.Text.UI.dll")));
-
-                // Include this DLL to get more EditorOptions values
-                list.Add(new AssemblyCatalog(Path.Combine(root, "Microsoft.VisualStudio.Text.UI.Wpf.dll")));
-
-                // There is no default IUndoHistoryRegistry provided so I need to provide it here just to 
-                // satisfy the MEF import.  
-                list.Add(new AssemblyCatalog(typeof(EditorUtil).Assembly));
-
-                // IBlockCaret needs to be satisfied for integration tests
-                list.Add(new AssemblyCatalog(typeof(IVim).Assembly));
-
-                var catalog = new AggregateCatalog(list.ToArray());
-                return new CompositionContainer(catalog);
-            }
-            catch (Exception)
-            {
-                throw;
-            }
+            var list = GetUnitTestCatalog();
+            var catalog = new AggregateCatalog(list.ToArray());
+            return new CompositionContainer(catalog);
         }
     }
 }
