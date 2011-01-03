@@ -2100,6 +2100,7 @@ namespace VimCore.UnitTest
         public void GoToFile1()
         {
             Create("foo bar");
+            _host.Setup(x => x.IsDirty(_textBuffer)).Returns(false).Verifiable();
             _host.Setup(x => x.LoadFileIntoExisting("foo", _textBuffer)).Returns(HostResult.Success).Verifiable();
             _operations.GoToFile();
             _host.Verify();
@@ -2109,7 +2110,8 @@ namespace VimCore.UnitTest
         public void GoToFile2()
         {
             Create("foo bar");
-            _host.Setup(x => x.LoadFileIntoExisting("foo", _textBuffer)).Returns(HostResult.Success).Verifiable();
+            _host.Setup(x => x.IsDirty(_textBuffer)).Returns(false).Verifiable();
+            _host.Setup(x => x.LoadFileIntoExisting("foo", _textBuffer)).Returns(HostResult.NewError("")).Verifiable();
             _statusUtil.Setup(x => x.OnError(Resources.NormalMode_CantFindFile("foo"))).Verifiable();
             _operations.GoToFile();
             _statusUtil.Verify();

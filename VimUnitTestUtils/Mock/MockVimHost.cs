@@ -127,36 +127,24 @@ namespace Vim.UnitTest.Mock
             throw new NotImplementedException();
         }
 
-        public void EnsureVisible(ITextView textView, SnapshotPoint point)
+        void IVimHost.EnsureVisible(ITextView textView, SnapshotPoint value)
         {
-        }
 
-
-        public bool Reload(ITextBuffer value)
-        {
-            throw new NotImplementedException();
-        }
-
-
-        void IVimHost.EnsureVisible(ITextView textView, SnapshotPoint point)
-        {
-            throw new NotImplementedException();
         }
 
         bool IVimHost.IsDirty(ITextBuffer value)
         {
-            throw new NotImplementedException();
+            return false;
+        }
+
+        HostResult IVimHost.LoadFileIntoExisting(string filePath, ITextBuffer textBuffer)
+        {
+            return HostResult.Success;
         }
 
         bool IVimHost.Reload(ITextBuffer value)
         {
-            throw new NotImplementedException();
-        }
-
-
-        public HostResult LoadFileIntoExisting(string filePath, ITextBuffer textBuffer)
-        {
-            throw new NotImplementedException();
+            return true;
         }
     }
 }
