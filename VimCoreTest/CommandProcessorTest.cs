@@ -928,6 +928,17 @@ namespace VimCore.UnitTest
         }
 
         [Test]
+        public void Substitute_EmptySearchUsesLastSearch()
+        {
+            Create("cat", "dog", "rabbit", "tree");
+            _operations
+                .Setup(x => x.Substitute("cat", "lab", _textView.GetLineRange(0, 0), SubstituteFlags.None))
+                .Verifiable();
+            _vimData.LastSearchData = new SearchData(SearchText.NewPattern("cat"), SearchKind.ForwardWithWrap, SearchOptions.None);
+            RunCommand("s//lab/");
+        }
+
+        [Test]
         public void Redo1()
         {
             Create("foo bar");

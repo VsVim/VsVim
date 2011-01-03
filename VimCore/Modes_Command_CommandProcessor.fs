@@ -571,6 +571,11 @@ type internal CommandProcessor
                             else
                                 (search,None)
 
+                        // If the search string is empty then use the previous search text
+                        let search = 
+                            if StringUtil.isNullOrEmpty search then _buffer.VimData.LastSearchData.Text.RawText
+                            else search
+
                         if Option.isSome errorMsg then
                             badParse (Option.get errorMsg)
                         elif StringUtil.isNullOrEmpty search then 
