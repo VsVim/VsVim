@@ -8,6 +8,13 @@ namespace Vim.UI.Wpf
 {
     public abstract class VimHost : IVimHost
     {
+        private readonly ITextDocumentFactoryService _textDocumentFactoryService;
+
+        protected VimHost(ITextDocumentFactoryService textDocumentFactoryService)
+        {
+            _textDocumentFactoryService = textDocumentFactoryService;
+        }
+
         public virtual void Beep()
         {
             SystemSounds.Beep.Play();
@@ -96,8 +103,6 @@ namespace Vim.UI.Wpf
 
         public abstract bool GoToDefinition();
 
-        public abstract bool GoToFile(string value);
-
         public abstract bool GoToGlobalDeclaration(ITextView textView, string name);
 
         public abstract bool GoToLocalDeclaration(ITextView textView, string name);
@@ -108,13 +113,48 @@ namespace Vim.UI.Wpf
 
         public abstract void GoToPreviousTab(int count);
 
+        public virtual bool IsDirty(ITextBuffer textbuffer)
+        {
+            ITextDocument document;
+            if (!_textDocumentFactoryService.TryGetTextDocument(textbuffer, out document))
+            {
+                return false;
+            }
+
+            return document.IsDirty;
+        }
+
+        public abstract HostResult LoadFileIntoExisting(string filePath, ITextBuffer textbuffer);
+
         public abstract void MoveViewDown(ITextView value);
 
         public abstract void MoveViewUp(ITextView value);
 
         public abstract bool NavigateTo(VirtualSnapshotPoint point);
 
-        public abstract bool Save(ITextView value);
+        public virtual bool Reload(ITextBuffer textBuffer)
+        {
+            ITextDocument document;
+            if (!_textDocumentFactoryService.TryGetTextDocument(textBuffer, out document))
+            {
+                return false;
+            }
+
+            document.Reload(EditOptions.DefaultMinimalChange);
+            return true;
+        }
+
+        public virtual bool Save(ITextBuffer textBuffer)
+        {
+            ITextDocument document;
+            if (!_textDocumentFactoryService.TryGetTextDocument(textBuffer, out document))
+            {
+                return false;
+            }
+
+            document.Save();
+            return true;
+        }
 
         public abstract bool SaveAllFiles();
 
@@ -123,5 +163,6 @@ namespace Vim.UI.Wpf
         public abstract void ShowOpenFileDialog();
 
         public abstract void SplitView(ITextView value);
+
     }
 }

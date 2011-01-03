@@ -38,9 +38,6 @@ type internal DefaultOperations ( _data : OperationsData ) =
     member private x.CommonImpl = x :> ICommonOperations
 
     interface IOperations with
-        member x.EditFile fileName = 
-            if not (_host.GoToFile fileName) then _host.Beep()
-
         member x.ShowOpenFileDialog () = _host.ShowOpenFileDialog()
 
         /// Implement the :pu[t] command

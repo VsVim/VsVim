@@ -38,14 +38,6 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void OpenFile1()
-        {
-            Create("");
-            RunCommand("e foo.cpp");
-            Assert.AreEqual("foo.cpp", _host.LastFileOpen);
-        }
-
-        [Test]
         public void SwitchTo()
         {
             Create("");

@@ -20,6 +20,7 @@ namespace VimCore.UnitTest
     public class CommandProcessorTest
     {
         private IWpfTextView _textView;
+        private ITextBuffer _textBuffer;
         private MockRepository _factory;
         private Mock<IVimBuffer> _bufferData;
         private CommandProcessor _processorRaw;
@@ -36,6 +37,7 @@ namespace VimCore.UnitTest
         {
             _textView = EditorUtil.CreateView(lines);
             _textView.Caret.MoveTo(new SnapshotPoint(_textView.TextSnapshot, 0));
+            _textBuffer = _textView.TextBuffer;
             _factory = new MockRepository(MockBehavior.Strict);
             _map = VimUtil.CreateRegisterMap(MockObjectFactory.CreateClipboardDevice(_factory).Object);
             _editOpts = _factory.Create<IEditorOperations>();
@@ -997,39 +999,66 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void Edit1()
+        public void Edit_NoArgumentsShouldReload()
         {
             Create("foo");
-            _operations.Setup(x => x.ShowOpenFileDialog()).Verifiable();
+            _host.Setup(x => x.Reload(_textBuffer)).Returns(true).Verifiable();
+            _host.Setup(x => x.IsDirty(_textBuffer)).Returns(false).Verifiable();
             RunCommand("e");
             _operations.Verify();
+            RunCommand("edi");
+            _factory.Verify();
         }
 
         [Test]
-        public void Edit2()
+        public void Edit_NoArgumentsButDirtyShouldError()
+        {
+            Create("");
+            _host.Setup(x => x.IsDirty(_textBuffer)).Returns(true).Verifiable();
+            _statusUtil.Setup(x => x.OnError(Resources.Common_NoWriteSinceLastChange)).Verifiable();
+            RunCommand("e");
+            _factory.Verify();
+        }
+
+        [Test]
+        public void Edit_FilePathButDirtyShouldError()
         {
             Create("foo");
-            _operations.Setup(x => x.ShowOpenFileDialog()).Verifiable();
-            RunCommand("edi");
-            _operations.Verify();
+            _host.Setup(x => x.IsDirty(_textBuffer)).Returns(true).Verifiable();
+            _statusUtil.Setup(x => x.OnError(Resources.Common_NoWriteSinceLastChange)).Verifiable();
+            RunCommand("e cat.txt");
+            _factory.Verify();
         }
 
         [Test]
-        public void Edit3()
+        [Description("Can't figure out how to make this fail so just beeping now")]
+        public void Edit_NoArgumentsReloadFailsShouldBeep()
         {
-            Create("bar");
-            _operations.Setup(x => x.EditFile("foo.cs")).Verifiable();
-            RunCommand("ed foo.cs");
-            _operations.Verify();
+            Create("foo");
+            _host.Setup(x => x.Reload(_textBuffer)).Returns(false).Verifiable();
+            _host.Setup(x => x.IsDirty(_textBuffer)).Returns(false).Verifiable();
+            _operations.Setup(x => x.Beep()).Verifiable();
+            RunCommand("e");
+            _factory.Verify();
         }
 
         [Test, Description("Make sure the starting e is not picked up as an :edit command")]
-        public void Edit4()
+        public void Edit_BadCommandName()
         {
             Create("");
             _statusUtil.Setup(x => x.OnError(It.IsAny<string>())).Verifiable();
             RunCommand("endfunc");
             _statusUtil.Verify();
+        }
+
+        [Test]
+        public void Edit_FilePathShouldLoadIntoExisting()
+        {
+            Create("");
+            _host.Setup(x => x.LoadFileIntoExisting("cat.txt", _textBuffer)).Returns(HostResult.Success).Verifiable();
+            _host.Setup(x => x.IsDirty(_textBuffer)).Returns(false).Verifiable();
+            RunCommand("e cat.txt");
+            _factory.Verify();
         }
 
         [Test]
@@ -1415,7 +1444,7 @@ namespace VimCore.UnitTest
         public void WriteQuit_NoArguments()
         {
             Create("");
-            _host.Setup(x => x.Save(_textView)).Returns(true).Verifiable();
+            _host.Setup(x => x.Save(_textView.TextBuffer)).Returns(true).Verifiable();
             _host.Setup(x => x.Close(_textView, false)).Verifiable();
             RunCommand("wq");
             _factory.Verify();
@@ -1425,7 +1454,7 @@ namespace VimCore.UnitTest
         public void WriteQuit_WithBang()
         {
             Create("");
-            _host.Setup(x => x.Save(_textView)).Returns(true).Verifiable();
+            _host.Setup(x => x.Save(_textView.TextBuffer)).Returns(true).Verifiable();
             _host.Setup(x => x.Close(_textView, false)).Verifiable();
             RunCommand("wq!");
             _factory.Verify();

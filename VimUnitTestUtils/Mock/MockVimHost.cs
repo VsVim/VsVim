@@ -7,7 +7,6 @@ namespace Vim.UnitTest.Mock
     public class MockVimHost : IVimHost
     {
         public int BeepCount { get; set; }
-        public string LastFileOpen { get; set; }
         public int GoToDefinitionCount { get; set; }
         public int GoToMatchCount { get; set; }
         public bool GoToFileReturn { get; set; }
@@ -68,7 +67,7 @@ namespace Vim.UnitTest.Mock
             throw new NotImplementedException();
         }
 
-        bool IVimHost.Save(ITextView textView)
+        bool IVimHost.Save(ITextBuffer textBuffer)
         {
             throw new NotImplementedException();
         }
@@ -113,12 +112,6 @@ namespace Vim.UnitTest.Mock
             throw new NotImplementedException();
         }
 
-        bool IVimHost.GoToFile(string value)
-        {
-            LastFileOpen = value;
-            return GoToFileReturn;
-        }
-
         bool IVimHost.GoToGlobalDeclaration(ITextView value, string target)
         {
             throw new NotImplementedException();
@@ -136,6 +129,34 @@ namespace Vim.UnitTest.Mock
 
         public void EnsureVisible(ITextView textView, SnapshotPoint point)
         {
+        }
+
+
+        public bool Reload(ITextBuffer value)
+        {
+            throw new NotImplementedException();
+        }
+
+
+        void IVimHost.EnsureVisible(ITextView textView, SnapshotPoint point)
+        {
+            throw new NotImplementedException();
+        }
+
+        bool IVimHost.IsDirty(ITextBuffer value)
+        {
+            throw new NotImplementedException();
+        }
+
+        bool IVimHost.Reload(ITextBuffer value)
+        {
+            throw new NotImplementedException();
+        }
+
+
+        public HostResult LoadFileIntoExisting(string filePath, ITextBuffer textBuffer)
+        {
+            throw new NotImplementedException();
         }
     }
 }

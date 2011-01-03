@@ -9,9 +9,6 @@ open Microsoft.VisualStudio.Text.Operations
 /// Command mode operations
 type IOperations =
 
-    /// Handle the :edit command
-    abstract EditFile : fileName : string -> unit
-
     /// Show the open file dialog
     abstract ShowOpenFileDialog : unit -> unit
 

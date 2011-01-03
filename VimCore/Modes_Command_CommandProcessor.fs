@@ -89,6 +89,8 @@ type internal CommandProcessor
         _fileSystem : IFileSystem ) as this = 
 
     let _textView = _buffer.TextView
+    let _textBuffer = _textView.TextBuffer
+    let _host = _buffer.Vim.VimHost
     let _regexFactory = VimRegexFactory(_buffer.Settings.GlobalSettings)
 
     let mutable _command : System.String = System.String.Empty
@@ -250,8 +252,28 @@ type internal CommandProcessor
             rest 
                 |> CommandParseUtil.SkipWhitespace
                 |> StringUtil.ofCharSeq
-        if System.String.IsNullOrEmpty name then _operations.ShowOpenFileDialog()
-        else _operations.EditFile name
+        if System.String.IsNullOrEmpty name then 
+            if not hasBang && _host.IsDirty _textBuffer then
+                _statusUtil.OnError Resources.Common_NoWriteSinceLastChange
+            else
+                let caret = 
+                    let point = TextViewUtil.GetCaretPoint _textView
+                    point.Snapshot.CreateTrackingPoint(point.Position, PointTrackingMode.Negative)
+                if not (_host.Reload _textBuffer) then
+                    _operations.Beep()
+                else
+                    match TrackingPointUtil.GetPoint _textView.TextSnapshot caret with
+                    | None -> ()
+                    | Some(point) -> 
+                        TextViewUtil.MoveCaretToPoint _textView point
+                        TextViewUtil.EnsureCaretOnScreen _textView
+
+        elif not hasBang && _host.IsDirty _textBuffer then
+            _statusUtil.OnError Resources.Common_NoWriteSinceLastChange
+        else
+            match _host.LoadFileIntoExisting name _textBuffer with
+            | HostResult.Success -> ()
+            | HostResult.Error(msg) -> _statusUtil.OnError(msg)
 
     /// Parse out the fold command and create the fold
     member x.ProcessFold _ (range : SnapshotLineRange option) _ =
@@ -317,7 +339,7 @@ type internal CommandProcessor
             if StringUtil.isNullOrEmpty name then None else Some name
 
         match range, filePath, hasBang with 
-        | None, None, _ -> host.Save _textView |> ignore  
+        | None, None, _ -> host.Save _textView.TextBuffer |> ignore  
         | None, Some(filePath), _ -> host.SaveAs _textView filePath |> ignore
         | Some(range), None, _ -> _statusUtil.OnError Resources.CommandMode_NoFileName
         | Some(range), Some(filePath), _ -> host.SaveTextAs (range.GetTextIncludingLineBreak()) filePath |> ignore

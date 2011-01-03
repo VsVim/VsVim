@@ -18,6 +18,7 @@ namespace VsVim.UnitTest
         private VsVimHost _hostRaw;
         private IVimHost _host;
         private MockRepository _factory;
+        private Mock<IVsAdapter> _adapter;
         private Mock<ITextManager> _textManager;
         private Mock<IVsEditorAdaptersFactoryService> _editorAdaptersFactoryService;
         private Mock<ITextBufferUndoManagerProvider> _undoManagerProvider;
@@ -27,6 +28,7 @@ namespace VsVim.UnitTest
         private void Create()
         {
             _factory = new MockRepository(MockBehavior.Strict);
+            _adapter = _factory.Create<IVsAdapter>();
             _undoManagerProvider = _factory.Create<ITextBufferUndoManagerProvider>();
             _editorAdaptersFactoryService = _factory.Create<IVsEditorAdaptersFactoryService>();
             _statusBar = _factory.Create<StatusBar>();
@@ -36,7 +38,13 @@ namespace VsVim.UnitTest
 
             var sp = _factory.Create<SVsServiceProvider>();
             sp.Setup(x => x.GetService(typeof(_DTE))).Returns(_dte.Object);
-            _hostRaw = new VsVimHost(_undoManagerProvider.Object, _editorAdaptersFactoryService.Object, _textManager.Object, sp.Object);
+            _hostRaw = new VsVimHost(
+                _adapter.Object,
+                _undoManagerProvider.Object,
+                _editorAdaptersFactoryService.Object,
+                _textManager.Object,
+                _factory.Create<ITextDocumentFactoryService>().Object,
+                sp.Object);
             _host = _hostRaw;
         }
 
@@ -151,7 +159,5 @@ namespace VsVim.UnitTest
             _editorAdaptersFactoryService.Setup(x => x.GetBufferAdapter(buffer.Object)).Returns(vsTextBuffer.Object);
             Assert.AreEqual("foo", _host.GetName(buffer.Object));
         }
-
-
     }
 }

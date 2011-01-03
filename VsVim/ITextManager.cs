@@ -29,13 +29,14 @@ namespace VsVim
         /// <summary>
         /// Save file if it's dirty
         /// </summary>
-        Result Save(ITextView textView);
+        Result Save(ITextBuffer textBuffer);
 
         /// <summary>
-        /// Close the passed in document.  This will close the buffer.  If 
-        /// there is a split view, the entire window will be closed
+        /// Close the passed in document.  This will close the file which will close 
+        /// the entire window.  If there is a split view this will close both of the
+        /// views
         /// </summary>
-        bool CloseBuffer(ITextView textView, bool checkDirty);
+        bool Close(ITextBuffer textBuffer, bool checkDirty);
 
         /// <summary>
         /// Close the given view passed in.  If there is a split view only

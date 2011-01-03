@@ -4,8 +4,16 @@ namespace Vim
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
 
+[<RequireQualifiedAccess>]
+type HostResult =
+    | Success
+    | Error of string
+
 type IVimHost =
     abstract Beep : unit -> unit
+
+    /// Ensure that the given point is visible
+    abstract EnsureVisible : ITextView -> SnapshotPoint -> unit
 
     /// Format the provided lines
     abstract FormatLines : ITextView -> SnapshotLineRange -> unit
@@ -19,9 +27,6 @@ type IVimHost =
     /// Go to the local declaration of the value under the cursor
     abstract GoToGlobalDeclaration : ITextView -> string -> bool
 
-    /// Go to the specified file name
-    abstract GoToFile : string -> bool
-
     /// Go to the matching construct of the value under the cursor
     abstract GoToMatch : unit -> bool
 
@@ -33,16 +38,22 @@ type IVimHost =
 
     abstract GetName : ITextBuffer -> string
 
-    /// Ensure that the given point is visible
-    abstract EnsureVisible : ITextView -> SnapshotPoint -> unit
+    /// Is the ITextBuffer in a dirty state?
+    abstract IsDirty : ITextBuffer -> bool
+
+    /// Loads the new file into the existing buffer
+    abstract LoadFileIntoExisting : filePath : string -> textBuffer : ITextBuffer -> HostResult
 
     abstract NavigateTo : point : VirtualSnapshotPoint -> bool
 
     /// Display the open file dialog 
     abstract ShowOpenFileDialog : unit -> unit
 
-    /// Save the current document
-    abstract Save : ITextView -> bool 
+    /// Reload the contents of the ITextBuffer discarding any changes
+    abstract Reload : ITextBuffer -> bool
+
+    /// Save the provided ITextBuffer instance
+    abstract Save : ITextBuffer -> bool 
 
     /// Save the current document as a new file with the specified name
     abstract SaveTextAs : text:string -> filePath:string -> bool 

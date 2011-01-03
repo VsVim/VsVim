@@ -3,6 +3,7 @@ using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Editor;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
+using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Moq;
 using NUnit.Framework;
@@ -71,26 +72,26 @@ namespace VsVim.UnitTest
         }
 
         [Test]
-        public void CloseBuffer1()
+        public void Close_NoAdapter()
         {
-            var view = _factory.Create<IWpfTextView>().Object;
-            Assert.IsFalse(_manager.CloseBuffer(view, false));
+            var textBuffer = _factory.Create<ITextBuffer>().Object;
+            Assert.IsFalse(_manager.Close(textBuffer, false));
         }
 
         [Test]
-        public void CloseBuffer2()
+        public void Close_ShouldPassThroughToFrame()
         {
-            var view = _factory.Create<IWpfTextView>().Object;
-            var mock = _adapter.MakeWindowFrame(view, _factory);
+            var textBuffer = _factory.Create<ITextBuffer>().Object;
+            var mock = _adapter.MakeWindowFrame(textBuffer, _factory);
             mock
                 .Setup(x => x.CloseFrame((uint)__FRAMECLOSE.FRAMECLOSE_PromptSave))
                 .Returns(VSConstants.S_OK);
-            Assert.IsTrue(_manager.CloseBuffer(view, checkDirty: true));
+            Assert.IsTrue(_manager.Close(textBuffer, checkDirty: true));
             _factory.Verify();
         }
 
         [Test]
-        public void CloseBuffer3()
+        public void Close_PassDirtyFlagToCloseFrame()
         {
             var view = _factory.Create<IWpfTextView>().Object;
             var mock = _adapter.MakeWindowFrame(view, _factory);

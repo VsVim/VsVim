@@ -21,6 +21,7 @@ module internal Resources =
     let Common_InvalidLineNumber = "Invalid Line Number"
     let Common_PatternNotFound pattern = sprintf "Pattern not found: %s" pattern
     let Common_SubstituteComplete subs lines = sprintf "%d substitutions on %d lines" subs lines
+    let Common_NoWriteSinceLastChange = "No write since last change (add ! to override)"
 
     let NormalMode_NoPreviousSearch = "No previous search"
     let NormalMode_NoWordUnderCursor = "No word under cursor"

@@ -24,6 +24,7 @@ namespace VsVim
     {
         internal const string CommandNameGoToDefinition = "Edit.GoToDefinition";
 
+        private readonly IVsAdapter _adapter;
         private readonly ITextManager _textManager;
         private readonly IVsEditorAdaptersFactoryService _editorAdaptersFactoryService;
         private readonly _DTE _dte;
@@ -35,11 +36,15 @@ namespace VsVim
 
         [ImportingConstructor]
         internal VsVimHost(
+            IVsAdapter adapter,
             ITextBufferUndoManagerProvider undoManagerProvider,
             IVsEditorAdaptersFactoryService editorAdaptersFactoryService,
             ITextManager textManager,
+            ITextDocumentFactoryService textDocumentFactoryService,
             SVsServiceProvider serviceProvider)
+            : base(textDocumentFactoryService)
         {
+            _adapter = adapter;
             _editorAdaptersFactoryService = editorAdaptersFactoryService;
             _dte = (_DTE)serviceProvider.GetService(typeof(_DTE));
             _textManager = textManager;
@@ -91,25 +96,6 @@ namespace VsVim
             return SafeExecuteCommand(CommandNameGoToDefinition);
         }
 
-        private bool OpenFileCore(string fileName)
-        {
-            if (SafeExecuteCommand("File.OpenFile", fileName))
-            {
-                return true;
-            }
-
-            var list = _dte.GetProjectItems(fileName);
-            if (list.Any())
-            {
-                var item = list.First();
-                var result = item.Open(EnvDTE.Constants.vsViewKindPrimary);
-                result.Activate();
-                return true;
-            }
-
-            return false;
-        }
-
         /// <summary>
         /// Format the specified line range.  There is no inherent operation to do this
         /// in Visual Studio.  Instead we leverage the FormatSelection command.  Need to be careful
@@ -137,6 +123,23 @@ namespace VsVim
             return SafeExecuteCommand("Edit.GoToBrace");
         }
 
+        public override HostResult LoadFileIntoExisting(string filePath, ITextBuffer textBuffer)
+        {
+            try
+            {
+                // Open the document before closing the other.  That way any error which occurs
+                // during an open will cause the method to abandon and produce a user error 
+                // message
+                VsShellUtilities.OpenDocument(_adapter.ServiceProvider, filePath);
+                _textManager.Close(textBuffer, false);
+                return HostResult.Success;
+            }
+            catch (Exception e)
+            {
+                return HostResult.NewError(e.Message);
+            }
+        }
+
         public override void ShowOpenFileDialog()
         {
             SafeExecuteCommand("Edit.OpenFile");
@@ -157,9 +160,9 @@ namespace VsVim
             return vsTextLines.GetFileName();
         }
 
-        public override bool Save(ITextView textView)
+        public override bool Save(ITextBuffer textBuffer)
         {
-            return _textManager.Save(textView).IsSuccess;
+            return _textManager.Save(textBuffer).IsSuccess;
         }
 
         public override bool SaveTextAs(string text, string fileName)
@@ -178,10 +181,10 @@ namespace VsVim
         public override bool SaveAllFiles()
         {
             var anyFailed = false;
-            var all = _textManager.TextViews;
-            foreach (var textView in all)
+            var all = _textManager.TextBuffers;
+            foreach (var textBuffer in all)
             {
-                if (_textManager.Save(textView).IsError)
+                if (_textManager.Save(textBuffer).IsError)
                 {
                     anyFailed = true;
                 }
@@ -192,10 +195,13 @@ namespace VsVim
 
         public override void CloseAllFiles(bool checkDirty)
         {
-            var all = _textManager.TextViews.ToList();
-            foreach (var textView in all)
+            var all = _textManager.TextViews
+                .Select(x => x.TextBuffer)
+                .Distinct()
+                .ToList();
+            foreach (var textBuffer in all)
             {
-                _textManager.CloseBuffer(textView, checkDirty);
+                _textManager.Close(textBuffer, checkDirty);
             }
         }
 
@@ -253,11 +259,6 @@ namespace VsVim
             // there is currently no better way in Visual Studio.  Added this method though
             // so it's easier to plug in later should such an API become available
             return GoToDefinitionCore(textView, target);
-        }
-
-        public override bool GoToFile(string fileName)
-        {
-            return OpenFileCore(fileName);
         }
     }
 }

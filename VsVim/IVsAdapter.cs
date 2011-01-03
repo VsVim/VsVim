@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using Microsoft.VisualStudio.Editor;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Text;
@@ -14,14 +15,19 @@ namespace VsVim
     public interface IVsAdapter
     {
         /// <summary>
+        /// Returns true if we're in the middle of an automation (think macro) call
+        /// </summary>
+        bool InAutomationFunction { get; }
+
+        /// <summary>
         /// Returns whether or not Visual Studio is currently in debug mode
         /// </summary>
         bool InDebugMode { get; }
 
         /// <summary>
-        /// Returns true if we're in the middle of an automation (think macro) call
+        /// Service provider instance
         /// </summary>
-        bool InAutomationFunction { get; }
+        IServiceProvider ServiceProvider { get; }
 
         /// <summary>
         /// Core Editor Adapter factory service
@@ -56,6 +62,16 @@ namespace VsVim
         /// the VsCodeWindowAdapter::IsReadOnly method.
         /// </summary>
         bool IsReadOnly(ITextBuffer textBuffer);
+
+        /// <summary>
+        /// Get the containing IVsCodeWindowFrame for the provided ITextBuffer
+        /// </summary>
+        Result<IVsWindowFrame> GetContainingWindowFrame(ITextBuffer textBuffer);
+
+        /// <summary>
+        /// Get the IVsPersisteDocData for the provided ITextBuffer
+        /// </summary>
+        Result<IVsPersistDocData> GetPersistDocData(ITextBuffer textBuffer);
 
         /// <summary>
         /// Get the IVsCodeWindow for the given ITextView.  Multiple ITextView

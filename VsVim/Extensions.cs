@@ -275,21 +275,19 @@ namespace VsVim
 
         #region IVsWindowFrame
 
-        public static bool TryGetCodeWindow(this IVsWindowFrame frame, out IVsCodeWindow codeWindow)
+        public static Result<IVsCodeWindow> GetCodeWindow(this IVsWindowFrame frame)
         {
             var iid = typeof(IVsCodeWindow).GUID;
             var ptr = IntPtr.Zero;
             try
             {
                 ErrorHandler.ThrowOnFailure(frame.QueryViewInterface(ref iid, out ptr));
-                codeWindow = (IVsCodeWindow)Marshal.GetObjectForIUnknown(ptr);
-                return codeWindow != null;
+                return Result.CreateSuccess((IVsCodeWindow)Marshal.GetObjectForIUnknown(ptr));
             }
-            catch (Exception)
+            catch (Exception e)
             {
                 // Venus will throw when querying for the code window
-                codeWindow = null;
-                return false;
+                return Result.CreateError(e);
             }
             finally
             {
@@ -299,6 +297,13 @@ namespace VsVim
                 }
             }
 
+        }
+
+        public static bool TryGetCodeWindow(this IVsWindowFrame frame, out IVsCodeWindow codeWindow)
+        {
+            var result = GetCodeWindow(frame);
+            codeWindow = result.IsSuccess ? result.Value : null;
+            return result.IsSuccess;
         }
 
         #endregion

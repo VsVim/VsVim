@@ -402,10 +402,16 @@ type internal CommonOperations ( _data : OperationsData ) =
 
     member x.Beep() = if not _settings.GlobalSettings.VisualBell then _host.Beep()
 
-    member private x.DoWithOutlining func = 
+    member x.DoWithOutlining func = 
         match _outlining with
         | None -> x.Beep()
         | Some(outlining) -> func outlining
+
+    member x.CheckDirty func = 
+        if _host.IsDirty _textView.TextBuffer then 
+            _statusUtil.OnError Resources.Common_NoWriteSinceLastChange
+        else
+            func()
 
     interface ICommonOperations with
         member x.TextView = _textView 
@@ -641,7 +647,7 @@ type internal CommonOperations ( _data : OperationsData ) =
             span
         member x.Undo count = _undoRedoOperations.Undo count
         member x.Redo count = _undoRedoOperations.Redo count
-        member x.Save() = _host.Save _textView 
+        member x.Save() = _host.Save _textView.TextBuffer
         member x.SaveAs fileName = 
             let text = SnapshotUtil.GetText _textView.TextSnapshot
             _host.SaveTextAs text fileName
@@ -898,9 +904,11 @@ type internal CommonOperations ( _data : OperationsData ) =
             if not (_host.GoToGlobalDeclaration _textView x.WordUnderCursorOrEmpty) then _host.Beep()
 
         member x.GoToFile () = 
-            let text = x.WordUnderCursorOrEmpty 
-            if not (_host.GoToFile text) then 
-                _statusUtil.OnError (Resources.NormalMode_CantFindFile text)
+            x.CheckDirty (fun () ->
+                let text = x.WordUnderCursorOrEmpty 
+                match _host.LoadFileIntoExisting text _textBuffer with
+                | HostResult.Success -> ()
+                | HostResult.Error(_) -> _statusUtil.OnError (Resources.NormalMode_CantFindFile text))
 
         member x.InsertLineBelow () =
             let point = TextViewUtil.GetCaretPoint _textView

@@ -40,6 +40,11 @@ namespace VsVim.Implementation
             get { return VsShellUtilities.IsInAutomationFunction(_serviceProvider); }
         }
 
+        public IServiceProvider ServiceProvider
+        {
+            get { return _serviceProvider; }
+        }
+
         public IVsEditorAdaptersFactoryService EditorAdapter
         {
             get { return _editorAdaptersFactoryService; }
@@ -109,6 +114,49 @@ namespace VsVim.Implementation
 
             windowFrame = null;
             return false;
+        }
+
+        public Result<IVsWindowFrame> GetContainingWindowFrame(ITextBuffer textBuffer)
+        {
+            var vsTextLines = _editorAdaptersFactoryService.GetBufferAdapter(textBuffer);
+            if (vsTextLines == null)
+            {
+                return Result.Error;
+            }
+
+            foreach (var frame in _uiShell.GetDocumentWindowFrames())
+            {
+                var result = frame.GetCodeWindow();
+                if (result.IsSuccess)
+                {
+                    IVsTextLines frameLines;
+                    if (ErrorHandler.Succeeded(result.Value.GetBuffer(out frameLines))
+                        && NativeMethods.IsSameComObject(frameLines, vsTextLines))
+                    {
+                        return Result.CreateSuccess(frame);
+                    }
+                }
+            }
+
+            return Result.Error;
+        }
+
+        public Result<IVsPersistDocData> GetPersistDocData(ITextBuffer textBuffer)
+        {
+            var vsTextBuffer = _editorAdaptersFactoryService.GetBufferAdapter(textBuffer);
+            if (vsTextBuffer == null)
+            {
+                return Result.Error;
+            }
+
+            try
+            {
+                return Result.CreateSuccess((IVsPersistDocData)vsTextBuffer);
+            }
+            catch (Exception e)
+            {
+                return Result.CreateError(e);
+            }
         }
 
         public IEnumerable<IVsTextView> GetTextViews(ITextBuffer textBuffer)
@@ -197,6 +245,11 @@ namespace VsVim.Implementation
             }
 
             var textLines = _editorAdaptersFactoryService.GetBufferAdapter(textBuffer);
+            if (textLines == null)
+            {
+                return false;
+            }
+
             uint flags;
             if (ErrorHandler.Succeeded(textLines.GetStateFlags(out flags))
                 && 0 != (flags & (uint)BUFFERSTATEFLAGS.BSF_USER_READONLY))
@@ -212,5 +265,6 @@ namespace VsVim.Implementation
             var search = _incrementalSearchFactoryService.GetIncrementalSearch(textView);
             return search != null && search.IsActive;
         }
+
     }
 }

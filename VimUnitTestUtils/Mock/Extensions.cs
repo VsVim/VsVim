@@ -91,6 +91,18 @@ namespace Vim.UnitTest.Mock
 
         public static Mock<IVsWindowFrame> MakeWindowFrame(
             this Mock<IVsAdapter> adapter,
+            ITextBuffer textBuffer,
+            MockRepository factory)
+        {
+            var mock = factory.Create<IVsWindowFrame>();
+            adapter
+                .Setup(x => x.GetContainingWindowFrame(textBuffer))
+                .Returns(Result.CreateSuccess(mock.Object));
+            return mock;
+        }
+
+        public static Mock<IVsWindowFrame> MakeWindowFrame(
+            this Mock<IVsAdapter> adapter,
             ITextView textView,
             MockRepository factory)
         {
@@ -290,8 +302,8 @@ namespace Vim.UnitTest.Mock
         }
 
         public static IReturnsResult<IOleCommandTarget> SetupQueryStatus(
-            this Mock<IOleCommandTarget> mock, 
-            Guid? command = null, 
+            this Mock<IOleCommandTarget> mock,
+            Guid? command = null,
             int hresult = VSConstants.S_OK)
         {
             var commandValue = command ?? VSConstants.VSStd2K;

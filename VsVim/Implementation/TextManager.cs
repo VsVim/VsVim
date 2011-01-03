@@ -88,12 +88,19 @@ namespace VsVim.Implementation
             return ErrorHandler.Succeeded(hr);
         }
 
-        public Result Save(ITextView textView)
+        public Result Save(ITextBuffer textBuffer)
         {
             try
             {
-                var vsTextView = _adapter.EditorAdapter.GetViewAdapter(textView);
-                VsShellUtilities.SaveFileIfDirty(vsTextView);
+                var docData = _adapter.GetPersistDocData(textBuffer).Value;
+                string unusedNewDocumentName;
+                int saveCancelled;
+                ErrorHandler.ThrowOnFailure(docData.SaveDocData(VSSAVEFLAGS.VSSAVE_Save, out unusedNewDocumentName, out saveCancelled));
+                if (saveCancelled != 0)
+                {
+                    return Result.Error;
+                }
+
                 return Result.Success;
             }
             catch (Exception e)
@@ -102,14 +109,15 @@ namespace VsVim.Implementation
             }
         }
 
-        public bool CloseBuffer(ITextView textView, bool checkDirty)
+        public bool Close(ITextBuffer textBuffer, bool checkDirty)
         {
-            IVsWindowFrame frame;
-            if (!_adapter.TryGetContainingWindowFrame(textView, out frame))
+            var result = _adapter.GetContainingWindowFrame(textBuffer);
+            if (result.IsError)
             {
                 return false;
             }
 
+            var frame = result.Value;
             var value = checkDirty
                 ? __FRAMECLOSE.FRAMECLOSE_PromptSave
                 : __FRAMECLOSE.FRAMECLOSE_SaveIfDirty;
@@ -123,7 +131,7 @@ namespace VsVim.Implementation
             {
                 return codeWindow.IsSplit()
                     ? SendSplit(codeWindow)
-                    : CloseBuffer(textView, checkDirty);
+                    : Close(textView.TextBuffer, checkDirty);
             }
 
             return false;
@@ -186,7 +194,7 @@ namespace VsVim.Implementation
         /// Send the split command.  This is really a toggle command that will split
         /// and unsplit the window
         /// </summary>
-        private bool SendSplit(IVsCodeWindow codeWindow)
+        private static bool SendSplit(IVsCodeWindow codeWindow)
         {
             var target = codeWindow as IOleCommandTarget;
             if (target != null)
