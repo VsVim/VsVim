@@ -274,6 +274,7 @@ type VimRegexFactory
         match c with 
         | '*' -> data.AppendChar '*'
         | '.' -> data.AppendChar '.'
+        | '}' -> data.AppendChar '}'
         | '^' -> x.ConvertCharAsSpecial data c
         | '$' -> x.ConvertCharAsSpecial data c
         | '[' -> x.ConvertCharAsSpecial data c
@@ -295,12 +296,14 @@ type VimRegexFactory
         match c with 
         | '.' -> if isMagic then data.AppendEscapedChar c else x.ConvertCharAsSpecial data c
         | '*' -> x.ConvertCharAsSpecial data c 
+        | '+' -> x.ConvertCharAsSpecial data c
         | '?' -> x.ConvertCharAsSpecial data c 
         | '=' -> x.ConvertCharAsSpecial data c
         | '<' -> x.ConvertCharAsSpecial data c
         | '>' -> x.ConvertCharAsSpecial data c
         | '(' -> x.ConvertCharAsSpecial data c 
         | ')' -> x.ConvertCharAsSpecial data c 
+        | '{' -> x.ConvertCharAsSpecial data c
         | '|' -> x.ConvertCharAsSpecial data c
         | '[' -> if isMagic then data.AppendEscapedChar c else x.ConvertCharAsSpecial data c
         | ']' -> x.ConvertCharAsSpecial data c
@@ -337,11 +340,14 @@ type VimRegexFactory
     member x.ConvertCharAsSpecial (data:Data) c = 
         match c with
         | '.' -> data.AppendChar '.'
+        | '+' -> data.AppendChar '+'
         | '=' -> data.AppendChar '?'
         | '?' -> data.AppendChar '?'
         | '*' -> data.AppendChar '*'
         | '(' -> data.AppendChar '('
         | ')' -> data.AppendChar ')'
+        | '{' -> data.AppendChar '{'
+        | '}' -> data.AppendChar '}'
         | '|' -> data.AppendChar '|'
         | '^' -> if data.IsStartOfPattern then data.AppendChar '^' else data.AppendEscapedChar '^'
         | '$' -> if data.IsEndOfPattern then data.AppendChar '$' else data.AppendEscapedChar '$'

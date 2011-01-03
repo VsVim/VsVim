@@ -235,6 +235,14 @@ namespace VimCore.UnitTest
         }
 
         [Test]
+        public void VeryNoMagicDotIsNotSpecial()
+        {
+            _settings.Magic = true;
+            VerifyNotMatches(@"\V.", "a");
+            VerifyMatches(@"\V.", ".");
+        }
+
+        [Test]
         public void ItemStar1()
         {
             VerifyMatchIs(@"ab*", "abb", "abb");
@@ -825,6 +833,26 @@ namespace VimCore.UnitTest
             VerifyMatches(@"\U", LowerCaseLetters);
             VerifyMatches(@"\U", "_");
             VerifyMatches(@"\U", Digits);
+        }
+
+        [Test]
+        public void AtomPlus()
+        {
+            _settings.Magic = true;
+            VerifyMatches(@"a\+", "a", "aa");
+            VerifyNotMatches(@"a\+", "b");
+            VerifyMatchIs(@"\va+", "aa", "aa");
+        }
+
+        [Test]
+        public void AtomCount()
+        {
+            _settings.Magic = true;
+            VerifyMatchIs(@"a\{1}", "aaa", "a");
+            VerifyMatchIs(@"a\{1,2}", "aaa", "aa");
+            VerifyMatchIs(@"a\{1,3}", "aaa", "aaa");
+            VerifyMatchIs(@"a\{2,3}", "aaa", "aaa");
+            VerifyNotMatches(@"a\{3}", "a");
         }
     }
 }
