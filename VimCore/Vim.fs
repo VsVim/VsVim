@@ -113,6 +113,7 @@ type internal VimBufferFactory
                 localSettings, 
                 wordNav, 
                 vim.SearchService, 
+                statusUtil,
                 vim.VimData) :> IIncrementalSearch
         let capture = MotionCapture(vim.VimHost, view, motionUtil, incrementalSearch, jumpList, _motionCaptureGlobalData, localSettings) :> IMotionCapture
         let bufferRaw = 

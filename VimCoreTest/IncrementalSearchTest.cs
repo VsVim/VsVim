@@ -23,6 +23,7 @@ namespace VimCore.UnitTest
         private Mock<IVimGlobalSettings> _globalSettings;
         private Mock<IVimLocalSettings> _settings;
         private Mock<ICommonOperations> _operations;
+        private Mock<IStatusUtil> _statusUtil;
         private ITextView _textView;
         private IncrementalSearch _searchRaw;
         private IIncrementalSearch _search;
@@ -36,6 +37,7 @@ namespace VimCore.UnitTest
             _nav = _factory.Create<ITextStructureNavigator>();
             _globalSettings = MockObjectFactory.CreateGlobalSettings(ignoreCase: true);
             _settings = MockObjectFactory.CreateLocalSettings(_globalSettings.Object);
+            _statusUtil = _factory.Create<IStatusUtil>();
             _operations = _factory.Create<ICommonOperations>();
             _operations.SetupGet(x => x.TextView).Returns(_textView);
             _operations.Setup(x => x.EnsureCaretOnScreenAndTextExpanded());
@@ -45,6 +47,7 @@ namespace VimCore.UnitTest
                 _settings.Object,
                 _nav.Object,
                 _searchService.Object,
+                _statusUtil.Object,
                 _vimData.Object);
             _search = _searchRaw;
         }
@@ -295,5 +298,32 @@ namespace VimCore.UnitTest
             _searchService.Verify();
         }
 
+        [Test]
+        public void SearchForwardThatWrapsShouldUpdateStatus()
+        {
+            Create("dog cat bear");
+            _textView.MoveCaretTo(4);
+            _searchService
+                .Setup(x => x.FindNext(It.IsAny<SearchData>(), _textView.GetPoint(5), _nav.Object))
+                .Returns(FSharpOption.Create(_textView.TextBuffer.GetSpan(0, 1)));
+            _vimData.SetupSet(x => x.LastSearchData = It.IsAny<SearchData>());
+            _statusUtil.Setup(x => x.OnStatus(Resources.Common_SearchForwardWrapped)).Verifiable();
+            _search.DoSearch("d");
+            _statusUtil.Verify();
+        }
+
+        [Test]
+        public void SearchBackwardThatWrapsShouldUpdateStatus()
+        {
+            Create("dog cat bear");
+            _textView.MoveCaretTo(4);
+            _searchService
+                .Setup(x => x.FindNext(It.IsAny<SearchData>(), _textView.GetPoint(3), _nav.Object))
+                .Returns(FSharpOption.Create(_textView.TextBuffer.GetSpan(8, 1)));
+            _vimData.SetupSet(x => x.LastSearchData = It.IsAny<SearchData>());
+            _statusUtil.Setup(x => x.OnStatus(Resources.Common_SearchBackwardWrapped)).Verifiable();
+            _search.DoSearch("b", SearchKind.BackwardWithWrap);
+            _statusUtil.Verify();
+        }
     }
 }

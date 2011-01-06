@@ -294,9 +294,11 @@ namespace Vim.UnitTest
             IVimLocalSettings settings,
             IVimData vimData,
             ISearchService search = null,
-            IOutliningManager outliningManager = null)
+            IOutliningManager outliningManager = null,
+            IStatusUtil statusUtil = null)
         {
             search = search ?? new SearchService(EditorUtil.FactoryService.textSearchService, settings.GlobalSettings);
+            statusUtil = statusUtil ?? new StatusUtil();
             var nav = CreateTextStructureNavigator(textView.TextBuffer);
             var operations = CreateCommonOperations(
                 textView: textView,
@@ -308,6 +310,7 @@ namespace Vim.UnitTest
                 settings,
                 nav,
                 search,
+                statusUtil,
                 vimData);
         }
 

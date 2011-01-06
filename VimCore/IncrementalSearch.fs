@@ -20,6 +20,7 @@ type internal IncrementalSearch
         _settings : IVimLocalSettings,
         _navigator : ITextStructureNavigator,
         _search : ISearchService,
+        _statusUtil : IStatusUtil,
         _vimData : IVimData) =
 
     let _textView = _operations.TextView
@@ -81,6 +82,17 @@ type internal IncrementalSearch
                 SearchCancelled
 
             if ki = KeyInputUtil.EnterKey then
+
+                // Need to update the status if the search wrapped around
+                match data.SearchResult, TrackingPointUtil.GetPoint _textView.TextSnapshot data.StartPoint with
+                | SearchResult.SearchFound(span), Some(point) ->
+                    if data.SearchData.Kind = SearchKind.ForwardWithWrap && span.Start.Position < point.Position then
+                        _statusUtil.OnStatus Resources.Common_SearchForwardWrapped
+                    elif data.SearchData.Kind = SearchKind.BackwardWithWrap && span.Start.Position > point.Position then
+                        _statusUtil.OnStatus Resources.Common_SearchBackwardWrapped 
+                | _ -> 
+                    ()
+
                 _data <- None
                 _vimData.LastSearchData <- oldSearchData
                 _currentSearchCompleted.Trigger(oldSearchData, data.SearchResult)
