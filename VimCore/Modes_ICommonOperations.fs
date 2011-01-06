@@ -21,8 +21,9 @@ type OperationsData = {
     LocalSettings : IVimLocalSettings
     OutliningManager : IOutliningManager option
     RegisterMap : IRegisterMap 
-    StatusUtil : IStatusUtil
     SearchService : ISearchService
+    SmartIndentationService : ISmartIndentationService
+    StatusUtil : IStatusUtil
     TextView : ITextView
     UndoRedoOperations : IUndoRedoOperations
     VimData : IVimData

@@ -1043,6 +1043,7 @@ module LocalSettingNames =
     let NumberName = "number"
     let ScrollName = "scroll"
     let QuoteEscapeName = "quoteescape"
+    let UseEditorIndentName = "vsvim_useeditorindent"
 
 /// Holds mutable data available to all buffers
 type IVimData = 
@@ -1143,15 +1144,19 @@ and IVimLocalSettings =
     abstract AutoIndent : bool with get, set
 
     /// Whether or not to highlight the line the cursor is on
-    abstract CursorLine : bool with get,set
+    abstract CursorLine : bool with get, set
 
     /// Return the handle to the global IVimSettings instance
     abstract GlobalSettings : IVimGlobalSettings
 
-    abstract Scroll : int with get,set
+    abstract Scroll : int with get, set
 
     /// Which characters escape quotes for certain motion types
-    abstract QuoteEscape : string with get,set
+    abstract QuoteEscape : string with get, set
+
+    /// Let the editor control indentation of lines instead.  Overrides the AutoIndent
+    /// setting
+    abstract UseEditorIndent : bool with get, set
 
     inherit IVimSettings
 

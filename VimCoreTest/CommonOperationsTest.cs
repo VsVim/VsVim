@@ -59,6 +59,7 @@ namespace VimCore.UnitTest
             _globalSettings.SetupGet(x => x.ShiftWidth).Returns(2);
             _statusUtil = _factory.Create<IStatusUtil>();
             _settings.SetupGet(x => x.GlobalSettings).Returns(_globalSettings.Object);
+            _settings.SetupGet(x => x.UseEditorIndent).Returns(false);
             _undoRedoOperations = _factory.Create<IUndoRedoOperations>();
             _undoRedoOperations.Setup(x => x.CreateUndoTransaction(It.IsAny<string>())).Returns<string>(name => new UndoTransaction(FSharpOption.Create(EditorUtil.GetUndoHistory(_textView.TextBuffer).CreateTransaction(name))));
             _searchService = new SearchService(EditorUtil.FactoryService.textSearchService, _globalSettings.Object);
@@ -78,7 +79,8 @@ namespace VimCore.UnitTest
                 navigator: null,
                 statusUtil: _statusUtil.Object,
                 foldManager: null,
-                searchService: _searchService);
+                searchService: _searchService,
+                smartIndentationService:  EditorUtil.FactoryService.smartIndentationService);
 
             _operationsRaw = new CommonOperations(data);
             _operations = _operationsRaw;

@@ -12,6 +12,7 @@ namespace Vim.UnitTest.Mock
             get { return GlobalSettingsImpl; }
         }
 
+        public bool UseEditorIndent { get; set; }
         public int Scroll { get; set; }
         public string QuoteEscape { get; set; }
         public IEnumerable<Setting> AllSettings

@@ -63,6 +63,9 @@ namespace Vim.UnitTest
             [Import]
             public ITextStructureNavigatorSelectorService textStructureNavigatorSelectorService;
 
+            [Import] 
+            public ISmartIndentationService smartIndentationService;
+
             public Factory() { }
         }
 

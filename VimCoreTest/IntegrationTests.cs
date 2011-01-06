@@ -11,28 +11,28 @@ namespace VimCore.UnitTest
     [TestFixture]
     public class IntegrationTests
     {
-        private IVimBuffer m_buffer;
-        private IWpfTextView m_view;
+        private IVimBuffer _buffer;
+        private IWpfTextView _textView;
 
-        static string[] s_lines = new string[]
+        static readonly string[] DefaultLines = new string[]
             {
                 "summary description for this line",
                 "some other line",
                 "running out of things to make up"
             };
 
-        public void CreateBuffer(params string[] lines)
+        private void CreateBuffer(params string[] lines)
         {
             var tuple = EditorUtil.CreateViewAndOperations(lines);
-            m_view = tuple.Item1;
+            _textView = tuple.Item1;
             var service = EditorUtil.FactoryService;
-            m_buffer = service.vim.CreateBuffer(m_view);
+            _buffer = service.vim.CreateBuffer(_textView);
         }
 
         [SetUp]
         public void Init()
         {
-            CreateBuffer(s_lines);
+            CreateBuffer(DefaultLines);
         }
 
         #region Misc
@@ -40,15 +40,15 @@ namespace VimCore.UnitTest
         [Test]
         public void Sanity()
         {
-            Assert.AreEqual(ModeKind.Normal, m_buffer.ModeKind);
+            Assert.AreEqual(ModeKind.Normal, _buffer.ModeKind);
         }
 
         [Test]
         public void TestChar_h_1()
         {
-            m_view.Caret.MoveTo(new SnapshotPoint(m_view.TextSnapshot, 2));
-            m_buffer.Process('h');
-            Assert.AreEqual(1, m_view.Caret.Position.BufferPosition.Position);
+            _textView.Caret.MoveTo(new SnapshotPoint(_textView.TextSnapshot, 2));
+            _buffer.Process('h');
+            Assert.AreEqual(1, _textView.Caret.Position.BufferPosition.Position);
         }
 
         /// <summary>
@@ -57,26 +57,26 @@ namespace VimCore.UnitTest
         [Test]
         public void TestChar_h_2()
         {
-            m_view.Caret.MoveTo(new SnapshotPoint(m_view.TextSnapshot, 2));
-            m_buffer.Process('2');
-            m_buffer.Process('h');
-            Assert.AreEqual(0, m_view.Caret.Position.BufferPosition.Position);
+            _textView.Caret.MoveTo(new SnapshotPoint(_textView.TextSnapshot, 2));
+            _buffer.Process('2');
+            _buffer.Process('h');
+            Assert.AreEqual(0, _textView.Caret.Position.BufferPosition.Position);
         }
 
         [Test]
         public void TestChar_l_1()
         {
-            m_view.Caret.MoveTo(new SnapshotPoint(m_view.TextSnapshot, 1));
-            m_buffer.Process('l');
-            Assert.AreEqual(2, m_view.Caret.Position.BufferPosition.Position);
+            _textView.Caret.MoveTo(new SnapshotPoint(_textView.TextSnapshot, 1));
+            _buffer.Process('l');
+            Assert.AreEqual(2, _textView.Caret.Position.BufferPosition.Position);
         }
 
         [Test]
         public void TestChar_w_1()
         {
-            m_view.Caret.MoveTo(new SnapshotPoint(m_view.TextSnapshot, 1));
-            m_buffer.Process('w');
-            Assert.AreEqual(8, m_view.Caret.Position.BufferPosition.Position);
+            _textView.Caret.MoveTo(new SnapshotPoint(_textView.TextSnapshot, 1));
+            _buffer.Process('w');
+            Assert.AreEqual(8, _textView.Caret.Position.BufferPosition.Position);
         }
 
         /// <summary>
@@ -85,25 +85,25 @@ namespace VimCore.UnitTest
         [Test]
         public void TestChar_w_2()
         {
-            m_view.Caret.MoveTo(new SnapshotPoint(m_view.TextSnapshot, 1));
-            m_buffer.Process('2');
-            m_buffer.Process('w');
-            Assert.AreEqual(20, m_view.Caret.Position.BufferPosition.Position);
+            _textView.Caret.MoveTo(new SnapshotPoint(_textView.TextSnapshot, 1));
+            _buffer.Process('2');
+            _buffer.Process('w');
+            Assert.AreEqual(20, _textView.Caret.Position.BufferPosition.Position);
         }
 
         [Test]
         public void TestChar_i_1()
         {
-            m_buffer.Process('i');
-            Assert.AreEqual(ModeKind.Insert, m_buffer.ModeKind);
+            _buffer.Process('i');
+            Assert.AreEqual(ModeKind.Insert, _buffer.ModeKind);
         }
 
         [Test]
         public void TestChar_yy_1()
         {
-            m_buffer.Process("yy");
-            var tss = m_view.TextSnapshot;
-            var reg = m_buffer.GetRegister(RegisterName.Unnamed);
+            _buffer.Process("yy");
+            var tss = _textView.TextSnapshot;
+            var reg = _buffer.GetRegister(RegisterName.Unnamed);
             Assert.AreEqual(tss.Lines.ElementAt(0).GetTextIncludingLineBreak(), reg.StringValue);
         }
 
@@ -113,9 +113,9 @@ namespace VimCore.UnitTest
         [Test]
         public void TestChar_yy_2()
         {
-            m_buffer.Process("2yy");
-            var tss = m_view.TextSnapshot;
-            var reg = m_buffer.GetRegister(RegisterName.Unnamed);
+            _buffer.Process("2yy");
+            var tss = _textView.TextSnapshot;
+            var reg = _buffer.GetRegister(RegisterName.Unnamed);
             var span = new SnapshotSpan(
                 tss.GetLineFromLineNumber(0).Start,
                 tss.GetLineFromLineNumber(1).EndIncludingLineBreak);
@@ -129,11 +129,11 @@ namespace VimCore.UnitTest
         [Test]
         public void TestChar_yy_3()
         {
-            var tss = m_view.TextSnapshot;
+            var tss = _textView.TextSnapshot;
             var last = tss.GetLineFromLineNumber(tss.Lines.Count() - 1);
-            m_view.Caret.MoveTo(last.Start);
-            m_buffer.Process("2yy");
-            var reg = m_buffer.GetRegister(RegisterName.Unnamed);
+            _textView.Caret.MoveTo(last.Start);
+            _buffer.Process("2yy");
+            var reg = _buffer.GetRegister(RegisterName.Unnamed);
             Assert.AreEqual(last.GetTextIncludingLineBreak(), reg.StringValue);
         }
 
@@ -143,9 +143,9 @@ namespace VimCore.UnitTest
         [Test]
         public void TestChar_yw_1()
         {
-            m_view.Caret.MoveTo(new SnapshotPoint(m_view.TextSnapshot, 0));
-            m_buffer.Process("yw");
-            var reg = m_buffer.GetRegister(RegisterName.Unnamed);
+            _textView.Caret.MoveTo(new SnapshotPoint(_textView.TextSnapshot, 0));
+            _buffer.Process("yw");
+            var reg = _buffer.GetRegister(RegisterName.Unnamed);
             Assert.AreEqual("summary ", reg.StringValue);
         }
 
@@ -155,9 +155,9 @@ namespace VimCore.UnitTest
         [Test]
         public void TestChar_yw_2()
         {
-            m_view.Caret.MoveTo(new SnapshotPoint(m_view.TextSnapshot, 0));
-            m_buffer.Process("\"cyw");
-            var reg = m_buffer.GetRegister('c');
+            _textView.Caret.MoveTo(new SnapshotPoint(_textView.TextSnapshot, 0));
+            _buffer.Process("\"cyw");
+            var reg = _buffer.GetRegister('c');
             Assert.AreEqual("summary ", reg.StringValue);
         }
 
@@ -167,9 +167,9 @@ namespace VimCore.UnitTest
         [Test]
         public void TestChar_y2w_1()
         {
-            m_view.Caret.MoveTo(new SnapshotPoint(m_view.TextSnapshot, 0));
-            m_buffer.Process("y2w");
-            var reg = m_buffer.GetRegister(RegisterName.Unnamed);
+            _textView.Caret.MoveTo(new SnapshotPoint(_textView.TextSnapshot, 0));
+            _buffer.Process("y2w");
+            var reg = _buffer.GetRegister(RegisterName.Unnamed);
             Assert.AreEqual("summary description ", reg.StringValue);
         }
 
@@ -179,20 +179,20 @@ namespace VimCore.UnitTest
         [Test]
         public void TestChar_2yw_1()
         {
-            m_view.Caret.MoveTo(new SnapshotPoint(m_view.TextSnapshot, 0));
-            m_buffer.Process("2yw");
-            var reg = m_buffer.GetRegister(RegisterName.Unnamed);
+            _textView.Caret.MoveTo(new SnapshotPoint(_textView.TextSnapshot, 0));
+            _buffer.Process("2yw");
+            var reg = _buffer.GetRegister(RegisterName.Unnamed);
             Assert.AreEqual("summary description ", reg.StringValue);
         }
 
         [Test]
         public void TestChar_dd_1()
         {
-            CreateBuffer(s_lines);
-            m_view.Caret.MoveTo(new SnapshotPoint(m_view.TextSnapshot, 0));
-            var text = m_view.TextSnapshot.GetLineFromLineNumber(0).GetTextIncludingLineBreak();
-            m_buffer.Process("dd");
-            var reg = m_buffer.GetRegister(RegisterName.Unnamed);
+            CreateBuffer(DefaultLines);
+            _textView.Caret.MoveTo(new SnapshotPoint(_textView.TextSnapshot, 0));
+            var text = _textView.TextSnapshot.GetLineFromLineNumber(0).GetTextIncludingLineBreak();
+            _buffer.Process("dd");
+            var reg = _buffer.GetRegister(RegisterName.Unnamed);
             Assert.AreEqual(text, reg.StringValue);
         }
 
@@ -202,10 +202,10 @@ namespace VimCore.UnitTest
         [Test]
         public void TestChar_dw_1()
         {
-            CreateBuffer(s_lines);
-            m_view.Caret.MoveTo(new SnapshotPoint(m_view.TextSnapshot, 8));
-            m_buffer.Process("dw");
-            var reg = m_buffer.GetRegister(RegisterName.Unnamed);
+            CreateBuffer(DefaultLines);
+            _textView.Caret.MoveTo(new SnapshotPoint(_textView.TextSnapshot, 8));
+            _buffer.Process("dw");
+            var reg = _buffer.GetRegister(RegisterName.Unnamed);
             Assert.AreEqual("description ", reg.StringValue);
         }
 
@@ -215,10 +215,10 @@ namespace VimCore.UnitTest
         [Test]
         public void TestChar_dw_2()
         {
-            CreateBuffer(s_lines);
-            m_view.Caret.MoveTo(new SnapshotPoint(m_view.TextSnapshot, 8));
-            m_buffer.Process("\"cdw");
-            var reg = m_buffer.GetRegister('c');
+            CreateBuffer(DefaultLines);
+            _textView.Caret.MoveTo(new SnapshotPoint(_textView.TextSnapshot, 8));
+            _buffer.Process("\"cdw");
+            var reg = _buffer.GetRegister('c');
             Assert.AreEqual("description ", reg.StringValue);
         }
 
@@ -229,73 +229,74 @@ namespace VimCore.UnitTest
         public void TestChar_p_1()
         {
             CreateBuffer("how is", "it going");
-            m_view.Caret.MoveTo(new SnapshotPoint(m_view.TextSnapshot, 0));
-            m_buffer.GetRegister(RegisterName.Unnamed).UpdateValue("hey");
-            m_buffer.Process("p");
-            Assert.AreEqual("hheyow is", m_view.TextSnapshot.GetLineFromLineNumber(0).GetText());
+            _textView.Caret.MoveTo(new SnapshotPoint(_textView.TextSnapshot, 0));
+            _buffer.GetRegister(RegisterName.Unnamed).UpdateValue("hey");
+            _buffer.Process("p");
+            Assert.AreEqual("hheyow is", _textView.TextSnapshot.GetLineFromLineNumber(0).GetText());
         }
 
         [Test]
         public void TestChar_P_1()
         {
             CreateBuffer("how is", "it going");
-            m_view.Caret.MoveTo(new SnapshotPoint(m_view.TextSnapshot, 0));
-            m_buffer.GetRegister(RegisterName.Unnamed).UpdateValue("hey");
-            m_buffer.Process("P");
-            Assert.AreEqual("heyhow is", m_view.TextSnapshot.GetLineFromLineNumber(0).GetText());
+            _textView.Caret.MoveTo(new SnapshotPoint(_textView.TextSnapshot, 0));
+            _buffer.GetRegister(RegisterName.Unnamed).UpdateValue("hey");
+            _buffer.Process("P");
+            Assert.AreEqual("heyhow is", _textView.TextSnapshot.GetLineFromLineNumber(0).GetText());
         }
 
         [Test]
         public void TestChar_2P_1()
         {
             CreateBuffer("how is", "it going");
-            m_view.Caret.MoveTo(new SnapshotPoint(m_view.TextSnapshot, 0));
-            m_buffer.GetRegister(RegisterName.Unnamed).UpdateValue("hey");
-            m_buffer.Process("2P");
-            Assert.AreEqual("heyheyhow is", m_view.TextSnapshot.GetLineFromLineNumber(0).GetText());
+            _textView.Caret.MoveTo(new SnapshotPoint(_textView.TextSnapshot, 0));
+            _buffer.GetRegister(RegisterName.Unnamed).UpdateValue("hey");
+            _buffer.Process("2P");
+            Assert.AreEqual("heyheyhow is", _textView.TextSnapshot.GetLineFromLineNumber(0).GetText());
         }
 
         [Test]
         public void TestChar_A_1()
         {
             CreateBuffer("how is", "foo");
-            m_view.Caret.MoveTo(new SnapshotPoint(m_view.TextSnapshot, 0));
-            m_buffer.Process("A");
-            Assert.AreEqual(ModeKind.Insert, m_buffer.ModeKind);
-            Assert.AreEqual(m_view.TextSnapshot.GetLineFromLineNumber(0).End, m_view.Caret.Position.BufferPosition);
+            _textView.Caret.MoveTo(new SnapshotPoint(_textView.TextSnapshot, 0));
+            _buffer.Process("A");
+            Assert.AreEqual(ModeKind.Insert, _buffer.ModeKind);
+            Assert.AreEqual(_textView.TextSnapshot.GetLineFromLineNumber(0).End, _textView.Caret.Position.BufferPosition);
         }
 
         [Test]
         public void TestChar_o_1()
         {
             CreateBuffer("how is", "foo");
-            m_view.Caret.MoveTo(new SnapshotPoint(m_view.TextSnapshot, 0));
-            m_buffer.Process("o");
-            Assert.AreEqual(ModeKind.Insert, m_buffer.ModeKind);
-            Assert.AreEqual(3, m_view.TextSnapshot.Lines.Count());
-            var left = m_view.TextSnapshot.GetLineFromLineNumber(1).Start;
-            var right = m_view.Caret.Position.BufferPosition;
+            _buffer.Settings.UseEditorIndent = false;
+            _textView.Caret.MoveTo(new SnapshotPoint(_textView.TextSnapshot, 0));
+            _buffer.Process("o");
+            Assert.AreEqual(ModeKind.Insert, _buffer.ModeKind);
+            Assert.AreEqual(3, _textView.TextSnapshot.Lines.Count());
+            var left = _textView.TextSnapshot.GetLineFromLineNumber(1).Start;
+            var right = _textView.Caret.Position.BufferPosition;
             Assert.AreEqual(left, right);
-            Assert.AreEqual(String.Empty, m_view.TextSnapshot.GetLineFromLineNumber(1).GetText());
+            Assert.AreEqual(String.Empty, _textView.TextSnapshot.GetLineFromLineNumber(1).GetText());
         }
 
         [Test, Description("Use o at end of buffer")]
         public void TestChar_o_2()
         {
             CreateBuffer("foo", "bar");
-            var line = m_view.TextSnapshot.Lines.Last();
-            m_view.Caret.MoveTo(line.Start);
-            m_buffer.Process("o");
+            var line = _textView.TextSnapshot.Lines.Last();
+            _textView.Caret.MoveTo(line.Start);
+            _buffer.Process("o");
         }
 
         [Test]
         public void TestChar_x_1()
         {
             CreateBuffer("how is");
-            m_view.Caret.MoveTo(new SnapshotPoint(m_view.TextSnapshot, 0));
-            m_buffer.Process("x");
-            Assert.AreEqual(ModeKind.Normal, m_buffer.ModeKind);
-            Assert.AreEqual("ow is", m_buffer.TextView.TextSnapshot.GetLineFromLineNumber(0).GetText());
+            _textView.Caret.MoveTo(new SnapshotPoint(_textView.TextSnapshot, 0));
+            _buffer.Process("x");
+            Assert.AreEqual(ModeKind.Normal, _buffer.ModeKind);
+            Assert.AreEqual("ow is", _buffer.TextView.TextSnapshot.GetLineFromLineNumber(0).GetText());
         }
 
         /// <summary>
@@ -304,12 +305,12 @@ namespace VimCore.UnitTest
         [Test]
         public void Next1()
         {
-            m_view.Caret.MoveTo(new SnapshotPoint(m_view.TextSnapshot, 0));
-            m_buffer.Process("/some", enter: true);
-            m_view.Caret.MoveTo(new SnapshotPoint(m_view.TextSnapshot, 0));
-            m_buffer.Process("n");
-            var line = m_view.TextSnapshot.GetLineFromLineNumber(1);
-            Assert.AreEqual(line.Start, m_view.Caret.Position.BufferPosition);
+            _textView.Caret.MoveTo(new SnapshotPoint(_textView.TextSnapshot, 0));
+            _buffer.Process("/some", enter: true);
+            _textView.Caret.MoveTo(new SnapshotPoint(_textView.TextSnapshot, 0));
+            _buffer.Process("n");
+            var line = _textView.TextSnapshot.GetLineFromLineNumber(1);
+            Assert.AreEqual(line.Start, _textView.Caret.Position.BufferPosition);
         }
 
         /// <summary>
@@ -318,10 +319,10 @@ namespace VimCore.UnitTest
         [Test]
         public void Next3()
         {
-            m_buffer.Process("/s", enter: true);
-            m_view.Caret.MoveTo(new SnapshotPoint(m_view.TextSnapshot, 0));
-            m_buffer.Process('n');
-            Assert.AreNotEqual(0, m_view.Caret.Position.BufferPosition.Position);
+            _buffer.Process("/s", enter: true);
+            _textView.Caret.MoveTo(new SnapshotPoint(_textView.TextSnapshot, 0));
+            _buffer.Process('n');
+            Assert.AreNotEqual(0, _textView.Caret.Position.BufferPosition.Position);
         }
 
         /// <summary>
@@ -330,7 +331,7 @@ namespace VimCore.UnitTest
         [Test]
         public void Next4()
         {
-            m_buffer.Process("n");
+            _buffer.Process("n");
         }
 
         #endregion
@@ -349,11 +350,11 @@ namespace VimCore.UnitTest
         public void NextWordUnderCursor1()
         {
             CreateBuffer(s_lines2);
-            m_view.Caret.MoveTo(new SnapshotPoint(m_view.TextSnapshot, 0));
-            m_buffer.Process("*");
-            var line = m_view.TextSnapshot.GetLineFromLineNumber(3);
-            Assert.AreEqual(line.Start + 4, m_view.Caret.Position.BufferPosition);
-            Assert.AreEqual(0, m_view.Selection.GetSpan().Length);
+            _textView.Caret.MoveTo(new SnapshotPoint(_textView.TextSnapshot, 0));
+            _buffer.Process("*");
+            var line = _textView.TextSnapshot.GetLineFromLineNumber(3);
+            Assert.AreEqual(line.Start + 4, _textView.Caret.Position.BufferPosition);
+            Assert.AreEqual(0, _textView.Selection.GetSpan().Length);
         }
 
         /// <summary>
@@ -363,9 +364,9 @@ namespace VimCore.UnitTest
         public void NextWordUnderCursor2()
         {
             CreateBuffer(s_lines2);
-            m_view.Caret.MoveTo(new SnapshotPoint(m_view.TextSnapshot, 7));
-            m_buffer.Process("*");
-            Assert.AreEqual(7, m_view.Caret.Position.BufferPosition.Position);
+            _textView.Caret.MoveTo(new SnapshotPoint(_textView.TextSnapshot, 7));
+            _buffer.Process("*");
+            Assert.AreEqual(7, _textView.Caret.Position.BufferPosition.Position);
         }
 
 

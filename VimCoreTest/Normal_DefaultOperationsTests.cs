@@ -96,7 +96,8 @@ namespace VimCore.UnitTest
                 editorOptions: _options.Object,
                 navigator: null,
                 foldManager: null,
-                searchService: _searchService);
+                searchService: _searchService,
+                smartIndentationService: EditorUtil.FactoryService.smartIndentationService);
 
             _operationsRaw = new DefaultOperations(data);
             _operations = _operationsRaw;

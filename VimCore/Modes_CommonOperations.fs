@@ -23,6 +23,7 @@ type internal CommonOperations ( _data : OperationsData ) =
     let _normalWordNav =  _data.Navigator
     let _registerMap = _data.RegisterMap
     let _search = _data.SearchService
+    let _smartIndentationServtice = _data.SmartIndentationService
     let _regexFactory = VimRegexFactory(_data.LocalSettings.GlobalSettings)
 
     /// The caret sometimes needs to be adjusted after an Up or Down movement.  Caret position
@@ -412,6 +413,19 @@ type internal CommonOperations ( _data : OperationsData ) =
             _statusUtil.OnError Resources.Common_NoWriteSinceLastChange
         else
             func()
+
+    member x.IndentForNewLine oldLine (newLine : ITextSnapshotLine) =
+        if _settings.UseEditorIndent then
+            let indent = _smartIndentationServtice.GetDesiredIndentation(_textView, newLine)
+            if indent.HasValue then 
+                let point = new VirtualSnapshotPoint(newLine, indent.Value)
+                TextViewUtil.MoveCaretToVirtualPoint _textView point |> ignore
+        elif _settings.AutoIndent then
+            let indent = oldLine |> SnapshotLineUtil.GetIndent |> SnapshotPointUtil.GetColumn
+            let point = new VirtualSnapshotPoint(newLine, indent)
+            TextViewUtil.MoveCaretToVirtualPoint _textView point |> ignore 
+        else
+            TextViewUtil.MoveCaretToPoint _textView newLine.Start |> ignore
 
     interface ICommonOperations with
         member x.TextView = _textView 
@@ -917,15 +931,7 @@ type internal CommonOperations ( _data : OperationsData ) =
             x.WrapEditInUndoTransactionWithReturn "Paste" (fun () -> 
                 buffer.Replace(new Span(line.End.Position,0), System.Environment.NewLine) |> ignore
                 let newLine = buffer.CurrentSnapshot.GetLineFromLineNumber(line.LineNumber+1)
-
-                // Update the caret indent if autoindent is set
-                if _settings.AutoIndent then
-                    let indent = line |> SnapshotLineUtil.GetIndent |> SnapshotPointUtil.GetColumn
-                    let point = new VirtualSnapshotPoint(newLine, indent)
-                    TextViewUtil.MoveCaretToVirtualPoint _textView point |> ignore 
-                else
-                    TextViewUtil.MoveCaretToPoint _textView newLine.Start |> ignore
-
+                x.IndentForNewLine line newLine
                 newLine )
 
         member x.InsertLineAbove () = 
@@ -935,15 +941,7 @@ type internal CommonOperations ( _data : OperationsData ) =
             x.WrapEditInUndoTransactionWithReturn "Paste" (fun() -> 
                 buffer.Replace(new Span(line.Start.Position,0), System.Environment.NewLine) |> ignore
                 let newLine = buffer.CurrentSnapshot.GetLineFromLineNumber(line.LineNumber)
-
-                // Update the caret indent if autoindent is set
-                if _settings.AutoIndent then
-                    let indent = line |> SnapshotLineUtil.GetIndent |> SnapshotPointUtil.GetColumn
-                    let point = new VirtualSnapshotPoint(newLine, indent)
-                    TextViewUtil.MoveCaretToVirtualPoint _textView point |> ignore 
-                else
-                    TextViewUtil.MoveCaretToPoint _textView newLine.Start |> ignore
-
+                x.IndentForNewLine line newLine
                 newLine)
 
         member x.WrapEditInUndoTransaction name action = x.WrapEditInUndoTransaction name action

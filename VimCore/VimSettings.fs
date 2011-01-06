@@ -209,6 +209,7 @@ type internal LocalSettings
             (NumberName, "nu", ToggleKind, ToggleValue(false))
             (ScrollName, "scr", NumberKind, NumberValue(25))
             (QuoteEscapeName, "qe", StringKind, StringValue(@"\"))
+            (UseEditorIndentName, UseEditorIndentName, ToggleKind, ToggleValue(true))
         |]
 
     let _map = SettingsMap(LocalSettingInfo, false)
@@ -282,6 +283,9 @@ type internal LocalSettings
         member x.QuoteEscape
             with get() = _map.GetStringValue QuoteEscapeName
             and set value = _map.TrySetValue QuoteEscapeName (StringValue(value)) |> ignore
+        member x.UseEditorIndent
+            with get() = _map.GetBoolValue UseEditorIndentName
+            and set value = _map.TrySetValue UseEditorIndentName (ToggleValue(value)) |> ignore
 
         [<CLIEvent>]
         member x.SettingChanged = _map.SettingChanged

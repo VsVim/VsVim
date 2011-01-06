@@ -1,0 +1,2 @@
+- Pass an IMouse interface to VimCore.  Let the actual modes control the caret.  Need to 
+  consider the impacts of doing this.

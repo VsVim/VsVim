@@ -59,6 +59,7 @@ type internal VimBufferFactory
         _completionWindowBrokerFactoryService : IDisplayWindowBrokerFactoryService,
         _textSearchService : ITextSearchService,
         _textStructureNavigatorSelectorService : ITextStructureNavigatorSelectorService,
+        _smartIndentationService : ISmartIndentationService,
         _tlcService : ITrackingLineColumnService,
         _undoManagerProvider : ITextBufferUndoManagerProvider,
         _foldManagerFactory : IFoldManagerFactory ) = 
@@ -98,6 +99,7 @@ type internal VimBufferFactory
             OutliningManager = outlining
             RegisterMap = vim.RegisterMap
             SearchService = vim.SearchService 
+            SmartIndentationService = _smartIndentationService
             StatusUtil = statusUtil :> IStatusUtil
             TextView = view
             UndoRedoOperations = undoRedoOperations
