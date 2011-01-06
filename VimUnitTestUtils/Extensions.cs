@@ -494,6 +494,20 @@ namespace Vim.UnitTest
 
         #endregion
 
+        #region IIncrementalSearch
+
+        public static SearchProcessResult DoSearch(this IIncrementalSearch search, string text, SearchKind searchKind = SearchKind.ForwardWithWrap)
+        {
+            search.Begin(searchKind);
+            foreach (var cur in text)
+            {
+                search.Process(KeyInputUtil.CharToKeyInput(cur));
+            }
+            return search.Process(KeyInputUtil.EnterKey);
+        }
+
+        #endregion
+
         public static SnapshotSpan GetSpan(this ITextSelection selection)
         {
             var span = new SnapshotSpan(selection.Start.Position, selection.End.Position);

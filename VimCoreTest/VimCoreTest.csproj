@@ -142,6 +142,7 @@
     <Compile Include="CommandProcessorTest.cs" />
     <Compile Include="CommandRunnerTest.cs" />
     <Compile Include="CommandDefaultOperationsTest.cs" />
+    <Compile Include="IncrementalSearchTaggerTest.cs" />
     <Compile Include="SubstituteConfirmModeTest.cs" />
     <Compile Include="SnapshotLineRangeUtilTest.cs" />
     <Compile Include="RegisterMapTest.cs" />

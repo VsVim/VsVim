@@ -9,14 +9,13 @@ open Microsoft.VisualStudio.Utilities
 open System.ComponentModel.Composition
 
 /// Tagger for incremental searches
-type IncrementalSearchTagger
-    ( 
-        _buffer : IVimBuffer,
-        _search : IIncrementalSearch ) as this= 
+type IncrementalSearchTagger(_buffer : IVimBuffer) as this =
 
+    let _search = _buffer.IncrementalSearch
     let _textBuffer = _buffer.TextBuffer
     let _tagsChanged = new Event<System.EventHandler<SnapshotSpanEventArgs>, SnapshotSpanEventArgs>()
-    let mutable _searchSpan : ITrackingSpan option = None
+    let mutable _previousSearchSpan : ITrackingSpan option = None
+    let mutable _currentSearchSpan : ITrackingSpan option = None
 
     do 
         let raiseAllChanged () = 
@@ -26,47 +25,57 @@ type IncrementalSearchTagger
             let allSpan = SnapshotSpan(snapshot, 0, snapshot.Length)
             _tagsChanged.Trigger (this,SnapshotSpanEventArgs(allSpan))
 
-        let handleChange (_,result) = 
-
-            // Make sure to reset _searchSpan before raising the event.  The editor can and will call back
-            // into us synchronously and access a stale value if we don't
-
-            if VisualKind.IsAnyVisual _buffer.ModeKind then
-                // Don't show any tags when we are in visual mode
-                _searchSpan <- None
-            else
+        let updateCurrentWithResult result = 
+            _currentSearchSpan <- 
                 match result with
-                | SearchFound(span) -> 
-                    _searchSpan <- Some(span.Snapshot.CreateTrackingSpan(span.Span, SpanTrackingMode.EdgeExclusive))
-                | SearchNotFound ->
-                    _searchSpan <- None
-            raiseAllChanged()               
+                | SearchFound(span) -> span.Snapshot.CreateTrackingSpan(span.Span, SpanTrackingMode.EdgeExclusive) |> Some
+                | SearchNotFound -> None
 
-        let clearTags _ =
-            _searchSpan <- None
+        let handleCurrentSearchUpdated (_, result) = 
+
+            // Make sure to reset the stored spans before raising the event.  The editor can and will call back
+            // into us synchronously and access a stale value if we don't
+            updateCurrentWithResult result
             raiseAllChanged()
-            
 
-        _search.CurrentSearchUpdated
-        |> Event.add handleChange
-        _search.CurrentSearchCompleted |> Event.add clearTags
-        _search.CurrentSearchCancelled |> Event.add clearTags
+        let handleCurrentSearchCompleted (_, result) = 
+            updateCurrentWithResult result
+            _previousSearchSpan <- _currentSearchSpan
+            _currentSearchSpan <- None
+            raiseAllChanged()
 
-    member private x.GetTags (col:NormalizedSnapshotSpanCollection) =
-        let inner snapshot = 
+        let handleCurrentSearchCancelled () = 
+            _currentSearchSpan <- None
+            raiseAllChanged()
+
+        _search.CurrentSearchUpdated |> Event.add handleCurrentSearchUpdated 
+        _search.CurrentSearchCompleted |> Event.add handleCurrentSearchCompleted
+        _search.CurrentSearchCancelled |> Event.add (fun _ -> handleCurrentSearchCancelled())
+        _buffer.SwitchedMode |> Event.add (fun _ -> raiseAllChanged())
+
+    member x.GetTags (col:NormalizedSnapshotSpanCollection) =
+
+        let inner snapshot searchSpan = 
             let span = 
-                match _searchSpan with 
+                match searchSpan with 
                 | None -> None
                 | (Some(trackingSpan)) -> TrackingSpanUtil.GetSpan snapshot trackingSpan
             match span with
-            | None -> Seq.empty
+            | None -> None
             | Some(span) ->
                 let tag = TextMarkerTag(Constants.IncrementalSearchTagName)
                 let tagSpan = TagSpan(span, tag) :> ITagSpan<TextMarkerTag>
-                Seq.singleton tagSpan
+                Some tagSpan
 
-        if col.Count = 0 then Seq.empty
-        else inner (col.Item(0)).Snapshot
+        if col.Count = 0 || VisualKind.IsAnyVisual _buffer.ModeKind then 
+            Seq.empty
+        else 
+            let snapshot = col.Item(0).Snapshot
+            [
+                inner snapshot _currentSearchSpan
+                inner snapshot _previousSearchSpan
+            ]
+            |> SeqUtil.filterToSome
 
     interface ITagger<TextMarkerTag> with
         member x.GetTags col = x.GetTags col
@@ -86,8 +95,7 @@ type internal IncrementalSearchTaggerProvider
             match _vim.GetBufferForBuffer textBuffer with
             | None -> null
             | Some(buffer) ->
-                let search = buffer.IncrementalSearch
-                let tagger = IncrementalSearchTagger(buffer, search)
+                let tagger = IncrementalSearchTagger(buffer)
                 tagger :> obj :?> ITagger<'T>
 
 /// Tagger for completed incremental searches
