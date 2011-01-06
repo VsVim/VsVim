@@ -68,5 +68,23 @@ namespace VimCore.UnitTest
             _buffer.SwitchMode(ModeKind.VisualCharacter, ModeArgument.None);
             Assert.AreEqual(0, GetTags().Count());
         }
+
+        [Test]
+        public void Edit_NewLineAfterPreviousShouldNotRemoveTag()
+        {
+            Create("dog cat bar");
+            _search.DoSearch("dog");
+            _textView.TextBuffer.Replace(new SnapshotSpan(_textView.GetLine(0).End, 0), "\n");
+            Assert.AreEqual("dog", GetTags().Single().Span.GetText());
+        }
+
+        [Test]
+        public void Edit_ChangeBeforeShouldNotRemoveTag()
+        {
+            Create("dog cat bar");
+            _search.DoSearch("dog");
+            _textView.TextBuffer.Replace(new SnapshotSpan(_textView.TextSnapshot, 0, 0), "foo");
+            Assert.AreEqual("dog", GetTags().Single().Span.GetText());
+        }
     }
 }
