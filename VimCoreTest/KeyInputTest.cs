@@ -1,5 +1,8 @@
-﻿using NUnit.Framework;
+﻿using System;
+using System.Linq;
+using NUnit.Framework;
 using Vim;
+using Vim.Extensions;
 using Vim.UnitTest;
 
 namespace VimCore.UnitTest
@@ -81,12 +84,98 @@ namespace VimCore.UnitTest
         }
 
         [Test]
+        public void Equality_AlternatesNotEquivalentWhenModifierPresent()
+        {
+            Action<KeyInput, KeyInput> func = (left, right) =>
+            {
+                Assert.AreNotEqual(KeyInputUtil.ChangeKeyModifiers(left, KeyModifiers.Control), right);
+                Assert.AreNotEqual(KeyInputUtil.ChangeKeyModifiers(left, KeyModifiers.Alt), right);
+                Assert.AreNotEqual(KeyInputUtil.ChangeKeyModifiers(left, KeyModifiers.Shift), right);
+            };
+
+            foreach (var cur in KeyInputUtil.AlternateKeyInputPairList)
+            {
+                func(cur.Item1, cur.Item2);
+            }
+        }
+
+        [Test]
+        public void Equality_AlternatesAreEqual()
+        {
+            foreach (var pair in KeyInputUtil.AlternateKeyInputPairList)
+            {
+                var unit = EqualityUnit.Create(pair.Item1).WithEqualValues(pair.Item2).WithNotEqualValues(KeyInputUtil.VimKeyToKeyInput(VimKey.Colon));
+                EqualityUtil.RunAll(
+                    (x, y) => x == y,
+                    (x, y) => x != y,
+                    values: unit);
+            }
+        }
+
+        [Test]
         public void CompareTo1()
         {
             var i1 = KeyInputUtil.CharToKeyInput('c');
             Assert.IsTrue(i1.CompareTo(KeyInputUtil.CharToKeyInput('z')) < 0);
             Assert.IsTrue(i1.CompareTo(KeyInputUtil.CharToKeyInput('c')) == 0);
             Assert.IsTrue(i1.CompareTo(KeyInputUtil.CharToKeyInput('a')) > 0);
+        }
+
+        [Test]
+        public void CompareSemantics()
+        {
+            var all = KeyInputUtil.AllKeyInputList.SelectMany(x => new[] {
+                x,
+                KeyInputUtil.ChangeKeyModifiers(x, KeyModifiers.Control),
+                KeyInputUtil.ChangeKeyModifiers(x, KeyModifiers.Shift),
+                KeyInputUtil.ChangeKeyModifiers(x, KeyModifiers.Alt)
+            });
+
+            foreach (var left in all)
+            {
+                foreach (var right in all)
+                {
+                    var altLeft = left.GetAlternate();
+                    var altRight = right.GetAlternate();
+                    var result1 = left.CompareTo(right);
+                    var result2 = right.CompareTo(left);
+                    if (result1 == result2)
+                    {
+                        Assert.AreEqual(0, result1);
+                        Assert.AreEqual(left.GetHashCode(), right.GetHashCode());
+                        if (altLeft.IsSome())
+                        {
+                            Assert.AreEqual(0, altLeft.Value.CompareTo(right));
+                        }
+                        if (altRight.IsSome())
+                        {
+                            Assert.AreEqual(0, left.CompareTo(altRight.Value));
+                        }
+                    }
+                    else if (result1 < 0)
+                    {
+                        Assert.IsTrue(result2 > 0);
+                        if (altLeft.IsSome())
+                        {
+                            Assert.IsTrue(altLeft.Value.CompareTo(right) < 0);
+                            Assert.IsTrue(right.CompareTo(altLeft.Value) > 0);
+                        }
+                    }
+                    else if (result2 < 0)
+                    {
+                        Assert.IsTrue(result1 > 0);
+                        if (altLeft.IsSome())
+                        {
+                            Assert.IsTrue(altLeft.Value.CompareTo(right) > 0);
+                            Assert.IsTrue(right.CompareTo(altLeft.Value) < 0);
+                        }
+                    }
+                    else
+                    {
+                        Assert.Fail();
+                    }
+                }
+            }
         }
 
         [Test]

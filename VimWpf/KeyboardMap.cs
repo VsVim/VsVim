@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
 using System.Windows.Input;
 
 namespace Vim.UI.Wpf
@@ -201,34 +199,7 @@ namespace Vim.UI.Wpf
         /// </summary>
         private static bool TryGetVirtualKeyAndModifiers(IntPtr hkl, KeyInput keyInput, out int virtualKeyCode, out ModifierKeys modKeys)
         {
-            if (KeyInputUtil.SpecialKeyInputList.Contains(keyInput))
-            {
-                // Want to map these to the keyboard keys vs. the Vim alternative.  So for 
-                // Enter map to Enter instead of CTRL-M
-                if (keyInput == KeyInputUtil.EnterKey)
-                {
-                    virtualKeyCode = 0xD;
-                }
-                else if (keyInput == KeyInputUtil.TabKey)
-                {
-                    virtualKeyCode = 0x9;
-                }
-                else if (keyInput == KeyInputUtil.EscapeKey)
-                {
-                    virtualKeyCode = 0x1B;
-                }
-                else
-                {
-                    Debug.Assert(keyInput == KeyInputUtil.LineFeedKey);
-                    virtualKeyCode = 0;
-                    modKeys = ModifierKeys.None;
-                    return false;
-                }
-
-                modKeys = ModifierKeys.None;
-                return true;
-            }
-            else if (VimKeyUtil.IsKeypadKey(keyInput.Key) || !keyInput.IsCharOnly)
+            if (VimKeyUtil.IsKeypadKey(keyInput.Key) || !keyInput.IsCharOnly)
             {
                 modKeys = ModifierKeys.None;
                 return TryVimKeyToVirtualKey(keyInput.Key, out virtualKeyCode);
@@ -251,6 +222,10 @@ namespace Vim.UI.Wpf
             var found = true;
             switch (vimKey)
             {
+                case VimKey.Enter: virtualKeyCode = 0xD; break;
+                case VimKey.Tab: virtualKeyCode = 0x9; break;
+                case VimKey.Escape: virtualKeyCode = 0x1B; break;
+                case VimKey.LineFeed: virtualKeyCode = 0; break;
                 case VimKey.Back: virtualKeyCode = 0x8; break;
                 case VimKey.Delete: virtualKeyCode = 0x2E; break;
                 case VimKey.Left: virtualKeyCode = 0x25; break;

@@ -398,7 +398,7 @@ type internal MotionCapture
 
     let MotionCommands = AllMotionsCore 
 
-    let MotionCommandsMap = AllMotionsCore |> Seq.map (fun command ->  (command.KeyInputSet,command)) |> Map.ofSeq
+    let MotionCommandsMap = AllMotionsCore |> Seq.map (fun command ->  (command.KeyInputSet, command)) |> Map.ofSeq
 
     /// Run a normal motion function
     member x.RunMotionFunction command func arg returnFunc =

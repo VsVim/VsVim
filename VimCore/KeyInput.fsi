@@ -43,21 +43,32 @@ type KeyInput =
 
 module KeyInputUtil = 
 
-    /// The Escape / <Esc> / <C-[> Key
-    val EscapeKey : KeyInput 
+    /// The Alternate Enter Key : <C-m>
+    val AlternateEnterKey : KeyInput
 
-    /// The Tab / <Tab> / <C-I> Key
-    val TabKey : KeyInput 
+    /// The Alternate Escape Key: <C-[>
+    val AlternateEscapeKey : KeyInput
+
+    /// The alternate LineFeed key: <C-j>
+    val AlternateLineFeedKey : KeyInput
+
+    /// The Alternate Tab Key <C-i>
+    val AlternateTabKey : KeyInput 
     
-    /// The LineFeed / <NL> / <C-J> key
-    val LineFeedKey : KeyInput
-
-    /// The Enter / <CR> / <Enter> / <C-M> / <Return>
+    /// The Enter Key: VimKey.Enter
     val EnterKey : KeyInput
 
-    /// The set of special keys which have multiple real aliases back at a single
-    /// Key
-    val SpecialKeyInputList : KeyInput list
+    /// The Escape Key: VimKey.Escape
+    val EscapeKey : KeyInput 
+
+    /// The LineFeed key: VimKey.LineFeed
+    val LineFeedKey : KeyInput
+
+    /// The Tab Key: VimKey.Tab
+    val TabKey : KeyInput 
+
+    /// The set of special keys which are alias's back into core VimKey values
+    val AlternateKeyInputList : KeyInput list
 
     /// The KeyInput for every VimKey in the system (except Unknown)
     val VimKeyInputList : KeyInput list
@@ -66,7 +77,7 @@ module KeyInputUtil =
     val VimKeyCharList : char list
 
     /// The core set of KeyInput values that Vim is concerned with.  This includes all of the
-    /// VimKey entries and Special KeyInput values
+    /// VimKey entries and Alternate KeyInput values
     val AllKeyInputList : KeyInput list
 
     /// Try and convert the given char to a KeyInput value
@@ -93,4 +104,12 @@ module KeyInputUtil =
     /// it will be extremely hard to produce that in a keyboard.  This seems odd at first 
     /// but it's a scenario that Vim supports (or doesn't support depending on how you 
     val ChangeKeyModifiers : KeyInput -> KeyModifiers -> KeyInput
+
+    /// Given a KeyInput value which is an Alternate KeyInput return the value it as an
+    /// alternate for
+    val GetAlternate : KeyInput -> KeyInput option
+
+    /// Given an alternate KeyInput get the value it targets
+    val GetAlternateTarget : KeyInput -> KeyInput option
+
 

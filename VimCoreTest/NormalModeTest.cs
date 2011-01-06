@@ -224,6 +224,13 @@ namespace VimCore.UnitTest
             Assert.IsFalse(_mode.CanProcess(KeyInputUtil.TabKey));
         }
 
+        [Test]
+        public void CanProcess_DontHandleControlTab()
+        {
+            Create("");
+            Assert.IsFalse(_mode.CanProcess(KeyInputUtil.ChangeKeyModifiers(KeyInputUtil.TabKey, KeyModifiers.Control)));
+        }
+
         #endregion
 
         #region Motion

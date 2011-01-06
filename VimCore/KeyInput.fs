@@ -12,6 +12,18 @@ type KeyInput
         _modKey:KeyModifiers, 
         _literal:char option ) =
 
+    static let _alternateEnterKeyInput = KeyInput(VimKey.LowerM, KeyModifiers.Control, Some 'm')
+    static let _alternateEscapeKeyInput = KeyInput(VimKey.OpenBracket, KeyModifiers.Control, Some '[')
+    static let _alternateLineFeedKeyInput = KeyInput(VimKey.LowerJ, KeyModifiers.Control, Some 'j')
+    static let _alternateTabKeyInput = KeyInput(VimKey.LowerI, KeyModifiers.Control, Some 'i')
+    static let _alternateKeyInputList = 
+        [
+            _alternateEnterKeyInput
+            _alternateEscapeKeyInput
+            _alternateTabKeyInput
+            _alternateLineFeedKeyInput
+        ]
+
     member x.Char = _literal |> OptionUtil.getOrDefault CharUtil.MinValue
     member x.RawChar = _literal
     member x.IsCharOnly = Option.isSome _literal && _modKey = KeyModifiers.None
@@ -43,33 +55,55 @@ type KeyInput
 
     member x.IsControlAndLetter = x.KeyModifiers = KeyModifiers.Control && CharUtil.IsLetter x.Char
 
+    member x.GetAlternate () = 
+        if x.KeyModifiers = KeyModifiers.None then
+            match x.Key with
+            | VimKey.Enter -> Some _alternateEnterKeyInput
+            | VimKey.Escape -> Some _alternateEscapeKeyInput
+            | VimKey.LineFeed -> Some _alternateLineFeedKeyInput
+            | VimKey.Tab -> Some _alternateTabKeyInput
+            | _ -> None
+        else
+            None
+
     /// In general Vim keys compare ordinally.  The one exception is when the control
     /// modifier is applied to a letter key.  In that case the keys compare in a case insensitive
     /// fashion
-    member x.CompareTo (other:KeyInput) =
-        if x.IsControlAndLetter then
-            if other.IsControlAndLetter then 
-                compare (CharUtil.ToLower x.Char) (CharUtil.ToLower other.Char)
+    member x.CompareTo (right : KeyInput) =
+
+        let maybeGetAlternate (x : KeyInput) = 
+            match x.GetAlternate() with
+            | Some(alternate) -> alternate
+            | None -> x
+        let left = maybeGetAlternate x
+        let right = maybeGetAlternate right
+
+        if left.IsControlAndLetter then
+            if right.IsControlAndLetter then 
+                compare (CharUtil.ToLower left.Char) (CharUtil.ToLower right.Char)
             else 
                 -1 
-        elif other.IsControlAndLetter then 
+        elif right.IsControlAndLetter then 
             1
         else
-            let comp = compare x.KeyModifiers other.KeyModifiers
+            let comp = compare left.KeyModifiers right.KeyModifiers
             if comp <> 0 then comp
             else
-                let comp = compare x.Char other.Char
+                let comp = compare left.Char right.Char
                 if comp <> 0 then comp
-                else compare x.Key other.Key
+                else compare left.Key right.Key
                     
     override x.GetHashCode() = 
-        let c = if x.IsControlAndLetter then CharUtil.ToLower x.Char else x.Char
-        int32 c
+        match x.GetAlternate() with
+        | Some(alternate) -> 
+            alternate.GetHashCode()
+        | None -> 
+            let c = if x.IsControlAndLetter then CharUtil.ToLower x.Char else x.Char
+            int32 c
 
     override x.Equals(obj) =
         match obj with
-        | :? KeyInput as other ->
-            0 = x.CompareTo other
+        | :? KeyInput as other -> 0 = x.CompareTo other
         | _ -> false
 
     override x.ToString() = System.String.Format("{0}:{1}:{2}", x.Char, x.Key, x.KeyModifiers);
@@ -77,6 +111,12 @@ type KeyInput
     static member DefaultValue = KeyInput(VimKey.NotWellKnown, KeyModifiers.None, None)
     static member op_Equality(this,other) = System.Collections.Generic.EqualityComparer<KeyInput>.Default.Equals(this,other)
     static member op_Inequality(this,other) = not (System.Collections.Generic.EqualityComparer<KeyInput>.Default.Equals(this,other))
+
+    static member AlternateEnterKey = _alternateEnterKeyInput
+    static member AlternateEscapeKey = _alternateEscapeKeyInput
+    static member AlternateTabKey = _alternateTabKeyInput
+    static member AlternateLineFeedKey = _alternateLineFeedKeyInput
+    static member AlternateKeyInputList = _alternateKeyInputList
    
     interface System.IComparable with
         member x.CompareTo yObj =
@@ -96,6 +136,8 @@ module KeyInputUtil =
     let VimKeyRawData = [
         (VimKey.Back, Some '\b')
         (VimKey.FormFeed, None)
+        (VimKey.Enter, None)
+        (VimKey.Escape, None)
         (VimKey.Left, None)
         (VimKey.Up, None)
         (VimKey.Right, None)
@@ -229,27 +271,15 @@ module KeyInputUtil =
         (VimKey.Colon, Some ':')
         (VimKey.Tilde, Some '~')
         (VimKey.Space, Some ' ')
-        (VimKey.Dollar, Some '$') ]
+        (VimKey.Dollar, Some '$')
+        (VimKey.Tab, None)
+        (VimKey.LineFeed, None) ]
 
-    let EscapeKey = KeyInput(VimKey.OpenBracket, KeyModifiers.Control, Some '[')
-    let TabKey = KeyInput(VimKey.LowerI, KeyModifiers.Control, Some 'i')
-    let LineFeedKey = KeyInput(VimKey.LowerJ, KeyModifiers.Control, Some 'j')
-    let EnterKey = KeyInput(VimKey.LowerM, KeyModifiers.Control, Some 'm')
-
-    let SpecialKeyInputList = 
-        [
-            EscapeKey
-            TabKey
-            LineFeedKey
-            EnterKey
-        ]
 
     let VimKeyInputList  = 
         VimKeyRawData 
         |> Seq.map (fun (key,charOpt) -> KeyInput(key, KeyModifiers.None, charOpt )) 
         |> List.ofSeq
-
-    let AllKeyInputList = List.append VimKeyInputList SpecialKeyInputList
 
     let VimKeyCharList = 
         VimKeyInputList
@@ -307,4 +337,30 @@ module KeyInputUtil =
         let ki = ch |> CharToKeyInput  
         ChangeKeyModifiers ki (ki.KeyModifiers ||| KeyModifiers.Shift)
 
+    let AlternateEnterKey = KeyInput.AlternateEnterKey
+    let AlternateEscapeKey = KeyInput.AlternateEscapeKey
+    let AlternateLineFeedKey = KeyInput.AlternateLineFeedKey
+    let AlternateTabKey = KeyInput.AlternateTabKey
+    let EscapeKey = VimKeyToKeyInput VimKey.Escape
+    let TabKey = VimKeyToKeyInput VimKey.Tab
+    let LineFeedKey = VimKeyToKeyInput VimKey.LineFeed
+    let EnterKey = VimKeyToKeyInput VimKey.Enter
+
+    let AlternateKeyInputList = KeyInput.AlternateKeyInputList
+
+    let AlternateKeyInputPairList = 
+        [
+            (EscapeKey, AlternateEscapeKey)
+            (TabKey, AlternateTabKey)
+            (LineFeedKey, AlternateLineFeedKey)
+            (EnterKey, AlternateEnterKey)
+        ]
+
+    let AllKeyInputList = List.append VimKeyInputList AlternateKeyInputList
+
+    let GetAlternate (ki : KeyInput) = ki.GetAlternate()
+
+    let GetAlternateTarget (ki : KeyInput) = 
+        AlternateKeyInputPairList 
+        |> List.tryPick (fun (target, alternate) -> if alternate = ki then Some target else None)
 

@@ -7,7 +7,8 @@ type VimKey =
     | NotWellKnown = 0
     | Back = 1
     | FormFeed = 2
-    // Gap 
+    | Enter = 3
+    | Escape = 4
     | Left = 5
     | Up = 6
     | Right = 7
@@ -142,6 +143,8 @@ type VimKey =
     | Tilde = 136           // ~
     | Space = 137           //  
     | Dollar = 138          // $
+    | Tab = 139
+    | LineFeed = 140
 
 module VimKeyUtil =
 

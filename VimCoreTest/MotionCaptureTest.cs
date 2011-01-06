@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using Microsoft.FSharp.Collections;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
@@ -828,6 +829,23 @@ namespace VimCore.UnitTest
             };
             Process("?cat");
             Assert.IsTrue(didRun);
+        }
+
+        [Test]
+        public void Motion_LineDownToFirstNonWhitespace_ShouldAcceptBothEnters()
+        {
+            _textView.SetText("cat\ndog\nbear");
+            _util.Setup(x => x.LineDownToFirstNonWhitespace(2)).Returns(CreateMotionData());
+            Assert.IsTrue(_capture.GetOperatorMotion(KeyInputUtil.AlternateEnterKey, FSharpOption.Create(2)).IsComplete);
+            Assert.IsTrue(_capture.GetOperatorMotion(KeyInputUtil.EnterKey, FSharpOption.Create(2)).IsComplete);
+        }
+
+        [Test]
+        public void Motion_CommandMapSupportsAlternateKeys()
+        {
+            var set = KeyInputSet.NewOneKeyInput(KeyInputUtil.EnterKey);
+            Assert.IsTrue(MapModule.TryFind(KeyInputSet.NewOneKeyInput(KeyInputUtil.AlternateEnterKey), _captureRaw.MotionCommandsMap).IsSome());
+            Assert.IsTrue(MapModule.TryFind(KeyInputSet.NewOneKeyInput(KeyInputUtil.EnterKey), _captureRaw.MotionCommandsMap).IsSome());
         }
     }
 }

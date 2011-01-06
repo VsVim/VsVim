@@ -121,6 +121,24 @@ namespace Vim.UI.Wpf.Test
         }
 
         [Test]
+        public void GetKeyInput_EnglishAlternateKeys()
+        {
+            Action<VimKey, Key> verifyFunc = (vimKey, key) =>
+            {
+                KeyInput ki;
+                Assert.IsTrue(_map.TryGetKeyInput(key, out ki));
+                Assert.AreEqual(vimKey, ki.Key);
+                Assert.IsTrue(_map.TryGetKeyInput(key, ModifierKeys.Control, out ki));
+                Assert.AreEqual(vimKey, ki.Key);
+                Assert.AreEqual(KeyModifiers.Control, ki.KeyModifiers);
+            };
+
+            verifyFunc(VimKey.Enter, Key.Enter);
+            verifyFunc(VimKey.Tab, Key.Tab);
+            verifyFunc(VimKey.Escape, Key.Escape);
+        }
+
+        [Test]
         public void GetKeyInput_TurkishFAlpha()
         {
             Setup(NativeMethods.LayoutTurkishF);

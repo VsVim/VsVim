@@ -77,7 +77,6 @@ type internal DefaultOperations ( _data : OperationsData ) =
             |> Seq.append ( "mark line  col file/text"  |> Seq.singleton)
             |> _statusUtil.OnStatusLong
 
-
         member x.PrintModifiedSettings () = 
             _settings.AllSettings |> Seq.filter (fun s -> not s.IsValueDefault) |> Seq.map FormatSetting |> _statusUtil.OnStatusLong
 
@@ -168,6 +167,8 @@ type internal DefaultOperations ( _data : OperationsData ) =
             let getKeyInputSetLine (keyInputSet:KeyInputSet) = 
 
                 let inner (ki:KeyInput) = 
+
+                    let ki = ki |> KeyInputUtil.GetAlternateTarget |> OptionUtil.getOrDefault ki
 
                     // Build up the prefix for the specified modifiers
                     let rec getPrefix modifiers = 

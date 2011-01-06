@@ -324,6 +324,16 @@ type KeyInputSet =
                 SeqUtil.contentsEqual (left |> Seq.ofList) (right |> Seq.ofList |> Seq.take left.Length)
             else false
 
+    member x.CompareTo (other : KeyInputSet) = 
+        let rec inner (left:KeyInput list) (right:KeyInput list) =
+            if left.IsEmpty && right.IsEmpty then 0
+            elif left.IsEmpty then -1
+            elif right.IsEmpty then 1
+            elif left.Head < right.Head then -1
+            elif left.Head > right.Head then 1
+            else inner (List.tail left) (List.tail right)
+        inner x.KeyInputs other.KeyInputs
+
     override x.GetHashCode() = 
         match x with
         | Empty -> 1
@@ -357,15 +367,7 @@ type KeyInputSet =
     interface System.IComparable with
         member x.CompareTo yobj = 
             match yobj with
-            | :? KeyInputSet as y -> 
-                let rec inner (left:KeyInput list) (right:KeyInput list) =
-                    if left.IsEmpty && right.IsEmpty then 0
-                    elif left.IsEmpty then -1
-                    elif right.IsEmpty then 1
-                    elif left.Head < right.Head then -1
-                    elif left.Head > right.Head then 1
-                    else inner (List.tail left) (List.tail right)
-                inner x.KeyInputs y.KeyInputs
+            | :? KeyInputSet as y -> x.CompareTo y
             | _ -> failwith "Cannot compare values of different types"
 
 module KeyInputSetUtil =

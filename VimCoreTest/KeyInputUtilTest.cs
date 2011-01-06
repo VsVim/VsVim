@@ -214,5 +214,40 @@ namespace VimCore.UnitTest
             var ki2 = KeyInputUtil.ChangeKeyModifiers(ki, KeyModifiers.Shift);
             Assert.AreEqual(ki.Char, ki2.Char);
         }
+
+        [Test]
+        public void GetAlternateTarget_ShouldWorkWithAllValues()
+        {
+            foreach (var cur in KeyInputUtil.AlternateKeyInputList)
+            {
+                Assert.IsTrue(KeyInputUtil.GetAlternateTarget(cur).IsSome());
+            }
+        }
+
+        [Test]
+        public void AllAlternatesShouldEqualTheirTarget()
+        {
+            foreach (var cur in KeyInputUtil.AlternateKeyInputList)
+            {
+                var target = KeyInputUtil.GetAlternateTarget(cur).Value;
+                Assert.AreEqual(target, cur);
+                Assert.AreEqual(target.GetHashCode(), cur.GetHashCode());
+            }
+        }
+
+        [Test]
+        public void VerifyAlternateKeyInputPairListIsComplete()
+        {
+            foreach (var cur in KeyInputUtil.AlternateKeyInputPairList)
+            {
+                var target = cur.Item1;
+                var alternate = cur.Item2;
+                Assert.AreEqual(alternate, target.GetAlternate().Value);
+                Assert.AreEqual(alternate, KeyInputUtil.GetAlternate(target).Value);
+                Assert.AreEqual(target, KeyInputUtil.GetAlternateTarget(alternate).Value);
+            }
+
+            Assert.AreEqual(KeyInputUtil.AlternateKeyInputPairList.Count(), KeyInputUtil.AlternateKeyInputList.Count());
+        }
     }
 }
