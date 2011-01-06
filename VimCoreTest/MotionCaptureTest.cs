@@ -44,7 +44,8 @@ namespace VimCore.UnitTest
                 _util.Object,
                 _incrementalSearch,
                 _jumpList.Object,
-                _data.Object);
+                _data.Object,
+                _localSettings);
             _capture = _captureRaw;
         }
 
@@ -769,6 +770,64 @@ namespace VimCore.UnitTest
             var data = Process("/world", enter: true).AsComplete().Item1;
             Assert.IsFalse(data.IsForward);
             Assert.AreEqual("world", data.Span.GetText());
+        }
+
+        [Test]
+        public void Motion_IncrementalSearchForwardShouldRespectWrapScan()
+        {
+            _textView.SetText("cat dog");
+            var didRun = false;
+            _incrementalSearch.CurrentSearchUpdated += (_, args) =>
+            {
+                Assert.IsTrue(SearchKind.ForwardWithWrap == args.Item1.Kind);
+                didRun = true;
+            };
+            Process("/cat");
+            Assert.IsTrue(didRun);
+        }
+
+        [Test]
+        public void Motion_IncrementalSearchForwardShouldRespectNoWrapScan()
+        {
+            _textView.SetText("cat dog");
+            _localSettings.GlobalSettings.WrapScan = false;
+            var didRun = false;
+            _incrementalSearch.CurrentSearchUpdated += (_, args) =>
+            {
+                Assert.IsTrue(SearchKind.Forward == args.Item1.Kind);
+                didRun = true;
+            };
+            Process("/cat");
+            Assert.IsTrue(didRun);
+        }
+
+        [Test]
+        public void Motion_IncrementalSearchBackwardShouldRespectWrapScan()
+        {
+            _textView.SetText("cat dog");
+            var didRun = false;
+            _incrementalSearch.CurrentSearchUpdated += (_, args) =>
+            {
+                Assert.IsTrue(SearchKind.BackwardWithWrap == args.Item1.Kind);
+                didRun = true;
+            };
+            Process("?cat");
+            Assert.IsTrue(didRun);
+        }
+
+        [Test]
+        public void Motion_IncrementalSearchBackwardShouldRespectNoWrapScan()
+        {
+            _textView.SetText("cat dog");
+            _localSettings.GlobalSettings.WrapScan = false;
+            var didRun = false;
+            _incrementalSearch.CurrentSearchUpdated += (_, args) =>
+            {
+                Assert.IsTrue(SearchKind.Backward == args.Item1.Kind);
+                didRun = true;
+            };
+            Process("?cat");
+            Assert.IsTrue(didRun);
         }
     }
 }

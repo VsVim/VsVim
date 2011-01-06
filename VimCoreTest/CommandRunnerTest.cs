@@ -36,7 +36,8 @@ namespace VimCore.UnitTest
                 new TextViewMotionUtil(_textView, new Vim.LocalSettings(new Vim.GlobalSettings(), _textView)),
                 MockObjectFactory.CreateIncrementalSearch(factory: _factory).Object,
                 _factory.Create<IJumpList>().Object,
-                new MotionCaptureGlobalData());
+                new MotionCaptureGlobalData(),
+                new LocalSettings(new Vim.GlobalSettings(), _textView));
             _runnerRaw = new CommandRunner(
                 _textView,
                 _registerMap,

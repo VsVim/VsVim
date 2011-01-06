@@ -67,5 +67,18 @@ namespace Vim.UnitTest.Mock
         {
             throw new NotImplementedException();
         }
+
+
+        public bool WrapScan
+        {
+            get
+            {
+                throw new NotImplementedException();
+            }
+            set
+            {
+                throw new NotImplementedException();
+            }
+        }
     }
 }

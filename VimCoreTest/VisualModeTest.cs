@@ -10,6 +10,7 @@ using Vim.Modes;
 using Vim.Modes.Visual;
 using Vim.UnitTest;
 using Vim.UnitTest.Mock;
+using GlobalSettings = Vim.GlobalSettings;
 
 namespace VimCore.UnitTest
 {
@@ -75,7 +76,8 @@ namespace VimCore.UnitTest
                 new TextViewMotionUtil(_textView, new Vim.LocalSettings(_bufferData.Object.Settings.GlobalSettings, _textView)),
                 _incrementalSearch.Object,
                 _jumpList.Object,
-                new MotionCaptureGlobalData());
+                new MotionCaptureGlobalData(),
+                new LocalSettings(new GlobalSettings(), _textView));
             var runner = new CommandRunner(_textView, _map, (IMotionCapture)capture, (new Mock<IStatusUtil>()).Object);
             _modeRaw = new Vim.Modes.Visual.VisualMode(_bufferData.Object, _operations.Object, kind, runner, capture, _tracker.Object);
             _mode = _modeRaw;

@@ -1035,6 +1035,7 @@ module GlobalSettingNames =
     let VirtualEditName = "virtualedit"
     let VimRcName = "vimrc"
     let VimRcPathsName = "vimrcpaths"
+    let WrapScanName = "wrapscan"
 
 module LocalSettingNames =
 
@@ -1132,6 +1133,9 @@ and IVimGlobalSettings =
 
     /// Whether or not to use a visual indicator of errors instead of a beep
     abstract VisualBell : bool with get,set
+
+    /// Whether or not searches should wrap at the end of the file
+    abstract WrapScan : bool with get, set
 
     abstract DisableCommand: KeyInput;
 

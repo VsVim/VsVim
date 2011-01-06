@@ -12,6 +12,7 @@ using Vim.Modes;
 using Vim.Modes.Normal;
 using Vim.UnitTest;
 using Vim.UnitTest.Mock;
+using GlobalSettings = Vim.GlobalSettings;
 
 namespace VimCore.UnitTest
 {
@@ -94,7 +95,8 @@ namespace VimCore.UnitTest
                 motionUtil,
                 _incrementalSearch.Object,
                 _jumpList.Object,
-                new MotionCaptureGlobalData());
+                new MotionCaptureGlobalData(),
+                new LocalSettings(new GlobalSettings(), _textView));
             var runner = new CommandRunner(_textView, _map, capture, _statusUtil.Object);
             _modeRaw = new NormalMode(
                 _buffer.Object,

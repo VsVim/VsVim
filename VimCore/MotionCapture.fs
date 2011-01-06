@@ -19,7 +19,8 @@ type internal MotionCapture
         _util :ITextViewMotionUtil,
         _incrementalSearch : IIncrementalSearch,
         _jumpList : IJumpList,
-        _globalData : IMotionCaptureGlobalData ) = 
+        _globalData : IMotionCaptureGlobalData,
+        _settings : IVimLocalSettings) = 
 
     let _search = _incrementalSearch.SearchService
 
@@ -43,7 +44,15 @@ type internal MotionCapture
         waitCharThen inner 
 
     /// Handles incremental searches (/ and ?)
-    let IncrementalSearch kind =
+    let IncrementalSearch direction =
+
+        let kind = 
+            match direction, _settings.GlobalSettings.WrapScan with
+            | Direction.Forward, true -> SearchKind.ForwardWithWrap
+            | Direction.Forward, false -> SearchKind.Forward
+            | Direction.Backward, true -> SearchKind.BackwardWithWrap
+            | Direction.Backward, false -> SearchKind.Backward
+
         let before = TextViewUtil.GetCaretPoint _textView
         let rec inner (ki:KeyInput) = 
             match _incrementalSearch.Process ki with
@@ -371,11 +380,11 @@ type internal MotionCapture
                 yield(
                     "/",
                     MotionFlags.CursorMovement ||| MotionFlags.HandlesEscape,
-                    fun () -> IncrementalSearch SearchKind.ForwardWithWrap)
+                    fun () -> IncrementalSearch Direction.Forward)
                 yield(
                     "?",
                     MotionFlags.CursorMovement ||| MotionFlags.HandlesEscape,
-                    fun () -> IncrementalSearch SearchKind.BackwardWithWrap)
+                    fun () -> IncrementalSearch Direction.Backward)
             } 
         motionSeq
         |> Seq.map (fun (str,flags,func) -> 

@@ -113,22 +113,22 @@ type internal GlobalSettings() =
 
     static let GlobalSettings = 
         [|
-            ( CaretOpacityName, CaretOpacityName, NumberKind, NumberValue(65) );
-            ( HighlightSearchName, "hls", ToggleKind, ToggleValue(false) );
-            ( IgnoreCaseName,"ic", ToggleKind, ToggleValue(false) );
-            ( MagicName, MagicName, ToggleKind, ToggleValue(true) );
-            ( ShiftWidthName, "sw", NumberKind, NumberValue(4) );
-            ( SelectionName, "sel", StringKind, StringValue("inclusive"));
-            ( ScrollOffsetName, "so", NumberKind, NumberValue(0) );
-            ( SmartCaseName, "scs", ToggleKind, ToggleValue(false) );
-            ( StartOfLineName, "sol", ToggleKind, ToggleValue(true) );
-            ( TabStopName, "ts", NumberKind, NumberValue(8) );
-            ( TildeOpName, "top", ToggleKind, ToggleValue(false) );
-            ( VimRcName, VimRcName, StringKind, StringValue(System.String.Empty) );
-            ( VimRcPathsName, VimRcPathsName, StringKind, StringValue(System.String.Empty) );
-            ( VirtualEditName, "ve", StringKind, StringValue(StringUtil.empty));
-            ( VisualBellName, "vb", ToggleKind, ToggleValue(false) );
-            ( CaretOpacityName, CaretOpacityName, NumberKind, NumberValue(65) );
+            (CaretOpacityName, CaretOpacityName, NumberKind, NumberValue(65));
+            (HighlightSearchName, "hls", ToggleKind, ToggleValue(false));
+            (IgnoreCaseName,"ic", ToggleKind, ToggleValue(false));
+            (MagicName, MagicName, ToggleKind, ToggleValue(true));
+            (ShiftWidthName, "sw", NumberKind, NumberValue(4));
+            (SelectionName, "sel", StringKind, StringValue("inclusive"));
+            (ScrollOffsetName, "so", NumberKind, NumberValue(0));
+            (SmartCaseName, "scs", ToggleKind, ToggleValue(false));
+            (StartOfLineName, "sol", ToggleKind, ToggleValue(true));
+            (TabStopName, "ts", NumberKind, NumberValue(8));
+            (TildeOpName, "top", ToggleKind, ToggleValue(false));
+            (VimRcName, VimRcName, StringKind, StringValue(System.String.Empty));
+            (VimRcPathsName, VimRcPathsName, StringKind, StringValue(System.String.Empty));
+            (VirtualEditName, "ve", StringKind, StringValue(StringUtil.empty));
+            (VisualBellName, "vb", ToggleKind, ToggleValue(false));
+            (WrapScanName, "ws", ToggleKind, ToggleValue(true));
         |]
 
     let _map = SettingsMap(GlobalSettings, true)
@@ -189,6 +189,9 @@ type internal GlobalSettings() =
         member x.VisualBell
             with get() = _map.GetBoolValue VisualBellName
             and set value = _map.TrySetValue VisualBellName (ToggleValue(value)) |> ignore
+        member x.WrapScan
+            with get() = _map.GetBoolValue WrapScanName
+            and set value = _map.TrySetValue WrapScanName (ToggleValue(value)) |> ignore
         member x.DisableCommand = DisableCommandLet
         member x.IsVirtualEditOneMore = 
             let value = _map.GetStringValue VirtualEditName
