@@ -854,5 +854,21 @@ namespace VimCore.UnitTest
             VerifyMatchIs(@"a\{2,3}", "aaa", "aaa");
             VerifyNotMatches(@"a\{3}", "a");
         }
+
+        [Test]
+        public void AtomStar_Magic()
+        {
+            _settings.Magic = true;
+            VerifyMatchIs(@"a*", "aa", "aa");
+            VerifyMatchIs(@"a\*", "a*", "a*");
+        }
+
+        [Test]
+        public void AtomStar_NoMagic()
+        {
+            _settings.Magic = false;
+            VerifyMatchIs(@"a*", "a*", "a*");
+            VerifyMatchIs(@"a\*", "aaa", "aaa");
+        }
     }
 }

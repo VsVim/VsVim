@@ -295,7 +295,7 @@ type VimRegexFactory
         let isMagic = data.MagicKind = MagicKind.Magic
         match c with 
         | '.' -> if isMagic then data.AppendEscapedChar c else x.ConvertCharAsSpecial data c
-        | '*' -> x.ConvertCharAsSpecial data c 
+        | '*' -> if isMagic then data.AppendEscapedChar c else x.ConvertCharAsSpecial data c 
         | '+' -> x.ConvertCharAsSpecial data c
         | '?' -> x.ConvertCharAsSpecial data c 
         | '=' -> x.ConvertCharAsSpecial data c
