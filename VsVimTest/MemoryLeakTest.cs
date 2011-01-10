@@ -39,7 +39,7 @@ namespace VsVim.UnitTest
                 _serviceMap[typeof(SVsShell)] = _factory.Create<IVsShell>().Object;
                 _serviceMap[typeof(SVsTextManager)] = _factory.Create<IVsTextManager>().Object;
                 _serviceMap[typeof(SVsRunningDocumentTable)] = _factory.Create<IVsRunningDocumentTable>().Object;
-                _serviceMap[typeof(SVsUIShell)] = _factory.Create<IVsUIShell>().Object;
+                _serviceMap[typeof(SVsUIShell)] = _factory.Create<IVsUIShell>().As<IVsUIShell4>().Object;
                 _serviceMap[typeof(SVsShellMonitorSelection)] = _factory.Create<IVsMonitorSelection>().Object;
                 _serviceMap[typeof(_DTE)] = _factory.Create<_DTE>().Object;
             }

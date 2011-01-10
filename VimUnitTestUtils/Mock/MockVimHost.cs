@@ -82,16 +82,6 @@ namespace Vim.UnitTest.Mock
             throw new NotImplementedException();
         }
 
-        void IVimHost.GoToNextTab(int count)
-        {
-            throw new NotImplementedException();
-        }
-
-        void IVimHost.GoToPreviousTab(int count)
-        {
-            throw new NotImplementedException();
-        }
-
         void IVimHost.SplitView(ITextView textView)
         {
             throw new NotImplementedException();
@@ -145,6 +135,17 @@ namespace Vim.UnitTest.Mock
         bool IVimHost.Reload(ITextBuffer value)
         {
             return true;
+        }
+
+
+        void IVimHost.GoToNextTab(Direction value, int count)
+        {
+            throw new NotImplementedException();
+        }
+
+        void IVimHost.GoToTab(int index)
+        {
+            throw new NotImplementedException();
         }
     }
 }

@@ -30,12 +30,14 @@ type IVimHost =
     /// Go to the matching construct of the value under the cursor
     abstract GoToMatch : unit -> bool
 
-    /// Go to the next tab window
-    abstract GoToNextTab : count : int -> unit
+    /// Go to the "count" next tab window in the specified direction.  This will wrap 
+    /// around
+    abstract GoToNextTab : Direction -> count : int -> unit
 
-    /// Go to the previous tab window
-    abstract GoToPreviousTab: count : int -> unit
+    /// Go the nth tab.  The first tab can be accessed with both 0 and 1
+    abstract GoToTab : index : int -> unit
 
+    /// Get the name of the given ITextBuffer
     abstract GetName : ITextBuffer -> string
 
     /// Is the ITextBuffer in a dirty state?

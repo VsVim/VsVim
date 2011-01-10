@@ -2,6 +2,7 @@
 using EnvDTE;
 using Microsoft.VisualStudio.Editor;
 using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Operations;
 using Microsoft.VisualStudio.TextManager.Interop;
@@ -23,6 +24,7 @@ namespace VsVim.UnitTest
         private Mock<IVsEditorAdaptersFactoryService> _editorAdaptersFactoryService;
         private Mock<ITextBufferUndoManagerProvider> _undoManagerProvider;
         private Mock<_DTE> _dte;
+        private Mock<IVsUIShell4> _shell;
         private Mock<StatusBar> _statusBar;
 
         private void Create()
@@ -32,12 +34,14 @@ namespace VsVim.UnitTest
             _undoManagerProvider = _factory.Create<ITextBufferUndoManagerProvider>();
             _editorAdaptersFactoryService = _factory.Create<IVsEditorAdaptersFactoryService>();
             _statusBar = _factory.Create<StatusBar>();
+            _shell = _factory.Create<IVsUIShell4>();
             _dte = _factory.Create<_DTE>();
             _dte.SetupGet(x => x.StatusBar).Returns(_statusBar.Object);
             _textManager = _factory.Create<ITextManager>();
 
             var sp = _factory.Create<SVsServiceProvider>();
             sp.Setup(x => x.GetService(typeof(_DTE))).Returns(_dte.Object);
+            sp.Setup(x => x.GetService(typeof(SVsUIShell))).Returns(_shell.Object);
             _hostRaw = new VsVimHost(
                 _adapter.Object,
                 _undoManagerProvider.Object,

@@ -143,11 +143,12 @@ type ICommonOperations =
     /// Go to the matching construct of the value under the cursor
     abstract GoToMatch : unit -> bool
 
-    /// Go to the next "count" tab
-    abstract GoToNextTab : count : int -> unit
+    /// Go to the "count" next tab window in the specified direction.  This will wrap 
+    /// around
+    abstract GoToNextTab : Direction -> count : int -> unit
 
-    /// Go to the previous "count" tab
-    abstract GoToPreviousTab : count : int -> unit
+    /// Go the nth tab.  The first tab can be accessed with both 0 and 1
+    abstract GoToTab : int -> unit
 
     /// Insert a line above the current cursor position and returns the resulting ITextSnapshotLine
     abstract InsertLineAbove : unit -> ITextSnapshotLine

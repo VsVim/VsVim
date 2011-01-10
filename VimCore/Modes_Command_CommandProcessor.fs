@@ -129,9 +129,12 @@ type internal CommandProcessor
             yield ("substitute", "s", this.ProcessSubstitute)
             yield ("smagic", "sm", this.ProcessSubstituteMagic)
             yield ("snomagic", "sno", this.ProcessSubstituteNomagic)
+            yield ("tabfirst", "tabfir", this.ProcessTabFirst |> wrap)
+            yield ("tablast", "tabl", this.ProcessTabLast |> wrap)
             yield ("tabnext", "tabn", this.ProcessTabNext |> wrap)
-            yield ("tabprevious", "tabp", this.ProcessTabPrevious |> wrap)
             yield ("tabNext", "tabN", this.ProcessTabPrevious |> wrap)
+            yield ("tabprevious", "tabp", this.ProcessTabPrevious |> wrap)
+            yield ("tabrewind", "tabr", this.ProcessTabFirst |> wrap)
             yield ("undo", "u", this.ProcessUndo |> wrap)
             yield ("write","w", this.ProcessWrite |> wrap)
             yield ("wq", "", this.ProcessWriteQuit |> wrap)
@@ -353,14 +356,22 @@ type internal CommandProcessor
         _operations.CloseAll checkDirty
 
     member x.ProcessTabNext rest _ _ =
-        let count,rest = RangeUtil.ParseNumber rest
-        let count = match count with | Some(c) -> c | None -> 1
-        _operations.GoToNextTab count
+        let count, _ = RangeUtil.ParseNumber rest
+        match count with
+        | None -> _operations.GoToNextTab Direction.Forward 1
+        | Some(index) -> _operations.GoToTab index
 
     member x.ProcessTabPrevious rest _ _ =
-        let count,rest = RangeUtil.ParseNumber rest
-        let count = match count with | Some(c) -> c | None -> 1
-        _operations.GoToPreviousTab count
+        let count, _ = RangeUtil.ParseNumber rest
+        match count with
+        | None -> _operations.GoToNextTab Direction.Backward 1
+        | Some(count) -> _operations.GoToNextTab Direction.Backward count
+
+    member x.ProcessTabFirst _ _ _ =
+        _operations.GoToTab 0
+
+    member x.ProcessTabLast _ _ _ =
+        _operations.GoToTab -1 
 
     member x.ProcessMake _ _ bang =
         _buffer.Vim.VimHost.BuildSolution()

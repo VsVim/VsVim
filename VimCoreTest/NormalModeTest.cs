@@ -2885,7 +2885,7 @@ namespace VimCore.UnitTest
         public void gt_1()
         {
             Create(DefaultLines);
-            _operations.Setup(x => x.GoToNextTab(1)).Verifiable();
+            _operations.Setup(x => x.GoToNextTab(Direction.Forward, 1)).Verifiable();
             _mode.Process("gt");
             _operations.Verify();
         }
@@ -2894,7 +2894,7 @@ namespace VimCore.UnitTest
         public void gt_2()
         {
             Create(DefaultLines);
-            _operations.Setup(x => x.GoToNextTab(2)).Verifiable();
+            _operations.Setup(x => x.GoToTab(2)).Verifiable();
             _mode.Process("2gt");
             _operations.Verify();
         }
@@ -2903,7 +2903,7 @@ namespace VimCore.UnitTest
         public void CPageDown_1()
         {
             Create(DefaultLines);
-            _operations.Setup(x => x.GoToNextTab(1)).Verifiable();
+            _operations.Setup(x => x.GoToNextTab(Direction.Forward, 1)).Verifiable();
             _mode.Process(KeyInputUtil.VimKeyAndModifiersToKeyInput(VimKey.PageDown, KeyModifiers.Control));
             _operations.Verify();
         }
@@ -2912,7 +2912,7 @@ namespace VimCore.UnitTest
         public void CPageDown_2()
         {
             Create(DefaultLines);
-            _operations.Setup(x => x.GoToNextTab(2)).Verifiable();
+            _operations.Setup(x => x.GoToTab(2)).Verifiable();
             _mode.Process("2");
             _mode.Process(KeyInputUtil.VimKeyAndModifiersToKeyInput(VimKey.PageDown, KeyModifiers.Control));
             _operations.Verify();
@@ -2922,7 +2922,7 @@ namespace VimCore.UnitTest
         public void gT_1()
         {
             Create(DefaultLines);
-            _operations.Setup(x => x.GoToPreviousTab(1)).Verifiable();
+            _operations.Setup(x => x.GoToNextTab(Direction.Backward, 1)).Verifiable();
             _mode.Process("gT");
             _operations.Verify();
         }
@@ -2931,7 +2931,7 @@ namespace VimCore.UnitTest
         public void gT_2()
         {
             Create(DefaultLines);
-            _operations.Setup(x => x.GoToPreviousTab(2)).Verifiable();
+            _operations.Setup(x => x.GoToNextTab(Direction.Backward, 2)).Verifiable();
             _mode.Process("2gT");
             _operations.Verify();
         }
@@ -2940,7 +2940,7 @@ namespace VimCore.UnitTest
         public void CPageUp_1()
         {
             Create(DefaultLines);
-            _operations.Setup(x => x.GoToPreviousTab(1)).Verifiable();
+            _operations.Setup(x => x.GoToNextTab(Direction.Backward, 1)).Verifiable();
             _mode.Process(KeyInputUtil.VimKeyAndModifiersToKeyInput(VimKey.PageUp, KeyModifiers.Control));
             _operations.Verify();
         }
@@ -2949,7 +2949,7 @@ namespace VimCore.UnitTest
         public void CPageUp_2()
         {
             Create(DefaultLines);
-            _operations.Setup(x => x.GoToPreviousTab(2)).Verifiable();
+            _operations.Setup(x => x.GoToNextTab(Direction.Backward, 2)).Verifiable();
             _mode.Process('2');
             _mode.Process(KeyInputUtil.VimKeyAndModifiersToKeyInput(VimKey.PageUp, KeyModifiers.Control));
             _operations.Verify();

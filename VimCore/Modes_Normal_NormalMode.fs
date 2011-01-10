@@ -283,14 +283,6 @@ type internal NormalMode
                     CommandFlags.Repeatable, 
                     fun count reg -> join count JoinKind.KeepEmptySpaces )
                 yield (
-                    "gt", 
-                    CommandFlags.Movement, 
-                    fun count _ -> _operations.GoToNextTab count)
-                yield (
-                    "gT", 
-                    CommandFlags.Movement, 
-                    fun count _ -> _operations.GoToPreviousTab count)
-                yield (
                     "gp", 
                     CommandFlags.Repeatable, 
                     fun count reg -> _operations.PutAtCaret (reg.Value.Value.ApplyCount count) reg.Value.OperationKind PutKind.After true)
@@ -499,14 +491,6 @@ type internal NormalMode
                     CommandFlags.Movement, 
                     fun _ _ -> _bufferData.Vim.VimHost.MoveViewUp(this.TextView))
                 yield (
-                    "<C-PageDown>", 
-                    CommandFlags.Movement, 
-                    fun count _ -> _operations.GoToNextTab count)
-                yield (
-                    "<C-PageUp>", 
-                    CommandFlags.Movement, 
-                    fun count _ -> _operations.GoToPreviousTab count)
-                yield (
                     "z<Enter>", 
                     CommandFlags.Movement, 
                     fun count _ -> 
@@ -630,20 +614,35 @@ type internal NormalMode
         let needCountAsOpt = 
             seq {
                 yield (
-                    ".", 
+                    ["."], 
                     CommandFlags.Special, 
                     fun count reg -> this.RepeatLastChange count reg)
                 yield (
-                    "<C-Home>", 
+                    ["<C-Home>"], 
                     CommandFlags.Movement, 
                     fun count _ -> _operations.GoToLineOrFirst(count))
+                yield (
+                    ["gt"; "<C-PageDown>"], 
+                    CommandFlags.Movement, 
+                    fun count _ -> 
+                        match count with 
+                        | None -> _operations.GoToNextTab Direction.Forward 1
+                        | Some(count) -> _operations.GoToTab count)
+                yield (
+                    ["gT"; "<C-PageUp>"], 
+                    CommandFlags.Movement, 
+                    fun count _ -> 
+                        let count = OptionUtil.getOrDefault 1 count
+                        _operations.GoToNextTab Direction.Backward count)
             }
-            |> Seq.map(fun (str,kind,func) -> 
-                let name = KeyNotationUtil.StringToKeyInputSet str
-                let func2 count reg = 
-                    func count reg
-                    CommandResult.Completed ModeSwitch.NoSwitch
-                SimpleCommand(name, kind, func2))
+            |> Seq.map(fun (nameList,kind,func) -> 
+                nameList |> Seq.map (fun str ->
+                    let name = KeyNotationUtil.StringToKeyInputSet str
+                    let func2 count reg = 
+                        func count reg
+                        CommandResult.Completed ModeSwitch.NoSwitch
+                    SimpleCommand(name, kind, func2)))
+            |> Seq.concat
 
         Seq.append allWithCount needCountAsOpt 
 

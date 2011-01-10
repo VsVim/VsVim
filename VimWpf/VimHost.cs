@@ -109,9 +109,9 @@ namespace Vim.UI.Wpf
 
         public abstract bool GoToMatch();
 
-        public abstract void GoToNextTab(int count);
+        public abstract void GoToNextTab(Direction direction, int count);
 
-        public abstract void GoToPreviousTab(int count);
+        public abstract void GoToTab(int index);
 
         public virtual bool IsDirty(ITextBuffer textbuffer)
         {

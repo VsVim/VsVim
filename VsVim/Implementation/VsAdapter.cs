@@ -92,7 +92,14 @@ namespace VsVim.Implementation
 
         public bool TryGetContainingWindowFrame(IVsTextView textView, out IVsWindowFrame windowFrame)
         {
-            foreach (var frame in _uiShell.GetDocumentWindowFrames())
+            var result = _uiShell.GetDocumentWindowFrames();
+            if (result.IsError)
+            {
+                windowFrame = null;
+                return false;
+            }
+
+            foreach (var frame in result.Value)
             {
                 IVsCodeWindow codeWindow;
                 if (frame.TryGetCodeWindow(out codeWindow))
@@ -124,7 +131,13 @@ namespace VsVim.Implementation
                 return Result.Error;
             }
 
-            foreach (var frame in _uiShell.GetDocumentWindowFrames())
+            var frameList = _uiShell.GetDocumentWindowFrames();
+            if (frameList.IsError)
+            {
+                return Result.CreateError(frameList.HResult);
+            }
+
+            foreach (var frame in frameList.Value)
             {
                 var result = frame.GetCodeWindow();
                 if (result.IsSuccess)

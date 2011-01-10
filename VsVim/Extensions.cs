@@ -210,25 +210,37 @@ namespace VsVim
             return new ModelessUtil(vsShell);
         }
 
-        public static List<IVsWindowFrame> GetDocumentWindowFrames(this IVsUIShell vsShell)
+        public static Result<List<IVsWindowFrame>> GetDocumentWindowFrames(this IVsUIShell vsShell)
         {
             IEnumWindowFrames enumFrames;
-            ErrorHandler.ThrowOnFailure(vsShell.GetDocumentWindowEnum(out enumFrames));
-            return enumFrames.GetContents();
+            var hr = vsShell.GetDocumentWindowEnum(out enumFrames);
+            return ErrorHandler.Failed(hr) ? Result.CreateError(hr) : enumFrames.GetContents();
+        }
+
+        public static Result<List<IVsWindowFrame>> GetDocumentWindowFrames(this IVsUIShell4 vsShell, __WindowFrameTypeFlags flags)
+        {
+            IEnumWindowFrames enumFrames;
+            var hr = vsShell.GetWindowEnum((uint) flags, out enumFrames);
+            return ErrorHandler.Failed(hr) ? Result.CreateError(hr) : enumFrames.GetContents();
         }
 
         #endregion
 
         #region IEnumWindowFrames
 
-        public static List<IVsWindowFrame> GetContents(this IEnumWindowFrames enumFrames)
+        public static Result<List<IVsWindowFrame>> GetContents(this IEnumWindowFrames enumFrames)
         {
             var list = new List<IVsWindowFrame>();
             var array = new IVsWindowFrame[16];
             while (true)
             {
                 uint num;
-                ErrorHandler.ThrowOnFailure(enumFrames.Next((uint)array.Length, array, out num));
+                var hr = enumFrames.Next((uint) array.Length, array, out num);
+                if (ErrorHandler.Failed(hr))
+                {
+                    return Result.CreateError(hr);
+                }
+
                 if (0 == num)
                 {
                     return list;
