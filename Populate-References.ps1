@@ -34,6 +34,9 @@ foreach ( $dll in $coreDllList) {
     CopyTo-References $fullPath
 }
 
+$idePath= join-path $progPath "Microsoft Visual Studio 10.0\Common7\IDE"
+CopyTo-References (join-path $idePath "Microsoft.VisualStudio.Shell.ViewManager.dll")
+
 $privPath = join-path $progPath "Microsoft Visual Studio 10.0\Common7\IDE\PrivateAssemblies"
 CopyTo-References (join-path $privPath "Microsoft.VisualStudio.Text.Internal.dll" )
 CopyTo-References (join-path $privPath "Microsoft.VisualStudio.Platform.VSEditor.Interop.dll" )

@@ -44,6 +44,7 @@ Microsoft.VisualStudio.Language.Intellisense.dll
 Microsoft.VisualStudio.Language.StandardClassification.dll
 Microsoft.VisualStudio.Platform.VSEditor.dll
 Microsoft.VisualStudio.Platform.VSEditor.Interop.dll
+Microsoft.VisualStudio.Shell.ViewManager.dll
 Microsoft.VisualStudio.Text.Data.dll
 Microsoft.VisualStudio.Text.Logic.dll
 Microsoft.VisualStudio.Text.UI.dll

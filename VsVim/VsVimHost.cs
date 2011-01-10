@@ -1,11 +1,12 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.IO;
 using System.Linq;
 using EnvDTE;
 using Microsoft.VisualStudio.Editor;
+using Microsoft.VisualStudio.PlatformUI.Shell;
 using Microsoft.VisualStudio.Shell;
-using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Operations;
@@ -29,7 +30,6 @@ namespace VsVim
         private readonly ITextManager _textManager;
         private readonly IVsEditorAdaptersFactoryService _editorAdaptersFactoryService;
         private readonly _DTE _dte;
-        private readonly IVsUIShell4 _shell;
 
         internal _DTE DTE
         {
@@ -49,7 +49,6 @@ namespace VsVim
             _adapter = adapter;
             _editorAdaptersFactoryService = editorAdaptersFactoryService;
             _dte = (_DTE)serviceProvider.GetService(typeof(_DTE));
-            _shell = (IVsUIShell4)serviceProvider.GetService(typeof(SVsUIShell));
             _textManager = textManager;
         }
 
@@ -97,6 +96,23 @@ namespace VsVim
             }
 
             return SafeExecuteCommand(CommandNameGoToDefinition);
+        }
+
+        private List<View> GetActiveViews()
+        {
+            var activeView = ViewManager.Instance.ActiveView;
+            if (activeView == null)
+            {
+                return new List<View>();
+            }
+
+            var group = activeView.Parent as DocumentGroup;
+            if (group == null)
+            {
+                return new List<View>();
+            }
+
+            return group.VisibleChildren.OfType<View>().ToList();
         }
 
         /// <summary>
@@ -215,47 +231,51 @@ namespace VsVim
 
         public override void GoToNextTab(Direction direction, int count)
         {
-            const string nextDocument = "Window.NextDocumentWindow";
-            const string previousDocument = "Window.PreviousDocumentWindow";
-            var command = direction == Direction.Forward ? nextDocument : previousDocument;
-
-            while (count > 0)
+            var children = GetActiveViews();
+            var activeView = ViewManager.Instance.ActiveView;
+            var index = children.IndexOf(activeView);
+            if (index == -1)
             {
-                SafeExecuteCommand(command);
-                count--;
+                return;
             }
+
+            if (direction.IsForward)
+            {
+                index += count;
+            }
+            else
+            {
+                index -= count;
+            }
+
+            index %= children.Count;
+            children[index].ShowInFront();
         }
 
         public override void GoToTab(int index)
         {
-            var result = _shell.GetDocumentWindowFrames(__WindowFrameTypeFlags.WINDOWFRAMETYPE_Document);
-            if (result.IsError || result.Value.Count == 0)
-            {
-                return;
-            }
-
-            IVsWindowFrame targetFrame;
-            var frameList = result.Value;
+            View targetView;
+            var children = GetActiveViews();
             if (index < 0)
             {
-                targetFrame = frameList[frameList.Count - 1];
+                targetView = children[children.Count - 1];
             }
             else if (index == 0)
             {
-                targetFrame = frameList[0];
+                targetView = children[0];
             }
             else
             {
                 index -= 1;
-                targetFrame = index < frameList.Count ? frameList[index] : null;
+                targetView = index < children.Count ? children[index] : null;
             }
 
-            if (targetFrame == null)
+            if (targetView == null)
             {
                 return;
             }
 
-            var hr = targetFrame.Show();
+            targetView.ShowInFront();
         }
 
         public override void BuildSolution()
