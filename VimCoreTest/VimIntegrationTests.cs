@@ -16,7 +16,7 @@ namespace VimCore.UnitTest
         [SetUp]
         public void Setup()
         {
-            _vim = EditorUtil.FactoryService.vim;
+            _vim = EditorUtil.FactoryService.Vim;
         }
 
         [Test]

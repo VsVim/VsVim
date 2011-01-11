@@ -5,9 +5,7 @@ using System.ComponentModel.Composition.Hosting;
 using System.ComponentModel.Composition.Primitives;
 using System.IO;
 using System.Linq;
-using Microsoft.VisualStudio.Language.Intellisense;
 using Microsoft.VisualStudio.Text;
-using Microsoft.VisualStudio.Text.Classification;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Operations;
 using Microsoft.VisualStudio.Utilities;
@@ -22,69 +20,58 @@ namespace Vim.UnitTest
         public sealed class Factory
         {
             [Import]
-            public ITextBufferFactoryService textBufferFactory;
+            public ITextBufferFactoryService TextBufferFactory;
 
             [Import]
-            public ITextEditorFactoryService textEditorFactory;
+            public ITextEditorFactoryService TextEditorFactory;
 
             [Import]
-            public IEditorOperationsFactoryService editorOperationsFactory;
+            public IEditorOperationsFactoryService EditorOperationsFactory;
 
             [Import]
-            public IEditorOptionsFactoryService editorOptionsFactory;
+            public IEditorOptionsFactoryService EditorOptionsFactory;
 
             [Import]
-            public ISignatureHelpBroker signatureBroker;
+            public IVim Vim;
 
             [Import]
-            public ICompletionBroker completionBroker;
+            public IVimHost VimHost;
 
             [Import]
-            public IEditorFormatMapService editorFormatMapService;
+            public ITextSearchService TextSearchService;
 
             [Import]
-            public IVim vim;
+            public IVimBufferFactory VimBufferFactory;
 
             [Import]
-            public IVimHost vimHost;
+            public ITextBufferUndoManagerProvider UndoManagerProvider;
 
             [Import]
-            public ITextSearchService textSearchService;
+            public IContentTypeRegistryService ContentTypeRegistryService;
 
             [Import]
-            public IVimBufferFactory vimBufferFactory;
-
-            [Import]
-            public ITextBufferUndoManagerProvider undoManagerProvider;
-
-            [Import]
-            public IContentTypeRegistryService contentTypeRegistryService;
-
-            [Import]
-            public ITextStructureNavigatorSelectorService textStructureNavigatorSelectorService;
+            public ITextStructureNavigatorSelectorService TextStructureNavigatorSelectorService;
 
             [Import] 
-            public ISmartIndentationService smartIndentationService;
-
-            public Factory() { }
+            public ISmartIndentationService SmartIndentationService;
         }
 
         #endregion
 
         [ThreadStatic]
-        private static CompositionContainer m_container;
+        private static CompositionContainer _compositionContainer;
         [ThreadStatic]
-        private static Factory m_factory;
+        private static Factory _factory;
 
         public static CompositionContainer Container
         {
             get
             {
-                if (null == m_container)
+                if (null == _compositionContainer)
                 {
-                    m_container = CreateContainer();
+                    _compositionContainer = CreateContainer();
                 }
-                return m_container;
+                return _compositionContainer;
             }
         }
 
@@ -93,12 +80,12 @@ namespace Vim.UnitTest
             get
             {
 
-                if (null == m_factory)
+                if (null == _factory)
                 {
-                    m_factory = new Factory();
-                    Container.ComposeParts(m_factory);
+                    _factory = new Factory();
+                    Container.ComposeParts(_factory);
                 }
-                return m_factory;
+                return _factory;
             }
         }
         public static ITextBuffer CreateBuffer(params string[] lines)
@@ -108,7 +95,7 @@ namespace Vim.UnitTest
 
         public static ITextBuffer CreateBuffer(IContentType contentType, params string[] lines)
         {
-            var factory = FactoryService.textBufferFactory;
+            var factory = FactoryService.TextBufferFactory;
             var buffer = contentType != null
                 ? factory.CreateTextBuffer(contentType)
                 : factory.CreateTextBuffer();
@@ -130,33 +117,33 @@ namespace Vim.UnitTest
         public static IWpfTextView CreateView(IContentType contentType, params string[] lines)
         {
             var buffer = CreateBuffer(contentType, lines);
-            var view = FactoryService.textEditorFactory.CreateTextView(buffer);
+            var view = FactoryService.TextEditorFactory.CreateTextView(buffer);
             return view;
         }
 
         public static Tuple<IWpfTextView, IEditorOperations> CreateViewAndOperations(params string[] lines)
         {
             var view = CreateView(lines);
-            var opts = FactoryService.editorOperationsFactory.GetEditorOperations(view);
+            var opts = FactoryService.EditorOperationsFactory.GetEditorOperations(view);
             return Tuple.Create(view, opts);
         }
 
         public static IEditorOperations GetOperations(ITextView view)
         {
-            return FactoryService.editorOperationsFactory.GetEditorOperations(view);
+            return FactoryService.EditorOperationsFactory.GetEditorOperations(view);
         }
 
         public static ITextUndoHistory GetUndoHistory(ITextBuffer textBuffer)
         {
-            return FactoryService.undoManagerProvider.GetTextBufferUndoManager(textBuffer).TextBufferUndoHistory;
+            return FactoryService.UndoManagerProvider.GetTextBufferUndoManager(textBuffer).TextBufferUndoHistory;
         }
 
         public static IContentType GetOrCreateContentType(string type, string baseType)
         {
-            var ct = FactoryService.contentTypeRegistryService.GetContentType(type);
+            var ct = FactoryService.ContentTypeRegistryService.GetContentType(type);
             if (ct == null)
             {
-                ct = FactoryService.contentTypeRegistryService.AddContentType(type, new string[] { baseType });
+                ct = FactoryService.ContentTypeRegistryService.AddContentType(type, new string[] { baseType });
             }
 
             return ct;

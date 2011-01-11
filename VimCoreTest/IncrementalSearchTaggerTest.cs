@@ -21,7 +21,7 @@ namespace VimCore.UnitTest
         public void Create(params string[] lines)
         {
             _textView = EditorUtil.CreateView(lines);
-            _buffer = EditorUtil.FactoryService.vim.CreateBuffer(_textView);
+            _buffer = EditorUtil.FactoryService.Vim.CreateBuffer(_textView);
             _search = _buffer.IncrementalSearch;
             _taggerRaw = new IncrementalSearchTagger(_buffer);
             _tagger = _taggerRaw;

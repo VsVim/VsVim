@@ -33,12 +33,11 @@ namespace VimCore.UnitTest
             _textView.SetupGet(x => x.HasAggregateFocus).Returns(true);
 
             _normalModeRunner = new MockCommandRunner();
-            _normalMode = new MockNormalMode() { CommandRunnerImpl = _normalModeRunner };
-            _buffer = new MockVimBuffer() { TextViewImpl = _textView.Object, TextBufferImpl = _textBuffer, NormalModeImpl = _normalMode };
+            _normalMode = new MockNormalMode { CommandRunnerImpl = _normalModeRunner };
+            _buffer = new MockVimBuffer { TextViewImpl = _textView.Object, TextBufferImpl = _textBuffer, NormalModeImpl = _normalMode };
             _textChangeTracker = new MockTextChangeTracker() { VimBufferImpl = _buffer };
 
-            _factory = new MockRepository(MockBehavior.Loose);
-            _factory.DefaultValue = DefaultValue.Mock;
+            _factory = new MockRepository(MockBehavior.Loose) {DefaultValue = DefaultValue.Mock};
             _textChangeTrackerFactory = _factory.Create<ITextChangeTrackerFactory>();
             _textChangeTrackerFactory.Setup(x => x.GetTextChangeTracker(_buffer)).Returns(_textChangeTracker);
             _buffer.VisualBlockModeImpl = _factory.Create<IVisualMode>().Object;
@@ -49,7 +48,7 @@ namespace VimCore.UnitTest
             _trackerRaw.OnVimBufferCreated(_buffer);
         }
 
-        private CommandRunData CreateCommand(
+        private static CommandRunData CreateCommand(
             Func<FSharpOption<int>, Register, CommandResult> func = null,
             KeyInputSet name = null,
             CommandFlags? flags = null,
@@ -72,7 +71,7 @@ namespace VimCore.UnitTest
                 visualRunData != null ? FSharpOption.Create(visualRunData) : FSharpOption<VisualSpan>.None);
         }
 
-        private CommandResult CreateResult()
+        private static CommandResult CreateResult()
         {
             return CommandResult.NewCompleted(ModeSwitch.NewSwitchMode(ModeKind.Insert));
         }

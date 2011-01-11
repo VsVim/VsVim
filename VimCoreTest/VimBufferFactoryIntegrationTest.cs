@@ -1,11 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using NUnit.Framework;
+﻿using NUnit.Framework;
 using Vim;
 using Vim.UnitTest;
-using Microsoft.FSharp.Control;
 
 namespace VimCore.UnitTest
 {
@@ -18,8 +13,8 @@ namespace VimCore.UnitTest
         [SetUp]
         public void SetUp()
         {
-            _factory = EditorUtil.FactoryService.vimBufferFactory;
-            _vim = EditorUtil.FactoryService.vim;
+            _factory = EditorUtil.FactoryService.VimBufferFactory;
+            _vim = EditorUtil.FactoryService.Vim;
         }
 
         [TearDown]

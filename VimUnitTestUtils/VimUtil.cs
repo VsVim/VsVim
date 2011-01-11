@@ -27,7 +27,7 @@ namespace Vim.UnitTest
             IFoldManager foldManager = null)
         {
             var editorOperations = EditorUtil.GetOperations(textView);
-            var editorOptions = EditorUtil.FactoryService.editorOptionsFactory.GetOptions(textView);
+            var editorOptions = EditorUtil.FactoryService.EditorOptionsFactory.GetOptions(textView);
             var jumpList = new JumpList(new TrackingLineColumnService());
             var keyMap = new KeyMap();
             foldManager = foldManager ?? new FoldManager(textView.TextBuffer);
@@ -49,7 +49,7 @@ namespace Vim.UnitTest
                 outlining != null ? FSharpOption.Create(outlining) : FSharpOption<IOutliningManager>.None,
                 CreateRegisterMap(clipboardDevice),
                 searchService,
-                EditorUtil.FactoryService.smartIndentationService,
+                EditorUtil.FactoryService.SmartIndentationService,
                 statusUtil,
                 textView,
                 undoRedoOperations,
@@ -76,7 +76,7 @@ namespace Vim.UnitTest
 
         internal static ISearchService CreateSearchService(IVimGlobalSettings settings)
         {
-            return new SearchService(EditorUtil.FactoryService.textSearchService, settings);
+            return new SearchService(EditorUtil.FactoryService.TextSearchService, settings);
         }
 
         internal static Command CreateSimpleCommand(string name)
@@ -105,7 +105,7 @@ namespace Vim.UnitTest
 
         internal static ITextStructureNavigator CreateTextStructureNavigator(ITextBuffer textBuffer)
         {
-            return EditorUtil.FactoryService.textStructureNavigatorSelectorService.GetTextStructureNavigator(textBuffer);
+            return EditorUtil.FactoryService.TextStructureNavigatorSelectorService.GetTextStructureNavigator(textBuffer);
         }
 
         internal static Command CreateLongCommand(string name, Func<FSharpOption<int>, Register, LongCommandResult> func, CommandFlags flags = CommandFlags.None)
@@ -297,7 +297,7 @@ namespace Vim.UnitTest
             IOutliningManager outliningManager = null,
             IStatusUtil statusUtil = null)
         {
-            search = search ?? new SearchService(EditorUtil.FactoryService.textSearchService, settings.GlobalSettings);
+            search = search ?? new SearchService(EditorUtil.FactoryService.TextSearchService, settings.GlobalSettings);
             statusUtil = statusUtil ?? new StatusUtil();
             var nav = CreateTextStructureNavigator(textView.TextBuffer);
             var operations = CreateCommonOperations(

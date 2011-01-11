@@ -31,7 +31,7 @@ namespace VimCore.UnitTest
             _factory = new MockRepository(MockBehavior.Strict);
             _settings = new Vim.GlobalSettings();
             _markMap = _factory.Create<IMarkMap>(MockBehavior.Strict);
-            _bufferFactory = EditorUtil.FactoryService.vimBufferFactory;
+            _bufferFactory = EditorUtil.FactoryService.VimBufferFactory;
             _keyMap = new KeyMap();
             _changeTracker = _factory.Create<IChangeTracker>(MockBehavior.Strict);
             _host = _factory.Create<IVimHost>(MockBehavior.Strict);

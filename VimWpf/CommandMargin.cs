@@ -11,11 +11,9 @@ namespace Vim.UI.Wpf
 
         private readonly CommandMarginControl _margin = new CommandMarginControl();
         private readonly CommandMarginController _controller;
-        private readonly IVimBuffer _buffer;
 
         public CommandMargin(IVimBuffer buffer, IEnumerable<Lazy<IOptionsProviderFactory>> optionsProviderFactories)
         {
-            _buffer = buffer;
             _margin.StatusLine = "Welcome to Vim";
             _controller = new CommandMarginController(buffer, _margin, optionsProviderFactories);
         }
@@ -32,11 +30,7 @@ namespace Vim.UI.Wpf
 
         public ITextViewMargin GetTextViewMargin(string marginName)
         {
-            if (marginName == Name)
-            {
-                return this;
-            }
-            return null;
+            return marginName == Name ? this : null;
         }
 
         public double MarginSize

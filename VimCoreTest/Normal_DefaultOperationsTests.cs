@@ -58,7 +58,7 @@ namespace VimCore.UnitTest
                 _view = EditorUtil.CreateView(lines);
             }
 
-            var editorOptions = EditorUtil.FactoryService.editorOptionsFactory.GetOptions(_view);
+            var editorOptions = EditorUtil.FactoryService.EditorOptionsFactory.GetOptions(_view);
             baseNav = baseNav ?? (new Mock<ITextStructureNavigator>(MockBehavior.Strict)).Object;
             var nav = TssUtil.CreateTextStructureNavigator(WordKind.NormalWord, baseNav);
             _vimData = new VimData();
@@ -74,7 +74,7 @@ namespace VimCore.UnitTest
             _options.Setup(x => x.GetOptionValue<int>(It.IsAny<EditorOptionKey<int>>())).Throws(new ArgumentException());
             _options.Setup(x => x.IsOptionDefined<int>(It.IsAny<EditorOptionKey<int>>(), false)).Returns(true);
             _jumpList = new Mock<IJumpList>(MockBehavior.Strict);
-            _searchService = new SearchService(EditorUtil.FactoryService.textSearchService, _globalSettings.Object);
+            _searchService = new SearchService(EditorUtil.FactoryService.TextSearchService, _globalSettings.Object);
             _statusUtil = new Mock<IStatusUtil>(MockBehavior.Strict);
             _outlining = new Mock<IOutliningManager>(MockBehavior.Strict);
             _undoRedoOperations = new Mock<IUndoRedoOperations>(MockBehavior.Strict);
@@ -97,7 +97,7 @@ namespace VimCore.UnitTest
                 navigator: null,
                 foldManager: null,
                 searchService: _searchService,
-                smartIndentationService: EditorUtil.FactoryService.smartIndentationService);
+                smartIndentationService: EditorUtil.FactoryService.SmartIndentationService);
 
             _operationsRaw = new DefaultOperations(data);
             _operations = _operationsRaw;

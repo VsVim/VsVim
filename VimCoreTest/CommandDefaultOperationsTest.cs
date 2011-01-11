@@ -55,7 +55,7 @@ namespace VimCore.UnitTest
             _outlining = _factory.Create<IOutliningManager>();
             _undoRedoOperations = _factory.Create<IUndoRedoOperations>();
             _undoRedoOperations.Setup(x => x.CreateUndoTransaction(It.IsAny<string>())).Returns<string>(name => new UndoTransaction(FSharpOption.Create(EditorUtil.GetUndoHistory(_textView.TextBuffer).CreateTransaction(name))));
-            _searchService = new SearchService(EditorUtil.FactoryService.textSearchService, _globalSettings.Object);
+            _searchService = new SearchService(EditorUtil.FactoryService.TextSearchService, _globalSettings.Object);
 
             var data = new OperationsData(
                 vimData: new VimData(),
@@ -73,7 +73,7 @@ namespace VimCore.UnitTest
                 foldManager: null,
                 registerMap: _registerMap.Object,
                 searchService: _searchService,
-                smartIndentationService: EditorUtil.FactoryService.smartIndentationService);
+                smartIndentationService: EditorUtil.FactoryService.SmartIndentationService);
             _operationsRaw = new DefaultOperations(data);
             _operations = _operationsRaw;
         }

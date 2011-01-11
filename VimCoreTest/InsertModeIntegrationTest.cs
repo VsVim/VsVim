@@ -17,7 +17,7 @@ namespace VimCore.UnitTest
             var tuple = EditorUtil.CreateViewAndOperations(lines);
             _textView = tuple.Item1;
             var service = EditorUtil.FactoryService;
-            _buffer = service.vim.CreateBuffer(_textView);
+            _buffer = service.Vim.CreateBuffer(_textView);
             _buffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
         }
 

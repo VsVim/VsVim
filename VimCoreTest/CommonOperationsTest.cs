@@ -64,7 +64,7 @@ namespace VimCore.UnitTest
             _undoRedoOperations = _factory.Create<IUndoRedoOperations>();
             _undoRedoOperations.Setup(x => x.CreateUndoTransaction(It.IsAny<string>())).Returns<string>(name => new UndoTransaction(FSharpOption.Create(EditorUtil.GetUndoHistory(_textView.TextBuffer).CreateTransaction(name))));
             _smartIndent = _factory.Create<ISmartIndentationService>();
-            _searchService = new SearchService(EditorUtil.FactoryService.textSearchService, _globalSettings.Object);
+            _searchService = new SearchService(EditorUtil.FactoryService.TextSearchService, _globalSettings.Object);
 
             var data = new OperationsData(
                 vimData: _vimData,
@@ -1105,7 +1105,7 @@ namespace VimCore.UnitTest
         {
             Create("foo", "bar", "baz", "jaz");
             _textView.MoveCaretTo(1);
-            var span = _operations.DeleteLines(3000);
+            _operations.DeleteLines(3000);
             Assert.AreEqual(String.Empty, _textView.TextSnapshot.GetLineRange(0).GetText());
         }
 

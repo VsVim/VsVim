@@ -17,13 +17,13 @@ namespace VimCore.UnitTest
             var tuple = EditorUtil.CreateViewAndOperations(lines);
             _textView = tuple.Item1;
             var service = EditorUtil.FactoryService;
-            _buffer = service.vim.CreateBuffer(_textView);
+            _buffer = service.Vim.CreateBuffer(_textView);
         }
 
         [TearDown]
         public void TearDown()
         {
-            EditorUtil.FactoryService.vim.KeyMap.ClearAll();
+            EditorUtil.FactoryService.Vim.KeyMap.ClearAll();
             _buffer.Close();
         }
 
