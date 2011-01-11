@@ -30,6 +30,7 @@ namespace VimCore.UnitTest
         private Mock<IOutliningManager> _outlining;
         private Mock<IUndoRedoOperations> _undoRedoOperations;
         private Mock<IStatusUtil> _statusUtil;
+        private Mock<ISmartIndentationService> _smartIndent;
         private ISearchService _searchService;
         private IRegisterMap _registerMap;
         private IVimData _vimData;
@@ -49,19 +50,20 @@ namespace VimCore.UnitTest
             _editorOpts = _factory.Create<IEditorOperations>();
             _editorOpts.Setup(x => x.AddAfterTextBufferChangePrimitive());
             _editorOpts.Setup(x => x.AddBeforeTextBufferChangePrimitive());
-            _settings = _factory.Create<IVimLocalSettings>();
-            _settings.SetupGet(x => x.AutoIndent).Returns(false);
             _globalSettings = _factory.Create<IVimGlobalSettings>();
             _globalSettings.SetupGet(x => x.Magic).Returns(true);
             _globalSettings.SetupGet(x => x.SmartCase).Returns(false);
             _globalSettings.SetupGet(x => x.IgnoreCase).Returns(true);
+            _settings = MockObjectFactory.CreateLocalSettings(_globalSettings.Object, _factory);
+            _settings.SetupGet(x => x.AutoIndent).Returns(false);
+            _settings.SetupGet(x => x.GlobalSettings).Returns(_globalSettings.Object);
+            _settings.SetupGet(x => x.UseEditorIndent).Returns(false);
             _outlining = _factory.Create<IOutliningManager>();
             _globalSettings.SetupGet(x => x.ShiftWidth).Returns(2);
             _statusUtil = _factory.Create<IStatusUtil>();
-            _settings.SetupGet(x => x.GlobalSettings).Returns(_globalSettings.Object);
-            _settings.SetupGet(x => x.UseEditorIndent).Returns(false);
             _undoRedoOperations = _factory.Create<IUndoRedoOperations>();
             _undoRedoOperations.Setup(x => x.CreateUndoTransaction(It.IsAny<string>())).Returns<string>(name => new UndoTransaction(FSharpOption.Create(EditorUtil.GetUndoHistory(_textView.TextBuffer).CreateTransaction(name))));
+            _smartIndent = _factory.Create<ISmartIndentationService>();
             _searchService = new SearchService(EditorUtil.FactoryService.textSearchService, _globalSettings.Object);
 
             var data = new OperationsData(
@@ -80,7 +82,7 @@ namespace VimCore.UnitTest
                 statusUtil: _statusUtil.Object,
                 foldManager: null,
                 searchService: _searchService,
-                smartIndentationService:  EditorUtil.FactoryService.smartIndentationService);
+                smartIndentationService: _smartIndent.Object);
 
             _operationsRaw = new CommonOperations(data);
             _operations = _operationsRaw;
@@ -2220,6 +2222,27 @@ namespace VimCore.UnitTest
             Assert.AreEqual(0, line.LineBreakLength);
             Assert.AreEqual("baz", line.GetText());
             Assert.AreEqual("baz", line.GetTextIncludingLineBreak());
+        }
+
+        [Test]
+        public void InsertLineBelow_PreferEditorIndent()
+        {
+            Create("cat", "dog");
+            _settings.SetupGet(x => x.UseEditorIndent).Returns(true);
+            _smartIndent.Setup(x => x.GetDesiredIndentation(_textView, It.IsAny<ITextSnapshotLine>())).Returns(8);
+            _operations.InsertLineBelow();
+            Assert.AreEqual(8, _textView.Caret.Position.VirtualSpaces);
+        }
+
+        [Test]
+        public void InsertLineBelow_RevertToVimIndentIfEditorIndentFails()
+        {
+            Create("  cat", "  dog");
+            _settings.SetupGet(x => x.UseEditorIndent).Returns(true);
+            _settings.SetupGet(x => x.AutoIndent).Returns(true);
+            _smartIndent.Setup(x => x.GetDesiredIndentation(_textView, It.IsAny<ITextSnapshotLine>())).Returns((int?) null);
+            _operations.InsertLineBelow();
+            Assert.AreEqual(2, _textView.Caret.Position.VirtualSpaces);
         }
 
         [Test]

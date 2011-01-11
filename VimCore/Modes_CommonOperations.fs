@@ -415,17 +415,23 @@ type internal CommonOperations ( _data : OperationsData ) =
             func()
 
     member x.IndentForNewLine oldLine (newLine : ITextSnapshotLine) =
+        let doVimIndent() = 
+            if _settings.AutoIndent then
+                let indent = oldLine |> SnapshotLineUtil.GetIndent |> SnapshotPointUtil.GetColumn
+                let point = new VirtualSnapshotPoint(newLine, indent)
+                TextViewUtil.MoveCaretToVirtualPoint _textView point |> ignore 
+            else
+                TextViewUtil.MoveCaretToPoint _textView newLine.Start |> ignore
+
         if _settings.UseEditorIndent then
             let indent = _smartIndentationServtice.GetDesiredIndentation(_textView, newLine)
             if indent.HasValue then 
                 let point = new VirtualSnapshotPoint(newLine, indent.Value)
                 TextViewUtil.MoveCaretToVirtualPoint _textView point |> ignore
-        elif _settings.AutoIndent then
-            let indent = oldLine |> SnapshotLineUtil.GetIndent |> SnapshotPointUtil.GetColumn
-            let point = new VirtualSnapshotPoint(newLine, indent)
-            TextViewUtil.MoveCaretToVirtualPoint _textView point |> ignore 
-        else
-            TextViewUtil.MoveCaretToPoint _textView newLine.Start |> ignore
+            else
+                doVimIndent()
+        else 
+            doVimIndent()
 
     interface ICommonOperations with
         member x.TextView = _textView 
