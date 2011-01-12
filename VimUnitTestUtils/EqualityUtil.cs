@@ -2,14 +2,13 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using System.Reflection;
 using NUnit.Framework;
  
 namespace Vim.UnitTest
 {
     public class EqualityUnit<T>
     {
-        private static ReadOnlyCollection<T> EmptyCollection = new ReadOnlyCollection<T>(new T[] { });
+        private static readonly ReadOnlyCollection<T> EmptyCollection = new ReadOnlyCollection<T>(new T[] { });
  
         public readonly T Value;
         public readonly ReadOnlyCollection<T> EqualValues;
