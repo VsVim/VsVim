@@ -394,7 +394,7 @@ type internal CommonOperations ( _data : OperationsData ) =
                             let number = caretPoint |> SnapshotPointUtil.GetContainingLine |> SnapshotLineUtil.GetLineNumber 
                             match putKind with
                             | PutKind.After -> SnapshotUtil.GetLineOrLast _textBuffer.CurrentSnapshot (number + 1)
-                            | PutKind.Before -> SnapshotUtil.GetLineOrFirst _textBuffer.CurrentSnapshot (number - 1)
+                            | PutKind.Before -> SnapshotUtil.GetLineOrFirst _textBuffer.CurrentSnapshot number
                         line |> SnapshotLineUtil.GetIndent |> SnapshotPointUtil.GetPosition
 
             let position = min _textBuffer.CurrentSnapshot.Length position

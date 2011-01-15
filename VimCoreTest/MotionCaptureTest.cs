@@ -18,7 +18,6 @@ namespace VimCore.UnitTest
     public class MotionCaptureTest
     {
         private MockRepository _factory;
-        private Mock<IMotionCaptureGlobalData> _data;
         private Mock<ITextViewMotionUtil> _util;
         private Mock<IVimHost> _host;
         private Mock<IJumpList> _jumpList;
@@ -27,6 +26,7 @@ namespace VimCore.UnitTest
         private IIncrementalSearch _incrementalSearch;
         private MotionCapture _captureRaw;
         private IMotionCapture _capture;
+        private IVimData _vimData;
 
         [SetUp]
         public void SetUp()
@@ -37,7 +37,7 @@ namespace VimCore.UnitTest
             _factory = new MockRepository(MockBehavior.Strict);
             _util = _factory.Create<ITextViewMotionUtil>();
             _host = _factory.Create<IVimHost>();
-            _data = _factory.Create<IMotionCaptureGlobalData>(MockBehavior.Loose);
+            _vimData = new VimData();
             _jumpList = _factory.Create<IJumpList>();
             _captureRaw = new MotionCapture(
                 _host.Object,
@@ -45,7 +45,7 @@ namespace VimCore.UnitTest
                 _util.Object,
                 _incrementalSearch,
                 _jumpList.Object,
-                _data.Object,
+                _vimData,
                 _localSettings);
             _capture = _captureRaw;
         }
@@ -74,12 +74,12 @@ namespace VimCore.UnitTest
             return res;
         }
 
-        internal void ProcessComplete(string input, int? count = null)
+        private void ProcessComplete(string input, int? count = null)
         {
             Assert.IsTrue(Process(input, count).IsComplete);
         }
 
-        internal MotionData CreateMotionData()
+        internal static MotionData CreateMotionData()
         {
             var point = MockObjectFactory.CreateSnapshotPoint(42);
             return new MotionData(
@@ -88,6 +88,11 @@ namespace VimCore.UnitTest
                 MotionKind.Inclusive,
                 OperationKind.CharacterWise,
                 FSharpOption.Create(42));
+        }
+
+        internal static FSharpOption<MotionData> CreateMotionDataSome()
+        {
+            return FSharpOption.Create(CreateMotionData());
         }
 
         [Test]
@@ -287,7 +292,7 @@ namespace VimCore.UnitTest
         public void ForwardChar1()
         {
             _util
-                .Setup(x => x.ForwardChar('c', 1))
+                .Setup(x => x.CharSearch('c', 1, CharSearch.ToChar, Direction.Forward))
                 .Returns(FSharpOption.Create(CreateMotionData()))
                 .Verifiable();
             ProcessComplete("fc", 1);
@@ -298,7 +303,7 @@ namespace VimCore.UnitTest
         public void ForwardTillChar1()
         {
             _util
-                .Setup(x => x.ForwardTillChar('c', 1))
+                .Setup(x => x.CharSearch('c', 1, CharSearch.TillChar, Direction.Forward))
                 .Returns(FSharpOption.Create(CreateMotionData()))
                 .Verifiable();
             ProcessComplete("tc", 1);
@@ -309,7 +314,7 @@ namespace VimCore.UnitTest
         public void BackwardCharMotion1()
         {
             _util
-                .Setup(x => x.BackwardChar('c', 1))
+                .Setup(x => x.CharSearch('c', 1, CharSearch.ToChar, Direction.Backward))
                 .Returns(FSharpOption.Create(CreateMotionData()))
                 .Verifiable();
             ProcessComplete("Fc", 1);
@@ -320,7 +325,7 @@ namespace VimCore.UnitTest
         public void BackwardTillCharMotion1()
         {
             _util
-                .Setup(x => x.BackwardTillChar('c', 1))
+                .Setup(x => x.CharSearch('c', 1, CharSearch.TillChar, Direction.Backward))
                 .Returns(FSharpOption.Create(CreateMotionData()))
                 .Verifiable();
             ProcessComplete("Tc", 1);
@@ -460,68 +465,61 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void Motion_lastCharForward1()
+        public void Motion_RepeatLastCharShouldErrorIfNoLastCharSearch()
         {
             _host.Setup(x => x.Beep()).Verifiable();
-            _data.MakeLastCharSearchNone();
+            _vimData.LastCharSearch = FSharpOption<Tuple<CharSearch, char>>.None;
             var res = Process(";", null);
             Assert.IsTrue(res.IsError);
             _factory.Verify();
         }
 
         [Test]
-        public void Motion_lastCharForward2()
+        public void Motion_RepeatLastCharForward()
         {
-            int? count = null;
-            _data.MakeLastCharSearch(
-                c => { count = c; },
-                _ => { throw new Exception(); });
-            var res = Process(";", null);
-            Assert.IsTrue(res.IsError);
-            Assert.AreEqual(1, count.Value);
-        }
-
-        [Test]
-        public void Motion_lastCharForward3()
-        {
-            int? count = null;
-            _data.MakeLastCharSearch(
-                c => { count = c; return CreateMotionData(); },
-                _ => { throw new Exception(); });
-            ProcessComplete("3;");
-            Assert.AreEqual(3, count.Value);
-        }
-
-        [Test]
-        public void Motion_lastCharBackward1()
-        {
-            _host.Setup(x => x.Beep()).Verifiable();
-            _data.MakeLastCharSearchNone();
-            var res = Process(",", null);
-            Assert.IsTrue(res.IsError);
+            _vimData.LastCharSearch = FSharpOption.Create(Tuple.Create(CharSearch.ToChar, 'c'));
+            _util
+                .Setup(x => x.CharSearch('c', 1, CharSearch.ToChar, Direction.Forward))
+                .Returns(CreateMotionDataSome())
+                .Verifiable();
+            Process(";", null);
             _factory.Verify();
         }
 
         [Test]
-        public void Motion_lastCharBackward2()
+        public void Motion_RepeatLastCharForwardWithCount()
         {
-            int? count = null;
-            _data.MakeLastCharSearch(
-                _ => { throw new Exception(); },
-                c => { count = c; return CreateMotionData(); });
-            ProcessComplete(",");
-            Assert.AreEqual(1, count.Value);
+            _vimData.LastCharSearch = FSharpOption.Create(Tuple.Create(CharSearch.ToChar, 'c'));
+            _util
+                .Setup(x => x.CharSearch('c', 3, CharSearch.ToChar, Direction.Forward))
+                .Returns(CreateMotionDataSome())
+                .Verifiable();
+            Process("3;", null);
+            _factory.Verify();
         }
 
         [Test]
-        public void Motion_lastCharBackward3()
+        public void Motion_RepeatLastCharBackward()
         {
-            int? count = null;
-            _data.MakeLastCharSearch(
-                _ => { throw new Exception(); },
-                c => { count = c; return CreateMotionData(); });
-            ProcessComplete("3,");
-            Assert.AreEqual(3, count.Value);
+            _vimData.LastCharSearch = FSharpOption.Create(Tuple.Create(CharSearch.ToChar, 'c'));
+            _util
+                .Setup(x => x.CharSearch('c', 1, CharSearch.ToChar, Direction.Backward))
+                .Returns(CreateMotionDataSome())
+                .Verifiable();
+            Process(",", null);
+            _factory.Verify();
+        }
+
+        [Test]
+        public void Motion_RepeatLastCharBackwardWithCount()
+        {
+            _vimData.LastCharSearch = FSharpOption.Create(Tuple.Create(CharSearch.ToChar, 'c'));
+            _util
+                .Setup(x => x.CharSearch('c', 3, CharSearch.ToChar, Direction.Backward))
+                .Returns(CreateMotionDataSome())
+                .Verifiable();
+            Process("3,", null);
+            _factory.Verify();
         }
 
         [Test]

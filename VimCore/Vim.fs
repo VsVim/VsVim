@@ -32,6 +32,7 @@ type internal VimData() =
 
     let mutable _lastSubstituteData : SubstituteData option = None
     let mutable _lastSearchData = { Text = SearchText.Pattern(StringUtil.empty); Kind = SearchKind.ForwardWithWrap; Options = SearchOptions.None }
+    let mutable _lastCharSearch : (CharSearch * char) option = None
     let _lastSearchChanged = Event<SearchData>()
 
     interface IVimData with 
@@ -43,6 +44,9 @@ type internal VimData() =
             and set value = 
                 _lastSearchData <- value
                 _lastSearchChanged.Trigger value
+        member x.LastCharSearch 
+            with get () = _lastCharSearch
+            and set value = _lastCharSearch <- value
         [<CLIEvent>]
         member x.LastSearchDataChanged = _lastSearchChanged.Publish
 
@@ -64,7 +68,6 @@ type internal VimBufferFactory
         _undoManagerProvider : ITextBufferUndoManagerProvider,
         _foldManagerFactory : IFoldManagerFactory ) = 
 
-    let _motionCaptureGlobalData = MotionCaptureGlobalData() :> IMotionCaptureGlobalData
     let _visualSpanCalculator = VisualSpanCalculator() :> IVisualSpanCalculator
 
     member x.CreateBuffer (vim:IVim) view = 
@@ -115,7 +118,7 @@ type internal VimBufferFactory
                 vim.SearchService, 
                 statusUtil,
                 vim.VimData) :> IIncrementalSearch
-        let capture = MotionCapture(vim.VimHost, view, motionUtil, incrementalSearch, jumpList, _motionCaptureGlobalData, localSettings) :> IMotionCapture
+        let capture = MotionCapture(vim.VimHost, view, motionUtil, incrementalSearch, jumpList, vim.VimData, localSettings) :> IMotionCapture
         let bufferRaw = 
             VimBuffer( 
                 vim,

@@ -104,6 +104,19 @@ type MotionArgument = {
         let motionCount = x.MotionCount |> OptionUtil.getOrDefault 1
         operatorCount * motionCount
 
+/// Char searches are interesting because they are definide in one IVimBuffer
+/// and can be repeated in any IVimBuffer.  Use a discriminated union here 
+/// to name the motion without tieing it to a given IVimBuffer or ITextView 
+/// which would increase the chance of an accidental memory leak
+[<RequireQualifiedAccess>]
+type CharSearch  =
+
+    /// Used for the 'f' and 'F' motion.  To the specified char 
+    | ToChar
+
+    /// Used for the 't' and 'T' motion.  Till the specified char
+    | TillChar
+
 /// Responsible for implementing all of the Motion information
 type ITextViewMotionUtil = 
 
@@ -115,21 +128,10 @@ type ITextViewMotionUtil =
 
     /// Right "count" characters
     abstract CharRight: int -> MotionData option
+
+    /// Run the CharSearch
+    abstract CharSearch : c : char -> count : int -> CharSearch -> Direction -> MotionData option
     
-    /// Forward to the next occurance of the specified char on the line
-    abstract ForwardChar : char -> int -> MotionData option
-
-    /// Handle the 't' motion.  Forward till the next occurrence of the specified character on
-    /// this line
-    abstract ForwardTillChar : char -> int -> MotionData option
-
-    /// Handle the 'F' motion.  Backward to the previous occurrence of the specified character
-    /// on this line
-    abstract BackwardChar : char -> int -> MotionData option
-
-    /// Handle the 'T' motion.  Backward till to the previous occurrence of the specified character
-    abstract BackwardTillChar : char -> int -> MotionData option
-        
     /// Implement the w/W motion
     abstract WordForward : WordKind -> int -> MotionData
 
@@ -225,6 +227,7 @@ type ITextViewMotionUtil =
 
     /// The quoted string excluding the quotes
     abstract QuotedStringContents : unit -> MotionData option
+
 
 type ModeKind = 
     | Normal = 1
@@ -599,6 +602,7 @@ type MotionFlags =
     /// on Complex motions such as / and ? 
     | HandlesEscape = 0x4
 
+/// Motion function which is tied to a given IVimBuffer
 type MotionFunction = MotionArgument -> MotionData option
 
 type ComplexMotionResult =
@@ -671,14 +675,6 @@ type MotionResult =
 
     | Error of string
     | Cancelled
-
-/// Holds the data which is global to all IMotionCapture instances
-type IMotionCaptureGlobalData =
-
-    /// Motion function used with the last f, F, t or T motion.  The 
-    // first item in the tuple is the forward version and the second item
-    // is the backwards version
-    abstract LastCharSearch : (MotionFunction * MotionFunction) option with get,set
 
 /// Responsible for capturing motions on a given ITextView
 type IMotionCapture =
@@ -1056,6 +1052,11 @@ type IVimData =
 
     /// Last pattern searched for in any buffer
     abstract LastSearchData : SearchData with get,set
+
+    /// Motion function used with the last f, F, t or T motion.  The 
+    /// first item in the tuple is the forward version and the second item
+    /// is the backwards version
+    abstract LastCharSearch : (CharSearch * char) option with get, set
 
     /// Raised when the LastSearch value changes
     [<CLIEvent>]

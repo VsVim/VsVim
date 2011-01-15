@@ -741,6 +741,18 @@ namespace VimCore.UnitTest
         }
 
         [Test]
+        public void Handle_P_LineWiseInMiddleOfBuffer()
+        {
+            CreateBuffer("dog", "cat", "bear", "tree");
+            _textView.MoveCaretToLine(2);
+            _buffer.RegisterMap.GetRegister(RegisterName.Unnamed).UpdateValue("  pig\n", OperationKind.LineWise);
+            _buffer.Process("P");
+            Assert.AreEqual("  pig", _textView.GetLine(2).GetText());
+            Assert.AreEqual("bear", _textView.GetLine(3).GetText());
+            Assert.AreEqual(_textView.GetLine(2).Start.Add(2), _textView.GetCaretPoint());
+        }
+
+        [Test]
         public void Handle_P_CharacterWiseBlockStringOnExistingLines()
         {
             CreateBuffer("dog", "cat", "bear", "tree");

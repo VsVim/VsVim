@@ -18,6 +18,7 @@ namespace VimCore.UnitTest
         private MockRepository _factory;
         private Mock<IVimHost> _host;
         private Mock<IStatusUtil> _statusUtil;
+        private IVimData _vimData;
         private IRegisterMap _registerMap;
         private ITextView _textView;
         private CommandRunner _runnerRaw;
@@ -30,13 +31,14 @@ namespace VimCore.UnitTest
             _host = _factory.Create<IVimHost>();
             _statusUtil = _factory.Create<IStatusUtil>();
             _registerMap = VimUtil.CreateRegisterMap(MockObjectFactory.CreateClipboardDevice(_factory).Object);
+            _vimData = new VimData();
             var capture = new MotionCapture(
                 _host.Object,
                 _textView,
                 new TextViewMotionUtil(_textView, new Vim.LocalSettings(new Vim.GlobalSettings(), _textView)),
                 MockObjectFactory.CreateIncrementalSearch(factory: _factory).Object,
                 _factory.Create<IJumpList>().Object,
-                new MotionCaptureGlobalData(),
+                _vimData,
                 new LocalSettings(new Vim.GlobalSettings(), _textView));
             _runnerRaw = new CommandRunner(
                 _textView,

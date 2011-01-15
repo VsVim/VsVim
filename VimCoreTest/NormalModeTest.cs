@@ -95,7 +95,7 @@ namespace VimCore.UnitTest
                 motionUtil,
                 _incrementalSearch.Object,
                 _jumpList.Object,
-                new MotionCaptureGlobalData(),
+                new VimData(),
                 new LocalSettings(new GlobalSettings(), _textView));
             var runner = new CommandRunner(_textView, _map, capture, _statusUtil.Object);
             _modeRaw = new NormalMode(

@@ -4,14 +4,6 @@ namespace Vim
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor;
 
-type internal MotionCaptureGlobalData() =
-    let mutable _lastCharSearch : (MotionFunction * MotionFunction) option = None
-
-    interface IMotionCaptureGlobalData with
-        member x.LastCharSearch 
-            with get() = _lastCharSearch
-            and set value = _lastCharSearch <- value
-
 type internal MotionCapture 
     (
         _host : IVimHost,
@@ -19,7 +11,7 @@ type internal MotionCapture
         _util :ITextViewMotionUtil,
         _incrementalSearch : IIncrementalSearch,
         _jumpList : IJumpList,
-        _globalData : IMotionCaptureGlobalData,
+        _vimData : IVimData,
         _settings : IVimLocalSettings) = 
 
     let _search = _incrementalSearch.SearchService
@@ -27,7 +19,7 @@ type internal MotionCapture
     /// Handles the f,F,t and T motions.  These are special in that they use the language 
     /// mapping mode (:help language-mapping) for their char input.  Most motions get handled
     /// via operator-pending
-    let CharSearch func backwardFunc =
+    let RunCharSearch charSearch direction = 
 
         let waitCharThen func =
             let inner (ki:KeyInput) =
@@ -35,13 +27,21 @@ type internal MotionCapture
                 else ComplexMotionResult.Finished ((fun arg -> func ki.Char arg), None)
             ComplexMotionResult.NeedMoreInput (Some KeyRemapMode.Language, inner)
 
-        let inner c (arg:MotionArgument) = 
-            let result = func c arg.Count
+        let inner c (arg : MotionArgument) = 
+            let result = _util.CharSearch c arg.Count charSearch direction
             if Option.isSome result then
-                let makeMotion func (arg:MotionArgument) = func c arg.Count
-                _globalData.LastCharSearch <- Some (makeMotion func, makeMotion backwardFunc)
+                _vimData.LastCharSearch <- Some (charSearch, c)
             result
         waitCharThen inner 
+
+    /// Repeat the last f,F,t or T motion.  
+    let RepeatLastCharSearch direction (arg : MotionArgument) =
+        match _vimData.LastCharSearch with
+        | None -> 
+            _host.Beep()
+            None
+        | Some(charSearch, c) ->
+            _util.CharSearch c arg.Count charSearch direction
 
     /// Handles incremental searches (/ and ?)
     let IncrementalSearch direction =
@@ -103,18 +103,6 @@ type internal MotionCapture
             | SearchNeedMore ->  ComplexMotionResult.NeedMoreInput (Some KeyRemapMode.Command, inner)
         _incrementalSearch.Begin kind
         ComplexMotionResult.NeedMoreInput (Some KeyRemapMode.Command, inner)
-
-    /// Repeat the last f,F,t or T motion.  
-    let RepeatLastCharSearch direction arg =
-        match _globalData.LastCharSearch with
-        | None -> 
-            _host.Beep()
-            None
-        | Some(forwardFunc,backwardFunc) ->
-            let arg = {arg with MotionContext=MotionContext.AfterOperator}
-            match direction with
-            | Direction.Forward -> forwardFunc arg
-            | Direction.Backward -> backwardFunc arg
 
     let SimpleMotions =  
         let motionSeq : (string * MotionFlags * MotionFunction ) seq = 
@@ -364,19 +352,19 @@ type internal MotionCapture
                 yield(
                     "f", 
                     MotionFlags.CursorMovement,
-                    fun () -> CharSearch _util.ForwardChar _util.BackwardChar)
+                    fun () -> RunCharSearch CharSearch.ToChar Direction.Forward)
                 yield(
                     "t", 
                     MotionFlags.CursorMovement,
-                    fun ()-> CharSearch _util.ForwardTillChar _util.BackwardTillChar)
+                    fun ()-> RunCharSearch CharSearch.TillChar Direction.Forward)
                 yield(
                     "F", 
                     MotionFlags.CursorMovement,
-                    fun () -> CharSearch _util.BackwardChar _util.ForwardChar)
+                    fun () -> RunCharSearch CharSearch.ToChar Direction.Backward)
                 yield(
                     "T", 
                     MotionFlags.CursorMovement,
-                    fun () -> CharSearch _util.BackwardTillChar _util.ForwardTillChar)
+                    fun () -> RunCharSearch CharSearch.TillChar Direction.Backward)
                 yield(
                     "/",
                     MotionFlags.CursorMovement ||| MotionFlags.HandlesEscape,

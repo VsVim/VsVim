@@ -334,6 +334,11 @@ namespace Vim.UnitTest
             return textView.Caret.MoveTo(new SnapshotPoint(textView.TextSnapshot, position));
         }
 
+        public static CaretPosition MoveCaretToLine(this ITextView textView, int lineNumber)
+        {
+            return MoveCaretTo(textView, textView.GetLine(lineNumber).Start.Position);
+        }
+
         public static void SelectAndUpdateCaret(this ITextView textView, SnapshotSpan span, TextSelectionMode mode = TextSelectionMode.Stream)
         {
             textView.Selection.Mode = mode;

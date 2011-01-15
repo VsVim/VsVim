@@ -219,10 +219,12 @@ type internal TextViewMotionUtil
 
     interface ITextViewMotionUtil with
         member x.TextView = _textView
-        member x.ForwardChar c count = x.ForwardCharMotionCore c count TssUtil.FindNextOccurranceOfCharOnLine
-        member x.ForwardTillChar c count = x.ForwardCharMotionCore c count TssUtil.FindTillNextOccurranceOfCharOnLine
-        member x.BackwardChar c count = x.BackwardCharMotionCore c count TssUtil.FindPreviousOccurranceOfCharOnLine 
-        member x.BackwardTillChar c count = x.BackwardCharMotionCore c count TssUtil.FindTillPreviousOccurranceOfCharOnLine
+        member x.CharSearch c count charSearch direction = 
+            match charSearch, direction with
+            | CharSearch.ToChar, Direction.Forward -> x.ForwardCharMotionCore c count TssUtil.FindNextOccurranceOfCharOnLine
+            | CharSearch.TillChar, Direction.Forward -> x.ForwardCharMotionCore c count TssUtil.FindTillNextOccurranceOfCharOnLine
+            | CharSearch.ToChar, Direction.Backward -> x.BackwardCharMotionCore c count TssUtil.FindPreviousOccurranceOfCharOnLine 
+            | CharSearch.TillChar, Direction.Backward -> x.BackwardCharMotionCore c count TssUtil.FindTillPreviousOccurranceOfCharOnLine
         member x.WordForward kind count = 
             let start = x.StartPoint
             let endPoint = TssUtil.FindNextWordStart start count kind  
