@@ -26,6 +26,7 @@ namespace VimCore.UnitTest
         private VisualMode _modeRaw;
         private IMode _mode;
         private IRegisterMap _map;
+        private IMarkMap _markMap;
         private Mock<IIncrementalSearch> _incrementalSearch;
         private Mock<ICommonOperations> _operations;
         private Mock<ISelectionTracker> _tracker;
@@ -48,6 +49,7 @@ namespace VimCore.UnitTest
             _selection = _textView.Selection;
             _factory = new MockRepository(MockBehavior.Strict);
             _map = VimUtil.CreateRegisterMap(MockObjectFactory.CreateClipboardDevice(_factory).Object);
+            _markMap = new MarkMap(new TrackingLineColumnService());
             _tracker = _factory.Create<ISelectionTracker>();
             _tracker.Setup(x => x.Start());
             _tracker.Setup(x => x.ResetCaret());
@@ -73,7 +75,10 @@ namespace VimCore.UnitTest
             var capture = new MotionCapture(
                 _host.Object,
                 _textView,
-                new TextViewMotionUtil(_textView, new Vim.LocalSettings(_bufferData.Object.Settings.GlobalSettings, _textView)),
+                new TextViewMotionUtil(
+                    _textView,
+                    _markMap,
+                    new Vim.LocalSettings(_bufferData.Object.Settings.GlobalSettings, _textView)),
                 _incrementalSearch.Object,
                 _jumpList.Object,
                 new VimData(),

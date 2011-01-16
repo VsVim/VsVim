@@ -27,6 +27,7 @@ namespace VimCore.UnitTest
         private IVimGlobalSettings _settings;
         private TextViewMotionUtil _utilRaw;
         private ITextViewMotionUtil _util;
+        private IMarkMap _markMap;
 
         [TearDown]
         public void TearDown()
@@ -53,7 +54,11 @@ namespace VimCore.UnitTest
             _buffer.Changed += delegate { _snapshot = _buffer.CurrentSnapshot; };
             _settings = new Vim.GlobalSettings();
             _localSettings = new LocalSettings(_settings, _textView);
-            _utilRaw = new TextViewMotionUtil(_textView, _localSettings);
+            _markMap = new MarkMap(new TrackingLineColumnService());
+            _utilRaw = new TextViewMotionUtil(
+                _textView,
+                _markMap,
+                _localSettings);
             _util = _utilRaw;
         }
 
@@ -1317,6 +1322,70 @@ namespace VimCore.UnitTest
             _textView.MoveCaretTo(_snapshot.Length);
             var data = _util.SentenceForward(1);
             AssertData(data, new SnapshotSpan(_snapshot, _snapshot.Length, 0));
+        }
+
+        [Test]
+        public void Mark_Forward()
+        {
+            Create("the dog chased the ball");
+            _markMap.SetMark(_textView.GetPoint(3), 'a');
+            var data = _util.Mark('a').Value;
+            Assert.AreEqual("the", data.Span.GetText());
+            Assert.AreEqual(OperationKind.CharacterWise, data.OperationKind);
+            Assert.AreEqual(MotionKind.Exclusive, data.MotionKind);
+            Assert.IsTrue(data.IsForward);
+        }
+
+        [Test]
+        public void Mark_DoesNotExist()
+        {
+            Create("the dog chased the ball");
+            Assert.IsTrue(_util.Mark('a').IsNone());
+        }
+
+        [Test]
+        public void Mark_Backward()
+        {
+            Create("the dog chased the ball");
+            _textView.MoveCaretTo(3);
+            _markMap.SetMark(_textView.GetPoint(0), 'a');
+            var data = _util.Mark('a').Value;
+            Assert.AreEqual("the", data.Span.GetText());
+            Assert.AreEqual(OperationKind.CharacterWise, data.OperationKind);
+            Assert.AreEqual(MotionKind.Exclusive, data.MotionKind);
+            Assert.IsFalse(data.IsForward);
+        }
+
+        [Test]
+        public void MarkLine_DoesNotExist()
+        {
+            Create("the dog chased the ball");
+            Assert.IsTrue(_util.MarkLine('a').IsNone());
+        }
+
+        [Test]
+        public void MarkLine_Forward()
+        {
+            Create("cat", "dog", "pig", "tree");
+            _markMap.SetMark(_textView.GetLine(1).Start.Add(1), 'a');
+            var data = _util.MarkLine('a').Value;
+            Assert.AreEqual(_textView.GetLineRange(0, 1).ExtentIncludingLineBreak, data.Span);
+            Assert.IsTrue(data.IsForward);
+            Assert.AreEqual(MotionKind.Inclusive, data.MotionKind);
+            Assert.AreEqual(OperationKind.LineWise, data.OperationKind);
+        }
+
+        [Test]
+        public void MarkLine_Backward()
+        {
+            Create("cat", "dog", "pig", "tree");
+            _textView.MoveCaretTo(_textView.GetLine(1).Start.Add(1));
+            _markMap.SetMark(_textView.GetPoint(0), 'a');
+            var data = _util.MarkLine('a').Value;
+            Assert.AreEqual(_textView.GetLineRange(0, 1).ExtentIncludingLineBreak, data.Span);
+            Assert.IsFalse(data.IsForward);
+            Assert.AreEqual(MotionKind.Inclusive, data.MotionKind);
+            Assert.AreEqual(OperationKind.LineWise, data.OperationKind);
         }
 
     }

@@ -35,7 +35,10 @@ namespace VimCore.UnitTest
             var capture = new MotionCapture(
                 _host.Object,
                 _textView,
-                new TextViewMotionUtil(_textView, new Vim.LocalSettings(new Vim.GlobalSettings(), _textView)),
+                new TextViewMotionUtil(
+                    _textView,
+                    new MarkMap(new TrackingLineColumnService()),
+                    new Vim.LocalSettings(new Vim.GlobalSettings(), _textView)),
                 MockObjectFactory.CreateIncrementalSearch(factory: _factory).Object,
                 _factory.Create<IJumpList>().Object,
                 _vimData,

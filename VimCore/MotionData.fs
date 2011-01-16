@@ -11,7 +11,7 @@ type MotionKind =
 /// Data about a complete motion operation. 
 type MotionData = {
 
-    /// Span of the motion.  
+    /// Span of the motion.
     Span : SnapshotSpan
 
     /// Was the motion forwards towards the end of the buffer

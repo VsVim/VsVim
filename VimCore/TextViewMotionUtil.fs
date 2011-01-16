@@ -19,8 +19,10 @@ type QuotedStringData =  {
 type internal TextViewMotionUtil 
     ( 
         _textView : ITextView,
+        _markMap : IMarkMap,
         _localSettings : IVimLocalSettings ) = 
 
+    let _textBuffer = _textView.TextBuffer
     let _settings = _localSettings.GlobalSettings
 
     /// Caret point in the view
@@ -217,6 +219,43 @@ type internal TextViewMotionUtil
         | Some(data) -> Some data
         | None -> SeqUtil.tryHeadOnly all
 
+    member x.Mark c = 
+        match _markMap.GetLocalMark _textBuffer c with 
+        | None -> 
+            None
+        | Some (virtualPoint) ->
+            let caretPoint = TextViewUtil.GetCaretPoint _textView
+            let startPoint, endPoint = SnapshotPointUtil.OrderAscending caretPoint virtualPoint.Position
+            let span = SnapshotSpan(startPoint, endPoint)
+            {
+                Span = span
+                IsForward = caretPoint = startPoint
+                MotionKind = MotionKind.Exclusive
+                OperationKind = OperationKind.CharacterWise
+                Column = SnapshotPointUtil.GetColumn virtualPoint.Position |> Some } |> Some
+
+    member x.MarkLine c =
+        match _markMap.GetLocalMark _textBuffer c with 
+        | None -> 
+            None
+        | Some (virtualPoint) ->
+            let caretPoint = TextViewUtil.GetCaretPoint _textView
+            let startPoint, endPoint = SnapshotPointUtil.OrderAscending caretPoint virtualPoint.Position
+            let startLine = SnapshotPointUtil.GetContainingLine startPoint
+            let endLine = SnapshotPointUtil.GetContainingLine endPoint
+            let range = SnapshotLineRangeUtil.CreateForLineRange startLine endLine
+            {
+                Span = range.ExtentIncludingLineBreak
+                IsForward = caretPoint = startPoint
+                MotionKind = MotionKind.Inclusive
+                OperationKind = OperationKind.LineWise
+                Column = 
+                    virtualPoint.Position
+                    |> SnapshotPointUtil.GetContainingLine
+                    |> TssUtil.FindFirstNonWhitespaceCharacter
+                    |> SnapshotPointUtil.GetColumn
+                    |> Some } |> Some
+
     interface ITextViewMotionUtil with
         member x.TextView = _textView
         member x.CharSearch c count charSearch direction = 
@@ -225,6 +264,8 @@ type internal TextViewMotionUtil
             | CharSearch.TillChar, Direction.Forward -> x.ForwardCharMotionCore c count TssUtil.FindTillNextOccurranceOfCharOnLine
             | CharSearch.ToChar, Direction.Backward -> x.BackwardCharMotionCore c count TssUtil.FindPreviousOccurranceOfCharOnLine 
             | CharSearch.TillChar, Direction.Backward -> x.BackwardCharMotionCore c count TssUtil.FindTillPreviousOccurranceOfCharOnLine
+        member x.Mark c = x.Mark c
+        member x.MarkLine c = x.MarkLine c
         member x.WordForward kind count = 
             let start = x.StartPoint
             let endPoint = TssUtil.FindNextWordStart start count kind  

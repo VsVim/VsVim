@@ -18,7 +18,7 @@ F#
         if (
         elif (
  - Don't add a space between
-    - Parens in everything but after keywords
+    - Parens in everything but after keywords and discriminated union values
         x.Foo()
  - To Deteremine:
     - Should functions returning an option be prefixed with Try? Example KeyNotationUtil 

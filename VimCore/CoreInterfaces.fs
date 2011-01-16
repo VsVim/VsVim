@@ -131,6 +131,15 @@ type ITextViewMotionUtil =
 
     /// Run the CharSearch
     abstract CharSearch : c : char -> count : int -> CharSearch -> Direction -> MotionData option
+
+    /// Get the motion to the specified mark.  This is typically accessed via
+    /// the ` (backtick) operator and results in an exclusive motion
+    abstract Mark : c : char -> MotionData option
+
+    /// Get the motion to the line of the specified mark.  This is typically
+    /// accessed via the ' (single quote) operator and results in a 
+    /// linewise motion
+    abstract MarkLine : c : char -> MotionData option
     
     /// Implement the w/W motion
     abstract WordForward : WordKind -> int -> MotionData
@@ -589,6 +598,8 @@ type Command =
 [<RequireQualifiedAccess>]
 [<System.Flags>]
 type MotionFlags =
+
+    | None = 0x0
 
     /// This type of motion can be used to move the cursor
     | CursorMovement = 0x1 

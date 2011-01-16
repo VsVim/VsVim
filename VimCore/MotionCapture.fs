@@ -16,23 +16,32 @@ type internal MotionCapture
 
     let _search = _incrementalSearch.SearchService
 
+    let RunWithChar func = 
+        let inner ki =
+            if ki = KeyInputUtil.EscapeKey then ComplexMotionResult.Cancelled
+            else func ki.Char
+        ComplexMotionResult.NeedMoreInput (Some KeyRemapMode.Language, inner)
+
     /// Handles the f,F,t and T motions.  These are special in that they use the language 
     /// mapping mode (:help language-mapping) for their char input.  Most motions get handled
     /// via operator-pending
     let RunCharSearch charSearch direction = 
+        RunWithChar(fun c ->
+            let func (arg : MotionArgument) = 
+                let result = _util.CharSearch c arg.Count charSearch direction
+                if Option.isSome result then
+                    _vimData.LastCharSearch <- Some (charSearch, c)
+                result
+            ComplexMotionResult.Finished (func, None))
 
-        let waitCharThen func =
-            let inner (ki:KeyInput) =
-                if ki = KeyInputUtil.EscapeKey then ComplexMotionResult.Cancelled
-                else ComplexMotionResult.Finished ((fun arg -> func ki.Char arg), None)
-            ComplexMotionResult.NeedMoreInput (Some KeyRemapMode.Language, inner)
+    /// Handles the mark characters
+    let RunMark isSingleQuote = 
+        RunWithChar(fun c -> 
+            let func _ = 
+                if isSingleQuote then _util.MarkLine c
+                else _util.Mark c
+            ComplexMotionResult.Finished (func, None))
 
-        let inner c (arg : MotionArgument) = 
-            let result = _util.CharSearch c arg.Count charSearch direction
-            if Option.isSome result then
-                _vimData.LastCharSearch <- Some (charSearch, c)
-            result
-        waitCharThen inner 
 
     /// Repeat the last f,F,t or T motion.  
     let RepeatLastCharSearch direction (arg : MotionArgument) =
@@ -349,27 +358,35 @@ type internal MotionCapture
     let ComplexMotions = 
         let motionSeq : (string * MotionFlags * ComplexMotionFunction ) seq = 
             seq {
-                yield(
+                yield (
                     "f", 
                     MotionFlags.CursorMovement,
                     fun () -> RunCharSearch CharSearch.ToChar Direction.Forward)
-                yield(
+                yield (
                     "t", 
                     MotionFlags.CursorMovement,
-                    fun ()-> RunCharSearch CharSearch.TillChar Direction.Forward)
-                yield(
+                    fun () -> RunCharSearch CharSearch.TillChar Direction.Forward)
+                yield (
                     "F", 
                     MotionFlags.CursorMovement,
                     fun () -> RunCharSearch CharSearch.ToChar Direction.Backward)
-                yield(
+                yield (
                     "T", 
                     MotionFlags.CursorMovement,
                     fun () -> RunCharSearch CharSearch.TillChar Direction.Backward)
-                yield(
+                yield (
+                    "'",
+                    MotionFlags.None,   // Cursor movement has different semantics than the motion
+                    fun () -> RunMark true)
+                yield (
+                    "`",
+                    MotionFlags.None,   // Cursor movement has different semantics than the motion
+                    fun () -> RunMark false)
+                yield (
                     "/",
                     MotionFlags.CursorMovement ||| MotionFlags.HandlesEscape,
                     fun () -> IncrementalSearch Direction.Forward)
-                yield(
+                yield (
                     "?",
                     MotionFlags.CursorMovement ||| MotionFlags.HandlesEscape,
                     fun () -> IncrementalSearch Direction.Backward)
@@ -450,6 +467,3 @@ type internal MotionCapture
         member x.MotionCommands = MotionCommands
         member x.GetOperatorMotion ki count = x.GetOperatorMotion ki count
 
-      
-    
-    

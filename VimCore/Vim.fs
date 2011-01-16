@@ -74,7 +74,7 @@ type internal VimBufferFactory
         let editOperations = _editorOperationsFactoryService.GetEditorOperations(view)
         let editOptions = _editorOptionsFactoryService.GetOptions(view)
         let localSettings = LocalSettings(vim.Settings, Some view) :> IVimLocalSettings
-        let motionUtil = TextViewMotionUtil(view, localSettings) :> ITextViewMotionUtil
+        let motionUtil = TextViewMotionUtil(view, vim.MarkMap, localSettings) :> ITextViewMotionUtil
         let outlining = 
             // This will return null in ITextBuffer instances where there is no IOutliningManager such
             // as TFS annotated buffers.

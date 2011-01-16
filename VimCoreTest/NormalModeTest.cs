@@ -86,9 +86,10 @@ namespace VimCore.UnitTest
             _operations.SetupGet(x => x.TextView).Returns(_textView);
             _operations.SetupGet(x => x.FoldManager).Returns(_foldManager.Object);
 
-            motionUtil = motionUtil ?? new TextViewMotionUtil(_textView, new LocalSettings(
-                    new Vim.GlobalSettings(),
-                    _textView));
+            motionUtil = motionUtil ?? new TextViewMotionUtil(
+                _textView,
+                new MarkMap(new TrackingLineColumnService()),
+                new LocalSettings(new Vim.GlobalSettings(), _textView));
             var capture = new MotionCapture(
                 _host.Object,
                 _textView,
