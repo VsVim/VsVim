@@ -795,12 +795,15 @@ type internal CommonOperations ( _data : OperationsData ) =
 
         member x.ChangeSpan (data:MotionData) =
             
-            // For whatever reason the change commands will remove the trailing whitespace
-            // for character wise motions that are forward
+            // The ChangeSpan is largely an implementation of the 'c' command.  This command
+            // has legacy / special case behavior for forward word motions.  It will not delete
+            // any trailing whitespace in the span if the motion is created for a forward word
+            // motion.  This behavior is detailed in the :help WORD section of the gVim 
+            // documentation and is likely legacy behavior coming from the original vi 
+            // implementation.  A larger discussion thread is available here
+            // http://groups.google.com/group/vim_use/browse_thread/thread/88b6499bbcb0878d/561dfe13d3f2ef63?lnk=gst&q=whitespace+cw#561dfe13d3f2ef63            // For whatever reason the change commands will remove the trailing whitespace
             let span = 
-                if data.OperationKind = OperationKind.LineWise || not data.IsForward then 
-                    data.OperationSpan
-                else 
+                if data.IsAnyWordMotion && data.IsForward then
                     let point = 
                         data.OperationSpan
                         |> SnapshotSpanUtil.GetPointsBackward 
@@ -812,7 +815,9 @@ type internal CommonOperations ( _data : OperationsData ) =
                             |> SnapshotPointUtil.TryAddOne 
                             |> OptionUtil.getOrDefault (SnapshotUtil.GetEndPoint (p.Snapshot))
                         SnapshotSpan(data.OperationSpan.Start, endPoint)
-                    | None -> data.OperationSpan
+                    | None -> data.OperationSpan 
+                else
+                    data.OperationSpan
             x.DeleteSpan span
             span
 

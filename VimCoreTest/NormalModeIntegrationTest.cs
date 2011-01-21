@@ -662,6 +662,15 @@ namespace VimCore.UnitTest
         }
 
         [Test]
+        public void Handle_cl_WithCountShouldDeleteWhitespace()
+        {
+            Create("dog   cat");
+            _buffer.Process("5cl");
+            Assert.AreEqual(ModeKind.Insert, _buffer.ModeKind);
+            Assert.AreEqual(" cat", _textView.GetLine(0).GetText());
+        }
+
+        [Test]
         public void Handle_d_WithMarkLineMotion()
         {
             Create("dog", "cat", "bear", "tree");

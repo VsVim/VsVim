@@ -80,6 +80,7 @@ type internal MotionCapture
                         {
                             Span = SnapshotSpan(startPoint, endPoint)
                             IsForward = true
+                            IsAnyWordMotion = false
                             MotionKind = MotionKind.Exclusive
                             OperationKind = OperationKind.CharacterWise
                             Column = SnapshotPointUtil.GetColumn endPoint |> Some } |> Some
@@ -87,6 +88,7 @@ type internal MotionCapture
                         {
                             Span = SnapshotSpan(endPoint, startPoint)
                             IsForward = false
+                            IsAnyWordMotion = false
                             MotionKind = MotionKind.Exclusive
                             OperationKind = OperationKind.CharacterWise
                             Column = SnapshotPointUtil.GetColumn endPoint |> Some } |> Some

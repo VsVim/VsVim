@@ -17,6 +17,9 @@ type MotionData = {
     /// Was the motion forwards towards the end of the buffer
     IsForward : bool 
 
+    /// Was this a w or W motion
+    IsAnyWordMotion : bool
+
     /// Type of motion
     MotionKind : MotionKind
 
@@ -56,4 +59,11 @@ type MotionData = {
 
     static member CreateEmptyFromPoint point motionKind operationKind = 
         let span = SnapshotSpanUtil.CreateWithLength point 0  
-        {Span=span; IsForward=true; MotionKind=motionKind; OperationKind=operationKind; Column=None}
+        {
+            Span = span 
+            IsForward = true 
+            IsAnyWordMotion = false
+            MotionKind = motionKind 
+            OperationKind = operationKind 
+            Column = None}
+

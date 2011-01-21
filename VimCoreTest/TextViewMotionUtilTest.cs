@@ -93,6 +93,7 @@ namespace VimCore.UnitTest
             Assert.AreEqual("foo ", span.GetText());
             Assert.AreEqual(MotionKind.Exclusive, res.MotionKind);
             Assert.AreEqual(OperationKind.CharacterWise, res.OperationKind);
+            Assert.IsTrue(res.IsAnyWordMotion);
         }
 
         [Test]
@@ -129,6 +130,22 @@ namespace VimCore.UnitTest
             Create("foo bar");
             var res = _util.WordForward(WordKind.NormalWord, 10);
             Assert.AreEqual("foo bar", res.Span.GetText());
+        }
+
+        [Test]
+        public void WordForward_BigWordIsAnyWord()
+        {
+            Create("foo bar");
+            var res = _util.WordForward(WordKind.BigWord, 1);
+            Assert.IsTrue(res.IsAnyWordMotion);
+        }
+
+        [Test]
+        public void WordBackward_BothAreAnyWord()
+        {
+            Create("foo bar");
+            Assert.IsTrue(_util.WordBackward(WordKind.NormalWord, 1).IsAnyWordMotion);
+            Assert.IsTrue(_util.WordBackward(WordKind.BigWord, 1).IsAnyWordMotion);
         }
 
         [Test]

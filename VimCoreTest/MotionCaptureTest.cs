@@ -82,12 +82,12 @@ namespace VimCore.UnitTest
         internal static MotionData CreateMotionData()
         {
             var point = MockObjectFactory.CreateSnapshotPoint(42);
-            return new MotionData(
+            return VimUtil.CreateMotionData(
                 new SnapshotSpan(point, point),
                 true,
                 MotionKind.Inclusive,
                 OperationKind.CharacterWise,
-                FSharpOption.Create(42));
+                42);
         }
 
         internal static FSharpOption<MotionData> CreateMotionDataSome()

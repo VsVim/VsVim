@@ -114,12 +114,11 @@ namespace VimCore.UnitTest
         private MotionData CreateMotionData(SnapshotSpan? span = null)
         {
             span = span ?? new SnapshotSpan(_textView.TextSnapshot, 0, 3);
-            return new MotionData(
+            return VimUtil.CreateMotionData(
                 span.Value,
                 true,
                 MotionKind.Exclusive,
-                OperationKind.LineWise,
-                FSharpOption<int>.None);
+                OperationKind.LineWise);
         }
 
         [TearDown]
@@ -1063,12 +1062,12 @@ namespace VimCore.UnitTest
         public void Edit_c_1()
         {
             Create("foo bar");
-            var motionData = new MotionData(
+            var motionData = VimUtil.CreateMotionData(
                 _textView.TextBuffer.GetSpan(0, 4),
-                true,
-                MotionKind.Exclusive,
-                OperationKind.CharacterWise,
-                FSharpOption<int>.None);
+                isForward: true,
+                isAnyWord: true,
+                motionKind: MotionKind.Exclusive,
+                operationKind: OperationKind.CharacterWise);
             _operations
                 .Setup(x => x.ChangeSpan(motionData))
                 .Returns(motionData.OperationSpan)
@@ -1087,12 +1086,12 @@ namespace VimCore.UnitTest
         {
             Create("foo bar");
             var reg = _map.GetRegister('c');
-            var motionData = new MotionData(
+            var motionData = VimUtil.CreateMotionData(
                 _textView.TextBuffer.GetSpan(0, 4),
-                true,
-                MotionKind.Exclusive,
-                OperationKind.CharacterWise,
-                FSharpOption<int>.None);
+                isForward: true,
+                isAnyWord: true,
+                motionKind: MotionKind.Exclusive,
+                operationKind: OperationKind.CharacterWise);
             _operations
                 .Setup(x => x.ChangeSpan(motionData))
                 .Returns(motionData.OperationSpan)

@@ -323,5 +323,33 @@ namespace Vim.UnitTest
             return SearchProcessResult.NewSearchComplete(data, SearchResult.SearchNotFound);
         }
 
+        internal static MotionData CreateMotionData(
+            SnapshotSpan span,
+            bool isForward,
+            MotionKind motionKind,
+            OperationKind operationKind,
+            int? column = null)
+        {
+            return CreateMotionData(
+                span: span,
+                isForward: isForward,
+                isAnyWord: false,
+                motionKind: motionKind,
+                operationKind: operationKind,
+                column: column);
+        }
+
+        internal static MotionData CreateMotionData(
+            SnapshotSpan span,
+            bool isForward,
+            bool isAnyWord,
+            MotionKind motionKind,
+            OperationKind operationKind,
+            int? column = null)
+        {
+            var col = column.HasValue ? FSharpOption.Create(column.Value) : FSharpOption<int>.None;
+            return new MotionData(span, isForward, isAnyWord, motionKind, operationKind, col);
+        }
+
     }
 }
