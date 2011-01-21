@@ -27,6 +27,13 @@ type MarkMap( _tlcService : ITrackingLineColumnService ) =
     /// Is this mark local to a buffer
     static member IsLocalMark c = Set.contains c _localMarkSet
 
+    member private x.GetLastSelection (data : BufferMarkData) =
+        match data.LastSelection with
+        | None -> None
+        | Some(selection) ->
+            let snapshot = data.TextBuffer.CurrentSnapshot
+            TrackingSpanUtil.GetSpan snapshot selection 
+
     /// Get or create the BufferMarkData for the given ITextBuffer. 
     member private x.GetOrCreateBufferMarkData buffer = 
         let ret,data = _localMap.TryGetValue(buffer)
@@ -36,29 +43,18 @@ type MarkMap( _tlcService : ITrackingLineColumnService ) =
             _localMap.Item(buffer) <- data
             data
 
-    member private x.GetSelectionMarkCore (data:BufferMarkData) (reduceFunc : SnapshotSpan -> SnapshotSpan ) =
-        let snapshot = data.TextBuffer.CurrentSnapshot
-        match data.LastSelection with
-        | None -> None
-        | Some(selection) ->
-            match TrackingSpanUtil.GetSpan snapshot selection with
-            | None -> None
-            | Some(span) ->
-                let first =
-                    reduceFunc span
-                    |> SnapshotSpanUtil.GetPoints
-                    |> Seq.tryFind (fun p -> CharUtil.IsNotWhiteSpace (p.GetChar()))
-                let point = 
-                    match first with
-                    | None -> span.Start 
-                    | Some(p) -> p
-                point |> VirtualSnapshotPointUtil.OfPoint |> Some
-
     member private x.GetSelectionStartMark data =
-        x.GetSelectionMarkCore data SnapshotSpanUtil.ReduceToStartLine
+        match x.GetLastSelection data with
+        | None -> None
+        | Some(span) -> span.Start |> VirtualSnapshotPointUtil.OfPoint |> Some
 
     member private x.GetSelectionEndMark data =
-        x.GetSelectionMarkCore data SnapshotSpanUtil.ReduceToEndLine
+        match x.GetLastSelection data with
+        | None -> None
+        | Some(span) -> 
+            match SnapshotSpanUtil.GetLastIncludedPoint span with
+            | None -> None
+            | Some(point) -> point |> VirtualSnapshotPointUtil.OfPoint |> Some
 
     /// Try and get the local mark for the specified char <param name="c"/>.  If it does not
     /// exist then the value None will be returned.  The mark is always returned for the 

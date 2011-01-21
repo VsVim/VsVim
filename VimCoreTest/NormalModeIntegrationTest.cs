@@ -851,5 +851,28 @@ namespace VimCore.UnitTest
             _buffer.Process("/cat", enter: true);
             Assert.AreEqual(4, _textView.GetCaretPoint().Position);
         }
+
+        [Test]
+        public void Mark_SelectionEndIsExclusive()
+        {
+            Create("the brown dog");
+            var span = new SnapshotSpan(_textView.GetPoint(4), _textView.GetPoint(9));
+            Assert.AreEqual("brown", span.GetText());
+            _textView.Selection.Select(span);
+            _textView.Selection.Clear();
+            _buffer.Process("y`>");
+            Assert.AreEqual("the brow", _buffer.RegisterMap.GetRegister(RegisterName.Unnamed).StringValue);
+        }
+
+        [Test]
+        public void Mark_NamedMarkIsExclusive()
+        {
+            Create("the brown dog");
+            var point = _textView.GetPoint(8);
+            Assert.AreEqual('n', point.GetChar());
+            _buffer.MarkMap.SetMark(point, 'b');
+            _buffer.Process("y`b");
+            Assert.AreEqual("the brow", _buffer.RegisterMap.GetRegister(RegisterName.Unnamed).StringValue);
+        }
     }
 }

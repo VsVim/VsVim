@@ -11,11 +11,11 @@ namespace VimCore.UnitTest
     [TestFixture]
     public class MarkMapTest
     {
-        ITextView _textView;
-        ITextBuffer _buffer;
-        MarkMap _mapRaw;
-        IMarkMap _map;
-        IVimBufferCreationListener _mapListener;
+        private ITextView _textView;
+        private ITextBuffer _textBuffer;
+        private MarkMap _mapRaw;
+        private IMarkMap _map;
+        private IVimBufferCreationListener _mapListener;
 
         [SetUp]
         public void Init()
@@ -35,7 +35,7 @@ namespace VimCore.UnitTest
         private void Create(params string[] lines)
         {
             _textView = EditorUtil.CreateView(lines);
-            _buffer = _textView.TextBuffer;
+            _textBuffer = _textView.TextBuffer;
             var vimBuffer = new MockVimBuffer() { TextViewImpl = _textView, TextBufferImpl = _textView.TextBuffer };
             _mapListener.VimBufferCreated(vimBuffer);
         }
@@ -44,8 +44,8 @@ namespace VimCore.UnitTest
         public void SetLocalMark1()
         {
             Create("foo", "bar");
-            _mapRaw.SetLocalMark(new SnapshotPoint(_buffer.CurrentSnapshot, 0), 'a');
-            var opt = _mapRaw.GetLocalMark(_buffer, 'a');
+            _mapRaw.SetLocalMark(new SnapshotPoint(_textBuffer.CurrentSnapshot, 0), 'a');
+            var opt = _mapRaw.GetLocalMark(_textBuffer, 'a');
             Assert.IsTrue(opt.IsSome());
             var data = opt.Value;
             Assert.AreEqual(0, data.Position.Position);
@@ -56,7 +56,7 @@ namespace VimCore.UnitTest
         public void GetLocalMark1()
         {
             Create("foo");
-            var opt = _mapRaw.GetLocalMark(_buffer, 'b');
+            var opt = _mapRaw.GetLocalMark(_textBuffer, 'b');
             Assert.IsFalse(opt.IsSome());
         }
 
@@ -64,9 +64,9 @@ namespace VimCore.UnitTest
         public void TrackReplace1()
         {
             Create("foo");
-            _mapRaw.SetLocalMark(new SnapshotPoint(_buffer.CurrentSnapshot, 0), 'a');
-            _buffer.Replace(new Span(0, 1), "b");
-            var opt = _mapRaw.GetLocalMark(_buffer, 'a');
+            _mapRaw.SetLocalMark(new SnapshotPoint(_textBuffer.CurrentSnapshot, 0), 'a');
+            _textBuffer.Replace(new Span(0, 1), "b");
+            var opt = _mapRaw.GetLocalMark(_textBuffer, 'a');
             Assert.IsTrue(opt.IsSome());
             Assert.AreEqual(0, opt.Value.Position.Position);
         }
@@ -75,9 +75,9 @@ namespace VimCore.UnitTest
         public void TrackReplace2()
         {
             Create("foo");
-            _mapRaw.SetLocalMark(new SnapshotPoint(_buffer.CurrentSnapshot, 1), 'a');
-            _buffer.Replace(new Span(2, 1), "b");
-            var opt = _mapRaw.GetLocalMark(_buffer, 'a');
+            _mapRaw.SetLocalMark(new SnapshotPoint(_textBuffer.CurrentSnapshot, 1), 'a');
+            _textBuffer.Replace(new Span(2, 1), "b");
+            var opt = _mapRaw.GetLocalMark(_textBuffer, 'a');
             Assert.IsTrue(opt.IsSome());
             Assert.AreEqual(1, opt.Value.Position.Position);
         }
@@ -86,9 +86,9 @@ namespace VimCore.UnitTest
         public void TrackReplace3()
         {
             Create("foo");
-            _mapRaw.SetLocalMark(new SnapshotPoint(_buffer.CurrentSnapshot, 2), 'a');
-            _buffer.Delete(new Span(0, 3));
-            var opt = _mapRaw.GetLocalMark(_buffer, 'a');
+            _mapRaw.SetLocalMark(new SnapshotPoint(_textBuffer.CurrentSnapshot, 2), 'a');
+            _textBuffer.Delete(new Span(0, 3));
+            var opt = _mapRaw.GetLocalMark(_textBuffer, 'a');
             Assert.IsTrue(opt.IsSome());
             var data = opt.Value;
             Assert.IsTrue(data.IsInVirtualSpace);
@@ -99,9 +99,9 @@ namespace VimCore.UnitTest
         public void TrackReplace4()
         {
             Create("foo", "bar");
-            _mapRaw.SetLocalMark(_buffer.CurrentSnapshot.GetLineFromLineNumber(1).Start, 'a');
-            _buffer.Delete(_buffer.CurrentSnapshot.GetLineFromLineNumber(0).ExtentIncludingLineBreak.Span);
-            var opt = _mapRaw.GetLocalMark(_buffer, 'a');
+            _mapRaw.SetLocalMark(_textBuffer.CurrentSnapshot.GetLineFromLineNumber(1).Start, 'a');
+            _textBuffer.Delete(_textBuffer.CurrentSnapshot.GetLineFromLineNumber(0).ExtentIncludingLineBreak.Span);
+            var opt = _mapRaw.GetLocalMark(_textBuffer, 'a');
             Assert.IsTrue(opt.IsSome());
             var data = opt.Value;
             Assert.AreEqual(0, data.Position.Position);
@@ -111,12 +111,12 @@ namespace VimCore.UnitTest
         public void TrackDeleteLine1()
         {
             Create("foo", "bar");
-            _mapRaw.SetLocalMark(_buffer.CurrentSnapshot.GetLineFromLineNumber(1).Start, 'a');
+            _mapRaw.SetLocalMark(_textBuffer.CurrentSnapshot.GetLineFromLineNumber(1).Start, 'a');
             var span = new SnapshotSpan(
-                _buffer.CurrentSnapshot.GetLineFromLineNumber(0).End,
-                _buffer.CurrentSnapshot.GetLineFromLineNumber(1).EndIncludingLineBreak);
-            _buffer.Delete(span.Span);
-            var opt = _mapRaw.GetLocalMark(_buffer, 'a');
+                _textBuffer.CurrentSnapshot.GetLineFromLineNumber(0).End,
+                _textBuffer.CurrentSnapshot.GetLineFromLineNumber(1).EndIncludingLineBreak);
+            _textBuffer.Delete(span.Span);
+            var opt = _mapRaw.GetLocalMark(_textBuffer, 'a');
             Assert.IsTrue(opt.IsNone());
         }
 
@@ -124,21 +124,21 @@ namespace VimCore.UnitTest
         public void TrackDeleteLine2()
         {
             Create("foo", "bar", "baz");
-            _mapRaw.SetLocalMark(_buffer.CurrentSnapshot.GetLineFromLineNumber(2).Start, 'a');
-            _buffer.Delete(_buffer.CurrentSnapshot.GetLineFromLineNumber(1).ExtentIncludingLineBreak.Span);
-            var opt = _mapRaw.GetLocalMark(_buffer, 'a');
+            _mapRaw.SetLocalMark(_textBuffer.CurrentSnapshot.GetLineFromLineNumber(2).Start, 'a');
+            _textBuffer.Delete(_textBuffer.CurrentSnapshot.GetLineFromLineNumber(1).ExtentIncludingLineBreak.Span);
+            var opt = _mapRaw.GetLocalMark(_textBuffer, 'a');
             Assert.IsTrue(opt.IsSome());
             var data = opt.Value;
-            Assert.AreEqual(_buffer.CurrentSnapshot.GetLineFromLineNumber(1).Start, data.Position);
+            Assert.AreEqual(_textBuffer.CurrentSnapshot.GetLineFromLineNumber(1).Start, data.Position);
         }
 
         [Test, Description("Deleting a line in the middle of the buffer")]
         public void TrackDeleteLine3()
         {
             Create("foo", "bar", "baz");
-            _mapRaw.SetLocalMark(_buffer.CurrentSnapshot.GetLineFromLineNumber(1).Start, 'a');
-            _buffer.Delete(_buffer.CurrentSnapshot.GetLineFromLineNumber(1).ExtentIncludingLineBreak.Span);
-            var opt = _mapRaw.GetLocalMark(_buffer, 'a');
+            _mapRaw.SetLocalMark(_textBuffer.CurrentSnapshot.GetLineFromLineNumber(1).Start, 'a');
+            _textBuffer.Delete(_textBuffer.CurrentSnapshot.GetLineFromLineNumber(1).ExtentIncludingLineBreak.Span);
+            var opt = _mapRaw.GetLocalMark(_textBuffer, 'a');
             Assert.IsTrue(opt.IsNone());
         }
 
@@ -146,27 +146,27 @@ namespace VimCore.UnitTest
         public void DeleteLocalMark1()
         {
             Create("foo");
-            Assert.IsFalse(_mapRaw.DeleteLocalMark(_buffer, 'a'));
+            Assert.IsFalse(_mapRaw.DeleteLocalMark(_textBuffer, 'a'));
         }
 
         [Test, Description("Simple Mark deletion")]
         public void DeleteLocalMark2()
         {
             Create("foo");
-            _mapRaw.SetLocalMark(new SnapshotPoint(_buffer.CurrentSnapshot, 0), 'a');
-            Assert.IsTrue(_mapRaw.DeleteLocalMark(_buffer, 'a'));
-            Assert.IsTrue(_mapRaw.GetLocalMark(_buffer, 'a').IsNone());
+            _mapRaw.SetLocalMark(new SnapshotPoint(_textBuffer.CurrentSnapshot, 0), 'a');
+            Assert.IsTrue(_mapRaw.DeleteLocalMark(_textBuffer, 'a'));
+            Assert.IsTrue(_mapRaw.GetLocalMark(_textBuffer, 'a').IsNone());
         }
 
         [Test, Description("Double deletion of a mark")]
         public void DeleteLocalMark3()
         {
             Create("foo");
-            _mapRaw.SetLocalMark(new SnapshotPoint(_buffer.CurrentSnapshot, 0), 'a');
-            Assert.IsTrue(_mapRaw.DeleteLocalMark(_buffer, 'a'));
-            Assert.IsTrue(_mapRaw.GetLocalMark(_buffer, 'a').IsNone());
-            Assert.IsFalse(_mapRaw.DeleteLocalMark(_buffer, 'a'));
-            Assert.IsTrue(_mapRaw.GetLocalMark(_buffer, 'a').IsNone());
+            _mapRaw.SetLocalMark(new SnapshotPoint(_textBuffer.CurrentSnapshot, 0), 'a');
+            Assert.IsTrue(_mapRaw.DeleteLocalMark(_textBuffer, 'a'));
+            Assert.IsTrue(_mapRaw.GetLocalMark(_textBuffer, 'a').IsNone());
+            Assert.IsFalse(_mapRaw.DeleteLocalMark(_textBuffer, 'a'));
+            Assert.IsTrue(_mapRaw.GetLocalMark(_textBuffer, 'a').IsNone());
         }
 
         [Test, Description("Deleting a mark in one buffer shouldn't affect another")]
@@ -174,10 +174,10 @@ namespace VimCore.UnitTest
         {
             Create("foo");
             var buffer2 = EditorUtil.CreateBuffer("baz");
-            _mapRaw.SetLocalMark(new SnapshotPoint(_buffer.CurrentSnapshot, 0), 'a');
+            _mapRaw.SetLocalMark(new SnapshotPoint(_textBuffer.CurrentSnapshot, 0), 'a');
             _mapRaw.SetLocalMark(new SnapshotPoint(buffer2.CurrentSnapshot, 0), 'a');
             Assert.IsTrue(_mapRaw.DeleteLocalMark(buffer2, 'a'));
-            Assert.IsTrue(_mapRaw.GetLocalMark(_buffer, 'a').IsSome());
+            Assert.IsTrue(_mapRaw.GetLocalMark(_textBuffer, 'a').IsSome());
         }
 
         [Test, Description("Should work on an empty map")]
@@ -190,9 +190,9 @@ namespace VimCore.UnitTest
         public void DeleteAllMarks2()
         {
             Create();
-            _mapRaw.SetLocalMark(new SnapshotPoint(_buffer.CurrentSnapshot, 0), 'a');
+            _mapRaw.SetLocalMark(new SnapshotPoint(_textBuffer.CurrentSnapshot, 0), 'a');
             _mapRaw.DeleteAllMarks();
-            Assert.IsTrue(_mapRaw.GetLocalMark(_buffer, 'a').IsNone());
+            Assert.IsTrue(_mapRaw.GetLocalMark(_textBuffer, 'a').IsNone());
         }
 
         [Test]
@@ -267,26 +267,62 @@ namespace VimCore.UnitTest
         public void MarkSelectionStart1()
         {
             Create("the", "quick", "fox");
-            Assert.IsTrue(_map.GetMark(_buffer, '<').IsNone());
+            Assert.IsTrue(_map.GetMark(_textBuffer, '<').IsNone());
         }
 
         [Test]
         public void MarkSelectionStart2()
         {
             Create("the", "quick", "fox");
-            _textView.Selection.Select(_buffer.GetLineRange(0).Extent, false);
-            Assert.AreEqual(0, _map.GetMark(_buffer, '<').Value.Position.Position);
+            _textView.Selection.Select(_textBuffer.GetLineRange(0).Extent, false);
+            Assert.AreEqual(0, _map.GetMark(_textBuffer, '<').Value.Position.Position);
         }
 
         [Test]
         public void MarkSelectionStart3()
         {
             Create("the", "quick", "fox");
-            _textView.Selection.Select(_buffer.GetLineRange(0).Extent, false);
+            _textView.Selection.Select(_textBuffer.GetLineRange(0).Extent, false);
             _textView.Selection.Clear();
-            Assert.AreEqual(0, _map.GetMark(_buffer, '<').Value.Position.Position);
+            Assert.AreEqual(0, _map.GetMark(_textBuffer, '<').Value.Position.Position);
         }
 
+        [Test]
+        public void GetMark_SelectionEndOnWhitespace()
+        {
+            Create("the", "  quick", "fox");
+            var endPoint = _textView.GetLine(1).Start.Add(1);
+            _textView.Selection.Select(_textView.GetLine(0).Start, endPoint);
+            Assert.AreEqual(endPoint.Subtract(1), _map.GetMark(_textBuffer, '>').Value.Position);
+        }
+
+        [Test]
+        public void GetMark_SelectionEndOnChar()
+        {
+            Create("the", "quick", "fox");
+            var endPoint = _textView.GetLine(1).Start.Add(1);
+            _textView.Selection.Select(_textView.GetLine(0).Start, endPoint);
+            Assert.AreEqual(endPoint.Subtract(1), _map.GetMark(_textBuffer, '>').Value.Position);
+        }
+
+        [Test]
+        public void GetMark_SelectionStart()
+        {
+            Create("the", "  quick", "fox");
+            var endPoint = _textView.GetLine(1).Start.Add(1);
+            _textView.Selection.Select(_textView.GetLine(0).Start, endPoint);
+            Assert.AreEqual(0, _map.GetMark(_textBuffer, '<').Value.Position.Position);
+        }
+
+        [Test]
+        public void GetMark_SelectionStartInMiddleOfLine()
+        {
+            Create("the", "  quick", "fox");
+            var startPoint = _textView.GetPoint(1);
+            var endPoint = _textView.GetLine(1).Start.Add(1);
+            _textView.Selection.Select(startPoint, endPoint);
+            Assert.AreEqual(1, _map.GetMark(_textBuffer, '<').Value.Position.Position);
+        }
 
         // TODO: Test Undo logic
 

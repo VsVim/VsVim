@@ -709,7 +709,7 @@ type internal CommandProcessor
             let rest = rest |> CommandParseUtil.SkipWhitespace
             action rest range hasBang
 
-    member x.ParseAndRunInput (originalInputs :char list) =
+    member x.ParseAndRunInput (originalInputs : char list) =
         let withRange (range:SnapshotLineRange option) (inputs:char list) = x.ParseAndRunCommand inputs range
         let point = TextViewUtil.GetCaretPoint _buffer.TextView
         match RangeUtil.ParseRange point _buffer.MarkMap originalInputs with

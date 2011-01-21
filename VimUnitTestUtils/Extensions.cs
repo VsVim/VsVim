@@ -519,6 +519,11 @@ namespace Vim.UnitTest
             return span;
         }
 
+        public static void Select(this ITextSelection selection, SnapshotPoint startPoint, SnapshotPoint endPoint)
+        {
+            selection.Select(new VirtualSnapshotPoint(startPoint), new VirtualSnapshotPoint(endPoint));
+        }
+
         public static void Select(this ITextSelection selection, params SnapshotSpan[] spans)
         {
             if (spans.Length == 1)
