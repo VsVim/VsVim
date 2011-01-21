@@ -84,12 +84,8 @@ type internal DefaultOperations ( _data : OperationsData) =
             let span = new SnapshotSpan(point, count)
             x.CommonImpl.DeleteSpan span 
 
-            // Need to respect the virtual edit setting here as we could have 
-            // deleted the last character on the line
-            x.CommonImpl.MoveCaretForVirtualEdit()
-
             span
-    
+
         /// Implement the normal mode X command
         member x.DeleteCharacterBeforeCursor count = 
             let point = TextViewUtil.GetCaretPoint _textView

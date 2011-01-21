@@ -915,6 +915,7 @@ namespace VimCore.UnitTest
             Create("foo");
             _textView.Caret.MoveTo(new SnapshotPoint(_textView.TextSnapshot, 1));
             var span = _textView.GetLineRange(0).Extent;
+            _operations.Setup(x => x.MoveCaretForVirtualEdit());
             _operations
                 .Setup(x => x.DeleteCharacterBeforeCursor(1))
                 .Returns(span)
@@ -998,6 +999,7 @@ namespace VimCore.UnitTest
         {
             Create("foo");
             var span = _textView.GetLineRange(0).Extent;
+            _operations.Setup(x => x.MoveCaretForVirtualEdit());
             _operations
                 .Setup(x => x.DeleteCharacterAtCursor(1))
                 .Returns(span)
@@ -1014,6 +1016,7 @@ namespace VimCore.UnitTest
         {
             Create("foo");
             var span = _textView.GetLineRange(0).Extent;
+            _operations.Setup(x => x.MoveCaretForVirtualEdit());
             _operations
                 .Setup(x => x.DeleteCharacterAtCursor(2))
                 .Returns(span)
@@ -1031,6 +1034,7 @@ namespace VimCore.UnitTest
             Create("foo");
             var reg = _map.GetRegister('c');
             var span = _textView.GetLineRange(0).Extent;
+            _operations.Setup(x => x.MoveCaretForVirtualEdit());
             _operations
                 .Setup(x => x.DeleteCharacterAtCursor(1))
                 .Returns(span)
@@ -1047,6 +1051,7 @@ namespace VimCore.UnitTest
         {
             Create("foo");
             var span = _textView.GetLineRange(0).Extent;
+            _operations.Setup(x => x.MoveCaretForVirtualEdit());
             _operations
                 .Setup(x => x.DeleteCharacterAtCursor(1))
                 .Returns(span)

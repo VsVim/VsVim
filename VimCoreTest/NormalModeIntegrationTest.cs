@@ -794,6 +794,17 @@ namespace VimCore.UnitTest
         }
 
         [Test]
+        public void Handle_s_AtEndOfLine()
+        {
+            Create("dog", "cat");
+            var point = _textView.MoveCaretTo(2);
+            _buffer.Process('s');
+            Assert.AreEqual(2, _textView.GetCaretPoint().Position);
+            Assert.AreEqual("do", _textView.GetLine(0).GetText());
+            Assert.AreEqual(ModeKind.Insert, _buffer.ModeKind);
+        }
+
+        [Test]
         public void IncrementalSearch_VeryNoMagic()
         {
             Create("dog", "cat");
