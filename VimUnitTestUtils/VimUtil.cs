@@ -341,12 +341,14 @@ namespace Vim.UnitTest
 
         internal static MotionData CreateMotionData(
             SnapshotSpan span,
-            bool isForward,
-            bool isAnyWord,
-            MotionKind motionKind,
-            OperationKind operationKind,
+            bool isForward = true,
+            bool isAnyWord = false,
+            MotionKind motionKind = null,
+            OperationKind operationKind = null,
             int? column = null)
         {
+            motionKind = motionKind ?? MotionKind.Inclusive;
+            operationKind = operationKind ?? OperationKind.CharacterWise;
             var col = column.HasValue ? FSharpOption.Create(column.Value) : FSharpOption<int>.None;
             return new MotionData(span, isForward, isAnyWord, motionKind, operationKind, col);
         }

@@ -439,14 +439,17 @@ type internal TextViewMotionUtil
             let endLine = SnapshotPointUtil.GetContainingLine point
             let startLine = SnapshotUtil.GetLineOrFirst endLine.Snapshot (endLine.LineNumber - count)
             let span = SnapshotSpan(startLine.Start, endLine.End)
-            let column = TssUtil.FindFirstNonWhitespaceCharacter startLine
+            let column = 
+                startLine 
+                |> TssUtil.FindFirstNonWhitespaceCharacter
+                |> SnapshotPointUtil.GetColumn
             {
                 Span = span 
                 IsForward = false 
                 IsAnyWordMotion = false
                 MotionKind = MotionKind.Inclusive 
                 OperationKind = OperationKind.LineWise 
-                Column = Some column.Position} 
+                Column = Some column}
         member x.CharLeft count = 
             let start = x.StartPoint
             let prev = SnapshotPointUtil.GetPreviousPointOnLine start count 

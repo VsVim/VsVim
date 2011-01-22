@@ -691,6 +691,15 @@ namespace VimCore.UnitTest
         }
 
         [Test]
+        public void Handle_Minus_MiddleOfBuffer()
+        {
+            Create("dog", "  cat", "bear");
+            _textView.MoveCaretToLine(2);
+            _buffer.Process("-");
+            Assert.AreEqual(_textView.GetLine(1).Start.Add(2), _textView.GetCaretPoint());
+        }
+
+        [Test]
         public void Handle_p_LineWiseSimpleString()
         {
             Create("dog", "cat", "bear", "tree");

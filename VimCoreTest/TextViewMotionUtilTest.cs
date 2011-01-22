@@ -1405,6 +1405,17 @@ namespace VimCore.UnitTest
             Assert.AreEqual(OperationKind.LineWise, data.OperationKind);
         }
 
+        [Test]
+        public void LineUpToFirstNonWhitespace_UseColumnNotPosition()
+        {
+            Create("the", "  dog", "cat");
+            _textView.MoveCaretToLine(2);
+            var data = _util.LineUpToFirstNonWhitespace(1);
+            Assert.AreEqual(2, data.Column.Value);
+            Assert.IsFalse(data.IsForward);
+            Assert.AreEqual(_textView.GetLineRange(1, 2).ExtentIncludingLineBreak, data.Span);
+        }
+
     }
 
 }

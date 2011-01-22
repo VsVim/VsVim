@@ -1506,6 +1506,21 @@ namespace VimCore.UnitTest
         }
 
         [Test]
+        [Description("Used with the - motion")]
+        public void MoveCaretToMotionData_ReverseLineWiseWithColumn()
+        {
+            Create(" dog", "cat", "bear");
+            _editorOpts.Setup(x => x.ResetSelection());
+            var data = VimUtil.CreateMotionData(
+                span: _textView.GetLineRange(0, 1).ExtentIncludingLineBreak,
+                isForward: false,
+                operationKind: OperationKind.LineWise,
+                column: 1);
+            _operations.MoveCaretToMotionData(data);
+            Assert.AreEqual(1, _textView.GetCaretPoint().Position);
+        }
+
+        [Test]
         public void Undo1()
         {
             Create(String.Empty);
