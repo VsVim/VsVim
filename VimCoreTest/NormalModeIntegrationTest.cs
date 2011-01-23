@@ -691,6 +691,14 @@ namespace VimCore.UnitTest
         }
 
         [Test]
+        public void Handle_f_WithTabTarget()
+        {
+            Create("dog\tcat");
+            _buffer.Process("f\t");
+            Assert.AreEqual(3, _textView.GetCaretPoint().Position);
+        }
+
+        [Test]
         public void Handle_Minus_MiddleOfBuffer()
         {
             Create("dog", "  cat", "bear");

@@ -138,6 +138,14 @@ namespace VimCore.UnitTest
         }
 
         [Test]
+        public void Single_HandleCommandKey()
+        {
+            var ki = KeyNotationUtil.StringToKeyInput("<D-a>");
+            Assert.AreEqual(VimKey.LowerA, ki.Key);
+            Assert.AreEqual(KeyModifiers.Command, ki.KeyModifiers);
+        }
+
+        [Test]
         [Description("Case shouldn't matter")]
         public void StringToKeyInput8()
         {
@@ -165,7 +173,9 @@ namespace VimCore.UnitTest
         public void Many_InvalidLessThanPrefix()
         {
             var opt = KeyNotationUtil.TryStringToKeyInputSet("<foo");
-            Assert.IsTrue(opt.IsNone());
+            Assert.IsTrue(opt.IsSome());
+            var list = opt.Value.KeyInputs.Select(x => x.Char).ToList();
+            CollectionAssert.AreEquivalent("<foo".ToList(), list);
         }
 
         [Test]
@@ -206,7 +216,7 @@ namespace VimCore.UnitTest
         public void SplitIntoKeyNotationEntries1()
         {
             CollectionAssert.AreEquivalent(
-                new string[] { "a", "b" },
+                new [] { "a", "b" },
                 KeyNotationUtil.SplitIntoKeyNotationEntries("ab"));
         }
 
@@ -214,7 +224,7 @@ namespace VimCore.UnitTest
         public void SplitIntoKeyNotationEntries2()
         {
             CollectionAssert.AreEquivalent(
-                new string[] { "<C-j>", "b" },
+                new [] { "<C-j>", "b" },
                 KeyNotationUtil.SplitIntoKeyNotationEntries("<C-j>b"));
         }
 
@@ -222,7 +232,7 @@ namespace VimCore.UnitTest
         public void SplitIntoKeyNotationEntries3()
         {
             CollectionAssert.AreEquivalent(
-                new string[] { "<C-J>", "b" },
+                new [] { "<C-J>", "b" },
                 KeyNotationUtil.SplitIntoKeyNotationEntries("<C-J>b"));
         }
 
@@ -230,8 +240,31 @@ namespace VimCore.UnitTest
         public void SplitIntoKeyNotationEntries4()
         {
             CollectionAssert.AreEquivalent(
-                new string[] { "<C-J>", "<C-b>" },
+                new [] { "<C-J>", "<C-b>" },
                 KeyNotationUtil.SplitIntoKeyNotationEntries("<C-J><C-b>"));
+        }
+
+        [Test]
+        public void SplitIntoKeyNotationEntries_InvalidModifierTreatesLessThanLiterally()
+        {
+            CollectionAssert.AreEquivalent(
+                new[] {"<", "b", "-", "j", ">"},
+                KeyNotationUtil.SplitIntoKeyNotationEntries("<b-j>"));
+        }
+
+        [Test]
+        public void TryStringToKeyInput_BadModifier()
+        {
+            Assert.IsTrue(KeyNotationUtil.TryStringToKeyInput("<b-j>").IsNone());
+        }
+
+        [Test]
+        public void TryStringToKeyInputSet_BadModifier()
+        {
+            var result = KeyNotationUtil.TryStringToKeyInputSet("<b-j>");
+            Assert.IsTrue(result.IsSome());
+            var list = result.Value.KeyInputs.Select(x => x.Char);
+            CollectionAssert.AreEquivalent(new[] {'<', 'b', '-', 'j', '>'}, list);
         }
     }
 }

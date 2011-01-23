@@ -171,7 +171,17 @@ module VimKeyUtil =
 [<System.Flags>]
 type KeyModifiers = 
     | None = 0x0
+
+    /// The Alt or Meta Key 
     | Alt = 0x1
+
+    /// The Control key
     | Control = 0x2
+
+    /// The Shift key
     | Shift = 0x4
+
+    /// The Command key.  This isn't actually used in VsVim but is a place holder 
+    /// for the command key notation <D-...> which is only valid on Mac's
+    | Command = 0x8
 

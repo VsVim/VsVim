@@ -119,13 +119,47 @@ module KeyNotationUtil =
                 withData [str]
 
             if startsWith ['<'] rest then 
+
+                // When a '<' char there are a couple of possibilities to consider. 
+                //
+                //  1. Modifier combination <C-a>, <S-b>, etc ...
+                //  2. Named combination <lt>, <Home>, etc ...
+                //  3. Invalid combo <b-a>, <foo
+                //
+                // The first 2 need to be treated as a single entry while the third need 
+                // te be treaed as separate key strokes
                 match rest |> List.tryFindIndex (fun c -> c = '>') with
-                | None -> error()
-                | Some(index) ->
-                    let length = index+1
-                    let str = rest |> Seq.take length |> StringUtil.ofCharSeq
-                    let rest = rest |> ListUtil.skip length
-                    inner rest (fun next -> withData (str :: next))
+                | None -> 
+                    // Easiest case of #3.  Treat them all as separate entries
+                    inner rest.Tail (fun next -> withData ("<" :: next))
+                | Some (closeIndex) ->
+                    let isModifier = rest.Length >= 3 && List.nth rest 2 = '-'
+                    let processGroup() = 
+                        let length = closeIndex + 1
+                        let str = rest |> Seq.take length |> StringUtil.ofCharSeq
+                        let rest = rest |> ListUtil.skip length
+                        inner rest (fun next -> withData (str :: next))
+
+                    if isModifier then
+                        // Need to determine if it's a valid modfier or not.  
+                        let isValid = 
+                            let c = List.nth rest 1
+                            match CharUtil.ToLower c with 
+                            | 'c' -> true
+                            | 's' -> true
+                            | 'm' -> true
+                            | 'a' -> true
+                            | 'd' -> true
+                            | _ -> false
+                        if isValid then 
+                            // It's a valid grouping
+                            processGroup()
+                        else
+                            // Invalid modifier is another case of #3.  Trea them separately
+                            inner rest.Tail (fun next -> withData ("<" :: next))
+                    else 
+                        // It's a word in a <> string 
+                        processGroup()
             else 
                 match ListUtil.tryHead rest with
                 | None -> withData []
@@ -176,11 +210,15 @@ module KeyNotationUtil =
             if  index + 2 < String.length data && data.[index+1] = '-' then
                 let modifier = 
                     match data.[index] |> CharUtil.ToLower with
-                    | 'c' -> KeyModifiers.Control ||| modifier
-                    | 's' -> KeyModifiers.Shift ||| modifier
-                    | 'a' -> KeyModifiers.Alt ||| modifier
-                    | _ -> modifier
-                insideLessThanGreaterThan data (index+2) modifier
+                    | 'c' -> KeyModifiers.Control ||| modifier |> Some
+                    | 's' -> KeyModifiers.Shift ||| modifier |> Some
+                    | 'a' -> KeyModifiers.Alt ||| modifier |> Some
+                    | 'm' -> KeyModifiers.Alt ||| modifier |> Some
+                    | 'd' -> KeyModifiers.Command ||| modifier |> Some
+                    | _ -> None
+                match modifier with
+                | Some(modifier) -> insideLessThanGreaterThan data (index + 2) modifier
+                | None -> None
             else 
                 // Need to remove the final > before converting.  
                 let length = ((String.length data) - index) - 1 

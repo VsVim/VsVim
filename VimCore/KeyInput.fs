@@ -136,7 +136,7 @@ module KeyInputUtil =
     let VimKeyRawData = [
         (VimKey.Back, Some '\b')
         (VimKey.FormFeed, None)
-        (VimKey.Enter, None)
+        (VimKey.Enter, Some '\n')
         (VimKey.Escape, None)
         (VimKey.Left, None)
         (VimKey.Up, None)
@@ -272,7 +272,7 @@ module KeyInputUtil =
         (VimKey.Tilde, Some '~')
         (VimKey.Space, Some ' ')
         (VimKey.Dollar, Some '$')
-        (VimKey.Tab, None)
+        (VimKey.Tab, Some '\t')
         (VimKey.LineFeed, None) ]
 
 

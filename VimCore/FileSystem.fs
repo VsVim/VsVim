@@ -10,7 +10,7 @@ type internal FileSystem() =
     /// The environment variables considered when loading a .vimrc
     let _environmentVariables = ["HOME";"VIM";"USERPROFILE"]
 
-    let _fileNames = [".vsvimrc"; ".vimrc"; "_vimrc" ]
+    let _fileNames = [".vsvimrc"; "_vsvimrc"; ".vimrc"; "_vimrc" ]
 
     /// Read all of the lines from the file at the given path.  If this fails None
     /// will be returned

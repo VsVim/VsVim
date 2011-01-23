@@ -185,6 +185,19 @@ namespace VimCore.UnitTest
             Assert.AreEqual('c', ret[1].Char);
         }
 
+        [Test]
+        public void MapWithRemap_HandleCommandKey()
+        {
+            Assert.IsTrue(_map.MapWithRemap("<D-k>", "gk", KeyRemapMode.Normal));
+            var ki = new KeyInput(VimKey.LowerK, KeyModifiers.Command, FSharpOption.Create('k'));
+            var kiSet = KeyInputSet.NewOneKeyInput(ki);
+            var ret = _map.GetKeyMapping(kiSet, KeyRemapMode.Normal);
+            Assert.IsTrue(ret.IsMapped);
+            var all = ret.AsMapped().Item.KeyInputs.Select(x => x.Char).ToList();
+            Assert.AreEqual('g', all[0]);
+            Assert.AreEqual('k', all[1]);
+        }
+
         [Test, Description("Recursive mappings should not follow the recursion here")]
         public void GetKeyMapping1()
         {

@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using NUnit.Framework;
 using Vim;
 
@@ -55,8 +54,9 @@ namespace VimCore.UnitTest
             Environment.SetEnvironmentVariable("HOME", @"c:\temp");
             var list = _fileSystem.GetVimRcFilePaths().ToList();
             Assert.AreEqual(@"c:\temp\.vsvimrc", list[0]);
-            Assert.AreEqual(@"c:\temp\.vimrc", list[1]);
-            Assert.AreEqual(@"c:\temp\_vimrc", list[2]);
+            Assert.AreEqual(@"c:\temp\_vsvimrc", list[1]);
+            Assert.AreEqual(@"c:\temp\.vimrc", list[2]);
+            Assert.AreEqual(@"c:\temp\_vimrc", list[3]);
         }
 
     }
