@@ -20,6 +20,8 @@ F#
  - Don't add a space between
     - Parens in everything but after keywords and discriminated union values
         x.Foo()
+    - After the get in a mutable property defenition
+        with get() = 
  - To Deteremine:
     - Should functions returning an option be prefixed with Try? Example KeyNotationUtil 
 

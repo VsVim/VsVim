@@ -269,7 +269,7 @@ namespace VimCore.UnitTest
         public void TestChar_o_1()
         {
             CreateBuffer("how is", "foo");
-            _buffer.Settings.UseEditorIndent = false;
+            _buffer.Settings.GlobalSettings.UseEditorIndent = false;
             _textView.Caret.MoveTo(new SnapshotPoint(_textView.TextSnapshot, 0));
             _buffer.Process("o");
             Assert.AreEqual(ModeKind.Insert, _buffer.ModeKind);

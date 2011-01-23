@@ -1040,6 +1040,8 @@ module GlobalSettingNames =
     let StartOfLineName = "startofline"
     let TabStopName = "tabstop"
     let TildeOpName = "tildeop"
+    let UseEditorIndentName = "vsvim_useeditorindent"
+    let UseEditorTabSettingsName = "vsvim_useeditortabsettings"
     let VisualBellName = "visualbell"
     let VirtualEditName = "virtualedit"
     let VimRcName = "vimrc"
@@ -1050,10 +1052,11 @@ module LocalSettingNames =
 
     let AutoIndentName = "autoindent"
     let CursorLineName = "cursorline"
+    let ExpandTabName = "expandtab"
     let NumberName = "number"
     let ScrollName = "scroll"
+    let TabStopName = "tabstop"
     let QuoteEscapeName = "quoteescape"
-    let UseEditorIndentName = "vsvim_useeditorindent"
 
 /// Holds mutable data available to all buffers
 type IVimData = 
@@ -1117,7 +1120,7 @@ and IVimGlobalSettings =
     /// Is the onemore option inside of VirtualEdit set
     abstract IsVirtualEditOneMore : bool with get
 
-    /// Controls how many spaces a tab counts for.  
+    /// Controls how many spaces a tab counts for.
     abstract TabStop : int with get,set
 
     /// Controls the behavior of ~ in normal mode
@@ -1133,6 +1136,13 @@ and IVimGlobalSettings =
     /// Overrides the IgnoreCase setting in certain cases if the pattern contains
     /// any upper case letters
     abstract SmartCase : bool with get,set
+
+    /// Let the editor control indentation of lines instead.  Overrides the AutoIndent
+    /// setting
+    abstract UseEditorIndent : bool with get, set
+
+    /// Use the editor tab setting over the ExpandTab one
+    abstract UseEditorTabSettings : bool with get, set
 
     /// Retrieves the location of the loaded VimRC file.  Will be the empty string if the load 
     /// did not succeed or has not been tried
@@ -1164,17 +1174,19 @@ and IVimLocalSettings =
     /// Whether or not to highlight the line the cursor is on
     abstract CursorLine : bool with get, set
 
+    /// Whether or not to expand tabs into spaces
+    abstract ExpandTab : bool with get, set
+
     /// Return the handle to the global IVimSettings instance
     abstract GlobalSettings : IVimGlobalSettings
+
+    /// How many spaces a tab counts for 
+    abstract TabStop : int with get, set
 
     abstract Scroll : int with get, set
 
     /// Which characters escape quotes for certain motion types
     abstract QuoteEscape : string with get, set
-
-    /// Let the editor control indentation of lines instead.  Overrides the AutoIndent
-    /// setting
-    abstract UseEditorIndent : bool with get, set
 
     inherit IVimSettings
 

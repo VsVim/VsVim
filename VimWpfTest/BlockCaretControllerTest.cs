@@ -8,26 +8,28 @@ namespace Vim.UI.Wpf.Test
     [TestFixture]
     class BlockCaretControllerTest
     {
-        private Mock<ITextView> _view;
+        private MockRepository _factory;
+        private Mock<ITextView> _textView;
         private Mock<IVimBuffer> _buffer;
         private Mock<IBlockCaret> _caret;
-        private MockVimLocalSettings _localSettings;
-        private MockVimGlobalSettings _settings;
+        private Mock<IVimGlobalSettings> _settings;
+        private Mock<IVimLocalSettings> _localSettings;
         private BlockCaretController _controller;
 
         [SetUp]
         public void SetUp()
         {
-            _view = new Mock<ITextView>();
-            _settings = new MockVimGlobalSettings();
-            _localSettings = new MockVimLocalSettings() { GlobalSettingsImpl = _settings };
-            _buffer = new Mock<IVimBuffer>();
+            _factory = new MockRepository(MockBehavior.Loose);
+            _textView = _factory.Create<ITextView>(MockBehavior.Strict);
+            _settings = _factory.Create<IVimGlobalSettings>(MockBehavior.Loose);
+            _localSettings = MockObjectFactory.CreateLocalSettings(global: _settings.Object, factory: _factory);
+            _buffer = _factory.Create<IVimBuffer>(MockBehavior.Strict);
             _buffer.SetupGet(x => x.ModeKind).Returns(ModeKind.Command);
-            _buffer.SetupGet(x => x.TextView).Returns(_view.Object);
-            _buffer.SetupGet(x => x.Settings).Returns(_localSettings);
-            _caret = new Mock<IBlockCaret>(MockBehavior.Strict);
+            _buffer.SetupGet(x => x.TextView).Returns(_textView.Object);
+            _buffer.SetupGet(x => x.Settings).Returns(_localSettings.Object);
+            _caret = _factory.Create<IBlockCaret>(MockBehavior.Strict);
             _caret.SetupSet(x => x.CaretDisplay = CaretDisplay.Invisible);
-            _caret.SetupSet(x => x.CaretOpacity = _settings.CaretOpacity);
+            _caret.SetupSet(x => x.CaretOpacity = It.IsAny<double>());
             _controller = new BlockCaretController(_buffer.Object, _caret.Object);
         }
 
@@ -172,8 +174,8 @@ namespace Vim.UI.Wpf.Test
                 SettingValue.NewStringValue(""),
                 SettingValue.NewStringValue(""),
                 true);
-            _settings.CaretOpacity = 1;
-            _settings.RaiseSettingChanged(setting);
+            _settings.SetupGet(x => x.CaretOpacity).Returns(1);
+            _settings.Raise(x => x.SettingChanged += null, null, setting);
             _caret.Verify();
         }
     }

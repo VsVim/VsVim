@@ -462,6 +462,12 @@ module SnapshotLineUtil =
         |> SeqUtil.tryHeadOnly
         |> OptionUtil.getOrDefault (GetEnd line)
 
+    /// Get the text of the ITextSnapshotLine 
+    let GetText (line : ITextSnapshotLine) = line.GetText()
+
+    /// Get the text of the ITextSnapshotLine including the line break
+    let GetTextIncludingLineBreak (line : ITextSnapshotLine) = line.GetTextIncludingLineBreak()
+
 [<RequireQualifiedAccess>]
 type PointKind =
     /// Normal valid point within the ITextSnapshot.  Point in question is the argument

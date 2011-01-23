@@ -21,7 +21,8 @@ namespace VimCore.UnitTest
         private IWpfTextView _textView;
         private ITextBuffer _textBuffer;
         private MockRepository _factory;
-        private Mock<IEditorOperations> _editorOpts;
+        private Mock<IEditorOptions> _editorOptions;
+        private Mock<IEditorOperations> _editorOperations;
         private Mock<IVimHost> _host;
         private Mock<IJumpList> _jumpList;
         private Mock<IVimLocalSettings> _settings;
@@ -46,17 +47,22 @@ namespace VimCore.UnitTest
             _registerMap = VimUtil.CreateRegisterMap(MockObjectFactory.CreateClipboardDevice(_factory).Object);
             _host = _factory.Create<IVimHost>();
             _jumpList = _factory.Create<IJumpList>();
-            _editorOpts = _factory.Create<IEditorOperations>();
-            _editorOpts.Setup(x => x.AddAfterTextBufferChangePrimitive());
-            _editorOpts.Setup(x => x.AddBeforeTextBufferChangePrimitive());
+            _editorOptions = _factory.Create<IEditorOptions>();
+            _editorOptions.Setup(x => x.GetOptionValue(DefaultOptions.ConvertTabsToSpacesOptionId)).Returns(true);
+            _editorOperations = _factory.Create<IEditorOperations>();
+            _editorOperations.Setup(x => x.AddAfterTextBufferChangePrimitive());
+            _editorOperations.Setup(x => x.AddBeforeTextBufferChangePrimitive());
             _globalSettings = _factory.Create<IVimGlobalSettings>();
             _globalSettings.SetupGet(x => x.Magic).Returns(true);
             _globalSettings.SetupGet(x => x.SmartCase).Returns(false);
             _globalSettings.SetupGet(x => x.IgnoreCase).Returns(true);
+            _globalSettings.SetupGet(x => x.UseEditorIndent).Returns(false);
+            _globalSettings.SetupGet(x => x.UseEditorTabSettings).Returns(false);
             _settings = MockObjectFactory.CreateLocalSettings(_globalSettings.Object, _factory);
             _settings.SetupGet(x => x.AutoIndent).Returns(false);
             _settings.SetupGet(x => x.GlobalSettings).Returns(_globalSettings.Object);
-            _settings.SetupGet(x => x.UseEditorIndent).Returns(false);
+            _settings.SetupGet(x => x.ExpandTab).Returns(true);
+            _settings.SetupGet(x => x.TabStop).Returns(4);
             _outlining = _factory.Create<IOutliningManager>();
             _globalSettings.SetupGet(x => x.ShiftWidth).Returns(2);
             _statusUtil = _factory.Create<IStatusUtil>();
@@ -68,14 +74,14 @@ namespace VimCore.UnitTest
             var data = new OperationsData(
                 vimData: _vimData,
                 vimHost: _host.Object,
-                editorOperations: _editorOpts.Object,
+                editorOperations: _editorOperations.Object,
                 textView: _textView,
                 outliningManager: FSharpOption.Create(_outlining.Object),
                 jumpList: _jumpList.Object,
                 localSettings: _settings.Object,
                 undoRedoOperations: _undoRedoOperations.Object,
                 registerMap: _registerMap,
-                editorOptions: null,
+                editorOptions: _editorOptions.Object,
                 keyMap: null,
                 navigator: null,
                 statusUtil: _statusUtil.Object,
@@ -415,21 +421,21 @@ namespace VimCore.UnitTest
         public void MoveCaretRight1()
         {
             Create("foo", "bar");
-            _editorOpts.Setup(x => x.ResetSelection()).Verifiable();
+            _editorOperations.Setup(x => x.ResetSelection()).Verifiable();
             _operations.MoveCaretRight(1);
             Assert.AreEqual(1, _textView.Caret.Position.BufferPosition.Position);
-            _editorOpts.Verify();
+            _editorOperations.Verify();
         }
 
         [Test]
         public void MoveCaretRight2()
         {
             Create("foo", "bar");
-            _editorOpts.Setup(x => x.ResetSelection()).Verifiable();
+            _editorOperations.Setup(x => x.ResetSelection()).Verifiable();
             _textView.Caret.MoveTo(new SnapshotPoint(_textView.TextSnapshot, 0));
             _operations.MoveCaretRight(2);
             Assert.AreEqual(2, _textView.Caret.Position.BufferPosition.Position);
-            _editorOpts.Verify();
+            _editorOperations.Verify();
         }
 
         [Test, Description("Don't move past the end of the line")]
@@ -459,11 +465,11 @@ namespace VimCore.UnitTest
             Create("foo", "bar");
             var line = _textView.TextSnapshot.GetLineFromLineNumber(0);
             _globalSettings.SetupGet(x => x.IsVirtualEditOneMore).Returns(false).Verifiable();
-            _editorOpts.Setup(x => x.ResetSelection());
+            _editorOperations.Setup(x => x.ResetSelection());
             _textView.Caret.MoveTo(line.End.Subtract(1));
             _operations.MoveCaretRight(1);
             Assert.AreEqual(line.End.Subtract(1), _textView.Caret.Position.BufferPosition);
-            _editorOpts.Verify();
+            _editorOperations.Verify();
             _globalSettings.Verify();
         }
 
@@ -480,12 +486,12 @@ namespace VimCore.UnitTest
         public void MoveCaretRight7()
         {
             Create("foo", "bar");
-            _editorOpts.Setup(x => x.ResetSelection()).Verifiable();
+            _editorOperations.Setup(x => x.ResetSelection()).Verifiable();
             _textView.Caret.MoveTo(_textView.GetLine(0).End.Subtract(1));
             _globalSettings.SetupGet(x => x.IsVirtualEditOneMore).Returns(true).Verifiable();
             _operations.MoveCaretRight(1);
             Assert.AreEqual(_textView.GetLine(0).End, _textView.GetCaretPoint());
-            _editorOpts.Verify();
+            _editorOperations.Verify();
             _globalSettings.Verify();
         }
 
@@ -494,10 +500,10 @@ namespace VimCore.UnitTest
         {
             Create("foo", "bar");
             _textView.Caret.MoveTo(new SnapshotPoint(_textView.TextSnapshot, 1));
-            _editorOpts.Setup(x => x.ResetSelection()).Verifiable();
+            _editorOperations.Setup(x => x.ResetSelection()).Verifiable();
             _operations.MoveCaretLeft(1);
             Assert.AreEqual(0, _textView.Caret.Position.BufferPosition.Position);
-            _editorOpts.Verify();
+            _editorOperations.Verify();
         }
 
         [Test, Description("Move left on the start of the line should not go anywhere")]
@@ -514,10 +520,10 @@ namespace VimCore.UnitTest
             Create("foo", "bar");
             var line = _textView.TextSnapshot.GetLineFromLineNumber(0);
             _textView.Caret.MoveTo(line.Start.Add(1));
-            _editorOpts.Setup(x => x.ResetSelection()).Verifiable();
+            _editorOperations.Setup(x => x.ResetSelection()).Verifiable();
             _operations.MoveCaretLeft(1);
             Assert.AreEqual(line.Start, _textView.Caret.Position.BufferPosition);
-            _editorOpts.Verify();
+            _editorOperations.Verify();
         }
 
         [Test, Description("Left at the start of the line should not go further")]
@@ -537,10 +543,10 @@ namespace VimCore.UnitTest
             _globalSettings.SetupGet(x => x.IsVirtualEditOneMore).Returns(true);
             var line = _textView.TextSnapshot.GetLineFromLineNumber(1);
             _textView.Caret.MoveTo(line.Start);
-            _editorOpts.Setup(x => x.ResetSelection()).Verifiable();
-            _editorOpts.Setup(x => x.MoveLineUp(false)).Verifiable();
+            _editorOperations.Setup(x => x.ResetSelection()).Verifiable();
+            _editorOperations.Setup(x => x.MoveLineUp(false)).Verifiable();
             _operations.MoveCaretUp(1);
-            _editorOpts.Verify();
+            _editorOperations.Verify();
         }
 
         [Test, Description("Move caret up past the begining of the buffer should fail if it's already at the top")]
@@ -561,10 +567,10 @@ namespace VimCore.UnitTest
             var tss = _textView.TextSnapshot;
             _globalSettings.SetupGet(x => x.IsVirtualEditOneMore).Returns(true);
             _textView.Caret.MoveTo(tss.GetLineFromLineNumber(1).Start.Add(1));
-            _editorOpts.Setup(x => x.ResetSelection()).Verifiable();
-            _editorOpts.Setup(x => x.MoveLineUp(false)).Verifiable();
+            _editorOperations.Setup(x => x.ResetSelection()).Verifiable();
+            _editorOperations.Setup(x => x.MoveLineUp(false)).Verifiable();
             _operations.MoveCaretUp(1);
-            _editorOpts.Verify();
+            _editorOperations.Verify();
         }
 
         [Test]
@@ -574,11 +580,11 @@ namespace VimCore.UnitTest
             _globalSettings.SetupGet(x => x.IsVirtualEditOneMore).Returns(true);
             _textView.Caret.MoveTo(_textView.TextSnapshot.GetLineFromLineNumber(3).Start);
             var count = 0;
-            _editorOpts.Setup(x => x.ResetSelection()).Verifiable();
-            _editorOpts.Setup(x => x.MoveLineUp(false)).Callback(() => { count++; }).Verifiable();
+            _editorOperations.Setup(x => x.ResetSelection()).Verifiable();
+            _editorOperations.Setup(x => x.MoveLineUp(false)).Callback(() => { count++; }).Verifiable();
             _operations.MoveCaretUp(1);
             Assert.AreEqual(1, count);
-            _editorOpts.Verify();
+            _editorOperations.Verify();
         }
 
         [Test]
@@ -588,11 +594,11 @@ namespace VimCore.UnitTest
             _globalSettings.SetupGet(x => x.IsVirtualEditOneMore).Returns(true);
             _textView.Caret.MoveTo(_textView.TextSnapshot.GetLineFromLineNumber(3).Start);
             var count = 0;
-            _editorOpts.Setup(x => x.ResetSelection()).Verifiable();
-            _editorOpts.Setup(x => x.MoveLineUp(false)).Callback(() => { count++; }).Verifiable();
+            _editorOperations.Setup(x => x.ResetSelection()).Verifiable();
+            _editorOperations.Setup(x => x.MoveLineUp(false)).Callback(() => { count++; }).Verifiable();
             _operations.MoveCaretUp(2);
             Assert.AreEqual(2, count);
-            _editorOpts.Verify();
+            _editorOperations.Verify();
         }
 
         [Test]
@@ -601,8 +607,8 @@ namespace VimCore.UnitTest
             Create("smaller", "foo bar baz");
             _textView.MoveCaretTo(_textView.GetLine(1).End);
             _globalSettings.SetupGet(x => x.IsVirtualEditOneMore).Returns(false);
-            _editorOpts.Setup(x => x.ResetSelection()).Verifiable();
-            _editorOpts
+            _editorOperations.Setup(x => x.ResetSelection()).Verifiable();
+            _editorOperations
                 .Setup(x => x.MoveLineUp(false))
                 .Callback(() => _textView.MoveCaretTo(_textView.GetLine(0).End))
                 .Verifiable();
@@ -617,8 +623,8 @@ namespace VimCore.UnitTest
             Create("foo bar baz", "", "smaller aoeu ao aou ");
             _textView.MoveCaretTo(_textView.GetLine(2).End);
             _globalSettings.SetupGet(x => x.IsVirtualEditOneMore).Returns(false);
-            _editorOpts.Setup(x => x.ResetSelection()).Verifiable();
-            _editorOpts
+            _editorOperations.Setup(x => x.ResetSelection()).Verifiable();
+            _editorOperations
                 .Setup(x => x.MoveLineUp(false))
                 .Callback(() => _textView.MoveCaretTo(_textView.GetLine(1).End))
                 .Verifiable();
@@ -710,10 +716,10 @@ namespace VimCore.UnitTest
         {
             Create("foo", "bar", "baz");
             _globalSettings.SetupGet(x => x.IsVirtualEditOneMore).Returns(true);
-            _editorOpts.Setup(x => x.ResetSelection()).Verifiable();
-            _editorOpts.Setup(x => x.MoveLineDown(false)).Verifiable();
+            _editorOperations.Setup(x => x.ResetSelection()).Verifiable();
+            _editorOperations.Setup(x => x.MoveLineDown(false)).Verifiable();
             _operations.MoveCaretDown(1);
-            _editorOpts.Verify();
+            _editorOperations.Verify();
         }
 
         [Test, Description("Move caret down should fail if the caret is at the end of the buffer")]
@@ -735,10 +741,10 @@ namespace VimCore.UnitTest
             var tss = _textView.TextSnapshot;
             var line = tss.GetLineFromLineNumber(tss.LineCount - 2);
             _textView.Caret.MoveTo(line.Start);
-            _editorOpts.Setup(x => x.ResetSelection()).Verifiable();
-            _editorOpts.Setup(x => x.MoveLineDown(false)).Verifiable();
+            _editorOperations.Setup(x => x.ResetSelection()).Verifiable();
+            _editorOperations.Setup(x => x.MoveLineDown(false)).Verifiable();
             _operations.MoveCaretDown(1);
-            _editorOpts.Verify();
+            _editorOperations.Verify();
         }
 
         [Test, Description("Move caret down should not crash if the line is the second to last line.  In other words, the last real line")]
@@ -758,14 +764,14 @@ namespace VimCore.UnitTest
             Create("foo", "bar", "baz", "jaz");
             _globalSettings.SetupGet(x => x.IsVirtualEditOneMore).Returns(true);
             var count = 0;
-            _editorOpts.Setup(x => x.ResetSelection()).Verifiable();
-            _editorOpts
+            _editorOperations.Setup(x => x.ResetSelection()).Verifiable();
+            _editorOperations
                 .Setup(x => x.MoveLineDown(false))
                 .Callback(() => { count++; })
                 .Verifiable();
             _operations.MoveCaretDown(1);
             Assert.AreEqual(1, count);
-            _editorOpts.Verify();
+            _editorOperations.Verify();
         }
 
         [Test]
@@ -774,14 +780,14 @@ namespace VimCore.UnitTest
             Create("foo", "bar", "baz", "jaz");
             var count = 0;
             _globalSettings.SetupGet(x => x.IsVirtualEditOneMore).Returns(true);
-            _editorOpts.Setup(x => x.ResetSelection()).Verifiable();
-            _editorOpts
+            _editorOperations.Setup(x => x.ResetSelection()).Verifiable();
+            _editorOperations
                 .Setup(x => x.MoveLineDown(false))
                 .Callback(() => { count++; })
                 .Verifiable();
             _operations.MoveCaretDown(2);
             Assert.AreEqual(2, count);
-            _editorOpts.Verify();
+            _editorOperations.Verify();
         }
 
         [Test]
@@ -789,8 +795,8 @@ namespace VimCore.UnitTest
         {
             Create("foo bar baz", "smaller");
             _globalSettings.SetupGet(x => x.IsVirtualEditOneMore).Returns(false);
-            _editorOpts.Setup(x => x.ResetSelection()).Verifiable();
-            _editorOpts
+            _editorOperations.Setup(x => x.ResetSelection()).Verifiable();
+            _editorOperations
                 .Setup(x => x.MoveLineDown(false))
                 .Callback(() => _textView.MoveCaretTo(_textView.GetLine(1).End))
                 .Verifiable();
@@ -804,8 +810,8 @@ namespace VimCore.UnitTest
         {
             Create("foo bar baz", "", "smaller");
             _globalSettings.SetupGet(x => x.IsVirtualEditOneMore).Returns(false);
-            _editorOpts.Setup(x => x.ResetSelection()).Verifiable();
-            _editorOpts
+            _editorOperations.Setup(x => x.ResetSelection()).Verifiable();
+            _editorOperations
                 .Setup(x => x.MoveLineDown(false))
                 .Callback(() => _textView.MoveCaretTo(_textView.GetLine(1).End))
                 .Verifiable();
@@ -965,6 +971,79 @@ namespace VimCore.UnitTest
         }
 
         [Test]
+        public void ShiftLinesLeft_TabStartUsingSpaces()
+        {
+            Create("\tcat");
+            _settings.SetupGet(x => x.ExpandTab).Returns(true);
+            _operations.ShiftLinesLeft(1);
+            Assert.AreEqual("  cat", _textView.GetLine(0).GetText());
+        }
+
+        [Test]
+        [Description("Vim will actually normalize the line and then shift")]
+        public void ShiftLinesLeft_MultiTabStartUsingSpaces()
+        {
+            Create("\t\tcat");
+            _settings.SetupGet(x => x.ExpandTab).Returns(true);
+            _operations.ShiftLinesLeft(1);
+            Assert.AreEqual("      cat", _textView.GetLine(0).GetText());
+        }
+
+        [Test]
+        public void ShiftLinesLeft_TabStartUsingTabs()
+        {
+            Create("\tcat");
+            _settings.SetupGet(x => x.ExpandTab).Returns(false);
+            _operations.ShiftLinesLeft(1);
+            Assert.AreEqual("  cat", _textView.GetLine(0).GetText());
+        }
+
+        [Test]
+        public void ShiftLinesLeft_SpaceStartUsingTabs()
+        {
+            Create("    cat");
+            _settings.SetupGet(x => x.ExpandTab).Returns(false);
+            _operations.ShiftLinesLeft(1);
+            Assert.AreEqual("  cat", _textView.GetLine(0).GetText());
+        }
+
+        [Test]
+        public void ShiftLinesLeft_TabStartFollowedBySpacesUsingTabs()
+        {
+            Create("\t    cat");
+            _settings.SetupGet(x => x.ExpandTab).Returns(false);
+            _operations.ShiftLinesLeft(1);
+            Assert.AreEqual("\t  cat", _textView.GetLine(0).GetText());
+        }
+
+        [Test]
+        public void ShiftLinesLeft_SpacesStartFollowedByTabFollowedBySpacesUsingTabs()
+        {
+            Create("    \t    cat");
+            _settings.SetupGet(x => x.ExpandTab).Returns(false);
+            _operations.ShiftLinesLeft(1);
+            Assert.AreEqual("\t\t  cat", _textView.GetLine(0).GetText());
+        }
+
+        [Test]
+        public void ShiftLinesLeft_SpacesStartFollowedByTabFollowedBySpacesUsingTabsWithModifiedTabStop()
+        {
+            Create("    \t    cat");
+            _settings.SetupGet(x => x.ExpandTab).Returns(false);
+            _settings.SetupGet(x => x.TabStop).Returns(2);
+            _operations.ShiftLinesLeft(1);
+            Assert.AreEqual("\t\t\t\tcat", _textView.GetLine(0).GetText());
+        }
+        [Test]
+        public void ShiftLinesLeft_ShortSpacesStartFollowedByTabFollowedBySpacesUsingTabs()
+        {
+            Create("  \t    cat");
+            _settings.SetupGet(x => x.ExpandTab).Returns(false);
+            _operations.ShiftLinesLeft(1);
+            Assert.AreEqual("\t  cat", _textView.GetLine(0).GetText());
+        }
+
+        [Test]
         public void ShiftLinesRight1()
         {
             Create("foo");
@@ -1003,11 +1082,57 @@ namespace VimCore.UnitTest
         }
 
         [Test]
+        public void ShiftLinesRight_PreferEditorTabSetting()
+        {
+            Create("cat", "dog");
+            _globalSettings.SetupGet(x => x.UseEditorTabSettings).Returns(true);
+            _globalSettings.SetupGet(x => x.ShiftWidth).Returns(4);
+            _editorOptions.Setup(x => x.GetOptionValue(DefaultOptions.ConvertTabsToSpacesOptionId)).Returns(false);
+            _editorOptions.Setup(x => x.GetOptionValue(DefaultOptions.TabSizeOptionId)).Returns(4);
+            _operations.ShiftLinesRight(1);
+            Assert.AreEqual("\tcat", _textView.GetLine(0).GetText());
+        }
+
+        [Test]
+        public void ShiftLinesRight_NoExpandTab()
+        {
+            Create("cat", "dog");
+            _globalSettings.SetupGet(x => x.UseEditorTabSettings).Returns(false);
+            _globalSettings.SetupGet(x => x.ShiftWidth).Returns(4);
+            _settings.SetupGet(x => x.ExpandTab).Returns(false);
+            _operations.ShiftLinesRight(1);
+            Assert.AreEqual("\tcat", _textView.GetLine(0).GetText());
+        }
+
+        [Test]
+        public void ShiftLinesRight_NoExpandTabKeepSpacesWhenFewerThanTabStop()
+        {
+            Create("cat", "dog");
+            _globalSettings.SetupGet(x => x.UseEditorTabSettings).Returns(false);
+            _globalSettings.SetupGet(x => x.ShiftWidth).Returns(2);
+            _globalSettings.SetupGet(x => x.TabStop).Returns(4);
+            _settings.SetupGet(x => x.ExpandTab).Returns(false);
+            _operations.ShiftLinesRight(1);
+            Assert.AreEqual("  cat", _textView.GetLine(0).GetText());
+        }
+
+        [Test]
+        public void ShiftLinesRight_SpacesStartUsingTabs()
+        {
+            Create("  cat", "dog");
+            _globalSettings.SetupGet(x => x.UseEditorTabSettings).Returns(false);
+            _settings.SetupGet(x => x.ExpandTab).Returns(false);
+            _settings.SetupGet(x => x.TabStop).Returns(2);
+            _operations.ShiftLinesRight(1);
+            Assert.AreEqual("\t\tcat", _textView.GetLine(0).GetText());
+        }
+
+        [Test]
         public void ScrollLines1()
         {
             Create("foo", "bar");
             _textView.Caret.MoveTo(_textView.TextSnapshot.GetLineFromLineNumber(1).End);
-            _editorOpts.Setup(x => x.ResetSelection());
+            _editorOperations.Setup(x => x.ResetSelection());
             _settings.SetupGet(x => x.Scroll).Returns(42).Verifiable();
             _operations.MoveCaretAndScrollLines(ScrollDirection.Up, 1);
             Assert.AreEqual(0, _textView.Caret.Position.BufferPosition.GetContainingLine().LineNumber);
@@ -1019,7 +1144,7 @@ namespace VimCore.UnitTest
         {
             Create("foo", "bar");
             _textView.Caret.MoveTo(_textView.TextSnapshot.GetLineFromLineNumber(0).End);
-            _editorOpts.Setup(x => x.ResetSelection());
+            _editorOperations.Setup(x => x.ResetSelection());
             _settings.SetupGet(x => x.Scroll).Returns(42).Verifiable();
             _operations.MoveCaretAndScrollLines(ScrollDirection.Up, 1);
             Assert.AreEqual(0, _textView.Caret.Position.BufferPosition.GetContainingLine().LineNumber);
@@ -1031,7 +1156,7 @@ namespace VimCore.UnitTest
         {
             Create("foo", "bar");
             _textView.Caret.MoveTo(_textView.TextSnapshot.GetLineFromLineNumber(0).End);
-            _editorOpts.Setup(x => x.ResetSelection());
+            _editorOperations.Setup(x => x.ResetSelection());
             _settings.SetupGet(x => x.Scroll).Returns(42).Verifiable();
             _operations.MoveCaretAndScrollLines(ScrollDirection.Down, 1);
             Assert.AreEqual(1, _textView.Caret.Position.BufferPosition.GetContainingLine().LineNumber);
@@ -1042,9 +1167,9 @@ namespace VimCore.UnitTest
         public void ScrollPages1()
         {
             Create("");
-            _editorOpts.Setup(x => x.ScrollPageUp()).Verifiable();
+            _editorOperations.Setup(x => x.ScrollPageUp()).Verifiable();
             _operations.ScrollPages(ScrollDirection.Up, 1);
-            _editorOpts.Verify();
+            _editorOperations.Verify();
         }
 
         [Test]
@@ -1052,7 +1177,7 @@ namespace VimCore.UnitTest
         {
             Create("");
             var count = 0;
-            _editorOpts.Setup(x => x.ScrollPageUp()).Callback(() => { count++; });
+            _editorOperations.Setup(x => x.ScrollPageUp()).Callback(() => { count++; });
             _operations.ScrollPages(ScrollDirection.Up, 2);
             Assert.AreEqual(2, count);
         }
@@ -1061,9 +1186,9 @@ namespace VimCore.UnitTest
         public void ScrollPages3()
         {
             Create("");
-            _editorOpts.Setup(x => x.ScrollPageDown()).Verifiable();
+            _editorOperations.Setup(x => x.ScrollPageDown()).Verifiable();
             _operations.ScrollPages(ScrollDirection.Down, 1);
-            _editorOpts.Verify();
+            _editorOperations.Verify();
         }
 
         [Test]
@@ -1071,7 +1196,7 @@ namespace VimCore.UnitTest
         {
             Create("");
             var count = 0;
-            _editorOpts.Setup(x => x.ScrollPageDown()).Callback(() => { count++; });
+            _editorOperations.Setup(x => x.ScrollPageDown()).Callback(() => { count++; });
             _operations.ScrollPages(ScrollDirection.Down, 2);
             Assert.AreEqual(2, count);
         }
@@ -1282,7 +1407,7 @@ namespace VimCore.UnitTest
         public void MoveCaretToMotionData1()
         {
             Create("foo", "bar", "baz");
-            _editorOpts.Setup(x => x.ResetSelection());
+            _editorOperations.Setup(x => x.ResetSelection());
             var data = VimUtil.CreateMotionData(
                 new SnapshotSpan(_textBuffer.CurrentSnapshot, 1, 2),
                 true,
@@ -1296,7 +1421,7 @@ namespace VimCore.UnitTest
         public void MoveCaretToMotionData2()
         {
             Create("foo", "bar", "baz");
-            _editorOpts.Setup(x => x.ResetSelection());
+            _editorOperations.Setup(x => x.ResetSelection());
             var data = VimUtil.CreateMotionData(
                 new SnapshotSpan(_textBuffer.CurrentSnapshot, 0, 1),
                 true,
@@ -1310,7 +1435,7 @@ namespace VimCore.UnitTest
         public void MoveCaretToMotionData3()
         {
             Create("foo", "bar", "baz");
-            _editorOpts.Setup(x => x.ResetSelection());
+            _editorOperations.Setup(x => x.ResetSelection());
             var data = VimUtil.CreateMotionData(
                 new SnapshotSpan(_textBuffer.CurrentSnapshot, 0, 0),
                 true,
@@ -1324,7 +1449,7 @@ namespace VimCore.UnitTest
         public void MoveCaretToMotionData4()
         {
             Create("foo", "bar", "baz");
-            _editorOpts.Setup(x => x.ResetSelection());
+            _editorOperations.Setup(x => x.ResetSelection());
             var data = VimUtil.CreateMotionData(
                 new SnapshotSpan(_textBuffer.CurrentSnapshot, 0, 3),
                 false,
@@ -1338,7 +1463,7 @@ namespace VimCore.UnitTest
         public void MoveCaretToMotionData5()
         {
             Create("foo", "bar", "baz");
-            _editorOpts.Setup(x => x.ResetSelection());
+            _editorOperations.Setup(x => x.ResetSelection());
             var data = VimUtil.CreateMotionData(
                 new SnapshotSpan(_textBuffer.CurrentSnapshot, 1, 2),
                 true,
@@ -1352,7 +1477,7 @@ namespace VimCore.UnitTest
         public void MoveCaretToMotionData6()
         {
             Create("foo", "bar", "baz");
-            _editorOpts.Setup(x => x.ResetSelection());
+            _editorOperations.Setup(x => x.ResetSelection());
             var data = VimUtil.CreateMotionData(
                 new SnapshotSpan(_textBuffer.CurrentSnapshot, 0, 1),
                 true,
@@ -1367,7 +1492,7 @@ namespace VimCore.UnitTest
         public void MoveCaretToMotionData7()
         {
             Create("foo", "bar", "");
-            _editorOpts.Setup(x => x.ResetSelection());
+            _editorOperations.Setup(x => x.ResetSelection());
             var data = VimUtil.CreateMotionData(
                 new SnapshotSpan(_textBuffer.CurrentSnapshot, 0, _textBuffer.CurrentSnapshot.Length),
                 true,
@@ -1382,7 +1507,7 @@ namespace VimCore.UnitTest
         public void MoveCaretToMotionData8()
         {
             Create("foo", "bar", "");
-            _editorOpts.Setup(x => x.ResetSelection());
+            _editorOperations.Setup(x => x.ResetSelection());
             var data = VimUtil.CreateMotionData(
                 _textBuffer.GetLineRange(0, 1).Extent,
                 true,
@@ -1398,7 +1523,7 @@ namespace VimCore.UnitTest
         public void MoveCaretToMotionData9()
         {
             Create("foo", "bar", "");
-            _editorOpts.Setup(x => x.ResetSelection());
+            _editorOperations.Setup(x => x.ResetSelection());
             var data = VimUtil.CreateMotionData(
                 _textBuffer.GetLineRange(0, 1).Extent,
                 true,
@@ -1414,7 +1539,7 @@ namespace VimCore.UnitTest
         public void MoveCaretToMotionData10()
         {
             Create("foo", "bar", "");
-            _editorOpts.Setup(x => x.ResetSelection());
+            _editorOperations.Setup(x => x.ResetSelection());
             var data = VimUtil.CreateMotionData(
                 _textBuffer.GetLineRange(0, 1).Extent,
                 true,
@@ -1430,7 +1555,7 @@ namespace VimCore.UnitTest
         public void MoveCaretToMotionData11()
         {
             Create("dog", "cat", "bear");
-            _editorOpts.Setup(x => x.ResetSelection());
+            _editorOperations.Setup(x => x.ResetSelection());
             var data = VimUtil.CreateMotionData(
                 _textBuffer.GetLineRange(0, 1).Extent,
                 false,
@@ -1446,7 +1571,7 @@ namespace VimCore.UnitTest
         public void MoveCaretToMotionData12()
         {
             Create("dog", "cat", "bear");
-            _editorOpts.Setup(x => x.ResetSelection());
+            _editorOperations.Setup(x => x.ResetSelection());
             var data = VimUtil.CreateMotionData(
                 _textBuffer.GetLineRange(0, 1).Extent,
                 false,
@@ -1462,7 +1587,7 @@ namespace VimCore.UnitTest
         public void MoveCaretToMotionData13()
         {
             Create("dog", "cat", "bear");
-            _editorOpts.Setup(x => x.ResetSelection());
+            _editorOperations.Setup(x => x.ResetSelection());
             var data = VimUtil.CreateMotionData(
                 _textBuffer.GetLineRange(0).ExtentIncludingLineBreak,
                 true,
@@ -1478,7 +1603,7 @@ namespace VimCore.UnitTest
         public void MoveCaretToMotionData14()
         {
             Create("dog", "cat", "bear");
-            _editorOpts.Setup(x => x.ResetSelection());
+            _editorOperations.Setup(x => x.ResetSelection());
             var data = VimUtil.CreateMotionData(
                 _textBuffer.GetLineRange(0, 1).ExtentIncludingLineBreak,
                 false,
@@ -1494,7 +1619,7 @@ namespace VimCore.UnitTest
         public void MoveCaretToMotionData15()
         {
             Create("dog", "cat", "bear");
-            _editorOpts.Setup(x => x.ResetSelection());
+            _editorOperations.Setup(x => x.ResetSelection());
             var data = VimUtil.CreateMotionData(
                 _textBuffer.GetSpan(1, _textBuffer.GetLine(1).EndIncludingLineBreak.Position),
                 true,
@@ -1510,7 +1635,7 @@ namespace VimCore.UnitTest
         public void MoveCaretToMotionData_ReverseLineWiseWithColumn()
         {
             Create(" dog", "cat", "bear");
-            _editorOpts.Setup(x => x.ResetSelection());
+            _editorOperations.Setup(x => x.ResetSelection());
             var data = VimUtil.CreateMotionData(
                 span: _textView.GetLineRange(0, 1).ExtentIncludingLineBreak,
                 isForward: false,
@@ -2234,7 +2359,7 @@ namespace VimCore.UnitTest
         public void InsertLineBelow_PreferEditorIndent()
         {
             Create("cat", "dog");
-            _settings.SetupGet(x => x.UseEditorIndent).Returns(true);
+            _globalSettings.SetupGet(x => x.UseEditorIndent).Returns(true);
             _smartIndent.Setup(x => x.GetDesiredIndentation(_textView, It.IsAny<ITextSnapshotLine>())).Returns(8);
             _operations.InsertLineBelow();
             Assert.AreEqual(8, _textView.Caret.Position.VirtualSpaces);
@@ -2244,7 +2369,7 @@ namespace VimCore.UnitTest
         public void InsertLineBelow_RevertToVimIndentIfEditorIndentFails()
         {
             Create("  cat", "  dog");
-            _settings.SetupGet(x => x.UseEditorIndent).Returns(true);
+            _globalSettings.SetupGet(x => x.UseEditorIndent).Returns(true);
             _settings.SetupGet(x => x.AutoIndent).Returns(true);
             _smartIndent.Setup(x => x.GetDesiredIndentation(_textView, It.IsAny<ITextSnapshotLine>())).Returns((int?)null);
             _operations.InsertLineBelow();

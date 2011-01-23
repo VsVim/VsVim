@@ -4,6 +4,7 @@ namespace Vim.Modes
 open Vim
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Editor
+open Microsoft.VisualStudio.Text.Editor.OptionsExtensionMethods
 open Microsoft.VisualStudio.Text.Operations
 open Microsoft.VisualStudio.Text.Outlining
 open System.Text.RegularExpressions
@@ -25,6 +26,20 @@ type internal CommonOperations ( _data : OperationsData ) =
     let _search = _data.SearchService
     let _smartIndentationServtice = _data.SmartIndentationService
     let _regexFactory = VimRegexFactory(_data.LocalSettings.GlobalSettings)
+
+    /// Whether or not to use spaces over tabs where applicable
+    member x.UseSpaces = 
+        if _settings.GlobalSettings.UseEditorTabSettings then 
+            DefaultOptionExtensions.IsConvertTabsToSpacesEnabled(_options) 
+        else
+            _settings.ExpandTab
+
+    /// How many spaces does a tab count for 
+    member x.TabSize =
+        if _settings.GlobalSettings.UseEditorTabSettings then
+            DefaultOptionExtensions.GetTabSize(_options)
+        else
+            _settings.TabStop
 
     /// The caret sometimes needs to be adjusted after an Up or Down movement.  Caret position
     /// and virtual space is actually quite a predicamite for VsVim because of how Vim standard 
@@ -66,25 +81,66 @@ type internal CommonOperations ( _data : OperationsData ) =
         let buffer = span.Snapshot.TextBuffer
         buffer.Delete(span.Span) |> ignore
 
+    /// Convert the provided whitespace into spaces.  The conversion of 
+    /// tabs into spaces will be done based on the TabSize setting
+    member x.GetAndNormalizeLeadingWhitespaceToSpaces line = 
+        let text = 
+            line
+            |> SnapshotLineUtil.GetText
+            |> Seq.takeWhile CharUtil.IsWhiteSpace
+            |> List.ofSeq
+        let builder = System.Text.StringBuilder()
+        let tabSize = x.TabSize
+        for c in text do
+            match c with 
+            | ' ' -> 
+                builder.Append(' ') |> ignore
+            | '\t' ->
+                // Insert spaces up to the next tab size modulus.  
+                let count = 
+                    let remainder = builder.Length % tabSize
+                    if remainder = 0 then tabSize else remainder
+                for i = 1 to count do
+                    builder.Append(' ') |> ignore
+            | _ -> 
+                builder.Append(' ') |> ignore
+        builder.ToString(), text.Length
+
+    /// Normalize the whitespace into tabs / spaces based on the ExpandTab,
+    /// TabSize settings
+    member x.NormalizeSpaces (text : string) = 
+        if x.UseSpaces then 
+            text
+        else
+            let tabSize = x.TabSize
+            let spacesCount = text.Length % tabSize
+            let tabCount = (text.Length - spacesCount) / tabSize 
+            let prefix = StringUtil.repeatChar tabCount '\t'
+            let suffix = StringUtil.repeatChar spacesCount ' '
+            prefix + suffix
+
     member x.ShiftLineRangeRight multiplier (lineSpan:SnapshotLineRange) =
-        let text = new System.String(' ', _settings.GlobalSettings.ShiftWidth * multiplier)
+        let shiftText = 
+            let count = _settings.GlobalSettings.ShiftWidth * multiplier
+            StringUtil.repeatChar count ' '
         use edit = _data.TextView.TextBuffer.CreateEdit()
         lineSpan.Lines
-        |> Seq.map (fun line -> line.Extent)
-        |> Seq.iter (fun span -> edit.Replace(span.Start.Position, 0, text) |> ignore)
+        |> Seq.iter (fun line ->
+            let ws, originalLength = x.GetAndNormalizeLeadingWhitespaceToSpaces line
+            let ws = x.NormalizeSpaces (ws + shiftText)
+            edit.Replace(line.Start.Position, originalLength, ws) |> ignore)
         edit.Apply() |> ignore
 
     member x.ShiftLineRangeLeft multiplier (lineSpan:SnapshotLineRange) = 
         let count = _settings.GlobalSettings.ShiftWidth * multiplier
         use edit = _data.TextView.TextBuffer.CreateEdit()
         lineSpan.Lines
-        |> Seq.map (fun line -> line.Extent)
-        |> Seq.iter (fun span -> 
-            let text = SnapshotSpanUtil.GetText span
-            let toReplace = 
-                let whiteSpaceLen = text |> Seq.takeWhile CharUtil.IsWhiteSpace |> Seq.length
-                min whiteSpaceLen count
-            edit.Replace(span.Start.Position, toReplace, StringUtil.empty) |> ignore )
+        |> Seq.iter (fun line ->
+            let ws, originalLength = x.GetAndNormalizeLeadingWhitespaceToSpaces line
+            let ws = 
+                let length = max (ws.Length - count) 0
+                StringUtil.repeatChar length ' ' |> x.NormalizeSpaces
+            edit.Replace(line.Start.Position, originalLength, ws) |> ignore)
         edit.Apply() |> ignore
 
     /// Change the letters on the given span by applying the specified function
@@ -423,7 +479,7 @@ type internal CommonOperations ( _data : OperationsData ) =
             else
                 TextViewUtil.MoveCaretToPoint _textView newLine.Start |> ignore
 
-        if _settings.UseEditorIndent then
+        if _settings.GlobalSettings.UseEditorIndent then
             let indent = _smartIndentationServtice.GetDesiredIndentation(_textView, newLine)
             if indent.HasValue then 
                 let point = new VirtualSnapshotPoint(newLine, indent.Value)

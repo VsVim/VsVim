@@ -113,22 +113,24 @@ type internal GlobalSettings() =
 
     static let GlobalSettings = 
         [|
-            (CaretOpacityName, CaretOpacityName, NumberKind, NumberValue(65));
-            (HighlightSearchName, "hls", ToggleKind, ToggleValue(false));
-            (IgnoreCaseName,"ic", ToggleKind, ToggleValue(false));
-            (MagicName, MagicName, ToggleKind, ToggleValue(true));
-            (ShiftWidthName, "sw", NumberKind, NumberValue(4));
-            (SelectionName, "sel", StringKind, StringValue("inclusive"));
-            (ScrollOffsetName, "so", NumberKind, NumberValue(0));
-            (SmartCaseName, "scs", ToggleKind, ToggleValue(false));
-            (StartOfLineName, "sol", ToggleKind, ToggleValue(true));
-            (TabStopName, "ts", NumberKind, NumberValue(8));
-            (TildeOpName, "top", ToggleKind, ToggleValue(false));
-            (VimRcName, VimRcName, StringKind, StringValue(System.String.Empty));
-            (VimRcPathsName, VimRcPathsName, StringKind, StringValue(System.String.Empty));
-            (VirtualEditName, "ve", StringKind, StringValue(StringUtil.empty));
-            (VisualBellName, "vb", ToggleKind, ToggleValue(false));
-            (WrapScanName, "ws", ToggleKind, ToggleValue(true));
+            (CaretOpacityName, CaretOpacityName, NumberKind, NumberValue(65))
+            (HighlightSearchName, "hls", ToggleKind, ToggleValue(false))
+            (IgnoreCaseName,"ic", ToggleKind, ToggleValue(false))
+            (MagicName, MagicName, ToggleKind, ToggleValue(true))
+            (ShiftWidthName, "sw", NumberKind, NumberValue(4))
+            (SelectionName, "sel", StringKind, StringValue("inclusive"))
+            (ScrollOffsetName, "so", NumberKind, NumberValue(0))
+            (SmartCaseName, "scs", ToggleKind, ToggleValue(false))
+            (StartOfLineName, "sol", ToggleKind, ToggleValue(true))
+            (TabStopName, "ts", NumberKind, NumberValue(8))
+            (TildeOpName, "top", ToggleKind, ToggleValue(false))
+            (UseEditorIndentName, UseEditorIndentName, ToggleKind, ToggleValue(true))
+            (UseEditorTabSettingsName, UseEditorTabSettingsName, ToggleKind, ToggleValue(true))
+            (VimRcName, VimRcName, StringKind, StringValue(System.String.Empty))
+            (VimRcPathsName, VimRcPathsName, StringKind, StringValue(System.String.Empty))
+            (VirtualEditName, "ve", StringKind, StringValue(StringUtil.empty))
+            (VisualBellName, "vb", ToggleKind, ToggleValue(false))
+            (WrapScanName, "ws", ToggleKind, ToggleValue(true))
         |]
 
     let _map = SettingsMap(GlobalSettings, true)
@@ -177,6 +179,12 @@ type internal GlobalSettings() =
         member x.TildeOp
             with get() = _map.GetBoolValue TildeOpName
             and set value = _map.TrySetValue TildeOpName (ToggleValue(value)) |> ignore
+        member x.UseEditorIndent
+            with get() = _map.GetBoolValue UseEditorIndentName
+            and set value = _map.TrySetValue UseEditorIndentName (ToggleValue(value)) |> ignore
+        member x.UseEditorTabSettings
+            with get() = _map.GetBoolValue UseEditorTabSettingsName
+            and set value = _map.TrySetValue UseEditorTabSettingsName (ToggleValue(value)) |> ignore
         member x.VimRc 
             with get() = _map.GetStringValue VimRcName
             and set value = _map.TrySetValue VimRcName (StringValue(value)) |> ignore
@@ -209,10 +217,11 @@ type internal LocalSettings
         [|
             (AutoIndentName, "ai", ToggleKind, ToggleValue(false))
             (CursorLineName, "cul", ToggleKind, ToggleValue(false))
+            (ExpandTabName, "et", ToggleKind, ToggleValue(false))
             (NumberName, "nu", ToggleKind, ToggleValue(false))
             (ScrollName, "scr", NumberKind, NumberValue(25))
+            (TabStopName, "ts", NumberKind, NumberValue(8))
             (QuoteEscapeName, "qe", StringKind, StringValue(@"\"))
-            (UseEditorIndentName, UseEditorIndentName, ToggleKind, ToggleValue(true))
         |]
 
     let _map = SettingsMap(LocalSettingInfo, false)
@@ -280,15 +289,18 @@ type internal LocalSettings
         member x.CursorLine 
             with get() = _map.GetBoolValue CursorLineName
             and set value = _map.TrySetValue CursorLineName (ToggleValue(value)) |> ignore
+        member x.ExpandTab
+            with get() = _map.GetBoolValue ExpandTabName
+            and set value = _map.TrySetValue ExpandTabName (ToggleValue(value)) |> ignore
         member x.Scroll 
             with get() = _map.GetNumberValue ScrollName
             and set value = _map.TrySetValue ScrollName (NumberValue(value)) |> ignore
+        member x.TabStop
+            with get() = _map.GetNumberValue TabStopName
+            and set value = _map.TrySetValue TabStopName (NumberValue(value)) |> ignore
         member x.QuoteEscape
             with get() = _map.GetStringValue QuoteEscapeName
             and set value = _map.TrySetValue QuoteEscapeName (StringValue(value)) |> ignore
-        member x.UseEditorIndent
-            with get() = _map.GetBoolValue UseEditorIndentName
-            and set value = _map.TrySetValue UseEditorIndentName (ToggleValue(value)) |> ignore
 
         [<CLIEvent>]
         member x.SettingChanged = _map.SettingChanged
