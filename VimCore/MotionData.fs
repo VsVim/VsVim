@@ -32,7 +32,17 @@ type MotionData = {
     Column : int option
 } with
 
+    /// The Span as an EditSpan value
+    member x.EditSpan = EditSpan.Single x.Span
+
+    /// The Span as a SnapshotLineRange value 
     member x.LineRange = SnapshotLineRangeUtil.CreateForSpan x.Span
+
+    /// The OperationSpan as an EditSpan value
+    member x.OperationEditSpan = EditSpan.Single x.OperationSpan
+
+    /// The SnapshotLineRange for the OperationSpan 
+    member x.OperationLineRange = SnapshotLineRangeUtil.CreateForSpan x.OperationSpan
     
     /// Span is the true result of the motion.  However some commands only process a
     /// subset of the data.  This exception is covered in the help page :help exclusive.
@@ -54,8 +64,6 @@ type MotionData = {
                     SnapshotSpan(x.Span.Start, lineAbove.End)
                 else x.Span
             else x.Span
-
-    member x.OperationLineRange = SnapshotLineRangeUtil.CreateForSpan x.OperationSpan
 
     static member CreateEmptyFromPoint point motionKind operationKind = 
         let span = SnapshotSpanUtil.CreateWithLength point 0  

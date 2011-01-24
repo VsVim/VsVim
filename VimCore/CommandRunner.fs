@@ -220,29 +220,36 @@ type internal CommandRunner
             | Command.LongVisualCommand(_, _, kind, func) ->
                 x.WaitForLongVisualCommand command None kind func
         | None -> 
-            let result = 
-                if commandName.KeyInputs.Length > 1 then
-                    // It's possible to have 2 commands with similar prefixes where one of them is a MotionCommand.  In this
-                    // case we can now resolve the ambiguity
-                    match Map.tryFind previousCommandName _commandMap with
-                    | Some(command) ->
-                        let waitResult =
-                            match command with
-                            | Command.SimpleCommand(_) -> NeedMore x.WaitForCommand 
-                            | Command.VisualCommand(_) -> NeedMore x.WaitForCommand
-                            | Command.LongCommand(_) -> NeedMore x.WaitForCommand 
-                            | Command.LongVisualCommand(_) -> NeedMore x.WaitForCommand 
-                            | Command.MotionCommand(_,_,func) -> x.WaitForMotion command func (Some currentInput) 
-                        Some waitResult
-                    | None -> None
-                else None
-            match result with
-            | Some(value) -> value
-            | None -> 
-                // At this point we need to see if there will ever be a command given the 
-                // current starting point with respect to characters
-                if findPrefixMatches commandName |> Seq.isEmpty then RunCommandResult.NoMatchingCommand
-                else NeedMore x.WaitForCommand
+            let hasPrefixMatch = findPrefixMatches commandName |> SeqUtil.isNotEmpty
+            if commandName.KeyInputs.Length > 1 && not hasPrefixMatch then
+
+                // It's possible to have 2 comamnds with similar prefixes where one of them is a 
+                // MotionCommand.  Consider
+                //
+                //  g~{motion}
+                //  g~g~
+                //
+                // This code path triggers when we get the first character after the motion 
+                // command name.  If the new name isn't the prefix of any other command then we can
+                // choose the motion 
+                match Map.tryFind previousCommandName _commandMap with
+                | Some(command) ->
+                    match command with
+                    | Command.SimpleCommand(_) -> RunCommandResult.NeedMore x.WaitForCommand 
+                    | Command.VisualCommand(_) -> RunCommandResult.NeedMore x.WaitForCommand
+                    | Command.LongCommand(_) -> RunCommandResult.NeedMore x.WaitForCommand 
+                    | Command.LongVisualCommand(_) -> RunCommandResult.NeedMore x.WaitForCommand 
+                    | Command.MotionCommand(_,_,func) -> x.WaitForMotion command func (Some currentInput) 
+                | None -> 
+                    // No prefix matches and no previous motion so won't ever match a comamand
+                    RunCommandResult.NoMatchingCommand
+            elif hasPrefixMatch then
+                // At least one command with a prefix matching the current input.  Wait for the 
+                // next keystroke
+                RunCommandResult.NeedMore x.WaitForCommand
+            else
+                // No prospect of matching a command at this point
+                RunCommandResult.NoMatchingCommand
                 
     /// Starting point for processing input 
     member x.RunCheckForCountAndRegister (ki:KeyInput) = 

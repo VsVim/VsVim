@@ -63,15 +63,21 @@ type ICommonOperations =
     abstract Beep : unit -> unit
 
     /// Change the case of all letters appearing in the given span
-    abstract ChangeLetterCase : SnapshotSpan -> unit
+    abstract ChangeLetterCase : EditSpan -> unit
+
+    /// Change the case of all letters appearing in the given span to upper
+    abstract ChangeLetterCaseToUpper : EditSpan -> unit
+
+    /// Change the case of all letters appearing in the given span to lower
+    abstract ChangeLetterCaseToLower : EditSpan -> unit
+
+    /// Change the letters by applying a ROT13 encoding to each letter in the span
+    abstract ChangeLetterRot13 : EditSpan -> unit
 
     /// Change the text represented by the given Motion.  Returns the SnapshotSpan 
     /// of the original ITextSnapshot which was modified.  Maybe different
     /// than the passed in value
     abstract ChangeSpan : MotionData -> SnapshotSpan
-
-    /// Change the case of all letters appearing in the given span
-    abstract ChangeLetterCaseBlock : NormalizedSnapshotSpanCollection -> unit
 
     /// Close the current buffer
     abstract Close : checkDirty : bool -> unit
@@ -164,12 +170,6 @@ type ICommonOperations =
 
     /// Jumps to a given mark in the buffer.  
     abstract JumpToMark : char -> IMarkMap -> Result
-
-    /// Make the letters on the given span lower case
-    abstract MakeLettersLowercase : SnapshotSpan -> unit
-
-    /// Make the letters on the given span upper case
-    abstract MakeLettersUppercase : SnapshotSpan -> unit
 
     /// Move the caret to a given point on the screen
     abstract MoveCaretToPoint : SnapshotPoint -> unit

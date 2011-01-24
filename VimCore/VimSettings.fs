@@ -155,6 +155,16 @@ type internal GlobalSettings() =
         member x.IgnoreCase
             with get()  = _map.GetBoolValue IgnoreCaseName
             and set value = _map.TrySetValue IgnoreCaseName (ToggleValue(value)) |> ignore
+        member x.IsSelectionInclusive = 
+            match _map.GetStringValue SelectionName with
+            | "inclusive" -> true
+            | "old" -> true
+            | _ -> false
+        member x.IsSelectionPastLine = 
+            match _map.GetStringValue SelectionName with
+            | "exclusive" -> true
+            | "inclusive" -> true
+            | _ -> false
         member x.Magic
             with get() = _map.GetBoolValue MagicName
             and set value = _map.TrySetValue MagicName (ToggleValue(value)) |> ignore

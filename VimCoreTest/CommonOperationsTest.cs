@@ -1333,7 +1333,7 @@ namespace VimCore.UnitTest
         public void ChangeLetterCase1()
         {
             Create("foo", "bar");
-            _operations.ChangeLetterCase(_textBuffer.GetLineRange(0).Extent);
+            _operations.ChangeLetterCase(_textBuffer.GetLineRange(0).Extent.ToEditSpan());
             Assert.AreEqual("FOO", _textBuffer.GetLineRange(0).GetText());
         }
 
@@ -1341,7 +1341,7 @@ namespace VimCore.UnitTest
         public void ChangeLetterCase2()
         {
             Create("fOo", "bar");
-            _operations.ChangeLetterCase(_textBuffer.GetLineRange(0).Extent);
+            _operations.ChangeLetterCase(_textBuffer.GetLineRange(0).Extent.ToEditSpan());
             Assert.AreEqual("FoO", _textBuffer.GetLineRange(0).GetText());
         }
 
@@ -1349,7 +1349,7 @@ namespace VimCore.UnitTest
         public void ChangeLetterCase3()
         {
             Create("fOo", "bar");
-            _operations.ChangeLetterCase(_textBuffer.GetLineRange(0, 1).Extent);
+            _operations.ChangeLetterCase(_textBuffer.GetLineRange(0, 1).Extent.ToEditSpan());
             Assert.AreEqual("FoO", _textBuffer.GetLineRange(0).GetText());
             Assert.AreEqual("BAR", _textBuffer.GetLineRange(1).GetText());
         }
@@ -1358,48 +1358,58 @@ namespace VimCore.UnitTest
         public void ChangeLetterCase4()
         {
             Create("f12o", "bar");
-            _operations.ChangeLetterCase(_textBuffer.GetLineRange(0).Extent);
+            _operations.ChangeLetterCase(_textBuffer.GetLineRange(0).Extent.ToEditSpan());
             Assert.AreEqual("F12O", _textBuffer.GetLineRange(0).GetText());
         }
 
         [Test]
-        public void MakeLettersLowercase1()
+        public void ChangeLetterCaseToLower_Standard()
         {
             Create("FOO", "BAR");
-            _operations.MakeLettersLowercase(_textBuffer.GetLineRange(0).Extent);
+            _operations.ChangeLetterCaseToLower(_textBuffer.GetLineRange(0).Extent);
             Assert.AreEqual("foo", _textBuffer.GetLineRange(0).GetText());
         }
 
         [Test]
-        public void MakeLettersLowercase2()
+        public void ChangeLetterCaseToLower_NotFirstLine()
         {
             Create("FOO", "BAR");
-            _operations.MakeLettersLowercase(_textBuffer.GetLineRange(1).Extent);
+            _operations.ChangeLetterCaseToLower(_textBuffer.GetLineRange(1).Extent);
             Assert.AreEqual("bar", _textBuffer.GetLineRange(1).GetText());
         }
 
         [Test]
-        public void MakeLettersLowercase3()
+        public void ChangeLetterCaseToLower_ExcludeNumbers()
         {
             Create("FoO123", "BAR");
-            _operations.MakeLettersLowercase(_textBuffer.GetLineRange(0).Extent);
+            _operations.ChangeLetterCaseToLower(_textBuffer.GetLineRange(0).Extent);
             Assert.AreEqual("foo123", _textBuffer.GetLineRange(0).GetText());
         }
 
         [Test]
-        public void MakeLettersUppercase1()
+        public void ChangeLetterCaseToUpper_ExcludeNumbers()
         {
             Create("foo123", "bar");
-            _operations.MakeLettersUppercase(_textBuffer.GetLineRange(0).Extent);
+            _operations.ChangeLetterCaseToUpper(_textBuffer.GetLineRange(0).Extent);
             Assert.AreEqual("FOO123", _textBuffer.GetLineRange(0).GetText());
         }
 
         [Test]
-        public void MakeLettersUppercase2()
+        public void ChangeLetterCaseToUpper_ExcludeNumbersNotFirstLine()
         {
             Create("fOo123", "bar");
-            _operations.MakeLettersUppercase(_textBuffer.GetLineRange(0).Extent);
+            _operations.ChangeLetterCaseToUpper(_textBuffer.GetLineRange(0).Extent);
             Assert.AreEqual("FOO123", _textBuffer.GetLineRange(0).GetText());
+        }
+
+        [Test]
+        public void ChangeLetterRot13_Standard()
+        {
+            Create("hello");
+            _operations.ChangeLetterRot13(_textView.GetLine(0).Extent);
+            Assert.AreEqual("uryyb", _textView.GetLine(0).GetText());
+            _operations.ChangeLetterRot13(_textView.GetLine(0).Extent);
+            Assert.AreEqual("hello", _textView.GetLine(0).GetText());
         }
 
         [Test]

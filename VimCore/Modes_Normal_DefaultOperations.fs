@@ -124,7 +124,7 @@ type internal DefaultOperations ( _data : OperationsData) =
             let point = TextViewUtil.GetCaretPoint _textView
             let line = SnapshotPointUtil.GetContainingLine point
             let count = min count (line.End.Position - point.Position)
-            let span = SnapshotSpan(point, count)
+            let span = SnapshotSpan(point, count) |> EditSpan.Single
             x.CommonImpl.ChangeLetterCase span
 
             if line.Length > 0 then

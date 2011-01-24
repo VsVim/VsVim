@@ -230,6 +230,13 @@ module internal CharUtil =
     let ToLower x = System.Char.ToLower(x)
     let ToUpper x = System.Char.ToUpper(x)
     let ChangeCase x = if IsUpper x then ToLower x else ToUpper x
+    let ChangeRot13 (x : char) = 
+        let isUpper = IsUpper x 
+        let x = ToLower x
+        let index = int x - int 'a'
+        let index = (index + 13 ) % 26
+        let c = char (index + int 'a')
+        if isUpper then ToUpper c else c 
     let LettersLower = ['a'..'z']
     let LettersUpper = ['A'..'Z']
     let Letters = Seq.append LettersLower LettersUpper 

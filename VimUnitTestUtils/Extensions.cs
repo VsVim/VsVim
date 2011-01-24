@@ -452,11 +452,23 @@ namespace Vim.UnitTest
 
         #endregion
 
-        #region ITextSnapshotPoint
+        #region SnapshotPoint
 
         public static SnapshotSpan GetSpan(this SnapshotPoint point, int length)
         {
             return new SnapshotSpan(point, length);
+        }
+
+        #endregion
+
+        #region SnapshotSpan
+
+        /// <summary>
+        /// Convert the SnapshotSpan into an EditSpan
+        /// </summary>
+        public static EditSpan ToEditSpan(this SnapshotSpan span)
+        {
+            return EditSpan.NewSingle(span);
         }
 
         #endregion
@@ -466,6 +478,24 @@ namespace Vim.UnitTest
         public static RunKeyInputResult Run(this ICommandRunner runner, char c)
         {
             return runner.Run(KeyInputUtil.CharToKeyInput(c));
+        }
+
+        /// <summary>
+        /// Run the multi-input command
+        /// </summary>
+        public static RunKeyInputResult Run(this ICommandRunner runner, string command)
+        {
+            RunKeyInputResult result = null;
+            for (var i = 0; i < command.Length; i++)
+            {
+                result = runner.Run(command[i]);
+                if (i + 1 < command.Length)
+                {
+                    Assert.IsTrue(result.IsNeedMoreKeyInput);
+                }
+            }
+
+            return result;
         }
 
         #endregion

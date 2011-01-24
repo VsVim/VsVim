@@ -2,7 +2,9 @@
 F# 
  - Util classes should contain Create methods to create 
  - Revisit: Util classes should have Get for conversions 
- - Should be Of for collection conversions
+ - Should be Of for type conversions in util classes
+    EditSnapshotSpan.OfSpan
+    EditSnapshotSpan.OfBlock 
  - Editor APIs 
      - APIs taking a count should return an option or explicitly guard against count being too large.  Users
        too often control this number

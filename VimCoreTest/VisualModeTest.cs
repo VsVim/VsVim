@@ -466,7 +466,7 @@ namespace VimCore.UnitTest
             Create("foo bar", "baz");
             var span = _textBuffer.GetSpan(0, 3);
             _operations
-                .Setup(x => x.ChangeLetterCase(span))
+                .Setup(x => x.ChangeLetterCase(span.ToEditSpan()))
                 .Verifiable();
             _selection.Select(span);
             _mode.Process('~');
@@ -480,7 +480,7 @@ namespace VimCore.UnitTest
                 _textBuffer.GetLineRange(0).Extent,
                 _textBuffer.GetLineRange(1).Extent);
             _operations
-                .Setup(x => x.ChangeLetterCaseBlock(It.IsAny<NormalizedSnapshotSpanCollection>()))
+                .Setup(x => x.ChangeLetterCase(It.IsAny<EditSpan>()))
                 .Verifiable();
             _mode.Process('~');
             _operations.Verify();

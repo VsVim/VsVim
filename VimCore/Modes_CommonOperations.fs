@@ -143,20 +143,18 @@ type internal CommonOperations ( _data : OperationsData ) =
             edit.Replace(line.Start.Position, originalLength, ws) |> ignore)
         edit.Apply() |> ignore
 
-    /// Change the letters on the given span by applying the specified function
-    /// to each of them
-    member x.ChangeLettersCore col changeFunc = 
+    /// Chnage the letters on the given span by applying the provided function and 
+    /// do this as a single edit.
+    member x.ChangeLetters (editSpan : EditSpan) changeFunc = 
         use edit = _textView.TextBuffer.CreateEdit()
-        col 
-        |> Seq.map SnapshotSpanUtil.GetPoints 
+        editSpan.Spans
+        |> Seq.map SnapshotSpanUtil.GetPoints
         |> Seq.concat
-        |> Seq.map (fun x -> x.Position,x.GetChar())
+        |> Seq.map (fun x -> x.Position, x.GetChar())
         |> Seq.filter (fun (_,c) -> CharUtil.IsLetter c)
         |> Seq.map (fun (pos,c) -> (pos, changeFunc c))
         |> Seq.iter (fun (pos,c) -> edit.Replace(new Span(pos,1), StringUtil.ofChar c) |> ignore)
         edit.Apply() |> ignore
-
-    member x.ChangeLettersOnSpan span changeFunc = x.ChangeLettersCore (Seq.singleton span) changeFunc
 
     member x.Join (range:SnapshotLineRange) kind = 
 
@@ -732,10 +730,10 @@ type internal CommonOperations ( _data : OperationsData ) =
         member x.CloseAll checkDirty = _host.CloseAllFiles checkDirty
         member x.GoToNextTab direction count = _host.GoToNextTab direction count
         member x.GoToTab index = _host.GoToTab index
-        member x.ChangeLetterCase span = x.ChangeLettersOnSpan span CharUtil.ChangeCase
-        member x.ChangeLetterCaseBlock col = x.ChangeLettersCore col CharUtil.ChangeCase
-        member x.MakeLettersLowercase span = x.ChangeLettersOnSpan span CharUtil.ToLower
-        member x.MakeLettersUppercase span = x.ChangeLettersOnSpan span CharUtil.ToUpper
+        member x.ChangeLetterCase editSpan = x.ChangeLetters editSpan CharUtil.ChangeCase
+        member x.ChangeLetterCaseToUpper editSpan = x.ChangeLetters editSpan CharUtil.ToUpper
+        member x.ChangeLetterCaseToLower editSpan = x.ChangeLetters editSpan CharUtil.ToLower
+        member x.ChangeLetterRot13 editSpan = x.ChangeLetters editSpan CharUtil.ChangeRot13
         member x.EnsureCaretOnScreen () = TextViewUtil.EnsureCaretOnScreen _textView 
         member x.EnsureCaretOnScreenAndTextExpanded () = TextViewUtil.EnsureCaretOnScreenAndTextExpanded _textView _outlining
 

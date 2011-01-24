@@ -514,6 +514,38 @@ namespace VimCore.UnitTest
         }
 
         [Test]
+        public void Run_MotionMixedWithNonMotion()
+        {
+            Create("the dog chased the ball");
+            var simple = new[] { "g~g~", "g~~", "gugu", "guu", "gUgU", "gUU" };
+            var motion = new[] { "g~", "gu", "gU" };
+
+            foreach (var cur in simple)
+            {
+                _runner.Add(VimUtil.CreateSimpleCommand(cur));
+            }
+
+            foreach (var cur in motion)
+            {
+                _runner.Add(VimUtil.CreateMotionCommand(cur));
+            }
+
+            foreach (var cur in simple)
+            {
+                // Make sure we can run them all
+                Assert.IsTrue(_runner.Run(cur).IsCommandRan);
+            }
+
+            foreach (var cur in motion)
+            {
+                // Make sure we can run them all
+                Assert.IsTrue(_runner.Run(cur).IsNeedMoreKeyInput);
+                _runner.ResetState();
+            }
+
+        }
+
+        [Test]
         public void Reset1()
         {
             Create("hello world");

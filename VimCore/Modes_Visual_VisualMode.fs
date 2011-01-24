@@ -259,8 +259,20 @@ type internal VisualMode
                     ["~"],
                     CommandFlags.Repeatable,
                     Some ModeKind.Normal,
-                    (fun _ _ span -> _operations.ChangeLetterCase span),
-                    (fun _ _ col -> _operations.ChangeLetterCaseBlock col))
+                    (fun _ _ span -> _operations.ChangeLetterCase (EditSpan.Single span)),
+                    (fun _ _ col -> _operations.ChangeLetterCase (EditSpan.Block col)))
+                yield (
+                    ["U"],
+                    CommandFlags.Repeatable,
+                    Some ModeKind.Normal, 
+                    (fun _ _ span -> _operations.ChangeLetterCaseToUpper (EditSpan.Single span)),
+                    (fun _ _ col -> _operations.ChangeLetterCaseToUpper (EditSpan.Block col)))
+                yield (
+                    ["u"],
+                    CommandFlags.Repeatable,
+                    Some ModeKind.Normal, 
+                    (fun _ _ span -> _operations.ChangeLetterCaseToLower (EditSpan.Single span)),
+                    (fun _ _ col -> _operations.ChangeLetterCaseToLower (EditSpan.Block col)))
                 yield (
                     ["c"], 
                     CommandFlags.Repeatable ||| CommandFlags.LinkedWithNextTextChange,
@@ -390,6 +402,12 @@ type internal VisualMode
                             |> NormalizedSnapshotSpanCollectionUtil.GetCombinedSpan
                             |> SnapshotLineRangeUtil.CreateForSpan 
                         _buffer.Vim.VimHost.FormatLines _buffer.TextView range))
+                yield (
+                    ["g?"],
+                    CommandFlags.Repeatable,
+                    Some ModeKind.Normal, 
+                    (fun _ _ span -> _operations.ChangeLetterRot13 (EditSpan.Single span)),
+                    (fun _ _ col -> _operations.ChangeLetterRot13 (EditSpan.Block col)))
             }
             |> Seq.map (fun (strList,flags,mode,funcNormal,funcBlock) ->
                 strList 

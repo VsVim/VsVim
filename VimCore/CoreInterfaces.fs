@@ -1120,6 +1120,15 @@ and IVimGlobalSettings =
     /// Is the onemore option inside of VirtualEdit set
     abstract IsVirtualEditOneMore : bool with get
 
+    /// Is the Selection setting set to a value which calls for inclusive 
+    /// selection.  This does not directly track if Setting = "inclusive" 
+    /// although that would cause this value to be true
+    abstract IsSelectionInclusive : bool with get
+
+    /// Is the Selection setting set to a value which permits the selection
+    /// to extend past the line
+    abstract IsSelectionPastLine : bool with get
+
     /// Controls how many spaces a tab counts for.
     abstract TabStop : int with get,set
 

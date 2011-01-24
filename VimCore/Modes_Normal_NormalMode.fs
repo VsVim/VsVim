@@ -195,7 +195,7 @@ type internal NormalMode
         let command = 
             if _bufferData.Settings.GlobalSettings.TildeOp then
                 let func count reg (data:MotionData) = 
-                    _operations.ChangeLetterCase data.OperationSpan
+                    _operations.ChangeLetterCase data.OperationEditSpan
                     CommandResult.Completed ModeSwitch.NoSwitch
                 MotionCommand(name, CommandFlags.Repeatable, func)
             else
@@ -649,6 +649,38 @@ type internal NormalMode
                         // deleted the last character on the line
                         _operations.MoveCaretForVirtualEdit()
                         _operations.UpdateRegisterForSpan reg RegisterOperation.Delete span OperationKind.CharacterWise)
+                yield (
+                    ["gUgU"; "gUU"],
+                    CommandFlags.Repeatable,
+                    ModeSwitch.NoSwitch,
+                    fun _ _ ->
+                        let line = TextViewUtil.GetCaretLine _textView
+                        let span = EditSpan.Single (line.Extent)
+                        _operations.ChangeLetterCaseToUpper span)
+                yield (
+                    ["gugu"; "guu"],
+                    CommandFlags.Repeatable,
+                    ModeSwitch.NoSwitch,
+                    fun _ _ ->
+                        let line = TextViewUtil.GetCaretLine _textView
+                        let span = EditSpan.Single (line.Extent)
+                        _operations.ChangeLetterCaseToLower span)
+                yield (
+                    ["g~g~"; "g~~"],
+                    CommandFlags.Repeatable,
+                    ModeSwitch.NoSwitch,
+                    fun _ _ -> 
+                        let line = TextViewUtil.GetCaretLine _textView
+                        let span = EditSpan.Single (line.Extent)
+                        _operations.ChangeLetterCase span)
+                yield (
+                    ["g?g?"; "g??"],
+                    CommandFlags.Repeatable,
+                    ModeSwitch.NoSwitch,
+                    fun _ _ -> 
+                        let line = TextViewUtil.GetCaretLine _textView
+                        let span = EditSpan.Single (line.Extent)
+                        _operations.ChangeLetterRot13 span)
             } |> Seq.map (fun (names, kind, switch, func) -> 
                 names |> Seq.map (fun str -> (str, kind, func, CommandResult.Completed switch)))
               |> Seq.concat
@@ -717,6 +749,21 @@ type internal NormalMode
                     fun _ reg data -> 
                         _operations.DeleteSpan data.OperationSpan 
                         _operations.UpdateRegisterForSpan reg RegisterOperation.Delete data.OperationSpan data.OperationKind)
+                yield (
+                    "gU",
+                    CommandFlags.Repeatable,
+                    None,
+                    fun _ _ data -> _operations.ChangeLetterCaseToUpper data.EditSpan)
+                yield (
+                    "gu",
+                    CommandFlags.Repeatable,
+                    None,
+                    fun _ _ data -> _operations.ChangeLetterCaseToLower data.EditSpan)
+                yield (
+                    "g?",
+                    CommandFlags.Repeatable,
+                    None,
+                    fun _ _ data -> _operations.ChangeLetterRot13 data.EditSpan)
                 yield (
                     "y", 
                     CommandFlags.None, 

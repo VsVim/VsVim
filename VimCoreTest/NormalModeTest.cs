@@ -1353,6 +1353,60 @@ namespace VimCore.UnitTest
             _operations.Verify();
         }
 
+        [Test]
+        public void Edit_gUgU()
+        {
+            Create("again");
+            _operations.Setup(x => x.ChangeLetterCaseToUpper(_textView.GetLine(0).Extent)).Verifiable();
+            _mode.Process("gUgU");
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Edit_gUU()
+        {
+            Create("again");
+            _operations.Setup(x => x.ChangeLetterCaseToUpper(_textView.GetLine(0).Extent)).Verifiable();
+            _mode.Process("gUU");
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Edit_gugu()
+        {
+            Create("again");
+            _operations.Setup(x => x.ChangeLetterCaseToLower(_textView.GetLine(0).Extent)).Verifiable();
+            _mode.Process("gugu");
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Edit_guu()
+        {
+            Create("again");
+            _operations.Setup(x => x.ChangeLetterCaseToLower(_textView.GetLine(0).Extent)).Verifiable();
+            _mode.Process("guu");
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Edit_gQuestiongQuestion()
+        {
+            Create("again");
+            _operations.Setup(x => x.ChangeLetterRot13(_textView.GetLine(0).Extent)).Verifiable();
+            _mode.Process("g?g?");
+            _operations.Verify();
+        }
+
+        [Test]
+        public void Edit_gQuestionQuestion()
+        {
+            Create("again");
+            _operations.Setup(x => x.ChangeLetterRot13(_textView.GetLine(0).Extent)).Verifiable();
+            _mode.Process("g??");
+            _operations.Verify();
+        }
+
         #endregion
 
         #region Yank
