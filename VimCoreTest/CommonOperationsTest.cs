@@ -2162,6 +2162,34 @@ namespace VimCore.UnitTest
             Assert.AreEqual(4, _textView.GetCaretPoint().Position);
         }
 
+        /// <summary>
+        /// Make sure that searching backward from the first char in a word doesn't
+        /// count that word as an occurance
+        /// </summary>
+        [Test]
+        public void MoveToNextOccuranceOfWordAtCursor_BackwardFromFirstChar()
+        {
+            Create("cat cat cat");
+            AllowOutlineExpansion();
+            _textView.MoveCaretTo(4);
+            _operations.MoveToNextOccuranceOfWordAtCursor(SearchKind.Backward, 1);
+            Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// Make sure that searching backward from the middle of a word 
+        /// count that word as an occurance
+        /// </summary>
+        [Test]
+        public void MoveToNextOccuranceOfWordAtCursor_BackwardFromMiddleOfWard()
+        {
+            Create("cat cat cat");
+            AllowOutlineExpansion();
+            _textView.MoveCaretTo(5);
+            _operations.MoveToNextOccuranceOfWordAtCursor(SearchKind.Backward, 1);
+            Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+        }
+
         [Test]
         public void MoveToNextOccuranceOfLastSearch1()
         {

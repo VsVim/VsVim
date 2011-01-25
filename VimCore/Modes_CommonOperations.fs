@@ -253,11 +253,20 @@ type internal CommonOperations ( _data : OperationsData ) =
             let text = if isWholeWord then SearchText.WholeWord(word) else SearchText.StraightText(word)
             let data = { Text=text; Kind = kind; Options = SearchOptions.ConsiderIgnoreCase }
 
-            // Make sure to start the search from the end of the current word.  Otherwise
-            // dependning on the caret position this could start from the begining of 
-            // the current word and have it count as the "first" match.  Start at the end
-            // of the word so the count works out correctly
-            match _search.FindNextMultiple data span.End _normalWordNav count with
+            // Pick the appropriate place to start the search.  
+            let searchStart = 
+                if SearchKindUtil.IsForward kind then 
+                    // Make sure to start the search from the end of the current word.  Otherwise
+                    // dependning on the caret position this could start from the begining of 
+                    // the current word and have it count as the "first" match.  Start at the end
+                    // of the word so the count works out correctly
+                    span.End
+                else
+                    // Begin from the start of the word.  The search will not include this character
+                    // when searching backward
+                    span.Start
+
+            match _search.FindNextMultiple data searchStart _normalWordNav count with
             | Some(span) -> 
                 TextViewUtil.MoveCaretToPoint _textView span.Start
                 TextViewUtil.EnsureCaretOnScreenAndTextExpanded _textView _outlining
