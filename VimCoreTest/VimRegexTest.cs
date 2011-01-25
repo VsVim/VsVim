@@ -870,5 +870,54 @@ namespace VimCore.UnitTest
             VerifyMatchIs(@"a*", "a*", "a*");
             VerifyMatchIs(@"a\*", "aaa", "aaa");
         }
+
+        [Test]
+        public void AtomGroup_GroupAllBut()
+        {
+            _settings.Magic = true;
+            VerifyMatchIs(@"[^""]*b", "acbd", "acb");
+            VerifyMatchIs(@"""[^""]*", @"b""cd", @"""cd");
+        }
+
+        [Test]
+        public void AtomWhitespace_NoMagic()
+        {
+            _settings.Magic = false;
+            VerifyMatchIs(@"\s", " ", " ");
+            VerifyMatchIs(@"hello\sworld", "hello world", "hello world");
+            VerifyMatchIs(@"hello\s\*world", "hello   world", "hello   world");
+        }
+
+        [Test]
+        public void AtomWhitespace_Magic()
+        {
+            _settings.Magic = true;
+            VerifyMatchIs(@"\s", " ", " ");
+            VerifyMatchIs(@"hello\sworld", "hello world", "hello world");
+            VerifyMatchIs(@"hello\s*world", "hello   world", "hello   world");
+        }
+
+        [Test]
+        public void AtomWhitespace_MultipleWithStarQualifier()
+        {
+            _settings.Magic = true;
+            VerifyMatchIs(@"TCHAR\s\s*buff", "TCHAR buff", "TCHAR buff");
+        }
+
+        [Test]
+        public void AtomNonWhitespace_NoMagic()
+        {
+            _settings.Magic = false;
+            VerifyMatchIs(@"\S", "a", "a");
+            VerifyMatchIs(@"hello\Sworld", "hello!world", "hello!world");
+        }
+
+        [Test]
+        public void AtomNonWhitespace_Magic()
+        {
+            _settings.Magic = true;
+            VerifyMatchIs(@"\S", "a", "a");
+            VerifyMatchIs(@"hello\Sworld", "hello!world", "hello!world");
+        }
     }
 }

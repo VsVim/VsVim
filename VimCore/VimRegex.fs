@@ -128,6 +128,9 @@ type Data = {
     /// Is this the start of the pattern
     IsStartOfPattern : bool
 
+    /// Is this the first character inside of a grouping [] construct
+    IsStartOfGrouping : bool
+
     /// The original options 
     Options : VimRegexOptions
 }
@@ -139,6 +142,9 @@ type Data = {
     member x.AppendString (str:string) = { x with Builder = x.Builder.Append(str) }
     member x.AppendChar (c:char) = { x with Builder = x.Builder.Append(c) }
     member x.AppendEscapedChar c = c |> StringUtil.ofChar |> Regex.Escape |> x.AppendString
+    member x.BeginGrouping() = 
+        let data = x.AppendChar '['
+        { data with IsStartOfGrouping = true }
 
 [<Sealed>]
 type VimRegexFactory
@@ -189,6 +195,7 @@ type VimRegexFactory
             HasCaseAtom = false 
             IsBroken = false 
             IsStartOfPattern = true
+            IsStartOfGrouping = false
             Options = options }
 
         // Check for smart case here
@@ -221,18 +228,25 @@ type VimRegexFactory
             let regex = VimRegexUtils.TryCreateRegex bclPattern options 
             OptionUtil.combineRev bclPattern regex
 
-    member x.Convert (data:Data) =
-        let rec inner (data:Data) : (string * Regex) option =
+    member x.Convert (data : Data) =
+        let rec inner (data : Data) : (string * Regex) option =
             if data.IsBroken then None
             else
                 match data.CharAtIndex with
                 | None -> x.CreateRegex data 
                 | Some('\\') -> 
+                    let wasStartOfGrouping = data.IsStartOfGrouping
                     let data = data.IncrementIndex 1
                     let data = 
                         match data.CharAtIndex with 
                         | None -> x.ProcessNormalChar data '\\'
                         | Some(c) -> x.ProcessEscapedChar (data.IncrementIndex 1) c
+
+                    // If we were at the start of a grouping before processing this 
+                    // char then we no longer are afterwards
+                    let data = 
+                        if wasStartOfGrouping then { data with IsStartOfGrouping = false }
+                        else data 
                     inner data
                 | Some(c) -> x.ProcessNormalChar (data.IncrementIndex 1) c |> inner
         inner data
@@ -255,8 +269,8 @@ type VimRegexFactory
                 | MagicKind.NoMagic -> x.ConvertEscapedCharAsMagicAndNoMagic data c
                 | MagicKind.VeryMagic -> data.AppendEscapedChar c
                 | MagicKind.VeryNoMagic -> x.ConvertCharAsSpecial data c
-            {data with IsStartOfPattern=false}
-    
+            { data with IsStartOfPattern = false }
+
     /// Convert a normal unescaped char based on the 
     member x.ProcessNormalChar (data:Data) c = 
         let data = 
@@ -307,22 +321,24 @@ type VimRegexFactory
         | '|' -> x.ConvertCharAsSpecial data c
         | '[' -> if isMagic then data.AppendEscapedChar c else x.ConvertCharAsSpecial data c
         | ']' -> x.ConvertCharAsSpecial data c
+        | 'a' -> x.ConvertCharAsSpecial data c
+        | 'A' -> x.ConvertCharAsSpecial data c
         | 'd' -> x.ConvertCharAsSpecial data c
         | 'D' -> x.ConvertCharAsSpecial data c
+        | 'h' -> x.ConvertCharAsSpecial data c
+        | 'H' -> x.ConvertCharAsSpecial data c
+        | 'l' -> x.ConvertCharAsSpecial data c
+        | 'L' -> x.ConvertCharAsSpecial data c
+        | 'o' -> x.ConvertCharAsSpecial data c
+        | 'O' -> x.ConvertCharAsSpecial data c
+        | 's' -> x.ConvertCharAsSpecial data c 
+        | 'S' -> x.ConvertCharAsSpecial data c 
+        | 'u' -> x.ConvertCharAsSpecial data c
+        | 'U' -> x.ConvertCharAsSpecial data c
         | 'w' -> x.ConvertCharAsSpecial data c
         | 'W' -> x.ConvertCharAsSpecial data c
         | 'x' -> x.ConvertCharAsSpecial data c
         | 'X' -> x.ConvertCharAsSpecial data c
-        | 'o' -> x.ConvertCharAsSpecial data c
-        | 'O' -> x.ConvertCharAsSpecial data c
-        | 'h' -> x.ConvertCharAsSpecial data c
-        | 'H' -> x.ConvertCharAsSpecial data c
-        | 'a' -> x.ConvertCharAsSpecial data c
-        | 'A' -> x.ConvertCharAsSpecial data c
-        | 'l' -> x.ConvertCharAsSpecial data c
-        | 'L' -> x.ConvertCharAsSpecial data c
-        | 'u' -> x.ConvertCharAsSpecial data c
-        | 'U' -> x.ConvertCharAsSpecial data c
         | '_' -> 
             match data.CharAtIndex with
             | None -> { data with IsBroken = true }
@@ -349,14 +365,16 @@ type VimRegexFactory
         | '{' -> data.AppendChar '{'
         | '}' -> data.AppendChar '}'
         | '|' -> data.AppendChar '|'
-        | '^' -> if data.IsStartOfPattern then data.AppendChar '^' else data.AppendEscapedChar '^'
+        | '^' -> if data.IsStartOfPattern || data.IsStartOfGrouping then data.AppendChar '^' else data.AppendEscapedChar '^'
         | '$' -> if data.IsEndOfPattern then data.AppendChar '$' else data.AppendEscapedChar '$'
         | '<' -> data.AppendString @"\b"
         | '>' -> data.AppendString @"\b"
-        | '[' -> data.AppendChar '['
+        | '[' -> data.BeginGrouping()
         | ']' -> data.AppendChar ']'
         | 'd' -> data.AppendString @"\d"
         | 'D' -> data.AppendString @"\D"
+        | 's' -> data.AppendString @"\s"
+        | 'S' -> data.AppendString @"\S"
         | 'w' -> data.AppendString @"\w"
         | 'W' -> data.AppendString @"\W"
         | 'x' -> data.AppendString @"[0-9A-Fa-f]"
