@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Windows.Threading;
+using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using NUnit.Framework;
@@ -606,5 +607,11 @@ namespace Vim.UnitTest
             return map.GetRegister(name);
         }
 
+        public static bool IsSome<T>(this FSharpOption<T> option, T value)
+        {
+            Assert.IsTrue(option.IsSome());
+            Assert.AreEqual(value, option.Value);
+            return true;
+        }
     }
 }

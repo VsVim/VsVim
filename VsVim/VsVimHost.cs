@@ -137,11 +137,6 @@ namespace VsVim
             return GoToDefinitionCore(_textManager.ActiveTextView, null);
         }
 
-        public override bool GoToMatch()
-        {
-            return SafeExecuteCommand("Edit.GoToBrace");
-        }
-
         public override HostResult LoadFileIntoExisting(string filePath, ITextBuffer textBuffer)
         {
             try

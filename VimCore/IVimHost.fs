@@ -27,9 +27,6 @@ type IVimHost =
     /// Go to the local declaration of the value under the cursor
     abstract GoToGlobalDeclaration : ITextView -> string -> bool
 
-    /// Go to the matching construct of the value under the cursor
-    abstract GoToMatch : unit -> bool
-
     /// Go to the "count" next tab window in the specified direction.  This will wrap 
     /// around
     abstract GoToNextTab : Direction -> count : int -> unit

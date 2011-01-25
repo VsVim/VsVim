@@ -140,6 +140,10 @@ type ITextViewMotionUtil =
     /// accessed via the ' (single quote) operator and results in a 
     /// linewise motion
     abstract MarkLine : c : char -> MotionData option
+
+    /// Get the matching token from the next token on the line.  This is used to implement
+    /// the % motion
+    abstract MatchingToken : unit -> MotionData option
     
     /// Implement the w/W motion
     abstract WordForward : WordKind -> int -> MotionData

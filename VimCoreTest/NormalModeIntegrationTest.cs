@@ -902,5 +902,28 @@ namespace VimCore.UnitTest
             _buffer.Process("y`b");
             Assert.AreEqual("the brow", _buffer.RegisterMap.GetRegister(RegisterName.Unnamed).StringValue);
         }
+
+        [Test]
+        public void MatchingToken_Parens()
+        {
+            Create("cat( )");
+            _buffer.Process('%');
+            Assert.AreEqual(5, _textView.GetCaretPoint());
+            _buffer.Process('%');
+            Assert.AreEqual(3, _textView.GetCaretPoint());
+        }
+
+        [Test]
+        public void MatchingToken_MismatchedBlockComments()
+        {
+            Create("/* /* */");
+            _textView.MoveCaretTo(3);
+            _buffer.Process('%');
+            Assert.AreEqual(6, _textView.GetCaretPoint());
+            _buffer.Process('%');
+            Assert.AreEqual(0, _textView.GetCaretPoint());
+            _buffer.Process('%');
+            Assert.AreEqual(6, _textView.GetCaretPoint());
+        }
     }
 }

@@ -343,6 +343,10 @@ type internal MotionCapture
                     MotionFlags.CursorMovement,
                     fun arg -> RepeatLastCharSearch Direction.Forward arg)
                 yield (
+                    "%",
+                    MotionFlags.CursorMovement,
+                    fun _ -> _util.MatchingToken())
+                yield (
                     ",", 
                     MotionFlags.CursorMovement,
                     fun arg -> RepeatLastCharSearch Direction.Backward arg)

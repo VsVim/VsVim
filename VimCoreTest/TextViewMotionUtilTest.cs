@@ -1416,6 +1416,83 @@ namespace VimCore.UnitTest
             Assert.AreEqual(_textView.GetLineRange(1, 2).ExtentIncludingLineBreak, data.Span);
         }
 
+        [Test]
+        public void MatchingToken_SimpleParens()
+        {
+            Create("( )");
+            var data = _util.MatchingToken().Value;
+            Assert.AreEqual("( )", data.Span.GetText());
+            Assert.IsTrue(data.IsForward);
+            Assert.AreEqual(MotionKind.Inclusive, data.MotionKind);
+            Assert.AreEqual(OperationKind.CharacterWise, data.OperationKind);
+        }
+
+        [Test]
+        public void MatchingToken_SimpleParensWithPrefix()
+        {
+            Create("cat( )");
+            var data = _util.MatchingToken().Value;
+            Assert.AreEqual("cat( )", data.Span.GetText());
+            Assert.IsTrue(data.IsForward);
+        }
+
+        [Test]
+        public void MatchingToken_TooManyOpenOnSameLine()
+        {
+            Create("cat(( )");
+            Assert.IsTrue(_util.MatchingToken().IsNone());
+        }
+
+        [Test]
+        public void MatchingToken_AcrossLines()
+        {
+            Create("cat(", ")");
+            var span = new SnapshotSpan(
+                _textView.GetLine(0).Start,
+                _textView.GetLine(1).Start.Add(1));
+            var data = _util.MatchingToken().Value;
+            Assert.AreEqual(span, data.Span);
+            Assert.IsTrue(data.IsForward);
+        }
+
+        [Test]
+        public void MatchingToken_ParensFromEnd()
+        {
+            Create("cat( )");
+            _textView.MoveCaretTo(5);
+            var data = _util.MatchingToken().Value;
+            Assert.AreEqual("( )", data.Span.GetText());
+            Assert.IsFalse(data.IsForward);
+        }
+
+        [Test]
+        public void MatchingToken_ParensFromMiddle()
+        {
+            Create("cat( )");
+            _textView.MoveCaretTo(4);
+            var data = _util.MatchingToken().Value;
+            Assert.AreEqual("( ", data.Span.GetText());
+            Assert.IsFalse(data.IsForward);
+        }
+
+        [Test]
+        public void MatchingToken_CommentStartDoesNotNest()
+        {
+            Create("/* /* */");
+            var data = _util.MatchingToken().Value;
+            Assert.AreEqual("/* /* */", data.Span.GetText());
+            Assert.IsTrue(data.IsForward);
+        }
+
+        [Test]
+        public void MatchingToken_IfElsePreProc()
+        {
+            Create("#if foo #endif", "again", "#endif");
+            var data = _util.MatchingToken().Value;
+            var span = new SnapshotSpan(_textView.GetPoint(0), _textView.GetLine(1).Start.Add(6));
+            Assert.AreEqual(span, data.Span);
+            Assert.IsTrue(data.Column.IsSome(0));
+        }
     }
 
 }

@@ -2270,15 +2270,6 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void GoToMatch1()
-        {
-            Create("foo bar");
-            _operations.Setup(x => x.GoToMatch()).Returns(true);
-            Assert.IsTrue(_mode.Process(KeyInputUtil.CharToKeyInput('%')).IsProcessed);
-            _operations.Verify();
-        }
-
-        [Test]
         public void Mark1()
         {
             Create(DefaultLines);

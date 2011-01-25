@@ -8,7 +8,6 @@ namespace Vim.UnitTest.Mock
     {
         public int BeepCount { get; set; }
         public int GoToDefinitionCount { get; set; }
-        public int GoToMatchCount { get; set; }
         public bool GoToFileReturn { get; set; }
         public bool GoToDefinitionReturn { get; set; }
         public bool IsCompletionWindowActive { get; set; }
@@ -49,12 +48,6 @@ namespace Vim.UnitTest.Mock
         void IVimHost.ShowOpenFileDialog()
         {
             ShowOpenFileDialogCount++;
-        }
-
-        bool IVimHost.GoToMatch()
-        {
-            GoToMatchCount++;
-            return true;
         }
 
         void IVimHost.Close(ITextView textView, bool checkDirty)

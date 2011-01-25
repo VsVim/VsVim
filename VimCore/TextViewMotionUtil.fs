@@ -7,14 +7,191 @@ open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Operations
 
 type QuotedStringData =  {
-        LeadingWhiteSpace : SnapshotSpan
-        LeadingQuote : SnapshotPoint
-        Contents : SnapshotSpan
-        TrailingQuote : SnapshotPoint
-        TrailingWhiteSpace : SnapshotSpan 
+    LeadingWhiteSpace : SnapshotSpan
+    LeadingQuote : SnapshotPoint
+    Contents : SnapshotSpan
+    TrailingQuote : SnapshotPoint
+    TrailingWhiteSpace : SnapshotSpan 
 } with
     
     member x.FullSpan = SnapshotSpanUtil.Create x.LeadingWhiteSpace.Start x.TrailingWhiteSpace.End
+
+/// Flags which can occur on a matching token
+type TokenFlags = 
+
+    /// No flags and hence no restrictions
+    | None = 0
+
+    /// Specified when a match must occur on a separate line
+    | MatchOnSeparateLine = 0x1
+
+    /// Specified when a token is only valid at the start of the line
+    | ValidOnlyAtStartOfLine = 0x2 
+
+    /// Start token does not create a new nesting.  Used for C style 
+    /// block comments because multiple / * doesn't create a nesting
+    | StartTokenDoesNotNest = 0x4
+
+type Token = SnapshotSpan * TokenFlags
+
+/// Helper function for getting motions on an ITextView / ITextBuffer instance
+module internal TextViewMotionUtilHelper =
+
+    /// The Standard tokens which are used when getting matches in an ITextBuffer.  The syntax
+    /// is (start, end matches, flags)
+    let StandardMatchTokens = 
+        [
+            ("(", [")"], TokenFlags.None)
+            ("[", ["]"], TokenFlags.None)
+            ("{", ["}"], TokenFlags.None)
+            ("/*", ["*/"], TokenFlags.StartTokenDoesNotNest)
+            ("#if", ["#else"; "#elif"; "#endif"], TokenFlags.MatchOnSeparateLine ||| TokenFlags.ValidOnlyAtStartOfLine)
+            ("#else", ["#else"; "#elif"; "#endif"], TokenFlags.MatchOnSeparateLine ||| TokenFlags.ValidOnlyAtStartOfLine)
+            ("#elif", ["#else"; "#elif"; "#endif"], TokenFlags.MatchOnSeparateLine ||| TokenFlags.ValidOnlyAtStartOfLine) 
+        ]
+
+    /// Set of all of the tokens which need to be considered
+    let StandardMatchTokenMap = 
+        StandardMatchTokens
+        |> Seq.map (fun (start, endList, flags) -> (start :: endList) |> Seq.map (fun token -> (token, flags)))
+        |> Seq.concat
+        |> Map.ofSeq
+
+    /// Get the Token in the given SnapshotSpan 
+    let GetMatchTokens span = 
+
+        // Build up a set of tokens which start words that we care about
+        let startSet = 
+            StandardMatchTokenMap
+            |> Seq.map (fun pair -> pair.Key.[0])
+            |> Set.ofSeq
+
+        seq {
+
+            use e = (SnapshotSpanUtil.GetPoints span).GetEnumerator()
+            let builder = System.Text.StringBuilder()
+            let builderStart = ref span.Start
+
+            // Is the data in the builder a prefix match for any item in the 
+            // set of possible matches
+            let isPrefixMatch current = 
+                StandardMatchTokenMap |> Seq.exists (fun pair -> pair.Key.StartsWith current)
+
+            let inToken = ref false
+            while e.MoveNext() do
+                let currentPoint = e.Current
+                let current = currentPoint.GetChar()
+                if inToken.Value then
+                    // Append the next value and check to see if we've completed the 
+                    // match or need to continue looking
+                    builder.Append(current) |> ignore
+                    let current = builder.ToString()
+                    match Map.tryFind current StandardMatchTokenMap with
+                    | Some flags -> 
+
+                        // Found a match.  Yield the Token
+                        yield (SnapshotSpan(builderStart.Value, builder.Length), flags)
+                        inToken := false
+
+                    | None -> 
+
+                        // If we don't still have a prefix match then reset the search
+                        if not (isPrefixMatch current) then 
+                            inToken := false
+                else 
+                    match Map.tryFind (current.ToString()) StandardMatchTokenMap with
+                    | Some flags -> 
+                        yield (SnapshotSpan(currentPoint, 1), flags)
+                    | None ->
+                        if Set.contains current startSet then
+                            builderStart := currentPoint 
+                            inToken := true
+                            builder.Length <- 0
+                            builder.Append(current) |> ignore
+
+        } |> Seq.filter (fun (span, flags) -> 
+
+            if Util.IsFlagSet flags TokenFlags.ValidOnlyAtStartOfLine then 
+                // Filter out tokens which must begin at the start of the line
+                // and don't
+                let line = SnapshotSpanUtil.GetStartLine span
+                TssUtil.FindFirstNonWhitespaceCharacter line = span.Start
+            else
+                true)
+
+    /// Find the matching token within the buffer 
+    let FindMatchingToken span flags = 
+
+        // Is this a start token
+        let startTokenNests = not (Util.IsFlagSet flags TokenFlags.StartTokenDoesNotNest)
+        let text = SnapshotSpanUtil.GetText span
+        let isStart, possibleMatches = 
+            match StandardMatchTokens |> Seq.tryFind (fun (start, _, _) -> start = text) with
+            | None -> 
+                // Not a start token.  Matches are all start tokens which have this as an
+                // end token
+                let possibleMatches = 
+                    StandardMatchTokens
+                    |> Seq.filter (fun (_, endTokens, _) -> Seq.exists (fun t -> t = text) endTokens)
+                    |> Seq.map (fun (start, _ , _) -> start)
+                false, possibleMatches
+            | Some (_, endTokens, _) ->
+                // A start token, match the end tokens
+                true, (endTokens |> Seq.ofList)
+
+        let isMatch span = 
+            let text = SnapshotSpanUtil.GetText span
+            Seq.exists (fun t -> t = text) possibleMatches
+        if isStart then
+            // Starting from this token.  Start the next line if that is one of the options
+            // for this token 
+            let startPoint = 
+                if Util.IsFlagSet flags TokenFlags.MatchOnSeparateLine then
+                    span |> SnapshotSpanUtil.GetStartLine |> SnapshotLineUtil.GetEndIncludingLineBreak
+                else
+                    span.End
+            let endPoint = SnapshotUtil.GetEndPoint startPoint.Snapshot
+            let searchSpan = SnapshotSpan(startPoint, endPoint)
+
+            // Searching for a matching end token is straigh forward.  Go forward 
+            // until we find the first matching item 
+            use e = (GetMatchTokens searchSpan).GetEnumerator()
+            let rec inner depth = 
+                if e.MoveNext() then
+                    let current, _ = e.Current 
+                    if isMatch current then 
+                        if depth = 1 then Some current
+                        else inner (depth - 1)
+                    elif startTokenNests && current.GetText() = text then 
+                        inner (depth + 1)
+                    else 
+                        inner depth
+                else
+                    None
+            inner 1 
+        else
+            // Go from the start of the buffer to the start of the token
+            let searchSpan = SnapshotSpan(SnapshotUtil.GetStartPoint span.Snapshot, span.Start)
+            use e = (GetMatchTokens searchSpan).GetEnumerator()
+            let rec inner startToken depth = 
+                if e.MoveNext() then
+                    let current, _ = e.Current 
+                    if isMatch current then 
+                        match startToken with
+                        | None -> 
+                            inner (Some current) 0
+                        | Some _ ->
+                            if startTokenNests then inner startToken (depth + 1)
+                            else inner startToken 0
+                    elif current.GetText() = text then 
+                        if depth > 0 then inner startToken (depth - 1)
+                        else inner None 0 
+                    else 
+                        inner startToken depth
+                else
+                    startToken
+            inner None 0
+
 
 type internal TextViewMotionUtil 
     ( 
@@ -288,6 +465,37 @@ type internal TextViewMotionUtil
                     |> SnapshotPointUtil.GetColumn
                     |> Some } |> Some
 
+    /// Find the matching token for the next token on the current line 
+    member x.MatchingToken() = 
+        // First find the next token on this line from the caret point
+        let caretPoint, caretLine = TextViewUtil.GetCaretPointAndLine _textView
+        let tokens = TextViewMotionUtilHelper.GetMatchTokens (SnapshotSpan(caretPoint, caretLine.End))
+        match SeqUtil.tryHeadOnly tokens with
+        | None -> 
+            // No tokens on the line 
+            None
+        | Some (token, flags) -> 
+            // Now lets look for the matching token 
+            match TextViewMotionUtilHelper.FindMatchingToken token flags with
+            | None ->
+                // No matching token so once again no motion data
+                None
+            | Some otherToken ->
+                // Nice now order the tokens appropriately to get the span 
+                let span, isForward = 
+                    if caretPoint.Position < otherToken.Start.Position then
+                        SnapshotSpan(caretPoint, otherToken.End), true
+                    else
+                        SnapshotSpan(otherToken.Start, caretPoint.Add(1)), false
+                let column = otherToken.Start |> SnapshotPointUtil.GetColumn |> Some
+                {
+                    Span = span
+                    IsForward = isForward
+                    IsAnyWordMotion = false
+                    MotionKind = MotionKind.Inclusive
+                    OperationKind = OperationKind.CharacterWise
+                    Column = column} |> Some
+
     interface ITextViewMotionUtil with
         member x.TextView = _textView
         member x.CharSearch c count charSearch direction = 
@@ -298,6 +506,7 @@ type internal TextViewMotionUtil
             | CharSearch.TillChar, Direction.Backward -> x.BackwardCharMotionCore c count TssUtil.FindTillPreviousOccurranceOfCharOnLine
         member x.Mark c = x.Mark c
         member x.MarkLine c = x.MarkLine c
+        member x.MatchingToken() = x.MatchingToken()
         member x.WordForward kind count = 
             let start = x.StartPoint
             let endPoint = TssUtil.FindNextWordStart start count kind  

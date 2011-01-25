@@ -505,11 +505,6 @@ type internal NormalMode
                     ModeSwitch.NoSwitch,
                     fun count _ -> _operations.JumpPrevious count)
                 yield (
-                    "%", 
-                    CommandFlags.Movement, 
-                    ModeSwitch.NoSwitch,
-                    fun _ _ -> _operations.GoToMatch() |> ignore)
-                yield (
                     "<C-w><C-j>", 
                     CommandFlags.Movement, 
                     ModeSwitch.NoSwitch,

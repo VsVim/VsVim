@@ -115,22 +115,6 @@ namespace VsVim.UnitTest
         }
 
         [Test]
-        public void GoToMatch1()
-        {
-            Create();
-            _dte.Setup(x => x.ExecuteCommand(It.IsAny<string>(), It.IsAny<string>()));
-            Assert.IsTrue(_host.GoToMatch());
-        }
-
-        [Test]
-        public void GoToMatch2()
-        {
-            Create();
-            _dte.Setup(x => x.ExecuteCommand(It.IsAny<string>(), It.IsAny<string>())).Throws(new Exception());
-            Assert.IsFalse(_host.GoToMatch());
-        }
-
-        [Test]
         public void NavigateTo1()
         {
             Create();

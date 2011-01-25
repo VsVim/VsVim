@@ -146,9 +146,6 @@ type ICommonOperations =
     /// Go to the global declaration of the word under the cursor
     abstract GoToGlobalDeclaration : unit -> unit
 
-    /// Go to the matching construct of the value under the cursor
-    abstract GoToMatch : unit -> bool
-
     /// Go to the "count" next tab window in the specified direction.  This will wrap 
     /// around
     abstract GoToNextTab : Direction -> count : int -> unit

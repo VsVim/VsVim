@@ -505,8 +505,6 @@ type internal CommonOperations ( _data : OperationsData ) =
                     Failed(msg)
                 | None ->  Failed(Resources.Common_GotoDefNoWordUnderCursor) 
 
-        member x.GoToMatch () = _host.GoToMatch()
-                
         member x.SetMark (vimBuffer:IVimBuffer) point c = 
             if System.Char.IsLetter(c) || c = '\'' || c = '`' then
                 let map = vimBuffer.MarkMap
