@@ -19,6 +19,7 @@ F#
         with get (
         if (
         elif (
+    - {} the values in a record initializer 
  - Don't add a space between
     - Parens in everything but after keywords and discriminated union values
         x.Foo()

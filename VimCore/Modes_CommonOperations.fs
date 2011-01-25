@@ -251,15 +251,13 @@ type internal CommonOperations ( _data : OperationsData ) =
             // Build up the SearchData structure
             let word = span.GetText()
             let text = if isWholeWord then SearchText.WholeWord(word) else SearchText.StraightText(word)
-            let data = {Text=text; Kind = kind; Options = SearchOptions.ConsiderIgnoreCase }
+            let data = { Text=text; Kind = kind; Options = SearchOptions.ConsiderIgnoreCase }
 
-            // When forward the search will be starting on the current word so it will 
-            // always match.  Without modification a count of 1 would simply find the word 
-            // under the cursor.  Increment the count by 1 here so that it will find
-            // the current word as the 0th match (so to speak)
-            let count = if SearchKindUtil.IsForward kind then count + 1 else count 
-
-            match _search.FindNextMultiple data point _normalWordNav count with
+            // Make sure to start the search from the end of the current word.  Otherwise
+            // dependning on the caret position this could start from the begining of 
+            // the current word and have it count as the "first" match.  Start at the end
+            // of the word so the count works out correctly
+            match _search.FindNextMultiple data span.End _normalWordNav count with
             | Some(span) -> 
                 TextViewUtil.MoveCaretToPoint _textView span.Start
                 TextViewUtil.EnsureCaretOnScreenAndTextExpanded _textView _outlining

@@ -2147,6 +2147,21 @@ namespace VimCore.UnitTest
             _outlining.Verify();
         }
 
+        /// <summary>
+        /// Regression test for issue 398.  When starting on something other
+        /// than the first character make sure we don't jump over an extra 
+        /// word
+        /// </summary>
+        [Test]
+        public void MoveToNextOccuranceOfWordAtCursor_StartOnSecondChar()
+        {
+            Create("cat cat cat");
+            AllowOutlineExpansion();
+            _textView.MoveCaretTo(1);
+            _operations.MoveToNextOccuranceOfWordAtCursor(SearchKind.ForwardWithWrap, 1);
+            Assert.AreEqual(4, _textView.GetCaretPoint().Position);
+        }
+
         [Test]
         public void MoveToNextOccuranceOfLastSearch1()
         {
