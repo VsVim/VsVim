@@ -522,7 +522,7 @@ namespace Vim.UnitTest
             var frame = new DispatcherFrame();
             Action<DispatcherFrame> action = _ => { frame.Continue = false; };
             dispatcher.BeginInvoke(
-                DispatcherPriority.Background,
+                DispatcherPriority.SystemIdle,
                 action,
                 frame);
             Dispatcher.PushFrame(frame);

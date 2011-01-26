@@ -22,7 +22,7 @@ type MarkMap( _tlcService : ITrackingLineColumnService ) =
     static let _updatableLocalMarkSet = CharUtil.Letters |> Set.ofSeq
 
     let mutable _localMap = new Dictionary<ITextBuffer,BufferMarkData>()
-    let mutable _globalList : (char*ITrackingLineColumn) seq = Seq.empty
+    let mutable _globalList : (char*ITrackingLineColumn) list = List.empty
 
     /// Is this mark local to a buffer
     static member IsLocalMark c = Set.contains c _localMarkSet
@@ -122,6 +122,7 @@ type MarkMap( _tlcService : ITrackingLineColumnService ) =
                 _globalList
                 |> Seq.filter (fun (c,_) -> c <> ident)
                 |> Seq.append (Seq.singleton (ident,tlc))
+                |> List.ofSeq
 
     member x.GetGlobalMarkOwner ident = 
         let res = 
@@ -153,7 +154,7 @@ type MarkMap( _tlcService : ITrackingLineColumnService ) =
         |> Seq.iter (fun (_,tlc) -> tlc.Close())
         _globalList |> Seq.iter (fun (_,tlc) -> tlc.Close())
         _localMap.Clear()
-        _globalList <- Seq.empty
+        _globalList <- List.empty
     
     /// Delete all of the marks for the specified buffer
     member x.DeleteAllMarksForBuffer buffer =
@@ -165,8 +166,8 @@ type MarkMap( _tlcService : ITrackingLineColumnService ) =
         _globalList
         |> Seq.filter (fun (_,tlc) -> tlc.TextBuffer = buffer)
         |> Seq.iter (fun (_,tlc) -> tlc.Close())
-        _globalList <- _globalList |> Seq.filter (fun (_,tlc) -> tlc.TextBuffer <> buffer)
-
+        _globalList <- _globalList |> Seq.filter (fun (_,tlc) -> tlc.TextBuffer <> buffer) |> List.ofSeq
+        
     member x.GetLocalMarks buffer = 
         _localMarkSet
         |> Set.toSeq

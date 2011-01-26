@@ -5,6 +5,7 @@ using System.ComponentModel.Composition;
 using System.ComponentModel.Composition.Hosting;
 using System.Windows.Threading;
 using EnvDTE;
+using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Editor;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
@@ -15,6 +16,7 @@ using Moq;
 using NUnit.Framework;
 using Vim;
 using Vim.UnitTest;
+using Vim.UnitTest.Mock;
 namespace VsVim.UnitTest
 {
     /// <summary>
@@ -27,6 +29,15 @@ namespace VsVim.UnitTest
     public sealed class MemoryLeakTest
     {
         #region Exports
+
+        [Export(typeof(IExtensionErrorHandler))]
+        private sealed class ErrorHandler : IExtensionErrorHandler
+        {
+            public void HandleError(object sender, Exception exception)
+            {
+                _errorInService = exception.ToString();
+            }
+        }
 
         [Export(typeof(SVsServiceProvider))]
         private sealed class ServiceProvider : SVsServiceProvider
@@ -41,7 +52,9 @@ namespace VsVim.UnitTest
                 _serviceMap[typeof(SVsRunningDocumentTable)] = _factory.Create<IVsRunningDocumentTable>().Object;
                 _serviceMap[typeof(SVsUIShell)] = _factory.Create<IVsUIShell>().As<IVsUIShell4>().Object;
                 _serviceMap[typeof(SVsShellMonitorSelection)] = _factory.Create<IVsMonitorSelection>().Object;
-                _serviceMap[typeof(_DTE)] = _factory.Create<_DTE>().Object;
+                var dte = MockObjectFactory.CreateDteWithCommands();
+                _serviceMap[typeof(_DTE)] = dte.Object;
+                _serviceMap[typeof(SDTE)] = dte.Object;
             }
 
             public object GetService(Type serviceType)
@@ -91,7 +104,12 @@ namespace VsVim.UnitTest
 
             public IVsTextBuffer GetBufferAdapter(ITextBuffer textBuffer)
             {
-                return _factory.Create<IVsTextLines>().Object;
+                var lines = _factory.Create<IVsTextLines>();
+                IVsEnumLineMarkers markers;
+                lines
+                    .Setup(x => x.EnumMarkers(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<uint>(), out markers))
+                    .Returns(VSConstants.E_FAIL);
+                return lines.Object;
             }
 
             public Microsoft.VisualStudio.Text.ITextBuffer GetDataBuffer(IVsTextBuffer bufferAdapter)
@@ -127,9 +145,28 @@ namespace VsVim.UnitTest
 
         #endregion
 
+        /// <summary>
+        /// Due to the way the MEF components are spun up errors like a missing service will
+        /// result in an exception which is swallowed by the editor layer.  To counter this
+        /// we provide an IExtensionErrorHandler to log any errors that occur on startup.
+        /// </summary>
+        private static string _errorInService;
+
+        [SetUp]
+        public void SetUp()
+        {
+            _errorInService = null;
+        }
+
+        [TearDown]
+        public void TearDown()
+        {
+            Assert.IsNull(_errorInService, _errorInService);
+        }
+
         private void RunGarbageCollector()
         {
-            for (var i = 0; i < 3; i++)
+            for (var i = 0; i < 10; i++)
             {
                 Dispatcher.CurrentDispatcher.DoEvents();
                 GC.Collect();
@@ -138,9 +175,40 @@ namespace VsVim.UnitTest
             }
         }
 
+        private IVimBuffer CreateVimBuffer()
+        {
+            var list = EditorUtil.GetEditorCatalog();
+            list.Add(new AssemblyCatalog(typeof(Vim.IVim).Assembly));
+            list.Add(new AssemblyCatalog(typeof(Vim.UI.Wpf.KeyProcessor).Assembly));
+            list.Add(new AssemblyCatalog(typeof(VsVim.VsCommandTarget).Assembly));
+            list.Add(new TypeCatalog(
+                typeof(VsVim.UnitTest.MemoryLeakTest.ServiceProvider),
+                typeof(VsVim.UnitTest.MemoryLeakTest.VsEditorAdaptersFactoryService),
+                typeof(VsVim.UnitTest.MemoryLeakTest.ErrorHandler)));
+
+            var catalog = new AggregateCatalog(list.ToArray());
+            var container = new CompositionContainer(catalog);
+            var factory = container.GetExport<ITextEditorFactoryService>().Value;
+            var textView = factory.CreateTextView();
+
+            // Verify we actually created the IVimBuffer instance 
+            var vim = container.GetExport<IVim>().Value;
+            var vimBuffer = vim.GetOrCreateBuffer(textView);
+            Assert.IsNotNull(vimBuffer);
+
+            // Do one round of DoEvents since several services queue up actions to 
+            // take immediately after the IVimBuffer is created
+            for (var i = 0; i < 10; i++)
+            {
+                Dispatcher.CurrentDispatcher.DoEvents();
+            }
+
+            return vimBuffer;
+        }
+
         [Test]
         [Description("Take VsVim out of the equation and make sure the test is functioning properly")]
-        public void LeakTest_TextViewOnly()
+        public void TextViewOnly()
         {
             var list = EditorUtil.GetEditorCatalog();
             var catalog = new AggregateCatalog(list.ToArray());
@@ -156,7 +224,7 @@ namespace VsVim.UnitTest
         }
 
         [Test]
-        public void LeakTest_VimWpfDoesntHoldBuffer()
+        public void VimWpfDoesntHoldBuffer()
         {
             var list = EditorUtil.GetEditorCatalog();
             list.Add(new TypeCatalog(typeof(Vim.UnitTest.Exports.VimHost)));
@@ -187,38 +255,39 @@ namespace VsVim.UnitTest
         }
 
         [Test]
-        public void LeakTest_VsVimfDoesntHoldBuffer()
+        public void VsVimDoesntHoldBuffer()
         {
-            var list = EditorUtil.GetEditorCatalog();
-            list.Add(new AssemblyCatalog(typeof(Vim.IVim).Assembly));
-            list.Add(new AssemblyCatalog(typeof(Vim.UI.Wpf.KeyProcessor).Assembly));
-            list.Add(new AssemblyCatalog(typeof(VsVim.VsCommandTarget).Assembly));
-            list.Add(new TypeCatalog(
-                typeof(VsVim.UnitTest.MemoryLeakTest.ServiceProvider),
-                typeof(VsVim.UnitTest.MemoryLeakTest.VsEditorAdaptersFactoryService)));
-
-            var catalog = new AggregateCatalog(list.ToArray());
-            var container = new CompositionContainer(catalog);
-            var factory = container.GetExport<ITextEditorFactoryService>().Value;
-            var textView = factory.CreateTextView();
-
-            // Verify we actually created the IVimBuffer instance 
-            var vim = container.GetExport<IVim>().Value;
-            var vimBuffer = vim.GetOrCreateBuffer(textView);
-            Assert.IsNotNull(vimBuffer);
-
+            var vimBuffer = CreateVimBuffer();
             var weakVimBuffer = new WeakReference(vimBuffer);
-            var weakTextView = new WeakReference(textView);
+            var weakTextView = new WeakReference(vimBuffer.TextView);
 
             // Clean up 
-            textView.Close();
-            textView = null;
-            vimBuffer.Close();
+            vimBuffer.TextView.Close();
+            vimBuffer = null;
+
+            RunGarbageCollector();
+            System.Diagnostics.Debugger.Break();
+            Assert.IsNull(weakVimBuffer.Target);
+            Assert.IsNull(weakTextView.Target);
+        }
+
+        [Test]
+        public void SetGlobalMarkAndClose()
+        {
+            var vimBuffer = CreateVimBuffer();
+            vimBuffer.MarkMap.SetMark(vimBuffer.TextSnapshot.GetPoint(0), 'a');
+            vimBuffer.MarkMap.SetMark(vimBuffer.TextSnapshot.GetPoint(0), 'A');
+            var weakVimBuffer = new WeakReference(vimBuffer);
+            var weakTextView = new WeakReference(vimBuffer.TextView);
+
+            // Clean up 
+            vimBuffer.TextView.Close();
             vimBuffer = null;
 
             RunGarbageCollector();
             Assert.IsNull(weakVimBuffer.Target);
             Assert.IsNull(weakTextView.Target);
         }
+
     }
 }
