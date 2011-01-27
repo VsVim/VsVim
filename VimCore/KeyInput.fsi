@@ -15,8 +15,9 @@ type KeyInput =
     /// then Char.MinValue will be returend
     member Char : char
 
-    /// Does this represent a character only.  I.E. a backing char with no modifiers
-    member IsCharOnly : bool
+    /// Returns the actual backing character in the form of an option.  Several keys 
+    /// don't have corresponding char values and will return None
+    member RawChar : char option
 
     /// The VimKey for this KeyInput.  
     member Key : VimKey
@@ -70,15 +71,12 @@ module KeyInputUtil =
     /// The set of special keys which are alias's back into core VimKey values
     val AlternateKeyInputList : KeyInput list
 
-    /// The KeyInput for every VimKey in the system (except Unknown)
+    /// The KeyInput for every VimKey in the system (except Unknown).  This will not
+    /// include any alternate KeyInput values
     val VimKeyInputList : KeyInput list
 
     /// The set of core characters as a seq
     val VimKeyCharList : char list
-
-    /// The core set of KeyInput values that Vim is concerned with.  This includes all of the
-    /// VimKey entries and Alternate KeyInput values
-    val AllKeyInputList : KeyInput list
 
     /// Try and convert the given char to a KeyInput value
     val CharToKeyInput : char -> KeyInput

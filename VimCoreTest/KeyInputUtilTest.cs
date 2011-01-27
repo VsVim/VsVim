@@ -66,7 +66,7 @@ namespace VimCore.UnitTest
             {
                 var ki = KeyInputUtil.CharToKeyInput(cur);
                 Assert.IsTrue(ki.RawChar.IsSome());
-                Assert.IsTrue(ki.IsCharOnly);
+                Assert.AreEqual(KeyModifiers.None, ki.KeyModifiers);
                 Assert.AreEqual(cur, ki.Char);
             }
         }
@@ -94,7 +94,7 @@ namespace VimCore.UnitTest
             };
             foreach (var cur in array)
             {
-                Assert.IsTrue(KeyInputUtil.AllKeyInputList.Contains(cur));
+                Assert.IsTrue(KeyInputUtil.VimKeyInputList.Contains(cur));
             }
         }
 
@@ -248,6 +248,28 @@ namespace VimCore.UnitTest
             }
 
             Assert.AreEqual(KeyInputUtil.AlternateKeyInputPairList.Count(), KeyInputUtil.AlternateKeyInputList.Count());
+        }
+
+        /// <summary>
+        /// Too many APIs are simply not setup to handle alternate keys and hence we keep them out of the core
+        /// list.  APIs which want to include them should use the AlternateKeyInputList property directly
+        /// </summary>
+        [Test]
+        public void AllKeyInputsShouldNotIncludeAlternateKeys()
+        {
+            foreach (var current in KeyInputUtil.AlternateKeyInputList)
+            {
+                foreach (var core in KeyInputUtil.VimKeyInputList)
+                {
+                    // Can't use Equals since the core version of an alternate will be equal.  Just 
+                    // check the values manually
+                    var bruteEqual =
+                        core.Key == current.Key &&
+                        core.KeyModifiers == current.KeyModifiers &&
+                        core.Char == current.Char;
+                    Assert.IsFalse(bruteEqual);
+                }
+            }
         }
     }
 }

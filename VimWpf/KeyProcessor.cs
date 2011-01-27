@@ -117,11 +117,14 @@ namespace Vim.UI.Wpf
             else if (args.KeyboardDevice.Modifiers == ModifierKeys.None || args.KeyboardDevice.Modifiers == ModifierKeys.Shift)
             {
                 // When there are no keyboard modifiers or simply shift then we only want to 
-                // process input which can't be represented as a char.  If it can be represented 
-                // by a char then it will appear in TextInput and we can do a much more 
-                // definitive mapping
+                // process input which isn't mapped by a char.  If it is mapped by a char value 
+                // then it will appear in TextInput and we can do a much more definitive mapping
+                // from that result
                 KeyInput ki;
-                handled = KeyUtil.TryConvertToKeyInput(args.Key, args.KeyboardDevice.Modifiers, out ki) && !ki.IsCharOnly
+                var tryProcess = 
+                    KeyUtil.TryConvertToKeyInput(args.Key, args.KeyboardDevice.Modifiers, out ki) && 
+                    !KeyUtil.IsMappedByChar(ki.Key);
+                handled = tryProcess
                     ? _buffer.CanProcess(ki) && _buffer.Process(ki)
                     : false;
             }

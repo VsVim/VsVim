@@ -70,7 +70,7 @@ namespace VsVim
             {
                 // We only want to process input characters here.  All other input will eventually 
                 // be routed along a more reliable route for us to convert back to Vim KeyInput
-                if (ki.IsCharOnly && _coreCharacterSet.Contains(ki.Char))
+                if (ki.KeyModifiers == KeyModifiers.None &&  KeyUtil.IsMappedByChar(ki.Key) &&  _coreCharacterSet.Contains(ki.Char))
                 {
                     handled = VimBuffer.CanProcess(ki) && VimBuffer.Process(ki);
                 }

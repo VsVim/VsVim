@@ -146,5 +146,27 @@ namespace Vim.UI.Wpf.Test
             Assert.AreEqual(VimKey.F12, ki.Key);
             Assert.AreEqual(KeyModifiers.Shift | KeyModifiers.Control, ki.KeyModifiers);
         }
+
+        /// <summary>
+        /// The alternate version of keys should not be stored in the map.  The map should only be storing 
+        /// the core KeyInput values.  Alternate keys are a modification on top of a core input value.
+        /// </summary>
+        [Test]
+        public void EnsureAlternateKeysNotMapped()
+        {
+            foreach (var current in KeyInputUtil.AlternateKeyInputList)
+            {
+                // Make sure the VimKey for the KeyInput maps by itself normally.  The alternate keys are usually
+                // a modifier on top of a key.  If they are put into the map a symptom will be the modifier
+                // showing up on a plain key
+                Key key;
+                if (KeyUtil.TryConvertToKey(current.Key, out key))
+                {
+                    KeyInput keyInput;
+                    Assert.IsTrue(KeyUtil.TryConvertToKeyInput(key, ModifierKeys.None, out keyInput));
+                    Assert.AreEqual(KeyModifiers.None, keyInput.KeyModifiers);
+                }
+            }
+        }
     }
 }

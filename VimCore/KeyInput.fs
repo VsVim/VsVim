@@ -26,7 +26,6 @@ type KeyInput
 
     member x.Char = _literal |> OptionUtil.getOrDefault CharUtil.MinValue
     member x.RawChar = _literal
-    member x.IsCharOnly = Option.isSome _literal && _modKey = KeyModifiers.None
     member x.Key = _key
     member x.KeyModifiers = _modKey
     member x.HasShiftModifier = _modKey = KeyModifiers.Shift
@@ -355,8 +354,6 @@ module KeyInputUtil =
             (LineFeedKey, AlternateLineFeedKey)
             (EnterKey, AlternateEnterKey)
         ]
-
-    let AllKeyInputList = List.append VimKeyInputList AlternateKeyInputList
 
     let GetAlternate (ki : KeyInput) = ki.GetAlternate()
 

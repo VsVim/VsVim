@@ -856,7 +856,7 @@ type internal NormalMode
             elif _displayWindowBroker.IsSignatureHelpActive then false
             elif _runner.IsWaitingForMoreInput then  true
             elif doesCommandStartWith ki then true
-            elif ki.IsCharOnly && Set.contains ki.Char _coreCharSet then true
+            elif Option.isSome ki.RawChar && KeyModifiers.None = ki.KeyModifiers && Set.contains ki.Char _coreCharSet then true
             else false
 
         member this.Process ki = this.ProcessCore ki

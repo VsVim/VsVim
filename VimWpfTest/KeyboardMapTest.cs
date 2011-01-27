@@ -153,5 +153,6 @@ namespace Vim.UI.Wpf.Test
             AssertGetKeyInput('<', '<', ModifierKeys.None);
             AssertGetKeyInput('>', '>', ModifierKeys.Shift);
         }
+
     }
 }

@@ -1489,7 +1489,7 @@ namespace VimCore.UnitTest
         {
             Create("#if foo #endif", "again", "#endif");
             var data = _util.MatchingToken().Value;
-            var span = new SnapshotSpan(_textView.GetPoint(0), _textView.GetLine(1).Start.Add(6));
+            var span = new SnapshotSpan(_textView.GetPoint(0), _textView.GetLine(2).Start.Add(6));
             Assert.AreEqual(span, data.Span);
             Assert.IsTrue(data.Column.IsSome(0));
         }

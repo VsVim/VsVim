@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Windows.Input;
 
 namespace Vim.UI.Wpf
@@ -137,6 +138,24 @@ namespace Vim.UI.Wpf
             return true;
         }
 
+        /// <summary>
+        /// Under the hood we map KeyInput values into actual input by one of two mechanisms
+        ///
+        ///  1. Straight mapping of a VimKey to a Virtual Key Code.
+        ///  2. Mapping of the character to a virtual key code and set of modifier keys
+        ///
+        /// This method will return true if the VimKey is mapped using method 2
+        ///
+        /// Generally speaking a KeyInput is mapped by character if it has an associated 
+        /// char value.  This is not true for certain special cases like Enter, Tab and 
+        /// the Keypad values.
+        /// </summary>
+        internal static bool IsMappedByCharacter(VimKey vimKey)
+        {
+            int virtualKey;
+            return !TryVimKeyToVirtualKey(vimKey, out virtualKey);
+        }
+
         private static KeyModifiers ConvertToKeyModifiers(ModifierKeys keys)
         {
             var res = KeyModifiers.None;
@@ -163,7 +182,7 @@ namespace Vim.UI.Wpf
             cache = new Dictionary<KeyType, KeyInput>();
             charToKeyModifiersMap = new Dictionary<char, ModifierKeys>();
 
-            foreach (var current in KeyInputUtil.AllKeyInputList)
+            foreach (var current in KeyInputUtil.VimKeyInputList)
             {
                 int virtualKeyCode;
                 ModifierKeys modKeys;
@@ -175,7 +194,7 @@ namespace Vim.UI.Wpf
                 // If this is backed by a real character then store the modifiers which are needed
                 // to produce this char.  Later we can compare the current modifiers to this value
                 // and find the extra modifiers to apply to the KeyInput given to Vim
-                if (current.IsCharOnly)
+                if (current.KeyModifiers == KeyModifiers.None && IsMappedByCharacter(current.Key))
                 {
                     charToKeyModifiersMap[current.Char] = modKeys;
                 }
@@ -199,13 +218,16 @@ namespace Vim.UI.Wpf
         /// </summary>
         private static bool TryGetVirtualKeyAndModifiers(IntPtr hkl, KeyInput keyInput, out int virtualKeyCode, out ModifierKeys modKeys)
         {
-            if (VimKeyUtil.IsKeypadKey(keyInput.Key) || !keyInput.IsCharOnly)
+            if (TryVimKeyToVirtualKey(keyInput.Key, out virtualKeyCode))
             {
+                Debug.Assert(!IsMappedByCharacter(keyInput.Key));
                 modKeys = ModifierKeys.None;
-                return TryVimKeyToVirtualKey(keyInput.Key, out virtualKeyCode);
+                return true;
             }
             else
             {
+                Debug.Assert(IsMappedByCharacter(keyInput.Key));
+                Debug.Assert(keyInput.KeyModifiers == KeyModifiers.None);
                 return TryMapCharToVirtualKeyAndModifiers(hkl, keyInput.Char, out virtualKeyCode, out modKeys);
             }
         }

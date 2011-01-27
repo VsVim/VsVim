@@ -124,7 +124,8 @@ namespace VimCore.UnitTest
         [Test]
         public void CompareSemantics()
         {
-            var all = KeyInputUtil.AllKeyInputList.SelectMany(x => new[] {
+            var allKeyInputs = Enumerable.Concat(KeyInputUtil.VimKeyInputList, KeyInputUtil.AlternateKeyInputList);
+            var all = allKeyInputs.SelectMany(x => new[] {
                 x,
                 KeyInputUtil.ChangeKeyModifiers(x, KeyModifiers.Control),
                 KeyInputUtil.ChangeKeyModifiers(x, KeyModifiers.Shift),
