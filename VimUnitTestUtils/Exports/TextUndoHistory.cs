@@ -65,7 +65,7 @@ namespace Vim.UnitTest.Exports
         public TextUndoHistoryState State
         {
             [DebuggerNonUserCode]
-            get { throw new NotImplementedException(); }
+            get { return TextUndoHistoryState.Idle; }
         }
 
         public void Undo(int count)

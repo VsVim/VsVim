@@ -152,6 +152,13 @@ namespace VsVim.UnitTest
         /// </summary>
         private static string _errorInService;
 
+        /// <summary>
+        /// This field is used to hold the IVim instance if it's created.  This is essential
+        /// to ensuring a leak doesn't occur by a Vim global service such as the change tracker
+        /// holding ont an IVimBuffer after it's closed
+        /// </summary>
+        private IVim _vim;
+
         [SetUp]
         public void SetUp()
         {
@@ -162,6 +169,7 @@ namespace VsVim.UnitTest
         public void TearDown()
         {
             Assert.IsNull(_errorInService, _errorInService);
+            _vim = null;
         }
 
         private void RunGarbageCollector()
@@ -192,8 +200,8 @@ namespace VsVim.UnitTest
             var textView = factory.CreateTextView();
 
             // Verify we actually created the IVimBuffer instance 
-            var vim = container.GetExport<IVim>().Value;
-            var vimBuffer = vim.GetOrCreateBuffer(textView);
+            _vim = container.GetExport<IVim>().Value;
+            var vimBuffer = _vim.GetOrCreateBuffer(textView);
             Assert.IsNotNull(vimBuffer);
 
             // Do one round of DoEvents since several services queue up actions to 
@@ -266,7 +274,6 @@ namespace VsVim.UnitTest
             vimBuffer = null;
 
             RunGarbageCollector();
-            System.Diagnostics.Debugger.Break();
             Assert.IsNull(weakVimBuffer.Target);
             Assert.IsNull(weakTextView.Target);
         }
@@ -277,6 +284,28 @@ namespace VsVim.UnitTest
             var vimBuffer = CreateVimBuffer();
             vimBuffer.MarkMap.SetMark(vimBuffer.TextSnapshot.GetPoint(0), 'a');
             vimBuffer.MarkMap.SetMark(vimBuffer.TextSnapshot.GetPoint(0), 'A');
+            var weakVimBuffer = new WeakReference(vimBuffer);
+            var weakTextView = new WeakReference(vimBuffer.TextView);
+
+            // Clean up 
+            vimBuffer.TextView.Close();
+            vimBuffer = null;
+
+            RunGarbageCollector();
+            Assert.IsNull(weakVimBuffer.Target);
+            Assert.IsNull(weakTextView.Target);
+        }
+
+        /// <summary>
+        /// Change tracking is currently IVimBuffer specific.  Want to make sure it's
+        /// not indirectly holding onto an IVimBuffer reference
+        /// </summary>
+        [Test]
+        public void ChangeTrackerDoesntHoldTheBuffer()
+        {
+            var vimBuffer = CreateVimBuffer();
+            vimBuffer.TextBuffer.SetText("hello world");
+            vimBuffer.Process("dw");
             var weakVimBuffer = new WeakReference(vimBuffer);
             var weakTextView = new WeakReference(vimBuffer.TextView);
 
