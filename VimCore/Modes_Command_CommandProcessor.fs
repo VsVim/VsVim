@@ -711,8 +711,8 @@ type internal CommandProcessor
 
     member x.ParseAndRunInput (originalInputs : char list) =
         let withRange (range:SnapshotLineRange option) (inputs:char list) = x.ParseAndRunCommand inputs range
-        let point = TextViewUtil.GetCaretPoint _buffer.TextView
-        match RangeUtil.ParseRange point _buffer.MarkMap originalInputs with
+        let line = TextViewUtil.GetCaretLine _buffer.TextView
+        match RangeUtil.ParseRange line _buffer.MarkMap originalInputs with
         | ParseRangeResult.Succeeded(range, inputs) -> 
             if inputs |> List.isEmpty then
                 if range.Count = 1 then range.StartLine |> TssUtil.FindFirstNonWhitespaceCharacter |> _operations.MoveCaretToPoint

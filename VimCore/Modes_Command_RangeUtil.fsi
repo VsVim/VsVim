@@ -28,5 +28,6 @@ module internal RangeUtil =
     /// Parse out a number from the input string
     val ParseNumber : char list -> (int option * char list)
 
-    /// Parse out a range from the input string
-    val ParseRange : SnapshotPoint -> IMarkMap -> char list -> ParseRangeResult
+    /// Parse out a range from the input string in the context of the provided
+    /// ITextSnapshotLine
+    val ParseRange : ITextSnapshotLine -> IMarkMap -> char list -> ParseRangeResult

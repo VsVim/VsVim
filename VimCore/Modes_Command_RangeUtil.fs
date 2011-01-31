@@ -101,9 +101,9 @@ module internal RangeUtil =
         | None -> Error("Expected a line number")
 
     /// Parse out a mark 
-    let private ParseMark (point:SnapshotPoint) (map:IMarkMap) (list:char list) = 
+    let private ParseMark (textBuffer: ITextBuffer) (map : IMarkMap) (list : char list) = 
         let inner head tail = 
-            let opt = map.GetMark point.Snapshot.TextBuffer head
+            let opt = map.GetMark textBuffer head
             match opt with 
             | Some(point) -> 
                 let range = point.Position |> SnapshotPointUtil.GetContainingLine |> SnapshotLineRangeUtil.CreateForLine
@@ -111,28 +111,15 @@ module internal RangeUtil =
             | None -> Error Resources.Range_MarkNotValidInFile
         ListUtil.tryProcessHead list inner (fun () -> Error Resources.Range_MarkMissingIdentifier)
 
-    /// Parse out a single item in the range.
-    let private ParseItem (point:SnapshotPoint) (map:IMarkMap) (list:char list) =
-        let head = list |> List.head 
-        if CharUtil.IsDigit head then
-            ParseLineNumber point.Snapshot list
-        else if head = '.' then
-            let range = point.GetContainingLine() |> SnapshotLineRangeUtil.CreateForLine
-            ValidRange(range, CurrentLine, list |> List.tail)
-        else if head = '\'' then
-            ParseMark point map (list |> List.tail)
-        else if head = '$' then 
-            let range = point.Snapshot |> SnapshotUtil.GetLastLine |> SnapshotLineRangeUtil.CreateForLine
-            ValidRange(range, LineNumber, list |> List.tail)
-        else
-            NoRange
-
-    let private ParsePlusMinus (range:SnapshotLineRange) (list:char list) =
+    /// This will parse out a potential '+' or '-' out of the list and apply it to the 
+    /// provided 'range' value.  If there is not a '+' or '-' at the start of the list
+    /// the method will return the original range and char list unchanged
+    let ParsePlusMinus (range : SnapshotLineRange) (list: char list) =
         let getCount list =
             let opt,list = ParseNumber list
             match opt with 
-            | Some(num) -> num,list
-            | None -> 1,list
+            | Some(num) -> num, list
+            | None -> 1, list
         let inner head tail = 
             if head = '+' then 
                 let count,tail = getCount tail
@@ -157,27 +144,55 @@ module internal RangeUtil =
                             range.Snapshot.GetLineFromLineNumber(endLineNumber) |> SnapshotLineRangeUtil.CreateForLine
                         else 
                             SnapshotLineRangeUtil.CreateForLineRange range.StartLine (range.Snapshot.GetLineFromLineNumber(endLineNumber))
-                range,tail
+                range, tail
             else 
-                range,list
-        ListUtil.tryProcessHead list inner (fun () -> range,list)
+                range, list
+        ListUtil.tryProcessHead list inner (fun () -> range, list)
 
-    let private ParseRangeCore (point:SnapshotPoint) (map:IMarkMap) (originalInput:char list) =
+    /// Parse out a single item in the range.  This is used to parse out the left and right
+    /// side of the range.  In the case we are parsing the right side of the range the left
+    /// value will be provided so that the '+' and '-' can be properly applied
+    let ParseItem (line : ITextSnapshotLine) (map : IMarkMap) (list : char list) (leftRange: SnapshotLineRange option)=
+        let head = list |> List.head 
+        if CharUtil.IsDigit head then
+            ParseLineNumber line.Snapshot list
+        else if head = '.' then
+            let range = line |> SnapshotLineRangeUtil.CreateForLine
+            ValidRange (range, CurrentLine, list |> List.tail)
+        else if head = '\'' then
+            ParseMark line.Snapshot.TextBuffer map (list |> List.tail)
+        else if head = '$' then 
+            let range = line.Snapshot |> SnapshotUtil.GetLastLine |> SnapshotLineRangeUtil.CreateForLine
+            ValidRange (range, LineNumber, list |> List.tail)
+        else if head = '+' || head = '-' then
+            // The range item begins with a '+' or a '-'.  In the case of the left hand
+            // side of the range this is applied to the current line and in the right
+            // side it's applied to the left range 
+            let range = 
+                match leftRange with
+                | Some (range) -> range
+                | None -> SnapshotLineRangeUtil.CreateForLine line
+            let range, list = ParsePlusMinus range list
+            ValidRange (range, LineNumber, list)
+        else
+            NoRange
+
+    let ParseRangeCore (line : ITextSnapshotLine) (map : IMarkMap) (originalInput : char list) =
         _parser {
-            let! range,kind,remaining = ParseItem point map originalInput
-            let range,remaining = ParsePlusMinus range remaining
+            let! range, kind,remaining = ParseItem line map originalInput None
+            let range, remaining = ParsePlusMinus range remaining
             match ListUtil.tryHead remaining with
             | None -> return! Succeeded(range, remaining)
             | Some (head,tail) ->
                 if head = ',' then 
-                    let! rightRange,_,remaining = ParseItem point map tail
-                    let rightRange,remaining = ParsePlusMinus rightRange remaining
+                    let! rightRange, _, remaining = ParseItem line map tail (Some range)
+                    let rightRange, remaining = ParsePlusMinus rightRange remaining
                     let fullRange = CombineRanges range rightRange
                     return! Succeeded(fullRange, remaining)
                 else if head = ';' then 
                     let point = range.Start
-                    let! rightRange,_,remaining = ParseItem point map tail
-                    let rightRange,remaining = ParsePlusMinus rightRange remaining
+                    let! rightRange, _, remaining = ParseItem line map tail (Some range)
+                    let rightRange, remaining = ParsePlusMinus rightRange remaining
                     let fullRange = CombineRanges range rightRange
                     return! Succeeded(fullRange, remaining)
                 else if kind = LineNumber then
@@ -188,11 +203,11 @@ module internal RangeUtil =
                     return! Failed Resources.Range_ConnectionMissing
         }
 
-    let ParseRange (point:SnapshotPoint) (map:IMarkMap) (list:char list) = 
+    let ParseRange (line : ITextSnapshotLine) (map : IMarkMap) (list : char list) = 
         let inner head tail =
             if head = '%' then 
-                let range = SnapshotLineRangeUtil.CreateForSnapshot point.Snapshot
+                let range = SnapshotLineRangeUtil.CreateForSnapshot line.Snapshot
                 ParseRangeResult.Succeeded(range, tail)
             else
-                ParseRangeCore point map list
+                ParseRangeCore line map list
         ListUtil.tryProcessHead list inner (fun() -> ParseRangeResult.NoRange)

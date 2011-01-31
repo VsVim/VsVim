@@ -108,6 +108,16 @@ namespace VimCore.UnitTest
             _factory.Verify();
         }
 
+        /// <summary>
+        /// Tests the given range text will produce the provided range
+        /// </summary>
+        private void TestRange(string rangeText, SnapshotLineRange range)
+        {
+            _operations.Setup(x => x.Join(range, JoinKind.RemoveEmptySpaces)).Verifiable();
+            RunCommand(rangeText + "j");
+            _operations.Verify();
+        }
+
         [Test]
         public void Jump_LastLine()
         {
@@ -1716,6 +1726,13 @@ namespace VimCore.UnitTest
                 .Verifiable();
             RunCommand("3j 1");
             _factory.Verify();
+        }
+
+        [Test]
+        public void Range_CurrentLineWithIncrement()
+        {
+            Create("dog", "cat", "bear", "fish", "tree");
+            TestRange(".,+2", _textView.GetLineRange(0, 2));
         }
 
     }
