@@ -254,19 +254,6 @@ namespace VimCore.UnitTest
             }
         }
 
-
-        [Test]
-        public void Motion_G()
-        {
-            AssertMotion(
-                "G",
-                (util, point, count, data) =>
-                    util
-                        .Setup(x => x.LineOrLastToFirstNonWhitespace(count))
-                        .Returns(data)
-                        .Verifiable());
-        }
-
         [Test]
         public void Motion_gg()
         {
@@ -852,6 +839,24 @@ namespace VimCore.UnitTest
             _operations.Verify();
         }
 
+        /// <summary>
+        /// Need to make sure that G is not being given a count when used as a motion
+        /// </summary>
+        [Test]
+        public void Motion_G()
+        {
+            var util = new Mock<ITextViewMotionUtil>(MockBehavior.Strict);
+            Create(util.Object, "hello world");
+            var span = _textView.GetLine(0).Extent;
+            util
+                .Setup(x => x.LineOrLastToFirstNonWhitespace(FSharpOption<int>.None))
+                .Returns(VimUtil.CreateMotionData(span, operationKind: OperationKind.LineWise));
+            _operations
+                .Setup(x => x.UpdateRegisterForSpan(_unnamedRegister, RegisterOperation.Yank, span, OperationKind.LineWise))
+                .Verifiable();
+            _mode.Process("yG");
+            util.Verify();
+        }
 
         #endregion
 

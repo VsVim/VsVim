@@ -1,4 +1,5 @@
-﻿using Microsoft.VisualStudio.Text;
+﻿using System;
+using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using NUnit.Framework;
 using Vim;
@@ -819,6 +820,18 @@ namespace VimCore.UnitTest
             Assert.AreEqual(2, _textView.GetCaretPoint().Position);
             Assert.AreEqual("do", _textView.GetLine(0).GetText());
             Assert.AreEqual(ModeKind.Insert, _buffer.ModeKind);
+        }
+
+        /// <summary>
+        /// This command should only yank from the current line to the end of the file
+        /// </summary>
+        [Test]
+        public void Handle_yG_NonFirstLine()
+        {
+            Create("dog", "cat", "bear");
+            _textView.MoveCaretToLine(1);
+            _buffer.Process("yG");
+            Assert.AreEqual("cat" + Environment.NewLine + "bear", _buffer.GetRegister(RegisterName.Unnamed).StringValue);
         }
 
         [Test]

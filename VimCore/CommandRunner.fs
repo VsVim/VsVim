@@ -118,9 +118,7 @@ type internal CommandRunner
                     CancelledCommand
                 | MotionResult.Cancelled -> CancelledCommand
 
-        let runInitialMotion ki =
-            let count = CommandUtil.CountOrDefault _data.Count
-            _capture.GetOperatorMotion ki (Some count) |> inner
+        let runInitialMotion ki = _capture.GetOperatorMotion ki _data.Count |> inner
 
         match initialInput with
         | None -> NeedMore runInitialMotion

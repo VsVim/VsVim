@@ -248,21 +248,28 @@ type internal TextViewMotionUtil
                 MotionKind = MotionKind.Exclusive 
                 Column = None} |> Some
 
-    member x.LineToLineFirstNonWhitespaceMotion (originLine:ITextSnapshotLine) (endLine:ITextSnapshotLine) =
-        let _,column = TssUtil.FindFirstNonWhitespaceCharacter endLine |> SnapshotPointUtil.GetLineColumn
-        let span,isForward = 
-            if originLine.LineNumber < endLine.LineNumber then
-                let span = SnapshotSpan(originLine.Start, endLine.End)
-                (span, true)
-            elif originLine.LineNumber > endLine.LineNumber then
-                let span = SnapshotSpan(endLine.Start, originLine.End)
-                (span, false)
-            else 
-                let span = SnapshotSpan(endLine.Start, endLine.End)
-                (span, true)
+    /// Get the motion between the provided two lines.  The motion will be linewise
+    /// and have a column of the first non-whitespace character.  If the 'startofline'
+    /// option is not set it will keep the original column
+    member x.LineToLineFirstNonWhitespaceMotion (startLine : ITextSnapshotLine) (endLine : ITextSnapshotLine) = 
+
+        // Get the column based on the 'startofline' option
+        let column = 
+            if _settings.StartOfLine then 
+                endLine |> TssUtil.FindFirstNonWhitespaceCharacter |> SnapshotPointUtil.GetColumn
+            else
+                _textView |> TextViewUtil.GetCaretPoint |> SnapshotPointUtil.GetColumn
+
+        // Create the range based on the provided lines.  Remember they can be in reverse
+        // order
+        let range, isForward = 
+            let startLine, endLine, isForward = 
+                if startLine.LineNumber <= endLine.LineNumber then startLine, endLine, true 
+                else endLine, startLine, false
+            (SnapshotLineRangeUtil.CreateForLineRange startLine endLine, isForward)
         {
-            Span = span 
-            IsForward = isForward 
+            Span = range.ExtentIncludingLineBreak
+            IsForward = isForward
             IsAnyWordMotion = false
             OperationKind = OperationKind.LineWise 
             MotionKind = MotionKind.Inclusive 

@@ -3,37 +3,39 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using Microsoft.VisualStudio.Text.Operations;
 using Microsoft.VisualStudio.Utilities;
-using NUnit.Framework;
 
 namespace Vim.UnitTest.Exports
 {
     internal sealed class TextUndoHistory : ITextUndoHistory
     {
-        private ITextUndoTransaction _currentTransaction = null;
+        private ITextUndoTransaction _currentTransaction;
 
         public bool CanRedo
         {
-            get { throw new NotImplementedException(); }
+            get { return false; }
         }
 
         public bool CanUndo
         {
-            get { throw new NotImplementedException(); }
+            get { return false; }
         }
 
         public ITextUndoTransaction CreateTransaction(string description)
         {
-            _currentTransaction = new TextUndoTransaction(this);
-            return _currentTransaction;
+            if (_currentTransaction != null)
+            {
+                return new TextUndoTransaction(this, _currentTransaction);
+            }
+            else
+            {
+                _currentTransaction = new TextUndoTransaction(this);
+                return _currentTransaction;
+            }
         }
 
         public ITextUndoTransaction CurrentTransaction
         {
-            get
-            {
-                Assert.NotNull(_currentTransaction);
-                return _currentTransaction;
-            }
+            get { return _currentTransaction; }
             internal set { _currentTransaction = value; }
         }
 

@@ -463,7 +463,7 @@ type internal MotionCapture
         inner (CountCapture.Process) ki
 
     member x.GetOperatorMotion (ki:KeyInput) operatorCountOpt =
-        let arg = {MotionContext=MotionContext.AfterOperator; OperatorCount=operatorCountOpt; MotionCount=None}
+        let arg = { MotionContext = MotionContext.AfterOperator; OperatorCount = operatorCountOpt; MotionCount=None }
         if ki = KeyInputUtil.EscapeKey then MotionResult.Cancelled
         elif ki.IsDigit && ki.Char <> '0' then x.WaitforCount ki arg
         else x.WaitForCommandName arg ki
