@@ -1493,6 +1493,54 @@ namespace VimCore.UnitTest
             Assert.AreEqual(span, data.Span);
             Assert.IsTrue(data.Column.IsSome(0));
         }
+
+        /// <summary>
+        /// Make sure find the full paragraph from a point in the middle.  Full paragraphs
+        /// are odd in that they trim the preeceding whitespace and include the trailing
+        /// one
+        /// </summary>
+        [Test]
+        public void GetFullParagraph_FromMiddle()
+        {
+            Create("a", "b", "", "c");
+            _textView.MoveCaretToLine(1);
+            var span = _util.ParagraphFullForward(1).Span;
+            Assert.AreEqual(_snapshot.GetLineRange(0, 2).ExtentIncludingLineBreak, span);
+        }
+
+        [Test]
+        public void GetFullParagraph_FromStart()
+        {
+            Create("a", "b", "", "c");
+            var span = _util.ParagraphFullForward(1).Span;
+            Assert.AreEqual(_snapshot.GetLineRange(0, 2).ExtentIncludingLineBreak, span);
+        }
+
+        /// <summary>
+        /// A full paragraph should not include the preceeding blanks when starting on
+        /// an actual portion of the paragraph
+        /// </summary>
+        [Test]
+        public void GetFullParagraph_FromStartWithPreceedingBlank()
+        {
+            Create("a", "b", "", "c");
+            _textView.MoveCaretToLine(2);
+            var span = _util.ParagraphFullForward(1).Span;
+            Assert.AreEqual(_snapshot.GetLineRange(2, 3).ExtentIncludingLineBreak, span);
+        }
+
+        /// <summary>
+        /// Make sure the preceeding blanks are included when starting on a blank
+        /// line but not the trailing ones
+        /// </summary>
+        [Test]
+        public void GetFullParagraph_FromBlankLine()
+        {
+            Create("", "dog", "cat", "", "pig");
+            _textView.MoveCaretToLine(3);
+            var span = _util.ParagraphFullForward(1).Span;
+            Assert.AreEqual(_snapshot.GetLineRange(3, 4).ExtentIncludingLineBreak, span);
+        }
     }
 
 }

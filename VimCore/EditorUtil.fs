@@ -155,6 +155,13 @@ module SnapshotUtil =
         GetLines snapshot startLineNumber SearchKind.Forward
         |> Seq.truncate count
 
+    /// Try and get the line at the specified number
+    let TryGetLine snapshot number = 
+        if IsLineNumberValid snapshot number then
+            GetLine snapshot number |> Some
+        else
+            None
+
 /// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
 /// include any Vim specific logic
 module SnapshotSpanUtil =
@@ -468,6 +475,20 @@ module SnapshotLineUtil =
     /// Get the text of the ITextSnapshotLine including the line break
     let GetTextIncludingLineBreak (line : ITextSnapshotLine) = line.GetTextIncludingLineBreak()
 
+    /// Get the last point which is included in this line not consdiring the line 
+    /// break.  Can be None if this is a 0 length line 
+    let GetLastIncludedPoint line = 
+        let span = GetExtent line
+        if span.Length = 0 then None
+        else span.End.Subtract(1) |> Some
+
+    /// Does the line consist of only whitespace
+    let IsWhitespace line = 
+        line
+        |> GetExtent
+        |> SnapshotSpanUtil.GetPoints
+        |> Seq.forall (fun point -> CharUtil.IsWhiteSpace (point.GetChar()))
+
 [<RequireQualifiedAccess>]
 type PointKind =
     /// Normal valid point within the ITextSnapshot.  Point in question is the argument
@@ -636,7 +657,7 @@ module SnapshotPointUtil =
             else SnapshotSpanUtil.GetPointsBackward 
         GetSpans point kind 
         |> Seq.map mapFunc
-        |> Seq.concat       
+        |> Seq.concat
 
     /// Divide the ITextSnapshot into at most 2 SnapshotSpan instances at the provided
     /// SnapshotPoint.  If there is an above span it will be exclusive to the provided
@@ -780,6 +801,13 @@ module SnapshotPointUtil =
     let TrySubtractOne (point:SnapshotPoint) =  
         if point.Position = 0 then None
         else point |> SubtractOne |> Some
+
+    /// Try and subtract 1 from the given point unless it's the start of the buffer in which
+    /// case return the passed in value
+    let SubtractOneOrCurrent point = 
+        match TrySubtractOne point with
+        | Some (point) -> point
+        | None -> point
 
     /// Used to order two SnapshotPoint's in ascending order.  
     let OrderAscending (left:SnapshotPoint) (right:SnapshotPoint) = 

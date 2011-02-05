@@ -1,5 +1,4 @@
-﻿using System;
-using System.Linq;
+﻿using System.Linq;
 using Microsoft.VisualStudio.Text;
 using NUnit.Framework;
 using Vim;
@@ -10,13 +9,13 @@ namespace VimCore.UnitTest
     [TestFixture]
     public class MotionUtilTest
     {
-        ITextBuffer _buffer = null;
-        ITextSnapshot _snapshot = null;
+        private ITextBuffer _textBuffer;
+        private ITextSnapshot _snapshot;
 
         private void Create(params string[] lines)
         {
-            _buffer = EditorUtil.CreateBuffer(lines);
-            _snapshot = _buffer.CurrentSnapshot;
+            _textBuffer = EditorUtil.CreateBuffer(lines);
+            _snapshot = _textBuffer.CurrentSnapshot;
         }
 
         [Test]
@@ -59,43 +58,56 @@ namespace VimCore.UnitTest
                 ret.Select(x => x.GetText()).ToList());
         }
 
+        /// <summary>
+        /// Make sure the return doesn't include an empty span for the end point
+        /// </summary>
         [Test]
-        public void GetSentences5()
+        public void GetSentences_BackwardFromEndOfBuffer()
         {
             Create("a? b.");
             var ret = MotionUtil.GetSentences(_snapshot.GetEndPoint(), Direction.Backward);
             CollectionAssert.AreEquivalent(
-                new string[] { " b.", "a?" },
+                new[] { " b.", "a?" },
                 ret.Select(x => x.GetText()).ToList());
         }
 
+        /// <summary>
+        /// Sentences are an exclusive motion and hence backward from a single whitespace 
+        /// to a sentence boundary should not include the whitespace
+        /// </summary>
         [Test]
-        public void GetSentences6()
+        public void GetSentences_BackwardFromSingleWhitespace()
         {
             Create("a? b.");
             var ret = MotionUtil.GetSentences(_snapshot.GetPoint(2), Direction.Backward);
             CollectionAssert.AreEquivalent(
-                new string[] { "a?" },
+                new[] { "a?" },
                 ret.Select(x => x.GetText()).ToList());
         }
 
+        /// <summary>
+        /// Make sure we include many legal trailing characters
+        /// </summary>
         [Test]
-        public void GetSentences7()
+        public void GetSentences_ManyTrailingChars()
         {
             Create("a?)]' b.");
             var ret = MotionUtil.GetSentences(_snapshot.GetPoint(0), Direction.Forward);
             CollectionAssert.AreEquivalent(
-                new string[] { "a?)]'", " b." },
+                new[] { "a?)]' ", "b." },
                 ret.Select(x => x.GetText()).ToList());
         }
 
+        /// <summary>
+        /// The character should go on the previous sentence
+        /// </summary>
         [Test]
-        public void GetSentences8()
+        public void GetSentences_BackwardWithCharBetween()
         {
             Create("a?) b.");
             var ret = MotionUtil.GetSentences(_snapshot.GetEndPoint(), Direction.Backward);
             CollectionAssert.AreEquivalent(
-                new string[] { " b.", "a?)" },
+                new[] { "b.", "a?) " },
                 ret.Select(x => x.GetText()).ToList());
         }
 
@@ -110,37 +122,35 @@ namespace VimCore.UnitTest
                 ret.Select(x => x.GetText()).ToList());
         }
 
+        /// <summary>
+        /// Only a valid boundary if the end character is followed by one of the 
+        /// legal follow up characters (spaces, tabs, end of line after trailing chars)
+        /// </summary>
         [Test]
-        [Description("Only a sentence end if followed by certain items")]
-        public void GetSentence10()
+        public void GetSentence_IncompleteBoundary()
         {
             Create("a!b. c");
             var ret = MotionUtil.GetSentences(_snapshot.GetEndPoint(), Direction.Backward);
             CollectionAssert.AreEquivalent(
-                new string[] { " c", "a!b." },
+                new[] { " c", "a!b." },
                 ret.Select(x => x.GetText()).ToList());
         }
 
+        /// <summary>
+        /// Make sure blank lines are included as sentence boundaries
+        /// </summary>
         [Test]
-        [Description("Blank lines are sentence boundaries")]
-        public void GetSentence11()
-        {
-            Create("a", "", "b");
-            var ret = MotionUtil.GetSentences(_snapshot.GetEndPoint(), Direction.Backward);
-            CollectionAssert.AreEquivalent(
-                new string[] { "a" + Environment.NewLine, "" + Environment.NewLine, "b" },
-                ret.Select(x => x.GetText()).ToList());
-        }
-
-        [Test]
-        [Description("Blank lines are sentence boundaries")]
-        public void GetSentence12()
+        public void GetSentence_ForwardBlankLinesAreBoundaries()
         {
             Create("a", "", "", "b");
             var ret = MotionUtil.GetSentences(_snapshot.GetPoint(0), Direction.Forward);
             CollectionAssert.AreEquivalent(
-                new string[] { "a" + Environment.NewLine, "" + Environment.NewLine, "" + Environment.NewLine, "b" },
-                ret.Select(x => x.GetText()).ToList());
+                new[]
+                {
+                    _textBuffer.GetLineRange(0, 0).ExtentIncludingLineBreak,
+                    _textBuffer.GetLineRange(1, 3).ExtentIncludingLineBreak
+                },
+                ret.ToList());
         }
 
         [Test]
@@ -149,112 +159,77 @@ namespace VimCore.UnitTest
             Create("dog", "cat", "bear");
             var ret = MotionUtil.GetSentences(_snapshot.GetEndPoint().Subtract(1), Direction.Forward);
             CollectionAssert.AreEquivalent(
-                new string[] { "r" },
+                new [] { "r" },
                 ret.Select(x => x.GetText()).ToList());
         }
 
         [Test]
-        public void GetParagraphs1()
+        public void GetParagraphs_SingleBreak()
         {
             Create("a", "b", "", "c");
             var ret = MotionUtil.GetParagraphs(_snapshot.GetPoint(0), Direction.Forward);
             CollectionAssert.AreEquivalent(
-                new string[] { "a" + Environment.NewLine + "b" + Environment.NewLine, "" + Environment.NewLine, "c" },
-                ret.Select(x => x.Span.GetText()).ToList());
-        }
-
-        [Test]
-        public void GetParagraphs2()
-        {
-            Create("a", "b", "", "c");
-            var list = MotionUtil.GetParagraphs(_snapshot.GetPoint(0), Direction.Forward).ToList();
-            Assert.AreEqual(Paragraph.NewContent(_snapshot.GetLineRange(0, 1).ExtentIncludingLineBreak), list[0]);
-            Assert.AreEqual(Paragraph.NewBoundary(2, _snapshot.GetLineRange(2).ExtentIncludingLineBreak), list[1]);
-            Assert.AreEqual(Paragraph.NewContent(_snapshot.GetLineRange(3).ExtentIncludingLineBreak), list[2]);
-        }
-
-        [Test]
-        public void GetParagraphs3()
-        {
-            Create("a", "b", "", "c");
-            var list = MotionUtil.GetParagraphs(_snapshot.GetPoint(0), Direction.Forward).Take(1).ToList();
-            CollectionAssert.AreEquivalent(
-                new Paragraph[] {
-                    Paragraph.NewContent(_snapshot.GetLineRange(0,1).ExtentIncludingLineBreak)
+                new[]
+                {
+                    _textBuffer.GetLineRange(0, 1).ExtentIncludingLineBreak,
+                    _textBuffer.GetLineRange(2, 3).ExtentIncludingLineBreak
                 },
-                list);
+                ret.ToList());
         }
 
+        /// <summary>
+        /// Consequtive breaks should not produce separate paragraphs.  They are treated as 
+        /// part of the same paragraph
+        /// </summary>
         [Test]
-        public void GetParagraphsInSpan1()
+        public void GetParagraphs_ConsequtiveBreaks()
         {
-            Create("a", "b", "", "c");
-            var list = MotionUtil.GetParagraphsInSpan(_snapshot.GetLineRange(0).Extent, Direction.Forward).ToList();
+            Create("a", "b", "", "", "c");
+            var ret = MotionUtil.GetParagraphs(_snapshot.GetPoint(0), Direction.Forward);
             CollectionAssert.AreEquivalent(
-                new Paragraph[] {
-                    Paragraph.NewContent(_snapshot.GetLineRange(0).Extent)
+                new[]
+                {
+                    _textBuffer.GetLineRange(0, 1).ExtentIncludingLineBreak,
+                    _textBuffer.GetLineRange(2, 4).ExtentIncludingLineBreak
                 },
-                list);
+                ret.ToList());
         }
 
+        /// <summary>
+        /// Formfeed is a section and hence a paragraph boundary
+        /// </summary>
         [Test]
-        public void GetFullParagraph1()
+        public void GetParagraphs_FormFeedShouldBeBoundary()
         {
-            Create("a", "b", "", "c");
-            var span = MotionUtil.GetFullParagraph(_snapshot.GetLine(1).Start);
-            Assert.AreEqual(_snapshot.GetLineRange(0, 2).ExtentIncludingLineBreak, span);
+            Create("a", "b", "\f", "", "c");
+            var ret = MotionUtil.GetParagraphs(_snapshot.GetPoint(0), Direction.Forward);
+            CollectionAssert.AreEquivalent(
+                new[]
+                {
+                    _textBuffer.GetLineRange(0, 1).ExtentIncludingLineBreak,
+                    _textBuffer.GetLineRange(2, 2).ExtentIncludingLineBreak,
+                    _textBuffer.GetLineRange(3, 4).ExtentIncludingLineBreak
+                },
+                ret.ToList());
         }
 
+        /// <summary>
+        /// A formfeed is a section boundary and should not count as a consequtive paragraph
+        /// boundary
+        /// </summary>
         [Test]
-        public void GetFullParagraph2()
+        public void GetParagraphs_FormFeedIsNotConsequtive()
         {
-            Create("a", "b", "", "c");
-            var span = MotionUtil.GetFullParagraph(_snapshot.GetLine(0).Start);
-            Assert.AreEqual(_snapshot.GetLineRange(0, 1).ExtentIncludingLineBreak, span);
-        }
-
-        [Test]
-        public void GetFullParagraph3()
-        {
-            Create("a", "b", "", "c");
-            var span = MotionUtil.GetFullParagraph(_snapshot.GetLine(2).Start);
-            Assert.AreEqual(_snapshot.GetLineRange(2, 3).ExtentIncludingLineBreak, span);
-        }
-
-        [Test]
-        [Description("Get from a content boundary end")]
-        public void GetFullParagraph4()
-        {
-            Create("dog", "cat", "", "pig");
-            var span = MotionUtil.GetFullParagraph(_snapshot.GetLine(2).Start);
-            Assert.AreEqual(_snapshot.GetLineRange(2, 3).ExtentIncludingLineBreak, span);
-        }
-
-        [Test]
-        [Description("Get from a content boundary end with preceeding boundaries")]
-        public void GetFullParagraph5()
-        {
-            Create("", "dog", "cat", "", "pig");
-            var span = MotionUtil.GetFullParagraph(_snapshot.GetLine(3).Start);
-            Assert.AreEqual(_snapshot.GetLineRange(3, 4).ExtentIncludingLineBreak, span);
-        }
-
-        [Test]
-        [Description("Get from within a content portion")]
-        public void GetFullParagraph6()
-        {
-            Create("", "dog", "cat", "", "pig");
-            var span = MotionUtil.GetFullParagraph(_snapshot.GetLine(2).Start);
-            Assert.AreEqual(_snapshot.GetLineRange(1, 3).ExtentIncludingLineBreak, span);
-        }
-
-        [Test]
-        [Description("Get from within a boundary portion")]
-        public void GetFullParagraph7()
-        {
-            Create("", "dog", "cat", "", "pig");
-            var span = MotionUtil.GetFullParagraph(_snapshot.GetPoint(0));
-            Assert.AreEqual(_snapshot.GetLineRange(0, 2).ExtentIncludingLineBreak, span);
+            Create("a", "b", "\f", "", "c");
+            var ret = MotionUtil.GetParagraphs(_snapshot.GetPoint(0), Direction.Forward);
+            CollectionAssert.AreEquivalent(
+                new[]
+                {
+                    _textBuffer.GetLineRange(0, 1).ExtentIncludingLineBreak,
+                    _textBuffer.GetLineRange(2, 2).ExtentIncludingLineBreak,
+                    _textBuffer.GetLineRange(3, 4).ExtentIncludingLineBreak
+                },
+                ret.ToList());
         }
     }
 }
