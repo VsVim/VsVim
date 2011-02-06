@@ -10,4 +10,3 @@ type internal TextViewMotionUtil =
     new : ITextView * IMarkMap * IVimLocalSettings -> TextViewMotionUtil
 
     interface ITextViewMotionUtil
-

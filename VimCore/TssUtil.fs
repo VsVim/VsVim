@@ -147,12 +147,12 @@ module TssUtil =
             |> Seq.map getForSpan
             |> Seq.concat
 
-    let FindFirstNonWhitespaceCharacter (line:ITextSnapshotLine) = 
+    let FindFirstNonWhiteSpaceCharacter (line:ITextSnapshotLine) = 
         line
         |> SnapshotLineUtil.GetPoints
         |> SeqUtil.tryFindOrDefault (fun p -> not (CharUtil.IsWhiteSpace (p.GetChar()))) (line.Start)
 
-    let FindLastNonWhitespaceCharacter line =
+    let FindLastNonWhiteSpaceCharacter line =
         line
         |> SnapshotLineUtil.GetPointsBackward
         |> SeqUtil.tryFindOrDefault (fun p -> not (CharUtil.IsWhiteSpace (p.GetChar()))) (line.Start)

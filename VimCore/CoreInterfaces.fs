@@ -109,7 +109,7 @@ type MotionArgument = {
 /// to name the motion without tieing it to a given IVimBuffer or ITextView 
 /// which would increase the chance of an accidental memory leak
 [<RequireQualifiedAccess>]
-type CharSearch  =
+type CharSearchKind  =
 
     /// Used for the 'f' and 'F' motion.  To the specified char 
     | ToChar
@@ -117,130 +117,148 @@ type CharSearch  =
     /// Used for the 't' and 'T' motion.  Till the specified char
     | TillChar
 
-/// Responsible for implementing all of the Motion information
-type ITextViewMotionUtil = 
+/// A discriminated union of the Motion types supported.  These are the primary
+/// repeat mechanisms for Motion arguments so it's very important that these 
+/// are ITextView / IVimBuffer agnostic.  It will be very common for a Motion 
+/// item to be stored and then applied to many IVimBuffer instances.
+[<RequireQualifiedAccess>]
+type Motion =
 
-    /// ITextView associated with the ITextViewMotionUtil
-    abstract TextView : ITextView 
+    /// Implement the 'aw' motion.  This is called once the a key is seen.
+    | AllWord of WordKind
 
-    /// Left "count" characters
-    abstract CharLeft: int -> MotionData option
+    /// Implement the 'ap' motion
+    | AllParagraph 
 
-    /// Right "count" characters
-    abstract CharRight: int -> MotionData option
-
-    /// Run the CharSearch
-    abstract CharSearch : c : char -> count : int -> CharSearch -> Direction -> MotionData option
-
-    /// Get the motion to the specified mark.  This is typically accessed via
-    /// the ` (backtick) operator and results in an exclusive motion
-    abstract Mark : c : char -> MotionData option
-
-    /// Get the motion to the line of the specified mark.  This is typically
-    /// accessed via the ' (single quote) operator and results in a 
-    /// linewise motion
-    abstract MarkLine : c : char -> MotionData option
-
-    /// Get the matching token from the next token on the line.  This is used to implement
-    /// the % motion
-    abstract MatchingToken : unit -> MotionData option
-    
-    /// Implement the w/W motion
-    abstract WordForward : WordKind -> int -> MotionData
-
-    /// Implement the b/B motion
-    abstract WordBackward : WordKind -> int -> MotionData 
-        
-    /// Implement the aw motion.  This is called once the a key is seen.
-    abstract AllWord : WordKind -> int -> MotionData
-
-    /// Implement the 'e' motion.  This goes to the end of the current word.  If we're
-    /// not currently on a word it will find the next word and then go to the end of that
-    abstract EndOfWord : WordKind -> int -> MotionData 
-    
-    /// Implement an end of line motion.  Typically in response to the $ key.  Even though
-    /// this motion deals with lines, it's still a character wise motion motion. 
-    abstract EndOfLine : int -> MotionData
-
-    /// Find the first non-whitespace character as the start of the span.  This is an exclusive
-    /// motion so be careful we don't go to far forward
-    abstract FirstNonWhitespaceOnLine : unit -> MotionData 
-
-    /// Find the last non-whitespace character on the line.  Count causes it to go "count" lines
-    /// down and perform the search
-    abstract LastNonWhitespaceOnLine : int -> MotionData
+    /// Gets count full sentences from the cursor.  If used on a blank line this will
+    /// not return a value
+    | AllSentence
 
     /// Move to the begining of the line.  Interestingly since this command is bound to the '0' it 
     /// can't be associated with a count.  Doing a command like 30 binds as count 30 vs. count 3 
     /// for command '0'
-    abstract BeginingOfLine : unit -> MotionData
+    | BeginingOfLine
+
+    /// The left motion for h, <Left>, etc ...
+    | CharLeft 
+
+    /// The right motion for l, <Right>, etc ...
+    | CharRight
+
+    /// Implements the f, F, t and T motions
+    | CharSearch of CharSearchKind * Direction * char
+
+    /// Implement the 'e' motion.  This goes to the end of the current word.  If we're
+    /// not currently on a word it will find the next word and then go to the end of that
+    | EndOfWord of WordKind
+    
+    /// Implement an end of line motion.  Typically in response to the $ key.  Even though
+    /// this motion deals with lines, it's still a character wise motion motion. 
+    | EndOfLine
+
+    /// Find the first non-whitespace character as the start of the span.  This is an exclusive
+    /// motion so be careful we don't go to far forward
+    | FirstNonWhiteSpaceOnLine
+
+    /// Find the last non-whitespace character on the line.  Count causes it to go "count" lines
+    /// down and perform the search
+    | LastNonWhiteSpaceOnLine
 
     /// Handle the lines down to first non-whitespace motion.  This is one of the motions which 
     /// can accept a count of 0.
-    abstract LineDownToFirstNonWhitespace : int -> MotionData 
+    | LineDownToFirstNonWhiteSpace
 
     /// Handle the - motion
-    abstract LineUpToFirstNonWhitespace : int -> MotionData
+    | LineUpToFirstNonWhiteSpace
 
     /// Get the span of "count" lines upward careful not to run off the beginning of the
     /// buffer.  Implementation of the "k" motion
-    abstract LineUp : int -> MotionData
+    | LineUp
 
     /// Get the span of "count" lines downward careful not to run off the end of the
     /// buffer.  Implementation of the "j" motion
-    abstract LineDown : int -> MotionData
+    | LineDown
 
     /// Go to the specified line number or the first line if no line number is provided 
-    abstract LineOrFirstToFirstNonWhitespace : int option -> MotionData 
+    | LineOrFirstToFirstNonWhiteSpace
 
     /// Go to the specified line number or the last line of no line number is provided
-    abstract LineOrLastToFirstNonWhitespace : int option -> MotionData 
+    | LineOrLastToFirstNonWhiteSpace
 
     /// Go to the "count - 1" line from the top of the visible window.  If the count exceeds
     /// the number of visible lines it will end on the last visible line
-    abstract LineFromTopOfVisibleWindow : int option -> MotionData
+    | LineFromTopOfVisibleWindow
 
     /// Go to the "count -1" line from the bottom of the visible window.  If the count 
     /// exceeds the number of visible lines it will end on the first visible line
-    abstract LineFromBottomOfVisibleWindow : int option -> MotionData
+    | LineFromBottomOfVisibleWindow
 
     /// Go to the middle line in the visible window.  
-    abstract LineInMiddleOfVisibleWindow : unit -> MotionData
+    | LineInMiddleOfVisibleWindow
 
-    /// Count sentences forward
-    abstract SentenceForward : count:int -> MotionData
+    /// Get the motion to the specified mark.  This is typically accessed via
+    /// the ` (backtick) operator and results in an exclusive motion
+    | Mark of char
 
-    /// Count sentences backward 
-    abstract SentenceBackward : count:int -> MotionData
+    /// Get the motion to the line of the specified mark.  This is typically
+    /// accessed via the ' (single quote) operator and results in a 
+    /// linewise motion
+    | MarkLine of char
 
-    /// Gets count full sentences from the cursor.  If used on a blank line this will
-    /// not return a value
-    abstract SentenceFullForward : count:int -> MotionData
-
-    /// Count paragraphs forward
-    abstract ParagraphForward : count:int -> MotionData
+    /// Get the matching token from the next token on the line.  This is used to implement
+    /// the % motion
+    | MatchingToken 
 
     /// Count pargraphs backwards
-    abstract ParagraphBackward : count:int -> MotionData
+    | ParagraphBackward
 
-    /// Get count full sentences from the cursor.  
-    abstract ParagraphFullForward : count:int -> MotionData
-
-    /// Forward a section in the editor
-    abstract SectionForward : MotionContext -> count:int-> MotionData
-
-    /// Backward a section in the editor or to an open brace
-    abstract SectionBackwardOrOpenBrace : count:int -> MotionData
-    
-    /// Backward a section in the editor or to a close brace
-    abstract SectionBackwardOrCloseBrace : count:int -> MotionData
+    /// Count paragraphs forward
+    | ParagraphForward
 
     /// The quoted string including the quotes
-    abstract QuotedString : unit -> MotionData option
+    | QuotedString
 
     /// The quoted string excluding the quotes
-    abstract QuotedStringContents : unit -> MotionData option
+    | QuotedStringContents
 
+    /// Repeat the last CharSearch value
+    | RepeatLastCharSearch of Direction
+
+    /// A search for the specified pattern
+    | Search of string * Direction
+
+    /// Backward a section in the editor or to a close brace
+    | SectionBackwardOrCloseBrace
+    
+    /// Backward a section in the editor or to an open brace
+    | SectionBackwardOrOpenBrace
+
+    /// Forward a section in the editor
+    | SectionForwardOrCloseBrace
+
+    /// Forward a section in the editor
+    | SectionForwardOrOpenBrace
+
+    /// Count sentences backward 
+    | SentenceBackward
+
+    /// Count sentences forward
+    | SentenceForward
+
+    /// Implement the b/B motion
+    | WordBackward of WordKind
+
+    /// Implement the w/W motion
+    | WordForward of WordKind 
+
+/// Interface for running Motion instances against an ITextView
+and ITextViewMotionUtil =
+
+    /// The associated ITextView instance
+    abstract TextView : ITextView
+
+    /// Get the specified Motion value 
+    abstract GetMotion : Motion -> MotionArgument -> MotionData option 
 
 type ModeKind = 
     | Normal = 1
@@ -617,34 +635,47 @@ type MotionFlags =
     /// on Complex motions such as / and ? 
     | HandlesEscape = 0x4
 
-/// Motion function which is tied to a given IVimBuffer
-type MotionFunction = MotionArgument -> MotionData option
+/// Data about the run of a given MotionData
+type MotionRunData = {
 
-type ComplexMotionResult =
-    /// The complex motion was completed and produced potentially a function that given
-    /// a MotionArgument will attempt to calculate a MotionData.  It can also optionally
-    /// return a MotionFunction used to calculate the very first instance of the 
-    /// MotionData function (useful for caching).  
-    | Finished of MotionFunction * MotionFunction option
-    | Cancelled
+    /// The associated Motion value
+    Motion : Motion
+
+    /// The argument which should be supplied to the given Motion
+    MotionArgument : MotionArgument
+}
+
+/// The result of binding to a Motion value.
+[<RequireQualifiedAccess>]
+type MotionResult = 
+
+    /// Successfully bound to a Motion value.  This will return the bound motion, the 
+    /// argument which should be passed to the motion to get the actual result and
+    /// optionally a pre-calculated MotionData value.  This is helpful in some scenarios
+    /// where part of binding the Motion includes calculating the resulting Motion data
+    | Complete of MotionRunData * MotionData option
+
+    /// Motion needs more input.  
+    | NeedMoreInput of KeyRemapMode option * (KeyInput -> MotionResult)
+
     | Error of string
-    | NeedMoreInput of KeyRemapMode option * (KeyInput -> ComplexMotionResult)
 
-type ComplexMotionFunction = unit -> ComplexMotionResult
+    /// Motion was cancelled via user input
+    | Cancelled
 
 /// Represents the types of MotionCommands which exist
-type MotionCommand = 
+type MotionCommand =
 
     /// Simple motion which comprises of a single KeyInput and a function which given 
     /// a start point and count will produce the motion.  None is returned in the 
     /// case the motion is not valid
-    | SimpleMotionCommand of KeyInputSet * MotionFlags * MotionFunction
+    | SimpleMotionCommand of KeyInputSet * MotionFlags * Motion
 
     /// Complex motion commands take more than one KeyInput to complete.  For example 
     /// the f,t,F and T commands all require at least one additional input.  The bool
     /// in the middle of the tuple indicates whether or not the motion can be 
     /// used as a cursor movement operation  
-    | ComplexMotionCommand of KeyInputSet * MotionFlags * ComplexMotionFunction
+    | ComplexMotionCommand of KeyInputSet * MotionFlags * (MotionArgument -> MotionResult)
 
     with
 
@@ -657,13 +688,6 @@ type MotionCommand =
         match x with 
         | SimpleMotionCommand(_,flags,_) -> flags
         | ComplexMotionCommand(_,flags,_) -> flags
-
-/// Data about the run of a given MotionData
-type MotionRunData = {
-    MotionCommand : MotionCommand
-    MotionArgument : MotionArgument
-    MotionFunction : MotionFunction
-}
 
 /// The information about the particular run of a Command
 type CommandRunData = {
@@ -679,19 +703,9 @@ type CommandRunData = {
     VisualRunData : VisualSpan option
 }
 
-[<RequireQualifiedAccess>]
-type MotionResult = 
-    /// Motion is complete.  Returns both the information about the result of the motion and the 
-    /// data necessary to repeat the motion later
-    | Complete of MotionData * MotionRunData
 
-    /// Motion needs more input.  
-    | NeedMoreInput of KeyRemapMode option * (KeyInput -> MotionResult)
-
-    | Error of string
-    | Cancelled
-
-/// Responsible for capturing motions on a given ITextView
+/// Responsible for binding key input to a Motion and MotionArgument tuple.  Does
+/// not actually run the motions
 type IMotionCapture =
 
     /// Associated ITextView
@@ -1074,7 +1088,7 @@ type IVimData =
     /// Motion function used with the last f, F, t or T motion.  The 
     /// first item in the tuple is the forward version and the second item
     /// is the backwards version
-    abstract LastCharSearch : (CharSearch * char) option with get, set
+    abstract LastCharSearch : (CharSearchKind * char) option with get, set
 
     /// Raised when the LastSearch value changes
     [<CLIEvent>]
@@ -1270,7 +1284,6 @@ and SwitchModeEventArgs
     /// Previous IMode.  Expressed as an Option because the first mode switch
     /// has no previous one
     member x.PreviousMode = _previousMode
-
 
 /// Main interface for the Vim editor engine so to speak. 
 and IVimBuffer =
@@ -1519,5 +1532,3 @@ type IVisualSpanCalculator =
     /// Calculate the new VisualSpan for the the given point
     abstract CalculateForPoint : SnapshotPoint -> oldSpan:VisualSpan  -> VisualSpan
 
-
-    

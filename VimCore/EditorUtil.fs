@@ -483,7 +483,7 @@ module SnapshotLineUtil =
         else span.End.Subtract(1) |> Some
 
     /// Does the line consist of only whitespace
-    let IsWhitespace line = 
+    let IsWhiteSpace line = 
         line
         |> GetExtent
         |> SnapshotSpanUtil.GetPoints
@@ -531,7 +531,7 @@ module SnapshotPointUtil =
         point = SnapshotUtil.GetEndPoint snapshot
 
     /// Is this point whitespace?
-    let IsWhitespace point =
+    let IsWhiteSpace point =
         if IsEndPoint point then false
         else CharUtil.IsWhiteSpace (point.GetChar())
 

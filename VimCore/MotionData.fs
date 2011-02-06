@@ -58,7 +58,7 @@ type MotionData = {
             let startLine = SnapshotSpanUtil.GetStartLine x.Span
             let endLine = x.Span.End.GetContainingLine()
             if endLine.LineNumber > startLine.LineNumber then
-                let point = TssUtil.FindFirstNonWhitespaceCharacter endLine
+                let point = TssUtil.FindFirstNonWhiteSpaceCharacter endLine
                 if point = x.Span.End then
                     let lineAbove = endLine.Snapshot.GetLineFromLineNumber(endLine.LineNumber-1)
                     SnapshotSpan(x.Span.Start, lineAbove.End)

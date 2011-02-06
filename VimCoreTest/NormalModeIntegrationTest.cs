@@ -593,6 +593,17 @@ namespace VimCore.UnitTest
             Assert.AreEqual(_textView.GetLine(1).End.Subtract(1), _textView.GetCaretPoint());
         }
 
+        /// <summary>
+        /// Make sure the cursor positions correctly on the next line 
+        /// </summary>
+        [Test]
+        public void Handle_BraceClose_MiddleOfParagraph()
+        {
+            Create("dog", "", "cat");
+            _buffer.Process("}");
+            Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
+        }
+
         [Test]
         public void Handle_cc_AutoIndentShouldPreserveOnSingle()
         {
@@ -689,6 +700,20 @@ namespace VimCore.UnitTest
             _buffer.Process("d`a");
             Assert.AreEqual("at", _textView.GetLine(0).GetText());
             Assert.AreEqual("bear", _textView.GetLine(1).GetText());
+        }
+
+        /// <summary>
+        /// Even though the motion will include the second line it should not 
+        /// be included in the delete operation.  This hits the special case
+        /// listed in :help exclusive
+        /// </summary>
+        [Test]
+        public void Handle_d_WithParagraphMotion()
+        {
+            Create("dog", "", "cat");
+            _buffer.Process("d}");
+            Assert.AreEqual("", _textView.GetLine(0).GetText());
+            Assert.AreEqual("cat", _textView.GetLine(1).GetText());
         }
 
         [Test]

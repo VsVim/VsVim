@@ -115,7 +115,7 @@ module internal MotionUtil =
                 // Filter out tokens which must begin at the start of the line
                 // and don't
                 let line = SnapshotSpanUtil.GetStartLine span
-                TssUtil.FindFirstNonWhitespaceCharacter line = span.Start
+                TssUtil.FindFirstNonWhiteSpaceCharacter line = span.Start
             else
                 true)
 
@@ -375,7 +375,7 @@ module internal MotionUtil =
                     let point = SnapshotPointUtil.AddOne point
                     moveForwardWhile (isCharInList SentenceTrailingChars) point
 
-                SnapshotPointUtil.IsWhitespace point ||
+                SnapshotPointUtil.IsWhiteSpace point ||
                 SnapshotPointUtil.IsEndPoint point ||
                 line.End = point 
 
@@ -518,7 +518,7 @@ type internal TextViewMotionUtil
             let endLine = 
                 if motionData.IsForward then SnapshotSpanUtil.GetEndLine motionData.Span
                 else SnapshotSpanUtil.GetStartLine motionData.Span
-            let point = TssUtil.FindFirstNonWhitespaceCharacter endLine
+            let point = TssUtil.FindFirstNonWhiteSpaceCharacter endLine
             let _,column = SnapshotPointUtil.GetLineColumn point
             { motionData with Column=Some column }
 
@@ -553,12 +553,12 @@ type internal TextViewMotionUtil
     /// Get the motion between the provided two lines.  The motion will be linewise
     /// and have a column of the first non-whitespace character.  If the 'startofline'
     /// option is not set it will keep the original column
-    member x.LineToLineFirstNonWhitespaceMotion (startLine : ITextSnapshotLine) (endLine : ITextSnapshotLine) = 
+    member x.LineToLineFirstNonWhiteSpaceMotion (startLine : ITextSnapshotLine) (endLine : ITextSnapshotLine) = 
 
         // Get the column based on the 'startofline' option
         let column = 
             if _settings.StartOfLine then 
-                endLine |> TssUtil.FindFirstNonWhitespaceCharacter |> SnapshotPointUtil.GetColumn
+                endLine |> TssUtil.FindFirstNonWhiteSpaceCharacter |> SnapshotPointUtil.GetColumn
             else
                 _textView |> TextViewUtil.GetCaretPoint |> SnapshotPointUtil.GetColumn
 
@@ -577,7 +577,8 @@ type internal TextViewMotionUtil
             MotionKind = MotionKind.Inclusive 
             Column = Some column }
 
-    member x.GetParagraphs point direction count = 
+    member x.GetParagraphs direction count = 
+        let point = TextViewUtil.GetCaretPoint _textView
         let span = 
             MotionUtil.GetParagraphs point direction
             |> Seq.truncate count
@@ -759,7 +760,7 @@ type internal TextViewMotionUtil
                 Column = 
                     virtualPoint.Position
                     |> SnapshotPointUtil.GetContainingLine
-                    |> TssUtil.FindFirstNonWhitespaceCharacter
+                    |> TssUtil.FindFirstNonWhiteSpaceCharacter
                     |> SnapshotPointUtil.GetColumn
                     |> Some } |> Some
 
@@ -800,12 +801,12 @@ type internal TextViewMotionUtil
     /// if there is no trailing whitespace or the caret started in whitespace then
     /// the leading whitespace will be included.  The 'p' motion is the only one
     /// which appears to go backwards line wise
-    member x.GetFullParagraph count = 
+    member x.GetAllParagraph count = 
 
         let caretPoint = TextViewUtil.GetCaretPoint _textView 
         let span = 
             let startPoint = SnapshotUtil.GetStartPoint caretPoint.Snapshot
-            MotionUtil.GetParagraphs startPoint Direction.Forward 
+            MotionUtil.GetParagraphs caretPoint Direction.Forward 
             |> Seq.skipWhile (fun span -> not (span.Contains caretPoint))
             |> Seq.truncate count
             |> SnapshotSpanUtil.CreateCombined
@@ -814,11 +815,11 @@ type internal TextViewMotionUtil
         let span = 
 
             // Does the span end in whitespace
-            let doesSpanEndInWhitespace = 
+            let doesSpanEndInWhiteSpace = 
                 let line = SnapshotPointUtil.GetContainingLine span.End
-                SnapshotLineUtil.IsWhitespace line
+                SnapshotLineUtil.IsWhiteSpace line
 
-            if SnapshotPointUtil.IsWhitespace caretPoint || not (SnapshotPointUtil.IsEndPoint span.End || doesSpanEndInWhitespace) then
+            if SnapshotPointUtil.IsWhiteSpace caretPoint || not (SnapshotPointUtil.IsEndPoint span.End || doesSpanEndInWhiteSpace) then
                 // Need to include the whitespace in front of the motion 
                 let startLine = 
                     let snapshot = caretPoint.Snapshot
@@ -828,13 +829,13 @@ type internal TextViewMotionUtil
                         | None ->
                             line 
                         | Some(prevLine) ->
-                            if SnapshotLineUtil.IsWhitespace prevLine then
+                            if SnapshotLineUtil.IsWhiteSpace prevLine then
                                 inner prevLine
                             else
                                 line
                     span.Start |> SnapshotPointUtil.GetContainingLine |> inner
                 SnapshotSpan(startLine.Start, span.End)
-            elif doesSpanEndInWhitespace then
+            elif doesSpanEndInWhiteSpace then
                 // Include the trailing whitespace
                 let endLine = 
                     let snapshot = caretPoint.Snapshot
@@ -844,7 +845,7 @@ type internal TextViewMotionUtil
                         | None ->
                             line
                         | Some nextLine ->
-                            if SnapshotLineUtil.IsWhitespace nextLine then inner nextLine
+                            if SnapshotLineUtil.IsWhiteSpace nextLine then inner nextLine
                             else line
                     span.End |> SnapshotPointUtil.GetContainingLine |> inner
                 SnapshotSpan(span.Start, endLine.EndIncludingLineBreak)
@@ -859,430 +860,549 @@ type internal TextViewMotionUtil
             OperationKind = OperationKind.LineWise
             Column = None }
 
-    interface ITextViewMotionUtil with
-        member x.TextView = _textView
-        member x.CharSearch c count charSearch direction = 
-            match charSearch, direction with
-            | CharSearch.ToChar, Direction.Forward -> x.ForwardCharMotionCore c count TssUtil.FindNextOccurranceOfCharOnLine
-            | CharSearch.TillChar, Direction.Forward -> x.ForwardCharMotionCore c count TssUtil.FindTillNextOccurranceOfCharOnLine
-            | CharSearch.ToChar, Direction.Backward -> x.BackwardCharMotionCore c count TssUtil.FindPreviousOccurranceOfCharOnLine 
-            | CharSearch.TillChar, Direction.Backward -> x.BackwardCharMotionCore c count TssUtil.FindTillPreviousOccurranceOfCharOnLine
-        member x.Mark c = x.Mark c
-        member x.MarkLine c = x.MarkLine c
-        member x.MatchingToken() = x.MatchingToken()
-        member x.WordForward kind count = 
-            let start = x.StartPoint
-            let endPoint = TssUtil.FindNextWordStart start count kind  
-            let span = SnapshotSpan(start,endPoint)
-            {
-                Span = span 
-                IsForward = true 
-                IsAnyWordMotion = true
-                MotionKind = MotionKind.Exclusive 
-                OperationKind = OperationKind.CharacterWise 
-                Column = None}
-        member x.WordBackward kind count =
-            let start = x.StartPoint
-            let startPoint = TssUtil.FindPreviousWordStart start count kind
-            let span = SnapshotSpan(startPoint,start)
-            {
-                Span = span 
-                IsForward = false 
-                IsAnyWordMotion = true
-                MotionKind = MotionKind.Exclusive 
-                OperationKind = OperationKind.CharacterWise 
-                Column = None}
-        member x.AllWord kind count = 
-            let start = x.StartPoint
-            let start = match TssUtil.FindCurrentFullWordSpan start kind with 
-                            | Some (s) -> s.Start
-                            | None -> start
-            let endPoint = TssUtil.FindNextWordStart start count kind  
-            let span = SnapshotSpan(start,endPoint)
-            {
-                Span = span 
-                IsForward = true 
-                IsAnyWordMotion = false
-                MotionKind = MotionKind.Exclusive 
-                OperationKind = OperationKind.CharacterWise 
-                Column = None}
-        member x.EndOfWord kind count = 
+    /// Implements the 'aw' motion. 
+    member x.GetAllWord kind count = 
+        let start = x.StartPoint
+        let start = match TssUtil.FindCurrentFullWordSpan start kind with 
+                        | Some (s) -> s.Start
+                        | None -> start
+        let endPoint = TssUtil.FindNextWordStart start count kind  
+        let span = SnapshotSpan(start,endPoint)
+        {
+            Span = span 
+            IsForward = true 
+            IsAnyWordMotion = false
+            MotionKind = MotionKind.Exclusive 
+            OperationKind = OperationKind.CharacterWise 
+            Column = None }
 
-            // Create the appropriate MotionData structure with the provided SnapshotSpan
-            let withSpan span = {
-                Span = span 
-                IsForward = true 
-                IsAnyWordMotion  =  false
-                MotionKind = MotionKind.Inclusive 
-                OperationKind = OperationKind.CharacterWise 
-                Column = None} 
+    member x.BeginingOfLine() = 
+        let start = x.StartPoint
+        let line = SnapshotPointUtil.GetContainingLine start
+        let span = SnapshotSpan(line.Start, start)
+        {
+            Span = span 
+            IsForward = false 
+            IsAnyWordMotion = false
+            MotionKind = MotionKind.Exclusive 
+            OperationKind = OperationKind.CharacterWise 
+            Column = None}
 
-            // Move forward until we find the first non-blank and hence a word character 
-            let point =
-                SnapshotPointUtil.GetPoints x.StartPoint SearchKind.Forward
-                |> Seq.skipWhile (fun point -> point.GetChar() |> CharUtil.IsWhiteSpace)
-                |> SeqUtil.tryHeadOnly
-            match point with 
-            | None -> 
-                SnapshotSpanUtil.CreateFromBounds x.StartPoint (SnapshotUtil.GetEndPoint _textView.TextSnapshot) |> withSpan
-            | Some(point) -> 
+    member x.CharSearch c count charSearch direction = 
+        match charSearch, direction with
+        | CharSearchKind.ToChar, Direction.Forward -> x.ForwardCharMotionCore c count TssUtil.FindNextOccurranceOfCharOnLine
+        | CharSearchKind.TillChar, Direction.Forward -> x.ForwardCharMotionCore c count TssUtil.FindTillNextOccurranceOfCharOnLine
+        | CharSearchKind.ToChar, Direction.Backward -> x.BackwardCharMotionCore c count TssUtil.FindPreviousOccurranceOfCharOnLine 
+        | CharSearchKind.TillChar, Direction.Backward -> x.BackwardCharMotionCore c count TssUtil.FindTillPreviousOccurranceOfCharOnLine
 
-                // Have a point and we are on a word.  There is a special case to consider where
-                // we started on the last character of a word.  In that case we start searching from
-                // the next point 
-                let searchPoint, count = 
-                    match TssUtil.FindCurrentWordSpan point kind with 
-                    | None -> point, count
-                    | Some(span) -> 
-                        if SnapshotSpanUtil.IsLastIncludedPoint span x.StartPoint then (span.End, count)
-                        else (span.End, count - 1)
+    member x.WordForward kind count =
+        let start = x.StartPoint
+        let endPoint = TssUtil.FindNextWordStart start count kind  
+        let span = SnapshotSpan(start,endPoint)
+        {
+            Span = span 
+            IsForward = true 
+            IsAnyWordMotion = true
+            MotionKind = MotionKind.Exclusive 
+            OperationKind = OperationKind.CharacterWise 
+            Column = None}
+    member x.WordBackward kind count =
+        let start = x.StartPoint
+        let startPoint = TssUtil.FindPreviousWordStart start count kind
+        let span = SnapshotSpan(startPoint,start)
+        {
+            Span = span 
+            IsForward = false 
+            IsAnyWordMotion = true
+            MotionKind = MotionKind.Exclusive 
+            OperationKind = OperationKind.CharacterWise 
+            Column = None}
+    member x.AllWord kind count = x.GetAllWord kind count
+    member x.EndOfWord kind count = 
 
-                if count = 0 then 
-                    // Getting the search point moved the 1 word count we had.  Done
-                    SnapshotSpanUtil.CreateFromBounds x.StartPoint searchPoint |> withSpan
-                else 
-                    // Need to skip (count - 1) remaining words to get to the one we're looking for
-                    let wordSpan = 
-                        TssUtil.GetWordSpans searchPoint kind SearchKind.Forward
-                        |> SeqUtil.skipMax (count - 1)
-                        |> SeqUtil.tryHeadOnly
-    
-                    match wordSpan with
-                    | Some(span) -> 
-                        SnapshotSpanUtil.Create x.StartPoint span.End |> withSpan
-                    | None -> 
-                        let endPoint = SnapshotUtil.GetEndPoint _textView.TextSnapshot
-                        SnapshotSpanUtil.Create x.StartPoint endPoint |> withSpan
+        // Create the appropriate MotionData structure with the provided SnapshotSpan
+        let withSpan span = {
+            Span = span 
+            IsForward = true 
+            IsAnyWordMotion  =  false
+            MotionKind = MotionKind.Inclusive 
+            OperationKind = OperationKind.CharacterWise 
+            Column = None} 
 
-        member x.EndOfLine count = 
-            let start = x.StartPoint
-            let span = SnapshotPointUtil.GetLineRangeSpan start count
-            {
-                Span = span 
-                IsForward = true 
-                IsAnyWordMotion = false
-                MotionKind = MotionKind.Inclusive 
-                OperationKind = OperationKind.CharacterWise 
-                Column = None}
-        member x.FirstNonWhitespaceOnLine () =
-            let start = x.StartPoint
-            let line = start.GetContainingLine()
-            let target = 
-                SnapshotLineUtil.GetPoints line
-                |> Seq.tryFind (fun x -> not (CharUtil.IsWhiteSpace (x.GetChar())) )
-                |> OptionUtil.getOrDefault line.End
-            let startPoint,endPoint,isForward = 
-                if start.Position <= target.Position then start,target,true
-                else target,start,false
-            let span = SnapshotSpanUtil.CreateFromBounds startPoint endPoint
-            {
-                Span = span 
-                IsForward = isForward 
-                IsAnyWordMotion = false
-                MotionKind = MotionKind.Exclusive 
-                OperationKind = OperationKind.CharacterWise 
-                Column = None} 
-        member x.BeginingOfLine () =
-            let start = x.StartPoint
-            let line = SnapshotPointUtil.GetContainingLine start
-            let span = SnapshotSpan(line.Start, start)
-            {
-                Span = span 
-                IsForward = false 
-                IsAnyWordMotion = false
-                MotionKind = MotionKind.Exclusive 
-                OperationKind = OperationKind.CharacterWise 
-                Column = None}
-        member x.LineDownToFirstNonWhitespace count =
-            let line = x.StartPoint |> SnapshotPointUtil.GetContainingLine
-            let number = line.LineNumber + count
-            let endLine = SnapshotUtil.GetLineOrLast line.Snapshot number
-            let column = TssUtil.FindFirstNonWhitespaceCharacter endLine |> SnapshotPointUtil.GetColumn |> Some
-            let span = SnapshotSpan(line.Start, endLine.EndIncludingLineBreak)
-            {
-                Span = span 
-                IsForward = true 
-                IsAnyWordMotion = false
-                MotionKind = MotionKind.Inclusive 
-                OperationKind = OperationKind.LineWise 
-                Column = column}
-        member x.LineUpToFirstNonWhitespace count =
-            let point = x.StartPoint
-            let endLine = SnapshotPointUtil.GetContainingLine point
-            let startLine = SnapshotUtil.GetLineOrFirst endLine.Snapshot (endLine.LineNumber - count)
-            let span = SnapshotSpan(startLine.Start, endLine.End)
-            let column = 
-                startLine 
-                |> TssUtil.FindFirstNonWhitespaceCharacter
-                |> SnapshotPointUtil.GetColumn
-            {
-                Span = span 
-                IsForward = false 
-                IsAnyWordMotion = false
-                MotionKind = MotionKind.Inclusive 
-                OperationKind = OperationKind.LineWise 
-                Column = Some column}
-        member x.CharLeft count = 
-            let start = x.StartPoint
-            let prev = SnapshotPointUtil.GetPreviousPointOnLine start count 
-            if prev = start then None
-            else {
-                Span = SnapshotSpan(prev,start) 
-                IsForward = false 
-                IsAnyWordMotion = false
-                MotionKind = MotionKind.Exclusive 
-                OperationKind = OperationKind.CharacterWise 
-                Column = None} |> Some
-        member x.CharRight count =
-            let start = x.StartPoint
-            let next = SnapshotPointUtil.GetNextPointOnLine start count 
-            if next = start then None
-            else {
-                Span = SnapshotSpan(start,next) 
-                IsForward = true 
-                IsAnyWordMotion = false
-                MotionKind = MotionKind.Exclusive 
-                OperationKind = OperationKind.CharacterWise 
-                Column = None } |> Some
-        member x.LineUp count =     
-            let point = x.StartPoint
-            let endLine = SnapshotPointUtil.GetContainingLine point
-            let startLineNumber = max 0 (endLine.LineNumber - count)
-            let startLine = SnapshotUtil.GetLine endLine.Snapshot startLineNumber
-            let span = SnapshotSpan(startLine.Start, endLine.EndIncludingLineBreak)
-            {
-                Span = span 
-                IsForward = false 
-                IsAnyWordMotion = false
-                MotionKind = MotionKind.Inclusive 
-                OperationKind = OperationKind.LineWise 
-                Column = None } 
-        member x.LineDown count = 
-            let point = x.StartPoint
-            let startLine = SnapshotPointUtil.GetContainingLine point
-            let endLineNumber = startLine.LineNumber + count
-            let endLine = SnapshotUtil.GetLineOrLast startLine.Snapshot endLineNumber
-            let span = SnapshotSpan(startLine.Start, endLine.EndIncludingLineBreak)            
-            {
-                Span = span 
-                IsForward = true 
-                IsAnyWordMotion = false
-                MotionKind = MotionKind.Inclusive 
-                OperationKind = OperationKind.LineWise 
-                Column = None } 
-        member x.LineOrFirstToFirstNonWhitespace numberOpt = 
-            let point = x.StartPoint
-            let originLine = SnapshotPointUtil.GetContainingLine point
-            let tss= originLine.Snapshot
-            let endLine = 
-                match numberOpt with
-                | Some(number) ->  SnapshotUtil.GetLineOrFirst tss (TssUtil.VimLineToTssLine number)
-                | None -> SnapshotUtil.GetFirstLine tss 
-            x.LineToLineFirstNonWhitespaceMotion originLine endLine
-        member x.LineOrLastToFirstNonWhitespace numberOpt = 
-            let point = x.StartPoint
-            let originLine = SnapshotPointUtil.GetContainingLine point
-            let tss= originLine.Snapshot
-            let endLine = 
-                match numberOpt with
-                | Some(number) ->  SnapshotUtil.GetLineOrLast tss (TssUtil.VimLineToTssLine number)
-                | None -> SnapshotUtil.GetLastLine tss 
-            x.LineToLineFirstNonWhitespaceMotion originLine endLine
-        member x.LastNonWhitespaceOnLine count = 
-            let start = x.StartPoint
-            let startLine = SnapshotPointUtil.GetContainingLine start
-            let snapshot = startLine.Snapshot
-            let number = startLine.LineNumber + (count-1)
-            let endLine = SnapshotUtil.GetLineOrLast snapshot number
-            let endPoint = TssUtil.FindLastNonWhitespaceCharacter endLine
-            let endPoint = if SnapshotUtil.GetEndPoint snapshot = endPoint then endPoint else endPoint.Add(1)
-            let span = SnapshotSpan(start,endPoint)
-            {
-                Span = span 
-                IsForward = true 
-                IsAnyWordMotion = false
-                MotionKind = MotionKind.Inclusive 
-                OperationKind = OperationKind.CharacterWise 
-                Column = None}
-        member x.LineFromTopOfVisibleWindow countOpt = 
-            let caretPoint,caretLine = TextViewUtil.GetCaretPointAndLine _textView
-            let lines = TextViewUtil.GetVisibleSnapshotLines _textView |> List.ofSeq
+        // Move forward until we find the first non-blank and hence a word character 
+        let point =
+            SnapshotPointUtil.GetPoints x.StartPoint SearchKind.Forward
+            |> Seq.skipWhile (fun point -> point.GetChar() |> CharUtil.IsWhiteSpace)
+            |> SeqUtil.tryHeadOnly
+        match point with 
+        | None -> 
+            SnapshotSpanUtil.CreateFromBounds x.StartPoint (SnapshotUtil.GetEndPoint _textView.TextSnapshot) |> withSpan
+        | Some(point) -> 
+
+            // Have a point and we are on a word.  There is a special case to consider where
+            // we started on the last character of a word.  In that case we start searching from
+            // the next point 
+            let searchPoint, count = 
+                match TssUtil.FindCurrentWordSpan point kind with 
+                | None -> point, count
+                | Some(span) -> 
+                    if SnapshotSpanUtil.IsLastIncludedPoint span x.StartPoint then (span.End, count)
+                    else (span.End, count - 1)
+
+            if count = 0 then 
+                // Getting the search point moved the 1 word count we had.  Done
+                SnapshotSpanUtil.CreateFromBounds x.StartPoint searchPoint |> withSpan
+            else 
+                // Need to skip (count - 1) remaining words to get to the one we're looking for
+                let wordSpan = 
+                    TssUtil.GetWordSpans searchPoint kind SearchKind.Forward
+                    |> SeqUtil.skipMax (count - 1)
+                    |> SeqUtil.tryHeadOnly
+
+                match wordSpan with
+                | Some(span) -> 
+                    SnapshotSpanUtil.Create x.StartPoint span.End |> withSpan
+                | None -> 
+                    let endPoint = SnapshotUtil.GetEndPoint _textView.TextSnapshot
+                    SnapshotSpanUtil.Create x.StartPoint endPoint |> withSpan
+
+    member x.EndOfLine count = 
+        let start = x.StartPoint
+        let span = SnapshotPointUtil.GetLineRangeSpan start count
+        {
+            Span = span 
+            IsForward = true 
+            IsAnyWordMotion = false
+            MotionKind = MotionKind.Inclusive 
+            OperationKind = OperationKind.CharacterWise 
+            Column = None}
+    member x.FirstNonWhiteSpaceOnLine () =
+        let start = x.StartPoint
+        let line = start.GetContainingLine()
+        let target = 
+            SnapshotLineUtil.GetPoints line
+            |> Seq.tryFind (fun x -> not (CharUtil.IsWhiteSpace (x.GetChar())) )
+            |> OptionUtil.getOrDefault line.End
+        let startPoint,endPoint,isForward = 
+            if start.Position <= target.Position then start,target,true
+            else target,start,false
+        let span = SnapshotSpanUtil.CreateFromBounds startPoint endPoint
+        {
+            Span = span 
+            IsForward = isForward 
+            IsAnyWordMotion = false
+            MotionKind = MotionKind.Exclusive 
+            OperationKind = OperationKind.CharacterWise 
+            Column = None} 
+
+    member x.LineDownToFirstNonWhiteSpace count =
+        let line = x.StartPoint |> SnapshotPointUtil.GetContainingLine
+        let number = line.LineNumber + count
+        let endLine = SnapshotUtil.GetLineOrLast line.Snapshot number
+        let column = TssUtil.FindFirstNonWhiteSpaceCharacter endLine |> SnapshotPointUtil.GetColumn |> Some
+        let span = SnapshotSpan(line.Start, endLine.EndIncludingLineBreak)
+        {
+            Span = span 
+            IsForward = true 
+            IsAnyWordMotion = false
+            MotionKind = MotionKind.Inclusive 
+            OperationKind = OperationKind.LineWise 
+            Column = column}
+
+    member x.LineUpToFirstNonWhiteSpace count =
+        let point = x.StartPoint
+        let endLine = SnapshotPointUtil.GetContainingLine point
+        let startLine = SnapshotUtil.GetLineOrFirst endLine.Snapshot (endLine.LineNumber - count)
+        let span = SnapshotSpan(startLine.Start, endLine.End)
+        let column = 
+            startLine 
+            |> TssUtil.FindFirstNonWhiteSpaceCharacter
+            |> SnapshotPointUtil.GetColumn
+        {
+            Span = span 
+            IsForward = false 
+            IsAnyWordMotion = false
+            MotionKind = MotionKind.Inclusive 
+            OperationKind = OperationKind.LineWise 
+            Column = Some column}
+
+    member x.CharLeft count = 
+        let start = x.StartPoint
+        let prev = SnapshotPointUtil.GetPreviousPointOnLine start count 
+        if prev = start then None
+        else {
+            Span = SnapshotSpan(prev,start) 
+            IsForward = false 
+            IsAnyWordMotion = false
+            MotionKind = MotionKind.Exclusive 
+            OperationKind = OperationKind.CharacterWise 
+            Column = None} |> Some
+
+    member x.CharRight count =
+        let start = x.StartPoint
+        let next = SnapshotPointUtil.GetNextPointOnLine start count 
+        if next = start then None
+        else {
+            Span = SnapshotSpan(start,next) 
+            IsForward = true 
+            IsAnyWordMotion = false
+            MotionKind = MotionKind.Exclusive 
+            OperationKind = OperationKind.CharacterWise 
+            Column = None } |> Some
+
+    member x.LineUp count =     
+        let point = x.StartPoint
+        let endLine = SnapshotPointUtil.GetContainingLine point
+        let startLineNumber = max 0 (endLine.LineNumber - count)
+        let startLine = SnapshotUtil.GetLine endLine.Snapshot startLineNumber
+        let span = SnapshotSpan(startLine.Start, endLine.EndIncludingLineBreak)
+        {
+            Span = span 
+            IsForward = false 
+            IsAnyWordMotion = false
+            MotionKind = MotionKind.Inclusive 
+            OperationKind = OperationKind.LineWise 
+            Column = None } 
+
+    member x.LineDown count = 
+        let point = x.StartPoint
+        let startLine = SnapshotPointUtil.GetContainingLine point
+        let endLineNumber = startLine.LineNumber + count
+        let endLine = SnapshotUtil.GetLineOrLast startLine.Snapshot endLineNumber
+        let span = SnapshotSpan(startLine.Start, endLine.EndIncludingLineBreak)            
+        {
+            Span = span 
+            IsForward = true 
+            IsAnyWordMotion = false
+            MotionKind = MotionKind.Inclusive 
+            OperationKind = OperationKind.LineWise 
+            Column = None } 
+
+    member x.LineOrFirstToFirstNonWhiteSpace numberOpt = 
+        let point = x.StartPoint
+        let originLine = SnapshotPointUtil.GetContainingLine point
+        let tss= originLine.Snapshot
+        let endLine = 
+            match numberOpt with
+            | Some(number) ->  SnapshotUtil.GetLineOrFirst tss (TssUtil.VimLineToTssLine number)
+            | None -> SnapshotUtil.GetFirstLine tss 
+        x.LineToLineFirstNonWhiteSpaceMotion originLine endLine
+
+    member x.LineOrLastToFirstNonWhiteSpace numberOpt = 
+        let point = x.StartPoint
+        let originLine = SnapshotPointUtil.GetContainingLine point
+        let tss= originLine.Snapshot
+        let endLine = 
+            match numberOpt with
+            | Some(number) ->  SnapshotUtil.GetLineOrLast tss (TssUtil.VimLineToTssLine number)
+            | None -> SnapshotUtil.GetLastLine tss 
+        x.LineToLineFirstNonWhiteSpaceMotion originLine endLine
+
+    member x.LastNonWhiteSpaceOnLine count = 
+        let start = x.StartPoint
+        let startLine = SnapshotPointUtil.GetContainingLine start
+        let snapshot = startLine.Snapshot
+        let number = startLine.LineNumber + (count-1)
+        let endLine = SnapshotUtil.GetLineOrLast snapshot number
+        let endPoint = TssUtil.FindLastNonWhiteSpaceCharacter endLine
+        let endPoint = if SnapshotUtil.GetEndPoint snapshot = endPoint then endPoint else endPoint.Add(1)
+        let span = SnapshotSpan(start,endPoint)
+        {
+            Span = span 
+            IsForward = true 
+            IsAnyWordMotion = false
+            MotionKind = MotionKind.Inclusive 
+            OperationKind = OperationKind.CharacterWise 
+            Column = None}
+
+    member x.LineFromTopOfVisibleWindow countOpt = 
+        let caretPoint,caretLine = TextViewUtil.GetCaretPointAndLine _textView
+        let lines = TextViewUtil.GetVisibleSnapshotLines _textView |> List.ofSeq
+        let span = 
+            if lines.Length = 0 then caretLine.Extent
+            else  
+                let count = (CommandUtil.CountOrDefault countOpt) 
+                let count = min count lines.Length
+                let startLine = lines.Head
+                SnapshotPointUtil.GetLineRangeSpan startLine.Start count
+        let isForward = caretPoint.Position <= span.End.Position
+        {
+            Span = span 
+            IsForward = isForward 
+            IsAnyWordMotion = false
+            MotionKind = MotionKind.Inclusive 
+            OperationKind = OperationKind.LineWise 
+            Column = None} |> x.ApplyStartOfLineOption
+
+    member x.LineFromBottomOfVisibleWindow countOpt =
+        let caretPoint,caretLine = TextViewUtil.GetCaretPointAndLine _textView
+        let lines = TextViewUtil.GetVisibleSnapshotLines _textView |> List.ofSeq
+        let span,isForward = 
+            if lines.Length = 0 then caretLine.Extent,true
+            else
+                let endLine = 
+                    match countOpt with 
+                    | None -> List.nth lines (lines.Length-1)
+                    | Some(count) ->    
+                        let count = lines.Length - count
+                        List.nth lines count
+                x.SpanAndForwardFromLines caretLine endLine
+        {
+            Span = span 
+            IsForward = isForward 
+            IsAnyWordMotion = false
+            MotionKind = MotionKind.Inclusive 
+            OperationKind = OperationKind.LineWise 
+            Column = None} |> x.ApplyStartOfLineOption
+
+    member x.LineInMiddleOfVisibleWindow () =
+        let caretLine = TextViewUtil.GetCaretLine _textView
+        let lines = TextViewUtil.GetVisibleSnapshotLines _textView |> List.ofSeq
+        let middleLine =
+            if lines.Length = 0 then caretLine
+            else 
+                let index = lines.Length / 2
+                List.nth lines index
+        let span,isForward = x.SpanAndForwardFromLines caretLine middleLine
+        {
+            Span = span 
+            IsForward = isForward 
+            IsAnyWordMotion = false
+            MotionKind = MotionKind.Inclusive 
+            OperationKind = OperationKind.LineWise 
+            Column = None} |> x.ApplyStartOfLineOption
+
+    member x.SentenceForward count = 
+        match TextViewUtil.GetCaretPointKind _textView with 
+        | PointKind.Normal (point) -> 
             let span = 
-                if lines.Length = 0 then caretLine.Extent
-                else  
-                    let count = (CommandUtil.CountOrDefault countOpt) 
-                    let count = min count lines.Length
-                    let startLine = lines.Head
-                    SnapshotPointUtil.GetLineRangeSpan startLine.Start count
-            let isForward = caretPoint.Position <= span.End.Position
-            {
-                Span = span 
-                IsForward = isForward 
-                IsAnyWordMotion = false
-                MotionKind = MotionKind.Inclusive 
-                OperationKind = OperationKind.LineWise 
-                Column = None} |> x.ApplyStartOfLineOption
-        member x.LineFromBottomOfVisibleWindow countOpt =
-            let caretPoint,caretLine = TextViewUtil.GetCaretPointAndLine _textView
-            let lines = TextViewUtil.GetVisibleSnapshotLines _textView |> List.ofSeq
-            let span,isForward = 
-                if lines.Length = 0 then caretLine.Extent,true
-                else
-                    let endLine = 
-                        match countOpt with 
-                        | None -> List.nth lines (lines.Length-1)
-                        | Some(count) ->    
-                            let count = lines.Length - count
-                            List.nth lines count
-                    x.SpanAndForwardFromLines caretLine endLine
-            {
-                Span = span 
-                IsForward = isForward 
-                IsAnyWordMotion = false
-                MotionKind = MotionKind.Inclusive 
-                OperationKind = OperationKind.LineWise 
-                Column = None} |> x.ApplyStartOfLineOption
-        member x.LineInMiddleOfVisibleWindow () =
-            let caretLine = TextViewUtil.GetCaretLine _textView
-            let lines = TextViewUtil.GetVisibleSnapshotLines _textView |> List.ofSeq
-            let middleLine =
-                if lines.Length = 0 then caretLine
-                else 
-                    let index = lines.Length / 2
-                    List.nth lines index
-            let span,isForward = x.SpanAndForwardFromLines caretLine middleLine
-            {
-                Span = span 
-                IsForward = isForward 
-                IsAnyWordMotion = false
-                MotionKind = MotionKind.Inclusive 
-                OperationKind = OperationKind.LineWise 
-                Column = None} |> x.ApplyStartOfLineOption
-        member x.SentenceForward count = 
-            match TextViewUtil.GetCaretPointKind _textView with 
-            | PointKind.Normal (point) -> 
-                let span = 
-                    MotionUtil.GetSentences point Direction.Forward
-                    |> Seq.truncate count
-                    |> SnapshotSpanUtil.CreateCombined 
-                    |> Option.get   // GetSentences must return at least one
-                {
-                    Span = span 
-                    IsForward = true 
-                    IsAnyWordMotion = false
-                    MotionKind = MotionKind.Exclusive 
-                    OperationKind = OperationKind.CharacterWise 
-                    Column = None}
-            | PointKind.EndPoint(_,point) -> MotionData.CreateEmptyFromPoint point MotionKind.Inclusive OperationKind.CharacterWise
-            | PointKind.ZeroLength(point) -> MotionData.CreateEmptyFromPoint point MotionKind.Inclusive OperationKind.CharacterWise
-        member x.SentenceBackward count = 
-            let caretPoint = TextViewUtil.GetCaretPoint _textView
-            let span = 
-                MotionUtil.GetSentences caretPoint Direction.Backward
+                MotionUtil.GetSentences point Direction.Forward
                 |> Seq.truncate count
                 |> SnapshotSpanUtil.CreateCombined 
                 |> Option.get   // GetSentences must return at least one
             {
                 Span = span 
-                IsForward = false 
+                IsForward = true 
                 IsAnyWordMotion = false
                 MotionKind = MotionKind.Exclusive 
                 OperationKind = OperationKind.CharacterWise 
                 Column = None}
-        member x.SentenceFullForward count =
-            let caretPoint,caretLine = TextViewUtil.GetCaretPointAndLine _textView
+        | PointKind.EndPoint(_,point) -> MotionData.CreateEmptyFromPoint point MotionKind.Inclusive OperationKind.CharacterWise
+        | PointKind.ZeroLength(point) -> MotionData.CreateEmptyFromPoint point MotionKind.Inclusive OperationKind.CharacterWise
+
+    member x.SentenceBackward count = 
+        let caretPoint = TextViewUtil.GetCaretPoint _textView
+        let span = 
+            MotionUtil.GetSentences caretPoint Direction.Backward
+            |> Seq.truncate count
+            |> SnapshotSpanUtil.CreateCombined 
+            |> Option.get   // GetSentences must return at least one
+        {
+            Span = span 
+            IsForward = false 
+            IsAnyWordMotion = false
+            MotionKind = MotionKind.Exclusive 
+            OperationKind = OperationKind.CharacterWise 
+            Column = None}
+
+    member x.GetAllSentence count =
+        let caretPoint,caretLine = TextViewUtil.GetCaretPointAndLine _textView
+        let span = 
+            if SnapshotLineUtil.GetLength caretLine = 0 then 
+                // This behavior is not specified in the standard but if the caret line has
+                // 0 length then only it is included in the span 
+                SnapshotLineUtil.GetExtentIncludingLineBreak caretLine
+            else 
+                let startPoint = 
+                    MotionUtil.GetSentenceFull caretPoint
+                    |> SnapshotSpanUtil.GetStartPoint
+                MotionUtil.GetSentences startPoint Direction.Forward 
+                |> Seq.truncate count
+                |> SnapshotSpanUtil.CreateCombinedOrEmpty caretPoint.Snapshot
+        {
+            Span = span 
+            IsForward = true 
+            IsAnyWordMotion = false
+            MotionKind = MotionKind.Exclusive 
+            OperationKind = OperationKind.CharacterWise 
+            Column = None }
+
+    member x.ParagraphForward count = 
+        let startPoint = TextViewUtil.GetCaretPoint _textView
+        let endPoint = 
+            let next = MotionUtil.GetParagraphs startPoint Direction.Forward |> Seq.skip count
+            match SeqUtil.tryHeadOnly next with
+            | None -> SnapshotUtil.GetEndPoint startPoint.Snapshot
+            | Some span -> span.Start
+        let span = SnapshotSpan(startPoint, endPoint)
+        {
+            Span = span
+            IsForward = true
+            IsAnyWordMotion = false
+            MotionKind = MotionKind.Exclusive
+            OperationKind = OperationKind.CharacterWise
+            Column = None }
+
+    member x.SectionForward context count =
+        let endPoint = SnapshotUtil.GetEndPoint _textView.TextSnapshot
+
+        // Move a single count forward from the given point
+        let rec getNext point = 
+            if point = endPoint then point
+            else
+                let nextPoint = point.Add(1)
+                if nextPoint = endPoint then endPoint
+                elif SnapshotPointUtil.IsStartOfLine nextPoint then
+                    match nextPoint.GetChar() with
+                    | '\f' -> nextPoint
+                    | '{' -> nextPoint 
+                    | '}' -> 
+                        match context with
+                        | MotionContext.AfterOperator ->
+                            let line = SnapshotPointUtil.GetContainingLine nextPoint
+                            line.EndIncludingLineBreak
+                        | MotionContext.Movement -> getNext nextPoint
+                    | _ -> getNext nextPoint
+                else getNext nextPoint
+
+        let startPoint = TextViewUtil.GetCaretPoint _textView 
+        let endPoint = 
+            let rec inner count point = 
+                if count = 0 then point
+                else inner (count-1) (getNext point)
+            inner count startPoint 
+
+        let span = SnapshotSpan(startPoint,endPoint)
+        {
+            Span = span 
+            IsForward = true 
+            IsAnyWordMotion = false
+            MotionKind = MotionKind.Exclusive 
+            OperationKind = OperationKind.CharacterWise 
+            Column = Some 0}
+
+    member x.SectionBackwardOrOpenBrace count = x.SectionBackwardOrOther count '{'
+
+    member x.SectionBackwardOrCloseBrace count = x.SectionBackwardOrOther count '}'
+
+    member x.QuotedString () = 
+        match x.GetQuotedStringData() with
+        | None -> None 
+        | Some(data) -> 
             let span = 
-                if SnapshotLineUtil.GetLength caretLine = 0 then 
-                    // This behavior is not specified in the standard but if the caret line has
-                    // 0 length then only it is included in the span 
-                    SnapshotLineUtil.GetExtentIncludingLineBreak caretLine
-                else 
-                    let startPoint = 
-                        MotionUtil.GetSentenceFull caretPoint
-                        |> SnapshotSpanUtil.GetStartPoint
-                    MotionUtil.GetSentences startPoint Direction.Forward 
-                    |> Seq.truncate count
-                    |> SnapshotSpanUtil.CreateCombinedOrEmpty caretPoint.Snapshot
+                if not data.TrailingWhiteSpace.IsEmpty then SnapshotSpanUtil.Create data.LeadingQuote data.TrailingWhiteSpace.End
+                else SnapshotSpanUtil.Create data.LeadingWhiteSpace.Start data.TrailingWhiteSpace.Start
             {
                 Span = span 
                 IsForward = true 
                 IsAnyWordMotion = false
-                MotionKind = MotionKind.Exclusive 
+                MotionKind = MotionKind.Inclusive 
                 OperationKind = OperationKind.CharacterWise 
-                Column = None}
-        member x.ParagraphForward count =
-            match TextViewUtil.GetCaretPointKind _textView with
-            | PointKind.Normal(point) -> x.GetParagraphs point Direction.Forward count
-            | PointKind.EndPoint(point,_) -> x.GetParagraphs point Direction.Forward count
-            | PointKind.ZeroLength(point) -> MotionData.CreateEmptyFromPoint point MotionKind.Inclusive OperationKind.CharacterWise
-        member x.ParagraphBackward count =
-            x.GetParagraphs (TextViewUtil.GetCaretPoint _textView) Direction.Backward count
-        member x.ParagraphFullForward count = x.GetFullParagraph count
-        member x.SectionForward context count =
-            let endPoint = SnapshotUtil.GetEndPoint _textView.TextSnapshot
+                Column = None} |> Some
 
-            // Move a single count forward from the given point
-            let rec getNext point = 
-                if point = endPoint then point
-                else
-                    let nextPoint = point.Add(1)
-                    if nextPoint = endPoint then endPoint
-                    elif SnapshotPointUtil.IsStartOfLine nextPoint then
-                        match nextPoint.GetChar() with
-                        | '\f' -> nextPoint
-                        | '{' -> nextPoint 
-                        | '}' -> 
-                            match context with
-                            | MotionContext.AfterOperator ->
-                                let line = SnapshotPointUtil.GetContainingLine nextPoint
-                                line.EndIncludingLineBreak
-                            | MotionContext.Movement -> getNext nextPoint
-                        | _ -> getNext nextPoint
-                    else getNext nextPoint
-
-            let startPoint = TextViewUtil.GetCaretPoint _textView 
-            let endPoint = 
-                let rec inner count point = 
-                    if count = 0 then point
-                    else inner (count-1) (getNext point)
-                inner count startPoint 
-
-            let span = SnapshotSpan(startPoint,endPoint)
+    member x.QuotedStringContents () = 
+        match x.GetQuotedStringData() with
+        | None -> None 
+        | Some(data) ->
+            let span = data.Contents
             {
                 Span = span 
                 IsForward = true 
                 IsAnyWordMotion = false
-                MotionKind = MotionKind.Exclusive 
+                MotionKind = MotionKind.Inclusive 
                 OperationKind = OperationKind.CharacterWise 
-                Column = Some 0}
+                Column = None} |> Some
 
-        member x.SectionBackwardOrOpenBrace count = x.SectionBackwardOrOther count '{'
-        member x.SectionBackwardOrCloseBrace count = x.SectionBackwardOrOther count '}'
-        member x.QuotedString () = 
-            match x.GetQuotedStringData() with
-            | None -> None 
-            | Some(data) -> 
-                let span = 
-                    if not data.TrailingWhiteSpace.IsEmpty then SnapshotSpanUtil.Create data.LeadingQuote data.TrailingWhiteSpace.End
-                    else SnapshotSpanUtil.Create data.LeadingWhiteSpace.Start data.TrailingWhiteSpace.Start
-                {
-                    Span = span 
-                    IsForward = true 
-                    IsAnyWordMotion = false
-                    MotionKind = MotionKind.Inclusive 
-                    OperationKind = OperationKind.CharacterWise 
-                    Column = None} |> Some
-        member x.QuotedStringContents () = 
-            match x.GetQuotedStringData() with
-            | None -> None 
-            | Some(data) ->
-                let span = data.Contents
-                {
-                    Span = span 
-                    IsForward = true 
-                    IsAnyWordMotion = false
-                    MotionKind = MotionKind.Inclusive 
-                    OperationKind = OperationKind.CharacterWise 
-                    Column = None} |> Some
+    /// Get the motion for a search command.  Used to implement the '/' and '?' motions
+    member x.Search pattern direction = 
+        let caret = TextViewUtil.GetCaretPoint _textView
+        let start = Util.GetSearchPoint kind caret
+        match _search.FindNext searchData start _incrementalSearch.WordNavigator with
+        | None -> None
+        | Some(span) -> getData caret span.Start arg *)
+                (*
+                // Create the MotionData for the provided MotionArgument and the 
+                // start and end points of the search.  Need to be careful because
+                // the start and end point can be forward or reverse
+                let getData (startPoint:SnapshotPoint) (endPoint:SnapshotPoint) (arg:MotionArgument) = 
+                    if arg.MotionContext = MotionContext.Movement then
+                        _jumpList.Add before |> ignore
 
-    
+                    if startPoint.Position = endPoint.Position then
+                        None
+                    else if startPoint.Position < endPoint.Position then 
+                        {
+                            Span = SnapshotSpan(startPoint, endPoint)
+                            IsForward = true
+                            IsAnyWordMotion = false
+                            MotionKind = MotionKind.Exclusive
+                            OperationKind = OperationKind.CharacterWise
+                            Column = SnapshotPointUtil.GetColumn endPoint |> Some } |> Some
+                    else 
+                        {
+                            Span = SnapshotSpan(endPoint, startPoint)
+                            IsForward = false
+                            IsAnyWordMotion = false
+                            MotionKind = MotionKind.Exclusive
+                            OperationKind = OperationKind.CharacterWise
+                            Column = SnapshotPointUtil.GetColumn endPoint |> Some } |> Some
+
+                // Provide a cached function here because we already calculated the 
+                // expensive data and don't want to wast time recalculating it
+                let cachedFunc arg = 
+                    match searchResult with
+                    | SearchResult.SearchNotFound -> None
+                    | SearchResult.SearchFound(foundSpan) -> getData before foundSpan.Start arg
+
+                // Need to repeat the search 
+                let func arg = 
+                    let caret = TextViewUtil.GetCaretPoint _textView
+                    let start = Util.GetSearchPoint kind caret
+                    match _search.FindNext searchData start _incrementalSearch.WordNavigator with
+                    | None -> None
+                    | Some(span) -> getData caret span.Start arg *)
+
+    /// Run the specified motion and return it's result
+    member x.GetMotion motion (motionArgument : MotionArgument) = 
+        match motion with 
+        | Motion.AllParagraph -> x.GetAllParagraph motionArgument.Count |> Some
+        | Motion.AllWord wordKind -> x.GetAllWord wordKind motionArgument.Count |> Some
+        | Motion.AllSentence -> x.GetAllSentence motionArgument.Count |> Some
+        | Motion.BeginingOfLine -> x.BeginingOfLine() |> Some
+        | Motion.CharLeft -> x.CharLeft motionArgument.Count
+        | Motion.CharRight -> x.CharRight motionArgument.Count
+        | Motion.CharSearch (kind, direction, c) -> x.CharSearch c motionArgument.Count kind direction
+        | Motion.EndOfLine -> x.EndOfLine motionArgument.Count |> Some
+        | Motion.EndOfWord wordKind -> x.EndOfWord wordKind motionArgument.Count |> Some
+        | Motion.FirstNonWhiteSpaceOnLine -> x.FirstNonWhiteSpaceOnLine() |> Some
+        | Motion.LastNonWhiteSpaceOnLine -> x.LastNonWhiteSpaceOnLine motionArgument.Count |> Some
+        | Motion.LineDown -> x.LineDown motionArgument.Count |> Some
+        | Motion.LineDownToFirstNonWhiteSpace -> x.LineDownToFirstNonWhiteSpace motionArgument.Count |> Some
+        | Motion.LineFromBottomOfVisibleWindow -> x.LineFromBottomOfVisibleWindow motionArgument.RawCount |> Some
+        | Motion.LineFromTopOfVisibleWindow -> x.LineFromTopOfVisibleWindow motionArgument.RawCount |> Some
+        | Motion.LineInMiddleOfVisibleWindow -> x.LineInMiddleOfVisibleWindow() |> Some
+        | Motion.LineOrFirstToFirstNonWhiteSpace -> x.LineOrFirstToFirstNonWhiteSpace motionArgument.RawCount |> Some
+        | Motion.LineOrLastToFirstNonWhiteSpace -> x.LineOrLastToFirstNonWhiteSpace motionArgument.RawCount |> Some
+        | Motion.LineUp -> x.LineUp motionArgument.Count |> Some
+        | Motion.LineUpToFirstNonWhiteSpace -> x.LineUpToFirstNonWhiteSpace motionArgument.Count |> Some
+        | Motion.Mark c -> x.Mark c
+        | Motion.MarkLine c -> x.MarkLine c 
+        | Motion.MatchingToken -> x.MatchingToken()
+        | Motion.ParagraphBackward -> x.GetParagraphs Direction.Backward motionArgument.Count |> Some
+        | Motion.ParagraphForward -> x.GetParagraphs Direction.Forward motionArgument.Count |> Some
+        | Motion.QuotedString -> x.QuotedString()
+        | Motion.QuotedStringContents -> x.QuotedStringContents()
+        | Motion.Search (pattern, direction) -> x.Search pattern direction
+        | Motion.SectionBackwardOrCloseBrace -> x.SectionBackwardOrCloseBrace motionArgument.Count |> Some
+        | Motion.SectionBackwardOrOpenBrace -> x.SectionBackwardOrOpenBrace motionArgument.Count |> Some
+        | Motion.SectionForwardOrOpenBrace -> x.SectionForward motionArgument.MotionContext motionArgument.Count |> Some
+        | Motion.SectionForwardOrCloseBrace -> x.SectionForward motionArgument.MotionContext motionArgument.Count |> Some
+        | Motion.SentenceBackward -> x.SentenceBackward motionArgument.Count |> Some
+        | Motion.SentenceForward -> x.SentenceForward motionArgument.Count |> Some
+        | Motion.WordBackward wordKind -> x.WordBackward wordKind motionArgument.Count |> Some
+        | Motion.WordForward wordKind -> x.WordForward wordKind motionArgument.Count |> Some
+
+    interface ITextViewMotionUtil with
+        member x.TextView = _textView
+        member x.GetMotion motion motionArgument = x.GetMotion motion motionArgument
+

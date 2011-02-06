@@ -42,11 +42,11 @@ module TssUtil =
 
     /// Find and return the SnapshotPoint representing the first non-whitespace character on
     /// the given ITextSnapshotLine
-    val FindFirstNonWhitespaceCharacter : ITextSnapshotLine -> SnapshotPoint
+    val FindFirstNonWhiteSpaceCharacter : ITextSnapshotLine -> SnapshotPoint
 
     /// Find and return the SnapshotPoint representing the last non-whitespace character on
     /// the given ITextSnapshotLine
-    val FindLastNonWhitespaceCharacter : ITextSnapshotLine -> SnapshotPoint
+    val FindLastNonWhiteSpaceCharacter : ITextSnapshotLine -> SnapshotPoint
 
     /// This function is mainly a backing for the "b" command mode command.  It is really
     /// used to find the position of the start of the current or previous word.  Unless we 
