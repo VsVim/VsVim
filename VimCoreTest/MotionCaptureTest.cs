@@ -264,7 +264,7 @@ namespace VimCore.UnitTest
         [Test]
         public void AllSentence()
         {
-            AssertMotion("aw", Motion.AllSentence);
+            AssertMotion("as", Motion.AllSentence);
         }
 
         [Test]
@@ -288,7 +288,7 @@ namespace VimCore.UnitTest
         [Test]
         public void SectionForwardOrCloseBrace()
         {
-            AssertMotion("][", Motion.SectionForwardOrOpenBrace);
+            AssertMotion("][", Motion.SectionForwardOrCloseBrace);
         }
 
         [Test]
@@ -325,7 +325,8 @@ namespace VimCore.UnitTest
             _textView.TextBuffer.SetText("hello world");
             _textView.MoveCaretTo(_textView.GetEndPoint().Position);
             var data = Process("?world", enter: true).AsComplete().Item1;
-            Assert.AreEqual(Motion.NewSearch("world", SearchKind.BackwardWithWrap), data.Motion);
+            var searchData = new SearchData(SearchText.NewPattern("world"), SearchKind.BackwardWithWrap, SearchOptions.ConsiderIgnoreCase | SearchOptions.ConsiderSmartCase);
+            Assert.AreEqual(Motion.NewSearch(searchData), data.Motion);
         }
 
         [Test]
@@ -333,7 +334,8 @@ namespace VimCore.UnitTest
         {
             _textView.SetText("hello world", caret: 0);
             var data = Process("/world", enter: true).AsComplete().Item1;
-            Assert.AreEqual(Motion.NewSearch("world", SearchKind.ForwardWithWrap), data.Motion);
+            var searchData = new SearchData(SearchText.NewPattern("world"), SearchKind.ForwardWithWrap, SearchOptions.ConsiderIgnoreCase | SearchOptions.ConsiderSmartCase);
+            Assert.AreEqual(Motion.NewSearch(searchData), data.Motion);
         }
 
         [Test]

@@ -67,6 +67,64 @@ type IUndoRedoOperations =
     /// Creates an Undo Transaction
     abstract CreateUndoTransaction : name:string -> IUndoTransaction
 
+/// Result of an individual search
+type SearchResult =
+    | SearchFound of SnapshotSpan
+    | SearchNotFound 
+
+[<System.Flags>]
+type SearchOptions = 
+    | None = 0x0
+
+    /// Consider the "ignorecase" option when doing the search
+    | ConsiderIgnoreCase = 0x1
+
+    /// Consider the "smartcase" option when doing the search
+    | ConsiderSmartCase = 0x2
+
+[<RequireQualifiedAccess>]
+type SearchText =
+    | Pattern of string
+    | WholeWord of string
+    | StraightText of string
+    with 
+
+    member x.RawText =
+        match x with
+        | Pattern(p) -> p
+        | WholeWord(p) -> p
+        | StraightText(p) -> p
+    
+    /// Is this a pattern
+    member x.IsPatternText = 
+        match x with
+        | Pattern(_) -> true
+        | WholeWord(_) -> false
+        | StraightText(_) -> false
+
+type SearchData = {
+    Text : SearchText;
+    Kind : SearchKind;
+    Options : SearchOptions
+}
+
+type SearchProcessResult =
+    | SearchNotStarted 
+    | SearchComplete of SearchData * SearchResult
+    | SearchCancelled 
+    | SearchNeedMore
+
+/// Global information about searches within Vim
+type ISearchService = 
+
+    /// Find the next occurrence of the pattern in the buffer starting at the 
+    /// given SnapshotPoint
+    abstract FindNext : SearchData -> SnapshotPoint -> ITextStructureNavigator -> SnapshotSpan option
+
+    /// Find the next Nth occurrence of the pattern
+    abstract FindNextMultiple : SearchData -> SnapshotPoint -> ITextStructureNavigator -> count:int -> SnapshotSpan option
+
+
 /// Context on how the motion is being used.  Several motions (]] for example)
 /// change behavior based on how they are being used
 [<RequireQualifiedAccess>]
@@ -228,7 +286,7 @@ type Motion =
     | RepeatLastCharSearchOpposite
 
     /// A search for the specified pattern
-    | Search of string * SearchKind
+    | Search of SearchData
 
     /// Backward a section in the editor or to a close brace
     | SectionBackwardOrCloseBrace
@@ -886,63 +944,6 @@ type IRegisterMap =
 
     /// Get the register with the specified name
     abstract GetRegister : RegisterName -> Register
-
-/// Result of an individual search
-type SearchResult =
-    | SearchFound of SnapshotSpan
-    | SearchNotFound 
-
-[<System.Flags>]
-type SearchOptions = 
-    | None = 0x0
-
-    /// Consider the "ignorecase" option when doing the search
-    | ConsiderIgnoreCase = 0x1
-
-    /// Consider the "smartcase" option when doing the search
-    | ConsiderSmartCase = 0x2
-
-[<RequireQualifiedAccess>]
-type SearchText =
-    | Pattern of string
-    | WholeWord of string
-    | StraightText of string
-    with 
-
-    member x.RawText =
-        match x with
-        | Pattern(p) -> p
-        | WholeWord(p) -> p
-        | StraightText(p) -> p
-    
-    /// Is this a pattern
-    member x.IsPatternText = 
-        match x with
-        | Pattern(_) -> true
-        | WholeWord(_) -> false
-        | StraightText(_) -> false
-
-type SearchData = {
-    Text : SearchText;
-    Kind : SearchKind;
-    Options : SearchOptions
-}
-
-type SearchProcessResult =
-    | SearchNotStarted 
-    | SearchComplete of SearchData * SearchResult
-    | SearchCancelled 
-    | SearchNeedMore
-
-/// Global information about searches within Vim
-type ISearchService = 
-
-    /// Find the next occurrence of the pattern in the buffer starting at the 
-    /// given SnapshotPoint
-    abstract FindNext : SearchData -> SnapshotPoint -> ITextStructureNavigator -> SnapshotSpan option
-
-    /// Find the next Nth occurrence of the pattern
-    abstract FindNextMultiple : SearchData -> SnapshotPoint -> ITextStructureNavigator -> count:int -> SnapshotSpan option
 
 type IIncrementalSearch = 
 

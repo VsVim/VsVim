@@ -38,7 +38,7 @@ type internal MotionCapture
         let rec inner (ki:KeyInput) = 
             match _incrementalSearch.Process ki with
             | SearchComplete(searchData, searchResult) ->
-                let motion = Motion.Search (searchData.Text.RawText, kind)
+                let motion = Motion.Search searchData
                 let data = { Motion = motion; MotionArgument = motionArgument }
                 MotionResult.Complete (data, None)
             | SearchNotStarted -> MotionResult.Cancelled
@@ -217,11 +217,11 @@ type internal MotionCapture
                 yield (
                     "]]", 
                     MotionFlags.CursorMovement,
-                    Motion.SectionForwardOrCloseBrace)
+                    Motion.SectionForwardOrOpenBrace)
                 yield (
                     "][", 
                     MotionFlags.CursorMovement,
-                    Motion.SectionForwardOrOpenBrace)
+                    Motion.SectionForwardOrCloseBrace)
                 yield (
                     "[[", 
                     MotionFlags.CursorMovement,

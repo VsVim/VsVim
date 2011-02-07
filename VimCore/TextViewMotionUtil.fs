@@ -1334,23 +1334,22 @@ type internal TextViewMotionUtil
                 Column = None} |> Some
 
     /// Get the motion for a search command.  Used to implement the '/' and '?' motions
-    member x.Search pattern searchKind = 
-        let caret = TextViewUtil.GetCaretPoint _textView
-        let startPoint = Util.GetSearchPoint searchKind caret
-        let searchData = { Text = SearchText.Pattern pattern; Kind = searchKind; Options = SearchOptions.None }
-        match _search.FindNext searchData startPoint _navigator with
+    member x.Search (searchData : SearchData) =
+        let caretPoint = TextViewUtil.GetCaretPoint _textView
+        let searchPoint = Util.GetSearchPoint searchData.Kind caretPoint
+        match _search.FindNext searchData searchPoint _navigator with
         | None -> 
             None
         | Some span ->
             // Create the MotionData for the provided MotionArgument and the 
             // start and end points of the search.  Need to be careful because
             // the start and end point can be forward or reverse
-            let endPoint = span.End
-            if startPoint.Position = endPoint.Position then
+            let endPoint = span.Start
+            if caretPoint.Position = endPoint.Position then
                 None
-            else if startPoint.Position < endPoint.Position then 
+            else if caretPoint.Position < endPoint.Position then 
                 {
-                    Span = SnapshotSpan(startPoint, endPoint)
+                    Span = SnapshotSpan(caretPoint, endPoint)
                     IsForward = true
                     IsAnyWordMotion = false
                     MotionKind = MotionKind.Exclusive
@@ -1358,14 +1357,12 @@ type internal TextViewMotionUtil
                     Column = SnapshotPointUtil.GetColumn endPoint |> Some } |> Some
             else 
                 {
-                    Span = SnapshotSpan(endPoint, startPoint)
+                    Span = SnapshotSpan(endPoint, caretPoint)
                     IsForward = false
                     IsAnyWordMotion = false
                     MotionKind = MotionKind.Exclusive
                     OperationKind = OperationKind.CharacterWise
                     Column = SnapshotPointUtil.GetColumn endPoint |> Some } |> Some
-
-    /// 
 
     /// Run the specified motion and return it's result
     member x.GetMotion motion (motionArgument : MotionArgument) = 
@@ -1399,7 +1396,7 @@ type internal TextViewMotionUtil
         | Motion.QuotedStringContents -> x.QuotedStringContents()
         | Motion.RepeatLastCharSearch -> x.RepeatLastCharSearch()
         | Motion.RepeatLastCharSearchOpposite -> x.RepeatLastCharSearchOpposite()
-        | Motion.Search (pattern, kind) -> x.Search pattern kind
+        | Motion.Search searchData -> x.Search searchData
         | Motion.SectionBackwardOrCloseBrace -> x.SectionBackwardOrCloseBrace motionArgument.Count |> Some
         | Motion.SectionBackwardOrOpenBrace -> x.SectionBackwardOrOpenBrace motionArgument.Count |> Some
         | Motion.SectionForwardOrOpenBrace -> x.SectionForward motionArgument.MotionContext motionArgument.Count |> Some
