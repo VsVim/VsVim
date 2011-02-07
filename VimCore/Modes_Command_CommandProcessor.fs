@@ -715,7 +715,7 @@ type internal CommandProcessor
         match RangeUtil.ParseRange line _buffer.MarkMap originalInputs with
         | ParseRangeResult.Succeeded(range, inputs) -> 
             if inputs |> List.isEmpty then
-                if range.Count = 1 then range.StartLine |> TssUtil.FindFirstNonWhitespaceCharacter |> _operations.MoveCaretToPoint
+                if range.Count = 1 then range.StartLine |> TssUtil.FindFirstNonWhiteSpaceCharacter |> _operations.MoveCaretToPoint
                 else _statusUtil.OnError("Invalid Command String")
                 RunResult.Completed
             else

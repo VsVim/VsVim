@@ -30,7 +30,7 @@ module internal Resources =
     let NormalMode_NoStringUnderCursor = "No string under cursor"
     let NormalMode_RecursiveRepeatDetected = "Recursive repeat command detected"
     let NormalMode_RepeatNotSupportedOnCommand name = sprintf "Repeat not yet supported on command %s" name
-    let NormalMode_UnableToRepeatMotion commandName motionName= sprintf "Unable to repeat motion %s for command %s " motionName commandName
+    let NormalMode_UnableToRepeatMotion = "Unable to repeat motion"
     let NormalMode_CantFindFile fileName = sprintf "Can't find file for %s in path" fileName
 
     let CommandMode_InvalidCommand = "Invalid command"

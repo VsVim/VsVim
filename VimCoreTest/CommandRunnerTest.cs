@@ -9,6 +9,7 @@ using Vim;
 using Vim.Extensions;
 using Vim.UnitTest;
 using Vim.UnitTest.Mock;
+using GlobalSettings = Vim.GlobalSettings;
 
 namespace VimCore.UnitTest
 {
@@ -23,6 +24,7 @@ namespace VimCore.UnitTest
         private ITextView _textView;
         private CommandRunner _runnerRaw;
         private ICommandRunner _runner;
+        private ITextViewMotionUtil _motionUtil;
 
         private void Create(params string[] lines)
         {
@@ -32,21 +34,22 @@ namespace VimCore.UnitTest
             _statusUtil = _factory.Create<IStatusUtil>();
             _registerMap = VimUtil.CreateRegisterMap(MockObjectFactory.CreateClipboardDevice(_factory).Object);
             _vimData = new VimData();
+            var settings = new GlobalSettings();
+            var localSettings = new LocalSettings(settings, _textView);
+            _motionUtil = VimUtil.CreateTextViewMotionUtil(
+                _textView,
+                settings: localSettings,
+                vimData: _vimData);
             var capture = new MotionCapture(
                 _host.Object,
                 _textView,
-                new TextViewMotionUtil(
-                    _textView,
-                    new MarkMap(new TrackingLineColumnService()),
-                    new Vim.LocalSettings(new Vim.GlobalSettings(), _textView)),
                 MockObjectFactory.CreateIncrementalSearch(factory: _factory).Object,
-                _factory.Create<IJumpList>().Object,
-                _vimData,
-                new LocalSettings(new Vim.GlobalSettings(), _textView));
+                localSettings);
             _runnerRaw = new CommandRunner(
                 _textView,
                 _registerMap,
-                (IMotionCapture)capture,
+                capture,
+                _motionUtil,
                 _statusUtil.Object);
             _runner = _runnerRaw;
         }

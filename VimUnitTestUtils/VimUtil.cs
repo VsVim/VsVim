@@ -59,6 +59,28 @@ namespace Vim.UnitTest
             return new CommonOperations(operationsData);
         }
 
+        internal static ITextViewMotionUtil CreateTextViewMotionUtil(
+            ITextView textView,
+            IMarkMap markMap = null,
+            IVimLocalSettings settings = null,
+            ISearchService search = null,
+            ITextStructureNavigator navigator = null,
+            IVimData vimData = null)
+        {
+            markMap = markMap ?? new MarkMap(new TrackingLineColumnService());
+            settings = settings ?? new LocalSettings(new GlobalSettings(), textView);
+            search = search ?? CreateSearchService(settings.GlobalSettings);
+            navigator = navigator ?? CreateTextStructureNavigator(textView.TextBuffer);
+            vimData = vimData ?? new VimData();
+            return new TextViewMotionUtil(
+                textView,
+                markMap,
+                settings,
+                search,
+                navigator,
+                vimData);
+        }
+
         internal static RegisterMap CreateRegisterMap(IClipboardDevice device)
         {
             return CreateRegisterMap(device, () => null);
@@ -185,7 +207,7 @@ namespace Vim.UnitTest
 
         internal static MotionCommand CreateSimpleMotion(
             string name,
-            Func<MotionData> func,
+            Motion motion,
             MotionFlags? flags = null)
         {
             var flagsRaw = flags ?? MotionFlags.CursorMovement;
@@ -193,7 +215,7 @@ namespace Vim.UnitTest
             return MotionCommand.NewSimpleMotionCommand(
                 commandName,
                 flagsRaw,
-                FuncUtil.CreateMotionFunc(func));
+                motion);
         }
 
         internal static CommandRunData CreateCommandRunData(
@@ -219,16 +241,18 @@ namespace Vim.UnitTest
         }
 
         internal static MotionRunData CreateMotionRunData(
-            MotionCommand motionCommand,
-            int? count = null,
-            Func<MotionData> func = null)
+            Motion motion,
+            int count)
         {
-            func = func ?? (() => null);
-            var countOpt = count != null ? FSharpOption.Create(count.Value) : FSharpOption<int>.None;
-            return new MotionRunData(
-                motionCommand,
-                new MotionArgument(MotionContext.AfterOperator, FSharpOption<int>.None, countOpt),
-                FuncUtil.CreateMotionFunc(func));
+            return CreateMotionRunData(motion, new MotionArgument(MotionContext.AfterOperator, FSharpOption.Create(count), FSharpOption<int>.None));
+        }
+
+        internal static MotionRunData CreateMotionRunData(
+            Motion motion,
+            MotionArgument argument = null)
+        {
+            argument = argument ?? new MotionArgument(MotionContext.AfterOperator, FSharpOption<int>.None, FSharpOption<int>.None);
+            return new MotionRunData(motion, argument);
         }
 
         internal static VisualSpan CreateVisualSpanSingle(

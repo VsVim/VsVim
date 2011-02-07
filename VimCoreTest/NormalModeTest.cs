@@ -75,30 +75,29 @@ namespace VimCore.UnitTest
             _displayWindowBroker.SetupGet(x => x.IsSignatureHelpActive).Returns(false);
             _displayWindowBroker.SetupGet(x => x.IsSmartTagSessionActive).Returns(false);
             _vimData = new VimData();
+
+            motionUtil = motionUtil ?? VimUtil.CreateTextViewMotionUtil(
+                _textView,
+                new MarkMap(new TrackingLineColumnService()),
+                new LocalSettings(new Vim.GlobalSettings(), _textView));
             _buffer = MockObjectFactory.CreateVimBuffer(
                 _textView,
                 "test",
                 MockObjectFactory.CreateVim(_map, changeTracker: _changeTracker.Object, host: _host.Object, vimData: _vimData).Object,
                 _jumpList.Object,
-                incrementalSearch: _incrementalSearch.Object);
+                incrementalSearch: _incrementalSearch.Object,
+                motionUtil: motionUtil);
             _operations = _factory.Create<IOperations>(MockBehavior.Strict);
             _operations.SetupGet(x => x.EditorOperations).Returns(_editorOperations.Object);
             _operations.SetupGet(x => x.TextView).Returns(_textView);
             _operations.SetupGet(x => x.FoldManager).Returns(_foldManager.Object);
 
-            motionUtil = motionUtil ?? new TextViewMotionUtil(
-                _textView,
-                new MarkMap(new TrackingLineColumnService()),
-                new LocalSettings(new Vim.GlobalSettings(), _textView));
             var capture = new MotionCapture(
                 _host.Object,
                 _textView,
-                motionUtil,
                 _incrementalSearch.Object,
-                _jumpList.Object,
-                new VimData(),
                 new LocalSettings(new GlobalSettings(), _textView));
-            var runner = new CommandRunner(_textView, _map, capture, _statusUtil.Object);
+            var runner = new CommandRunner(_textView, _map, capture, motionUtil, _statusUtil.Object);
             _modeRaw = new NormalMode(
                 _buffer.Object,
                 _operations.Object,
@@ -229,53 +228,6 @@ namespace VimCore.UnitTest
         {
             Create("");
             Assert.IsFalse(_mode.CanProcess(KeyInputUtil.ChangeKeyModifiers(KeyInputUtil.TabKey, KeyModifiers.Control)));
-        }
-
-        #endregion
-
-        #region Motion
-
-        private void AssertMotion(
-            string motionName,
-            Action<Mock<ITextViewMotionUtil>, SnapshotPoint, FSharpOption<int>, MotionData> setupMock,
-            bool isMovement = true)
-        {
-            if (isMovement)
-            {
-                var mock = new Mock<ITextViewMotionUtil>(MockBehavior.Strict);
-                Create(mock.Object, DefaultLines);
-                var data = CreateMotionData();
-                var point = _textView.GetPoint(0);
-                setupMock(mock, point, FSharpOption<int>.None, data);
-                _operations.Setup(x => x.MoveCaretToMotionData(data)).Verifiable();
-                _mode.Process(motionName);
-                mock.Verify();
-                _operations.Verify();
-            }
-        }
-
-        [Test]
-        public void Motion_gg()
-        {
-            AssertMotion(
-                "gg",
-                (util, point, count, data) =>
-                    util
-                        .Setup(x => x.LineOrFirstToFirstNonWhitespace(count))
-                        .Returns(data)
-                        .Verifiable());
-        }
-
-        [Test]
-        public void Motion_g_()
-        {
-            AssertMotion(
-                "g_",
-                (util, point, count, data) =>
-                    util
-                    .Setup(x => x.LastNonWhitespaceOnLine(CommandUtil.CountOrDefault(count)))
-                    .Returns(data)
-                    .Verifiable());
         }
 
         #endregion
@@ -848,9 +800,10 @@ namespace VimCore.UnitTest
             var util = new Mock<ITextViewMotionUtil>(MockBehavior.Strict);
             Create(util.Object, "hello world");
             var span = _textView.GetLine(0).Extent;
+            var arg = new MotionArgument(MotionContext.AfterOperator, FSharpOption<int>.None, FSharpOption<int>.None);
             util
-                .Setup(x => x.LineOrLastToFirstNonWhitespace(FSharpOption<int>.None))
-                .Returns(VimUtil.CreateMotionData(span, operationKind: OperationKind.LineWise));
+                .Setup(x => x.GetMotion(Motion.LineOrLastToFirstNonWhiteSpace, arg))
+                .Returns(FSharpOption.Create(VimUtil.CreateMotionData(span, operationKind: OperationKind.LineWise)));
             _operations
                 .Setup(x => x.UpdateRegisterForSpan(_unnamedRegister, RegisterOperation.Yank, span, OperationKind.LineWise))
                 .Verifiable();
@@ -2692,37 +2645,6 @@ namespace VimCore.UnitTest
             _mode.Process(".");
             _changeTracker.Verify();
             _statusUtil.Verify();
-        }
-
-        [Test]
-        [Description("Repeat with a motion")]
-        public void RepeatLastChange10()
-        {
-            Create("foobar");
-            var didRunCommand = false;
-            var didRunMotion = false;
-            var data =
-                VimUtil.CreateCommandRunData(
-                    VimUtil.CreateMotionCommand("c", (x, y, motionData) => { didRunCommand = true; }),
-                    _map.GetRegister(RegisterName.Unnamed),
-                    1,
-                    VimUtil.CreateMotionRunData(
-                        VimUtil.CreateSimpleMotion("w", () => null),
-                        null,
-                        () =>
-                        {
-                            didRunMotion = true;
-                            return CreateMotionData();
-                        }));
-            _changeTracker
-                .SetupGet(x => x.LastChange)
-                .Returns(FSharpOption.Create(RepeatableChange.NewCommandChange(data)))
-                .Verifiable();
-            _mode.Process(".");
-            _operations.Verify();
-            _changeTracker.Verify();
-            Assert.IsTrue(didRunCommand);
-            Assert.IsTrue(didRunMotion);
         }
 
         [Test]

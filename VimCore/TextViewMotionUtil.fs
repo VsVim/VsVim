@@ -499,7 +499,10 @@ type internal TextViewMotionUtil
     ( 
         _textView : ITextView,
         _markMap : IMarkMap,
-        _localSettings : IVimLocalSettings ) = 
+        _localSettings : IVimLocalSettings,
+        _search : ISearchService,
+        _navigator : ITextStructureNavigator,
+        _vimData : IVimData ) = 
 
     let _textBuffer = _textView.TextBuffer
     let _settings = _localSettings.GlobalSettings
@@ -894,6 +897,23 @@ type internal TextViewMotionUtil
         | CharSearchKind.TillChar, Direction.Forward -> x.ForwardCharMotionCore c count TssUtil.FindTillNextOccurranceOfCharOnLine
         | CharSearchKind.ToChar, Direction.Backward -> x.BackwardCharMotionCore c count TssUtil.FindPreviousOccurranceOfCharOnLine 
         | CharSearchKind.TillChar, Direction.Backward -> x.BackwardCharMotionCore c count TssUtil.FindTillPreviousOccurranceOfCharOnLine
+
+    /// Repeat the last f, F, t or T search pattern.
+    member x.RepeatLastCharSearch () =
+        match _vimData.LastCharSearch with 
+        | None -> None
+        | Some (kind, direction, c) -> x.CharSearch c 1 kind direction
+
+    /// Repeat the last f, F, t or T search pattern in the opposite direction
+    member x.RepeatLastCharSearchOpposite () =
+        match _vimData.LastCharSearch with 
+        | None -> None
+        | Some (kind, direction, c) -> 
+            let direction = 
+                match direction with
+                | Direction.Forward -> Direction.Backward
+                | Direction.Backward -> Direction.Forward
+            x.CharSearch c 1 kind direction
 
     member x.WordForward kind count =
         let start = x.StartPoint
@@ -1314,53 +1334,38 @@ type internal TextViewMotionUtil
                 Column = None} |> Some
 
     /// Get the motion for a search command.  Used to implement the '/' and '?' motions
-    member x.Search pattern direction = 
+    member x.Search pattern searchKind = 
         let caret = TextViewUtil.GetCaretPoint _textView
-        let start = Util.GetSearchPoint kind caret
-        match _search.FindNext searchData start _incrementalSearch.WordNavigator with
-        | None -> None
-        | Some(span) -> getData caret span.Start arg *)
-                (*
-                // Create the MotionData for the provided MotionArgument and the 
-                // start and end points of the search.  Need to be careful because
-                // the start and end point can be forward or reverse
-                let getData (startPoint:SnapshotPoint) (endPoint:SnapshotPoint) (arg:MotionArgument) = 
-                    if arg.MotionContext = MotionContext.Movement then
-                        _jumpList.Add before |> ignore
+        let startPoint = Util.GetSearchPoint searchKind caret
+        let searchData = { Text = SearchText.Pattern pattern; Kind = searchKind; Options = SearchOptions.None }
+        match _search.FindNext searchData startPoint _navigator with
+        | None -> 
+            None
+        | Some span ->
+            // Create the MotionData for the provided MotionArgument and the 
+            // start and end points of the search.  Need to be careful because
+            // the start and end point can be forward or reverse
+            let endPoint = span.End
+            if startPoint.Position = endPoint.Position then
+                None
+            else if startPoint.Position < endPoint.Position then 
+                {
+                    Span = SnapshotSpan(startPoint, endPoint)
+                    IsForward = true
+                    IsAnyWordMotion = false
+                    MotionKind = MotionKind.Exclusive
+                    OperationKind = OperationKind.CharacterWise
+                    Column = SnapshotPointUtil.GetColumn endPoint |> Some } |> Some
+            else 
+                {
+                    Span = SnapshotSpan(endPoint, startPoint)
+                    IsForward = false
+                    IsAnyWordMotion = false
+                    MotionKind = MotionKind.Exclusive
+                    OperationKind = OperationKind.CharacterWise
+                    Column = SnapshotPointUtil.GetColumn endPoint |> Some } |> Some
 
-                    if startPoint.Position = endPoint.Position then
-                        None
-                    else if startPoint.Position < endPoint.Position then 
-                        {
-                            Span = SnapshotSpan(startPoint, endPoint)
-                            IsForward = true
-                            IsAnyWordMotion = false
-                            MotionKind = MotionKind.Exclusive
-                            OperationKind = OperationKind.CharacterWise
-                            Column = SnapshotPointUtil.GetColumn endPoint |> Some } |> Some
-                    else 
-                        {
-                            Span = SnapshotSpan(endPoint, startPoint)
-                            IsForward = false
-                            IsAnyWordMotion = false
-                            MotionKind = MotionKind.Exclusive
-                            OperationKind = OperationKind.CharacterWise
-                            Column = SnapshotPointUtil.GetColumn endPoint |> Some } |> Some
-
-                // Provide a cached function here because we already calculated the 
-                // expensive data and don't want to wast time recalculating it
-                let cachedFunc arg = 
-                    match searchResult with
-                    | SearchResult.SearchNotFound -> None
-                    | SearchResult.SearchFound(foundSpan) -> getData before foundSpan.Start arg
-
-                // Need to repeat the search 
-                let func arg = 
-                    let caret = TextViewUtil.GetCaretPoint _textView
-                    let start = Util.GetSearchPoint kind caret
-                    match _search.FindNext searchData start _incrementalSearch.WordNavigator with
-                    | None -> None
-                    | Some(span) -> getData caret span.Start arg *)
+    /// 
 
     /// Run the specified motion and return it's result
     member x.GetMotion motion (motionArgument : MotionArgument) = 
@@ -1392,7 +1397,9 @@ type internal TextViewMotionUtil
         | Motion.ParagraphForward -> x.GetParagraphs Direction.Forward motionArgument.Count |> Some
         | Motion.QuotedString -> x.QuotedString()
         | Motion.QuotedStringContents -> x.QuotedStringContents()
-        | Motion.Search (pattern, direction) -> x.Search pattern direction
+        | Motion.RepeatLastCharSearch -> x.RepeatLastCharSearch()
+        | Motion.RepeatLastCharSearchOpposite -> x.RepeatLastCharSearchOpposite()
+        | Motion.Search (pattern, kind) -> x.Search pattern kind
         | Motion.SectionBackwardOrCloseBrace -> x.SectionBackwardOrCloseBrace motionArgument.Count |> Some
         | Motion.SectionBackwardOrOpenBrace -> x.SectionBackwardOrOpenBrace motionArgument.Count |> Some
         | Motion.SectionForwardOrOpenBrace -> x.SectionForward motionArgument.MotionContext motionArgument.Count |> Some

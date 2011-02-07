@@ -64,7 +64,7 @@ type internal NormalMode
 
     member private this.EnsureCommands() = 
         if not this.IsCommandRunnerPopulated then
-            let factory = Vim.Modes.CommandFactory(_operations, _capture, _bufferData.IncrementalSearch, _bufferData.JumpList, _bufferData.Settings)
+            let factory = Vim.Modes.CommandFactory(_operations, _capture, _bufferData.TextViewMotionUtil, _bufferData.JumpList, _bufferData.Settings)
 
             this.CreateSimpleCommands()
             |> Seq.append (factory.CreateMovementCommands())
@@ -157,21 +157,20 @@ type internal NormalMode
                                 func countOpt reg span |> ignore
 
                         match data.Command with 
-                        | SimpleCommand(_,_,func) -> func countOpt reg |> ignore
-                        | MotionCommand(_,_,func) -> 
+                        | SimpleCommand(_, _, func) -> func countOpt reg |> ignore
+                        | MotionCommand(_, _, func) -> 
     
                             // Repeating a motion based command is a bit more complex because we need to
                             // first re-run the motion to get the span to be processed
                             match data.MotionRunData with
                             | None -> _statusUtil.OnError (Resources.NormalMode_RepeatNotSupportedOnCommand commandName)
-                            | Some(motionRunData) ->
+                            | Some motionRunData ->
     
                                 // Repeat the motion and process the results
-                                let motionName = motionRunData.MotionCommand.KeyInputSet.Name
-                                match motionRunData.MotionFunction motionRunData.MotionArgument with
-                                | None ->  _statusUtil.OnError (Resources.NormalMode_UnableToRepeatMotion commandName motionName)
+                                match _bufferData.TextViewMotionUtil.GetMotion motionRunData.Motion motionRunData.MotionArgument with
+                                | None ->  _statusUtil.OnError Resources.NormalMode_UnableToRepeatMotion
                                 | Some(motionData) -> func countOpt reg motionData |> ignore
-    
+
                         | LongCommand(_) -> 
                             _statusUtil.OnError (Resources.NormalMode_RepeatNotSupportedOnCommand commandName)
                         | VisualCommand(_, _, _, func) -> 

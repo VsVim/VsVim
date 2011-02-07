@@ -308,5 +308,11 @@ namespace Vim.UnitTest.Mock
         {
             get { return IncrementalSearchImpl; }
         }
+
+
+        public ITextViewMotionUtil TextViewMotionUtil
+        {
+            get { throw new NotImplementedException(); }
+        }
     }
 }

@@ -65,26 +65,26 @@ namespace VimCore.UnitTest
             _operations.SetupGet(x => x.TextView).Returns(_textView);
             _host = _factory.Create<IVimHost>(MockBehavior.Loose);
             _incrementalSearch = MockObjectFactory.CreateIncrementalSearch(factory: _factory);
+            var globalSettings = new GlobalSettings();
+            var localSettings = new LocalSettings(globalSettings, _textView);
+            var motionUtil = VimUtil.CreateTextViewMotionUtil(
+                _textView,
+                _markMap,
+                localSettings);
             _bufferData = MockObjectFactory.CreateVimBuffer(
                 _textView,
                 "test",
-                MockObjectFactory.CreateVim(_map, host: _host.Object).Object,
+                MockObjectFactory.CreateVim(_map, host: _host.Object, settings: globalSettings).Object,
                 incrementalSearch: _incrementalSearch.Object,
                 jumpList: _jumpList.Object,
-                factory: _factory);
+                motionUtil: motionUtil);
             var capture = new MotionCapture(
                 _host.Object,
                 _textView,
-                new TextViewMotionUtil(
-                    _textView,
-                    _markMap,
-                    new Vim.LocalSettings(_bufferData.Object.Settings.GlobalSettings, _textView)),
                 _incrementalSearch.Object,
-                _jumpList.Object,
-                new VimData(),
-                new LocalSettings(new GlobalSettings(), _textView));
-            var runner = new CommandRunner(_textView, _map, (IMotionCapture)capture, (new Mock<IStatusUtil>()).Object);
-            _modeRaw = new Vim.Modes.Visual.VisualMode(_bufferData.Object, _operations.Object, kind, runner, capture, _tracker.Object);
+                localSettings);
+            var runner = new CommandRunner(_textView, _map, capture, motionUtil, (new Mock<IStatusUtil>()).Object);
+            _modeRaw = new VisualMode(_bufferData.Object, _operations.Object, kind, runner, capture, _tracker.Object);
             _mode = _modeRaw;
             _mode.OnEnter(ModeArgument.None);
         }

@@ -28,6 +28,7 @@ type internal CommandRunner
         _textView : ITextView,
         _registerMap : IRegisterMap,
         _capture : IMotionCapture,
+        _motionUtil : ITextViewMotionUtil,
         _statusUtil : IStatusUtil ) as this =
 
     /// Represents the empty state for processing commands.  Holds all of the default
@@ -103,20 +104,35 @@ type internal CommandRunner
     /// if the motion is successfully completed
     member x.WaitForMotion command onMotionComplete (initialInput : KeyInput option) =
         _data <- { _data with State = NotFinishWithCommand(command, Some KeyRemapMode.OperatorPending) }
-        let rec inner (result:MotionResult) = 
+        let rec inner (result : MotionResult) = 
             match result with 
-                | MotionResult.Complete (motionData,motionRunData) ->
+            | MotionResult.Complete (motionRunData, precalculatedData) ->
+
+                // Calculate the MotionData.  Used the cached MotionData if available
+                let motionData = 
+                    match precalculatedData with
+                    | Some data -> Some data
+                    | None -> _motionUtil.GetMotion motionRunData.Motion motionRunData.MotionArgument
+
+                // Now use the MotionData to complete the command
+                match motionData with
+                | None ->
+                    // Invalid motion so raise an error
+                    _statusUtil.OnError Resources.MotionCapture_InvalidMotion
+                    CancelledCommand
+                | Some motionData -> 
+                    // Valid motion pass off to the actual command
                     let data = x.CreateCommandRunData command (Some motionRunData) None
                     let result = onMotionComplete data.Count data.Register motionData
-                    RanCommand (data,result)
-                | MotionResult.NeedMoreInput (keyRemapMode, moreFunc) ->
-                    _data <- { _data with State = NotFinishWithCommand(command, keyRemapMode) }
-                    let func ki = moreFunc ki |> inner
-                    NeedMore func
-                | MotionResult.Error (msg) ->
-                    _statusUtil.OnError msg
-                    CancelledCommand
-                | MotionResult.Cancelled -> CancelledCommand
+                    RanCommand (data, result)
+            | MotionResult.NeedMoreInput (keyRemapMode, moreFunc) ->
+                _data <- { _data with State = NotFinishWithCommand(command, keyRemapMode) }
+                let func ki = moreFunc ki |> inner
+                NeedMore func
+            | MotionResult.Error (msg) ->
+                _statusUtil.OnError msg
+                CancelledCommand
+            | MotionResult.Cancelled -> CancelledCommand
 
         let runInitialMotion ki = _capture.GetOperatorMotion ki _data.Count |> inner
 
@@ -196,7 +212,7 @@ type internal CommandRunner
                 let data = x.CreateCommandRunData command None (Some visualSpan)
                 let result = func _data.Count _data.Register visualSpan
                 RanCommand (data,result)
-            | Command.MotionCommand(_,_,func) -> 
+            | Command.MotionCommand(_, _, func) -> 
 
                 // Can't just call this.  It's possible there is a non-motion command with a 
                 // longer command commandInputs.  If there are any other commands which have a 

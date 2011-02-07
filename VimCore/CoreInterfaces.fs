@@ -222,10 +222,13 @@ type Motion =
     | QuotedStringContents
 
     /// Repeat the last CharSearch value
-    | RepeatLastCharSearch of Direction
+    | RepeatLastCharSearch
+
+    /// Repeat the last CharSearch value in the opposite direction
+    | RepeatLastCharSearchOpposite
 
     /// A search for the specified pattern
-    | Search of string * Direction
+    | Search of string * SearchKind
 
     /// Backward a section in the editor or to a close brace
     | SectionBackwardOrCloseBrace
@@ -1088,7 +1091,7 @@ type IVimData =
     /// Motion function used with the last f, F, t or T motion.  The 
     /// first item in the tuple is the forward version and the second item
     /// is the backwards version
-    abstract LastCharSearch : (CharSearchKind * char) option with get, set
+    abstract LastCharSearch : (CharSearchKind * Direction * char) option with get, set
 
     /// Raised when the LastSearch value changes
     [<CLIEvent>]
@@ -1331,6 +1334,9 @@ and IVimBuffer =
 
     /// View of the file
     abstract TextView : ITextView
+
+    /// The ITextViewMotionUtil associated with this IVimBuffer instance
+    abstract TextViewMotionUtil : ITextViewMotionUtil
 
     /// Owning IVim instance
     abstract Vim : IVim

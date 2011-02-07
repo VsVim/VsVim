@@ -10,7 +10,7 @@ type internal CommandFactory
     ( 
         _operations : ICommonOperations, 
         _capture : IMotionCapture,
-        _incrementalSearch : IIncrementalSearch,
+        _motionUtil : ITextViewMotionUtil, 
         _jumpList : IJumpList,
         _settings : IVimLocalSettings ) =
 
@@ -56,7 +56,8 @@ type internal CommandFactory
                 CommandResult.Completed NoSwitch
             Command.SimpleCommand (kiSet,CommandFlags.Movement, funcWithReg))
 
-    /// Build up a set of MotionCommand values from applicable Motion values
+    /// Build up a set of MotionCommand values from applicable Motion values.  These will 
+    /// move the cursor to the result of the motion
     member x.CreateMovementsFromMotions() =
         let processResult opt = 
             match opt with
@@ -64,40 +65,59 @@ type internal CommandFactory
             | Some(data) -> _operations.MoveCaretToMotionData data
             CommandResult.Completed NoSwitch
 
-        let makeMotionArgument count = {MotionContext=MotionContext.Movement; OperatorCount=None; MotionCount=count}
+        let makeMotionArgument count = { MotionContext = MotionContext.Movement; OperatorCount = None; MotionCount = count }
 
         let processMotionCommand command =
             match command with
-            | SimpleMotionCommand(name,_,func) -> 
+            | SimpleMotionCommand(name, _, motion) -> 
+
+                // Create a function which will proces the simple motion and move the caret
                 let inner count _ =  
                     let arg = makeMotionArgument count
-                    func arg |> processResult
+                    let data = _motionUtil.GetMotion motion arg
+                    processResult data
+
                 Command.SimpleCommand(name,CommandFlags.Movement,inner) 
             | ComplexMotionCommand(name, motionFlags, func) -> 
-                
+
+                // The core function which accepts the initial count.  Will create a MotionArgument
+                // from this value and then begin to loop over the MotionResult until we get 
+                // a final one
                 let coreFunc count _ = 
+
                     let rec inner result =  
                         match result with
-                        | ComplexMotionResult.Finished(func, cachedFunc) ->
+                        | MotionResult.Complete (motionRunData, precalculatedData) ->
                             let res = 
-                                let arg = makeMotionArgument count
-                                let func = OptionUtil.getOrDefault func cachedFunc
-                                match func arg with
-                                | None -> CommandResult.Error Resources.MotionCapture_InvalidMotion
+
+                                // Calculate the resulting MotionData.  Use the precalculated cached
+                                // data if it's available 
+                                let data = 
+                                    match precalculatedData with
+                                    | Some data -> Some data
+                                    | None -> _motionUtil.GetMotion motionRunData.Motion motionRunData.MotionArgument
+
+                                // Move the cursor based on the resulting motion
+                                match data with
+                                | None -> 
+                                    CommandResult.Error Resources.MotionCapture_InvalidMotion
                                 | Some(data) -> 
                                     _operations.MoveCaretToMotionData data
                                     CommandResult.Completed NoSwitch 
                             res |> LongCommandResult.Finished
-                        | ComplexMotionResult.NeedMoreInput (keyRemapMode, func) -> 
+                        | MotionResult.NeedMoreInput (keyRemapMode, func) -> 
                             LongCommandResult.NeedMoreInput (keyRemapMode, fun ki -> func ki |> inner)
-                        | ComplexMotionResult.Cancelled -> 
+                        | MotionResult.Cancelled -> 
                             LongCommandResult.Cancelled
-                        | ComplexMotionResult.Error (msg) -> 
+                        | MotionResult.Error (msg) -> 
                             CommandResult.Error msg |> LongCommandResult.Finished
 
-                    let initialResult = func()
-                    inner initialResult
+                    let arg = makeMotionArgument count
+                    let result = func arg
+                    inner result
 
+                // Create the flags.  Make sure that we set that Escape can be handled if the
+                // motion itself can handle escape
                 let flags = 
                     if Util.IsFlagSet motionFlags MotionFlags.HandlesEscape then 
                         CommandFlags.Movement ||| CommandFlags.HandlesEscape

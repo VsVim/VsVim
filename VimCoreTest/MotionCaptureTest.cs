@@ -1,5 +1,4 @@
-﻿using System;
-using System.Linq;
+﻿using System.Linq;
 using Microsoft.FSharp.Collections;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
@@ -18,15 +17,12 @@ namespace VimCore.UnitTest
     public class MotionCaptureTest
     {
         private MockRepository _factory;
-        private Mock<ITextViewMotionUtil> _util;
         private Mock<IVimHost> _host;
-        private Mock<IJumpList> _jumpList;
         private IVimLocalSettings _localSettings;
         private ITextView _textView;
         private IIncrementalSearch _incrementalSearch;
         private MotionCapture _captureRaw;
         private IMotionCapture _capture;
-        private IVimData _vimData;
 
         [SetUp]
         public void SetUp()
@@ -35,17 +31,11 @@ namespace VimCore.UnitTest
             _localSettings = new LocalSettings(new GlobalSettings(), _textView);
             _incrementalSearch = VimUtil.CreateIncrementalSearch(_textView, _localSettings, new VimData());
             _factory = new MockRepository(MockBehavior.Strict);
-            _util = _factory.Create<ITextViewMotionUtil>();
             _host = _factory.Create<IVimHost>();
-            _vimData = new VimData();
-            _jumpList = _factory.Create<IJumpList>();
             _captureRaw = new MotionCapture(
                 _host.Object,
                 _textView,
-                _util.Object,
                 _incrementalSearch,
-                _jumpList.Object,
-                _vimData,
                 _localSettings);
             _capture = _captureRaw;
         }
@@ -79,7 +69,26 @@ namespace VimCore.UnitTest
             Assert.IsTrue(Process(input, count).IsComplete);
         }
 
-        internal static MotionData CreateMotionData()
+        private void AssertMotion(string text, Motion motion)
+        {
+            var result = Process(text);
+            Assert.IsTrue(result.IsComplete);
+            Assert.AreEqual(motion, result.AsComplete().Item1.Motion);
+        }
+
+        private void AssertMotion(KeyInput keyInput, Motion motion)
+        {
+            var result = _capture.GetOperatorMotion(keyInput, FSharpOption<int>.None);
+            Assert.IsTrue(result.IsComplete);
+            Assert.AreEqual(motion, result.AsComplete().Item1.Motion);
+        }
+
+        private void AssertMotion(VimKey key, Motion motion)
+        {
+            AssertMotion(KeyInputUtil.VimKeyToKeyInput(key), motion);
+        }
+
+        private static MotionData CreateMotionData()
         {
             var point = MockObjectFactory.CreateSnapshotPoint(42);
             return VimUtil.CreateMotionData(
@@ -90,30 +99,16 @@ namespace VimCore.UnitTest
                 42);
         }
 
-        internal static FSharpOption<MotionData> CreateMotionDataSome()
+        private static FSharpOption<MotionData> CreateMotionDataSome()
         {
             return FSharpOption.Create(CreateMotionData());
         }
 
         [Test]
-        public void Word1()
+        public void Word()
         {
-            _util
-                .Setup(x => x.WordForward(WordKind.NormalWord, 1))
-                .Returns(CreateMotionData())
-                .Verifiable();
-            ProcessComplete("w", 1);
-            _factory.Verify();
-        }
-
-        [Test]
-        public void Word2()
-        {
-            _util
-                .Setup(x => x.WordForward(WordKind.NormalWord, 2))
-                .Returns(CreateMotionData())
-                .Verifiable();
-            ProcessComplete("w", 2);
+            AssertMotion("w", Motion.NewWordForward(WordKind.NormalWord));
+            AssertMotion("W", Motion.NewWordForward(WordKind.BigWord));
         }
 
         [Test]
@@ -124,655 +119,225 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void Motion_Dollar1()
+        public void EndOfLine()
         {
-            _util
-                .Setup(x => x.EndOfLine(1))
-                .Returns(CreateMotionData())
-                .Verifiable();
-            ProcessComplete("$", 1);
-            _factory.Verify();
+            AssertMotion("$", Motion.EndOfLine);
+            AssertMotion(VimKey.End, Motion.EndOfLine);
         }
 
         [Test]
-        public void Motion_Dollar2()
+        public void BeginingOfLine()
         {
-            _util
-                .Setup(x => x.EndOfLine(2))
-                .Returns(CreateMotionData())
-                .Verifiable();
-            ProcessComplete("$", 2);
-            _factory.Verify();
+            AssertMotion("0", Motion.BeginingOfLine);
         }
 
         [Test]
-        public void Motion_End()
+        public void FirstNonWhitespaceOnLine()
         {
-            _util
-                .Setup(x => x.EndOfLine(1))
-                .Returns(CreateMotionData())
-                .Verifiable();
-            _capture.GetOperatorMotion(KeyInputUtil.VimKeyToKeyInput(VimKey.End), FSharpOption<int>.None);
-            _factory.Verify();
+            AssertMotion("^", Motion.FirstNonWhiteSpaceOnLine);
         }
 
         [Test]
-        public void BeginingOfLine1()
+        public void AllWord()
         {
-            _util
-                .Setup(x => x.BeginingOfLine())
-                .Returns(CreateMotionData())
-                .Verifiable();
-            ProcessComplete("0", 1);
-            _factory.Verify();
+            AssertMotion("aw", Motion.NewAllWord(WordKind.NormalWord));
+            AssertMotion("aW", Motion.NewAllWord(WordKind.BigWord));
         }
 
         [Test]
-        public void FirstNonWhitespaceOnLine1()
+        public void LineFromTopOfWindow()
         {
-            _util
-                .Setup(x => x.FirstNonWhitespaceOnLine())
-                .Returns(CreateMotionData())
-                .Verifiable();
-            ProcessComplete("^", 1);
-            _factory.Verify();
-        }
-
-
-        [Test]
-        public void Motion_aw1()
-        {
-            _util
-                .Setup(x => x.AllWord(WordKind.NormalWord, 1))
-                .Returns(CreateMotionData())
-                .Verifiable();
-            ProcessComplete("aw", 1);
-            _factory.Verify();
+            AssertMotion("H", Motion.LineFromTopOfVisibleWindow);
         }
 
         [Test]
-        public void Motion_aw2()
+        public void CharLeft()
         {
-            _util
-                .Setup(x => x.AllWord(WordKind.NormalWord, 2))
-                .Returns(CreateMotionData())
-                .Verifiable();
-            ProcessComplete("aw", 2);
-            _factory.Verify();
+            AssertMotion("h", Motion.CharLeft);
+            AssertMotion(VimKey.Left, Motion.CharLeft);
+            AssertMotion(VimKey.Back, Motion.CharLeft);
+            AssertMotion(KeyNotationUtil.StringToKeyInput("<C-h>"), Motion.CharLeft);
         }
 
         [Test]
-        public void Motion_H()
+        public void CharRight()
         {
-            _util
-                .Setup(x => x.LineFromTopOfVisibleWindow(FSharpOption<int>.None))
-                .Returns(CreateMotionData())
-                .Verifiable();
-            ProcessComplete("H");
-            _factory.Verify();
+            AssertMotion("l", Motion.CharRight);
+            AssertMotion(VimKey.Right, Motion.CharRight);
+            AssertMotion(VimKey.Space, Motion.CharRight);
         }
 
         [Test]
-        public void Motion_aW1()
+        public void LineUp()
         {
-            _util
-                .Setup(x => x.AllWord(WordKind.BigWord, 1))
-                .Returns(CreateMotionData())
-                .Verifiable();
-            ProcessComplete("aW", 1);
-            _factory.Verify();
+            AssertMotion("k", Motion.LineUp);
+            AssertMotion(VimKey.Up, Motion.LineUp);
+            AssertMotion(KeyNotationUtil.StringToKeyInput("<C-p>"), Motion.LineUp);
         }
 
         [Test]
-        public void CharLeft1()
+        public void EndOfWord()
         {
-            _util
-                .Setup(x => x.CharLeft(1))
-                .Returns(FSharpOption.Create(CreateMotionData()))
-                .Verifiable();
-            ProcessComplete("h", 1);
-            _factory.Verify();
+            AssertMotion("e", Motion.NewEndOfWord(WordKind.NormalWord));
+            AssertMotion("E", Motion.NewEndOfWord(WordKind.BigWord));
         }
 
         [Test]
-        public void CharLeft2()
+        public void CharSearch_ToCharForward()
         {
-            _util
-                .Setup(x => x.CharLeft(2))
-                .Returns(FSharpOption.Create(CreateMotionData()))
-                .Verifiable();
-            ProcessComplete("2h", 1);
-            _factory.Verify();
+            AssertMotion("fc", Motion.NewCharSearch(CharSearchKind.ToChar, Direction.Forward, 'c'));
         }
 
         [Test]
-        public void CharRight1()
+        public void CharSearch_TillCharForward()
         {
-            _util
-                .Setup(x => x.CharRight(2))
-                .Returns(FSharpOption.Create(CreateMotionData()))
-                .Verifiable();
-            ProcessComplete("2l", 1);
-            _factory.Verify();
+            AssertMotion("tc", Motion.NewCharSearch(CharSearchKind.TillChar, Direction.Forward, 'c'));
         }
 
         [Test]
-        public void LineUp1()
+        public void CharSearch_ToCharBackward()
         {
-            _util
-                .Setup(x => x.LineUp(1))
-                .Returns(CreateMotionData())
-                .Verifiable();
-            ProcessComplete("k", 1);
-            _factory.Verify();
+            AssertMotion("Fc", Motion.NewCharSearch(CharSearchKind.ToChar, Direction.Backward, 'c'));
         }
 
         [Test]
-        public void EndOfWord1()
+        public void CharSearch_TillCharBackward()
         {
-            _util
-                .Setup(x => x.EndOfWord(WordKind.NormalWord, 1))
-                .Returns(CreateMotionData())
-                .Verifiable();
-            ProcessComplete("e", 1);
-            _factory.Verify();
-        }
-
-        public void EndOfWord2()
-        {
-            _util
-                .Setup(x => x.EndOfWord(WordKind.BigWord, 1))
-                .Returns(CreateMotionData())
-                .Verifiable();
-            ProcessComplete("E", 1);
-            _factory.Verify();
+            AssertMotion("Tc", Motion.NewCharSearch(CharSearchKind.TillChar, Direction.Backward, 'c'));
         }
 
         [Test]
-        public void ForwardChar1()
+        public void LineOrLastToFirstNonWhiteSpace()
         {
-            _util
-                .Setup(x => x.CharSearch('c', 1, CharSearch.ToChar, Direction.Forward))
-                .Returns(FSharpOption.Create(CreateMotionData()))
-                .Verifiable();
-            ProcessComplete("fc", 1);
-            _factory.Verify();
+            AssertMotion("G", Motion.LineOrLastToFirstNonWhiteSpace);
         }
 
         [Test]
-        public void ForwardTillChar1()
+        public void LineOrFirstToFirstNonWhiteSpace()
         {
-            _util
-                .Setup(x => x.CharSearch('c', 1, CharSearch.TillChar, Direction.Forward))
-                .Returns(FSharpOption.Create(CreateMotionData()))
-                .Verifiable();
-            ProcessComplete("tc", 1);
-            _factory.Verify();
+            AssertMotion("gg", Motion.LineOrFirstToFirstNonWhiteSpace);
         }
 
         [Test]
-        public void BackwardCharMotion1()
+        public void LastNonWhiteSpaceOnLine()
         {
-            _util
-                .Setup(x => x.CharSearch('c', 1, CharSearch.ToChar, Direction.Backward))
-                .Returns(FSharpOption.Create(CreateMotionData()))
-                .Verifiable();
-            ProcessComplete("Fc", 1);
-            _factory.Verify();
+            AssertMotion("g_", Motion.LastNonWhiteSpaceOnLine);
         }
 
         [Test]
-        public void BackwardTillCharMotion1()
+        public void LineInMiddleOfVisibleWindow()
         {
-            _util
-                .Setup(x => x.CharSearch('c', 1, CharSearch.TillChar, Direction.Backward))
-                .Returns(FSharpOption.Create(CreateMotionData()))
-                .Verifiable();
-            ProcessComplete("Tc", 1);
-            _factory.Verify();
+            AssertMotion("M", Motion.LineInMiddleOfVisibleWindow);
         }
 
         [Test]
-        public void Motion_G1()
+        public void LineFromBottomOfVisibleWindow()
         {
-            _util
-                .Setup(x => x.LineOrLastToFirstNonWhitespace(FSharpOption<int>.None))
-                .Returns(CreateMotionData())
-                .Verifiable();
-            ProcessComplete("G");
-            _factory.Verify();
+            AssertMotion("L", Motion.LineFromBottomOfVisibleWindow);
         }
 
         [Test]
-        public void Motion_G2()
+        public void LineDownToFirstNonWhiteSpace()
         {
-            _util
-                .Setup(x => x.LineOrLastToFirstNonWhitespace(FSharpOption.Create(1)))
-                .Returns(CreateMotionData())
-                .Verifiable();
-            ProcessComplete("1G");
-            _factory.Verify();
+            AssertMotion("_", Motion.LineDownToFirstNonWhiteSpace);
         }
 
         [Test]
-        public void Motion_G3()
+        public void RepeatLastCharSearch()
         {
-            _util
-                .Setup(x => x.LineOrLastToFirstNonWhitespace(FSharpOption.Create(42)))
-                .Returns(CreateMotionData())
-                .Verifiable();
-            ProcessComplete("42G");
-            _factory.Verify();
+            AssertMotion(";", Motion.RepeatLastCharSearch);
+            AssertMotion(",", Motion.RepeatLastCharSearchOpposite);
         }
 
         [Test]
-        public void Motion_gg1()
+        public void SentenceForward()
         {
-            _util
-                .Setup(x => x.LineOrFirstToFirstNonWhitespace(FSharpOption<int>.None))
-                .Returns(CreateMotionData())
-                .Verifiable();
-            ProcessComplete("gg");
-            _factory.Verify();
+            AssertMotion(")", Motion.SentenceForward);
         }
 
         [Test]
-        public void Motion_gg2()
+        public void SentenceBackward()
         {
-            _util
-                .Setup(x => x.LineOrFirstToFirstNonWhitespace(FSharpOption.Create(2)))
-                .Returns(CreateMotionData())
-                .Verifiable();
-            ProcessComplete("2gg");
-            _factory.Verify();
+            AssertMotion("(", Motion.SentenceBackward);
         }
 
         [Test]
-        public void Motion_g_1()
+        public void AllSentence()
         {
-            _util
-                .Setup(x => x.LastNonWhitespaceOnLine(1))
-                .Returns(CreateMotionData())
-                .Verifiable();
-            ProcessComplete("g_");
-            _factory.Verify();
+            AssertMotion("aw", Motion.AllSentence);
         }
 
         [Test]
-        public void Motion_g_2()
+        public void ParagraphForward()
         {
-            _util
-                .Setup(x => x.LastNonWhitespaceOnLine(2))
-                .Returns(CreateMotionData())
-                .Verifiable();
-            ProcessComplete("2g_");
-            _factory.Verify();
+            AssertMotion("}", Motion.ParagraphForward);
         }
 
         [Test]
-        public void Motion_M_1()
+        public void ParagraphBackward()
         {
-            _util
-                .Setup(x => x.LineInMiddleOfVisibleWindow())
-                .Returns(CreateMotionData())
-                .Verifiable();
-            ProcessComplete("M");
-            _factory.Verify();
+            AssertMotion("{", Motion.ParagraphBackward);
         }
 
         [Test]
-        public void Motion_L_1()
+        public void SectionForwardOrOpenBrace()
         {
-            _util
-                .Setup(x => x.LineFromBottomOfVisibleWindow(FSharpOption.Create(2)))
-                .Returns(CreateMotionData())
-                .Verifiable();
-            ProcessComplete("2L");
-            _factory.Verify();
+            AssertMotion("]]", Motion.SectionForwardOrOpenBrace);
         }
 
         [Test]
-        public void Motion_L_2()
+        public void SectionForwardOrCloseBrace()
         {
-            _util
-                .Setup(x => x.LineFromBottomOfVisibleWindow(FSharpOption<int>.None))
-                .Returns(CreateMotionData())
-                .Verifiable();
-            ProcessComplete("L");
-            _factory.Verify();
+            AssertMotion("][", Motion.SectionForwardOrOpenBrace);
         }
 
         [Test]
-        public void Motion_underscore1()
+        public void SectionBackwardOrOpenBrace()
         {
-            _util
-                .Setup(x => x.LineDownToFirstNonWhitespace(0))
-                .Returns(CreateMotionData())
-                .Verifiable();
-            ProcessComplete("_");
-            _factory.Verify();
+            AssertMotion("[[", Motion.SectionBackwardOrOpenBrace);
         }
 
         [Test]
-        public void Motion_underscore2()
+        public void SectionBackwardOrCloseBrace()
         {
-            _util
-                .Setup(x => x.LineDownToFirstNonWhitespace(1))
-                .Returns(CreateMotionData())
-                .Verifiable();
-            ProcessComplete("2_");
-            _factory.Verify();
+            AssertMotion("[]", Motion.SectionBackwardOrCloseBrace);
         }
 
         [Test]
-        public void Motion_RepeatLastCharShouldErrorIfNoLastCharSearch()
+        public void QuotedString()
         {
-            _host.Setup(x => x.Beep()).Verifiable();
-            _vimData.LastCharSearch = FSharpOption<Tuple<CharSearch, char>>.None;
-            var res = Process(";", null);
-            Assert.IsTrue(res.IsError);
-            _factory.Verify();
+            AssertMotion(@"a""", Motion.QuotedString);
+            AssertMotion("a'", Motion.QuotedString);
+            AssertMotion("a`", Motion.QuotedString);
         }
 
         [Test]
-        public void Motion_RepeatLastCharForward()
+        public void QuotedStringContents1()
         {
-            _vimData.LastCharSearch = FSharpOption.Create(Tuple.Create(CharSearch.ToChar, 'c'));
-            _util
-                .Setup(x => x.CharSearch('c', 1, CharSearch.ToChar, Direction.Forward))
-                .Returns(CreateMotionDataSome())
-                .Verifiable();
-            Process(";", null);
-            _factory.Verify();
+            AssertMotion(@"i""", Motion.QuotedStringContents);
+            AssertMotion("i'", Motion.QuotedStringContents);
+            AssertMotion("i`", Motion.QuotedStringContents);
         }
 
         [Test]
-        public void Motion_RepeatLastCharForwardWithCount()
-        {
-            _vimData.LastCharSearch = FSharpOption.Create(Tuple.Create(CharSearch.ToChar, 'c'));
-            _util
-                .Setup(x => x.CharSearch('c', 3, CharSearch.ToChar, Direction.Forward))
-                .Returns(CreateMotionDataSome())
-                .Verifiable();
-            Process("3;", null);
-            _factory.Verify();
-        }
-
-        [Test]
-        public void Motion_RepeatLastCharBackward()
-        {
-            _vimData.LastCharSearch = FSharpOption.Create(Tuple.Create(CharSearch.ToChar, 'c'));
-            _util
-                .Setup(x => x.CharSearch('c', 1, CharSearch.ToChar, Direction.Backward))
-                .Returns(CreateMotionDataSome())
-                .Verifiable();
-            Process(",", null);
-            _factory.Verify();
-        }
-
-        [Test]
-        public void Motion_RepeatLastCharBackwardWithCount()
-        {
-            _vimData.LastCharSearch = FSharpOption.Create(Tuple.Create(CharSearch.ToChar, 'c'));
-            _util
-                .Setup(x => x.CharSearch('c', 3, CharSearch.ToChar, Direction.Backward))
-                .Returns(CreateMotionDataSome())
-                .Verifiable();
-            Process("3,", null);
-            _factory.Verify();
-        }
-
-        [Test]
-        public void Motion_SentenceForward1()
-        {
-            _util
-                .Setup(x => x.SentenceForward(1))
-                .Returns(CreateMotionData())
-                .Verifiable();
-            ProcessComplete(")");
-            _factory.Verify();
-        }
-
-        [Test]
-        public void Motion_SentenceForward2()
-        {
-            _util
-                .Setup(x => x.SentenceForward(2))
-                .Returns(CreateMotionData())
-                .Verifiable();
-            ProcessComplete("2)");
-            _factory.Verify();
-        }
-
-        [Test]
-        public void Motion_SentenceBackward1()
-        {
-            _util
-                .Setup(x => x.SentenceBackward(1))
-                .Returns(CreateMotionData())
-                .Verifiable();
-            ProcessComplete("(");
-            _factory.Verify();
-        }
-
-        [Test]
-        public void Motion_SentenceBackward2()
-        {
-            _util
-                .Setup(x => x.SentenceBackward(3))
-                .Returns(CreateMotionData())
-                .Verifiable();
-            ProcessComplete("3(");
-            _factory.Verify();
-        }
-
-        [Test]
-        public void Motion_SentenceForwardFull1()
-        {
-            _util
-                .Setup(x => x.SentenceFullForward(1))
-                .Returns(CreateMotionData())
-                .Verifiable();
-            ProcessComplete("as");
-            _factory.Verify();
-        }
-
-        [Test]
-        public void Motion_SentenceForwardFull2()
-        {
-            _util
-                .Setup(x => x.SentenceFullForward(3))
-                .Returns(CreateMotionData())
-                .Verifiable();
-            ProcessComplete("3as");
-            _factory.Verify();
-        }
-
-        [Test]
-        public void Motion_ParagraphForward1()
-        {
-            _util
-                .Setup(x => x.ParagraphForward(1))
-                .Returns(CreateMotionData())
-                .Verifiable();
-            ProcessComplete("}");
-            _factory.Verify();
-        }
-
-        [Test]
-        public void Motion_ParagraphForward2()
-        {
-            _util
-                .Setup(x => x.ParagraphForward(3))
-                .Returns(CreateMotionData())
-                .Verifiable();
-            ProcessComplete("3}");
-            _factory.Verify();
-        }
-
-        [Test]
-        public void Motion_ParagraphBackward1()
-        {
-            _util
-                .Setup(x => x.ParagraphBackward(1))
-                .Returns(CreateMotionData())
-                .Verifiable();
-            ProcessComplete("{");
-            _factory.Verify();
-        }
-
-        [Test]
-        public void Motion_ParagraphBackward2()
-        {
-            _util
-                .Setup(x => x.ParagraphBackward(3))
-                .Returns(CreateMotionData())
-                .Verifiable();
-            ProcessComplete("3{");
-            _factory.Verify();
-        }
-
-        [Test]
-        public void Motion_SectionForward1()
-        {
-            _util
-                .Setup(x => x.SectionForward(MotionContext.AfterOperator, 1))
-                .Returns(CreateMotionData())
-                .Verifiable();
-            ProcessComplete("]]");
-            _factory.Verify();
-        }
-
-        [Test]
-        public void Motion_SectionForward2()
-        {
-            _util
-                .Setup(x => x.SectionForward(MotionContext.Movement, 1))
-                .Returns(CreateMotionData())
-                .Verifiable();
-            ProcessComplete("][");
-            _factory.Verify();
-        }
-
-        [Test]
-        public void Motion_SectionBackwardOrOpenBrace1()
-        {
-            _util
-                .Setup(x => x.SectionBackwardOrOpenBrace(1))
-                .Returns(CreateMotionData())
-                .Verifiable();
-            ProcessComplete("[[");
-            _factory.Verify();
-        }
-
-        [Test]
-        public void Motion_SectionBackwardOrCloseBrace1()
-        {
-            _util
-                .Setup(x => x.SectionBackwardOrCloseBrace(1))
-                .Returns(CreateMotionData())
-                .Verifiable();
-            ProcessComplete("[]");
-            _factory.Verify();
-        }
-
-        [Test]
-        public void Motion_QuotedString1()
-        {
-            _util
-                .Setup(x => x.QuotedString())
-                .Returns(FSharpOption.Create(CreateMotionData()))
-                .Verifiable();
-            ProcessComplete(@"a""");
-            _factory.Verify();
-        }
-
-        [Test]
-        public void Motion_QuotedString2()
-        {
-            _util
-                .Setup(x => x.QuotedString())
-                .Returns(FSharpOption.Create(CreateMotionData()))
-                .Verifiable();
-            ProcessComplete(@"a'");
-            _factory.Verify();
-        }
-
-        [Test]
-        public void Motion_QuotedString3()
-        {
-            _util
-                .Setup(x => x.QuotedString())
-                .Returns(FSharpOption.Create(CreateMotionData()))
-                .Verifiable();
-            ProcessComplete(@"a`");
-            _factory.Verify();
-        }
-
-        [Test]
-        public void Motion_QuotedStringContents1()
-        {
-            _util
-                .Setup(x => x.QuotedStringContents())
-                .Returns(FSharpOption.Create(CreateMotionData()))
-                .Verifiable();
-            ProcessComplete(@"i""");
-            _factory.Verify();
-        }
-
-        [Test]
-        public void Motion_QuotedStringContents2()
-        {
-            _util
-                .Setup(x => x.QuotedStringContents())
-                .Returns(FSharpOption.Create(CreateMotionData()))
-                .Verifiable();
-            ProcessComplete(@"i'");
-            _factory.Verify();
-        }
-
-        [Test]
-        public void Motion_QuotedStringContents3()
-        {
-            _util
-                .Setup(x => x.QuotedStringContents())
-                .Returns(FSharpOption.Create(CreateMotionData()))
-                .Verifiable();
-            ProcessComplete(@"i`");
-            _factory.Verify();
-        }
-
-        [Test]
-        public void Motion_IncrementalSearchReverse()
+        public void IncrementalSearch_Reverse()
         {
             _textView.TextBuffer.SetText("hello world");
             _textView.MoveCaretTo(_textView.GetEndPoint().Position);
             var data = Process("?world", enter: true).AsComplete().Item1;
-            Assert.IsFalse(data.IsForward);
-            Assert.AreEqual("world", data.Span.GetText());
+            Assert.AreEqual(Motion.NewSearch("world", SearchKind.BackwardWithWrap), data.Motion);
         }
 
         [Test]
-        public void Motion_IncrementalSearch()
+        public void IncrementalSearch_Forward()
         {
             _textView.SetText("hello world", caret: 0);
             var data = Process("/world", enter: true).AsComplete().Item1;
-            Assert.IsTrue(data.IsForward);
-            Assert.AreEqual("hello ", data.Span.GetText());
+            Assert.AreEqual(Motion.NewSearch("world", SearchKind.ForwardWithWrap), data.Motion);
         }
 
         [Test]
-        public void Motion_IncrementalSearchMotionIsBackwardIfWrap()
-        {
-            _textView.SetText("hello world");
-            _textView.MoveCaretTo(_textView.GetEndPoint().Position);
-            var data = Process("/world", enter: true).AsComplete().Item1;
-            Assert.IsFalse(data.IsForward);
-            Assert.AreEqual("world", data.Span.GetText());
-        }
-
-        [Test]
-        public void Motion_IncrementalSearchForwardShouldRespectWrapScan()
+        public void IncrementalSearch_ForwardShouldRespectWrapScan()
         {
             _textView.SetText("cat dog");
             var didRun = false;
@@ -786,7 +351,7 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void Motion_IncrementalSearchForwardShouldRespectNoWrapScan()
+        public void IncrementalSearch_ForwardShouldRespectNoWrapScan()
         {
             _textView.SetText("cat dog");
             _localSettings.GlobalSettings.WrapScan = false;
@@ -801,7 +366,7 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void Motion_IncrementalSearchBackwardShouldRespectWrapScan()
+        public void IncrementalSearch_BackwardShouldRespectWrapScan()
         {
             _textView.SetText("cat dog");
             var didRun = false;
@@ -815,7 +380,7 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void Motion_IncrementalSearchBackwardShouldRespectNoWrapScan()
+        public void IncrementalSearch_BackwardShouldRespectNoWrapScan()
         {
             _textView.SetText("cat dog");
             _localSettings.GlobalSettings.WrapScan = false;
@@ -830,18 +395,16 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void Motion_LineDownToFirstNonWhitespace_ShouldAcceptBothEnters()
+        public void LineDownToFirstNonWhitespace_ShouldAcceptBothEnters()
         {
             _textView.SetText("cat\ndog\nbear");
-            _util.Setup(x => x.LineDownToFirstNonWhitespace(2)).Returns(CreateMotionData());
             Assert.IsTrue(_capture.GetOperatorMotion(KeyInputUtil.AlternateEnterKey, FSharpOption.Create(2)).IsComplete);
             Assert.IsTrue(_capture.GetOperatorMotion(KeyInputUtil.EnterKey, FSharpOption.Create(2)).IsComplete);
         }
 
         [Test]
-        public void Motion_CommandMapSupportsAlternateKeys()
+        public void CommandMapSupportsAlternateKeys()
         {
-            var set = KeyInputSet.NewOneKeyInput(KeyInputUtil.EnterKey);
             Assert.IsTrue(MapModule.TryFind(KeyInputSet.NewOneKeyInput(KeyInputUtil.AlternateEnterKey), _captureRaw.MotionCommandsMap).IsSome());
             Assert.IsTrue(MapModule.TryFind(KeyInputSet.NewOneKeyInput(KeyInputUtil.EnterKey), _captureRaw.MotionCommandsMap).IsSome());
         }

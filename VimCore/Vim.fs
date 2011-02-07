@@ -32,7 +32,7 @@ type internal VimData() =
 
     let mutable _lastSubstituteData : SubstituteData option = None
     let mutable _lastSearchData = { Text = SearchText.Pattern(StringUtil.empty); Kind = SearchKind.ForwardWithWrap; Options = SearchOptions.None }
-    let mutable _lastCharSearch : (CharSearch * char) option = None
+    let mutable _lastCharSearch : (CharSearchKind * Direction * char) option = None
     let _lastSearchChanged = Event<SearchData>()
 
     interface IVimData with 
@@ -73,8 +73,9 @@ type internal VimBufferFactory
     member x.CreateBuffer (vim:IVim) view = 
         let editOperations = _editorOperationsFactoryService.GetEditorOperations(view)
         let editOptions = _editorOptionsFactoryService.GetOptions(view)
+        let wordNav = x.CreateTextStructureNavigator view.TextBuffer WordKind.NormalWord
         let localSettings = LocalSettings(vim.Settings, Some view) :> IVimLocalSettings
-        let motionUtil = TextViewMotionUtil(view, vim.MarkMap, localSettings) :> ITextViewMotionUtil
+        let motionUtil = TextViewMotionUtil(view, vim.MarkMap, localSettings, vim.SearchService, wordNav, vim.VimData) :> ITextViewMotionUtil
         let outlining = 
             // This will return null in ITextBuffer instances where there is no IOutliningManager such
             // as TFS annotated buffers.
@@ -82,7 +83,6 @@ type internal VimBufferFactory
             if ret = null then None else Some ret
         let jumpList = JumpList(_tlcService) :> IJumpList
         let foldManager = _foldManagerFactory.GetFoldManager(view.TextBuffer)
-        let wordNav = x.CreateTextStructureNavigator view.TextBuffer WordKind.NormalWord
 
         let statusUtil = StatusUtil()
         let undoRedoOperations = 
@@ -118,14 +118,15 @@ type internal VimBufferFactory
                 vim.SearchService, 
                 statusUtil,
                 vim.VimData) :> IIncrementalSearch
-        let capture = MotionCapture(vim.VimHost, view, motionUtil, incrementalSearch, jumpList, vim.VimData, localSettings) :> IMotionCapture
+        let capture = MotionCapture(vim.VimHost, view, incrementalSearch, localSettings) :> IMotionCapture
         let bufferRaw = 
             VimBuffer( 
                 vim,
                 view,
                 jumpList,
                 localSettings,
-                incrementalSearch)
+                incrementalSearch,
+                motionUtil)
         let buffer = bufferRaw :> IVimBuffer
 
         /// Create the selection change tracker so that it will begin to monitor
@@ -138,7 +139,7 @@ type internal VimBufferFactory
 
         statusUtil.VimBuffer <- Some bufferRaw
 
-        let createCommandRunner() = CommandRunner (view, vim.RegisterMap, capture,statusUtil) :>ICommandRunner
+        let createCommandRunner() = CommandRunner (view, vim.RegisterMap, capture, motionUtil, statusUtil) :>ICommandRunner
         let broker = _completionWindowBrokerFactoryService.CreateDisplayWindowBroker view
         let bufferOptions = _editorOptionsFactoryService.GetOptions(view.TextBuffer)
         let normalOpts = Modes.Normal.DefaultOperations(operationsData) :> Vim.Modes.Normal.IOperations

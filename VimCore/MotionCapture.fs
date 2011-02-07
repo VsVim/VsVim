@@ -9,7 +9,6 @@ type internal MotionCapture
         _host : IVimHost,
         _textView : ITextView,
         _incrementalSearch : IIncrementalSearch,
-        _jumpList : IJumpList,
         _settings : IVimLocalSettings) = 
 
     let _search = _incrementalSearch.SearchService
@@ -39,7 +38,7 @@ type internal MotionCapture
         let rec inner (ki:KeyInput) = 
             match _incrementalSearch.Process ki with
             | SearchComplete(searchData, searchResult) ->
-                let motion = Motion.Search (searchData.Text.RawText, direction)
+                let motion = Motion.Search (searchData.Text.RawText, kind)
                 let data = { Motion = motion; MotionArgument = motionArgument }
                 MotionResult.Complete (data, None)
             | SearchNotStarted -> MotionResult.Cancelled
@@ -274,7 +273,7 @@ type internal MotionCapture
                 yield (
                     ";", 
                     MotionFlags.CursorMovement,
-                    Motion.RepeatLastCharSearch Direction.Forward)
+                    Motion.RepeatLastCharSearch)
                 yield (
                     "%",
                     MotionFlags.CursorMovement,
@@ -282,7 +281,7 @@ type internal MotionCapture
                 yield (
                     ",", 
                     MotionFlags.CursorMovement,
-                    Motion.RepeatLastCharSearch Direction.Backward)
+                    Motion.RepeatLastCharSearchOpposite)
                 yield ( 
                     "gg", 
                     MotionFlags.CursorMovement,

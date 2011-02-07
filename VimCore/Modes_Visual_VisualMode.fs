@@ -80,7 +80,7 @@ type internal VisualMode
                 x.EndExplicitMove()
                 res
 
-        let factory = Vim.Modes.CommandFactory(_operations, _capture, _buffer.IncrementalSearch, _buffer.JumpList, _buffer.Settings)
+        let factory = Vim.Modes.CommandFactory(_operations, _capture, _buffer.TextViewMotionUtil, _buffer.JumpList, _buffer.Settings)
         factory.CreateMovementCommands()
         |> Seq.append (factory.CreateEditCommandsForVisualMode _visualKind)
         |> Seq.map (fun (command) ->
