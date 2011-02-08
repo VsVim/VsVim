@@ -505,26 +505,6 @@ type internal NormalMode
                     ModeSwitch.NoSwitch,
                     fun count _ -> _operations.JumpPrevious count)
                 yield (
-                    "<C-w><C-j>", 
-                    CommandFlags.Movement, 
-                    ModeSwitch.NoSwitch,
-                    fun _ _ -> _bufferData.Vim.VimHost.MoveViewDown(this.TextView))
-                yield (
-                    "<C-w>j", 
-                    CommandFlags.Movement, 
-                    ModeSwitch.NoSwitch,
-                    fun _ _ -> _bufferData.Vim.VimHost.MoveViewDown(this.TextView))
-                yield (
-                    "<C-w><C-k>", 
-                    CommandFlags.Movement, 
-                    ModeSwitch.NoSwitch,
-                    fun _ _ -> _bufferData.Vim.VimHost.MoveViewUp(this.TextView))
-                yield (
-                    "<C-w>k", 
-                    CommandFlags.Movement, 
-                    ModeSwitch.NoSwitch,
-                    fun _ _ -> _bufferData.Vim.VimHost.MoveViewUp(this.TextView))
-                yield (
                     "z<Enter>", 
                     CommandFlags.Movement, 
                     ModeSwitch.NoSwitch,
@@ -676,6 +656,52 @@ type internal NormalMode
                         let line = TextViewUtil.GetCaretLine _textView
                         let span = EditSpan.Single (line.Extent)
                         _operations.ChangeLetterRot13 span)
+                yield (
+                    ["<C-w><C-j>"; "<C-w>j"],
+                    CommandFlags.Movement, 
+                    ModeSwitch.NoSwitch,
+                    fun _ _ -> _bufferData.Vim.VimHost.MoveViewDown this.TextView)
+                yield (
+                    ["<C-w><C-k>"; "<C-w>k"],
+                    CommandFlags.None, 
+                    ModeSwitch.NoSwitch,
+                    fun _ _ -> _bufferData.Vim.VimHost.MoveViewUp this.TextView)
+                yield (
+                    ["<C-w><C-l>"; "<C-w>l"],
+                    CommandFlags.None, 
+                    ModeSwitch.NoSwitch,
+                    fun _ _ -> _bufferData.Vim.VimHost.MoveViewRight this.TextView)
+                yield (
+                    ["<C-w><C-h>"; "<C-w>h"],
+                    CommandFlags.None, 
+                    ModeSwitch.NoSwitch,
+                    fun _ _ -> _bufferData.Vim.VimHost.MoveViewLeft this.TextView)
+                yield (
+                    ["<C-w><C-h>"; "<C-w>h"],
+                    CommandFlags.None, 
+                    ModeSwitch.NoSwitch,
+                    fun _ _ -> _bufferData.Vim.VimHost.MoveViewLeft this.TextView)
+                yield (
+                    ["<C-w>s"; "<C-w><C-s>"],
+                    CommandFlags.None,
+                    ModeSwitch.NoSwitch,
+                    fun _ _ -> 
+                        match _bufferData.Vim.VimHost.SplitViewHorizontally this.TextView with
+                        | HostResult.Success -> ()
+                        | HostResult.Error _ -> _operations.Beep())
+                yield (
+                    ["<C-w>v"; "<C-w><C-v>"],
+                    CommandFlags.None,
+                    ModeSwitch.NoSwitch,
+                    fun _ _ -> 
+                        match _bufferData.Vim.VimHost.SplitViewVertically this.TextView with
+                        | HostResult.Success -> ()
+                        | HostResult.Error _ -> _operations.Beep())
+                yield (
+                    ["<C-w>gf"; "<C-w><C-g><C-f>"],
+                    CommandFlags.Special, 
+                    ModeSwitch.NoSwitch,
+                    fun _ _ -> _operations.GoToFileInNewWindow())
             } |> Seq.map (fun (names, kind, switch, func) -> 
                 names |> Seq.map (fun str -> (str, kind, func, CommandResult.Completed switch)))
               |> Seq.concat

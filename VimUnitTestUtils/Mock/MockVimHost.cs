@@ -75,7 +75,7 @@ namespace Vim.UnitTest.Mock
             throw new NotImplementedException();
         }
 
-        void IVimHost.SplitView(ITextView textView)
+        HostResult IVimHost.SplitViewHorizontally(ITextView textView)
         {
             throw new NotImplementedException();
         }
@@ -120,7 +120,7 @@ namespace Vim.UnitTest.Mock
             return false;
         }
 
-        HostResult IVimHost.LoadFileIntoExisting(string filePath, ITextBuffer textBuffer)
+        HostResult IVimHost.LoadFileIntoExistingWindow(string filePath, ITextBuffer textBuffer)
         {
             return HostResult.Success;
         }
@@ -137,6 +137,29 @@ namespace Vim.UnitTest.Mock
         }
 
         void IVimHost.GoToTab(int index)
+        {
+            throw new NotImplementedException();
+        }
+
+
+
+        void IVimHost.MoveViewLeft(ITextView value)
+        {
+            throw new NotImplementedException();
+        }
+
+        void IVimHost.MoveViewRight(ITextView value)
+        {
+            throw new NotImplementedException();
+        }
+
+        HostResult IVimHost.SplitViewVertically(ITextView value)
+        {
+            throw new NotImplementedException();
+        }
+
+
+        HostResult IVimHost.LoadFileIntoNewWindow(string filePath)
         {
             throw new NotImplementedException();
         }

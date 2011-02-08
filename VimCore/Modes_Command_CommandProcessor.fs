@@ -274,7 +274,7 @@ type internal CommandProcessor
         elif not hasBang && _host.IsDirty _textBuffer then
             _statusUtil.OnError Resources.Common_NoWriteSinceLastChange
         else
-            match _host.LoadFileIntoExisting name _textBuffer with
+            match _host.LoadFileIntoExistingWindow name _textBuffer with
             | HostResult.Success -> ()
             | HostResult.Error(msg) -> _statusUtil.OnError(msg)
 
@@ -434,7 +434,9 @@ type internal CommandProcessor
 
     /// Split the given view into 2
     member x.ProcessSplit _ _ _ =
-        _buffer.Vim.VimHost.SplitView _buffer.TextView
+        match _buffer.Vim.VimHost.SplitViewHorizontally _buffer.TextView with
+        | HostResult.Success -> ()
+        | HostResult.Error msg -> _statusUtil.OnError msg
 
     /// Process the :substitute and :& command. 
     member x.ProcessSubstitute rest range _ = 

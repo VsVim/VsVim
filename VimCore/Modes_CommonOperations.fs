@@ -990,9 +990,17 @@ type internal CommonOperations ( _data : OperationsData ) =
         member x.GoToFile () = 
             x.CheckDirty (fun () ->
                 let text = x.WordUnderCursorOrEmpty 
-                match _host.LoadFileIntoExisting text _textBuffer with
+                match _host.LoadFileIntoExistingWindow text _textBuffer with
                 | HostResult.Success -> ()
                 | HostResult.Error(_) -> _statusUtil.OnError (Resources.NormalMode_CantFindFile text))
+
+        /// Look for a word under the cursor and go to the specified file in a new window.  No need to 
+        /// check for dirty since we are opening a new window
+        member x.GoToFileInNewWindow () =
+            let text = x.WordUnderCursorOrEmpty 
+            match _host.LoadFileIntoNewWindow text with
+            | HostResult.Success -> ()
+            | HostResult.Error(_) -> _statusUtil.OnError (Resources.NormalMode_CantFindFile text)
 
         member x.InsertLineBelow () =
             let point = TextViewUtil.GetCaretPoint _textView
