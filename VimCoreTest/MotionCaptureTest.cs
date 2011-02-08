@@ -64,11 +64,6 @@ namespace VimCore.UnitTest
             return res;
         }
 
-        private void ProcessComplete(string input, int? count = null)
-        {
-            Assert.IsTrue(Process(input, count).IsComplete);
-        }
-
         private void AssertMotion(string text, Motion motion)
         {
             var result = Process(text);
@@ -409,6 +404,20 @@ namespace VimCore.UnitTest
         {
             Assert.IsTrue(MapModule.TryFind(KeyInputSet.NewOneKeyInput(KeyInputUtil.AlternateEnterKey), _captureRaw.MotionCommandsMap).IsSome());
             Assert.IsTrue(MapModule.TryFind(KeyInputSet.NewOneKeyInput(KeyInputUtil.EnterKey), _captureRaw.MotionCommandsMap).IsSome());
+        }
+
+        [Test]
+        public void Mark()
+        {
+            AssertMotion("`a", Motion.NewMark('a'));
+            AssertMotion("`b", Motion.NewMark('b'));
+        }
+
+        [Test]
+        public void MarkLine()
+        {
+            AssertMotion("'a", Motion.NewMarkLine('a'));
+            AssertMotion("'b", Motion.NewMarkLine('b'));
         }
     }
 }

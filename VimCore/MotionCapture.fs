@@ -315,7 +315,7 @@ type internal MotionCapture
                 yield (
                     "'",
                     MotionFlags.None,   // Cursor movement has different semantics than the motion
-                    GetChar (fun c -> Motion.Mark c))
+                    GetChar (fun c -> Motion.MarkLine c))
                 yield (
                     "`",
                     MotionFlags.None,   // Cursor movement has different semantics than the motion

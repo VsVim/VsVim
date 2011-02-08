@@ -1187,23 +1187,28 @@ namespace VimCore.UnitTest
             Assert.AreEqual(_textView.GetLineRange(0, 1).ExtentIncludingLineBreak, data.Span);
         }
 
+        /// <summary>
+        /// At the end of the ITextBuffer the span should return an empty span.  This can be 
+        /// repro'd be setting ve=onemore and trying a 'y(' operation past the last character
+        /// in the buffer
+        /// </summary>
         [Test]
-        [Description("End of buffer should grab the last character")]
-        public void ParagraphForward1()
+        public void ParagraphForward_EndPoint()
         {
             Create("dog", "pig", "cat");
             _textView.MoveCaretTo(_textView.TextSnapshot.GetEndPoint());
             var data = _motionUtil.ParagraphForward(1);
-            Assert.AreEqual("t", data.Span.GetText());
+            Assert.AreEqual("", data.Span.GetText());
         }
 
+        /// <summary>
+        /// A forward paragraph from the last character should return the char
+        /// </summary>
         [Test]
-        [Description("End of buffer should grab the last character even with VirtualEdit=onemore")]
-        public void ParagraphForward2()
+        public void ParagraphForward_LastChar()
         {
             Create("dog", "pig", "cat");
-            _settings.VirtualEdit = "onemore";
-            _textView.MoveCaretTo(_textView.TextSnapshot.GetEndPoint());
+            _textView.MoveCaretTo(_textView.TextSnapshot.GetEndPoint().Subtract(1));
             var data = _motionUtil.ParagraphForward(1);
             Assert.AreEqual("t", data.Span.GetText());
         }

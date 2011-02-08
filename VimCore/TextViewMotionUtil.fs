@@ -809,7 +809,7 @@ type internal TextViewMotionUtil
         let caretPoint = TextViewUtil.GetCaretPoint _textView 
         let span = 
             let startPoint = SnapshotUtil.GetStartPoint caretPoint.Snapshot
-            MotionUtil.GetParagraphs caretPoint Direction.Forward 
+            MotionUtil.GetParagraphs startPoint Direction.Forward 
             |> Seq.skipWhile (fun span -> not (span.Contains caretPoint))
             |> Seq.truncate count
             |> SnapshotSpanUtil.CreateCombined
