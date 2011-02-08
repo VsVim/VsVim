@@ -41,6 +41,16 @@ type KeyInput
         | VimKey.Number7 -> true
         | VimKey.Number8 -> true
         | VimKey.Number9 -> true
+        | VimKey.Keypad0 -> true
+        | VimKey.Keypad1 -> true
+        | VimKey.Keypad2 -> true
+        | VimKey.Keypad3 -> true
+        | VimKey.Keypad4 -> true
+        | VimKey.Keypad5 -> true
+        | VimKey.Keypad6 -> true
+        | VimKey.Keypad7 -> true
+        | VimKey.Keypad8 -> true
+        | VimKey.Keypad9 -> true
         | _ -> false
 
     /// Is this an arrow key?
