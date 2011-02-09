@@ -17,12 +17,12 @@ type internal MotionCapture
     let GetChar func motionArgument = 
         let inner ki =
             if ki = KeyInputUtil.EscapeKey then 
-                MotionResult.Cancelled
+                MotionBindResult.Cancelled
             else 
                 let motion = func ki.Char
                 let data = { Motion = motion; MotionArgument = motionArgument }
-                MotionResult.Complete (data, None)
-        MotionResult.NeedMoreInput (Some KeyRemapMode.Language, inner)
+                MotionBindResult.Complete (data, None)
+        MotionBindResult.NeedMoreInput (Some KeyRemapMode.Language, inner)
 
     /// Handles incremental searches (/ and ?)
     let IncrementalSearch direction motionArgument =
@@ -40,12 +40,12 @@ type internal MotionCapture
             | SearchComplete(searchData, searchResult) ->
                 let motion = Motion.Search searchData
                 let data = { Motion = motion; MotionArgument = motionArgument }
-                MotionResult.Complete (data, None)
-            | SearchNotStarted -> MotionResult.Cancelled
-            | SearchCancelled -> MotionResult.Cancelled
-            | SearchNeedMore ->  MotionResult.NeedMoreInput (Some KeyRemapMode.Command, inner)
+                MotionBindResult.Complete (data, None)
+            | SearchNotStarted -> MotionBindResult.Cancelled
+            | SearchCancelled -> MotionBindResult.Cancelled
+            | SearchNeedMore ->  MotionBindResult.NeedMoreInput (Some KeyRemapMode.Command, inner)
         _incrementalSearch.Begin kind
-        MotionResult.NeedMoreInput (Some KeyRemapMode.Command, inner)
+        MotionBindResult.NeedMoreInput (Some KeyRemapMode.Command, inner)
 
     let SimpleMotions =  
         let motionSeq : (string * MotionFlags * Motion) seq = 
@@ -294,7 +294,7 @@ type internal MotionCapture
             SimpleMotionCommand(name, flags, func)  )
     
     let ComplexMotions = 
-        let motionSeq : (string * MotionFlags * (MotionArgument -> MotionResult)) seq = 
+        let motionSeq : (string * MotionFlags * (MotionArgument -> MotionBindResult)) seq = 
             seq {
                 yield (
                     "f", 
@@ -349,7 +349,7 @@ type internal MotionCapture
         let rec inner (previousName : KeyInputSet) (ki : KeyInput) =
             if ki = KeyInputUtil.EscapeKey then 
                 // User hit escape so abandon the motion
-                MotionResult.Cancelled 
+                MotionBindResult.Cancelled 
             else
                 let name = previousName.Add ki
                 match Map.tryFind name MotionCommandsMap with
@@ -359,32 +359,32 @@ type internal MotionCapture
                         // Simple motions don't need any extra information so we can 
                         // return them directly
                         let data = { Motion = motion; MotionArgument = arg }
-                        MotionResult.Complete  (data, None)
+                        MotionBindResult.Complete  (data, None)
                     | ComplexMotionCommand(_, _, func) -> 
                         // Complex motions need further input so delegate off
                         func arg
                 | None -> 
                     let res = MotionCommandsMap |> Seq.filter (fun pair -> pair.Key.StartsWith name) 
-                    if Seq.isEmpty res then MotionResult.Error Resources.MotionCapture_InvalidMotion
-                    else MotionResult.NeedMoreInput (None, inner name)
+                    if Seq.isEmpty res then MotionBindResult.Error Resources.MotionCapture_InvalidMotion
+                    else MotionBindResult.NeedMoreInput (None, inner name)
         inner Empty ki
         
     /// Wait for the completion of the motion count
     member x.WaitforCount ki arg =
         let rec inner (processFunc: KeyInput->CountResult) (ki:KeyInput)  =               
             if ki = KeyInputUtil.EscapeKey then 
-                MotionResult.Cancelled 
+                MotionBindResult.Cancelled 
             else
                 match processFunc ki with 
                 | CountResult.Complete(count,nextKi) -> 
                     let arg = {arg with MotionCount=Some count}
                     x.WaitForMotionName arg nextKi
-                | NeedMore(nextFunc) -> MotionResult.NeedMoreInput (None, inner nextFunc)
+                | NeedMore(nextFunc) -> MotionBindResult.NeedMoreInput (None, inner nextFunc)
         inner (CountCapture.Process) ki
 
     member x.GetOperatorMotion (ki : KeyInput) operatorCountOpt =
         let arg = { MotionContext = MotionContext.AfterOperator; OperatorCount = operatorCountOpt; MotionCount=None }
-        if ki = KeyInputUtil.EscapeKey then MotionResult.Cancelled
+        if ki = KeyInputUtil.EscapeKey then MotionBindResult.Cancelled
         elif ki.IsDigit && ki.Char <> '0' then x.WaitforCount ki arg
         else x.WaitForMotionName arg ki
 

@@ -167,7 +167,7 @@ namespace Vim.UnitTest
             return CreateMotionCommand(name, (count, reg, motionData) => { });
         }
 
-        internal static Command CreateMotionCommand(string name, Action<FSharpOption<int>, Register, MotionData> del)
+        internal static Command CreateMotionCommand(string name, Action<FSharpOption<int>, Register, MotionResult> del)
         {
             return CreateMotionCommand(
                 name,
@@ -178,7 +178,7 @@ namespace Vim.UnitTest
                 });
         }
 
-        internal static Command CreateMotionCommand(string name, Func<FSharpOption<int>, Register, MotionData, CommandResult> func)
+        internal static Command CreateMotionCommand(string name, Func<FSharpOption<int>, Register, MotionResult, CommandResult> func)
         {
             var fsharpFunc = func.ToFSharpFunc();
             var list = name.Select(KeyInputUtil.CharToKeyInput).ToFSharpList();
@@ -222,13 +222,13 @@ namespace Vim.UnitTest
             Command command,
             Register register,
             int? count = null,
-            MotionRunData motionRunData = null,
+            MotionData motionRunData = null,
             VisualSpan visualRunData = null)
         {
             var countOpt = count != null ? FSharpOption.Create(count.Value) : FSharpOption<int>.None;
             var motion = motionRunData != null
                 ? FSharpOption.Create(motionRunData)
-                : FSharpOption<MotionRunData>.None;
+                : FSharpOption<MotionData>.None;
             var visual = visualRunData != null
                 ? FSharpOption.Create(visualRunData)
                 : FSharpOption<VisualSpan>.None;
@@ -240,19 +240,19 @@ namespace Vim.UnitTest
                 visual);
         }
 
-        internal static MotionRunData CreateMotionRunData(
+        internal static MotionData CreateMotionData(
             Motion motion,
             int count)
         {
-            return CreateMotionRunData(motion, new MotionArgument(MotionContext.AfterOperator, FSharpOption.Create(count), FSharpOption<int>.None));
+            return CreateMotionData(motion, new MotionArgument(MotionContext.AfterOperator, FSharpOption.Create(count), FSharpOption<int>.None));
         }
 
-        internal static MotionRunData CreateMotionRunData(
+        internal static MotionData CreateMotionData(
             Motion motion,
             MotionArgument argument = null)
         {
             argument = argument ?? new MotionArgument(MotionContext.AfterOperator, FSharpOption<int>.None, FSharpOption<int>.None);
-            return new MotionRunData(motion, argument);
+            return new MotionData(motion, argument);
         }
 
         internal static VisualSpan CreateVisualSpanSingle(
@@ -347,14 +347,14 @@ namespace Vim.UnitTest
             return SearchProcessResult.NewSearchComplete(data, SearchResult.SearchNotFound);
         }
 
-        internal static MotionData CreateMotionData(
+        internal static MotionResult CreateMotionResult(
             SnapshotSpan span,
             bool isForward,
             MotionKind motionKind,
             OperationKind operationKind,
             int? column = null)
         {
-            return CreateMotionData(
+            return CreateMotionResult(
                 span: span,
                 isForward: isForward,
                 isAnyWord: false,
@@ -363,7 +363,7 @@ namespace Vim.UnitTest
                 column: column);
         }
 
-        internal static MotionData CreateMotionData(
+        internal static MotionResult CreateMotionResult(
             SnapshotSpan span,
             bool isForward = true,
             bool isAnyWord = false,
@@ -374,7 +374,7 @@ namespace Vim.UnitTest
             motionKind = motionKind ?? MotionKind.Inclusive;
             operationKind = operationKind ?? OperationKind.CharacterWise;
             var col = column.HasValue ? FSharpOption.Create(column.Value) : FSharpOption<int>.None;
-            return new MotionData(span, isForward, isAnyWord, motionKind, operationKind, col);
+            return new MotionResult(span, isForward, isAnyWord, motionKind, operationKind, col);
         }
 
     }

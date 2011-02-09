@@ -40,7 +40,7 @@ namespace VimCore.UnitTest
             _capture = _captureRaw;
         }
 
-        internal MotionResult Process(string input, int? count = 1, bool enter = false)
+        internal MotionBindResult Process(string input, int? count = 1, bool enter = false)
         {
             var realCount = count.HasValue
                 ? FSharpOption.Create(count.Value)
@@ -51,13 +51,13 @@ namespace VimCore.UnitTest
             foreach (var cur in input.Skip(1))
             {
                 Assert.IsTrue(res.IsNeedMoreInput);
-                var needMore = (MotionResult.NeedMoreInput)res;
+                var needMore = (MotionBindResult.NeedMoreInput)res;
                 res = needMore.Item2.Invoke(KeyInputUtil.CharToKeyInput(cur));
             }
 
             if (enter)
             {
-                var needMore = (MotionResult.NeedMoreInput)res;
+                var needMore = (MotionBindResult.NeedMoreInput)res;
                 res = needMore.Item2.Invoke(KeyInputUtil.EnterKey);
             }
 
@@ -83,10 +83,10 @@ namespace VimCore.UnitTest
             AssertMotion(KeyInputUtil.VimKeyToKeyInput(key), motion);
         }
 
-        private static MotionData CreateMotionData()
+        private static MotionResult CreateMotionResult()
         {
             var point = MockObjectFactory.CreateSnapshotPoint(42);
-            return VimUtil.CreateMotionData(
+            return VimUtil.CreateMotionResult(
                 new SnapshotSpan(point, point),
                 true,
                 MotionKind.Inclusive,
@@ -94,9 +94,9 @@ namespace VimCore.UnitTest
                 42);
         }
 
-        private static FSharpOption<MotionData> CreateMotionDataSome()
+        private static FSharpOption<MotionResult> CreateMotionResultSome()
         {
-            return FSharpOption.Create(CreateMotionData());
+            return FSharpOption.Create(CreateMotionResult());
         }
 
         [Test]

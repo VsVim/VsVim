@@ -514,8 +514,8 @@ type internal TextViewMotionUtil
         if line1.LineNumber <= line2.LineNumber then SnapshotSpan(line1.Start, line2.End),true
         else SnapshotSpan(line2.Start, line1.End),false
 
-    /// Apply the startofline option to the given MotionData
-    member x.ApplyStartOfLineOption (motionData:MotionData) =
+    /// Apply the startofline option to the given MotionResult
+    member x.ApplyStartOfLineOption (motionData:MotionResult) =
         if not _settings.StartOfLine then motionData 
         else
             let endLine = 
@@ -940,7 +940,7 @@ type internal TextViewMotionUtil
     member x.AllWord kind count = x.GetAllWord kind count
     member x.EndOfWord kind count = 
 
-        // Create the appropriate MotionData structure with the provided SnapshotSpan
+        // Create the appropriate MotionResult structure with the provided SnapshotSpan
         let withSpan span = {
             Span = span 
             IsForward = true 
@@ -1141,7 +1141,7 @@ type internal TextViewMotionUtil
         let span = 
             if lines.Length = 0 then caretLine.Extent
             else  
-                let count = (CommandUtil.CountOrDefault countOpt) 
+                let count = (CommandUtil2.CountOrDefault countOpt) 
                 let count = min count lines.Length
                 let startLine = lines.Head
                 SnapshotPointUtil.GetLineRangeSpan startLine.Start count
@@ -1207,8 +1207,8 @@ type internal TextViewMotionUtil
                 MotionKind = MotionKind.Exclusive 
                 OperationKind = OperationKind.CharacterWise 
                 Column = None}
-        | PointKind.EndPoint(_,point) -> MotionData.CreateEmptyFromPoint point MotionKind.Inclusive OperationKind.CharacterWise
-        | PointKind.ZeroLength(point) -> MotionData.CreateEmptyFromPoint point MotionKind.Inclusive OperationKind.CharacterWise
+        | PointKind.EndPoint(_,point) -> MotionResult.CreateEmptyFromPoint point MotionKind.Inclusive OperationKind.CharacterWise
+        | PointKind.ZeroLength(point) -> MotionResult.CreateEmptyFromPoint point MotionKind.Inclusive OperationKind.CharacterWise
 
     member x.SentenceBackward count = 
         let caretPoint = TextViewUtil.GetCaretPoint _textView
@@ -1341,7 +1341,7 @@ type internal TextViewMotionUtil
         | None -> 
             None
         | Some span ->
-            // Create the MotionData for the provided MotionArgument and the 
+            // Create the MotionResult for the provided MotionArgument and the 
             // start and end points of the search.  Need to be careful because
             // the start and end point can be forward or reverse
             let endPoint = span.Start

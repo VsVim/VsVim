@@ -749,7 +749,7 @@ type internal CommonOperations ( _data : OperationsData ) =
             | Some(outlining) -> outlining.ExpandAll(SnapshotSpan(point,0), fun _ -> true) |> ignore
 
         member x.MoveCaretToPoint point =  TextViewUtil.MoveCaretToPoint _textView point 
-        member x.MoveCaretToMotionData (data:MotionData) =
+        member x.MoveCaretToMotionResult (data:MotionResult) =
 
             // Reduce the Span to the line we care about 
             let line = 
@@ -852,7 +852,7 @@ type internal CommonOperations ( _data : OperationsData ) =
         member x.MoveToNextOccuranceOfPartialWordAtCursor kind count = x.MoveToNextWordCore kind count false
         member x.MoveToNextOccuranceOfLastSearch count isReverse = x.MoveToNextOccuranceOfLastSearchCore count isReverse
 
-        member x.ChangeSpan (data:MotionData) =
+        member x.ChangeSpan (data:MotionResult) =
             
             // The ChangeSpan is largely an implementation of the 'c' command.  This command
             // has legacy / special case behavior for forward word motions.  It will not delete

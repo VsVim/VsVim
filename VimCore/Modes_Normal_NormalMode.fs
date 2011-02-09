@@ -131,7 +131,7 @@ type internal NormalMode
                     /// Repeat a text buffer edit.  
                     let repeatTextBufferChange change = 
                         match change with 
-                        | TextChange.Insert(text) -> _operations.InsertText text (CommandUtil.CountOrDefault countOpt)
+                        | TextChange.Insert(text) -> _operations.InsertText text (CommandUtil2.CountOrDefault countOpt)
                         | TextChange.Delete(count) -> 
                             let caretPoint,caretLine = TextViewUtil.GetCaretPointAndLine this.TextView
                             let length = min count (caretLine.EndIncludingLineBreak.Position - caretPoint.Position)
@@ -162,7 +162,7 @@ type internal NormalMode
     
                             // Repeating a motion based command is a bit more complex because we need to
                             // first re-run the motion to get the span to be processed
-                            match data.MotionRunData with
+                            match data.MotionData with
                             | None -> _statusUtil.OnError (Resources.NormalMode_RepeatNotSupportedOnCommand commandName)
                             | Some motionRunData ->
     
@@ -193,13 +193,13 @@ type internal NormalMode
         let name = KeyInputUtil.CharToKeyInput '~' |> OneKeyInput
         let command = 
             if _bufferData.Settings.GlobalSettings.TildeOp then
-                let func count reg (data:MotionData) = 
+                let func count reg (data:MotionResult) = 
                     _operations.ChangeLetterCase data.OperationEditSpan
                     CommandResult.Completed ModeSwitch.NoSwitch
                 MotionCommand(name, CommandFlags.Repeatable, func)
             else
                 let func count _ = 
-                    let count = CommandUtil.CountOrDefault count
+                    let count = CommandUtil2.CountOrDefault count
                     _operations.ChangeLetterCaseAtCursor count
                     CommandResult.Completed ModeSwitch.NoSwitch
                 SimpleCommand(name, CommandFlags.Repeatable, func)
@@ -229,7 +229,7 @@ type internal NormalMode
         |> Seq.map (fun (str,kind, func) -> 
             let name = KeyNotationUtil.StringToKeyInput str |> OneKeyInput
             let func2 count reg = 
-                let count = CommandUtil.CountOrDefault count
+                let count = CommandUtil2.CountOrDefault count
                 func count reg 
             LongCommand(name, kind, func2))
 
@@ -684,7 +684,7 @@ type internal NormalMode
             |> Seq.map(fun (str,kind,func,result) -> 
                 let name = KeyNotationUtil.StringToKeyInputSet str
                 let func2 count reg =
-                    let count = CommandUtil.CountOrDefault count
+                    let count = CommandUtil2.CountOrDefault count
                     func count reg
                     result
                 SimpleCommand(name, kind, func2))
@@ -727,7 +727,7 @@ type internal NormalMode
     /// Create all motion commands
     member this.CreateMotionCommands() =
     
-        let complex : seq<string * CommandFlags * ModeKind option * (int -> Register -> MotionData -> unit)> =
+        let complex : seq<string * CommandFlags * ModeKind option * (int -> Register -> MotionResult -> unit)> =
             seq {
                 yield (
                     "c", 
@@ -789,7 +789,7 @@ type internal NormalMode
         |> Seq.map (fun (str, extraFlags, modeKindOpt, func) ->
             let name = KeyNotationUtil.StringToKeyInputSet str
             let func2 count reg data =
-                let count = CommandUtil.CountOrDefault count
+                let count = CommandUtil2.CountOrDefault count
                 func count reg data
                 match modeKindOpt with
                 | None -> CommandResult.Completed ModeSwitch.NoSwitch

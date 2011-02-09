@@ -36,13 +36,13 @@ namespace Vim.UnitTest
 
         #endregion
 
-        #region MotionResult
+        #region MotionBindResult
 
 
-        public static MotionResult.Complete AsComplete(this MotionResult res)
+        public static MotionBindResult.Complete AsComplete(this MotionBindResult res)
         {
             Assert.IsTrue(res.IsComplete);
-            return (MotionResult.Complete)res;
+            return (MotionBindResult.Complete)res;
         }
 
         #endregion

@@ -178,7 +178,7 @@ type internal VisualMode
                     | None -> ModeSwitch.SwitchPreviousMode
                     | Some(switch) -> switch
                 let func2 count reg = 
-                    let count = CommandUtil.CountOrDefault count
+                    let count = CommandUtil2.CountOrDefault count
                     func count reg 
                     CommandResult.Completed modeSwitch
                 Command.SimpleCommand (kiSet, flags, func2) )
@@ -418,7 +418,7 @@ type internal VisualMode
                         | None -> ModeSwitch.SwitchPreviousMode
                         | Some(kind) -> ModeSwitch.SwitchMode kind
                     let func2 count reg visualSpan = 
-                        let count = CommandUtil.CountOrDefault count
+                        let count = CommandUtil2.CountOrDefault count
                         runVisualCommand funcNormal funcBlock count reg visualSpan
                         CommandResult.Completed modeSwitch
     

@@ -1414,244 +1414,244 @@ namespace VimCore.UnitTest
 
         [Test]
         [Description("Inclusive motions need to put the caret on End-1 in most cases.  See e as an example of why")]
-        public void MoveCaretToMotionData1()
+        public void MoveCaretToMotionResult1()
         {
             Create("foo", "bar", "baz");
             _editorOperations.Setup(x => x.ResetSelection());
-            var data = VimUtil.CreateMotionData(
+            var data = VimUtil.CreateMotionResult(
                 new SnapshotSpan(_textBuffer.CurrentSnapshot, 1, 2),
                 true,
                 MotionKind.Inclusive,
                 OperationKind.CharacterWise);
-            _operations.MoveCaretToMotionData(data);
+            _operations.MoveCaretToMotionResult(data);
             Assert.AreEqual(2, _textView.GetCaretPoint().Position);
         }
 
         [Test]
-        public void MoveCaretToMotionData2()
+        public void MoveCaretToMotionResult2()
         {
             Create("foo", "bar", "baz");
             _editorOperations.Setup(x => x.ResetSelection());
-            var data = VimUtil.CreateMotionData(
+            var data = VimUtil.CreateMotionResult(
                 new SnapshotSpan(_textBuffer.CurrentSnapshot, 0, 1),
                 true,
                 MotionKind.Inclusive,
                 OperationKind.CharacterWise);
-            _operations.MoveCaretToMotionData(data);
+            _operations.MoveCaretToMotionResult(data);
             Assert.AreEqual(0, _textView.GetCaretPoint().Position);
         }
 
         [Test]
-        public void MoveCaretToMotionData3()
+        public void MoveCaretToMotionResult3()
         {
             Create("foo", "bar", "baz");
             _editorOperations.Setup(x => x.ResetSelection());
-            var data = VimUtil.CreateMotionData(
+            var data = VimUtil.CreateMotionResult(
                 new SnapshotSpan(_textBuffer.CurrentSnapshot, 0, 0),
                 true,
                 MotionKind.Inclusive,
                 OperationKind.CharacterWise);
-            _operations.MoveCaretToMotionData(data);
+            _operations.MoveCaretToMotionResult(data);
             Assert.AreEqual(0, _textView.GetCaretPoint().Position);
         }
 
         [Test]
-        public void MoveCaretToMotionData4()
+        public void MoveCaretToMotionResult4()
         {
             Create("foo", "bar", "baz");
             _editorOperations.Setup(x => x.ResetSelection());
-            var data = VimUtil.CreateMotionData(
+            var data = VimUtil.CreateMotionResult(
                 new SnapshotSpan(_textBuffer.CurrentSnapshot, 0, 3),
                 false,
                 MotionKind.Inclusive,
                 OperationKind.CharacterWise);
-            _operations.MoveCaretToMotionData(data);
+            _operations.MoveCaretToMotionResult(data);
             Assert.AreEqual(0, _textView.GetCaretPoint().Position);
         }
 
         [Test, Description("Exclusive motions should go to End")]
-        public void MoveCaretToMotionData5()
+        public void MoveCaretToMotionResult5()
         {
             Create("foo", "bar", "baz");
             _editorOperations.Setup(x => x.ResetSelection());
-            var data = VimUtil.CreateMotionData(
+            var data = VimUtil.CreateMotionResult(
                 new SnapshotSpan(_textBuffer.CurrentSnapshot, 1, 2),
                 true,
                 MotionKind.Exclusive,
                 OperationKind.CharacterWise);
-            _operations.MoveCaretToMotionData(data);
+            _operations.MoveCaretToMotionResult(data);
             Assert.AreEqual(3, _textView.GetCaretPoint().Position);
         }
 
         [Test]
-        public void MoveCaretToMotionData6()
+        public void MoveCaretToMotionResult6()
         {
             Create("foo", "bar", "baz");
             _editorOperations.Setup(x => x.ResetSelection());
-            var data = VimUtil.CreateMotionData(
+            var data = VimUtil.CreateMotionResult(
                 new SnapshotSpan(_textBuffer.CurrentSnapshot, 0, 1),
                 true,
                 MotionKind.Exclusive,
                 OperationKind.CharacterWise);
-            _operations.MoveCaretToMotionData(data);
+            _operations.MoveCaretToMotionResult(data);
             Assert.AreEqual(1, _textView.GetCaretPoint().Position);
         }
 
         [Test]
         [Description("Motion to empty last line")]
-        public void MoveCaretToMotionData7()
+        public void MoveCaretToMotionResult7()
         {
             Create("foo", "bar", "");
             _editorOperations.Setup(x => x.ResetSelection());
-            var data = VimUtil.CreateMotionData(
+            var data = VimUtil.CreateMotionResult(
                 new SnapshotSpan(_textBuffer.CurrentSnapshot, 0, _textBuffer.CurrentSnapshot.Length),
                 true,
                 MotionKind.Inclusive,
                 OperationKind.LineWise);
-            _operations.MoveCaretToMotionData(data);
+            _operations.MoveCaretToMotionResult(data);
             Assert.AreEqual(2, _textView.GetCaretPoint().GetContainingLine().LineNumber);
         }
 
         [Test]
         [Description("Need to respect the specified column")]
-        public void MoveCaretToMotionData8()
+        public void MoveCaretToMotionResult8()
         {
             Create("foo", "bar", "");
             _editorOperations.Setup(x => x.ResetSelection());
-            var data = VimUtil.CreateMotionData(
+            var data = VimUtil.CreateMotionResult(
                 _textBuffer.GetLineRange(0, 1).Extent,
                 true,
                 MotionKind.Inclusive,
                 OperationKind.LineWise,
                 1);
-            _operations.MoveCaretToMotionData(data);
+            _operations.MoveCaretToMotionResult(data);
             Assert.AreEqual(Tuple.Create(1, 1), SnapshotPointUtil.GetLineColumn(_textView.GetCaretPoint()));
         }
 
         [Test]
         [Description("Ignore column if it's past the end of the line")]
-        public void MoveCaretToMotionData9()
+        public void MoveCaretToMotionResult9()
         {
             Create("foo", "bar", "");
             _editorOperations.Setup(x => x.ResetSelection());
-            var data = VimUtil.CreateMotionData(
+            var data = VimUtil.CreateMotionResult(
                 _textBuffer.GetLineRange(0, 1).Extent,
                 true,
                 MotionKind.Inclusive,
                 OperationKind.LineWise,
                 100);
-            _operations.MoveCaretToMotionData(data);
+            _operations.MoveCaretToMotionResult(data);
             Assert.AreEqual(Tuple.Create(1, 3), SnapshotPointUtil.GetLineColumn(_textView.GetCaretPoint()));
         }
 
         [Test]
         [Description("Need to respect the specified column")]
-        public void MoveCaretToMotionData10()
+        public void MoveCaretToMotionResult10()
         {
             Create("foo", "bar", "");
             _editorOperations.Setup(x => x.ResetSelection());
-            var data = VimUtil.CreateMotionData(
+            var data = VimUtil.CreateMotionResult(
                 _textBuffer.GetLineRange(0, 1).Extent,
                 true,
                 MotionKind.Inclusive,
                 OperationKind.LineWise,
                 0);
-            _operations.MoveCaretToMotionData(data);
+            _operations.MoveCaretToMotionResult(data);
             Assert.AreEqual(Tuple.Create(1, 0), SnapshotPointUtil.GetLineColumn(_textView.GetCaretPoint()));
         }
 
         [Test]
         [Description("Reverse spans should move to the start of the span")]
-        public void MoveCaretToMotionData11()
+        public void MoveCaretToMotionResult11()
         {
             Create("dog", "cat", "bear");
             _editorOperations.Setup(x => x.ResetSelection());
-            var data = VimUtil.CreateMotionData(
+            var data = VimUtil.CreateMotionResult(
                 _textBuffer.GetLineRange(0, 1).Extent,
                 false,
                 MotionKind.Inclusive,
                 OperationKind.CharacterWise,
                 0);
-            _operations.MoveCaretToMotionData(data);
+            _operations.MoveCaretToMotionResult(data);
             Assert.AreEqual(Tuple.Create(0, 0), SnapshotPointUtil.GetLineColumn(_textView.GetCaretPoint()));
         }
 
         [Test]
         [Description("Reverse spans should move to the start of the span and respect column")]
-        public void MoveCaretToMotionData12()
+        public void MoveCaretToMotionResult12()
         {
             Create("dog", "cat", "bear");
             _editorOperations.Setup(x => x.ResetSelection());
-            var data = VimUtil.CreateMotionData(
+            var data = VimUtil.CreateMotionResult(
                 _textBuffer.GetLineRange(0, 1).Extent,
                 false,
                 MotionKind.Inclusive,
                 OperationKind.CharacterWise,
                 2);
-            _operations.MoveCaretToMotionData(data);
+            _operations.MoveCaretToMotionResult(data);
             Assert.AreEqual(Tuple.Create(0, 2), SnapshotPointUtil.GetLineColumn(_textView.GetCaretPoint()));
         }
 
         [Test]
         [Description("Exclusive spans going forward ending on a endline having a 0 column should position caret in the below line")]
-        public void MoveCaretToMotionData13()
+        public void MoveCaretToMotionResult13()
         {
             Create("dog", "cat", "bear");
             _editorOperations.Setup(x => x.ResetSelection());
-            var data = VimUtil.CreateMotionData(
+            var data = VimUtil.CreateMotionResult(
                 _textBuffer.GetLineRange(0).ExtentIncludingLineBreak,
                 true,
                 MotionKind.Exclusive,
                 OperationKind.CharacterWise,
                 0);
-            _operations.MoveCaretToMotionData(data);
+            _operations.MoveCaretToMotionResult(data);
             Assert.AreEqual(_textBuffer.GetLine(1).Start, _textView.GetCaretPoint());
         }
 
         [Test]
         [Description("Exclusive spans going backward should go through normal movements")]
-        public void MoveCaretToMotionData14()
+        public void MoveCaretToMotionResult14()
         {
             Create("dog", "cat", "bear");
             _editorOperations.Setup(x => x.ResetSelection());
-            var data = VimUtil.CreateMotionData(
+            var data = VimUtil.CreateMotionResult(
                 _textBuffer.GetLineRange(0, 1).ExtentIncludingLineBreak,
                 false,
                 MotionKind.Exclusive,
                 OperationKind.CharacterWise,
                 0);
-            _operations.MoveCaretToMotionData(data);
+            _operations.MoveCaretToMotionResult(data);
             Assert.AreEqual(_textBuffer.GetLine(0).Start, _textView.GetCaretPoint());
         }
 
         [Test]
         [Description("Exclusive spans going forward ending on a endline having a 0 column and starting in the middle of a span checks")]
-        public void MoveCaretToMotionData15()
+        public void MoveCaretToMotionResult15()
         {
             Create("dog", "cat", "bear");
             _editorOperations.Setup(x => x.ResetSelection());
-            var data = VimUtil.CreateMotionData(
+            var data = VimUtil.CreateMotionResult(
                 _textBuffer.GetSpan(1, _textBuffer.GetLine(1).EndIncludingLineBreak.Position),
                 true,
                 MotionKind.Exclusive,
                 OperationKind.CharacterWise,
                 0);
-            _operations.MoveCaretToMotionData(data);
+            _operations.MoveCaretToMotionResult(data);
             Assert.AreEqual(_textBuffer.GetLine(2).Start, _textView.GetCaretPoint());
         }
 
         [Test]
         [Description("Used with the - motion")]
-        public void MoveCaretToMotionData_ReverseLineWiseWithColumn()
+        public void MoveCaretToMotionResult_ReverseLineWiseWithColumn()
         {
             Create(" dog", "cat", "bear");
             _editorOperations.Setup(x => x.ResetSelection());
-            var data = VimUtil.CreateMotionData(
+            var data = VimUtil.CreateMotionResult(
                 span: _textView.GetLineRange(0, 1).ExtentIncludingLineBreak,
                 isForward: false,
                 operationKind: OperationKind.LineWise,
                 column: 1);
-            _operations.MoveCaretToMotionData(data);
+            _operations.MoveCaretToMotionResult(data);
             Assert.AreEqual(1, _textView.GetCaretPoint().Position);
         }
 
@@ -1696,7 +1696,7 @@ namespace VimCore.UnitTest
         public void ChangeSpan_WordSpan()
         {
             Create("foo  bar");
-            var data = VimUtil.CreateMotionData(
+            var data = VimUtil.CreateMotionResult(
                 _textBuffer.GetSpan(0, 3),
                 isForward: true,
                 isAnyWord: true,
@@ -1710,7 +1710,7 @@ namespace VimCore.UnitTest
         public void ChangeSpan_WordShouldSaveTrailingWhitespace()
         {
             Create("foo  bar");
-            var data = VimUtil.CreateMotionData(
+            var data = VimUtil.CreateMotionResult(
                 _textBuffer.GetSpan(0, 5),
                 isForward: true,
                 isAnyWord: true,
@@ -1724,7 +1724,7 @@ namespace VimCore.UnitTest
         public void ChangeSpan_NonWordShouldDeleteTrailingWhitespace()
         {
             Create("foo  bar");
-            var data = VimUtil.CreateMotionData(
+            var data = VimUtil.CreateMotionResult(
                 _textBuffer.GetSpan(0, 5),
                 isForward: true,
                 isAnyWord: false,
@@ -1738,7 +1738,7 @@ namespace VimCore.UnitTest
         public void ChangeSpan_LeaveWhitespaceIfBackward()
         {
             Create("cat dog tree");
-            var data = VimUtil.CreateMotionData(
+            var data = VimUtil.CreateMotionResult(
                 _textBuffer.GetSpan(4, 4),
                 false,
                 MotionKind.Inclusive,

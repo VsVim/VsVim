@@ -64,7 +64,7 @@ namespace VimCore.UnitTest
         }
 
         public void AssertData(
-            MotionData data,
+            MotionResult data,
             SnapshotSpan? span,
             MotionKind motionKind = null,
             OperationKind operationKind = null)

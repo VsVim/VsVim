@@ -29,6 +29,10 @@ F#
  - To Deteremine:
     - Should functions returning an option be prefixed with Try? Example KeyNotationUtil 
 
+ - Naming patterns
+    - Information needed to iniate an action: XXXData
+    - Information 
+
 C#
  - Member variables prefixed with _ 
  - Buffer creation methods should be Create.  Not CreateBuffer

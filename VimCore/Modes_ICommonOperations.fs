@@ -77,7 +77,7 @@ type ICommonOperations =
     /// Change the text represented by the given Motion.  Returns the SnapshotSpan 
     /// of the original ITextSnapshot which was modified.  Maybe different
     /// than the passed in value
-    abstract ChangeSpan : MotionData -> SnapshotSpan
+    abstract ChangeSpan : MotionResult -> SnapshotSpan
 
     /// Close the current buffer
     abstract Close : checkDirty : bool -> unit
@@ -171,8 +171,8 @@ type ICommonOperations =
     /// Move the caret to a given point on the screen
     abstract MoveCaretToPoint : SnapshotPoint -> unit
 
-    /// Move the caret to the MotionData value
-    abstract MoveCaretToMotionData : MotionData -> unit
+    /// Move the caret to the MotionResult value
+    abstract MoveCaretToMotionResult : MotionResult -> unit
 
     /// Move the caret count spaces left on the same line
     abstract MoveCaretLeft : count : int -> unit

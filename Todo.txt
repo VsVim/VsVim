@@ -1,2 +1,2 @@
 Make sure that ; and , work as motions (repeat last char search)
-
+Rename IMotionCapture -> IMotionBinder

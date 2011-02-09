@@ -421,7 +421,9 @@ type Register
     new (name) = Register(name, DefaultRegisterValueBacking() :> IRegisterValueBacking )
 
     member x.Name = _name
+    member x.OperationKind = _valueBacking.Value.OperationKind
     member x.StringValue = _valueBacking.Value.Value.String
+    member x.StringData = _valueBacking.Value.Value
     member x.Value 
         with get () =  _valueBacking.Value
         and set value = _valueBacking.Value <- value

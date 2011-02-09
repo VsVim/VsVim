@@ -110,10 +110,10 @@ namespace VimCore.UnitTest
             _mode.OnEnter(ModeArgument.None);
         }
 
-        private MotionData CreateMotionData(SnapshotSpan? span = null)
+        private MotionResult CreateMotionResult(SnapshotSpan? span = null)
         {
             span = span ?? new SnapshotSpan(_textView.TextSnapshot, 0, 3);
-            return VimUtil.CreateMotionData(
+            return VimUtil.CreateMotionResult(
                 span.Value,
                 true,
                 MotionKind.Exclusive,
@@ -423,7 +423,7 @@ namespace VimCore.UnitTest
         public void Move_Motion_w1()
         {
             Create(DefaultLines);
-            _operations.Setup(x => x.MoveCaretToMotionData(It.IsAny<MotionData>())).Verifiable();
+            _operations.Setup(x => x.MoveCaretToMotionResult(It.IsAny<MotionResult>())).Verifiable();
             _mode.Process('w');
             _operations.Verify();
         }
@@ -432,7 +432,7 @@ namespace VimCore.UnitTest
         public void Move_Motion_W1()
         {
             Create(DefaultLines);
-            _operations.Setup(x => x.MoveCaretToMotionData(It.IsAny<MotionData>())).Verifiable();
+            _operations.Setup(x => x.MoveCaretToMotionResult(It.IsAny<MotionResult>())).Verifiable();
             _mode.Process('W');
             _operations.Verify();
         }
@@ -441,7 +441,7 @@ namespace VimCore.UnitTest
         public void Move_Motion_b1()
         {
             Create(DefaultLines);
-            _operations.Setup(x => x.MoveCaretToMotionData(It.IsAny<MotionData>())).Verifiable();
+            _operations.Setup(x => x.MoveCaretToMotionResult(It.IsAny<MotionResult>())).Verifiable();
             _mode.Process('b');
             _operations.Verify();
         }
@@ -450,7 +450,7 @@ namespace VimCore.UnitTest
         public void Move_Motion_B1()
         {
             Create(DefaultLines);
-            _operations.Setup(x => x.MoveCaretToMotionData(It.IsAny<MotionData>())).Verifiable();
+            _operations.Setup(x => x.MoveCaretToMotionResult(It.IsAny<MotionResult>())).Verifiable();
             _mode.Process('B');
             _operations.Verify();
         }
@@ -459,7 +459,7 @@ namespace VimCore.UnitTest
         public void Move_Motion_Enter1()
         {
             Create(DefaultLines);
-            _operations.Setup(x => x.MoveCaretToMotionData(It.IsAny<MotionData>())).Verifiable();
+            _operations.Setup(x => x.MoveCaretToMotionResult(It.IsAny<MotionResult>())).Verifiable();
             _mode.Process(KeyInputUtil.EnterKey);
             _operations.Verify();
         }
@@ -468,7 +468,7 @@ namespace VimCore.UnitTest
         public void Move_Motion_Enter2()
         {
             Create(DefaultLines);
-            _operations.Setup(x => x.MoveCaretToMotionData(It.IsAny<MotionData>())).Verifiable();
+            _operations.Setup(x => x.MoveCaretToMotionResult(It.IsAny<MotionResult>())).Verifiable();
             _mode.Process('2');
             _mode.Process(KeyInputUtil.EnterKey);
             _operations.Verify();
@@ -479,7 +479,7 @@ namespace VimCore.UnitTest
         {
             Create("foo bar");
             _textView.MoveCaretTo(3);
-            _operations.Setup(x => x.MoveCaretToMotionData(It.IsAny<MotionData>())).Verifiable();
+            _operations.Setup(x => x.MoveCaretToMotionResult(It.IsAny<MotionResult>())).Verifiable();
             _mode.Process('^');
             _editorOperations.Verify();
         }
@@ -488,7 +488,7 @@ namespace VimCore.UnitTest
         public void Move_Motion_Hat2()
         {
             Create("   foo bar");
-            _operations.Setup(x => x.MoveCaretToMotionData(It.IsAny<MotionData>())).Verifiable();
+            _operations.Setup(x => x.MoveCaretToMotionResult(It.IsAny<MotionResult>())).Verifiable();
             _mode.Process('^');
             _editorOperations.Verify();
 
@@ -498,7 +498,7 @@ namespace VimCore.UnitTest
         public void Move_Motion_Dollar1()
         {
             Create("foo", "bar");
-            _operations.Setup(x => x.MoveCaretToMotionData(It.IsAny<MotionData>())).Verifiable();
+            _operations.Setup(x => x.MoveCaretToMotionResult(It.IsAny<MotionResult>())).Verifiable();
             _mode.Process('$');
             _editorOperations.Verify();
         }
@@ -507,7 +507,7 @@ namespace VimCore.UnitTest
         public void Move_0()
         {
             Create("foo bar baz");
-            _operations.Setup(x => x.MoveCaretToMotionData(It.IsAny<MotionData>())).Verifiable();
+            _operations.Setup(x => x.MoveCaretToMotionResult(It.IsAny<MotionResult>())).Verifiable();
             _textView.MoveCaretTo(3);
             _mode.Process('0');
             _operations.Verify();
@@ -803,7 +803,7 @@ namespace VimCore.UnitTest
             var arg = new MotionArgument(MotionContext.AfterOperator, FSharpOption<int>.None, FSharpOption<int>.None);
             util
                 .Setup(x => x.GetMotion(Motion.LineOrLastToFirstNonWhiteSpace, arg))
-                .Returns(FSharpOption.Create(VimUtil.CreateMotionData(span, operationKind: OperationKind.LineWise)));
+                .Returns(FSharpOption.Create(VimUtil.CreateMotionResult(span, operationKind: OperationKind.LineWise)));
             _operations
                 .Setup(x => x.UpdateRegisterForSpan(_unnamedRegister, RegisterOperation.Yank, span, OperationKind.LineWise))
                 .Verifiable();
@@ -1025,7 +1025,7 @@ namespace VimCore.UnitTest
         public void Edit_c_1()
         {
             Create("foo bar");
-            var motionData = VimUtil.CreateMotionData(
+            var motionData = VimUtil.CreateMotionResult(
                 _textView.TextBuffer.GetSpan(0, 4),
                 isForward: true,
                 isAnyWord: true,
@@ -1049,7 +1049,7 @@ namespace VimCore.UnitTest
         {
             Create("foo bar");
             var reg = _map.GetRegister('c');
-            var motionData = VimUtil.CreateMotionData(
+            var motionData = VimUtil.CreateMotionResult(
                 _textView.TextBuffer.GetSpan(0, 4),
                 isForward: true,
                 isAnyWord: true,

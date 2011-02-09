@@ -94,7 +94,7 @@ type SearchText =
         | Pattern(p) -> p
         | WholeWord(p) -> p
         | StraightText(p) -> p
-    
+
     /// Is this a pattern
     member x.IsPatternText = 
         match x with
@@ -319,7 +319,7 @@ and ITextViewMotionUtil =
     abstract TextView : ITextView
 
     /// Get the specified Motion value 
-    abstract GetMotion : Motion -> MotionArgument -> MotionData option 
+    abstract GetMotion : Motion -> MotionArgument -> MotionResult option 
 
 type ModeKind = 
     | Normal = 1
@@ -587,12 +587,13 @@ type RunResult =
 [<RequireQualifiedAccess>]
 type VisualSpan =
     | Single of VisualKind * SnapshotSpan
+    /// REPEAT TODO: Rename Multiple -> Block
     | Multiple of VisualKind * NormalizedSnapshotSpanCollection
     with
     member x.VisualKind = 
         match x with
-        | Single(kind,_) -> kind
-        | Multiple(kind,_) -> kind
+        | Single (kind, _) -> kind
+        | Multiple (kind, _) -> kind
 
 /// Information about the attributes of Command
 [<System.Flags>]
@@ -616,6 +617,10 @@ type CommandFlags =
     | ResetCaret = 0x20
 
 /// Representation of commands within Vim.  
+/// 
+/// REPEAT TODO: This should evolve into CommandBinding which has 
+///     Simple of KeyInputSet * Command
+///     Motion of KeyInputSet * (MotionData -> Command)
 [<DebuggerDisplay("{ToString(),nq}")>]
 type Command = 
     
@@ -625,9 +630,9 @@ type Command =
     | SimpleCommand of KeyInputSet * CommandFlags * (int option -> Register -> CommandResult)
 
     /// Represents a Command prefix which has an associated motion.  The delegate takes
-    /// an optional count, a Register and a MotionData value.  If unspecified the default
+    /// an optional count, a Register and a MotionResult value.  If unspecified the default
     /// register will be used
-    | MotionCommand of KeyInputSet * CommandFlags * (int option -> Register -> MotionData -> CommandResult)
+    | MotionCommand of KeyInputSet * CommandFlags * (int option -> Register -> MotionResult -> CommandResult)
 
     /// Represents a command which has a Name but then has additional unspecified input
     /// which needs to be dealt with specially by the command.  These commands are not
@@ -676,6 +681,128 @@ type Command =
 
     override x.ToString() = System.String.Format("{0} -> {1}", x.KeyInputSet, x.CommandFlags)
 
+/// Data about the run of a given MotionResult
+type MotionData = {
+
+    /// The associated Motion value
+    Motion : Motion
+
+    /// The argument which should be supplied to the given Motion
+    MotionArgument : MotionArgument
+}
+
+/// REPEAT TODO: Need to clean up the terminology around Motion structures.  Most
+/// use the Run modifier to represent what was run.  For now use these type defs
+
+/// Data needed to execute a command
+type CommandData = {
+
+    /// The raw count provided to the command
+    Count : int option 
+
+    /// The register name specified for the command 
+    RegisterName : RegisterName option
+
+} with
+
+    /// Return the provided count or the default value of 1
+    member x.CountOrDefault = 
+        match x.Count with 
+        | Some count -> count
+        | None -> 1
+
+    /// Get the provided register name or the default name (Unnamed)
+    member x.RegisterNameOrDefault =
+        match x.RegisterName with
+        | Some name -> name
+        | None -> RegisterName.Unnamed
+
+/// Normal mode commands which can be executed by the user 
+[<RequireQualifiedAccess>]
+type NormalCommand = 
+
+    /// Put the contents of the register into the 
+    | PutAfterCursor
+
+    /// Repeat the last command
+    | RepeatLastCommand
+
+    /// Yank the given motion into a register
+    | Yank of MotionData
+
+/// Visual mode commands which can be executed by the user 
+[<RequireQualifiedAccess>]
+type VisualCommand = 
+
+    /// Put the contents of the register into the 
+    | PutAfterCursor
+
+/// Commands which can be executed by the user
+///
+/// REPEAT TODO: Rename to Command when the old Command is gone
+[<RequireQualifiedAccess>]
+type Command2 =
+
+    /// A Normal Mode Command
+    | NormalCommand of NormalCommand * CommandData
+
+    /// A Visual Mode Command
+    | VisualCommand of VisualCommand * CommandData * VisualSpan
+
+/// REPEAT TODO: Rename to CommandResult when old CommandResult is gone
+[<RequireQualifiedAccess>]
+type Command2Result =   
+    | Completed
+    | Error of string
+
+/// Used to exceute commands
+and ICommandUtil = 
+
+    /// Run a normal command
+    abstract RunNormalCommand : NormalCommand -> CommandData -> Command2Result
+
+    /// Run a visual command
+    abstract RunVisualCommand : VisualCommand -> CommandData -> VisualSpan -> Command2Result
+
+/// Contains the stored information about a Visual Span.  This instance *will* be 
+/// stored for long periods of time and used to erpeat a Command instance across
+/// mulitiple IVimBuffer instances so it must be buffer agnostic
+[<RequireQualifiedAccess>]
+type StoredVisualSpan = 
+
+    /// Storing a character wise span 
+    | Characterwise of Span
+
+    /// Storing a linewise span just stores the count of lines
+    | Linewise of int
+
+    /// Storing of a block span records the collection of Spans
+    | Block of Span list
+
+[<RequireQualifiedAccess>]
+type TextChange = 
+    | Insert of string
+    | Delete of int
+
+/// Contains information about an executed Command.  This instance *will* be stored
+/// for long periods of time and used to repeat a Command instance across multiple
+/// IVimBuffer instances so it simply cannot store any state specific to an 
+/// ITextView instance.  It must be completely agnostic of such information 
+[<RequireQualifiedAccess>]
+type StoredCommand =
+
+    /// The stored information about a NormalCommand
+    | NormalCommand of NormalCommand * CommandData
+
+    /// The stored information about a VisualCommand
+    | VisualCommand of VisualCommand * CommandData * StoredVisualSpan
+
+    /// A Text Change which ocurred 
+    | TextChangeCommand of TextChange
+
+    /// A Linked Command links together 2 other StoredCommand objects so they
+    /// can be repeated together.
+    | LinkedCommand of StoredCommand * StoredCommand
 
 /// Flags about specific motions
 [<RequireQualifiedAccess>]
@@ -696,28 +823,18 @@ type MotionFlags =
     /// on Complex motions such as / and ? 
     | HandlesEscape = 0x4
 
-/// Data about the run of a given MotionData
-type MotionRunData = {
-
-    /// The associated Motion value
-    Motion : Motion
-
-    /// The argument which should be supplied to the given Motion
-    MotionArgument : MotionArgument
-}
-
 /// The result of binding to a Motion value.
 [<RequireQualifiedAccess>]
-type MotionResult = 
+type MotionBindResult = 
 
     /// Successfully bound to a Motion value.  This will return the bound motion, the 
     /// argument which should be passed to the motion to get the actual result and
-    /// optionally a pre-calculated MotionData value.  This is helpful in some scenarios
+    /// optionally a pre-calculated MotionResult value.  This is helpful in some scenarios
     /// where part of binding the Motion includes calculating the resulting Motion data
-    | Complete of MotionRunData * MotionData option
+    | Complete of MotionData * MotionResult option
 
     /// Motion needs more input.  
-    | NeedMoreInput of KeyRemapMode option * (KeyInput -> MotionResult)
+    | NeedMoreInput of KeyRemapMode option * (KeyInput -> MotionBindResult)
 
     | Error of string
 
@@ -736,7 +853,7 @@ type MotionCommand =
     /// the f,t,F and T commands all require at least one additional input.  The bool
     /// in the middle of the tuple indicates whether or not the motion can be 
     /// used as a cursor movement operation  
-    | ComplexMotionCommand of KeyInputSet * MotionFlags * (MotionArgument -> MotionResult)
+    | ComplexMotionCommand of KeyInputSet * MotionFlags * (MotionArgument -> MotionBindResult)
 
     with
 
@@ -758,12 +875,11 @@ type CommandRunData = {
 
     /// For commands which took a motion this will hold the relevant information
     /// on how the motion was ran
-    MotionRunData : MotionRunData option
+    MotionData : MotionData option
 
     /// For visual commands this holds the relevant span information
     VisualRunData : VisualSpan option
 }
-
 
 /// Responsible for binding key input to a Motion and MotionArgument tuple.  Does
 /// not actually run the motions
@@ -776,9 +892,9 @@ type IMotionCapture =
     abstract MotionCommands : seq<MotionCommand>
 
     /// Get the motion starting with the given KeyInput
-    abstract GetOperatorMotion : KeyInput -> int option -> MotionResult
+    abstract GetOperatorMotion : KeyInput -> int option -> MotionBindResult
 
-module CommandUtil = 
+module CommandUtil2 = 
 
     let CountOrDefault opt = 
         match opt with 
@@ -996,14 +1112,9 @@ type ProcessResult =
         | SwitchModeWithArgument(_,_) -> true
         | SwitchPreviousMode -> true
 
-[<RequireQualifiedAccess>]
-type TextChange = 
-    | Insert of string
-    | Delete of int
-
 type SettingKind =
     | NumberKind
-    | StringKind    
+    | StringKind
     | ToggleKind
 
 type SettingValue =
@@ -1084,15 +1195,18 @@ module LocalSettingNames =
 type IVimData = 
 
     /// Data for the last substitute command performed
-    abstract LastSubstituteData : SubstituteData option with get,set
+    abstract LastSubstituteData : SubstituteData option with get, set
 
     /// Last pattern searched for in any buffer
-    abstract LastSearchData : SearchData with get,set
+    abstract LastSearchData : SearchData with get, set
 
     /// Motion function used with the last f, F, t or T motion.  The 
     /// first item in the tuple is the forward version and the second item
     /// is the backwards version
     abstract LastCharSearch : (CharSearchKind * Direction * char) option with get, set
+
+    /// The last command which was ran 
+    abstract LastCommand : StoredCommand option with get, set
 
     /// Raised when the LastSearch value changes
     [<CLIEvent>]
@@ -1529,6 +1643,7 @@ and [<RequireQualifiedAccess>] RepeatableChange =
     | CommandChange of CommandRunData
     | TextChange of TextChange
     | LinkedChange of RepeatableChange * RepeatableChange
+
 
 /// Responsible for calculating the new Span for a VisualMode change
 type IVisualSpanCalculator =

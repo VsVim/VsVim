@@ -89,6 +89,8 @@
     <Compile Include="Modes_SubstituteConfirm_SubstituteConfirmMode.fs" />
     <Compile Include="IncrementalSearch.fsi" />
     <Compile Include="IncrementalSearch.fs" />
+    <Compile Include="CommandUtil.fsi" />
+    <Compile Include="CommandUtil.fs" />
     <Compile Include="Tagger.fsi" />
     <Compile Include="Tagger.fs" />
     <Compile Include="SelectionChangeTracker.fsi" />

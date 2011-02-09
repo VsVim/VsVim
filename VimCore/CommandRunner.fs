@@ -9,7 +9,7 @@ type internal RunCommandResult =
     | NeedMore of (KeyInput -> RunCommandResult)
     | NoMatchingCommand
 
-type internal CommandData = {
+type internal CommandRunnerData = {
     Register : Register;
     Count : int option;
 
@@ -63,7 +63,7 @@ type internal CommandRunner
             Command = command
             Register = _data.Register
             Count = _data.Count
-            MotionRunData = motionDataOpt
+            MotionData = motionDataOpt
             VisualRunData = visualDataOpt }
 
     member x.GetVisualSpan kind = 
@@ -104,17 +104,17 @@ type internal CommandRunner
     /// if the motion is successfully completed
     member x.WaitForMotion command onMotionComplete (initialInput : KeyInput option) =
         _data <- { _data with State = NotFinishWithCommand(command, Some KeyRemapMode.OperatorPending) }
-        let rec inner (result : MotionResult) = 
+        let rec inner (result : MotionBindResult) = 
             match result with 
-            | MotionResult.Complete (motionRunData, precalculatedData) ->
+            | MotionBindResult.Complete (motionRunData, precalculatedData) ->
 
-                // Calculate the MotionData.  Used the cached MotionData if available
+                // Calculate the MotionResult.  Used the cached MotionResult if available
                 let motionData = 
                     match precalculatedData with
                     | Some data -> Some data
                     | None -> _motionUtil.GetMotion motionRunData.Motion motionRunData.MotionArgument
 
-                // Now use the MotionData to complete the command
+                // Now use the MotionResult to complete the command
                 match motionData with
                 | None ->
                     // Invalid motion so raise an error
@@ -125,14 +125,14 @@ type internal CommandRunner
                     let data = x.CreateCommandRunData command (Some motionRunData) None
                     let result = onMotionComplete data.Count data.Register motionData
                     RanCommand (data, result)
-            | MotionResult.NeedMoreInput (keyRemapMode, moreFunc) ->
+            | MotionBindResult.NeedMoreInput (keyRemapMode, moreFunc) ->
                 _data <- { _data with State = NotFinishWithCommand(command, keyRemapMode) }
                 let func ki = moreFunc ki |> inner
                 NeedMore func
-            | MotionResult.Error (msg) ->
+            | MotionBindResult.Error (msg) ->
                 _statusUtil.OnError msg
                 CancelledCommand
-            | MotionResult.Cancelled -> CancelledCommand
+            | MotionBindResult.Cancelled -> CancelledCommand
 
         let runInitialMotion ki = _capture.GetOperatorMotion ki _data.Count |> inner
 

@@ -6,13 +6,13 @@ using Vim.UnitTest;
 namespace VimCore.UnitTest
 {
     [TestFixture]
-    public class MotionDataTest
+    public class MotionResultTest
     {
         [Test]
         public void OperationSpan1()
         {
             var buffer = EditorUtil.CreateBuffer("foo", "  bar");
-            var data = VimUtil.CreateMotionData(
+            var data = VimUtil.CreateMotionResult(
                 new SnapshotSpan(buffer.GetPoint(0), buffer.GetLine(1).Start.Add(2)),
                 true,
                 MotionKind.Exclusive,
@@ -24,7 +24,7 @@ namespace VimCore.UnitTest
         public void OperationSpan2()
         {
             var buffer = EditorUtil.CreateBuffer("foo", "  bar");
-            var data = VimUtil.CreateMotionData(
+            var data = VimUtil.CreateMotionResult(
                 new SnapshotSpan(buffer.GetLine(1).Start.Add(1), 1),
                 true,
                 MotionKind.Exclusive,

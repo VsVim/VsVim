@@ -9,7 +9,7 @@ type MotionKind =
     | Inclusive
 
 /// Data about a complete motion operation. 
-type MotionData = {
+type MotionResult = {
 
     /// Span of the motion.
     Span : SnapshotSpan

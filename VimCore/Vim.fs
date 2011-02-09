@@ -33,12 +33,16 @@ type internal VimData() =
     let mutable _lastSubstituteData : SubstituteData option = None
     let mutable _lastSearchData = { Text = SearchText.Pattern(StringUtil.empty); Kind = SearchKind.ForwardWithWrap; Options = SearchOptions.None }
     let mutable _lastCharSearch : (CharSearchKind * Direction * char) option = None
+    let mutable _lastCommand : StoredCommand option = None
     let _lastSearchChanged = Event<SearchData>()
 
     interface IVimData with 
         member x.LastSubstituteData 
             with get () = _lastSubstituteData
             and set value = _lastSubstituteData <- value
+        member x.LastCommand 
+            with get () = _lastCommand
+            and set value = _lastCommand <- value
         member x.LastSearchData
             with get () = _lastSearchData
             and set value = 

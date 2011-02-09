@@ -52,7 +52,7 @@ type internal CommandFactory
         |> Seq.map (fun (notation,func) ->
             let kiSet = KeyNotationUtil.StringToKeyInputSet notation
             let funcWithReg opt reg = 
-                func (CommandUtil.CountOrDefault opt)
+                func (CommandUtil2.CountOrDefault opt)
                 CommandResult.Completed NoSwitch
             Command.SimpleCommand (kiSet,CommandFlags.Movement, funcWithReg))
 
@@ -62,7 +62,7 @@ type internal CommandFactory
         let processResult opt = 
             match opt with
             | None -> _operations.Beep()
-            | Some(data) -> _operations.MoveCaretToMotionData data
+            | Some(data) -> _operations.MoveCaretToMotionResult data
             CommandResult.Completed NoSwitch
 
         let makeMotionArgument count = { MotionContext = MotionContext.Movement; OperatorCount = None; MotionCount = count }
@@ -81,16 +81,16 @@ type internal CommandFactory
             | ComplexMotionCommand(name, motionFlags, func) -> 
 
                 // The core function which accepts the initial count.  Will create a MotionArgument
-                // from this value and then begin to loop over the MotionResult until we get 
+                // from this value and then begin to loop over the MotionBindResult until we get 
                 // a final one
                 let coreFunc count _ = 
 
                     let rec inner result =  
                         match result with
-                        | MotionResult.Complete (motionRunData, precalculatedData) ->
+                        | MotionBindResult.Complete (motionRunData, precalculatedData) ->
                             let res = 
 
-                                // Calculate the resulting MotionData.  Use the precalculated cached
+                                // Calculate the resulting MotionResult.  Use the precalculated cached
                                 // data if it's available 
                                 let data = 
                                     match precalculatedData with
@@ -102,14 +102,14 @@ type internal CommandFactory
                                 | None -> 
                                     CommandResult.Error Resources.MotionCapture_InvalidMotion
                                 | Some(data) -> 
-                                    _operations.MoveCaretToMotionData data
+                                    _operations.MoveCaretToMotionResult data
                                     CommandResult.Completed NoSwitch 
                             res |> LongCommandResult.Finished
-                        | MotionResult.NeedMoreInput (keyRemapMode, func) -> 
+                        | MotionBindResult.NeedMoreInput (keyRemapMode, func) -> 
                             LongCommandResult.NeedMoreInput (keyRemapMode, fun ki -> func ki |> inner)
-                        | MotionResult.Cancelled -> 
+                        | MotionBindResult.Cancelled -> 
                             LongCommandResult.Cancelled
-                        | MotionResult.Error (msg) -> 
+                        | MotionBindResult.Error (msg) -> 
                             CommandResult.Error msg |> LongCommandResult.Finished
 
                     let arg = makeMotionArgument count
@@ -200,7 +200,7 @@ type internal CommandFactory
                 CommandFlags.LinkedWithNextTextChange ||| CommandFlags.Repeatable,
                 ModeSwitch.SwitchMode ModeKind.Insert,
                 (fun count reg ->  
-                    let span = TextViewUtil.GetCaretLineRange _textView (CommandUtil.CountOrDefault count) |> getDeleteSpan
+                    let span = TextViewUtil.GetCaretLineRange _textView (CommandUtil2.CountOrDefault count) |> getDeleteSpan
                     _operations.DeleteSpan span 
                     _operations.UpdateRegisterForSpan reg RegisterOperation.Delete span OperationKind.LineWise),
                 ModeSwitch.SwitchMode ModeKind.Insert,
