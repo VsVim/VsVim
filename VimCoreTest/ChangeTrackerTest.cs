@@ -43,7 +43,7 @@ namespace VimCore.UnitTest
             _buffer.VisualBlockModeImpl = _factory.Create<IVisualMode>().Object;
             _buffer.VisualCharacterModeImpl = _factory.Create<IVisualMode>().Object;
             _buffer.VisualLineModeImpl = _factory.Create<IVisualMode>().Object;
-            _trackerRaw = new ChangeTracker(_textChangeTrackerFactory.Object);
+            _trackerRaw = new ChangeTracker(_textChangeTrackerFactory.Object, new VimData());
             _tracker = _trackerRaw;
             _trackerRaw.OnVimBufferCreated(_buffer);
         }
@@ -68,7 +68,8 @@ namespace VimCore.UnitTest
                 new Register('c'),
                 countRaw,
                 motionRunData != null ? FSharpOption.Create(motionRunData) : FSharpOption<MotionData>.None,
-                visualRunData != null ? FSharpOption.Create(visualRunData) : FSharpOption<VisualSpan>.None);
+                visualRunData != null ? FSharpOption.Create(visualRunData) : FSharpOption<VisualSpan>.None,
+                FSharpOption<Command2>.None);
         }
 
         private static CommandResult CreateResult()

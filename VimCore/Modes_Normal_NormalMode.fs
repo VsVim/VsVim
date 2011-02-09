@@ -8,7 +8,6 @@ open Microsoft.VisualStudio.Text.Editor
 
 type internal NormalModeData = {
     Command : string
-    IsInRepeatLastChange : bool
     IsInReplace : bool
     OneTimeMode : ModeKind option 
 } 
@@ -29,7 +28,6 @@ type internal NormalMode
     /// Reset state for data in Normal Mode
     let _emptyData = {
         Command = StringUtil.empty
-        IsInRepeatLastChange = false
         IsInReplace = false
         OneTimeMode = None
     }
@@ -67,6 +65,7 @@ type internal NormalMode
             let factory = Vim.Modes.CommandFactory(_operations, _capture, _bufferData.TextViewMotionUtil, _bufferData.JumpList, _bufferData.Settings)
 
             this.CreateSimpleCommands()
+            |> Seq.append (this.CreateCommandBindings())
             |> Seq.append (factory.CreateMovementCommands())
             |> Seq.append (factory.CreateEditCommandsForNormalMode())
             |> Seq.append (this.CreateMotionCommands())
@@ -117,77 +116,6 @@ type internal NormalMode
             CommandResult.Completed ModeSwitch.NoSwitch |> LongCommandResult.Finished
         LongCommandResult.NeedMoreInput (Some KeyRemapMode.Language, waitForKey)
 
-    /// Implements the '.' operator.  This is a special command in that it cannot be easily routed 
-    /// to interfaces like ICommonOperations due to the complexity of repeating the command here.  
-    member private this.RepeatLastChange countOpt reg =  
-
-        if _data.IsInRepeatLastChange then _statusUtil.OnError Resources.NormalMode_RecursiveRepeatDetected
-        else
-            _data <- { _data with IsInRepeatLastChange = true }
-            try
-
-                let rec repeatChange change countOpt =
-
-                    /// Repeat a text buffer edit.  
-                    let repeatTextBufferChange change = 
-                        match change with 
-                        | TextChange.Insert(text) -> _operations.InsertText text (CommandUtil2.CountOrDefault countOpt)
-                        | TextChange.Delete(count) -> 
-                            let caretPoint,caretLine = TextViewUtil.GetCaretPointAndLine this.TextView
-                            let length = min count (caretLine.EndIncludingLineBreak.Position - caretPoint.Position)
-                            let span = SnapshotSpanUtil.CreateWithLength caretPoint length
-                            _operations.DeleteSpan span
-
-
-                    match change with
-                    | RepeatableChange.TextChange(change) -> repeatTextBufferChange change
-                    | RepeatableChange.CommandChange(data) -> 
-
-                        let countOpt = match countOpt with | Some(count) -> Some(count) | None -> data.Count
-                        let reg = data.Register
-                        let commandName = data.Command.KeyInputSet.Name
-
-                        // Repeating a visual command is more complex because we need to calculate the
-                        // new visual range
-                        let repeatVisualOperation func = 
-                            match data.VisualRunData with
-                            | None -> _statusUtil.OnError (Resources.NormalMode_RepeatNotSupportedOnCommand commandName)
-                            | Some(oldSpan) ->
-                                let span = _visualSpanCalculator.CalculateForTextView _bufferData.TextView oldSpan
-                                func countOpt reg span |> ignore
-
-                        match data.Command with 
-                        | SimpleCommand(_, _, func) -> func countOpt reg |> ignore
-                        | MotionCommand(_, _, func) -> 
-    
-                            // Repeating a motion based command is a bit more complex because we need to
-                            // first re-run the motion to get the span to be processed
-                            match data.MotionData with
-                            | None -> _statusUtil.OnError (Resources.NormalMode_RepeatNotSupportedOnCommand commandName)
-                            | Some motionRunData ->
-    
-                                // Repeat the motion and process the results
-                                match _bufferData.TextViewMotionUtil.GetMotion motionRunData.Motion motionRunData.MotionArgument with
-                                | None ->  _statusUtil.OnError Resources.NormalMode_UnableToRepeatMotion
-                                | Some(motionData) -> func countOpt reg motionData |> ignore
-
-                        | LongCommand(_) -> 
-                            _statusUtil.OnError (Resources.NormalMode_RepeatNotSupportedOnCommand commandName)
-                        | VisualCommand(_, _, _, func) -> 
-                            repeatVisualOperation func
-                        | LongVisualCommand(_, _, _, func) -> 
-                            repeatVisualOperation func
-
-                    | RepeatableChange.LinkedChange(left, right) ->
-                        repeatChange left countOpt
-                        repeatChange right None
-
-                match _bufferData.Vim.ChangeTracker.LastChange with
-                | None -> _operations.Beep()
-                | Some(lastChange) -> repeatChange lastChange countOpt 
-            finally
-                _data <- { _data with IsInRepeatLastChange = false }
-
     /// Get the informatoin on how to handle the tilde command based on the current setting for tildeop
     member private this.GetTildeCommand count =
         let name = KeyInputUtil.CharToKeyInput '~' |> OneKeyInput
@@ -232,6 +160,24 @@ type internal NormalMode
                 let count = CommandUtil2.CountOrDefault count
                 func count reg 
             LongCommand(name, kind, func2))
+
+    /// Create the CommandBinding instances for the supported NormalCommand values
+    member x.CreateCommandBindings() =
+        let normalSeq = 
+            seq {
+                yield ("p", CommandFlags.Repeatable, NormalCommand.PutAfterCursor)
+                yield (".", CommandFlags.Special, NormalCommand.RepeatLastCommand)
+            } |> Seq.map (fun (str, flags, command) -> 
+                let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
+                Command.NormalCommand2(keyInputSet, flags, command))
+            
+        let motionSeq = 
+            seq {
+                yield ("y", CommandFlags.None, NormalCommand.Yank)
+            } |> Seq.map (fun (str, flags, command) -> 
+                let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
+                Command.MotionCommand2(keyInputSet, flags, command))
+        Seq.append normalSeq motionSeq
 
     /// Create the simple commands
     member this.CreateSimpleCommands() =
@@ -395,11 +341,6 @@ type internal NormalMode
                     fun count reg -> 
                         let span = _operations.DeleteCharacterBeforeCursor count
                         _operations.UpdateRegisterForSpan reg RegisterOperation.Delete span OperationKind.CharacterWise)
-                yield (
-                    "p", 
-                    CommandFlags.Repeatable, 
-                    ModeSwitch.NoSwitch,
-                    fun count reg -> _operations.PutAtCaret (reg.Value.Value.ApplyCount count) reg.Value.OperationKind PutKind.After false)
                 yield (
                     "P", 
                     CommandFlags.Repeatable, 
@@ -692,10 +633,6 @@ type internal NormalMode
         let needCountAsOpt = 
             seq {
                 yield (
-                    ["."], 
-                    CommandFlags.Special, 
-                    fun count reg -> this.RepeatLastChange count reg)
-                yield (
                     ["<C-Home>"], 
                     CommandFlags.Movement, 
                     fun count _ -> _operations.GoToLineOrFirst(count))
@@ -758,11 +695,6 @@ type internal NormalMode
                     CommandFlags.Repeatable,
                     None,
                     fun _ _ data -> _operations.ChangeLetterRot13 data.EditSpan)
-                yield (
-                    "y", 
-                    CommandFlags.None, 
-                    None, 
-                    fun _ reg data -> _operations.UpdateRegisterForSpan reg RegisterOperation.Yank data.OperationSpan data.OperationKind)
                 yield (
                     "<lt>", 
                     CommandFlags.None, 

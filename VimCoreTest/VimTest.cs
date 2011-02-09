@@ -45,7 +45,8 @@ namespace VimCore.UnitTest
                 _keyMap,
                 MockObjectFactory.CreateClipboardDevice().Object,
                 _changeTracker.Object,
-                _searchInfo.Object);
+                _searchInfo.Object,
+                new VimData());
             _vim = _vimRaw;
         }
 

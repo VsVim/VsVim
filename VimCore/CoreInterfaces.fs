@@ -584,8 +584,10 @@ type RunResult =
     | Completed
     | SubstituteConfirm of SnapshotSpan * SnapshotLineRange * SubstituteData
 
+/// REPEAT TODO: Really this should be a 3-tuple for the VisualKind values
 [<RequireQualifiedAccess>]
 type VisualSpan =
+
     | Single of VisualKind * SnapshotSpan
     /// REPEAT TODO: Rename Multiple -> Block
     | Multiple of VisualKind * NormalizedSnapshotSpanCollection
@@ -615,71 +617,6 @@ type CommandFlags =
     /// For Visual Mode commands which should reset the cursor to the original point
     /// after completing
     | ResetCaret = 0x20
-
-/// Representation of commands within Vim.  
-/// 
-/// REPEAT TODO: This should evolve into CommandBinding which has 
-///     Simple of KeyInputSet * Command
-///     Motion of KeyInputSet * (MotionData -> Command)
-[<DebuggerDisplay("{ToString(),nq}")>]
-type Command = 
-    
-    /// Represents a Command which has no motion modifiers.  The  delegate takes 
-    /// an optional count and a Register.  If unspecified the default register
-    /// will be used
-    | SimpleCommand of KeyInputSet * CommandFlags * (int option -> Register -> CommandResult)
-
-    /// Represents a Command prefix which has an associated motion.  The delegate takes
-    /// an optional count, a Register and a MotionResult value.  If unspecified the default
-    /// register will be used
-    | MotionCommand of KeyInputSet * CommandFlags * (int option -> Register -> MotionResult -> CommandResult)
-
-    /// Represents a command which has a Name but then has additional unspecified input
-    /// which needs to be dealt with specially by the command.  These commands are not
-    /// repeatable.  
-    | LongCommand of KeyInputSet * CommandFlags * (int option -> Register -> LongCommandResult) 
-
-    /// Represents a command which has a name and relies on the Visual Mode Span to 
-    /// execute the command
-    | VisualCommand of KeyInputSet * CommandFlags * VisualKind * (int option -> Register -> VisualSpan -> CommandResult) 
-
-    /// Represents a command which has a name, extra characters and relies on the Visual 
-    /// Mode Span to execute the command
-    | LongVisualCommand of KeyInputSet * CommandFlags * VisualKind * (int option -> Register -> VisualSpan -> LongCommandResult) 
-
-    with 
-
-    /// The raw command inputs
-    member x.KeyInputSet = 
-        match x with
-        | SimpleCommand(value, _, _ ) -> value
-        | MotionCommand(value, _, _) -> value
-        | LongCommand(value, _, _) -> value
-        | VisualCommand(value, _, _, _) -> value
-        | LongVisualCommand(value, _, _, _) -> value
-
-    /// The kind of the Command
-    member x.CommandFlags =
-        match x with
-        | SimpleCommand(_, value, _ ) -> value
-        | MotionCommand(_, value, _) -> value
-        | LongCommand(_, value, _) -> value
-        | VisualCommand(_, value, _, _) -> value
-        | LongVisualCommand(_, value, _, _) -> value
-
-    /// Is the Repeatable flag set
-    member x.IsRepeatable = Util.IsFlagSet x.CommandFlags CommandFlags.Repeatable
-
-    /// Is the HandlesEscape flag set
-    member x.HandlesEscape = Util.IsFlagSet x.CommandFlags CommandFlags.HandlesEscape
-
-    /// Is the Movement flag set
-    member x.IsMovement = Util.IsFlagSet x.CommandFlags CommandFlags.Movement
-
-    /// Is the Special flag set
-    member x.IsSpecial = Util.IsFlagSet x.CommandFlags CommandFlags.Special
-
-    override x.ToString() = System.String.Format("{0} -> {1}", x.KeyInputSet, x.CommandFlags)
 
 /// Data about the run of a given MotionResult
 type MotionData = {
@@ -749,20 +686,95 @@ type Command2 =
     /// A Visual Mode Command
     | VisualCommand of VisualCommand * CommandData * VisualSpan
 
-/// REPEAT TODO: Rename to CommandResult when old CommandResult is gone
-[<RequireQualifiedAccess>]
-type Command2Result =   
-    | Completed
-    | Error of string
+/// Representation of commands within Vim.  
+/// 
+/// REPEAT TODO: This should evolve into CommandBinding which has 
+///     Simple of KeyInputSet * Command
+///     Motion of KeyInputSet * (MotionData -> Command)
+/// REPEAT TODO: This should have requires qualified access
+[<DebuggerDisplay("{ToString(),nq}")>]
+type Command = 
+    
+    /// Represents a Command which has no motion modifiers.  The  delegate takes 
+    /// an optional count and a Register.  If unspecified the default register
+    /// will be used
+    | SimpleCommand of KeyInputSet * CommandFlags * (int option -> Register -> CommandResult)
+
+    /// Represents a Command prefix which has an associated motion.  The delegate takes
+    /// an optional count, a Register and a MotionResult value.  If unspecified the default
+    /// register will be used
+    | MotionCommand of KeyInputSet * CommandFlags * (int option -> Register -> MotionResult -> CommandResult)
+
+    /// Represents a command which has a Name but then has additional unspecified input
+    /// which needs to be dealt with specially by the command.  These commands are not
+    /// repeatable.  
+    | LongCommand of KeyInputSet * CommandFlags * (int option -> Register -> LongCommandResult) 
+
+    /// Represents a command which has a name and relies on the Visual Mode Span to 
+    /// execute the command
+    | VisualCommand of KeyInputSet * CommandFlags * VisualKind * (int option -> Register -> VisualSpan -> CommandResult) 
+
+    /// Represents a command which has a name, extra characters and relies on the Visual 
+    /// Mode Span to execute the command
+    | LongVisualCommand of KeyInputSet * CommandFlags * VisualKind * (int option -> Register -> VisualSpan -> LongCommandResult) 
+
+    /// KeyInputSet bound to a particular NormalCommand instance
+    | NormalCommand2 of KeyInputSet * CommandFlags * NormalCommand
+
+    /// KeyInputSet bound to a particular NormalCommand instance which takes a Motion Argument
+    | MotionCommand2 of KeyInputSet * CommandFlags * (MotionData -> NormalCommand)
+
+    /// KeyInputSet bound to a particular VisualCommand instance
+    | VisualCommand2 of KeyInputSet * CommandFlags * VisualCommand
+
+    with 
+
+    /// The raw command inputs
+    member x.KeyInputSet = 
+        match x with
+        | SimpleCommand(value, _, _ ) -> value
+        | MotionCommand(value, _, _) -> value
+        | LongCommand(value, _, _) -> value
+        | VisualCommand(value, _, _, _) -> value
+        | LongVisualCommand(value, _, _, _) -> value
+        | NormalCommand2 (value, _, _) -> value
+        | MotionCommand2 (value, _, _) -> value
+        | VisualCommand2 (value, _, _) -> value
+
+    /// The kind of the Command
+    member x.CommandFlags =
+        match x with
+        | SimpleCommand(_, value, _ ) -> value
+        | MotionCommand(_, value, _) -> value
+        | LongCommand(_, value, _) -> value
+        | VisualCommand(_, value, _, _) -> value
+        | LongVisualCommand(_, value, _, _) -> value
+        | NormalCommand2 (_, value, _) -> value
+        | MotionCommand2 (_, value, _) -> value
+        | VisualCommand2 (_, value, _) -> value
+
+    /// Is the Repeatable flag set
+    member x.IsRepeatable = Util.IsFlagSet x.CommandFlags CommandFlags.Repeatable
+
+    /// Is the HandlesEscape flag set
+    member x.HandlesEscape = Util.IsFlagSet x.CommandFlags CommandFlags.HandlesEscape
+
+    /// Is the Movement flag set
+    member x.IsMovement = Util.IsFlagSet x.CommandFlags CommandFlags.Movement
+
+    /// Is the Special flag set
+    member x.IsSpecial = Util.IsFlagSet x.CommandFlags CommandFlags.Special
+
+    override x.ToString() = System.String.Format("{0} -> {1}", x.KeyInputSet, x.CommandFlags)
 
 /// Used to exceute commands
 and ICommandUtil = 
 
     /// Run a normal command
-    abstract RunNormalCommand : NormalCommand -> CommandData -> Command2Result
+    abstract RunNormalCommand : NormalCommand -> CommandData -> CommandResult
 
     /// Run a visual command
-    abstract RunVisualCommand : VisualCommand -> CommandData -> VisualSpan -> Command2Result
+    abstract RunVisualCommand : VisualCommand -> CommandData -> VisualSpan -> CommandResult
 
 /// Contains the stored information about a Visual Span.  This instance *will* be 
 /// stored for long periods of time and used to erpeat a Command instance across
@@ -778,6 +790,19 @@ type StoredVisualSpan =
 
     /// Storing of a block span records the collection of Spans
     | Block of Span list
+
+    with
+
+    /// Create a StoredVisualSpan from the provided VisualSpan value
+    static member OfVisualSpan visualSpan = 
+        match visualSpan with
+        | VisualSpan.Single (kind, span) ->
+            match kind with
+            | VisualKind.Character -> StoredVisualSpan.Characterwise span.Span
+            | VisualKind.Line -> StoredVisualSpan.Linewise (SnapshotSpanUtil.GetLineCount span)
+            | VisualKind.Block -> StoredVisualSpan.Block [span.Span]
+        | VisualSpan.Multiple (_, col) -> 
+            StoredVisualSpan.Block (col |> Seq.map (fun span -> span.Span) |> List.ofSeq)
 
 [<RequireQualifiedAccess>]
 type TextChange = 
@@ -803,6 +828,17 @@ type StoredCommand =
     /// A Linked Command links together 2 other StoredCommand objects so they
     /// can be repeated together.
     | LinkedCommand of StoredCommand * StoredCommand
+
+    with
+
+    /// Create a StoredCommand instance from the given Command value
+    static member OfCommand command = 
+        match command with 
+        | Command2.NormalCommand (command, data) -> 
+            StoredCommand.NormalCommand (command, data)
+        | Command2.VisualCommand (command, data, visualSpan) ->
+            let storedVisualSpan = StoredVisualSpan.OfVisualSpan visualSpan
+            StoredCommand.VisualCommand (command, data, storedVisualSpan)
 
 /// Flags about specific motions
 [<RequireQualifiedAccess>]
@@ -868,6 +904,8 @@ type MotionCommand =
         | ComplexMotionCommand(_,flags,_) -> flags
 
 /// The information about the particular run of a Command
+/// REPEAT TODO: Delet this and replace with Command2
+/// CommandBinding)
 type CommandRunData = {
     Command : Command;
     Register : Register;
@@ -879,6 +917,9 @@ type CommandRunData = {
 
     /// For visual commands this holds the relevant span information
     VisualRunData : VisualSpan option
+
+    /// Temporary hack to support the new command infrastructure
+    Command2 : Command2 option 
 }
 
 /// Responsible for binding key input to a Motion and MotionArgument tuple.  Does

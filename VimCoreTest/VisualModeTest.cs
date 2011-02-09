@@ -34,6 +34,7 @@ namespace VimCore.UnitTest
         private Mock<IUndoRedoOperations> _undoRedoOperations;
         private Mock<IEditorOperations> _editorOperations;
         private Mock<IJumpList> _jumpList;
+        private Mock<ICommandUtil> _commandUtil;
 
         public void Create(params string[] lines)
         {
@@ -64,6 +65,7 @@ namespace VimCore.UnitTest
             _operations.SetupGet(x => x.EditorOperations).Returns(_editorOperations.Object);
             _operations.SetupGet(x => x.TextView).Returns(_textView);
             _host = _factory.Create<IVimHost>(MockBehavior.Loose);
+            _commandUtil = _factory.Create<ICommandUtil>();
             _incrementalSearch = MockObjectFactory.CreateIncrementalSearch(factory: _factory);
             var globalSettings = new GlobalSettings();
             var localSettings = new LocalSettings(globalSettings, _textView);
@@ -83,7 +85,14 @@ namespace VimCore.UnitTest
                 _textView,
                 _incrementalSearch.Object,
                 localSettings);
-            var runner = new CommandRunner(_textView, _map, capture, motionUtil, (new Mock<IStatusUtil>()).Object);
+            var runner = new CommandRunner(
+                _textView, 
+                _map, 
+                capture, 
+                motionUtil, 
+                _commandUtil.Object,
+                (new Mock<IStatusUtil>()).Object,
+                VisualKind.Character);
             _modeRaw = new VisualMode(_bufferData.Object, _operations.Object, kind, runner, capture, _tracker.Object);
             _mode = _modeRaw;
             _mode.OnEnter(ModeArgument.None);

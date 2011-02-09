@@ -7,7 +7,9 @@ open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Operations
 
 type internal ChangeTracker
-    (   _textChangeTrackerFactory : ITextChangeTrackerFactory ) =
+    (
+        _textChangeTrackerFactory : ITextChangeTrackerFactory,
+        _vimData : IVimData ) =
 
     /// This is a prime example of the flaw in this architecture.  The last 
     /// change should be independent of the IVimBuffer which caused it.  Need
@@ -45,11 +47,20 @@ type internal ChangeTracker
         elif command.IsRepeatable then 
             let change = RepeatableChange.CommandChange data
             _last <- Some (buffer, change)
+            match data.Command2 with
+            | None ->
+                _vimData.LastCommand <- None
+            | Some command ->
+                let storedCommand = StoredCommand.OfCommand command
+                _vimData.LastCommand <- Some storedCommand
         else 
             _last <- None
+            _vimData.LastCommand <- None
 
     member private x.OnTextChanged buffer data = 
-        let useCurrent() = _last <- (buffer, RepeatableChange.TextChange(data)) |> Some
+        let useCurrent() = 
+            _last <- (buffer, RepeatableChange.TextChange(data)) |> Some
+            _vimData.LastCommand <- Some (StoredCommand.TextChangeCommand data)
         match _last with
         | None -> 
             _last <- (buffer, RepeatableChange.TextChange(data)) |> Some
@@ -61,9 +72,10 @@ type internal ChangeTracker
                 if Util.IsFlagSet change.Command.CommandFlags CommandFlags.LinkedWithNextTextChange then
                     let change = RepeatableChange.LinkedChange (RepeatableChange.CommandChange change,RepeatableChange.TextChange data) 
                     _last <- Some (buffer, change)
+                    _vimData.LastCommand <- Some (StoredCommand.TextChangeCommand data)
                 else 
                     useCurrent()
-            
+
     interface IVimBufferCreationListener with
         member x.VimBufferCreated buffer = x.OnVimBufferCreated buffer
 

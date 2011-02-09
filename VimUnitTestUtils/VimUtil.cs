@@ -237,7 +237,8 @@ namespace Vim.UnitTest
                 register,
                 countOpt,
                 motion,
-                visual);
+                visual,
+                FSharpOption<Command2>.None);
         }
 
         internal static MotionData CreateMotionData(

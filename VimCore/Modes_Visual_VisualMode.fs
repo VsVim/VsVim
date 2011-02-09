@@ -89,7 +89,10 @@ type internal VisualMode
             | Command.MotionCommand (name, flags, func) -> Command.MotionCommand (name, flags,wrapMotion func) |> Some
             | Command.LongCommand (name, flags, func) -> Command.LongCommand (name, flags, wrapLong func) |> Some
             | Command.VisualCommand (_) -> Some command
-            | Command.LongVisualCommand (_) -> Some command)
+            | Command.LongVisualCommand (_) -> Some command
+            | Command.NormalCommand2 _ -> None
+            | Command.MotionCommand2 _ -> None
+            | Command.VisualCommand2 _ -> None) 
         |> SeqUtil.filterToSome
 
     member x.BuildOperationsSequence() =

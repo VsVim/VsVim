@@ -114,6 +114,7 @@ type internal VimBufferFactory
             VimHost = _host }
         let commonOperations = Modes.CommonOperations(operationsData) :> Modes.ICommonOperations
 
+        let commandUtil = CommandUtil(commonOperations, vim.RegisterMap, motionUtil, vim.VimData) :> ICommandUtil
         let incrementalSearch = 
             IncrementalSearch(
                 commonOperations,
@@ -143,7 +144,7 @@ type internal VimBufferFactory
 
         statusUtil.VimBuffer <- Some bufferRaw
 
-        let createCommandRunner() = CommandRunner (view, vim.RegisterMap, capture, motionUtil, statusUtil) :>ICommandRunner
+        let createCommandRunner kind = CommandRunner (view, vim.RegisterMap, capture, motionUtil, commandUtil, statusUtil, kind) :>ICommandRunner
         let broker = _completionWindowBrokerFactoryService.CreateDisplayWindowBroker view
         let bufferOptions = _editorOptionsFactoryService.GetOptions(view.TextBuffer)
         let normalOpts = Modes.Normal.DefaultOperations(operationsData) :> Vim.Modes.Normal.IOperations
@@ -159,13 +160,14 @@ type internal VimBufferFactory
             |> Seq.ofList
             |> Seq.map (fun kind -> 
                 let tracker, opts = visualOptsFactory kind
-                ((Modes.Visual.VisualMode(buffer, opts, kind, createCommandRunner(),capture, tracker)) :> IMode) )
+                let visualKind = VisualKind.OfModeKind kind |> Option.get
+                ((Modes.Visual.VisualMode(buffer, opts, kind, createCommandRunner visualKind,capture, tracker)) :> IMode) )
             |> List.ofSeq
     
         // Normal mode values
         let modeList = 
             [
-                ((Modes.Normal.NormalMode(buffer, normalOpts, statusUtil,broker, createCommandRunner(),capture, _visualSpanCalculator)) :> IMode)
+                ((Modes.Normal.NormalMode(buffer, normalOpts, statusUtil,broker, createCommandRunner VisualKind.Character,capture, _visualSpanCalculator)) :> IMode)
                 ((Modes.Command.CommandMode(buffer, commandProcessor)) :> IMode)
                 ((Modes.Insert.InsertMode(buffer, commonOperations, broker, editOptions,false)) :> IMode)
                 ((Modes.Insert.InsertMode(buffer, commonOperations, broker, editOptions,true)) :> IMode)
@@ -197,13 +199,12 @@ type internal Vim
         _keyMap : IKeyMap,
         _clipboardDevice : IClipboardDevice,
         _changeTracker : IChangeTracker,
-        _search : ISearchService ) =
+        _search : ISearchService,
+        _vimData : IVimData ) =
 
     /// Holds an IVimBuffer and the DisposableBag for event handlers on the IVimBuffer.  This
     /// needs to be removed when we're done with the IVimBuffer to avoid leaks
     let _bufferMap = new System.Collections.Generic.Dictionary<ITextView, IVimBuffer * DisposableBag>()
-
-    let _vimData = VimData() :> IVimData
 
     /// Holds the active stack of IVimBuffer instances
     let mutable _activeBufferStack : IVimBuffer list = List.empty
@@ -232,7 +233,8 @@ type internal Vim
         textChangeTrackerFactory : ITextChangeTrackerFactory,
         clipboard : IClipboardDevice ) =
         let markMap = MarkMap(tlcService)
-        let tracker = ChangeTracker(textChangeTrackerFactory)
+        let vimData = VimData() :> IVimData
+        let tracker = ChangeTracker(textChangeTrackerFactory, vimData)
         let globalSettings = GlobalSettings() :> IVimGlobalSettings
         let listeners = 
             [tracker :> IVimBufferCreationListener; markMap :> IVimBufferCreationListener]
@@ -248,7 +250,8 @@ type internal Vim
             KeyMap() :> IKeyMap,
             clipboard,
             tracker :> IChangeTracker,
-            SearchService(search, globalSettings) :> ISearchService)
+            SearchService(search, globalSettings) :> ISearchService,
+            vimData)
 
     member x.ActiveBuffer = ListUtil.tryHeadOnly _activeBufferStack
 

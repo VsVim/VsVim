@@ -32,11 +32,11 @@ type internal CommandUtil
 
     /// Put the contents of the specified register after the cursor.  Used for the
     /// normal / visual 'p' command
-    member x.PutAfterCursor (register : Register) count =
+    member x.PutAfterCursor (register : Register) count switch =
         let point = SnapshotPointUtil.AddOneOrCurrent x.CaretPoint
         let stringData = register.StringData.ApplyCount count
         _operations.PutAt point stringData register.OperationKind
-        Command2Result.Completed
+        CommandResult.Completed switch
 
     /// Calculate the VisualSpan value for the associated ITextBuffer given the 
     /// StoreVisualSpan value
@@ -66,7 +66,7 @@ type internal CommandUtil
                     let length = min count (caretLine.EndIncludingLineBreak.Position - caretPoint.Position)
                     let span = SnapshotSpanUtil.CreateWithLength caretPoint length
                     _operations.DeleteSpan span
-                Command2Result.Completed
+                CommandResult.Completed ModeSwitch.NoSwitch
 
             match command with
             | StoredCommand.NormalCommand (command, data) ->
@@ -81,18 +81,18 @@ type internal CommandUtil
                 // Run the commands in sequence.  Only continue onto the second if the first 
                 // command succeeds
                 match repeat command1 with
-                | Command2Result.Error msg -> Command2Result.Error msg
-                | Command2Result.Completed -> repeat command2
+                | CommandResult.Error msg -> CommandResult.Error msg
+                | CommandResult.Completed _ -> repeat command2
 
         if _inRepeatLastChange then
-            Command2Result.Error Resources.NormalMode_RecursiveRepeatDetected
+            CommandResult.Error Resources.NormalMode_RecursiveRepeatDetected
         else
             try
                 _inRepeatLastChange <- true
                 match _vimData.LastCommand with
                 | None -> 
                     _operations.Beep()
-                    Command2Result.Completed
+                    CommandResult.Completed ModeSwitch.NoSwitch
                 | Some command ->
                     repeat command
             finally
@@ -101,21 +101,21 @@ type internal CommandUtil
     /// Yank the contents of the motion into the specified register
     member x.YankMotion register (result: MotionResult) = 
         _operations.UpdateRegisterForSpan register RegisterOperation.Yank result.OperationSpan result.OperationKind
-        Command2Result.Completed
+        CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Get the MotionResult value for the provided MotionData and pass it
     /// if found to the provided function
     member x.RunWithMotion (motion : MotionData) func = 
         match _motionUtil.GetMotion motion.Motion motion.MotionArgument with
-        | None -> Command2Result.Error Resources.MotionCapture_InvalidMotion
+        | None -> CommandResult.Error Resources.MotionCapture_InvalidMotion
         | Some data -> func data
 
     /// Run a NormalCommand against the buffer
-    member x.RunNormalCommand command (data : CommandData) : Command2Result = 
+    member x.RunNormalCommand command (data : CommandData) =
         let register = _registerMap.GetRegister data.RegisterNameOrDefault
         let count = data.CountOrDefault
         match command with
-        | NormalCommand.PutAfterCursor -> x.PutAfterCursor register count
+        | NormalCommand.PutAfterCursor -> x.PutAfterCursor register count ModeSwitch.NoSwitch
         | NormalCommand.RepeatLastCommand -> x.RepeatLastCommand data
         | NormalCommand.Yank motion -> x.RunWithMotion motion (x.YankMotion register)
 
@@ -124,7 +124,7 @@ type internal CommandUtil
         let register = _registerMap.GetRegister data.RegisterNameOrDefault
         let count = data.CountOrDefault
         match command with
-        | VisualCommand.PutAfterCursor -> x.PutAfterCursor register count
+        | VisualCommand.PutAfterCursor -> x.PutAfterCursor register count (ModeSwitch.SwitchMode ModeKind.Normal)
 
     interface ICommandUtil with
         member x.RunNormalCommand command data = x.RunNormalCommand command data

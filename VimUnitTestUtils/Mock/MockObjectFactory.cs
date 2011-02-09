@@ -78,7 +78,7 @@ namespace Vim.UnitTest.Mock
             keyMap = keyMap ?? (new KeyMap());
             keyboardDevice = keyboardDevice ?? (factory.Create<IKeyboardDevice>(MockBehavior.Loose)).Object;
             mouseDevice = mouseDevice ?? (factory.Create<IMouseDevice>(MockBehavior.Loose)).Object;
-            changeTracker = changeTracker ?? new ChangeTracker(new TextChangeTrackerFactory(keyboardDevice, mouseDevice));
+            changeTracker = changeTracker ?? new ChangeTracker(new TextChangeTrackerFactory(keyboardDevice, mouseDevice), new VimData());
             vimData = vimData ?? new VimData();
             var mock = factory.Create<IVim>(MockBehavior.Strict);
             mock.SetupGet(x => x.RegisterMap).Returns(registerMap);

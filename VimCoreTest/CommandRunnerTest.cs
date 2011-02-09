@@ -19,6 +19,7 @@ namespace VimCore.UnitTest
         private MockRepository _factory;
         private Mock<IVimHost> _host;
         private Mock<IStatusUtil> _statusUtil;
+        private Mock<ICommandUtil> _commandUtil;
         private IVimData _vimData;
         private IRegisterMap _registerMap;
         private ITextView _textView;
@@ -31,6 +32,7 @@ namespace VimCore.UnitTest
             _textView = EditorUtil.CreateView(lines);
             _factory = new MockRepository(MockBehavior.Strict);
             _host = _factory.Create<IVimHost>();
+            _commandUtil = _factory.Create<ICommandUtil>();
             _statusUtil = _factory.Create<IStatusUtil>();
             _registerMap = VimUtil.CreateRegisterMap(MockObjectFactory.CreateClipboardDevice(_factory).Object);
             _vimData = new VimData();
@@ -50,7 +52,9 @@ namespace VimCore.UnitTest
                 _registerMap,
                 capture,
                 _motionUtil,
-                _statusUtil.Object);
+                _commandUtil.Object,
+                _statusUtil.Object,
+                VisualKind.Character);
             _runner = _runnerRaw;
         }
 

@@ -10,6 +10,9 @@ type internal RunCommandResult =
     | NoMatchingCommand
 
 type internal CommandRunnerData = {
+
+    /// REPEAT TODO: Store the RegisterName here as an Option so it can be 
+    /// threaded through to CommandData properly
     Register : Register;
     Count : int option;
 
@@ -28,8 +31,11 @@ type internal CommandRunner
         _textView : ITextView,
         _registerMap : IRegisterMap,
         _capture : IMotionCapture,
+        // REPEAT TODO: Eventually this won't be needed
         _motionUtil : ITextViewMotionUtil,
-        _statusUtil : IStatusUtil ) as this =
+        _commandUtil : ICommandUtil,
+        _statusUtil : IStatusUtil,
+        _visualKind : VisualKind ) as this =
 
     /// Represents the empty state for processing commands.  Holds all of the default
     /// values
@@ -58,9 +64,10 @@ type internal CommandRunner
         _runFunc <- this.RunCheckForCountAndRegister
 
     /// Create a CommandRunData based on the current state for the given command information
-    member x.CreateCommandRunData command motionDataOpt visualDataOpt = 
+    member x.CreateCommandRunData command motionDataOpt visualDataOpt command2Opt = 
         {  
             Command = command
+            Command2 = command2Opt
             Register = _data.Register
             Count = _data.Count
             MotionData = motionDataOpt
@@ -102,29 +109,12 @@ type internal CommandRunner
 
     /// Used to wait for a MotionCommand to complete.  Will call the passed in function 
     /// if the motion is successfully completed
-    member x.WaitForMotion command onMotionComplete (initialInput : KeyInput option) =
+    member x.WaitForMotionCore command onMotionBind (initialInput : KeyInput option) =
         _data <- { _data with State = NotFinishWithCommand(command, Some KeyRemapMode.OperatorPending) }
         let rec inner (result : MotionBindResult) = 
             match result with 
-            | MotionBindResult.Complete (motionRunData, precalculatedData) ->
-
-                // Calculate the MotionResult.  Used the cached MotionResult if available
-                let motionData = 
-                    match precalculatedData with
-                    | Some data -> Some data
-                    | None -> _motionUtil.GetMotion motionRunData.Motion motionRunData.MotionArgument
-
-                // Now use the MotionResult to complete the command
-                match motionData with
-                | None ->
-                    // Invalid motion so raise an error
-                    _statusUtil.OnError Resources.MotionCapture_InvalidMotion
-                    CancelledCommand
-                | Some motionData -> 
-                    // Valid motion pass off to the actual command
-                    let data = x.CreateCommandRunData command (Some motionRunData) None
-                    let result = onMotionComplete data.Count data.Register motionData
-                    RanCommand (data, result)
+            | MotionBindResult.Complete (motionData, _) ->
+                onMotionBind motionData
             | MotionBindResult.NeedMoreInput (keyRemapMode, moreFunc) ->
                 _data <- { _data with State = NotFinishWithCommand(command, keyRemapMode) }
                 let func ki = moreFunc ki |> inner
@@ -139,6 +129,33 @@ type internal CommandRunner
         match initialInput with
         | None -> NeedMore runInitialMotion
         | Some(ki) -> runInitialMotion ki
+
+    /// REPEAT TODO: Delete when no longer needed
+    member x.WaitForMotionOld command func initialInput =
+        let inner (motionData : MotionData) = 
+            // Now use the MotionResult to complete the command
+            match _motionUtil.GetMotion motionData.Motion motionData.MotionArgument with
+            | None ->
+                // Invalid motion so raise an error
+                _statusUtil.OnError Resources.MotionCapture_InvalidMotion
+                CancelledCommand
+            | Some motionResult -> 
+                // Valid motion pass off to the actual command
+                let data = x.CreateCommandRunData command (Some motionData) None None
+                let result = func data.Count data.Register motionResult
+                RanCommand (data, result)
+        x.WaitForMotionCore command inner initialInput
+
+    /// REPEAT TODO: Merge with WaitForMotionCore when old MotionCommand is deleted
+    member x.WaitForMotionNew command func initialInput =
+        let inner motionData = 
+            let data = { Count = _data.Count; RegisterName = Some _data.Register.Name }
+            let normalCommand = func motionData
+            let result = _commandUtil.RunNormalCommand normalCommand data 
+
+            let data = x.CreateCommandRunData command None None None
+            RanCommand (data, result)
+        x.WaitForMotionCore command inner initialInput
 
     /// Certain commands require additional data on top of their initial command 
     /// name.  They will return NeedMoreKeyInput until they receive it all
@@ -157,7 +174,7 @@ type internal CommandRunner
     member x.WaitForLongCommand command keyRemapMode func =
         _data <- { _data with State = NotFinishWithCommand(command, keyRemapMode) }
 
-        let data = x.CreateCommandRunData command None None
+        let data = x.CreateCommandRunData command None None None
         let rec inner result = 
             match result with
             | LongCommandResult.Finished(commandResult) -> RanCommand (data,commandResult)
@@ -172,17 +189,17 @@ type internal CommandRunner
     member x.WaitForLongVisualCommand command keyRemapMode kind func =
         _data <- { _data with State = NotFinishWithCommand(command, keyRemapMode) }
 
-        let data = x.CreateCommandRunData command None None
+        let data = x.CreateCommandRunData command None None None
         let rec inner result = 
             match result with
-            | LongCommandResult.Finished(commandResult) -> RanCommand (data,commandResult)
+            | LongCommandResult.Finished(commandResult) -> RanCommand (data, commandResult)
             | LongCommandResult.Cancelled -> CancelledCommand
             | LongCommandResult.NeedMoreInput(keyRemapMode, func) -> 
                 _data <- { _data with State = NotFinishWithCommand(command, keyRemapMode) }
                 NeedMore (fun ki -> func ki |> inner)
 
         let visualSpan = x.GetVisualSpan kind
-        let data = x.CreateCommandRunData command None (Some visualSpan)
+        let data = x.CreateCommandRunData command None (Some visualSpan) None
         func _data.Count _data.Register visualSpan |> inner
 
     /// Try and run a command with the given name
@@ -202,18 +219,31 @@ type internal CommandRunner
 
         match Map.tryFind commandName _commandMap with
         | Some(command) ->
+
             match command with
             | Command.SimpleCommand(_,_,func) -> 
-                let data = x.CreateCommandRunData command None None
+                let data = x.CreateCommandRunData command None None None
                 let result = func _data.Count _data.Register
                 RanCommand (data,result)
+            | Command.NormalCommand2(_, _, normalCommand) -> 
+                let data = { Count = _data.Count; RegisterName = Some _data.Register.Name }
+                let result = _commandUtil.RunNormalCommand normalCommand data 
+
+                let data = x.CreateCommandRunData command None None (Some (Command2.NormalCommand (normalCommand, data)))
+                RanCommand (data, result)
             | Command.VisualCommand(_,_,kind,func) -> 
                 let visualSpan = x.GetVisualSpan kind
-                let data = x.CreateCommandRunData command None (Some visualSpan)
+                let data = x.CreateCommandRunData command None (Some visualSpan) None
                 let result = func _data.Count _data.Register visualSpan
                 RanCommand (data,result)
-            | Command.MotionCommand(_, _, func) -> 
+            | Command.VisualCommand2(_, _, visualCommand) ->
+                let visualSpan = x.GetVisualSpan _visualKind
+                let data = { Count = _data.Count; RegisterName = Some _data.Register.Name }
+                let result = _commandUtil.RunVisualCommand visualCommand data visualSpan
 
+                let data = x.CreateCommandRunData command None (Some visualSpan) (Some (Command2.VisualCommand (visualCommand, data, visualSpan)))
+                RanCommand (data, result)
+            | Command.MotionCommand(_, _, func) -> 
                 // Can't just call this.  It's possible there is a non-motion command with a 
                 // longer command commandInputs.  If there are any other commands which have a 
                 // matching prefix we can't bind to the command yet
@@ -222,13 +252,30 @@ type internal CommandRunner
                     |> Seq.filter (fun c -> c.KeyInputSet <> command.KeyInputSet)
                 if Seq.isEmpty withPrefix then 
                     // Nothing else matched so we are good to go for this motion.
-                    x.WaitForMotion command func None
+                    x.WaitForMotionOld command func None
                 else 
                     // At least one other command matched so we need at least one more piece of input to
                     // differentiate the commands.  At this point though because the command is of the
                     // motion variety we are in operator pending
                     _data <- {_data with State = NotEnoughMatchingPrefix (command, withPrefix |> List.ofSeq, Some KeyRemapMode.OperatorPending)}
                     NeedMore x.WaitForCommand
+            | Command.MotionCommand2(_, _, func) -> 
+                // Can't just call this.  It's possible there is a non-motion command with a 
+                // longer command commandInputs.  If there are any other commands which have a 
+                // matching prefix we can't bind to the command yet
+                let withPrefix = 
+                    findPrefixMatches commandName
+                    |> Seq.filter (fun c -> c.KeyInputSet <> command.KeyInputSet)
+                if Seq.isEmpty withPrefix then 
+                    // Nothing else matched so we are good to go for this motion.
+                    x.WaitForMotionNew command func None
+                else 
+                    // At least one other command matched so we need at least one more piece of input to
+                    // differentiate the commands.  At this point though because the command is of the
+                    // motion variety we are in operator pending
+                    _data <- {_data with State = NotEnoughMatchingPrefix (command, withPrefix |> List.ofSeq, Some KeyRemapMode.OperatorPending)}
+                    NeedMore x.WaitForCommand
+                
             | Command.LongCommand(_,_,func) -> 
                 x.WaitForLongCommand command None func
             | Command.LongVisualCommand(_, _, kind, func) ->
@@ -249,11 +296,14 @@ type internal CommandRunner
                 match Map.tryFind previousCommandName _commandMap with
                 | Some(command) ->
                     match command with
-                    | Command.SimpleCommand(_) -> RunCommandResult.NeedMore x.WaitForCommand 
-                    | Command.VisualCommand(_) -> RunCommandResult.NeedMore x.WaitForCommand
-                    | Command.LongCommand(_) -> RunCommandResult.NeedMore x.WaitForCommand 
-                    | Command.LongVisualCommand(_) -> RunCommandResult.NeedMore x.WaitForCommand 
-                    | Command.MotionCommand(_,_,func) -> x.WaitForMotion command func (Some currentInput) 
+                    | Command.SimpleCommand _ -> RunCommandResult.NeedMore x.WaitForCommand 
+                    | Command.VisualCommand _ -> RunCommandResult.NeedMore x.WaitForCommand
+                    | Command.LongCommand _ -> RunCommandResult.NeedMore x.WaitForCommand 
+                    | Command.LongVisualCommand _ -> RunCommandResult.NeedMore x.WaitForCommand 
+                    | Command.MotionCommand (_, _, func) -> x.WaitForMotionOld command func (Some currentInput) 
+                    | Command.MotionCommand2 (_, _, func) -> x.WaitForMotionNew command func (Some currentInput)
+                    | Command.NormalCommand2 _ -> RunCommandResult.NeedMore x.WaitForCommand
+                    | Command.VisualCommand2 _ -> RunCommandResult.NeedMore x.WaitForCommand
                 | None -> 
                     // No prefix matches and no previous motion so won't ever match a comamand
                     RunCommandResult.NoMatchingCommand
