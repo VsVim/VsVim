@@ -148,8 +148,8 @@ type VimKey =
 
 module VimKeyUtil =
 
-    /// Is this a key from the Keypad
-    let IsKeypadKey key = 
+    /// Is this a number key from the Keypad
+    let IsKeypadNumberKey key = 
         match key with
         | VimKey.Keypad0 -> true
         | VimKey.Keypad1 -> true
@@ -161,12 +161,20 @@ module VimKeyUtil =
         | VimKey.Keypad7 -> true
         | VimKey.Keypad8 -> true
         | VimKey.Keypad9 -> true
-        | VimKey.KeypadPlus -> true
-        | VimKey.KeypadMinus -> true
-        | VimKey.KeypadDecimal -> true
-        | VimKey.KeypadDivide -> true
-        | VimKey.KeypadMultiply -> true
         | _ -> false
+
+    /// Is this a key from the Keypad
+    let IsKeypadKey key = 
+        if IsKeypadNumberKey key then
+            true
+        else
+            match key with
+            | VimKey.KeypadPlus -> true
+            | VimKey.KeypadMinus -> true
+            | VimKey.KeypadDecimal -> true
+            | VimKey.KeypadDivide -> true
+            | VimKey.KeypadMultiply -> true
+            | _ -> false
 
 [<System.Flags>]
 type KeyModifiers = 
