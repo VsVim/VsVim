@@ -573,6 +573,7 @@ type CommandResult =
     | Completed  of ModeSwitch
     | Error of string
 
+/// REPEAT TODO: Delete
 [<RequireQualifiedAccess>]
 type LongCommandResult =
     | Finished of CommandResult
@@ -686,6 +687,21 @@ type Command2 =
     /// A Visual Mode Command
     | VisualCommand of VisualCommand * CommandData * VisualSpan
 
+/// The result of binding to a Motion value.
+[<RequireQualifiedAccess>]
+type BindResult<'T> = 
+
+    /// Successfully bound to a value
+    | Complete of 'T 
+
+    /// More input is needed to complete the binding operation
+    | NeedMoreInput of KeyRemapMode option * (KeyInput -> BindResult<'T>)
+
+    | Error of string
+
+    /// Motion was cancelled via user input
+    | Cancelled
+
 /// Representation of commands within Vim.  
 /// 
 /// REPEAT TODO: This should evolve into CommandBinding which has 
@@ -693,8 +709,9 @@ type Command2 =
 ///     Motion of KeyInputSet * (MotionData -> Command)
 /// REPEAT TODO: This should have requires qualified access
 [<DebuggerDisplay("{ToString(),nq}")>]
-type Command = 
-    
+[<RequireQualifiedAccess>]
+type CommandBinding = 
+
     /// Represents a Command which has no motion modifiers.  The  delegate takes 
     /// an optional count and a Register.  If unspecified the default register
     /// will be used
@@ -721,11 +738,17 @@ type Command =
     /// KeyInputSet bound to a particular NormalCommand instance
     | NormalCommand2 of KeyInputSet * CommandFlags * NormalCommand
 
+    /// KeyInputSet bound to a complex NormalCommand instance
+    | ComplexNormalCommand of KeyInputSet * CommandFlags * (KeyInput -> BindResult<NormalCommand>)
+
     /// KeyInputSet bound to a particular NormalCommand instance which takes a Motion Argument
     | MotionCommand2 of KeyInputSet * CommandFlags * (MotionData -> NormalCommand)
 
     /// KeyInputSet bound to a particular VisualCommand instance
     | VisualCommand2 of KeyInputSet * CommandFlags * VisualCommand
+
+    /// KeyInputSet bound to a complex VisualCommand instance
+    | ComplexVisualCommand of KeyInputSet * CommandFlags * (KeyInput -> BindResult<VisualCommand>)
 
     with 
 
@@ -740,6 +763,8 @@ type Command =
         | NormalCommand2 (value, _, _) -> value
         | MotionCommand2 (value, _, _) -> value
         | VisualCommand2 (value, _, _) -> value
+        | ComplexNormalCommand (value, _, _) -> value
+        | ComplexVisualCommand (value, _, _) -> value
 
     /// The kind of the Command
     member x.CommandFlags =
@@ -752,6 +777,8 @@ type Command =
         | NormalCommand2 (_, value, _) -> value
         | MotionCommand2 (_, value, _) -> value
         | VisualCommand2 (_, value, _) -> value
+        | ComplexNormalCommand (_, value, _) -> value
+        | ComplexVisualCommand (_, value, _) -> value
 
     /// Is the Repeatable flag set
     member x.IsRepeatable = Util.IsFlagSet x.CommandFlags CommandFlags.Repeatable
@@ -860,22 +887,7 @@ type MotionFlags =
     | HandlesEscape = 0x4
 
 /// The result of binding to a Motion value.
-[<RequireQualifiedAccess>]
-type MotionBindResult = 
-
-    /// Successfully bound to a Motion value.  This will return the bound motion, the 
-    /// argument which should be passed to the motion to get the actual result and
-    /// optionally a pre-calculated MotionResult value.  This is helpful in some scenarios
-    /// where part of binding the Motion includes calculating the resulting Motion data
-    | Complete of MotionData * MotionResult option
-
-    /// Motion needs more input.  
-    | NeedMoreInput of KeyRemapMode option * (KeyInput -> MotionBindResult)
-
-    | Error of string
-
-    /// Motion was cancelled via user input
-    | Cancelled
+type MotionBindResult = BindResult<MotionData * MotionResult option>
 
 /// Represents the types of MotionCommands which exist
 type MotionCommand =
@@ -907,7 +919,7 @@ type MotionCommand =
 /// REPEAT TODO: Delet this and replace with Command2
 /// CommandBinding)
 type CommandRunData = {
-    Command : Command;
+    Command : CommandBinding;
     Register : Register;
     Count : int option;
 
@@ -979,19 +991,19 @@ type CommandRunnerState =
     /// where the name of the Motion is a prefix of the Simple command.  The MotionCommand is 
     /// captured in the first item of the tuple and all other commands with a matching prefix are
     /// captured in the list
-    | NotEnoughMatchingPrefix of Command * Command list * KeyRemapMode option
+    | NotEnoughMatchingPrefix of CommandBinding * CommandBinding list * KeyRemapMode option
 
     /// Waiting for a Motion or Long Command to complete.  Enough input is present to determine this
     /// is the command to execute but not enough to complete the execution of the command.  The
     /// bool in the tuple represents whether or not the next input should be processed as language 
     /// input (:help language-mapping)
-    | NotFinishWithCommand of Command * KeyRemapMode option
+    | NotFinishWithCommand of CommandBinding * KeyRemapMode option
 
 /// Responsible for managing a set of Commands and running them
 type ICommandRunner =
     
     /// Set of Commands currently supported
-    abstract Commands : Command seq
+    abstract Commands : CommandBinding seq
 
     /// Current state of the ICommandRunner
     abstract State : CommandRunnerState
@@ -1006,7 +1018,7 @@ type ICommandRunner =
 
     /// Add a Command.  If there is already a Command with the same name an exception will
     /// be raised
-    abstract Add : Command -> unit
+    abstract Add : CommandBinding -> unit
 
     /// Remove a command with the specified name
     abstract Remove : KeyInputSet -> unit

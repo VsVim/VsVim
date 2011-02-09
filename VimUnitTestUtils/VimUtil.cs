@@ -101,12 +101,12 @@ namespace Vim.UnitTest
             return new SearchService(EditorUtil.FactoryService.TextSearchService, settings);
         }
 
-        internal static Command CreateSimpleCommand(string name)
+        internal static CommandBinding CreateSimpleCommand(string name)
         {
             return CreateSimpleCommand(name, (count, reg) => CommandResult.NewCompleted(ModeSwitch.NoSwitch));
         }
 
-        internal static Command CreateSimpleCommand(string name, Action<FSharpOption<int>, Register> del)
+        internal static CommandBinding CreateSimpleCommand(string name, Action<FSharpOption<int>, Register> del)
         {
             return CreateSimpleCommand(
                 name,
@@ -117,12 +117,12 @@ namespace Vim.UnitTest
                 });
         }
 
-        internal static Command CreateSimpleCommand(string name, Func<FSharpOption<int>, Register, CommandResult> func)
+        internal static CommandBinding CreateSimpleCommand(string name, Func<FSharpOption<int>, Register, CommandResult> func)
         {
             var fsharpFunc = func.ToFSharpFunc();
             var list = name.Select(KeyInputUtil.CharToKeyInput).ToFSharpList();
             var commandName = KeyInputSet.NewManyKeyInputs(list);
-            return Command.NewSimpleCommand(commandName, CommandFlags.None, fsharpFunc);
+            return CommandBinding.NewSimpleCommand(commandName, CommandFlags.None, fsharpFunc);
         }
 
         internal static ITextStructureNavigator CreateTextStructureNavigator(ITextBuffer textBuffer)
@@ -130,15 +130,15 @@ namespace Vim.UnitTest
             return EditorUtil.FactoryService.TextStructureNavigatorSelectorService.GetTextStructureNavigator(textBuffer);
         }
 
-        internal static Command CreateLongCommand(string name, Func<FSharpOption<int>, Register, LongCommandResult> func, CommandFlags flags = CommandFlags.None)
+        internal static CommandBinding CreateLongCommand(string name, Func<FSharpOption<int>, Register, LongCommandResult> func, CommandFlags flags = CommandFlags.None)
         {
             var fsharpFunc = func.ToFSharpFunc();
             var list = name.Select(KeyInputUtil.CharToKeyInput).ToFSharpList();
             var commandName = KeyInputSet.NewManyKeyInputs(list);
-            return Command.NewLongCommand(commandName, flags, fsharpFunc);
+            return CommandBinding.NewLongCommand(commandName, flags, fsharpFunc);
         }
 
-        internal static Command CreateLongCommand(string name, Func<KeyInput, bool> func, FSharpOption<KeyRemapMode> keyRemapModeOption = null, CommandFlags flags = CommandFlags.None)
+        internal static CommandBinding CreateLongCommand(string name, Func<KeyInput, bool> func, FSharpOption<KeyRemapMode> keyRemapModeOption = null, CommandFlags flags = CommandFlags.None)
         {
             return CreateLongCommand(
                 name,
@@ -162,12 +162,12 @@ namespace Vim.UnitTest
                 flags);
         }
 
-        internal static Command CreateMotionCommand(string name)
+        internal static CommandBinding CreateMotionCommand(string name)
         {
             return CreateMotionCommand(name, (count, reg, motionData) => { });
         }
 
-        internal static Command CreateMotionCommand(string name, Action<FSharpOption<int>, Register, MotionResult> del)
+        internal static CommandBinding CreateMotionCommand(string name, Action<FSharpOption<int>, Register, MotionResult> del)
         {
             return CreateMotionCommand(
                 name,
@@ -178,15 +178,15 @@ namespace Vim.UnitTest
                 });
         }
 
-        internal static Command CreateMotionCommand(string name, Func<FSharpOption<int>, Register, MotionResult, CommandResult> func)
+        internal static CommandBinding CreateMotionCommand(string name, Func<FSharpOption<int>, Register, MotionResult, CommandResult> func)
         {
             var fsharpFunc = func.ToFSharpFunc();
             var list = name.Select(KeyInputUtil.CharToKeyInput).ToFSharpList();
             var commandName = KeyInputSet.NewManyKeyInputs(list);
-            return Command.NewMotionCommand(commandName, CommandFlags.None, fsharpFunc);
+            return CommandBinding.NewMotionCommand(commandName, CommandFlags.None, fsharpFunc);
         }
 
-        internal static Command CreateVisualCommand(
+        internal static CommandBinding CreateVisualCommand(
             string name = "c",
             CommandFlags? flags = null,
             VisualKind kind = null,
@@ -198,7 +198,7 @@ namespace Vim.UnitTest
             {
                 func = (x, y, z) => CommandResult.NewCompleted(ModeSwitch.NoSwitch);
             }
-            return Command.NewVisualCommand(
+            return CommandBinding.NewVisualCommand(
                 KeyNotationUtil.StringToKeyInputSet(name),
                 flagsArg,
                 kind,
@@ -219,7 +219,7 @@ namespace Vim.UnitTest
         }
 
         internal static CommandRunData CreateCommandRunData(
-            Command command,
+            CommandBinding command,
             Register register,
             int? count = null,
             MotionData motionRunData = null,

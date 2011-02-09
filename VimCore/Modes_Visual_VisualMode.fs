@@ -85,14 +85,16 @@ type internal VisualMode
         |> Seq.append (factory.CreateEditCommandsForVisualMode _visualKind)
         |> Seq.map (fun (command) ->
             match command with
-            | Command.SimpleCommand(name, flags, func) -> Command.SimpleCommand (name, flags, wrapSimple func) |> Some
-            | Command.MotionCommand (name, flags, func) -> Command.MotionCommand (name, flags,wrapMotion func) |> Some
-            | Command.LongCommand (name, flags, func) -> Command.LongCommand (name, flags, wrapLong func) |> Some
-            | Command.VisualCommand (_) -> Some command
-            | Command.LongVisualCommand (_) -> Some command
-            | Command.NormalCommand2 _ -> None
-            | Command.MotionCommand2 _ -> None
-            | Command.VisualCommand2 _ -> None) 
+            | CommandBinding.SimpleCommand(name, flags, func) -> CommandBinding.SimpleCommand (name, flags, wrapSimple func) |> Some
+            | CommandBinding.MotionCommand (name, flags, func) -> CommandBinding.MotionCommand (name, flags,wrapMotion func) |> Some
+            | CommandBinding.LongCommand (name, flags, func) -> CommandBinding.LongCommand (name, flags, wrapLong func) |> Some
+            | CommandBinding.VisualCommand (_) -> Some command
+            | CommandBinding.LongVisualCommand (_) -> Some command
+            | CommandBinding.NormalCommand2 _ -> None
+            | CommandBinding.MotionCommand2 _ -> None
+            | CommandBinding.VisualCommand2 _ -> None
+            | CommandBinding.ComplexNormalCommand _ -> None
+            | CommandBinding.ComplexVisualCommand _ -> None)
         |> SeqUtil.filterToSome
 
     member x.BuildOperationsSequence() =
@@ -184,7 +186,7 @@ type internal VisualMode
                     let count = CommandUtil2.CountOrDefault count
                     func count reg 
                     CommandResult.Completed modeSwitch
-                Command.SimpleCommand (kiSet, flags, func2) )
+                CommandBinding.SimpleCommand (kiSet, flags, func2) )
 
         /// Commands which must customize their return
         let customReturn = 
@@ -196,7 +198,7 @@ type internal VisualMode
             }
             |> Seq.map (fun (name,flags,func) ->
                 let name = KeyNotationUtil.StringToKeyInputSet name
-                Command.SimpleCommand (name, flags, func) )
+                CommandBinding.SimpleCommand (name, flags, func) )
 
         /// Visual Commands
         let visualSimple = 
@@ -425,7 +427,7 @@ type internal VisualMode
                         runVisualCommand funcNormal funcBlock count reg visualSpan
                         CommandResult.Completed modeSwitch
     
-                    Command.VisualCommand(kiSet, flags, _visualKind, func2)))
+                    CommandBinding.VisualCommand(kiSet, flags, _visualKind, func2)))
             |> Seq.concat
 
         /// Visual Long Commands
@@ -438,7 +440,7 @@ type internal VisualMode
             }
             |> Seq.map (fun (str, flags, func) -> 
                 let kiSet = KeyNotationUtil.StringToKeyInputSet str
-                LongVisualCommand(kiSet, flags, _visualKind, func))
+                CommandBinding.LongVisualCommand(kiSet, flags, _visualKind, func))
 
         Seq.append simples visualSimple 
         |> Seq.append customReturn

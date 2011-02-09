@@ -124,13 +124,13 @@ type internal NormalMode
                 let func count reg (data:MotionResult) = 
                     _operations.ChangeLetterCase data.OperationEditSpan
                     CommandResult.Completed ModeSwitch.NoSwitch
-                MotionCommand(name, CommandFlags.Repeatable, func)
+                CommandBinding.MotionCommand(name, CommandFlags.Repeatable, func)
             else
                 let func count _ = 
                     let count = CommandUtil2.CountOrDefault count
                     _operations.ChangeLetterCaseAtCursor count
                     CommandResult.Completed ModeSwitch.NoSwitch
-                SimpleCommand(name, CommandFlags.Repeatable, func)
+                CommandBinding.SimpleCommand(name, CommandFlags.Repeatable, func)
         name,command
 
     /// Create the set of Command values which are not repeatable 
@@ -159,7 +159,7 @@ type internal NormalMode
             let func2 count reg = 
                 let count = CommandUtil2.CountOrDefault count
                 func count reg 
-            LongCommand(name, kind, func2))
+            CommandBinding.LongCommand(name, kind, func2))
 
     /// Create the CommandBinding instances for the supported NormalCommand values
     member x.CreateCommandBindings() =
@@ -169,14 +169,14 @@ type internal NormalMode
                 yield (".", CommandFlags.Special, NormalCommand.RepeatLastCommand)
             } |> Seq.map (fun (str, flags, command) -> 
                 let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
-                Command.NormalCommand2(keyInputSet, flags, command))
+                CommandBinding.NormalCommand2(keyInputSet, flags, command))
             
         let motionSeq = 
             seq {
                 yield ("y", CommandFlags.None, NormalCommand.Yank)
             } |> Seq.map (fun (str, flags, command) -> 
                 let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
-                Command.MotionCommand2(keyInputSet, flags, command))
+                CommandBinding.MotionCommand2(keyInputSet, flags, command))
         Seq.append normalSeq motionSeq
 
     /// Create the simple commands
@@ -628,7 +628,7 @@ type internal NormalMode
                     let count = CommandUtil2.CountOrDefault count
                     func count reg
                     result
-                SimpleCommand(name, kind, func2))
+                CommandBinding.SimpleCommand(name, kind, func2))
 
         let needCountAsOpt = 
             seq {
@@ -656,7 +656,7 @@ type internal NormalMode
                     let func2 count reg = 
                         func count reg
                         CommandResult.Completed ModeSwitch.NoSwitch
-                    SimpleCommand(name, kind, func2)))
+                    CommandBinding.SimpleCommand(name, kind, func2)))
             |> Seq.concat
 
         Seq.append allWithCount needCountAsOpt 
@@ -727,7 +727,7 @@ type internal NormalMode
                 | None -> CommandResult.Completed ModeSwitch.NoSwitch
                 | Some(modeKind) -> CommandResult.Completed (ModeSwitch.SwitchMode modeKind)
             let flags = extraFlags ||| CommandFlags.Repeatable
-            MotionCommand(name, flags, func2))
+            CommandBinding.MotionCommand(name, flags, func2))
 
     member this.Reset() =
         _runner.ResetState()

@@ -54,7 +54,7 @@ type internal CommandFactory
             let funcWithReg opt reg = 
                 func (CommandUtil2.CountOrDefault opt)
                 CommandResult.Completed NoSwitch
-            Command.SimpleCommand (kiSet,CommandFlags.Movement, funcWithReg))
+            CommandBinding.SimpleCommand (kiSet,CommandFlags.Movement, funcWithReg))
 
     /// Build up a set of MotionCommand values from applicable Motion values.  These will 
     /// move the cursor to the result of the motion
@@ -77,7 +77,7 @@ type internal CommandFactory
                     let data = _motionUtil.GetMotion motion arg
                     processResult data
 
-                Command.SimpleCommand(name,CommandFlags.Movement,inner) 
+                CommandBinding.SimpleCommand(name,CommandFlags.Movement,inner) 
             | ComplexMotionCommand(name, motionFlags, func) -> 
 
                 // The core function which accepts the initial count.  Will create a MotionArgument
@@ -123,7 +123,7 @@ type internal CommandFactory
                         CommandFlags.Movement ||| CommandFlags.HandlesEscape
                     else
                         CommandFlags.Movement
-                Command.LongCommand(name, flags, coreFunc) 
+                CommandBinding.LongCommand(name, flags, coreFunc) 
 
         _capture.MotionCommands
         |> Seq.filter (fun command -> Util.IsFlagSet command.MotionFlags MotionFlags.CursorMovement)
@@ -225,7 +225,7 @@ type internal CommandFactory
             let func count reg = 
                 normalFunc count reg
                 CommandResult.Completed normalSwitch
-            SimpleCommand(keyInputSet, flags, func))
+            CommandBinding.SimpleCommand(keyInputSet, flags, func))
 
     member x.CreateEditCommandsForVisualMode visualKind = 
         x.CreateEditCommandsCore()
@@ -239,7 +239,7 @@ type internal CommandFactory
                 | VisualSpan.Multiple (kind, block) ->
                     blockFunc kind count reg block
                     CommandResult.Completed visualSwitch
-            VisualCommand(keyInputSet, flags, visualKind, func))
+            CommandBinding.VisualCommand(keyInputSet, flags, visualKind, func))
 
     member x.CreateMovementCommands() = 
         let standard = x.CreateStandardMovementCommands()

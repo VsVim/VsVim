@@ -6,7 +6,7 @@ namespace Vim.UnitTest.Mock
 {
     public sealed class MockCommandRunner : ICommandRunner
     {
-        public void Add(Command value)
+        public void Add(CommandBinding value)
         {
             throw new NotImplementedException();
         }
@@ -22,7 +22,7 @@ namespace Vim.UnitTest.Mock
             }
         }
 
-        public IEnumerable<Command> Commands
+        public IEnumerable<CommandBinding> Commands
         {
             get { throw new NotImplementedException(); }
         }
