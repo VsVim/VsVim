@@ -98,6 +98,32 @@ type internal CommandUtil
             finally
                 _inRepeatLastChange <- false
 
+    /// Replace the char under the cursor with the specified character
+    member x.ReplaceChar keyInput count = 
+
+        let succeeded = 
+            // Make sure the replace string is valid
+            let point = x.CaretPoint
+            if (point.Position + count) > point.GetContainingLine().End.Position then
+                false
+            else
+                let replaceText = 
+                    if keyInput = KeyInputUtil.EnterKey then System.Environment.NewLine
+                    else new System.String(keyInput.Char, count)
+                let span = new Span(point.Position, count)
+                let tss = _textView.TextBuffer.Replace(span, replaceText) 
+
+                // Reset the caret to the point before the edit
+                let point = new SnapshotPoint(tss,point.Position)
+                _textView.Caret.MoveTo(point) |> ignore
+                true
+
+        // If the replace failed then we should beep the console
+        if not succeeded then
+            _operations.Beep()
+
+        CommandResult.Completed ModeSwitch.NoSwitch
+
     /// Yank the contents of the motion into the specified register
     member x.YankMotion register (result: MotionResult) = 
         _operations.UpdateRegisterForSpan register RegisterOperation.Yank result.OperationSpan result.OperationKind
@@ -117,6 +143,7 @@ type internal CommandUtil
         match command with
         | NormalCommand.PutAfterCursor -> x.PutAfterCursor register count ModeSwitch.NoSwitch
         | NormalCommand.RepeatLastCommand -> x.RepeatLastCommand data
+        | NormalCommand.ReplaceChar keyInput -> x.ReplaceChar keyInput data.CountOrDefault
         | NormalCommand.Yank motion -> x.RunWithMotion motion (x.YankMotion register)
 
     /// Run a VisualCommand against the buffer

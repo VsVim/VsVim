@@ -85,16 +85,11 @@ type internal NormalMode
             _runner.Remove name
             _runner.Add command
 
-    member private x.ReplaceChar count reg = 
-        let inner (ki:KeyInput) = 
-            _data <- { _data with IsInReplace = false }
-            if ki = KeyInputUtil.EscapeKey then LongCommandResult.Cancelled
-            else 
-                if not (_operations.ReplaceChar ki count) then
-                    _operations.Beep()
-                CommandResult.Completed ModeSwitch.NoSwitch |> LongCommandResult.Finished
+    member x.BindReplaceChar () =
         _data <- { _data with IsInReplace = true }
-        LongCommandResult.NeedMoreInput (Some KeyRemapMode.Language, inner)
+        BindData.CreateForSingleChar (Some KeyRemapMode.Language) (fun ki -> 
+            _data <- { _data with IsInReplace = false }
+            NormalCommand.ReplaceChar ki)
 
     member x.WaitJumpToMark (count:int) (reg:Register) =
         let waitForKey (ki:KeyInput)  =
@@ -138,10 +133,6 @@ type internal NormalMode
 
         seq {
             yield (
-                "r", 
-                CommandFlags.None, 
-                fun count reg -> this.ReplaceChar count reg) 
-            yield (
                 "'", 
                 CommandFlags.Movement, 
                 fun count reg -> this.WaitJumpToMark count reg)
@@ -177,6 +168,13 @@ type internal NormalMode
             } |> Seq.map (fun (str, flags, command) -> 
                 let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
                 CommandBinding.MotionCommand2(keyInputSet, flags, command))
+
+        let complexSeq = 
+            seq {
+                yield ("r", CommandFlags.Repeatable, x.BindReplaceChar ())
+            } |> Seq.map (fun (str, flags, bindCommand) -> 
+                let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
+                CommandBinding.ComplexNormalCommand(keyInputSet, flags, bindCommand))
         Seq.append normalSeq motionSeq
 
     /// Create the simple commands

@@ -56,26 +56,6 @@ type internal DefaultOperations ( _data : OperationsData) =
 
     interface IOperations with 
 
-                    
-        /// Implement the r command in normal mode.  
-        member x.ReplaceChar (ki:KeyInput) count = 
-            let point = TextViewUtil.GetCaretPoint _textView
-
-            // Make sure the replace string is valid
-            if (point.Position + count) > point.GetContainingLine().End.Position then
-                false
-            else
-                let replaceText = 
-                    if ki = KeyInputUtil.EnterKey then System.Environment.NewLine
-                    else new System.String(ki.Char, count)
-                let span = new Span(point.Position, count)
-                let tss = _textView.TextBuffer.Replace(span, replaceText) 
-
-                // Reset the caret to the point before the edit
-                let point = new SnapshotPoint(tss,point.Position)
-                _textView.Caret.MoveTo(point) |> ignore
-                true
-    
         /// Implement the normal mode x command
         member x.DeleteCharacterAtCursor count =
             let point = TextViewUtil.GetCaretPoint _textView

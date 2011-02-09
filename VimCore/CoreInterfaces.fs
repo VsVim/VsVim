@@ -573,7 +573,7 @@ type CommandResult =
     | Completed  of ModeSwitch
     | Error of string
 
-/// REPEAT TODO: Delete
+/// REPEAT TODO: Delete and use BindResult<'T> instead where this is currently used
 [<RequireQualifiedAccess>]
 type LongCommandResult =
     | Finished of CommandResult
@@ -665,6 +665,9 @@ type NormalCommand =
     /// Repeat the last command
     | RepeatLastCommand
 
+    /// Replace the char under the cursor with the given char
+    | ReplaceChar of KeyInput
+
     /// Yank the given motion into a register
     | Yank of MotionData
 
@@ -695,12 +698,40 @@ type BindResult<'T> =
     | Complete of 'T 
 
     /// More input is needed to complete the binding operation
-    | NeedMoreInput of KeyRemapMode option * (KeyInput -> BindResult<'T>)
+    | NeedMoreInput of BindData<'T>
 
     | Error of string
 
     /// Motion was cancelled via user input
     | Cancelled
+
+    with
+
+    static member CreateNeedMoreInput keyRemapModeOpt bindFunc =
+        let data = { KeyRemapMode = keyRemapModeOpt; BindFunction = bindFunc }
+        NeedMoreInput data
+
+and BindData<'T> = {
+
+    /// The optional KeyRemapMode which should be used when binding
+    /// the next KeyInput in the sequence
+    KeyRemapMode : KeyRemapMode option
+    
+    /// Function to call to get the BindResult for this data
+    BindFunction : KeyInput -> BindResult<'T>
+
+} with
+
+    /// Many bindings are simply to get a single char.  Centralize that logic 
+    /// here so it doesn't need to be repeated
+    static member CreateForSingleChar keyRemapModeOpt completeFunc =
+        let inner keyInput =
+            if keyInput = KeyInputUtil.EscapeKey then
+                BindResult.Cancelled
+            else
+                let data = completeFunc keyInput
+                BindResult<'T>.Complete data
+        { KeyRemapMode = keyRemapModeOpt; BindFunction = inner }
 
 /// Representation of commands within Vim.  
 /// 
@@ -739,7 +770,7 @@ type CommandBinding =
     | NormalCommand2 of KeyInputSet * CommandFlags * NormalCommand
 
     /// KeyInputSet bound to a complex NormalCommand instance
-    | ComplexNormalCommand of KeyInputSet * CommandFlags * (KeyInput -> BindResult<NormalCommand>)
+    | ComplexNormalCommand of KeyInputSet * CommandFlags * BindData<NormalCommand>
 
     /// KeyInputSet bound to a particular NormalCommand instance which takes a Motion Argument
     | MotionCommand2 of KeyInputSet * CommandFlags * (MotionData -> NormalCommand)
@@ -748,7 +779,7 @@ type CommandBinding =
     | VisualCommand2 of KeyInputSet * CommandFlags * VisualCommand
 
     /// KeyInputSet bound to a complex VisualCommand instance
-    | ComplexVisualCommand of KeyInputSet * CommandFlags * (KeyInput -> BindResult<VisualCommand>)
+    | ComplexVisualCommand of KeyInputSet * CommandFlags * BindData<VisualCommand>
 
     with 
 
@@ -886,9 +917,6 @@ type MotionFlags =
     /// on Complex motions such as / and ? 
     | HandlesEscape = 0x4
 
-/// The result of binding to a Motion value.
-type MotionBindResult = BindResult<MotionData * MotionResult option>
-
 /// Represents the types of MotionCommands which exist
 type MotionCommand =
 
@@ -901,7 +929,7 @@ type MotionCommand =
     /// the f,t,F and T commands all require at least one additional input.  The bool
     /// in the middle of the tuple indicates whether or not the motion can be 
     /// used as a cursor movement operation  
-    | ComplexMotionCommand of KeyInputSet * MotionFlags * (MotionArgument -> MotionBindResult)
+    | ComplexMotionCommand of KeyInputSet * MotionFlags * (MotionArgument -> BindData<MotionData>)
 
     with
 
@@ -945,7 +973,7 @@ type IMotionCapture =
     abstract MotionCommands : seq<MotionCommand>
 
     /// Get the motion starting with the given KeyInput
-    abstract GetOperatorMotion : KeyInput -> int option -> MotionBindResult
+    abstract GetOperatorMotion : KeyInput -> int option -> BindResult<MotionData>
 
 module CommandUtil2 = 
 

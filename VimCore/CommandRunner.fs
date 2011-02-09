@@ -109,7 +109,7 @@ type internal CommandRunner
 
     /// REPEAT TODO: Delete when no longer needed
     member x.WaitForMotionOld command func initialInput =
-        let inner (motionData : MotionData, _) = 
+        let inner (motionData : MotionData) = 
             // Now use the MotionResult to complete the command
             match _motionUtil.GetMotion motionData.Motion motionData.MotionArgument with
             | None ->
@@ -179,9 +179,9 @@ type internal CommandRunner
             match bindResult with
             | BindResult.Complete value ->
                 completeFunc value
-            | BindResult.NeedMoreInput (keyRemapMode, func) -> 
-                _data <- { _data with State = NotFinishWithCommand(binding, keyRemapMode) }
-                NeedMore (fun keyInput -> inner (func keyInput))
+            | BindResult.NeedMoreInput bindData ->
+                _data <- { _data with State = NotFinishWithCommand(binding, bindData.KeyRemapMode) }
+                NeedMore (fun keyInput -> inner (bindData.BindFunction keyInput))
             | BindResult.Cancelled ->
                 CancelledCommand
             | BindResult.Error msg ->
@@ -191,12 +191,12 @@ type internal CommandRunner
         inner bindResult
 
     /// Wait for a complex binding to complete and then run the associated 
-    member x.WaitForComplexBindingThenRun binding keyInputOpt getResultFunc runFunc =
+    member x.WaitForComplexBindingThenRun binding keyInputOpt (bindData : BindData<'T>) runFunc =
 
         let completeFunc data =  runFunc data binding
 
         let inner keyInput =
-            let result = getResultFunc keyInput
+            let result = bindData.BindFunction keyInput
             x.WaitForComplexBinding binding result completeFunc
 
         match keyInputOpt with
@@ -222,7 +222,7 @@ type internal CommandRunner
     /// NormalCommand
     member x.WaitForMotionThenRun commandBinding convertFunc keyInputOpt =
 
-        let run (motionData, _) =
+        let run motionData =
             let normalCommand = convertFunc motionData
             x.RunNormalCommand normalCommand commandBinding
 
@@ -314,10 +314,10 @@ type internal CommandRunner
                 x.WaitForLongCommand command None func
             | CommandBinding.LongVisualCommand(_, _, kind, func) ->
                 x.WaitForLongVisualCommand command None kind func
-            | CommandBinding.ComplexNormalCommand (_, _, func) -> 
-                x.WaitForComplexBindingThenRun command None func x.RunNormalCommand
-            | CommandBinding.ComplexVisualCommand (_, _, func) -> 
-                x.WaitForComplexBindingThenRun command None func x.RunVisualCommand
+            | CommandBinding.ComplexNormalCommand (_, _, bindData) -> 
+                x.WaitForComplexBindingThenRun command None bindData x.RunNormalCommand
+            | CommandBinding.ComplexVisualCommand (_, _, bindData) -> 
+                x.WaitForComplexBindingThenRun command None bindData x.RunVisualCommand
         | None -> 
             let hasPrefixMatch = findPrefixMatches commandName |> SeqUtil.isNotEmpty
             if commandName.KeyInputs.Length > 1 && not hasPrefixMatch then

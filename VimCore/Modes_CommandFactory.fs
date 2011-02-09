@@ -81,40 +81,33 @@ type internal CommandFactory
             | ComplexMotionCommand(name, motionFlags, func) -> 
 
                 // The core function which accepts the initial count.  Will create a MotionArgument
-                // from this value and then begin to loop over the MotionBindResult until we get 
+                // from this value and then begin to loop over the BindResult until we get 
                 // a final one
                 let coreFunc count _ = 
 
                     let rec inner result =  
                         match result with
-                        | MotionBindResult.Complete (motionRunData, precalculatedData) ->
+                        | BindResult.Complete motionData ->
                             let res = 
 
-                                // Calculate the resulting MotionResult.  Use the precalculated cached
-                                // data if it's available 
-                                let data = 
-                                    match precalculatedData with
-                                    | Some data -> Some data
-                                    | None -> _motionUtil.GetMotion motionRunData.Motion motionRunData.MotionArgument
-
-                                // Move the cursor based on the resulting motion
-                                match data with
+                                // Calculate the resulting MotionResult
+                                match _motionUtil.GetMotion motionData.Motion motionData.MotionArgument with
                                 | None -> 
                                     CommandResult.Error Resources.MotionCapture_InvalidMotion
                                 | Some(data) -> 
                                     _operations.MoveCaretToMotionResult data
                                     CommandResult.Completed NoSwitch 
                             res |> LongCommandResult.Finished
-                        | MotionBindResult.NeedMoreInput (keyRemapMode, func) -> 
-                            LongCommandResult.NeedMoreInput (keyRemapMode, fun ki -> func ki |> inner)
-                        | MotionBindResult.Cancelled -> 
+                        | BindResult.NeedMoreInput bindData ->
+                            LongCommandResult.NeedMoreInput (bindData.KeyRemapMode, fun ki -> bindData.BindFunction ki |> inner)
+                        | BindResult.Cancelled -> 
                             LongCommandResult.Cancelled
-                        | MotionBindResult.Error (msg) -> 
+                        | BindResult.Error (msg) -> 
                             CommandResult.Error msg |> LongCommandResult.Finished
 
                     let arg = makeMotionArgument count
-                    let result = func arg
-                    inner result
+                    let bindData = func arg
+                    inner (BindResult.NeedMoreInput bindData)
 
                 // Create the flags.  Make sure that we set that Escape can be handled if the
                 // motion itself can handle escape
