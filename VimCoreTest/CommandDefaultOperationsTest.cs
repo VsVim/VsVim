@@ -54,7 +54,7 @@ namespace VimCore.UnitTest
             _statusUtil = _factory.Create<IStatusUtil>();
             _outlining = _factory.Create<IOutliningManager>();
             _undoRedoOperations = _factory.Create<IUndoRedoOperations>();
-            _undoRedoOperations.Setup(x => x.CreateUndoTransaction(It.IsAny<string>())).Returns<string>(name => new UndoTransaction(FSharpOption.Create(EditorUtil.GetUndoHistory(_textView.TextBuffer).CreateTransaction(name))));
+            _undoRedoOperations.Setup(x => x.CreateUndoTransaction(It.IsAny<string>())).Returns(_factory.Create<IUndoTransaction>(MockBehavior.Loose).Object);
             _searchService = new SearchService(EditorUtil.FactoryService.TextSearchService, _globalSettings.Object);
 
             var data = new OperationsData(

@@ -44,6 +44,14 @@ type IFileSystem =
 /// Wraps an ITextUndoTransaction so we can avoid all of the null checks
 type IUndoTransaction =
 
+    /// Adds an ITextUndoPrimitive which will reset the selection to the current
+    /// state when redoing this edit
+    abstract AddAfterTextBufferChangePrimitive : unit -> unit
+
+    /// Adds an ITextUndoPrimitive which will reset the selection to the current
+    /// state when undoing this change
+    abstract AddBeforeTextBufferChangePrimitive : unit -> unit
+
     /// Call when it completes
     abstract Complete : unit -> unit
 

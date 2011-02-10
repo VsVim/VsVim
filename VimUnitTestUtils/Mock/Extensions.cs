@@ -12,8 +12,8 @@ using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.TextManager.Interop;
 using Moq;
 using Moq.Language.Flow;
-using VsVim;
 using Vim.Extensions;
+using VsVim;
 
 namespace Vim.UnitTest.Mock
 {
@@ -295,6 +295,14 @@ namespace Vim.UnitTest.Mock
                 It.IsAny<uint>(),
                 It.IsAny<IntPtr>(),
                 It.IsAny<IntPtr>())).Returns(hresult);
+        }
+
+        public static void SetupNormalCommand(this Mock<ICommandUtil> commandUtil, NormalCommand command, int? count = null, RegisterName registerName = null)
+        {
+            var realCount = count.HasValue ? FSharpOption.Create(count.Value) : FSharpOption<int>.None;
+            var realName = registerName != null ? FSharpOption.Create(registerName) : FSharpOption<RegisterName>.None;
+            var commandData = new CommandData(realCount, realName);
+            commandUtil.Setup(x => x.RunNormalCommand(command, commandData));
         }
     }
 }

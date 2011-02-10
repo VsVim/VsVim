@@ -1,13 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using NUnit.Framework;
-using Moq;
-using Vim;
-using Microsoft.VisualStudio.Text.Operations;
-using Vim.Extensions;
 using Microsoft.FSharp.Core;
+using Microsoft.VisualStudio.Text.Operations;
+using Moq;
+using NUnit.Framework;
+using Vim;
+using Vim.Extensions;
 
 namespace VimCore.UnitTest
 {
@@ -17,25 +14,29 @@ namespace VimCore.UnitTest
         private MockRepository _factory;
         private Mock<IStatusUtil> _statusUtil;
         private Mock<ITextUndoHistory> _history;
+        private Mock<IEditorOperations> _editorOperations;
         private UndoRedoOperations _operationsRaw;
         private IUndoRedoOperations _operations;
 
         public void Create(bool haveHistory = true)
         {
             _factory = new MockRepository(MockBehavior.Strict);
+            _editorOperations = _factory.Create<IEditorOperations>();
             _statusUtil = _factory.Create<IStatusUtil>();
             if (haveHistory)
             {
                 _history = _factory.Create<ITextUndoHistory>();
                 _operationsRaw = new UndoRedoOperations(
                     _statusUtil.Object,
-                    FSharpOption.Create(_history.Object));
+                    FSharpOption.Create(_history.Object),
+                    _editorOperations.Object);
             }
             else
             {
                 _operationsRaw = new UndoRedoOperations(
                     _statusUtil.Object,
-                    FSharpOption<ITextUndoHistory>.None);
+                    FSharpOption<ITextUndoHistory>.None,
+                    _editorOperations.Object);
             }
             _operations = _operationsRaw;
         }

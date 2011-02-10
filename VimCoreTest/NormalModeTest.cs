@@ -905,53 +905,19 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void Edit_r_1()
+        public void Bind_ReplaceChar_Simple()
         {
-            Create("foo");
-            var ki = KeyInputUtil.CharToKeyInput('b');
-            _operations.Setup(x => x.ReplaceChar(ki, 1)).Returns(true).Verifiable();
+            Create("the dog chased the cat");
+            _commandUtil.SetupNormalCommand(NormalCommand.NewReplaceChar(KeyInputUtil.VimKeyToKeyInput(VimKey.LowerB)));
             _mode.Process("rb");
-            _operations.Verify();
         }
 
         [Test]
-        public void Edit_r_2()
+        public void Bind_ReplaceChar_WithCount()
         {
-            Create("foo");
-            var ki = KeyInputUtil.CharToKeyInput('b');
-            _operations.Setup(x => x.ReplaceChar(ki, 2)).Returns(true).Verifiable();
+            Create("the dog chased the cat");
+            _commandUtil.SetupNormalCommand(NormalCommand.NewReplaceChar(KeyInputUtil.VimKeyToKeyInput(VimKey.LowerB)));
             _mode.Process("2rb");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void Edit_r_3()
-        {
-            Create("foo");
-            var ki = KeyInputUtil.EnterKey;
-            _operations.Setup(x => x.ReplaceChar(ki, 1)).Returns(true).Verifiable();
-            _textView.Caret.MoveTo(new SnapshotPoint(_textView.TextSnapshot, 1));
-            _mode.Process("r", enter: true);
-            _operations.Verify();
-        }
-
-        [Test]
-        public void Edit_r_4()
-        {
-            Create("food");
-            _operations.Setup(x => x.Beep()).Verifiable();
-            _operations.Setup(x => x.ReplaceChar(It.IsAny<KeyInput>(), 200)).Returns(false).Verifiable();
-            _mode.Process("200ru");
-            _operations.Verify();
-        }
-
-        [Test, Description("Escape should exit replace not be a part of it")]
-        public void Edit_r_5()
-        {
-            Create("foo");
-            _mode.Process("200r");
-            _mode.Process(KeyInputUtil.EscapeKey);
-            Assert.IsFalse(_mode.IsInReplace);
         }
 
         [Test]

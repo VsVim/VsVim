@@ -102,20 +102,27 @@ type internal CommandUtil
     member x.ReplaceChar keyInput count = 
 
         let succeeded = 
-            // Make sure the replace string is valid
             let point = x.CaretPoint
             if (point.Position + count) > point.GetContainingLine().End.Position then
+                // If the replace operation exceeds the line length then the operation
+                // can't succeed
                 false
             else
-                let replaceText = 
-                    if keyInput = KeyInputUtil.EnterKey then System.Environment.NewLine
-                    else new System.String(keyInput.Char, count)
-                let span = new Span(point.Position, count)
-                let tss = _textView.TextBuffer.Replace(span, replaceText) 
+                // Do the replace in an undo transaction since we are explicitly positioning
+                // the caret
+                x.EditWithUndoTransaciton "ReplaceChar" (fun () -> 
 
-                // Reset the caret to the point before the edit
-                let point = new SnapshotPoint(tss,point.Position)
-                _textView.Caret.MoveTo(point) |> ignore
+                    let replaceText = 
+                        if keyInput = KeyInputUtil.EnterKey then System.Environment.NewLine
+                        else new System.String(keyInput.Char, count)
+                    let span = new Span(point.Position, count)
+                    let snapshot = _textView.TextBuffer.Replace(span, replaceText) 
+    
+                    // The caret should move to the end of the replace operation which is 
+                    // 'count - 1' characters from the original position 
+                    let point = SnapshotPoint(snapshot, point.Position + (count - 1))
+
+                    _textView.Caret.MoveTo(point) |> ignore)
                 true
 
         // If the replace failed then we should beep the console
@@ -128,6 +135,10 @@ type internal CommandUtil
     member x.YankMotion register (result: MotionResult) = 
         _operations.UpdateRegisterForSpan register RegisterOperation.Yank result.OperationSpan result.OperationKind
         CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Run the specified action with a wrapped undo transaction.  This is often necessary when
+    /// an edit command manipulates the caret
+    member x.EditWithUndoTransaciton name action = _operations.WrapEditInUndoTransaction name action
 
     /// Get the MotionResult value for the provided MotionData and pass it
     /// if found to the provided function

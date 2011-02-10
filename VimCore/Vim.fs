@@ -94,7 +94,7 @@ type internal VimBufferFactory
                 let manager = _undoManagerProvider.GetTextBufferUndoManager(view.TextBuffer)
                 if manager = null then None
                 else manager.TextBufferUndoHistory |> Some
-            UndoRedoOperations(statusUtil, history) :> IUndoRedoOperations
+            UndoRedoOperations(statusUtil, history, editOperations) :> IUndoRedoOperations
         let operationsData = { 
             EditorOperations = editOperations
             EditorOptions = editOptions

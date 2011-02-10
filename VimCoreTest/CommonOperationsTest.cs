@@ -67,7 +67,7 @@ namespace VimCore.UnitTest
             _globalSettings.SetupGet(x => x.ShiftWidth).Returns(2);
             _statusUtil = _factory.Create<IStatusUtil>();
             _undoRedoOperations = _factory.Create<IUndoRedoOperations>();
-            _undoRedoOperations.Setup(x => x.CreateUndoTransaction(It.IsAny<string>())).Returns<string>(name => new UndoTransaction(FSharpOption.Create(EditorUtil.GetUndoHistory(_textView.TextBuffer).CreateTransaction(name))));
+            _undoRedoOperations.Setup(x => x.CreateUndoTransaction(It.IsAny<string>())).Returns(_factory.Create<IUndoTransaction>(MockBehavior.Loose).Object);
             _smartIndent = _factory.Create<ISmartIndentationService>();
             _searchService = new SearchService(EditorUtil.FactoryService.TextSearchService, _globalSettings.Object);
 

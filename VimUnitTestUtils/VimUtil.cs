@@ -34,7 +34,7 @@ namespace Vim.UnitTest
             statusUtil = statusUtil ?? new StatusUtil();
             searchService = searchService ?? CreateSearchService(localSettings.GlobalSettings);
             undoRedoOperations = undoRedoOperations ??
-                                 new UndoRedoOperations(statusUtil, FSharpOption<ITextUndoHistory>.None);
+                                 new UndoRedoOperations(statusUtil, FSharpOption<ITextUndoHistory>.None, editorOperations);
             vimData = vimData ?? new VimData();
             vimHost = vimHost ?? new MockVimHost();
             navigator = navigator ?? CreateTextStructureNavigator(textView.TextBuffer);

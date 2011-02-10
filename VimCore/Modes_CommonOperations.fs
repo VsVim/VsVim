@@ -314,17 +314,17 @@ type internal CommonOperations ( _data : OperationsData ) =
     /// during an undo operation
     member x.WrapEditInUndoTransaction name action =
         use undoTransaction = _undoRedoOperations.CreateUndoTransaction(name)
-        _operations.AddBeforeTextBufferChangePrimitive()
+        undoTransaction.AddBeforeTextBufferChangePrimitive()
         action()
-        _operations.AddAfterTextBufferChangePrimitive()
+        undoTransaction.AddAfterTextBufferChangePrimitive()
         undoTransaction.Complete()
 
     /// Same as WrapInUndoTransaction except provides for a return value
     member x.WrapEditInUndoTransactionWithReturn name action =
         use undoTransaction = _undoRedoOperations.CreateUndoTransaction(name)
-        _operations.AddBeforeTextBufferChangePrimitive()
+        undoTransaction.AddBeforeTextBufferChangePrimitive()
         let ret = action()
-        _operations.AddAfterTextBufferChangePrimitive()
+        undoTransaction.AddAfterTextBufferChangePrimitive()
         undoTransaction.Complete()
         ret
 

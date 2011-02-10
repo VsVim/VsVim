@@ -1,5 +1,4 @@
-﻿using System;
-using System.Linq;
+﻿using System.Linq;
 using Microsoft.FSharp.Collections;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
@@ -41,7 +40,7 @@ namespace VimCore.UnitTest
             _capture = _captureRaw;
         }
 
-        internal BindResult<Tuple<MotionData, FSharpOption<MotionResult>>> Process(string input, int? count = 1, bool enter = false)
+        internal BindResult<MotionData> Process(string input, int? count = 1, bool enter = false)
         {
             var realCount = count.HasValue
                 ? FSharpOption.Create(count.Value)
@@ -52,14 +51,14 @@ namespace VimCore.UnitTest
             foreach (var cur in input.Skip(1))
             {
                 Assert.IsTrue(res.IsNeedMoreInput);
-                var needMore = (BindResult<Tuple<MotionData, FSharpOption<MotionResult>>>.NeedMoreInput)res;
-                res = needMore.Item2.Invoke(KeyInputUtil.CharToKeyInput(cur));
+                var needMore = (BindResult<MotionData>.NeedMoreInput)res;
+                res = needMore.Item.BindFunction.Invoke(KeyInputUtil.CharToKeyInput(cur));
             }
 
             if (enter)
             {
-                var needMore = (BindResult<Tuple<MotionData, FSharpOption<MotionResult>>>.NeedMoreInput)res;
-                res = needMore.Item2.Invoke(KeyInputUtil.EnterKey);
+                var needMore = (BindResult<MotionData>.NeedMoreInput)res;
+                res = needMore.Item.BindFunction.Invoke(KeyInputUtil.EnterKey);
             }
 
             return res;
@@ -69,14 +68,14 @@ namespace VimCore.UnitTest
         {
             var result = Process(text);
             Assert.IsTrue(result.IsComplete);
-            Assert.AreEqual(motion, result.AsComplete().Item.Item1.Motion);
+            Assert.AreEqual(motion, result.AsComplete().Item.Motion);
         }
 
         private void AssertMotion(KeyInput keyInput, Motion motion)
         {
             var result = _capture.GetOperatorMotion(keyInput, FSharpOption<int>.None);
             Assert.IsTrue(result.IsComplete);
-            Assert.AreEqual(motion, result.AsComplete().Item.Item1.Motion);
+            Assert.AreEqual(motion, result.AsComplete().Item.Motion);
         }
 
         private void AssertMotion(VimKey key, Motion motion)
@@ -320,7 +319,7 @@ namespace VimCore.UnitTest
         {
             _textView.TextBuffer.SetText("hello world");
             _textView.MoveCaretTo(_textView.GetEndPoint().Position);
-            var data = Process("?world", enter: true).AsComplete().Item.Item1;
+            var data = Process("?world", enter: true).AsComplete().Item;
             var searchData = new SearchData(SearchText.NewPattern("world"), SearchKind.BackwardWithWrap, SearchOptions.ConsiderIgnoreCase | SearchOptions.ConsiderSmartCase);
             Assert.AreEqual(Motion.NewSearch(searchData), data.Motion);
         }
@@ -329,7 +328,7 @@ namespace VimCore.UnitTest
         public void IncrementalSearch_Forward()
         {
             _textView.SetText("hello world", caret: 0);
-            var data = Process("/world", enter: true).AsComplete().Item.Item1;
+            var data = Process("/world", enter: true).AsComplete().Item;
             var searchData = new SearchData(SearchText.NewPattern("world"), SearchKind.ForwardWithWrap, SearchOptions.ConsiderIgnoreCase | SearchOptions.ConsiderSmartCase);
             Assert.AreEqual(Motion.NewSearch(searchData), data.Motion);
         }

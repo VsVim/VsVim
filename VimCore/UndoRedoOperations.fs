@@ -7,33 +7,51 @@ open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Operations
 
 
-type UndoTransaction (_transaction : ITextUndoTransaction option ) =
+type UndoTransaction 
+    (
+        _transaction : ITextUndoTransaction option,
+        _editorOperations : IEditorOperations option
+    ) =
 
     interface IUndoTransaction with
+        member x.AddAfterTextBufferChangePrimitive() =
+            match _editorOperations with
+            | None -> ()
+            | Some editorOperations -> editorOperations.AddAfterTextBufferChangePrimitive()
+        member x.AddBeforeTextBufferChangePrimitive() = 
+            match _editorOperations with
+            | None -> ()
+            | Some editorOperations -> editorOperations.AddBeforeTextBufferChangePrimitive()
         member x.Complete () = 
             match _transaction with
             | None -> ()
-            | Some(transaction) -> transaction.Complete()
+            | Some transaction -> transaction.Complete()
         member x.Cancel() = 
             match _transaction with
             | None -> ()
-            | Some(transaction) -> transaction.Cancel()
+            | Some transaction -> transaction.Cancel()
         member x.Dispose() = 
             match _transaction with
             | None -> ()
-            | Some(transaction) -> transaction.Dispose()
+            | Some transaction -> transaction.Dispose()
 
 type UndoRedoOperations 
     (
         _statusUtil : IStatusUtil,
-        _history : ITextUndoHistory option) =
+        _history : ITextUndoHistory option,
+        _editorOperations : IEditorOperations 
+    ) =
 
     member x.CreateUndoTransaction name = 
         match _history with
-        | None -> new UndoTransaction(None) :> IUndoTransaction
+        | None -> 
+            // Don't support either if the history is not present.  While we have an instance
+            // of IEditorOperations it will still fail because internally it's trying to access
+            // the same ITextUndorHistory which is null
+            new UndoTransaction(None, None) :> IUndoTransaction
         | Some(history) ->
             let transaction = history.CreateTransaction(name)
-            new UndoTransaction(Some transaction) :> IUndoTransaction
+            new UndoTransaction(Some transaction, Some _editorOperations) :> IUndoTransaction
 
     member x.Undo count =
         match _history with

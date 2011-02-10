@@ -77,7 +77,7 @@ namespace VimCore.UnitTest
             _statusUtil = new Mock<IStatusUtil>(MockBehavior.Strict);
             _outlining = new Mock<IOutliningManager>(MockBehavior.Strict);
             _undoRedoOperations = new Mock<IUndoRedoOperations>(MockBehavior.Strict);
-            _undoRedoOperations.Setup(x => x.CreateUndoTransaction(It.IsAny<string>())).Returns<string>(name => new Vim.UndoTransaction(FSharpOption.Create(EditorUtil.GetUndoHistory(_textView.TextBuffer).CreateTransaction(name))));
+            _undoRedoOperations.Setup(x => x.CreateUndoTransaction(It.IsAny<string>())).Returns((new Mock<IUndoTransaction>(MockBehavior.Loose)).Object);
             _registerMap = MockObjectFactory.CreateRegisterMap();
 
             var data = new OperationsData(
@@ -192,62 +192,7 @@ namespace VimCore.UnitTest
             var span = _operations.DeleteCharacterBeforeCursor(2);
             Assert.AreEqual("foo", _textView.TextSnapshot.GetLineFromLineNumber(0).GetText());
         }
-        [Test]
-        public void ReplaceChar1()
-        {
-            Create("foo");
-            _operations.ReplaceChar(KeyInputUtil.CharToKeyInput('b'), 1);
-            Assert.AreEqual("boo", _textView.TextSnapshot.GetLineFromLineNumber(0).GetText());
-        }
 
-        [Test]
-        public void ReplaceChar2()
-        {
-            Create("foo");
-            _operations.ReplaceChar(KeyInputUtil.CharToKeyInput('b'), 2);
-            Assert.AreEqual("bbo", _textView.TextSnapshot.GetLineFromLineNumber(0).GetText());
-        }
-
-        [Test]
-        public void ReplaceChar3()
-        {
-            Create("foo");
-            _textView.Caret.MoveTo(new SnapshotPoint(_textView.TextSnapshot, 1));
-            _operations.ReplaceChar(KeyInputUtil.EnterKey, 1);
-            var tss = _textView.TextSnapshot;
-            Assert.AreEqual(2, tss.LineCount);
-            Assert.AreEqual("f", tss.GetLineFromLineNumber(0).GetText());
-            Assert.AreEqual("o", tss.GetLineFromLineNumber(1).GetText());
-        }
-
-        [Test]
-        public void ReplaceChar4()
-        {
-            Create("food");
-            _textView.Caret.MoveTo(new SnapshotPoint(_textView.TextSnapshot, 1));
-            Assert.IsTrue(_operations.ReplaceChar(KeyInputUtil.EnterKey, 2));
-            var tss = _textView.TextSnapshot;
-            Assert.AreEqual(2, tss.LineCount);
-            Assert.AreEqual("f", tss.GetLineFromLineNumber(0).GetText());
-            Assert.AreEqual("d", tss.GetLineFromLineNumber(1).GetText());
-        }
-
-        [Test]
-        public void ReplaceChar5()
-        {
-            Create("food");
-            var tss = _textView.TextSnapshot;
-            Assert.IsFalse(_operations.ReplaceChar(KeyInputUtil.CharToKeyInput('c'), 200));
-            Assert.AreSame(tss, _textView.TextSnapshot);
-        }
-
-        [Test, Description("Edit should not cause the cursor to move")]
-        public void ReplaceChar6()
-        {
-            Create("foo");
-            Assert.IsTrue(_operations.ReplaceChar(KeyInputUtil.CharToKeyInput('u'), 1));
-            Assert.AreEqual(0, _textView.Caret.Position.BufferPosition.Position);
-        }
 
 
 
