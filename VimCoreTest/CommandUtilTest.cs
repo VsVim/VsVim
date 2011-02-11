@@ -1,4 +1,5 @@
-﻿using Microsoft.FSharp.Core;
+﻿using System;
+using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Moq;
@@ -118,7 +119,7 @@ namespace VimCore.UnitTest
         {
             Create("food");
             var tss = _textView.TextSnapshot;
-            _vimHost.Setup(x => x.Beep()).Verifiable();
+            _operations.Setup(x => x.Beep()).Verifiable();
             Assert.IsTrue(_commandUtil.ReplaceChar(KeyInputUtil.CharToKeyInput('c'), 200).IsCompleted);
             Assert.AreSame(tss, _textView.TextSnapshot);
             _factory.Verify();
@@ -179,14 +180,13 @@ namespace VimCore.UnitTest
         }
 
         /// <summary>
-        /// Beep and pass the error message onto IStatusUtil if there is na error
+        /// Pass the error message onto IStatusUtil if there is na error
         /// </summary>
         [Test]
         public void JumpToMark_OnFailure()
         {
             Create("the cat chased the dog");
             _operations.Setup(x => x.JumpToMark('a', _markMap)).Returns(Result.NewFailed("e")).Verifiable();
-            _operations.Setup(x => x.Beep()).Verifiable();
             _statusUtil.Setup(x => x.OnError("e")).Verifiable();
             _commandUtil.JumpToMark('a');
             _factory.Verify();
@@ -284,8 +284,9 @@ namespace VimCore.UnitTest
                 didRun = true;
             });
             SetLastCommand(command);
+            var saved = _vimData.LastCommand.Value;
             _commandUtil.RepeatLastCommand(VimUtil.CreateCommandData());
-            Assert.AreEqual(_vimData.LastCommand.Value, command);
+            Assert.AreEqual(saved, _vimData.LastCommand.Value);
             Assert.IsTrue(didRun);
         }
 
@@ -307,6 +308,28 @@ namespace VimCore.UnitTest
             _commandUtil.RepeatLastCommand(VimUtil.CreateCommandData());
             _factory.Verify();
             Assert.IsTrue(didRun);
+        }
+
+        /// <summary>
+        /// Pass a barrage of spans and verify they map back and forth within the same 
+        /// ITextBuffer
+        /// </summary>
+        [Test]
+        public void CalculateVisualSpan_BackAndForth()
+        {
+            Create("the dog kicked the ball", "into the tree");
+
+            Action<SnapshotSpan> action = span =>
+            {
+                var visual = VisualSpan.NewCharacter(span);
+                var stored = StoredVisualSpan.OfVisualSpan(visual);
+                var restored = _commandUtil.CalculateVisualSpan(stored);
+                Assert.AreEqual(visual, restored);
+            };
+
+            action(new SnapshotSpan(_textView.TextSnapshot, 0, 3));
+            action(new SnapshotSpan(_textView.TextSnapshot, 0, 4));
+            action(new SnapshotSpan(_textView.GetLine(0).Start, _textView.GetLine(1).Start.Add(1)));
         }
     }
 }

@@ -19,28 +19,33 @@ type internal MotionCapture
     /// Handles incremental searches (/ and ?)
     let IncrementalSearch direction =
 
-        let kind = 
-            match direction, _settings.GlobalSettings.WrapScan with
-            | Direction.Forward, true -> SearchKind.ForwardWithWrap
-            | Direction.Forward, false -> SearchKind.Forward
-            | Direction.Backward, true -> SearchKind.BackwardWithWrap
-            | Direction.Backward, false -> SearchKind.Backward
+        let bindFunc keyInput = 
 
-        /// REPEAT TODO: When SearchResult is a BindResult use the Convert function
-        /// here
-        let before = TextViewUtil.GetCaretPoint _textView
-        let rec inner (ki:KeyInput) =
-            match _incrementalSearch.Process ki with
-            | SearchComplete(searchData, searchResult) ->
-                BindResult.Complete (Motion.Search searchData)
-            | SearchNotStarted -> 
-                BindResult.Cancelled
-            | SearchCancelled -> 
-                BindResult.Cancelled
-            | SearchNeedMore -> 
-                BindResult<MotionData>.CreateNeedMoreInput (Some KeyRemapMode.Command) inner
-        _incrementalSearch.Begin kind
-        { KeyRemapMode = Some KeyRemapMode.Command; BindFunction = inner }
+            let kind = 
+                match direction, _settings.GlobalSettings.WrapScan with
+                | Direction.Forward, true -> SearchKind.ForwardWithWrap
+                | Direction.Forward, false -> SearchKind.Forward
+                | Direction.Backward, true -> SearchKind.BackwardWithWrap
+                | Direction.Backward, false -> SearchKind.Backward
+    
+            /// REPEAT TODO: When SearchResult is a BindResult use the Convert function
+            /// here
+            let before = TextViewUtil.GetCaretPoint _textView
+    
+            let rec inner (ki:KeyInput) =
+                match _incrementalSearch.Process ki with
+                | SearchComplete(searchData, searchResult) ->
+                    BindResult.Complete (Motion.Search searchData)
+                | SearchNotStarted -> 
+                    BindResult.Cancelled
+                | SearchCancelled -> 
+                    BindResult.Cancelled
+                | SearchNeedMore -> 
+                    BindResult<MotionData>.CreateNeedMoreInput (Some KeyRemapMode.Command) inner
+            _incrementalSearch.Begin kind
+            inner keyInput
+
+        { KeyRemapMode = Some KeyRemapMode.Command; BindFunction = bindFunc}
 
     let SimpleMotions =  
         let motionSeq : (string * MotionFlags * Motion) seq = 

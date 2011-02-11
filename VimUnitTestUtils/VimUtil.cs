@@ -310,15 +310,6 @@ namespace Vim.UnitTest
             return new MotionData(motion, argument);
         }
 
-        internal static VisualSpan CreateVisualSpanSingle(
-            SnapshotSpan span,
-            VisualKind kind = null)
-        {
-            return VisualSpan.NewSingle(
-                kind ?? VisualKind.Line,
-                span);
-        }
-
         internal static KeyInput CreateKeyInput(
             VimKey key = VimKey.NotWellKnown,
             KeyModifiers mod = KeyModifiers.None,

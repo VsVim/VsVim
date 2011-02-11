@@ -11,9 +11,3 @@ type internal CommandFactory =
     /// valid as movements.  Several of these are overridden with custom movement behavior though.
     member CreateMovementCommands : unit -> CommandBinding seq
 
-    /// Returns the sequence of shared edit commands for normal mode
-    member CreateEditCommandsForNormalMode  : unit -> CommandBinding seq
-
-    /// Returns the sequence of shared edit commands for visual mode
-    member CreateEditCommandsForVisualMode  : VisualKind -> CommandBinding seq
-

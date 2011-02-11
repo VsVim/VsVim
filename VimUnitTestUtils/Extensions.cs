@@ -67,20 +67,6 @@ namespace Vim.UnitTest
 
         #endregion
 
-        #region VisualSpan
-
-        public static VisualSpan.Multiple AsMultiple(this VisualSpan span)
-        {
-            return (VisualSpan.Multiple)span;
-        }
-
-        public static VisualSpan.Single AsSingle(this VisualSpan span)
-        {
-            return (VisualSpan.Single)span;
-        }
-
-        #endregion
-
         #region ParseRangeResult
 
         internal static ParseRangeResult.Succeeded AsSucceeded(this ParseRangeResult res)

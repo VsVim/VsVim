@@ -34,7 +34,6 @@ namespace VimCore.UnitTest
         private Mock<IDisplayWindowBroker> _displayWindowBroker;
         private Mock<IFoldManager> _foldManager;
         private Mock<IVimHost> _host;
-        private Mock<IVisualSpanCalculator> _visualSpanCalculator;
         private Mock<ICommandUtil> _commandUtil;
         private Register _unnamedRegister;
 
@@ -67,7 +66,6 @@ namespace VimCore.UnitTest
             _jumpList = _factory.Create<IJumpList>(MockBehavior.Strict);
             _statusUtil = _factory.Create<IStatusUtil>(MockBehavior.Strict);
             _foldManager = _factory.Create<IFoldManager>(MockBehavior.Strict);
-            _visualSpanCalculator = _factory.Create<IVisualSpanCalculator>(MockBehavior.Strict);
             _host = _factory.Create<IVimHost>(MockBehavior.Loose);
             _commandUtil = _factory.Create<ICommandUtil>();
             _displayWindowBroker = _factory.Create<IDisplayWindowBroker>(MockBehavior.Strict);
@@ -104,8 +102,7 @@ namespace VimCore.UnitTest
                 _statusUtil.Object,
                 _displayWindowBroker.Object,
                 runner,
-                capture,
-                _visualSpanCalculator.Object);
+                capture);
             _mode = _modeRaw;
             _mode.OnEnter(ModeArgument.None);
         }

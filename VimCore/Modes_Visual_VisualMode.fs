@@ -64,7 +64,6 @@ type internal VisualMode
 
         let factory = Vim.Modes.CommandFactory(_operations, _capture, _buffer.TextViewMotionUtil, _buffer.JumpList, _buffer.Settings)
         factory.CreateMovementCommands()
-        |> Seq.append (factory.CreateEditCommandsForVisualMode _visualKind)
         |> Seq.map (fun (command) ->
             match command with
             | CommandBinding.SimpleCommand(name, flags, func) -> CommandBinding.SimpleCommand (name, flags, wrapSimple func) |> Some
@@ -81,8 +80,9 @@ type internal VisualMode
 
         let runVisualCommand funcNormal funcBlock count reg visualSpan = 
             match visualSpan with
-            | VisualSpan.Single(_,span) -> funcNormal count reg span
-            | VisualSpan.Multiple(_,col) -> funcBlock count reg col
+            | VisualSpan.Character span -> funcNormal count reg span
+            | VisualSpan.Line range -> funcNormal count reg range.ExtentIncludingLineBreak
+            | VisualSpan.Block col -> funcBlock count reg col
 
         /// Commands which do not need a span to operate on
         let simples =

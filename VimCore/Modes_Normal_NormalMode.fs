@@ -19,8 +19,8 @@ type internal NormalMode
         _statusUtil : IStatusUtil,
         _displayWindowBroker : IDisplayWindowBroker,
         _runner : ICommandRunner,
-        _capture : IMotionCapture,
-        _visualSpanCalculator : IVisualSpanCalculator ) as this =
+        _capture : IMotionCapture
+    ) as this =
 
     let _textView = _bufferData.TextView
     let _settings = _bufferData.Settings
@@ -67,7 +67,6 @@ type internal NormalMode
             this.CreateSimpleCommands()
             |> Seq.append (this.CreateCommandBindings())
             |> Seq.append (factory.CreateMovementCommands())
-            |> Seq.append (factory.CreateEditCommandsForNormalMode())
             |> Seq.append (this.CreateMotionCommands())
             |> Seq.iter _runner.Add
 

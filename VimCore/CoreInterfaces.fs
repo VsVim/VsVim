@@ -601,18 +601,26 @@ type RunResult =
     | Completed
     | SubstituteConfirm of SnapshotSpan * SnapshotLineRange * SubstituteData
 
-/// REPEAT TODO: Really this should be a 3-tuple for the VisualKind values
 [<RequireQualifiedAccess>]
 type VisualSpan =
 
-    | Single of VisualKind * SnapshotSpan
-    /// REPEAT TODO: Rename Multiple -> Block
-    | Multiple of VisualKind * NormalizedSnapshotSpanCollection
+    /// A characterwise span
+    | Character of SnapshotSpan
+
+    /// A linewise span
+    | Line of SnapshotLineRange
+
+    /// A block span
+    | Block of NormalizedSnapshotSpanCollection
+
     with
-    member x.VisualKind = 
-        match x with
-        | Single (kind, _) -> kind
-        | Multiple (kind, _) -> kind
+
+    /// Return the Spans which make up this VisualSpan instance
+    member x.Spans = 
+        match x with 
+        | VisualSpan.Character span -> [span] |> Seq.ofList
+        | VisualSpan.Line range -> [range.ExtentIncludingLineBreak] |> Seq.ofList
+        | VisualSpan.Block col -> col :> SnapshotSpan seq
 
 /// Information about the attributes of Command
 [<System.Flags>]
@@ -897,11 +905,12 @@ and ICommandUtil =
 [<RequireQualifiedAccess>]
 type StoredVisualSpan = 
 
-    /// Storing a character wise span 
-    | Characterwise of Span
+    /// Storing a character wise span.  Only need to know how many lines down is 
+    /// the end point and what is the offset of the end point
+    | Character of (int * int)
 
     /// Storing a linewise span just stores the count of lines
-    | Linewise of int
+    | Line of int
 
     /// Storing of a block span records the collection of Spans
     | Block of Span list
@@ -911,12 +920,42 @@ type StoredVisualSpan =
     /// Create a StoredVisualSpan from the provided VisualSpan value
     static member OfVisualSpan visualSpan = 
         match visualSpan with
-        | VisualSpan.Single (kind, span) ->
-            match kind with
-            | VisualKind.Character -> StoredVisualSpan.Characterwise span.Span
-            | VisualKind.Line -> StoredVisualSpan.Linewise (SnapshotSpanUtil.GetLineCount span)
-            | VisualKind.Block -> StoredVisualSpan.Block [span.Span]
-        | VisualSpan.Multiple (_, col) -> 
+        | VisualSpan.Character span ->
+
+            // Break the span into leading, middle and trailing edges and use
+            // those to calculate the offsets
+            let startSpan, middle, endSpan = SnapshotSpanUtil.GetLinesAndEdges span
+
+            // How many full lines in the middle
+            let middleLines = 
+                match middle with
+                | None -> 0
+                | Some range -> 
+
+                    // Deal with the special case where there is no start span because
+                    // the first line is a full line
+                    match startSpan with
+                    | None -> range.Count - 1
+                    | Some _ -> range.Count
+
+            let endLineOffset, endOffset = 
+                match endSpan with
+                | None -> 
+                    if middleLines > 0 then 
+                        // No end span but we have middle lines.  The end offset should
+                        // be at column 0 one line further down
+                        (middleLines + 1, 0)
+                    else
+                        // No middle lines or end span.  Single line guy
+                        (0, span.Length)
+                | Some endSpan ->
+                    // There is an end span.  It's 1 line further down from the middle guys
+                    // and ends at the length
+                    (middleLines + 1, SnapshotPointUtil.GetColumn endSpan.End)
+            StoredVisualSpan.Character (endLineOffset, endOffset)
+        | VisualSpan.Line range ->
+            StoredVisualSpan.Line range.Count
+        | VisualSpan.Block col -> 
             StoredVisualSpan.Block (col |> Seq.map (fun span -> span.Span) |> List.ofSeq)
 
 [<RequireQualifiedAccess>]
@@ -1750,13 +1789,4 @@ and ISubstituteConfirmMode =
     abstract CurrentMatchChanged : IEvent<SnapshotSpan option> 
 
     inherit IMode 
-
-/// Responsible for calculating the new Span for a VisualMode change
-type IVisualSpanCalculator =
-
-    /// Calculate the new VisualSpan 
-    abstract CalculateForTextView : textView:ITextView -> oldspan:VisualSpan -> VisualSpan
-
-    /// Calculate the new VisualSpan for the the given point
-    abstract CalculateForPoint : SnapshotPoint -> oldSpan:VisualSpan  -> VisualSpan
 

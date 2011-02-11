@@ -37,13 +37,42 @@ type internal CommandUtil
     /// StoreVisualSpan value
     member x.CalculateVisualSpan stored =
 
-        // REPEAT TODO: Actually implement
-        let span = SnapshotSpan(x.CurrentSnapshot, 0, 0)
-        let span = VisualSpan.Single (VisualKind.Character, span)
         match stored with
-        | StoredVisualSpan.Linewise _ -> span
-        | StoredVisualSpan.Characterwise _ -> span
-        | StoredVisualSpan.Block _-> span
+        | StoredVisualSpan.Line _ -> 
+            // REPEAT TODO: Actually implement
+            VisualSpan.Line (SnapshotLineRangeUtil.CreateForLine x.CaretLine)
+
+        | StoredVisualSpan.Character (endLineOffset, endOffset) -> 
+            // Repeating a characterise span starts from the caret position.  There
+            // are 2 cases to consider
+            //
+            //  1. Single Line: endOffset is the offset from the caret
+            //  2. Multi Line: endOffset is the offset from the last line
+
+            let offsetOrEnd (line : ITextSnapshotLine) offset = 
+                if offset >= line.Length then line.End
+                else line.Start.Add(offset)
+
+            let startPoint = x.CaretPoint
+
+            /// Calculate the end point being careful not to go past the end of the buffer
+            let endPoint = 
+                if 0 = endLineOffset then
+                    let column = SnapshotPointUtil.GetColumn x.CaretPoint
+                    offsetOrEnd x.CaretLine (column + endOffset)
+                else
+                    let endLineNumber = x.CaretLine.LineNumber + endLineOffset
+                    match SnapshotUtil.TryGetLine x.CurrentSnapshot endLineNumber with
+                    | None -> SnapshotUtil.GetEndPoint x.CurrentSnapshot
+                    | Some endLine -> offsetOrEnd endLine endOffset
+
+            let span = SnapshotSpan(startPoint, endPoint)
+            VisualSpan.Character span
+        | StoredVisualSpan.Block _->
+            // REPEAT TODO: Actually implement
+            let span = SnapshotSpan(x.CurrentSnapshot, 0, 0)
+            let col = NormalizedSnapshotSpanCollection(span)
+            VisualSpan.Block col
 
     /// Run the specified action with a wrapped undo transaction.  This is often necessary when
     /// an edit command manipulates the caret
@@ -85,7 +114,14 @@ type internal CommandUtil
         // Function to actually repeat the last change 
         let rec repeat (command : StoredCommand) = 
 
-            /// Repeat a text change.  
+            // Calculate the new CommandData based on the old and 
+            // current CommandData values
+            let getCommandData (oldData : CommandData) = 
+                match repeatData.Count with
+                | Some count -> { oldData with Count = repeatData.Count }
+                | None -> oldData
+
+            // Repeat a text change.  
             let repeatTextChange change = 
                 match change with 
                 | TextChange.Insert text -> 
@@ -99,8 +135,10 @@ type internal CommandUtil
 
             match command with
             | StoredCommand.NormalCommand (command, data, _) ->
+                let data = getCommandData data
                 x.RunNormalCommand command data
             | StoredCommand.VisualCommand (command, data, storedVisualSpan, _) -> 
+                let data = getCommandData data
                 let visualSpan = x.CalculateVisualSpan storedVisualSpan
                 x.RunVisualCommand command data visualSpan
             | StoredCommand.TextChangeCommand change ->
@@ -136,6 +174,7 @@ type internal CommandUtil
             if (point.Position + count) > point.GetContainingLine().End.Position then
                 // If the replace operation exceeds the line length then the operation
                 // can't succeed
+                _operations.Beep()
                 false
             else
                 // Do the replace in an undo transaction since we are explicitly positioning
@@ -160,6 +199,24 @@ type internal CommandUtil
             _operations.Beep()
 
         CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Replace the char under the cursor in visual mode.  No need to use an 
+    /// undo transaction here because we don't want to preserve the selection
+    /// and caret (it's visual mode). 
+    member x.ReplaceCharVisual keyInput (visualSpan : VisualSpan) = 
+
+        let replaceText = 
+            if keyInput = KeyInputUtil.EnterKey then System.Environment.NewLine
+            else System.String(keyInput.Char, 1)
+
+        use edit = _textBuffer.CreateEdit()
+        visualSpan.Spans
+        |> Seq.map SnapshotSpanUtil.GetPoints
+        |> Seq.concat
+        |> Seq.iter (fun point -> edit.Replace((Span(point.Position, 1)), replaceText) |> ignore)
+
+        edit.Apply() |> ignore
+        CommandResult.Completed (ModeSwitch.SwitchMode ModeKind.Normal)
 
     /// Run the specified Command
     member x.RunCommand command = 
@@ -188,6 +245,7 @@ type internal CommandUtil
         let count = data.CountOrDefault
         match command with
         | VisualCommand.PutAfterCursor -> x.PutAfterCursor register count (ModeSwitch.SwitchMode ModeKind.Normal)
+        | VisualCommand.ReplaceChar keyInput -> x.ReplaceCharVisual keyInput visualSpan
 
     /// Get the MotionResult value for the provided MotionData and pass it
     /// if found to the provided function
@@ -203,6 +261,7 @@ type internal CommandUtil
         let caretPoint = TextViewUtil.GetCaretPoint _textView
         match _operations.SetMark caretPoint c _markMap with
         | Modes.Result.Failed msg ->
+            _operations.Beep()
             _statusUtil.OnError msg
             CommandResult.Error
         | Modes.Result.Succeeded ->

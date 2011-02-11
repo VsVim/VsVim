@@ -72,8 +72,6 @@ type internal VimBufferFactory
         _undoManagerProvider : ITextBufferUndoManagerProvider,
         _foldManagerFactory : IFoldManagerFactory ) = 
 
-    let _visualSpanCalculator = VisualSpanCalculator() :> IVisualSpanCalculator
-
     member x.CreateBuffer (vim:IVim) view = 
         let editOperations = _editorOperationsFactoryService.GetEditorOperations(view)
         let editOptions = _editorOptionsFactoryService.GetOptions(view)
@@ -169,7 +167,7 @@ type internal VimBufferFactory
         // Normal mode values
         let modeList = 
             [
-                ((Modes.Normal.NormalMode(buffer, normalOpts, statusUtil,broker, createCommandRunner VisualKind.Character,capture, _visualSpanCalculator)) :> IMode)
+                ((Modes.Normal.NormalMode(buffer, normalOpts, statusUtil,broker, createCommandRunner VisualKind.Character, capture)) :> IMode)
                 ((Modes.Command.CommandMode(buffer, commandProcessor)) :> IMode)
                 ((Modes.Insert.InsertMode(buffer, commonOperations, broker, editOptions,false)) :> IMode)
                 ((Modes.Insert.InsertMode(buffer, commonOperations, broker, editOptions,true)) :> IMode)

@@ -311,7 +311,7 @@ module SnapshotSpanUtil =
     let GetLinesAndEdges span = 
 
         // Calculate the lead edge and the remaining span 
-        let leadEdge,span = 
+        let leadEdge, span = 
             let startLine = GetStartLine span
             if span.Start = SnapshotUtil.GetEndPoint span.Snapshot then 
                 // Special case for a 0 length span at the end of a Snapshot.  Just return 
@@ -328,7 +328,7 @@ module SnapshotSpanUtil =
                 Some lead, SnapshotSpan(lead.End, span.End)
 
         // Calculate the trailing edge and finish off the middle span
-        let trailingEdge,span= 
+        let trailingEdge, span = 
             if not span.IsEmpty then 
                 let endPointLine = span.End.GetContainingLine()
                 if span.End = endPointLine.Start then None,span
@@ -336,8 +336,11 @@ module SnapshotSpanUtil =
             else None,span
 
         let lines = 
-            if span.IsEmpty then Seq.empty
-            else GetAllLines span
+            if span.IsEmpty then 
+                None
+            else 
+                let startLine = span.Start.GetContainingLine()
+                SnapshotLineRange(span.Snapshot, startLine.LineNumber, GetLineCount span) |> Some
 
         (leadEdge, lines, trailingEdge)
 

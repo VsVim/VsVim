@@ -48,10 +48,10 @@ type internal CommandRunner
     let mutable _inRun = false
 
     member x.GetVisualSpan kind = 
-        match _textView.Selection.Mode with
-        | TextSelectionMode.Stream -> VisualSpan.Single (kind,_textView.Selection.StreamSelectionSpan.SnapshotSpan)
-        | TextSelectionMode.Box -> VisualSpan.Multiple (kind,_textView.Selection.SelectedSpans)
-        | _ -> failwith "Invalid Selection Mode"
+        match kind with
+        | VisualKind.Character -> VisualSpan.Character (_textView.Selection.StreamSelectionSpan.SnapshotSpan)
+        | VisualKind.Line-> VisualSpan.Line (_textView.Selection.StreamSelectionSpan.SnapshotSpan |> SnapshotLineRangeUtil.CreateForSpan)
+        | VisualKind.Block -> VisualSpan.Block _textView.Selection.SelectedSpans
 
     /// Used to wait for the character after the " which signals the Register.  When the register
     /// is found it will be passed to completeFunc

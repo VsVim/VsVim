@@ -234,10 +234,9 @@ namespace VimCore.UnitTest
             Create("dog", "cat", "pig", "fox");
             var tuple = SnapshotSpanUtil.GetLinesAndEdges(_buffer.GetLineRange(0, 1).ExtentIncludingLineBreak);
             Assert.IsTrue(tuple.Item1.IsNone());
+            Assert.IsTrue(tuple.Item2.IsSome(x => x.Count == 2));
+            Assert.IsTrue(tuple.Item2.IsSome(x => x.StartLineNumber == 0));
             Assert.IsTrue(tuple.Item3.IsNone());
-            CollectionAssert.AreEquivalent(
-                new int[] { 0, 1 },
-                tuple.Item2.Select(x => x.LineNumber).ToList());
         }
 
         [Test]
@@ -249,10 +248,8 @@ namespace VimCore.UnitTest
                 _buffer.GetLine(1).EndIncludingLineBreak);
             var tuple = SnapshotSpanUtil.GetLinesAndEdges(span);
             Assert.AreEqual(new SnapshotSpan(span.Start, _buffer.GetLine(0).EndIncludingLineBreak), tuple.Item1.Value);
+            Assert.IsTrue(tuple.Item2.IsSome(x => x.Count == 1));
             Assert.IsTrue(tuple.Item3.IsNone());
-            CollectionAssert.AreEquivalent(
-                new int[] { 1 },
-                tuple.Item2.Select(x => x.LineNumber).ToList());
         }
 
         [Test]
@@ -265,7 +262,7 @@ namespace VimCore.UnitTest
             var tuple = SnapshotSpanUtil.GetLinesAndEdges(span);
             Assert.AreEqual(new SnapshotSpan(span.Start, _buffer.GetLine(0).EndIncludingLineBreak), tuple.Item1.Value);
             Assert.AreEqual(new SnapshotSpan(_buffer.GetLine(1).Start, span.End), tuple.Item3.Value);
-            Assert.IsTrue(tuple.Item2.Count() == 0);
+            Assert.IsTrue(tuple.Item2.IsNone());
         }
 
         [Test]
@@ -278,9 +275,7 @@ namespace VimCore.UnitTest
             var tuple = SnapshotSpanUtil.GetLinesAndEdges(span);
             Assert.AreEqual(new SnapshotSpan(span.Start, _buffer.GetLine(0).EndIncludingLineBreak), tuple.Item1.Value);
             Assert.AreEqual(new SnapshotSpan(_buffer.GetLine(2).Start, span.End), tuple.Item3.Value);
-            CollectionAssert.AreEquivalent(
-               new int[] { 1 },
-               tuple.Item2.Select(x => x.LineNumber).ToList());
+            Assert.IsTrue(tuple.Item2.IsSome(x => x.Count == 1));
         }
 
         [Test]
@@ -293,7 +288,7 @@ namespace VimCore.UnitTest
             var tuple = SnapshotSpanUtil.GetLinesAndEdges(span);
             Assert.AreEqual(new SnapshotSpan(span.Start, span.End), tuple.Item1.Value);
             Assert.IsTrue(tuple.Item3.IsNone());
-            Assert.AreEqual(0, tuple.Item2.Count());
+            Assert.IsTrue(tuple.Item2.IsNone());
         }
 
         [Test]
@@ -306,7 +301,7 @@ namespace VimCore.UnitTest
                 0);
             var tuple = SnapshotSpanUtil.GetLinesAndEdges(span);
             Assert.AreEqual(span, tuple.Item1.Value);
-            Assert.AreEqual(0, tuple.Item2.ToList().Count);
+            Assert.IsTrue(tuple.Item2.IsNone());
             Assert.IsTrue(tuple.Item3.IsNone());
         }
 
@@ -324,7 +319,7 @@ namespace VimCore.UnitTest
                 0);
             var tuple = SnapshotSpanUtil.GetLinesAndEdges(span);
             Assert.IsTrue(tuple.Item1.IsNone());
-            Assert.AreEqual(0, tuple.Item2.ToList().Count);
+            Assert.IsTrue(tuple.Item2.IsNone());
             Assert.IsTrue(tuple.Item3.IsNone());
         }
 
@@ -339,7 +334,7 @@ namespace VimCore.UnitTest
             var tuple = SnapshotSpanUtil.GetLinesAndEdges(span);
             Assert.IsTrue(tuple.Item1.IsSome());
             Assert.AreEqual(new SnapshotSpan(span.Start, _buffer.GetLine(1).EndIncludingLineBreak), tuple.Item1.Value);
-            Assert.AreEqual(0, tuple.Item2.Count());
+            Assert.IsTrue(tuple.Item2.IsNone());
             Assert.AreEqual(_buffer.GetLine(2).ExtentIncludingLineBreak, tuple.Item3.Value);
         }
 
