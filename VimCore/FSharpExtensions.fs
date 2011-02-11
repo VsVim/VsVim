@@ -27,6 +27,15 @@ module public FSharpOption =
 
     let Create value = value |> Some
 
+    let CreateForReference value = 
+        match box value with
+        | null -> None
+        | _ -> Some value
+
+    let CreateForNullable (value : System.Nullable<'T>) =
+        if value.HasValue then Some value.Value
+        else None
+
 [<Extension>]
 module public SeqExtensions =
 
@@ -50,6 +59,9 @@ type public FSharpFuncUtil =
 
     [<Extension>] 
     static member ToFSharpFunc<'a,'b,'c,'d> (func:System.Func<'a,'b,'c,'d>) = fun x y z -> func.Invoke(x,y,z)
+
+    [<Extension>] 
+    static member ToFSharpFunc<'a> (func:System.Action<'a>) = fun x -> func.Invoke(x)
 
     static member Create<'a,'b> (func:System.Func<'a,'b>) = FSharpFuncUtil.ToFSharpFunc func
 

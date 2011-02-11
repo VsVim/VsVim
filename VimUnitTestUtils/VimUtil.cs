@@ -86,6 +86,31 @@ namespace Vim.UnitTest
             return CreateRegisterMap(device, () => null);
         }
 
+        internal static CommandUtil CreateCommandUtil(
+            ITextView textView,
+            ICommonOperations operations = null,
+            ITextViewMotionUtil motionUtil = null,
+            IStatusUtil statusUtil = null,
+            IRegisterMap registerMap = null,
+            IMarkMap markMap = null,
+            IVimData vimData = null)
+        {
+            var localSettings = new LocalSettings(new GlobalSettings());
+            registerMap = registerMap ?? CreateRegisterMap(MockObjectFactory.CreateClipboardDevice().Object);
+            markMap = markMap ?? new MarkMap(new TrackingLineColumnService());
+            vimData = vimData ?? new VimData();
+            motionUtil = motionUtil ?? CreateTextViewMotionUtil(textView, markMap: markMap, vimData: vimData, settings: localSettings);
+            operations = operations ?? CreateCommonOperations(textView, localSettings, vimData: vimData, statusUtil: statusUtil);
+            return new CommandUtil(
+                textView,
+                operations,
+                motionUtil,
+                statusUtil,
+                registerMap,
+                markMap,
+                vimData);
+        }
+
         internal static RegisterMap CreateRegisterMap(IClipboardDevice device, Func<string> func)
         {
             Func<FSharpOption<string>> func2 = () =>
@@ -128,38 +153,6 @@ namespace Vim.UnitTest
         internal static ITextStructureNavigator CreateTextStructureNavigator(ITextBuffer textBuffer)
         {
             return EditorUtil.FactoryService.TextStructureNavigatorSelectorService.GetTextStructureNavigator(textBuffer);
-        }
-
-        internal static CommandBinding CreateLongCommand(string name, Func<FSharpOption<int>, Register, LongCommandResult> func, CommandFlags flags = CommandFlags.None)
-        {
-            var fsharpFunc = func.ToFSharpFunc();
-            var list = name.Select(KeyInputUtil.CharToKeyInput).ToFSharpList();
-            var commandName = KeyInputSet.NewManyKeyInputs(list);
-            return CommandBinding.NewLongCommand(commandName, flags, fsharpFunc);
-        }
-
-        internal static CommandBinding CreateLongCommand(string name, Func<KeyInput, bool> func, FSharpOption<KeyRemapMode> keyRemapModeOption = null, CommandFlags flags = CommandFlags.None)
-        {
-            return CreateLongCommand(
-                name,
-                (x, y) =>
-                {
-                    FSharpFunc<KeyInput, LongCommandResult> realFunc = null;
-                    Converter<KeyInput, LongCommandResult> func2 = ki =>
-                        {
-                            if (func(ki))
-                            {
-                                return LongCommandResult.NewFinished(CommandResult.NewCompleted(ModeSwitch.NoSwitch));
-                            }
-                            else
-                            {
-                                return LongCommandResult.NewNeedMoreInput(keyRemapModeOption, realFunc);
-                            }
-                        };
-                    realFunc = func2;
-                    return LongCommandResult.NewNeedMoreInput(keyRemapModeOption, realFunc);
-                },
-                flags);
         }
 
         internal static CommandBinding CreateMotionCommand(string name)
@@ -219,27 +212,88 @@ namespace Vim.UnitTest
         }
 
         internal static CommandRunData CreateCommandRunData(
-            CommandBinding command,
-            Register register,
-            int? count = null,
-            MotionData motionRunData = null,
-            VisualSpan visualRunData = null)
+            Command command = null,
+            CommandBinding binding = null,
+            CommandResult result = null, 
+            CommandFlags flags = CommandFlags.None)
         {
-            var countOpt = count != null ? FSharpOption.Create(count.Value) : FSharpOption<int>.None;
-            var motion = motionRunData != null
-                ? FSharpOption.Create(motionRunData)
-                : FSharpOption<MotionData>.None;
-            var visual = visualRunData != null
-                ? FSharpOption.Create(visualRunData)
-                : FSharpOption<VisualSpan>.None;
-            return new CommandRunData(
-                command,
-                register,
-                countOpt,
-                motion,
-                visual,
-                FSharpOption<Command2>.None);
+            command = command ?? CreateNormalCommand();
+            binding = binding ?? CreateCommandBindingNormal(flags: flags);
+            result = result ?? CommandResult.NewCompleted(ModeSwitch.NoSwitch);
+            return new CommandRunData(binding, command, result);
         }
+
+        internal static CommandBinding CreateCommandBindingNormal(
+            string name = "default",
+            CommandFlags flags = CommandFlags.None,
+            NormalCommand command = null)
+
+        {
+            command = command ?? NormalCommand.PutAfterCursor;
+            return CommandBinding.NewNormalCommand2(KeyNotationUtil.StringToKeyInputSet(name), flags, command);
+        }
+
+        internal static CommandBinding CreateCommandBindingNormalComplex(
+            string name,
+            Action<KeyInput> action,
+            CommandFlags flags = CommandFlags.None)
+        {
+            Func<KeyInput, BindResult<NormalCommand>> func = keyInput =>
+            {
+                action(keyInput);
+                return BindResult<NormalCommand>.NewComplete(NormalCommand.PutAfterCursor);
+            };
+
+            var bindData = new BindData<NormalCommand>(
+                FSharpOption<KeyRemapMode>.None,
+                func.ToFSharpFunc());
+            return CommandBinding.NewComplexNormalCommand(
+                KeyNotationUtil.StringToKeyInputSet(name),
+                flags,
+                bindData);
+        }
+
+        internal static CommandBinding CreateCommandBindingNormalComplex(
+            string name,
+            Func<KeyInput, bool> predicate,
+            KeyRemapMode remapMode = null,
+            CommandFlags flags = CommandFlags.None)
+        {
+            var remapModeOption = remapMode != null
+                ? FSharpOption.Create(remapMode)
+                : FSharpOption<KeyRemapMode>.None;
+            Func<KeyInput, BindResult<NormalCommand>> func = null;
+            func = keyInput =>
+            {
+                if (predicate(keyInput))
+                {
+                    var data = new BindData<NormalCommand>(
+                        remapModeOption,
+                        func.ToFSharpFunc());
+                    return BindResult<NormalCommand>.NewNeedMoreInput(data);
+                }
+
+                return BindResult<NormalCommand>.NewComplete(NormalCommand.PutAfterCursor);
+            };
+
+            var bindData = new BindData<NormalCommand>(
+                FSharpOption<KeyRemapMode>.None,
+                func.ToFSharpFunc());
+            return CommandBinding.NewComplexNormalCommand(
+                KeyNotationUtil.StringToKeyInputSet(name),
+                flags,
+                bindData);
+        }
+
+        internal static Command CreateNormalCommand(
+            NormalCommand command = null,
+            CommandData commandData = null)
+        {
+            command = command ?? NormalCommand.PutAfterCursor;
+            commandData = commandData ?? new CommandData(FSharpOption<int>.None, FSharpOption<RegisterName>.None);
+            return Command.NewNormalCommand(command, commandData);
+        }
+
 
         internal static MotionData CreateMotionData(
             Motion motion,
@@ -378,5 +432,18 @@ namespace Vim.UnitTest
             return new MotionResult(span, isForward, isAnyWord, motionKind, operationKind, col);
         }
 
+        internal static CommandData CreateCommandData(
+            int? count = null,
+            RegisterName name = null)
+        {
+            return new CommandData(
+                FSharpOption.CreateForNullable(count),
+                FSharpOption.CreateForReference(name));
+        }
+
+        internal static NormalCommand CreatePing(Action<CommandData> action)
+        {
+            return NormalCommand.NewPing(action.ToFSharpFunc());
+        }
     }
 }

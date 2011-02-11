@@ -684,6 +684,10 @@ type NormalCommand =
     /// Move the caret to the result of the given Motion
     | MoveCaretToMotion of Motion
 
+    /// Not actually a Vim Command.  This is a simple ping command which makes 
+    /// testing items like complex repeats significantly easier
+    | Ping of (CommandData -> unit)
+
     /// Put the contents of the register into the 
     | PutAfterCursor
 
@@ -710,10 +714,8 @@ type VisualCommand =
     | ReplaceChar of KeyInput
 
 /// Commands which can be executed by the user
-///
-/// REPEAT TODO: Rename to Command when the old Command is gone
 [<RequireQualifiedAccess>]
-type Command2 =
+type Command =
 
     /// A Normal Mode Command
     | NormalCommand of NormalCommand * CommandData
@@ -887,7 +889,7 @@ and ICommandUtil =
     abstract RunVisualCommand : VisualCommand -> CommandData -> VisualSpan -> CommandResult
 
     /// Run a command
-    abstract RunCommand : Command2 -> CommandResult
+    abstract RunCommand : Command -> CommandResult
 
 /// Contains the stored information about a Visual Span.  This instance *will* be 
 /// stored for long periods of time and used to erpeat a Command instance across
@@ -930,10 +932,10 @@ type TextChange =
 type StoredCommand =
 
     /// The stored information about a NormalCommand
-    | NormalCommand of NormalCommand * CommandData
+    | NormalCommand of NormalCommand * CommandData * CommandFlags
 
     /// The stored information about a VisualCommand
-    | VisualCommand of VisualCommand * CommandData * StoredVisualSpan
+    | VisualCommand of VisualCommand * CommandData * StoredVisualSpan * CommandFlags
 
     /// A Text Change which ocurred 
     | TextChangeCommand of TextChange
@@ -944,14 +946,27 @@ type StoredCommand =
 
     with
 
+    /// The CommandFlags associated with this StoredCommand
+    member x.CommandFlags =
+        match x with 
+        | NormalCommand (_, _, flags) -> flags
+        | VisualCommand (_, _, _, flags) -> flags
+        | TextChangeCommand _ -> CommandFlags.None
+        | LinkedCommand _ -> CommandFlags.None
+
     /// Create a StoredCommand instance from the given Command value
-    static member OfCommand command = 
+    ///
+    /// REPEAT TODO: Remove the option when legacy commands are removed
+    static member OfCommand command (commandBinding : CommandBinding) = 
         match command with 
-        | Command2.NormalCommand (command, data) -> 
-            StoredCommand.NormalCommand (command, data)
-        | Command2.VisualCommand (command, data, visualSpan) ->
+        | Command.NormalCommand (command, data) -> 
+            StoredCommand.NormalCommand (command, data, commandBinding.CommandFlags) |> Some
+        | Command.VisualCommand (command, data, visualSpan) ->
             let storedVisualSpan = StoredVisualSpan.OfVisualSpan visualSpan
-            StoredCommand.VisualCommand (command, data, storedVisualSpan)
+            StoredCommand.VisualCommand (command, data, storedVisualSpan, commandBinding.CommandFlags) |> Some
+        | Command.LegacyCommand _ ->
+            // Not possible to store a legacy command
+            None
 
 /// Flags about specific motions
 [<RequireQualifiedAccess>]
@@ -999,23 +1014,24 @@ type MotionCommand =
         | ComplexMotionCommand(_,flags,_) -> flags
 
 /// The information about the particular run of a Command
-/// REPEAT TODO: Delet this and replace with Command2
-/// CommandBinding)
 type CommandRunData = {
-    Command : CommandBinding;
-    Register : Register;
-    Count : int option;
 
-    /// For commands which took a motion this will hold the relevant information
-    /// on how the motion was ran
-    MotionData : MotionData option
+    /// The binding which the command was invoked from
+    CommandBinding : CommandBinding
 
-    /// For visual commands this holds the relevant span information
-    VisualRunData : VisualSpan option
+    /// The Command which was run
+    Command : Command
 
-    /// Temporary hack to support the new command infrastructure
-    Command2 : Command2 option 
-}
+    /// The result of the Command Run
+    CommandResult : CommandResult
+
+} with
+
+    /// The ModeSwitch associated with this CommandRunData instance
+    member x.ModeSwitch = 
+        match x.CommandResult with
+        | CommandResult.Completed modeSwitch -> modeSwitch
+        | CommandResult.Error -> ModeSwitch.NoSwitch
 
 /// Responsible for binding key input to a Motion and MotionArgument tuple.  Does
 /// not actually run the motions
@@ -1036,31 +1052,6 @@ module CommandUtil2 =
         match opt with 
         | Some(count) -> count
         | None -> 1
-
-/// Represents the types of actions which are taken when an ICommandRunner is presented
-/// with a KeyInput to run
-/// 
-/// REPEAT TODO: Potentially make this a BindResult
-type RunKeyInputResult = 
-    
-    /// Ran a command which produced the attached result.  
-    | CommandRan of Command2 * ModeSwitch
-
-    /// Command was cancelled
-    | CommandCancelled 
-
-    /// Command ran but resulted in an error
-    | CommandErrored
-
-    /// More input is needed to determine if there is a matching command or not
-    | NeedMoreKeyInput 
-
-    /// The ICommandRunner was asked to process a KeyInput when it was already in
-    /// the middle of processing one.  This KeyInput was hence ignored
-    | NestedRunDetected
-
-    /// No command which matches the given input
-    | NoMatchingCommand 
 
 /// Represents the different states of the ICommandRunner with respect to running a Command
 type CommandRunnerState =
@@ -1110,7 +1101,7 @@ type ICommandRunner =
 
     /// Process the given KeyInput.  If the command completed it will return a result.  A
     /// None value implies more input is needed to finish the operation
-    abstract Run : KeyInput -> RunKeyInputResult
+    abstract Run : KeyInput -> BindResult<CommandRunData>
 
     /// If currently waiting for more input on a Command, reset to the 
     /// initial state
@@ -1118,7 +1109,7 @@ type ICommandRunner =
 
     /// Raised when a command is successfully run
     [<CLIEvent>]
-    abstract CommandRan : IEvent<CommandRunData * CommandResult>
+    abstract CommandRan : IEvent<CommandRunData>
 
 /// Manages the key map for Vim.  Responsible for handling all key remappings
 type IKeyMap =
@@ -1471,9 +1462,6 @@ and IVim =
     /// which has focus 
     abstract ActiveBuffer : IVimBuffer option
 
-    /// IChangeTracker for this IVim instance
-    abstract ChangeTracker : IChangeTracker
-
     /// Is the VimRc loaded
     abstract IsVimRcLoaded : bool
 
@@ -1762,17 +1750,6 @@ and ISubstituteConfirmMode =
     abstract CurrentMatchChanged : IEvent<SnapshotSpan option> 
 
     inherit IMode 
-
-and IChangeTracker =
-    
-    abstract LastChange : RepeatableChange option
-
-/// Represents a change which is repeatable 
-and [<RequireQualifiedAccess>] RepeatableChange =
-    | CommandChange of CommandRunData
-    | TextChange of TextChange
-    | LinkedChange of RepeatableChange * RepeatableChange
-
 
 /// Responsible for calculating the new Span for a VisualMode change
 type IVisualSpanCalculator =

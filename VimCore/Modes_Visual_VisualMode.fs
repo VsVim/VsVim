@@ -471,31 +471,26 @@ type internal VisualMode
                 else
                     let original = _buffer.TextSnapshot.Version.VersionNumber
                     match _runner.Run ki with
-                    | RunKeyInputResult.NeedMoreKeyInput -> 
+                    | BindResult.NeedMoreInput _ -> 
                         // Commands like incremental search can move the caret and be incomplete.  Need to 
                         // update the selection while waiting for the next key
                         _selectionTracker.UpdateSelection()
                         ProcessResult.Processed
-                    | RunKeyInputResult.NestedRunDetected -> 
-                        ProcessResult.Processed
-                    | RunKeyInputResult.CommandRan(commandRanData,modeSwitch) -> 
+                    | BindResult.Complete commandRanData ->
     
-                        if Util.IsFlagSet commandRanData.Command.CommandFlags CommandFlags.ResetCaret then
+                        if Util.IsFlagSet commandRanData.CommandBinding.CommandFlags CommandFlags.ResetCaret then
                             _selectionTracker.ResetCaret()
 
-                        match modeSwitch with
+                        match commandRanData.ModeSwitch with
                         | ModeSwitch.NoSwitch -> _selectionTracker.UpdateSelection()
                         | ModeSwitch.SwitchMode(_) -> ()
                         | ModeSwitch.SwitchModeWithArgument(_,_) -> ()
                         | ModeSwitch.SwitchPreviousMode -> ()
-                        ProcessResult.OfModeSwitch modeSwitch
-                    | RunKeyInputResult.CommandErrored(_) -> 
+                        ProcessResult.OfModeSwitch commandRanData.ModeSwitch
+                    | BindResult.Error ->
                         ProcessResult.SwitchPreviousMode
-                    | RunKeyInputResult.CommandCancelled -> 
+                    | BindResult.Cancelled -> 
                         ProcessResult.SwitchPreviousMode
-                    | RunKeyInputResult.NoMatchingCommand -> 
-                        _operations.Beep()
-                        ProcessResult.Processed
 
             // If we are switching out Visual Mode then reset the selection
             if result.IsAnySwitch then

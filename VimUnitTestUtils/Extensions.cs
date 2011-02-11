@@ -44,6 +44,18 @@ namespace Vim.UnitTest
             return (BindResult<T>.Complete)res;
         }
 
+        public static BindResult<T>.NeedMoreInput AsNeedMoreInput<T>(this BindResult<T> res)
+        {
+            Assert.IsTrue(res.IsNeedMoreInput);
+            return (BindResult<T>.NeedMoreInput) res;
+        }
+
+        public static BindResult<TResult> Convert<T, TResult>(this BindResult<T> res, Func<T, TResult> func)
+        {
+            var func2 = func.ToFSharpFunc();
+            return res.Convert(func2);
+        }
+
         #endregion
 
         #region ModeUtil.Result
@@ -165,22 +177,6 @@ namespace Vim.UnitTest
 
         #endregion
 
-        #region RepeatableChange
-
-        public static RepeatableChange.TextChange AsTextChange(this RepeatableChange change)
-        {
-            Assert.IsTrue(change.IsTextChange);
-            return (RepeatableChange.TextChange)change;
-        }
-
-        public static RepeatableChange.CommandChange AsCommandChange(this RepeatableChange change)
-        {
-            Assert.IsTrue(change.IsCommandChange);
-            return (RepeatableChange.CommandChange)change;
-        }
-
-        #endregion
-
         #region SettingValue
 
         public static SettingValue.StringValue AsStringValue(this SettingValue value)
@@ -199,20 +195,6 @@ namespace Vim.UnitTest
         {
             Assert.IsTrue(value.IsNumberValue);
             return (SettingValue.NumberValue)value;
-        }
-
-        #endregion
-
-        #region RunKeyInputResult
-
-        public static RunKeyInputResult.CommandRan AsCommandRan(this RunKeyInputResult result)
-        {
-            return (RunKeyInputResult.CommandRan)result;
-        }
-
-        public static RunKeyInputResult.CommandErrored AsCommandErrored(this RunKeyInputResult result)
-        {
-            return (RunKeyInputResult.CommandErrored)result;
         }
 
         #endregion
@@ -475,7 +457,12 @@ namespace Vim.UnitTest
 
         #region ICommandRunner
 
-        public static RunKeyInputResult Run(this ICommandRunner runner, char c)
+        public static BindResult<CommandRunData> Run(this ICommandRunner runner, VimKey key)
+        {
+            return runner.Run(KeyInputUtil.VimKeyToKeyInput(key));
+        }
+
+        public static BindResult<CommandRunData> Run(this ICommandRunner runner, char c)
         {
             return runner.Run(KeyInputUtil.CharToKeyInput(c));
         }
@@ -483,15 +470,15 @@ namespace Vim.UnitTest
         /// <summary>
         /// Run the multi-input command
         /// </summary>
-        public static RunKeyInputResult Run(this ICommandRunner runner, string command)
+        public static BindResult<CommandRunData> Run(this ICommandRunner runner, string command)
         {
-            RunKeyInputResult result = null;
+            BindResult<CommandRunData> result = null;
             for (var i = 0; i < command.Length; i++)
             {
                 result = runner.Run(command[i]);
                 if (i + 1 < command.Length)
                 {
-                    Assert.IsTrue(result.IsNeedMoreKeyInput);
+                    Assert.IsTrue(result.IsNeedMoreInput);
                 }
             }
 
@@ -610,6 +597,13 @@ namespace Vim.UnitTest
         {
             Assert.IsTrue(option.IsSome());
             Assert.AreEqual(value, option.Value);
+            return true;
+        }
+
+        public static bool IsSome<T>(this FSharpOption<T> option, Func<T, bool> func)
+        {
+            Assert.IsTrue(option.IsSome());
+            Assert.IsTrue(func(option.Value));
             return true;
         }
     }

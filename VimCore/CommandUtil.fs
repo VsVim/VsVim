@@ -9,18 +9,16 @@ open Microsoft.VisualStudio.Text.Outlining
 
 type internal CommandUtil 
     (
+        _textView : ITextView,
         _operations : ICommonOperations,
-        _buffer : IVimBuffer,
-        _statusUtil : IStatusUtil
+        _motionUtil : ITextViewMotionUtil,
+        _statusUtil : IStatusUtil,
+        _registerMap : IRegisterMap,
+        _markMap : IMarkMap,
+        _vimData : IVimData
     ) =
 
-
-    let _textView = _operations.TextView
-    let _textBuffer = _operations.TextView.TextBuffer
-    let _registerMap = _buffer.RegisterMap
-    let _markMap = _buffer.MarkMap
-    let _motionUtil = _buffer.TextViewMotionUtil
-    let _vimData = _buffer.VimData
+    let _textBuffer = _textView.TextBuffer
     let mutable _inRepeatLastChange = false
 
     /// The SnapshotPoint for the caret
@@ -68,6 +66,11 @@ type internal CommandUtil
         | Some result -> _operations.MoveCaretToMotionResult result
         CommandResult.Completed ModeSwitch.NoSwitch
 
+    /// Run the Ping command
+    member x.Ping func data = 
+        func data
+        CommandResult.Completed ModeSwitch.NoSwitch
+
     /// Put the contents of the specified register after the cursor.  Used for the
     /// normal / visual 'p' command
     member x.PutAfterCursor (register : Register) count switch =
@@ -95,9 +98,9 @@ type internal CommandUtil
                 CommandResult.Completed ModeSwitch.NoSwitch
 
             match command with
-            | StoredCommand.NormalCommand (command, data) ->
+            | StoredCommand.NormalCommand (command, data, _) ->
                 x.RunNormalCommand command data
-            | StoredCommand.VisualCommand (command, data, storedVisualSpan) -> 
+            | StoredCommand.VisualCommand (command, data, storedVisualSpan, _) -> 
                 let visualSpan = x.CalculateVisualSpan storedVisualSpan
                 x.RunVisualCommand command data visualSpan
             | StoredCommand.TextChangeCommand change ->
@@ -161,9 +164,9 @@ type internal CommandUtil
     /// Run the specified Command
     member x.RunCommand command = 
         match command with
-        | Command2.NormalCommand (command, data) -> x.RunNormalCommand command data
-        | Command2.VisualCommand (command, data, visualSpan) -> x.RunVisualCommand command data visualSpan
-        | Command2.LegacyCommand func -> func()
+        | Command.NormalCommand (command, data) -> x.RunNormalCommand command data
+        | Command.VisualCommand (command, data, visualSpan) -> x.RunVisualCommand command data visualSpan
+        | Command.LegacyCommand func -> func()
 
     /// Run a NormalCommand against the buffer
     member x.RunNormalCommand command (data : CommandData) =
@@ -172,6 +175,7 @@ type internal CommandUtil
         match command with
         | NormalCommand.MoveCaretToMotion motion -> x.MoveCaretToMotion motion data.Count
         | NormalCommand.JumpToMark c -> x.JumpToMark c
+        | NormalCommand.Ping func -> x.Ping func data
         | NormalCommand.PutAfterCursor -> x.PutAfterCursor register count ModeSwitch.NoSwitch
         | NormalCommand.SetMarkToCaret c -> x.SetMarkToCaret c
         | NormalCommand.RepeatLastCommand -> x.RepeatLastCommand data
@@ -197,7 +201,7 @@ type internal CommandUtil
     /// Process the m[a-z] command
     member x.SetMarkToCaret c = 
         let caretPoint = TextViewUtil.GetCaretPoint _textView
-        match _operations.SetMark _buffer caretPoint c with
+        match _operations.SetMark caretPoint c _markMap with
         | Modes.Result.Failed msg ->
             _statusUtil.OnError msg
             CommandResult.Error

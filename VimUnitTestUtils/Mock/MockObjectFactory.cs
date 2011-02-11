@@ -64,7 +64,6 @@ namespace Vim.UnitTest.Mock
             IVimGlobalSettings settings = null,
             IVimHost host = null,
             IKeyMap keyMap = null,
-            IChangeTracker changeTracker = null,
             IKeyboardDevice keyboardDevice = null,
             IMouseDevice mouseDevice = null,
             IVimData vimData = null,
@@ -78,7 +77,6 @@ namespace Vim.UnitTest.Mock
             keyMap = keyMap ?? (new KeyMap());
             keyboardDevice = keyboardDevice ?? (factory.Create<IKeyboardDevice>(MockBehavior.Loose)).Object;
             mouseDevice = mouseDevice ?? (factory.Create<IMouseDevice>(MockBehavior.Loose)).Object;
-            changeTracker = changeTracker ?? new ChangeTracker(new TextChangeTrackerFactory(keyboardDevice, mouseDevice), new VimData());
             vimData = vimData ?? new VimData();
             var mock = factory.Create<IVim>(MockBehavior.Strict);
             mock.SetupGet(x => x.RegisterMap).Returns(registerMap);
@@ -86,7 +84,6 @@ namespace Vim.UnitTest.Mock
             mock.SetupGet(x => x.Settings).Returns(settings);
             mock.SetupGet(x => x.VimHost).Returns(host);
             mock.SetupGet(x => x.KeyMap).Returns(keyMap);
-            mock.SetupGet(x => x.ChangeTracker).Returns(changeTracker);
             mock.SetupGet(x => x.VimData).Returns(vimData);
             return mock;
         }

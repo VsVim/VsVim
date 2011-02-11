@@ -109,7 +109,6 @@
     <Compile Include="KeyMap.fsi" />
     <Compile Include="KeyMap.fs" />
     <Compile Include="JumpList.fs" />
-    <Compile Include="ChangeTracker.fs" />
     <Compile Include="TextChangeTracker.fs" />
     <Compile Include="VimSettings.fs" />
     <Compile Include="FileSystem.fs" />

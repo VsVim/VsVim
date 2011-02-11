@@ -31,7 +31,6 @@ namespace VimCore.UnitTest
         private Mock<IIncrementalSearch> _incrementalSearch;
         private Mock<IJumpList> _jumpList;
         private Mock<IStatusUtil> _statusUtil;
-        private Mock<IChangeTracker> _changeTracker;
         private Mock<IDisplayWindowBroker> _displayWindowBroker;
         private Mock<IFoldManager> _foldManager;
         private Mock<IVimHost> _host;
@@ -67,7 +66,6 @@ namespace VimCore.UnitTest
             _incrementalSearch = MockObjectFactory.CreateIncrementalSearch(factory: _factory);
             _jumpList = _factory.Create<IJumpList>(MockBehavior.Strict);
             _statusUtil = _factory.Create<IStatusUtil>(MockBehavior.Strict);
-            _changeTracker = _factory.Create<IChangeTracker>(MockBehavior.Strict);
             _foldManager = _factory.Create<IFoldManager>(MockBehavior.Strict);
             _visualSpanCalculator = _factory.Create<IVisualSpanCalculator>(MockBehavior.Strict);
             _host = _factory.Create<IVimHost>(MockBehavior.Loose);
@@ -85,7 +83,7 @@ namespace VimCore.UnitTest
             _buffer = MockObjectFactory.CreateVimBuffer(
                 _textView,
                 "test",
-                MockObjectFactory.CreateVim(_map, changeTracker: _changeTracker.Object, host: _host.Object, vimData: _vimData).Object,
+                MockObjectFactory.CreateVim(_map, host: _host.Object, vimData: _vimData).Object,
                 _jumpList.Object,
                 incrementalSearch: _incrementalSearch.Object,
                 motionUtil: motionUtil);
@@ -2196,76 +2194,47 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void Mark1()
+        public void SetMark_CanProcessM()
         {
-            Create(DefaultLines);
+            Create("");
             Assert.IsTrue(_mode.CanProcess(KeyInputUtil.CharToKeyInput('m')));
             Assert.IsTrue(_mode.CommandNames.Any(x => x.KeyInputs.First().Char == 'm'));
         }
 
+        /// <summary>
+        /// Inside mark mode we can process anything
+        /// </summary>
         [Test, Description("Once we are in mark mode we can process anything")]
-        public void Mark2()
+        public void SetMark_CanProcessAnything()
         {
-            Create(DefaultLines);
+            Create("");
             _mode.Process(KeyInputUtil.CharToKeyInput('m'));
             Assert.IsTrue(_mode.CanProcess(KeyInputUtil.CharWithControlToKeyInput('c')));
         }
 
         [Test]
-        public void Mark3()
+        public void SetMark_Simple()
         {
-            Create(DefaultLines);
-            _operations.Setup(x => x.SetMark(_buffer.Object, _textView.Caret.Position.BufferPosition, 'a')).Returns(Result._unique_Succeeded).Verifiable();
-            _mode.Process(KeyInputUtil.CharToKeyInput('m'));
-            _mode.Process(KeyInputUtil.CharToKeyInput('a'));
-            _operations.Verify();
-        }
-
-        [Test, Description("Bad mark should beep")]
-        public void Mark4()
-        {
-            Create(DefaultLines);
-            _operations.Setup(x => x.Beep()).Verifiable();
-            _operations.Setup(x => x.SetMark(_buffer.Object, _textView.Caret.Position.BufferPosition, ';')).Returns(Result.NewFailed("foo")).Verifiable();
-            _mode.Process(KeyInputUtil.CharToKeyInput('m'));
-            _mode.Process(KeyInputUtil.CharToKeyInput(';'));
-            _operations.Verify();
+            Create("");
+            _commandUtil.SetupNormalCommand(NormalCommand.NewSetMarkToCaret('a'));
+            _mode.Process("ma");
+            _commandUtil.Verify();
         }
 
         [Test]
-        public void JumpToMark1()
+        public void JumpToMark_SingleQuote()
         {
-            Create(DefaultLines);
-            Assert.IsTrue(_mode.CanProcess(KeyInputUtil.CharToKeyInput('\'')));
-            Assert.IsTrue(_mode.CanProcess(KeyInputUtil.CharToKeyInput('`')));
-            Assert.IsTrue(_mode.CommandNames.Any(x => x.KeyInputs.First().Char == '\''));
-            Assert.IsTrue(_mode.CommandNames.Any(x => x.KeyInputs.First().Char == '`'));
+            Create("");
+            _commandUtil.SetupNormalCommand(NormalCommand.NewJumpToMark('a'));
+            _mode.Process("'a");
         }
 
         [Test]
-        public void JumpToMark2()
+        public void JumpToMark_BackTick()
         {
-            Create("foobar");
-            _operations
-                .Setup(x => x.JumpToMark('a', _buffer.Object.MarkMap))
-                .Returns(Result._unique_Succeeded)
-                .Verifiable();
-            _mode.Process('\'');
-            _mode.Process('a');
-            _operations.Verify();
-        }
-
-        [Test]
-        public void JumpToMark3()
-        {
-            Create("foobar");
-            _operations
-                .Setup(x => x.JumpToMark('a', _buffer.Object.MarkMap))
-                .Returns(Result._unique_Succeeded)
-                .Verifiable();
-            _mode.Process('`');
-            _mode.Process('a');
-            _operations.Verify();
+            Create("");
+            _commandUtil.SetupNormalCommand(NormalCommand.NewJumpToMark('a'));
+            _mode.Process("`a");
         }
 
         [Test]
@@ -2455,225 +2424,11 @@ namespace VimCore.UnitTest
             Assert.AreEqual(CommandFlags.Repeatable, found.CommandFlags);
         }
 
+        /// <summary>
+        /// Sanity check to ensure certain commands are not in fact repeatable
+        /// </summary>
         [Test]
-        public void RepeatLastChange1()
-        {
-            Create("foo");
-            _operations.Setup(x => x.Beep()).Verifiable();
-            _changeTracker.SetupGet(x => x.LastChange).Returns(FSharpOption<RepeatableChange>.None).Verifiable();
-            _mode.Process('.');
-            _changeTracker.Verify();
-            _operations.Verify();
-        }
-
-        [Test]
-        public void RepeatLastChange2()
-        {
-            Create("");
-            _changeTracker.SetupGet(x => x.LastChange).Returns(FSharpOption.Create(RepeatableChange.NewTextChange(TextChange.NewInsert("h")))).Verifiable();
-            _operations.Setup(x => x.InsertText("h", 1)).Verifiable();
-            _mode.Process('.');
-            _operations.Verify();
-            _changeTracker.Verify();
-        }
-
-        [Test]
-        public void RepeatLastChange3()
-        {
-            Create("");
-            _changeTracker.SetupGet(x => x.LastChange).Returns(FSharpOption.Create(RepeatableChange.NewTextChange(TextChange.NewInsert("h")))).Verifiable();
-            _operations.Setup(x => x.InsertText("h", 3)).Verifiable();
-            _mode.Process("3.");
-            _operations.Verify();
-            _changeTracker.Verify();
-        }
-
-        [Test]
-        public void RepeatLastChange4()
-        {
-            Create("");
-            var didRun = false;
-            var data =
-                VimUtil.CreateCommandRunData(
-                    VimUtil.CreateSimpleCommand("d", (x, y) => { didRun = true; }),
-                    _map.GetRegister(RegisterName.Unnamed),
-                    1);
-            _changeTracker
-                .SetupGet(x => x.LastChange)
-                .Returns(FSharpOption.Create(RepeatableChange.NewCommandChange(data)))
-                .Verifiable();
-            _mode.Process(".");
-            _operations.Verify();
-            _changeTracker.Verify();
-            Assert.IsTrue(didRun);
-        }
-
-        [Test]
-        public void RepeatLastChange5()
-        {
-            Create("");
-            var didRun = false;
-            var data =
-                VimUtil.CreateCommandRunData(
-                    VimUtil.CreateSimpleCommand("c", (x, y) => { didRun = true; }),
-                    _map.GetRegister(RegisterName.Unnamed),
-                    1);
-            _changeTracker
-                .SetupGet(x => x.LastChange)
-                .Returns(FSharpOption.Create(RepeatableChange.NewCommandChange(data)))
-                .Verifiable();
-            _mode.Process(".");
-            _operations.Verify();
-            _changeTracker.Verify();
-            Assert.IsTrue(didRun);
-        }
-
-        [Test, Description("No new count should use last count")]
-        public void RepeatLastChange6()
-        {
-            Create("");
-            var didRun = false;
-            var data =
-                VimUtil.CreateCommandRunData(
-                    VimUtil.CreateSimpleCommand("c", (x, y) =>
-                    {
-                        Assert.AreEqual(2, x.Value);
-                        didRun = true;
-                    }),
-                    _map.GetRegister(RegisterName.Unnamed),
-                    2);
-            _changeTracker
-                .SetupGet(x => x.LastChange)
-                .Returns(FSharpOption.Create(RepeatableChange.NewCommandChange(data)))
-                .Verifiable();
-            _mode.Process(".");
-            _operations.Verify();
-            _changeTracker.Verify();
-            Assert.IsTrue(didRun);
-        }
-
-        [Test, Description("New Count sohuld replace old count")]
-        public void RepeatLastChange7()
-        {
-            Create("");
-            var didRun = false;
-            var data =
-                VimUtil.CreateCommandRunData(
-                    VimUtil.CreateSimpleCommand("c", (x, y) =>
-                    {
-                        Assert.AreEqual(4, x.Value);
-                        didRun = true;
-                    }),
-                    _map.GetRegister(RegisterName.Unnamed),
-                    2);
-            _changeTracker
-                .SetupGet(x => x.LastChange)
-                .Returns(FSharpOption.Create(RepeatableChange.NewCommandChange(data)))
-                .Verifiable();
-            _mode.Process("4.");
-            _operations.Verify();
-            _changeTracker.Verify();
-            Assert.IsTrue(didRun);
-        }
-
-        [Test, Description("Executing . should not clear the last command")]
-        public void RepeatLastChange8()
-        {
-            Create("");
-            var runCount = 0;
-            var data =
-                VimUtil.CreateCommandRunData(
-                    VimUtil.CreateSimpleCommand("c", (x, y) => { runCount++; }),
-                    _map.GetRegister(RegisterName.Unnamed));
-            _changeTracker
-                .SetupGet(x => x.LastChange)
-                .Returns(FSharpOption.Create(RepeatableChange.NewCommandChange(data)))
-                .Verifiable();
-            _mode.Process(".");
-            _mode.Process(".");
-            _mode.Process(".");
-            Assert.AreEqual(3, runCount);
-            _operations.Verify();
-            _changeTracker.Verify();
-        }
-
-        [Test, Description("Guard against a possible stack overflow with a recursive . repeat")]
-        public void RepeatLastChange9()
-        {
-            /*
-            Create("");
-            var data =
-                VimUtil.CreateCommandRunData(
-                    VimUtil.CreateSimpleCommand("c", (x, y) => _modeRaw.RepeatLastChange(FSharpOption.Create(42), _map.GetRegister(RegisterName.Unnamed))),
-                    _map.GetRegister(RegisterName.Unnamed));
-            _changeTracker
-                .SetupGet(x => x.LastChange)
-                .Returns(FSharpOption.Create(RepeatableChange.NewCommandChange(data)))
-                .Verifiable();
-            _statusUtil.Setup(x => x.OnError(Resources.NormalMode_RecursiveRepeatDetected)).Verifiable();
-            _mode.Process(".");
-            _changeTracker.Verify();
-            _statusUtil.Verify(); */
-        }
-
-        [Test]
-        public void RepeatLastChange11()
-        {
-            Create("");
-            var data =
-                VimUtil.CreateCommandRunData(
-                    VimUtil.CreateVisualCommand(name: "c"),
-                    _map.GetRegister(RegisterName.Unnamed),
-                    2);
-            _changeTracker
-                .SetupGet(x => x.LastChange)
-                .Returns(FSharpOption.Create(RepeatableChange.NewCommandChange(data)))
-                .Verifiable();
-            _statusUtil
-                .Setup(x => x.OnError(Resources.NormalMode_RepeatNotSupportedOnCommand("c")))
-                .Verifiable();
-            _mode.Process(".");
-            _changeTracker.Verify();
-            _statusUtil.Verify();
-        }
-
-        [Test]
-        public void RepeatLastChange12()
-        {
-            Create("here again", "and again");
-            var didRun = false;
-            var span = VimUtil.CreateVisualSpanSingle(_textView.GetLineRange(1).Extent);
-            var data =
-                VimUtil.CreateCommandRunData(
-                    VimUtil.CreateVisualCommand(
-                        "c",
-                        CommandFlags.None,
-                        VisualKind.Line,
-                        (_, __, spanArg) =>
-                        {
-                            didRun = true;
-                            Assert.AreEqual(span, spanArg);
-                            return CommandResult.NewCompleted(ModeSwitch.NoSwitch);
-                        }),
-                    _map.GetRegister(RegisterName.Unnamed),
-                    1,
-                    visualRunData: VimUtil.CreateVisualSpanSingle(_textView.GetLineRange(0).Extent));
-            _visualSpanCalculator.Setup(x => x.CalculateForTextView(
-                It.IsAny<ITextView>(),
-                It.IsAny<VisualSpan>())).Returns(span).Verifiable();
-            _changeTracker
-                .SetupGet(x => x.LastChange)
-                .Returns(FSharpOption.Create(RepeatableChange.NewCommandChange(data)))
-                .Verifiable();
-            _mode.Process(".");
-            _changeTracker.Verify();
-            _visualSpanCalculator.Verify();
-            Assert.IsTrue(didRun);
-        }
-
-        [Test]
-        [Description("Verify certain commands are not actually repeatable")]
-        public void RepeatLastChange13()
+        public void VerifyCommandsNotRepeatable()
         {
             Create(String.Empty);
             Action<string> verify = str =>

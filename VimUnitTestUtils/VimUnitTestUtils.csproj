@@ -189,7 +189,6 @@
     <Compile Include="MatchUtil.cs" />
     <Compile Include="Mock\MockClipboardDevice.cs" />
     <Compile Include="Mock\Extensions.cs" />
-    <Compile Include="Mock\MockCommandRunner.cs" />
     <Compile Include="Mock\MockEnumLineMarkers.cs" />
     <Compile Include="Mock\MockKeyboardDevice.cs" />
     <Compile Include="Mock\MockNormalMode.cs" />

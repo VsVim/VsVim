@@ -42,7 +42,7 @@ type internal CommandRunner
     let mutable _data = _emptyData
 
     /// The latest BindData we are waiting to recieve KeyInput to complete
-    let mutable _runBindData : BindData<Command2> option = None
+    let mutable _runBindData : BindData<Command * CommandBinding> option = None
 
     /// True during the running of a particular KeyInput 
     let mutable _inRun = false
@@ -156,26 +156,26 @@ type internal CommandRunner
                 BindResult.NeedMoreInput { KeyRemapMode = None; BindFunction = inner }
 
             // Used to complete the transition from a MotionCommand to a NormalCommand
-            let completeMotion convertFunc (motion, motionCount) =
+            let completeMotion commandBinding convertFunc (motion, motionCount) =
                 let argument = { MotionContext = MotionContext.AfterOperator; OperatorCount = count; MotionCount = motionCount }
                 let data = { Motion = motion; MotionArgument = argument }
                 let command = convertFunc data
-                Command2.NormalCommand (command, commandData)
+                (Command.NormalCommand (command, commandData), commandBinding)
 
             match Map.tryFind commandName _commandMap with
             | Some(command) ->
                 match command with
                 | CommandBinding.SimpleCommand(_, _, func) -> 
                     let func () = func count (commandData.GetRegister _registerMap)
-                    BindResult.Complete (Command2.LegacyCommand func)
+                    BindResult.Complete (Command.LegacyCommand func, command)
                 | CommandBinding.NormalCommand2(_, _, normalCommand) -> 
-                    BindResult.Complete (Command2.NormalCommand (normalCommand, commandData))
+                    BindResult.Complete (Command.NormalCommand (normalCommand, commandData), command)
                 | CommandBinding.VisualCommand(_, _, kind, func) -> 
                     let visualSpan = x.GetVisualSpan kind
                     let func () = func count (commandData.GetRegister _registerMap) visualSpan
-                    BindResult.Complete (Command2.LegacyCommand func)
+                    BindResult.Complete (Command.LegacyCommand func, command)
                 | CommandBinding.VisualCommand2(_, _, visualCommand) ->
-                    BindResult.Complete (Command2.VisualCommand (visualCommand, commandData, x.GetVisualSpan _visualKind))
+                    BindResult.Complete (Command.VisualCommand (visualCommand, commandData, x.GetVisualSpan _visualKind), command)
                 | CommandBinding.MotionCommand(_, _, func) -> 
                     // Can't just call this.  It's possible there is a non-motion command with a 
                     // longer command commandInputs.  If there are any other commands which have a 
@@ -184,7 +184,7 @@ type internal CommandRunner
                         findPrefixMatches commandName
                         |> Seq.filter (fun c -> c.KeyInputSet <> command.KeyInputSet)
                     if Seq.isEmpty withPrefix then 
-                        BindResult<_>.CreateNeedMoreInput None (fun keyInput -> x.BindLegacyMotion keyInput count register func)
+                        BindResult<_>.CreateNeedMoreInput None (fun keyInput -> x.BindLegacyMotion command keyInput count register func)
                     else 
                         // At least one other command matched so we need at least one more piece of input to
                         // differentiate the commands.  At this point though because the command is of the
@@ -200,7 +200,7 @@ type internal CommandRunner
                         |> Seq.filter (fun c -> c.KeyInputSet <> command.KeyInputSet)
                     if Seq.isEmpty withPrefix then 
                         // Nothing else matched so we are good to go for this motion.
-                        BindResult<_>.CreateNeedMoreInput None (fun keyInput -> x.BindMotion keyInput (completeMotion func))
+                        BindResult<_>.CreateNeedMoreInput None (fun keyInput -> x.BindMotion keyInput (completeMotion command func))
                     else 
                         // At least one other command matched so we need at least one more piece of input to
                         // differentiate the commands.  At this point though because the command is of the
@@ -209,10 +209,10 @@ type internal CommandRunner
                         bindNext()
     
                 | CommandBinding.ComplexNormalCommand (_, _, bindData) -> 
-                    let bindData = bindData.Convert (fun normalCommand -> Command2.NormalCommand (normalCommand, commandData))
+                    let bindData = bindData.Convert (fun normalCommand -> (Command.NormalCommand (normalCommand, commandData), command))
                     BindResult.NeedMoreInput bindData
                 | CommandBinding.ComplexVisualCommand (_, _, bindData) -> 
-                    let bindData = bindData.Convert (fun visualCommand -> Command2.VisualCommand (visualCommand, commandData, x.GetVisualSpan _visualKind))
+                    let bindData = bindData.Convert (fun visualCommand -> (Command.VisualCommand (visualCommand, commandData, x.GetVisualSpan _visualKind), command))
                     BindResult.NeedMoreInput bindData
             | None -> 
                 let hasPrefixMatch = findPrefixMatches commandName |> SeqUtil.isNotEmpty
@@ -232,8 +232,8 @@ type internal CommandRunner
                         match command with
                         | CommandBinding.SimpleCommand _ -> bindNext()
                         | CommandBinding.VisualCommand _ -> bindNext()
-                        | CommandBinding.MotionCommand (_, _, func) -> x.BindLegacyMotion currentInput count register func
-                        | CommandBinding.MotionCommand2 (_, _, func) -> x.BindMotion keyInput (completeMotion func)
+                        | CommandBinding.MotionCommand (_, _, func) -> x.BindLegacyMotion command currentInput count register func
+                        | CommandBinding.MotionCommand2 (_, _, func) -> x.BindMotion keyInput (completeMotion command func)
                         | CommandBinding.NormalCommand2 _ -> bindNext()
                         | CommandBinding.VisualCommand2 _ -> bindNext()
                         | CommandBinding.ComplexNormalCommand _ -> bindNext()
@@ -253,7 +253,7 @@ type internal CommandRunner
         inner (KeyInputSet.OneKeyInput keyInput) KeyInputSet.Empty keyInput
 
     /// REPEAT TODO: Delete when legacy commands are eliminated
-    member x.BindLegacyMotion keyInput count register (func : int option -> Register -> MotionResult -> CommandResult) = 
+    member x.BindLegacyMotion command keyInput count register (func : int option -> Register -> MotionResult -> CommandResult) = 
         x.BindMotion keyInput (fun (motion, motionCount) -> 
             let argument = { MotionContext = MotionContext.AfterOperator; OperatorCount = count; MotionCount = count }
             let func () = 
@@ -262,7 +262,7 @@ type internal CommandRunner
                     CommandResult.Error
                 | Some result ->
                     func count register result
-            Command2.LegacyCommand func)
+            (Command.LegacyCommand func, command))
 
     /// Should the Esacpe key cancel the current command
     member x.ShouldEscapeCancelCurrentCommand () = 
@@ -276,9 +276,9 @@ type internal CommandRunner
     member x.Run (ki:KeyInput) =
         if ki = KeyInputUtil.EscapeKey && x.ShouldEscapeCancelCurrentCommand() then 
             x.ResetState()
-            RunKeyInputResult.CommandCancelled
+            BindResult.Cancelled
         elif _inRun then 
-            RunKeyInputResult.NestedRunDetected
+            BindResult.Error
         else
             _data <- {_data with Inputs = ki :: _data.Inputs }
             _inRun <- true
@@ -288,20 +288,21 @@ type internal CommandRunner
                     | Some bindData -> bindData.BindFunction ki
                     | None -> x.BindCountAndRegister ki
                 match result with
-                | BindResult.Complete command -> 
+                | BindResult.Complete (command, commandBinding) -> 
                     x.ResetState()
-                    match _commandUtil.RunCommand command with
-                    | CommandResult.Completed modeSwitch -> RunKeyInputResult.CommandRan (command, modeSwitch)
-                    | CommandResult.Error -> RunKeyInputResult.CommandErrored
+                    let result = _commandUtil.RunCommand command
+                    let data = { Command = command; CommandBinding = commandBinding; CommandResult = result }
+                    _commandRanEvent.Trigger data
+                    BindResult.Complete data
                 | BindResult.Cancelled ->
                     x.ResetState()
-                    RunKeyInputResult.CommandCancelled
+                    BindResult.Error
                 | BindResult.Error ->
                     x.ResetState()
-                    RunKeyInputResult.CommandErrored
+                    BindResult.Error
                 | BindResult.NeedMoreInput bindData ->
                     _runBindData <- Some bindData
-                    RunKeyInputResult.NeedMoreKeyInput
+                    BindResult.NeedMoreInput { KeyRemapMode = bindData.KeyRemapMode; BindFunction = x.Run }
 
             finally
                 _inRun <-false

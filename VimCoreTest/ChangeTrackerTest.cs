@@ -1,6 +1,4 @@
-﻿using System;
-using Microsoft.FSharp.Core;
-using Microsoft.VisualStudio.Text;
+﻿using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Moq;
 using NUnit.Framework;
@@ -15,16 +13,15 @@ namespace VimCore.UnitTest
     public class ChangeTrackerTest
     {
         private MockRepository _factory;
-        private ChangeTracker _trackerRaw;
-        private IChangeTracker _tracker;
+        private ChangeTracker _tracker;
         private ITextBuffer _textBuffer;
         private Mock<ITextView> _textView;
         private Mock<ITextChangeTrackerFactory> _textChangeTrackerFactory;
-        private MockVimBuffer _buffer;
-        private MockNormalMode _normalMode;
-        private MockCommandRunner _normalModeRunner;
-        private MockTextChangeTracker _textChangeTracker;
-
+        private Mock<ICommandRunner> _runner;
+        private Mock<ITextChangeTracker> _textChangeTracker;
+        private Mock<IVimBuffer> _buffer;
+        private Mock<INormalMode> _normalMode;
+        private IVimData _vimData;
 
         private void CreateForText(params string[] lines)
         {
@@ -32,124 +29,112 @@ namespace VimCore.UnitTest
             _textView = MockObjectFactory.CreateTextView(_textBuffer);
             _textView.SetupGet(x => x.HasAggregateFocus).Returns(true);
 
-            _normalModeRunner = new MockCommandRunner();
-            _normalMode = new MockNormalMode { CommandRunnerImpl = _normalModeRunner };
-            _buffer = new MockVimBuffer { TextViewImpl = _textView.Object, TextBufferImpl = _textBuffer, NormalModeImpl = _normalMode };
-            _textChangeTracker = new MockTextChangeTracker() { VimBufferImpl = _buffer };
-
+            // Setup normal mode so that we can provide an ICommandRunner to 
+            // recieve commands from
             _factory = new MockRepository(MockBehavior.Loose) {DefaultValue = DefaultValue.Mock};
+            _runner = _factory.Create<ICommandRunner>(MockBehavior.Loose);
+            _normalMode = _factory.Create<INormalMode>(MockBehavior.Strict);
+            _normalMode.SetupGet(x => x.CommandRunner).Returns(_runner.Object);
+
+            // Create the IVimBuffer instance
+            _buffer = _factory.Create<IVimBuffer>(MockBehavior.Loose);
+            _buffer.DefaultValue = DefaultValue.Mock;
+            _buffer.SetupGet(x => x.NormalMode).Returns(_normalMode.Object);
+
+            // Setup the ITextChangeTrackerFactory to give back our ITextChangeTracker 
+            // for the IVimBuffer
+            _textChangeTracker = _factory.Create<ITextChangeTracker>(MockBehavior.Loose);
             _textChangeTrackerFactory = _factory.Create<ITextChangeTrackerFactory>();
-            _textChangeTrackerFactory.Setup(x => x.GetTextChangeTracker(_buffer)).Returns(_textChangeTracker);
-            _buffer.VisualBlockModeImpl = _factory.Create<IVisualMode>().Object;
-            _buffer.VisualCharacterModeImpl = _factory.Create<IVisualMode>().Object;
-            _buffer.VisualLineModeImpl = _factory.Create<IVisualMode>().Object;
-            _trackerRaw = new ChangeTracker(_textChangeTrackerFactory.Object, new VimData());
-            _tracker = _trackerRaw;
-            _trackerRaw.OnVimBufferCreated(_buffer);
-        }
+            _textChangeTrackerFactory.Setup(x => x.GetTextChangeTracker(It.IsAny<IVimBuffer>())).Returns(_textChangeTracker.Object);
 
-        private static CommandRunData CreateCommand(
-            Func<FSharpOption<int>, Register, CommandResult> func = null,
-            KeyInputSet name = null,
-            CommandFlags? flags = null,
-            int? count = 0,
-            MotionData motionRunData = null,
-            VisualSpan visualRunData = null)
-        {
-            name = name ?? KeyInputSet.NewOneKeyInput(KeyInputUtil.CharToKeyInput('c'));
-            var flagsRaw = flags ?? CommandFlags.None;
-            var countRaw = count.HasValue ? FSharpOption.Create(count.Value) : FSharpOption<int>.None;
-            var cmd = CommandBinding.NewSimpleCommand(
-                name,
-                flagsRaw,
-                func.ToFSharpFunc());
-            return new CommandRunData(
-                cmd,
-                new Register('c'),
-                countRaw,
-                motionRunData != null ? FSharpOption.Create(motionRunData) : FSharpOption<MotionData>.None,
-                visualRunData != null ? FSharpOption.Create(visualRunData) : FSharpOption<VisualSpan>.None,
-                FSharpOption<Command2>.None);
-        }
-
-        private static CommandResult CreateResult()
-        {
-            return CommandResult.NewCompleted(ModeSwitch.NewSwitchMode(ModeKind.Insert));
+            _vimData = new VimData();
+            var vim = MockObjectFactory.CreateVim(vimData: _vimData);
+            _tracker = new ChangeTracker(_textChangeTrackerFactory.Object, vim.Object);
+            _tracker.OnVimBufferCreated(_buffer.Object);
         }
 
         [Test]
-        public void LinkedWithTextChange1()
+        public void LinkedWithTextChange_Simple()
         {
             CreateForText("hello");
-            var res = CommandResult.NewCompleted(ModeSwitch.NewSwitchMode(ModeKind.Insert));
-            _normalModeRunner.RaiseCommandRan(
-                CreateCommand(flags: CommandFlags.LinkedWithNextTextChange | CommandFlags.Repeatable),
-                res);
-            _buffer.ModeKindImpl = ModeKind.Insert;
-            _textChangeTracker.RaiseChangeCompleted("foo");
-            var last = _tracker.LastChange.Value;
-            Assert.IsTrue(last.IsLinkedChange);
+            var data = VimUtil.CreateCommandRunData(flags: CommandFlags.LinkedWithNextTextChange | CommandFlags.Repeatable);
+            _runner.Raise(x => x.CommandRan += null, (object) null, data);
+            _buffer.SetupGet(x => x.ModeKind).Returns(ModeKind.Insert);
+            _textChangeTracker.Raise(x => x.ChangeCompleted += null, (object) null, TextChange.NewInsert("foo"));
+            var last = _vimData.LastCommand;
+            Assert.IsTrue(last.IsSome(x => x.IsLinkedCommand));
         }
 
+        /// <summary>
+        /// Don't track commands which are not repeatable
+        /// </summary>
         [Test]
-        [Description("Don't track a command unless it's repeatable")]
-        public void OnCommand1()
+        public void OnCommand_NotRepetable()
         {
             CreateForText("hello");
-            var cmd = CreateCommand(flags: CommandFlags.None);
-            _normalModeRunner.RaiseCommandRan(cmd, CreateResult());
-            Assert.IsTrue(_tracker.LastChange.IsNone());
+            var data = VimUtil.CreateCommandRunData(flags: CommandFlags.None);
+            _runner.Raise(x => x.CommandRan += null, (object) null, data);
+            Assert.IsTrue(_vimData.LastCommand.IsNone());
         }
 
+        /// <summary>
+        /// Definitely track repeatable changes
+        /// </summary>
         [Test]
-        public void OnCommand2()
+        public void OnCommand_Repeatable()
         {
             CreateForText("hello");
-            var cmd = CreateCommand(flags: CommandFlags.Repeatable);
-            _normalModeRunner.RaiseCommandRan(cmd, CreateResult());
-            Assert.IsTrue(_tracker.LastChange.IsSome());
-            Assert.IsTrue(_tracker.LastChange.Value.IsCommandChange);
+            var data = VimUtil.CreateCommandRunData(flags: CommandFlags.Repeatable);
+            _runner.Raise(x => x.CommandRan += null, (object) null, data);
+            Assert.IsTrue(_vimData.LastCommand.IsSome(x => x.IsNormalCommand));
         }
 
+        /// <summary>
+        /// Don't track movement commands.  They don't get repeated
+        /// </summary>
         [Test]
-        [Description("Don't track movement commands")]
-        public void OnCommand3()
+        public void OnCommand_DontTrackMovement()
         {
             CreateForText("hello");
-            var cmd = CreateCommand(flags: CommandFlags.Movement);
-            _normalModeRunner.RaiseCommandRan(cmd, CreateResult());
-            Assert.IsTrue(_tracker.LastChange.IsNone());
+            var data = VimUtil.CreateCommandRunData(flags: CommandFlags.Movement);
+            _runner.Raise(x => x.CommandRan += null, (object) null, data);
+            Assert.IsTrue(_vimData.LastCommand.IsNone());
         }
 
+        /// <summary>
+        /// Don't track special commands.  They don't get repeated
+        /// </summary>
         [Test]
-        [Description("Don't track special commands")]
-        public void OnCommand4()
+        public void OnCommand_DontTrackSpecial()
         {
             CreateForText("hello");
-            var cmd = CreateCommand(flags: CommandFlags.Special);
-            _normalModeRunner.RaiseCommandRan(cmd, CreateResult());
-            Assert.IsTrue(_tracker.LastChange.IsNone());
+            var data = VimUtil.CreateCommandRunData(flags: CommandFlags.Special);
+            _runner.Raise(x => x.CommandRan += null, (object) null, data);
+            Assert.IsTrue(_vimData.LastCommand.IsNone());
         }
 
+        /// <summary>
+        /// Track text changes 
+        /// </summary>
         [Test]
-        public void OnTextChange1()
+        public void OnTextChange_Standard()
         {
             CreateForText("hello");
-            _textChangeTracker.RaiseChangeCompleted("foo");
-            Assert.IsTrue(_tracker.LastChange.IsSome());
-            Assert.AreEqual(TextChange.NewInsert("foo"), _tracker.LastChange.Value.AsTextChange().Item);
+            _textChangeTracker.Raise(x => x.ChangeCompleted += null, (object) null, TextChange.NewInsert("foo"));
+            Assert.IsTrue(_vimData.LastCommand.IsSome(x => x.IsTextChangeCommand));
         }
 
+        /// <summary>
+        /// A text change should override a normal command change
+        /// </summary>
         [Test]
-        [Description("Should replace a normal change")]
         public void OnTextChange2()
         {
             CreateForText("hello");
-            var cmd = CreateCommand(flags: CommandFlags.Repeatable);
-            _normalModeRunner.RaiseCommandRan(cmd, CreateResult());
-            _textChangeTracker.RaiseChangeCompleted("foo");
-            Assert.IsTrue(_tracker.LastChange.IsSome());
-            Assert.AreEqual(TextChange.NewInsert("foo"), _tracker.LastChange.Value.AsTextChange().Item);
+            var data = VimUtil.CreateCommandRunData(flags: CommandFlags.Repeatable);
+            _runner.Raise(x => x.CommandRan += null, (object) null, data);
+            _textChangeTracker.Raise(x => x.ChangeCompleted += null, (object) null, TextChange.NewInsert("foo"));
+            Assert.IsTrue(_vimData.LastCommand.IsSome(x => x.IsTextChangeCommand));
         }
 
     }

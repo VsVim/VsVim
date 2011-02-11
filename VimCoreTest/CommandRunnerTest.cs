@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Linq;
-using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Moq;
@@ -58,9 +57,9 @@ namespace VimCore.UnitTest
             _runner = _runnerRaw;
         }
 
-        private RunKeyInputResult Run(string command)
+        private BindResult<CommandRunData> Run(string command)
         {
-            RunKeyInputResult last = null;
+            BindResult<CommandRunData> last = null;
             foreach (var c in command)
             {
                 last = _runner.Run(KeyInputUtil.CharToKeyInput(c));
@@ -264,14 +263,16 @@ namespace VimCore.UnitTest
             Assert.IsTrue(didRun);
         }
 
+        /// <summary>
+        /// 0 is not a valid command
+        /// </summary>
         [Test]
-        [Description("0 is not a valid count")]
         public void Run_Count4()
         {
             Create(string.Empty);
             var didRun = false;
             _runner.Add(VimUtil.CreateSimpleCommand("a", (count, reg) => { didRun = true; }));
-            Assert.IsTrue(_runner.Run('0').IsNoMatchingCommand);
+            Assert.IsTrue(_runner.Run('0').IsError);
             Assert.IsFalse(didRun);
         }
 
@@ -359,7 +360,7 @@ namespace VimCore.UnitTest
         {
             Create("hello world");
             _runner.Add(VimUtil.CreateSimpleCommand("cat", (count, reg) => CommandResult.NewCompleted(ModeSwitch.NoSwitch)));
-            Assert.IsTrue(_runner.Run('b').IsNoMatchingCommand);
+            Assert.IsTrue(_runner.Run('b').IsError);
         }
 
         [Test]
@@ -367,8 +368,8 @@ namespace VimCore.UnitTest
         {
             Create("hello world");
             _runner.Add(VimUtil.CreateSimpleCommand("cat", (count, reg) => CommandResult.NewCompleted(ModeSwitch.NoSwitch)));
-            Assert.IsTrue(_runner.Run('c').IsNeedMoreKeyInput);
-            Assert.IsTrue(_runner.Run('b').IsNoMatchingCommand);
+            Assert.IsTrue(_runner.Run('c').IsNeedMoreInput);
+            Assert.IsTrue(_runner.Run('b').IsError);
         }
 
         [Test]
@@ -377,69 +378,55 @@ namespace VimCore.UnitTest
             Create("hello world");
             _runner.Add(VimUtil.CreateSimpleCommand("cot", (count, reg) => CommandResult.NewCompleted(ModeSwitch.NoSwitch)));
             _runner.Add(VimUtil.CreateSimpleCommand("cook", (count, reg) => CommandResult.NewCompleted(ModeSwitch.NoSwitch)));
-            Assert.IsTrue(_runner.Run('c').IsNeedMoreKeyInput);
-            Assert.IsTrue(_runner.Run('o').IsNeedMoreKeyInput);
-            Assert.IsTrue(_runner.Run('b').IsNoMatchingCommand);
+            Assert.IsTrue(_runner.Run('c').IsNeedMoreInput);
+            Assert.IsTrue(_runner.Run('o').IsNeedMoreInput);
+            Assert.IsTrue(_runner.Run('b').IsError);
         }
 
+        /// <summary>
+        /// A BindData shouldn't be passed an Escape if it doesn't set the handle
+        /// escape falg
+        /// </summary>
         [Test]
-        public void Run_Escape1()
+        public void Run_RespectDontHandleEscapeFlag()
         {
             Create("hello world");
-            var didSee = false;
-            _runner.Add(VimUtil.CreateLongCommand(
+            var didRun = false;
+            var didEscape = false;
+            _runner.Add(VimUtil.CreateCommandBindingNormalComplex(
                 "c",
                 ki =>
                 {
-                    if (ki == KeyInputUtil.EscapeKey)
-                    {
-                        didSee = true;
-                        return true;
-                    }
-                    else
-                    {
-                        return false;
-                    }
+                    didRun = true;
+                    didEscape = ki == KeyInputUtil.EscapeKey;
                 }));
             _runner.Run('c');
-            Assert.IsTrue(_runner.Run(KeyInputUtil.EscapeKey).IsCommandCancelled);
-            Assert.IsFalse(didSee);
+            _runner.Run(VimKey.Escape);
+            Assert.IsFalse(didEscape);
+            Assert.IsTrue(didRun);
         }
 
+        /// <summary>
+        /// A BindData shouldn be passed an Escape if it set the handle escape falg
+        /// </summary>
         [Test]
-        public void Run_Escape2()
+        public void Run_RespectHandleEscapeFlag()
         {
             Create("hello world");
-            var didSee = false;
-            _runner.Add(VimUtil.CreateLongCommand(
+            var didRun = false;
+            var didEscape = false;
+            _runner.Add(VimUtil.CreateCommandBindingNormalComplex(
                 "c",
                 ki =>
                 {
-                    if (ki == KeyInputUtil.EscapeKey) { didSee = true; }
-                    return false;
+                    didRun = true;
+                    didEscape = ki == KeyInputUtil.EscapeKey;
                 },
-                flags: CommandFlags.HandlesEscape));
+                CommandFlags.HandlesEscape));
             _runner.Run('c');
-            Assert.IsTrue(_runner.Run(KeyInputUtil.EscapeKey).IsNeedMoreKeyInput);
-            Assert.IsTrue(didSee);
-        }
-
-        [Test]
-        public void Run_Escape3()
-        {
-            Create("hello world");
-            var didSee = false;
-            _runner.Add(VimUtil.CreateLongCommand(
-                "c",
-                ki =>
-                {
-                    if (ki == KeyInputUtil.EscapeKey) { didSee = true; return true; }
-                    return false;
-                },
-                flags: CommandFlags.HandlesEscape));
-            _runner.Run('c');
-            Assert.IsTrue(_runner.Run(KeyInputUtil.EscapeKey).IsCommandRan);
-            Assert.IsTrue(didSee);
+            _runner.Run(VimKey.Escape);
+            Assert.IsTrue(didEscape);
+            Assert.IsTrue(didRun);
         }
 
         [Test]
@@ -447,7 +434,7 @@ namespace VimCore.UnitTest
         {
             Create("hello world");
             _runner.Add(VimUtil.CreateSimpleCommand("cat", (count, reg) => CommandResult.NewCompleted(ModeSwitch.NoSwitch)));
-            Assert.IsTrue(Run("c").IsNeedMoreKeyInput);
+            Assert.IsTrue(Run("c").IsNeedMoreInput);
             Assert.IsTrue(_runner.IsWaitingForMoreInput);
         }
 
@@ -456,7 +443,7 @@ namespace VimCore.UnitTest
         {
             Create("hello world");
             _runner.Add(VimUtil.CreateSimpleCommand("cat", (count, reg) => CommandResult.NewCompleted(ModeSwitch.NoSwitch)));
-            Assert.IsTrue(Run("ca").IsNeedMoreKeyInput);
+            Assert.IsTrue(Run("ca").IsNeedMoreInput);
             Assert.IsTrue(_runner.IsWaitingForMoreInput);
         }
 
@@ -465,7 +452,7 @@ namespace VimCore.UnitTest
         {
             Create("hello world");
             _runner.Add(VimUtil.CreateSimpleCommand("cat", (count, reg) => CommandResult.NewCompleted(ModeSwitch.NoSwitch)));
-            Assert.IsTrue(Run("cat").IsCommandRan);
+            Assert.IsTrue(Run("cat").IsComplete);
             Assert.IsFalse(_runner.IsWaitingForMoreInput);
         }
 
@@ -474,8 +461,8 @@ namespace VimCore.UnitTest
         {
             Create("hello world");
             _runner.Add(VimUtil.CreateSimpleCommand("cat", (count, reg) => CommandResult.NewCompleted(ModeSwitch.NoSwitch)));
-            Assert.IsTrue(Run("ca").IsNeedMoreKeyInput);
-            Assert.IsTrue(_runner.Run(KeyInputUtil.EscapeKey).IsCommandCancelled);
+            Assert.IsTrue(Run("ca").IsNeedMoreInput);
+            Assert.IsTrue(_runner.Run(KeyInputUtil.EscapeKey).IsCancelled);
             Assert.IsFalse(_runner.IsWaitingForMoreInput);
         }
 
@@ -485,8 +472,8 @@ namespace VimCore.UnitTest
         {
             Create("hello world");
             _runner.Add(VimUtil.CreateMotionCommand("cat", (count, reg, data) => CommandResult.NewCompleted(ModeSwitch.NoSwitch)));
-            Assert.IsTrue(Run("cata").IsNeedMoreKeyInput);
-            Assert.IsTrue(_runner.Run(KeyInputUtil.EscapeKey).IsCommandCancelled);
+            Assert.IsTrue(Run("cata").IsNeedMoreInput);
+            Assert.IsTrue(_runner.Run(KeyInputUtil.EscapeKey).IsCancelled);
             Assert.IsFalse(_runner.IsWaitingForMoreInput);
         }
 
@@ -540,13 +527,13 @@ namespace VimCore.UnitTest
             foreach (var cur in simple)
             {
                 // Make sure we can run them all
-                Assert.IsTrue(_runner.Run(cur).IsCommandRan);
+                Assert.IsTrue(_runner.Run(cur).IsComplete);
             }
 
             foreach (var cur in motion)
             {
                 // Make sure we can run them all
-                Assert.IsTrue(_runner.Run(cur).IsNeedMoreKeyInput);
+                Assert.IsTrue(_runner.Run(cur).IsNeedMoreInput);
                 _runner.ResetState();
             }
 
@@ -564,70 +551,19 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void LongCommand1()
+        public void ComplexCommand_EnsureItLoops()
         {
             Create("hello world");
-            var isDone = false;
             var seen = string.Empty;
-            FSharpFunc<KeyInput, LongCommandResult> repeat = null;
-            Converter<KeyInput, LongCommandResult> func = ki =>
+            Func<KeyInput, bool> func = ki =>
             {
                 seen += ki.Char.ToString();
-                return isDone
-                    ? LongCommandResult.NewFinished(CommandResult.NewError("foo"))
-                    : LongCommandResult.NewNeedMoreInput(FSharpOption<KeyRemapMode>.None, repeat);
+                return seen == "ood";
             };
-            repeat = FSharpFunc<KeyInput, LongCommandResult>.FromConverter(func);
-            _runner.Add(VimUtil.CreateLongCommand("f", (x, y) => LongCommandResult.NewNeedMoreInput(FSharpOption<KeyRemapMode>.None, repeat)));
-            Assert.IsTrue(_runner.Run(KeyInputUtil.CharToKeyInput('f')).IsNeedMoreKeyInput);
-            Assert.IsTrue(_runner.Run(KeyInputUtil.CharToKeyInput('o')).IsNeedMoreKeyInput);
-            Assert.IsTrue(_runner.Run(KeyInputUtil.CharToKeyInput('d')).IsNeedMoreKeyInput);
-            isDone = true;
-            Assert.IsTrue(_runner.Run(KeyInputUtil.CharToKeyInput('d')).IsCommandErrored);
-            Assert.AreEqual("odd", seen);
-        }
 
-        [Test]
-        public void LongCommand2()
-        {
-            Create("hello world");
-            var isDone = false;
-            var seen = string.Empty;
-            FSharpFunc<KeyInput, LongCommandResult> repeat = null;
-            Converter<KeyInput, LongCommandResult> func = ki =>
-            {
-                seen += ki.Char.ToString();
-                return isDone
-                    ? LongCommandResult.Cancelled
-                    : LongCommandResult.NewNeedMoreInput(FSharpOption<KeyRemapMode>.None, repeat);
-            };
-            repeat = FSharpFunc<KeyInput, LongCommandResult>.FromConverter(func);
-            _runner.Add(VimUtil.CreateLongCommand("f", (x, y) => LongCommandResult.NewNeedMoreInput(FSharpOption<KeyRemapMode>.None, repeat)));
-            Assert.IsTrue(_runner.Run(KeyInputUtil.CharToKeyInput('f')).IsNeedMoreKeyInput);
-            Assert.IsTrue(_runner.Run(KeyInputUtil.CharToKeyInput('o')).IsNeedMoreKeyInput);
-            Assert.IsTrue(_runner.Run(KeyInputUtil.CharToKeyInput('d')).IsNeedMoreKeyInput);
-            isDone = true;
-            Assert.IsTrue(_runner.Run(KeyInputUtil.CharToKeyInput('d')).IsCommandCancelled);
-            Assert.AreEqual("odd", seen);
-        }
-
-        [Test]
-        public void LongCommand3()
-        {
-            Create("hello world");
-            var seen = string.Empty;
-            FSharpFunc<KeyInput, LongCommandResult> repeat = null;
-            Converter<KeyInput, LongCommandResult> func = ki =>
-            {
-                seen += ki.Char.ToString();
-                return LongCommandResult.NewNeedMoreInput(FSharpOption<KeyRemapMode>.None, repeat);
-            };
-            repeat = FSharpFunc<KeyInput, LongCommandResult>.FromConverter(func);
-            _runner.Add(VimUtil.CreateLongCommand("f", (x, y) => LongCommandResult.NewNeedMoreInput(FSharpOption<KeyRemapMode>.None, repeat)));
-            Assert.IsTrue(_runner.Run(KeyInputUtil.CharToKeyInput('f')).IsNeedMoreKeyInput);
-            Assert.IsTrue(_runner.Run(KeyInputUtil.CharToKeyInput('o')).IsNeedMoreKeyInput);
-            Assert.IsTrue(_runner.Run(KeyInputUtil.CharToKeyInput('d')).IsNeedMoreKeyInput);
-            Assert.IsTrue(_runner.Run(KeyInputUtil.EscapeKey).IsCommandCancelled);
+            _runner.Add(VimUtil.CreateCommandBindingNormalComplex("f", func));
+            Assert.IsTrue(_runner.Run("food").IsComplete);
+            Assert.AreEqual("ood", seen);
         }
 
         [Test]
@@ -637,12 +573,12 @@ namespace VimCore.UnitTest
             _runner.Add(VimUtil.CreateSimpleCommand("a", (x, y) =>
                 {
                     var res = _runner.Run(KeyInputUtil.CharToKeyInput('a'));
-                    Assert.IsTrue(res.IsNestedRunDetected);
+                    Assert.IsTrue(res.IsError);
                     return CommandResult.NewCompleted(ModeSwitch.NoSwitch);
                 }));
 
             var res2 = _runner.Run(KeyInputUtil.CharToKeyInput('a'));
-            Assert.IsTrue(res2.IsCommandRan);
+            Assert.IsTrue(res2.IsComplete);
         }
 
         [Test]
@@ -652,12 +588,12 @@ namespace VimCore.UnitTest
             _runner.Add(VimUtil.CreateSimpleCommand("a", (x, y) =>
                 {
                     var res = _runner.Run(KeyInputUtil.CharToKeyInput('a'));
-                    Assert.IsTrue(res.IsNestedRunDetected);
+                    Assert.IsTrue(res.IsError);
                     return CommandResult.NewCompleted(ModeSwitch.NoSwitch);
                 }));
 
             var res2 = _runner.Run(KeyInputUtil.CharToKeyInput('a'));
-            Assert.IsTrue(res2.IsCommandRan);
+            Assert.IsTrue(res2.IsComplete);
         }
 
         [Test]
@@ -671,7 +607,7 @@ namespace VimCore.UnitTest
         public void State2()
         {
             Create("hello world");
-            Assert.IsTrue(_runner.Run('c').IsNoMatchingCommand);
+            Assert.IsTrue(_runner.Run('c').IsError);
             Assert.IsTrue(_runner.State.IsNoInput);
         }
 
@@ -716,23 +652,18 @@ namespace VimCore.UnitTest
             Assert.IsTrue(_runner.State.IsNoInput);
         }
 
+        /// <summary>
+        /// Make sure we register as not finished while completing a complex binding
+        /// </summary>
         [Test]
-        public void State7()
+        public void State_InsideComplexBindingIsNotFinished()
         {
             Create("hello world");
-            var seen = string.Empty;
-            FSharpFunc<KeyInput, LongCommandResult> repeat = null;
-            Converter<KeyInput, LongCommandResult> func = ki =>
-            {
-                seen += ki.Char.ToString();
-                return LongCommandResult.NewNeedMoreInput(FSharpOption<KeyRemapMode>.None, repeat);
-            };
-            repeat = FSharpFunc<KeyInput, LongCommandResult>.FromConverter(func);
-            var command1 = VimUtil.CreateLongCommand("f", (x, y) => LongCommandResult.NewNeedMoreInput(FSharpOption<KeyRemapMode>.None, repeat));
-            _runner.Add(command1);
+            var binding = VimUtil.CreateCommandBindingNormalComplex("f", x => true);
+            _runner.Add(binding);
             _runner.Run('f');
             Assert.IsTrue(_runner.State.IsNotFinishWithCommand);
-            Assert.AreSame(command1, _runner.State.AsNotFinishedWithCommand().Item1);
+            Assert.AreSame(binding, _runner.State.AsNotFinishedWithCommand().Item1);
         }
 
         [Test]
@@ -758,8 +689,8 @@ namespace VimCore.UnitTest
             _runner.Add(command1);
             _runner.CommandRan += (notUsed, tuple) =>
                 {
-                    Assert.AreSame(command1, tuple.Item1.Command);
-                    Assert.IsTrue(tuple.Item2.IsCompleted);
+                    Assert.AreSame(command1, tuple.Command);
+                    Assert.IsTrue(tuple.CommandResult.IsCompleted);
                     didSee = true;
                 };
             _runner.Run('c');
@@ -775,9 +706,7 @@ namespace VimCore.UnitTest
             _runner.Add(command1);
             _runner.CommandRan += (notUsed, tuple) =>
                 {
-                    Assert.AreSame(command1, tuple.Item1.Command);
-                    Assert.AreEqual(2, tuple.Item1.Count.Value);
-                    Assert.IsTrue(tuple.Item2.IsCompleted);
+                    Assert.AreSame(command1, tuple.Command);
                     didSee = true;
                 };
             _runner.Run('2');
@@ -846,12 +775,17 @@ namespace VimCore.UnitTest
             Assert.AreEqual(KeyRemapMode.Language, _runner.KeyRemapMode.Value);
         }
 
+        /// <summary>
+        /// In a complex binding we need to use the KeyRemapMode specified in that binding
+        /// </summary>
         [Test]
         public void KeyRemapMode_LongCommandPropagateMode()
         {
             Create("hello world");
-            _runner.Add(VimUtil.CreateLongCommand("a", ki => false, FSharpOption.Create(KeyRemapMode.Language)));
+            _runner.Add(VimUtil.CreateCommandBindingNormalComplex("a", x => true, KeyRemapMode.Language));
             _runner.Run('a');
+            Assert.AreEqual(KeyRemapMode.Language, _runner.KeyRemapMode.Value);
+            _runner.Run('b');
             Assert.AreEqual(KeyRemapMode.Language, _runner.KeyRemapMode.Value);
         }
     }

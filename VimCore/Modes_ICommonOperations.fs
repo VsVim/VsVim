@@ -239,7 +239,7 @@ type ICommonOperations =
     abstract SaveAll : unit -> bool
 
     /// Sets a mark at the specified point.  If this operation fails an error message will be generated
-    abstract SetMark : IVimBuffer -> SnapshotPoint -> char -> Result
+    abstract SetMark : SnapshotPoint -> char -> IMarkMap -> Result
 
     /// Scrolls the number of lines given and keeps the caret in the view
     abstract ScrollLines : ScrollDirection -> count:int -> unit

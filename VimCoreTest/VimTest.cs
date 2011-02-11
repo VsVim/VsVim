@@ -17,7 +17,6 @@ namespace VimCore.UnitTest
         private MockRepository _factory;
         private Mock<IMarkMap> _markMap;
         private Mock<IVimHost> _host;
-        private Mock<IChangeTracker> _changeTracker;
         private Mock<ISearchService> _searchInfo;
         private IKeyMap _keyMap;
         private IVimGlobalSettings _settings;
@@ -33,7 +32,6 @@ namespace VimCore.UnitTest
             _markMap = _factory.Create<IMarkMap>(MockBehavior.Strict);
             _bufferFactory = EditorUtil.FactoryService.VimBufferFactory;
             _keyMap = new KeyMap();
-            _changeTracker = _factory.Create<IChangeTracker>(MockBehavior.Strict);
             _host = _factory.Create<IVimHost>(MockBehavior.Strict);
             _searchInfo = _factory.Create<ISearchService>(MockBehavior.Strict);
             _vimRaw = new Vim.Vim(
@@ -44,7 +42,6 @@ namespace VimCore.UnitTest
                 _markMap.Object,
                 _keyMap,
                 MockObjectFactory.CreateClipboardDevice().Object,
-                _changeTracker.Object,
                 _searchInfo.Object,
                 new VimData());
             _vim = _vimRaw;

@@ -241,3 +241,53 @@ type internal TrackingLineColumnService() =
             |> Seq.map (fun tlc -> tlc :> ITrackingLineColumn)
             |> Seq.iter (fun tlc -> tlc.Close() )
 
+/// Component which monitors commands across IVimBuffer instances and 
+/// updates the LastCommand value for repeat purposes
+[<Export(typeof<IVimBufferCreationListener>)>]
+type internal ChangeTracker
+    [<ImportingConstructor>]
+    (
+        _textChangeTrackerFactory : ITextChangeTrackerFactory,
+        _vim : IVim
+    ) =
+
+    let _vimData = _vim.VimData
+
+    member x.OnVimBufferCreated (buffer : IVimBuffer) =
+        let handler = x.OnCommandRan buffer
+        buffer.NormalMode.CommandRunner.CommandRan |> Event.add handler
+        buffer.VisualLineMode.CommandRunner.CommandRan |> Event.add handler
+        buffer.VisualBlockMode.CommandRunner.CommandRan |> Event.add handler
+        buffer.VisualCharacterMode.CommandRunner.CommandRan |> Event.add handler
+
+        let tracker = _textChangeTrackerFactory.GetTextChangeTracker buffer
+        tracker.ChangeCompleted |> Event.add (x.OnTextChanged buffer)
+
+    member x.OnCommandRan buffer (data : CommandRunData) = 
+        let command = data.CommandBinding
+        if command.IsMovement || command.IsSpecial then
+            // Movement and special commands don't participate in change tracking
+            ()
+        elif command.IsRepeatable then 
+            _vimData.LastCommand <- StoredCommand.OfCommand data.Command data.CommandBinding
+        else 
+            _vimData.LastCommand <- None
+
+    member x.OnTextChanged buffer data = 
+        let textChange = StoredCommand.TextChangeCommand data
+        let useCurrent() = 
+            _vimData.LastCommand <- Some textChange
+
+        let maybeLink (command : StoredCommand) = 
+            if Util.IsFlagSet command.CommandFlags CommandFlags.LinkedWithNextTextChange then
+                let change = StoredCommand.LinkedCommand (command, textChange)
+                _vimData.LastCommand <- Some change
+            else 
+                useCurrent()
+
+        match _vimData.LastCommand with
+        | None -> useCurrent()
+        | Some storedCommand -> maybeLink storedCommand
+
+    interface IVimBufferCreationListener with
+        member x.VimBufferCreated buffer = x.OnVimBufferCreated buffer

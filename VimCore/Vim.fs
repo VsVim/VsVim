@@ -123,6 +123,9 @@ type internal VimBufferFactory
                 statusUtil,
                 vim.VimData) :> IIncrementalSearch
         let capture = MotionCapture(vim.VimHost, view, incrementalSearch, localSettings) :> IMotionCapture
+
+        let commandUtil = CommandUtil(view, commonOperations,  motionUtil, statusUtil, vim.RegisterMap, vim.MarkMap, vim.VimData) :> ICommandUtil
+
         let bufferRaw = 
             VimBuffer( 
                 vim,
@@ -132,7 +135,6 @@ type internal VimBufferFactory
                 incrementalSearch,
                 motionUtil)
         let buffer = bufferRaw :> IVimBuffer
-        let commandUtil = CommandUtil(commonOperations, buffer, statusUtil) :> ICommandUtil
 
         /// Create the selection change tracker so that it will begin to monitor
         /// selection events.  
@@ -198,7 +200,6 @@ type internal Vim
         _markMap : IMarkMap,
         _keyMap : IKeyMap,
         _clipboardDevice : IClipboardDevice,
-        _changeTracker : IChangeTracker,
         _search : ISearchService,
         _vimData : IVimData ) =
 
@@ -234,10 +235,9 @@ type internal Vim
         clipboard : IClipboardDevice ) =
         let markMap = MarkMap(tlcService)
         let vimData = VimData() :> IVimData
-        let tracker = ChangeTracker(textChangeTrackerFactory, vimData)
         let globalSettings = GlobalSettings() :> IVimGlobalSettings
         let listeners = 
-            [tracker :> IVimBufferCreationListener; markMap :> IVimBufferCreationListener]
+            [markMap :> IVimBufferCreationListener]
             |> Seq.map (fun t -> new Lazy<IVimBufferCreationListener>(fun () -> t))
             |> Seq.append bufferCreationListeners 
             |> List.ofSeq
@@ -249,7 +249,6 @@ type internal Vim
             markMap :> IMarkMap,
             KeyMap() :> IKeyMap,
             clipboard,
-            tracker :> IChangeTracker,
             SearchService(search, globalSettings) :> ISearchService,
             vimData)
 
@@ -337,7 +336,6 @@ type internal Vim
             and set value = _vimrcLocalSettings <- LocalSettings.Copy value
         member x.MarkMap = _markMap
         member x.KeyMap = _keyMap
-        member x.ChangeTracker = _changeTracker
         member x.SearchService = _search
         member x.IsVimRcLoaded = not (System.String.IsNullOrEmpty(_settings.VimRc))
         member x.RegisterMap = _registerMap 

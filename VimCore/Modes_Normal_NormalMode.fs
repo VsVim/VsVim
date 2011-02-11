@@ -695,28 +695,24 @@ type internal NormalMode
         _data <- {_data with Command=command }
 
         match _runner.Run ki with
-        | RunKeyInputResult.NeedMoreKeyInput -> ProcessResult.Processed
-        | RunKeyInputResult.NestedRunDetected -> ProcessResult.Processed
-        | RunKeyInputResult.CommandRan(_,modeSwitch) ->
+        | BindResult.NeedMoreInput _ -> 
+            ProcessResult.Processed
+        | BindResult.Complete commandData -> 
 
             // If we are in the one time mode then switch back to the previous
             // mode
             let modeSwitch = 
                 match _data.OneTimeMode with
-                | None -> modeSwitch 
+                | None -> commandData.ModeSwitch
                 | Some(modeKind) -> ModeSwitch.SwitchMode modeKind
 
             this.Reset()
             ProcessResult.OfModeSwitch modeSwitch
-        | RunKeyInputResult.CommandErrored(_) -> 
+        | BindResult.Error -> 
             this.Reset()
             ProcessResult.Processed
-        | RunKeyInputResult.CommandCancelled -> 
+        | BindResult.Cancelled -> 
             this.Reset()
-            ProcessResult.Processed
-        | RunKeyInputResult.NoMatchingCommand ->
-            this.Reset()
-            _operations.Beep()
             ProcessResult.Processed
 
     interface INormalMode with 

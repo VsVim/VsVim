@@ -225,10 +225,7 @@ namespace VimCore.UnitTest
         {
             Create("foo");
             var map = new MarkMap(new TrackingLineColumnService());
-            var vimBuffer = new Mock<IVimBuffer>(MockBehavior.Strict);
-            vimBuffer.SetupGet(x => x.MarkMap).Returns(map);
-            vimBuffer.SetupGet(x => x.TextBuffer).Returns(_textBuffer);
-            var res = _operations.SetMark(vimBuffer.Object, _textBuffer.CurrentSnapshot.GetLineFromLineNumber(0).Start, 'a');
+            var res = _operations.SetMark(_textBuffer.GetLine(0).Start, 'a', map);
             Assert.IsTrue(res.IsSucceeded);
             Assert.IsTrue(map.GetLocalMark(_textBuffer, 'a').IsSome());
         }
@@ -238,9 +235,7 @@ namespace VimCore.UnitTest
         {
             Create("bar");
             var map = new MarkMap(new TrackingLineColumnService());
-            var vimBuffer = new Mock<IVimBuffer>(MockBehavior.Strict);
-            vimBuffer.SetupGet(x => x.MarkMap).Returns(map);
-            var res = _operations.SetMark(vimBuffer.Object, _textBuffer.CurrentSnapshot.GetLineFromLineNumber(0).Start, ';');
+            var res = _operations.SetMark(_textBuffer.GetLine(0).Start, ';', map);
             Assert.IsTrue(res.IsFailed);
             Assert.AreEqual(Resources.Common_MarkInvalid, res.AsFailed().Item);
         }
