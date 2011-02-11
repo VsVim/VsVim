@@ -114,7 +114,6 @@ type internal VimBufferFactory
             VimHost = _host }
         let commonOperations = Modes.CommonOperations(operationsData) :> Modes.ICommonOperations
 
-        let commandUtil = CommandUtil(commonOperations, vim.RegisterMap, motionUtil, vim.VimData) :> ICommandUtil
         let incrementalSearch = 
             IncrementalSearch(
                 commonOperations,
@@ -133,6 +132,7 @@ type internal VimBufferFactory
                 incrementalSearch,
                 motionUtil)
         let buffer = bufferRaw :> IVimBuffer
+        let commandUtil = CommandUtil(commonOperations, buffer, statusUtil) :> ICommandUtil
 
         /// Create the selection change tracker so that it will begin to monitor
         /// selection events.  

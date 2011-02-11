@@ -59,55 +59,19 @@ type internal CommandFactory
     /// Build up a set of MotionCommand values from applicable Motion values.  These will 
     /// move the cursor to the result of the motion
     member x.CreateMovementsFromMotions() =
-        let processResult opt = 
-            match opt with
-            | None -> _operations.Beep()
-            | Some(data) -> _operations.MoveCaretToMotionResult data
-            CommandResult.Completed NoSwitch
-
-        let makeMotionArgument count = { MotionContext = MotionContext.Movement; OperatorCount = None; MotionCount = count }
-
         let processMotionCommand command =
             match command with
             | SimpleMotionCommand(name, _, motion) -> 
 
-                // Create a function which will proces the simple motion and move the caret
-                let inner count _ =  
-                    let arg = makeMotionArgument count
-                    let data = _motionUtil.GetMotion motion arg
-                    processResult data
+                // Convert the Motion into a NormalCommand which moves the caret for the given Motion
+                let command = NormalCommand.MoveCaretToMotion motion
+                CommandBinding.NormalCommand2(name, CommandFlags.Movement, command) 
 
-                CommandBinding.SimpleCommand(name,CommandFlags.Movement,inner) 
-            | ComplexMotionCommand(name, motionFlags, func) -> 
+            | ComplexMotionCommand(name, motionFlags, bindData) ->
 
-                // The core function which accepts the initial count.  Will create a MotionArgument
-                // from this value and then begin to loop over the BindResult until we get 
-                // a final one
-                let coreFunc count _ = 
-
-                    let rec inner result =  
-                        match result with
-                        | BindResult.Complete motionData ->
-                            let res = 
-
-                                // Calculate the resulting MotionResult
-                                match _motionUtil.GetMotion motionData.Motion motionData.MotionArgument with
-                                | None -> 
-                                    CommandResult.Error Resources.MotionCapture_InvalidMotion
-                                | Some(data) -> 
-                                    _operations.MoveCaretToMotionResult data
-                                    CommandResult.Completed NoSwitch 
-                            res |> LongCommandResult.Finished
-                        | BindResult.NeedMoreInput bindData ->
-                            LongCommandResult.NeedMoreInput (bindData.KeyRemapMode, fun ki -> bindData.BindFunction ki |> inner)
-                        | BindResult.Cancelled -> 
-                            LongCommandResult.Cancelled
-                        | BindResult.Error (msg) -> 
-                            CommandResult.Error msg |> LongCommandResult.Finished
-
-                    let arg = makeMotionArgument count
-                    let bindData = func arg
-                    inner (BindResult.NeedMoreInput bindData)
+                // We're starting with a BindData<Motion> and need to instead produce a BindData<NormalCommand>
+                // where the command will move the motion 
+                let bindData = bindData.Convert (fun motion -> NormalCommand.MoveCaretToMotion motion)
 
                 // Create the flags.  Make sure that we set that Escape can be handled if the
                 // motion itself can handle escape
@@ -116,7 +80,7 @@ type internal CommandFactory
                         CommandFlags.Movement ||| CommandFlags.HandlesEscape
                     else
                         CommandFlags.Movement
-                CommandBinding.LongCommand(name, flags, coreFunc) 
+                CommandBinding.ComplexNormalCommand(name, flags, bindData)
 
         _capture.MotionCommands
         |> Seq.filter (fun command -> Util.IsFlagSet command.MotionFlags MotionFlags.CursorMovement)

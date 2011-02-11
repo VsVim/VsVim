@@ -69,7 +69,6 @@ type internal NormalMode
             |> Seq.append (factory.CreateMovementCommands())
             |> Seq.append (factory.CreateEditCommandsForNormalMode())
             |> Seq.append (this.CreateMotionCommands())
-            |> Seq.append (this.CreateLongCommands())
             |> Seq.iter _runner.Add
 
             // Add in the special ~ command
@@ -87,29 +86,10 @@ type internal NormalMode
 
     member x.BindReplaceChar () =
         _data <- { _data with IsInReplace = true }
-        BindData.CreateForSingleChar (Some KeyRemapMode.Language) (fun ki -> 
+        BindData<_>.CreateForSingle (Some KeyRemapMode.Language) (fun ki -> 
             _data <- { _data with IsInReplace = false }
             NormalCommand.ReplaceChar ki)
 
-    member x.WaitJumpToMark (count:int) (reg:Register) =
-        let waitForKey (ki:KeyInput)  =
-            let res = _operations.JumpToMark ki.Char _bufferData.MarkMap 
-            match res with 
-            | Modes.Failed(msg) -> _statusUtil.OnError msg
-            | _ -> ()
-            CommandResult.Completed ModeSwitch.NoSwitch |> LongCommandResult.Finished
-        LongCommandResult.NeedMoreInput (Some KeyRemapMode.Language, waitForKey)
-
-    /// Process the m[a-z] command.  Called when the m has been input so wait for the next key
-    member x.WaitMark (count:int) (reg:Register)= 
-        let waitForKey (ki:KeyInput) =
-            let cursor = TextViewUtil.GetCaretPoint _bufferData.TextView
-            let res = _operations.SetMark _bufferData cursor ki.Char 
-            match res with
-            | Modes.Failed(_) -> _operations.Beep()
-            | _ -> ()
-            CommandResult.Completed ModeSwitch.NoSwitch |> LongCommandResult.Finished
-        LongCommandResult.NeedMoreInput (Some KeyRemapMode.Language, waitForKey)
 
     /// Get the informatoin on how to handle the tilde command based on the current setting for tildeop
     member private this.GetTildeCommand count =
@@ -127,30 +107,6 @@ type internal NormalMode
                     CommandResult.Completed ModeSwitch.NoSwitch
                 CommandBinding.SimpleCommand(name, CommandFlags.Repeatable, func)
         name,command
-
-    /// Create the set of Command values which are not repeatable 
-    member this.CreateLongCommands() = 
-
-        seq {
-            yield (
-                "'", 
-                CommandFlags.Movement, 
-                fun count reg -> this.WaitJumpToMark count reg)
-            yield (
-                "`", 
-                CommandFlags.Movement, 
-                fun count reg -> this.WaitJumpToMark count reg)
-            yield (
-                "m", 
-                CommandFlags.Movement, 
-                fun count reg -> this.WaitMark count reg)
-        }
-        |> Seq.map (fun (str,kind, func) -> 
-            let name = KeyNotationUtil.StringToKeyInput str |> OneKeyInput
-            let func2 count reg = 
-                let count = CommandUtil2.CountOrDefault count
-                func count reg 
-            CommandBinding.LongCommand(name, kind, func2))
 
     /// Create the CommandBinding instances for the supported NormalCommand values
     member x.CreateCommandBindings() =
@@ -172,10 +128,13 @@ type internal NormalMode
         let complexSeq = 
             seq {
                 yield ("r", CommandFlags.Repeatable, x.BindReplaceChar ())
+                yield ("'", CommandFlags.Movement, BindData<_>.CreateForSingleChar None (fun c -> NormalCommand.JumpToMark c))
+                yield ("`", CommandFlags.Movement, BindData<_>.CreateForSingleChar None (fun c -> NormalCommand.JumpToMark c))
+                yield ("m", CommandFlags.Movement, BindData<_>.CreateForSingleChar None (fun c -> NormalCommand.SetMarkToCaret c))
             } |> Seq.map (fun (str, flags, bindCommand) -> 
                 let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
                 CommandBinding.ComplexNormalCommand(keyInputSet, flags, bindCommand))
-        Seq.append normalSeq motionSeq
+        Seq.append normalSeq motionSeq |> Seq.append complexSeq
 
     /// Create the simple commands
     member this.CreateSimpleCommands() =

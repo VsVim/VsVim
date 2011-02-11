@@ -39,24 +39,6 @@ type internal VisualMode
     member x.EndExplicitMove() = _explicitMoveCount <- _explicitMoveCount - 1
     member x.SelectedSpan = (TextSelectionUtil.GetStreamSelectionSpan _buffer.TextView.Selection).SnapshotSpan
 
-    member x.RunReplace count register visualSpan = 
-
-        let func (keyInput : KeyInput) = 
-            let replaceSpan (span : SnapshotSpan) =
-                let replace = StringUtil.repeatChar span.Length keyInput.Char
-                _textBuffer.Replace(span.Span, replace) |> ignore
-            match visualSpan with
-            | VisualSpan.Single(_, span) -> 
-                _operations.UpdateRegisterForSpan register RegisterOperation.Delete span OperationKind.CharacterWise
-                replaceSpan span
-            | VisualSpan.Multiple(_, col) -> 
-                _operations.UpdateRegisterForCollection register RegisterOperation.Delete col OperationKind.CharacterWise
-                _operations.WrapEditInUndoTransaction "Replace" (fun () -> 
-                    col |> Seq.iter replaceSpan)
-            LongCommandResult.Finished(CommandResult.Completed(ModeSwitch.SwitchMode ModeKind.Normal))
-
-        LongCommandResult.NeedMoreInput((Some KeyRemapMode.Language), func)
-
     member x.BuildMoveSequence() = 
 
         let wrapSimple func = 
@@ -87,9 +69,7 @@ type internal VisualMode
             match command with
             | CommandBinding.SimpleCommand(name, flags, func) -> CommandBinding.SimpleCommand (name, flags, wrapSimple func) |> Some
             | CommandBinding.MotionCommand (name, flags, func) -> CommandBinding.MotionCommand (name, flags,wrapMotion func) |> Some
-            | CommandBinding.LongCommand (name, flags, func) -> CommandBinding.LongCommand (name, flags, wrapLong func) |> Some
             | CommandBinding.VisualCommand (_) -> Some command
-            | CommandBinding.LongVisualCommand (_) -> Some command
             | CommandBinding.NormalCommand2 _ -> None
             | CommandBinding.MotionCommand2 _ -> None
             | CommandBinding.VisualCommand2 _ -> None
@@ -430,21 +410,36 @@ type internal VisualMode
                     CommandBinding.VisualCommand(kiSet, flags, _visualKind, func2)))
             |> Seq.concat
 
-        /// Visual Long Commands
-        let visualLong = 
-            seq {
-                yield (
-                    "r",
-                    CommandFlags.Repeatable, 
-                    x.RunReplace)
-            }
-            |> Seq.map (fun (str, flags, func) -> 
-                let kiSet = KeyNotationUtil.StringToKeyInputSet str
-                CommandBinding.LongVisualCommand(kiSet, flags, _visualKind, func))
-
         Seq.append simples visualSimple 
         |> Seq.append customReturn
-        |> Seq.append visualLong
+        |> Seq.append (x.CreateCommandBindings())
+
+    /// Create the CommandBinding instances for the supported command values
+    member x.CreateCommandBindings() =
+        (*
+        let normalSeq = 
+            seq {
+                yield ("p", CommandFlags.Repeatable, NormalCommand.PutAfterCursor)
+                yield (".", CommandFlags.Special, NormalCommand.RepeatLastCommand)
+            } |> Seq.map (fun (str, flags, command) -> 
+                let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
+                CommandBinding.NormalCommand2(keyInputSet, flags, command))
+            
+        let motionSeq = 
+            seq {
+                yield ("y", CommandFlags.None, NormalCommand.Yank)
+            } |> Seq.map (fun (str, flags, command) -> 
+                let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
+                CommandBinding.MotionCommand2(keyInputSet, flags, command)) *)
+
+        let complexSeq = 
+            seq {
+                yield ("r", CommandFlags.Repeatable, BindData<_>.CreateForSingle None (fun keyInput -> VisualCommand.ReplaceChar keyInput))
+            } |> Seq.map (fun (str, flags, bindCommand) -> 
+                let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
+                CommandBinding.ComplexVisualCommand(keyInputSet, flags, bindCommand))
+        complexSeq
+        // Seq.append normalSeq motionSeq
 
     member x.EnsureCommandsBuilt() =
         if not _builtCommands then

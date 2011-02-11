@@ -10,12 +10,17 @@ open Microsoft.VisualStudio.Text.Outlining
 type internal CommandUtil 
     (
         _operations : ICommonOperations,
-        _registerMap : IRegisterMap,
-        _motionUtil : ITextViewMotionUtil,
-        _vimData : IVimData ) = 
+        _buffer : IVimBuffer,
+        _statusUtil : IStatusUtil
+    ) =
+
 
     let _textView = _operations.TextView
     let _textBuffer = _operations.TextView.TextBuffer
+    let _registerMap = _buffer.RegisterMap
+    let _markMap = _buffer.MarkMap
+    let _motionUtil = _buffer.TextViewMotionUtil
+    let _vimData = _buffer.VimData
     let mutable _inRepeatLastChange = false
 
     /// The SnapshotPoint for the caret
@@ -30,14 +35,6 @@ type internal CommandUtil
     /// The current ITextSnapshot instance for the ITextBuffer
     member x.CurrentSnapshot = _textBuffer.CurrentSnapshot
 
-    /// Put the contents of the specified register after the cursor.  Used for the
-    /// normal / visual 'p' command
-    member x.PutAfterCursor (register : Register) count switch =
-        let point = SnapshotPointUtil.AddOneOrCurrent x.CaretPoint
-        let stringData = register.StringData.ApplyCount count
-        _operations.PutAt point stringData register.OperationKind
-        CommandResult.Completed switch
-
     /// Calculate the VisualSpan value for the associated ITextBuffer given the 
     /// StoreVisualSpan value
     member x.CalculateVisualSpan stored =
@@ -49,6 +46,35 @@ type internal CommandUtil
         | StoredVisualSpan.Linewise _ -> span
         | StoredVisualSpan.Characterwise _ -> span
         | StoredVisualSpan.Block _-> span
+
+    /// Run the specified action with a wrapped undo transaction.  This is often necessary when
+    /// an edit command manipulates the caret
+    member x.EditWithUndoTransaciton name action = _operations.WrapEditInUndoTransaction name action
+
+    /// Jump to the specified mark
+    member x.JumpToMark c =
+        match _operations.JumpToMark c _markMap with
+        | Modes.Result.Failed msg ->
+            _statusUtil.OnError msg
+            CommandResult.Error
+        | Modes.Result.Succeeded ->
+            CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Move the caret to the result of the motion
+    member x.MoveCaretToMotion motion count = 
+        let argument = { MotionContext = MotionContext.Movement; OperatorCount = None; MotionCount = count}
+        match _motionUtil.GetMotion motion argument with
+        | None -> _operations.Beep()
+        | Some result -> _operations.MoveCaretToMotionResult result
+        CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Put the contents of the specified register after the cursor.  Used for the
+    /// normal / visual 'p' command
+    member x.PutAfterCursor (register : Register) count switch =
+        let point = SnapshotPointUtil.AddOneOrCurrent x.CaretPoint
+        let stringData = register.StringData.ApplyCount count
+        _operations.PutAt point stringData register.OperationKind
+        CommandResult.Completed switch
 
     /// Repeat the last executed command against the current buffer
     member x.RepeatLastCommand (repeatData : CommandData) = 
@@ -81,11 +107,12 @@ type internal CommandUtil
                 // Run the commands in sequence.  Only continue onto the second if the first 
                 // command succeeds
                 match repeat command1 with
-                | CommandResult.Error msg -> CommandResult.Error msg
+                | CommandResult.Error -> CommandResult.Error
                 | CommandResult.Completed _ -> repeat command2
 
         if _inRepeatLastChange then
-            CommandResult.Error Resources.NormalMode_RecursiveRepeatDetected
+            _statusUtil.OnError Resources.NormalMode_RecursiveRepeatDetected
+            CommandResult.Error 
         else
             try
                 _inRepeatLastChange <- true
@@ -117,7 +144,7 @@ type internal CommandUtil
                         else new System.String(keyInput.Char, count)
                     let span = new Span(point.Position, count)
                     let snapshot = _textView.TextBuffer.Replace(span, replaceText) 
-    
+
                     // The caret should move to the end of the replace operation which is 
                     // 'count - 1' characters from the original position 
                     let point = SnapshotPoint(snapshot, point.Position + (count - 1))
@@ -131,28 +158,22 @@ type internal CommandUtil
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
-    /// Yank the contents of the motion into the specified register
-    member x.YankMotion register (result: MotionResult) = 
-        _operations.UpdateRegisterForSpan register RegisterOperation.Yank result.OperationSpan result.OperationKind
-        CommandResult.Completed ModeSwitch.NoSwitch
-
-    /// Run the specified action with a wrapped undo transaction.  This is often necessary when
-    /// an edit command manipulates the caret
-    member x.EditWithUndoTransaciton name action = _operations.WrapEditInUndoTransaction name action
-
-    /// Get the MotionResult value for the provided MotionData and pass it
-    /// if found to the provided function
-    member x.RunWithMotion (motion : MotionData) func = 
-        match _motionUtil.GetMotion motion.Motion motion.MotionArgument with
-        | None -> CommandResult.Error Resources.MotionCapture_InvalidMotion
-        | Some data -> func data
+    /// Run the specified Command
+    member x.RunCommand command = 
+        match command with
+        | Command2.NormalCommand (command, data) -> x.RunNormalCommand command data
+        | Command2.VisualCommand (command, data, visualSpan) -> x.RunVisualCommand command data visualSpan
+        | Command2.LegacyCommand func -> func()
 
     /// Run a NormalCommand against the buffer
     member x.RunNormalCommand command (data : CommandData) =
         let register = _registerMap.GetRegister data.RegisterNameOrDefault
         let count = data.CountOrDefault
         match command with
+        | NormalCommand.MoveCaretToMotion motion -> x.MoveCaretToMotion motion data.Count
+        | NormalCommand.JumpToMark c -> x.JumpToMark c
         | NormalCommand.PutAfterCursor -> x.PutAfterCursor register count ModeSwitch.NoSwitch
+        | NormalCommand.SetMarkToCaret c -> x.SetMarkToCaret c
         | NormalCommand.RepeatLastCommand -> x.RepeatLastCommand data
         | NormalCommand.ReplaceChar keyInput -> x.ReplaceChar keyInput data.CountOrDefault
         | NormalCommand.Yank motion -> x.RunWithMotion motion (x.YankMotion register)
@@ -164,7 +185,32 @@ type internal CommandUtil
         match command with
         | VisualCommand.PutAfterCursor -> x.PutAfterCursor register count (ModeSwitch.SwitchMode ModeKind.Normal)
 
+    /// Get the MotionResult value for the provided MotionData and pass it
+    /// if found to the provided function
+    member x.RunWithMotion (motion : MotionData) func = 
+        match _motionUtil.GetMotion motion.Motion motion.MotionArgument with
+        | None ->  
+            _statusUtil.OnError Resources.MotionCapture_InvalidMotion
+            CommandResult.Error
+        | Some data -> func data
+
+    /// Process the m[a-z] command
+    member x.SetMarkToCaret c = 
+        let caretPoint = TextViewUtil.GetCaretPoint _textView
+        match _operations.SetMark _buffer caretPoint c with
+        | Modes.Result.Failed msg ->
+            _statusUtil.OnError msg
+            CommandResult.Error
+        | Modes.Result.Succeeded ->
+            CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Yank the contents of the motion into the specified register
+    member x.YankMotion register (result: MotionResult) = 
+        _operations.UpdateRegisterForSpan register RegisterOperation.Yank result.OperationSpan result.OperationKind
+        CommandResult.Completed ModeSwitch.NoSwitch
+
     interface ICommandUtil with
         member x.RunNormalCommand command data = x.RunNormalCommand command data
         member x.RunVisualCommand command data visualSpan = x.RunVisualCommand command data visualSpan 
+        member x.RunCommand command = x.RunCommand command
 

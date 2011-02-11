@@ -7,6 +7,6 @@ open Microsoft.VisualStudio.Text.Outlining
 
 type internal CommandUtil =
 
-    new : Modes.ICommonOperations * IRegisterMap * ITextViewMotionUtil * IVimData -> CommandUtil
+    new : Modes.ICommonOperations * IVimBuffer * IStatusUtil -> CommandUtil
 
     interface ICommandUtil

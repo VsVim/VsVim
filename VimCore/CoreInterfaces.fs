@@ -8,6 +8,15 @@ open Microsoft.VisualStudio.Text.Outlining
 open Microsoft.VisualStudio.Utilities
 open System.Diagnostics
 
+/// Map containing the various VIM registers
+type IRegisterMap = 
+
+    /// Gets all of the available register name values
+    abstract RegisterNames : seq<RegisterName>
+
+    /// Get the register with the specified name
+    abstract GetRegister : RegisterName -> Register
+
 type IStatusUtil =
 
     /// Raised when there is a special status message that needs to be reported
@@ -116,6 +125,7 @@ type SearchData = {
     Options : SearchOptions
 }
 
+/// REPEAT TODO: Convert to a BindResult.  
 type SearchProcessResult =
     | SearchNotStarted 
     | SearchComplete of SearchData * SearchResult
@@ -407,7 +417,7 @@ type KeyInputSet =
 
     /// Add a KeyInput to the end of this KeyInputSet and return the 
     /// resulting value
-    member x.Add (ki) =
+    member x.Add ki =
         match x with 
         | Empty -> OneKeyInput ki
         | OneKeyInput(previous) -> TwoKeyInputs(previous,ki)
@@ -578,15 +588,13 @@ type ModeSwitch =
 
 [<RequireQualifiedAccess>]
 type CommandResult =   
-    | Completed  of ModeSwitch
-    | Error of string
 
-/// REPEAT TODO: Delete and use BindResult<'T> instead where this is currently used
-[<RequireQualifiedAccess>]
-type LongCommandResult =
-    | Finished of CommandResult
-    | Cancelled
-    | NeedMoreInput of KeyRemapMode option * (KeyInput -> LongCommandResult)
+    /// The command completed and requested a switch to the provided Mode which 
+    /// may just be a no-op
+    | Completed  of ModeSwitch
+
+    /// An error was encountered and the command was unable to run
+    | Error
 
 [<RequireQualifiedAccess>]
 type RunResult = 
@@ -663,9 +671,18 @@ type CommandData = {
         | Some name -> name
         | None -> RegisterName.Unnamed
 
+    /// Get the applicable register
+    member x.GetRegister (map : IRegisterMap) = map.GetRegister x.RegisterNameOrDefault
+
 /// Normal mode commands which can be executed by the user 
 [<RequireQualifiedAccess>]
 type NormalCommand = 
+
+    /// Jump to the specified mark 
+    | JumpToMark of char
+
+    /// Move the caret to the result of the given Motion
+    | MoveCaretToMotion of Motion
 
     /// Put the contents of the register into the 
     | PutAfterCursor
@@ -676,6 +693,9 @@ type NormalCommand =
     /// Replace the char under the cursor with the given char
     | ReplaceChar of KeyInput
 
+    /// Set the specified mark to the current value of the caret
+    | SetMarkToCaret of char
+
     /// Yank the given motion into a register
     | Yank of MotionData
 
@@ -685,6 +705,9 @@ type VisualCommand =
 
     /// Put the contents of the register into the 
     | PutAfterCursor
+
+    /// Replace the visual span with the provided character
+    | ReplaceChar of KeyInput
 
 /// Commands which can be executed by the user
 ///
@@ -698,6 +721,11 @@ type Command2 =
     /// A Visual Mode Command
     | VisualCommand of VisualCommand * CommandData * VisualSpan
 
+    /// A Legacy command was run
+    /// 
+    /// REPEAT TODO: Delete this once legacy commands are eliminated
+    | LegacyCommand of (unit -> CommandResult)
+
 /// The result of binding to a Motion value.
 [<RequireQualifiedAccess>]
 type BindResult<'T> = 
@@ -708,7 +736,8 @@ type BindResult<'T> =
     /// More input is needed to complete the binding operation
     | NeedMoreInput of BindData<'T>
 
-    | Error of string
+    /// There was an error completing the binding operation
+    | Error
 
     /// Motion was cancelled via user input
     | Cancelled
@@ -718,6 +747,15 @@ type BindResult<'T> =
     static member CreateNeedMoreInput keyRemapModeOpt bindFunc =
         let data = { KeyRemapMode = keyRemapModeOpt; BindFunction = bindFunc }
         NeedMoreInput data
+
+    /// Used to convert a BindResult<'T> to BindResult<'U> through a conversion
+    /// function
+    member x.Convert mapFunc = 
+        match x with
+        | Complete value -> Complete (mapFunc value)
+        | NeedMoreInput bindData -> NeedMoreInput (bindData.Convert mapFunc)
+        | Error -> Error
+        | Cancelled -> Cancelled
 
 and BindData<'T> = {
 
@@ -730,9 +768,9 @@ and BindData<'T> = {
 
 } with
 
-    /// Many bindings are simply to get a single char.  Centralize that logic 
+    /// Many bindings are simply to get a single KeyInput.  Centralize that logic 
     /// here so it doesn't need to be repeated
-    static member CreateForSingleChar keyRemapModeOpt completeFunc =
+    static member CreateForSingle keyRemapModeOpt completeFunc =
         let inner keyInput =
             if keyInput = KeyInputUtil.EscapeKey then
                 BindResult.Cancelled
@@ -740,6 +778,25 @@ and BindData<'T> = {
                 let data = completeFunc keyInput
                 BindResult<'T>.Complete data
         { KeyRemapMode = keyRemapModeOpt; BindFunction = inner }
+
+    /// Many bindings are simply to get a single char.  Centralize that logic 
+    /// here so it doesn't need to be repeated
+    static member CreateForSingleChar keyRemapModeOpt completeFunc = 
+        BindData<_>.CreateForSingle keyRemapModeOpt (fun keyInput -> completeFunc keyInput.Char)
+
+    /// Often types bindings need to compose together because we need an inner binding
+    /// to succeed so we can create a projected value.  This function will allow us
+    /// to translate a BindData<'T> -> BindData<'U>
+    member x.Convert mapFunc = 
+
+        let rec inner bindFunction keyInput = 
+            match x.BindFunction keyInput with
+            | BindResult.Cancelled -> BindResult.Cancelled
+            | BindResult.Complete value -> BindResult.Complete (mapFunc value)
+            | BindResult.Error -> BindResult.Error
+            | BindResult.NeedMoreInput bindData -> BindResult.NeedMoreInput { KeyRemapMode = bindData.KeyRemapMode; BindFunction = inner bindData.BindFunction}
+
+        { KeyRemapMode = x.KeyRemapMode; BindFunction = inner x.BindFunction }
 
 /// Representation of commands within Vim.  
 /// 
@@ -761,18 +818,9 @@ type CommandBinding =
     /// register will be used
     | MotionCommand of KeyInputSet * CommandFlags * (int option -> Register -> MotionResult -> CommandResult)
 
-    /// Represents a command which has a Name but then has additional unspecified input
-    /// which needs to be dealt with specially by the command.  These commands are not
-    /// repeatable.  
-    | LongCommand of KeyInputSet * CommandFlags * (int option -> Register -> LongCommandResult) 
-
     /// Represents a command which has a name and relies on the Visual Mode Span to 
     /// execute the command
     | VisualCommand of KeyInputSet * CommandFlags * VisualKind * (int option -> Register -> VisualSpan -> CommandResult) 
-
-    /// Represents a command which has a name, extra characters and relies on the Visual 
-    /// Mode Span to execute the command
-    | LongVisualCommand of KeyInputSet * CommandFlags * VisualKind * (int option -> Register -> VisualSpan -> LongCommandResult) 
 
     /// KeyInputSet bound to a particular NormalCommand instance
     | NormalCommand2 of KeyInputSet * CommandFlags * NormalCommand
@@ -796,9 +844,7 @@ type CommandBinding =
         match x with
         | SimpleCommand(value, _, _ ) -> value
         | MotionCommand(value, _, _) -> value
-        | LongCommand(value, _, _) -> value
         | VisualCommand(value, _, _, _) -> value
-        | LongVisualCommand(value, _, _, _) -> value
         | NormalCommand2 (value, _, _) -> value
         | MotionCommand2 (value, _, _) -> value
         | VisualCommand2 (value, _, _) -> value
@@ -810,9 +856,7 @@ type CommandBinding =
         match x with
         | SimpleCommand(_, value, _ ) -> value
         | MotionCommand(_, value, _) -> value
-        | LongCommand(_, value, _) -> value
         | VisualCommand(_, value, _, _) -> value
-        | LongVisualCommand(_, value, _, _) -> value
         | NormalCommand2 (_, value, _) -> value
         | MotionCommand2 (_, value, _) -> value
         | VisualCommand2 (_, value, _) -> value
@@ -841,6 +885,9 @@ and ICommandUtil =
 
     /// Run a visual command
     abstract RunVisualCommand : VisualCommand -> CommandData -> VisualSpan -> CommandResult
+
+    /// Run a command
+    abstract RunCommand : Command2 -> CommandResult
 
 /// Contains the stored information about a Visual Span.  This instance *will* be 
 /// stored for long periods of time and used to erpeat a Command instance across
@@ -937,7 +984,7 @@ type MotionCommand =
     /// the f,t,F and T commands all require at least one additional input.  The bool
     /// in the middle of the tuple indicates whether or not the motion can be 
     /// used as a cursor movement operation  
-    | ComplexMotionCommand of KeyInputSet * MotionFlags * (MotionArgument -> BindData<MotionData>)
+    | ComplexMotionCommand of KeyInputSet * MotionFlags * BindData<Motion>
 
     with
 
@@ -981,7 +1028,7 @@ type IMotionCapture =
     abstract MotionCommands : seq<MotionCommand>
 
     /// Get the motion starting with the given KeyInput
-    abstract GetOperatorMotion : KeyInput -> int option -> BindResult<MotionData>
+    abstract GetOperatorMotion : KeyInput -> BindResult<Motion * int option>
 
 module CommandUtil2 = 
 
@@ -992,16 +1039,18 @@ module CommandUtil2 =
 
 /// Represents the types of actions which are taken when an ICommandRunner is presented
 /// with a KeyInput to run
+/// 
+/// REPEAT TODO: Potentially make this a BindResult
 type RunKeyInputResult = 
     
     /// Ran a command which produced the attached result.  
-    | CommandRan of CommandRunData * ModeSwitch
+    | CommandRan of Command2 * ModeSwitch
 
     /// Command was cancelled
     | CommandCancelled 
 
     /// Command ran but resulted in an error
-    | CommandErrored of CommandRunData * string
+    | CommandErrored
 
     /// More input is needed to determine if there is a matching command or not
     | NeedMoreKeyInput 
@@ -1140,15 +1189,6 @@ type IJumpList =
 
     /// Add a given SnapshotPoint to the jump list
     abstract Add : SnapshotPoint -> unit
-
-/// Map containing the various VIM registers
-type IRegisterMap = 
-
-    /// Gets all of the available register name values
-    abstract RegisterNames : seq<RegisterName>
-
-    /// Get the register with the specified name
-    abstract GetRegister : RegisterName -> Register
 
 type IIncrementalSearch = 
 
