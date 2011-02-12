@@ -485,6 +485,12 @@ module SnapshotLineUtil =
         if span.Length = 0 then None
         else span.End.Subtract(1) |> Some
 
+    /// Get a SnapshotPoint representing 'offset' characters into the line or the 
+    /// End point of the line
+    let GetOffsetOrEnd (line : ITextSnapshotLine) offset = 
+        if line.Start.Position + offset >= line.End.Position then line.End
+        else line.Start.Add(offset)
+
     /// Does the line consist of only whitespace
     let IsWhiteSpace line = 
         line

@@ -111,6 +111,10 @@ type internal NormalMode
         let normalSeq = 
             seq {
                 yield ("p", CommandFlags.Repeatable, NormalCommand.PutAfterCursor)
+                yield ("s", CommandFlags.LinkedWithNextTextChange ||| CommandFlags.Repeatable, NormalCommand.SubstituteCharacterAtCursor)
+                yield ("x", CommandFlags.Repeatable, NormalCommand.DeleteCharacterAtCursor)
+                yield ("X", CommandFlags.Repeatable, NormalCommand.DeleteCharacterBeforeCursor)
+                yield ("<Del>", CommandFlags.Repeatable, NormalCommand.DeleteCharacterAtCursor)
                 yield (".", CommandFlags.Special, NormalCommand.RepeatLastCommand)
             } |> Seq.map (fun (str, flags, command) -> 
                 let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
@@ -289,13 +293,6 @@ type internal NormalMode
                     CommandFlags.Special,
                     ModeSwitch.NoSwitch,
                     fun _ _ ->  _operations.Close(true) |> ignore )
-                yield (
-                    "X", 
-                    CommandFlags.Repeatable, 
-                    ModeSwitch.NoSwitch,
-                    fun count reg -> 
-                        let span = _operations.DeleteCharacterBeforeCursor count
-                        _operations.UpdateRegisterForSpan reg RegisterOperation.Delete span OperationKind.CharacterWise)
                 yield (
                     "P", 
                     CommandFlags.Repeatable, 
@@ -494,13 +491,6 @@ type internal NormalMode
                     ModeSwitch.SwitchMode ModeKind.VisualBlock, 
                     doNothing)
                 yield (
-                    "s", 
-                    CommandFlags.LinkedWithNextTextChange ||| CommandFlags.Repeatable,
-                    ModeSwitch.SwitchMode ModeKind.Insert, 
-                    (fun count reg -> 
-                        let span = _operations.DeleteCharacterAtCursor count 
-                        _operations.UpdateRegisterForSpan reg RegisterOperation.Delete span OperationKind.CharacterWise))
-                yield (
                     "C", 
                     CommandFlags.LinkedWithNextTextChange ||| CommandFlags.Repeatable,
                     ModeSwitch.SwitchMode ModeKind.Insert, 
@@ -528,17 +518,6 @@ type internal NormalMode
 
         let aliasedCommands = 
             seq {
-                yield (
-                    ["x"; "<Del>"],
-                    CommandFlags.Repeatable, 
-                    ModeSwitch.NoSwitch,
-                    fun count reg -> 
-                        let span = _operations.DeleteCharacterAtCursor count 
-
-                        // Need to respect the virtual edit setting here as we could have 
-                        // deleted the last character on the line
-                        _operations.MoveCaretForVirtualEdit()
-                        _operations.UpdateRegisterForSpan reg RegisterOperation.Delete span OperationKind.CharacterWise)
                 yield (
                     ["gUgU"; "gUU"],
                     CommandFlags.Repeatable,

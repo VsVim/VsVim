@@ -865,38 +865,21 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void Edit_X_1()
+        public void Bind_DeleteCharacterBeforeCursor()
         {
-            Create("foo");
-            _textView.Caret.MoveTo(new SnapshotPoint(_textView.TextSnapshot, 1));
-            var span = _textView.GetLineRange(0).Extent;
-            _operations.Setup(x => x.MoveCaretForVirtualEdit());
-            _operations
-                .Setup(x => x.DeleteCharacterBeforeCursor(1))
-                .Returns(span)
-                .Verifiable();
-            _operations
-                .Setup(x => x.UpdateRegisterForSpan(_unnamedRegister, RegisterOperation.Delete, span, OperationKind.CharacterWise))
-                .Verifiable();
+            Create("");
+            _commandUtil.SetupNormalCommand(NormalCommand.DeleteCharacterBeforeCursor);
             _mode.Process("X");
-            _operations.Verify();
+            _commandUtil.Verify();
         }
 
         [Test]
-        public void Edit_X_2()
+        public void Bind_DeleteCharacterBeforeCursor_WithCountAndRegister()
         {
-            Create("foo", "bar");
-            _textView.Caret.MoveTo(_textView.TextSnapshot.GetLineFromLineNumber(0).Start.Add(2));
-            var span = _textView.GetLineRange(0).Extent;
-            _operations
-                .Setup(x => x.DeleteCharacterBeforeCursor(2))
-                .Returns(span)
-                .Verifiable();
-            _operations
-                .Setup(x => x.UpdateRegisterForSpan(_unnamedRegister, RegisterOperation.Delete, span, OperationKind.CharacterWise))
-                .Verifiable();
-            _mode.Process("2X");
-            _operations.Verify();
+            Create("");
+            _commandUtil.SetupNormalCommand(NormalCommand.DeleteCharacterBeforeCursor, 2, RegisterName.OfChar('c').Value);
+            _mode.Process("\"c2X");
+            _commandUtil.Verify();
         }
 
         [Test]
@@ -916,72 +899,30 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void Edit_x_1()
+        public void Bind_DeleteCharacterAtCursor()
         {
-            Create("foo");
-            var span = _textView.GetLineRange(0).Extent;
-            _operations.Setup(x => x.MoveCaretForVirtualEdit());
-            _operations
-                .Setup(x => x.DeleteCharacterAtCursor(1))
-                .Returns(span)
-                .Verifiable();
-            _operations
-                .Setup(x => x.UpdateRegisterForSpan(_unnamedRegister, RegisterOperation.Delete, span, OperationKind.CharacterWise))
-                .Verifiable();
+            Create("");
+            _commandUtil.SetupNormalCommand(NormalCommand.DeleteCharacterAtCursor);
             _mode.Process("x");
-            _operations.Verify();
+            _commandUtil.Verify();
         }
 
         [Test]
-        public void Edit_2x()
+        public void Bind_DeleteCharacterAtCursor_WithCountAndRegister()
         {
-            Create("foo");
-            var span = _textView.GetLineRange(0).Extent;
-            _operations.Setup(x => x.MoveCaretForVirtualEdit());
-            _operations
-                .Setup(x => x.DeleteCharacterAtCursor(2))
-                .Returns(span)
-                .Verifiable();
-            _operations
-                .Setup(x => x.UpdateRegisterForSpan(_unnamedRegister, RegisterOperation.Delete, span, OperationKind.CharacterWise))
-                .Verifiable();
-            _mode.Process("2x");
-            _operations.Verify();
+            Create("");
+            _commandUtil.SetupNormalCommand(NormalCommand.DeleteCharacterAtCursor, 1, RegisterName.OfChar('c').Value);
+            _mode.Process("\"c2x");
+            _commandUtil.Verify();
         }
 
         [Test]
-        public void Edit_x_2()
+        public void Bind_DeleteCharacterAtCursor_ViaDelete()
         {
-            Create("foo");
-            var reg = _map.GetRegister('c');
-            var span = _textView.GetLineRange(0).Extent;
-            _operations.Setup(x => x.MoveCaretForVirtualEdit());
-            _operations
-                .Setup(x => x.DeleteCharacterAtCursor(1))
-                .Returns(span)
-                .Verifiable();
-            _operations
-                .Setup(x => x.UpdateRegisterForSpan(reg, RegisterOperation.Delete, span, OperationKind.CharacterWise))
-                .Verifiable();
-            _mode.Process("\"cx");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void Edit_Del_1()
-        {
-            Create("foo");
-            var span = _textView.GetLineRange(0).Extent;
-            _operations.Setup(x => x.MoveCaretForVirtualEdit());
-            _operations
-                .Setup(x => x.DeleteCharacterAtCursor(1))
-                .Returns(span)
-                .Verifiable();
-            _operations
-                .Setup(x => x.UpdateRegisterForSpan(_unnamedRegister, RegisterOperation.Delete, span, OperationKind.CharacterWise))
-                .Verifiable();
+            Create("");
+            _commandUtil.SetupNormalCommand(NormalCommand.DeleteCharacterAtCursor);
             _mode.Process(VimKey.Delete);
-            _operations.Verify();
+            _commandUtil.Verify();
         }
 
         [Test]
@@ -1131,57 +1072,12 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void Edit_s_1()
+        public void Bind_SubstituteCharacterAtCursor()
         {
-            Create("foo bar");
-            var span = _textView.GetLineRange(0).Extent;
-            _operations
-                .Setup(x => x.DeleteCharacterAtCursor(1))
-                .Returns(span)
-                .Verifiable();
-            _operations
-                .Setup(x => x.UpdateRegisterForSpan(_unnamedRegister, RegisterOperation.Delete, span, OperationKind.CharacterWise))
-                .Verifiable();
-            var res = _mode.Process("s");
-            Assert.IsTrue(res.IsSwitchMode);
-            Assert.AreEqual(ModeKind.Insert, res.AsSwitchMode().Item);
-            _operations.Verify();
-        }
-
-        [Test]
-        public void Edit_s_2()
-        {
-            Create("foo bar");
-            var span = _textView.GetLineRange(0).Extent;
-            _operations
-                .Setup(x => x.DeleteCharacterAtCursor(2))
-                .Returns(span)
-                .Verifiable();
-            _operations
-                .Setup(x => x.UpdateRegisterForSpan(_unnamedRegister, RegisterOperation.Delete, span, OperationKind.CharacterWise))
-                .Verifiable();
-            var res = _mode.Process("2s");
-            Assert.IsTrue(res.IsSwitchMode);
-            Assert.AreEqual(ModeKind.Insert, res.AsSwitchMode().Item);
-            _operations.Verify();
-        }
-
-        [Test]
-        public void Edit_s_3()
-        {
-            Create("foo bar");
-            var span = _textView.GetLineRange(0).Extent;
-            _operations
-                .Setup(x => x.DeleteCharacterAtCursor(1))
-                .Returns(span)
-                .Verifiable();
-            _operations
-                .Setup(x => x.UpdateRegisterForSpan(_map.GetRegister('c'), RegisterOperation.Delete, span, OperationKind.CharacterWise))
-                .Verifiable();
-            var res = _mode.Process("\"cs");
-            Assert.IsTrue(res.IsSwitchMode);
-            Assert.AreEqual(ModeKind.Insert, res.AsSwitchMode().Item);
-            _operations.Verify();
+            Create("");
+            _commandUtil.SetupNormalCommand(NormalCommand.SubstituteCharacterAtCursor);
+            _mode.Process("s");
+            _commandUtil.Verify();
         }
 
         [Test]

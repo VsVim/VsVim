@@ -9,6 +9,7 @@ using Vim.Extensions;
 using Vim.Modes;
 using Vim.UnitTest;
 using Vim.UnitTest.Mock;
+using GlobalSettings = Vim.GlobalSettings;
 
 namespace VimCore.UnitTest
 {
@@ -19,6 +20,8 @@ namespace VimCore.UnitTest
         private Mock<IVimHost> _vimHost;
         private Mock<IStatusUtil> _statusUtil;
         private Mock<ICommonOperations> _operations;
+        private IVimGlobalSettings _globalSettings;
+        private IVimLocalSettings _localSettings;
         private ITextViewMotionUtil _motionUtil;
         private IRegisterMap _registerMap;
         private IVimData _vimData;
@@ -43,6 +46,8 @@ namespace VimCore.UnitTest
             _vimData = new VimData();
             _registerMap = VimUtil.CreateRegisterMap(MockObjectFactory.CreateClipboardDevice().Object);
             _markMap = new MarkMap(new TrackingLineColumnService());
+            _globalSettings = new GlobalSettings();
+            _localSettings = new LocalSettings(_globalSettings, _textView);
 
             var localSettings = new LocalSettings(new Vim.GlobalSettings());
             _motionUtil = VimUtil.CreateTextViewMotionUtil(
@@ -58,6 +63,11 @@ namespace VimCore.UnitTest
                 markMap: _markMap,
                 vimData: _vimData);
             _commandUtilInterface = _commandUtil;
+        }
+
+        private Register UnnamedRegister
+        {
+            get { return _registerMap.GetRegister(RegisterName.Unnamed); }
         }
 
         private void SetLastCommand(NormalCommand command, int? count = null, RegisterName name = null)
@@ -453,6 +463,82 @@ namespace VimCore.UnitTest
                     _textView.GetLineSpan(1, 1, 1)
                 },
                 restored.AsBlock().Item);
+        }
+
+        [Test]
+        public void DeleteCharacterAtCursor_Simple()
+        {
+            Create("foo", "bar");
+            _commandUtil.DeleteCharacterAtCursor(1, UnnamedRegister, ModeSwitch.NoSwitch);
+            Assert.AreEqual("oo", _textView.GetLine(0).GetText());
+            Assert.AreEqual("f", UnnamedRegister.StringValue);
+            Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// Delete several characters
+        /// </summary>
+        [Test]
+        public void DeleteCharacterAtCursor_TwoCharacters()
+        {
+            Create("foo", "bar");
+            _commandUtil.DeleteCharacterAtCursor(2, UnnamedRegister, ModeSwitch.NoSwitch);
+            Assert.AreEqual("o", _textView.GetLine(0).GetText());
+            Assert.AreEqual("fo", UnnamedRegister.StringValue);
+        }
+
+        /// <summary>
+        /// Delete at a different offset and make sure the cursor is positioned correctly
+        /// </summary>
+        [Test]
+        public void DeleteCharacterAtCursor_NonZeroOffset()
+        {
+            Create("the cat", "bar");
+            _textView.MoveCaretTo(1);
+            _commandUtil.DeleteCharacterAtCursor(2, UnnamedRegister, ModeSwitch.NoSwitch);
+            Assert.AreEqual("t cat", _textView.GetLine(0).GetText());
+            Assert.AreEqual("he", UnnamedRegister.StringValue);
+            Assert.AreEqual(1, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// When the count exceeds the length of the line it should delete to the end of the 
+        /// line
+        /// </summary>
+        [Test]
+        public void DeleteCharacterAtCursor_CountExceedsLine()
+        {
+            Create("the cat", "bar");
+            _textView.MoveCaretTo(1);
+            _commandUtil.DeleteCharacterAtCursor(300, UnnamedRegister, ModeSwitch.NoSwitch);
+            Assert.AreEqual("t", _textView.GetLine(0).GetText());
+            Assert.AreEqual("he cat", UnnamedRegister.StringValue);
+            Assert.AreEqual(1, _textView.GetCaretPoint().Position);
+        }
+
+        [Test]
+        public void DeleteCharacterBeforeCursor_Simple()
+        {
+            Create("foo");
+            _textView.MoveCaretTo(1);
+            _commandUtil.DeleteCharacterBeforeCursor(1, UnnamedRegister);
+            Assert.AreEqual("oo", _textView.GetLine(0).GetText());
+            Assert.AreEqual("f", UnnamedRegister.StringValue);
+            Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// When the count exceeds the line just delete to the start of the line
+        /// </summary>
+        [Test]
+        public void DeleteCharacterBeforeCursor_CountExceedsLine()
+        {
+            Create("foo");
+            _textView.MoveCaretTo(1);
+            _commandUtil.DeleteCharacterBeforeCursor(300, UnnamedRegister);
+            Assert.AreEqual("oo", _textView.GetLine(0).GetText());
+            Assert.AreEqual("f", UnnamedRegister.StringValue);
+            Assert.AreEqual(0, _textView.GetCaretPoint().Position);
         }
     }
 }

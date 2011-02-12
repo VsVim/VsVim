@@ -56,23 +56,18 @@ type internal CommandUtil
             //
             //  1. Single Line: endOffset is the offset from the caret
             //  2. Multi Line: endOffset is the offset from the last line
-
-            let offsetOrEnd (line : ITextSnapshotLine) offset = 
-                if offset >= line.Length then line.End
-                else line.Start.Add(offset)
-
             let startPoint = x.CaretPoint
 
             /// Calculate the end point being careful not to go past the end of the buffer
             let endPoint = 
                 if 0 = endLineOffset then
                     let column = SnapshotPointUtil.GetColumn x.CaretPoint
-                    offsetOrEnd x.CaretLine (column + endOffset)
+                    SnapshotLineUtil.GetOffsetOrEnd x.CaretLine (column + endOffset)
                 else
                     let endLineNumber = x.CaretLine.LineNumber + endLineOffset
                     match SnapshotUtil.TryGetLine x.CurrentSnapshot endLineNumber with
                     | None -> SnapshotUtil.GetEndPoint x.CurrentSnapshot
-                    | Some endLine -> offsetOrEnd endLine endOffset
+                    | Some endLine -> SnapshotLineUtil.GetOffsetOrEnd endLine endOffset
 
             let span = SnapshotSpan(startPoint, endPoint)
             VisualSpan.Character span
@@ -93,6 +88,81 @@ type internal CommandUtil
                     SnapshotSpan(startPoint, endPoint))
                 |> NormalizedSnapshotSpanCollectionUtil.OfSeq
             VisualSpan.Block col
+
+    /// Delete 'count' characters after the cursor on the current line.  Caret should 
+    /// remain at it's original position 
+    member x.DeleteCharacterAtCursor count register modeSwitch =
+
+        // Check for the case where the caret is past the end of the line.  Can happen
+        // when 've=onemore'
+        if x.CaretPoint.Position < x.CaretLine.End.Position then
+            let endPoint = SnapshotLineUtil.GetOffsetOrEnd x.CaretLine (x.CaretColumn + count)
+            let span = SnapshotSpan(x.CaretPoint, endPoint)
+
+            // Use a transaction so we can guarantee the caret is in the correct
+            // position on undo / redo
+            x.EditWithUndoTransaciton "DeleteChar" (fun () -> 
+                let position = x.CaretPoint.Position
+                let snapshot = _textBuffer.Delete(span.Span)
+                TextViewUtil.MoveCaretToPoint _textView (SnapshotPoint(snapshot, position))
+
+                // Need to respect the virtual edit setting here as we could have 
+                // deleted the last character on the line
+                _operations.MoveCaretForVirtualEdit())
+
+            // Put the deleted text into the specified register
+            _operations.UpdateRegister register RegisterOperation.Delete (EditSpan.Single span) OperationKind.CharacterWise
+
+        CommandResult.Completed modeSwitch
+
+    /// Delete 'count' characters before the cursor on the current line.  Caret should be
+    /// positioned at the begining of the span for undo / redo
+    member x.DeleteCharacterBeforeCursor count register = 
+
+        let startPoint = 
+            let position = x.CaretPoint.Position - count
+            if position < x.CaretLine.Start.Position then x.CaretLine.Start else SnapshotPoint(x.CurrentSnapshot, position)
+        let span = SnapshotSpan(startPoint, x.CaretPoint)
+
+        // Use a transaction so we can guarantee the caret is in the correct position.  We 
+        // need to position the caret to the start of the span before the transaction to 
+        // ensure it appears there during an undo
+        TextViewUtil.MoveCaretToPoint _textView startPoint
+        x.EditWithUndoTransaciton "DeleteChar" (fun () ->
+            let snapshot = _textBuffer.Delete(span.Span)
+            TextViewUtil.MoveCaretToPosition _textView startPoint.Position)
+
+        // Put the deleted text into the specified register once the delete completes
+        _operations.UpdateRegister register RegisterOperation.Delete (EditSpan.Single span) OperationKind.CharacterWise
+
+        CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Delete the highlighted text from the buffer and put it into the specified 
+    /// register.  The caret should be positioned at the begining of the text for
+    /// undo / redo
+    member x.DeleteHighlightedText register (visualSpan : VisualSpan) = 
+        let startPoint = visualSpan.Start |> OptionUtil.getOrDefault x.CaretPoint 
+
+        // Use a transaction to guarantee caret position.  Caret should be at the start
+        // during undo and redo so move it before the edit
+        TextViewUtil.MoveCaretToPoint _textView startPoint
+        x.EditWithUndoTransaciton "DeleteHighlightedText" (fun () ->
+            use edit = _textBuffer.CreateEdit()
+            visualSpan.Spans |> Seq.iter (fun span -> 
+
+                // If the span ends partially in a LineBreak extent put it fully across
+                // the extent
+                let span = 
+                    let line = span.End.GetContainingLine()
+                    let extent = SnapshotLineUtil.GetLineBreakSpan line
+                    if extent.Contains span.End then SnapshotSpan(span.Start, line.EndIncludingLineBreak)
+                    else span
+
+                edit.Delete(span.Span) |> ignore)
+            let snapshot = edit.Apply()
+            TextViewUtil.MoveCaretToPosition _textView startPoint.Position)
+
+        CommandResult.Completed ModeSwitch.SwitchPreviousMode
 
     /// Run the specified action with a wrapped undo transaction.  This is often necessary when
     /// an edit command manipulates the caret
@@ -267,11 +337,14 @@ type internal CommandUtil
         let register = _registerMap.GetRegister data.RegisterNameOrDefault
         let count = data.CountOrDefault
         match command with
+        | NormalCommand.DeleteCharacterAtCursor -> x.DeleteCharacterAtCursor count register ModeSwitch.NoSwitch
+        | NormalCommand.DeleteCharacterBeforeCursor -> x.DeleteCharacterBeforeCursor count register
         | NormalCommand.MoveCaretToMotion motion -> x.MoveCaretToMotion motion data.Count
         | NormalCommand.JumpToMark c -> x.JumpToMark c
         | NormalCommand.Ping func -> x.Ping func data
         | NormalCommand.PutAfterCursor -> x.PutAfterCursor register count ModeSwitch.NoSwitch
         | NormalCommand.SetMarkToCaret c -> x.SetMarkToCaret c
+        | NormalCommand.SubstituteCharacterAtCursor -> x.DeleteCharacterAtCursor count register (ModeSwitch.SwitchMode ModeKind.Insert)
         | NormalCommand.RepeatLastCommand -> x.RepeatLastCommand data
         | NormalCommand.ReplaceChar keyInput -> x.ReplaceChar keyInput data.CountOrDefault
         | NormalCommand.Yank motion -> x.RunWithMotion motion (x.YankMotion register)
@@ -281,6 +354,7 @@ type internal CommandUtil
         let register = _registerMap.GetRegister data.RegisterNameOrDefault
         let count = data.CountOrDefault
         match command with
+        | VisualCommand.DeleteHighlightedText -> x.DeleteHighlightedText register visualSpan
         | VisualCommand.PutAfterCursor -> x.PutAfterCursor register count (ModeSwitch.SwitchMode ModeKind.Normal)
         | VisualCommand.ReplaceChar keyInput -> x.ReplaceCharVisual keyInput visualSpan
 

@@ -8,13 +8,6 @@ open Microsoft.VisualStudio.Text.Operations
 
 /// Normal mode operations
 type IOperations =
-    /// Delete count characters starting at the cursor.  This will not delete past the 
-    /// end of the current line
-    abstract DeleteCharacterAtCursor : count:int -> SnapshotSpan
-
-    abstract DeleteCharacterBeforeCursor : count:int -> SnapshotSpan
-
-
     /// Go to the definition of the word under the cursor
     abstract GoToDefinitionWrapper : unit -> unit
 

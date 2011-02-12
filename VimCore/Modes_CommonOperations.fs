@@ -859,7 +859,7 @@ type internal CommonOperations ( _data : OperationsData ) =
             // motion.  This behavior is detailed in the :help WORD section of the gVim 
             // documentation and is likely legacy behavior coming from the original vi 
             // implementation.  A larger discussion thread is available here
-            // http://groups.google.com/group/vim_use/browse_thread/thread/88b6499bbcb0878d/561dfe13d3f2ef63?lnk=gst&q=whitespace+cw#561dfe13d3f2ef63            // For whatever reason the change commands will remove the trailing whitespace
+            // http://groups.google.com/group/vim_use/browse_thread/thread/88b6499bbcb0878d/561dfe13d3f2ef63?lnk=gst&q=whitespace+cw#561dfe13d3f2ef63            
             let span = 
                 if data.IsAnyWordMotion && data.IsForward then
                     let point = 
@@ -973,6 +973,9 @@ type internal CommonOperations ( _data : OperationsData ) =
                 _vimData.LastSubstituteData <- Some {SearchPattern=pattern; Substitute=replace; Flags=flags}
 
 
+        member x.UpdateRegister reg regOp editSpan opKind = 
+            let value = { Value = StringData.OfEditSpan editSpan; OperationKind = opKind }
+            x.UpdateRegister reg regOp value
         member x.UpdateRegisterForSpan reg regOp span opKind = 
             let value = { Value=StringData.OfSpan span; OperationKind=opKind }
             x.UpdateRegister reg regOp value

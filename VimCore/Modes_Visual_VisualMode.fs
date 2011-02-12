@@ -184,16 +184,6 @@ type internal VisualMode
         let visualSimple = 
             seq {
                 yield (
-                    ["d"], 
-                    CommandFlags.Repeatable, 
-                    Some ModeKind.Normal, 
-                    (fun _ reg span -> 
-                        _operations.DeleteSpan span 
-                        _operations.UpdateRegisterForSpan reg RegisterOperation.Delete span OperationKind.CharacterWise),
-                    (fun _ reg col -> 
-                        _operations.DeleteBlock col 
-                        _operations.UpdateRegisterForCollection reg RegisterOperation.Delete col OperationKind.CharacterWise))
-                yield (
                     ["D"; "X"],
                     CommandFlags.Repeatable,
                     Some ModeKind.Normal,
@@ -201,33 +191,13 @@ type internal VisualMode
                         let range = SnapshotLineRangeUtil.CreateForSpan span
                         _operations.DeleteSpan range.ExtentIncludingLineBreak
                         _operations.UpdateRegisterForSpan reg RegisterOperation.Delete range.ExtentIncludingLineBreak OperationKind.LineWise),
-                    (fun _ reg col ->
+                    (fun _ reg (col : NormalizedSnapshotSpanCollection) ->
                         let col = 
                             col
                             |> Seq.map (fun span -> SnapshotSpan(span.Start, span |> SnapshotSpanUtil.GetStartLine |> SnapshotLineUtil.GetEnd))
                             |> NormalizedSnapshotSpanCollectionUtil.OfSeq
                         _operations.DeleteBlock col
                         _operations.UpdateRegisterForCollection reg RegisterOperation.Delete col OperationKind.CharacterWise))
-                yield (
-                    ["x"], 
-                    CommandFlags.Repeatable, 
-                    Some ModeKind.Normal, 
-                    (fun count reg span -> 
-                        _operations.DeleteSpan span 
-                        _operations.UpdateRegisterForSpan reg RegisterOperation.Delete span _operationKind ),
-                    (fun _ reg col -> 
-                        _operations.DeleteBlock col 
-                        _operations.UpdateRegisterForCollection reg RegisterOperation.Delete col _operationKind))
-                yield (
-                    ["<Del>"], 
-                    CommandFlags.Repeatable, 
-                    Some ModeKind.Normal, 
-                    (fun count reg span -> 
-                        _operations.DeleteSpan span 
-                        _operations.UpdateRegisterForSpan reg RegisterOperation.Delete span _operationKind),
-                    (fun _ reg col -> 
-                        _operations.DeleteBlock col
-                        _operations.UpdateRegisterForCollection reg RegisterOperation.Delete col _operationKind))
                 yield (
                     ["<lt>"],
                     CommandFlags.Repeatable ||| CommandFlags.ResetCaret,
@@ -416,21 +386,14 @@ type internal VisualMode
 
     /// Create the CommandBinding instances for the supported command values
     member x.CreateCommandBindings() =
-        (*
-        let normalSeq = 
+        let visualSeq = 
             seq {
-                yield ("p", CommandFlags.Repeatable, NormalCommand.PutAfterCursor)
-                yield (".", CommandFlags.Special, NormalCommand.RepeatLastCommand)
+                yield ("d", CommandFlags.Repeatable, VisualCommand.DeleteHighlightedText)
+                yield ("x", CommandFlags.Repeatable, VisualCommand.DeleteHighlightedText)
+                yield ("<Del>", CommandFlags.Repeatable, VisualCommand.DeleteHighlightedText)
             } |> Seq.map (fun (str, flags, command) -> 
                 let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
-                CommandBinding.NormalCommand2(keyInputSet, flags, command))
-            
-        let motionSeq = 
-            seq {
-                yield ("y", CommandFlags.None, NormalCommand.Yank)
-            } |> Seq.map (fun (str, flags, command) -> 
-                let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
-                CommandBinding.MotionCommand2(keyInputSet, flags, command)) *)
+                CommandBinding.VisualCommand2(keyInputSet, flags, command))
 
         let complexSeq = 
             seq {
@@ -438,8 +401,8 @@ type internal VisualMode
             } |> Seq.map (fun (str, flags, bindCommand) -> 
                 let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
                 CommandBinding.ComplexVisualCommand(keyInputSet, flags, bindCommand))
-        complexSeq
-        // Seq.append normalSeq motionSeq
+
+        Seq.append visualSeq complexSeq
 
     member x.EnsureCommandsBuilt() =
         if not _builtCommands then

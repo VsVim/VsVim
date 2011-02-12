@@ -32,6 +32,11 @@ type StringData =
 
     static member OfSeq seq =  seq |> NormalizedSnapshotSpanCollectionUtil.OfSeq |> StringData.OfNormalizedSnasphotSpanCollection
 
+    static member OfEditSpan editSpan =
+        match editSpan with
+        | EditSpan.Single span -> StringData.OfSpan span
+        | EditSpan.Block col -> StringData.OfNormalizedSnasphotSpanCollection col
+
 [<RequireQualifiedAccess>]
 type NumberedRegister = 
     | Register_0

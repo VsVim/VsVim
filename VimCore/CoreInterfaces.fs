@@ -622,6 +622,19 @@ type VisualSpan =
         | VisualSpan.Line range -> [range.ExtentIncludingLineBreak] |> Seq.ofList
         | VisualSpan.Block col -> col :> SnapshotSpan seq
 
+    /// Returns the start point of the Visual Span.  This can be None in the case
+    /// of an empty Block selection.
+    member x.Start =
+        match x with
+        | Character span -> 
+            Some span.Start
+        | Line range -> 
+            Some range.Start
+        | Block col -> 
+            match SeqUtil.tryHeadOnly col with
+            | None -> None
+            | Some span -> Some span.Start
+
 /// Information about the attributes of Command
 [<System.Flags>]
 type CommandFlags =
@@ -686,6 +699,12 @@ type CommandData = {
 [<RequireQualifiedAccess>]
 type NormalCommand = 
 
+    /// Delete the character at the current cursor position.  Implements the "x" command
+    | DeleteCharacterAtCursor
+
+    /// Delete the character before the cursor. Implements the "X" command
+    | DeleteCharacterBeforeCursor
+
     /// Jump to the specified mark 
     | JumpToMark of char
 
@@ -708,12 +727,18 @@ type NormalCommand =
     /// Set the specified mark to the current value of the caret
     | SetMarkToCaret of char
 
+    /// Substitute the character at the cursor
+    | SubstituteCharacterAtCursor
+
     /// Yank the given motion into a register
     | Yank of MotionData
 
 /// Visual mode commands which can be executed by the user 
 [<RequireQualifiedAccess>]
 type VisualCommand = 
+
+    /// Delte the highlighted text and put it into a register
+    | DeleteHighlightedText
 
     /// Put the contents of the register into the 
     | PutAfterCursor

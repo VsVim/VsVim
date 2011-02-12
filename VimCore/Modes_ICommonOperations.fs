@@ -274,6 +274,9 @@ type ICommonOperations =
     abstract Undo : count:int -> unit
 
     /// Update the register for the given register operation
+    abstract UpdateRegister : Register -> RegisterOperation -> EditSpan -> OperationKind -> unit
+
+    /// Update the register for the given register operation
     abstract UpdateRegisterForSpan : Register -> RegisterOperation -> SnapshotSpan -> OperationKind -> unit
 
     /// Update the register for the given register operation
