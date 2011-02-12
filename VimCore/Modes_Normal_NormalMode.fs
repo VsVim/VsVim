@@ -97,13 +97,13 @@ type internal NormalMode
                 let func count reg (data:MotionResult) = 
                     _operations.ChangeLetterCase data.OperationEditSpan
                     CommandResult.Completed ModeSwitch.NoSwitch
-                CommandBinding.MotionCommand(name, CommandFlags.Repeatable, func)
+                CommandBinding.LegacyMotionCommand(name, CommandFlags.Repeatable, func)
             else
                 let func count _ = 
                     let count = CommandUtil2.CountOrDefault count
                     _operations.ChangeLetterCaseAtCursor count
                     CommandResult.Completed ModeSwitch.NoSwitch
-                CommandBinding.SimpleCommand(name, CommandFlags.Repeatable, func)
+                CommandBinding.LegacySimpleCommand(name, CommandFlags.Repeatable, func)
         name,command
 
     /// Create the CommandBinding instances for the supported NormalCommand values
@@ -118,14 +118,14 @@ type internal NormalMode
                 yield (".", CommandFlags.Special, NormalCommand.RepeatLastCommand)
             } |> Seq.map (fun (str, flags, command) -> 
                 let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
-                CommandBinding.NormalCommand2(keyInputSet, flags, command))
+                CommandBinding.NormalCommand(keyInputSet, flags, command))
             
         let motionSeq = 
             seq {
                 yield ("y", CommandFlags.None, NormalCommand.Yank)
             } |> Seq.map (fun (str, flags, command) -> 
                 let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
-                CommandBinding.MotionCommand2(keyInputSet, flags, command))
+                CommandBinding.MotionCommand(keyInputSet, flags, command))
 
         let complexSeq = 
             seq {
@@ -160,7 +160,7 @@ type internal NormalMode
                         _operations.UpdateRegisterForSpan reg RegisterOperation.Delete span OperationKind.LineWise)
                 yield (
                     "yy", 
-                    CommandFlags.Repeatable, 
+                    CommandFlags.None, 
                     ModeSwitch.NoSwitch,
                     fun count reg -> 
                         let point = TextViewUtil.GetCaretPoint _bufferData.TextView
@@ -562,7 +562,7 @@ type internal NormalMode
                     let count = CommandUtil2.CountOrDefault count
                     func count reg
                     result
-                CommandBinding.SimpleCommand(name, kind, func2))
+                CommandBinding.LegacySimpleCommand(name, kind, func2))
 
         let needCountAsOpt = 
             seq {
@@ -590,7 +590,7 @@ type internal NormalMode
                     let func2 count reg = 
                         func count reg
                         CommandResult.Completed ModeSwitch.NoSwitch
-                    CommandBinding.SimpleCommand(name, kind, func2)))
+                    CommandBinding.LegacySimpleCommand(name, kind, func2)))
             |> Seq.concat
 
         Seq.append allWithCount needCountAsOpt 
@@ -661,7 +661,7 @@ type internal NormalMode
                 | None -> CommandResult.Completed ModeSwitch.NoSwitch
                 | Some(modeKind) -> CommandResult.Completed (ModeSwitch.SwitchMode modeKind)
             let flags = extraFlags ||| CommandFlags.Repeatable
-            CommandBinding.MotionCommand(name, flags, func2))
+            CommandBinding.LegacyMotionCommand(name, flags, func2))
 
     member this.Reset() =
         _runner.ResetState()

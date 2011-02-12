@@ -846,28 +846,28 @@ type CommandBinding =
     /// Represents a Command which has no motion modifiers.  The  delegate takes 
     /// an optional count and a Register.  If unspecified the default register
     /// will be used
-    | SimpleCommand of KeyInputSet * CommandFlags * (int option -> Register -> CommandResult)
+    | LegacySimpleCommand of KeyInputSet * CommandFlags * (int option -> Register -> CommandResult)
 
     /// Represents a Command prefix which has an associated motion.  The delegate takes
     /// an optional count, a Register and a MotionResult value.  If unspecified the default
     /// register will be used
-    | MotionCommand of KeyInputSet * CommandFlags * (int option -> Register -> MotionResult -> CommandResult)
+    | LegacyMotionCommand of KeyInputSet * CommandFlags * (int option -> Register -> MotionResult -> CommandResult)
 
     /// Represents a command which has a name and relies on the Visual Mode Span to 
     /// execute the command
-    | VisualCommand of KeyInputSet * CommandFlags * VisualKind * (int option -> Register -> VisualSpan -> CommandResult) 
+    | LegacyVisualCommand of KeyInputSet * CommandFlags * VisualKind * (int option -> Register -> VisualSpan -> CommandResult) 
 
     /// KeyInputSet bound to a particular NormalCommand instance
-    | NormalCommand2 of KeyInputSet * CommandFlags * NormalCommand
+    | NormalCommand of KeyInputSet * CommandFlags * NormalCommand
 
     /// KeyInputSet bound to a complex NormalCommand instance
     | ComplexNormalCommand of KeyInputSet * CommandFlags * BindData<NormalCommand>
 
     /// KeyInputSet bound to a particular NormalCommand instance which takes a Motion Argument
-    | MotionCommand2 of KeyInputSet * CommandFlags * (MotionData -> NormalCommand)
+    | MotionCommand of KeyInputSet * CommandFlags * (MotionData -> NormalCommand)
 
     /// KeyInputSet bound to a particular VisualCommand instance
-    | VisualCommand2 of KeyInputSet * CommandFlags * VisualCommand
+    | VisualCommand of KeyInputSet * CommandFlags * VisualCommand
 
     /// KeyInputSet bound to a complex VisualCommand instance
     | ComplexVisualCommand of KeyInputSet * CommandFlags * BindData<VisualCommand>
@@ -877,24 +877,24 @@ type CommandBinding =
     /// The raw command inputs
     member x.KeyInputSet = 
         match x with
-        | SimpleCommand(value, _, _ ) -> value
-        | MotionCommand(value, _, _) -> value
-        | VisualCommand(value, _, _, _) -> value
-        | NormalCommand2 (value, _, _) -> value
-        | MotionCommand2 (value, _, _) -> value
-        | VisualCommand2 (value, _, _) -> value
+        | LegacySimpleCommand(value, _, _ ) -> value
+        | LegacyMotionCommand(value, _, _) -> value
+        | LegacyVisualCommand(value, _, _, _) -> value
+        | NormalCommand (value, _, _) -> value
+        | MotionCommand (value, _, _) -> value
+        | VisualCommand (value, _, _) -> value
         | ComplexNormalCommand (value, _, _) -> value
         | ComplexVisualCommand (value, _, _) -> value
 
     /// The kind of the Command
     member x.CommandFlags =
         match x with
-        | SimpleCommand(_, value, _ ) -> value
-        | MotionCommand(_, value, _) -> value
-        | VisualCommand(_, value, _, _) -> value
-        | NormalCommand2 (_, value, _) -> value
-        | MotionCommand2 (_, value, _) -> value
-        | VisualCommand2 (_, value, _) -> value
+        | LegacySimpleCommand(_, value, _ ) -> value
+        | LegacyMotionCommand(_, value, _) -> value
+        | LegacyVisualCommand(_, value, _, _) -> value
+        | NormalCommand (_, value, _) -> value
+        | MotionCommand (_, value, _) -> value
+        | VisualCommand (_, value, _) -> value
         | ComplexNormalCommand (_, value, _) -> value
         | ComplexVisualCommand (_, value, _) -> value
 
@@ -1058,7 +1058,7 @@ type MotionFlags =
     | HandlesEscape = 0x4
 
 /// Represents the types of MotionCommands which exist
-type MotionCommand =
+type LegacyMotionCommand =
 
     /// Simple motion which comprises of a single KeyInput and a function which given 
     /// a start point and count will produce the motion.  None is returned in the 
@@ -1110,8 +1110,8 @@ type IMotionCapture =
     /// Associated ITextView
     abstract TextView : ITextView
     
-    /// Set of supported MotionCommand
-    abstract MotionCommands : seq<MotionCommand>
+    /// Set of supported LegacyMotionCommand
+    abstract MotionCommands : seq<LegacyMotionCommand>
 
     /// Get the motion starting with the given KeyInput
     abstract GetOperatorMotion : KeyInput -> BindResult<Motion * int option>
@@ -1134,7 +1134,7 @@ type CommandRunnerState =
     | NotEnoughInput
 
     /// There exist many pairs of commands where one is a Motion and another is a Simple command
-    /// where the name of the Motion is a prefix of the Simple command.  The MotionCommand is 
+    /// where the name of the Motion is a prefix of the Simple command.  The LegacyMotionCommand is 
     /// captured in the first item of the tuple and all other commands with a matching prefix are
     /// captured in the list
     | NotEnoughMatchingPrefix of CommandBinding * CommandBinding list * KeyRemapMode option

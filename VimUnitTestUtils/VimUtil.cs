@@ -147,7 +147,7 @@ namespace Vim.UnitTest
             var fsharpFunc = func.ToFSharpFunc();
             var list = name.Select(KeyInputUtil.CharToKeyInput).ToFSharpList();
             var commandName = KeyInputSet.NewManyKeyInputs(list);
-            return CommandBinding.NewSimpleCommand(commandName, CommandFlags.None, fsharpFunc);
+            return CommandBinding.NewLegacySimpleCommand(commandName, CommandFlags.None, fsharpFunc);
         }
 
         internal static ITextStructureNavigator CreateTextStructureNavigator(ITextBuffer textBuffer)
@@ -176,7 +176,7 @@ namespace Vim.UnitTest
             var fsharpFunc = func.ToFSharpFunc();
             var list = name.Select(KeyInputUtil.CharToKeyInput).ToFSharpList();
             var commandName = KeyInputSet.NewManyKeyInputs(list);
-            return CommandBinding.NewMotionCommand(commandName, CommandFlags.None, fsharpFunc);
+            return CommandBinding.NewLegacyMotionCommand(commandName, CommandFlags.None, fsharpFunc);
         }
 
         internal static CommandBinding CreateVisualCommand(
@@ -191,21 +191,21 @@ namespace Vim.UnitTest
             {
                 func = (x, y, z) => CommandResult.NewCompleted(ModeSwitch.NoSwitch);
             }
-            return CommandBinding.NewVisualCommand(
+            return CommandBinding.NewLegacyVisualCommand(
                 KeyNotationUtil.StringToKeyInputSet(name),
                 flagsArg,
                 kind,
                 func.ToFSharpFunc());
         }
 
-        internal static MotionCommand CreateSimpleMotion(
+        internal static LegacyMotionCommand CreateSimpleMotion(
             string name,
             Motion motion,
             MotionFlags? flags = null)
         {
             var flagsRaw = flags ?? MotionFlags.CursorMovement;
             var commandName = KeyNotationUtil.StringToKeyInputSet(name);
-            return MotionCommand.NewSimpleMotionCommand(
+            return LegacyMotionCommand.NewSimpleMotionCommand(
                 commandName,
                 flagsRaw,
                 motion);
@@ -230,7 +230,7 @@ namespace Vim.UnitTest
 
         {
             command = command ?? NormalCommand.PutAfterCursor;
-            return CommandBinding.NewNormalCommand2(KeyNotationUtil.StringToKeyInputSet(name), flags, command);
+            return CommandBinding.NewNormalCommand(KeyNotationUtil.StringToKeyInputSet(name), flags, command);
         }
 
         internal static CommandBinding CreateCommandBindingNormalComplex(

@@ -54,9 +54,9 @@ type internal CommandFactory
             let funcWithReg opt reg = 
                 func (CommandUtil2.CountOrDefault opt)
                 CommandResult.Completed NoSwitch
-            CommandBinding.SimpleCommand (kiSet,CommandFlags.Movement, funcWithReg))
+            CommandBinding.LegacySimpleCommand (kiSet,CommandFlags.Movement, funcWithReg))
 
-    /// Build up a set of MotionCommand values from applicable Motion values.  These will 
+    /// Build up a set of LegacyMotionCommand values from applicable Motion values.  These will 
     /// move the cursor to the result of the motion
     member x.CreateMovementsFromMotions() =
         let processMotionCommand command =
@@ -65,7 +65,7 @@ type internal CommandFactory
 
                 // Convert the Motion into a NormalCommand which moves the caret for the given Motion
                 let command = NormalCommand.MoveCaretToMotion motion
-                CommandBinding.NormalCommand2(name, CommandFlags.Movement, command) 
+                CommandBinding.NormalCommand(name, CommandFlags.Movement, command) 
 
             | ComplexMotionCommand(name, motionFlags, bindData) ->
 

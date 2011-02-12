@@ -66,12 +66,12 @@ type internal VisualMode
         factory.CreateMovementCommands()
         |> Seq.map (fun (command) ->
             match command with
-            | CommandBinding.SimpleCommand(name, flags, func) -> CommandBinding.SimpleCommand (name, flags, wrapSimple func) |> Some
-            | CommandBinding.MotionCommand (name, flags, func) -> CommandBinding.MotionCommand (name, flags,wrapMotion func) |> Some
-            | CommandBinding.VisualCommand (_) -> Some command
-            | CommandBinding.NormalCommand2 _ -> None
-            | CommandBinding.MotionCommand2 _ -> None
-            | CommandBinding.VisualCommand2 _ -> None
+            | CommandBinding.LegacySimpleCommand(name, flags, func) -> CommandBinding.LegacySimpleCommand (name, flags, wrapSimple func) |> Some
+            | CommandBinding.LegacyMotionCommand (name, flags, func) -> CommandBinding.LegacyMotionCommand (name, flags,wrapMotion func) |> Some
+            | CommandBinding.LegacyVisualCommand (_) -> Some command
+            | CommandBinding.NormalCommand _ -> None
+            | CommandBinding.MotionCommand _ -> None
+            | CommandBinding.VisualCommand _ -> None
             | CommandBinding.ComplexNormalCommand _ -> None
             | CommandBinding.ComplexVisualCommand _ -> None)
         |> SeqUtil.filterToSome
@@ -166,7 +166,7 @@ type internal VisualMode
                     let count = CommandUtil2.CountOrDefault count
                     func count reg 
                     CommandResult.Completed modeSwitch
-                CommandBinding.SimpleCommand (kiSet, flags, func2) )
+                CommandBinding.LegacySimpleCommand (kiSet, flags, func2) )
 
         /// Commands which must customize their return
         let customReturn = 
@@ -178,7 +178,7 @@ type internal VisualMode
             }
             |> Seq.map (fun (name,flags,func) ->
                 let name = KeyNotationUtil.StringToKeyInputSet name
-                CommandBinding.SimpleCommand (name, flags, func) )
+                CommandBinding.LegacySimpleCommand (name, flags, func) )
 
         /// Visual Commands
         let visualSimple = 
@@ -377,7 +377,7 @@ type internal VisualMode
                         runVisualCommand funcNormal funcBlock count reg visualSpan
                         CommandResult.Completed modeSwitch
     
-                    CommandBinding.VisualCommand(kiSet, flags, _visualKind, func2)))
+                    CommandBinding.LegacyVisualCommand(kiSet, flags, _visualKind, func2)))
             |> Seq.concat
 
         Seq.append simples visualSimple 
@@ -393,7 +393,7 @@ type internal VisualMode
                 yield ("<Del>", CommandFlags.Repeatable, VisualCommand.DeleteHighlightedText)
             } |> Seq.map (fun (str, flags, command) -> 
                 let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
-                CommandBinding.VisualCommand2(keyInputSet, flags, command))
+                CommandBinding.VisualCommand(keyInputSet, flags, command))
 
         let complexSeq = 
             seq {

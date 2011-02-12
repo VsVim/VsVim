@@ -154,7 +154,7 @@ type internal CommandRunner
                     inner commandName previousCommandName keyInput
                 BindResult.NeedMoreInput { KeyRemapMode = None; BindFunction = inner }
 
-            // Used to complete the transition from a MotionCommand to a NormalCommand
+            // Used to complete the transition from a LegacyMotionCommand to a NormalCommand
             let completeMotion commandBinding convertFunc (motion, motionCount) =
                 let argument = { MotionContext = MotionContext.AfterOperator; OperatorCount = count; MotionCount = motionCount }
                 let data = { Motion = motion; MotionArgument = argument }
@@ -164,18 +164,18 @@ type internal CommandRunner
             match Map.tryFind commandName _commandMap with
             | Some(command) ->
                 match command with
-                | CommandBinding.SimpleCommand(_, _, func) -> 
+                | CommandBinding.LegacySimpleCommand(_, _, func) -> 
                     let func () = func count (commandData.GetRegister _registerMap)
                     BindResult.Complete (Command.LegacyCommand func, command)
-                | CommandBinding.NormalCommand2(_, _, normalCommand) -> 
+                | CommandBinding.NormalCommand(_, _, normalCommand) -> 
                     BindResult.Complete (Command.NormalCommand (normalCommand, commandData), command)
-                | CommandBinding.VisualCommand(_, _, kind, func) -> 
+                | CommandBinding.LegacyVisualCommand(_, _, kind, func) -> 
                     let visualSpan = x.GetVisualSpan kind
                     let func () = func count (commandData.GetRegister _registerMap) visualSpan
                     BindResult.Complete (Command.LegacyCommand func, command)
-                | CommandBinding.VisualCommand2(_, _, visualCommand) ->
+                | CommandBinding.VisualCommand(_, _, visualCommand) ->
                     BindResult.Complete (Command.VisualCommand (visualCommand, commandData, x.GetVisualSpan _visualKind), command)
-                | CommandBinding.MotionCommand(_, _, func) -> 
+                | CommandBinding.LegacyMotionCommand(_, _, func) -> 
                     // Can't just call this.  It's possible there is a non-motion command with a 
                     // longer command commandInputs.  If there are any other commands which have a 
                     // matching prefix we can't bind to the command yet
@@ -190,7 +190,7 @@ type internal CommandRunner
                         // motion variety we are in operator pending
                         _data <- {_data with State = NotEnoughMatchingPrefix (command, withPrefix |> List.ofSeq, Some KeyRemapMode.OperatorPending)}
                         bindNext()
-                | CommandBinding.MotionCommand2 (_, _, func) -> 
+                | CommandBinding.MotionCommand (_, _, func) -> 
                     // Can't just call this.  It's possible there is a non-motion command with a 
                     // longer command commandInputs.  If there are any other commands which have a 
                     // matching prefix we can't bind to the command yet
@@ -218,7 +218,7 @@ type internal CommandRunner
                 if commandName.KeyInputs.Length > 1 && not hasPrefixMatch then
     
                     // It's possible to have 2 comamnds with similar prefixes where one of them is a 
-                    // MotionCommand.  Consider
+                    // LegacyMotionCommand.  Consider
                     //
                     //  g~{motion}
                     //  g~g~
@@ -229,12 +229,12 @@ type internal CommandRunner
                     match Map.tryFind previousCommandName _commandMap with
                     | Some(command) ->
                         match command with
-                        | CommandBinding.SimpleCommand _ -> bindNext()
+                        | CommandBinding.LegacySimpleCommand _ -> bindNext()
+                        | CommandBinding.LegacyVisualCommand _ -> bindNext()
+                        | CommandBinding.LegacyMotionCommand (_, _, func) -> x.BindLegacyMotion command currentInput count register func
+                        | CommandBinding.MotionCommand (_, _, func) -> x.BindMotion keyInput (completeMotion command func)
+                        | CommandBinding.NormalCommand _ -> bindNext()
                         | CommandBinding.VisualCommand _ -> bindNext()
-                        | CommandBinding.MotionCommand (_, _, func) -> x.BindLegacyMotion command currentInput count register func
-                        | CommandBinding.MotionCommand2 (_, _, func) -> x.BindMotion keyInput (completeMotion command func)
-                        | CommandBinding.NormalCommand2 _ -> bindNext()
-                        | CommandBinding.VisualCommand2 _ -> bindNext()
                         | CommandBinding.ComplexNormalCommand _ -> bindNext()
                         | CommandBinding.ComplexVisualCommand _ -> bindNext()
                     | None -> 
