@@ -540,5 +540,39 @@ namespace VimCore.UnitTest
             Assert.AreEqual("f", UnnamedRegister.StringValue);
             Assert.AreEqual(0, _textView.GetCaretPoint().Position);
         }
+
+        [Test]
+        public void DeleteLinesIncludingLineBreak_Simple()
+        {
+            Create("foo", "bar", "baz", "jaz");
+            _commandUtil.DeleteLines(1, UnnamedRegister);
+            Assert.AreEqual("bar", _textView.GetLine(0).GetText());
+            Assert.AreEqual("foo" + Environment.NewLine, UnnamedRegister.StringValue);
+            Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+        }
+
+        [Test]
+        public void DeleteLinesIncludingLineBreak_WithCount()
+        {
+            Create("foo", "bar", "baz", "jaz");
+            _commandUtil.DeleteLines(2, UnnamedRegister);
+            Assert.AreEqual("baz", _textView.GetLine(0).GetText());
+            Assert.AreEqual("foo" + Environment.NewLine + "bar" + Environment.NewLine, UnnamedRegister.StringValue);
+            Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// Delete the last line and make sure it actually deletes a line from the buffer
+        /// </summary>
+        [Test]
+        public void DeleteLinesIncludingLineBreak_LastLine()
+        {
+            Create("foo", "bar");
+            _textView.MoveCaretToLine(1);
+            _commandUtil.DeleteLines(1, UnnamedRegister);
+            Assert.AreEqual("bar" + Environment.NewLine, UnnamedRegister.StringValue);
+            Assert.AreEqual(1, _textView.TextSnapshot.LineCount);
+            Assert.AreEqual("foo", _textView.GetLine(0).GetText());
+        }
     }
 }

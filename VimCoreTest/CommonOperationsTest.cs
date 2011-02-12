@@ -1259,46 +1259,6 @@ namespace VimCore.UnitTest
             Assert.AreEqual("oo" + Environment.NewLine + "bar", span.GetText());
         }
 
-        [Test]
-        public void DeleteLinesIncludingLineBreak1()
-        {
-            Create("foo", "bar", "baz", "jaz");
-            var span = _operations.DeleteLinesIncludingLineBreak(1);
-            Assert.AreEqual("foo" + Environment.NewLine, span.GetText());
-            Assert.AreEqual("bar", _textView.TextSnapshot.GetLineRange(0).GetText());
-            Assert.AreEqual(3, _textView.TextSnapshot.LineCount);
-        }
-
-        [Test]
-        public void DeleteLinesIncludingLineBreak2()
-        {
-            Create("foo", "bar", "baz", "jaz");
-            var span = _operations.DeleteLinesIncludingLineBreak(2);
-            Assert.AreEqual("foo" + Environment.NewLine + "bar" + Environment.NewLine, span.GetText());
-            Assert.AreEqual("baz", _textView.TextSnapshot.GetLineRange(0).GetText());
-            Assert.AreEqual(2, _textView.TextSnapshot.LineCount);
-        }
-
-        [Test]
-        [Description("Deleting the last line should change the line count")]
-        public void DeleteLinesIncludingLineBreak3()
-        {
-            Create("foo", "bar");
-            _textView.MoveCaretTo(_textView.GetLine(1).Start);
-            var span = _operations.DeleteLinesIncludingLineBreak(1);
-            Assert.AreEqual(Environment.NewLine + "bar", span.GetText());
-            Assert.AreEqual(1, _textView.TextSnapshot.LineCount);
-        }
-
-        [Test]
-        public void DeleteLinesIncludingLineBreak4()
-        {
-            Create("foo");
-            var span = _operations.DeleteLinesIncludingLineBreak(1);
-            Assert.AreEqual("foo", span.GetText());
-            Assert.AreEqual(1, _textView.TextSnapshot.LineCount);
-            Assert.AreEqual(String.Empty, _textView.TextSnapshot.GetText());
-        }
 
         [Test]
         public void DeleteLinesIncludingLineBreakFromCursor1()

@@ -389,6 +389,11 @@ module RegisterNameUtil =
 
     let CharToRegister c = Map.tryFind c RegisterMap 
 
+[<RequireQualifiedAccess>]
+type RegisterOperation = 
+    | Delete
+    | Yank
+
 /// Value stored in the register.  Contains contextual information on how the data
 /// was yanked from the buffer
 type RegisterValue = {

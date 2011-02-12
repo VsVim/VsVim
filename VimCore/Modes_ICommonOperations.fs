@@ -7,10 +7,6 @@ open Microsoft.VisualStudio.Text.Editor
 open Microsoft.VisualStudio.Text.Operations
 open Microsoft.VisualStudio.Text.Outlining
 
-[<RequireQualifiedAccess>]
-type RegisterOperation = 
-    | Delete
-    | Yank
 
 type OperationsData = {
     EditorOperations : IEditorOperations
@@ -104,9 +100,6 @@ type ICommonOperations =
     /// Delete from the cursor to the end of the current line and (count-1) more 
     /// lines.  
     abstract DeleteLinesFromCursor : count:int -> SnapshotSpan
-
-    /// Delete count lines from the buffer starting from the cursor line
-    abstract DeleteLinesIncludingLineBreak : count:int -> SnapshotSpan
 
     /// Delete from the cursor to the end of the current line and (count-1) more 
     /// lines.  
@@ -275,6 +268,9 @@ type ICommonOperations =
 
     /// Update the register for the given register operation
     abstract UpdateRegister : Register -> RegisterOperation -> EditSpan -> OperationKind -> unit
+
+    /// Update the register for the given register value
+    abstract UpdateRegisterForValue : Register -> RegisterOperation -> RegisterValue -> unit
 
     /// Update the register for the given register operation
     abstract UpdateRegisterForSpan : Register -> RegisterOperation -> SnapshotSpan -> OperationKind -> unit

@@ -204,43 +204,8 @@ type internal CommonOperations ( _data : OperationsData ) =
             | None -> ()
             | Some(point) ->  TextViewUtil.MoveCaretToPoint _textView point 
 
-    /// Updates the given register with the specified value.  This will also update 
-    /// other registers based on the type of update that is being performed.  See 
-    /// :help registers for the full details
     member x.UpdateRegister (reg:Register) regOperation value = 
-        if reg.Name <> RegisterName.Blackhole then
-            reg.Value <- value
-    
-            // If this is not the unnamed register then the unnamed register needs to 
-            // be updated 
-            if reg.Name <> RegisterName.Unnamed then
-                let unnamedReg = _registerMap.GetRegister RegisterName.Unnamed
-                unnamedReg.Value <- value
-    
-            // Update the numbered registers with the new values.  First shift the existing
-            // values up the stack
-            let intToName num = 
-                let c = char (num + (int '0'))
-                let name = NumberedRegister.OfChar c |> Option.get
-                RegisterName.Numbered name
-    
-            // Next is insert the new value into the numbered register list.  New value goes
-            // into 0 and the rest shift up
-            for i in [9;8;7;6;5;4;3;2;1] do
-                let cur = intToName i |> _registerMap.GetRegister
-                let prev = intToName (i-1) |> _registerMap.GetRegister
-                cur.Value <- prev.Value
-            let regZero = _registerMap.GetRegister (RegisterName.Numbered NumberedRegister.Register_0)
-            regZero.Value <- value
-    
-            // Possibily update the small delete register
-            if reg.Name <> RegisterName.Unnamed && regOperation = RegisterOperation.Delete then
-                match value.Value with
-                | StringData.Block(_) -> ()
-                | StringData.Simple(str) -> 
-                    if not (StringUtil.containsChar str '\n') then
-                        let regSmallDelete = _registerMap.GetRegister RegisterName.SmallDelete
-                        regSmallDelete.Value <- value
+        _registerMap.SetRegisterValue reg regOperation value
 
     member x.MoveToNextWordCore kind count isWholeWord = 
         let point = TextViewUtil.GetCaretPoint _textView
@@ -697,26 +662,6 @@ type internal CommonOperations ( _data : OperationsData ) =
             let span = SnapshotSpan(point, span.End)
             x.DeleteSpan span 
             span
-        /// Delete count lines from the cursor.  The last line is an unfortunate special case here 
-        /// as it does not have a line break.  Hence in order to delete the line we must delete the 
-        /// line break at the end of the preceeding line.  
-        ///
-        /// This cannot be normalized by always deleting the line break from the previous line because
-        /// it would still break for the first line.  This is an unfortunate special case we must 
-        /// deal with
-        member x.DeleteLinesIncludingLineBreak count = 
-            let point,line = TextViewUtil.GetCaretPointAndLine _textView
-            let snapshot = point.Snapshot
-            let span = 
-                if 1 = count && line.LineNumber = SnapshotUtil.GetLastLineNumber snapshot && snapshot.LineCount > 1 then
-                    let above = snapshot.GetLineFromLineNumber (line.LineNumber-1)
-                    SnapshotSpan(above.End, line.End)
-                else
-                    let point = line.Start
-                    let span = SnapshotPointUtil.GetLineRangeSpanIncludingLineBreak point count
-                    SnapshotSpan(point, span.End)
-            x.DeleteSpan span 
-            span
         member x.DeleteLinesIncludingLineBreakFromCursor count = 
             let point = TextViewUtil.GetCaretPoint _textView
             let span = SnapshotPointUtil.GetLineRangeSpanIncludingLineBreak point count
@@ -975,6 +920,8 @@ type internal CommonOperations ( _data : OperationsData ) =
 
         member x.UpdateRegister reg regOp editSpan opKind = 
             let value = { Value = StringData.OfEditSpan editSpan; OperationKind = opKind }
+            x.UpdateRegister reg regOp value
+        member x.UpdateRegisterForValue reg regOp value = 
             x.UpdateRegister reg regOp value
         member x.UpdateRegisterForSpan reg regOp span opKind = 
             let value = { Value=StringData.OfSpan span; OperationKind=opKind }

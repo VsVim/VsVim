@@ -17,6 +17,9 @@ type IRegisterMap =
     /// Get the register with the specified name
     abstract GetRegister : RegisterName -> Register
 
+    /// Update the register with the specified value
+    abstract SetRegisterValue : Register -> RegisterOperation -> RegisterValue -> unit
+
 type IStatusUtil =
 
     /// Raised when there is a special status message that needs to be reported
@@ -704,6 +707,9 @@ type NormalCommand =
 
     /// Delete the character before the cursor. Implements the "X" command
     | DeleteCharacterBeforeCursor
+
+    /// Delete lines from the buffer: dd
+    | DeleteLines
 
     /// Jump to the specified mark 
     | JumpToMark of char

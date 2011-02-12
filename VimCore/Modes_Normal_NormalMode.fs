@@ -110,6 +110,7 @@ type internal NormalMode
     member x.CreateCommandBindings() =
         let normalSeq = 
             seq {
+                yield ("dd", CommandFlags.Repeatable, NormalCommand.DeleteLines)
                 yield ("p", CommandFlags.Repeatable, NormalCommand.PutAfterCursor)
                 yield ("s", CommandFlags.LinkedWithNextTextChange ||| CommandFlags.Repeatable, NormalCommand.SubstituteCharacterAtCursor)
                 yield ("x", CommandFlags.Repeatable, NormalCommand.DeleteCharacterAtCursor)
@@ -151,13 +152,6 @@ type internal NormalMode
         let doNothing _ _ = ()
         let commands = 
             seq {
-                yield (
-                    "dd", 
-                    CommandFlags.Repeatable, 
-                    ModeSwitch.NoSwitch,
-                    fun count reg -> 
-                        let span = _operations.DeleteLinesIncludingLineBreak count 
-                        _operations.UpdateRegisterForSpan reg RegisterOperation.Delete span OperationKind.LineWise)
                 yield (
                     "yy", 
                     CommandFlags.None, 

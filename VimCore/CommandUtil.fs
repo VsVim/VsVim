@@ -111,7 +111,8 @@ type internal CommandUtil
                 _operations.MoveCaretForVirtualEdit())
 
             // Put the deleted text into the specified register
-            _operations.UpdateRegister register RegisterOperation.Delete (EditSpan.Single span) OperationKind.CharacterWise
+            let value = { Value = StringData.OfSpan span; OperationKind = OperationKind.CharacterWise }
+            _registerMap.SetRegisterValue register RegisterOperation.Delete value
 
         CommandResult.Completed modeSwitch
 
@@ -133,7 +134,8 @@ type internal CommandUtil
             TextViewUtil.MoveCaretToPosition _textView startPoint.Position)
 
         // Put the deleted text into the specified register once the delete completes
-        _operations.UpdateRegister register RegisterOperation.Delete (EditSpan.Single span) OperationKind.CharacterWise
+        let value = { Value = StringData.OfSpan span; OperationKind = OperationKind.CharacterWise }
+        _registerMap.SetRegisterValue register RegisterOperation.Delete value
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
@@ -163,6 +165,40 @@ type internal CommandUtil
             TextViewUtil.MoveCaretToPosition _textView startPoint.Position)
 
         CommandResult.Completed ModeSwitch.SwitchPreviousMode
+
+    /// Delete count lines from the cursor.  The caret should be positioned at the start
+    /// of the first line for both undo / redo
+    member x.DeleteLines count register = 
+        let line = x.CaretLine
+        let span, stringData = 
+            if line.LineNumber = SnapshotUtil.GetLastLineNumber x.CurrentSnapshot && x.CurrentSnapshot.LineCount > 1 then
+                // The last line is an unfortunate special case here as it does not have a line break.  Hence 
+                // in order to delete the line we must delete the line break at the end of the preceeding line.  
+                //
+                // This cannot be normalized by always deleting the line break from the previous line because
+                // it would still break for the first line.  This is an unfortunate special case we must 
+                // deal with
+                let above = SnapshotUtil.GetLine x.CurrentSnapshot (line.LineNumber - 1)
+                let span = SnapshotSpan(above.End, line.EndIncludingLineBreak)
+                let data = StringData.Simple (line.GetText() + System.Environment.NewLine)
+                (span, data)
+            else 
+                // Simpler case.  Get the line range and delete
+                let range = SnapshotLineRangeUtil.CreateForLineAndMaxCount x.CaretLine count
+                (range.ExtentIncludingLineBreak, StringData.OfSpan range.ExtentIncludingLineBreak)
+
+        // Use a transaction to properly position the caret for undo / redo.  We want it in the same
+        // place for undo / redo so move it before the transaction
+        TextViewUtil.MoveCaretToPoint _textView span.Start
+        x.EditWithUndoTransaciton "DeleteLines" (fun() -> 
+            let snapshot = _textBuffer.Delete(span.Span)
+            TextViewUtil.MoveCaretToPoint _textView (SnapshotPoint(snapshot, span.Start.Position)))
+
+        // Now update the register after the delete completes
+        let value = { Value = stringData; OperationKind = OperationKind.LineWise }
+        _registerMap.SetRegisterValue register RegisterOperation.Delete value
+
+        CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Run the specified action with a wrapped undo transaction.  This is often necessary when
     /// an edit command manipulates the caret
@@ -339,6 +375,7 @@ type internal CommandUtil
         match command with
         | NormalCommand.DeleteCharacterAtCursor -> x.DeleteCharacterAtCursor count register ModeSwitch.NoSwitch
         | NormalCommand.DeleteCharacterBeforeCursor -> x.DeleteCharacterBeforeCursor count register
+        | NormalCommand.DeleteLines -> x.DeleteLines count register
         | NormalCommand.MoveCaretToMotion motion -> x.MoveCaretToMotion motion data.Count
         | NormalCommand.JumpToMark c -> x.JumpToMark c
         | NormalCommand.Ping func -> x.Ping func data
@@ -380,7 +417,8 @@ type internal CommandUtil
 
     /// Yank the contents of the motion into the specified register
     member x.YankMotion register (result: MotionResult) = 
-        _operations.UpdateRegisterForSpan register RegisterOperation.Yank result.OperationSpan result.OperationKind
+        let value = { Value = StringData.OfSpan result.OperationSpan; OperationKind = result.OperationKind }
+        _registerMap.SetRegisterValue register RegisterOperation.Yank value
         CommandResult.Completed ModeSwitch.NoSwitch
 
     interface ICommandUtil with

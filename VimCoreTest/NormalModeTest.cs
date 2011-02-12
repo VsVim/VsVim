@@ -1531,36 +1531,13 @@ namespace VimCore.UnitTest
 
         #region Delete
 
-        [Test, Description("Make sure a dd is a linewise action")]
-        public void Delete_dd_1()
-        {
-            Create("foo", "bar");
-            var span = _textView.GetLineRange(0).ExtentIncludingLineBreak;
-            _operations
-                .Setup(x => x.DeleteLinesIncludingLineBreak(1))
-                .Returns(span)
-                .Verifiable();
-            _operations
-                .Setup(x => x.UpdateRegisterForSpan(_unnamedRegister, RegisterOperation.Delete, span, OperationKind.LineWise))
-                .Verifiable();
-            _mode.Process("dd");
-            _operations.Verify();
-        }
-
         [Test]
-        public void Delete_dd_2()
+        public void Bind_DeleteLines()
         {
             Create("foo", "bar");
-            var span = _textView.GetLineRange(0).ExtentIncludingLineBreak;
-            _operations
-                .Setup(x => x.DeleteLinesIncludingLineBreak(2))
-                .Returns(span)
-                .Verifiable();
-            _operations
-                .Setup(x => x.UpdateRegisterForSpan(_unnamedRegister, RegisterOperation.Delete, span, OperationKind.LineWise))
-                .Verifiable();
-            _mode.Process("2dd");
-            _operations.Verify();
+            _commandUtil.SetupNormalCommand(NormalCommand.DeleteLines);
+            _mode.Process("dd");
+            _commandUtil.Verify();
         }
 
         [Test]
