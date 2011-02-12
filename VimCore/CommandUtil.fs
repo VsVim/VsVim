@@ -21,11 +21,17 @@ type internal CommandUtil
     let _textBuffer = _textView.TextBuffer
     let mutable _inRepeatLastChange = false
 
+    /// The column of the caret
+    member x.CaretColumn = SnapshotPointUtil.GetColumn x.CaretPoint
+
     /// The SnapshotPoint for the caret
     member x.CaretPoint = TextViewUtil.GetCaretPoint _textView
 
     /// The ITextSnapshotLine for the caret
     member x.CaretLine = TextViewUtil.GetCaretLine _textView
+
+    /// The line number for the caret
+    member x.CaretLineNumber = x.CaretLine.LineNumber
 
     /// The SnapshotPoint and ITextSnapshotLine for the caret
     member x.CaretPointAndLine = TextViewUtil.GetCaretPointAndLine _textView
@@ -38,9 +44,11 @@ type internal CommandUtil
     member x.CalculateVisualSpan stored =
 
         match stored with
-        | StoredVisualSpan.Line _ -> 
-            // REPEAT TODO: Actually implement
-            VisualSpan.Line (SnapshotLineRangeUtil.CreateForLine x.CaretLine)
+        | StoredVisualSpan.Line count -> 
+            // Repeating a Linewise operation just creates a span with the same 
+            // number of lines as the original operation
+            let range = SnapshotLineRangeUtil.CreateForLineAndMaxCount x.CaretLine count
+            VisualSpan.Line range
 
         | StoredVisualSpan.Character (endLineOffset, endOffset) -> 
             // Repeating a characterise span starts from the caret position.  There
@@ -68,10 +76,22 @@ type internal CommandUtil
 
             let span = SnapshotSpan(startPoint, endPoint)
             VisualSpan.Character span
-        | StoredVisualSpan.Block _->
-            // REPEAT TODO: Actually implement
-            let span = SnapshotSpan(x.CurrentSnapshot, 0, 0)
-            let col = NormalizedSnapshotSpanCollection(span)
+        | StoredVisualSpan.Block (length, count) ->
+            // Need to rehydrate spans of length 'length' on 'count' lines from the 
+            // current caret position
+            let column = x.CaretColumn
+            let col = 
+                SnapshotUtil.GetLines x.CurrentSnapshot x.CaretLineNumber SearchKind.Forward
+                |> Seq.truncate count
+                |> Seq.map (fun line ->
+                    let startPoint = 
+                        if column >= line.Length then line.End 
+                        else line.Start.Add(column)
+                    let endPoint = 
+                        if startPoint.Position + length >= line.End.Position then line.End 
+                        else startPoint.Add(length)
+                    SnapshotSpan(startPoint, endPoint))
+                |> NormalizedSnapshotSpanCollectionUtil.OfSeq
             VisualSpan.Block col
 
     /// Run the specified action with a wrapped undo transaction.  This is often necessary when
@@ -200,22 +220,39 @@ type internal CommandUtil
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
-    /// Replace the char under the cursor in visual mode.  No need to use an 
-    /// undo transaction here because we don't want to preserve the selection
-    /// and caret (it's visual mode). 
+    /// Replace the char under the cursor in visual mode.
     member x.ReplaceCharVisual keyInput (visualSpan : VisualSpan) = 
 
         let replaceText = 
             if keyInput = KeyInputUtil.EnterKey then System.Environment.NewLine
             else System.String(keyInput.Char, 1)
 
-        use edit = _textBuffer.CreateEdit()
-        visualSpan.Spans
-        |> Seq.map SnapshotSpanUtil.GetPoints
-        |> Seq.concat
-        |> Seq.iter (fun point -> edit.Replace((Span(point.Position, 1)), replaceText) |> ignore)
+        // First step is we want to update the selection.  A replace char operation
+        // in visual mode should position the caret on the first character and clear
+        // the selection (both before and after).
+        //
+        // The caret can be anywhere at the start of the operation so move it to the
+        // first point before even begining the edit transaction
+        _textView.Selection.Clear()
+        let points = 
+            visualSpan.Spans
+            |> Seq.map SnapshotSpanUtil.GetPoints
+            |> Seq.concat
+        let editPoint = 
+            match points |> SeqUtil.tryHeadOnly with
+            | Some point -> point
+            | None -> x.CaretPoint
+        TextViewUtil.MoveCaretToPoint _textView editPoint
 
-        edit.Apply() |> ignore
+        x.EditWithUndoTransaciton "ReplaceChar" (fun () -> 
+            use edit = _textBuffer.CreateEdit()
+            points |> Seq.iter (fun point -> edit.Replace((Span(point.Position, 1)), replaceText) |> ignore)
+            let snapshot = edit.Apply()
+
+            // Reposition the caret at the start of the edit
+            let editPoint = SnapshotPoint(snapshot, editPoint.Position)
+            TextViewUtil.MoveCaretToPoint _textView editPoint)
+
         CommandResult.Completed (ModeSwitch.SwitchMode ModeKind.Normal)
 
     /// Run the specified Command

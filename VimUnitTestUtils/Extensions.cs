@@ -287,6 +287,16 @@ namespace Vim.UnitTest
             return SnapshotLineRangeUtil.CreateForLineNumberRange(textView.TextSnapshot, startLine, endLine);
         }
 
+        public static SnapshotSpan GetLineSpan(this ITextView textView, int lineNumber, int length)
+        {
+            return GetLineSpan(textView, lineNumber, 0, length);
+        }
+
+        public static SnapshotSpan GetLineSpan(this ITextView textView, int lineNumber, int startOffset, int length)
+        {
+            return GetLineSpan(textView.TextBuffer, lineNumber, startOffset, length);
+        }
+
         public static ITextSnapshotLine GetLastLine(this ITextView textView)
         {
             return textView.TextSnapshot.GetLastLine();
@@ -346,6 +356,17 @@ namespace Vim.UnitTest
         {
             endLine = endLine >= 0 ? endLine : startLine;
             return SnapshotLineRangeUtil.CreateForLineNumberRange(buffer.CurrentSnapshot, startLine, endLine);
+        }
+
+        public static SnapshotSpan GetLineSpan(this ITextBuffer buffer, int lineNumber, int length)
+        {
+            return GetLineSpan(buffer, lineNumber, 0, length);
+        }
+
+        public static SnapshotSpan GetLineSpan(this ITextBuffer buffer, int lineNumber, int startOffset, int length)
+        {
+            var line = buffer.GetLine(lineNumber);
+            return new SnapshotSpan(line.Start.Add(startOffset), length);
         }
 
         public static SnapshotPoint GetPoint(this ITextBuffer buffer, int position)
@@ -440,6 +461,29 @@ namespace Vim.UnitTest
         }
 
         #endregion
+
+        #region VisualSpan
+
+        public static VisualSpan.Character AsCharacter(this VisualSpan span)
+        {
+            Assert.IsTrue(span.IsCharacter);
+            return (VisualSpan.Character) span;
+        }
+
+        public static VisualSpan.Line AsLine(this VisualSpan span)
+        {
+            Assert.IsTrue(span.IsLine);
+            return (VisualSpan.Line) span;
+        }
+
+        public static VisualSpan.Block AsBlock(this VisualSpan span)
+        {
+            Assert.IsTrue(span.IsBlock);
+            return (VisualSpan.Block) span;
+        }
+
+        #endregion
+
 
         #region ICommandRunner
 

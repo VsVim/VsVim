@@ -907,13 +907,14 @@ type StoredVisualSpan =
 
     /// Storing a character wise span.  Only need to know how many lines down is 
     /// the end point and what is the offset of the end point
-    | Character of (int * int)
+    | Character of int * int
 
     /// Storing a linewise span just stores the count of lines
     | Line of int
 
-    /// Storing of a block span records the collection of Spans
-    | Block of Span list
+    /// Storing of a block span records the length of the span and the number of
+    /// lines which should be affected by the Span
+    | Block of int * int
 
     with
 
@@ -956,7 +957,12 @@ type StoredVisualSpan =
         | VisualSpan.Line range ->
             StoredVisualSpan.Line range.Count
         | VisualSpan.Block col -> 
-            StoredVisualSpan.Block (col |> Seq.map (fun span -> span.Span) |> List.ofSeq)
+            let length = 
+                match SeqUtil.tryHeadOnly col with
+                | None -> 0
+                | Some span -> span.Length
+            let count = col.Count
+            StoredVisualSpan.Block (length, count)
 
 [<RequireQualifiedAccess>]
 type TextChange = 

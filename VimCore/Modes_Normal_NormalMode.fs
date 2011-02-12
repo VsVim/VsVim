@@ -89,7 +89,6 @@ type internal NormalMode
             _data <- { _data with IsInReplace = false }
             NormalCommand.ReplaceChar ki)
 
-
     /// Get the informatoin on how to handle the tilde command based on the current setting for tildeop
     member private this.GetTildeCommand count =
         let name = KeyInputUtil.CharToKeyInput '~' |> OneKeyInput

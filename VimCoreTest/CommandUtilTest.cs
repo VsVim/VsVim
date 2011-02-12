@@ -315,7 +315,7 @@ namespace VimCore.UnitTest
         /// ITextBuffer
         /// </summary>
         [Test]
-        public void CalculateVisualSpan_BackAndForth()
+        public void CalculateVisualSpan_CharacterBackAndForth()
         {
             Create("the dog kicked the ball", "into the tree");
 
@@ -330,6 +330,129 @@ namespace VimCore.UnitTest
             action(new SnapshotSpan(_textView.TextSnapshot, 0, 3));
             action(new SnapshotSpan(_textView.TextSnapshot, 0, 4));
             action(new SnapshotSpan(_textView.GetLine(0).Start, _textView.GetLine(1).Start.Add(1)));
+        }
+
+        /// <summary>
+        /// When repeating a multi-line characterwise span where the caret moves left,
+        /// we need to use the caret to the end of the line on the first line
+        /// </summary>
+        [Test]
+        public void CalculateVisualSpan_CharacterMultilineMoveCaretLeft()
+        {
+            Create("the dog", "ball");
+
+            var span = new SnapshotSpan(_textView.GetPoint(3), _textView.GetLine(1).Start.Add(1));
+            var stored = StoredVisualSpan.OfVisualSpan(VisualSpan.NewCharacter(span));
+            _textView.MoveCaretTo(1);
+            var restored = _commandUtil.CalculateVisualSpan(stored);
+            var expected = new SnapshotSpan(_textView.GetPoint(1), _textView.GetLine(1).Start.Add(1));
+            Assert.AreEqual(expected, restored.AsCharacter().Item);
+        }
+
+        /// <summary>
+        /// When restoring for a single line maintain the length but do it from the caret
+        /// point and not the original
+        /// </summary>
+        [Test]
+        public void CalculateVisualSpan_CharacterSingleLine()
+        {
+            Create("the dog kicked the cat", "and ball");
+
+            var span = new SnapshotSpan(_textView.TextSnapshot, 3, 4);
+            var stored = StoredVisualSpan.OfVisualSpan(VisualSpan.NewCharacter(span));
+            _textView.MoveCaretTo(1);
+            var restored = _commandUtil.CalculateVisualSpan(stored);
+            var expected = new SnapshotSpan(_textView.GetPoint(1), 4);
+            Assert.AreEqual(expected, restored.AsCharacter().Item);
+        }
+
+        /// <summary>
+        /// Restore a Linewise span from the same offset
+        /// </summary>
+        [Test]
+        public void CalculateVisualSpan_Linewise()
+        {
+            Create("a", "b", "c", "d");
+            var span = VisualSpan.NewLine(_textView.GetLineRange(0, 1));
+            var stored = StoredVisualSpan.OfVisualSpan(span);
+            var restored = _commandUtil.CalculateVisualSpan(stored);
+            Assert.AreEqual(span, restored);
+        }
+
+        /// <summary>
+        /// Restore a Linewise span from a different offset
+        /// </summary>
+        [Test]
+        public void CalculateVisualSpan_LinewiseDifferentOffset()
+        {
+            Create("a", "b", "c", "d");
+            var span = VisualSpan.NewLine(_textView.GetLineRange(0, 1));
+            var stored = StoredVisualSpan.OfVisualSpan(span);
+            _textView.MoveCaretToLine(1);
+            var restored = _commandUtil.CalculateVisualSpan(stored);
+            Assert.AreEqual(_textView.GetLineRange(1, 2), restored.AsLine().Item);
+        }
+
+        /// <summary>
+        /// Restore a Linewise span from a different offset which causes the count
+        /// to be invalid
+        /// </summary>
+        [Test]
+        public void CalculateVisualSpan_LinewiseCountPastEndOfBuffer()
+        {
+            Create("a", "b", "c", "d");
+            var span = VisualSpan.NewLine(_textView.GetLineRange(0, 2));
+            var stored = StoredVisualSpan.OfVisualSpan(span);
+            _textView.MoveCaretToLine(3);
+            var restored = _commandUtil.CalculateVisualSpan(stored);
+            Assert.AreEqual(_textView.GetLineRange(3, 3), restored.AsLine().Item);
+        }
+
+        /// <summary>
+        /// Restore of Block span at the same offset.  
+        /// </summary>
+        [Test]
+        public void CalculateVisualSpan_Block()
+        {
+            Create("the", "dog", "kicked", "the", "ball");
+
+            var col = new NormalizedSnapshotSpanCollection(
+                new[]
+                {
+                    _textView.GetLineSpan(0, 1),
+                    _textView.GetLineSpan(1, 1)
+                });
+            var span = VisualSpan.NewBlock(col);
+            var stored = StoredVisualSpan.OfVisualSpan(span);
+            var restored = _commandUtil.CalculateVisualSpan(stored);
+            CollectionAssert.AreEquivalent(col, restored.AsBlock().Item);
+        }
+
+        /// <summary>
+        /// Restore of Block span at one character to the right
+        /// </summary>
+        [Test]
+        public void CalculateVisualSpan_BlockOneCharecterRight()
+        {
+            Create("the", "dog", "kicked", "the", "ball");
+
+            var col = new NormalizedSnapshotSpanCollection(
+                new[]
+                {
+                    _textView.GetLineSpan(0, 1),
+                    _textView.GetLineSpan(1, 1)
+                });
+            var span = VisualSpan.NewBlock(col);
+            var stored = StoredVisualSpan.OfVisualSpan(span);
+            _textView.MoveCaretTo(1);
+            var restored = _commandUtil.CalculateVisualSpan(stored);
+            CollectionAssert.AreEquivalent(
+                new[]
+                {
+                    _textView.GetLineSpan(0, 1, 1),
+                    _textView.GetLineSpan(1, 1, 1)
+                },
+                restored.AsBlock().Item);
         }
     }
 }

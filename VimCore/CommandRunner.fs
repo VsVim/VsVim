@@ -75,7 +75,7 @@ type internal CommandRunner
                 BindResult.NeedMoreInput { KeyRemapMode = None; BindFunction = inner num }
             else
                 let count = System.Int32.Parse(num)
-                completeFunc count
+                completeFunc count ki
 
         _data <- { _data with State = NotEnoughInput }
         inner StringUtil.empty initialDigit 
@@ -102,10 +102,9 @@ type internal CommandRunner
             BindResult.NeedMoreInput data
 
         let tryCountThenRegister keyInput missingCount = 
-            let foundCount count =
+            let foundCount count keyInput =
                 let count = Some count
-                let next keyInput = tryRegister keyInput (fun register -> bindCommandResult (Some register) count) (fun keyInput -> x.BindCommand None count keyInput)
-                BindResult.NeedMoreInput { KeyRemapMode = None; BindFunction = next }
+                tryRegister keyInput (fun register -> bindCommandResult (Some register) count) (fun keyInput -> x.BindCommand None count keyInput)
 
             tryCount keyInput foundCount missingCount
 
@@ -113,7 +112,7 @@ type internal CommandRunner
 
             let foundRegister register = 
                 let register = Some register
-                let next keyInput = tryCount keyInput (fun count -> bindCommandResult register (Some count)) (fun keyInput -> x.BindCommand register None keyInput)
+                let next keyInput = tryCount keyInput (fun count keyInput -> x.BindCommand register (Some count) keyInput) (fun keyInput -> x.BindCommand register None keyInput)
                 BindResult.NeedMoreInput { KeyRemapMode = None; BindFunction = next }
 
             tryRegister keyInput foundRegister missingRegister

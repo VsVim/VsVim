@@ -3,6 +3,7 @@ using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using NUnit.Framework;
 using Vim;
+using Vim.Extensions;
 using Vim.UnitTest;
 
 namespace VimCore.UnitTest
@@ -516,6 +517,41 @@ namespace VimCore.UnitTest
             _buffer.Process(".");
             Assert.AreEqual("  abcdog", _textView.GetLine(1).GetText());
             Assert.AreEqual(_textView.GetLine(1).Start.Add(4), _textView.GetCaretPoint());
+        }
+
+        /// <summary>
+        /// Repeating a replace char command should move the caret to the end just like
+        /// the original command did
+        /// </summary>
+        [Test]
+        public void RepeatCommand_ReplaceChar_ShouldMoveCaret()
+        {
+            Create("the dog kicked the ball");
+            _buffer.Process("3ru");
+            Assert.AreEqual("uuu dog kicked the ball", _textView.GetLine(0).GetText());
+            Assert.AreEqual(2, _textView.GetCaretPoint().Position);
+            _textView.MoveCaretTo(4);
+            _buffer.Process(".");
+            Assert.AreEqual("uuu uuu kicked the ball", _textView.GetLine(0).GetText());
+            Assert.AreEqual(6, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// Repeating a replace char command from visual mode should not move the caret
+        /// </summary>
+        [Test]
+        public void RepeatCommand_ReplaceCharVisual_ShouldNotMoveCaret()
+        {
+            Create("the dog kicked the ball");
+            _buffer.VimData.LastCommand = FSharpOption.Create(StoredCommand.NewVisualCommand(
+                VisualCommand.NewReplaceChar(KeyInputUtil.VimKeyToKeyInput(VimKey.LowerB)),
+                VimUtil.CreateCommandData(),
+                StoredVisualSpan.OfVisualSpan(VisualSpan.NewCharacter(_textView.GetLineSpan(0, 3))),
+                CommandFlags.None));
+            _textView.MoveCaretTo(1);
+            _buffer.Process(".");
+            Assert.AreEqual("tbbbdog kicked the ball", _textView.GetLine(0).GetText());
+            Assert.AreEqual(1, _textView.GetCaretPoint().Position);
         }
 
         [Test]
