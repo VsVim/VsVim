@@ -16,6 +16,7 @@ type internal InsertMode
         _editorOptions : IEditorOptions,
         _isReplace : bool ) as this =
 
+    let _textView = _data.TextView
     let mutable _commandMap : Map<KeyInput,CommandFunction> = Map.empty
 
     do
@@ -41,12 +42,14 @@ type internal InsertMode
 
     /// Process the CTRL-D combination and do a shift left
     member private this.ProcessShiftLeft() = 
-        _operations.ShiftLinesLeft 1
+        let range = TextViewUtil.GetCaretLineRange _textView 1
+        _operations.ShiftLineRangeLeft range 1
         ProcessResult.Processed
 
     /// Process the CTRL-T combination and do a shift right
     member private this.ProcessShiftRight() = 
-        _operations.ShiftLinesRight 1
+        let range = TextViewUtil.GetCaretLineRange _textView 1
+        _operations.ShiftLineRangeRight range 1
         ProcessResult.Processed
 
     member private this.ProcessEscape () =

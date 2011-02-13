@@ -259,7 +259,7 @@ namespace VimCore.UnitTest
             Create("     foo", "bar", "baz");
             var range = _textView.GetLineRange(0);
             _operations
-                .Setup(x => x.ShiftLineRangeLeft(1, range))
+                .Setup(x => x.ShiftLineRangeLeft(range, 1))
                 .Verifiable();
             RunCommand("<");
             _operations.Verify();
@@ -271,7 +271,7 @@ namespace VimCore.UnitTest
             Create("     foo", "     bar", "baz");
             var range = _textView.GetLineRange(0, 1);
             _operations
-                .Setup(x => x.ShiftLineRangeLeft(1, range))
+                .Setup(x => x.ShiftLineRangeLeft(range, 1))
                 .Verifiable();
             RunCommand("1,2<");
             _operations.Verify();
@@ -283,7 +283,7 @@ namespace VimCore.UnitTest
             Create("     foo", "     bar", "baz");
             var range = _textView.GetLineRange(0, 1);
             _operations
-                .Setup(x => x.ShiftLineRangeLeft(1, range))
+                .Setup(x => x.ShiftLineRangeLeft(range, 1))
                 .Verifiable();
             RunCommand("< 2");
             _operations.Verify();
@@ -294,7 +294,7 @@ namespace VimCore.UnitTest
         {
             Create("foo", "bar", "baz");
             _operations
-                .Setup(x => x.ShiftLineRangeRight(1, _textView.GetLineRange(0, 0)))
+                .Setup(x => x.ShiftLineRangeRight(_textView.GetLineRange(0, 0), 1))
                 .Verifiable();
             RunCommand(">");
             _operations.Verify();
@@ -305,7 +305,7 @@ namespace VimCore.UnitTest
         {
             Create("foo", "bar", "baz");
             _operations
-                .Setup(x => x.ShiftLineRangeRight(1, _textView.GetLineRange(0, 1)))
+                .Setup(x => x.ShiftLineRangeRight(_textView.GetLineRange(0, 1), 1))
                 .Verifiable();
             RunCommand("1,2>");
             _operations.Verify();
@@ -316,7 +316,7 @@ namespace VimCore.UnitTest
         {
             Create("foo", "bar", "baz");
             _operations
-                .Setup(x => x.ShiftLineRangeRight(1, _textView.GetLineRange(0, 1)))
+                .Setup(x => x.ShiftLineRangeRight(_textView.GetLineRange(0, 1), 1))
                 .Verifiable();
             RunCommand("> 2");
             _operations.Verify();

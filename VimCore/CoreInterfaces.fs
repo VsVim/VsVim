@@ -733,6 +733,18 @@ type NormalCommand =
     /// Set the specified mark to the current value of the caret
     | SetMarkToCaret of char
 
+    /// Shift 'count' lines from the cursor left
+    | ShiftLinesLeft
+
+    /// Shift 'count' lines from the cursor right
+    | ShiftLinesRight
+
+    /// Shift 'motion' lines from the cursor left
+    | ShiftMotionLinesLeft of MotionData
+
+    /// Shift 'motion' lines from the cursor right
+    | ShiftMotionLinesRight of MotionData
+
     /// Substitute the character at the cursor
     | SubstituteCharacterAtCursor
 
@@ -751,6 +763,12 @@ type VisualCommand =
 
     /// Replace the visual span with the provided character
     | ReplaceChar of KeyInput
+
+    /// Shift the selected lines left
+    | ShiftLinesLeft
+
+    /// Shift the selected lines to the right
+    | ShiftLinesRight
 
 /// Commands which can be executed by the user
 [<RequireQualifiedAccess>]

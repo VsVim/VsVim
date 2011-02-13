@@ -199,18 +199,6 @@ type internal VisualMode
                         _operations.DeleteBlock col
                         _operations.UpdateRegisterForCollection reg RegisterOperation.Delete col OperationKind.CharacterWise))
                 yield (
-                    ["<lt>"],
-                    CommandFlags.Repeatable ||| CommandFlags.ResetCaret,
-                    Some ModeKind.Normal,
-                    (fun count _ span -> _operations.ShiftLineRangeLeft count (SnapshotLineRangeUtil.CreateForSpan span)) ,
-                    (fun count _ col -> _operations.ShiftBlockLeft count col ))
-                yield (
-                    [">"],
-                    CommandFlags.Repeatable ||| CommandFlags.ResetCaret,
-                    Some ModeKind.Normal,
-                    (fun count _ span ->  _operations.ShiftLineRangeRight count (SnapshotLineRangeUtil.CreateForSpan span)),
-                    (fun count _ col -> _operations.ShiftBlockRight count col))
-                yield (
                     ["~"],
                     CommandFlags.Repeatable,
                     Some ModeKind.Normal,
@@ -391,6 +379,8 @@ type internal VisualMode
                 yield ("d", CommandFlags.Repeatable, VisualCommand.DeleteHighlightedText)
                 yield ("x", CommandFlags.Repeatable, VisualCommand.DeleteHighlightedText)
                 yield ("<Del>", CommandFlags.Repeatable, VisualCommand.DeleteHighlightedText)
+                yield ("<lt>", CommandFlags.Repeatable, VisualCommand.ShiftLinesLeft)
+                yield (">", CommandFlags.Repeatable, VisualCommand.ShiftLinesRight)
             } |> Seq.map (fun (str, flags, command) -> 
                 let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
                 CommandBinding.VisualCommand(keyInputSet, flags, command))

@@ -108,7 +108,8 @@ namespace Vim.UnitTest
                 statusUtil,
                 registerMap,
                 markMap,
-                vimData);
+                vimData,
+                localSettings);
         }
 
         internal static RegisterMap CreateRegisterMap(IClipboardDevice device, Func<string> func)

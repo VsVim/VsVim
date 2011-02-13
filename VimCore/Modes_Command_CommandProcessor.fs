@@ -316,7 +316,7 @@ type internal CommandProcessor
             range
             |> RangeUtil.RangeOrCurrentLine _buffer.TextView 
             |> RangeUtil.TryApplyCount count
-        _operations.ShiftLineRangeLeft 1 range
+        _operations.ShiftLineRangeLeft range 1
 
     member x.ProcessShiftRight (rest:char list) (range: SnapshotLineRange option) _ =
         let count,rest = rest |> RangeUtil.ParseNumber
@@ -324,7 +324,7 @@ type internal CommandProcessor
             range
             |> RangeUtil.RangeOrCurrentLine _buffer.TextView 
             |> RangeUtil.TryApplyCount count
-        _operations.ShiftLineRangeRight 1 range
+        _operations.ShiftLineRangeRight range 1
 
     member x.ProcessWrite (rest:char list) _ _ = 
         let name = rest |> StringUtil.ofCharSeq 

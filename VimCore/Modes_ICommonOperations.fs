@@ -46,6 +46,12 @@ type ICommonOperations =
     /// Associated ITextView
     abstract TextView : ITextView 
 
+    /// The TabSize for the buffer
+    abstract TabSize : int
+
+    /// Whether or not to use Spaces in the buffer
+    abstract UseSpaces : bool
+
     /// Associated IEditorOperations
     abstract EditorOperations : IEditorOperations
 
@@ -126,6 +132,11 @@ type ICommonOperations =
     /// Fold count lines under the cursor
     abstract FoldLines : count:int -> unit
 
+    /// Convert the provided whitespace into spaces.  The conversion of tabs into spaces will be 
+    /// done based on the TabSize setting.  Returns the new whitespace string and the length 
+    /// of the original string
+    abstract GetAndNormalizeLeadingWhiteSpaceToSpaces : SnapshotSpan -> (string * int)
+
     /// Attempt to GoToDefinition on the current state of the buffer.  If this operation fails, an error message will 
     /// be generated as appropriate
     abstract GoToDefinition : unit -> Result
@@ -204,6 +215,10 @@ type ICommonOperations =
     /// jump list
     abstract NavigateToPoint : VirtualSnapshotPoint -> bool
 
+    /// Normalize the whitespace into tabs / spaces based on the ExpandTab,
+    /// TabSize settings
+    abstract NormalizeWhiteSpace : string -> string
+
     /// Open count folds in the given SnapshotSpan 
     abstract OpenFold : SnapshotSpan -> count:int -> unit
 
@@ -240,25 +255,11 @@ type ICommonOperations =
     /// Scroll the buffer by the specified number of pages in the given direction
     abstract ScrollPages : ScrollDirection -> count:int -> unit
 
-    /// Shift the count lines starting at the cursor right by the "ShiftWidth" setting
-    abstract ShiftLinesRight : count:int -> unit
+    /// Shift the given line range left by shiftwidth * 'multiplier'
+    abstract ShiftLineRangeLeft : SnapshotLineRange -> multiplier : int -> unit
 
-    /// Shift the count lines starting at the cursor left by the "ShiftWidth" setting
-    abstract ShiftLinesLeft :  count:int -> unit
-
-    /// Shift the lines in the span to the right by the "ShiftWidth" setting multiplied
-    /// by the multiplier
-    abstract ShiftLineRangeRight : multiplier:int -> SnapshotLineRange -> unit
-
-    /// Shift the lines in the span to the right by the "ShiftWidth" setting multiplied
-    /// by the multiplier
-    abstract ShiftBlockRight : multiplier:int -> NormalizedSnapshotSpanCollection -> unit
-
-    /// Shift the lines in the span to the right by the "ShiftWidth" setting
-    abstract ShiftLineRangeLeft : multiplier:int -> SnapshotLineRange -> unit
-
-    /// Shift the lines in the span to the right by the "ShiftWidth" setting
-    abstract ShiftBlockLeft : multiplier:int -> NormalizedSnapshotSpanCollection -> unit
+    /// Shift the given line range right by shiftwidth * 'multiplier'
+    abstract ShiftLineRangeRight : SnapshotLineRange -> multiplier : int -> unit
 
     /// Substitute Command implementation
     abstract Substitute : pattern : string -> replace : string -> SnapshotLineRange -> SubstituteFlags -> unit

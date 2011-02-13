@@ -851,28 +851,11 @@ namespace VimCore.UnitTest
             Assert.AreEqual("baz", tss.GetLineFromLineNumber(1).GetText());
         }
 
-        [Test]
-        public void ShiftLineRangeRight1()
-        {
-            Create("foo");
-            _operations.ShiftLineRangeRight(1, _textBuffer.GetLineRange(0));
-            Assert.AreEqual("  foo", _textBuffer.CurrentSnapshot.GetLineFromLineNumber(0).GetText());
-        }
-
-        [Test]
-        public void ShiftLineRangeRight2()
-        {
-            Create("a", "b", "c");
-            _operations.ShiftLineRangeRight(1, _textBuffer.GetLineRange(0));
-            Assert.AreEqual("  a", _textBuffer.GetLine(0).GetText());
-            Assert.AreEqual("b", _textBuffer.GetLine(1).GetText());
-        }
-
         [Test, Description("Only shift whitespace")]
         public void ShiftLineRangeLeft1()
         {
             Create("foo");
-            _operations.ShiftLineRangeLeft(1, _textBuffer.GetLineRange(0));
+            _operations.ShiftLineRangeLeft(_textBuffer.GetLineRange(0), 1);
             Assert.AreEqual("foo", _textBuffer.CurrentSnapshot.GetLineFromLineNumber(0).GetText());
         }
 
@@ -880,7 +863,7 @@ namespace VimCore.UnitTest
         public void ShiftLineRangeLeft2()
         {
             Create("");
-            _operations.ShiftLineRangeLeft(1, _textBuffer.GetLineRange(0));
+            _operations.ShiftLineRangeLeft(_textBuffer.GetLineRange(0), 1);
             Assert.AreEqual("", _textBuffer.CurrentSnapshot.GetLineFromLineNumber(0).GetText());
         }
 
@@ -888,7 +871,7 @@ namespace VimCore.UnitTest
         public void ShiftLineRangeLeft3()
         {
             Create("  foo", "  bar");
-            _operations.ShiftLineRangeLeft(1, _textBuffer.GetLineRange(0, 1));
+            _operations.ShiftLineRangeLeft(_textBuffer.GetLineRange(0, 1), 1);
             Assert.AreEqual("foo", _textBuffer.CurrentSnapshot.GetLineFromLineNumber(0).GetText());
             Assert.AreEqual("bar", _textBuffer.CurrentSnapshot.GetLineFromLineNumber(1).GetText());
         }
@@ -897,7 +880,7 @@ namespace VimCore.UnitTest
         public void ShiftLineRangeLeft4()
         {
             Create("   foo");
-            _operations.ShiftLineRangeLeft(1, _textBuffer.GetLineRange(0));
+            _operations.ShiftLineRangeLeft(_textBuffer.GetLineRange(0), 1);
             Assert.AreEqual(" foo", _textBuffer.CurrentSnapshot.GetLineFromLineNumber(0).GetText());
         }
 
@@ -905,220 +888,237 @@ namespace VimCore.UnitTest
         public void ShiftLineRangeLeft5()
         {
             Create("  a", "  b", "c");
-            _operations.ShiftLineRangeLeft(1, _textBuffer.GetLineRange(0));
+            _operations.ShiftLineRangeLeft(_textBuffer.GetLineRange(0), 1);
             Assert.AreEqual("a", _textBuffer.GetLine(0).GetText());
             Assert.AreEqual("  b", _textBuffer.GetLine(1).GetText());
         }
 
         [Test]
-        public void ShiftLinesLeft1()
+        public void ShiftLineRangeLeft6()
         {
             Create("   foo");
-            _operations.ShiftLinesLeft(1);
+            _operations.ShiftLineRangeLeft(_textView.GetLineRange(0), 1);
             Assert.AreEqual(" foo", _textBuffer.GetLineRange(0).GetText());
         }
 
         [Test]
-        public void ShiftLinesLeft2()
+        public void ShiftLineRangeLeft7()
         {
             Create(" foo");
-            _operations.ShiftLinesLeft(400);
+            _operations.ShiftLineRangeLeft(_textView.GetLineRange(0), 400);
             Assert.AreEqual("foo", _textBuffer.GetLineRange(0).GetText());
         }
 
         [Test]
-        public void ShiftLinesLeft3()
+        public void ShiftLineRangeLeft8()
         {
             Create("   foo", "    bar");
-            _operations.ShiftLinesLeft(2);
+            _operations.ShiftLineRangeLeft(2);
             Assert.AreEqual(" foo", _textBuffer.GetLineRange(0).GetText());
             Assert.AreEqual("  bar", _textBuffer.GetLineRange(1).GetText());
         }
 
         [Test]
-        public void ShiftLinesLeft4()
+        public void ShiftLineRangeLeft9()
         {
             Create(" foo", "   bar");
             _textView.MoveCaretTo(_textBuffer.GetLineRange(1).Start.Position);
-            _operations.ShiftLinesLeft(1);
+            _operations.ShiftLineRangeLeft(1);
             Assert.AreEqual(" foo", _textBuffer.GetLineRange(0).GetText());
             Assert.AreEqual(" bar", _textBuffer.GetLineRange(1).GetText());
         }
 
         [Test]
-        public void ShiftLinesLeft5()
+        public void ShiftLineRangeLeft10()
         {
             Create(" foo", "", "   bar");
-            _operations.ShiftLinesLeft(3);
+            _operations.ShiftLineRangeLeft(3);
             Assert.AreEqual("foo", _textBuffer.GetLineRange(0).GetText());
             Assert.AreEqual("", _textBuffer.GetLineRange(1).GetText());
             Assert.AreEqual(" bar", _textBuffer.GetLineRange(2).GetText());
         }
 
         [Test]
-        public void ShiftLinesLeft6()
+        public void ShiftLineRangeLeft11()
         {
             Create(" foo", "   ", "   bar");
-            _operations.ShiftLinesLeft(3);
+            _operations.ShiftLineRangeLeft(3);
             Assert.AreEqual("foo", _textBuffer.GetLineRange(0).GetText());
             Assert.AreEqual(" ", _textBuffer.GetLineRange(1).GetText());
             Assert.AreEqual(" bar", _textBuffer.GetLineRange(2).GetText());
         }
 
         [Test]
-        public void ShiftLinesLeft_TabStartUsingSpaces()
+        public void ShiftLineRangeLeft_TabStartUsingSpaces()
         {
             Create("\tcat");
             _settings.SetupGet(x => x.ExpandTab).Returns(true);
-            _operations.ShiftLinesLeft(1);
+            _operations.ShiftLineRangeLeft(1);
             Assert.AreEqual("  cat", _textView.GetLine(0).GetText());
         }
 
         [Test]
         [Description("Vim will actually normalize the line and then shift")]
-        public void ShiftLinesLeft_MultiTabStartUsingSpaces()
+        public void ShiftLineRangeLeft_MultiTabStartUsingSpaces()
         {
             Create("\t\tcat");
             _settings.SetupGet(x => x.ExpandTab).Returns(true);
-            _operations.ShiftLinesLeft(1);
+            _operations.ShiftLineRangeLeft(1);
             Assert.AreEqual("      cat", _textView.GetLine(0).GetText());
         }
 
         [Test]
-        public void ShiftLinesLeft_TabStartUsingTabs()
+        public void ShiftLineRangeLeft_TabStartUsingTabs()
         {
             Create("\tcat");
             _settings.SetupGet(x => x.ExpandTab).Returns(false);
-            _operations.ShiftLinesLeft(1);
+            _operations.ShiftLineRangeLeft(1);
             Assert.AreEqual("  cat", _textView.GetLine(0).GetText());
         }
 
         [Test]
-        public void ShiftLinesLeft_SpaceStartUsingTabs()
+        public void ShiftLineRangeLeft_SpaceStartUsingTabs()
         {
             Create("    cat");
             _settings.SetupGet(x => x.ExpandTab).Returns(false);
-            _operations.ShiftLinesLeft(1);
+            _operations.ShiftLineRangeLeft(1);
             Assert.AreEqual("  cat", _textView.GetLine(0).GetText());
         }
 
         [Test]
-        public void ShiftLinesLeft_TabStartFollowedBySpacesUsingTabs()
+        public void ShiftLineRangeLeft_TabStartFollowedBySpacesUsingTabs()
         {
             Create("\t    cat");
             _settings.SetupGet(x => x.ExpandTab).Returns(false);
-            _operations.ShiftLinesLeft(1);
+            _operations.ShiftLineRangeLeft(1);
             Assert.AreEqual("\t  cat", _textView.GetLine(0).GetText());
         }
 
         [Test]
-        public void ShiftLinesLeft_SpacesStartFollowedByTabFollowedBySpacesUsingTabs()
+        public void ShiftLineRangeLeft_SpacesStartFollowedByTabFollowedBySpacesUsingTabs()
         {
             Create("    \t    cat");
             _settings.SetupGet(x => x.ExpandTab).Returns(false);
-            _operations.ShiftLinesLeft(1);
+            _operations.ShiftLineRangeLeft(1);
             Assert.AreEqual("\t\t  cat", _textView.GetLine(0).GetText());
         }
 
         [Test]
-        public void ShiftLinesLeft_SpacesStartFollowedByTabFollowedBySpacesUsingTabsWithModifiedTabStop()
+        public void ShiftLineRangeLeft_SpacesStartFollowedByTabFollowedBySpacesUsingTabsWithModifiedTabStop()
         {
             Create("    \t    cat");
             _settings.SetupGet(x => x.ExpandTab).Returns(false);
             _settings.SetupGet(x => x.TabStop).Returns(2);
-            _operations.ShiftLinesLeft(1);
+            _operations.ShiftLineRangeLeft(1);
             Assert.AreEqual("\t\t\t\tcat", _textView.GetLine(0).GetText());
         }
         [Test]
-        public void ShiftLinesLeft_ShortSpacesStartFollowedByTabFollowedBySpacesUsingTabs()
+        public void ShiftLineRangeLeft_ShortSpacesStartFollowedByTabFollowedBySpacesUsingTabs()
         {
             Create("  \t    cat");
             _settings.SetupGet(x => x.ExpandTab).Returns(false);
-            _operations.ShiftLinesLeft(1);
+            _operations.ShiftLineRangeLeft(1);
             Assert.AreEqual("\t  cat", _textView.GetLine(0).GetText());
         }
 
         [Test]
-        public void ShiftLinesRight1()
+        public void ShiftLineRangeRight1()
         {
             Create("foo");
-            _operations.ShiftLinesRight(1);
+            _operations.ShiftLineRangeRight(_textBuffer.GetLineRange(0), 1);
+            Assert.AreEqual("  foo", _textBuffer.CurrentSnapshot.GetLineFromLineNumber(0).GetText());
+        }
+
+        [Test]
+        public void ShiftLineRangeRight2()
+        {
+            Create("a", "b", "c");
+            _operations.ShiftLineRangeRight(_textBuffer.GetLineRange(0), 1);
+            Assert.AreEqual("  a", _textBuffer.GetLine(0).GetText());
+            Assert.AreEqual("b", _textBuffer.GetLine(1).GetText());
+        }
+
+        [Test]
+        public void ShiftLineRangeRight3()
+        {
+            Create("foo");
+            _operations.ShiftLineRangeRight(1);
             Assert.AreEqual("  foo", _textBuffer.GetLineRange(0).GetText());
         }
 
         [Test]
-        public void ShiftLinesRight2()
+        public void ShiftLineRangeRight4()
         {
             Create("foo", " bar");
-            _operations.ShiftLinesRight(2);
+            _operations.ShiftLineRangeRight(2);
             Assert.AreEqual("  foo", _textBuffer.GetLineRange(0).GetText());
             Assert.AreEqual("   bar", _textBuffer.GetLineRange(1).GetText());
         }
 
         [Test]
-        public void ShiftLinesRight3()
+        public void ShiftLineRangeRight5()
         {
             Create("foo", " bar");
             _textView.MoveCaretTo(_textBuffer.GetLineRange(1).Start.Position);
-            _operations.ShiftLinesRight(2);
+            _operations.ShiftLineRangeRight(2);
             Assert.AreEqual("foo", _textBuffer.GetLineRange(0).GetText());
             Assert.AreEqual("   bar", _textBuffer.GetLineRange(1).GetText());
         }
 
         [Test]
         [Description("Blank lines need to expand")]
-        public void ShiftLinesRight4()
+        public void ShiftLineRangeRight6()
         {
             Create("foo", "", "bar");
-            _operations.ShiftLinesRight(3);
+            _operations.ShiftLineRangeRight(3);
             Assert.AreEqual("  foo", _textBuffer.GetLineRange(0).GetText());
             Assert.AreEqual("  ", _textBuffer.GetLineRange(1).GetText());
             Assert.AreEqual("  bar", _textBuffer.GetLineRange(2).GetText());
         }
 
         [Test]
-        public void ShiftLinesRight_PreferEditorTabSetting()
+        public void ShiftLineRangeRight_PreferEditorTabSetting()
         {
             Create("cat", "dog");
             _globalSettings.SetupGet(x => x.UseEditorTabSettings).Returns(true);
             _globalSettings.SetupGet(x => x.ShiftWidth).Returns(4);
             _editorOptions.Setup(x => x.GetOptionValue(DefaultOptions.ConvertTabsToSpacesOptionId)).Returns(false);
             _editorOptions.Setup(x => x.GetOptionValue(DefaultOptions.TabSizeOptionId)).Returns(4);
-            _operations.ShiftLinesRight(1);
+            _operations.ShiftLineRangeRight(1);
             Assert.AreEqual("\tcat", _textView.GetLine(0).GetText());
         }
 
         [Test]
-        public void ShiftLinesRight_NoExpandTab()
+        public void ShiftLineRangeRight_NoExpandTab()
         {
             Create("cat", "dog");
             _globalSettings.SetupGet(x => x.UseEditorTabSettings).Returns(false);
             _globalSettings.SetupGet(x => x.ShiftWidth).Returns(4);
             _settings.SetupGet(x => x.ExpandTab).Returns(false);
-            _operations.ShiftLinesRight(1);
+            _operations.ShiftLineRangeRight(1);
             Assert.AreEqual("\tcat", _textView.GetLine(0).GetText());
         }
 
         [Test]
-        public void ShiftLinesRight_NoExpandTabKeepSpacesWhenFewerThanTabStop()
+        public void ShiftLineRangeRight_NoExpandTabKeepSpacesWhenFewerThanTabStop()
         {
             Create("cat", "dog");
             _globalSettings.SetupGet(x => x.UseEditorTabSettings).Returns(false);
             _globalSettings.SetupGet(x => x.ShiftWidth).Returns(2);
             _globalSettings.SetupGet(x => x.TabStop).Returns(4);
             _settings.SetupGet(x => x.ExpandTab).Returns(false);
-            _operations.ShiftLinesRight(1);
+            _operations.ShiftLineRangeRight(1);
             Assert.AreEqual("  cat", _textView.GetLine(0).GetText());
         }
 
         [Test]
-        public void ShiftLinesRight_SpacesStartUsingTabs()
+        public void ShiftLineRangeRight_SpacesStartUsingTabs()
         {
             Create("  cat", "dog");
             _globalSettings.SetupGet(x => x.UseEditorTabSettings).Returns(false);
             _settings.SetupGet(x => x.ExpandTab).Returns(false);
             _settings.SetupGet(x => x.TabStop).Returns(2);
-            _operations.ShiftLinesRight(1);
+            _operations.ShiftLineRangeRight(1);
             Assert.AreEqual("\t\tcat", _textView.GetLine(0).GetText());
         }
 

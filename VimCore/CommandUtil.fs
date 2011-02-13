@@ -15,10 +15,13 @@ type internal CommandUtil
         _statusUtil : IStatusUtil,
         _registerMap : IRegisterMap,
         _markMap : IMarkMap,
-        _vimData : IVimData
+        _vimData : IVimData,
+        _localSettings : IVimLocalSettings
     ) =
 
+    let _globalSettings = _localSettings.GlobalSettings
     let _textBuffer = _textView.TextBuffer
+
     let mutable _inRepeatLastChange = false
 
     /// The column of the caret
@@ -382,6 +385,10 @@ type internal CommandUtil
         | NormalCommand.PutAfterCursor -> x.PutAfterCursor register count ModeSwitch.NoSwitch
         | NormalCommand.SetMarkToCaret c -> x.SetMarkToCaret c
         | NormalCommand.SubstituteCharacterAtCursor -> x.DeleteCharacterAtCursor count register (ModeSwitch.SwitchMode ModeKind.Insert)
+        | NormalCommand.ShiftLinesLeft -> x.ShiftLinesLeft count
+        | NormalCommand.ShiftLinesRight -> x.ShiftLinesRight count
+        | NormalCommand.ShiftMotionLinesLeft motion -> x.RunWithMotion motion x.ShiftMotionLinesLeft
+        | NormalCommand.ShiftMotionLinesRight motion -> x.RunWithMotion motion x.ShiftMotionLinesRight
         | NormalCommand.RepeatLastCommand -> x.RepeatLastCommand data
         | NormalCommand.ReplaceChar keyInput -> x.ReplaceChar keyInput data.CountOrDefault
         | NormalCommand.Yank motion -> x.RunWithMotion motion (x.YankMotion register)
@@ -394,6 +401,8 @@ type internal CommandUtil
         | VisualCommand.DeleteHighlightedText -> x.DeleteHighlightedText register visualSpan
         | VisualCommand.PutAfterCursor -> x.PutAfterCursor register count (ModeSwitch.SwitchMode ModeKind.Normal)
         | VisualCommand.ReplaceChar keyInput -> x.ReplaceCharVisual keyInput visualSpan
+        | VisualCommand.ShiftLinesLeft -> x.ShiftLinesLeftVisual count visualSpan
+        | VisualCommand.ShiftLinesRight -> x.ShiftLinesRightVisual count visualSpan
 
     /// Get the MotionResult value for the provided MotionData and pass it
     /// if found to the provided function
@@ -414,6 +423,142 @@ type internal CommandUtil
             CommandResult.Error
         | Modes.Result.Succeeded ->
             CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Shift the given line range left by the specified value.  The caret will be 
+    /// placed at the first character on the first line of the shifted text
+    member x.ShiftLinesLeftCore range multiplier =
+
+        // Use a transaction so the caret will be properly moved for undo / redo
+        x.EditWithUndoTransaciton "ShiftLeft" (fun () ->
+            _operations.ShiftLineRangeLeft range multiplier
+
+            // Now move the caret to the first non-whitespace character on the first
+            // line 
+            let line = SnapshotUtil.GetLine x.CurrentSnapshot range.StartLineNumber
+            let point = 
+                match TssUtil.TryFindFirstNonWhiteSpaceCharacter line with
+                | None -> SnapshotLineUtil.GetLastIncludedPoint line |> OptionUtil.getOrDefault line.Start
+                | Some point -> point
+            TextViewUtil.MoveCaretToPoint _textView point)
+
+    /// Shift the given line range left by the specified value.  The caret will be 
+    /// placed at the first character on the first line of the shifted text
+    member x.ShiftLinesRightCore range multiplier =
+
+        // Use a transaction so the caret will be properly moved for undo / redo
+        x.EditWithUndoTransaciton "ShiftRight" (fun () ->
+            _operations.ShiftLineRangeRight range multiplier
+
+            // Now move the caret to the first non-whitespace character on the first
+            // line 
+            let line = SnapshotUtil.GetLine x.CurrentSnapshot range.StartLineNumber
+            let point = 
+                match TssUtil.TryFindFirstNonWhiteSpaceCharacter line with
+                | None -> SnapshotLineUtil.GetLastIncludedPoint line |> OptionUtil.getOrDefault line.Start
+                | Some point -> point
+            TextViewUtil.MoveCaretToPoint _textView point)
+
+    /// Shift 'count' lines to the left 
+    member x.ShiftLinesLeft count =
+        let range = SnapshotLineRangeUtil.CreateForLineAndMaxCount x.CaretLine count
+        x.ShiftLinesLeftCore range 1
+        CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Shift 'motion' lines to the left by 'count' shiftwidth.
+    member x.ShiftLinesLeftVisual count visualSpan = 
+
+        // Both Character and Line spans operate like most shifts
+        match visualSpan with
+        | VisualSpan.Character span ->
+            let range = SnapshotLineRangeUtil.CreateForSpan span
+            x.ShiftLinesLeftCore range count
+        | VisualSpan.Line range ->
+            x.ShiftLinesLeftCore range count
+        | VisualSpan.Block col ->
+            // Shifting a block span is trickier because it doesn't shift at column
+            // 0 but rather shifts at the start column of every span.  It also treats
+            // the caret much more different by keeping it at the start of the first
+            // span vs. the start of the shift
+            let targetCaretPosition = 
+                visualSpan.Start 
+                |> OptionUtil.getOrDefault x.CaretPoint 
+                |> SnapshotPointUtil.GetPosition
+
+            // Use a transaction to preserve the caret.  But move the caret first since
+            // it needs to be undone to this location
+            TextViewUtil.MoveCaretToPosition _textView targetCaretPosition
+            x.EditWithUndoTransaciton "ShiftLeft" (fun () -> 
+                use edit = _textBuffer.CreateEdit()
+
+                col |> Seq.iter (fun span ->
+                    // Get the span we are formatting within the line
+                    let ws, originalLength = _operations.GetAndNormalizeLeadingWhiteSpaceToSpaces span
+                    let ws = 
+                        let length = max (ws.Length - count) 0
+                        StringUtil.repeatChar length ' ' |> _operations.NormalizeWhiteSpace
+                    edit.Replace(span.Start.Position, originalLength, ws) |> ignore)
+
+                edit.Apply() |> ignore
+                TextViewUtil.MoveCaretToPosition _textView targetCaretPosition)
+
+        CommandResult.Completed ModeSwitch.SwitchPreviousMode
+
+    /// Shift 'count' lines to the right 
+    member x.ShiftLinesRight count =
+        let range = SnapshotLineRangeUtil.CreateForLineAndMaxCount x.CaretLine count
+        x.ShiftLinesRightCore range 1
+        CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Shift 'motion' lines to the right by 'count' shiftwidth
+    member x.ShiftLinesRightVisual count visualSpan = 
+
+        // Both Character and Line spans operate like most shifts
+        match visualSpan with
+        | VisualSpan.Character span ->
+            let range = SnapshotLineRangeUtil.CreateForSpan span
+            x.ShiftLinesRightCore range count
+        | VisualSpan.Line range ->
+            x.ShiftLinesRightCore range count
+        | VisualSpan.Block col ->
+            let shiftText = 
+                let count = _globalSettings.ShiftWidth * count
+                StringUtil.repeatChar count ' '
+
+            // Shifting a block span is trickier because it doesn't shift at column
+            // 0 but rather shifts at the start column of every span.  It also treats
+            // the caret much more different by keeping it at the start of the first
+            // span vs. the start of the shift
+            let targetCaretPosition = 
+                visualSpan.Start 
+                |> OptionUtil.getOrDefault x.CaretPoint 
+                |> SnapshotPointUtil.GetPosition
+
+            // Use a transaction to preserve the caret.  But move the caret first since
+            // it needs to be undone to this location
+            TextViewUtil.MoveCaretToPosition _textView targetCaretPosition
+            x.EditWithUndoTransaciton "ShiftLeft" (fun () -> 
+                use edit = _textBuffer.CreateEdit()
+
+                col |> Seq.iter (fun span ->
+                    // Get the span we are formatting within the line
+                    let ws, originalLength = _operations.GetAndNormalizeLeadingWhiteSpaceToSpaces span
+                    let ws = _operations.NormalizeWhiteSpace (ws + shiftText)
+                    edit.Replace(span.Start.Position, originalLength, ws) |> ignore)
+
+                edit.Apply() |> ignore
+                TextViewUtil.MoveCaretToPosition _textView targetCaretPosition)
+
+        CommandResult.Completed ModeSwitch.SwitchPreviousMode
+
+    /// Shift 'motion' lines to the left
+    member x.ShiftMotionLinesLeft (result : MotionResult) = 
+        x.ShiftLinesLeftCore result.OperationLineRange 1
+        CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Shift 'motion' lines to the right
+    member x.ShiftMotionLinesRight (result : MotionResult) = 
+        x.ShiftLinesRightCore result.OperationLineRange 1
+        CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Yank the contents of the motion into the specified register
     member x.YankMotion register (result: MotionResult) = 

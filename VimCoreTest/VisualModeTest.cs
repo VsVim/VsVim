@@ -496,82 +496,20 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void ShiftLeft1()
+        public void Bind_ShiftLeft()
         {
             Create("foo bar baz");
-            var span = _textBuffer.GetSpan(0, 3);
-            _operations
-                .Setup(x => x.ShiftLineRangeLeft(1, SnapshotLineRangeUtil.CreateForSpan(span)))
-                .Verifiable();
-            _selection.Select(span);
+            _commandUtil.SetupVisualCommand(VisualCommand.ShiftLinesLeft);
             _mode.Process('<');
-            _operations.Verify();
+            _commandUtil.Verify();
         }
 
         [Test]
-        public void ShiftLeft2()
+        public void Bind_ShiftRight()
         {
             Create("foo bar baz");
-            var span = _textBuffer.GetSpan(0, 3);
-            _operations
-                .Setup(x => x.ShiftLineRangeLeft(2, SnapshotLineRangeUtil.CreateForSpan(span)))
-                .Verifiable();
-            _selection.Select(span);
-            _mode.Process("2<");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void ShiftLeft3()
-        {
-            Create("foo", "bar", "baz");
-            _selection.Select(
-                _textBuffer.GetLineRange(0).Extent,
-                _textBuffer.GetLineRange(1).Extent);
-            _operations
-                .Setup(x => x.ShiftBlockLeft(1, It.IsAny<NormalizedSnapshotSpanCollection>()))
-                .Verifiable();
-            _mode.Process("<");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void ShiftRight1()
-        {
-            Create("foo bar baz");
-            var span = _textBuffer.GetSpan(0, 3);
-            _operations
-                .Setup(x => x.ShiftLineRangeRight(1, SnapshotLineRangeUtil.CreateForSpan(span)))
-                .Verifiable();
-            _selection.Select(span);
+            _commandUtil.SetupVisualCommand(VisualCommand.ShiftLinesRight);
             _mode.Process('>');
-            _operations.Verify();
-        }
-
-        [Test]
-        public void ShiftRight2()
-        {
-            Create("foo bar baz");
-            var span = _textBuffer.GetSpan(0, 3);
-            _operations
-                .Setup(x => x.ShiftLineRangeRight(2, SnapshotLineRangeUtil.CreateForSpan(span)))
-                .Verifiable();
-            _selection.Select(span);
-            _mode.Process("2>");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void ShiftRight3()
-        {
-            Create("foo", "bar", "baz");
-            _selection.Select(
-                _textBuffer.GetLineRange(0).Extent,
-                _textBuffer.GetLineRange(1).Extent);
-            _operations
-                .Setup(x => x.ShiftBlockRight(1, It.IsAny<NormalizedSnapshotSpanCollection>()))
-                .Verifiable();
-            _mode.Process(">");
             _operations.Verify();
         }
 

@@ -44,6 +44,10 @@ module TssUtil =
     /// the given ITextSnapshotLine
     val FindFirstNonWhiteSpaceCharacter : ITextSnapshotLine -> SnapshotPoint
 
+    /// Find and return the SnapshotPoint representing the first non-whitespace character on
+    /// the given ITextSnapshotLine.  Returns None if there is no surch characetr
+    val TryFindFirstNonWhiteSpaceCharacter : ITextSnapshotLine -> SnapshotPoint option
+
     /// Find and return the SnapshotPoint representing the last non-whitespace character on
     /// the given ITextSnapshotLine
     val FindLastNonWhiteSpaceCharacter : ITextSnapshotLine -> SnapshotPoint

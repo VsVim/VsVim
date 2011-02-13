@@ -302,7 +302,23 @@ namespace Vim.UnitTest.Mock
             var realCount = count.HasValue ? FSharpOption.Create(count.Value) : FSharpOption<int>.None;
             var realName = registerName != null ? FSharpOption.Create(registerName) : FSharpOption<RegisterName>.None;
             var commandData = new CommandData(realCount, realName);
-            commandUtil.Setup(x => x.RunNormalCommand(command, commandData));
+            commandUtil.Setup(x => x.RunNormalCommand(command, commandData)).Verifiable();
+        }
+
+        public static void SetupVisualCommand(this Mock<ICommandUtil> commandUtil, VisualCommand command, int? count = null, RegisterName registerName = null, VisualSpan visualSpan = null)
+        {
+            var realCount = count.HasValue ? FSharpOption.Create(count.Value) : FSharpOption<int>.None;
+            var realName = registerName != null ? FSharpOption.Create(registerName) : FSharpOption<RegisterName>.None;
+            var commandData = new CommandData(realCount, realName);
+            if (visualSpan != null)
+            {
+                commandUtil.Setup(x => x.RunVisualCommand(command, commandData, visualSpan)).Verifiable();
+            }
+            else
+            {
+                commandUtil.Setup(x => x.RunVisualCommand(command, commandData, It.IsAny<VisualSpan>())).Verifiable();
+            }
+        
         }
     }
 }

@@ -117,6 +117,8 @@ type internal NormalMode
                 yield ("X", CommandFlags.Repeatable, NormalCommand.DeleteCharacterBeforeCursor)
                 yield ("<Del>", CommandFlags.Repeatable, NormalCommand.DeleteCharacterAtCursor)
                 yield (".", CommandFlags.Special, NormalCommand.RepeatLastCommand)
+                yield ("<lt><lt>", CommandFlags.Repeatable, NormalCommand.ShiftLinesLeft)
+                yield (">>", CommandFlags.Repeatable, NormalCommand.ShiftLinesRight)
             } |> Seq.map (fun (str, flags, command) -> 
                 let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
                 CommandBinding.NormalCommand(keyInputSet, flags, command))
@@ -124,6 +126,8 @@ type internal NormalMode
         let motionSeq = 
             seq {
                 yield ("y", CommandFlags.None, NormalCommand.Yank)
+                yield ("<lt>", CommandFlags.Repeatable, NormalCommand.ShiftMotionLinesLeft)
+                yield (">", CommandFlags.Repeatable, NormalCommand.ShiftMotionLinesRight)
             } |> Seq.map (fun (str, flags, command) -> 
                 let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
                 CommandBinding.MotionCommand(keyInputSet, flags, command))
@@ -161,16 +165,6 @@ type internal NormalMode
                         let point = point.GetContainingLine().Start
                         let span = SnapshotPointUtil.GetLineRangeSpanIncludingLineBreak point count
                         _operations.UpdateRegisterForSpan reg RegisterOperation.Yank span OperationKind.LineWise )
-                yield (
-                    "<lt><lt>", 
-                    CommandFlags.Repeatable, 
-                    ModeSwitch.NoSwitch,
-                    fun count _ -> _operations.ShiftLinesLeft count)
-                yield (
-                    ">>", 
-                    CommandFlags.Repeatable, 
-                    ModeSwitch.NoSwitch,
-                    fun count _ -> _operations.ShiftLinesRight count)
                 yield (
                     "&",
                     CommandFlags.Special,
@@ -623,16 +617,6 @@ type internal NormalMode
                     CommandFlags.Repeatable,
                     None,
                     fun _ _ data -> _operations.ChangeLetterRot13 data.EditSpan)
-                yield (
-                    "<lt>", 
-                    CommandFlags.None, 
-                    None, 
-                    fun _ _ data -> _operations.ShiftLineRangeLeft 1 data.OperationLineRange)
-                yield (
-                    ">", 
-                    CommandFlags.None, 
-                    None, 
-                    fun _ _ data -> _operations.ShiftLineRangeRight 1 data.OperationLineRange)
                 yield (
                     "zf", 
                     CommandFlags.None, 

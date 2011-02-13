@@ -517,6 +517,24 @@ namespace Vim.UnitTest
 
         #endregion
 
+        #region ICommonOperations
+
+        public static void ShiftLineRangeLeft(this ICommonOperations operations, int count)
+        {
+            var number = operations.TextView.GetCaretLine().LineNumber;
+            var range = operations.TextView.GetLineRange(number, number + (count - 1));
+            operations.ShiftLineRangeLeft(range, 1);
+        }
+
+        public static void ShiftLineRangeRight(this ICommonOperations operations, int count)
+        {
+            var number = operations.TextView.GetCaretLine().LineNumber;
+            var range = operations.TextView.GetLineRange(number, number + (count - 1));
+            operations.ShiftLineRangeRight(range, 1);
+        }
+
+        #endregion
+
         #region CommandRunnerState
 
         public static CommandRunnerState.NotFinishWithCommand AsNotFinishedWithCommand(this CommandRunnerState state)

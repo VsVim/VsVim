@@ -1844,70 +1844,35 @@ namespace VimCore.UnitTest
         #region Shift
 
         [Test]
-        public void ShiftRight1()
+        public void Bind_ShiftRight()
         {
             Create("foo");
-            _operations
-                .Setup(x => x.ShiftLinesRight(1))
-                .Verifiable();
+            _commandUtil.SetupNormalCommand(NormalCommand.ShiftLinesRight);
             _mode.Process(">>");
-            _operations.Verify();
-        }
-
-        [Test, Description("With a count")]
-        public void ShiftRight2()
-        {
-            Create("foo", "bar");
-            _operations
-                .Setup(x => x.ShiftLinesRight(2))
-                .Verifiable();
-            _mode.Process("2>>");
-            _operations.Verify();
-        }
-
-        [Test, Description("With a motion")]
-        public void ShiftRight3()
-        {
-            Create("foo", "bar");
-            var range = _textView.GetLineRange(0, 1);
-            _operations
-                .Setup(x => x.ShiftLineRangeRight(1, range))
-                .Verifiable();
-            _mode.Process(">j");
-            _operations.Verify();
+            _commandUtil.Verify();
         }
 
         [Test]
-        public void ShiftLeft1()
+        public void Bind_ShiftMotionRight()
+        {
+            Create("foo", "bar");
+            /// REPEAT TODO: Add tests for this
+        }
+
+        [Test]
+        public void Bind_ShiftLeft()
         {
             Create("foo");
-            _operations
-                .Setup(x => x.ShiftLinesLeft(1))
-                .Verifiable();
+            _commandUtil.SetupNormalCommand(NormalCommand.ShiftLinesLeft);
             _mode.Process("<<");
-            _operations.Verify();
+            _commandUtil.Verify();
         }
 
         [Test]
-        public void ShiftLeft2()
+        public void Bind_ShiftMotionLeft()
         {
-            Create(" foo");
-            _operations
-                .Setup(x => x.ShiftLinesLeft(1))
-                .Verifiable();
-            _mode.Process("<<");
-            _operations.Verify();
-        }
-
-        [Test, Description("With a count")]
-        public void ShiftLeft3()
-        {
-            Create("     foo", "     bar");
-            _operations
-                .Setup(x => x.ShiftLinesLeft(2))
-                .Verifiable();
-            _mode.Process("2<<");
-            _operations.Verify();
+            /// REPEAT TODO: Add tests for this
+            Create("foo");
         }
 
         #endregion

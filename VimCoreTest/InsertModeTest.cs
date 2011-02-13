@@ -19,7 +19,7 @@ namespace VimCore.UnitTest
         private Mock<IVimBuffer> _data;
         private Vim.Modes.Insert.InsertMode _modeRaw;
         private IMode _mode;
-        private Mock<ITextView> _textView;
+        private ITextView _textView;
         private Mock<ICommonOperations> _operations;
         private Mock<IDisplayWindowBroker> _broker;
         private Mock<IVimGlobalSettings> _globalSettings;
@@ -37,14 +37,14 @@ namespace VimCore.UnitTest
         {
             _factory = new MockRepository(MockBehavior.Strict);
             _factory.DefaultValue = DefaultValue.Mock;
-            _textView = _factory.Create<ITextView>();
+            _textView = EditorUtil.CreateView();
             _vim = _factory.Create<IVim>(MockBehavior.Loose);
             _editorOptions = _factory.Create<IEditorOptions>(MockBehavior.Loose);
             _globalSettings = _factory.Create<IVimGlobalSettings>();
             _localSettings = _factory.Create<IVimLocalSettings>();
             _localSettings.SetupGet(x => x.GlobalSettings).Returns(_globalSettings.Object);
             _data = MockObjectFactory.CreateVimBuffer(
-                _textView.Object,
+                _textView,
                 settings: _localSettings.Object,
                 vim: _vim.Object,
                 factory: _factory);
@@ -125,8 +125,9 @@ namespace VimCore.UnitTest
         [Test]
         public void ShiftLeft1()
         {
+            _textView.SetText("hello world");
             _operations
-                .Setup(x => x.ShiftLinesLeft(1))
+                .Setup(x => x.ShiftLineRangeLeft(_textView.GetLineRange(0, 0), 1))
                 .Verifiable(); ;
             var res = _mode.Process(KeyInputUtil.CharWithControlToKeyInput('d'));
             Assert.IsTrue(res.IsProcessed);
@@ -171,7 +172,8 @@ namespace VimCore.UnitTest
         public void ShiftRight1()
         {
             SetUp();
-            _operations.Setup(x => x.ShiftLinesRight(1)).Verifiable();
+            _textView.SetText("hello world");
+            _operations.Setup(x => x.ShiftLineRangeRight(_textView.GetLineRange(0, 0), 1)).Verifiable();
             _mode.Process(KeyNotationUtil.StringToKeyInput("<C-T>"));
             _factory.Verify();
         }

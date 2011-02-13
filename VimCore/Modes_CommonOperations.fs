@@ -26,6 +26,7 @@ type internal CommonOperations ( _data : OperationsData ) =
     let _search = _data.SearchService
     let _smartIndentationServtice = _data.SmartIndentationService
     let _regexFactory = VimRegexFactory(_data.LocalSettings.GlobalSettings)
+    let _globalSettings = _settings.GlobalSettings
 
     /// Whether or not to use spaces over tabs where applicable
     member x.UseSpaces = 
@@ -81,6 +82,80 @@ type internal CommonOperations ( _data : OperationsData ) =
         let buffer = span.Snapshot.TextBuffer
         buffer.Delete(span.Span) |> ignore
 
+    /// Convert the provided whitespace into spaces.  The conversion of tabs into spaces will be 
+    /// done based on the TabSize setting
+    member x.GetAndNormalizeLeadingWhiteSpaceToSpaces span = 
+        let text = 
+            span
+            |> SnapshotSpanUtil.GetText
+            |> Seq.takeWhile CharUtil.IsWhiteSpace
+            |> List.ofSeq
+        let builder = System.Text.StringBuilder()
+        let tabSize = x.TabSize
+        for c in text do
+            match c with 
+            | ' ' -> 
+                builder.Append(' ') |> ignore
+            | '\t' ->
+                // Insert spaces up to the next tab size modulus.  
+                let count = 
+                    let remainder = builder.Length % tabSize
+                    if remainder = 0 then tabSize else remainder
+                for i = 1 to count do
+                    builder.Append(' ') |> ignore
+            | _ -> 
+                builder.Append(' ') |> ignore
+        builder.ToString(), text.Length
+
+    /// Normalize the whitespace into tabs / spaces based on the ExpandTab,
+    /// TabSize settings
+    member x.NormalizeWhiteSpace (text : string) = 
+        if x.UseSpaces then 
+            text
+        else
+            let tabSize = x.TabSize
+            let spacesCount = text.Length % tabSize
+            let tabCount = (text.Length - spacesCount) / tabSize 
+            let prefix = StringUtil.repeatChar tabCount '\t'
+            let suffix = StringUtil.repeatChar spacesCount ' '
+            prefix + suffix
+
+    /// Shift lines in the specified range to the left by one shiftwidth
+    /// item.  The shift will done against 'column' in the line
+    member x.ShiftLineRangeLeft (range : SnapshotLineRange) multiplier =
+        let count = _globalSettings.ShiftWidth * multiplier
+
+        use edit = _textBuffer.CreateEdit()
+        range.Lines
+        |> Seq.iter (fun line ->
+
+            // Get the span we are formatting within the line
+            let span = line.Extent
+            let ws, originalLength = x.GetAndNormalizeLeadingWhiteSpaceToSpaces span
+            let ws = 
+                let length = max (ws.Length - count) 0
+                StringUtil.repeatChar length ' ' |> x.NormalizeWhiteSpace
+            edit.Replace(span.Start.Position, originalLength, ws) |> ignore)
+        edit.Apply() |> ignore
+
+    /// Shift lines in the specified range to the right by one shiftwidth 
+    /// item.  The shift will occur against column 'column'
+    member x.ShiftLineRangeRight (range : SnapshotLineRange) multiplier =
+        let shiftText = 
+            let count = _globalSettings.ShiftWidth * multiplier
+            StringUtil.repeatChar count ' '
+
+        use edit = _textBuffer.CreateEdit()
+        range.Lines
+        |> Seq.iter (fun line ->
+
+            // Get the span we are formatting within the line
+            let span = line.Extent
+            let ws, originalLength = x.GetAndNormalizeLeadingWhiteSpaceToSpaces span
+            let ws = x.NormalizeWhiteSpace (ws + shiftText)
+            edit.Replace(line.Start.Position, originalLength, ws) |> ignore)
+        edit.Apply() |> ignore
+
     /// Convert the provided whitespace into spaces.  The conversion of 
     /// tabs into spaces will be done based on the TabSize setting
     member x.GetAndNormalizeLeadingWhitespaceToSpaces line = 
@@ -105,43 +180,6 @@ type internal CommonOperations ( _data : OperationsData ) =
             | _ -> 
                 builder.Append(' ') |> ignore
         builder.ToString(), text.Length
-
-    /// Normalize the whitespace into tabs / spaces based on the ExpandTab,
-    /// TabSize settings
-    member x.NormalizeSpaces (text : string) = 
-        if x.UseSpaces then 
-            text
-        else
-            let tabSize = x.TabSize
-            let spacesCount = text.Length % tabSize
-            let tabCount = (text.Length - spacesCount) / tabSize 
-            let prefix = StringUtil.repeatChar tabCount '\t'
-            let suffix = StringUtil.repeatChar spacesCount ' '
-            prefix + suffix
-
-    member x.ShiftLineRangeRight multiplier (lineSpan:SnapshotLineRange) =
-        let shiftText = 
-            let count = _settings.GlobalSettings.ShiftWidth * multiplier
-            StringUtil.repeatChar count ' '
-        use edit = _data.TextView.TextBuffer.CreateEdit()
-        lineSpan.Lines
-        |> Seq.iter (fun line ->
-            let ws, originalLength = x.GetAndNormalizeLeadingWhitespaceToSpaces line
-            let ws = x.NormalizeSpaces (ws + shiftText)
-            edit.Replace(line.Start.Position, originalLength, ws) |> ignore)
-        edit.Apply() |> ignore
-
-    member x.ShiftLineRangeLeft multiplier (lineSpan:SnapshotLineRange) = 
-        let count = _settings.GlobalSettings.ShiftWidth * multiplier
-        use edit = _data.TextView.TextBuffer.CreateEdit()
-        lineSpan.Lines
-        |> Seq.iter (fun line ->
-            let ws, originalLength = x.GetAndNormalizeLeadingWhitespaceToSpaces line
-            let ws = 
-                let length = max (ws.Length - count) 0
-                StringUtil.repeatChar length ' ' |> x.NormalizeSpaces
-            edit.Replace(line.Start.Position, originalLength, ws) |> ignore)
-        edit.Apply() |> ignore
 
     /// Chnage the letters on the given span by applying the provided function and 
     /// do this as a single edit.
@@ -461,10 +499,13 @@ type internal CommonOperations ( _data : OperationsData ) =
 
     interface ICommonOperations with
         member x.TextView = _textView 
+        member x.TabSize = x.TabSize
+        member x.UseSpaces = x.UseSpaces
         member x.EditorOperations = _operations
         member x.FoldManager = _data.FoldManager
         member x.UndoRedoOperations = _data.UndoRedoOperations
         member x.Join range kind = x.Join range kind
+        member x.GetAndNormalizeLeadingWhiteSpaceToSpaces span = x.GetAndNormalizeLeadingWhiteSpaceToSpaces span
         member x.GoToDefinition () = 
             let before = TextViewUtil.GetCaretPoint _textView
             if _host.GoToDefinition() then
@@ -477,6 +518,7 @@ type internal CommonOperations ( _data : OperationsData ) =
                     Failed(msg)
                 | None ->  Failed(Resources.Common_GotoDefNoWordUnderCursor) 
 
+        member x.NormalizeWhiteSpace text = x.NormalizeWhiteSpace text
         member x.SetMark point c (markMap : IMarkMap) = 
             if System.Char.IsLetter(c) || c = '\'' || c = '`' then
                 markMap.SetMark point c
@@ -571,25 +613,6 @@ type internal CommonOperations ( _data : OperationsData ) =
 
         member x.MoveCaretForVirtualEdit () = x.MoveCaretForVirtualEdit()
 
-        member x.ShiftLineRangeRight multiplier range = x.ShiftLineRangeRight multiplier range
-
-        member x.ShiftBlockRight multiplier block = 
-            let lineSpan = SnapshotLineRangeUtil.CreateForNormalizedSnapshotSpanCollection block
-            x.ShiftLineRangeRight multiplier lineSpan
-        member x.ShiftLineRangeLeft multiplier range = x.ShiftLineRangeLeft multiplier range
-
-        member x.ShiftBlockLeft multiplier block = 
-            let lineSpan = SnapshotLineRangeUtil.CreateForNormalizedSnapshotSpanCollection block
-            x.ShiftLineRangeLeft multiplier lineSpan
-
-        member x.ShiftLinesRight count = 
-            let lineSpan = TextViewUtil.GetCaretLineRange _textView count
-            x.ShiftLineRangeRight 1 lineSpan
-
-        member x.ShiftLinesLeft count =
-            let lineSpan= TextViewUtil.GetCaretLineRange _textView count
-            x.ShiftLineRangeLeft 1 lineSpan
-
         member x.InsertText text count = 
             let text = StringUtil.repeat count text
             let point = TextViewUtil.GetCaretPoint _textView
@@ -641,6 +664,9 @@ type internal CommonOperations ( _data : OperationsData ) =
             // Scrolling itself does not move the caret.  Must be manually moved
             let line = getLine()
             _textView.Caret.MoveTo(line) |> ignore
+
+        member x.ShiftLineRangeLeft range multiplier = x.ShiftLineRangeLeft range multiplier
+        member x.ShiftLineRangeRight range multiplier = x.ShiftLineRangeRight range multiplier
 
         member x.DeleteSpan span = x.DeleteSpan span 
         member x.DeleteBlock col = x.DeleteBlock col 
