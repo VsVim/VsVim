@@ -142,7 +142,7 @@ namespace VimCore.UnitTest
         public void Jump3()
         {
             Create("foo");
-            _statusUtil.Setup(x => x.OnError(It.IsAny<string>())).Verifiable();
+            _operations.Setup(x => x.MoveCaretToPoint(_textView.GetLastLine().Start)).Verifiable();
             RunCommand("400");
             _factory.Verify();
         }

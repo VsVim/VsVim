@@ -91,13 +91,9 @@ module internal RangeUtil =
         let opt,remaining = ParseNumber input
         match opt with 
         | Some(number) ->
-            let number = TssUtil.VimLineToTssLine number
-            if number < tss.LineCount then 
-                let range = tss.GetLineFromLineNumber(number) |> SnapshotLineRangeUtil.CreateForLine
-                ValidRange(range, LineNumber, remaining)
-            else
-                let msg = sprintf "Invalid Range: Line Number %d is not a valid number in the file" number
-                Error(msg)
+            let number = min (TssUtil.VimLineToTssLine number) (tss.LineCount - 1)
+            let range = tss.GetLineFromLineNumber(number) |> SnapshotLineRangeUtil.CreateForLine
+            ValidRange(range, LineNumber, remaining)
         | None -> Error("Expected a line number")
 
     /// Parse out a mark 
