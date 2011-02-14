@@ -638,7 +638,7 @@ namespace VimCore.UnitTest
             _runner.Add(command1);
             _runner.Run('c');
             Assert.IsTrue(_runner.State.IsNotFinishWithCommand);
-            Assert.AreSame(command1, _runner.State.AsNotFinishedWithCommand().Item1);
+            Assert.AreSame(command1, _runner.State.AsNotFinishedWithCommand().Item);
         }
 
         [Test]
@@ -663,7 +663,7 @@ namespace VimCore.UnitTest
             _runner.Add(binding);
             _runner.Run('f');
             Assert.IsTrue(_runner.State.IsNotFinishWithCommand);
-            Assert.AreSame(binding, _runner.State.AsNotFinishedWithCommand().Item1);
+            Assert.AreSame(binding, _runner.State.AsNotFinishedWithCommand().Item);
         }
 
         [Test]

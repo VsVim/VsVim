@@ -8,7 +8,8 @@ open Microsoft.VisualStudio.Text.Editor
 type internal SearchService 
     (
         _search : ITextSearchService,
-        _settings : IVimGlobalSettings ) = 
+        _settings : IVimGlobalSettings
+    ) = 
 
     let _factory = VimRegexFactory(_settings)
 
@@ -40,11 +41,10 @@ type internal SearchService
 
         caseOptions ||| revOptions ||| searchKindOptions
 
-    member x.FindNextMultiple (searchData:SearchData) point nav count =
+    member x.FindNextMultiple (searchData : SearchData) point nav count =
         let tss = SnapshotPointUtil.GetSnapshot point
         let isWrap = SearchKindUtil.IsWrap searchData.Kind
         let opts = x.CreateFindOptions searchData.Text searchData.Kind searchData.Options
-
         match x.ConvertSearchToFindText searchData.Text with
         | None -> None
         | Some(text) -> 

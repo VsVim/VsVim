@@ -284,30 +284,6 @@ type internal VisualMode
                         let range = SnapshotLineRangeUtil.CreateForNormalizedSnapshotSpanCollection col
                         _operations.Join range JoinKind.KeepEmptySpaces))
                 yield (
-                    ["p"],
-                    CommandFlags.Repeatable,
-                    None,
-                    (fun count reg _ -> _operations.PutAtCaret (reg.Value.Value.ApplyCount count) reg.Value.OperationKind PutKind.Before false),
-                    (fun count reg _ -> _operations.PutAtCaret (reg.Value.Value.ApplyCount count) reg.Value.OperationKind PutKind.Before false))
-                yield (
-                    ["P"],
-                    CommandFlags.Repeatable,
-                    None,
-                    (fun count reg _ -> _operations.PutAtCaret (reg.Value.Value.ApplyCount count) reg.Value.OperationKind PutKind.Before false),
-                    (fun count reg _ -> _operations.PutAtCaret (reg.Value.Value.ApplyCount count) reg.Value.OperationKind PutKind.Before false))
-                yield (
-                    ["gp"],
-                    CommandFlags.Repeatable,
-                    None,
-                    (fun count reg _ -> _operations.PutAtCaret (reg.Value.Value.ApplyCount count) reg.Value.OperationKind PutKind.Before true),
-                    (fun count reg _ -> _operations.PutAtCaret (reg.Value.Value.ApplyCount count) reg.Value.OperationKind PutKind.Before true))
-                yield (
-                    ["gP"],
-                    CommandFlags.Repeatable,
-                    None,
-                    (fun count reg _ -> _operations.PutAtCaret (reg.Value.Value.ApplyCount count) reg.Value.OperationKind PutKind.Before true),
-                    (fun count reg _ -> _operations.PutAtCaret (reg.Value.Value.ApplyCount count) reg.Value.OperationKind PutKind.Before true))
-                yield (
                     ["y"],
                     CommandFlags.ResetCaret,
                     None,
@@ -377,6 +353,10 @@ type internal VisualMode
         let visualSeq = 
             seq {
                 yield ("d", CommandFlags.Repeatable, VisualCommand.DeleteHighlightedText)
+                yield ("gp", CommandFlags.Repeatable, VisualCommand.PutAfterCursor true)
+                yield ("gP", CommandFlags.Repeatable, VisualCommand.PutBeforeCursor true)
+                yield ("p", CommandFlags.Repeatable, VisualCommand.PutAfterCursor false)
+                yield ("P", CommandFlags.Repeatable, VisualCommand.PutBeforeCursor false)
                 yield ("x", CommandFlags.Repeatable, VisualCommand.DeleteHighlightedText)
                 yield ("<Del>", CommandFlags.Repeatable, VisualCommand.DeleteHighlightedText)
                 yield ("<lt>", CommandFlags.Repeatable, VisualCommand.ShiftLinesLeft)
@@ -407,7 +387,7 @@ type internal VisualMode
         | CommandRunnerState.NoInput -> true
         | CommandRunnerState.NotEnoughInput -> true
         | CommandRunnerState.NotEnoughMatchingPrefix (_) -> true
-        | CommandRunnerState.NotFinishWithCommand (command, _) -> not (Util.IsFlagSet command.CommandFlags CommandFlags.HandlesEscape)
+        | CommandRunnerState.NotFinishWithCommand command -> not (Util.IsFlagSet command.CommandFlags CommandFlags.HandlesEscape)
 
     interface IMode with
         member x.VimBuffer = _buffer

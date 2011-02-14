@@ -29,7 +29,6 @@ namespace VimCore.UnitTest
         private ITextView _textView;
         private ITextBuffer _textBuffer;
         private CommandUtil _commandUtil;
-        private ICommandUtil _commandUtilInterface;
 
         private void Create(params string[] lines)
         {
@@ -62,7 +61,6 @@ namespace VimCore.UnitTest
                 registerMap: _registerMap,
                 markMap: _markMap,
                 vimData: _vimData);
-            _commandUtilInterface = _commandUtil;
         }
 
         private Register UnnamedRegister
@@ -321,6 +319,36 @@ namespace VimCore.UnitTest
         }
 
         /// <summary>
+        /// When dealing with a repeat of a linked command where a new count is provided, only
+        /// the first command gets the new count.  The linked command gets the original count
+        /// </summary>
+        [Test]
+        public void RepeatLastCommand_OnlyFirstCommandGetsNewCount()
+        {
+            Create("");
+            var didRun1 = false;
+            var didRun2 = false;
+            var command1 = VimUtil.CreatePing(
+                data =>
+                {
+                    didRun1 = true;
+                    Assert.AreEqual(2, data.CountOrDefault);
+                });
+            var command2 = VimUtil.CreatePing(
+                data =>
+                {
+                    didRun2 = true;
+                    Assert.AreEqual(1, data.CountOrDefault);
+                });
+            var command = StoredCommand.NewLinkedCommand(
+                StoredCommand.NewNormalCommand(command1, VimUtil.CreateCommandData(), CommandFlags.None),
+                StoredCommand.NewNormalCommand(command2, VimUtil.CreateCommandData(), CommandFlags.None));
+            _vimData.LastCommand = FSharpOption.Create(command);
+            _commandUtil.RepeatLastCommand(VimUtil.CreateCommandData(count: 2));
+            Assert.IsTrue(didRun1 && didRun2);
+        }
+
+        /// <summary>
         /// Pass a barrage of spans and verify they map back and forth within the same 
         /// ITextBuffer
         /// </summary>
@@ -469,7 +497,7 @@ namespace VimCore.UnitTest
         public void DeleteCharacterAtCursor_Simple()
         {
             Create("foo", "bar");
-            _commandUtil.DeleteCharacterAtCursor(1, UnnamedRegister, ModeSwitch.NoSwitch);
+            _commandUtil.DeleteCharacterAtCursor(1, UnnamedRegister);
             Assert.AreEqual("oo", _textView.GetLine(0).GetText());
             Assert.AreEqual("f", UnnamedRegister.StringValue);
             Assert.AreEqual(0, _textView.GetCaretPoint().Position);
@@ -482,7 +510,7 @@ namespace VimCore.UnitTest
         public void DeleteCharacterAtCursor_TwoCharacters()
         {
             Create("foo", "bar");
-            _commandUtil.DeleteCharacterAtCursor(2, UnnamedRegister, ModeSwitch.NoSwitch);
+            _commandUtil.DeleteCharacterAtCursor(2, UnnamedRegister);
             Assert.AreEqual("o", _textView.GetLine(0).GetText());
             Assert.AreEqual("fo", UnnamedRegister.StringValue);
         }
@@ -495,7 +523,7 @@ namespace VimCore.UnitTest
         {
             Create("the cat", "bar");
             _textView.MoveCaretTo(1);
-            _commandUtil.DeleteCharacterAtCursor(2, UnnamedRegister, ModeSwitch.NoSwitch);
+            _commandUtil.DeleteCharacterAtCursor(2, UnnamedRegister);
             Assert.AreEqual("t cat", _textView.GetLine(0).GetText());
             Assert.AreEqual("he", UnnamedRegister.StringValue);
             Assert.AreEqual(1, _textView.GetCaretPoint().Position);
@@ -510,7 +538,7 @@ namespace VimCore.UnitTest
         {
             Create("the cat", "bar");
             _textView.MoveCaretTo(1);
-            _commandUtil.DeleteCharacterAtCursor(300, UnnamedRegister, ModeSwitch.NoSwitch);
+            _commandUtil.DeleteCharacterAtCursor(300, UnnamedRegister);
             Assert.AreEqual("t", _textView.GetLine(0).GetText());
             Assert.AreEqual("he cat", UnnamedRegister.StringValue);
             Assert.AreEqual(1, _textView.GetCaretPoint().Position);
@@ -574,5 +602,144 @@ namespace VimCore.UnitTest
             Assert.AreEqual(1, _textView.TextSnapshot.LineCount);
             Assert.AreEqual("foo", _textView.GetLine(0).GetText());
         }
+
+        /// <summary>
+        /// Caret should be moved to the start of the shift
+        /// </summary>
+        [Test]
+        public void ShiftLinesRightVisual_BlockShouldPutCaretAtStart()
+        {
+            Create("cat", "dog");
+            _textView.MoveCaretToLine(1);
+            var span = _textView.GetVisualSpanBlock(column: 1, length: 2, startLine: 0, lineCount: 2);
+            _operations
+                .Setup(x => x.ShiftLineBlockRight(span.AsBlock().item, 1))
+                .Callback(() => _textView.SetText("c  at", "d  og"))
+                .Verifiable();
+            _commandUtil.ShiftLinesRightVisual(1, span);
+            Assert.AreEqual(1, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// Caret should be moved to the start of the shift
+        /// </summary>
+        [Test]
+        public void ShiftLinesLeftVisual_BlockShouldPutCaretAtStart()
+        {
+            Create("c  at", "d  og");
+            _textView.MoveCaretToLine(1);
+            var span = _textView.GetVisualSpanBlock(column: 1, length: 1, startLine: 0, lineCount: 2);
+            _operations
+                .Setup(x => x.ShiftLineBlockRight(span.AsBlock().item, 1))
+                .Callback(() => _textView.SetText("cat", "dog"))
+                .Verifiable();
+            _commandUtil.ShiftLinesLeftVisual(1, span);
+            Assert.AreEqual(1, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// Changing a word based motion forward should not delete trailing whitespace
+        /// </summary>
+        [Test]
+        public void ChangeMotion_WordSpan()
+        {
+            Create("foo  bar");
+            _commandUtil.ChangeMotion(
+                UnnamedRegister,
+                VimUtil.CreateMotionResult(
+                    _textBuffer.GetSpan(0, 3),
+                    isForward: true,
+                    isAnyWord: true,
+                    motionKind: MotionKind.Inclusive,
+                    operationKind: OperationKind.CharacterWise));
+            Assert.AreEqual("  bar", _textBuffer.GetLineRange(0).GetText());
+            Assert.AreEqual("foo", UnnamedRegister.StringValue);
+        }
+
+        /// <summary>
+        /// Changing a word based motion forward should not delete trailing whitespace
+        /// </summary>
+        [Test]
+        public void ChangeMotion_WordShouldSaveTrailingWhitespace()
+        {
+            Create("foo  bar");
+            _commandUtil.ChangeMotion(
+                UnnamedRegister,
+                VimUtil.CreateMotionResult(
+                    _textBuffer.GetSpan(0, 5),
+                    isForward: true,
+                    isAnyWord: true,
+                    motionKind: MotionKind.Inclusive,
+                    operationKind: OperationKind.LineWise));
+            Assert.AreEqual("  bar", _textBuffer.GetLineRange(0).GetText());
+            Assert.AreEqual("foo", UnnamedRegister.StringValue);
+            Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// Delete trailing whitespace in a non-word motion
+        /// </summary>
+        [Test]
+        public void ChangeMotion_NonWordShouldDeleteTrailingWhitespace()
+        {
+            Create("foo  bar");
+            _commandUtil.ChangeMotion(
+                UnnamedRegister,
+                VimUtil.CreateMotionResult(
+                    _textBuffer.GetSpan(0, 5),
+                    isForward: true,
+                    isAnyWord: false,
+                    motionKind: MotionKind.Inclusive,
+                    operationKind: OperationKind.LineWise));
+            Assert.AreEqual("bar", _textBuffer.GetLineRange(0).GetText());
+        }
+
+        /// <summary>
+        /// Leave whitespace in a backward word motion
+        /// </summary>
+        [Test]
+        public void ChangeMotion_LeaveWhitespaceIfBackward()
+        {
+            Create("cat dog tree");
+            _commandUtil.ChangeMotion(
+                UnnamedRegister,
+                VimUtil.CreateMotionResult(
+                    _textBuffer.GetSpan(4, 4),
+                    false,
+                    MotionKind.Inclusive,
+                    OperationKind.CharacterWise));
+            Assert.AreEqual("cat tree", _textBuffer.GetLineRange(0).GetText());
+            Assert.AreEqual(4, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// Caret should be positioned at the end of the first line
+        /// </summary>
+        [Test]
+        public void JoinLines_Caret()
+        {
+            Create("dog", "cat", "bear");
+            _operations
+                .Setup(x => x.Join(_textView.GetLineRange(0, 1), JoinKind.RemoveEmptySpaces))
+                .Callback(() => _textView.SetText("dog cat", "bear"))
+                .Verifiable();
+            _commandUtil.JoinLines(JoinKind.RemoveEmptySpaces, 1);
+            _operations.Verify();
+            Assert.AreEqual(3, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// Should beep when the count specified causes the range to exceed the 
+        /// length of the ITextBuffer
+        /// </summary>
+        [Test]
+        public void JoinLines_CountExceedsBuffer()
+        {
+            Create("dog", "cat", "bear");
+            _operations.Setup(x => x.Beep()).Verifiable();
+            _commandUtil.JoinLines(JoinKind.RemoveEmptySpaces, 3000);
+            _operations.Verify();
+        }
+
     }
 }

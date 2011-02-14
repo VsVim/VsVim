@@ -76,7 +76,7 @@ type internal IncrementalSearch
             let oldSearchData = data.SearchData
             let doSearchWithNewPattern newPattern =  doSearch newPattern
 
-            let cancelSearch = 
+            let cancelSearch () = 
                 _data <- None
                 _currentSearchCancelled.Trigger oldSearchData
                 SearchCancelled
@@ -99,12 +99,12 @@ type internal IncrementalSearch
                 SearchComplete(data.SearchData, data.SearchResult)
             elif ki = KeyInputUtil.EscapeKey then
                 resetView()
-                cancelSearch
+                cancelSearch()
             elif ki.Key = VimKey.Back then
                 resetView()
                 let pattern = data.SearchData.Text.RawText
                 match pattern.Length with
-                | 0 -> cancelSearch
+                | 0 -> cancelSearch()
                 | _ -> 
                     let pattern = pattern.Substring(0, pattern.Length - 1)
                     doSearchWithNewPattern pattern

@@ -230,7 +230,7 @@ namespace Vim.UnitTest
             NormalCommand command = null)
 
         {
-            command = command ?? NormalCommand.PutAfterCursor;
+            command = command ?? NormalCommand.NewPutAfterCursor(false);
             return CommandBinding.NewNormalCommand(KeyNotationUtil.StringToKeyInputSet(name), flags, command);
         }
 
@@ -242,7 +242,7 @@ namespace Vim.UnitTest
             Func<KeyInput, BindResult<NormalCommand>> func = keyInput =>
             {
                 action(keyInput);
-                return BindResult<NormalCommand>.NewComplete(NormalCommand.PutAfterCursor);
+                return BindResult<NormalCommand>.NewComplete(NormalCommand.NewPutAfterCursor(false));
             };
 
             var bindData = new BindData<NormalCommand>(
@@ -274,7 +274,7 @@ namespace Vim.UnitTest
                     return BindResult<NormalCommand>.NewNeedMoreInput(data);
                 }
 
-                return BindResult<NormalCommand>.NewComplete(NormalCommand.PutAfterCursor);
+                return BindResult<NormalCommand>.NewComplete(NormalCommand.NewPutAfterCursor(false));
             };
 
             var bindData = new BindData<NormalCommand>(
@@ -290,7 +290,7 @@ namespace Vim.UnitTest
             NormalCommand command = null,
             CommandData commandData = null)
         {
-            command = command ?? NormalCommand.PutAfterCursor;
+            command = command ?? NormalCommand.NewPutAfterCursor(false);
             commandData = commandData ?? new CommandData(FSharpOption<int>.None, FSharpOption<RegisterName>.None);
             return Command.NewNormalCommand(command, commandData);
         }
@@ -368,7 +368,8 @@ namespace Vim.UnitTest
             IOutliningManager outliningManager = null,
             IStatusUtil statusUtil = null)
         {
-            search = search ?? new SearchService(EditorUtil.FactoryService.TextSearchService, settings.GlobalSettings);
+            vimData = vimData ?? new VimData();
+            search = search ?? CreateSearchService(settings.GlobalSettings);
             statusUtil = statusUtil ?? new StatusUtil();
             var nav = CreateTextStructureNavigator(textView.TextBuffer);
             var operations = CreateCommonOperations(

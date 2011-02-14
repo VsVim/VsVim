@@ -120,6 +120,36 @@ type internal CommonOperations ( _data : OperationsData ) =
             let suffix = StringUtil.repeatChar spacesCount ' '
             prefix + suffix
 
+    /// Shifts a block of lines to the left
+    member x.ShiftLineBlockLeft (col: NormalizedSnapshotSpanCollection) multiplier =
+        use edit = _textBuffer.CreateEdit()
+
+        col |> Seq.iter (fun span ->
+            // Get the span we are formatting within the line
+            let ws, originalLength = x.GetAndNormalizeLeadingWhiteSpaceToSpaces span
+            let ws = 
+                let length = max (ws.Length - originalLength) 0
+                StringUtil.repeatChar length ' ' |> x.NormalizeWhiteSpace
+            edit.Replace(span.Start.Position, originalLength, ws) |> ignore)
+
+        edit.Apply() |> ignore
+
+    /// Shift a block of lines to the right
+    member x.ShiftLineBlockRight (col: NormalizedSnapshotSpanCollection) multiplier =
+        let shiftText = 
+            let count = _globalSettings.ShiftWidth * multiplier
+            StringUtil.repeatChar count ' '
+
+        use edit = _textBuffer.CreateEdit()
+
+        col |> Seq.iter (fun span ->
+            // Get the span we are formatting within the line
+            let ws, originalLength = x.GetAndNormalizeLeadingWhiteSpaceToSpaces span
+            let ws = x.NormalizeWhiteSpace (ws + shiftText)
+            edit.Replace(span.Start.Position, originalLength, ws) |> ignore)
+
+        edit.Apply() |> ignore
+
     /// Shift lines in the specified range to the left by one shiftwidth
     /// item.  The shift will done against 'column' in the line
     member x.ShiftLineRangeLeft (range : SnapshotLineRange) multiplier =
@@ -208,8 +238,8 @@ type internal CommonOperations ( _data : OperationsData ) =
 
             let replace = 
                 match kind with
-                | KeepEmptySpaces -> ""
-                | RemoveEmptySpaces -> " "
+                | JoinKind.KeepEmptySpaces -> ""
+                | JoinKind.RemoveEmptySpaces -> " "
 
             // First delete line breaks on all but the last line 
             range.Lines
@@ -223,8 +253,8 @@ type internal CommonOperations ( _data : OperationsData ) =
             // Remove the empty spaces from the start of all but the first line 
             // if the option was specified
             match kind with
-            | KeepEmptySpaces -> ()
-            | RemoveEmptySpaces ->
+            | JoinKind.KeepEmptySpaces -> ()
+            | JoinKind.RemoveEmptySpaces ->
                 range.Lines 
                 |> Seq.skip 1
                 |> Seq.iter (fun line ->
@@ -505,7 +535,6 @@ type internal CommonOperations ( _data : OperationsData ) =
         member x.FoldManager = _data.FoldManager
         member x.UndoRedoOperations = _data.UndoRedoOperations
         member x.Join range kind = x.Join range kind
-        member x.GetAndNormalizeLeadingWhiteSpaceToSpaces span = x.GetAndNormalizeLeadingWhiteSpaceToSpaces span
         member x.GoToDefinition () = 
             let before = TextViewUtil.GetCaretPoint _textView
             if _host.GoToDefinition() then
@@ -518,7 +547,6 @@ type internal CommonOperations ( _data : OperationsData ) =
                     Failed(msg)
                 | None ->  Failed(Resources.Common_GotoDefNoWordUnderCursor) 
 
-        member x.NormalizeWhiteSpace text = x.NormalizeWhiteSpace text
         member x.SetMark point c (markMap : IMarkMap) = 
             if System.Char.IsLetter(c) || c = '\'' || c = '`' then
                 markMap.SetMark point c
@@ -665,6 +693,8 @@ type internal CommonOperations ( _data : OperationsData ) =
             let line = getLine()
             _textView.Caret.MoveTo(line) |> ignore
 
+        member x.ShiftLineBlockLeft col multiplier = x.ShiftLineBlockLeft col multiplier
+        member x.ShiftLineBlockRight col multiplier = x.ShiftLineBlockRight col multiplier
         member x.ShiftLineRangeLeft range multiplier = x.ShiftLineRangeLeft range multiplier
         member x.ShiftLineRangeRight range multiplier = x.ShiftLineRangeRight range multiplier
 
@@ -821,34 +851,6 @@ type internal CommonOperations ( _data : OperationsData ) =
         member x.MoveToNextOccuranceOfWordAtCursor kind count =  x.MoveToNextWordCore kind count true
         member x.MoveToNextOccuranceOfPartialWordAtCursor kind count = x.MoveToNextWordCore kind count false
         member x.MoveToNextOccuranceOfLastSearch count isReverse = x.MoveToNextOccuranceOfLastSearchCore count isReverse
-
-        member x.ChangeSpan (data:MotionResult) =
-            
-            // The ChangeSpan is largely an implementation of the 'c' command.  This command
-            // has legacy / special case behavior for forward word motions.  It will not delete
-            // any trailing whitespace in the span if the motion is created for a forward word
-            // motion.  This behavior is detailed in the :help WORD section of the gVim 
-            // documentation and is likely legacy behavior coming from the original vi 
-            // implementation.  A larger discussion thread is available here
-            // http://groups.google.com/group/vim_use/browse_thread/thread/88b6499bbcb0878d/561dfe13d3f2ef63?lnk=gst&q=whitespace+cw#561dfe13d3f2ef63            
-            let span = 
-                if data.IsAnyWordMotion && data.IsForward then
-                    let point = 
-                        data.OperationSpan
-                        |> SnapshotSpanUtil.GetPointsBackward 
-                        |> Seq.tryFind (fun x -> x.GetChar() |> CharUtil.IsWhiteSpace |> not)
-                    match point with 
-                    | Some(p) -> 
-                        let endPoint = 
-                            p
-                            |> SnapshotPointUtil.TryAddOne 
-                            |> OptionUtil.getOrDefault (SnapshotUtil.GetEndPoint (p.Snapshot))
-                        SnapshotSpan(data.OperationSpan.Start, endPoint)
-                    | None -> data.OperationSpan 
-                else
-                    data.OperationSpan
-            x.DeleteSpan span
-            span
 
         member x.Substitute pattern replace (range:SnapshotLineRange) flags = 
 

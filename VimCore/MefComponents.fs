@@ -269,7 +269,7 @@ type internal ChangeTracker
             // Movement and special commands don't participate in change tracking
             ()
         elif command.IsRepeatable then 
-            _vimData.LastCommand <- StoredCommand.OfCommand data.Command data.CommandBinding
+            _vimData.LastCommand <- StoredCommand.OfCommand data.Command data.CommandBinding |> Some
         else 
             _vimData.LastCommand <- None
 

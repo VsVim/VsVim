@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Windows.Threading;
 using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
@@ -47,7 +48,7 @@ namespace Vim.UnitTest
         public static BindResult<T>.NeedMoreInput AsNeedMoreInput<T>(this BindResult<T> res)
         {
             Assert.IsTrue(res.IsNeedMoreInput);
-            return (BindResult<T>.NeedMoreInput) res;
+            return (BindResult<T>.NeedMoreInput)res;
         }
 
         public static BindResult<TResult> Convert<T, TResult>(this BindResult<T> res, Func<T, TResult> func)
@@ -292,9 +293,9 @@ namespace Vim.UnitTest
             return GetLineSpan(textView, lineNumber, 0, length);
         }
 
-        public static SnapshotSpan GetLineSpan(this ITextView textView, int lineNumber, int startOffset, int length)
+        public static SnapshotSpan GetLineSpan(this ITextView textView, int lineNumber, int column, int length)
         {
-            return GetLineSpan(textView.TextBuffer, lineNumber, startOffset, length);
+            return GetLineSpan(textView.TextBuffer, lineNumber, column, length);
         }
 
         public static ITextSnapshotLine GetLastLine(this ITextView textView)
@@ -329,6 +330,12 @@ namespace Vim.UnitTest
             return textView.Caret.Position.BufferPosition.GetContainingLine();
         }
 
+        public static void SetText(this ITextView textView, params string[] lines)
+        {
+            var text = lines.Aggregate((x, y) => x + y);
+            SetText(textView.TextBuffer, text);
+        }
+
         public static void SetText(this ITextView textView, string text, int? caret = null)
         {
             SetText(textView.TextBuffer, text);
@@ -336,6 +343,16 @@ namespace Vim.UnitTest
             {
                 MoveCaretTo(textView, caret.Value);
             }
+        }
+
+        public static VisualSpan GetVisualSpanBlock(this ITextView textView, int column, int length, int startLine = 0, int lineCount = 1)
+        {
+            return GetVisualSpanBlock(textView.TextBuffer, column, length, startLine, lineCount);
+        }
+
+        public static NormalizedSnapshotSpanCollection GetBlock(this ITextView textView, int column, int length, int startLine = 0, int lineCount = 1)
+        {
+            return GetBlock(textView.TextBuffer, column, length, startLine, lineCount);
         }
 
         #endregion
@@ -363,10 +380,10 @@ namespace Vim.UnitTest
             return GetLineSpan(buffer, lineNumber, 0, length);
         }
 
-        public static SnapshotSpan GetLineSpan(this ITextBuffer buffer, int lineNumber, int startOffset, int length)
+        public static SnapshotSpan GetLineSpan(this ITextBuffer buffer, int lineNumber, int column, int length)
         {
             var line = buffer.GetLine(lineNumber);
-            return new SnapshotSpan(line.Start.Add(startOffset), length);
+            return new SnapshotSpan(line.Start.Add(column), length);
         }
 
         public static SnapshotPoint GetPoint(this ITextBuffer buffer, int position)
@@ -392,6 +409,23 @@ namespace Vim.UnitTest
         public static void SetText(this ITextBuffer buffer, string text)
         {
             buffer.Replace(new Span(0, buffer.CurrentSnapshot.Length), text);
+        }
+
+        public static NormalizedSnapshotSpanCollection GetBlock(this ITextBuffer textBuffer, int column, int length, int startLine = 0, int lineCount = 1)
+        {
+            var list = new List<SnapshotSpan>();
+            for (var i = 0; i < lineCount; i++)
+            {
+                list.Add(textBuffer.GetLineSpan(i + startLine, column: column, length: length));
+            }
+
+            return new NormalizedSnapshotSpanCollection(list);
+        }
+
+        public static VisualSpan GetVisualSpanBlock(this ITextBuffer textBuffer, int column, int length, int startLine = 0, int lineCount = 1)
+        {
+            var col = GetBlock(textBuffer, column, length, startLine, lineCount);
+            return VisualSpan.NewBlock(col);
         }
 
         #endregion
@@ -467,19 +501,19 @@ namespace Vim.UnitTest
         public static VisualSpan.Character AsCharacter(this VisualSpan span)
         {
             Assert.IsTrue(span.IsCharacter);
-            return (VisualSpan.Character) span;
+            return (VisualSpan.Character)span;
         }
 
         public static VisualSpan.Line AsLine(this VisualSpan span)
         {
             Assert.IsTrue(span.IsLine);
-            return (VisualSpan.Line) span;
+            return (VisualSpan.Line)span;
         }
 
         public static VisualSpan.Block AsBlock(this VisualSpan span)
         {
             Assert.IsTrue(span.IsBlock);
-            return (VisualSpan.Block) span;
+            return (VisualSpan.Block)span;
         }
 
         #endregion

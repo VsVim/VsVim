@@ -926,61 +926,9 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void Edit_c_1()
+        public void Bind_ChangeMotion()
         {
-            Create("foo bar");
-            var motionData = VimUtil.CreateMotionResult(
-                _textView.TextBuffer.GetSpan(0, 4),
-                isForward: true,
-                isAnyWord: true,
-                motionKind: MotionKind.Exclusive,
-                operationKind: OperationKind.CharacterWise);
-            _operations
-                .Setup(x => x.ChangeSpan(motionData))
-                .Returns(motionData.OperationSpan)
-                .Verifiable();
-            _operations
-                .Setup(x => x.UpdateRegisterForSpan(_unnamedRegister, RegisterOperation.Delete, motionData.OperationSpan, OperationKind.CharacterWise))
-                .Verifiable();
-            var res = _mode.Process("cw");
-            Assert.IsTrue(res.IsSwitchMode);
-            Assert.AreEqual(ModeKind.Insert, res.AsSwitchMode().Item);
-            _operations.Verify();
-        }
-
-        [Test]
-        public void Edit_c_2()
-        {
-            Create("foo bar");
-            var reg = _map.GetRegister('c');
-            var motionData = VimUtil.CreateMotionResult(
-                _textView.TextBuffer.GetSpan(0, 4),
-                isForward: true,
-                isAnyWord: true,
-                motionKind: MotionKind.Exclusive,
-                operationKind: OperationKind.CharacterWise);
-            _operations
-                .Setup(x => x.ChangeSpan(motionData))
-                .Returns(motionData.OperationSpan)
-                .Verifiable();
-            _operations
-                .Setup(x => x.UpdateRegisterForSpan(reg, RegisterOperation.Delete, motionData.OperationSpan, OperationKind.CharacterWise))
-                .Verifiable();
-            var res = _mode.Process("\"ccw");
-            Assert.IsTrue(res.IsSwitchMode);
-            Assert.AreEqual(ModeKind.Insert, res.AsSwitchMode().Item);
-            _operations.Verify();
-        }
-
-        [Test]
-        public void Edit_c_3()
-        {
-            Create("");
-            var command =
-                _mode.CommandRunner.Commands
-                .Where(x => x.KeyInputSet.Name == "c" && x.IsMotionCommand)
-                .Single();
-            Assert.IsTrue(0 != (CommandFlags.LinkedWithNextTextChange & command.CommandFlags));
+            // REPEAT TODO: Figure out how to test the binding of motion commands
         }
 
         [Test]

@@ -16,12 +16,14 @@ namespace VimCore.UnitTest
         private MockRepository _factory;
         private Mock<IVimGlobalSettings> _settings;
         private Mock<ITextSearchService> _textSearch;
+        private IVimData _vimData;
         private SearchService _searchRaw;
         private ISearchService _search;
 
         [SetUp]
         public void SetUp()
         {
+            _vimData = new VimData();
             _factory = new MockRepository(MockBehavior.Strict);
             _settings = _factory.Create<IVimGlobalSettings>();
             _settings.SetupGet(x => x.Magic).Returns(true);

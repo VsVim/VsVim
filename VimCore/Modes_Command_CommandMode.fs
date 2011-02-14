@@ -77,6 +77,7 @@ type internal CommandMode
                 | ModeArgument.OneTimeCommand(_) -> StringUtil.empty
                 | ModeArgument.FromVisual -> FromVisualModeString
                 | ModeArgument.Subsitute(_) -> StringUtil.empty
+                | ModeArgument.InsertWithCount _ -> StringUtil.empty
             _input <- _command |> Seq.map KeyInputUtil.CharToKeyInput |> List.ofSeq |> List.rev
         member x.OnLeave () = ()
         member x.OnClose() = ()

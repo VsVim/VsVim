@@ -27,10 +27,6 @@ type OperationsData = {
     Navigator : ITextStructureNavigator
 }
 
-type JoinKind = 
-| RemoveEmptySpaces
-| KeepEmptySpaces
-
 type Result = 
 | Succeeded
 | Failed of string
@@ -40,7 +36,10 @@ type PutKind =
 | Before
 | After
 
-/// Common operations
+/// This class abstracts out the operations that are common to normal, visual and 
+/// command mode.  It usually contains common edit and movement operations and very
+/// rarely will deal with caret operations.  That is the responsibility of the 
+/// caller
 type ICommonOperations =
 
     /// Associated ITextView
@@ -75,11 +74,6 @@ type ICommonOperations =
 
     /// Change the letters by applying a ROT13 encoding to each letter in the span
     abstract ChangeLetterRot13 : EditSpan -> unit
-
-    /// Change the text represented by the given Motion.  Returns the SnapshotSpan 
-    /// of the original ITextSnapshot which was modified.  Maybe different
-    /// than the passed in value
-    abstract ChangeSpan : MotionResult -> SnapshotSpan
 
     /// Close the current buffer
     abstract Close : checkDirty : bool -> unit
@@ -131,11 +125,6 @@ type ICommonOperations =
 
     /// Fold count lines under the cursor
     abstract FoldLines : count:int -> unit
-
-    /// Convert the provided whitespace into spaces.  The conversion of tabs into spaces will be 
-    /// done based on the TabSize setting.  Returns the new whitespace string and the length 
-    /// of the original string
-    abstract GetAndNormalizeLeadingWhiteSpaceToSpaces : SnapshotSpan -> (string * int)
 
     /// Attempt to GoToDefinition on the current state of the buffer.  If this operation fails, an error message will 
     /// be generated as appropriate
@@ -215,10 +204,6 @@ type ICommonOperations =
     /// jump list
     abstract NavigateToPoint : VirtualSnapshotPoint -> bool
 
-    /// Normalize the whitespace into tabs / spaces based on the ExpandTab,
-    /// TabSize settings
-    abstract NormalizeWhiteSpace : string -> string
-
     /// Open count folds in the given SnapshotSpan 
     abstract OpenFold : SnapshotSpan -> count:int -> unit
 
@@ -254,6 +239,12 @@ type ICommonOperations =
 
     /// Scroll the buffer by the specified number of pages in the given direction
     abstract ScrollPages : ScrollDirection -> count:int -> unit
+
+    /// Shift the block of lines to the left by shiftwidth * 'multiplier'
+    abstract ShiftLineBlockLeft : NormalizedSnapshotSpanCollection -> multiplier : int -> unit
+
+    /// Shift the block of lines to the right by shiftwidth * 'multiplier'
+    abstract ShiftLineBlockRight : NormalizedSnapshotSpanCollection -> multiplier : int -> unit
 
     /// Shift the given line range left by shiftwidth * 'multiplier'
     abstract ShiftLineRangeLeft : SnapshotLineRange -> multiplier : int -> unit

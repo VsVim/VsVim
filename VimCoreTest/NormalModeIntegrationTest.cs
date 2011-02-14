@@ -13,6 +13,7 @@ namespace VimCore.UnitTest
     {
         private IVimBuffer _buffer;
         private IWpfTextView _textView;
+        private bool _assertOnErrorMessage = true;
 
         public void Create(params string[] lines)
         {
@@ -20,6 +21,15 @@ namespace VimCore.UnitTest
             _textView = tuple.Item1;
             var service = EditorUtil.FactoryService;
             _buffer = service.Vim.CreateBuffer(_textView);
+            _buffer.ErrorMessage += 
+                (_, message) =>
+                {
+                    if (_assertOnErrorMessage)
+                    {
+                        Assert.Fail("Error Message: " + message);
+                    }
+                };
+
         }
 
         [TearDown]
@@ -40,7 +50,7 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void dot_Repeated1()
+        public void RepeatCommand_Repeated()
         {
             Create("the fox chased the bird");
             _buffer.Process("dw");
@@ -52,7 +62,7 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void dot_LinkedTextChange1()
+        public void RepeatCommand_LinkedTextChange1()
         {
             Create("the fox chased the bird");
             _buffer.Process("cw");
@@ -64,7 +74,7 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void dot_LinkedTextChange2()
+        public void RepeatCommand_LinkedTextChange2()
         {
             Create("the fox chased the bird");
             _buffer.Process("cw");
@@ -76,7 +86,7 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void dot_LinkedTextChange3()
+        public void RepeatCommand_LinkedTextChange3()
         {
             Create("the fox chased the bird");
             _buffer.Process("cw");
@@ -876,7 +886,7 @@ namespace VimCore.UnitTest
         public void Handle_s_AtEndOfLine()
         {
             Create("dog", "cat");
-            var point = _textView.MoveCaretTo(2);
+            _textView.MoveCaretTo(2);
             _buffer.Process('s');
             Assert.AreEqual(2, _textView.GetCaretPoint().Position);
             Assert.AreEqual("do", _textView.GetLine(0).GetText());

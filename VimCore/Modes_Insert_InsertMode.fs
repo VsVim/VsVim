@@ -73,6 +73,9 @@ type internal InsertMode
             | Some(func) -> func()
             | None -> Processed
         member x.OnEnter _ = 
+            // REPEAT TOOD: Need to handle the InsertWithCount argument so that text
+            // can be repeated on exit
+
             // If this is replace mode then go ahead and setup overwrite
             if _isReplace then
                 _editorOptions.SetOptionValue(DefaultTextViewOptions.OverwriteModeId, true)

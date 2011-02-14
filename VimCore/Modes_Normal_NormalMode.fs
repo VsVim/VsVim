@@ -111,7 +111,13 @@ type internal NormalMode
         let normalSeq = 
             seq {
                 yield ("dd", CommandFlags.Repeatable, NormalCommand.DeleteLines)
-                yield ("p", CommandFlags.Repeatable, NormalCommand.PutAfterCursor)
+                yield ("I", CommandFlags.LinkedWithNextTextChange ||| CommandFlags.Repeatable, NormalCommand.InsertAtFirstNonBlank)
+                yield ("J", CommandFlags.Repeatable, NormalCommand.JoinLines JoinKind.RemoveEmptySpaces)
+                yield ("gJ", CommandFlags.Repeatable, NormalCommand.JoinLines JoinKind.KeepEmptySpaces)
+                yield ("gp", CommandFlags.Repeatable, NormalCommand.PutAfterCursor true)
+                yield ("gP", CommandFlags.Repeatable, NormalCommand.PutBeforeCursor true)
+                yield ("p", CommandFlags.Repeatable, NormalCommand.PutAfterCursor false)
+                yield ("P", CommandFlags.Repeatable, NormalCommand.PutBeforeCursor false)
                 yield ("s", CommandFlags.LinkedWithNextTextChange ||| CommandFlags.Repeatable, NormalCommand.SubstituteCharacterAtCursor)
                 yield ("x", CommandFlags.Repeatable, NormalCommand.DeleteCharacterAtCursor)
                 yield ("X", CommandFlags.Repeatable, NormalCommand.DeleteCharacterBeforeCursor)
@@ -125,6 +131,8 @@ type internal NormalMode
             
         let motionSeq = 
             seq {
+                yield ("c", CommandFlags.LinkedWithNextTextChange ||| CommandFlags.Repeatable, NormalCommand.ChangeMotion)
+                yield ("d", CommandFlags.Repeatable, NormalCommand.DeleteMotion)
                 yield ("y", CommandFlags.None, NormalCommand.Yank)
                 yield ("<lt>", CommandFlags.Repeatable, NormalCommand.ShiftMotionLinesLeft)
                 yield (">", CommandFlags.Repeatable, NormalCommand.ShiftMotionLinesRight)
@@ -145,13 +153,6 @@ type internal NormalMode
 
     /// Create the simple commands
     member this.CreateSimpleCommands() =
-
-        let join count kind = 
-            let line = TextViewUtil.GetCaretLine this.TextView
-            let count = if count = 1 then 2 else count
-            match SnapshotLineRangeUtil.CreateForLineAndCount line count with
-            | None -> _bufferData.Vim.VimHost.Beep()
-            | Some(range) -> _operations.Join range kind
 
         let doNothing _ _ = ()
         let commands = 
@@ -176,21 +177,6 @@ type internal NormalMode
                             let range = TextViewUtil.GetCaretLineRange _bufferData.TextView 1
                             _operations.Substitute data.SearchPattern data.Substitute range SubstituteFlags.None 
                         | None -> () )
-                yield (
-                    "gJ", 
-                    CommandFlags.Repeatable, 
-                    ModeSwitch.NoSwitch,
-                    fun count reg -> join count JoinKind.KeepEmptySpaces )
-                yield (
-                    "gp", 
-                    CommandFlags.Repeatable, 
-                    ModeSwitch.NoSwitch,
-                    fun count reg -> _operations.PutAtCaret (reg.Value.Value.ApplyCount count) reg.Value.OperationKind PutKind.After true)
-                yield (
-                    "gP", 
-                    CommandFlags.Repeatable, 
-                    ModeSwitch.NoSwitch,
-                    fun count reg -> _operations.PutAtCaret (reg.Value.Value.ApplyCount count) reg.Value.OperationKind PutKind.Before true)
                 yield (
                     "g&", 
                     CommandFlags.Special, 
@@ -282,11 +268,6 @@ type internal NormalMode
                     ModeSwitch.NoSwitch,
                     fun _ _ ->  _operations.Close(true) |> ignore )
                 yield (
-                    "P", 
-                    CommandFlags.Repeatable, 
-                    ModeSwitch.NoSwitch,
-                    fun count reg -> _operations.PutAtCaret (reg.Value.Value.ApplyCount count) reg.Value.OperationKind PutKind.Before false)
-                yield (
                     "D", 
                     CommandFlags.Repeatable, 
                     ModeSwitch.NoSwitch,
@@ -333,11 +314,6 @@ type internal NormalMode
                     CommandFlags.Special, 
                     ModeSwitch.NoSwitch,
                     fun count _ -> _operations.ScrollPages ScrollDirection.Down count)
-                yield (
-                    "J", 
-                    CommandFlags.Repeatable, 
-                    ModeSwitch.NoSwitch,
-                    fun count _ -> join count JoinKind.RemoveEmptySpaces )
                 yield (
                     "<C-b>", 
                     CommandFlags.Special, 
@@ -438,11 +414,6 @@ type internal NormalMode
                     CommandFlags.Special,
                     ModeSwitch.SwitchMode ModeKind.Insert, 
                     doNothing)
-                yield (
-                    "I", 
-                    CommandFlags.LinkedWithNextTextChange ||| CommandFlags.Repeatable,
-                    ModeSwitch.SwitchMode ModeKind.Insert, 
-                    (fun _ _ -> _operations.EditorOperations.MoveToStartOfLineAfterWhiteSpace(false)))
                 yield (
                     ":", 
                     CommandFlags.Special,
@@ -589,20 +560,6 @@ type internal NormalMode
         let complex : seq<string * CommandFlags * ModeKind option * (int -> Register -> MotionResult -> unit)> =
             seq {
                 yield (
-                    "c", 
-                    CommandFlags.LinkedWithNextTextChange ||| CommandFlags.Repeatable, 
-                    Some ModeKind.Insert, 
-                    fun _ reg data -> 
-                        let span = _operations.ChangeSpan data 
-                        _operations.UpdateRegisterForSpan reg RegisterOperation.Delete span data.OperationKind)
-                yield (
-                    "d", 
-                    CommandFlags.None, 
-                    None, 
-                    fun _ reg data -> 
-                        _operations.DeleteSpan data.OperationSpan 
-                        _operations.UpdateRegisterForSpan reg RegisterOperation.Delete data.OperationSpan data.OperationKind)
-                yield (
                     "gU",
                     CommandFlags.Repeatable,
                     None,
@@ -709,6 +666,7 @@ type internal NormalMode
             | ModeArgument.FromVisual -> ()
             | ModeArgument.Subsitute(_) -> ()
             | ModeArgument.OneTimeCommand(modeKind) -> _data <- { _data with OneTimeMode = Some modeKind }
+            | ModeArgument.InsertWithCount _ -> ()
 
         member this.OnLeave () = ()
         member this.OnClose() = _eventHandlers.DisposeAll()

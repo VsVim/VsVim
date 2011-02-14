@@ -1335,6 +1335,11 @@ type internal TextViewMotionUtil
 
     /// Get the motion for a search command.  Used to implement the '/' and '?' motions
     member x.Search (searchData : SearchData) =
+
+        // Searching as part of a motion should update the last search information
+        // irrespective of whether or not the search completes
+        _vimData.LastSearchData <- searchData
+
         let caretPoint = TextViewUtil.GetCaretPoint _textView
         let searchPoint = Util.GetSearchPoint searchData.Kind caretPoint
         match _search.FindNext searchData searchPoint _navigator with

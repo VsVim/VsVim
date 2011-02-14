@@ -8,6 +8,11 @@ open Microsoft.VisualStudio.Text.Outlining
 open Microsoft.VisualStudio.Utilities
 open System.Diagnostics
 
+[<RequireQualifiedAccess>]
+type JoinKind = 
+    | RemoveEmptySpaces
+    | KeepEmptySpaces
+
 /// Map containing the various VIM registers
 type IRegisterMap = 
 
@@ -583,6 +588,10 @@ type ModeArgument =
     /// match to process and the range is the full range to consider for a replace
     | Subsitute of SnapshotSpan * SnapshotLineRange * SubstituteData
 
+    /// Begins insert mode with a specified count.  This means the text inserted should
+    /// be repeated a total of 'count - 1' times when insert mode exits
+    | InsertWithCount of int
+
 type ModeSwitch =
     | NoSwitch
     | SwitchMode of ModeKind
@@ -702,6 +711,10 @@ type CommandData = {
 [<RequireQualifiedAccess>]
 type NormalCommand = 
 
+    /// Deletes the text specified by the motion and begins insert mode. Implements the "c" 
+    /// command
+    | ChangeMotion of MotionData
+
     /// Delete the character at the current cursor position.  Implements the "x" command
     | DeleteCharacterAtCursor
 
@@ -710,6 +723,15 @@ type NormalCommand =
 
     /// Delete lines from the buffer: dd
     | DeleteLines
+
+    /// Delete the specified motion of text
+    | DeleteMotion of MotionData
+
+    /// Insert text at the first non-blank line in the current line
+    | InsertAtFirstNonBlank
+
+    /// Join the specified lines
+    | JoinLines of JoinKind
 
     /// Jump to the specified mark 
     | JumpToMark of char
@@ -721,8 +743,13 @@ type NormalCommand =
     /// testing items like complex repeats significantly easier
     | Ping of (CommandData -> unit)
 
-    /// Put the contents of the register into the 
-    | PutAfterCursor
+    /// Put the contents of the register into the buffer after the cursor.  The bool is 
+    /// whether or not the caret should be placed after the inserted text
+    | PutAfterCursor of bool
+
+    /// Put the contents of the register into the buffer before the cursor.  The bool is 
+    /// whether or not the caret should be placed after the inserted text
+    | PutBeforeCursor of bool
 
     /// Repeat the last command
     | RepeatLastCommand
@@ -758,8 +785,13 @@ type VisualCommand =
     /// Delte the highlighted text and put it into a register
     | DeleteHighlightedText
 
-    /// Put the contents of the register into the 
-    | PutAfterCursor
+    /// Put the contents of the register into the buffer after the cursor.  The bool is 
+    /// whether or not the caret should be placed after the inserted text
+    | PutAfterCursor of bool
+
+    /// Put the contents of the register into the buffer before the cursor.  The bool is 
+    /// whether or not the caret should be placed after the inserted text
+    | PutBeforeCursor of bool
 
     /// Replace the visual span with the provided character
     | ReplaceChar of KeyInput
@@ -853,7 +885,7 @@ and BindData<'T> = {
             | BindResult.Cancelled -> BindResult.Cancelled
             | BindResult.Complete value -> BindResult.Complete (mapFunc value)
             | BindResult.Error -> BindResult.Error
-            | BindResult.NeedMoreInput bindData -> BindResult.NeedMoreInput { KeyRemapMode = bindData.KeyRemapMode; BindFunction = inner bindData.BindFunction}
+            | BindResult.NeedMoreInput bindData -> BindResult.NeedMoreInput (bindData.Convert mapFunc)
 
         { KeyRemapMode = x.KeyRemapMode; BindFunction = inner x.BindFunction }
 
@@ -1038,6 +1070,12 @@ type StoredCommand =
     /// can be repeated together.
     | LinkedCommand of StoredCommand * StoredCommand
 
+    /// A Legacy command.  These cannot be repeated but we store them because it 
+    /// makes it easier to spot a Legacy command linked with a repeat text change.  
+    ///
+    /// REPEAT TODO: Delete this when all legacy commands are done
+    | LegacyCommand of KeyInputSet * CommandFlags
+
     with
 
     /// The CommandFlags associated with this StoredCommand
@@ -1047,20 +1085,18 @@ type StoredCommand =
         | VisualCommand (_, _, _, flags) -> flags
         | TextChangeCommand _ -> CommandFlags.None
         | LinkedCommand _ -> CommandFlags.None
+        | LegacyCommand (_, flags) -> flags
 
     /// Create a StoredCommand instance from the given Command value
-    ///
-    /// REPEAT TODO: Remove the option when legacy commands are removed
     static member OfCommand command (commandBinding : CommandBinding) = 
         match command with 
         | Command.NormalCommand (command, data) -> 
-            StoredCommand.NormalCommand (command, data, commandBinding.CommandFlags) |> Some
+            StoredCommand.NormalCommand (command, data, commandBinding.CommandFlags)
         | Command.VisualCommand (command, data, visualSpan) ->
             let storedVisualSpan = StoredVisualSpan.OfVisualSpan visualSpan
-            StoredCommand.VisualCommand (command, data, storedVisualSpan, commandBinding.CommandFlags) |> Some
+            StoredCommand.VisualCommand (command, data, storedVisualSpan, commandBinding.CommandFlags)
         | Command.LegacyCommand _ ->
-            // Not possible to store a legacy command
-            None
+            StoredCommand.LegacyCommand (commandBinding.KeyInputSet, commandBinding.CommandFlags)
 
 /// Flags about specific motions
 [<RequireQualifiedAccess>]
@@ -1161,13 +1197,13 @@ type CommandRunnerState =
     /// where the name of the Motion is a prefix of the Simple command.  The LegacyMotionCommand is 
     /// captured in the first item of the tuple and all other commands with a matching prefix are
     /// captured in the list
-    | NotEnoughMatchingPrefix of CommandBinding * CommandBinding list * KeyRemapMode option
+    | NotEnoughMatchingPrefix of CommandBinding * CommandBinding list
 
     /// Waiting for a Motion or Long Command to complete.  Enough input is present to determine this
     /// is the command to execute but not enough to complete the execution of the command.  The
     /// bool in the tuple represents whether or not the next input should be processed as language 
     /// input (:help language-mapping)
-    | NotFinishWithCommand of CommandBinding * KeyRemapMode option
+    | NotFinishWithCommand of CommandBinding
 
 /// Responsible for managing a set of Commands and running them
 type ICommandRunner =

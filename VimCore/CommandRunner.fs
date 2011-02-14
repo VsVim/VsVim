@@ -147,12 +147,12 @@ type internal CommandRunner
         let rec inner (commandName : KeyInputSet) previousCommandName currentInput = 
 
             // Used to continue driving the 'inner' function a BindData value.
-            let bindNext () = 
+            let bindNext keyRemapMode = 
                 let inner keyInput = 
                     let previousCommandName = commandName
                     let commandName = previousCommandName.Add keyInput
                     inner commandName previousCommandName keyInput
-                BindResult.NeedMoreInput { KeyRemapMode = None; BindFunction = inner }
+                BindResult.NeedMoreInput { KeyRemapMode = keyRemapMode ; BindFunction = inner }
 
             // Used to complete the transition from a LegacyMotionCommand to a NormalCommand
             let completeMotion commandBinding convertFunc (motion, motionCount) =
@@ -188,8 +188,8 @@ type internal CommandRunner
                         // At least one other command matched so we need at least one more piece of input to
                         // differentiate the commands.  At this point though because the command is of the
                         // motion variety we are in operator pending
-                        _data <- {_data with State = NotEnoughMatchingPrefix (command, withPrefix |> List.ofSeq, Some KeyRemapMode.OperatorPending)}
-                        bindNext()
+                        _data <- { _data with State = NotEnoughMatchingPrefix (command, withPrefix |> List.ofSeq) }
+                        bindNext (Some KeyRemapMode.OperatorPending)
                 | CommandBinding.MotionCommand (_, _, func) -> 
                     // Can't just call this.  It's possible there is a non-motion command with a 
                     // longer command commandInputs.  If there are any other commands which have a 
@@ -204,8 +204,8 @@ type internal CommandRunner
                         // At least one other command matched so we need at least one more piece of input to
                         // differentiate the commands.  At this point though because the command is of the
                         // motion variety we are in operator pending
-                        _data <- {_data with State = NotEnoughMatchingPrefix (command, withPrefix |> List.ofSeq, Some KeyRemapMode.OperatorPending)}
-                        bindNext()
+                        _data <- { _data with State = NotEnoughMatchingPrefix (command, withPrefix |> List.ofSeq) }
+                        bindNext (Some KeyRemapMode.OperatorPending)
     
                 | CommandBinding.ComplexNormalCommand (_, _, bindData) -> 
                     let bindData = bindData.Convert (fun normalCommand -> (Command.NormalCommand (normalCommand, commandData), command))
@@ -229,21 +229,21 @@ type internal CommandRunner
                     match Map.tryFind previousCommandName _commandMap with
                     | Some(command) ->
                         match command with
-                        | CommandBinding.LegacySimpleCommand _ -> bindNext()
-                        | CommandBinding.LegacyVisualCommand _ -> bindNext()
+                        | CommandBinding.LegacySimpleCommand _ -> bindNext None
+                        | CommandBinding.LegacyVisualCommand _ -> bindNext None
                         | CommandBinding.LegacyMotionCommand (_, _, func) -> x.BindLegacyMotion command currentInput count register func
-                        | CommandBinding.MotionCommand (_, _, func) -> x.BindMotion keyInput (completeMotion command func)
-                        | CommandBinding.NormalCommand _ -> bindNext()
-                        | CommandBinding.VisualCommand _ -> bindNext()
-                        | CommandBinding.ComplexNormalCommand _ -> bindNext()
-                        | CommandBinding.ComplexVisualCommand _ -> bindNext()
+                        | CommandBinding.MotionCommand (_, _, func) -> x.BindMotion currentInput (completeMotion command func)
+                        | CommandBinding.NormalCommand _ -> bindNext None
+                        | CommandBinding.VisualCommand _ -> bindNext None
+                        | CommandBinding.ComplexNormalCommand _ -> bindNext None
+                        | CommandBinding.ComplexVisualCommand _ -> bindNext None
                     | None -> 
                         // No prefix matches and no previous motion so won't ever match a comamand
                         BindResult.Error
                 elif hasPrefixMatch then
                     // At least one command with a prefix matching the current input.  Wait for the 
                     // next keystroke
-                    bindNext()
+                    bindNext None
                 else
                     // No prospect of matching a command at this point
                     BindResult.Error
@@ -269,7 +269,7 @@ type internal CommandRunner
         | CommandRunnerState.NoInput -> true
         | CommandRunnerState.NotEnoughInput -> true
         | CommandRunnerState.NotEnoughMatchingPrefix(_) -> true
-        | CommandRunnerState.NotFinishWithCommand (command, _) -> not command.HandlesEscape
+        | CommandRunnerState.NotFinishWithCommand command -> not command.HandlesEscape
 
     /// Function which handles all incoming input
     member x.Run (ki:KeyInput) =
@@ -325,11 +325,9 @@ type internal CommandRunner
             | CommandRunnerState.NotFinishWithCommand(_) -> true
             | CommandRunnerState.NotEnoughMatchingPrefix(_) -> true
         member x.KeyRemapMode = 
-            match _data.State with
-            | CommandRunnerState.NoInput -> None
-            | CommandRunnerState.NotEnoughInput -> None
-            | CommandRunnerState.NotFinishWithCommand(_, mode) -> mode
-            | CommandRunnerState.NotEnoughMatchingPrefix(_, _, mode) -> mode
+            match _runBindData with
+            | None -> None
+            | Some bindData -> bindData.KeyRemapMode
 
         member x.Add command = x.Add command
         member x.Remove name = x.Remove name

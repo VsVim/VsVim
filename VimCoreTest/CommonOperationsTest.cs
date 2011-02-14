@@ -69,7 +69,7 @@ namespace VimCore.UnitTest
             _undoRedoOperations = _factory.Create<IUndoRedoOperations>();
             _undoRedoOperations.Setup(x => x.CreateUndoTransaction(It.IsAny<string>())).Returns(_factory.Create<IUndoTransaction>(MockBehavior.Loose).Object);
             _smartIndent = _factory.Create<ISmartIndentationService>();
-            _searchService = new SearchService(EditorUtil.FactoryService.TextSearchService, _globalSettings.Object);
+            _searchService = VimUtil.CreateSearchService(_globalSettings.Object);
 
             var data = new OperationsData(
                 vimData: _vimData,
@@ -1122,6 +1122,30 @@ namespace VimCore.UnitTest
             Assert.AreEqual("\t\tcat", _textView.GetLine(0).GetText());
         }
 
+        /// <summary>
+        /// Make sure it shifts on the appropriate column and not column 0
+        /// </summary>
+        [Test]
+        public void ShiftLineBlockRight_Simple()
+        {
+            Create("cat", "dog");
+            _operations.ShiftLineBlockRight(_textView.GetBlock(column: 1, length: 1, startLine: 0, lineCount: 2), 1);
+            Assert.AreEqual("c  at", _textView.GetLine(0).GetText());
+            Assert.AreEqual("d  og", _textView.GetLine(1).GetText());
+        }
+
+        /// <summary>
+        /// Make sure it shifts on the appropriate column and not column 0
+        /// </summary>
+        [Test]
+        public void ShiftLineBlockLeft_Simple()
+        {
+            Create("c  at", "d  og");
+            _operations.ShiftLineBlockLeft(_textView.GetBlock(column: 1, length: 1, startLine: 0, lineCount: 2), 1);
+            Assert.AreEqual("cat", _textView.GetLine(0).GetText());
+            Assert.AreEqual("dog", _textView.GetLine(1).GetText());
+        }
+
         [Test]
         public void ScrollLines1()
         {
@@ -1645,61 +1669,6 @@ namespace VimCore.UnitTest
             _globalSettings.Setup(x => x.VisualBell).Returns(true).Verifiable();
             _operations.Beep();
             _factory.Verify();
-        }
-
-        [Test]
-        public void ChangeSpan_WordSpan()
-        {
-            Create("foo  bar");
-            var data = VimUtil.CreateMotionResult(
-                _textBuffer.GetSpan(0, 3),
-                isForward: true,
-                isAnyWord: true,
-                motionKind: MotionKind.Inclusive,
-                operationKind: OperationKind.CharacterWise);
-            _operations.ChangeSpan(data);
-            Assert.AreEqual("  bar", _textBuffer.GetLineRange(0).GetText());
-        }
-
-        [Test]
-        public void ChangeSpan_WordShouldSaveTrailingWhitespace()
-        {
-            Create("foo  bar");
-            var data = VimUtil.CreateMotionResult(
-                _textBuffer.GetSpan(0, 5),
-                isForward: true,
-                isAnyWord: true,
-                motionKind: MotionKind.Inclusive,
-                operationKind: OperationKind.LineWise);
-            _operations.ChangeSpan(data);
-            Assert.AreEqual("  bar", _textBuffer.GetLineRange(0).GetText());
-        }
-
-        [Test]
-        public void ChangeSpan_NonWordShouldDeleteTrailingWhitespace()
-        {
-            Create("foo  bar");
-            var data = VimUtil.CreateMotionResult(
-                _textBuffer.GetSpan(0, 5),
-                isForward: true,
-                isAnyWord: false,
-                motionKind: MotionKind.Inclusive,
-                operationKind: OperationKind.LineWise);
-            _operations.ChangeSpan(data);
-            Assert.AreEqual("bar", _textBuffer.GetLineRange(0).GetText());
-        }
-
-        [Test]
-        public void ChangeSpan_LeaveWhitespaceIfBackward()
-        {
-            Create("cat dog tree");
-            var data = VimUtil.CreateMotionResult(
-                _textBuffer.GetSpan(4, 4),
-                false,
-                MotionKind.Inclusive,
-                OperationKind.CharacterWise);
-            _operations.ChangeSpan(data);
-            Assert.AreEqual("cat tree", _textBuffer.GetLineRange(0).GetText());
         }
 
         [Test]

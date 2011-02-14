@@ -92,9 +92,50 @@ type internal CommandUtil
                 |> NormalizedSnapshotSpanCollectionUtil.OfSeq
             VisualSpan.Block col
 
+    /// Delete the specified motion and enter insert mode
+    member x.ChangeMotion register (result : MotionResult) = 
+
+        // This command has legacy / special case behavior for forward word motions.  It will 
+        // not delete any trailing whitespace in the span if the motion is created for a forward 
+        // word motion. This behavior is detailed in the :help WORD section of the gVim 
+        // documentation and is likely legacy behavior coming from the original vi 
+        // implementation.  A larger discussion thread is available here
+        // http://groups.google.com/group/vim_use/browse_thread/thread/88b6499bbcb0878d/561dfe13d3f2ef63?lnk=gst&q=whitespace+cw#561dfe13d3f2ef63
+
+        let span = 
+            if result.IsAnyWordMotion && result.IsForward then
+                let point = 
+                    result.OperationSpan
+                    |> SnapshotSpanUtil.GetPointsBackward 
+                    |> Seq.tryFind (fun x -> x.GetChar() |> CharUtil.IsWhiteSpace |> not)
+                match point with 
+                | Some(p) -> 
+                    let endPoint = 
+                        p
+                        |> SnapshotPointUtil.TryAddOne 
+                        |> OptionUtil.getOrDefault (SnapshotUtil.GetEndPoint (p.Snapshot))
+                    SnapshotSpan(result.OperationSpan.Start, endPoint)
+                | None -> result.OperationSpan 
+            else
+                result.OperationSpan
+
+        // Use an undo transaction to preserve the caret position.  It should be at the start
+        // of the span being deleted before and after the undo / redo so move it before and 
+        // after the delete occurs
+        TextViewUtil.MoveCaretToPoint _textView span.Start
+        x.EditWithUndoTransaciton "Change" (fun () ->
+            _textBuffer.Delete(span.Span) |> ignore
+            TextViewUtil.MoveCaretToPosition _textView span.Start.Position)
+
+        // Now that the delete is complete update the register
+        let value = { Value = StringData.OfSpan span; OperationKind = result.OperationKind }
+        _registerMap.SetRegisterValue register RegisterOperation.Delete value
+
+        CommandResult.Completed (ModeSwitch.SwitchMode ModeKind.Insert)
+
     /// Delete 'count' characters after the cursor on the current line.  Caret should 
     /// remain at it's original position 
-    member x.DeleteCharacterAtCursor count register modeSwitch =
+    member x.DeleteCharacterAtCursor count register =
 
         // Check for the case where the caret is past the end of the line.  Can happen
         // when 've=onemore'
@@ -117,7 +158,7 @@ type internal CommandUtil
             let value = { Value = StringData.OfSpan span; OperationKind = OperationKind.CharacterWise }
             _registerMap.SetRegisterValue register RegisterOperation.Delete value
 
-        CommandResult.Completed modeSwitch
+        CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Delete 'count' characters before the cursor on the current line.  Caret should be
     /// positioned at the begining of the span for undo / redo
@@ -203,9 +244,60 @@ type internal CommandUtil
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
+    /// Delete the specified motion of text
+    member x.DeleteMotion register (result : MotionResult) = 
+
+        // The d{motion} command has an exception listed which is visible by typing ':help d' in 
+        // gVim.  In summary, if the motion is characterwise, begins and ends on different
+        // lines and the start is preceeding by only whitespace and the end is followed
+        // only by whitespace then it becomes a linewise motion for those lines.  However experimentation
+        // shows that this does not appear to be the case.  For example type the following out 
+        // where ^ is the caret
+        //
+        //  ^abc
+        //   def
+        //    
+        //
+        // Then try 'd/    '.  It will not delete the final line even though this meets all of
+        // the requirements.  Choosing to ignore this exception for now until I can find
+        // a better example
+
+
+        // Caret should be placed at the start of the motion for both undo / redo so place it 
+        // before starting the transaction
+        let span = result.OperationSpan
+        TextViewUtil.MoveCaretToPoint _textView span.Start
+        x.EditWithUndoTransaciton "Delete" (fun () ->
+            _textBuffer.Delete(span.Span) |> ignore
+            TextViewUtil.MoveCaretToPosition _textView span.Start.Position)
+
+        // Update the register with the result
+        let value = { Value = StringData.OfSpan span; OperationKind = result.OperationKind }
+        _registerMap.SetRegisterValue register RegisterOperation.Delete value
+
+        CommandResult.Completed ModeSwitch.NoSwitch
+
     /// Run the specified action with a wrapped undo transaction.  This is often necessary when
     /// an edit command manipulates the caret
     member x.EditWithUndoTransaciton name action = _operations.WrapEditInUndoTransaction name action
+
+    /// Join 'count + 1' lines in the buffer
+    member x.JoinLines kind count = 
+
+        match SnapshotLineRangeUtil.CreateForLineAndCount x.CaretLine (count + 1) with
+        | None -> 
+            // If the count exceeds the length of the buffer then the operation should not 
+            // complete and a beep should be issued
+            _operations.Beep()
+        | Some range -> 
+            // The caret should be moved after the original line.  It should have it's original
+            // position during an undo though so don't move the caret until inside the transaciton
+            let position = x.CaretLine.End.Position
+            x.EditWithUndoTransaciton "Join" (fun () -> 
+                _operations.Join range kind
+                TextViewUtil.MoveCaretToPosition _textView position)
+
+        CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Jump to the specified mark
     member x.JumpToMark c =
@@ -215,6 +307,20 @@ type internal CommandUtil
             CommandResult.Error
         | Modes.Result.Succeeded ->
             CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Begin insert mode on the first non-blank character of the line.  Pass the count onto
+    /// insert mode so it can duplicate the input
+    member x.InsertAtFirstNonBlank count =
+        let point = 
+            x.CaretLine
+            |> SnapshotLineUtil.GetPoints
+            |> Seq.skipWhile SnapshotPointUtil.IsWhiteSpace
+            |> SeqUtil.tryHeadOnly
+            |> OptionUtil.getOrDefault x.CaretLine.End
+        TextViewUtil.MoveCaretToPoint _textView point
+
+        let switch = ModeSwitch.SwitchModeWithArgument (ModeKind.Insert, ModeArgument.InsertWithCount count)
+        CommandResult.Completed switch
 
     /// Move the caret to the result of the motion
     member x.MoveCaretToMotion motion count = 
@@ -231,30 +337,56 @@ type internal CommandUtil
 
     /// Put the contents of the specified register after the cursor.  Used for the
     /// normal / visual 'p' command
-    member x.PutAfterCursor (register : Register) count switch =
+    member x.PutAfterCursor (register : Register) count moveCaretAfterText switch =
         let point = SnapshotPointUtil.AddOneOrCurrent x.CaretPoint
         let stringData = register.StringData.ApplyCount count
-        _operations.PutAt point stringData register.OperationKind
+
+        // PutAtCaret is one of the few ICommonOperations which takes care of
+        // positioning the caret so no need to do it here
+        _operations.PutAtCaret stringData register.Value.OperationKind PutKind.After moveCaretAfterText
+        CommandResult.Completed switch
+
+    /// Put the contents of the specified register before the cursor.  Used for the
+    /// normal / visual 'P' command
+    member x.PutBeforeCursor (register : Register) count moveCaretAfterText switch =
+        let point = SnapshotPointUtil.AddOneOrCurrent x.CaretPoint
+        let stringData = register.StringData.ApplyCount count
+
+        // PutAtCaret is one of the few ICommonOperations which takes care of
+        // positioning the caret so no need to do it here
+        _operations.PutAtCaret stringData register.Value.OperationKind PutKind.Before moveCaretAfterText
         CommandResult.Completed switch
 
     /// Repeat the last executed command against the current buffer
     member x.RepeatLastCommand (repeatData : CommandData) = 
 
         // Function to actually repeat the last change 
-        let rec repeat (command : StoredCommand) = 
+        let rec repeat (command : StoredCommand) (repeatData : CommandData option) = 
 
-            // Calculate the new CommandData based on the old and 
-            // current CommandData values
-            let getCommandData (oldData : CommandData) = 
-                match repeatData.Count with
-                | Some count -> { oldData with Count = repeatData.Count }
-                | None -> oldData
+            // Calculate the new CommandData based on the original and repeat CommandData 
+            // values.  The repeat CommandData will be None in nested command repeats 
+            // for linked commands which means the original should just be used
+            let getCommandData (original : CommandData) = 
+                match repeatData with
+                | None -> 
+                    original
+                | Some repeatData -> 
+                    match repeatData.Count with
+                    | Some count -> { original with Count = repeatData.Count }
+                    | None -> original
 
             // Repeat a text change.  
             let repeatTextChange change = 
+
+                // Calculate the count of the repeat
+                let count = 
+                    match repeatData with
+                    | Some repeatData -> repeatData.CountOrDefault
+                    | None -> 1
+
                 match change with 
                 | TextChange.Insert text -> 
-                    _operations.InsertText text repeatData.CountOrDefault
+                    _operations.InsertText text count
                 | TextChange.Delete(count) -> 
                     let caretPoint, caretLine = x.CaretPointAndLine
                     let length = min count (caretLine.EndIncludingLineBreak.Position - caretPoint.Position)
@@ -276,9 +408,15 @@ type internal CommandUtil
 
                 // Run the commands in sequence.  Only continue onto the second if the first 
                 // command succeeds
-                match repeat command1 with
+                match repeat command1 repeatData with
                 | CommandResult.Error -> CommandResult.Error
-                | CommandResult.Completed _ -> repeat command2
+                | CommandResult.Completed _ -> repeat command2 None
+            | StoredCommand.LegacyCommand (keyInputSet, _) -> 
+
+                // Don't support repeat of Legacy Commands.  They're the reason we moved to this
+                // new system
+                _statusUtil.OnError (Resources.Common_CannotRepeatLegacy (keyInputSet.ToString()))
+                CommandResult.Error
 
         if _inRepeatLastChange then
             _statusUtil.OnError Resources.NormalMode_RecursiveRepeatDetected
@@ -291,7 +429,7 @@ type internal CommandUtil
                     _operations.Beep()
                     CommandResult.Completed ModeSwitch.NoSwitch
                 | Some command ->
-                    repeat command
+                    repeat command (Some repeatData)
             finally
                 _inRepeatLastChange <- false
 
@@ -376,15 +514,20 @@ type internal CommandUtil
         let register = _registerMap.GetRegister data.RegisterNameOrDefault
         let count = data.CountOrDefault
         match command with
-        | NormalCommand.DeleteCharacterAtCursor -> x.DeleteCharacterAtCursor count register ModeSwitch.NoSwitch
+        | NormalCommand.ChangeMotion motion -> x.RunWithMotion motion (x.ChangeMotion register)
+        | NormalCommand.DeleteCharacterAtCursor -> x.DeleteCharacterAtCursor count register
         | NormalCommand.DeleteCharacterBeforeCursor -> x.DeleteCharacterBeforeCursor count register
         | NormalCommand.DeleteLines -> x.DeleteLines count register
-        | NormalCommand.MoveCaretToMotion motion -> x.MoveCaretToMotion motion data.Count
+        | NormalCommand.DeleteMotion motion -> x.RunWithMotion motion (x.DeleteMotion register)
+        | NormalCommand.InsertAtFirstNonBlank -> x.InsertAtFirstNonBlank count
+        | NormalCommand.JoinLines kind -> x.JoinLines kind count
         | NormalCommand.JumpToMark c -> x.JumpToMark c
+        | NormalCommand.MoveCaretToMotion motion -> x.MoveCaretToMotion motion data.Count
         | NormalCommand.Ping func -> x.Ping func data
-        | NormalCommand.PutAfterCursor -> x.PutAfterCursor register count ModeSwitch.NoSwitch
+        | NormalCommand.PutAfterCursor moveCaretAfterText -> x.PutAfterCursor register count moveCaretAfterText ModeSwitch.NoSwitch
+        | NormalCommand.PutBeforeCursor moveCaretBeforeText -> x.PutBeforeCursor register count moveCaretBeforeText ModeSwitch.NoSwitch
         | NormalCommand.SetMarkToCaret c -> x.SetMarkToCaret c
-        | NormalCommand.SubstituteCharacterAtCursor -> x.DeleteCharacterAtCursor count register (ModeSwitch.SwitchMode ModeKind.Insert)
+        | NormalCommand.SubstituteCharacterAtCursor -> x.SubstituteCharacterAtCursor count register
         | NormalCommand.ShiftLinesLeft -> x.ShiftLinesLeft count
         | NormalCommand.ShiftLinesRight -> x.ShiftLinesRight count
         | NormalCommand.ShiftMotionLinesLeft motion -> x.RunWithMotion motion x.ShiftMotionLinesLeft
@@ -399,7 +542,8 @@ type internal CommandUtil
         let count = data.CountOrDefault
         match command with
         | VisualCommand.DeleteHighlightedText -> x.DeleteHighlightedText register visualSpan
-        | VisualCommand.PutAfterCursor -> x.PutAfterCursor register count (ModeSwitch.SwitchMode ModeKind.Normal)
+        | VisualCommand.PutAfterCursor moveCaretAfterText -> x.PutAfterCursor register count moveCaretAfterText (ModeSwitch.SwitchMode ModeKind.Normal)
+        | VisualCommand.PutBeforeCursor moveCaretAfterText -> x.PutBeforeCursor register count moveCaretAfterText (ModeSwitch.SwitchMode ModeKind.Normal)
         | VisualCommand.ReplaceChar keyInput -> x.ReplaceCharVisual keyInput visualSpan
         | VisualCommand.ShiftLinesLeft -> x.ShiftLinesLeftVisual count visualSpan
         | VisualCommand.ShiftLinesRight -> x.ShiftLinesRightVisual count visualSpan
@@ -479,6 +623,7 @@ type internal CommandUtil
             // 0 but rather shifts at the start column of every span.  It also treats
             // the caret much more different by keeping it at the start of the first
             // span vs. the start of the shift
+
             let targetCaretPosition = 
                 visualSpan.Start 
                 |> OptionUtil.getOrDefault x.CaretPoint 
@@ -488,17 +633,7 @@ type internal CommandUtil
             // it needs to be undone to this location
             TextViewUtil.MoveCaretToPosition _textView targetCaretPosition
             x.EditWithUndoTransaciton "ShiftLeft" (fun () -> 
-                use edit = _textBuffer.CreateEdit()
-
-                col |> Seq.iter (fun span ->
-                    // Get the span we are formatting within the line
-                    let ws, originalLength = _operations.GetAndNormalizeLeadingWhiteSpaceToSpaces span
-                    let ws = 
-                        let length = max (ws.Length - count) 0
-                        StringUtil.repeatChar length ' ' |> _operations.NormalizeWhiteSpace
-                    edit.Replace(span.Start.Position, originalLength, ws) |> ignore)
-
-                edit.Apply() |> ignore
+                _operations.ShiftLineBlockRight col count
                 TextViewUtil.MoveCaretToPosition _textView targetCaretPosition)
 
         CommandResult.Completed ModeSwitch.SwitchPreviousMode
@@ -520,10 +655,6 @@ type internal CommandUtil
         | VisualSpan.Line range ->
             x.ShiftLinesRightCore range count
         | VisualSpan.Block col ->
-            let shiftText = 
-                let count = _globalSettings.ShiftWidth * count
-                StringUtil.repeatChar count ' '
-
             // Shifting a block span is trickier because it doesn't shift at column
             // 0 but rather shifts at the start column of every span.  It also treats
             // the caret much more different by keeping it at the start of the first
@@ -537,15 +668,8 @@ type internal CommandUtil
             // it needs to be undone to this location
             TextViewUtil.MoveCaretToPosition _textView targetCaretPosition
             x.EditWithUndoTransaciton "ShiftLeft" (fun () -> 
-                use edit = _textBuffer.CreateEdit()
+                _operations.ShiftLineBlockRight col count
 
-                col |> Seq.iter (fun span ->
-                    // Get the span we are formatting within the line
-                    let ws, originalLength = _operations.GetAndNormalizeLeadingWhiteSpaceToSpaces span
-                    let ws = _operations.NormalizeWhiteSpace (ws + shiftText)
-                    edit.Replace(span.Start.Position, originalLength, ws) |> ignore)
-
-                edit.Apply() |> ignore
                 TextViewUtil.MoveCaretToPosition _textView targetCaretPosition)
 
         CommandResult.Completed ModeSwitch.SwitchPreviousMode
@@ -559,6 +683,33 @@ type internal CommandUtil
     member x.ShiftMotionLinesRight (result : MotionResult) = 
         x.ShiftLinesRightCore result.OperationLineRange 1
         CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Substitute 'count' characters at the cursor on the current line.  Very similar to
+    /// DeleteCharacterAtCursor.  Main exception is the behavior when the caret is on
+    /// or after the last character in the line
+    /// should be after the span for Substitute even if 've='.  
+    member x.SubstituteCharacterAtCursor count register =
+
+        if x.CaretPoint.Position >= x.CaretLine.End.Position then
+            // When we are past the end of the line just move the caret
+            // to the end of the line and complete the command.  Nothing should be deleted
+            TextViewUtil.MoveCaretToPoint _textView x.CaretLine.End
+        else
+            let endPoint = SnapshotLineUtil.GetOffsetOrEnd x.CaretLine (x.CaretColumn + count)
+            let span = SnapshotSpan(x.CaretPoint, endPoint)
+
+            // Use a transaction so we can guarantee the caret is in the correct
+            // position on undo / redo
+            x.EditWithUndoTransaciton "DeleteChar" (fun () -> 
+                let position = x.CaretPoint.Position
+                let snapshot = _textBuffer.Delete(span.Span)
+                TextViewUtil.MoveCaretToPoint _textView (SnapshotPoint(snapshot, position)))
+
+            // Put the deleted text into the specified register
+            let value = { Value = StringData.OfSpan span; OperationKind = OperationKind.CharacterWise }
+            _registerMap.SetRegisterValue register RegisterOperation.Delete value
+
+        CommandResult.Completed (ModeSwitch.SwitchMode ModeKind.Insert)
 
     /// Yank the contents of the motion into the specified register
     member x.YankMotion register (result: MotionResult) = 

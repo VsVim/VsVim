@@ -73,7 +73,7 @@ namespace VimCore.UnitTest
             _options.Setup(x => x.GetOptionValue<int>(It.IsAny<EditorOptionKey<int>>())).Throws(new ArgumentException());
             _options.Setup(x => x.IsOptionDefined<int>(It.IsAny<EditorOptionKey<int>>(), false)).Returns(true);
             _jumpList = new Mock<IJumpList>(MockBehavior.Strict);
-            _searchService = new SearchService(EditorUtil.FactoryService.TextSearchService, _globalSettings.Object);
+            _searchService = VimUtil.CreateSearchService(_globalSettings.Object);
             _statusUtil = new Mock<IStatusUtil>(MockBehavior.Strict);
             _outlining = new Mock<IOutliningManager>(MockBehavior.Strict);
             _undoRedoOperations = new Mock<IUndoRedoOperations>(MockBehavior.Strict);
