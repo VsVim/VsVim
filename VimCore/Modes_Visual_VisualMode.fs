@@ -290,19 +290,6 @@ type internal VisualMode
                             | VisualKind.Line -> normal()
                             | VisualKind.Block -> StringData.OfNormalizedSnasphotSpanCollection col
                         reg.Value <- { Value = data; OperationKind = OperationKind.LineWise} ))
-                yield (
-                    ["="],
-                    CommandFlags.Repeatable,
-                    None,
-                    (fun _ _ span -> 
-                        let range = SnapshotLineRangeUtil.CreateForSpan span
-                        _buffer.Vim.VimHost.FormatLines _buffer.TextView range),
-                    (fun _ _ col ->
-                        let range = 
-                            col
-                            |> NormalizedSnapshotSpanCollectionUtil.GetCombinedSpan
-                            |> SnapshotLineRangeUtil.CreateForSpan 
-                        _buffer.Vim.VimHost.FormatLines _buffer.TextView range))
             }
             |> Seq.map (fun (strList,flags,mode,funcNormal,funcBlock) ->
                 strList 
@@ -341,6 +328,7 @@ type internal VisualMode
                 yield ("<lt>", CommandFlags.Repeatable, VisualCommand.ShiftLinesLeft)
                 yield (">", CommandFlags.Repeatable, VisualCommand.ShiftLinesRight)
                 yield ("~", CommandFlags.Repeatable, VisualCommand.ChangeCase ChangeCharacterKind.ToggleCase)
+                yield ("=", CommandFlags.Repeatable, VisualCommand.FormatLines)
             } |> Seq.map (fun (str, flags, command) -> 
                 let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
                 CommandBinding.VisualCommand(keyInputSet, flags, command))

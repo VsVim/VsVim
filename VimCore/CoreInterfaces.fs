@@ -745,6 +745,13 @@ type NormalCommand =
     /// Change case of the specified motion
     | ChangeCaseMotion of ChangeCharacterKind * MotionData
 
+    /// Delete 'count' lines and begin insert mode
+    | ChangeLines
+
+    /// Delete the text till the end of the line in the same manner as DeleteTillEndOfLine
+    /// and start Insert Mode
+    | ChangeTillEndOfLine
+
     /// Delete the character at the current cursor position.  Implements the "x" command
     | DeleteCharacterAtCursor
 
@@ -756,6 +763,15 @@ type NormalCommand =
 
     /// Delete the specified motion of text
     | DeleteMotion of MotionData
+
+    /// Delete till the end of the line and 'count - 1' more lines down
+    | DeleteTillEndOfLine
+
+    /// Format the specified lines
+    | FormatLines
+
+    /// Format the specified motion
+    | FormatMotion of MotionData
 
     /// Insert text at the first non-blank line in the current line
     | InsertAtFirstNonBlank
@@ -817,6 +833,9 @@ type VisualCommand =
 
     /// Delte the highlighted text and put it into a register
     | DeleteHighlightedText
+
+    /// Format the selected text
+    | FormatLines
 
     /// Put the contents of the register into the buffer after the cursor.  The bool is 
     /// whether or not the caret should be placed after the inserted text

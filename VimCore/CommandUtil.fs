@@ -226,6 +226,63 @@ type internal CommandUtil
 
         CommandResult.Completed (ModeSwitch.SwitchMode ModeKind.Insert)
 
+    /// Delete 'count' lines and begin insert mode.  The documentation of this command 
+    /// and behavior are a bit off.  It's documented like it behaves lke 'dd + insert mode' 
+    /// but behaves more like ChangeTillEndOfLine but linewise and deletes the entire
+    /// first line
+    member x.ChangeLines count register = 
+
+        let range = SnapshotLineRangeUtil.CreateForLineAndMaxCount x.CaretLine count
+        let lineNumber = x.CaretLine.LineNumber
+
+        // Caret position before the delete needs to be on the first non-whitespace character
+        // of the first line.  If the line is blank the caret should remain un-moved
+        let point =
+            x.CaretLine
+            |> SnapshotLineUtil.GetPoints
+            |> Seq.skipWhile SnapshotPointUtil.IsWhiteSpace
+            |> SeqUtil.tryHeadOnly
+        match point with
+        | None -> ()
+        | Some point -> TextViewUtil.MoveCaretToPoint _textView point
+
+        // Start an edit transaction to get the appropriate undo / redo behavior for the 
+        // caret movement after the edit.
+        x.EditWithUndoTransaciton "ChangeLines" (fun () -> 
+            let snapshot = _textBuffer.Delete(range.Extent.Span)
+            let line = SnapshotUtil.GetLine snapshot lineNumber
+
+            if _localSettings.AutoIndent then
+                // If auto-indent is on then we preserve the original indent.  The line is empty
+                // right now so put the caret into virtual space
+                match point with
+                | Some point ->
+                    let point = VirtualSnapshotPoint(line.Start, SnapshotPointUtil.GetColumn point)
+                    TextViewUtil.MoveCaretToVirtualPoint _textView point
+                | None -> 
+                    TextViewUtil.MoveCaretToPoint _textView line.Start
+            else
+                // Put the caret at column 0
+                TextViewUtil.MoveCaretToPoint _textView line.Start)
+
+        // Update the register now that the operation is complete.  Register value is odd here
+        // because we really didn't delete linewise but it's required to be a linewise 
+        // operation.  
+        let value = range.Extent.GetText() + System.Environment.NewLine
+        let value = { Value = StringData.Simple value; OperationKind = OperationKind.LineWise }
+        _registerMap.SetRegisterValue register RegisterOperation.Delete value
+
+        CommandResult.Completed (ModeSwitch.SwitchMode ModeKind.Insert)
+
+    /// Delete till the end of the line and start insert mode
+    member x.ChangeTillEndOfLine count register =
+
+        // Exact same operation as DeleteTillEndOfLine except we end by switching to 
+        // insert mode
+        x.DeleteTillEndOfLine count register |> ignore
+
+        CommandResult.Completed (ModeSwitch.SwitchMode ModeKind.Insert)
+
     /// Delete 'count' characters after the cursor on the current line.  Caret should 
     /// remain at it's original position 
     member x.DeleteCharacterAtCursor count register =
@@ -368,6 +425,54 @@ type internal CommandUtil
         let value = { Value = StringData.OfSpan span; OperationKind = result.OperationKind }
         _registerMap.SetRegisterValue register RegisterOperation.Delete value
 
+        CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Delete from the cursor to the end of the line and then 'count - 1' more lines into
+    /// the buffer.
+    member x.DeleteTillEndOfLine count register =
+        let span = 
+            if count = 1 then
+                // Just deleting till the end of 
+                SnapshotSpan(x.CaretPoint, x.CaretLine.End)
+            else
+                // Grab a SnapshotLineRange for the 'count - 1' lines and combine in with
+                // the caret start to get the span
+                let range = SnapshotLineRangeUtil.CreateForLineAndMaxCount x.CaretLine count
+                SnapshotSpan(x.CaretPoint, range.End)
+
+        // The caret is already at the start of the Span and it needs to be after the 
+        // delete so wrap it in an undo transaction
+        x.EditWithUndoTransaciton "Delete" (fun () -> 
+            _textBuffer.Delete(span.Span) |> ignore
+            TextViewUtil.MoveCaretToPosition _textView span.Start.Position)
+
+        // Delete is complete so update the register.  Strangely enough this is a characterwise
+        // operation even though it involves line deletion
+        let value = { Value = StringData.OfSpan span; OperationKind = OperationKind.CharacterWise }
+        _registerMap.SetRegisterValue register RegisterOperation.Delete value
+
+        CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Format the 'count' lines in the buffer
+    member x.FormatLines count =
+        let range = SnapshotLineRangeUtil.CreateForLineAndMaxCount x.CaretLine count
+        _operations.FormatLines range
+        CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Format the selected lines
+    member x.FormatLinesVisual (visualSpan: VisualSpan) =
+
+        // Use a transaction so the formats occur as a single operation
+        x.EditWithUndoTransaciton "Format" (fun () ->
+            visualSpan.Spans
+            |> Seq.map SnapshotLineRangeUtil.CreateForSpan
+            |> Seq.iter _operations.FormatLines)
+
+        CommandResult.Completed ModeSwitch.SwitchPreviousMode
+
+    /// Format the lines in the Motion 
+    member x.FormatMotion (result : MotionResult) = 
+        _operations.FormatLines result.LineRange
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Run the specified action with a wrapped undo transaction.  This is often necessary when
@@ -611,10 +716,15 @@ type internal CommandUtil
         | NormalCommand.ChangeCaseCaretLine kind -> x.ChangeCaseCaretLine kind
         | NormalCommand.ChangeCaseCaretPoint kind -> x.ChangeCaseCaretPoint kind count
         | NormalCommand.ChangeCaseMotion (kind, motion) -> x.RunWithMotion motion (x.ChangeCaseMotion kind)
+        | NormalCommand.ChangeLines -> x.ChangeLines count register
+        | NormalCommand.ChangeTillEndOfLine -> x.ChangeTillEndOfLine count register
         | NormalCommand.DeleteCharacterAtCursor -> x.DeleteCharacterAtCursor count register
         | NormalCommand.DeleteCharacterBeforeCursor -> x.DeleteCharacterBeforeCursor count register
         | NormalCommand.DeleteLines -> x.DeleteLines count register
         | NormalCommand.DeleteMotion motion -> x.RunWithMotion motion (x.DeleteMotion register)
+        | NormalCommand.DeleteTillEndOfLine -> x.DeleteTillEndOfLine count register
+        | NormalCommand.FormatLines -> x.FormatLines count
+        | NormalCommand.FormatMotion motion -> x.RunWithMotion motion x.FormatMotion 
         | NormalCommand.InsertAtFirstNonBlank -> x.InsertAtFirstNonBlank count
         | NormalCommand.JoinLines kind -> x.JoinLines kind count
         | NormalCommand.JumpToMark c -> x.JumpToMark c
@@ -639,6 +749,7 @@ type internal CommandUtil
         match command with
         | VisualCommand.ChangeCase kind -> x.ChangeCaseVisual kind visualSpan
         | VisualCommand.DeleteHighlightedText -> x.DeleteHighlightedText register visualSpan
+        | VisualCommand.FormatLines -> x.FormatLinesVisual visualSpan
         | VisualCommand.PutAfterCursor moveCaretAfterText -> x.PutAfterCursor register count moveCaretAfterText (ModeSwitch.SwitchMode ModeKind.Normal)
         | VisualCommand.PutBeforeCursor moveCaretAfterText -> x.PutBeforeCursor register count moveCaretAfterText (ModeSwitch.SwitchMode ModeKind.Normal)
         | VisualCommand.ReplaceChar keyInput -> x.ReplaceCharVisual keyInput visualSpan

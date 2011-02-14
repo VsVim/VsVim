@@ -104,7 +104,10 @@ type internal NormalMode
     member x.CreateCommandBindings() =
         let normalSeq = 
             seq {
+                yield ("C", CommandFlags.LinkedWithNextTextChange ||| CommandFlags.Repeatable, NormalCommand.ChangeTillEndOfLine)
+                yield ("cc", CommandFlags.LinkedWithNextTextChange ||| CommandFlags.Repeatable, NormalCommand.ChangeLines)
                 yield ("dd", CommandFlags.Repeatable, NormalCommand.DeleteLines)
+                yield ("D", CommandFlags.Repeatable, NormalCommand.DeleteTillEndOfLine)
                 yield ("I", CommandFlags.LinkedWithNextTextChange ||| CommandFlags.Repeatable, NormalCommand.InsertAtFirstNonBlank)
                 yield ("J", CommandFlags.Repeatable, NormalCommand.JoinLines JoinKind.RemoveEmptySpaces)
                 yield ("gJ", CommandFlags.Repeatable, NormalCommand.JoinLines JoinKind.KeepEmptySpaces)
@@ -121,12 +124,14 @@ type internal NormalMode
                 yield ("p", CommandFlags.Repeatable, NormalCommand.PutAfterCursor false)
                 yield ("P", CommandFlags.Repeatable, NormalCommand.PutBeforeCursor false)
                 yield ("s", CommandFlags.LinkedWithNextTextChange ||| CommandFlags.Repeatable, NormalCommand.SubstituteCharacterAtCursor)
+                yield ("S", CommandFlags.LinkedWithNextTextChange ||| CommandFlags.Repeatable, NormalCommand.ChangeLines)
                 yield ("x", CommandFlags.Repeatable, NormalCommand.DeleteCharacterAtCursor)
                 yield ("X", CommandFlags.Repeatable, NormalCommand.DeleteCharacterBeforeCursor)
                 yield ("<Del>", CommandFlags.Repeatable, NormalCommand.DeleteCharacterAtCursor)
                 yield (".", CommandFlags.Special, NormalCommand.RepeatLastCommand)
                 yield ("<lt><lt>", CommandFlags.Repeatable, NormalCommand.ShiftLinesLeft)
                 yield (">>", CommandFlags.Repeatable, NormalCommand.ShiftLinesRight)
+                yield ("==", CommandFlags.Repeatable, NormalCommand.FormatLines)
             } |> Seq.map (fun (str, flags, command) -> 
                 let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
                 CommandBinding.NormalCommand(keyInputSet, flags, command))
@@ -141,6 +146,7 @@ type internal NormalMode
                 yield ("y", CommandFlags.None, NormalCommand.Yank)
                 yield ("<lt>", CommandFlags.Repeatable, NormalCommand.ShiftMotionLinesLeft)
                 yield (">", CommandFlags.Repeatable, NormalCommand.ShiftMotionLinesRight)
+                yield ("=", CommandFlags.Repeatable, NormalCommand.FormatMotion)
             } |> Seq.map (fun (str, flags, command) -> 
                 let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
                 CommandBinding.MotionCommand(keyInputSet, flags, command))
@@ -273,13 +279,6 @@ type internal NormalMode
                     ModeSwitch.NoSwitch,
                     fun _ _ ->  _operations.Close(true) |> ignore )
                 yield (
-                    "D", 
-                    CommandFlags.Repeatable, 
-                    ModeSwitch.NoSwitch,
-                    fun count reg -> 
-                        let span = _operations.DeleteLinesFromCursor count
-                        _operations.UpdateRegisterForSpan reg RegisterOperation.Delete span OperationKind.CharacterWise)
-                yield (
                     "<C-r>", 
                     CommandFlags.Special, 
                     ModeSwitch.NoSwitch,
@@ -393,28 +392,6 @@ type internal NormalMode
                         _operations.EditorOperations.ScrollLineTop()
                         _operations.EditorOperations.MoveToStartOfLineAfterWhiteSpace(false) )
                 yield (
-                    "==",
-                    CommandFlags.Repeatable,
-                    ModeSwitch.NoSwitch,
-                    fun count _ -> 
-                        let range = TextViewUtil.GetCaretLineRange this.TextView count 
-                        _bufferData.Vim.VimHost.FormatLines this.TextView range )
-                yield (
-                    "cc",
-                    CommandFlags.LinkedWithNextTextChange ||| CommandFlags.Repeatable,
-                    ModeSwitch.SwitchMode ModeKind.Insert,
-                    fun count reg ->  
-                        let getDeleteSpan (range:SnapshotLineRange) =
-                            if _settings.AutoIndent then 
-                                let start = TextViewUtil.GetCaretLineIndent _textView
-                                TextViewUtil.MoveCaretToPoint _textView start
-                                SnapshotSpanUtil.Create start range.End
-                            else
-                                range.Extent
-                        let span = TextViewUtil.GetCaretLineRange _textView count |> getDeleteSpan
-                        _operations.DeleteSpan span 
-                        _operations.UpdateRegisterForSpan reg RegisterOperation.Delete span OperationKind.LineWise)
-                yield (
                     "i", 
                     CommandFlags.Special,
                     ModeSwitch.SwitchMode ModeKind.Insert, 
@@ -454,20 +431,6 @@ type internal NormalMode
                     CommandFlags.Special,
                     ModeSwitch.SwitchMode ModeKind.VisualBlock, 
                     doNothing)
-                yield (
-                    "C", 
-                    CommandFlags.LinkedWithNextTextChange ||| CommandFlags.Repeatable,
-                    ModeSwitch.SwitchMode ModeKind.Insert, 
-                    (fun count reg -> 
-                        let span = _operations.DeleteLinesFromCursor count 
-                        _operations.UpdateRegisterForSpan reg RegisterOperation.Delete span OperationKind.CharacterWise))
-                yield (
-                    "S", 
-                    CommandFlags.LinkedWithNextTextChange ||| CommandFlags.Repeatable,
-                    ModeSwitch.SwitchMode ModeKind.Insert, 
-                    (fun count reg -> 
-                        let span = _operations.DeleteLines count 
-                        _operations.UpdateRegisterForSpan reg RegisterOperation.Delete span OperationKind.LineWise))
                 yield (
                     "a", 
                     CommandFlags.Special,
@@ -531,11 +494,6 @@ type internal NormalMode
                     CommandFlags.None, 
                     None, 
                     fun _ _ data -> _operations.FoldManager.CreateFold data.OperationSpan)
-                yield (
-                    "=",
-                    CommandFlags.Repeatable,
-                    None,
-                    fun _ _ data -> _bufferData.Vim.VimHost.FormatLines this.TextView data.OperationLineRange)
             }
 
         complex
@@ -547,7 +505,7 @@ type internal NormalMode
                 match modeKindOpt with
                 | None -> CommandResult.Completed ModeSwitch.NoSwitch
                 | Some(modeKind) -> CommandResult.Completed (ModeSwitch.SwitchMode modeKind)
-            let flags = extraFlags ||| CommandFlags.Repeatable
+            let flags = extraFlags
             CommandBinding.LegacyMotionCommand(name, flags, func2))
 
     member this.Reset() =

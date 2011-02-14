@@ -643,7 +643,6 @@ type internal CommonOperations ( _data : OperationsData ) =
                 let caret = SnapshotPoint(snapshot, position)
                 _textView.Caret.MoveTo(caret) |> ignore
                 _textView.Caret.EnsureVisible()
-                
 
         member x.MoveCaretAndScrollLines dir count =
             let lines = _settings.Scroll
@@ -814,6 +813,9 @@ type internal CommonOperations ( _data : OperationsData ) =
                 let caretLine = TextViewUtil.GetCaretLine _textView
                 let span = SnapshotSpanUtil.ExtendDownIncludingLineBreak caretLine.Extent (count-1)
                 _data.FoldManager.CreateFold span
+
+        member x.FormatLines range =
+            _host.FormatLines _textView range
 
         member x.DeleteOneFoldAtCursor () = 
             let point = TextViewUtil.GetCaretPoint _textView
