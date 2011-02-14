@@ -121,7 +121,7 @@ type internal TextChangeTracker
                 |> Seq.filter (fun k -> _keyboard.IsKeyDown k.Key)
                 |> SeqUtil.isNotEmpty
             if keyMove then x.ChangeCompleted()
-            
+
     interface ITextChangeTracker with 
         member x.VimBuffer = _buffer
         member x.CurrentChange = x.CurrentChange

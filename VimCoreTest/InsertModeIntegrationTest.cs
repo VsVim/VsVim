@@ -11,21 +11,23 @@ namespace VimCore.UnitTest
     {
         private IVimBuffer _buffer;
         private IWpfTextView _textView;
+        private ITextBuffer _textBuffer;
 
-        public void CreateBuffer(params string[] lines)
+        private void Create(params string[] lines)
         {
             var tuple = EditorUtil.CreateViewAndOperations(lines);
             _textView = tuple.Item1;
+            _textBuffer = _textView.TextBuffer;
             var service = EditorUtil.FactoryService;
             _buffer = service.Vim.CreateBuffer(_textView);
-            _buffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
         }
 
         [Test]
         [Description("Make sure we don't access the ITextView on the way down")]
         public void CloseInInsertMode()
         {
-            CreateBuffer("foo", "bar");
+            Create("foo", "bar");
+            _buffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
             _textView.Close();
         }
 
@@ -36,9 +38,41 @@ namespace VimCore.UnitTest
         [Description("Make sure a minor selection change doesn't move us into Normal mode")]
         public void SelectionChange1()
         {
-            CreateBuffer("foo", "bar");
+            Create("foo", "bar");
+            _buffer.SwitchMode(ModeKind.Insert, ModeArgument.None);
             _textView.SelectAndUpdateCaret(new SnapshotSpan(_textView.GetLine(0).Start, 0));
             Assert.AreEqual(ModeKind.Insert, _buffer.ModeKind);
+        }
+
+        /// <summary>
+        /// Ensure when the mode is entered with a count that the escape will cause the 
+        /// text to be repeated
+        /// </summary>
+        [Test]
+        public void Repeat_Insert()
+        {
+            Create("the cat");
+            _buffer.SwitchMode(ModeKind.Insert, ModeArgument.NewInsertWithCount(2));
+            _textBuffer.Insert(0, "hi");
+            _buffer.Process(VimKey.Escape);
+            Assert.AreEqual("hihithe cat", _textView.GetLine(0).GetText());
+            Assert.AreEqual(3, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// Ensure when the mode is entered with a count that the escape will cause the
+        /// deleted text to be repeated
+        /// </summary>
+        [Test]
+        public void Repeat_Delete()
+        {
+            Create("doggie");
+            _textView.MoveCaretTo(1);
+            _buffer.SwitchMode(ModeKind.Insert, ModeArgument.NewInsertWithCount(2));
+            _textBuffer.Delete(new Span(1, 1));
+            _buffer.Process(VimKey.Escape);
+            Assert.AreEqual("dgie", _textView.GetLine(0).GetText());
+            Assert.AreEqual(0, _textView.GetCaretPoint().Position);
         }
 
     }

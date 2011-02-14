@@ -506,6 +506,10 @@ type internal CommandUtil
         | Modes.Result.Succeeded ->
             CommandResult.Completed ModeSwitch.NoSwitch
 
+    /// Switch to Insert mode with the specified count
+    member x.Insert count =
+        CommandResult.Completed (ModeSwitch.SwitchModeWithArgument (ModeKind.Insert, ModeArgument.InsertWithCount count))
+
     /// Begin insert mode on the first non-blank character of the line.  Pass the count onto
     /// insert mode so it can duplicate the input
     member x.InsertAtFirstNonBlank count =
@@ -725,6 +729,7 @@ type internal CommandUtil
         | NormalCommand.DeleteTillEndOfLine -> x.DeleteTillEndOfLine count register
         | NormalCommand.FormatLines -> x.FormatLines count
         | NormalCommand.FormatMotion motion -> x.RunWithMotion motion x.FormatMotion 
+        | NormalCommand.Insert -> x.Insert count
         | NormalCommand.InsertAtFirstNonBlank -> x.InsertAtFirstNonBlank count
         | NormalCommand.JoinLines kind -> x.JoinLines kind count
         | NormalCommand.JumpToMark c -> x.JumpToMark c

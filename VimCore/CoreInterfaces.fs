@@ -773,6 +773,9 @@ type NormalCommand =
     /// Format the specified motion
     | FormatMotion of MotionData
 
+    /// Switch to insert mode
+    | Insert
+
     /// Insert text at the first non-blank line in the current line
     | InsertAtFirstNonBlank
 
@@ -1114,6 +1117,7 @@ type StoredCommand =
 
     /// The stored information about a VisualCommand
     | VisualCommand of VisualCommand * CommandData * StoredVisualSpan * CommandFlags
+
 
     /// A Text Change which ocurred 
     | TextChangeCommand of TextChange

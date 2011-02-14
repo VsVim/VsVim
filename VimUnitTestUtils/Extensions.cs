@@ -664,6 +664,11 @@ namespace Vim.UnitTest
             return view.Caret.Position.BufferPosition;
         }
 
+        public static VirtualSnapshotPoint GetCaretVirtualPoint(this ITextView view)
+        {
+            return view.Caret.Position.VirtualBufferPosition;
+        }
+
         public static SnapshotSpan GetSelectionSpan(this ITextView textView)
         {
             return textView.Selection.StreamSelectionSpan.SnapshotSpan;

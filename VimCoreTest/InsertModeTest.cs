@@ -25,6 +25,8 @@ namespace VimCore.UnitTest
         private Mock<IVimGlobalSettings> _globalSettings;
         private Mock<IVimLocalSettings> _localSettings;
         private Mock<IEditorOptions> _editorOptions;
+        private Mock<IUndoRedoOperations> _undoRedoOperations;
+        private Mock<ITextChangeTracker> _textChangeTracker;
         private Mock<IVim> _vim;
 
         [SetUp]
@@ -43,6 +45,8 @@ namespace VimCore.UnitTest
             _globalSettings = _factory.Create<IVimGlobalSettings>();
             _localSettings = _factory.Create<IVimLocalSettings>();
             _localSettings.SetupGet(x => x.GlobalSettings).Returns(_globalSettings.Object);
+            _textChangeTracker = _factory.Create<ITextChangeTracker>();
+            _undoRedoOperations = _factory.Create<IUndoRedoOperations>();
             _data = MockObjectFactory.CreateVimBuffer(
                 _textView,
                 settings: _localSettings.Object,
@@ -50,7 +54,14 @@ namespace VimCore.UnitTest
                 factory: _factory);
             _operations = _factory.Create<ICommonOperations>();
             _broker = _factory.Create<IDisplayWindowBroker>();
-            _modeRaw = new Vim.Modes.Insert.InsertMode(_data.Object, _operations.Object, _broker.Object, _editorOptions.Object, _isReplace: !insertMode);
+            _modeRaw = new Vim.Modes.Insert.InsertMode(
+                _data.Object, 
+                _operations.Object, 
+                _broker.Object, 
+                _editorOptions.Object, 
+                _undoRedoOperations.Object, 
+                _textChangeTracker.Object,
+                _isReplace: !insertMode);
             _mode = _modeRaw;
         }
 

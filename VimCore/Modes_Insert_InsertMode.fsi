@@ -7,4 +7,4 @@ open Vim
 
 type internal InsertMode =
     interface IMode
-    new : IVimBuffer * Modes.ICommonOperations * IDisplayWindowBroker * IEditorOptions * bool -> InsertMode
+    new : IVimBuffer * Modes.ICommonOperations * IDisplayWindowBroker * IEditorOptions * IUndoRedoOperations * ITextChangeTracker * bool -> InsertMode

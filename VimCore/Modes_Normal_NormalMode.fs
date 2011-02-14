@@ -108,6 +108,7 @@ type internal NormalMode
                 yield ("cc", CommandFlags.LinkedWithNextTextChange ||| CommandFlags.Repeatable, NormalCommand.ChangeLines)
                 yield ("dd", CommandFlags.Repeatable, NormalCommand.DeleteLines)
                 yield ("D", CommandFlags.Repeatable, NormalCommand.DeleteTillEndOfLine)
+                yield ("i", CommandFlags.None, NormalCommand.Insert)
                 yield ("I", CommandFlags.LinkedWithNextTextChange ||| CommandFlags.Repeatable, NormalCommand.InsertAtFirstNonBlank)
                 yield ("J", CommandFlags.Repeatable, NormalCommand.JoinLines JoinKind.RemoveEmptySpaces)
                 yield ("gJ", CommandFlags.Repeatable, NormalCommand.JoinLines JoinKind.KeepEmptySpaces)
@@ -391,11 +392,6 @@ type internal NormalMode
                     fun count _ -> 
                         _operations.EditorOperations.ScrollLineTop()
                         _operations.EditorOperations.MoveToStartOfLineAfterWhiteSpace(false) )
-                yield (
-                    "i", 
-                    CommandFlags.Special,
-                    ModeSwitch.SwitchMode ModeKind.Insert, 
-                    doNothing)
                 yield (
                     ":", 
                     CommandFlags.Special,

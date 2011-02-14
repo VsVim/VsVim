@@ -547,7 +547,8 @@ namespace VimCore.UnitTest
         }
 
         /// <summary>
-        /// Repeating a replace char command from visual mode should not move the caret
+        /// Repeating a 
+        /// replace char command from visual mode should not move the caret
         /// </summary>
         [Test]
         public void RepeatCommand_ReplaceCharVisual_ShouldNotMoveCaret()
@@ -650,6 +651,10 @@ namespace VimCore.UnitTest
             Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
         }
 
+        /// <summary>
+        /// Caret should maintain position but the text should be deleted.  The caret 
+        /// exists in virtual space
+        /// </summary>
         [Test]
         public void Handle_cc_AutoIndentShouldPreserveOnSingle()
         {
@@ -657,8 +662,8 @@ namespace VimCore.UnitTest
             _buffer.Settings.AutoIndent = true;
             _buffer.Process("cc", enter: true);
             Assert.AreEqual(ModeKind.Insert, _buffer.ModeKind);
-            Assert.AreEqual(2, _textView.GetCaretPoint().Position);
-            Assert.AreEqual("  ", _textView.GetLine(0).GetText());
+            Assert.AreEqual(2, _textView.GetCaretVirtualPoint().VirtualSpaces);
+            Assert.AreEqual("", _textView.GetLine(0).GetText());
         }
 
         [Test]
@@ -672,6 +677,9 @@ namespace VimCore.UnitTest
             Assert.AreEqual("", _textView.GetLine(0).GetText());
         }
 
+        /// <summary>
+        /// Caret position should be preserved in virtual space
+        /// </summary>
         [Test]
         public void Handle_cc_AutoIndentShouldPreserveOnMultiple()
         {
@@ -679,11 +687,14 @@ namespace VimCore.UnitTest
             _buffer.Settings.AutoIndent = true;
             _buffer.Process("2cc", enter: true);
             Assert.AreEqual(ModeKind.Insert, _buffer.ModeKind);
-            Assert.AreEqual(2, _textView.GetCaretPoint().Position);
-            Assert.AreEqual("  ", _textView.GetLine(0).GetText());
+            Assert.AreEqual(2, _textView.GetCaretVirtualPoint().VirtualSpaces);
+            Assert.AreEqual("", _textView.GetLine(0).GetText());
             Assert.AreEqual("  tree", _textView.GetLine(1).GetText());
         }
 
+        /// <summary>
+        /// Caret point should be preserved in virtual space
+        /// </summary>
         [Test]
         public void Handle_cc_AutoIndentShouldPreserveFirstOneOnMultiple()
         {
@@ -691,8 +702,8 @@ namespace VimCore.UnitTest
             _buffer.Settings.AutoIndent = true;
             _buffer.Process("2cc", enter: true);
             Assert.AreEqual(ModeKind.Insert, _buffer.ModeKind);
-            Assert.AreEqual(4, _textView.GetCaretPoint().Position);
-            Assert.AreEqual("    ", _textView.GetLine(0).GetText());
+            Assert.AreEqual(4, _textView.GetCaretVirtualPoint().VirtualSpaces);
+            Assert.AreEqual("", _textView.GetLine(0).GetText());
             Assert.AreEqual("  tree", _textView.GetLine(1).GetText());
         }
 

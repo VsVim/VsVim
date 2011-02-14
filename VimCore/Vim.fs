@@ -65,6 +65,7 @@ type internal VimBufferFactory
         _editorOptionsFactoryService : IEditorOptionsFactoryService,
         _outliningManagerService : IOutliningManagerService,
         _completionWindowBrokerFactoryService : IDisplayWindowBrokerFactoryService,
+        _textChangeTrackerFactory : ITextChangeTrackerFactory,
         _textSearchService : ITextSearchService,
         _textStructureNavigatorSelectorService : ITextStructureNavigatorSelectorService,
         _smartIndentationService : ISmartIndentationService,
@@ -165,12 +166,13 @@ type internal VimBufferFactory
             |> List.ofSeq
     
         // Normal mode values
+        let tracker = _textChangeTrackerFactory.GetTextChangeTracker buffer
         let modeList = 
             [
                 ((Modes.Normal.NormalMode(buffer, normalOpts, statusUtil,broker, createCommandRunner VisualKind.Character, capture)) :> IMode)
                 ((Modes.Command.CommandMode(buffer, commandProcessor)) :> IMode)
-                ((Modes.Insert.InsertMode(buffer, commonOperations, broker, editOptions,false)) :> IMode)
-                ((Modes.Insert.InsertMode(buffer, commonOperations, broker, editOptions,true)) :> IMode)
+                ((Modes.Insert.InsertMode(buffer, commonOperations, broker, editOptions, undoRedoOperations, tracker, false)) :> IMode)
+                ((Modes.Insert.InsertMode(buffer, commonOperations, broker, editOptions, undoRedoOperations, tracker, true)) :> IMode)
                 ((Modes.SubstituteConfirm.SubstituteConfirmMode(buffer, commonOperations) :> IMode))
                 (DisabledMode(buffer) :> IMode)
                 (ExternalEditMode(buffer) :> IMode)
@@ -229,7 +231,6 @@ type internal Vim
         tlcService : ITrackingLineColumnService,
         [<ImportMany>] bufferCreationListeners : Lazy<IVimBufferCreationListener> seq,
         search : ITextSearchService,
-        textChangeTrackerFactory : ITextChangeTrackerFactory,
         clipboard : IClipboardDevice ) =
         let markMap = MarkMap(tlcService)
         let vimData = VimData() :> IVimData
