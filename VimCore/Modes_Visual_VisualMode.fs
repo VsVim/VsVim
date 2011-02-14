@@ -199,24 +199,6 @@ type internal VisualMode
                         _operations.DeleteBlock col
                         _operations.UpdateRegisterForCollection reg RegisterOperation.Delete col OperationKind.CharacterWise))
                 yield (
-                    ["~"],
-                    CommandFlags.Repeatable,
-                    Some ModeKind.Normal,
-                    (fun _ _ span -> _operations.ChangeLetterCase (EditSpan.Single span)),
-                    (fun _ _ col -> _operations.ChangeLetterCase (EditSpan.Block col)))
-                yield (
-                    ["U"],
-                    CommandFlags.Repeatable,
-                    Some ModeKind.Normal, 
-                    (fun _ _ span -> _operations.ChangeLetterCaseToUpper (EditSpan.Single span)),
-                    (fun _ _ col -> _operations.ChangeLetterCaseToUpper (EditSpan.Block col)))
-                yield (
-                    ["u"],
-                    CommandFlags.Repeatable,
-                    Some ModeKind.Normal, 
-                    (fun _ _ span -> _operations.ChangeLetterCaseToLower (EditSpan.Single span)),
-                    (fun _ _ col -> _operations.ChangeLetterCaseToLower (EditSpan.Block col)))
-                yield (
                     ["c"], 
                     CommandFlags.Repeatable ||| CommandFlags.LinkedWithNextTextChange,
                     Some ModeKind.Insert,
@@ -321,12 +303,6 @@ type internal VisualMode
                             |> NormalizedSnapshotSpanCollectionUtil.GetCombinedSpan
                             |> SnapshotLineRangeUtil.CreateForSpan 
                         _buffer.Vim.VimHost.FormatLines _buffer.TextView range))
-                yield (
-                    ["g?"],
-                    CommandFlags.Repeatable,
-                    Some ModeKind.Normal, 
-                    (fun _ _ span -> _operations.ChangeLetterRot13 (EditSpan.Single span)),
-                    (fun _ _ col -> _operations.ChangeLetterRot13 (EditSpan.Block col)))
             }
             |> Seq.map (fun (strList,flags,mode,funcNormal,funcBlock) ->
                 strList 
@@ -355,12 +331,16 @@ type internal VisualMode
                 yield ("d", CommandFlags.Repeatable, VisualCommand.DeleteHighlightedText)
                 yield ("gp", CommandFlags.Repeatable, VisualCommand.PutAfterCursor true)
                 yield ("gP", CommandFlags.Repeatable, VisualCommand.PutBeforeCursor true)
+                yield ("g?", CommandFlags.Repeatable, VisualCommand.ChangeCase ChangeCharacterKind.Rot13)
                 yield ("p", CommandFlags.Repeatable, VisualCommand.PutAfterCursor false)
                 yield ("P", CommandFlags.Repeatable, VisualCommand.PutBeforeCursor false)
+                yield ("u", CommandFlags.Repeatable, VisualCommand.ChangeCase ChangeCharacterKind.ToLowerCase)
+                yield ("U", CommandFlags.Repeatable, VisualCommand.ChangeCase ChangeCharacterKind.ToUpperCase)
                 yield ("x", CommandFlags.Repeatable, VisualCommand.DeleteHighlightedText)
                 yield ("<Del>", CommandFlags.Repeatable, VisualCommand.DeleteHighlightedText)
                 yield ("<lt>", CommandFlags.Repeatable, VisualCommand.ShiftLinesLeft)
                 yield (">", CommandFlags.Repeatable, VisualCommand.ShiftLinesRight)
+                yield ("~", CommandFlags.Repeatable, VisualCommand.ChangeCase ChangeCharacterKind.ToggleCase)
             } |> Seq.map (fun (str, flags, command) -> 
                 let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
                 CommandBinding.VisualCommand(keyInputSet, flags, command))

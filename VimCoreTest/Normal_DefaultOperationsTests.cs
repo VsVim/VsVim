@@ -332,33 +332,6 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void ChangeLetterCaseAtCursor1()
-        {
-            Create("bar", "baz");
-            _operations.ChangeLetterCaseAtCursor(1);
-            Assert.AreEqual("Bar", _textView.GetLineRange(0).GetText());
-            Assert.AreEqual(1, _textView.GetCaretPoint().Position);
-        }
-
-        [Test]
-        public void ChangeLetterCaseAtCursor2()
-        {
-            Create("bar", "baz");
-            _operations.ChangeLetterCaseAtCursor(2);
-            Assert.AreEqual("BAr", _textView.GetLineRange(0).GetText());
-            Assert.AreEqual(2, _textView.GetCaretPoint().Position);
-        }
-
-        [Test]
-        public void ChangeLetterCaseAtCursor3()
-        {
-            Create("bar", "baz");
-            _operations.ChangeLetterCaseAtCursor(300);
-            Assert.AreEqual("BAR", _textView.GetLineRange(0).GetText());
-            Assert.AreEqual(2, _textView.GetCaretPoint().Position);
-        }
-
-        [Test]
         public void MoveCaretForAppend1()
         {
             Create("foo", "bar");

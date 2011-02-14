@@ -1083,93 +1083,80 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void Edit_Tilde1()
+        public void Bind_ChangeCaseCaretPoint_Tilde()
         {
             Create("foo");
-            _operations.Setup(x => x.ChangeLetterCaseAtCursor(1)).Verifiable();
+            _commandUtil.SetupNormalCommand(NormalCommand.NewChangeCaseCaretPoint(ChangeCharacterKind.ToggleCase));
             _mode.Process("~");
-            _operations.Verify();
+            _commandUtil.Verify();
         }
 
+        /// <summary>
+        /// When tildeop is set this becomes a motion command
+        /// </summary>
         [Test]
-        public void Edit_Tilde2()
-        {
-            Create("foo");
-            _operations.Setup(x => x.ChangeLetterCaseAtCursor(30)).Verifiable();
-            _mode.Process("30~");
-            _operations.Verify();
-        }
-
-        [Test, Description("When TildeOp is set it becomes a motion command")]
         public void Edit_Tilde3()
         {
             Create("foo");
-            _buffer.Object.Settings.GlobalSettings.TildeOp = true;
+            // REPEAT TODO: Figure this out
+            // _commandUtil.SetupMotionCommand(motion => NormalCommand.NewChangeCaseMotion(ChangeCharacterKind.ToggleCase, motion));
             _mode.Process("~");
+            _commandUtil.Verify();
         }
 
         [Test]
-        public void Edit_Tilde4()
-        {
-            Create("foo");
-            _buffer.Object.Settings.GlobalSettings.TildeOp = true;
-            _operations.Setup(x => x.ChangeLetterCase(_textView.TextBuffer.GetLineRange(0, 0).Extent)).Verifiable();
-            _mode.Process("~aw");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void Edit_gUgU()
+        public void Bind_ChangeCaseLine_Upper1()
         {
             Create("again");
-            _operations.Setup(x => x.ChangeLetterCaseToUpper(_textView.GetLine(0).Extent)).Verifiable();
+            _commandUtil.SetupNormalCommand(NormalCommand.NewChangeCaseCaretLine(ChangeCharacterKind.ToUpperCase));
             _mode.Process("gUgU");
-            _operations.Verify();
+            _commandUtil.Verify();
         }
 
         [Test]
-        public void Edit_gUU()
+        public void Bind_ChangeCaseLine_Upper2()
         {
             Create("again");
-            _operations.Setup(x => x.ChangeLetterCaseToUpper(_textView.GetLine(0).Extent)).Verifiable();
+            _commandUtil.SetupNormalCommand(NormalCommand.NewChangeCaseCaretLine(ChangeCharacterKind.ToUpperCase));
             _mode.Process("gUU");
-            _operations.Verify();
+            _commandUtil.Verify();
         }
 
+
         [Test]
-        public void Edit_gugu()
+        public void Bind_ChangeCaseLine_Lower1()
         {
             Create("again");
-            _operations.Setup(x => x.ChangeLetterCaseToLower(_textView.GetLine(0).Extent)).Verifiable();
+            _commandUtil.SetupNormalCommand(NormalCommand.NewChangeCaseCaretLine(ChangeCharacterKind.ToLowerCase));
             _mode.Process("gugu");
-            _operations.Verify();
+            _commandUtil.Verify();
         }
 
         [Test]
-        public void Edit_guu()
+        public void Bind_ChangeCaseLine_Lower2()
         {
             Create("again");
-            _operations.Setup(x => x.ChangeLetterCaseToLower(_textView.GetLine(0).Extent)).Verifiable();
+            _commandUtil.SetupNormalCommand(NormalCommand.NewChangeCaseCaretLine(ChangeCharacterKind.ToLowerCase));
             _mode.Process("guu");
-            _operations.Verify();
+            _commandUtil.Verify();
         }
 
         [Test]
-        public void Edit_gQuestiongQuestion()
+        public void Bind_ChangeCaseLine_Rot13_1()
         {
             Create("again");
-            _operations.Setup(x => x.ChangeLetterRot13(_textView.GetLine(0).Extent)).Verifiable();
+            _commandUtil.SetupNormalCommand(NormalCommand.NewChangeCaseCaretLine(ChangeCharacterKind.Rot13));
             _mode.Process("g?g?");
-            _operations.Verify();
+            _commandUtil.Verify();
         }
 
         [Test]
-        public void Edit_gQuestionQuestion()
+        public void Bind_ChangeCaseLine_Rot13_2()
         {
             Create("again");
-            _operations.Setup(x => x.ChangeLetterRot13(_textView.GetLine(0).Extent)).Verifiable();
+            _commandUtil.SetupNormalCommand(NormalCommand.NewChangeCaseCaretLine(ChangeCharacterKind.Rot13));
             _mode.Process("g??");
-            _operations.Verify();
+            _commandUtil.Verify();
         }
 
         #endregion

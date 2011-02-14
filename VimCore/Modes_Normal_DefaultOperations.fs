@@ -61,7 +61,6 @@ type internal DefaultOperations ( _data : OperationsData) =
             | Vim.Modes.Succeeded -> ()
             | Vim.Modes.Failed(msg) -> _statusUtil.OnError msg
 
-
         member x.JumpNext count = x.JumpCore count (fun () -> _jumpList.MoveNext())
         member x.JumpPrevious count = x.JumpCore count (fun() -> _jumpList.MovePrevious())
 
@@ -83,21 +82,6 @@ type internal DefaultOperations ( _data : OperationsData) =
                 | Some(c) -> c
             x.GoToLineCore line
 
-        member x.ChangeLetterCaseAtCursor count = 
-            let point = TextViewUtil.GetCaretPoint _textView
-            let line = SnapshotPointUtil.GetContainingLine point
-            let count = min count (line.End.Position - point.Position)
-            let span = SnapshotSpan(point, count) |> EditSpan.Single
-            x.CommonImpl.ChangeLetterCase span
-
-            if line.Length > 0 then
-                
-                // Because we aren't changing the length of the buffer it's OK 
-                // to calculate with respect to the points before the edit
-                let pos = point.Position + count
-                let pos = min pos (line.End.Position-1)
-                TextViewUtil.MoveCaretToPosition _textView pos |> ignore
-            
         member x.MoveCaretForAppend () = 
             let point = TextViewUtil.GetCaretPoint _textView
             _operations.ResetSelection()

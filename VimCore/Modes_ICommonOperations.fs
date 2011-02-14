@@ -63,18 +63,6 @@ type ICommonOperations =
     /// Run the beep operation
     abstract Beep : unit -> unit
 
-    /// Change the case of all letters appearing in the given span
-    abstract ChangeLetterCase : EditSpan -> unit
-
-    /// Change the case of all letters appearing in the given span to upper
-    abstract ChangeLetterCaseToUpper : EditSpan -> unit
-
-    /// Change the case of all letters appearing in the given span to lower
-    abstract ChangeLetterCaseToLower : EditSpan -> unit
-
-    /// Change the letters by applying a ROT13 encoding to each letter in the span
-    abstract ChangeLetterRot13 : EditSpan -> unit
-
     /// Close the current buffer
     abstract Close : checkDirty : bool -> unit
 

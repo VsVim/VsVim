@@ -92,6 +92,99 @@ type internal CommandUtil
                 |> NormalizedSnapshotSpanCollectionUtil.OfSeq
             VisualSpan.Block col
 
+    /// Change the characters in the given span via the specied change kind
+    member x.ChangeCaseSpanCore kind (editSpan : EditSpan) =
+
+        let func = 
+            match kind with
+            | ChangeCharacterKind.Rot13 -> CharUtil.ChangeRot13
+            | ChangeCharacterKind.ToLowerCase -> CharUtil.ToLower
+            | ChangeCharacterKind.ToUpperCase -> CharUtil.ToUpper
+            | ChangeCharacterKind.ToggleCase -> CharUtil.ChangeCase
+
+        use edit = _textBuffer.CreateEdit()
+        editSpan.Spans
+        |> Seq.map SnapshotSpanUtil.GetPoints
+        |> Seq.concat
+        |> Seq.filter (fun p -> CharUtil.IsLetter (p.GetChar()))
+        |> Seq.iter (fun p ->
+            let change = func (p.GetChar()) |> StringUtil.ofChar
+            edit.Replace(p.Position, 1, change) |> ignore)
+        edit.Apply() |> ignore
+
+    /// Change the caret line via the specied ChangeCharacterKind.
+    member x.ChangeCaseCaretLine kind =
+
+        // The caret should be positioned on the first non-blank space in 
+        // the line.  If the line is completely blank the caret should
+        // not be moved.  Caret should be in the same place for undo / redo
+        // so move before and inside the transaction
+        let position = 
+            x.CaretLine
+            |> SnapshotLineUtil.GetPoints
+            |> Seq.skipWhile SnapshotPointUtil.IsWhiteSpace
+            |> Seq.map SnapshotPointUtil.GetPosition
+            |> SeqUtil.tryHeadOnly
+
+        let maybeMoveCaret () =
+            match position with
+            | Some position -> TextViewUtil.MoveCaretToPosition _textView position
+            | None -> ()
+
+        maybeMoveCaret()
+        x.EditWithUndoTransaciton "Change" (fun () ->
+            x.ChangeCaseSpanCore kind (EditSpan.Single x.CaretLine.Extent)
+            maybeMoveCaret())
+
+        CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Change the case of the specified motion
+    member x.ChangeCaseMotion kind (result : MotionResult) =
+
+        // The caret should be placed at the start of the motion for both
+        // undo / redo so move before and inside the transaction
+        TextViewUtil.MoveCaretToPoint _textView result.Span.Start
+        x.EditWithUndoTransaciton "Change" (fun () ->
+            x.ChangeCaseSpanCore kind result.EditSpan
+            TextViewUtil.MoveCaretToPosition _textView result.Span.Start.Position)
+
+        CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Change the case of the current caret point
+    member x.ChangeCaseCaretPoint kind count =
+
+        // The caret should be placed after the caret point but only 
+        // for redo.  Undo should move back to the current position so 
+        // don't move until inside the transaction
+        x.EditWithUndoTransaciton "Change" (fun () ->
+
+            let span = 
+                let endPoint = SnapshotLineUtil.GetOffsetOrEnd x.CaretLine (x.CaretColumn + count)
+                SnapshotSpan(x.CaretPoint, endPoint)
+
+            let editSpan = EditSpan.Single span
+            x.ChangeCaseSpanCore kind editSpan
+
+            // Move the caret but make sure to respect the 'virtualedit' option
+            TextViewUtil.MoveCaretToPosition _textView span.End.Position
+            _operations.MoveCaretForVirtualEdit())
+
+        CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Change the case of the selected text.  
+    member x.ChangeCaseVisual kind (visualSpan : VisualSpan) = 
+
+        // The caret should be positioned at the start of the VisualSpan for both 
+        // undo / redo so move it before and inside the transaction
+        let point = visualSpan.Start |> OptionUtil.getOrDefault x.CaretPoint
+        let moveCaret () = TextViewUtil.MoveCaretToPosition _textView point.Position
+        moveCaret()
+        x.EditWithUndoTransaciton "Change" (fun () ->
+            x.ChangeCaseSpanCore kind visualSpan.EditSpan
+            moveCaret())
+
+        CommandResult.Completed ModeSwitch.SwitchPreviousMode
+
     /// Delete the specified motion and enter insert mode
     member x.ChangeMotion register (result : MotionResult) = 
 
@@ -515,6 +608,9 @@ type internal CommandUtil
         let count = data.CountOrDefault
         match command with
         | NormalCommand.ChangeMotion motion -> x.RunWithMotion motion (x.ChangeMotion register)
+        | NormalCommand.ChangeCaseCaretLine kind -> x.ChangeCaseCaretLine kind
+        | NormalCommand.ChangeCaseCaretPoint kind -> x.ChangeCaseCaretPoint kind count
+        | NormalCommand.ChangeCaseMotion (kind, motion) -> x.RunWithMotion motion (x.ChangeCaseMotion kind)
         | NormalCommand.DeleteCharacterAtCursor -> x.DeleteCharacterAtCursor count register
         | NormalCommand.DeleteCharacterBeforeCursor -> x.DeleteCharacterBeforeCursor count register
         | NormalCommand.DeleteLines -> x.DeleteLines count register
@@ -541,6 +637,7 @@ type internal CommandUtil
         let register = _registerMap.GetRegister data.RegisterNameOrDefault
         let count = data.CountOrDefault
         match command with
+        | VisualCommand.ChangeCase kind -> x.ChangeCaseVisual kind visualSpan
         | VisualCommand.DeleteHighlightedText -> x.DeleteHighlightedText register visualSpan
         | VisualCommand.PutAfterCursor moveCaretAfterText -> x.PutAfterCursor register count moveCaretAfterText (ModeSwitch.SwitchMode ModeKind.Normal)
         | VisualCommand.PutBeforeCursor moveCaretAfterText -> x.PutBeforeCursor register count moveCaretAfterText (ModeSwitch.SwitchMode ModeKind.Normal)

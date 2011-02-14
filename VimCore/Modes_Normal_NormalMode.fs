@@ -79,7 +79,7 @@ type internal NormalMode
         
         // If the tildeop setting changes we need to update how we handle it
         if StringUtil.isEqual setting.Name GlobalSettingNames.TildeOpName && this.IsCommandRunnerPopulated then
-            let name,command = this.GetTildeCommand()
+            let name, command = this.GetTildeCommand()
             _runner.Remove name
             _runner.Add command
 
@@ -90,21 +90,15 @@ type internal NormalMode
             NormalCommand.ReplaceChar ki)
 
     /// Get the informatoin on how to handle the tilde command based on the current setting for tildeop
-    member private this.GetTildeCommand count =
+    member x.GetTildeCommand count =
         let name = KeyInputUtil.CharToKeyInput '~' |> OneKeyInput
+        let flags = CommandFlags.Repeatable
         let command = 
             if _bufferData.Settings.GlobalSettings.TildeOp then
-                let func count reg (data:MotionResult) = 
-                    _operations.ChangeLetterCase data.OperationEditSpan
-                    CommandResult.Completed ModeSwitch.NoSwitch
-                CommandBinding.LegacyMotionCommand(name, CommandFlags.Repeatable, func)
+                CommandBinding.MotionCommand (name, flags, (fun motion -> NormalCommand.ChangeCaseMotion (ChangeCharacterKind.ToggleCase, motion)))
             else
-                let func count _ = 
-                    let count = CommandUtil2.CountOrDefault count
-                    _operations.ChangeLetterCaseAtCursor count
-                    CommandResult.Completed ModeSwitch.NoSwitch
-                CommandBinding.LegacySimpleCommand(name, CommandFlags.Repeatable, func)
-        name,command
+                CommandBinding.NormalCommand (name, flags, NormalCommand.ChangeCaseCaretPoint ChangeCharacterKind.ToggleCase)
+        name, command
 
     /// Create the CommandBinding instances for the supported NormalCommand values
     member x.CreateCommandBindings() =
@@ -116,6 +110,14 @@ type internal NormalMode
                 yield ("gJ", CommandFlags.Repeatable, NormalCommand.JoinLines JoinKind.KeepEmptySpaces)
                 yield ("gp", CommandFlags.Repeatable, NormalCommand.PutAfterCursor true)
                 yield ("gP", CommandFlags.Repeatable, NormalCommand.PutBeforeCursor true)
+                yield ("gugu", CommandFlags.Repeatable, NormalCommand.ChangeCaseCaretLine ChangeCharacterKind.ToLowerCase)
+                yield ("guu", CommandFlags.Repeatable, NormalCommand.ChangeCaseCaretLine ChangeCharacterKind.ToLowerCase)
+                yield ("gUgU", CommandFlags.Repeatable, NormalCommand.ChangeCaseCaretLine ChangeCharacterKind.ToUpperCase)
+                yield ("gUU", CommandFlags.Repeatable, NormalCommand.ChangeCaseCaretLine ChangeCharacterKind.ToUpperCase)
+                yield ("g~g~", CommandFlags.Repeatable, NormalCommand.ChangeCaseCaretLine ChangeCharacterKind.ToggleCase)
+                yield ("g~~", CommandFlags.Repeatable, NormalCommand.ChangeCaseCaretLine ChangeCharacterKind.ToggleCase)
+                yield ("g?g?", CommandFlags.Repeatable, NormalCommand.ChangeCaseCaretLine ChangeCharacterKind.Rot13)
+                yield ("g??", CommandFlags.Repeatable, NormalCommand.ChangeCaseCaretLine ChangeCharacterKind.Rot13)
                 yield ("p", CommandFlags.Repeatable, NormalCommand.PutAfterCursor false)
                 yield ("P", CommandFlags.Repeatable, NormalCommand.PutBeforeCursor false)
                 yield ("s", CommandFlags.LinkedWithNextTextChange ||| CommandFlags.Repeatable, NormalCommand.SubstituteCharacterAtCursor)
@@ -133,6 +135,9 @@ type internal NormalMode
             seq {
                 yield ("c", CommandFlags.LinkedWithNextTextChange ||| CommandFlags.Repeatable, NormalCommand.ChangeMotion)
                 yield ("d", CommandFlags.Repeatable, NormalCommand.DeleteMotion)
+                yield ("gU", CommandFlags.Repeatable, (fun motion -> NormalCommand.ChangeCaseMotion (ChangeCharacterKind.ToUpperCase, motion)))
+                yield ("gu", CommandFlags.Repeatable, (fun motion -> NormalCommand.ChangeCaseMotion (ChangeCharacterKind.ToLowerCase, motion)))
+                yield ("g?", CommandFlags.Repeatable, (fun motion -> NormalCommand.ChangeCaseMotion (ChangeCharacterKind.Rot13, motion)))
                 yield ("y", CommandFlags.None, NormalCommand.Yank)
                 yield ("<lt>", CommandFlags.Repeatable, NormalCommand.ShiftMotionLinesLeft)
                 yield (">", CommandFlags.Repeatable, NormalCommand.ShiftMotionLinesRight)
@@ -475,46 +480,8 @@ type internal NormalMode
                     doNothing)
             } |> Seq.map (fun (str, kind, switch, func) -> (str, kind, func, CommandResult.Completed switch))
 
-        let aliasedCommands = 
-            seq {
-                yield (
-                    ["gUgU"; "gUU"],
-                    CommandFlags.Repeatable,
-                    ModeSwitch.NoSwitch,
-                    fun _ _ ->
-                        let line = TextViewUtil.GetCaretLine _textView
-                        let span = EditSpan.Single (line.Extent)
-                        _operations.ChangeLetterCaseToUpper span)
-                yield (
-                    ["gugu"; "guu"],
-                    CommandFlags.Repeatable,
-                    ModeSwitch.NoSwitch,
-                    fun _ _ ->
-                        let line = TextViewUtil.GetCaretLine _textView
-                        let span = EditSpan.Single (line.Extent)
-                        _operations.ChangeLetterCaseToLower span)
-                yield (
-                    ["g~g~"; "g~~"],
-                    CommandFlags.Repeatable,
-                    ModeSwitch.NoSwitch,
-                    fun _ _ -> 
-                        let line = TextViewUtil.GetCaretLine _textView
-                        let span = EditSpan.Single (line.Extent)
-                        _operations.ChangeLetterCase span)
-                yield (
-                    ["g?g?"; "g??"],
-                    CommandFlags.Repeatable,
-                    ModeSwitch.NoSwitch,
-                    fun _ _ -> 
-                        let line = TextViewUtil.GetCaretLine _textView
-                        let span = EditSpan.Single (line.Extent)
-                        _operations.ChangeLetterRot13 span)
-            } |> Seq.map (fun (names, kind, switch, func) -> 
-                names |> Seq.map (fun str -> (str, kind, func, CommandResult.Completed switch)))
-              |> Seq.concat
-
         let allWithCount = 
-            Seq.append commands aliasedCommands
+            commands
             |> Seq.map(fun (str,kind,func,result) -> 
                 let name = KeyNotationUtil.StringToKeyInputSet str
                 let func2 count reg =
@@ -559,21 +526,6 @@ type internal NormalMode
     
         let complex : seq<string * CommandFlags * ModeKind option * (int -> Register -> MotionResult -> unit)> =
             seq {
-                yield (
-                    "gU",
-                    CommandFlags.Repeatable,
-                    None,
-                    fun _ _ data -> _operations.ChangeLetterCaseToUpper data.EditSpan)
-                yield (
-                    "gu",
-                    CommandFlags.Repeatable,
-                    None,
-                    fun _ _ data -> _operations.ChangeLetterCaseToLower data.EditSpan)
-                yield (
-                    "g?",
-                    CommandFlags.Repeatable,
-                    None,
-                    fun _ _ data -> _operations.ChangeLetterRot13 data.EditSpan)
                 yield (
                     "zf", 
                     CommandFlags.None, 

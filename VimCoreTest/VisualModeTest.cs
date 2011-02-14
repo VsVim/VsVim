@@ -470,29 +470,12 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void ChangeCase1()
+        public void Bind_ChangeCase_Tilde()
         {
             Create("foo bar", "baz");
-            var span = _textBuffer.GetSpan(0, 3);
-            _operations
-                .Setup(x => x.ChangeLetterCase(span.ToEditSpan()))
-                .Verifiable();
-            _selection.Select(span);
+            _commandUtil.SetupVisualCommand(VisualCommand.NewChangeCase(ChangeCharacterKind.ToggleCase));
             _mode.Process('~');
-        }
-
-        [Test]
-        public void ChangeCase2()
-        {
-            Create("foo", "bar", "baz");
-            _selection.Select(
-                _textBuffer.GetLineRange(0).Extent,
-                _textBuffer.GetLineRange(1).Extent);
-            _operations
-                .Setup(x => x.ChangeLetterCase(It.IsAny<EditSpan>()))
-                .Verifiable();
-            _mode.Process('~');
-            _operations.Verify();
+            _commandUtil.Verify();
         }
 
         [Test]

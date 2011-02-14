@@ -26,8 +26,5 @@ type IOperations =
     /// Jump to the previous item in the jump list
     abstract JumpPrevious : count:int -> unit
 
-    /// Change the case of the character at cursor
-    abstract ChangeLetterCaseAtCursor : count:int -> unit 
-
     inherit Modes.ICommonOperations
 

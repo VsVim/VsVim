@@ -211,19 +211,6 @@ type internal CommonOperations ( _data : OperationsData ) =
                 builder.Append(' ') |> ignore
         builder.ToString(), text.Length
 
-    /// Chnage the letters on the given span by applying the provided function and 
-    /// do this as a single edit.
-    member x.ChangeLetters (editSpan : EditSpan) changeFunc = 
-        use edit = _textView.TextBuffer.CreateEdit()
-        editSpan.Spans
-        |> Seq.map SnapshotSpanUtil.GetPoints
-        |> Seq.concat
-        |> Seq.map (fun x -> x.Position, x.GetChar())
-        |> Seq.filter (fun (_,c) -> CharUtil.IsLetter c)
-        |> Seq.map (fun (pos,c) -> (pos, changeFunc c))
-        |> Seq.iter (fun (pos,c) -> edit.Replace(new Span(pos,1), StringUtil.ofChar c) |> ignore)
-        edit.Apply() |> ignore
-
     member x.Join (range:SnapshotLineRange) kind = 
 
         if range.Count > 1 then
@@ -735,10 +722,6 @@ type internal CommonOperations ( _data : OperationsData ) =
         member x.CloseAll checkDirty = _host.CloseAllFiles checkDirty
         member x.GoToNextTab direction count = _host.GoToNextTab direction count
         member x.GoToTab index = _host.GoToTab index
-        member x.ChangeLetterCase editSpan = x.ChangeLetters editSpan CharUtil.ChangeCase
-        member x.ChangeLetterCaseToUpper editSpan = x.ChangeLetters editSpan CharUtil.ToUpper
-        member x.ChangeLetterCaseToLower editSpan = x.ChangeLetters editSpan CharUtil.ToLower
-        member x.ChangeLetterRot13 editSpan = x.ChangeLetters editSpan CharUtil.ChangeRot13
         member x.EnsureCaretOnScreen () = TextViewUtil.EnsureCaretOnScreen _textView 
         member x.EnsureCaretOnScreenAndTextExpanded () = TextViewUtil.EnsureCaretOnScreenAndTextExpanded _textView _outlining
 

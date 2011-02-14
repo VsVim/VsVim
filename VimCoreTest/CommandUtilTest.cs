@@ -741,5 +741,84 @@ namespace VimCore.UnitTest
             _operations.Verify();
         }
 
+        [Test]
+        public void ChangeCaseCaretPoint_Simple()
+        {
+            Create("bar", "baz");
+            _commandUtil.ChangeCaseCaretPoint(ChangeCharacterKind.ToUpperCase, 1);
+            Assert.AreEqual("Bar", _textView.GetLineRange(0).GetText());
+            Assert.AreEqual(1, _textView.GetCaretPoint().Position);
+        }
+
+        [Test]
+        public void ChangeCaseCaretPoint_WithCount()
+        {
+            Create("bar", "baz");
+            _commandUtil.ChangeCaseCaretPoint(ChangeCharacterKind.ToUpperCase, 2);
+            Assert.AreEqual("BAr", _textView.GetLineRange(0).GetText());
+            Assert.AreEqual(2, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// If the count exceeds the line then just do the rest of the line
+        /// </summary>
+        [Test]
+        public void ChangeCaseCaretPoint_CountExceedsLine()
+        {
+            Create("bar", "baz");
+            _commandUtil.ChangeCaseCaretPoint(ChangeCharacterKind.ToUpperCase, 300);
+            Assert.AreEqual("BAR", _textView.GetLine(0).GetText());
+            Assert.AreEqual("baz", _textView.GetLine(1).GetText());
+            Assert.AreEqual(3, _textView.GetCaretPoint().Position);
+        }
+
+        [Test]
+        public void ChangeCaseCaretLine_Simple()
+        {
+            Create("foo", "bar");
+            _textView.MoveCaretTo(1);
+            _commandUtil.ChangeCaseCaretLine(ChangeCharacterKind.ToUpperCase);
+            Assert.AreEqual("FOO", _textView.GetLine(0).GetText());
+            Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// Make sure the caret moves past the whitespace when changing case
+        /// </summary>
+        [Test]
+        public void ChangeCaseCaretLine_WhiteSpaceStart()
+        {
+            Create("  foo", "bar");
+            _textView.MoveCaretTo(4);
+            _commandUtil.ChangeCaseCaretLine(ChangeCharacterKind.ToUpperCase);
+            Assert.AreEqual("  FOO", _textView.GetLine(0).GetText());
+            Assert.AreEqual(2, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// Don't change anything but letters
+        /// </summary>
+        [Test]
+        public void ChangeCaseCaretLine_ExcludeNumbers()
+        {
+            Create("foo123", "bar");
+            _textView.MoveCaretTo(1);
+            _commandUtil.ChangeCaseCaretLine(ChangeCharacterKind.ToUpperCase);
+            Assert.AreEqual("FOO123", _textView.GetLine(0).GetText());
+            Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// Change the caret line with the rot13 encoding
+        /// </summary>
+        [Test]
+        public void ChangeCaseCaretLine_Rot13()
+        {
+            Create("hello", "bar");
+            _textView.MoveCaretTo(1);
+            _commandUtil.ChangeCaseCaretLine(ChangeCharacterKind.Rot13);
+            Assert.AreEqual("uryyb", _textView.GetLine(0).GetText());
+            Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+        }
     }
 }

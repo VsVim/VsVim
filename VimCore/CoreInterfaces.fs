@@ -13,6 +13,20 @@ type JoinKind =
     | RemoveEmptySpaces
     | KeepEmptySpaces
 
+[<RequireQualifiedAccess>]
+type ChangeCharacterKind =
+    /// Switch the characters to upper case
+    | ToUpperCase
+
+    /// Switch the characters to lower case
+    | ToLowerCase
+
+    /// Toggle the case of the characters
+    | ToggleCase
+
+    /// Rot13 encode the letters
+    | Rot13
+
 /// Map containing the various VIM registers
 type IRegisterMap = 
 
@@ -634,6 +648,13 @@ type VisualSpan =
         | VisualSpan.Line range -> [range.ExtentIncludingLineBreak] |> Seq.ofList
         | VisualSpan.Block col -> col :> SnapshotSpan seq
 
+    /// Returns the EditSpan for this VisualSpan
+    member x.EditSpan = 
+        match x with
+        | VisualSpan.Character span -> EditSpan.Single span
+        | VisualSpan.Line range -> EditSpan.Single range.ExtentIncludingLineBreak
+        | VisualSpan.Block col -> EditSpan.Block col
+
     /// Returns the start point of the Visual Span.  This can be None in the case
     /// of an empty Block selection.
     member x.Start =
@@ -715,6 +736,15 @@ type NormalCommand =
     /// command
     | ChangeMotion of MotionData
 
+    /// Change the characters on the caret line 
+    | ChangeCaseCaretLine of ChangeCharacterKind
+
+    /// Change the characters on the caret line 
+    | ChangeCaseCaretPoint of ChangeCharacterKind
+
+    /// Change case of the specified motion
+    | ChangeCaseMotion of ChangeCharacterKind * MotionData
+
     /// Delete the character at the current cursor position.  Implements the "x" command
     | DeleteCharacterAtCursor
 
@@ -781,6 +811,9 @@ type NormalCommand =
 /// Visual mode commands which can be executed by the user 
 [<RequireQualifiedAccess>]
 type VisualCommand = 
+
+    /// Change the case of the selected text in the specified manner
+    | ChangeCase of ChangeCharacterKind
 
     /// Delte the highlighted text and put it into a register
     | DeleteHighlightedText
