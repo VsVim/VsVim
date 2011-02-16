@@ -112,8 +112,8 @@ type internal NormalMode
                 yield ("I", CommandFlags.LinkedWithNextTextChange ||| CommandFlags.Repeatable, NormalCommand.InsertAtFirstNonBlank)
                 yield ("J", CommandFlags.Repeatable, NormalCommand.JoinLines JoinKind.RemoveEmptySpaces)
                 yield ("gJ", CommandFlags.Repeatable, NormalCommand.JoinLines JoinKind.KeepEmptySpaces)
-                yield ("gp", CommandFlags.Repeatable, NormalCommand.PutAfterCursor true)
-                yield ("gP", CommandFlags.Repeatable, NormalCommand.PutBeforeCursor true)
+                yield ("gp", CommandFlags.Repeatable, NormalCommand.PutAfterCaret true)
+                yield ("gP", CommandFlags.Repeatable, NormalCommand.PutBeforeCaret true)
                 yield ("gugu", CommandFlags.Repeatable, NormalCommand.ChangeCaseCaretLine ChangeCharacterKind.ToLowerCase)
                 yield ("guu", CommandFlags.Repeatable, NormalCommand.ChangeCaseCaretLine ChangeCharacterKind.ToLowerCase)
                 yield ("gUgU", CommandFlags.Repeatable, NormalCommand.ChangeCaseCaretLine ChangeCharacterKind.ToUpperCase)
@@ -122,13 +122,13 @@ type internal NormalMode
                 yield ("g~~", CommandFlags.Repeatable, NormalCommand.ChangeCaseCaretLine ChangeCharacterKind.ToggleCase)
                 yield ("g?g?", CommandFlags.Repeatable, NormalCommand.ChangeCaseCaretLine ChangeCharacterKind.Rot13)
                 yield ("g??", CommandFlags.Repeatable, NormalCommand.ChangeCaseCaretLine ChangeCharacterKind.Rot13)
-                yield ("p", CommandFlags.Repeatable, NormalCommand.PutAfterCursor false)
-                yield ("P", CommandFlags.Repeatable, NormalCommand.PutBeforeCursor false)
-                yield ("s", CommandFlags.LinkedWithNextTextChange ||| CommandFlags.Repeatable, NormalCommand.SubstituteCharacterAtCursor)
+                yield ("p", CommandFlags.Repeatable, NormalCommand.PutAfterCaret false)
+                yield ("P", CommandFlags.Repeatable, NormalCommand.PutBeforeCaret false)
+                yield ("s", CommandFlags.LinkedWithNextTextChange ||| CommandFlags.Repeatable, NormalCommand.SubstituteCharacterAtCaret)
                 yield ("S", CommandFlags.LinkedWithNextTextChange ||| CommandFlags.Repeatable, NormalCommand.ChangeLines)
-                yield ("x", CommandFlags.Repeatable, NormalCommand.DeleteCharacterAtCursor)
-                yield ("X", CommandFlags.Repeatable, NormalCommand.DeleteCharacterBeforeCursor)
-                yield ("<Del>", CommandFlags.Repeatable, NormalCommand.DeleteCharacterAtCursor)
+                yield ("x", CommandFlags.Repeatable, NormalCommand.DeleteCharacterAtCaret)
+                yield ("X", CommandFlags.Repeatable, NormalCommand.DeleteCharacterBeforeCaret)
+                yield ("<Del>", CommandFlags.Repeatable, NormalCommand.DeleteCharacterAtCaret)
                 yield (".", CommandFlags.Special, NormalCommand.RepeatLastCommand)
                 yield ("<lt><lt>", CommandFlags.Repeatable, NormalCommand.ShiftLinesLeft)
                 yield (">>", CommandFlags.Repeatable, NormalCommand.ShiftLinesRight)
@@ -160,7 +160,8 @@ type internal NormalMode
                 yield ("m", CommandFlags.Movement, BindData<_>.CreateForSingleChar None (fun c -> NormalCommand.SetMarkToCaret c))
             } |> Seq.map (fun (str, flags, bindCommand) -> 
                 let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
-                CommandBinding.ComplexNormalCommand(keyInputSet, flags, bindCommand))
+                let storage = BindDataStorage.Simple bindCommand
+                CommandBinding.ComplexNormalCommand(keyInputSet, flags, storage))
         Seq.append normalSeq motionSeq |> Seq.append complexSeq
 
     /// Create the simple commands

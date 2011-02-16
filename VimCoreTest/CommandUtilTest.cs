@@ -134,7 +134,7 @@ namespace VimCore.UnitTest
         }
 
         /// <summary>
-        /// Cursor should not move as a result of a single ReplaceChar operation
+        /// Caret should not move as a result of a single ReplaceChar operation
         /// </summary>
         [Test]
         public void ReplaceChar_DontMoveCaret()
@@ -145,7 +145,7 @@ namespace VimCore.UnitTest
         }
 
         /// <summary>
-        /// Cursor should move for a multiple replace
+        /// Caret should move for a multiple replace
         /// </summary>
         [Test]
         public void ReplaceChar_MoveCaretForMultiple()
@@ -494,10 +494,10 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void DeleteCharacterAtCursor_Simple()
+        public void DeleteCharacterAtCaret_Simple()
         {
             Create("foo", "bar");
-            _commandUtil.DeleteCharacterAtCursor(1, UnnamedRegister);
+            _commandUtil.DeleteCharacterAtCaret(1, UnnamedRegister);
             Assert.AreEqual("oo", _textView.GetLine(0).GetText());
             Assert.AreEqual("f", UnnamedRegister.StringValue);
             Assert.AreEqual(0, _textView.GetCaretPoint().Position);
@@ -507,10 +507,10 @@ namespace VimCore.UnitTest
         /// Delete several characters
         /// </summary>
         [Test]
-        public void DeleteCharacterAtCursor_TwoCharacters()
+        public void DeleteCharacterAtCaret_TwoCharacters()
         {
             Create("foo", "bar");
-            _commandUtil.DeleteCharacterAtCursor(2, UnnamedRegister);
+            _commandUtil.DeleteCharacterAtCaret(2, UnnamedRegister);
             Assert.AreEqual("o", _textView.GetLine(0).GetText());
             Assert.AreEqual("fo", UnnamedRegister.StringValue);
         }
@@ -519,11 +519,11 @@ namespace VimCore.UnitTest
         /// Delete at a different offset and make sure the cursor is positioned correctly
         /// </summary>
         [Test]
-        public void DeleteCharacterAtCursor_NonZeroOffset()
+        public void DeleteCharacterAtCaret_NonZeroOffset()
         {
             Create("the cat", "bar");
             _textView.MoveCaretTo(1);
-            _commandUtil.DeleteCharacterAtCursor(2, UnnamedRegister);
+            _commandUtil.DeleteCharacterAtCaret(2, UnnamedRegister);
             Assert.AreEqual("t cat", _textView.GetLine(0).GetText());
             Assert.AreEqual("he", UnnamedRegister.StringValue);
             Assert.AreEqual(1, _textView.GetCaretPoint().Position);
@@ -534,22 +534,22 @@ namespace VimCore.UnitTest
         /// line
         /// </summary>
         [Test]
-        public void DeleteCharacterAtCursor_CountExceedsLine()
+        public void DeleteCharacterAtCaret_CountExceedsLine()
         {
             Create("the cat", "bar");
             _textView.MoveCaretTo(1);
-            _commandUtil.DeleteCharacterAtCursor(300, UnnamedRegister);
+            _commandUtil.DeleteCharacterAtCaret(300, UnnamedRegister);
             Assert.AreEqual("t", _textView.GetLine(0).GetText());
             Assert.AreEqual("he cat", UnnamedRegister.StringValue);
             Assert.AreEqual(1, _textView.GetCaretPoint().Position);
         }
 
         [Test]
-        public void DeleteCharacterBeforeCursor_Simple()
+        public void DeleteCharacterBeforeCaret_Simple()
         {
             Create("foo");
             _textView.MoveCaretTo(1);
-            _commandUtil.DeleteCharacterBeforeCursor(1, UnnamedRegister);
+            _commandUtil.DeleteCharacterBeforeCaret(1, UnnamedRegister);
             Assert.AreEqual("oo", _textView.GetLine(0).GetText());
             Assert.AreEqual("f", UnnamedRegister.StringValue);
             Assert.AreEqual(0, _textView.GetCaretPoint().Position);
@@ -559,11 +559,11 @@ namespace VimCore.UnitTest
         /// When the count exceeds the line just delete to the start of the line
         /// </summary>
         [Test]
-        public void DeleteCharacterBeforeCursor_CountExceedsLine()
+        public void DeleteCharacterBeforeCaret_CountExceedsLine()
         {
             Create("foo");
             _textView.MoveCaretTo(1);
-            _commandUtil.DeleteCharacterBeforeCursor(300, UnnamedRegister);
+            _commandUtil.DeleteCharacterBeforeCaret(300, UnnamedRegister);
             Assert.AreEqual("oo", _textView.GetLine(0).GetText());
             Assert.AreEqual("f", UnnamedRegister.StringValue);
             Assert.AreEqual(0, _textView.GetCaretPoint().Position);
@@ -819,6 +819,26 @@ namespace VimCore.UnitTest
             _commandUtil.ChangeCaseCaretLine(ChangeCharacterKind.Rot13);
             Assert.AreEqual("uryyb", _textView.GetLine(0).GetText());
             Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// An invalid motion should produce an error and not call the pased in function
+        /// </summary>
+        [Test]
+        public void RunWithMotion_InvalidMotionShouldError()
+        {
+            Create("");
+            var data = VimUtil.CreateMotionData(Motion.NewMark('a'));
+            Func<MotionResult, CommandResult> func =
+                _ =>
+                {
+                    Assert.Fail("Should not run");
+                    return null;
+                };
+            _statusUtil.Setup(x => x.OnError(Resources.MotionCapture_InvalidMotion)).Verifiable();
+            var result = _commandUtil.RunWithMotion(data, func.ToFSharpFunc());
+            Assert.IsTrue(result.IsError);
+            _factory.Verify();
         }
     }
 }

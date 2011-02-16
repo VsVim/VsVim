@@ -106,11 +106,6 @@ type IUndoRedoOperations =
     /// Creates an Undo Transaction
     abstract CreateUndoTransaction : name:string -> IUndoTransaction
 
-/// Result of an individual search
-type SearchResult =
-    | SearchFound of SnapshotSpan
-    | SearchNotFound 
-
 [<System.Flags>]
 type SearchOptions = 
     | None = 0x0
@@ -147,12 +142,18 @@ type SearchData = {
     Options : SearchOptions
 }
 
-/// REPEAT TODO: Convert to a BindResult.  
-type SearchProcessResult =
-    | SearchNotStarted 
-    | SearchComplete of SearchData * SearchResult
-    | SearchCancelled 
-    | SearchNeedMore
+/// Result of an individual search
+[<RequireQualifiedAccess>]
+type SearchResult =
+    | SearchFound of SearchData * SnapshotSpan
+    | SearchNotFound of SearchData
+
+    with 
+
+    member x.SearchData = 
+        match x with 
+        | SearchResult.SearchFound (searchData, _) -> searchData
+        | SearchResult.SearchNotFound searchData -> searchData
 
 /// Global information about searches within Vim
 type ISearchService = 
@@ -728,8 +729,41 @@ type CommandData = {
     /// Get the applicable register
     member x.GetRegister (map : IRegisterMap) = map.GetRegister x.RegisterNameOrDefault
 
+/// We want the NormalCommand discriminated union to have structural equality in order
+/// to ease testing requirements.  In order to do this and support Ping we need a 
+/// separate type here to wrap the Func to be comparable.  Does so in a reference 
+/// fashion
+type PingData (_func : CommandData -> unit) = 
+
+    member x.Function = _func
+
+    static member op_Equality (this, other) = System.Object.ReferenceEquals(this, other)
+    static member op_Inequality (this, other) = not (System.Object.ReferenceEquals(this, other))
+    override x.GetHashCode() = 1
+    override x.Equals(obj) = System.Object.ReferenceEquals(x, obj)
+    interface System.IEquatable<PingData> with
+        member x.Equals other = x.Equals(other)
+
+/// We want the Command discriminated union to have structural equality in order
+/// to ease testing requirements.  In order to do this and support LegacyCommands 
+/// for the time being we need a separate type here to wrap the Func to be comparable.  
+/// Does so in a reference fashion
+/// REPEAT TODO: Delete this when legacy commands go away
+type LegacyData (_func : unit -> CommandResult) = 
+
+    member x.Function = _func
+
+    static member op_Equality (this, other) = System.Object.ReferenceEquals(this, other)
+    static member op_Inequality (this, other) = not (System.Object.ReferenceEquals(this, other))
+    override x.GetHashCode() = 1
+    override x.Equals(obj) = System.Object.ReferenceEquals(x, obj)
+    interface System.IEquatable<PingData> with
+        member x.Equals other = x.Equals(other)
+
 /// Normal mode commands which can be executed by the user 
 [<RequireQualifiedAccess>]
+[<StructuralEquality>]
+[<NoComparison>]
 type NormalCommand = 
 
     /// Deletes the text specified by the motion and begins insert mode. Implements the "c" 
@@ -753,10 +787,10 @@ type NormalCommand =
     | ChangeTillEndOfLine
 
     /// Delete the character at the current cursor position.  Implements the "x" command
-    | DeleteCharacterAtCursor
+    | DeleteCharacterAtCaret
 
     /// Delete the character before the cursor. Implements the "X" command
-    | DeleteCharacterBeforeCursor
+    | DeleteCharacterBeforeCaret
 
     /// Delete lines from the buffer: dd
     | DeleteLines
@@ -790,15 +824,15 @@ type NormalCommand =
 
     /// Not actually a Vim Command.  This is a simple ping command which makes 
     /// testing items like complex repeats significantly easier
-    | Ping of (CommandData -> unit)
+    | Ping of PingData
 
     /// Put the contents of the register into the buffer after the cursor.  The bool is 
     /// whether or not the caret should be placed after the inserted text
-    | PutAfterCursor of bool
+    | PutAfterCaret of bool
 
     /// Put the contents of the register into the buffer before the cursor.  The bool is 
     /// whether or not the caret should be placed after the inserted text
-    | PutBeforeCursor of bool
+    | PutBeforeCaret of bool
 
     /// Repeat the last command
     | RepeatLastCommand
@@ -822,7 +856,7 @@ type NormalCommand =
     | ShiftMotionLinesRight of MotionData
 
     /// Substitute the character at the cursor
-    | SubstituteCharacterAtCursor
+    | SubstituteCharacterAtCaret
 
     /// Yank the given motion into a register
     | Yank of MotionData
@@ -842,11 +876,11 @@ type VisualCommand =
 
     /// Put the contents of the register into the buffer after the cursor.  The bool is 
     /// whether or not the caret should be placed after the inserted text
-    | PutAfterCursor of bool
+    | PutAfterCaret of bool
 
     /// Put the contents of the register into the buffer before the cursor.  The bool is 
     /// whether or not the caret should be placed after the inserted text
-    | PutBeforeCursor of bool
+    | PutBeforeCaret of bool
 
     /// Replace the visual span with the provided character
     | ReplaceChar of KeyInput
@@ -859,6 +893,8 @@ type VisualCommand =
 
 /// Commands which can be executed by the user
 [<RequireQualifiedAccess>]
+[<StructuralEquality>]
+[<NoComparison>]
 type Command =
 
     /// A Normal Mode Command
@@ -870,7 +906,7 @@ type Command =
     /// A Legacy command was run
     /// 
     /// REPEAT TODO: Delete this once legacy commands are eliminated
-    | LegacyCommand of (unit -> CommandResult)
+    | LegacyCommand of LegacyData
 
 /// The result of binding to a Motion value.
 [<RequireQualifiedAccess>]
@@ -930,6 +966,10 @@ and BindData<'T> = {
     static member CreateForSingleChar keyRemapModeOpt completeFunc = 
         BindData<_>.CreateForSingle keyRemapModeOpt (fun keyInput -> completeFunc keyInput.Char)
 
+    /// Create for a function which doesn't require any remapping
+    static member CreateForSimple bindFunc =
+        { KeyRemapMode = None; BindFunction = bindFunc }
+
     /// Often types bindings need to compose together because we need an inner binding
     /// to succeed so we can create a projected value.  This function will allow us
     /// to translate a BindData<'T> -> BindData<'U>
@@ -943,6 +983,35 @@ and BindData<'T> = {
             | BindResult.NeedMoreInput bindData -> BindResult.NeedMoreInput (bindData.Convert mapFunc)
 
         { KeyRemapMode = x.KeyRemapMode; BindFunction = inner x.BindFunction }
+
+/// Several types of BindData<'T> need to take an actiov when a binding begins against
+/// themselves.  This action needs to occur before the first KeyInput value is processed
+/// and hence they need a jump start.  The most notable is IncrementalSearch which 
+/// needs to enter 'Search' mode before processing KeyInput values so the cursor can
+/// be updated
+[<RequireQualifiedAccess>]
+type BindDataStorage<'T> =
+
+    /// Simple BindData<'T> which doesn't require activation
+    | Simple of BindData<'T> 
+
+    /// Complex BindData<'T> which does require activation
+    | Complex of (unit -> BindData<'T>)
+
+    with
+
+    /// Creates the BindData
+    member x.CreateBindData () = 
+        match x with
+        | Simple bindData -> bindData
+        | Complex func -> func()
+
+    /// Convert from a BindDataStorage<'T> -> BindDataStorage<'U>.  The 'mapFunc' value
+    /// will run on the final 'T' data if it eventually is completed
+    member x.Convert mapFunc = 
+        match x with
+        | Simple bindData -> Simple (bindData.Convert mapFunc)
+        | Complex func -> Complex (fun () -> func().Convert mapFunc)
 
 /// Representation of commands within Vim.  
 /// 
@@ -972,7 +1041,7 @@ type CommandBinding =
     | NormalCommand of KeyInputSet * CommandFlags * NormalCommand
 
     /// KeyInputSet bound to a complex NormalCommand instance
-    | ComplexNormalCommand of KeyInputSet * CommandFlags * BindData<NormalCommand>
+    | ComplexNormalCommand of KeyInputSet * CommandFlags * BindDataStorage<NormalCommand>
 
     /// KeyInputSet bound to a particular NormalCommand instance which takes a Motion Argument
     | MotionCommand of KeyInputSet * CommandFlags * (MotionData -> NormalCommand)
@@ -981,7 +1050,7 @@ type CommandBinding =
     | VisualCommand of KeyInputSet * CommandFlags * VisualCommand
 
     /// KeyInputSet bound to a complex VisualCommand instance
-    | ComplexVisualCommand of KeyInputSet * CommandFlags * BindData<VisualCommand>
+    | ComplexVisualCommand of KeyInputSet * CommandFlags * BindDataStorage<VisualCommand>
 
     with 
 
@@ -1174,30 +1243,31 @@ type MotionFlags =
     | HandlesEscape = 0x4
 
 /// Represents the types of MotionCommands which exist
-type LegacyMotionCommand =
+[<RequireQualifiedAccess>]
+type MotionBinding =
 
     /// Simple motion which comprises of a single KeyInput and a function which given 
     /// a start point and count will produce the motion.  None is returned in the 
     /// case the motion is not valid
-    | SimpleMotionCommand of KeyInputSet * MotionFlags * Motion
+    | Simple of KeyInputSet * MotionFlags * Motion
 
     /// Complex motion commands take more than one KeyInput to complete.  For example 
     /// the f,t,F and T commands all require at least one additional input.  The bool
     /// in the middle of the tuple indicates whether or not the motion can be 
     /// used as a cursor movement operation  
-    | ComplexMotionCommand of KeyInputSet * MotionFlags * BindData<Motion>
+    | Complex of KeyInputSet * MotionFlags * BindDataStorage<Motion>
 
     with
 
     member x.KeyInputSet = 
         match x with
-        | SimpleMotionCommand(name,_,_) -> name
-        | ComplexMotionCommand(name,_,_) -> name
+        | Simple (name, _, _) -> name
+        | Complex (name, _, _) -> name
 
     member x.MotionFlags =
         match x with 
-        | SimpleMotionCommand(_,flags,_) -> flags
-        | ComplexMotionCommand(_,flags,_) -> flags
+        | Simple (_, flags, _) -> flags
+        | Complex (_, flags, _) -> flags
 
 /// The information about the particular run of a Command
 type CommandRunData = {
@@ -1226,8 +1296,8 @@ type IMotionCapture =
     /// Associated ITextView
     abstract TextView : ITextView
     
-    /// Set of supported LegacyMotionCommand
-    abstract MotionCommands : seq<LegacyMotionCommand>
+    /// Set of MotionBinding values supported
+    abstract MotionBindings : seq<MotionBinding>
 
     /// Get the motion starting with the given KeyInput
     abstract GetOperatorMotion : KeyInput -> BindResult<Motion * int option>
@@ -1372,6 +1442,8 @@ type IIncrementalSearch =
     /// True when a search is occuring
     abstract InSearch : bool
 
+    /// When in the middle of a search this will return the SearchData for 
+    /// the search
     abstract CurrentSearch : SearchData option
 
     /// ISearchInformation instance this incremental search is associated with
@@ -1380,17 +1452,14 @@ type IIncrementalSearch =
     /// The ITextStructureNavigator used for finding 'word' values in the ITextBuffer
     abstract WordNavigator : ITextStructureNavigator
 
-    /// Processes the next piece of input.  Returns true when the incremental search operation is complete
-    abstract Process : KeyInput -> SearchProcessResult
-
-    /// Called when a search is about to begin
-    abstract Begin : SearchKind -> unit
+    /// Begin an incremental search in the ITextBuffer
+    abstract Begin : SearchKind -> BindData<SearchResult>
 
     [<CLIEvent>]
-    abstract CurrentSearchUpdated : IEvent<SearchData * SearchResult>
+    abstract CurrentSearchUpdated : IEvent<SearchResult>
 
     [<CLIEvent>]
-    abstract CurrentSearchCompleted : IEvent<SearchData * SearchResult>
+    abstract CurrentSearchCompleted : IEvent<SearchResult>
 
     [<CLIEvent>]
     abstract CurrentSearchCancelled : IEvent<SearchData>

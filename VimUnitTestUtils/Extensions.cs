@@ -59,6 +59,37 @@ namespace Vim.UnitTest
 
         #endregion
 
+        #region Command
+
+        public static Command.LegacyCommand AsLegacyCommand(this Command command)
+        {
+            Assert.IsTrue(command.IsLegacyCommand);
+            return (Command.LegacyCommand)command;
+        }
+
+        public static Command.VisualCommand AsVisualCommand(this Command command)
+        {
+            Assert.IsTrue(command.IsVisualCommand);
+            return (Command.VisualCommand)command;
+        }
+
+        public static Command.NormalCommand AsNormalCommand(this Command command)
+        {
+            Assert.IsTrue(command.IsNormalCommand);
+            return (Command.NormalCommand)command;
+        }
+
+        #endregion
+
+        #region IMotionCapture
+
+        public static BindResult<Tuple<Motion, FSharpOption<int>>> GetOperatorMotion(this IMotionCapture capture, char c)
+        {
+            return capture.GetOperatorMotion(KeyInputUtil.CharToKeyInput(c));
+        }
+
+        #endregion
+
         #region ModeUtil.Result
 
         public static Result.Failed AsFailed(this Result res)
@@ -518,7 +549,6 @@ namespace Vim.UnitTest
 
         #endregion
 
-
         #region ICommandRunner
 
         public static BindResult<CommandRunData> Run(this ICommandRunner runner, VimKey key)
@@ -598,16 +628,60 @@ namespace Vim.UnitTest
 
         #endregion
 
+        #region BindResult<T>
+
+        public static BindResult<T> Run<T>(this BindResult<T> result, string text)
+        {
+            for (var i = 0; i < text.Length; i++)
+            {
+                var keyInput = KeyInputUtil.CharToKeyInput(text[i]);
+                Assert.IsTrue(result.IsNeedMoreInput);
+                result = result.AsNeedMoreInput().Item.BindFunction.Invoke(keyInput);
+            }
+
+            return result;
+        }
+
+        public static BindResult<T> Run<T>(this BindResult<T> result, VimKey vimKey)
+        {
+            Assert.IsTrue(result.IsNeedMoreInput);
+            return result.AsNeedMoreInput().Item.Run(vimKey);
+        }
+
+        #endregion
+
+        #region BindData<T>
+
+        public static BindResult<T> Run<T>(this BindData<T> data, string text)
+        {
+            var keyInput = KeyInputUtil.CharToKeyInput(text[0]);
+            return data.BindFunction.Invoke(keyInput).Run(text.Substring(1));
+        }
+
+        public static BindResult<T> Run<T>(this BindData<T> data, VimKey vimKey)
+        {
+            var keyInput = KeyInputUtil.VimKeyToKeyInput(vimKey);
+            return data.BindFunction.Invoke(keyInput);
+        }
+
+        #endregion
+
+        #region SearchResult
+
+        public static SearchResult.SearchFound AsSearchFound(this SearchResult result)
+        {
+            Assert.IsTrue(result.IsSearchFound);
+            return (SearchResult.SearchFound)result;
+        }
+
+        #endregion
+
+
         #region IIncrementalSearch
 
-        public static SearchProcessResult DoSearch(this IIncrementalSearch search, string text, SearchKind searchKind = SearchKind.ForwardWithWrap)
+        public static BindResult<SearchResult> DoSearch(this IIncrementalSearch search, string text, SearchKind searchKind = SearchKind.ForwardWithWrap)
         {
-            search.Begin(searchKind);
-            foreach (var cur in text)
-            {
-                search.Process(KeyInputUtil.CharToKeyInput(cur));
-            }
-            return search.Process(KeyInputUtil.EnterKey);
+            return search.Begin(searchKind).Run(text);
         }
 
         #endregion

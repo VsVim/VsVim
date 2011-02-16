@@ -24,6 +24,8 @@ namespace VimCore.UnitTest
         private ITextView _textView;
         private IRegisterMap _map;
         private IVimData _vimData;
+        private IVimGlobalSettings _globalSettings;
+        private IVimLocalSettings _localSettings;
         private MockRepository _factory;
         private Mock<IVimBuffer> _buffer;
         private Mock<IOperations> _operations;
@@ -68,23 +70,29 @@ namespace VimCore.UnitTest
             _foldManager = _factory.Create<IFoldManager>(MockBehavior.Strict);
             _host = _factory.Create<IVimHost>(MockBehavior.Loose);
             _commandUtil = _factory.Create<ICommandUtil>();
+            _commandUtil
+                .Setup(x => x.RunCommand(It.Is<Command>(y => y.IsLegacyCommand)))
+                .Returns<Command>(c => c.AsLegacyCommand().Item.Function.Invoke(null));
             _displayWindowBroker = _factory.Create<IDisplayWindowBroker>(MockBehavior.Strict);
             _displayWindowBroker.SetupGet(x => x.IsCompletionActive).Returns(false);
             _displayWindowBroker.SetupGet(x => x.IsSignatureHelpActive).Returns(false);
             _displayWindowBroker.SetupGet(x => x.IsSmartTagSessionActive).Returns(false);
             _vimData = new VimData();
 
+            _globalSettings = new Vim.GlobalSettings();
+            _localSettings = new LocalSettings(_globalSettings, _textView);
             motionUtil = motionUtil ?? VimUtil.CreateTextViewMotionUtil(
                 _textView,
                 new MarkMap(new TrackingLineColumnService()),
-                new LocalSettings(new Vim.GlobalSettings(), _textView));
+                _localSettings);
             _buffer = MockObjectFactory.CreateVimBuffer(
                 _textView,
                 "test",
                 MockObjectFactory.CreateVim(_map, host: _host.Object, vimData: _vimData).Object,
                 _jumpList.Object,
                 incrementalSearch: _incrementalSearch.Object,
-                motionUtil: motionUtil);
+                motionUtil: motionUtil,
+                settings: _localSettings);
             _operations = _factory.Create<IOperations>(MockBehavior.Strict);
             _operations.SetupGet(x => x.EditorOperations).Returns(_editorOperations.Object);
             _operations.SetupGet(x => x.TextView).Returns(_textView);
@@ -175,7 +183,9 @@ namespace VimCore.UnitTest
         public void CanProcess4()
         {
             Create(DefaultLines);
-            _incrementalSearch.Setup(x => x.Begin(SearchKind.ForwardWithWrap));
+            _incrementalSearch
+                .Setup(x => x.Begin(SearchKind.ForwardWithWrap))
+                .Returns(VimUtil.CreateBindData<SearchResult>());
             _mode.Process(KeyInputUtil.CharToKeyInput('/'));
             Assert.IsTrue(_mode.CanProcess(KeyInputUtil.CharToKeyInput('U')));
             Assert.IsTrue(_mode.CanProcess(KeyInputUtil.CharToKeyInput('Z')));
@@ -739,26 +749,6 @@ namespace VimCore.UnitTest
 
         #region Motion
 
-        [Test, Description("Typing in invalid motion should produce a warning")]
-        public void BadMotion1()
-        {
-            Create(DefaultLines);
-            _statusUtil.Setup(x => x.OnError(Resources.MotionCapture_InvalidMotion));
-            _mode.Process("d@");
-            _statusUtil.Verify();
-        }
-
-        [Test, Description("Invalid motion should bring us back to normal state")]
-        public void BadMotion2()
-        {
-            Create(DefaultLines);
-            _statusUtil.Setup(x => x.OnError(It.IsAny<string>())).Verifiable();
-            _mode.Process("d@");
-            var res = _mode.Process(KeyInputUtil.CharToKeyInput('i'));
-            Assert.IsTrue(res.IsSwitchMode);
-            _statusUtil.Verify();
-        }
-
         [Test]
         public void Motion_l()
         {
@@ -865,19 +855,19 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void Bind_DeleteCharacterBeforeCursor()
+        public void Bind_DeleteCharacterBeforeCaret()
         {
             Create("");
-            _commandUtil.SetupNormalCommand(NormalCommand.DeleteCharacterBeforeCursor);
+            _commandUtil.SetupCommandNormal(NormalCommand.DeleteCharacterBeforeCaret);
             _mode.Process("X");
             _commandUtil.Verify();
         }
 
         [Test]
-        public void Bind_DeleteCharacterBeforeCursor_WithCountAndRegister()
+        public void Bind_DeleteCharacterBeforeCaret_WithCountAndRegister()
         {
             Create("");
-            _commandUtil.SetupNormalCommand(NormalCommand.DeleteCharacterBeforeCursor, 2, RegisterName.OfChar('c').Value);
+            _commandUtil.SetupCommandNormal(NormalCommand.DeleteCharacterBeforeCaret, 2, RegisterName.OfChar('c').Value);
             _mode.Process("\"c2X");
             _commandUtil.Verify();
         }
@@ -886,7 +876,7 @@ namespace VimCore.UnitTest
         public void Bind_ReplaceChar_Simple()
         {
             Create("the dog chased the cat");
-            _commandUtil.SetupNormalCommand(NormalCommand.NewReplaceChar(KeyInputUtil.VimKeyToKeyInput(VimKey.LowerB)));
+            _commandUtil.SetupCommandNormal(NormalCommand.NewReplaceChar(KeyInputUtil.VimKeyToKeyInput(VimKey.LowerB)));
             _mode.Process("rb");
         }
 
@@ -894,33 +884,33 @@ namespace VimCore.UnitTest
         public void Bind_ReplaceChar_WithCount()
         {
             Create("the dog chased the cat");
-            _commandUtil.SetupNormalCommand(NormalCommand.NewReplaceChar(KeyInputUtil.VimKeyToKeyInput(VimKey.LowerB)));
+            _commandUtil.SetupCommandNormal(NormalCommand.NewReplaceChar(KeyInputUtil.VimKeyToKeyInput(VimKey.LowerB)), count: 2);
             _mode.Process("2rb");
         }
 
         [Test]
-        public void Bind_DeleteCharacterAtCursor()
+        public void Bind_DeleteCharacterAtCaret()
         {
             Create("");
-            _commandUtil.SetupNormalCommand(NormalCommand.DeleteCharacterAtCursor);
+            _commandUtil.SetupCommandNormal(NormalCommand.DeleteCharacterAtCaret);
             _mode.Process("x");
             _commandUtil.Verify();
         }
 
         [Test]
-        public void Bind_DeleteCharacterAtCursor_WithCountAndRegister()
+        public void Bind_DeleteCharacterAtCaret_WithCountAndRegister()
         {
             Create("");
-            _commandUtil.SetupNormalCommand(NormalCommand.DeleteCharacterAtCursor, 1, RegisterName.OfChar('c').Value);
+            _commandUtil.SetupCommandNormal(NormalCommand.DeleteCharacterAtCaret, 2, RegisterName.OfChar('c').Value);
             _mode.Process("\"c2x");
             _commandUtil.Verify();
         }
 
         [Test]
-        public void Bind_DeleteCharacterAtCursor_ViaDelete()
+        public void Bind_DeleteCharacterAtCaret_ViaDelete()
         {
             Create("");
-            _commandUtil.SetupNormalCommand(NormalCommand.DeleteCharacterAtCursor);
+            _commandUtil.SetupCommandNormal(NormalCommand.DeleteCharacterAtCaret);
             _mode.Process(VimKey.Delete);
             _commandUtil.Verify();
         }
@@ -928,165 +918,53 @@ namespace VimCore.UnitTest
         [Test]
         public void Bind_ChangeMotion()
         {
-            // REPEAT TODO: Figure out how to test the binding of motion commands
-        }
-
-        [Test]
-        public void Edit_cc_1()
-        {
-            Create("foo", "bar", "baz");
-            var span = _textView.GetLineRange(0, 0).Extent;
-            _operations
-                .Setup(x => x.DeleteSpan(span))
-                .Verifiable();
-            _operations
-                .Setup(x => x.UpdateRegisterForSpan(_unnamedRegister, RegisterOperation.Delete, span, OperationKind.LineWise))
-                .Verifiable();
-            var res = _mode.Process("cc");
-            Assert.IsTrue(res.IsSwitchMode);
-            Assert.AreEqual(ModeKind.Insert, res.AsSwitchMode().Item);
-            _operations.Verify();
-        }
-
-        [Test]
-        public void Edit_cc_2()
-        {
-            Create("foo", "bar", "baz");
-            var span = _textView.GetLineRange(0, 1).Extent;
-            _operations
-                .Setup(x => x.DeleteSpan(span))
-                .Verifiable();
-            _operations
-                .Setup(x => x.UpdateRegisterForSpan(_unnamedRegister, RegisterOperation.Delete, span, OperationKind.LineWise))
-                .Verifiable();
-            var res = _mode.Process("2cc");
-            Assert.IsTrue(res.IsSwitchMode);
-            Assert.AreEqual(ModeKind.Insert, res.AsSwitchMode().Item);
-            _operations.Verify();
-        }
-
-        [Test]
-        public void Edit_C_1()
-        {
-            Create("foo", "bar", "baz");
-            var span = _textView.GetLineRange(0).Extent;
-            _operations
-                .Setup(x => x.DeleteLinesFromCursor(1))
-                .Returns(span)
-                .Verifiable();
-            _operations
-                .Setup(x => x.UpdateRegisterForSpan(_unnamedRegister, RegisterOperation.Delete, span, OperationKind.CharacterWise))
-                .Verifiable();
-            var res = _mode.Process("C");
-            Assert.IsTrue(res.IsSwitchMode);
-            Assert.AreEqual(ModeKind.Insert, res.AsSwitchMode().Item);
-            _operations.Verify();
-        }
-
-        [Test]
-        public void Edit_C_2()
-        {
-            Create("foo", "bar", "baz");
-            var span = _textView.GetLineRange(0).Extent;
-            _operations
-                .Setup(x => x.DeleteLinesFromCursor(1))
-                .Returns(span)
-                .Verifiable();
-            _operations
-                .Setup(x => x.UpdateRegisterForSpan(_map.GetRegister('b'), RegisterOperation.Delete, span, OperationKind.CharacterWise))
-                .Verifiable();
-            var res = _mode.Process("\"bC");
-            Assert.IsTrue(res.IsSwitchMode);
-            Assert.AreEqual(ModeKind.Insert, res.AsSwitchMode().Item);
-            _operations.Verify();
-        }
-
-        [Test, Description("Delete from the cursor")]
-        public void Edit_C_3()
-        {
-            Create("foo", "bar", "baz");
-            var span = _textView.GetLineRange(0).Extent;
-            _operations
-                .Setup(x => x.DeleteLinesFromCursor(2))
-                .Returns(span)
-                .Verifiable();
-            _operations
-                .Setup(x => x.UpdateRegisterForSpan(_map.GetRegister('b'), RegisterOperation.Delete, span, OperationKind.CharacterWise))
-                .Verifiable();
-            var res = _mode.Process("\"b2C");
-            Assert.IsTrue(res.IsSwitchMode);
-            Assert.AreEqual(ModeKind.Insert, res.AsSwitchMode().Item);
-            _operations.Verify();
-        }
-
-        [Test]
-        public void Bind_SubstituteCharacterAtCursor()
-        {
-            Create("");
-            _commandUtil.SetupNormalCommand(NormalCommand.SubstituteCharacterAtCursor);
-            _mode.Process("s");
+            Create("the dog chases the ball");
+            _commandUtil.SetupCommandMotion<NormalCommand.ChangeMotion>();
+            _mode.Process("cw");
             _commandUtil.Verify();
         }
 
         [Test]
-        public void Edit_S_1()
+        public void Bind_ChangeLines()
         {
-            Create("foo", "bar", "baz");
-            var span = _textView.GetLineRange(0).Extent;
-            _operations
-                .Setup(x => x.DeleteLines(1))
-                .Returns(span)
-                .Verifiable();
-            _operations
-                .Setup(x => x.UpdateRegisterForSpan(_unnamedRegister, RegisterOperation.Delete, span, OperationKind.LineWise))
-                .Verifiable();
-            var res = _mode.Process("S");
-            Assert.IsTrue(res.IsSwitchMode);
-            Assert.AreEqual(ModeKind.Insert, res.AsSwitchMode().Item);
-            _operations.Verify();
+            Create("");
+            _commandUtil.SetupCommandNormal(NormalCommand.ChangeLines);
+            _mode.Process("cc");
+            _commandUtil.Verify();
         }
 
         [Test]
-        public void Edit_S_2()
+        public void Bind_ChangeLines_ViaS()
         {
             Create("foo", "bar", "baz");
-            var span = _textView.GetLineRange(0).Extent;
-            _operations
-                .Setup(x => x.DeleteLines(2))
-                .Returns(span)
-                .Verifiable();
-            _operations
-                .Setup(x => x.UpdateRegisterForSpan(_unnamedRegister, RegisterOperation.Delete, span, OperationKind.LineWise))
-                .Verifiable();
-            var res = _mode.Process("2S");
-            Assert.IsTrue(res.IsSwitchMode);
-            Assert.AreEqual(ModeKind.Insert, res.AsSwitchMode().Item);
-            _operations.Verify();
+            _commandUtil.SetupCommandNormal(NormalCommand.ChangeLines);
+            _mode.Process("S");
+            _commandUtil.Verify();
         }
 
         [Test]
-        public void Edit_S_3()
+        public void Bind_ChangeTillEndOfLine()
         {
             Create("foo", "bar", "baz");
-            var span = _textView.GetLineRange(0).Extent;
-            _operations
-                .Setup(x => x.DeleteLines(300))
-                .Returns(span)
-                .Verifiable();
-            _operations
-                .Setup(x => x.UpdateRegisterForSpan(_unnamedRegister, RegisterOperation.Delete, span, OperationKind.LineWise))
-                .Verifiable();
-            var res = _mode.Process("300S");
-            Assert.IsTrue(res.IsSwitchMode);
-            Assert.AreEqual(ModeKind.Insert, res.AsSwitchMode().Item);
-            _operations.Verify();
+            _commandUtil.SetupCommandNormal(NormalCommand.ChangeTillEndOfLine);
+            _mode.Process("C");
+            _commandUtil.Verify();
+        }
+
+        [Test]
+        public void Bind_SubstituteCharacterAtCaret()
+        {
+            Create("");
+            _commandUtil.SetupCommandNormal(NormalCommand.SubstituteCharacterAtCaret);
+            _mode.Process("s");
+            _commandUtil.Verify();
         }
 
         [Test]
         public void Bind_ChangeCaseCaretPoint_Tilde()
         {
             Create("foo");
-            _commandUtil.SetupNormalCommand(NormalCommand.NewChangeCaseCaretPoint(ChangeCharacterKind.ToggleCase));
+            _commandUtil.SetupCommandNormal(NormalCommand.NewChangeCaseCaretPoint(ChangeCharacterKind.ToggleCase));
             _mode.Process("~");
             _commandUtil.Verify();
         }
@@ -1095,11 +973,11 @@ namespace VimCore.UnitTest
         /// When tildeop is set this becomes a motion command
         /// </summary>
         [Test]
-        public void Edit_Tilde3()
+        public void Bind_TildeMotion()
         {
             Create("foo");
-            // REPEAT TODO: Figure this out
-            // _commandUtil.SetupMotionCommand(motion => NormalCommand.NewChangeCaseMotion(ChangeCharacterKind.ToggleCase, motion));
+            _globalSettings.TildeOp = true;
+            _commandUtil.SetupCommandMotion<NormalCommand.ChangeMotion>();
             _mode.Process("~");
             _commandUtil.Verify();
         }
@@ -1108,7 +986,7 @@ namespace VimCore.UnitTest
         public void Bind_ChangeCaseLine_Upper1()
         {
             Create("again");
-            _commandUtil.SetupNormalCommand(NormalCommand.NewChangeCaseCaretLine(ChangeCharacterKind.ToUpperCase));
+            _commandUtil.SetupCommandNormal(NormalCommand.NewChangeCaseCaretLine(ChangeCharacterKind.ToUpperCase));
             _mode.Process("gUgU");
             _commandUtil.Verify();
         }
@@ -1117,7 +995,7 @@ namespace VimCore.UnitTest
         public void Bind_ChangeCaseLine_Upper2()
         {
             Create("again");
-            _commandUtil.SetupNormalCommand(NormalCommand.NewChangeCaseCaretLine(ChangeCharacterKind.ToUpperCase));
+            _commandUtil.SetupCommandNormal(NormalCommand.NewChangeCaseCaretLine(ChangeCharacterKind.ToUpperCase));
             _mode.Process("gUU");
             _commandUtil.Verify();
         }
@@ -1127,7 +1005,7 @@ namespace VimCore.UnitTest
         public void Bind_ChangeCaseLine_Lower1()
         {
             Create("again");
-            _commandUtil.SetupNormalCommand(NormalCommand.NewChangeCaseCaretLine(ChangeCharacterKind.ToLowerCase));
+            _commandUtil.SetupCommandNormal(NormalCommand.NewChangeCaseCaretLine(ChangeCharacterKind.ToLowerCase));
             _mode.Process("gugu");
             _commandUtil.Verify();
         }
@@ -1136,7 +1014,7 @@ namespace VimCore.UnitTest
         public void Bind_ChangeCaseLine_Lower2()
         {
             Create("again");
-            _commandUtil.SetupNormalCommand(NormalCommand.NewChangeCaseCaretLine(ChangeCharacterKind.ToLowerCase));
+            _commandUtil.SetupCommandNormal(NormalCommand.NewChangeCaseCaretLine(ChangeCharacterKind.ToLowerCase));
             _mode.Process("guu");
             _commandUtil.Verify();
         }
@@ -1145,7 +1023,7 @@ namespace VimCore.UnitTest
         public void Bind_ChangeCaseLine_Rot13_1()
         {
             Create("again");
-            _commandUtil.SetupNormalCommand(NormalCommand.NewChangeCaseCaretLine(ChangeCharacterKind.Rot13));
+            _commandUtil.SetupCommandNormal(NormalCommand.NewChangeCaseCaretLine(ChangeCharacterKind.Rot13));
             _mode.Process("g?g?");
             _commandUtil.Verify();
         }
@@ -1154,7 +1032,7 @@ namespace VimCore.UnitTest
         public void Bind_ChangeCaseLine_Rot13_2()
         {
             Create("again");
-            _commandUtil.SetupNormalCommand(NormalCommand.NewChangeCaseCaretLine(ChangeCharacterKind.Rot13));
+            _commandUtil.SetupCommandNormal(NormalCommand.NewChangeCaseCaretLine(ChangeCharacterKind.Rot13));
             _mode.Process("g??");
             _commandUtil.Verify();
         }
@@ -1470,46 +1348,26 @@ namespace VimCore.UnitTest
         public void Bind_DeleteLines()
         {
             Create("foo", "bar");
-            _commandUtil.SetupNormalCommand(NormalCommand.DeleteLines);
+            _commandUtil.SetupCommandNormal(NormalCommand.DeleteLines);
             _mode.Process("dd");
             _commandUtil.Verify();
         }
 
         [Test]
-        public void Delete_dw_1()
+        public void Bind_DeleteMotion()
         {
-            Create("foo bar baz");
-            var span = new SnapshotSpan(_textView.TextSnapshot, 0, 4);
-            _operations
-                .Setup(x => x.DeleteSpan(span))
-                .Verifiable();
-            _operations
-                .Setup(x => x.UpdateRegisterForSpan(_unnamedRegister, RegisterOperation.Delete, span, OperationKind.CharacterWise))
-                .Verifiable();
+            Create("hello world");
+            _commandUtil.SetupCommandMotion<NormalCommand.DeleteMotion>();
             _mode.Process("dw");
-            _operations.Verify();
+            _commandUtil.Verify();
         }
 
-        [Test, Description("Delete at the end of the line shouldn't delete newline")]
-        public void Delete_dw_2()
-        {
-            Create("foo bar", "baz");
-            var point = new SnapshotPoint(_textView.TextSnapshot, 4);
-            _textView.Caret.MoveTo(point);
-            Assert.AreEqual('b', _textView.Caret.Position.BufferPosition.GetChar());
-            var span = new SnapshotSpan(point, _textView.TextSnapshot.GetLineFromLineNumber(0).End);
-            _operations
-                .Setup(x => x.DeleteSpan(span))
-                .Verifiable();
-            _operations
-                .Setup(x => x.UpdateRegisterForSpan(_unnamedRegister, RegisterOperation.Delete, span, OperationKind.CharacterWise))
-                .Verifiable();
-            _mode.Process("dw");
-            _operations.Verify();
-        }
-
-        [Test, Description("Escape should exit d")]
-        public void Delete_d_1()
+        /// <summary>
+        /// Make sure that escape will cause the CommandRunner to exit when waiting
+        /// for a Motion to complete
+        /// </summary>
+        [Test]
+        public void Process_EscapeShouldExitMotion()
         {
             Create(DefaultLines);
             _mode.Process('d');
@@ -1519,51 +1377,12 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void Delete_D_1()
+        public void Bind_DeleteTillEndOfLine()
         {
             Create("foo bar");
-            var span = _textView.GetLineRange(0).Extent;
-            _operations
-                .Setup(x => x.DeleteLinesFromCursor(1))
-                .Returns(span)
-                .Verifiable();
-            _operations
-                .Setup(x => x.UpdateRegisterForSpan(_unnamedRegister, RegisterOperation.Delete, span, OperationKind.CharacterWise))
-                .Verifiable();
+            _commandUtil.SetupCommandNormal(NormalCommand.DeleteTillEndOfLine);
             _mode.Process("D");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void Delete_D_2()
-        {
-            Create("foo bar baz");
-            var span = _textView.GetLineRange(0).Extent;
-            _operations
-                .Setup(x => x.DeleteLinesFromCursor(1))
-                .Returns(span)
-                .Verifiable();
-            _operations
-                .Setup(x => x.UpdateRegisterForSpan(_map.GetRegister('b'), RegisterOperation.Delete, span, OperationKind.CharacterWise))
-                .Verifiable();
-            _mode.Process("\"bD");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void Delete_D_3()
-        {
-            Create("foo bar");
-            var span = _textView.GetLineRange(0).Extent;
-            _operations
-                .Setup(x => x.DeleteLinesFromCursor(3))
-                .Returns(span)
-                .Verifiable();
-            _operations
-                .Setup(x => x.UpdateRegisterForSpan(_unnamedRegister, RegisterOperation.Delete, span, OperationKind.CharacterWise))
-                .Verifiable();
-            _mode.Process("3D");
-            _operations.Verify();
+            _commandUtil.Verify();
         }
 
         #endregion
@@ -1599,81 +1418,51 @@ namespace VimCore.UnitTest
 
         #region Incremental Search
 
+        /// <summary>
+        /// Make sure the incremental search begins when the '/' is typed
+        /// </summary>
         [Test]
-        public void IncrementalSearch1()
+        public void IncrementalSearch_BeginOnForwardSearchChar()
         {
             Create("foo bar");
-            _incrementalSearch.Setup(x => x.Begin(SearchKind.ForwardWithWrap)).Verifiable();
+            _incrementalSearch
+                .Setup(x => x.Begin(SearchKind.ForwardWithWrap))
+                .Returns(VimUtil.CreateBindData<SearchResult>())
+                .Verifiable();
             _mode.Process('/');
             _incrementalSearch.Verify();
         }
 
+        /// <summary>
+        /// Make sure the incremental search beigns when the '?' is typed
+        /// </summary>
         [Test]
-        public void IncrementalSearch2()
+        public void IncrementalSearch_BeginOnBackwardSearchChar()
         {
             Create("foo bar");
-            _incrementalSearch.Setup(x => x.Begin(SearchKind.BackwardWithWrap)).Verifiable();
+            _incrementalSearch
+                .Setup(x => x.Begin(SearchKind.BackwardWithWrap))
+                .Returns(VimUtil.CreateBindData<SearchResult>())
+                .Verifiable();
             _mode.Process('?');
             _incrementalSearch.Verify();
         }
 
+        /// <summary>
+        /// Once incremental search begins, make sure it handles any keystroke
+        /// </summary>
         [Test]
-        public void IncrementalSearch3()
+        public void IncrementalSearch_HandlesAnyKey()
         {
             Create("foo bar");
-            _incrementalSearch.Setup(x => x.Begin(SearchKind.ForwardWithWrap)).Verifiable();
-            _mode.Process('/');
             _incrementalSearch
-                .Setup(x => x.Process(It.IsAny<KeyInput>()))
-                .Returns(VimUtil.CreateSearchComplete(""))
+                .Setup(x => x.Begin(SearchKind.ForwardWithWrap))
+                .Returns(VimUtil.CreateBindData<SearchResult>())
                 .Verifiable();
-            _mode.Process('b');
-            _incrementalSearch.Verify();
-            _jumpList.Verify();
-        }
-
-        [Test, Description("Make sure any key goes to incremental search")]
-        public void IncrementalSearch4()
-        {
-            Create("foo bar");
-            _incrementalSearch.Setup(x => x.Begin(SearchKind.ForwardWithWrap)).Verifiable();
             _mode.Process('/');
             var ki = KeyInputUtil.CharToKeyInput((char)7);
-            _incrementalSearch
-                .Setup(x => x.Process(It.IsAny<KeyInput>()))
-                .Returns(VimUtil.CreateSearchComplete(""))
-                .Verifiable();
             _mode.Process(ki);
             _incrementalSearch.Verify();
-            _jumpList.Verify();
-        }
-
-        [Test, Description("After a true return incremental search should be completed")]
-        public void IncrementalSearch5()
-        {
-            Create("foo bar");
-            _incrementalSearch.Setup(x => x.Begin(SearchKind.ForwardWithWrap)).Verifiable();
-            _mode.Process('/');
-            var ki = KeyInputUtil.CharToKeyInput('c');
-            _incrementalSearch
-                .Setup(x => x.Process(It.IsAny<KeyInput>()))
-                .Returns(VimUtil.CreateSearchComplete(""))
-                .Verifiable();
-            _mode.Process(ki);
-            _incrementalSearch.Verify();
-            _jumpList.Verify();
-        }
-
-        [Test, Description("Cancel should not add to the jump list")]
-        public void IncrementalSearch6()
-        {
-            Create("foo bar");
-            _incrementalSearch.Setup(x => x.Begin(SearchKind.ForwardWithWrap)).Verifiable();
-            _mode.Process('/');
-            _incrementalSearch.Setup(x => x.Process(It.IsAny<KeyInput>())).Returns(SearchProcessResult.SearchCancelled).Verifiable();
-            _mode.Process(KeyInputUtil.CharToKeyInput((char)8));
-            _incrementalSearch.Verify();
-            _jumpList.Verify();
         }
 
         #endregion
@@ -1782,7 +1571,7 @@ namespace VimCore.UnitTest
         public void Bind_ShiftRight()
         {
             Create("foo");
-            _commandUtil.SetupNormalCommand(NormalCommand.ShiftLinesRight);
+            _commandUtil.SetupCommandNormal(NormalCommand.ShiftLinesRight);
             _mode.Process(">>");
             _commandUtil.Verify();
         }
@@ -1798,7 +1587,7 @@ namespace VimCore.UnitTest
         public void Bind_ShiftLeft()
         {
             Create("foo");
-            _commandUtil.SetupNormalCommand(NormalCommand.ShiftLinesLeft);
+            _commandUtil.SetupCommandNormal(NormalCommand.ShiftLinesLeft);
             _mode.Process("<<");
             _commandUtil.Verify();
         }
@@ -1986,7 +1775,7 @@ namespace VimCore.UnitTest
         public void SetMark_Simple()
         {
             Create("");
-            _commandUtil.SetupNormalCommand(NormalCommand.NewSetMarkToCaret('a'));
+            _commandUtil.SetupCommandNormal(NormalCommand.NewSetMarkToCaret('a'));
             _mode.Process("ma");
             _commandUtil.Verify();
         }
@@ -1995,7 +1784,7 @@ namespace VimCore.UnitTest
         public void JumpToMark_SingleQuote()
         {
             Create("");
-            _commandUtil.SetupNormalCommand(NormalCommand.NewJumpToMark('a'));
+            _commandUtil.SetupCommandNormal(NormalCommand.NewJumpToMark('a'));
             _mode.Process("'a");
         }
 
@@ -2003,7 +1792,7 @@ namespace VimCore.UnitTest
         public void JumpToMark_BackTick()
         {
             Create("");
-            _commandUtil.SetupNormalCommand(NormalCommand.NewJumpToMark('a'));
+            _commandUtil.SetupCommandNormal(NormalCommand.NewJumpToMark('a'));
             _mode.Process("`a");
         }
 
@@ -2076,7 +1865,9 @@ namespace VimCore.UnitTest
         public void KeyRemapMode_CommandInIncrementalSearch()
         {
             Create("foobar");
-            _incrementalSearch.Setup(x => x.Begin(SearchKind.ForwardWithWrap));
+            _incrementalSearch
+                .Setup(x => x.Begin(SearchKind.ForwardWithWrap))
+                .Returns(VimUtil.CreateBindData<SearchResult>(remapMode: KeyRemapMode.Command));
             _mode.Process('/');
             Assert.AreEqual(KeyRemapMode.Command, _mode.KeyRemapMode);
         }
@@ -2116,7 +1907,9 @@ namespace VimCore.UnitTest
         public void IsWaitingForInput2()
         {
             Create("foobar");
-            _incrementalSearch.Setup(x => x.Begin(SearchKind.ForwardWithWrap));
+            _incrementalSearch
+                .Setup(x => x.Begin(SearchKind.ForwardWithWrap))
+                .Returns(VimUtil.CreateBindData<SearchResult>());
             _mode.Process('/');
             Assert.IsTrue(_mode.CommandRunner.IsWaitingForMoreInput);
         }
@@ -2427,19 +2220,21 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void FormatMotion1()
+        public void Bind_FormatLines()
         {
             Create("foo", "bar");
-            _host.Setup(x => x.FormatLines(_textView, _textView.GetLineRange(0, 0)));
+            _commandUtil.SetupCommandNormal(NormalCommand.FormatLines);
             _mode.Process("==");
+            _commandUtil.Verify();
         }
 
         [Test]
-        public void FormatMotion2()
+        public void Bind_FormatMotion()
         {
-            Create("foo", "bar");
-            _host.Setup(x => x.FormatLines(_textView, _textView.GetLineRange(0, 1)));
-            _mode.Process("2==");
+            Create("the dog chased the ball");
+            _commandUtil.SetupCommandMotion<NormalCommand.FormatMotion>();
+            _mode.Process("=w");
+            _commandUtil.Verify();
         }
 
         #endregion

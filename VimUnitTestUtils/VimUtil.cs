@@ -199,14 +199,14 @@ namespace Vim.UnitTest
                 func.ToFSharpFunc());
         }
 
-        internal static LegacyMotionCommand CreateSimpleMotion(
+        internal static MotionBinding CreateSimpleMotion(
             string name,
             Motion motion,
             MotionFlags? flags = null)
         {
             var flagsRaw = flags ?? MotionFlags.CursorMovement;
             var commandName = KeyNotationUtil.StringToKeyInputSet(name);
-            return LegacyMotionCommand.NewSimpleMotionCommand(
+            return MotionBinding.NewSimple(
                 commandName,
                 flagsRaw,
                 motion);
@@ -215,7 +215,7 @@ namespace Vim.UnitTest
         internal static CommandRunData CreateCommandRunData(
             Command command = null,
             CommandBinding binding = null,
-            CommandResult result = null, 
+            CommandResult result = null,
             CommandFlags flags = CommandFlags.None)
         {
             command = command ?? CreateNormalCommand();
@@ -228,9 +228,8 @@ namespace Vim.UnitTest
             string name = "default",
             CommandFlags flags = CommandFlags.None,
             NormalCommand command = null)
-
         {
-            command = command ?? NormalCommand.NewPutAfterCursor(false);
+            command = command ?? NormalCommand.NewPutAfterCaret(false);
             return CommandBinding.NewNormalCommand(KeyNotationUtil.StringToKeyInputSet(name), flags, command);
         }
 
@@ -242,16 +241,17 @@ namespace Vim.UnitTest
             Func<KeyInput, BindResult<NormalCommand>> func = keyInput =>
             {
                 action(keyInput);
-                return BindResult<NormalCommand>.NewComplete(NormalCommand.NewPutAfterCursor(false));
+                return BindResult<NormalCommand>.NewComplete(NormalCommand.NewPutAfterCaret(false));
             };
 
             var bindData = new BindData<NormalCommand>(
                 FSharpOption<KeyRemapMode>.None,
                 func.ToFSharpFunc());
+            var bindDataStorage = BindDataStorage<NormalCommand>.NewSimple(bindData);
             return CommandBinding.NewComplexNormalCommand(
                 KeyNotationUtil.StringToKeyInputSet(name),
                 flags,
-                bindData);
+                bindDataStorage);
         }
 
         internal static CommandBinding CreateCommandBindingNormalComplex(
@@ -274,23 +274,24 @@ namespace Vim.UnitTest
                     return BindResult<NormalCommand>.NewNeedMoreInput(data);
                 }
 
-                return BindResult<NormalCommand>.NewComplete(NormalCommand.NewPutAfterCursor(false));
+                return BindResult<NormalCommand>.NewComplete(NormalCommand.NewPutAfterCaret(false));
             };
 
             var bindData = new BindData<NormalCommand>(
                 FSharpOption<KeyRemapMode>.None,
                 func.ToFSharpFunc());
+            var bindDataStorage = BindDataStorage<NormalCommand>.NewSimple(bindData);
             return CommandBinding.NewComplexNormalCommand(
                 KeyNotationUtil.StringToKeyInputSet(name),
                 flags,
-                bindData);
+                bindDataStorage);
         }
 
         internal static Command CreateNormalCommand(
             NormalCommand command = null,
             CommandData commandData = null)
         {
-            command = command ?? NormalCommand.NewPutAfterCursor(false);
+            command = command ?? NormalCommand.NewPutAfterCaret(false);
             commandData = commandData ?? new CommandData(FSharpOption<int>.None, FSharpOption<RegisterName>.None);
             return Command.NewNormalCommand(command, commandData);
         }
@@ -386,15 +387,6 @@ namespace Vim.UnitTest
                 vimData);
         }
 
-        internal static SearchProcessResult CreateSearchComplete(string text)
-        {
-            var data = new SearchData(
-                SearchText.NewStraightText(text),
-                SearchKind.Forward,
-                SearchOptions.None);
-            return SearchProcessResult.NewSearchComplete(data, SearchResult.SearchNotFound);
-        }
-
         internal static MotionResult CreateMotionResult(
             SnapshotSpan span,
             bool isForward,
@@ -436,7 +428,20 @@ namespace Vim.UnitTest
 
         internal static NormalCommand CreatePing(Action<CommandData> action)
         {
-            return NormalCommand.NewPing(action.ToFSharpFunc());
+            var data = new PingData(action.ToFSharpFunc());
+            return NormalCommand.NewPing(data);
+        }
+
+        internal static BindData<T> CreateBindData<T>(Func<KeyInput, BindResult<T>> func = null, KeyRemapMode remapMode = null)
+        {
+            func = func ?? (x => BindResult<T>.Cancelled);
+            return new BindData<T>(FSharpOption.CreateForReference(remapMode), func.ToFSharpFunc());
+        }
+
+        internal static BindDataStorage<T> CreateBindDataStorage<T>(BindData<T> bindData = null)
+        {
+            bindData = bindData ?? CreateBindData<T>();
+            return BindDataStorage<T>.NewSimple(bindData);
         }
     }
 }

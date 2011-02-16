@@ -28,17 +28,17 @@ type IncrementalSearchTagger(_buffer : IVimBuffer) as this =
         let updateCurrentWithResult result = 
             _currentSearchSpan <- 
                 match result with
-                | SearchFound(span) -> span.Snapshot.CreateTrackingSpan(span.Span, SpanTrackingMode.EdgeExclusive) |> Some
-                | SearchNotFound -> None
+                | SearchResult.SearchFound (_, span) -> span.Snapshot.CreateTrackingSpan(span.Span, SpanTrackingMode.EdgeExclusive) |> Some
+                | SearchResult.SearchNotFound _ -> None
 
-        let handleCurrentSearchUpdated (_, result) = 
+        let handleCurrentSearchUpdated result = 
 
             // Make sure to reset the stored spans before raising the event.  The editor can and will call back
             // into us synchronously and access a stale value if we don't
             updateCurrentWithResult result
             raiseAllChanged()
 
-        let handleCurrentSearchCompleted (_, result) = 
+        let handleCurrentSearchCompleted result = 
             updateCurrentWithResult result
             _previousSearchSpan <- _currentSearchSpan
             _currentSearchSpan <- None

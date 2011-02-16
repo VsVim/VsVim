@@ -166,13 +166,15 @@ type internal CommandRunner
                 match command with
                 | CommandBinding.LegacySimpleCommand(_, _, func) -> 
                     let func () = func count (commandData.GetRegister _registerMap)
-                    BindResult.Complete (Command.LegacyCommand func, command)
+                    let data = LegacyData(func)
+                    BindResult.Complete (Command.LegacyCommand data, command)
                 | CommandBinding.NormalCommand(_, _, normalCommand) -> 
                     BindResult.Complete (Command.NormalCommand (normalCommand, commandData), command)
                 | CommandBinding.LegacyVisualCommand(_, _, kind, func) -> 
                     let visualSpan = x.GetVisualSpan kind
                     let func () = func count (commandData.GetRegister _registerMap) visualSpan
-                    BindResult.Complete (Command.LegacyCommand func, command)
+                    let data = LegacyData(func)
+                    BindResult.Complete (Command.LegacyCommand data, command)
                 | CommandBinding.VisualCommand(_, _, visualCommand) ->
                     BindResult.Complete (Command.VisualCommand (visualCommand, commandData, x.GetVisualSpan _visualKind), command)
                 | CommandBinding.LegacyMotionCommand(_, _, func) -> 
@@ -207,10 +209,12 @@ type internal CommandRunner
                         _data <- { _data with State = NotEnoughMatchingPrefix (command, withPrefix |> List.ofSeq) }
                         bindNext (Some KeyRemapMode.OperatorPending)
     
-                | CommandBinding.ComplexNormalCommand (_, _, bindData) -> 
+                | CommandBinding.ComplexNormalCommand (_, _, bindDataStorage) -> 
+                    let bindData = bindDataStorage.CreateBindData()
                     let bindData = bindData.Convert (fun normalCommand -> (Command.NormalCommand (normalCommand, commandData), command))
                     BindResult.NeedMoreInput bindData
-                | CommandBinding.ComplexVisualCommand (_, _, bindData) -> 
+                | CommandBinding.ComplexVisualCommand (_, _, bindDataStorage) -> 
+                    let bindData = bindDataStorage.CreateBindData()
                     let bindData = bindData.Convert (fun visualCommand -> (Command.VisualCommand (visualCommand, commandData, x.GetVisualSpan _visualKind), command))
                     BindResult.NeedMoreInput bindData
             | None -> 
@@ -261,7 +265,8 @@ type internal CommandRunner
                     CommandResult.Error
                 | Some result ->
                     func count register result
-            (Command.LegacyCommand func, command))
+            let data = LegacyData(func)
+            (Command.LegacyCommand data, command))
 
     /// Should the Esacpe key cancel the current command
     member x.ShouldEscapeCancelCurrentCommand () = 

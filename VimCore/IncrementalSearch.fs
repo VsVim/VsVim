@@ -10,9 +10,11 @@ type internal IncrementalSearchData = {
     /// The point from which the search needs to occur 
     StartPoint : ITrackingPoint;
 
-    SearchData : SearchData;
-    SearchResult : SearchResult;
-}
+    /// Most recent result of the search
+    SearchResult : SearchResult
+} with 
+
+    member x.SearchData = x.SearchResult.SearchData
 
 type internal IncrementalSearch
     (
@@ -26,28 +28,31 @@ type internal IncrementalSearch
     let _textView = _operations.TextView
     let mutable _data : IncrementalSearchData option = None
     let _searchOptions = SearchOptions.ConsiderIgnoreCase ||| SearchOptions.ConsiderSmartCase
-    let _currentSearchUpdated = Event<SearchData * SearchResult>()
-    let _currentSearchCompleted = Event<SearchData * SearchResult>()
+    let _currentSearchUpdated = Event<SearchResult>()
+    let _currentSearchCompleted = Event<SearchResult>()
     let _currentSearchCancelled = Event<SearchData>()
 
     member x.Begin kind = 
         let caret = TextViewUtil.GetCaretPoint _textView
         let start = Util.GetSearchPoint kind caret
+        let searchData = {Text = SearchText.Pattern(StringUtil.empty); Kind = kind; Options = _searchOptions}
         let data = {
             StartPoint = start.Snapshot.CreateTrackingPoint(start.Position, PointTrackingMode.Negative)
-            SearchData = {Text = SearchText.Pattern(StringUtil.empty); Kind = kind; Options = _searchOptions}
-            SearchResult = SearchNotFound 
+            SearchResult = SearchResult.SearchNotFound searchData
         }
         _data <- Some data
 
         // Raise the event
-        _currentSearchUpdated.Trigger (data.SearchData,SearchNotFound)
+        _currentSearchUpdated.Trigger data.SearchResult
+
+        { KeyRemapMode = Some KeyRemapMode.Command; BindFunction = x.Process }
 
     /// Process the next key stroke in the incremental search
     member x.Process (ki:KeyInput) = 
 
         match _data with 
-        | None -> SearchNotStarted
+        | None -> 
+            BindResult<_>.CreateNeedMoreInput None x.Process
         | Some (data) -> 
 
             let resetView () = _operations.EnsureCaretOnScreenAndTextExpanded()
@@ -65,13 +70,15 @@ type internal IncrementalSearch
 
                 match ret with
                 | Some(span) ->
+                    let result = SearchResult.SearchFound(searchData, span)
                     _operations.EnsurePointOnScreenAndTextExpanded span.Start
-                    _currentSearchUpdated.Trigger (searchData, SearchFound(span)) 
-                    _data <- Some { data with SearchData = searchData; SearchResult = SearchFound(span) }
+                    _currentSearchUpdated.Trigger result
+                    _data <- Some { data with SearchResult = result }
                 | None ->
                     resetView()
-                    _currentSearchUpdated.Trigger (searchData,SearchNotFound)
-                    _data <- Some { data with SearchData = searchData; SearchResult = SearchNotFound }
+                    let result = SearchResult.SearchNotFound searchData
+                    _currentSearchUpdated.Trigger result
+                    _data <- Some { data with SearchResult = result }
 
             let oldSearchData = data.SearchData
             let doSearchWithNewPattern newPattern =  doSearch newPattern
@@ -79,13 +86,13 @@ type internal IncrementalSearch
             let cancelSearch () = 
                 _data <- None
                 _currentSearchCancelled.Trigger oldSearchData
-                SearchCancelled
+                BindResult.Cancelled
 
             if ki = KeyInputUtil.EnterKey then
 
                 // Need to update the status if the search wrapped around
                 match data.SearchResult, TrackingPointUtil.GetPoint _textView.TextSnapshot data.StartPoint with
-                | SearchResult.SearchFound(span), Some(point) ->
+                | SearchResult.SearchFound(_, span), Some(point) ->
                     if data.SearchData.Kind = SearchKind.ForwardWithWrap && span.Start.Position < point.Position then
                         _statusUtil.OnStatus Resources.Common_SearchForwardWrapped
                     elif data.SearchData.Kind = SearchKind.BackwardWithWrap && span.Start.Position > point.Position then
@@ -95,8 +102,8 @@ type internal IncrementalSearch
 
                 _data <- None
                 _vimData.LastSearchData <- oldSearchData
-                _currentSearchCompleted.Trigger(oldSearchData, data.SearchResult)
-                SearchComplete(data.SearchData, data.SearchResult)
+                _currentSearchCompleted.Trigger data.SearchResult
+                BindResult.Complete data.SearchResult
             elif ki = KeyInputUtil.EscapeKey then
                 resetView()
                 cancelSearch()
@@ -108,12 +115,12 @@ type internal IncrementalSearch
                 | _ -> 
                     let pattern = pattern.Substring(0, pattern.Length - 1)
                     doSearchWithNewPattern pattern
-                    SearchNeedMore
+                    BindResult<_>.CreateNeedMoreInput None x.Process
             else
                 let c = ki.Char
                 let pattern = data.SearchData.Text.RawText + (c.ToString())
                 doSearchWithNewPattern pattern
-                SearchNeedMore
+                BindResult<_>.CreateNeedMoreInput None x.Process
 
     interface IIncrementalSearch with
         member x.InSearch = Option.isSome _data
@@ -123,7 +130,6 @@ type internal IncrementalSearch
             match _data with 
             | Some(data) -> Some data.SearchData
             | None -> None
-        member x.Process ki = x.Process ki
         member x.Begin kind = x.Begin kind
         [<CLIEvent>]
         member x.CurrentSearchUpdated = _currentSearchUpdated.Publish

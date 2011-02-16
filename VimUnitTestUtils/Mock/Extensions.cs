@@ -297,28 +297,55 @@ namespace Vim.UnitTest.Mock
                 It.IsAny<IntPtr>())).Returns(hresult);
         }
 
-        public static void SetupNormalCommand(this Mock<ICommandUtil> commandUtil, NormalCommand command, int? count = null, RegisterName registerName = null)
+        public static void SetupCommandNormal(this Mock<ICommandUtil> commandUtil, NormalCommand normalCommand, int? count = null, RegisterName registerName = null)
         {
-            var realCount = count.HasValue ? FSharpOption.Create(count.Value) : FSharpOption<int>.None;
-            var realName = registerName != null ? FSharpOption.Create(registerName) : FSharpOption<RegisterName>.None;
+            var realCount = FSharpOption.CreateForNullable(count);
+            var realName = FSharpOption.CreateForReference(registerName);
             var commandData = new CommandData(realCount, realName);
-            commandUtil.Setup(x => x.RunNormalCommand(command, commandData)).Verifiable();
+            var command = Command.NewNormalCommand(normalCommand, commandData);
+            commandUtil
+                .Setup(x => x.RunCommand(command))
+                .Returns(CommandResult.NewCompleted(ModeSwitch.NoSwitch))
+                .Verifiable();
         }
 
-        public static void SetupVisualCommand(this Mock<ICommandUtil> commandUtil, VisualCommand command, int? count = null, RegisterName registerName = null, VisualSpan visualSpan = null)
+        public static void SetupCommandMotion<T>(this Mock<ICommandUtil> commandUtil, int? count = null, RegisterName registerName = null) where T : NormalCommand
+        {
+            var realCount = FSharpOption.CreateForNullable(count);
+            var realName = FSharpOption.CreateForReference(registerName);
+            var commandData = new CommandData(realCount, realName);
+            commandUtil
+                .Setup(x => x.RunCommand(It.Is<Command>(c =>
+                    c.IsNormalCommand &&
+                    c.AsNormalCommand().Item1 is T)))
+                .Returns(CommandResult.NewCompleted(ModeSwitch.NoSwitch))
+                .Verifiable();
+        }
+
+        public static void SetupCommandVisual(this Mock<ICommandUtil> commandUtil, VisualCommand visualCommand, int? count = null, RegisterName registerName = null, VisualSpan visualSpan = null)
         {
             var realCount = count.HasValue ? FSharpOption.Create(count.Value) : FSharpOption<int>.None;
             var realName = registerName != null ? FSharpOption.Create(registerName) : FSharpOption<RegisterName>.None;
             var commandData = new CommandData(realCount, realName);
             if (visualSpan != null)
             {
-                commandUtil.Setup(x => x.RunVisualCommand(command, commandData, visualSpan)).Verifiable();
+                var command = Command.NewVisualCommand(visualCommand, commandData, visualSpan);
+                commandUtil
+                    .Setup(x => x.RunCommand(command))
+                    .Returns(CommandResult.NewCompleted(ModeSwitch.SwitchPreviousMode))
+                    .Verifiable();
             }
             else
             {
-                commandUtil.Setup(x => x.RunVisualCommand(command, commandData, It.IsAny<VisualSpan>())).Verifiable();
+                commandUtil
+                    .Setup(x => x.RunCommand(It.Is<Command>(command =>
+                            command.IsVisualCommand &&
+                            command.AsVisualCommand().Item1.Equals(visualCommand) &&
+                            command.AsVisualCommand().Item2.Equals(commandData))))
+                    .Returns(CommandResult.NewCompleted(ModeSwitch.SwitchPreviousMode))
+                    .Verifiable();
             }
-        
+
         }
     }
 }

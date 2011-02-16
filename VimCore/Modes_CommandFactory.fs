@@ -59,19 +59,19 @@ type internal CommandFactory
     /// Build up a set of LegacyMotionCommand values from applicable Motion values.  These will 
     /// move the cursor to the result of the motion
     member x.CreateMovementsFromMotions() =
-        let processMotionCommand command =
-            match command with
-            | SimpleMotionCommand(name, _, motion) -> 
+        let processMotionBinding binding =
+            match binding with
+            | MotionBinding.Simple (name, _, motion) -> 
 
                 // Convert the Motion into a NormalCommand which moves the caret for the given Motion
                 let command = NormalCommand.MoveCaretToMotion motion
                 CommandBinding.NormalCommand(name, CommandFlags.Movement, command) 
 
-            | ComplexMotionCommand(name, motionFlags, bindData) ->
+            | MotionBinding.Complex (name, motionFlags, bindDataStorage) ->
 
                 // We're starting with a BindData<Motion> and need to instead produce a BindData<NormalCommand>
                 // where the command will move the motion 
-                let bindData = bindData.Convert (fun motion -> NormalCommand.MoveCaretToMotion motion)
+                let bindDataStorage = bindDataStorage.Convert (fun motion -> NormalCommand.MoveCaretToMotion motion)
 
                 // Create the flags.  Make sure that we set that Escape can be handled if the
                 // motion itself can handle escape
@@ -80,11 +80,11 @@ type internal CommandFactory
                         CommandFlags.Movement ||| CommandFlags.HandlesEscape
                     else
                         CommandFlags.Movement
-                CommandBinding.ComplexNormalCommand(name, flags, bindData)
+                CommandBinding.ComplexNormalCommand(name, flags, bindDataStorage)
 
-        _capture.MotionCommands
-        |> Seq.filter (fun command -> Util.IsFlagSet command.MotionFlags MotionFlags.CursorMovement)
-        |> Seq.map processMotionCommand
+        _capture.MotionBindings
+        |> Seq.filter (fun binding -> Util.IsFlagSet binding.MotionFlags MotionFlags.CursorMovement)
+        |> Seq.map processMotionBinding
 
     member x.CreateMovementCommands() = 
         let standard = x.CreateStandardMovementCommands()

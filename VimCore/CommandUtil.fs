@@ -285,7 +285,7 @@ type internal CommandUtil
 
     /// Delete 'count' characters after the cursor on the current line.  Caret should 
     /// remain at it's original position 
-    member x.DeleteCharacterAtCursor count register =
+    member x.DeleteCharacterAtCaret count register =
 
         // Check for the case where the caret is past the end of the line.  Can happen
         // when 've=onemore'
@@ -312,7 +312,7 @@ type internal CommandUtil
 
     /// Delete 'count' characters before the cursor on the current line.  Caret should be
     /// positioned at the begining of the span for undo / redo
-    member x.DeleteCharacterBeforeCursor count register = 
+    member x.DeleteCharacterBeforeCaret count register = 
 
         let startPoint = 
             let position = x.CaretPoint.Position - count
@@ -533,13 +533,13 @@ type internal CommandUtil
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Run the Ping command
-    member x.Ping func data = 
-        func data
+    member x.Ping (pingData : PingData) data = 
+        pingData.Function data
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Put the contents of the specified register after the cursor.  Used for the
     /// normal / visual 'p' command
-    member x.PutAfterCursor (register : Register) count moveCaretAfterText switch =
+    member x.PutAfterCaret (register : Register) count moveCaretAfterText switch =
         let point = SnapshotPointUtil.AddOneOrCurrent x.CaretPoint
         let stringData = register.StringData.ApplyCount count
 
@@ -550,7 +550,7 @@ type internal CommandUtil
 
     /// Put the contents of the specified register before the cursor.  Used for the
     /// normal / visual 'P' command
-    member x.PutBeforeCursor (register : Register) count moveCaretAfterText switch =
+    member x.PutBeforeCaret (register : Register) count moveCaretAfterText switch =
         let point = SnapshotPointUtil.AddOneOrCurrent x.CaretPoint
         let stringData = register.StringData.ApplyCount count
 
@@ -709,7 +709,7 @@ type internal CommandUtil
         match command with
         | Command.NormalCommand (command, data) -> x.RunNormalCommand command data
         | Command.VisualCommand (command, data, visualSpan) -> x.RunVisualCommand command data visualSpan
-        | Command.LegacyCommand func -> func()
+        | Command.LegacyCommand data -> data.Function()
 
     /// Run a NormalCommand against the buffer
     member x.RunNormalCommand command (data : CommandData) =
@@ -722,8 +722,8 @@ type internal CommandUtil
         | NormalCommand.ChangeCaseMotion (kind, motion) -> x.RunWithMotion motion (x.ChangeCaseMotion kind)
         | NormalCommand.ChangeLines -> x.ChangeLines count register
         | NormalCommand.ChangeTillEndOfLine -> x.ChangeTillEndOfLine count register
-        | NormalCommand.DeleteCharacterAtCursor -> x.DeleteCharacterAtCursor count register
-        | NormalCommand.DeleteCharacterBeforeCursor -> x.DeleteCharacterBeforeCursor count register
+        | NormalCommand.DeleteCharacterAtCaret -> x.DeleteCharacterAtCaret count register
+        | NormalCommand.DeleteCharacterBeforeCaret -> x.DeleteCharacterBeforeCaret count register
         | NormalCommand.DeleteLines -> x.DeleteLines count register
         | NormalCommand.DeleteMotion motion -> x.RunWithMotion motion (x.DeleteMotion register)
         | NormalCommand.DeleteTillEndOfLine -> x.DeleteTillEndOfLine count register
@@ -734,11 +734,11 @@ type internal CommandUtil
         | NormalCommand.JoinLines kind -> x.JoinLines kind count
         | NormalCommand.JumpToMark c -> x.JumpToMark c
         | NormalCommand.MoveCaretToMotion motion -> x.MoveCaretToMotion motion data.Count
-        | NormalCommand.Ping func -> x.Ping func data
-        | NormalCommand.PutAfterCursor moveCaretAfterText -> x.PutAfterCursor register count moveCaretAfterText ModeSwitch.NoSwitch
-        | NormalCommand.PutBeforeCursor moveCaretBeforeText -> x.PutBeforeCursor register count moveCaretBeforeText ModeSwitch.NoSwitch
+        | NormalCommand.Ping pingData -> x.Ping pingData data
+        | NormalCommand.PutAfterCaret moveCaretAfterText -> x.PutAfterCaret register count moveCaretAfterText ModeSwitch.NoSwitch
+        | NormalCommand.PutBeforeCaret moveCaretBeforeText -> x.PutBeforeCaret register count moveCaretBeforeText ModeSwitch.NoSwitch
         | NormalCommand.SetMarkToCaret c -> x.SetMarkToCaret c
-        | NormalCommand.SubstituteCharacterAtCursor -> x.SubstituteCharacterAtCursor count register
+        | NormalCommand.SubstituteCharacterAtCaret -> x.SubstituteCharacterAtCaret count register
         | NormalCommand.ShiftLinesLeft -> x.ShiftLinesLeft count
         | NormalCommand.ShiftLinesRight -> x.ShiftLinesRight count
         | NormalCommand.ShiftMotionLinesLeft motion -> x.RunWithMotion motion x.ShiftMotionLinesLeft
@@ -755,8 +755,8 @@ type internal CommandUtil
         | VisualCommand.ChangeCase kind -> x.ChangeCaseVisual kind visualSpan
         | VisualCommand.DeleteHighlightedText -> x.DeleteHighlightedText register visualSpan
         | VisualCommand.FormatLines -> x.FormatLinesVisual visualSpan
-        | VisualCommand.PutAfterCursor moveCaretAfterText -> x.PutAfterCursor register count moveCaretAfterText (ModeSwitch.SwitchMode ModeKind.Normal)
-        | VisualCommand.PutBeforeCursor moveCaretAfterText -> x.PutBeforeCursor register count moveCaretAfterText (ModeSwitch.SwitchMode ModeKind.Normal)
+        | VisualCommand.PutAfterCaret moveCaretAfterText -> x.PutAfterCaret register count moveCaretAfterText (ModeSwitch.SwitchMode ModeKind.Normal)
+        | VisualCommand.PutBeforeCaret moveCaretAfterText -> x.PutBeforeCaret register count moveCaretAfterText (ModeSwitch.SwitchMode ModeKind.Normal)
         | VisualCommand.ReplaceChar keyInput -> x.ReplaceCharVisual keyInput visualSpan
         | VisualCommand.ShiftLinesLeft -> x.ShiftLinesLeftVisual count visualSpan
         | VisualCommand.ShiftLinesRight -> x.ShiftLinesRightVisual count visualSpan
@@ -768,7 +768,8 @@ type internal CommandUtil
         | None ->  
             _statusUtil.OnError Resources.MotionCapture_InvalidMotion
             CommandResult.Error
-        | Some data -> func data
+        | Some data -> 
+            func data
 
     /// Process the m[a-z] command
     member x.SetMarkToCaret c = 
@@ -898,10 +899,10 @@ type internal CommandUtil
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Substitute 'count' characters at the cursor on the current line.  Very similar to
-    /// DeleteCharacterAtCursor.  Main exception is the behavior when the caret is on
+    /// DeleteCharacterAtCaret.  Main exception is the behavior when the caret is on
     /// or after the last character in the line
     /// should be after the span for Substitute even if 've='.  
-    member x.SubstituteCharacterAtCursor count register =
+    member x.SubstituteCharacterAtCaret count register =
 
         if x.CaretPoint.Position >= x.CaretLine.End.Position then
             // When we are past the end of the line just move the caret

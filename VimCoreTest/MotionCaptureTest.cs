@@ -70,7 +70,7 @@ namespace VimCore.UnitTest
         {
             var result = _capture.GetOperatorMotion(keyInput);
             Assert.IsTrue(result.IsComplete);
-            Assert.AreEqual(motion, result.AsComplete().Item);
+            Assert.AreEqual(motion, result.AsComplete().Item.Item1);
         }
 
         private void AssertMotion(VimKey key, Motion motion)
@@ -333,9 +333,9 @@ namespace VimCore.UnitTest
         {
             _textView.SetText("cat dog");
             var didRun = false;
-            _incrementalSearch.CurrentSearchUpdated += (_, args) =>
+            _incrementalSearch.CurrentSearchUpdated += (_, result) =>
             {
-                Assert.IsTrue(SearchKind.ForwardWithWrap == args.Item1.Kind);
+                Assert.IsTrue(SearchKind.ForwardWithWrap == result.SearchData.Kind);
                 didRun = true;
             };
             Process("/cat");
@@ -348,9 +348,9 @@ namespace VimCore.UnitTest
             _textView.SetText("cat dog");
             _localSettings.GlobalSettings.WrapScan = false;
             var didRun = false;
-            _incrementalSearch.CurrentSearchUpdated += (_, args) =>
+            _incrementalSearch.CurrentSearchUpdated += (_, result) =>
             {
-                Assert.IsTrue(SearchKind.Forward == args.Item1.Kind);
+                Assert.IsTrue(SearchKind.Forward == result.SearchData.Kind);
                 didRun = true;
             };
             Process("/cat");
@@ -362,9 +362,9 @@ namespace VimCore.UnitTest
         {
             _textView.SetText("cat dog");
             var didRun = false;
-            _incrementalSearch.CurrentSearchUpdated += (_, args) =>
+            _incrementalSearch.CurrentSearchUpdated += (_, result) =>
             {
-                Assert.IsTrue(SearchKind.BackwardWithWrap == args.Item1.Kind);
+                Assert.IsTrue(SearchKind.BackwardWithWrap == result.SearchData.Kind);
                 didRun = true;
             };
             Process("?cat");
@@ -377,9 +377,9 @@ namespace VimCore.UnitTest
             _textView.SetText("cat dog");
             _localSettings.GlobalSettings.WrapScan = false;
             var didRun = false;
-            _incrementalSearch.CurrentSearchUpdated += (_, args) =>
+            _incrementalSearch.CurrentSearchUpdated += (_, result) =>
             {
-                Assert.IsTrue(SearchKind.Backward == args.Item1.Kind);
+                Assert.IsTrue(SearchKind.Backward == result.SearchData.Kind);
                 didRun = true;
             };
             Process("?cat");
@@ -397,8 +397,8 @@ namespace VimCore.UnitTest
         [Test]
         public void CommandMapSupportsAlternateKeys()
         {
-            Assert.IsTrue(MapModule.TryFind(KeyInputSet.NewOneKeyInput(KeyInputUtil.AlternateEnterKey), _captureRaw.MotionCommandsMap).IsSome());
-            Assert.IsTrue(MapModule.TryFind(KeyInputSet.NewOneKeyInput(KeyInputUtil.EnterKey), _captureRaw.MotionCommandsMap).IsSome());
+            Assert.IsTrue(MapModule.TryFind(KeyInputSet.NewOneKeyInput(KeyInputUtil.AlternateEnterKey), _captureRaw.MotionBindingsMap).IsSome());
+            Assert.IsTrue(MapModule.TryFind(KeyInputSet.NewOneKeyInput(KeyInputUtil.EnterKey), _captureRaw.MotionBindingsMap).IsSome());
         }
 
         [Test]
@@ -414,5 +414,38 @@ namespace VimCore.UnitTest
             AssertMotion("'a", Motion.NewMarkLine('a'));
             AssertMotion("'b", Motion.NewMarkLine('b'));
         }
+
+        /// <summary>
+        /// Make sure the bindings aren't incorrectly structured such that the incremental search
+        /// begins on MotionCapture startup.  It should only begin during the processing of a motion
+        /// </summary>
+        [Test]
+        public void Search_EnsureIncrementalSearchNotStarted()
+        {
+            Assert.IsFalse(_incrementalSearch.InSearch);
+        }
+
+        /// <summary>
+        /// Search should begin once the '/' is processed
+        /// </summary>
+        [Test]
+        public void Search_EnsureStartedOnSlash()
+        {
+            _capture.GetOperatorMotion('/');
+            Assert.IsTrue(_incrementalSearch.InSearch);
+        }
+
+        /// <summary>
+        /// Escape should end the search operation
+        /// </summary>
+        [Test]
+        public void Search_EscapeShouldEndTheSearch()
+        {
+            var result = _capture.GetOperatorMotion('/');
+            Assert.IsTrue(result.IsNeedMoreInput);
+            result.AsNeedMoreInput().Item.BindFunction.Invoke(KeyInputUtil.VimKeyToKeyInput(VimKey.Escape));
+            Assert.IsFalse(_incrementalSearch.InSearch);
+        }
+
     }
 }

@@ -316,11 +316,11 @@ type internal VisualMode
         let visualSeq = 
             seq {
                 yield ("d", CommandFlags.Repeatable, VisualCommand.DeleteHighlightedText)
-                yield ("gp", CommandFlags.Repeatable, VisualCommand.PutAfterCursor true)
-                yield ("gP", CommandFlags.Repeatable, VisualCommand.PutBeforeCursor true)
+                yield ("gp", CommandFlags.Repeatable, VisualCommand.PutAfterCaret true)
+                yield ("gP", CommandFlags.Repeatable, VisualCommand.PutBeforeCaret true)
                 yield ("g?", CommandFlags.Repeatable, VisualCommand.ChangeCase ChangeCharacterKind.Rot13)
-                yield ("p", CommandFlags.Repeatable, VisualCommand.PutAfterCursor false)
-                yield ("P", CommandFlags.Repeatable, VisualCommand.PutBeforeCursor false)
+                yield ("p", CommandFlags.Repeatable, VisualCommand.PutAfterCaret false)
+                yield ("P", CommandFlags.Repeatable, VisualCommand.PutBeforeCaret false)
                 yield ("u", CommandFlags.Repeatable, VisualCommand.ChangeCase ChangeCharacterKind.ToLowerCase)
                 yield ("U", CommandFlags.Repeatable, VisualCommand.ChangeCase ChangeCharacterKind.ToUpperCase)
                 yield ("x", CommandFlags.Repeatable, VisualCommand.DeleteHighlightedText)
@@ -338,7 +338,8 @@ type internal VisualMode
                 yield ("r", CommandFlags.Repeatable, BindData<_>.CreateForSingle None (fun keyInput -> VisualCommand.ReplaceChar keyInput))
             } |> Seq.map (fun (str, flags, bindCommand) -> 
                 let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
-                CommandBinding.ComplexVisualCommand(keyInputSet, flags, bindCommand))
+                let storage = BindDataStorage.Simple bindCommand
+                CommandBinding.ComplexVisualCommand(keyInputSet, flags, storage))
 
         Seq.append visualSeq complexSeq
 

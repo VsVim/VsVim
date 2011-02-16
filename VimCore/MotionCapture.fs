@@ -14,13 +14,19 @@ type internal MotionCapture
     let _search = _incrementalSearch.SearchService
 
     /// Get a char and use the provided 'func' to create a Motion value.
-    let GetChar func = BindData<_>.CreateForSingleChar (Some KeyRemapMode.Language) func
+    let GetChar func = 
+        let data = BindData<_>.CreateForSingleChar (Some KeyRemapMode.Language) func
+        BindDataStorage<_>.Simple data
 
-    /// Handles incremental searches (/ and ?)
+    /// Handles incremental searches (/ and ?).  Retrieve the BindData storage for
+    /// the activation
     let IncrementalSearch direction =
 
-        let bindFunc keyInput = 
+        // This is the function which will activate once the / or ? is bound in 
+        // the IMotionCapture interface
+        let activateFunc () = 
 
+            // Calculate the kind here so it will change as the user changes options
             let kind = 
                 match direction, _settings.GlobalSettings.WrapScan with
                 | Direction.Forward, true -> SearchKind.ForwardWithWrap
@@ -28,24 +34,17 @@ type internal MotionCapture
                 | Direction.Backward, true -> SearchKind.BackwardWithWrap
                 | Direction.Backward, false -> SearchKind.Backward
     
-            /// REPEAT TODO: When SearchResult is a BindResult use the Convert function
-            /// here
+            // Store the caret point before the search begins
             let before = TextViewUtil.GetCaretPoint _textView
-    
-            let rec inner (ki:KeyInput) =
-                match _incrementalSearch.Process ki with
-                | SearchComplete(searchData, searchResult) ->
-                    BindResult.Complete (Motion.Search searchData)
-                | SearchNotStarted -> 
-                    BindResult.Cancelled
-                | SearchCancelled -> 
-                    BindResult.Cancelled
-                | SearchNeedMore -> 
-                    BindResult<MotionData>.CreateNeedMoreInput (Some KeyRemapMode.Command) inner
-            _incrementalSearch.Begin kind
-            inner keyInput
 
-        { KeyRemapMode = Some KeyRemapMode.Command; BindFunction = bindFunc}
+            let result = _incrementalSearch.Begin kind
+
+            result.Convert (fun searchResult ->
+                match searchResult with
+                | SearchResult.SearchFound (searchData, _) -> Motion.Search searchData
+                | SearchResult.SearchNotFound searchData -> Motion.Search searchData)
+
+        BindDataStorage.Complex activateFunc
 
     let SimpleMotions =  
         let motionSeq : (string * MotionFlags * Motion) seq = 
@@ -289,12 +288,12 @@ type internal MotionCapture
             } 
             
         motionSeq 
-        |> Seq.map (fun (str,flags,func) ->
+        |> Seq.map (fun (str, flags, motion) ->
             let name = KeyNotationUtil.StringToKeyInputSet str
-            SimpleMotionCommand(name, flags, func)  )
+            MotionBinding.Simple (name, flags, motion))
     
     let ComplexMotions = 
-        let motionSeq : (string * MotionFlags * BindData<Motion>) seq = 
+        let motionSeq : (string * MotionFlags * BindDataStorage<Motion>) seq = 
             seq {
                 yield (
                     "f", 
@@ -330,18 +329,18 @@ type internal MotionCapture
                     IncrementalSearch Direction.Backward)
             } 
         motionSeq
-        |> Seq.map (fun (str, flags, bindData) -> 
+        |> Seq.map (fun (str, flags, bindDataStorage) -> 
                 let name = KeyNotationUtil.StringToKeyInputSet str 
-                ComplexMotionCommand(name, flags, bindData))
+                MotionBinding.Complex (name, flags, bindDataStorage))
     
     let AllMotionsCore =
         let simple = SimpleMotions 
         let complex = ComplexMotions 
         simple |> Seq.append complex
 
-    let MotionCommands = AllMotionsCore 
+    let MotionBindings = AllMotionsCore
 
-    let MotionCommandsMap = AllMotionsCore |> Seq.map (fun command ->  (command.KeyInputSet, command)) |> Map.ofSeq
+    let MotionBindingsMap = AllMotionsCore |> Seq.map (fun command ->  (command.KeyInputSet, command)) |> Map.ofSeq
 
     /// This continuation will run until the name of the motion is complete, 
     /// errors or is cancelled by the user
@@ -352,19 +351,19 @@ type internal MotionCapture
                 BindResult.Cancelled 
             else
                 let name = previousName.Add ki
-                match Map.tryFind name MotionCommandsMap with
+                match Map.tryFind name MotionBindingsMap with
                 | Some(command) -> 
                     match command with 
-                    | SimpleMotionCommand(_, _ , motion) -> 
+                    | MotionBinding.Simple (_, _ , motion) -> 
                         // Simple motions don't need any extra information so we can 
                         // return them directly
                         BindResult.Complete (motion, motionCountOpt)
-                    | ComplexMotionCommand(_, _, bindData) -> 
+                    | MotionBinding.Complex (_, _, bindDataStorage) -> 
                         // Complex motions need further input so delegate off
-                        let bindData = bindData.Convert (fun motion -> (motion, motionCountOpt))
+                        let bindData = bindDataStorage.CreateBindData().Convert (fun motion -> (motion, motionCountOpt))
                         BindResult.NeedMoreInput bindData
                 | None -> 
-                    let res = MotionCommandsMap |> Seq.filter (fun pair -> pair.Key.StartsWith name) 
+                    let res = MotionBindingsMap |> Seq.filter (fun pair -> pair.Key.StartsWith name) 
                     if Seq.isEmpty res then 
                         BindResult.Error
                     else 
@@ -392,6 +391,6 @@ type internal MotionCapture
 
     interface IMotionCapture with
         member x.TextView = _textView
-        member x.MotionCommands = MotionCommands
+        member x.MotionBindings = MotionBindings
         member x.GetOperatorMotion ki = x.GetOperatorMotion ki
 

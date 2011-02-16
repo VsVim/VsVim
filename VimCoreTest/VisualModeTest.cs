@@ -86,10 +86,10 @@ namespace VimCore.UnitTest
                 _incrementalSearch.Object,
                 localSettings);
             var runner = new CommandRunner(
-                _textView, 
-                _map, 
-                capture, 
-                motionUtil, 
+                _textView,
+                _map,
+                capture,
+                motionUtil,
                 _commandUtil.Object,
                 (new Mock<IStatusUtil>()).Object,
                 VisualKind.Character);
@@ -473,7 +473,7 @@ namespace VimCore.UnitTest
         public void Bind_ChangeCase_Tilde()
         {
             Create("foo bar", "baz");
-            _commandUtil.SetupVisualCommand(VisualCommand.NewChangeCase(ChangeCharacterKind.ToggleCase));
+            _commandUtil.SetupCommandVisual(VisualCommand.NewChangeCase(ChangeCharacterKind.ToggleCase));
             _mode.Process('~');
             _commandUtil.Verify();
         }
@@ -482,7 +482,7 @@ namespace VimCore.UnitTest
         public void Bind_ShiftLeft()
         {
             Create("foo bar baz");
-            _commandUtil.SetupVisualCommand(VisualCommand.ShiftLinesLeft);
+            _commandUtil.SetupCommandVisual(VisualCommand.ShiftLinesLeft);
             _mode.Process('<');
             _commandUtil.Verify();
         }
@@ -491,7 +491,7 @@ namespace VimCore.UnitTest
         public void Bind_ShiftRight()
         {
             Create("foo bar baz");
-            _commandUtil.SetupVisualCommand(VisualCommand.ShiftLinesRight);
+            _commandUtil.SetupCommandVisual(VisualCommand.ShiftLinesRight);
             _mode.Process('>');
             _operations.Verify();
         }
@@ -783,29 +783,6 @@ namespace VimCore.UnitTest
             Create("foo", "bar");
             _operations.Setup(x => x.MoveToNextOccuranceOfLastSearch(2, false)).Verifiable();
             _mode.Process("2n");
-        }
-
-        [Test]
-        public void IncrementalSearch_ShouldHandleEscape()
-        {
-            Create("foo", "bar");
-            _incrementalSearch.Setup(x => x.Begin(SearchKind.ForwardWithWrap)).Verifiable();
-            _incrementalSearch.Setup(x => x.Process(KeyInputUtil.EscapeKey)).Returns(SearchProcessResult.SearchCancelled).Verifiable();
-            _mode.Process("/");
-            _mode.Process(KeyInputUtil.EscapeKey);
-            _factory.Verify();
-        }
-
-        [Test]
-        public void IncrementalSearch_ShouldHandleEnter()
-        {
-            Create("foo", "bar");
-            _incrementalSearch.Setup(x => x.Begin(SearchKind.ForwardWithWrap)).Verifiable();
-            _incrementalSearch.Setup(x => x.Process(KeyInputUtil.CharToKeyInput('a'))).Returns(SearchProcessResult.SearchNeedMore).Verifiable();
-            _incrementalSearch.Setup(x => x.Process(KeyInputUtil.EnterKey)).Returns(VimUtil.CreateSearchComplete("")).Verifiable();
-            _mode.Process("/a");
-            _mode.Process(KeyInputUtil.EnterKey);
-            _factory.Verify();
         }
     }
 }
