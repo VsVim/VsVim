@@ -741,6 +741,22 @@ namespace VimCore.UnitTest
             _operations.Verify();
         }
 
+        /// <summary>
+        /// A count of 2 is the same as 1 for JoinLines
+        /// </summary>
+        [Test]
+        public void JoinLines_CountOfTwoIsSameAsOne()
+        {
+            Create("dog", "cat", "bear");
+            _operations
+                .Setup(x => x.Join(_textView.GetLineRange(0, 1), JoinKind.RemoveEmptySpaces))
+                .Callback(() => _textView.SetText("dog cat", "bear"))
+                .Verifiable();
+            _commandUtil.JoinLines(JoinKind.RemoveEmptySpaces, 2);
+            _operations.Verify();
+            Assert.AreEqual(3, _textView.GetCaretPoint().Position);
+        }
+
         [Test]
         public void ChangeCaseCaretPoint_Simple()
         {

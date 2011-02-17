@@ -1641,59 +1641,21 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void Join_NoArguments()
+        public void Bind_JoinLines()
         {
-            Create("foo", "bar");
-            _operations
-                .Setup(x => x.Join(_textView.GetLineRange(0, 1), JoinKind.RemoveEmptySpaces))
-                .Verifiable();
+            Create("");
+            _commandUtil.SetupCommandNormal(NormalCommand.NewJoinLines(JoinKind.RemoveEmptySpaces));
             _mode.Process("J");
-            _operations.Verify();
+            _commandUtil.Verify();
         }
 
         [Test]
-        [Description("A count of 2 is the same as 1 or no count")]
-        public void Join_2IstheSameAs1()
+        public void Bind_JoinLines_KeepEmptySpaces()
         {
-            Create("foo", "  bar", "baz");
-            _operations
-                .Setup(x => x.Join(_textView.GetLineRange(0, 1), JoinKind.RemoveEmptySpaces))
-                .Verifiable();
-            _mode.Process("2J");
-            _operations.Verify();
-        }
-
-        [Test]
-        [Description("Join more than 1 line")]
-        public void Join_MoreThan2Lines()
-        {
-            Create("foo", "  bar", "baz");
-            _operations
-                .Setup(x => x.Join(_textView.GetLineRange(0, 2), JoinKind.RemoveEmptySpaces))
-                .Verifiable();
-            _mode.Process("3J");
-            _operations.Verify();
-        }
-
-        [Test]
-        [Description("Join should beep if the count exceeds the number of lines in the buffer")]
-        public void Join_CountExceedsLinesInBuffer()
-        {
-            Create("foo", "  bar", "baz");
-            _host.Setup(x => x.Beep()).Verifiable();
-            _mode.Process("33J");
-            _host.Verify();
-        }
-
-        [Test]
-        public void Join_KeepEmptySpaces()
-        {
-            Create("foo", "bar");
-            _operations
-                .Setup(x => x.Join(_textView.GetLineRange(0, 1), JoinKind.KeepEmptySpaces))
-                .Verifiable();
+            Create("");
+            _commandUtil.SetupCommandNormal(NormalCommand.NewJoinLines(JoinKind.KeepEmptySpaces));
             _mode.Process("gJ");
-            _operations.Verify();
+            _commandUtil.Verify();
         }
 
         [Test]
