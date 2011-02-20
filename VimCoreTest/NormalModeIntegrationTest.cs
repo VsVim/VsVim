@@ -21,7 +21,7 @@ namespace VimCore.UnitTest
             _textView = tuple.Item1;
             var service = EditorUtil.FactoryService;
             _buffer = service.Vim.CreateBuffer(_textView);
-            _buffer.ErrorMessage += 
+            _buffer.ErrorMessage +=
                 (_, message) =>
                 {
                     if (_assertOnErrorMessage)
@@ -555,7 +555,7 @@ namespace VimCore.UnitTest
         {
             Create("the dog kicked the ball");
             _buffer.VimData.LastCommand = FSharpOption.Create(StoredCommand.NewVisualCommand(
-                VisualCommand.NewReplaceChar(KeyInputUtil.VimKeyToKeyInput(VimKey.LowerB)),
+                VisualCommand.NewReplaceSelection(KeyInputUtil.VimKeyToKeyInput(VimKey.LowerB)),
                 VimUtil.CreateCommandData(),
                 StoredVisualSpan.OfVisualSpan(VisualSpan.NewCharacter(_textView.GetLineSpan(0, 3))),
                 CommandFlags.None));

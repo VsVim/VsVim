@@ -868,8 +868,8 @@ type VisualCommand =
     /// Change the case of the selected text in the specified manner
     | ChangeCase of ChangeCharacterKind
 
-    /// Delte the highlighted text and put it into a register
-    | DeleteHighlightedText
+    /// Delte the selected text and put it into a register
+    | DeleteSelectedText
 
     /// Format the selected text
     | FormatLines
@@ -883,7 +883,7 @@ type VisualCommand =
     | PutBeforeCaret of bool
 
     /// Replace the visual span with the provided character
-    | ReplaceChar of KeyInput
+    | ReplaceSelection of KeyInput
 
     /// Shift the selected lines left
     | ShiftLinesLeft
@@ -1309,41 +1309,19 @@ module CommandUtil2 =
         | Some(count) -> count
         | None -> 1
 
-/// Represents the different states of the ICommandRunner with respect to running a Command
-type CommandRunnerState =
-
-    /// This is the start state.  No input is on the queue and there is no interesting state
-    | NoInput
-
-    /// At least one KeyInput was run but it was not enough to disambiguate which Command to 
-    /// run.  
-    | NotEnoughInput
-
-    /// There exist many pairs of commands where one is a Motion and another is a Simple command
-    /// where the name of the Motion is a prefix of the Simple command.  The LegacyMotionCommand is 
-    /// captured in the first item of the tuple and all other commands with a matching prefix are
-    /// captured in the list
-    | NotEnoughMatchingPrefix of CommandBinding * CommandBinding list
-
-    /// Waiting for a Motion or Long Command to complete.  Enough input is present to determine this
-    /// is the command to execute but not enough to complete the execution of the command.  The
-    /// bool in the tuple represents whether or not the next input should be processed as language 
-    /// input (:help language-mapping)
-    | NotFinishWithCommand of CommandBinding
-
 /// Responsible for managing a set of Commands and running them
 type ICommandRunner =
-    
+
     /// Set of Commands currently supported
     abstract Commands : CommandBinding seq
-
-    /// Current state of the ICommandRunner
-    abstract State : CommandRunnerState
 
     /// In certain circumstances a specific type of key remapping needs to occur for input.  This 
     /// option will have the appropriate value in those circumstances.  For example while processing
     /// the {char} argument to f,F,t or T the Language mapping will be used
     abstract KeyRemapMode : KeyRemapMode option
+
+    /// Is the command runner currently binding a command which needs to explicitly handly escape
+    abstract IsHandlingEscape : bool
 
     /// True if waiting on more input
     abstract IsWaitingForMoreInput : bool

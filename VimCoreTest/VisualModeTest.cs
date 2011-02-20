@@ -66,6 +66,9 @@ namespace VimCore.UnitTest
             _operations.SetupGet(x => x.TextView).Returns(_textView);
             _host = _factory.Create<IVimHost>(MockBehavior.Loose);
             _commandUtil = _factory.Create<ICommandUtil>();
+            _commandUtil
+                .Setup(x => x.RunCommand(It.Is<Command>(y => y.IsLegacyCommand)))
+                .Returns<Command>(c => c.AsLegacyCommand().Item.Function.Invoke(null));
             _incrementalSearch = MockObjectFactory.CreateIncrementalSearch(factory: _factory);
             var globalSettings = new GlobalSettings();
             var localSettings = new LocalSettings(globalSettings, _textView);
@@ -276,67 +279,30 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void DeleteSelection1()
+        public void Bind_DeleteSelectedText()
         {
-            Create("foo", "bar");
-            var span = _textBuffer.GetLine(0).Start.GetSpan(2);
-            _selection.Select(span);
-            _operations
-                .Setup(x => x.DeleteSpan(span))
-                .Verifiable();
-            _operations
-                .Setup(x => x.UpdateRegisterForSpan(_map.GetRegister(RegisterName.Unnamed), RegisterOperation.Delete, span, OperationKind.CharacterWise))
-                .Verifiable();
+            Create("");
+            _commandUtil.SetupCommandVisual(VisualCommand.DeleteSelectedText);
             _mode.Process("d");
-            _operations.Verify();
+            _commandUtil.Verify();
         }
 
         [Test]
-        public void DeleteSelection2()
+        public void Bind_DeleteSelectedText_ViaDelete()
         {
-            Create("foo", "bar");
-            var span = _textBuffer.GetLine(0).Start.GetSpan(2);
-            _selection.Select(span);
-            _operations
-                .Setup(x => x.DeleteSpan(span))
-                .Verifiable();
-            _operations
-                .Setup(x => x.UpdateRegisterForSpan(_map.GetRegister('c'), RegisterOperation.Delete, span, OperationKind.CharacterWise))
-                .Verifiable();
-            _mode.Process("\"cd");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void DeleteSelection3()
-        {
-            Create("foo", "bar");
-            var span = _textBuffer.GetLine(0).Start.GetSpan(2);
-            _selection.Select(span);
-            _operations
-                .Setup(x => x.DeleteSpan(span))
-                .Verifiable();
-            _operations
-                .Setup(x => x.UpdateRegisterForSpan(_map.GetRegister(RegisterName.Unnamed), RegisterOperation.Delete, span, OperationKind.CharacterWise))
-                .Verifiable();
-            _mode.Process("x");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void DeleteSelection4()
-        {
-            Create("foo", "bar");
-            var span = _textBuffer.GetLine(0).Start.GetSpan(2);
-            _selection.Select(span);
-            _operations
-                .Setup(x => x.DeleteSpan(span))
-                .Verifiable();
-            _operations
-                .Setup(x => x.UpdateRegisterForSpan(_map.GetRegister(RegisterName.Unnamed), RegisterOperation.Delete, span, OperationKind.CharacterWise))
-                .Verifiable();
+            Create("");
+            _commandUtil.SetupCommandVisual(VisualCommand.DeleteSelectedText);
             _mode.Process(VimKey.Delete);
-            _operations.Verify();
+            _commandUtil.Verify();
+        }
+
+        [Test]
+        public void Bind_DeleteSelectedText_ViaX()
+        {
+            Create("");
+            _commandUtil.SetupCommandVisual(VisualCommand.DeleteSelectedText);
+            _mode.Process("x");
+            _commandUtil.Verify();
         }
 
         [Test]
@@ -513,83 +479,49 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void Handle_p_NoArguments()
+        public void Bind_PutAfterCaret()
         {
-            Create("foo bar");
-            _map.GetRegister(RegisterName.Unnamed).UpdateValue("foo", OperationKind.CharacterWise);
-            _selection.Select(_textView.GetLineRange(0).Extent);
-            _operations
-                .Setup(x => x.PutAtCaret(It.IsAny<StringData>(), OperationKind.CharacterWise, PutKind.Before, false))
-                .Verifiable();
+            Create("");
+            _commandUtil.SetupCommandVisual(VisualCommand.NewPutAfterCaret(false));
             _mode.Process('p');
-            _factory.Verify();
+            _commandUtil.Verify();
         }
 
         [Test]
-        public void Handle_p_WithRegister()
+        public void Bind_PutAfterCaret_WithCaretMove()
         {
-            Create("foo bar");
-            _map.GetRegister(RegisterName.NewNamed(NamedRegister.Register_c)).UpdateValue("foo", OperationKind.CharacterWise);
-            _selection.Select(_textBuffer.GetLineRange(0).Extent);
-            _operations
-                .Setup(x => x.PutAtCaret(It.IsAny<StringData>(), OperationKind.CharacterWise, PutKind.Before, false))
-                .Verifiable();
-            _mode.Process("\"cp");
-            _factory.Verify();
+            Create("");
+            _commandUtil.SetupCommandVisual(VisualCommand.NewPutAfterCaret(true));
+            _mode.Process("gp");
+            _commandUtil.Verify();
         }
 
         [Test]
-        public void Handle_P_NoArguments()
+        public void Bind_PutBeforeCaret()
         {
-            Create("foo bar");
-            _map.GetRegister(RegisterName.Unnamed).UpdateValue("foo", OperationKind.CharacterWise);
-            _selection.Select(_textView.GetLineRange(0).Extent);
-            _operations
-                .Setup(x => x.PutAtCaret(It.IsAny<StringData>(), OperationKind.CharacterWise, PutKind.Before, false))
-                .Verifiable();
+            Create("");
+            _commandUtil.SetupCommandVisual(VisualCommand.NewPutBeforeCaret(false));
             _mode.Process('P');
-            _factory.Verify();
+            _commandUtil.Verify();
         }
 
         [Test]
-        public void Handle_P_WithRegister()
+        public void Bind_PutBeforeCaret_WithCaretMove()
         {
-            Create("foo bar");
-            _map.GetRegister(RegisterName.NewNamed(NamedRegister.Register_c)).UpdateValue("foo", OperationKind.CharacterWise);
-            _selection.Select(_textBuffer.GetLineRange(0).Extent);
-            _operations
-                .Setup(x => x.PutAtCaret(It.IsAny<StringData>(), OperationKind.CharacterWise, PutKind.Before, false))
-                .Verifiable();
-            _mode.Process("\"cP");
-            _factory.Verify();
+            Create("");
+            _commandUtil.SetupCommandVisual(VisualCommand.NewPutBeforeCaret(true));
+            _mode.Process("gP");
+            _commandUtil.Verify();
         }
 
         [Test]
-        public void Handle_r_SingleChar()
+        public void Bind_ReplaceSelection()
         {
-            Create("dog cat");
-            var span = new SnapshotSpan(_textView.TextSnapshot, 0, 1);
-            _selection.Select(span);
-            _operations
-                .Setup(x => x.UpdateRegisterForSpan(_map.GetRegister(RegisterName.Unnamed), RegisterOperation.Delete, span, OperationKind.CharacterWise))
-                .Verifiable();
+            Create("");
+            var keyInput = KeyInputUtil.CharToKeyInput('c');
+            _commandUtil.SetupCommandVisual(VisualCommand.NewReplaceSelection(keyInput));
             _mode.Process("rc");
-            Assert.AreEqual("cog cat", _textView.GetLine(0).GetText());
-            _factory.Verify();
-        }
-
-        [Test]
-        public void Handle_r_DobuleChar()
-        {
-            Create("dog cat");
-            var span = new SnapshotSpan(_textView.TextSnapshot, 0, 2);
-            _selection.Select(span);
-            _operations
-                .Setup(x => x.UpdateRegisterForSpan(_map.GetRegister(RegisterName.Unnamed), RegisterOperation.Delete, span, OperationKind.CharacterWise))
-                .Verifiable();
-            _mode.Process("rc");
-            Assert.AreEqual("ccg cat", _textView.GetLine(0).GetText());
-            _factory.Verify();
+            _commandUtil.Verify();
         }
 
         [Test]
@@ -743,14 +675,12 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void FormatSelection1()
+        public void Bind_FormatLines()
         {
-            Create("foo", "bar");
-            var span = _textBuffer.GetLineRange(0).Extent;
-            _selection.Select(span);
-            _host.Setup(x => x.FormatLines(_textView, _textBuffer.GetLineRange(0, 0))).Verifiable();
+            Create("");
+            _commandUtil.SetupCommandVisual(VisualCommand.FormatLines);
             _mode.Process("=");
-            _factory.Verify();
+            _commandUtil.Verify();
         }
 
         [Test]

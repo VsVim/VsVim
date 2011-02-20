@@ -6,12 +6,14 @@ open Microsoft.VisualStudio.Text.Editor
 type internal CommandRunnerData = {
 
     /// Name of the current command
-    KeyInputSet : KeyInputSet;
+    KeyInputSet : KeyInputSet
 
     /// Reverse ordered List of all KeyInput for a given command
-    Inputs : KeyInput list;
+    Inputs : KeyInput list
 
-    State : CommandRunnerState;
+    /// Once a CommandBinding is chosen this will be the flags of that 
+    /// CommandBinding instance
+    CommandFlags : CommandFlags option
 }
 
 /// Implementation of the ICommandRunner interface.  
@@ -31,7 +33,7 @@ type internal CommandRunner
     let _emptyData = { 
         KeyInputSet = Empty
         Inputs = List.empty
-        State = CommandRunnerState.NoInput
+        CommandFlags = None
     }
 
     let _commandRanEvent = Event<_>()
@@ -62,7 +64,6 @@ type internal CommandRunner
             | None -> BindResult.Error
             | Some name -> completeFunc name
 
-        _data <- { _data with State = NotEnoughInput }
         BindResult.NeedMoreInput { KeyRemapMode = None; BindFunction = inner }
 
     /// Used to wait for a count value to complete.  Passed in the initial digit 
@@ -77,7 +78,6 @@ type internal CommandRunner
                 let count = System.Int32.Parse(num)
                 completeFunc count ki
 
-        _data <- { _data with State = NotEnoughInput }
         inner StringUtil.empty initialDigit 
 
     /// Bind the optional register and count operations and then pass that off to the command 
@@ -185,12 +185,12 @@ type internal CommandRunner
                         findPrefixMatches commandName
                         |> Seq.filter (fun c -> c.KeyInputSet <> command.KeyInputSet)
                     if Seq.isEmpty withPrefix then 
-                        BindResult<_>.CreateNeedMoreInput None (fun keyInput -> x.BindLegacyMotion command keyInput count register func)
+                        _data <- { _data with CommandFlags = Some command.CommandFlags }
+                        BindResult<_>.CreateNeedMoreInput (Some KeyRemapMode.OperatorPending) (fun keyInput -> x.BindLegacyMotion command keyInput count register func)
                     else 
                         // At least one other command matched so we need at least one more piece of input to
                         // differentiate the commands.  At this point though because the command is of the
                         // motion variety we are in operator pending
-                        _data <- { _data with State = NotEnoughMatchingPrefix (command, withPrefix |> List.ofSeq) }
                         bindNext (Some KeyRemapMode.OperatorPending)
                 | CommandBinding.MotionCommand (_, _, func) -> 
                     // Can't just call this.  It's possible there is a non-motion command with a 
@@ -201,19 +201,22 @@ type internal CommandRunner
                         |> Seq.filter (fun c -> c.KeyInputSet <> command.KeyInputSet)
                     if Seq.isEmpty withPrefix then 
                         // Nothing else matched so we are good to go for this motion.
-                        BindResult<_>.CreateNeedMoreInput None (fun keyInput -> x.BindMotion keyInput (completeMotion command func))
+                        _data <- { _data with CommandFlags = Some command.CommandFlags }
+                        BindResult<_>.CreateNeedMoreInput (Some KeyRemapMode.OperatorPending) (fun keyInput -> x.BindMotion keyInput (completeMotion command func))
                     else 
                         // At least one other command matched so we need at least one more piece of input to
                         // differentiate the commands.  At this point though because the command is of the
                         // motion variety we are in operator pending
-                        _data <- { _data with State = NotEnoughMatchingPrefix (command, withPrefix |> List.ofSeq) }
+                        _data <- { _data with CommandFlags = Some command.CommandFlags }
                         bindNext (Some KeyRemapMode.OperatorPending)
     
                 | CommandBinding.ComplexNormalCommand (_, _, bindDataStorage) -> 
+                    _data <- { _data with CommandFlags = Some command.CommandFlags }
                     let bindData = bindDataStorage.CreateBindData()
                     let bindData = bindData.Convert (fun normalCommand -> (Command.NormalCommand (normalCommand, commandData), command))
                     BindResult.NeedMoreInput bindData
                 | CommandBinding.ComplexVisualCommand (_, _, bindDataStorage) -> 
+                    _data <- { _data with CommandFlags = Some command.CommandFlags }
                     let bindData = bindDataStorage.CreateBindData()
                     let bindData = bindData.Convert (fun visualCommand -> (Command.VisualCommand (visualCommand, commandData, x.GetVisualSpan _visualKind), command))
                     BindResult.NeedMoreInput bindData
@@ -233,14 +236,24 @@ type internal CommandRunner
                     match Map.tryFind previousCommandName _commandMap with
                     | Some(command) ->
                         match command with
-                        | CommandBinding.LegacySimpleCommand _ -> bindNext None
-                        | CommandBinding.LegacyVisualCommand _ -> bindNext None
-                        | CommandBinding.LegacyMotionCommand (_, _, func) -> x.BindLegacyMotion command currentInput count register func
-                        | CommandBinding.MotionCommand (_, _, func) -> x.BindMotion currentInput (completeMotion command func)
-                        | CommandBinding.NormalCommand _ -> bindNext None
-                        | CommandBinding.VisualCommand _ -> bindNext None
-                        | CommandBinding.ComplexNormalCommand _ -> bindNext None
-                        | CommandBinding.ComplexVisualCommand _ -> bindNext None
+                        | CommandBinding.LegacySimpleCommand _ -> 
+                            bindNext None
+                        | CommandBinding.LegacyVisualCommand _ -> 
+                            bindNext None
+                        | CommandBinding.LegacyMotionCommand (_, _, func) -> 
+                            _data <- { _data with CommandFlags = Some command.CommandFlags }
+                            x.BindLegacyMotion command currentInput count register func
+                        | CommandBinding.MotionCommand (_, _, func) -> 
+                            _data <- { _data with CommandFlags = Some command.CommandFlags }
+                            x.BindMotion currentInput (completeMotion command func)
+                        | CommandBinding.NormalCommand _ -> 
+                            bindNext None
+                        | CommandBinding.VisualCommand _ -> 
+                            bindNext None
+                        | CommandBinding.ComplexNormalCommand _ -> 
+                            bindNext None
+                        | CommandBinding.ComplexVisualCommand _ -> 
+                            bindNext None
                     | None -> 
                         // No prefix matches and no previous motion so won't ever match a comamand
                         BindResult.Error
@@ -270,11 +283,9 @@ type internal CommandRunner
 
     /// Should the Esacpe key cancel the current command
     member x.ShouldEscapeCancelCurrentCommand () = 
-        match _data.State with
-        | CommandRunnerState.NoInput -> true
-        | CommandRunnerState.NotEnoughInput -> true
-        | CommandRunnerState.NotEnoughMatchingPrefix(_) -> true
-        | CommandRunnerState.NotFinishWithCommand command -> not command.HandlesEscape
+        match _data.CommandFlags with
+        | None -> true
+        | Some flags -> not (Util.IsFlagSet flags CommandFlags.HandlesEscape)
 
     /// Function which handles all incoming input
     member x.Run (ki:KeyInput) =
@@ -322,18 +333,15 @@ type internal CommandRunner
 
     interface ICommandRunner with
         member x.Commands = _commandMap |> Seq.map (fun pair -> pair.Value)
-        member x.State = _data.State
-        member x.IsWaitingForMoreInput = 
-            match _data.State with
-            | CommandRunnerState.NoInput -> false
-            | CommandRunnerState.NotEnoughInput -> true
-            | CommandRunnerState.NotFinishWithCommand(_) -> true
-            | CommandRunnerState.NotEnoughMatchingPrefix(_) -> true
+        member x.IsHandlingEscape =
+            match _data.CommandFlags with
+            | None -> false
+            | Some flags -> Util.IsFlagSet flags CommandFlags.HandlesEscape
+        member x.IsWaitingForMoreInput = Option.isSome _runBindData
         member x.KeyRemapMode = 
             match _runBindData with
             | None -> None
             | Some bindData -> bindData.KeyRemapMode
-
         member x.Add command = x.Add command
         member x.Remove name = x.Remove name
         member x.ResetState () = x.ResetState()

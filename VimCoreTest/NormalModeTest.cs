@@ -8,7 +8,6 @@ using Moq;
 using NUnit.Framework;
 using Vim;
 using Vim.Extensions;
-using Vim.Modes;
 using Vim.Modes.Normal;
 using Vim.UnitTest;
 using Vim.UnitTest.Mock;
@@ -427,97 +426,57 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void Move_Motion_w1()
+        public void Bind_Motion_Word()
         {
             Create(DefaultLines);
-            _operations.Setup(x => x.MoveCaretToMotionResult(It.IsAny<MotionResult>())).Verifiable();
+            _commandUtil.SetupCommandNormal(NormalCommand.NewMoveCaretToMotion(Motion.NewWordForward(WordKind.NormalWord)));
             _mode.Process('w');
-            _operations.Verify();
+            _commandUtil.Verify();
         }
 
         [Test]
-        public void Move_Motion_W1()
+        public void Bind_Motion_BigWord()
         {
             Create(DefaultLines);
-            _operations.Setup(x => x.MoveCaretToMotionResult(It.IsAny<MotionResult>())).Verifiable();
+            _commandUtil.SetupCommandNormal(NormalCommand.NewMoveCaretToMotion(Motion.NewWordForward(WordKind.BigWord)));
             _mode.Process('W');
-            _operations.Verify();
+            _commandUtil.Verify();
         }
 
         [Test]
-        public void Move_Motion_b1()
+        public void Bind_Motion_WordBackward()
         {
             Create(DefaultLines);
-            _operations.Setup(x => x.MoveCaretToMotionResult(It.IsAny<MotionResult>())).Verifiable();
+            _commandUtil.SetupCommandNormal(NormalCommand.NewMoveCaretToMotion(Motion.NewWordBackward(WordKind.NormalWord)));
             _mode.Process('b');
-            _operations.Verify();
+            _commandUtil.Verify();
         }
 
         [Test]
-        public void Move_Motion_B1()
-        {
-            Create(DefaultLines);
-            _operations.Setup(x => x.MoveCaretToMotionResult(It.IsAny<MotionResult>())).Verifiable();
-            _mode.Process('B');
-            _operations.Verify();
-        }
-
-        [Test]
-        public void Move_Motion_Enter1()
-        {
-            Create(DefaultLines);
-            _operations.Setup(x => x.MoveCaretToMotionResult(It.IsAny<MotionResult>())).Verifiable();
-            _mode.Process(KeyInputUtil.EnterKey);
-            _operations.Verify();
-        }
-
-        [Test]
-        public void Move_Motion_Enter2()
-        {
-            Create(DefaultLines);
-            _operations.Setup(x => x.MoveCaretToMotionResult(It.IsAny<MotionResult>())).Verifiable();
-            _mode.Process('2');
-            _mode.Process(KeyInputUtil.EnterKey);
-            _operations.Verify();
-        }
-
-        [Test]
-        public void Move_Motion_Hat1()
-        {
-            Create("foo bar");
-            _textView.MoveCaretTo(3);
-            _operations.Setup(x => x.MoveCaretToMotionResult(It.IsAny<MotionResult>())).Verifiable();
-            _mode.Process('^');
-            _editorOperations.Verify();
-        }
-
-        [Test]
-        public void Move_Motion_Hat2()
+        public void Bind_Motion_Hat()
         {
             Create("   foo bar");
-            _operations.Setup(x => x.MoveCaretToMotionResult(It.IsAny<MotionResult>())).Verifiable();
+            _commandUtil.SetupCommandNormal(NormalCommand.NewMoveCaretToMotion(Motion.FirstNonWhiteSpaceOnLine));
             _mode.Process('^');
-            _editorOperations.Verify();
-
+            _commandUtil.Verify();
         }
 
         [Test]
-        public void Move_Motion_Dollar1()
+        public void Bind_Motion_Dollar()
         {
             Create("foo", "bar");
-            _operations.Setup(x => x.MoveCaretToMotionResult(It.IsAny<MotionResult>())).Verifiable();
+            _commandUtil.SetupCommandNormal(NormalCommand.NewMoveCaretToMotion(Motion.EndOfLine));
             _mode.Process('$');
-            _editorOperations.Verify();
+            _commandUtil.Verify();
         }
 
         [Test]
-        public void Move_0()
+        public void Bind_0()
         {
             Create("foo bar baz");
-            _operations.Setup(x => x.MoveCaretToMotionResult(It.IsAny<MotionResult>())).Verifiable();
-            _textView.MoveCaretTo(3);
+            _commandUtil.SetupCommandNormal(NormalCommand.NewMoveCaretToMotion(Motion.BeginingOfLine));
             _mode.Process('0');
-            _operations.Verify();
+            _commandUtil.Verify();
         }
 
         [Test]
@@ -736,15 +695,6 @@ namespace VimCore.UnitTest
             _editorOperations.Verify();
         }
 
-        [Test]
-        public void Scroll_zInvalid()
-        {
-            Create(String.Empty);
-            _operations.Setup(x => x.Beep()).Verifiable();
-            _mode.Process("z;");
-            _operations.Verify();
-        }
-
         #endregion
 
         #region Motion
@@ -791,11 +741,13 @@ namespace VimCore.UnitTest
             util
                 .Setup(x => x.GetMotion(Motion.LineOrLastToFirstNonWhiteSpace, arg))
                 .Returns(FSharpOption.Create(VimUtil.CreateMotionResult(span, operationKind: OperationKind.LineWise)));
-            _operations
-                .Setup(x => x.UpdateRegisterForSpan(_unnamedRegister, RegisterOperation.Yank, span, OperationKind.LineWise))
+            _commandUtil
+                .Setup(x => x.RunCommand(It.Is<Command>(y => y.AsNormalCommand().Item2.Count.IsNone())))
+                .Returns(CommandResult.NewCompleted(ModeSwitch.NoSwitch))
                 .Verifiable();
             _mode.Process("yG");
             util.Verify();
+            _commandUtil.Verify();
         }
 
         #endregion
@@ -977,8 +929,8 @@ namespace VimCore.UnitTest
         {
             Create("foo");
             _globalSettings.TildeOp = true;
-            _commandUtil.SetupCommandMotion<NormalCommand.ChangeMotion>();
-            _mode.Process("~");
+            _commandUtil.SetupCommandMotion<NormalCommand.ChangeCaseMotion>();
+            _mode.Process("~w");
             _commandUtil.Verify();
         }
 
@@ -1042,123 +994,12 @@ namespace VimCore.UnitTest
         #region Yank
 
         [Test]
-        public void Yank_yw()
+        public void Bind_Yank()
         {
-            Create("foo");
-            var span = _textView.TextSnapshot.GetLineFromLineNumber(0).Extent;
-            _operations
-                .Setup(x => x.UpdateRegisterForSpan(_unnamedRegister, RegisterOperation.Yank, span, OperationKind.CharacterWise))
-                .Verifiable();
+            Create("");
+            _commandUtil.SetupCommandMotion<NormalCommand.Yank>();
             _mode.Process("yw");
-            _operations.Verify();
-        }
-
-        [Test, Description("Yanks in the middle of the word should only get a partial")]
-        public void Yank_yw_2()
-        {
-            Create("foo bar baz");
-            _textView.Caret.MoveTo(new SnapshotPoint(_textView.TextSnapshot, 1));
-            var span = new SnapshotSpan(_textView.TextSnapshot, 1, 3);
-            _operations
-                .Setup(x => x.UpdateRegisterForSpan(_unnamedRegister, RegisterOperation.Yank, span, OperationKind.CharacterWise))
-                .Verifiable();
-            _mode.Process("yw");
-            _operations.Verify();
-        }
-
-        [Test, Description("Yank word should go to the start of the next word including spaces")]
-        public void Yank_yw_3()
-        {
-            Create("foo bar");
-            var span = new SnapshotSpan(_textView.TextSnapshot, 0, 4);
-            _operations
-                .Setup(x => x.UpdateRegisterForSpan(_unnamedRegister, RegisterOperation.Yank, span, OperationKind.CharacterWise))
-                .Verifiable();
-            _mode.Process("yw");
-            _operations.Verify();
-        }
-
-        [Test, Description("Non-default register")]
-        public void Yank_yw_4()
-        {
-            Create("foo bar");
-            var span = new SnapshotSpan(_textView.TextSnapshot, 0, 4);
-            _operations
-                .Setup(x => x.UpdateRegisterForSpan(_map.GetRegister('c'), RegisterOperation.Yank, span, OperationKind.CharacterWise))
-                .Verifiable();
-            _mode.Process("\"cyw");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void Yank_2yw()
-        {
-            Create("foo bar baz");
-            var span = new SnapshotSpan(_textView.TextSnapshot, 0, 8);
-            _operations
-                .Setup(x => x.UpdateRegisterForSpan(_unnamedRegister, RegisterOperation.Yank, span, OperationKind.CharacterWise))
-                .Verifiable();
-            _mode.Process("2yw");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void Yank_3yw()
-        {
-            Create("foo bar baz joe");
-            var span = new SnapshotSpan(_textView.TextSnapshot, 0, 12);
-            _operations
-                .Setup(x => x.UpdateRegisterForSpan(_unnamedRegister, RegisterOperation.Yank, span, OperationKind.CharacterWise))
-                .Verifiable();
-            _mode.Process("3yw");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void Yank_yaw()
-        {
-            Create("foo bar");
-            var span = new SnapshotSpan(_textView.TextSnapshot, 0, 4);
-            _operations
-                .Setup(x => x.UpdateRegisterForSpan(_unnamedRegister, RegisterOperation.Yank, span, OperationKind.CharacterWise))
-                .Verifiable();
-            _mode.Process("yaw");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void Yank_y2w()
-        {
-            Create("foo bar baz");
-            var span = new SnapshotSpan(_textView.TextSnapshot, 0, 8);
-            _operations
-                .Setup(x => x.UpdateRegisterForSpan(_unnamedRegister, RegisterOperation.Yank, span, OperationKind.CharacterWise))
-                .Verifiable();
-            _mode.Process("y2w");
-            _operations.Verify();
-        }
-
-
-        [Test]
-        public void Yank_yaw_2()
-        {
-            Create("foo bar");
-            _textView.Caret.MoveTo(new SnapshotPoint(_textView.TextSnapshot, 1));
-            var span = new SnapshotSpan(_textView.TextSnapshot, 0, 4);
-            _operations
-                .Setup(x => x.UpdateRegisterForSpan(_unnamedRegister, RegisterOperation.Yank, span, OperationKind.CharacterWise))
-                .Verifiable();
-            _mode.Process("yaw");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void Yank_yaw_3()
-        {
-            Create(DefaultLines);
-            _mode.Process("ya");
-            _mode.Process(KeyInputUtil.EscapeKey);
-            Assert.IsFalse(_mode.CommandRunner.IsWaitingForMoreInput);
+            _commandUtil.Verify();
         }
 
         [Test, Description("A yy should grab the end of line including line break information")]
@@ -1227,117 +1068,39 @@ namespace VimCore.UnitTest
         #region Paste
 
         [Test]
-        public void Paste_p()
-        {
-            Create("foo bar");
-            _operations.Setup(x => x.PutAtCaret(StringData.NewSimple("hey"), OperationKind.CharacterWise, PutKind.After, false)).Verifiable();
-            _map.GetRegister(RegisterName.Unnamed).UpdateValue("hey");
-            _mode.Process('p');
-            _operations.Verify();
-        }
-
-        [Test, Description("Paste from a non-default register")]
-        public void Paste_p_2()
+        public void Bind_PutAfterCaret()
         {
             Create("foo");
-            _operations.Setup(x => x.PutAtCaret(StringData.NewSimple("hey"), OperationKind.CharacterWise, PutKind.After, false)).Verifiable();
-            _map.GetRegister('j').UpdateValue("hey");
-            _mode.Process("\"jp");
-            _operations.Verify();
-        }
-
-        [Test, Description("Pasting a linewise motion should occur on the next line")]
-        public void Paste_p_3()
-        {
-            Create("foo", "bar");
-            _operations.Setup(x => x.PutAtCaret(StringData.NewSimple("baz\n"), OperationKind.LineWise, PutKind.After, false)).Verifiable();
-            _textView.Caret.MoveTo(new SnapshotPoint(_textView.TextSnapshot, 0));
-            _map.GetRegister(RegisterName.Unnamed).Value = new RegisterValue(StringData.NewSimple("baz\n"), OperationKind.LineWise);
+            _commandUtil.SetupCommandNormal(NormalCommand.NewPutAfterCaret(false));
             _mode.Process("p");
-            _operations.Verify();
+            _commandUtil.Verify();
         }
 
         [Test]
-        public void Paste_2p()
+        public void Bind_PutBeforeCaret()
         {
             Create("foo");
-            _operations.Setup(x => x.PutAtCaret(StringData.NewSimple("heyhey"), OperationKind.CharacterWise, PutKind.After, false)).Verifiable();
-            _map.GetRegister(RegisterName.Unnamed).UpdateValue("hey");
-            _mode.Process("2p");
-            _operations.Verify();
+            _commandUtil.SetupCommandNormal(NormalCommand.NewPutBeforeCaret(false));
+            _mode.Process("P");
+            _commandUtil.Verify();
         }
 
         [Test]
-        public void Paste_P()
+        public void Bind_PutAfterCaret_WithMove()
         {
             Create("foo");
-            _operations.Setup(x => x.PutAtCaret(StringData.NewSimple("hey"), OperationKind.CharacterWise, PutKind.Before, false)).Verifiable();
-            _map.GetRegister(RegisterName.Unnamed).UpdateValue("hey");
-            _mode.Process('P');
-            _operations.Verify();
-        }
-
-        [Test, Description("Pasting a linewise motion should occur on the previous line")]
-        public void Paste_P_2()
-        {
-            Create("foo", "bar");
-            _operations.Setup(x => x.PutAtCaret(StringData.NewSimple("baz\n"), OperationKind.LineWise, PutKind.Before, false)).Verifiable();
-            _textView.Caret.MoveTo(new SnapshotPoint(_textView.TextSnapshot, 1));
-            _map.GetRegister(RegisterName.Unnamed).Value = new RegisterValue(StringData.NewSimple("baz\n"), OperationKind.LineWise);
-            _mode.Process('P');
-            _operations.Verify();
-        }
-
-        [Test]
-        public void Paste_2P()
-        {
-            Create("foo");
-            _operations.Setup(x => x.PutAtCaret(StringData.NewSimple("heyhey"), OperationKind.CharacterWise, PutKind.Before, false)).Verifiable();
-            _map.GetRegister(RegisterName.Unnamed).UpdateValue("hey");
-            _mode.Process("2P");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void Paste_gp_1()
-        {
-            Create("foo");
-            _operations.Setup(x => x.PutAtCaret(StringData.NewSimple("hey"), OperationKind.CharacterWise, PutKind.After, true)).Verifiable();
-            _map.GetRegister(RegisterName.Unnamed).UpdateValue("hey");
+            _commandUtil.SetupCommandNormal(NormalCommand.NewPutAfterCaret(true));
             _mode.Process("gp");
-            _operations.Verify();
+            _commandUtil.Verify();
         }
 
         [Test]
-        public void Paste_gp_2()
-        {
-            Create("foo", "bar");
-            _operations.Setup(x => x.PutAtCaret(StringData.NewSimple("hey"), OperationKind.CharacterWise, PutKind.After, true)).Verifiable();
-            _textView.Caret.MoveTo(_textView.TextSnapshot.GetLineFromLineNumber(0).End);
-            _map.GetRegister('c').UpdateValue("hey");
-            _mode.Process("\"cgp");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void Paste_gP_1()
+        public void Bind_PutBeforeCaret_WithMove()
         {
             Create("foo");
-            _operations.Setup(x => x.PutAtCaret(StringData.NewSimple("hey"), OperationKind.CharacterWise, PutKind.Before, true)).Verifiable();
-            _map.GetRegister(RegisterName.Unnamed).UpdateValue("hey");
+            _commandUtil.SetupCommandNormal(NormalCommand.NewPutBeforeCaret(true));
             _mode.Process("gP");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void Paste_gP_2()
-        {
-            Create("foo", "bar");
-            _operations.Setup(x => x.PutAtCaret(StringData.NewSimple("hey"), OperationKind.CharacterWise, PutKind.Before, true)).Verifiable();
-            _textView.Caret.MoveTo(_textView.TextSnapshot.GetLineFromLineNumber(0).End);
-            _map.GetRegister(RegisterName.Unnamed).UpdateValue("hey");
-            _mode.Process("gP");
-            _operations.Verify();
+            _commandUtil.Verify();
         }
 
         #endregion
@@ -1388,19 +1151,6 @@ namespace VimCore.UnitTest
         #endregion
 
         #region Regressions
-
-        [Test, Description("Don't re-enter insert mode on every keystroke once you've left")]
-        public void Regression_InsertMode()
-        {
-            Create(DefaultLines);
-            var res = _mode.Process('i');
-            Assert.IsTrue(res.IsSwitchMode);
-            Assert.AreEqual(ModeKind.Insert, res.AsSwitchMode().Item);
-            _operations.Setup(x => x.MoveCaretLeft(1)).Verifiable();
-            res = _mode.Process('h');
-            Assert.IsTrue(res.IsProcessed);
-            _operations.Verify();
-        }
 
         [Test, Description("j past the end of the buffer")]
         public void Regression_DownPastBufferEnd()
@@ -2097,14 +1847,12 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void ShiftI_1()
+        public void Bind_I()
         {
             Create(DefaultLines);
-            _editorOperations.Setup(x => x.MoveToStartOfLineAfterWhiteSpace(false)).Verifiable();
-            var res = _mode.Process('I');
-            Assert.IsTrue(res.IsSwitchMode);
-            Assert.AreEqual(ModeKind.Insert, res.AsSwitchMode().Item);
-            _editorOperations.Verify();
+            _commandUtil.SetupCommandNormal(NormalCommand.InsertAtFirstNonBlank);
+            _mode.Process('I');
+            _commandUtil.Verify();
         }
 
         [Test]

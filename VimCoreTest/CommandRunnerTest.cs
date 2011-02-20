@@ -18,7 +18,7 @@ namespace VimCore.UnitTest
         private MockRepository _factory;
         private Mock<IVimHost> _host;
         private Mock<IStatusUtil> _statusUtil;
-        private Mock<ICommandUtil> _commandUtil;
+        private ICommandUtil _commandUtil;
         private IVimData _vimData;
         private IRegisterMap _registerMap;
         private ITextView _textView;
@@ -31,7 +31,6 @@ namespace VimCore.UnitTest
             _textView = EditorUtil.CreateView(lines);
             _factory = new MockRepository(MockBehavior.Strict);
             _host = _factory.Create<IVimHost>();
-            _commandUtil = _factory.Create<ICommandUtil>();
             _statusUtil = _factory.Create<IStatusUtil>();
             _registerMap = VimUtil.CreateRegisterMap(MockObjectFactory.CreateClipboardDevice(_factory).Object);
             _vimData = new VimData();
@@ -46,12 +45,18 @@ namespace VimCore.UnitTest
                 _textView,
                 MockObjectFactory.CreateIncrementalSearch(factory: _factory).Object,
                 localSettings);
+            _commandUtil = VimUtil.CreateCommandUtil(
+                _textView,
+                motionUtil: _motionUtil,
+                statusUtil: _statusUtil.Object,
+                registerMap: _registerMap,
+                vimData: _vimData);
             _runnerRaw = new CommandRunner(
                 _textView,
                 _registerMap,
                 capture,
                 _motionUtil,
-                _commandUtil.Object,
+                _commandUtil,
                 _statusUtil.Object,
                 VisualKind.Character);
             _runner = _runnerRaw;
@@ -384,8 +389,8 @@ namespace VimCore.UnitTest
         }
 
         /// <summary>
-        /// A BindData shouldn't be passed an Escape if it doesn't set the handle
-        /// escape falg
+        /// A BindData should be passed an Escape if it does set the handle
+        /// escape flag
         /// </summary>
         [Test]
         public void Run_RespectDontHandleEscapeFlag()
@@ -399,10 +404,11 @@ namespace VimCore.UnitTest
                 {
                     didRun = true;
                     didEscape = ki == KeyInputUtil.EscapeKey;
-                }));
+                },
+                flags: CommandFlags.HandlesEscape));
             _runner.Run('c');
             _runner.Run(VimKey.Escape);
-            Assert.IsFalse(didEscape);
+            Assert.IsTrue(didEscape);
             Assert.IsTrue(didRun);
         }
 
@@ -558,7 +564,7 @@ namespace VimCore.UnitTest
             Func<KeyInput, bool> func = ki =>
             {
                 seen += ki.Char.ToString();
-                return seen == "ood";
+                return seen != "ood";
             };
 
             _runner.Add(VimUtil.CreateCommandBindingNormalComplex("f", func));
@@ -597,90 +603,6 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void State1()
-        {
-            Create("hello world");
-            Assert.IsTrue(_runner.State.IsNoInput);
-        }
-
-        [Test]
-        public void State2()
-        {
-            Create("hello world");
-            Assert.IsTrue(_runner.Run('c').IsError);
-            Assert.IsTrue(_runner.State.IsNoInput);
-        }
-
-        [Test]
-        public void State3()
-        {
-            Create("hello world");
-            _runner.Add(VimUtil.CreateSimpleCommand("cat", (count, reg) => CommandResult.NewCompleted(ModeSwitch.NoSwitch)));
-            _runner.Run('c');
-            Assert.IsTrue(_runner.State.IsNotEnoughInput);
-        }
-
-        [Test]
-        public void State4()
-        {
-            Create("hello world");
-            _runner.Add(VimUtil.CreateSimpleCommand("cat", (count, reg) => CommandResult.NewCompleted(ModeSwitch.NoSwitch)));
-            _runner.Run('c');
-            _runner.Run(KeyInputUtil.EscapeKey);
-            Assert.IsTrue(_runner.State.IsNoInput);
-        }
-
-        [Test]
-        public void State5()
-        {
-            Create("hello world");
-            var command1 = VimUtil.CreateMotionCommand("c", (x, y, z) => CommandResult.NewCompleted(ModeSwitch.NoSwitch));
-            _runner.Add(command1);
-            _runner.Run('c');
-            Assert.IsTrue(_runner.State.IsNotFinishWithCommand);
-            Assert.AreSame(command1, _runner.State.AsNotFinishedWithCommand().Item);
-        }
-
-        [Test]
-        public void State6()
-        {
-            Create("hello world");
-            var command1 = VimUtil.CreateMotionCommand("c", (x, y, z) => CommandResult.NewCompleted(ModeSwitch.NoSwitch));
-            _runner.Add(command1);
-            _runner.Run('c');
-            _runner.Run('w');
-            Assert.IsTrue(_runner.State.IsNoInput);
-        }
-
-        /// <summary>
-        /// Make sure we register as not finished while completing a complex binding
-        /// </summary>
-        [Test]
-        public void State_InsideComplexBindingIsNotFinished()
-        {
-            Create("hello world");
-            var binding = VimUtil.CreateCommandBindingNormalComplex("f", x => true);
-            _runner.Add(binding);
-            _runner.Run('f');
-            Assert.IsTrue(_runner.State.IsNotFinishWithCommand);
-            Assert.AreSame(binding, _runner.State.AsNotFinishedWithCommand().Item);
-        }
-
-        [Test]
-        public void State8()
-        {
-            Create("hello world");
-            var command1 = VimUtil.CreateSimpleCommand("cc", (x, y) => { });
-            var command2 = VimUtil.CreateMotionCommand("c", (x, y, z) => { });
-            _runner.Add(command1);
-            _runner.Add(command2);
-            _runner.Run('c');
-            Assert.IsTrue(_runner.State.IsNotEnoughMatchingPrefix);
-            Assert.AreSame(command2, _runner.State.AsNotEnoughMatchingPrefix().Item1);
-            Assert.IsTrue(_runner.State.AsNotEnoughMatchingPrefix().Item2.Contains(command1));
-        }
-
-        [Test]
         public void CommandRan1()
         {
             Create("hello world");
@@ -689,7 +611,7 @@ namespace VimCore.UnitTest
             _runner.Add(command1);
             _runner.CommandRan += (notUsed, tuple) =>
                 {
-                    Assert.AreSame(command1, tuple.Command);
+                    Assert.AreSame(command1, tuple.CommandBinding);
                     Assert.IsTrue(tuple.CommandResult.IsCompleted);
                     didSee = true;
                 };
@@ -706,7 +628,7 @@ namespace VimCore.UnitTest
             _runner.Add(command1);
             _runner.CommandRan += (notUsed, tuple) =>
                 {
-                    Assert.AreSame(command1, tuple.Command);
+                    Assert.AreSame(command1, tuple.CommandBinding);
                     didSee = true;
                 };
             _runner.Run('2');
@@ -747,12 +669,21 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void KeyRemapMode_OperatorPendingWhenWaitingForMotion()
+        public void KeyRemapMode_OperatorPendingWhenWaitingForMotionLegacy()
         {
             Create("hello world");
             _runner.Add(VimUtil.CreateMotionCommand("d"));
             _runner.Run('d');
-            Assert.AreEqual(KeyRemapMode.OperatorPending, _runner.KeyRemapMode.Value);
+            Assert.IsTrue(_runner.KeyRemapMode.IsSome(KeyRemapMode.OperatorPending));
+        }
+
+        [Test]
+        public void KeyRemapMode_OperatorPendingWhenWaitingForMotion()
+        {
+            Create("hello world");
+            _runner.Add(VimUtil.CreateCommandBindingMotion("d"));
+            _runner.Run('d');
+            Assert.IsTrue(_runner.KeyRemapMode.IsSome(KeyRemapMode.OperatorPending));
         }
 
         [Test]
@@ -762,7 +693,7 @@ namespace VimCore.UnitTest
             _runner.Add(VimUtil.CreateMotionCommand("d"));
             _runner.Add(VimUtil.CreateSimpleCommand("dd"));
             _runner.Run('d');
-            Assert.AreEqual(KeyRemapMode.OperatorPending, _runner.KeyRemapMode.Value);
+            Assert.IsTrue(_runner.KeyRemapMode.IsSome(KeyRemapMode.OperatorPending));
         }
 
         [Test]
@@ -784,9 +715,9 @@ namespace VimCore.UnitTest
             Create("hello world");
             _runner.Add(VimUtil.CreateCommandBindingNormalComplex("a", x => true, KeyRemapMode.Language));
             _runner.Run('a');
-            Assert.AreEqual(KeyRemapMode.Language, _runner.KeyRemapMode.Value);
+            Assert.IsTrue(_runner.KeyRemapMode.IsSome(KeyRemapMode.Language));
             _runner.Run('b');
-            Assert.AreEqual(KeyRemapMode.Language, _runner.KeyRemapMode.Value);
+            Assert.IsTrue(_runner.KeyRemapMode.IsSome(KeyRemapMode.Language));
         }
     }
 }

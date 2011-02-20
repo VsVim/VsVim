@@ -336,7 +336,7 @@ type internal CommandUtil
     /// Delete the highlighted text from the buffer and put it into the specified 
     /// register.  The caret should be positioned at the begining of the text for
     /// undo / redo
-    member x.DeleteHighlightedText register (visualSpan : VisualSpan) = 
+    member x.DeleteSelectedText register (visualSpan : VisualSpan) = 
         let startPoint = visualSpan.Start |> OptionUtil.getOrDefault x.CaretPoint 
 
         // Use a transaction to guarantee caret position.  Caret should be at the start
@@ -670,7 +670,7 @@ type internal CommandUtil
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Replace the char under the cursor in visual mode.
-    member x.ReplaceCharVisual keyInput (visualSpan : VisualSpan) = 
+    member x.ReplaceSelection keyInput (visualSpan : VisualSpan) = 
 
         let replaceText = 
             if keyInput = KeyInputUtil.EnterKey then System.Environment.NewLine
@@ -753,11 +753,11 @@ type internal CommandUtil
         let count = data.CountOrDefault
         match command with
         | VisualCommand.ChangeCase kind -> x.ChangeCaseVisual kind visualSpan
-        | VisualCommand.DeleteHighlightedText -> x.DeleteHighlightedText register visualSpan
+        | VisualCommand.DeleteSelectedText -> x.DeleteSelectedText register visualSpan
         | VisualCommand.FormatLines -> x.FormatLinesVisual visualSpan
         | VisualCommand.PutAfterCaret moveCaretAfterText -> x.PutAfterCaret register count moveCaretAfterText (ModeSwitch.SwitchMode ModeKind.Normal)
         | VisualCommand.PutBeforeCaret moveCaretAfterText -> x.PutBeforeCaret register count moveCaretAfterText (ModeSwitch.SwitchMode ModeKind.Normal)
-        | VisualCommand.ReplaceChar keyInput -> x.ReplaceCharVisual keyInput visualSpan
+        | VisualCommand.ReplaceSelection keyInput -> x.ReplaceSelection keyInput visualSpan
         | VisualCommand.ShiftLinesLeft -> x.ShiftLinesLeftVisual count visualSpan
         | VisualCommand.ShiftLinesRight -> x.ShiftLinesRightVisual count visualSpan
 

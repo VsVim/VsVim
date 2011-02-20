@@ -233,6 +233,15 @@ namespace Vim.UnitTest
             return CommandBinding.NewNormalCommand(KeyNotationUtil.StringToKeyInputSet(name), flags, command);
         }
 
+        internal static CommandBinding CreateCommandBindingMotion(
+            string name = "default",
+            CommandFlags flags = CommandFlags.None,
+            Func<MotionData, NormalCommand> func = null)
+        {
+            func = func ?? NormalCommand.NewYank;
+            return CommandBinding.NewMotionCommand(KeyNotationUtil.StringToKeyInputSet(name), flags, func.ToFSharpFunc());
+        }
+
         internal static CommandBinding CreateCommandBindingNormalComplex(
             string name,
             Action<KeyInput> action,
@@ -260,9 +269,7 @@ namespace Vim.UnitTest
             KeyRemapMode remapMode = null,
             CommandFlags flags = CommandFlags.None)
         {
-            var remapModeOption = remapMode != null
-                ? FSharpOption.Create(remapMode)
-                : FSharpOption<KeyRemapMode>.None;
+            var remapModeOption = FSharpOption.CreateForReference(remapMode);
             Func<KeyInput, BindResult<NormalCommand>> func = null;
             func = keyInput =>
             {
@@ -278,7 +285,7 @@ namespace Vim.UnitTest
             };
 
             var bindData = new BindData<NormalCommand>(
-                FSharpOption<KeyRemapMode>.None,
+                remapModeOption,
                 func.ToFSharpFunc());
             var bindDataStorage = BindDataStorage<NormalCommand>.NewSimple(bindData);
             return CommandBinding.NewComplexNormalCommand(
@@ -286,6 +293,7 @@ namespace Vim.UnitTest
                 flags,
                 bindDataStorage);
         }
+
 
         internal static Command CreateNormalCommand(
             NormalCommand command = null,

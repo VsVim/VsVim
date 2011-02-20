@@ -599,20 +599,6 @@ namespace Vim.UnitTest
 
         #endregion
 
-        #region CommandRunnerState
-
-        public static CommandRunnerState.NotFinishWithCommand AsNotFinishedWithCommand(this CommandRunnerState state)
-        {
-            return (CommandRunnerState.NotFinishWithCommand)state;
-        }
-
-        public static CommandRunnerState.NotEnoughMatchingPrefix AsNotEnoughMatchingPrefix(this CommandRunnerState state)
-        {
-            return (CommandRunnerState.NotEnoughMatchingPrefix)state;
-        }
-
-        #endregion
-
         #region Dispatcher
 
         public static void DoEvents(this System.Windows.Threading.Dispatcher dispatcher)
@@ -756,7 +742,7 @@ namespace Vim.UnitTest
 
         public static bool IsSome<T>(this FSharpOption<T> option, T value)
         {
-            Assert.IsTrue(option.IsSome());
+            Assert.IsTrue(option.IsSome(), "Option is None");
             Assert.AreEqual(value, option.Value);
             return true;
         }

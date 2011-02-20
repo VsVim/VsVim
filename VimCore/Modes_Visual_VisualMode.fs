@@ -315,7 +315,7 @@ type internal VisualMode
     member x.CreateCommandBindings() =
         let visualSeq = 
             seq {
-                yield ("d", CommandFlags.Repeatable, VisualCommand.DeleteHighlightedText)
+                yield ("d", CommandFlags.Repeatable, VisualCommand.DeleteSelectedText)
                 yield ("gp", CommandFlags.Repeatable, VisualCommand.PutAfterCaret true)
                 yield ("gP", CommandFlags.Repeatable, VisualCommand.PutBeforeCaret true)
                 yield ("g?", CommandFlags.Repeatable, VisualCommand.ChangeCase ChangeCharacterKind.Rot13)
@@ -323,8 +323,8 @@ type internal VisualMode
                 yield ("P", CommandFlags.Repeatable, VisualCommand.PutBeforeCaret false)
                 yield ("u", CommandFlags.Repeatable, VisualCommand.ChangeCase ChangeCharacterKind.ToLowerCase)
                 yield ("U", CommandFlags.Repeatable, VisualCommand.ChangeCase ChangeCharacterKind.ToUpperCase)
-                yield ("x", CommandFlags.Repeatable, VisualCommand.DeleteHighlightedText)
-                yield ("<Del>", CommandFlags.Repeatable, VisualCommand.DeleteHighlightedText)
+                yield ("x", CommandFlags.Repeatable, VisualCommand.DeleteSelectedText)
+                yield ("<Del>", CommandFlags.Repeatable, VisualCommand.DeleteSelectedText)
                 yield ("<lt>", CommandFlags.Repeatable, VisualCommand.ShiftLinesLeft)
                 yield (">", CommandFlags.Repeatable, VisualCommand.ShiftLinesRight)
                 yield ("~", CommandFlags.Repeatable, VisualCommand.ChangeCase ChangeCharacterKind.ToggleCase)
@@ -335,7 +335,7 @@ type internal VisualMode
 
         let complexSeq = 
             seq {
-                yield ("r", CommandFlags.Repeatable, BindData<_>.CreateForSingle None (fun keyInput -> VisualCommand.ReplaceChar keyInput))
+                yield ("r", CommandFlags.Repeatable, BindData<_>.CreateForSingle None (fun keyInput -> VisualCommand.ReplaceSelection keyInput))
             } |> Seq.map (fun (str, flags, bindCommand) -> 
                 let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
                 let storage = BindDataStorage.Simple bindCommand
@@ -351,12 +351,7 @@ type internal VisualMode
                 |> Seq.iter _runner.Add 
             _builtCommands <- true
 
-    member x.ShouldHandleEscape = 
-        match _runner.State with
-        | CommandRunnerState.NoInput -> true
-        | CommandRunnerState.NotEnoughInput -> true
-        | CommandRunnerState.NotEnoughMatchingPrefix (_) -> true
-        | CommandRunnerState.NotFinishWithCommand command -> not (Util.IsFlagSet command.CommandFlags CommandFlags.HandlesEscape)
+    member x.ShouldHandleEscape = not _runner.IsHandlingEscape
 
     interface IMode with
         member x.VimBuffer = _buffer
@@ -379,7 +374,7 @@ type internal VisualMode
                         _selectionTracker.UpdateSelection()
                         ProcessResult.Processed
                     | BindResult.Complete commandRanData ->
-    
+
                         if Util.IsFlagSet commandRanData.CommandBinding.CommandFlags CommandFlags.ResetCaret then
                             _selectionTracker.ResetCaret()
 
@@ -390,9 +385,10 @@ type internal VisualMode
                         | ModeSwitch.SwitchPreviousMode -> ()
                         ProcessResult.OfModeSwitch commandRanData.ModeSwitch
                     | BindResult.Error ->
-                        ProcessResult.SwitchPreviousMode
+                        _operations.Beep()
+                        ProcessResult.Processed
                     | BindResult.Cancelled -> 
-                        ProcessResult.SwitchPreviousMode
+                        ProcessResult.Processed
 
             // If we are switching out Visual Mode then reset the selection
             if result.IsAnySwitch then
