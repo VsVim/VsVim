@@ -638,7 +638,7 @@ type VisualSpan =
     | Line of SnapshotLineRange
 
     /// A block span
-    | Block of NormalizedSnapshotSpanCollection
+    | Block of NonEmptyCollection<SnapshotSpan>
 
     with
 
@@ -647,7 +647,7 @@ type VisualSpan =
         match x with 
         | VisualSpan.Character span -> [span] |> Seq.ofList
         | VisualSpan.Line range -> [range.ExtentIncludingLineBreak] |> Seq.ofList
-        | VisualSpan.Block col -> col :> SnapshotSpan seq
+        | VisualSpan.Block col -> col.All
 
     /// Returns the EditSpan for this VisualSpan
     member x.EditSpan = 
@@ -660,14 +660,9 @@ type VisualSpan =
     /// of an empty Block selection.
     member x.Start =
         match x with
-        | Character span -> 
-            Some span.Start
-        | Line range -> 
-            Some range.Start
-        | Block col -> 
-            match SeqUtil.tryHeadOnly col with
-            | None -> None
-            | Some span -> Some span.Start
+        | Character span -> span.Start
+        | Line range ->  range.Start
+        | Block col -> col.Head.Start
 
 /// Information about the attributes of Command
 [<System.Flags>]
@@ -868,8 +863,11 @@ type VisualCommand =
     /// Change the case of the selected text in the specified manner
     | ChangeCase of ChangeCharacterKind
 
-    /// Delte the selected text and put it into a register
-    | DeleteSelectedText
+    /// Delete the selected lines
+    | DeleteLineSelection
+
+    /// Delete the selected text and put it into a register
+    | DeleteSelection
 
     /// Format the selected text
     | FormatLines
@@ -968,15 +966,28 @@ and BindData<'T> = {
 
     /// Often types bindings need to compose together because we need an inner binding
     /// to succeed so we can create a projected value.  This function will allow us
-    /// to translate a BindData<'T> -> BindData<'U>
-    member x.Convert mapFunc = 
+    /// to translate a BindData.Completed<'T> -> BindData.Completed<'U>
+    member x.Convert convertFunc = 
 
         let rec inner bindFunction keyInput = 
             match x.BindFunction keyInput with
             | BindResult.Cancelled -> BindResult.Cancelled
-            | BindResult.Complete value -> BindResult.Complete (mapFunc value)
+            | BindResult.Complete value -> BindResult.Complete (convertFunc value)
             | BindResult.Error -> BindResult.Error
-            | BindResult.NeedMoreInput bindData -> BindResult.NeedMoreInput (bindData.Convert mapFunc)
+            | BindResult.NeedMoreInput bindData -> BindResult.NeedMoreInput (bindData.Convert convertFunc)
+
+        { KeyRemapMode = x.KeyRemapMode; BindFunction = inner x.BindFunction }
+
+    /// Very similar to the Convert function.  This will instead map a BindData<'T>.Completed
+    /// to a BindData<'U> of any form 
+    member x.Map mapFunc = 
+
+        let rec inner bindFunction keyInput = 
+            match x.BindFunction keyInput with
+            | BindResult.Cancelled -> BindResult.Cancelled
+            | BindResult.Complete value -> mapFunc value
+            | BindResult.Error -> BindResult.Error
+            | BindResult.NeedMoreInput bindData -> BindResult.NeedMoreInput (bindData.Map mapFunc)
 
         { KeyRemapMode = x.KeyRemapMode; BindFunction = inner x.BindFunction }
 

@@ -20,8 +20,20 @@ type StringData =
         | Simple(str) -> str
         | Block(l) -> l |> StringUtil.combineWith System.Environment.NewLine
 
-    static member OfNormalizedSnasphotSpanCollection (col:NormalizedSnapshotSpanCollection) = 
-        if col.Count = 1 then col.[0] |> SnapshotSpanUtil.GetText |> StringData.Simple
+    static member OfNormalizedSnasphotSpanCollection (col : NormalizedSnapshotSpanCollection) = 
+        if col.Count = 0 then
+            StringData.Simple StringUtil.empty
+        elif col.Count = 1 then 
+            col.[0] |> SnapshotSpanUtil.GetText |> StringData.Simple
+        else
+            col
+            |> Seq.map SnapshotSpanUtil.GetText
+            |> List.ofSeq
+            |> StringData.Block
+
+    static member OfNonEmptyCollection (col : NonEmptyCollection<SnapshotSpan>) = 
+        if col.Count = 1 then 
+            col.Head |> SnapshotSpanUtil.GetText |> StringData.Simple
         else 
             col
             |> Seq.map SnapshotSpanUtil.GetText
@@ -35,7 +47,7 @@ type StringData =
     static member OfEditSpan editSpan =
         match editSpan with
         | EditSpan.Single span -> StringData.OfSpan span
-        | EditSpan.Block col -> StringData.OfNormalizedSnasphotSpanCollection col
+        | EditSpan.Block col -> StringData.OfNonEmptyCollection col
 
 [<RequireQualifiedAccess>]
 type NumberedRegister = 

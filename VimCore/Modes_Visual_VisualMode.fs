@@ -41,9 +41,13 @@ type internal VisualMode
 
         let runVisualCommand funcNormal funcBlock count reg visualSpan = 
             match visualSpan with
-            | VisualSpan.Character span -> funcNormal count reg span
-            | VisualSpan.Line range -> funcNormal count reg range.ExtentIncludingLineBreak
-            | VisualSpan.Block col -> funcBlock count reg col
+            | VisualSpan.Character span -> 
+                funcNormal count reg span
+            | VisualSpan.Line range -> 
+                funcNormal count reg range.ExtentIncludingLineBreak
+            | VisualSpan.Block col ->  
+                let col = NormalizedSnapshotSpanCollection(col)
+                funcBlock count reg col
 
         /// Commands which do not need a span to operate on
         let simples =
@@ -144,21 +148,6 @@ type internal VisualMode
         /// Visual Commands
         let visualSimple = 
             seq {
-                yield (
-                    ["D"; "X"],
-                    CommandFlags.Repeatable,
-                    Some ModeKind.Normal,
-                    (fun _ reg span -> 
-                        let range = SnapshotLineRangeUtil.CreateForSpan span
-                        _operations.DeleteSpan range.ExtentIncludingLineBreak
-                        _operations.UpdateRegisterForSpan reg RegisterOperation.Delete range.ExtentIncludingLineBreak OperationKind.LineWise),
-                    (fun _ reg (col : NormalizedSnapshotSpanCollection) ->
-                        let col = 
-                            col
-                            |> Seq.map (fun span -> SnapshotSpan(span.Start, span |> SnapshotSpanUtil.GetStartLine |> SnapshotLineUtil.GetEnd))
-                            |> NormalizedSnapshotSpanCollectionUtil.OfSeq
-                        _operations.DeleteBlock col
-                        _operations.UpdateRegisterForCollection reg RegisterOperation.Delete col OperationKind.CharacterWise))
                 yield (
                     ["c"], 
                     CommandFlags.Repeatable ||| CommandFlags.LinkedWithNextTextChange,
@@ -276,7 +265,8 @@ type internal VisualMode
     member x.CreateCommandBindings() =
         let visualSeq = 
             seq {
-                yield ("d", CommandFlags.Repeatable, VisualCommand.DeleteSelectedText)
+                yield ("d", CommandFlags.Repeatable, VisualCommand.DeleteSelection)
+                yield ("D", CommandFlags.Repeatable, VisualCommand.DeleteLineSelection)
                 yield ("gp", CommandFlags.Repeatable, VisualCommand.PutOverSelection true)
                 yield ("gP", CommandFlags.Repeatable, VisualCommand.PutOverSelection true)
                 yield ("g?", CommandFlags.Repeatable, VisualCommand.ChangeCase ChangeCharacterKind.Rot13)
@@ -284,8 +274,9 @@ type internal VisualMode
                 yield ("P", CommandFlags.Repeatable, VisualCommand.PutOverSelection false)
                 yield ("u", CommandFlags.Repeatable, VisualCommand.ChangeCase ChangeCharacterKind.ToLowerCase)
                 yield ("U", CommandFlags.Repeatable, VisualCommand.ChangeCase ChangeCharacterKind.ToUpperCase)
-                yield ("x", CommandFlags.Repeatable, VisualCommand.DeleteSelectedText)
-                yield ("<Del>", CommandFlags.Repeatable, VisualCommand.DeleteSelectedText)
+                yield ("x", CommandFlags.Repeatable, VisualCommand.DeleteSelection)
+                yield ("X", CommandFlags.Repeatable, VisualCommand.DeleteLineSelection)
+                yield ("<Del>", CommandFlags.Repeatable, VisualCommand.DeleteSelection)
                 yield ("<lt>", CommandFlags.Repeatable, VisualCommand.ShiftLinesLeft)
                 yield (">", CommandFlags.Repeatable, VisualCommand.ShiftLinesRight)
                 yield ("~", CommandFlags.Repeatable, VisualCommand.ChangeCase ChangeCharacterKind.ToggleCase)

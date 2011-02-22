@@ -262,7 +262,7 @@ namespace VimCore.UnitTest
         public void Bind_DeleteSelectedText()
         {
             Create("");
-            _commandUtil.SetupCommandVisual(VisualCommand.DeleteSelectedText);
+            _commandUtil.SetupCommandVisual(VisualCommand.DeleteSelection);
             _mode.Process("d");
             _commandUtil.Verify();
         }
@@ -271,7 +271,7 @@ namespace VimCore.UnitTest
         public void Bind_DeleteSelectedText_ViaDelete()
         {
             Create("");
-            _commandUtil.SetupCommandVisual(VisualCommand.DeleteSelectedText);
+            _commandUtil.SetupCommandVisual(VisualCommand.DeleteSelection);
             _mode.Process(VimKey.Delete);
             _commandUtil.Verify();
         }
@@ -280,7 +280,7 @@ namespace VimCore.UnitTest
         public void Bind_DeleteSelectedText_ViaX()
         {
             Create("");
-            _commandUtil.SetupCommandVisual(VisualCommand.DeleteSelectedText);
+            _commandUtil.SetupCommandVisual(VisualCommand.DeleteSelection);
             _mode.Process("x");
             _commandUtil.Verify();
         }
@@ -443,19 +443,12 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void Handle_D_NoCountInCharacter()
+        public void Bind_DeleteLineSelection()
         {
             Create("cat", "tree", "dog");
-            var range = _textView.GetLineRange(0);
-            _operations
-                .Setup(x => x.DeleteSpan(range.ExtentIncludingLineBreak))
-                .Verifiable();
-            _operations
-                .Setup(x => x.UpdateRegisterForSpan(It.IsAny<Register>(), RegisterOperation.Delete, range.ExtentIncludingLineBreak, OperationKind.LineWise))
-                .Verifiable();
-            _selection.Select(range.Extent);
+            _commandUtil.SetupCommandVisual(VisualCommand.DeleteLineSelection);
             _mode.Process("D");
-            _factory.Verify();
+            _commandUtil.Verify();
         }
 
         [Test]
@@ -505,19 +498,12 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void Handle_X_NoCountInCharacter()
+        public void Bind_DeleteLineSelection_ViaX()
         {
             Create("cat", "tree", "dog");
-            var range = _textView.GetLineRange(0);
-            _operations
-                .Setup(x => x.DeleteSpan(range.ExtentIncludingLineBreak))
-                .Verifiable();
-            _operations
-                .Setup(x => x.UpdateRegisterForSpan(It.IsAny<Register>(), RegisterOperation.Delete, range.ExtentIncludingLineBreak, OperationKind.LineWise))
-                .Verifiable();
-            _selection.Select(range.Extent);
+            _commandUtil.SetupCommandVisual(VisualCommand.DeleteLineSelection);
             _mode.Process("X");
-            _factory.Verify();
+            _commandUtil.Verify();
         }
 
         [Test]

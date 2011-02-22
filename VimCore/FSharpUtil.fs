@@ -309,6 +309,45 @@ module internal OptionUtil =
         | Some(value) -> value
         | None -> defaultValue
 
+/// Represents a collection which is guarantee to have at least a single element.  This
+/// is very useful when dealing with discriminated unions of values where one is an element
+/// and another is a collection where the collection has the constraint that it must 
+/// have at least a single element.  This collection type allows the developer to avoid
+/// the use of unsafe operations like List.head or SeqUtil.headOnly in favor of guaranteed 
+/// operations
+type NonEmptyCollection<'T> 
+    (
+        _head : 'T,
+        _rest : 'T list
+    ) = 
 
+    /// Number of items in the collection
+    member x.Count = 1 + _rest.Length
 
+    /// Head of the collection
+    member x.Head = _head
 
+    /// The remainder of the collection after the 'Head' element
+    member x.Rest = _rest
+
+    /// All of the items in the collection
+    member x.All = 
+        seq {
+            yield _head
+            for cur in _rest do
+                yield cur
+        }
+
+    interface System.Collections.IEnumerable with
+        member x.GetEnumerator () = x.All.GetEnumerator() :> System.Collections.IEnumerator
+
+    interface System.Collections.Generic.IEnumerable<'T> with
+        member x.GetEnumerator () = x.All.GetEnumerator()
+
+module NonEmptyCollectionUtil =
+
+    /// Attempts to create a NonEmptyCollection from a raw sequence
+    let OfSeq seq = 
+        match SeqUtil.tryHead seq with
+        | None -> None
+        | Some (head, rest) -> NonEmptyCollection(head, rest |> List.ofSeq) |> Some

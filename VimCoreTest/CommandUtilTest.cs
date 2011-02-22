@@ -454,12 +454,7 @@ namespace VimCore.UnitTest
         {
             Create("the", "dog", "kicked", "the", "ball");
 
-            var col = new NormalizedSnapshotSpanCollection(
-                new[]
-                {
-                    _textView.GetLineSpan(0, 1),
-                    _textView.GetLineSpan(1, 1)
-                });
+            var col = _textView.GetBlock(0, 1, 0, 2);
             var span = VisualSpan.NewBlock(col);
             var stored = StoredVisualSpan.OfVisualSpan(span);
             var restored = _commandUtil.CalculateVisualSpan(stored);
@@ -474,12 +469,7 @@ namespace VimCore.UnitTest
         {
             Create("the", "dog", "kicked", "the", "ball");
 
-            var col = new NormalizedSnapshotSpanCollection(
-                new[]
-                {
-                    _textView.GetLineSpan(0, 1),
-                    _textView.GetLineSpan(1, 1)
-                });
+            var col = _textView.GetBlock(0, 1, 0, 2);
             var span = VisualSpan.NewBlock(col);
             var stored = StoredVisualSpan.OfVisualSpan(span);
             _textView.MoveCaretTo(1);
@@ -927,6 +917,58 @@ namespace VimCore.UnitTest
             Assert.AreEqual("czt", _textView.GetLine(0).GetText());
             Assert.AreEqual("dg", _textView.GetLine(1).GetText());
             Assert.AreEqual(1, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// Should delete the entire line range encompasing the selection and position the 
+        /// caret at the start of the range for undo / redo
+        /// </summary>
+        [Test]
+        public void DeleteLineSelection_Character()
+        {
+            Create("cat", "dog");
+            var visualSpan = VisualSpan.NewCharacter(_textView.GetLineSpan(0, 1, 1));
+            _operations.Setup(x => x.MoveCaretForVirtualEdit());
+            _commandUtil.DeleteLineSelection(UnnamedRegister, visualSpan);
+            Assert.AreEqual("cat" + Environment.NewLine, UnnamedRegister.StringValue);
+            Assert.AreEqual("dog", _textView.GetLine(0).GetText());
+            Assert.AreEqual(1, _textView.GetCaretPoint().Position);
+            _operations.Verify();
+        }
+
+        /// <summary>
+        /// Should delete the entire line range encompasing the selection and position the 
+        /// caret at the start of the range for undo / redo
+        /// </summary>
+        [Test]
+        public void DeleteLineSelection_Line()
+        {
+            Create("cat", "dog");
+            var visualSpan = VisualSpan.NewLine(_textView.GetLineRange(0));
+            _commandUtil.DeleteLineSelection(UnnamedRegister, visualSpan);
+            Assert.AreEqual("cat" + Environment.NewLine, UnnamedRegister.StringValue);
+            Assert.AreEqual("dog", _textView.GetLine(0).GetText());
+            Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// When deleting a block it should delete from the start of the span until the end
+        /// of the line for every span.  Caret should be positioned at the start of the edit
+        /// but backed off a single space due to 'virtualedit='.  This will be properly
+        /// handled by the moveCaretForVirtualEdit function.  Ensure it's called
+        /// </summary>
+        [Test]
+        public void DeleteLineSelection_Block()
+        {
+            Create("cat", "dog", "fish");
+            _globalSettings.VirtualEdit = String.Empty;
+            _operations.Setup(x => x.MoveCaretForVirtualEdit());
+            var visualSpan = VisualSpan.NewBlock(_textView.GetBlock(1, 1, 0, 2));
+            _commandUtil.DeleteLineSelection(UnnamedRegister, visualSpan);
+            Assert.AreEqual("c", _textView.GetLine(0).GetText());
+            Assert.AreEqual("d", _textView.GetLine(1).GetText());
+            Assert.AreEqual(1, _textView.GetCaretPoint().Position);
+            _operations.Verify();
         }
     }
 }

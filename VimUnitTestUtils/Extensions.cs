@@ -381,7 +381,7 @@ namespace Vim.UnitTest
             return GetVisualSpanBlock(textView.TextBuffer, column, length, startLine, lineCount);
         }
 
-        public static NormalizedSnapshotSpanCollection GetBlock(this ITextView textView, int column, int length, int startLine = 0, int lineCount = 1)
+        public static NonEmptyCollection<SnapshotSpan> GetBlock(this ITextView textView, int column, int length, int startLine = 0, int lineCount = 1)
         {
             return GetBlock(textView.TextBuffer, column, length, startLine, lineCount);
         }
@@ -442,7 +442,7 @@ namespace Vim.UnitTest
             buffer.Replace(new Span(0, buffer.CurrentSnapshot.Length), text);
         }
 
-        public static NormalizedSnapshotSpanCollection GetBlock(this ITextBuffer textBuffer, int column, int length, int startLine = 0, int lineCount = 1)
+        public static NonEmptyCollection<SnapshotSpan> GetBlock(this ITextBuffer textBuffer, int column, int length, int startLine = 0, int lineCount = 1)
         {
             var list = new List<SnapshotSpan>();
             for (var i = 0; i < lineCount; i++)
@@ -450,7 +450,7 @@ namespace Vim.UnitTest
                 list.Add(textBuffer.GetLineSpan(i + startLine, column: column, length: length));
             }
 
-            return new NormalizedSnapshotSpanCollection(list);
+            return NonEmptyCollectionUtil.OfSeq(list).Value;
         }
 
         public static VisualSpan GetVisualSpanBlock(this ITextBuffer textBuffer, int column, int length, int startLine = 0, int lineCount = 1)

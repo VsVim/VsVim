@@ -232,10 +232,10 @@ type ICommonOperations =
     abstract ScrollPages : ScrollDirection -> count:int -> unit
 
     /// Shift the block of lines to the left by shiftwidth * 'multiplier'
-    abstract ShiftLineBlockLeft : NormalizedSnapshotSpanCollection -> multiplier : int -> unit
+    abstract ShiftLineBlockLeft : SnapshotSpan seq -> multiplier : int -> unit
 
     /// Shift the block of lines to the right by shiftwidth * 'multiplier'
-    abstract ShiftLineBlockRight : NormalizedSnapshotSpanCollection -> multiplier : int -> unit
+    abstract ShiftLineBlockRight : SnapshotSpan seq -> multiplier : int -> unit
 
     /// Shift the given line range left by shiftwidth * 'multiplier'
     abstract ShiftLineRangeLeft : SnapshotLineRange -> multiplier : int -> unit

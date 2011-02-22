@@ -23,6 +23,7 @@ module internal Resources =
     let Common_PatternNotFound pattern = sprintf "Pattern not found: %s" pattern
     let Common_SubstituteComplete subs lines = sprintf "%d substitutions on %d lines" subs lines
     let Common_NoWriteSinceLastChange = "No write since last change (add ! to override)"
+    let Common_SelectionInvalid = "An invalid selection was detected"
     let Common_SearchForwardWrapped = "search hit BOTTOM, continuing at TOP"
     let Common_SearchBackwardWrapped = "search hit TOP, continuing at BOTTOM"
 

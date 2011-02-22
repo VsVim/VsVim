@@ -89,7 +89,8 @@ type internal CommandUtil
                         if startPoint.Position + length >= line.End.Position then line.End 
                         else startPoint.Add(length)
                     SnapshotSpan(startPoint, endPoint))
-                |> NormalizedSnapshotSpanCollectionUtil.OfSeq
+                |> NonEmptyCollectionUtil.OfSeq
+                |> Option.get
             VisualSpan.Block col
 
     /// Change the characters in the given span via the specied change kind
@@ -176,7 +177,7 @@ type internal CommandUtil
 
         // The caret should be positioned at the start of the VisualSpan for both 
         // undo / redo so move it before and inside the transaction
-        let point = visualSpan.Start |> OptionUtil.getOrDefault x.CaretPoint
+        let point = visualSpan.Start
         let moveCaret () = TextViewUtil.MoveCaretToPosition _textView point.Position
         moveCaret()
         x.EditWithUndoTransaciton "Change" (fun () ->
@@ -333,11 +334,59 @@ type internal CommandUtil
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
+    /// Delete the selected text from the buffer and put it into the specified 
+    /// register. 
+    member x.DeleteLineSelection register (visualSpan : VisualSpan) =
+
+        // For each of the 3 cases the caret should begin at the start of the 
+        // VisualSpan during undo so move the caret now. 
+        TextViewUtil.MoveCaretToPoint _textView visualSpan.Start
+
+        // Start a transaction so we can manipulate the caret position during 
+        // an undo / redo
+        x.EditWithUndoTransaciton "Delete" (fun () -> 
+
+            use edit = _textBuffer.CreateEdit()
+            match visualSpan with
+            | VisualSpan.Character span ->
+                let range = SnapshotLineRangeUtil.CreateForSpan span
+                edit.Delete(range.ExtentIncludingLineBreak.Span) |> ignore
+            | VisualSpan.Line range ->
+                edit.Delete(range.ExtentIncludingLineBreak.Span) |> ignore
+            | VisualSpan.Block col -> 
+                col
+                |> Seq.iter (fun span -> 
+                    // Delete from the start of the span until the end of the containing
+                    // line
+                    let span = 
+                        let line = SnapshotPointUtil.GetContainingLine span.Start
+                        SnapshotSpan(span.Start, line.End)
+                    edit.Delete(span.Span) |> ignore)
+
+            edit.Apply() |> ignore
+
+            // Now position the cursor back at the start of the VisualSpan
+            TextViewUtil.MoveCaretToPosition _textView visualSpan.Start.Position
+
+            // Possible for a block mode to deletion to cause the start to now be in the line 
+            // break so we need to acount for the 'virtualedit' setting
+            _operations.MoveCaretForVirtualEdit())
+
+        let stringData = 
+            match visualSpan with
+            | VisualSpan.Character span -> StringData.OfSpan (SnapshotLineRangeUtil.CreateForSpan span).ExtentIncludingLineBreak
+            | VisualSpan.Line range -> StringData.OfSpan range.ExtentIncludingLineBreak
+            | VisualSpan.Block col -> StringData.OfNonEmptyCollection col
+        let value = { Value = stringData; OperationKind = OperationKind.LineWise }
+        _registerMap.SetRegisterValue register RegisterOperation.Delete value
+
+        CommandResult.Completed ModeSwitch.SwitchPreviousMode
+
     /// Delete the highlighted text from the buffer and put it into the specified 
     /// register.  The caret should be positioned at the begining of the text for
     /// undo / redo
-    member x.DeleteSelectedText register (visualSpan : VisualSpan) = 
-        let startPoint = visualSpan.Start |> OptionUtil.getOrDefault x.CaretPoint 
+    member x.DeleteSelection register (visualSpan : VisualSpan) = 
+        let startPoint = visualSpan.Start
 
         // Use a transaction to guarantee caret position.  Caret should be at the start
         // during undo and redo so move it before the edit
@@ -602,29 +651,26 @@ type internal CommandUtil
         | VisualSpan.Block col ->
             // Cursor needs to be positioned at the start of the range for undo so
             // move the caret now
-            match NormalizedSnapshotSpanCollectionUtil.TryGetFirst col with
-            | None -> 
-                ()
-            | Some span -> 
-                TextViewUtil.MoveCaretToPoint _textView span.Start
-                x.EditWithUndoTransaciton "Put" (fun () ->
-                    use edit = _textBuffer.CreateEdit()
+            let span = col.Head
+            TextViewUtil.MoveCaretToPoint _textView span.Start
+            x.EditWithUndoTransaciton "Put" (fun () ->
+                use edit = _textBuffer.CreateEdit()
 
-                    // First delete everything but the first span 
-                    col
-                    |> SeqUtil.skipMax 1
-                    |> Seq.iter (fun span -> edit.Delete(span.Span) |> ignore)
+                // First delete everything but the first span 
+                col
+                |> SeqUtil.skipMax 1
+                |> Seq.iter (fun span -> edit.Delete(span.Span) |> ignore)
 
-                    // Now replace the first span with the contents of the register 
-                    edit.Replace(span.Span, stringData.String) |> ignore
-                    edit.Apply() |> ignore
+                // Now replace the first span with the contents of the register 
+                edit.Replace(span.Span, stringData.String) |> ignore
+                edit.Apply() |> ignore
 
-                    let position = span.Start.Position + stringData.String.Length - 1
-                    let position = if moveCaretAfterText then position + 1 else position
-                    TextViewUtil.MoveCaretToPosition _textView position
+                let position = span.Start.Position + stringData.String.Length - 1
+                let position = if moveCaretAfterText then position + 1 else position
+                TextViewUtil.MoveCaretToPosition _textView position
 
-                    // Need to respect the virtualedit setting
-                    _operations.MoveCaretForVirtualEdit())
+                // Need to respect the virtualedit setting
+                _operations.MoveCaretForVirtualEdit())
 
         CommandResult.Completed ModeSwitch.SwitchPreviousMode
 
@@ -822,7 +868,8 @@ type internal CommandUtil
         let count = data.CountOrDefault
         match command with
         | VisualCommand.ChangeCase kind -> x.ChangeCaseVisual kind visualSpan
-        | VisualCommand.DeleteSelectedText -> x.DeleteSelectedText register visualSpan
+        | VisualCommand.DeleteSelection -> x.DeleteSelection register visualSpan
+        | VisualCommand.DeleteLineSelection -> x.DeleteLineSelection register visualSpan
         | VisualCommand.FormatLines -> x.FormatLinesVisual visualSpan
         | VisualCommand.PutOverSelection moveCaretAfterText -> x.PutOverSelection register count visualSpan moveCaretAfterText
         | VisualCommand.ReplaceSelection keyInput -> x.ReplaceSelection keyInput visualSpan
@@ -905,11 +952,7 @@ type internal CommandUtil
             // 0 but rather shifts at the start column of every span.  It also treats
             // the caret much more different by keeping it at the start of the first
             // span vs. the start of the shift
-
-            let targetCaretPosition = 
-                visualSpan.Start 
-                |> OptionUtil.getOrDefault x.CaretPoint 
-                |> SnapshotPointUtil.GetPosition
+            let targetCaretPosition = visualSpan.Start.Position
 
             // Use a transaction to preserve the caret.  But move the caret first since
             // it needs to be undone to this location
@@ -941,10 +984,7 @@ type internal CommandUtil
             // 0 but rather shifts at the start column of every span.  It also treats
             // the caret much more different by keeping it at the start of the first
             // span vs. the start of the shift
-            let targetCaretPosition = 
-                visualSpan.Start 
-                |> OptionUtil.getOrDefault x.CaretPoint 
-                |> SnapshotPointUtil.GetPosition
+            let targetCaretPosition = visualSpan.Start.Position 
 
             // Use a transaction to preserve the caret.  But move the caret first since
             // it needs to be undone to this location

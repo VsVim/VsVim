@@ -4,3 +4,4 @@ Figure out the action when there is no matching command in normal mode for a key
 Need to make sure key remapping in operators and such continues to work.  Data doesn't apepar to be leaving ICommandRunner::Run
 	- Fixed it so the KeyRemapMode is used.  Still verify
 Need to handle put + block registers
+Repeat of a LinkedChange should use a Transaction.  Otherwise undo of the repeat is incorrect

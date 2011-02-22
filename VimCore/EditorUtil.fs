@@ -1055,15 +1055,15 @@ type EditSpan =
     | Single of SnapshotSpan 
 
     /// Occurs during block edits
-    | Block of NormalizedSnapshotSpanCollection
+    | Block of NonEmptyCollection<SnapshotSpan>
     with
 
     /// View the data as a collection.  For Single values this just creates a
     /// collection with a single element
     member x.Spans =
         match x with
-        | Single (span) -> NormalizedSnapshotSpanCollection(span)
-        | Block (col) -> col
+        | Single span -> NonEmptyCollection(span, List.empty) 
+        | Block col -> col
 
     /// Provide an implicit conversion from SnapshotSpan.  Useful from C# code
     static member op_Implicit span = EditSpan.Single span

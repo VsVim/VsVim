@@ -49,11 +49,25 @@ type internal CommandRunner
     /// True during the running of a particular KeyInput 
     let mutable _inRun = false
 
-    member x.GetVisualSpan kind = 
+    /// Try and get the VisualSpan for the provided kind
+    member x.TryGetVisualSpan kind = 
         match kind with
-        | VisualKind.Character -> VisualSpan.Character (_textView.Selection.StreamSelectionSpan.SnapshotSpan)
-        | VisualKind.Line-> VisualSpan.Line (_textView.Selection.StreamSelectionSpan.SnapshotSpan |> SnapshotLineRangeUtil.CreateForSpan)
-        | VisualKind.Block -> VisualSpan.Block _textView.Selection.SelectedSpans
+        | VisualKind.Character -> 
+            let visualSpan = VisualSpan.Character (_textView.Selection.StreamSelectionSpan.SnapshotSpan)
+            Some visualSpan
+        | VisualKind.Line-> 
+            let visualSpan = VisualSpan.Line (_textView.Selection.StreamSelectionSpan.SnapshotSpan |> SnapshotLineRangeUtil.CreateForSpan)
+            Some visualSpan
+        | VisualKind.Block -> 
+            let col = _textView.Selection.SelectedSpans
+            if col.Count = 0 then
+                // Shouldn't be possible but needs to be accounted for.  If there are 0 selected 
+                // spans then what are we do with them?  Another possibility here would be to create
+                // a single empty span at the caret.  
+                None
+            else
+                let col = NonEmptyCollection(col.[0], col |> Seq.skip 1 |> List.ofSeq)
+                VisualSpan.Block col |> Some
 
     /// Used to wait for the character after the " which signals the Register.  When the register
     /// is found it will be passed to completeFunc
@@ -162,31 +176,41 @@ type internal CommandRunner
                 (Command.NormalCommand (command, commandData), commandBinding)
 
             match Map.tryFind commandName _commandMap with
-            | Some(command) ->
-                match command with
+            | Some(commandBinding) ->
+                match commandBinding with
                 | CommandBinding.LegacySimpleCommand(_, _, func) -> 
                     let func () = func count (commandData.GetRegister _registerMap)
                     let data = LegacyData(func)
-                    BindResult.Complete (Command.LegacyCommand data, command)
+                    BindResult.Complete (Command.LegacyCommand data, commandBinding)
                 | CommandBinding.NormalCommand(_, _, normalCommand) -> 
-                    BindResult.Complete (Command.NormalCommand (normalCommand, commandData), command)
+                    BindResult.Complete (Command.NormalCommand (normalCommand, commandData), commandBinding)
                 | CommandBinding.LegacyVisualCommand(_, _, kind, func) -> 
-                    let visualSpan = x.GetVisualSpan kind
-                    let func () = func count (commandData.GetRegister _registerMap) visualSpan
-                    let data = LegacyData(func)
-                    BindResult.Complete (Command.LegacyCommand data, command)
+                    match x.TryGetVisualSpan kind with
+                    | None ->
+                        _statusUtil.OnError Resources.Common_SelectionInvalid
+                        BindResult.Error
+                    | Some visualSpan ->
+                        let func () = func count (commandData.GetRegister _registerMap) visualSpan
+                        let data = LegacyData(func)
+                        BindResult.Complete (Command.LegacyCommand data, commandBinding)
                 | CommandBinding.VisualCommand(_, _, visualCommand) ->
-                    BindResult.Complete (Command.VisualCommand (visualCommand, commandData, x.GetVisualSpan _visualKind), command)
+                    match x.TryGetVisualSpan _visualKind with
+                    | None -> 
+                        _statusUtil.OnError Resources.Common_SelectionInvalid
+                        BindResult.Error
+                    | Some visualSpan -> 
+                        let visualCommand = Command.VisualCommand (visualCommand, commandData, visualSpan)
+                        BindResult.Complete (visualCommand, commandBinding)
                 | CommandBinding.LegacyMotionCommand(_, _, func) -> 
                     // Can't just call this.  It's possible there is a non-motion command with a 
                     // longer command commandInputs.  If there are any other commands which have a 
                     // matching prefix we can't bind to the command yet
                     let withPrefix = 
                         findPrefixMatches commandName
-                        |> Seq.filter (fun c -> c.KeyInputSet <> command.KeyInputSet)
+                        |> Seq.filter (fun c -> c.KeyInputSet <> commandBinding.KeyInputSet)
                     if Seq.isEmpty withPrefix then 
-                        _data <- { _data with CommandFlags = Some command.CommandFlags }
-                        BindResult<_>.CreateNeedMoreInput (Some KeyRemapMode.OperatorPending) (fun keyInput -> x.BindLegacyMotion command keyInput count register func)
+                        _data <- { _data with CommandFlags = Some commandBinding.CommandFlags }
+                        BindResult<_>.CreateNeedMoreInput (Some KeyRemapMode.OperatorPending) (fun keyInput -> x.BindLegacyMotion commandBinding keyInput count register func)
                     else 
                         // At least one other command matched so we need at least one more piece of input to
                         // differentiate the commands.  At this point though because the command is of the
@@ -198,27 +222,34 @@ type internal CommandRunner
                     // matching prefix we can't bind to the command yet
                     let withPrefix = 
                         findPrefixMatches commandName
-                        |> Seq.filter (fun c -> c.KeyInputSet <> command.KeyInputSet)
+                        |> Seq.filter (fun c -> c.KeyInputSet <> commandBinding.KeyInputSet)
                     if Seq.isEmpty withPrefix then 
                         // Nothing else matched so we are good to go for this motion.
-                        _data <- { _data with CommandFlags = Some command.CommandFlags }
-                        BindResult<_>.CreateNeedMoreInput (Some KeyRemapMode.OperatorPending) (fun keyInput -> x.BindMotion keyInput (completeMotion command func))
+                        _data <- { _data with CommandFlags = Some commandBinding.CommandFlags }
+                        BindResult<_>.CreateNeedMoreInput (Some KeyRemapMode.OperatorPending) (fun keyInput -> x.BindMotion keyInput (completeMotion commandBinding func))
                     else 
                         // At least one other command matched so we need at least one more piece of input to
                         // differentiate the commands.  At this point though because the command is of the
                         // motion variety we are in operator pending
-                        _data <- { _data with CommandFlags = Some command.CommandFlags }
+                        _data <- { _data with CommandFlags = Some commandBinding.CommandFlags }
                         bindNext (Some KeyRemapMode.OperatorPending)
     
                 | CommandBinding.ComplexNormalCommand (_, _, bindDataStorage) -> 
-                    _data <- { _data with CommandFlags = Some command.CommandFlags }
+                    _data <- { _data with CommandFlags = Some commandBinding.CommandFlags }
                     let bindData = bindDataStorage.CreateBindData()
-                    let bindData = bindData.Convert (fun normalCommand -> (Command.NormalCommand (normalCommand, commandData), command))
+                    let bindData = bindData.Convert (fun normalCommand -> (Command.NormalCommand (normalCommand, commandData), commandBinding))
                     BindResult.NeedMoreInput bindData
                 | CommandBinding.ComplexVisualCommand (_, _, bindDataStorage) -> 
-                    _data <- { _data with CommandFlags = Some command.CommandFlags }
+                    _data <- { _data with CommandFlags = Some commandBinding.CommandFlags }
                     let bindData = bindDataStorage.CreateBindData()
-                    let bindData = bindData.Convert (fun visualCommand -> (Command.VisualCommand (visualCommand, commandData, x.GetVisualSpan _visualKind), command))
+                    let bindData = bindData.Map (fun visualCommand -> 
+                        match x.TryGetVisualSpan _visualKind with
+                        | None ->
+                            _statusUtil.OnError Resources.Common_SelectionInvalid
+                            BindResult.Error
+                        | Some visualSpan ->
+                            let visualCommand = Command.VisualCommand (visualCommand, commandData, visualSpan)
+                            BindResult.Complete (visualCommand, commandBinding))
                     BindResult.NeedMoreInput bindData
             | None -> 
                 let hasPrefixMatch = findPrefixMatches commandName |> SeqUtil.isNotEmpty

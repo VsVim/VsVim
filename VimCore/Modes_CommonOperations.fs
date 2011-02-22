@@ -121,7 +121,7 @@ type internal CommonOperations ( _data : OperationsData ) =
             prefix + suffix
 
     /// Shifts a block of lines to the left
-    member x.ShiftLineBlockLeft (col: NormalizedSnapshotSpanCollection) multiplier =
+    member x.ShiftLineBlockLeft (col: SnapshotSpan seq) multiplier =
         let count = _globalSettings.ShiftWidth * multiplier
         use edit = _textBuffer.CreateEdit()
 
@@ -143,7 +143,7 @@ type internal CommonOperations ( _data : OperationsData ) =
         edit.Apply() |> ignore
 
     /// Shift a block of lines to the right
-    member x.ShiftLineBlockRight (col: NormalizedSnapshotSpanCollection) multiplier =
+    member x.ShiftLineBlockRight (col: SnapshotSpan seq) multiplier =
         let shiftText = 
             let count = _globalSettings.ShiftWidth * multiplier
             StringUtil.repeatChar count ' '
