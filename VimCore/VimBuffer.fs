@@ -20,9 +20,24 @@ type internal ModeMap() =
         let prev = _mode
         let mode = _modeMap.Item kind
         _mode <- Some mode
-        if Option.isSome prev then
-            (Option.get prev).OnLeave()
-            _previousMode <- prev
+
+        match prev with
+        | None ->
+            () 
+        | Some prev ->
+            prev.OnLeave()
+
+            // When switching between different visual modes we don't want to lose
+            // the previous non-visual mode value.  Commands executing in Visual mode
+            // which return a SwitchPrevious mode value expecte to actually leave 
+            // Visual Mode 
+            match _previousMode with
+            | None -> 
+                _previousMode <- Some prev
+            | Some mode -> 
+                if not (VisualKind.IsAnyVisual prev.ModeKind) && not (VisualKind.IsAnyVisual mode.ModeKind) then
+                    _previousMode <- Some prev
+
         mode.OnEnter arg
         _modeSwitchedEvent.Trigger(SwitchModeEventArgs(prev, mode))
         mode

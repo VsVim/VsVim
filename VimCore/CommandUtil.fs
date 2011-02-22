@@ -479,10 +479,14 @@ type internal CommandUtil
     /// an edit command manipulates the caret
     member x.EditWithUndoTransaciton name action = _operations.WrapEditInUndoTransaction name action
 
-    /// Join 'count + 1' lines in the buffer
+    /// Join 'count' lines in the buffer
     member x.JoinLines kind count = 
 
-        match SnapshotLineRangeUtil.CreateForLineAndCount x.CaretLine (count + 1) with
+        // An oddity of the join command is that the count 1 and 2 have the same effect.  Easiest
+        // to treat both values as 2 since the math works out for all other values above 2
+        let count = if count = 1 then 2 else count
+
+        match SnapshotLineRangeUtil.CreateForLineAndCount x.CaretLine count with
         | None -> 
             // If the count exceeds the length of the buffer then the operation should not 
             // complete and a beep should be issued
@@ -538,26 +542,91 @@ type internal CommandUtil
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Put the contents of the specified register after the cursor.  Used for the
-    /// normal / visual 'p' command
-    member x.PutAfterCaret (register : Register) count moveCaretAfterText switch =
+    /// normal 'p' and 'gp' command
+    member x.PutAfterCaret (register : Register) count moveCaretAfterText =
         let point = SnapshotPointUtil.AddOneOrCurrent x.CaretPoint
         let stringData = register.StringData.ApplyCount count
 
         // PutAtCaret is one of the few ICommonOperations which takes care of
         // positioning the caret so no need to do it here
         _operations.PutAtCaret stringData register.Value.OperationKind PutKind.After moveCaretAfterText
-        CommandResult.Completed switch
+        CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Put the contents of the specified register before the cursor.  Used for the
     /// normal / visual 'P' command
-    member x.PutBeforeCaret (register : Register) count moveCaretAfterText switch =
+    member x.PutBeforeCaret (register : Register) count moveCaretAfterText =
         let point = SnapshotPointUtil.AddOneOrCurrent x.CaretPoint
         let stringData = register.StringData.ApplyCount count
 
         // PutAtCaret is one of the few ICommonOperations which takes care of
         // positioning the caret so no need to do it here
         _operations.PutAtCaret stringData register.Value.OperationKind PutKind.Before moveCaretAfterText
-        CommandResult.Completed switch
+        CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Put the contents of the specified register after the selection.  Used for the
+    /// the visual 'p' and 'gp' command
+    member x.PutOverSelection (register : Register) count visualSpan moveCaretAfterText = 
+        let stringData = register.StringData.ApplyCount count
+        match visualSpan with
+        | VisualSpan.Character span ->
+            // Cursor needs to be at the start of the span during undo and at the end
+            // of the pasted span after redo so move to the start before the undo transaction
+            TextViewUtil.MoveCaretToPoint _textView span.Start
+            x.EditWithUndoTransaciton "Put" (fun () ->
+                _textBuffer.Replace(span.Span, stringData.String) |> ignore
+
+                let position = span.Start.Position + stringData.String.Length - 1
+                let position = if moveCaretAfterText then position + 1 else position
+                TextViewUtil.MoveCaretToPosition _textView position
+
+                // Need to respect the virtualedit setting
+                _operations.MoveCaretForVirtualEdit())
+
+        | VisualSpan.Line range ->
+            // Cursor needs to be positioned at the start of the range for both undo so
+            // move the caret now 
+            TextViewUtil.MoveCaretToPoint _textView range.Start
+            x.EditWithUndoTransaciton "Put" (fun () ->
+                let snapshot = _textBuffer.Replace(range.Extent.Span, stringData.String)
+
+                if moveCaretAfterText then
+                    // Move to the line after the line which was the start of the replace.  If this
+                    // occured at the end of the buffer then pretend we didn't have 'moveCaretAfterText'
+                    match SnapshotUtil.TryGetLine snapshot (range.StartLineNumber + 1) with
+                    | None -> TextViewUtil.MoveCaretToPosition _textView range.Start.Position
+                    | Some line -> TextViewUtil.MoveCaretToPoint _textView line.Start
+                else
+                    // Need to be positioned at the start of the original range
+                    TextViewUtil.MoveCaretToPosition _textView range.Start.Position)
+
+        | VisualSpan.Block col ->
+            // Cursor needs to be positioned at the start of the range for undo so
+            // move the caret now
+            match NormalizedSnapshotSpanCollectionUtil.TryGetFirst col with
+            | None -> 
+                ()
+            | Some span -> 
+                TextViewUtil.MoveCaretToPoint _textView span.Start
+                x.EditWithUndoTransaciton "Put" (fun () ->
+                    use edit = _textBuffer.CreateEdit()
+
+                    // First delete everything but the first span 
+                    col
+                    |> SeqUtil.skipMax 1
+                    |> Seq.iter (fun span -> edit.Delete(span.Span) |> ignore)
+
+                    // Now replace the first span with the contents of the register 
+                    edit.Replace(span.Span, stringData.String) |> ignore
+                    edit.Apply() |> ignore
+
+                    let position = span.Start.Position + stringData.String.Length - 1
+                    let position = if moveCaretAfterText then position + 1 else position
+                    TextViewUtil.MoveCaretToPosition _textView position
+
+                    // Need to respect the virtualedit setting
+                    _operations.MoveCaretForVirtualEdit())
+
+        CommandResult.Completed ModeSwitch.SwitchPreviousMode
 
     /// Repeat the last executed command against the current buffer
     member x.RepeatLastCommand (repeatData : CommandData) = 
@@ -735,8 +804,8 @@ type internal CommandUtil
         | NormalCommand.JumpToMark c -> x.JumpToMark c
         | NormalCommand.MoveCaretToMotion motion -> x.MoveCaretToMotion motion data.Count
         | NormalCommand.Ping pingData -> x.Ping pingData data
-        | NormalCommand.PutAfterCaret moveCaretAfterText -> x.PutAfterCaret register count moveCaretAfterText ModeSwitch.NoSwitch
-        | NormalCommand.PutBeforeCaret moveCaretBeforeText -> x.PutBeforeCaret register count moveCaretBeforeText ModeSwitch.NoSwitch
+        | NormalCommand.PutAfterCaret moveCaretAfterText -> x.PutAfterCaret register count moveCaretAfterText
+        | NormalCommand.PutBeforeCaret moveCaretBeforeText -> x.PutBeforeCaret register count moveCaretBeforeText
         | NormalCommand.SetMarkToCaret c -> x.SetMarkToCaret c
         | NormalCommand.SubstituteCharacterAtCaret -> x.SubstituteCharacterAtCaret count register
         | NormalCommand.ShiftLinesLeft -> x.ShiftLinesLeft count
@@ -755,8 +824,7 @@ type internal CommandUtil
         | VisualCommand.ChangeCase kind -> x.ChangeCaseVisual kind visualSpan
         | VisualCommand.DeleteSelectedText -> x.DeleteSelectedText register visualSpan
         | VisualCommand.FormatLines -> x.FormatLinesVisual visualSpan
-        | VisualCommand.PutAfterCaret moveCaretAfterText -> x.PutAfterCaret register count moveCaretAfterText (ModeSwitch.SwitchMode ModeKind.Normal)
-        | VisualCommand.PutBeforeCaret moveCaretAfterText -> x.PutBeforeCaret register count moveCaretAfterText (ModeSwitch.SwitchMode ModeKind.Normal)
+        | VisualCommand.PutOverSelection moveCaretAfterText -> x.PutOverSelection register count visualSpan moveCaretAfterText
         | VisualCommand.ReplaceSelection keyInput -> x.ReplaceSelection keyInput visualSpan
         | VisualCommand.ShiftLinesLeft -> x.ShiftLinesLeftVisual count visualSpan
         | VisualCommand.ShiftLinesRight -> x.ShiftLinesRightVisual count visualSpan

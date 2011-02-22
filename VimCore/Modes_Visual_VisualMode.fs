@@ -29,52 +29,13 @@ type internal VisualMode
 
     let mutable _builtCommands = false
 
-    /// Tracks the count of explicit moves we are seeing.  Normally an explicit character
-    /// move causes the selection to be removed.  Updating this counter is a way of our 
-    /// consumers to tell us the caret move is legal
-    let mutable _explicitMoveCount = 0
-
-    member x.InExplicitMove = _explicitMoveCount > 0
-    member x.BeginExplicitMove() = _explicitMoveCount <- _explicitMoveCount + 1
-    member x.EndExplicitMove() = _explicitMoveCount <- _explicitMoveCount - 1
     member x.SelectedSpan = (TextSelectionUtil.GetStreamSelectionSpan _buffer.TextView.Selection).SnapshotSpan
 
+    /// Build the set of CommandBinding which will be used to move the caret.  Typically
+    /// these are just MotionBinding instances which are converted to movement commands
     member x.BuildMoveSequence() = 
-
-        let wrapSimple func = 
-            fun count reg ->
-                x.BeginExplicitMove()
-                let res = func count reg
-                x.EndExplicitMove()
-                res
-
-        let wrapMotion func = 
-            fun count reg data ->
-                x.BeginExplicitMove()
-                let res = func count reg data
-                x.EndExplicitMove()
-                res
-
-        let wrapLong func = 
-            fun count reg ->
-                x.BeginExplicitMove()
-                let res = func count reg 
-                x.EndExplicitMove()
-                res
-
         let factory = Vim.Modes.CommandFactory(_operations, _capture, _buffer.TextViewMotionUtil, _buffer.JumpList, _buffer.Settings)
         factory.CreateMovementCommands()
-        |> Seq.map (fun (command) ->
-            match command with
-            | CommandBinding.LegacySimpleCommand(name, flags, func) -> CommandBinding.LegacySimpleCommand (name, flags, wrapSimple func) |> Some
-            | CommandBinding.LegacyMotionCommand (name, flags, func) -> CommandBinding.LegacyMotionCommand (name, flags,wrapMotion func) |> Some
-            | CommandBinding.LegacyVisualCommand (_) -> Some command
-            | CommandBinding.NormalCommand _ -> None
-            | CommandBinding.MotionCommand _ -> None
-            | CommandBinding.VisualCommand _ -> None
-            | CommandBinding.ComplexNormalCommand _ -> None
-            | CommandBinding.ComplexVisualCommand _ -> None)
-        |> SeqUtil.filterToSome
 
     member x.BuildOperationsSequence() =
 
@@ -316,11 +277,11 @@ type internal VisualMode
         let visualSeq = 
             seq {
                 yield ("d", CommandFlags.Repeatable, VisualCommand.DeleteSelectedText)
-                yield ("gp", CommandFlags.Repeatable, VisualCommand.PutAfterCaret true)
-                yield ("gP", CommandFlags.Repeatable, VisualCommand.PutBeforeCaret true)
+                yield ("gp", CommandFlags.Repeatable, VisualCommand.PutOverSelection true)
+                yield ("gP", CommandFlags.Repeatable, VisualCommand.PutOverSelection true)
                 yield ("g?", CommandFlags.Repeatable, VisualCommand.ChangeCase ChangeCharacterKind.Rot13)
-                yield ("p", CommandFlags.Repeatable, VisualCommand.PutAfterCaret false)
-                yield ("P", CommandFlags.Repeatable, VisualCommand.PutBeforeCaret false)
+                yield ("p", CommandFlags.Repeatable, VisualCommand.PutOverSelection false)
+                yield ("P", CommandFlags.Repeatable, VisualCommand.PutOverSelection false)
                 yield ("u", CommandFlags.Repeatable, VisualCommand.ChangeCase ChangeCharacterKind.ToLowerCase)
                 yield ("U", CommandFlags.Repeatable, VisualCommand.ChangeCase ChangeCharacterKind.ToUpperCase)
                 yield ("x", CommandFlags.Repeatable, VisualCommand.DeleteSelectedText)
@@ -418,7 +379,6 @@ type internal VisualMode
         member x.OnClose() = ()
 
     interface IVisualMode with
-        member x.InExplicitMove = x.InExplicitMove
         member x.CommandRunner = _runner
         member x.SyncSelection () = 
             if _selectionTracker.IsRunning then

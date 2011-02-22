@@ -856,5 +856,77 @@ namespace VimCore.UnitTest
             Assert.IsTrue(result.IsError);
             _factory.Verify();
         }
+
+        /// <summary>
+        /// Replace the text and put the caret at the end of the selection
+        /// </summary>
+        [Test]
+        public void PutOverSelection_Character()
+        {
+            Create("hello world");
+            var visualSpan = VisualSpan.NewCharacter(_textView.GetLineSpan(0, 0, 5));
+            UnnamedRegister.UpdateValue("dog");
+            _commandUtil.PutOverSelection(UnnamedRegister, 1, visualSpan, moveCaretAfterText: false);
+            Assert.AreEqual("dog world", _textView.GetLine(0).GetText());
+            Assert.AreEqual(2, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// Replace the text and put the caret after the selection span
+        /// </summary>
+        [Test]
+        public void PutOverSelection_Character_WithCaretMove()
+        {
+            Create("hello world");
+            var visualSpan = VisualSpan.NewCharacter(_textView.GetLineSpan(0, 0, 5));
+            UnnamedRegister.UpdateValue("dog");
+            _commandUtil.PutOverSelection(UnnamedRegister, 1, visualSpan, moveCaretAfterText: true);
+            Assert.AreEqual("dog world", _textView.GetLine(0).GetText());
+            Assert.AreEqual(3, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// Make sure it removes both lines and inserts the text at the start 
+        /// of the line range span.  Should position the caret at the start as well
+        /// </summary>
+        [Test]
+        public void PutOverSelection_Line()
+        {
+            Create("the cat", "chased", "the dog");
+            var visualSpan = VisualSpan.NewLine(_textView.GetLineRange(0, 1));
+            UnnamedRegister.UpdateValue("dog");
+            _commandUtil.PutOverSelection(UnnamedRegister, 1, visualSpan, moveCaretAfterText: false);
+            Assert.AreEqual("dog", _textView.GetLine(0).GetText());
+            Assert.AreEqual("the dog", _textView.GetLine(1).GetText());
+            Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// Caret should be moved to the start of the next line if the 'moveCaretAfterText' 
+        /// option is specified
+        /// </summary>
+        [Test]
+        public void PutOverSelection_Line_WithCaretMove()
+        {
+            Create("the cat", "chased", "the dog");
+            var visualSpan = VisualSpan.NewLine(_textView.GetLineRange(0, 1));
+            UnnamedRegister.UpdateValue("dog");
+            _commandUtil.PutOverSelection(UnnamedRegister, 1, visualSpan, moveCaretAfterText: true);
+            Assert.AreEqual("dog", _textView.GetLine(0).GetText());
+            Assert.AreEqual("the dog", _textView.GetLine(1).GetText());
+            Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
+        }
+
+        [Test]
+        public void PutOverSelection_Block()
+        {
+            Create("cat", "dog", "bear", "fish");
+            var visualSpan = VisualSpan.NewBlock(_textView.GetBlock(1, 1, 0, 2));
+            UnnamedRegister.UpdateValue("z");
+            _commandUtil.PutOverSelection(UnnamedRegister, 1, visualSpan, moveCaretAfterText: false);
+            Assert.AreEqual("czt", _textView.GetLine(0).GetText());
+            Assert.AreEqual("dg", _textView.GetLine(1).GetText());
+            Assert.AreEqual(1, _textView.GetCaretPoint().Position);
+        }
     }
 }

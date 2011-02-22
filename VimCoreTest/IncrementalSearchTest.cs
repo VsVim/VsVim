@@ -36,6 +36,8 @@ namespace VimCore.UnitTest
             _factory = new MockRepository(MockBehavior.Strict);
             _vimData = _factory.Create<IVimData>();
             _statusUtil = _factory.Create<IStatusUtil>();
+            _statusUtil.Setup(x => x.OnStatus(Resources.Common_SearchBackwardWrapped));
+            _statusUtil.Setup(x => x.OnStatus(Resources.Common_SearchForwardWrapped));
             _operations = _factory.Create<ICommonOperations>();
             _operations.SetupGet(x => x.TextView).Returns(_textView);
             _operations.Setup(x => x.EnsureCaretOnScreenAndTextExpanded());
@@ -130,11 +132,16 @@ namespace VimCore.UnitTest
             Assert.IsTrue(didRun);
         }
 
+        /// <summary>
+        /// Make sure the CurrentSearchUpdated fires even if the character in question is
+        /// not found
+        /// </summary>
         [Test]
         public void CurrenSearchUpdated_FireOnSearhCharNotFound()
         {
             Create("foo bar");
             var didRun = false;
+            var bind = _search.Begin(SearchKind.ForwardWithWrap);
             _search.CurrentSearchUpdated +=
                 (unused, result) =>
                 {
@@ -142,7 +149,7 @@ namespace VimCore.UnitTest
                     Assert.IsTrue(result.IsSearchNotFound);
                     didRun = true;
                 };
-            _search.Begin(SearchKind.ForwardWithWrap).Run("z");
+            bind.Run("z");
             Assert.IsTrue(didRun);
         }
 
@@ -240,6 +247,7 @@ namespace VimCore.UnitTest
         public void SearchShouldStartAfterCaretWhenForward()
         {
             Create("foo bar");
+            _vimData.SetupSet(x => x.LastSearchData = It.IsAny<SearchData>());
             var result = _search.Begin(SearchKind.Forward).Run("f").Run(VimKey.Enter).AsComplete().Item;
             Assert.IsTrue(result.IsSearchNotFound);
         }
@@ -253,6 +261,7 @@ namespace VimCore.UnitTest
         {
             Create("cat bar");
             _textView.MoveCaretTo(2);
+            _vimData.SetupSet(x => x.LastSearchData = It.IsAny<SearchData>());
             var result = _search.Begin(SearchKind.Backward).Run("t").Run(VimKey.Enter).AsComplete().Item;
             Assert.IsTrue(result.IsSearchNotFound);
         }

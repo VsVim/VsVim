@@ -874,13 +874,9 @@ type VisualCommand =
     /// Format the selected text
     | FormatLines
 
-    /// Put the contents of the register into the buffer after the cursor.  The bool is 
+    /// Put the contents of the register into the buffer after the selection.  The bool is 
     /// whether or not the caret should be placed after the inserted text
-    | PutAfterCaret of bool
-
-    /// Put the contents of the register into the buffer before the cursor.  The bool is 
-    /// whether or not the caret should be placed after the inserted text
-    | PutBeforeCaret of bool
+    | PutOverSelection of bool
 
     /// Replace the visual span with the provided character
     | ReplaceSelection of KeyInput
@@ -1948,11 +1944,6 @@ and ICommandMode =
     inherit IMode
 
 and IVisualMode = 
-
-    /// True during the duration of an explicit caret move from within Visual Mode.  Will be 
-    /// false in cases where the caret is moved by a non-Vim item such as the user clicking
-    /// or a third party component repositioning the caret
-    abstract InExplicitMove : bool
 
     /// The ICommandRunner implementation associated with NormalMode
     abstract CommandRunner : ICommandRunner 

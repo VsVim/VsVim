@@ -122,13 +122,21 @@ type internal CommonOperations ( _data : OperationsData ) =
 
     /// Shifts a block of lines to the left
     member x.ShiftLineBlockLeft (col: NormalizedSnapshotSpanCollection) multiplier =
+        let count = _globalSettings.ShiftWidth * multiplier
         use edit = _textBuffer.CreateEdit()
 
         col |> Seq.iter (fun span ->
-            // Get the span we are formatting within the line
+            // Get the span we are formatting within the line.  The span we are given
+            // here is the actual span of the selection.  What we want to shift though
+            // involves all whitespace from the start of the span through the remainder
+            // of the line
+            let span = 
+                let line = SnapshotPointUtil.GetContainingLine span.Start
+                SnapshotSpan(span.Start, line.End)
+
             let ws, originalLength = x.GetAndNormalizeLeadingWhiteSpaceToSpaces span
             let ws = 
-                let length = max (ws.Length - originalLength) 0
+                let length = max (ws.Length - count) 0
                 StringUtil.repeatChar length ' ' |> x.NormalizeWhiteSpace
             edit.Replace(span.Start.Position, originalLength, ws) |> ignore)
 

@@ -148,26 +148,6 @@ namespace VimCore.UnitTest
             _tracker.Verify();
         }
 
-        [Test]
-        public void InExplicitMove1()
-        {
-            Create("foo");
-            _modeRaw.BeginExplicitMove();
-            Assert.IsTrue(_modeRaw.InExplicitMove);
-        }
-
-        [Test]
-        public void InExplicitMove2()
-        {
-            Create("");
-            Assert.IsFalse(_modeRaw.InExplicitMove);
-            _modeRaw.BeginExplicitMove();
-            _modeRaw.BeginExplicitMove();
-            _modeRaw.EndExplicitMove();
-            _modeRaw.EndExplicitMove();
-            Assert.IsFalse(_modeRaw.InExplicitMove);
-        }
-
         [Test, Description("Must handle arbitrary input to prevent changes but don't list it as a command")]
         public void PreventInput1()
         {
@@ -479,37 +459,37 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void Bind_PutAfterCaret()
+        public void Bind_PutOverSelection()
         {
             Create("");
-            _commandUtil.SetupCommandVisual(VisualCommand.NewPutAfterCaret(false));
+            _commandUtil.SetupCommandVisual(VisualCommand.NewPutOverSelection(false));
             _mode.Process('p');
             _commandUtil.Verify();
         }
 
         [Test]
-        public void Bind_PutAfterCaret_WithCaretMove()
+        public void Bind_PutOverCaret_WithCaretMove()
         {
             Create("");
-            _commandUtil.SetupCommandVisual(VisualCommand.NewPutAfterCaret(true));
+            _commandUtil.SetupCommandVisual(VisualCommand.NewPutOverSelection(true));
             _mode.Process("gp");
             _commandUtil.Verify();
         }
 
         [Test]
-        public void Bind_PutBeforeCaret()
+        public void Bind_PutOverSelectio_ViaP()
         {
             Create("");
-            _commandUtil.SetupCommandVisual(VisualCommand.NewPutBeforeCaret(false));
+            _commandUtil.SetupCommandVisual(VisualCommand.NewPutOverSelection(false));
             _mode.Process('P');
             _commandUtil.Verify();
         }
 
         [Test]
-        public void Bind_PutBeforeCaret_WithCaretMove()
+        public void Bind_PutPutOverSelection_WithCaretMoveViaP()
         {
             Create("");
-            _commandUtil.SetupCommandVisual(VisualCommand.NewPutBeforeCaret(true));
+            _commandUtil.SetupCommandVisual(VisualCommand.NewPutOverSelection(true));
             _mode.Process("gP");
             _commandUtil.Verify();
         }

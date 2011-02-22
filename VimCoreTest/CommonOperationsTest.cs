@@ -1055,12 +1055,15 @@ namespace VimCore.UnitTest
             Assert.AreEqual("   bar", _textBuffer.GetLineRange(1).GetText());
         }
 
+        /// <summary>
+        /// Shift the line range right starting with the second line
+        /// </summary>
         [Test]
-        public void ShiftLineRangeRight5()
+        public void ShiftLineRangeRight_SecondLine()
         {
             Create("foo", " bar");
             _textView.MoveCaretTo(_textBuffer.GetLineRange(1).Start.Position);
-            _operations.ShiftLineRangeRight(2);
+            _operations.ShiftLineRangeRight(1);
             Assert.AreEqual("foo", _textBuffer.GetLineRange(0).GetText());
             Assert.AreEqual("   bar", _textBuffer.GetLineRange(1).GetText());
         }

@@ -92,7 +92,7 @@ type internal IncrementalSearch
 
                 // Need to update the status if the search wrapped around
                 match data.SearchResult, TrackingPointUtil.GetPoint _textView.TextSnapshot data.StartPoint with
-                | SearchResult.SearchFound(_, span), Some(point) ->
+                | SearchResult.SearchFound(_, span), Some point ->
                     if data.SearchData.Kind = SearchKind.ForwardWithWrap && span.Start.Position < point.Position then
                         _statusUtil.OnStatus Resources.Common_SearchForwardWrapped
                     elif data.SearchData.Kind = SearchKind.BackwardWithWrap && span.Start.Position > point.Position then

@@ -22,6 +22,7 @@ namespace VimCore.UnitTest
             _textView = tuple.Item1;
             var service = EditorUtil.FactoryService;
             _buffer = service.Vim.CreateBuffer(_textView);
+            _buffer.SwitchMode(ModeKind.Normal, ModeArgument.None);
             Assert.IsTrue(_context.IsEmpty);
         }
 

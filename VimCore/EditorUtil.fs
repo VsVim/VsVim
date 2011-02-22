@@ -411,6 +411,9 @@ module NormalizedSnapshotSpanCollectionUtil =
         let last = GetLast col
         SnapshotSpan(first.Start,last.End) 
 
+    /// Get the first item 
+    let TryGetFirst (col : NormalizedSnapshotSpanCollection) = if col.Count = 0 then None else Some (col.[0])
+
     let OfSeq (s:SnapshotSpan seq) = new NormalizedSnapshotSpanCollection(s)
 
 /// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
