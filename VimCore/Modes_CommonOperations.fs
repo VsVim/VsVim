@@ -223,12 +223,6 @@ type internal CommonOperations ( _data : OperationsData ) =
 
         if range.Count > 1 then
 
-            // Create a tracking point for the caret
-            let snapshot = range.Snapshot
-            let trackingPoint = 
-                let point = range.EndLine.Start 
-                snapshot.CreateTrackingPoint(point.Position, PointTrackingMode.Positive)
-
             use edit = _data.TextView.TextBuffer.CreateEdit()
 
             let replace = 
@@ -262,10 +256,7 @@ type internal CommonOperations ( _data : OperationsData ) =
                             edit.Delete(line.Start.Position,count) |> ignore )
 
             // Now position the caret on the new snapshot
-            let snapshot = edit.Apply()
-            match TrackingPointUtil.GetPoint snapshot trackingPoint with
-            | None -> ()
-            | Some(point) ->  TextViewUtil.MoveCaretToPoint _textView point 
+            edit.Apply() |> ignore
 
     member x.UpdateRegister (reg:Register) regOperation value = 
         _registerMap.SetRegisterValue reg regOperation value

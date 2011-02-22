@@ -747,6 +747,24 @@ namespace VimCore.UnitTest
             Assert.AreEqual(3, _textView.GetCaretPoint().Position);
         }
 
+        /// <summary>
+        /// The caret behavior for the 'J' family of commands is hard to follow at first
+        /// but comes down to a very simple behavior.  The caret should be placed 1 past
+        /// the last character in the second to last line joined
+        /// </summary>
+        [Test]
+        public void JoinLines_CaretWithBlankAtEnd()
+        {
+            Create("a ", "b", "c");
+            _operations
+                .Setup(x => x.Join(_textView.GetLineRange(0, 2), JoinKind.RemoveEmptySpaces))
+                .Callback(() => _textView.SetText("a b c"))
+                .Verifiable();
+            _commandUtil.JoinLines(JoinKind.RemoveEmptySpaces, 3);
+            _operations.Verify();
+            Assert.AreEqual(3, _textView.GetCaretPoint().Position);
+        }
+
         [Test]
         public void ChangeCaseCaretPoint_Simple()
         {

@@ -385,13 +385,13 @@ type internal CommandUtil
     /// Delete the highlighted text from the buffer and put it into the specified 
     /// register.  The caret should be positioned at the begining of the text for
     /// undo / redo
-    member x.DeleteSelection register (visualSpan : VisualSpan) = 
+    member x.DeleteSelection register (visualSpan : VisualSpan) modeSwitch = 
         let startPoint = visualSpan.Start
 
         // Use a transaction to guarantee caret position.  Caret should be at the start
         // during undo and redo so move it before the edit
         TextViewUtil.MoveCaretToPoint _textView startPoint
-        x.EditWithUndoTransaciton "DeleteHighlightedText" (fun () ->
+        x.EditWithUndoTransaciton "DeleteSelection" (fun () ->
             use edit = _textBuffer.CreateEdit()
             visualSpan.Spans |> Seq.iter (fun span -> 
 
@@ -407,7 +407,7 @@ type internal CommandUtil
             let snapshot = edit.Apply()
             TextViewUtil.MoveCaretToPosition _textView startPoint.Position)
 
-        CommandResult.Completed ModeSwitch.SwitchPreviousMode
+        CommandResult.Completed modeSwitch
 
     /// Delete count lines from the cursor.  The caret should be positioned at the start
     /// of the first line for both undo / redo
@@ -541,14 +541,44 @@ type internal CommandUtil
             // complete and a beep should be issued
             _operations.Beep()
         | Some range -> 
-            // The caret should be moved after the original line.  It should have it's original
-            // position during an undo though so don't move the caret until inside the transaciton
-            let position = x.CaretLine.End.Position
+            // The caret should be positioned one after the second to last line in the 
+            // join.  It should have it's original position during an undo so don't
+            // move the caret until we're inside the transaction
             x.EditWithUndoTransaciton "Join" (fun () -> 
                 _operations.Join range kind
-                TextViewUtil.MoveCaretToPosition _textView position)
+                x.MoveCaretFollowingJoin range)
 
         CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Join the selection of lines in the buffer
+    member x.JoinSelection kind (visualSpan : VisualSpan) = 
+        let range = SnapshotLineRangeUtil.CreateForSpan visualSpan.EditSpan.OverarchingSpan 
+
+        // Extend the range to at least 2 lines if possible
+        let range = 
+            if range.Count = 1 && range.EndLineNumber = SnapshotUtil.GetLastLineNumber range.Snapshot then
+                // Can't extend
+                range
+            elif range.Count = 1 then
+                // Extend it 1 line
+                SnapshotLineRange(range.Snapshot, range.StartLineNumber, 2)
+            else
+                // Already at least 2 lines
+                range
+
+        if range.Count = 1 then
+            // Can't join a single line
+            _operations.Beep()
+
+            CommandResult.Completed ModeSwitch.NoSwitch
+        else 
+            // The caret before the join should be positioned at the start of the VisualSpan
+            TextViewUtil.MoveCaretToPoint _textView visualSpan.Start
+            x.EditWithUndoTransaciton "Join" (fun () -> 
+                _operations.Join range kind
+                x.MoveCaretFollowingJoin range)
+
+            CommandResult.Completed ModeSwitch.SwitchPreviousMode
 
     /// Jump to the specified mark
     member x.JumpToMark c =
@@ -576,6 +606,24 @@ type internal CommandUtil
 
         let switch = ModeSwitch.SwitchModeWithArgument (ModeKind.Insert, ModeArgument.InsertWithCount count)
         CommandResult.Completed switch
+
+    /// The Join commands (Visual and Normal) have identical cursor positioning behavior and 
+    /// it's non-trivial so it's factored out to a function here.  In short the caret should be
+    /// positioned 1 position after the last character in the second to last line of the join
+    // The caret should be positioned one after the second to last line in the 
+    // join.  It should have it's original position during an undo so don't
+    // move the caret until we're inside the transaction
+    member x.MoveCaretFollowingJoin (range : SnapshotLineRange) =
+        let point = 
+            let number = range.StartLineNumber + range.Count - 2
+            let line = SnapshotUtil.GetLine range.Snapshot number
+            line |> SnapshotLineUtil.GetLastIncludedPoint |> OptionUtil.getOrDefault line.Start
+        match TrackingPointUtil.GetPointInSnapshot point PointTrackingMode.Positive x.CurrentSnapshot with
+        | None -> 
+            ()
+        | Some point -> 
+            let point = SnapshotPointUtil.AddOneOrCurrent point
+            TextViewUtil.MoveCaretToPoint _textView point
 
     /// Move the caret to the result of the motion
     member x.MoveCaretToMotion motion count = 
@@ -868,9 +916,11 @@ type internal CommandUtil
         let count = data.CountOrDefault
         match command with
         | VisualCommand.ChangeCase kind -> x.ChangeCaseVisual kind visualSpan
-        | VisualCommand.DeleteSelection -> x.DeleteSelection register visualSpan
+        | VisualCommand.ChangeSelection -> x.DeleteSelection register visualSpan (ModeSwitch.SwitchMode ModeKind.Insert)
+        | VisualCommand.DeleteSelection -> x.DeleteSelection register visualSpan ModeSwitch.SwitchPreviousMode
         | VisualCommand.DeleteLineSelection -> x.DeleteLineSelection register visualSpan
         | VisualCommand.FormatLines -> x.FormatLinesVisual visualSpan
+        | VisualCommand.JoinSelection kind -> x.JoinSelection kind visualSpan
         | VisualCommand.PutOverSelection moveCaretAfterText -> x.PutOverSelection register count visualSpan moveCaretAfterText
         | VisualCommand.ReplaceSelection keyInput -> x.ReplaceSelection keyInput visualSpan
         | VisualCommand.ShiftLinesLeft -> x.ShiftLinesLeftVisual count visualSpan

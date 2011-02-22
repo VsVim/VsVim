@@ -439,7 +439,9 @@ namespace Vim.UnitTest
 
         public static void SetText(this ITextBuffer buffer, string text)
         {
-            buffer.Replace(new Span(0, buffer.CurrentSnapshot.Length), text);
+            var edit = buffer.CreateEdit(EditOptions.DefaultMinimalChange, 0, null);
+            edit.Replace(new Span(0, buffer.CurrentSnapshot.Length), text);
+            edit.Apply();
         }
 
         public static NonEmptyCollection<SnapshotSpan> GetBlock(this ITextBuffer textBuffer, int column, int length, int startLine = 0, int lineCount = 1)

@@ -148,26 +148,6 @@ type internal VisualMode
         /// Visual Commands
         let visualSimple = 
             seq {
-                yield (
-                    ["c"], 
-                    CommandFlags.Repeatable ||| CommandFlags.LinkedWithNextTextChange,
-                    Some ModeKind.Insert,
-                    (fun _ reg span -> 
-                        _operations.DeleteSpan span 
-                        _operations.UpdateRegisterForSpan reg RegisterOperation.Delete span _operationKind),
-                    (fun _ reg col -> 
-                        _operations.DeleteBlock col
-                        _operations.UpdateRegisterForCollection reg RegisterOperation.Delete col _operationKind))
-                yield (
-                    ["s"], 
-                    CommandFlags.Repeatable ||| CommandFlags.LinkedWithNextTextChange,
-                    Some ModeKind.Insert,
-                    (fun _ reg span -> 
-                        _operations.DeleteSpan span 
-                        _operations.UpdateRegisterForSpan reg RegisterOperation.Delete span _operationKind),
-                    (fun _ reg col -> 
-                        _operations.DeleteBlock col 
-                        _operations.UpdateRegisterForCollection reg RegisterOperation.Delete col _operationKind))
                 yield ( 
                     ["S"],
                     CommandFlags.Repeatable ||| CommandFlags.LinkedWithNextTextChange,
@@ -195,26 +175,6 @@ type internal VisualMode
                             |> NormalizedSnapshotSpanCollectionUtil.OfSeq
                         _operations.DeleteBlock col 
                         _operations.UpdateRegisterForCollection reg RegisterOperation.Delete col OperationKind.CharacterWise))
-                yield (
-                    ["J"],
-                    CommandFlags.Repeatable,
-                    None,
-                    (fun _ _ span -> 
-                        let range = SnapshotLineRangeUtil.CreateForSpan span
-                        _operations.Join range JoinKind.RemoveEmptySpaces),
-                    (fun _ _ col ->
-                        let range = SnapshotLineRangeUtil.CreateForNormalizedSnapshotSpanCollection col
-                        _operations.Join range JoinKind.RemoveEmptySpaces))
-                yield (
-                    ["gJ"],
-                    CommandFlags.Repeatable,
-                    None,
-                    (fun _ _ span -> 
-                        let range = SnapshotLineRangeUtil.CreateForSpan span
-                        _operations.Join range JoinKind.KeepEmptySpaces),
-                    (fun _ _ col ->
-                        let range = SnapshotLineRangeUtil.CreateForNormalizedSnapshotSpanCollection col
-                        _operations.Join range JoinKind.KeepEmptySpaces))
                 yield (
                     ["y"],
                     CommandFlags.ResetCaret,
@@ -265,13 +225,17 @@ type internal VisualMode
     member x.CreateCommandBindings() =
         let visualSeq = 
             seq {
+                yield ("c", CommandFlags.Repeatable ||| CommandFlags.LinkedWithNextTextChange, VisualCommand.ChangeSelection)
                 yield ("d", CommandFlags.Repeatable, VisualCommand.DeleteSelection)
                 yield ("D", CommandFlags.Repeatable, VisualCommand.DeleteLineSelection)
+                yield ("gJ", CommandFlags.Repeatable, VisualCommand.JoinSelection JoinKind.KeepEmptySpaces)
                 yield ("gp", CommandFlags.Repeatable, VisualCommand.PutOverSelection true)
                 yield ("gP", CommandFlags.Repeatable, VisualCommand.PutOverSelection true)
                 yield ("g?", CommandFlags.Repeatable, VisualCommand.ChangeCase ChangeCharacterKind.Rot13)
+                yield ("J", CommandFlags.Repeatable, VisualCommand.JoinSelection JoinKind.RemoveEmptySpaces)
                 yield ("p", CommandFlags.Repeatable, VisualCommand.PutOverSelection false)
                 yield ("P", CommandFlags.Repeatable, VisualCommand.PutOverSelection false)
+                yield ("s", CommandFlags.Repeatable ||| CommandFlags.LinkedWithNextTextChange, VisualCommand.ChangeSelection)
                 yield ("u", CommandFlags.Repeatable, VisualCommand.ChangeCase ChangeCharacterKind.ToLowerCase)
                 yield ("U", CommandFlags.Repeatable, VisualCommand.ChangeCase ChangeCharacterKind.ToUpperCase)
                 yield ("x", CommandFlags.Repeatable, VisualCommand.DeleteSelection)

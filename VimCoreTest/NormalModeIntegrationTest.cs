@@ -1020,5 +1020,17 @@ namespace VimCore.UnitTest
             _buffer.Process('%');
             Assert.AreEqual(6, _textView.GetCaretPoint());
         }
+
+        /// <summary>
+        /// Make sure the caret is properly positioned against a join across 3 lines
+        /// </summary>
+        [Test]
+        public void Join_CaretPositionThreeLines()
+        {
+            Create("cat", "dog", "bear");
+            _buffer.Process("3J");
+            Assert.AreEqual("cat dog bear", _textView.GetLine(0).GetText());
+            Assert.AreEqual(7, _textView.GetCaretPoint().Position);
+        }
     }
 }

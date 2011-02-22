@@ -1056,6 +1056,7 @@ type EditSpan =
 
     /// Occurs during block edits
     | Block of NonEmptyCollection<SnapshotSpan>
+
     with
 
     /// View the data as a collection.  For Single values this just creates a
@@ -1064,6 +1065,18 @@ type EditSpan =
         match x with
         | Single span -> NonEmptyCollection(span, List.empty) 
         | Block col -> col
+
+    /// Returns the overarching span of the entire EditSpan value.  For Single values
+    /// this is a 1-1 mapping.  For Block values it will take the min start position
+    /// and combine it with the maximum end position
+    member x.OverarchingSpan =
+        match x with 
+        | Single span ->
+            span
+        | Block col ->
+            let startPoint = col |> Seq.map (fun span -> span.Start) |> Seq.minBy SnapshotPointUtil.GetPosition
+            let endPoint = col |> Seq.map (fun span -> span.End) |> Seq.maxBy SnapshotPointUtil.GetPosition
+            SnapshotSpan (startPoint, endPoint)
 
     /// Provide an implicit conversion from SnapshotSpan.  Useful from C# code
     static member op_Implicit span = EditSpan.Single span

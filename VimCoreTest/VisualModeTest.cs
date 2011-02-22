@@ -286,95 +286,39 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void Join1()
+        public void Bind_Join_RemoveEmptySpaces()
         {
-            Create("a", "b", "c", "d", "e");
-            var range = _textBuffer.GetLineRange(0, 2);
-            _selection.Select(range.Extent);
-            _operations
-                .Setup(x => x.Join(range, JoinKind.RemoveEmptySpaces))
-                .Verifiable();
-            _mode.Process('J');
-            _operations.Verify();
+            Create("");
+            _commandUtil.SetupCommandVisual(VisualCommand.NewJoinSelection(JoinKind.RemoveEmptySpaces));
+            _mode.Process("J");
+            _commandUtil.Verify();
         }
 
         [Test]
-        public void Join2()
+        public void Bind_Join_KeepEmptySpaces()
         {
-            Create("a", "b", "c", "d", "e");
-            var range = _textBuffer.GetLineRange(0, 3);
-            _selection.Select(range.Extent);
-            _operations
-                .Setup(x => x.Join(range, JoinKind.RemoveEmptySpaces))
-                .Verifiable();
-            _mode.Process('J');
-            _operations.Verify();
-        }
-
-        [Test]
-        public void Join3()
-        {
-            Create("a", "b", "c", "d", "e");
-            var range = _textBuffer.GetLineRange(0, 3);
-            _selection.Select(range.Extent);
-            _operations
-                .Setup(x => x.Join(range, JoinKind.KeepEmptySpaces))
-                .Verifiable();
+            Create("");
+            _commandUtil.SetupCommandVisual(VisualCommand.NewJoinSelection(JoinKind.KeepEmptySpaces));
             _mode.Process("gJ");
-            _operations.Verify();
+            _commandUtil.Verify();
         }
 
         [Test]
-        public void Change1()
+        public void Bind_ChangeSelection()
         {
-            Create("foo", "bar");
-            var span = _textBuffer.GetLineRange(0).Extent;
-            _selection.Select(span);
-            _operations
-                .Setup(x => x.DeleteSpan(span))
-                .Verifiable();
-            _operations
-                .Setup(x => x.UpdateRegisterForSpan(_map.GetRegister(RegisterName.Unnamed), RegisterOperation.Delete, span, OperationKind.CharacterWise))
-                .Verifiable();
-            var res = _mode.Process('c');
-            Assert.IsTrue(res.IsSwitchMode);
-            Assert.AreEqual(ModeKind.Insert, res.AsSwitchMode().Item);
-            _factory.Verify();
+            Create("");
+            _commandUtil.SetupCommandVisual(VisualCommand.ChangeSelection);
+            _mode.Process('c');
+            _commandUtil.Verify();
         }
 
         [Test]
-        public void Change2()
+        public void Bind_ChangeSelection_ViaS()
         {
-            Create("foo", "bar");
-            var span = _textBuffer.GetLineRange(0).Extent;
-            _selection.Select(span);
-            _operations
-                .Setup(x => x.DeleteSpan(span))
-                .Verifiable();
-            _operations
-                .Setup(x => x.UpdateRegisterForSpan(_map.GetRegister('b'), RegisterOperation.Delete, span, OperationKind.CharacterWise))
-                .Verifiable();
-            var res = _mode.Process("\"bc");
-            Assert.IsTrue(res.IsSwitchMode);
-            Assert.AreEqual(ModeKind.Insert, res.AsSwitchMode().Item);
-            _factory.Verify();
-        }
-
-        [Test]
-        public void Change3()
-        {
-            Create("foo", "bar");
-            var span = _textBuffer.GetLineRange(0).Extent;
-            _selection.Select(span);
-            _operations
-                .Setup(x => x.DeleteSpan(span))
-                .Verifiable();
-            _operations
-                .Setup(x => x.UpdateRegisterForSpan(_map.GetRegister(RegisterName.Unnamed), RegisterOperation.Delete, span, OperationKind.CharacterWise))
-                .Verifiable();
-            var res = _mode.Process('s');
-            Assert.IsTrue(res.IsSwitchMode);
-            Assert.AreEqual(ModeKind.Insert, res.AsSwitchMode().Item);
+            Create("");
+            _commandUtil.SetupCommandVisual(VisualCommand.ChangeSelection);
+            _mode.Process('s');
+            _commandUtil.Verify();
         }
 
         [Test]

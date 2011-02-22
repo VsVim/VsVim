@@ -863,6 +863,9 @@ type VisualCommand =
     /// Change the case of the selected text in the specified manner
     | ChangeCase of ChangeCharacterKind
 
+    /// Delete the selection and begin insert mode.  Implements the 'c' and 's' commands
+    | ChangeSelection
+
     /// Delete the selected lines
     | DeleteLineSelection
 
@@ -871,6 +874,9 @@ type VisualCommand =
 
     /// Format the selected text
     | FormatLines
+
+    /// Join the selected lines
+    | JoinSelection of JoinKind
 
     /// Put the contents of the register into the buffer after the selection.  The bool is 
     /// whether or not the caret should be placed after the inserted text
@@ -1026,6 +1032,7 @@ type BindDataStorage<'T> =
 ///     Simple of KeyInputSet * Command
 ///     Motion of KeyInputSet * (MotionData -> Command)
 /// REPEAT TODO: This should have requires qualified access
+/// REPEAT TODO: Need to actually label the contents as ---CommandBinding instead of ---Command
 [<DebuggerDisplay("{ToString(),nq}")>]
 [<RequireQualifiedAccess>]
 type CommandBinding = 
