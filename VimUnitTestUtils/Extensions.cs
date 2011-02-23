@@ -363,7 +363,7 @@ namespace Vim.UnitTest
 
         public static void SetText(this ITextView textView, params string[] lines)
         {
-            var text = lines.Aggregate((x, y) => x + y);
+            var text = lines.Aggregate((x, y) => x + Environment.NewLine + y);
             SetText(textView.TextBuffer, text);
         }
 

@@ -1,4 +1,5 @@
 ﻿using System.Linq;
+using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Moq;
 using NUnit.Framework;
@@ -54,6 +55,9 @@ namespace VimCore.UnitTest
                 factory: _factory);
             _operations = _factory.Create<ICommonOperations>();
             _broker = _factory.Create<IDisplayWindowBroker>();
+            _broker.SetupGet(x => x.IsCompletionActive).Returns(false);
+            _broker.SetupGet(x => x.IsQuickInfoActive).Returns(false);
+            _broker.SetupGet(x => x.IsSignatureHelpActive).Returns(false);
             _modeRaw = new Vim.Modes.Insert.InsertMode(
                 _data.Object, 
                 _operations.Object, 
@@ -78,8 +82,11 @@ namespace VimCore.UnitTest
             Assert.IsFalse(_mode.CanProcess(KeyInputUtil.CharToKeyInput('c')));
         }
 
+        /// <summary>
+        /// Make sure to move the caret left when exiting insert mode
+        /// </summary>
         [Test]
-        public void Escape1()
+        public void Escape_MoveCaretLeftOnExit()
         {
             _broker.SetupGet(x => x.IsCompletionActive).Returns(false).Verifiable();
             _broker.SetupGet(x => x.IsQuickInfoActive).Returns(false).Verifiable();
@@ -90,8 +97,14 @@ namespace VimCore.UnitTest
             _factory.Verify();
         }
 
+        /// <summary>
+        /// Make sure to dismiss any active completion windows when exiting.  We had the choice
+        /// between having escape cancel only the window and escape canceling and returning
+        /// to presambly normal mode.  The unanimous user feedback is that Escape should leave 
+        /// insert mode no matter what.  
+        /// </summary>
         [Test]
-        public void Escape2()
+        public void Escape_DismissCompletionWindows()
         {
             _broker
                 .SetupGet(x => x.IsCompletionActive)
@@ -105,6 +118,29 @@ namespace VimCore.UnitTest
             Assert.IsTrue(res.IsSwitchMode);
             Assert.AreEqual(ModeKind.Normal, res.AsSwitchMode().Item);
             _factory.Verify();
+        }
+
+        /// <summary>
+        /// If the caret is in virtual space when leaving insert mode move it back to the real
+        /// position.  This really only comes up in a few cases, primarily the 'C' command 
+        /// which preserves indent by putting the caret in virtual space.  For example take the 
+        /// following (- are spaces and ^ is caret).
+        /// --cat
+        ///
+        /// Caret starts on the 'c' and 'autoindent' is on.  Execute the following
+        ///  - cc
+        ///  - Escape
+        /// Now the caret is at position 0 on a blank line 
+        /// </summary>
+        [Test]
+        public void Escape_LeaveVirtualSpace()
+        {
+            _textView.SetText("", "random data");
+            var virtualPoint = new VirtualSnapshotPoint(_textView.TextSnapshot.GetPoint(0), 2);
+            _textView.Caret.MoveTo(virtualPoint);
+            _operations.Setup(x => x.MoveCaretToPoint(virtualPoint.Position)).Verifiable();
+            _mode.Process(KeyInputUtil.EscapeKey);
+            _operations.Verify();
         }
 
         [Test]

@@ -123,7 +123,7 @@ type internal VimBufferFactory
                 vim.VimData) :> IIncrementalSearch
         let capture = MotionCapture(vim.VimHost, view, incrementalSearch, localSettings) :> IMotionCapture
 
-        let commandUtil = CommandUtil(view, commonOperations,  motionUtil, statusUtil, vim.RegisterMap, vim.MarkMap, vim.VimData, localSettings) :> ICommandUtil
+        let commandUtil = CommandUtil(view, commonOperations,  motionUtil, statusUtil, vim.RegisterMap, vim.MarkMap, vim.VimData, localSettings, undoRedoOperations) :> ICommandUtil
 
         let bufferRaw = 
             VimBuffer( 

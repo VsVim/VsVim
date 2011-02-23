@@ -162,6 +162,9 @@ module SnapshotUtil =
         else
             None
 
+    /// Get the point from the specified position
+    let GetPoint (snapshot : ITextSnapshot) position = SnapshotPoint(snapshot, position)
+
 /// Contains operations to help fudge the Editor APIs to be more F# friendly.  Does not
 /// include any Vim specific logic
 module SnapshotSpanUtil =
@@ -929,6 +932,8 @@ module TextViewUtil =
     let GetCaret (textView:ITextView) = textView.Caret
 
     let GetCaretPoint (textView:ITextView) = textView.Caret.Position.BufferPosition
+
+    let GetCaretVirtualPoint (textView:ITextView) = textView.Caret.Position.VirtualBufferPosition
 
     let GetCaretPointKind textView = textView |> GetCaretPoint |> SnapshotPointUtil.GetPointKind
 

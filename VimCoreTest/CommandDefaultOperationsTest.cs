@@ -31,8 +31,8 @@ namespace VimCore.UnitTest
         private Mock<IVimGlobalSettings> _globalSettings;
         private Mock<IKeyMap> _keyMap;
         private Mock<IOutliningManager> _outlining;
-        private Mock<IUndoRedoOperations> _undoRedoOperations;
         private Mock<IRegisterMap> _registerMap;
+        private IUndoRedoOperations _undoRedoOperations;
         private ISearchService _searchService;
 
         private void Create(params string[] lines)
@@ -53,8 +53,7 @@ namespace VimCore.UnitTest
             _keyMap = _factory.Create<IKeyMap>();
             _statusUtil = _factory.Create<IStatusUtil>();
             _outlining = _factory.Create<IOutliningManager>();
-            _undoRedoOperations = _factory.Create<IUndoRedoOperations>();
-            _undoRedoOperations.Setup(x => x.CreateUndoTransaction(It.IsAny<string>())).Returns(_factory.Create<IUndoTransaction>(MockBehavior.Loose).Object);
+            _undoRedoOperations = VimUtil.CreateUndoRedoOperations(_statusUtil.Object);
             _searchService = VimUtil.CreateSearchService(_globalSettings.Object);
 
             var data = new OperationsData(
@@ -67,7 +66,7 @@ namespace VimCore.UnitTest
                 jumpList: _jumpList.Object,
                 localSettings: _settings.Object,
                 keyMap: _keyMap.Object,
-                undoRedoOperations: _undoRedoOperations.Object,
+                undoRedoOperations: _undoRedoOperations,
                 editorOptions: null,
                 navigator: null,
                 foldManager: null,

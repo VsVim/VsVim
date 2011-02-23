@@ -261,9 +261,3 @@ type ICommonOperations =
     /// Update the register for the given register operation
     abstract UpdateRegisterForCollection : Register -> RegisterOperation -> NormalizedSnapshotSpanCollection -> OperationKind -> unit
 
-    /// Wrap the edit code in an undo transaction.  Ensures the caret is reset during an undo
-    abstract WrapEditInUndoTransaction : name:string -> editAction:(unit -> unit) -> unit
-
-    /// Wrap the edit code in an undo transaction.  Ensures the caret is reset during an undo
-    abstract WrapEditInUndoTransactionWithReturn : name:string -> editAction:(unit -> 'a) -> 'a
-

@@ -351,3 +351,17 @@ module NonEmptyCollectionUtil =
         match SeqUtil.tryHead seq with
         | None -> None
         | Some (head, rest) -> NonEmptyCollection(head, rest |> List.ofSeq) |> Some
+
+    /// Maps the elements in the NonEmptyCollection using the specified function
+    let Map mapFunc (col : NonEmptyCollection<'T>) = 
+        let head = mapFunc col.Head
+        let rest = List.map mapFunc col.Rest
+        NonEmptyCollection<'T>(head, rest)
+
+type Contract = 
+
+    [<System.Diagnostics.ConditionalAttribute("DEBUG")>]
+    static member Requires test = 
+        if not test then
+            raise (System.Exception("Contract failed"))
+

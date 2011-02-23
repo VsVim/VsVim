@@ -28,9 +28,9 @@ namespace VimCore.UnitTest
         private Mock<IVimLocalSettings> _settings;
         private Mock<IVimGlobalSettings> _globalSettings;
         private Mock<IOutliningManager> _outlining;
-        private Mock<IUndoRedoOperations> _undoRedoOperations;
         private Mock<IStatusUtil> _statusUtil;
         private Mock<ISmartIndentationService> _smartIndent;
+        private IUndoRedoOperations _undoRedoOperations;
         private ISearchService _searchService;
         private IRegisterMap _registerMap;
         private IVimData _vimData;
@@ -66,10 +66,9 @@ namespace VimCore.UnitTest
             _outlining = _factory.Create<IOutliningManager>();
             _globalSettings.SetupGet(x => x.ShiftWidth).Returns(2);
             _statusUtil = _factory.Create<IStatusUtil>();
-            _undoRedoOperations = _factory.Create<IUndoRedoOperations>();
-            _undoRedoOperations.Setup(x => x.CreateUndoTransaction(It.IsAny<string>())).Returns(_factory.Create<IUndoTransaction>(MockBehavior.Loose).Object);
             _smartIndent = _factory.Create<ISmartIndentationService>();
             _searchService = VimUtil.CreateSearchService(_globalSettings.Object);
+            _undoRedoOperations = VimUtil.CreateUndoRedoOperations(_statusUtil.Object);
 
             var data = new OperationsData(
                 vimData: _vimData,
@@ -79,7 +78,7 @@ namespace VimCore.UnitTest
                 outliningManager: FSharpOption.Create(_outlining.Object),
                 jumpList: _jumpList.Object,
                 localSettings: _settings.Object,
-                undoRedoOperations: _undoRedoOperations.Object,
+                undoRedoOperations: _undoRedoOperations,
                 registerMap: _registerMap,
                 editorOptions: _editorOptions.Object,
                 keyMap: null,
@@ -135,7 +134,6 @@ namespace VimCore.UnitTest
             _operations.Join(_textView.GetLineRange(0, 1), JoinKind.RemoveEmptySpaces);
             Assert.AreEqual("foo bar", _textView.TextSnapshot.GetLineFromLineNumber(0).GetText());
             Assert.AreEqual(1, _textView.TextSnapshot.LineCount);
-            Assert.AreEqual(4, _textView.Caret.Position.BufferPosition.Position);
         }
 
         [Test]
@@ -146,7 +144,6 @@ namespace VimCore.UnitTest
             _operations.Join(_textView.GetLineRange(0, 1), JoinKind.RemoveEmptySpaces);
             Assert.AreEqual("foo bar", _textView.TextSnapshot.GetLineFromLineNumber(0).GetText());
             Assert.AreEqual(1, _textView.TextSnapshot.LineCount);
-            Assert.AreEqual(4, _textView.Caret.Position.BufferPosition.Position);
         }
 
         [Test]
@@ -157,7 +154,6 @@ namespace VimCore.UnitTest
             _operations.Join(_textView.GetLineRange(0, 2), JoinKind.RemoveEmptySpaces);
             Assert.AreEqual("foo bar baz", _textView.TextSnapshot.GetLineFromLineNumber(0).GetText());
             Assert.AreEqual(1, _textView.TextSnapshot.LineCount);
-            Assert.AreEqual(8, _textView.Caret.Position.BufferPosition.Position);
         }
 
         [Test]
@@ -1552,24 +1548,6 @@ namespace VimCore.UnitTest
                 column: 1);
             _operations.MoveCaretToMotionResult(data);
             Assert.AreEqual(1, _textView.GetCaretPoint().Position);
-        }
-
-        [Test]
-        public void Undo1()
-        {
-            Create(String.Empty);
-            _undoRedoOperations.Setup(x => x.Undo(1)).Verifiable();
-            _operations.Undo(1);
-            _undoRedoOperations.Verify();
-        }
-
-        [Test]
-        public void Redo1()
-        {
-            Create(String.Empty);
-            _undoRedoOperations.Setup(x => x.Redo(1)).Verifiable();
-            _operations.Redo(1);
-            _undoRedoOperations.Verify();
         }
 
         [Test]

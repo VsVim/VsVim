@@ -283,5 +283,23 @@ namespace VimCore.UnitTest
             Assert.AreEqual("cat", _textView.GetLine(1).GetText());
             Assert.AreEqual(2, _textView.GetCaretPoint().Position);
         }
+
+        /// <summary>
+        /// Make sure we handle the virtual spaces properly here.  The 'C' command should leave the caret
+        /// in virtual space due to the previous indent and escape should cause the caret to jump back to 
+        /// real spaces when leaving insert mode
+        /// </summary>
+        [Test]
+        public void ChangeLineSelection_VirtualSpaceHandling()
+        {
+            Create("  cat", "dog");
+            EnterMode(ModeKind.VisualCharacter, _textView.GetLineSpan(0, 2, 2));
+            _buffer.Process('C');
+            _buffer.Process(VimKey.Escape);
+            Assert.AreEqual("", _textView.GetLine(0).GetText());
+            Assert.AreEqual("dog", _textView.GetLine(1).GetText());
+            Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+            Assert.IsFalse(_textView.GetCaretVirtualPoint().IsInVirtualSpace);
+        }
     }
 }

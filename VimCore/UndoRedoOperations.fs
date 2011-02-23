@@ -73,9 +73,18 @@ type UndoRedoOperations
             with
                 | :? System.NotSupportedException -> _statusUtil.OnError Resources.UndoRedo_CannotRedo
 
+    member x.EditWithUndoTransaction name action = 
+        use undoTransaction = x.CreateUndoTransaction name
+        undoTransaction.AddBeforeTextBufferChangePrimitive()
+        let ret = action()
+        undoTransaction.AddAfterTextBufferChangePrimitive()
+        undoTransaction.Complete()
+        ret
+
     interface IUndoRedoOperations with
         member x.StatusUtil = _statusUtil
         member x.CreateUndoTransaction name = x.CreateUndoTransaction name
         member x.Redo count = x.Redo count
         member x.Undo count = x.Undo count
+        member x.EditWithUndoTransaction name action = x.EditWithUndoTransaction name action
 

@@ -148,33 +148,6 @@ type internal VisualMode
         /// Visual Commands
         let visualSimple = 
             seq {
-                yield ( 
-                    ["S"],
-                    CommandFlags.Repeatable ||| CommandFlags.LinkedWithNextTextChange,
-                    Some ModeKind.Insert,
-                    (fun _ reg span -> 
-                        let span = _operations.DeleteLinesInSpan span 
-                        _operations.UpdateRegisterForSpan reg RegisterOperation.Delete span OperationKind.LineWise),
-                    (fun _ reg col -> 
-                        let span = NormalizedSnapshotSpanCollectionUtil.GetCombinedSpan col 
-                        let span = _operations.DeleteLinesInSpan span
-                        _operations.UpdateRegisterForSpan reg RegisterOperation.Delete span OperationKind.LineWise))
-                yield (
-                    ["C"],
-                    CommandFlags.Repeatable ||| CommandFlags.LinkedWithNextTextChange,
-                    Some ModeKind.Insert,
-                    (fun _ reg span -> 
-                        let span = _operations.DeleteLinesInSpan span
-                        _operations.UpdateRegisterForSpan reg RegisterOperation.Delete span OperationKind.CharacterWise),
-                    (fun _ reg col -> 
-                        let col = 
-                            col 
-                            |> Seq.map (fun span -> 
-                                let line = SnapshotSpanUtil.GetStartLine span
-                                SnapshotSpan(span.Start,line.End) )
-                            |> NormalizedSnapshotSpanCollectionUtil.OfSeq
-                        _operations.DeleteBlock col 
-                        _operations.UpdateRegisterForCollection reg RegisterOperation.Delete col OperationKind.CharacterWise))
                 yield (
                     ["y"],
                     CommandFlags.ResetCaret,
@@ -226,6 +199,7 @@ type internal VisualMode
         let visualSeq = 
             seq {
                 yield ("c", CommandFlags.Repeatable ||| CommandFlags.LinkedWithNextTextChange, VisualCommand.ChangeSelection)
+                yield ("C", CommandFlags.Repeatable ||| CommandFlags.LinkedWithNextTextChange, VisualCommand.ChangeLineSelection true)
                 yield ("d", CommandFlags.Repeatable, VisualCommand.DeleteSelection)
                 yield ("D", CommandFlags.Repeatable, VisualCommand.DeleteLineSelection)
                 yield ("gJ", CommandFlags.Repeatable, VisualCommand.JoinSelection JoinKind.KeepEmptySpaces)
@@ -235,7 +209,9 @@ type internal VisualMode
                 yield ("J", CommandFlags.Repeatable, VisualCommand.JoinSelection JoinKind.RemoveEmptySpaces)
                 yield ("p", CommandFlags.Repeatable, VisualCommand.PutOverSelection false)
                 yield ("P", CommandFlags.Repeatable, VisualCommand.PutOverSelection false)
+                yield ("R", CommandFlags.Repeatable ||| CommandFlags.LinkedWithNextTextChange, VisualCommand.ChangeLineSelection false)
                 yield ("s", CommandFlags.Repeatable ||| CommandFlags.LinkedWithNextTextChange, VisualCommand.ChangeSelection)
+                yield ("S", CommandFlags.Repeatable ||| CommandFlags.LinkedWithNextTextChange, VisualCommand.ChangeLineSelection false)
                 yield ("u", CommandFlags.Repeatable, VisualCommand.ChangeCase ChangeCharacterKind.ToLowerCase)
                 yield ("U", CommandFlags.Repeatable, VisualCommand.ChangeCase ChangeCharacterKind.ToUpperCase)
                 yield ("x", CommandFlags.Repeatable, VisualCommand.DeleteSelection)

@@ -93,9 +93,13 @@ namespace Vim.UnitTest
             IStatusUtil statusUtil = null,
             IRegisterMap registerMap = null,
             IMarkMap markMap = null,
-            IVimData vimData = null)
+            IVimData vimData = null,
+            IVimLocalSettings localSettings = null,
+            IUndoRedoOperations undoRedOperations = null)
         {
-            var localSettings = new LocalSettings(new GlobalSettings());
+            statusUtil = statusUtil ?? new StatusUtil();
+            undoRedOperations = undoRedOperations ?? VimUtil.CreateUndoRedoOperations(statusUtil);
+            localSettings = localSettings ?? new LocalSettings(new GlobalSettings());
             registerMap = registerMap ?? CreateRegisterMap(MockObjectFactory.CreateClipboardDevice().Object);
             markMap = markMap ?? new MarkMap(new TrackingLineColumnService());
             vimData = vimData ?? new VimData();
@@ -109,7 +113,14 @@ namespace Vim.UnitTest
                 registerMap,
                 markMap,
                 vimData,
-                localSettings);
+                localSettings,
+                undoRedOperations);
+        }
+
+        internal static UndoRedoOperations CreateUndoRedoOperations(IStatusUtil statusUtil = null)
+        {
+            statusUtil = statusUtil ?? new StatusUtil();
+            return new UndoRedoOperations(statusUtil, FSharpOption<ITextUndoHistory>.None, null);
         }
 
         internal static RegisterMap CreateRegisterMap(IClipboardDevice device, Func<string> func)

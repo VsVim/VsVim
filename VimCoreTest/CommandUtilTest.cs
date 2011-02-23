@@ -36,9 +36,6 @@ namespace VimCore.UnitTest
             _vimHost = _factory.Create<IVimHost>();
             _statusUtil = _factory.Create<IStatusUtil>();
             _operations = _factory.Create<ICommonOperations>();
-            _operations
-                .Setup(x => x.WrapEditInUndoTransaction(It.IsAny<string>(), It.IsAny<FSharpFunc<Unit, Unit>>()))
-                .Callback<string, FSharpFunc<Unit, Unit>>((x, y) => y.Invoke(null));
 
             _textView = EditorUtil.CreateView(lines);
             _textBuffer = _textView.TextBuffer;
@@ -58,6 +55,7 @@ namespace VimCore.UnitTest
                 _operations.Object,
                 _motionUtil,
                 statusUtil: _statusUtil.Object,
+                localSettings : _localSettings,
                 registerMap: _registerMap,
                 markMap: _markMap,
                 vimData: _vimData);
@@ -987,6 +985,87 @@ namespace VimCore.UnitTest
             Assert.AreEqual("d", _textView.GetLine(1).GetText());
             Assert.AreEqual(1, _textView.GetCaretPoint().Position);
             _operations.Verify();
+        }
+
+        /// <summary>
+        /// Should delete the contents of the line excluding the break and preserve the 
+        /// original line indent
+        /// </summary>
+        [Test]
+        public void ChangeLineSelection_Character()
+        {
+            Create("  cat", "dog");
+            _localSettings.AutoIndent = true;
+            var visualSpan = VisualSpan.NewCharacter(_textView.GetLineSpan(0, 2, 2));
+            _commandUtil.ChangeLineSelection(UnnamedRegister, visualSpan, specialCaseBlock: false);
+            Assert.AreEqual("", _textView.GetLine(0).GetText());
+            Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+            Assert.AreEqual(2, _textView.GetCaretVirtualPoint().VirtualSpaces);
+        }
+
+        /// <summary>
+        /// Don't preserve the original indent if the 'autoindent' flag is not set
+        /// </summary>
+        [Test]
+        public void ChangeLineSelection_Character_NoAutoIndent()
+        {
+            Create("  cat", "dog");
+            _localSettings.AutoIndent = false;
+            var visualSpan = VisualSpan.NewCharacter(_textView.GetLineSpan(0, 2, 2));
+            _commandUtil.ChangeLineSelection(UnnamedRegister, visualSpan, specialCaseBlock: false);
+            Assert.AreEqual("  cat", UnnamedRegister.StringValue);
+            Assert.AreEqual("", _textView.GetLine(0).GetText());
+            Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+            Assert.IsFalse(_textView.GetCaretVirtualPoint().IsInVirtualSpace);
+        }
+
+        /// <summary>
+        /// Delete everything except the line break and preserve the original indent
+        /// </summary>
+        [Test]
+        public void ChangeLineSelection_Line()
+        {
+            Create("  cat", " dog", "bear", "fish");
+            _localSettings.AutoIndent = true;
+            var visualSpan = VisualSpan.NewLine(_textView.GetLineRange(1, 2));
+            _commandUtil.ChangeLineSelection(UnnamedRegister, visualSpan, specialCaseBlock: false);
+            Assert.AreEqual("  cat", _textView.GetLine(0).GetText());
+            Assert.AreEqual("", _textView.GetLine(1).GetText());
+            Assert.AreEqual("fish", _textView.GetLine(2).GetText());
+            Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
+            Assert.AreEqual(1, _textView.GetCaretVirtualPoint().VirtualSpaces);
+        }
+
+        /// <summary>
+        /// When not special casing block this should behave like the other forms of 
+        /// ChangeLineSelection
+        /// </summary>
+        [Test]
+        public void ChangeLineSelection_Block_NoSpecialCase()
+        {
+            Create("  cat", "  dog", "bear", "fish");
+            _localSettings.AutoIndent = true;
+            var visualSpan = VisualSpan.NewBlock(_textView.GetBlock(2, 1, 0, 2));
+            _commandUtil.ChangeLineSelection(UnnamedRegister, visualSpan, specialCaseBlock: false);
+            Assert.AreEqual("", _textView.GetLine(0).GetText());
+            Assert.AreEqual("bear", _textView.GetLine(1).GetText());
+            Assert.AreEqual(0, _textView.GetCaretPoint().Position);
+            Assert.AreEqual(2, _textView.GetCaretVirtualPoint().VirtualSpaces);
+        }
+
+        /// <summary>
+        /// When special casing block this turns into a simple delete till the end of the line
+        /// </summary>
+        [Test]
+        public void ChangeLineSelection_Block_SpecialCase()
+        {
+            Create("  cat", "  dog", "bear", "fish");
+            _localSettings.AutoIndent = true;
+            var visualSpan = VisualSpan.NewBlock(_textView.GetBlock(2, 1, 0, 2));
+            _commandUtil.ChangeLineSelection(UnnamedRegister, visualSpan, specialCaseBlock: true);
+            Assert.AreEqual("  ", _textView.GetLine(0).GetText());
+            Assert.AreEqual("  ", _textView.GetLine(1).GetText());
+            Assert.AreEqual(2, _textView.GetCaretPoint().Position);
         }
     }
 }

@@ -50,7 +50,7 @@ type internal DefaultOperations ( _data : OperationsData ) =
                 if text.EndsWith(System.Environment.NewLine) then text
                 else text + System.Environment.NewLine
 
-            x.CommonImpl.WrapEditInUndoTransaction "Paste" (fun () -> 
+            _undoRedoOperations.EditWithUndoTransaction "Paste" (fun () -> 
                 let span =
                     let point = if isAfter then line.EndIncludingLineBreak else line.Start
                     x.PutAtWithReturn point (StringData.Simple text) OperationKind.LineWise

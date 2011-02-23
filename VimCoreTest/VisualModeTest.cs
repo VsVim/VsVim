@@ -322,41 +322,30 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void Change4()
+        public void Bind_ChangeLineSelection()
         {
-            Create("foo", "bar");
-            var span = _textBuffer.GetLineRange(0).Extent;
-            _selection.Select(span);
-            _operations
-                .Setup(x => x.DeleteLinesInSpan(span))
-                .Returns(span)
-                .Verifiable();
-            _operations
-                .Setup(x => x.UpdateRegisterForSpan(_map.GetRegister(RegisterName.Unnamed), RegisterOperation.Delete, span, OperationKind.LineWise))
-                .Verifiable();
-            var res = _mode.Process('S');
-            Assert.IsTrue(res.IsSwitchMode);
-            Assert.AreEqual(ModeKind.Insert, res.AsSwitchMode().Item);
-            _factory.Verify();
+            Create("");
+            _commandUtil.SetupCommandVisual(VisualCommand.NewChangeLineSelection(true));
+            _mode.Process('C');
+            _commandUtil.Verify();
         }
 
         [Test]
-        public void Change5()
+        public void Bind_ChangeLineSelection_ViaS()
         {
-            Create("foo", "bar");
-            var span = _textBuffer.GetLineRange(0).Extent;
-            _selection.Select(span);
-            _operations
-                .Setup(x => x.DeleteLinesInSpan(span))
-                .Returns(span)
-                .Verifiable();
-            _operations
-                .Setup(x => x.UpdateRegisterForSpan(_map.GetRegister(RegisterName.Unnamed), RegisterOperation.Delete, span, OperationKind.CharacterWise))
-                .Verifiable();
-            var res = _mode.Process('C');
-            Assert.IsTrue(res.IsSwitchMode);
-            Assert.AreEqual(ModeKind.Insert, res.AsSwitchMode().Item);
-            _factory.Verify();
+            Create("");
+            _commandUtil.SetupCommandVisual(VisualCommand.NewChangeLineSelection(false));
+            _mode.Process('S');
+            _commandUtil.Verify();
+        }
+
+        [Test]
+        public void Bind_ChangeLineSelection_ViaR()
+        {
+            Create("");
+            _commandUtil.SetupCommandVisual(VisualCommand.NewChangeLineSelection(false));
+            _mode.Process('R');
+            _commandUtil.Verify();
         }
 
         [Test]

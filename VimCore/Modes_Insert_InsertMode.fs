@@ -101,7 +101,13 @@ type internal InsertMode
             ProcessResult.SwitchMode ModeKind.Normal
 
         else
-            _operations.MoveCaretLeft 1 
+            // Need to adjust the caret on exit.  Typically it's just a move left by 1 but if we're
+            // in virtual space we just need to get out of it.
+            let virtualPoint = TextViewUtil.GetCaretVirtualPoint _textView
+            if virtualPoint.IsInVirtualSpace then 
+                _operations.MoveCaretToPoint virtualPoint.Position
+            else
+                _operations.MoveCaretLeft 1 
             ProcessResult.SwitchMode ModeKind.Normal
 
     interface IMode with 

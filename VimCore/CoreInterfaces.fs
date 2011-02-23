@@ -106,6 +106,11 @@ type IUndoRedoOperations =
     /// Creates an Undo Transaction
     abstract CreateUndoTransaction : name:string -> IUndoTransaction
 
+    /// Wrap the passed in "action" inside an undo transaction.  This is needed
+    /// when making edits such as paste so that the cursor will move properly 
+    /// during an undo operation
+    abstract EditWithUndoTransaction<'T> : name : string -> action : (unit -> 'T) -> 'T
+
 [<System.Flags>]
 type SearchOptions = 
     | None = 0x0
@@ -865,6 +870,10 @@ type VisualCommand =
 
     /// Delete the selection and begin insert mode.  Implements the 'c' and 's' commands
     | ChangeSelection
+
+    /// Delete the selected lines and begin insert mode ('S' and 'C' commands).  The bool parameter
+    /// is whether or not to treat block selection as a special case
+    | ChangeLineSelection of bool
 
     /// Delete the selected lines
     | DeleteLineSelection

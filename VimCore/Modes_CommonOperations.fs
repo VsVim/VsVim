@@ -328,25 +328,6 @@ type internal CommonOperations ( _data : OperationsData ) =
                     | Some(span) -> foundSpan span
                     | None -> _statusUtil.OnError (Resources.Common_PatternNotFound last.Text.RawText)
 
-    /// Wrap the passed in "action" inside an undo transaction.  This is needed
-    /// when making edits such as paste so that the cursor will move properly 
-    /// during an undo operation
-    member x.WrapEditInUndoTransaction name action =
-        use undoTransaction = _undoRedoOperations.CreateUndoTransaction(name)
-        undoTransaction.AddBeforeTextBufferChangePrimitive()
-        action()
-        undoTransaction.AddAfterTextBufferChangePrimitive()
-        undoTransaction.Complete()
-
-    /// Same as WrapInUndoTransaction except provides for a return value
-    member x.WrapEditInUndoTransactionWithReturn name action =
-        use undoTransaction = _undoRedoOperations.CreateUndoTransaction(name)
-        undoTransaction.AddBeforeTextBufferChangePrimitive()
-        let ret = action()
-        undoTransaction.AddAfterTextBufferChangePrimitive()
-        undoTransaction.Complete()
-        ret
-
     member x.PutAt point stringData opKind =
         x.PutAtWithReturn point stringData opKind |> ignore
 
@@ -434,7 +415,7 @@ type internal CommonOperations ( _data : OperationsData ) =
             | PutKind.Before, OperationKind.LineWise -> 
                 caretPoint |> SnapshotPointUtil.GetContainingLine |> SnapshotLineUtil.GetStart
 
-        x.WrapEditInUndoTransaction "Paste" (fun () -> 
+        _undoRedoOperations.EditWithUndoTransaction "Paste" (fun () -> 
             x.PutAt editPoint stringData opKind 
             let position = 
                 match opKind with 
@@ -959,7 +940,7 @@ type internal CommonOperations ( _data : OperationsData ) =
             let point = TextViewUtil.GetCaretPoint _textView
             let line = point.GetContainingLine()
             let buffer = line.Snapshot.TextBuffer
-            x.WrapEditInUndoTransactionWithReturn "Paste" (fun () -> 
+            _undoRedoOperations.EditWithUndoTransaction  "Paste" (fun () -> 
                 buffer.Replace(new Span(line.End.Position,0), System.Environment.NewLine) |> ignore
                 let newLine = buffer.CurrentSnapshot.GetLineFromLineNumber(line.LineNumber+1)
                 x.IndentForNewLine line newLine
@@ -969,15 +950,11 @@ type internal CommonOperations ( _data : OperationsData ) =
             let point = TextViewUtil.GetCaretPoint _textView
             let line = point.GetContainingLine()
             let buffer = line.Snapshot.TextBuffer
-            x.WrapEditInUndoTransactionWithReturn "Paste" (fun() -> 
+            _undoRedoOperations.EditWithUndoTransaction "Paste" (fun() -> 
                 buffer.Replace(new Span(line.Start.Position,0), System.Environment.NewLine) |> ignore
                 let newLine = buffer.CurrentSnapshot.GetLineFromLineNumber(line.LineNumber)
                 x.IndentForNewLine line newLine
                 newLine)
-
-        member x.WrapEditInUndoTransaction name action = x.WrapEditInUndoTransaction name action
-
-        member x.WrapEditInUndoTransactionWithReturn name action = x.WrapEditInUndoTransactionWithReturn name action
 
         member x.PutAt point stringData opKind = x.PutAt point stringData opKind
 

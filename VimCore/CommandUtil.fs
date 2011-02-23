@@ -16,7 +16,8 @@ type internal CommandUtil
         _registerMap : IRegisterMap,
         _markMap : IMarkMap,
         _vimData : IVimData,
-        _localSettings : IVimLocalSettings
+        _localSettings : IVimLocalSettings,
+        _undoRedoOperations : IUndoRedoOperations
     ) =
 
     let _globalSettings = _localSettings.GlobalSettings
@@ -252,25 +253,75 @@ type internal CommandUtil
         x.EditWithUndoTransaciton "ChangeLines" (fun () -> 
             let snapshot = _textBuffer.Delete(range.Extent.Span)
             let line = SnapshotUtil.GetLine snapshot lineNumber
-
-            if _localSettings.AutoIndent then
-                // If auto-indent is on then we preserve the original indent.  The line is empty
-                // right now so put the caret into virtual space
-                match point with
-                | Some point ->
-                    let point = VirtualSnapshotPoint(line.Start, SnapshotPointUtil.GetColumn point)
-                    TextViewUtil.MoveCaretToVirtualPoint _textView point
-                | None -> 
-                    TextViewUtil.MoveCaretToPoint _textView line.Start
-            else
-                // Put the caret at column 0
-                TextViewUtil.MoveCaretToPoint _textView line.Start)
+            x.MoveCaretToDeletedLineStart range.StartLine)
 
         // Update the register now that the operation is complete.  Register value is odd here
         // because we really didn't delete linewise but it's required to be a linewise 
         // operation.  
         let value = range.Extent.GetText() + System.Environment.NewLine
         let value = { Value = StringData.Simple value; OperationKind = OperationKind.LineWise }
+        _registerMap.SetRegisterValue register RegisterOperation.Delete value
+
+        CommandResult.Completed (ModeSwitch.SwitchMode ModeKind.Insert)
+
+    /// Delete the selected lines and begin insert mode (implements the 'S', 'C' and 'R' visual
+    /// mode commands.  This is very similar to DeleteLineSelection except that block deletion
+    /// can be special cased depending on the command it's used in
+    member x.ChangeLineSelection register (visualSpan : VisualSpan) specialCaseBlock =
+
+        // The majority of cases simply delete a SnapshotLineRange directly.  Handle that here
+        let deleteRange (range : SnapshotLineRange) = 
+
+            // In an undo the caret position has 2 cases.
+            //  - Single line range: Start of the first line
+            //  - Multiline range: Start of the second line.
+            let point = 
+                if range.Count = 1 then 
+                    range.StartLine.Start
+                else 
+                    let next = SnapshotUtil.GetLine range.Snapshot (range.StartLineNumber + 1)
+                    next.Start
+            TextViewUtil.MoveCaretToPoint _textView point
+
+            x.EditWithUndoTransaciton "ChangeLines" (fun () -> 
+                _textBuffer.Delete(range.Extent.Span) |> ignore
+                x.MoveCaretToDeletedLineStart range.StartLine)
+
+            EditSpan.Single range.Extent
+
+        // The special casing of block deletion is handled here
+        let deleteBlock (col : NonEmptyCollection<SnapshotSpan>) = 
+
+            // First step is to change the SnapshotSpan instances to extent from the start to the
+            // end of the current line 
+            let col = col |> NonEmptyCollectionUtil.Map (fun span -> 
+                let line = SnapshotPointUtil.GetContainingLine span.Start
+                SnapshotSpan(span.Start, line.End))
+
+            // Caret should be positioned at the start of the span for undo
+            TextViewUtil.MoveCaretToPoint _textView col.Head.Start
+
+            x.EditWithUndoTransaciton "ChangeLines" (fun () -> 
+                let edit = _textBuffer.CreateEdit()
+                col |> Seq.iter (fun span -> edit.Delete(span.Span) |> ignore)
+                edit.Apply() |> ignore
+
+                TextViewUtil.MoveCaretToPosition _textView col.Head.Start.Position)
+
+            EditSpan.Block col
+
+        // Dispatch to the appropriate type of edit
+        let editSpan = 
+            match visualSpan with 
+            | VisualSpan.Character span -> 
+                span |> SnapshotLineRangeUtil.CreateForSpan |> deleteRange
+            | VisualSpan.Line range -> 
+                deleteRange range
+            | VisualSpan.Block col -> 
+                if specialCaseBlock then deleteBlock col 
+                else visualSpan.EditSpan.OverarchingSpan |> SnapshotLineRangeUtil.CreateForSpan |> deleteRange
+
+        let value = { Value = StringData.OfEditSpan editSpan; OperationKind = OperationKind.LineWise }
         _registerMap.SetRegisterValue register RegisterOperation.Delete value
 
         CommandResult.Completed (ModeSwitch.SwitchMode ModeKind.Insert)
@@ -344,40 +395,45 @@ type internal CommandUtil
 
         // Start a transaction so we can manipulate the caret position during 
         // an undo / redo
-        x.EditWithUndoTransaciton "Delete" (fun () -> 
+        let editSpan = 
+            x.EditWithUndoTransaciton "Delete" (fun () -> 
+    
+                use edit = _textBuffer.CreateEdit()
+                let editSpan = 
+                    match visualSpan with
+                    | VisualSpan.Character span ->
+                        // Just extend the SnapshotSpan to the encompasing SnapshotLineRange 
+                        let range = SnapshotLineRangeUtil.CreateForSpan span
+                        let span = range.ExtentIncludingLineBreak
+                        edit.Delete(span.Span) |> ignore
+                        EditSpan.Single span
+                    | VisualSpan.Line range ->
+                        // Easiest case.  It's just the range
+                        edit.Delete(range.ExtentIncludingLineBreak.Span) |> ignore
+                        EditSpan.Single range.ExtentIncludingLineBreak
+                    | VisualSpan.Block col -> 
+                        col
+                        |> Seq.iter (fun span -> 
+                            // Delete from the start of the span until the end of the containing
+                            // line
+                            let span = 
+                                let line = SnapshotPointUtil.GetContainingLine span.Start
+                                SnapshotSpan(span.Start, line.End)
+                            edit.Delete(span.Span) |> ignore)
+                        EditSpan.Block col
+    
+                edit.Apply() |> ignore
+    
+                // Now position the cursor back at the start of the VisualSpan
+                TextViewUtil.MoveCaretToPosition _textView visualSpan.Start.Position
+    
+                // Possible for a block mode to deletion to cause the start to now be in the line 
+                // break so we need to acount for the 'virtualedit' setting
+                _operations.MoveCaretForVirtualEdit()
 
-            use edit = _textBuffer.CreateEdit()
-            match visualSpan with
-            | VisualSpan.Character span ->
-                let range = SnapshotLineRangeUtil.CreateForSpan span
-                edit.Delete(range.ExtentIncludingLineBreak.Span) |> ignore
-            | VisualSpan.Line range ->
-                edit.Delete(range.ExtentIncludingLineBreak.Span) |> ignore
-            | VisualSpan.Block col -> 
-                col
-                |> Seq.iter (fun span -> 
-                    // Delete from the start of the span until the end of the containing
-                    // line
-                    let span = 
-                        let line = SnapshotPointUtil.GetContainingLine span.Start
-                        SnapshotSpan(span.Start, line.End)
-                    edit.Delete(span.Span) |> ignore)
+                editSpan)
 
-            edit.Apply() |> ignore
-
-            // Now position the cursor back at the start of the VisualSpan
-            TextViewUtil.MoveCaretToPosition _textView visualSpan.Start.Position
-
-            // Possible for a block mode to deletion to cause the start to now be in the line 
-            // break so we need to acount for the 'virtualedit' setting
-            _operations.MoveCaretForVirtualEdit())
-
-        let stringData = 
-            match visualSpan with
-            | VisualSpan.Character span -> StringData.OfSpan (SnapshotLineRangeUtil.CreateForSpan span).ExtentIncludingLineBreak
-            | VisualSpan.Line range -> StringData.OfSpan range.ExtentIncludingLineBreak
-            | VisualSpan.Block col -> StringData.OfNonEmptyCollection col
-        let value = { Value = stringData; OperationKind = OperationKind.LineWise }
+        let value = { Value = StringData.OfEditSpan editSpan; OperationKind = OperationKind.LineWise }
         _registerMap.SetRegisterValue register RegisterOperation.Delete value
 
         CommandResult.Completed ModeSwitch.SwitchPreviousMode
@@ -502,6 +558,11 @@ type internal CommandUtil
 
         CommandResult.Completed ModeSwitch.NoSwitch
 
+    /// Run the specified action with a wrapped undo transaction.  This is often necessary when
+    /// an edit command manipulates the caret
+    member x.EditWithUndoTransaciton<'T> (name : string) (action : unit -> 'T) : 'T = 
+        _undoRedoOperations.EditWithUndoTransaction name action
+
     /// Format the 'count' lines in the buffer
     member x.FormatLines count =
         let range = SnapshotLineRangeUtil.CreateForLineAndMaxCount x.CaretLine count
@@ -523,10 +584,6 @@ type internal CommandUtil
     member x.FormatMotion (result : MotionResult) = 
         _operations.FormatLines result.LineRange
         CommandResult.Completed ModeSwitch.NoSwitch
-
-    /// Run the specified action with a wrapped undo transaction.  This is often necessary when
-    /// an edit command manipulates the caret
-    member x.EditWithUndoTransaciton name action = _operations.WrapEditInUndoTransaction name action
 
     /// Join 'count' lines in the buffer
     member x.JoinLines kind count = 
@@ -607,12 +664,38 @@ type internal CommandUtil
         let switch = ModeSwitch.SwitchModeWithArgument (ModeKind.Insert, ModeArgument.InsertWithCount count)
         CommandResult.Completed switch
 
+    /// Move the caret to start of a line which is deleted.  Needs to preserve the original 
+    /// indent if 'autoindent' is set.
+    ///
+    /// Be wary of using this function.  It has the implicit contract that the Start position
+    /// of the line is still valid.  
+    member x.MoveCaretToDeletedLineStart (deletedLine : ITextSnapshotLine) =
+        Contract.Requires (deletedLine.Start.Position <= x.CurrentSnapshot.Length)
+
+        if _localSettings.AutoIndent then
+            // Caret needs to be positioned at the indentation point of the previous line.  Don't
+            // create actual whitespace, put the caret instead into virtual space
+            let column = 
+                deletedLine.Start
+                |> SnapshotPointUtil.GetContainingLine
+                |> SnapshotLineUtil.GetIndent
+                |> SnapshotPointUtil.GetColumn
+            if column = 0 then 
+                TextViewUtil.MoveCaretToPosition _textView deletedLine.Start.Position
+            else
+                let point = SnapshotUtil.GetPoint x.CurrentSnapshot deletedLine.Start.Position
+                let virtualPoint = VirtualSnapshotPoint(point, column)
+                TextViewUtil.MoveCaretToVirtualPoint _textView virtualPoint
+        else
+            // Put the caret at column 0
+            TextViewUtil.MoveCaretToPosition _textView deletedLine.Start.Position
+
     /// The Join commands (Visual and Normal) have identical cursor positioning behavior and 
     /// it's non-trivial so it's factored out to a function here.  In short the caret should be
     /// positioned 1 position after the last character in the second to last line of the join
-    // The caret should be positioned one after the second to last line in the 
-    // join.  It should have it's original position during an undo so don't
-    // move the caret until we're inside the transaction
+    /// The caret should be positioned one after the second to last line in the 
+    /// join.  It should have it's original position during an undo so don't
+    /// move the caret until we're inside the transaction
     member x.MoveCaretFollowingJoin (range : SnapshotLineRange) =
         let point = 
             let number = range.StartLineNumber + range.Count - 2
@@ -912,11 +995,19 @@ type internal CommandUtil
 
     /// Run a VisualCommand against the buffer
     member x.RunVisualCommand command (data : CommandData) (visualSpan : VisualSpan) = 
+
+        // Clear the selection before actually running any Visual Commands.  Selection is one 
+        // of the items which is preserved along with caret position when we use an edit transaction
+        // with the change primitives (EditWithUndoTransaction).  We don't want the selection to 
+        // reappear during an undo hence clear it now so it's gone.
+        _textView.Selection.Clear()
+
         let register = _registerMap.GetRegister data.RegisterNameOrDefault
         let count = data.CountOrDefault
         match command with
         | VisualCommand.ChangeCase kind -> x.ChangeCaseVisual kind visualSpan
         | VisualCommand.ChangeSelection -> x.DeleteSelection register visualSpan (ModeSwitch.SwitchMode ModeKind.Insert)
+        | VisualCommand.ChangeLineSelection specialCaseBlock -> x.ChangeLineSelection register visualSpan specialCaseBlock
         | VisualCommand.DeleteSelection -> x.DeleteSelection register visualSpan ModeSwitch.SwitchPreviousMode
         | VisualCommand.DeleteLineSelection -> x.DeleteLineSelection register visualSpan
         | VisualCommand.FormatLines -> x.FormatLinesVisual visualSpan
