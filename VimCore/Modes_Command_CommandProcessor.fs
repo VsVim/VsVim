@@ -92,6 +92,7 @@ type internal CommandProcessor
     let _textBuffer = _textView.TextBuffer
     let _host = _buffer.Vim.VimHost
     let _regexFactory = VimRegexFactory(_buffer.Settings.GlobalSettings)
+    let _registerMap = _buffer.RegisterMap
 
     let mutable _command : System.String = System.String.Empty
 
@@ -386,8 +387,10 @@ type internal CommandProcessor
             |> RangeUtil.TryApplyCount count
 
         let span = range.ExtentIncludingLineBreak
-        _operations.DeleteSpan span 
-        _operations.UpdateRegisterForSpan reg RegisterOperation.Delete span OperationKind.LineWise
+        _textBuffer.Delete(span.Span) |> ignore
+
+        let value = { Value = StringData.OfSpan span; OperationKind = OperationKind.LineWise }
+        _registerMap.SetRegisterValue reg RegisterOperation.Delete value
 
     member x.ProcessUndo rest _ _ =
         match Seq.isEmpty rest with

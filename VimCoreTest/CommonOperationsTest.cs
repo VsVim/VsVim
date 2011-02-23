@@ -811,42 +811,6 @@ namespace VimCore.UnitTest
             Assert.AreEqual(point, _textView.GetCaretPoint());
         }
 
-        [Test]
-        public void DeleteSpan1()
-        {
-            Create("foo", "bar");
-            _operations.DeleteSpan(_textView.TextSnapshot.GetLineFromLineNumber(0).ExtentIncludingLineBreak);
-            var tss = _textView.TextSnapshot;
-            Assert.AreEqual(1, tss.LineCount);
-            Assert.AreEqual("bar", tss.GetLineFromLineNumber(0).GetText());
-        }
-
-        [Test]
-        public void DeleteSpan2()
-        {
-            Create("foo", "bar", "baz");
-            var tss = _textView.TextSnapshot;
-            var span = new SnapshotSpan(
-                tss.GetLineFromLineNumber(0).Start,
-                tss.GetLineFromLineNumber(1).EndIncludingLineBreak);
-            _operations.DeleteSpan(span);
-            tss = _textView.TextSnapshot;
-            Assert.AreEqual(1, tss.LineCount);
-            Assert.AreEqual("baz", tss.GetLineFromLineNumber(0).GetText());
-        }
-
-        [Test]
-        public void DeleteSpan3()
-        {
-            Create("foo", "bar", "baz");
-            var tss = _textView.TextSnapshot;
-            _operations.DeleteSpan(tss.GetLineFromLineNumber(1).ExtentIncludingLineBreak);
-            tss = _textView.TextSnapshot;
-            Assert.AreEqual(2, tss.LineCount);
-            Assert.AreEqual("foo", tss.GetLineFromLineNumber(0).GetText());
-            Assert.AreEqual("baz", tss.GetLineFromLineNumber(1).GetText());
-        }
-
         [Test, Description("Only shift whitespace")]
         public void ShiftLineRangeLeft1()
         {
@@ -1217,94 +1181,6 @@ namespace VimCore.UnitTest
             _editorOperations.Setup(x => x.ScrollPageDown()).Callback(() => { count++; });
             _operations.ScrollPages(ScrollDirection.Down, 2);
             Assert.AreEqual(2, count);
-        }
-
-        [Test]
-        public void DeleteLines1()
-        {
-            Create("foo", "bar", "baz", "jaz");
-            var span = _operations.DeleteLines(1);
-            Assert.AreEqual("foo", span.GetText());
-            Assert.AreEqual(String.Empty, _textView.TextSnapshot.GetLineRange(0).GetText());
-            Assert.AreEqual("bar", _textView.TextSnapshot.GetLineRange(1).GetText());
-            Assert.AreEqual(4, _textView.TextSnapshot.LineCount);
-        }
-
-        [Test, Description("Caret position should not affect this operation")]
-        public void DeleteLines2()
-        {
-            Create("foo", "bar", "baz", "jaz");
-            _textView.MoveCaretTo(1);
-            var span = _operations.DeleteLines(1);
-            Assert.AreEqual("foo", span.GetText());
-            Assert.AreEqual(String.Empty, _textView.TextSnapshot.GetLineRange(0).GetText());
-            Assert.AreEqual("bar", _textView.TextSnapshot.GetLineRange(1).GetText());
-            Assert.AreEqual(4, _textView.TextSnapshot.LineCount);
-        }
-
-        [Test, Description("Delete past the end of the buffer should not crash")]
-        public void DeleteLines3()
-        {
-            Create("foo", "bar", "baz", "jaz");
-            _textView.MoveCaretTo(1);
-            _operations.DeleteLines(3000);
-            Assert.AreEqual(String.Empty, _textView.TextSnapshot.GetLineRange(0).GetText());
-        }
-
-        [Test]
-        public void DeleteLinesFromCursor1()
-        {
-            Create("foo", "bar", "baz", "jaz");
-            var tss = _textView.TextSnapshot;
-            var span = _operations.DeleteLinesFromCursor(1);
-            Assert.AreEqual(String.Empty, _textView.TextSnapshot.GetLineFromLineNumber(0).GetText());
-            Assert.AreEqual("foo", span.GetText());
-        }
-
-        [Test]
-        public void DeleteLinesFromCursor2()
-        {
-            Create("foo", "bar", "baz", "jaz");
-            var tss = _textView.TextSnapshot;
-            var span = _operations.DeleteLinesFromCursor(2);
-            Assert.AreEqual(String.Empty, _textView.TextSnapshot.GetLineFromLineNumber(0).GetText());
-            Assert.AreEqual("foo" + Environment.NewLine + "bar", span.GetText());
-        }
-
-        [Test]
-        public void DeleteLinesFromCursor3()
-        {
-            Create("foo", "bar", "baz", "jaz");
-            var tss = _textView.TextSnapshot;
-            _textView.MoveCaretTo(1);
-            var span = _operations.DeleteLinesFromCursor(2);
-            Assert.AreEqual("f", _textView.TextSnapshot.GetLineFromLineNumber(0).GetText());
-            Assert.AreEqual("oo" + Environment.NewLine + "bar", span.GetText());
-        }
-
-
-        [Test]
-        public void DeleteLinesIncludingLineBreakFromCursor1()
-        {
-            Create("foo", "bar", "baz", "jaz");
-            _textView.MoveCaretTo(1);
-            var span = _operations.DeleteLinesIncludingLineBreakFromCursor(1);
-            Assert.AreEqual("oo" + Environment.NewLine, span.GetText());
-            Assert.AreEqual("fbar", _textView.TextSnapshot.GetLineRange(0).GetText());
-            Assert.AreEqual("baz", _textView.TextSnapshot.GetLineRange(1).GetText());
-            Assert.AreEqual(3, _textView.TextSnapshot.LineCount);
-        }
-
-        [Test]
-        public void DeleteLinesIncludingLineBreakFromCursor2()
-        {
-            Create("foo", "bar", "baz", "jaz");
-            _textView.MoveCaretTo(1);
-            var span = _operations.DeleteLinesIncludingLineBreakFromCursor(2);
-            Assert.AreEqual("oo" + Environment.NewLine + "bar" + Environment.NewLine, span.GetText());
-            Assert.AreEqual("fbaz", _textView.TextSnapshot.GetLineRange(0).GetText());
-            Assert.AreEqual("jaz", _textView.TextSnapshot.GetLineRange(1).GetText());
-            Assert.AreEqual(2, _textView.TextSnapshot.LineCount);
         }
 
         [Test]

@@ -839,7 +839,7 @@ type internal CommandUtil
                     let caretPoint, caretLine = x.CaretPointAndLine
                     let length = min count (caretLine.EndIncludingLineBreak.Position - caretPoint.Position)
                     let span = SnapshotSpanUtil.CreateWithLength caretPoint length
-                    _operations.DeleteSpan span
+                    _textBuffer.Delete(span.Span) |> ignore
                 CommandResult.Completed ModeSwitch.NoSwitch
 
             match command with

@@ -9,7 +9,6 @@ using Moq;
 using NUnit.Framework;
 using Vim;
 using Vim.Extensions;
-using Vim.Modes;
 using Vim.Modes.Command;
 using Vim.UnitTest;
 using Vim.UnitTest.Mock;
@@ -53,6 +52,11 @@ namespace VimCore.UnitTest
                 MockObjectFactory.CreateVim(_map, host: _host.Object, vimData: _vimData).Object);
             _processorRaw = new Vim.Modes.Command.CommandProcessor(_bufferData.Object, _operations.Object, _statusUtil.Object, _fileSystem.Object);
             _processor = _processorRaw;
+        }
+
+        private Register UnnamedRegister
+        {
+            get { return _map.GetRegister(RegisterName.Unnamed); }
         }
 
         private RunResult RunCommand(string input)
@@ -322,52 +326,41 @@ namespace VimCore.UnitTest
             _operations.Verify();
         }
 
+        /// <summary>
+        /// No arguments means delete the current line
+        /// </summary>
         [Test]
-        public void Delete1()
+        public void Delete_CurrentLine()
         {
             Create("foo", "bar");
-            var span = _textView.TextSnapshot.GetLineFromLineNumber(0).ExtentIncludingLineBreak;
-            _operations
-                .Setup(x => x.DeleteSpan(span))
-                .Verifiable();
-            _operations
-                .Setup(x => x.UpdateRegisterForSpan(_map.GetRegister(RegisterName.Unnamed), RegisterOperation.Delete, span, OperationKind.LineWise))
-                .Verifiable();
             RunCommand("del");
-            _operations.Verify();
+            Assert.AreEqual("foo" + Environment.NewLine, UnnamedRegister.StringValue);
+            Assert.AreEqual("bar", _textView.GetLine(0).GetText());
         }
 
+        /// <summary>
+        /// When count is in back it's a range of lines
+        /// </summary>
         [Test]
-        public void Delete2()
+        public void Delete_SeveralLines()
         {
             Create("foo", "bar", "baz");
-            var tss = _textView.TextSnapshot;
-            var span = new SnapshotSpan(
-                tss.GetLineFromLineNumber(0).Start,
-                tss.GetLineFromLineNumber(1).EndIncludingLineBreak);
-            _operations
-                .Setup(x => x.DeleteSpan(span))
-                .Verifiable();
-            _operations
-                .Setup(x => x.UpdateRegisterForSpan(_map.GetRegister(RegisterName.Unnamed), RegisterOperation.Delete, span, OperationKind.LineWise))
-                .Verifiable();
             RunCommand("dele 2");
-            _operations.Verify();
+            Assert.AreEqual("baz", _textView.GetLine(0).GetText());
+            Assert.AreEqual("foo" + Environment.NewLine + "bar" + Environment.NewLine, UnnamedRegister.StringValue);
         }
 
+        /// <summary>
+        /// Delete only the specified line when count is in front
+        /// </summary>
         [Test]
-        public void Delete3()
+        public void Delete_SpecificLineNumber()
         {
             Create("foo", "bar", "baz");
-            var span = _textView.TextSnapshot.GetLineFromLineNumber(1).ExtentIncludingLineBreak;
-            _operations
-                .Setup(x => x.DeleteSpan(span))
-                .Verifiable();
-            _operations
-                .Setup(x => x.UpdateRegisterForSpan(_map.GetRegister(RegisterName.Unnamed), RegisterOperation.Delete, span, OperationKind.LineWise))
-                .Verifiable();
             RunCommand("2del");
-            _operations.Verify();
+            Assert.AreEqual("foo", _textView.GetLine(0).GetText());
+            Assert.AreEqual("baz", _textView.GetLine(1).GetText());
+            Assert.AreEqual("bar" + Environment.NewLine, UnnamedRegister.StringValue);
         }
 
         [Test]

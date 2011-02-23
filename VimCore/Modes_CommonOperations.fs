@@ -664,32 +664,6 @@ type internal CommonOperations ( _data : OperationsData ) =
         member x.ShiftLineRangeLeft range multiplier = x.ShiftLineRangeLeft range multiplier
         member x.ShiftLineRangeRight range multiplier = x.ShiftLineRangeRight range multiplier
 
-        member x.DeleteSpan span = x.DeleteSpan span 
-        member x.DeleteBlock col = x.DeleteBlock col 
-        member x.DeleteLines count = 
-            let point = TextViewUtil.GetCaretPoint _textView
-            let point = point.GetContainingLine().Start
-            let span = SnapshotPointUtil.GetLineRangeSpan point count
-            let span = SnapshotSpan(point, span.End)
-            x.DeleteSpan span 
-            span
-        member x.DeleteLinesInSpan span =
-            let startLine,endLine = SnapshotSpanUtil.GetStartAndEndLine span
-            let span = SnapshotSpan(startLine.Start,endLine.End)
-            x.DeleteSpan span 
-            span
-        member x.DeleteLinesFromCursor count = 
-            let point,line = TextViewUtil.GetCaretPointAndLine _textView
-            let span = SnapshotPointUtil.GetLineRangeSpan point count
-            let span = SnapshotSpan(point, span.End)
-            x.DeleteSpan span 
-            span
-        member x.DeleteLinesIncludingLineBreakFromCursor count = 
-            let point = TextViewUtil.GetCaretPoint _textView
-            let span = SnapshotPointUtil.GetLineRangeSpanIncludingLineBreak point count
-            let span = SnapshotSpan(point, span.End)
-            x.DeleteSpan span
-            span
         member x.Undo count = _undoRedoOperations.Undo count
         member x.Redo count = _undoRedoOperations.Redo count
         member x.Save() = _host.Save _textView.TextBuffer

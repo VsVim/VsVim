@@ -81,27 +81,6 @@ type ICommonOperations =
     /// Delete all folds at the cursor
     abstract DeleteAllFoldsAtCursor : unit -> unit
 
-    /// Delete count lines starting from the cursor line.  The last line will 
-    /// not have its break deleted
-    abstract DeleteLines : count:int -> SnapshotSpan
-
-    /// Delete from the cursor to the end of the current line and (count-1) more 
-    /// lines.  
-    abstract DeleteLinesFromCursor : count:int -> SnapshotSpan
-
-    /// Delete from the cursor to the end of the current line and (count-1) more 
-    /// lines.  
-    abstract DeleteLinesIncludingLineBreakFromCursor : count:int -> SnapshotSpan
-
-    /// Delete the lines in the given span.  Does not include the final line break
-    abstract DeleteLinesInSpan : SnapshotSpan -> SnapshotSpan
-
-    /// Delete a range of text
-    abstract DeleteSpan : SnapshotSpan -> unit
-
-    /// Delete a range of text
-    abstract DeleteBlock : NormalizedSnapshotSpanCollection -> unit
-
     /// Ensure the caret is on the visible screen
     abstract EnsureCaretOnScreen : unit -> unit
 
