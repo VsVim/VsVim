@@ -1,6 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel.Composition;
+using System.Runtime.CompilerServices;
 using Microsoft.VisualStudio.Text.Operations;
 
 namespace Vim.UnitTest.Exports
@@ -8,7 +8,7 @@ namespace Vim.UnitTest.Exports
     [Export(typeof(ITextUndoHistoryRegistry))]
     public sealed class TextUndoHistoryRegistry : ITextUndoHistoryRegistry
     {
-        private readonly Dictionary<object, ITextUndoHistory> _map = new Dictionary<object, ITextUndoHistory>();
+        private readonly ConditionalWeakTable<object, ITextUndoHistory> _map = new ConditionalWeakTable<object, ITextUndoHistory>();
 
         public void AttachHistory(object context, ITextUndoHistory history)
         {
