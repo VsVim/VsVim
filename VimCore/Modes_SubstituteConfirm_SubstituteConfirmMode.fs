@@ -69,10 +69,14 @@ type internal SubstituteConfirmMode
             _confirmData <- value
             _currentMatchChanged.Trigger this.CurrentMatch
 
-            // Adjust the caret to the new location
             match value with 
-            | None -> ()
-            | Some(data) -> _operations.MoveCaretToPoint data.CurrentMatch.Start
+            | None -> 
+                ()
+            | Some(data) -> 
+
+                // Adjust the caret to the new location and ensure it's visible to the user
+                _operations.MoveCaretToPoint data.CurrentMatch.Start
+                _operations.EnsureCaretOnScreenAndTextExpanded()
 
     member this.CurrentSubstitute =
         match _confirmData with
@@ -84,7 +88,7 @@ type internal SubstituteConfirmMode
         ModeSwitch.SwitchMode ModeKind.Normal
 
     /// Move to the next match given provided ConfirmData 
-    member this.MoveToNext (data:ConfirmData) = 
+    member this.MoveToNext (data : ConfirmData) = 
 
         // First we need to get the point after the Current selection.  This function
         // is called after edits so it's possible the Snapshot is different.
@@ -104,7 +108,7 @@ type internal SubstituteConfirmMode
                 let span = SnapshotSpanUtil.CreateFromBounds point line.EndIncludingLineBreak
                 match RegexUtil.MatchSpan span data.Regex.Regex with
                 | Some(span,_) ->
-                    this.ConfirmData <- Some {data with CurrentMatch=span}
+                    this.ConfirmData <- Some { data with CurrentMatch=span }
                     ModeSwitch.NoSwitch
                 | None -> 
                     doSearch line.EndIncludingLineBreak
