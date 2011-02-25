@@ -855,10 +855,13 @@ type internal CommandUtil
             | StoredCommand.LinkedCommand (command1, command2) -> 
 
                 // Run the commands in sequence.  Only continue onto the second if the first 
-                // command succeeds
-                match repeat command1 repeatData with
-                | CommandResult.Error -> CommandResult.Error
-                | CommandResult.Completed _ -> repeat command2 None
+                // command succeeds.  We do want any actions performed in the linked commands
+                // to remain linked so do this inside of an edit transaction
+                x.EditWithUndoTransaciton "LinkedCommand" (fun () ->
+                    match repeat command1 repeatData with
+                    | CommandResult.Error -> CommandResult.Error
+                    | CommandResult.Completed _ -> repeat command2 None)
+
             | StoredCommand.LegacyCommand (keyInputSet, _) -> 
 
                 // Don't support repeat of Legacy Commands.  They're the reason we moved to this
