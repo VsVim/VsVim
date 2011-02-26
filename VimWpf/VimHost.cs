@@ -122,11 +122,17 @@ namespace Vim.UI.Wpf
             return document.IsDirty;
         }
 
-        public abstract HostResult LoadFileIntoExisting(string filePath, ITextBuffer textbuffer);
+        public abstract HostResult LoadFileIntoExistingWindow(string filePath, ITextBuffer textbuffer);
+
+        public abstract HostResult LoadFileIntoNewWindow(string filePath);
 
         public abstract void MoveViewDown(ITextView value);
 
         public abstract void MoveViewUp(ITextView value);
+
+        public abstract void MoveViewLeft(ITextView value);
+
+        public abstract void MoveViewRight(ITextView value);
 
         public abstract bool NavigateTo(VirtualSnapshotPoint point);
 
@@ -160,7 +166,8 @@ namespace Vim.UI.Wpf
 
         public abstract void ShowOpenFileDialog();
 
-        public abstract void SplitView(ITextView value);
+        public abstract HostResult SplitViewHorizontally(ITextView value);
 
+        public abstract HostResult SplitViewVertically(ITextView value);
     }
 }

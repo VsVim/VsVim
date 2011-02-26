@@ -40,8 +40,11 @@ type IVimHost =
     /// Is the ITextBuffer in a dirty state?
     abstract IsDirty : ITextBuffer -> bool
 
-    /// Loads the new file into the existing buffer
-    abstract LoadFileIntoExisting : filePath : string -> textBuffer : ITextBuffer -> HostResult
+    /// Loads the new file into the existing window
+    abstract LoadFileIntoExistingWindow : filePath : string -> textBuffer : ITextBuffer -> HostResult
+
+    /// Loads the new file into a new existing window
+    abstract LoadFileIntoNewWindow : filePath : string -> HostResult
 
     abstract NavigateTo : point : VirtualSnapshotPoint -> bool
 
@@ -69,14 +72,23 @@ type IVimHost =
     /// Builds the solution
     abstract BuildSolution : unit -> unit
 
-    /// Split the views
-    abstract SplitView : ITextView -> unit
+    /// Split the views horizontally
+    abstract SplitViewHorizontally : ITextView -> HostResult
+
+    /// Split the views horizontally
+    abstract SplitViewVertically: ITextView -> HostResult
 
     /// Move to the view above the current one
     abstract MoveViewUp : ITextView -> unit
 
     /// Move to the view below the current one
     abstract MoveViewDown : ITextView -> unit
+
+    /// Move to the view to the right of the current one
+    abstract MoveViewRight : ITextView -> unit
+
+    /// Move to the view to the right of the current one
+    abstract MoveViewLeft : ITextView -> unit
 
 
 module internal VimHostExtensions =

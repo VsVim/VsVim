@@ -14,6 +14,7 @@ using Microsoft.VisualStudio.TextManager.Interop;
 using Vim;
 using Vim.Extensions;
 using Vim.UI.Wpf;
+using VsVim.Properties;
 
 namespace VsVim
 {
@@ -137,7 +138,14 @@ namespace VsVim
             return GoToDefinitionCore(_textManager.ActiveTextView, null);
         }
 
-        public override HostResult LoadFileIntoExisting(string filePath, ITextBuffer textBuffer)
+        /// <summary>
+        /// In a perfect world this would replace the contents of the existing ITextView
+        /// with those of the specified file.  Unfortunately this causes problems in 
+        /// Visual Studio when the file is of a different content type.  Instead we 
+        /// mimic the behavior by opening the document in a new window and closing the
+        /// existing one
+        /// </summary>
+        public override HostResult LoadFileIntoExistingWindow(string filePath, ITextBuffer textBuffer)
         {
             try
             {
@@ -146,6 +154,22 @@ namespace VsVim
                 // message
                 VsShellUtilities.OpenDocument(_adapter.ServiceProvider, filePath);
                 _textManager.Close(textBuffer, false);
+                return HostResult.Success;
+            }
+            catch (Exception e)
+            {
+                return HostResult.NewError(e.Message);
+            }
+        }
+
+        /// <summary>
+        /// Open up a new document window with the specified file
+        /// </summary>
+        public override HostResult LoadFileIntoNewWindow(string filePath)
+        {
+            try
+            {
+                VsShellUtilities.OpenDocument(_adapter.ServiceProvider, filePath);
                 return HostResult.Success;
             }
             catch (Exception e)
@@ -278,9 +302,21 @@ namespace VsVim
             SafeExecuteCommand("Build.BuildSolution");
         }
 
-        public override void SplitView(ITextView textView)
+        /// <summary>
+        /// Perform a horizontal window split 
+        /// </summary>
+        public override HostResult SplitViewHorizontally(ITextView textView)
         {
             _textManager.SplitView(textView);
+            return HostResult.Success;
+        }
+
+        /// <summary>
+        /// Verticaly window splits are not supported in visual studio
+        /// </summary>
+        public override HostResult SplitViewVertically(ITextView value)
+        {
+            return HostResult.NewError(Resources.UnsupportedInVisualStudio);
         }
 
         public override void MoveViewDown(ITextView textView)
@@ -291,6 +327,22 @@ namespace VsVim
         public override void MoveViewUp(ITextView textView)
         {
             _textManager.MoveViewUp(textView);
+        }
+
+        /// <summary>
+        /// Vertical splits are not supported in Visual Studio so this method is not applicable
+        /// </summary>
+        public override void MoveViewLeft(ITextView value)
+        {
+            // Unsupported
+        }
+
+        /// <summary>
+        /// Vertical splits are not supported in Visual Studio so this method is not applicable
+        /// </summary>
+        public override void MoveViewRight(ITextView value)
+        {
+            // Unsupported
         }
 
         public override bool GoToGlobalDeclaration(ITextView textView, string target)

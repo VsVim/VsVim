@@ -24,6 +24,22 @@ namespace VimCore.UnitTest
             Assert.IsFalse(input.IsDigit);
         }
 
+        /// <summary>
+        /// The key pad should register as digits.  Otherwise it won't be included as count
+        /// values
+        /// </summary>
+        [Test]
+        public void IsDigit_KeyPad()
+        {
+            foreach (var cur in Enum.GetValues(typeof(VimKey)).Cast<VimKey>().Where(VimKeyUtil.IsKeypadNumberKey))
+            {
+                var keyInput = KeyInputUtil.VimKeyToKeyInput(cur);
+                Assert.IsTrue(keyInput.IsDigit);
+                Assert.IsTrue(keyInput.RawChar.IsSome());
+                Assert.IsTrue(CharUtil.IsDigit(keyInput.Char));
+            }
+        }
+
         [Test]
         public void Equality1()
         {
