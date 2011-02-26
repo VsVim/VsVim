@@ -29,7 +29,6 @@ namespace VimCore.UnitTest
         private Mock<IVimGlobalSettings> _globalSettings;
         private Mock<IOutliningManager> _outlining;
         private Mock<IStatusUtil> _statusUtil;
-        private Mock<ISmartIndentationService> _smartIndent;
         private IUndoRedoOperations _undoRedoOperations;
         private ISearchService _searchService;
         private IRegisterMap _registerMap;
@@ -66,7 +65,6 @@ namespace VimCore.UnitTest
             _outlining = _factory.Create<IOutliningManager>();
             _globalSettings.SetupGet(x => x.ShiftWidth).Returns(2);
             _statusUtil = _factory.Create<IStatusUtil>();
-            _smartIndent = _factory.Create<ISmartIndentationService>();
             _searchService = VimUtil.CreateSearchService(_globalSettings.Object);
             _undoRedoOperations = VimUtil.CreateUndoRedoOperations(_statusUtil.Object);
 
@@ -85,8 +83,7 @@ namespace VimCore.UnitTest
                 navigator: null,
                 statusUtil: _statusUtil.Object,
                 foldManager: null,
-                searchService: _searchService,
-                smartIndentationService: _smartIndent.Object);
+                searchService: _searchService);
 
             _operationsRaw = new CommonOperations(data);
             _operations = _operationsRaw;

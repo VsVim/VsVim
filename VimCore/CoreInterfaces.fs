@@ -612,6 +612,11 @@ type ModeArgument =
     /// be repeated a total of 'count - 1' times when insert mode exits
     | InsertWithCount of int
 
+    /// Begins insert mode with a specified count.  This means the text inserted should
+    /// be repeated a total of 'count - 1' times when insert mode exits.  Each extra time
+    /// should be on a new line
+    | InsertWithCountAndNewLine of int
+
 type ModeSwitch =
     | NoSwitch
     | SwitchMode of ModeKind

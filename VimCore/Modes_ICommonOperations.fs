@@ -18,7 +18,6 @@ type OperationsData = {
     OutliningManager : IOutliningManager option
     RegisterMap : IRegisterMap 
     SearchService : ISearchService
-    SmartIndentationService : ISmartIndentationService
     StatusUtil : IStatusUtil
     TextView : ITextView
     UndoRedoOperations : IUndoRedoOperations

@@ -5,6 +5,7 @@ open Vim
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Operations
 open Microsoft.VisualStudio.Text.Editor
+open System
 
 type CommandFunction = unit -> ProcessResult
 
@@ -19,8 +20,12 @@ type internal InsertMode
         _isReplace : bool ) as this =
 
     let _textView = _data.TextView
-    let mutable _transaction : (IUndoTransaction * int) option = None
     let mutable _commandMap : Map<KeyInput,CommandFunction> = Map.empty
+
+    /// Holds the information about insert repeat.  The second two items in the
+    /// tuple are the count of the repeat and whether or not a newline should be
+    /// used
+    let mutable _transaction : (IUndoTransaction * int * bool) option = None
 
     do
         let commands : (string * CommandFunction) list = 
@@ -54,14 +59,14 @@ type internal InsertMode
         _operations.ShiftLineRangeRight range 1
         ProcessResult.Processed
 
-    member this.ProcessEscape () =
-
+    /// Apply the repeated edits the the ITextBuffer
+    member this.MaybeApplyRepeatedEdits () = 
         // Need to close out the edit transaction if there is any
         match _transaction with
         | None ->
             // nothing to do
             ()
-        | Some (transaction, count) ->
+        | Some (transaction, count, addNewLines) ->
 
             // Start by None'ing out the _transaction variable.  Don't need it anymore
             _transaction <- None
@@ -71,7 +76,13 @@ type internal InsertMode
                     match change with
                     | TextChange.Insert text -> 
                         // Insert the same text 'count - 1' times at the cursor
-                        let text = StringUtil.repeat (count - 1) text
+                        let text = 
+                            if addNewLines then
+                                let text = Environment.NewLine + text
+                                StringUtil.repeat (count - 1) text
+                            else 
+                                StringUtil.repeat (count - 1) text
+
                         let caretPoint = TextViewUtil.GetCaretPoint _textView
                         let span = SnapshotSpan(caretPoint, 0)
                         let snapshot = _textView.TextBuffer.Replace(span.Span, text) |> ignore
@@ -94,6 +105,10 @@ type internal InsertMode
 
             finally
                 transaction.Complete()
+
+    member this.ProcessEscape () =
+
+        this.MaybeApplyRepeatedEdits()
 
         if _broker.IsCompletionActive || _broker.IsSignatureHelpActive || _broker.IsQuickInfoActive then
             _broker.DismissDisplayWindows()
@@ -128,7 +143,13 @@ type internal InsertMode
                 | ModeArgument.InsertWithCount count ->
                     if count > 1 then
                         let transaction = _undoRedoOperations.CreateUndoTransaction "Insert"
-                        Some (transaction, count)
+                        Some (transaction, count, false)
+                    else
+                        None
+                | ModeArgument.InsertWithCountAndNewLine count ->
+                    if count > 1 then
+                        let transaction = _undoRedoOperations.CreateUndoTransaction "Insert"
+                        Some (transaction, count, true)
                     else
                         None
                 | _ -> 
@@ -137,6 +158,7 @@ type internal InsertMode
             // If this is replace mode then go ahead and setup overwrite
             if _isReplace then
                 _editorOptions.SetOptionValue(DefaultTextViewOptions.OverwriteModeId, true)
+
         member x.OnLeave () = 
 
             // Ensure the transaction is complete and None'd out.  We can get here with an active
@@ -145,7 +167,7 @@ type internal InsertMode
             try
                 match _transaction with
                 | None -> ()
-                | Some (transaction, _) -> transaction.Complete()
+                | Some (transaction, _, _) -> transaction.Complete()
             finally
                 _transaction <- None
 

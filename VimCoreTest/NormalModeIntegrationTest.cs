@@ -13,12 +13,14 @@ namespace VimCore.UnitTest
     {
         private IVimBuffer _buffer;
         private IWpfTextView _textView;
+        private ITextBuffer _textBuffer;
         private bool _assertOnErrorMessage = true;
 
         public void Create(params string[] lines)
         {
             var tuple = EditorUtil.CreateViewAndOperations(lines);
             _textView = tuple.Item1;
+            _textBuffer = _textView.TextBuffer;
             var service = EditorUtil.FactoryService;
             _buffer = service.Vim.CreateBuffer(_textView);
             _buffer.ErrorMessage +=
@@ -1031,6 +1033,23 @@ namespace VimCore.UnitTest
             _buffer.Process("3J");
             Assert.AreEqual("cat dog bear", _textView.GetLine(0).GetText());
             Assert.AreEqual(7, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// Ensure the text inserted is repeated after the Escape
+        /// </summary>
+        [Test]
+        public void InsertLineBelowCaret_WithCount()
+        {
+            Create("dog", "bear");
+            _buffer.Process("2o");
+            _textBuffer.Insert(_textBuffer.GetLine(1).Start.Position, "cat");
+            _buffer.Process(VimKey.Escape);
+            Assert.AreEqual("dog", _textView.GetLine(0).GetText());
+            Assert.AreEqual("cat", _textView.GetLine(1).GetText());
+            Assert.AreEqual("cat", _textView.GetLine(2).GetText());
+            Assert.AreEqual("bear", _textView.GetLine(3).GetText());
+            Assert.AreEqual(_textView.GetLine(2).Start.Add(2), _textView.GetCaretPoint());
         }
     }
 }

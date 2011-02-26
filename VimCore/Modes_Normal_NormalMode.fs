@@ -566,6 +566,7 @@ type internal NormalMode
             | ModeArgument.Subsitute(_) -> ()
             | ModeArgument.OneTimeCommand(modeKind) -> _data <- { _data with OneTimeMode = Some modeKind }
             | ModeArgument.InsertWithCount _ -> ()
+            | ModeArgument.InsertWithCountAndNewLine _ -> ()
 
         member this.OnLeave () = ()
         member this.OnClose() = _eventHandlers.DisposeAll()

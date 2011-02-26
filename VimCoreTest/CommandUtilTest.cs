@@ -19,6 +19,7 @@ namespace VimCore.UnitTest
         private Mock<IVimHost> _vimHost;
         private Mock<IStatusUtil> _statusUtil;
         private Mock<ICommonOperations> _operations;
+        private Mock<ISmartIndentationService> _smartIdentationService;
         private IVimGlobalSettings _globalSettings;
         private IVimLocalSettings _localSettings;
         private ITextViewMotionUtil _motionUtil;
@@ -35,6 +36,7 @@ namespace VimCore.UnitTest
             _vimHost = _factory.Create<IVimHost>();
             _statusUtil = _factory.Create<IStatusUtil>();
             _operations = _factory.Create<ICommonOperations>();
+            _smartIdentationService = _factory.Create<ISmartIndentationService>();
 
             _textView = EditorUtil.CreateView(lines);
             _textBuffer = _textView.TextBuffer;
@@ -57,7 +59,8 @@ namespace VimCore.UnitTest
                 localSettings : _localSettings,
                 registerMap: _registerMap,
                 markMap: _markMap,
-                vimData: _vimData);
+                vimData: _vimData,
+                smartIndentationService: _smartIdentationService.Object);
         }
 
         private Register UnnamedRegister
@@ -1097,31 +1100,40 @@ namespace VimCore.UnitTest
             Assert.AreEqual(1, _textView.GetCaretPoint().Position);
         }
 
-        // REPEAT TODO: Uncomment and add
-        /*
+        /// <summary>
+        /// Make sure caret starts at the begining of the line when there is no auto-indent
+        /// </summary>
         [Test]
         public void InsertLineAbove_KeepCaretAtStartWithNoAutoIndent()
         {
             Create("foo");
-            _operations.InsertLineAbove();
+            _globalSettings.UseEditorIndent = false;
+            _commandUtil.InsertLineAbove(1);
             var point = _textView.Caret.Position.VirtualBufferPosition;
             Assert.IsFalse(point.IsInVirtualSpace);
             Assert.AreEqual(0, point.Position.Position);
         }
 
+        /// <summary>
+        /// Make sure the ending is placed correctly when done from the middle of the line
+        /// </summary>
         [Test]
         public void InsertLineAbove_MiddleOfLine()
         {
             Create("foo", "bar");
+            _globalSettings.UseEditorIndent = false;
             _textView.Caret.MoveTo(_textView.TextSnapshot.GetLineFromLineNumber(1).Start);
-            _operations.InsertLineAbove();
+            _commandUtil.InsertLineAbove(1);
             var point = _textView.Caret.Position.BufferPosition;
             Assert.AreEqual(1, point.GetContainingLine().LineNumber);
             Assert.AreEqual(String.Empty, point.GetContainingLine().GetText());
         }
 
+        /// <summary>
+        /// Make sure we properly handle edits in the middle of our edit.  This happens 
+        /// when the language service does a format for a new line
+        /// </summary>
         [Test]
-        [Description("Happens when a language service formats text")]
         public void InsertLineAbove_EditInTheMiddle()
         {
             Create("foo bar", "baz");
@@ -1142,45 +1154,59 @@ namespace VimCore.UnitTest
                 didEdit = true;
             };
 
-            _operations.InsertLineAbove();
+            _globalSettings.UseEditorIndent = false;
+            _commandUtil.InsertLineAbove(1);
             var buffer = _textView.TextBuffer;
             var line = buffer.CurrentSnapshot.GetLineFromLineNumber(0);
             Assert.AreEqual("a ", line.GetText());
         }
 
+        /// <summary>
+        /// Maintain current indent when 'autoindent' is set but do so in virtual space
+        /// </summary>
         [Test]
         public void InsertLineAbove_ShouldKeepIndentWhenAutoIndentSet()
         {
             Create("  cat", "dog");
-            _settings.SetupGet(x => x.AutoIndent).Returns(true);
-            _operations.InsertLineAbove();
+            _globalSettings.UseEditorIndent = false;
+            _localSettings.AutoIndent = true;
+            _commandUtil.InsertLineAbove(1);
             Assert.AreEqual(2, _textView.Caret.Position.VirtualSpaces);
         }
 
+        /// <summary>
+        /// Insert from middle of line and enure it works out
+        /// </summary>
         [Test]
         public void InsertLineBelow_InMiddleOfLine()
         {
             Create("foo", "bar", "baz");
-            var newLine = _operations.InsertLineBelow();
-            Assert.AreEqual(1, newLine.LineNumber);
-            Assert.AreEqual(String.Empty, newLine.GetText());
-
+            _commandUtil.InsertLineBelow(1);
+            Assert.AreEqual(String.Empty, _textView.GetLine(1).GetText());
+            Assert.AreEqual(_textView.GetLine(1).Start, _textView.GetCaretPoint());
         }
 
+        /// <summary>
+        /// Insert a new line at the end of the buffer and ensure it works.  Bit of a corner
+        /// case since it won't have a line break
+        /// </summary>
         [Test]
         public void InsertLineBelow_AtEndOfBuffer()
         {
             Create("foo", "bar");
-            _textView.Caret.MoveTo(_textView.TextSnapshot.GetLineFromLineNumber(_textView.TextSnapshot.LineCount - 1).Start);
-            var newLine = _operations.InsertLineBelow();
-            Assert.IsTrue(String.IsNullOrEmpty(newLine.GetText()));
+            _textView.Caret.MoveTo(_textView.GetLine(1).End);
+            _commandUtil.InsertLineBelow(1);
+            Assert.AreEqual("", _textView.GetLine(2).GetText());
         }
 
+        /// <summary>
+        /// Deeply verify the contents of an insert below
+        /// </summary>
         [Test]
         public void InsertLineBelow_Misc()
         {
             Create("foo bar", "baz");
-            _operations.InsertLineBelow();
+            _commandUtil.InsertLineBelow(1);
             var buffer = _textView.TextBuffer;
             var line = buffer.CurrentSnapshot.GetLineFromLineNumber(0);
             Assert.AreEqual(Environment.NewLine, line.GetLineBreakText());
@@ -1201,29 +1227,38 @@ namespace VimCore.UnitTest
             Assert.AreEqual("baz", line.GetTextIncludingLineBreak());
         }
 
+        /// <summary>
+        /// Make sure that editor indent trumps 'autoindent'
+        /// </summary>
         [Test]
         public void InsertLineBelow_PreferEditorIndent()
         {
             Create("cat", "dog");
-            _globalSettings.SetupGet(x => x.UseEditorIndent).Returns(true);
-            _smartIndent.Setup(x => x.GetDesiredIndentation(_textView, It.IsAny<ITextSnapshotLine>())).Returns(8);
-            _operations.InsertLineBelow();
+            _globalSettings.UseEditorIndent = true;
+            _smartIdentationService.Setup(x => x.GetDesiredIndentation(_textView, It.IsAny<ITextSnapshotLine>())).Returns(8);
+            _commandUtil.InsertLineBelow(1);
             Assert.AreEqual(8, _textView.Caret.Position.VirtualSpaces);
         }
 
+        /// <summary>
+        /// Use Vim settings if the 'useeditorindent' setting is not present
+        /// </summary>
         [Test]
         public void InsertLineBelow_RevertToVimIndentIfEditorIndentFails()
         {
             Create("  cat", "  dog");
-            _globalSettings.SetupGet(x => x.UseEditorIndent).Returns(true);
-            _settings.SetupGet(x => x.AutoIndent).Returns(true);
-            _smartIndent.Setup(x => x.GetDesiredIndentation(_textView, It.IsAny<ITextSnapshotLine>())).Returns((int?)null);
-            _operations.InsertLineBelow();
+            _globalSettings.UseEditorIndent = false;
+            _localSettings.AutoIndent = true;
+            _smartIdentationService.Setup(x => x.GetDesiredIndentation(_textView, It.IsAny<ITextSnapshotLine>())).Returns((int?)null);
+            _commandUtil.InsertLineBelow(1);
             Assert.AreEqual(2, _textView.Caret.Position.VirtualSpaces);
         }
 
+        /// <summary>
+        /// Nested edits occur when the language service formats our new line.  Make
+        /// sure we can handle it.
+        /// </summary>
         [Test]
-        [Description("Happens when a language service formats text")]
         public void InsertLineBelow_EditsInTheMiddle()
         {
             Create("foo bar", "baz");
@@ -1244,21 +1279,24 @@ namespace VimCore.UnitTest
                 didEdit = true;
             };
 
-            _operations.InsertLineBelow();
+            _commandUtil.InsertLineBelow(1);
             var buffer = _textView.TextBuffer;
             var line = buffer.CurrentSnapshot.GetLineFromLineNumber(0);
             Assert.AreEqual("a foo bar", line.GetText());
         }
 
+        /// <summary>
+        /// Maintain indent when using autoindent
+        /// </summary>
         [Test]
         public void InsertLineBelow_KeepIndentWhenAutoIndentSet()
         {
             Create("  cat", "dog");
-            _settings.SetupGet(x => x.AutoIndent).Returns(true);
-            _operations.InsertLineBelow();
+            _globalSettings.UseEditorIndent = false;
+            _localSettings.AutoIndent = true;
+            _commandUtil.InsertLineBelow(1);
             Assert.AreEqual("", _textView.GetLine(1).GetText());
             Assert.AreEqual(2, _textView.Caret.Position.VirtualBufferPosition.VirtualSpaces);
         }
-*/
     }
 }

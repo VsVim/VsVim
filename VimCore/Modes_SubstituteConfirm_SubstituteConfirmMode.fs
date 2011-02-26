@@ -192,6 +192,7 @@ type internal SubstituteConfirmMode
                 | ModeArgument.OneTimeCommand(_) -> None
                 | ModeArgument.FromVisual -> None
                 | ModeArgument.InsertWithCount _ -> None
+                | ModeArgument.InsertWithCountAndNewLine _ -> None
                 | ModeArgument.Subsitute(span, range, data) ->
                     match _factory.CreateForSubstituteFlags data.SearchPattern data.Flags with
                     | None -> None

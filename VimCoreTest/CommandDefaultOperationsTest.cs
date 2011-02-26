@@ -71,8 +71,7 @@ namespace VimCore.UnitTest
                 navigator: null,
                 foldManager: null,
                 registerMap: _registerMap.Object,
-                searchService: _searchService,
-                smartIndentationService: EditorUtil.FactoryService.SmartIndentationService);
+                searchService: _searchService);
             _operationsRaw = new DefaultOperations(data);
             _operations = _operationsRaw;
         }

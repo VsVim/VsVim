@@ -105,7 +105,6 @@ type internal VimBufferFactory
             OutliningManager = outlining
             RegisterMap = vim.RegisterMap
             SearchService = vim.SearchService 
-            SmartIndentationService = _smartIndentationService
             StatusUtil = statusUtil :> IStatusUtil
             TextView = view
             UndoRedoOperations = undoRedoOperations

@@ -684,10 +684,10 @@ type internal CommandUtil
             _textBuffer.Replace(new Span(line.Start.Position,0), System.Environment.NewLine) |> ignore)
 
         // Position the caret for the edit
-        let line = SnapshotUtil.GetLine x.CurrentSnapshot (savedCaretLine.LineNumber - 1)
+        let line = SnapshotUtil.GetLine x.CurrentSnapshot savedCaretLine.LineNumber
         x.MoveCaretToNewLineIndent savedCaretLine line
 
-        let switch = ModeSwitch.SwitchModeWithArgument (ModeKind.Insert, ModeArgument.InsertWithCount count)
+        let switch = ModeSwitch.SwitchModeWithArgument (ModeKind.Insert, ModeArgument.InsertWithCountAndNewLine count)
         CommandResult.Completed switch
 
     /// Insert a line below the current caret line and begin insert mode at the start of that 
@@ -713,7 +713,7 @@ type internal CommandUtil
         let newLine = SnapshotUtil.GetLine x.CurrentSnapshot (savedCaretLine.LineNumber + 1)
         x.MoveCaretToNewLineIndent savedCaretLine newLine
 
-        let switch = ModeSwitch.SwitchModeWithArgument (ModeKind.Insert, ModeArgument.InsertWithCount count)
+        let switch = ModeSwitch.SwitchModeWithArgument (ModeKind.Insert, ModeArgument.InsertWithCountAndNewLine count)
         CommandResult.Completed switch
 
     /// Move the caret to start of a line which is deleted.  Needs to preserve the original 

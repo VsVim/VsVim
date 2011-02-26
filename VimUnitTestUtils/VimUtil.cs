@@ -49,7 +49,6 @@ namespace Vim.UnitTest
                 outlining != null ? FSharpOption.Create(outlining) : FSharpOption<IOutliningManager>.None,
                 CreateRegisterMap(clipboardDevice),
                 searchService,
-                EditorUtil.FactoryService.SmartIndentationService,
                 statusUtil,
                 textView,
                 undoRedoOperations,
