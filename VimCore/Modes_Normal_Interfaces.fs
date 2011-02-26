@@ -17,9 +17,6 @@ type IOperations =
     /// GoTo the specified line number or the last line if no value is specified
     abstract GoToLineOrLast : int option -> unit
 
-    /// Move the caret for an append operation
-    abstract MoveCaretForAppend : unit -> unit
-
     /// Jump to the next item in the jump list
     abstract JumpNext : count:int -> unit
 

@@ -82,14 +82,6 @@ type internal DefaultOperations ( _data : OperationsData) =
                 | Some(c) -> c
             x.GoToLineCore line
 
-        member x.MoveCaretForAppend () = 
-            let point = TextViewUtil.GetCaretPoint _textView
-            _operations.ResetSelection()
-            if SnapshotPointUtil.IsInsideLineBreak point then ()
-            elif SnapshotPointUtil.IsEndPoint point then ()
-            else 
-                let point = point.Add(1)
-                TextViewUtil.MoveCaretToPoint _textView point |> ignore
 
 
 

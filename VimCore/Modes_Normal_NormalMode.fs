@@ -104,11 +104,14 @@ type internal NormalMode
     member x.CreateCommandBindings() =
         let normalSeq = 
             seq {
+                yield ("a", CommandFlags.None, NormalCommand.InsertAfterCaret)
+                yield ("A", CommandFlags.None, NormalCommand.InsertAtEndOfLine)
                 yield ("C", CommandFlags.LinkedWithNextTextChange ||| CommandFlags.Repeatable, NormalCommand.ChangeTillEndOfLine)
                 yield ("cc", CommandFlags.LinkedWithNextTextChange ||| CommandFlags.Repeatable, NormalCommand.ChangeLines)
                 yield ("dd", CommandFlags.Repeatable, NormalCommand.DeleteLines)
                 yield ("D", CommandFlags.Repeatable, NormalCommand.DeleteTillEndOfLine)
                 yield ("gJ", CommandFlags.Repeatable, NormalCommand.JoinLines JoinKind.KeepEmptySpaces)
+                yield ("gI", CommandFlags.None, NormalCommand.InsertAtStartOfLine)
                 yield ("gp", CommandFlags.Repeatable, NormalCommand.PutAfterCaret true)
                 yield ("gP", CommandFlags.Repeatable, NormalCommand.PutBeforeCaret true)
                 yield ("gugu", CommandFlags.Repeatable, NormalCommand.ChangeCaseCaretLine ChangeCharacterKind.ToLowerCase)
@@ -119,7 +122,7 @@ type internal NormalMode
                 yield ("g~~", CommandFlags.Repeatable, NormalCommand.ChangeCaseCaretLine ChangeCharacterKind.ToggleCase)
                 yield ("g?g?", CommandFlags.Repeatable, NormalCommand.ChangeCaseCaretLine ChangeCharacterKind.Rot13)
                 yield ("g??", CommandFlags.Repeatable, NormalCommand.ChangeCaseCaretLine ChangeCharacterKind.Rot13)
-                yield ("i", CommandFlags.None, NormalCommand.Insert)
+                yield ("i", CommandFlags.None, NormalCommand.InsertBeforeCaret)
                 yield ("I", CommandFlags.LinkedWithNextTextChange ||| CommandFlags.Repeatable, NormalCommand.InsertAtFirstNonBlank)
                 yield ("J", CommandFlags.Repeatable, NormalCommand.JoinLines JoinKind.RemoveEmptySpaces)
                 yield ("o", CommandFlags.Repeatable, NormalCommand.InsertLineBelow)
@@ -401,11 +404,6 @@ type internal NormalMode
                     ModeSwitch.SwitchMode ModeKind.Command, 
                     doNothing)
                 yield (
-                    "A", 
-                    CommandFlags.Special,
-                    ModeSwitch.SwitchMode ModeKind.Insert, 
-                    (fun _ _ -> _operations.EditorOperations.MoveToEndOfLine(false)))
-                yield (
                     "v", 
                     CommandFlags.Special,
                     ModeSwitch.SwitchMode ModeKind.VisualCharacter, 
@@ -420,11 +418,6 @@ type internal NormalMode
                     CommandFlags.Special,
                     ModeSwitch.SwitchMode ModeKind.VisualBlock, 
                     doNothing)
-                yield (
-                    "a", 
-                    CommandFlags.Special,
-                    ModeSwitch.SwitchMode ModeKind.Insert, 
-                    (fun _ _ -> _operations.MoveCaretForAppend()) )
                 yield (
                     "R", 
                     CommandFlags.Special,

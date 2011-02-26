@@ -1522,14 +1522,21 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void Append1()
+        public void Bind_InsertAtEndOfLine()
         {
             Create("foo bar");
-            _operations.Setup(x => x.MoveCaretForAppend()).Verifiable();
-            var ret = _mode.Process('a');
-            Assert.IsTrue(ret.IsSwitchMode);
-            Assert.AreEqual(ModeKind.Insert, ret.AsSwitchMode().Item);
-            _operations.Verify();
+            _commandUtil.SetupCommandNormal(NormalCommand.InsertAtEndOfLine);
+            _mode.Process('A');
+            _commandUtil.Verify();
+        }
+
+        [Test]
+        public void Bind_InsertAfterCaret()
+        {
+            Create("foo bar");
+            _commandUtil.SetupCommandNormal(NormalCommand.InsertAfterCaret);
+            _mode.Process('a');
+            _commandUtil.Verify();
         }
 
         [Test]

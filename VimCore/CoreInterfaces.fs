@@ -812,11 +812,20 @@ type NormalCommand =
     /// Format the specified motion
     | FormatMotion of MotionData
 
+    /// Switch to insert after the caret position
+    | InsertAfterCaret
+
     /// Switch to insert mode
-    | Insert
+    | InsertBeforeCaret
+
+    /// Switch to insert mode at the end of the line
+    | InsertAtEndOfLine
 
     /// Insert text at the first non-blank line in the current line
     | InsertAtFirstNonBlank
+
+    /// Insert text at the start of a line (column 0)
+    | InsertAtStartOfLine
 
     /// Insert a line above the cursor and begin insert mode
     | InsertLineAbove

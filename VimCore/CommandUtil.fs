@@ -655,8 +655,27 @@ type internal CommandUtil
         | Modes.Result.Succeeded ->
             CommandResult.Completed ModeSwitch.NoSwitch
 
+    /// Switch to insert mode after the caret 
+    member x.InsertAfterCaret count = 
+        let point = x.CaretPoint
+        if SnapshotPointUtil.IsInsideLineBreak point then 
+            ()
+        elif SnapshotPointUtil.IsEndPoint point then 
+            ()
+        else 
+            let point = point.Add(1)
+            TextViewUtil.MoveCaretToPoint _textView point
+
+        CommandResult.Completed (ModeSwitch.SwitchModeWithArgument (ModeKind.Insert, ModeArgument.InsertWithCount count))
+
     /// Switch to Insert mode with the specified count
-    member x.Insert count =
+    member x.InsertBeforeCaret count =
+        CommandResult.Completed (ModeSwitch.SwitchModeWithArgument (ModeKind.Insert, ModeArgument.InsertWithCount count))
+
+    /// Switch to insert mode at the end of the line
+    member x.InsertAtEndOfLine count =
+        TextViewUtil.MoveCaretToPoint _textView x.CaretLine.End
+
         CommandResult.Completed (ModeSwitch.SwitchModeWithArgument (ModeKind.Insert, ModeArgument.InsertWithCount count))
 
     /// Begin insert mode on the first non-blank character of the line.  Pass the count onto
@@ -672,6 +691,12 @@ type internal CommandUtil
 
         let switch = ModeSwitch.SwitchModeWithArgument (ModeKind.Insert, ModeArgument.InsertWithCount count)
         CommandResult.Completed switch
+
+    /// Switch to insert mode at the start of the line
+    member x.InsertAtStartOfLine count =
+        TextViewUtil.MoveCaretToPoint _textView x.CaretLine.Start
+
+        CommandResult.Completed (ModeSwitch.SwitchModeWithArgument (ModeKind.Insert, ModeArgument.InsertWithCount count))
 
     /// Insert a line above the current caret line and begin insert mode at the start of that
     /// line
@@ -1050,8 +1075,11 @@ type internal CommandUtil
         | NormalCommand.DeleteTillEndOfLine -> x.DeleteTillEndOfLine count register
         | NormalCommand.FormatLines -> x.FormatLines count
         | NormalCommand.FormatMotion motion -> x.RunWithMotion motion x.FormatMotion 
-        | NormalCommand.Insert -> x.Insert count
+        | NormalCommand.InsertAfterCaret -> x.InsertAfterCaret count
+        | NormalCommand.InsertBeforeCaret -> x.InsertBeforeCaret count
+        | NormalCommand.InsertAtEndOfLine -> x.InsertAtEndOfLine count
         | NormalCommand.InsertAtFirstNonBlank -> x.InsertAtFirstNonBlank count
+        | NormalCommand.InsertAtStartOfLine -> x.InsertAtStartOfLine count
         | NormalCommand.InsertLineAbove -> x.InsertLineAbove count
         | NormalCommand.InsertLineBelow -> x.InsertLineBelow count
         | NormalCommand.JoinLines kind -> x.JoinLines kind count

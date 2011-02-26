@@ -329,41 +329,5 @@ namespace VimCore.UnitTest
             _operations.InsertText("hey", 1);
             Assert.AreEqual(3, _textView.GetCaretPoint().Position);
         }
-
-        [Test]
-        public void MoveCaretForAppend1()
-        {
-            Create("foo", "bar");
-            _operations.MoveCaretForAppend();
-            Assert.AreEqual(1, _textView.GetCaretPoint().Position);
-        }
-
-        [Test]
-        public void MoveCaretForAppend2()
-        {
-            Create("foo", "bar");
-            _textView.MoveCaretTo(_textView.GetLine(0).End.Subtract(1));
-            _operations.MoveCaretForAppend();
-            Assert.AreEqual(_textView.GetLine(0).End, _textView.GetCaretPoint());
-        }
-
-        [Test]
-        public void MoveCaretForAppend3()
-        {
-            Create("foo", "bar");
-            _textView.MoveCaretTo(_textView.GetLine(0).End);
-            _operations.MoveCaretForAppend();
-            Assert.AreEqual(_textView.GetLine(0).End, _textView.GetCaretPoint());
-        }
-
-        [Test]
-        public void MoveCaretForAppend4()
-        {
-            Create("foo", "bar");
-            _textView.MoveCaretTo(SnapshotUtil.GetEndPoint(_textView.TextSnapshot));
-            _operations.MoveCaretForAppend();
-            Assert.AreEqual(SnapshotUtil.GetEndPoint(_textView.TextSnapshot), _textView.GetCaretPoint());
-        }
-
     }
 }

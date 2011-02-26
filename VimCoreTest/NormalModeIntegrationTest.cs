@@ -1051,5 +1051,18 @@ namespace VimCore.UnitTest
             Assert.AreEqual("bear", _textView.GetLine(3).GetText());
             Assert.AreEqual(_textView.GetLine(2).Start.Add(2), _textView.GetCaretPoint());
         }
+
+        /// <summary>
+        /// Make sure the text is repeated
+        /// </summary>
+        [Test]
+        public void InsertAtEndOfLine_WithCount()
+        {
+            Create("dog", "bear");
+            _buffer.Process("3A");
+            _textBuffer.Insert(_textView.GetLine(0).End.Position, "b");
+            _buffer.Process(VimKey.Escape);
+            Assert.AreEqual("dogbbb", _textView.GetLine(0).GetText());
+        }
     }
 }
