@@ -5,3 +5,4 @@ Need to make sure key remapping in operators and such continues to work.  Data d
 	- Fixed it so the KeyRemapMode is used.  Still verify
 Need to handle put + block registers
 Repeat of a LinkedChange should use a Transaction.  Otherwise undo of the repeat is incorrect
+Visual Mode X is not updating a register

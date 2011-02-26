@@ -463,6 +463,14 @@ type internal CommandUtil
             let snapshot = edit.Apply()
             TextViewUtil.MoveCaretToPosition _textView startPoint.Position)
 
+        let operationKind = 
+            match visualSpan with
+            | VisualSpan.Character _ -> OperationKind.CharacterWise
+            | VisualSpan.Line _ -> OperationKind.LineWise
+            | VisualSpan.Block _ -> OperationKind.CharacterWise
+        let value = { Value = StringData.OfEditSpan visualSpan.EditSpan; OperationKind = operationKind }
+        _registerMap.SetRegisterValue register RegisterOperation.Delete value
+
         CommandResult.Completed modeSwitch
 
     /// Delete count lines from the cursor.  The caret should be positioned at the start

@@ -1,5 +1,4 @@
 ﻿using System;
-using Microsoft.FSharp.Core;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Moq;
@@ -1066,6 +1065,21 @@ namespace VimCore.UnitTest
             Assert.AreEqual("  ", _textView.GetLine(0).GetText());
             Assert.AreEqual("  ", _textView.GetLine(1).GetText());
             Assert.AreEqual(2, _textView.GetCaretPoint().Position);
+        }
+
+        /// <summary>
+        /// Make sure the character deletion positions the caret at the start of the span and
+        /// updates the register
+        /// </summary>
+        [Test]
+        public void DeleteSelection_Character()
+        {
+            Create("the dog chased the ball");
+            var visualSpan = VisualSpan.NewCharacter(_textView.GetLineSpan(0, 1, 2));
+            _commandUtil.DeleteSelection(UnnamedRegister, visualSpan, ModeSwitch.NoSwitch);
+            Assert.AreEqual("t dog chased the ball", _textView.GetLine(0).GetText());
+            Assert.AreEqual("he", UnnamedRegister.StringValue);
+            Assert.AreEqual(1, _textView.GetCaretPoint().Position);
         }
     }
 }
