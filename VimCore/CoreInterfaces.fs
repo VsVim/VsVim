@@ -813,6 +813,12 @@ type NormalCommand =
     /// Insert text at the first non-blank line in the current line
     | InsertAtFirstNonBlank
 
+    /// Insert a line above the cursor and begin insert mode
+    | InsertLineAbove
+
+    /// Insert a line below the cursor and begin insert mode
+    | InsertLineBelow
+
     /// Join the specified lines
     | JoinLines of JoinKind
 

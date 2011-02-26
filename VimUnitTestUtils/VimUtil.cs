@@ -95,7 +95,8 @@ namespace Vim.UnitTest
             IMarkMap markMap = null,
             IVimData vimData = null,
             IVimLocalSettings localSettings = null,
-            IUndoRedoOperations undoRedOperations = null)
+            IUndoRedoOperations undoRedOperations = null,
+            ISmartIndentationService smartIndentationService = null)
         {
             statusUtil = statusUtil ?? new StatusUtil();
             undoRedOperations = undoRedOperations ?? VimUtil.CreateUndoRedoOperations(statusUtil);
@@ -105,6 +106,7 @@ namespace Vim.UnitTest
             vimData = vimData ?? new VimData();
             motionUtil = motionUtil ?? CreateTextViewMotionUtil(textView, markMap: markMap, vimData: vimData, settings: localSettings);
             operations = operations ?? CreateCommonOperations(textView, localSettings, vimData: vimData, statusUtil: statusUtil);
+            smartIndentationService = smartIndentationService ?? CreateSmartIndentationService();
             return new CommandUtil(
                 textView,
                 operations,
@@ -114,7 +116,13 @@ namespace Vim.UnitTest
                 markMap,
                 vimData,
                 localSettings,
-                undoRedOperations);
+                undoRedOperations,
+                smartIndentationService);
+        }
+
+        internal static ISmartIndentationService CreateSmartIndentationService()
+        {
+            return EditorUtil.FactoryService.SmartIndentationService;
         }
 
         internal static UndoRedoOperations CreateUndoRedoOperations(IStatusUtil statusUtil = null)

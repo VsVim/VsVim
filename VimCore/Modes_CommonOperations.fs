@@ -24,7 +24,6 @@ type internal CommonOperations ( _data : OperationsData ) =
     let _normalWordNav =  _data.Navigator
     let _registerMap = _data.RegisterMap
     let _search = _data.SearchService
-    let _smartIndentationServtice = _data.SmartIndentationService
     let _regexFactory = VimRegexFactory(_data.LocalSettings.GlobalSettings)
     let _globalSettings = _settings.GlobalSettings
 
@@ -475,25 +474,6 @@ type internal CommonOperations ( _data : OperationsData ) =
         else
             func()
 
-    member x.IndentForNewLine oldLine (newLine : ITextSnapshotLine) =
-        let doVimIndent() = 
-            if _settings.AutoIndent then
-                let indent = oldLine |> SnapshotLineUtil.GetIndent |> SnapshotPointUtil.GetColumn
-                let point = new VirtualSnapshotPoint(newLine, indent)
-                TextViewUtil.MoveCaretToVirtualPoint _textView point |> ignore 
-            else
-                TextViewUtil.MoveCaretToPoint _textView newLine.Start |> ignore
-
-        if _settings.GlobalSettings.UseEditorIndent then
-            let indent = _smartIndentationServtice.GetDesiredIndentation(_textView, newLine)
-            if indent.HasValue then 
-                let point = new VirtualSnapshotPoint(newLine, indent.Value)
-                TextViewUtil.MoveCaretToVirtualPoint _textView point |> ignore
-            else
-                doVimIndent()
-        else 
-            doVimIndent()
-
     interface ICommonOperations with
         member x.TextView = _textView 
         member x.TabSize = x.TabSize
@@ -909,26 +889,6 @@ type internal CommonOperations ( _data : OperationsData ) =
                 match _host.LoadFileIntoExisting text _textBuffer with
                 | HostResult.Success -> ()
                 | HostResult.Error(_) -> _statusUtil.OnError (Resources.NormalMode_CantFindFile text))
-
-        member x.InsertLineBelow () =
-            let point = TextViewUtil.GetCaretPoint _textView
-            let line = point.GetContainingLine()
-            let buffer = line.Snapshot.TextBuffer
-            _undoRedoOperations.EditWithUndoTransaction  "Paste" (fun () -> 
-                buffer.Replace(new Span(line.End.Position,0), System.Environment.NewLine) |> ignore
-                let newLine = buffer.CurrentSnapshot.GetLineFromLineNumber(line.LineNumber+1)
-                x.IndentForNewLine line newLine
-                newLine )
-
-        member x.InsertLineAbove () = 
-            let point = TextViewUtil.GetCaretPoint _textView
-            let line = point.GetContainingLine()
-            let buffer = line.Snapshot.TextBuffer
-            _undoRedoOperations.EditWithUndoTransaction "Paste" (fun() -> 
-                buffer.Replace(new Span(line.Start.Position,0), System.Environment.NewLine) |> ignore
-                let newLine = buffer.CurrentSnapshot.GetLineFromLineNumber(line.LineNumber)
-                x.IndentForNewLine line newLine
-                newLine)
 
         member x.PutAt point stringData opKind = x.PutAt point stringData opKind
 

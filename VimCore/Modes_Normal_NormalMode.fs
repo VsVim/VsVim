@@ -122,6 +122,8 @@ type internal NormalMode
                 yield ("i", CommandFlags.None, NormalCommand.Insert)
                 yield ("I", CommandFlags.LinkedWithNextTextChange ||| CommandFlags.Repeatable, NormalCommand.InsertAtFirstNonBlank)
                 yield ("J", CommandFlags.Repeatable, NormalCommand.JoinLines JoinKind.RemoveEmptySpaces)
+                yield ("o", CommandFlags.Repeatable, NormalCommand.InsertLineBelow)
+                yield ("O", CommandFlags.Repeatable, NormalCommand.InsertLineAbove)
                 yield ("p", CommandFlags.Repeatable, NormalCommand.PutAfterCaret false)
                 yield ("P", CommandFlags.Repeatable, NormalCommand.PutBeforeCaret false)
                 yield ("s", CommandFlags.LinkedWithNextTextChange ||| CommandFlags.Repeatable, NormalCommand.SubstituteCharacterAtCaret)
@@ -403,16 +405,6 @@ type internal NormalMode
                     CommandFlags.Special,
                     ModeSwitch.SwitchMode ModeKind.Insert, 
                     (fun _ _ -> _operations.EditorOperations.MoveToEndOfLine(false)))
-                yield (
-                    "o", 
-                    CommandFlags.Special,
-                    ModeSwitch.SwitchMode ModeKind.Insert, 
-                    (fun _ _ -> _operations.InsertLineBelow() |> ignore))
-                yield (
-                    "O", 
-                    CommandFlags.Special,
-                    ModeSwitch.SwitchMode ModeKind.Insert, 
-                    (fun _ _ -> _operations.InsertLineAbove() |> ignore))
                 yield (
                     "v", 
                     CommandFlags.Special,

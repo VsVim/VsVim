@@ -34,6 +34,7 @@ namespace VimCore.UnitTest
             _buffer = MockObjectFactory.CreateVimBuffer(textView: _textView.Object, factory: _factory);
             _operations = _factory.Create<ICommonOperations>();
             _operations.Setup(x => x.MoveCaretToPoint(It.IsAny<SnapshotPoint>()));
+            _operations.Setup(x => x.EnsureCaretOnScreenAndTextExpanded());
             _modeRaw = new SubstituteConfirmMode(_buffer.Object, _operations.Object);
             _mode = _modeRaw;
         }

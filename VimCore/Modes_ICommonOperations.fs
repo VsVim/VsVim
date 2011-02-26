@@ -116,12 +116,6 @@ type ICommonOperations =
     /// Go the nth tab.  The first tab can be accessed with both 0 and 1
     abstract GoToTab : int -> unit
 
-    /// Insert a line above the current cursor position and returns the resulting ITextSnapshotLine
-    abstract InsertLineAbove : unit -> ITextSnapshotLine
-
-    /// Adds an empty line to the buffer below the cursor and returns the resulting ITextSnapshotLine
-    abstract InsertLineBelow : unit -> ITextSnapshotLine
-
     /// Insert text at the caret
     abstract InsertText : string -> int -> unit
 

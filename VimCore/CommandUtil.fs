@@ -17,7 +17,8 @@ type internal CommandUtil
         _markMap : IMarkMap,
         _vimData : IVimData,
         _localSettings : IVimLocalSettings,
-        _undoRedoOperations : IUndoRedoOperations
+        _undoRedoOperations : IUndoRedoOperations,
+        _smartIndentationService : ISmartIndentationService
     ) =
 
     let _globalSettings = _localSettings.GlobalSettings
@@ -672,6 +673,49 @@ type internal CommandUtil
         let switch = ModeSwitch.SwitchModeWithArgument (ModeKind.Insert, ModeArgument.InsertWithCount count)
         CommandResult.Completed switch
 
+    /// Insert a line above the current caret line and begin insert mode at the start of that
+    /// line
+    member x.InsertLineAbove count = 
+        let savedCaretLine = x.CaretLine
+
+        // REPEAT TODO: Need to file a bug to get the caret position correct here for redo
+        _undoRedoOperations.EditWithUndoTransaction "InsertLineAbove" (fun() -> 
+            let line = x.CaretLine
+            _textBuffer.Replace(new Span(line.Start.Position,0), System.Environment.NewLine) |> ignore)
+
+        // Position the caret for the edit
+        let line = SnapshotUtil.GetLine x.CurrentSnapshot (savedCaretLine.LineNumber - 1)
+        x.MoveCaretToNewLineIndent savedCaretLine line
+
+        let switch = ModeSwitch.SwitchModeWithArgument (ModeKind.Insert, ModeArgument.InsertWithCount count)
+        CommandResult.Completed switch
+
+    /// Insert a line below the current caret line and begin insert mode at the start of that 
+    /// line
+    member x.InsertLineBelow count = 
+
+        // The caret position here odd.  The caret during undo / redo should be in the original
+        // caret position.  However the edit needs to occur with the caret indented on the newly
+        // created line.  So there are actually 3 caret positions to consider here
+        //
+        //  1. Before Edit (Undo)
+        //  2. After the Edit but in the Transaction (Redo)
+        //  3. For the eventual user edit
+
+        let savedCaretPoint = x.CaretPoint
+        let savedCaretLine = x.CaretLine
+        _undoRedoOperations.EditWithUndoTransaction  "InsertLineBelow" (fun () -> 
+            let span = new SnapshotSpan(savedCaretLine.EndIncludingLineBreak, 0)
+            _textBuffer.Replace(span.Span, System.Environment.NewLine) |> ignore
+
+            TextViewUtil.MoveCaretToPosition _textView savedCaretPoint.Position)
+
+        let newLine = SnapshotUtil.GetLine x.CurrentSnapshot (savedCaretLine.LineNumber + 1)
+        x.MoveCaretToNewLineIndent savedCaretLine newLine
+
+        let switch = ModeSwitch.SwitchModeWithArgument (ModeKind.Insert, ModeArgument.InsertWithCount count)
+        CommandResult.Completed switch
+
     /// Move the caret to start of a line which is deleted.  Needs to preserve the original 
     /// indent if 'autoindent' is set.
     ///
@@ -697,6 +741,26 @@ type internal CommandUtil
         else
             // Put the caret at column 0
             TextViewUtil.MoveCaretToPosition _textView deletedLine.Start.Position
+
+    /// Move the caret to the indentation point applicable for a new line in the ITextBuffer
+    member x.MoveCaretToNewLineIndent oldLine (newLine : ITextSnapshotLine) =
+        let doVimIndent() = 
+            if _localSettings.AutoIndent then
+                let indent = oldLine |> SnapshotLineUtil.GetIndent |> SnapshotPointUtil.GetColumn
+                let point = new VirtualSnapshotPoint(newLine, indent)
+                TextViewUtil.MoveCaretToVirtualPoint _textView point |> ignore 
+            else
+                TextViewUtil.MoveCaretToPoint _textView newLine.Start |> ignore
+
+        if _localSettings.GlobalSettings.UseEditorIndent then
+            let indent = _smartIndentationService.GetDesiredIndentation(_textView, newLine)
+            if indent.HasValue then 
+                let point = new VirtualSnapshotPoint(newLine, indent.Value)
+                TextViewUtil.MoveCaretToVirtualPoint _textView point |> ignore
+            else
+               doVimIndent()
+        else 
+            doVimIndent()
 
     /// The Join commands (Visual and Normal) have identical cursor positioning behavior and 
     /// it's non-trivial so it's factored out to a function here.  In short the caret should be
@@ -863,10 +927,13 @@ type internal CommandUtil
             | StoredCommand.LinkedCommand (command1, command2) -> 
 
                 // Run the commands in sequence.  Only continue onto the second if the first 
-                // command succeeds
-                match repeat command1 repeatData with
-                | CommandResult.Error -> CommandResult.Error
-                | CommandResult.Completed _ -> repeat command2 None
+                // command succeeds.  We do want any actions performed in the linked commands
+                // to remain linked so do this inside of an edit transaction
+                x.EditWithUndoTransaciton "LinkedCommand" (fun () ->
+                    match repeat command1 repeatData with
+                    | CommandResult.Error -> CommandResult.Error
+                    | CommandResult.Completed _ -> repeat command2 None)
+
             | StoredCommand.LegacyCommand (keyInputSet, _) -> 
 
                 // Don't support repeat of Legacy Commands.  They're the reason we moved to this
@@ -985,6 +1052,8 @@ type internal CommandUtil
         | NormalCommand.FormatMotion motion -> x.RunWithMotion motion x.FormatMotion 
         | NormalCommand.Insert -> x.Insert count
         | NormalCommand.InsertAtFirstNonBlank -> x.InsertAtFirstNonBlank count
+        | NormalCommand.InsertLineAbove -> x.InsertLineAbove count
+        | NormalCommand.InsertLineBelow -> x.InsertLineBelow count
         | NormalCommand.JoinLines kind -> x.JoinLines kind count
         | NormalCommand.JumpToMark c -> x.JumpToMark c
         | NormalCommand.MoveCaretToMotion motion -> x.MoveCaretToMotion motion data.Count
