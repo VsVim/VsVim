@@ -755,55 +755,21 @@ namespace VimCore.UnitTest
         #region Edits
 
         [Test]
-        public void Edit_o_1()
+        public void Bind_InsertLineBelow()
         {
             Create("how is", "foo");
-            _textView.Caret.MoveTo(new SnapshotPoint(_textView.TextSnapshot, 0));
-            _operations.Setup(x => x.InsertLineBelow()).Returns<ITextSnapshotLine>(null).Verifiable();
-            var res = _mode.Process('o');
-            Assert.IsTrue(res.IsSwitchMode);
-            Assert.AreEqual(ModeKind.Insert, res.AsSwitchMode().Item);
-            _operations.Verify();
-        }
-
-        [Test, Description("Use o at end of buffer")]
-        public void Edit_o_2()
-        {
-            Create("foo", "bar");
-            var line = _textView.TextSnapshot.Lines.Last();
-            _textView.Caret.MoveTo(line.Start);
-            _operations.Setup(x => x.InsertLineBelow()).Returns<ITextSnapshotLine>(null).Verifiable();
+            _commandUtil.SetupCommandNormal(NormalCommand.InsertLineBelow);
             _mode.Process('o');
-            _operations.Verify();
+            _commandUtil.Verify();
         }
 
         [Test]
-        public void Edit_O_1()
+        public void Bind_InsertLineAbove()
         {
-            Create("foo");
-            _operations.Setup(x => x.InsertLineAbove()).Returns<ITextSnapshotLine>(null).Verifiable();
+            Create("how is", "foo");
+            _commandUtil.SetupCommandNormal(NormalCommand.InsertLineAbove);
             _mode.Process('O');
-            _operations.Verify();
-        }
-
-        [Test]
-        public void Edit_O_2()
-        {
-            Create("foo", "bar");
-            _operations.Setup(x => x.InsertLineAbove()).Returns<ITextSnapshotLine>(null).Verifiable();
-            _textView.Caret.MoveTo(_textView.TextSnapshot.GetLineFromLineNumber(1).Start);
-            _mode.Process("O");
-            _operations.Verify();
-        }
-
-        [Test]
-        public void Edit_O_3()
-        {
-            Create("foo");
-            _operations.Setup(x => x.InsertLineAbove()).Returns<ITextSnapshotLine>(null).Verifiable();
-            var res = _mode.Process('O');
-            Assert.IsTrue(res.IsSwitchMode);
-            Assert.AreEqual(ModeKind.Insert, res.AsSwitchMode().item);
+            _commandUtil.Verify();
         }
 
         [Test]
