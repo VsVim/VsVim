@@ -8,5 +8,5 @@ open Vim
 
 type internal CommandRunner =
     interface ICommandRunner
-    new : ITextView * IRegisterMap * IMotionCapture * ITextViewMotionUtil * ICommandUtil * IStatusUtil * VisualKind-> CommandRunner
+    new : ITextView * IRegisterMap * IMotionCapture * ICommandUtil * IStatusUtil * VisualKind-> CommandRunner
 

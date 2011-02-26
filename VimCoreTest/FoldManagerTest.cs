@@ -36,9 +36,9 @@ namespace VimCore.UnitTest
         public void Folds2()
         {
             SetUp("the quick brown", "fox jumped", " over the dog");
-            var span = _textBuffer.GetLineRange(0, 1).ExtentIncludingLineBreak;
-            _manager.CreateFold(span);
-            Assert.AreEqual(span, _manager.Folds.Single());
+            var range = _textBuffer.GetLineRange(0, 1);
+            _manager.CreateFold(range);
+            Assert.AreEqual(range.ExtentIncludingLineBreak, _manager.Folds.Single());
         }
 
         [Test]
@@ -46,8 +46,8 @@ namespace VimCore.UnitTest
         public void CreateFold1()
         {
             SetUp("the quick brown", "fox jumped", " over the dog");
-            var span = _textBuffer.GetSpan(0, 3);
-            _manager.CreateFold(span);
+            var range = _textBuffer.GetLineRange(0);
+            _manager.CreateFold(range);
             Assert.AreEqual(0, _manager.Folds.Count());
         }
 
@@ -55,39 +55,29 @@ namespace VimCore.UnitTest
         public void CreateFold2()
         {
             SetUp("the quick brown", "fox jumped", " over the dog");
-            var span = _textBuffer.GetLineRange(0, 1).Extent;
-            _manager.CreateFold(span);
-            Assert.AreEqual(_textBuffer.GetLineRange(0, 1).ExtentIncludingLineBreak, _manager.Folds.Single());
+            var range = _textBuffer.GetLineRange(0, 1);
+            _manager.CreateFold(range);
+            Assert.AreEqual(range.ExtentIncludingLineBreak, _manager.Folds.Single());
         }
 
         [Test]
         public void CreateFold3()
         {
             SetUp("the quick brown", "fox jumped", " over the dog");
-            var span1 = _textBuffer.GetLineRange(0, 1).ExtentIncludingLineBreak;
-            _manager.CreateFold(span1);
-            var span2 = _textBuffer.GetLineRange(0, 2).ExtentIncludingLineBreak;
-            _manager.CreateFold(span2);
-            Assert.IsTrue(_manager.Folds.Contains(span1));
-            Assert.IsTrue(_manager.Folds.Contains(span2));
-        }
-
-        [Test]
-        [Description("Should expand to the entire line span")]
-        public void CreateFold4()
-        {
-            SetUp("the quick brown", "fox jumped", " over the dog");
-            var span = new SnapshotSpan(_textBuffer.GetPoint(3), _textBuffer.GetLine(1).Start.Add(1));
-            _manager.CreateFold(span);
-            Assert.AreEqual(_textBuffer.GetLineRange(0, 1).ExtentIncludingLineBreak, _manager.Folds.Single());
+            var range1 = _textBuffer.GetLineRange(0, 1);
+            _manager.CreateFold(range1);
+            var range2 = _textBuffer.GetLineRange(0, 2);
+            _manager.CreateFold(range2);
+            Assert.IsTrue(_manager.Folds.Contains(range1.ExtentIncludingLineBreak));
+            Assert.IsTrue(_manager.Folds.Contains(range2.ExtentIncludingLineBreak));
         }
 
         [Test]
         public void DeleteFold1()
         {
             SetUp("the quick brown", "fox jumped", " over the dog");
-            var span = _textBuffer.GetLineRange(0, 1).Extent;
-            _manager.CreateFold(span);
+            var range = _textBuffer.GetLineRange(0, 1);
+            _manager.CreateFold(range);
             Assert.IsFalse(_manager.DeleteFold(_textBuffer.GetLine(2).Start));
         }
 
@@ -95,8 +85,8 @@ namespace VimCore.UnitTest
         public void DeleteFold2()
         {
             SetUp("the quick brown", "fox jumped", " over the dog");
-            var span = _textBuffer.GetLineRange(0, 1).Extent;
-            _manager.CreateFold(span);
+            var range = _textBuffer.GetLineRange(0, 1);
+            _manager.CreateFold(range);
             Assert.IsTrue(_manager.DeleteFold(_textBuffer.GetLine(0).Start));
             Assert.AreEqual(0, _manager.Folds.Count());
         }
@@ -105,10 +95,8 @@ namespace VimCore.UnitTest
         public void DeleteAllFolds1()
         {
             SetUp("the quick brown", "fox jumped", " over the dog");
-            var span1 = _textBuffer.GetLineRange(0, 1).Extent;
-            _manager.CreateFold(span1);
-            var span2 = _textBuffer.GetLineRange(0, 2).Extent;
-            _manager.CreateFold(span2);
+            _manager.CreateFold(_textBuffer.GetLineRange(0, 1));
+            _manager.CreateFold(_textBuffer.GetLineRange(0, 2));
             _manager.DeleteAllFolds();
             Assert.AreEqual(0, _manager.Folds.Count());
         }

@@ -745,8 +745,8 @@ type internal CommonOperations ( _data : OperationsData ) =
         member x.FoldLines count = 
             if count > 1 then 
                 let caretLine = TextViewUtil.GetCaretLine _textView
-                let span = SnapshotSpanUtil.ExtendDownIncludingLineBreak caretLine.Extent (count-1)
-                _data.FoldManager.CreateFold span
+                let range = SnapshotLineRangeUtil.CreateForLineAndMaxCount caretLine count
+                _data.FoldManager.CreateFold range
 
         member x.FormatLines range =
             _host.FormatLines _textView range

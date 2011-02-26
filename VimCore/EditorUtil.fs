@@ -356,6 +356,14 @@ module SnapshotSpanUtil =
         && line.Length = 0 
         && (span.End.Position >= span.End.Position && span.End.Position <= line.EndIncludingLineBreak.Position)
 
+    /// Given a NonEmptyCollection<SnapshotSpan> return the SnapshotSpan which is the overoarching span that
+    /// encompases all of the SnapshotSpan values in the collection.  The Start will be the minimum start of 
+    /// all of the SnapshotSpan values and the End will be the maximum
+    let GetOverarchingSpan (col : NonEmptyCollection<SnapshotSpan>) =
+        let startPoint = col |> Seq.map (fun span -> span.Start) |> Seq.minBy (fun p -> p.Position)
+        let endPoint = col |> Seq.map (fun span -> span.End) |> Seq.maxBy (fun p -> p.Position)
+        SnapshotSpan(startPoint, endPoint)
+
     /// Create an empty span at the given point
     let Create (startPoint:SnapshotPoint) (endPoint:SnapshotPoint) = SnapshotSpan(startPoint,endPoint)
 
@@ -1000,16 +1008,13 @@ module TextSelectionUtil =
 
     /// Returns the SnapshotSpan which represents the total of the selection.  This is a SnapshotSpan of the left
     /// most and right most point point in any of the selected spans 
-    /// TODO: Delete this
-    let GetOverarchingSelectedSpan (selection:ITextSelection) = 
-        if selection.IsEmpty || 0 = selection.SelectedSpans.Count then None
+    let GetOverarchingSelectedSpan (selection : ITextSelection) = 
+        if selection.IsEmpty then 
+            None
         else
-            let spans = selection.SelectedSpans
-            let min = spans |> Seq.map SnapshotSpanUtil.GetStartPosition |> Seq.min
-            let max = spans |> Seq.map SnapshotSpanUtil.GetEndPosition |> Seq.max
-            let span = Span.FromBounds(min,max)
-            let snapshot = spans.Item(0).Snapshot
-            SnapshotSpan(snapshot, span) |> Some
+            match NonEmptyCollectionUtil.OfSeq selection.SelectedSpans with
+            | None -> None
+            | Some col -> SnapshotSpanUtil.GetOverarchingSpan col |> Some
 
     /// Gets the selection of the editor
     let GetStreamSelectionSpan (selection:ITextSelection) = selection.StreamSelectionSpan
@@ -1076,12 +1081,8 @@ type EditSpan =
     /// and combine it with the maximum end position
     member x.OverarchingSpan =
         match x with 
-        | Single span ->
-            span
-        | Block col ->
-            let startPoint = col |> Seq.map (fun span -> span.Start) |> Seq.minBy SnapshotPointUtil.GetPosition
-            let endPoint = col |> Seq.map (fun span -> span.End) |> Seq.maxBy SnapshotPointUtil.GetPosition
-            SnapshotSpan (startPoint, endPoint)
+        | Single span -> span
+        | Block col -> SnapshotSpanUtil.GetOverarchingSpan col
 
     /// Provide an implicit conversion from SnapshotSpan.  Useful from C# code
     static member op_Implicit span = EditSpan.Single span

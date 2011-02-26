@@ -87,9 +87,8 @@ type IFoldManager =
     /// Gets snapshot spans for all of the currently existing folds
     abstract Folds : SnapshotSpan seq
 
-    /// Create a fold for the given Span.  The fold will actually be for the
-    /// entire lines at the start and end of the span
-    abstract CreateFold : SnapshotSpan -> unit 
+    /// Create a fold for the given line range
+    abstract CreateFold : SnapshotLineRange -> unit 
 
     /// Delete a fold which crosses the given SnapshotPoint.  Returns false if 
     /// there was no fold to be deleted

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Linq;
-using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Moq;
 using NUnit.Framework;
@@ -24,7 +23,6 @@ namespace VimCore.UnitTest
         private ITextView _textView;
         private CommandRunner _runnerRaw;
         private ICommandRunner _runner;
-        private ITextViewMotionUtil _motionUtil;
 
         private void Create(params string[] lines)
         {
@@ -36,7 +34,7 @@ namespace VimCore.UnitTest
             _vimData = new VimData();
             var settings = new GlobalSettings();
             var localSettings = new LocalSettings(settings, _textView);
-            _motionUtil = VimUtil.CreateTextViewMotionUtil(
+            var motionUtil = VimUtil.CreateTextViewMotionUtil(
                 _textView,
                 settings: localSettings,
                 vimData: _vimData);
@@ -47,7 +45,7 @@ namespace VimCore.UnitTest
                 localSettings);
             _commandUtil = VimUtil.CreateCommandUtil(
                 _textView,
-                motionUtil: _motionUtil,
+                motionUtil: motionUtil,
                 statusUtil: _statusUtil.Object,
                 registerMap: _registerMap,
                 vimData: _vimData);
@@ -55,7 +53,6 @@ namespace VimCore.UnitTest
                 _textView,
                 _registerMap,
                 capture,
-                _motionUtil,
                 _commandUtil,
                 _statusUtil.Object,
                 VisualKind.Character);
@@ -76,7 +73,7 @@ namespace VimCore.UnitTest
         public void Add1()
         {
             Create(String.Empty);
-            var command1 = VimUtil.CreateSimpleCommand("foo", (x, y) => CommandResult.NewCompleted(ModeSwitch.NoSwitch));
+            var command1 = VimUtil.CreateLegacyBinding("foo", (x, y) => CommandResult.NewCompleted(ModeSwitch.NoSwitch));
             _runner.Add(command1);
             Assert.AreSame(command1, _runner.Commands.Single());
         }
@@ -85,8 +82,8 @@ namespace VimCore.UnitTest
         public void Add2()
         {
             Create(String.Empty);
-            var command1 = VimUtil.CreateSimpleCommand("foo", (x, y) => CommandResult.NewCompleted(ModeSwitch.NoSwitch));
-            var command2 = VimUtil.CreateSimpleCommand("bar", (x, y) => CommandResult.NewCompleted(ModeSwitch.NoSwitch));
+            var command1 = VimUtil.CreateLegacyBinding("foo", (x, y) => CommandResult.NewCompleted(ModeSwitch.NoSwitch));
+            var command2 = VimUtil.CreateLegacyBinding("bar", (x, y) => CommandResult.NewCompleted(ModeSwitch.NoSwitch));
             _runner.Add(command1);
             _runner.Add(command2);
             Assert.AreEqual(2, _runner.Commands.Count());
@@ -99,7 +96,7 @@ namespace VimCore.UnitTest
         public void Add3()
         {
             Create(String.Empty);
-            var command1 = VimUtil.CreateSimpleCommand("foo", (x, y) => CommandResult.NewCompleted(ModeSwitch.NoSwitch));
+            var command1 = VimUtil.CreateLegacyBinding("foo", (x, y) => CommandResult.NewCompleted(ModeSwitch.NoSwitch));
             _runner.Add(command1);
             _runner.Add(command1);
         }
@@ -109,8 +106,8 @@ namespace VimCore.UnitTest
         public void Add4()
         {
             Create(String.Empty);
-            var command1 = VimUtil.CreateSimpleCommand("foo", (x, y) => CommandResult.NewCompleted(ModeSwitch.NoSwitch));
-            var command2 = VimUtil.CreateMotionCommand("foo", (x, y, z) => CommandResult.NewCompleted(ModeSwitch.NoSwitch));
+            var command1 = VimUtil.CreateLegacyBinding("foo", (x, y) => CommandResult.NewCompleted(ModeSwitch.NoSwitch));
+            var command2 = VimUtil.CreateNormalBinding("foo");
             _runner.Add(command1);
             _runner.Add(command2);
         }
@@ -119,8 +116,7 @@ namespace VimCore.UnitTest
         public void Remove1()
         {
             Create(String.Empty);
-            var command1 = VimUtil.CreateSimpleCommand("foo", (x, y) => CommandResult.NewCompleted(ModeSwitch.NoSwitch));
-            var command2 = VimUtil.CreateSimpleCommand("bar", (x, y) => CommandResult.NewCompleted(ModeSwitch.NoSwitch));
+            var command1 = VimUtil.CreateLegacyBinding("foo", (x, y) => CommandResult.NewCompleted(ModeSwitch.NoSwitch));
             _runner.Add(command1);
             _runner.Remove(command1.KeyInputSet);
             Assert.AreEqual(0, _runner.Commands.Count());
@@ -140,7 +136,7 @@ namespace VimCore.UnitTest
         {
             Create(String.Empty);
             var count1 = 0;
-            _runner.Add(VimUtil.CreateSimpleCommand("a", (count, reg) => { count1++; return CommandResult.NewCompleted(ModeSwitch.NoSwitch); }));
+            _runner.Add(VimUtil.CreateLegacyBinding("a", (count, reg) => { count1++; return CommandResult.NewCompleted(ModeSwitch.NoSwitch); }));
             Run("a");
             Assert.AreEqual(1, count1);
         }
@@ -150,7 +146,7 @@ namespace VimCore.UnitTest
         {
             Create(String.Empty);
             var count1 = 0;
-            _runner.Add(VimUtil.CreateSimpleCommand("a", (count, reg) => { count1++; return CommandResult.NewCompleted(ModeSwitch.NoSwitch); }));
+            _runner.Add(VimUtil.CreateLegacyBinding("a", (count, reg) => { count1++; return CommandResult.NewCompleted(ModeSwitch.NoSwitch); }));
             Run("b");
             Assert.AreEqual(0, count1);
         }
@@ -160,9 +156,9 @@ namespace VimCore.UnitTest
         {
             Create(String.Empty);
             var count1 = 0;
-            _runner.Add(VimUtil.CreateSimpleCommand("a", (count, reg) => { count1++; return CommandResult.NewCompleted(ModeSwitch.NoSwitch); }));
+            _runner.Add(VimUtil.CreateLegacyBinding("a", (count, reg) => { count1++; return CommandResult.NewCompleted(ModeSwitch.NoSwitch); }));
             var count2 = 0;
-            _runner.Add(VimUtil.CreateSimpleCommand("b", (count, reg) => { count2++; return CommandResult.NewCompleted(ModeSwitch.NoSwitch); }));
+            _runner.Add(VimUtil.CreateLegacyBinding("b", (count, reg) => { count2++; return CommandResult.NewCompleted(ModeSwitch.NoSwitch); }));
             Run("b");
             Assert.AreEqual(0, count1);
             Assert.AreEqual(1, count2);
@@ -173,9 +169,9 @@ namespace VimCore.UnitTest
         {
             Create(String.Empty);
             var count1 = 0;
-            _runner.Add(VimUtil.CreateSimpleCommand("ab", (count, reg) => { count1++; return CommandResult.NewCompleted(ModeSwitch.NoSwitch); }));
+            _runner.Add(VimUtil.CreateLegacyBinding("ab", (count, reg) => { count1++; return CommandResult.NewCompleted(ModeSwitch.NoSwitch); }));
             var count2 = 0;
-            _runner.Add(VimUtil.CreateSimpleCommand("b", (count, reg) => { count2++; return CommandResult.NewCompleted(ModeSwitch.NoSwitch); }));
+            _runner.Add(VimUtil.CreateLegacyBinding("b", (count, reg) => { count2++; return CommandResult.NewCompleted(ModeSwitch.NoSwitch); }));
             Run("ab");
             Assert.AreEqual(1, count1);
             Assert.AreEqual(0, count2);
@@ -187,9 +183,9 @@ namespace VimCore.UnitTest
         {
             Create(String.Empty);
             var count1 = 0;
-            _runner.Add(VimUtil.CreateMotionCommand("aa", (count, reg, data) => { count1++; return CommandResult.NewCompleted(ModeSwitch.NoSwitch); }));
+            _runner.Add(VimUtil.CreateMotionBinding("aa", data => { count1++; return NormalCommand.NewYank(data); }));
             var count2 = 0;
-            _runner.Add(VimUtil.CreateSimpleCommand("aab", (count, reg) => { count2++; return CommandResult.NewCompleted(ModeSwitch.NoSwitch); }));
+            _runner.Add(VimUtil.CreateLegacyBinding("aab", (count, reg) => { count2++; return CommandResult.NewCompleted(ModeSwitch.NoSwitch); }));
             Run("aa");
             Assert.AreEqual(0, count1);
             Assert.AreEqual(0, count2);
@@ -200,9 +196,9 @@ namespace VimCore.UnitTest
         {
             Create(String.Empty);
             var count1 = 0;
-            _runner.Add(VimUtil.CreateMotionCommand("aa", (count, reg, data) => { count1++; return CommandResult.NewCompleted(ModeSwitch.NoSwitch); }));
+            _runner.Add(VimUtil.CreateMotionBinding("aa", data => { count1++; return NormalCommand.NewYank(data); }));
             var count2 = 0;
-            _runner.Add(VimUtil.CreateSimpleCommand("aab", (count, reg) => { count2++; return CommandResult.NewCompleted(ModeSwitch.NoSwitch); }));
+            _runner.Add(VimUtil.CreateLegacyBinding("aab", (count, reg) => { count2++; return CommandResult.NewCompleted(ModeSwitch.NoSwitch); }));
             Run("aab");
             Assert.AreEqual(0, count1);
             Assert.AreEqual(1, count2);
@@ -213,9 +209,9 @@ namespace VimCore.UnitTest
         {
             Create("foo bar");
             var count1 = 0;
-            _runner.Add(VimUtil.CreateMotionCommand("aa", (count, reg, data) => { count1++; return CommandResult.NewCompleted(ModeSwitch.NoSwitch); }));
+            _runner.Add(VimUtil.CreateMotionBinding("aa", data => { count1++; return NormalCommand.NewYank(data); }));
             var count2 = 0;
-            _runner.Add(VimUtil.CreateSimpleCommand("aab", (count, reg) => { count2++; return CommandResult.NewCompleted(ModeSwitch.NoSwitch); }));
+            _runner.Add(VimUtil.CreateLegacyBinding("aab", (count, reg) => { count2++; return CommandResult.NewCompleted(ModeSwitch.NoSwitch); }));
             Run("aaw");
             Assert.AreEqual(1, count1);
             Assert.AreEqual(0, count2);
@@ -226,7 +222,7 @@ namespace VimCore.UnitTest
         {
             Create(String.Empty);
             var didRun = false;
-            _runner.Add(VimUtil.CreateSimpleCommand("a", (count, reg) =>
+            _runner.Add(VimUtil.CreateLegacyBinding("a", (count, reg) =>
                 {
                     Assert.IsTrue(count.IsNone());
                     didRun = true;
@@ -241,7 +237,7 @@ namespace VimCore.UnitTest
         {
             Create(String.Empty);
             var didRun = false;
-            _runner.Add(VimUtil.CreateSimpleCommand("a", (count, reg) =>
+            _runner.Add(VimUtil.CreateLegacyBinding("a", (count, reg) =>
                 {
                     Assert.IsTrue(count.IsSome());
                     Assert.AreEqual(1, count.Value);
@@ -257,7 +253,7 @@ namespace VimCore.UnitTest
         {
             Create(String.Empty);
             var didRun = false;
-            _runner.Add(VimUtil.CreateSimpleCommand("a", (count, reg) =>
+            _runner.Add(VimUtil.CreateLegacyBinding("a", (count, reg) =>
                 {
                     Assert.IsTrue(count.IsSome());
                     Assert.AreEqual(42, count.Value);
@@ -276,7 +272,7 @@ namespace VimCore.UnitTest
         {
             Create(string.Empty);
             var didRun = false;
-            _runner.Add(VimUtil.CreateSimpleCommand("a", (count, reg) => { didRun = true; }));
+            _runner.Add(VimUtil.CreateLegacyBinding("a", (count, reg) => { didRun = true; }));
             Assert.IsTrue(_runner.Run('0').IsError);
             Assert.IsFalse(didRun);
         }
@@ -286,7 +282,7 @@ namespace VimCore.UnitTest
         {
             Create(String.Empty);
             var didRun = false;
-            _runner.Add(VimUtil.CreateSimpleCommand("a", (count, reg) =>
+            _runner.Add(VimUtil.CreateLegacyBinding("a", (count, reg) =>
                 {
                     Assert.AreEqual(RegisterName.Unnamed, reg.Name);
                     didRun = true;
@@ -301,7 +297,7 @@ namespace VimCore.UnitTest
         {
             Create(String.Empty);
             var didRun = false;
-            _runner.Add(VimUtil.CreateSimpleCommand("a", (count, reg) =>
+            _runner.Add(VimUtil.CreateLegacyBinding("a", (count, reg) =>
                 {
                     Assert.AreSame(_registerMap.GetRegister('c'), reg);
                     didRun = true;
@@ -316,7 +312,7 @@ namespace VimCore.UnitTest
         {
             Create(String.Empty);
             var didRun = false;
-            _runner.Add(VimUtil.CreateSimpleCommand("a", (count, reg) =>
+            _runner.Add(VimUtil.CreateLegacyBinding("a", (count, reg) =>
                 {
                     Assert.AreSame(_registerMap.GetRegister('d'), reg);
                     didRun = true;
@@ -331,7 +327,7 @@ namespace VimCore.UnitTest
         {
             Create(String.Empty);
             var didRun = false;
-            _runner.Add(VimUtil.CreateSimpleCommand("a", (count, reg) =>
+            _runner.Add(VimUtil.CreateLegacyBinding("a", (count, reg) =>
                 {
                     Assert.IsTrue(count.IsSome());
                     Assert.AreEqual(2, count.Value);
@@ -348,7 +344,7 @@ namespace VimCore.UnitTest
         {
             Create(String.Empty);
             var didRun = false;
-            _runner.Add(VimUtil.CreateSimpleCommand("a", (count, reg) =>
+            _runner.Add(VimUtil.CreateLegacyBinding("a", (count, reg) =>
                 {
                     Assert.IsTrue(count.IsSome());
                     Assert.AreEqual(2, count.Value);
@@ -364,7 +360,7 @@ namespace VimCore.UnitTest
         public void Run_NoMatchingCommand1()
         {
             Create("hello world");
-            _runner.Add(VimUtil.CreateSimpleCommand("cat", (count, reg) => CommandResult.NewCompleted(ModeSwitch.NoSwitch)));
+            _runner.Add(VimUtil.CreateLegacyBinding("cat", (count, reg) => CommandResult.NewCompleted(ModeSwitch.NoSwitch)));
             Assert.IsTrue(_runner.Run('b').IsError);
         }
 
@@ -372,7 +368,7 @@ namespace VimCore.UnitTest
         public void Run_NoMatchingCommand2()
         {
             Create("hello world");
-            _runner.Add(VimUtil.CreateSimpleCommand("cat", (count, reg) => CommandResult.NewCompleted(ModeSwitch.NoSwitch)));
+            _runner.Add(VimUtil.CreateLegacyBinding("cat", (count, reg) => CommandResult.NewCompleted(ModeSwitch.NoSwitch)));
             Assert.IsTrue(_runner.Run('c').IsNeedMoreInput);
             Assert.IsTrue(_runner.Run('b').IsError);
         }
@@ -381,8 +377,8 @@ namespace VimCore.UnitTest
         public void Run_NoMatchingCommand3()
         {
             Create("hello world");
-            _runner.Add(VimUtil.CreateSimpleCommand("cot", (count, reg) => CommandResult.NewCompleted(ModeSwitch.NoSwitch)));
-            _runner.Add(VimUtil.CreateSimpleCommand("cook", (count, reg) => CommandResult.NewCompleted(ModeSwitch.NoSwitch)));
+            _runner.Add(VimUtil.CreateLegacyBinding("cot", (count, reg) => CommandResult.NewCompleted(ModeSwitch.NoSwitch)));
+            _runner.Add(VimUtil.CreateLegacyBinding("cook", (count, reg) => CommandResult.NewCompleted(ModeSwitch.NoSwitch)));
             Assert.IsTrue(_runner.Run('c').IsNeedMoreInput);
             Assert.IsTrue(_runner.Run('o').IsNeedMoreInput);
             Assert.IsTrue(_runner.Run('b').IsError);
@@ -398,7 +394,7 @@ namespace VimCore.UnitTest
             Create("hello world");
             var didRun = false;
             var didEscape = false;
-            _runner.Add(VimUtil.CreateCommandBindingNormalComplex(
+            _runner.Add(VimUtil.CreateComplexNormalBinding(
                 "c",
                 ki =>
                 {
@@ -421,7 +417,7 @@ namespace VimCore.UnitTest
             Create("hello world");
             var didRun = false;
             var didEscape = false;
-            _runner.Add(VimUtil.CreateCommandBindingNormalComplex(
+            _runner.Add(VimUtil.CreateComplexNormalBinding(
                 "c",
                 ki =>
                 {
@@ -439,7 +435,7 @@ namespace VimCore.UnitTest
         public void IsWaitingForMoreInput1()
         {
             Create("hello world");
-            _runner.Add(VimUtil.CreateSimpleCommand("cat", (count, reg) => CommandResult.NewCompleted(ModeSwitch.NoSwitch)));
+            _runner.Add(VimUtil.CreateLegacyBinding("cat", (count, reg) => CommandResult.NewCompleted(ModeSwitch.NoSwitch)));
             Assert.IsTrue(Run("c").IsNeedMoreInput);
             Assert.IsTrue(_runner.IsWaitingForMoreInput);
         }
@@ -448,7 +444,7 @@ namespace VimCore.UnitTest
         public void IsWaitingForMoreInput2()
         {
             Create("hello world");
-            _runner.Add(VimUtil.CreateSimpleCommand("cat", (count, reg) => CommandResult.NewCompleted(ModeSwitch.NoSwitch)));
+            _runner.Add(VimUtil.CreateLegacyBinding("cat", (count, reg) => CommandResult.NewCompleted(ModeSwitch.NoSwitch)));
             Assert.IsTrue(Run("ca").IsNeedMoreInput);
             Assert.IsTrue(_runner.IsWaitingForMoreInput);
         }
@@ -457,7 +453,7 @@ namespace VimCore.UnitTest
         public void IsWaitingForMoreInput3()
         {
             Create("hello world");
-            _runner.Add(VimUtil.CreateSimpleCommand("cat", (count, reg) => CommandResult.NewCompleted(ModeSwitch.NoSwitch)));
+            _runner.Add(VimUtil.CreateLegacyBinding("cat", (count, reg) => CommandResult.NewCompleted(ModeSwitch.NoSwitch)));
             Assert.IsTrue(Run("cat").IsComplete);
             Assert.IsFalse(_runner.IsWaitingForMoreInput);
         }
@@ -466,7 +462,7 @@ namespace VimCore.UnitTest
         public void IsWaitingForMoreInput4()
         {
             Create("hello world");
-            _runner.Add(VimUtil.CreateSimpleCommand("cat", (count, reg) => CommandResult.NewCompleted(ModeSwitch.NoSwitch)));
+            _runner.Add(VimUtil.CreateLegacyBinding("cat", (count, reg) => CommandResult.NewCompleted(ModeSwitch.NoSwitch)));
             Assert.IsTrue(Run("ca").IsNeedMoreInput);
             Assert.IsTrue(_runner.Run(KeyInputUtil.EscapeKey).IsCancelled);
             Assert.IsFalse(_runner.IsWaitingForMoreInput);
@@ -477,42 +473,16 @@ namespace VimCore.UnitTest
         public void IsWaitingForMoreInput5()
         {
             Create("hello world");
-            _runner.Add(VimUtil.CreateMotionCommand("cat", (count, reg, data) => CommandResult.NewCompleted(ModeSwitch.NoSwitch)));
+            _runner.Add(VimUtil.CreateMotionBinding("cat"));
             Assert.IsTrue(Run("cata").IsNeedMoreInput);
             Assert.IsTrue(_runner.Run(KeyInputUtil.EscapeKey).IsCancelled);
             Assert.IsFalse(_runner.IsWaitingForMoreInput);
         }
 
-        [Test]
-        public void Run_Motion1()
-        {
-            Create("foo bar");
-            var didRun = false;
-            _runner.Add(VimUtil.CreateMotionCommand("a", (count, reg, data) =>
-                {
-                    Assert.AreEqual(new SnapshotSpan(_textView.GetLine(0).Start, 4), data.Span);
-                    didRun = true;
-                    return CommandResult.NewCompleted(ModeSwitch.NoSwitch);
-                }));
-            Run("aw");
-            Assert.IsTrue(didRun);
-        }
-
-        [Test]
-        public void Run_Motion2()
-        {
-            Create("foo bar");
-            var didRun = false;
-            _runner.Add(VimUtil.CreateMotionCommand("a", (count, reg, data) =>
-                {
-                    Assert.AreEqual(new SnapshotSpan(_textView.GetLine(0).Start, 4), data.Span);
-                    didRun = true;
-                    return CommandResult.NewCompleted(ModeSwitch.NoSwitch);
-                }));
-            Run("aaw");
-            Assert.IsTrue(didRun);
-        }
-
+        /// <summary>
+        /// Make sure we are properly able to distinguish between motion and non-motion commands
+        /// which have similar prefix matches
+        /// </summary>
         [Test]
         public void Run_MotionMixedWithNonMotion()
         {
@@ -522,12 +492,12 @@ namespace VimCore.UnitTest
 
             foreach (var cur in simple)
             {
-                _runner.Add(VimUtil.CreateSimpleCommand(cur));
+                _runner.Add(VimUtil.CreateLegacyBinding(cur));
             }
 
             foreach (var cur in motion)
             {
-                _runner.Add(VimUtil.CreateMotionCommand(cur));
+                _runner.Add(VimUtil.CreateMotionBinding(cur));
             }
 
             foreach (var cur in simple)
@@ -549,7 +519,7 @@ namespace VimCore.UnitTest
         public void Reset1()
         {
             Create("hello world");
-            _runner.Add(VimUtil.CreateSimpleCommand("abc", (x, y) => CommandResult.NewCompleted(ModeSwitch.NoSwitch)));
+            _runner.Add(VimUtil.CreateLegacyBinding("abc", (x, y) => CommandResult.NewCompleted(ModeSwitch.NoSwitch)));
             Run("a");
             Assert.IsTrue(_runner.IsWaitingForMoreInput);
             _runner.ResetState();
@@ -567,7 +537,7 @@ namespace VimCore.UnitTest
                 return seen != "ood";
             };
 
-            _runner.Add(VimUtil.CreateCommandBindingNormalComplex("f", func));
+            _runner.Add(VimUtil.CreateComplexNormalBinding("f", func));
             Assert.IsTrue(_runner.Run("food").IsComplete);
             Assert.AreEqual("ood", seen);
         }
@@ -576,7 +546,7 @@ namespace VimCore.UnitTest
         public void NestedRun1()
         {
             Create("hello world");
-            _runner.Add(VimUtil.CreateSimpleCommand("a", (x, y) =>
+            _runner.Add(VimUtil.CreateLegacyBinding("a", (x, y) =>
                 {
                     var res = _runner.Run(KeyInputUtil.CharToKeyInput('a'));
                     Assert.IsTrue(res.IsError);
@@ -591,7 +561,7 @@ namespace VimCore.UnitTest
         public void NestedRun2()
         {
             Create("hello world");
-            _runner.Add(VimUtil.CreateSimpleCommand("a", (x, y) =>
+            _runner.Add(VimUtil.CreateLegacyBinding("a", (x, y) =>
                 {
                     var res = _runner.Run(KeyInputUtil.CharToKeyInput('a'));
                     Assert.IsTrue(res.IsError);
@@ -607,7 +577,7 @@ namespace VimCore.UnitTest
         {
             Create("hello world");
             var didSee = false;
-            var command1 = VimUtil.CreateSimpleCommand("c", (x, y) => CommandResult.NewCompleted(ModeSwitch.NoSwitch));
+            var command1 = VimUtil.CreateLegacyBinding("c", (x, y) => CommandResult.NewCompleted(ModeSwitch.NoSwitch));
             _runner.Add(command1);
             _runner.CommandRan += (notUsed, tuple) =>
                 {
@@ -624,7 +594,7 @@ namespace VimCore.UnitTest
         {
             Create("hello world");
             var didSee = false;
-            var command1 = VimUtil.CreateSimpleCommand("c", (x, y) => CommandResult.NewCompleted(ModeSwitch.NoSwitch));
+            var command1 = VimUtil.CreateLegacyBinding("c", (x, y) => CommandResult.NewCompleted(ModeSwitch.NoSwitch));
             _runner.Add(command1);
             _runner.CommandRan += (notUsed, tuple) =>
                 {
@@ -641,7 +611,7 @@ namespace VimCore.UnitTest
         {
             Create("hello world");
             var didSee = false;
-            var command1 = VimUtil.CreateSimpleCommand("cat", (x, y) => CommandResult.NewCompleted(ModeSwitch.NoSwitch));
+            var command1 = VimUtil.CreateLegacyBinding("cat", (x, y) => CommandResult.NewCompleted(ModeSwitch.NoSwitch));
             _runner.Add(command1);
             _runner.CommandRan += (notUsed, tuple) =>
                 {
@@ -663,7 +633,7 @@ namespace VimCore.UnitTest
         public void KeyRemapMode_NoneWhileFindingCommand()
         {
             Create("hello world");
-            _runner.Add(VimUtil.CreateSimpleCommand("cat"));
+            _runner.Add(VimUtil.CreateLegacyBinding("cat"));
             _runner.Run('c');
             Assert.IsTrue(_runner.KeyRemapMode.IsNone());
         }
@@ -672,7 +642,7 @@ namespace VimCore.UnitTest
         public void KeyRemapMode_OperatorPendingWhenWaitingForMotionLegacy()
         {
             Create("hello world");
-            _runner.Add(VimUtil.CreateMotionCommand("d"));
+            _runner.Add(VimUtil.CreateMotionBinding("d"));
             _runner.Run('d');
             Assert.IsTrue(_runner.KeyRemapMode.IsSome(KeyRemapMode.OperatorPending));
         }
@@ -681,7 +651,7 @@ namespace VimCore.UnitTest
         public void KeyRemapMode_OperatorPendingWhenWaitingForMotion()
         {
             Create("hello world");
-            _runner.Add(VimUtil.CreateCommandBindingMotion("d"));
+            _runner.Add(VimUtil.CreateMotionBinding("d"));
             _runner.Run('d');
             Assert.IsTrue(_runner.KeyRemapMode.IsSome(KeyRemapMode.OperatorPending));
         }
@@ -690,8 +660,8 @@ namespace VimCore.UnitTest
         public void KeyRemapMode_OperatorPendingWhenAmbiguousBetweenMotionAndCommand()
         {
             Create("hello world");
-            _runner.Add(VimUtil.CreateMotionCommand("d"));
-            _runner.Add(VimUtil.CreateSimpleCommand("dd"));
+            _runner.Add(VimUtil.CreateMotionBinding("d"));
+            _runner.Add(VimUtil.CreateLegacyBinding("dd"));
             _runner.Run('d');
             Assert.IsTrue(_runner.KeyRemapMode.IsSome(KeyRemapMode.OperatorPending));
         }
@@ -700,7 +670,7 @@ namespace VimCore.UnitTest
         public void KeyRemapMode_LanguageInToArgument()
         {
             Create("hello world");
-            _runner.Add(VimUtil.CreateMotionCommand("d"));
+            _runner.Add(VimUtil.CreateMotionBinding("d"));
             _runner.Run('d');
             _runner.Run('f');
             Assert.AreEqual(KeyRemapMode.Language, _runner.KeyRemapMode.Value);
@@ -713,7 +683,7 @@ namespace VimCore.UnitTest
         public void KeyRemapMode_LongCommandPropagateMode()
         {
             Create("hello world");
-            _runner.Add(VimUtil.CreateCommandBindingNormalComplex("a", x => true, KeyRemapMode.Language));
+            _runner.Add(VimUtil.CreateComplexNormalBinding("a", x => true, KeyRemapMode.Language));
             _runner.Run('a');
             Assert.IsTrue(_runner.KeyRemapMode.IsSome(KeyRemapMode.Language));
             _runner.Run('b');

@@ -122,7 +122,7 @@ type internal VimBufferFactory
                 vim.VimData) :> IIncrementalSearch
         let capture = MotionCapture(vim.VimHost, view, incrementalSearch, localSettings) :> IMotionCapture
 
-        let commandUtil = CommandUtil(view, commonOperations,  motionUtil, statusUtil, vim.RegisterMap, vim.MarkMap, vim.VimData, localSettings, undoRedoOperations, _smartIndentationService) :> ICommandUtil
+        let commandUtil = CommandUtil(view, commonOperations,  motionUtil, statusUtil, vim.RegisterMap, vim.MarkMap, vim.VimData, localSettings, undoRedoOperations, _smartIndentationService, foldManager) :> ICommandUtil
 
         let bufferRaw = 
             VimBuffer( 
@@ -144,7 +144,7 @@ type internal VimBufferFactory
 
         statusUtil.VimBuffer <- Some bufferRaw
 
-        let createCommandRunner kind = CommandRunner (view, vim.RegisterMap, capture, motionUtil, commandUtil, statusUtil, kind) :>ICommandRunner
+        let createCommandRunner kind = CommandRunner (view, vim.RegisterMap, capture, commandUtil, statusUtil, kind) :>ICommandRunner
         let broker = _completionWindowBrokerFactoryService.CreateDisplayWindowBroker view
         let bufferOptions = _editorOptionsFactoryService.GetOptions(view.TextBuffer)
         let normalOpts = Modes.Normal.DefaultOperations(operationsData) :> Vim.Modes.Normal.IOperations

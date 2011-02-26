@@ -22,8 +22,6 @@ type internal CommandRunner
         _textView : ITextView,
         _registerMap : IRegisterMap,
         _capture : IMotionCapture,
-        // REPEAT TODO: Eventually this won't be needed
-        _motionUtil : ITextViewMotionUtil,
         _commandUtil : ICommandUtil,
         _statusUtil : IStatusUtil,
         _visualKind : VisualKind ) =
@@ -178,13 +176,13 @@ type internal CommandRunner
             match Map.tryFind commandName _commandMap with
             | Some(commandBinding) ->
                 match commandBinding with
-                | CommandBinding.LegacySimpleCommand(_, _, func) -> 
+                | CommandBinding.LegacyBinding (_, _, func) -> 
                     let func () = func count (commandData.GetRegister _registerMap)
                     let data = LegacyData(func)
                     BindResult.Complete (Command.LegacyCommand data, commandBinding)
-                | CommandBinding.NormalCommand(_, _, normalCommand) -> 
+                | CommandBinding.NormalBinding (_, _, normalCommand) -> 
                     BindResult.Complete (Command.NormalCommand (normalCommand, commandData), commandBinding)
-                | CommandBinding.LegacyVisualCommand(_, _, kind, func) -> 
+                | CommandBinding.LegacyVisualBinding (_, _, kind, func) -> 
                     match x.TryGetVisualSpan kind with
                     | None ->
                         _statusUtil.OnError Resources.Common_SelectionInvalid
@@ -193,7 +191,7 @@ type internal CommandRunner
                         let func () = func count (commandData.GetRegister _registerMap) visualSpan
                         let data = LegacyData(func)
                         BindResult.Complete (Command.LegacyCommand data, commandBinding)
-                | CommandBinding.VisualCommand(_, _, visualCommand) ->
+                | CommandBinding.VisualBinding (_, _, visualCommand) ->
                     match x.TryGetVisualSpan _visualKind with
                     | None -> 
                         _statusUtil.OnError Resources.Common_SelectionInvalid
@@ -201,22 +199,7 @@ type internal CommandRunner
                     | Some visualSpan -> 
                         let visualCommand = Command.VisualCommand (visualCommand, commandData, visualSpan)
                         BindResult.Complete (visualCommand, commandBinding)
-                | CommandBinding.LegacyMotionCommand(_, _, func) -> 
-                    // Can't just call this.  It's possible there is a non-motion command with a 
-                    // longer command commandInputs.  If there are any other commands which have a 
-                    // matching prefix we can't bind to the command yet
-                    let withPrefix = 
-                        findPrefixMatches commandName
-                        |> Seq.filter (fun c -> c.KeyInputSet <> commandBinding.KeyInputSet)
-                    if Seq.isEmpty withPrefix then 
-                        _data <- { _data with CommandFlags = Some commandBinding.CommandFlags }
-                        BindResult<_>.CreateNeedMoreInput (Some KeyRemapMode.OperatorPending) (fun keyInput -> x.BindLegacyMotion commandBinding keyInput count register func)
-                    else 
-                        // At least one other command matched so we need at least one more piece of input to
-                        // differentiate the commands.  At this point though because the command is of the
-                        // motion variety we are in operator pending
-                        bindNext (Some KeyRemapMode.OperatorPending)
-                | CommandBinding.MotionCommand (_, _, func) -> 
+                | CommandBinding.MotionBinding (_, _, func) -> 
                     // Can't just call this.  It's possible there is a non-motion command with a 
                     // longer command commandInputs.  If there are any other commands which have a 
                     // matching prefix we can't bind to the command yet
@@ -234,12 +217,12 @@ type internal CommandRunner
                         _data <- { _data with CommandFlags = Some commandBinding.CommandFlags }
                         bindNext (Some KeyRemapMode.OperatorPending)
     
-                | CommandBinding.ComplexNormalCommand (_, _, bindDataStorage) -> 
+                | CommandBinding.ComplexNormalBinding (_, _, bindDataStorage) -> 
                     _data <- { _data with CommandFlags = Some commandBinding.CommandFlags }
                     let bindData = bindDataStorage.CreateBindData()
                     let bindData = bindData.Convert (fun normalCommand -> (Command.NormalCommand (normalCommand, commandData), commandBinding))
                     BindResult.NeedMoreInput bindData
-                | CommandBinding.ComplexVisualCommand (_, _, bindDataStorage) -> 
+                | CommandBinding.ComplexVisualBinding (_, _, bindDataStorage) -> 
                     _data <- { _data with CommandFlags = Some commandBinding.CommandFlags }
                     let bindData = bindDataStorage.CreateBindData()
                     let bindData = bindData.Map (fun visualCommand -> 
@@ -267,23 +250,20 @@ type internal CommandRunner
                     match Map.tryFind previousCommandName _commandMap with
                     | Some(command) ->
                         match command with
-                        | CommandBinding.LegacySimpleCommand _ -> 
+                        | CommandBinding.LegacyBinding _ -> 
                             bindNext None
-                        | CommandBinding.LegacyVisualCommand _ -> 
+                        | CommandBinding.LegacyVisualBinding _ -> 
                             bindNext None
-                        | CommandBinding.LegacyMotionCommand (_, _, func) -> 
-                            _data <- { _data with CommandFlags = Some command.CommandFlags }
-                            x.BindLegacyMotion command currentInput count register func
-                        | CommandBinding.MotionCommand (_, _, func) -> 
+                        | CommandBinding.MotionBinding (_, _, func) -> 
                             _data <- { _data with CommandFlags = Some command.CommandFlags }
                             x.BindMotion currentInput (completeMotion command func)
-                        | CommandBinding.NormalCommand _ -> 
+                        | CommandBinding.NormalBinding _ -> 
                             bindNext None
-                        | CommandBinding.VisualCommand _ -> 
+                        | CommandBinding.VisualBinding _ -> 
                             bindNext None
-                        | CommandBinding.ComplexNormalCommand _ -> 
+                        | CommandBinding.ComplexNormalBinding _ -> 
                             bindNext None
-                        | CommandBinding.ComplexVisualCommand _ -> 
+                        | CommandBinding.ComplexVisualBinding _ -> 
                             bindNext None
                     | None -> 
                         // No prefix matches and no previous motion so won't ever match a comamand
@@ -298,19 +278,6 @@ type internal CommandRunner
 
         // Lets get it started
         inner (KeyInputSet.OneKeyInput keyInput) KeyInputSet.Empty keyInput
-
-    /// REPEAT TODO: Delete when legacy commands are eliminated
-    member x.BindLegacyMotion command keyInput count register (func : int option -> Register -> MotionResult -> CommandResult) = 
-        x.BindMotion keyInput (fun (motion, motionCount) -> 
-            let argument = { MotionContext = MotionContext.AfterOperator; OperatorCount = count; MotionCount = count }
-            let func () = 
-                match _motionUtil.GetMotion motion argument with
-                | None ->
-                    CommandResult.Error
-                | Some result ->
-                    func count register result
-            let data = LegacyData(func)
-            (Command.LegacyCommand data, command))
 
     /// Should the Esacpe key cancel the current command
     member x.ShouldEscapeCancelCurrentCommand () = 

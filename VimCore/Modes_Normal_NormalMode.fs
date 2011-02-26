@@ -67,7 +67,6 @@ type internal NormalMode
             this.CreateSimpleCommands()
             |> Seq.append (this.CreateCommandBindings())
             |> Seq.append (factory.CreateMovementCommands())
-            |> Seq.append (this.CreateMotionCommands())
             |> Seq.iter _runner.Add
 
             // Add in the special ~ command
@@ -95,9 +94,9 @@ type internal NormalMode
         let flags = CommandFlags.Repeatable
         let command = 
             if _bufferData.Settings.GlobalSettings.TildeOp then
-                CommandBinding.MotionCommand (name, flags, (fun motion -> NormalCommand.ChangeCaseMotion (ChangeCharacterKind.ToggleCase, motion)))
+                CommandBinding.MotionBinding (name, flags, (fun motion -> NormalCommand.ChangeCaseMotion (ChangeCharacterKind.ToggleCase, motion)))
             else
-                CommandBinding.NormalCommand (name, flags, NormalCommand.ChangeCaseCaretPoint ChangeCharacterKind.ToggleCase)
+                CommandBinding.NormalBinding (name, flags, NormalCommand.ChangeCaseCaretPoint ChangeCharacterKind.ToggleCase)
         name, command
 
     /// Create the CommandBinding instances for the supported NormalCommand values
@@ -140,7 +139,7 @@ type internal NormalMode
                 yield ("==", CommandFlags.Repeatable, NormalCommand.FormatLines)
             } |> Seq.map (fun (str, flags, command) -> 
                 let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
-                CommandBinding.NormalCommand(keyInputSet, flags, command))
+                CommandBinding.NormalBinding (keyInputSet, flags, command))
             
         let motionSeq = 
             seq {
@@ -150,12 +149,13 @@ type internal NormalMode
                 yield ("gu", CommandFlags.Repeatable, (fun motion -> NormalCommand.ChangeCaseMotion (ChangeCharacterKind.ToLowerCase, motion)))
                 yield ("g?", CommandFlags.Repeatable, (fun motion -> NormalCommand.ChangeCaseMotion (ChangeCharacterKind.Rot13, motion)))
                 yield ("y", CommandFlags.None, NormalCommand.Yank)
+                yield ("zf", CommandFlags.None, NormalCommand.FoldMotion)
                 yield ("<lt>", CommandFlags.Repeatable, NormalCommand.ShiftMotionLinesLeft)
                 yield (">", CommandFlags.Repeatable, NormalCommand.ShiftMotionLinesRight)
                 yield ("=", CommandFlags.Repeatable, NormalCommand.FormatMotion)
             } |> Seq.map (fun (str, flags, command) -> 
                 let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
-                CommandBinding.MotionCommand(keyInputSet, flags, command))
+                CommandBinding.MotionBinding (keyInputSet, flags, command))
 
         let complexSeq = 
             seq {
@@ -166,7 +166,7 @@ type internal NormalMode
             } |> Seq.map (fun (str, flags, bindCommand) -> 
                 let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
                 let storage = BindDataStorage.Simple bindCommand
-                CommandBinding.ComplexNormalCommand(keyInputSet, flags, storage))
+                CommandBinding.ComplexNormalBinding (keyInputSet, flags, storage))
         Seq.append normalSeq motionSeq |> Seq.append complexSeq
 
     /// Create the simple commands
@@ -433,7 +433,7 @@ type internal NormalMode
                     let count = CommandUtil2.CountOrDefault count
                     func count reg
                     result
-                CommandBinding.LegacySimpleCommand(name, kind, func2))
+                CommandBinding.LegacyBinding (name, kind, func2))
 
         let needCountAsOpt = 
             seq {
@@ -461,34 +461,10 @@ type internal NormalMode
                     let func2 count reg = 
                         func count reg
                         CommandResult.Completed ModeSwitch.NoSwitch
-                    CommandBinding.LegacySimpleCommand(name, kind, func2)))
+                    CommandBinding.LegacyBinding (name, kind, func2)))
             |> Seq.concat
 
         Seq.append allWithCount needCountAsOpt 
-
-    /// Create all motion commands
-    member this.CreateMotionCommands() =
-    
-        let complex : seq<string * CommandFlags * ModeKind option * (int -> Register -> MotionResult -> unit)> =
-            seq {
-                yield (
-                    "zf", 
-                    CommandFlags.None, 
-                    None, 
-                    fun _ _ data -> _operations.FoldManager.CreateFold data.OperationSpan)
-            }
-
-        complex
-        |> Seq.map (fun (str, extraFlags, modeKindOpt, func) ->
-            let name = KeyNotationUtil.StringToKeyInputSet str
-            let func2 count reg data =
-                let count = CommandUtil2.CountOrDefault count
-                func count reg data
-                match modeKindOpt with
-                | None -> CommandResult.Completed ModeSwitch.NoSwitch
-                | Some(modeKind) -> CommandResult.Completed (ModeSwitch.SwitchMode modeKind)
-            let flags = extraFlags
-            CommandBinding.LegacyMotionCommand(name, flags, func2))
 
     member this.Reset() =
         _runner.ResetState()

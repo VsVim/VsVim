@@ -102,7 +102,7 @@ namespace VimCore.UnitTest
                 _textView,
                 _incrementalSearch.Object,
                 new LocalSettings(new GlobalSettings(), _textView));
-            var runner = new CommandRunner(_textView, _map, capture, motionUtil, _commandUtil.Object, _statusUtil.Object, VisualKind.Character);
+            var runner = new CommandRunner(_textView, _map, capture, _commandUtil.Object, _statusUtil.Object, VisualKind.Character);
             _modeRaw = new NormalMode(
                 _buffer.Object,
                 _operations.Object,
@@ -1979,12 +1979,12 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void Fold_zf_1()
+        public void Bind_FoldMotion()
         {
-            Create("the quick brown", "fox jumped", " over the dog");
-            _foldManager.Setup(x => x.CreateFold(_textView.TextBuffer.GetSpan(0, 4))).Verifiable();
+            Create("");
+            _commandUtil.SetupCommandMotion<NormalCommand.FoldMotion>();
             _mode.Process("zfw");
-            _foldManager.Verify();
+            _commandUtil.Verify();
         }
 
         [Test]

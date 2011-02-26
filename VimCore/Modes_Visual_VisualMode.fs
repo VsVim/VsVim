@@ -94,11 +94,6 @@ type internal VisualMode
                     None,
                     fun _ _ -> _operations.CloseAllFolds x.SelectedSpan )
                 yield (
-                    "zf", 
-                    CommandFlags.Special, 
-                    None,
-                    fun _ _ -> _operations.FoldManager.CreateFold x.SelectedSpan)
-                yield (
                     "zd", 
                     CommandFlags.Special, 
                     None,
@@ -118,8 +113,9 @@ type internal VisualMode
                     CommandFlags.Special, 
                     None,
                     fun count _ -> 
-                        let span = SnapshotSpanUtil.ExtendDownIncludingLineBreak x.SelectedSpan (count-1)
-                        _operations.FoldManager.CreateFold span )
+                        let line = TextViewUtil.GetCaretLine _textView
+                        let range = SnapshotLineRangeUtil.CreateForLineAndMaxCount line count
+                        _operations.FoldManager.CreateFold range)
             }
             |> Seq.map (fun (str,flags,mode,func) ->
                 let kiSet = KeyNotationUtil.StringToKeyInputSet str
@@ -131,7 +127,7 @@ type internal VisualMode
                     let count = CommandUtil2.CountOrDefault count
                     func count reg 
                     CommandResult.Completed modeSwitch
-                CommandBinding.LegacySimpleCommand (kiSet, flags, func2) )
+                CommandBinding.LegacyBinding (kiSet, flags, func2) )
 
         /// Commands which must customize their return
         let customReturn = 
@@ -143,7 +139,7 @@ type internal VisualMode
             }
             |> Seq.map (fun (name,flags,func) ->
                 let name = KeyNotationUtil.StringToKeyInputSet name
-                CommandBinding.LegacySimpleCommand (name, flags, func) )
+                CommandBinding.LegacyBinding (name, flags, func) )
 
         /// Visual Commands
         let visualSimple = 
@@ -187,7 +183,7 @@ type internal VisualMode
                         runVisualCommand funcNormal funcBlock count reg visualSpan
                         CommandResult.Completed modeSwitch
     
-                    CommandBinding.LegacyVisualCommand(kiSet, flags, _visualKind, func2)))
+                    CommandBinding.LegacyVisualBinding (kiSet, flags, _visualKind, func2)))
             |> Seq.concat
 
         Seq.append simples visualSimple 
@@ -216,6 +212,7 @@ type internal VisualMode
                 yield ("U", CommandFlags.Repeatable, VisualCommand.ChangeCase ChangeCharacterKind.ToUpperCase)
                 yield ("x", CommandFlags.Repeatable, VisualCommand.DeleteSelection)
                 yield ("X", CommandFlags.Repeatable, VisualCommand.DeleteLineSelection)
+                yield ("zf", CommandFlags.None, VisualCommand.FoldSelection)
                 yield ("<Del>", CommandFlags.Repeatable, VisualCommand.DeleteSelection)
                 yield ("<lt>", CommandFlags.Repeatable, VisualCommand.ShiftLinesLeft)
                 yield (">", CommandFlags.Repeatable, VisualCommand.ShiftLinesRight)
@@ -223,7 +220,7 @@ type internal VisualMode
                 yield ("=", CommandFlags.Repeatable, VisualCommand.FormatLines)
             } |> Seq.map (fun (str, flags, command) -> 
                 let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
-                CommandBinding.VisualCommand(keyInputSet, flags, command))
+                CommandBinding.VisualBinding (keyInputSet, flags, command))
 
         let complexSeq = 
             seq {
@@ -231,7 +228,7 @@ type internal VisualMode
             } |> Seq.map (fun (str, flags, bindCommand) -> 
                 let keyInputSet = KeyNotationUtil.StringToKeyInputSet str
                 let storage = BindDataStorage.Simple bindCommand
-                CommandBinding.ComplexVisualCommand(keyInputSet, flags, storage))
+                CommandBinding.ComplexVisualBinding (keyInputSet, flags, storage))
 
         Seq.append visualSeq complexSeq
 

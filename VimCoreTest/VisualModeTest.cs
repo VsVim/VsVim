@@ -92,7 +92,6 @@ namespace VimCore.UnitTest
                 _textView,
                 _map,
                 capture,
-                motionUtil,
                 _commandUtil.Object,
                 (new Mock<IStatusUtil>()).Object,
                 VisualKind.Character);
@@ -484,36 +483,12 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void Fold_zf()
+        public void Bind_FoldSelection()
         {
             Create("foo bar");
-            var span = _textBuffer.GetSpan(0, 1);
-            _selection.Select(span);
-            _foldManager.Setup(x => x.CreateFold(span)).Verifiable();
+            _commandUtil.SetupCommandVisual(VisualCommand.FoldSelection);
             _mode.Process("zf");
-            _factory.Verify();
-        }
-
-        [Test]
-        public void Fold_zF_1()
-        {
-            Create("the", "quick", "brown", "fox");
-            var span = _textBuffer.GetSpan(0, 1);
-            _selection.Select(span);
-            _foldManager.Setup(x => x.CreateFold(_textBuffer.GetLineRange(0, 0).ExtentIncludingLineBreak)).Verifiable();
-            _mode.Process("zF");
-            _factory.Verify();
-        }
-
-        [Test]
-        public void Fold_zF_2()
-        {
-            Create("the", "quick", "brown", "fox");
-            var span = _textBuffer.GetSpan(0, 1);
-            _selection.Select(span);
-            _foldManager.Setup(x => x.CreateFold(_textBuffer.GetLineRange(0, 1).ExtentIncludingLineBreak)).Verifiable();
-            _mode.Process("2zF");
-            _factory.Verify();
+            _commandUtil.Verify();
         }
 
         [Test]

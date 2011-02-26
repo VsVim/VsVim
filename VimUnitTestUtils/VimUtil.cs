@@ -95,7 +95,8 @@ namespace Vim.UnitTest
             IVimData vimData = null,
             IVimLocalSettings localSettings = null,
             IUndoRedoOperations undoRedOperations = null,
-            ISmartIndentationService smartIndentationService = null)
+            ISmartIndentationService smartIndentationService = null,
+            IFoldManager foldManager = null)
         {
             statusUtil = statusUtil ?? new StatusUtil();
             undoRedOperations = undoRedOperations ?? VimUtil.CreateUndoRedoOperations(statusUtil);
@@ -106,6 +107,7 @@ namespace Vim.UnitTest
             motionUtil = motionUtil ?? CreateTextViewMotionUtil(textView, markMap: markMap, vimData: vimData, settings: localSettings);
             operations = operations ?? CreateCommonOperations(textView, localSettings, vimData: vimData, statusUtil: statusUtil);
             smartIndentationService = smartIndentationService ?? CreateSmartIndentationService();
+            foldManager = foldManager ?? CreateFoldManager(textView.TextBuffer);
             return new CommandUtil(
                 textView,
                 operations,
@@ -116,12 +118,18 @@ namespace Vim.UnitTest
                 vimData,
                 localSettings,
                 undoRedOperations,
-                smartIndentationService);
+                smartIndentationService,
+                foldManager);
         }
 
         internal static ISmartIndentationService CreateSmartIndentationService()
         {
             return EditorUtil.FactoryService.SmartIndentationService;
+        }
+
+        internal static FoldManager CreateFoldManager(ITextBuffer textBuffer)
+        {
+            return new FoldManager(textBuffer);
         }
 
         internal static UndoRedoOperations CreateUndoRedoOperations(IStatusUtil statusUtil = null)
@@ -145,14 +153,14 @@ namespace Vim.UnitTest
             return new SearchService(EditorUtil.FactoryService.TextSearchService, settings);
         }
 
-        internal static CommandBinding CreateSimpleCommand(string name)
+        internal static CommandBinding CreateLegacyBinding(string name)
         {
-            return CreateSimpleCommand(name, (count, reg) => CommandResult.NewCompleted(ModeSwitch.NoSwitch));
+            return CreateLegacyBinding(name, (count, reg) => CommandResult.NewCompleted(ModeSwitch.NoSwitch));
         }
 
-        internal static CommandBinding CreateSimpleCommand(string name, Action<FSharpOption<int>, Register> del)
+        internal static CommandBinding CreateLegacyBinding(string name, Action<FSharpOption<int>, Register> del)
         {
-            return CreateSimpleCommand(
+            return CreateLegacyBinding(
                 name,
                 (x, y) =>
                 {
@@ -161,73 +169,17 @@ namespace Vim.UnitTest
                 });
         }
 
-        internal static CommandBinding CreateSimpleCommand(string name, Func<FSharpOption<int>, Register, CommandResult> func)
+        internal static CommandBinding CreateLegacyBinding(string name, Func<FSharpOption<int>, Register, CommandResult> func)
         {
             var fsharpFunc = func.ToFSharpFunc();
             var list = name.Select(KeyInputUtil.CharToKeyInput).ToFSharpList();
             var commandName = KeyInputSet.NewManyKeyInputs(list);
-            return CommandBinding.NewLegacySimpleCommand(commandName, CommandFlags.None, fsharpFunc);
+            return CommandBinding.NewLegacyBinding(commandName, CommandFlags.None, fsharpFunc);
         }
 
         internal static ITextStructureNavigator CreateTextStructureNavigator(ITextBuffer textBuffer)
         {
             return EditorUtil.FactoryService.TextStructureNavigatorSelectorService.GetTextStructureNavigator(textBuffer);
-        }
-
-        internal static CommandBinding CreateMotionCommand(string name)
-        {
-            return CreateMotionCommand(name, (count, reg, motionData) => { });
-        }
-
-        internal static CommandBinding CreateMotionCommand(string name, Action<FSharpOption<int>, Register, MotionResult> del)
-        {
-            return CreateMotionCommand(
-                name,
-                (x, y, z) =>
-                {
-                    del(x, y, z);
-                    return CommandResult.NewCompleted(ModeSwitch.NoSwitch);
-                });
-        }
-
-        internal static CommandBinding CreateMotionCommand(string name, Func<FSharpOption<int>, Register, MotionResult, CommandResult> func)
-        {
-            var fsharpFunc = func.ToFSharpFunc();
-            var list = name.Select(KeyInputUtil.CharToKeyInput).ToFSharpList();
-            var commandName = KeyInputSet.NewManyKeyInputs(list);
-            return CommandBinding.NewLegacyMotionCommand(commandName, CommandFlags.None, fsharpFunc);
-        }
-
-        internal static CommandBinding CreateVisualCommand(
-            string name = "c",
-            CommandFlags? flags = null,
-            VisualKind kind = null,
-            Func<FSharpOption<int>, Register, VisualSpan, CommandResult> func = null)
-        {
-            var flagsArg = flags ?? CommandFlags.None;
-            kind = kind ?? VisualKind.Line;
-            if (func == null)
-            {
-                func = (x, y, z) => CommandResult.NewCompleted(ModeSwitch.NoSwitch);
-            }
-            return CommandBinding.NewLegacyVisualCommand(
-                KeyNotationUtil.StringToKeyInputSet(name),
-                flagsArg,
-                kind,
-                func.ToFSharpFunc());
-        }
-
-        internal static MotionBinding CreateSimpleMotion(
-            string name,
-            Motion motion,
-            MotionFlags? flags = null)
-        {
-            var flagsRaw = flags ?? MotionFlags.CursorMovement;
-            var commandName = KeyNotationUtil.StringToKeyInputSet(name);
-            return MotionBinding.NewSimple(
-                commandName,
-                flagsRaw,
-                motion);
         }
 
         internal static CommandRunData CreateCommandRunData(
@@ -237,30 +189,37 @@ namespace Vim.UnitTest
             CommandFlags flags = CommandFlags.None)
         {
             command = command ?? CreateNormalCommand();
-            binding = binding ?? CreateCommandBindingNormal(flags: flags);
+            binding = binding ?? CreateNormalBinding(flags: flags);
             result = result ?? CommandResult.NewCompleted(ModeSwitch.NoSwitch);
             return new CommandRunData(binding, command, result);
         }
 
-        internal static CommandBinding CreateCommandBindingNormal(
+        internal static CommandBinding CreateNormalBinding(
             string name = "default",
             CommandFlags flags = CommandFlags.None,
             NormalCommand command = null)
         {
             command = command ?? NormalCommand.NewPutAfterCaret(false);
-            return CommandBinding.NewNormalCommand(KeyNotationUtil.StringToKeyInputSet(name), flags, command);
+            return CommandBinding.NewNormalBinding(KeyNotationUtil.StringToKeyInputSet(name), flags, command);
         }
 
-        internal static CommandBinding CreateCommandBindingMotion(
+        internal static CommandBinding CreateMotionBinding(
+            string name,
+            Func<MotionData, NormalCommand> func)
+        {
+            return CreateMotionBinding(name, CommandFlags.None, func);
+        }
+
+        internal static CommandBinding CreateMotionBinding(
             string name = "default",
             CommandFlags flags = CommandFlags.None,
             Func<MotionData, NormalCommand> func = null)
         {
             func = func ?? NormalCommand.NewYank;
-            return CommandBinding.NewMotionCommand(KeyNotationUtil.StringToKeyInputSet(name), flags, func.ToFSharpFunc());
+            return CommandBinding.NewMotionBinding(KeyNotationUtil.StringToKeyInputSet(name), flags, func.ToFSharpFunc());
         }
 
-        internal static CommandBinding CreateCommandBindingNormalComplex(
+        internal static CommandBinding CreateComplexNormalBinding(
             string name,
             Action<KeyInput> action,
             CommandFlags flags = CommandFlags.None)
@@ -275,13 +234,13 @@ namespace Vim.UnitTest
                 FSharpOption<KeyRemapMode>.None,
                 func.ToFSharpFunc());
             var bindDataStorage = BindDataStorage<NormalCommand>.NewSimple(bindData);
-            return CommandBinding.NewComplexNormalCommand(
+            return CommandBinding.NewComplexNormalBinding(
                 KeyNotationUtil.StringToKeyInputSet(name),
                 flags,
                 bindDataStorage);
         }
 
-        internal static CommandBinding CreateCommandBindingNormalComplex(
+        internal static CommandBinding CreateComplexNormalBinding(
             string name,
             Func<KeyInput, bool> predicate,
             KeyRemapMode remapMode = null,
@@ -306,7 +265,7 @@ namespace Vim.UnitTest
                 remapModeOption,
                 func.ToFSharpFunc());
             var bindDataStorage = BindDataStorage<NormalCommand>.NewSimple(bindData);
-            return CommandBinding.NewComplexNormalCommand(
+            return CommandBinding.NewComplexNormalBinding(
                 KeyNotationUtil.StringToKeyInputSet(name),
                 flags,
                 bindDataStorage);

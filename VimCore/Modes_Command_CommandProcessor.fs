@@ -282,7 +282,7 @@ type internal CommandProcessor
     /// Parse out the fold command and create the fold
     member x.ProcessFold _ (range : SnapshotLineRange option) _ =
         let range = RangeUtil.RangeOrCurrentLine _buffer.TextView range
-        _operations.FoldManager.CreateFold range.ExtentIncludingLineBreak
+        _operations.FoldManager.CreateFold range
 
     /// Parse out the Yank command
     member x.ProcessYank (rest:char list) (range: SnapshotLineRange option) _ =

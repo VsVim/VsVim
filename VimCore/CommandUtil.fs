@@ -18,7 +18,8 @@ type internal CommandUtil
         _vimData : IVimData,
         _localSettings : IVimLocalSettings,
         _undoRedoOperations : IUndoRedoOperations,
-        _smartIndentationService : ISmartIndentationService
+        _smartIndentationService : ISmartIndentationService,
+        _foldManager : IFoldManager
     ) =
 
     let _globalSettings = _localSettings.GlobalSettings
@@ -572,6 +573,18 @@ type internal CommandUtil
     member x.EditWithUndoTransaciton<'T> (name : string) (action : unit -> 'T) : 'T = 
         _undoRedoOperations.EditWithUndoTransaction name action
 
+    /// Create a fold for the given MotionResult
+    member x.FoldMotion (result : MotionResult) =
+        _foldManager.CreateFold result.LineRange
+
+        CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Fold the specified selection 
+    member x.FoldSelection (visualSpan : VisualSpan) = 
+        _foldManager.CreateFold visualSpan.LineRange
+
+        CommandResult.Completed ModeSwitch.SwitchPreviousMode
+
     /// Format the 'count' lines in the buffer
     member x.FormatLines count =
         let range = SnapshotLineRangeUtil.CreateForLineAndMaxCount x.CaretLine count
@@ -1073,6 +1086,7 @@ type internal CommandUtil
         | NormalCommand.DeleteLines -> x.DeleteLines count register
         | NormalCommand.DeleteMotion motion -> x.RunWithMotion motion (x.DeleteMotion register)
         | NormalCommand.DeleteTillEndOfLine -> x.DeleteTillEndOfLine count register
+        | NormalCommand.FoldMotion motion -> x.RunWithMotion motion x.FoldMotion
         | NormalCommand.FormatLines -> x.FormatLines count
         | NormalCommand.FormatMotion motion -> x.RunWithMotion motion x.FormatMotion 
         | NormalCommand.InsertAfterCaret -> x.InsertAfterCaret count
@@ -1116,6 +1130,7 @@ type internal CommandUtil
         | VisualCommand.DeleteSelection -> x.DeleteSelection register visualSpan ModeSwitch.SwitchPreviousMode
         | VisualCommand.DeleteLineSelection -> x.DeleteLineSelection register visualSpan
         | VisualCommand.FormatLines -> x.FormatLinesVisual visualSpan
+        | VisualCommand.FoldSelection -> x.FoldSelection visualSpan
         | VisualCommand.JoinSelection kind -> x.JoinSelection kind visualSpan
         | VisualCommand.PutOverSelection moveCaretAfterText -> x.PutOverSelection register count visualSpan moveCaretAfterText
         | VisualCommand.ReplaceSelection keyInput -> x.ReplaceSelection keyInput visualSpan

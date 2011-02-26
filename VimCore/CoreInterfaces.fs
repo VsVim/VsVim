@@ -666,6 +666,15 @@ type VisualSpan =
         | VisualSpan.Line range -> EditSpan.Single range.ExtentIncludingLineBreak
         | VisualSpan.Block col -> EditSpan.Block col
 
+    /// Returns the SnapshotLineRange for the VisualSpan.  For Character this will
+    /// just expand out the Span.  For Line this is an identity.  For Block it will
+    /// return the overarching span
+    member x.LineRange = 
+        match x with
+        | VisualSpan.Character span -> SnapshotLineRangeUtil.CreateForSpan span
+        | VisualSpan.Line range -> range
+        | VisualSpan.Block col -> col |> SnapshotSpanUtil.GetOverarchingSpan |> SnapshotLineRangeUtil.CreateForSpan
+
     /// Returns the start point of the Visual Span.  This can be None in the case
     /// of an empty Block selection.
     member x.Start =
@@ -704,9 +713,6 @@ type MotionData = {
     /// The argument which should be supplied to the given Motion
     MotionArgument : MotionArgument
 }
-
-/// REPEAT TODO: Need to clean up the terminology around Motion structures.  Most
-/// use the Run modifier to represent what was run.  For now use these type defs
 
 /// Data needed to execute a command
 type CommandData = {
@@ -762,7 +768,7 @@ type LegacyData (_func : unit -> CommandResult) =
     static member op_Inequality (this, other) = not (System.Object.ReferenceEquals(this, other))
     override x.GetHashCode() = 1
     override x.Equals(obj) = System.Object.ReferenceEquals(x, obj)
-    interface System.IEquatable<PingData> with
+    interface System.IEquatable<LegacyData> with
         member x.Equals other = x.Equals(other)
 
 /// Normal mode commands which can be executed by the user 
@@ -805,6 +811,9 @@ type NormalCommand =
 
     /// Delete till the end of the line and 'count - 1' more lines down
     | DeleteTillEndOfLine
+
+    /// Create a fold over the specified motion 
+    | FoldMotion of MotionData
 
     /// Format the specified lines
     | FormatLines
@@ -900,6 +909,9 @@ type VisualCommand =
 
     /// Delete the selected text and put it into a register
     | DeleteSelection
+
+    /// Fold the current selected lines
+    | FoldSelection
 
     /// Format the selected text
     | FormatLines
@@ -1055,13 +1067,8 @@ type BindDataStorage<'T> =
         | Simple bindData -> Simple (bindData.Convert mapFunc)
         | Complex func -> Complex (fun () -> func().Convert mapFunc)
 
-/// Representation of commands within Vim.  
-/// 
-/// REPEAT TODO: This should evolve into CommandBinding which has 
-///     Simple of KeyInputSet * Command
-///     Motion of KeyInputSet * (MotionData -> Command)
-/// REPEAT TODO: This should have requires qualified access
-/// REPEAT TODO: Need to actually label the contents as ---CommandBinding instead of ---Command
+/// Representation of binding of Command's to KeyInputSet values and flags which correspond
+/// to the execution of the command
 [<DebuggerDisplay("{ToString(),nq}")>]
 [<RequireQualifiedAccess>]
 type CommandBinding = 
@@ -1069,57 +1076,50 @@ type CommandBinding =
     /// Represents a Command which has no motion modifiers.  The  delegate takes 
     /// an optional count and a Register.  If unspecified the default register
     /// will be used
-    | LegacySimpleCommand of KeyInputSet * CommandFlags * (int option -> Register -> CommandResult)
-
-    /// Represents a Command prefix which has an associated motion.  The delegate takes
-    /// an optional count, a Register and a MotionResult value.  If unspecified the default
-    /// register will be used
-    | LegacyMotionCommand of KeyInputSet * CommandFlags * (int option -> Register -> MotionResult -> CommandResult)
+    | LegacyBinding of KeyInputSet * CommandFlags * (int option -> Register -> CommandResult)
 
     /// Represents a command which has a name and relies on the Visual Mode Span to 
     /// execute the command
-    | LegacyVisualCommand of KeyInputSet * CommandFlags * VisualKind * (int option -> Register -> VisualSpan -> CommandResult) 
+    | LegacyVisualBinding of KeyInputSet * CommandFlags * VisualKind * (int option -> Register -> VisualSpan -> CommandResult) 
 
     /// KeyInputSet bound to a particular NormalCommand instance
-    | NormalCommand of KeyInputSet * CommandFlags * NormalCommand
+    | NormalBinding of KeyInputSet * CommandFlags * NormalCommand
 
     /// KeyInputSet bound to a complex NormalCommand instance
-    | ComplexNormalCommand of KeyInputSet * CommandFlags * BindDataStorage<NormalCommand>
+    | ComplexNormalBinding of KeyInputSet * CommandFlags * BindDataStorage<NormalCommand>
 
     /// KeyInputSet bound to a particular NormalCommand instance which takes a Motion Argument
-    | MotionCommand of KeyInputSet * CommandFlags * (MotionData -> NormalCommand)
+    | MotionBinding of KeyInputSet * CommandFlags * (MotionData -> NormalCommand)
 
     /// KeyInputSet bound to a particular VisualCommand instance
-    | VisualCommand of KeyInputSet * CommandFlags * VisualCommand
+    | VisualBinding of KeyInputSet * CommandFlags * VisualCommand
 
     /// KeyInputSet bound to a complex VisualCommand instance
-    | ComplexVisualCommand of KeyInputSet * CommandFlags * BindDataStorage<VisualCommand>
+    | ComplexVisualBinding of KeyInputSet * CommandFlags * BindDataStorage<VisualCommand>
 
     with 
 
     /// The raw command inputs
     member x.KeyInputSet = 
         match x with
-        | LegacySimpleCommand(value, _, _ ) -> value
-        | LegacyMotionCommand(value, _, _) -> value
-        | LegacyVisualCommand(value, _, _, _) -> value
-        | NormalCommand (value, _, _) -> value
-        | MotionCommand (value, _, _) -> value
-        | VisualCommand (value, _, _) -> value
-        | ComplexNormalCommand (value, _, _) -> value
-        | ComplexVisualCommand (value, _, _) -> value
+        | LegacyBinding(value, _, _ ) -> value
+        | LegacyVisualBinding(value, _, _, _) -> value
+        | NormalBinding (value, _, _) -> value
+        | MotionBinding (value, _, _) -> value
+        | VisualBinding (value, _, _) -> value
+        | ComplexNormalBinding (value, _, _) -> value
+        | ComplexVisualBinding (value, _, _) -> value
 
     /// The kind of the Command
     member x.CommandFlags =
         match x with
-        | LegacySimpleCommand(_, value, _ ) -> value
-        | LegacyMotionCommand(_, value, _) -> value
-        | LegacyVisualCommand(_, value, _, _) -> value
-        | NormalCommand (_, value, _) -> value
-        | MotionCommand (_, value, _) -> value
-        | VisualCommand (_, value, _) -> value
-        | ComplexNormalCommand (_, value, _) -> value
-        | ComplexVisualCommand (_, value, _) -> value
+        | LegacyBinding(_, value, _ ) -> value
+        | LegacyVisualBinding(_, value, _, _) -> value
+        | NormalBinding (_, value, _) -> value
+        | MotionBinding (_, value, _) -> value
+        | VisualBinding (_, value, _) -> value
+        | ComplexNormalBinding (_, value, _) -> value
+        | ComplexVisualBinding (_, value, _) -> value
 
     /// Is the Repeatable flag set
     member x.IsRepeatable = Util.IsFlagSet x.CommandFlags CommandFlags.Repeatable

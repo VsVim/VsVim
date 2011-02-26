@@ -22,13 +22,16 @@ type FoldManager(_textBuffer : ITextBuffer) =
         |> Seq.map (TrackingSpanUtil.GetSpan _textBuffer.CurrentSnapshot) 
         |> SeqUtil.filterToSome
         |> Seq.sortBy (fun span -> span.Start.Position)
-    member x.CreateFold span = 
-        let startLine,endLine = SnapshotSpanUtil.GetStartAndEndLine span
-        if startLine.LineNumber < endLine.LineNumber then
-            let span = SnapshotSpan(startLine.Start, endLine.EndIncludingLineBreak)
+
+    /// Create a fold over the given line range
+    member x.CreateFold (range : SnapshotLineRange) = 
+        if range.Count > 1 then
+            let span = range.ExtentIncludingLineBreak
             let span = _textBuffer.CurrentSnapshot.CreateTrackingSpan(span.Span, SpanTrackingMode.EdgeInclusive)
             _folds <- span :: _folds
             _updated.Trigger System.EventArgs.Empty
+
+    /// Delete the fold which corresponds to the given SnapshotPoint
     member x.DeleteFold (point:SnapshotPoint) = 
         let snapshot = _textBuffer.CurrentSnapshot
         let data = 
@@ -52,7 +55,7 @@ type FoldManager(_textBuffer : ITextBuffer) =
     interface IFoldManager with
         member x.TextBuffer = _textBuffer
         member x.Folds = x.Folds
-        member x.CreateFold span = x.CreateFold span
+        member x.CreateFold range = x.CreateFold range
         member x.DeleteFold point = x.DeleteFold point
         member x.DeleteAllFolds () = x.DeleteAllFolds()
         [<CLIEvent>]
