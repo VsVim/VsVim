@@ -250,7 +250,7 @@ type Motion =
     | CharRight
 
     /// Implements the f, F, t and T motions
-    | CharSearch of CharSearchKind * Direction * char
+    | CharSearch of CharSearchKind * Path * char
 
     /// Implement the 'e' motion.  This goes to the end of the current word.  If we're
     /// not currently on a word it will find the next word and then go to the end of that
@@ -821,6 +821,13 @@ type NormalCommand =
     /// Format the specified motion
     | FormatMotion of MotionData
 
+    /// GoTo the file under the cursor.  The bool represents whether or not this should occur in
+    /// a different widnow
+    | GoToFileUnderCaret of bool
+
+    /// GoTo the ITextView in the specified direction
+    | GoToView of Direction
+
     /// Switch to insert after the caret position
     | InsertAfterCaret
 
@@ -883,6 +890,12 @@ type NormalCommand =
 
     /// Shift 'motion' lines from the cursor right
     | ShiftMotionLinesRight of MotionData
+
+    /// Split the view horizontally
+    | SplitViewHorizontally
+
+    /// Split the view vertically
+    | SplitViewVertically
 
     /// Substitute the character at the cursor
     | SubstituteCharacterAtCaret
@@ -1599,7 +1612,7 @@ type IVimData =
     /// Motion function used with the last f, F, t or T motion.  The 
     /// first item in the tuple is the forward version and the second item
     /// is the backwards version
-    abstract LastCharSearch : (CharSearchKind * Direction * char) option with get, set
+    abstract LastCharSearch : (CharSearchKind * Path * char) option with get, set
 
     /// The last command which was ran 
     abstract LastCommand : StoredCommand option with get, set

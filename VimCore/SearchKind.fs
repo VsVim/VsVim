@@ -2,7 +2,13 @@
 
 namespace Vim
 
-type Direction = 
+type Direction =
+    | Up
+    | Down
+    | Left
+    | Right
+
+type Path = 
     | Forward
     | Backward
 
@@ -45,6 +51,6 @@ module SearchKindUtil =
 
     let OfDirection dir = 
         match dir with 
-        | Direction.Forward -> SearchKind.Forward
-        | Direction.Backward -> SearchKind.Backward
+        | Path.Forward -> SearchKind.Forward
+        | Path.Backward -> SearchKind.Backward
 

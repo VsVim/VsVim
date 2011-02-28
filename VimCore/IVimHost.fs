@@ -29,7 +29,7 @@ type IVimHost =
 
     /// Go to the "count" next tab window in the specified direction.  This will wrap 
     /// around
-    abstract GoToNextTab : Direction -> count : int -> unit
+    abstract GoToNextTab : Path -> count : int -> unit
 
     /// Go the nth tab.  The first tab can be accessed with both 0 and 1
     abstract GoToTab : index : int -> unit

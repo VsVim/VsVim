@@ -109,6 +109,7 @@ type internal NormalMode
                 yield ("cc", CommandFlags.LinkedWithNextTextChange ||| CommandFlags.Repeatable, NormalCommand.ChangeLines)
                 yield ("dd", CommandFlags.Repeatable, NormalCommand.DeleteLines)
                 yield ("D", CommandFlags.Repeatable, NormalCommand.DeleteTillEndOfLine)
+                yield ("gf", CommandFlags.None, NormalCommand.GoToFileUnderCaret false)
                 yield ("gJ", CommandFlags.Repeatable, NormalCommand.JoinLines JoinKind.KeepEmptySpaces)
                 yield ("gI", CommandFlags.None, NormalCommand.InsertAtStartOfLine)
                 yield ("gp", CommandFlags.Repeatable, NormalCommand.PutAfterCaret true)
@@ -132,6 +133,20 @@ type internal NormalMode
                 yield ("S", CommandFlags.LinkedWithNextTextChange ||| CommandFlags.Repeatable, NormalCommand.ChangeLines)
                 yield ("x", CommandFlags.Repeatable, NormalCommand.DeleteCharacterAtCaret)
                 yield ("X", CommandFlags.Repeatable, NormalCommand.DeleteCharacterBeforeCaret)
+                yield ("<C-w><C-j>", CommandFlags.None, NormalCommand.GoToView Direction.Down)
+                yield ("<C-w>j", CommandFlags.None, NormalCommand.GoToView Direction.Down)
+                yield ("<C-w><C-k>", CommandFlags.None, NormalCommand.GoToView Direction.Up)
+                yield ("<C-w>k", CommandFlags.None, NormalCommand.GoToView Direction.Up)
+                yield ("<C-w><C-l>", CommandFlags.None, NormalCommand.GoToView Direction.Right)
+                yield ("<C-w>l", CommandFlags.None, NormalCommand.GoToView Direction.Right)
+                yield ("<C-w><C-h>", CommandFlags.None, NormalCommand.GoToView Direction.Left)
+                yield ("<C-w>h", CommandFlags.None, NormalCommand.GoToView Direction.Left)
+                yield ("<C-w><C-s>", CommandFlags.None, NormalCommand.SplitViewHorizontally)
+                yield ("<C-w>s", CommandFlags.None, NormalCommand.SplitViewHorizontally)
+                yield ("<C-w><C-v>", CommandFlags.None, NormalCommand.SplitViewVertically)
+                yield ("<C-w>v", CommandFlags.None, NormalCommand.SplitViewVertically)
+                yield ("<C-w><C-g><C-f>", CommandFlags.None, NormalCommand.GoToFileUnderCaret true)
+                yield ("<C-w>gf", CommandFlags.None, NormalCommand.GoToFileUnderCaret true)
                 yield ("<Del>", CommandFlags.Repeatable, NormalCommand.DeleteCharacterAtCaret)
                 yield (".", CommandFlags.Special, NormalCommand.RepeatLastCommand)
                 yield ("<lt><lt>", CommandFlags.Repeatable, NormalCommand.ShiftLinesLeft)
@@ -346,11 +361,6 @@ type internal NormalMode
                     ModeSwitch.NoSwitch,
                     fun _ _ -> _operations.GoToDefinitionWrapper())
                 yield (
-                    "gf", 
-                    CommandFlags.Special, 
-                    ModeSwitch.NoSwitch,
-                    fun _ _ -> _operations.GoToFile())
-                yield (
                     "Y", 
                     CommandFlags.Special, 
                     ModeSwitch.NoSwitch,
@@ -405,57 +415,6 @@ type internal NormalMode
                     doNothing)
             } |> Seq.map (fun (str, kind, switch, func) -> (str, kind, func, CommandResult.Completed switch))
 
-            seq {
-                yield (
-                    ["<C-w><C-j>"; "<C-w>j"],
-                    CommandFlags.Movement, 
-                    ModeSwitch.NoSwitch,
-                    fun _ _ -> _bufferData.Vim.VimHost.MoveViewDown this.TextView)
-                yield (
-                    ["<C-w><C-k>"; "<C-w>k"],
-                    CommandFlags.None, 
-                    ModeSwitch.NoSwitch,
-                    fun _ _ -> _bufferData.Vim.VimHost.MoveViewUp this.TextView)
-                yield (
-                    ["<C-w><C-l>"; "<C-w>l"],
-                    CommandFlags.None, 
-                    ModeSwitch.NoSwitch,
-                    fun _ _ -> _bufferData.Vim.VimHost.MoveViewRight this.TextView)
-                yield (
-                    ["<C-w><C-h>"; "<C-w>h"],
-                    CommandFlags.None, 
-                    ModeSwitch.NoSwitch,
-                    fun _ _ -> _bufferData.Vim.VimHost.MoveViewLeft this.TextView)
-                yield (
-                    ["<C-w><C-h>"; "<C-w>h"],
-                    CommandFlags.None, 
-                    ModeSwitch.NoSwitch,
-                    fun _ _ -> _bufferData.Vim.VimHost.MoveViewLeft this.TextView)
-                yield (
-                    ["<C-w>s"; "<C-w><C-s>"],
-                    CommandFlags.None,
-                    ModeSwitch.NoSwitch,
-                    fun _ _ -> 
-                        match _bufferData.Vim.VimHost.SplitViewHorizontally this.TextView with
-                        | HostResult.Success -> ()
-                        | HostResult.Error _ -> _operations.Beep())
-                yield (
-                    ["<C-w>v"; "<C-w><C-v>"],
-                    CommandFlags.None,
-                    ModeSwitch.NoSwitch,
-                    fun _ _ -> 
-                        match _bufferData.Vim.VimHost.SplitViewVertically this.TextView with
-                        | HostResult.Success -> ()
-                        | HostResult.Error _ -> _operations.Beep())
-                yield (
-                    ["<C-w>gf"; "<C-w><C-g><C-f>"],
-                    CommandFlags.Special, 
-                    ModeSwitch.NoSwitch,
-                    fun _ _ -> _operations.GoToFileInNewWindow())
-            } |> Seq.map (fun (names, kind, switch, func) -> 
-                names |> Seq.map (fun str -> (str, kind, func, CommandResult.Completed switch)))
-              |> Seq.concat
-
         let allWithCount = 
             commands
             |> Seq.map(fun (str,kind,func,result) -> 
@@ -477,14 +436,14 @@ type internal NormalMode
                     CommandFlags.Movement, 
                     fun count _ -> 
                         match count with 
-                        | None -> _operations.GoToNextTab Direction.Forward 1
+                        | None -> _operations.GoToNextTab Path.Forward 1
                         | Some(count) -> _operations.GoToTab count)
                 yield (
                     ["gT"; "<C-PageUp>"], 
                     CommandFlags.Movement, 
                     fun count _ -> 
                         let count = OptionUtil.getOrDefault 1 count
-                        _operations.GoToNextTab Direction.Backward count)
+                        _operations.GoToNextTab Path.Backward count)
             }
             |> Seq.map(fun (nameList,kind,func) -> 
                 nameList |> Seq.map (fun str ->

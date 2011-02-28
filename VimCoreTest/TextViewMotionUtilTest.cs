@@ -482,18 +482,18 @@ namespace VimCore.UnitTest
         public void ForwardChar1()
         {
             Create("foo bar baz");
-            Assert.AreEqual("fo", _motionUtil.CharSearch('o', 1, CharSearchKind.ToChar, Direction.Forward).Value.Span.GetText());
+            Assert.AreEqual("fo", _motionUtil.CharSearch('o', 1, CharSearchKind.ToChar, Path.Forward).Value.Span.GetText());
             _textView.MoveCaretTo(1);
-            Assert.AreEqual("oo", _motionUtil.CharSearch('o', 1, CharSearchKind.ToChar, Direction.Forward).Value.Span.GetText());
+            Assert.AreEqual("oo", _motionUtil.CharSearch('o', 1, CharSearchKind.ToChar, Path.Forward).Value.Span.GetText());
             _textView.MoveCaretTo(1);
-            Assert.AreEqual("oo b", _motionUtil.CharSearch('b', 1, CharSearchKind.ToChar, Direction.Forward).Value.Span.GetText());
+            Assert.AreEqual("oo b", _motionUtil.CharSearch('b', 1, CharSearchKind.ToChar, Path.Forward).Value.Span.GetText());
         }
 
         [Test]
         public void ForwardChar2()
         {
             Create("foo bar baz");
-            var data = _motionUtil.CharSearch('q', 1, CharSearchKind.ToChar, Direction.Forward);
+            var data = _motionUtil.CharSearch('q', 1, CharSearchKind.ToChar, Path.Forward);
             Assert.IsTrue(data.IsNone());
         }
 
@@ -501,7 +501,7 @@ namespace VimCore.UnitTest
         public void ForwardChar3()
         {
             Create("foo bar baz");
-            var data = _motionUtil.CharSearch('o', 1, CharSearchKind.ToChar, Direction.Forward).Value;
+            var data = _motionUtil.CharSearch('o', 1, CharSearchKind.ToChar, Path.Forward).Value;
             Assert.AreEqual(MotionKind.Inclusive, data.MotionKind);
             Assert.AreEqual(OperationKind.CharacterWise, data.OperationKind);
         }
@@ -510,7 +510,7 @@ namespace VimCore.UnitTest
         public void ForwardChar4()
         {
             Create("foo bar baz");
-            var data = _motionUtil.CharSearch('o', 300, CharSearchKind.ToChar, Direction.Forward);
+            var data = _motionUtil.CharSearch('o', 300, CharSearchKind.ToChar, Path.Forward);
             Assert.IsTrue(data.IsNone());
         }
 
@@ -518,29 +518,29 @@ namespace VimCore.UnitTest
         public void ForwardTillChar1()
         {
             Create("foo bar baz");
-            Assert.AreEqual("f", _motionUtil.CharSearch('o', 1, CharSearchKind.TillChar, Direction.Forward).Value.Span.GetText());
-            Assert.AreEqual("foo ", _motionUtil.CharSearch('b', 1, CharSearchKind.TillChar, Direction.Forward).Value.Span.GetText());
+            Assert.AreEqual("f", _motionUtil.CharSearch('o', 1, CharSearchKind.TillChar, Path.Forward).Value.Span.GetText());
+            Assert.AreEqual("foo ", _motionUtil.CharSearch('b', 1, CharSearchKind.TillChar, Path.Forward).Value.Span.GetText());
         }
 
         [Test]
         public void ForwardTillChar2()
         {
             Create("foo bar baz");
-            Assert.IsTrue(_motionUtil.CharSearch('q', 1, CharSearchKind.TillChar, Direction.Forward).IsNone());
+            Assert.IsTrue(_motionUtil.CharSearch('q', 1, CharSearchKind.TillChar, Path.Forward).IsNone());
         }
 
         [Test]
         public void ForwardTillChar3()
         {
             Create("foo bar baz");
-            Assert.AreEqual("fo", _motionUtil.CharSearch('o', 2, CharSearchKind.TillChar, Direction.Forward).Value.Span.GetText());
+            Assert.AreEqual("fo", _motionUtil.CharSearch('o', 2, CharSearchKind.TillChar, Path.Forward).Value.Span.GetText());
         }
 
         [Test, Description("Bad count gets nothing in gVim")]
         public void ForwardTillChar4()
         {
             Create("foo bar baz");
-            Assert.IsTrue(_motionUtil.CharSearch('o', 300, CharSearchKind.TillChar, Direction.Forward).IsNone());
+            Assert.IsTrue(_motionUtil.CharSearch('o', 300, CharSearchKind.TillChar, Path.Forward).IsNone());
         }
 
         [Test]
@@ -548,7 +548,7 @@ namespace VimCore.UnitTest
         {
             Create("the boy kicked the ball");
             _textView.MoveCaretTo(_buffer.GetLine(0).End);
-            var data = _motionUtil.CharSearch('b', 1, CharSearchKind.ToChar, Direction.Backward).Value;
+            var data = _motionUtil.CharSearch('b', 1, CharSearchKind.ToChar, Path.Backward).Value;
             Assert.AreEqual("ball", data.Span.GetText());
             Assert.AreEqual(MotionKind.Exclusive, data.MotionKind);
             Assert.AreEqual(OperationKind.CharacterWise, data.OperationKind);
@@ -559,7 +559,7 @@ namespace VimCore.UnitTest
         {
             Create("the boy kicked the ball");
             _textView.MoveCaretTo(_buffer.GetLine(0).End);
-            var data = _motionUtil.CharSearch('b', 2, CharSearchKind.ToChar, Direction.Backward).Value;
+            var data = _motionUtil.CharSearch('b', 2, CharSearchKind.ToChar, Path.Backward).Value;
             Assert.AreEqual("boy kicked the ball", data.Span.GetText());
             Assert.AreEqual(MotionKind.Exclusive, data.MotionKind);
             Assert.AreEqual(OperationKind.CharacterWise, data.OperationKind);
@@ -570,7 +570,7 @@ namespace VimCore.UnitTest
         {
             Create("the boy kicked the ball");
             _textView.MoveCaretTo(_buffer.GetLine(0).End);
-            var data = _motionUtil.CharSearch('b', 1, CharSearchKind.TillChar, Direction.Backward).Value;
+            var data = _motionUtil.CharSearch('b', 1, CharSearchKind.TillChar, Path.Backward).Value;
             Assert.AreEqual("all", data.Span.GetText());
             Assert.AreEqual(MotionKind.Exclusive, data.MotionKind);
             Assert.AreEqual(OperationKind.CharacterWise, data.OperationKind);
@@ -581,7 +581,7 @@ namespace VimCore.UnitTest
         {
             Create("the boy kicked the ball");
             _textView.MoveCaretTo(_buffer.GetLine(0).End);
-            var data = _motionUtil.CharSearch('b', 2, CharSearchKind.TillChar, Direction.Backward).Value;
+            var data = _motionUtil.CharSearch('b', 2, CharSearchKind.TillChar, Path.Backward).Value;
             Assert.AreEqual("oy kicked the ball", data.Span.GetText());
             Assert.AreEqual(MotionKind.Exclusive, data.MotionKind);
             Assert.AreEqual(OperationKind.CharacterWise, data.OperationKind);

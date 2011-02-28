@@ -22,7 +22,7 @@ namespace VimCore.UnitTest
         public void GetSentences1()
         {
             Create("a. b.");
-            var ret = MotionUtil.GetSentences(_snapshot.GetPoint(0), Direction.Forward);
+            var ret = MotionUtil.GetSentences(_snapshot.GetPoint(0), Path.Forward);
             CollectionAssert.AreEquivalent(
                 new string[] { "a.", " b." },
                 ret.Select(x => x.GetText()).ToList());
@@ -32,7 +32,7 @@ namespace VimCore.UnitTest
         public void GetSentences2()
         {
             Create("a! b.");
-            var ret = MotionUtil.GetSentences(_snapshot.GetPoint(0), Direction.Forward);
+            var ret = MotionUtil.GetSentences(_snapshot.GetPoint(0), Path.Forward);
             CollectionAssert.AreEquivalent(
                 new string[] { "a!", " b." },
                 ret.Select(x => x.GetText()).ToList());
@@ -42,7 +42,7 @@ namespace VimCore.UnitTest
         public void GetSentences3()
         {
             Create("a? b.");
-            var ret = MotionUtil.GetSentences(_snapshot.GetPoint(0), Direction.Forward);
+            var ret = MotionUtil.GetSentences(_snapshot.GetPoint(0), Path.Forward);
             CollectionAssert.AreEquivalent(
                 new string[] { "a?", " b." },
                 ret.Select(x => x.GetText()).ToList());
@@ -52,7 +52,7 @@ namespace VimCore.UnitTest
         public void GetSentences4()
         {
             Create("a? b.");
-            var ret = MotionUtil.GetSentences(_snapshot.GetEndPoint(), Direction.Forward);
+            var ret = MotionUtil.GetSentences(_snapshot.GetEndPoint(), Path.Forward);
             CollectionAssert.AreEquivalent(
                 new string[] { },
                 ret.Select(x => x.GetText()).ToList());
@@ -65,7 +65,7 @@ namespace VimCore.UnitTest
         public void GetSentences_BackwardFromEndOfBuffer()
         {
             Create("a? b.");
-            var ret = MotionUtil.GetSentences(_snapshot.GetEndPoint(), Direction.Backward);
+            var ret = MotionUtil.GetSentences(_snapshot.GetEndPoint(), Path.Backward);
             CollectionAssert.AreEquivalent(
                 new[] { " b.", "a?" },
                 ret.Select(x => x.GetText()).ToList());
@@ -79,7 +79,7 @@ namespace VimCore.UnitTest
         public void GetSentences_BackwardFromSingleWhitespace()
         {
             Create("a? b.");
-            var ret = MotionUtil.GetSentences(_snapshot.GetPoint(2), Direction.Backward);
+            var ret = MotionUtil.GetSentences(_snapshot.GetPoint(2), Path.Backward);
             CollectionAssert.AreEquivalent(
                 new[] { "a?" },
                 ret.Select(x => x.GetText()).ToList());
@@ -92,7 +92,7 @@ namespace VimCore.UnitTest
         public void GetSentences_ManyTrailingChars()
         {
             Create("a?)]' b.");
-            var ret = MotionUtil.GetSentences(_snapshot.GetPoint(0), Direction.Forward);
+            var ret = MotionUtil.GetSentences(_snapshot.GetPoint(0), Path.Forward);
             CollectionAssert.AreEquivalent(
                 new[] { "a?)]' ", "b." },
                 ret.Select(x => x.GetText()).ToList());
@@ -105,7 +105,7 @@ namespace VimCore.UnitTest
         public void GetSentences_BackwardWithCharBetween()
         {
             Create("a?) b.");
-            var ret = MotionUtil.GetSentences(_snapshot.GetEndPoint(), Direction.Backward);
+            var ret = MotionUtil.GetSentences(_snapshot.GetEndPoint(), Path.Backward);
             CollectionAssert.AreEquivalent(
                 new[] { "b.", "a?) " },
                 ret.Select(x => x.GetText()).ToList());
@@ -116,7 +116,7 @@ namespace VimCore.UnitTest
         public void GetSentence9()
         {
             Create("a!b. c");
-            var ret = MotionUtil.GetSentences(_snapshot.GetPoint(0), Direction.Forward);
+            var ret = MotionUtil.GetSentences(_snapshot.GetPoint(0), Path.Forward);
             CollectionAssert.AreEquivalent(
                 new string[] { "a!b.", " c" },
                 ret.Select(x => x.GetText()).ToList());
@@ -130,7 +130,7 @@ namespace VimCore.UnitTest
         public void GetSentence_IncompleteBoundary()
         {
             Create("a!b. c");
-            var ret = MotionUtil.GetSentences(_snapshot.GetEndPoint(), Direction.Backward);
+            var ret = MotionUtil.GetSentences(_snapshot.GetEndPoint(), Path.Backward);
             CollectionAssert.AreEquivalent(
                 new[] { " c", "a!b." },
                 ret.Select(x => x.GetText()).ToList());
@@ -143,7 +143,7 @@ namespace VimCore.UnitTest
         public void GetSentence_ForwardBlankLinesAreBoundaries()
         {
             Create("a", "", "", "b");
-            var ret = MotionUtil.GetSentences(_snapshot.GetPoint(0), Direction.Forward);
+            var ret = MotionUtil.GetSentences(_snapshot.GetPoint(0), Path.Forward);
             CollectionAssert.AreEquivalent(
                 new[]
                 {
@@ -157,7 +157,7 @@ namespace VimCore.UnitTest
         public void GetSentence13()
         {
             Create("dog", "cat", "bear");
-            var ret = MotionUtil.GetSentences(_snapshot.GetEndPoint().Subtract(1), Direction.Forward);
+            var ret = MotionUtil.GetSentences(_snapshot.GetEndPoint().Subtract(1), Path.Forward);
             CollectionAssert.AreEquivalent(
                 new [] { "r" },
                 ret.Select(x => x.GetText()).ToList());
@@ -167,7 +167,7 @@ namespace VimCore.UnitTest
         public void GetParagraphs_SingleBreak()
         {
             Create("a", "b", "", "c");
-            var ret = MotionUtil.GetParagraphs(_snapshot.GetPoint(0), Direction.Forward);
+            var ret = MotionUtil.GetParagraphs(_snapshot.GetPoint(0), Path.Forward);
             CollectionAssert.AreEquivalent(
                 new[]
                 {
@@ -185,7 +185,7 @@ namespace VimCore.UnitTest
         public void GetParagraphs_ConsequtiveBreaks()
         {
             Create("a", "b", "", "", "c");
-            var ret = MotionUtil.GetParagraphs(_snapshot.GetPoint(0), Direction.Forward);
+            var ret = MotionUtil.GetParagraphs(_snapshot.GetPoint(0), Path.Forward);
             CollectionAssert.AreEquivalent(
                 new[]
                 {
@@ -202,7 +202,7 @@ namespace VimCore.UnitTest
         public void GetParagraphs_FormFeedShouldBeBoundary()
         {
             Create("a", "b", "\f", "", "c");
-            var ret = MotionUtil.GetParagraphs(_snapshot.GetPoint(0), Direction.Forward);
+            var ret = MotionUtil.GetParagraphs(_snapshot.GetPoint(0), Path.Forward);
             CollectionAssert.AreEquivalent(
                 new[]
                 {
@@ -221,7 +221,7 @@ namespace VimCore.UnitTest
         public void GetParagraphs_FormFeedIsNotConsequtive()
         {
             Create("a", "b", "\f", "", "c");
-            var ret = MotionUtil.GetParagraphs(_snapshot.GetPoint(0), Direction.Forward);
+            var ret = MotionUtil.GetParagraphs(_snapshot.GetPoint(0), Path.Forward);
             CollectionAssert.AreEquivalent(
                 new[]
                 {

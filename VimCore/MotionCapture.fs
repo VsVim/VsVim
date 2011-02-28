@@ -29,10 +29,10 @@ type internal MotionCapture
             // Calculate the kind here so it will change as the user changes options
             let kind = 
                 match direction, _settings.GlobalSettings.WrapScan with
-                | Direction.Forward, true -> SearchKind.ForwardWithWrap
-                | Direction.Forward, false -> SearchKind.Forward
-                | Direction.Backward, true -> SearchKind.BackwardWithWrap
-                | Direction.Backward, false -> SearchKind.Backward
+                | Path.Forward, true -> SearchKind.ForwardWithWrap
+                | Path.Forward, false -> SearchKind.Forward
+                | Path.Backward, true -> SearchKind.BackwardWithWrap
+                | Path.Backward, false -> SearchKind.Backward
     
             // Store the caret point before the search begins
             let before = TextViewUtil.GetCaretPoint _textView
@@ -298,19 +298,19 @@ type internal MotionCapture
                 yield (
                     "f", 
                     MotionFlags.CursorMovement,
-                    GetChar (fun c -> Motion.CharSearch (CharSearchKind.ToChar, Direction.Forward, c)))
+                    GetChar (fun c -> Motion.CharSearch (CharSearchKind.ToChar, Path.Forward, c)))
                 yield (
                     "t", 
                     MotionFlags.CursorMovement,
-                    GetChar (fun c -> Motion.CharSearch (CharSearchKind.TillChar, Direction.Forward, c)))
+                    GetChar (fun c -> Motion.CharSearch (CharSearchKind.TillChar, Path.Forward, c)))
                 yield (
                     "F", 
                     MotionFlags.CursorMovement,
-                    GetChar (fun c -> Motion.CharSearch (CharSearchKind.ToChar, Direction.Backward, c)))
+                    GetChar (fun c -> Motion.CharSearch (CharSearchKind.ToChar, Path.Backward, c)))
                 yield (
                     "T", 
                     MotionFlags.CursorMovement,
-                    GetChar (fun c -> Motion.CharSearch (CharSearchKind.TillChar, Direction.Backward, c)))
+                    GetChar (fun c -> Motion.CharSearch (CharSearchKind.TillChar, Path.Backward, c)))
                 yield (
                     "'",
                     MotionFlags.None,   // Cursor movement has different semantics than the motion
@@ -322,11 +322,11 @@ type internal MotionCapture
                 yield (
                     "/",
                     MotionFlags.CursorMovement ||| MotionFlags.HandlesEscape,
-                    IncrementalSearch Direction.Forward)
+                    IncrementalSearch Path.Forward)
                 yield (
                     "?",
                     MotionFlags.CursorMovement ||| MotionFlags.HandlesEscape,
-                    IncrementalSearch Direction.Backward)
+                    IncrementalSearch Path.Backward)
             } 
         motionSeq
         |> Seq.map (fun (str, flags, bindDataStorage) -> 

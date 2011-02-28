@@ -359,14 +359,14 @@ type internal CommandProcessor
     member x.ProcessTabNext rest _ _ =
         let count, _ = RangeUtil.ParseNumber rest
         match count with
-        | None -> _operations.GoToNextTab Direction.Forward 1
+        | None -> _operations.GoToNextTab Path.Forward 1
         | Some(index) -> _operations.GoToTab index
 
     member x.ProcessTabPrevious rest _ _ =
         let count, _ = RangeUtil.ParseNumber rest
         match count with
-        | None -> _operations.GoToNextTab Direction.Backward 1
-        | Some(count) -> _operations.GoToNextTab Direction.Backward count
+        | None -> _operations.GoToNextTab Path.Backward 1
+        | Some(count) -> _operations.GoToNextTab Path.Backward count
 
     member x.ProcessTabFirst _ _ _ =
         _operations.GoToTab 0

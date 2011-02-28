@@ -175,25 +175,25 @@ namespace VimCore.UnitTest
         [Test]
         public void CharSearch_ToCharForward()
         {
-            AssertMotion("fc", Motion.NewCharSearch(CharSearchKind.ToChar, Direction.Forward, 'c'));
+            AssertMotion("fc", Motion.NewCharSearch(CharSearchKind.ToChar, Path.Forward, 'c'));
         }
 
         [Test]
         public void CharSearch_TillCharForward()
         {
-            AssertMotion("tc", Motion.NewCharSearch(CharSearchKind.TillChar, Direction.Forward, 'c'));
+            AssertMotion("tc", Motion.NewCharSearch(CharSearchKind.TillChar, Path.Forward, 'c'));
         }
 
         [Test]
         public void CharSearch_ToCharBackward()
         {
-            AssertMotion("Fc", Motion.NewCharSearch(CharSearchKind.ToChar, Direction.Backward, 'c'));
+            AssertMotion("Fc", Motion.NewCharSearch(CharSearchKind.ToChar, Path.Backward, 'c'));
         }
 
         [Test]
         public void CharSearch_TillCharBackward()
         {
-            AssertMotion("Tc", Motion.NewCharSearch(CharSearchKind.TillChar, Direction.Backward, 'c'));
+            AssertMotion("Tc", Motion.NewCharSearch(CharSearchKind.TillChar, Path.Backward, 'c'));
         }
 
         [Test]

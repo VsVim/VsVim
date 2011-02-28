@@ -1552,7 +1552,7 @@ namespace VimCore.UnitTest
         public void TabNext_NoArguments()
         {
             Create("");
-            _operations.Setup(x => x.GoToNextTab(Direction.Forward, 1)).Verifiable();
+            _operations.Setup(x => x.GoToNextTab(Path.Forward, 1)).Verifiable();
             RunCommand("tabnext");
             _operations.Verify();
         }
@@ -1561,7 +1561,7 @@ namespace VimCore.UnitTest
         public void TabNext_WithShortName()
         {
             Create("");
-            _operations.Setup(x => x.GoToNextTab(Direction.Forward, 1)).Verifiable();
+            _operations.Setup(x => x.GoToNextTab(Path.Forward, 1)).Verifiable();
             RunCommand("tabn");
             _operations.Verify();
         }
@@ -1579,7 +1579,7 @@ namespace VimCore.UnitTest
         public void TabPrevious_NoArguments()
         {
             Create("");
-            _operations.Setup(x => x.GoToNextTab(Direction.Backward, 1)).Verifiable();
+            _operations.Setup(x => x.GoToNextTab(Path.Backward, 1)).Verifiable();
             RunCommand("tabprevious");
             _operations.Verify();
         }
@@ -1588,7 +1588,7 @@ namespace VimCore.UnitTest
         public void TabPrevious_ShortName()
         {
             Create("");
-            _operations.Setup(x => x.GoToNextTab(Direction.Backward, 1)).Verifiable();
+            _operations.Setup(x => x.GoToNextTab(Path.Backward, 1)).Verifiable();
             RunCommand("tabp");
             _operations.Verify();
         }
@@ -1597,7 +1597,7 @@ namespace VimCore.UnitTest
         public void TabPrevious_AlternateShortName()
         {
             Create("");
-            _operations.Setup(x => x.GoToNextTab(Direction.Backward, 1)).Verifiable();
+            _operations.Setup(x => x.GoToNextTab(Path.Backward, 1)).Verifiable();
             RunCommand("tabN");
             _operations.Verify();
         }
@@ -1606,7 +1606,7 @@ namespace VimCore.UnitTest
         public void TabPrevious_AlternateFullName()
         {
             Create("");
-            _operations.Setup(x => x.GoToNextTab(Direction.Backward, 1)).Verifiable();
+            _operations.Setup(x => x.GoToNextTab(Path.Backward, 1)).Verifiable();
             RunCommand("tabNext");
             _operations.Verify();
         }
@@ -1615,7 +1615,7 @@ namespace VimCore.UnitTest
         public void TabPrevious_AlternateNameAndCount()
         {
             Create("");
-            _operations.Setup(x => x.GoToNextTab(Direction.Backward, 42)).Verifiable();
+            _operations.Setup(x => x.GoToNextTab(Path.Backward, 42)).Verifiable();
             RunCommand("tabNext 42");
             _operations.Verify();
         }

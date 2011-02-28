@@ -8,7 +8,6 @@ open Microsoft.VisualStudio.Text.Outlining
 open Microsoft.VisualStudio.Language.Intellisense
 open Microsoft.VisualStudio.Text.Classification
 open System.ComponentModel.Composition
-open System.IO
 open Vim.Modes
 
 type internal StatusUtil() = 
@@ -32,7 +31,7 @@ type internal VimData() =
 
     let mutable _lastSubstituteData : SubstituteData option = None
     let mutable _lastSearchData = { Text = SearchText.Pattern(StringUtil.empty); Kind = SearchKind.ForwardWithWrap; Options = SearchOptions.None }
-    let mutable _lastCharSearch : (CharSearchKind * Direction * char) option = None
+    let mutable _lastCharSearch : (CharSearchKind * Path * char) option = None
     let mutable _lastCommand : StoredCommand option = None
     let _lastSearchChanged = Event<SearchData>()
 
@@ -122,7 +121,7 @@ type internal VimBufferFactory
                 vim.VimData) :> IIncrementalSearch
         let capture = MotionCapture(vim.VimHost, view, incrementalSearch, localSettings) :> IMotionCapture
 
-        let commandUtil = CommandUtil(view, commonOperations,  motionUtil, statusUtil, vim.RegisterMap, vim.MarkMap, vim.VimData, localSettings, undoRedoOperations, _smartIndentationService, foldManager) :> ICommandUtil
+        let commandUtil = CommandUtil(view, commonOperations,  motionUtil, statusUtil, vim.RegisterMap, vim.MarkMap, vim.VimData, localSettings, undoRedoOperations, _smartIndentationService, foldManager, _host) :> ICommandUtil
 
         let bufferRaw = 
             VimBuffer( 
@@ -219,7 +218,7 @@ type internal Vim
             | [] -> None
             | h::_ -> 
                 let name = _host.GetName h.TextBuffer 
-                let name = Path.GetFileName(name)
+                let name = System.IO.Path.GetFileName(name)
                 Some name
         RegisterMap(_clipboardDevice, currentFileNameFunc) :> IRegisterMap
 

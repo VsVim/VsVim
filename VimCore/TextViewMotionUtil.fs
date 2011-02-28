@@ -321,8 +321,8 @@ module internal MotionUtil =
             }
 
         match direction with 
-        | Direction.Forward -> forSpanForward()
-        | Direction.Backward -> forSpanBackward()
+        | Path.Forward -> forSpanForward()
+        | Path.Backward -> forSpanBackward()
 
     /// Set of characters which represent the end of a sentence. 
     let SentenceEndChars = ['.'; '!'; '?']
@@ -483,15 +483,15 @@ module internal MotionUtil =
 
         let func = 
             match direction with
-            | Direction.Forward -> forSpanForward
-            | Direction.Backward -> forSpanBackward
+            | Path.Forward -> forSpanForward
+            | Path.Backward -> forSpanBackward
 
         GetParagraphs point direction
         |> Seq.map func
         |> Seq.concat
 
     let GetSentenceFull point = 
-        GetSentences point Direction.Backward
+        GetSentences point Path.Backward
         |> Seq.tryFind (fun x -> x.Contains(point))
         |> OptionUtil.getOrDefault (SnapshotSpanUtil.CreateFromStartToProvidedEnd point)
 
@@ -590,7 +590,7 @@ type internal TextViewMotionUtil
             match span with 
             | Some(span) -> span
             | None -> SnapshotSpan(point, 0)
-        let isForward = Direction.Forward = direction
+        let isForward = Path.Forward = direction
         {
             Span = span 
             IsForward = isForward 
@@ -809,7 +809,7 @@ type internal TextViewMotionUtil
         let caretPoint = TextViewUtil.GetCaretPoint _textView 
         let span = 
             let startPoint = SnapshotUtil.GetStartPoint caretPoint.Snapshot
-            MotionUtil.GetParagraphs startPoint Direction.Forward 
+            MotionUtil.GetParagraphs startPoint Path.Forward 
             |> Seq.skipWhile (fun span -> not (span.Contains caretPoint))
             |> Seq.truncate count
             |> SnapshotSpanUtil.CreateCombined
@@ -893,10 +893,10 @@ type internal TextViewMotionUtil
 
     member x.CharSearch c count charSearch direction = 
         match charSearch, direction with
-        | CharSearchKind.ToChar, Direction.Forward -> x.ForwardCharMotionCore c count TssUtil.FindNextOccurranceOfCharOnLine
-        | CharSearchKind.TillChar, Direction.Forward -> x.ForwardCharMotionCore c count TssUtil.FindTillNextOccurranceOfCharOnLine
-        | CharSearchKind.ToChar, Direction.Backward -> x.BackwardCharMotionCore c count TssUtil.FindPreviousOccurranceOfCharOnLine 
-        | CharSearchKind.TillChar, Direction.Backward -> x.BackwardCharMotionCore c count TssUtil.FindTillPreviousOccurranceOfCharOnLine
+        | CharSearchKind.ToChar, Path.Forward -> x.ForwardCharMotionCore c count TssUtil.FindNextOccurranceOfCharOnLine
+        | CharSearchKind.TillChar, Path.Forward -> x.ForwardCharMotionCore c count TssUtil.FindTillNextOccurranceOfCharOnLine
+        | CharSearchKind.ToChar, Path.Backward -> x.BackwardCharMotionCore c count TssUtil.FindPreviousOccurranceOfCharOnLine 
+        | CharSearchKind.TillChar, Path.Backward -> x.BackwardCharMotionCore c count TssUtil.FindTillPreviousOccurranceOfCharOnLine
 
     /// Repeat the last f, F, t or T search pattern.
     member x.RepeatLastCharSearch () =
@@ -911,8 +911,8 @@ type internal TextViewMotionUtil
         | Some (kind, direction, c) -> 
             let direction = 
                 match direction with
-                | Direction.Forward -> Direction.Backward
-                | Direction.Backward -> Direction.Forward
+                | Path.Forward -> Path.Backward
+                | Path.Backward -> Path.Forward
             x.CharSearch c 1 kind direction
 
     member x.WordForward kind count =
@@ -1196,7 +1196,7 @@ type internal TextViewMotionUtil
         match TextViewUtil.GetCaretPointKind _textView with 
         | PointKind.Normal (point) -> 
             let span = 
-                MotionUtil.GetSentences point Direction.Forward
+                MotionUtil.GetSentences point Path.Forward
                 |> Seq.truncate count
                 |> SnapshotSpanUtil.CreateCombined 
                 |> Option.get   // GetSentences must return at least one
@@ -1213,7 +1213,7 @@ type internal TextViewMotionUtil
     member x.SentenceBackward count = 
         let caretPoint = TextViewUtil.GetCaretPoint _textView
         let span = 
-            MotionUtil.GetSentences caretPoint Direction.Backward
+            MotionUtil.GetSentences caretPoint Path.Backward
             |> Seq.truncate count
             |> SnapshotSpanUtil.CreateCombined 
             |> Option.get   // GetSentences must return at least one
@@ -1236,7 +1236,7 @@ type internal TextViewMotionUtil
                 let startPoint = 
                     MotionUtil.GetSentenceFull caretPoint
                     |> SnapshotSpanUtil.GetStartPoint
-                MotionUtil.GetSentences startPoint Direction.Forward 
+                MotionUtil.GetSentences startPoint Path.Forward 
                 |> Seq.truncate count
                 |> SnapshotSpanUtil.CreateCombinedOrEmpty caretPoint.Snapshot
         {
@@ -1250,7 +1250,7 @@ type internal TextViewMotionUtil
     member x.ParagraphForward count = 
         let startPoint = TextViewUtil.GetCaretPoint _textView
         let endPoint = 
-            let next = MotionUtil.GetParagraphs startPoint Direction.Forward |> Seq.skip count
+            let next = MotionUtil.GetParagraphs startPoint Path.Forward |> Seq.skip count
             match SeqUtil.tryHeadOnly next with
             | None -> SnapshotUtil.GetEndPoint startPoint.Snapshot
             | Some span -> span.Start
@@ -1395,8 +1395,8 @@ type internal TextViewMotionUtil
         | Motion.Mark c -> x.Mark c
         | Motion.MarkLine c -> x.MarkLine c 
         | Motion.MatchingToken -> x.MatchingToken()
-        | Motion.ParagraphBackward -> x.GetParagraphs Direction.Backward motionArgument.Count |> Some
-        | Motion.ParagraphForward -> x.GetParagraphs Direction.Forward motionArgument.Count |> Some
+        | Motion.ParagraphBackward -> x.GetParagraphs Path.Backward motionArgument.Count |> Some
+        | Motion.ParagraphForward -> x.GetParagraphs Path.Forward motionArgument.Count |> Some
         | Motion.QuotedString -> x.QuotedString()
         | Motion.QuotedStringContents -> x.QuotedStringContents()
         | Motion.RepeatLastCharSearch -> x.RepeatLastCharSearch()

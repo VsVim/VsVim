@@ -96,7 +96,8 @@ namespace Vim.UnitTest
             IVimLocalSettings localSettings = null,
             IUndoRedoOperations undoRedOperations = null,
             ISmartIndentationService smartIndentationService = null,
-            IFoldManager foldManager = null)
+            IFoldManager foldManager = null,
+            IVimHost vimHost = null)
         {
             statusUtil = statusUtil ?? new StatusUtil();
             undoRedOperations = undoRedOperations ?? VimUtil.CreateUndoRedoOperations(statusUtil);
@@ -108,6 +109,7 @@ namespace Vim.UnitTest
             operations = operations ?? CreateCommonOperations(textView, localSettings, vimData: vimData, statusUtil: statusUtil);
             smartIndentationService = smartIndentationService ?? CreateSmartIndentationService();
             foldManager = foldManager ?? CreateFoldManager(textView.TextBuffer);
+            vimHost = vimHost ?? new MockVimHost();
             return new CommandUtil(
                 textView,
                 operations,
@@ -119,7 +121,8 @@ namespace Vim.UnitTest
                 localSettings,
                 undoRedOperations,
                 smartIndentationService,
-                foldManager);
+                foldManager,
+                vimHost);
         }
 
         internal static ISmartIndentationService CreateSmartIndentationService()

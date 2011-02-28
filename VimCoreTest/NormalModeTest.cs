@@ -1422,12 +1422,12 @@ namespace VimCore.UnitTest
         }
 
         [Test]
-        public void GoTo_gf1()
+        public void Bind_GoToFileUnderCaret()
         {
-            Create("foo bar");
-            _operations.Setup(x => x.GoToFile()).Verifiable();
+            Create("");
+            _commandUtil.SetupCommandNormal(NormalCommand.NewGoToFileUnderCaret(false));
             _mode.Process("gf");
-            _operations.Verify();
+            _commandUtil.Verify();
         }
 
         [Test]
@@ -1832,7 +1832,7 @@ namespace VimCore.UnitTest
         public void gt_1()
         {
             Create(DefaultLines);
-            _operations.Setup(x => x.GoToNextTab(Direction.Forward, 1)).Verifiable();
+            _operations.Setup(x => x.GoToNextTab(Path.Forward, 1)).Verifiable();
             _mode.Process("gt");
             _operations.Verify();
         }
@@ -1850,7 +1850,7 @@ namespace VimCore.UnitTest
         public void CPageDown_1()
         {
             Create(DefaultLines);
-            _operations.Setup(x => x.GoToNextTab(Direction.Forward, 1)).Verifiable();
+            _operations.Setup(x => x.GoToNextTab(Path.Forward, 1)).Verifiable();
             _mode.Process(KeyInputUtil.VimKeyAndModifiersToKeyInput(VimKey.PageDown, KeyModifiers.Control));
             _operations.Verify();
         }
@@ -1869,7 +1869,7 @@ namespace VimCore.UnitTest
         public void gT_1()
         {
             Create(DefaultLines);
-            _operations.Setup(x => x.GoToNextTab(Direction.Backward, 1)).Verifiable();
+            _operations.Setup(x => x.GoToNextTab(Path.Backward, 1)).Verifiable();
             _mode.Process("gT");
             _operations.Verify();
         }
@@ -1878,7 +1878,7 @@ namespace VimCore.UnitTest
         public void gT_2()
         {
             Create(DefaultLines);
-            _operations.Setup(x => x.GoToNextTab(Direction.Backward, 2)).Verifiable();
+            _operations.Setup(x => x.GoToNextTab(Path.Backward, 2)).Verifiable();
             _mode.Process("2gT");
             _operations.Verify();
         }
@@ -1887,7 +1887,7 @@ namespace VimCore.UnitTest
         public void CPageUp_1()
         {
             Create(DefaultLines);
-            _operations.Setup(x => x.GoToNextTab(Direction.Backward, 1)).Verifiable();
+            _operations.Setup(x => x.GoToNextTab(Path.Backward, 1)).Verifiable();
             _mode.Process(KeyInputUtil.VimKeyAndModifiersToKeyInput(VimKey.PageUp, KeyModifiers.Control));
             _operations.Verify();
         }
@@ -1896,7 +1896,7 @@ namespace VimCore.UnitTest
         public void CPageUp_2()
         {
             Create(DefaultLines);
-            _operations.Setup(x => x.GoToNextTab(Direction.Backward, 2)).Verifiable();
+            _operations.Setup(x => x.GoToNextTab(Path.Backward, 2)).Verifiable();
             _mode.Process('2');
             _mode.Process(KeyInputUtil.VimKeyAndModifiersToKeyInput(VimKey.PageUp, KeyModifiers.Control));
             _operations.Verify();
@@ -2037,39 +2037,53 @@ namespace VimCore.UnitTest
         #region Split View
 
         [Test]
-        public void MoveViewUp1()
+        public void Bind_GoToView_Down()
         {
             Create(string.Empty);
-            _mode.Process(KeyNotationUtil.StringToKeyInput("<C-w>"));
-            _mode.Process(KeyNotationUtil.StringToKeyInput("<C-k>"));
-            _host.Verify(x => x.MoveViewUp(_textView));
-        }
-
-        [Test]
-        public void MoveViewUp2()
-        {
-            Create(string.Empty);
-            _mode.Process(KeyNotationUtil.StringToKeyInput("<C-w>"));
-            _mode.Process(KeyNotationUtil.StringToKeyInput("k"));
-            _host.Verify(x => x.MoveViewUp(_textView));
-        }
-
-        [Test]
-        public void MoveViewDown1()
-        {
-            Create(string.Empty);
+            _commandUtil.SetupCommandNormal(NormalCommand.NewGoToView(Direction.Down));
             _mode.Process(KeyNotationUtil.StringToKeyInput("<C-w>"));
             _mode.Process(KeyNotationUtil.StringToKeyInput("<C-j>"));
-            _host.Verify(x => x.MoveViewDown(_textView));
+            _commandUtil.Verify();
         }
 
         [Test]
-        public void MoveViewDown2()
+        public void Bind_GoToView_Right()
         {
             Create(string.Empty);
+            _commandUtil.SetupCommandNormal(NormalCommand.NewGoToView(Direction.Right));
             _mode.Process(KeyNotationUtil.StringToKeyInput("<C-w>"));
-            _mode.Process(KeyNotationUtil.StringToKeyInput("j"));
-            _host.Verify(x => x.MoveViewDown(_textView));
+            _mode.Process(KeyNotationUtil.StringToKeyInput("<C-l>"));
+            _commandUtil.Verify();
+        }
+
+        [Test]
+        public void Bind_GoToView_Left()
+        {
+            Create(string.Empty);
+            _commandUtil.SetupCommandNormal(NormalCommand.NewGoToView(Direction.Left));
+            _mode.Process(KeyNotationUtil.StringToKeyInput("<C-w>"));
+            _mode.Process(KeyNotationUtil.StringToKeyInput("<C-h>"));
+            _commandUtil.Verify();
+        }
+
+        [Test]
+        public void Bind_GoToView_Up()
+        {
+            Create(string.Empty);
+            _commandUtil.SetupCommandNormal(NormalCommand.NewGoToView(Direction.Up));
+            _mode.Process(KeyNotationUtil.StringToKeyInput("<C-w>"));
+            _mode.Process(KeyNotationUtil.StringToKeyInput("<C-k>"));
+            _commandUtil.Verify();
+        }
+
+        [Test]
+        public void Bind_GoToView_Up2()
+        {
+            Create(string.Empty);
+            _commandUtil.SetupCommandNormal(NormalCommand.NewGoToView(Direction.Up));
+            _mode.Process(KeyNotationUtil.StringToKeyInput("<C-w>"));
+            _mode.Process(KeyNotationUtil.StringToKeyInput("k"));
+            _commandUtil.Verify();
         }
 
         #endregion

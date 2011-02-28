@@ -131,7 +131,7 @@ namespace Vim.UnitTest.Mock
         }
 
 
-        void IVimHost.GoToNextTab(Direction value, int count)
+        void IVimHost.GoToNextTab(Path value, int count)
         {
             throw new NotImplementedException();
         }

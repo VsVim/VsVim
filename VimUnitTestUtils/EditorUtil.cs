@@ -3,13 +3,13 @@ using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.ComponentModel.Composition.Hosting;
 using System.ComponentModel.Composition.Primitives;
-using System.IO;
 using System.Linq;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Operations;
 using Microsoft.VisualStudio.Utilities;
 using Vim.UnitTest.Exports;
+using IOPath = System.IO.Path;
 
 namespace Vim.UnitTest
 {
@@ -152,22 +152,22 @@ namespace Vim.UnitTest
         public static List<ComposablePartCatalog> GetEditorCatalog()
         {
             var uri = new Uri(typeof(EditorUtil).Assembly.CodeBase);
-            var root = Path.GetDirectoryName(uri.LocalPath);
+            var root = IOPath.GetDirectoryName(uri.LocalPath);
             var list = new List<ComposablePartCatalog>();
-            list.Add(new AssemblyCatalog(Path.Combine(root, "Microsoft.VisualStudio.Platform.VSEditor.dll")));
+            list.Add(new AssemblyCatalog(IOPath.Combine(root, "Microsoft.VisualStudio.Platform.VSEditor.dll")));
 
             // Not entirely sure why this is suddenly needed
-            list.Add(new AssemblyCatalog(Path.Combine(root, "Microsoft.VisualStudio.Text.Internal.dll")));
+            list.Add(new AssemblyCatalog(IOPath.Combine(root, "Microsoft.VisualStudio.Text.Internal.dll")));
 
             // Must include this because several editor options are actually stored as exported information 
             // on this DLL.  Including most importantly, the tabsize information
-            list.Add(new AssemblyCatalog(Path.Combine(root, "Microsoft.VisualStudio.Text.Logic.dll")));
+            list.Add(new AssemblyCatalog(IOPath.Combine(root, "Microsoft.VisualStudio.Text.Logic.dll")));
 
             // Include this DLL to get several more EditorOptions including WordWrapStyle
-            list.Add(new AssemblyCatalog(Path.Combine(root, "Microsoft.VisualStudio.Text.UI.dll")));
+            list.Add(new AssemblyCatalog(IOPath.Combine(root, "Microsoft.VisualStudio.Text.UI.dll")));
 
             // Include this DLL to get more EditorOptions values
-            list.Add(new AssemblyCatalog(Path.Combine(root, "Microsoft.VisualStudio.Text.UI.Wpf.dll")));
+            list.Add(new AssemblyCatalog(IOPath.Combine(root, "Microsoft.VisualStudio.Text.UI.Wpf.dll")));
 
             // There is no default IUndoHistoryRegistry provided so I need to provide it here just to 
             // satisfy the MEF import.  

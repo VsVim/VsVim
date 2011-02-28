@@ -19,7 +19,8 @@ type internal CommandUtil
         _localSettings : IVimLocalSettings,
         _undoRedoOperations : IUndoRedoOperations,
         _smartIndentationService : ISmartIndentationService,
-        _foldManager : IFoldManager
+        _foldManager : IFoldManager,
+        _vimHost : IVimHost
     ) =
 
     let _globalSettings = _localSettings.GlobalSettings
@@ -607,6 +608,23 @@ type internal CommandUtil
         _operations.FormatLines result.LineRange
         CommandResult.Completed ModeSwitch.NoSwitch
 
+    /// GoTo the file name under the cursor and possiby use a new window
+    member x.GoToFileUnderCaret useNewWindow =
+        if useNewWindow then _operations.GoToFileInNewWindow()
+        else _operations.GoToFile()
+
+        CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// GoTo the ITextView in the specified direction
+    member x.GoToView direction = 
+        match direction with
+        | Direction.Up -> _vimHost.MoveViewUp _textView
+        | Direction.Down -> _vimHost.MoveViewDown _textView
+        | Direction.Left -> _vimHost.MoveViewLeft _textView
+        | Direction.Right -> _vimHost.MoveViewRight _textView
+
+        CommandResult.Completed ModeSwitch.NoSwitch
+
     /// Join 'count' lines in the buffer
     member x.JoinLines kind count = 
 
@@ -1089,6 +1107,8 @@ type internal CommandUtil
         | NormalCommand.FoldMotion motion -> x.RunWithMotion motion x.FoldMotion
         | NormalCommand.FormatLines -> x.FormatLines count
         | NormalCommand.FormatMotion motion -> x.RunWithMotion motion x.FormatMotion 
+        | NormalCommand.GoToFileUnderCaret useNewWindow -> x.GoToFileUnderCaret useNewWindow
+        | NormalCommand.GoToView direction -> x.GoToView direction
         | NormalCommand.InsertAfterCaret -> x.InsertAfterCaret count
         | NormalCommand.InsertBeforeCaret -> x.InsertBeforeCaret count
         | NormalCommand.InsertAtEndOfLine -> x.InsertAtEndOfLine count
@@ -1108,6 +1128,8 @@ type internal CommandUtil
         | NormalCommand.ShiftLinesRight -> x.ShiftLinesRight count
         | NormalCommand.ShiftMotionLinesLeft motion -> x.RunWithMotion motion x.ShiftMotionLinesLeft
         | NormalCommand.ShiftMotionLinesRight motion -> x.RunWithMotion motion x.ShiftMotionLinesRight
+        | NormalCommand.SplitViewHorizontally -> x.SplitViewHorizontally()
+        | NormalCommand.SplitViewVertically -> x.SplitViewVertically()
         | NormalCommand.RepeatLastCommand -> x.RepeatLastCommand data
         | NormalCommand.ReplaceChar keyInput -> x.ReplaceChar keyInput data.CountOrDefault
         | NormalCommand.Yank motion -> x.RunWithMotion motion (x.YankMotion register)
@@ -1265,6 +1287,22 @@ type internal CommandUtil
     /// Shift 'motion' lines to the right
     member x.ShiftMotionLinesRight (result : MotionResult) = 
         x.ShiftLinesRightCore result.OperationLineRange 1
+        CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Split the view horizontally
+    member x.SplitViewHorizontally () = 
+        match _vimHost.SplitViewHorizontally _textView with
+        | HostResult.Success -> ()
+        | HostResult.Error _ -> _operations.Beep()
+
+        CommandResult.Completed ModeSwitch.NoSwitch
+
+    /// Split the view vertically
+    member x.SplitViewVertically () =
+        match _vimHost.SplitViewVertically _textView with
+        | HostResult.Success -> ()
+        | HostResult.Error _ -> _operations.Beep()
+
         CommandResult.Completed ModeSwitch.NoSwitch
 
     /// Substitute 'count' characters at the cursor on the current line.  Very similar to

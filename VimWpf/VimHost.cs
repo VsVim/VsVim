@@ -107,7 +107,7 @@ namespace Vim.UI.Wpf
 
         public abstract bool GoToLocalDeclaration(ITextView textView, string name);
 
-        public abstract void GoToNextTab(Direction direction, int count);
+        public abstract void GoToNextTab(Path direction, int count);
 
         public abstract void GoToTab(int index);
 

@@ -248,7 +248,7 @@ namespace VsVim
             _textManager.CloseView(textView, checkDirty);
         }
 
-        public override void GoToNextTab(Direction direction, int count)
+        public override void GoToNextTab(Vim.Path direction, int count)
         {
             var children = GetActiveViews();
             var activeView = ViewManager.Instance.ActiveView;
