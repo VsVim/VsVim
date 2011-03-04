@@ -474,6 +474,36 @@ type internal CommonOperations ( _data : OperationsData ) =
         else
             func()
 
+    /// Undo 'count' operations in the ITextBuffer and ensure the caret is on the screen
+    /// after the undo completes
+    member x.Undo count = 
+        _undoRedoOperations.Undo count
+        x.EnsureCaretOnScreenAndTextExpanded()
+
+    /// Redo 'count' operations in the ITextBuffer and ensure the caret is on the screen
+    /// after the redo completes
+    member x.Redo count = 
+        _undoRedoOperations.Redo count
+        x.EnsureCaretOnScreenAndTextExpanded()
+
+    /// Ensure the caret is visible on the screen.  Will not expand the text around the caret
+    /// if it's in the middle of a collapsed region
+    member x.EnsureCaretOnScreen () = 
+        TextViewUtil.EnsureCaretOnScreen _textView 
+
+    /// Ensure the caret is visible on the screen and any regions surrounding the caret are
+    /// expanded such that the actual caret is visible
+    member x.EnsureCaretOnScreenAndTextExpanded () = 
+        TextViewUtil.EnsureCaretOnScreenAndTextExpanded _textView _outlining
+
+    /// Ensure the point is visible on the screen and any regions surrounding the point are
+    /// expanded such that the actual caret is visible
+    member x.EnsurePointOnScreenAndTextExpanded point = 
+        _host.EnsureVisible _textView point
+        match _outlining with
+        | None -> ()
+        | Some(outlining) -> outlining.ExpandAll(SnapshotSpan(point,0), fun _ -> true) |> ignore
+
     interface ICommonOperations with
         member x.TextView = _textView 
         member x.TabSize = x.TabSize
@@ -644,8 +674,8 @@ type internal CommonOperations ( _data : OperationsData ) =
         member x.ShiftLineRangeLeft range multiplier = x.ShiftLineRangeLeft range multiplier
         member x.ShiftLineRangeRight range multiplier = x.ShiftLineRangeRight range multiplier
 
-        member x.Undo count = _undoRedoOperations.Undo count
-        member x.Redo count = _undoRedoOperations.Redo count
+        member x.Undo count = x.Undo count
+        member x.Redo count = x.Redo count
         member x.Save() = _host.Save _textView.TextBuffer
         member x.SaveAs fileName = 
             let text = SnapshotUtil.GetText _textView.TextSnapshot
@@ -655,15 +685,9 @@ type internal CommonOperations ( _data : OperationsData ) =
         member x.CloseAll checkDirty = _host.CloseAllFiles checkDirty
         member x.GoToNextTab direction count = _host.GoToNextTab direction count
         member x.GoToTab index = _host.GoToTab index
-        member x.EnsureCaretOnScreen () = TextViewUtil.EnsureCaretOnScreen _textView 
-        member x.EnsureCaretOnScreenAndTextExpanded () = TextViewUtil.EnsureCaretOnScreenAndTextExpanded _textView _outlining
-
-        member x.EnsurePointOnScreenAndTextExpanded point = 
-            _host.EnsureVisible _textView point
-            match _outlining with
-            | None -> ()
-            | Some(outlining) -> outlining.ExpandAll(SnapshotSpan(point,0), fun _ -> true) |> ignore
-
+        member x.EnsureCaretOnScreen () = x.EnsureCaretOnScreen()
+        member x.EnsureCaretOnScreenAndTextExpanded () = x.EnsureCaretOnScreenAndTextExpanded()
+        member x.EnsurePointOnScreenAndTextExpanded point = x.EnsurePointOnScreenAndTextExpanded point
         member x.MoveCaretToPoint point =  TextViewUtil.MoveCaretToPoint _textView point 
         member x.MoveCaretToMotionResult (data:MotionResult) =
 
