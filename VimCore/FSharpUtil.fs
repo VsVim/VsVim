@@ -356,7 +356,7 @@ module NonEmptyCollectionUtil =
     let Map mapFunc (col : NonEmptyCollection<'T>) = 
         let head = mapFunc col.Head
         let rest = List.map mapFunc col.Rest
-        NonEmptyCollection<'T>(head, rest)
+        NonEmptyCollection<_>(head, rest)
 
 type Contract = 
 

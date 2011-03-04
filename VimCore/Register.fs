@@ -6,13 +6,13 @@ open Microsoft.VisualStudio.Text
 [<RequireQualifiedAccess>]
 type StringData = 
     | Simple of string
-    | Block of string list 
+    | Block of NonEmptyCollection<string>
     with 
 
     member x.ApplyCount count =
         match x with 
-        | Simple(str) -> StringUtil.repeat count str |> Simple
-        | Block(list) -> list |> List.map (StringUtil.repeat count) |> Block
+        | Simple str -> StringUtil.repeat count str |> Simple
+        | Block col -> col |> NonEmptyCollectionUtil.Map (StringUtil.repeat count) |> Block
 
     // TODO: Delete this and force the use of individual values
     member x.String =
@@ -26,19 +26,7 @@ type StringData =
         elif col.Count = 1 then 
             col.[0] |> SnapshotSpanUtil.GetText |> StringData.Simple
         else
-            col
-            |> Seq.map SnapshotSpanUtil.GetText
-            |> List.ofSeq
-            |> StringData.Block
-
-    static member OfNonEmptyCollection (col : NonEmptyCollection<SnapshotSpan>) = 
-        if col.Count = 1 then 
-            col.Head |> SnapshotSpanUtil.GetText |> StringData.Simple
-        else 
-            col
-            |> Seq.map SnapshotSpanUtil.GetText
-            |> List.ofSeq
-            |> StringData.Block
+            col |> Seq.map SnapshotSpanUtil.GetText |> NonEmptyCollectionUtil.OfSeq |> Option.get |> StringData.Block
 
     static member OfSpan span = span |> SnapshotSpanUtil.GetText |> StringData.Simple
 
@@ -47,7 +35,7 @@ type StringData =
     static member OfEditSpan editSpan =
         match editSpan with
         | EditSpan.Single span -> StringData.OfSpan span
-        | EditSpan.Block col -> StringData.OfNonEmptyCollection col
+        | EditSpan.Block col -> col |> NonEmptyCollectionUtil.Map SnapshotSpanUtil.GetText |> StringData.Block 
 
 [<RequireQualifiedAccess>]
 type NumberedRegister = 

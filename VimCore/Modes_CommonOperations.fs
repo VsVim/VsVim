@@ -362,7 +362,7 @@ type internal CommonOperations ( _data : OperationsData ) =
             let startPoint = SnapshotPoint(snapshot, position)
             SnapshotSpanUtil.CreateWithLength startPoint text.Length
 
-        | StringData.Block(col) -> 
+        | StringData.Block col -> 
 
             // Collection strings are inserted at the original character
             // position down the set of lines creating whitespace as needed
@@ -375,7 +375,7 @@ type internal CommonOperations ( _data : OperationsData ) =
             let originalSnapshot = point.Snapshot
             let insertCol, appendCol = 
                 let lastLineNumber = SnapshotUtil.GetLastLineNumber originalSnapshot
-                let insertCount = min ((lastLineNumber - lineNumber) + 1) col.Length
+                let insertCount = min ((lastLineNumber - lineNumber) + 1) col.Count
                 (Seq.take insertCount col, Seq.skip insertCount col)
 
             // Insert the text at existing lines
@@ -386,7 +386,7 @@ type internal CommonOperations ( _data : OperationsData ) =
                     edit.Insert(line.Start.Position, prefix + str) |> ignore
                 else
                     edit.Insert(line.Start.Position + column, str) |> ignore)
-    
+
             // Add the text to the end of the buffer.
             if not (Seq.isEmpty appendCol) then
                 let prefix = System.Environment.NewLine + (String.replicate column " ")
@@ -396,7 +396,7 @@ type internal CommonOperations ( _data : OperationsData ) =
 
             let newSnapshot = edit.Apply()
             let line = newSnapshot.GetLineFromLineNumber lineNumber
-            let range = SnapshotLineRangeUtil.CreateForLineAndMaxCount line col.Length 
+            let range = SnapshotLineRangeUtil.CreateForLineAndMaxCount line col.Count
             range.ExtentIncludingLineBreak
 
     member x.PutAtCaret stringData opKind putKind moveCaretAfterText = 
@@ -425,11 +425,8 @@ type internal CommonOperations ( _data : OperationsData ) =
                     // one further to the right. 
                     let length = 
                         match stringData with 
-                        | StringData.Simple(str) -> str.Length - 1
-                        | StringData.Block(col) -> 
-                            match col with
-                            | h::_ -> h.Length - 1
-                            | [] -> 0
+                        | StringData.Simple str -> str.Length - 1
+                        | StringData.Block col -> col.Head.Length - 1
                     let length = max 0 length
                     let length = if moveCaretAfterText then length + 1 else length
 

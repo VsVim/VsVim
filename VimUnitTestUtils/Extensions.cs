@@ -717,7 +717,8 @@ namespace Vim.UnitTest
 
         public static void UpdateBlockValues(this Register reg, params string[] value)
         {
-            var data = StringData.NewBlock(value.ToFSharpList());
+            var col = NonEmptyCollectionUtil.OfSeq(value).Value;
+            var data = StringData.NewBlock(col);
             reg.Value = new RegisterValue(data, OperationKind.CharacterWise);
         }
 
